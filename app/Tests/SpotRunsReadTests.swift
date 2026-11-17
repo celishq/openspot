@@ -18,6 +18,16 @@ final class SpotRunsReadTests: SpotRunsCase {
         XCTAssertEqual(try String(contentsOfFile: path("runs"), encoding: .utf8), "run\n")
     }
 
+    func testAnOpenAfterAQuitStartsNoRead() throws {
+        try script(header: "on=panel.open", "printf 'title=Read\\n'")
+        _ = try sheet()
+
+        runs.quit()
+        runs.panelOpened()
+
+        XCTAssertFalse(runs.isReading)
+    }
+
     func testAReadThatAnswersWithItsHeadAtItsEndIsReadingUntilTheAnswerIsIn() async throws {
         try script(header: "on=panel.open", "printf 'title=Read\\n'")
         let sheet = try sheet()

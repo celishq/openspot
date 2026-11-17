@@ -50,7 +50,7 @@ public struct SpotDrag: Equatable, Sendable {
         self.rects = rects
         let height = layouts.values.map(SpotGrid.height(of:)).max() ?? 0
         reach = CGRect(x: 0, y: 0, width: SpotTokens.width(columns: grid.panels.columns), height: height)
-            .insetBy(dx: -SpotTokens.rowHeight / 2, dy: -SpotTokens.rowHeight / 2)
+            .insetBy(dx: -SpotTokens.cell / 2, dy: -SpotTokens.cell / 2)
     }
 
     public func layout(at target: Target) -> [SpotPlacement] {

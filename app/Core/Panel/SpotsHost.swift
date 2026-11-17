@@ -11,6 +11,8 @@ public protocol SpotsHost: AnyObject {
     func confirm(_ text: String)
     func work(_ text: String)
     func applyConfig(_ config: Config)
+    func paint(_ colours: Theme.Colours)
+    func layOut(_ layout: Theme.Layout)
     func setEntryKey(on isOn: Bool)
     func hold(_ keys: [GlobalKey])
     func chooseFiles(for spot: Spot, then take: @escaping ([String]) -> Void)

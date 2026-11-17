@@ -37,6 +37,15 @@ extension OpenspotApp: SpotsHost {
         keys.apply(config)
     }
 
+    func paint(_ colours: Theme.Colours) {
+        SpotLoadedTheme.shared.paint(colours)
+    }
+
+    func layOut(_ layout: Theme.Layout) {
+        SpotLoadedTheme.shared.lay(layout)
+        panel?.layOut()
+    }
+
     func setEntryKey(on isOn: Bool) {
         keys.setEntry(on: isOn)
     }
@@ -116,7 +125,7 @@ extension OpenspotApp: SpotsHost {
     }
 
     func prepareCards(glyphs: [String]) {
-        SpotItemIcon.prepare(glyphs: glyphs, size: SpotTokens.glyphSize)
+        SpotItemIcon.prepare(glyphs: glyphs, size: SpotTokens.glyph)
     }
 
     func agentPrompt(for folder: URL) -> AgentPrompt {

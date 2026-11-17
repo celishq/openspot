@@ -33,7 +33,7 @@ public struct Mac: Sendable {
         pickFolder: (@MainActor @Sendable () async -> URL?)? = nil,
         guide: URL? = Bundle.main.url(forResource: "GUIDE", withExtension: "md"),
         pages: URL? = Bundle.main.url(forResource: "Help", withExtension: nil),
-        theme: URL? = ThemeFile.builtInURL,
+        theme: URL? = ThemeFolder.builtInURL,
         openText: (@MainActor @Sendable (URL) async -> Void)? = nil
     ) {
         self.calendar = calendar

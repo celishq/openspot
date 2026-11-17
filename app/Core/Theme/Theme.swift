@@ -1,41 +1,69 @@
 import Foundation
 
 public struct Theme: Equatable, Sendable {
-    public struct Look: Equatable, Sendable {
-        public fileprivate(set) var glassTint = HexColor(red: 0, green: 0, blue: 0, alpha: 0)
+    private var choices = ThemeValues()
+    public private(set) var colours = Colours()
+    public private(set) var layout = Layout()
+    public private(set) var faults: [String] = []
+
+    public static var keys: [ThemeKey] {
+        choiceKinds.map(\.key)
     }
 
-    public private(set) var dark = Look()
-    public private(set) var light = Look()
-    public private(set) var faults: [String] = []
+    static let lookColours = ["background", "ink", "accent", "highlight", "good", "warn", "bad"]
+
+    static let choiceKinds: [(key: ThemeKey, kind: ThemeKind)] = ["dark", "light"].flatMap { section in
+        lookColours.map { (ThemeKey(section: section, key: $0), ThemeKind.colour) }
+    } + Self.lookKinds.map { (ThemeKey(section: "look", key: $0.0), $0.1) }
+
+    private static let lookKinds: [(String, ThemeKind)] = [
+        ("glass", .words(Glass.allCases.map(\.rawValue))), ("backdrop", .words(Backdrop.Style.allCases.map(\.rawValue))),
+        ("reach", .words(Backdrop.Reach.allCases.map(\.rawValue))), ("corner", .points()), ("density", .factor), ("type", .points()), ("speed", .factor)
+    ]
+
+    static let exactKinds: [(key: ThemeKey, kind: ThemeKind)] = ["dark", "light"].flatMap { section in
+        Appearance.exactKinds.map { (ThemeKey(section: section, key: $0.0), $0.1) }
+    } + Layout.exactKinds.map { (ThemeKey(section: "advanced", key: $0.0), $0.1) }
 
     public init() {}
 
-    public init(unreadable fault: String) {
-        faults = [fault]
+    public init(unreadable fault: String, over base: Theme = Theme()) {
+        self = base
+        faults.append(fault)
     }
 
-    public init(text: String) {
-        self.init()
+    public init(text: String, over base: Theme = Theme()) {
+        self = base
         let document: ConfigDocument
         do {
             document = try ConfigDocument(text: text)
         } catch {
-            faults = ["theme.toml: \((error as? SpotError)?.reason ?? String(describing: error))"]
+            faults.append("theme.toml: \((error as? SpotError)?.reason ?? String(describing: error))")
             return
         }
-        let looks: [String: WritableKeyPath<Theme, Look>] = ["dark": \.dark, "light": \.light]
         for key in document.values.keys.sorted() {
-            let parts = key.split(separator: ".", maxSplits: 1).map(String.init)
-            guard parts.count == 2, let look = looks[parts[0]], parts[1] == "glass-tint" else {
-                faults.append("theme.toml: \(key) is not a key of a theme.")
-                continue
-            }
-            guard case .string(let text)? = document.values[key], let color = HexColor(text: text) else {
-                faults.append("theme.toml: \(key) is a colour such as #00000099.")
-                continue
-            }
-            self[keyPath: look].glassTint = color
+            faults.append("theme.toml: \(key) is not a key of a theme.")
         }
+        let choiceKinds = Dictionary(uniqueKeysWithValues: Self.choiceKinds.map { ($0.key, $0.kind) })
+        let exactKinds = Dictionary(uniqueKeysWithValues: Self.exactKinds.map { ($0.key, $0.kind) })
+        var own = ThemeValues()
+        var exact = ThemeValues()
+        for section in document.sections {
+            for key in section.keys {
+                let id = ThemeKey(section: section.name, key: key)
+                guard let kind = choiceKinds[id] ?? exactKinds[id] else {
+                    faults.append("theme.toml: \(id.name) is not a key of a theme.")
+                    continue
+                }
+                guard kind.accepts(section[key]) else {
+                    faults.append("theme.toml: \(id.name) is \(kind.meaning).")
+                    continue
+                }
+                if choiceKinds[id] != nil { own[id] = section[key] } else { exact[id] = section[key] }
+            }
+        }
+        choices = choices.merging(own)
+        colours = Colours(choices: choices, exact: exact)
+        layout = Layout(choices: choices, exact: exact)
     }
 }

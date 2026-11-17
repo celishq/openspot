@@ -77,14 +77,12 @@ public final class SpotsModel {
     @ObservationIgnored var finding: Finding?
     @ObservationIgnored var foundSpots: [Entry] = []
     public internal(set) var placements: [SpotPlacement] = [] {
-        didSet {
-            let height = SpotTokens.contentHeight(gridHeight: SpotGrid.height(of: placements))
-            if height != gridHeight { gridHeight = height }
-            let bands = SpotGroupBands(placements)
-            if bands != groupBands { groupBands = bands }
-            takeShade()
-        }
+        didSet { takePlacements() }
     }
+    @ObservationIgnored var isPanelHidden = true
+    @ObservationIgnored var heldLayout: Theme.Layout?
+    @ObservationIgnored var laidOut = Theme.Layout()
+    @ObservationIgnored var takenTheme = Theme()
     public internal(set) var groupBands: SpotGroupBands?
     public internal(set) var panels = GridPanels() {
         didSet { spanBackdrop() }
@@ -93,6 +91,14 @@ public final class SpotsModel {
     public internal(set) var backdropSheet: SpotRun?
     @ObservationIgnored var panelLeaving: GridPanel?
     public private(set) var gridHeight = SpotTokens.contentHeight(gridHeight: 0)
+
+    func takePlacements() {
+        let height = SpotTokens.contentHeight(gridHeight: SpotGrid.height(of: placements))
+        if height != gridHeight { gridHeight = height }
+        let bands = SpotGroupBands(placements)
+        if bands != groupBands { groupBands = bands }
+        takeShade()
+    }
     public var selected = 0 {
         didSet {
             if confirming != nil, selected != oldValue { confirming = nil }
@@ -461,6 +467,7 @@ public final class SpotsModel {
     }
 
     public func panelWillShow() {
+        isPanelHidden = false
         finishPick()
         selected = 0
         runs.panelOpened(readsToEnd: isWarming)

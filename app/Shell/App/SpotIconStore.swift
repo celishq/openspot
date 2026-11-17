@@ -5,7 +5,6 @@ import UniformTypeIdentifiers
 @MainActor
 final class SpotIconStore {
     static let shared = SpotIconStore()
-    static let scale: CGFloat = 2
 
     nonisolated private static let pixels = 72
     private static let byteLimit = 4 << 20

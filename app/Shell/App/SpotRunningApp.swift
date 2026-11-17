@@ -42,7 +42,9 @@ struct SpotRunningApp: RunningApp {
     }
 
     func apply(_ theme: Theme) async {
-        await SpotLoadedTheme.shared.take(theme)
+        await MainActor.run {
+            model.take(theme)
+        }
     }
 
     func open(_ id: String) async -> Bool {

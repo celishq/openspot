@@ -48,7 +48,23 @@ final class ConfigDocumentTests: XCTestCase {
         XCTAssertThrowsError(try ConfigDocument(text: "a = \"open\n"))
     }
 
-    func testRefusesAPlainTable() {
-        XCTAssertThrowsError(try ConfigDocument(text: "[table]\n"))
+    func testReadsSectionsAndNumbersAndWritesThemBack() throws {
+        let text = "name = \"A\"\n\n[dark]\nink = \"#FFFFFF\"\nfill = 0.1\n\n[light]\nfill = 0\n\n[[commands]]\nname = \"B\"\n"
+
+        let document = try ConfigDocument(text: text)
+
+        XCTAssertEqual(document.values["name"], .string("A"))
+        XCTAssertEqual(document.sections.map(\.name), ["dark", "light"])
+        XCTAssertEqual(document.sections.first?["ink"], .string("#FFFFFF"))
+        XCTAssertEqual(document.sections.first?["fill"], .number(0.1))
+        XCTAssertEqual(document.sections.last?["fill"], .integer(0))
+        XCTAssertEqual(document.tables(named: "commands").first?["name"], .string("B"))
+        XCTAssertEqual(document.text, text)
+    }
+
+    func testRefusesASectionSetTwice() {
+        XCTAssertThrowsError(try ConfigDocument(text: "[dark]\n[light]\n[dark]\n")) { error in
+            XCTAssertEqual(error as? SpotError, .fault("line 3: [dark] is set twice"))
+        }
     }
 }

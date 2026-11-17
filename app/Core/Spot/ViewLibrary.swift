@@ -17,6 +17,76 @@ public struct ViewLibrary: Sendable {
             public let value: Font
         }
 
+        public struct SpotTheme {
+            public struct Colors {
+                public let ink: Color
+                public let solid: Color
+                public let onSolid: Color
+                public let accent: Color
+                public let good: Color
+                public let warn: Color
+                public let bad: Color
+                public let secondary: Double
+                public let fill: Double
+                public let selected: Double
+                public let track: Double
+            }
+
+            public struct Space {
+                public let padding: CGFloat
+                public let columnGap: CGFloat
+                public let rowGap: CGFloat
+                public let listRow: CGFloat
+                public let listRowGap: CGFloat
+                public let glyph: CGFloat
+                public let cell: CGFloat
+                public let gridWidth: CGFloat
+            }
+
+            public struct Radius {
+                public let card: CGFloat
+                public let media: CGFloat
+                public let inner: CGFloat
+            }
+
+            public struct Fonts {
+                public let title: Font
+                public let body: Font
+                public let detail: Font
+                public let input: Font
+            }
+
+            public struct Motion {
+                public let press: Double
+                public let pressBounce: Double
+            }
+
+            public let color: Colors
+            public let space: Space
+            public let radius: Radius
+            public let font: Fonts
+            public let motion: Motion
+
+            init(_ values: [String: Any]) {
+                let number = { (key: String) in values[key] as? CGFloat ?? 0 }
+                let strength = { (key: String) in Double(number(key)) }
+                let color = { (key: String) in values[key] as? Color ?? .clear }
+                let font = { (key: String) in values[key] as? Font ?? .body }
+                self.color = Colors(
+                    ink: color("ink"), solid: color("solid"), onSolid: color("onSolid"), accent: color("accent"), good: color("good"),
+                    warn: color("warn"), bad: color("bad"), secondary: strength("secondary"), fill: strength("fill"),
+                    selected: strength("selected"), track: strength("track")
+                )
+                space = Space(
+                    padding: number("padding"), columnGap: number("columnGap"), rowGap: number("rowGap"), listRow: number("listRow"),
+                    listRowGap: number("listRowGap"), glyph: number("glyph"), cell: number("cell"), gridWidth: number("gridWidth")
+                )
+                radius = Radius(card: number("card"), media: number("media"), inner: number("inner"))
+                self.font = Fonts(title: font("title"), body: font("body"), detail: font("detail"), input: font("input"))
+                motion = Motion(press: strength("press"), pressBounce: strength("pressBounce"))
+            }
+        }
+
         public enum SpotCard: String {
             case small, wide, square, strip, large
         }
@@ -52,6 +122,7 @@ public struct ViewLibrary: Sendable {
             public let secondary: Double
             public let accent: Color
             public let font: SpotFonts
+            public let theme: SpotTheme
             public let answers: Int
             public let columnGap: CGFloat
             public let rowGap: CGFloat
@@ -103,6 +174,7 @@ public struct ViewLibrary: Sendable {
                     metric: card["metric"] as? Font ?? .system(size: 30, weight: .semibold, design: .rounded),
                     value: card["value"] as? Font ?? .system(size: 15, weight: .semibold, design: .rounded)
                 )
+                theme = SpotTheme(card["theme"] as? [String: Any] ?? [:])
             }
 
             public subscript(key: String) -> String? { values[key]?.last }

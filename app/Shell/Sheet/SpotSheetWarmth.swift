@@ -16,11 +16,11 @@ enum SpotSheetWarmth {
                 }
             }
             SpotRowsView(list: ItemList(items: rows), onRun: { _ in })
-                .frame(width: SpotTokens.panelWidth, height: 5 * SpotTokens.listRowHeight)
+                .frame(width: SpotTokens.panelWidth, height: CGFloat(rows.count) * SpotTokens.listRow)
         }
         let host = NSHostingView(rootView: view.preferredColorScheme(.dark))
         let size = host.fittingSize
-        let window = NSWindow(contentRect: NSRect(x: -9000, y: -9000, width: size.width, height: size.height), styleMask: .borderless, backing: .buffered, defer: false)
+        let window = NSWindow(contentRect: NSRect(origin: SpotTokens.offScreen, size: size), styleMask: .borderless, backing: .buffered, defer: false)
         window.isReleasedWhenClosed = false
         window.contentView = host
         window.orderBack(nil)

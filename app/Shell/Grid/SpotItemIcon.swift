@@ -7,8 +7,6 @@ struct SpotItemIcon: View {
     let symbol: String?
     let size: CGFloat
 
-    private static let glyphScale = 0.8
-
     init(item: SpotItem, size: CGFloat) {
         self.init(icon: item.icon, glyph: item.glyph, symbol: item.symbol, size: size)
     }
@@ -21,30 +19,30 @@ struct SpotItemIcon: View {
     }
 
     static func prepare(_ items: ArraySlice<SpotItem>, size: CGFloat) {
-        SpotGlyphPicture.prepare(items.compactMap(\.glyph), side: size, fontSize: size * glyphScale)
+        SpotGlyphPicture.prepare(items.compactMap(\.glyph), side: size, fontSize: size * SpotType.itemGlyphShare)
     }
 
     static func prepare(glyphs: [String], size: CGFloat) {
-        SpotGlyphPicture.prepare(glyphs, side: size, fontSize: size * glyphScale)
+        SpotGlyphPicture.prepare(glyphs, side: size, fontSize: size * SpotType.itemGlyphShare)
     }
 
     static func bind(glyphs: [String]) {
-        SpotGlyphShelf.bind(glyphs, side: SpotTokens.listIconSize, fontSize: SpotTokens.listIconSize * glyphScale)
+        SpotGlyphShelf.bind(glyphs, side: SpotTokens.listIconSize, fontSize: SpotTokens.listIconSize * SpotType.itemGlyphShare)
     }
 
     var body: some View {
         if let icon {
             SpotFileIconView(icon: icon, size: size)
-        } else if let glyph, let picture = SpotGlyphPicture.image(glyph, side: size, fontSize: size * Self.glyphScale) {
+        } else if let glyph, let picture = SpotGlyphPicture.image(glyph, side: size, fontSize: size * SpotType.itemGlyphShare) {
             Image(decorative: picture, scale: SpotGlyphPicture.scale)
                 .frame(width: size, height: size)
         } else if let glyph {
             Text(glyph)
-                .font(.system(size: size * Self.glyphScale))
+                .font(SpotType.itemGlyph(side: size))
                 .frame(width: size, height: size)
         } else if let symbol {
             Image(systemName: symbol)
-                .font(.system(size: size * 0.7, weight: .medium))
+                .font(SpotType.itemSymbol(side: size))
                 .foregroundStyle(SpotTheme.glassInk)
                 .frame(width: size, height: size)
         }
@@ -59,7 +57,7 @@ private struct SpotFileIconView: View {
     var body: some View {
         Group {
             if let image = SpotIconStore.shared.cached(icon) ?? loaded {
-                Image(decorative: image, scale: SpotIconStore.scale)
+                Image(decorative: image, scale: SpotTokens.pictureScale)
                     .resizable()
                     .interpolation(.high)
             } else {

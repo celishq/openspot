@@ -24,6 +24,6 @@ struct SpotFieldPrompt: View {
         Image(systemName: "magnifyingglass")
             .font(SpotType.input)
             .modifier(SpotSecondaryText())
-            .frame(width: SpotTokens.glyphSize, height: SpotTokens.rowHeight)
+            .frame(width: SpotTokens.glyph, height: SpotTokens.cell)
     }
 }

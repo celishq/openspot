@@ -12,7 +12,7 @@ final class SurfaceEdgeTests: XCTestCase {
             let isCapsule = size == .small || size == .wide
 
             XCTAssertEqual(edge.isCircular(in: bounds(of: size)), isCapsule, size.name)
-            XCTAssertEqual(edge.corner(in: bounds(of: size)), isCapsule ? SpotTokens.rowHeight / 2 : SpotTokens.radius, size.name)
+            XCTAssertEqual(edge.corner(in: bounds(of: size)), isCapsule ? SpotTokens.cell / 2 : SpotTokens.cardRadius, size.name)
             XCTAssertEqual(edge.place(in: bounds(of: size)), bounds(of: size), size.name)
         }
     }
@@ -63,9 +63,9 @@ final class SurfaceEdgeTests: XCTestCase {
     }
 
     func testAPartInsideASurfaceHasTheCornerOfTheSurfaceLessThePadding() {
-        XCTAssertEqual(SurfaceEdge.sheet.inner().radius, SpotTokens.radius - SpotTokens.padding)
+        XCTAssertEqual(SurfaceEdge.sheet.inner().radius, SpotTokens.cardRadius - SpotTokens.padding)
         XCTAssertEqual(SurfaceEdge.window.inner().radius, SurfaceEdge.window.radius - SpotTokens.padding)
         XCTAssertEqual(SurfaceEdge(radius: 8).inner().radius, 0)
-        XCTAssertEqual(SurfaceEdge.sheet.inner(by: 4).radius, SpotTokens.radius - 4)
+        XCTAssertEqual(SurfaceEdge.sheet.inner(by: 4).radius, SpotTokens.cardRadius - 4)
     }
 }

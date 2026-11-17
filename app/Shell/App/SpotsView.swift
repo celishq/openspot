@@ -17,7 +17,7 @@ struct SpotsView: View {
     }
 
     static let panelSpace = "panel"
-    fileprivate static let gridBottom: CGFloat = SpotTokens.halo + SpotTokens.hintBlock
+    fileprivate static var gridBottom: CGFloat { SpotTokens.halo + SpotTokens.hintBlock }
 
     var body: some View {
         let card = SpotSheetCard.of(sheetID, in: model).flatMap { $0.isSeen(scrollOffset: model.cardScroll, gridHeight: gridHeight) ? $0 : nil }
@@ -193,14 +193,14 @@ private struct GridEdgeScroll: ViewModifier {
     private func step(seconds: Double) {
         guard let drag = model.drag else { return }
         let window = ScrollWindow(
-            top: SpotTokens.halo + SpotTokens.rowHeight + SpotScrollEdges.fadeLength,
-            bottom: SpotTokens.panelHeight - SpotsView.gridBottom - SpotScrollEdges.fadeLength,
+            top: SpotTokens.halo + SpotTokens.cell + SpotTokens.scrollFadeLength,
+            bottom: SpotTokens.panelHeight - SpotsView.gridBottom - SpotTokens.scrollFadeLength,
             viewHeight: SpotTokens.panelHeight,
             contentHeight: SpotTokens.gridTop + SpotGrid.height(of: model.placements) + SpotsView.gridBottom
         )
         let point = SpotTokens.gridTop + drag.centre(movedBy: model.lift.offset).y
         guard point - model.gridScroll < SpotTokens.panelHeight else { return }
-        let next = window.offset(scrolling: point, from: model.gridScroll, by: MotionTokens.edgeScrollSpeed * seconds, over: SpotScrollEdges.fadeLength)
+        let next = window.offset(scrolling: point, from: model.gridScroll, by: MotionTokens.edgeScrollSpeed * seconds, over: SpotTokens.scrollFadeLength)
         if next != model.gridScroll { scroll.scrollTo(y: next) }
     }
 }
@@ -227,8 +227,8 @@ private struct GridSelectionFollow: ViewModifier {
         guard model.openSheetID == nil, model.drag == nil, let spot = placements.first(where: { $0.index == model.selected }) else { return }
         let top = SpotTokens.gridTop + spot.rect.minY
         let window = ScrollWindow(
-            top: SpotTokens.halo + SpotTokens.rowHeight + SpotScrollEdges.fadeLength,
-            bottom: SpotTokens.panelHeight - SpotsView.gridBottom - SpotScrollEdges.fadeLength,
+            top: SpotTokens.halo + SpotTokens.cell + SpotTokens.scrollFadeLength,
+            bottom: SpotTokens.panelHeight - SpotsView.gridBottom - SpotTokens.scrollFadeLength,
             viewHeight: SpotTokens.panelHeight,
             contentHeight: SpotTokens.gridTop + SpotGrid.height(of: model.placements) + SpotsView.gridBottom
         )

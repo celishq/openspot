@@ -11,7 +11,7 @@ struct SpotRowsView: View {
     var selection: (() -> Int)?
     var onDragOut: ([SpotItem]) -> Void = { _ in }
 
-    private static let bottomFade = 2 * SpotTokens.padding
+    private static var bottomFade: CGFloat { 2 * SpotTokens.padding }
 
     private var row: SpotRoundShape {
         SpotRoundShape(surface.inner())
@@ -120,7 +120,7 @@ struct SpotRowsView: View {
                         .font(SpotType.detail.weight(.semibold))
                         .modifier(SpotSecondaryText())
                         .padding(.horizontal, SpotTokens.padding)
-                        .frame(maxWidth: .infinity, minHeight: SpotTokens.listRowHeight, maxHeight: SpotTokens.listRowHeight, alignment: .bottomLeading)
+                        .frame(maxWidth: .infinity, minHeight: SpotTokens.listRow, maxHeight: SpotTokens.listRow, alignment: .bottomLeading)
                 }
                 Button {
                     onRun(item)
@@ -150,7 +150,7 @@ struct SpotRowsView: View {
                     }
                 }
                 .overlay(alignment: .topLeading) { BentoRing(selection: selected, count: list.shown.count, drawing: drawing, step: step) }
-                .frame(width: SheetPlacement.width, height: max(CGFloat(lines) * step - SpotTokens.listRowGap, 0), alignment: .topLeading)
+                .frame(width: SpotTokens.partsWidth, height: max(CGFloat(lines) * step - SpotTokens.listRowGap, 0), alignment: .topLeading)
                 .padding(.top, SpotTokens.padding)
                 .padding(.bottom, bottomInset)
             }
@@ -170,8 +170,8 @@ struct SpotRowsView: View {
     }
 
     private func bentoCell(_ item: SpotItem, size: CGSize) -> some View {
-        SpotItemIcon(item: item, size: min(size.width, size.height) * 0.5)
-            .overlay(alignment: .bottomTrailing) { SpotToneDot(tone: item.tone, side: min(size.width, size.height) * 0.5) }
+        SpotItemIcon(item: item, size: min(size.width, size.height) * SpotTokens.tileIconShare)
+            .overlay(alignment: .bottomTrailing) { SpotToneDot(tone: item.tone, side: min(size.width, size.height) * SpotTokens.tileIconShare) }
             .frame(width: size.width, height: size.height)
         .background(SpotTheme.ink.opacity(SpotTheme.fill), in: row)
         .contentShape(row)
@@ -183,7 +183,7 @@ struct SpotRowsView: View {
     }
 
     private func rowLabel(_ item: SpotItem) -> some View {
-        HStack(spacing: SpotTokens.padding - 5) {
+        HStack(spacing: SpotTokens.wordsGap) {
             SpotItemIcon(item: item, size: SpotTokens.listIconSize)
                 .overlay(alignment: .bottomTrailing) { SpotToneDot(tone: item.tone, side: SpotTokens.listIconSize) }
             VStack(alignment: .leading, spacing: SpotType.lineGap) {
@@ -217,7 +217,7 @@ struct SpotRowsView: View {
         }
         .frame(maxWidth: .infinity, alignment: .leading)
         .padding(.horizontal, SpotTokens.padding)
-        .frame(height: SpotTokens.listRowHeight)
+        .frame(height: SpotTokens.listRow)
         .background(SpotTheme.ink.opacity(SpotTheme.fill), in: row)
         .modifier(SpotLiveSelectionRing(isSelected: { [selectedRun, run = item.run] in selectedRun() == run }, shape: row, marksMenu: true))
         .contentShape(row)
@@ -228,20 +228,15 @@ private struct RowBars: View {
     let bars: [Double?]
     let tone: MetricValue.Tone?
 
-    private static let width: CGFloat = 3
-    private static let gap: CGFloat = 2
-    private static let height: CGFloat = 20
-    private static let floor: CGFloat = 2
-
     var body: some View {
-        HStack(alignment: .bottom, spacing: Self.gap) {
+        HStack(alignment: .bottom, spacing: SpotTokens.rowBarGap) {
             ForEach(bars.indices, id: \.self) { index in
                 Rectangle()
                     .fill(bars[index].map { $0 > 0 ? colour : SpotTheme.ink.opacity(SpotTheme.fill) } ?? SpotTheme.ink.opacity(SpotTheme.fill))
-                    .frame(width: Self.width, height: max(Self.floor, Self.height * (bars[index] ?? 0)))
+                    .frame(width: SpotTokens.rowBarWidth, height: max(SpotTokens.rowBarFloor, SpotTokens.rowBarHeight * (bars[index] ?? 0)))
             }
         }
-        .frame(height: Self.height, alignment: .bottom)
+        .frame(height: SpotTokens.rowBarHeight, alignment: .bottom)
     }
 
     private var colour: Color {
@@ -252,19 +247,15 @@ private struct RowBars: View {
 private struct RowSwitch: View {
     let isOn: Bool
 
-    private static let width: CGFloat = 32
-    private static let height: CGFloat = 18
-    private static let inset: CGFloat = 2
-
     var body: some View {
         Capsule()
             .fill(isOn ? SpotTheme.accent : SpotTheme.ink.opacity(SpotTheme.fill))
-            .frame(width: Self.width, height: Self.height)
+            .frame(width: SpotTokens.rowSwitch.width, height: SpotTokens.rowSwitch.height)
             .overlay(alignment: isOn ? .trailing : .leading) {
                 Circle()
-                    .fill(.white)
-                    .padding(Self.inset)
-                    .frame(width: Self.height, height: Self.height)
+                    .fill(SpotTheme.switchKnob)
+                    .padding(SpotTokens.rowSwitchInset)
+                    .frame(width: SpotTokens.rowSwitch.height, height: SpotTokens.rowSwitch.height)
             }
             .accessibilityElement()
             .accessibilityValue(isOn ? "On" : "Off")
@@ -294,10 +285,10 @@ private struct RowsFade: ViewModifier {
             .modifier(SpotScrollEdgeTracker(edges: $edges))
             .mask {
                 VStack(spacing: 0) {
-                    LinearGradient(colors: [.black.opacity(1 - edges.top), .black], startPoint: .top, endPoint: .bottom)
+                    LinearGradient(colors: [SpotTheme.mask.opacity(1 - edges.top), SpotTheme.mask], startPoint: .top, endPoint: .bottom)
                         .frame(height: SpotTokens.padding)
-                    Color.black
-                    LinearGradient(colors: [.black, .black.opacity(1 - edges.bottom)], startPoint: .top, endPoint: .bottom)
+                    SpotTheme.mask
+                    LinearGradient(colors: [SpotTheme.mask, SpotTheme.mask.opacity(1 - edges.bottom)], startPoint: .top, endPoint: .bottom)
                         .frame(height: bottom)
                 }
             }

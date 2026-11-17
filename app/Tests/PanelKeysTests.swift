@@ -61,6 +61,18 @@ final class PanelKeysTests: PanelCase {
         try await wait("the grid") { self.model.mode == .grid }
     }
 
+    func testASearchThatFindsNoSpotTeachesTheSlash() async throws {
+        try script("list", header: "title=List\non=sheet.open", "printf 'row=a\\ntitle=A\\n'")
+        await model.reload()
+
+        model.query = "zzz"
+
+        try await wait("the hint of the slash") { self.model.hint.hasPrefix("Type / and a spot's name to run it with text") }
+        model.query = "lis"
+        try await wait("the list found") { !self.model.visible.isEmpty }
+        XCTAssertFalse(model.hint.contains("Type /"))
+    }
+
     func testAKeyAddedInOneRowShowsInTheHint() async throws {
         try await showGrid()
         model.beginEditing()

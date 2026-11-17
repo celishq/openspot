@@ -14,9 +14,9 @@
   - `Tests/` — XCTest, through `@testable import OpenspotCore`.
 - `app/Keywords/` holds the CLDR keywords of emoji and symbols, one xz file per language. `scripts/emoji-keywords.py` writes
   it from a pinned CLDR version, and the build copies it into the app.
-- `app/Themes/` holds the theme of the app, `openspot.theme/theme.toml`, which gives each appearance its glass tint. The build
-  copies it into the app. `openspot theme open` copies it to `themes/` beside the config, and the app reads that copy in its
-  place, at launch and at `openspot theme reload`.
+- `app/Themes/` holds the built-in themes, each in `<name>.theme/theme.toml`. Openspot, in `openspot.theme`, sets every choice,
+  and each other built-in theme sets only the choices it changes. The build copies them into the app.
+  [Change the look of Openspot](GUIDE.md#change-the-look-of-openspot) lists its keys and says how a person changes it.
 - `app/Help/` holds the guide of each `openspot` noun that has one, which `openspot help <noun>` prints. The build copies it
   into the app.
 - `spots/` holds the source of the core spots, each a `<name>.spot` folder. The build copies it into the app, and they run
@@ -88,8 +88,15 @@ Settings, `⌘Y` its History, `⌘K` the menu of all acts. Openspot makes these 
   and Synchronization. `make verify` runs `scripts/check-core.sh`, which fails on any other import, also after an attribute
   such as `@preconcurrency`.
 - Logic that a window needs goes in `Core/`. Only drawing and window handling go in `Shell/`.
-- Each colour and strength of the panel is in `Shell/Surface/SpotTheme.swift`, and a new theme is one more value there,
-  except the glass tint, which `app/Themes/` holds.
+- Each size, colour, strength, font and motion value has one name in a token file: `SpotTokens` (measured base values in
+  `Core/Theme/SpotTokens.swift`, formulas over them in `Core/Theme/SpotTokens+Derived.swift`, sizes of single parts in
+  `Core/Theme/SpotTokens+Parts.swift`), `SpotTheme`, `SpotType` and `MotionTokens`. A theme file names only the choices of a theme, so a
+  new theme is one more file. `Core/Theme/` works out every other value from them by rules anchored on the measured values
+  of Openspot, and `SpotTheme`, `SpotType`, `SpotTokens` and `MotionTokens` read the result. The defaults of the rules
+  mirror the choices in `app/Themes/openspot.theme/theme.toml`, which `ThemeTests` checks. A value that no theme chooses,
+  such as a colour of one card, is a constant in a token file. `make verify` runs `scripts/check-tokens.sh`, which fails
+  on a number or a colour written for the look in `Shell/`, outside the token files, `Shell/Picture`, `Shell/Mac` and
+  `Shell/Tools`.
 - Glass is system glass, drawn by `spotGlass`, which wraps `glassEffect`. Each shape draws its own glass, outside a
   `GlassEffectContainer`, since a container drops an opacity after `glassEffect`, and the grid hides an open card and
   hides the panel by opacity. The grid's scroll edge is one gradient mask over the scroll view, so it cuts each card and
@@ -97,9 +104,12 @@ Settings, `⌘Y` its History, `⌘K` the menu of all acts. Openspot makes these 
   keeps the glass whole until its last third (`SpotTheme.glassStrength`), so faded glass never shows a sharp page.
   `make verify` runs `scripts/check-glass.sh`, which fails on `NSVisualEffectView` or a private Core Animation name in
   `Shell/`, outside `Shell/Surface/SpotBackdropBlur.swift`.
+- Each app window opens through `SpotSheetWindow.make`, so it has the same title bar, keys and Dock presence, and
+  the system material, not glass, so the glass of what it shows stands out. It ends with `SpotWindowFooter`, its hint and Done. `make verify` runs `scripts/check-windows.sh`, which fails on a window
+  that `Shell/` makes elsewhere, except the panel and its parts, the screen backdrop under it, the toast, a float, the screen pick and an off-screen picture.
 - A surface has one shape, a `SurfaceEdge` of Core drawn by `SpotRoundShape`, and its glass, its clip, its ring and its
   other marks take that value. A part inside it takes `inner()` of the edge it reads from `spotSurfaceEdge`. A titled
-  window follows the corner that macOS gives it: its glass is a `ConcentricRectangle`. A borderless window gives its
+  window follows the corner that macOS gives it. A borderless window gives its
   content view the edge of its surface (`NSWindow.take`). `make verify` runs `scripts/check-shapes.sh`, which fails on a
   `RoundedRectangle` in `Shell/` outside `Shell/Surface/SpotRoundShape.swift`.
 - The soft backdrop of the panel is a progressive blur under the glass: fixed `SpotBackdropBlur` views of rising radius,
@@ -160,7 +170,7 @@ below is one a reviewer can check in a diff.
 ### Motion
 
 Each motion is one of five kinds, each with one curve in `Shell/Surface/SpotMotion.swift`: grow (and its way back), move,
-fade and press. Each duration, bounce and motion scale is in `Core/Panel/MotionTokens.swift`. A part of a surface that grows
+fade and press. Each duration, bounce and motion scale is in `Core/Theme/MotionTokens.swift`. A part of a surface that grows
 takes its look from the surface's progress, by `SheetMorph`, and keeps no curve of its own. `make verify` runs
 `scripts/check-motion.sh`, which fails on a curve written anywhere else in `app/` or `scripts/`.
 
@@ -249,6 +259,8 @@ make test T=SpotRunsTests  # one test class, while you work on it
 make perf N=3              # times a Release sheet that opens and closes 20 times, 3 runs; ACTION picks another motion
 make film SPOT=caffeinate  # films the open and close of a sheet 10x slower (SLOW=1 for real speed) into .temp/film
 make shots                 # saves pictures of the actions menu in the running panel into .temp/shots; ACTION=search TEXT=/translate shoots a typed search
+sh scripts/pixel-diff.sh shoot before  # saves pictures of fixed screens, dark and light, into .temp/pixels/before
+sh scripts/pixel-diff.sh compare before after  # counts the pixels that differ in each picture, and marks them in .temp/pixels/marks
 make docs-images           # shows each GUIDE.md example on screen, focused, and takes its image; GuideImageTests fail when one is out of date
 make eval-agent LABEL=base # gives each task of scripts/agent-eval/ to claude -p (Sonnet) N=3 times, grades what it did and how it used
                            # the command, into .temp/agent-eval/base; TASKS=calc picks tasks; it costs money

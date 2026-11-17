@@ -115,6 +115,7 @@ extension SpotsModel {
     }
 
     public func panelDidHide() {
+        isPanelHidden = true
         noteMiss()
         finishPick()
         for entry in entries where entry.spot.answers != nil { sheets[entry.id]?.answer("") }
@@ -124,6 +125,7 @@ extension SpotsModel {
             host.confirm(entryKey.openHint)
         }
         endReview()
+        if let heldLayout { lay(heldLayout) }
     }
 
     func showSheet(_ list: String?, moving: Bool) {

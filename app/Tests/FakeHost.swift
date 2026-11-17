@@ -80,6 +80,17 @@ final class FakeHost: SpotsHost {
 
     func applyConfig(_ config: Config) {}
 
+    var paints: [Theme.Colours] = []
+    var layOuts: [Theme.Layout] = []
+
+    func paint(_ look: Theme.Colours) {
+        paints.append(look)
+    }
+
+    func layOut(_ layout: Theme.Layout) {
+        layOuts.append(layout)
+    }
+
     func setEntryKey(on isOn: Bool) {}
 
     var held: [[GlobalKey]] = []

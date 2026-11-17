@@ -16,7 +16,7 @@ public enum SheetFaults {
         guard let layout, layout.isDrawn else {
             let flat = SheetPlacement(parts: parts, layout: SheetLayout(flat: parts))
             if flat.overflows, parts.contains(where: \.scrollsItself) {
-                faults.append("the sheet is too tall for a part that scrolls: \(Int(flat.height))pt of \(Int(SheetPlacement.maxHeight))pt")
+                faults.append("the sheet is too tall for a part that scrolls: \(Int(flat.height))pt of \(Int(SpotTokens.partsMaxHeight))pt")
             }
             return faults
         }
@@ -63,39 +63,39 @@ public enum SheetFaults {
     private static func sizeFaults(_ layout: SheetLayout, _ parts: [SpotPart]) -> [String] {
         let sheet = SheetPlacement(parts: parts, layout: layout)
         let columns = max(layout.rows.map(\.count).max() ?? 1, 1)
-        let columnWidth = (SheetPlacement.width - SheetPlacement.gap * CGFloat(columns - 1)) / CGFloat(columns)
+        let columnWidth = (SpotTokens.partsWidth - SpotTokens.partGap * CGFloat(columns - 1)) / CGFloat(columns)
         var faults: [String] = []
         for part in parts {
             guard let letter = layout.letter(of: part), let area = layout.areas[letter], let frame = sheet.frames[part.id] else { continue }
-            let width = CGFloat(area.x1 - area.x0 + 1) * (columnWidth + SheetPlacement.gap) - SheetPlacement.gap
+            let width = CGFloat(area.x1 - area.x0 + 1) * (columnWidth + SpotTokens.partGap) - SpotTokens.partGap
             let height = frame.isOnTop ? CGFloat.infinity : frame.rect.height
             switch part.control {
             case .number:
                 if width < metricWidth {
-                    faults.append("the part \(part.id) needs at least \(Int((metricWidth + SheetPlacement.gap) / (columnWidth + SheetPlacement.gap)) + 1) columns of \(columns) for its number")
+                    faults.append("the part \(part.id) needs at least \(Int((metricWidth + SpotTokens.partGap) / (columnWidth + SpotTokens.partGap)) + 1) columns of \(columns) for its number")
                 }
                 if part.title != nil, height < tallMetric { faults.append("the part \(part.id) needs at least 2 rows for its number and title") }
             case .progress:
                 if height < tallProgress { faults.append("the part \(part.id) needs at least 2 rows for its title and bar") }
             case .swatches(let colors, _):
-                if colors.count > 1, CGFloat(colors.count) * swatchWidth > width + SheetPlacement.gap { faults.append("the part \(part.id) needs more columns for its \(colors.count) colours") }
+                if colors.count > 1, CGFloat(colors.count) * swatchWidth > width + SpotTokens.partGap { faults.append("the part \(part.id) needs more columns for its \(colors.count) colours") }
             default:
                 break
             }
             if let title = part.title, !part.fillsHeight {
                 var control = part.control == .none && part.press != .line ? 0 : controlWidth
                 if case .swatches = part.control { control = smallSwatchWidth }
-                let detail = frame.hasDetailUnderTitle ? 0 : part.detail.map { CGFloat($0.count) * detailLetterWidth + 2 * SheetPlacement.gap } ?? 0
+                let detail = frame.hasDetailUnderTitle ? 0 : part.detail.map { CGFloat($0.count) * detailLetterWidth + 2 * SpotTokens.partGap } ?? 0
                 if CGFloat(title.count) * letterWidth + detail + (part.press == .line ? 0 : control) > width {
                     faults.append("the title of the part \(part.id) may not fit its cell")
                 }
             }
-            if !frame.isOnTop, !part.fillsHeight, frame.rect.height > SheetPlacement.rowHeight * 2, area.y0 == area.y1 {
+            if !frame.isOnTop, !part.fillsHeight, frame.rect.height > SpotTokens.listRow * 2, area.y0 == area.y1 {
                 faults.append("the part \(part.id) sits in rows that stretch, so draw a choice over two lines for a list")
             }
         }
         if sheet.overflows {
-            faults.append("the drawing is too tall: \(Int(sheet.height))pt of \(Int(SheetPlacement.maxHeight))pt")
+            faults.append("the drawing is too tall: \(Int(sheet.height))pt of \(Int(SpotTokens.partsMaxHeight))pt")
         }
         return faults
     }

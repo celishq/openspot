@@ -18,6 +18,7 @@ struct SpotCustomView: View, @MainActor Equatable {
     @Environment(\.spotViewPlace) private var place
     @Environment(\.spotIsHeld) private var isHeld
     @Environment(\.spotSurfaceEdge) private var surface
+    @Environment(\.colorScheme) private var scheme
 
     static func == (lhs: Self, rhs: Self) -> Bool {
         lhs.source == rhs.source && lhs.values == rhs.values && lhs.rows == rhs.rows && lhs.card == rhs.card && lhs.room == rhs.room && lhs.answers == rhs.answers && lhs.selection == rhs.selection && lhs.date == rhs.date && lhs.views === rhs.views
@@ -112,7 +113,7 @@ struct SpotCustomView: View, @MainActor Equatable {
             "inset": SpotTokens.padding,
             "corner": corner,
             "ink": SpotTheme.ink,
-            "secondary": SpotTheme.secondaryLight,
+            "secondary": SpotTheme.secondary,
             "accent": SpotTheme.accent,
             "title": SpotType.title,
             "detail": SpotType.detail,
@@ -127,8 +128,13 @@ struct SpotCustomView: View, @MainActor Equatable {
             "columnGap": SpotTokens.columnGap,
             "rowGap": SpotTokens.rowGap,
             "columns": SpotTokens.windowColumns,
-            "tipDelay": SpotTipView.delay
+            "tipDelay": SpotTipView.delay,
+            "theme": theme
         ]
+    }
+
+    private var theme: [String: Any] {
+        SpotLoadedTheme.shared.viewTheme(isDark: scheme == .dark, corner: corner)
     }
 
     @ViewBuilder
@@ -143,8 +149,8 @@ struct SpotCustomView: View, @MainActor Equatable {
         case .failed(let reason):
             Text(reason)
                 .font(SpotType.detail)
-                .minimumScaleFactor(0.5)
-                .foregroundStyle(SpotTheme.ink.opacity(SpotTheme.secondaryLight))
+                .minimumScaleFactor(SpotType.leastViewScale)
+                .foregroundStyle(SpotTheme.ink.opacity(SpotTheme.secondary))
                 .padding(SpotTokens.padding)
         }
     }

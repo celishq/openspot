@@ -3,7 +3,8 @@ import SwiftUI
 
 struct SpotResizeHandle: View {
     let size: SpotSize
-    @MainActor private static var rims: [String: Path] = [:]
+    @MainActor private static var rims: [Rim: Path] = [:]
+    private static let rimLimit = 32
 
     var body: some View {
         Self.rim(of: size)
@@ -13,10 +14,11 @@ struct SpotResizeHandle: View {
     }
 
     private static func rim(of size: SpotSize) -> Path {
-        if let rim = rims[size.name] { return rim }
         let shape = SurfaceEdge(card: size, mark: .resize)
         let radius = shape.radius
         let card = CGRect(x: 0, y: 0, width: SpotTokens.width(columns: size.columns), height: SpotTokens.height(rows: size.rows))
+        let name = Rim(size: card.size, radius: radius)
+        if let rim = rims[name] { return rim }
         let edge = SpotRoundShape(shape).path(in: card)
         let centre = CGPoint(x: card.maxX - radius, y: card.maxY - radius)
         let steps = 720
@@ -28,7 +30,20 @@ struct SpotResizeHandle: View {
         let side = SpotTokens.resizeHandle
         let rim = edge.trimmedPath(from: corner.first ?? 0, to: corner.last ?? 0)
             .offsetBy(dx: side - card.width, dy: side - card.height)
-        rims[size.name] = rim
+        if rims.count >= rimLimit { rims = [:] }
+        rims[name] = rim
         return rim
+    }
+}
+
+private struct Rim: Hashable {
+    let width: CGFloat
+    let height: CGFloat
+    let radius: CGFloat
+
+    init(size: CGSize, radius: CGFloat) {
+        width = size.width
+        height = size.height
+        self.radius = radius
     }
 }

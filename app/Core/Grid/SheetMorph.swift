@@ -11,7 +11,7 @@ public struct SheetMorph: Equatable, Sendable {
     public let sheet: CGRect
     public let source: Source
 
-    public static let clearance = SpotTokens.padding
+    public static var clearance: CGFloat { SpotTokens.padding }
 
     public init(card: CGRect, sheet: CGRect, source: Source = .card) {
         self.card = card

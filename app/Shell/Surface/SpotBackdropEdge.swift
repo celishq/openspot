@@ -5,7 +5,15 @@ struct SpotBackdropEdge: View {
     let edge: BackdropEdge
     let rect: CGRect
 
-    @MainActor private static let drawn = Dictionary(uniqueKeysWithValues: BackdropEdge.blurs.map { ($0, pictures(of: $0)) })
+    @MainActor private static var drawn = pictures()
+
+    @MainActor static func draw() {
+        drawn = pictures()
+    }
+
+    @MainActor private static func pictures() -> [BackdropEdge: [Image]] {
+        Dictionary(uniqueKeysWithValues: BackdropEdge.blurs.map { ($0, pictures(of: $0)) })
+    }
 
     var body: some View {
         let pictures = Self.drawn[edge] ?? []
@@ -23,7 +31,7 @@ struct SpotBackdropEdge: View {
     @MainActor private static func pictures(of edge: BackdropEdge) -> [Image] {
         let size = edge.pictureSize
         let renderer = ImageRenderer(content: RoundedRectangle(cornerRadius: edge.corner, style: .continuous)
-            .fill(Color.black)
+            .fill(SpotTheme.mask)
             .padding(edge.inset)
             .frame(width: size.width, height: size.height)
             .blur(radius: edge.softness))

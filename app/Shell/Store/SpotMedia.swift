@@ -5,7 +5,7 @@ import SwiftUI
 struct SpotMedia: View {
     private static let pictures: Set<String> = ["png", "jpg", "jpeg"]
     private static let videos: Set<String> = ["mov", "mp4"]
-    private static let edge = SpotRoundShape(radius: 8)
+    private static var edge: SpotRoundShape { SpotRoundShape(radius: SpotTokens.mediaRadius) }
 
     let source: String
     @State private var picture: NSImage?

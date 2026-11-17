@@ -69,7 +69,7 @@ private struct SheetContentView: View {
                 .morph(progress, offset: { [rowCardDrop] in SheetMorph.place(onCard: CGSize(width: 0, height: rowCardDrop), at: $0) })
             VStack(alignment: .leading, spacing: SpotTokens.rowGap) {
                 if let panel = content.panel {
-                    if panel.showsRows { Color.clear.frame(height: SpotTokens.listRowHeight) }
+                    if panel.showsRows { Color.clear.frame(height: SpotTokens.listRow) }
                     SheetPartsView(
                         panel: panel,
                         work: content.work,
@@ -89,7 +89,7 @@ private struct SheetContentView: View {
                         viewDate: entry.spot.viewDate
                     )
                 } else if let form {
-                    if form.choices != nil { Color.clear.frame(height: SpotTokens.listRowHeight) }
+                    if form.choices != nil { Color.clear.frame(height: SpotTokens.listRow) }
                     SpotFormView(
                         draft: form,
                         onValue: { model.setFormValue($0, for: $1) },
@@ -97,7 +97,7 @@ private struct SheetContentView: View {
                         selection: { [model] in model.form?.draft.choices?.selected ?? 0 }
                     )
                 } else {
-                    if list.search != .off { Color.clear.frame(height: SpotTokens.listRowHeight) }
+                    if list.search != .off { Color.clear.frame(height: SpotTokens.listRow) }
                     if let create = content.create() {
                         Button { model.createFromSearch() } label: {
                             CreateLabel(model: model, title: create.title, shape: row)
@@ -117,7 +117,7 @@ private struct SheetContentView: View {
     }
 
     private var header: some View {
-            HStack(spacing: SpotTokens.padding - 5) {
+            HStack(spacing: SpotTokens.wordsGap) {
                 glyph
                 ZStack(alignment: .leading) {
                     if showsCardWords {
@@ -165,16 +165,14 @@ private struct SheetContentView: View {
         return SheetMorph.sheetLook(at:)
     }
 
-    private static let wordsGap = SpotTokens.padding - 5
-
     private var sheetWordsWidth: CGFloat {
-        rect.width - SpotTokens.padding - SpotTokens.glyphSize - 2 * Self.wordsGap - SpotTokens.glyphSize - SpotTokens.padding
+        rect.width - SpotTokens.padding - SpotTokens.glyph - 2 * SpotTokens.wordsGap - SpotTokens.glyph - SpotTokens.padding
     }
 
     private var cardWordsWidth: CGFloat {
         if cardSize.rows > 1 { return cardWidth - 2 * SpotTokens.padding }
-        let arrow = closeShift == nil ? 0 : SpotCardArrow.width + Self.wordsGap
-        return max(cardWidth - SpotCardArrow.rowInset - arrow - SpotTokens.padding - SpotTokens.glyphSize - Self.wordsGap, 0)
+        let arrow = closeShift == nil ? 0 : SpotTokens.arrowWidth + SpotTokens.wordsGap
+        return max(cardWidth - SpotTokens.arrowRowInset - arrow - SpotTokens.padding - SpotTokens.glyph - SpotTokens.wordsGap, 0)
     }
 
     @ViewBuilder
@@ -188,7 +186,7 @@ private struct SheetContentView: View {
         } else if hasCardLook {
             button
         } else {
-            let place = CGRect(x: rect.width - SpotTokens.padding - SpotTokens.glyphSize, y: SpotTokens.padding, width: SpotTokens.glyphSize, height: SpotTokens.glyphSize)
+            let place = CGRect(x: rect.width - SpotTokens.padding - SpotTokens.glyph, y: SpotTokens.padding, width: SpotTokens.glyph, height: SpotTokens.glyph)
             button
                 .morph(progress, opacity: { [morph] in min(morph.growth(of: place, at: $0), morph.headerLook(at: $0)) })
         }
@@ -210,7 +208,7 @@ private struct SheetContentView: View {
     private var fileDrag: some View {
         if isOpen, content.takesFiles {
             Color.clear
-                .frame(width: SpotTokens.glyphSize, height: SpotTokens.glyphSize)
+                .frame(width: SpotTokens.glyph, height: SpotTokens.glyph)
                 .contentShape(Rectangle())
                 .modifier(SpotFileDragSource(items: list.shown, hasFiles: true, onDrop: { model.dragOut($0, of: entry.id) }))
                 .padding(SpotTokens.padding)
@@ -222,15 +220,15 @@ private struct SheetContentView: View {
     }
 
     private var smallCardShift: CGFloat {
-        isSmallCard ? (SpotTokens.cell - SpotTokens.glyphSize) / 2 - SpotTokens.padding : 0
+        isSmallCard ? (SpotTokens.cell - SpotTokens.glyph) / 2 - SpotTokens.padding : 0
     }
 
     private var rowCardDrop: CGFloat {
-        !hasCardLook && cardSize.rows == 1 ? (SpotTokens.rowHeight - SpotTokens.glyphSize) / 2 - SpotTokens.padding : 0
+        !hasCardLook && cardSize.rows == 1 ? (SpotTokens.cell - SpotTokens.glyph) / 2 - SpotTokens.padding : 0
     }
 
     private var firstRow: CGRect {
-        CGRect(x: SpotTokens.padding, y: SpotTokens.padding + SpotTokens.glyphSize + SpotTokens.rowGap, width: rect.width - 2 * SpotTokens.padding, height: SpotTokens.listRowHeight)
+        CGRect(x: SpotTokens.padding, y: SpotTokens.sheetFieldDrop, width: rect.width - 2 * SpotTokens.padding, height: SpotTokens.listRow)
     }
 
     private var isSmallCard: Bool {
@@ -241,10 +239,10 @@ private struct SheetContentView: View {
         guard !hasCardLook, cardSize.rows > 1 else { return .zero }
         let hasSubtitle = form == nil && (state.subtitle != nil || (list.perLine > 1 && !list.shown.isEmpty))
         let wordsHeight = SpotType.titleLine + (hasSubtitle ? SpotType.lineGap + SpotType.detailLine : 0)
-        let row = max(SpotTokens.glyphSize, wordsHeight)
+        let row = max(SpotTokens.glyph, wordsHeight)
         let top = SpotTokens.padding + (row - wordsHeight) / 2
         return CGSize(
-            width: -(SpotTokens.glyphSize + SpotTokens.padding - 5),
+            width: -(SpotTokens.glyph + SpotTokens.wordsGap),
             height: SpotTokens.height(rows: cardSize.rows) - SpotTokens.padding - wordsHeight - top
         )
     }
@@ -262,7 +260,7 @@ private struct CreateLabel: View {
             .lineLimit(1)
             .frame(maxWidth: .infinity, alignment: .leading)
             .padding(.horizontal, SpotTokens.padding)
-            .frame(height: SpotTokens.listRowHeight)
+            .frame(height: SpotTokens.listRow)
             .background(SpotTheme.ink.opacity(SpotTheme.fill), in: shape)
             .modifier(SpotSelectionRing(isSelected: true, shape: shape))
             .contentShape(shape)

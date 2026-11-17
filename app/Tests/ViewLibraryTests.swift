@@ -149,6 +149,29 @@ final class ViewLibraryTests: XCTestCase {
     }
 
     @MainActor
+    func testAViewReadsTheThemeByRole() async throws {
+        let text = """
+        import SwiftUI
+
+        struct SpotView: View {
+            let spot: SpotInput
+
+            var body: some View {
+                let theme = spot.theme
+                let _ = spot.send("\\(theme.space.padding) \\(theme.space.gridWidth) \\(theme.radius.inner) \\(theme.motion.press) \\(theme.color.fill) \\(theme.color.secondary)")
+                Text("theme").font(theme.font.body).foregroundStyle(theme.color.good)
+            }
+        }
+
+        """
+        let theme: [String: Any] = ["padding": CGFloat(20), "gridWidth": CGFloat(310), "inner": CGFloat(10), "press": CGFloat(0.3), "fill": CGFloat(0.25), "secondary": CGFloat(0.7)]
+
+        let sent = try await drawn(text, values: [:], card: ["theme": theme])
+
+        XCTAssertEqual(sent, ["20.0 310.0 10.0 0.3 0.25 0.7"])
+    }
+
+    @MainActor
     func testAViewThatClosesFromAnotherThreadClosesOnTheMainThread() async throws {
         let text = """
         import SwiftUI

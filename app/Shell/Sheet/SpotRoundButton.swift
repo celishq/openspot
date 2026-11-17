@@ -6,12 +6,10 @@ struct SpotRoundButton: View {
         case plain, floating, strong, bare
     }
 
-    private static let symbolRatio: CGFloat = 0.32
-
     let symbol: String
     let label: String
     var work: ScriptCall?
-    var size: CGFloat = SpotTokens.glyphSize
+    var size: CGFloat = SpotTokens.glyph
     var look = Look.plain
     let action: () -> Void
 
@@ -22,7 +20,7 @@ struct SpotRoundButton: View {
                     SpotWorkMark(call: work, side: size, stops: true)
                 } else {
                     Image(systemName: symbol)
-                        .font(.system(size: max(size * Self.symbolRatio, 10), weight: .semibold))
+                        .font(SpotType.roundSymbol(side: size))
                         .modifier(SpotInk())
                         .frame(width: size, height: size)
                 }

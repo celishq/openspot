@@ -4,34 +4,41 @@ import SwiftUI
 struct SpotPlaygroundView: View {
     @Bindable var model: SpotPlaygroundModel
 
-    private static let minTextWidth: CGFloat = 320
-    private static let minStageWidth: CGFloat = SpotTokens.gridWidth + 2 * SpotTokens.padding
-    private static let minTopHeight: CGFloat = 360
-    private static let minLogHeight: CGFloat = 120
-
     private var text: Binding<String> {
         Binding(get: { model.source }, set: { model.edit($0) })
     }
 
     var body: some View {
+        VStack(spacing: 0) {
+            split
+            SpotWindowFooter(hint: hint, tip: "Close the playground") {}
+        }
+        .ignoresSafeArea(edges: [.horizontal, .bottom])
+        .modifier(SpotWindowSurface())
+    }
+
+    private var hint: String {
+        if let name = model.fileName { return "Each edit saves to \(name) and runs the spot again." }
+        return "Each edit runs the spot again. The spot ends with this window."
+    }
+
+    private var split: some View {
         VSplitView {
             HSplitView {
                 source
-                    .frame(minWidth: Self.minTextWidth, idealWidth: 440, maxHeight: .infinity)
-                    .background(SpotTheme.window)
+                    .frame(minWidth: SpotTokens.playgroundTextWidth, idealWidth: SpotTokens.playgroundTextIdeal, maxHeight: .infinity)
                 VStack(spacing: 0) {
                     SpotPlaygroundStage(model: model)
                     faults
                 }
-                .frame(minWidth: Self.minStageWidth, idealWidth: SpotTokens.panelWidth, maxHeight: .infinity)
+                .frame(minWidth: SpotTokens.playgroundStageWidth, idealWidth: SpotTokens.panelWidth, maxHeight: .infinity)
             }
-            .frame(minHeight: Self.minTopHeight, idealHeight: SpotTokens.panelHeight + 120)
+            .frame(minHeight: SpotTokens.playgroundTopHeight, idealHeight: SpotTokens.playgroundTopIdeal)
             .layoutPriority(1)
             calls
-                .frame(minHeight: Self.minLogHeight, idealHeight: Self.minLogHeight, maxHeight: .infinity)
-                .background(SpotTheme.window)
+                .frame(minHeight: SpotTokens.playgroundLogHeight, idealHeight: SpotTokens.playgroundLogHeight, maxHeight: .infinity)
         }
-        .frame(minWidth: Self.minTextWidth + Self.minStageWidth, minHeight: Self.minTopHeight + Self.minLogHeight)
+        .frame(minWidth: SpotTokens.playgroundTextWidth + SpotTokens.playgroundStageWidth, minHeight: SpotTokens.playgroundTopHeight + SpotTokens.playgroundLogHeight)
     }
 
     private var source: some View {
@@ -45,7 +52,7 @@ struct SpotPlaygroundView: View {
                     .keyboardShortcut("r")
                 presets
             }
-            .frame(height: SpotTokens.glyphSize)
+            .frame(height: SpotTokens.glyph)
             TextEditor(text: text)
                 .font(SpotType.code)
                 .scrollContentBackground(.hidden)
@@ -67,14 +74,13 @@ struct SpotPlaygroundView: View {
     private var faults: some View {
         let faults = (model.fault.map { [$0] } ?? []) + (model.lack.map { [$0] } ?? []) + model.playground.faults
         return VStack(alignment: .leading, spacing: SpotType.lineGap) {
-            lines(faults.isEmpty ? ["No faults"] : faults, color: faults.isEmpty ? SpotTheme.ink.opacity(SpotTheme.secondaryLight) : SpotTheme.warn)
+            lines(faults.isEmpty ? ["No faults"] : faults, color: faults.isEmpty ? SpotTheme.ink.opacity(SpotTheme.secondary) : SpotTheme.warn)
             if !model.playground.log.isEmpty {
-                lines(model.playground.log, color: SpotTheme.ink.opacity(SpotTheme.secondaryLight))
+                lines(model.playground.log, color: SpotTheme.ink.opacity(SpotTheme.secondary))
             }
         }
         .padding(SpotTokens.padding)
         .frame(maxWidth: .infinity, alignment: .leading)
-        .background(SpotTheme.window)
     }
 
     private var calls: some View {
@@ -106,7 +112,7 @@ struct SpotPlaygroundView: View {
         switch line.first {
         case "$", "=": SpotTheme.ink
         case "!": SpotTheme.warn
-        default: SpotTheme.ink.opacity(SpotTheme.secondaryLight)
+        default: SpotTheme.ink.opacity(SpotTheme.secondary)
         }
     }
 

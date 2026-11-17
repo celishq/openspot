@@ -2,8 +2,7 @@ import OpenspotCore
 import SwiftUI
 
 struct SpotFieldView: View {
-    static let rect = CGRect(x: SpotTokens.halo, y: SpotTokens.halo, width: SpotTokens.gridWidth, height: SpotTokens.rowHeight)
-    private static let gap: CGFloat = 8
+    static var rect: CGRect { CGRect(x: SpotTokens.halo, y: SpotTokens.halo, width: SpotTokens.gridWidth, height: SpotTokens.cell) }
 
     let model: SpotsModel
     let isOpen: Bool
@@ -39,16 +38,16 @@ struct SpotFieldView: View {
         return ZStack(alignment: .topLeading) {
             SpotSurface(rect: place, radius: fieldRadius, glass: isInstall ? 0 : 1, cut: sheetShape)
             SpotSurfaceShape(rect: place, radius: fieldRadius)
-                .fill(SpotTheme.ink.opacity(isInSheet ? SpotTheme.fill : 0))
+                .fill(SpotTheme.highlight.opacity(isInSheet ? SpotTheme.fill : 0))
                 .mask { insideSheet }
             ZStack(alignment: .topLeading) {
                 SpotFieldPrompt.glyph
                     .offset(x: glyphLeft, y: top)
                 searchText
-                    .frame(width: Self.fieldTextWidth, height: SpotTokens.rowHeight, alignment: .leading)
+                    .frame(width: Self.fieldTextWidth, height: SpotTokens.cell, alignment: .leading)
                     .offset(x: fieldTextLeft, y: top)
                 SpotSlashMark(model: model)
-                    .frame(width: Self.fieldTextWidth, height: SpotTokens.rowHeight, alignment: .leading)
+                    .frame(width: Self.fieldTextWidth, height: SpotTokens.cell, alignment: .leading)
                     .offset(x: fieldTextLeft, y: top)
                     .allowsHitTesting(false)
             }
@@ -70,7 +69,7 @@ struct SpotFieldView: View {
         .foregroundStyle(SpotTheme.glassInk)
         .frame(width: SpotTokens.panelWidth, height: SpotTokens.panelHeight, alignment: .topLeading)
         .animation(SpotMotion.fade(isShown: model.isShown)) {
-            $0.scaleEffect(model.isShown ? 1 : MotionTokens.hiddenScale, anchor: UnitPoint(x: 0.5, y: Self.rect.midY / SpotTokens.panelHeight))
+            $0.scaleEffect(model.isShown ? 1 : MotionTokens.hiddenScale, anchor: UnitPoint(x: UnitPoint.center.x, y: Self.rect.midY / SpotTokens.panelHeight))
         }
     }
 
@@ -95,20 +94,22 @@ struct SpotFieldView: View {
         .frame(width: SpotTokens.panelWidth, height: SpotTokens.panelHeight, alignment: .topLeading)
     }
 
-    static let sheetRow = CGRect(
-        x: SpotTokens.halo + SpotTokens.padding,
-        y: SpotTokens.halo + SpotTokens.sheetFieldDrop,
-        width: SpotTokens.gridWidth - 2 * SpotTokens.padding,
-        height: SpotTokens.listRowHeight
-    )
-    static let sheetTop = SpotTokens.halo + SpotTokens.sheetFieldDrop - (SpotTokens.rowHeight - SpotTokens.listRowHeight) / 2
-    static let sheetGlyphLeft = SpotTokens.halo + 2 * SpotTokens.padding + (SpotTokens.listIconSize - SpotTokens.glyphSize) / 2
-    static let sheetTextLeft = SpotTokens.halo + 2 * SpotTokens.padding + SpotTokens.listIconSize + gap
-    static let sheetRadius = SurfaceEdge.sheet.inner().radius
-    static let fieldTextWidth = SpotTokens.gridWidth - 4 * SpotTokens.padding - SpotTokens.listIconSize - gap
+    static var sheetRow: CGRect {
+        CGRect(
+            x: SpotTokens.halo + SpotTokens.padding,
+            y: SpotTokens.halo + SpotTokens.sheetFieldDrop,
+            width: SpotTokens.gridWidth - 2 * SpotTokens.padding,
+            height: SpotTokens.listRow
+        )
+    }
+    static var sheetTop: CGFloat { SpotTokens.halo + SpotTokens.sheetFieldDrop - (SpotTokens.cell - SpotTokens.listRow) / 2 }
+    static var sheetGlyphLeft: CGFloat { SpotTokens.halo + 2 * SpotTokens.padding + (SpotTokens.listIconSize - SpotTokens.glyph) / 2 }
+    static var sheetTextLeft: CGFloat { SpotTokens.halo + 2 * SpotTokens.padding + SpotTokens.listIconSize + SpotTokens.fieldTextGap }
+    static var sheetRadius: CGFloat { SurfaceEdge.sheet.inner().radius }
+    static var fieldTextWidth: CGFloat { SpotTokens.gridWidth - 4 * SpotTokens.padding - SpotTokens.listIconSize - SpotTokens.fieldTextGap }
 
     private var fieldTextLeft: CGFloat {
-        isInSheet ? Self.sheetTextLeft : SpotTokens.halo + SpotTokens.padding + SpotTokens.glyphSize + Self.gap
+        isInSheet ? Self.sheetTextLeft : SpotTokens.halo + SpotTokens.padding + SpotTokens.glyph + SpotTokens.fieldTextGap
     }
 
     private var searchText: some View {
@@ -127,14 +128,14 @@ struct SpotFieldView: View {
         let top = isInSheet ? Self.sheetTop : SpotTokens.halo
         let left = fieldTextLeft
         return promptWords
-            .frame(height: SpotTokens.rowHeight)
+            .frame(height: SpotTokens.cell)
             .offset(x: left, y: top)
             .frame(width: SpotTokens.panelWidth, height: SpotTokens.panelHeight, alignment: .topLeading)
             .morph(showsField ? 1 : 0, opacity: { SheetMorph.sheetLook(at: $0) })
             .modifier(SpotShownFade(
                 isShown: model.isShown,
                 hiddenScale: MotionTokens.hiddenScale,
-                anchor: UnitPoint(x: 0.5, y: (SpotTokens.halo + SpotTokens.rowHeight / 2) / SpotTokens.panelHeight)
+                anchor: UnitPoint(x: UnitPoint.center.x, y: (SpotTokens.halo + SpotTokens.cell / 2) / SpotTokens.panelHeight)
             ))
             .allowsHitTesting(false)
     }
@@ -156,10 +157,10 @@ struct SpotFieldView: View {
 
     private var crossing: (Double) -> Double {
         guard let morph = sheet?.morph else { return { _ in 1 } }
-        let header = CGRect(x: SpotTokens.padding, y: SpotTokens.padding, width: SpotTokens.gridWidth - 2 * SpotTokens.padding, height: SpotTokens.glyphSize)
+        let header = CGRect(x: SpotTokens.padding, y: SpotTokens.padding, width: SpotTokens.gridWidth - 2 * SpotTokens.padding, height: SpotTokens.glyph)
         let line = SpotType.inputLine
-        let rest = SpotTokens.halo + (SpotTokens.rowHeight - line) / 2
-        let drop = SpotTokens.sheetFieldDrop - (SpotTokens.rowHeight - SpotTokens.listRowHeight) / 2
+        let rest = SpotTokens.halo + (SpotTokens.cell - line) / 2
+        let drop = SpotTokens.sheetFieldDrop - (SpotTokens.cell - SpotTokens.listRow) / 2
         return { progress in
             let words = CGRect(x: SpotTokens.halo, y: rest + drop * CGFloat(progress), width: SpotTokens.gridWidth, height: line)
             return morph.crossing(of: words, header: header, at: progress)
@@ -167,15 +168,15 @@ struct SpotFieldView: View {
     }
 
     private var sheetShape: SpotSurfaceShape? {
-        sheet.map { isOpen ? SpotSurfaceShape(rect: $0.morph.sheet, radius: SpotTokens.radius) : SpotSurfaceShape(rect: $0.morph.card, radius: $0.cardRadius) }
+        sheet.map { isOpen ? SpotSurfaceShape(rect: $0.morph.sheet, radius: SpotTokens.cardRadius) : SpotSurfaceShape(rect: $0.morph.card, radius: $0.cardRadius) }
     }
 
     @ViewBuilder
     private var insideSheet: some View {
         if let sheetShape {
-            sheetShape.fill(Color.black)
+            sheetShape.fill(SpotTheme.mask)
         } else {
-            Color.black
+            SpotTheme.mask
         }
     }
 

@@ -14,7 +14,7 @@ struct SpotSlider: View {
                 if !editing, let dragged { onEnd(dragged); self.dragged = nil }
             }
             .controlSize(.small)
-            .tint(SpotTheme.ink)
+            .tint(SpotTheme.highlight)
             .labelsHidden()
             if let words {
                 Text(dragged.map { String(Int($0.rounded())) } ?? words)

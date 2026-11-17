@@ -12,6 +12,7 @@ final class SpotsPanel: NSPanel {
     private var swipe = FlowSwipe()
     private var pressStage = 0
     private var isForceDragging = false
+    private var screenBackdrop: SpotScreenBackdrop?
 
     override var canBecomeKey: Bool { true }
 
@@ -73,6 +74,17 @@ final class SpotsPanel: NSPanel {
     private func open(ordering order: () -> Void) {
         model?.panelWillShow()
         order()
+        if model?.isWarming != true { screenBackdrop?.show(on: screen, below: self) }
+    }
+
+    private func takeBackdrop() {
+        guard let model else { return }
+        if SpotTokens.backdrop.reach == .screen {
+            if screenBackdrop == nil { screenBackdrop = SpotScreenBackdrop.make(model: model) }
+        } else if let screenBackdrop {
+            screenBackdrop.close()
+            self.screenBackdrop = nil
+        }
     }
 
     func showsDrop(at point: NSPoint) -> Bool {
@@ -105,12 +117,22 @@ final class SpotsPanel: NSPanel {
         CATransaction.commit()
     }
 
+    func layOut() {
+        guard let model else { return }
+        place.left = model.panels.leftExtent
+        appliedRight = model.panels.rightExtent
+        let width = SpotTokens.panelWidth + place.left + appliedRight
+        resize(to: NSRect(x: frame.minX, y: frame.maxY - SpotTokens.panelHeight, width: width, height: SpotTokens.panelHeight))
+        takeBackdrop()
+    }
+
     func hide(then done: (() -> Void)? = nil) {
         model?.panelWillHide()
         DispatchQueue.main.asyncAfter(deadline: .now() + MotionTokens.fadeOut) {
             defer { done?() }
             guard self.model?.isShown == false else { return }
             self.orderOut(nil)
+            self.screenBackdrop?.orderOut(nil)
             self.alphaValue = 1
             self.ignoresMouseEvents = false
             self.model?.panelDidHide()
@@ -290,6 +312,7 @@ final class SpotsPanel: NSPanel {
         panel.watchPaste(model: model)
         panel.center()
         panel.followSides()
+        panel.takeBackdrop()
         return panel
     }
 }

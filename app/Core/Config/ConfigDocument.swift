@@ -4,6 +4,7 @@ public struct ConfigDocument: Equatable, Sendable {
     public enum Value: Equatable, Sendable {
         case string(String)
         case integer(Int)
+        case number(Double)
         case boolean(Bool)
         case strings([String])
         case table([String: String])
@@ -12,6 +13,7 @@ public struct ConfigDocument: Equatable, Sendable {
             switch self {
             case .string(let text): Self.quoted(text)
             case .integer(let number): String(number)
+            case .number(let number): String(number)
             case .boolean(let isOn): String(isOn)
             case .strings(let items): "[\(items.map(Self.quoted).joined(separator: ", "))]"
             case .table(let pairs): "{ \(pairs.sorted { $0.key < $1.key }.map { "\($0.key) = \(Self.quoted($0.value))" }.joined(separator: ", ")) }"
@@ -45,36 +47,51 @@ public struct ConfigDocument: Equatable, Sendable {
             }
         }
 
-        var text: String {
-            (["[[\(name)]]"] + keys.map { "\($0) = \(values[$0]!.text)" }).joined(separator: "\n")
+        func text(opening: String) -> String {
+            ([opening] + keys.map { "\($0) = \(values[$0]!.text)" }).joined(separator: "\n")
         }
     }
 
     public private(set) var head: [String] = []
     public private(set) var values: [String: Value] = [:]
+    public private(set) var sections: [Table] = []
     public var tables: [Table] = []
 
     public init() {}
 
     public init(text: String) throws {
+        var isInSection = false
         for (index, scalars) in text.unicodeScalars.split(separator: "\n", omittingEmptySubsequences: false).enumerated() {
             let raw = String(scalars)
             let line = raw.trimmingCharacters(in: .whitespaces)
             let fault = { (reason: String) in SpotError.fault("line \(index + 1): \(reason)") }
-            if line.hasPrefix("[") {
-                guard line.hasPrefix("[["), let end = line.range(of: "]]") else {
-                    throw fault("only arrays of tables are allowed, as in [[commands]]")
-                }
+            if line.hasPrefix("[[") {
+                guard let end = line.range(of: "]]") else { throw fault("expected a table such as [[commands]]") }
                 tables.append(Table(String(line[line.index(line.startIndex, offsetBy: 2)..<end.lowerBound])))
+                isInSection = false
                 continue
             }
-            if tables.isEmpty { head.append(raw) }
+            if line.hasPrefix("[") {
+                guard let end = line.firstIndex(of: "]"), Self.isEnd(line[line.index(after: end)...].unicodeScalars) else {
+                    throw fault("expected a section such as [dark]")
+                }
+                let name = String(line[line.index(after: line.startIndex)..<end]).trimmingCharacters(in: .whitespaces)
+                guard !name.isEmpty else { throw fault("expected a section such as [dark]") }
+                guard !sections.contains(where: { $0.name == name }) else { throw fault("[\(name)] is set twice") }
+                sections.append(Table(name))
+                isInSection = true
+                continue
+            }
+            if tables.isEmpty, sections.isEmpty { head.append(raw) }
             if line.isEmpty || line.hasPrefix("#") { continue }
             guard let equals = line.unicodeScalars.firstIndex(of: "=") else { throw fault("expected a key and a value") }
             let key = String(line.unicodeScalars[..<equals]).trimmingCharacters(in: .whitespaces)
             guard !key.isEmpty, !key.contains(" ") else { throw fault("expected a key and a value") }
             guard let value = Self.value(line.unicodeScalars[line.unicodeScalars.index(after: equals)...]) else { throw fault("\(key) has a value that cannot be read") }
-            if tables.isEmpty {
+            if isInSection {
+                guard sections[sections.count - 1][key] == nil else { throw fault("\(key) is set twice") }
+                sections[sections.count - 1][key] = value
+            } else if tables.isEmpty {
                 guard values[key] == nil else { throw fault("\(key) is set twice") }
                 values[key] = value
             } else {
@@ -100,7 +117,8 @@ public struct ConfigDocument: Equatable, Sendable {
     }
 
     public var text: String {
-        let parts = (head.isEmpty ? [] : [head.joined(separator: "\n")]) + tables.map(\.text)
+        let parts = (head.isEmpty ? [] : [head.joined(separator: "\n")]) + sections.map { $0.text(opening: "[\($0.name)]") }
+            + tables.map { $0.text(opening: "[[\($0.name)]]") }
         return parts.isEmpty ? "" : parts.joined(separator: "\n\n") + "\n"
     }
 
@@ -125,7 +143,10 @@ public struct ConfigDocument: Equatable, Sendable {
         switch bare {
         case "true": return .boolean(true)
         case "false": return .boolean(false)
-        default: return Int(bare).map(Value.integer)
+        default:
+            if let integer = Int(bare) { return .integer(integer) }
+            guard bare.contains("."), bare.allSatisfy({ "0123456789.-".contains($0) }), let number = Double(bare) else { return nil }
+            return .number(number)
         }
     }
 

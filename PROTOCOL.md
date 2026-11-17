@@ -685,8 +685,8 @@ The user decides where a spot shows. A spot only offers, with one `offers` line 
 - The user can give a spot that offers `float` a hotkey, or a shake of the pointer, in its Settings. It shows the spot in a small window at the pointer, which stays while the user works in other apps. The spot never learns where it shows.
 - A spot that offers `window` opens its sheet in a normal window, from its card, the main search or `openspot spot open`.
   The user moves, resizes and closes it, and Openspot shows in the Dock while it's open. Use it for a sheet that needs
-  room, such as a catalog. The window has no title bar buttons: Esc closes it, so give a view that fills it a way
-  out, such as a Done button.
+  room, such as a catalog. Esc closes it too, and a view that fills it should still give a way out, such as a
+  Done button.
 - `on=search.text <pattern>` makes a spot answer the main search. Openspot asks it at each change of a text that the
   pattern matches, with no pause. A newer text stops the older call. The answer should be fast.
 - Its rows show first in the main search until the newest text has an answer, and go at once when the pattern no longer
@@ -867,10 +867,22 @@ struct SpotView: View {
 | `spot.rowGap`       | The gap between the rows of the grid.                                 |
 | `spot.columns`      | How many columns a window holds.                                      |
 | `spot.tipDelay`     | How long the pointer rests on a control before its tip shows.         |
+| `spot.theme`        | The values of the theme, by role. See the table below.                |
 | `spot.rows`         | Each `row` block of the frame, in a sheet or a window, in order.      |
 | `spot.isShown`      | Whether its place shows now. It's false while the panel is hidden.    |
 | `spot.selection`    | The id of the selected row of the sheet, or nil.                      |
 | `spot.close()`      | Closes the sheet, the float or the window of its spot.                |
+
+`spot.theme` gives the values of the theme (see [Change the look of Openspot](GUIDE.md#change-the-look-of-openspot)) in
+five groups. Each colour and strength is the one of the appearance that shows.
+
+| Member              | Gives                                                                                                  |
+| ------------------- | ------------------------------------------------------------------------------------------------------ |
+| `spot.theme.color`  | The colours `ink`, `solid`, `onSolid`, `accent`, `good`, `warn` and `bad`, and the strengths `secondary`, `fill`, `selected` and `track`. |
+| `spot.theme.space`  | `padding`, `columnGap`, `rowGap`, `listRow`, `listRowGap`, `glyph`, `cell`, the side of a grid cell, and `gridWidth`. |
+| `spot.theme.radius` | `card`, `media`, and `inner`, the corner of a part that sits `padding` inside the view's place.         |
+| `spot.theme.font`   | The fonts `title`, `body`, `detail` and `input`.                                                       |
+| `spot.theme.motion` | `press`, the time of a press in seconds, and `pressBounce`, its bounce.                                |
 
 - `SpotMetric(spot, value:, detail:, mark:, onFill:)` draws a big number with its detail and an SF Symbol `mark`, laid
   out for `spot.card` as the other cards lay out theirs, and for the size of its place off a card. It drops the detail
@@ -980,13 +992,14 @@ A spot asks the Mac and Openspot for things through one command, which works the
   - calls that capture the screen: `screen shot`, `screen record start` and `screen record stop`;
   - calls that change the Mac or the user's data: `window move`, `clipboard copy`, `clipboard paste`, `power lid-closed`, `calendar add`,
     `reminders add`, `reminders done`, `spot add`, `spot remove` and `spot delete`;
-  - calls that change Openspot or its places: `app quit`, `theme reload`, `update install`, and `setting set` of a key that Openspot
+  - calls that change Openspot or its places: `app quit`, each call of `theme` but `theme list` and `theme open`, `update install`, and `setting set` of a key that Openspot
     keeps for the user (see [Settings](#settings));
   - calls that open a window or the panel: `spot open`, `spot choose`, `spot settings`, `spot edit`, `spot prompt`, `spot share`, `spot review`, `grid edit`, `setting change`, `theme open`,
     `update check`, `calendar show` and `reminders show`.
 - `calendar add --dry-run` and `reminders add --dry-run` change nothing, so they work in a read.
 - `openspot batch` runs one call for each line of stdin, and prints `---` after each. It stops at the first failure.
-- Each call that lists or reports, such as `app status`, `power readings`, `account show`, `spot list`, `spot stats`, `store list` and `setting list`,
+- Each call that lists or reports, such as `app status`, `power readings`, `account show`, `spot list`, `spot stats`, `store list`, `setting list` and
+  `theme list`,
   prints blocks, the format of a frame. `--json` prints JSON.
 
 The commands that try a spot are in [Try your spot](GUIDE.md#try-your-spot). The others:
@@ -1023,9 +1036,11 @@ The commands that try a spot are in [Try your spot](GUIDE.md#try-your-spot). The
 | `openspot render store <file.png>`                 | Draws the window of the Store with each spot as its card.                                       |
 | `openspot prompt new [words]...`                   | Prints a prompt that asks a coding agent to build a spot that does what the words say.          |
 | `openspot prompt change <id> [words]...`           | Prints a prompt that asks a coding agent to change a spot as the words say, with what [Stats](#stats) counted of it over 14 days. With no words, its goal follows those counts. |
+| `openspot prompt theme <name> [words]...`          | Prints a prompt that asks a coding agent to change a theme as the words say.                    |
 | `openspot emoji list [--tone name]`                | Prints each emoji as a row, with its name in the language of the Mac.                           |
 | `openspot symbols list`                            | Prints each symbol of the Character Viewer as a row.                                            |
 | `openspot translate text [--from code] [--to code]` | Translates the text on stdin. `openspot translate languages` prints the languages it knows.     |
+| `openspot theme <verb>`                            | Lists the themes, and uses, makes and changes one: `list`, `use`, `new`, `duplicate`, `rename`, `delete`, `open` and `reload`. See [Change the look of Openspot](GUIDE.md#change-the-look-of-openspot). |
 | `openspot account show [--json]`                   | Prints the public facts of the account that signs what you publish. See [Trust](#trust).        |
 
 ### Settings
@@ -1040,8 +1055,8 @@ on its card, a press of the card with `⌘`, or **Settings** in its ⌘K menu op
   as a look; and last **Show in the menu bar**, which every spot has.
 - Each shortcut is a row with `type=hotkey` (see [Rows](#rows)). Return on it records a key, and `⌘⌫` removes the key.
 - Openspot makes the Settings sheet, and it grows from the spot's card. Its rows never show in the spot's own sheet.
-- The Settings spot of Openspot holds only the settings of the app: its keys, Careful mode, Open theme, Reload theme,
-  Slow motion, Open at login and the `openspot` command.
+- The Settings spot of Openspot holds only the settings of the app: its keys, Careful mode, Slow
+  motion, Open at login and the `openspot` command. The Themes spot of Openspot changes its look.
 - A `field` block in the header names a setting. Return on it runs the action with the same id, which can answer with a
   form. `⌘⌫` removes the value.
 - Each call gets the value of each `field` in `OPENSPOT_SETTING_<KEY>`, such as `OPENSPOT_SETTING_FOLDER`, so a spot
@@ -1155,7 +1170,7 @@ openspot app quit
 
 | Use         | The calls that need it                                                                                                                                          |
 | ----------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `app`       | `app quit`, `theme reload`, `theme open`, `update check`, `update install`, and `setting set` of `menubar`, `open`, `float`, `key.<command>` or of the spot `openspot`                                |
+| `app`       | `app quit`, each call of `theme` but `theme list`, `update check`, `update install`, and `setting set` of `menubar`, `open`, `float`, `key.<command>` or of the spot `openspot`                                |
 | `spots`     | `spot add`, `spot remove`, `spot settings`, `spot edit`, `spot prompt`, `spot share`, `spot delete`, `spot new`, `spot run`, `spot log`, `setting list`, `setting set` of `enabled`, and `setting get`, `set` or `change` of another spot |
 | `screen`    | `screen sources`, `screen shot`, `screen record`, `window frame`, `window move` and `color pick`                                                                |
 | `clipboard` | `clipboard copy`, `clipboard paste` and `clipboard read`                                                                                                        |
