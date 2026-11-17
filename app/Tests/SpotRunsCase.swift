@@ -39,6 +39,12 @@ class SpotRunsCase: XCTestCase {
         ((try? String(contentsOfFile: path(name), encoding: .utf8)) ?? "").split(separator: "\n", omittingEmptySubsequences: false).dropLast().map(String.init)
     }
 
+    var trust = SpotTrust()
+
+    func restrict(_ name: String = "script") {
+        trust = SpotTrust(entries: [SpotLock.Entry(source: "https://example.com/\(name).git", commit: nil, paths: ["\(name).spot"], hash: nil, uses: [])])
+    }
+
     @discardableResult
     func script(_ name: String = "script", header: String = "", log: String = "log", _ body: String = "") throws -> URL {
         let url = folder.spotFile(name)
@@ -53,7 +59,8 @@ class SpotRunsCase: XCTestCase {
 
     func scanned() throws -> ScanResult {
         let load = KeptScan.shared.load(SpotsFolder(url: folder))
-        let scan = try load.result(enabled: [], disabled: [], hosted: [])
+        var scan = try load.result(enabled: [], disabled: [], hosted: [])
+        scan.restrict(by: trust)
         XCTAssertEqual(scan.refused, [])
         var stamps: [String: [Int]] = [:]
         for script in scan.scripts { stamps[script.id] = load.stamp(of: script) }

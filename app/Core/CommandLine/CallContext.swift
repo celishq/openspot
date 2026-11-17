@@ -33,7 +33,7 @@ struct CallContext {
     }
 
     var isCareful: Bool {
-        runs?.tokens.isCareful == true
+        runs?.tokens.isCareful == true || caller?.isRestricted == true
     }
 
     var careful: Set<SpotUse>? {

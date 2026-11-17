@@ -68,6 +68,14 @@ final class CarefulModeTests: SpotRunsCase {
         XCTAssertFalse(FileManager.default.fileExists(atPath: outside.appendingPathComponent("written").path))
     }
 
+    func testOffARestrictedSpotWritesOnlyToItsDataAndTheTempFolderAndReachesNoNetwork() async throws {
+        restrict()
+
+        let result = try await result(of: trying())
+
+        XCTAssertEqual(result, "data temp cache read")
+    }
+
     func testOnASpotHasWhatItsUsesName() async throws {
         runs.isCareful = true
 

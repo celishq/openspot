@@ -340,7 +340,7 @@ public final class SpotRuns {
 
     func stay(_ spot: Spot, limit: TimeInterval?) -> (ScriptProcess, AsyncThrowingStream<String, Error>, String) {
         let token = tokens.issue(for: spot)
-        let script = ScriptProcess(url: swift.runnable(for: spot), name: spot.url.path, mode: .stays, limit: limit, stopPause: stopPause, dataName: spot.dataName, variables: ["OPENSPOT_ID": spot.id, CallerTokens.variable: token], careful: isCareful ? spot.uses : nil, base: environment, build: swift.build(of: spot))
+        let script = ScriptProcess(url: swift.runnable(for: spot), name: spot.url.path, mode: .stays, limit: limit, stopPause: stopPause, dataName: spot.dataName, variables: ["OPENSPOT_ID": spot.id, CallerTokens.variable: token], careful: careful(for: spot), base: environment, build: swift.build(of: spot))
         track(script, of: spot.id, token: token)
         let frames = script.start()
         keep(script)
@@ -373,7 +373,7 @@ public final class SpotRuns {
         case .stay, .once:
             let sent = action.sent(input: input)
             let token = tokens.issue(for: spot, reason: variables[ReadReason.variable], keepsFix: true)
-            let process = ScriptProcess(url: swift.runnable(for: spot), name: spot.url.path, arguments: sent.arguments, mode: .once(input: sent.input), limit: limit, stopPause: stopPause, dataName: spot.dataName, variables: variables.merging(["OPENSPOT_ID": spot.id]) { given, _ in given }.merging([CallerTokens.variable: token]) { _, own in own }, careful: isCareful ? spot.uses : nil, base: environment, build: swift.build(of: spot))
+            let process = ScriptProcess(url: swift.runnable(for: spot), name: spot.url.path, arguments: sent.arguments, mode: .once(input: sent.input), limit: limit, stopPause: stopPause, dataName: spot.dataName, variables: variables.merging(["OPENSPOT_ID": spot.id]) { given, _ in given }.merging([CallerTokens.variable: token]) { _, own in own }, careful: careful(for: spot), base: environment, build: swift.build(of: spot))
             track(process, of: spot.id, token: token)
             process.fix = { [tokens] in tokens.fix(of: token) }
             let stream = process.start()

@@ -124,6 +124,17 @@ final class SpotUsesTests: SpotRunsCase {
         XCTAssertEqual(toasts, [])
     }
 
+    func testARestrictedSpotIsRefusedAnUndeclaredUseWhileCarefulModeIsOff() async throws {
+        restrict()
+        try caller("setting list")
+        _ = try scanned()
+
+        let (code, errors) = try await pressed()
+
+        XCTAssertEqual(code, "1")
+        XCTAssertEqual(errors, "Openspot stopped Script, because it read the settings of each spot without `uses=spots` in its header, and you have not trusted its author. Trust it in its Settings, or ask its author to add the use.\n")
+    }
+
     func testInCarefulModeASandboxedProcessOutsideEachSpotCannotChangeCarefulModeOrUseAnything() async throws {
         runs.isCareful = true
         _ = try scanned()
