@@ -1,7 +1,7 @@
 #!/bin/sh
 # title=Liquid battery
 # icon=battery.100
-# detail=The battery as a liquid that fills its card
+# detail=The battery as a liquid that fills its card from the bottom
 # on=panel.open
 # view=battery.swift
 # offers=card
