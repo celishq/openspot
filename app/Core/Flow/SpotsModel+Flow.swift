@@ -40,13 +40,14 @@ extension SpotsModel {
     @discardableResult
     public func pop(in id: String, all: Bool = false) -> Bool {
         guard openSheetID == id, flow.current?.spot == id else { return false }
-        if id == runs.launchSheet, all || (flow.behind == nil && flow.current?.page == nil) {
+        var start = flow.index
+        while start > 0, flow.pages[start].page != nil, flow.pages[start - 1].spot == id { start -= 1 }
+        if id == runs.launchSheet, all || flow.current?.page == nil {
+            guard start == 0 else { return popPage(steps: flow.index - start + 1) }
             closeSheet(moving: isShown)
             return true
         }
         guard all else { return flow.behind != nil && popPage() }
-        var start = flow.index
-        while start > 0, flow.pages[start].page != nil, flow.pages[start - 1].spot == id { start -= 1 }
         return start < flow.index && popPage(steps: flow.index - start)
     }
 

@@ -192,4 +192,21 @@ final class FirstLaunchTests: XCTestCase {
         try await wait("the first page again") { model.flow.current?.page == "n0" }
         XCTAssertEqual(model.openSheetID, "openspot/hello")
     }
+
+    @MainActor
+    func testAllFromTheLaunchSpotPushedOverAnotherSpotGoesBackToIt() async throws {
+        let (model, _) = try await firstLaunch(core: true, own: true, header: Self.launchHeader + "\npages=n*", body: Self.pagedBody)
+        await model.reload()
+        XCTAssertTrue(model.push(FlowSheet(spot: "mine/hello")))
+        try await wait("the other sheet") { model.openSheetID == "mine/hello" }
+        XCTAssertTrue(model.push(FlowSheet(spot: "openspot/hello")))
+        try await wait("the launch sheet") { model.openSheetID == "openspot/hello" && model.sheets["openspot/hello"]?.spot.actions.count == 3 }
+        try press("next", in: model)
+        try await wait("the first page") { model.flow.current?.page == "n0" }
+
+        try press("top", in: model)
+
+        try await wait("the other sheet again") { model.openSheetID == "mine/hello" }
+        XCTAssertEqual(model.flow.pages.count, 1)
+    }
 }
