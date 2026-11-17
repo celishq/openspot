@@ -120,7 +120,7 @@ The header says what a spot is. Openspot reads it without running the spot.
 | `source`      | A Swift file, or a folder of Swift files, that a Swift spot is built with. One line each. See [A Swift spot](#a-swift-spot).     |
 | `mode`        | `once` (the default), `stay` or `always`. See [Modes](#modes).                                                                   |
 | `press`       | `open`: a press of the card sends `<spot> open` though the spot has a sheet, which **Open** in ⌘K opens. `sheet` is the default. |
-| `uses`        | What the spot uses, split by commas: `app`, `spots`, `screen`, `clipboard`, `calendar`, `network`, `files`. See [Trust](#trust). |
+| `uses`        | What the spot uses, split by commas: `app`, `spots`, `screen`, `clipboard`, `calendar`, `power`, `network`, `files`. See [Trust](#trust). |
 | `grid.<size>` | A card made of other spots. Each word is a spot id. See [Cards of other spots](#cards-of-other-spots).                           |
 | `to`          | The spot that opens when the user presses a card of other spots. See [Cards of other spots](#cards-of-other-spots).              |
 
@@ -973,7 +973,7 @@ A spot asks the Mac and Openspot for things through one command, which works the
 - These calls fail in a read, so that a read changes nothing and opens nothing:
   - calls that wait for the user: `color pick` and `folder pick`;
   - calls that capture the screen: `screen shot`, `screen record start` and `screen record stop`;
-  - calls that change the Mac or the user's data: `window move`, `clipboard copy`, `clipboard paste`, `calendar add`,
+  - calls that change the Mac or the user's data: `window move`, `clipboard copy`, `clipboard paste`, `power lid-closed`, `calendar add`,
     `reminders add`, `reminders done`, `spot add`, `spot remove` and `spot delete`;
   - calls that change Openspot or its places: `app quit`, `theme reload`, `update install`, and `setting set` of a key that Openspot
     keeps for the user (see [Settings](#settings));
@@ -981,7 +981,7 @@ A spot asks the Mac and Openspot for things through one command, which works the
     `update check`, `calendar show` and `reminders show`.
 - `calendar add --dry-run` and `reminders add --dry-run` change nothing, so they work in a read.
 - `openspot batch` runs one call for each line of stdin, and prints `---` after each. It stops at the first failure.
-- Each call that lists or reports, such as `app status`, `account show`, `spot list`, `spot stats`, `store list` and `setting list`,
+- Each call that lists or reports, such as `app status`, `power readings`, `account show`, `spot list`, `spot stats`, `store list` and `setting list`,
   prints blocks, the format of a frame. `--json` prints JSON.
 
 The commands that try a spot are in [Try your spot](GUIDE.md#try-your-spot). The others:
@@ -1155,6 +1155,7 @@ openspot app quit
 | `screen`    | `screen sources`, `screen shot`, `screen record`, `window frame`, `window move` and `color pick`                                                                |
 | `clipboard` | `clipboard copy`, `clipboard paste` and `clipboard read`                                                                                                        |
 | `calendar`  | each call of `calendar` and `reminders`                                                                                                                         |
+| `power`     | `power lid-closed`                                                                                                                                              |
 | `network`   | No call. The spot reaches the network.                                                                                                                          |
 | `files`     | No call. The spot writes outside its data folder.                                                                                                               |
 | `account`   | `store publish`. Only a spot that ships inside Openspot can have it.                                                                                            |
