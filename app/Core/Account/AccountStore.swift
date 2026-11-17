@@ -5,10 +5,13 @@ public struct AccountStore: Sendable {
     private static let service = "dev.openspot.account"
     private static let account = "key"
     private static let fileName = "account"
+    private static let publicName = "account.pub"
     let file: URL?
+    let publicFile: URL?
 
-    init(file: URL?) {
+    init(file: URL?, publicFile: URL? = nil) {
         self.file = file
+        self.publicFile = publicFile
     }
 
     public static func standard(
@@ -18,7 +21,7 @@ public struct AccountStore: Sendable {
     ) -> AccountStore {
         let isOwnState = [environment["OPENSPOT_CONFIG"], devState].contains { $0?.isEmpty == false }
         let folder = SpotsFolder.config(environment: environment, home: home, devState: devState)
-        return AccountStore(file: isOwnState ? folder.appendingPathComponent(fileName) : nil)
+        return AccountStore(file: isOwnState ? folder.appendingPathComponent(fileName) : nil, publicFile: folder.appendingPathComponent(publicName))
     }
 
     public func record() throws -> AccountRecord? {
@@ -27,6 +30,19 @@ public struct AccountStore: Sendable {
 
     public func key() throws -> AccountKey? {
         try record()?.key
+    }
+
+    public func publicKey() -> String? {
+        if let publicFile, let text = try? String(contentsOf: publicFile, encoding: .utf8) { return text.isEmpty ? nil : text }
+        let key = (try? key())?.publicKey
+        keepPublic(key)
+        return key
+    }
+
+    private func keepPublic(_ key: String?) {
+        guard let publicFile else { return }
+        try? FileManager.default.createDirectory(at: publicFile.deletingLastPathComponent(), withIntermediateDirectories: true)
+        try? Data((key ?? "").utf8).write(to: publicFile)
     }
 
     public func keyMadeOnce(handle: String? = nil, on date: Date = Date()) throws -> AccountKey {
@@ -42,6 +58,7 @@ public struct AccountStore: Sendable {
 
     public func keep(_ record: AccountRecord) throws {
         try write(record.lines)
+        keepPublic(record.key.publicKey)
     }
 
     public func markBackedUp() throws {
@@ -51,6 +68,7 @@ public struct AccountStore: Sendable {
     }
 
     public func remove() throws {
+        keepPublic(nil)
         if let file {
             guard FileManager.default.fileExists(atPath: file.path) else { return }
             return try FileManager.default.removeItem(at: file)

@@ -228,8 +228,6 @@ public final class SpotsModel {
     @ObservationIgnored private var loading: Task<Void, Never>?
     @ObservationIgnored private var lastScan = ScanResult(files: [], refused: [])
     @ObservationIgnored private var loaded: (stamp: [String: [Int]], hosted: [Spot], trust: SpotTrust)?
-    @ObservationIgnored private(set) var trust = SpotTrust()
-    @ObservationIgnored private var ownKey: String??
     @ObservationIgnored private(set) var kept = KeptConfig() {
         didSet {
             if kept.config.settings != oldValue.config.settings { runs.take(settings: kept.config.settings) }
@@ -268,7 +266,7 @@ public final class SpotsModel {
             copy: { text in (try? await ScriptProcess.output(url: URL(fileURLWithPath: "/usr/bin/env"), arguments: ["LC_ALL=en_US.UTF-8", "pbcopy"], input: text, base: environment)) != nil },
             publish: { [weak self] in await self?.publishWaiting() ?? false },
             userName: { NSFullUserName() },
-            changed: { [weak self] in await self?.accountChanged() }
+            changed: { [weak self] in await self?.reload() }
         ))
     }
 
@@ -318,10 +316,9 @@ public final class SpotsModel {
         let task = Task {
             await previous?.value
             let start = kept
-            let (next, load, trust) = await Self.read(config, folder, secrets, lock, account, store, ownKey)
+            let (next, load, trust) = await Self.read(config, folder, secrets, lock, account, store)
             self.load = load
-            self.trust = trust
-            if trust.needsOwnKey { ownKey = .some(trust.ownKey) }
+            runs.tokens.trust = trust
             let id = selectedEntry?.id
             reload(patching: nil, to: kept == start ? next : kept)
             landSearch()
@@ -332,9 +329,9 @@ public final class SpotsModel {
     }
 
     @concurrent
-    private nonisolated static func read(_ config: ConfigFile, _ folder: SpotsFolder, _ secrets: SecretStore, _ lock: SpotLock, _ account: AccountStore, _ store: Store?, _ ownKey: String??) async -> (KeptConfig, SpotLoad, SpotTrust) {
+    private nonisolated static func read(_ config: ConfigFile, _ folder: SpotsFolder, _ secrets: SecretStore, _ lock: SpotLock, _ account: AccountStore, _ store: Store?) async -> (KeptConfig, SpotLoad, SpotTrust) {
         _ = try? secrets.read()
-        return (config.readKept(), KeptScan.shared.load(folder), SpotTrust.read(lock: lock, account: account, store: store, ownKey: ownKey))
+        return (config.readKept(), KeptScan.shared.load(folder), SpotTrust.read(lock: lock, account: account, store: store))
     }
 
     func reload(patching ids: Set<String>?, to next: KeptConfig) {
@@ -344,13 +341,13 @@ public final class SpotsModel {
         kept = next
         let folder = files.folder(config)
         let hosted = (load.hasAppSpots ? [account.spot] : []) + (reviewed.map { [$0.spot] } ?? [])
+        let trust = runs.tokens.trust.applying(config)
+        runs.tokens.trust = trust
         guard loaded.map({ $0.stamp != load.stamp || $0.hosted != hosted || $0.trust != trust }) ?? true || !isSameConfig else { return holdAssignedKeys(config) }
         var scan = (try? load.result(enabled: folder.enabled, disabled: folder.disabled, hosted: hosted)) ?? ScanResult(files: [SpotFile(id: "openspot", spots: hosted)], refused: [])
         let faults = load.faultSpots(of: scan, prompt: host.agentPrompt(for: folder.url))
         if !faults.isEmpty { scan.files.append(SpotFile(id: FaultSpot.fileID, spots: faults)) }
-        let granted = trust.applying(config)
-        runs.tokens.trust = granted
-        scan.restrict(by: granted)
+        scan.restrict(by: trust)
         scan.addSettings(in: files.config, secrets: files.secrets, read: config)
         let carded = Set(faults.map(\.id))
         let problems = scan.refused.filter { !carded.contains($0.file) }.map { "\($0.file) was not loaded: \($0.reason)" }
@@ -371,11 +368,6 @@ public final class SpotsModel {
             host.notify(problems.joined(separator: " "))
         }
         self.problems = problems
-    }
-
-    public func accountChanged() async {
-        ownKey = nil
-        await reload()
     }
 
     public func spotsChanged() async {

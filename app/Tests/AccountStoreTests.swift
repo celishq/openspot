@@ -15,6 +15,15 @@ final class AccountStoreTests: XCTestCase {
         try? FileManager.default.removeItem(at: folder)
     }
 
+    func testThePublicKeyIsReadWithoutTheRecordOnceKeptAndGoesWithASignOut() throws {
+        let key = try store.keyMadeOnce()
+
+        XCTAssertEqual(try String(contentsOf: folder.appendingPathComponent("account.pub"), encoding: .utf8), key.publicKey)
+        XCTAssertEqual(store.publicKey(), key.publicKey)
+        try store.remove()
+        XCTAssertNil(store.publicKey())
+    }
+
     func testAMadeKeyIsNotBackedUpUntilItIsMarked() throws {
         let key = try store.keyMadeOnce()
         XCTAssertFalse(try store.record()?.isBackedUp == true)

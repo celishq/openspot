@@ -132,7 +132,7 @@ final class SpotTrustTests: PanelCase {
         XCTAssertEqual(cups?.isRestricted, true)
 
         try model.files.account.keep(mine)
-        await model.accountChanged()
+        await model.reload()
 
         XCTAssertEqual(cups?.isRestricted, false)
     }

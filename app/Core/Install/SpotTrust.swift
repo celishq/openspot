@@ -25,14 +25,10 @@ public struct SpotTrust: Equatable, Sendable {
         entry.key.map(Trusted.author) ?? .source(entry.source)
     }
 
-    public static func read(lock: SpotLock, account: AccountStore, store: Store?, ownKey known: String?? = nil) -> SpotTrust {
+    public static func read(lock: SpotLock, account: AccountStore, store: Store?) -> SpotTrust {
         let entries = (try? lock.entries()) ?? []
-        let ownKey = entries.contains { $0.key != nil } ? known ?? (try? account.key())?.publicKey : nil
+        let ownKey = entries.contains { $0.key != nil } ? account.publicKey() : nil
         return SpotTrust(entries: entries, store: store?.url, ownKey: ownKey)
-    }
-
-    var needsOwnKey: Bool {
-        entries.contains { $0.key != nil }
     }
 
     func applied(to spot: Spot) -> Spot {
