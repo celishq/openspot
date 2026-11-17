@@ -69,8 +69,23 @@ SPOT
   } > "$work/state/config/config.toml"
 }
 
+stop() {
+  quiet=0
+  while [ "$quiet" -lt 20 ]; do
+    if pgrep -f "$work/" >/dev/null; then
+      pkill -f "$work/" || true
+      quiet=0
+    else
+      quiet=$((quiet + 1))
+    fi
+    sleep 0.1
+  done
+}
+
 shoot() {
   out=$work/$1
+  stop
+  trap stop EXIT
   rm -rf "$out"
   mkdir -p "$out"
   (cd app && xcodegen generate >/dev/null)
@@ -87,6 +102,7 @@ shoot() {
   for look in dark light; do
     run env OPENSPOT_PROBE="$out/probe.txt" OPENSPOT_ACTION=pixels OPENSPOT_SHOTS="$out/$look" OPENSPOT_SEEN=1 OPENSPOT_GLASS=off OPENSPOT_APPEARANCE="$look" \
       "$app/Contents/MacOS/Openspot" >"$out/run-$look.log" 2>&1
+    stop
   done
   mkdir -p "$out/picture"
   sh "$work/state/spots/parts.spot/parts.sh" | run "$app/Contents/MacOS/Openspot" render "$out/picture/parts.png"
