@@ -80,11 +80,11 @@ final class FirstLaunchTests: XCTestCase {
     private static let launchHeader = "title=Hello\non=sheet.open\noffers=none\nedits=launch"
 
     @MainActor
-    private func firstLaunch(core launch: Bool, own: Bool = false) async throws -> (SpotsModel, FakeHost) {
+    private func firstLaunch(core launch: Bool, own: Bool = false, header: String = FirstLaunchTests.launchHeader, body: String = "printf 'row=a\\ntitle=A\\n'") async throws -> (SpotsModel, FakeHost) {
         let core = root.appendingPathComponent("core", isDirectory: true)
         try FileManager.default.createDirectory(at: spots, withIntermediateDirectories: true)
         try FileManager.default.createDirectory(at: core.appendingPathComponent("openspot.spot"), withIntermediateDirectories: true)
-        let spot = TestSpot(header: Self.launchHeader, body: "printf 'row=a\\ntitle=A\\n'")
+        let spot = TestSpot(header: header, body: body)
         if launch { try spot.write(to: core.spotFile("openspot/hello")) }
         if own { try spot.write(to: spots.spotFile("mine/hello")) }
         let suite = "openspot-first-\(UUID().uuidString)"
@@ -142,5 +142,54 @@ final class FirstLaunchTests: XCTestCase {
 
         XCTAssertTrue(model.sheets.keys.contains("mine/hello"), "\(model.sheets.keys)")
         XCTAssertEqual(model.runs.launchSheet, "openspot/hello")
+    }
+
+    private static let pagedBody = """
+    case "$1" in
+      read) printf 'button=next\\ntitle=Next\\nscope=spot\\n\\nbutton=back\\ntitle=Back\\nscope=spot\\n\\nbutton=top\\ntitle=Top\\nscope=spot\\n\\nrow=x\\ntitle=Page %s\\n' "${OPENSPOT_PAGE-first}" ;;
+      next) printf 'push=n%s\\n' "${#OPENSPOT_PAGE}" ;;
+      back) printf 'pop=true\\n' ;;
+      top) printf 'pop=all\\n' ;;
+    esac
+    """
+
+    @MainActor
+    private func pagedLaunch() async throws -> SpotsModel {
+        let (model, _) = try await firstLaunch(core: true, header: Self.launchHeader + "\npages=n*", body: Self.pagedBody)
+        await model.beginFirstLaunch()
+        try await wait("the launch sheet") { model.openSheetID == "openspot/hello" && model.sheets["openspot/hello"]?.spot.actions.count == 3 }
+        return model
+    }
+
+    @MainActor
+    private func press(_ id: String, in model: SpotsModel) throws {
+        let sheet = try XCTUnwrap(model.sheets["openspot/hello"])
+        sheet.run(try XCTUnwrap(sheet.spot.actions.first { $0.id == id }), item: nil)
+    }
+
+    @MainActor
+    func testAllFromAPageOfTheLaunchSpotShowsTheGrid() async throws {
+        let model = try await pagedLaunch()
+        try press("next", in: model)
+        try await wait("the first page") { model.flow.current?.page == "n0" }
+
+        try press("top", in: model)
+
+        try await wait("the grid") { model.openSheetID == nil }
+        XCTAssertTrue(model.flow.pages.isEmpty)
+    }
+
+    @MainActor
+    func testOnePopFromAPageOfTheLaunchSpotGoesBackOnePage() async throws {
+        let model = try await pagedLaunch()
+        try press("next", in: model)
+        try await wait("the first page") { model.flow.current?.page == "n0" }
+        try press("next", in: model)
+        try await wait("the second page") { model.flow.current?.page == "n2" }
+
+        try press("back", in: model)
+
+        try await wait("the first page again") { model.flow.current?.page == "n0" }
+        XCTAssertEqual(model.openSheetID, "openspot/hello")
     }
 }

@@ -115,7 +115,7 @@ The header says what a spot is. Openspot reads it without running the spot.
 | `emits`       | The events the spot raises, split by commas. See [Events](#events).                                                              |
 | `offers`      | A place where the spot can show: `card`, `search`, `menubar`, `float` or `window`. One line each. See [Places](#places).         |
 | `drop`        | The files its card takes: extensions such as `mov,mkv`, `folder`, or `*`. See [The calls](#the-calls).                           |
-| `edits`       | `spots`: its sheet is also the Edit sheet of each spot. `keys`: its sheet, on the page `spot:<id>`, sets the keys of each spot. `launch`: its sheet opens in place of the grid at the first launch, and `pop=true` on that first sheet takes it off to the grid. Only a spot of the app takes it. |
+| `edits`       | `spots`: its sheet is also the Edit sheet of each spot. `keys`: its sheet, on the page `spot:<id>`, sets the keys of each spot. `launch`: its sheet opens in place of the grid at the first launch, and `pop=true` on that first sheet, or `pop=all` on any of its pages, takes it off to the grid. Only a spot of the app takes it. |
 | `view`        | A SwiftUI file next to the spot, such as `view=cups.swift`. See [Views](#views).                                                 |
 | `source`      | A Swift file, or a folder of Swift files, that a Swift spot is built with. One line each. See [A Swift spot](#a-swift-spot).     |
 | `mode`        | `once` (the default), `stay` or `always`. See [Modes](#modes).                                                                   |
