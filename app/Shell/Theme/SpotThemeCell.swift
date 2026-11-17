@@ -9,11 +9,8 @@ struct SpotThemeCell: View {
     let isLocked: Bool
     let model: SpotThemeModel
 
-    private static let writePause: Duration = .milliseconds(500)
-
     @State private var number = 0.0
     @State private var colour = Color.clear
-    @State private var pending: Task<Void, Never>?
 
     var body: some View {
         HStack(spacing: SpotTokens.menuPadding) {
@@ -57,7 +54,7 @@ struct SpotThemeCell: View {
             .pickerStyle(.segmented)
         case .strength:
             Slider(value: Binding(get: { number }, set: slide), in: kind.range) { isMoving in
-                if !isMoving { write(kind.value(number)) }
+                if !isMoving { model.save() }
             }
             .controlSize(.small)
             .frame(maxWidth: .infinity)
@@ -87,7 +84,7 @@ struct SpotThemeCell: View {
 
     private func slide(_ next: Double) {
         number = next
-        model.preview(kind.value(next), of: key, in: cell.section)
+        model.change(kind.value(next), of: key, in: cell.section)
     }
 
     private func step(_ next: Double) {
@@ -99,13 +96,7 @@ struct SpotThemeCell: View {
         colour = next
         guard let rgb = NSColor(next).usingColorSpace(.sRGB) else { return }
         let value = ConfigDocument.Value.string(HexColor(red: rgb.redComponent, green: rgb.greenComponent, blue: rgb.blueComponent, alpha: rgb.alphaComponent).text)
-        model.preview(value, of: key, in: cell.section)
-        pending?.cancel()
-        pending = Task {
-            try? await Task.sleep(for: Self.writePause)
-            guard !Task.isCancelled else { return }
-            write(value)
-        }
+        model.change(value, of: key, in: cell.section)
     }
 
     private func write(_ value: ConfigDocument.Value) {

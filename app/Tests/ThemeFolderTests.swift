@@ -189,4 +189,24 @@ final class ThemeFolderTests: XCTestCase {
         ])
         XCTAssertEqual(builtIn.flatMap(\.cells).map(\.isSet), [false, false, false])
     }
+
+    func testANameLosesItsOuterSpacesAndCannotStartWithADotOrHoldANewLine() throws {
+        try write("Night", "")
+
+        XCTAssertEqual(refusal { try themes.rename("Night", to: ".hidden") }, "A theme's name cannot start with `.`. Pick a name such as `Dusk`.")
+        XCTAssertEqual(refusal { try themes.rename("Night", to: "a\nb") }, "A theme's name cannot hold a new line. Pick a name such as `Dusk`.")
+        XCTAssertEqual(try themes.rename("Night", to: " Dusk "), "Dusk")
+        XCTAssertEqual(themes.scan(), ["Openspot", "Dusk"])
+    }
+
+    func testARenameThatChangesOnlyTheCaseKeepsTheTheme() throws {
+        try write("Dusk", "[dark]\nfill = 0.3\n")
+        try themes.use("Dusk")
+
+        XCTAssertEqual(try themes.rename("Dusk", to: "dusk"), "dusk")
+
+        XCTAssertEqual(themes.scan(), ["Openspot", "dusk"])
+        XCTAssertEqual(themes.readInUse(), "dusk")
+        XCTAssertEqual(themes.read().dark.fill, 0.3)
+    }
 }

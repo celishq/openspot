@@ -21,7 +21,7 @@ public struct ThemeMarks: Equatable, Sendable {
             let size = card.placement.size
             let isRound = size.rows == 1 && size.columns < SpotTokens.columns
             if !isRound { corners += Self.corners(of: rect, radius: sizes.radius) }
-            edges += Self.edges(of: rect, size: size, corner: isRound ? 0 : Self.cornerSide(sizes.radius))
+            edges += Self.edges(of: rect, placement: card.placement, corner: isRound ? 0 : Self.cornerSide(sizes.radius))
             if card.isPadded { padding += Self.padding(of: rect, by: sizes.padding) }
             if rects.contains(where: { abs($0.minX - rect.maxX - sizes.columnGap) < 1 && $0.minY < rect.maxY && $0.maxY > rect.minY }) {
                 gaps.append(ThemeMark(section: "space", key: "column-gap", rect: CGRect(x: rect.maxX, y: rect.minY, width: sizes.columnGap, height: rect.height), axis: CGVector(dx: 1, dy: 0)))
@@ -70,18 +70,18 @@ public struct ThemeMarks: Equatable, Sendable {
         }
     }
 
-    private static func edges(of rect: CGRect, size: SpotSize, corner: CGFloat) -> [ThemeMark] {
+    private static func edges(of rect: CGRect, placement: SpotPlacement, corner: CGFloat) -> [ThemeMark] {
         let half = SpotTokens.themeMarkEdge / 2
         return [
             ThemeMark(
                 section: "space", key: "cell",
                 rect: CGRect(x: rect.maxX - half, y: rect.minY + corner, width: 2 * half, height: rect.height - 2 * corner),
-                axis: CGVector(dx: 1, dy: 0), rate: 1 / CGFloat(size.columns)
+                axis: CGVector(dx: 1, dy: 0), rate: 1 / CGFloat(placement.column + placement.size.columns)
             ),
             ThemeMark(
                 section: "space", key: "cell",
                 rect: CGRect(x: rect.minX + corner, y: rect.maxY - half, width: rect.width - 2 * corner, height: 2 * half),
-                axis: CGVector(dx: 0, dy: 1), rate: 1 / CGFloat(size.rows)
+                axis: CGVector(dx: 0, dy: 1), rate: 1 / CGFloat(placement.row + placement.size.rows)
             )
         ]
     }

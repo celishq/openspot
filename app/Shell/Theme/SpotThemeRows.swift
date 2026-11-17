@@ -21,10 +21,10 @@ struct SpotThemeRows: View {
             .padding(SpotTokens.padding)
             ScrollViewReader { proxy in
                 Form {
-                    ForEach(groups, id: \.self) { group in
+                    ForEach(model.groups, id: \.self) { group in
                         Section {
-                            ForEach(model.rows.filter { $0.group == group }) { row in
-                                SpotThemeRowView(row: row, isLocked: model.isBuiltIn, isPicked: model.picked == row.id, model: model)
+                            ForEach(model.grouped[group] ?? []) { row in
+                                SpotThemeRowView(row: row, isLocked: model.isBuiltIn, model: model)
                                     .id(row.id)
                             }
                         } header: {
@@ -41,14 +41,19 @@ struct SpotThemeRows: View {
                 }
                 .formStyle(.grouped)
                 .scrollContentBackground(.hidden)
-                .onChange(of: model.picked) { _, id in
-                    if let id { proxy.scrollTo(id) }
-                }
+                .background { PickScroll(model: model, proxy: proxy) }
             }
         }
     }
+}
 
-    private var groups: [String] {
-        model.rows.map(\.group).reduce(into: []) { if !$0.contains($1) { $0.append($1) } }
+private struct PickScroll: View {
+    let model: SpotThemeModel
+    let proxy: ScrollViewProxy
+
+    var body: some View {
+        Color.clear.onChange(of: model.picked) { _, id in
+            if let id { proxy.scrollTo(id) }
+        }
     }
 }

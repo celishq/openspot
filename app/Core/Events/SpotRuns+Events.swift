@@ -13,6 +13,7 @@ extension SpotRuns {
     }
 
     public func panelOpened(readsToEnd: Bool = false) {
+        guard !hasQuit else { return }
         openPanel(readsToEnd: readsToEnd)
     }
 

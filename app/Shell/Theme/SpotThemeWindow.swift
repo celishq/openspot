@@ -23,9 +23,9 @@ final class SpotThemeWindow: NSObject, NSWindowDelegate {
         window.isOpaque = false
         window.backgroundColor = .clear
         window.isReleasedWhenClosed = false
-        window.minSize = SpotTokens.themeWindowSize
+        window.minSize = SpotTokens.themeWindowMinSize
         super.init()
-        let host = NSHostingController(rootView: SpotThemeView(model: model) { [weak self] in self?.window.performClose(nil) })
+        let host = NSHostingController(rootView: SpotThemeView(model: model))
         host.sizingOptions = []
         window.contentViewController = host
         window.setContentSize(SpotTokens.themeWindowSize)
@@ -41,6 +41,10 @@ final class SpotThemeWindow: NSObject, NSWindowDelegate {
         }
         NSApp.activate(ignoringOtherApps: true)
         shown.window.makeKeyAndOrderFront(nil)
+    }
+
+    func windowDidBecomeKey(_ notification: Notification) {
+        model.refresh()
     }
 
     func windowWillClose(_ notification: Notification) {

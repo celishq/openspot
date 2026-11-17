@@ -565,6 +565,8 @@ checked: click one to use it, or make, duplicate, rename and delete one below th
 theme in use, by section, with the dark and the light value side by side. Beside it, the panel draws with the theme, in
 the appearance you pick above it, and follows each control as you move it. A change saves to the theme when you let go of
 the control. A value that reads **From Openspot** is the built-in one; the arrow beside a value you set takes it back.
+While the window is open, the Openspot panel draws the theme you edit too, and it draws the saved theme when you close
+the window.
 
 You can also point at the panel. A gap, a card's padding, its edge or its corner lights up with its name and value, and
 the list shows that value. Drag it to change the value, and let go to save it.
@@ -631,10 +633,11 @@ Each section of the file holds one kind of value:
 - A key that a theme lacks keeps the value of `Openspot`, so a theme needs only the keys you change.
 - A colour is `#RRGGBB`, `#RRGGBBAA`, or a colour of the Mac: `accent`, `green`, `orange` or `red`. A strength is from 0
   to 1.
-- Colours, strengths and the glass change at once. Sizes, type and motion change when the panel next hides.
+- After `openspot theme reload`, colours, strengths and the glass change at once. Sizes, type and motion change when the
+  panel next hides.
 - `openspot theme reload` fails on a value it can't read, prints a line for each, such as
   `theme.toml: [space] padding is a number of points, such as 3.`, and keeps the look as it was. At launch, such a value
   keeps the value of `Openspot`, and a toast shows the line.
 - A theme in use that is gone gives a toast at launch, and Openspot draws with `Openspot`.
-- A name can't be empty or hold `/`. A folder named `openspot.theme`, in any case, is not a theme, since `Openspot` is the
-  built-in theme.
+- A name can't be empty, start with `.`, or hold `/` or a new line, and the spaces around it are dropped. A folder named
+  `openspot.theme`, in any case, is not a theme, since `Openspot` is the built-in theme.

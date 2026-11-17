@@ -76,4 +76,13 @@ final class ThemeMarksTests: XCTestCase {
         XCTAssertEqual(wide.key, "cell")
         XCTAssertEqual(wide.value(after: CGSize(width: 10, height: 0), from: 64, kind: .points), .integer(69))
     }
+
+    func testTheEdgeOfACardFurtherOutMovesByEachCellBeforeIt() throws {
+        let marks = ThemeMarks(sizes: sizes, cards: [(SpotPlacement(index: 0, row: 1, column: 2, size: .small), true)])
+        let right = try XCTUnwrap(marks.all.first { $0.key == "cell" && $0.axis.dx == 1 })
+        let bottom = try XCTUnwrap(marks.all.first { $0.key == "cell" && $0.axis.dy == 1 })
+
+        XCTAssertEqual(right.value(after: CGSize(width: 9, height: 0), from: 64, kind: .points), .integer(67))
+        XCTAssertEqual(bottom.value(after: CGSize(width: 0, height: 4), from: 64, kind: .points), .integer(66))
+    }
 }

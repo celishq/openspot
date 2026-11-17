@@ -130,7 +130,7 @@ public struct ConfigDocument: Equatable, Sendable {
         let words = { (line: String) in line.trimmingCharacters(in: .whitespaces) }
         let name = { (line: String) in line.split(separator: "=", maxSplits: 1).first.map { $0.trimmingCharacters(in: .whitespaces) } }
         let line = value.map { "\(key) = \($0.text)" }
-        guard let start = lines.firstIndex(where: { words($0) == "[\(section)]" }) else {
+        guard let start = lines.firstIndex(where: { Self.section(of: $0) == section }) else {
             guard let line else { return text }
             while lines.last.map(words) == "" { lines.removeLast() }
             return (lines + (lines.isEmpty ? [] : [""]) + ["[\(section)]", line]).joined(separator: "\n") + "\n"
@@ -140,11 +140,12 @@ public struct ConfigDocument: Equatable, Sendable {
         let set = range.first { !words(lines[$0]).hasPrefix("#") && name(lines[$0]) == key }
         let kept = range.first { index in
             let words = words(lines[index])
-            return words.hasPrefix("#") && words.contains("=") && name(String(words.drop { $0 == "#" || $0 == " " })) == key
+            let setting = String(words.drop { $0 == "#" || $0 == " " })
+            return words.hasPrefix("#") && name(setting) == key && setting.unicodeScalars.firstIndex(of: "=").flatMap { Self.value(setting.unicodeScalars[setting.unicodeScalars.index(after: $0)...]) } != nil
         }
         switch (line, set, kept) {
         case (let line?, let index?, _), (let line?, nil, let index?):
-            lines[index] = line
+            lines[index] = line + comment(of: lines[index])
         case (let line?, nil, nil):
             let last = range.last { !words(lines[$0]).isEmpty } ?? start
             lines.insert(line, at: last + 1)
@@ -188,6 +189,27 @@ public struct ConfigDocument: Equatable, Sendable {
             guard bare.contains("."), bare.allSatisfy({ "0123456789.-".contains($0) }), let number = Double(bare) else { return nil }
             return .number(number)
         }
+    }
+
+    private static func section(of line: String) -> String? {
+        let words = line.trimmingCharacters(in: .whitespaces)
+        guard words.hasPrefix("["), !words.hasPrefix("[["), let end = words.firstIndex(of: "]"), isEnd(words[words.index(after: end)...].unicodeScalars) else { return nil }
+        return String(words[words.index(after: words.startIndex)..<end]).trimmingCharacters(in: .whitespaces)
+    }
+
+    private static func comment(of line: String) -> String {
+        guard let equals = line.unicodeScalars.firstIndex(of: "=") else { return "" }
+        var rest = line.unicodeScalars[line.unicodeScalars.index(after: equals)...].drop { $0 == " " || $0 == "\t" }
+        if rest.first == "\"" {
+            rest.removeFirst()
+            guard quoted(&rest) != nil else { return "" }
+        }
+        guard let hash = rest.firstIndex(of: "#") else { return "" }
+        var start = hash
+        while start > rest.startIndex, rest[rest.index(before: start)] == " " || rest[rest.index(before: start)] == "\t" {
+            start = rest.index(before: start)
+        }
+        return String(rest[start...])
     }
 
     private static func isEnd(_ rest: Substring.UnicodeScalarView) -> Bool {

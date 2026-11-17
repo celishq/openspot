@@ -18,8 +18,15 @@ struct SpotThemeStage: View {
                 SpotsView(model: model.stage)
                     .frame(width: SpotTokens.panelWidth, height: SpotTokens.panelHeight)
                     .environment(\.spotIsShown, model.stage.isShown)
+                    .disabled(true)
+                    .allowsHitTesting(false)
                     .id(model.layout)
-                    .overlay(alignment: .topLeading) { SpotThemeMarkLayer(model: model) }
+                    .overlay(alignment: .topLeading) {
+                        ZStack(alignment: .topLeading) {
+                            Color.clear.contentShape(Rectangle())
+                            SpotThemeMarkLayer(model: model)
+                        }
+                    }
                     .onContinuousHover { phase in
                         if case .active(let point) = phase { model.point(at: point) } else { model.point(at: nil) }
                     }

@@ -3,7 +3,6 @@ import SwiftUI
 
 struct SpotThemeView: View {
     let model: SpotThemeModel
-    let done: () -> Void
 
     var body: some View {
         VStack(spacing: 0) {
@@ -17,7 +16,7 @@ struct SpotThemeView: View {
                 SpotThemeStage(model: model)
             }
             Divider()
-            SpotThemeFooter(hint: hint, done: done)
+            SpotThemeFooter(hint: hint)
         }
         .overlayPreferenceValue(SpotThemeTipAnchor.self, alignment: .topLeading) { anchor in
             GeometryReader { proxy in
@@ -36,6 +35,6 @@ struct SpotThemeView: View {
     private var hint: String {
         if let fault = model.fault { return fault }
         if model.isBuiltIn { return "\(ThemeFolder.builtInName) is built in. Duplicate it to change a value." }
-        return "A change saves to the theme when you let go. Sizes, type and motion reach the panel when it next hides."
+        return "A change saves to the theme when you let go. While this window is open, the panel draws the theme you edit."
     }
 }

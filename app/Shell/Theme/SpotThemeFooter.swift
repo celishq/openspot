@@ -1,9 +1,9 @@
+import AppKit
 import OpenspotCore
 import SwiftUI
 
 struct SpotThemeFooter: View {
     let hint: String
-    let done: () -> Void
 
     var body: some View {
         HStack(spacing: SpotTokens.padding) {
@@ -14,7 +14,7 @@ struct SpotThemeFooter: View {
                 .truncationMode(.tail)
             Spacer(minLength: 0)
             Button {
-                done()
+                NSApp.sendAction(#selector(NSWindow.performClose(_:)), to: nil, from: nil)
             } label: {
                 Text("Done")
                     .font(SpotType.body)
@@ -24,7 +24,6 @@ struct SpotThemeFooter: View {
                     .contentShape(Capsule())
             }
             .buttonStyle(.plain)
-            .keyboardShortcut(.defaultAction)
         }
         .padding(.horizontal, SpotTokens.padding)
         .padding(.vertical, SpotTokens.menuPadding)

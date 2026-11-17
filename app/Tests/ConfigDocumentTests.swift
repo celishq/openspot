@@ -103,4 +103,22 @@ final class ConfigDocumentTests: XCTestCase {
         XCTAssertNil(try ConfigDocument(text: reset).sections.first?["padding"])
         XCTAssertEqual(ConfigDocument.text(reset, setting: "padding", in: "space", to: nil), reset)
     }
+
+    func testASettingFindsASectionWrittenWithSpacesOrACommentAndKeepsTheCommentOfItsLine() {
+        let text = "[ dark ]  # night\nfill = 0.1  # soft\n"
+
+        let changed = ConfigDocument.text(text, setting: "fill", in: "dark", to: .number(0.3))
+        let added = ConfigDocument.text(text, setting: "ink", in: "dark", to: .string("#000000"))
+
+        XCTAssertEqual(changed, "[ dark ]  # night\nfill = 0.3  # soft\n")
+        XCTAssertEqual(added, "[ dark ]  # night\nfill = 0.1  # soft\nink = \"#000000\"\n")
+    }
+
+    func testASettingUncommentsOnlyALineThatHoldsAValue() {
+        let text = "[radius]\n# card = the corner of each card\n"
+
+        let changed = ConfigDocument.text(text, setting: "card", in: "radius", to: .integer(20))
+
+        XCTAssertEqual(changed, "[radius]\n# card = the corner of each card\ncard = 20\n")
+    }
 }

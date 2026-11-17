@@ -71,7 +71,8 @@ public struct ThemeFolder: Sendable {
     }
 
     @discardableResult
-    public func rename(_ old: String, to new: String) throws -> String {
+    public func rename(_ old: String, to name: String) throws -> String {
+        let new = name.trimmingCharacters(in: .whitespaces)
         let source = try find(old)
         guard !Self.isBuiltIn(source) else {
             throw SpotError.failed(1, "The theme \(Self.builtInName) is built in, so it keeps its name. Run `openspot theme duplicate` to make a copy you can change.")
@@ -131,6 +132,8 @@ public struct ThemeFolder: Sendable {
     private func check(_ name: String) throws {
         guard !name.trimmingCharacters(in: .whitespaces).isEmpty else { throw SpotError.failed(1, "A theme needs a name, such as `Dusk`.") }
         guard !name.contains("/") else { throw SpotError.failed(1, "A theme's name cannot hold `/`. Pick a name such as `Dusk`.") }
+        guard !name.hasPrefix(".") else { throw SpotError.failed(1, "A theme's name cannot start with `.`. Pick a name such as `Dusk`.") }
+        guard name.rangeOfCharacter(from: .newlines) == nil else { throw SpotError.failed(1, "A theme's name cannot hold a new line. Pick a name such as `Dusk`.") }
     }
 
     private func find(_ name: String) throws -> String {

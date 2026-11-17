@@ -7,7 +7,8 @@ import OpenspotCore
 final class SpotThemeModel {
     private(set) var names: [String] = []
     private(set) var inUse = ThemeFolder.builtInName
-    private(set) var rows: [ThemeRow] = []
+    private(set) var groups: [String] = []
+    private(set) var grouped: [String: [ThemeRow]] = [:]
     private(set) var fault: String?
     private(set) var layout = 0
     private(set) var isDark: Bool
@@ -15,6 +16,7 @@ final class SpotThemeModel {
     private(set) var tip: String?
     private(set) var picked: String?
     var renaming: String?
+    @ObservationIgnored private var rows: [ThemeRow] = []
     @ObservationIgnored let stage: SpotsModel
     @ObservationIgnored private let themes: ThemeFolder
     @ObservationIgnored private let panel: SpotsModel
@@ -24,6 +26,12 @@ final class SpotThemeModel {
     @ObservationIgnored private var marksScroll: CGFloat = 0
     @ObservationIgnored private var litIndex: Int?
     @ObservationIgnored private var held: (mark: ThemeMark, row: ThemeRow, value: ConfigDocument.Value)?
+    @ObservationIgnored private var pending: (id: String, write: @MainActor () -> Void, wait: Task<Void, Never>)?
+    @ObservationIgnored private var loading: Task<Void, Never>?
+    @ObservationIgnored private var working: Task<Void, Never>?
+    @ObservationIgnored private var isClosed = false
+
+    private static let writePause: Duration = .milliseconds(500)
 
     var isBuiltIn: Bool {
         ThemeFolder.isBuiltIn(inUse)
@@ -35,10 +43,11 @@ final class SpotThemeModel {
         stage = SpotsModel(host: SpotQuietHost.shared, files: panel.files, runs: SpotRuns())
         appearance = NSApp.appearance
         isDark = SpotTheme.isDark(NSApp.effectiveAppearance)
-        scan()
         follow()
-        Task { [stage] in
+        refresh()
+        loading = Task { [stage] in
             await stage.reload()
+            guard !Task.isCancelled else { return }
             stage.panelWillShow()
         }
     }
@@ -51,27 +60,32 @@ final class SpotThemeModel {
         NSApp.appearance = NSAppearance(named: next ? .darkAqua : .aqua)
     }
 
+    func refresh() {
+        act { _ in }
+    }
+
     func use(_ name: String) {
         guard name != inUse else { return }
-        act { _ = try themes.use(name) }
+        act { _ = try $0.use(name) }
     }
 
     func make() {
-        act { _ = try themes.make() }
+        act { _ = try $0.make() }
     }
 
     func duplicate() {
-        act { _ = try themes.duplicate(inUse) }
+        let name = inUse
+        act { _ = try $0.duplicate(name) }
     }
 
     func rename(_ name: String, to new: String) {
         renaming = nil
         guard new != name else { return }
-        act { try themes.rename(name, to: new) }
+        act { try $0.rename(name, to: new) }
     }
 
     func delete(_ name: String) {
-        act { try themes.delete(name) }
+        act { try $0.delete(name) }
     }
 
     func preview(_ value: ConfigDocument.Value, of key: String, in section: String) {
@@ -81,9 +95,29 @@ final class SpotThemeModel {
         draw(Theme(rows: next))
     }
 
-    func write(_ value: ConfigDocument.Value?, of key: String, in section: String) {
+    func change(_ value: ConfigDocument.Value, of key: String, in section: String) {
+        preview(value, of: key, in: section)
+        let id = "\(section) \(key)"
+        if pending?.id != id { save() }
+        pending?.wait.cancel()
         let name = inUse
-        act { try themes.write(key, in: section, to: value, of: name) }
+        let wait = Task { [weak self] in
+            try? await Task.sleep(for: Self.writePause)
+            guard !Task.isCancelled else { return }
+            self?.save()
+        }
+        pending = (id, { [weak self] in self?.write(value, of: key, in: section, to: name) }, wait)
+    }
+
+    func save() {
+        guard let pending else { return }
+        self.pending = nil
+        pending.wait.cancel()
+        pending.write()
+    }
+
+    func write(_ value: ConfigDocument.Value?, of key: String, in section: String) {
+        write(value, of: key, in: section, to: inUse)
     }
 
     func point(at location: CGPoint?) {
@@ -112,33 +146,67 @@ final class SpotThemeModel {
     }
 
     func close() {
+        save()
+        isClosed = true
+        loading?.cancel()
         stage.quit()
         NSApp.appearance = appearance
-        let theme = themes.read()
-        SpotType.take(theme.type)
-        stage.lay(theme)
-    }
-
-    private func act(_ work: () throws -> Void) {
-        do {
-            try work()
-            fault = nil
-        } catch {
-            fault = (error as? SpotError)?.reason ?? error.localizedDescription
+        let previous = working
+        let themes = themes
+        working = Task { [panel] in
+            await previous?.value
+            let theme = await Self.run({ _ in }, in: themes).read.theme
+            SpotLoadedTheme.shared.take(theme)
+            SpotLoadedTheme.shared.layOut(theme)
+            panel.take(theme)
         }
-        scan()
     }
 
-    private func scan() {
-        let found = themes.scan()
-        if found != names { names = found }
-        inUse = themes.readInUse()
-        let next = (try? themes.readRows(of: inUse)) ?? []
-        if next != rows { rows = next }
-        let theme = themes.read()
-        if fault == nil, let first = theme.faults.first { fault = first }
-        draw(theme)
-        panel.take(theme)
+    private func write(_ value: ConfigDocument.Value?, of key: String, in section: String, to name: String) {
+        act { try $0.write(key, in: section, to: value, of: name) }
+    }
+
+    private func act(_ work: @escaping @Sendable (ThemeFolder) throws -> Void) {
+        save()
+        let previous = working
+        let themes = themes
+        working = Task { [weak self] in
+            await previous?.value
+            let (fault, read) = await Self.run(work, in: themes)
+            self?.take(read, fault: fault)
+        }
+    }
+
+    @concurrent
+    private nonisolated static func run(_ work: @Sendable (ThemeFolder) throws -> Void, in themes: ThemeFolder) async -> (fault: String?, read: ThemeRead) {
+        var fault: String?
+        do {
+            try work(themes)
+        } catch {
+            fault = SpotsModel.reason(error)
+        }
+        return (fault, read(themes))
+    }
+
+    private nonisolated static func read(_ themes: ThemeFolder) -> ThemeRead {
+        let inUse = themes.readInUse()
+        return ThemeRead(names: themes.scan(), inUse: inUse, rows: (try? themes.readRows(of: inUse)) ?? [], theme: themes.read())
+    }
+
+    private func take(_ read: ThemeRead, fault: String?) {
+        if read.names != names { names = read.names }
+        if read.inUse != inUse { inUse = read.inUse }
+        if read.rows != rows {
+            rows = read.rows
+            let order = rows.map(\.group).reduce(into: [String]()) { if !$0.contains($1) { $0.append($1) } }
+            if order != groups { groups = order }
+            grouped = Dictionary(grouping: rows, by: \.group)
+        }
+        let next = fault ?? read.theme.faults.first
+        if next != self.fault { self.fault = next }
+        guard !isClosed else { return }
+        draw(read.theme)
+        panel.take(read.theme)
     }
 
     private func follow() {
@@ -182,6 +250,7 @@ final class SpotThemeModel {
     }
 
     private func draw(_ theme: Theme) {
+        guard !isClosed else { return }
         SpotLoadedTheme.shared.take(theme)
         SpotType.take(theme.type)
         stage.lay(theme)
@@ -189,4 +258,11 @@ final class SpotThemeModel {
         drawn = theme
         mark()
     }
+}
+
+private struct ThemeRead: Sendable {
+    let names: [String]
+    let inUse: String
+    let rows: [ThemeRow]
+    let theme: Theme
 }
