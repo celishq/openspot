@@ -69,7 +69,7 @@ public struct SpotCatalog: Sendable {
         }
         let stored = stores.flatMap { store in
             ((try? SpotsFolder(url: store.url).scan())?.files ?? []).filter { !ownIDs.contains($0.id) }.compactMap { file in
-                file.spots.first.map { item(store.isBuiltIn ? $0 : $0.restricted(), id: file.id, isAdded: false, store: store) }
+                file.spots.first.map { item(store.isBuiltIn ? $0 : $0.restricted(.untrusted(.source($0.url.deletingLastPathComponent().path))), id: file.id, isAdded: false, store: store) }
             }
         }
         var seen = Set<String>()
@@ -89,7 +89,7 @@ public struct SpotCatalog: Sendable {
 
     public func add(_ item: Item, environment: [String: String]) async throws {
         guard let package = item.package else { return }
-        _ = try await SpotLock.standard(environment: environment).add(SpotSource(text: package.path, place: package), to: folder.url, isConfirmed: false)
+        _ = try await SpotLock.standard(environment: environment).add(SpotSource(text: package.path, place: package), to: folder.url, isConfirmed: false, isShipped: item.store?.isBuiltIn == true)
     }
 
     public func get(_ id: String, config: ConfigFile, environment: [String: String]) async throws -> Item {

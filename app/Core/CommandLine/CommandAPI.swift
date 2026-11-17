@@ -54,9 +54,8 @@ public final class CommandAPI: @unchecked Sendable {
             return CommandLineCall(name: call.name, call: CallFault.refused("\(caller.name) \(refusal)"))
         }
         guard let needed = call.use else { return call }
-        if caller.isRestricted, !caller.uses.contains(needed.use) {
-            let fix = caller.grant == nil ? "Add it, or turn Careful mode off." : "Trust it in its Settings, or ask its author to add the use."
-            return CommandLineCall(name: call.name, call: CallFault.refused("Openspot stopped \(caller.name), because it \(needed.words) without `uses=\(needed.use.rawValue)` in its header. \(fix)"))
+        if let restriction = caller.restriction, !caller.uses.contains(needed.use) {
+            return CommandLineCall(name: call.name, call: CallFault.refused("Openspot stopped \(caller.name), because it \(needed.words) without `uses=\(needed.use.rawValue)` in its header. \(restriction.fix)"))
         }
         Task { @MainActor in runs.used(needed, by: caller) }
         return call

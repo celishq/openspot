@@ -6,9 +6,12 @@ public final class CallerTokens: @unchecked Sendable {
         public let name: String
         public let uses: Set<SpotUse>
         public var isBuiltIn = false
-        public var isRestricted = false
-        public var grant: Trusted?
+        public var restriction: Restriction?
         public var dataName: String?
+
+        public var isRestricted: Bool {
+            restriction != nil
+        }
 
         public var reachesAccountKey: Bool {
             SpotUse.reachesAccountKey(uses, isBuiltIn: isBuiltIn)
@@ -48,13 +51,13 @@ public final class CallerTokens: @unchecked Sendable {
     }
 
     public init() {
-        records[Self.sandboxed] = Record(caller: Caller(id: "", name: "A sandboxed process", uses: [], isRestricted: true))
+        records[Self.sandboxed] = Record(caller: Caller(id: "", name: "A sandboxed process", uses: [], restriction: .careful))
     }
 
     func issue(for spot: Spot, reason: String? = nil, keepsFix: Bool = false) -> String {
         var random = SystemRandomNumberGenerator()
         let token = String(format: "%016llx%016llx", random.next() as UInt64, random.next() as UInt64)
-        lock.withLock { records[token] = Record(caller: Caller(id: spot.id, name: spot.name, uses: spot.uses, isBuiltIn: spot.isBuiltIn, isRestricted: spot.isRestricted, grant: spot.grant, dataName: spot.dataName), reason: reason, keepsFix: keepsFix) }
+        lock.withLock { records[token] = Record(caller: Caller(id: spot.id, name: spot.name, uses: spot.uses, isBuiltIn: spot.isBuiltIn, restriction: spot.restriction, dataName: spot.dataName), reason: reason, keepsFix: keepsFix) }
         return token
     }
 

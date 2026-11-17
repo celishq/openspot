@@ -34,13 +34,20 @@ public struct SpotFacts: Equatable, Sendable {
     public let settings: [HeaderField]
     public internal(set) var holdsSettings = false
     public internal(set) var isBuiltIn = false
-    public internal(set) var isRestricted = false
-    public internal(set) var grant: Trusted?
+    public internal(set) var restriction: Restriction?
     public let keywords: [String]
     public let placeholder: String?
     public let sample: URL?
     public let edits: SpotEdits?
     public internal(set) var editedFile: URL?
+
+    public var isRestricted: Bool {
+        restriction != nil
+    }
+
+    public var grant: Trusted? {
+        restriction?.grant
+    }
 
     public var editsSpots: Bool {
         edits == .spots

@@ -36,13 +36,13 @@ public struct SpotTrust: Equatable, Sendable {
     }
 
     func applied(to spot: Spot) -> Spot {
-        if let grant = grant(lifting: spot) { return spot.restricted(lifting: grant) }
-        return isCareful && !spot.isBuiltIn ? spot.restricted() : spot
+        if let grant = grant(lifting: spot) { return spot.restricted(.untrusted(grant)) }
+        return isCareful && !spot.isBuiltIn ? spot.restricted(.careful) : spot
     }
 
     private func grant(lifting spot: Spot) -> Trusted? {
         guard !spot.isBuiltIn, let entry = entries.first(where: { $0.holds(spot.id) }) else { return nil }
-        if let store, entry.source.hasPrefix(store.path + "/") { return nil }
+        if entry.isShipped ?? store.map({ entry.source.hasPrefix($0.path + "/") }) == true { return nil }
         if let key = entry.key, key == ownKey { return nil }
         let grant = Self.grant(of: entry)
         return trusted.contains(grant) ? nil : grant

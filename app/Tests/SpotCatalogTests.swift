@@ -54,6 +54,17 @@ final class SpotCatalogTests: XCTestCase {
         XCTAssertEqual(list(stores: [builtIn]).items.first { $0.id == "year" }?.store?.url.path, examples.path)
     }
 
+    func testASpotAddedFromTheBuiltInStoreIsShippedInTheLock() async throws {
+        let examples = folder.appendingPathComponent("examples", isDirectory: true)
+        let builtIn = try XCTUnwrap(Store.builtIn(environment: ["OPENSPOT_EXAMPLES": examples.path]))
+        try "#!/bin/sh\n# title=Year\n".writeScript(to: examples.appendingPathComponent("year.spot/year.sh"))
+        let environment = ["OPENSPOT_CONFIG": folder.path, "OPENSPOT_SPOTS": spots.path, "PATH": "/usr/bin:/bin"]
+
+        try await list(stores: [builtIn]).add(try XCTUnwrap(list(stores: [builtIn]).item("year")), environment: environment)
+
+        XCTAssertEqual(try SpotLock.standard(environment: environment).entries().first?.isShipped, true)
+    }
+
     func testTheFolderThatPublishWritesIsNoStore() {
         XCTAssertFalse(list(stores: []).items.contains { $0.id == "shared" })
     }

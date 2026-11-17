@@ -259,10 +259,9 @@ public struct Spot: Equatable, Sendable {
         return spot
     }
 
-    func restricted(lifting grant: Trusted? = nil) -> Spot {
+    func restricted(_ restriction: Restriction) -> Spot {
         var spot = self
-        spot.isRestricted = true
-        spot.grant = grant
+        spot.restriction = restriction
         spot.view = nil
         return spot
     }

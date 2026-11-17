@@ -10,6 +10,7 @@ public struct SpotLock: Equatable, Sendable {
         public var canDo: [String]
         public var address: String?
         public var key: String?
+        public var isShipped: Bool?
 
         public var name: String {
             SpotID(path: paths.first ?? source).name
@@ -21,7 +22,7 @@ public struct SpotLock: Equatable, Sendable {
             }
         }
 
-        public init(source: String, commit: String?, paths: [String], hash: String?, uses: [SpotUse], canDo: [String] = [], address: String? = nil, key: String? = nil) {
+        public init(source: String, commit: String?, paths: [String], hash: String?, uses: [SpotUse], canDo: [String] = [], address: String? = nil, key: String? = nil, isShipped: Bool? = nil) {
             self.source = source
             self.commit = commit
             self.paths = paths
@@ -30,6 +31,7 @@ public struct SpotLock: Equatable, Sendable {
             self.canDo = canDo
             self.address = address
             self.key = key
+            self.isShipped = isShipped
         }
 
         var addedLine: String {
@@ -77,6 +79,7 @@ public struct SpotLock: Equatable, Sendable {
         isConfirmed: Bool = false,
         replaces: [String] = [],
         expecting: SpotPackage? = nil,
+        isShipped: Bool = false,
         discard: (URL) throws -> Void = { try FileManager.default.trashItem(at: $0, resultingItemURL: nil) }
     ) async throws -> String {
         try await locked {
@@ -105,7 +108,7 @@ public struct SpotLock: Equatable, Sendable {
                 }
                 facts = new
             }
-            let entry = Entry(source: source.text, commit: commit, paths: paths, hash: facts?.hash, uses: facts?.uses ?? [], canDo: facts?.canDo ?? [], address: facts?.release?.address, key: facts?.release?.publicKey)
+            let entry = Entry(source: source.text, commit: commit, paths: paths, hash: facts?.hash, uses: facts?.uses ?? [], canDo: facts?.canDo ?? [], address: facts?.release?.address, key: facts?.release?.publicKey, isShipped: isShipped ? true : nil)
             try write(try entries().filter { Set($0.paths).isDisjoint(with: paths) && $0.source != source.text } + [entry])
             return old == nil ? entry.addedLine : entry.updatedLine
         }
@@ -131,7 +134,7 @@ public struct SpotLock: Equatable, Sendable {
                     }
                     facts = new
                 })
-                entries[index] = Entry(source: entry.source, commit: entry.commit, paths: entry.paths, hash: facts?.hash, uses: facts?.uses ?? [], canDo: facts?.canDo ?? [], address: facts?.release?.address, key: facts?.release?.publicKey)
+                entries[index] = Entry(source: entry.source, commit: entry.commit, paths: entry.paths, hash: facts?.hash, uses: facts?.uses ?? [], canDo: facts?.canDo ?? [], address: facts?.release?.address, key: facts?.release?.publicKey, isShipped: entry.isShipped)
                 changed[entry.source] = entries[index]
                 added += entry.addedLine
             } catch {
