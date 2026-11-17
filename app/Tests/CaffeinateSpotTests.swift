@@ -123,6 +123,7 @@ final class CaffeinateSpotTests: XCTestCase {
         XCTAssertEqual(sheet.list.all.map(\.run), ["1800", "3600", "7200", "14400", "28800", "0", "lid"])
         XCTAssertEqual(sheet.list.all.map(\.title), ["30 minutes", "1 hour", "2 hours", "4 hours", "8 hours", "Until turned off", "Work with the lid closed"])
         XCTAssertEqual(sheet.list.all.last?.isOn, false)
+        XCTAssertEqual(sheet.list.all.last?.isToggle, true)
     }
 
     func testAPickOfTheLidRowTurnsItOnAndKeepsItAsASetting() async throws {

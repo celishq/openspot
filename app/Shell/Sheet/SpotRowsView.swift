@@ -207,7 +207,12 @@ struct SpotRowsView: View {
             if let shortcut = item.shortcut {
                 SpotKeyLabel(text: shortcut, isRecording: recording == item.run, recordingWords: recordingWords)
             }
-            if item.isOn {
+            if item.isToggle {
+                Image(systemName: item.isOn ? "checkmark.circle.fill" : "circle")
+                    .font(SpotType.body.weight(.regular))
+                    .imageScale(.large)
+                    .foregroundStyle(SpotTheme.ink.opacity(item.isOn ? SpotTheme.secondaryLight : 1))
+            } else if item.isOn {
                 Image(systemName: "checkmark")
                     .font(SpotType.body.weight(.semibold))
                     .foregroundStyle(SpotTheme.ink)

@@ -6,5 +6,6 @@ public enum RowKey: String, CaseIterable, Sendable {
     case pushReplace = "push.replace"
 
     public static let hotkey = "hotkey"
+    public static let toggle = "toggle"
 }
 
