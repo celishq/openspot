@@ -54,6 +54,7 @@ public struct ViewLibrary: Sendable {
             public let tipDelay: Duration
             public let rows: SpotRows
             public let isShown: Bool
+            public let selection: String?
             let closer: () -> Void
             let timer: (Duration) -> Void
             let values: [String: [String]]
@@ -76,6 +77,7 @@ public struct ViewLibrary: Sendable {
                 cornerMaker = card["cornerButton"] as? (String, String, String, @escaping () -> Void) -> AnyView ?? { _, _, _, _ in AnyView(EmptyView()) }
                 rows = SpotRows(fields: card["rows"] as? [[String]] ?? [])
                 isShown = card["isShown"] as? Bool ?? true
+                selection = card["selection"] as? String
                 closer = card["close"] as? () -> Void ?? {}
                 timer = card["bodyTime"] as? (Duration) -> Void ?? { _ in }
                 columnGap = card["columnGap"] as? CGFloat ?? 11

@@ -11,6 +11,7 @@ public struct ItemList: Equatable, Sendable {
     private var topCount = 0
     private var bottomCount = 0
     public private(set) var hasFiles = false
+    public private(set) var sectionStarts: [String: String] = [:]
     public private(set) var selected = 0
     public private(set) var perLine = 1
     public private(set) var drawing = RepeatDrawing.list
@@ -304,12 +305,23 @@ public struct ItemList: Equatable, Sendable {
         return Shown(items: rows, hasFiles: holdsFiles && rows.contains { $0.file != nil })
     }
 
+    private static func sectionStarts(of items: [SpotItem]) -> [String: String] {
+        var starts: [String: String] = [:]
+        var last: String?
+        for item in items where item.section != last {
+            last = item.section
+            if let section = item.section { starts[item.run] = section }
+        }
+        return starts
+    }
+
     private mutating func show<Offsets: Collection<Int>>(_ found: Offsets) {
         show(rows(of: found))
     }
 
     private mutating func show(_ rows: Shown) {
         shown = rows.items
+        sectionStarts = query.isEmpty ? Self.sectionStarts(of: rows.items) : [:]
         topCount = pinnedAbove.count
         bottomCount = pinnedBelow.count
         hasFiles = rows.hasFiles

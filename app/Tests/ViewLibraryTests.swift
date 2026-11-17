@@ -99,6 +99,15 @@ final class ViewLibraryTests: XCTestCase {
     }
 
     @MainActor
+    func testAViewReadsTheIdOfTheSelectedRow() async throws {
+        let picked = try await drawn(view.replacingOccurrences(of: "Text(", with: "let _ = spot.send(spot.selection ?? \"-\")\n        Text("), values: [:], card: ["selection": "b"])
+        let none = try await drawn(view.replacingOccurrences(of: "Text(", with: "let _ = spot.send(spot.selection ?? \"-\")\n        Text("), values: [:], card: [:])
+
+        XCTAssertEqual(picked, ["b"])
+        XCTAssertEqual(none, ["-"])
+    }
+
+    @MainActor
     func testAViewWithNoHostWordsShowsAndHasNoRows() async throws {
         let sent = try await drawn(view.replacingOccurrences(of: "Text(", with: "let _ = spot.send(\"\\(spot.rows.count) \\(spot.isShown) \\(spot[\"row\"] ?? \"-\")\")\n        Text("), values: ["title": ["Hi"], "row": ["mine"]], card: [:])
 

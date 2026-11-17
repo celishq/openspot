@@ -356,7 +356,9 @@ Rows are a list that the user searches and picks from. See [Show a list](GUIDE.m
 | `icon`     | The icon.                                                                                      |
 | `parent`   | Where the row sits in its spot. The main search shows `<spot> › <parent>`.                     |
 | `tone`     | A dot of its colour on the icon.                                                               |
-| `value`    | `true` draws a checkmark at the end.                                                           |
+| `value`    | `true` draws a checkmark at the end. More than one line draws a bar for each, oldest first, in the colour of `tone`; `-` is a bar with no value. |
+| `max`      | The value of a full bar. By default, the largest `value`.                                      |
+| `section`  | A title over the first row of a run of rows with the same `section`. A search hides it.        |
 | `hides`    | The id of an action that this row doesn't offer. One line for each action.                     |
 | `keywords` | Words that find the row but don't show, split by commas.                                       |
 | `shortcut` | Any text, such as `⌃⌥K`, that shows at the end of the row.                                     |
@@ -866,6 +868,7 @@ struct SpotView: View {
 | `spot.tipDelay`     | How long the pointer rests on a control before its tip shows.         |
 | `spot.rows`         | Each `row` block of the frame, in a sheet or a window, in order.      |
 | `spot.isShown`      | Whether its place shows now. It's false while the panel is hidden.    |
+| `spot.selection`    | The id of the selected row of the sheet, or nil.                      |
 | `spot.close()`      | Closes the sheet, the float or the window of its spot.                |
 
 - The view fills its place, and the whole card when there's no card layout. It can't change the size of its place.

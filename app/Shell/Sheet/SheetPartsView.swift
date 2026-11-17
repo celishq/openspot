@@ -94,6 +94,13 @@ struct SheetPartsView: View {
             .zIndex(frame.isOnTop ? 1 : 0)
     }
 
+    private var selectedRun: () -> String? {
+        { [list, selection] in
+            let index = (selection ?? { list.selected })()
+            return list.shown.indices.contains(index) ? list.shown[index].run : nil
+        }
+    }
+
     private var selectedID: () -> String? {
         selectedPart ?? { [panel] in panel.selectedPart?.id }
     }
@@ -132,8 +139,10 @@ struct SheetPartsView: View {
     private func drawn(_ part: SpotPart, _ frame: SheetPlacement.Frame) -> some View {
         if part.isOpen {
             if let viewSource {
-                SpotCustomView(source: viewSource, values: part.values, rows: part.rows, card: .square, room: frame.rect.size, answers: panel.answered, date: viewDate, views: views) { onSet(part, $0) }
-                    .equatable()
+                SpotSelectedRow(run: selectedRun) { run in
+                    SpotCustomView(source: viewSource, values: part.values, rows: part.rows, card: .square, room: frame.rect.size, answers: panel.answered, selection: run, date: viewDate, views: views) { onSet(part, $0) }
+                        .equatable()
+                }
             }
         } else {
             content(part, frame)
