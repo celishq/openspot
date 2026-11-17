@@ -1,23 +1,28 @@
 import SwiftUI
 
 /// The battery as a liquid that fills the card from the bottom to its level, like a glass, with a surface that rolls
-/// slowly. The words turn white where the liquid covers them. While it charges, a bolt shows and a few small bubbles
-/// rise. It moves only while the panel shows it.
+/// slowly. It is red when the battery runs low and green otherwise. The words turn white where the liquid covers them.
+/// On power, a bolt shows and a few small bubbles rise. It moves only while the panel shows it.
 struct SpotView: View {
     let spot: SpotInput
     @State private var start = Date()
 
     private static let fill = 1.1
 
-    private var level: Double { min(1, max(0, (Double(spot["title"] ?? "") ?? 0) / 100)) }
-    private var isCharging: Bool { spot["state"] == "charging" }
+    private var level: Double { min(1, max(0, Double(spot["value"] ?? "") ?? 0)) }
+    private var isCharging: Bool { spot["tone"] == "good" }
+
+    private var colors: [Color] {
+        spot["tone"] == "bad" ? [Color(red: 1, green: 0.41, blue: 0.38), Color(red: 0.9, green: 0.2, blue: 0.16)]
+            : [Color(red: 0.37, green: 0.88, blue: 0.48), Color(red: 0.16, green: 0.71, blue: 0.27)]
+    }
 
     var body: some View {
         TimelineView(.animation(minimumInterval: 1 / 30, paused: !spot.isShown)) { context in
             let time = context.date.timeIntervalSince(start)
             let liquid = Liquid(time: time, level: spot.isShown ? level * (1 - pow(1 - min(time / Self.fill, 1), 3)) : level)
             ZStack {
-                liquid.fill(LinearGradient(colors: liquid.colors, startPoint: .top, endPoint: .bottom))
+                liquid.fill(LinearGradient(colors: colors, startPoint: .top, endPoint: .bottom))
                 liquid.surface.stroke(.white.opacity(0.55), lineWidth: 1)
                 if isCharging {
                     Bubbles(time: time).clipShape(liquid)
@@ -31,7 +36,7 @@ struct SpotView: View {
     }
 
     private func words(over: Bool) -> some View {
-        SpotMetric(spot, value: spot["title"].map { "\($0)%" } ?? "–", detail: spot["detail"] ?? "", mark: isCharging ? "bolt.fill" : nil, onFill: over)
+        SpotMetric(spot, value: spot["title"] ?? "–", detail: spot["detail"] ?? "", mark: isCharging ? "bolt.fill" : nil, onFill: over)
     }
 }
 
@@ -39,13 +44,6 @@ struct SpotView: View {
 struct Liquid: Shape {
     let time: Double
     let level: Double
-
-    /// Red when low, then amber, then green, each lighter at the top.
-    var colors: [Color] {
-        level < 0.1 ? [Color(red: 1, green: 0.41, blue: 0.38), Color(red: 0.9, green: 0.2, blue: 0.16)]
-            : level < 0.2 ? [Color(red: 1, green: 0.75, blue: 0.3), Color(red: 0.95, green: 0.57, blue: 0)]
-            : [Color(red: 0.37, green: 0.88, blue: 0.48), Color(red: 0.16, green: 0.71, blue: 0.27)]
-    }
 
     /// The line of the surface alone.
     var surface: Surface { Surface(liquid: self) }
