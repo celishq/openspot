@@ -17,6 +17,23 @@ extension SpotUsage {
         public var answers = AnswerTimes()
         public var failures = Failures()
 
+        static let actGap: TimeInterval = 2
+
+        mutating func act(at date: Date) {
+            if let last, date.timeIntervalSince(last) < Self.actGap { return }
+            acts += 1
+            last = date
+        }
+
+        mutating func call(seconds: TimeInterval, answered: TimeInterval?, failure: Failure?, reason: String?, network: Bool, at date: Date) {
+            runs += 1
+            self.seconds += seconds
+            if let answered { answers.add(answered) }
+            if let failure { failures.add(failure, at: date) }
+            if let reason { reads[reason, default: 0] += 1 }
+            self.network = network
+        }
+
         mutating func add(_ time: ProcessTime, hidden isHidden: Bool) {
             cost = cost + time
             if isHidden { hidden = hidden + ProcessTime(cpu: time.cpu, wakeups: time.wakeups) }

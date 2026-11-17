@@ -40,7 +40,6 @@ public final class SpotUsage: @unchecked Sendable {
     }
 
     static let keptDays = 90
-    private static let actGap: TimeInterval = 2
     private static let useLimit = 100
 
     private let folder: URL?
@@ -117,40 +116,21 @@ public final class SpotUsage: @unchecked Sendable {
     }
 
     func acted(_ spot: Spot, at date: Date) {
-        change(at: date) { day in
-            if let last = day.spots[spot.id]?.last, date.timeIntervalSince(last) < Self.actGap { return }
-            day.spots[spot.id, default: Count()].name = spot.name
-            day.spots[spot.id, default: Count()].acts += 1
-            day.spots[spot.id, default: Count()].last = date
-        }
+        change(spot, at: date) { $0.act(at: date) }
     }
 
     func called(_ spot: Spot, seconds: TimeInterval, answered: TimeInterval? = nil, failure: Failure? = nil, reason: String? = nil, at date: Date) {
-        change(at: date) { day in
-            day.spots[spot.id, default: Count()].name = spot.name
-            day.spots[spot.id, default: Count()].runs += 1
-            day.spots[spot.id, default: Count()].seconds += seconds
-            if let answered { day.spots[spot.id, default: Count()].answers.add(answered) }
-            if let failure {
-                day.spots[spot.id, default: Count()].failures.add(failure, at: date)
-            }
-            if let reason { day.spots[spot.id, default: Count()].reads[reason, default: 0] += 1 }
-            day.spots[spot.id, default: Count()].network = spot.uses.contains(.network)
-        }
+        change(spot, at: date) { $0.call(seconds: seconds, answered: answered, failure: failure, reason: reason, network: spot.uses.contains(.network), at: date) }
     }
 
     func failedRun(_ spot: Spot, failure: Failure, at date: Date) {
-        change(at: date) { day in
-            day.spots[spot.id, default: Count()].name = spot.name
-            day.spots[spot.id, default: Count()].failures.add(failure, at: date)
-        }
+        change(spot, at: date) { $0.failures.add(failure, at: date) }
     }
 
     func failed(_ spot: Spot, fault: String, at date: Date) {
-        change(at: date) { day in
-            day.spots[spot.id, default: Count()].name = spot.name
-            day.spots[spot.id, default: Count()].fault = fault
-            day.spots[spot.id, default: Count()].failures.last = date
+        change(spot, at: date) { count in
+            count.fault = fault
+            count.failures.last = date
         }
     }
 
@@ -195,6 +175,13 @@ public final class SpotUsage: @unchecked Sendable {
     static func day(of date: Date) -> String {
         let parts = Calendar.current.dateComponents([.year, .month, .day], from: date)
         return String(format: "%04d-%02d-%02d", parts.year ?? 0, parts.month ?? 0, parts.day ?? 0)
+    }
+
+    private func change(_ spot: Spot, at date: Date, _ work: (inout Count) -> Void) {
+        change(at: date) { day in
+            day.spots[spot.id, default: Count()].name = spot.name
+            work(&day.spots[spot.id, default: Count()])
+        }
     }
 
     private func change(at date: Date? = nil, _ work: (inout Day) -> Void) {
