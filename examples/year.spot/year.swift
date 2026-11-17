@@ -7,18 +7,19 @@ struct SpotView: View {
 
     private var day: Int { Int(spot["day"] ?? "") ?? 0 }
     private var days: Int { max(1, Int(spot["days"] ?? "") ?? 365) }
-    private var left: String { spot["left"] ?? "–" }
+    private var title: some View { Text(spot["title"] ?? "").font(.headline) }
+    private var left: some View { Text("\(days - day) days left").font(spot.font.detail).opacity(spot.secondary) }
 
     var body: some View {
         Group {
             switch spot.card {
             case .small, .wide:
-                SpotMetric(spot, value: left, detail: "days left\nin \(spot["title"] ?? "")")
+                SpotMetric(spot, value: "\(days - day)", detail: "days left\nin \(spot["title"] ?? "")")
             case .strip:
                 HStack(spacing: 14) {
                     VStack(alignment: .leading, spacing: 1) {
-                        Text(spot["title"] ?? "").font(.headline)
-                        Text("\(left) days left").font(spot.font.detail).opacity(spot.secondary)
+                        title
+                        left
                     }
                     .fixedSize()
                     field
@@ -27,9 +28,9 @@ struct SpotView: View {
             default:
                 VStack(spacing: 8) {
                     HStack(alignment: .firstTextBaseline) {
-                        Text(spot["title"] ?? "").font(.headline)
+                        title
                         Spacer(minLength: 4)
-                        Text("\(left) days left").font(spot.font.detail).opacity(spot.secondary)
+                        left
                     }
                     field
                 }
