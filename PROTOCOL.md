@@ -1091,7 +1091,7 @@ openspot spot stats --days 7
 - `--days N` adds up the last N days. `--spot <id>` shows one spot.
 - `--by version` prints a row for each version of a spot, the oldest first, so you can compare a spot before and after
   a change. A version is a short hash that changes each time a file of the spot is written, replaced or touched.
-  The version `-` holds the counts kept before any version.
+  The version `-` holds the counts with no known version, such as those kept before versions, and sorts first.
 - `--openmetrics` prints each counter as [OpenMetrics](https://openmetrics.io) text, labelled by `spot`, and by
   `version` with `--by version`, so that any tool for metrics can read it.
 - It prints a `row=<id>` block for each spot, the most CPU first, then a `use=<n>` block for each call that needs a

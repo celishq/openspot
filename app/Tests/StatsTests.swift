@@ -227,4 +227,17 @@ final class StatsTests: XCTestCase {
 
         XCTAssertTrue(text.contains("openspot_spot_runs_total{spot=\"a\\\"b\",version=\"v1\"} 1\n"), text)
     }
+
+    func testByVersionACountWithNoKnownVersionComesFirst() throws {
+        let usage = StatsLog(at: day)
+        let alpha = Spot(id: "a", name: "Alpha", url: URL(fileURLWithPath: "/a.sh"))
+        usage.take(versions: ["a": "v1"])
+        usage.called(alpha, CallOutcome(seconds: 1), at: day)
+        usage.take(versions: [:])
+        usage.called(alpha, CallOutcome(seconds: 1), at: day.addingTimeInterval(60))
+
+        let rows = Stats(days: usage.days(1, at: day), spot: "a", byVersion: true).rows
+
+        XCTAssertEqual(rows.map(\.version), ["-", "v1"])
+    }
 }

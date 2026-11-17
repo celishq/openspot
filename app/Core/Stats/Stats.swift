@@ -23,12 +23,14 @@ public struct Stats: Sendable {
     let spot: String?
     let cards: [Spot]
     let byVersion: Bool
+    private let totals: [[String: StatsLog.Count]]
 
     public init(days: [StatsLog.Day], spot: String?, cards: [Spot] = [], byVersion: Bool = false) {
         self.days = days
         self.spot = spot
         self.cards = cards.filter { $0.kind == .widget }
         self.byVersion = byVersion
+        totals = days.map(\.spots)
     }
 
     public func text(_ format: Form) throws -> String {
@@ -43,7 +45,7 @@ public struct Stats: Sendable {
         guard byVersion else {
             let undeclared = Dictionary(grouping: uses.filter { !$0.declared }, by: \.spot).mapValues { Dictionary(grouping: $0, by: \.call).mapValues(\.count) }
             return counts.map { id, count in
-                row(id, version: nil, since: nil, count: count, undeclared: undeclared[id] ?? [:]) { $0.spots[id] }
+                row(id, version: nil, since: nil, count: count, undeclared: undeclared[id] ?? [:]) { $1[id] }
             }
         }
         var sums: [String: [String: StatsLog.Version]] = [:]
@@ -56,8 +58,8 @@ public struct Stats: Sendable {
             }
         }
         return sums.flatMap { id, versions in
-            versions.map { version, kept in row(id, version: version, since: kept.first, count: kept.count, undeclared: [:]) { $0.versions[id]?[version]?.count } }
-        }.sorted { ($0.id, $0.since ?? .distantPast) < ($1.id, $1.since ?? .distantPast) }
+            versions.map { version, kept in row(id, version: version, since: kept.first, count: kept.count, undeclared: [:]) { day, _ in day.versions[id]?[version]?.count } }
+        }.sorted { ($0.id, $0.version == StatsLog.Day.unknownVersion ? .distantPast : $0.since ?? .distantPast) < ($1.id, $1.version == StatsLog.Day.unknownVersion ? .distantPast : $1.since ?? .distantPast) }
     }
 
     var uses: [StatsLog.Use] {
@@ -73,8 +75,8 @@ public struct Stats: Sendable {
 
     func ran(by caller: String) -> [(id: String, runs: Int)] {
         var runs: [String: Int] = [:]
-        for day in days {
-            for (id, count) in day.spots {
+        for spots in totals {
+            for (id, count) in spots {
                 if let started = count.callers[caller] { runs[id, default: 0] += started }
             }
         }
@@ -83,8 +85,8 @@ public struct Stats: Sendable {
 
     private var counts: [(id: String, count: StatsLog.Count)] {
         var sums: [String: StatsLog.Count] = [:]
-        for day in days {
-            for (id, count) in day.spots where spot == nil || spot == id {
+        for spots in totals {
+            for (id, count) in spots where spot == nil || spot == id {
                 sums[id] = sums[id].map { $0.adding(count) } ?? count
             }
         }
@@ -96,11 +98,12 @@ public struct Stats: Sendable {
         return sums.sorted { ($0.value.cost.cpu, $1.key) > ($1.value.cost.cpu, $0.key) }.map { ($0.key, $0.value) }
     }
 
-    private func row(_ id: String, version: String?, since: Date?, count: StatsLog.Count, undeclared: [String: Int], of day: (StatsLog.Day) -> StatsLog.Count?) -> Row {
-        Row(
+    private func row(_ id: String, version: String?, since: Date?, count: StatsLog.Count, undeclared: [String: Int], of day: (StatsLog.Day, [String: StatsLog.Count]) -> StatsLog.Count?) -> Row {
+        let counts = zip(days, totals).map { day($0, $1) }
+        return Row(
             id: id, version: version, since: since, count: count,
-            acts: days.reversed().map { $0.countsActs ? String(day($0)?.acts ?? 0) : "-" },
-            seen: days.count { day($0) != nil },
+            acts: zip(days, counts).reversed().map { $0.countsActs ? String($1?.acts ?? 0) : "-" },
+            seen: counts.count { $0 != nil },
             undeclared: undeclared
         )
     }
