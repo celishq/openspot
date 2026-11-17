@@ -17,12 +17,10 @@ final class PowerCallTests: XCTestCase {
         let acts: Acts
         var fault: String?
 
-        func holdLidClosed() async throws {
+        func holdLidClosed(during hold: @escaping @Sendable () async -> Void) async throws {
             if let fault { throw SpotError.fault(fault) }
             acts.keep("hold")
-        }
-
-        func releaseLidClosed() async {
+            await hold()
             acts.keep("release")
         }
 

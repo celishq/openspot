@@ -4,19 +4,19 @@ final class PowerHolds: NSObject, NSXPCListenerDelegate, @unchecked Sendable {
     private static let mark = URL(fileURLWithPath: "/private/var/db/openspot.lid-closed")
     private static let idle: TimeInterval = 10
     private let lock = NSLock()
-    private var holds: [UUID: Int] = [:]
+    private var holds: Set<UUID> = []
     private var links = 0
     private var isEnding = false
 
     func start() {
-        lock.withLock { letGoAfterAnEnd() }
+        lock.withLock { letGo() }
         endWhenIdle()
     }
 
     func stop() -> Never {
         lock.lock()
         isEnding = true
-        if !holds.isEmpty { letGoAfterAnEnd() }
+        letGo()
         exit(0)
     }
 
@@ -44,26 +44,21 @@ final class PowerHolds: NSObject, NSXPCListenerDelegate, @unchecked Sendable {
                     return "pmset could not keep the Mac awake with the lid closed."
                 }
             }
-            holds[id, default: 0] += 1
+            holds.insert(id)
             return nil
         }
     }
 
-    func release(_ id: UUID, all: Bool = false) {
-        lock.withLock {
-            guard let count = holds[id] else { return }
-            holds[id] = all || count <= 1 ? nil : count - 1
-            if holds.isEmpty { letGoAfterAnEnd() }
-        }
-    }
-
     private func drop(_ id: UUID) {
-        release(id, all: true)
-        lock.withLock { links -= 1 }
+        lock.withLock {
+            links -= 1
+            guard holds.remove(id) != nil, holds.isEmpty else { return }
+            letGo()
+        }
         endWhenIdle()
     }
 
-    private func letGoAfterAnEnd() {
+    private func letGo() {
         guard FileManager.default.fileExists(atPath: Self.mark.path), Self.pmset(sleep: true) else { return }
         try? FileManager.default.removeItem(at: Self.mark)
     }

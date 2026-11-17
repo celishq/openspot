@@ -13,11 +13,6 @@ final class PowerLink: NSObject, PowerService, @unchecked Sendable {
         reply(holds.hold(id))
     }
 
-    func releaseLidClosed(reply: @escaping @Sendable () -> Void) {
-        holds.release(id)
-        reply()
-    }
-
     func sample(reply: @escaping @Sendable (Data?, String?) -> Void) {
         DispatchQueue.global().async {
             let arguments = ["-n", "1", "-i", "200", "--samplers", "cpu_power,gpu_power,thermal", "-f", "plist"]

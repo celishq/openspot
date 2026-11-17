@@ -6,13 +6,12 @@ struct PowerCalls {
 
     func lidClosed() -> CommandAPI.Work {
         CommandAnswer.work { [mac, output] in
-            let power = try Mac.part(mac, "power helper")
-            try await power.holdLidClosed()
-            output.print("on\n")
-            while !Task.isCancelled {
-                try? await Task.sleep(for: .seconds(86_400))
+            try await Mac.part(mac, "power helper").holdLidClosed {
+                output.print("on\n")
+                while !Task.isCancelled {
+                    try? await Task.sleep(for: .seconds(86_400))
+                }
             }
-            await power.releaseLidClosed()
             return ""
         }
     }

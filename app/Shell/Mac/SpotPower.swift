@@ -3,77 +3,60 @@ import OpenspotCore
 import Security
 import ServiceManagement
 
-final class SpotPower: MacPower, @unchecked Sendable {
-    static let shared = SpotPower()
+struct SpotPower: MacPower {
+    private typealias Send<Answer: Sendable> = @Sendable (PowerService, @escaping @Sendable (Result<Answer, Error>) -> Void) -> Void
 
     private static let loginItems = URL(string: "x-apple.systempreferences:com.apple.LoginItems-Settings.extension")!
-    private let lock = NSLock()
-    private var connection: NSXPCConnection?
+    private static let noAnswer = "The power helper of Openspot did not answer. Run the call again, or restart the Mac if it keeps failing."
 
-    func holdLidClosed() async throws {
-        let fault: String? = try await ask { service, reply in service.holdLidClosed { reply(.success($0)) } }
+    func holdLidClosed(during hold: @escaping @Sendable () async -> Void) async throws {
+        let (fault, connection): (String?, NSXPCConnection) = try await Self.ask { service, reply in service.holdLidClosed { reply(.success($0)) } }
+        defer { connection.invalidate() }
         if let fault { throw SpotError.fault(fault) }
-    }
-
-    func releaseLidClosed() async {
-        let _: Void? = try? await ask(again: false) { service, reply in service.releaseLidClosed { reply(.success(())) } }
+        await hold()
     }
 
     func sample() async throws -> Data {
-        let answer: (Data?, String?) = try await ask { service, reply in service.sample { reply(.success(($0, $1))) } }
+        let (answer, connection): ((Data?, String?), NSXPCConnection) = try await Self.ask { service, reply in service.sample { reply(.success(($0, $1))) } }
+        connection.invalidate()
         guard let data = answer.0 else { throw SpotError.fault(answer.1 ?? "powermetrics did not give a sample.") }
         return data
     }
 
-    private func ask<Answer: Sendable>(again: Bool = true, _ send: @escaping @Sendable (PowerService, @escaping @Sendable (Result<Answer, Error>) -> Void) -> Void) async throws -> Answer {
+    private static func ask<Answer: Sendable>(_ send: @escaping Send<Answer>) async throws -> (Answer, NSXPCConnection) {
         do {
             return try await once(send)
         } catch {
-            guard again else { throw error }
-            try Self.ready()
+            try ready()
             do {
                 return try await once(send)
             } catch let error as SpotError {
                 throw error
             } catch {
-                throw SpotError.fault("The power helper of Openspot did not answer. Run the call again, or restart the Mac if it keeps failing.")
+                throw SpotError.fault(noAnswer)
             }
         }
     }
 
-    private func once<Answer: Sendable>(_ send: @escaping @Sendable (PowerService, @escaping @Sendable (Result<Answer, Error>) -> Void) -> Void) async throws -> Answer {
-        let connection = link()
-        return try await withCheckedThrowingContinuation { continuation in
-            let reply = PowerReply(continuation)
-            let proxy = connection.remoteObjectProxyWithErrorHandler { reply.give(.failure($0)) }
-            guard let service = proxy as? PowerService else {
-                return reply.give(.failure(SpotError.fault("Openspot cannot reach its power helper.")))
+    private static func once<Answer: Sendable>(_ send: @escaping Send<Answer>) async throws -> (Answer, NSXPCConnection) {
+        let connection = NSXPCConnection(machServiceName: PowerDaemon.label, options: .privileged)
+        connection.remoteObjectInterface = NSXPCInterface(with: PowerService.self)
+        connection.setCodeSigningRequirement(PowerDaemon.helper)
+        connection.resume()
+        do {
+            let answer: Answer = try await withCheckedThrowingContinuation { continuation in
+                let reply = PowerReply(continuation)
+                let proxy = connection.remoteObjectProxyWithErrorHandler { reply.give(.failure($0)) }
+                guard let service = proxy as? PowerService else {
+                    return reply.give(.failure(SpotError.fault("Openspot cannot reach its power helper.")))
+                }
+                send(service, reply.give)
             }
-            send(service, reply.give)
+            return (answer, connection)
+        } catch {
+            connection.invalidate()
+            throw error
         }
-    }
-
-    private func link() -> NSXPCConnection {
-        lock.withLock {
-            if let connection { return connection }
-            let connection = NSXPCConnection(machServiceName: PowerDaemon.label, options: .privileged)
-            connection.remoteObjectInterface = NSXPCInterface(with: PowerService.self)
-            connection.setCodeSigningRequirement(PowerDaemon.helper)
-            connection.invalidationHandler = { [weak self, weak connection] in self?.forget(connection) }
-            connection.interruptionHandler = { [weak self, weak connection] in self?.forget(connection) }
-            connection.resume()
-            self.connection = connection
-            return connection
-        }
-    }
-
-    private func forget(_ gone: NSXPCConnection?) {
-        let isCurrent = lock.withLock {
-            guard let gone, connection === gone else { return false }
-            connection = nil
-            return true
-        }
-        if isCurrent { gone?.invalidate() }
     }
 
     private static func ready() throws {
@@ -97,7 +80,7 @@ final class SpotPower: MacPower, @unchecked Sendable {
             SMAppService.openSystemSettingsLoginItems()
             throw SpotError.failedWithFix(1, "Openspot needs your approval for its power helper. Turn on Openspot in Login Items & Extensions, then try again.", loginItems)
         default:
-            throw SpotError.fault("The power helper of Openspot did not answer. Run the call again, or restart the Mac if it keeps failing.")
+            throw SpotError.fault(noAnswer)
         }
     }
 
