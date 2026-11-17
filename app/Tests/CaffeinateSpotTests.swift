@@ -136,8 +136,9 @@ final class CaffeinateSpotTests: XCTestCase {
         try await wait("the rows") { !sheet.list.all.isEmpty }
 
         XCTAssertEqual(sheet.shownState.subtitle, "Keep the Mac awake")
-        XCTAssertEqual(sheet.list.all.map(\.run), ["1800", "3600", "7200", "14400", "28800", "0", "display", "lid"])
-        XCTAssertEqual(sheet.list.all.map(\.title), ["30 minutes", "1 hour", "2 hours", "4 hours", "8 hours", "Until turned off", "Keep the display on", "Work with the lid closed"])
+        XCTAssertEqual(sheet.list.all.map(\.run), ["1800", "3600", "7200", "14400", "28800", "0", "custom", "display", "lid"])
+        XCTAssertEqual(sheet.list.all.map(\.title), ["30 minutes", "1 hour", "2 hours", "4 hours", "8 hours", "Until turned off", "Custom…", "Keep the display on", "Work with the lid closed"])
+        XCTAssertEqual(sheet.list.all.suffix(2).map(\.pin), [.bottom, .bottom])
         XCTAssertEqual(sheet.list.all.suffix(2).map(\.isOn), [true, false])
         XCTAssertEqual(sheet.list.all.suffix(2).map(\.isToggle), [true, true])
         XCTAssertEqual(sheet.list.all.suffix(2).map(\.symbol), ["display", "laptopcomputer"])
@@ -156,6 +157,36 @@ final class CaffeinateSpotTests: XCTestCase {
         try await wait("caffeinate") { self.running().count == 1 }
         XCTAssertEqual(lines("lid"), [])
         XCTAssertTrue(toasts.allSatisfy { !$0.contains("lid") })
+    }
+
+    func testTheRunningDurationShowsTheTimeItHasLeft() async throws {
+        let sheet = try sheet()
+
+        try await pick("3600", in: sheet)
+
+        try await wait("the time left on the row") { sheet.list.all.first { $0.title == "1 hour" }?.subtitle == "1h 0m left" }
+        XCTAssertNil(sheet.list.all.first { $0.title == "2 hours" }?.subtitle)
+    }
+
+    func testTheCustomRowAsksForMinutesAndKeepsTheMacAwakeForThem() async throws {
+        let sheet = try sheet()
+        try await wait("the custom row") { self.row("custom", in: sheet) != nil }
+        let open = CommandAction(id: "open", title: "Select")
+        let item = try XCTUnwrap(row("custom", in: sheet))
+
+        let form = try await sheet.form(open, item: item)
+        var draft = FormDraft(form: try XCTUnwrap(form))
+        draft.set("45", for: "minutes")
+        _ = try await sheet.submit(open, item: item, draft: draft)
+
+        try await wait("caffeinate") { self.running().count == 1 }
+        XCTAssertEqual(flags(), ["-di -t 2700"])
+    }
+
+    func testTheCardOfALidHoldSaysTheLidCanClose() async throws {
+        let sheet = try await holdWithTheLid()
+
+        try await wait("the card") { sheet.shownState.subtitle == "Until off · lid closed" }
     }
 
     func testAPickOfTheDisplayRowTurnsItOffAndKeepsItAsASetting() async throws {

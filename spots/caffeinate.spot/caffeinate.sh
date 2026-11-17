@@ -68,12 +68,12 @@ lid_hold() {
   mkfifo "$pipe" || { fault="Openspot cannot start the lid-closed hold."; return 1; }
   openspot power lid-closed </dev/null >"$pipe" 2>&1 &
   holder=$!
-  said=
-  read -r said <"$pipe"
+  first=
+  read -r first <"$pipe"
   rm -f "$pipe"
-  [ "$said" = on ] && return 0
+  [ "$first" = on ] && return 0
   holder=
-  fault=$said
+  fault=$first
   return 1
 }
 
@@ -108,11 +108,16 @@ left() {
   fi
 }
 
+# Prints what the card shows while a hold runs: the time left, and that the lid can close when it holds the lid.
+card() {
+  if [ -n "$holder" ]; then echo "$(left) · lid closed"; else left; fi
+}
+
 # Prints the row of one duration. The row of the duration that runs carries the id of its call, so that a pick of it
-# is a new call that starts it again, and not a second press that would stop it.
+# is a new call that starts it again, and not a second press that would stop it, and shows the time it has left.
 duration() {
   if awake && [ "$1" = "$picked" ]; then
-    printf 'row=%s.%s\ntitle=%s\n' "$1" "$held" "$2"
+    printf 'row=%s.%s\ntitle=%s\ndetail=%s\n' "$1" "$held" "$2" "$(left)"
   else
     printf 'row=%s\ntitle=%s\n' "$1" "$2"
   fi
@@ -130,9 +135,10 @@ sheet() {
   duration 14400 '4 hours'; echo
   duration 28800 '8 hours'; echo
   duration 0 'Until turned off'; echo
-  printf 'row=display\ntitle=Keep the display on\ndetail=Off lets the screen lock\nicon=display\ntype=toggle\nvalue=%s\nclose=false\n' "${display:-true}"
+  printf 'row=custom\ntitle=Custom…\n\n'
+  printf 'row=display\ntitle=Keep the display on\ndetail=Off lets the screen lock\nicon=display\npin=bottom\ntype=toggle\nvalue=%s\nclose=false\n' "${display:-true}"
   [ "$lidded" = true ] || return 0
-  printf '\nrow=lid\ntitle=Work with the lid closed\ndetail=Can grow hot in a bag\nicon=laptopcomputer\ntype=toggle\nvalue=%s\nclose=false\n' "${lid:-false}"
+  printf '\nrow=lid\ntitle=Work with the lid closed\ndetail=Can grow hot in a bag\nicon=laptopcomputer\npin=bottom\ntype=toggle\nvalue=%s\nclose=false\n' "${lid:-false}"
 }
 
 # Runs `caffeinate` for the duration picked, or for the seconds given after it, or until it is stopped, in a watcher
@@ -170,7 +176,7 @@ begin() {
 "
   [ $# -ge 3 ] || [ -n "$said" ] || said="toast=$(toast "$2")
 "
-  printf '%s%s\n---\ncall=%s\n---\n%sdetail=%s\n---\n' "$ended" "$(sheet)" "$1" "$said" "$(left)"
+  printf '%s%s\n---\ncall=%s\n---\n%sdetail=%s\n---\n' "$ended" "$(sheet)" "$1" "$said" "$(card)"
 }
 
 # Stops `caffeinate`, and sets `ended` to the frame that ends the call that turned it on.
@@ -219,7 +225,7 @@ serve() {
       release
       printf '%scall=%s\n---\ntoast=Caffeinate is off\n%s\n---\nend=%s\n---\n' "$ended" "$call" "$(sheet)" "$call"
       ;;
-    start*)
+    start* | 'open custom')
       minutes=$(given minutes)
       [ -n "$minutes" ] || minutes=$(given search)
       case $minutes in
@@ -255,7 +261,7 @@ serve() {
       now=
       awake && now="call=$held
 ---
-detail=$(left)
+detail=$(card)
 ---
 "
       printf 'call=%s\n---\n%s\n---\nend=%s\n---\n%s' "$call" "$(sheet)" "$call" "$now"
