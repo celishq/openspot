@@ -1,5 +1,6 @@
 #!/bin/sh
-# title=Running spots
+# title=Usage
+# keywords=Running spots, statistics
 # icon=gauge.with.dots.needle.33percent
 # detail=Use and cost of each spot
 # on=sheet.open
