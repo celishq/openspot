@@ -19,6 +19,10 @@ struct SpotThemeStage: View {
                     .frame(width: SpotTokens.panelWidth, height: SpotTokens.panelHeight)
                     .environment(\.spotIsShown, model.stage.isShown)
                     .id(model.layout)
+                    .overlay(alignment: .topLeading) { SpotThemeMarkLayer(model: model) }
+                    .onContinuousHover { phase in
+                        if case .active(let point) = phase { model.point(at: point) } else { model.point(at: nil) }
+                    }
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
             }
             .defaultScrollAnchor(.top)

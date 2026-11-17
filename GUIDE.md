@@ -566,6 +566,9 @@ theme in use, by section, with the dark and the light value side by side. Beside
 the appearance you pick above it, and follows each control as you move it. A change saves to the theme when you let go of
 the control. A value that reads **From Openspot** is the built-in one; the arrow beside a value you set takes it back.
 
+You can also point at the panel. A gap, a card's padding, its edge or its corner lights up with its name and value, and
+the list shows that value. Drag it to change the value, and let go to save it.
+
 Openspot comes with the theme `Openspot`, which can't change, so its values have no controls. Click **Duplicate to edit**
 to make a copy that you can change.
 

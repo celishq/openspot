@@ -19,26 +19,32 @@ struct SpotThemeRows: View {
                 }
             }
             .padding(SpotTokens.padding)
-            Form {
-                ForEach(groups, id: \.self) { group in
-                    Section {
-                        ForEach(model.rows.filter { $0.group == group }) { row in
-                            SpotThemeRowView(row: row, isLocked: model.isBuiltIn, model: model)
-                        }
-                    } header: {
-                        HStack {
-                            Text(Self.titles[group] ?? group.capitalized)
-                            Spacer(minLength: 0)
-                            if group == ThemeRow.look {
-                                Text("Dark").frame(width: SpotTokens.themeCellWidth, alignment: .leading)
-                                Text("Light").frame(width: SpotTokens.themeCellWidth, alignment: .leading)
+            ScrollViewReader { proxy in
+                Form {
+                    ForEach(groups, id: \.self) { group in
+                        Section {
+                            ForEach(model.rows.filter { $0.group == group }) { row in
+                                SpotThemeRowView(row: row, isLocked: model.isBuiltIn, isPicked: model.picked == row.id, model: model)
+                                    .id(row.id)
+                            }
+                        } header: {
+                            HStack {
+                                Text(Self.titles[group] ?? group.capitalized)
+                                Spacer(minLength: 0)
+                                if group == ThemeRow.look {
+                                    Text("Dark").frame(width: SpotTokens.themeCellWidth, alignment: .leading)
+                                    Text("Light").frame(width: SpotTokens.themeCellWidth, alignment: .leading)
+                                }
                             }
                         }
                     }
                 }
+                .formStyle(.grouped)
+                .scrollContentBackground(.hidden)
+                .onChange(of: model.picked) { _, id in
+                    if let id { proxy.scrollTo(id) }
+                }
             }
-            .formStyle(.grouped)
-            .scrollContentBackground(.hidden)
         }
     }
 

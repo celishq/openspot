@@ -106,6 +106,9 @@ extension SpotTokens {
     public static let themeCellWidth: CGFloat = 150
     public static let themeNumberWidth: CGFloat = 40
     public static let themeSwatch: CGFloat = 18
+    public static let themeMarkEdge: CGFloat = 6
+    public static let themeMarkCorner: CGFloat = 8
+    public static let themeMarkLine: CGFloat = 3
 
     public static let emblemSide: CGFloat = 26
     public static let publisherPlace = CGSize(width: 263, height: 178)

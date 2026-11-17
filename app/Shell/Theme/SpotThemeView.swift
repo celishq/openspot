@@ -19,6 +19,16 @@ struct SpotThemeView: View {
             Divider()
             SpotThemeFooter(hint: hint, done: done)
         }
+        .overlayPreferenceValue(SpotThemeTipAnchor.self, alignment: .topLeading) { anchor in
+            GeometryReader { proxy in
+                if let anchor, let tip = model.tip {
+                    let rect = proxy[anchor]
+                    SpotTipPill(text: tip)
+                        .position(x: rect.midX, y: rect.maxY + SpotTokens.placeGap + SpotTokens.hintPillHeight / 2)
+                }
+            }
+            .allowsHitTesting(false)
+        }
         .environment(\.spotSurfaceEdge, .window)
         .background { Color.clear.spotGlass(in: ConcentricRectangle()).ignoresSafeArea() }
     }

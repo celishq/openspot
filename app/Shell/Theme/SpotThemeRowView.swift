@@ -4,6 +4,7 @@ import SwiftUI
 struct SpotThemeRowView: View {
     let row: ThemeRow
     let isLocked: Bool
+    let isPicked: Bool
     let model: SpotThemeModel
 
     var body: some View {
@@ -19,6 +20,9 @@ struct SpotThemeRowView: View {
                 SpotThemeCell(key: row.key, kind: row.kind, cell: cell, isLocked: isLocked, model: model)
                     .frame(width: SpotTokens.themeCellWidth, alignment: .leading)
             }
+        }
+        .background {
+            if isPicked { Rectangle().fill(SpotTheme.accent.opacity(SpotTheme.markFill)).padding(-SpotTokens.menuPadding) }
         }
     }
 }

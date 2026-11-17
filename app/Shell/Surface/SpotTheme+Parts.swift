@@ -9,6 +9,7 @@ extension SpotTheme {
     @MainActor static var fadeNear: Double { loaded.shared.fadeNear }
     @MainActor static var fadeFar: Double { loaded.shared.fadeFar }
     static let fadeSteps = 3.0
+    static let markFill = 0.3
     @MainActor static var liftShadowColor: Color { loaded.liftShadow }
     static let liftShadowDrop: CGFloat = 4
 
