@@ -1,7 +1,7 @@
 enum CommandKind {
     static let live: Set<String> = [
         "batch", "app status", "update check", "update install", "spot open", "spot show", "spot review", "setting change",
-        "event emit"
+        "event emit", "theme edit"
     ]
     static let pure: Set<String> = ["emoji", "symbols"]
 

@@ -99,6 +99,14 @@ extension SpotTokens {
     public static let playgroundTopHeight: CGFloat = 360
     public static let playgroundLogHeight: CGFloat = 120
 
+    public static let themeWindowSize = CGSize(width: 1240, height: 860)
+    public static let themeListWidth: CGFloat = 200
+    public static let themeRowsWidth: CGFloat = 540
+    public static let themeKeyWidth: CGFloat = 150
+    public static let themeCellWidth: CGFloat = 150
+    public static let themeNumberWidth: CGFloat = 40
+    public static let themeSwatch: CGFloat = 18
+
     public static let emblemSide: CGFloat = 26
     public static let publisherPlace = CGSize(width: 263, height: 178)
     public static let publisherTiltReach = CGSize(width: 10, height: 7)

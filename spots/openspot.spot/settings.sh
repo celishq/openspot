@@ -50,7 +50,7 @@ case "$1" in
         if [ "$(status login)" = true ]; then on=false; else on=true; fi
         exec openspot setting set --spot openspot login "$on"
         ;;
-      edit_theme) exec openspot theme open ;;
+      edit_theme) exec openspot theme edit ;;
       careful_mode)
         if [ "$(status careful)" = true ]; then on=false; else on=true; fi
         exec openspot setting set --spot openspot careful "$on"

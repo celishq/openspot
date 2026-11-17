@@ -204,4 +204,42 @@ final class ThemeTests: XCTestCase {
         XCTAssertEqual(theme.shared.hover, 0.08)
         XCTAssertEqual(theme.faults, ["theme.toml cannot be read at \(copy.path), so Openspot keeps the look of the app. Save it as text, or delete it."])
     }
+
+    func testTheRowsOfTheBuiltInFileHoldEachKeyOnceWithItsKindAndDrawTheSameTheme() throws {
+        let text = try String(contentsOf: builtInURL, encoding: .utf8)
+
+        let rows = ThemeRow.rows(builtIn: text, own: nil)
+
+        let names = rows.flatMap { row in row.cells.map { "[\($0.section)] \(row.key)" } }
+        XCTAssertEqual(names.sorted(), Theme.keys)
+        XCTAssertEqual(Set(rows.filter { $0.group == "look" }.map { $0.cells.map(\.section) }), [["dark", "light"]])
+        XCTAssertEqual(rows.first { $0.key == "variant" }?.kind, .variant)
+        XCTAssertEqual(rows.first { $0.key == "padding" }?.kind, .points)
+        XCTAssertEqual(rows.first { $0.key == "fade-reach" }?.kind, .reach)
+        XCTAssertEqual(rows.first { $0.key == "grow" }?.kind, .seconds)
+        XCTAssertEqual(rows.first { $0.key == "pressed-scale" }?.kind, .scale)
+        XCTAssertEqual(rows.first { $0.key == "press-bounce" }?.kind, .strength)
+        XCTAssertEqual(Theme(rows: rows), Theme(text: text))
+    }
+
+    func testAChangedCellDrawsTheThemeWithItsValue() throws {
+        var rows = ThemeRow.rows(builtIn: try String(contentsOf: builtInURL, encoding: .utf8), own: "[light]\nfill = 0.3\n")
+        let index = try XCTUnwrap(rows.firstIndex { $0.key == "padding" })
+
+        rows[index].change(.integer(21), in: "space")
+
+        XCTAssertEqual(rows[index].cells, [ThemeRow.Cell(section: "space", value: .integer(21), isSet: true)])
+        XCTAssertEqual(Theme(rows: rows).space.padding, 21)
+        XCTAssertEqual(Theme(rows: rows).light.fill, 0.3)
+    }
+
+    func testAKindRoundsANumberIntoItsRange() {
+        XCTAssertEqual(ThemeKind.points.value(13.4), .number(13.4))
+        XCTAssertEqual(ThemeKind.points.value(13), .integer(13))
+        XCTAssertEqual(ThemeKind.strength.value(0.123), .number(0.12))
+        XCTAssertEqual(ThemeKind.strength.value(1.5), .number(1))
+        XCTAssertEqual(ThemeKind.reach.value(0), .number(1))
+        XCTAssertEqual(ConfigDocument.Value.integer(3).number, 3)
+        XCTAssertNil(ConfigDocument.Value.string("#FFFFFF").number)
+    }
 }

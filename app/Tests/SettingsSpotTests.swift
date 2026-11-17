@@ -179,17 +179,16 @@ final class SettingsSpotTests: BuiltInCase {
         XCTAssertEqual(changes, 2)
     }
 
-    func testTheOneThemeRowOpensACopyOfTheBuiltInThemeAndUsesIt() async throws {
+    func testTheOneThemeRowOpensTheThemeWindow() async throws {
         let items = try await items()
         let row = try XCTUnwrap(items.first { $0.run == "edit_theme" })
         XCTAssertEqual(row.title, "Edit theme")
 
         try await call(["open", "edit_theme"])
 
-        XCTAssertEqual(mac.opened, [root.appendingPathComponent("themes/Openspot copy.theme/theme.toml")])
-        XCTAssertEqual(file.read().theme, "Openspot copy")
-        let themes = await app.themes
-        XCTAssertEqual(themes.map(\.light.glassTint), [ThemeColor(text: "#FFFFFF99")])
+        let opened = await app.opened
+        XCTAssertEqual(opened, ["theme"])
+        XCTAssertEqual(mac.opened, [])
     }
 
     func testTheLinkRowIsOffUntilALinkPointsAtTheAppAndAPickLinksAndRemovesIt() async throws {

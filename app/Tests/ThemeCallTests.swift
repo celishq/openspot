@@ -74,6 +74,8 @@ final class ThemeCallTests: XCTestCase {
 
         XCTAssertEqual(parse(["reload"]), .reload)
         XCTAssertEqual(parse(["open"]), .open)
+        XCTAssertEqual(parse(["edit"]), .edit)
+        XCTAssertNil(parse(["edit", "Dusk"]))
         XCTAssertEqual(parse(["list"]), .list(.json))
         XCTAssertEqual(parse(["use", "Dusk"]), .use("Dusk"))
         XCTAssertEqual(parse(["new"]), .new)
@@ -83,5 +85,17 @@ final class ThemeCallTests: XCTestCase {
         XCTAssertEqual(parse(["delete", "Dusk"]), .delete("Dusk"))
         XCTAssertNil(parse(["rename", "Dusk"]))
         XCTAssertNil(CommandLineCall(arguments: ["app", "theme"], environment: [:])?.value as? AppCall)
+    }
+
+    func testEditOpensTheThemeWindowAndIsNoRead() async throws {
+        let app = FakeRunningApp()
+        let api = api(try temporaryFolder(), app: app)
+
+        let opened = try await answer(api, ["theme", "edit"])
+
+        XCTAssertEqual(opened, CommandAnswer())
+        let windows = await app.opened
+        XCTAssertEqual(windows, ["theme"])
+        XCTAssertEqual(CommandLineCall(arguments: ["theme", "edit"], environment: [:])?.rule.read, .changes("opens a window"))
     }
 }

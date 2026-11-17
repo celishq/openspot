@@ -557,12 +557,20 @@ The box sits `padding` inside the view's place, so its corner is `radius.inner`,
 A theme gives Openspot its colours, glass, sizes, type and motion. Change it to make Openspot look your way.
 
 ```sh
-openspot theme open
+openspot theme edit
 ```
 
-This opens the file of the theme in use in the text editor, as **Edit theme** in Settings does. Openspot comes with the
-theme `Openspot`, which can't change, so the first time this makes a copy of it, `Openspot copy`, and uses the copy.
-Change a value and save:
+This opens the theme window, as **Edit theme** in Settings does. Its sidebar lists your themes, with the one in use
+checked: click one to use it, or make, duplicate, rename and delete one below the list. The middle lists each value of the
+theme in use, by section, with the dark and the light value side by side. Beside it, the panel draws with the theme, in
+the appearance you pick above it, and follows each control as you move it. A change saves to the theme when you let go of
+the control. A value that reads **From Openspot** is the built-in one; the arrow beside a value you set takes it back.
+
+Openspot comes with the theme `Openspot`, which can't change, so its values have no controls. Click **Duplicate to edit**
+to make a copy that you can change.
+
+To change the file in a text editor instead, run `openspot theme open`. It opens the file of the theme in use, and the
+first time makes a copy of `Openspot`, `Openspot copy`, and uses it. Change a value and save:
 
 ```toml
 [shared]
@@ -578,7 +586,7 @@ Then draw Openspot with it:
 openspot theme reload
 ```
 
-Keep more than one theme to switch between looks. Each theme is a folder, `themes/<name>.theme` in the folder of your
+Keep more than one theme to switch between looks, in the window or with a command. Each theme is a folder, `themes/<name>.theme` in the folder of your
 config, named by the folder, with its `theme.toml` inside:
 
 ```sh

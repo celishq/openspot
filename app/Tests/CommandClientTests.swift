@@ -23,6 +23,7 @@ final class CommandClientTests: XCTestCase {
         func publish(_ id: String) async -> SpotPublish { .notOwn }
         func reveal(_ id: String) async -> Bool { true }
         func playground(_ file: URL?, isCareful: Bool) async {}
+        func editTheme() async {}
 
         func changeSetting(_ key: String, of spot: String) async -> Bool {
             FileManager.default.createFile(atPath: folder.appendingPathComponent("started").path, contents: nil)

@@ -18,6 +18,7 @@ public protocol RunningApp: Sendable {
     func publish(_ id: String) async -> SpotPublish
     func reveal(_ id: String) async -> Bool
     func playground(_ file: URL?, isCareful: Bool) async
+    func editTheme() async
     func changeSetting(_ key: String, of spot: String) async -> Bool
     func allows(_ reason: String) async -> Bool
     func slowMotion(_ isOn: Bool?) async -> Bool?

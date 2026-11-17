@@ -105,6 +105,10 @@ actor FakeRunningApp: RunningApp {
         opened.append("playground \(file?.path ?? "") careful=\(isCareful)")
     }
 
+    func editTheme() {
+        opened.append("theme")
+    }
+
     func changeSetting(_ key: String, of spot: String) -> Bool {
         opened.append("change \(spot) \(key)")
         return spot != "gone"

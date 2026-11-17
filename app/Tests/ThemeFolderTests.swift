@@ -149,4 +149,44 @@ final class ThemeFolderTests: XCTestCase {
         XCTAssertEqual(themes.file(of: "Night")?.path, "/tmp/openspot-config/themes/Night.theme/theme.toml")
         XCTAssertNil(themes.file(of: "openspot"))
     }
+
+    func testAWriteChangesOneKeyOfTheThemeAndTheThemeFollows() throws {
+        try write("Night", "# Night\n[dark]\n# ink = \"#FFFFFF\"\nfill = 0.3\n")
+
+        try themes.write("ink", in: "dark", to: .string("#FF0000"), of: "night")
+        try themes.write("fill", in: "dark", to: nil, of: "Night")
+
+        XCTAssertEqual(try text(of: "Night"), "# Night\n[dark]\nink = \"#FF0000\"\n# fill = 0.3\n")
+        try themes.use("Night")
+        XCTAssertEqual(themes.read().dark.ink, ThemeColor(text: "#FF0000"))
+        XCTAssertEqual(themes.read().dark.fill, 0.1)
+    }
+
+    func testTheBuiltInThemeRefusesAWrite() {
+        XCTAssertEqual(
+            refusal { try themes.write("fill", in: "dark", to: .number(0.5), of: "Openspot") },
+            "The theme Openspot is built in, so it can't change. Run `openspot theme duplicate` to make a copy you can change."
+        )
+        XCTAssertEqual(refusal { try themes.write("fill", in: "dark", to: .number(0.5), of: "Gone") }, "There is no theme named Gone. Run `openspot theme list` to see each one.")
+    }
+
+    func testTheRowsHoldEachKeyWithItsValueAndWhetherTheThemeSetsIt() throws {
+        try write("Night", "[dark]\nfill = 0.3\n# ink = \"#000000\"\n")
+
+        let rows = try themes.readRows(of: "Night")
+        let builtIn = try themes.readRows(of: "Openspot")
+
+        XCTAssertEqual(rows, [
+            ThemeRow(group: "look", key: "ink", kind: .colour, cells: [
+                ThemeRow.Cell(section: "dark", value: .string("#FFFFFF"), isSet: false)
+            ]),
+            ThemeRow(group: "look", key: "fill", kind: .strength, cells: [
+                ThemeRow.Cell(section: "dark", value: .number(0.3), isSet: true)
+            ]),
+            ThemeRow(group: "shared", key: "hover", kind: .strength, cells: [
+                ThemeRow.Cell(section: "shared", value: .number(0.08), isSet: false)
+            ])
+        ])
+        XCTAssertEqual(builtIn.flatMap(\.cells).map(\.isSet), [false, false, false])
+    }
 }

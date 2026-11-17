@@ -67,4 +67,40 @@ final class ConfigDocumentTests: XCTestCase {
             XCTAssertEqual(error as? SpotError, .fault("line 3: [dark] is set twice"))
         }
     }
+
+    func testASettingReplacesTheKeyOfItsSectionAndKeepsEachOtherLine() {
+        let text = "# My theme\n[dark]\nink = \"#FFFFFF\"\n# a note\nfill = 0.1\n\n[light]\nfill = 0.2\n"
+
+        let changed = ConfigDocument.text(text, setting: "fill", in: "light", to: .number(0.3))
+
+        XCTAssertEqual(changed, "# My theme\n[dark]\nink = \"#FFFFFF\"\n# a note\nfill = 0.1\n\n[light]\nfill = 0.3\n")
+    }
+
+    func testASettingUncommentsTheLineThatNewWrote() {
+        let text = "[space]\n# cell = 64\n# padding = 13\n\n[radius]\n# card = 26\n"
+
+        let changed = ConfigDocument.text(text, setting: "padding", in: "space", to: .integer(20))
+
+        XCTAssertEqual(changed, "[space]\n# cell = 64\npadding = 20\n\n[radius]\n# card = 26\n")
+    }
+
+    func testASettingAddsAKeyAndASectionThatTheFileLacks() {
+        let added = ConfigDocument.text("[space]\ncell = 60\n\n[radius]\ncard = 20\n", setting: "padding", in: "space", to: .integer(9))
+        let made = ConfigDocument.text("[space]\ncell = 60\n", setting: "accent", in: "shared", to: .string("#FF9F0A"))
+        let first = ConfigDocument.text("", setting: "card", in: "radius", to: .integer(20))
+
+        XCTAssertEqual(added, "[space]\ncell = 60\npadding = 9\n\n[radius]\ncard = 20\n")
+        XCTAssertEqual(made, "[space]\ncell = 60\n\n[shared]\naccent = \"#FF9F0A\"\n")
+        XCTAssertEqual(first, "[radius]\ncard = 20\n")
+    }
+
+    func testAResetCommentsTheKeyOut() throws {
+        let text = "[space]\ncell = 60\npadding = 9\n"
+
+        let reset = ConfigDocument.text(text, setting: "padding", in: "space", to: nil)
+
+        XCTAssertEqual(reset, "[space]\ncell = 60\n# padding = 9\n")
+        XCTAssertNil(try ConfigDocument(text: reset).sections.first?["padding"])
+        XCTAssertEqual(ConfigDocument.text(reset, setting: "padding", in: "space", to: nil), reset)
+    }
 }

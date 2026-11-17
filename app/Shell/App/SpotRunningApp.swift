@@ -84,6 +84,10 @@ struct SpotRunningApp: RunningApp {
         await SpotPlayground.show(path: file?.path, isCareful: isCareful)
     }
 
+    func editTheme() async {
+        await MainActor.run { SpotThemeWindow.show(model: model) }
+    }
+
     func changeSetting(_ key: String, of spot: String) async -> Bool {
         await model.changeSetting(key, of: spot)
     }

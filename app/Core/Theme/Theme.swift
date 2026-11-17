@@ -130,6 +130,16 @@ public struct Theme: Equatable, Sendable {
         (Array(colours.keys) + [strengths, points, reaches, seconds, scales].flatMap(\.keys) + [variant]).sorted()
     }
 
+    public static func kind(of key: String) -> ThemeKind? {
+        if colours[key] != nil { return .colour }
+        if strengths[key] != nil { return .strength }
+        if points[key] != nil { return .points }
+        if reaches[key] != nil { return .reach }
+        if seconds[key] != nil { return .seconds }
+        if scales[key] != nil { return .scale }
+        return key == variant ? .variant : nil
+    }
+
     private static var colours: [String: WritableKeyPath<Theme, ThemeColor>] {
         paths(look: Look.colours, shared: Shared.colours)
     }

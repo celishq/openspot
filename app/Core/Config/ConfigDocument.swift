@@ -9,6 +9,14 @@ public struct ConfigDocument: Equatable, Sendable {
         case strings([String])
         case table([String: String])
 
+        public var number: Double? {
+            switch self {
+            case .integer(let number): Double(number)
+            case .number(let number): number
+            default: nil
+            }
+        }
+
         var text: String {
             switch self {
             case .string(let text): Self.quoted(text)
@@ -114,6 +122,38 @@ public struct ConfigDocument: Equatable, Sendable {
             head.append(line)
         }
         values[key] = value
+    }
+
+    public static func text(_ text: String, setting key: String, in section: String, to value: Value?) -> String {
+        var lines = text.components(separatedBy: "\n")
+        if lines.last == "" { lines.removeLast() }
+        let words = { (line: String) in line.trimmingCharacters(in: .whitespaces) }
+        let name = { (line: String) in line.split(separator: "=", maxSplits: 1).first.map { $0.trimmingCharacters(in: .whitespaces) } }
+        let line = value.map { "\(key) = \($0.text)" }
+        guard let start = lines.firstIndex(where: { words($0) == "[\(section)]" }) else {
+            guard let line else { return text }
+            while lines.last.map(words) == "" { lines.removeLast() }
+            return (lines + (lines.isEmpty ? [] : [""]) + ["[\(section)]", line]).joined(separator: "\n") + "\n"
+        }
+        let end = lines[(start + 1)...].firstIndex { words($0).hasPrefix("[") } ?? lines.count
+        let range = (start + 1)..<end
+        let set = range.first { !words(lines[$0]).hasPrefix("#") && name(lines[$0]) == key }
+        let kept = range.first { index in
+            let words = words(lines[index])
+            return words.hasPrefix("#") && words.contains("=") && name(String(words.drop { $0 == "#" || $0 == " " })) == key
+        }
+        switch (line, set, kept) {
+        case (let line?, let index?, _), (let line?, nil, let index?):
+            lines[index] = line
+        case (let line?, nil, nil):
+            let last = range.last { !words(lines[$0]).isEmpty } ?? start
+            lines.insert(line, at: last + 1)
+        case (nil, let index?, _):
+            lines[index] = "# " + words(lines[index])
+        case (nil, nil, _):
+            return text
+        }
+        return lines.joined(separator: "\n") + "\n"
     }
 
     public var text: String {

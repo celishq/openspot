@@ -7,6 +7,10 @@ extension SpotsModel {
             return
         }
         heldTheme = nil
+        lay(theme)
+    }
+
+    public func lay(_ theme: Theme) {
         let laidOut = laidOutTheme
         guard theme.space != laidOut.space || theme.radius != laidOut.radius || theme.type != laidOut.type || theme.motion != laidOut.motion else { return }
         laidOutTheme = theme
