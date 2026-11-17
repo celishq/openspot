@@ -124,7 +124,7 @@ final class ThemeReloadTests: PanelCase {
         model.take(night)
 
         let dark = try XCTUnwrap(host.paints.last?.dark)
-        XCTAssertEqual(dark.glassTint, ThemeColor(text: "#282A3699"))
+        XCTAssertEqual(dark.glassTint, ThemeColor(text: "#282A364D"))
         XCTAssertEqual(dark.onSolid, ThemeColor(text: "#282A36"))
         XCTAssertEqual(dark.window, ThemeColor(text: "#494B54"))
         XCTAssertNotEqual(dark.fill, Theme().look.dark.fill)

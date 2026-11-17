@@ -96,8 +96,8 @@ final class ThemeTests: XCTestCase {
     func testOpenspotsChoicesGiveItsMeasuredValues() {
         let look = Theme().look
 
-        XCTAssertEqual(look.dark.glassTint, ThemeColor(text: "#00000099"))
-        XCTAssertEqual(look.light.glassTint, ThemeColor(text: "#FFFFFF99"))
+        XCTAssertEqual(look.dark.glassTint, ThemeColor(text: "#0000004D"))
+        XCTAssertEqual(look.light.glassTint, ThemeColor(text: "#FFFFFF4D"))
         XCTAssertEqual(look.dark.glass, ThemeColor(text: "#00000000"))
         XCTAssertEqual(look.light.glass, ThemeColor(text: "#FFFFFF80"))
         XCTAssertEqual([look.dark.cornerFill, look.light.cornerFill], [ThemeColor(text: "#333333"), ThemeColor(text: "#FAFAFA")])

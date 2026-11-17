@@ -91,6 +91,7 @@ struct SpotFormView: View {
                 .toggleStyle(.switch)
                 .controlSize(.small)
                 .labelsHidden()
+                .tint(SpotTheme.accent)
                 .frame(height: SpotTokens.listRow)
         case .slider:
             let range = field.range ?? 0...100

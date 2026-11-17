@@ -333,6 +333,7 @@ struct SheetPartsView: View {
                 .toggleStyle(.switch)
                 .controlSize(.small)
                 .labelsHidden()
+                .tint(SpotTheme.accent)
         case .menu(let options, let value):
             menu(part, frame, options: options, value: value)
         case .shortcut(let text):

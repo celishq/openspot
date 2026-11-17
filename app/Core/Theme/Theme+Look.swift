@@ -85,7 +85,7 @@ extension Theme {
             solid = pinned("solid") ?? highlight
             onSolid = pinned("on-solid") ?? solid.legible(background, or: ink)
             glyphOnSolid = pinned("glyph-on-solid") ?? onSolid
-            glassTint = pinned("glass-tint") ?? background.with(alpha: variant == .regular ? 0.9 : 0.6)
+            glassTint = pinned("glass-tint") ?? background.with(alpha: variant == .regular ? 0.9 : 0.3)
             glass = variant == .regular ? glassTint : background.with(alpha: isDark ? 0 : 0.5)
             cornerFill = pinned("corner-fill") ?? background.mixed(with: ink, by: isDark ? 0.2 : 0.02)
             window = pinned("window") ?? background.mixed(with: ink, by: isDark ? 0.16 : 0.08)
