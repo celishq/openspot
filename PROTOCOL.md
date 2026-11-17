@@ -247,8 +247,9 @@ confirm=Press again to forget
 - A `hotkey` field records a key in Openspot. An empty field records as soon as its sheet shows, and again after a
   press that leaves it empty. A field with a key records when the user presses Return on it, clicks it, or presses a
   button with `records=<field id>`.
-- While a field records, every key goes to it. Esc stops the recording and brings back the key it had. A key that
-  makes a shortcut ends the recording, sends `<id> <key>`, and moves the focus past the field.
+- While a field records, every key goes to it. Esc stops the recording and brings back the key it had, and on a page
+  with a sheet behind it, also goes back to that sheet. A key that makes a shortcut ends the recording, sends
+  `<id> <key>`, and moves the focus past the field.
 - While a sheet with a `hotkey` field shows, Openspot's own keys are off, so only a press of a button saves a key, and a
   key that nothing on the sheet takes does nothing.
 - The line under the keycaps comes from Openspot: whether the key is free, what macOS or another spot does with it, or

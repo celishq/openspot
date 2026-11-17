@@ -107,19 +107,21 @@ final class WelcomeLaunchTests: XCTestCase {
         XCTAssertEqual(model.files.config.read().panelKey, .standard)
     }
 
-    func testEscRecordsAndEscAgainBringsTheKeyBack() async throws {
+    func testEscRecordsAndEscAgainGoesBackToTheWelcomeWithTheKeyKept() async throws {
         try await launch()
         try await toKeyPage()
 
         XCTAssertTrue(press("escape"))
         XCTAssertEqual(model.recording, "key")
+        XCTAssertEqual(model.hint, "Esc Back")
         XCTAssertTrue(press("escape"))
-        await nextTurn()
 
+        try await wait("the welcome again") { self.model.flow.index == 0 && self.focus == "next" }
         XCTAssertNil(model.recording)
-        XCTAssertEqual(keyField?.value, "ctrl+space")
         XCTAssertEqual(model.openSheetID, Self.welcome)
-        XCTAssertEqual(focus, "use")
+        XCTAssertEqual(model.files.config.read().panelKey, .standard)
+        XCTAssertTrue(press("return"))
+        try await wait("the key page again") { self.keyField?.value == "ctrl+space" && self.focus == "use" }
     }
 
     func testANewKeyIsSavedByReturnAndTheToastNamesIt() async throws {
