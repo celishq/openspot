@@ -258,6 +258,13 @@ public struct Spot: Equatable, Sendable {
         return spot
     }
 
+    func restricted() -> Spot {
+        var spot = self
+        spot.isRestricted = true
+        spot.view = nil
+        return spot
+    }
+
     func builtIn() -> Spot {
         var spot = self
         spot.isBuiltIn = true

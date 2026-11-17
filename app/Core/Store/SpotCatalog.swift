@@ -33,12 +33,14 @@ public struct SpotCatalog: Sendable {
     let folder: SpotsFolder
     let arrangement: SpotArrangement
     let stores: [Store]
+    let trust: SpotTrust
 
-    public init(published: URL, folder: SpotsFolder, arrangement: SpotArrangement, stores: [Store]) {
+    public init(published: URL, folder: SpotsFolder, arrangement: SpotArrangement, stores: [Store], trust: SpotTrust = SpotTrust()) {
         self.published = published
         self.folder = folder
         self.arrangement = arrangement
         self.stores = stores
+        self.trust = trust
     }
 
     public static func url(environment: [String: String], home: URL = FileManager.default.homeDirectoryForCurrentUser) -> URL {
@@ -63,11 +65,11 @@ public struct SpotCatalog: Sendable {
             item(spot, id: SpotsFolder.coreID(of: spot), isAdded: enabled.contains(SpotsFolder.coreID(of: spot)), isCore: true)
         }
         let mine = own.files.compactMap { file in
-            file.spots.first.map { item($0, id: file.id, isAdded: !disabled.contains(file.id), publication: publications[$0.id]) }
+            file.spots.first.map { item(trust.applied(to: $0), id: file.id, isAdded: !disabled.contains(file.id), publication: publications[$0.id]) }
         }
         let stored = stores.flatMap { store in
             ((try? SpotsFolder(url: store.url).scan())?.files ?? []).filter { !ownIDs.contains($0.id) }.compactMap { file in
-                file.spots.first.map { item($0, id: file.id, isAdded: false, store: store) }
+                file.spots.first.map { item(store.isBuiltIn ? $0 : $0.restricted(), id: file.id, isAdded: false, store: store) }
             }
         }
         var seen = Set<String>()

@@ -227,7 +227,8 @@ public final class SpotsModel {
     @ObservationIgnored private var load = SpotLoad.empty
     @ObservationIgnored private var loading: Task<Void, Never>?
     @ObservationIgnored private var lastScan = ScanResult(files: [], refused: [])
-    @ObservationIgnored private var loaded: (stamp: [String: [Int]], hosted: [Spot])?
+    @ObservationIgnored private var loaded: (stamp: [String: [Int]], hosted: [Spot], trust: SpotTrust)?
+    @ObservationIgnored private(set) var trust = SpotTrust()
     @ObservationIgnored private(set) var kept = KeptConfig() {
         didSet {
             if kept.config.settings != oldValue.config.settings { runs.take(settings: kept.config.settings) }
@@ -309,11 +310,15 @@ public final class SpotsModel {
         let config = files.config
         let folder = folder
         let secrets = files.secrets
+        let lock = SpotLock.standard(environment: files.environment, home: files.home)
+        let account = files.account
+        let store = Store.builtIn(environment: files.environment)
         let task = Task {
             await previous?.value
             let start = kept
-            let (next, load) = await Self.read(config, folder, secrets)
+            let (next, load, trust) = await Self.read(config, folder, secrets, lock, account, store)
             self.load = load
+            self.trust = trust
             let id = selectedEntry?.id
             reload(patching: nil, to: kept == start ? next : kept)
             landSearch()
@@ -324,9 +329,9 @@ public final class SpotsModel {
     }
 
     @concurrent
-    private nonisolated static func read(_ config: ConfigFile, _ folder: SpotsFolder, _ secrets: SecretStore) async -> (KeptConfig, SpotLoad) {
+    private nonisolated static func read(_ config: ConfigFile, _ folder: SpotsFolder, _ secrets: SecretStore, _ lock: SpotLock, _ account: AccountStore, _ store: Store?) async -> (KeptConfig, SpotLoad, SpotTrust) {
         _ = try? secrets.read()
-        return (config.readKept(), KeptScan.shared.load(folder))
+        return (config.readKept(), KeptScan.shared.load(folder), SpotTrust.read(lock: lock, account: account, store: store))
     }
 
     func reload(patching ids: Set<String>?, to next: KeptConfig) {
@@ -336,10 +341,11 @@ public final class SpotsModel {
         kept = next
         let folder = files.folder(config)
         let hosted = (load.hasAppSpots ? [account.spot] : []) + (reviewed.map { [$0.spot] } ?? [])
-        guard loaded.map({ $0.stamp != load.stamp || $0.hosted != hosted }) ?? true || !isSameConfig else { return holdAssignedKeys(config) }
+        guard loaded.map({ $0.stamp != load.stamp || $0.hosted != hosted || $0.trust != trust }) ?? true || !isSameConfig else { return holdAssignedKeys(config) }
         var scan = (try? load.result(enabled: folder.enabled, disabled: folder.disabled, hosted: hosted)) ?? ScanResult(files: [SpotFile(id: "openspot", spots: hosted)], refused: [])
         let faults = load.faultSpots(of: scan, prompt: host.agentPrompt(for: folder.url))
         if !faults.isEmpty { scan.files.append(SpotFile(id: FaultSpot.fileID, spots: faults)) }
+        scan.restrict(by: trust)
         scan.addSettings(in: files.config, secrets: files.secrets, read: config)
         let carded = Set(faults.map(\.id))
         let problems = scan.refused.filter { !carded.contains($0.file) }.map { "\($0.file) was not loaded: \($0.reason)" }
@@ -348,7 +354,7 @@ public final class SpotsModel {
         for script in scan.scripts where script.host == nil { stamps[script.id] = load.stamp(of: script) }
         runs.take(scan, menuBar: config.arrangement.menuBar, stamps: stamps)
         lastScan = scan
-        loaded = (load.stamp, hosted)
+        loaded = (load.stamp, hosted, trust)
         let others = ids.map { ids in { (stamps: [String: [Int]]) in stamps.filter { !ids.contains($0.key) } } }
         let isOnlyNamed = others.map { $0(stamps) == $0(fileStamps) } ?? false
         fileStamps = stamps

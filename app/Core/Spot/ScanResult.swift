@@ -41,6 +41,10 @@ public struct ScanResult: Equatable, Sendable {
         files = files.map { SpotFile(id: $0.id, spots: $0.spots.map { $0.takingSettings(in: config, secrets: secrets).withIcon(read.setting(ReservedSetting.icon, of: $0.id)) }) }
     }
 
+    mutating func restrict(by trust: SpotTrust) {
+        files = files.map { SpotFile(id: $0.id, spots: $0.spots.map(trust.applied)) }
+    }
+
     mutating func keepOpenedOffTheGrid() {
         let opened = Set(files.flatMap(\.spots).compactMap(\.opens))
         files = files.map { SpotFile(id: $0.id, spots: $0.spots.map { opened.contains($0.id) ? $0.offTheGrid() : $0 }) }
