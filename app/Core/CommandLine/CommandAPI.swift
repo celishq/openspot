@@ -61,19 +61,19 @@ public final class CommandAPI: @unchecked Sendable {
         return call
     }
 
-    public func work(for request: CommandRequest, input: @escaping @Sendable () async -> String, isSandboxed: Bool = false, output: CommandOutput? = nil) -> Work? {
+    public func work(for request: CommandRequest, input: @escaping @Sendable () async -> String, output: CommandOutput? = nil) -> Work? {
         guard let call = call(of: request) else { return nil }
-        return work(for: admit(call, request: request), request: request, input: input, isSandboxed: isSandboxed, output: output)
+        return work(for: admit(call, request: request), request: request, input: input, output: output)
     }
 
-    public func work(for call: CommandLineCall, request: CommandRequest, input: @escaping @Sendable () async -> String, isSandboxed: Bool = false, output: CommandOutput? = nil) -> Work? {
+    public func work(for call: CommandLineCall, request: CommandRequest, input: @escaping @Sendable () async -> String, output: CommandOutput? = nil) -> Work? {
         guard let output else {
             let kept = CommandOutput()
-            guard let work = work(for: call, request: request, input: input, isSandboxed: isSandboxed, output: kept) else { return nil }
+            guard let work = work(for: call, request: request, input: input, output: kept) else { return nil }
             return { kept.answer(ending: await work()) }
         }
         let caller = caller(of: request)
-        if call.rule.flags.contains(.startsScripts), isSandboxed || caller?.isRestricted == true { return nil }
+        if call.rule.flags.contains(.startsScripts), caller?.isRestricted == true { return nil }
         let (spot, reason) = values(of: request)
         let work = call.call.work(in: CallContext(
             mac: mac, api: self, request: request, environment: places.environment, app: app, runs: runs, account: account, secrets: places.secrets, raise: raise, caller: caller,

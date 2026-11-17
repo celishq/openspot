@@ -33,7 +33,7 @@ struct CallContext {
     }
 
     var fence: (caller: CallerTokens.Caller, mode: Sandbox)? {
-        guard let caller, caller.isRestricted, !caller.uses.contains(.files) else { return nil }
+        guard let caller, caller.isRestricted else { return nil }
         return (caller, Sandbox(uses: caller.uses))
     }
 }

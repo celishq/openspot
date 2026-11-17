@@ -250,11 +250,17 @@ final class CommandAPITests: XCTestCase {
         }
     }
 
-    func testACallThatStartsScriptsForASandboxedCallerRunsAloneInItsSandbox() throws {
+    @MainActor
+    func testACallThatStartsScriptsForARestrictedCallerRunsAloneInItsSandbox() throws {
+        let runs = SpotRuns()
+        let api = CommandAPI(mac: host, places: .test(), app: FakeRunningApp(), runs: runs, rates: .offline)
+        let spot = Spot(id: "notes", name: "Notes", url: URL(fileURLWithPath: "/notes.sh"))
+        let restricted = runs.tokens.issue(for: spot.restricted(.unknown))
+        let free = runs.tokens.issue(for: spot)
         for arguments in [["check", "spots"], ["check", "spots", "--json"], ["spot", "run", "notes"], ["playground", "open"]] {
             let call = try XCTUnwrap(CommandLineCall(arguments: arguments, environment: [:]))
-            XCTAssertNil(CommandAPI(mac: host, places: .test(), app: FakeRunningApp(), rates: .offline).work(for: call, request: .test(), input: { "" }, isSandboxed: true), arguments.joined(separator: " "))
-            XCTAssertNotNil(CommandAPI(mac: host, places: .test(), app: FakeRunningApp(), rates: .offline).work(for: call, request: .test(), input: { "" }), arguments.joined(separator: " "))
+            XCTAssertNil(api.work(for: call, request: CommandRequest(arguments: arguments, folder: "/", token: restricted), input: { "" }), arguments.joined(separator: " "))
+            XCTAssertNotNil(api.work(for: call, request: CommandRequest(arguments: arguments, folder: "/", token: free), input: { "" }), arguments.joined(separator: " "))
         }
     }
 }

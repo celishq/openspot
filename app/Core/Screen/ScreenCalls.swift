@@ -27,7 +27,7 @@ struct ScreenCalls {
         for path in [capture.file, capture.events].compactMap({ $0 }) {
             let file = path.hasPrefix("/") ? URL(fileURLWithPath: path) : folder.appendingPathComponent(path)
             let climbs = path.split(separator: "/").contains("..")
-            guard climbs || !fence.mode.allows(writing: file, data: data, temp: own["TMPDIR"] ?? NSTemporaryDirectory(), home: own["HOME"] ?? NSHomeDirectory()) else { continue }
+            guard climbs || !fence.mode.allows(writing: file, data: data, temp: own["TMPDIR"] ?? NSTemporaryDirectory(), home: own["HOME"] ?? NSHomeDirectory(), kept: Sandbox.kept(in: own)) else { continue }
             let line = "Openspot keeps \(fence.caller.name) from writing \(file.path). Name a file in its data folder or a temp folder, or add `uses=files` to its header.\n"
             return { CommandAnswer(errors: line, code: 1) }
         }

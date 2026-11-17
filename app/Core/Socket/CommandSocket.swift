@@ -70,7 +70,7 @@ public final class CommandSocket: @unchecked Sendable {
         }
         let request = api.request(asked, from: peer)
         let output = CommandOutput { text, isError in link.notify(isError ? "stderr" : "stdout", text: text) }
-        guard let work = api.work(for: request, input: { await link.stdin() }, isSandboxed: CallerTokens.isSandboxedApart(peer), output: output) else {
+        guard let work = api.work(for: request, input: { await link.stdin() }, output: output) else {
             return link.end(fault(aloneCode, "Run this call in a process of its own.", id: request.id))
         }
         let stop = CommandStop()

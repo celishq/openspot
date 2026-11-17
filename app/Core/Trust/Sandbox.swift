@@ -24,15 +24,21 @@ struct Sandbox: Equatable, Sendable {
 
     func words(in environment: [String: String]) -> [String] {
         let home = environment["HOME"] ?? NSHomeDirectory()
-        let homeURL = URL(fileURLWithPath: home, isDirectory: true)
-        let kept = [SpotsFolder.config(environment: environment, home: homeURL).path, SpotsFolder.standard(environment: environment, home: homeURL).url.path]
-        return words(data: environment["OPENSPOT_DATA"] ?? NSTemporaryDirectory(), temp: environment["TMPDIR"] ?? NSTemporaryDirectory(), home: home, kept: kept)
+        return words(data: environment["OPENSPOT_DATA"] ?? NSTemporaryDirectory(), temp: environment["TMPDIR"] ?? NSTemporaryDirectory(), home: home, kept: Self.kept(in: environment))
     }
 
-    func allows(writing file: URL, data: String?, temp: String, home: String) -> Bool {
-        guard let folders = writable(data: data, temp: temp, home: home) else { return true }
+    static func kept(in environment: [String: String]) -> [String] {
+        let home = URL(fileURLWithPath: environment["HOME"] ?? NSHomeDirectory(), isDirectory: true)
+        return [SpotsFolder.config(environment: environment, home: home).path, SpotsFolder.standard(environment: environment, home: home).url.path]
+    }
+
+    func allows(writing file: URL, data: String?, temp: String, home: String, kept: [String]) -> Bool {
         let path = Self.real(file.standardizedFileURL.path)
-        return folders.contains { path == $0.path || path.hasPrefix($0.path.hasSuffix("/") ? $0.path : $0.path + "/") }
+        let holds = { (folder: String) in path == folder || path.hasPrefix(folder.hasSuffix("/") ? folder : folder + "/") }
+        if let data, holds(Self.real(data)) { return true }
+        if kept.map(Self.real).contains(where: holds) { return false }
+        guard let folders = writable(data: data, temp: temp, home: home) else { return true }
+        return folders.map(\.path).contains(where: holds)
     }
 
     private func writable(data: String?, temp: String, home: String) -> [(name: String, path: String)]? {

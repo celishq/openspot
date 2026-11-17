@@ -46,10 +46,6 @@ public final class CallerTokens: @unchecked Sendable {
         sandboxCheck?(process, nil, 0) == 1
     }
 
-    static func isSandboxedApart(_ process: pid_t) -> Bool {
-        isSandboxed(process) && !isSandboxed(getpid())
-    }
-
     public init() {
         records[Self.sandboxed] = Record(caller: Caller(id: "", name: "A sandboxed process", uses: [], restriction: .unknown))
     }

@@ -231,9 +231,11 @@ final class MacCallsTests: XCTestCase {
         let temp = try await answer(["screen", "shot", "display:1", "d.png"], fenced, in: FileManager.default.temporaryDirectory)
         let desktop = try await answer(["screen", "shot", "display:1", "e.png"], fenced, in: home.appendingPathComponent("Desktop"))
         let anywhere = try await answer(["screen", "shot", "display:1", "f.png"], free, in: outside)
+        let kept = SpotsFolder.config(environment: ProcessInfo.processInfo.environment, home: home)
+        let config = try await answer(["screen", "shot", "display:1", kept.appendingPathComponent("h.png").path], free, in: outside)
 
         XCTAssertEqual(shot.errors, "Openspot keeps Shots from writing \(outside.appendingPathComponent("a.png").path). Name a file in its data folder or a temp folder, or add `uses=files` to its header.\n")
-        XCTAssertEqual([shot.code, events.code, linked.code, climbed.code], [1, 1, 1, 1])
+        XCTAssertEqual([shot.code, events.code, linked.code, climbed.code, config.code], [1, 1, 1, 1, 1])
         XCTAssertEqual([own.code, temp.code, desktop.code, anywhere.code], [0, 0, 0, 0], own.errors + temp.errors + desktop.errors)
         XCTAssertEqual(acts.all, ["shot c.png in shots", "shot d.png in \(FileManager.default.temporaryDirectory.lastPathComponent)", "shot e.png in Desktop", "shot f.png in \(outside.lastPathComponent)"])
     }
