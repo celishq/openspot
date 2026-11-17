@@ -183,7 +183,7 @@ public struct StatsReport: Sendable {
         return "\(view.bodies) \(view.bodies == 1 ? "body" : "bodies") of its view\(split)\(String(format: "%.2f", each)) ms each"
     }
 
-    private static func time(_ seconds: TimeInterval) -> String {
+    static func time(_ seconds: TimeInterval) -> String {
         seconds < 1 ? "\(Int((seconds * 1000).rounded())) ms" : String(format: "%.1f s", seconds)
     }
 }

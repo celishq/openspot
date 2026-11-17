@@ -47,14 +47,21 @@ extension SpotsModel {
 
     func copyPrompt(changing entry: Entry) {
         let prompt = host.agentPrompt(for: folder.url)
-        let text = prompt.changing(file(of: entry), failure: entry.failure)
+        let file = file(of: entry)
         Task {
+            let evidence = SpotEvidence(of: entry.id, in: await Self.days(of: runs.usage, at: runs.now()), app: prompt.app)
+            let text = prompt.changing(file, failure: entry.failure, evidence: evidence)
             do {
                 host.confirm(try await prompt.copy(text, base: runs.environment))
             } catch {
                 host.notify("The prompt for \(entry.spot.name) was not copied. \(Self.reason(error))")
             }
         }
+    }
+
+    @concurrent
+    private nonisolated static func days(of usage: SpotUsage, at date: Date) async -> [SpotUsage.Day] {
+        usage.days(SpotEvidence.days, at: date)
     }
 
     func remove(_ entry: Entry) {

@@ -516,7 +516,7 @@ final class SpotVerbTests: XCTestCase {
         XCTAssertFalse(model.gridShade.dims(weather))
     }
 
-    func testCopyPromptForAICopiesTheFileAndTheLastFailure() async throws {
+    func testCopyPromptForAICopiesTheFileTheLastFailureAndTheStatsOfTheSpot() async throws {
         try script("ping", "echo 'Openspot cannot reach the server.' >&2; exit 1")
         let target = try await select("ping")
         model.tap("ping")
@@ -528,7 +528,9 @@ final class SpotVerbTests: XCTestCase {
 
         let prompt = try XCTUnwrap(saved("clipboard"))
         XCTAssertTrue(prompt.contains(spots.spotFile("ping").path))
-        XCTAssertTrue(prompt.contains("Ask me what to change"))
+        XCTAssertTrue(prompt.contains("Make every call pass"))
+        XCTAssertTrue(prompt.contains("What Openspot counted of this spot"))
+        XCTAssertFalse(prompt.contains("Ask me what to change"))
         XCTAssertTrue(prompt.contains("Openspot cannot reach the server."))
     }
 

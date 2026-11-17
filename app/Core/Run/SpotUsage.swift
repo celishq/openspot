@@ -98,6 +98,14 @@ public final class SpotUsage: @unchecked Sendable {
         }
     }
 
+    static func days(_ count: Int, runs: SpotRuns?, environment: [String: String]) async -> [Day] {
+        guard let runs else {
+            return days(count, at: Date(), in: AppPlaces(environment: environment, home: FileManager.default.homeDirectoryForCurrentUser, defaults: .standard).stats)
+        }
+        let now = await MainActor.run { runs.now() }
+        return runs.usage.days(count, at: now)
+    }
+
     func take(views spots: [Spot]) {
         let views = Dictionary(spots.compactMap { spot in spot.view.map { ($0, (id: spot.id, name: spot.name)) } }) { first, _ in first }
         lock.withLock { self.views = views }

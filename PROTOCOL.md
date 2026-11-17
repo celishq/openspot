@@ -1017,7 +1017,7 @@ The commands that try a spot are in [Try your spot](GUIDE.md#try-your-spot). The
 | `openspot render panel <file.png>`                 | Draws the panel with each installed spot on its grid.                                           |
 | `openspot render store <file.png>`                 | Draws the window of the Store with each spot as its card.                                       |
 | `openspot prompt new [words]...`                   | Prints a prompt that asks a coding agent to build a spot that does what the words say.          |
-| `openspot prompt change <id> [words]...`           | Prints a prompt that asks a coding agent to change a spot as the words say.                     |
+| `openspot prompt change <id> [words]...`           | Prints a prompt that asks a coding agent to change a spot as the words say, with what [Stats](#stats) counted of it over 14 days. With no words, its goal follows those counts. |
 | `openspot emoji list [--tone name]`                | Prints each emoji as a row, with its name in the language of the Mac.                           |
 | `openspot symbols list`                            | Prints each symbol of the Character Viewer as a row.                                            |
 | `openspot translate text [--from code] [--to code]` | Translates the text on stdin. `openspot translate languages` prints the languages it knows.     |
