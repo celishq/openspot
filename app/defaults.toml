@@ -76,3 +76,7 @@ grid = false
 [[spots]]
 id = "openspot/playground"
 grid = false
+
+[[spots]]
+id = "openspot/themes"
+grid = false
