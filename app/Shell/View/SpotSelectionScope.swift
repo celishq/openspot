@@ -1,6 +1,6 @@
 import SwiftUI
 
-struct SpotSelectedRow<Content: View>: View {
+struct SpotSelectionScope<Content: View>: View {
     let run: () -> String?
     @ViewBuilder let content: (String?) -> Content
 
