@@ -1,121 +1,24 @@
 [dark]
+background = "#000000"
 ink = "#FFFFFF"
+accent = "accent"
 highlight = "#FFFFFF"
-solid = "#FFFFFF"
-on-solid = "#000000"
 glyph-on-solid = "accent"
-glass = "#00000000"
-glass-tint = "#00000099"
-corner-fill = "#333333"
-window = "#292929"
-preview = "#4D4D4D"
 confirm = "#C72924"
-on-confirm = "#FFFFFF"
-backdrop-tint = "#00000040"
-fill = 0.1
-selected = 0.22
-disc = 0.2
-chip = 0.25
-control = 0.2
-track = 0.2
 
 [light]
+background = "#FFFFFF"
 ink = "#1C1C1C"
+accent = "accent"
 highlight = "#1C1C1C"
 solid = "#1F1F1F"
-on-solid = "#FFFFFF"
-glyph-on-solid = "#FFFFFF"
-glass = "#FFFFFF80"
-glass-tint = "#FFFFFF99"
-corner-fill = "#FAFAFA"
-window = "#EDEDED"
-preview = "#FAFAFA"
 confirm = "#C72924"
-on-confirm = "#FFFFFF"
-backdrop-tint = "#00000014"
-fill = 0.08
-selected = 0.12
-disc = 0.0
-chip = 0.1
-control = 0.09
-track = 0.12
 
-[shared]
-accent = "accent"
-good = "green"
-warn = "orange"
-bad = "red"
-picture-rim = "#FFFFFF40"
-lift-shadow = "#000000"
-foil = "#FFFFFF"
-publisher-rim = "#FFFFFF4D"
-publisher-pill-shine = "#FFFFFF73"
-engrave-on-dark = "#ECEEF4E6"
-engrave-on-light = "#12141ACC"
-catch-light-on-dark = "#00000099"
-catch-light-on-light = "#FFFFFF8C"
-secondary = 0.7
-drag-fill = 0.4
-hover = 0.08
-menu-dim = 0.4
-lift-shadow-strength = 0.25
-unfocused-card = 0.35
-stale = 0.5
-old-bar = 0.55
-press-fill = 0.12
-menu-bar-track = 0.25
-fade-near = 0.6
-fade-far = 0.2
-publisher-pill = 0.1
-publisher-pill-hover = 0.18
-publisher-pill-ring = 0.22
-
-[glass]
-variant = "clear"
-fade-reach = 3.0
-edge-near = 1.0
-edge-middle = 0.7
-edge-far = 0.45
-
-[backdrop]
-look = "blur"
+[look]
+glass = "clear"
+backdrop = "blur"
 reach = "tiles"
-blur = 3
-size = 60
-padding = 0
-
-[space]
-cell = 64
-column-gap = 11
-row-gap = 12
-padding = 13
-glyph = 36
-list-row = 40
-list-row-gap = 6
-menu-row = 32
-menu-padding = 8
-
-[radius]
-card = 26
-window = 16
-media = 8
-corner-mark = 6
-
-[type]
-title = 13
-body = 13
-detail = 11
-input = 14
-
-[motion]
-grow = 0.15
-shrink = 0.2
-move = 0.25
-fade-in = 0.1
-fade-out = 0.12
-press = 0.2
-settle = 0.25
-press-bounce = 0.2
-pressed-scale = 1.04
-lifted-scale = 1.05
-focused-scale = 1.04
+corner = 26
+density = 1
+type = 13
+speed = 1

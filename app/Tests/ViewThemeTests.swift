@@ -4,17 +4,15 @@ import XCTest
 final class ViewThemeTests: XCTestCase {
     func testAViewTakesTheSpaceRadiiAndPressOfItsTheme() {
         let theme = Theme(text: """
-        [space]
+        [look]
+        corner = 30
+
+        [advanced]
         cell = 70
         column-gap = 10
         padding = 20
         list-row = 44
-
-        [radius]
-        card = 30
-        media = 9
-
-        [motion]
+        media-corner = 9
         press = 0.3
         press-bounce = 0.4
         """)

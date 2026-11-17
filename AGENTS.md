@@ -14,9 +14,9 @@
   - `Tests/` — XCTest, through `@testable import OpenspotCore`.
 - `app/Keywords/` holds the CLDR keywords of emoji and symbols, one xz file per language. `scripts/emoji-keywords.py` writes
   it from a pinned CLDR version, and the build copies it into the app.
-- `app/Themes/` holds the built-in themes, each in `<name>.theme/theme.toml`. Openspot, in `openspot.theme`, sets every key,
-  and each other built-in theme sets only the keys it changes. The build copies them into the app.
-  [Change the look of Openspot](GUIDE.md#change-the-look-of-openspot) lists its sections and says how a person changes it.
+- `app/Themes/` holds the built-in themes, each in `<name>.theme/theme.toml`. Openspot, in `openspot.theme`, sets every choice,
+  and each other built-in theme sets only the choices it changes. The build copies them into the app.
+  [Change the look of Openspot](GUIDE.md#change-the-look-of-openspot) lists its keys and says how a person changes it.
 - `app/Help/` holds the guide of each `openspot` noun that has one, which `openspot help <noun>` prints. The build copies it
   into the app.
 - `spots/` holds the source of the core spots, each a `<name>.spot` folder. The build copies it into the app, and they run
@@ -90,9 +90,11 @@ Settings, `⌘Y` its History, `⌘K` the menu of all acts. Openspot makes these 
 - Logic that a window needs goes in `Core/`. Only drawing and window handling go in `Shell/`.
 - Each size, colour, strength, font and motion value has one name in a token file: `SpotTokens` (measured base values in
   `Core/Grid/SpotTokens.swift`, formulas over them in `Core/Grid/SpotTokens+Derived.swift`, sizes of single parts in
-  `Core/Grid/SpotTokens+Parts.swift`), `SpotTheme`, `SpotType` and `MotionTokens`. The file `app/Themes/openspot.theme/theme.toml` is the
-  source of each value it names, so a new theme is one more file. `SpotTheme`, `SpotType`, `SpotTokens` and `MotionTokens`
-  read those values from it, and the defaults in `Core/Theme/Theme+Sizes.swift` only mirror it, which `ThemeTests` checks. `make verify` runs `scripts/check-tokens.sh`, which fails
+  `Core/Grid/SpotTokens+Parts.swift`), `SpotTheme`, `SpotType` and `MotionTokens`. A theme file names only the choices of a theme, so a
+  new theme is one more file. `Core/Theme/` works out every other value from them by rules anchored on the measured values
+  of Openspot, and `SpotTheme`, `SpotType`, `SpotTokens` and `MotionTokens` read the result. The defaults of the rules
+  mirror the choices in `app/Themes/openspot.theme/theme.toml`, which `ThemeTests` checks. A value that no theme chooses,
+  such as a colour of one card, is a constant in a token file. `make verify` runs `scripts/check-tokens.sh`, which fails
   on a number or a colour written for the look in `Shell/`, outside the token files, `Shell/Picture`, `Shell/Mac` and
   `Shell/Tools`.
 - Glass is system glass, drawn by `spotGlass`, which wraps `glassEffect`. Each shape draws its own glass, outside a

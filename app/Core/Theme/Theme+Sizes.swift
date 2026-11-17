@@ -2,93 +2,124 @@ import Foundation
 
 extension Theme {
     public struct Layout: Equatable, Sendable {
-        public fileprivate(set) var space = Space()
-        public fileprivate(set) var radius = Radius()
-        public fileprivate(set) var type = TypeSizes()
-        public fileprivate(set) var motion = Motion()
-        public fileprivate(set) var backdrop = Backdrop()
+        public let space: Space
+        public let radius: Radius
+        public let type: TypeSizes
+        public let motion: Motion
+        public let backdrop: Backdrop
 
-        public init() {}
+        static let exactKinds: [(String, ThemeKind)] = [
+            "cell", "column-gap", "row-gap", "padding", "glyph", "list-row", "list-row-gap", "menu-row", "menu-padding",
+            "window-corner", "media-corner", "mark-corner", "title", "body", "detail", "input"
+        ].map { ($0, ThemeKind.points) } + ["grow", "shrink", "move", "fade-in", "fade-out", "press", "settle"].map { ($0, ThemeKind.seconds) }
+            + [("press-bounce", .strength), ("pressed-scale", .scale), ("lifted-scale", .scale), ("focused-scale", .scale)]
+            + [("backdrop-blur", .points), ("halo-size", .haloSize), ("halo-padding", .haloPadding)]
 
-        static var fields: [ThemeKey: ThemeField<Layout>] {
-            [
-                named("space", \.space, Space.fields), named("radius", \.radius, Radius.fields), named("type", \.type, TypeSizes.fields),
-                named("motion", \.motion, Motion.fields), named("backdrop", \.backdrop, Backdrop.fields)
-            ]
-                .reduce(into: [:]) { all, part in all.merge(part) { one, _ in one } }
+        public init() {
+            self.init(choices: ThemeValues(), exact: ThemeValues())
+        }
+
+        init(choices: ThemeValues, exact: ThemeValues) {
+            let pinned = { (key: String) in exact.number("advanced", key) }
+            space = Space(density: choices.number("look", "density") ?? 1, pinned: pinned)
+            radius = Radius(corner: choices.number("look", "corner") ?? Radius.openspotCorner, pinned: pinned)
+            type = TypeSizes(base: choices.number("look", "type") ?? TypeSizes.openspotBody, pinned: pinned)
+            motion = Motion(speed: choices.number("look", "speed") ?? 1, pinned: pinned)
+            backdrop = Backdrop(look: choices.word("look", "backdrop") ?? .blur, reach: choices.word("look", "reach") ?? .tiles, pinned: pinned)
         }
     }
 
     public struct Space: Equatable, Sendable {
-        public fileprivate(set) var cell = 64.0
-        public fileprivate(set) var columnGap = 11.0
-        public fileprivate(set) var rowGap = 12.0
-        public fileprivate(set) var padding = 13.0
-        public fileprivate(set) var glyph = 36.0
-        public fileprivate(set) var listRow = 40.0
-        public fileprivate(set) var listRowGap = 6.0
-        public fileprivate(set) var menuRow = 32.0
-        public fileprivate(set) var menuPadding = 8.0
+        public let cell: Double
+        public let columnGap: Double
+        public let rowGap: Double
+        public let padding: Double
+        public let glyph: Double
+        public let listRow: Double
+        public let listRowGap: Double
+        public let menuRow: Double
+        public let menuPadding: Double
 
-        public init() {}
-
-        static var fields: [String: ThemeField<Space>] {
-            [
-                "cell": .number(.points, \.cell), "column-gap": .number(.points, \.columnGap), "row-gap": .number(.points, \.rowGap),
-                "padding": .number(.points, \.padding), "glyph": .number(.points, \.glyph), "list-row": .number(.points, \.listRow),
-                "list-row-gap": .number(.points, \.listRowGap), "menu-row": .number(.points, \.menuRow), "menu-padding": .number(.points, \.menuPadding)
-            ]
+        init(density: Double, pinned: @escaping (String) -> Double?) {
+            let gap = { (key: String, base: Double) in pinned(key) ?? (base * density).rounded() }
+            cell = pinned("cell") ?? 64
+            columnGap = gap("column-gap", 11)
+            rowGap = gap("row-gap", 12)
+            padding = gap("padding", 13)
+            glyph = pinned("glyph") ?? 36
+            listRow = pinned("list-row") ?? 40
+            listRowGap = gap("list-row-gap", 6)
+            menuRow = pinned("menu-row") ?? 32
+            menuPadding = gap("menu-padding", 8)
         }
     }
 
     public struct Radius: Equatable, Sendable {
-        public fileprivate(set) var card = 26.0
-        public fileprivate(set) var window = 16.0
-        public fileprivate(set) var media = 8.0
-        public fileprivate(set) var cornerMark = 6.0
+        static let openspotCorner = 26.0
 
-        public init() {}
+        public let card: Double
+        public let window: Double
+        public let media: Double
+        public let cornerMark: Double
 
-        static var fields: [String: ThemeField<Radius>] {
-            ["card": .number(.points, \.card), "window": .number(.points, \.window), "media": .number(.points, \.media), "corner-mark": .number(.points, \.cornerMark)]
+        init(corner: Double, pinned: @escaping (String) -> Double?) {
+            card = corner
+            window = pinned("window-corner") ?? corner * 16 / Self.openspotCorner
+            media = pinned("media-corner") ?? corner * 8 / Self.openspotCorner
+            cornerMark = pinned("mark-corner") ?? corner * 6 / Self.openspotCorner
         }
     }
 
     public struct TypeSizes: Equatable, Sendable {
-        public fileprivate(set) var title = 13.0
-        public fileprivate(set) var body = 13.0
-        public fileprivate(set) var detail = 11.0
-        public fileprivate(set) var input = 14.0
+        static let openspotBody = 13.0
 
-        public init() {}
+        public let title: Double
+        public let body: Double
+        public let detail: Double
+        public let input: Double
 
-        static var fields: [String: ThemeField<TypeSizes>] {
-            ["title": .number(.points, \.title), "body": .number(.points, \.body), "detail": .number(.points, \.detail), "input": .number(.points, \.input)]
+        public init() {
+            self.init(base: Self.openspotBody) { _ in nil }
+        }
+
+        init(base: Double, pinned: @escaping (String) -> Double?) {
+            title = pinned("title") ?? base
+            body = pinned("body") ?? base
+            detail = pinned("detail") ?? base - 2
+            input = pinned("input") ?? base + 1
         }
     }
 
     public struct Motion: Equatable, Sendable {
-        public fileprivate(set) var grow = 0.15
-        public fileprivate(set) var shrink = 0.2
-        public fileprivate(set) var move = 0.25
-        public fileprivate(set) var fadeIn = 0.1
-        public fileprivate(set) var fadeOut = 0.12
-        public fileprivate(set) var press = 0.2
-        public fileprivate(set) var settle = 0.25
-        public fileprivate(set) var pressBounce = 0.2
-        public fileprivate(set) var pressedScale = 1.04
-        public fileprivate(set) var liftedScale = 1.05
-        public fileprivate(set) var focusedScale = 1.04
+        public let grow: Double
+        public let shrink: Double
+        public let move: Double
+        public let fadeIn: Double
+        public let fadeOut: Double
+        public let press: Double
+        public let settle: Double
+        public let pressBounce: Double
+        public let pressedScale: Double
+        public let liftedScale: Double
+        public let focusedScale: Double
 
-        public init() {}
+        public init() {
+            self.init(speed: 1) { _ in nil }
+        }
 
-        static var fields: [String: ThemeField<Motion>] {
-            [
-                "grow": .number(.seconds, \.grow), "shrink": .number(.seconds, \.shrink), "move": .number(.seconds, \.move),
-                "fade-in": .number(.seconds, \.fadeIn), "fade-out": .number(.seconds, \.fadeOut), "press": .number(.seconds, \.press),
-                "settle": .number(.seconds, \.settle), "press-bounce": .number(.strength, \.pressBounce),
-                "pressed-scale": .number(.scale, \.pressedScale), "lifted-scale": .number(.scale, \.liftedScale), "focused-scale": .number(.scale, \.focusedScale)
-            ]
+        init(speed: Double, pinned: @escaping (String) -> Double?) {
+            let time = { (key: String, base: Double) in pinned(key) ?? base / speed }
+            grow = time("grow", 0.15)
+            shrink = time("shrink", 0.2)
+            move = time("move", 0.25)
+            fadeIn = time("fade-in", 0.1)
+            fadeOut = time("fade-out", 0.12)
+            press = time("press", 0.2)
+            settle = time("settle", 0.25)
+            pressBounce = pinned("press-bounce") ?? 0.2
+            pressedScale = pinned("pressed-scale") ?? 1.04
+            liftedScale = pinned("lifted-scale") ?? 1.05
+            focusedScale = pinned("focused-scale") ?? 1.04
         }
     }
 }

@@ -1,26 +1,27 @@
+import OpenspotCore
 import SwiftUI
 
 extension SpotTheme {
     static let mask = Color.black
-    @MainActor static var stale: Double { loaded.shared.stale }
-    @MainActor static var oldBar: Double { loaded.shared.oldBar }
-    @MainActor static var pressFill: Double { loaded.shared.pressFill }
-    @MainActor static var menuBarTrack: Double { loaded.shared.menuBarTrack }
-    @MainActor static var fadeNear: Double { loaded.shared.fadeNear }
-    @MainActor static var fadeFar: Double { loaded.shared.fadeFar }
+    static let stale = 0.5
+    static let oldBar = 0.55
+    static let pressFill = 0.12
+    static let menuBarTrack = 0.25
+    static let fadeNear = 0.6
+    static let fadeFar = 0.2
     static let fadeSteps = 3.0
     static let markFill = 0.3
-    @MainActor static var liftShadowColor: Color { loaded.liftShadow }
+    static let liftShadowColor = ThemeColor(text: "#000000")!.color
     static let liftShadowDrop: CGFloat = 4
 
-    @MainActor static var foilBase: Color { loaded.foil }
-    @MainActor static var publisherRim: Color { loaded.publisherRim }
-    @MainActor static var publisherPill: Double { loaded.shared.publisherPill }
-    @MainActor static var publisherPillHover: Double { loaded.shared.publisherPillHover }
-    @MainActor static var publisherPillRing: Double { loaded.shared.publisherPillRing }
-    @MainActor static var publisherPillShine: Color { loaded.publisherPillShine }
-    @MainActor static var engraveDark: Color { loaded.engraveOnDark }
-    @MainActor static var engraveLight: Color { loaded.engraveOnLight }
-    @MainActor static var catchLightDark: Color { loaded.catchLightOnDark }
-    @MainActor static var catchLightLight: Color { loaded.catchLightOnLight }
+    static let foilBase = ThemeColor(text: "#FFFFFF")!.color
+    static let publisherRim = ThemeColor(text: "#FFFFFF4D")!.color
+    static let publisherPill = 0.1
+    static let publisherPillHover = 0.18
+    static let publisherPillRing = 0.22
+    static let publisherPillShine = ThemeColor(text: "#FFFFFF73")!.color
+    static let engraveDark = ThemeColor(text: "#ECEEF4E6")!.color
+    static let engraveLight = ThemeColor(text: "#12141ACC")!.color
+    static let catchLightDark = ThemeColor(text: "#00000099")!.color
+    static let catchLightLight = ThemeColor(text: "#FFFFFF8C")!.color
 }

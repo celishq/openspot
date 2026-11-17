@@ -1,136 +1,34 @@
 import Foundation
 
 public struct Theme: Equatable, Sendable {
-    public struct Look: Equatable, Sendable {
-        public fileprivate(set) var dark = Appearance()
-        public fileprivate(set) var light = Appearance()
-        public fileprivate(set) var shared = Shared()
-        public fileprivate(set) var glass = Glass()
-
-        public init() {}
-
-        fileprivate static var fields: [ThemeKey: ThemeField<Look>] {
-            [named("dark", \.dark, Appearance.fields), named("light", \.light, Appearance.fields), named("shared", \.shared, Shared.fields), named("glass", \.glass, Glass.fields)]
-                .reduce(into: [:]) { all, part in all.merge(part) { one, _ in one } }
-        }
-    }
-
-    public struct Appearance: Equatable, Sendable {
-        public fileprivate(set) var ink = ThemeColor.none
-        public fileprivate(set) var solid = ThemeColor.none
-        public fileprivate(set) var onSolid = ThemeColor.none
-        public fileprivate(set) var glyphOnSolid = ThemeColor.none
-        public fileprivate(set) var glass = ThemeColor.none
-        public fileprivate(set) var glassTint = ThemeColor.none
-        public fileprivate(set) var cornerFill = ThemeColor.none
-        public fileprivate(set) var window = ThemeColor.none
-        public fileprivate(set) var preview = ThemeColor.none
-        public fileprivate(set) var confirm = ThemeColor.none
-        public fileprivate(set) var onConfirm = ThemeColor.none
-        public fileprivate(set) var backdropTint = ThemeColor.none
-        public fileprivate(set) var highlight = ThemeColor.none
-        public fileprivate(set) var fill = 0.0
-        public fileprivate(set) var selected = 0.0
-        public fileprivate(set) var disc = 0.0
-        public fileprivate(set) var chip = 0.0
-        public fileprivate(set) var control = 0.0
-        public fileprivate(set) var track = 0.0
-
-        fileprivate static var fields: [String: ThemeField<Appearance>] {
-            [
-                "ink": .colour(\.ink), "solid": .colour(\.solid), "on-solid": .colour(\.onSolid), "glyph-on-solid": .colour(\.glyphOnSolid),
-                "glass": .colour(\.glass), "glass-tint": .colour(\.glassTint), "corner-fill": .colour(\.cornerFill), "window": .colour(\.window),
-                "preview": .colour(\.preview), "confirm": .colour(\.confirm), "on-confirm": .colour(\.onConfirm), "backdrop-tint": .colour(\.backdropTint),
-                "highlight": .colour(\.highlight),
-                "fill": .number(.strength, \.fill), "selected": .number(.strength, \.selected), "disc": .number(.strength, \.disc),
-                "chip": .number(.strength, \.chip), "control": .number(.strength, \.control), "track": .number(.strength, \.track)
-            ]
-        }
-    }
-
-    public struct Shared: Equatable, Sendable {
-        public fileprivate(set) var accent = ThemeColor.none
-        public fileprivate(set) var good = ThemeColor.none
-        public fileprivate(set) var warn = ThemeColor.none
-        public fileprivate(set) var bad = ThemeColor.none
-        public fileprivate(set) var pictureRim = ThemeColor.none
-        public fileprivate(set) var liftShadow = ThemeColor.none
-        public fileprivate(set) var foil = ThemeColor.none
-        public fileprivate(set) var publisherRim = ThemeColor.none
-        public fileprivate(set) var publisherPillShine = ThemeColor.none
-        public fileprivate(set) var engraveOnDark = ThemeColor.none
-        public fileprivate(set) var engraveOnLight = ThemeColor.none
-        public fileprivate(set) var catchLightOnDark = ThemeColor.none
-        public fileprivate(set) var catchLightOnLight = ThemeColor.none
-        public fileprivate(set) var secondary = 0.0
-        public fileprivate(set) var dragFill = 0.0
-        public fileprivate(set) var hover = 0.0
-        public fileprivate(set) var menuDim = 0.0
-        public fileprivate(set) var liftShadowStrength = 0.0
-        public fileprivate(set) var unfocusedCard = 0.0
-        public fileprivate(set) var stale = 0.0
-        public fileprivate(set) var oldBar = 0.0
-        public fileprivate(set) var pressFill = 0.0
-        public fileprivate(set) var menuBarTrack = 0.0
-        public fileprivate(set) var fadeNear = 0.0
-        public fileprivate(set) var fadeFar = 0.0
-        public fileprivate(set) var publisherPill = 0.0
-        public fileprivate(set) var publisherPillHover = 0.0
-        public fileprivate(set) var publisherPillRing = 0.0
-
-        fileprivate static var fields: [String: ThemeField<Shared>] {
-            [
-                "accent": .colour(\.accent), "good": .colour(\.good), "warn": .colour(\.warn), "bad": .colour(\.bad),
-                "picture-rim": .colour(\.pictureRim), "lift-shadow": .colour(\.liftShadow), "foil": .colour(\.foil),
-                "publisher-rim": .colour(\.publisherRim), "publisher-pill-shine": .colour(\.publisherPillShine),
-                "engrave-on-dark": .colour(\.engraveOnDark), "engrave-on-light": .colour(\.engraveOnLight),
-                "catch-light-on-dark": .colour(\.catchLightOnDark), "catch-light-on-light": .colour(\.catchLightOnLight),
-                "secondary": .number(.strength, \.secondary), "drag-fill": .number(.strength, \.dragFill), "hover": .number(.strength, \.hover),
-                "menu-dim": .number(.strength, \.menuDim), "lift-shadow-strength": .number(.strength, \.liftShadowStrength),
-                "unfocused-card": .number(.strength, \.unfocusedCard), "stale": .number(.strength, \.stale), "old-bar": .number(.strength, \.oldBar),
-                "press-fill": .number(.strength, \.pressFill), "menu-bar-track": .number(.strength, \.menuBarTrack),
-                "fade-near": .number(.strength, \.fadeNear), "fade-far": .number(.strength, \.fadeFar),
-                "publisher-pill": .number(.strength, \.publisherPill), "publisher-pill-hover": .number(.strength, \.publisherPillHover),
-                "publisher-pill-ring": .number(.strength, \.publisherPillRing)
-            ]
-        }
-    }
-
-    public struct Glass: Equatable, Sendable {
-        public enum Variant: String, Equatable, Sendable {
-            case clear
-            case regular
-        }
-
-        public fileprivate(set) var variant = Variant.clear
-        public fileprivate(set) var fadeReach = 1.0
-        public fileprivate(set) var edgeNear = 0.0
-        public fileprivate(set) var edgeMiddle = 0.0
-        public fileprivate(set) var edgeFar = 0.0
-
-        public var edgeStrengths: [Double] {
-            [edgeNear, edgeMiddle, edgeFar]
-        }
-
-        fileprivate static var fields: [String: ThemeField<Glass>] {
-            [
-                "variant": .word(.variant, \.variant), "fade-reach": .number(.reach, \.fadeReach),
-                "edge-near": .number(.strength, \.edgeNear), "edge-middle": .number(.strength, \.edgeMiddle), "edge-far": .number(.strength, \.edgeFar)
-            ]
-        }
-    }
-
+    public private(set) var choices = ThemeValues()
+    public private(set) var exact = ThemeValues()
     public private(set) var look = Look()
     public private(set) var layout = Layout()
     public private(set) var faults: [String] = []
 
     public static var keys: [ThemeKey] {
-        fields.keys.sorted { $0.name < $1.name }
+        choiceKinds.map(\.key)
     }
 
-    private static var fields: [ThemeKey: ThemeField<Theme>] {
-        Look.fields.mapValues { $0.on(\Theme.look) }.merging(Layout.fields.mapValues { $0.on(\Theme.layout) }) { one, _ in one }
+    public static var exactKeys: [ThemeKey] {
+        exactKinds.map(\.key)
     }
+
+    static let lookColours = ["background", "ink", "accent", "highlight", "good", "warn", "bad"]
+
+    static let choiceKinds: [(key: ThemeKey, kind: ThemeKind)] = ["dark", "light"].flatMap { section in
+        lookColours.map { (ThemeKey(section: section, key: $0), ThemeKind.colour) }
+    } + Self.lookKinds.map { (ThemeKey(section: "look", key: $0.0), $0.1) }
+
+    private static let lookKinds: [(String, ThemeKind)] = [
+        ("glass", .variant), ("backdrop", .backdropLook), ("reach", .backdropReach), ("corner", .points), ("density", .factor),
+        ("type", .points), ("speed", .factor)
+    ]
+
+    static let exactKinds: [(key: ThemeKey, kind: ThemeKind)] = ["dark", "light"].flatMap { section in
+        Appearance.exactKinds.map { (ThemeKey(section: section, key: $0.0), $0.1) }
+    } + Layout.exactKinds.map { (ThemeKey(section: "advanced", key: $0.0), $0.1) }
 
     public init() {}
 
@@ -151,20 +49,26 @@ public struct Theme: Equatable, Sendable {
         for key in document.values.keys.sorted() {
             faults.append("theme.toml: \(key) is not a key of a theme.")
         }
-        let fields = Self.fields
+        let choiceKinds = Dictionary(uniqueKeysWithValues: Self.choiceKinds.map { ($0.key, $0.kind) })
+        let exactKinds = Dictionary(uniqueKeysWithValues: Self.exactKinds.map { ($0.key, $0.kind) })
+        var own = ThemeValues()
+        exact = ThemeValues()
         for section in document.sections {
             for key in section.keys {
                 let id = ThemeKey(section: section.name, key: key)
-                guard let field = fields[id] else {
+                guard let kind = choiceKinds[id] ?? exactKinds[id] else {
                     faults.append("theme.toml: \(id.name) is not a key of a theme.")
                     continue
                 }
-                if !field.set(section[key], in: &self) { faults.append("theme.toml: \(id.name) is \(field.kind.meaning).") }
+                guard kind.accepts(section[key]) else {
+                    faults.append("theme.toml: \(id.name) is \(kind.meaning).")
+                    continue
+                }
+                if choiceKinds[id] != nil { own[id] = section[key] } else { exact[id] = section[key] }
             }
         }
-    }
-
-    static func named<Whole, Part>(_ section: String, _ part: WritableKeyPath<Whole, Part>, _ fields: [String: ThemeField<Part>]) -> [ThemeKey: ThemeField<Whole>] {
-        Dictionary(uniqueKeysWithValues: fields.map { (ThemeKey(section: section, key: $0.key), $0.value.on(part)) })
+        choices = choices.merging(own)
+        look = Look(choices: choices, exact: exact)
+        layout = Layout(choices: choices, exact: exact)
     }
 }

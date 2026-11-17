@@ -84,7 +84,7 @@ final class ThemesSpotTests: BuiltInCase {
         XCTAssertTrue(prompt.contains("theme duplicate 'Openspot'"), prompt)
         XCTAssertTrue(prompt.contains(root.appendingPathComponent("themes").path), prompt)
         XCTAssertTrue(prompt.contains("Change the look of Openspot, which says"), prompt)
-        XCTAssertTrue(prompt.contains("[radius] "), prompt)
+        XCTAssertTrue(prompt.contains("[look] "), prompt)
         XCTAssertTrue(prompt.contains("theme reload"), prompt)
     }
 

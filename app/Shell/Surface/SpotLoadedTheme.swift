@@ -45,7 +45,7 @@ final class SpotLoadedTheme {
         values["good"] = palette.good
         values["warn"] = palette.warn
         values["bad"] = palette.bad
-        values["secondary"] = CGFloat(palette.shared.secondary)
+        values["secondary"] = CGFloat(look.secondary)
         values["fill"] = CGFloat(look.fillStrength)
         values["selected"] = CGFloat(look.selectedStrength)
         values["track"] = CGFloat(look.trackStrength)

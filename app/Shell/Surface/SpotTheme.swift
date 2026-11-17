@@ -11,11 +11,16 @@ struct SpotTheme {
     let glassTint: NSColor
     let cornerFill: NSColor
     let window: NSColor
-    let preview: NSColor
     let confirm: NSColor
     let onConfirm: NSColor
     let backdropTint: NSColor
     let highlight: NSColor
+    let accent: NSColor
+    let good: NSColor
+    let warn: NSColor
+    let bad: NSColor
+    let secondaryInk: NSColor
+    let secondary: Double
     let fillStrength: Double
     let selectedStrength: Double
     let discStrength: Double
@@ -32,11 +37,16 @@ struct SpotTheme {
         glassTint = look.glassTint.nsColor
         cornerFill = look.cornerFill.nsColor
         window = look.window.nsColor
-        preview = look.preview.nsColor
         confirm = look.confirm.nsColor
         onConfirm = look.onConfirm.nsColor
         backdropTint = look.backdropTint.nsColor
         highlight = look.highlight.nsColor
+        accent = look.accent.nsColor
+        good = look.good.nsColor
+        warn = look.warn.nsColor
+        bad = look.bad.nsColor
+        secondary = look.secondary
+        secondaryInk = ink.withAlphaComponent(ink.alphaComponent * look.secondary)
         fillStrength = look.fill
         selectedStrength = look.selected
         discStrength = look.disc
@@ -65,7 +75,7 @@ struct SpotTheme {
 
     @MainActor private static var chosen: (appearance: NSAppearance, isDark: Bool)?
 
-    @MainActor static var pictureRim: Color { loaded.pictureRim }
+    static let pictureRim = ThemeColor(text: "#FFFFFF40")!.color
 
     @MainActor static var glassVariant: Glass {
         switch loaded.glassVariant {
@@ -75,22 +85,23 @@ struct SpotTheme {
     }
 
     @MainActor static func glassStrength(at fade: Double) -> Double {
-        min(fade * loaded.glassFadeReach, 1)
+        min(fade * glassFadeReach, 1)
     }
     @MainActor static var accent: Color { loaded.accent }
     @MainActor static var good: Color { loaded.good }
     @MainActor static var warn: Color { loaded.warn }
     @MainActor static var bad: Color { loaded.bad }
-    @MainActor static var secondaryLight: Double { loaded.shared.secondary }
-    @MainActor static var dragFill: Double { loaded.shared.dragFill }
-    @MainActor static var hover: Double { loaded.shared.hover }
-    @MainActor static var menuDim: Double { loaded.shared.menuDim }
+    @MainActor static var secondaryLight: Double { current.secondary }
+    static let glassFadeReach = 3.0
+    static let dragFill = 0.4
+    static let hover = 0.08
+    static let menuDim = 0.4
     static let liftShadow: CGFloat = 14
     static let chosenRow = 0.1
-    @MainActor static var liftShadowStrength: Double { loaded.shared.liftShadowStrength }
-    @MainActor static var unfocusedCardStrength: Double { loaded.shared.unfocusedCard }
+    static let liftShadowStrength = 0.25
+    static let unfocusedCardStrength = 0.35
     @MainActor static var fill: Double { current.fillStrength }
-    @MainActor static var edgeStrengths: [Double] { loaded.edgeStrengths }
+    static let edgeStrengths = [1, 0.7, 0.45]
     @MainActor static var disc: Double { current.discStrength }
     @MainActor static var chip: Double { current.chipStrength }
     @MainActor static var selectedFill: Double { current.selectedStrength }
@@ -98,8 +109,8 @@ struct SpotTheme {
     @MainActor static var control: Double { current.controlStrength }
 
     @MainActor static var ink: Color { loaded.ink }
-    static let glassInk = HierarchicalShapeStyle.primary
-    static let glassSecondary = HierarchicalShapeStyle.secondary
+    @MainActor static var glassInk: AnyShapeStyle { loaded.glassInk }
+    @MainActor static var glassSecondary: AnyShapeStyle { loaded.glassSecondary }
     @MainActor static var solid: Color { loaded.solid }
     @MainActor static var onSolid: Color { loaded.onSolid }
     @MainActor static var glyphOnSolid: Color { loaded.glyphOnSolid }
@@ -109,7 +120,6 @@ struct SpotTheme {
     @MainActor static var highlight: Color { loaded.highlight }
     @MainActor static var cornerFill: Color { loaded.cornerFill }
     @MainActor static var window: Color { loaded.window }
-    @MainActor static var preview: Color { loaded.preview }
     @MainActor static var confirm: Color { loaded.confirm }
     @MainActor static var onConfirm: Color { loaded.onConfirm }
 }

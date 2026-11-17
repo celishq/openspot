@@ -12,19 +12,22 @@ extension Theme {
             case screen
         }
 
-        public fileprivate(set) var look = Look.blur
-        public fileprivate(set) var reach = Reach.tiles
-        public fileprivate(set) var blur = 3.0
-        public fileprivate(set) var size = 60.0
-        public fileprivate(set) var padding = 0.0
+        public let look: Look
+        public let reach: Reach
+        public let blur: Double
+        public let size: Double
+        public let padding: Double
 
-        public init() {}
+        public init() {
+            self.init(look: .blur, reach: .tiles) { _ in nil }
+        }
 
-        static var fields: [String: ThemeField<Backdrop>] {
-            [
-                "look": .word(.backdropLook, \.look), "reach": .word(.backdropReach, \.reach), "blur": .number(.points, \.blur),
-                "size": .number(.haloSize, \.size), "padding": .number(.haloPadding, \.padding)
-            ]
+        init(look: Look, reach: Reach, pinned: @escaping (String) -> Double?) {
+            self.look = look
+            self.reach = reach
+            blur = pinned("backdrop-blur") ?? 3
+            size = pinned("halo-size") ?? 60
+            padding = pinned("halo-padding") ?? 0
         }
     }
 }

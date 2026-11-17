@@ -2,7 +2,7 @@ import XCTest
 @testable import OpenspotCore
 
 final class ThemeReloadTests: PanelCase {
-    private let roomy = Theme(text: "[space]\npadding = 20\ncell = 70\n")
+    private let roomy = Theme(text: "[advanced]\npadding = 20\ncell = 70\n")
 
     override func tearDown() async throws {
         SpotTokens.take(Theme().layout)
@@ -51,7 +51,7 @@ final class ThemeReloadTests: PanelCase {
         try await openList()
         host.dismiss()
 
-        model.take(Theme(text: "[shared]\nhover = 0.2\n"))
+        model.take(Theme(text: "[dark]\nfill = 0.2\n"))
 
         XCTAssertEqual(host.layOuts, [])
     }
@@ -59,7 +59,7 @@ final class ThemeReloadTests: PanelCase {
     func testALookChangePaintsAndTellsNoReaderOfTheLayout() async throws {
         try await openList()
         host.dismiss()
-        let hover = Theme(text: "[shared]\nhover = 0.2\n")
+        let hover = Theme(text: "[dark]\nfill = 0.2\n")
         nonisolated(unsafe) var told = false
         withObservationTracking { _ = (model.gridHeight, model.placements, model.groupBands, model.sheets["list"]?.sheetRect) } onChange: { told = true }
 
@@ -72,7 +72,7 @@ final class ThemeReloadTests: PanelCase {
 
     func testALookChangeWhileShownPaintsAtOnce() async throws {
         try await openList()
-        let hover = Theme(text: "[shared]\nhover = 0.2\n")
+        let hover = Theme(text: "[dark]\nfill = 0.2\n")
 
         model.take(hover)
 
@@ -82,7 +82,7 @@ final class ThemeReloadTests: PanelCase {
     func testARadiusChangeTellsTheHostToDrawTheEdgeAgain() async throws {
         try await openList()
         host.dismiss()
-        let round = Theme(text: "[radius]\ncard = 30\n")
+        let round = Theme(text: "[look]\ncorner = 30\n")
 
         model.take(round)
 
@@ -93,7 +93,7 @@ final class ThemeReloadTests: PanelCase {
     func testABackdropSizeAndPaddingMoveTheEdgesOfTheBlur() async throws {
         try await openList()
         host.dismiss()
-        let wide = Theme(text: "[backdrop]\nlook = \"tint\"\nreach = \"screen\"\nblur = 6\nsize = 84\npadding = 20\n")
+        let wide = Theme(text: "[look]\nbackdrop = \"tint\"\nreach = \"screen\"\n\n[advanced]\nbackdrop-blur = 6\nhalo-size = 84\nhalo-padding = 20\n")
 
         model.take(wide)
 
@@ -109,16 +109,40 @@ final class ThemeReloadTests: PanelCase {
         try await openList()
         host.dismiss()
 
-        model.take(Theme(text: "[backdrop]\nsize = 30\npadding = 74\n"))
+        model.take(Theme(text: "[advanced]\nhalo-size = 30\nhalo-padding = 74\n"))
 
         let reach = { (edge: BackdropEdge) in SpotTokens.halo - edge.inset + SpotTokens.backdropReach * edge.softness }
         XCTAssertEqual(reach(BackdropEdge.blurs[0]), 30, accuracy: 0.001)
         XCTAssertEqual(BackdropEdge.blurs[0].softness, SpotTokens.backdropLeastFade / (SpotTokens.backdropSteps[0] + SpotTokens.backdropReach))
     }
 
+    func testAChangedBackgroundReachesEachColourThatFollowsIt() async throws {
+        try await openList()
+        host.dismiss()
+        let night = Theme(text: "[dark]\nbackground = \"#282A36\"\nink = \"#F8F8F2\"\n")
+
+        model.take(night)
+
+        let dark = try XCTUnwrap(host.paints.last?.dark)
+        XCTAssertEqual(dark.glassTint, ThemeColor(text: "#282A3699"))
+        XCTAssertEqual(dark.onSolid, ThemeColor(text: "#282A36"))
+        XCTAssertEqual(dark.window, ThemeColor(text: "#494B54"))
+        XCTAssertNotEqual(dark.fill, Theme().look.dark.fill)
+    }
+
+    func testAChangedDensityReachesEachGapAndPadding() async throws {
+        try await openList()
+        host.dismiss()
+
+        model.take(Theme(text: "[look]\ndensity = 2\n"))
+
+        XCTAssertEqual([SpotTokens.padding, SpotTokens.columnGap, SpotTokens.rowGap, SpotTokens.listRowGap, SpotTokens.menuPadding], [26, 22, 24, 12, 16])
+        XCTAssertEqual(SpotTokens.cell, 64)
+    }
+
     func testALayoutHeldUntilTheHideIsTheLastOneTaken() async throws {
         try await openList()
-        let round = Theme(text: "[radius]\ncard = 30\n")
+        let round = Theme(text: "[look]\ncorner = 30\n")
 
         model.take(roomy)
         model.take(round)

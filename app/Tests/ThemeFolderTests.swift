@@ -8,7 +8,7 @@ final class ThemeFolderTests: XCTestCase {
     override func setUpWithError() throws {
         folder = try temporaryFolder()
         let builtIn = folder.appendingPathComponent("built-in.toml")
-        try "[dark]\nink = \"#FFFFFF\"\nfill = 0.1\n\n[shared]\nhover = 0.08\n".write(to: builtIn, atomically: true, encoding: .utf8)
+        try "[dark]\nink = \"#FFFFFF\"\nfill = 0.1\n\n[look]\ncorner = 20\n".write(to: builtIn, atomically: true, encoding: .utf8)
         themes = ThemeFolder(url: folder.appendingPathComponent("themes"), builtIn: builtIn, config: ConfigFile(url: folder.appendingPathComponent("config.toml")))
     }
 
@@ -91,10 +91,11 @@ final class ThemeFolderTests: XCTestCase {
         XCTAssertEqual(try themes.make(), "Theme 3")
 
         XCTAssertEqual(themes.readInUse(), "Theme 3")
-        XCTAssertEqual(try text(of: "Theme 2"), "[dark]\n# ink = \"#FFFFFF\"\n# fill = 0.1\n\n[shared]\n# hover = 0.08\n")
+        XCTAssertEqual(try text(of: "Theme 2"), "[dark]\n# ink = \"#FFFFFF\"\n# fill = 0.1\n\n[look]\n# corner = 20\n")
         let theme = themes.read()
         XCTAssertEqual(theme.faults, [])
-        XCTAssertEqual(theme, ThemeFolder.read(builtIn: themes.builtIn))
+        XCTAssertEqual(theme.look, ThemeFolder.read(builtIn: themes.builtIn).look)
+        XCTAssertEqual(theme.layout, ThemeFolder.read(builtIn: themes.builtIn).layout)
     }
 
     func testDuplicateCopiesTheThemeInUseOrTheNamedOneAndUsesTheCopy() throws {
@@ -165,7 +166,7 @@ final class ThemeFolderTests: XCTestCase {
         let shipped = folder.appendingPathComponent("Openspot.app/Themes")
         let openspot = shipped.appendingPathComponent("openspot.theme/theme.toml")
         let dusk = shipped.appendingPathComponent("dusk.theme/theme.toml")
-        for (file, text) in [(openspot, "[dark]\nink = \"#FFFFFF\"\nfill = 0.1\n\n[shared]\nhover = 0.08\n"), (dusk, "[dark]\nfill = 0.4\n")] {
+        for (file, text) in [(openspot, "[dark]\nink = \"#FFFFFF\"\nfill = 0.1\n\n[look]\ncorner = 20\n"), (dusk, "[dark]\nfill = 0.4\n")] {
             try FileManager.default.createDirectory(at: file.deletingLastPathComponent(), withIntermediateDirectories: true)
             try text.write(to: file, atomically: true, encoding: .utf8)
         }
@@ -176,7 +177,7 @@ final class ThemeFolderTests: XCTestCase {
         XCTAssertEqual(themes.scan(), ["Openspot", "Dusk", "Night"])
         XCTAssertEqual(try themes.use("dusk"), "Dusk")
         XCTAssertEqual(themes.read().look.dark.fill, 0.4)
-        XCTAssertEqual(themes.read().look.shared.hover, 0.08)
+        XCTAssertEqual(themes.read().layout.radius.card, 20)
         XCTAssertEqual(themes.read().faults, ["The folder \(folder.appendingPathComponent("themes/dusk.theme").path) has the name of the built-in theme Dusk, so Openspot skips it. Rename the folder."])
 
         XCTAssertEqual(try themes.duplicate("Dusk"), "Dusk copy")

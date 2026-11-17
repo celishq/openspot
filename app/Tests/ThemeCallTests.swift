@@ -57,7 +57,7 @@ final class ThemeCallTests: XCTestCase {
         let app = FakeRunningApp()
         let api = api(config, app: app)
         _ = try await answer(api, ["theme", "new"])
-        try "[backdrop]\nblur = 8\n".write(to: config.appendingPathComponent("themes/Theme 2.theme/theme.toml"), atomically: true, encoding: .utf8)
+        try "[advanced]\nbackdrop-blur = 8\n".write(to: config.appendingPathComponent("themes/Theme 2.theme/theme.toml"), atomically: true, encoding: .utf8)
 
         let reloaded = try await answer(api, ["theme", "reload"])
 
@@ -74,7 +74,7 @@ final class ThemeCallTests: XCTestCase {
         try FileManager.default.createDirectory(at: openspot.deletingLastPathComponent(), withIntermediateDirectories: true)
         try FileManager.default.copyItem(at: builtInURL, to: openspot)
         try FileManager.default.createDirectory(at: shipped.appendingPathComponent("paper.theme"), withIntermediateDirectories: true)
-        try "[shared]\naccent = \"#FF9F0A\"\n".write(to: shipped.appendingPathComponent("paper.theme/theme.toml"), atomically: true, encoding: .utf8)
+        try "[dark]\naccent = \"#FF9F0A\"\n".write(to: shipped.appendingPathComponent("paper.theme/theme.toml"), atomically: true, encoding: .utf8)
         let app = FakeRunningApp()
         let api = api(config, app: app, theme: openspot)
         _ = try await answer(api, ["theme", "new"])
@@ -85,7 +85,7 @@ final class ThemeCallTests: XCTestCase {
         XCTAssertEqual(list.output, "theme=Openspot\nbuiltin=true\n\ntheme=Paper\nbuiltin=true\n\ntheme=Theme 2\nused=true\n\n")
         XCTAssertEqual(used.output, "Switched to the theme Paper.\n")
         let themes = await app.themes
-        XCTAssertEqual(themes.last?.look.shared.accent, ThemeColor(text: "#FF9F0A"))
+        XCTAssertEqual(themes.last?.look.dark.accent, ThemeColor(text: "#FF9F0A"))
     }
 
     func testABadNameIsAFailureLine() async throws {

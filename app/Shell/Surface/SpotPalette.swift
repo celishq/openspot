@@ -13,7 +13,6 @@ final class SpotPalette: Sendable {
     let glassTint: Color
     let cornerFill: Color
     let window: Color
-    let preview: Color
     let confirm: Color
     let onConfirm: Color
     let backdropTint: Color
@@ -22,19 +21,9 @@ final class SpotPalette: Sendable {
     let good: Color
     let warn: Color
     let bad: Color
-    let pictureRim: Color
-    let liftShadow: Color
-    let foil: Color
-    let publisherRim: Color
-    let publisherPillShine: Color
-    let engraveOnDark: Color
-    let engraveOnLight: Color
-    let catchLightOnDark: Color
-    let catchLightOnLight: Color
-    let shared: Theme.Shared
+    let glassInk: AnyShapeStyle
+    let glassSecondary: AnyShapeStyle
     let glassVariant: Theme.Glass.Variant
-    let glassFadeReach: Double
-    let edgeStrengths: [Double]
 
     init(_ look: Theme.Look) {
         let dark = SpotTheme(look.dark)
@@ -42,6 +31,9 @@ final class SpotPalette: Sendable {
         let color = { (part: KeyPath<SpotTheme, NSColor> & Sendable) in
             let (one, other) = (dark[keyPath: part], light[keyPath: part])
             return Color(nsColor: NSColor(name: nil) { SpotTheme.isDark($0) ? one : other })
+        }
+        let either = { (part: KeyPath<Theme.Appearance, ThemeColor> & Sendable, drawn: KeyPath<SpotTheme, NSColor> & Sendable) in
+            look.dark[keyPath: part] == look.light[keyPath: part] ? look.dark[keyPath: part].color : color(drawn)
         }
         self.dark = dark
         self.light = light
@@ -53,28 +45,16 @@ final class SpotPalette: Sendable {
         glassTint = color(\.glassTint)
         cornerFill = color(\.cornerFill)
         window = color(\.window)
-        preview = color(\.preview)
         confirm = color(\.confirm)
         onConfirm = color(\.onConfirm)
         backdropTint = color(\.backdropTint)
         highlight = color(\.highlight)
-        let shared = look.shared
-        accent = shared.accent.color
-        good = shared.good.color
-        warn = shared.warn.color
-        bad = shared.bad.color
-        pictureRim = shared.pictureRim.color
-        liftShadow = shared.liftShadow.color
-        foil = shared.foil.color
-        publisherRim = shared.publisherRim.color
-        publisherPillShine = shared.publisherPillShine.color
-        engraveOnDark = shared.engraveOnDark.color
-        engraveOnLight = shared.engraveOnLight.color
-        catchLightOnDark = shared.catchLightOnDark.color
-        catchLightOnLight = shared.catchLightOnLight.color
-        self.shared = shared
+        accent = either(\.accent, \.accent)
+        good = either(\.good, \.good)
+        warn = either(\.warn, \.warn)
+        bad = either(\.bad, \.bad)
+        glassInk = look.glass.takesInk ? AnyShapeStyle(ink) : AnyShapeStyle(HierarchicalShapeStyle.primary)
+        glassSecondary = look.glass.takesInk ? AnyShapeStyle(color(\.secondaryInk)) : AnyShapeStyle(HierarchicalShapeStyle.secondary)
         glassVariant = look.glass.variant
-        glassFadeReach = look.glass.fadeReach
-        edgeStrengths = look.glass.edgeStrengths
     }
 }

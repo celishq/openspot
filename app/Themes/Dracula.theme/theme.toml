@@ -1,50 +1,22 @@
 [dark]
+background = "#282A36"
 ink = "#F8F8F2"
-solid = "#FF79C6"
-on-solid = "#282A36"
-glyph-on-solid = "#282A36"
-glass = "#282A36E6"
-glass-tint = "#282A36E6"
-corner-fill = "#44475A"
-window = "#282A36"
-preview = "#44475A"
-confirm = "#FF5555"
-on-confirm = "#282A36"
-backdrop-tint = "#282A3699"
-highlight = "#BD93F9"
-fill = 0.12
-selected = 0.26
-control = 0.24
-track = 0.3
-
-[light]
-ink = "#1F1F1F"
-solid = "#A3144D"
-on-solid = "#FFFBEB"
-glyph-on-solid = "#FFFBEB"
-glass = "#FFFBEBE6"
-glass-tint = "#FFFBEBE6"
-corner-fill = "#CFCFDE"
-window = "#FFFBEB"
-preview = "#CFCFDE"
-confirm = "#CB3A2A"
-on-confirm = "#FFFBEB"
-backdrop-tint = "#FFFBEB80"
-highlight = "#644AC9"
-fill = 0.1
-selected = 0.18
-control = 0.14
-track = 0.2
-
-[shared]
 accent = "#BD93F9"
+highlight = "#FF79C6"
 good = "#50FA7B"
 warn = "#FFB86C"
 bad = "#FF5555"
 
-[glass]
-variant = "regular"
+[light]
+background = "#FFFBEB"
+ink = "#1F1F1F"
+accent = "#644AC9"
+highlight = "#A3144D"
+good = "#14710A"
+warn = "#A34D14"
+bad = "#CB3A2A"
 
-[backdrop]
-look = "tint"
+[look]
+glass = "regular"
+backdrop = "tint"
 reach = "tiles"

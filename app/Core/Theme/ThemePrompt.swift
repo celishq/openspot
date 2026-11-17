@@ -29,6 +29,7 @@ public struct ThemePrompt: Equatable, Sendable {
         Run "\(app)" guide, and read its section Change the look of Openspot, which says what each section holds.
         The file holds these sections and keys:
         \(keys)
+        Every other value of the look follows from these keys. Set one exactly only when the rule gives the wrong value; the guide lists those keys.
         After each change, run "\(app)" theme reload. It draws Openspot with the file and prints each value it can't read. Fix each one until it prints nothing.
 
         """
