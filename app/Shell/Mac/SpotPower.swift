@@ -1,6 +1,5 @@
 import Foundation
 import OpenspotCore
-import Security
 import ServiceManagement
 
 struct SpotPower: MacPower {
@@ -39,9 +38,10 @@ struct SpotPower: MacPower {
     }
 
     private static func once<Answer: Sendable>(_ send: @escaping Send<Answer>) async throws -> (Answer, NSXPCConnection) {
-        let connection = NSXPCConnection(machServiceName: PowerDaemon.label, options: .privileged)
+        let daemon = try daemon()
+        let connection = NSXPCConnection(machServiceName: daemon.label, options: .privileged)
         connection.remoteObjectInterface = NSXPCInterface(with: PowerService.self)
-        connection.setCodeSigningRequirement(PowerDaemon.helper)
+        connection.setCodeSigningRequirement(daemon.helperRequirement)
         connection.resume()
         do {
             let answer: Answer = try await withCheckedThrowingContinuation { continuation in
@@ -59,11 +59,15 @@ struct SpotPower: MacPower {
         }
     }
 
-    private static func ready() throws {
-        guard isSignedByTeam() else {
-            throw SpotError.fault("This build of Openspot is not signed by its team, so it cannot start its power helper. Use a release of Openspot.")
+    private static func daemon() throws -> PowerDaemon {
+        guard let daemon = PowerDaemon.readForApp() else {
+            throw SpotError.fault("This build of Openspot is not signed by a team, so it cannot start its power helper. Use a release of Openspot.")
         }
-        let daemon = SMAppService.daemon(plistName: PowerDaemon.plist)
+        return daemon
+    }
+
+    private static func ready() throws {
+        let daemon = SMAppService.daemon(plistName: try daemon().plist)
         if daemon.status == .notRegistered || daemon.status == .notFound {
             do {
                 try daemon.register()
@@ -82,13 +86,5 @@ struct SpotPower: MacPower {
         default:
             throw SpotError.fault(noAnswer)
         }
-    }
-
-    private static func isSignedByTeam() -> Bool {
-        var code: SecCode?
-        var requirement: SecRequirement?
-        guard SecCodeCopySelf([], &code) == errSecSuccess, let code,
-              SecRequirementCreateWithString(PowerDaemon.app as CFString, [], &requirement) == errSecSuccess, let requirement else { return false }
-        return SecCodeCheckValidity(code, [], requirement) == errSecSuccess
     }
 }

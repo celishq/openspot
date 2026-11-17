@@ -1,8 +1,9 @@
 import Foundation
 
+guard let daemon = PowerDaemon.readForHelper() else { exit(1) }
 let holds = PowerHolds()
-let listener = NSXPCListener(machServiceName: PowerDaemon.label)
-listener.setConnectionCodeSigningRequirement(PowerDaemon.app)
+let listener = NSXPCListener(machServiceName: daemon.label)
+listener.setConnectionCodeSigningRequirement(daemon.appRequirement)
 listener.delegate = holds
 signal(SIGTERM, SIG_IGN)
 let stop = DispatchSource.makeSignalSource(signal: SIGTERM, queue: .global())
