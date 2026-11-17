@@ -51,7 +51,7 @@ public struct Stats: Sendable {
             for (id, versions) in day.versions where spot == nil || spot == id {
                 for (version, kept) in versions {
                     let older = sums[id]?[version]
-                    sums[id, default: [:]][version] = SpotUsage.Version(first: min(older?.first ?? kept.first, kept.first), count: older.map { kept.count.adding($0.count) } ?? kept.count)
+                    sums[id, default: [:]][version] = SpotUsage.Version(first: [older?.first, kept.first].compactMap { $0 }.min(), count: older.map { kept.count.adding($0.count) } ?? kept.count)
                 }
             }
         }

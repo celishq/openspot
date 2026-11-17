@@ -409,4 +409,27 @@ final class SpotUsageTests: SpotRunsCase {
         XCTAssertEqual(SpotUsage.version(of: [1, 2, 3]), SpotUsage.version(of: [1, 2, 3]))
         XCTAssertNotEqual(SpotUsage.version(of: [1, 2, 3]), SpotUsage.version(of: [1, 2, 4]))
     }
+
+    func testADayKeptBeforeVersionsReadsItsCountsAsOneUnknownVersion() throws {
+        try FileManager.default.createDirectory(at: stats, withIntermediateDirectories: true)
+        try Data(#"{"day":"2026-11-11","spots":{"a":{"runs":2}}}"#.utf8).write(to: file("2026-11-11"))
+
+        let kept = SpotUsage(folder: stats, at: day).days(1, at: day).first
+
+        XCTAssertEqual(kept?.spots["a"]?.runs, 2)
+        XCTAssertEqual(kept?.versions["a"]?["-"]?.count.runs, 2)
+    }
+
+    func testASpotIsTheSumOfItsVersionsWithTheFaultOfTheNewest() {
+        let usage = SpotUsage(at: day)
+        usage.take(versions: ["a": "v1"])
+        usage.failed(spot("a", "Alpha"), fault: "old", at: day)
+        usage.called(spot("a", "Alpha"), CallOutcome(seconds: 1), at: day)
+        usage.take(versions: ["a": "v2"])
+        usage.failed(spot("a", "Alpha"), fault: "new", at: day.addingTimeInterval(60))
+        usage.called(spot("a", "Alpha"), CallOutcome(seconds: 1), at: day.addingTimeInterval(60))
+
+        XCTAssertEqual(usage.counts["a"]?.runs, 2)
+        XCTAssertEqual(usage.counts["a"]?.fault, "new")
+    }
 }

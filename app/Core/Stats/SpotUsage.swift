@@ -41,23 +41,28 @@ public final class SpotUsage: @unchecked Sendable {
     }
 
     public struct Version: Codable, Equatable, Sendable {
-        public let first: Date
+        public let first: Date?
         public var count = Count()
     }
 
     public struct Day: Codable, Equatable, Sendable {
+        static let unknownVersion = "-"
+
         public let day: String
-        public var spots: [String: Count] = [:]
         public var versions: [String: [String: Version]] = [:]
         public var uses: [Use] = []
         public var searches: [String: Int] = [:]
         public var countsActs = true
         var told: [String] = []
 
+        public var spots: [String: Count] {
+            versions.mapValues { kept in
+                kept.values.sorted { ($0.first ?? .distantPast) > ($1.first ?? .distantPast) }.map(\.count).reduce(nil) { sum, count in sum?.adding(count) ?? count } ?? Count()
+            }
+        }
+
         mutating func change(_ id: String, version: String?, at date: Date, _ work: (inout Count) -> Void) {
-            work(&spots[id, default: Count()])
-            guard let version else { return }
-            work(&versions[id, default: [:]][version, default: Version(first: date)].count)
+            work(&versions[id, default: [:]][version ?? Self.unknownVersion, default: Version(first: date)].count)
         }
     }
 
@@ -321,11 +326,16 @@ public final class SpotUsage: @unchecked Sendable {
 }
 
 extension SpotUsage.Day {
+    private enum KeptKeys: String, CodingKey {
+        case spots
+    }
+
     public init(from decoder: Decoder) throws {
         let values = try decoder.container(keyedBy: CodingKeys.self)
         day = try values.decode(String.self, forKey: .day)
-        spots = try values.decodeIfPresent([String: SpotUsage.Count].self, forKey: .spots) ?? [:]
-        versions = try values.decodeIfPresent([String: [String: SpotUsage.Version]].self, forKey: .versions) ?? [:]
+        let kept = try decoder.container(keyedBy: KeptKeys.self).decodeIfPresent([String: SpotUsage.Count].self, forKey: .spots) ?? [:]
+        versions = try values.decodeIfPresent([String: [String: SpotUsage.Version]].self, forKey: .versions)
+            ?? kept.mapValues { [Self.unknownVersion: SpotUsage.Version(first: nil, count: $0)] }
         uses = try values.decodeIfPresent([SpotUsage.Use].self, forKey: .uses) ?? []
         searches = try values.decodeIfPresent([String: Int].self, forKey: .searches) ?? [:]
         countsActs = try values.decodeIfPresent(Bool.self, forKey: .countsActs) ?? false
