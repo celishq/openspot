@@ -1106,6 +1106,8 @@ openspot spot stats --days 7
 | `p50`, `p95`         | The seconds within which half, and 95 in 100, of its reads and searches first answered. |
 | `memory`             | The most memory its own process held at once, in bytes, not counting the processes it starts. |
 | `seen`               | The days that hold a count of the spot.                               |
+| `shows`              | On a [card of other spots](#cards-of-other-spots), one line for each spot it shows. Such a card runs nothing, so its other numbers are 0. |
+| `cards`              | One line for each card of other spots that shows this spot.           |
 | `failures.<kind>`    | The failures of one kind: `timeout`, `exit` or `output`.              |
 | `failed`             | The time of its last failure.                                         |
 | `call.<noun>.<verb>` | The count of one call that needs a use, such as `call.screen.shot=2`. |

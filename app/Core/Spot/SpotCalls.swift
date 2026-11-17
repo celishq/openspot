@@ -175,7 +175,8 @@ struct SpotCalls {
             } else {
                 counts = SpotUsage.days(days, at: Date(), in: AppPlaces(environment: environment, home: FileManager.default.homeDirectoryForCurrentUser, defaults: .standard).stats)
             }
-            return try StatsReport(days: counts, spot: spot).text(format)
+            let cards = (try? SpotsFolder.standard(environment: environment).scan().spots) ?? []
+            return try StatsReport(days: counts, spot: spot, cards: cards).text(format)
         }
     }
 }

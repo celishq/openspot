@@ -3,10 +3,12 @@ import Foundation
 public struct StatsReport: Sendable {
     let days: [SpotUsage.Day]
     let spot: String?
+    let cards: [Spot]
 
-    public init(days: [SpotUsage.Day], spot: String?) {
+    public init(days: [SpotUsage.Day], spot: String?, cards: [Spot] = []) {
         self.days = days
         self.spot = spot
+        self.cards = cards.filter { $0.kind == .widget }
     }
 
     public func text(_ format: PrintForm) throws -> String {
@@ -22,6 +24,11 @@ public struct StatsReport: Sendable {
             for (id, count) in day.spots where spot == nil || spot == id {
                 sums[id] = sums[id].map { $0.adding(count) } ?? count
             }
+        }
+        for card in cards where sums[card.id] == nil && (spot == nil || spot == card.id) {
+            var count = SpotUsage.Count()
+            count.name = card.name
+            sums[card.id] = count
         }
         return sums.sorted { ($0.value.cost.cpu, $1.key) > ($1.value.cost.cpu, $0.key) }.map { ($0.key, $0.value) }
     }
@@ -53,6 +60,8 @@ public struct StatsReport: Sendable {
             if let last = count.last { fields.append(.init(key: "last", value: stamp.string(from: last))) }
             fields += acts(of: id).map { .init(key: "days", value: $0) }
             fields.append(.init(key: "seen", value: String(days.count { $0.spots[id] != nil })))
+            fields += (cards.first { $0.id == id }?.places ?? []).map { .init(key: "shows", value: $0) }
+            fields += cards.filter { $0.places.contains(id) }.map { .init(key: "cards", value: $0.id) }
             fields += count.reads.sorted { $0.key < $1.key }.map { .init(key: "reads.\($0.key)", value: String($0.value)) }
             if count.hidden != .zero {
                 fields += [.init(key: "hidden.cpu", value: String(format: "%.3f", count.hidden.cpu)), .init(key: "hidden.wakeups", value: String(count.hidden.wakeups))]
