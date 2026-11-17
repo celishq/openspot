@@ -6,7 +6,11 @@
 # offers=card
 
 # One process answers every call. The call that turns Caffeinate on stays open while `caffeinate` runs, so Openspot
-# keeps this process until it ends, and a quit of Openspot ends `caffeinate` too. Nothing is written to disk.
+# keeps this process until it ends, and a quit of Openspot ends `caffeinate` too. With the lid on, a hold also turns
+# sleep off through `pmset`, which a sudoers rule lets this user run without a password, and every end of the hold turns
+# it on again. A mark in the data folder lives while sleep is off, so that the next start turns it on after a crash.
+rule=/etc/sudoers.d/openspot-caffeinate
+mark=$OPENSPOT_DATA/sleep-off
 held=
 watcher=
 until=0
@@ -22,6 +26,30 @@ lidded() {
   [ -n "$lid" ] || lid=$(openspot setting get lid </dev/null 2>/dev/null)
   [ "$lid" = true ] || lid=false
   [ "$lid" = true ]
+}
+
+# Sets `pmset disablesleep`, through the sudoers rule, and fails when the rule does not let it.
+sleepless() {
+  sudo -n /usr/bin/pmset disablesleep "$1" </dev/null >/dev/null 2>&1
+}
+
+# Turns sleep off while the lid is closed, after the mark that tells a later start to turn it on again.
+stay() {
+  : > "$mark"
+  sleepless 1 || rm -f "$mark"
+}
+
+# Turns sleep on again, when a hold turned it off.
+rest() {
+  [ -f "$mark" ] || return 0
+  sleepless 0 && rm -f "$mark"
+}
+
+# Installs the sudoers rule, which asks for the password of an administrator once.
+allow() {
+  entry="#$(id -u) ALL=(root) NOPASSWD: /usr/bin/pmset disablesleep 1, /usr/bin/pmset disablesleep 0"
+  script="mkdir -p /etc/sudoers.d && echo '$entry' > $rule && chmod 0440 $rule && /usr/sbin/visudo -c -f $rule || { rm -f $rule; exit 1; }"
+  osascript -e "do shell script \"$script\" with administrator privileges with prompt \"Caffeinate needs your password once to keep the Mac working with the lid closed.\"" </dev/null >/dev/null 2>&1
 }
 
 # Prints how long the Mac stays awake, which the card shows while the call that turned it on runs.
@@ -76,10 +104,12 @@ hold() {
   lidded && flags=-i
   (
     awake=
-    trap '[ -z "$awake" ] || kill "$awake" 2>/dev/null; exit 0' TERM
+    trap '[ -z "$awake" ] || kill "$awake" 2>/dev/null; rest; exit 0' TERM
+    [ "$flags" = -di ] || stay
     if [ "$seconds" = 0 ]; then caffeinate $flags & else caffeinate $flags -t "$seconds" & fi
     awake=$!
     wait "$awake"
+    rest
     watcher=
     printf 'end=%s\n---\n%s\n---\n' "$1" "$(sheet)"
   ) &
@@ -141,7 +171,14 @@ serve() {
       esac
       ;;
     'open lid')
-      if lidded; then lid=false; else lid=true; fi
+      if lidded; then
+        lid=false
+      elif sleepless 0 || { allow && sleepless 0; }; then
+        lid=true
+      else
+        printf 'call=%s\n---\ntoast=Caffeinate works with the lid closed only with your password. Pick the row again to enter it.\n%s\n---\nend=%s\n---\n' "$call" "$(sheet)" "$call"
+        return
+      fi
       openspot setting set lid "$lid" </dev/null >/dev/null 2>&1
       if awake; then
         picked=$secs
@@ -171,6 +208,8 @@ detail=$(left)
       ;;
   esac
 }
+
+rest
 
 call=
 input=

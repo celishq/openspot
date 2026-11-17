@@ -6,13 +6,17 @@ final class CaffeinateSpotTests: XCTestCase {
     private var folder: URL!
     private var runs: SpotRuns!
     private var toasts: [String] = []
+    private var environment: [String: String] = [:]
 
     override func setUp() async throws {
         folder = try temporaryFolder()
         let tools = folder.appendingPathComponent("tools")
         try "#!/bin/sh\necho \"$$ $*\" >> '\(folder.path)/awake'\n[ -f '\(folder.path)/short' ] && exec /bin/sleep 0.3\nexec /bin/sleep 600\n".writeScript(to: tools.appendingPathComponent("caffeinate"))
         try "#!/bin/sh\ncase \"$1 $2\" in\n'setting get') cat '\(folder.path)/lid' 2>/dev/null ;;\n'setting set') printf %s \"$4\" > '\(folder.path)/lid' ;;\nesac\n".writeScript(to: tools.appendingPathComponent("openspot"))
-        runs = SpotRuns(environment: ["PATH": "\(tools.path):/usr/bin:/bin", "HOME": folder.path, "TMPDIR": folder.path + "/"], stopPause: 0.2)
+        try "#!/bin/sh\necho \"$*\" >> '\(folder.path)/sudo'\n[ -f '\(folder.path)/rule' ]\n".writeScript(to: tools.appendingPathComponent("sudo"))
+        try "#!/bin/sh\necho \"$*\" >> '\(folder.path)/osascript'\n[ ! -f '\(folder.path)/deny' ] && : > '\(folder.path)/rule'\n".writeScript(to: tools.appendingPathComponent("osascript"))
+        environment = ["PATH": "\(tools.path):/usr/bin:/bin", "HOME": folder.path, "TMPDIR": folder.path + "/"]
+        runs = SpotRuns(environment: environment, stopPause: 0.2)
     }
 
     override func tearDown() async throws {
@@ -20,9 +24,22 @@ final class CaffeinateSpotTests: XCTestCase {
         for pid in awake() { kill(pid, SIGKILL) }
     }
 
-    private func sheet() throws -> SpotRun {
+    private func spot() throws -> Spot {
         let root = URL(fileURLWithPath: #filePath).deletingLastPathComponent().deletingLastPathComponent().deletingLastPathComponent()
-        let spot = try XCTUnwrap(try SpotsFolder(url: root.appendingPathComponent("spots")).scan().spots.first { $0.id == "caffeinate" })
+        return try XCTUnwrap(try SpotsFolder(url: root.appendingPathComponent("spots")).scan().spots.first { $0.id == "caffeinate" })
+    }
+
+    private func mark() throws -> URL {
+        ScriptProcess.dataFolder(base: environment, dataName: try spot().dataName).appendingPathComponent("sleep-off")
+    }
+
+    private func lines(_ name: String) -> [String] {
+        let text = (try? String(contentsOf: folder.appendingPathComponent(name), encoding: .utf8)) ?? ""
+        return text.split(separator: "\n").map(String.init)
+    }
+
+    private func sheet() throws -> SpotRun {
+        let spot = try spot()
         let sheet = runs.sheet(for: spot)
         sheet.onReport = { [weak self] in if case .toast(let text) = $0 { self?.toasts.append(text) } }
         runs.panelOpened()
@@ -213,5 +230,83 @@ final class CaffeinateSpotTests: XCTestCase {
         runs.quit()
 
         try await wait("the end of caffeinate") { self.running().isEmpty }
+    }
+
+    func testTheLidRowAsksOnceForThePasswordToInstallTheRule() async throws {
+        let sheet = try sheet()
+
+        try await pick("lid", in: sheet)
+
+        try await wait("the lid row on") { sheet.list.all.first { $0.run == "lid" }?.isOn == true }
+        XCTAssertEqual(lines("osascript").count, 1)
+        XCTAssertTrue(lines("osascript")[0].contains("with administrator privileges"))
+        XCTAssertTrue(lines("osascript")[0].contains("ALL=(root) NOPASSWD: /usr/bin/pmset disablesleep 1, /usr/bin/pmset disablesleep 0' > /etc/sudoers.d/openspot-caffeinate"))
+        XCTAssertTrue(lines("osascript")[0].contains("/usr/sbin/visudo -c -f /etc/sudoers.d/openspot-caffeinate"))
+
+        try await pick("lid", in: sheet)
+        try await wait("the lid row off") { sheet.list.all.first { $0.run == "lid" }?.isOn == false }
+        try await pick("lid", in: sheet)
+
+        try await wait("the lid row on again") { sheet.list.all.first { $0.run == "lid" }?.isOn == true }
+        XCTAssertEqual(lines("osascript").count, 1)
+    }
+
+    func testADeniedPasswordLeavesTheLidOff() async throws {
+        FileManager.default.createFile(atPath: folder.appendingPathComponent("deny").path, contents: Data())
+        let sheet = try sheet()
+
+        try await pick("lid", in: sheet)
+
+        try await wait("the toast") { self.toasts.last == "Caffeinate works with the lid closed only with your password. Pick the row again to enter it." }
+        XCTAssertEqual(sheet.list.all.first { $0.run == "lid" }?.isOn, false)
+        XCTAssertNotEqual(lid(), "true")
+    }
+
+    private func holdWithTheLid() async throws -> SpotRun {
+        FileManager.default.createFile(atPath: folder.appendingPathComponent("rule").path, contents: Data())
+        try "true".write(to: folder.appendingPathComponent("lid"), atomically: true, encoding: .utf8)
+        let sheet = try sheet()
+        try await pick("0", in: sheet)
+        try await wait("sleep off") { self.lines("sudo").last == "-n /usr/bin/pmset disablesleep 1" }
+        XCTAssertTrue(FileManager.default.fileExists(atPath: try mark().path))
+        return sheet
+    }
+
+    func testAHoldWithTheLidTurnsSleepOffAndTurnOffTurnsItOn() async throws {
+        let sheet = try await holdWithTheLid()
+
+        try await pick("off", in: sheet)
+
+        try await wait("sleep on") { self.lines("sudo").last == "-n /usr/bin/pmset disablesleep 0" }
+        let mark = try mark()
+        try await wait("the mark gone") { !FileManager.default.fileExists(atPath: mark.path) }
+    }
+
+    func testAQuitOfOpenspotTurnsSleepOnAgain() async throws {
+        _ = try await holdWithTheLid()
+
+        runs.quit()
+
+        try await wait("sleep on") { self.lines("sudo").last == "-n /usr/bin/pmset disablesleep 0" }
+    }
+
+    func testATimeThatEndsByItselfTurnsSleepOnAgain() async throws {
+        FileManager.default.createFile(atPath: folder.appendingPathComponent("short").path, contents: Data())
+
+        _ = try await holdWithTheLid()
+
+        try await wait("sleep on") { self.lines("sudo").last == "-n /usr/bin/pmset disablesleep 0" }
+    }
+
+    func testAMarkLeftByACrashTurnsSleepOnAtTheNextStart() async throws {
+        FileManager.default.createFile(atPath: folder.appendingPathComponent("rule").path, contents: Data())
+        try FileManager.default.createDirectory(at: try mark().deletingLastPathComponent(), withIntermediateDirectories: true)
+        FileManager.default.createFile(atPath: try mark().path, contents: Data())
+
+        _ = try sheet()
+
+        try await wait("sleep on") { self.lines("sudo") == ["-n /usr/bin/pmset disablesleep 0"] }
+        let mark = try mark()
+        try await wait("the mark gone") { !FileManager.default.fileExists(atPath: mark.path) }
     }
 }
