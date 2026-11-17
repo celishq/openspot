@@ -2,17 +2,19 @@ import Foundation
 
 final class PowerLink: NSObject, PowerService, @unchecked Sendable {
     private let holds: PowerHolds
+    private let id: UUID
 
-    init(holds: PowerHolds) {
+    init(holds: PowerHolds, id: UUID) {
         self.holds = holds
+        self.id = id
     }
 
     func holdLidClosed(reply: @escaping @Sendable (String?) -> Void) {
-        reply(holds.hold(ObjectIdentifier(self)))
+        reply(holds.hold(id))
     }
 
     func releaseLidClosed(reply: @escaping @Sendable () -> Void) {
-        holds.release(ObjectIdentifier(self))
+        holds.release(id)
         reply()
     }
 

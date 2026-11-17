@@ -13,6 +13,11 @@
 	</dict>
 	<key>RunAtLoad</key>
 	<true/>
+	<key>KeepAlive</key>
+	<dict>
+		<key>Crashed</key>
+		<true/>
+	</dict>
 	<key>AssociatedBundleIdentifiers</key>
 	<array>
 		<string>openspot.celis.ai</string>

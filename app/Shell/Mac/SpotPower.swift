@@ -31,7 +31,13 @@ final class SpotPower: MacPower, @unchecked Sendable {
         } catch {
             guard again else { throw error }
             try Self.ready()
-            return try await once(send)
+            do {
+                return try await once(send)
+            } catch let error as SpotError {
+                throw error
+            } catch {
+                throw SpotError.fault("The power helper of Openspot did not answer. Run the call again, or restart the Mac if it keeps failing.")
+            }
         }
     }
 
@@ -53,20 +59,21 @@ final class SpotPower: MacPower, @unchecked Sendable {
             let connection = NSXPCConnection(machServiceName: PowerDaemon.label, options: .privileged)
             connection.remoteObjectInterface = NSXPCInterface(with: PowerService.self)
             connection.setCodeSigningRequirement(PowerDaemon.helper)
-            connection.invalidationHandler = { [weak self] in self?.forget() }
-            connection.interruptionHandler = { [weak self] in self?.forget() }
+            connection.invalidationHandler = { [weak self, weak connection] in self?.forget(connection) }
+            connection.interruptionHandler = { [weak self, weak connection] in self?.forget(connection) }
             connection.resume()
             self.connection = connection
             return connection
         }
     }
 
-    private func forget() {
-        let gone = lock.withLock {
-            defer { connection = nil }
-            return connection
+    private func forget(_ gone: NSXPCConnection?) {
+        let isCurrent = lock.withLock {
+            guard let gone, connection === gone else { return false }
+            connection = nil
+            return true
         }
-        gone?.invalidate()
+        if isCurrent { gone?.invalidate() }
     }
 
     private static func ready() throws {
