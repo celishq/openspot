@@ -145,32 +145,34 @@ public struct ViewLibrary: Sendable {
 
             public var body: some View {
                 Group {
-                    switch spot.card {
-                    case .small?:
+                    switch shape {
+                    case .small:
                         VStack(spacing: -1) {
                             number(.system(size: 20, weight: .semibold, design: .rounded))
-                            if !detail.isEmpty {
-                                Text(detail).font(.system(size: 8)).multilineTextAlignment(.center).opacity(detailOpacity)
-                            }
+                            note(withDetail: true, font: .system(size: 8)).multilineTextAlignment(.center)
                         }
                         .padding(spot.inset / 2)
-                    case .wide?, .strip?:
+                    case .wide, .strip:
                         ViewThatFits(in: .horizontal) {
                             line(withDetail: true)
                             line(withDetail: false)
                         }
-                        .padding(.horizontal, spot.inset + 6)
+                        .padding(.horizontal, spot.inset)
                         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .leading)
                     default:
                         VStack(alignment: .leading, spacing: 2) {
                             number(spot.font.metric)
-                            note(withDetail: true)
+                            note(withDetail: true, font: spot.font.detail)
                         }
                         .padding(spot.inset + 4)
                         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .bottomLeading)
                     }
                 }
                 .foregroundStyle(isOnFill ? .white : spot.ink)
+            }
+
+            private var shape: SpotCard {
+                spot.card ?? (spot.size.height >= 100 ? .large : spot.size.width < 100 ? .small : .strip)
             }
 
             private var detailOpacity: Double { isOnFill ? 1 : spot.secondary }
@@ -180,13 +182,13 @@ public struct ViewLibrary: Sendable {
             }
 
             private func line(withDetail: Bool) -> some View {
-                HStack(alignment: .center, spacing: 8) {
+                HStack(alignment: .center, spacing: 6) {
                     number(spot.font.metric).fixedSize()
-                    note(withDetail: withDetail).fixedSize()
+                    note(withDetail: withDetail, font: spot.font.detail).fixedSize()
                 }
             }
 
-            private func note(withDetail: Bool) -> some View {
+            private func note(withDetail: Bool, font: Font) -> some View {
                 HStack(spacing: 3) {
                     if withDetail && !detail.isEmpty {
                         Text(detail)
@@ -195,7 +197,7 @@ public struct ViewLibrary: Sendable {
                         Image(systemName: mark)
                     }
                 }
-                .font(spot.font.detail)
+                .font(font)
                 .opacity(detailOpacity)
             }
         }

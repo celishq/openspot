@@ -848,7 +848,7 @@ struct SpotView: View {
 | `spot["key"]`       | The last value of a key of its block, or nil.                         |
 | `spot.all("key")`   | Each value of a key that repeats.                                     |
 | `spot.size`         | The size of its place.                                                |
-| `spot.card`         | The name of its card's size, such as `wide`, or nil off a card.       |
+| `spot.card`         | The name of its card's size, such as `wide`, or nil off a whole card. |
 | `spot.inset`        | The space other cards keep between their edge and their words.        |
 | `spot.corner`       | The corner radius of the card.                                        |
 | `spot.ink`          | The colour of words, for light and dark.                              |
@@ -873,8 +873,9 @@ struct SpotView: View {
 | `spot.close()`      | Closes the sheet, the float or the window of its spot.                |
 
 - `SpotMetric(spot, value:, detail:, mark:, onFill:)` draws a big number with its detail and an SF Symbol `mark`, laid
-  out for `spot.card` as the other cards lay out theirs. It drops the detail when the line has no room for it, and keeps
-  the mark. `onFill: true` draws it in white, over a colour that the view draws.
+  out for `spot.card` as the other cards lay out theirs, and for the size of its place off a card. It drops the detail
+  when the line has no room for it, and keeps the mark. `onFill: true` draws it in white, over a colour that the view
+  draws.
 - The view fills its place, and the whole card when there's no card layout. It can't change the size of its place.
 - In a window (see [Places](#places)), a sheet with one `view` block fills the window. `spot.card(id)` draws the card of
   any spot by the ID that `openspot store list` prints, as the store does. `spot.sheet(id)` draws its sheet with what its
