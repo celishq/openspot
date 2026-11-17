@@ -1,19 +1,11 @@
 import Foundation
 
-struct PowerReadings: PrintedRecord, Equatable {
-    let watts: Double
-    let cpuWatts: Double
-    let gpuWatts: Double
-    let aneWatts: Double
+struct PowerReadings: PrintedRecord {
+    let watts: [(key: String, value: Double)]
     let thermalPressure: String
 
-    private enum CodingKeys: String, CodingKey {
-        case watts
-        case cpuWatts = "cpu-watts"
-        case gpuWatts = "gpu-watts"
-        case aneWatts = "ane-watts"
-        case thermalPressure = "thermal-pressure"
-    }
+    private static let pressureKey = "thermal-pressure"
+    private static let sources = [("watts", "combined_power"), ("cpu-watts", "cpu_power"), ("gpu-watts", "gpu_power"), ("ane-watts", "ane_power")]
 
     init(sample: Data) throws {
         let plist = sample.prefix { $0 != 0 }
@@ -21,19 +13,26 @@ struct PowerReadings: PrintedRecord, Equatable {
               let processor = root["processor"] as? [String: Any] else {
             throw SpotError.fault("powermetrics gave a sample that Openspot cannot read.")
         }
-        let watts = { (key: String) in ((processor[key] as? NSNumber)?.doubleValue ?? 0) / 1000 }
-        self.watts = watts("combined_power")
-        cpuWatts = watts("cpu_power")
-        gpuWatts = watts("gpu_power")
-        aneWatts = watts("ane_power")
+        watts = Self.sources.map { key, source in (key, ((processor[source] as? NSNumber)?.doubleValue ?? 0) / 1000) }
         thermalPressure = ((root["thermal_pressure"] as? String) ?? "unknown").lowercased()
     }
 
     var blocks: [[(String, String?)]] {
-        let text = { (value: Double) in String(format: "%.2f", value) }
-        return [[
-            (CodingKeys.watts.rawValue, text(watts)), (CodingKeys.cpuWatts.rawValue, text(cpuWatts)), (CodingKeys.gpuWatts.rawValue, text(gpuWatts)),
-            (CodingKeys.aneWatts.rawValue, text(aneWatts)), (CodingKeys.thermalPressure.rawValue, thermalPressure)
-        ]]
+        [watts.map { ($0.key, String(format: "%.2f", $0.value)) } + [(Self.pressureKey, thermalPressure)]]
+    }
+
+    func encode(to encoder: Encoder) throws {
+        var container = encoder.container(keyedBy: Key.self)
+        for (key, value) in watts { try container.encode(value, forKey: Key(key)) }
+        try container.encode(thermalPressure, forKey: Key(Self.pressureKey))
+    }
+
+    private struct Key: CodingKey {
+        let stringValue: String
+        var intValue: Int? { nil }
+
+        init(_ stringValue: String) { self.stringValue = stringValue }
+        init?(stringValue: String) { self.stringValue = stringValue }
+        init?(intValue: Int) { nil }
     }
 }
