@@ -12,6 +12,7 @@ public struct SpotItem: Equatable, Sendable {
     public let records: Bool
     public let takesShake: Bool
     public let isOn: Bool
+    public let isToggle: Bool
     public let tone: MetricValue.Tone?
     public let file: String?
     public var to: String? {
@@ -35,7 +36,7 @@ public struct SpotItem: Equatable, Sendable {
     public let bars: [Double?]
     public let section: String?
 
-    public init(title: String, subtitle: String? = nil, run: String, picture: Icon? = nil, parent: String? = nil, hides: [String]? = nil, keywords: [String] = [], shortcut: String? = nil, records: Bool = false, takesShake: Bool = false, isOn: Bool = false, tone: MetricValue.Tone? = nil, file: String? = nil, fields: String? = nil, card: SpotState? = nil, pin: Pin? = nil, openTitle: String? = nil, staysOnPick: Bool = false, focusSubtitle: String? = nil, move: FlowMove? = nil, bars: [Double?] = [], section: String? = nil) {
+    public init(title: String, subtitle: String? = nil, run: String, picture: Icon? = nil, parent: String? = nil, hides: [String]? = nil, keywords: [String] = [], shortcut: String? = nil, records: Bool = false, takesShake: Bool = false, isOn: Bool = false, isToggle: Bool = false, tone: MetricValue.Tone? = nil, file: String? = nil, fields: String? = nil, card: SpotState? = nil, pin: Pin? = nil, openTitle: String? = nil, staysOnPick: Bool = false, focusSubtitle: String? = nil, move: FlowMove? = nil, bars: [Double?] = [], section: String? = nil) {
         self.title = title
         self.subtitle = subtitle
         self.run = run
@@ -47,6 +48,7 @@ public struct SpotItem: Equatable, Sendable {
         self.records = records
         self.takesShake = takesShake
         self.isOn = isOn
+        self.isToggle = isToggle
         self.tone = tone
         self.file = file
         self.fields = fields
@@ -76,6 +78,7 @@ public struct SpotItem: Equatable, Sendable {
             records: block.value(RowKey.type) == RowKey.hotkey,
             takesShake: block.flag(RowKey.shake) ?? false,
             isOn: block.flag(RowKey.value) ?? false,
+            isToggle: block.value(RowKey.type) == RowKey.toggle,
             tone: block.value(RowKey.tone).flatMap(MetricValue.Tone.init),
             file: block.value(RowKey.file).flatMap { $0.hasPrefix("/") ? $0 : nil },
             fields: block.value(RowKey.pushSpot) != nil || block.fields.contains { RowKey(rawValue: $0.key) == nil } ? block.text : nil,
