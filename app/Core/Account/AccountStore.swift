@@ -39,6 +39,10 @@ public struct AccountStore: Sendable {
         return key
     }
 
+    public func checkPublicKey() {
+        keepPublic((try? key())?.publicKey)
+    }
+
     private func keepPublic(_ key: String?) {
         guard let publicFile else { return }
         try? FileManager.default.createDirectory(at: publicFile.deletingLastPathComponent(), withIntermediateDirectories: true)

@@ -77,6 +77,8 @@ final class OpenspotApp: NSObject, NSApplicationDelegate {
     }
 
     private func launch(update: AppUpdate?, api: CommandAPI) async {
+        let account = model.files.account
+        await Task.detached { account.checkPublicKey() }.value
         await model.reload()
         let config = ConfigFile.standard().url.deletingLastPathComponent()
         commandSocket = CommandSocket(folder: config, api: api)

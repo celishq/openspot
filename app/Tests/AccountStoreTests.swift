@@ -24,6 +24,14 @@ final class AccountStoreTests: XCTestCase {
         XCTAssertNil(store.publicKey())
     }
 
+    func testACheckDropsAPublicKeyWhoseAccountWentElsewhere() throws {
+        try Data("stale".utf8).write(to: folder.appendingPathComponent("account.pub"))
+
+        store.checkPublicKey()
+
+        XCTAssertNil(store.publicKey())
+    }
+
     func testAMadeKeyIsNotBackedUpUntilItIsMarked() throws {
         let key = try store.keyMadeOnce()
         XCTAssertFalse(try store.record()?.isBackedUp == true)
