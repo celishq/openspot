@@ -116,6 +116,7 @@ final class StatsReportTests: XCTestCase {
 
         XCTAssertTrue(rows.contains { $0.hasPrefix("row=a\n") && $0.contains("\nruns.by.b=1\n") }, rows.joined())
         XCTAssertTrue(rows.contains { $0.hasPrefix("row=b\n") && $0.contains("\nran.a=1\n") }, rows.joined())
+        XCTAssertTrue(try StatsReport(days: usage.days(1, at: day), spot: "b").text(.frame).contains("\nran.a=1\n"))
     }
 
     func testASpotWithNoViewHasNoBodyKeys() throws {

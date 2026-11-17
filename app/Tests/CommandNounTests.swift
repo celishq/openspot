@@ -70,6 +70,18 @@ final class CommandNounTests: XCTestCase {
         XCTAssertEqual(runs.usage.counts["echo"]?.runs, 1)
     }
 
+    func testARunThatOpenspotRefusesCountsNothing() async throws {
+        let core = folder.appendingPathComponent("core", isDirectory: true)
+        try "#!/bin/sh\n# title=Keyed\n# uses=account\n# on=sheet.open\necho 'title=hi'\n".writeScript(to: core.appendingPathComponent("openspot.spot/keyed.sh"))
+        api = CommandAPI(mac: Mac(), places: .test(["OPENSPOT_CONFIG": folder.path, "OPENSPOT_CORE": core.path]), app: FakeRunningApp(), runs: runs, rates: .offline, nouns: nouns)
+        let caller = Spot(id: "board", name: "Board", url: folder.appendingPathComponent("board.sh"), dataName: "board", uses: [.spots])
+
+        let answer = try await ask(["spot", "run", "openspot/keyed"], from: caller)
+
+        XCTAssertTrue(answer.errors.contains("account key"), answer.errors)
+        XCTAssertNil(runs.usage.counts["openspot/keyed"])
+    }
+
     func testTheRuleOfAVerbRefusesItInARead() {
         XCTAssertEqual(
             CommandLineCall(arguments: ["bell", "ring", "hi"], reason: "panel.open", nouns: nouns)?.value as? CallFault,

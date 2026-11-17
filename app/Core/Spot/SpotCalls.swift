@@ -117,7 +117,7 @@ struct SpotCalls {
             }
             if let careful { spot.uses.formIntersection(careful) }
             let text = await input?()
-            let usage = caller == nil ? nil : runs?.usage
+            let usage = caller == nil || spot.reachesAccountKey ? nil : runs?.usage
             let run = TerminalRun(spot: spot, arguments: arguments, input: text, careful: careful == nil ? nil : spot.uses, tokens: runs?.tokens, environment: environment, folder: folder, usage: usage)
             let begin = Date()
             var first = true
