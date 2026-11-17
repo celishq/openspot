@@ -51,6 +51,14 @@ public struct ItemList: Equatable, Sendable {
         all == other.all && recent == other.recent && search == other.search
     }
 
+    public var lineCount: Int {
+        shown.count + sectionStarts.count
+    }
+
+    public func run(at index: Int) -> String? {
+        shown.indices.contains(index) ? shown[index].run : nil
+    }
+
     public var selectedItem: SpotItem? {
         shown.indices.contains(selected) ? shown[selected] : nil
     }

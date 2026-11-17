@@ -22,10 +22,7 @@ struct SpotRowsView: View {
     }
 
     private var selectedRun: () -> String? {
-        { [list, selected] in
-            let index = selected()
-            return list.shown.indices.contains(index) ? list.shown[index].run : nil
-        }
+        { [list, selected] in list.run(at: selected()) }
     }
 
     private var isGrid: Bool {
@@ -84,7 +81,7 @@ struct SpotRowsView: View {
     }
 
     private var bottomInset: CGFloat {
-        SpotTokens.sheetFits(rows: list.shown.count + list.sectionStarts.count, perLine: list.perLine) ? SpotTokens.padding : Self.bottomFade
+        SpotTokens.sheetFits(rows: list.lineCount, perLine: list.perLine) ? SpotTokens.padding : Self.bottomFade
     }
 
     private var pinnedScroll: some View {

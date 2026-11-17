@@ -95,10 +95,7 @@ struct SheetPartsView: View {
     }
 
     private var selectedRun: () -> String? {
-        { [list, selection] in
-            let index = (selection ?? { list.selected })()
-            return list.shown.indices.contains(index) ? list.shown[index].run : nil
-        }
+        { [list, selection] in list.run(at: (selection ?? { list.selected })()) }
     }
 
     private var selectedID: () -> String? {

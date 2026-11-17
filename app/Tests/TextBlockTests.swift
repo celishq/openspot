@@ -137,8 +137,12 @@ final class TextBlockTests: XCTestCase {
         var list = ItemList(items: items)
 
         XCTAssertEqual(list.sectionStarts, ["a": "Used", "c": "Failing"])
+        XCTAssertEqual(list.lineCount, list.shown.count + 2)
+        XCTAssertEqual(list.run(at: 0), "a")
+        XCTAssertNil(list.run(at: list.shown.count))
         _ = list.search("b")
         XCTAssertEqual(list.sectionStarts, [:])
+        XCTAssertEqual(list.lineCount, list.shown.count)
     }
 
     func testAnItemShowsItsPathAsItsSpotThenItsParent() {

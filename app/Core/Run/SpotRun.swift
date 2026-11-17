@@ -294,7 +294,7 @@ public final class SpotRun {
     func settle() {
         let next = rows.isBento
             ? Shape(rows: rows.drawing.lineCount(rows: rows.shown.count) * rows.drawing.columns, perLine: rows.drawing.columns)
-            : Shape(rows: rows.shown.count + rows.sectionStarts.count, perLine: rows.perLine, hasField: rows.search != .off, setsApart: rows.setsApart)
+            : Shape(rows: rows.lineCount, perLine: rows.perLine, hasField: rows.search != .off, setsApart: rows.setsApart)
         if next != shape { shape = next }
         let waits = showsSheet && answered == nil && panel == nil && rows.search == .local && rows.isLoading && !rows.holdsItems
         let nextKind = heardKind ?? (waits ? .waiting : panel?.kind ?? .rows)
