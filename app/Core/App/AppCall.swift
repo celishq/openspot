@@ -12,7 +12,7 @@ enum AppCall: NounCall {
     ])
 
     func work(in context: CallContext) -> CommandAPI.Work? {
-        let calls = AppCalls(mac: context.mac, environment: context.environment, app: context.app)
+        let calls = AppCalls(mac: context.mac, places: context.places, app: context.app)
         return switch self {
         case .status(let form): calls.status(form)
         case .quit: calls.quit()

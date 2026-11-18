@@ -2,12 +2,12 @@ import Foundation
 
 struct AppCalls {
     let mac: Mac
-    let environment: [String: String]
+    let places: AppPlaces
     let app: (any RunningApp)?
 
     func status(_ form: PrintForm) -> CommandAPI.Work {
-        CommandAnswer.work { [mac, environment, app] in
-            let config = ConfigFile.standard(environment: environment).read()
+        CommandAnswer.work { [mac, places, app] in
+            let config = places.config.read()
             let running = await app?.status()
             let slow = await app?.slowMotion(nil) ?? nil
             return try form.text(of: AppStatus(
@@ -42,8 +42,8 @@ struct AppCalls {
     }
 
     func careful(_ isOn: Bool) -> CommandAPI.Work {
-        CommandAnswer.work { [environment, app] in
-            let config = try ConfigFile.standard(environment: environment).change { $0.set(isCareful: isOn) }
+        CommandAnswer.work { [places, app] in
+            let config = try places.config.change { $0.set(isCareful: isOn) }
             await app?.configChanged(.careful, to: config)
             return ""
         }

@@ -1,7 +1,7 @@
 import Foundation
 
 struct SpotCalls {
-    let environment: [String: String]
+    let places: AppPlaces
     let folder: URL
     let app: (any RunningApp)?
     let runs: SpotRuns?
@@ -10,7 +10,7 @@ struct SpotCalls {
 
     init(_ context: CallContext) {
         caller = context.caller
-        environment = context.environment
+        places = context.places
         folder = context.folder
         app = context.app
         runs = context.runs
@@ -18,33 +18,33 @@ struct SpotCalls {
     }
 
     func list(core: Bool, form: PrintForm) -> CommandAPI.Work {
-        CommandAnswer.work { [environment] in
-            let list = SpotList(folder: SpotsFolder.standard(environment: environment), config: ConfigFile.standard(environment: environment).read())
+        CommandAnswer.work { [places] in
+            let config = places.config.read()
+            let list = SpotList(folder: places.folder(config), config: config)
             return try core ? list.core(form) : list.loaded(form)
         }
     }
 
     func turn(_ ids: [String], on isOn: Bool) -> CommandAPI.Work {
-        CommandAnswer.work { [environment, app] in
-            let config = try SpotsFolder.standard(environment: environment).turn(ids, on: isOn, in: ConfigFile.standard(environment: environment))
+        CommandAnswer.work { [places, app] in
+            let config = try places.readSpots().turn(ids, on: isOn, in: places.config)
             await app?.configChanged(.spots(ids), to: config)
             return ""
         }
     }
 
     func add(_ source: String, isConfirmed: Bool) -> CommandAPI.Work {
-        CommandAnswer.work { [environment, folder, app] in
-            let spots = SpotsFolder.standard(environment: environment, enabled: [], disabled: [])
-            let answer = try await SpotLock.standard(environment: environment).add(SpotSource(text: source, place: folder), to: spots.url, isConfirmed: isConfirmed)
+        CommandAnswer.work { [places, folder, app] in
+            let answer = try await places.lock.add(SpotSource(text: source, place: folder), to: places.spots.url, isConfirmed: isConfirmed)
             await app?.spotsChanged()
             return answer
         }
     }
 
     func restore(isConfirmed: Bool) -> CommandAPI.Work {
-        { [environment, app] in
+        { [places, app] in
             do {
-                let answer = try await SpotLock.standard(environment: environment).restore(to: SpotsFolder.standard(environment: environment, enabled: [], disabled: []).url, isConfirmed: isConfirmed)
+                let answer = try await places.lock.restore(to: places.spots.url, isConfirmed: isConfirmed)
                 await app?.spotsChanged()
                 return answer
             } catch {
@@ -54,9 +54,8 @@ struct SpotCalls {
     }
 
     func remove(_ id: String) -> CommandAPI.Work {
-        CommandAnswer.work { [environment, app, secrets] in
-            let folder = SpotsFolder.standard(environment: environment, enabled: [], disabled: [])
-            let removed = try SpotLock.standard(environment: environment).remove(id, from: folder.url).name
+        CommandAnswer.work { [places, app, secrets] in
+            let removed = try places.lock.remove(id, from: places.spots.url).name
             _ = try secrets.remove { SpotID($0).isSameFolder(as: SpotID(removed)) }
             await app?.spotsChanged()
             return "Removed \(removed).\n"
@@ -104,8 +103,8 @@ struct SpotCalls {
     }
 
     func run(_ id: String, _ arguments: [String], input: (@Sendable () async -> String)?, careful: Set<SpotUse>?, output: CommandOutput) -> CommandAPI.Work {
-        { [environment, folder, runs, caller] in
-            let spots = SpotsFolder.standard(environment: environment)
+        { [places, folder, runs, caller] in
+            let spots = places.readSpots()
             let found: Spot?
             do {
                 found = try spots.scan().scripts.first { $0.id == id }
@@ -118,7 +117,7 @@ struct SpotCalls {
             if let careful { spot.uses.formIntersection(careful) }
             let text = await input?()
             let usage = caller == nil || spot.reachesAccountKey ? nil : runs?.usage
-            let run = TerminalRun(spot: spot, arguments: arguments, input: text, careful: careful == nil ? nil : spot.uses, callers: runs?.callers, environment: environment, folder: folder, usage: usage)
+            let run = TerminalRun(spot: spot, arguments: arguments, input: text, careful: careful == nil ? nil : spot.uses, callers: runs?.callers, environment: places.environment, folder: folder, usage: usage)
             let begin = Date()
             var first = true
             let end = await run.start { frame in
@@ -164,24 +163,24 @@ struct SpotCalls {
     }
 
     func new(_ name: String, from starter: SpotStarter) -> CommandAPI.Work {
-        CommandAnswer.work { [environment, app] in
-            let file = try starter.write(name: name, in: SpotsFolder.standard(environment: environment).url)
+        CommandAnswer.work { [places, app] in
+            let file = try starter.write(name: name, in: places.spots.url)
             await app?.spotsChanged()
             return "Wrote \(file.path). Its ID is \(file.deletingPathExtension().lastPathComponent).\n"
         }
     }
 
     func log(_ id: String) -> CommandAPI.Work {
-        CommandAnswer.work { [environment] in
-            let text = AppPlaces(environment: environment, home: FileManager.default.homeDirectoryForCurrentUser, defaults: .standard).log.text(of: id)
+        CommandAnswer.work { [places] in
+            let text = places.log.text(of: id)
             return text.isEmpty ? "Openspot has made no call to \(id) yet. Use it in the panel, then run this again.\n" : text
         }
     }
 
     func stats(days: Int, spot: String?, format: Stats.Form, byVersion: Bool) -> CommandAPI.Work {
-        CommandAnswer.work { [environment, runs] in
-            let counts = await StatsLog.days(days, runs: runs, environment: environment)
-            let cards = (try? SpotsFolder.standard(environment: environment).scan().spots) ?? []
+        CommandAnswer.work { [places, runs] in
+            let counts = await StatsLog.days(days, runs: runs, stats: places.stats)
+            let cards = (try? places.readSpots().scan().spots) ?? []
             return try Stats(days: counts, spot: spot, cards: cards, byVersion: byVersion).text(format)
         }
     }

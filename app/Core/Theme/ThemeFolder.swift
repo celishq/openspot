@@ -14,9 +14,12 @@ public struct ThemeFolder: Sendable {
         self.config = config
     }
 
+    public init(config: ConfigFile, builtIn: URL? = builtInURL) {
+        self.init(url: config.url.deletingLastPathComponent().appendingPathComponent("themes"), builtIn: builtIn, config: config)
+    }
+
     public static func standard(environment: [String: String], builtIn: URL? = builtInURL) -> ThemeFolder {
-        let config = ConfigFile.standard(environment: environment)
-        return ThemeFolder(url: config.url.deletingLastPathComponent().appendingPathComponent("themes"), builtIn: builtIn, config: config)
+        ThemeFolder(config: .standard(environment: environment), builtIn: builtIn)
     }
 
     public func file(of name: String) -> URL {

@@ -111,9 +111,9 @@ public final class StatsLog: @unchecked Sendable {
     }
 
     @concurrent
-    static func days(_ count: Int, runs: SpotRuns?, environment: [String: String]) async -> [Day] {
+    static func days(_ count: Int, runs: SpotRuns?, stats: URL) async -> [Day] {
         guard let runs else {
-            return days(count, at: Date(), in: AppPlaces(environment: environment, home: FileManager.default.homeDirectoryForCurrentUser, defaults: .standard).stats)
+            return days(count, at: Date(), in: stats)
         }
         let now = await MainActor.run { runs.now() }
         return runs.usage.days(count, at: now)

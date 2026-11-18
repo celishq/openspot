@@ -22,7 +22,7 @@ enum StoreCall: NounCall {
     ])
 
     func work(in context: CallContext) -> CommandAPI.Work? {
-        let calls = StoreCalls(environment: context.environment, app: context.app)
+        let calls = StoreCalls(places: context.places, app: context.app)
         return switch self {
         case .list(let form): calls.list(form)
         case .get(let id): calls.get(id)

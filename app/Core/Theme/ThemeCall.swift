@@ -39,7 +39,7 @@ enum ThemeCall: NounCall, Equatable {
     }
 
     func work(in context: CallContext) -> CommandAPI.Work? {
-        let themes = ThemeFolder.standard(environment: context.environment, builtIn: context.mac.theme)
+        let themes = ThemeFolder(config: context.places.config, builtIn: context.mac.theme)
         let app = context.app
         let draw = { @Sendable (line: String) async throws -> String in
             let theme = themes.read()

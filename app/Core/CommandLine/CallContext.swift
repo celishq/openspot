@@ -4,7 +4,7 @@ struct CallContext {
     let mac: Mac
     let api: CommandAPI
     let request: CommandRequest
-    let environment: [String: String]
+    let places: AppPlaces
     let app: (any RunningApp)?
     let runs: SpotRuns?
     let account: Account?
