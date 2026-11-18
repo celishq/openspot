@@ -1,2 +1,2 @@
 #!/bin/sh
-printf 'number=temp\ntitle=Lisbon\nvalue=18\ndisplay=18°\n'
+printf 'frame=\ngrid=now\n\nview=now\nicon=cloud.sun.fill\ntemp=18°\n'

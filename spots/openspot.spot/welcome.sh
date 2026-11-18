@@ -113,8 +113,7 @@ case "$1" in
     ;;
   done)
     current
-    openspot spot pop openspot/welcome --all || exit 1
-    openspot route back || exit 1
+    openspot route close || exit 1
     openspot toast "Press \`$(label "$now")\` to open Openspot"
     ;;
   *)

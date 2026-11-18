@@ -150,8 +150,8 @@ final class WelcomeSpotTests: BuiltInCase {
         XCTAssertEqual(button.title, "Start using Openspot")
         XCTAssertEqual(button.key, ActionKey(name: "return"))
         let opened = await app.opened
-        XCTAssertEqual(opened, ["pop openspot/welcome all"])
-        XCTAssertEqual(effects(), ["route back", "toast \(Shortcut.standard.openHint)"])
+        XCTAssertEqual(opened, [])
+        XCTAssertEqual(effects(), ["route close", "toast \(Shortcut.standard.openHint)"])
     }
 
     func testEachDrawingThatAPageNamesIsAFileBesideTheScript() async throws {

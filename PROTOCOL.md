@@ -493,7 +493,7 @@ openspot route close
   place of the sheet that shows, so going back skips it.
 - `route back` takes the spot's sheet off, as Esc does. On its first sheet, that goes back to whoever pushed it, or to
   the grid. `--root` goes back to the spot's first sheet.
-- `route close` takes each sheet of the spot off, back to the sheet that pushed the spot, or to the grid.
+- `route close` takes each sheet of the spot off in one motion, back to the sheet that pushed the spot, or to the grid.
 - Each call of a page, a show or a press, gets the page's route as `route=` on stdin. The first sheet of a spot gets none.
 - A spot moves only its own routes, and only while its sheet shows. A move of another spot's sheet does nothing.
 - A read never moves the flow: `openspot route` fails in a read.

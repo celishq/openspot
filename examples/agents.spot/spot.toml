@@ -1,3 +1,13 @@
+title = "Agents"
 icon = "sparkles"
-on = ["clock.5"]
+detail = "Claude Code and Codex at work"
+on = ["panel.open", "sheet.open", "clock.5"]
 offers = ["card", "menubar"]
+view = "card.swift"
+source = ["agents"]
+
+[settings.claude]
+title = "Claude command"
+
+[settings.codex]
+title = "Codex command"

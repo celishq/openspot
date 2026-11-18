@@ -1,2 +1,2 @@
 #!/bin/sh
-printf 'view=day\nday=WED\ndate=12\n'
+printf 'frame=\ngrid=day\n\nview=day\nday=WED\ndate=12\n'

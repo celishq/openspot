@@ -225,6 +225,7 @@ final class FlowNavigationTests: PanelCase {
         try await wait("the step to settle") { self.model.flowEdges.from == nil && self.model.flowEdges.titles(on: .ahead) == ["A"] }
         let start = try XCTUnwrap(host.edgeChanges.first?.edges)
         XCTAssertEqual(start.sheetStart, .bar(.behind, 0))
+        XCTAssertTrue(start.sheetStartsOnMark)
         XCTAssertEqual(start.leaving, .bar(.ahead, 0))
         XCTAssertFalse(start.edges.contains { $0.sheet == FlowSheet(spot: "list") })
         XCTAssertEqual(start.leavingEdge?.sheet, FlowSheet(spot: "list", page: "a"))
@@ -239,6 +240,7 @@ final class FlowNavigationTests: PanelCase {
         try await wait("the step to settle") { self.model.flowEdges.from == nil && self.model.flowEdges.titles(on: .behind) == ["List"] }
         let start = try XCTUnwrap(host.edgeChanges.first?.edges)
         XCTAssertEqual(start.sheetStart, .bar(.ahead, 0))
+        XCTAssertFalse(start.sheetStartsOnMark)
         XCTAssertEqual(start.leaving, .bar(.behind, 0))
         XCTAssertNil(host.edgeChanges.first { $0.edges.edges.contains { $0.sheet == FlowSheet(spot: "list", page: "a") } })
     }

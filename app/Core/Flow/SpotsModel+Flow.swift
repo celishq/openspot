@@ -49,7 +49,7 @@ extension SpotsModel {
     private func close(in id: String) {
         guard flow.current?.spot == id else { return }
         var start = flow.index
-        while start > 0, flow.pages[start - 1].spot == id { start -= 1 }
+        while start > 0, flow.pages[start].page != nil, flow.pages[start - 1].spot == id { start -= 1 }
         if start == 0 { closeSheet(moving: isShown) } else { popPage(steps: flow.index - start + 1) }
     }
 
