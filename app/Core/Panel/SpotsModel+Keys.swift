@@ -338,4 +338,35 @@ extension SpotsModel {
         }
         return true
     }
+
+    public func followHint() {
+        guard !followsHint else { return }
+        followsHint = true
+        takeHint()
+    }
+
+    private func takeHint() {
+        hintTakes += 1
+        let words = HintWords(withObservationTracking { hint } onChange: { [weak self] in
+            Task { @MainActor in self?.takeHint() }
+        })
+        let motion: PanelMotion? = isEditing || hintIsForEdit || fieldDrop != nil ? .fade : nil
+        hintIsForEdit = isEditing
+        if openSheetID == nil, spotDrop == nil {
+            if words != gridHint { change(motion, { gridHint = words }) }
+        } else {
+            takeSheetHint(words, motion: motion)
+        }
+    }
+
+    func takeSheetHint(_ words: HintWords, motion: PanelMotion? = nil) {
+        if words != sheetHint { change(motion, { sheetHint = words }) }
+    }
+
+    var selectedGlyphTitle: String? {
+        guard openSheetID == nil, let entry = selectedEntry,
+              placements.first(where: { $0.index == selected })?.size == .small
+        else { return nil }
+        return entry.state.title
+    }
 }
