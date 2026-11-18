@@ -115,7 +115,7 @@ final class MetricSpotsTests: SpotRunsCase {
         let script = folder.appendingPathComponent("devices.spot/devices.sh")
         var kept = ""
 
-        for try await frame in ScriptProcess(url: script, arguments: ["read"], limit: 60, dataName: "devices", variables: ["OPENSPOT_REASON": "spot.want"], base: runs.environment).start() { kept += frame }
+        for try await frame in ScriptProcess(url: script, arguments: ["show"], mode: .once(input: "event=spot.want\n"), limit: 60, dataName: "devices", base: runs.environment).start() { kept += frame }
         XCTAssertEqual(log("tools.log"), ["system_profiler"])
         XCTAssertTrue(kept.contains("title=–"), kept)
 

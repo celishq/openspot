@@ -6,8 +6,6 @@ public struct ReadReason: Equatable, Sendable {
     public static let want = ReadReason(rawValue: "spot.want")
     public static let change = ReadReason(rawValue: "spot.change")
 
-    static let variable = "OPENSPOT_REASON"
-
     public let rawValue: String
     public let value: String?
     let isEvent: Bool
@@ -36,7 +34,7 @@ public struct ReadReason: Equatable, Sendable {
         isEvent || self == .want || [SpotEvent.searchText, SpotEvent.sheetText].contains(rawValue) || rawValue.hasPrefix(SpotEvent.clockPrefix)
     }
 
-    var variables: [String: String] {
-        [Self.variable: rawValue].merging(value.map { ["OPENSPOT_VALUE": $0] } ?? [:]) { _, new in new }
+    var fields: [TextBlock.Field] {
+        [.init(key: "event", value: rawValue)] + (value.map { [.init(key: "event.value", value: $0)] } ?? [])
     }
 }

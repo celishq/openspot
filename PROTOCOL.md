@@ -452,7 +452,7 @@ went through. A spot pushes a sheet onto the flow and pops its own sheet off it.
 | `pop=true`            | a press                | Takes the spot's sheet off. On its first sheet, that goes back to whoever pushed it, or to the grid.  |
 | `pop=all`             | a press                | Goes back to the spot's first sheet.                                                  |
 
-- Each call of a page, a read or a press, gets the page's id in `OPENSPOT_PAGE`. The first sheet of a spot gets none.
+- Each call of a page, a show or a press, gets the page's id as `route=` on stdin. The first sheet of a spot gets none.
 - A press moves the flow with the keys in the head of its frame. A read never moves it, and a frame moves it one way at
   most: a push or a pop.
 - A pushed page must match a `pages=` line of the spot that shows it, where `*` stands for any text. A spot with no
@@ -514,7 +514,7 @@ An event makes Openspot ask a spot what to show. The manifest lists the events w
   filter on any other event is an error. `sheet.text` takes none either, because the spot answers every search of its
   sheet.
 - Openspot never asks a spot with no event. A press of its card sends `<spot> open`.
-- Each read gets the event in `OPENSPOT_REASON` and its value in `OPENSPOT_VALUE`.
+- Each `show` gets the event as `event=` on stdin, and its value as `event.value=`.
 - Openspot measures the load once for all the spots that list `system.load`, and only while one of them is wanted.
 
 ```toml
@@ -525,7 +525,9 @@ offers = ["menubar"]
 
 ```sh
 #!/bin/sh
-printf 'text=load\ntitle=%s\n' "${OPENSPOT_VALUE:-cpu=0 memory=0}"
+. "$OPENSPOT_SH"
+load=$(value event.value)
+printf 'text=load\ntitle=%s\n' "${load:-cpu=0 memory=0}"
 ```
 
 | Event              | When Openspot raises it                                                   | Value         |
@@ -561,12 +563,12 @@ printf 'text=load\ntitle=%s\n' "${OPENSPOT_VALUE:-cpu=0 memory=0}"
 
 ## The calls
 
-A call asks a spot to do one thing. It works like a CGI call: arguments, variables and stdin go in, and a frame comes
+A call asks a spot to do one thing. It works like a CGI call: arguments and a message on stdin go in, and a frame comes
 out.
 
 | Call                               | When                                                                      |
 | ---------------------------------- | ------------------------------------------------------------------------- |
-| `<spot> read`                      | An event that its manifest lists.                                         |
+| `<spot> show`                      | An event that its manifest lists.                                         |
 | `<spot> open [row id]`             | A pick of a row, or a press of a card with no sheet or with `press = "open"`. |
 | `<spot> <id> [row id] [value]`     | A change or a press of a block.                                           |
 | `<spot> drop <path> [path]...`     | A drop of files on its card.                                              |
@@ -574,8 +576,8 @@ out.
 | `<spot> <command>`                 | A press of the hotkey the user gave a command.                            |
 | `<spot> <command>`, `<spot> open`  | A [slash command](#slash-commands), with `search=<text>` on stdin.        |
 
-- `read` is the only reserved call. `open`, `drop` and `drag` are default ids. A block can't use them, but a button can
-  use `open`.
+- `show` asks what to show. `open`, `drop` and `drag` are default ids. A block can't use any of the four, but a button
+  can use `open`.
 - A new default id reaches only a spot that asks for it.
 - A drop on a card waits for the card's running call. A drop on a card with rows opens its sheet, and the frame can
   select the new row with `select=`.
@@ -585,10 +587,9 @@ out.
 
 Each call has three parts:
 
-- **Arguments:** the id, its row, then its values, so that `case "$1"` handles each call. A value over 64 KB goes only
-  on stdin.
-- **Variables:** `OPENSPOT_REASON` and `OPENSPOT_VALUE` of a read, `OPENSPOT_PAGE`, the page that shows, `OPENSPOT_SETTING_<KEY>`, the value of each
-  setting of the manifest that has one, with its key in capitals and `_` for any other sign (see [Settings](#settings)), `OPENSPOT_ID`, the spot's id, `OPENSPOT_DATA`, a
+- **Arguments:** `<id> [item] [value]`: the id, its row, then its values, so that `case "$1"` handles each call. A value
+  over 64 KB goes only on stdin, as `input.value=`.
+- **Variables:** `OPENSPOT_ID`, the spot's id, `OPENSPOT_DATA`, a
   folder for its files that one spot folder shares, `OPENSPOT_SH`, the shell helper, `PATH`, and `LC_ALL`, which is
   `en_US.UTF-8`, so each tool reads text as UTF-8 and writes numbers and dates one way on every Mac. A command that
   handles raw bytes or needs byte order sets `LC_ALL=C` for itself, such as `LC_ALL=C sort`, since `sed` and `tr` fail
@@ -598,19 +599,32 @@ Each call has three parts:
   `OPENSPOT_SPOTS`, the spots folder when it isn't `spots` in that folder, and for the sheet that changes a spot,
   `OPENSPOT_EDIT`, the id of that spot, `OPENSPOT_EDIT_FILE`, its file when the user owns it, and
   `OPENSPOT_EDIT_FAILURE`, its last failure.
-- **Stdin:** one block of what the user filled in and typed: a line for each field of the sheet, `search=` with the
-  search text, and a `form=` line for each other text the user may have meant, such as the same keys in another
-  keyboard layout. A value that isn't a field comes as `value=`.
-- An action or a pick on a row that holds keys of its own, such as `meeting=`, also gets every key of that row on
-  stdin. The calls of a form don't.
-- Each process that the spot starts inherits its stdin, with the value of each secret and the keys of the row, unless
-  the spot reads it first or closes it for that process, such as `curl "$url" </dev/null`.
+- **Stdin:** the message, one block of what the call knows. Each key has a prefix that says where it comes from:
+
+| Key              | Holds                                                                                                 |
+| ---------------- | ----------------------------------------------------------------------------------------------------- |
+| `event=`         | On a `show`, the event that asked, such as `sheet.open` (see [Events](#events)).                       |
+| `event.value=`   | The value of that event, such as the search text of `search.text`.                                     |
+| `route=`         | The page that shows (see [Pages](#pages)). The first sheet of a spot has none.                         |
+| `search=`        | The search text.                                                                                       |
+| `search.alt=`    | Each other text the user may have meant, such as the same keys in another keyboard layout.             |
+| `input.<id>=`    | Each input of the sheet or of a form, such as a field. A value that isn't an input comes as `input.value=`. |
+| `setting.<key>=` | Each setting of the manifest that has a value, a secret too (see [Settings](#settings)).               |
+| `item.<key>=`    | On an action or a pick of a row that holds a key of its own, such as `meeting=`, or `push.spot=`, each key of the row. |
 
 ```ini
-title=Groceries
+event=sheet.text
+event.value=milk
+route=photo/12
 search=milk
-form=ьшдл
+search.alt=ьшдл
+input.title=Groceries
+setting.city=Paris
 ```
+
+- The calls of a form get no `item.` keys.
+- Each process that the spot starts inherits its stdin, with each setting and the keys of the row, unless the spot reads
+  it first or closes it for that process, such as `curl "$url" </dev/null`.
 
 The shell helper reads and writes values for you:
 
@@ -642,8 +656,8 @@ title = "Echo"
 ```sh
 #!/bin/sh
 . "$OPENSPOT_SH"
-printf 'field=output\n'
-openspot_kv value "$(value input)"
+printf 'field=note\ntitle=Note\n\ntext=echo\n'
+openspot_kv title "$(value input.note)"
 ```
 
 ## Slash commands
@@ -652,7 +666,7 @@ A slash command runs a command or a spot that has a `placeholder`, with the text
 A `placeholder` says that a command takes text. A plain search finds spots; `/` runs one with text.
 
 ```text
-/translate hello world     Return opens Translate, and its read gets search=hello world
+/translate hello world     Return opens Translate, and its show gets search=hello world
 buy milk /notes            Return runs notes add, with search=buy milk on stdin
 ```
 
@@ -669,7 +683,7 @@ buy milk /notes            Return runs notes add, with search=buy milk on stdin
 | -------------------------------------- | -------------------------------------------------- |
 | A `button` with a `placeholder`        | `<spot> <id>`                                      |
 | A spot with a `placeholder`, no sheet  | `<spot> open`                                      |
-| A spot with a `placeholder` and sheet  | Its sheet opens, and the read of the sheet gets it |
+| A spot with a `placeholder` and sheet  | Its sheet opens, and the show of the sheet gets it |
 
 - The first frame of the call decides what shows. A frame with fields is a form, as for a `form=true` button, and Return
   in it sends the values to the same call. Other blocks open the spot's sheet with them. A frame with nothing to show,
@@ -690,7 +704,7 @@ start ──► frame ──► frame ──► ... ──► end        exit 0:
        terminate signal, then kill; a stopped call changes nothing
 ```
 
-- A `read` has 10 seconds to print its first frame or end. Other calls have no time limit.
+- A `show` has 10 seconds to print its first frame or end. Other calls have no time limit.
 - A frame holds at most 32 MB. Openspot stops a call that prints more in one frame, and the call fails.
 - A new value of a block stops the older call of that block. A second press of a running call stops it: its process
   group gets the terminate signal, then the kill signal. A staying spot can keep a call that the user pressed again; see
@@ -776,16 +790,19 @@ on = ["sheet.open"]
 
 ```js
 function main(args, env, input) {
-  if (args[0] === "read")
+  if (args[0] === "show")
     return openspot.frame({
       row: "hi",
-      title: `Hello from ${env.OPENSPOT_REASON}`,
+      title: `Hello from ${openspot.value("event", input)}`,
     });
   return "";
 }
 ```
 
-- The file defines `main(args, env, input)`, which gets the three parts of a call and returns the text of a frame.
+- The file defines `main(args, env, input)`, which gets the three parts of a call and returns the text of a frame. `input`
+  is the message, the same text that stdin holds.
+- `openspot.value("setting.city", input)` returns the value of a key from a text, as `openspot_value` does: each value on
+  a line of its own, or `""` when there's none.
 - `openspot.call(["calc", "solve", "2+2"])` runs the `openspot` command and returns `{ stdout, code }`. A second argument
   gives its stdin.
 - `openspot.frame(object)` writes an object, or a list of objects, as blocks.
@@ -806,21 +823,21 @@ on = ["app.launch", "panel.open"]
 . "$OPENSPOT_SH"
 main() {
   case "$1" in
-    read) printf 'field=message\ntitle=Message\n\nbutton=send\ntitle=Send\nshortcut=cmd+return\n' ;;
-    send) openspot_kv toast "Sent: $(value message)" ;;
+    show) printf 'field=message\ntitle=Message\n\nbutton=send\ntitle=Send\nshortcut=cmd+return\n' ;;
+    send) openspot_kv toast "Sent: $(value input.message)" ;;
   esac
 }
 openspot_serve main "$@"
 ```
 
 Openspot writes each call to the spot's stdin as one block, then a blank line. `call=<n>` numbers the call, an `arg`
-line gives each argument, an `env.<name>` line gives each variable, such as `env.OPENSPOT_REASON` of a read, and one
-`input` line holds its stdin.
+line gives each argument, and the lines of its message follow, as a spot that runs once gets them on stdin.
 
 ```ini
 call=4
 arg=send
-input=message=Hello\n
+input.message=Hello
+setting.city=Paris
 ```
 
 - A staying spot is one process that talks both ways over stdin and stdout. Each call goes to the running process, and
@@ -1021,7 +1038,7 @@ on = ["sheet.open"]
 . "$OPENSPOT_SH"
 list="$OPENSPOT_DATA/files"
 case "$1" in
-  read)
+  show)
     [ -f "$list" ] || exit 0
     while IFS= read -r path; do
       [ -e "$path" ] || continue
@@ -1140,10 +1157,10 @@ on its card, a press of the card with `⌘`, or **Settings** in its ⌘K menu op
   motion, Open at login and the `openspot` command. The Themes spot of Openspot changes its look.
 - A `[settings.<key>]` table in the manifest names a setting. Return on it runs the action with the same id, which can answer with a
   form. `⌘⌫` removes the value.
-- Each call gets the value of each setting in `OPENSPOT_SETTING_<KEY>`, such as `OPENSPOT_SETTING_FOLDER`, so a spot
+- Each call gets the value of each setting on stdin, as `setting.<key>=<value>`, such as `setting.folder=`, so a spot
   reads its settings with no `openspot` call. A spot never gets the settings of another spot this way.
 - `type = "secret"` on a setting keeps a value such as a key of a service. Return on its row asks for the value in
-  Openspot's own form. Each call gets it only on stdin, as `setting.<key>=<value>`, never in a variable or an argument.
+  Openspot's own form. A call gets it as any other setting, never in a variable or an argument.
   Settings show only that it is set, and Openspot hides it in the call log, the stats, a toast and a failure line.
 - Openspot keeps a secret in the Keychain, under the spot's id and the field's key, never in the config. Only a
   `type=secret` field of that spot gets it, and it goes when the spot is removed. See [Trust](#trust).
@@ -1161,14 +1178,14 @@ type = "secret"
 ```sh
 #!/bin/sh
 . "$OPENSPOT_SH"
-printf 'text=city\ntitle=%s\n' "${OPENSPOT_SETTING_CITY:-Paris}"
+city=$(value setting.city)
+printf 'text=city\ntitle=%s\n' "${city:-Paris}"
 if [ -n "$(value setting.token)" ]; then printf 'text=token\ntitle=Signed in\n'; fi
 ```
 
 - A secret has 8 characters or more. Openspot hides only the exact value, so a part of it or another form of it, such
   as its base64, still shows.
-- `openspot spot run` in Terminal and `openspot check spots` pass no settings. A value over 64 KB isn't put in a variable.
-  Two keys that give one variable, such as `api-key` and `api_key`, are a fault of the manifest.
+- `openspot spot run` in Terminal and `openspot check spots` pass no settings.
 - `openspot setting get <key>` prints the value, or nothing, and `•••` for a secret that is set. `openspot setting set <key> [value]` keeps the value, or
   removes it when there's no value. In a terminal, `--spot <id>` names the spot.
 - Keep a choice of the user in a setting. Keep what the spot makes, such as a cache, in `OPENSPOT_DATA`.

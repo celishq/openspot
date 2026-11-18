@@ -44,8 +44,8 @@ prompt() {
 # The words of the field: the ones on stdin when the sheet sends them, or else the draft that a last call kept. A draft that
 # was copied is done, so the sheet opens empty.
 case "$nl$(openspot_input)" in
-  *"${nl}describe="*)
-    typed=$(value describe; printf x)
+  *"${nl}input.describe="*)
+    typed=$(value input.describe; printf x)
     typed=${typed%x}
     mkdir -p "${draft%/*}" && printf '%s' "$typed" > "$draft.$$" && mv "$draft.$$" "$draft"
     ;;
@@ -60,7 +60,7 @@ case "$nl$(openspot_input)" in
 esac
 
 case "$1" in
-  read | describe) sheet "$typed" ;;
+  show | describe) sheet "$typed" ;;
   copy)
     text=$(printf '%s' "$typed" | awk '{ lines[NR] = $0 } END { s = ""; for (i = 1; i <= NR; i++) s = s (i > 1 ? "\n" : "") lines[i]; sub(/^[ \t\n]+/, "", s); sub(/[ \t\n]+$/, "", s); printf "%s", s }')
     words=$(prompt "$text") || exit 1

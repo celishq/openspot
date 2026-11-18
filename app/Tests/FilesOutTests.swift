@@ -57,7 +57,7 @@ final class FilesOutTests: XCTestCase {
     func testADragOutTellsTheScriptAndADragOfEveryFileClosesTheFloat() async throws {
         let body = """
         case "$1" in
-          read) printf 'row=a\\nfile=/a.png\\n\\nrow=b\\nfile=/b.png\\n\\nrow=c\\n' ;;
+          show) printf 'row=a\\nfile=/a.png\\n\\nrow=b\\nfile=/b.png\\n\\nrow=c\\n' ;;
           drag) shift; printf 'toast=Took %s\\n' "$*" ;;
         esac
         """

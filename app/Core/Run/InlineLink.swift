@@ -19,8 +19,7 @@ final class InlineLink: ScriptLink {
     func send(_ call: OpenCall) -> Bool {
         guard let run else { return false }
         let request = call.request
-        let values = run.fieldValues
-        let inline = InlineCall(arguments: request.action.arguments, variables: run.sent(request.variables, values: values), input: values.input(with: request.input), limit: request.limit)
+        let inline = InlineCall(arguments: request.action.arguments, input: run.message(of: request, values: run.fieldValues), reason: request.reason?.rawValue, limit: request.limit)
         call.made.halt = { inline.stop() }
         if case .ask(let ask) = request.purpose, !ask.isAnswer { asking.append(call.made) }
         run.track(call.made)

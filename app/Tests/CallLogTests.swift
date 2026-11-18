@@ -53,7 +53,7 @@ final class CallLogTests: SpotRunsCase {
     }
 
     func testATimedReadThatEndsWellLeavesNoRecordAndAPanelReadDoes() async throws {
-        try script(toml: "on = ['panel.open']", "echo \"title=$OPENSPOT_REASON\"")
+        try script(toml: "on = ['panel.open']", "\(TestSpot.event)\necho \"title=$ev\"")
         let sheet = try sheet()
 
         sheet.read(reason: .clock(60))
@@ -94,7 +94,7 @@ final class CallLogTests: SpotRunsCase {
         for number in 0..<100 {
             small.add("frame \(number) " + String(repeating: "x", count: 90), to: &frames)
         }
-        small.write(CallLog.Record(spot: "many", arguments: ["read"], input: nil, frames: frames, errors: "", end: .exited(0), started: time, seconds: 0.1))
+        small.write(CallLog.Record(spot: "many", arguments: ["show"], input: nil, frames: frames, errors: "", end: .exited(0), started: time, seconds: 0.1))
 
         let text = small.text(of: "many")
 
@@ -106,7 +106,7 @@ final class CallLogTests: SpotRunsCase {
     func testARecordMarksTheCutWhenItDropsAnOlderFrame() {
         let small = CallLog(folder: folder.appendingPathComponent("small"), limit: 2_000)
 
-        small.write(CallLog.Record(spot: "cut", arguments: ["read"], input: nil, frames: [String(repeating: "a", count: 10), String(repeating: "b", count: 500)], errors: "", end: .exited(0), started: time, seconds: 0.1))
+        small.write(CallLog.Record(spot: "cut", arguments: ["show"], input: nil, frames: [String(repeating: "a", count: 10), String(repeating: "b", count: 500)], errors: "", end: .exited(0), started: time, seconds: 0.1))
 
         XCTAssertTrue(small.text(of: "cut").contains("stdout:\n…" + String(repeating: "b", count: 500)))
     }

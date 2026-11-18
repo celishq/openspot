@@ -4,7 +4,7 @@ enum EventCall: NounCall {
     case emit(name: String, value: String?)
 
     static let noun = CommandNoun("event", group: .app, verbs: [
-        CommandVerb("emit", "<name> [value]", "Raises an event in the running app, such as music.track. Each spot that lists it in its read reads, with the value in OPENSPOT_VALUE.", rule: CallRule(flags: .needsApp)) { words in
+        CommandVerb("emit", "<name> [value]", "Raises an event in the running app, such as music.track. Each spot that lists it in its on gets a show call, with event=<name> and the value in event.value.", rule: CallRule(flags: .needsApp)) { words in
             guard let name = words.rest.first, words.rest.count <= 2 else { return nil }
             guard SpotEvent.isName(name) else { return CallFault.refused("`\(name)` is not an event. Name one with a dot, such as `music.track`.") }
             guard words.reason != name else {

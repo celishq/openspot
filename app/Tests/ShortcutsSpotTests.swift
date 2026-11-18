@@ -53,9 +53,9 @@ final class ShortcutsSpotTests: SampleSpotsCase {
         }
     }
 
-    private static func frames(of shortcuts: Spot) async throws -> [String] {
+    private static func frames(of shortcuts: Spot, event: String? = nil) async throws -> [String] {
         var frames: [String] = []
-        for try await frame in ScriptProcess(url: shortcuts.url, arguments: ["read"], limit: 60, dataName: shortcuts.dataName, base: TestEnvironment.values).start() {
+        for try await frame in ScriptProcess(url: shortcuts.url, arguments: ["show"], mode: .once(input: event.map { "event=\($0)\n" }), limit: 60, dataName: shortcuts.dataName, base: TestEnvironment.values).start() {
             frames.append(frame)
         }
         return frames
@@ -88,7 +88,7 @@ final class ShortcutsSpotTests: SampleSpotsCase {
             try FileManager.default.removeItem(at: calls)
             try Self.fakeShortcuts(in: folder, loose: "echo 'Make a GIF'")
 
-            let opened = try await TestEnvironment.with(["OPENSPOT_REASON": "panel.open"]) { try await Self.frames(of: shortcuts) }
+            let opened = try await Self.frames(of: shortcuts, event: "panel.open")
 
             XCTAssertEqual(opened, first)
             XCTAssertFalse(FileManager.default.fileExists(atPath: calls.path))
@@ -212,7 +212,7 @@ final class ShortcutsSpotTests: SampleSpotsCase {
 
             try await shortcuts.perform(.drop(paths: [file]), timeout: 60)
             let dropped = try await shortcuts.items(timeout: 60)
-            let reopened = try await TestEnvironment.with(["OPENSPOT_REASON": "panel.open"]) { try await shortcuts.items(timeout: 60) }
+            let reopened = try await shortcuts.items(input: "event=panel.open\n", timeout: 60)
             try await shortcuts.perform(.drop(paths: [file]), timeout: 60)
             try await shortcuts.perform(.press("cancel"), timeout: 60)
             let cancelled = try await shortcuts.items(timeout: 60)

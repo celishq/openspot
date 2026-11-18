@@ -27,14 +27,14 @@ draw() {
 
 case $1 in
   levels) levels; exit 0 ;;
-  show) printf '%s\n' "${2-}" | draw; exit 0 ;;
+  show) [ -z "${2-}" ] || { printf '%s\n' "$2" | draw; exit 0; } ;;
 esac
 
 # A device that connects asks again at once. Another read asks again only after 5 minutes, since the levels move
 # slowly and the Bluetooth report takes a second: until then it shows the frame it kept, whose first line is its time.
 kept="$OPENSPOT_DATA/frame"
 now=$(/bin/date +%s)
-if [ "$OPENSPOT_REASON" != device.connect ] && [ -f "$kept" ]; then
+if [ "$(value event)" != device.connect ] && [ -f "$kept" ]; then
   { IFS= read -r made && [ $((now - made)) -lt 300 ] && /bin/cat; } < "$kept" && exit 0
 fi
 frame=$(levels | draw)

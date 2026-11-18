@@ -28,7 +28,8 @@ final class PanelKeysTests: PanelCase {
 
     private func openInfo() async throws {
         try script("info", toml: "on = ['sheet.open']\npages = ['a']", """
-        if [ -n "$OPENSPOT_PAGE" ]; then printf 'text=detail\\ntitle=Detail\\n'; else printf 'text=first\\ntitle=First\\n'; fi
+        page=$(sed -n 's/^route=//p')
+        if [ -n "$page" ]; then printf 'text=detail\\ntitle=Detail\\n'; else printf 'text=first\\ntitle=First\\n'; fi
         """)
         await model.reload()
         model.isShown = true
@@ -304,13 +305,13 @@ final class PanelKeysTests: PanelCase {
         if let key { try key.write(to: pickData.appendingPathComponent("key"), atomically: true, encoding: .utf8) }
         try script("pick", toml: "title = 'Pick'\non = ['sheet.open']", """
         data='\(pickData.path)'
-        [ "$1" = read ] || echo "$*" >> "$data/calls"
+        [ "$1" = show ] || echo "$*" >> "$data/calls"
         case "$1" in
           key) printf %s "$2" > "$data/key" ;;
           again) rm -f "$data/key" ;;
         esac
         case "$1" in
-          read|key|again)
+          show|key|again)
             key=$(cat "$data/key" 2>/dev/null)
             printf 'title=Choose your key\\ngrid=key\\ngrid=keep\\ngrid=again\\n\\nfield=key\\ntype=hotkey\\nvalue=%s\\n' "$key"
             [ -n "$key" ] || printf 'recording=true\\n'
@@ -327,11 +328,11 @@ final class PanelKeysTests: PanelCase {
         try FileManager.default.createDirectory(at: pickData, withIntermediateDirectories: true)
         try script("choice", toml: "title = 'Choice'\non = ['sheet.open']", """
         data='\(pickData.path)'
-        [ "$1" = read ] || echo "$*" >> "$data/calls"
+        [ "$1" = show ] || echo "$*" >> "$data/calls"
         [ "$1" = key ] && printf %s "$2" > "$data/key"
         [ "$1" = use ] && printf 'toast=Used\\n'
         case "$1" in
-          read|key|record)
+          show|key|record)
             printf 'grid=key\\ngrid=key\\ngrid=use\\ngrid=record\\n\\nfield=key\\ntype=hotkey\\nvalue=%s\\n' "$(cat "$data/key" 2>/dev/null || printf ctrl+space)"
             [ "$1" != record ] || printf 'recording=true\\n'
             printf '\\nbutton=use\\ntitle=Use\\nshortcut=return\\n\\nbutton=record\\ntitle=Record\\nshortcut=escape\\n' ;;

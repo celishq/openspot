@@ -176,7 +176,7 @@ final class SoleCommandTests: XCTestCase {
     }
 
     func testReturnRunsTheOneCommandOfASpotWithRowsAndCommandYOpensTheRowsAsHistory() async throws {
-        try "#!/bin/sh\ncase \"$1\" in read) printf 'row=one\\ntitle=Hello there\\n\\nrow=two\\ntitle=Second\\n' ;; esac\n"
+        try "#!/bin/sh\ncase \"$1\" in show) printf 'row=one\\ntitle=Hello there\\n\\nrow=two\\ntitle=Second\\n' ;; esac\n"
             .writeScript(to: spots.spotFile("dictate"), toml: "title = 'Dictate'\non = ['sheet.open', 'app.update']\n[commands.dictate]\ntitle = 'Dictate'")
         await model.reload()
         model.isShown = true
@@ -219,7 +219,7 @@ final class SoleCommandTests: XCTestCase {
     }
 
     func testARowThatSaysCloseFalseNamesItsEnterAndKeepsThePanelOpen() async throws {
-        try "#!/bin/sh\ncase \"$1\" in read) printf 'button=open\\ntitle=Copy\\n\\nrow=model\\ntitle=Download\\nopen=Download\\nclose=false\\n\\nrow=text\\ntitle=Hello\\n' ;; esac\n"
+        try "#!/bin/sh\ncase \"$1\" in show) printf 'button=open\\ntitle=Copy\\n\\nrow=model\\ntitle=Download\\nopen=Download\\nclose=false\\n\\nrow=text\\ntitle=Hello\\n' ;; esac\n"
             .writeScript(to: spots.spotFile("get"), toml: "title = 'Get'\non = ['sheet.open']")
         await model.reload()
         model.isShown = true
@@ -238,7 +238,7 @@ final class SoleCommandTests: XCTestCase {
     }
 
     func testASheetWithSearchOffShowsOnlyItsOwnRowsAsItsHistory() async throws {
-        try "#!/bin/sh\ncase \"$1\" in read) printf 'row=whisper\\ntitle=Download\\npin=top\\n\\nsearch=off\\n' ;; esac\n"
+        try "#!/bin/sh\ncase \"$1\" in show) printf 'row=whisper\\ntitle=Download\\npin=top\\n\\nsearch=off\\n' ;; esac\n"
             .writeScript(to: spots.spotFile("dictate"), toml: "title = 'Dictate'\non = ['sheet.open']\n[commands.dictate]\ntitle = 'Dictate'")
         await model.reload()
         model.isShown = true
@@ -282,7 +282,7 @@ final class SoleCommandTests: XCTestCase {
     }
 
     func testAKeyRecordedOnARowThatStaysOpenKeepsThePanelOpen() async throws {
-        try "#!/bin/sh\ncase \"$1\" in read) printf 'row=k\\ntitle=Key\\ntype=hotkey\\nclose=false\\nshortcut=Record\\n' ;; esac\n".writeScript(to: spots.spotFile("keys"), toml: "on = ['sheet.open']")
+        try "#!/bin/sh\ncase \"$1\" in show) printf 'row=k\\ntitle=Key\\ntype=hotkey\\nclose=false\\nshortcut=Record\\n' ;; esac\n".writeScript(to: spots.spotFile("keys"), toml: "on = ['sheet.open']")
         await model.reload()
         model.isShown = true
         model.panelWillShow()

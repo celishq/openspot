@@ -46,7 +46,7 @@ final class SpotStarterTests: XCTestCase {
     func testAPickOfTheListStarterReadsAKeyOfItsRow() async throws {
         _ = try SpotStarter.list.write(name: "Weather", in: folder)
         let spot = try XCTUnwrap(SpotsFolder(url: folder).scan().spots.first)
-        let rows = try await spot.answer(.read, timeout: 10).items
+        let rows = try await spot.answer(.show, timeout: 10).items
 
         let picked = try await spot.answer(SpotAction(arguments: ["open", "second"]), input: rows.last?.fields, timeout: 10)
 

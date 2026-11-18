@@ -178,7 +178,7 @@ final class SpotUsesTests: SpotRunsCase {
     }
 
     func testAReadIsKnownFromTheAppsRecordAndNotFromTheVariables() async throws {
-        try script(toml: "on = ['sheet.open']", "OPENSPOT_CONFIG='\(config.path)' /usr/bin/env -u OPENSPOT_REASON '\(client.path)' spot remove other > /dev/null 2> '\(path("errors"))'; echo $? >> '\(path("done"))'")
+        try script(toml: "on = ['sheet.open']", "OPENSPOT_CONFIG='\(config.path)' /usr/bin/env '\(client.path)' spot remove other > /dev/null 2> '\(path("errors"))'; echo $? >> '\(path("done"))'")
         let sheet = try sheet()
         runs.panelOpened()
 

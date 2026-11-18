@@ -38,7 +38,7 @@ final class SpotTests: XCTestCase {
 
     func testReadsTheStateACommandPrintsForRead() async throws {
         let command = try writeCommand(kind: .toggle, read: .panel, """
-        [ "$1" = read ] && [ -z "$2" ] && printf 'switch=focus\\ntitle=Focus\\ndetail=On\\nvalue=true\\n'
+        [ "$1" = show ] && [ -z "$2" ] && printf 'switch=focus\\ntitle=Focus\\ndetail=On\\nvalue=true\\n'
         """)
 
         let state = try await command.state(timeout: 60)
@@ -88,7 +88,7 @@ final class SpotTests: XCTestCase {
 
     func testReadsTheItemsACommandPrintsForRead() async throws {
         let command = try writeCommand(kind: .list, """
-        [ "$1" = read ] && [ -z "$2" ] && printf 'row=/Safari.app\\ntitle=Safari\\n'
+        [ "$1" = show ] && [ -z "$2" ] && printf 'row=/Safari.app\\ntitle=Safari\\n'
         """)
 
         let lines = try await command.items(timeout: 60)
@@ -103,7 +103,7 @@ final class SpotTests: XCTestCase {
 
         let lines = try await command.items(query: "rep", timeout: 60)
 
-        XCTAssertEqual(lines.items, [SpotItem(title: "rep", run: "read")])
+        XCTAssertEqual(lines.items, [SpotItem(title: "rep", run: "show")])
     }
 
     func testAFormIsTheCallOfItsActionWithEmptyStdin() async throws {
@@ -161,7 +161,7 @@ final class SpotTests: XCTestCase {
         let run = try await command.submit(CommandAction(id: "new", title: "New", isForm: true), item: nil, draft: FormDraft(form: form), timeout: 60)
 
         XCTAssertEqual(run, "abc")
-        XCTAssertEqual(try String(contentsOf: marker, encoding: .utf8), "title=One\n")
+        XCTAssertEqual(try String(contentsOf: marker, encoding: .utf8), "input.title=One\n")
     }
 
     func testOutputThatIsNotAStateFails() async throws {

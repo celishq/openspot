@@ -101,7 +101,7 @@ play() {
 }
 
 case "$1" in
-  read) card; exit 0 ;;
+  show) card; exit 0 ;;
   open | play) ;;
   *) exit 0 ;;
 esac

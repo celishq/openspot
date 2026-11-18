@@ -1,6 +1,6 @@
 #!/bin/sh
 . "$OPENSPOT_SH"
-kept=${OPENSPOT_SETTING_INPUTS-}
+kept=$(value setting.inputs)
 
 # Turns an input on or off, and keeps one mic and one camera at most.
 toggle() {
@@ -19,7 +19,7 @@ toggle() {
 
 case "$1" in
   inputs)
-    picked=$(value inputs)
+    picked=$(value input.inputs)
     if [ -n "$picked" ]; then
       for word in $picked; do toggle "$word"; done
       if [ -n "$kept" ]; then openspot setting set inputs "$kept"; else openspot setting set inputs; fi

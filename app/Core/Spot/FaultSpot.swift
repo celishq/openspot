@@ -19,7 +19,7 @@ public struct FaultSpot: Equatable, Sendable {
 
     public func answer(_ arguments: [String], base: [String: String]? = nil) async throws -> String {
         switch arguments.first {
-        case "read":
+        case "show":
             return sheet
         case Self.fixPart:
             let toast = try await prompt.copy(prompt.fixing(file, faults: faults), base: base)

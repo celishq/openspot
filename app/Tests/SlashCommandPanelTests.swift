@@ -11,7 +11,7 @@ final class SlashCommandPanelTests: PanelCase {
         stdin=$(cat)
         printf '%s\\n%s\\n' "$*" "$stdin" >> '\(input.path)'
         search=$(printf '%s\\n' "$stdin" | sed -n 's/^search=//p' | head -n 1)
-        name=$(printf '%s\\n' "$stdin" | sed -n 's/^name=//p' | head -n 1)
+        name=$(printf '%s\\n' "$stdin" | sed -n 's/^input\\.name=//p' | head -n 1)
         case "$1" in
           add)
             if [ "$search" = ask ]; then printf 'title=Add a note\\n\\nfield=name\\ntitle=Name\\n'; else printf 'toast=Saved %s%s\\n' "$search" "$name"; fi ;;
@@ -246,6 +246,6 @@ final class SlashCommandPanelTests: PanelCase {
 
         try await wait("the sheet") { self.model.openSheetID == "translate" }
         try await wait("the text in the read") { self.sent.contains("search=hello world") }
-        XCTAssertTrue(sent.contains("read\n"), sent)
+        XCTAssertTrue(sent.contains("show\n"), sent)
     }
 }

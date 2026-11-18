@@ -6,7 +6,7 @@ final class SpotRunsFrameTests: SpotRunsCase {
     func testAnActionsFrameWithABlockReplacesTheWholeSheet() async throws {
         try script(toml: "on = ['sheet.open']", """
         case "$1" in
-          read) printf 'grid=go\\ngrid=a\\ngrid=b\\n\\nbutton=go\\ntitle=Go\\n\\ntext=a\\ntitle=A\\n\\ntext=b\\ntitle=B\\n' ;;
+          show) printf 'grid=go\\ngrid=a\\ngrid=b\\n\\nbutton=go\\ntitle=Go\\n\\ntext=a\\ntitle=A\\n\\ntext=b\\ntitle=B\\n' ;;
           go) printf 'text=only\\ntitle=Only\\n' ;;
         esac
         """)
@@ -19,7 +19,7 @@ final class SpotRunsFrameTests: SpotRunsCase {
         try await wait("the new picture") { sheet.panel?.parts.map(\.id) == ["only"] }
         try await allEnded()
         try await pause(0.1)
-        XCTAssertEqual(log(), ["read", "go"])
+        XCTAssertEqual(log(), ["show", "go"])
     }
 
     func testALaterFrameOfAReadWithABlockAndNoHeadReplacesAll() async throws {
@@ -35,7 +35,7 @@ final class SpotRunsFrameTests: SpotRunsCase {
     func testAFrameOfOnlyAHeadShowsItsToastAndKeepsThePicture() async throws {
         try script(toml: "on = ['sheet.open']", """
         case "$1" in
-          read) printf 'row=a\\ntitle=A\\n' ;;
+          show) printf 'row=a\\ntitle=A\\n' ;;
           open) printf 'toast=Saved\\ntitle=Other\\n---\\n'; \(untilRelease) ;;
         esac
         """)
@@ -56,7 +56,7 @@ final class SpotRunsFrameTests: SpotRunsCase {
     func testProgressInAHeadShowsOnTheRunningCall() async throws {
         try script(toml: "on = ['sheet.open']", """
         case "$1" in
-          read) printf 'row=a\\ntitle=A\\n' ;;
+          show) printf 'row=a\\ntitle=A\\n' ;;
           open) printf 'progress=0.4\\ntitle=Copying\\ndetail=2 of 5\\n---\\n'; \(untilRelease) ;;
         esac
         """)
@@ -76,7 +76,7 @@ final class SpotRunsFrameTests: SpotRunsCase {
     func testAMainGaugeOfARunningCallIsNoLongerItsProgress() async throws {
         try script(toml: "on = ['sheet.open']", """
         case "$1" in
-          read) printf 'row=a\\ntitle=A\\n' ;;
+          show) printf 'row=a\\ntitle=A\\n' ;;
           open) printf 'graph=g\\nvalue=0.4\\n---\\n'; \(untilRelease) ;;
         esac
         """)
@@ -113,7 +113,7 @@ final class SpotRunsFrameTests: SpotRunsCase {
         while IFS= read -r line; do
           case "$line" in
             call=*) call=${line#call=} ;;
-            arg=read) printf 'end=%s\\n\\nrow=a\\ntitle=A\\n---\\n' "$call" ;;
+            arg=show) printf 'end=%s\\n\\nrow=a\\ntitle=A\\n---\\n' "$call" ;;
             arg=open) printf 'toast=Done\\nend=%s\\n---\\n' "$call"; printf 'text=peer\\ntitle=Peer\\n---\\n' ;;
           esac
         done
@@ -134,7 +134,7 @@ final class SpotRunsFrameTests: SpotRunsCase {
         while IFS= read -r line; do
           case "$line" in
             call=*) call=${line#call=} ;;
-            arg=read) printf 'row=a\\ntitle=A\\n---\\n'; printf 'end=%s\\n---\\n' "$call" ;;
+            arg=show) printf 'row=a\\ntitle=A\\n---\\n'; printf 'end=%s\\n---\\n' "$call" ;;
           esac
         done
         """)
@@ -151,7 +151,7 @@ final class SpotRunsFrameTests: SpotRunsCase {
     func testAnOutdatedAnswerChangesNothingAndAReadFollowsItsEnd() async throws {
         try script(toml: "on = ['sheet.open']", """
         case "$1" in
-          read) printf 'switch=a\\nvalue=%s\\n\\nswitch=b\\nvalue=%s\\n' "$(cat '\(path("a"))' 2>/dev/null || echo false)" "$(cat '\(path("b"))' 2>/dev/null || echo false)" ;;
+          show) printf 'switch=a\\nvalue=%s\\n\\nswitch=b\\nvalue=%s\\n' "$(cat '\(path("a"))' 2>/dev/null || echo false)" "$(cat '\(path("b"))' 2>/dev/null || echo false)" ;;
           a) \(untilRelease); echo "$2" > '\(path("a"))'; printf 'switch=a\\nvalue=%s\\n\\nswitch=b\\nvalue=false\\n' "$2" ;;
           b) echo "$2" > '\(path("b"))'; printf 'switch=a\\nvalue=false\\n\\nswitch=b\\nvalue=%s\\n' "$2" ;;
         esac
@@ -167,7 +167,7 @@ final class SpotRunsFrameTests: SpotRunsCase {
         try await wait("the answer of b") { self.log().contains("b true") && sheet.calls.count == 1 }
         openGate()
 
-        try await wait("the read after a") { self.log().last == "read" && sheet.calls.isEmpty }
+        try await wait("the read after a") { self.log().last == "show" && sheet.calls.isEmpty }
         XCTAssertEqual(sheet.panel?.parts.map(\.value), ["true", "true"])
     }
 }

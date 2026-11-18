@@ -73,7 +73,7 @@ public struct SheetParts: Equatable, Sendable {
     }
 
     public var values: String {
-        TextBlock(fields: parts.compactMap { part in part.value.map { .init(key: part.id, value: $0) } }).text
+        TextBlock(fields: parts.compactMap { part in part.value.map { .init(key: "input.\(part.id)", value: $0) } }).text
     }
 
     public var hint: String {

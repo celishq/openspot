@@ -60,12 +60,6 @@ public struct SpotFile: Equatable, Sendable {
         if let field = header.children.first(where: { HeaderBlock(block: $0) == .field && $0.value("type").map { $0 != HeaderField.secret } == true }) {
             throw SpotError.fault("\(name) has an unknown type on the field `\(field.value(HeaderBlock.field) ?? "")`: `\(field.value("type") ?? "")`. Use `type=secret`, or no type.")
         }
-        let fieldKeys = header.children.compactMap { $0.value(HeaderBlock.field) }
-        if let (first, second) = fieldKeys.enumerated().lazy.compactMap({ place, key in
-            fieldKeys[..<place].first { $0 != key && FieldValues.variable(of: $0) == FieldValues.variable(of: key) }.map { ($0, key) }
-        }).first {
-            throw SpotError.fault("\(name) has field=\(first) and field=\(second), which both give `\(FieldValues.variable(of: first))`. Rename one of them.")
-        }
         let buttons = header.children.filter { HeaderBlock(block: $0) == .button }
         let offeredActions = try OfferedAction.read(buttons, owner: id, of: name, isInline: mode == .inline)
         let offeredIDs = Set(offeredActions.map(\.action.id))

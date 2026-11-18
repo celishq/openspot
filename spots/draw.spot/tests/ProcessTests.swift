@@ -68,7 +68,7 @@ final class DrawProcessTests: XCTestCase {
         first.take(.ask(id: 1, arguments: ["open", "0:flows"], input: [:]))
         let second = try draw("second")
 
-        second.take(.ask(id: 1, arguments: ["rename", "0:flows"], input: ["name": "Other"]))
+        second.take(.ask(id: 1, arguments: ["rename", "0:flows"], input: ["input.name": "Other"]))
         first.desk?.studio?.change { $0.add(self.box()) }
         first.desk?.finish()
 
@@ -83,7 +83,7 @@ final class DrawProcessTests: XCTestCase {
         first.take(.ask(id: 1, arguments: ["open", "0:flows"], input: [:]))
         let second = try draw("second")
 
-        second.take(.ask(id: 1, arguments: ["read"], input: [:]))
+        second.take(.ask(id: 1, arguments: ["show"], input: [:]))
         second.take(.ask(id: 2, arguments: ["rename", "0:flows"], input: [:]))
 
         let frames = try frames(of: "second")
@@ -97,10 +97,10 @@ final class DrawProcessTests: XCTestCase {
         let first = try draw("first")
         first.take(.ask(id: 1, arguments: ["open", "0:flows"], input: [:]))
         let second = try draw("second")
-        second.take(.ask(id: 1, arguments: ["rename", "0:flows"], input: ["name": "Other"]))
+        second.take(.ask(id: 1, arguments: ["rename", "0:flows"], input: ["input.name": "Other"]))
 
         first.take(nil)
-        second.take(.ask(id: 2, arguments: ["rename", "0:flows"], input: ["name": "Other"]))
+        second.take(.ask(id: 2, arguments: ["rename", "0:flows"], input: ["input.name": "Other"]))
 
         XCTAssertEqual(try Board.title(at: file), "Other")
     }
@@ -108,10 +108,10 @@ final class DrawProcessTests: XCTestCase {
     func testADrawThatOnlyListedTheBoardsHoldsNone() throws {
         let file = try board("flows")
         let first = try draw("first")
-        first.take(.ask(id: 1, arguments: ["read"], input: [:]))
+        first.take(.ask(id: 1, arguments: ["show"], input: [:]))
         let second = try draw("second")
 
-        second.take(.ask(id: 1, arguments: ["rename", "0:flows"], input: ["name": "Other"]))
+        second.take(.ask(id: 1, arguments: ["rename", "0:flows"], input: ["input.name": "Other"]))
 
         XCTAssertEqual(try Board.title(at: file), "Other")
     }

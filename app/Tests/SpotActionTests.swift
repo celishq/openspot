@@ -38,9 +38,9 @@ final class SpotActionTests: XCTestCase {
     }
 
     func testAReadHasNoArgumentsAndItsTextGoesOnStdinWithEachForm() {
-        XCTAssertEqual(SpotAction.read.arguments, ["read"])
+        XCTAssertEqual(SpotAction.show.arguments, ["show"])
         XCTAssertEqual(SearchQuery(text: "rep", layouts: []).input, "search=rep\n")
-        XCTAssertEqual(SearchQuery(text: "сафари", layouts: []).input, "search=сафари\nform=safari\n")
+        XCTAssertEqual(SearchQuery(text: "сафари", layouts: []).input, "search=сафари\nsearch.alt=safari\n")
     }
 
     func testAnActionSendsItsIdAndItsItem() {
@@ -62,10 +62,10 @@ final class SpotActionTests: XCTestCase {
     func testALongRunJoinsTheValuesOfAFormAsValue() {
         let long = String(repeating: "x", count: 65_537)
 
-        let sent = SpotAction(arguments: ["edit", long]).sent(input: "title=A\n")
+        let sent = SpotAction(arguments: ["edit", long]).sent(input: "input.title=A\n")
 
         XCTAssertEqual(sent.arguments, ["edit"])
-        XCTAssertEqual(sent.input, "title=A\nvalue=\(long)\n")
+        XCTAssertEqual(sent.input, "input.title=A\ninput.value=\(long)\n")
     }
 
     func testAShortValueStaysAndStdinDoesNotChange() {

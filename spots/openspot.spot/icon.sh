@@ -40,7 +40,7 @@ case "$1" in
     cp "$2" "$file"
     openspot setting set --spot "$target" icon "$file"
     ;;
-  read)
+  show)
     [ -n "$target" ] || { printf 'text=none\ntitle=No spot\ndetail=Choose Change Icon › Draw… in the menu of a card\n'; exit 0; }
     dots=$(cat "$data/$name.draft" 2>/dev/null || cat "$data/$name.dots" 2>/dev/null)
     [ ${#dots} -eq 81 ] || dots=$empty

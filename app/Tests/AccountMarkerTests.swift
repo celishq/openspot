@@ -51,7 +51,7 @@ final class AccountMarkerTests: BuiltInCase {
         let command = tools.appendingPathComponent("openspot")
         var said: [String] = []
         for id in ids {
-            for call in [[], ["read"], ["show"], ["again"], ["about"]] {
+            for call in [[], ["show"], ["reveal"], ["again"], ["about"]] {
                 do {
                     said.append("spot run \(id) \(call) gave " + (try await ScriptProcess.output(url: command, arguments: ["spot", "run", id] + call, input: "", limit: 60, base: TestEnvironment.values)))
                 } catch {
@@ -94,10 +94,9 @@ final class AccountMarkerTests: BuiltInCase {
         var lines: [String] = []
         var failures: [String] = []
         let frame = { (arguments: [String], input: String?, page: String?) async -> String in
-            var variables = arguments == ["read"] ? ["OPENSPOT_REASON": "sheet.open"] : [:]
-            if let page { variables["OPENSPOT_PAGE"] = page }
+            let message = (arguments == ["show"] ? "event=sheet.open\n" : "") + (page.map { "route=\($0)\n" } ?? "") + (input ?? "")
             do {
-                let text = try await self.runs.answer(of: sheet.spot, SpotAction(arguments: arguments), input: input, limit: 60, variables: variables)
+                let text = try await self.runs.answer(of: sheet.spot, SpotAction(arguments: arguments), input: message, limit: 60)
                 lines += text.split(separator: "\n").filter { line in ["toast=", "push=", "pop="].contains { line.hasPrefix($0) } }.map(String.init)
                 return text
             } catch {
@@ -114,10 +113,10 @@ final class AccountMarkerTests: BuiltInCase {
 
         let check = { (words: [String], wrongFirst: Bool) async throws in
             _ = await frame(["about"], nil, nil)
-            let shown = await frame(["show"], nil, "about")
+            let shown = await frame(["reveal"], nil, "about")
             XCTAssertTrue(shown.contains("title=\(words[0])"), shown)
             _ = await frame(["wrote"], nil, "about")
-            let asked = await frame(["read"], nil, "check")
+            let asked = await frame(["show"], nil, "check")
             let places = Array(Set(picks(asked).map(\.place))).sorted()
             XCTAssertEqual(places.count, 2, asked)
             if wrongFirst {
@@ -130,7 +129,7 @@ final class AccountMarkerTests: BuiltInCase {
         }
 
         _ = await frame(["new"], nil, nil)
-        _ = await frame(["create"], "handle=tony\n", "handle")
+        _ = await frame(["create"], "input.handle=tony\n", "handle")
         XCTAssertEqual(try store.record()?.handle, "tony")
         let made = try XCTUnwrap(try store.key()?.words)
         try await check(made, true)
@@ -142,16 +141,16 @@ final class AccountMarkerTests: BuiltInCase {
         XCTAssertNil(try store.key())
         _ = await frame(["own"], nil, nil)
         _ = await frame(["phrase", "abandon abandon"], nil, "restore")
-        _ = await frame(["sign_in"], "phrase=\(phrase)\n", "restore")
+        _ = await frame(["sign_in"], "input.phrase=\(phrase)\n", "restore")
         let words = try XCTUnwrap(try store.key()?.words)
         XCTAssertEqual(words.joined(separator: " "), phrase)
         try keepTheKey()
-        _ = await frame(["read"], nil, nil)
+        _ = await frame(["show"], nil, nil)
         try await check(words, true)
         try await check(words, false)
         XCTAssertTrue(try store.record()?.isBackedUp == true)
         await app.set(allows: false)
-        _ = await frame(["show"], nil, "about")
+        _ = await frame(["reveal"], nil, "about")
         _ = await frame(["sign_out"], nil, "leave")
         await app.set(allows: true)
         _ = await frame(["new"], nil, "publish:evil")

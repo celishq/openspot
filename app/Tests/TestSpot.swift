@@ -1,6 +1,8 @@
 import Foundation
 
 struct TestSpot {
+    static let event = #"in=$(cat); ev=$(printf '%s\n' "$in" | sed -n 's/^event=//p'); val=$(printf '%s\n' "$in" | sed -n 's/^event\.value=//p')"#
+
     let toml: String
     let body: String
 

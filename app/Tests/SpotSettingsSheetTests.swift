@@ -43,7 +43,7 @@ final class SpotSettingsSheetTests: XCTestCase {
     }
 
     private func script(_ name: String, toml: String) throws {
-        try "#!/bin/sh\necho \"$*\" >> '\(log.path)'\n[ \"$1\" = read ] && printf 'row=own\\ntitle=Own\\n'\nexit 0\n".writeScript(to: spots.spotFile(name), toml: toml)
+        try "#!/bin/sh\necho \"$*\" >> '\(log.path)'\n[ \"$1\" = show ] && printf 'row=own\\ntitle=Own\\n'\nexit 0\n".writeScript(to: spots.spotFile(name), toml: toml)
     }
 
     private func show(selecting id: String, search: String = "") async throws {
@@ -68,7 +68,7 @@ final class SpotSettingsSheetTests: XCTestCase {
         XCTAssertEqual(model.openEntry?.id, settings)
         XCTAssertEqual(model.openEntry?.state.title, "Draw Settings")
         XCTAssertEqual(SpotSheetCard.of(model.openSheetID, in: model)?.id, "draw")
-        XCTAssertFalse(calls.contains("read"))
+        XCTAssertFalse(calls.contains("show"))
 
         XCTAssertTrue(model.handleKey(ActionKey(name: "escape")))
         XCTAssertNil(model.openSheetID)

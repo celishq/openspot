@@ -21,8 +21,8 @@ Fleet
 Android Studio'
 finder=/System/Library/CoreServices/Finder.app
 
-folder=${OPENSPOT_SETTING_FOLDER-}
-editor=${OPENSPOT_SETTING_EDITOR-}
+folder=$(value setting.folder)
+editor=$(value setting.editor)
 [ -d "$folder" ] || folder=""
 [ -d "$editor" ] || editor=""
 
@@ -83,7 +83,7 @@ form() {
 
 # Keeps the editor of the form. Asks again when the form gave an app that is gone, and returns 1 then.
 keep_editor() {
-  chosen=$(value editor)
+  chosen=$(value input.editor)
   if [ ! -d "$chosen" ]; then
     form "Openspot cannot find that app. Choose another one."
     return 1
@@ -153,7 +153,7 @@ host() {
 tab=$(printf '\t')
 
 case "$1" in
-  read)
+  show)
     if [ -z "$folder" ]; then
       printf 'button=open\ntitle=Choose\n\n'
       printf 'row=choose\ntitle=Choose the folder of your repos\ndetail=Repos lists each git repo inside it\nicon=folder.badge.plus\n'
@@ -216,14 +216,14 @@ case "$1" in
     open -a "$editor" "$2"
     ;;
   page-*)
-    open "$(value page)"
+    open "$(value item.page)"
     ;;
   in-*)
     app=$(installed | sed -n "${1#in-}p")
     open -a "$app" "$2"
     ;;
   editor)
-    if [ -z "$(value editor)" ]; then
+    if [ -z "$(value input.editor)" ]; then
       form "Choose the default app"
       exit 0
     fi

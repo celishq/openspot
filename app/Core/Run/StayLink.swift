@@ -152,7 +152,7 @@ final class StayLink: ScriptLink {
         self.caller = caller
         slowAsks = 0
         let reason = reason ?? startReason
-        let read = SpotRun.Call(action: .read, key: SpotRun.readKey, reason: reason, purpose: .ask(.read(generation: nil, reports: true)))
+        let read = SpotRun.Call(action: .show, key: SpotRun.readKey, reason: reason, purpose: .ask(.read(generation: nil, reports: true)))
         open(OpenCall(read, started: runs.now()), on: script, isTimed: false)
         Task { await follow(script, frames) }
     }
@@ -176,8 +176,7 @@ final class StayLink: ScriptLink {
         call.made.halt = { [weak script] in script?.send(text: SpotAction.stopEvent(id: id)) }
         if case .ask = request.purpose { askReason = request.reason?.rawValue }
         noteReason()
-        let values = run?.fieldValues
-        script.send(request.action, input: values?.input(with: request.input) ?? request.input, variables: values.flatMap { run?.sent(request.variables, values: $0) } ?? request.variables, id: id)
+        script.send(request.action, input: run.map { $0.message(of: request, values: $0.fieldValues) } ?? request.input, id: id)
         guard isTimed else { return }
         let limit = runs.readLimit
         record.timer = Task { [weak self, weak script, sleep = runs.clock.sleep] in

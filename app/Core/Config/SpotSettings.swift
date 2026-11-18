@@ -69,7 +69,7 @@ public struct SpotSettings: Equatable, Sendable {
     func answer(_ arguments: [String]) throws -> String {
         let row = arguments.dropFirst().first
         switch (arguments.first, row.flatMap(self.row)) {
-        case ("read", _):
+        case ("show", _):
             return sheet(in: file.read(), secrets: try secrets.read()[spot] ?? [:])
         case (Self.clear, let found?):
             try clear(found)

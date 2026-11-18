@@ -18,7 +18,7 @@ final class GlobalKeyTests: XCTestCase {
     }
 
     func testABadCommandRefusesTheSpotAndNamesTheFault() {
-        for block in ["[commands.full]", "[commands.read]\ntitle = 'Read'", "[commands.'full now']\ntitle = 'Full'"] {
+        for block in ["[commands.full]", "[commands.show]\ntitle = 'Show'", "[commands.'full now']\ntitle = 'Full'"] {
             XCTAssertThrowsError(try command(toml: block), block) { error in
                 XCTAssertTrue((error as? SpotError)?.reason.contains("cannot read the button") == true, block)
             }

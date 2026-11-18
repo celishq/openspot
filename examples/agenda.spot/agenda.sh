@@ -1,10 +1,8 @@
 #!/bin/sh
 . "$OPENSPOT_SH"
 
-hidden=${OPENSPOT_SETTING_CALENDARS-}
-
 # Prints a --hide flag for each calendar and list that the person hides in the calendars setting.
-hides() { for id in $hidden; do printf -- '--hide %s ' "$id"; done; }
+hides() { for id in $(value setting.calendars); do printf -- '--hide %s ' "$id"; done; }
 
 # Turns each calendar or list of the ids on or off, and keeps the ids of the hidden ones in the calendars setting.
 toggle() {
@@ -161,7 +159,7 @@ allow() {
 }
 
 case "$1" in
-  read)
+  show)
     events=$(events) || { printf '%s\n' "$events"; exit 1; }
     reminders=$(reminders) || { printf '%s\n' "$reminders"; exit 1; }
     card
@@ -175,7 +173,7 @@ case "$1" in
     fi
     [ "$events" != status=unasked ] || printf 'row=allow-calendar\ntitle=Allow Calendar\ndetail=Show your events here\nicon=calendar\nhides=join\nhides=tick\n\n'
     [ "$reminders" != status=unasked ] || printf 'row=allow-reminders\ntitle=Allow Reminders\ndetail=Show and tick your reminders here\nicon=checklist\nhides=join\nhides=tick\n\n'
-    rows "$typed" "$(value form)"
+    rows "$typed" "$(value search.alt)"
     ;;
   open)
     case "$2" in
@@ -192,12 +190,13 @@ case "$1" in
     esac
     ;;
   calendars)
-    picked=$(value calendars)
+    hidden=$(value setting.calendars)
+    picked=$(value input.calendars)
     [ -z "$picked" ] || toggle $picked
     calendars_form
     ;;
   tick)
-    state=$(value done)
+    state=$(value item.done)
     to=true
     [ "$state" = true ] && to=false
     openspot reminders done "$2" "$to" </dev/null
@@ -209,7 +208,7 @@ case "$1" in
     open "$link"
     ;;
   join)
-    link=$(value meeting)
+    link=$(value item.meeting)
     [ -n "$link" ] || { echo 'This event has no call link.' >&2; exit 1; }
     open "$link"
     ;;

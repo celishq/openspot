@@ -56,10 +56,6 @@ public final class SpotRun {
         var limit: TimeInterval?
         var reason: ReadReason?
         var purpose: Purpose
-
-        var variables: [String: String] {
-            reason?.variables ?? [:]
-        }
     }
 
     static let answerAge: TimeInterval = 5

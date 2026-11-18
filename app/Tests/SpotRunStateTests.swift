@@ -164,7 +164,7 @@ final class SpotRunStateTests: XCTestCase {
         await link.frame("toast=Done\n", of: link.sent[1])
         await link.end(link.sent[1])
 
-        XCTAssertEqual(link.arguments(), [["read"], ["open", "a"], ["read"]])
+        XCTAssertEqual(link.arguments(), [["show"], ["open", "a"], ["show"]])
     }
 
     func testNoReadFollowsWorkThatDrewAPicture() async throws {
@@ -174,7 +174,7 @@ final class SpotRunStateTests: XCTestCase {
         await link.frame("row=b\ntitle=B\n", of: link.sent[1])
         await link.end(link.sent[1])
 
-        XCTAssertEqual(link.arguments(), [["read"], ["open", "a"]])
+        XCTAssertEqual(link.arguments(), [["show"], ["open", "a"]])
         XCTAssertEqual(sheet.list.shown.map(\.run), ["b"])
     }
 
@@ -486,7 +486,7 @@ final class SpotRunStateTests: XCTestCase {
         await link.frame("toast=Done\n", of: link.sent[1])
         await link.end(link.sent[1], .failed(SpotError.failed(2, "No")))
 
-        XCTAssertEqual(records.map(\.arguments), [["read"], ["open", "a"]])
+        XCTAssertEqual(records.map(\.arguments), [["show"], ["open", "a"]])
         XCTAssertEqual(records.last?.frames, ["toast=Done\n"])
         XCTAssertEqual(records.last?.end, .exited(2))
         XCTAssertEqual(runs.usage.counts["script"]?.runs, 2)

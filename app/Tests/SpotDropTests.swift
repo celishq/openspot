@@ -241,14 +241,14 @@ final class SpotDropTests: XCTestCase {
     private func busySheet() async throws -> SpotRun {
         let sheet = try sheet(toml: "on = ['sheet.open']\ndrop = 'mov'", """
         case "$1" in
-          read) printf 'button=work\\ntitle=Work\\nscope=spot\\n\\nrow=a\\ntitle=A\\n' ;;
+          show) printf 'button=work\\ntitle=Work\\nscope=spot\\n\\nrow=a\\ntitle=A\\n' ;;
           work) \(untilRelease); touch '\(path("worked"))' ;;
         esac
         """)
         sheet.open {}
         try await wait("the action") { sheet.spot.actions.count == 1 && sheet.calls.isEmpty }
         sheet.run(try XCTUnwrap(sheet.spot.actions.first), item: nil)
-        try await wait("the call") { self.log() == ["read", "work"] }
+        try await wait("the call") { self.log() == ["show", "work"] }
         return sheet
     }
 
@@ -259,7 +259,7 @@ final class SpotDropTests: XCTestCase {
         XCTAssertTrue(sheet.drop([file]))
         try await pause()
 
-        XCTAssertEqual(log(), ["read", "work"])
+        XCTAssertEqual(log(), ["show", "work"])
         XCTAssertEqual(sheet.calls.map(\.action.arguments), [["work"]])
 
         FileManager.default.createFile(atPath: path("release"), contents: Data())
@@ -297,7 +297,7 @@ final class SpotDropTests: XCTestCase {
     func testAWaitingDropRunsAfterTheRunningCallFails() async throws {
         let sheet = try sheet(toml: "on = ['sheet.open']\ndrop = 'mov'", """
         case "$1" in
-          read) printf 'button=work\\ntitle=Work\\nscope=spot\\n\\nrow=a\\ntitle=A\\n' ;;
+          show) printf 'button=work\\ntitle=Work\\nscope=spot\\n\\nrow=a\\ntitle=A\\n' ;;
           work) sleep 0.2; echo gone >&2; exit 3 ;;
         esac
         """)
@@ -345,11 +345,11 @@ final class SpotDropTests: XCTestCase {
 
     func testARunningReadDoesNotHoldADrop() async throws {
         let sheet = try sheet(toml: "on = ['panel.open']\ndrop = 'mov'", """
-        [ "$1" = read ] && { printf 'switch=power\\nvalue=false\\n---\\n'; sleep 30; }
+        [ "$1" = show ] && { printf 'switch=power\\nvalue=false\\n---\\n'; sleep 30; }
         exit 0
         """)
         runs.panelOpened()
-        try await wait("the read") { self.log() == ["read"] && sheet.spot.kind == .toggle }
+        try await wait("the read") { self.log() == ["show"] && sheet.spot.kind == .toggle }
         let file = file("a.mov")
 
         XCTAssertTrue(sheet.drop([file]))
@@ -364,7 +364,7 @@ final class SpotDropTests: XCTestCase {
         runs.quit()
         try await pause(0.25)
 
-        XCTAssertEqual(log(), ["read", "work"])
+        XCTAssertEqual(log(), ["show", "work"])
     }
 
     private func stayingSheet(toml: String = "") throws -> SpotRun {
@@ -380,7 +380,7 @@ final class SpotDropTests: XCTestCase {
     private func blocks() -> [String] {
         let text = (try? String(contentsOfFile: path("blocks"), encoding: .utf8)) ?? ""
         return text.components(separatedBy: "\n\n").filter { !$0.isEmpty }.map { block in
-            block.split(separator: "\n").filter { !$0.hasPrefix("call=") && !$0.hasPrefix("env.") }.joined(separator: "\n")
+            block.split(separator: "\n").filter { line in !["call=", "event=", "event.value=", "route=", "setting."].contains { line.hasPrefix($0) } }.joined(separator: "\n")
         }
     }
 
@@ -394,7 +394,7 @@ final class SpotDropTests: XCTestCase {
 
         XCTAssertTrue(sheet.drop([spaced, dashed]))
 
-        try await wait("the call and its end") { self.blocks() == ["arg=read", "arg=drop\narg=\(spaced)\narg=\(dashed)"] && sheet.calls.isEmpty }
+        try await wait("the call and its end") { self.blocks() == ["arg=show", "arg=drop\narg=\(spaced)\narg=\(dashed)"] && sheet.calls.isEmpty }
         XCTAssertEqual(log().count, 1)
     }
 
@@ -405,7 +405,7 @@ final class SpotDropTests: XCTestCase {
 
         XCTAssertTrue(sheet.drop([spaced, dashed]))
 
-        try await wait("the call") { self.blocks() == ["arg=read", "arg=drop\narg=\(spaced)\narg=\(dashed)"] }
+        try await wait("the call") { self.blocks() == ["arg=show", "arg=drop\narg=\(spaced)\narg=\(dashed)"] }
         XCTAssertEqual(log(), [""])
     }
 
@@ -420,7 +420,7 @@ final class SpotDropTests: XCTestCase {
         XCTAssertTrue(sheet.drop([first]))
         XCTAssertTrue(sheet.drop([second]))
 
-        try await wait("the calls") { self.blocks() == ["arg=read", "arg=drop\narg=\(first)", "arg=drop\narg=\(second)"] }
+        try await wait("the calls") { self.blocks() == ["arg=show", "arg=drop\narg=\(first)", "arg=drop\narg=\(second)"] }
         XCTAssertEqual(log().count, 1)
     }
 
@@ -491,7 +491,7 @@ final class SpotDropTests: XCTestCase {
     }
 
     func testAToggleWithDropKeepsItsClick() async throws {
-        let sheet = try sheet(toml: "on = ['panel.open']\ndrop = 'mov'", "[ \"$1\" = read ] && printf 'switch=power\\nvalue=false\\n'\nexit 0")
+        let sheet = try sheet(toml: "on = ['panel.open']\ndrop = 'mov'", "[ \"$1\" = show ] && printf 'switch=power\\nvalue=false\\n'\nexit 0")
         let choices = choiceCount(of: sheet)
         runs.panelOpened()
         try await wait("the kind") { sheet.spot.kind == .toggle }
@@ -547,7 +547,7 @@ final class SpotDropTests: XCTestCase {
     func testAStoppedDropChangesNothingAndItsSilenceIsNoAnswer() async throws {
         let sheet = try sheet(toml: "on = ['sheet.open']\ndrop = 'mov'", """
         case "$1" in
-          read) printf 'row=a\\ntitle=A\\n' ;;
+          show) printf 'row=a\\ntitle=A\\n' ;;
           drop) sleep 5; touch '\(path("went-on"))' ;;
         esac
         """)
@@ -565,17 +565,17 @@ final class SpotDropTests: XCTestCase {
     }
 
     func testADropWithNoFrameReadsOnce() async throws {
-        let sheet = try sheet(toml: "on = ['sheet.open']\ndrop = 'mov'", "[ \"$1\" = read ] && printf 'row=a\\ntitle=A\\n'\nexit 0")
+        let sheet = try sheet(toml: "on = ['sheet.open']\ndrop = 'mov'", "[ \"$1\" = show ] && printf 'row=a\\ntitle=A\\n'\nexit 0")
         let file = file("a.mov")
 
         XCTAssertTrue(sheet.drop([file]))
 
-        try await wait("the read after the call") { self.log() == ["drop \(file)", "read"] }
+        try await wait("the read after the call") { self.log() == ["drop \(file)", "show"] }
     }
 
     func testADropThatSelectsARowReadsAgainWithThatRowSelected() async throws {
         let rows = "printf 'row=a\\ntitle=A\\n\\nrow=b\\ntitle=B\\n'"
-        let sheet = try sheet(toml: "on = ['sheet.open']\ndrop = 'mov'", "case \"$1\" in\n  read) \(rows) ;;\n  drop) printf 'toast=Added\\nselect=b\\n' ;;\nesac")
+        let sheet = try sheet(toml: "on = ['sheet.open']\ndrop = 'mov'", "case \"$1\" in\n  show) \(rows) ;;\n  drop) printf 'toast=Added\\nselect=b\\n' ;;\nesac")
         sheet.open {}
         try await wait("the rows") { sheet.list.shown.count == 2 }
         XCTAssertEqual(sheet.list.selectedItem?.run, "a")
@@ -583,6 +583,6 @@ final class SpotDropTests: XCTestCase {
 
         XCTAssertTrue(sheet.drop([file]))
 
-        try await wait("the read with b selected") { self.log() == ["read", "drop \(file)", "read"] && sheet.list.selectedItem?.run == "b" }
+        try await wait("the read with b selected") { self.log() == ["show", "drop \(file)", "show"] && sheet.list.selectedItem?.run == "b" }
     }
 }

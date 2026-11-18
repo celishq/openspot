@@ -38,7 +38,7 @@ required=true"'
 }
 
 case "$1" in
-  read)
+  show)
     printf 'button=open\ntitle=Copy\n\n'
     printf 'button=paste\ntitle=Paste\nshortcut=cmd+return\nclose=true\n\n'
     printf 'button=edit\ntitle=Edit\nshortcut=cmd+e\nform=true\n\n'
@@ -48,8 +48,8 @@ case "$1" in
     jq -r "$esc"'.[] | "row=\(.id | esc)\ntitle=\(.title | esc)\ndetail=\(.content | gsub("\\s+"; " ") | .[0:200] | esc)\n"' "$data"
     ;;
   new)
-    title=$(value title)
-    text=$(value content; printf x)
+    title=$(value input.title)
+    text=$(value input.content; printf x)
     if [ -z "$title${text%x}" ]; then
       form "New snippet" "$(jq -nc --arg content "$(value search)" '{title: "", content: $content}')"
       exit 0
@@ -59,8 +59,8 @@ case "$1" in
     printf 'select=%s\n' "$id"
     ;;
   edit)
-    title=$(value title)
-    text=$(value content; printf x)
+    title=$(value input.title)
+    text=$(value input.content; printf x)
     if [ -z "$title${text%x}" ]; then
       form "Edit snippet" "$(load | jq -c --arg id "$2" '.[] | select(.id == $id)')"
       exit 0

@@ -41,7 +41,7 @@ public final class CommandAPI: @unchecked Sendable {
     }
 
     private func values(of request: CommandRequest) -> (spot: String?, reason: String?) {
-        guard runs != nil else { return (places.environment[CallWords.spotVariable], places.environment[CallWords.reasonVariable]) }
+        guard runs != nil else { return (places.environment[CallWords.spotVariable], nil) }
         let spot = request.caller?.spot.id
         return (spot?.isEmpty == false ? spot : nil, request.caller?.reason)
     }

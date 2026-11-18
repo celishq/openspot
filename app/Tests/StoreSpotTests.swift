@@ -17,7 +17,7 @@ final class StoreSpotTests: BuiltInCase {
     }
 
     private func items() async throws -> [[String]] {
-        let text = try await runs.answer(of: store, .read, limit: 60)
+        let text = try await runs.answer(of: store, .show, limit: 60)
         XCTAssertEqual(SpotOutput(text: text).parts.map(\.id), ["gallery"])
         return TextBlock.blocks(in: text).compactMap { row in
             row.value("row").map { [$0, row.value("title") ?? "", row.value("step") ?? "", row.value("origin") ?? "", row.value("detail") ?? "", row.value("size") ?? "", row.value("sample") == "true" ? "sample" : ""] }
@@ -75,11 +75,11 @@ final class StoreSpotTests: BuiltInCase {
         let friends = try friends()
         _ = try file.change { $0.add(store: Store(url: friends)) }
         try FileManager.default.removeItem(at: examples)
-        let before = try await runs.answer(of: store, .read, limit: 60)
+        let before = try await runs.answer(of: store, .show, limit: 60)
         XCTAssertEqual(SpotOutput(text: before).parts.first?.values["folder"], ["\(friends.path)\tfriends\tfound\tadded"])
 
         try "#!/bin/sh\n".writeScript(to: examples.appendingPathComponent("year.spot/year.sh"), toml: "title = 'Year'")
-        let text = try await runs.answer(of: store, .read, limit: 60)
+        let text = try await runs.answer(of: store, .show, limit: 60)
 
         XCTAssertEqual(SpotOutput(text: text).parts.first?.values["folder"], ["\(examples.path)\tOpenspot\tfound\tbuiltin", "\(friends.path)\tfriends\tfound\tadded"])
         XCTAssertEqual(TextBlock.blocks(in: text).first { $0.value("row") == "year" }?.value("store"), examples.path)
@@ -89,7 +89,7 @@ final class StoreSpotTests: BuiltInCase {
         let gone = root.appendingPathComponent("gone")
         _ = try file.change { $0.add(store: Store(url: gone)) }
 
-        let text = try await runs.answer(of: store, .read, limit: 60)
+        let text = try await runs.answer(of: store, .show, limit: 60)
         XCTAssertEqual(SpotOutput(text: text).parts.first?.values["folder"]?.last, "\(gone.path)\tgone\tmissing\tadded")
 
         try await call(["gallery", "remove:\(gone.path)"])
@@ -179,7 +179,7 @@ final class StoreSpotTests: BuiltInCase {
         try "# Timer\n\nCounts down.\n".write(to: core.appendingPathComponent("timer.spot/readme.md"), atomically: true, encoding: .utf8)
         try "# Mine\n".write(to: spots.appendingPathComponent("mine.spot/readme.md"), atomically: true, encoding: .utf8)
 
-        for action in [SpotAction.read, SpotAction(arguments: ["gallery", "get:timer"]), SpotAction(arguments: ["gallery", "publish:timer"])] {
+        for action in [SpotAction.show, SpotAction(arguments: ["gallery", "get:timer"]), SpotAction(arguments: ["gallery", "publish:timer"])] {
             let text = try await SpotRuns(environment: TestEnvironment.values).answer(of: store, action, limit: 60)
             XCTAssertNil(SpotOutput(text: text).parts.first?.values["readme"], "\(action.arguments)")
         }

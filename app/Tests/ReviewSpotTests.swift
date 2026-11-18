@@ -23,7 +23,7 @@ final class ReviewSpotTests: XCTestCase {
     }
 
     private func sheet(_ review: ReviewSpot) throws -> SpotOutput {
-        SpotOutput(text: try review.answer(["read"]))
+        SpotOutput(text: try review.answer(["show"]))
     }
 
     private func shown(_ review: ReviewSpot) throws -> String {
@@ -333,7 +333,7 @@ final class ReviewSpotTests: XCTestCase {
     func testNoScriptRunsForAReviewOrForAdd() async throws {
         let mark = folder.appendingPathComponent("ran")
         let review = try filed("on = ['panel.open']", body: "touch \"\(mark.path)\"\n")
-        _ = try review.answer(["read"])
+        _ = try review.answer(["show"])
 
         _ = try await review.add()
 
@@ -372,8 +372,8 @@ final class ReviewSpotTests: XCTestCase {
         XCTAssertEqual(command.kind, .list)
         XCTAssertEqual(command.read, .sheet)
         XCTAssertTrue(command.growsFromField)
-        let answer = try await command.host?.answer(["read"], input: nil, variables: [:])
-        XCTAssertEqual(answer, try review.answer(["read"]))
+        let answer = try await command.host?.answer(["show"], input: nil)
+        XCTAssertEqual(answer, try review.answer(["show"]))
     }
 
     func testAnUnknownCallFails() throws {

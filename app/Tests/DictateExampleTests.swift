@@ -94,7 +94,7 @@ final class DictateExampleTests: SampleSpotsCase {
         try Data().write(to: folder.appendingPathComponent("data/\(Self.model)"))
         try "1000\tFirst words\n2000\tSecond, with a back\\slash\n".write(to: folder.appendingPathComponent("data/history"), atomically: true, encoding: .utf8)
 
-        let frames = try await frames(script, sending: "call=1\narg=read\n\ncall=2\narg=open\narg=1000\n\ncall=3\narg=delete\narg=2000\n\n", until: ["1", "2", "3"])
+        let frames = try await frames(script, sending: "call=1\narg=show\n\ncall=2\narg=open\narg=1000\n\ncall=3\narg=delete\narg=2000\n\n", until: ["1", "2", "3"])
 
         let first = Array(frames.prefix { FrameHead(text: $0).end != "1" })
         XCTAssertEqual(rows(first).map(\.run), ["2000", "1000"])
@@ -111,7 +111,7 @@ final class DictateExampleTests: SampleSpotsCase {
         let script = try await staying(in: folder)
         defer { script.stop() }
 
-        let frames = try await frames(script, sending: "call=1\narg=read\n\ncall=2\narg=open\narg=whisper\n\n", until: ["1", "2"])
+        let frames = try await frames(script, sending: "call=1\narg=show\n\ncall=2\narg=open\narg=whisper\n\n", until: ["1", "2"])
         let offer = rows(Array(frames.prefix(2))).first
 
         XCTAssertEqual(offer?.run, "whisper")
@@ -164,11 +164,11 @@ final class DictateExampleTests: SampleSpotsCase {
         try await wait("curl") { FileManager.default.fileExists(atPath: pidFile.path) }
         let curl = try XCTUnwrap(pid_t(try read("curl.pid", in: folder).trimmingCharacters(in: .whitespacesAndNewlines)))
         defer { kill(curl, SIGKILL) }
-        script.send(text: "call=2\narg=read\n\n")
+        script.send(text: "call=2\narg=show\n\n")
         let during = try await Self.collect(&frames, until: ["2"])
         script.send(text: "stop=1\n\n")
         _ = try await Self.collect(&frames, until: ["1"])
-        script.send(text: "call=3\narg=read\n\n")
+        script.send(text: "call=3\narg=show\n\n")
         let after = try await Self.collect(&frames, until: ["3"])
 
         XCTAssertNotEqual(kill(curl, 0), 0)

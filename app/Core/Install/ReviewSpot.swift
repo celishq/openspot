@@ -85,7 +85,7 @@ public struct ReviewSpot: Equatable, Sendable {
 
     public func answer(_ arguments: [String]) throws -> String {
         switch arguments.first {
-        case "read":
+        case "show":
             return sheet
         default:
             throw SpotError.failed(1, "This sheet cannot do that.")

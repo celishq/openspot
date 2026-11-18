@@ -237,8 +237,8 @@ final class SwiftProgramTests: XCTestCase {
         let runs = SpotRuns(swift: try counting())
         defer { runs.quit() }
 
-        let several = try await runs.answer(of: spots.several, .read)
-        let single = try await runs.answer(of: spots.single, .read)
+        let several = try await runs.answer(of: spots.several, .show)
+        let single = try await runs.answer(of: spots.single, .show)
 
         XCTAssertEqual([several, single], ["text=program\n", "text=source\n"])
         try await wait("the build of the spot of one file") { self.builds == 2 }
@@ -249,9 +249,9 @@ final class SwiftProgramTests: XCTestCase {
         let runs = SpotRuns(swift: try counting(selector: "exit 2", compiler: "exit 2"))
         defer { runs.quit() }
 
-        let several = try await runs.answer(of: spots.several, .read)
-        let single = try await runs.answer(of: spots.single, .read)
-        let again = try await runs.answer(of: spots.several, .read)
+        let several = try await runs.answer(of: spots.several, .show)
+        let single = try await runs.answer(of: spots.single, .show)
+        let again = try await runs.answer(of: spots.several, .show)
 
         XCTAssertEqual([several, single, again], ["text=carried\n", "text=carried\n", "text=carried\n"])
         XCTAssertEqual(asks, 1)
@@ -262,8 +262,8 @@ final class SwiftProgramTests: XCTestCase {
         let runs = SpotRuns(swift: try counting(shipped: folder))
         defer { runs.quit() }
 
-        let several = try await runs.answer(of: spots.several, .read)
-        let single = try await runs.answer(of: spots.single, .read)
+        let several = try await runs.answer(of: spots.several, .show)
+        let single = try await runs.answer(of: spots.single, .show)
 
         XCTAssertEqual([several, single], ["text=carried\n", "text=carried\n"])
         XCTAssertEqual(builds, 0)
@@ -426,7 +426,7 @@ final class SwiftProgramTests: XCTestCase {
 
         XCTAssertEqual(review.name, "Hello")
         XCTAssertEqual(review.subtitle, "Holds a program that you cannot read")
-        let part = try XCTUnwrap(SpotOutput(text: try review.answer(["read"])).parts.first { $0.id == "review" })
+        let part = try XCTUnwrap(SpotOutput(text: try review.answer(["show"])).parts.first { $0.id == "review" })
         guard case .text(let text, _, _) = part.control else { throw SpotError.badForm }
         XCTAssertTrue(text.hasPrefix("Hello\n\nProgram that Openspot cannot show\nhello.spot/\(carried)\nIt can do all that you can. Add it only if you trust the sender.\nThe source beside it may not match the program.\n\n"), text)
     }
@@ -532,7 +532,7 @@ final class SwiftProgramTests: XCTestCase {
         let runs = SpotRuns(swift: SwiftProgram(cache: cache))
         defer { runs.quit() }
 
-        let answer = try await runs.answer(of: spot, .read)
+        let answer = try await runs.answer(of: spot, .show)
 
         XCTAssertEqual(spot.sources, ["words.swift", "more"])
         XCTAssertEqual(answer, "text=hello!\n")
@@ -544,11 +544,11 @@ final class SwiftProgramTests: XCTestCase {
         let runs = SpotRuns(swift: swift)
         defer { runs.quit() }
 
-        let first = try await runs.answer(of: spot, .read)
-        let second = try await runs.answer(of: spot, .read)
+        let first = try await runs.answer(of: spot, .show)
+        let second = try await runs.answer(of: spot, .show)
         let built = builds
         try Data("func mark() -> String { \"?\" }\n".utf8).write(to: folder.appendingPathComponent("hello.spot/more/Mark.swift"))
-        let third = try await runs.answer(of: spot, .read)
+        let third = try await runs.answer(of: spot, .show)
 
         XCTAssertEqual([first, second, third], ["text=program\n", "text=program\n", "text=program\n"])
         XCTAssertEqual(built, 1)
@@ -576,7 +576,7 @@ final class SwiftProgramTests: XCTestCase {
         defer { runs.quit() }
 
         do {
-            _ = try await runs.answer(of: spot, .read)
+            _ = try await runs.answer(of: spot, .show)
             XCTFail("It must not run.")
         } catch {
             XCTAssertEqual((error as? SpotError)?.reason, "This Swift spot does not compile. main.swift:6:7: error: cannot find mark")
@@ -589,7 +589,7 @@ final class SwiftProgramTests: XCTestCase {
         defer { runs.quit() }
 
         do {
-            _ = try await runs.answer(of: spot, .read)
+            _ = try await runs.answer(of: spot, .show)
             XCTFail("It must not run.")
         } catch {
             XCTAssertEqual((error as? SpotError)?.reason, "To build a Swift spot, install the Command Line Tools: xcode-select --install")
@@ -660,8 +660,8 @@ final class SwiftProgramTests: XCTestCase {
         let runs = SpotRuns(swift: SwiftProgram(tools: none, cache: folder.appendingPathComponent("empty-cache"), shipped: folder))
         defer { runs.quit() }
 
-        let several = try await runs.answer(of: spot, .read)
-        let single = try await runs.answer(of: one, .read)
+        let several = try await runs.answer(of: spot, .show)
+        let single = try await runs.answer(of: one, .show)
 
         XCTAssertEqual([several, single], ["text=program\n", "text=program\n"])
         XCTAssertEqual(builds, built)

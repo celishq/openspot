@@ -5,7 +5,7 @@ public struct PlaygroundCall: Equatable, Sendable {
 
     public init(record: CallLog.Record, reason: ReadReason?) {
         let words = record.arguments.map { $0.contains(where: \.isWhitespace) || $0.isEmpty ? "'\($0)'" : $0 }.joined(separator: " ")
-        let why = reason.map { [" · OPENSPOT_REASON=\($0.rawValue)"] + ($0.value.map { [" OPENSPOT_VALUE=\($0)"] } ?? []) }?.joined() ?? ""
+        let why = reason.map { " · " + $0.fields.map { "\($0.key)=\($0.value)" }.joined(separator: " ") } ?? ""
         let ending = switch record.end {
         case .exited(let code): "exit \(code)"
         case .stopped: "stopped"

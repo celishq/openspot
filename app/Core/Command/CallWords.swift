@@ -3,7 +3,6 @@ import Foundation
 public struct CallWords: Sendable {
     static let spotWord = "--spot"
     public static let spotVariable = "OPENSPOT_ID"
-    public static let reasonVariable = ReadReason.variable
 
     public let rest: [String]
     public let spot: String?

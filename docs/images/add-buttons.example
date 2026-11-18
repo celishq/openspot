@@ -1,7 +1,7 @@
 #!/bin/sh
 . "$OPENSPOT_SH"
 case "$1" in
-  read)
+  show)
     openspot_row today Today
     printf '\nbutton=trash\ntitle=Move to Trash\nshortcut=cmd+backspace\nconfirm=Press again to delete\n'
     ;;

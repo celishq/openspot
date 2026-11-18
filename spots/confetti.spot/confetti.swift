@@ -58,8 +58,8 @@ func play(_ id: String, call: String) {
 
 /// Answers the Look row of Settings: with no value, a form with a choice of each look; with one, keeps it and plays it.
 func look(_ call: Call) {
-    let picked = call.arguments.dropFirst().first ?? call.value("look") ?? ""
-    let current = shelf.chosen(call.variables["OPENSPOT_SETTING_LOOK"])
+    let picked = call.arguments.dropFirst().first ?? call.value("input.look") ?? ""
+    let current = shelf.chosen(call.value("setting.look"))
     guard shelf.ids.contains(picked) else {
         var form = "title=Look\n\nchoice=look\ntitle=Look\nvalue=\(current)\n"
         for id in shelf.ids { form += "\noption=\(id)\ntitle=\(Link.value(shelf.title(of: id)))\n" }
@@ -83,7 +83,7 @@ func look(_ call: Call) {
 Link.listen { call in
     Link.start(call.id)
     switch call.arguments.first {
-    case "play", "open": play(shelf.chosen(call.variables["OPENSPOT_SETTING_LOOK"]), call: call.id)
+    case "play", "open": play(shelf.chosen(call.value("setting.look")), call: call.id)
     case "look": look(call)
     default: Link.end(call.id)
     }

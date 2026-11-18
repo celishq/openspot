@@ -14,11 +14,12 @@ final class FlowMoveTests: PanelCase {
 
     private func writeFlow() throws {
         try script("flow", toml: "title = 'Flow'\non = ['sheet.open']\npages = ['n*', 'swapped']", """
+        page=$(sed -n 's/^route=//p')
         case "$1" in
-          read) printf 'button=done\\ntitle=Done\\nscope=spot\\n\\nbutton=top\\ntitle=Top\\nscope=spot\\n\\nbutton=next\\ntitle=Next\\nscope=spot\\n\\nbutton=swap\\ntitle=Swap\\nscope=spot\\n\\nbutton=hand\\ntitle=Hand\\nscope=spot\\n\\nrow=x\\ntitle=Page %s\\n' "${OPENSPOT_PAGE-first}" ;;
+          show) printf 'button=done\\ntitle=Done\\nscope=spot\\n\\nbutton=top\\ntitle=Top\\nscope=spot\\n\\nbutton=next\\ntitle=Next\\nscope=spot\\n\\nbutton=swap\\ntitle=Swap\\nscope=spot\\n\\nbutton=hand\\ntitle=Hand\\nscope=spot\\n\\nrow=x\\ntitle=Page %s\\n' "${page:-first}" ;;
           done) printf 'pop=true\\n' ;;
           top) printf 'pop=all\\n' ;;
-          next) printf 'push=n%s\\n' "${#OPENSPOT_PAGE}" ;;
+          next) printf 'push=n%s\\n' "${#page}" ;;
           swap) printf 'push=swapped\\npush.replace=true\\n' ;;
           hand) printf 'push.spot=other\\n' ;;
         esac

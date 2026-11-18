@@ -30,14 +30,15 @@ page() {
   printf '\nbutton=copy\ntitle=%s\nlook=strong\nshortcut=cmd+return\n' "${3:-Copy prompt}"
 }
 
-case "$OPENSPOT_PAGE" in
+route=$(value route)
+case "$route" in
   prompt:*)
-    theme=${OPENSPOT_PAGE#prompt:}
+    theme=${route#prompt:}
     draft="$OPENSPOT_DATA/prompts/$theme.draft"
     # The words of the field: the ones on stdin when the page sends them, or else the draft that a last call kept.
     case "$nl$(openspot_input)" in
-      *"${nl}describe="*)
-        typed=$(value describe; printf x)
+      *"${nl}input.describe="*)
+        typed=$(value input.describe; printf x)
         typed=${typed%x}
         openspot_keep "$draft" "$typed"
         ;;
@@ -47,7 +48,7 @@ case "$OPENSPOT_PAGE" in
         ;;
     esac
     case "$1" in
-      read | describe) page "$typed" "$theme" ;;
+      show | describe) page "$typed" "$theme" ;;
       copy)
         words=$(openspot prompt theme "$theme" "$typed") || exit 1
         printf '%s' "$words" | openspot clipboard copy || exit 1
@@ -66,19 +67,19 @@ case "$OPENSPOT_PAGE" in
     ;;
   *)
     case "$1" in
-      read) list ;;
+      show) list ;;
       open) openspot theme use "$2" >/dev/null && list ;;
       duplicate)
         said=$(openspot theme duplicate "$2") || exit 1
         list "toast=$said$nl"
         ;;
       rename)
-        if [ -z "$(openspot_input)" ]; then
+        if [ -z "$(value input.name)" ]; then
           printf 'title=Rename %s\n\nfield=name\ntitle=Name\n' "$2"
           openspot_kv value "$2"
           exit 0
         fi
-        name=$(value name)
+        name=$(value input.name)
         said=$(openspot theme rename "$2" "$name") || exit 1
         name=${said#"Renamed the theme $2 to "}
         list "select=${name%.}$nl"

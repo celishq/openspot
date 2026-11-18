@@ -8,7 +8,7 @@ public struct SearchQuery: Equatable, Sendable {
     private let plain: String
 
     public var input: String {
-        TextBlock(fields: [.init(key: "search", value: text)] + forms.map { .init(key: "form", value: $0) }).text
+        TextBlock(fields: [.init(key: "search", value: text)] + forms.map { .init(key: "search.alt", value: $0) }).text
     }
 
     public init(text: String, layouts: [KeyLayout] = KeyLayout.enabled) {

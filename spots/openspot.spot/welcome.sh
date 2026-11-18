@@ -86,8 +86,8 @@ agent() {
 }
 
 case "$1" in
-  read)
-    case "${OPENSPOT_PAGE-}" in
+  show)
+    case "$(value route)" in
       key) current; keys ;;
       agent) agent ;;
       *) welcome ;;

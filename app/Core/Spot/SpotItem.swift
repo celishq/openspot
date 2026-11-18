@@ -81,7 +81,7 @@ public struct SpotItem: Equatable, Sendable {
             isToggle: block.value(RowKey.type) == RowKey.toggle,
             tone: block.value(RowKey.tone).flatMap(MetricValue.Tone.init),
             file: block.value(RowKey.file).flatMap { $0.hasPrefix("/") ? $0 : nil },
-            fields: block.value(RowKey.pushSpot) != nil || block.fields.contains { RowKey(rawValue: $0.key) == nil } ? block.text : nil,
+            fields: Self.fields(of: block),
             pin: block.value(RowKey.pin).flatMap(Pin.init(rawValue:)),
             openTitle: block.value(RowKey.open),
             staysOnPick: block.flag(RowKey.close) == false,
@@ -90,6 +90,11 @@ public struct SpotItem: Equatable, Sendable {
             bars: Self.bars(values: block.values(RowKey.value), max: block.value(RowKey.max).flatMap(Double.init)),
             section: block.value(RowKey.section)
         )
+    }
+
+    private static func fields(of block: TextBlock) -> String? {
+        guard block.value(RowKey.pushSpot) != nil || block.fields.contains(where: { RowKey(rawValue: $0.key) == nil }) else { return nil }
+        return TextBlock(fields: block.fields.map { .init(key: "item.\($0.key)", value: $0.value) }).text
     }
 
     private static func bars(values: [String], max: Double?) -> [Double?] {

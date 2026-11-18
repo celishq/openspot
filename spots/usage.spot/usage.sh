@@ -1,6 +1,7 @@
 #!/bin/sh
 
 here=$(dirname "$0")
+. "$OPENSPOT_SH"
 
 # Prints the change of spot $1 since its last version against the versions before it.
 change() {
@@ -12,9 +13,10 @@ page() {
   openspot spot stats --days 14 | awk -v want="$1" -v change="$(change "$1")" -f "$here/stats.awk" -f "$here/page.awk"
 }
 
-case "$OPENSPOT_PAGE" in
+route=$(value route)
+case "$route" in
   spot:*)
-    id=${OPENSPOT_PAGE#spot:}
+    id=${route#spot:}
     case "$1" in
       open) exec openspot spot open "$id" ;;
       settings) exec openspot spot settings "$id" ;;

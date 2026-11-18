@@ -35,21 +35,26 @@ public struct TerminalRun {
     }
 
     var action: SpotAction {
-        SpotAction(arguments: arguments.isEmpty ? (spot.read == nil ? SpotAction.open : SpotAction.read).arguments : arguments)
+        SpotAction(arguments: arguments.isEmpty ? (spot.read == nil ? SpotAction.open : SpotAction.show).arguments : arguments)
+    }
+
+    private func message(isRead: Bool) -> String? {
+        guard isRead else { return input }
+        return TextBlock(fields: ReadReason.sheet.fields).text + (input ?? "")
     }
 
     public func start(isolation: isolated (any Actor)? = #isolation, frame: (String) -> Void) async -> End {
         if spot.reachesAccountKey {
             return End(code: 1, errors: "\(spot.name) reaches your account key, so it runs only in the Openspot panel. Open it there.\n")
         }
-        let isRead = action == .read
+        let isRead = action == .show
         if spot.mode == .inline { return await inline(isRead: isRead, frame: frame) }
         let swift = SwiftProgram()
         let program = swift.runnable(for: spot, builds: false)
-        let caller = callers?.issue(for: spot)
+        let caller = callers?.issue(for: spot, reason: isRead ? ReadReason.sheet.rawValue : nil)
         let process = ScriptProcess(
-            spot: spot, program: program, swift: swift, sending: spot.mode.stays ? nil : action, input: input, limit: isRead ? Self.readLimit : nil,
-            variables: isRead ? ReadReason.sheet.variables : [:], errorLimit: Self.errorLimit, careful: careful, base: environment, folder: folder
+            spot: spot, program: program, swift: swift, sending: spot.mode.stays ? nil : action, input: message(isRead: isRead), limit: isRead ? Self.readLimit : nil,
+            errorLimit: Self.errorLimit, careful: careful, base: environment, folder: folder
         )
         usage?.track(process, of: spot.id)
         if let callers, let caller { callers.attach(process, to: caller) }
@@ -57,7 +62,7 @@ public struct TerminalRun {
             var code: Int32 = 0
             do {
                 let frames = process.start()
-                if spot.mode.stays { process.send(action, input: input, variables: isRead ? ReadReason.sheet.variables : [:], id: Self.callID) }
+                if spot.mode.stays { process.send(action, input: message(isRead: isRead), id: Self.callID) }
                 for try await text in frames {
                     let head = spot.mode.stays ? FrameHead(text: text) : nil
                     if head?.isMark != true { frame(text) }
@@ -84,7 +89,7 @@ public struct TerminalRun {
     private func inline(isolation: isolated (any Actor)? = #isolation, isRead: Bool, frame: (String) -> Void) async -> End {
         let script = InlineScript(spot: spot, api: nil, callers: callers, careful: careful, limit: Self.readLimit, base: environment ?? ProcessInfo.processInfo.environment)
         defer { script.end() }
-        let call = InlineCall(arguments: action.arguments, variables: ["OPENSPOT_ID": spot.id].merging(isRead ? ReadReason.sheet.variables : [:]) { _, new in new }, input: input, limit: isRead ? Self.readLimit : nil)
+        let call = InlineCall(arguments: action.arguments, variables: ["OPENSPOT_ID": spot.id], input: message(isRead: isRead), reason: isRead ? ReadReason.sheet.rawValue : nil, limit: isRead ? Self.readLimit : nil)
         script.send(call)
         let outcome = await withTaskCancellationHandler {
             await call.outcome(limit: isRead ? Self.readLimit : nil)

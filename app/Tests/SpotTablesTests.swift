@@ -52,13 +52,6 @@ final class SpotTablesTests: XCTestCase {
         XCTAssertNil(fault(of: "title = 'T'\non = ['sheet.open']\n[settings.token]\ntype = 'secret'"))
     }
 
-    func testTwoSettingsThatGiveOneVariableAreAFaultThatNamesBoth() {
-        XCTAssertEqual(
-            fault(of: "title = 'T'\non = ['sheet.open']\n[settings.api-key]\n[settings.api_key]"),
-            "T has field=api-key and field=api_key, which both give `OPENSPOT_SETTING_API_KEY`. Rename one of them."
-        )
-    }
-
     func testARowHoldsKeysOfItsOwnWhichACheckDoesNotReport() async throws {
         let faults = try await findings("#!/bin/sh\nprintf 'row=a\\ntitle=A\\nruns=38\\n\\nrow=b\\ntitle=B\\npush.replace=true\\n'\n", toml: "on = ['sheet.open']")
 
@@ -134,7 +127,7 @@ final class SpotTablesTests: XCTestCase {
         for name in ["spots", "examples"] {
             for spot in try SpotsFolder(url: RepoDoc.repo.appendingPathComponent(name)).scan().scripts {
                 guard let sampled = spot.sampled else { continue }
-                let frame = try await SpotRuns(environment: TestEnvironment.values).answer(of: sampled, .read, limit: 60)
+                let frame = try await SpotRuns(environment: TestEnvironment.values).answer(of: sampled, .show, limit: 60)
                 XCTAssertEqual(unknownKeys(in: frame), [], spot.id)
             }
         }

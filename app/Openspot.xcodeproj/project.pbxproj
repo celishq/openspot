@@ -833,6 +833,7 @@
 		E2602B4A58D5A6E92B50229B /* SpotSelectionRing.swift in Sources */ = {isa = PBXBuildFile; fileRef = DA8F981AACA0636A82B3B23F /* SpotSelectionRing.swift */; };
 		E2B9983579DFD248E8630353 /* SpotEventStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = D4897908125CE360107B6AA7 /* SpotEventStore.swift */; };
 		E2BD8FE0DD3020E2783E86A2 /* SpotRuns+Events.swift in Sources */ = {isa = PBXBuildFile; fileRef = 12C01D3BF334D440FF9BEBB1 /* SpotRuns+Events.swift */; };
+		E2F101E4832B3009846B922C /* CallMessageTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B3417BD9909ABFF539181855 /* CallMessageTests.swift */; };
 		E2F3FAA9A498125AF0B72906 /* CommandNoun.swift in Sources */ = {isa = PBXBuildFile; fileRef = A63461A07AEB314D138E0BCD /* CommandNoun.swift */; };
 		E34E07F19D2607FF824F6CB2 /* SpotFieldPrompt.swift in Sources */ = {isa = PBXBuildFile; fileRef = 441D60D3142BDD50E886B27D /* SpotFieldPrompt.swift */; };
 		E51015E3E363570D7D996941 /* SheetMotion.swift in Sources */ = {isa = PBXBuildFile; fileRef = AAFA3D401343502B7835F58F /* SheetMotion.swift */; };
@@ -897,6 +898,7 @@
 		F35D6B0382CED10EFB06974F /* BigPasteTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 54721534E4A59D8BE9117831 /* BigPasteTests.swift */; };
 		F384F66572FD85069B65637A /* EventsTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = ADC7DF8C7DF85DDD6D84B1C3 /* EventsTests.swift */; };
 		F3A3DE6D9225B0DC9D93AF83 /* SpotShowLink.swift in Sources */ = {isa = PBXBuildFile; fileRef = CBFE807B6D890BC64CD2FCE1 /* SpotShowLink.swift */; };
+		F3D2D6DA015B662EADA83153 /* TestSettings.swift in Sources */ = {isa = PBXBuildFile; fileRef = F002B656ED755F7C8457CDA5 /* TestSettings.swift */; };
 		F3EA918CCB2D5F8BD22E03D2 /* SpotCalls.swift in Sources */ = {isa = PBXBuildFile; fileRef = ADF70F46E57A9D5A6C413B2D /* SpotCalls.swift */; };
 		F43766016E130EA85B20FD01 /* SpotUse.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D232AA89F8D8DA0343EB227 /* SpotUse.swift */; };
 		F43E5481DCC23A77FE3CD74B /* SpotSubmenuView.swift in Sources */ = {isa = PBXBuildFile; fileRef = DF90695FE5675499484242F7 /* SpotSubmenuView.swift */; };
@@ -1653,6 +1655,7 @@
 		B2C4F749FF5E92621742CB71 /* CaptureFile.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CaptureFile.swift; sourceTree = "<group>"; };
 		B2C7D1C5D04D1BC1019B9784 /* PlaygroundSpotTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PlaygroundSpotTests.swift; sourceTree = "<group>"; };
 		B3135ABD411D311144DC40D1 /* AccountStatus.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AccountStatus.swift; sourceTree = "<group>"; };
+		B3417BD9909ABFF539181855 /* CallMessageTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CallMessageTests.swift; sourceTree = "<group>"; };
 		B3721E68B35514C45AC6CF3A /* InputLink.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = InputLink.swift; sourceTree = "<group>"; };
 		B3BB6FEF64A12552DBC57343 /* CaffeinateSpotTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CaffeinateSpotTests.swift; sourceTree = "<group>"; };
 		B3F429FC6AAB9E1AA2BFE0F7 /* Guide.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Guide.swift; sourceTree = "<group>"; };
@@ -1886,6 +1889,7 @@
 		EF6A921F459E3BE2EA9BFC4E /* PreviousApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PreviousApp.swift; sourceTree = "<group>"; };
 		EF73F1965C9FFF9F8F6300EE /* FoldedItem.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FoldedItem.swift; sourceTree = "<group>"; };
 		EF899C0D68313BD1ACB2ECD8 /* TestChild.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TestChild.swift; sourceTree = "<group>"; };
+		F002B656ED755F7C8457CDA5 /* TestSettings.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TestSettings.swift; sourceTree = "<group>"; };
 		F03D9C8DC9AE3DE9867DD1EA /* DrawSpotTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DrawSpotTests.swift; sourceTree = "<group>"; };
 		F04BEF46B4A79B0040258B67 /* Store.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Store.swift; sourceTree = "<group>"; };
 		F06E95F6AF356EBFD00D06E1 /* SpotRunsReadTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SpotRunsReadTests.swift; sourceTree = "<group>"; };
@@ -2533,6 +2537,7 @@
 				513307403E69A6E0F4CAD083 /* CalendarShowTests.swift */,
 				E75C18A9074E1B6060A20101 /* CallInputTests.swift */,
 				6A24B017BE3E9498BE963068 /* CallLogTests.swift */,
+				B3417BD9909ABFF539181855 /* CallMessageTests.swift */,
 				22B883AB943DB3379EC9DAD5 /* CallRouteTests.swift */,
 				E0B87D3D102FAE184B447819 /* CapabilityTests.swift */,
 				E50E6719EBEC724AB88E711A /* CaptureFileTests.swift */,
@@ -2745,6 +2750,7 @@
 				43426D303EAEED7D975374D4 /* TestChildTests.swift */,
 				BAE51D8BEAC1F240D8E3A2BE /* TestClient.swift */,
 				8E3B3580731E96642B131B68 /* TestEnvironment.swift */,
+				F002B656ED755F7C8457CDA5 /* TestSettings.swift */,
 				464948DCFF0FC33897C14FB8 /* TestSpot.swift */,
 				77CA1A1F50C44D2C91139D8A /* TextBlockTests.swift */,
 				632642921676F725094B4B0C /* ThemeCallTests.swift */,
@@ -4491,6 +4497,7 @@
 				C93FF777882698EC87B827DB /* CalendarShowTests.swift in Sources */,
 				30203CE7D1C72A2606A89CFD /* CallInputTests.swift in Sources */,
 				8D639351C6AE0146DDFDE645 /* CallLogTests.swift in Sources */,
+				E2F101E4832B3009846B922C /* CallMessageTests.swift in Sources */,
 				C4E01FDEF461C600A86DB435 /* CallRouteTests.swift in Sources */,
 				243173D48D69C555B9C3D35F /* CapabilityTests.swift in Sources */,
 				A3C681BDC95F170555B2F6FD /* CaptureFileTests.swift in Sources */,
@@ -4703,6 +4710,7 @@
 				DEB17834B6D52E4865A70200 /* TestChildTests.swift in Sources */,
 				DFB0D3A249DB9FEA3D9A2334 /* TestClient.swift in Sources */,
 				527E928AA596DA51543DE78A /* TestEnvironment.swift in Sources */,
+				F3D2D6DA015B662EADA83153 /* TestSettings.swift in Sources */,
 				447082408043BBB085EC71D5 /* TestSpot.swift in Sources */,
 				E8AD72E2EAE5612CFCD9FD55 /* TextBlockTests.swift in Sources */,
 				EA237FC583A214BF4C8BF542 /* ThemeCallTests.swift in Sources */,

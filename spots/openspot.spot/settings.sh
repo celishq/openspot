@@ -32,7 +32,7 @@ sheet() {
 }
 
 case "$1" in
-  read)
+  show)
     state=$(openspot app status) || exit 1
     sheet "$state"
     ;;

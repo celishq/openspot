@@ -69,7 +69,7 @@ final class ShellHelperTests: XCTestCase {
         let served = try script("main() { printf '%s|%s|' \"$1\" \"$(value secret)\"; openspot_input; /bin/cat; kept=yes; return 3; }\nopenspot_serve main \"$@\"\nprintf '|%s|%s' \"$?\" \"$kept\"")
         let stays = try script("count=0\nmain() { count=$((count + 1)); printf '%s|%s|%s|%s|' \"$count\" \"$(esc \"$1\")\" \"$#\" \"$(value secret)\"; openspot_input; /bin/cat; }\nopenspot_serve main", toml: "mode = 'stay'")
         let tool = URL(fileURLWithPath: "/usr/bin/sandbox-exec")
-        let calls = "call=1\narg=a\\\\b\\nc\narg=\ninput=secret=hunter2\\nb=1\n\ncall=2\n\ncall=3\ninput=secret=two\n\n"
+        let calls = "call=1\narg=a\\\\b\\nc\narg=\nsecret=hunter2\nb=1\n\ncall=2\n\ncall=3\nsecret=two\n\n"
 
         for shell in ["/bin/sh", "/bin/dash"] {
             let read = try await ScriptProcess.output(url: tool, arguments: ["-p", fence, shell, once.path], input: "a=one\\ntwo\nb=1\nc=2\nb=3\n", limit: 60)
@@ -95,8 +95,8 @@ final class ShellHelperTests: XCTestCase {
 
         for shell in ["/bin/sh", "/bin/dash"] {
             let ran = try await output(of: once, shell: shell, input: "a=1\n", base: base)
-            let stayed = try await output(of: stays, shell: shell, input: "call=1\ninput=a=1\n\ncall=2\ninput=a=2\n\n", base: base)
-            _ = try await output(of: stopped, shell: shell, input: "call=1\ninput=\(Self.large)\n\n", base: base)
+            let stayed = try await output(of: stays, shell: shell, input: "call=1\na=1\n\ncall=2\na=2\n\n", base: base)
+            _ = try await output(of: stopped, shell: shell, input: "call=1\n\(Self.large)\n\n", base: base)
 
             XCTAssertEqual(ran, "1", shell)
             XCTAssertTrue(stayed.contains("1\n") && stayed.contains("2\n"), stayed)
@@ -104,7 +104,7 @@ final class ShellHelperTests: XCTestCase {
         }
     }
 
-    private static let large = "a=" + String(repeating: "x", count: 200_000) + "\\n"
+    private static let large = "a=" + String(repeating: "x", count: 200_000)
 
     func testACallWithLargeStdinEndsWhateverItsFunctionReads() async throws {
         let url = try script("""
@@ -120,7 +120,7 @@ final class ShellHelperTests: XCTestCase {
         var calls = ""
         for id in 1...20 {
             let word = ["none", "half", "all", "raw"][id % 4]
-            calls += "call=\(id)\narg=\(word)\n" + (id % 5 == 0 ? "" : "input=\(Self.large)\n") + "\n"
+            calls += "call=\(id)\narg=\(word)\n" + (id % 5 == 0 ? "" : "\(Self.large)\n") + "\n"
         }
 
         for shell in ["/bin/sh", "/bin/dash"] {
@@ -138,7 +138,7 @@ final class ShellHelperTests: XCTestCase {
         let once = try script("trap '/usr/bin/pgrep -P $$ > /dev/null; printf none=%s \"$?\"' EXIT\nmain() { exit 0; }\nopenspot_serve main")
 
         for shell in ["/bin/sh", "/bin/dash"] {
-            let stayed = try await output(of: stays, shell: shell, input: "call=1\ninput=\(Self.large)\n\n")
+            let stayed = try await output(of: stays, shell: shell, input: "call=1\n\(Self.large)\n\n")
             let ran = try await output(of: once, shell: shell, input: "a=" + String(repeating: "x", count: 200_000) + "\n")
 
             XCTAssertTrue(stayed.contains("none=1\n"), "\(shell) \(stayed)")
@@ -158,7 +158,7 @@ final class ShellHelperTests: XCTestCase {
         """, toml: "mode = 'stay'")
 
         for shell in ["/bin/sh", "/bin/dash"] {
-            let output = try await output(of: url, shell: shell, input: "call=1\narg=child\ninput=secret=old\n\ncall=2\narg=next\ninput=b=new\n\n")
+            let output = try await output(of: url, shell: shell, input: "call=1\narg=child\nsecret=old\n\ncall=2\narg=next\nb=new\n\n")
 
             XCTAssertTrue(output.contains("got=new||\n"), "\(shell) \(output)")
         }
@@ -299,7 +299,7 @@ final class ShellHelperTests: XCTestCase {
 
     private static let shownCall = """
     main() {
-      printf 'text=t\\ntitle=%s\\n' "$(esc "$#|$1|$2|${OPENSPOT_REASON-}|$(value note)|$(openspot_input)$(cat)")"
+      printf 'text=t\\ntitle=%s\\n' "$(esc "$#|$1|$2|$(value event)|$(value input.note)|$(openspot_input)$(cat)")"
     }
     openspot_serve main "$@"
     """
@@ -309,19 +309,18 @@ final class ShellHelperTests: XCTestCase {
     }
 
     func testOneMainRunsUnchangedOnceAndStaying() async throws {
-        let action = SpotAction(arguments: ["read", "a b"])
-        let input = "note=x\\ny\n"
-        let variables = ["OPENSPOT_REASON": "panel"]
+        let action = SpotAction(arguments: ["show", "a b"])
+        let input = "event=panel\ninput.note=x\\ny\n"
         let once = try script(Self.shownCall)
         let stays = try script(Self.shownCall, toml: "mode = 'stay'")
 
         var onceText = ""
-        for try await frame in ScriptProcess(url: once, arguments: action.arguments, mode: .once(input: input), limit: 60, variables: variables).start() {
+        for try await frame in ScriptProcess(url: once, arguments: action.arguments, mode: .once(input: input), limit: 60).start() {
             onceText += frame
         }
         let live = ScriptProcess(url: stays, mode: .stays, limit: 60)
         var frames = live.start().makeAsyncIterator()
-        live.send(action, input: input, variables: variables, id: 1)
+        live.send(action, input: input, id: 1)
         var stayFrames: [String] = []
         while let frame = try await frames.next() {
             stayFrames.append(frame)
@@ -329,28 +328,28 @@ final class ShellHelperTests: XCTestCase {
         }
         live.end()
 
-        XCTAssertEqual(TextBlock.blocks(in: onceText).first?.value("title"), "2|read|a b|panel|x\ny|note=x\\ny")
+        XCTAssertEqual(TextBlock.blocks(in: onceText).first?.value("title"), "2|show|a b|panel|x\ny|event=panel\ninput.note=x\\ny")
         XCTAssertEqual(Self.pictures(stayFrames), [TextBlock.blocks(in: onceText)])
         XCTAssertEqual(TextBlock.blocks(in: stayFrames.first ?? "").first?.value("call"), "1")
     }
 
     func testServeGivesEachCallOnlyItsOwnVariablesAndSkipsAStop() async throws {
         let url = try script("""
-        main() { printf 'got=%s|%s|%s\\n' "$1" "${OPENSPOT_VALUE-none}" "$(value a)"; }
+        main() { printf 'got=%s|%s|%s\\n' "$1" "$(value event.value)" "$(value input.a)"; }
         openspot_serve main "$@"
         printf 'over=1\\n'
         """, toml: "mode = 'stay'")
         let live = ScriptProcess(url: url, mode: .stays, limit: 60)
         var frames = live.start().makeAsyncIterator()
 
-        live.send(.read, input: "a=held\n", variables: ReadReason(event: "music.track", value: "Song").variables, id: 1)
+        live.send(.show, input: TextBlock(fields: ReadReason(event: "music.track", value: "Song").fields).text + "input.a=held\n", id: 1)
         live.send(text: SpotAction.stopEvent(id: 1))
         live.send(.press("go"), id: 2)
         live.end()
         var printed: [String] = []
         while let frame = try await frames.next() { printed.append(frame) }
 
-        XCTAssertEqual(printed.filter { $0.hasPrefix("got=") || $0.hasPrefix("over=") }, ["got=read|Song|held\n\n", "got=go|none|\n\n", "over=1\n"])
+        XCTAssertEqual(printed.filter { $0.hasPrefix("got=") || $0.hasPrefix("over=") }, ["got=show|Song|held\n\n", "got=go||\n\n", "over=1\n"])
         XCTAssertEqual(printed.filter { $0.hasPrefix("end=") }, ["end=1\n", "end=2\n"])
     }
 
@@ -369,7 +368,7 @@ final class ShellHelperTests: XCTestCase {
 
     func testOnceServeReturnsTheCodeOfMain() async throws {
         let url = try script("main() { echo 'No sky' >&2; return 3; }\nopenspot_serve main \"$@\"")
-        let process = ScriptProcess(url: url, arguments: ["read"], limit: 60)
+        let process = ScriptProcess(url: url, arguments: ["show"], limit: 60)
 
         do {
             for try await _ in process.start() {}

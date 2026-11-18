@@ -1,8 +1,8 @@
 #!/bin/sh
-texts=$(sed -n 's/^search=//p; s/^form=//p')
 . "$OPENSPOT_SH"
 case "$1" in
-  read)
+  show)
+    texts=$(value search; value search.alt)
     printf 'button=reveal\ntitle=Show in Finder\nshortcut=cmd+return\nclose=true\n\n'
     printf 'button=copy\ntitle=Copy path\nshortcut=cmd+shift+c\nclose=true\n\n'
     predicate=''

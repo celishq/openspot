@@ -315,14 +315,14 @@ final class DrawSpotTests: XCTestCase {
         XCTAssertEqual(link.sent.last?.request.action.arguments, ["open", "1:flows"])
         XCTAssertFalse(held.made.isStopped)
         await link.end(try XCTUnwrap(link.sent.last))
-        for read in link.sent.dropFirst() where read.request.action == .read { await link.end(read) }
+        for read in link.sent.dropFirst() where read.request.action == .show { await link.end(read) }
         XCTAssertEqual(sheet.calls.map(\.id), [held.made.id])
         XCTAssertTrue(sheet.isWanted)
         XCTAssertTrue(sheet.work.isEmpty)
         XCTAssertNil(runs.runningSummary)
 
         await link.end(held)
-        for read in link.sent.dropFirst() where read.request.action == .read && sheet.calls.contains(where: { $0 === read.made }) { await link.end(read) }
+        for read in link.sent.dropFirst() where read.request.action == .show && sheet.calls.contains(where: { $0 === read.made }) { await link.end(read) }
         XCTAssertFalse(sheet.isWanted)
     }
 }

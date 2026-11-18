@@ -1,7 +1,7 @@
 #!/bin/sh
 case "$1" in
-  read) report=$(pmset -g batt) ;;
-  show) report=$2 ;;
+  show) report=$(pmset -g batt) ;;
+  report) report=$2 ;;
   *) exit 0 ;;
 esac
 printf '%s\n' "$report" | awk '

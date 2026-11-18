@@ -30,7 +30,7 @@ final class ScreenExamplesTests: SampleSpotsCase {
 
     func testRecordStartsWithTheInputsOfItsSettingAndTheNextRunStopsAndCopiesTheVideo() async throws {
         let record = try example("Record")
-        try await withPrivateHome(["OPENSPOT_SETTING_INPUTS": "mic:B2 system"]) { folder in
+        try await withPrivateHome(settings: ["inputs": "mic:B2 system"]) { folder in
             try self.fakeScreen(in: folder)
 
             let started = try await record.perform(.open, timeout: 60)
@@ -64,7 +64,7 @@ final class ScreenExamplesTests: SampleSpotsCase {
 
     func testTheInputsSettingListsTheSoundMicsAndCamerasWithTheKeptOnesOn() async throws {
         let record = try example("Record")
-        try await withPrivateHome(["OPENSPOT_SETTING_INPUTS": "mic:B2 camera:C3"]) { folder in
+        try await withPrivateHome(settings: ["inputs": "mic:B2 camera:C3"]) { folder in
             try self.fakeScreen(in: folder)
 
             let form = try await record.form(CommandAction(id: "inputs", title: "Sound and camera"), item: nil, timeout: 60)
@@ -81,7 +81,7 @@ final class ScreenExamplesTests: SampleSpotsCase {
         try await withPrivateHome { folder in
             try self.fakeScreen(in: folder)
             let pick = { (input: String, kept: String) in
-                _ = try await SpotRuns(environment: TestEnvironment.values).answer(of: record, inputs, input: "inputs=\(input)\n", limit: 60, variables: ["OPENSPOT_SETTING_INPUTS": kept])
+                _ = try await SpotRuns(environment: TestEnvironment.values).answer(of: record, inputs, input: "input.inputs=\(input)\nsetting.inputs=\(kept)\n", limit: 60)
                 return (try? self.read("setting-inputs", in: folder)) ?? ""
             }
 

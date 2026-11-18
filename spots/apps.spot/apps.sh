@@ -119,8 +119,8 @@ trash_files() {
 }
 
 case "$1" in
-  read)
-    if [ "$OPENSPOT_REASON" = spot.change ] && [ -s "$pending" ] && [ -d "$(cat "$pending")" ]; then
+  show)
+    if [ "$(value event)" = spot.change ] && [ -s "$pending" ] && [ -d "$(cat "$pending")" ]; then
       uninstall_sheet "$(cat "$pending")"
     else
       [ ! -e "$pending" ] && [ ! -e "$kept" ] || rm -f "$pending" "$kept"

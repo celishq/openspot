@@ -29,7 +29,7 @@ final class SpotSettingsTests: XCTestCase {
     }
 
     private func rows(of spot: Spot, in runs: SpotRuns) async throws -> [SpotItem] {
-        SpotOutput(text: try await runs.answer(of: spot, .read, limit: 1)).items
+        SpotOutput(text: try await runs.answer(of: spot, .show, limit: 1)).items
     }
 
     func testAScriptWithCommandsAndNoReadOpensToItsSettingsWhichHoldItsKeys() async throws {
@@ -95,7 +95,7 @@ final class SpotSettingsTests: XCTestCase {
     }
 
     func testASpotWithOneCommandAndAReadKeepsItsOwnSheetAndItsSettingsApart() async throws {
-        try "#!/bin/sh\n[ \"$1\" = read ] && printf 'row=own\\ntitle=Own\\n'\nexit 0\n".writeScript(to: folder.spotFile("move"), toml: "title = 'Move'\non = ['sheet.open']\noffers = ['card', 'float']\n[commands.left]\ntitle = 'Left side'")
+        try "#!/bin/sh\n[ \"$1\" = show ] && printf 'row=own\\ntitle=Own\\n'\nexit 0\n".writeScript(to: folder.spotFile("move"), toml: "title = 'Move'\non = ['sheet.open']\noffers = ['card', 'float']\n[commands.left]\ntitle = 'Left side'")
         let move = try spot("move")
         let runs = SpotRuns()
 
@@ -144,7 +144,7 @@ final class SpotSettingsTests: XCTestCase {
         XCTAssertEqual(before.map(\.symbol), ["tray.full", "tray.full", "tray.full", "tray.full", "slider.horizontal.3", "slider.horizontal.3", "slider.horizontal.3", "menubar.rectangle"])
         XCTAssertEqual(before.map(\.records), [true, true, true, true, false, false, false, false])
         XCTAssertEqual(before.map { $0.hides ?? [] }, [["clear"], ["clear"], ["clear"], ["clear"], [], ["clear"], [], ["clear"]])
-        let own = try await runs.answer(of: shelf, .read, limit: 60)
+        let own = try await runs.answer(of: shelf, .show, limit: 60)
         XCTAssertEqual(SpotOutput(text: own).items.map(\.run), ["own"])
 
         _ = try await runs.answer(of: settings, SpotAction(arguments: ["open", "menubar:shelf"]), limit: 1)

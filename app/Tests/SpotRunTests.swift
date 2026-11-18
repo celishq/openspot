@@ -20,7 +20,7 @@ final class SpotRunTests: XCTestCase {
 
     private func make(name: String = "script", searches: Bool = false, _ body: String, mode: SpotMode = .once, read: SpotRead? = nil) throws -> SpotRun {
         let url = folder.spotFile(name)
-        let typed = searches ? "[ \"$1\" = read ] && in=$(cat); t=$(printf '%s\\n' \"$in\" | sed -n 's/^search=//p'); f=$(printf '%s\\n' \"$in\" | sed -n 's/^form=//p' | head -1)\n" : ""
+        let typed = searches ? "[ \"$1\" = show ] && in=$(cat); t=$(printf '%s\\n' \"$in\" | sed -n 's/^search=//p'); f=$(printf '%s\\n' \"$in\" | sed -n 's/^search\\.alt=//p' | head -1)\n" : ""
         try "#!/bin/sh\n\(typed)\(body)\n".writeScript(to: url, toml: mode.stays ? "mode = 'stay'" : "")
         let made = SpotRuns()
         runs.append(made)
@@ -439,7 +439,7 @@ final class SpotRunTests: XCTestCase {
     func testAStayingScriptGetsTheValuesOfTheSheetAsTheStdinOfItsCall() async throws {
         let sheet = try make("""
         . "$OPENSPOT_SH"
-        main() { printf 'field=input\\nvalue=x\\n\\ntext=seen\\ntitle=%s\\n' "$(value input)"; }
+        main() { printf 'field=input\\nvalue=x\\n\\ntext=seen\\ntitle=%s\\n' "$(value input.input)"; }
         openspot_serve main "$@"
         """, mode: .stay)
         runs.last?.panelOpened()
@@ -527,11 +527,11 @@ final class SpotRunTests: XCTestCase {
     func testAScriptThatSearchesGetsReadWithTheText() async throws {
         let sheet = try make(searches: true, "printf 'row=a\\ntitle=%s:%s\\n' \"$1\" \"$t\"")
         sheet.open {}
-        try await wait("the first answer") { sheet.list.shown.map(\.title) == ["read:"] }
+        try await wait("the first answer") { sheet.list.shown.map(\.title) == ["show:"] }
 
         sheet.search("rep")
 
-        try await wait("the answer to the text") { sheet.list.shown.map(\.title) == ["read:rep"] }
+        try await wait("the answer to the text") { sheet.list.shown.map(\.title) == ["show:rep"] }
     }
 
     func testAReadWithNoTextGivesAScriptThatSearchesANewValue() async throws {
@@ -606,7 +606,7 @@ final class SpotRunTests: XCTestCase {
     func testAPickInAScriptThatSearchesGetsTheTextOnStdinBeforeTheTextIsRead() async throws {
         let sheet = try make(searches: true, """
         case "$1" in
-          read) printf 'row=a\\ntitle=A\\n' ;;
+          show) printf 'row=a\\ntitle=A\\n' ;;
           open) cat > '\(path("stdin"))' ;;
         esac
         """)

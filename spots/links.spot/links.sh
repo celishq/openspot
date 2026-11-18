@@ -48,7 +48,7 @@ check_path() {
 
 # Prints the form values as one JSON object, with a full link. A path stays as it is.
 checked() {
-  jq -nc --arg title "$(value title)" --arg url "$(value url)" '{$title, $url} | .url |= (gsub("^\\s+|\\s+$"; "") | if test("^[/~]") or test("^[a-zA-Z][a-zA-Z0-9+.-]*:") then . else "https://" + . end)
+  jq -nc --arg title "$(value input.title)" --arg url "$(value input.url)" '{$title, $url} | .url |= (gsub("^\\s+|\\s+$"; "") | if test("^[/~]") or test("^[a-zA-Z][a-zA-Z0-9+.-]*:") then . else "https://" + . end)
     | if (.url | test("^[/~]") | not) and (.url | test("\\s")) then error("bad") else . end' 2>/dev/null || {
     echo "Enter a link with no spaces, or a path." >&2
     exit 1
@@ -135,7 +135,7 @@ placeholder=example.com or ~/Downloads"'
 prepare
 
 case "$1" in
-  read)
+  show)
     printf 'button=copy\ntitle=Copy\nshortcut=cmd+return\nclose=true\n\n'
     printf 'button=reveal\ntitle=Show in Finder\nshortcut=cmd+r\nclose=true\n\n'
     printf 'button=edit\ntitle=Edit\nshortcut=cmd+e\nform=true\n\n'
@@ -154,7 +154,7 @@ case "$1" in
         end' "$data" --args "$@"
     ;;
   new)
-    if [ -z "$(value title)$(value url)" ]; then
+    if [ -z "$(value input.title)$(value input.url)" ]; then
       form "New link" "$(jq -nc --arg url "$(value search)" '{title: "", url: $url}')"
       exit 0
     fi
@@ -165,7 +165,7 @@ case "$1" in
     printf 'select=%s\n' "$id"
     ;;
   edit)
-    if [ -z "$(value title)$(value url)" ]; then
+    if [ -z "$(value input.title)$(value input.url)" ]; then
       form "Edit link" "$(load | jq -c --arg id "$2" '.[] | select(.id == $id)')"
       exit 0
     fi

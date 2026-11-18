@@ -9,7 +9,7 @@ public struct HeaderButton: Equatable, Sendable {
     public let placeholder: String?
 
     public init?(block: TextBlock) {
-        guard let id = block.value(HeaderBlock.button), let title = block.value("title"), id != "read", !id.contains(where: \.isWhitespace) else {
+        guard let id = block.value(HeaderBlock.button), let title = block.value("title"), id != "show", !id.contains(where: \.isWhitespace) else {
             return nil
         }
         self.id = id

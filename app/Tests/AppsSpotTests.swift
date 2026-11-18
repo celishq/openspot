@@ -65,7 +65,7 @@ final class AppsSpotTests: SampleSpotsCase {
 
     func testDeleteShowsTheAppAndItsFilesTicksOnlyThoseOfItsBundleIdAndTrashesThoseThatStayChosen() async throws {
         let apps = try apps()
-        try await withPrivateHome(["OPENSPOT_REASON": "spot.change"]) { folder in
+        try await withPrivateHome { folder in
             let app = try Self.fakeApp(in: folder, running: false)
             let cache = try Self.library(folder, "Caches/dev.zed.Zed/db")
             let support = try Self.library(folder, "Application Support/Zed/settings.json")
@@ -73,7 +73,7 @@ final class AppsSpotTests: SampleSpotsCase {
             _ = try Self.library(folder, "Caches/com.other.App/db")
 
             try await apps.perform(SpotAction(arguments: ["uninstall", app.path]), timeout: 60)
-            let sheet = try await apps.items(timeout: 60)
+            let sheet = try await apps.items(input: "event=spot.change\n", timeout: 60)
 
             XCTAssertEqual(sheet.summary?.value("title"), "Delete Zed")
             XCTAssertEqual(sheet.summary?.value("detail"), "Move the app and its files to the Trash. A folder found only by the app's name waits for your tick.")
@@ -89,7 +89,7 @@ final class AppsSpotTests: SampleSpotsCase {
             XCTAssertEqual(sheet.pick, .stay)
 
             try await apps.perform(.item(SpotItem(title: "dev.zed.Zed.plist", run: preferences.path)), timeout: 60)
-            let kept = try await apps.items(timeout: 60)
+            let kept = try await apps.items(input: "event=spot.change\n", timeout: 60)
             XCTAssertEqual(kept.items.first { $0.run == preferences.path }?.isOn, false)
             try await apps.perform(.item(SpotItem(title: "Zed", run: support.deletingLastPathComponent().path)), timeout: 60)
             let toast = try await apps.perform(.press("remove"), timeout: 60)
@@ -100,7 +100,7 @@ final class AppsSpotTests: SampleSpotsCase {
             XCTAssertFalse(said.contains(preferences.path))
             XCTAssertTrue(said.contains(support.deletingLastPathComponent().path + "\n"))
             XCTAssertEqual(toast, "Moved Zed and 2 of its files to the Trash")
-            let after = try await apps.items(timeout: 60)
+            let after = try await apps.items(input: "event=spot.change\n", timeout: 60)
             XCTAssertTrue(after.parts.isEmpty)
         }
     }

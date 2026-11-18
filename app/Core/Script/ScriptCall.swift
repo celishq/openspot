@@ -28,7 +28,7 @@ public final class ScriptCall: Identifiable {
     nonisolated deinit {}
 
     public var doesWork: Bool {
-        action.arguments.first != SpotAction.read.arguments.first
+        action.arguments.first != SpotAction.show.arguments.first
     }
 
     public var fill: Double? {

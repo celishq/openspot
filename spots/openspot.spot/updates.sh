@@ -23,7 +23,7 @@ warned() {
 }
 
 case "$1" in
-  read)
+  show)
     if [ -z "$ready" ]; then
       rm -f "$warned"
       printf 'title=Updates\ndetail=%s\nshown=false\n' "$version"

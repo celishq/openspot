@@ -17,7 +17,7 @@ tick() {
 
 main() {
   case "$1" in
-    read) now ;;
+    show) now ;;
   esac
 }
 

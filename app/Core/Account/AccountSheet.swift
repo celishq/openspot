@@ -72,10 +72,10 @@ public actor AccountSheet {
         ).builtIn()
     }
 
-    func answer(_ arguments: [String], input: String?, variables: [String: String]) async throws -> String {
+    func answer(_ arguments: [String], input: String?) async throws -> String {
         let fields = TextBlock.blocks(in: input ?? "").first
-        let reason = variables["OPENSPOT_REASON"]
-        let page = variables["OPENSPOT_PAGE"].flatMap(Page.init(rawValue:))
+        let reason = fields?.value("event")
+        let page = fields?.value("route").flatMap(Page.init(rawValue:))
         var toast: String?
         var phrase = ""
         var handle: String?
@@ -83,10 +83,10 @@ public actor AccountSheet {
         if reason != nil { shows = false }
         let action = arguments.first ?? ""
         switch action {
-        case "read":
+        case "show":
             break
         case "sign_in":
-            phrase = fields?.value("phrase") ?? ""
+            phrase = fields?.value("input.phrase") ?? ""
             let typed = AccountPhrase(phrase)
             if typed.canSignIn {
                 try await account.signIn(typed)
@@ -102,7 +102,7 @@ public actor AccountSheet {
         case "handle":
             handle = AccountHandle.suggestion(from: arguments.dropFirst().first ?? "")
         case "create":
-            let typed = AccountHandle.suggestion(from: fields?.value("handle") ?? "")
+            let typed = AccountHandle.suggestion(from: fields?.value("input.handle") ?? "")
             guard AccountHandle(typed) != nil else {
                 handle = typed
                 break
@@ -118,7 +118,7 @@ public actor AccountSheet {
             move = .push(.how)
         case "about":
             move = .push(.about)
-        case "show":
+        case "reveal":
             shows = true
         case "wrote":
             shows = false
@@ -242,13 +242,13 @@ public actor AccountSheet {
     private func about(_ frame: inout AccountFrame, _ facts: AccountStatus, toast: String?) {
         frame.grid("head", "head", "private", "reset")
         if facts.sync == true { frame.grid("icloud") }
-        frame.grid("show")
+        frame.grid("reveal")
         frame.toast(toast)
         frame.line("head", "Your 12 words are your key", icon: "key", detail: "They bring your key back on any Mac.")
         frame.line("private", "Anyone with them is you", icon: "eye.slash")
         frame.line("reset", "Nobody can reset them", icon: "exclamationmark.triangle", tone: "warn")
         if facts.sync == true { frame.line("icloud", "iCloud Keychain keeps a copy", icon: "icloud") }
-        frame.button("show", "Show my words", .main)
+        frame.button("reveal", "Show my words", .main)
         frame.howAction()
     }
 

@@ -46,7 +46,7 @@ gallery() {
 }
 
 case "$1" in
-  read)
+  show)
     gallery
     ;;
   gallery)

@@ -36,11 +36,11 @@ listen() {
 
 main() {
   case "$1" in
-    read) sheet ;;
+    show) sheet ;;
     send)
-      peer=$(value peer)
+      peer=$(value input.peer)
       printf '%s' "$peer" > "$state/peer.new" && mv "$state/peer.new" "$state/peer"
-      if { value message; echo; } | nc -w 1 "${peer%:*}" "${peer##*:}" 2>/dev/null; then
+      if { value input.message; echo; } | nc -w 1 "${peer%:*}" "${peer##*:}" 2>/dev/null; then
         printf 'toast=Sent\n'
       else
         openspot_kv toast "Nothing listens on $peer. Start Relay there first."

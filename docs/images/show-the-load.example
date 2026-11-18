@@ -1,7 +1,9 @@
 #!/bin/sh
-case "${OPENSPOT_VALUE-}" in
+. "$OPENSPOT_SH"
+load=$(value event.value)
+case "$load" in
   cpu=*)
-    cpu=${OPENSPOT_VALUE#cpu=}
+    cpu=${load#cpu=}
     printf 'text=cpu\ntitle=%s%% CPU\n' "${cpu%% *}"
     ;;
   *) printf 'text=cpu\ntitle=Measuring…\n' ;;

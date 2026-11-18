@@ -14,7 +14,7 @@ final class SpotRunsToTests: SpotRunsCase {
     }
 
     func testAPickOfARowWithToOpensTheOtherSpotWithTheRowOnStdin() async throws {
-        try script("viewer", log: "viewer-log", #"[ "$1" = open ] && printf 'toast=%s %s\n' "$2" "$(sed -n 's/^file=//p')""#)
+        try script("viewer", log: "viewer-log", #"[ "$1" = open ] && printf 'toast=%s %s\n' "$2" "$(sed -n 's/^item\.file=//p')""#)
         try script("files", log: "files-log")
         let files = try sheet("files")
 
@@ -35,7 +35,7 @@ final class SpotRunsToTests: SpotRunsCase {
         files.pick(try row("row=doc\ntitle=Doc\nfile=/tmp/doc.txt\npush.spot=viewer\n"))
 
         try await wait("the toast of the viewer") { self.toasts(of: "viewer").count == 1 }
-        XCTAssertEqual(toasts(of: "viewer"), ["row=doc title=Doc file=/tmp/doc.txt push.spot=viewer"])
+        XCTAssertEqual(toasts(of: "viewer"), ["item.row=doc item.title=Doc item.file=/tmp/doc.txt item.push.spot=viewer"])
     }
 
     func testARowToASpotThatIsNotThereFailsOnItsOwnSpot() async throws {

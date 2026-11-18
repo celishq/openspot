@@ -11,7 +11,7 @@ forget() {
 }
 
 case "$1" in
-  read)
+  show)
     printf 'recents=false\n\n'
     printf 'button=reveal\ntitle=Show in Finder\nshortcut=cmd+return\n\n'
     printf 'button=remove\ntitle=Remove from Shelf\nshortcut=cmd+backspace\n\n'

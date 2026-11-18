@@ -16,7 +16,7 @@ final class ClockExampleTests: SampleSpotsCase {
         defer { process.end() }
         var frames = process.start().makeAsyncIterator()
 
-        process.send(.read, id: 1)
+        process.send(.show, id: 1)
         var answer: String?
         var tick: String?
         var hasEnded = false

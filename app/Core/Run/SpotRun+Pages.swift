@@ -36,10 +36,10 @@ extension SpotRun {
         pageStates.removeAll { $0.page == page }
     }
 
-    func sent(_ variables: [String: String], values: FieldValues) -> [String: String] {
-        let given = values.variables.merging(variables) { _, given in given }
-        guard let page else { return given }
-        return given.merging(["OPENSPOT_PAGE": page]) { _, own in own }
+    func message(of call: Call, values: FieldValues) -> String? {
+        let head = TextBlock(fields: (call.reason?.fields ?? []) + (page.map { [.init(key: "route", value: $0)] } ?? [])).text
+        let text = [head, call.input ?? "", values.input].map { $0.isEmpty || $0.hasSuffix("\n") ? $0 : $0 + "\n" }.joined()
+        return text.isEmpty ? nil : text
     }
 
     var fieldValues: FieldValues {

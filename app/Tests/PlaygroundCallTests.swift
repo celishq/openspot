@@ -4,7 +4,7 @@ import XCTest
 @MainActor
 final class PlaygroundCallTests: SpotRunsCase {
     func testTheRunsTellEachCallWithItsPartsAlsoAQuietOne() async throws {
-        try script(toml: "on = ['sheet.open', 'sheet.text']", "echo 'slow disk' >&2\nprintf 'row=a\\ntitle=%s\\n' \"$OPENSPOT_VALUE\"")
+        try script(toml: "on = ['sheet.open', 'sheet.text']", "echo 'slow disk' >&2\nprintf 'row=a\\ntitle=%s\\n' \"$(sed -n 's/^event.value=//p')\"")
         var calls: [PlaygroundCall] = []
         runs.onCall = { calls.append(PlaygroundCall(record: $0, reason: $1)) }
         let sheet = try sheet()
@@ -14,9 +14,9 @@ final class PlaygroundCallTests: SpotRunsCase {
         sheet.search("rep")
         try await wait("the search") { calls.count == 2 }
 
-        XCTAssertEqual(calls[0].lines.dropLast(), ["$ read · OPENSPOT_REASON=sheet.open", "> row=a", "> title=", "! slow disk"])
+        XCTAssertEqual(calls[0].lines.dropLast(), ["$ show · event=sheet.open", "> row=a", "> title=", "! slow disk"])
         XCTAssertTrue(calls[0].lines.last?.hasPrefix("= ") == true)
-        XCTAssertEqual(calls[1].lines.first, "$ read · OPENSPOT_REASON=sheet.text OPENSPOT_VALUE=rep")
+        XCTAssertEqual(calls[1].lines.first, "$ show · event=sheet.text event.value=rep")
         XCTAssertTrue(calls[1].lines.contains("< search=rep"), "\(calls[1].lines)")
     }
 
@@ -27,10 +27,10 @@ final class PlaygroundCallTests: SpotRunsCase {
 
         for uses in [Set<SpotUse>([.account]), []] {
             let spot = Spot(id: "account", name: "Account", url: url, dataName: "account", uses: uses).builtIn()
-            runs.record(spot, SpotAction(arguments: ["read"]), input: nil, frames: ["word=secret\n"], errors: "", end: .ended, reason: nil, started: Date(), begin: Date())
+            runs.record(spot, SpotAction(arguments: ["show"]), input: nil, frames: ["word=secret\n"], errors: "", end: .ended, reason: nil, started: Date(), begin: Date())
         }
 
-        XCTAssertEqual(calls.map(\.lines.first), ["$ read"])
+        XCTAssertEqual(calls.map(\.lines.first), ["$ show"])
     }
 
     func testTheRunsTellEachCallOfAStayingSpotOnceWhenItEnds() async throws {
@@ -72,7 +72,7 @@ final class PlaygroundCallTests: SpotRunsCase {
         try "".write(toFile: path("done"), atomically: true, encoding: .utf8)
         try await wait("the end after the stop") { calls.count == 3 }
 
-        XCTAssertEqual(calls[0].lines.first, "$ read · OPENSPOT_REASON=sheet.open")
+        XCTAssertEqual(calls[0].lines.first, "$ show · event=sheet.open")
         XCTAssertTrue(calls[0].lines.contains("> button=go"), "\(calls[0].lines)")
         XCTAssertEqual(calls[0].lines.last, "= exit 0")
         XCTAssertEqual(calls[1].lines, ["$ go", "> end=2", "= exit 0"])

@@ -75,8 +75,8 @@ if arguments.first == "pick" {
 Link.listen { call in
     Link.start(call.id)
     switch call.arguments.first {
-    case "read":
-        if !(call.variables["OPENSPOT_REASON"] ?? "").isEmpty { grid.warm() }
+    case "show":
+        if !(call.value("event") ?? "").isEmpty { grid.warm() }
         Link.end(call.id)
     case "open":
         guard shown == nil else { return Link.end(call.id) }

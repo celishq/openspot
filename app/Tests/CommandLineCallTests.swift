@@ -29,15 +29,15 @@ final class CommandLineCallTests: XCTestCase {
         XCTAssertEqual(CommandLineCall(arguments: ["store", "add", "/a"])?.value as? StoreCall, .add("/a"))
         XCTAssertEqual(CommandLineCall(arguments: ["store", "remove", "/a"])?.value as? StoreCall, .remove("/a"))
         XCTAssertEqual(CommandLineCall(arguments: ["store", "folders", "--json"])?.value as? StoreCall, .folders(.json))
-        XCTAssertEqual(CommandLineCall(arguments: ["store", "publish", "timer"], environment: ["OPENSPOT_REASON": "panel.open"])?.value as? CallFault, .refused("`openspot store publish` changes the store, so it cannot run in a read. Run it from a pick or an action."))
+        XCTAssertEqual(CommandLineCall(arguments: ["store", "publish", "timer"], environment: [:], reason: "panel.open")?.value as? CallFault, .refused("`openspot store publish` changes the store, so it cannot run in a read. Run it from a pick or an action."))
     }
 
     func testEventEmitTakesAnEventNameAndAValue() {
         XCTAssertEqual(CommandLineCall(arguments: ["event", "emit", "music.track"])?.value as? EventCall, .emit(name: "music.track", value: nil))
         XCTAssertEqual(CommandLineCall(arguments: ["event", "emit", "music.track", "Blue in Green"])?.value as? EventCall, .emit(name: "music.track", value: "Blue in Green"))
-        XCTAssertEqual(CommandLineCall(arguments: ["event", "emit", "clipboard.change"], environment: ["OPENSPOT_REASON": "panel.open"])?.value as? EventCall, .emit(name: "clipboard.change", value: nil))
-        XCTAssertEqual(CommandLineCall(arguments: ["event", "emit", "music.track"], environment: ["OPENSPOT_REASON": "music.track"])?.value as? CallFault, .refused("`openspot event emit music.track` runs in a read of `music.track`, so it would read that spot again without end, and Openspot did not raise it. Raise it from an action, or raise another event."))
-        XCTAssertEqual(CommandLineCall(arguments: ["event", "emit", "music.next"], environment: ["OPENSPOT_REASON": "music.track"])?.value as? EventCall, .emit(name: "music.next", value: nil))
+        XCTAssertEqual(CommandLineCall(arguments: ["event", "emit", "clipboard.change"], environment: [:], reason: "panel.open")?.value as? EventCall, .emit(name: "clipboard.change", value: nil))
+        XCTAssertEqual(CommandLineCall(arguments: ["event", "emit", "music.track"], environment: [:], reason: "music.track")?.value as? CallFault, .refused("`openspot event emit music.track` runs in a read of `music.track`, so it would read that spot again without end, and Openspot did not raise it. Raise it from an action, or raise another event."))
+        XCTAssertEqual(CommandLineCall(arguments: ["event", "emit", "music.next"], environment: [:], reason: "music.track")?.value as? EventCall, .emit(name: "music.next", value: nil))
         XCTAssertEqual(CommandLineCall(arguments: ["event", "emit", "music"])?.value as? CallFault, .refused("`music` is not an event. Name one with a dot, such as `music.track`."))
         XCTAssertEqual(CommandLineCall(arguments: ["event", "emit"])?.value as? CallFault, .unknown(["event", "emit"]))
         XCTAssertEqual(CommandLineCall(arguments: ["event", "emit", "a.b", "c", "d"])?.value as? CallFault, .unknown(["event", "emit", "a.b", "c", "d"]))
@@ -46,7 +46,7 @@ final class CommandLineCallTests: XCTestCase {
 
     func testAccountPrintsItsFactsAndReachesTheKey() {
         XCTAssertEqual(CommandLineCall(arguments: ["account", "show"])?.value as? AccountCall, .status(.frame))
-        XCTAssertEqual(CommandLineCall(arguments: ["account", "show", "--json"], environment: ["OPENSPOT_REASON": "sheet.open"])?.value as? AccountCall, .status(.json))
+        XCTAssertEqual(CommandLineCall(arguments: ["account", "show", "--json"], environment: [:], reason: "sheet.open")?.value as? AccountCall, .status(.json))
         XCTAssertEqual(CommandLineCall(arguments: ["account", "open"])?.value as? CallFault, .unknown(["account", "open"]))
         for verb in ["words", "choices", "checked", "phrase", "sign-in", "new", "sign-out", "sync"] {
             XCTAssertEqual(CommandLineCall(arguments: ["account", verb])?.value as? CallFault, .unknown(["account", "\(verb)"]))
@@ -67,7 +67,7 @@ final class CommandLineCallTests: XCTestCase {
     func testCalcSolvesTheWordsAfterItsVerbAlsoInARead() {
         XCTAssertEqual(CommandLineCall(arguments: ["calc", "solve", "2*(3+4)"])?.value as? CalcCall, .solve("2*(3+4)"))
         XCTAssertEqual(CommandLineCall(arguments: ["calc", "solve", "5", "km", "in", "mi"])?.value as? CalcCall, .solve("5 km in mi"))
-        XCTAssertEqual(CommandLineCall(arguments: ["calc", "solve", "1+1"], environment: ["OPENSPOT_REASON": "search"])?.value as? CalcCall, .solve("1+1"))
+        XCTAssertEqual(CommandLineCall(arguments: ["calc", "solve", "1+1"], environment: [:], reason: "search")?.value as? CalcCall, .solve("1+1"))
         XCTAssertEqual(CommandLineCall(arguments: ["calc", "solve"])?.value as? CallFault, .unknown(["calc", "solve"]))
         XCTAssertEqual(CommandLineCall(arguments: ["calc", "2+2"])?.value as? CallFault, .unknown(["calc", "2+2"]))
         XCTAssertTrue(CommandLineCall.usage.contains("openspot calc solve <words>..."))
@@ -180,9 +180,9 @@ final class CommandLineCallTests: XCTestCase {
     func testACommandThatWaitsForThePersonIsRefusedInARead() {
         XCTAssertEqual(CommandLineCall(arguments: ["folder", "pick"], environment: [:])?.value as? FolderCall, .pick)
         XCTAssertEqual(
-            CommandLineCall(arguments: ["folder", "pick"], environment: ["OPENSPOT_REASON": "sheet"])?.value as? CallFault, .refused("`openspot folder pick` waits for the person, so it cannot run in a read. Run it from a pick or an action."))
+            CommandLineCall(arguments: ["folder", "pick"], environment: [:], reason: "sheet")?.value as? CallFault, .refused("`openspot folder pick` waits for the person, so it cannot run in a read. Run it from a pick or an action."))
         XCTAssertEqual(
-            CommandLineCall(arguments: ["color", "pick"], environment: ["OPENSPOT_REASON": "panel"])?.value as? CallFault, .refused("`openspot color pick` waits for the person, so it cannot run in a read. Run it from a pick or an action."))
+            CommandLineCall(arguments: ["color", "pick"], environment: [:], reason: "panel")?.value as? CallFault, .refused("`openspot color pick` waits for the person, so it cannot run in a read. Run it from a pick or an action."))
     }
 
     func testAWindowCallReadsItsFrames() {
@@ -209,7 +209,7 @@ final class CommandLineCallTests: XCTestCase {
     }
 
     func testACallThatChangesTheMacOrThePlacesOfTheAppIsRefusedInARead() {
-        let read = ["OPENSPOT_REASON": "panel.open", "OPENSPOT_ID": "tools"]
+        let read: [String: String] = ["OPENSPOT_ID": "tools"]
         let refusals = [
             (["window", "move", "0 0 1 1"], "`openspot window move` moves a window"),
             (["clipboard", "copy", "hi"], "`openspot clipboard copy` changes the clipboard"),
@@ -224,44 +224,44 @@ final class CommandLineCallTests: XCTestCase {
             (["setting", "set", "enabled", "false"], "`openspot setting set enabled` turns a spot on or off"),
         ]
         for (arguments, act) in refusals {
-            XCTAssertEqual(CommandLineCall(arguments: arguments, environment: read)?.value as? CallFault, .refused("\(act), so it cannot run in a read. Run it from a pick or an action."), arguments.joined(separator: " "))
+            XCTAssertEqual(CommandLineCall(arguments: arguments, environment: read, reason: "panel.open")?.value as? CallFault, .refused("\(act), so it cannot run in a read. Run it from a pick or an action."), arguments.joined(separator: " "))
             XCTAssertNotEqual(CommandLineCall(arguments: arguments, environment: ["OPENSPOT_ID": "tools"])?.value as? CallFault, .refused("\(act), so it cannot run in a read. Run it from a pick or an action."))
         }
-        XCTAssertEqual(CommandLineCall(arguments: ["clipboard", "read"], environment: read)?.value as? ClipboardCall, .read)
-        XCTAssertEqual(CommandLineCall(arguments: ["window", "frame"], environment: read)?.value as? WindowCall, .frame)
-        XCTAssertEqual(CommandLineCall(arguments: ["setting", "set", "folder", "/tmp"], environment: read)?.value as? SettingCall, .set(spot: "tools", key: "folder", value: "/tmp"))
+        XCTAssertEqual(CommandLineCall(arguments: ["clipboard", "read"], environment: read, reason: "panel.open")?.value as? ClipboardCall, .read)
+        XCTAssertEqual(CommandLineCall(arguments: ["window", "frame"], environment: read, reason: "panel.open")?.value as? WindowCall, .frame)
+        XCTAssertEqual(CommandLineCall(arguments: ["setting", "set", "folder", "/tmp"], environment: read, reason: "panel.open")?.value as? SettingCall, .set(spot: "tools", key: "folder", value: "/tmp"))
     }
 
     func testAScreenCaptureIsRefusedInAReadAndTheSourcesAreNot() {
-        let read = ["OPENSPOT_REASON": "panel"]
+        let read: [String: String] = [:]
 
-        XCTAssertEqual(CommandLineCall(arguments: ["screen", "sources"], environment: read)?.value as? ScreenCall, .sources)
+        XCTAssertEqual(CommandLineCall(arguments: ["screen", "sources"], environment: read, reason: "panel")?.value as? ScreenCall, .sources)
         XCTAssertEqual(
-            CommandLineCall(arguments: ["screen", "shot", "display"], environment: read)?.value as? CallFault, .refused("`openspot screen shot` captures the screen, so it cannot run in a read. Run it from a pick or an action."))
+            CommandLineCall(arguments: ["screen", "shot", "display"], environment: read, reason: "panel")?.value as? CallFault, .refused("`openspot screen shot` captures the screen, so it cannot run in a read. Run it from a pick or an action."))
     }
 
     func testARecordingCallReadsItsWordsAndOnlyItsStatusRunsInARead() {
-        let read = ["OPENSPOT_REASON": "timer"]
+        let read: [String: String] = [:]
 
         XCTAssertEqual(CommandLineCall(arguments: ["screen", "record", "start", "display:1", "mic", "talk.mp4"])?.value as? ScreenCall, .recordStart(ScreenCapture(source: .display(1), inputs: [.mic(nil)], file: "talk.mp4")))
         XCTAssertEqual(CommandLineCall(arguments: ["screen", "record", "stop"])?.value as? ScreenCall, .recordStop)
-        XCTAssertEqual(CommandLineCall(arguments: ["screen", "record", "status"], environment: read)?.value as? ScreenCall, .recordStatus)
+        XCTAssertEqual(CommandLineCall(arguments: ["screen", "record", "status"], environment: read, reason: "timer")?.value as? ScreenCall, .recordStatus)
         XCTAssertEqual(CommandLineCall(arguments: ["screen", "record", "start", "mic", "mic"])?.value as? CallFault, .unknown(["screen", "record", "start", "mic", "mic"]))
         XCTAssertEqual(CommandLineCall(arguments: ["screen", "record", "stop", "now"])?.value as? CallFault, .unknown(["screen", "record", "stop", "now"]))
         XCTAssertEqual(CommandLineCall(arguments: ["screen", "record"])?.value as? CallFault, .unknown(["screen", "record"]))
         XCTAssertEqual(
-            CommandLineCall(arguments: ["screen", "record", "start"], environment: read)?.value as? CallFault, .refused("`openspot screen record start` captures the screen, so it cannot run in a read. Run it from a pick or an action."))
+            CommandLineCall(arguments: ["screen", "record", "start"], environment: read, reason: "timer")?.value as? CallFault, .refused("`openspot screen record start` captures the screen, so it cannot run in a read. Run it from a pick or an action."))
         XCTAssertEqual(
-            CommandLineCall(arguments: ["screen", "record", "stop"], environment: read)?.value as? CallFault, .refused("`openspot screen record stop` captures the screen, so it cannot run in a read. Run it from a pick or an action."))
+            CommandLineCall(arguments: ["screen", "record", "stop"], environment: read, reason: "timer")?.value as? CallFault, .refused("`openspot screen record stop` captures the screen, so it cannot run in a read. Run it from a pick or an action."))
         XCTAssertTrue(CommandLineCall.usage.contains("openspot screen record start"))
     }
 
     func testACalendarCallReadsItsDaysAndHiddenCalendarsAndRunsInARead() {
-        let read = ["OPENSPOT_REASON": "panel"]
-        XCTAssertEqual(CommandLineCall(arguments: ["calendar", "events"], environment: read)?.value as? CalendarCall, .events(days: 1, hidden: []))
+        let read: [String: String] = [:]
+        XCTAssertEqual(CommandLineCall(arguments: ["calendar", "events"], environment: read, reason: "panel")?.value as? CalendarCall, .events(days: 1, hidden: []))
         XCTAssertEqual(
             CommandLineCall(arguments: ["calendar", "events", "--days", "2", "--hide", "A8E2", "--hide", "B1"])?.value as? CalendarCall, .events(days: 2, hidden: ["A8E2", "B1"]))
-        XCTAssertEqual(CommandLineCall(arguments: ["calendar", "calendars"], environment: read)?.value as? CalendarCall, .calendars)
+        XCTAssertEqual(CommandLineCall(arguments: ["calendar", "calendars"], environment: read, reason: "panel")?.value as? CalendarCall, .calendars)
         XCTAssertEqual(CommandLineCall(arguments: ["calendar", "events", "--days", "0"])?.value as? CallFault, .unknown(["calendar", "events", "--days", "0"]))
         XCTAssertEqual(CommandLineCall(arguments: ["calendar", "events", "--days"])?.value as? CallFault, .unknown(["calendar", "events", "--days"]))
         XCTAssertEqual(CommandLineCall(arguments: ["calendar", "events", "today"])?.value as? CallFault, .unknown(["calendar", "events", "today"]))
@@ -273,34 +273,34 @@ final class CommandLineCallTests: XCTestCase {
     }
 
     func testARemindersCallReadsItsWordsAndDoneIsRefusedInARead() {
-        let read = ["OPENSPOT_REASON": "panel"]
-        XCTAssertEqual(CommandLineCall(arguments: ["reminders", "due"], environment: read)?.value as? RemindersCall, .due(days: 1, hidden: []))
+        let read: [String: String] = [:]
+        XCTAssertEqual(CommandLineCall(arguments: ["reminders", "due"], environment: read, reason: "panel")?.value as? RemindersCall, .due(days: 1, hidden: []))
         XCTAssertEqual(CommandLineCall(arguments: ["reminders", "due", "--days", "2", "--hide", "7D10"])?.value as? RemindersCall, .due(days: 2, hidden: ["7D10"]))
-        XCTAssertEqual(CommandLineCall(arguments: ["reminders", "lists"], environment: read)?.value as? RemindersCall, .lists)
+        XCTAssertEqual(CommandLineCall(arguments: ["reminders", "lists"], environment: read, reason: "panel")?.value as? RemindersCall, .lists)
         XCTAssertEqual(CommandLineCall(arguments: ["reminders", "done", "reminder:9C41"])?.value as? RemindersCall, .done(id: "reminder:9C41", isDone: true))
         XCTAssertEqual(CommandLineCall(arguments: ["reminders", "done", "reminder:9C41", "false"])?.value as? RemindersCall, .done(id: "reminder:9C41", isDone: false))
         XCTAssertEqual(CommandLineCall(arguments: ["reminders", "done", "reminder:9C41", "maybe"])?.value as? CallFault, .unknown(["reminders", "done", "reminder:9C41", "maybe"]))
         XCTAssertEqual(CommandLineCall(arguments: ["reminders", "done"])?.value as? CallFault, .unknown(["reminders", "done"]))
         XCTAssertEqual(CommandLineCall(arguments: ["reminders", "due", "--list", "7D10"])?.value as? CallFault, .unknown(["reminders", "due", "--list", "7D10"]))
         XCTAssertEqual(
-            CommandLineCall(arguments: ["reminders", "done", "reminder:9C41"], environment: read)?.value as? CallFault, .refused("`openspot reminders done` changes your reminders, so it cannot run in a read. Run it from a pick or an action."))
+            CommandLineCall(arguments: ["reminders", "done", "reminder:9C41"], environment: read, reason: "panel")?.value as? CallFault, .refused("`openspot reminders done` changes your reminders, so it cannot run in a read. Run it from a pick or an action."))
         XCTAssertTrue(CommandLineCall.usage.contains("openspot reminders due"))
         XCTAssertTrue(CommandLineCall.usage.contains("openspot reminders lists"))
         XCTAssertTrue(CommandLineCall.usage.contains("openspot reminders done"))
     }
 
     func testAnAddJoinsItsWordsAndOnlyADryRunRunsInARead() {
-        let read = ["OPENSPOT_REASON": "search"]
+        let read: [String: String] = [:]
         XCTAssertEqual(CommandLineCall(arguments: ["calendar", "add", "Lunch", "tomorrow", "13:00"])?.value as? CalendarCall, .add(words: "Lunch tomorrow 13:00", isDry: false))
-        XCTAssertEqual(CommandLineCall(arguments: ["calendar", "add", "--dry-run", "Lunch tomorrow"], environment: read)?.value as? CalendarCall, .add(words: "Lunch tomorrow", isDry: true))
+        XCTAssertEqual(CommandLineCall(arguments: ["calendar", "add", "--dry-run", "Lunch tomorrow"], environment: read, reason: "search")?.value as? CalendarCall, .add(words: "Lunch tomorrow", isDry: true))
         XCTAssertEqual(CommandLineCall(arguments: ["reminders", "add", "Call mom"])?.value as? RemindersCall, .add(words: "Call mom", isDry: false))
-        XCTAssertEqual(CommandLineCall(arguments: ["reminders", "add", "--dry-run", "Call", "mom"], environment: read)?.value as? RemindersCall, .add(words: "Call mom", isDry: true))
+        XCTAssertEqual(CommandLineCall(arguments: ["reminders", "add", "--dry-run", "Call", "mom"], environment: read, reason: "search")?.value as? RemindersCall, .add(words: "Call mom", isDry: true))
         XCTAssertEqual(CommandLineCall(arguments: ["reminders", "add"])?.value as? CallFault, .unknown(["reminders", "add"]))
         XCTAssertEqual(CommandLineCall(arguments: ["calendar", "add", "--dry-run"])?.value as? CallFault, .unknown(["calendar", "add", "--dry-run"]))
         XCTAssertEqual(
-            CommandLineCall(arguments: ["calendar", "add", "Lunch"], environment: read)?.value as? CallFault, .refused("`openspot calendar add` changes your calendars, so it cannot run in a read. Run it from a pick or an action."))
+            CommandLineCall(arguments: ["calendar", "add", "Lunch"], environment: read, reason: "search")?.value as? CallFault, .refused("`openspot calendar add` changes your calendars, so it cannot run in a read. Run it from a pick or an action."))
         XCTAssertEqual(
-            CommandLineCall(arguments: ["reminders", "add", "Call mom"], environment: read)?.value as? CallFault, .refused("`openspot reminders add` changes your reminders, so it cannot run in a read. Run it from a pick or an action."))
+            CommandLineCall(arguments: ["reminders", "add", "Call mom"], environment: read, reason: "search")?.value as? CallFault, .refused("`openspot reminders add` changes your reminders, so it cannot run in a read. Run it from a pick or an action."))
         XCTAssertTrue(CommandLineCall.usage.contains("openspot calendar add"))
         XCTAssertTrue(CommandLineCall.usage.contains("openspot reminders add"))
     }
@@ -310,7 +310,7 @@ final class CommandLineCallTests: XCTestCase {
         XCTAssertEqual(CommandLineCall(arguments: ["calendar", "show"])?.value as? CallFault, .unknown(["calendar", "show"]))
         XCTAssertEqual(CommandLineCall(arguments: ["calendar", "show", "a", "b"])?.value as? CallFault, .unknown(["calendar", "show", "a", "b"]))
         XCTAssertEqual(
-            CommandLineCall(arguments: ["calendar", "show", "reminder:9C41"], environment: ["OPENSPOT_REASON": "panel"])?.value as? CallFault, .refused("`openspot calendar show` opens Calendar, so it cannot run in a read. Run it from a pick or an action."))
+            CommandLineCall(arguments: ["calendar", "show", "reminder:9C41"], environment: [:], reason: "panel")?.value as? CallFault, .refused("`openspot calendar show` opens Calendar, so it cannot run in a read. Run it from a pick or an action."))
         XCTAssertTrue(CommandLineCall.usage.contains("openspot calendar show"))
     }
 
@@ -318,7 +318,7 @@ final class CommandLineCallTests: XCTestCase {
         XCTAssertEqual(CommandLineCall(arguments: ["reminders", "show", "reminder:9C41"])?.value as? RemindersCall, .show(id: "reminder:9C41"))
         XCTAssertEqual(CommandLineCall(arguments: ["reminders", "show"])?.value as? CallFault, .unknown(["reminders", "show"]))
         XCTAssertEqual(
-            CommandLineCall(arguments: ["reminders", "show", "reminder:9C41"], environment: ["OPENSPOT_REASON": "panel"])?.value as? CallFault, .refused("`openspot reminders show` opens Reminders, so it cannot run in a read. Run it from a pick or an action."))
+            CommandLineCall(arguments: ["reminders", "show", "reminder:9C41"], environment: [:], reason: "panel")?.value as? CallFault, .refused("`openspot reminders show` opens Reminders, so it cannot run in a read. Run it from a pick or an action."))
         XCTAssertTrue(CommandLineCall.usage.contains("openspot reminders show"))
     }
 

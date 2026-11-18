@@ -27,7 +27,7 @@ final class EmptySearchTests: PanelCase {
     }
 
     func testASearchThatFoundOnlyAnAnswerUnderTheResultsCountsAsMissed() async throws {
-        try script("make", toml: "title = 'Make'\non = ['search.text .']\nanswers = 'last'", #"printf 'row=%s\ntitle=Make\n' "$OPENSPOT_VALUE""#)
+        try script("make", toml: "title = 'Make'\non = ['search.text .']\nanswers = 'last'", #"\#(TestSpot.event); printf 'row=%s\ntitle=Make\n' "$val""#)
         await model.reload()
         model.isShown = true
         model.panelWillShow()

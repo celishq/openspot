@@ -38,7 +38,7 @@ final class TerminalRunTests: XCTestCase {
         store.uses.insert(.account)
         var frames: [String] = []
 
-        let end = await TerminalRun(spot: store, arguments: ["read"], input: nil).start { frames.append($0) }
+        let end = await TerminalRun(spot: store, arguments: ["show"], input: nil).start { frames.append($0) }
 
         XCTAssertEqual(end, TerminalRun.End(code: 1, errors: "Store reaches your account key, so it runs only in the Openspot panel. Open it there.\n"))
         XCTAssertEqual(frames, [])
@@ -64,14 +64,14 @@ final class TerminalRunTests: XCTestCase {
     }
 
     func testARunWithNoCallReadsASpotThatReadsAndOpensOneThatDoesNot() async throws {
-        let reads = try spot("reads", toml: "on = ['sheet.open']", "echo \"$1 $OPENSPOT_REASON\"")
+        let reads = try spot("reads", toml: "on = ['sheet.open']", "\(TestSpot.event)\necho \"$1 $ev\"")
         let opens = try spot("opens", "echo \"$1\"")
         var said: [String] = []
 
         _ = await TerminalRun(spot: reads, arguments: [], input: nil).start { said.append($0) }
         _ = await TerminalRun(spot: opens, arguments: [], input: nil).start { said.append($0) }
 
-        XCTAssertEqual(said, ["read sheet.open\n", "open\n"])
+        XCTAssertEqual(said, ["show sheet.open\n", "open\n"])
     }
 
     func testARunOfAStayingScriptEndsWithTheFrameThatEndsItsCall() async throws {

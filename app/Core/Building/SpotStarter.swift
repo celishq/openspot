@@ -67,12 +67,12 @@ public enum SpotStarter: String, CaseIterable, Sendable {
             #!/bin/sh
             . "$OPENSPOT_SH"
             case "$1" in
-              read)
+              show)
                 printf 'row=first\\ntitle=First row\\ndetail=Press Enter to pick it\\nnote=Hello\\n\\n'
                 printf 'row=second\\ntitle=Second row\\ndetail=Press Enter to pick it\\nnote=Hello again\\n'
                 ;;
               open)
-                openspot_kv toast "You picked the row that says: $(value note)"
+                openspot_kv toast "You picked the row that says: $(value item.note)"
                 ;;
             esac
 
@@ -88,13 +88,13 @@ public enum SpotStarter: String, CaseIterable, Sendable {
             #!/bin/sh
             . "$OPENSPOT_SH"
             case "$1" in
-              read)
+              show)
                 printf 'grid=note\\ngrid=save\\n\\n'
                 printf 'field=note\\ntitle=Note\\nplaceholder=Write a note\\n\\n'
                 printf 'button=save\\ntitle=Save\\nshortcut=cmd+return\\nlook=strong\\nclose=true\\n'
                 ;;
               save)
-                printf '%s\\n' "$(value note)" >> "$OPENSPOT_DATA/notes.txt"
+                printf '%s\\n' "$(value input.note)" >> "$OPENSPOT_DATA/notes.txt"
                 echo 'toast=Saved'
                 ;;
             esac

@@ -45,7 +45,7 @@ pane() {
 }
 
 case "$1" in
-  read)
+  show)
     full=$(language)
     base=${full%%_*}
     cache="$OPENSPOT_DATA/rows3-$(sw_vers -buildVersion 2>/dev/null)-$full"

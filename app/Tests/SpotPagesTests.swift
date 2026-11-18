@@ -8,7 +8,7 @@ final class SpotPagesTests: SpotRunsCase {
     }
 
     func testEachReadOfAPageNamesItAndTheFirstSheetNamesNone() async throws {
-        try script(toml: "on = ['sheet.open']", "echo \"${OPENSPOT_PAGE-none}\" >> '\(path("pages"))'\nprintf 'row=a\\ntitle=Page %s\\n' \"${OPENSPOT_PAGE-first}\"")
+        try script(toml: "on = ['sheet.open']", "page=$(sed -n 's/^route=//p')\necho \"${page:-none}\" >> '\(path("pages"))'\nprintf 'row=a\\ntitle=Page %s\\n' \"${page:-first}\"")
         let sheet = try sheet()
         runs.panelOpened()
         sheet.open(onReady: {})
@@ -22,7 +22,7 @@ final class SpotPagesTests: SpotRunsCase {
     }
 
     func testAPageThatComesBackShowsItsRowsAtOnceAndReadsAgain() async throws {
-        try script(toml: "on = ['sheet.open']", "printf 'row=a\\ntitle=Page %s\\n' \"${OPENSPOT_PAGE-first}\"")
+        try script(toml: "on = ['sheet.open']", "page=$(sed -n 's/^route=//p')\nprintf 'row=a\\ntitle=Page %s\\n' \"${page:-first}\"")
         let sheet = try sheet()
         runs.panelOpened()
         sheet.open(onReady: {})
@@ -38,7 +38,7 @@ final class SpotPagesTests: SpotRunsCase {
     }
 
     func testAPressOnAPageNamesItToo() async throws {
-        try script(toml: "on = ['sheet.open']", "[ \"$1\" = go ] && echo \"${OPENSPOT_PAGE-none}\" >> '\(path("pages"))'\nprintf 'button=go\\ntitle=Go\\nscope=spot\\n\\nrow=a\\ntitle=A\\n'")
+        try script(toml: "on = ['sheet.open']", "[ \"$1\" = go ] && echo \"$(sed -n 's/^route=//p')\" >> '\(path("pages"))'\nprintf 'button=go\\ntitle=Go\\nscope=spot\\n\\nrow=a\\ntitle=A\\n'")
         let sheet = try sheet()
         runs.panelOpened()
         sheet.open(onReady: {})
@@ -67,14 +67,14 @@ final class SpotPagesTests: SpotRunsCase {
 
         sheet.show(page: "detail")
 
-        try await wait("the read of the page") { self.blocks(ids: true).last?.contains("env.OPENSPOT_PAGE=detail") == true }
-        XCTAssertFalse(blocks(ids: true)[0].contains("OPENSPOT_PAGE"))
+        try await wait("the read of the page") { self.blocks(ids: true).last?.contains("route=detail") == true }
+        XCTAssertFalse(blocks(ids: true)[0].contains("route="))
     }
 
     func testAnInlineScriptGetsThePage() async throws {
         let url = folder.spotFile("script", extension: "js")
         try FileManager.default.createDirectory(at: url.deletingLastPathComponent(), withIntermediateDirectories: true)
-        try "function main(args, env) { return `row=a\\ntitle=Page ${env.OPENSPOT_PAGE || 'first'}\\n` }\n".writeInline(to: url, toml: "on = ['sheet.open']")
+        try "function main(args, env, input) { return `row=a\\ntitle=Page ${openspot.value('route', input) || 'first'}\\n` }\n".writeInline(to: url, toml: "on = ['sheet.open']")
         let sheet = try sheet()
         runs.panelOpened()
         sheet.open(onReady: {})

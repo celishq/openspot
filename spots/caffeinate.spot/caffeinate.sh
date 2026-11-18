@@ -183,9 +183,9 @@ release() {
   held=
 }
 
-# Prints a value of the stdin of the call, which comes escaped on its input line.
+# Prints a value of the stdin of the call, whose lines follow its arguments in the block of the call.
 given() {
-  printf '%b\n' "$input" | sed -n "s/^$1=//p" | head -n 1
+  printf '%s' "$input" | sed -n "s/^$1=//p" | head -n 1
 }
 
 # Prints the toast of a hold of that many seconds, which says, after `lost`, that it could not work with the lid closed,
@@ -217,7 +217,7 @@ serve() {
       printf '%scall=%s\n---\ntoast=Caffeinate is off\n%s\n---\nend=%s\n---\n' "$ended" "$call" "$(sheet)" "$call"
       ;;
     start* | 'open custom')
-      minutes=$(given minutes)
+      minutes=$(given input.minutes)
       [ -n "$minutes" ] || minutes=$(given search)
       case $minutes in
         '')
@@ -265,7 +265,6 @@ input=
 while IFS= read -r line; do
   case $line in
     call=*) call=${line#call=}; input=; set -- ;;
-    input=*) input=${line#input=} ;;
     arg=*) set -- "$@" "${line#arg=}" ;;
     stop=*)
       if [ "${line#stop=}" = "$held" ]; then
@@ -277,6 +276,8 @@ while IFS= read -r line; do
       [ -z "$call" ] || serve "$@"
       call=
       ;;
+    *) [ -z "$call" ] || input="$input$line
+" ;;
   esac
 done
 release

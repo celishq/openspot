@@ -21,7 +21,7 @@ extension SpotRun {
             return
         }
         let query = list.search == .script && !script.keepsState ? list.query : ""
-        let read = SpotAction.read
+        let read = SpotAction.show
         let action = spot.read == nil ? spot.click : read
         let typed = query.isEmpty ? typed ?? "" : query
         let values = [showsSheet ? panel?.values : nil, typed.isEmpty ? nil : SearchQuery(text: typed).input].compactMap { $0 }
@@ -68,7 +68,7 @@ extension SpotRun {
         pauses[Self.searchKey]?.cancel()
         pauses[Self.searchKey] = nil
         send(Call(
-            action: .read,
+            action: .show,
             key: Self.searchKey,
             input: (showsSheet ? panel?.values ?? "" : "") + SearchQuery(text: query).input,
             limit: runs.readLimit,
@@ -88,7 +88,7 @@ extension SpotRun {
             return
         }
         send(Call(
-            action: .read,
+            action: .show,
             key: Self.answerKey,
             input: runs.search(of: text).input,
             limit: runs.readLimit,

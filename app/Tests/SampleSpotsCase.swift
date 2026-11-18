@@ -49,7 +49,7 @@ class SampleSpotsCase: XCTestCase {
         return String(decoding: output.fileHandleForReading.readDataToEndOfFile(), as: UTF8.self)
     }
 
-    func withPrivateHome(_ more: [String: String] = [:], _ body: (URL) async throws -> Void) async throws {
+    func withPrivateHome(_ more: [String: String] = [:], settings: [String: String] = [:], _ body: (URL) async throws -> Void) async throws {
         let folder = FileManager.default.temporaryDirectory.appendingPathComponent("openspot-home-\(UUID().uuidString)")
         let tools = folder.appendingPathComponent("tools")
         try FileManager.default.createDirectory(at: tools, withIntermediateDirectories: true)
@@ -74,7 +74,7 @@ class SampleSpotsCase: XCTestCase {
             "APP_FOLDERS": folder.appendingPathComponent("Applications").path
         ]
         try await TestEnvironment.with(home.merging(more) { _, new in new }) {
-            try await body(folder)
+            try await TestSettings.with(settings) { try await body(folder) }
         }
     }
 

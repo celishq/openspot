@@ -1,6 +1,10 @@
 #!/bin/sh
+. "$OPENSPOT_SH"
 case "$1" in
-  read) printf 'text=folder\ntitle=%s\n' "${OPENSPOT_SETTING_FOLDER:-Choose a folder in Settings}" ;;
+  show)
+    folder=$(value setting.folder)
+    printf 'text=folder\ntitle=%s\n' "${folder:-Choose a folder in Settings}"
+    ;;
   folder)
     picked=$(openspot folder pick)
     [ -n "$picked" ] && openspot setting set folder "$picked"

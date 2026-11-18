@@ -306,12 +306,12 @@ final class WidgetContractTests: XCTestCase {
         XCTAssertEqual(faults, ["tools: gone"])
     }
 
-    func testTheCheckFaultsAPartOrAnActionCalledRead() async throws {
-        try script("tools.sh", "#!/bin/sh\nprintf 'button=read\\ntitle=A\\n\\nrow=a\\ntitle=A\\n\\ntext=read\\ntitle=B\\n'\n", toml: "on = ['sheet.open']")
+    func testTheCheckFaultsAPartOrAnActionCalledShow() async throws {
+        try script("tools.sh", "#!/bin/sh\nprintf 'button=show\\ntitle=A\\n\\nrow=a\\ntitle=A\\n\\ntext=show\\ntitle=B\\n'\n", toml: "on = ['sheet.open']")
 
         let faults = await SpotCheck(folder: SpotsFolder(url: folder)).faults()
 
-        XCTAssertEqual(faults, ["tools: an action cannot be called read", "tools: a part cannot be called read"])
+        XCTAssertEqual(faults, ["tools: an action cannot be called show", "tools: a part cannot be called show"])
     }
 
     func testTheCheckDoesNotRunAScriptWithNoRead() async throws {

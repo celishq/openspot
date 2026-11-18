@@ -61,7 +61,7 @@ final class ThemesSpotTests: BuiltInCase {
     func testDuplicateRenameAndMoveToTrashChangeTheThemes() async throws {
         try await themes.perform(SpotAction(arguments: ["duplicate", "Openspot"]), timeout: 60)
         let form = try await themes.answer(SpotAction(arguments: ["rename", "Openspot copy"]), timeout: 60)
-        let renamed = try await themes.answer(SpotAction(arguments: ["rename", "Openspot copy"]), input: "name= Dusk \n", timeout: 60)
+        let renamed = try await themes.answer(SpotAction(arguments: ["rename", "Openspot copy"]), input: "input.name= Dusk \n", timeout: 60)
         let toast = try await themes.perform(SpotAction(arguments: ["delete", "Dusk"]), timeout: 60)
 
         XCTAssertEqual(form.fields.map { $0.block.value("field") }, ["name"])
@@ -74,7 +74,7 @@ final class ThemesSpotTests: BuiltInCase {
     func testCopyPromptPushesAPageWhoseButtonCopiesAPromptThatChangesACopyOfTheBuiltInTheme() async throws {
         let pushed = try await themes.answer(SpotAction(arguments: ["prompt", "Openspot"]), timeout: 60)
         let page = try await themes.items(page: "prompt:Openspot", timeout: 60)
-        let toast = try await themes.perform(SpotAction(arguments: ["copy"]), input: "describe=Warm and round\n", page: "prompt:Openspot", timeout: 60)
+        let toast = try await themes.perform(SpotAction(arguments: ["copy"]), input: "input.describe=Warm and round\n", page: "prompt:Openspot", timeout: 60)
 
         XCTAssertNotNil(pushed.move)
         XCTAssertEqual(page.fields.map { $0.block.value("field") }, ["describe"])
@@ -91,7 +91,7 @@ final class ThemesSpotTests: BuiltInCase {
     func testThePromptOfAnOwnThemeNamesItsFile() async throws {
         try theme("Night", "")
 
-        _ = try await themes.perform(SpotAction(arguments: ["copy"]), input: "describe=Darker\n", page: "prompt:Night", timeout: 60)
+        _ = try await themes.perform(SpotAction(arguments: ["copy"]), input: "input.describe=Darker\n", page: "prompt:Night", timeout: 60)
 
         let prompt = try String(contentsOf: root.appendingPathComponent("clipboard"), encoding: .utf8)
         XCTAssertTrue(prompt.contains("theme use 'Night'. Then change the file \(root.appendingPathComponent("themes/Night.theme/theme.toml").path)."), prompt)

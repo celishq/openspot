@@ -3,7 +3,7 @@ import XCTest
 
 final class CardDropTests: PanelCase {
     func testADropOnACardWithRowsOpensItsSheetWithTheFocusAndOnAnyOtherCardClosesThePanel() async throws {
-        try script("shelf", toml: "on = ['sheet.open']\ndrop = '*'", "case \"$1\" in read) printf 'row=a\\ntitle=A\\n' ;; esac")
+        try script("shelf", toml: "on = ['sheet.open']\ndrop = '*'", "case \"$1\" in show) printf 'row=a\\ntitle=A\\n' ;; esac")
         try script("plain", toml: "drop = '*'", "true")
         await model.reload()
         model.isShown = true

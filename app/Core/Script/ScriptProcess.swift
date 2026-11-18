@@ -173,8 +173,8 @@ public final class ScriptProcess: @unchecked Sendable {
         follow(output: output, errors: errors)
     }
 
-    public func send(_ action: SpotAction, input: String? = nil, variables: [String: String] = [:], id: Int) {
-        send(text: action.block(input: input, variables: variables, id: id))
+    public func send(_ action: SpotAction, input: String? = nil, id: Int) {
+        send(text: action.block(input: input, id: id))
     }
 
     public func send(text: String) {

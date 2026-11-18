@@ -86,7 +86,7 @@ on = ["sheet.open"]
 #!/bin/sh
 . "$OPENSPOT_SH"
 case "$1" in
-  read) printf 'Mail\tMail\tYour inbox\tenvelope\nNotes\tNotes\tYour notes\tnote.text\n' | openspot_rows ;;
+  show) printf 'Mail\tMail\tYour inbox\tenvelope\nNotes\tNotes\tYour notes\tnote.text\n' | openspot_rows ;;
   open) open -a "$2" ;;
 esac
 ```
@@ -96,7 +96,7 @@ esac
 The sheet shows two rows, **Mail** and **Notes**. Type in the sheet's search field, and Openspot filters the rows for
 you. Pick **Notes**, and Openspot runs `apps.sh open Notes`.
 
-The first argument tells your spot what to do. `read` asks what to show. Any other word is something the user did. The
+The first argument tells your spot what to do. `show` asks what to show. Any other word is something the user did. The
 shell helper, `$OPENSPOT_SH`, prints rows for you and escapes each value.
 
 Learn more in [Rows](PROTOCOL.md#rows) and [The calls](PROTOCOL.md#the-calls).
@@ -104,7 +104,7 @@ Learn more in [Rows](PROTOCOL.md#rows) and [The calls](PROTOCOL.md#the-calls).
 ## Open a row as a page
 
 A page shows the detail of a row as a sheet of its own, and keeps the list it came from. Name the pages in the manifest
-with `pages`, give the row `push=true`, and print the page when `OPENSPOT_PAGE` holds its id.
+with `pages`, give the row `push=true`, and print the page when `route` holds its id.
 
 ```toml
 title = "Fruit"
@@ -116,16 +116,17 @@ pages = ["*"]
 ```sh
 #!/bin/sh
 . "$OPENSPOT_SH"
-case "$OPENSPOT_PAGE" in
+route=$(value route)
+case "$route" in
   '') printf 'row=apple\ntitle=Apple\npush=true\n\nrow=pear\ntitle=Pear\npush=true\n' ;;
-  *) openspot_row "$OPENSPOT_PAGE:color" "Color" "Green" ;;
+  *) openspot_row "$route:color" "Color" "Green" ;;
 esac
 ```
 
 Pick **Apple**, and its page opens in place of the list, with one row, **Color**. Press `⌘[` to go back to the list,
 and `⌘]` to go forward to the page again. Esc takes the page off, so `⌘]` has nothing to go to. `⌘Esc` goes back to the grid.
 
-Each call of a page gets its id in `OPENSPOT_PAGE`, so a press on the page knows which page it came from. A press can
+Each call of a page gets its id as `route=` on stdin, so a press on the page knows which page it came from. A press can
 move the flow too: print `pop=true` after it saves, and the list shows again. A row or a press with `push.spot=` pushes
 another spot, which reads what to show from its page, as a web page reads its URL.
 
@@ -222,7 +223,7 @@ on = ["sheet.open"]
 #!/bin/sh
 . "$OPENSPOT_SH"
 case "$1" in
-  read)
+  show)
     openspot_row today Today
     printf '\nbutton=trash\ntitle=Move to Trash\nshortcut=cmd+backspace\nconfirm=Press again to delete\n'
     ;;
@@ -234,8 +235,8 @@ esac
 
 Select **Today** and press ⌘⌫ twice, and Openspot runs `notes-list.sh trash today`.
 
-A row can hold keys of its own, such as `path=`. An action on that row gets each of its keys on stdin, so the spot
-doesn't look the row up again.
+A row can hold keys of its own, such as `path=`. An action on that row gets each of its keys on stdin, as `item.path=`,
+so the spot doesn't look the row up again.
 
 ```toml
 title = "Downloads"
@@ -246,16 +247,16 @@ on = ["sheet.open"]
 #!/bin/sh
 . "$OPENSPOT_SH"
 case "$1" in
-  read)
+  show)
     openspot_row report Report.pdf
     openspot_kv path "$HOME/Downloads/Report.pdf"
     printf '\nbutton=reveal\ntitle=Show in Finder\nshortcut=cmd+o\n'
     ;;
-  reveal) open -R "$(value path)" ;;
+  reveal) open -R "$(value item.path)" ;;
 esac
 ```
 
-Select **Report.pdf** and press ⌘O, and `value path` prints the path that the row holds.
+Select **Report.pdf** and press ⌘O, and `value item.path` prints the path that the row holds.
 
 Learn more in [Buttons and actions](PROTOCOL.md#buttons-and-actions).
 
@@ -273,9 +274,9 @@ on = ["sheet.open"]
 #!/bin/sh
 . "$OPENSPOT_SH"
 case "$1" in
-  read) printf 'text=hint\ntitle=Press ⌘K to add a note\n\nbutton=add\ntitle=Add note\nform=true\nscope=spot\n' ;;
+  show) printf 'text=hint\ntitle=Press ⌘K to add a note\n\nbutton=add\ntitle=Add note\nform=true\nscope=spot\n' ;;
   add)
-    note=$(value note)
+    note=$(value input.note)
     if [ -z "$note" ]; then
       printf 'title=New note\n\nfield=note\ntitle=Note\n'
     else
@@ -287,7 +288,7 @@ esac
 ```
 
 Choose **Add note**, and a form with one field opens. Type a note and press Return. The spot saves it, and a toast says
-**Saved**. `value note` reads the field from stdin.
+**Saved**. `value input.note` reads the field from stdin.
 
 Learn more in [Buttons and actions](PROTOCOL.md#buttons-and-actions) and [The head](PROTOCOL.md#the-head).
 
@@ -310,7 +311,7 @@ placeholder = "What to note"
 . "$OPENSPOT_SH"
 case "$1" in
   add)
-    note=$(value note)
+    note=$(value input.note)
     [ -n "$note" ] || note=$(value search)
     if [ -z "$note" ]; then
       printf 'title=New note\n\nfield=note\ntitle=Note\n'
@@ -341,9 +342,9 @@ uses = ["clipboard"]
 ```
 
 ```js
-function main(args, env) {
-  if (args[0] === "read")
-    return openspot.call(["calc", "solve", env.OPENSPOT_VALUE]).stdout;
+function main(args, env, input) {
+  if (args[0] === "show")
+    return openspot.call(["calc", "solve", openspot.value("event.value", input)]).stdout;
   return "";
 }
 ```
@@ -351,7 +352,7 @@ function main(args, env) {
 <!-- draw: openspot calc solve 2+2 -->
 ![The answer to 2+2: one row, 4](docs/images/answer-the-search.png)
 
-Type `2+2`, and the answer shows at the top of the main search. `OPENSPOT_VALUE` holds the typed text. A `.js` file runs
+Type `2+2`, and the answer shows at the top of the main search. `event.value` holds the typed text. A `.js` file runs
 inside Openspot, so it answers in the same keystroke.
 
 Learn more in [Places](PROTOCOL.md#places) and [Modes](PROTOCOL.md#modes).
@@ -368,17 +369,18 @@ on = ["sheet.open", "app.front com\\.apple\\.Notes"]
 
 ```sh
 #!/bin/sh
-printf 'text=n\ntitle=%s\n' "$OPENSPOT_REASON"
+. "$OPENSPOT_SH"
+printf 'text=n\ntitle=%s\n' "$(value event)"
 ```
 
-<!-- draw: OPENSPOT_REASON=app.front sh "$EXAMPLE" -->
+<!-- draw: printf 'event=app.front\n' | sh "$EXAMPLE" -->
 ![The sheet of Notes after Notes came to the front: one line, app.front](docs/images/respond-to-the-mac.png)
 
-Bring Notes to the front while the sheet shows, and Openspot asks the spot again. `OPENSPOT_REASON` says why:
+Bring Notes to the front while the sheet shows, and Openspot asks the spot again. `value event` says why:
 `sheet.open` or `app.front`.
 
 Some events bring a value. `system.load` comes every 5 seconds while the sheet shows, with the load of the Mac in
-`OPENSPOT_VALUE`, so the spot starts no tool to measure it.
+`event.value`, so the spot starts no tool to measure it.
 
 ```toml
 title = "Load"
@@ -388,16 +390,18 @@ on = ["sheet.open", "system.load"]
 
 ```sh
 #!/bin/sh
-case "${OPENSPOT_VALUE-}" in
+. "$OPENSPOT_SH"
+load=$(value event.value)
+case "$load" in
   cpu=*)
-    cpu=${OPENSPOT_VALUE#cpu=}
+    cpu=${load#cpu=}
     printf 'text=cpu\ntitle=%s%% CPU\n' "${cpu%% *}"
     ;;
   *) printf 'text=cpu\ntitle=Measuring…\n' ;;
 esac
 ```
 
-<!-- draw: OPENSPOT_VALUE='cpu=12 memory=61' sh "$EXAMPLE" -->
+<!-- draw: printf 'event=system.load\nevent.value=cpu=12 memory=61\n' | sh "$EXAMPLE" -->
 ![The sheet of Load: one line, 12% CPU](docs/images/show-the-load.png)
 
 The sheet opens with **Measuring…**, and shows the first value within 5 seconds.
@@ -443,8 +447,12 @@ on = ["sheet.open"]
 
 ```sh
 #!/bin/sh
+. "$OPENSPOT_SH"
 case "$1" in
-  read) printf 'text=folder\ntitle=%s\n' "${OPENSPOT_SETTING_FOLDER:-Choose a folder in Settings}" ;;
+  show)
+    folder=$(value setting.folder)
+    printf 'text=folder\ntitle=%s\n' "${folder:-Choose a folder in Settings}"
+    ;;
   folder)
     picked=$(openspot folder pick)
     [ -n "$picked" ] && openspot setting set folder "$picked"
@@ -452,15 +460,15 @@ case "$1" in
 esac
 ```
 
-<!-- draw: OPENSPOT_SETTING_FOLDER=/Users/me/Code sh "$EXAMPLE" read -->
+<!-- draw: printf 'setting.folder=/Users/me/Code\n' | sh "$EXAMPLE" show -->
 ![The sheet of Repos: one line, /Users/me/Code](docs/images/read-a-setting.png)
 
 In the Settings of Repos, choose **Folder**, and Openspot runs `repos.sh folder`. The spot asks for a folder and keeps it.
-Each later call gets it in `OPENSPOT_SETTING_FOLDER`, so the spot reads its setting with no `openspot` call.
+Each later call gets it on stdin as `setting.folder=`, so the spot reads its setting with no `openspot` call.
 
 A setting with `type = "secret"` keeps a value that no other program should see, such as the token of a service. Openspot
-asks for it in a form of its own, keeps it in the Keychain, and gives it to each call only on stdin, as
-`setting.token`. A secret has 8 characters or more.
+asks for it in a form of its own, keeps it in the Keychain, and gives it to each call on stdin, as
+`setting.token`, as any other setting. A secret has 8 characters or more.
 
 ```toml
 title = "Weather"

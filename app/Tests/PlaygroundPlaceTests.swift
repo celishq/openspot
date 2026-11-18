@@ -22,7 +22,7 @@ final class PlaygroundPlaceTests: XCTestCase {
     }
 
     private let manifest = "title = \"Twice\"\non = [\"sheet.open\", \"clock.60\", \"search.text ^[0-9]\"]\n"
-    private let answering = "#!/bin/sh\nprintf 'text=t\\ntitle=%s\\n' \"$OPENSPOT_REASON\"\n[ -n \"$OPENSPOT_VALUE\" ] && printf '\\nrow=%s\\ntitle=Twice %s\\n' \"$OPENSPOT_VALUE\" \"$OPENSPOT_VALUE\"\n"
+    private let answering = "#!/bin/sh\n. \"$OPENSPOT_SH\"\nvalue=$(value event.value)\nprintf 'text=t\\ntitle=%s\\n' \"$(value event)\"\n[ -n \"$value\" ] && printf '\\nrow=%s\\ntitle=Twice %s\\n' \"$value\" \"$value\"\n"
 
     func testATypedSpotLiesOnTheGridOfItsOwnPanel() async throws {
         let id = try await panel.place(file: nil, text: answering, manifest: manifest)

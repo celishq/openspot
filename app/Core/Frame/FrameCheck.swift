@@ -1,6 +1,5 @@
 public struct FrameCheck: Equatable, Sendable {
-    public static let calls = ["read", SpotOutput.open, "drop", "drag"]
-    static let stdinKeys = ["search", "form", "value"]
+    public static let calls = ["show", SpotOutput.open, "drop", "drag"]
 
     public let output: SpotOutput
     public let partFaults: [String]
@@ -22,7 +21,6 @@ public struct FrameCheck: Equatable, Sendable {
                 continue
             }
             if taken.contains(id), id != SpotOutput.open { faults.append("an action cannot be called \(id)") }
-            if Self.stdinKeys.contains(id) { faults.append("an action cannot be called \(id), which stdin uses") }
             if id != SpotOutput.open, CommandAction(id: id, block: block) == nil { faults += PartCatalog.actionFaults(in: block) }
         }
         if let id = head?.value(HeadKey.main), output.value == nil {
@@ -31,9 +29,6 @@ public struct FrameCheck: Equatable, Sendable {
         faults += Self.headFaults(head, of: output)
         for id in taken where output.parts.contains(where: { $0.id == id }) {
             faults.append("a part cannot be called \(id)")
-        }
-        for id in Self.stdinKeys where output.parts.contains(where: { $0.id == id }) {
-            faults.append("a part cannot be called \(id), which stdin uses")
         }
         for row in rows {
             if let file = row.value(RowKey.file), !file.hasPrefix("/") {

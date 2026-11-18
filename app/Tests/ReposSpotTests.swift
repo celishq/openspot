@@ -23,11 +23,11 @@ final class ReposSpotTests: SampleSpotsCase {
 
     @discardableResult
     private func kept<T>(in folder: URL, _ body: () async throws -> T) async throws -> T {
-        var settings: [String: String?] = [:]
+        var settings: [String: String] = [:]
         for key in ["folder", "editor"] {
-            settings["OPENSPOT_SETTING_\(key.uppercased())"] = try? String(contentsOf: folder.appendingPathComponent("setting-\(key)"), encoding: .utf8)
+            settings[key] = try? String(contentsOf: folder.appendingPathComponent("setting-\(key)"), encoding: .utf8)
         }
-        return try await TestEnvironment.with(settings, body)
+        return try await TestSettings.with(settings, body)
     }
 
     func testWithNoFolderItAsksForOneAndKeepsThePick() async throws {

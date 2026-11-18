@@ -1,2 +1,3 @@
 #!/bin/sh
-printf 'text=n\ntitle=%s\n' "$OPENSPOT_REASON"
+. "$OPENSPOT_SH"
+printf 'text=n\ntitle=%s\n' "$(value event)"

@@ -29,8 +29,9 @@ used=
 # Prints the memory from the load that Openspot measures every 5 seconds. A read with no load, as when the panel
 # opens, measures the memory now.
 main() {
-  case $OPENSPOT_VALUE in
-    *memory=*) used=${OPENSPOT_VALUE##*memory=} used=${used%% *} ;;
+  load=$(value event.value)
+  case $load in
+    *memory=*) used=${load##*memory=} used=${used%% *} ;;
     *) used=$(measure) ;;
   esac
   draw "$used"

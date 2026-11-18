@@ -23,7 +23,7 @@ final class CallInputTests: SpotRunsCase {
     }
 
     func testACallCarriesTheValuesOfTheFieldsOfItsOwnHeaderAndOfNoOtherSpot() async throws {
-        try script(toml: "on = ['sheet.open']\n[settings.folder]\n[settings.api-key]", "env | grep '^OPENSPOT_SETTING_' | sort > '\(path("env"))'")
+        try script(toml: "on = ['sheet.open']\n[settings.folder]\n[settings.api-key]", "grep '^setting\\.' | sort > '\(path("env"))'")
         try script("other", toml: "on = ['sheet.open']\n[settings.folder]", log: "other", "")
         let sheet = try sheet()
         runs.take(settings: [
@@ -36,13 +36,13 @@ final class CallInputTests: SpotRunsCase {
         sheet.read(need: .change)
 
         try await wait("the call") { self.text("env").hasSuffix("\n") }
-        XCTAssertEqual(text("env"), "OPENSPOT_SETTING_API_KEY=k1\nOPENSPOT_SETTING_FOLDER=/tmp/repos\n")
+        XCTAssertEqual(text("env"), "setting.api-key=k1\nsetting.folder=/tmp/repos\n")
     }
 
     func testAnActionAndAPickOfARowCarryTheKeysOfThatRowOnStdin() async throws {
         try script(toml: "on = ['sheet.open']", """
         case "$1" in
-          read) printf 'row=a\\ntitle=A\\nmeeting=https://meet.example/a\\n\\nrow=b\\ntitle=B\\n' ;;
+          show) printf 'row=a\\ntitle=A\\nmeeting=https://meet.example/a\\n\\nrow=b\\ntitle=B\\n' ;;
           *) { echo "$*"; cat; echo; } >> '\(path("input"))' ;;
         esac
         """)
@@ -55,8 +55,8 @@ final class CallInputTests: SpotRunsCase {
         try await wait("the action") { self.text("input").contains("join a") && sheet.calls.isEmpty }
         sheet.pick(row)
 
-        try await wait("the pick") { self.text("input").contains("open a\nrow=a") && self.text("input").hasSuffix("\n\n") }
-        XCTAssertEqual(text("input"), "join a\nrow=a\ntitle=A\nmeeting=https://meet.example/a\n\nopen a\nrow=a\ntitle=A\nmeeting=https://meet.example/a\n\n")
+        try await wait("the pick") { self.text("input").contains("open a\nitem.row=a") && self.text("input").hasSuffix("\n\n") }
+        XCTAssertEqual(text("input"), "join a\nitem.row=a\nitem.title=A\nitem.meeting=https://meet.example/a\n\nopen a\nitem.row=a\nitem.title=A\nitem.meeting=https://meet.example/a\n\n")
     }
 
     func testTheValueOfASecretFieldGoesOnlyOnStdinAndTheHostRecordsItNowhere() async throws {
@@ -131,25 +131,11 @@ final class CallInputTests: SpotRunsCase {
         XCTAssertFalse(text("input").contains(marker))
     }
 
-    func testASettingOver64KBIsNotPutInTheEnvironment() async throws {
-        try script(toml: "on = ['sheet.open']\n[settings.notes]\n[settings.city]", "env | grep '^OPENSPOT_SETTING_' | cut -c1-30 > '\(path("env"))'")
-        let sheet = try sheet()
-        runs.take(settings: [
-            SpotSetting(spot: "script", key: "notes", value: String(repeating: "n", count: 65_537)),
-            SpotSetting(spot: "script", key: "city", value: "Paris")
-        ])
-
-        sheet.read(need: .change)
-
-        try await wait("the call") { self.text("env").hasSuffix("\n") }
-        XCTAssertEqual(text("env"), "OPENSPOT_SETTING_CITY=Paris\n")
-    }
-
     private func settingsSheet(fields: [HeaderField], config: String = "") throws -> String {
         let file = ConfigFile(url: folder.appendingPathComponent("config.toml"))
         try config.write(to: file.url, atomically: true, encoding: .utf8)
         let settings = SpotSettings(file: file, secrets: try secrets(["token": marker]), spot: "script", fields: fields, showsInMenuBar: false, keys: [])
-        return try settings.answer(["read"])
+        return try settings.answer(["show"])
     }
 
     private func field(_ key: String, secret: Bool) throws -> HeaderField {

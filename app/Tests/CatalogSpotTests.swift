@@ -64,7 +64,7 @@ final class CatalogSpotTests: BuiltInCase {
         let shared = try SpotPackage(sharing: XCTUnwrap(scan.spots.first { $0.id == "apps" }), from: scan)
 
         let review = try ReviewSpot(spot: shared, folder: spots, canAdd: false)
-        let sheet = try review.answer(["read"])
+        let sheet = try review.answer(["show"])
 
         XCTAssertFalse(sheet.contains("text=install"))
         XCTAssertTrue(sheet.contains("apps.sh"))

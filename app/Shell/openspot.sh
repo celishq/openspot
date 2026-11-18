@@ -66,8 +66,8 @@ esc() {
   done
 }
 
-# Prints the real text of each value of a key from stdin, one per line: `\n` as a new line and `\\` as a backslash. It prints
-# nothing when stdin has no such value.
+# Prints the real text of each value of a key from stdin, such as `value setting.city`, `value input.title` or `value event`,
+# one per line: `\n` as a new line and `\\` as a backslash. It prints nothing when stdin has no such value.
 value() (
   if [ "${#_openspot_stdin}" -gt 1024 ]; then
     printf %s "$_openspot_stdin" |
@@ -158,12 +158,10 @@ _openspot_decode() {
 }
 
 # Reads the next call block of a staying script from stdin, and fails at the end of stdin (protocol: Modes). It sets `_openspot_call`,
-# `_openspot_args` with one written argument on each line, and `_openspot_stdin`, and exports each variable of the call in
-# place of those of the call before. A stop block gives no call.
+# `_openspot_args` with one written argument on each line, and `_openspot_stdin` with the other lines of the block, the stdin
+# of the call. A stop block gives no call.
 _openspot_next() {
   _openspot_call= _openspot_args= _openspot_stdin= _openspot_count=0
-  for _openspot_name in $_openspot_env; do unset "$_openspot_name"; done
-  _openspot_env=
   while IFS= read -r _openspot_line; do
     case $_openspot_line in
       '') [ -z "$_openspot_call" ] || return 0 ;;
@@ -173,18 +171,7 @@ _openspot_next() {
         _openspot_args=$_openspot_args${_openspot_line#arg=}
         _openspot_count=$((_openspot_count + 1))
         ;;
-      env.OPENSPOT_*=*)
-        _openspot_name=${_openspot_line%%=*}
-        _openspot_name=${_openspot_name#env.}
-        case $_openspot_name in *[!A-Z0-9_]*) continue ;; esac
-        _openspot_decode "${_openspot_line#*=}"
-        export "$_openspot_name=$_openspot_text"
-        _openspot_env="$_openspot_env $_openspot_name"
-        ;;
-      input=*)
-        _openspot_decode "${_openspot_line#input=}"
-        _openspot_stdin=$_openspot_text
-        ;;
+      *) [ -z "$_openspot_call" ] || _openspot_stdin=$_openspot_stdin$_openspot_line$_openspot_nl ;;
     esac
   done
   return 1

@@ -12,7 +12,7 @@ on = ["panel.open"]
 ```text
 #!/bin/sh
 case "$1" in
-  read) openspot calendar events ;;
+  show) openspot calendar events ;;
   open) openspot calendar show "$2" ;;
 esac
 ```

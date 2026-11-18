@@ -1,5 +1,5 @@
 #!/bin/sh
-[ "$1" = read ] || exit 0
+[ "$1" = show ] || exit 0
 year=$(date +%Y)
 day=$(date +%j | sed 's/^0*//')
 days=$(date -j -f %Y-%m-%d "$year-12-31" +%j)

@@ -108,7 +108,7 @@ class SpotRunsCase: XCTestCase {
     func blocks(ids: Bool = false) -> [String] {
         let text = (try? String(contentsOfFile: path("blocks"), encoding: .utf8)) ?? ""
         return text.components(separatedBy: "\n\n").filter { !$0.isEmpty }.map { block in
-            ids ? block : block.split(separator: "\n").filter { !$0.hasPrefix("call=") && !$0.hasPrefix("env.") }.joined(separator: "\n")
+            ids ? block : block.split(separator: "\n").filter { line in !["call=", "event=", "event.value=", "route=", "setting."].contains { line.hasPrefix($0) } }.joined(separator: "\n")
         }
     }
 

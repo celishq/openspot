@@ -116,15 +116,15 @@ show() {
   fi
 }
 
-input=$(value input; printf x)
+input=$(value input.input; printf x)
 input=${input%x}
 typed=$(value search)
 [ -z "$typed" ] || input=$typed
-source=$(value source)
-target=$(value target)
+source=$(value input.source)
+target=$(value input.target)
 [ -n "$source" ] || source=$(field source "$(cat "$saved" 2>/dev/null)")
 [ -n "$target" ] || target=$(field target "$(cat "$saved" 2>/dev/null)")
-if [ ! -s "$known" ] && { [ "$1" = read ] || [ -z "$1" ]; }; then
+if [ ! -s "$known" ] && { [ "$1" = show ] || [ -z "$1" ]; }; then
   (source=${source:-auto}; target=${target:-en}; output=; status=; detected=; show)
   printf -- '---\n'
 fi
@@ -143,7 +143,7 @@ case "$1" in
     open "$settings"
     ;;
   copy)
-    value output | openspot clipboard copy
+    value input.output | openspot clipboard copy
     printf 'toast=Copied\n'
     ;;
   swap)

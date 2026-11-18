@@ -20,7 +20,7 @@ music() {
 }
 
 case "$1" in
-  read)
+  show)
     state=$(music "player state as text")
     if [ -z "$state" ] || [ "$state" = stopped ]; then
       printf 'text=song\ntitle=Nothing playing\ndetail=Open Music to play a song\n'

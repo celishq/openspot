@@ -142,7 +142,7 @@ func serve() {
     Link.listen { call in
         let row = call.arguments.dropFirst().first ?? ""
         switch call.arguments.first {
-        case "read":
+        case "show":
             answer(call.id, sheet())
         case "dictate":
             dictate(call.id)

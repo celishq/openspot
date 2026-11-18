@@ -237,11 +237,11 @@ final class SheetPartsTests: XCTestCase {
 
         let block = try XCTUnwrap(TextBlock.blocks(in: panel.values).first)
 
-        XCTAssertNil(block.value("lights"))
-        XCTAssertEqual(block.value("left"), "true")
-        XCTAssertEqual(block.value("brightness"), "20")
-        XCTAssertEqual(block.value("color"), "#00ff00")
-        XCTAssertNil(block.value("battery"))
+        XCTAssertNil(block.value("input.lights"))
+        XCTAssertEqual(block.value("input.left"), "true")
+        XCTAssertEqual(block.value("input.brightness"), "20")
+        XCTAssertEqual(block.value("input.color"), "#00ff00")
+        XCTAssertNil(block.value("input.battery"))
     }
 
     func testAnOlderAnswerIsDropped() throws {
@@ -333,17 +333,9 @@ final class SheetPartsTests: XCTestCase {
         XCTAssertEqual(SpotAction.press("quit").arguments, ["quit"])
     }
 
-    func testAPartOrAnActionCalledReadIsAFault() {
-        XCTAssertEqual(FrameCheck(text: "text=read\ntitle=A\n").partFaults, ["a part cannot be called read"])
-        XCTAssertEqual(FrameCheck(text: "button=read\ntitle=A\n").partFaults, ["an action cannot be called read"])
-    }
-
-    func testAPartOrAnActionWithAKeyOfStdinIsAFault() {
-        for id in ["search", "form", "value"] {
-            XCTAssertEqual(FrameCheck(text: "field=\(id)\nvalue=A\n").partFaults, ["a part cannot be called \(id), which stdin uses"])
-            XCTAssertEqual(FrameCheck(text: "button=\(id)\ntitle=A\n").partFaults, ["an action cannot be called \(id), which stdin uses"])
-            XCTAssertEqual(FrameCheck(text: "row=\(id)\ntitle=A\n").partFaults, [])
-        }
+    func testAPartOrAnActionCalledShowIsAFault() {
+        XCTAssertEqual(FrameCheck(text: "text=show\ntitle=A\n").partFaults, ["a part cannot be called show"])
+        XCTAssertEqual(FrameCheck(text: "button=show\ntitle=A\n").partFaults, ["an action cannot be called show"])
     }
 
     func testAPartCanBeCalledCallOrArgBecauseAValueRidesInsideTheInputOfACall() {

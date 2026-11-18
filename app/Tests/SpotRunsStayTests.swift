@@ -113,7 +113,7 @@ final class SpotRunsStayTests: SpotRunsCase {
 
         sheet.pick(try XCTUnwrap(sheet.list.selectedItem))
 
-        try await wait("the call") { self.blocks(ids: true) == ["call=1\narg=read\nenv.OPENSPOT_REASON=sheet.open", "call=2\narg=open\narg=a"] }
+        try await wait("the call") { self.blocks(ids: true) == ["call=1\narg=show\nevent=sheet.open", "call=2\narg=open\narg=a"] }
     }
 
     func testACallRunsUntilItsEndOnceTheScriptPrintsEnds() async throws {
@@ -200,7 +200,7 @@ final class SpotRunsStayTests: SpotRunsCase {
         sheet.pick(try XCTUnwrap(sheet.list.selectedItem))
 
         try await wait("the call and its end") { self.blocks().last == "arg=open\narg=a" && sheet.calls.isEmpty }
-        XCTAssertEqual(Set(blocks().dropLast()), ["arg=read"])
+        XCTAssertEqual(Set(blocks().dropLast()), ["arg=show"])
         XCTAssertEqual(log().count, 1)
     }
 
@@ -229,7 +229,7 @@ final class SpotRunsStayTests: SpotRunsCase {
         sheet.run(action, item: sheet.list.selectedItem)
         sheet.run(action, item: nil)
 
-        try await wait("the calls") { self.blocks() == ["arg=read", "arg=go\narg=a", "arg=go"] }
+        try await wait("the calls") { self.blocks() == ["arg=show", "arg=go\narg=a", "arg=go"] }
         XCTAssertEqual(log().count, 1)
     }
 
@@ -250,7 +250,7 @@ final class SpotRunsStayTests: SpotRunsCase {
         let answer = try await sheet.submit(action, item: nil, draft: draft)
 
         XCTAssertEqual(answer, .done)
-        try await wait("the blocks") { self.blocks() == ["arg=read", "arg=new", "arg=new\ninput=a=one\\n"] }
+        try await wait("the blocks") { self.blocks() == ["arg=show", "arg=new", "arg=new\ninput.a=one"] }
         XCTAssertEqual(log().count, 1)
     }
 
@@ -267,7 +267,7 @@ final class SpotRunsStayTests: SpotRunsCase {
             """)
             try script("once", toml: "on = ['sheet.open']", """
             case "$1" in
-              read) printf 'button=add\\ntitle=Add\\nform=true\\nscope=spot\\n\\nrow=a\\ntitle=A\\n' ;;
+              show) printf 'button=add\\ntitle=Add\\nform=true\\nscope=spot\\n\\nrow=a\\ntitle=A\\n' ;;
               add) case "$(cat)" in *name=*) printf 'select=a\\n' ;; *) printf 'title=Name\\n\\nfield=name\\ntitle=Name\\n' ;; esac ;;
             esac
             """)
@@ -302,7 +302,7 @@ final class SpotRunsStayTests: SpotRunsCase {
           case "$line" in
             call=*) call=${line#call=} ;;
             arg=new) \(untilRelease); printf 'title=New\\n\\nfield=a\\ntitle=A\\n---\\n' ;;
-            arg=read) printf 'end=%s\\n\\nbutton=new\\ntitle=New\\nscope=spot\\nform=true\\n---\\n' "$call" ;;
+            arg=show) printf 'end=%s\\n\\nbutton=new\\ntitle=New\\nscope=spot\\nform=true\\n---\\n' "$call" ;;
           esac
         done
         """)
@@ -328,7 +328,7 @@ final class SpotRunsStayTests: SpotRunsCase {
           case "$line" in
             call=*) call=${line#call=} ;;
             arg=new) exit 0 ;;
-            arg=read) printf 'end=%s\\n\\nbutton=new\\ntitle=New\\nscope=spot\\nform=true\\n---\\n' "$call" ;;
+            arg=show) printf 'end=%s\\n\\nbutton=new\\ntitle=New\\nscope=spot\\nform=true\\n---\\n' "$call" ;;
           esac
         done
         """)
@@ -353,7 +353,7 @@ final class SpotRunsStayTests: SpotRunsCase {
         call=*) call=${line#call=} ;;
         arg=new) ;;
         arg=done) printf 'toast=Done already\\nend=%%s\\n---\\n' "$call" ;;
-        arg=read) printf 'end=%%s\\n\\nbutton=new\\ntitle=New\\nscope=spot\\nform=true\\n\\nbutton=done\\ntitle=Done\\nscope=spot\\nform=true\\n---\\n' "$call" ;;
+        arg=show) printf 'end=%%s\\n\\nbutton=new\\ntitle=New\\nscope=spot\\nform=true\\n\\nbutton=done\\ntitle=Done\\nscope=spot\\nform=true\\n---\\n' "$call" ;;
       esac
     done
     """
@@ -421,7 +421,7 @@ final class SpotRunsStayTests: SpotRunsCase {
 
         sheet.search("rep")
 
-        try await wait("the search") { self.blocks() == ["arg=read", "arg=read\ninput=search=rep\\n"] }
+        try await wait("the search") { self.blocks() == ["arg=show", "arg=show\nsearch=rep"] }
         try await wait("the answer") { !sheet.list.isWaiting }
         XCTAssertEqual(log().count, 1)
     }
@@ -433,7 +433,7 @@ final class SpotRunsStayTests: SpotRunsCase {
           case "$line" in
             call=*) call=${line#call=}; n=0; text= ;;
             stop=*) call= ;;
-            env.OPENSPOT_VALUE=*) text=${line#env.OPENSPOT_VALUE=} ;;
+            event.value=*) text=${line#event.value=} ;;
           esac
           [ -n "$line" ] || [ -z "$call" ] || {
             if [ -n "$text" ]; then printf 'end=%s\\n\\nrow=%s\\ntitle=%s\\n---\\n' "$call" "$text" "$text"; else printf 'end=%s\\n---\\n' "$call"; fi
@@ -459,7 +459,7 @@ final class SpotRunsStayTests: SpotRunsCase {
     }
 
     func testAnAnswerOfAStayingScriptThatEndsIsNoLongerAwaited() async throws {
-        try script(toml: "mode = 'stay'\non = ['search.text ^[0-9]']\noffers = ['card', 'menubar']", "while IFS= read -r line; do [ \"$line\" = env.OPENSPOT_VALUE=12 ] && exit 1; done")
+        try script(toml: "mode = 'stay'\non = ['search.text ^[0-9]']\noffers = ['card', 'menubar']", "while IFS= read -r line; do [ \"$line\" = event.value=12 ] && exit 1; done")
         let sheet = try sheet()
         runs.panelOpened()
 
@@ -491,7 +491,7 @@ final class SpotRunsStayTests: SpotRunsCase {
         . "$OPENSPOT_SH"
         main() {
           case "$1" in
-            read) if [ -n "$OPENSPOT_VALUE" ]; then printf 'row=%s\\ntitle=Is %s\\n' "$OPENSPOT_VALUE" "$OPENSPOT_VALUE"; else printf 'row=a\\ntitle=A\\n'; fi ;;
+            show) text=$(value event.value); if [ -n "$text" ]; then printf 'row=%s\\ntitle=Is %s\\n' "$text" "$text"; else printf 'row=a\\ntitle=A\\n'; fi ;;
           esac
         }
         openspot_serve main "$@"
@@ -652,7 +652,7 @@ final class SpotRunsStayTests: SpotRunsCase {
 
         XCTAssertFalse(runs.isPanelOpen)
         XCTAssertEqual(log().count, 1)
-        XCTAssertEqual(blocks(), ["arg=read"])
+        XCTAssertEqual(blocks(), ["arg=show"])
     }
 
     func testAStayingMenuBarScriptGoesOnWhenItsSheetAndThePanelCloseAndAScanComes() async throws {
@@ -682,7 +682,7 @@ final class SpotRunsStayTests: SpotRunsCase {
         while IFS= read -r line; do
           case "$line" in
             call=*) call=${line#call=} ;;
-            arg=read) printf 'end=%s\\n\\ntext=n\\ntitle=3\\n---\\n' "$call" ;;
+            arg=show) printf 'end=%s\\n\\ntext=n\\ntitle=3\\n---\\n' "$call" ;;
             arg=open) printf 'text=n\\ntitle=4\\n---\\n' ;;
           esac
         done
@@ -719,7 +719,7 @@ final class SpotRunsStayTests: SpotRunsCase {
 
         runs.panelOpened()
         try await wait("the frame") { sheet.list.shown.count == 1 }
-        XCTAssertEqual(blocks(), ["arg=read"])
+        XCTAssertEqual(blocks(), ["arg=show"])
 
         runs.panelClosed()
         try await wait("the end") { self.exists("ended") }
@@ -731,7 +731,7 @@ final class SpotRunsStayTests: SpotRunsCase {
         let sheet = try sheet()
 
         try await wait("the frame") { sheet.list.shown.count == 1 }
-        XCTAssertEqual(blocks(ids: true), ["call=1\narg=read\nenv.OPENSPOT_REASON=panel.open"])
+        XCTAssertEqual(blocks(ids: true), ["call=1\narg=show\nevent=panel.open"])
 
         runs.panelOpened()
         runs.panelClosed()
@@ -757,12 +757,12 @@ final class SpotRunsStayTests: SpotRunsCase {
         try staying(toml: "mode = 'stay'\non = ['clock.5']\noffers = ['card', 'menubar']", frame: "text=n\\ntitle=3\\n")
         _ = try scanned()
         try await wait("the mark") { !self.runs.menuBarMarks.isEmpty }
-        XCTAssertEqual(blocks(), ["arg=read"])
+        XCTAssertEqual(blocks(), ["arg=show"])
 
         time += 5
         runs.raise(.clock)
 
-        try await wait("the read") { self.blocks() == ["arg=read", "arg=read"] }
+        try await wait("the read") { self.blocks() == ["arg=show", "arg=show"] }
         XCTAssertEqual(log().count, 1)
     }
 
@@ -795,7 +795,7 @@ final class SpotRunsStayTests: SpotRunsCase {
         sheet.pick(SpotItem(title: "A", run: "a"))
 
         try await wait("the end") { self.exists("ended") }
-        XCTAssertEqual(blocks(), ["arg=read", "arg=open\narg=a"])
+        XCTAssertEqual(blocks(), ["arg=show", "arg=open\narg=a"])
         XCTAssertEqual(log().count, 1)
     }
 
@@ -941,13 +941,13 @@ final class SpotRunsStayTests: SpotRunsCase {
           case "$line" in
             call=*) call=${line#call=}; args= ;;
             arg=*) args="$args ${line#arg=}" ;;
-            env.OPENSPOT_VALUE=*) args="$args ${line#env.OPENSPOT_VALUE=}" ;;
+            event.value=*) args="$args ${line#event.value=}" ;;
             stop=*) touch '\(path("stopped"))'; args=stop ;;
             '')
               case "$args" in
-                ' read a') ( \(untilRelease); printf 'end=%s\\n\\nrow=o\\ntitle=Old\\n---\\n' "$call"; printf 'toast=Done\\n---\\n' ) & ;;
-                ' read ab') printf 'end=%s\\n\\nrow=n\\ntitle=New\\n---\\n' "$call" ;;
-                ' read') printf 'end=%s\\n\\nrow=x\\ntitle=X\\n---\\n' "$call" ;;
+                ' show a') ( \(untilRelease); printf 'end=%s\\n\\nrow=o\\ntitle=Old\\n---\\n' "$call"; printf 'toast=Done\\n---\\n' ) & ;;
+                ' show ab') printf 'end=%s\\n\\nrow=n\\ntitle=New\\n---\\n' "$call" ;;
+                ' show') printf 'end=%s\\n\\nrow=x\\ntitle=X\\n---\\n' "$call" ;;
               esac ;;
           esac
         done
@@ -958,7 +958,7 @@ final class SpotRunsStayTests: SpotRunsCase {
         sheet.open {}
         try await wait("the first rows") { sheet.list.search == .script && sheet.list.shown.count == 1 }
         sheet.search("a")
-        try await wait("the older search") { self.blocks().contains("arg=read\ninput=search=a\\n") }
+        try await wait("the older search") { self.blocks().contains("arg=show\nsearch=a") }
 
         sheet.search("ab")
 

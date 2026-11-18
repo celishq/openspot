@@ -169,10 +169,10 @@ final class GridExampleTests: SampleSpotsCase {
         let (script, frames) = try await grid(in: folder)
         defer { script.stop() }
 
-        script.send(text: "call=1\narg=read\n\n")
+        script.send(text: "call=1\narg=show\n\n")
         try await wait("the end of the plain read") { frames.ends == ["1"] }
         XCTAssertEqual(notes(in: folder), "")
-        script.send(text: "call=2\narg=read\nenv.OPENSPOT_REASON=panel.open\n\n")
+        script.send(text: "call=2\narg=show\nevent=panel.open\n\n")
         try await wait("the end of the read") { frames.ends == ["1", "2"] }
 
         XCTAssertEqual(notes(in: folder), "warm\n")

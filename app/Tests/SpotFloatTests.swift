@@ -44,8 +44,9 @@ final class SpotFloatTests: XCTestCase {
 
     private func floatList() async throws {
         try script("list", toml: "on = ['sheet.open']", """
+        \(TestSpot.event)
         case "$1" in
-          read) printf 'row=a\\ntitle=%s\\n\\nrow=b\\ntitle=Banana\\n\\nbutton=trash\\ntitle=Trash\\nshortcut=cmd+backspace\\n\\nbutton=rename\\ntitle=Rename\\nform=true\\n' "$OPENSPOT_REASON" ;;
+          show) printf 'row=a\\ntitle=%s\\n\\nrow=b\\ntitle=Banana\\n\\nbutton=trash\\ntitle=Trash\\nshortcut=cmd+backspace\\n\\nbutton=rename\\ntitle=Rename\\nform=true\\n' "$ev" ;;
           open) printf 'toast=Opened %s\\n' "$2" ;;
           trash) printf 'toast=Trashed %s\\n' "$2" ;;
         esac
@@ -166,7 +167,7 @@ final class SpotFloatTests: XCTestCase {
     func testADropOnAFloatGoesToItsScriptAndLeavesThePanel() async throws {
         try script("shelf", toml: "on = ['sheet.open']\ndrop = '*'", """
         case "$1" in
-          read) printf 'row=a\\n' ;;
+          show) printf 'row=a\\n' ;;
           drop) shift; printf 'toast=Kept %s\\n' "$*" ;;
         esac
         """)
@@ -196,7 +197,7 @@ final class SpotFloatTests: XCTestCase {
         let given = folder.appendingPathComponent("given").path
         try script("keys", toml: "title = 'Keys'\non = ['sheet.open']", """
         case "$1" in
-          read) printf 'button=open\\ntitle=Change\\nclose=false\\n\\nrow=panel-key\\ntitle=Open\\nshortcut=ctrl+space\\n\\nrow=float:shelf\\ntitle=Float\\nshortcut=Record\\nshake=true\\n' ;;
+          show) printf 'button=open\\ntitle=Change\\nclose=false\\n\\nrow=panel-key\\ntitle=Open\\nshortcut=ctrl+space\\n\\nrow=float:shelf\\ntitle=Float\\nshortcut=Record\\nshake=true\\n' ;;
           *) printf '%s %s' "$1" "$2" > '\(given)' ;;
         esac
         """)
