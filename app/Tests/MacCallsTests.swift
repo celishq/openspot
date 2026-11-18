@@ -181,8 +181,8 @@ final class MacCallsTests: XCTestCase {
     func testInCarefulModeASpotsCaptureIntoAFileOutsideItsFoldersIsRefused() async throws {
         let runs = SpotRuns()
         runs.isCareful = true
-        let fenced = runs.tokens.issue(for: Spot(id: "shots", name: "Shots", url: folder.appendingPathComponent("shots.sh"), dataName: "shots", uses: [.screen]))
-        let free = runs.tokens.issue(for: Spot(id: "files", name: "Files", url: folder.appendingPathComponent("files.sh"), dataName: "files", uses: [.screen, .files]))
+        let fenced = runs.callers.issue(for: Spot(id: "shots", name: "Shots", url: folder.appendingPathComponent("shots.sh"), dataName: "shots", uses: [.screen]))
+        let free = runs.callers.issue(for: Spot(id: "files", name: "Files", url: folder.appendingPathComponent("files.sh"), dataName: "files", uses: [.screen, .files]))
         let api = CommandAPI(mac: host, places: .test(["OPENSPOT_CONFIG": config.path]), runs: runs, rates: .offline)
         let home = URL(fileURLWithPath: try XCTUnwrap(ProcessInfo.processInfo.environment["HOME"], "the test scheme gives a private home"), isDirectory: true).standardizedFileURL
         let data = URL(fileURLWithPath: try XCTUnwrap(ScriptProcess.environment(base: ProcessInfo.processInfo.environment, app: "", dataName: "shots")["OPENSPOT_DATA"]), isDirectory: true)
@@ -191,8 +191,8 @@ final class MacCallsTests: XCTestCase {
         defer { try? FileManager.default.removeItem(at: outside) }
         try? FileManager.default.removeItem(at: data.appendingPathComponent("away"))
         try FileManager.default.createSymbolicLink(at: data.appendingPathComponent("away"), withDestinationURL: outside)
-        func answer(_ arguments: [String], _ token: String, in place: URL) async throws -> CommandAnswer {
-            let request = CommandRequest(arguments: arguments, folder: place.path, token: token)
+        func answer(_ arguments: [String], _ caller: SpotCaller, in place: URL) async throws -> CommandAnswer {
+            let request = CommandRequest(arguments: arguments, folder: place.path, caller: caller)
             let work = try XCTUnwrap(api.work(for: try XCTUnwrap(api.call(of: request)), request: request, input: { "" }))
             return await work()
         }

@@ -6,7 +6,7 @@ struct SpotCalls {
     let app: (any RunningApp)?
     let runs: SpotRuns?
     let secrets: SecretStore
-    let caller: CallerTokens.Caller?
+    let caller: Spot?
 
     init(_ context: CallContext) {
         caller = context.caller
@@ -118,7 +118,7 @@ struct SpotCalls {
             if let careful { spot.uses.formIntersection(careful) }
             let text = await input?()
             let usage = caller == nil || spot.reachesAccountKey ? nil : runs?.usage
-            let run = TerminalRun(spot: spot, arguments: arguments, input: text, careful: careful == nil ? nil : spot.uses, tokens: runs?.tokens, environment: environment, folder: folder, usage: usage)
+            let run = TerminalRun(spot: spot, arguments: arguments, input: text, careful: careful == nil ? nil : spot.uses, callers: runs?.callers, environment: environment, folder: folder, usage: usage)
             let begin = Date()
             var first = true
             let end = await run.start { frame in

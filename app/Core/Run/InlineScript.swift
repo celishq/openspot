@@ -31,8 +31,8 @@ final class InlineScript: @unchecked Sendable {
     private let base: [String: String]
     private let environment: [String: String]
     private let api: CommandAPI?
-    private let tokens: CallerTokens?
-    private let token: String?
+    private let callers: SpotCallers?
+    private let caller: SpotCaller?
     private let careful: CarefulMode?
     private let limit: TimeInterval
     private let idle: TimeInterval
@@ -49,7 +49,7 @@ final class InlineScript: @unchecked Sendable {
     private var thrown: JSValue?
     private var variables: [String: String] = [:]
 
-    init(spot: Spot, api: CommandAPI?, tokens: CallerTokens? = nil, careful: Set<SpotUse>? = nil, limit: TimeInterval = 10, idle: TimeInterval = 30, base: [String: String] = ProcessInfo.processInfo.environment, spent: @escaping @Sendable (TimeInterval) -> Void = { _ in }) {
+    init(spot: Spot, api: CommandAPI?, callers: SpotCallers? = nil, careful: Set<SpotUse>? = nil, limit: TimeInterval = 10, idle: TimeInterval = 30, base: [String: String] = ProcessInfo.processInfo.environment, spent: @escaping @Sendable (TimeInterval) -> Void = { _ in }) {
         self.careful = careful.map(CarefulMode.init)
         url = spot.url
         name = spot.id
@@ -59,14 +59,14 @@ final class InlineScript: @unchecked Sendable {
         self.limit = limit
         self.idle = idle
         self.spent = spent
-        self.tokens = tokens
-        token = tokens?.issue(for: spot)
+        self.callers = callers
+        caller = callers?.issue(for: spot)
         environment = ScriptProcess.environment(base: base, app: Bundle.main.executablePath ?? "", dataName: spot.dataName)
             .merging(["OPENSPOT_ID": spot.id]) { _, new in new }
     }
 
     deinit {
-        if let token { tokens?.release(token) }
+        if let caller { callers?.release(caller) }
     }
 
     var isRunning: Bool {
@@ -169,10 +169,10 @@ final class InlineScript: @unchecked Sendable {
         }
         let env = environment.filter { $0.key == "OPENSPOT_ID" }.merging(call.variables) { _, new in new }
         variables = call.variables
-        if let token { tokens?.setReason(call.variables[ReadReason.variable], of: token) }
+        caller?.reason = call.variables[ReadReason.variable]
         defer {
             variables = [:]
-            if let token { tokens?.setReason(nil, of: token) }
+            caller?.reason = nil
         }
         let result = function.call(withArguments: [call.arguments, env, call.input ?? ""])
         try rethrow()
@@ -225,13 +225,13 @@ final class InlineScript: @unchecked Sendable {
         guard let call = CommandLineCall(arguments: arguments, spot: environment[CallWords.spotVariable], reason: environment[CallWords.reasonVariable]) else {
             return CommandAnswer(errors: "openspot needs a call, such as calc solve 2+2.\n", code: 2)
         }
-        let request = CommandRequest(arguments: arguments, folder: environment["PWD"] ?? FileManager.default.currentDirectoryPath, token: token, isBound: true)
+        let request = CommandRequest(arguments: arguments, folder: environment["PWD"] ?? FileManager.default.currentDirectoryPath, caller: caller)
         if let api, api.work(for: call, request: request, input: { input ?? "" }) != nil,
            let work = api.work(for: api.admit(call, request: request), request: request, input: { input ?? "" }) {
             return answer { await work() }
         }
         let child = ScriptProcess(url: URL(fileURLWithPath: "/usr/bin/env"), arguments: ["openspot"] + arguments, mode: .once(input: input), dataName: dataName, variables: self.environment.filter { $0.key == "OPENSPOT_ID" }.merging(variables) { _, new in new }, careful: careful?.uses, base: base)
-        child.channel = token.flatMap { tokens?.channel(for: $0) }
+        child.channel = caller.flatMap { callers?.channel(for: $0) }
         return answer { await Self.answer(of: child) }
     }
 

@@ -100,7 +100,7 @@ final class AppCallsSocketTests: XCTestCase {
         await MainActor.run { runs.isCareful = true }
         listen(runs: runs)
         let reader = try XCTUnwrap(SpotsFolder(url: spots).scan().scripts.first { $0.id == "reader" })
-        let channel = try XCTUnwrap(runs.tokens.channel(for: runs.tokens.issue(for: reader)))
+        let channel = try XCTUnwrap(runs.callers.channel(for: runs.callers.issue(for: reader)))
         defer { channel.close() }
 
         let person = try ask(["spot", "run", "writer", "person"])

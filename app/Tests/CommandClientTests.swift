@@ -84,9 +84,9 @@ final class CommandClientTests: XCTestCase {
     func testNoVariableNamesTheSpotOfACaller() async throws {
         let runs = await SpotRuns()
         socket = CommandSocket(folder: config, api: CommandAPI(mac: Mac(), places: .test(["OPENSPOT_CONFIG": config.path]), runs: runs, rates: .offline))
-        let token = runs.tokens.issue(for: Spot(id: "home/coffee", name: "Coffee", url: folder.appendingPathComponent("coffee.sh")))
+        _ = runs.callers.issue(for: Spot(id: "home/coffee", name: "Coffee", url: folder.appendingPathComponent("coffee.sh")))
 
-        let claimed = try run(client, ["setting", "set", "tone", "cold"], variables: ["OPENSPOT_ID": "home/tea", "OPENSPOT_TOKEN": token])
+        let claimed = try run(client, ["setting", "set", "tone", "cold"], variables: ["OPENSPOT_ID": "home/tea", "OPENSPOT_TOKEN": "0123456789abcdef0123456789abcdef"])
 
         XCTAssertNotEqual(claimed.code, 0)
         let kept = ConfigFile(url: config.appendingPathComponent("config.toml")).read()
@@ -99,7 +99,8 @@ final class CommandClientTests: XCTestCase {
         let app = FakeRunningApp()
         socket = CommandSocket(folder: config, api: CommandAPI(mac: Mac(), places: .test(["OPENSPOT_CONFIG": config.path]), app: app, runs: runs, rates: .offline))
         let account = Spot(id: "openspot/account", name: "Account", url: folder.appendingPathComponent("account.sh"), uses: [.account]).builtIn()
-        let copied = ["OPENSPOT_TOKEN": runs.tokens.issue(for: account)]
+        _ = runs.callers.issue(for: account)
+        let copied = ["OPENSPOT_TOKEN": "0123456789abcdef0123456789abcdef"]
         let refused = "Only Openspot's Store can reach your account key.\n"
 
         XCTAssertEqual(try run(client, ["store", "publish", "mine"]).errors, refused)

@@ -67,7 +67,7 @@ struct StoreCalls {
         }
     }
 
-    func publish(_ id: String, account: Account?, caller: CallerTokens.Caller?) -> CommandAPI.Work {
+    func publish(_ id: String, account: Account?, caller: Spot?) -> CommandAPI.Work {
         guard let app, let account else { return CommandAnswer.notRunning("store publish \(id)") }
         return CommandAnswer.work {
             try account.admit(caller)

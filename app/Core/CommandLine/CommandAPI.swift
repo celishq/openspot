@@ -25,13 +25,13 @@ public final class CommandAPI: @unchecked Sendable {
         self.nouns = nouns
         calendar = CalendarCalls(mac: mac.calendar)
         reminders = RemindersCalls(mac: mac.reminders)
-        runs?.tokens.serve(by: self)
+        runs?.callers.serve(by: self)
     }
 
-    public func request(_ request: CommandRequest, from peer: pid_t, token: String? = nil) -> CommandRequest {
+    public func request(_ request: CommandRequest, from peer: pid_t, caller: SpotCaller? = nil) -> CommandRequest {
         guard let runs else { return request }
         var request = request
-        (request.token, request.isBound) = token.map { ($0, true) } ?? runs.tokens.token(of: peer)
+        request.caller = caller ?? runs.callers.caller(of: peer)
         return request
     }
 
@@ -41,12 +41,13 @@ public final class CommandAPI: @unchecked Sendable {
     }
 
     private func values(of request: CommandRequest) -> (spot: String?, reason: String?) {
-        let variables = runs.map { $0.tokens.variables(of: request.token) } ?? places.environment
-        return (variables[CallWords.spotVariable], variables[CallWords.reasonVariable])
+        guard runs != nil else { return (places.environment[CallWords.spotVariable], places.environment[CallWords.reasonVariable]) }
+        let spot = request.caller?.spot.id
+        return (spot?.isEmpty == false ? spot : nil, request.caller?.reason)
     }
 
-    private func caller(of request: CommandRequest) -> CallerTokens.Caller? {
-        runs?.tokens.caller(of: request.token)
+    private func caller(of request: CommandRequest) -> Spot? {
+        runs == nil ? nil : request.caller?.spot
     }
 
     public func admit(_ call: CommandLineCall, request: CommandRequest) -> CommandLineCall {
@@ -55,7 +56,7 @@ public final class CommandAPI: @unchecked Sendable {
             return CommandLineCall(name: call.name, call: CallFault.refused("\(caller.name) \(refusal)"))
         }
         guard let needed = call.use else { return call }
-        if runs.tokens.isCareful, !caller.uses.contains(needed.use) {
+        if runs.callers.isCareful, !caller.uses.contains(needed.use) {
             return CommandLineCall(name: call.name, call: CallFault.refused("Careful mode stopped \(caller.name), because it \(needed.words) without `uses=\(needed.use.rawValue)` in its header. Add it, or turn Careful mode off."))
         }
         Task { @MainActor in runs.used(needed, by: caller) }
@@ -74,16 +75,16 @@ public final class CommandAPI: @unchecked Sendable {
             return { kept.answer(ending: await work()) }
         }
         let caller = caller(of: request)
-        if call.rule.flags.contains(.startsScripts), isSandboxed || runs?.tokens.isCareful == true && caller != nil { return nil }
+        if call.rule.flags.contains(.startsScripts), isSandboxed || runs?.callers.isCareful == true && caller != nil { return nil }
         let (spot, reason) = values(of: request)
         let work = call.call.work(in: CallContext(
             mac: mac, api: self, request: request, environment: places.environment, app: app, runs: runs, account: account, secrets: places.secrets, trash: places.trash, raise: raise, caller: caller,
             spot: spot, isRead: reason != nil, input: input, output: output, calendar: calendar, reminders: reminders, rates: rates, nouns: nouns
         ))
-        guard let work, let tokens = runs?.tokens, let token = request.token, caller != nil else { return work }
+        guard let work, let spotCaller = request.caller, caller != nil else { return work }
         return {
             let answer = await work()
-            tokens.note(answer.code == 0 ? nil : answer.fix, of: token)
+            spotCaller.note(answer.code == 0 ? nil : answer.fix)
             return answer
         }
     }

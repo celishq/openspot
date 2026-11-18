@@ -19,16 +19,14 @@ public struct CommandRequest: Equatable, Sendable {
     public let id: Int?
     public let arguments: [String]
     public let folder: String
-    public var token: String?
-    public var isBound: Bool
+    public var caller: SpotCaller?
     public let isPiped: Bool
 
-    public init(arguments: [String], folder: String, token: String? = nil, isBound: Bool = false, isPiped: Bool = true, id: Int? = nil) {
+    public init(arguments: [String], folder: String, caller: SpotCaller? = nil, isPiped: Bool = true, id: Int? = nil) {
         self.id = id
         self.arguments = arguments
         self.folder = folder
-        self.token = token
-        self.isBound = isBound
+        self.caller = caller
         self.isPiped = isPiped
     }
 
@@ -42,6 +40,6 @@ public struct CommandRequest: Equatable, Sendable {
     }
 
     func asking(_ arguments: [String]) -> CommandRequest {
-        CommandRequest(arguments: arguments, folder: folder, token: token, isBound: isBound)
+        CommandRequest(arguments: arguments, folder: folder, caller: caller)
     }
 }

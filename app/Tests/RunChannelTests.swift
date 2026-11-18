@@ -214,9 +214,9 @@ final class RunChannelTests: SpotRunsCase {
     }
 
     func testExtraDescriptorsSentOnTheChannelAreClosed() async throws {
-        let token = runs.tokens.issue(for: Spot(id: "script", name: "Script", url: folder.appendingPathComponent("script.sh")))
-        let channel = try XCTUnwrap(runs.tokens.channel(for: token))
-        defer { runs.tokens.release(token) }
+        let caller = runs.callers.issue(for: Spot(id: "script", name: "Script", url: folder.appendingPathComponent("script.sh")))
+        let channel = try XCTUnwrap(runs.callers.channel(for: caller))
+        defer { runs.callers.release(caller) }
         let before = try FileManager.default.contentsOfDirectory(atPath: "/dev/fd").count
         for _ in 0..<20 {
             var pair: [Int32] = [-1, -1]

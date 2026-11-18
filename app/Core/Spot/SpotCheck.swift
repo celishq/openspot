@@ -6,21 +6,21 @@ public struct SpotCheck: Sendable {
     public let views: ViewLibrary
     let programs: SwiftProgram
     let careful: Set<SpotUse>?
-    let tokens: CallerTokens?
+    let callers: SpotCallers?
     let environment: [String: String]
 
     public init(folder: SpotsFolder, timeout: TimeInterval = 10, views: ViewLibrary = .standard(), programs: SwiftProgram = SwiftProgram(), environment: [String: String] = ProcessInfo.processInfo.environment) {
-        self.init(folder: folder, timeout: timeout, views: views, programs: programs, careful: nil, tokens: nil, environment: environment)
+        self.init(folder: folder, timeout: timeout, views: views, programs: programs, careful: nil, callers: nil, environment: environment)
     }
 
-    init(folder: SpotsFolder, timeout: TimeInterval = 10, views: ViewLibrary = .standard(), programs: SwiftProgram = SwiftProgram(), careful: Set<SpotUse>?, tokens: CallerTokens?, environment: [String: String] = ProcessInfo.processInfo.environment) {
+    init(folder: SpotsFolder, timeout: TimeInterval = 10, views: ViewLibrary = .standard(), programs: SwiftProgram = SwiftProgram(), careful: Set<SpotUse>?, callers: SpotCallers?, environment: [String: String] = ProcessInfo.processInfo.environment) {
         self.environment = environment
         self.folder = folder
         self.timeout = timeout
         self.views = views
         self.programs = programs
         self.careful = careful
-        self.tokens = tokens
+        self.callers = callers
     }
 
     public struct Finding: Equatable, Sendable, PrintedRecord {
@@ -76,7 +76,7 @@ public struct SpotCheck: Sendable {
                 findings.append(Finding(spot: script.id, file: script.url.path, fault: Self.reason(error)))
             }
         }
-        let runs = await SpotRuns(environment: environment, swift: programs, tokens: tokens ?? CallerTokens())
+        let runs = await SpotRuns(environment: environment, swift: programs, callers: callers ?? SpotCallers())
         if careful != nil { await MainActor.run { runs.isCareful = true } }
         for var script in scan.scripts where script.read != nil && !unbuilt.contains(script.id) {
             guard !Task.isCancelled else { return findings }

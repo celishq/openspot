@@ -37,7 +37,7 @@ final class StayLink: ScriptLink {
     weak var run: SpotRun?
     private let runs: SpotRuns
     private var script: ScriptProcess?
-    private var token: String?
+    private var caller: SpotCaller?
     private(set) var records: [Int: Record] = [:]
     private var droppedBelow = 0
     private var askReason: String?
@@ -147,9 +147,9 @@ final class StayLink: ScriptLink {
 
     private func start(reason: ReadReason? = nil) {
         guard let run, givenUp == nil else { return }
-        let (script, frames, token) = runs.stay(run.spot, limit: runs.readLimit)
+        let (script, frames, caller) = runs.stay(run.spot, limit: runs.readLimit)
         self.script = script
-        self.token = token
+        self.caller = caller
         slowAsks = 0
         let reason = reason ?? startReason
         let read = SpotRun.Call(action: .read, key: SpotRun.readKey, reason: reason, purpose: .ask(.read(generation: nil, reports: true)))
@@ -188,9 +188,9 @@ final class StayLink: ScriptLink {
     }
 
     private func noteReason() {
-        guard let token else { return }
+        guard let caller else { return }
         let asks = records.values.contains { $0.ask != nil }
-        runs.tokens.setReason(asks && !holdsScript ? askReason : nil, of: token)
+        caller.reason = asks && !holdsScript ? askReason : nil
     }
 
     private func timeOut(_ id: Int, of script: ScriptProcess) {

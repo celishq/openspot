@@ -185,7 +185,7 @@ public final class StatsLog: @unchecked Sendable {
         }
     }
 
-    func used(_ call: SpotUseCall, by caller: CallerTokens.Caller, at date: Date) -> Bool {
+    func used(_ call: SpotUseCall, by caller: Spot, at date: Date) -> Bool {
         let declared = caller.uses.contains(call.use)
         var tells = false
         change(at: date) { day in
