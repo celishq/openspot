@@ -88,7 +88,7 @@ public struct ViewLibrary: Sendable {
         }
 
         public enum SpotCard: String {
-            case small, wide, square, strip, large
+            case \(SpotSize.all.map(\.name).joined(separator: ", "))
         }
 
         public struct SpotRow: Identifiable {

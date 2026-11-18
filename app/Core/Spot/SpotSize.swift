@@ -10,7 +10,11 @@ public struct SpotSize: Equatable, Sendable {
     public static let strip = SpotSize(columns: 4, rows: 1)
     public static let large = SpotSize(columns: 4, rows: 2)
 
-    public static let all: [SpotSize] = [.small, .wide, .square, .strip, .large]
+    private static let named: [(name: String, size: SpotSize)] = [
+        ("small", .small), ("wide", .wide), ("square", .square), ("strip", .strip), ("large", .large),
+    ]
+
+    public static let all = named.map(\.size)
 
     public init(columns: Int, rows: Int) {
         self.columns = columns
@@ -23,24 +27,11 @@ public struct SpotSize: Equatable, Sendable {
     }
 
     public var name: String {
-        switch self {
-        case .small: "small"
-        case .wide: "wide"
-        case .square: "square"
-        case .strip: "strip"
-        case .large: "large"
-        default: "\(columns)x\(rows)"
-        }
+        Self.named.first { $0.size == self }?.name ?? "\(columns)x\(rows)"
     }
 
     public init?(name: String) {
-        switch name {
-        case "small": self = .small
-        case "wide": self = .wide
-        case "square": self = .square
-        case "strip": self = .strip
-        case "large": self = .large
-        default: return nil
-        }
+        guard let size = Self.named.first(where: { $0.name == name })?.size else { return nil }
+        self = size
     }
 }
