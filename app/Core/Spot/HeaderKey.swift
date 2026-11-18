@@ -7,7 +7,9 @@ public enum HeaderKey: String, CaseIterable, Sendable {
         key.hasPrefix(drawing)
     }
 
-    static func unknown(in header: TextBlock) -> String? {
-        header.fields.map(\.key).first { HeaderKey(rawValue: $0) == nil }
+    static let ofTheApp: Set<HeaderKey> = [.edits]
+
+    static func unknown(in header: TextBlock, isApp: Bool = false) -> String? {
+        header.fields.map(\.key).first { key in HeaderKey(rawValue: key).map { !isApp && ofTheApp.contains($0) } ?? true }
     }
 }

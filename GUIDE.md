@@ -166,14 +166,7 @@ grid.bar=free
 
 A spot with a clock stays off the grid until the user adds it, so that a new spot doesn't fill the panel.
 
-The user also chooses whether the main search finds a spot. `search = false` in the spot's record of
-`~/.config/openspot/config.toml` keeps it out of the main search and out of the list of slash commands:
-
-```toml
-[[spots]]
-id = "notes"
-search = false
-```
+The user also chooses the other places of a spot; see [What the user chooses](#what-the-user-chooses).
 
 Learn more in [The card](PROTOCOL.md#the-card), [Places](PROTOCOL.md#places) and [Events](PROTOCOL.md#events).
 
@@ -602,7 +595,97 @@ struct SpotView: View {
 ```
 
 The box sits `padding` inside the view's place, so its corner is `radius.inner`, and it follows the corner of the card.
-[Views](PROTOCOL.md#views) lists each value of `spot.theme`.
+`spot.theme` gives the values of the theme in five groups. Each colour and strength is the one of the appearance that
+shows.
+
+| Member              | Gives                                                                                                  |
+| ------------------- | ------------------------------------------------------------------------------------------------------ |
+| `spot.theme.color`  | The colours `ink`, `solid`, `onSolid`, `accent`, `good`, `warn` and `bad`, and the strengths `secondary`, `fill`, `selected` and `track`. |
+| `spot.theme.space`  | `padding`, `columnGap`, `rowGap`, `listRow`, `listRowGap`, `glyph`, `cell`, the side of a grid cell, and `gridWidth`. |
+| `spot.theme.radius` | `card`, `media`, and `inner`, the corner of a part that sits `padding` inside the view's place.         |
+| `spot.theme.font`   | The fonts `title`, `body`, `detail` and `input`.                                                       |
+| `spot.theme.motion` | `press`, the time of a press in seconds, and `pressBounce`, its bounce.                                |
+
+## What the user chooses
+
+A spot says what it has, and the user decides where it shows and which keys reach it. Write a spot for any place and
+any key, since Openspot gives each one the same acts.
+
+### The keys of a spot
+
+Every spot answers the same keys, so a user learns them once. Openspot gives each key its act.
+
+| Key          | What it does                                                                                              |
+| ------------ | --------------------------------------------------------------------------------------------------------- |
+| Return       | The main act of the spot: it runs the spot's one command, or opens its sheet.                             |
+| `⌘` Return   | Opens the spot's Settings: its keys, each setting and its places.                                         |
+| `⌘Y`         | Opens the items of a spot whose Return runs its command, as its **History**.                              |
+| `⌘K`         | Opens the menu of all acts, when it holds more than the footer shows.                                     |
+
+- A spot with one command in its manifest, such as Dictate, runs that command on Return, even before it has a hotkey.
+  Its items are its History, on `⌘Y` and in its ⌘K menu. Any other spot opens its sheet on Return.
+- A press of its card, its open hotkey, a click of it in the menu bar and its slash command with no text do what Return
+  does. The click in the menu bar opens the sheet under the menu bar item. A press with `⌘` opens its Settings.
+- The ⌘K menu of a card starts with the acts that Openspot adds, always in this order: first what the user does with
+  the spot, the main act on Return, History and Share; then what changes it, Settings, Edit and Change Icon; then Turn
+  off or a red Delete. The acts that spots offer to every card follow, under the name of their spot. A spot adds no act
+  to its own card. Its sheet carries what it does.
+- A card's `⌘` keys work while a search is typed, except the ones that edit the words, such as `⌘⌫`.
+- Edit copies a prompt that sends an agent to the spot's file. A user changes a spot there, not in its Settings.
+- A card shows an arrow when Return opens its sheet, and none when Return runs its command. The footer names the
+  spot's own keys first and `⌘K Actions` last.
+
+### The Settings of a spot
+
+Each spot has its own Settings, a sheet that grows from its card, apart from the spot's own sheet.
+
+- They list each thing the user can change about the spot, in this order: first its keys, **Open**, the hotkey of
+  each command in its manifest, and **Float**; then what the spot itself does, each setting, set or not, and each value
+  it keeps that no setting names, such as a look; and last its places, **Show in the menu bar** and **Open in a
+  window**, which every spot has.
+- Each key row records a key on Return, and `⌘⌫` removes it. Return on a setting runs the call with the same id, which
+  can answer with a form, and `⌘⌫` removes its value.
+- A choice that stays, such as a look or a folder, is a setting, not a part of the spot's own sheet.
+- The Settings spot of Openspot holds only the settings of the app: its keys, Careful mode, Slow motion, Open at login
+  and the `openspot` command. The Themes spot changes its look.
+- Openspot keeps these keys for the user, and a setting can't use them: of any spot, `icon`, the picture that Change
+  Icon keeps; `enabled` and `menubar`, `true` or `false`; and `open`, `float` and `key.<command>`, a hotkey such as
+  `ctrl+option+k`, `shake`, or one modifier alone, such as `option`, which a tap of that key presses. The key of
+  `open` does what a press of the spot's card does, from any app. Of the spot `openspot`, which is the app: `login`,
+  `link`, `careful` and `slow`, `true` or `false`, and `panel-key` and `fix-key`. `slow` runs each motion of the panel
+  ten times slower until the app quits.
+
+### The places of a spot
+
+The user puts any spot on the grid, in the menu bar, in a float or in a window, from its Settings and from Edit
+Spots. The manifest names no place, and a spot can't claim a hotkey or a place.
+
+- A float shows the spot in a small window at the pointer, which a hotkey or a shake of the pointer opens, and which
+  stays while the user works in other apps. The spot never learns where it shows.
+- A window opens the sheet in a normal window, from the card, the main search or `openspot spot open`. The user
+  moves, resizes and closes it, and Openspot shows in the Dock while it's open. Esc closes it too, and a view that
+  fills it should still give a way out, such as a Done button.
+- A spot with a `clock` event or a command starts off the grid, so that a new spot doesn't fill the panel.
+- `search = false` in the spot's record of `~/.config/openspot/config.toml` keeps it out of the main search and out of
+  the list of slash commands:
+
+```toml
+[[spots]]
+id = "notes"
+search = false
+```
+
+## Write a message
+
+A toast or a failure line tells the user what happened. Write it so that the user knows what to do next.
+
+| Instead of                    | Write                                                                                  |
+| ----------------------------- | -------------------------------------------------------------------------------------- |
+| `Oops! Something went wrong.` | `Openspot cannot find a screenshot.`                                                   |
+| `Error 1: osascript failed.`  | ``Copied, but Openspot cannot paste. Press `⌘V`, or allow Openspot in Accessibility.`` |
+
+Say what happened, and why when you know it. Say what still worked, and the exact step that fixes the rest. Use plain
+words, a calm tone, and one or two short sentences. Put each key in backticks.
 
 ## Change the look of Openspot
 

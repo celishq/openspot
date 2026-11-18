@@ -20,7 +20,7 @@ final class GuideTests: XCTestCase {
         let topics = try await answer(["guide", "--topics"])
         let screen = try await answer(["guide", "screen"])
 
-        XCTAssertEqual(topics.output, "show-a-list    Show a list\ncalendar       openspot calendar and openspot reminders\nscreen         openspot screen\n")
+        XCTAssertEqual(topics.output, "show-a-list    Show a list\ncalendar       openspot calendar and openspot reminders\ncommands       The openspot commands\nscreen         openspot screen\nstats          openspot spot stats\n")
         XCTAssertTrue(screen.output.hasPrefix("# openspot screen"), screen.output)
         XCTAssertTrue(screen.output.contains("(S11)"))
     }

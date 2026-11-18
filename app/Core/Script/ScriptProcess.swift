@@ -19,6 +19,7 @@ public final class ScriptProcess: @unchecked Sendable {
     private let dataName: String?
     private let careful: CarefulMode?
     private let variables: [String: String]
+    private let withheld: Set<String>
     private let base: [String: String]?
     private let folder: URL?
     private let stopPause: TimeInterval
@@ -47,7 +48,7 @@ public final class ScriptProcess: @unchecked Sendable {
     var fix: @Sendable () -> URL? = { nil }
     var channel: RunChannel?
 
-    public init(url: URL, name: String? = nil, arguments: [String] = [], mode: Mode = .once(input: nil), limit: TimeInterval? = nil, stopPause: TimeInterval = 2, dataName: String? = nil, variables: [String: String] = [:], errorLimit: Int? = 64 * 1024, careful: Set<SpotUse>? = nil, base: [String: String]? = nil, folder: URL? = nil, build: (@Sendable () async throws -> URL)? = nil) {
+    public init(url: URL, name: String? = nil, arguments: [String] = [], mode: Mode = .once(input: nil), limit: TimeInterval? = nil, stopPause: TimeInterval = 2, dataName: String? = nil, variables: [String: String] = [:], withheld: Set<String> = [], errorLimit: Int? = 64 * 1024, careful: Set<SpotUse>? = nil, base: [String: String]? = nil, folder: URL? = nil, build: (@Sendable () async throws -> URL)? = nil) {
         self.name = name
         self.build = build
         building = build != nil
@@ -57,6 +58,7 @@ public final class ScriptProcess: @unchecked Sendable {
         errorText = ErrorTail(limit: errorLimit)
         self.dataName = dataName
         self.variables = variables
+        self.withheld = withheld
         self.url = url
         self.arguments = arguments
         self.mode = mode
@@ -137,7 +139,7 @@ public final class ScriptProcess: @unchecked Sendable {
             text = given
             hasInput = given != nil
         }
-        let environment = Self.environment(base: base ?? ProcessInfo.processInfo.environment, app: Bundle.main.executablePath ?? "", dataName: dataName).merging(variables) { _, new in new }
+        let environment = Self.environment(base: base ?? ProcessInfo.processInfo.environment, app: Bundle.main.executablePath ?? "", dataName: dataName).merging(variables) { _, new in new }.filter { !withheld.contains($0.key) }
         let fence = careful?.words(in: environment) ?? []
         let errors = errorOutput
         signal(SIGPIPE, SIG_IGN)

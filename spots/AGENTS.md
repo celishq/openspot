@@ -17,6 +17,29 @@ These rules hold for the core spots in `spots/` and the spots in `examples/`. A 
 - A spot's own app, such as the board of Draw, keeps its own motion. The curves of `app/Shell/Surface/SpotMotion.swift`
   are for the panel.
 
+## The app's own words
+
+The spots of `spots/openspot.spot/` are parts of the app, such as Settings and New spot, and take a few words that no
+other spot gets. In any other spot, `edits` is an unknown key, `account` is removed from its uses, `shown=` is skipped,
+and the variables are absent. `builtin` names these spots to the others.
+
+```toml
+title = "New spot"
+edits = "spots"
+```
+
+| Word                    | Where       | Does                                                                                           |
+| ----------------------- | ----------- | ---------------------------------------------------------------------------------------------- |
+| `edits`                 | `spot.toml` | `edits = "spots"`: its sheet is also the Edit sheet of each spot.                              |
+| `account`               | `uses`      | It may publish with the account key; [The account](../TRUST.md#the-account) says how.          |
+| `shown`                 | the root    | `shown=true` puts the spot's card on the grid, and `shown=false` takes it off.                 |
+| `builtin`               | a filter    | After `actions` in `offers`, and as the origin that `when` gets: a spot of the app.            |
+| `OPENSPOT_CONFIG`       | a variable  | The folder of the config.                                                                      |
+| `OPENSPOT_SPOTS`        | a variable  | The spots folder, when it isn't `spots` in the config folder.                                  |
+| `OPENSPOT_EDIT`         | a variable  | In the Edit sheet: the id of the spot it changes.                                              |
+| `OPENSPOT_EDIT_FILE`    | a variable  | In the Edit sheet: the file of that spot, when the person owns it.                             |
+| `OPENSPOT_EDIT_FAILURE` | a variable  | In the Edit sheet: the last failure of that spot.                                              |
+
 ## Checks
 
 `make verify` runs `scripts/check-spots.sh`. It fails on a core spot with a `clock.` event in its `spot.toml`, and on a spot that names

@@ -11,16 +11,16 @@ public struct SpotFile: Equatable, Sendable {
         self.spots = spots
     }
 
-    public init?(file url: URL, id: String, toml: SpotToml? = nil) throws {
+    public init?(file url: URL, id: String, toml: SpotToml? = nil, isApp: Bool = false) throws {
         if SwiftProgram.isProgram(url) { return nil }
         let toml = toml ?? SpotToml(beside: url)
         guard Self.runs(url, toml: toml) else { return nil }
-        try self.init(script: url, header: toml.block(of: url), id: id)
+        try self.init(script: url, header: toml.block(of: url), id: id, isApp: isApp)
     }
 
-    public init(script url: URL, header: TextBlock, id: String) throws {
+    public init(script url: URL, header: TextBlock, id: String, isApp: Bool = false) throws {
         let name = header.value(HeaderKey.title) ?? Self.name(of: url)
-        if let key = HeaderKey.unknown(in: header) {
+        if let key = HeaderKey.unknown(in: header, isApp: isApp) {
             throw SpotError.fault("\(name) has an unknown key in its \(SpotToml.fileName): \(key)")
         }
         for block in header.children {

@@ -74,7 +74,7 @@ public final class KeptScan: Sendable {
         let added = origin == .own ? (try? file.resourceValues(forKeys: [.creationDateKey]).creationDate) : nil
         ScanWork.meter?.parse()
         do {
-            let parsed = SpotLoad.Entry(id: id, file: file, origin: origin, spots: try SpotFile(file: file, id: id, toml: toml)?.spots, refusal: nil, added: added)
+            let parsed = SpotLoad.Entry(id: id, file: file, origin: origin, spots: try SpotFile(file: file, id: id, toml: toml, isApp: origin == .app)?.spots, refusal: nil, added: added)
             return SpotLoad.Entry(id: id, file: file, origin: origin, spots: parsed.spots?.map(parsed.placed), refusal: nil, added: added)
         } catch {
             let reason = (error as? SpotError)?.reason ?? String(describing: error)

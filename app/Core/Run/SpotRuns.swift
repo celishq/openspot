@@ -358,7 +358,7 @@ public final class SpotRuns {
     }
 
     func frames(of spot: Spot, _ action: SpotAction, input: String?, limit: TimeInterval?, reason: String? = nil, variables given: [String: String] = [:], call: OpenCall? = nil) -> (stream: AsyncThrowingStream<String, Error>, halt: () -> Void, process: ScriptProcess?) {
-        let variables = given.merging(editing(spot)) { given, _ in given }
+        let variables = given.merging(editing(spot)) { given, _ in given }.filter { spot.isBuiltIn || !ScriptProcess.appVariables.contains($0.key) }
         switch ScriptKind(of: spot) {
         case .settings(let settings):
             let (stream, halt) = answered { try settings.answer(action.arguments) }

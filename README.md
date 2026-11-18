@@ -79,7 +79,8 @@ one task at a time, and the [protocol](PROTOCOL.md) has every rule.
 Security is a bit of a tradeoff here. Anything you write yourself runs with Openspot's permissions, which we call yolo
 mode, while spots from other people run in a sandbox through `sandbox-exec`. We know it's deprecated, but Bazel, Nix and
 Codex CLI still rely on the same Seatbelt sandbox, and every spot ships as source anyway, so you or your agent can read
-it before you add it.
+it before you add it. [TRUST.md](TRUST.md) says what Openspot shows you about a spot, and what a spot can and can't
+reach.
 
 ## Contributing
 
