@@ -17,7 +17,11 @@ public struct ConfigFile: Equatable, Sendable {
         environment: [String: String] = ProcessInfo.processInfo.environment,
         home: URL = FileManager.default.homeDirectoryForCurrentUser
     ) -> ConfigFile {
-        ConfigFile(url: SpotsFolder.config(environment: environment, home: home).appendingPathComponent("config.toml"))
+        standard(in: SpotsFolder.config(environment: environment, home: home))
+    }
+
+    static func standard(in folder: URL, disk: any ConfigDisk = LocalDisk()) -> ConfigFile {
+        ConfigFile(url: folder.appendingPathComponent("config.toml"), disk: disk)
     }
 
     public func read() -> Config {

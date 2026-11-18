@@ -103,16 +103,16 @@ public enum SettingCall: NounCall {
     }
 
     func work(in context: CallContext) -> CommandAPI.Work? {
-        let settings = SettingCalls(environment: context.environment, caller: context.spot, app: context.app, secrets: context.secrets)
-        let keys = KeyCalls(environment: context.environment, app: context.app)
-        let apps = AppCalls(mac: context.mac, environment: context.environment, app: context.app)
+        let settings = SettingCalls(places: context.places, caller: context.spot, app: context.app, secrets: context.secrets)
+        let keys = KeyCalls(places: context.places, app: context.app)
+        let apps = AppCalls(mac: context.mac, places: context.places, app: context.app)
         return switch self {
         case .get(let spot, let key): settings.get(key, of: spot)
         case .set(let spot, let key, let value): settings.set(key, of: spot, to: value)
         case .list(let form): settings.list(form)
         case .change(let spot, let key): settings.change(key, of: spot)
         case .turn(let spot, let isOn): SpotCalls(context).turn([spot], on: isOn)
-        case .menuBar(let spot, let isShown): MenuBarCalls(environment: context.environment, app: context.app).show(spot, isShown)
+        case .menuBar(let spot, let isShown): MenuBarCalls(places: context.places, app: context.app).show(spot, isShown)
         case .key(let spot, let act, let key): keys.set(act, of: spot, to: key)
         case .appKey(let name, let key): keys.set(app: name, to: key)
         case .login(let isOn): apps.login(isOn)

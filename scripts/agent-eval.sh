@@ -26,7 +26,7 @@ if [ "$1" = "--run" ]; then
   (cd "$place/work" && PLACE="$place" OPENSPOT="$real" OPENSPOT_CONFIG="$place" TASKS="$tasks" \
     perl -e 'alarm shift; exec @ARGV' 300 sh "$tasks/$task/check.sh" >"$place/check.txt" 2>&1)
   result=$([ $? -eq 0 ] && echo pass || echo fail)
-  OPENSPOT_CONFIG="$place" "$real" app quit >/dev/null 2>&1 </dev/null
+  "$real" --config "$place" app quit >/dev/null 2>&1 </dev/null
   python3 -I "$tasks/run.py" "$place" "$task" "$n" "$result" "$seconds" >>"$out/$label/runs.tsv"
   echo "$result  $task #$n  (${seconds}s)"
   exit 0

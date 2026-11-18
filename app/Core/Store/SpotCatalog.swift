@@ -85,17 +85,17 @@ public struct SpotCatalog: Sendable {
         )
     }
 
-    public func add(_ item: Item, environment: [String: String]) async throws {
+    public func add(_ item: Item, lock: SpotLock) async throws {
         guard let package = item.package else { return }
-        _ = try await SpotLock.standard(environment: environment).add(SpotSource(text: package.path, place: package), to: folder.url, isConfirmed: false)
+        _ = try await lock.add(SpotSource(text: package.path, place: package), to: folder.url, isConfirmed: false)
     }
 
-    public func get(_ id: String, config: ConfigFile, environment: [String: String]) async throws -> Item {
+    public func get(_ id: String, config: ConfigFile, lock: SpotLock) async throws -> Item {
         guard let item = item(id) else {
             throw SpotError.failed(1, "`\(id)` is not a spot of the store. Run `openspot store list` to see each one.")
         }
         guard !item.isAdded else { return item }
-        if item.store != nil { try await add(item, environment: environment) } else {
+        if item.store != nil { try await add(item, lock: lock) } else {
             try config.change { $0.arrangement.set(isEnabled: true, of: item.id) }
         }
         return item

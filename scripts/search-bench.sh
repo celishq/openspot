@@ -22,7 +22,7 @@ fi
 package="$out/package"
 mkdir -p "$package/Sources/OpenspotCore"
 ln -sfn "$PWD/app/Core" "$package/Sources/OpenspotCore/Core"
-for file in CommandKind SocketPath; do ln -sfn "$PWD/app/Client/$file.swift" "$package/Sources/OpenspotCore/$file.swift"; done
+for file in CommandKind SocketPath; do ln -sfn "$PWD/app/Shared/$file.swift" "$package/Sources/OpenspotCore/$file.swift"; done
 cp scripts/search-bench.swift "$package/Sources/OpenspotCore/main.swift"
 cat > "$package/Package.swift" <<'SWIFT'
 // swift-tools-version: 6.1

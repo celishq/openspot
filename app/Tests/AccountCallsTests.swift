@@ -31,7 +31,7 @@ final class AccountCallsTests: XCTestCase {
     }
 
     private func call(_ arguments: [String], from spot: Spot? = nil, input: String = "") async throws -> CommandAnswer {
-        let request = CommandRequest(arguments: arguments, folder: folder.path, token: spot.map { runs.tokens.issue(for: $0) }, isBound: true)
+        let request = CommandRequest(arguments: arguments, folder: folder.path, caller: spot.map { runs.callers.issue(for: $0) })
         let parsed = api.admit(try XCTUnwrap(api.call(of: request)), request: request)
         let work = try XCTUnwrap(api.work(for: parsed, request: request, input: { input }))
         return await work()

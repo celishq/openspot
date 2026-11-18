@@ -14,22 +14,22 @@ public struct TerminalRun {
     public let arguments: [String]
     public let input: String?
     let careful: Set<SpotUse>?
-    let tokens: CallerTokens?
+    let callers: SpotCallers?
     let environment: [String: String]?
     let folder: URL?
     let usage: StatsLog?
 
     public init(spot: Spot, arguments: [String], input: String?) {
-        self.init(spot: spot, arguments: arguments, input: input, careful: nil, tokens: nil, environment: nil, folder: nil)
+        self.init(spot: spot, arguments: arguments, input: input, careful: nil, callers: nil, environment: nil, folder: nil)
     }
 
-    init(spot: Spot, arguments: [String], input: String?, careful: Set<SpotUse>?, tokens: CallerTokens?, environment: [String: String]?, folder: URL?, usage: StatsLog? = nil) {
+    init(spot: Spot, arguments: [String], input: String?, careful: Set<SpotUse>?, callers: SpotCallers?, environment: [String: String]?, folder: URL?, usage: StatsLog? = nil) {
         self.usage = usage
         self.spot = spot
         self.arguments = arguments
         self.input = input
         self.careful = careful
-        self.tokens = tokens
+        self.callers = callers
         self.environment = environment
         self.folder = folder
     }
@@ -46,20 +46,13 @@ public struct TerminalRun {
         if spot.mode == .inline { return await inline(isRead: isRead, frame: frame) }
         let swift = SwiftProgram()
         let program = swift.runnable(for: spot, builds: false)
-        let token = tokens?.issue(for: spot)
-        let variables = ["OPENSPOT_ID": spot.id].merging(isRead ? ReadReason.sheet.variables : [:]) { _, new in new }.merging(token.map { [CallerTokens.variable: $0] } ?? [:]) { _, new in new }
-        let process: ScriptProcess
-        if spot.mode.stays {
-            process = ScriptProcess(url: program, name: spot.url.path, mode: .stays, limit: isRead ? Self.readLimit : nil, dataName: spot.dataName, variables: variables, errorLimit: Self.errorLimit, careful: careful, base: environment, folder: folder, build: swift.build(of: spot))
-        } else {
-            let sent = action.sent(input: input)
-            process = ScriptProcess(url: program, name: spot.url.path, arguments: sent.arguments, mode: .once(input: sent.input), limit: isRead ? Self.readLimit : nil, dataName: spot.dataName, variables: variables, errorLimit: Self.errorLimit, careful: careful, base: environment, folder: folder, build: swift.build(of: spot))
-        }
+        let caller = callers?.issue(for: spot)
+        let process = ScriptProcess(
+            spot: spot, program: program, swift: swift, sending: spot.mode.stays ? nil : action, input: input, limit: isRead ? Self.readLimit : nil,
+            variables: isRead ? ReadReason.sheet.variables : [:], errorLimit: Self.errorLimit, careful: careful, base: environment, folder: folder
+        )
         usage?.track(process, of: spot.id)
-        if let tokens, let token {
-            process.onStart { group in tokens.enter(group, token: token) }
-            process.onExit { _ in tokens.release(token) }
-        }
+        if let callers, let caller { callers.attach(process, to: caller) }
         return await withTaskCancellationHandler {
             var code: Int32 = 0
             do {
@@ -89,7 +82,7 @@ public struct TerminalRun {
     }
 
     private func inline(isolation: isolated (any Actor)? = #isolation, isRead: Bool, frame: (String) -> Void) async -> End {
-        let script = InlineScript(spot: spot, api: nil, tokens: tokens, careful: careful, limit: Self.readLimit)
+        let script = InlineScript(spot: spot, api: nil, callers: callers, careful: careful, limit: Self.readLimit, base: environment ?? ProcessInfo.processInfo.environment)
         defer { script.end() }
         let call = InlineCall(arguments: action.arguments, variables: ["OPENSPOT_ID": spot.id].merging(isRead ? ReadReason.sheet.variables : [:]) { _, new in new }, input: input, limit: isRead ? Self.readLimit : nil)
         script.send(call)

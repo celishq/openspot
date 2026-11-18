@@ -19,7 +19,7 @@ enum PromptCall: NounCall {
     ])
 
     func work(in context: CallContext) -> CommandAPI.Work? {
-        let calls = PromptCalls(mac: context.mac, environment: context.environment, runs: context.runs)
+        let calls = PromptCalls(mac: context.mac, places: context.places, runs: context.runs)
         return switch self {
         case .new(let words): calls.new(words)
         case .change(let id, let words, let failure): calls.change(id, words: words, failure: failure)

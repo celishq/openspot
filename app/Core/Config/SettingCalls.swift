@@ -1,14 +1,14 @@
 import Foundation
 
 struct SettingCalls {
-    let environment: [String: String]
+    let places: AppPlaces
     let caller: String?
     let app: (any RunningApp)?
     let secrets: SecretStore
 
     func get(_ key: String, of spot: String) -> CommandAPI.Work {
-        CommandAnswer.work { [environment, secrets] in
-            let config = ConfigFile.standard(environment: environment).read()
+        CommandAnswer.work { [places, secrets] in
+            let config = places.config.read()
             if let act = GlobalKey.Act(setting: key) {
                 return config.keys.first { $0.spot == spot && $0.act == act }.map { $0.trigger.text + "\n" } ?? ""
             }
@@ -18,25 +18,26 @@ struct SettingCalls {
     }
 
     func set(_ key: String, of spot: String, to value: String?) -> CommandAPI.Work {
-        CommandAnswer.work { [environment, caller, app, secrets] in
-            if try secrets.read()[spot]?[key] != nil || Self.isSecret(key, of: spot, in: environment) {
+        CommandAnswer.work { [places, caller, app, secrets] in
+            if try secrets.read()[spot]?[key] != nil || Self.isSecret(key, of: spot, in: places) {
                 throw SpotError.failed(1, "Openspot keeps `\(key)` of \(spot) as a secret, so only its own form changes it. Open the Settings of \(spot), and press Return on its row.")
             }
-            let config = try ConfigFile.standard(environment: environment).change { $0.set(setting: key, of: spot, to: value) }
+            let config = try places.config.change { $0.set(setting: key, of: spot, to: value) }
             await app?.configChanged(key == ReservedSetting.icon ? .spots([spot]) : .value(spot: spot, caller: caller), to: config)
             return ""
         }
     }
 
     func list(_ form: PrintForm) -> CommandAPI.Work {
-        CommandAnswer.work { [environment, secrets] in
-            let list = SpotList(folder: SpotsFolder.standard(environment: environment), config: ConfigFile.standard(environment: environment).read())
+        CommandAnswer.work { [places, secrets] in
+            let config = places.config.read()
+            let list = SpotList(folder: places.folder(config), config: config)
             return try list.values(form, secrets: secrets.read())
         }
     }
 
-    private static func isSecret(_ key: String, of spot: String, in environment: [String: String]) -> Bool {
-        let script = try? SpotsFolder.standard(environment: environment).scan().scripts.first { $0.id == spot }
+    private static func isSecret(_ key: String, of spot: String, in places: AppPlaces) -> Bool {
+        let script = try? places.readSpots().scan().scripts.first { $0.id == spot }
         return script?.settings.contains { $0.id == key && $0.isSecret } == true
     }
 

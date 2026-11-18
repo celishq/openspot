@@ -104,7 +104,7 @@ extension SpotsModel {
         closeSheet(moving: isShown)
         endReview()
         let folder = folder.url
-        let lock = SpotLock.standard(environment: files.environment, home: files.home)
+        let lock = files.lock
         let wasShown = isShown
         reviewRead?.cancel()
         reviewRead = Task { [weak self] in

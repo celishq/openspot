@@ -45,6 +45,7 @@ public final class ScriptProcess: @unchecked Sendable {
     private var unended: String?
     private var reader = SheetFrames()
     var fix: @Sendable () -> URL? = { nil }
+    var channel: RunChannel?
 
     public init(url: URL, name: String? = nil, arguments: [String] = [], mode: Mode = .once(input: nil), limit: TimeInterval? = nil, stopPause: TimeInterval = 2, dataName: String? = nil, variables: [String: String] = [:], errorLimit: Int? = 64 * 1024, careful: Set<SpotUse>? = nil, base: [String: String]? = nil, folder: URL? = nil, build: (@Sendable () async throws -> URL)? = nil) {
         self.name = name
@@ -70,7 +71,7 @@ public final class ScriptProcess: @unchecked Sendable {
         let contents = URL(fileURLWithPath: app).deletingLastPathComponent().deletingLastPathComponent()
         let helpers = contents.appendingPathComponent("Helpers").path
         let config = SpotsFolder.config(environment: base, home: home(of: base))
-        let data = dataFolder(base: base, dataName: dataName)
+        let data = dataFolder(config: config, dataName: dataName)
         try? FileManager.default.createDirectory(at: data, withIntermediateDirectories: true)
         var paths = [helpers] + (base["PATH"] ?? "").split(separator: ":").map(String.init)
         paths += commonPaths.filter { !paths.contains($0) }
@@ -81,7 +82,11 @@ public final class ScriptProcess: @unchecked Sendable {
     }
 
     static func dataFolder(base: [String: String], dataName: String?) -> URL {
-        var data = SpotsFolder.config(environment: base, home: home(of: base)).appendingPathComponent("data", isDirectory: true)
+        dataFolder(config: SpotsFolder.config(environment: base, home: home(of: base)), dataName: dataName)
+    }
+
+    private static func dataFolder(config: URL, dataName: String?) -> URL {
+        var data = config.appendingPathComponent("data", isDirectory: true)
         if let dataName { data.appendPathComponent(URL(fileURLWithPath: dataName).lastPathComponent, isDirectory: true) }
         return data
     }
@@ -393,6 +398,13 @@ public final class ScriptProcess: @unchecked Sendable {
         }
         posix_spawn_file_actions_adddup2(&actions, output.fileDescriptor, STDOUT_FILENO)
         posix_spawn_file_actions_adddup2(&actions, errors.fileDescriptor, STDERR_FILENO)
+        if let child = channel?.childEnd {
+            if child == ChannelDescriptor.number {
+                posix_spawn_file_actions_addinherit_np(&actions, child)
+            } else {
+                posix_spawn_file_actions_adddup2(&actions, child, ChannelDescriptor.number)
+            }
+        }
         if let folder { posix_spawn_file_actions_addchdir(&actions, folder.path) }
         var attributes: posix_spawnattr_t?
         posix_spawnattr_init(&attributes)
