@@ -4,7 +4,7 @@ public struct FrameCheck: Equatable, Sendable {
     public let output: SpotOutput
     public let partFaults: [String]
 
-    public init(text: String, kinds: [BlockKind] = BlockKind.all) {
+    public init(text: String, kinds: [BlockKind] = BlockKind.all, isApp: Bool = false) {
         FrameParses.meter?.add()
         let blocks = SpotOutput.grouping(TextBlock.blocks(in: text))
         let output = SpotOutput(grouped: blocks, kinds: kinds)
@@ -41,7 +41,7 @@ public struct FrameCheck: Equatable, Sendable {
         let sheet = output.parts.filter { !carded.contains($0.id) || output.layout?.areas[$0.id] != nil }
         if !sheet.isEmpty { faults += SheetFaults.of(layout: output.layout, parts: sheet) }
         var told = Set<String>()
-        for field in root?.fields ?? [] where !RootKey.isKey(field.key) && told.insert(field.key).inserted {
+        for field in root?.fields ?? [] where !RootKey.isKey(field.key, isApp: isApp) && told.insert(field.key).inserted {
             faults.append("the root has an unknown key: \(field.key)")
         }
         self.output = output

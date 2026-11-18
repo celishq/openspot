@@ -5,9 +5,10 @@ public enum RootKey: String, CaseIterable, Sendable {
     public static let drawing = "grid."
     private static let names = Set(allCases.map(\.rawValue))
     static let marks: Set<String> = [end.rawValue, call.rawValue]
+    static let appKeys: Set<String> = [shown.rawValue]
 
-    static func isKey(_ key: String) -> Bool {
-        names.contains(key) || isDrawing(key)
+    static func isKey(_ key: String, isApp: Bool) -> Bool {
+        (names.contains(key) && (isApp || !appKeys.contains(key))) || isDrawing(key)
     }
 
     static func isDrawing(_ key: String) -> Bool {

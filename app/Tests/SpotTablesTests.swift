@@ -64,6 +64,13 @@ final class SpotTablesTests: XCTestCase {
         XCTAssertEqual(faults, ["the root has an unknown key: toost"])
     }
 
+    func testShownIsAnUnknownRootKeyOutsideTheSpotsOfTheApp() async throws {
+        let faults = try await findings("#!/bin/sh\nprintf 'frame=\\ntitle=T\\nshown=false\\n'\n", toml: "on = ['clock.600']")
+
+        XCTAssertEqual(faults, ["the root has an unknown key: shown"])
+        XCTAssertEqual(FrameCheck(text: "frame=\ntitle=T\nshown=false\n", isApp: true).partFaults, [])
+    }
+
     func testOnlyShownInTheHeadOfASpotOfTheAppMovesItsCardOnOrOffTheGrid() throws {
         let spot = Spot(id: "u", name: "U", url: URL(fileURLWithPath: "/none/u.sh"), read: .panel)
 

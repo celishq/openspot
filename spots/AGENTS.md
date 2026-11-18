@@ -20,7 +20,7 @@ These rules hold for the core spots in `spots/` and the spots in `examples/`. A 
 ## The app's own words
 
 The spots of `spots/openspot.spot/` are parts of the app, such as Settings and New spot, and take a few words that no
-other spot gets. In any other spot, `edits` is an unknown key, `account` is removed from its uses, `shown=` is skipped,
+other spot gets. In any other spot, `edits` and `shown` are unknown keys, `account` is removed from its uses,
 and the variables are absent. `builtin` names these spots to the others.
 
 ```toml
