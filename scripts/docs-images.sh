@@ -79,7 +79,7 @@ cp -R docs/sample/. "$work/spots/"
 rm "$work/spots/config.toml"
 for spot in system system-info battery cpu memory devices; do cp -R "spots/$spot.spot" "$work/spots/"; done
 cp docs/sample/config.toml "$work/config/config.toml"
-"$app" --spots "$work/spots" --config "$work/config" --core "$work/core" check >/dev/null
+"$app" --spots "$work/spots" --config "$work/config" --core "$work/core" check spots >/dev/null
 "$app" --picture-on-screen --spots "$work/spots" --config "$work/config" --core "$work/core" \
   render panel docs/images/panel.png
 echo docs/images/panel.png
