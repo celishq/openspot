@@ -36,7 +36,7 @@ final class WelcomeSpotTests: BuiltInCase {
         let spot = try welcome
 
         XCTAssertEqual(spot.starts, .firstLaunch)
-        XCTAssertFalse(spot.offersCard)
+        XCTAssertEqual(Config(text: try String(contentsOf: URL(fileURLWithPath: #filePath).deletingLastPathComponent().deletingLastPathComponent().appendingPathComponent("defaults.toml"), encoding: .utf8)).arrangement.isOnGrid(of: "openspot/welcome"), false)
         XCTAssertEqual(spot.name, "Welcome spot")
         XCTAssertNil(spot.subtitle)
         XCTAssertEqual(spot.symbol, "hand.wave")

@@ -214,9 +214,11 @@ public struct Config: Equatable, Sendable {
             if choice.size == nil { faults.append("config.toml: \(id) cannot use the size \(name).") }
         }
         if case .boolean(let isOnGrid)? = table["grid"] { choice.isOnGrid = isOnGrid }
+        if case .boolean(let isFound)? = table["search"] { choice.isFound = isFound }
         if case .boolean(let isEnabled)? = table["enabled"] { choice.isEnabled = isEnabled }
         if case .boolean(let isGlobal)? = table["global"] { choice.isGlobal = isGlobal }
         if case .boolean(let isInMenuBar)? = table["tray"] { choice.isInMenuBar = isInMenuBar }
+        if case .boolean(let isWindow)? = table["window"] { choice.isWindow = isWindow }
         if case .string(let text)? = table["key"] {
             choice.key = ActionKey(text: text)
             if choice.key == nil { faults.append("config.toml: \(id) cannot use the key \(text).") }
@@ -225,7 +227,7 @@ public struct Config: Equatable, Sendable {
             choice.panel = GridPanel(rawValue: name).flatMap { $0 == .center ? nil : $0 }
             if choice.panel == nil { faults.append("config.toml: \(id) cannot use the side \(name).") }
         }
-        for key in table.keys.sorted() where !["id", "size", "grid", "enabled", "global", "tray", "letter", "key", "side"].contains(key) {
+        for key in table.keys.sorted() where !["id", "size", "grid", "search", "enabled", "global", "tray", "window", "letter", "key", "side"].contains(key) {
             faults.append("config.toml: \(key) is not a setting of a spot.")
         }
         return choice

@@ -1,3 +1,0 @@
-title = "System"
-"grid.large" = ["battery battery cpu    cpu", "battery battery memory memory"]
-to = "system-info"

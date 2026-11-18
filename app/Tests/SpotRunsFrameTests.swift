@@ -148,7 +148,7 @@ final class SpotRunsFrameTests: SpotRunsCase {
     }
 
     func testAFrameOfAStayingScriptWithARootReplacesAll() async throws {
-        try script(toml: "mode = 'stay'\noffers = ['card', 'menubar']", """
+        try script(toml: "mode = 'stay'", """
         while IFS= read -r line; do
           case "$line" in
             call=*) call=${line#call=} ;;
@@ -169,7 +169,7 @@ final class SpotRunsFrameTests: SpotRunsCase {
     }
 
     func testALaterFrameOfAStayingScriptWithNoRootMergesIntoTheFrameOfItsCall() async throws {
-        try script(toml: "mode = 'stay'\noffers = ['card', 'menubar']", """
+        try script(toml: "mode = 'stay'", """
         while IFS= read -r line; do
           case "$line" in
             call=*) call=${line#call=}; printf 'call=%s\\n---\\n' "$call" ;;
@@ -185,7 +185,7 @@ final class SpotRunsFrameTests: SpotRunsCase {
     }
 
     func testAStayingReadThatEndsWithOnlyAHeadKeepsThePictureThatCameBeforeIt() async throws {
-        try script(toml: "mode = 'stay'\noffers = ['card', 'menubar']", """
+        try script(toml: "mode = 'stay'", """
         while IFS= read -r line; do
           case "$line" in
             call=*) call=${line#call=} ;;

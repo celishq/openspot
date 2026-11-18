@@ -8,7 +8,7 @@ draw() {
   else detail="In use" tone=
   fi
   case $used in ?) value=0.0$used ;; ??) value=0.$used ;; *) value=1 ;; esac
-  printf 'graph=memory\ntitle=%s%%\ndetail=%s\nvalue=%s\ntone=%s\n' "$used" "$detail" "$value" "$tone"
+  printf 'frame=\ngrid=memory\ngrid=memory\ngrid.bar=memory\n\ngraph=memory\ntitle=%s%%\ndetail=%s\nvalue=%s\ntone=%s\n' "$used" "$detail" "$value" "$tone"
 }
 
 # Prints the memory in use now, as a percent.

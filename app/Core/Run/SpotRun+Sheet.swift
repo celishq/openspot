@@ -74,9 +74,7 @@ extension SpotRun {
         settle()
         list.selectFirst()
         if panel == nil, answered != nil { panel = lastAnswer.flatMap(SheetParts.init(output:)) }
-        if let read = spot.read, spot.kind.opensSheet || read.has(.panel) {
-            self.read(reason: spot.kind.opensSheet ? .sheet : .panel)
-        }
+        read(reason: spot.kind.opensSheet ? .sheet : .panel)
         link.settle()
         runs.updateClock()
     }

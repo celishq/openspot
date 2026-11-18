@@ -4,6 +4,5 @@ icon = "gauge.with.dots.needle.33percent"
 detail = "Use and cost of each spot"
 on = ["sheet.open"]
 view = "chart.swift"
-offers = ["card"]
 pages = ["spot:*"]
 uses = ["spots", "clipboard"]

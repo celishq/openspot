@@ -3,4 +3,3 @@ icon = "face.smiling"
 detail = "Copy an emoji or a symbol"
 on = ["sheet.open"]
 uses = ["clipboard"]
-offers = ["card"]

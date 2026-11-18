@@ -16,8 +16,6 @@ extension SpotsModel {
             return call(button, of: entry, text)
         }
         switch entry.spot.mainAct {
-        case .run:
-            call(CommandAction(id: SpotAction.open.arguments[0], title: entry.state.title, scope: .spot, after: .close), of: entry, text, onCard: true)
         case .sheet:
             pushFirst(entry.id, moving: true)
             sheets[entry.id]?.type(text)

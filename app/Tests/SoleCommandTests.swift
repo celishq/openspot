@@ -49,7 +49,7 @@ final class SoleCommandTests: XCTestCase {
         try XCTUnwrap(model.entries.first { $0.id == id })
     }
 
-    func testTheFirstReturnRecordsTheKeyAndTheNextReturnRunsTheCommand() async throws {
+    func testReturnRunsTheOneCommandAtOnceAndItsSettingsRecordItsKey() async throws {
         try script("dictate", toml: "title = 'Dictate'\n[commands.dictate]\ntitle = 'Dictate'")
         await model.reload()
         model.isShown = true
@@ -58,39 +58,46 @@ final class SoleCommandTests: XCTestCase {
         model.query = "dictate"
         model.landSearch()
         model.selected = try XCTUnwrap(model.visible.firstIndex { $0.id == "dictate" })
-        XCTAssertEqual(model.hint, "⏎ Set key   ⌘⏎ Settings   ⌘K Actions")
-        model.run(try entry("dictate"))
-
-        XCTAssertEqual(model.recording, "key:dictate:key.dictate")
-        try await wait("the key row") { model.openItems?.shown.contains { $0.run == "key:dictate:key.dictate" } == true }
-        XCTAssertEqual(model.openSheetID, SpotSettings.sheetID(of: "dictate"))
-        XCTAssertEqual(model.recordingWords, "Press keys or shake")
-        model.record(code: 125, modifiers: .command)
-        XCTAssertEqual(model.recording, "key:dictate:key.dictate")
-        XCTAssertEqual(host.notes.last, "`⌘↓` belongs to apps. Hold `⌥` or `⌃` with a key, or tap one key such as `⌥`.")
-        XCTAssertEqual(model.openItems?.shown.first { $0.run == "key:dictate:key.dictate" }?.subtitle, "Press ⏎ to set")
-        model.recordTap(.option)
-        try await wait("the tap in the file") {
-            model.files.config.read().keys == [GlobalKey(spot: "dictate", act: .command("dictate"), trigger: .tap(.option))]
-        }
-        try await wait("the new key in its row") { model.openItems?.shown.first { $0.run == "key:dictate:key.dictate" }?.shortcut == "option" }
-        XCTAssertNil(model.recording)
-        XCTAssertEqual(model.openSheetID, SpotSettings.sheetID(of: "dictate"))
-        XCTAssertEqual(host.dismissals, 0)
-
-        model.closeSheet(moving: false)
-        model.query = "dictate"
-        model.landSearch()
-        model.selected = try XCTUnwrap(model.visible.firstIndex { $0.id == "dictate" })
-        try await wait("the key in the footer") { model.hint == "⏎ Dictate   ⌘⏎ Settings   ⌘K Actions" }
-        XCTAssertTrue(model.openSelectedSettings())
-        try await wait("the key row again") { model.openSheetID == SpotSettings.sheetID(of: "dictate") }
-        XCTAssertNil(model.recording)
-        model.closeSheet(moving: false)
+        XCTAssertEqual(model.hint, "⏎ Dictate   ⌘⏎ Settings   ⌘K Actions")
         model.run(try entry("dictate"))
 
         try await wait("the command") { host.confirms == ["Ran dictate"] }
         XCTAssertNil(model.recording)
+        XCTAssertNil(model.openSheetID)
+        XCTAssertEqual(host.dismissals, 1)
+
+        model.isShown = true
+        model.panelWillShow()
+        model.query = "dictate"
+        model.landSearch()
+        model.selected = try XCTUnwrap(model.visible.firstIndex { $0.id == "dictate" })
+        XCTAssertTrue(model.openSelectedSettings())
+        try await wait("the key row") { model.openItems?.shown.contains { $0.run == "key:dictate:key.dictate" } == true }
+        XCTAssertNil(model.recording)
+        model.toggleRecording(id: "key:dictate:key.dictate")
+        XCTAssertEqual(model.recording, "key:dictate:key.dictate")
+        model.recordTap(.option)
+        try await wait("the tap in the file") {
+            model.files.config.read().keys == [GlobalKey(spot: "dictate", act: .command("dictate"), trigger: .tap(.option))]
+        }
+        XCTAssertEqual(model.openSheetID, SpotSettings.sheetID(of: "dictate"))
+    }
+
+    func testACommandWithConfirmAndNoKeyAsksForASecondReturn() async throws {
+        try script("wipe", toml: "title = 'Wipe'\n[commands.wipe]\ntitle = 'Wipe'\nconfirm = 'Press again to wipe'")
+        await model.reload()
+        model.isShown = true
+        model.panelWillShow()
+        model.query = "wipe"
+        model.landSearch()
+        model.selected = try XCTUnwrap(model.visible.firstIndex { $0.id == "wipe" })
+
+        model.run(try entry("wipe"))
+
+        XCTAssertEqual(model.hint, "⏎ Press again to wipe   ⌘⏎ Settings   ⌘K Actions")
+        XCTAssertEqual(host.dismissals, 0)
+        model.run(try entry("wipe"))
+        try await wait("the command") { host.confirms == ["Ran wipe"] }
     }
 
     func testACommandWithConfirmAsksForASecondPressOfItsCard() async throws {
@@ -145,23 +152,6 @@ final class SoleCommandTests: XCTestCase {
         XCTAssertEqual(menu.rows.first { $0.title == "Wipe" }?.action?.confirm, "Press again to wipe")
     }
 
-    func testTheFooterOfASpotWithOneCommandAndNoSheetNamesWhatReturnDoes() async throws {
-        try script("party", toml: "title = 'Party'\non = ['panel.open']\n[commands.play]\ntitle = 'Play'")
-        await model.reload()
-        model.isShown = true
-        model.panelWillShow()
-        model.query = "party"
-        model.landSearch()
-        model.selected = try XCTUnwrap(model.visible.firstIndex { $0.id == "party" })
-
-        XCTAssertEqual(try entry("party").kind, .launch)
-        XCTAssertFalse(model.hint.contains("Set key"), model.hint)
-        model.run(try entry("party"))
-
-        try await wait("the press of the card") { host.confirms.contains("Ran open") }
-        XCTAssertNil(model.recording)
-    }
-
     func testReturnOnASpotWithTwoCommandsOnlyOpensTheirKeys() async throws {
         try script("windows", toml: "title = 'Windows'\n[commands.left]\ntitle = 'Left'\n[commands.right]\ntitle = 'Right'")
         await model.reload()
@@ -171,12 +161,12 @@ final class SoleCommandTests: XCTestCase {
         model.run(try entry("windows"))
 
         try await wait("the key rows") { model.openSheetID == SpotSettings.sheetID(of: "windows") }
-        try await wait("their rows") { model.openItems?.shown.map(\.run) == ["key:windows:open", "key:windows:key.left", "key:windows:key.right", "menubar:windows"] }
+        try await wait("their rows") { model.openItems?.shown.map(\.run) == ["key:windows:open", "key:windows:key.left", "key:windows:key.right", "key:windows:float", "menubar:windows", "window:windows"] }
         XCTAssertNil(model.recording)
     }
 
     func testReturnRunsTheOneCommandOfASpotWithRowsAndCommandYOpensTheRowsAsHistory() async throws {
-        try "#!/bin/sh\ncase \"$1\" in show) printf 'text=one\\ntitle=Hello there\\n\\ntext=two\\ntitle=Second\\n' ;; esac\n"
+        try "#!/bin/sh\ncase \"$1\" in show) printf 'text=one\\ntitle=Hello there\\n\\ntext=two\\ntitle=Second\\n' ;; dictate) printf '\\033]9;Ran dictate\\007' ;; esac\n"
             .writeScript(to: spots.spotFile("dictate"), toml: "title = 'Dictate'\non = ['sheet.open', 'app.update']\n[commands.dictate]\ntitle = 'Dictate'")
         await model.reload()
         model.isShown = true
@@ -187,7 +177,7 @@ final class SoleCommandTests: XCTestCase {
 
         XCTAssertEqual(try entry("dictate").spot.soleCommand, "dictate")
         XCTAssertFalse(try entry("dictate").spot.opensOnReturn)
-        XCTAssertEqual(model.hint, "⏎ Set key   ⌘⏎ Settings   ⌘K Actions")
+        XCTAssertEqual(model.hint, "⏎ Dictate   ⌘⏎ Settings   ⌘K Actions")
         XCTAssertTrue(model.handleKey(ActionKey(name: "k", isCommand: true)))
         let menu = try XCTUnwrap(model.menu)
         XCTAssertEqual(menu.rows.map(\.title), ["Dictate", "History"])
@@ -204,9 +194,8 @@ final class SoleCommandTests: XCTestCase {
         model.closeSheet(moving: false)
 
         model.runSelected()
-        try await wait("its settings, recording its key") {
-            model.recording == "key:dictate:key.dictate" && model.openSheetID == SpotSettings.sheetID(of: "dictate")
-        }
+        try await wait("the command") { host.confirms == ["Ran dictate"] }
+        XCTAssertNil(model.recording)
     }
 
     func testAKeyRowSaysSetUntilItHasAKeyAndChangeAfter() {
@@ -252,32 +241,15 @@ final class SoleCommandTests: XCTestCase {
         XCTAssertEqual(model.sheets["dictate"]?.shape.hasField, false)
     }
 
-    func testAClickOnTheMenuBarIconOfASpotThatReturnRunsDoesWhatReturnDoes() async throws {
-        try "#!/bin/sh\nexit 0\n".writeScript(to: spots.spotFile("pen"), toml: "title = 'Pen'\nicon = 'pencil.tip'\n[commands.draw]\ntitle = 'Draw on screen'")
-        await model.reload()
-
-        model.openFromMenuBar("pen")
-
-        try await wait("its key, as the first Return records it") {
-            model.recording == "key:pen:key.draw" && model.openSheetID == SpotSettings.sheetID(of: "pen")
-        }
-        XCTAssertGreaterThan(host.shows, 0)
-    }
-
-    func testAnOpenKeyOfASpotWithOneCommandRecordsItsKeyAndThenRunsTheCommand() async throws {
+    func testAnOpenKeyOfASpotWithOneCommandRunsTheCommandAtOnce() async throws {
         try script("dictate", toml: "title = 'Dictate'\n[commands.dictate]\ntitle = 'Dictate'")
         await model.reload()
         let open = GlobalKey(spot: "dictate", act: .open, trigger: .key(try XCTUnwrap(Shortcut(text: "ctrl+option+d"))))
 
         model.press(open)
-        XCTAssertEqual(host.shows, 1)
-        XCTAssertEqual(model.recording, "key:dictate:key.dictate")
-        model.stopRecording()
-        _ = try model.files.config.change { $0.assign(.tap(.option), to: "dictate", act: .command("dictate")) }
-        await model.reload()
-        model.press(open)
 
-        XCTAssertEqual(host.shows, 1)
+        XCTAssertEqual(host.shows, 0)
+        XCTAssertNil(model.recording)
         try await wait("the command") { host.confirms == ["Ran dictate"] }
     }
 

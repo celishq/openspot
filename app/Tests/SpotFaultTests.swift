@@ -132,6 +132,7 @@ final class SpotFaultTests: XCTestCase {
         model.tap("ping")
         try await wait("the failure") { entry("ping")?.failure != nil }
         XCTAssertEqual(entry("ping")?.failure, "Openspot cannot reach the server. Try again when the Mac is online.")
+        model.closeSheet(moving: false)
 
         try script("ping", "exit 0")
         await model.spotsChanged()

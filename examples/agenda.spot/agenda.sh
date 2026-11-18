@@ -91,7 +91,7 @@ card() {
   fi
   strip=next
   [ -z "$join" ] || strip='next next next join-now'
-  printf 'frame=\nmain=next\nrecents=false\ngrid=items\ngrid.small=at\ngrid.wide=next\ngrid.strip=%s\n' "$strip"
+  printf 'frame=\ngrid.bar=next\nrecents=false\ngrid=items\ngrid.small=at\ngrid.wide=next\ngrid.strip=%s\n' "$strip"
   printf 'grid.square=next next\ngrid.square=next next\ngrid.large=next next next next\ngrid.large=next next next next\n'
   if [ "$late" -gt 0 ]; then
     printf 'grid.square=todo late\n'

@@ -114,7 +114,7 @@ final class SpotVerbTests: XCTestCase {
         try script("notes", toml: "title = 'Notes'\non = ['sheet.open']")
 
         _ = try await select("weather")
-        XCTAssertEqual(model.hint, "⏎ Run   ⌘⏎ Settings   ⌘K Actions")
+        XCTAssertEqual(model.hint, "⏎ Open   ⌘⏎ Settings   ⌘K Actions")
         _ = try await select("notes")
         XCTAssertEqual(model.hint, "⏎ Open   ⌘⏎ Settings   ⌘K Actions")
         XCTAssertTrue(model.handleKey(ActionKey(name: "e", isCommand: true)))
@@ -146,6 +146,7 @@ final class SpotVerbTests: XCTestCase {
         _ = try await select("ping")
         model.tap("ping")
         try await wait("the failure") { model.entries.first { $0.id == "ping" }?.failure != nil }
+        model.closeSheet(moving: false)
         model.isShown = true
 
         XCTAssertTrue(model.handleKey(ActionKey(name: "k", isCommand: true)))

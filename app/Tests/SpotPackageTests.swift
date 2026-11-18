@@ -124,42 +124,6 @@ final class SpotPackageTests: XCTestCase {
         XCTAssertNil(icon.text)
     }
 
-    func testAWidgetTravelsWithEachSpotFolderItPlacesAndOpens() throws {
-        try script("cpu.spot/cpu.sh")
-        try manifest("cpu.spot", "on = [\"clock.5\"]\n")
-        try script("home.spot/disk.sh")
-        try manifest("home.spot", "[scripts.disk]\non = [\"clock.5\"]\n")
-        try script("links.spot/links.sh")
-        try manifest("links.spot", "on = [\"sheet.open\"]\n")
-        try script("other.spot/other.sh")
-        try script("board.spot/board.sh")
-        try manifest("board.spot", "title = \"Desk\"\n\"grid.strip\" = [\"cpu cpu home/disk home/disk\"]\nto = \"links\"\n")
-
-        let spot = try sharing("board")
-
-        XCTAssertEqual(spot.files.map(\.path).sorted(), [
-            "board.spot/board.sh", "board.spot/spot.toml", "cpu.spot/cpu.sh", "cpu.spot/spot.toml",
-            "home.spot/disk.sh", "home.spot/spot.toml", "links.spot/links.sh", "links.spot/spot.toml"
-        ])
-        XCTAssertEqual(spot.roots.first, "board.spot")
-    }
-
-    func testAWidgetThatOpensASpotOfTheAppCarriesNoFileForIt() throws {
-        try script("cpu.spot/cpu.sh")
-        try manifest("cpu.spot", "on = [\"clock.5\"]\n")
-        try script("board.spot/board.sh")
-        try manifest("board.spot", "title = \"Desk\"\n\"grid.square\" = [\"cpu\"]\nto = \"openspot/spots\"\n")
-        let core = spots.deletingLastPathComponent().appendingPathComponent("core")
-        _ = try script("openspot.spot/spots.sh", in: core)
-        try manifest("openspot.spot", "[scripts.spots]\non = [\"sheet.open\"]\n", in: core)
-        let scan = try SpotsFolder(url: spots, core: core).scan()
-        let widget = try XCTUnwrap(scan.spots.first { $0.id == "board" })
-
-        let spot = try SpotPackage(sharing: widget, from: scan)
-
-        XCTAssertEqual(spot.files.map(\.path).sorted(), ["board.spot/board.sh", "board.spot/spot.toml", "cpu.spot/cpu.sh", "cpu.spot/spot.toml"])
-    }
-
     func testACompiledProgramTravelsWithItsBytesAndStaysExecutable() throws {
         let program = spots.appendingPathComponent("tool.spot/tool")
         try FileManager.default.createDirectory(at: program.deletingLastPathComponent(), withIntermediateDirectories: true)

@@ -51,14 +51,16 @@ what it has.
 
 | Key          | What it does                                                                                              |
 | ------------ | --------------------------------------------------------------------------------------------------------- |
-| Return       | The main act of the spot: it runs the spot, or opens its rows when the rows are what the spot is for.     |
-| `⌘` Return   | Opens the spot's [Settings](#settings): Show in the menu bar and each setting.                            |
+| Return       | The main act of the spot: it runs the spot's one command, or opens its sheet.                             |
+| `⌘` Return   | Opens the spot's [Settings](#settings): its keys, each setting and its places.                            |
 | `⌘Y`         | Opens the rows of a spot whose Return runs its command, as its **History**.                               |
 | `⌘K`         | Opens the menu of all acts, when it holds more than the footer shows.                                     |
 
-- A spot with one command in its manifest and its own rows, such as Dictate, runs that command on Return. Its rows are
-  its History, on `⌘Y` and in its ⌘K menu. With no key yet, Return records one first.
-- A spot whose rows are its main use, such as a clipboard history, has no `button`: Return opens its rows.
+- A spot with one command in its manifest, such as Dictate, runs that command on Return. Its rows are its History, on
+  `⌘Y` and in its ⌘K menu. Return runs it even before it has a hotkey: the user sets one in its Settings.
+- Any other spot opens its sheet on Return, such as a clipboard history.
+- A press of its card, its open hotkey, a click of it in the menu bar and its slash command with no text do what Return
+  does. The click in the menu bar opens the sheet under the menu bar item.
 - The ⌘K menu of a card starts with the acts that Openspot adds, always in this order: first what the user does with the
   spot, the main act on Return, History and Share; then what changes it, Settings, Edit and Change Icon; then Turn off
   or a red Delete. The acts that spots offer to every card with `offers = ["actions"]` follow, under the name of their spot. A
@@ -66,8 +68,7 @@ what it has.
 - A card's `⌘` keys work while a search is typed, except the ones that edit the words, such as `⌘⌫`.
 - Edit copies a prompt that sends an agent to the spot's file. A person changes a spot there, not in its Settings.
 - A choice that stays, such as a look or a folder, is a setting in Settings, not a part of the spot's own sheet.
-- A card shows an arrow only when Return opens another view of the spot, its sheet. A card that Return runs, as an app
-  runs, shows no arrow and no Run.
+- A card shows an arrow when Return opens its sheet, and none when Return runs its command.
 - The footer names the spot's own keys first and `⌘K Actions` last.
 
 ## The format
@@ -121,7 +122,7 @@ on = ["clock.300"]
   `[scripts.<name>]` describes each other script of the folder, such as `radar.sh`, with the same keys. Its commands
   and settings are `[scripts.<name>.commands.<id>]` and `[scripts.<name>.settings.<key>]`.
 - A value is a string in quotes, `true` or `false`, or a list in brackets, such as `on = ["sheet.open", "clock.60"]`.
-  `on`, `offers`, `source`, `pages`, `uses`, `emits`, `keywords` and `grid.<size>` take a list.
+  `on`, `offers`, `source`, `pages`, `uses`, `emits` and `keywords` take a list.
 - A script holds no header. A comment at its top is ordinary text.
 - If a key is wrong, or is one that Openspot doesn't know, such as `titel`, Openspot doesn't load that spot, and its
   fault names the key. Other spots still load.
@@ -135,17 +136,14 @@ on = ["clock.300"]
 | `placeholder` | The text the spot takes in a [slash command](#slash-commands), such as `placeholder = "Text to translate"`. It lists the spot there. |
 | `on`          | The events that make Openspot ask the spot what to show. See [Events](#events).                                                  |
 | `emits`       | The events the spot raises. See [Events](#events).                                                                               |
-| `offers`      | The places where the spot can show: `card`, `search`, `menubar`, `float` or `window`. See [Places](#places).                     |
+| `offers`      | `search`: its items show in the main search. See [Places](#places).                                                              |
 | `drop`        | The files its card takes: extensions such as `mov,mkv`, `folder`, or `*`. See [The calls](#the-calls).                           |
 | `edits`       | `spots`: its sheet is also the Edit sheet of each spot. Only a spot of the app takes it. |
 | `starts`      | `first-launch`: its sheet opens in place of the grid when Openspot starts for the first time. |
 | `view`        | A SwiftUI file next to the spot, such as `view = "cups.swift"`. See [Views](#views).                                             |
 | `source`      | The Swift files, or folders of Swift files, that a Swift spot is built with. See [A Swift spot](#a-swift-spot).                  |
 | `mode`        | `once` (the default) or `stay`. A `stay` spot with `app.launch` in `on` runs from launch. See [Modes](#modes).                   |
-| `press`       | `open`: a press of the card sends `<spot> open` though the spot has a sheet, which **Open** in ⌘K opens. `sheet` is the default. |
 | `uses`        | What the spot uses: `app`, `spots`, `screen`, `clipboard`, `calendar`, `power`, `network`, `files`. See [Trust](#trust). |
-| `grid.<size>` | A card made of other spots, written in quotes, such as `"grid.large"`. Each word is a spot id. See [Cards of other spots](#cards-of-other-spots). |
-| `to`          | The spot that opens when the user presses a card of other spots. See [Cards of other spots](#cards-of-other-spots).              |
 | `answers`     | `last`: the answers of `search.text` show under the other results, not first. See [Places](#places).                            |
 
 | Table               | Meaning                                                                                                                                                                                                                                                                      |
@@ -153,11 +151,11 @@ on = ["clock.300"]
 | `[commands.<id>]`   | A command, with its `title` and `icon`. The user can give it a hotkey. `confirm` asks for a second press. `close = false` keeps the panel open after a [slash command](#slash-commands) that shows nothing, and `placeholder` lists it there, as the grey hint after its name. |
 | `[settings.<key>]`  | A setting the user chooses, with its `title` (by default, its key) and `icon`. See [Settings](#settings).                                                                                                                                                                    |
 
-- A spot with a command in its manifest has no card. It gives its commands instead.
-- Return on a spot with one command and no `on` events runs it, as its hotkey does. When it has no hotkey yet, Return
-  opens its [Settings](#settings) and records one.
-- A spot with one command and its own rows runs the command on Return, and its rows open as its History on `⌘Y`. A
-  spot with more commands runs them by their hotkeys and from its ⌘K menu. See [The keys of a spot](#the-keys-of-a-spot).
+- A spot with a command in its manifest starts off the grid, and the user can add its card.
+- Return on a spot with one command runs it, as its hotkey does, also when it has no hotkey yet. The user sets one in its
+  [Settings](#settings). Its own rows open as its History on `⌘Y`. A spot with more commands runs them
+  by their hotkeys and from its ⌘K menu, and Return on it opens its sheet, or its Settings when it has no `on`. See
+  [The keys of a spot](#the-keys-of-a-spot).
 - `confirm = "<words>"` on a command makes a press of its card, or its row in the ⌘K menu, ask twice: the first
   press shows the words, and the second runs the command. Its hotkey doesn't run it at once: it shows the panel on the
   spot with the words, and Return, or the hotkey again, runs it.
@@ -329,11 +327,11 @@ divider across its line.
   rectangle. A smaller block inside a bigger one sits on top of it, at the edge it touches.
 - A `view`, a list, a chart, an image or a `multiline` field takes the free height of the sheet. `grow=false` keeps it
   at the height of its grid lines, and the sheet is as tall as its lines.
-- `grid.<size>=` lines lay out the card at one size: `small`, `wide`, `square`, `strip` or `large`. The user chooses the
-  size of each card. A block that only a card layout places shows only on the card.
+- `grid.<size>=` lines lay out the card at one size: `small`, `wide`, `square`, `strip` or `large`, and `grid.bar=`
+  lines lay out the menu bar (see [Places](#places)). The user chooses the size of each card. A block that only a card
+  layout places shows only on the card.
 - A card layout can have more lines than the card has room for. A size with no layout uses the layout of the next
-  smaller size. A spot with no card layout shows the default card (see
-  [The main block and the card](#the-main-block-and-the-card)).
+  smaller size. A spot with no card layout shows the default card (see [The card](#the-card)).
 - With no `grid=` line, the layout is a search field over the items: each block that isn't a button is an item (see
   [Items](#items)).
 
@@ -524,7 +522,7 @@ value=true
 ```
 
 - `frame=<route>` starts it. The route can be empty, as in `frame=`.
-- Its layout keys: `grid=` and `grid.<size>=` lines, `main`, `title`, `detail` and `active` for the card, and `recents`.
+- Its layout keys: `grid=` and `grid.<size>=` lines, `title`, `detail` and `active` for the card, and `recents`.
 - `progress=<0 to 1>` shows progress. With it, `title` and `detail` show only while the call runs.
 - `shown=true` puts the card of a spot of the app on the grid, and `shown=false` takes it off. Openspot skips it in
   the frame of any other spot.
@@ -535,24 +533,29 @@ value=true
 - A frame holds no effect. A command does each one from the call, the same way as in a terminal: `openspot toast <words>`,
   `open <url>`, `openspot select <item>` and `openspot route`. See [The openspot command](#the-openspot-command).
 
-## The main block and the card
+## The card
 
-The main block stands for the spot on its card and in the menu bar.
+The card stands for the spot on the grid. Use it to show one value at a glance, such as free disk space.
 
-- `main=<id>` in the root names it. Without `main=`, the main block is the only `text`, `number`, `graph`, `switch` or
-  slider in the frame.
-- The menu bar and a card of other spots show a main `text`, `number` or `graph`.
+```ini
+frame=
+detail=Home
+grid.wide=free
+
+text=free
+title=256 GB free
+```
+
+- Without `grid.<size>=` lines, a spot shows the default card: its icon, title and detail, and an arrow when Return
+  opens its sheet.
+- The **value** of the card is the one `text`, `number`, `graph`, `switch` or slider among the blocks that a layout
+  places, or else the one among the items. The menu bar shows a value the same way, from its `grid.bar=` lines (see
+  [Places](#places)).
 - `active=true` in the root shows on the card that the spot's thing is on, and `active=false` that it is off.
-- A spot has a sheet when its manifest has `sheet.open`, `sheet.text` or a `clock` in `on`, `search` in `offers`, or
-  `mode = "stay"`. Without any of these, such as with only `panel.open` or `app.front` in `on`, it has no sheet, and its
-  rows never show.
-- Without `grid.<size>=` lines, a spot shows the default card: its icon, title and detail, and an arrow when it has a
-  sheet.
 - When a frame holds only one `switch` or one slider, the card draws it, and a press of the card changes it. A card
   that is a switch is active while the switch is on.
-- A press on the card outside a control opens the sheet, or sends `<spot> open` when there's no sheet or the manifest has
-  `press = "open"`. With `press = "open"`, **Open** in the ⌘K menu opens the sheet. A press with `⌘` opens the spot's
-  [Settings](#settings).
+- A press on the card outside a control does what Return does (see [The keys of a spot](#the-keys-of-a-spot)). A press
+  with `⌘` opens the spot's [Settings](#settings).
 
 ## Events
 
@@ -566,28 +569,27 @@ An event makes Openspot ask a spot what to show. The manifest lists the events w
 - Only an event with a value takes a filter: `search.text`, `app.front`, `app.update`, or an event that a spot emits. A
   filter on any other event is an error. `sheet.text` takes none either, because the spot answers every search of its
   sheet.
-- Openspot never asks a spot with no event. A press of its card sends `<spot> open`.
+- The sheet asks its spot each time it opens, with `sheet.open`, whether `on` lists it or not.
 - Each `show` gets the event as `event=` on stdin, and its value as `event.value=`.
-- Openspot measures the load once for all the spots that list `system.load`, and only while one of them is wanted.
+- Openspot measures the load once for all the spots that list `system.load`, and only while one of their places shows.
 
 ```toml
 title = "Load"
 on = ["system.load"]
-offers = ["menubar"]
 ```
 
 ```sh
 #!/bin/sh
 . "$OPENSPOT_SH"
 load=$(value event.value)
-printf 'text=load\ntitle=%s\n' "${load:-cpu=0 memory=0}"
+printf 'frame=\ngrid.bar=load\n\ntext=load\ntitle=%s\n' "${load:-cpu=0 memory=0}"
 ```
 
 | Event              | When Openspot raises it                                                   | Value         |
 | ------------------ | ------------------------------------------------------------------------- | ------------- |
 | `sheet.open`       | When the spot's sheet opens.                                              |               |
 | `panel.open`       | Each time the panel opens, and once when the app starts.                  |               |
-| `clock.<seconds>`  | Every that many seconds while the spot is wanted, and when the Mac wakes. |               |
+| `clock.<seconds>`  | Every that many seconds while a place of the spot shows, and when the Mac wakes. |        |
 | `search.text`      | At each change of the main search text.                                   | the text      |
 | `sheet.text`       | At each change of the sheet's search text, and when the sheet opens.      | the text      |
 | `clipboard.change` | When the clipboard changes.                                               |               |
@@ -595,23 +597,23 @@ printf 'text=load\ntitle=%s\n' "${load:-cpu=0 memory=0}"
 | `app.update`       | When Openspot has downloaded an update.                                   | its version   |
 | `app.launch`       | Once when Openspot starts.                                                |               |
 | `screen.wake`      | When the screen wakes.                                                    |               |
-| `system.load`      | Every 5 seconds while the spot is wanted.                                 | `cpu=<percent> memory=<percent>` |
+| `system.load`      | Every 5 seconds while a place of the spot shows.                          | `cpu=<percent> memory=<percent>` |
 | `power.change`     | When the Mac moves to another power source, or its battery gains or loses a percent. | `ac`, `battery` or `ups` |
 | `disk.mount`       | When a disk or a volume mounts.                                           | its path      |
 | `device.connect`   | When a USB device connects. A Bluetooth device raises no event.           | its name      |
 
 - Openspot also asks a spot for these reasons, which aren't events:
   - `spot.change`: after a call that printed nothing;
-  - `spot.want`: when a spot becomes wanted and no event has asked it yet.
+  - `spot.want`: when a place starts to show a spot whose events haven't come yet, such as a card of a spot with only
+    `power.change` in `on`.
 - `openspot event emit <event> [value]` raises an event, from a spot or a terminal. If Openspot isn't running, it starts
   first.
 - A spot must list each event it raises in `emits`, such as `emits=music.track`. `openspot check spots` reports an `on` event
   that neither Openspot nor any spot raises.
 - A read must not raise the event that caused it. `openspot check spots` warns of a spot whose `on` and `emits` share an event.
-- A spot is **wanted** while its sheet, the menu bar or a card of other spots shows it, and while the open panel asks it
-  at `panel.open`.
-- A `clock`, and events other than `sheet.open`, `sheet.text` and `search.text`, ask a spot only while it's wanted.
-  `app.update` and `app.launch` ask each spot that lists them, wanted or not.
+- Openspot asks a spot only while one of its places shows: its sheet, its float or window, the menu bar, or its card on
+  the grid while the panel is open (see [Places](#places)). A `panel.open` spot is asked at each open of the panel.
+- `app.update` and `app.launch` ask each spot that lists them, whether a place shows it or not.
 - A read must be safe at each event its manifest lists. Only you can make sure of that. A spot has one read at a time.
 
 ## The calls
@@ -621,19 +623,19 @@ out.
 
 | Call                               | When                                                                      |
 | ---------------------------------- | ------------------------------------------------------------------------- |
-| `<spot> show`                      | An event that its manifest lists.                                         |
-| `<spot> open [item id]`            | A pick of an item, or a press of a card with no sheet or with `press = "open"`. |
+| `<spot> show`                      | An event that its manifest lists, or an open of its sheet.                |
+| `<spot> open <item id>`            | A pick of an item.                                                        |
 | `<spot> <id> [item id] [value]`    | A change or a press of a block, such as a pick of a `switch` item.        |
 | `<spot> drop <path> [path]...`     | A drop of files on its card.                                              |
 | `<spot> drag <item id> [item id]...` | A drag of items that stand for files out of its sheet.                  |
 | `<spot> <command>`                 | A press of the hotkey the user gave a command.                            |
-| `<spot> <command>`, `<spot> open`  | A [slash command](#slash-commands), with `search=<text>` on stdin.        |
+| `<spot> <command>`                 | A [slash command](#slash-commands), with `search=<text>` on stdin.        |
 
 - `show` asks what to show. `open`, `drop` and `drag` are default ids. A block can't use any of the four, but a button
   can use `open`.
 - A new default id reaches only a spot that asks for it.
-- A drop on a card waits for the card's running call. A drop on a card with items opens its sheet, and the call can
-  select the new item with `openspot select`.
+- A drop on a card waits for the card's running call. A drop on a card whose Return opens the sheet opens it, and the
+  call can select the new item with `openspot select`.
 - A spot's hotkeys run one at a time, in order, and never stop a call. A staying spot gets each press at once, in
   order, so a second press can end the call of the first, while fewer than 8 calls of its hotkeys are open. Openspot
   drops a press past that with a toast. Only the user gives a command a hotkey.
@@ -735,8 +737,7 @@ buy milk /notes            Return runs notes add, with search=buy milk on stdin
 | Command                                | The call with text                                 |
 | -------------------------------------- | -------------------------------------------------- |
 | A `button` with a `placeholder`        | `<spot> <id>`                                      |
-| A spot with a `placeholder`, no sheet  | `<spot> open`                                      |
-| A spot with a `placeholder` and sheet  | Its sheet opens, and the show of the sheet gets it |
+| A spot with a `placeholder` and no command | Its sheet opens, and the show of the sheet gets it |
 
 - The first frame of the call decides what shows. A frame with fields is a form, as for a `form=true` button, and Return
   in it sends the values to the same call. Other blocks open the spot's sheet with them. A frame with nothing to show,
@@ -772,43 +773,49 @@ start ──► frame ──► frame ──► ... ──► end        exit 0:
 
 ## Places
 
-The user decides where a spot shows. A spot only offers, with each place in its `offers` list. See
-[Show a value on a card](GUIDE.md#show-a-value-on-a-card) for an example.
+The user decides where a spot shows: on the grid, in the menu bar, in a float or in a window. A spot says what each
+place draws with a layout for its size. See [Show a value on a card](GUIDE.md#show-a-value-on-a-card) for an example.
 
-```toml
-title = "Shelf"
-on = ["sheet.open"]
-offers = ["card", "float"]
+```ini
+frame=
+grid.small=free
+grid.wide=free total
+grid.bar=free
+
+text=free
+title=256 GB
+
+text=total
+title=of 1 TB
 ```
 
-```sh
-#!/bin/sh
-```
+| Size                                        | Where                                                                 |
+| ------------------------------------------- | --------------------------------------------------------------------- |
+| `small`, `wide`, `square`, `strip`, `large` | A card on the grid. The user chooses its size.                        |
+| `bar`                                       | The menu bar, next to the clock. A click opens the sheet under it.    |
 
-| Place     | The spot can show                                                       | It needs                                            |
-| --------- | ----------------------------------------------------------------------- | --------------------------------------------------- |
-| `card`    | as a card on the grid.                                                  |                                                     |
-| `search`  | its rows in the main search.                                            | `panel.open`, `sheet.open` or a `clock` in `on`     |
-| `menubar` | its main block in the menu bar.                                         | a `clock`, another event, or `mode = "stay"`         |
-| `float`   | in a small window at the pointer, which a hotkey or a shake opens.      | a sheet                                             |
-| `window`  | its sheet in a window of its own, in place of the panel.                | a sheet                                             |
-| `actions` | a command of its manifest in the ⌘K menu of every card.                 | `offers` in the command's table, not at the top     |
-| `none`    | nowhere, until another spot opens its sheet with `openspot spot open`.  | no other place in `offers`                          |
+- The sheet, a float and a window draw the `grid=` lines, as in [Layouts](#layouts).
+- A size with no layout uses the layout of the next smaller size. A card with none shows the icon, title and detail
+  (see [The card](#the-card)). A spot in the menu bar with no `grid.bar=` lines shows its icon there.
+- The menu bar shows the value of the blocks that `grid.bar=` places: a `text`, a `number` or a `graph`. A read that
+  prints nothing hides it until the next read.
+- The user puts any spot on the grid, in the menu bar, in a float or in a window, from its [Settings](#settings) and
+  from Edit Spots. The manifest names no place, and a spot can't claim a hotkey or a place.
+- A float shows the spot in a small window at the pointer, which a hotkey or a shake of the pointer opens, and which
+  stays while the user works in other apps. The spot never learns where it shows.
+- A window opens the sheet in a normal window, from the card, the main search or `openspot spot open`. The user moves,
+  resizes and closes it, and Openspot shows in the Dock while it's open. Esc closes it too, and a view that fills it
+  should still give a way out, such as a Done button.
+- A spot with a `clock` or a command starts off the grid, so that a new spot doesn't fill the panel.
 
-- A spot with no `offers`, at the top of its manifest or on a command, offers `card`. A spot with `offers` shows only
-  in the places it names.
-- A spot that offers a place without what it needs, or an unknown place, doesn't load.
-- The user gives each spot its hotkey, puts spots in the menu bar, floats them, and orders and sizes the cards. A spot
-  can't claim a hotkey or a place. The hotkeys and the menu bar are in its [Settings](#settings).
-- `search` in `offers` shows the spot's rows in the main search. It needs `panel.open`, `sheet.open` or a `clock` in
-  `on`. With only `sheet.open`, Openspot reads the rows when it loads the spots, as it starts or after a spot changes, after each
-  change of the config, and at each open of the sheet. A panel open doesn't read them. Openspot ranks the
-  rows by the user's picks.
-- The user can give a spot that offers `float` a hotkey, or a shake of the pointer, in its Settings. It shows the spot in a small window at the pointer, which stays while the user works in other apps. The spot never learns where it shows.
-- A spot that offers `window` opens its sheet in a normal window, from its card, the main search or `openspot spot open`.
-  The user moves, resizes and closes it, and Openspot shows in the Dock while it's open. Use it for a sheet that needs
-  room, such as a catalog. Esc closes it too, and a view that fills it should still give a way out, such as a
-  Done button.
+### The main search
+
+`offers = ["search"]` shows the spot's items in the main search, and `search.text` in `on` makes it answer what the user
+types.
+
+- `search` in `offers` needs `panel.open`, `sheet.open` or a `clock` in `on`. With only `sheet.open`, Openspot reads
+  the items when it loads the spots, as it starts or after a spot changes, after each change of the config, and at each
+  open of the sheet. A panel open doesn't read them. Openspot ranks the items by the user's picks.
 - `search.text <pattern>` in `on` makes a spot answer the main search. Openspot asks it at each change of a text that the
   pattern matches, with no pause. A newer text stops the older call. The answer should be fast.
 - Its items show first in the main search until the newest text has an answer, and go at once when the pattern no longer
@@ -816,20 +823,18 @@ offers = ["card", "float"]
 - With `answers = "last"`, its items show under the other results instead, such as an item that offers to make a spot of
   the typed words. A search that finds only such items counts as a search that found nothing.
 - A spot whose only event is `search.text` has no card.
-- An answer can be one card instead of items: its root has `grid.large=` or `grid.strip=` lines, and its main block has a
-  `value`. A pick of the card sends `<spot> open <value>`.
+- An answer can be one card instead of items: its root has `grid.large=` or `grid.strip=` lines, and the card's value
+  has a `value`. A pick of the card sends `<spot> open <value>`.
 - `openspot calc solve <words>...` prints the answer to a sum, a conversion or a date as an item.
-- Every spot can show in the menu bar when the user puts it there. A spot that offers `menubar` shows its main `text`,
-  `number` or `graph` there. A read that prints nothing hides it until the next read. Any other spot shows its icon, and
-  a click does what Return does.
-- A spot with a `clock` has no card on the grid until the user adds it.
+- `offers = ["actions"]` on a command, not at the top, shows that command in the ⌘K menu of every card (see
+  [Buttons and actions](#buttons-and-actions)).
 
 ## Modes
 
 Openspot starts a spot for each call, unless its manifest says otherwise.
 
 - `mode = "once"` starts a process for each call.
-- `mode = "stay"` keeps one process, which gets each call on stdin while the spot is wanted.
+- `mode = "stay"` keeps one process, which gets each call on stdin while one of its places shows (see [Events](#events)).
 - `mode = "stay"` with `app.launch` in `on` keeps that process from the start of Openspot until it quits.
 - A `.js` file that the manifest describes, with no execute permission, runs inside Openspot. A `.js` file that it
   doesn't describe can hold shared code. An executable `.js` file runs as a process, like any other spot.
@@ -906,8 +911,8 @@ setting.city=Paris
   stop at once. `openspot_serve` reads stdin only between calls, so it can't see a stop while `main` runs. A newer
   search text sends `stop=<n>` for the read of the older text, so only the newest answer shows. A read after the first gets `stop=<n>` after 10 seconds, and fails
   as a slow read.
-- With `mode = "stay"`, the process runs while the spot is wanted, or while a call waits for its `end`. When the spot is no
-  longer wanted, Openspot closes its stdin, and the spot must end, with every process it started. After 2 seconds its
+- With `mode = "stay"`, the process runs while one of its places shows, or while a call waits for its `end`. When none
+  shows any more, Openspot closes its stdin, and the spot must end, with every process it started. After 2 seconds its
   process group gets the terminate signal, and 2 seconds later the kill signal.
 - After 3 failures in one minute, Openspot tells the user, and starts the spot again only when its file changes. Keep
   what must survive in `OPENSPOT_DATA`.
@@ -1060,22 +1065,6 @@ five groups. Each colour and strength is the one of the appearance that shows.
   each `body`.
 - The view runs inside Openspot, so a crash quits Openspot. Do the work in the spot, and only draw in `body`.
 
-## Cards of other spots
-
-A card of other spots shows the main blocks of the spots it names. See
-[Combine spots on one card](GUIDE.md#combine-spots-on-one-card) for an example.
-
-- Each item of a `grid.<size>` list is one line of the card at that size, as in [Layouts](#layouts). Here each word is the id of
-  another spot, not of a block. That spot's main block fills the cells its id covers.
-- `to` names the spot that opens when the user presses the card. Without `to`, a press does nothing.
-- While the card shows, Openspot asks each spot it names, at that spot's own events. A spot with no event that would ask
-  it, such as one with only `sheet.open` in `on`, is asked with `spot.want`. Each named spot must have an event in `on`.
-- The best spots to name have a `clock` and a main `text`, `number` or `graph`.
-- Openspot looks for each id in the card's folder first, then among all spots.
-- Each line of one size must have the same number of words, and each id must cover a rectangle. All lines use one size.
-- The manifest takes only `title`, `icon`, `detail`, `keywords` and `to` next to its `grid.<size>` lists. Openspot doesn't
-  load a card with any other key, because the card runs no code.
-
 ## Files out
 
 An item can stand for a file that the user drags into another app.
@@ -1211,10 +1200,10 @@ A setting keeps a choice of the user. Each spot has its own Settings, a sheet ap
 on its card, a press of the card with `⌘`, or **Settings** in its ⌘K menu opens. Return does the spot's main act, and
 `⌘` Return sets it up. See [Let the user choose a setting](GUIDE.md#let-the-user-choose-a-setting) for an example.
 
-- The Settings of a spot list each thing the user can change about it, in this order: first its keys, **Open** when it
-  has a card or rows in the search, the hotkey of each command in its manifest, and **Float** when it has a view to
-  float; then what the spot itself does, each setting, set or not, and each value it keeps that no setting names, such
-  as a look; and last **Show in the menu bar**, which every spot has.
+- The Settings of a spot list each thing the user can change about it, in this order: first its keys, **Open**, the
+  hotkey of each command in its manifest, and **Float**; then what the spot itself does, each setting, set or not, and
+  each value it keeps that no setting names, such as a look; and last its places, **Show in the menu bar** and **Open in
+  a window**, which every spot has.
 - Each shortcut is a `field` item with `type=hotkey` (see [Items](#items)). Return on it records a key, and `⌘⌫` removes the key.
 - Openspot makes the Settings sheet, and it grows from the spot's card. Its rows never show in the spot's own sheet.
 - The Settings spot of Openspot holds only the settings of the app: its keys, Careful mode, Slow
@@ -1297,8 +1286,6 @@ openspot spot stats --days 7
 | `p50`, `p95`         | The seconds within which half, and 95 in 100, of its reads and searches first answered. |
 | `memory`             | The most memory its own process held at once, in bytes, not counting the processes it starts. |
 | `seen`               | The days that hold a count of the spot.                               |
-| `shows`              | On a [card of other spots](#cards-of-other-spots), one line for each spot it shows. Such a card runs nothing, so its other numbers are 0. |
-| `cards`              | One line for each card of other spots that shows this spot.           |
 | `runs.by.<id>`       | The part of `runs` that the spot `<id>` started with `openspot spot run`. |
 | `ran.<id>`           | The runs of the spot `<id>` that this spot started with `openspot spot run`. |
 | `failures.<kind>`    | The failures of one kind: `timeout`, `exit` or `output`.              |
@@ -1405,7 +1392,7 @@ load a spot whose manifest has a key that it doesn't know.
 | To add               | Add                                                              |
 | -------------------- | ---------------------------------------------------------------- |
 | A thing that happens | an event `<noun>.<verb>`                                         |
-| A place to show      | a value of `offers`                                              |
+| A place to show      | a size of a layout, `grid.<size>=`                               |
 | A thing to draw      | a kind `<kind>=`, which an old app skips and reports             |
 | A detail of a kind   | a key, or a `type` value                                         |
 | A power of the Mac   | a noun: `openspot <noun> <verb>`, its events and its `uses` word |

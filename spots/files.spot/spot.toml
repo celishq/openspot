@@ -2,4 +2,3 @@ icon = "doc.text.magnifyingglass"
 detail = "Find a file"
 on = ["sheet.open", "sheet.text"]
 uses = ["clipboard"]
-offers = ["card"]

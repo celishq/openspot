@@ -279,8 +279,6 @@ public struct SpotPackage: Equatable, Sendable {
             let folder = first.url.deletingLastPathComponent()
             guard !roots.contains(where: { $0.url == folder }) else { continue }
             roots.append((folder.lastPathComponent, folder))
-            let neighbours = scan.files.flatMap(\.spots).filter { $0.url.deletingLastPathComponent() == folder }
-            waiting += neighbours.flatMap { $0.places + ($0.opens.map { [$0] } ?? []) }
         }
         return roots
     }

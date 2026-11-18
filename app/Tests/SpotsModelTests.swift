@@ -111,7 +111,7 @@ final class SpotsModelTests: XCTestCase {
     }
 
     func testAMenuBarPlaceAndAValueThatTheAPISetsBuildNoGridNowOrAtTheNextReload() async throws {
-        try script("cups", toml: "title = 'Cups'\non = ['clock.60']\noffers = ['card', 'menubar']", "printf 'text=c\\ntitle=3\\n'")
+        try script("cups", toml: "title = 'Cups'\non = ['clock.60']", "printf 'text=c\\ntitle=3\\n'")
         try script("notes", toml: "title = 'Notes'", ":")
         await model.reload()
         let builds = model.gridBuilds
@@ -128,10 +128,10 @@ final class SpotsModelTests: XCTestCase {
     }
 
     func testAFileThatChangesBesideASpotThatTheAPITurnsOnStillShowsItsCard() async throws {
-        try script("cups", toml: "title = 'Cups'\non = ['clock.60']\noffers = ['card', 'menubar']", "printf 'text=c\\ntitle=3\\n'")
+        try script("cups", toml: "title = 'Cups'\non = ['clock.60']", "printf 'text=c\\ntitle=3\\n'")
         await model.reload()
         try script("notes", toml: "title = 'Notes'", ":")
-        try script("cups", toml: "title = 'Mugs'\non = ['clock.60']\noffers = ['card', 'menubar']", "printf 'text=c\\ntitle=3\\n'")
+        try script("cups", toml: "title = 'Mugs'\non = ['clock.60']", "printf 'text=c\\ntitle=3\\n'")
 
         model.configChanged(.spots(["other"]), to: model.files.config.readKept())
         await model.spotsChanged()
@@ -201,8 +201,8 @@ final class SpotsModelTests: XCTestCase {
 
     func testADownloadedUpdateReadsEachSpotThatListsItWhileThePanelIsHidden() async throws {
         let seen = folder.appendingPathComponent("seen").path
-        try script("news", toml: "on = ['panel.open', 'app.update']\noffers = ['card', 'menubar']", "\(TestSpot.event); [ \"$ev\" = app.update ] && printf '%s' \"$val\" > '\(seen)'; printf 'frame=\\ntitle=News\n'")
-        try script("other", toml: "on = ['panel.open', 'app.front']\noffers = ['card', 'menubar']", "printf 'frame=\\ntitle=Other\n'")
+        try script("news", toml: "on = ['panel.open', 'app.update']", "\(TestSpot.event); [ \"$ev\" = app.update ] && printf '%s' \"$val\" > '\(seen)'; printf 'frame=\\ntitle=News\n'")
+        try script("other", toml: "on = ['panel.open', 'app.front']", "printf 'frame=\\ntitle=Other\n'")
         await model.reload()
 
         model.updateIsReady("0.3.0")
@@ -1011,38 +1011,9 @@ final class SpotsModelTests: XCTestCase {
         XCTAssertEqual(model.openItems?.selected, 1)
     }
 
-    func testEnterRunsASpotWithPressOpenCommandEnterOpensItsSettingsAndTheMenuOpensItsSheet() async throws {
+    func testAClickWithCommandOpensTheSettingsOfASpot() async throws {
         let log = folder.appendingPathComponent("calls")
-        try script("conf", toml: "on = ['sheet.open']\npress = 'open'", "if [ \"$1\" = show ]; then printf 'text=a\\ntitle=A\\n'; else echo \"$@\" >> '\(log.path)'; fi")
-        await model.reload()
-        model.isShown = true
-        model.panelWillShow()
-        let calls = { ((try? String(contentsOf: log, encoding: .utf8)) ?? "").split(separator: "\n").map(String.init) }
-
-        XCTAssertEqual(model.hint, "⏎ Run   ⌘⏎ Settings   ⌘K Actions")
-        model.pressHint("⏎")
-        try await wait("the run") { calls() == ["open"] }
-        XCTAssertNil(model.openSheetID)
-        XCTAssertEqual(host.dismissals, 1)
-
-        model.isShown = true
-        model.panelWillShow()
-        XCTAssertTrue(model.handleKey(ActionKey(name: "return", isCommand: true)))
-        try await wait("the Settings sheet") { model.openSheetID == SpotSettings.sheetID(of: "conf") }
-        try await wait("its rows") { model.openItems?.shown.map(\.run) == ["key:conf:open", "menubar:conf"] }
-        model.closeSheet(moving: false)
-
-        XCTAssertTrue(model.handleKey(ActionKey(name: "k", isCommand: true)))
-        let row = try XCTUnwrap(model.menu?.rows.firstIndex { $0.title == "Open" && $0.action != nil })
-        model.pressMenu(row: row)
-        try await wait("its own sheet") { model.openItems?.shown.map(\.run) == ["a"] }
-        XCTAssertEqual(model.openSheetID, "conf")
-        XCTAssertEqual(calls(), ["open"])
-    }
-
-    func testAClickWithCommandOpensTheSettingsOfASpotWithPressOpen() async throws {
-        let log = folder.appendingPathComponent("calls")
-        try script("conf", toml: "on = ['sheet.open']\npress = 'open'", "if [ \"$1\" = show ]; then printf 'text=a\\ntitle=A\\n'; else echo \"$@\" >> '\(log.path)'; fi")
+        try script("conf", toml: "on = ['sheet.open']", "if [ \"$1\" = show ]; then printf 'text=a\\ntitle=A\\n'; else echo \"$@\" >> '\(log.path)'; fi")
         await model.reload()
         model.isShown = true
         model.panelWillShow()
@@ -1137,7 +1108,8 @@ final class SpotsModelTests: XCTestCase {
     }
 
     func testAMoveInTheActionsMenuTellsNoReaderOfACardsFocus() async throws {
-        try script("weather", toml: "title = 'Weather'\non = ['sheet.open']\npress = 'open'", ":")
+        try script("weather", toml: "title = 'Weather'\non = ['sheet.open']\n[commands.hot]\ntitle = 'Hot'\n[commands.cold]\ntitle = 'Cold'", ":")
+        _ = try model.files.config.change { $0.arrangement.set(isOnGrid: true, of: "weather") }
         await model.reload()
         model.isShown = true
         model.selected = try XCTUnwrap(model.visible.firstIndex { $0.id == "weather" })
@@ -1151,7 +1123,8 @@ final class SpotsModelTests: XCTestCase {
     }
 
     func testAMoveInTheActionsMenuTellsNoReaderThatTheMenuIsOpen() async throws {
-        try script("weather", toml: "title = 'Weather'\non = ['sheet.open']\npress = 'open'", ":")
+        try script("weather", toml: "title = 'Weather'\non = ['sheet.open']\n[commands.hot]\ntitle = 'Hot'\n[commands.cold]\ntitle = 'Cold'", ":")
+        _ = try model.files.config.change { $0.arrangement.set(isOnGrid: true, of: "weather") }
         await model.reload()
         model.isShown = true
         model.selected = try XCTUnwrap(model.visible.firstIndex { $0.id == "weather" })
@@ -1240,7 +1213,8 @@ final class SpotsModelTests: XCTestCase {
     }
 
     private func openWeatherMenu() async throws -> ActionMenuFrame {
-        try script("weather", toml: "title = 'Weather'\non = ['sheet.open']\npress = 'open'", ":")
+        try script("weather", toml: "title = 'Weather'\non = ['sheet.open']\n[commands.hot]\ntitle = 'Hot'\n[commands.cold]\ntitle = 'Cold'", ":")
+        _ = try model.files.config.change { $0.arrangement.set(isOnGrid: true, of: "weather") }
         await model.reload()
         model.isShown = true
         model.selected = try XCTUnwrap(model.visible.firstIndex { $0.id == "weather" })
@@ -1532,8 +1506,8 @@ final class SpotsModelTests: XCTestCase {
         XCTAssertEqual(model.selectedEntry?.id, "notes")
     }
 
-    func testAnAnswerThatDrawsALargeCardTakesTwoFullRowsAndAPressSendsItsMainValue() async throws {
-        let body = #"\#(TestSpot.event); case "$1" in show) printf 'frame=\ngrid.large=sum sum sum sum\ngrid.large=answer answer answer answer\nmain=answer\n\ntext=sum\ntitle=%s\n\nnumber=answer\nvalue=14\n' "$val" ;; open) printf '\033]9;Picked %s\007' "$2" ;; esac"#
+    func testAnAnswerThatDrawsALargeCardTakesTwoFullRowsAndAPressSendsItsValue() async throws {
+        let body = #"\#(TestSpot.event); case "$1" in show) printf 'frame=\ngrid.large=answer answer answer answer\ngrid.large=answer answer answer answer\n\nnumber=answer\ntitle=%s\nvalue=14\n' "$val" ;; open) printf '\033]9;Picked %s\007' "$2" ;; esac"#
         try script("calc", toml: "title = 'Calc'\non = ['search.text ^[0-9]']", body)
         try script("notes", toml: "title = 'Notes 2'\non = ['sheet.open']", "printf 'text=a\\ntitle=A\\n'")
         await model.reload()
@@ -1649,7 +1623,7 @@ final class SpotsModelTests: XCTestCase {
     }
 
     func testAStayingSpotAnswersTheKeptTextWhenThePanelShowsAgain() async throws {
-        try script("calc", toml: "title = 'Calc'\nmode = 'stay'\non = ['search.text ^[0-9]']\noffers = ['card', 'menubar']", """
+        try script("calc", toml: "title = 'Calc'\nmode = 'stay'\non = ['search.text ^[0-9]']", """
         while IFS= read -r line; do
           case "$line" in call=*) call=${line#call=}; text= ;; event.value=*) text=${line#event.value=} ;; esac
           [ -n "$line" ] || { [ -n "$text" ] && printf 'end=%s\\n\\ntext=%s\\ntitle=%s\\n---\\n' "$call" "$text" "$text" || printf 'end=%s\\n---\\n' "$call"; }

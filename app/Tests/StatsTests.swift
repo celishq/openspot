@@ -94,19 +94,6 @@ final class StatsTests: XCTestCase {
         """)
     }
 
-    func testACardOfSpotsGetsARowThatNamesTheSpotsItShowsAndEachSpotNamesItsCards() throws {
-        let usage = StatsLog(at: day)
-        usage.called(Spot(id: "a", name: "Alpha", url: URL(fileURLWithPath: "/a.sh")), CallOutcome(seconds: 1), at: day)
-        let card = Spot(id: "system", name: "System", url: URL(fileURLWithPath: "/system.sh"), kind: .widget, places: ["a", "b"])
-
-        let frame = try Stats(days: usage.days(1, at: day), spot: nil, cards: [card]).text(.frame)
-        let rows = frame.components(separatedBy: "\n\n").map { $0 + "\n" }
-
-        XCTAssertTrue(rows.contains { $0.hasPrefix("text=a\n") && $0.contains("\ncards=system\n") }, frame)
-        XCTAssertTrue(rows.contains { $0.hasPrefix("text=system\ntitle=System\n") && $0.contains("\nshows=a\nshows=b\n") }, frame)
-        XCTAssertFalse(try Stats(days: usage.days(1, at: day), spot: "a", cards: [card]).text(.frame).contains("text=system"))
-    }
-
     func testARunThatOneSpotStartsOfAnotherShowsOnBoth() throws {
         let usage = StatsLog(at: day)
         usage.ran(Spot(id: "a", name: "Alpha", url: URL(fileURLWithPath: "/a.sh")), by: "b", CallOutcome(seconds: 1), at: day)

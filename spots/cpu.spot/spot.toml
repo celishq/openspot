@@ -2,4 +2,3 @@ title = "CPU"
 detail = "The use of all cores"
 on = ["system.load"]
 mode = "stay"
-offers = ["card", "menubar"]

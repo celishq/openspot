@@ -76,7 +76,7 @@ Each spot follows [The keys of a spot](PROTOCOL.md#the-keys-of-a-spot): Return d
 Settings, `⌘Y` its History, `⌘K` the menu of all acts. Openspot makes these for every spot, so a rule changes in one place.
 
 - Settings follow the level they change. openspot's Settings hold only the app's rows. Each spot's own Settings hold its
-  keys first, Open, each command and Float, then its fields and its menu bar, with the same Not set and `⌘⌫` Remove on
+  keys first, Open, each command and Float, then its fields, its menu bar and its window, with the same Not set and `⌘⌫` Remove on
   every key row.
 - A card's ⌘K menu holds the standard acts in one order, which `spots/openspot.spot/actions.js` offers to every card.
   A key that a footer already shows does not need a ⌘K menu of its own.

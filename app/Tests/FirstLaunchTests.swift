@@ -102,7 +102,7 @@ final class FirstLaunchTests: XCTestCase {
 
     @MainActor
     func testTheFirstLaunchOpensTheSpotThatStartsIt() async throws {
-        let (model, host) = try await firstLaunch(toml: "title = 'Hello'\non = ['sheet.open']\noffers = ['none']\nstarts = 'first-launch'")
+        let (model, host) = try await firstLaunch(toml: "title = 'Hello'\non = ['sheet.open']\nstarts = 'first-launch'")
 
         await model.beginFirstLaunch()
 
@@ -112,7 +112,7 @@ final class FirstLaunchTests: XCTestCase {
 
     @MainActor
     func testWithNoSpotThatStartsItTheFirstLaunchShowsTheGrid() async throws {
-        let (model, host) = try await firstLaunch(toml: "title = 'Hello'\non = ['sheet.open']\noffers = ['none']")
+        let (model, host) = try await firstLaunch(toml: "title = 'Hello'\non = ['sheet.open']")
 
         await model.beginFirstLaunch()
 

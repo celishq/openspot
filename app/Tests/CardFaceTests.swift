@@ -7,7 +7,7 @@ final class CardFaceTests: XCTestCase {
     grid.wide=time power
     grid.large=time time power power
     grid.large=date date date date
-    main=time
+    grid.bar=time
 
     text=date
     title=Sunday
@@ -34,8 +34,12 @@ final class CardFaceTests: XCTestCase {
         XCTAssertEqual(face.parts.map(\.id), ["date", "time", "power"])
     }
 
-    func testTheHeadNamesTheValueThatTheMenuBarShows() {
-        XCTAssertEqual(MetricValue(output: SpotOutput(text: clock))?.title, "14:20")
+    func testTheBarLayoutNamesTheValueThatTheMenuBarShows() {
+        let output = SpotOutput(text: clock)
+
+        XCTAssertTrue(output.hasBar)
+        XCTAssertEqual(MetricValue(output: output.barred)?.title, "14:20")
+        XCTAssertNil(output.value)
     }
 
     func testWithNoNameTheOnlyValueStandsForTheSpotAndTwoStandForNone() {
@@ -56,15 +60,15 @@ final class CardFaceTests: XCTestCase {
         XCTAssertNil(SpotState(title: "Clock").taking(SpotOutput(text: "frame=\nmain=power\n\nswitch=power\nvalue=true\n\ntext=bar\ntitle=Bar\n")).on)
     }
 
-    func testTheHeadCanNameASwitchAsMain() {
-        let outputCheck = FrameCheck(text: "frame=\nmain=power\n\nswitch=power\nvalue=true\n\ntext=bar\ntitle=Bar\n")
+    func testTheOneValueBlockThatALayoutPlacesIsTheValueOfTheCard() {
+        let outputCheck = FrameCheck(text: "frame=\ngrid=power\n\nswitch=power\nvalue=true\n\ntext=bar\ntitle=Bar\n")
         let output = outputCheck.output
         XCTAssertEqual(output.value?.value("switch"), "power")
         XCTAssertEqual(outputCheck.partFaults, [])
     }
 
-    func testANameThatNoValueHasAndAnUnknownPlaceAreFaults() {
-        XCTAssertEqual(FrameCheck(text: "frame=\nmain=gone\n\nbutton=go\ntitle=Go\n").partFaults, ["the root names gone as main, which no text, number, gauge, graph, switch or slider has"])
+    func testMainAndAnUnknownPlaceAreFaults() {
+        XCTAssertEqual(FrameCheck(text: "frame=\nmain=gone\n\nbutton=go\ntitle=Go\n").partFaults, ["the root has an unknown key: main"])
         XCTAssertEqual(FrameCheck(text: "frame=\ngrid.tray=a\n\ntext=a\ntitle=A\n").partFaults, ["the root draws grid.tray, which is not a place"])
     }
 
@@ -78,15 +82,11 @@ final class CardFaceTests: XCTestCase {
         XCTAssertEqual(state.setting("true", of: "power").face.parts.last?.control, .toggle(true))
     }
 
-    func testAnAnswerThatDrawsALargeCardIsOneCardWhosePressSendsItsMainValue() {
+    func testAnAnswerThatDrawsALargeCardIsOneCardWhosePressSendsItsValue() {
         let answer = SpotOutput(text: """
         frame=
-        grid.large=sum sum sum sum
         grid.large=answer answer answer answer
-        main=answer
-
-        text=sum
-        title=1000 + 234.5
+        grid.large=answer answer answer answer
 
         number=answer
         value=1234.5

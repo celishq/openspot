@@ -11,7 +11,7 @@ struct CommandIndex {
 
     init(_ cards: [SpotsModel.Entry]) {
         var rows: [SpotItem] = []
-        for card in cards where card.spot.isFound && card.spot.fault == nil {
+        for card in cards where card.isFound && card.spot.fault == nil {
             let offers = card.spot.host == nil ? card.spot.offers.map { (CommandAction.command($0), Icon(text: $0.icon)) } : []
             let own = card.spot.actions.filter { $0.scope == .spot }.map { ($0, Icon?.none) }
             for (action, icon) in offers + own where action.placeholder != nil && action.confirm == nil {

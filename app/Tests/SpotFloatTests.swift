@@ -222,24 +222,20 @@ final class SpotFloatTests: XCTestCase {
         try await wait("the shake given to the row") { (try? String(contentsOfFile: given, encoding: .utf8)) == "float:shelf shake" }
     }
 
-    func testAFloatOfACardWithNoReadRunsNothingUntilItsCardIsPressed() async throws {
-        try script("go", toml: "title = 'Go'", "printf '\\033]9;Went\\007'")
+    func testAFloatOfASpotWithNoEventAsksItWhatToShow() async throws {
+        try script("go", toml: "title = 'Go'", "printf 'text=a\\ntitle=Went\\n'")
         await model.reload()
 
         model.press(try key("go"))
 
         XCTAssertEqual(host.floats, ["go"])
-        XCTAssertEqual(model.sheets["go"]?.isReading, false)
-        XCTAssertEqual(model.sheets["go"]?.calls.isEmpty, true)
-
-        model.pressFloatCard("go")
-
-        try await wait("the run") { host.confirms == ["Went"] }
+        try await wait("the read") { self.model.sheets["go"]?.list.shown.map(\.title) == ["Went"] }
         XCTAssertEqual(host.dismissals, 0)
     }
 
     private func windowSpot() async throws {
-        try script("store", toml: "on = ['sheet.open']\noffers = ['card', 'window']", "printf 'text=a\\ntitle=Apple\\n'")
+        try script("store", toml: "on = ['sheet.open']", "printf 'text=a\\ntitle=Apple\\n'")
+        _ = try model.files.config.change { $0.arrangement.set(isWindow: true, of: "store") }
         await model.reload()
     }
 
@@ -282,7 +278,8 @@ final class SpotFloatTests: XCTestCase {
 
     func testAWindowReadsAgainWhenTheSpotsChange() async throws {
         let log = folder.appendingPathComponent("reads")
-        try script("store", toml: "on = ['sheet.open']\noffers = ['card', 'window']", "echo read >> '\(log.path)'\nprintf 'text=a\\ntitle=Apple\\n'")
+        try script("store", toml: "on = ['sheet.open']", "echo read >> '\(log.path)'\nprintf 'text=a\\ntitle=Apple\\n'")
+        _ = try model.files.config.change { $0.arrangement.set(isWindow: true, of: "store") }
         await model.reload()
         model.press("store")
         let reads = { ((try? String(contentsOf: log, encoding: .utf8)) ?? "").split(separator: "\n").count }

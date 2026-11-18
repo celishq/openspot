@@ -23,24 +23,15 @@ final class CatalogSpotTests: BuiltInCase {
         XCTAssertEqual(spot.subtitle, "Edit Spots")
         XCTAssertNil(spot.read)
         XCTAssertEqual(defaults.arrangement.size(of: spot.id), .wide)
-        XCTAssertTrue(spot.isOnGrid)
+        XCTAssertEqual(defaults.arrangement.isOnGrid(of: spot.id), true)
         XCTAssertEqual(spot.keywords, ["edit spots"])
     }
 
     func testAPressOpensEditSpotsInTheApp() async throws {
-        _ = try await catalog.perform(SpotAction(arguments: ["open"]), timeout: 60)
+        _ = try await catalog.perform(.press("edit"), timeout: 60)
 
         let opened = await app.opened
         XCTAssertEqual(opened, ["grid"])
-    }
-
-    func testTurningOnACoreWidgetLoadsItInAScan() throws {
-        try "#!/bin/sh\n".writeScript(to: core.appendingPathComponent("overview.spot/overview.sh"), toml: "title = 'Overview'\n'grid.square' = ['cpu']")
-
-        try file.turn("overview", on: true)
-
-        let scan = try SpotsFolder(url: spots, core: core, enabled: file.read().arrangement.enabled).scan()
-        XCTAssertEqual(scan.spots.filter(\.headerState.isOnGrid).map(\.name), ["Overview"])
     }
 
     func testTheSpotsSpotShowsWithAnEmptyFolder() throws {

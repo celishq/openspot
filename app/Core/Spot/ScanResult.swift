@@ -23,48 +23,22 @@ public struct ScanResult: Equatable, Sendable {
     }
 
     public var scripts: [Spot] {
-        files.flatMap(\.spots).filter { $0.kind != .widget }
+        files.flatMap(\.spots)
     }
 
     public func offered(_ keys: [GlobalKey]) -> [GlobalKey] {
         keys.filter { key in
             switch key.act {
-            case .open: scripts.contains { $0.id == key.spot && !$0.offeredPlaces.isDisjoint(with: [.card, .search]) }
-            case .float: scripts.contains { $0.id == key.spot && $0.offersFloat }
+            case .open, .float: scripts.contains { $0.id == key.spot }
             case .command(let command): scripts.contains { $0.id == key.spot && $0.offers.contains { $0.id == command } }
             }
         }
     }
 
-    public mutating func addSettings(in config: ConfigFile, secrets: SecretStore, read: Config? = nil) {
+    public mutating func addSettings(in config: ConfigFile, secrets: SecretStore, read: Config? = nil, defaults: SpotArrangement = SpotArrangement()) {
         let read = read ?? config.read()
-        files = files.map { SpotFile(id: $0.id, spots: $0.spots.map { $0.takingSettings(in: config, secrets: secrets).withIcon(read.setting(ReservedSetting.icon, of: $0.id)) }) }
-    }
-
-    mutating func keepOpenedOffTheGrid() {
-        let opened = Set(files.flatMap(\.spots).compactMap(\.opens))
-        files = files.map { SpotFile(id: $0.id, spots: $0.spots.map { opened.contains($0.id) ? $0.offTheGrid() : $0 }) }
-    }
-
-    mutating func removeWidgetsWithLostParts() {
-        let metrics = Set(scripts.filter { $0.read != nil }.map(\.id))
-        let silent = Set(scripts.filter { $0.read == nil && $0.answers == nil }.map(\.id))
-        let ids = Set(spots.map(\.id))
-        files = files.map { file in
-            let kept = file.spots.filter { command in
-                guard command.kind == .widget else { return true }
-                var reason = command.places.first { !metrics.contains($0) }.map { id in
-                    silent.contains(id)
-                        ? "\(command.name) names \(id), which has no on= line, so it never prints a value. Give \(id) an event, such as on=clock.60."
-                        : "\(command.name) names no metric called \(id)"
-                }
-                if reason == nil, let opens = command.opens, !ids.contains(opens) {
-                    reason = "\(command.name) opens no command called \(opens)"
-                }
-                if let reason { refused.append(Refusal(file: file.id, reason: reason)) }
-                return reason == nil
-            }
-            return SpotFile(id: file.id, spots: kept)
-        }
+        files = files.map { SpotFile(id: $0.id, spots: $0.spots.map { spot in
+            spot.takingSettings(in: config, secrets: secrets, isWindow: defaults.isWindow(of: spot.id) ?? false).withIcon(read.setting(ReservedSetting.icon, of: spot.id))
+        }) }
     }
 }

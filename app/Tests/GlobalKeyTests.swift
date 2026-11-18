@@ -80,13 +80,13 @@ final class GlobalKeyTests: XCTestCase {
         XCTAssertFalse(try String(contentsOf: file.url, encoding: .utf8).contains("command"))
     }
 
-    func testAnOpenKeyIsAKeyThatTheFileKeepsAndThatStaysForASpotWithACardOrASearch() throws {
+    func testAnOpenKeyIsAKeyThatTheFileKeepsAndThatStaysForASpotThatLoads() throws {
         let folder = try temporaryFolder()
         let file = ConfigFile(url: folder.appendingPathComponent("config.toml"))
         let config = Config(text: "[[keys]]\nspot = \"notes\"\nopen = true\nkey = \"ctrl+option+n\"\n\n[[keys]]\nspot = \"mail\"\nopen = \"yes\"\nkey = \"ctrl+option+m\"\n")
         let notes = GlobalKey(spot: "notes", act: .open, trigger: .key(try XCTUnwrap(Shortcut(text: "ctrl+option+n"))))
         try "#!/bin/sh\n".writeScript(to: folder.spotFile("notes"))
-        try "#!/bin/sh\n".writeScript(to: folder.spotFile("hidden"), toml: "offers = ['none']")
+        try "#!/bin/sh\n".writeScript(to: folder.spotFile("hidden"), toml: "offers = ['card']")
 
         XCTAssertEqual(config.keys, [notes])
         XCTAssertEqual(config.faults, ["config.toml: the key of mail takes open = true, or no open line."])
@@ -114,11 +114,11 @@ final class GlobalKeyTests: XCTestCase {
         XCTAssertEqual(Trigger(text: "ctrl+space")?.label, "⌃Space")
     }
 
-    func testAKeyWithNoCommandStaysOnlyForASpotThatOffersFloat() throws {
+    func testAFloatKeyStaysForEachSpotThatLoads() throws {
         let folder = try temporaryFolder()
-        try "#!/bin/sh\n".writeScript(to: folder.spotFile("shelf"), toml: "on = ['sheet.open']\noffers = ['float']")
+        try "#!/bin/sh\n".writeScript(to: folder.spotFile("shelf"), toml: "on = ['sheet.open']")
         try "#!/bin/sh\n".writeScript(to: folder.spotFile("notes"))
-        try "#!/bin/sh\necho text=cups\n".writeScript(to: folder.spotFile("cups"), toml: "on = ['clock.60']\noffers = ['card', 'float']")
+        try "#!/bin/sh\necho text=cups\n".writeScript(to: folder.spotFile("cups"), toml: "on = ['clock.60']")
         try "#!/bin/sh\n".writeScript(to: folder.spotFile("sheet"), toml: "on = ['sheet.open']")
         let shortcut = try XCTUnwrap(Shortcut(text: "ctrl+up"))
         let shelf = GlobalKey(spot: "shelf", act: .float, trigger: .key(shortcut))
@@ -127,7 +127,7 @@ final class GlobalKeyTests: XCTestCase {
         let sheet = GlobalKey(spot: "sheet", act: .float, trigger: .key(shortcut))
         let gone = GlobalKey(spot: "gone", act: .float, trigger: .key(shortcut))
 
-        XCTAssertEqual(try SpotsFolder(url: folder).scan().offered([shelf, cups, notes, sheet, gone]), [shelf, cups])
+        XCTAssertEqual(try SpotsFolder(url: folder).scan().offered([shelf, cups, notes, sheet, gone]), [shelf, cups, notes, sheet])
     }
 
     func testSavingTheGridKeepsTheKeys() throws {

@@ -75,7 +75,7 @@ final class TerminalRunTests: XCTestCase {
     }
 
     func testARunOfAStayingScriptEndsWithTheFrameThatEndsItsCall() async throws {
-        let spot = try spot("relay", toml: "mode = 'stay'\noffers = ['card', 'menubar']", """
+        let spot = try spot("relay", toml: "mode = 'stay'", """
         . "$OPENSPOT_SH"
         main() { printf 'text=peer\\ntitle=%s\\n' "$1"; }
         openspot_serve main "$@"

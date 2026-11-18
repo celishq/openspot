@@ -11,7 +11,6 @@ public final class SpotRun {
         case frame(String)
         case parts
         case listChange
-        case chooseFiles
         case landed
         case closed
         case move(FlowMove)

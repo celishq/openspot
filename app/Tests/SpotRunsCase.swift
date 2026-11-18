@@ -94,7 +94,7 @@ class SpotRunsCase: XCTestCase {
     }
 
     @discardableResult
-    func staying(toml: String = "mode = 'stay'\noffers = ['card', 'menubar']", head: String = "", frame: String = "text=a\\ntitle=A\\n") throws -> URL {
+    func staying(toml: String = "mode = 'stay'", head: String = "", frame: String = "text=a\\ntitle=A\\n") throws -> URL {
         try script(toml: toml, """
         trap 'touch "\(path("ended"))"' EXIT
         while IFS= read -r line; do

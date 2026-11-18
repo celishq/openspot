@@ -4,7 +4,7 @@
 draw() {
   [ $# -gt 0 ] || return 0
   eval "now=\${$#}"
-  printf 'graph=cpu\ntitle=%s%%\nmax=100\n' "$now"
+  printf 'frame=\ngrid=cpu\ngrid=cpu\ngrid.bar=cpu\n\ngraph=cpu\ntitle=%s%%\nmax=100\n' "$now"
   for point; do printf 'value=%s\n' "$point"; done
 }
 

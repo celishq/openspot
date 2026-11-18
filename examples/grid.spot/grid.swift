@@ -83,7 +83,7 @@ Link.listen { call in
     case "show":
         if !(call.value("event") ?? "").isEmpty { grid.warm() }
         Link.end(call.id)
-    case "open":
+    case "place":
         guard shown == nil else { return Link.end(call.id) }
         shown = call.id
         grid.show { pick in

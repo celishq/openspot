@@ -261,17 +261,17 @@ final class SpotRunStateTests: XCTestCase {
     func testANewReadingTellsTheReaderOfTheMarksAndTheSameReadingDoesNot() async throws {
         let (sheet, link) = inMenuBar(read: SpotRead(moments: [.every(60)]))
         try await wait("the first read") { link.sent.count == 1 }
-        await link.frame("number=n\nvalue=3\n", of: link.sent[0])
+        await link.frame("frame=\ngrid.bar=n\n\nnumber=n\nvalue=3\n", of: link.sent[0])
         await link.end(link.sent[0])
         nonisolated(unsafe) var told = 0
         withObservationTracking { _ = self.runs.menuBarMarks } onChange: { told += 1 }
 
         sheet.read(need: .change)
-        await link.frame("number=n\nvalue=3\n", of: link.sent[1])
+        await link.frame("frame=\ngrid.bar=n\n\nnumber=n\nvalue=3\n", of: link.sent[1])
         await link.end(link.sent[1])
         XCTAssertEqual(told, 0)
         sheet.read(need: .change)
-        await link.frame("number=n\nvalue=4\n", of: link.sent[2])
+        await link.frame("frame=\ngrid.bar=n\n\nnumber=n\nvalue=4\n", of: link.sent[2])
         await link.end(link.sent[2])
 
         XCTAssertEqual(told, 1)

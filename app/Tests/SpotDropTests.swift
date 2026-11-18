@@ -368,7 +368,7 @@ final class SpotDropTests: XCTestCase {
     }
 
     private func stayingSheet(toml: String = "") throws -> SpotRun {
-        try sheet(toml: "mode = 'stay'\ndrop = 'mov'\noffers = ['card', 'menubar']", """
+        try sheet(toml: "mode = 'stay'\ndrop = 'mov'", """
         while IFS= read -r line; do
           printf '%s\\n' "$line" >> '\(path("blocks"))'
           case "$line" in call=*) call=${line#call=} ;; esac
@@ -424,47 +424,16 @@ final class SpotDropTests: XCTestCase {
         XCTAssertEqual(log().count, 1)
     }
 
-    private func choiceCount(of sheet: SpotRun) -> () -> Int {
-        var count = 0
-        sheet.onReport = { if case .chooseFiles = $0 { count += 1 } }
-        return { count }
-    }
-
-    func testAClickOnACardWithDropAndNoSheetAsksForAChoiceAndRunsNothing() async throws {
-        let sheet = try sheet(toml: "drop = 'mov'")
-        let choices = choiceCount(of: sheet)
-
-        sheet.pressCard()
-
-        XCTAssertEqual(choices(), 1)
-        XCTAssertTrue(sheet.calls.isEmpty)
-        try await pause()
-        XCTAssertEqual(log(), [])
-    }
-
-    func testAChoiceRunsTheSameCallAsADrop() async throws {
-        let sheet = try sheet(toml: "drop = 'mov'")
-        sheet.pressCard()
-        let file = file("a b.mov")
-
-        XCTAssertTrue(sheet.drop([file]))
-
-        try await wait("the call") { self.log() == ["drop \(file)"] }
-    }
-
-    func testAClickOnACardWithNoDropRunsItsCallAndAsksForNoChoice() async throws {
+    func testAClickOnACardWithNoDropRunsItsCall() async throws {
         let sheet = try sheet()
-        let choices = choiceCount(of: sheet)
 
         sheet.pressCard()
 
-        XCTAssertEqual(choices(), 0)
         try await wait("the call") { self.log() == ["open"] }
     }
 
-    func testAPressOnARunningDropStopsItAndAsksForNoChoice() async throws {
+    func testAPressOnARunningDropStopsIt() async throws {
         let sheet = try sheet(toml: "drop = 'mov'", "sleep 5\ntouch '\(path("went-on"))'")
-        let choices = choiceCount(of: sheet)
         XCTAssertTrue(sheet.drop([file("a.mov")]))
         XCTAssertTrue(sheet.isCardRunning)
         try await wait("the call") { self.log().count == 1 }
@@ -472,7 +441,6 @@ final class SpotDropTests: XCTestCase {
         time = time.addingTimeInterval(1)
         sheet.pressCard()
 
-        XCTAssertEqual(choices(), 0)
         XCTAssertFalse(sheet.isCardRunning)
         try await allEnded()
         XCTAssertFalse(exists("went-on"))
@@ -480,25 +448,21 @@ final class SpotDropTests: XCTestCase {
 
     func testAPressWithinOneSecondOfADropDoesNothing() async throws {
         let sheet = try sheet(toml: "drop = 'mov'", "sleep 0.2\ntouch '\(path("done"))'")
-        let choices = choiceCount(of: sheet)
         XCTAssertTrue(sheet.drop([file("a.mov")]))
 
         sheet.pressCard()
 
-        XCTAssertEqual(choices(), 0)
         XCTAssertTrue(sheet.isCardRunning)
         try await wait("the end of the work") { self.exists("done") }
     }
 
     func testAToggleWithDropKeepsItsClick() async throws {
         let sheet = try sheet(toml: "on = ['panel.open']\ndrop = 'mov'", "[ \"$1\" = show ] && printf 'switch=power\\nvalue=false\\n'\nexit 0")
-        let choices = choiceCount(of: sheet)
         runs.panelOpened()
         try await wait("the kind") { sheet.spot.kind == .toggle }
 
         sheet.pressCard()
 
-        XCTAssertEqual(choices(), 0)
         try await wait("the call") { self.log().contains("power true") }
     }
 

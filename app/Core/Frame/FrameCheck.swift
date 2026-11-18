@@ -33,9 +33,6 @@ public struct FrameCheck: Equatable, Sendable {
             if taken.contains(id), id != SpotOutput.open { faults.append("an action cannot be called \(id)") }
             if id != SpotOutput.open, CommandAction(id: id, block: block) == nil { faults += PartCatalog.actionFaults(in: block) }
         }
-        if let id = root?.value(RootKey.main), output.value == nil {
-            faults.append("the root names \(id) as main, which no text, number, gauge, graph, switch or slider has")
-        }
         faults += Self.rootFaults(root, of: output)
         for id in taken where output.parts.contains(where: { $0.id == id }) {
             faults.append("a part cannot be called \(id)")

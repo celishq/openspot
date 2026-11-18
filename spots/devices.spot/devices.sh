@@ -16,6 +16,7 @@ levels() {
 
 # Prints the frame of the lowest level of the lines of `levels` on stdin, but a case's.
 draw() {
+  printf 'frame=\ngrid=devices\ngrid=devices\ngrid.bar=devices\n'
   awk -F'\t' '
   $2 != "Case" && (low == "" || $3 + 0 < low + 0) { low = $3; name = $1 }
   END {
@@ -27,7 +28,7 @@ draw() {
 
 case $1 in
   levels) levels; exit 0 ;;
-  show) [ -z "${2-}" ] || { printf '%s\n' "$2" | draw; exit 0; } ;;
+  show) [ $# -lt 2 ] || { printf '%s\n' "$2" | draw; exit 0; } ;;
 esac
 
 # A device that connects asks again at once. Another read asks again only after 5 minutes, since the levels move

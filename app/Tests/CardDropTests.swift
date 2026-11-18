@@ -2,9 +2,10 @@ import XCTest
 @testable import OpenspotCore
 
 final class CardDropTests: PanelCase {
-    func testADropOnACardWithRowsOpensItsSheetWithTheFocusAndOnAnyOtherCardClosesThePanel() async throws {
+    func testADropOnACardWhoseReturnOpensItsSheetOpensItWithTheFocusAndOnAnyOtherCardClosesThePanel() async throws {
         try script("shelf", toml: "on = ['sheet.open']\ndrop = '*'", "case \"$1\" in show) printf 'text=a\\ntitle=A\\n' ;; esac")
-        try script("plain", toml: "drop = '*'", "true")
+        try script("plain", toml: "drop = '*'\n[commands.go]\ntitle = 'Go'", "true")
+        _ = try model.files.config.change { $0.arrangement.set(isOnGrid: true, of: "plain") }
         await model.reload()
         model.isShown = true
         model.panelWillShow()

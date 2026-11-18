@@ -19,24 +19,14 @@ final class SpotKeysTests: XCTestCase {
         XCTAssertFalse(command.headerState.isOnGrid)
     }
 
-    func testEachOffersItemNamesOnePlaceAndASpotWithNoOffersOffersItsCard() throws {
-        let all = try spot("on = ['panel.open', 'app.front']\noffers = ['card', 'search', 'menubar']")
-        let float = try spot("on = ['sheet.open']\noffers = ['float']")
-        let clock = try spot("on = ['clock.60']\noffers = ['card']")
-        let none = try spot("on = ['sheet.open']")
+    func testOffersHoldsOnlySearchAndASpotWithNoOffersStartsOnTheGrid() throws {
         let search = try spot("on = ['panel.open']\noffers = ['search']")
-        let nowhere = try spot("on = ['sheet.open']\noffers = ['none']")
-        let window = try spot("on = ['sheet.open']\noffers = ['card', 'window']")
+        let plain = try spot("on = ['sheet.open']")
+        let clock = try spot("on = ['clock.60']")
 
-        XCTAssertEqual([all.offersCard, all.headerState.isOnGrid, all.isGlobal, all.showsValueInMenuBar, all.offersFloat], [true, true, true, true, false])
-        XCTAssertEqual([float.offersCard, float.headerState.isOnGrid, float.isGlobal, float.showsValueInMenuBar, float.offersFloat], [false, false, false, false, true])
-        XCTAssertEqual([clock.offersCard, clock.headerState.isOnGrid], [true, false])
-        XCTAssertEqual([none.offersCard, none.headerState.isOnGrid, none.isGlobal, none.showsValueInMenuBar, none.offersFloat], [true, true, false, false, false])
-        XCTAssertEqual([search.offersCard, search.headerState.isOnGrid, search.isGlobal], [false, false, true])
-        XCTAssertTrue(search.isFound)
-        XCTAssertEqual([nowhere.offersCard, nowhere.headerState.isOnGrid, nowhere.isGlobal, nowhere.showsValueInMenuBar, nowhere.offersFloat], [false, false, false, false, false])
-        XCTAssertEqual([window.offersCard, window.offersWindow, nowhere.offersWindow], [true, true, false])
-        XCTAssertThrowsError(try spot("on = ['sheet.open']\noffers = ['none', 'card']"))
+        XCTAssertEqual([search.isGlobal, search.isFound, search.headerState.isOnGrid], [true, true, true])
+        XCTAssertEqual([plain.isGlobal, plain.isFound, plain.headerState.isOnGrid], [false, true, true])
+        XCTAssertEqual([clock.isFound, clock.headerState.isOnGrid], [true, false])
     }
 
     func testACommandThatOffersActionsJoinsTheMenuOfEveryCardAndIsNoCommand() throws {
@@ -48,7 +38,7 @@ final class SpotKeysTests: XCTestCase {
         XCTAssertEqual(spot.offeredActions.first?.action.title, "Change Icon")
         XCTAssertEqual(spot.offeredActions.first?.origins, [])
         XCTAssertEqual(spot.offers.map(\.id), ["reset"])
-        XCTAssertFalse(spot.offersCard)
+        XCTAssertFalse(spot.isFound)
     }
 
     func testACommandWhoseIDStartsWithAnOfferedCommandAndADotJoinsItsPlace() throws {
@@ -101,36 +91,15 @@ final class SpotKeysTests: XCTestCase {
         }
     }
 
-    func testAPlaceThatTheSpotCannotFillRefusesIt() throws {
-        let cases = [
-            ("offers = ['float']", "a sheet"),
-            ("offers = ['window']", "a sheet"),
-            ("on = ['sheet.open']\noffers = ['menubar']", "a clock"),
-            ("offers = ['card, search']", "one place on each line")
-        ]
-        for (toml, hint) in cases {
-            XCTAssertThrowsError(try spot(toml), toml) { error in
-                XCTAssertTrue((error as? SpotError)?.reason.contains(hint) == true, "\(toml): \(error)")
-            }
-        }
-    }
-
-    func testPressOpenMakesAPressOfASpotWithASheetRunIt() throws {
-        let run = try spot("on = ['sheet.open']\npress = 'open'")
-        let open = try spot("on = ['sheet.open']")
-
-        XCTAssertTrue(run.pressRuns)
-        XCTAssertEqual(run.openTitle(hasItem: false), "Run")
-        XCTAssertFalse(open.pressRuns)
-        XCTAssertEqual(open.openTitle(hasItem: false), "Open")
-        XCTAssertThrowsError(try spot("on = ['sheet.open']\npress = 'jump'")) { error in
-            XCTAssertTrue((error as? SpotError)?.reason.contains("Use open or sheet") == true, "\(error)")
-        }
-    }
-
     func testAnUnknownPlaceRefusesTheSpot() throws {
         XCTAssertThrowsError(try spot("on = ['panel.open']\noffers = ['dock']")) { error in
-            XCTAssertTrue((error as? SpotError)?.reason.contains("Use card, search, menubar, float, window or none") == true, "\(error)")
+            XCTAssertEqual((error as? SpotError)?.reason, "Script offers an unknown place: dock. Use search")
+        }
+    }
+
+    func testOffersSearchNeedsAnEventThatReadsItsItems() throws {
+        XCTAssertThrowsError(try spot("on = ['clipboard.change']\noffers = ['search']")) { error in
+            XCTAssertTrue((error as? SpotError)?.reason.contains("to join the main search") == true, "\(error)")
         }
     }
 

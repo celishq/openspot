@@ -86,7 +86,7 @@ final class CarefulModeTests: SpotRunsCase {
 
     func testOnAStayingSpotIsCarefulToo() async throws {
         runs.isCareful = true
-        try script(toml: "mode = 'stay'\non = ['sheet.open']\noffers = ['card', 'menubar']", """
+        try script(toml: "mode = 'stay'\non = ['sheet.open']", """
         echo a > '\(outside.path)/written' 2>/dev/null && r=files || r=kept
         while IFS= read -r line; do
           case "$line" in call=*) call=${line#call=} ;; esac
@@ -100,7 +100,7 @@ final class CarefulModeTests: SpotRunsCase {
     }
 
     func testAStayingSpotStartsAgainInTheNewModeWhenTheModeChanges() async throws {
-        try script(toml: "mode = 'stay'\non = ['sheet.open']\noffers = ['card', 'menubar']", """
+        try script(toml: "mode = 'stay'\non = ['sheet.open']", """
         echo a > '\(outside.path)/written-$$' 2>/dev/null && r=files || r=kept
         while IFS= read -r line; do
           case "$line" in call=*) call=${line#call=} ;; esac

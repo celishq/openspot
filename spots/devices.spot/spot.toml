@@ -2,4 +2,3 @@ title = "Devices"
 icon = "airpods"
 detail = "The lowest battery of your Bluetooth devices"
 on = ["device.connect"]
-offers = ["card", "menubar"]

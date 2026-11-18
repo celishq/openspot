@@ -26,7 +26,7 @@ final class CalculatorSpotTests: SampleSpotsCase {
         XCTAssertFalse(calculator.isFound)
     }
 
-    func testAnAnswerIsALargeCardOfAFaintSumOverTheAnswerWhosePickCopiesThePlainValue() async throws {
+    func testAnAnswerIsALargeCardOfTheAnswerOverAFaintSumWhosePickCopiesThePlainValue() async throws {
         try await withPrivateHome { home in
             try "text=1234.5\ntitle=1,234.5\ndetail=1000 + 234.5\n".write(to: home.appendingPathComponent("calc-answer"), atomically: true, encoding: .utf8)
 
@@ -34,7 +34,7 @@ final class CalculatorSpotTests: SampleSpotsCase {
 
             XCTAssertEqual(answers.map(\.run), ["1234.5"])
             XCTAssertEqual(answers.first?.card?.face.answerSize, .large)
-            XCTAssertEqual(answers.first?.card?.face.parts.map(\.detail), ["1000 + 234.5", nil])
+            XCTAssertEqual(answers.first?.card?.face.parts.map(\.title), ["1000 + 234.5"])
             XCTAssertEqual(answers.first?.card?.face.parts.last?.control, .number("1,234.5", unit: nil))
             XCTAssertEqual(answers.first?.openTitle, "Copy")
             XCTAssertEqual(try String(contentsOf: home.appendingPathComponent("calc-asked"), encoding: .utf8), "1000+234.5\n")
@@ -47,7 +47,7 @@ final class CalculatorSpotTests: SampleSpotsCase {
 
             let answers = try await self.calculator.items(query: "15 usd in eur", timeout: 60).answers
 
-            XCTAssertEqual(answers.first?.card?.face.parts.map(\.detail), ["15 USD in EUR", nil])
+            XCTAssertEqual(answers.first?.card?.face.parts.map(\.title), ["15 USD in EUR"])
             XCTAssertEqual(answers.first?.card?.face.parts.last?.numberPieces.map(\.isUnit), [false, true])
         }
     }
@@ -58,7 +58,7 @@ final class CalculatorSpotTests: SampleSpotsCase {
 
             let answers = try await self.calculator.items(query: "3pm tokyo in berlin", timeout: 60).answers
 
-            XCTAssertEqual(answers.first?.card?.face.parts.first?.detail, "Wed 3:00 PM · Tokyo")
+            XCTAssertEqual(answers.first?.card?.face.parts.first?.title, "Wed 3:00 PM · Tokyo")
         }
     }
 
@@ -69,8 +69,7 @@ final class CalculatorSpotTests: SampleSpotsCase {
             let answers = try await self.calculator.items(query: "15 usd in eur", timeout: 60).answers
 
             XCTAssertEqual(answers.map(\.run), ["13.46"])
-            XCTAssertEqual(answers.first?.card?.face.parts.first?.detail, "15 USD in EUR · rates of Nov 2, 9 days old")
-            XCTAssertEqual(answers.first?.card?.face.parts.first?.textTone, .warn)
+            XCTAssertEqual(answers.first?.card?.face.parts.first?.title, "15 USD in EUR · rates of Nov 2, 9 days old")
         }
     }
 

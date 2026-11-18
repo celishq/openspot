@@ -264,8 +264,8 @@ final class SpotsModelDragTests: XCTestCase {
         XCTAssertEqual(model.groupBands?.shelf, 1)
     }
 
-    func testTheShelfLeavesOutASpotWithNoCardOfItsOwn() async throws {
-        try "#!/bin/sh\n".writeScript(to: spots.appendingPathComponent("rows.spot/rows.sh"), toml: "on = ['panel.open']\noffers = ['search']")
+    func testTheShelfLeavesOutASpotThatOnlyAnswersTheSearch() async throws {
+        try "#!/bin/sh\n".writeScript(to: spots.appendingPathComponent("rows.spot/rows.sh"), toml: "on = ['search.text ^x']")
         await model.reload()
 
         XCTAssertFalse(order.contains("rows"))

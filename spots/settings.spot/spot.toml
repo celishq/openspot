@@ -2,4 +2,4 @@ title = "System Settings"
 icon = "gearshape"
 detail = "Open a setting"
 on = ["panel.open"]
-offers = ["card", "search"]
+offers = ["search"]

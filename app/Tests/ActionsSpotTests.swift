@@ -10,7 +10,7 @@ final class ActionsSpotTests: BuiltInCase {
         XCTAssertEqual(actions.offeredActions.map { $0.action.key?.label ?? "" }, ["⇧⌘C", "⌘⏎", "⌘E", "", "", "", "", "⌘⌫", "⌘⌫"])
         XCTAssertEqual(actions.offeredActions.map(\.hooks), [[:], [:], [:], [:], [:], [:], [.when: "hasIcon"], [:], [:]])
         XCTAssertNil(actions.offeredActions[7].action.confirm)
-        XCTAssertFalse(actions.offersCard)
+        XCTAssertFalse(actions.isFound)
     }
 
     func testEachCommandAsksTheAPIAndTurnOffTurnsTheSpotOff() async throws {

@@ -90,7 +90,7 @@ final class SpotRunsWorkTests: SpotRunsCase {
     }
 
     func testACallToAStayingScriptShowsAsWorkAfterItsSecondAndLeavesItAtItsEnd() async throws {
-        try script(toml: "mode = 'stay'\noffers = ['card', 'menubar']", """
+        try script(toml: "mode = 'stay'", """
         while IFS= read -r line; do
           printf '%s\\n' "$line" >> '\(path("blocks"))'
           case "$line" in
@@ -571,7 +571,7 @@ final class SpotRunsWorkTests: SpotRunsCase {
     }
 
     func testAQuitChangesNothingOnAStayingScriptThatFailsAsItEnds() async throws {
-        try script(toml: "on = ['app.launch']\nmode = 'stay'\noffers = ['card', 'menubar']", """
+        try script(toml: "on = ['app.launch']\nmode = 'stay'", """
         while IFS= read -r line; do
           case "$line" in call=*) call=${line#call=} ;; esac
           [ -n "$line" ] || printf 'end=%s\\n\\ntext=n\\ntitle=A\\n---\\n' "$call"

@@ -68,7 +68,7 @@ struct SpotList {
                 },
                 fields: script.settings.map { Loaded.Offer(id: $0.id, title: $0.title, icon: $0.icon, key: nil) },
                 openKey: keys.first { $0.spot == script.id && $0.act == .open }?.trigger.text,
-                float: script.offersFloat,
+                float: true,
                 floatKey: keys.first { $0.spot == script.id && $0.act == .float }?.trigger.text,
                 menubar: script.canShowInMenuBar,
                 inMenuBar: config.arrangement.menuBar.contains(script.id)

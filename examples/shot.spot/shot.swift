@@ -65,7 +65,7 @@ func shoot(_ call: String) {
 Link.listen { call in
     Link.start(call.id)
     switch call.arguments.first {
-    case "open":
+    case "shoot":
         guard editing == nil else {
             editor?.front()
             return Link.end(call.id)

@@ -2,7 +2,7 @@ frame=
 grid.large=cover cover cover song song song
 grid.large=cover cover cover time time time
 grid.large=cover cover cover prev play next
-main=song
+grid.bar=song
 
 picture=cover
 icon=music.note

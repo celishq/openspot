@@ -13,13 +13,9 @@ public struct SpotFacts: Equatable, Sendable {
     public let isFound: Bool
     public let answers: AnswerPattern?
     public internal(set) var order: Int
-    public let layout: WidgetLayout?
-    public let places: [String]
-    public let opens: String?
     public let host: HostSheet?
     public let growsFromField: Bool
     public internal(set) var mode: SpotMode
-    public let pressRuns: Bool
     public let drop: [String]
     public let dataName: String?
     public internal(set) var isOnGrid: Bool

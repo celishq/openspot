@@ -21,16 +21,14 @@ extension SpotRun {
             return
         }
         let query = list.search == .script && !script.keepsState ? list.query : ""
-        let read = SpotAction.show
-        let action = spot.read == nil ? spot.click : read
         let typed = query.isEmpty ? typed ?? "" : query
         let values = [showsSheet ? panel?.values : nil, typed.isEmpty ? nil : SearchQuery(text: typed).input].compactMap { $0 }
         let isSent = send(Call(
-            action: action,
+            action: .show,
             key: Self.readKey,
             input: values.isEmpty ? nil : values.joined(),
-            limit: action == read ? runs.readLimit : nil,
-            reason: action == read ? reason : nil,
+            limit: runs.readLimit,
+            reason: reason,
             purpose: .ask(.read(generation: panel?.generation, reports: need != .clock, query: query, tells: reason != .panel))
         ))
         self.typed = nil

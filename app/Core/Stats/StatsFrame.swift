@@ -25,8 +25,6 @@ struct StatsFrame {
             if let last = count.last { fields.append(.init(key: "last", value: stamp.string(from: last))) }
             fields += row.acts.map { .init(key: "days", value: $0) }
             fields.append(.init(key: "seen", value: String(row.seen)))
-            fields += (stats.cards.first { $0.id == id }?.places ?? []).map { .init(key: "shows", value: $0) }
-            fields += stats.cards.filter { $0.places.contains(id) }.map { .init(key: "cards", value: $0.id) }
             fields += count.callers.sorted { $0.key < $1.key }.map { .init(key: "runs.by.\($0.key)", value: String($0.value)) }
             fields += stats.ran(by: id).map { .init(key: "ran.\($0.id)", value: String($0.runs)) }
             fields += count.reads.sorted { $0.key < $1.key }.map { .init(key: "reads.\($0.key)", value: String($0.value)) }

@@ -20,7 +20,7 @@ final class ProtocolContractTests: XCTestCase {
     private func gaps() throws -> [String] {
         let doc = try RepoDoc("PROTOCOL.md")
         let pages = RepoDoc.tableRows(in: doc.section("Pages"))
-        let headerKeys = Set(HeaderKey.allCases.map(\.rawValue) + [HeaderKey.drawing + "<size>"])
+        let headerKeys = Set(HeaderKey.allCases.map(\.rawValue))
         let manifest = RepoDoc.tableRows(in: doc.section("The manifest"))
         let docHeaderKeys = keys(manifest.filter { !$0[0].hasPrefix("`[") }.map { $0[0] })
             + keys(pages.filter { $0[1] == "the manifest" }.map { $0[0] })
@@ -41,7 +41,7 @@ final class ProtocolContractTests: XCTestCase {
         let events = Set(SpotEvent.known + [SpotEvent.clockPrefix + "<seconds>"])
         let docEvents = keys(RepoDoc.tableRows(in: doc.section("Events")).map { $0[0] })
 
-        let places = Set(Place.allCases.map(\.rawValue) + [Place.none, OfferedAction.place])
+        let places = Set(CardFace.places)
         let docPlaces = keys(RepoDoc.tableRows(in: doc.section("Places")).map { $0[0] })
 
         let uses = Set(SpotUse.allCases.map(\.rawValue))

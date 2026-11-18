@@ -27,10 +27,6 @@ public struct SpotFile: Equatable, Sendable {
             guard let key = HeaderBlock.unknown(in: block), let kind = HeaderBlock(block: block) else { continue }
             throw SpotError.fault("\(name) has an unknown key on the \(kind.word) \(block.value(kind) ?? ""): \(key)")
         }
-        if header.fields.contains(where: { HeaderKey.isDrawing($0.key) }) {
-            self.init(id: id, spots: [try Self.drawn(header, name: name, id: id, url: url)])
-            return
-        }
         let icon = Icon(text: header.value(HeaderKey.icon)).map { Self.placed($0, beside: url) }
         let on = try SpotRead(on: header.values(HeaderKey.on), of: name)
         let read = on?.moments.isEmpty == false ? on : nil
@@ -48,7 +44,7 @@ public struct SpotFile: Equatable, Sendable {
             throw SpotError.fault("\(name) is a .js file, which runs inline, so it takes no mode=\(modeName)")
         }
         let mode = isInline ? SpotMode.inline : named
-        let namedPlaces = try Place.read(header.values(HeaderKey.offers), of: name)
+        let places = try Place.read(header.values(HeaderKey.offers), of: name)
         let order = header.value(HeaderKey.answers)
         guard order == nil || order == "last" else { throw SpotError.fault("\(name) has an unknown answers: \(order ?? ""). Use answers=last") }
         guard order == nil || on?.answers != nil else { throw SpotError.fault("\(name) has answers=last, which needs on=search.text") }
@@ -69,8 +65,6 @@ public struct SpotFile: Equatable, Sendable {
             }
             return offer
         }
-        let press = header.value(HeaderKey.press) ?? "sheet"
-        guard ["sheet", "open"].contains(press) else { throw SpotError.fault("\(name) has an unknown press: \(press). Use open or sheet") }
         let view = header.value(HeaderKey.view)
         if let view, URL(fileURLWithPath: view).pathExtension != SwiftProgram.sourceExtension {
             throw SpotError.fault("\(name) needs a Swift file for its view, such as view=\(url.deletingPathExtension().lastPathComponent).swift")
@@ -91,25 +85,23 @@ public struct SpotFile: Equatable, Sendable {
         let startsWord = header.value(HeaderKey.starts)
         let starts = startsWord.flatMap(SpotStart.init(rawValue:))
         guard startsWord == nil || starts != nil else { throw SpotError.fault("\(name) has an unknown starts: \(startsWord ?? ""). Use starts=first-launch.") }
-        let places: Set<Place> = namedPlaces ?? (offeredActions.isEmpty && !answersOnly ? [.card] : [])
-        let kind: SpotKind = mode.stays || places.contains(.search) || read?.has(.sheet) == true || read?.seconds != nil ? .list : .launch
-        try Place.check(places, read: read, mode: mode, kind: kind, of: name)
+        try Place.check(places, read: read, of: name)
+        let isFound = !answersOnly && (offeredActions.isEmpty || !places.isEmpty)
         let command = Spot(
             id: id,
             name: name,
             url: url,
-            kind: kind,
+            kind: .list,
             icon: icon,
             subtitle: header.value(HeaderKey.detail),
             read: read,
-            isFound: !answersOnly && !places.isEmpty,
+            isFound: isFound,
             answers: answers,
             mode: mode,
-            pressRuns: press == "open",
             drop: header.value(HeaderKey.drop)?.split(separator: ",").map { $0.trimmingCharacters(in: .whitespaces) } ?? [],
             offeredPlaces: places,
             dataName: SpotID(id).name,
-            isOnGrid: places.contains(.card) && offers.isEmpty && read?.seconds == nil && !answersOnly,
+            isOnGrid: isFound && offers.isEmpty && read?.seconds == nil,
             offers: offers,
             offeredActions: offeredActions,
             settings: header.children.filter { HeaderBlock(block: $0) == .field }.compactMap { HeaderField(setting: $0) },
@@ -163,41 +155,5 @@ public struct SpotFile: Equatable, Sendable {
             .replacingOccurrences(of: "-", with: " ")
             .replacingOccurrences(of: "_", with: " ")
         return words.prefix(1).uppercased() + words.dropFirst()
-    }
-
-    private static func drawn(_ header: TextBlock, name: String, id: String, url: URL) throws -> Spot {
-        if let key = header.fields.map(\.key).first(where: { key in !HeaderKey.isDrawing(key) && !HeaderKey.card.contains { $0.rawValue == key } }) {
-            throw SpotError.fault("\(name) draws a card of other spots, so it takes no \(key). Keep title, icon, detail, keywords, to and its grid lines, or draw its own blocks with grid lines in its output")
-        }
-        let keys = Set(header.fields.map(\.key).filter(HeaderKey.isDrawing))
-        guard keys.count == 1, let key = keys.first else {
-            throw SpotError.fault("\(name) draws its card at more than one size. Keep the grid lines of one size, such as grid.large")
-        }
-        let sizeName = String(key.dropFirst(HeaderKey.drawing.count))
-        guard let size = SpotSize(name: sizeName) else { throw SpotError.fault("\(name) has an unknown size: \(sizeName)") }
-        let drawing = header.values(key)
-        if let fault = WidgetLayout.faults(in: drawing).first { throw SpotError.fault("\(name): \(fault)") }
-        let layout = WidgetLayout(drawing: drawing, size: size)
-        let icon = Icon(text: header.value(HeaderKey.icon))
-        return Spot(
-            id: id,
-            name: name,
-            url: url,
-            kind: .widget,
-            size: layout.size,
-            symbol: icon?.symbol ?? "app",
-            subtitle: header.value(HeaderKey.detail),
-            layout: layout,
-            places: layout.names.map { tool($0, beside: url, id: id) },
-            opens: header.value(HeaderKey.to).map { tool($0, beside: url, id: id) }
-        )
-    }
-
-    private static func tool(_ name: String, beside url: URL, id: String) -> String {
-        guard !name.contains("/") else { return name }
-        let files = (try? FileManager.default.contentsOfDirectory(at: url.deletingLastPathComponent(), includingPropertiesForKeys: nil)) ?? []
-        let own = files.first { $0.deletingPathExtension().lastPathComponent == name && $0.lastPathComponent != url.lastPathComponent
-            && (try? $0.resourceValues(forKeys: [.isDirectoryKey]).isDirectory) != true && runs($0, toml: SpotToml(beside: $0)) }
-        return own.map { SpotID(file: $0).description } ?? name
     }
 }

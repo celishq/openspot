@@ -6,10 +6,12 @@ key = "cmd+n"
 [[spots]]
 id = "openspot/spots"
 size = "wide"
+grid = true
 
 [[spots]]
 id = "openspot/store"
 size = "wide"
+window = true
 
 [[spots]]
 id = "apps"
@@ -21,6 +23,7 @@ size = "small"
 [[spots]]
 id = "color-picker"
 size = "small"
+grid = true
 
 [[spots]]
 id = "confetti"
@@ -42,6 +45,7 @@ id = "links"
 [[spots]]
 id = "paste-screenshot"
 size = "small"
+grid = true
 
 [[spots]]
 id = "usage"
@@ -80,3 +84,17 @@ grid = false
 [[spots]]
 id = "openspot/themes"
 grid = false
+
+[[spots]]
+id = "openspot/icon"
+grid = false
+search = false
+
+[[spots]]
+id = "openspot/welcome"
+grid = false
+search = false
+
+[[spots]]
+id = "system"
+size = "large"

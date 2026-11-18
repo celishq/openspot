@@ -6,7 +6,7 @@ printf '127.0.0.1:%s' "$port" > "$state/peer"
 
 # Prints the whole sheet, since each frame with a block is the whole picture.
 sheet() {
-  printf 'frame=\ngrid=last last last\ngrid=last last last\ngrid=peer peer peer\ngrid=- - -\n'
+  printf 'frame=\ngrid.bar=last\ngrid=last last last\ngrid=last last last\ngrid=peer peer peer\ngrid=- - -\n'
   printf 'grid=message message message\ngrid=message message message\ngrid=. . send\n\n'
   if [ -s "$state/last" ]; then
     printf 'text=last\n'

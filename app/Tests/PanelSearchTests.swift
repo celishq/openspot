@@ -29,9 +29,8 @@ final class PanelSearchTests: PanelCase {
         XCTAssertEqual(ranks.countOnMain, 0)
     }
 
-    func testASpotThatOffersNoPlaceIsNotFound() async throws {
+    func testASpotThatOnlyOffersActionsIsNotFound() async throws {
         try await showGrid()
-        try script("hidden", toml: "title = 'Alphabet'\noffers = ['none']", "true")
         try script("acts", toml: "title = 'Alpha acts'\n[commands.change]\ntitle = 'Change'\noffers = ['actions']", "true")
         await model.reload()
 
@@ -81,7 +80,7 @@ final class PanelSearchTests: PanelCase {
         }
 
         XCTAssertEqual(shown, ["beta"])
-        XCTAssertEqual(host.dismissals, 1)
+        try await wait("the sheet of beta") { self.model.openSheetID == "beta" }
         try await wait("the end of the search in flight") { ranks.dropped == 1 }
         XCTAssertEqual(ranks.count, 1)
     }
@@ -101,7 +100,7 @@ final class PanelSearchTests: PanelCase {
         model.query = "bet"
         model.tap("alpha")
 
-        XCTAssertEqual(host.dismissals, 1)
+        try await wait("the sheet of the card") { self.model.openSheetID == "alpha" }
     }
 
     func testClearingTheTextShowsTheGridAtOnceAndDropsTheSearchInFlight() async throws {

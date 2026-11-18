@@ -11,6 +11,7 @@ extension SpotsModel {
         private let fixedSpot: Spot
         private let fixedState: SpotState
         private let gridChoice: Bool?
+        private let searchChoice: Bool?
         public let panel: GridPanel
 
         public init(spot: Spot, run: SpotRun?, choice: SpotArrangement = SpotArrangement(), defaults: SpotArrangement = SpotArrangement()) {
@@ -18,6 +19,7 @@ extension SpotsModel {
             sizeChoice = choice.size(of: spot.id)
             defaultSize = defaults.size(of: spot.id)
             gridChoice = choice.isOnGrid(of: spot.id) ?? defaults.isOnGrid(of: spot.id)
+            searchChoice = choice.isFound(of: spot.id) ?? defaults.isFound(of: spot.id)
             panel = choice.panel(of: spot.id) ?? .center
             item = nil
             isAnswer = false
@@ -31,6 +33,7 @@ extension SpotsModel {
             sizeChoice = item.card?.face.answerSize ?? .strip
             defaultSize = nil
             gridChoice = nil
+            searchChoice = nil
             panel = .center
             self.item = item
             self.isAnswer = isAnswer
@@ -56,8 +59,12 @@ extension SpotsModel {
             run?.failure
         }
 
+        @MainActor public var isFound: Bool {
+            (searchChoice ?? true) && spot.isFound
+        }
+
         @MainActor public var isOnGrid: Bool {
-            spot.offersCard && (gridChoice ?? state.isOnGrid)
+            gridChoice ?? state.isOnGrid
         }
 
         @MainActor public var kind: SpotKind {
@@ -97,7 +104,7 @@ extension SpotsModel {
         }
 
         @MainActor public var soleCommand: String? {
-            kind == .list && !spot.pressRuns ? spot.soleCommand : nil
+            kind == .list ? spot.soleCommand : nil
         }
 
         public static func == (lhs: Entry, rhs: Entry) -> Bool {

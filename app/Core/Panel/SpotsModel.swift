@@ -33,6 +33,7 @@ public final class SpotsModel {
     private func takeCards() {
         let next = entries.filter { $0.id != fieldSheet }
         if next != cards { cards = next }
+        runs.take(grid: Set(entries.lazy.filter(\.isOnGrid).map(\.id)))
     }
     @ObservationIgnored var storeCards: [String: (entry: Entry, item: SpotCatalog.Item)]?
     @ObservationIgnored private var entryPlaces: [String: Int] = [:]
@@ -322,10 +323,6 @@ public final class SpotsModel {
         runs.sheets
     }
 
-    public func reading(of id: String) -> MetricReading? {
-        runs.sheets[id]?.reading
-    }
-
     public var workCount: Int {
         runs.work.count
     }
@@ -378,7 +375,7 @@ public final class SpotsModel {
         var scan = (try? load.result(enabled: folder.enabled, disabled: folder.disabled, hosted: hosted)) ?? ScanResult(files: [SpotFile(id: "openspot", spots: hosted)], refused: [])
         let faults = load.faultSpots(of: scan, prompt: host.agentPrompt(for: folder.url))
         if !faults.isEmpty { scan.files.append(SpotFile(id: FaultSpot.fileID, spots: faults)) }
-        scan.addSettings(in: files.config, secrets: files.secrets, read: config)
+        scan.addSettings(in: files.config, secrets: files.secrets, read: config, defaults: defaultArrangement)
         let carded = Set(faults.map(\.id))
         let problems = scan.refused.filter { !carded.contains($0.file) }.map { "\($0.file) was not loaded: \($0.reason)" }
         runs.isCareful = config.isCareful
@@ -571,8 +568,6 @@ public final class SpotsModel {
                 showSheet(nil, moving: false)
                 endFlow()
             }
-        case .chooseFiles:
-            _ = chooseFiles(for: id)
         case .move(let move):
             self.move(move, in: id)
         }

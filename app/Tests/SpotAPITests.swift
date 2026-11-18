@@ -49,8 +49,8 @@ final class SpotAPITests: XCTestCase {
     }
 
     func testTheListHoldsEachScriptWithItsCommandsSettingsAndKeys() async throws {
-        try "#!/bin/sh\n".writeScript(to: spots.spotFile("move"), toml: "title = 'Move'\nicon = 'macwindow'\non = ['sheet.open']\noffers = ['card', 'float']\n[commands.left]\ntitle = 'Left side'\n[settings.folder]")
-        try "#!/bin/sh\n".writeScript(to: spots.spotFile("cups"), toml: "title = 'Cups'\non = ['clock.60']\noffers = ['card', 'menubar']")
+        try "#!/bin/sh\n".writeScript(to: spots.spotFile("move"), toml: "title = 'Move'\nicon = 'macwindow'\non = ['sheet.open']\n[commands.left]\ntitle = 'Left side'\n[settings.folder]")
+        try "#!/bin/sh\n".writeScript(to: spots.spotFile("cups"), toml: "title = 'Cups'\non = ['clock.60']")
         try file.write(keys: [
             GlobalKey(spot: "move", act: .command("left"), trigger: .key(try XCTUnwrap(Shortcut(text: "ctrl+option+left")))),
             GlobalKey(spot: "move", act: .float, trigger: .shake)

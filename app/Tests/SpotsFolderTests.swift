@@ -272,13 +272,13 @@ final class SpotsFolderTests: XCTestCase {
         XCTAssertEqual(tea.glyph, "🍵")
     }
 
-    func testAScriptWithNoHeaderIsAWideLaunchSpotNamedAfterItsFile() throws {
+    func testAScriptWithNoHeaderIsAWideSpotNamedAfterItsFile() throws {
         try write("say-hello_now.sh")
 
         let command = try XCTUnwrap(try scan.spots.first)
 
         XCTAssertEqual(command.name, "Say hello now")
-        XCTAssertEqual(command.kind, .launch)
+        XCTAssertEqual(command.kind, .list)
         XCTAssertEqual(command.size, .wide)
         XCTAssertEqual(command.symbol, "app")
         XCTAssertNil(command.read)
@@ -312,13 +312,13 @@ final class SpotsFolderTests: XCTestCase {
 
         let commands = try scan.spots
 
-        XCTAssertEqual(commands.map(\.kind), [.list, .launch, .list])
+        XCTAssertEqual(commands.map(\.kind), [.list, .list, .list])
         XCTAssertEqual(commands.map(\.readsState), [false, true, false])
         XCTAssertTrue(commands[2].isGlobal)
     }
 
     func testReadIsAListOfPlacesBesideItsSeconds() throws {
-        try write("a.sh", toml: "on = ['panel.open', 'sheet.open', 'clock.30']\noffers = ['card', 'menubar']")
+        try write("a.sh", toml: "on = ['panel.open', 'sheet.open', 'clock.30']")
 
         let read = try XCTUnwrap(try scan.spots.first?.read)
 
@@ -327,7 +327,7 @@ final class SpotsFolderTests: XCTestCase {
     }
 
     func testModeIsOnceOrStay() throws {
-        try write("a.sh", toml: "mode = 'stay'\noffers = ['card', 'menubar']")
+        try write("a.sh", toml: "mode = 'stay'")
         try write("c.sh", toml: "mode = 'once'")
         try write("d.sh", toml: "mode = 'sometimes'")
 
@@ -366,7 +366,7 @@ final class SpotsFolderTests: XCTestCase {
     }
 
     func testANumberInAListOfMomentsStartsTheSpotOffTheGrid() throws {
-        try write("a.sh", toml: "on = ['panel.open', 'clock.30']\noffers = ['card', 'menubar']")
+        try write("a.sh", toml: "on = ['panel.open', 'clock.30']")
 
         let scan = try scan
 
@@ -376,7 +376,7 @@ final class SpotsFolderTests: XCTestCase {
     }
 
     func testASpotThatOffersSearchAndCardHasACard() throws {
-        try write("a.sh", toml: "on = ['panel.open']\noffers = ['card', 'search']")
+        try write("a.sh", toml: "on = ['panel.open']\noffers = ['search']")
 
         XCTAssertEqual(try scan.spots.map(\.headerState.isOnGrid), [true])
     }
@@ -391,7 +391,7 @@ final class SpotsFolderTests: XCTestCase {
     }
 
     func testANumberAsTheReadIsAMetricWhoseCardStartsOffTheGrid() throws {
-        try write("cups.sh", toml: "title = 'Cups'\nicon = 'cup.and.saucer'\non = ['clock.30']\noffers = ['card', 'menubar']")
+        try write("cups.sh", toml: "title = 'Cups'\nicon = 'cup.and.saucer'\non = ['clock.30']")
 
         let scan = try scan
         let metric = try XCTUnwrap(scan.metrics.first)
@@ -405,7 +405,7 @@ final class SpotsFolderTests: XCTestCase {
     }
 
     func testAMetricIsAlsoAList() throws {
-        try write("pulls.sh", toml: "on = ['clock.120']\noffers = ['card', 'menubar']")
+        try write("pulls.sh", toml: "on = ['clock.120']")
 
         let scan = try scan
 
@@ -424,18 +424,6 @@ final class SpotsFolderTests: XCTestCase {
         XCTAssertEqual(try scan.spots.map(\.id), ["c", "b", "d", "a"])
     }
 
-    func testAScriptThatAWidgetOpensHasNoCardOnTheGrid() throws {
-        try write("details.sh", toml: "on = ['panel.open']")
-        try write("other.sh", toml: "on = ['panel.open']")
-        try write("cpu.sh", toml: "on = ['clock.60']\noffers = ['card', 'menubar']")
-        try "#!/bin/sh\n".writeScript(to: folder.spotFile("box"), toml: "title = 'Box'\n'grid.square' = ['cpu']\nto = 'details'")
-
-        let commands = try scan.spots
-
-        XCTAssertEqual(commands.first { $0.id == "details" }?.isOnGrid, false)
-        XCTAssertEqual(commands.first { $0.id == "other" }?.isOnGrid, true)
-    }
-
     func testRefusesAHeaderWithAFault() throws {
         try write("b.sh", toml: "mode = 'huge'")
         try write("f.sh", toml: "offers = ['search']")
@@ -449,8 +437,8 @@ final class SpotsFolderTests: XCTestCase {
 
     func testRefusesAnAnswersPatternThatIsNoneAndTakesOneThatStays() throws {
         try write("m.sh", toml: "on = ['search.text [0-9']")
-        try write("n.sh", toml: "on = ['search.text ^[0-9]']\nmode = 'stay'\noffers = ['card', 'menubar']")
-        try write("o.sh", toml: "on = ['search.text ^[0-9]', 'app.launch']\nmode = 'stay'\noffers = ['card', 'menubar']")
+        try write("n.sh", toml: "on = ['search.text ^[0-9]']\nmode = 'stay'")
+        try write("o.sh", toml: "on = ['search.text ^[0-9]', 'app.launch']\nmode = 'stay'")
 
         XCTAssertEqual(try scan.spots.map(\.id), ["n", "o"])
         XCTAssertEqual(try scan.refused, [

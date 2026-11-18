@@ -42,29 +42,6 @@ final class CoreSpotsTests: XCTestCase {
         XCTAssertEqual(try names(enabled: ["apps"]), ["My apps"])
     }
 
-    func testASpotThatIsOnLoadsThePartsItPlaces() throws {
-        try write("cpu.sh", in: core, toml: "on = ['clock.5']\noffers = ['card', 'menubar']")
-        try "#!/bin/sh\n".writeScript(to: core.appendingPathComponent("overview.spot/overview.sh"), toml: "title = 'Overview'\n'grid.square' = ['cpu']")
-
-        let off = try SpotsFolder(url: folder, core: core, enabled: []).scan()
-        XCTAssertEqual(off.scripts.map(\.id), [])
-
-        let on = try SpotsFolder(url: folder, core: core, enabled: ["overview"]).scan()
-        XCTAssertEqual(on.spots.filter(\.headerState.isOnGrid).map(\.name), ["Overview"])
-        XCTAssertEqual(on.scripts.map(\.id), ["cpu"])
-        XCTAssertEqual(on.refused, [])
-    }
-
-    func testAWidgetInTheSpotsFolderCanPlaceACorePart() throws {
-        try write("cpu.sh", in: core, toml: "on = ['clock.5']\noffers = ['card', 'menubar']")
-        try "#!/bin/sh\n".writeScript(to: folder.spotFile("mine"), toml: "title = 'Mine'\n'grid.square' = ['cpu']")
-
-        let scan = try SpotsFolder(url: folder, core: core, enabled: []).scan()
-
-        XCTAssertEqual(scan.spots.filter(\.headerState.isOnGrid).map(\.name), ["Mine"])
-        XCTAssertEqual(scan.refused, [])
-    }
-
     func testTheFolderOfACoreSpotHoldsItsFilesAndIsNoSpot() throws {
         let files = core.appendingPathComponent("party", isDirectory: true)
         try FileManager.default.createDirectory(at: files, withIntermediateDirectories: true)
@@ -150,12 +127,11 @@ final class CoreSpotsTests: XCTestCase {
         XCTAssertFalse(FileManager.default.fileExists(atPath: mark.path))
     }
 
-    func testTheChoicesLeaveOutPartsWithNoCard() throws {
-        try write("cpu.sh", in: core, toml: "on = ['clock.5']\noffers = ['card', 'menubar']")
+    func testTheChoicesLeaveOutSpotsWithAClock() throws {
+        try write("cpu.sh", in: core, toml: "on = ['clock.5']")
         try write("apps.sh", in: core)
-        try "#!/bin/sh\n".writeScript(to: core.appendingPathComponent("overview.spot/overview.sh"), toml: "title = 'Overview'\n'grid.square' = ['cpu']")
 
-        XCTAssertEqual(SpotsFolder(url: folder, core: core).coreChoices().map(\.name), ["Apps", "Overview"])
+        XCTAssertEqual(SpotsFolder(url: folder, core: core).coreChoices().map(\.name), ["Apps"])
     }
 
     func testACoreSpotCannotBeRemovedAndStaysOnTheDisk() throws {
@@ -173,17 +149,6 @@ final class CoreSpotsTests: XCTestCase {
         let mine = try XCTUnwrap(place.scan().spots.first)
 
         XCTAssertFalse(place.isCore(mine))
-    }
-
-    func testACoreWidgetSharesWithItsPartsFromTheCoreFolder() throws {
-        try write("cpu.sh", in: core, toml: "on = ['clock.5']\noffers = ['card', 'menubar']")
-        try "#!/bin/sh\n".writeScript(to: core.appendingPathComponent("overview.spot/overview.sh"), toml: "title = 'Overview'\n'grid.square' = ['cpu']")
-        let scan = try SpotsFolder(url: folder, core: core, enabled: ["overview"]).scan()
-
-        let spot = try SpotPackage(sharing: XCTUnwrap(scan.spots.first { $0.name == "Overview" }), from: scan)
-
-        XCTAssertEqual(spot.files.map(\.path), ["overview.spot/overview.sh", "overview.spot/spot.toml", "cpu.spot/cpu.sh", "cpu.spot/spot.toml"])
-        XCTAssertEqual(spot.files.first { $0.path == "cpu.spot/cpu.sh" }?.isExecutable, true)
     }
 
     func testTheConfigReadsAndWritesEnabled() throws {

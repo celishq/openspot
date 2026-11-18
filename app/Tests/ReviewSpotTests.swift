@@ -113,13 +113,6 @@ final class ReviewSpotTests: XCTestCase {
         XCTAssertEqual(command.symbol, "sun.max")
     }
 
-    func testAWidgetNamesItselfBeforeTheMetricsItPlaces() throws {
-        let widget = [("board.spot/board.sh", "#!/bin/sh\n", true), ("board.spot/spot.toml", "title = 'Desk'\n'grid.square' = ['cpu']", false)]
-        let review = try ReviewSpot(spot: spot(widget + [("cpu.spot/cpu.sh", "#!/bin/sh\n", true), ("cpu.spot/spot.toml", "title = 'CPU'\non = ['clock.5']", false)]), folder: folder)
-
-        XCTAssertEqual(review.name, "Desk")
-    }
-
     func testAProgramWarningComesBeforeTheDescription() throws {
         let long = "#!/bin/sh\necho nice\n" + String(repeating: "x", count: ReviewSpot.textLimit)
         let files = [SpotPackage.File(path: "tool.spot/tool", isExecutable: true, contents: Data(long.utf8))]
@@ -271,17 +264,6 @@ final class ReviewSpotTests: XCTestCase {
 
         let text = try shown(review)
         XCTAssertTrue(text.contains("Relay: keeps running while Openspot runs"), text)
-    }
-
-    func testAMetricThatAWidgetPlacesRunsWhenThePanelOpens() throws {
-        let widget = [("board.spot/board.sh", "#!/bin/sh\n", true), ("board.spot/spot.toml", "title = 'Desk'\n'grid.square' = ['cpu']", false)]
-        let review = try ReviewSpot(
-            spot: spot(widget + [("cpu.spot/cpu.sh", "#!/bin/sh\n", true), ("cpu.spot/spot.toml", "title = 'CPU'\non = ['sheet.open']", false)]),
-            folder: folder
-        )
-
-        let text = try shown(review)
-        XCTAssertTrue(text.contains("CPU: when the panel opens"), text)
     }
 
     func testItNamesEachFileItReplaces() throws {

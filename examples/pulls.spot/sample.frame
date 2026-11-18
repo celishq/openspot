@@ -1,3 +1,13 @@
+frame=
+grid=items
+grid.bar=count
+
+number=count
+value=5
+title=Pull requests
+
+repeat=items
+
 button=copy
 title=Copy link
 shortcut=cmd+return

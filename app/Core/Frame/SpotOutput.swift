@@ -22,6 +22,9 @@ public struct SpotOutput: Equatable, Sendable {
     public private(set) var layout: SheetLayout?
     public private(set) var value: TextBlock?
     private(set) var valueKind: BlockKind?
+    private var barValue: TextBlock?
+    private var barKind: BlockKind?
+    public private(set) var hasBar = false
     public private(set) var view: TextBlock?
     public private(set) var face = CardFace.none
     public private(set) var drawing = RepeatDrawing.list
@@ -124,12 +127,16 @@ public struct SpotOutput: Equatable, Sendable {
         let fields = listed.map { $0.fields.flatMap { [$0.key, $0.value] } }
         parts = parts.map { $0.drawn(in: layout).holding(rows: fields) }
         face = CardFace(head: head, parts: every)
-        let main = head?.value(RootKey.main)
         let placedValues = values.filter { placed.contains($0.block.fields.first?.value ?? "") }
         let sole = placedValues.isEmpty ? values : placedValues
-        let held = main.map { id in values.first { $0.block.fields.first?.value == id } } ?? (sole.count == 1 ? sole.first : nil)
+        let held = sole.count == 1 ? sole.first : nil
         value = held?.block
         valueKind = held?.kind
+        let barred = face.drawings[CardFace.bar]?.flatMap { $0 } ?? []
+        let shown = barred.lazy.compactMap { id in values.first { $0.block.fields.first?.value == id } }.first
+        barValue = shown?.block
+        barKind = shown?.kind
+        hasBar = !barred.isEmpty
     }
 
     private static func isSearch(_ block: TextBlock) -> Bool {
@@ -142,6 +149,14 @@ public struct SpotOutput: Equatable, Sendable {
         case .toggle, .slider: return part
         default: return nil
         }
+    }
+
+    public var barred: SpotOutput {
+        var output = self
+        output.value = barValue
+        output.valueKind = barKind
+        output.items = []
+        return output
     }
 
     public var metric: TextBlock? {
@@ -197,7 +212,7 @@ public struct SpotOutput: Equatable, Sendable {
     public var kind: SpotKind {
         if case .toggle? = control?.control { return .toggle }
         if control != nil { return .slider }
-        return items.isEmpty && actions.isEmpty && parts.isEmpty ? .launch : .list
+        return .list
     }
 
     private mutating func take(marks block: TextBlock) {

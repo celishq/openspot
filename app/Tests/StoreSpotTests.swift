@@ -124,8 +124,7 @@ final class StoreSpotTests: BuiltInCase {
         let spot = try store
 
         XCTAssertEqual(spot.name, "Store")
-        XCTAssertTrue(spot.offersWindow)
-        XCTAssertTrue(spot.offersCard)
+        XCTAssertEqual(Config(text: try String(contentsOf: URL(fileURLWithPath: #filePath).deletingLastPathComponent().deletingLastPathComponent().appendingPathComponent("defaults.toml"), encoding: .utf8)).arrangement.isWindow(of: "openspot/store"), true)
         XCTAssertEqual(spot.kind, .list)
         XCTAssertEqual(spot.view.map { URL(fileURLWithPath: $0).lastPathComponent }, "store.swift")
     }

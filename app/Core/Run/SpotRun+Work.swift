@@ -50,7 +50,6 @@ extension SpotRun {
 
     public func pressCard() {
         if let running = running(Self.cardKey) { return pressAgain(running) }
-        if spot.kind == .launch, spot.takesDrops { return onReport(.chooseFiles) }
         guard spot.kind == .toggle else { return work(spot.click, key: Self.cardKey) }
         let before = state
         let action = SpotAction.toggle(state)

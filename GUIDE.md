@@ -141,7 +141,6 @@ and `clock.300` asks it again every 5 minutes while the card shows.
 title = "Disk"
 icon = "internaldrive"
 on = ["panel.open", "clock.300"]
-offers = ["card", "menubar"]
 ```
 
 ```sh
@@ -155,13 +154,28 @@ printf 'frame=\ndetail=%s free\n\ntext=free\ntitle=%s free\n' "$free" "$free"
 ![The card of Disk, with the free space under its title](docs/images/show-a-value.png)
 
 The first block, `frame=`, is the **root**: it isn't drawn, and its `detail` becomes the line under the card's title.
-The `text` block is the spot's **main block**. `card` and `menubar` in `offers` name the places where the spot can
-show it: a card on the grid, and the menu bar, next to the clock. The user puts the spot in the menu bar from its Settings,
-which `⌘⏎` on its card opens.
+The `text` block is the card's **value**, since it's the only one.
+
+The user can also put the spot in the menu bar, next to the clock, from its Settings, which `⌘⏎` on its card opens.
+There it shows its icon, until the root lays out the menu bar with a `grid.bar=` line:
+
+```ini
+frame=
+grid.bar=free
+```
 
 A spot with a clock stays off the grid until the user adds it, so that a new spot doesn't fill the panel.
 
-Learn more in [The main block and the card](PROTOCOL.md#the-main-block-and-the-card) and [Events](PROTOCOL.md#events).
+The user also chooses whether the main search finds a spot. `search = false` in the spot's record of
+`~/.config/openspot/config.toml` keeps it out of the main search and out of the list of slash commands:
+
+```toml
+[[spots]]
+id = "notes"
+search = false
+```
+
+Learn more in [The card](PROTOCOL.md#the-card), [Places](PROTOCOL.md#places) and [Events](PROTOCOL.md#events).
 
 ## Add buttons
 
@@ -409,29 +423,6 @@ The sheet opens with **Measuring…**, and shows the first value within 5 second
 way.
 
 Learn more in [Events](PROTOCOL.md#events).
-
-## Combine spots on one card
-
-One card can show several spots side by side, such as the battery, the CPU and the memory. You write only a manifest,
-and Openspot fills the card with the main blocks of the spots that it names.
-
-```toml
-title = "System"
-"grid.large" = ["battery battery cpu    cpu", "battery battery memory memory"]
-to = "system-info"
-```
-
-```sh
-#!/bin/sh
-```
-
-<!-- card: large -->
-![The System card: the battery on the left, the CPU over the memory on the right](docs/images/combine-spots.png)
-
-Each word is the id of another spot. At the large size, the card shows the battery on the left, and the CPU over the
-memory on the right. Press the card, and the spot `system-info` opens.
-
-Learn more in [Cards of other spots](PROTOCOL.md#cards-of-other-spots).
 
 ## Let the user choose a setting
 

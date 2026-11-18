@@ -113,7 +113,7 @@ final class AgentsTests: XCTestCase {
 
         let frame = Board(sessions: sessions, limits: [Limit(agent: .claude, used: 0.62)], logos: URL(fileURLWithPath: "/logos")).frame
 
-        XCTAssertTrue(frame.hasPrefix("frame=\ngrid=items\ngrid.small=card\n\nview=card\nlimit1=claude|0.62|working\ntask1=waiting|Fix a flaky test|openai|site\ntask2=working|Add a cart page|claude|shop\n\nrepeat=items\n\n"), frame)
+        XCTAssertTrue(frame.hasPrefix("frame=\ngrid=items\ngrid.small=card\ngrid.bar=count\n\nview=card\nlimit1=claude|0.62|working\ntask1=waiting|Fix a flaky test|openai|site\ntask2=working|Add a cart page|claude|shop\n\nnumber=count\nvalue=2\ntitle=Sessions\n\nrepeat=items\n\n"), frame)
         XCTAssertTrue(frame.contains("text=codex/7\ntitle=Fix a flaky test\ndetail=site · waits for you · 25% context\nicon=/logos/openai.png\n"), frame)
         XCTAssertTrue(frame.contains("text=claude/41\ntitle=Add a cart page\ndetail=shop · working · 50% context\nicon=/logos/claude.png\n"), frame)
     }

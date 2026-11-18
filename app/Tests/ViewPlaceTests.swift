@@ -25,7 +25,8 @@ final class ViewPlaceTests: XCTestCase {
         for name in ["list", "other"] {
             try TestSpot(toml: "on = ['sheet.open']", body: "printf 'text=a\\ntitle=Apple\\n'").write(to: spots.spotFile(name))
         }
-        try TestSpot(toml: "on = ['sheet.open']\noffers = ['card', 'window']", body: "printf 'text=a\\ntitle=Apple\\n'").write(to: spots.spotFile("store"))
+        try TestSpot(toml: "on = ['sheet.open']", body: "printf 'text=a\\ntitle=Apple\\n'").write(to: spots.spotFile("store"))
+        _ = try model.files.config.change { $0.arrangement.set(isWindow: true, of: "store") }
         await model.reload()
     }
 

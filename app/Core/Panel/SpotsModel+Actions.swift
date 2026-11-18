@@ -343,10 +343,9 @@ extension SpotsModel {
     func extras(on target: Target) -> [CommandAction] {
         guard openSheetID == nil, target.item == nil else { return [] }
         let spot = target.entry.spot
-        let opens: [CommandAction] = spot.pressRuns && target.entry.kind.opensSheet ? [.open] : []
         let history: [CommandAction] = spot.keepsHistory ? [.history] : []
         let commands = spot.opensToKeys || spot.soleCommand != nil ? [] : spot.offers.map(CommandAction.command)
-        return opens + history + commands
+        return history + commands
     }
 
     @discardableResult
@@ -447,7 +446,7 @@ extension SpotsModel {
     }
 
     var selectedGlyphTitle: String? {
-        guard openSheetID == nil, let entry = selectedEntry, entry.kind != .widget,
+        guard openSheetID == nil, let entry = selectedEntry,
               placements.first(where: { $0.index == selected })?.size == .small
         else { return nil }
         return entry.state.title

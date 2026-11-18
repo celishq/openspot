@@ -34,12 +34,12 @@ final class ScreenExamplesTests: SampleSpotsCase {
         try await withPrivateHome(settings: ["inputs": "mic:B2 system"]) { folder in
             try self.fakeScreen(in: folder)
 
-            try await record.perform(.open, timeout: 60)
+            try await record.perform(.press("record"), timeout: 60)
             XCTAssertEqual(self.toasts(in: folder), ["Recording the screen. Run Record again to stop it."])
             XCTAssertTrue(try self.read("calls", in: folder).contains("screen record start mic:B2 system\n"))
             XCTAssertFalse(try self.read("calls", in: folder).contains("setting get"))
 
-            try await record.perform(.open, timeout: 60)
+            try await record.perform(.press("record"), timeout: 60)
             XCTAssertEqual(self.toasts(in: folder), ["Recording the screen. Run Record again to stop it.", "Copied the recording."])
             XCTAssertEqual(try self.read("clipboard", in: folder), folder.path + "/talk.mp4")
         }
@@ -52,7 +52,7 @@ final class ScreenExamplesTests: SampleSpotsCase {
             FileManager.default.createFile(atPath: folder.appendingPathComponent("ended").path, contents: Data())
 
             do {
-                try await record.perform(.open, timeout: 60)
+                try await record.perform(.press("record"), timeout: 60)
                 XCTFail("the run says why the recording ended")
             } catch {
                 XCTAssertTrue("\(error)".contains("The recording ended as macOS stopped it."), "\(error)")
@@ -140,7 +140,7 @@ final class ScreenExamplesTests: SampleSpotsCase {
         let (script, frames) = try await shot(in: folder)
         defer { script.stop() }
 
-        script.send(text: "call=1\narg=open\n\n")
+        script.send(text: "call=1\narg=shoot\n\n")
         try await wait("the end of the press") { frames.ends == ["1"] }
 
         XCTAssertEqual(try read("calls", in: folder), "screen shot\n")
@@ -154,7 +154,7 @@ final class ScreenExamplesTests: SampleSpotsCase {
         let (script, frames) = try await shot(in: folder, picture: picture.path + "\n")
         defer { script.stop() }
 
-        script.send(text: "call=1\narg=open\n\n")
+        script.send(text: "call=1\narg=shoot\n\n")
         try await wait("the end of the press") { frames.ends == ["1"] }
 
         XCTAssertEqual(notes(in: folder), "edit a.png\n")
@@ -169,7 +169,7 @@ final class ScreenExamplesTests: SampleSpotsCase {
         let (script, frames) = try await shot(in: folder, picture: file.path)
         defer { script.stop() }
 
-        script.send(text: "call=1\narg=open\n\n")
+        script.send(text: "call=1\narg=shoot\n\n")
         try await wait("the end of the press") { frames.ends == ["1"] }
 
         XCTAssertEqual(toasts(in: folder), ["Openspot cannot open b.png to mark it."])
@@ -183,9 +183,9 @@ final class ScreenExamplesTests: SampleSpotsCase {
         let (script, frames) = try await shot(in: folder, picture: picture.path, holds: true)
         defer { script.stop() }
 
-        script.send(text: "call=1\narg=open\n\n")
+        script.send(text: "call=1\narg=shoot\n\n")
         try await wait("the editor") { self.notes(in: folder) == "edit a.png\n" }
-        script.send(text: "call=2\narg=open\n\n")
+        script.send(text: "call=2\narg=shoot\n\n")
         try await wait("the end of the second press") { frames.ends == ["2"] }
         script.send(text: "stop=1\n\n")
         try await wait("the editor in front again") { self.notes(in: folder) == "edit a.png\nfront\nfront\n" }
@@ -201,7 +201,7 @@ final class ScreenExamplesTests: SampleSpotsCase {
         let (script, frames) = try await shot(in: folder, picture: picture.path, holds: true)
         defer { script.stop() }
 
-        script.send(text: "call=1\narg=open\n\n")
+        script.send(text: "call=1\narg=shoot\n\n")
         try await wait("the editor") { self.notes(in: folder) == "edit a.png\n" }
         script.end()
 

@@ -136,7 +136,7 @@ final class RunChannelTests: SpotRunsCase {
     }
 
     func testAStayingSpotIsKnownInEachCall() async throws {
-        try script(toml: "mode = 'stay'\non = ['sheet.open']\noffers = ['card', 'menubar']", """
+        try script(toml: "mode = 'stay'\non = ['sheet.open']", """
         while IFS= read -r line; do
           case "$line" in call=*) call=${line#call=} ;; esac
           [ -n "$line" ] || { \(call("setting set tone stay$call")); printf 'end=%s\\n\\ntext=a\\n---\\n' "$call"; }

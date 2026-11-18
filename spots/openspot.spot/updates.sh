@@ -33,7 +33,7 @@ case "$1" in
       printf 'frame=\ntitle=Restart\ndetail=Update %s\nshown=true\n' "$ready"
     fi
     ;;
-  open)
+  update)
     if [ -z "$ready" ]; then
       exec openspot update check
     elif [ "$calls" -eq 0 ] || warned; then

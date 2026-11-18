@@ -50,22 +50,18 @@ public struct SpotLoad: Sendable {
         for entry in entries where entry.origin == .own && !disabled.contains(entry.id) {
             entry.add(to: &result)
         }
-        for entry in wantedCore(after: result, hiding: ownIDs, enabled: enabled) {
+        for entry in entries where entry.origin == .core && !ownIDs.contains(entry.id) && enabled.contains(entry.id) {
             entry.add(to: &result)
         }
         for entry in entries where entry.origin == .app {
             entry.add(to: &result)
         }
-        result.removeWidgetsWithLostParts()
-        result.keepOpenedOffTheGrid()
         return result
     }
 
     public var coreChoices: [Spot] {
         let files = entries.filter { $0.origin == .core }.compactMap { entry in entry.spots.map { SpotFile(id: entry.id, spots: $0) } }
-        let commands = ScanResult(files: files, refused: []).spots
-        let opened = Set(commands.compactMap(\.opens))
-        return commands.filter { !opened.contains($0.id) && $0.read?.seconds == nil }
+        return ScanResult(files: files, refused: []).spots.filter { $0.read?.seconds == nil }
     }
 
     static func version(of stamp: [Int]) -> String {
@@ -97,19 +93,5 @@ public struct SpotLoad: Sendable {
             )
             return entry.added.map(spot.added(at:)) ?? spot
         }
-    }
-
-    private func wantedCore(after result: ScanResult, hiding ownIDs: Set<String>, enabled: Set<String>) -> [Entry] {
-        let files = entries.filter { $0.origin == .core && !ownIDs.contains($0.id) }
-        var wanted = Set(files.map(\.id).filter(enabled.contains))
-        var waiting = result.files.flatMap(\.spots) + files.filter { wanted.contains($0.id) }.flatMap { $0.spots ?? [] }
-        while let command = waiting.popLast() {
-            for id in command.places + (command.opens.map { [$0] } ?? []) where !wanted.contains(id) {
-                guard let file = files.first(where: { $0.id == id }) else { continue }
-                wanted.insert(id)
-                waiting += file.spots ?? []
-            }
-        }
-        return files.filter { wanted.contains($0.id) }
     }
 }

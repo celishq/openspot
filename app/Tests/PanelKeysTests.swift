@@ -16,7 +16,8 @@ final class PanelKeysTests: PanelCase {
     private func showGrid() async throws {
         try script("alpha", toml: "title = 'Alpha'", "true")
         try script("beta", toml: "title = 'Beta'", "true")
-        try script("weather", toml: "title = 'Weather'\non = ['sheet.open']\npress = 'open'", ":")
+        try script("weather", toml: "title = 'Weather'\non = ['sheet.open']\n[commands.hot]\ntitle = 'Hot'\n[commands.cold]\ntitle = 'Cold'", ":")
+        _ = try model.files.config.change { $0.arrangement.set(isOnGrid: true, of: "weather") }
         await model.reload()
         model.isShown = true
         model.panelWillShow()
@@ -123,7 +124,7 @@ final class PanelKeysTests: PanelCase {
         XCTAssertEqual(host.dismissals, 1)
     }
 
-    func testOnTheGridTheArrowsMoveBetweenCardsAndReturnRunsTheSelectedOne() async throws {
+    func testOnTheGridTheArrowsMoveBetweenCardsAndReturnOpensTheSelectedOne() async throws {
         try await showGrid()
         XCTAssertEqual(model.selected, 0)
 
@@ -135,7 +136,7 @@ final class PanelKeysTests: PanelCase {
         XCTAssertTrue(model.handleSearchKey(up))
 
         XCTAssertTrue(model.handleSearchKey(enter))
-        XCTAssertEqual(host.dismissals, 1)
+        try await wait("the sheet of the selected card") { self.model.openSheetID == "alpha" }
     }
 
     func testReturnAndTheArrowsStayWithAFieldThatIsNotTheSearchField() async throws {

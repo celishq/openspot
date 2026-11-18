@@ -19,53 +19,12 @@ final class WidgetContractTests: XCTestCase {
         try FileManager.default.setAttributes([.creationDate: Date(timeIntervalSince1970: 1_700_000_000)], ofItemAtPath: url.path)
     }
 
-    private func widget(name: String = "Now", grid: [String] = ["power power"], size: String? = nil, more: String = "", file: String = "mine.sh") throws {
-        let size = size ?? (grid.count == 1 ? "strip" : "large")
-        let lines = grid.map { "'\($0)'" }.joined(separator: ", ")
-        try script(file, "#!/bin/sh\n", toml: "title = '\(name)'\n'grid.\(size)' = [\(lines)]\(more)")
-    }
-
     private func power(_ body: String = "printf 'graph=power\\ntitle=84%%\\nvalue=0.84\\ntone=good\\n'") throws {
         try script("power.sh", "#!/bin/sh\n\(body)\n", toml: "on = ['clock.5']")
     }
 
     private var scan: ScanResult {
         get throws { try SpotsFolder(url: folder).scan() }
-    }
-
-    private func single(size: String?) throws {
-        try power()
-        try widget(grid: ["power"], size: size)
-    }
-
-    func testAWidgetInAFolderNamesItsOwnToolsByFileNameAndOthersByID() throws {
-        try FileManager.default.createDirectory(at: folder.appendingPathComponent("morning"), withIntermediateDirectories: true)
-        try script("morning/power.sh", "#!/bin/sh\nprintf 'frame=\\ntitle=1\\n'\n", toml: "on = ['clock.5']")
-        try script("morning/notes.sh", "#!/bin/sh\n", toml: "on = ['sheet.open']")
-        try power()
-        try widget(grid: ["power power morning/power morning/power"], more: "\nto = 'notes'", file: "morning/widgets.sh")
-
-        let result = try scan
-        let widget = try XCTUnwrap(result.spots.first { $0.kind == .widget })
-
-        XCTAssertEqual(widget.places, ["morning/power", "morning/power"])
-        XCTAssertEqual(widget.opens, "morning/notes")
-        XCTAssertEqual(result.refused, [])
-    }
-
-    func testTheSizeOfTheDrawingKeyIsTheSizeOfTheCard() throws {
-        try single(size: nil)
-        XCTAssertEqual(try scan.spots.first?.size, .strip)
-    }
-
-    func testASingleWidgetCanAskToBeSmall() throws {
-        try single(size: "small")
-        XCTAssertEqual(try scan.spots.first?.size, .small)
-    }
-
-    func testASingleWidgetRefusesAnUnknownSize() throws {
-        try single(size: "huge")
-        XCTAssertEqual(try scan.refused.first?.reason, "Now has an unknown size: huge")
     }
 
     func testAPlaceTakesItsFormFromTheCardItFills() {
@@ -89,42 +48,8 @@ final class WidgetContractTests: XCTestCase {
         XCTAssertEqual(pair.slots.map { pair.form(of: $0, on: .strip) }, [.half, .half])
     }
 
-    func testAWidgetDrawingPlacesTheMetricThatEachWordNames() throws {
-        try power()
-        try script("heat.sh", "#!/bin/sh\nprintf 'frame=\\ntitle=1\\n'\n", toml: "on = ['clock.5']")
-        try widget(name: "Mine", grid: ["heat heat power", "heat heat power"])
-
-        let command = try XCTUnwrap(try scan.spots.first { $0.kind == .widget })
-
-        XCTAssertEqual(command.places, ["heat", "power"])
-        XCTAssertEqual(command.size, .large)
-        XCTAssertEqual(command.layout?.columns, 3)
-        XCTAssertEqual(command.layout?.rows, 2)
-        XCTAssertEqual(command.layout?.slots.first, SheetArea(x0: 0, x1: 1, y0: 0, y1: 1))
-    }
-
-    func testAWidgetDrawingCanAskForASize() throws {
-        try power()
-        try widget(name: "Mine", grid: ["power power"], size: "wide")
-
-        XCTAssertEqual(try scan.spots.first { $0.kind == .widget }?.size, .wide)
-    }
-
     func testAOneLineDrawingIsAStrip() {
         XCTAssertEqual(WidgetLayout(drawing: ["a b c"]).size, .strip)
-    }
-
-    func testAWidgetDrawingNamesItsFault() throws {
-        let cases: [(grid: [String], reason: String)] = [
-            (["power heat", "power"], "Mine: each grid line needs the same number of columns"),
-            (["power -"], "Mine: a widget's grid cannot have a divider"),
-            (["power heat", "heat power"], "Mine: the metric power is not a rectangle")
-        ]
-        try power()
-        for item in cases {
-            try widget(name: "Mine", grid: item.grid)
-            XCTAssertEqual(try scan.refused.first?.reason, item.reason)
-        }
     }
 
     func testCellsKeepOneGapAndAWiderOneBetweenTheSides() throws {
@@ -165,75 +90,14 @@ final class WidgetContractTests: XCTestCase {
         }
     }
 
-    func testEachSpotCanShowInTheMenuBarAndOnlyOneThatOffersItWithAValueShowsTheValue() throws {
+    func testEachSpotCanShowInTheMenuBar() throws {
         try script("one.sh", "#!/bin/sh\n")
         try script("two.sh", "#!/bin/sh\n", toml: "on = ['panel.open']")
-        try script("three.sh", "#!/bin/sh\n", toml: "mode = 'stay'\noffers = ['menubar']")
-        try script("four.sh", "#!/bin/sh\n", toml: "on = ['clock.5']\noffers = ['menubar']")
-        try script("five.sh", "#!/bin/sh\n", toml: "on = ['clock.5']")
+        try script("three.sh", "#!/bin/sh\n", toml: "mode = 'stay'")
+        try script("four.sh", "#!/bin/sh\n", toml: "on = ['clock.5']")
 
         XCTAssertEqual(try scan.refused, [])
-        XCTAssertEqual(try scan.scripts.filter(\.canShowInMenuBar).map(\.id), ["five", "four", "one", "three", "two"])
-        XCTAssertEqual(try scan.scripts.filter(\.showsValueInMenuBar).map(\.id), ["four", "three"])
-    }
-
-    func testASpotWhoseHeaderDrawsItsCardPlacesMetricsOfOtherScripts() throws {
-        try power()
-        try widget(grid: ["power power"])
-        try widget(name: "Then", grid: ["power"], size: "square", file: "then.sh")
-
-        let scan = try scan
-        let widget = try XCTUnwrap(scan.spots.first)
-
-        XCTAssertEqual(scan.refused, [])
-        XCTAssertEqual(scan.spots.map(\.id), ["mine", "power", "then"])
-        XCTAssertEqual(scan.spots.map(\.headerState.isOnGrid), [true, false, true])
-        XCTAssertEqual(widget.kind, .widget)
-        XCTAssertEqual(widget.size, .strip)
-        XCTAssertEqual(widget.layout, WidgetLayout(drawing: ["power power"]))
-        XCTAssertEqual(widget.places, ["power"])
-    }
-
-    func testACardDrawnAtTwoSizesIsRefused() throws {
-        try power()
-        try widget(grid: ["power"], more: "\n'grid.large' = ['power']")
-
-        XCTAssertEqual(try scan.refused.first?.reason, "Now draws its card at more than one size. Keep the grid lines of one size, such as grid.large")
-    }
-
-    func testACardOfOtherSpotsRefusesAKeyOfASpotThatRuns() throws {
-        try power()
-        try widget(more: "\nicon = 'cpu'\ndetail = 'Now'\nkeywords = ['load']\non = ['clock.60']")
-
-        XCTAssertEqual(try scan.refused.first?.reason, "Now draws a card of other spots, so it takes no on. Keep title, icon, detail, keywords, to and its grid lines, or draw its own blocks with grid lines in its output")
-    }
-
-    func testAWidgetThatNamesAMissingMetricIsLeftOutAndReported() throws {
-        try widget(grid: ["power none"])
-
-        let scan = try scan
-
-        XCTAssertEqual(scan.spots, [])
-        XCTAssertEqual(scan.refused, [ScanResult.Refusal(file: "mine", reason: "Now names no metric called power")])
-    }
-
-    func testAWidgetThatOpensAMissingCommandIsLeftOutAndReported() throws {
-        try power()
-        try widget(more: "\nto = 'nothing'")
-
-        let scan = try scan
-
-        XCTAssertEqual(scan.spots.map(\.id), ["power"])
-        XCTAssertEqual(scan.refused, [ScanResult.Refusal(file: "mine", reason: "Now opens no command called nothing")])
-    }
-
-    func testAWidgetOffersEnterOnlyWhenItOpensSomething() {
-        let url = URL(fileURLWithPath: "/tmp")
-        let still = Spot(id: "a/b", name: "b", url: url, kind: .widget)
-        let opening = Spot(id: "a/c", name: "c", url: url, kind: .widget, opens: "a/d")
-
-        XCTAssertNil(still.openTitle(hasItem: false))
-        XCTAssertEqual(opening.openTitle(hasItem: false), "Open")
+        XCTAssertEqual(try scan.scripts.filter(\.canShowInMenuBar).map(\.id), ["four", "one", "three", "two"])
     }
 
     func testEveryLayoutFillsItsSizeWithNoOverlap() {

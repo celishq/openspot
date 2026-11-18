@@ -32,12 +32,6 @@ final class SampleSpotsTests: SampleSpotsCase {
         }
     }
 
-    func testNoMetricShowsTwiceInTheGrid() throws {
-        let places = try scan.spots.flatMap(\.places)
-
-        XCTAssertEqual(places.count, Set(places).count)
-    }
-
     func testTheSpotsOfANewMacFitThePanelWithNoScrolling() throws {
         let spots = URL(fileURLWithPath: #filePath).deletingLastPathComponent().deletingLastPathComponent().deletingLastPathComponent().appendingPathComponent("spots")
         let starting = Set(SpotsFolder(url: spots.appendingPathComponent("none"), core: spots).startingSpots())
@@ -135,7 +129,7 @@ final class SampleSpotsTests: SampleSpotsCase {
     }
 
     func testEveryCommandCanBeRun() throws {
-        for command in try scan.spots where command.kind != .widget && command.host == nil && command.mode != .inline {
+        for command in try scan.spots where command.host == nil && command.mode != .inline {
             XCTAssertTrue(FileManager.default.isExecutableFile(atPath: command.url.path), command.name)
         }
     }

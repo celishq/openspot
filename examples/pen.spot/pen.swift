@@ -18,7 +18,7 @@ func close() {
 Link.listen { call in
     Link.start(call.id)
     switch call.arguments.first {
-    case "draw", "open":
+    case "draw":
         guard overlay == nil else {
             close()
             return Link.end(call.id)

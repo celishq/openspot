@@ -149,8 +149,8 @@ final class SpotOutputTests: XCTestCase {
     }
 
     func testWhatItPrintsDecidesTheKindOfSpot() {
-        XCTAssertEqual(SpotOutput(text: "").kind, .launch)
-        XCTAssertEqual(SpotOutput(text: "frame=\ntitle=Hi\n").kind, .launch)
+        XCTAssertEqual(SpotOutput(text: "").kind, .list)
+        XCTAssertEqual(SpotOutput(text: "frame=\ntitle=Hi\n").kind, .list)
         XCTAssertEqual(SpotOutput(text: "switch=power\nvalue=true\n").kind, .toggle)
         XCTAssertEqual(SpotOutput(text: "field=volume\ntype=slider\nvalue=7\n").kind, .slider)
         XCTAssertEqual(SpotOutput(text: "switch=power\nvalue=true\n\ntext=a\ntitle=A\n").kind, .list)
@@ -182,7 +182,7 @@ final class SpotOutputTests: XCTestCase {
         let rows = "text=One\ndetail=2m\ntone=bad\n\ntext=Two\n"
 
         let counted = try XCTUnwrap(MetricValue(output: SpotOutput(text: rows)))
-        let titled = try XCTUnwrap(MetricValue(output: SpotOutput(text: "frame=\nmain=m\n\ntext=m\ntitle=Many\n\n" + rows)))
+        let titled = try XCTUnwrap(MetricValue(output: SpotOutput(text: "frame=\ngrid=m\n\ntext=m\ntitle=Many\n\n" + rows)))
 
         XCTAssertEqual(counted.title, "2")
         XCTAssertEqual(counted.rows, [.init(title: "One", detail: "2m", tone: .bad), .init(title: "Two")])

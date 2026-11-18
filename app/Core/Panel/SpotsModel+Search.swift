@@ -8,8 +8,7 @@ extension SpotsModel {
     }
 
     var shelfCards: [Entry] {
-        let parts = Set(cards.flatMap { $0.spot.places + ($0.spot.opens.map { [$0] } ?? []) })
-        return cards.filter { !$0.isOnGrid && $0.item == nil && $0.spot.offersCard && $0.spot.fault == nil && !parts.contains($0.id) }
+        cards.filter { !$0.isOnGrid && $0.item == nil && $0.spot.isFound && $0.spot.fault == nil }
     }
 
     var grid: SpotGrid {
@@ -63,7 +62,7 @@ extension SpotsModel {
         if spotListIsStale {
             spotListIsStale = false
             spotListBuilds += 1
-            spotList.replace(cards.filter(\.spot.isFound).map(Self.foundItem))
+            spotList.replace(cards.filter(\.isFound).map(Self.foundItem))
             commands = CommandIndex(cards)
         }
         let command = isEditing ? nil : SlashCommand(query)
@@ -148,7 +147,7 @@ extension SpotsModel {
             }
             return entry.isOnGrid == (placements[index].group == .shelf)
         }
-        return entry.spot.isFound || entry.spot.isGlobal || entry.spot.answers != nil
+        return entry.isFound || entry.spot.isGlobal || entry.spot.answers != nil
     }
 
     func noteMiss() {
@@ -166,7 +165,7 @@ extension SpotsModel {
 
     func markFound(_ id: String) {
         guard !spotListIsStale else { return }
-        let card = card(id: id).flatMap { $0.spot.isFound ? Self.foundItem($0) : nil }
+        let card = card(id: id).flatMap { $0.isFound ? Self.foundItem($0) : nil }
         if spotList.all.first(where: { $0.run == id }) != card { spotListIsStale = true }
     }
 

@@ -2,6 +2,8 @@ title = "Grid"
 icon = "square.grid.3x3"
 detail = "Drag over a grid to place the front window"
 on = ["panel.open"]
-offers = ["card"]
 mode = "stay"
 source = ["grid"]
+
+[commands.place]
+title = "Place window"

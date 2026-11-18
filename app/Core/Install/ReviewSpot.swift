@@ -124,7 +124,6 @@ public struct ReviewSpot: Equatable, Sendable {
     static let otherKeySubtitle = "Signed by another key"
 
     private static func selfRuns(in scan: ScanResult) -> [String] {
-        let placed = Set(scan.files.flatMap(\.spots).flatMap(\.places))
         return scan.scripts.compactMap { script in
             var moments: [String] = switch script.mode {
             case .stay: [script.readsAtLaunch ? "keeps running while Openspot runs" : "keeps running while it is in use"]
@@ -137,9 +136,6 @@ public struct ReviewSpot: Equatable, Sendable {
                 case .event(let name): moments.append("on \(name)")
                 case .sheet: break
                 }
-            }
-            if placed.contains(script.id), script.read?.seconds == nil, script.read?.has(.panel) != true {
-                moments.append("when the panel opens")
             }
             return moments.isEmpty ? nil : "\(script.name): \(moments.joined(separator: ", "))"
         }

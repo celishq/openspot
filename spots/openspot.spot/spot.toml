@@ -53,7 +53,6 @@ on = ["sheet.open"]
 view = "icon.swift"
 uses = ["spots"]
 drop = "png,jpg,jpeg,heic,gif,tiff,svg,pdf,icns"
-offers = ["none"]
 
 [scripts.make]
 title = "Make a spot"
@@ -70,21 +69,24 @@ detail = "Make your own"
 on = ["sheet.open"]
 uses = ["clipboard"]
 edits = "spots"
-offers = ["card"]
 
 [scripts.playground]
 title = "Playground"
 icon = "hammer"
 detail = "Try a spot and see each call"
 keywords = ["sandbox"]
-offers = ["card"]
+
+[scripts.playground.commands.playground]
+title = "Open Playground"
 
 [scripts.quit]
 title = "Quit"
 icon = "power"
 detail = "Openspot"
 uses = ["app"]
-offers = ["card"]
+
+[scripts.quit.commands.quit]
+title = "Quit"
 
 [scripts.settings]
 title = "Settings"
@@ -92,14 +94,16 @@ icon = "gearshape"
 detail = "Choose your key"
 on = ["sheet.open"]
 uses = ["app"]
-offers = ["card", "search"]
+offers = ["search"]
 
 [scripts.spots]
 title = "Spots"
 icon = "puzzlepiece.extension"
 detail = "Edit Spots"
 keywords = ["edit spots"]
-offers = ["card"]
+
+[scripts.spots.commands.edit]
+title = "Edit Spots"
 
 [scripts.store]
 title = "Store"
@@ -109,7 +113,6 @@ keywords = ["store", "get spots"]
 on = ["sheet.open"]
 uses = ["spots", "account"]
 view = "store.swift"
-offers = ["card", "window"]
 
 [scripts.themes]
 title = "Themes"
@@ -118,7 +121,6 @@ detail = "Change the look"
 keywords = ["theme", "look"]
 on = ["sheet.open"]
 uses = ["app", "clipboard"]
-offers = ["card"]
 pages = ["prompt:*"]
 
 [scripts.updates]
@@ -126,14 +128,15 @@ title = "Updates"
 icon = "arrow.triangle.2.circlepath"
 on = ["app.launch", "app.update"]
 uses = ["app"]
-offers = ["card"]
+
+[scripts.updates.commands.update]
+title = "Update"
 
 [scripts.welcome]
 title = "Welcome spot"
 icon = "hand.wave"
 on = ["sheet.open"]
 uses = ["app"]
-offers = ["none"]
 starts = "first-launch"
 view = "welcome.swift"
 pages = ["key", "agent"]

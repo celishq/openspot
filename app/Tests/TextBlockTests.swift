@@ -72,7 +72,7 @@ final class TextBlockTests: XCTestCase {
     func testAMetricReadsItsKeys() {
         let output = SpotOutput(text: """
         frame=
-        main=m
+        grid=m
 
         text=m
         title=6 open

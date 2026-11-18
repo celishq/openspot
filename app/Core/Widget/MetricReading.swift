@@ -6,6 +6,7 @@ public struct MetricReading: Equatable, Sendable {
     public let headerSymbol: String?
     public private(set) var value: MetricValue?
     public private(set) var isStale = false
+    public internal(set) var hasBar = false
 
     public init(label: String, headerSymbol: String? = nil, value: MetricValue? = nil) {
         kind = value?.kind ?? .value

@@ -43,7 +43,7 @@ extension SpotsModel {
 
     private func open(byKey entry: Entry) {
         guard entry.soleCommand == nil else { return run(entry) }
-        if entry.kind.opensSheet, !entry.spot.pressRuns { endFlow() }
+        if entry.kind.opensSheet { endFlow() }
         press(entry.id)
     }
 
@@ -119,7 +119,7 @@ extension SpotsModel {
             sheet.afterAnswer { [weak self] in self?.press(id) }
             return
         }
-        guard entry.kind.opensSheet, !entry.spot.pressRuns else {
+        guard entry.kind.opensSheet else {
             run(entry)
             return
         }
@@ -150,17 +150,12 @@ extension SpotsModel {
         switch entry.spot.mainAct {
         case .toggle:
             sheets[entry.id]?.pressCard()
-        case .run(let closes):
-            if closes, isShown, sheets[entry.id]?.isCardRunning != true { host.dismiss() }
-            sheets[entry.id]?.pressCard()
         case .command where openSheetID == entry.id, .sheet where openSheetID == entry.id:
             closeSheet(moving: true)
         case .command(let command):
             runSole(command, of: entry)
         case .sheet:
             pushFirst(entry.id, moving: true)
-        case .open(let opens):
-            press(opens)
         case .none:
             break
         }
@@ -185,24 +180,19 @@ extension SpotsModel {
 
     var soleHint: String? {
         guard openSheetID == nil, let entry = selectedEntry, entry.item == nil, case .command(let command) = entry.spot.mainAct else { return nil }
-        guard assignedKeys.contains(where: { $0.spot == entry.id && $0.act == .command(command) }) else {
-            return "⏎ Set key   ⌘⏎ Settings   ⌘K Actions"
-        }
         return "⏎ \(entry.spot.offers.first?.title ?? command)   ⌘⏎ Settings   ⌘K Actions"
     }
 
     private func runSole(_ command: String, of entry: Entry) {
-        if let key = assignedKeys.first(where: { $0.spot == entry.id && $0.act == .command(command) }) {
-            if confirmWords(of: key) != nil {
-                guard isShown else { return press(key) }
-                if confirming != key || !runConfirmed() { confirming = key }
-                return
-            }
-            if isShown { host.dismiss() }
-            run(key)
-        } else {
-            openKeys(of: entry.id, recording: .command(command))
+        let key = assignedKeys.first { $0.spot == entry.id && $0.act == .command(command) }
+            ?? GlobalKey(spot: entry.id, act: .command(command), trigger: .shake)
+        if confirmWords(of: key) != nil {
+            guard isShown else { return press(key) }
+            if confirming != key || !runConfirmed() { confirming = key }
+            return
         }
+        if isShown { host.dismiss() }
+        run(key)
     }
 
     public var menuBarMarks: [(id: String, mark: MenuBarMark)] {
@@ -215,7 +205,7 @@ extension SpotsModel {
 
     public func openWork() -> Bool {
         guard let id = runs.workSpot else { return false }
-        let spot = { self.visible.firstIndex { $0.id == id || $0.spot.places.contains(id) } }
+        let spot = { self.visible.firstIndex { $0.id == id } }
         if isShown, openSheetID == nil, spot() == selected {
             host.dismiss()
             return true
@@ -235,20 +225,7 @@ extension SpotsModel {
     }
 
     public func openFromMenuBar(_ id: String) {
-        if let entry = entries.first(where: { $0.id == id && $0.item == nil }), !entry.spot.showsValueInMenuBar, !entry.spot.opensOnReturn {
-            let recordsFirst = entry.spot.soleCommand.map { command in !assignedKeys.contains { $0.spot == id && $0.act == .command(command) } } ?? false
-            if recordsFirst { host.show() }
-            return run(entry)
-        }
-        let opens = entries.first { $0.id == id && $0.kind.opensSheet }?.id
-        if isShown, opens == nil || openSheetID == opens {
-            host.dismiss()
-        } else if let opens {
-            press(opens)
-        } else {
-            closeSheet(moving: isShown)
-            host.show()
-            selected = visible.firstIndex { $0.spot.places.contains(id) } ?? 0
-        }
+        if isShown { host.dismiss() }
+        float(id)
     }
 }

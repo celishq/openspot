@@ -119,10 +119,6 @@ extension SpotRuns {
         }
         updateClock()
         readPanel(toEnd: readsToEnd)
-        for id in placed {
-            guard let sheet = sheets[id], let read = sheet.spot.read, read.seconds == nil, !read.has(.panel) else { continue }
-            if readsToEnd { sheet.readToEnd(reason: .want) } else { sheet.read(reason: .want) }
-        }
     }
 
     private func readPanel(toEnd: Bool = false) {

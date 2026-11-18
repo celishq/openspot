@@ -301,7 +301,8 @@ final class FlowNavigationTests: PanelCase {
     }
 
     func testASheetWithNoCardGrowsFromTheFieldAndShrinksBackIntoIt() async throws {
-        try script("hidden", toml: "on = ['sheet.open']\noffers = ['search']", "printf 'text=h\\ntitle=Hidden\\n'")
+        try script("hidden", toml: "on = ['sheet.open']", "printf 'text=h\\ntitle=Hidden\\n'")
+        _ = try model.files.config.change { $0.arrangement.set(isOnGrid: false, of: "hidden") }
         await model.reload()
         model.isShown = true
         model.panelWillShow()

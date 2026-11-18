@@ -69,7 +69,7 @@ extension SpotsModel {
         guard acceptsDrop(paths, on: id, in: place), sheets[id]?.drop(paths, files: runs.dragged) == true else { return false }
         guard place == .panel else { return true }
         endDrag()
-        guard entry(id)?.kind == .list else {
+        guard entry(id)?.spot.opensOnReturn == true else {
             if isShown { host.dismiss() }
             return true
         }

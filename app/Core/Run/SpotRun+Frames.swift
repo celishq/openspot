@@ -194,10 +194,10 @@ extension SpotRun {
     }
 
     private func takeValue(_ lines: SpotOutput) {
-        if let value = MetricValue(output: lines) {
-            changeReading { $0.take(value) }
-        } else {
-            changeReading { $0.markStale() }
+        let value = MetricValue(output: lines.hasBar ? lines.barred : lines)
+        changeReading {
+            $0.hasBar = lines.hasBar
+            if let value { $0.take(value) } else { $0.markStale() }
         }
     }
 

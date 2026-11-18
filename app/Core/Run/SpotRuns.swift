@@ -48,7 +48,7 @@ public final class SpotRuns {
     @ObservationIgnored private let prepare: ([SpotItem], [String]) async -> Void
     @ObservationIgnored private var order: [String] = []
 
-    @ObservationIgnored private(set) var placed: Set<String> = []
+    @ObservationIgnored private var grid: Set<String> = []
     @ObservationIgnored private var menuBar: Set<String> = []
     public private(set) var menuBarMarks: [(id: String, mark: MenuBarMark)] = []
     @ObservationIgnored public private(set) var work: [(id: String, call: ScriptCall)] = []
@@ -128,7 +128,6 @@ public final class SpotRuns {
         let scripts = scan.scripts
         self.stamps = stamps
         for (id, kept) in loaded where kept.stamp != stamps[id] { dropScript(of: id) }
-        placed = Set(scan.spots.flatMap(\.places))
         self.menuBar = menuBar
         order = scripts.map(\.id)
         let owners = Dictionary(scan.spots.map { ($0.id, $0) }, uniquingKeysWith: { first, _ in first })
@@ -249,7 +248,7 @@ public final class SpotRuns {
         if let id, !menuBar.contains(id) { return }
         let marks: [(id: String, mark: MenuBarMark)] = order.compactMap { id in
             guard let sheet = sheets[id], isInMenuBar(sheet.spot) else { return nil }
-            guard sheet.spot.showsValueInMenuBar else { return (id, MenuBarMark(icon: sheet.spot.symbol, name: sheet.spot.name)) }
+            guard sheet.reading.hasBar else { return (id, MenuBarMark(icon: sheet.spot.symbol, name: sheet.spot.name)) }
             return MenuBarMark(reading: sheet.reading).map { (id, $0) }
         }
         guard !marks.elementsEqual(menuBarMarks, by: { $0.id == $1.id && $0.mark == $1.mark }) else { return }
@@ -300,9 +299,16 @@ public final class SpotRuns {
 
     func wants(_ spot: Spot) -> Bool {
         if isInMenuBar(spot) || spot.mode == .stay && spot.readsAtLaunch { return true }
-        if isPanelOpen, spot.mode.stays, spot.answers != nil { return true }
-        guard let read = spot.read else { return false }
-        return isPanelOpen && (read.has(.panel) || placed.contains(spot.id))
+        guard isPanelOpen else { return false }
+        return spot.mode.stays && spot.answers != nil || spot.read?.has(.panel) == true || grid.contains(spot.id)
+    }
+
+    public func take(grid next: Set<String>) {
+        guard next != grid else { return }
+        grid = next
+        guard isPanelOpen else { return }
+        sheets.values.forEach { $0.settleScript() }
+        updateClock()
     }
 
     func intake(_ frame: String, of id: String?) async -> SpotOutput {

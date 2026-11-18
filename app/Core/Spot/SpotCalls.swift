@@ -180,8 +180,7 @@ struct SpotCalls {
     func stats(days: Int, spot: String?, format: Stats.Form, byVersion: Bool) -> CommandAPI.Work {
         CommandAnswer.work { [places, runs] in
             let counts = await StatsLog.days(days, runs: runs, stats: places.stats)
-            let cards = (try? places.readSpots().scan().spots) ?? []
-            return try Stats(days: counts, spot: spot, cards: cards, byVersion: byVersion).text(format)
+            return try Stats(days: counts, spot: spot, byVersion: byVersion).text(format)
         }
     }
 }

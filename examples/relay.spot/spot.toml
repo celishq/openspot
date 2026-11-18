@@ -4,4 +4,3 @@ detail = "Send a line to another process, and see each line it sends back"
 mode = "stay"
 on = ["app.launch", "panel.open"]
 uses = ["network"]
-offers = ["card", "menubar"]

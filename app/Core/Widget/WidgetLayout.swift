@@ -40,20 +40,6 @@ public struct WidgetLayout: Equatable, Sendable {
         slots = names.compactMap { areas[$0] }
     }
 
-    public static func faults(in drawing: [String]) -> [String] {
-        let cells = drawing.map(words)
-        guard !cells.isEmpty else { return ["its grid is empty"] }
-        var faults: [String] = []
-        if Set(cells.map(\.count)).count > 1 { faults.append("each grid line needs the same number of columns") }
-        if cells.contains(where: { $0.contains(SheetLayout.divider) }) { faults.append("a widget's grid cannot have a divider") }
-        let layout = WidgetLayout(drawing: drawing)
-        for (name, area) in zip(layout.names, layout.slots) where name != SheetLayout.divider {
-            let count = cells.reduce(0) { $0 + $1.filter { $0 == name }.count }
-            if count != area.size { faults.append("the metric \(name) is not a rectangle") }
-        }
-        return faults
-    }
-
     public func form(of slot: SheetArea, on card: SpotSize) -> Form {
         if card == .small { return .control }
         let wide = Double(slot.x1 - slot.x0 + 1) / Double(columns) * Double(card.columns)

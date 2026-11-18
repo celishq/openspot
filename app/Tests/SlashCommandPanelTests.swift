@@ -51,6 +51,21 @@ final class SlashCommandPanelTests: PanelCase {
         XCTAssertEqual(model.hint, "⏎ Find note \"buy milk\"")
     }
 
+    func testASpotThatThePersonKeepsOutOfSearchIsNotFoundAndListsNoCommand() async throws {
+        try writeNotes()
+        try script("trash", toml: "title = 'Trash'", "printf '\\033]9;Emptied\\007'")
+        _ = try model.files.config.change { $0.arrangement.arrange(["notes"]) }
+        try String(contentsOf: model.files.config.url, encoding: .utf8).appending("search = false\n").write(to: model.files.config.url, atomically: true, encoding: .utf8)
+        await open()
+
+        type("notes")
+        XCTAssertFalse(model.visible.contains { $0.spot.id == "notes" })
+        type("/note")
+        XCTAssertEqual(model.visible.map(\.state.title), [])
+        type("trash")
+        XCTAssertEqual(model.visible.first?.id, "trash")
+    }
+
     func testTheHintOfTheHighlightedCommandShowsUntilTextFollows() async throws {
         try writeNotes()
         await open()
@@ -138,7 +153,7 @@ final class SlashCommandPanelTests: PanelCase {
         XCTAssertEqual(model.selected, 0)
     }
 
-    func testASpotWithAPlaceholderRunsOpenWithTheText() async throws {
+    func testASpotWithAPlaceholderOpensItsSheetWithTheText() async throws {
         try script("say", toml: "title = 'Say'\nplaceholder = 'What to say'", """
         stdin=$(cat)
         printf '%s\\n%s\\n' "$*" "$stdin" >> '\(input.path)'
@@ -149,8 +164,7 @@ final class SlashCommandPanelTests: PanelCase {
         type("/say hi")
         model.runSelected()
 
-        try await wait("the toast") { self.host.confirms == ["Said"] }
-        XCTAssertTrue(sent.contains("open\nsearch=hi"), sent)
+        try await wait("the show of its sheet") { self.model.openSheetID == "say" && self.sent.hasPrefix("show\n") && self.sent.contains("search=hi") }
     }
 
     func testASlashAfterTheTextListsEveryCommandAndReturnSendsTheText() async throws {

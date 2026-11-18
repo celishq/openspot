@@ -27,8 +27,6 @@ final class IconSpotTests: BuiltInCase {
         let icon = try icon
 
         XCTAssertEqual(icon.offeredActions, [])
-        XCTAssertFalse(icon.offersFloat)
-        XCTAssertFalse(icon.offersCard)
         XCTAssertTrue(icon.takesDrops)
     }
 

@@ -10,13 +10,12 @@ function fields(text) {
   return Object.fromEntries(text.trim().split("\n").map((line) => [line.slice(0, line.indexOf("=")), line.slice(line.indexOf("=") + 1)]))
 }
 
-/** The card of an answer: the sum as it was read, faint, over the big answer with its unit faint. The sum names the day
- * of old rates, in the tone that warns. A pick copies the plain value. */
+/** The card of an answer: the big answer with its unit faint, over the sum as it was read, faint. The sum names the day
+ * of old rates. A pick copies the plain value. */
 function card(solved) {
   return openspot.frame([
-    { frame: "", "grid.large": ["sum sum sum sum", "answer answer answer answer", "answer answer answer answer"], main: "answer" },
-    { text: "sum", detail: solved.tone ? `${solved.detail} · rates of ${solved.rates}` : solved.detail, tone: solved.tone },
-    { number: "answer", value: solved.text, display: solved.title, unit: solved.unit },
+    { frame: "", "grid.large": "answer" },
+    { number: "answer", value: solved.text, display: solved.title, unit: solved.unit, title: solved.tone ? `${solved.detail} · rates of ${solved.rates}` : solved.detail },
     { button: "open", title: "Copy" },
   ])
 }

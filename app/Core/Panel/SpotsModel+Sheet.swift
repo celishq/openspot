@@ -53,7 +53,7 @@ extension SpotsModel {
     }
 
     public func place(ofSheet id: String) -> SheetPlace {
-        entry(id)?.spot.offersWindow == true ? .window : .panel
+        arrangement.isWindow(of: id) ?? defaultArrangement.isWindow(of: id) ?? false ? .window : .panel
     }
 
     func presentSheet(of id: String, moving: Bool, showingPanel: () -> Void = {}) {
@@ -68,12 +68,11 @@ extension SpotsModel {
     }
 
     @discardableResult
-    func openKeys(of id: String, recording act: GlobalKey.Act? = nil) -> Bool {
+    func openKeys(of id: String) -> Bool {
         guard let entry = entry(id), let settings = settingsSheet(of: entry) else { return false }
         let moves = isShown
         if !moves { host.show() }
         pushFirst(settings, moving: moves)
-        if let act { toggleRecording(id: SpotSettings.Row.key(act).id(of: id)) }
         return true
     }
 

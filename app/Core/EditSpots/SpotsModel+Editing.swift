@@ -4,7 +4,7 @@ import Observation
 extension SpotsModel {
 
     public func sizes(of entry: Entry) -> [SpotSize] {
-        entry.item == nil ? entry.spot.sizes : []
+        entry.item == nil ? SpotSize.all : []
     }
 
     public func beginEditing() {
