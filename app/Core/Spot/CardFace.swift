@@ -6,7 +6,7 @@ public struct CardFace: Equatable, Sendable {
 
     public private(set) var drawings: [String: [[String]]]
     public private(set) var parts: [SpotPart]
-    private var layouts: [String: WidgetLayout] = [:]
+    private var layouts: [String: CardLayout] = [:]
 
     public static let none = CardFace(drawings: [:], parts: [])
 
@@ -15,7 +15,7 @@ public struct CardFace: Equatable, Sendable {
         self.parts = parts
         for size in SpotSize.all {
             guard let drawing = drawing(for: size) else { continue }
-            layouts[size.name] = WidgetLayout(drawing: drawing.map { $0.joined(separator: " ") }, size: size)
+            layouts[size.name] = CardLayout(drawing: drawing.map { $0.joined(separator: " ") }, size: size)
         }
     }
 
@@ -34,7 +34,7 @@ public struct CardFace: Equatable, Sendable {
         return fitting.reversed().lazy.compactMap { drawings[$0.name] }.first
     }
 
-    public func layout(for size: SpotSize) -> WidgetLayout? {
+    public func layout(for size: SpotSize) -> CardLayout? {
         layouts[size.name]
     }
 

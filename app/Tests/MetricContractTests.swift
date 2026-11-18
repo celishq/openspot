@@ -1,11 +1,11 @@
 import XCTest
 @testable import OpenspotCore
 
-final class WidgetContractTests: XCTestCase {
+final class MetricContractTests: XCTestCase {
     private var folder: URL!
 
     override func setUpWithError() throws {
-        folder = FileManager.default.temporaryDirectory.appendingPathComponent("openspot-widgets-\(UUID().uuidString)")
+        folder = FileManager.default.temporaryDirectory.appendingPathComponent("openspot-metrics-\(UUID().uuidString)")
         try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
     }
 
@@ -25,48 +25,6 @@ final class WidgetContractTests: XCTestCase {
 
     private var scan: ScanResult {
         get throws { try SpotsFolder(url: folder).scan() }
-    }
-
-    func testAPlaceTakesItsFormFromTheCardItFills() {
-        let single = WidgetLayout(drawing: ["a"])
-        let slot = single.slots[0]
-        XCTAssertEqual(single.form(of: slot, on: .small), .control)
-        XCTAssertEqual(single.form(of: slot, on: .wide), .half)
-        XCTAssertEqual(single.form(of: slot, on: .strip), .half)
-        XCTAssertEqual(single.form(of: slot, on: .square), .big)
-    }
-
-    func testOneBigPlaceBesideThreeLines() {
-        let hero = WidgetLayout(drawing: ["a a b b", "a a c c", "a a d d"])
-        XCTAssertEqual(hero.slots.map { hero.form(of: $0, on: .large) }, [.big, .line, .line, .line])
-    }
-
-    func testAPlaceInARowOrAPairTakesItsFormFromItsCell() {
-        let row = WidgetLayout(drawing: ["a b c d"])
-        let pair = WidgetLayout(drawing: ["a a b b"])
-        XCTAssertEqual(row.slots.map { row.form(of: $0, on: .strip) }, [.stat, .stat, .stat, .stat])
-        XCTAssertEqual(pair.slots.map { pair.form(of: $0, on: .strip) }, [.half, .half])
-    }
-
-    func testAOneLineDrawingIsAStrip() {
-        XCTAssertEqual(WidgetLayout(drawing: ["a b c"]).size, .strip)
-    }
-
-    func testCellsKeepOneGapAndAWiderOneBetweenTheSides() throws {
-        let room = CGSize(width: 300, height: 100)
-        let hero = WidgetLayout(drawing: ["a a b b", "a a c c", "a a d d"])
-        let rects = hero.slots.map { hero.rect(of: $0, in: room, gap: 8, sideGap: 20) }
-
-        XCTAssertEqual(rects[1].minX - rects[0].maxX, 20, accuracy: 0.001)
-        XCTAssertEqual(rects[2].minY - rects[1].maxY, 8, accuracy: 0.001)
-        XCTAssertEqual(rects[3].maxY, 100, accuracy: 0.001)
-        XCTAssertEqual(rects[3].maxX, 300, accuracy: 0.001)
-
-        let three = WidgetLayout(drawing: ["a b c"])
-        let cells = three.slots.map { three.rect(of: $0, in: room, gap: 8, sideGap: 20) }
-        XCTAssertEqual(cells[1].minX - cells[0].maxX, 8, accuracy: 0.001)
-        XCTAssertEqual(cells[0].width, cells[2].width, accuracy: 0.001)
-        XCTAssertEqual(cells[2].maxX, 300, accuracy: 0.001)
     }
 
     func testAMetricPrintsItsValue() async throws {
@@ -98,20 +56,6 @@ final class WidgetContractTests: XCTestCase {
 
         XCTAssertEqual(try scan.refused, [])
         XCTAssertEqual(try scan.scripts.filter(\.canShowInMenuBar).map(\.id), ["four", "one", "three", "two"])
-    }
-
-    func testEveryLayoutFillsItsSizeWithNoOverlap() {
-        for layout in [["a"], ["a a b b", "a a c c", "a a d d"], ["a a b b"], ["a b c d"]].map({ WidgetLayout(drawing: $0) }) {
-            var cells = Set<[Int]>()
-            for slot in layout.slots {
-                for row in slot.y0...slot.y1 {
-                    for column in slot.x0...slot.x1 {
-                        XCTAssertTrue(cells.insert([row, column]).inserted, layout.name)
-                    }
-                }
-            }
-            XCTAssertEqual(cells.count, layout.columns * layout.rows, layout.name)
-        }
     }
 
     func testAFailedReadKeepsTheLastValueAndMarksItStale() {

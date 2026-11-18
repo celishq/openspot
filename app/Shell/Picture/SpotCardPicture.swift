@@ -19,7 +19,7 @@ enum SpotCardPicture {
         let shape = SpotRoundShape(radius: SurfaceEdge(card: size).radius)
         let stage = SpotPictureStage(size: card, radius: SurfaceEdge(card: size).radius, seed: URL(fileURLWithPath: path).lastPathComponent) {
             SpotCardDrawing(layout: layout, face: face, card: size) { _, _ in }
-                .padding(SpotTokens.cardPadding(for: size, isWidget: true))
+                .padding(SpotTokens.cardPadding(for: size, isDrawn: true))
                 .background(SpotTheme.ink.opacity(SpotTheme.fill), in: shape)
                 .spotGlass(in: shape)
         }

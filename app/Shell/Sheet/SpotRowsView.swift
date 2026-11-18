@@ -253,7 +253,7 @@ private struct RowBars: View {
     }
 
     private var colour: Color {
-        tone.map(SpotMetricView.colour) ?? SpotTheme.ink
+        SpotToneWords.colour(of: tone) ?? SpotTheme.ink
     }
 }
 

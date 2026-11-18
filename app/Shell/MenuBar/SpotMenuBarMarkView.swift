@@ -5,7 +5,7 @@ struct SpotMenuBarMarkView: View {
     let mark: MenuBarMark
 
     private var markColour: Color {
-        mark.tone.map(SpotMetricView.colour) ?? .primary
+        SpotToneWords.colour(of: mark.tone) ?? .primary
     }
 
     var body: some View {
@@ -30,7 +30,7 @@ struct SpotMenuBarMarkView: View {
         case .counts(let counts):
             ForEach(Array(counts.enumerated()), id: \.offset) { _, count in
                 HStack(spacing: SpotTokens.menuBarCountGap) {
-                    if let tone = count.tone { dot(SpotMetricView.colour(tone)) }
+                    if let colour = SpotToneWords.colour(of: count.tone) { dot(colour) }
                     Text("\(count.count)")
                 }
             }

@@ -148,7 +148,7 @@ struct SpotSheetLayer: View {
             SpotCardDrawing(layout: layout, face: card.state.face, card: size, view: { room in
                 card.spot.view.map { SpotCustomView(source: $0, values: card.state.values, card: size, room: room, views: SpotViews.shared) }
             }, onSlot: { _, _ in })
-            .padding(SpotTokens.cardPadding(for: size, isWidget: true))
+            .padding(SpotTokens.cardPadding(for: size, isDrawn: true))
         } else if card.item == nil, card.state.face.hasView, let view = card.spot.view {
             SpotCustomView(source: view, values: card.state.values, card: size, views: SpotViews.shared)
         }

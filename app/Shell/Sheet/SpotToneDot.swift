@@ -6,9 +6,9 @@ struct SpotToneDot: View {
     let side: CGFloat
 
     var body: some View {
-        if let tone {
+        if let colour = SpotToneWords.colour(of: tone) {
             Circle()
-                .fill(SpotMetricView.colour(tone))
+                .fill(colour)
                 .frame(width: max(side / SpotTokens.toneDotParts, SpotTokens.toneDotLeast), height: max(side / SpotTokens.toneDotParts, SpotTokens.toneDotLeast))
                 .offset(x: side / SpotTokens.toneDotShiftParts, y: side / SpotTokens.toneDotShiftParts)
         }

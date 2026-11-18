@@ -1,16 +1,7 @@
 import CoreGraphics
 import Foundation
 
-public struct WidgetLayout: Equatable, Sendable {
-    public enum Form: Equatable, Sendable {
-        case big
-        case line
-        case half
-        case stat
-        case control
-    }
-
-    public let name: String
+public struct CardLayout: Equatable, Sendable {
     public let size: SpotSize
     public let columns: Int
     public let rows: Int
@@ -18,10 +9,6 @@ public struct WidgetLayout: Equatable, Sendable {
     public let slots: [SheetArea]
 
     public init(drawing: [String], size: SpotSize? = nil) {
-        self.init(name: "grid", size: size ?? (drawing.count == 1 ? .strip : .large), drawing: drawing)
-    }
-
-    private init(name: String, size: SpotSize, drawing: [String]) {
         let cells = drawing.map(Self.words)
         var names: [String] = []
         var areas: [String: SheetArea] = [:]
@@ -32,21 +19,11 @@ public struct WidgetLayout: Equatable, Sendable {
                 areas[name] = areas[name]?.joined(area) ?? area
             }
         }
-        self.name = name
-        self.size = size
+        self.size = size ?? (drawing.count == 1 ? .strip : .large)
         columns = max(cells.map(\.count).max() ?? 1, 1)
         rows = max(cells.count, 1)
         self.names = names
         slots = names.compactMap { areas[$0] }
-    }
-
-    public func form(of slot: SheetArea, on card: SpotSize) -> Form {
-        if card == .small { return .control }
-        let wide = Double(slot.x1 - slot.x0 + 1) / Double(columns) * Double(card.columns)
-        let tall = Double(slot.y1 - slot.y0 + 1) / Double(rows) * Double(card.rows)
-        if wide >= 2, tall >= 2 { return .big }
-        if wide <= 1 { return .stat }
-        return tall < 1 ? .line : .half
     }
 
     public func rect(of slot: SheetArea, in room: CGSize, gap: CGFloat, sideGap: CGFloat) -> CGRect {

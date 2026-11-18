@@ -29,8 +29,8 @@ final class CardFaceTests: XCTestCase {
         XCTAssertEqual(face.drawing(for: .strip), [["time", "power"]])
         XCTAssertEqual(face.drawing(for: .large), [["time", "time", "power", "power"], ["date", "date", "date", "date"]])
         XCTAssertNil(face.layout(for: .small))
-        XCTAssertEqual(face.layout(for: .square), WidgetLayout(drawing: ["time power"], size: .square))
-        XCTAssertEqual(face.layout(for: .large), WidgetLayout(drawing: ["time time power power", "date date date date"], size: .large))
+        XCTAssertEqual(face.layout(for: .square), CardLayout(drawing: ["time power"], size: .square))
+        XCTAssertEqual(face.layout(for: .large), CardLayout(drawing: ["time time power power", "date date date date"], size: .large))
         XCTAssertEqual(face.parts.map(\.id), ["date", "time", "power"])
     }
 
@@ -123,5 +123,40 @@ final class CardFaceTests: XCTestCase {
         XCTAssertEqual(noMain.answers.map(\.run), ["r"])
         XCTAssertEqual(wide.answers.map(\.run), ["r"])
         XCTAssertEqual(strip.answers.first?.card?.face.answerSize, .strip)
+    }
+
+    func testAOneLineDrawingIsAStrip() {
+        XCTAssertEqual(CardLayout(drawing: ["a b c"]).size, .strip)
+    }
+
+    func testCellsKeepOneGapAndAWiderOneBetweenTheSides() throws {
+        let room = CGSize(width: 300, height: 100)
+        let hero = CardLayout(drawing: ["a a b b", "a a c c", "a a d d"])
+        let rects = hero.slots.map { hero.rect(of: $0, in: room, gap: 8, sideGap: 20) }
+
+        XCTAssertEqual(rects[1].minX - rects[0].maxX, 20, accuracy: 0.001)
+        XCTAssertEqual(rects[2].minY - rects[1].maxY, 8, accuracy: 0.001)
+        XCTAssertEqual(rects[3].maxY, 100, accuracy: 0.001)
+        XCTAssertEqual(rects[3].maxX, 300, accuracy: 0.001)
+
+        let three = CardLayout(drawing: ["a b c"])
+        let cells = three.slots.map { three.rect(of: $0, in: room, gap: 8, sideGap: 20) }
+        XCTAssertEqual(cells[1].minX - cells[0].maxX, 8, accuracy: 0.001)
+        XCTAssertEqual(cells[0].width, cells[2].width, accuracy: 0.001)
+        XCTAssertEqual(cells[2].maxX, 300, accuracy: 0.001)
+    }
+
+    func testEveryLayoutFillsItsSizeWithNoOverlap() {
+        for layout in [["a"], ["a a b b", "a a c c", "a a d d"], ["a a b b"], ["a b c d"]].map({ CardLayout(drawing: $0) }) {
+            var cells = Set<[Int]>()
+            for slot in layout.slots {
+                for row in slot.y0...slot.y1 {
+                    for column in slot.x0...slot.x1 {
+                        XCTAssertTrue(cells.insert([row, column]).inserted)
+                    }
+                }
+            }
+            XCTAssertEqual(cells.count, layout.columns * layout.rows)
+        }
     }
 }
