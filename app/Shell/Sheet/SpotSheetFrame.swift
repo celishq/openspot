@@ -18,7 +18,7 @@ struct SpotSheetFrame: ViewModifier {
         let shape = SpotSurfaceShape(rect: rect, radius: radius)
         let width = panels.frame.width
         ZStack(alignment: .topLeading) {
-            SpotSurface(rect: rect, radius: radius, marks: step.marks, markRoom: step.room ?? sheetRect)
+            SpotSurface(rect: rect, radius: radius, glass: step.glass, marks: step.marks, markRoom: step.room ?? sheetRect)
             ZStack(alignment: .topLeading) {
                 content
                     .frame(width: sheetRect.width, height: sheetRect.height, alignment: .topLeading)

@@ -69,7 +69,8 @@ struct SpotSheetLayer: View {
             room: room,
             fit: edges.sheetStart?.rect(around: from) ?? sheetRect,
             leaving: leaving(edges, around: room),
-            field: showsField ? AnyView(SpotFieldLook(query: model.searchText, title: entry.state.title)) : nil
+            field: showsField ? AnyView(SpotFieldLook(query: model.searchText, title: entry.state.title)) : nil,
+            glass: edges.sheetStart == nil || edges.sheetStartsOnMark ? 1 : MotionTokens.hiddenOpacity
         )
     }
 
