@@ -123,6 +123,4 @@ extension SpotTokens {
     public static let rowBarGap: CGFloat = 2
     public static let rowBarHeight: CGFloat = 20
     public static let rowBarFloor: CGFloat = 2
-    public static let rowSwitch = CGSize(width: 32, height: 18)
-    public static let rowSwitchInset: CGFloat = 2
 }

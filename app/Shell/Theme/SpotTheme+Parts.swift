@@ -3,7 +3,6 @@ import SwiftUI
 
 extension SpotTheme {
     static let mask = Color.black
-    static let switchKnob = Color.white
     static let stale = 0.5
     static let oldBar = 0.55
     static let pressFill = 0.12
