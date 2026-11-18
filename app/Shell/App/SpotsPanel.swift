@@ -293,7 +293,7 @@ final class SpotsPanel: NSPanel {
         _ = plainCursors
         let panel = SpotsPanel(
             contentRect: NSRect(x: 0, y: 0, width: SpotTokens.panelWidth, height: SpotTokens.panelHeight),
-            styleMask: [.borderless, .fullSizeContentView],
+            styleMask: [.borderless, .nonactivatingPanel, .fullSizeContentView],
             backing: .buffered,
             defer: false
         )

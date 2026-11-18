@@ -161,7 +161,6 @@ final class OpenspotApp: NSObject, NSApplicationDelegate {
         guard let panel else { return }
         let front = recordFront()
         panel.place(over: front)
-        NSApp.activate(ignoringOtherApps: true)
         panel.show()
     }
 
@@ -181,7 +180,6 @@ final class OpenspotApp: NSObject, NSApplicationDelegate {
         showPanel()
         DispatchQueue.main.asyncAfter(deadline: .now() + Self.dragSourceFocusDelay) { [weak self] in
             guard self?.model.holdsFocus == true else { return }
-            NSApp.activate(ignoringOtherApps: true)
             self?.panel?.makeKeyAndOrderFront(nil)
             self?.model.isSettlingDrop = false
         }
