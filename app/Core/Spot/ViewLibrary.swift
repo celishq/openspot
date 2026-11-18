@@ -198,6 +198,85 @@ public struct ViewLibrary: Sendable {
             public func media(_ source: String) -> AnyView { mediaMaker(source) }
 
             public func cornerButton(_ symbol: String, label: String, card id: String, action: @escaping () -> Void) -> AnyView { cornerMaker(symbol, label, id, action) }
+
+            public func loop(period: Double, fill colors: [Color], path: @escaping (Double, CGRect) -> Path) -> some View {
+                SpotLoop(period: period, size: size, isPlaying: isShown, look: .fill(colors), path: path)
+            }
+
+            public func loop(period: Double, stroke color: Color, width: CGFloat, path: @escaping (Double, CGRect) -> Path) -> some View {
+                SpotLoop(period: period, size: size, isPlaying: isShown, look: .stroke(color, width), path: path)
+            }
+        }
+
+        struct SpotLoop: NSViewRepresentable {
+            enum Look: Equatable {
+                case fill([Color])
+                case stroke(Color, CGFloat)
+            }
+
+            let period: Double
+            let size: CGSize
+            let isPlaying: Bool
+            let look: Look
+            let path: (Double, CGRect) -> Path
+
+            final class Stage: NSView {
+                let shape = CAShapeLayer()
+                let paint = CAGradientLayer()
+                var key: (Double, CGSize, Bool, Look)?
+
+                override var isFlipped: Bool { true }
+
+                init() {
+                    super.init(frame: .zero)
+                    wantsLayer = true
+                    layer?.addSublayer(paint)
+                }
+
+                required init?(coder: NSCoder) { nil }
+
+                func take(_ loop: SpotLoop) {
+                    if let key, key.0 == loop.period, key.1 == loop.size, key.2 == loop.isPlaying, key.3 == loop.look { return }
+                    key = (loop.period, loop.size, loop.isPlaying, loop.look)
+                    let rect = CGRect(origin: .zero, size: loop.size)
+                    let steps = max(2, Int(loop.period * 10))
+                    let paths = (0...steps).map { loop.path(loop.period * Double($0) / Double(steps), rect).cgPath }
+                    CATransaction.begin()
+                    CATransaction.setDisableActions(true)
+                    paint.frame = rect
+                    shape.frame = rect
+                    shape.removeAllAnimations()
+                    shape.path = paths[0]
+                    switch loop.look {
+                    case .fill(let colors):
+                        paint.isHidden = false
+                        paint.colors = colors.map { NSColor($0).cgColor }
+                        shape.fillColor = NSColor.black.cgColor
+                        shape.strokeColor = nil
+                        shape.removeFromSuperlayer()
+                        paint.mask = shape
+                    case .stroke(let color, let width):
+                        paint.mask = nil
+                        paint.isHidden = true
+                        if shape.superlayer == nil { layer?.addSublayer(shape) }
+                        shape.fillColor = nil
+                        shape.strokeColor = NSColor(color).cgColor
+                        shape.lineWidth = width
+                    }
+                    CATransaction.commit()
+                    guard loop.isPlaying else { return }
+                    let wave = CAKeyframeAnimation(keyPath: "path")
+                    wave.values = paths
+                    wave.duration = loop.period
+                    wave.repeatCount = .infinity
+                    wave.isRemovedOnCompletion = false
+                    shape.add(wave, forKey: "loop")
+                }
+            }
+
+            func makeNSView(context: Context) -> Stage { Stage() }
+
+            func updateNSView(_ stage: Stage, context: Context) { stage.take(self) }
         }
 
         public struct SpotMetric: View {
@@ -374,7 +453,7 @@ public struct ViewLibrary: Sendable {
 
     public func build(source: Data, named name: String, kinds: [String]) async throws -> Data {
         let module = "View\(Self.name(of: source).prefix(16))"
-        let flags = ["-emit-library", "-parse-as-library", "-O", "-module-name", module, "-Xfrontend", "-import-module", "-Xfrontend", "SwiftUI"]
+        let flags = ["-emit-library", "-parse-as-library", "-O", "-module-name", module, "-Xfrontend", "-import-module", "-Xfrontend", "SwiftUI", "-Xfrontend", "-import-module", "-Xfrontend", "AppKit"]
         let files = [SwiftBuild.File(name: Self.preludeName, data: Data(Self.prelude.utf8)), SwiftBuild.File(name: name, data: source)]
         return try await SwiftBuild(tools: tools).output(of: files, flags: flags, kinds: kinds, toolsFault: Self.toolsFault, fault: Self.sourceFault)
     }

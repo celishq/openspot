@@ -862,6 +862,7 @@ struct SpotView: View {
 | `spot.sheet(id)`    | The sheet of a spot with its sample data, where a click runs nothing. |
 | `spot.tip(text)`    | A tip in the look of Openspot's own, for the view to show on hover.   |
 | `spot.media(path)`  | A PNG or JPEG picture, or a MOV or MP4 video, at its size or less.    |
+| `spot.loop(...)`    | A shape that moves in a loop, played by macOS. See the note below.     |
 | `spot.cornerButton` | The round button on the rim of a card, by its id and an action.       |
 | `spot.columnGap`    | The gap between the columns of the grid.                              |
 | `spot.rowGap`       | The gap between the rows of the grid.                                 |
@@ -905,6 +906,11 @@ five groups. Each colour and strength is the one of the appearance that shows.
   `openspot check spots` reports one.
 - `spot.close()` closes only the open sheet, the float or the window of the view's own spot. It does nothing on a card,
   in the sheet that `spot.sheet(id)` draws, and in a card that `spot.card(id)` draws. A view can call it from any thread.
+- `spot.loop(period:fill:path:)` and `spot.loop(period:stroke:width:path:)` draw a shape that moves on its own, such as a
+  wave. `path` gives the shape at each time from 0 to `period` in a rect of the view's size, and the shape at `period`
+  must equal the one at 0. Openspot draws it about ten times a second of the loop, once for each value, and macOS
+  plays it between those steps. It plays only while `spot.isShown` is true. A `TimelineView` or a timer that redraws
+  the view on each frame slows Openspot instead.
 - Openspot removes a view while its place is hidden, and builds it again at the next show, so its `@State` starts
   anew. A view that reads `spot.isShown` stays built instead, and must stop its timers and its motion while it's false.
 - `openspot spot stats` counts each run of the `body` of `SpotView` and the time of that one `body` (see
