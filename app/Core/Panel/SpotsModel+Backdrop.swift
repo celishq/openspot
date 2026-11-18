@@ -2,10 +2,27 @@ import Foundation
 
 extension SpotsModel {
     public var backdrop: CGRect {
-        let sheet = formRect ?? backdropSheet?.sheetRect ?? SpotTokens.sheetRect(rows: 0)
-        let content = transition.isOpen ? sheet.height + 2 * SpotTokens.halo + SpotTokens.hintBlock + flowEdges.heldHeight(of: sheet) : gridHeight
+        let foot = panelFoot
         let span = backdropPanels.frame
-        return CGRect(x: span.minX, y: 0, width: span.width, height: max(content, menuContentHeight))
+        return CGRect(x: span.minX, y: 0, width: span.width, height: transition.isOpen ? foot.open : foot.closed)
+    }
+
+    public var panelFoot: PanelFoot {
+        let closed = max(gridHeight, menuContentHeight)
+        let open = backdropSheetRect.map { Self.foot(of: $0) + flowEdges.heldHeight(of: $0) } ?? closed
+        return PanelFoot(closed: closed, open: max(open, isMenuOpen ? menuContentHeight : 0))
+    }
+
+    public var pushFoot: PanelFoot {
+        PanelFoot(closed: gridHeight, open: Self.foot(of: backdropSheetRect ?? SpotTokens.sheetRect(rows: 0)))
+    }
+
+    private var backdropSheetRect: CGRect? {
+        formRect ?? backdropSheet?.sheetRect ?? (transition.id == nil ? nil : SpotTokens.sheetRect(rows: 0))
+    }
+
+    private static func foot(of sheet: CGRect) -> CGFloat {
+        sheet.height + 2 * SpotTokens.halo + SpotTokens.hintBlock
     }
 
     func spanBackdrop() {

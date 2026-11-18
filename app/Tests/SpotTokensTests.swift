@@ -4,7 +4,7 @@ import XCTest
 final class SpotTokensTests: XCTestCase {
     func testAPictureInARoomOneLineHighIsARowIcon() {
         XCTAssertEqual(SpotTokens.pictureSide(in: CGSize(width: 80, height: 26)), SpotTokens.listIconSize)
-        XCTAssertEqual(SpotTokens.pictureSide(in: CGSize(width: 80, height: SpotTokens.listRowHeight)), SpotTokens.listIconSize)
+        XCTAssertEqual(SpotTokens.pictureSide(in: CGSize(width: 80, height: SpotTokens.listRow)), SpotTokens.listIconSize)
     }
 
     func testAPictureInABiggerRoomFillsMostOfIt() {
@@ -23,5 +23,14 @@ final class SpotTokensTests: XCTestCase {
         XCTAssertEqual(SpotSize.wide.reach(among: sizes).shrinks, true)
         XCTAssertEqual(SpotSize.square.reach(among: sizes).grows, false)
         XCTAssertEqual(SpotSize.square.reach(among: sizes).shrinks, true)
+    }
+
+    func testAFloatingSheetWithRowsSetApartHoldsTheRuleAsThePanelDoes() {
+        let plain = SpotTokens.floatSize(rows: 6)
+        let apart = SpotTokens.floatSize(rows: 6, setsApart: true)
+        let panel = SpotTokens.sheetRect(rows: 6, setsApart: true).height - SpotTokens.sheetRect(rows: 6).height
+
+        XCTAssertEqual(apart.height - plain.height, panel)
+        XCTAssertGreaterThan(panel, 0)
     }
 }

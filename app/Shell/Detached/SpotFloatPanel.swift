@@ -35,7 +35,7 @@ final class SpotFloatPanel: NSPanel {
 
     static func make(model: SpotsModel, id: String) -> SpotFloatPanel {
         let panel = SpotFloatPanel(
-            contentRect: NSRect(x: 0, y: 0, width: SpotTokens.gridWidth, height: SpotTokens.rowHeight),
+            contentRect: NSRect(x: 0, y: 0, width: SpotTokens.gridWidth, height: SpotTokens.cell),
             styleMask: [.borderless, .nonactivatingPanel, .fullSizeContentView],
             backing: .buffered,
             defer: false

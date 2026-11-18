@@ -6,7 +6,7 @@ import SwiftUI
 final class OpenspotItem {
     private static let name = "Openspot"
 
-    private let item = NSStatusBar.system.statusItem(withLength: SpotMenuBarIconView.width)
+    private let item = NSStatusBar.system.statusItem(withLength: SpotTokens.menuBarIconWidth)
     private var icon: MenuBarHost<SpotMenuBarIconView>?
     private var drag: SpotMenuBarDrag?
 
@@ -42,7 +42,7 @@ final class OpenspotItem {
         guard let button = item.button, let image = button.image else { return nil }
         button.image = nil
         let host = MenuBarHost(rootView: SpotMenuBarIconView(model: model, image: image, toast: toast))
-        host.frame = NSRect(x: 0, y: 0, width: SpotMenuBarIconView.width, height: button.bounds.height)
+        host.frame = NSRect(x: 0, y: 0, width: SpotTokens.menuBarIconWidth, height: button.bounds.height)
         host.autoresizingMask = [.width, .height]
         button.addSubview(host)
         return host

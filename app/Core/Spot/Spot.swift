@@ -178,6 +178,14 @@ public struct Spot: Equatable, Sendable {
         soleCommand != nil && !self.opensToKeys && self.read != nil
     }
 
+    private var settingKeys: [SpotSettings.Key] {
+        let icon = self.image ?? self.file ?? self.glyph ?? self.symbol
+        let open = self.offeredPlaces.isDisjoint(with: [.card, .search]) ? [] : [SpotSettings.Key(act: .open, title: "Open", icon: icon)]
+        let commands = self.offers.map { SpotSettings.Key(act: .command($0.id), title: $0.title, icon: $0.icon ?? icon) }
+        let float = self.offersFloat ? [SpotSettings.Key(act: .float, title: "Float", icon: icon)] : []
+        return open + commands + float
+    }
+
     func takingSettings(in config: ConfigFile, secrets: SecretStore) -> Spot {
         guard self.host == nil else { return self }
         var spot = self
@@ -186,7 +194,8 @@ public struct Spot: Equatable, Sendable {
             secrets: secrets,
             spot: self.id,
             fields: self.settings,
-            showsInMenuBar: canShowInMenuBar
+            showsInMenuBar: canShowInMenuBar,
+            keys: settingKeys
         )
         if self.read == nil, !self.offers.isEmpty {
             spot.kind = .list

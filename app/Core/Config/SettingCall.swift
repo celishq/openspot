@@ -12,18 +12,19 @@ public enum SettingCall: NounCall {
     case login(Bool)
     case link(Bool)
     case careful(Bool)
+    case slow(Bool)
 
-    static let noun = CommandNoun("setting", verbs: [
+    static let noun = CommandNoun("setting", group: .app, verbs: [
         CommandVerb("get", "[--spot id] <key>", "Prints the value the person chose for the spot, or nothing. A secret prints as •••.") { words in
             pair(words, sets: false) { spot, key, _ in Self.get(spot: spot, key: key) }
         },
         CommandVerb(
             "set", "[--spot id] <key> [value]",
-            "Keeps a value for the spot, or removes it with no value. The person's choices of a spot: enabled, menubar (true or false), open, float and key.<command> (a key such as ctrl+option+k, or shake; none takes it away). Of the spot openspot: login, link, careful (true or false), panel-key and fix-key."
+            "Keeps a value for the spot, or removes it with no value. The person's choices of a spot: enabled, menubar (true or false), open, float and key.<command> (a key such as ctrl+option+k, or shake; none takes it away). Of the spot openspot: login, link, careful, slow (true or false), panel-key and fix-key."
         ) { words in
             pair(words, sets: true) { spot, key, value in reserved(spot, key, value, isRead: words.isRead) ?? Self.set(spot: spot, key: key, value: value) }
         },
-        CommandVerb("list", "[--frame]", "Prints each value that a spot keeps as JSON, with its spot and key. --frame prints a field=<key> block with spot and value for each.", rule: CallRule(use: .spots, used: "read the settings of each spot")) { words in
+        CommandVerb("list", "[--json]", "Prints a field=<key> block with spot and value for each value that a spot keeps. --json prints them as JSON.", rule: CallRule(use: .spots, used: "read the settings of each spot")) { words in
             words.form.map(Self.list)
         },
         CommandVerb("change", "[--spot id] <key>", "Runs the action of the setting in the panel, which can ask with a form.", rule: CallRule(read: .changes("opens a form"), flags: .needsApp)) { words in
@@ -70,6 +71,7 @@ public enum SettingCall: NounCall {
             case "login": return on("changes your Mac", Self.login)
             case "link": return on("changes your Mac", Self.link)
             case "careful": return on("changes how spots run", Self.careful)
+            case "slow": return on("changes how fast the panel moves", Self.slow)
             default: return nil
             }
         }
@@ -95,6 +97,7 @@ public enum SettingCall: NounCall {
         case .login: CallRule(use: .app, used: "changed whether Openspot opens at login")
         case .link: CallRule(use: .app, used: "changed the openspot command in Terminal")
         case .careful: CallRule(use: .app, used: "changed Careful mode", onlyPerson: Self.careful)
+        case .slow: CallRule(use: .app, used: "changed slow motion")
         default: rule
         }
     }
@@ -115,6 +118,7 @@ public enum SettingCall: NounCall {
         case .login(let isOn): apps.login(isOn)
         case .link(let isOn): apps.link(isOn)
         case .careful(let isOn): apps.careful(isOn)
+        case .slow(let isOn): apps.slow(isOn)
         }
     }
 }

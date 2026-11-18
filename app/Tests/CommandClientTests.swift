@@ -12,6 +12,7 @@ final class CommandClientTests: XCTestCase {
         func installUpdate() async -> Bool { true }
         func allows(_ reason: String) async -> Bool { false }
         func quit() async {}
+        func apply(_ theme: Theme) async {}
         func open(_ id: String) async -> Bool { true }
         func push(_ id: String, page: String?, title: String?, replace: Bool) async -> Bool { true }
         func pop(_ id: String, all: Bool) async -> Bool { true }
@@ -125,8 +126,8 @@ final class CommandClientTests: XCTestCase {
     func testStdinStderrAndTheCodeComeThroughTheSocket() throws {
         listen()
 
-        XCTAssertEqual(try run(client, ["check", "--sheet"], input: "title=Hi\n").output, "the sheet has no parts\n1 faults.\n")
-        XCTAssertEqual(try run(client, ["check", "--sheet"], input: "title=Hi\n").code, 1)
+        XCTAssertEqual(try run(client, ["check", "sheet"], input: "title=Hi\n").output, "the sheet has no parts\n1 faults.\n")
+        XCTAssertEqual(try run(client, ["check", "sheet"], input: "title=Hi\n").code, 1)
         let unknown = try run(client, ["calc", "2+2"])
         XCTAssertTrue(unknown.errors.hasPrefix("openspot cannot do this: calc 2+2\n"))
         XCTAssertEqual(unknown.code, 2)
@@ -157,7 +158,7 @@ final class CommandClientTests: XCTestCase {
         let output = Pipe()
         let stdin = Pipe()
         process.executableURL = client
-        process.arguments = ["check", "--sheet"]
+        process.arguments = ["check", "sheet"]
         process.environment = ["OPENSPOT_CONFIG": config.path, "PATH": "/usr/bin:/bin"]
         process.standardOutput = output
         process.standardInput = stdin
@@ -175,10 +176,14 @@ final class CommandClientTests: XCTestCase {
         XCTAssertEqual(try run(client, ["guide"]).output, "app: guide\n")
     }
 
+    func testWithNoWordsItAsksForHelp() throws {
+        XCTAssertEqual(try run(client, []).output, "app: help\n")
+    }
+
     func testACallThatRunsAloneStartsTheApp() throws {
         listen()
 
-        XCTAssertEqual(try run(client, ["render", "x.png"]).output, "app: render x.png\n")
+        XCTAssertEqual(try run(client, ["render", "sheet", "x.png"]).output, "app: render sheet x.png\n")
     }
 
     private func start(_ arguments: [String], variables: [String: String] = [:]) throws -> (process: Process, output: Pipe, errors: Pipe) {
@@ -208,7 +213,7 @@ final class CommandClientTests: XCTestCase {
         try await wait("the end of the call") { !run.process.isRunning }
 
         let printed = String(decoding: run.output.fileHandleForReading.readDataToEndOfFile(), as: UTF8.self)
-        XCTAssertTrue(printed.hasPrefix("{"), printed)
+        XCTAssertTrue(printed.hasPrefix("version="), printed)
         XCTAssertEqual(run.process.terminationStatus, 0)
     }
 
@@ -220,7 +225,7 @@ final class CommandClientTests: XCTestCase {
         let said = String(decoding: run.errors.fileHandleForReading.readDataToEndOfFile(), as: UTF8.self)
         XCTAssertEqual(said, "Openspot did not start within 0.3 seconds, so this call did not run. Open Openspot, then run it again.\n")
         XCTAssertEqual(String(decoding: run.output.fileHandleForReading.readDataToEndOfFile(), as: UTF8.self), "")
-        XCTAssertEqual(run.process.terminationStatus, 1)
+        XCTAssertEqual(run.process.terminationStatus, 3)
     }
 
     func testAQuitOrTheStatsOfAClosedAppStartNoApp() async throws {
@@ -255,6 +260,15 @@ final class CommandClientTests: XCTestCase {
         }
     }
 
+    func testTheHelpFlagsOfTheClientAreThoseOfTheHelpNoun() {
+        XCTAssertEqual(CommandKind.help, Set(HelpCall.noun.flags))
+    }
+
+    func testHelpOfALiveCallNeedsNoApp() {
+        XCTAssertFalse(CommandKind.needsApp(["spot", "open", "--help"]))
+        XCTAssertFalse(CommandKind.needsApp(["app", "status", "-h"]))
+    }
+
     func testTheListsOfTheClientAreTheFlagsOfTheVerbTable() {
         var live: Set<String> = []
         var pure: Set<String> = []
@@ -275,7 +289,7 @@ final class CommandClientTests: XCTestCase {
     func testAPureCallOpensNoSocketAndRunsInItsOwnProcess() throws {
         listen()
 
-        for call in [["emoji", "--tone", "dark"], ["symbols"]] {
+        for call in [["emoji", "list", "--tone", "dark"], ["symbols", "list"]] {
             XCTAssertEqual(try run(client, call).output, "app: \(call.joined(separator: " "))\n")
         }
     }

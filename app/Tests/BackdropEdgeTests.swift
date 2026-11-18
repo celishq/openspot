@@ -16,8 +16,8 @@ final class BackdropEdgeTests: XCTestCase {
     func testACapHoldsTheInsetTheCornerAndTheFadeOfTheEdge() {
         for edge in edges {
             XCTAssertGreaterThanOrEqual(edge.cap.height, edge.inset + edge.corner)
-            XCTAssertGreaterThanOrEqual(edge.cap.height, edge.inset + BackdropEdge.reach * edge.softness)
-            XCTAssertGreaterThanOrEqual(edge.cap.width, edge.inset + edge.corner + BackdropEdge.reach * edge.softness)
+            XCTAssertGreaterThanOrEqual(edge.cap.height, edge.inset + SpotTokens.backdropCapFade * edge.softness)
+            XCTAssertGreaterThanOrEqual(edge.cap.width, edge.inset + edge.corner + SpotTokens.backdropCapFade * edge.softness)
         }
     }
 
@@ -57,8 +57,8 @@ final class BackdropEdgeTests: XCTestCase {
     }
 
     func testTheBlurReachesAsFarPastTheCardsAsBeforeAndBothStayInTheWindow() {
-        let reach = { (edge: BackdropEdge) in SpotTokens.halo - edge.inset + BackdropEdge.reach * edge.softness }
-        XCTAssertGreaterThanOrEqual(reach(BackdropEdge.blurs[0]), 55)
+        let reach = { (edge: BackdropEdge) in SpotTokens.halo - edge.inset + SpotTokens.backdropReach * edge.softness }
+        XCTAssertEqual(reach(BackdropEdge.blurs[0]), 60, accuracy: 0.001)
         XCTAssertLessThanOrEqual(reach(BackdropEdge.blurs[0]), SpotTokens.halo)
     }
 }

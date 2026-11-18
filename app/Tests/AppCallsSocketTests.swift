@@ -119,9 +119,9 @@ final class AppCallsSocketTests: XCTestCase {
         await MainActor.run { runs.isCareful = true }
         listen(runs: runs)
 
-        let answer = try ask(["check", "spots"], cwd: config)
+        let answer = try ask(["check", "spots", "spots"], cwd: config)
 
-        XCTAssertEqual(answer.stdout, "No faults in \(spots.path).\n")
+        XCTAssertEqual(answer.stdout, "")
         XCTAssertEqual(answer.code, 0)
         XCTAssertFalse(exists(leak))
     }
@@ -135,7 +135,7 @@ final class AppCallsSocketTests: XCTestCase {
         listen(runs: runs)
         let connection = connect()
         defer { connection.close() }
-        try connection.send(request(["check"]))
+        try connection.send(request(["check", "spots"]))
         try await wait("the read") { !((try? String(contentsOf: token, encoding: .utf8)) ?? "").isEmpty }
 
         let caller = runs.tokens.caller(of: try String(contentsOf: token, encoding: .utf8).trimmingCharacters(in: .whitespacesAndNewlines))
@@ -149,7 +149,7 @@ final class AppCallsSocketTests: XCTestCase {
         try spot("weather", header: "mode=huge", "echo")
         listen()
 
-        let answer = try ask(["check", "--json"])
+        let answer = try ask(["check", "spots", "--json"])
 
         let json = try JSONSerialization.jsonObject(with: Data(answer.stdout.utf8)) as? [[String: String]]
         XCTAssertEqual(json?.map { $0["fault"] }, ["Weather has an unknown mode: huge. Use once, stay or always"])
@@ -160,11 +160,11 @@ final class AppCallsSocketTests: XCTestCase {
         let app = FakeRunningApp()
         listen(app: app)
 
-        let shown = try ask(["spot", "show", "notes"])
-        let gone = try ask(["spot", "show", "gone"])
+        let shown = try ask(["spot", "open", "notes", "--select"])
+        let gone = try ask(["spot", "open", "gone", "--select"])
 
         XCTAssertEqual(shown.stdout, "Openspot shows notes.\n")
-        XCTAssertEqual(gone.stderr, "Openspot has no spot gone. Run `openspot check` to see each file that does not load.\n")
+        XCTAssertEqual(gone.stderr, "Openspot has no spot gone. Run `openspot check spots` to see each file that does not load.\n")
         XCTAssertEqual(gone.code, 1)
         let opened = await app.opened
         XCTAssertEqual(opened, ["reveal notes", "reveal gone"])
@@ -174,7 +174,7 @@ final class AppCallsSocketTests: XCTestCase {
         let app = FakeRunningApp()
         listen(app: app)
 
-        let answer = try ask(["playground", "sheet.txt"], cwd: outside)
+        let answer = try ask(["playground", "open", "sheet.txt"], cwd: outside)
 
         XCTAssertEqual(answer.code, 0)
         let opened = await app.opened

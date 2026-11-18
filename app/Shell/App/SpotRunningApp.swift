@@ -2,6 +2,8 @@ import AppKit
 import OpenspotCore
 
 struct SpotRunningApp: RunningApp {
+    private static let answerPause: TimeInterval = 0.2
+
     let model: SpotsModel
     let update: AppUpdate?
 
@@ -17,6 +19,10 @@ struct SpotRunningApp: RunningApp {
         await MainActor.run { (update?.readyVersion, model.workCount, model.isFirstLaunch) }
     }
 
+    func slowMotion(_ isOn: Bool?) async -> Bool? {
+        await MainActor.run { model.slowMotion(isOn) }
+    }
+
     func checkUpdate() async -> Bool {
         await MainActor.run {
             guard let update else { return false }
@@ -30,7 +36,15 @@ struct SpotRunningApp: RunningApp {
     }
 
     func quit() async {
-        await MainActor.run { NSApp.terminate(nil) }
+        await MainActor.run {
+            DispatchQueue.main.asyncAfter(deadline: .now() + Self.answerPause) { NSApp.terminate(nil) }
+        }
+    }
+
+    func apply(_ theme: Theme) async {
+        await MainActor.run {
+            model.take(theme)
+        }
     }
 
     func open(_ id: String) async -> Bool {

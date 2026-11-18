@@ -18,7 +18,7 @@ chosen() {
 
 # Sets now to the key that opens Openspot, in the form of a key text such as option+space. A failing status ends the call.
 current() {
-  state=$(openspot app status --frame) || exit 1
+  state=$(openspot app status) || exit 1
   now=ctrl+space
   while IFS= read -r line; do
     case $line in "panel-key="*) now=${line#*=}; break ;; esac

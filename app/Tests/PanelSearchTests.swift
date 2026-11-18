@@ -29,6 +29,18 @@ final class PanelSearchTests: PanelCase {
         XCTAssertEqual(ranks.countOnMain, 0)
     }
 
+    func testASpotThatOffersNoPlaceIsNotFound() async throws {
+        try await showGrid()
+        try script("hidden", header: "title=Alphabet\noffers=none", "true")
+        try script("acts", header: "title=Alpha acts\n\nbutton=change\ntitle=Change\noffers=actions", "true")
+        await model.reload()
+
+        model.query = "al"
+
+        try await wait("the found spots") { !self.shown.contains("beta") }
+        XCTAssertEqual(shown, ["alpha"])
+    }
+
     func testTheNextKeyCancelsTheSearchOfTheKeyBefore() async throws {
         try await showGrid()
         let ranks = SearchRanks()

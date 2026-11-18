@@ -119,6 +119,26 @@ final class FlowNavigationTests: PanelCase {
         XCTAssertEqual(model.flowEdges.room(around: try XCTUnwrap(model.sheets["list"]?.sheetRect)), held.rect)
     }
 
+    func testAHeldPageGivesWhatItDrewAtThePressAndTakesNoActWhileTheLivePageReadsTheModel() async throws {
+        try await openList()
+        host.heldEnds = []
+
+        XCTAssertTrue(model.push(FlowSheet(spot: "list", page: "a")))
+
+        let page = try XCTUnwrap(model.flowEdges.leavingPage)
+        let held = SheetContent(page: page)
+        let live = model.sheetContent(of: try XCTUnwrap(model.sheetEntry("list")))
+        XCTAssertEqual(held.list, page.list)
+        XCTAssertEqual(held.state, page.state)
+        XCTAssertEqual(held.selection(), page.selection)
+        XCTAssertNil(held.form)
+        XCTAssertNil(held.recording)
+        XCTAssertNil(held.create())
+        XCTAssertFalse(held.takesFiles)
+        XCTAssertEqual(live.list, model.sheets["list"]?.list)
+        XCTAssertNotEqual(live.list, held.list)
+    }
+
     func testAStepSaysWhichSideItsNewPageComesFromUntilItEnds() async throws {
         try await openList()
         host.edgeChanges = []
@@ -164,6 +184,21 @@ final class FlowNavigationTests: PanelCase {
         try await wait("one step to the newest page") { self.model.sheets["list"]?.page == nil && self.model.flowEdges.from == nil }
         XCTAssertEqual(model.flowEdges.titles(on: .ahead), ["A"])
         XCTAssertEqual(host.edgeChanges.filter { $0.motion == .flow }.count, 1)
+    }
+
+    func testAPressStartsItsStepOnceTheStepBeforeIsLogicallyCompleteThoughItsAnimationStillRuns() async throws {
+        try await openList()
+        host.heldRemovals = []
+        XCTAssertTrue(model.push(FlowSheet(spot: "list", page: "a")))
+        try await wait("the step to move") { self.model.flowEdges.isMoving }
+
+        XCTAssertTrue(model.handleKey(back))
+
+        try await wait("the back step at the press") { self.model.sheets["list"]?.page == nil }
+        let removals = host.heldRemovals ?? []
+        host.heldRemovals = nil
+        removals.forEach { $0() }
+        try await wait("the back step to settle") { self.model.flowEdges.from == nil && self.model.flowEdges.titles(on: .ahead) == ["A"] }
     }
 
     func testBackPutsThePageItLeavesInABarAheadThatAClickGoesForwardTo() async throws {
@@ -260,6 +295,32 @@ final class FlowNavigationTests: PanelCase {
         try await wait("the other spot") { self.model.openSheetID == "other" && self.titles == ["Other"] }
         XCTAssertEqual(model.flow.pages, [FlowSheet(spot: "other")])
         XCTAssertNil(model.sheets["list"]?.page)
+    }
+
+    func testASheetWithNoCardGrowsFromTheFieldAndShrinksBackIntoIt() async throws {
+        try script("hidden", header: "on=sheet.open\noffers=search", "printf 'row=h\\ntitle=Hidden\\n'")
+        await model.reload()
+        model.isShown = true
+        model.panelWillShow()
+        XCTAssertNil(SpotSheetCard.of("hidden", in: model))
+
+        XCTAssertTrue(model.open("hidden"))
+        try await wait("the open sheet") { self.model.transition.phase == .open && self.titles == ["Hidden"] }
+        XCTAssertTrue(host.motions.contains(.sheet(isOpen: true)))
+
+        model.closeSheet(moving: true)
+        XCTAssertTrue(host.motions.contains(.sheet(isOpen: false)))
+    }
+
+    func testAnOpenKeyStartsANewFlowWithNothingBehind() async throws {
+        try await openList()
+        try await openPage()
+
+        model.press(GlobalKey(spot: "other", act: .open, trigger: .key(try XCTUnwrap(Shortcut(text: "ctrl+h")))))
+
+        try await wait("the other spot") { self.model.openSheetID == "other" && self.titles == ["Other"] }
+        XCTAssertEqual(model.flow.pages, [FlowSheet(spot: "other")])
+        try await wait("no bar behind") { self.model.flowEdges.from == nil && self.model.flowEdges.titles(on: .behind) == [] }
     }
 
     func testARunForgetsWhatEachPageShowedOnceThePageLeavesTheFlow() async throws {

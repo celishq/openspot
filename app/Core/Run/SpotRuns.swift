@@ -5,7 +5,9 @@ import Observation
 @Observable
 public final class SpotRuns {
     public private(set) var sheets: [String: SpotRun] = [:]
-    public internal(set) var isPanelOpen = false
+    public internal(set) var isPanelOpen = false {
+        didSet { if isPanelOpen != oldValue { usage.panel(shown: isPanelOpen) } }
+    }
     public private(set) var openID: String?
     public private(set) var floating: Set<String> = []
     public var dragged = FileKinds() {
@@ -22,7 +24,7 @@ public final class SpotRuns {
     public let readLimit: TimeInterval
     let inlineIdle: TimeInterval
     let frameWait: DispatchTimeInterval
-    public nonisolated let usage: SpotUsage
+    public nonisolated let usage: StatsLog
     @ObservationIgnored public var isCareful = false {
         didSet {
             tokens.isCareful = isCareful
@@ -106,7 +108,7 @@ public final class SpotRuns {
         self.tokens = tokens
         self.log = log
         self.swift = swift
-        usage = SpotUsage(folder: stats, at: clock.now(), now: clock.now)
+        usage = StatsLog(folder: stats, at: clock.now(), now: clock.now)
         self.inlineIdle = inlineIdle
         self.frameWait = frameWait
         self.readLimit = readLimit
@@ -147,6 +149,7 @@ public final class SpotRuns {
         showWork()
         swift.prune(keeping: scripts.map(\.url), with: Dictionary(scripts.map { ($0.url, $0.sources) }) { first, _ in first })
         usage.take(views: scripts)
+        usage.take(versions: stamps.mapValues(SpotLoad.version(of:)))
         updateClock()
         readOfferedRows()
     }
@@ -174,10 +177,6 @@ public final class SpotRuns {
 
     public var editsSpots: Bool {
         editor != nil
-    }
-
-    public var keysSheet: String? {
-        sheets.values.lazy.map(\.spot).first { $0.edits == .keys && $0.isBuiltIn }?.id
     }
 
     public var launchSheet: String? {

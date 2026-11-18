@@ -181,7 +181,7 @@ class SampleSpotsCase: XCTestCase {
           printf 'preferred=en\\npreferred=ru\\n\\nlanguage=en\\nname=English\\n\\nlanguage=ru\\nname=Russian\\n'
           exit 0
         fi
-        from=$3
+        from=$4
         text=$(cat; printf x)
         text=${text%x}
         \(reply)
@@ -213,7 +213,7 @@ class SampleSpotsCase: XCTestCase {
         #!/bin/sh
         case "$1" in
           clipboard) \(Self.fakeOpenspot(in: folder)) ;;
-          emoji) printf 'row=👍\\ntitle=thumbs up, %s\\nicon=👍\\n\\n' "$3" ;;
+          emoji) printf 'row=👍\\ntitle=thumbs up, %s\\nicon=👍\\n\\n' "$4" ;;
           symbols) printf 'row=→\\ntitle=rightwards arrow\\ndetail=Rightwards Arrows\\nicon=→\\n' ;;
         esac
 

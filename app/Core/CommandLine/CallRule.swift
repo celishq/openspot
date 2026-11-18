@@ -38,14 +38,17 @@ public struct CallRule: Equatable, Sendable {
         self.onlyPerson = onlyPerson
     }
 
-    func refusal(of name: String) -> String? {
-        let act = switch read {
-        case .free: ""
-        case .changes(let act): act
-        case .waits: "waits for the person"
-        case .captures: "captures the screen"
+    var act: (effect: String, words: String?) {
+        switch read {
+        case .free: ("read", nil)
+        case .changes(let act): ("changes", act)
+        case .waits: ("waits", "waits for the person")
+        case .captures: ("captures", "captures the screen")
         }
-        return act.isEmpty ? nil : "`openspot \(name)` \(act), so it cannot run in a read. Run it from a pick or an action."
+    }
+
+    func refusal(of name: String) -> String? {
+        act.words.map { "`openspot \(name)` \($0), so it cannot run in a read. Run it from a pick or an action." }
     }
 
     var isBatched: Bool {

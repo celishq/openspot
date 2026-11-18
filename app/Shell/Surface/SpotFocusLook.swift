@@ -7,6 +7,5 @@ struct SpotFocusLook: ViewModifier {
     func body(content: Content) -> some View {
         content
             .scaleEffect(focus == .focused ? MotionTokens.focusedScale : 1)
-            .animation(SpotMotion.grow(isOpen: focus != .none), value: focus)
     }
 }

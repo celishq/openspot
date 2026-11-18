@@ -11,12 +11,22 @@ actor FakeRunningApp: RunningApp {
     private var update: String?
     private var calls = 0
     private var isFirstLaunch = false
+    private var slow: Bool?
 
     private(set) var changeList: [ConfigChange] = []
 
     func configChanged(_ change: ConfigChange, to config: KeptConfig) {
         changes += 1
         changeList.append(change)
+    }
+
+    func offerSlowMotion() {
+        slow = false
+    }
+
+    func slowMotion(_ isOn: Bool?) -> Bool? {
+        if let isOn, slow != nil { slow = isOn }
+        return slow
     }
 
     func spotsChanged() {
@@ -39,6 +49,12 @@ actor FakeRunningApp: RunningApp {
 
     func quit() {
         quits += 1
+    }
+
+    private(set) var themes: [Theme] = []
+
+    func apply(_ theme: Theme) {
+        themes.append(theme)
     }
 
     func open(_ id: String) -> Bool {

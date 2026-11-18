@@ -3,8 +3,6 @@ import OpenspotCore
 import SwiftUI
 
 final class ToastPanel: NSPanel {
-    static let margin: CGFloat = 16
-    private static let maxSize = NSSize(width: 560, height: 120)
     private static let duration: TimeInterval = 5
 
     let toast = Toast()
@@ -23,10 +21,10 @@ final class ToastPanel: NSPanel {
         copy.message = toast.message
         copy.kind = kind
         measure.rootView = ToastView(toast: copy)
-        let width = min(measure.view.fittingSize.width.rounded(.up) + 1, Self.maxSize.width)
-        let size = measure.sizeThatFits(in: NSSize(width: width, height: Self.maxSize.height))
+        let width = min(measure.view.fittingSize.width.rounded(.up) + 1, SpotTokens.toastMaxSize.width)
+        let size = measure.sizeThatFits(in: NSSize(width: width, height: SpotTokens.toastMaxSize.height))
         let place = ScreenPlace(screens: ScreenPlace.Screen.all)
-        if let origin = place.origin(ofToast: size, inset: Self.margin, under: item?.frame) {
+        if let origin = place.origin(ofToast: size, inset: SpotTokens.toastMargin, under: item?.frame) {
             setFrame(NSRect(origin: origin, size: size), display: true)
         }
         orderFrontRegardless()
@@ -70,7 +68,7 @@ final class ToastPanel: NSPanel {
 
     static func make() -> ToastPanel {
         let panel = ToastPanel(
-            contentRect: NSRect(origin: .zero, size: maxSize),
+            contentRect: NSRect(origin: .zero, size: SpotTokens.toastMaxSize),
             styleMask: [.borderless, .nonactivatingPanel, .fullSizeContentView],
             backing: .buffered,
             defer: false

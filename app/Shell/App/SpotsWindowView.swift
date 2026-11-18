@@ -15,5 +15,6 @@ struct SpotsWindowView: View {
             SpotTipView(model: model, panelOrigin: origin)
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+        .id(SpotLoadedTheme.shared.layout)
     }
 }

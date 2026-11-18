@@ -68,7 +68,7 @@ final class MacCallsTests: XCTestCase {
         func languages() async throws -> [String] { ["uk", "en"] }
     }
 
-    private var folder: URL!
+    private var client: TestClient!
     private var socket: CommandSocket?
     private let acts = Acts()
 
@@ -79,50 +79,23 @@ final class MacCallsTests: XCTestCase {
         )
     }
 
-    private var config: URL { folder.appendingPathComponent("config") }
-    private var client: URL { folder.appendingPathComponent("A.app/Contents/Helpers/openspot") }
+    private var folder: URL { client.folder }
+    private var config: URL { client.config }
 
     override func setUpWithError() throws {
-        let temp = try XCTUnwrap(realpath(FileManager.default.temporaryDirectory.path, nil))
-        defer { free(temp) }
-        folder = URL(fileURLWithPath: String(cString: temp), isDirectory: true).appendingPathComponent("mc-\(UUID().uuidString.prefix(8))", isDirectory: true)
-        try FileManager.default.createDirectory(at: client.deletingLastPathComponent(), withIntermediateDirectories: true)
+        client = try TestClient(beside: Bundle(for: Self.self))
         try FileManager.default.createDirectory(at: folder.appendingPathComponent("A.app/Contents/MacOS"), withIntermediateDirectories: true)
-        try FileManager.default.createDirectory(at: config, withIntermediateDirectories: true)
-        let built = Bundle(for: Self.self).bundleURL.deletingLastPathComponent().appendingPathComponent("openspot")
-        try FileManager.default.copyItem(at: built, to: client)
         try "#!/bin/sh\necho \"alone: $*\"\n".writeScript(to: folder.appendingPathComponent("A.app/Contents/MacOS/Openspot"))
         socket = CommandSocket(folder: config, api: CommandAPI(mac: host, places: .test(["OPENSPOT_CONFIG": config.path]), rates: .offline))
     }
 
     override func tearDownWithError() throws {
         socket?.close()
-        try? FileManager.default.removeItem(at: folder)
+        client.remove()
     }
 
     private func run(_ arguments: [String], input: String = "", in place: URL? = nil) throws -> (output: String, errors: String, code: Int32) {
-        try Self.run(client, config: config, arguments, input: input, in: place ?? folder)
-    }
-
-    private static func run(_ client: URL, config: URL, _ arguments: [String], input: String, in place: URL) throws -> (output: String, errors: String, code: Int32) {
-        let process = Process()
-        let output = Pipe()
-        let errors = Pipe()
-        let stdin = Pipe()
-        process.executableURL = client
-        process.arguments = arguments
-        process.environment = ["OPENSPOT_CONFIG": config.path, "PATH": "/usr/bin:/bin"]
-        process.currentDirectoryURL = place
-        process.standardOutput = output
-        process.standardError = errors
-        process.standardInput = stdin
-        try process.run()
-        stdin.fileHandleForWriting.write(Data(input.utf8))
-        try stdin.fileHandleForWriting.close()
-        let printed = String(decoding: output.fileHandleForReading.readDataToEndOfFile(), as: UTF8.self)
-        let said = String(decoding: errors.fileHandleForReading.readDataToEndOfFile(), as: UTF8.self)
-        process.waitUntilExit()
-        return (printed, said, process.terminationStatus)
+        try client.run(arguments, input: input, in: place)
     }
 
     func testTheAppAnswersThroughItsSocketWhenTheConfigFolderHasALongPath() throws {
@@ -132,7 +105,7 @@ final class MacCallsTests: XCTestCase {
         let socket = try XCTUnwrap(CommandSocket(folder: deep, api: CommandAPI(mac: host, places: .test(["OPENSPOT_CONFIG": deep.path]), rates: .offline)))
         defer { socket.close() }
 
-        let answer = try Self.run(client, config: deep, ["clipboard", "read"], input: "", in: folder)
+        let answer = try client.run(["clipboard", "read"], config: deep)
 
         XCTAssertEqual(answer.output, "kept text")
         XCTAssertEqual(answer.code, 0)
@@ -240,7 +213,7 @@ final class MacCallsTests: XCTestCase {
     }
 
     func testTheAppTranslatesStdinAndListsItsLanguages() throws {
-        let translated = try run(["translate", "--to", "en"], input: "hola")
+        let translated = try run(["translate", "text", "--to", "en"], input: "hola")
         let languages = try run(["translate", "languages"])
 
         XCTAssertEqual(translated.output, "text=hello\n")
@@ -270,7 +243,7 @@ final class MacCallsTests: XCTestCase {
         let frame = try await answer(["window", "frame"])
         let copied = try await answer(["clipboard", "copy", "a.txt"])
         let sources = try await answer(["screen", "sources"])
-        let translated = try await answer(["translate"])
+        let translated = try await answer(["translate", "text"])
         let events = try await answer(["calendar", "events"])
         let colour = try await answer(["color", "pick"])
 
@@ -280,9 +253,9 @@ final class MacCallsTests: XCTestCase {
     }
 
     func testTheAppAsksForAColourAndAFolder() async throws {
-        let (client, config, folder) = (client, config, folder!)
-        let colour = try await Task.detached { try Self.run(client, config: config, ["color", "pick"], input: "", in: folder) }.value
-        let picked = try await Task.detached { try Self.run(client, config: config, ["folder", "pick"], input: "", in: folder) }.value
+        let client = client!
+        let colour = try await Task.detached { try client.run(["color", "pick"]) }.value
+        let picked = try await Task.detached { try client.run(["folder", "pick"]) }.value
 
         XCTAssertEqual(colour.output, "#FF8800\n")
         XCTAssertEqual(picked.output, "/Users/a/Repos\n")

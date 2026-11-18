@@ -7,8 +7,10 @@ struct SpotBackdropBlur: NSViewRepresentable {
         private static let log = Logger(subsystem: Bundle.main.bundleIdentifier ?? "openspot", category: "glass")
         private static var isReported = false
         private let filter: NSObject?
+        private var radius: CGFloat
 
         init(radius: CGFloat) {
+            self.radius = radius
             let make = NSSelectorFromString("filterWithType:")
             if let type = NSClassFromString("CAFilter") as? NSObject.Type, type.responds(to: make),
                let filter = type.perform(make, with: "gaussianBlur")?.takeUnretainedValue() as? NSObject {
@@ -49,7 +51,14 @@ struct SpotBackdropBlur: NSViewRepresentable {
             nil
         }
 
-        private func applyBlur(reports: Bool) {
+        func take(radius next: CGFloat) {
+            guard next != radius, let filter else { return }
+            radius = next
+            filter.setValue(next, forKey: "inputRadius")
+            applyBlur(reports: false, isNew: true)
+        }
+
+        private func applyBlur(reports: Bool, isNew: Bool = false) {
             CATransaction.begin()
             CATransaction.setDisableActions(true)
             defer { CATransaction.commit() }
@@ -61,7 +70,7 @@ struct SpotBackdropBlur: NSViewRepresentable {
             }
             alphaValue = 1
             for part in parts { part.isHidden = part.name != "backdrop" }
-            guard backdrop.filters?.count != 1 || (backdrop.filters?.first as? NSObject) !== filter else { return }
+            guard isNew || backdrop.filters?.count != 1 || (backdrop.filters?.first as? NSObject) !== filter else { return }
             backdrop.filters = [filter]
             backdrop.setValue(1, forKey: "scale")
         }
@@ -88,5 +97,7 @@ struct SpotBackdropBlur: NSViewRepresentable {
         return surface
     }
 
-    func updateNSView(_ surface: Surface, context: Context) {}
+    func updateNSView(_ surface: Surface, context: Context) {
+        surface.take(radius: radius)
+    }
 }

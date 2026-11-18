@@ -18,7 +18,7 @@ struct SpotSubmenuView: View {
             }
         }
         .padding(SpotTokens.menuPadding)
-        .frame(width: ActionMenuFrame.width, alignment: .top)
+        .frame(width: SpotTokens.menuWidth, alignment: .top)
         .spotGlass(in: outline)
         .environment(\.spotIsShown, true)
     }
@@ -34,8 +34,8 @@ struct SpotSubmenuView: View {
                     .font(SpotType.detail)
                     .modifier(SpotSecondaryText())
             }
-            .padding(.horizontal, SpotTokens.padding - SpotTokens.menuPadding + 4)
-            .frame(height: SpotTokens.menuRowHeight)
+            .padding(.horizontal, SpotTokens.menuTextInset)
+            .frame(height: SpotTokens.menuRow)
             .modifier(SpotLiveSelectionRing(isSelected: { [model] in model.menuSession?.menu.submenu?.selected == index }, shape: shape))
             .contentShape(shape)
         }

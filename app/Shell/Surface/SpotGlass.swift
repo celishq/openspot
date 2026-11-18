@@ -8,7 +8,7 @@ struct SpotGlass: ViewModifier {
     @Environment(\.spotIsShown) private var isShown
     @Environment(\.spotFade) private var fade
 
-    init(shape: SpotRoundShape = SpotRoundShape(radius: SpotTokens.radius), isSolid: Bool? = nil, isBare: Bool = false) {
+    init(shape: SpotRoundShape = SpotRoundShape(radius: SpotTokens.cardRadius), isSolid: Bool? = nil, isBare: Bool = false) {
         self.shape = shape
         self.isSolid = isSolid
         self.isBare = isBare

@@ -1,2 +1,2 @@
 #!/bin/sh
-printf 'view=liquid\ntitle=72\nstate=discharging\ndetail=4:18 left\n'
+exec "$(dirname "$0")/battery.sh" show " -InternalBattery-0 (id=1)	72%; discharging; 4:18 remaining present: true"

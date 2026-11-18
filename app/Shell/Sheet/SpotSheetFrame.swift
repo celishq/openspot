@@ -42,7 +42,7 @@ struct SpotSheetFrame: ViewModifier {
                 leaving.look
                     .frame(width: width, height: SpotTokens.panelHeight, alignment: .topLeading)
                     .modifier(PageFit(rect: leaving.rect, natural: leaving.from, isFitting: true, width: width))
-                    .clipShape(SpotSurfaceShape(rect: leaving.rect, radius: SpotTokens.radius))
+                    .clipShape(SpotSurfaceShape(rect: leaving.rect, radius: SpotTokens.cardRadius))
                     .allowsHitTesting(false)
             }
         }
@@ -65,7 +65,7 @@ private struct PageFit: ViewModifier, @preconcurrency Animatable {
     }
 
     func body(content: Content) -> some View {
-        let rect = isFitting ? rect : natural
+        let rect = isFitting || rect.width != natural.width ? rect : natural
         let scale = min(rect.height / max(natural.height, 1), 1)
         let width = min(rect.width / max(natural.width, 1), 1)
         let shown = min(max((width - MotionTokens.stepFadeWidth) / (1 - MotionTokens.stepFadeWidth), MotionTokens.hiddenOpacity), 1)

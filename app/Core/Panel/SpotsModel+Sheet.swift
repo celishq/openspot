@@ -68,9 +68,12 @@ extension SpotsModel {
     }
 
     @discardableResult
-    func openKeys(of id: String, recording row: String? = nil) -> Bool {
-        guard let keys = runs.keysSheet, push(FlowSheet(spot: keys, page: SpotEdits.page(of: id), title: nil)) else { return false }
-        if let row { toggleRecording(id: row) }
+    func openKeys(of id: String, recording act: GlobalKey.Act? = nil) -> Bool {
+        guard let entry = entry(id), let settings = settingsSheet(of: entry) else { return false }
+        let moves = isShown
+        if !moves { host.show() }
+        pushFirst(settings, moving: moves)
+        if let act { toggleRecording(id: SpotSettings.Row.key(act).id(of: id)) }
         return true
     }
 
@@ -86,7 +89,7 @@ extension SpotsModel {
         if openSheetID == nil { endFlow() }
         flow.push(FlowSheet(spot: id, title: title))
         sheets[id]?.show(page: nil)
-        waitPush(moving: moving && openSheetID != nil && openSheetID != id)
+        waitPush(moving: moving && openSheetID != nil && openSheetID != id && flow.index > 0)
         present(id, moving: moving)
     }
 
@@ -113,6 +116,8 @@ extension SpotsModel {
     }
 
     public func panelDidHide() {
+        isPanelHidden = true
+        noteMiss()
         finishPick()
         for entry in entries where entry.spot.answers != nil { sheets[entry.id]?.answer("") }
         runs.panelClosed()
@@ -121,6 +126,7 @@ extension SpotsModel {
             host.confirm(entryKey.openHint)
         }
         endReview()
+        if let heldLayout { lay(heldLayout) }
     }
 
     func showSheet(_ list: String?, moving: Bool) {
@@ -147,11 +153,12 @@ extension SpotsModel {
             }
             return
         }
+        closeMenu(keepsFoot: true)
         change(nil) {
             transition.show(list, moves: true)
             holdFieldDrop()
         }
-        DispatchQueue.main.async { [weak self] in
+        host.nextFrame { [weak self] in
             self?.animate(isOpen: true) { self?.transition.start() }
         }
     }
@@ -167,7 +174,7 @@ extension SpotsModel {
 
     func hasPlace(_ id: String?) -> Bool {
         guard let id else { return false }
-        return id == fieldSheet || SpotSheetCard.of(id, in: self) != nil
+        return id == fieldSheet || sheets[id] != nil || SpotSheetCard.of(id, in: self) != nil
     }
 
     private func animate(isOpen: Bool, _ body: () -> Void) {

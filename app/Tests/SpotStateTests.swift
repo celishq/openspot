@@ -70,17 +70,6 @@ final class SpotStateTests: XCTestCase {
         XCTAssertEqual(state.subtitle, "From header")
     }
 
-    func testAdjustingASliderMovesItWithinItsRange() {
-        let state = SpotState(title: "Display", level: 95, min: 0, max: 100)
-        XCTAssertEqual(state.adjusted(by: 10).level, 100)
-        XCTAssertEqual(state.adjusted(by: -10).level, 85)
-    }
-
-    func testAdjustingASliderStopsAtZero() {
-        let state = SpotState(title: "Sound", level: 4, min: 0, max: 100)
-        XCTAssertEqual(state.adjusted(by: -10).level, 0)
-    }
-
     func testSettingASliderLevelClampsToItsRange() {
         let state = SpotState(title: "Display", level: 50, min: 0, max: 100)
         XCTAssertEqual(state.withLevel(140).level, 100)

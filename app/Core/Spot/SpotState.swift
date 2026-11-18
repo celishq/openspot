@@ -89,11 +89,6 @@ public struct SpotState: Equatable, Sendable {
         SpotState(title: title, subtitle: subtitle, on: on, level: level, min: self.min, max: self.max, isOnGrid: isOnGrid, values: values, control: control, face: face)
     }
 
-    public func adjusted(by delta: Double) -> SpotState {
-        guard let level else { return self }
-        return withLevel(level + delta)
-    }
-
     public func withLevel(_ value: Double) -> SpotState {
         let low = self.min ?? 0
         let high = self.max ?? 100

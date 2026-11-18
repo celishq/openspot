@@ -8,18 +8,20 @@ struct SpotCustomView: View, @MainActor Equatable {
     let card: SpotSize
     var room: CGSize?
     var answers = 0
+    var selection: String?
     var date: Date?
     let views: SpotViews
     var send: ((String) -> Void)?
     @Environment(\.spotIsShown) private var isShown
-    @Environment(\.spotIsStill) private var isStill
+    @Environment(\.spotMoves) private var moves
     @Environment(\.spotCards) private var cards
     @Environment(\.spotViewPlace) private var place
     @Environment(\.spotIsHeld) private var isHeld
     @Environment(\.spotSurfaceEdge) private var surface
+    @Environment(\.colorScheme) private var scheme
 
     static func == (lhs: Self, rhs: Self) -> Bool {
-        lhs.source == rhs.source && lhs.values == rhs.values && lhs.rows == rhs.rows && lhs.card == rhs.card && lhs.room == rhs.room && lhs.answers == rhs.answers && lhs.date == rhs.date && lhs.views === rhs.views
+        lhs.source == rhs.source && lhs.values == rhs.values && lhs.rows == rhs.rows && lhs.card == rhs.card && lhs.room == rhs.room && lhs.answers == rhs.answers && lhs.selection == rhs.selection && lhs.date == rhs.date && lhs.views === rhs.views
             && (lhs.send == nil) == (rhs.send == nil)
     }
 
@@ -100,16 +102,18 @@ struct SpotCustomView: View, @MainActor Equatable {
 
     private var input: [String: Any] {
         [
-            "isShown": isShown && !isStill,
+            "isShown": isShown && moves,
             "rows": rows,
+            "selection": selection as Any,
             "close": close,
             "bodyTime": bodyTime,
             "size": size,
+            "cardName": (room == nil ? card.name : nil) as Any,
             "answers": answers,
             "inset": SpotTokens.padding,
             "corner": corner,
             "ink": SpotTheme.ink,
-            "secondary": SpotTheme.secondaryLight,
+            "secondary": SpotTheme.secondary,
             "accent": SpotTheme.accent,
             "title": SpotType.title,
             "detail": SpotType.detail,
@@ -124,8 +128,13 @@ struct SpotCustomView: View, @MainActor Equatable {
             "columnGap": SpotTokens.columnGap,
             "rowGap": SpotTokens.rowGap,
             "columns": SpotTokens.windowColumns,
-            "tipDelay": SpotTipView.delay
+            "tipDelay": SpotTipView.delay,
+            "theme": theme
         ]
+    }
+
+    private var theme: [String: Any] {
+        SpotLoadedTheme.shared.viewTheme(isDark: scheme == .dark, corner: corner)
     }
 
     @ViewBuilder
@@ -140,8 +149,8 @@ struct SpotCustomView: View, @MainActor Equatable {
         case .failed(let reason):
             Text(reason)
                 .font(SpotType.detail)
-                .minimumScaleFactor(0.5)
-                .foregroundStyle(SpotTheme.ink.opacity(SpotTheme.secondaryLight))
+                .minimumScaleFactor(SpotType.leastViewScale)
+                .foregroundStyle(SpotTheme.ink.opacity(SpotTheme.secondary))
                 .padding(SpotTokens.padding)
         }
     }

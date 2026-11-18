@@ -52,9 +52,9 @@ final class SheetLayoutTests: XCTestCase {
         let grown = try placement("grid=note\ngrid=note\ngrid=note\ngrid=go\n\nfield=note\ntype=multiline\n\nbutton=go\ntitle=Go\n")
         let kept = try placement("grid=note\ngrid=note\ngrid=note\ngrid=go\n\nfield=note\ntype=multiline\ngrow=false\n\nbutton=go\ntitle=Go\n")
 
-        XCTAssertEqual(grown.height, SheetPlacement.maxHeight)
-        XCTAssertEqual(try XCTUnwrap(kept.frames["note"]).rect.height, 3 * SheetPlacement.rowHeight + 2 * SheetPlacement.gap)
-        XCTAssertLessThan(kept.height, SheetPlacement.maxHeight)
+        XCTAssertEqual(grown.height, SpotTokens.partsMaxHeight)
+        XCTAssertEqual(try XCTUnwrap(kept.frames["note"]).rect.height, 3 * SpotTokens.listRow + 2 * SpotTokens.partGap)
+        XCTAssertLessThan(kept.height, SpotTokens.partsMaxHeight)
     }
 
     func testALetterFillsTheRectangleAroundItsCells() throws {
@@ -86,9 +86,9 @@ final class SheetLayoutTests: XCTestCase {
         """).frames
 
         let a = try XCTUnwrap(frames["a"]).rect, b = try XCTUnwrap(frames["b"]).rect, c = try XCTUnwrap(frames["c"]).rect
-        XCTAssertEqual(b.minX - a.maxX, SheetPlacement.gap)
-        XCTAssertEqual(c.minY - a.maxY, SheetPlacement.gap)
-        XCTAssertEqual(a.height, SheetPlacement.rowHeight)
+        XCTAssertEqual(b.minX - a.maxX, SpotTokens.partGap)
+        XCTAssertEqual(c.minY - a.maxY, SpotTokens.partGap)
+        XCTAssertEqual(a.height, SpotTokens.listRow)
     }
 
     func testARowOfButtonsAtTheEndStandsAGroupGapBelowTheField() throws {
@@ -105,9 +105,9 @@ final class SheetLayoutTests: XCTestCase {
         """).frames
 
         let note = try XCTUnwrap(frames["note"]).rect, save = try XCTUnwrap(frames["save"]).rect
-        XCTAssertEqual(save.minY - note.maxY, SheetPlacement.groupGap)
-        XCTAssertEqual(save.maxY, SheetPlacement.maxHeight)
-        XCTAssertGreaterThan(SheetPlacement.groupGap, SheetPlacement.gap)
+        XCTAssertEqual(save.minY - note.maxY, SpotTokens.partGroupGap)
+        XCTAssertEqual(save.maxY, SpotTokens.partsMaxHeight)
+        XCTAssertGreaterThan(SpotTokens.partGroupGap, SpotTokens.partGap)
     }
 
     func testTheRowsOfButtonsAtTheEndStandApartTogetherWithTheRowGapBetweenThem() throws {
@@ -127,23 +127,23 @@ final class SheetLayoutTests: XCTestCase {
         """).frames
 
         let note = try XCTUnwrap(frames["note"]).rect, save = try XCTUnwrap(frames["save"]).rect, cancel = try XCTUnwrap(frames["cancel"]).rect
-        XCTAssertEqual(save.minY - note.maxY, SheetPlacement.groupGap)
-        XCTAssertEqual(cancel.minY - save.maxY, SheetPlacement.gap)
+        XCTAssertEqual(save.minY - note.maxY, SpotTokens.partGroupGap)
+        XCTAssertEqual(cancel.minY - save.maxY, SpotTokens.partGap)
     }
 
     func testTilesHaveTheOneRowHeightAndGap() throws {
         let sheet = try XCTUnwrap(SheetParts(output: SpotOutput(text: "text=a\ntitle=A\nlook=tile\n\ntext=b\ntitle=B\nlook=tile\n"))).placement
 
-        XCTAssertEqual(try XCTUnwrap(sheet.frames["a"]).rect.height, SheetPlacement.rowHeight)
-        XCTAssertEqual(try XCTUnwrap(sheet.frames["b"]).rect.minY, SheetPlacement.rowHeight + SheetPlacement.gap)
-        XCTAssertEqual(sheet.height, 2 * SheetPlacement.rowHeight + SheetPlacement.gap)
+        XCTAssertEqual(try XCTUnwrap(sheet.frames["a"]).rect.height, SpotTokens.listRow)
+        XCTAssertEqual(try XCTUnwrap(sheet.frames["b"]).rect.minY, SpotTokens.listRow + SpotTokens.partGap)
+        XCTAssertEqual(sheet.height, 2 * SpotTokens.listRow + SpotTokens.partGap)
     }
 
     func testARoundButtonOnALineShrinksToTheRow() throws {
         let frame = try XCTUnwrap(try placement("grid=reload\n\nbutton=reload\ntitle=Reload\nicon=arrow.clockwise\n").frames["reload"])
 
-        XCTAssertEqual(frame.rect.height, SheetPlacement.rowHeight)
-        XCTAssertEqual(frame.roundSize, SheetPlacement.rowHeight)
+        XCTAssertEqual(frame.rect.height, SpotTokens.listRow)
+        XCTAssertEqual(frame.roundSize, SpotTokens.listRow)
     }
 
     func testADividerHasOneGapAboveAndBelow() throws {
@@ -160,8 +160,8 @@ final class SheetLayoutTests: XCTestCase {
         """)
 
         let line = try XCTUnwrap(sheet.lines.first)
-        XCTAssertEqual(line.minY - (try XCTUnwrap(sheet.frames["a"]).rect.maxY), SheetPlacement.gap)
-        XCTAssertEqual((try XCTUnwrap(sheet.frames["b"]).rect.minY) - line.maxY, SheetPlacement.gap)
+        XCTAssertEqual(line.minY - (try XCTUnwrap(sheet.frames["a"]).rect.maxY), SpotTokens.partGap)
+        XCTAssertEqual((try XCTUnwrap(sheet.frames["b"]).rect.minY) - line.maxY, SpotTokens.partGap)
     }
 
     func testAPartThatCrossesADividerCentresOnIt() throws {
@@ -190,8 +190,8 @@ final class SheetLayoutTests: XCTestCase {
         XCTAssertTrue(save.isOnTop)
         XCTAssertEqual((save.horizontal, save.vertical).0, .end)
         XCTAssertEqual(save.vertical, .end)
-        XCTAssertEqual(note.rect.maxX - save.rect.maxX, SheetPlacement.gap)
-        XCTAssertEqual(note.rect.maxY - save.rect.maxY, SheetPlacement.gap)
+        XCTAssertEqual(note.rect.maxX - save.rect.maxX, SpotTokens.partGap)
+        XCTAssertEqual(note.rect.maxY - save.rect.maxY, SpotTokens.partGap)
     }
 
     func testTextStepsAwayFromAPartOverItsEdge() throws {
@@ -229,23 +229,23 @@ final class SheetLayoutTests: XCTestCase {
     func testRowsWithTextShareTheFreeHeightAndNoMore() throws {
         let sheet = try placement(pair)
 
-        XCTAssertEqual(sheet.height, SheetPlacement.maxHeight)
+        XCTAssertEqual(sheet.height, SpotTokens.partsMaxHeight)
         XCTAssertFalse(sheet.overflows)
-        XCTAssertGreaterThan(try XCTUnwrap(sheet.frames["input"]).rect.height, SheetPlacement.rowHeight)
-        XCTAssertEqual(try XCTUnwrap(sheet.frames["source"]).rect.height, SheetPlacement.rowHeight)
+        XCTAssertGreaterThan(try XCTUnwrap(sheet.frames["input"]).rect.height, SpotTokens.listRow)
+        XCTAssertEqual(try XCTUnwrap(sheet.frames["source"]).rect.height, SpotTokens.listRow)
     }
 
     func testRowsWithOnlyLinesKeepTheirHeight() throws {
         let sheet = try placement("grid=a\ngrid=b\n\ntext=a\ntitle=A\n\ntext=b\ntitle=B\n")
 
-        XCTAssertEqual(sheet.height, 2 * SheetPlacement.rowHeight + SheetPlacement.gap)
+        XCTAssertEqual(sheet.height, 2 * SpotTokens.listRow + SpotTokens.partGap)
     }
 
     func testTheWordsOfALineSetTheColumns() throws {
         let sheet = try placement("grid=a b b b\n\ntext=a\ntitle=A\n\ntext=b\ntitle=B\n")
         let a = try XCTUnwrap(sheet.frames["a"]).rect, b = try XCTUnwrap(sheet.frames["b"]).rect
 
-        XCTAssertEqual(b.width, 3 * a.width + 2 * SheetPlacement.gap, accuracy: 0.01)
+        XCTAssertEqual(b.width, 3 * a.width + 2 * SpotTokens.partGap, accuracy: 0.01)
     }
 
     func testALetterWithNoPartStaysEmpty() {
@@ -275,8 +275,8 @@ final class SheetLayoutTests: XCTestCase {
         let sheet = try placement(picker)
         let area = try XCTUnwrap(sheet.repeatFrame)
 
-        XCTAssertEqual(area.minY, SheetPlacement.rowHeight + SheetPlacement.gap)
-        XCTAssertEqual(sheet.height, SheetPlacement.maxHeight - SheetPlacement.fieldRoom)
+        XCTAssertEqual(area.minY, SpotTokens.listRow + SpotTokens.partGap)
+        XCTAssertEqual(sheet.height, SpotTokens.partsMaxHeight - SpotTokens.partFieldRoom)
         XCTAssertEqual(area.maxY, sheet.height)
         XCTAssertFalse(sheet.overflows)
     }
@@ -327,7 +327,7 @@ final class SheetLayoutTests: XCTestCase {
         """)
 
         XCTAssertEqual(sheet.lines.count, 1)
-        XCTAssertEqual(try XCTUnwrap(sheet.frames["left"]).rect.width, SheetPlacement.width)
+        XCTAssertEqual(try XCTUnwrap(sheet.frames["left"]).rect.width, SpotTokens.partsWidth)
     }
 
     func testAHotkeyFieldWithNoDrawingTakesTwoLinesOfTheFullWidth() throws {
@@ -335,9 +335,9 @@ final class SheetLayoutTests: XCTestCase {
         let placed = try placement("grid=key\ngrid=go\n\nfield=key\ntype=hotkey\n\nbutton=go\ntitle=Go\n")
 
         let key = try XCTUnwrap(sheet.frames["key"]).rect
-        XCTAssertEqual(key.width, SheetPlacement.width)
-        XCTAssertEqual(key.height, 2 * SheetPlacement.rowHeight + SheetPlacement.gap)
-        XCTAssertEqual(try XCTUnwrap(placed.frames["key"]).rect.height, SheetPlacement.rowHeight)
+        XCTAssertEqual(key.width, SpotTokens.partsWidth)
+        XCTAssertEqual(key.height, 2 * SpotTokens.listRow + SpotTokens.partGap)
+        XCTAssertEqual(try XCTUnwrap(placed.frames["key"]).rect.height, SpotTokens.listRow)
     }
 
     func testAPartStartsWithItsPartKey() throws {
@@ -383,7 +383,7 @@ final class SheetLayoutTests: XCTestCase {
         XCTAssertEqual(faults("grid=p p\n\ngraph=p\nvalue=0.01\n"), ["the part p needs at least 2 rows for its title and bar"])
         XCTAssertEqual(faults("grid=a b c d\n\ntext=a\ntitle=A very long title indeed\n\ntext=b\ntitle=B\n\ntext=c\ntitle=C\n\ntext=d\ntitle=D\n"), ["the title of the part a may not fit its cell"])
         XCTAssertEqual(faults("grid=a b\ngrid=t b\n\ntext=a\ntitle=Item\n\ntext=t\ntitle=Other\n\nfield=b\nvalue=Hi\n"), ["the part a sits in rows that stretch, so draw a choice over two lines for a list", "the part t sits in rows that stretch, so draw a choice over two lines for a list"])
-        XCTAssertEqual(faults(String(repeating: "grid=a\n", count: 20) + "\nfield=a\nvalue=Hi\n"), ["the drawing is too tall: 914pt of 442pt"])
+        XCTAssertEqual(faults(String(repeating: "grid=a\n", count: 20) + "\nfield=a\nvalue=Hi\n"), ["the drawing is too tall: 914pt of 446pt"])
     }
 
     func testATextOverTwoLinesShowsItsDetailUnderItsTitle() throws {
@@ -400,7 +400,7 @@ final class SheetLayoutTests: XCTestCase {
         let frame = try XCTUnwrap(sheet.frames["chart"])
 
         XCTAssertEqual(frame.vertical, .fill)
-        XCTAssertGreaterThan(frame.rect.height, SheetPlacement.rowHeight * 2)
+        XCTAssertGreaterThan(frame.rect.height, SpotTokens.listRow * 2)
         XCTAssertEqual(FrameCheck(text: "grid=chart\n\nview=chart\n").sheetFaults, [])
     }
 

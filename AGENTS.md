@@ -14,6 +14,9 @@
   - `Tests/` — XCTest, through `@testable import OpenspotCore`.
 - `app/Keywords/` holds the CLDR keywords of emoji and symbols, one xz file per language. `scripts/emoji-keywords.py` writes
   it from a pinned CLDR version, and the build copies it into the app.
+- `app/Themes/` holds the built-in themes, each in `<name>.theme/theme.toml`. Openspot, in `openspot.theme`, sets every choice,
+  and each other built-in theme sets only the choices it changes. The build copies them into the app.
+  [Change the look of Openspot](GUIDE.md#change-the-look-of-openspot) lists its keys and says how a person changes it.
 - `app/Help/` holds the guide of each `openspot` noun that has one, which `openspot help <noun>` prints. The build copies it
   into the app.
 - `spots/` holds the source of the core spots, each a `<name>.spot` folder. The build copies it into the app, and they run
@@ -72,8 +75,8 @@ Each spot follows [The keys of a spot](PROTOCOL.md#the-keys-of-a-spot): Return d
 Settings, `⌘Y` its History, `⌘K` the menu of all acts. Openspot makes these for every spot, so a rule changes in one place.
 
 - Settings follow the level they change. openspot's Settings hold only the app's rows. Each spot's own Settings hold its
-  menu bar and fields. Its keys, Open, each command and Float, are in Keys… in its ⌘K menu, with the same Not set and
-  `⌘⌫` Remove on every key row.
+  keys first, Open, each command and Float, then its fields and its menu bar, with the same Not set and `⌘⌫` Remove on
+  every key row.
 - A card's ⌘K menu holds the standard acts in one order, which `spots/openspot.spot/actions.js` offers to every card.
   A key that a footer already shows does not need a ⌘K menu of its own.
 - Making and changing a spot both go through one form: describe it, then Copy prompt (`⌘⏎`), which flashes `✓ Copied`
@@ -85,7 +88,15 @@ Settings, `⌘Y` its History, `⌘K` the menu of all acts. Openspot makes these 
   and Synchronization. `make verify` runs `scripts/check-core.sh`, which fails on any other import, also after an attribute
   such as `@preconcurrency`.
 - Logic that a window needs goes in `Core/`. Only drawing and window handling go in `Shell/`.
-- Each colour and strength of the panel is in `Shell/Surface/SpotTheme.swift`, and a new theme is one more value there.
+- Each size, colour, strength, font and motion value has one name in a token file: `SpotTokens` (measured base values in
+  `Core/Theme/SpotTokens.swift`, formulas over them in `Core/Theme/SpotTokens+Derived.swift`, sizes of single parts in
+  `Core/Theme/SpotTokens+Parts.swift`), `SpotTheme`, `SpotType` and `MotionTokens`. A theme file names only the choices of a theme, so a
+  new theme is one more file. `Core/Theme/` works out every other value from them by rules anchored on the measured values
+  of Openspot, and `SpotTheme`, `SpotType`, `SpotTokens` and `MotionTokens` read the result. The defaults of the rules
+  mirror the choices in `app/Themes/openspot.theme/theme.toml`, which `ThemeTests` checks. A value that no theme chooses,
+  such as a colour of one card, is a constant in a token file. `make verify` runs `scripts/check-tokens.sh`, which fails
+  on a number or a colour written for the look in `Shell/`, outside the token files, `Shell/Picture`, `Shell/Mac` and
+  `Shell/Tools`.
 - Glass is system glass, drawn by `spotGlass`, which wraps `glassEffect`. Each shape draws its own glass, outside a
   `GlassEffectContainer`, since a container drops an opacity after `glassEffect`, and the grid hides an open card and
   hides the panel by opacity. The grid's scroll edge is one gradient mask over the scroll view, so it cuts each card and
@@ -93,9 +104,12 @@ Settings, `⌘Y` its History, `⌘K` the menu of all acts. Openspot makes these 
   keeps the glass whole until its last third (`SpotTheme.glassStrength`), so faded glass never shows a sharp page.
   `make verify` runs `scripts/check-glass.sh`, which fails on `NSVisualEffectView` or a private Core Animation name in
   `Shell/`, outside `Shell/Surface/SpotBackdropBlur.swift`.
+- Each app window opens through `SpotSheetWindow.make`, so it has the same title bar, keys and Dock presence, and
+  the system material, not glass, so the glass of what it shows stands out. It ends with `SpotWindowFooter`, its hint and Done. `make verify` runs `scripts/check-windows.sh`, which fails on a window
+  that `Shell/` makes elsewhere, except the panel and its parts, the screen backdrop under it, the toast, a float, the screen pick and an off-screen picture.
 - A surface has one shape, a `SurfaceEdge` of Core drawn by `SpotRoundShape`, and its glass, its clip, its ring and its
   other marks take that value. A part inside it takes `inner()` of the edge it reads from `spotSurfaceEdge`. A titled
-  window follows the corner that macOS gives it: its glass is a `ConcentricRectangle`. A borderless window gives its
+  window follows the corner that macOS gives it. A borderless window gives its
   content view the edge of its surface (`NSWindow.take`). `make verify` runs `scripts/check-shapes.sh`, which fails on a
   `RoundedRectangle` in `Shell/` outside `Shell/Surface/SpotRoundShape.swift`.
 - The soft backdrop of the panel is a progressive blur under the glass: fixed `SpotBackdropBlur` views of rising radius,
@@ -156,7 +170,7 @@ below is one a reviewer can check in a diff.
 ### Motion
 
 Each motion is one of five kinds, each with one curve in `Shell/Surface/SpotMotion.swift`: grow (and its way back), move,
-fade and press. Each duration, bounce and motion scale is in `Core/Panel/MotionTokens.swift`. A part of a surface that grows
+fade and press. Each duration, bounce and motion scale is in `Core/Theme/MotionTokens.swift`. A part of a surface that grows
 takes its look from the surface's progress, by `SheetMorph`, and keeps no curve of its own. `make verify` runs
 `scripts/check-motion.sh`, which fails on a curve written anywhere else in `app/` or `scripts/`.
 
@@ -168,13 +182,44 @@ takes its look from the surface's progress, by `SheetMorph`, and keeps no curve 
   field by opacity (`SpotMenuDim`), and `make perf ACTION=menu` guards its cost. A glass holds still during a motion it is
   not the subject of, since the system draws a glass again on each frame in which its content or its opacity changes.
 - Change words by a crossfade of two laid-out copies, not by a reflow.
-- Do not put an AppKit view in a view that moves or resizes.
+- Do not put an AppKit view in a view that moves or resizes, except a moving piece of a spot's view (see
+  [Drawing](#drawing)).
 - The model starts a motion where its cause happens, not a view: no `onChange` chain, and no `.animation(_:value:)` on a
-  container. A view that is just built lies at its first place for one turn, and its motion starts on the next turn.
+  container. A view that is just built lies at its first place for one frame, and its motion starts on the next frame
+  (`SpotsHost.nextFrame`), never on the next turn of the queue, which can run before that frame is drawn.
 - During a motion, no state is written from a measure, such as `onGeometryChange` or a scroll's geometry. Compute frames
   from the layout's own numbers, and scale the content inside a scroll view, not the scroll view.
 - Content that reaches a surface during its open motion is applied when the motion ends.
+- A sheet opens and closes by one rule, whatever its source (`SheetMorph.Source`): a card in sight, or the field for any
+  other sheet. The source shows its own look and words, and they fade over the first half of the motion. The sheet's
+  content, its title too, fades in from `MotionTokens.contentStart`. No part pops in when the shape has room for it.
+- The field travels into the sheet's search row, and the sheet's moving shape cuts its glass, so one glass shape shows.
+- The blur's foot is the lower of the moving shape's foot and the grid's foot, which reaches the sheet's foot while the
+  grid fades. The footer sits on it, and a grid card has faded by the time it reaches the card (`PanelFoot`).
+- The actions menu is placed from its card's resting frame, never from the card's moving outline, and the card's focus
+  grows on the menu's own grow (`isMenuGrown`).
+- A sheet that opens over the actions menu folds the menu in the update that shows the sheet, and the menu's foot is
+  where the sheet's footer starts. A menu row that another spot runs keeps the menu until its run ends, so whatever
+  the run opens takes the menu's place in one motion.
+- A step of the flow, a push, a back or a forward, is the same grow motion as a sheet that opens. Its stand-ins, the leaving page and the
+  field's copy, give way to the real views when its animation is removed, so the page and the field land where they
+  moved to. A press may start the next step once the step is logically complete (`SpotsHost.change(_:_:completion:removal:)`).
+  A stand-in draws with the same views as what it stands in for (`SpotFieldPrompt`), so the hand-off shows no change.
 - Hide a view that comes back with a mask or with opacity 0.001, not with opacity 0, which drops its drawing.
+
+### Drawing
+
+A view that moves on its own, such as a liquid, a clock hand or a GIF, keeps the main thread free while it moves.
+
+- A motion that runs on each frame runs in the render server: a Core Animation animation or a video layer, set up once
+  for each value. The main thread works only when a value changes. A `TimelineView` that redraws on each frame, or a
+  timer that writes state for each frame, breaks this rule.
+- Live content may sit in a glass, since a motion in the render server costs the glass no more than still content
+  does.
+- A view moves only while its place shows: the panel is shown, its card is in sight, and no sheet, menu, Edit Spots or
+  motion of the panel covers it. The model decides it, and a spot's view reads it as `spot.isShown`.
+- Openspot gives a spot's view each moving piece it needs, such as `spot.media`, so a spot never writes AppKit. Such a
+  piece is the one AppKit view that may sit in a view that moves.
 
 ### Idle and memory
 
@@ -229,8 +274,12 @@ make test T=SpotRunsTests  # one test class, while you work on it
 make perf N=3              # times a Release sheet that opens and closes 20 times, 3 runs; ACTION picks another motion
 make film SPOT=caffeinate  # films the open and close of a sheet 10x slower (SLOW=1 for real speed) into .temp/film
 make shots                 # saves pictures of the actions menu in the running panel into .temp/shots; ACTION=search TEXT=/translate shoots a typed search
+sh scripts/pixel-diff.sh shoot before  # saves pictures of fixed screens, dark and light, into .temp/pixels/before
+sh scripts/pixel-diff.sh compare before after  # counts the pixels that differ in each picture, and marks them in .temp/pixels/marks
 make docs-images           # shows each GUIDE.md example on screen, focused, and takes its image; GuideImageTests fail when one is out of date
-make eval-agent N=1        # gives N tasks to claude -p with only `openspot guide`, and checks each spot; it costs money
+make eval-agent LABEL=base # gives each task of scripts/agent-eval/ to claude -p (Sonnet) N=3 times, grades what it did and how it used
+                           # the command, into .temp/agent-eval/base; TASKS=calc picks tasks; it costs money
+make eval-compare LABELS="base phase1"  # prints the summaries of two eval runs one after the other
 ```
 
 `make verify` runs `xcodegen generate` before it builds, so the project file matches the folders on disk.
@@ -243,6 +292,36 @@ under "Proving a speed fix".
 
 - The team is `NNK86LQK58` (set in `app/project.yml`). Local builds use ad-hoc signing (`CODE_SIGN_IDENTITY "-"`).
 - Do not commit a signing identity or a provisioning profile.
+
+## A local build of main
+
+A local build puts the newest `main` on your Mac before a release holds it. Build it in a throwaway `git worktree`, so
+that your own checkout stays as it is:
+
+```sh
+(cd app && xcodegen generate >/dev/null)
+xcodebuild -project app/Openspot.xcodeproj -scheme Openspot -configuration Release -destination 'platform=macOS' \
+  -derivedDataPath .temp/local ONLY_ACTIVE_ARCH=YES build \
+  CURRENT_PROJECT_VERSION=$(git rev-list --count HEAD) \
+  UPDATE_PUBLIC_KEY=$(defaults read /Applications/Openspot.app/Contents/Info SUPublicEDKey) \
+  CODE_SIGN_INJECT_BASE_ENTITLEMENTS=NO
+osascript -e 'quit app "Openspot"'
+rm -rf /Applications/Openspot.app && ditto .temp/local/Build/Products/Release/Openspot.app /Applications/Openspot.app
+open /Applications/Openspot.app
+```
+
+- `CURRENT_PROJECT_VERSION` numbers the build by its count of commits, as `make release` does. The updater then keeps it
+  until a release of a later commit replaces it.
+- `UPDATE_PUBLIC_KEY` takes the key of the installed release, so that the build still checks for updates.
+- The build is signed ad hoc ([Signing](#signing)), so macOS may ask again for a permission that the release had.
+
+Xcode 26.5, with Swift 6.3.2, fails on `main` in two places. Patch only the throwaway copy, never a commit, in a way that
+changes nothing on macOS 26:
+
+- `main` calls an API of the macOS 27 SDK, such as `concentricCornerRadii`, behind `if #available(macOS 27.0, *)`. Replace
+  that block with its fallback, since it never runs on macOS 26.
+- The compiler crashes in IR generation, on a reabstraction thunk, when a `@MainActor @Sendable` function value is passed
+  as a closure, such as `Binding(get: { text }, set: onSearch)`. Pass a closure that calls it: `set: { onSearch($0) }`.
 
 ## Release
 

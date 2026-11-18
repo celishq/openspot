@@ -1,0 +1,137 @@
+#!/bin/sh
+cat <<'EOF'
+grid=chart
+grid=chart
+grid=chart
+grid=chart
+grid=spots
+grid.small=top
+recents=false
+
+view=chart
+grow=false
+
+text=top
+title=Shortcuts
+detail=1.4 s CPU a day
+
+repeat=spots
+
+row=apps
+title=Apps
+detail=13.1 a day · 1.2 s CPU
+section=Used · last 14 days
+push=spot:apps
+value=9
+value=14
+value=11
+value=12
+value=16
+value=13
+value=10
+value=15
+value=12
+value=17
+value=14
+value=11
+value=16
+value=13
+acts=13.07
+cpu=1.229
+state=used
+
+row=links
+title=Links
+detail=4.8 a day · 343 ms CPU
+section=Used · last 14 days
+push=spot:links
+value=-
+value=-
+value=-
+value=4
+value=6
+value=3
+value=5
+value=4
+value=3
+value=2
+value=3
+value=2
+value=1
+value=2
+acts=4.82
+cpu=0.343
+state=used
+
+row=paste
+title=Paste screenshot
+detail=4 of 19 failed · stopped with an error
+section=Failing
+push=spot:paste
+tone=bad
+value=0
+value=1
+value=2
+value=0
+value=3
+value=1
+value=0
+value=2
+value=4
+value=1
+value=0
+value=2
+value=3
+value=1
+acts=1.36
+cpu=0.221
+state=bad
+
+row=shortcuts
+title=Shortcuts
+detail=95 in 100 answer within 1.6 s · half within 400 ms
+section=Slow to answer
+push=spot:shortcuts
+tone=warn
+value=2
+value=1
+value=3
+value=2
+value=0
+value=1
+value=2
+value=3
+value=1
+value=2
+value=2
+value=1
+value=0
+value=2
+acts=1.57
+cpu=1.421
+state=warn
+
+row=devices
+title=Devices
+detail=1.1 s CPU a day, 857 ms while hidden
+section=Unused for 14 days
+push=spot:devices
+value=0
+value=0
+value=0
+value=0
+value=0
+value=0
+value=0
+value=0
+value=0
+value=0
+value=0
+value=0
+value=0
+value=0
+acts=0.00
+cpu=1.093
+state=unused
+
+EOF

@@ -1,0 +1,24 @@
+[dark]
+background = "#000000"
+ink = "#FFFFFF"
+accent = "accent"
+highlight = "#FFFFFF"
+glyph-on-solid = "accent"
+confirm = "#C72924"
+
+[light]
+background = "#FFFFFF"
+ink = "#1C1C1C"
+accent = "accent"
+highlight = "#1C1C1C"
+solid = "#1F1F1F"
+confirm = "#C72924"
+
+[look]
+glass = "clear"
+backdrop = "blur"
+reach = "tiles"
+corner = 26
+density = 1
+type = 13
+speed = 1

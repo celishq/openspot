@@ -11,13 +11,13 @@ struct SpotSheetBody: View {
     var viewSource: String?
     var views = SpotViews.shared
 
-    static func size(of panel: SheetParts?, rows: Int) -> CGSize {
-        panel.map { SpotTokens.panelRect($0).size } ?? SpotTokens.floatSize(rows: rows)
+    static func size(of panel: SheetParts?, rows: Int, setsApart: Bool = false) -> CGSize {
+        panel.map { SpotTokens.panelRect($0).size } ?? SpotTokens.floatSize(rows: rows, setsApart: setsApart)
     }
 
     var body: some View {
         if let panel {
-            if panel.showsRows { Color.clear.frame(height: SpotTokens.listRowHeight) }
+            if panel.showsRows { Color.clear.frame(height: SpotTokens.listRow) }
             SheetPartsView(panel: panel, onSet: onSet, onPress: onPress, list: list, onRun: onPick, selection: selection, viewSource: viewSource, views: views)
         } else {
             SpotRowsView(list: list, onRun: onPick, onPoint: onPick, selection: selection)

@@ -29,7 +29,7 @@ extension SpotsModel {
     }
 
     private func run(_ key: GlobalKey) {
-        if key.act == .open { return entry(key.spot).map { $0.soleCommand == nil ? press($0.id) : run($0) } ?? () }
+        if key.act == .open { return entry(key.spot).map(open(byKey:)) ?? () }
         guard case .command(let command) = key.act else { return float(key.spot) }
         guard let sheet = sheets[key.spot] else { return }
         sheet.pressKey(command)
@@ -39,6 +39,12 @@ extension SpotsModel {
             try? await Task.sleep(for: flashPause)
             if !Task.isCancelled { self?.flashSymbol = nil }
         }
+    }
+
+    private func open(byKey entry: Entry) {
+        guard entry.soleCommand == nil else { return run(entry) }
+        if entry.kind.opensSheet, !entry.spot.pressRuns { endFlow() }
+        press(entry.id)
     }
 
     public func menuBarSymbol(during toast: ToastKind?) -> String? {
@@ -65,7 +71,7 @@ extension SpotsModel {
     }
 
     public func focus(ofCard index: Int) -> CardFocus {
-        isMenuOpen && openSheetID == nil && index == selected ? .focused : .none
+        isMenuGrown && openSheetID == nil && index == selected ? .focused : .none
     }
 
     public func tap(_ id: String, opening: Bool = false) {
@@ -129,6 +135,7 @@ extension SpotsModel {
 
 
     public func run(_ entry: Entry) {
+        missedSearch.drop()
         if let item = entry.item, let list = self.entry(entry.spot.id) {
             if item.records, openSheetID != list.id {
                 pushFirst(list.id, moving: true)
@@ -194,7 +201,7 @@ extension SpotsModel {
             if isShown { host.dismiss() }
             run(key)
         } else {
-            openKeys(of: entry.id, recording: GlobalKey.Act.command(command).setting)
+            openKeys(of: entry.id, recording: .command(command))
         }
     }
 

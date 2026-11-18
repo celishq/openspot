@@ -49,7 +49,18 @@ final class SpotMotionProbe: NSObject {
         DispatchQueue.main.asyncAfter(deadline: .now() + 2) { self.begin() }
     }
 
+    nonisolated static let drawsGlass = ProcessInfo.processInfo.environment["OPENSPOT_GLASS"] != "off"
+
+    static func takeAppearance(environment: [String: String] = ProcessInfo.processInfo.environment) {
+        switch environment["OPENSPOT_APPEARANCE"] {
+        case "dark": NSApplication.shared.appearance = NSAppearance(named: .darkAqua)
+        case "light": NSApplication.shared.appearance = NSAppearance(named: .aqua)
+        default: break
+        }
+    }
+
     private func begin() {
+        if action == "pixels" { return shotsFolder.map(shootPixels) ?? finish(with: "no shots folder\n") }
         if action == "panel" { return beginOpens() }
         if action == "search" { return shotsFolder.map(shootTyping) ?? beginSearch() }
         if action == "drag" || action == "mouse" { return beginDrag() }
@@ -69,6 +80,13 @@ final class SpotMotionProbe: NSObject {
             start = CACurrentMediaTime()
             return press(target.id, left: presses)
         }
+        if action == "keys" {
+            if let placement = model.placements.first(where: { model.visible[$0.index].id == target.id }) { model.selected = placement.index } else { model.open(target.id) }
+            return DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) {
+                self.start = CACurrentMediaTime()
+                self.play(self.keys)
+            }
+        }
         model.press(target.id)
         whenRowsArrive {
             self.start = CACurrentMediaTime()
@@ -84,7 +102,7 @@ final class SpotMotionProbe: NSObject {
 
     private func beginJump() {
         Task { @MainActor in
-            guard let watch = await SpotJumpWatch(panel: panel, row: SpotTokens.halo + SpotTokens.rowHeight / 2) else {
+            guard let watch = await SpotJumpWatch(panel: panel, row: SpotTokens.halo + SpotTokens.cell / 2) else {
                 return finish(with: "no capture\n")
             }
             try? await Task.sleep(for: .milliseconds(500))
@@ -182,8 +200,9 @@ final class SpotMotionProbe: NSObject {
     private func saveWithChildren(to path: String) {
         let windows = [panel as NSWindow] + (panel.childWindows ?? []).filter(\.isVisible)
         let whole = windows.map(\.frame).reduce(panel.frame) { $0.union($1) }
+        let appearance = NSApp.effectiveAppearance
         let image = NSImage(size: whole.size, flipped: false) { bounds in
-            NSColor(SpotTheme.window).setFill()
+            SpotTheme.palette(for: appearance).window.nsColor.setFill()
             bounds.fill()
             for window in windows {
                 guard let view = window.contentView, let bitmap = view.bitmapImageRepForCachingDisplay(in: view.bounds) else { continue }
@@ -228,6 +247,61 @@ final class SpotMotionProbe: NSObject {
                 }
             }
         }
+    }
+
+    private func shootPixels(into folder: String) {
+        try? FileManager.default.createDirectory(atPath: folder, withIntermediateDirectories: true)
+        panel.makeFirstResponder(nil)
+        let small = model.placements.first { $0.size == .small }?.index ?? 0
+        let steps: [(name: String?, wait: Double, act: () -> Void)] = [
+            ("panel", 1, {}),
+            ("menu", 1, {
+                self.model.selected = small
+                _ = self.model.handleKey(ActionKey(name: "k", isCommand: true))
+            }),
+            (nil, 1, { self.model.closeMenu() }),
+            ("search", 1.5, { self.model.searchText = "ro" }),
+            (nil, 1, { self.model.searchText = "" }),
+            ("edit", 1.5, { self.model.beginEditing() }),
+            ("tip", 1, { self.model.tip = self.model.visible.first.map { SpotTip(id: $0.id, anchor: .trailingCorner, text: "Hide from grid") } }),
+            (nil, 1.5, {
+                self.model.tip = nil
+                self.model.endEditing()
+            }),
+            ("rows", 2, { self.model.press("rows") }),
+            (nil, 1.5, { self.model.closeSheet(moving: false) }),
+            ("parts", 2, { self.model.press("parts") }),
+            (nil, 1.5, { self.model.closeSheet(moving: false) }),
+            (nil, 2, { self.model.press("asks") }),
+            (nil, 1, { _ = self.model.handleKey(ActionKey(name: "k", isCommand: true)) }),
+            ("form", 2, {
+                if let row = self.model.menu?.shown.firstIndex(where: { $0.title == "Add" }) { self.model.pressMenu(row: row) }
+            }),
+            (nil, 1.5, {
+                self.model.cancelForm()
+                self.model.closeSheet(moving: false)
+            }),
+            ("toast", 1, { self.model.host.confirm("Saved to the shelf") })
+        ]
+        func next(_ left: ArraySlice<(name: String?, wait: Double, act: () -> Void)>) {
+            guard let step = left.first else { return finish(with: "shots\n") }
+            step.act()
+            panel.makeFirstResponder(nil)
+            DispatchQueue.main.asyncAfter(deadline: .now() + step.wait) {
+                if let name = step.name {
+                    if name == "toast" { self.saveToast(to: "\(folder)/\(name).png") } else { self.saveWithChildren(to: "\(folder)/\(name).png") }
+                }
+                next(left.dropFirst())
+            }
+        }
+        next(steps[...])
+    }
+
+    private func saveToast(to path: String) {
+        guard let view = NSApp.windows.first(where: { $0 is ToastPanel && $0.isVisible })?.contentView,
+              let bitmap = view.bitmapImageRepForCachingDisplay(in: view.bounds) else { return }
+        view.cacheDisplay(in: view.bounds, to: bitmap)
+        FileManager.default.createFile(atPath: path, contents: bitmap.representation(using: .png, properties: [:]))
     }
 
     private func shootTyping(into folder: String) {
@@ -285,7 +359,7 @@ final class SpotMotionProbe: NSObject {
         panel.makeKey()
         let inset = SpotTokens.cornerMark / 2
         let corner = CGPoint(x: window.place.left + end.x - inset, y: end.y - inset)
-        let reach = CGSize(width: 2 * (SpotTokens.cell + SpotTokens.columnGap), height: SpotTokens.rowHeight + SpotTokens.rowGap)
+        let reach = CGSize(width: 2 * (SpotTokens.cell + SpotTokens.columnGap), height: SpotTokens.cell + SpotTokens.rowGap)
         func post(_ type: NSEvent.EventType, _ share: CGFloat) {
             let point = NSPoint(x: corner.x + reach.width * share, y: view.bounds.height - corner.y - reach.height * share)
             guard let event = NSEvent.mouseEvent(with: type, location: point, modifierFlags: [], timestamp: ProcessInfo.processInfo.systemUptime, windowNumber: panel.windowNumber, context: nil, eventNumber: 1, clickCount: 1, pressure: type == .leftMouseUp ? 0 : 1) else { return }
@@ -406,6 +480,31 @@ final class SpotMotionProbe: NSObject {
         DispatchQueue.main.asyncAfter(deadline: .now() + pause) { self.end() }
     }
 
+    private var keys: [String] {
+        (ProcessInfo.processInfo.environment["OPENSPOT_KEYS"] ?? "").split(separator: ",").map(String.init)
+    }
+
+    private func play(_ keys: [String]) {
+        guard let key = keys.first else { return DispatchQueue.main.asyncAfter(deadline: .now() + pause) { self.end() } }
+        if key == "close" {
+            model.closeSheet(moving: true)
+        } else if key == "slow" {
+            MotionTokens.toggleSlowMotion()
+        } else if key == "settings" {
+            model.openSettings()
+        } else if key.hasPrefix("text:") {
+            model.searchText = String(key.dropFirst(5))
+        } else if key.hasPrefix("part:") {
+            let id = String(key.dropFirst(5))
+            if let part = model.openSheet?.panel?.parts.first(where: { $0.id == id }) { model.pressPart(part) }
+        } else {
+            let words = key.split(separator: "+").map(String.init)
+            let action = ActionKey(name: words.last ?? "", isCommand: words.contains("cmd"), isShift: words.contains("shift"))
+            if !model.handleKey(action) { _ = model.handleSearchKey(action) }
+        }
+        Timer.scheduledTimer(withTimeInterval: pause, repeats: false) { _ in MainActor.assumeIsolated { self.play(Array(keys.dropFirst())) } }
+    }
+
     private var history: [ActionKey] {
         let steps = (0..<presses).map { ActionKey(name: $0 % 2 == 0 ? "[" : "]", isCommand: true) }
         return steps + [ActionKey(name: "escape"), ActionKey(name: "escape")]
@@ -457,7 +556,7 @@ final class SpotMotionProbe: NSObject {
         let rect = model.placements[index].rect
         let stops = [
             CGPoint(x: rect.midX, y: rect.midY),
-            CGPoint(x: SpotTokens.cell / 2, y: SpotTokens.rowHeight / 2),
+            CGPoint(x: SpotTokens.cell / 2, y: SpotTokens.cell / 2),
             CGPoint(x: SpotTokens.gridWidth / 2, y: SpotGrid.height(of: model.placements) / 2),
             CGPoint(x: rect.midX, y: rect.midY)
         ].map { CGSize(width: $0.x - rect.midX, height: $0.y - rect.midY) }
@@ -504,7 +603,7 @@ final class SpotMotionProbe: NSObject {
         let inset = SpotTokens.cornerMark / 2
         let point = row == "corner" ? CGPoint(x: rect.maxX - inset, y: rect.maxY - inset) : row == "minus" ? CGPoint(x: rect.minX + inset, y: rect.minY + inset) : CGPoint(x: rect.midX, y: rect.midY)
         let edgeMove = CGSize(width: 0, height: SpotTokens.panelHeight - SpotTokens.halo - SpotTokens.hintBlock - 10 - (SpotTokens.gridTop + rect.midY))
-        let translation = row == "corner" ? CGSize(width: 0, height: SpotTokens.rowHeight + SpotTokens.rowGap) : row == "minus" ? .zero : row == "edge" ? edgeMove : move
+        let translation = row == "corner" ? CGSize(width: 0, height: SpotTokens.cell + SpotTokens.rowGap) : row == "minus" ? .zero : row == "edge" ? edgeMove : move
         let start = NSPoint(x: SpotTokens.halo + point.x, y: height - (SpotTokens.gridTop + point.y))
         let size = { self.model.visible.firstIndex { $0.id == id }.map { self.model.placements[$0].size.name } ?? "none" }
         let sizeBefore = size()
@@ -551,7 +650,7 @@ final class SpotMotionProbe: NSObject {
     private func shoot(_ id: String, stops: [CGSize], into folder: String) {
         panel.setFrameOrigin(NSPoint(x: -9000, y: -9000))
         panel.alphaValue = 1
-        let near = CGSize(width: stops[1].width + SpotTokens.cell / 3, height: stops[1].height + SpotTokens.rowHeight / 3)
+        let near = CGSize(width: stops[1].width + SpotTokens.cell / 3, height: stops[1].height + SpotTokens.cell / 3)
         let states: [(name: String, wait: Double, act: () -> Void)] = [
             ("edit", 1, {}),
             ("handle", 1, { self.model.resizeSpot(id, by: .zero) }),
@@ -562,7 +661,7 @@ final class SpotMotionProbe: NSObject {
             ("lifted", 1, { self.model.dragSpot(id, by: near) }),
             ("dropping", 0.06, { self.model.dropSpot(by: near) }),
             ("dropped", 1, {}),
-            ("resized", 1, { self.model.resizeSpot(id, by: CGSize(width: 0, height: SpotTokens.rowHeight + SpotTokens.rowGap)) }),
+            ("resized", 1, { self.model.resizeSpot(id, by: CGSize(width: 0, height: SpotTokens.cell + SpotTokens.rowGap)) }),
             ("kept", 1, { self.model.dropResize() })
         ]
         func next(_ left: ArraySlice<(name: String, wait: Double, act: () -> Void)>) {

@@ -19,21 +19,21 @@ final class ActionMenuFrameTests: XCTestCase {
 
         let menu = place(item)
 
-        XCTAssertEqual(menu.minX, item.maxX + ActionMenuFrame.gap)
+        XCTAssertEqual(menu.minX, item.maxX + SpotTokens.placeGap)
         XCTAssertEqual(menu.minY, item.minY)
     }
 
     func testTheMenuOfACardOnTheRightOpensToItsLeft() {
         let item = card(column: 2)
 
-        XCTAssertEqual(place(item).maxX, item.minX - ActionMenuFrame.gap)
+        XCTAssertEqual(place(item).maxX, item.minX - SpotTokens.placeGap)
     }
 
     func testTheMenuOfAWideCardOpensUnderItOnItsSide() {
         let left = card(column: 0, columns: 2)
         let right = card(column: 2, columns: 2)
 
-        XCTAssertEqual(place(left).minY, left.maxY + ActionMenuFrame.gap)
+        XCTAssertEqual(place(left).minY, left.maxY + SpotTokens.placeGap)
         XCTAssertEqual(place(left).minX, left.minX)
         XCTAssertEqual(place(right).maxX, right.maxX)
     }
@@ -43,7 +43,7 @@ final class ActionMenuFrameTests: XCTestCase {
 
         let menu = place(row)
 
-        XCTAssertEqual(menu.maxY, row.minY - ActionMenuFrame.gap)
+        XCTAssertEqual(menu.maxY, row.minY - SpotTokens.placeGap)
         XCTAssertEqual(menu.minX, row.minX)
     }
 
@@ -110,7 +110,7 @@ final class ActionMenuFrameTests: XCTestCase {
 
         let menu = ActionMenuFrame(item: item, height: 116, bounds: ActionMenuFrame.bounds(under: SpotTokens.gridTop)).rect
 
-        XCTAssertEqual(menu.minY, item.maxY + ActionMenuFrame.gap)
+        XCTAssertEqual(menu.minY, item.maxY + SpotTokens.placeGap)
         XCTAssertLessThanOrEqual(menu.maxY, SpotTokens.panelHeight - SpotTokens.halo - SpotTokens.hintBlock)
     }
 

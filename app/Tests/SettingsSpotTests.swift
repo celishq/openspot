@@ -38,7 +38,7 @@ final class SettingsSpotTests: BuiltInCase {
 
         _ = try await items()
 
-        XCTAssertEqual(programs(), ["openspot app status --frame"])
+        XCTAssertEqual(programs(), ["openspot app status"])
     }
 
     func testTheSheetListsOnlyTheSettingsOfTheAppAndNoneOfASpot() async throws {
@@ -147,6 +147,19 @@ final class SettingsSpotTests: BuiltInCase {
 
         try await call(["open", "open_at_login"])
         XCTAssertFalse(opensAtLogin)
+    }
+
+    func testTheSlowMotionRowShowsWithARunningAppAndAPickTurnsItOnAndOff() async throws {
+        await app.offerSlowMotion()
+
+        let off = try await items()
+        let row = try XCTUnwrap(off.first { $0.run == "slow_motion" })
+        XCTAssertEqual(row.title, "Slow motion")
+        XCTAssertEqual(row.isOn, false)
+
+        try await call(["open", "slow_motion"])
+        let on = try await items()
+        XCTAssertEqual(on.first { $0.run == "slow_motion" }?.isOn, true)
     }
 
     func testTheCarefulRowShowsItsStateAndAPickTurnsItOnAndOff() async throws {

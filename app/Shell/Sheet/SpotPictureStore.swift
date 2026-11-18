@@ -5,7 +5,6 @@ import OpenspotCore
 @MainActor
 final class SpotPictureStore {
     static let shared = SpotPictureStore()
-    nonisolated static let scale: CGFloat = 2
 
     struct Key: Hashable, Sendable {
         let path: String
@@ -26,7 +25,7 @@ final class SpotPictureStore {
         }
     }
 
-    nonisolated private static let shortSide = Int(max(SpotTokens.gridWidth, SpotTokens.sheetMaxHeight) * scale)
+    private static var shortSide: Int { Int(max(SpotTokens.gridWidth, SpotTokens.sheetMaxHeight) * SpotTokens.pictureScale) }
     private static let byteLimit = 16 << 20
 
     private let bitmaps = NSCache<NSString, Bitmap>()
@@ -43,7 +42,8 @@ final class SpotPictureStore {
     func image(_ key: Key) async -> CGImage? {
         if let image = cached(key) { return image }
         if let load = loads[key] { return await load.value }
-        let load = Task.detached(priority: .userInitiated) { await WebPictures.shared.path(of: key.path).flatMap { Self.picture(at: $0, fit: key.fit) } }
+        let shortSide = Self.shortSide
+        let load = Task.detached(priority: .userInitiated) { await WebPictures.shared.path(of: key.path).flatMap { Self.picture(at: $0, shortSide: shortSide, fit: key.fit) } }
         loads[key] = load
         let image = await load.value
         loads[key] = nil
@@ -52,10 +52,10 @@ final class SpotPictureStore {
     }
 
     private static func name(of key: Key) -> NSString {
-        "\(key.changed ?? 0)|\(key.fit.map { "\($0.width)x\($0.height)" } ?? "")|\(key.path)" as NSString
+        "\(shortSide)|\(key.changed ?? 0)|\(key.fit.map { "\($0.width)x\($0.height)" } ?? "")|\(key.path)" as NSString
     }
 
-    private nonisolated static func picture(at path: String, fit: Fit?) -> CGImage? {
+    private nonisolated static func picture(at path: String, shortSide: Int, fit: Fit?) -> CGImage? {
         let url = URL(fileURLWithPath: path)
         if let source = CGImageSourceCreateWithURL(url as CFURL, nil), CGImageSourceGetCount(source) > 0 {
             let properties = CGImageSourceCopyPropertiesAtIndex(source, 0, nil) as? [CFString: Any]
@@ -82,6 +82,6 @@ final class SpotPictureStore {
 
     private nonisolated static func factor(_ size: CGSize, into fit: Fit) -> CGFloat {
         guard size.width > 0, size.height > 0 else { return 1 }
-        return min(fit.width * scale / size.width, fit.height * scale / size.height)
+        return min(fit.width * SpotTokens.pictureScale / size.width, fit.height * SpotTokens.pictureScale / size.height)
     }
 }

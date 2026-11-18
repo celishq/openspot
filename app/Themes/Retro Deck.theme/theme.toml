@@ -1,0 +1,34 @@
+[dark]
+background = "#1A1A24"
+ink = "#00E000"
+accent = "#00E000"
+highlight = "#00E000"
+good = "#00E000"
+warn = "#E0A000"
+bad = "#E03030"
+backdrop-tint = "#1E2A2499"
+
+[light]
+background = "#C8C8D2"
+ink = "#1A1A24"
+accent = "#007A00"
+highlight = "#2C2C38"
+good = "#007A00"
+warn = "#C08000"
+bad = "#E03030"
+on-solid = "#00E000"
+backdrop-tint = "#1E2A2433"
+
+[look]
+glass = "regular"
+backdrop = "tint"
+reach = "screen"
+corner = 6
+speed = 1.5
+
+[advanced]
+window-corner = 6
+column-gap = 6
+row-gap = 6
+press-bounce = 0
+pressed-scale = 0.97

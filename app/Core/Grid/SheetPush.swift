@@ -1,17 +1,20 @@
 import Foundation
 
 public struct SheetPush: Equatable, Sendable {
-    public let open: SpotPlacement
+    public let open: SpotPlacement?
     public let sheet: CGRect
     public let window: CGRect
+    public let foot: PanelFoot?
 
-    public init(open: SpotPlacement, sheet: CGRect, window: CGRect) {
+    public init(open: SpotPlacement?, sheet: CGRect, window: CGRect, foot: PanelFoot? = nil) {
         self.open = open
         self.sheet = sheet
         self.window = window
+        self.foot = foot
     }
 
     public func offset(of placement: SpotPlacement) -> CGSize {
+        guard let open else { return .zero }
         let from = open.rect
         let rect = placement.rect
         if rect.maxX <= sheet.minX || rect.minX >= sheet.maxX { return .zero }
@@ -23,13 +26,21 @@ public struct SheetPush: Equatable, Sendable {
     }
 
     public func fade(of placement: SpotPlacement, movedBy moved: CGSize) -> Double? {
+        guard let open else { return nil }
         guard placement.index != open.index else { return 0 }
         let push = offset(of: placement)
         let length = (push.width * push.width + push.height * push.height).squareRoot()
         guard length > 0 else { return nil }
         let along = (moved.width * push.width + moved.height * push.height) / length
-        let end = CardPush(from: placement.rect, by: push).fade(within: window)?.upperBound ?? 1
+        let ends = [CardPush(from: placement.rect, by: push).fade(within: window)?.upperBound, foot?.meeting(of: placement.rect, movingDown: push.height)]
+        let end = ends.compactMap { $0 }.min() ?? 1
         guard end > 0 else { return 1 }
         return min(max(Double(along / length) / end, 0), 1)
+    }
+
+    public func fade(of placement: SpotPlacement, share: Double) -> Double {
+        guard let meeting = foot?.meeting(of: placement.rect, movingDown: 0) else { return share }
+        guard meeting > 0 else { return 1 }
+        return min(share / meeting, 1)
     }
 }

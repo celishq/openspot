@@ -41,7 +41,7 @@ struct SpotRowGrid: View {
                     }
                 }
             }
-            .frame(width: SheetPlacement.width, height: max(CGFloat(lineCount) * step - SpotTokens.listRowGap, 0), alignment: .topLeading)
+            .frame(width: SpotTokens.partsWidth, height: max(CGFloat(lineCount) * step - SpotTokens.listRowGap, 0), alignment: .topLeading)
             .overlay(alignment: .topLeading) { GridRing(selection: selection, count: count, perLine: perLine, side: side) }
             .contentShape(Rectangle())
             .onTapGesture { point in

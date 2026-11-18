@@ -62,6 +62,25 @@ final class NewSpotTests: BuiltInCase {
         }
     }
 
+    func testEverySearchEndsWithARowThatMakesASpotOfTheTypedWords() async throws {
+        let make = try spot("make")
+
+        let rows = try await make.items(query: " time in kyiv ", timeout: 60).answers
+
+        XCTAssertEqual(try XCTUnwrap(make.answers).isLast, true)
+        XCTAssertEqual(rows.map(\.run), ["time in kyiv"])
+        XCTAssertEqual(rows.map(\.title), ["Make a spot"])
+        XCTAssertEqual(rows.map(\.subtitle), ["time in kyiv"])
+    }
+
+    func testAPickOfMakeASpotCopiesThePromptThatBuildsTheTypedWords() async throws {
+        let toast = try await spot("make").perform(SpotAction(arguments: ["open", "time in kyiv"]), timeout: 60)
+
+        XCTAssertEqual(toast, AgentPrompt.copied)
+        let prompt = try saved("clipboard")
+        XCTAssertTrue(prompt.hasPrefix("Build an Openspot spot that does this: time in kyiv\n\(AgentPrompt.finishAlone)\n"), prompt)
+    }
+
     func testAfterACopyTheNextOpenStartsEmpty() async throws {
         let spot = try newSpot()
 

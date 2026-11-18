@@ -3,7 +3,6 @@ import SwiftUI
 
 struct SpotTipView: View {
     static let delay: Duration = .milliseconds(500)
-    private static let gap: CGFloat = 4
 
     let model: SpotsModel
     let panelOrigin: CGPoint
@@ -13,7 +12,7 @@ struct SpotTipView: View {
         ZStack(alignment: .topLeading) {
             if let tip = model.tip, model.isEditing, model.carry == nil, model.resize == nil, let top = top(of: tip) {
                 SpotTipPill(text: tip.text)
-                    .position(x: panelOrigin.x + top.x, y: panelOrigin.y + top.y + Self.gap + SpotTokens.hintPillHeight / 2)
+                    .position(x: panelOrigin.x + top.x, y: panelOrigin.y + top.y + SpotTokens.tipGap + SpotTokens.hintPillHeight / 2)
                     .opacity(isShown ? 1 : MotionTokens.hiddenOpacity)
             }
         }

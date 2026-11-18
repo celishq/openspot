@@ -17,6 +17,80 @@ public struct ViewLibrary: Sendable {
             public let value: Font
         }
 
+        public struct SpotTheme {
+            public struct Colors {
+                public let ink: Color
+                public let solid: Color
+                public let onSolid: Color
+                public let accent: Color
+                public let good: Color
+                public let warn: Color
+                public let bad: Color
+                public let secondary: Double
+                public let fill: Double
+                public let selected: Double
+                public let track: Double
+            }
+
+            public struct Space {
+                public let padding: CGFloat
+                public let columnGap: CGFloat
+                public let rowGap: CGFloat
+                public let listRow: CGFloat
+                public let listRowGap: CGFloat
+                public let glyph: CGFloat
+                public let cell: CGFloat
+                public let gridWidth: CGFloat
+            }
+
+            public struct Radius {
+                public let card: CGFloat
+                public let media: CGFloat
+                public let inner: CGFloat
+            }
+
+            public struct Fonts {
+                public let title: Font
+                public let body: Font
+                public let detail: Font
+                public let input: Font
+            }
+
+            public struct Motion {
+                public let press: Double
+                public let pressBounce: Double
+            }
+
+            public let color: Colors
+            public let space: Space
+            public let radius: Radius
+            public let font: Fonts
+            public let motion: Motion
+
+            init(_ values: [String: Any]) {
+                let number = { (key: String) in values[key] as? CGFloat ?? 0 }
+                let strength = { (key: String) in Double(number(key)) }
+                let color = { (key: String) in values[key] as? Color ?? .clear }
+                let font = { (key: String) in values[key] as? Font ?? .body }
+                self.color = Colors(
+                    ink: color("ink"), solid: color("solid"), onSolid: color("onSolid"), accent: color("accent"), good: color("good"),
+                    warn: color("warn"), bad: color("bad"), secondary: strength("secondary"), fill: strength("fill"),
+                    selected: strength("selected"), track: strength("track")
+                )
+                space = Space(
+                    padding: number("padding"), columnGap: number("columnGap"), rowGap: number("rowGap"), listRow: number("listRow"),
+                    listRowGap: number("listRowGap"), glyph: number("glyph"), cell: number("cell"), gridWidth: number("gridWidth")
+                )
+                radius = Radius(card: number("card"), media: number("media"), inner: number("inner"))
+                self.font = Fonts(title: font("title"), body: font("body"), detail: font("detail"), input: font("input"))
+                motion = Motion(press: strength("press"), pressBounce: strength("pressBounce"))
+            }
+        }
+
+        public enum SpotCard: String {
+            case small, wide, square, strip, large
+        }
+
         public struct SpotRow: Identifiable {
             let fields: [String]
 
@@ -41,12 +115,14 @@ public struct ViewLibrary: Sendable {
 
         public struct SpotInput {
             public let size: CGSize
+            public let card: SpotCard?
             public let inset: CGFloat
             public let corner: CGFloat
             public let ink: Color
             public let secondary: Double
             public let accent: Color
             public let font: SpotFonts
+            public let theme: SpotTheme
             public let answers: Int
             public let columnGap: CGFloat
             public let rowGap: CGFloat
@@ -54,6 +130,7 @@ public struct ViewLibrary: Sendable {
             public let tipDelay: Duration
             public let rows: SpotRows
             public let isShown: Bool
+            public let selection: String?
             let closer: () -> Void
             let timer: (Duration) -> Void
             let values: [String: [String]]
@@ -76,6 +153,7 @@ public struct ViewLibrary: Sendable {
                 cornerMaker = card["cornerButton"] as? (String, String, String, @escaping () -> Void) -> AnyView ?? { _, _, _, _ in AnyView(EmptyView()) }
                 rows = SpotRows(fields: card["rows"] as? [[String]] ?? [])
                 isShown = card["isShown"] as? Bool ?? true
+                selection = card["selection"] as? String
                 closer = card["close"] as? () -> Void ?? {}
                 timer = card["bodyTime"] as? (Duration) -> Void ?? { _ in }
                 columnGap = card["columnGap"] as? CGFloat ?? 11
@@ -83,6 +161,7 @@ public struct ViewLibrary: Sendable {
                 columns = card["columns"] as? Int ?? 16
                 tipDelay = card["tipDelay"] as? Duration ?? .milliseconds(500)
                 size = card["size"] as? CGSize ?? .zero
+                self.card = (card["cardName"] as? String).flatMap(SpotCard.init(rawValue:))
                 answers = card["answers"] as? Int ?? 0
                 inset = card["inset"] as? CGFloat ?? 13
                 corner = card["corner"] as? CGFloat ?? 20
@@ -95,6 +174,7 @@ public struct ViewLibrary: Sendable {
                     metric: card["metric"] as? Font ?? .system(size: 30, weight: .semibold, design: .rounded),
                     value: card["value"] as? Font ?? .system(size: 15, weight: .semibold, design: .rounded)
                 )
+                theme = SpotTheme(card["theme"] as? [String: Any] ?? [:])
             }
 
             public subscript(key: String) -> String? { values[key]?.last }
@@ -118,6 +198,184 @@ public struct ViewLibrary: Sendable {
             public func media(_ source: String) -> AnyView { mediaMaker(source) }
 
             public func cornerButton(_ symbol: String, label: String, card id: String, action: @escaping () -> Void) -> AnyView { cornerMaker(symbol, label, id, action) }
+
+            public func loop(period: Double, fill colors: Color..., path: @escaping (Double, CGRect) -> Path) -> some View {
+                SpotLoop(key: .init(period: period, size: size, values: values, look: .fill(colors)), isPlaying: isShown, path: path)
+            }
+
+            public func loop(period: Double, stroke color: Color, width: CGFloat, path: @escaping (Double, CGRect) -> Path) -> some View {
+                SpotLoop(key: .init(period: period, size: size, values: values, look: .stroke(color, width)), isPlaying: isShown, path: path)
+            }
+        }
+
+        struct SpotLoop: NSViewRepresentable {
+            enum Look: Equatable {
+                case fill([Color])
+                case stroke(Color, CGFloat)
+            }
+
+            struct Key: Equatable {
+                let period: Double
+                let size: CGSize
+                let values: [String: [String]]
+                let look: Look
+            }
+
+            let key: Key
+            let isPlaying: Bool
+            let path: (Double, CGRect) -> Path
+
+            final class Stage: NSView {
+                let shape = CAShapeLayer()
+                private let paint: CAGradientLayer?
+                private var key: Key?
+
+                override var isFlipped: Bool { true }
+
+                init(look: Look) {
+                    if case .fill = look { paint = CAGradientLayer() } else { paint = nil }
+                    super.init(frame: .zero)
+                    wantsLayer = true
+                    if let paint {
+                        paint.mask = shape
+                        layer?.addSublayer(paint)
+                    } else {
+                        shape.fillColor = nil
+                        layer?.addSublayer(shape)
+                    }
+                }
+
+                required init?(coder: NSCoder) { nil }
+
+                func take(_ loop: SpotLoop) {
+                    if key != loop.key {
+                        key = loop.key
+                        build(loop)
+                    }
+                    play(loop.isPlaying)
+                }
+
+                private func build(_ loop: SpotLoop) {
+                    let rect = CGRect(origin: .zero, size: loop.key.size)
+                    let period = loop.key.period
+                    let steps = max(2, Int(period * 10))
+                    let paths = (0...steps).map { loop.path(period * Double($0) / Double(steps), rect).cgPath }
+                    CATransaction.begin()
+                    CATransaction.setDisableActions(true)
+                    paint?.frame = rect
+                    shape.frame = rect
+                    shape.path = paths[0]
+                    switch loop.key.look {
+                    case .fill(let colors):
+                        paint?.colors = (colors.count == 1 ? colors + colors : colors).map { NSColor($0).cgColor }
+                    case .stroke(let color, let width):
+                        shape.strokeColor = NSColor(color).cgColor
+                        shape.lineWidth = width
+                    }
+                    shape.speed = 1
+                    shape.timeOffset = 0
+                    shape.beginTime = 0
+                    let wave = CAKeyframeAnimation(keyPath: "path")
+                    wave.values = paths
+                    wave.duration = period
+                    wave.repeatCount = .infinity
+                    wave.isRemovedOnCompletion = false
+                    shape.add(wave, forKey: "loop")
+                    CATransaction.commit()
+                }
+
+                private func play(_ isPlaying: Bool) {
+                    guard isPlaying != (shape.speed != 0) else { return }
+                    if isPlaying {
+                        let paused = shape.timeOffset
+                        shape.speed = 1
+                        shape.timeOffset = 0
+                        shape.beginTime = 0
+                        shape.beginTime = shape.convertTime(CACurrentMediaTime(), from: nil) - paused
+                    } else {
+                        shape.timeOffset = shape.convertTime(CACurrentMediaTime(), from: nil)
+                        shape.speed = 0
+                    }
+                }
+            }
+
+            func makeNSView(context: Context) -> Stage { Stage(look: key.look) }
+
+            func updateNSView(_ stage: Stage, context: Context) { stage.take(self) }
+        }
+
+        public struct SpotMetric: View {
+            let spot: SpotInput
+            let value: String
+            let detail: String
+            let mark: String?
+            let isOnFill: Bool
+
+            public init(_ spot: SpotInput, value: String, detail: String = "", mark: String? = nil, onFill: Bool = false) {
+                self.spot = spot
+                self.value = value
+                self.detail = detail
+                self.mark = mark
+                isOnFill = onFill
+            }
+
+            public var body: some View {
+                Group {
+                    switch shape {
+                    case .small:
+                        VStack(spacing: -1) {
+                            number(.system(size: 20, weight: .semibold, design: .rounded))
+                            note(withDetail: true, font: .system(size: 8)).multilineTextAlignment(.center)
+                        }
+                        .padding(spot.inset / 2)
+                    case .wide, .strip:
+                        ViewThatFits(in: .horizontal) {
+                            line(withDetail: true)
+                            line(withDetail: false)
+                        }
+                        .padding(.horizontal, spot.inset)
+                        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .leading)
+                    default:
+                        VStack(alignment: .leading, spacing: 2) {
+                            number(spot.font.metric)
+                            note(withDetail: true, font: spot.font.detail)
+                        }
+                        .padding(spot.inset + 4)
+                        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .bottomLeading)
+                    }
+                }
+                .foregroundStyle(isOnFill ? .white : spot.ink)
+            }
+
+            private var shape: SpotCard {
+                spot.card ?? (spot.size.height >= 100 ? .large : spot.size.width < 100 ? .small : .strip)
+            }
+
+            private var detailOpacity: Double { isOnFill ? 1 : spot.secondary }
+
+            private func number(_ font: Font) -> some View {
+                Text(value).font(font).lineLimit(1).minimumScaleFactor(0.6).layoutPriority(1)
+            }
+
+            private func line(withDetail: Bool) -> some View {
+                HStack(alignment: .center, spacing: 6) {
+                    number(spot.font.metric).fixedSize()
+                    note(withDetail: withDetail, font: spot.font.detail).fixedSize()
+                }
+            }
+
+            private func note(withDetail: Bool, font: Font) -> some View {
+                HStack(spacing: 3) {
+                    if withDetail && !detail.isEmpty {
+                        Text(detail)
+                    }
+                    if let mark {
+                        Image(systemName: mark)
+                    }
+                }
+                .font(font)
+                .opacity(detailOpacity)
+            }
         }
 
         extension SpotView: DynamicProperty {}
@@ -220,7 +478,7 @@ public struct ViewLibrary: Sendable {
 
     public func build(source: Data, named name: String, kinds: [String]) async throws -> Data {
         let module = "View\(Self.name(of: source).prefix(16))"
-        let flags = ["-emit-library", "-parse-as-library", "-O", "-module-name", module, "-Xfrontend", "-import-module", "-Xfrontend", "SwiftUI"]
+        let flags = ["-emit-library", "-parse-as-library", "-O", "-module-name", module, "-Xfrontend", "-import-module", "-Xfrontend", "SwiftUI", "-Xfrontend", "-import-module", "-Xfrontend", "AppKit"]
         let files = [SwiftBuild.File(name: Self.preludeName, data: Data(Self.prelude.utf8)), SwiftBuild.File(name: name, data: source)]
         return try await SwiftBuild(tools: tools).output(of: files, flags: flags, kinds: kinds, toolsFault: Self.toolsFault, fault: Self.sourceFault)
     }

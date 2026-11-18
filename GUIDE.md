@@ -52,7 +52,7 @@ with **Last at 14:20** at the end of the line.
 
 Try each example of this page in the playground before you put it in the spots folder.
 
-- **Playground.** Open the Playground spot, or run `openspot playground [file]`. Type a spot, or pick one from Examples.
+- **Playground.** Open the Playground spot, or run `openspot playground open [file]`. Type a spot, or pick one from Examples.
   It runs in a panel of its own: pick its sheet or its card, and type in the panel's search to try its answers. Under
   it, you see each call with its arguments, its stdin, what it printed, its stderr and how it ended. When you open a
   file, edits go straight to the file.
@@ -61,11 +61,12 @@ Try each example of this page in the playground before you put it in the spots f
 - **One call.** `openspot spot run <id> [call] [value]...` runs one call the way Openspot does, and prints everything the
   spot prints. With no call, it asks the spot what to show. While Openspot is open, the script gets the variables of
   the app, not those of your shell.
-- **Image.** `openspot render [--view <file>] <file.png>` draws the sheet that stdin holds. `--card <size>` draws its card,
-  and `--spot <id>` draws an installed spot.
+- **Image.** `openspot render sheet [--view <file>] <file.png>` draws the sheet that stdin holds.
+  `openspot render card <size> <file.png>` draws its card, and `openspot render spot <id> <file.png>` draws an
+  installed spot.
 - **Log.** `openspot spot log <id>` prints the last calls to a spot, with their stdin, stdout, stderr and exit code.
-- **Check.** `openspot check [--json] <folder>` loads each spot, runs it once, and prints each error. Run it before you
-  share a spot.
+- **Check.** `openspot check spots [--json] <folder>` loads each spot, runs it once, and prints a `fault` block for each error,
+  or nothing. Run it before you share a spot.
 
 ## Show a list
 
@@ -156,7 +157,7 @@ Learn more in [The main block and the card](PROTOCOL.md#the-main-block-and-the-c
 A button runs a command. Give each button an id. When the user presses it, Openspot runs your spot with that id.
 
 Buttons in the header turn the spot into a set of commands, with no card. The user finds each command in the main
-search, and gives it a hotkey with Keys… in its ⌘K menu.
+search, and gives it a hotkey in its Settings.
 
 ```sh
 #!/bin/sh
@@ -511,3 +512,180 @@ rows under the view. `spot.isShown` is false while the panel is hidden: stop a m
 its pulse. `spot.close()` closes the sheet, as Esc does.
 
 Learn more in [Views](PROTOCOL.md#views).
+
+## Follow the theme in a view
+
+A view that takes its colours, sizes and fonts from `spot.theme` looks like the rest of Openspot, and changes with it when
+you [change the look](#change-the-look-of-openspot).
+
+```sh
+#!/bin/sh
+# title=Steps
+# icon=figure.walk
+# on=sheet.open
+# view=steps.swift
+printf 'view=steps\nvalue=6200\ngoal=10000\n'
+```
+
+```swift
+import SwiftUI
+
+struct SpotView: View {
+    let spot: SpotInput
+
+    var body: some View {
+        let theme = spot.theme
+        let reached = (Int(spot["value"] ?? "") ?? 0) >= (Int(spot["goal"] ?? "") ?? 1)
+        VStack(alignment: .leading, spacing: theme.space.listRowGap) {
+            Text("\(spot["value"] ?? "–") steps").font(theme.font.title)
+            Text(reached ? "Goal reached" : "Keep going")
+                .font(theme.font.detail)
+                .foregroundStyle(reached ? theme.color.good : theme.color.ink.opacity(theme.color.secondary))
+        }
+        .padding(theme.space.padding)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(theme.color.ink.opacity(theme.color.fill), in: RoundedRectangle(cornerRadius: theme.radius.inner))
+        .padding(theme.space.padding)
+    }
+}
+```
+
+The box sits `padding` inside the view's place, so its corner is `radius.inner`, and it follows the corner of the card.
+[Views](PROTOCOL.md#views) lists each value of `spot.theme`.
+
+## Change the look of Openspot
+
+A theme gives Openspot its colours, glass, sizes, type and motion. Change it to make Openspot look your way.
+
+Open **Themes** in Openspot to see each theme, with the one in use checked. Return uses a theme. Its ⌘K menu
+duplicates, renames, moves to the Trash or opens the file of a theme, and **Copy prompt** hands a theme to your agent:
+describe the look you want, and `⌘⏎` copies a prompt that changes the theme's file. The same prompt comes from
+`openspot prompt theme <name> [words]...`.
+
+Each theme lives in one file, `theme.toml`. Run `openspot theme open`, which opens the file of the theme in use, and the
+first time makes a copy of `Openspot`, `Openspot copy`, and uses it. A theme names a few colours and choices, and
+Openspot works out every other value from them. This one gives Openspot the look of Dracula:
+
+```toml
+[dark]
+background = "#282A36"
+ink = "#F8F8F2"
+accent = "#BD93F9"
+highlight = "#FF79C6"
+
+[light]
+background = "#FFFBEB"
+ink = "#1F1F1F"
+accent = "#644AC9"
+highlight = "#A3144D"
+
+[look]
+glass = "regular"
+backdrop = "tint"
+corner = 20
+```
+
+Then draw Openspot with it:
+
+```sh
+openspot theme reload
+```
+
+`[dark]` and `[light]` each hold the colours of one appearance of the Mac, and `[look]` holds the choices of both:
+
+| Key          | Section             | Means                                                                                         | `Openspot`             |
+| ------------ | ------------------- | --------------------------------------------------------------------------------------------- | ---------------------- |
+| `background` | `[dark]`, `[light]` | The colour of the panel: it tints the glass, the backdrop and the windows.                    | `#000000`, `#FFFFFF`   |
+| `ink`        | `[dark]`, `[light]` | The colour of text and glyphs.                                                                | `#FFFFFF`, `#1C1C1C`   |
+| `accent`     | `[dark]`, `[light]` | The colour of a selection, its ring and each chosen state.                                    | `accent`               |
+| `highlight`  | `[dark]`, `[light]` | The colour of the search field, the keys, the sliders and a filled card.                      | the `ink`              |
+| `good`, `warn`, `bad` | `[dark]`, `[light]` | The colours of a value that is fine, needs a look, or failed. `bad` also marks a press that deletes. | `green`, `orange`, `red` |
+| `glass`      | `[look]`            | `clear` shows what is behind the panel. `regular` frosts it, and the `background` tints it strongly. | `clear`         |
+| `backdrop`   | `[look]`            | `blur` blurs what is behind the panel. `tint` lays the `background` over it.                  | `blur`                 |
+| `reach`      | `[look]`            | `tiles` lays the backdrop as a soft halo around the tiles. `screen` covers the screen.         | `tiles`                |
+| `corner`     | `[look]`            | The corner of a card in points. Every other corner follows it.                                | `26`                   |
+| `density`    | `[look]`            | A factor on every gap and padding: `0.5` is tight, `1.5` is roomy.                            | `1`                    |
+| `type`       | `[look]`            | The size of the text in points. Smaller and larger text follows it.                           | `13`                   |
+| `speed`      | `[look]`            | A factor on the speed of every motion: `2` is twice as fast.                                  | `1`                    |
+
+- A key that a theme lacks keeps the value of `Openspot`, so a theme needs only the keys you change.
+- A colour is `#RRGGBB`, `#RRGGBBAA`, or a colour of the Mac: `accent`, `green`, `orange` or `red`.
+- Openspot works out each other value, such as the fill of a card, from these keys. The fills keep the same visible step
+  over any `background`, and the second line of a row stays readable over it, at 4.5:1 or more.
+- At the `corner` of 26, a card one row high is a capsule; a smaller corner makes it squarer.
+- After `openspot theme reload`, colours and the glass change at once. Corners, density, type, speed and the backdrop
+  change when the panel next hides.
+- `openspot theme reload` fails on a value it can't read, prints a line for each, such as
+  `theme.toml: [look] corner is a number of points from 0 to 100, such as 3.`, and keeps the look as it was. At launch,
+  such a value keeps the value of `Openspot`, and a toast shows the line. A key that is not in this guide is such a value.
+
+Keep more than one theme to switch between looks. Each theme is a folder, `themes/<name>.theme` in the folder of your
+config, named by the folder, with its `theme.toml` inside:
+
+```sh
+openspot theme list
+openspot theme new
+openspot theme use "Openspot copy"
+```
+
+`list` prints a block for each theme, the built-in ones first, and marks the one in use:
+
+```text
+theme=Openspot
+builtin=true
+
+theme=Openspot copy
+used=true
+```
+
+| Command                                   | Does                                                                                     |
+| ----------------------------------------- | ---------------------------------------------------------------------------------------- |
+| `openspot theme use <name>`               | Draws Openspot with a theme.                                                             |
+| `openspot theme new`                      | Makes `Theme 2`, then `Theme 3`, and uses it. Its file lists each key behind a `#`; remove the `#` to change one. |
+| `openspot theme duplicate [name]`         | Copies the theme in use, or the named one, as `<name> copy`, and uses the copy.          |
+| `openspot theme rename <name> <new name>` | Renames a theme.                                                                         |
+| `openspot theme delete <name>`            | Moves a theme to the Trash. Deleting the one in use switches to `Openspot`.              |
+| `openspot theme open [name]`             | Opens the file of the theme in use, or the named one, and copies a built-in theme first.  |
+
+- A theme in use that is gone gives a toast at launch, and Openspot draws with `Openspot`.
+- Openspot comes with built-in themes, such as `Openspot` and `Dracula`. A built-in theme can't change, be renamed or be
+  deleted: `openspot theme duplicate` makes a copy of it that you can change.
+- A name can't be empty, start with `.`, or hold `/` or a new line, and the spaces around it are dropped. A folder that
+  has the name of a built-in theme, in any case, is not a theme, and a toast at launch asks you to rename it.
+- `openspot theme use` fails on a theme with a value it can't read, prints a line for each, and keeps the theme in use.
+
+### Set a value exactly
+
+Set a value exactly when the value that Openspot works out is not the one you want, such as square windows on a theme
+with small corners. Name the value in `[dark]` or `[light]` for a colour or a strength of one appearance, and in
+`[advanced]` for a size, a time or the backdrop:
+
+```toml
+[dark]
+solid = "#FF79C6"
+fill = 0.12
+
+[advanced]
+window-corner = 6
+column-gap = 6
+press-bounce = 0
+```
+
+| Key                                       | Section             | Sets                                                                                    |
+| ----------------------------------------- | ------------------- | --------------------------------------------------------------------------------------- |
+| `solid`, `on-solid`, `glyph-on-solid`     | `[dark]`, `[light]` | A filled card, its text and its glyph. They follow `highlight`.                         |
+| `glass-tint`, `corner-fill`, `window`     | `[dark]`, `[light]` | The tint of the glass, the fill behind a corner button, and a lifted card and a window. They follow `background`. |
+| `confirm`, `on-confirm`                   | `[dark]`, `[light]` | A press that asks again before it deletes, and its text. They follow `bad`.             |
+| `backdrop-tint`                           | `[dark]`, `[light]` | The colour of the backdrop `tint`. It follows `background`.                             |
+| `fill`, `selected`, `disc`, `chip`, `control`, `track`, `secondary` | `[dark]`, `[light]` | Strengths from 0 to 1 of the `ink`: the field and a card, a chosen row, the disc behind a glyph, a chip, a button, a track and ring, and the second line of a row. |
+| `cell`, `glyph`, `list-row`, `menu-row`   | `[advanced]`        | The side of a grid cell, of a glyph, and the height of a row and a menu row, in points. |
+| `column-gap`, `row-gap`, `padding`, `list-row-gap`, `menu-padding` | `[advanced]` | The gaps and paddings in points. They follow `density`.                     |
+| `window-corner`, `media-corner`, `mark-corner` | `[advanced]`   | The corners of a window, a picture and a corner mark. They follow `corner`.             |
+| `title`, `body`, `detail`, `input`        | `[advanced]`        | The sizes of the text in points. They follow `type`.                                    |
+| `grow`, `shrink`, `move`, `fade-in`, `fade-out`, `press`, `settle` | `[advanced]` | The time of each motion in seconds. They follow `speed`.                     |
+| `press-bounce`, `pressed-scale`, `lifted-scale`, `focused-scale` | `[advanced]` | The bounce of a press, and the scale of a pressed, a lifted and a focused card.   |
+| `backdrop-blur`, `halo-size`, `halo-padding` | `[advanced]`     | The strength of the backdrop's blur, how far its halo reaches past the tiles, from 16 to 90, and how far it holds its full strength, from 0 to 74. |
+
+- An exact value holds only in the file that sets it. A copy of `Openspot` keeps the exact values in its file, but a
+  theme you write from scratch works out its own.
+- A value that follows another follows the exact one too: an exact `solid` gives `on-solid` the colour that reads on it.

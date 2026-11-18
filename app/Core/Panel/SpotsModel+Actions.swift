@@ -330,7 +330,7 @@ extension SpotsModel {
     }
 
     public func menuItemAtRest(_ item: CGRect) -> CGRect {
-        guard focus(ofCard: selected) == .focused, let size = placements.first(where: { $0.index == selected })?.size else { return item }
+        guard isMenuOpen, openSheetID == nil, let size = placements.first(where: { $0.index == selected })?.size else { return item }
         let width = SpotTokens.width(columns: size.columns) * MotionTokens.focusedScale
         let height = SpotTokens.height(rows: size.rows) * MotionTokens.focusedScale
         return CGRect(x: item.midX - width / 2, y: item.midY - height / 2, width: width, height: height)
@@ -355,7 +355,7 @@ extension SpotsModel {
     func openMenu(on target: Target) {
         var answers = HookAnswers()
         menuSession = actionMenu(on: target, answers: &answers, asks: true).map { ActionMenuSession(menu: $0, target: target, answers: answers) }
-        DispatchQueue.main.async { [weak self] in
+        host.nextFrame { [weak self] in
             guard let self, menuSession?.phase == .opening else { return }
             change(.sheet(isOpen: true), {
                 self.menuSession?.phase = .open
@@ -454,8 +454,14 @@ extension SpotsModel {
     }
 
     public func run(_ action: CommandAction, offeredBy owner: String, on target: Target) {
-        if action.after == .close, isShown { host.dismiss() }
-        sheets[owner]?.run(action, item: SpotItem(title: target.entry.state.title, run: target.entry.id))
+        if action.after == .close {
+            closeMenu()
+            if isShown { host.dismiss() }
+        }
+        sheets[owner]?.run(action, item: SpotItem(title: target.entry.state.title, run: target.entry.id)) { [weak self] in
+            guard let self, flow.current == nil || transition.id != nil else { return }
+            closeMenu()
+        }
     }
 
     public func followHint() {
@@ -489,13 +495,16 @@ extension SpotsModel {
         return entry.state.title
     }
 
-    public func closeMenu() {
+    public func closeMenu(keepsFoot: Bool = false) {
         guard menu != nil else { return }
         if menuSession?.submenuRow != nil {
             menuSession?.submenuRow = nil
             host.hideSubmenu()
         }
-        change(.sheet(isOpen: false), { menuSession?.phase = .closing }, completion: { [weak self] in
+        change(.sheet(isOpen: false), {
+            menuSession?.phase = .closing
+            if !keepsFoot, menuContentHeight != 0 { menuContentHeight = 0 }
+        }, completion: { [weak self] in
             if self?.menuSession?.phase == .closing { self?.menuSession = nil }
         })
     }
@@ -515,10 +524,11 @@ extension SpotsModel {
             openForm(action, on: target)
             return
         }
-        closeMenu()
         if let action = row.action, let owner = row.owner {
-            run(action, offeredBy: owner, on: target)
-        } else if let action = row.action {
+            return run(action, offeredBy: owner, on: target)
+        }
+        closeMenu()
+        if let action = row.action {
             run(action, on: target)
         } else if let item = target.item {
             pick(item, of: target.entry)

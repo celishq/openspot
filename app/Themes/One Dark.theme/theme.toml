@@ -1,0 +1,22 @@
+[dark]
+background = "#282C34"
+ink = "#ABB2BF"
+accent = "#61AFEF"
+highlight = "#C678DD"
+good = "#98C379"
+warn = "#D19A66"
+bad = "#E06C75"
+
+[light]
+background = "#FAFAFA"
+ink = "#383A42"
+accent = "#4078F2"
+highlight = "#A626A4"
+good = "#50A14F"
+warn = "#986801"
+bad = "#E45649"
+
+[look]
+glass = "regular"
+backdrop = "tint"
+reach = "tiles"

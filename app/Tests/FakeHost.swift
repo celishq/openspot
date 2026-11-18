@@ -24,6 +24,7 @@ final class FakeHost: SpotsHost {
     var glyphLists: [[String]] = []
     var cardGlyphs: [[String]] = []
     var heldEnds: [@MainActor () -> Void]?
+    var heldRemovals: [@MainActor () -> Void]?
     weak var model: SpotsModel?
 
     nonisolated deinit {}
@@ -79,6 +80,17 @@ final class FakeHost: SpotsHost {
 
     func applyConfig(_ config: Config) {
         if let key = config.panelKey { model?.entryKey = key }
+    }
+
+    var paints: [Theme.Colours] = []
+    var layOuts: [Theme.Layout] = []
+
+    func paint(_ look: Theme.Colours) {
+        paints.append(look)
+    }
+
+    func layOut(_ layout: Theme.Layout) {
+        layOuts.append(layout)
     }
 
     var entryKeyIsOn = true
@@ -143,5 +155,12 @@ final class FakeHost: SpotsHost {
         if let phase = model?.transition.phase { phases.append(phase) }
         openings.append(model?.runs.opening.moving)
         if heldEnds != nil { heldEnds?.append(completion) } else { completion() }
+    }
+
+    func change(_ motion: PanelMotion?, _ body: () -> Void, completion: @escaping @MainActor () -> Void, removal: @escaping @MainActor () -> Void) {
+        change(motion, body) { [weak self] in
+            completion()
+            if self?.heldRemovals != nil { self?.heldRemovals?.append(removal) } else { removal() }
+        }
     }
 }

@@ -8,17 +8,21 @@ public struct CallWords: Sendable {
     public let rest: [String]
     public let spot: String?
     public let reason: String?
+    let fit: CommandForm.Words?
+
+    init(rest: [String], spot: String?, reason: String?, form: CommandForm = CommandForm("")) {
+        self.rest = rest
+        self.spot = spot
+        self.reason = reason
+        fit = form.fit(rest)
+    }
 
     var isRead: Bool {
         reason != nil
     }
 
-    func options(_ allowed: Set<String>) -> Set<String>? {
-        Set(rest).count == rest.count && Set(rest).isSubset(of: allowed) ? Set(rest) : nil
-    }
-
     var form: PrintForm? {
-        options([PrintForm.frameWord]).map { $0.isEmpty ? .json : .frame }
+        fit.flatMap { $0.rest.isEmpty ? $0.form : nil }
     }
 
     var one: String? {
@@ -27,32 +31,5 @@ public struct CallWords: Sendable {
 
     var none: Bool {
         rest.isEmpty
-    }
-}
-
-extension CallWords {
-    static func listing(_ words: [String]) -> (days: Int, hidden: [String])? {
-        var days = 1
-        var hidden: [String] = []
-        var index = 0
-        while index < words.count {
-            guard index + 1 < words.count else { return nil }
-            let value = words[index + 1]
-            switch words[index] {
-            case "--days":
-                guard let number = Int(value), number > 0 else { return nil }
-                days = number
-            case "--hide": hidden.append(value)
-            default: return nil
-            }
-            index += 2
-        }
-        return (days, hidden)
-    }
-
-    static func adding(_ words: [String]) -> (words: String, isDry: Bool)? {
-        let isDry = words.first == "--dry-run"
-        let rest = isDry ? Array(words.dropFirst()) : words
-        return rest.isEmpty ? nil : (rest.joined(separator: " "), isDry)
     }
 }

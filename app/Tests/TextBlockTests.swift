@@ -114,6 +114,37 @@ final class TextBlockTests: XCTestCase {
         )
     }
 
+    func testARowWithMoreThanOneValueDrawsABarForEachUpToItsMax() throws {
+        let bars = try XCTUnwrap(SpotItem(block: TextBlock.blocks(in: "row=a\nvalue=2\nvalue=-\nvalue=4\nsection=Used")[0]))
+        let capped = try XCTUnwrap(SpotItem(block: TextBlock.blocks(in: "row=a\nvalue=2\nvalue=4\nmax=8")[0]))
+        let check = try XCTUnwrap(SpotItem(block: TextBlock.blocks(in: "row=a\nvalue=true")[0]))
+
+        XCTAssertEqual(bars.bars, [0.5, nil, 1])
+        XCTAssertEqual(bars.section, "Used")
+        XCTAssertNil(bars.fields)
+        XCTAssertFalse(bars.isOn)
+        XCTAssertEqual(capped.bars, [0.25, 0.5])
+        XCTAssertEqual(check.bars, [])
+        XCTAssertEqual(SpotItem(block: TextBlock.blocks(in: "row=a\nvalue=nan\nvalue=2")[0])?.bars, [nil, 1])
+        XCTAssertTrue(check.isOn)
+    }
+
+    func testAListTitlesTheFirstRowOfEachSectionUntilASearch() {
+        let items = ["a Used", "b Used", "c Failing", "d"].map { word in
+            let parts = word.split(separator: " ").map(String.init)
+            return SpotItem(title: parts[0], run: parts[0], section: parts.count > 1 ? parts[1] : nil)
+        }
+        var list = ItemList(items: items)
+
+        XCTAssertEqual(list.sectionStarts, ["a": "Used", "c": "Failing"])
+        XCTAssertEqual(list.lineCount, list.shown.count + 2)
+        XCTAssertEqual(list.run(at: 0), "a")
+        XCTAssertNil(list.run(at: list.shown.count))
+        _ = list.search("b")
+        XCTAssertEqual(list.sectionStarts, [:])
+        XCTAssertEqual(list.lineCount, list.shown.count)
+    }
+
     func testAnItemShowsItsPathAsItsSpotThenItsParent() {
         let spot = Spot(id: "s", name: "System Settings", url: URL(fileURLWithPath: "/settings.sh"))
         let volume = SpotItem(block: TextBlock.blocks(in: "row=v\ntitle=Volume\ndetail=Loud\nparent=Sound")[0])

@@ -9,15 +9,14 @@ struct SpotSearchField: View {
     var isFocused: FocusState<Bool>.Binding
 
     var body: some View {
-        TextField(prompt, text: Binding(get: { text }, set: onSearch), prompt: Text(prompt).foregroundStyle(SpotTheme.glassSecondary))
+        TextField(prompt, text: Binding(get: { text }, set: onSearch), prompt: Text(""))
             .labelsHidden()
             .textFieldStyle(.plain)
             .font(SpotType.body)
             .foregroundStyle(SpotTheme.glassInk)
             .focused(isFocused)
-            .padding(.horizontal, SpotTokens.padding - SpotTokens.menuPadding + 4)
-            .frame(height: SpotTokens.menuRowHeight)
-            .background(SpotTheme.ink.opacity(SpotTheme.fill), in: shape)
+            .padding(.horizontal, SpotTokens.menuTextInset)
+            .frame(height: SpotTokens.menuRow)
             .contentShape(shape)
             .pointerStyle(.horizontalText)
             .simultaneousGesture(TapGesture().onEnded { isFocused.wrappedValue = true })

@@ -47,7 +47,7 @@ public struct SheetParts: Equatable, Sendable {
         SheetPlacement(parts: parts, layout: layout ?? SheetLayout(flat: parts))
     }
 
-    private mutating func place() {
+    mutating func place() {
         placement = Self.placement(of: parts, in: layout)
         orderFocus()
     }

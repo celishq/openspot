@@ -12,6 +12,7 @@ public struct SpotItem: Equatable, Sendable {
     public let records: Bool
     public let takesShake: Bool
     public let isOn: Bool
+    public let isToggle: Bool
     public let tone: MetricValue.Tone?
     public let file: String?
     public var to: String? {
@@ -32,8 +33,10 @@ public struct SpotItem: Equatable, Sendable {
     public let openTitle: String?
     public let staysOnPick: Bool
     public let move: FlowMove?
+    public let bars: [Double?]
+    public let section: String?
 
-    public init(title: String, subtitle: String? = nil, run: String, picture: Icon? = nil, parent: String? = nil, hides: [String]? = nil, keywords: [String] = [], shortcut: String? = nil, records: Bool = false, takesShake: Bool = false, isOn: Bool = false, tone: MetricValue.Tone? = nil, file: String? = nil, fields: String? = nil, card: SpotState? = nil, pin: Pin? = nil, openTitle: String? = nil, staysOnPick: Bool = false, focusSubtitle: String? = nil, move: FlowMove? = nil) {
+    public init(title: String, subtitle: String? = nil, run: String, picture: Icon? = nil, parent: String? = nil, hides: [String]? = nil, keywords: [String] = [], shortcut: String? = nil, records: Bool = false, takesShake: Bool = false, isOn: Bool = false, isToggle: Bool = false, tone: MetricValue.Tone? = nil, file: String? = nil, fields: String? = nil, card: SpotState? = nil, pin: Pin? = nil, openTitle: String? = nil, staysOnPick: Bool = false, focusSubtitle: String? = nil, move: FlowMove? = nil, bars: [Double?] = [], section: String? = nil) {
         self.title = title
         self.subtitle = subtitle
         self.run = run
@@ -45,6 +48,7 @@ public struct SpotItem: Equatable, Sendable {
         self.records = records
         self.takesShake = takesShake
         self.isOn = isOn
+        self.isToggle = isToggle
         self.tone = tone
         self.file = file
         self.fields = fields
@@ -54,6 +58,8 @@ public struct SpotItem: Equatable, Sendable {
         self.focusSubtitle = focusSubtitle
         self.staysOnPick = staysOnPick
         self.move = move
+        self.bars = bars
+        self.section = section
     }
 
     public init?(block: TextBlock) {
@@ -72,6 +78,7 @@ public struct SpotItem: Equatable, Sendable {
             records: block.value(RowKey.type) == RowKey.hotkey,
             takesShake: block.flag(RowKey.shake) ?? false,
             isOn: block.flag(RowKey.value) ?? false,
+            isToggle: block.value(RowKey.type) == RowKey.toggle,
             tone: block.value(RowKey.tone).flatMap(MetricValue.Tone.init),
             file: block.value(RowKey.file).flatMap { $0.hasPrefix("/") ? $0 : nil },
             fields: block.value(RowKey.pushSpot) != nil || block.fields.contains { RowKey(rawValue: $0.key) == nil } ? block.text : nil,
@@ -79,8 +86,17 @@ public struct SpotItem: Equatable, Sendable {
             openTitle: block.value(RowKey.open),
             staysOnPick: block.flag(RowKey.close) == false,
             focusSubtitle: block.value(RowKey.focus),
-            move: FlowMove(block: block, own: run).flatMap { if case .push = $0 { $0 } else { nil } }
+            move: FlowMove(block: block, own: run).flatMap { if case .push = $0 { $0 } else { nil } },
+            bars: Self.bars(values: block.values(RowKey.value), max: block.value(RowKey.max).flatMap(Double.init)),
+            section: block.value(RowKey.section)
         )
+    }
+
+    private static func bars(values: [String], max: Double?) -> [Double?] {
+        guard values.count > 1 else { return [] }
+        let numbers = values.map { Double($0).flatMap { $0.isFinite ? $0 : nil } }
+        let top = max ?? numbers.compactMap { $0 }.max() ?? 0
+        return numbers.map { number in number.map { top > 0 ? Swift.min(Swift.max($0 / top, 0), 1) : 0 } }
     }
 
     public var symbol: String? {

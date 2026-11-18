@@ -11,18 +11,22 @@ final class OpenspotApp: NSObject, NSApplicationDelegate {
             SpotCommandLine.run(call)
         }
         let app = NSApplication.shared
+        #if OPENSPOT_TOOLS
+        SpotMotionProbe.takeAppearance()
+        #endif
         let delegate = OpenspotApp()
         app.delegate = delegate
         app.setActivationPolicy(.accessory)
         app.run()
     }
 
-    private static let dragSourceFocusDelay = 0.2
+    private static let dragSourceFocusDelay: TimeInterval = 0.2
     static var unlocks = UnlockPass()
 
     private(set) var item: OpenspotItem?
     private(set) lazy var model = SpotsModel(host: self)
     private(set) var panel: SpotsPanel?
+    let frame = NextFrame()
     private(set) var toast: ToastPanel?
     private(set) var previous = PreviousApp<NSRunningApplication>()
     private(set) lazy var keys = GlobalKeys(
@@ -47,6 +51,9 @@ final class OpenspotApp: NSObject, NSApplicationDelegate {
 
     func applicationDidFinishLaunching(_ notification: Notification) {
         toast = ToastPanel.make()
+        let theme = ThemeFolder.standard(environment: model.files.environment, builtIn: mac.mac.theme).read()
+        model.take(theme)
+        if !theme.faults.isEmpty { notify(theme.faults.joined(separator: "\n")) }
         let item = OpenspotItem(
             model: model, toast: toast?.toast, target: self, action: #selector(pressItem),
             onDragEnter: { [weak self] in self?.showPanelForDrag() }, onDrop: { [weak self] in self?.model.review($0) }

@@ -13,20 +13,20 @@ struct SpotKeycaps: View {
     private static let caps: [(modifier: Shortcut.Modifiers, name: String)] = [
         (.control, "control"), (.option, "option"), (.shift, "shift"), (.command, "command")
     ]
-    private static let side: CGFloat = 52
-    private static let gap: CGFloat = 6
-    private static let plus: CGFloat = 12
-    private static let hintGap: CGFloat = 4
-    private static let hintLine: CGFloat = 13
-    private static let statusGap: CGFloat = 8
+    private static let side = SpotTokens.keycapSide
+    private static let gap = SpotTokens.keycapGap
+    private static let plus = SpotTokens.keycapPlus
+    private static let hintGap = SpotTokens.keycapHintGap
+    private static let hintLine = SpotTokens.keycapHintLine
+    private static let statusGap = SpotTokens.keycapStatusGap
     private static let statusLines = 3
     private static let waiting = "Press the keys together."
     private static let idle = "Press Return to record a key."
     private static let modifierHint = "⌃, ⌥ or ⌘"
     private static let keyHint = "a key"
-    private static let symbolFont = Font.system(size: 22, weight: .medium)
-    private static let keyFont = Font.system(size: 17, weight: .medium)
-    private static let arrivalScale = 0.85
+    private static let symbolFont = SpotType.keycapSymbol
+    private static let keyFont = SpotType.keycapKey
+    private static let arrivalScale = MotionTokens.keycapArrivalScale
     private static let arrival = AnyTransition.asymmetric(
         insertion: .scale(scale: arrivalScale).combined(with: .opacity).animation(SpotMotion.pop),
         removal: .scale(scale: arrivalScale).combined(with: .opacity).animation(SpotMotion.fade(isShown: false))
@@ -61,8 +61,8 @@ struct SpotKeycaps: View {
     }
 
     private static let hintRoom = hintGap + hintLine
-    private static let statusInset: CGFloat = 16
-    private static let statusWidth = SheetPlacement.width - 2 * statusInset
+    private static let statusInset = SpotTokens.keycapStatusInset
+    private static var statusWidth: CGFloat { SpotTokens.partsWidth - 2 * statusInset }
 
     private func message(shown: Shortcut?) -> String {
         isRecording ? status ?? Self.waiting : status ?? (shown == nil ? Self.idle : "")
@@ -195,17 +195,17 @@ private struct Keycap: View {
     let cap: Cap
     let size: CGSize
 
-    private static let corner: CGFloat = 8
+    private static let corner = SpotTokens.keycapCorner
     private static let rim: CGFloat = 1
-    private static let edge: CGFloat = 2.5
-    private static let litEdge: CGFloat = 2
-    private static let glow: CGFloat = 2.5
-    private static let dashLine: CGFloat = 1.5
+    private static let edge = SpotTokens.keycapEdge
+    private static let litEdge = SpotTokens.keycapLitEdge
+    private static let glow = SpotTokens.keycapGlow
+    private static let dashLine = SpotTokens.keycapDashLine
     private static let dash: [CGFloat] = [4, 3]
     private static let nameGap: CGFloat = 1
-    private static let leastScale = 0.6
-    private static let nameFont = Font.system(size: 9, weight: .medium)
-    private static let legendScale = 0.7
+    private static let leastScale = MotionTokens.keycapLeastScale
+    private static let nameFont = SpotType.keycapName
+    private static let legendScale = MotionTokens.keycapLegendScale
     private static let legendArrival = AnyTransition.scale(scale: legendScale).combined(with: .opacity).animation(SpotMotion.pop)
 
     @State private var isIn = false

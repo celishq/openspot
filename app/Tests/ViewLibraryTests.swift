@@ -99,10 +99,76 @@ final class ViewLibraryTests: XCTestCase {
     }
 
     @MainActor
+    func testAViewReadsTheIdOfTheSelectedRow() async throws {
+        let picked = try await drawn(view.replacingOccurrences(of: "Text(", with: "let _ = spot.send(spot.selection ?? \"-\")\n        Text("), values: [:], card: ["selection": "b"])
+        let none = try await drawn(view.replacingOccurrences(of: "Text(", with: "let _ = spot.send(spot.selection ?? \"-\")\n        Text("), values: [:], card: [:])
+
+        XCTAssertEqual(picked, ["b"])
+        XCTAssertEqual(none, ["-"])
+    }
+
+    @MainActor
+    func testAViewReadsTheNameOfItsCardSizeAndNoneOutsideACard() async throws {
+        let reads = view.replacingOccurrences(of: "Text(", with: "let _ = spot.send(spot.card.map { \"\\($0)\" } ?? \"-\")\n        Text(")
+        let wide = try await drawn(reads, values: [:], card: ["cardName": "wide"])
+        let sheet = try await drawn(reads, values: [:], card: [:])
+
+        XCTAssertEqual(wide, ["wide"])
+        XCTAssertEqual(sheet, ["-"])
+    }
+
+    @MainActor
+    func testAViewDrawsANumberWithItsDetailAtEachCardSize() async throws {
+        let text = """
+        import SwiftUI
+
+        struct SpotView: View {
+            let spot: SpotInput
+
+            var body: some View {
+                let _ = spot.send(spot.card.map { "\\($0)" } ?? "-")
+                SpotMetric(spot, value: "44", detail: "days left", mark: "bolt.fill", onFill: true)
+            }
+        }
+
+        """
+        var sent: [String] = []
+        for name in ["small", "wide", "square", "strip", "large"] {
+            sent += try await drawn(text, values: [:], card: ["cardName": name])
+        }
+        sent += try await drawn(text, values: [:], card: [:])
+
+        XCTAssertEqual(sent, ["small", "wide", "square", "strip", "large", "-"])
+    }
+
+    @MainActor
     func testAViewWithNoHostWordsShowsAndHasNoRows() async throws {
         let sent = try await drawn(view.replacingOccurrences(of: "Text(", with: "let _ = spot.send(\"\\(spot.rows.count) \\(spot.isShown) \\(spot[\"row\"] ?? \"-\")\")\n        Text("), values: ["title": ["Hi"], "row": ["mine"]], card: [:])
 
         XCTAssertEqual(sent, ["0 true mine"])
+    }
+
+    @MainActor
+    func testAViewReadsTheThemeByRole() async throws {
+        let text = """
+        import SwiftUI
+
+        struct SpotView: View {
+            let spot: SpotInput
+
+            var body: some View {
+                let theme = spot.theme
+                let _ = spot.send("\\(theme.space.padding) \\(theme.space.gridWidth) \\(theme.radius.inner) \\(theme.motion.press) \\(theme.color.fill) \\(theme.color.secondary)")
+                Text("theme").font(theme.font.body).foregroundStyle(theme.color.good)
+            }
+        }
+
+        """
+        let theme: [String: Any] = ["padding": CGFloat(20), "gridWidth": CGFloat(310), "inner": CGFloat(10), "press": CGFloat(0.3), "fill": CGFloat(0.25), "secondary": CGFloat(0.7)]
+
+        let sent = try await drawn(text, values: [:], card: ["theme": theme])
+
+        XCTAssertEqual(sent, ["20.0 310.0 10.0 0.3 0.25 0.7"])
     }
 
     @MainActor

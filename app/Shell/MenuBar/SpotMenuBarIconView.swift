@@ -7,20 +7,15 @@ struct SpotMenuBarIconView: View {
     let toast: Toast?
     var isWorking = false
 
-    static let width: CGFloat = 30
-
-    private static let small = 0.5
-    private static let pillInset: CGFloat = 2
-    private static let workScale = 0.72
-    private static let leave = SpotMotion.fade(isShown: false)
-    private static let arrive = SpotMotion.press
+    private static var leave: Animation { SpotMotion.fade(isShown: false) }
+    private static var arrive: Animation { SpotMotion.press }
 
     var body: some View {
         ZStack {
-            swap.scaleEffect(isWorking ? Self.workScale : 1).opacity(isWorking ? MotionTokens.hiddenOpacity : 1)
+            swap.scaleEffect(isWorking ? MotionTokens.menuBarWorkScale : 1).opacity(isWorking ? MotionTokens.hiddenOpacity : 1)
             ZStack {
-                Capsule().padding(.vertical, Self.pillInset)
-                swap.scaleEffect(isWorking ? Self.workScale : 1).blendMode(.destinationOut)
+                Capsule().padding(.vertical, SpotTokens.menuBarPillInset)
+                swap.scaleEffect(isWorking ? MotionTokens.menuBarWorkScale : 1).blendMode(.destinationOut)
             }
             .compositingGroup()
             .opacity(isWorking ? 1 : MotionTokens.hiddenOpacity)
@@ -35,8 +30,8 @@ struct SpotMenuBarIconView: View {
             icon
                 .id(symbol)
                 .transition(.asymmetric(
-                    insertion: .scale(scale: Self.small).combined(with: .opacity).animation(Self.arrive),
-                    removal: .scale(scale: Self.small).combined(with: .opacity).animation(Self.leave)
+                    insertion: .scale(scale: MotionTokens.menuBarSwapScale).combined(with: .opacity).animation(Self.arrive),
+                    removal: .scale(scale: MotionTokens.menuBarSwapScale).combined(with: .opacity).animation(Self.leave)
                 ))
         }
     }

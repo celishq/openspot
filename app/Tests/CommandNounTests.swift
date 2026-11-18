@@ -5,7 +5,7 @@ private enum BellCall: NounCall {
     case ring(String)
     case count
 
-    static let noun = CommandNoun("bell", guide: "screen", verbs: [
+    static let noun = CommandNoun("bell", group: .app, guide: "screen", verbs: [
         CommandVerb("ring", "<words>...", "Rings the bell with the words.", rule: CallRule(use: .network, used: "rang a bell", read: .changes("rings a bell"))) { words in
             words.none ? nil : Self.ring(words.rest.joined(separator: " "))
         },
@@ -49,15 +49,37 @@ final class CommandNounTests: XCTestCase {
 
     func testANounInOneFolderIsParsedListedAndRun() async throws {
         XCTAssertEqual(CommandLineCall(arguments: ["bell", "ring", "a", "b"], nouns: nouns)?.value as? BellCall, .ring("a b"))
-        XCTAssertEqual(CommandLineCall(arguments: ["bell", "ring"], nouns: nouns)?.value as? CallFault, .unknown("bell ring"))
-        XCTAssertEqual(CommandLineCall(arguments: ["bell", "ring", "a"])?.value as? CallFault, .unknown("bell ring a"))
+        XCTAssertEqual(CommandLineCall(arguments: ["bell", "ring"], nouns: nouns)?.value as? CallFault, .unknown(["bell", "ring"]))
+        XCTAssertEqual(CommandLineCall(arguments: ["bell", "ring", "a"])?.value as? CallFault, .unknown(["bell", "ring", "a"]))
         XCTAssertTrue(CommandLineCall.usage(of: nouns).contains("openspot bell ring <words>...                Rings the bell with the words.\n"))
         XCTAssertFalse(CommandLineCall.usage.contains("openspot bell"))
-        XCTAssertEqual(CommandGuide(folder: folder, nouns: nouns).names, ["bell", "calendar", "reminders", "screen"])
 
         let answer = try await ask(["bell", "ring", "hi"])
 
         XCTAssertEqual(answer.output, "rang hi\n")
+    }
+
+    func testARunOfAnotherSpotCountsOnItWithItsCaller() async throws {
+        try "#!/bin/sh\n# title=Echo\n# on=sheet.open\necho 'title=hi'\n".writeScript(to: folder.appendingPathComponent("spots/echo.sh"))
+        let caller = Spot(id: "board", name: "Board", url: folder.appendingPathComponent("board.sh"), dataName: "board", uses: [.spots])
+
+        let answer = try await ask(["spot", "run", "echo"], from: caller)
+
+        XCTAssertEqual(answer.output, "title=hi\n", answer.errors)
+        try await wait("the run by board") { self.runs.usage.counts["echo"]?.callers == ["board": 1] }
+        XCTAssertEqual(runs.usage.counts["echo"]?.runs, 1)
+    }
+
+    func testARunThatOpenspotRefusesCountsNothing() async throws {
+        let core = folder.appendingPathComponent("core", isDirectory: true)
+        try "#!/bin/sh\n# title=Keyed\n# uses=account\n# on=sheet.open\necho 'title=hi'\n".writeScript(to: core.appendingPathComponent("openspot.spot/keyed.sh"))
+        api = CommandAPI(mac: Mac(), places: .test(["OPENSPOT_CONFIG": folder.path, "OPENSPOT_CORE": core.path]), app: FakeRunningApp(), runs: runs, rates: .offline, nouns: nouns)
+        let caller = Spot(id: "board", name: "Board", url: folder.appendingPathComponent("board.sh"), dataName: "board", uses: [.spots])
+
+        let answer = try await ask(["spot", "run", "openspot/keyed"], from: caller)
+
+        XCTAssertTrue(answer.errors.contains("account key"), answer.errors)
+        XCTAssertNil(runs.usage.counts["openspot/keyed"])
     }
 
     func testTheRuleOfAVerbRefusesItInARead() {

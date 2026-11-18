@@ -16,8 +16,7 @@ public struct CommandLineCall: Equatable, Sendable {
     public static let usage = usage(of: CommandNoun.all)
 
     static func usage(of nouns: [CommandNoun]) -> String {
-        let guides = CommandNoun.listed(nouns.filter { $0.guide != nil }.map(\.name).sorted())
-        return nouns.flatMap { $0.lines(guides: guides) }.map { $0 + "\n" }.joined()
+        CommandHelp(nouns: nouns).text
     }
 
     init(name: String, rule: CallRule = CallRule(), call: any NounCall) {
@@ -27,13 +26,17 @@ public struct CommandLineCall: Equatable, Sendable {
     }
 
     public init?(arguments: [String], spot: String? = nil, reason: String? = nil, nouns: [CommandNoun] = CommandNoun.all) {
-        guard let first = arguments.first, first == HelpCall.flag || !first.hasPrefix("-") else { return nil }
-        let noun = first == HelpCall.flag && arguments.count == 1 ? HelpCall.noun.name : first
+        guard let first = arguments.first, first.hasPrefix("--") || nouns.contains(where: { $0.flags.contains(first) }) || !first.hasPrefix("-") else { return nil }
+        let noun = nouns.first { $0.flags.contains(first) }?.name ?? first
         let spot = spot?.isEmpty == true ? nil : spot
         let rest = Array(arguments.dropFirst())
-        let unknown = CommandLineCall(name: noun, call: CallFault.unknown(arguments.joined(separator: " ")))
+        let unknown = CommandLineCall(name: noun, call: CallFault.unknown(arguments))
+        if noun != HelpCall.noun.name, let last = rest.last, HelpCall.noun.flags.contains(last), nouns.contains(where: { $0.name == noun }) {
+            self.init(name: HelpCall.noun.name, call: HelpCall.verbs(noun, verb: Array(rest.dropLast())))
+            return
+        }
         guard let found = nouns.first(where: { $0.name == noun }), let verb = found.verb(of: rest),
-              let call = verb.parse(CallWords(rest: Array(rest.dropFirst(verb.words.count)), spot: spot, reason: reason))
+              let call = verb.parse(CallWords(rest: Array(rest.dropFirst(verb.words.count)), spot: spot, reason: reason, form: verb.shape))
         else {
             self = unknown
             return

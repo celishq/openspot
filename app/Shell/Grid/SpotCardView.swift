@@ -17,8 +17,6 @@ struct SpotCardView: View, @MainActor Equatable {
             && lhs.model === rhs.model
     }
 
-    private static let lineReach: CGFloat = 6
-
     private func shape(of mark: CardMark) -> SpotRoundShape {
         SpotRoundShape(SurfaceEdge(card: size, mark: mark))
     }
@@ -117,13 +115,13 @@ struct SpotCardView: View, @MainActor Equatable {
     }
 
     private var row: some View {
-        HStack(spacing: SpotTokens.padding - 5) {
+        HStack(spacing: SpotTokens.wordsGap) {
             glyph
             text
                 .frame(maxWidth: .infinity, alignment: .leading)
             accessory
         }
-        .padding(.trailing, -Self.lineReach)
+        .padding(.trailing, -SpotTokens.cardLineReach)
         .frame(maxHeight: .infinity)
     }
 
@@ -184,7 +182,7 @@ struct SpotCardView: View, @MainActor Equatable {
             in: low...high
         )
         .controlSize(.small)
-        .tint(SpotTheme.ink)
+        .tint(SpotTheme.highlight)
         .sliderThumbVisibility(.hidden)
     }
 
@@ -195,9 +193,9 @@ struct SpotCardView: View, @MainActor Equatable {
     @ViewBuilder
     private var glyph: some View {
         if let item = entry.item, item.icon != nil {
-            SpotItemIcon(item: item, size: SpotTokens.glyphSize)
+            SpotItemIcon(item: item, size: SpotTokens.glyph)
         } else if entry.showsHeaderPicture {
-            SpotItemIcon(icon: entry.spot.fileIcon, glyph: entry.spot.glyph, symbol: nil, size: SpotTokens.glyphSize)
+            SpotItemIcon(icon: entry.spot.fileIcon, glyph: entry.spot.glyph, symbol: nil, size: SpotTokens.glyph)
         } else {
             symbolGlyph
         }
@@ -207,7 +205,7 @@ struct SpotCardView: View, @MainActor Equatable {
         Image(systemName: entry.symbol)
             .font(SpotType.glyph)
             .foregroundStyle(isFilled ? AnyShapeStyle(SpotTheme.glyphOnSolid) : AnyShapeStyle(SpotTheme.glassInk))
-            .frame(width: SpotTokens.glyphSize, height: SpotTokens.glyphSize)
+            .frame(width: SpotTokens.glyph, height: SpotTokens.glyph)
             .background(glyphDisc, in: Circle())
     }
 }
@@ -229,7 +227,7 @@ private struct CardPress: ViewModifier {
 
     func body(content: Content) -> some View {
         content
-            .overlay(shape.fill((isFilled ? SpotTheme.onSolid : SpotTheme.ink).opacity(showsPress ? 0.12 : 0)).allowsHitTesting(false))
+            .overlay(shape.fill((isFilled ? SpotTheme.onSolid : SpotTheme.ink).opacity(showsPress ? SpotTheme.pressFill : 0)).allowsHitTesting(false))
             .contentShape(shape)
     }
 }

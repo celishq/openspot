@@ -7,18 +7,6 @@ struct SpotMetricView: View {
     let isMirrored: Bool
     let size: CGSize
 
-    private static let bigRingLine: CGFloat = 8
-    private static let smallRingLine: CGFloat = 4
-    private static let barLine: CGFloat = 4
-    static let trendBar: CGFloat = 3
-    static let trendGap: CGFloat = 2
-    static let oldBar = 0.55
-    private static let dot: CGFloat = 7
-    private static let rowLine: CGFloat = 15
-    static let edgeMarkWidth: CGFloat = 44
-    static let lineTrendHeight: CGFloat = 12
-    private static let controlBars = CGSize(width: 33, height: 16)
-
     private var kind: MetricKind { reading?.kind ?? .value }
     private var value: MetricValue? { reading?.value }
     private var title: String { value?.title ?? "–" }
@@ -26,7 +14,7 @@ struct SpotMetricView: View {
     var body: some View {
         content
             .frame(width: size.width, height: size.height, alignment: .topLeading)
-            .opacity(reading?.isStale == true ? 0.5 : 1)
+            .opacity(reading?.isStale == true ? SpotTheme.stale : 1)
     }
 
     @ViewBuilder
@@ -72,7 +60,7 @@ struct SpotMetricView: View {
     }
 
     private var line: some View {
-        VStack(alignment: .leading, spacing: SpotType.lineGap + 2) {
+        VStack(alignment: .leading, spacing: SpotType.barLineGap) {
             HStack(alignment: .firstTextBaseline, spacing: SpotTokens.placeGap) {
                 label
                 Spacer(minLength: 0)
@@ -84,7 +72,7 @@ struct SpotMetricView: View {
                 if value?.max != nil {
                     bar(fill: value?.scaledPoints.last ?? 0)
                 } else {
-                    bars.frame(height: Self.lineTrendHeight)
+                    bars.frame(height: SpotTokens.lineTrendHeight)
                 }
             }
         }
@@ -121,17 +109,17 @@ struct SpotMetricView: View {
         Group {
             switch kind {
             case .gauge:
-                ring(side: min(size.width, size.height), line: Self.smallRingLine) {
+                ring(side: min(size.width, size.height), line: SpotTokens.metricRingLine) {
                     Text(title)
                         .font(SpotType.controlValue)
                         .foregroundStyle(SpotTheme.ink)
                         .lineLimit(1)
-                        .minimumScaleFactor(0.7)
+                        .minimumScaleFactor(SpotType.leastWordsScale)
                 }
             case .trend:
                 VStack(spacing: SpotType.lineGap) {
                     valueText(SpotType.controlValue)
-                    bars.frame(width: Self.controlBars.width, height: Self.controlBars.height)
+                    bars.frame(width: SpotTokens.metricControlBars.width, height: SpotTokens.metricControlBars.height)
                 }
             case .value, .status, .rows:
                 VStack(spacing: SpotType.lineGap) {
@@ -147,9 +135,9 @@ struct SpotMetricView: View {
     private var edgeMark: some View {
         switch kind {
         case .gauge:
-            ring(side: min(size.height, SpotTokens.glyphSize), line: Self.smallRingLine) { ringSymbol }
+            ring(side: min(size.height, SpotTokens.glyph), line: SpotTokens.metricRingLine) { ringSymbol }
         case .trend:
-            bars.frame(width: Self.edgeMarkWidth)
+            bars.frame(width: SpotTokens.edgeMarkWidth)
         case .value:
             symbol
         case .rows, .status:
@@ -171,7 +159,7 @@ struct SpotMetricView: View {
                 .font(font)
                 .foregroundStyle(SpotTheme.ink)
                 .lineLimit(1)
-                .minimumScaleFactor(0.6)
+                .minimumScaleFactor(SpotType.leastValueScale)
         }
     }
 
@@ -206,7 +194,7 @@ struct SpotMetricView: View {
     private func dot(_ colour: Color) -> some View {
         Circle()
             .fill(colour)
-            .frame(width: Self.dot, height: Self.dot)
+            .frame(width: SpotTokens.toneDot, height: SpotTokens.toneDot)
     }
 
     private var markColour: Color {
@@ -214,19 +202,19 @@ struct SpotMetricView: View {
     }
 
     private var bigRing: some View {
-        ring(side: min(size.width, size.height - SpotTokens.placeGap * 2), line: Self.bigRingLine) {
+        ring(side: min(size.width, size.height - SpotTokens.placeGap * 2), line: SpotTokens.metricBigRingLine) {
             VStack(spacing: 0) {
                 Text(title)
                     .font(SpotType.ringValue)
                     .foregroundStyle(SpotTheme.ink)
                     .lineLimit(1)
-                    .minimumScaleFactor(0.6)
+                    .minimumScaleFactor(SpotType.leastValueScale)
                 if let detail = value?.detail {
                     Text(detail)
                         .font(SpotType.small)
                         .modifier(SpotSecondaryText())
                         .lineLimit(1)
-                        .minimumScaleFactor(0.7)
+                        .minimumScaleFactor(SpotType.leastWordsScale)
                 }
             }
         }
@@ -235,7 +223,7 @@ struct SpotMetricView: View {
     private func ring(side: CGFloat, line: CGFloat, @ViewBuilder inside: () -> some View) -> some View {
         ZStack {
             SpotRing(fill: value?.fill ?? 0, line: line, colour: markColour)
-            inside().padding(line / 2 + line + 2)
+            inside().padding(line / 2 + line + SpotTokens.ringInsideGap)
         }
         .frame(width: side, height: side)
     }
@@ -247,26 +235,26 @@ struct SpotMetricView: View {
                 Capsule().fill(markColour).frame(width: room.size.width * fill)
             }
         }
-        .frame(height: Self.barLine)
+        .frame(height: SpotTokens.metricBarLine)
     }
 
     private var bars: some View {
         Canvas { context, room in
-            let step = Self.trendBar + Self.trendGap
-            let count = Int((room.width + Self.trendGap) / step)
+            let step = SpotTokens.trendBar + SpotTokens.trendGap
+            let count = Int((room.width + SpotTokens.trendGap) / step)
             let points = Array((value?.scaledPoints ?? []).suffix(count))
             for (index, point) in points.enumerated() {
-                let height = max(CGFloat(point) * room.height, Self.trendBar)
+                let height = max(CGFloat(point) * room.height, SpotTokens.trendBar)
                 let rect = CGRect(
-                    x: room.width - CGFloat(points.count - index) * step + Self.trendGap,
+                    x: room.width - CGFloat(points.count - index) * step + SpotTokens.trendGap,
                     y: room.height - height,
-                    width: Self.trendBar,
+                    width: SpotTokens.trendBar,
                     height: height
                 )
                 let isNewest = index == points.count - 1
                 context.fill(
-                    Path(roundedRect: rect, cornerRadius: Self.trendBar / 2),
-                    with: .color(markColour.opacity(isNewest ? 1 : Self.oldBar))
+                    Path(roundedRect: rect, cornerRadius: SpotTokens.trendBar / 2),
+                    with: .color(markColour.opacity(isNewest ? 1 : SpotTheme.oldBar))
                 )
             }
         }
@@ -283,7 +271,7 @@ struct SpotMetricView: View {
                     .foregroundStyle(SpotTheme.ink)
                     .lineLimit(1)
             }
-            .padding(.bottom, 4)
+            .padding(.bottom, SpotTokens.metricTitleGap)
             ForEach(Array((value?.rows ?? []).prefix(rowRoom).enumerated()), id: \.offset) { _, row in
                 HStack(spacing: SpotTokens.placeGap / 2) {
                     if let tone = row.tone { dot(Self.colour(tone)) }
@@ -299,7 +287,7 @@ struct SpotMetricView: View {
                             .lineLimit(1)
                     }
                 }
-                .frame(height: Self.rowLine)
+                .frame(height: SpotTokens.metricRowLine)
             }
         }
     }
@@ -313,6 +301,6 @@ struct SpotMetricView: View {
     }
 
     private var rowRoom: Int {
-        max(Int(size.height / Self.rowLine) - 2, 0)
+        max(Int(size.height / SpotTokens.metricRowLine) - 2, 0)
     }
 }

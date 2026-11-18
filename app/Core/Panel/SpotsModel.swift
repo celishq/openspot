@@ -51,6 +51,7 @@ public final class SpotsModel {
     public var query = "" {
         didSet {
             guard query != oldValue else { return }
+            if query.trimmingCharacters(in: .whitespaces).isEmpty { noteMiss() }
             selected = 0
             askAnswers()
             updateVisible()
@@ -68,6 +69,7 @@ public final class SpotsModel {
     @ObservationIgnored var keyFrames: [String: String] = [:]
     @ObservationIgnored var spotListBuilds = 0
     @ObservationIgnored var visibleUpdates = 0
+    @ObservationIgnored var missedSearch = MissedSearch()
     var answerMatches: AnswerMatches {
         runs.answerMatches
     }
@@ -75,14 +77,12 @@ public final class SpotsModel {
     @ObservationIgnored var finding: Finding?
     @ObservationIgnored var foundSpots: [Entry] = []
     public internal(set) var placements: [SpotPlacement] = [] {
-        didSet {
-            let height = SpotTokens.contentHeight(gridHeight: SpotGrid.height(of: placements))
-            if height != gridHeight { gridHeight = height }
-            let bands = SpotGroupBands(placements)
-            if bands != groupBands { groupBands = bands }
-            takeShade()
-        }
+        didSet { takePlacements() }
     }
+    @ObservationIgnored var isPanelHidden = true
+    @ObservationIgnored var heldLayout: Theme.Layout?
+    @ObservationIgnored var laidOut = Theme.Layout()
+    @ObservationIgnored var takenTheme = Theme()
     public internal(set) var groupBands: SpotGroupBands?
     public internal(set) var panels = GridPanels() {
         didSet { spanBackdrop() }
@@ -91,6 +91,14 @@ public final class SpotsModel {
     public internal(set) var backdropSheet: SpotRun?
     @ObservationIgnored var panelLeaving: GridPanel?
     public private(set) var gridHeight = SpotTokens.contentHeight(gridHeight: 0)
+
+    func takePlacements() {
+        let height = SpotTokens.contentHeight(gridHeight: SpotGrid.height(of: placements))
+        if height != gridHeight { gridHeight = height }
+        let bands = SpotGroupBands(placements)
+        if bands != groupBands { groupBands = bands }
+        takeShade()
+    }
     public var selected = 0 {
         didSet {
             if confirming != nil, selected != oldValue { confirming = nil }
@@ -106,6 +114,7 @@ public final class SpotsModel {
     }
     public internal(set) var flowEdges = FlowEdges()
     @ObservationIgnored var edgeStep = 0
+    @ObservationIgnored var landedStep = -1
     @ObservationIgnored var waitingPush = false
     public internal(set) var transition = SheetTransition() {
         didSet {
@@ -196,6 +205,10 @@ public final class SpotsModel {
     public internal(set) var keyStatus: String?
     @ObservationIgnored var takenKeys: [TakenKey] = []
     @ObservationIgnored var filledFields: Set<String> = []
+
+    public var cardsMove: Bool {
+        isShown && mode == .grid
+    }
     @ObservationIgnored private var problems: [String] = []
     public internal(set) var menuSession: ActionMenuSession? {
         didSet {
@@ -204,6 +217,8 @@ public final class SpotsModel {
                 isMenuOpen = isOpen
                 takeMode()
             }
+            let isGrown = menuSession?.isGrown == true
+            if isGrown != isMenuGrown { isMenuGrown = isGrown }
             takeShade()
             guard menuSession == nil else { return }
             if menuFrame != nil { menuFrame = nil }
@@ -211,6 +226,7 @@ public final class SpotsModel {
         }
     }
     public private(set) var isMenuOpen = false
+    public private(set) var isMenuGrown = false
     public private(set) var gridShade = GridShade()
 
     private func takeShade() {
@@ -503,11 +519,12 @@ public final class SpotsModel {
     }
 
     public func panelWillShow() {
+        isPanelHidden = false
         finishPick()
         selected = 0
         runs.panelOpened(readsToEnd: isWarming)
         askAnswers()
-        DispatchQueue.main.async { [weak self] in
+        host.nextFrame { [weak self] in
             self?.isShown = true
             self?.recordEmptyField()
         }

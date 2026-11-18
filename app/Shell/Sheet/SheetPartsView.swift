@@ -28,18 +28,9 @@ struct SheetPartsView: View {
     @FocusState private var focus: String?
     @Environment(\.spotIsHeld) private var isHeld
 
-    private static let swatchSize: CGFloat = 22
-    private static let smallSwatch: CGFloat = 16
-    private static let lineGap: CGFloat = 8
-    private static let headingFit = SpotPictureStore.Fit(width: SheetPlacement.width, height: SheetHeading.pictureHeight)
-    private static let noteFit = SpotPictureStore.Fit(width: SheetPlacement.width, height: SheetHeading.noteHeight)
-    private static let cardNoteFit = SpotPictureStore.Fit(width: 10, height: 13)
-    private static let cardNoteOffset = CGSize(width: 30, height: 5)
-    private static let barGap: CGFloat = 3
-    private static let narrowCell: CGFloat = 80
-    private static let narrowGap: CGFloat = 2
-    private static let markValueWidth: CGFloat = 36
-    private static let symbolWidth: CGFloat = 22
+    private static var headingFit: SpotPictureStore.Fit { SpotPictureStore.Fit(width: SpotTokens.partsWidth, height: SheetHeading.pictureHeight) }
+    private static var noteFit: SpotPictureStore.Fit { SpotPictureStore.Fit(width: SpotTokens.partsWidth, height: SheetHeading.noteHeight) }
+    private static let cardNoteFit = SpotPictureStore.Fit(width: SpotTokens.cardNote.width, height: SpotTokens.cardNote.height)
 
     private var shape: SpotRoundShape {
         SpotRoundShape(surface.inner())
@@ -50,7 +41,7 @@ struct SheetPartsView: View {
         Group {
             if sheet.overflows {
                 ScrollView(showsIndicators: false) { canvas(sheet) }
-                    .modifier(SpotArrowScroll(nudge: nudge))
+                    .modifier(SpotArrowScroll(nudge: nudge, searches: list.landedSearches))
             } else {
                 canvas(sheet)
             }
@@ -82,7 +73,7 @@ struct SheetPartsView: View {
                 }
             }
         }
-        .frame(width: SheetPlacement.width, height: sheet.height, alignment: .topLeading)
+        .frame(width: SpotTokens.partsWidth, height: sheet.height, alignment: .topLeading)
     }
 
     private func placed(_ part: SpotPart, _ frame: SheetPlacement.Frame) -> some View {
@@ -100,6 +91,10 @@ struct SheetPartsView: View {
             }
             .offset(x: frame.rect.minX, y: frame.rect.minY)
             .zIndex(frame.isOnTop ? 1 : 0)
+    }
+
+    private var selectedRun: () -> String? {
+        { [list, selection] in list.run(at: (selection ?? { list.selected })()) }
     }
 
     private var selectedID: () -> String? {
@@ -140,8 +135,10 @@ struct SheetPartsView: View {
     private func drawn(_ part: SpotPart, _ frame: SheetPlacement.Frame) -> some View {
         if part.isOpen {
             if let viewSource {
-                SpotCustomView(source: viewSource, values: part.values, rows: part.rows, card: .square, room: frame.rect.size, answers: panel.answered, date: viewDate, views: views) { onSet(part, $0) }
-                    .equatable()
+                SpotSelectionScope(run: views.readsSelection(viewSource) ? selectedRun : { nil }) { run in
+                    SpotCustomView(source: viewSource, values: part.values, rows: part.rows, card: .square, room: frame.rect.size, answers: panel.answered, selection: run, date: viewDate, views: views) { onSet(part, $0) }
+                        .equatable()
+                }
             }
         } else {
             content(part, frame)
@@ -157,7 +154,7 @@ struct SheetPartsView: View {
         case .slider(let level, let low, let high):
             slider(part, level: level, low: low, high: high)
         case .swatches(let colors, let value) where colors.count > 1:
-            HStack(spacing: Self.lineGap) {
+            HStack(spacing: SpotTokens.partLineGap) {
                 mark(part)
                 swatches(part, colors: colors, value: value)
             }
@@ -240,17 +237,17 @@ struct SheetPartsView: View {
     }
 
     private func card(_ part: SpotPart) -> some View {
-        HStack(spacing: SpotTokens.padding - 5) {
+        HStack(spacing: SpotTokens.cardGlyphGap) {
             Image(systemName: part.symbol ?? "square.dashed")
                 .font(SpotType.glyph)
                 .foregroundStyle(SpotTheme.glassInk)
-                .frame(width: SpotTokens.glyphSize, height: SpotTokens.glyphSize)
+                .frame(width: SpotTokens.glyph, height: SpotTokens.glyph)
                 .background(SpotTheme.ink.opacity(SpotTheme.disc), in: Circle())
                 .overlay(alignment: .topLeading) {
                     if let note = part.note {
                         drawing(note, fit: Self.cardNoteFit, alignment: .center)
                             .frame(width: Self.cardNoteFit.width, height: Self.cardNoteFit.height)
-                            .offset(Self.cardNoteOffset)
+                            .offset(SpotTokens.cardNoteOffset)
                     }
                 }
             VStack(alignment: .leading, spacing: SpotType.lineGap) {
@@ -263,15 +260,15 @@ struct SheetPartsView: View {
         }
         .padding(SpotTokens.padding)
         .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .background(SpotTheme.ink.opacity(SpotTheme.fill), in: SpotRoundShape(radius: SpotTokens.radius))
+        .background(SpotTheme.ink.opacity(SpotTheme.fill), in: SpotRoundShape(radius: SpotTokens.cardRadius))
     }
 
     private func stacked(_ part: SpotPart, title: String, detail: String) -> some View {
-        HStack(alignment: .firstTextBaseline, spacing: Self.lineGap) {
+        HStack(alignment: .firstTextBaseline, spacing: SpotTokens.partLineGap) {
             if let symbol = part.symbol {
                 Image(systemName: symbol)
                     .modifier(SpotSecondaryText())
-                    .frame(width: Self.symbolWidth)
+                    .frame(width: SpotTokens.partSymbolWidth)
             }
             VStack(alignment: .leading, spacing: SpotType.lineGap) {
                 Text(title).font(SpotType.body).foregroundStyle(SpotTheme.ink).lineLimit(1)
@@ -291,16 +288,16 @@ struct SheetPartsView: View {
     }
 
     private func line(_ part: SpotPart, _ frame: SheetPlacement.Frame) -> some View {
-        HStack(spacing: frame.rect.width < Self.narrowCell ? Self.narrowGap : Self.lineGap) {
+        HStack(spacing: frame.rect.width < SpotTokens.narrowCell ? SpotTokens.narrowGap : SpotTokens.partLineGap) {
             if !hasRoundMark(part), work(part) != nil {
                 mark(part)
             } else if let symbol = part.symbol {
                 Image(systemName: symbol)
                     .modifier(SpotSecondaryText())
-                    .frame(width: Self.symbolWidth)
+                    .frame(width: SpotTokens.partSymbolWidth)
             }
             else if panel.keepsIconColumn(part) {
-                Color.clear.frame(width: Self.symbolWidth, height: 0)
+                Color.clear.frame(width: SpotTokens.partSymbolWidth, height: 0)
             }
             if let title = part.title {
                 Text(title)
@@ -317,7 +314,7 @@ struct SheetPartsView: View {
             }
             if let detail = part.detail, part.ringWords == nil {
                 SpotToneWords(text: detail, tone: part.textTone)
-                    .frame(minWidth: part.mark == nil ? nil : Self.markValueWidth, alignment: .trailing)
+                    .frame(minWidth: part.mark == nil ? nil : SpotTokens.markValueWidth, alignment: .trailing)
                     .layoutPriority(2)
             }
             if case .symbol(let symbol) = part.press {
@@ -358,7 +355,7 @@ struct SheetPartsView: View {
             case .chip:
                 pressLabel(part, words: part.title ?? part.id, font: SpotType.action)
                     .padding(.horizontal, SpotTokens.padding)
-                    .padding(.vertical, 5)
+                    .padding(.vertical, SpotTokens.chipPaddingY)
                     .fixedSize()
                     .spotFill(isActive: work(part) != nil, otherwise: SpotTheme.ink.opacity(frame.isOnTop ? SpotTheme.control : SpotTheme.selectedFill), in: Capsule())
                     .background { if frame.isOnTop { SpotFloatGlass(shape: Capsule()) } }
@@ -375,7 +372,7 @@ struct SheetPartsView: View {
             case .strong where frame.isOnTop:
                 pressLabel(part, words: part.title ?? part.id.capitalized, font: SpotType.action)
                     .padding(.horizontal, SpotTokens.padding)
-                    .padding(.vertical, 5)
+                    .padding(.vertical, SpotTokens.chipPaddingY)
                     .fixedSize()
                     .spotFill(isActive: true, in: Capsule())
                     .spotHover(isOnSolid: true, in: Capsule())
@@ -418,11 +415,12 @@ struct SheetPartsView: View {
                 .toggleStyle(.switch)
                 .controlSize(.small)
                 .labelsHidden()
+                .tint(SpotTheme.accent)
         case .menu(let options, let value):
             menu(part, frame, options: options, value: value)
         case .swatches(let colors, let value):
             if let color = colors.first {
-                swatch(part, color: color, isChosen: color == value, size: Self.smallSwatch)
+                swatch(part, color: color, isChosen: color == value, size: SpotTokens.smallSwatch)
             }
         default:
             EmptyView()
@@ -437,7 +435,7 @@ struct SheetPartsView: View {
             .pickerStyle(.inline)
             .labelsHidden()
         } label: {
-            HStack(spacing: 4) {
+            HStack(spacing: SpotTokens.choiceChevronGap) {
                 Text(options.first { $0.id == value }?.title ?? options.first?.title ?? "")
                     .font(SpotType.detail)
                     .foregroundStyle(SpotTheme.ink)
@@ -446,8 +444,8 @@ struct SheetPartsView: View {
                     .font(SpotType.mark)
                     .modifier(SpotSecondaryText())
             }
-            .padding(.horizontal, frame.isOnTop ? 10 : 0)
-            .padding(.vertical, frame.isOnTop ? 5 : 0)
+            .padding(.horizontal, frame.isOnTop ? SpotTokens.choicePaddingX : 0)
+            .padding(.vertical, frame.isOnTop ? SpotTokens.chipPaddingY : 0)
             .background(SpotTheme.ink.opacity(frame.isOnTop ? SpotTheme.control : 0), in: Capsule())
             .background { if frame.isOnTop { SpotFloatGlass(shape: Capsule()) } }
         }
@@ -479,7 +477,7 @@ struct SheetPartsView: View {
     }
 
     private func slider(_ part: SpotPart, level: Double, low: Double, high: Double) -> some View {
-        HStack(spacing: Self.lineGap) {
+        HStack(spacing: SpotTokens.partLineGap) {
             if let title = part.title {
                 Text(title)
                     .font(SpotType.body)
@@ -500,7 +498,7 @@ struct SheetPartsView: View {
         HStack(spacing: 0) {
             ForEach(Array(colors.enumerated()), id: \.offset) { index, color in
                 if index > 0 { Spacer(minLength: 0) }
-                swatch(part, color: color, isChosen: color == value, size: Self.swatchSize)
+                swatch(part, color: color, isChosen: color == value, size: SpotTokens.swatchSize)
             }
         }
     }
@@ -511,7 +509,7 @@ struct SheetPartsView: View {
                 .fill(SpotColorBar.color(color))
                 .frame(width: size, height: size)
                 .overlay {
-                    if isChosen { Circle().strokeBorder(SpotTheme.ink, lineWidth: 2) }
+                    if isChosen { Circle().strokeBorder(SpotTheme.ink, lineWidth: SpotTokens.ring) }
                 }
                 .contentShape(Circle())
         }
@@ -530,7 +528,7 @@ struct SheetPartsView: View {
                             .lineLimit(1)
                             .frame(maxWidth: .infinity, alignment: .leading)
                             .padding(.horizontal, SpotTokens.controlPadding)
-                            .frame(height: SheetPlacement.rowHeight)
+                            .frame(height: SpotTokens.listRow)
                             .background(SpotTheme.ink.opacity(item.id == value ? SpotTheme.selectedFill : 0), in: shape)
                             .contentShape(shape)
                     }
@@ -541,13 +539,13 @@ struct SheetPartsView: View {
     }
 
     private func number(_ part: SpotPart) -> some View {
-        SpotNumberView(part: part, font: SpotType.number, leastScale: 0.6, alignment: part.look == .bare ? .trailing : .leading)
+        SpotNumberView(part: part, font: SpotType.number, leastScale: SpotType.leastValueScale, alignment: part.look == .bare ? .trailing : .leading)
             .padding(.horizontal, part.look == .bare ? 0 : SpotTokens.padding)
             .background(SpotTheme.ink.opacity(part.look == .bare ? 0 : SpotTheme.fill), in: shape)
     }
 
     private func chart(_ points: [Double]) -> some View {
-        SpotBars(points: points, gap: Self.barGap, radius: 2)
+        SpotBars(points: points, gap: SpotTokens.partBarGap, radius: SpotTokens.partBarRadius)
             .padding(SpotTokens.padding)
             .background(SpotTheme.ink.opacity(SpotTheme.fill), in: shape)
     }
@@ -559,13 +557,13 @@ struct SheetPartsView: View {
     }
 
     private func progress(_ part: SpotPart, level: Double) -> some View {
-        VStack(spacing: Self.lineGap) {
+        VStack(spacing: SpotTokens.partLineGap) {
             HStack {
                 Text(part.title ?? "")
                     .font(SpotType.body)
                     .foregroundStyle(SpotTheme.ink)
                     .lineLimit(1)
-                Spacer(minLength: Self.lineGap)
+                Spacer(minLength: SpotTokens.partLineGap)
                 if let detail = part.detail {
                     Text(detail).font(SpotType.detail).modifier(SpotSecondaryText()).lineLimit(1)
                 }
@@ -581,7 +579,10 @@ struct SheetPartsView: View {
     @ViewBuilder
     private func textArea(_ part: SpotPart, _ frame: SheetPlacement.Frame, text: String, placeholder: String?, isReadOnly: Bool) -> some View {
         let inset = SpotTokens.padding
-        let space = EdgeInsets(top: inset + frame.clearTop, leading: inset, bottom: inset + frame.clearBottom, trailing: inset)
+        let line = max((frame.rect.height - SpotType.titleLine) / 2, 0)
+        let space = frame.rect.height > SpotTokens.listRow
+            ? EdgeInsets(top: inset + frame.clearTop, leading: inset, bottom: inset + frame.clearBottom, trailing: inset)
+            : EdgeInsets(top: line, leading: inset, bottom: line, trailing: inset)
         ZStack(alignment: .topLeading) {
             if isReadOnly {
                 ScrollView(showsIndicators: false) {
@@ -600,7 +601,7 @@ struct SheetPartsView: View {
             }
             if text.isEmpty, let placeholder {
                 Text(placeholder)
-                    .foregroundStyle(SpotTheme.ink.opacity(SpotTheme.secondaryLight))
+                    .foregroundStyle(SpotTheme.ink.opacity(SpotTheme.secondary))
                     .allowsHitTesting(false)
                     .padding(space)
             }
@@ -697,14 +698,14 @@ private struct SheetPicture: View {
             .overlay {
                 if let image = SpotPictureStore.shared.cached(key) ?? (loaded?.key == key ? loaded?.image : nil) {
                     if let tint {
-                        Image(decorative: image, scale: SpotPictureStore.scale)
+                        Image(decorative: image, scale: SpotTokens.pictureScale)
                             .renderingMode(.template)
                             .resizable()
                             .scaledToFit()
                             .foregroundStyle(tint)
                             .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: alignment)
                     } else {
-                        Image(decorative: image, scale: SpotPictureStore.scale).resizable().scaledToFill()
+                        Image(decorative: image, scale: SpotTokens.pictureScale).resizable().scaledToFill()
                     }
                 } else if tint == nil {
                     SpotTheme.ink.opacity(SpotTheme.fill)

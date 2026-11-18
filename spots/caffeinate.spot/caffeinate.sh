@@ -4,26 +4,103 @@
 # on=panel.open
 # mode=stay
 # offers=card
+# uses=power
 
 # One process answers every call. The call that turns Caffeinate on stays open while `caffeinate` runs, so Openspot
-# keeps this process until it ends, and a quit of Openspot ends `caffeinate` too. Nothing is written to disk.
+# keeps this process until it ends, and a quit of Openspot ends `caffeinate` too. With the lid on, a hold also runs
+# `openspot power lid-closed`, which keeps the Mac awake with the lid closed for as long as it runs, and every end of
+# the hold ends it.
 held=
 watcher=
 until=0
-secs=
+picked=
+lid=
+display=
+lidded=
+holder=
+fault=
 
 awake() {
   [ -n "$watcher" ] && kill -0 "$watcher" 2>/dev/null
 }
 
+# Tells whether this Mac has a lid, as macOS reports a clamshell state only for one that has. Read once, at the start.
+has_lid() {
+  [ -n "$lidded" ] || if ioreg -r -k AppleClamshellState -d 1 2>/dev/null | grep -q AppleClamshellState; then lidded=true; else lidded=false; fi
+  [ "$lidded" = true ]
+}
+
+# Tells whether a hold keeps the Mac working with the lid closed, which only a Mac with a lid can. The setting is read
+# from Openspot once, at its first use, which each call makes before it prints the sheet in a subshell, where a read
+# would be lost.
+lid_on() {
+  has_lid || { lid=false; return 1; }
+  [ -n "$lid" ] || lid=$(openspot setting get lid-closed </dev/null 2>/dev/null)
+  [ "$lid" = true ] || lid=false
+  [ "$lid" = true ]
+}
+
+# Keeps the lid-closed setting.
+lid_keep() {
+  lid=$1
+  openspot setting set lid-closed "$1" </dev/null >/dev/null 2>&1
+}
+
+# Tells whether a hold keeps the display on, which it does unless the setting says false. Read once, as `lid_on` is.
+display_on() {
+  [ -n "$display" ] || display=$(openspot setting get display-on </dev/null 2>/dev/null)
+  [ "$display" = false ] || display=true
+  [ "$display" = true ]
+}
+
+# Keeps the display-on setting.
+display_keep() {
+  display=$1
+  openspot setting set display-on "$1" </dev/null >/dev/null 2>&1
+}
+
+# Starts `openspot power lid-closed` and reads its first line, `on` or the line that says why it cannot hold. Sets
+# `holder` to its process while it holds, or `fault` to that line.
+lid_hold() {
+  mkdir -p "$OPENSPOT_DATA"
+  pipe=$OPENSPOT_DATA/lid.$$
+  rm -f "$pipe"
+  mkfifo "$pipe" || { fault="Openspot cannot start the lid-closed hold."; return 1; }
+  openspot power lid-closed </dev/null >"$pipe" 2>&1 &
+  holder=$!
+  first=
+  read -r first <"$pipe"
+  rm -f "$pipe"
+  [ "$first" = on ] && return 0
+  holder=
+  fault=$first
+  return 1
+}
+
+# Ends what a hold runs: `caffeinate`, and the lid hold when there is one.
+let_go() {
+  kill $(jobs -p) $holder 2>/dev/null
+}
+
+# Prints the seconds that a hold has left, or 0 when it runs until it is stopped.
+remaining() {
+  if [ "$until" = 0 ]; then
+    echo 0
+    return
+  fi
+  seconds=$(( until - $(date +%s) ))
+  [ "$seconds" -gt 0 ] || seconds=1
+  echo "$seconds"
+}
+
 # Prints how long the Mac stays awake, which the card shows while the call that turned it on runs.
 left() {
-  if [ "$until" = 0 ]; then
+  seconds=$(remaining)
+  if [ "$seconds" = 0 ]; then
     echo "Until off"
     return
   fi
-  minutes=$(( (until - $(date +%s) + 59) / 60 ))
-  [ "$minutes" -gt 0 ] || minutes=1
+  minutes=$(( (seconds + 59) / 60 ))
   if [ "$minutes" -ge 60 ]; then
     echo "$(( minutes / 60 ))h $(( minutes % 60 ))m left"
   else
@@ -31,11 +108,16 @@ left() {
   fi
 }
 
+# Prints what the card shows while a hold runs: the time left, and that the lid can close when it holds the lid.
+card() {
+  if [ -n "$holder" ]; then echo "$(left) · lid closed"; else left; fi
+}
+
 # Prints the row of one duration. The row of the duration that runs carries the id of its call, so that a pick of it
-# is a new call that starts it again, and not a second press that would stop it.
+# is a new call that starts it again, and not a second press that would stop it, and shows the time it has left.
 duration() {
-  if awake && [ "$1" = "$secs" ]; then
-    printf 'row=%s.%s\ntitle=%s\n' "$1" "$held" "$2"
+  if awake && [ "$1" = "$picked" ]; then
+    printf 'row=%s.%s\ntitle=%s\ndetail=%s\n' "$1" "$held" "$2" "$(left)"
   else
     printf 'row=%s\ntitle=%s\n' "$1" "$2"
   fi
@@ -48,28 +130,50 @@ sheet() {
   printf 'button=start\ntitle=Keep awake for…\nscope=spot\nform=true\nclose=true\nplaceholder=Minutes, such as 45\n\n'
   awake && printf 'row=off\ntitle=Turn off\n\n'
   duration 1800 '30 minutes'; echo
-  duration 3600 '1 hour'; echo
   duration 7200 '2 hours'; echo
-  duration 14400 '4 hours'; echo
-  duration 28800 '8 hours'; echo
-  duration 0 'Until turned off'
+  printf 'row=custom\ntitle=Custom…\n\n'
+  duration 0 'Until turned off'; echo
+  printf 'row=display\ntitle=Keep the display on\ndetail=Off lets the screen lock\nicon=display\npin=bottom\ntype=toggle\nvalue=%s\nclose=false\n' "${display:-true}"
+  [ "$lidded" = true ] || return 0
+  printf '\nrow=lid\ntitle=Work with the lid closed\ndetail=Can grow hot in a bag\nicon=laptopcomputer\npin=bottom\ntype=toggle\nvalue=%s\nclose=false\n' "${lid:-false}"
 }
 
-# Runs `caffeinate` for that many seconds, or until it is stopped, in a watcher that ends the call when it ends by itself.
+# Runs `caffeinate` for the duration picked, or for the seconds given after it, or until it is stopped, in a watcher
+# that ends the call when it ends by itself. With the display off, the display may sleep and the screen lock. Fails when
+# the lid is on but the Mac refuses to hold it, which turns the lid off.
 hold() {
   held=$1
-  secs=$2
-  if [ "$2" = 0 ]; then until=0; else until=$(( $(date +%s) + $2 )); fi
+  picked=$2
+  seconds=${3:-$2}
+  if [ "$seconds" = 0 ]; then until=0; else until=$(( $(date +%s) + seconds )); fi
+  if display_on; then flags=-di; else flags=-i; fi
+  closed=true
+  holder=
+  if lid_on && ! lid_hold; then
+    closed=
+    lid_keep false
+  fi
   (
-    awake=
-    trap '[ -z "$awake" ] || kill "$awake" 2>/dev/null; exit 0' TERM
-    if [ "$2" = 0 ]; then caffeinate -di & else caffeinate -di -t "$2" & fi
-    awake=$!
-    wait "$awake"
+    trap 'let_go; exit 0' TERM
+    if [ "$seconds" = 0 ]; then caffeinate $flags & else caffeinate $flags -t "$seconds" & fi
+    wait $!
+    let_go
     watcher=
     printf 'end=%s\n---\n%s\n---\n' "$1" "$(sheet)"
   ) &
   watcher=$!
+  [ -n "$closed" ]
+}
+
+# Starts a hold on a call, as `hold` takes it, and prints the head that keeps the call running. A new pick, with no
+# seconds given, gets a toast, and so does a hold that lost the lid.
+begin() {
+  said=
+  hold "$@" || said="toast=$(toast "$2" lost)
+"
+  [ $# -ge 3 ] || [ -n "$said" ] || said="toast=$(toast "$2")
+"
+  printf '%s%s\n---\ncall=%s\n---\n%sdetail=%s\n---\n' "$ended" "$(sheet)" "$1" "$said" "$(card)"
 }
 
 # Stops `caffeinate`, and sets `ended` to the frame that ends the call that turned it on.
@@ -90,13 +194,20 @@ given() {
   printf '%b\n' "$input" | sed -n "s/^$1=//p" | head -n 1
 }
 
+# Prints the toast of a hold of that many seconds, which says, after `lost`, that it could not work with the lid closed,
+# and why.
 toast() {
   minutes=$(( $1 / 60 ))
-  if [ "$1" = 0 ]; then echo "Caffeinate is on until you turn it off"
-  elif [ "$minutes" -ge 120 ]; then echo "Caffeinate is on for $(( minutes / 60 )) hours"
-  elif [ "$minutes" -eq 60 ]; then echo "Caffeinate is on for 1 hour"
-  elif [ "$minutes" -eq 1 ]; then echo "Caffeinate is on for 1 minute"
-  else echo "Caffeinate is on for $minutes minutes"
+  if [ "$1" = 0 ]; then on="Caffeinate is on until you turn it off"
+  elif [ "$minutes" -ge 120 ]; then on="Caffeinate is on for $(( minutes / 60 )) hours"
+  elif [ "$minutes" -eq 60 ]; then on="Caffeinate is on for 1 hour"
+  elif [ "$minutes" -eq 1 ]; then on="Caffeinate is on for 1 minute"
+  else on="Caffeinate is on for $minutes minutes"
+  fi
+  if [ "$2" = lost ]; then
+    echo "$on, but not with the lid closed. $fault"
+  else
+    echo "$on"
   fi
 }
 
@@ -104,12 +215,14 @@ toast() {
 # that turns Caffeinate on prints the rows before it starts, and then only a head with the time left, which the card
 # shows while that call runs: a call that prints rows is not shown as running.
 serve() {
+  lid_on
+  display_on
   case "$1 $2" in
     'open off')
       release
       printf '%scall=%s\n---\ntoast=Caffeinate is off\n%s\n---\nend=%s\n---\n' "$ended" "$call" "$(sheet)" "$call"
       ;;
-    start*)
+    start* | 'open custom')
       minutes=$(given minutes)
       [ -n "$minutes" ] || minutes=$(given search)
       case $minutes in
@@ -121,21 +234,31 @@ serve() {
           ;;
         *)
           release
-          hold "$call" $(( minutes * 60 ))
-          printf '%s%s\n---\ncall=%s\n---\ntoast=%s\ndetail=%s\n---\n' "$ended" "$(sheet)" "$call" "$(toast "$secs")" "$(left)"
+          begin "$call" $(( minutes * 60 ))
           ;;
       esac
       ;;
+    'open lid' | 'open display')
+      if "$2"_on; then next=false; else next=true; fi
+      if awake; then
+        seconds=$(remaining)
+        release
+        "$2"_keep "$next"
+        begin "$call" "$picked" "$seconds"
+      else
+        "$2"_keep "$next"
+        printf 'call=%s\n---\n%s\n---\nend=%s\n---\n' "$call" "$(sheet)" "$call"
+      fi
+      ;;
     open\ [0-9]*)
       release
-      hold "$call" "${2%%.*}"
-      printf '%s%s\n---\ncall=%s\n---\ntoast=%s\ndetail=%s\n---\n' "$ended" "$(sheet)" "$call" "$(toast "$secs")" "$(left)"
+      begin "$call" "${2%%.*}"
       ;;
     *)
       now=
       awake && now="call=$held
 ---
-detail=$(left)
+detail=$(card)
 ---
 "
       printf 'call=%s\n---\n%s\n---\nend=%s\n---\n%s' "$call" "$(sheet)" "$call" "$now"

@@ -15,10 +15,12 @@ final class SpotMac: MacEvents {
             screen: SpotScreen(),
             translation: SpotTranslation(),
             events: self,
+            power: SpotPower(),
             login: { AppLogin.item },
             link: { AppCommandLink.item },
             pickColor: { await SpotColorPick.pick() },
-            pickFolder: { await SpotFolderPick.pick() }
+            pickFolder: { await SpotFolderPick.pick() },
+            openText: { SpotTextEditor.open($0) }
         )
     }
 

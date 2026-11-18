@@ -170,9 +170,9 @@ final class SheetPartsTests: XCTestCase {
         let head = try XCTUnwrap(panel.placement.frames["head"]).rect
         let line = try XCTUnwrap(panel.placement.frames["line"]).rect
 
-        XCTAssertGreaterThan(head.height, SheetPlacement.rowHeight)
-        XCTAssertLessThan(head.height, 2 * SheetPlacement.rowHeight + SheetPlacement.gap)
-        XCTAssertEqual(line.minY, head.maxY + SheetPlacement.headingBottom, accuracy: 0.01)
+        XCTAssertGreaterThan(head.height, SpotTokens.listRow)
+        XCTAssertLessThan(head.height, 2 * SpotTokens.listRow + SpotTokens.partGap)
+        XCTAssertEqual(line.minY, head.maxY + SpotTokens.partHeadingBottom, accuracy: 0.01)
     }
 
     func testAHeadingAtTheTopStandsItsGapUnderTheHeaderOfTheSheet() throws {
@@ -180,7 +180,7 @@ final class SheetPartsTests: XCTestCase {
         let head = try XCTUnwrap(panel.placement.frames["head"]).rect
         let go = try XCTUnwrap(panel.placement.frames["go"]).rect
 
-        XCTAssertEqual(SpotTokens.rowGap + head.minY, SheetPlacement.headingTop)
+        XCTAssertEqual(SpotTokens.rowGap + head.minY, SpotTokens.partHeadingTop)
         XCTAssertEqual(panel.placement.height, go.maxY)
     }
 
@@ -198,7 +198,7 @@ final class SheetPartsTests: XCTestCase {
         for rows in ["grid=new\n", "grid=new\ngrid=new\n"] {
             let panel = try panel(rows + "grid=go\n\ntext=new\nlook=card\ntitle=New spot\ndetail=Make your own\nicon=plus\n\nbutton=go\ntitle=Go\n")
 
-            XCTAssertEqual(try XCTUnwrap(panel.placement.frames["new"]).rect.height, SpotTokens.rowHeight, accuracy: 0.01, rows)
+            XCTAssertEqual(try XCTUnwrap(panel.placement.frames["new"]).rect.height, SpotTokens.cell, accuracy: 0.01, rows)
         }
     }
 
@@ -227,7 +227,7 @@ final class SheetPartsTests: XCTestCase {
         let short = try XCTUnwrap(panel(sheet("Hello")).placement.frames["head"]).rect
         let long = try XCTUnwrap(panel(sheet("Everything starts from the disposable spot")).placement.frames["head"]).rect
 
-        XCTAssertGreaterThan(long.height, short.height + SheetPlacement.rowHeight / 2)
+        XCTAssertGreaterThan(long.height, short.height + SpotTokens.listRow / 2)
     }
 
     func testAScriptThatPrintsPartsIsAList() {
