@@ -248,15 +248,12 @@ private struct RowSwitch: View {
     let isOn: Bool
 
     var body: some View {
-        Capsule()
-            .fill(isOn ? SpotTheme.accent : SpotTheme.ink.opacity(SpotTheme.fill))
-            .frame(width: SpotTokens.rowSwitch.width, height: SpotTokens.rowSwitch.height)
-            .overlay(alignment: isOn ? .trailing : .leading) {
-                Circle()
-                    .fill(SpotTheme.switchKnob)
-                    .padding(SpotTokens.rowSwitchInset)
-                    .frame(width: SpotTokens.rowSwitch.height, height: SpotTokens.rowSwitch.height)
-            }
+        Toggle("", isOn: .constant(isOn))
+            .toggleStyle(.switch)
+            .labelsHidden()
+            .controlSize(.small)
+            .tint(SpotTheme.accent)
+            .allowsHitTesting(false)
             .accessibilityElement()
             .accessibilityValue(isOn ? "On" : "Off")
     }
