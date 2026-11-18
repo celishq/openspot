@@ -11,11 +11,12 @@ final class OpenspotApp: NSObject, NSApplicationDelegate {
         #else
         let launch = LaunchSettings(arguments: Array(CommandLine.arguments.dropFirst()))
         #endif
-        launch.apply()
+        launch.apply(keepsCallData: true)
         let environment = ProcessInfo.processInfo.environment
         if let call = CommandLineCall(arguments: launch.words, spot: environment[CallWords.spotVariable], reason: environment[CallWords.reasonVariable]) {
             SpotCommandLine.run(call, words: launch.words)
         }
+        launch.apply(keepsCallData: false)
         let app = NSApplication.shared
         #if OPENSPOT_TOOLS
         SpotMotionProbe.takeAppearance()

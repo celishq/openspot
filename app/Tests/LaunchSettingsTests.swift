@@ -7,7 +7,6 @@ final class LaunchSettingsTests: XCTestCase {
 
         XCTAssertEqual(settings.words, ["app", "status", "--json"])
         XCTAssertEqual(settings.variables, ["OPENSPOT_CONFIG": "/c", "OPENSPOT_PICTURE_ON_SCREEN": "1", "OPENSPOT_SPOTS": "/s"])
-        XCTAssertEqual(settings.flags, ["--config", "/c", "--picture-on-screen", "--spots", "/s"])
     }
 
     func testAFlagThatIsNotASettingStartsTheWords() {
@@ -16,10 +15,18 @@ final class LaunchSettingsTests: XCTestCase {
         XCTAssertEqual(LaunchSettings(arguments: ["--config"]).words, ["--config"])
     }
 
-    func testAnInheritedSettingIsDroppedAndAGivenOneTakesItsPlace() {
+    func testTheAppDropsEveryInheritedVariableOfOpenspotAndKeepsWhatItsFlagsGive() {
+        let inherited = ["OPENSPOT_CONFIG": "/release", "OPENSPOT_ID": "apps", "OPENSPOT_TOKEN": "a4", "OPENSPOT_DATA": "/d", "PATH": "/bin"]
+
+        let environment = LaunchSettings(arguments: ["--config", "/dev"]).environment(from: inherited, keepsCallData: false)
+
+        XCTAssertEqual(environment, ["OPENSPOT_CONFIG": "/dev", "PATH": "/bin"])
+    }
+
+    func testACallThatRunsAloneKeepsTheDataOfItsCallAndDropsInheritedSettings() {
         let inherited = ["OPENSPOT_CONFIG": "/release", "OPENSPOT_SPOTS": "/spots", "OPENSPOT_CORE": "/core", "OPENSPOT_ID": "apps", "PATH": "/bin"]
 
-        let environment = LaunchSettings(arguments: ["--config", "/dev"]).environment(from: inherited)
+        let environment = LaunchSettings(arguments: ["--config", "/dev"]).environment(from: inherited, keepsCallData: true)
 
         XCTAssertEqual(environment, ["OPENSPOT_CONFIG": "/dev", "OPENSPOT_ID": "apps", "PATH": "/bin"])
     }
@@ -28,6 +35,6 @@ final class LaunchSettingsTests: XCTestCase {
         let settings = LaunchSettings(arguments: ["--config", "/c", "--tool-word", "w", "--tool-on", "guide"], valued: LaunchSettings.valued.merging(["--tool-word": "OPENSPOT_TOOL_WORD"]) { $1 }, switches: ["--tool-on": "OPENSPOT_TOOL_ON"])
 
         XCTAssertEqual(settings.words, ["guide"])
-        XCTAssertEqual(settings.environment(from: ["OPENSPOT_TOOL_WORD": "old"]), ["OPENSPOT_CONFIG": "/c", "OPENSPOT_TOOL_WORD": "w", "OPENSPOT_TOOL_ON": "1"])
+        XCTAssertEqual(settings.environment(from: ["OPENSPOT_TOOL_WORD": "old"], keepsCallData: true), ["OPENSPOT_CONFIG": "/c", "OPENSPOT_TOOL_WORD": "w", "OPENSPOT_TOOL_ON": "1"])
     }
 }
