@@ -63,7 +63,7 @@ final class SpotRunStateTests: XCTestCase {
         clock.advance(by: 0.1)
 
         try await wait("the search") { link.sent.count == 2 }
-        XCTAssertEqual(link.sent[1].request.input, "search=rep\n")
+        XCTAssertEqual(link.sent[1].request.message.text, "search=rep\n")
     }
 
     func testAStoppedSearchChangesNothing() async throws {

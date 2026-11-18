@@ -123,7 +123,7 @@ final class TextBlockTests: XCTestCase {
 
         XCTAssertEqual(bars.bars, [0.5, nil, 1])
         XCTAssertEqual(bars.section, "Used")
-        XCTAssertNil(bars.fields)
+        XCTAssertEqual(bars.fields, [])
         XCTAssertFalse(bars.isOn)
         XCTAssertEqual(capped.bars, [0.25, 0.5])
         XCTAssertEqual(check.bars, [])

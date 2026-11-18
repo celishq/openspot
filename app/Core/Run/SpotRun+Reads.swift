@@ -22,11 +22,10 @@ extension SpotRun {
         }
         let query = list.search == .script && !script.keepsState ? list.query : ""
         let typed = query.isEmpty ? typed ?? "" : query
-        let values = [showsSheet ? panel?.values : nil, typed.isEmpty ? nil : SearchQuery(text: typed).input].compactMap { $0 }
+        let search = typed.isEmpty ? nil : SearchQuery(text: typed)
         let isSent = send(Call(
-            action: .show,
+            message: Message(.show, inputs: showsSheet ? panel?.inputs ?? [] : [], search: search?.text, searchForms: search?.forms ?? []),
             key: Self.readKey,
-            input: values.isEmpty ? nil : values.joined(),
             limit: runs.readLimit,
             reason: reason,
             purpose: .ask(.read(generation: panel?.generation, reports: need != .clock, query: query, tells: reason != .panel))
@@ -65,10 +64,10 @@ extension SpotRun {
         if let older = running(Self.searchKey) { stop(older) }
         pauses[Self.searchKey]?.cancel()
         pauses[Self.searchKey] = nil
+        let search = SearchQuery(text: query)
         send(Call(
-            action: .show,
+            message: Message(.show, inputs: showsSheet ? panel?.inputs ?? [] : [], search: search.text, searchForms: search.forms),
             key: Self.searchKey,
-            input: (showsSheet ? panel?.values ?? "" : "") + SearchQuery(text: query).input,
             limit: runs.readLimit,
             reason: .text(query, inSheet: true),
             purpose: .ask(.search(query))
@@ -85,10 +84,10 @@ extension SpotRun {
             takeAnswers([])
             return
         }
+        let search = runs.search(of: text)
         send(Call(
-            action: .show,
+            message: Message(.show, search: search.text, searchForms: search.forms),
             key: Self.answerKey,
-            input: runs.search(of: text).input,
             limit: runs.readLimit,
             reason: .text(text, inSheet: false),
             purpose: .ask(.answer(text))

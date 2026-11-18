@@ -12,9 +12,9 @@ extension SpotRun {
         runs.usage.acted(spot, at: runs.now())
     }
 
-    func answer(to action: SpotAction, key: String, input: String?) async throws -> SpotOutput? {
+    func answer(to message: Message, key: String) async throws -> SpotOutput? {
         try await withCheckedThrowingContinuation { waiting in
-            if !send(Call(action: action, key: key, input: input, purpose: .form(waiting))) { waiting.resume(returning: nil) }
+            if !send(Call(message: message, key: key, purpose: .form(waiting))) { waiting.resume(returning: nil) }
         }
     }
 
@@ -95,7 +95,7 @@ extension SpotRun {
         guard !script.answersInApp else { return }
         let request = call.request
         let values = fieldValues
-        runs.record(spot, request.action, input: values.hiding(request.input), frames: call.frames.map(values.hiding), errors: values.hiding(errors), end: end, reason: request.reason, started: call.made.started, begin: call.begin)
+        runs.record(spot, request.action, input: values.hiding(request.message.text), frames: call.frames.map(values.hiding), errors: values.hiding(errors), end: end, reason: request.reason, started: call.made.started, begin: call.begin)
     }
 
     private func answer(_ waiting: CheckedContinuation<SpotOutput?, Error>, of call: OpenCall, _ end: ScriptCall.End) {

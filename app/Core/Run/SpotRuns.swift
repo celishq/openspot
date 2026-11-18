@@ -278,14 +278,14 @@ public final class SpotRuns {
             let (script, frames, caller) = stay(spot, limit: limit)
             caller.reason = ReadReason.panel.rawValue
             defer { script.end() }
-            script.send(.show, input: TextBlock(fields: ReadReason.panel.fields).text + (input ?? ""), id: 1)
+            script.send(Message(.show, event: .panel, given: input), id: 1)
             for try await frame in frames {
                 let head = FrameRoot(text: frame)
                 if !head.isMark || head.end == "1" { return frame }
             }
             return ""
         }
-        let (stream, halt, _) = frames(of: spot, action, input: input, limit: limit, variables: variables)
+        let (stream, halt, _) = frames(of: spot, Message(action, given: input), limit: limit, variables: variables)
         defer { if sheets[spot.id] == nil { dropScript(of: spot.id) } }
         if action == .show {
             defer { halt() }
@@ -350,28 +350,28 @@ public final class SpotRuns {
 
     func stay(_ spot: Spot, limit: TimeInterval?) -> (ScriptProcess, AsyncThrowingStream<String, Error>, SpotCaller) {
         let caller = callers.issue(for: spot)
-        let script = ScriptProcess(spot: spot, program: swift.runnable(for: spot), swift: swift, sending: nil, input: nil, limit: limit, stopPause: stopPause, careful: isCareful ? spot.uses : nil, base: environment)
+        let script = ScriptProcess(spot: spot, program: swift.runnable(for: spot), swift: swift, sending: nil, limit: limit, stopPause: stopPause, careful: isCareful ? spot.uses : nil, base: environment)
         track(script, of: spot.id, caller: caller)
         let frames = script.start()
         keep(script)
         return (script, frames, caller)
     }
 
-    func frames(of spot: Spot, _ action: SpotAction, input: String?, limit: TimeInterval?, reason: String? = nil, variables given: [String: String] = [:], call: OpenCall? = nil) -> (stream: AsyncThrowingStream<String, Error>, halt: () -> Void, process: ScriptProcess?) {
+    func frames(of spot: Spot, _ message: Message, limit: TimeInterval?, reason: String? = nil, variables given: [String: String] = [:], call: OpenCall? = nil) -> (stream: AsyncThrowingStream<String, Error>, halt: () -> Void, process: ScriptProcess?) {
         let variables = given.merging(editing(spot)) { given, _ in given }.filter { spot.isBuiltIn || !ScriptProcess.appVariables.contains($0.key) }
         switch ScriptKind(of: spot) {
         case .settings(let settings):
-            let (stream, halt) = answered { try settings.answer(action.arguments) }
+            let (stream, halt) = answered { try settings.answer(message.action.arguments) }
             return (stream, halt, nil)
         case .host(let sheet):
             let (stream, halt) = answered { [environment, weak self] in
-                let answer = try await sheet.answer(action.arguments, input: input, base: environment)
+                let answer = try await sheet.answer(message.action.arguments, input: message.text, base: environment)
                 for effect in answer.effects { await self?.take(effect, of: spot.id, call: call) }
                 return answer.frame
             }
             return (stream, halt, nil)
         case .inline:
-            let call = InlineCall(arguments: action.arguments, variables: variables, input: input, reason: reason, limit: limit)
+            let call = InlineCall(arguments: message.action.arguments, variables: variables, input: message.text, reason: reason, limit: limit)
             script(of: spot).send(call)
             let (stream, halt) = answered {
                 switch await call.outcome(limit: limit) {
@@ -387,7 +387,7 @@ public final class SpotRuns {
         case .stay, .once:
             let caller = callers.issue(for: spot, reason: reason, keepsFix: true)
             caller.call = call
-            let process = ScriptProcess(spot: spot, program: swift.runnable(for: spot), swift: swift, sending: action, input: input, limit: limit, stopPause: stopPause, variables: variables, careful: isCareful ? spot.uses : nil, base: environment)
+            let process = ScriptProcess(spot: spot, program: swift.runnable(for: spot), swift: swift, sending: message, limit: limit, stopPause: stopPause, variables: variables, careful: isCareful ? spot.uses : nil, base: environment)
             track(process, of: spot.id, caller: caller)
             process.fix = { caller.takeFix() }
             let stream = process.start()

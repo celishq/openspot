@@ -20,11 +20,9 @@ extension Spot {
     }
 
     func items(query: String = "", input: String? = nil, page: String? = nil, timeout: TimeInterval) async throws -> SpotOutput {
-        let event = query.isEmpty ? [] : ReadReason.text(query, inSheet: self.answers == nil).fields
-        let route = page.map { [TextBlock.Field(key: "route", value: $0)] } ?? []
-        let typed = query.isEmpty ? [] : [TextBlock.Field(key: "search", value: query)]
-        let message = TextBlock(fields: event + route + typed).text + (input ?? "")
-        return try await output(.show, input: message.isEmpty ? nil : message, timeout: timeout)
+        let event = query.isEmpty ? nil : ReadReason.text(query, inSheet: self.answers == nil)
+        let message = Message(.show, event: event, route: page, search: query.isEmpty ? nil : query, given: input).text
+        return try await output(.show, input: message?.isEmpty == true ? nil : message, timeout: timeout)
     }
 
     func answer(_ action: SpotAction, input: String? = nil, timeout: TimeInterval) async throws -> SpotOutput {
@@ -41,7 +39,7 @@ extension Spot {
     }
 
     func submit(_ action: CommandAction, item: SpotItem?, draft: FormDraft, timeout: TimeInterval) async throws {
-        _ = try await output(.action(action, item: item), input: draft.text, timeout: timeout)
+        _ = try await output(.action(action, item: item), input: Message(.action(action, item: item), inputs: draft.inputs).text, timeout: timeout)
     }
 
     @discardableResult

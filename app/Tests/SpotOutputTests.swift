@@ -269,7 +269,7 @@ final class SpotOutputTests: XCTestCase {
         let output = SpotOutput(text: "text=r\ntitle=R\nas=big\nname=Big\n")
 
         let row = try XCTUnwrap(output.items.first)
-        XCTAssertEqual(row, SpotItem(title: "R", run: "r", fields: "item.text=r\nitem.title=R\nitem.as=big\nitem.name=Big\n"))
+        XCTAssertEqual(row, SpotItem(title: "R", run: "r", fields: [.init(key: "text", value: "r"), .init(key: "title", value: "R"), .init(key: "as", value: "big"), .init(key: "name", value: "Big")]))
     }
 
     func testAGraphOfOneValueIsAGaugeAFieldTypeIsItsInputAndAnOldKindIsReported() {

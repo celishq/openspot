@@ -292,7 +292,7 @@ final class CaffeinateSpotTests: XCTestCase {
         let sheet = try sheet()
         let start = try await start(in: sheet)
 
-        let answer = try await sheet.launch(start, input: "search=45\n")
+        let answer = try await sheet.launch(start, search: SearchQuery(text: "45", layouts: []))
 
         XCTAssertEqual(answer, .done)
         try await wait("caffeinate") { self.running().count == 1 }
@@ -304,7 +304,7 @@ final class CaffeinateSpotTests: XCTestCase {
         let sheet = try sheet()
         let start = try await start(in: sheet)
 
-        let answer = try await sheet.launch(start, input: "search=soon\n")
+        let answer = try await sheet.launch(start, search: SearchQuery(text: "soon", layouts: []))
 
         XCTAssertEqual(answer, .shown)
         try await wait("the toast") { self.lines("toasts").last == "Caffeinate takes minutes as a number, such as 45." }

@@ -52,7 +52,7 @@ final class SpotStarterTests: XCTestCase {
         let rows = try await spot.answer(.show, timeout: 10).items
 
         _ = try await TestEnvironment.with(["PATH": "\(tools.path):/usr/bin:/bin"]) {
-            try await spot.answer(SpotAction(arguments: ["open", "second"]), input: rows.last?.fields, timeout: 10)
+            try await spot.answer(SpotAction(arguments: ["open", "second"]), input: Message(SpotAction(arguments: ["open", "second"]), item: rows.last?.fields ?? []).text, timeout: 10)
         }
 
         XCTAssertEqual(rows.map(\.run), ["first", "second"])

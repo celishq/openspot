@@ -49,12 +49,15 @@ public final class SpotRun {
     }
 
     struct Call {
-        let action: SpotAction
+        var message: Message
         let key: String
-        var input: String?
         var limit: TimeInterval?
         var reason: ReadReason?
         var purpose: Purpose
+
+        var action: SpotAction {
+            message.action
+        }
     }
 
     static let answerAge: TimeInterval = 5

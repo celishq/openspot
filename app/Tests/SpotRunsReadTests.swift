@@ -161,7 +161,7 @@ final class SpotRunsReadTests: SpotRunsCase {
         try script(toml: "on = ['sheet.open', 'sheet.text']", "\(TestSpot.event)\n[ \"$ev\" = sheet.text ] && printf '%s\\n' \"$in\" >> '\(path("stdin"))'\nprintf 'frame=\\ngrid=note\\n\\nfield=note\\nvalue=hello\\n'")
         let sheet = try sheet()
         sheet.open(onReady: {})
-        try await wait("the sheet") { sheet.panel?.values == "input.note=hello\n" }
+        try await wait("the sheet") { sheet.panel?.inputs == [.init(key: "note", value: "hello")] }
 
         sheet.search("k")
 

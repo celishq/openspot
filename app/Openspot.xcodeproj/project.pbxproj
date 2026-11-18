@@ -643,6 +643,7 @@
 		B4C5EBD09D1C14C87201685F /* SheetFocusTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = E750EC985BC75D11052E0B76 /* SheetFocusTests.swift */; };
 		B4FD1A627AF3CF9E324EE5F5 /* AccountCallsTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = D105963DD8FBB6CA84AD55E1 /* AccountCallsTests.swift */; };
 		B512F4DB9EE1FF9D89C7C95E /* FormDraft.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3EC527B539564A89DFC014CA /* FormDraft.swift */; };
+		B591F7F48AC15212DC2A5DFF /* Message.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9DF589D37DDFE6FE34877BD0 /* Message.swift */; };
 		B601E166271674D8DBFE9FEF /* CalendarEntryTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6C5B6013A7D3A8A2D7C7E232 /* CalendarEntryTests.swift */; };
 		B6582E815802148F1D739482 /* ThemeScan.swift in Sources */ = {isa = PBXBuildFile; fileRef = A17BC46FD789F75D966FBF24 /* ThemeScan.swift */; };
 		B6745FC2B9BCEA2156209D7F /* PenExampleTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 424C4697CEBCCA92D20C9FF8 /* PenExampleTests.swift */; };
@@ -1581,6 +1582,7 @@
 		9D876A4D8896A6A1984BB6DB /* PowerTool.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PowerTool.swift; sourceTree = "<group>"; };
 		9D88281ECA8907B0A5F708B0 /* WebPicturesTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WebPicturesTests.swift; sourceTree = "<group>"; };
 		9DB6300B9A82BFD47A55DB88 /* FlowSwipeTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FlowSwipeTests.swift; sourceTree = "<group>"; };
+		9DF589D37DDFE6FE34877BD0 /* Message.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Message.swift; sourceTree = "<group>"; };
 		9E2BBBB5CFD3D9C12B7A7857 /* PartCatalog.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PartCatalog.swift; sourceTree = "<group>"; };
 		9E425E0AA75F091617B3AA67 /* SpotsModel+Verbs.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "SpotsModel+Verbs.swift"; sourceTree = "<group>"; };
 		9E516E416148586FA2A245E1 /* ViewBuildsTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ViewBuildsTests.swift; sourceTree = "<group>"; };
@@ -2164,6 +2166,7 @@
 			isa = PBXGroup;
 			children = (
 				712611AA6131BCF6BEF84A88 /* Capability.swift */,
+				9DF589D37DDFE6FE34877BD0 /* Message.swift */,
 				347C690A39CF114C90A03B03 /* ScriptCall.swift */,
 				BB3BF554F43314B713EEC4F0 /* ScriptProcess.swift */,
 				461FE2CF805E82EFB2F6EAED /* ScriptProcess+Spot.swift */,
@@ -4027,6 +4030,7 @@
 				B7846103D56D6C3377A70D40 /* MainSearch.swift in Sources */,
 				0ADF42882D864E2AD3BB1165 /* MenuBarCalls.swift in Sources */,
 				557507D458AEB9E6F3024635 /* MenuBarMark.swift in Sources */,
+				B591F7F48AC15212DC2A5DFF /* Message.swift in Sources */,
 				B1DF39E3F91226E7A117D160 /* MetricKind.swift in Sources */,
 				D5AE4DC5DC48D88986CB8A60 /* MetricReading.swift in Sources */,
 				7F3083C79B1BD4666E33BA46 /* MetricValue.swift in Sources */,

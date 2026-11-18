@@ -527,7 +527,7 @@ final class SpotRunsStayTests: SpotRunsCase {
         let before = sheet.state
         sheet.state = before.switched(on: true)
 
-        sheet.send(SpotRun.Call(action: .press("power"), key: SpotRun.cardKey, purpose: .work(SpotRun.Work(undo: before))))
+        sheet.send(SpotRun.Call(message: Message(.press("power")), key: SpotRun.cardKey, purpose: .work(SpotRun.Work(undo: before))))
 
         XCTAssertTrue(sheet.isCardRunning)
         try await wait("the undo of the switch") { sheet.state == before }
