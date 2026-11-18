@@ -1,4 +1,4 @@
-.PHONY: verify test perf film shots eval-agent eval-compare docs-images spots dev-state examples release release-build
+.PHONY: verify test perf film shots eval-agent eval-compare docs-images spots dev-state first-launch examples release release-build
 
 verify:
 	sh scripts/check-core.sh
@@ -53,6 +53,10 @@ dev-state:
 	mkdir -p .temp/openspot/spots
 	[ -n "$(EMPTY)" ] || cp -R spots/. .temp/openspot/spots/
 	rm -rf .temp/openspot/spots/openspot.spot
+
+first-launch:
+	pkill -f '/Debug/Openspot.app/Contents/MacOS/Openspot' || true
+	$(MAKE) dev-state EMPTY=1
 
 examples:
 	mkdir -p .temp/openspot/spots
