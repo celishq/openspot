@@ -97,8 +97,7 @@ extension OpenspotApp: SpotsHost {
     }
 
     func takeFocus() {
-        NSApp.activate(ignoringOtherApps: true)
-        panel?.makeKeyAndOrderFront(nil)
+        panel?.makeKey()
     }
 
     func allows(_ reason: String) async -> Bool {
