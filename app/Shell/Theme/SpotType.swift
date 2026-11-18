@@ -46,8 +46,6 @@ enum SpotType {
     @MainActor static var titleMeasure: NSFont { faces.titleMeasure }
     @MainActor static var detailMeasure: NSFont { faces.detailMeasure }
     static var input: Font { faces.input }
-    static let heading = Font.system(size: SheetHeading.titleSize, weight: .bold)
-    static let lead = Font.system(size: SheetHeading.detailSize)
     static let keycapSymbol = Font.system(size: 22, weight: .medium)
     static let keycapKey = Font.system(size: 17, weight: .medium)
     static let keycapName = Font.system(size: 9, weight: .medium)

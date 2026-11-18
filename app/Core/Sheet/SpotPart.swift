@@ -35,7 +35,7 @@ public struct SpotPart: Equatable, Sendable, Identifiable {
     }
 
     public enum Look: String, Equatable, Sendable {
-        case tile, chip, strong, bare, tick, heading, card
+        case tile, chip, strong, bare, tick
     }
 
     public enum Align: String, Equatable, Sendable {
@@ -51,8 +51,6 @@ public struct SpotPart: Equatable, Sendable, Identifiable {
     public let detail: String?
     public let symbol: String?
     public let file: String?
-    public let image: String?
-    public let note: String?
     public let glyph: String?
     public let tone: MetricValue.Tone?
     public let textTone: MetricValue.Tone?
@@ -106,8 +104,6 @@ public struct SpotPart: Equatable, Sendable, Identifiable {
         look = block.value("type").flatMap { kind.looks[$0] } ?? (named == .tick ? nil : named)
         let icon = Icon(text: block.value("icon"))
         file = icon?.file
-        image = icon?.image
-        note = Icon(text: block.value("note"))?.image
         glyph = icon?.glyph
         tone = block.value("tone").flatMap(MetricValue.Tone.init)
         textTone = kind == .text ? tone : nil

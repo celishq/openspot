@@ -367,12 +367,6 @@ final class SheetLayoutTests: XCTestCase {
         XCTAssertEqual(FrameCheck(text: "grid=a\n").sheetFaults, ["the sheet has no parts"])
     }
 
-    func testATallHeadingOnOneRowIsNoStretchedRow() {
-        let sheet = "grid=head\ngrid=go\n\ntext=head\nlook=heading\ntitle=Everything is a disposable spot\ndetail=Make a script or an app for anything. Keep it, throw it away, or share it in one click.\n\nbutton=go\ntitle=Go\n"
-
-        XCTAssertEqual(FrameCheck(text: sheet).partFaults, [])
-    }
-
     func testTheFaultsThatComeFromSize() {
         func faults(_ text: String) -> [String] { FrameCheck(text: text).partFaults }
 

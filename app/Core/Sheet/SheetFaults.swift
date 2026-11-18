@@ -90,7 +90,7 @@ public enum SheetFaults {
                     faults.append("the title of the part \(part.id) may not fit its cell")
                 }
             }
-            if !frame.isOnTop, !part.fillsHeight, part.look != .heading, frame.rect.height > SpotTokens.listRow * 2, area.y0 == area.y1 {
+            if !frame.isOnTop, !part.fillsHeight, frame.rect.height > SpotTokens.listRow * 2, area.y0 == area.y1 {
                 faults.append("the part \(part.id) sits in rows that stretch, so draw a choice over two lines for a list")
             }
         }

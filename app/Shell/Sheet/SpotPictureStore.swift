@@ -9,12 +9,6 @@ final class SpotPictureStore {
     struct Key: Hashable, Sendable {
         let path: String
         let changed: Double?
-        var fit: Fit?
-    }
-
-    struct Fit: Hashable, Sendable {
-        let width: CGFloat
-        let height: CGFloat
     }
 
     private final class Bitmap {
@@ -43,7 +37,7 @@ final class SpotPictureStore {
         if let image = cached(key) { return image }
         if let load = loads[key] { return await load.value }
         let shortSide = Self.shortSide
-        let load = Task.detached(priority: .userInitiated) { await WebPictures.shared.path(of: key.path).flatMap { Self.picture(at: $0, shortSide: shortSide, fit: key.fit) } }
+        let load = Task.detached(priority: .userInitiated) { await WebPictures.shared.path(of: key.path).flatMap { Self.picture(at: $0, shortSide: shortSide) } }
         loads[key] = load
         let image = await load.value
         loads[key] = nil
@@ -52,10 +46,10 @@ final class SpotPictureStore {
     }
 
     private static func name(of key: Key) -> NSString {
-        "\(shortSide)|\(key.changed ?? 0)|\(key.fit.map { "\($0.width)x\($0.height)" } ?? "")|\(key.path)" as NSString
+        "\(shortSide)|\(key.changed ?? 0)|\(key.path)" as NSString
     }
 
-    private nonisolated static func picture(at path: String, shortSide: Int, fit: Fit?) -> CGImage? {
+    private nonisolated static func picture(at path: String, shortSide: Int) -> CGImage? {
         let url = URL(fileURLWithPath: path)
         if let source = CGImageSourceCreateWithURL(url as CFURL, nil), CGImageSourceGetCount(source) > 0 {
             let properties = CGImageSourceCopyPropertiesAtIndex(source, 0, nil) as? [CFString: Any]
@@ -64,24 +58,18 @@ final class SpotPictureStore {
             let short = min(width, height)
             let long = max(width, height)
             let filled = short > shortSide ? long * shortSide / short : long
-            let side = fit.map { min(long, Int((CGFloat(long) * factor(CGSize(width: width, height: height), into: $0)).rounded(.up))) } ?? filled
             let options: [CFString: Any] = [
                 kCGImageSourceCreateThumbnailFromImageAlways: true,
                 kCGImageSourceCreateThumbnailWithTransform: true,
                 kCGImageSourceShouldCacheImmediately: true,
-                kCGImageSourceThumbnailMaxPixelSize: max(side, 1)
+                kCGImageSourceThumbnailMaxPixelSize: max(filled, 1)
             ]
             if let image = CGImageSourceCreateThumbnailAtIndex(source, 0, options as CFDictionary) { return image }
         }
         guard let picture = NSImage(contentsOfFile: path), picture.size.width > 0, picture.size.height > 0 else { return nil }
         let size = picture.size
-        let fill = fit.map { factor(size, into: $0) } ?? max(1, CGFloat(shortSide) / min(size.width, size.height))
+        let fill = max(1, CGFloat(shortSide) / min(size.width, size.height))
         var rect = CGRect(x: 0, y: 0, width: max((size.width * fill).rounded(), 1), height: max((size.height * fill).rounded(), 1))
         return picture.cgImage(forProposedRect: &rect, context: nil, hints: nil)
-    }
-
-    private nonisolated static func factor(_ size: CGSize, into fit: Fit) -> CGFloat {
-        guard size.width > 0, size.height > 0 else { return 1 }
-        return min(fit.width * SpotTokens.pictureScale / size.width, fit.height * SpotTokens.pictureScale / size.height)
     }
 }
