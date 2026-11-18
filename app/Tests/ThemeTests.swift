@@ -241,6 +241,7 @@ final class ThemeTests: XCTestCase {
         XCTAssertEqual(Theme(text: Self.choices(of: document)).colours, Theme().colours)
         XCTAssertEqual(theme.layout, Theme().layout)
         XCTAssertEqual(theme.colours.light.solid, ThemeColor(text: "#1F1F1F"))
+        XCTAssertEqual([theme.colours.dark.glassTint, theme.colours.light.glassTint], [ThemeColor(text: "#2C2C2E73"), ThemeColor(text: "#C4C4C473")])
         XCTAssertEqual(theme.colours.dark.glyphOnSolid, .accent)
         XCTAssertEqual([theme.colours.dark.confirm, theme.colours.light.confirm], [ThemeColor(text: "#C72924"), ThemeColor(text: "#C72924")])
         XCTAssertEqual([theme.colours.dark.onConfirm, theme.colours.light.onConfirm], [ThemeColor(text: "#FFFFFF"), ThemeColor(text: "#FFFFFF")])
