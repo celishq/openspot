@@ -93,7 +93,7 @@ public struct FlowEdges: Equatable, Sendable {
         guard let shown, !next.edges.contains(where: { $0.sheet == shown }) else { return next }
         let left = flow.pages.firstIndex(of: shown)
         let coming: FlowEdge.Side = left.map { $0 > flow.index ? .behind : .ahead } ?? .behind
-        let onMark = next.edges.contains { $0.sheet == flow.current }
+        let onMark = next.edges.contains { $0.sheet == flow.current && $0.place == .bar(coming, 0) }
         next.edges.removeAll { $0.sheet == flow.current }
         next.edges.append(FlowEdge(sheet: shown, title: title(shown), place: .stand(rect)))
         let leaving: FlowEdge.Place = left == nil ? .line(.ahead) : .bar(coming == .ahead ? .behind : .ahead, 0)

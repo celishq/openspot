@@ -119,15 +119,11 @@ extension SpotsModel {
         pushIn { sheet.show(page: page.page) ? nil : sheet }
     }
 
-    func endFlow(resetsPages: Bool = true) {
-        if resetsPages { for page in flow.pages where page.page != nil { sheets[page.spot]?.show(page: nil) } }
+    func endFlow() {
+        for page in flow.pages where page.page != nil { sheets[page.spot]?.show(page: nil) }
         flow.clear()
         waitingPublish = nil
         showEdges()
-    }
-
-    func restPages() {
-        for (id, run) in sheets where run.page != nil && id != openSheetID { run.show(page: nil) }
     }
 
     func title(of sheet: FlowSheet) -> String {

@@ -111,11 +111,13 @@ final class FlowMoveTests: PanelCase {
         try pressFlow("leave")
 
         try await wait("the close") { self.model.openSheetID == nil }
-        XCTAssertEqual(model.sheets["flow"]?.page, "n0")
+        XCTAssertNil(model.sheets["flow"]?.page)
+        XCTAssertEqual(model.closingPage?.page, "n0")
+        XCTAssertEqual(model.closingPage?.list.all.map(\.title), ["Page n0"])
         let ends = host.heldEnds ?? []
         host.heldEnds = nil
         ends.forEach { $0() }
-        XCTAssertNil(model.sheets["flow"]?.page)
+        XCTAssertNil(model.closingPage)
     }
 
     func testPopSpotFromAPageGoesBackToTheSpotThatPushedItInOneStep() async throws {

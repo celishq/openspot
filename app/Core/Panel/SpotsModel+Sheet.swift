@@ -94,18 +94,20 @@ extension SpotsModel {
     }
 
     func present(_ id: String, moving: Bool) {
+        closingPage = nil
         if let shown = openSheetID, shown != id { stopRecording() }
         sheets[id]?.open(waits: moving) { [weak self] in self?.showSheet(id, moving: moving) }
     }
 
     public func closeSheet(moving: Bool) {
+        closingPage = moving ? openSheetID.flatMap { id in sheets[id].map { SheetPage(run: $0, rect: $0.sheetRect, query: searchText) } } : nil
         pendingAsk = nil
         keys.status = nil
         askedAnswer = nil
         stopRecording()
         showSheet(nil, moving: moving)
         runs.closeOpen()
-        endFlow(resetsPages: false)
+        endFlow()
     }
 
     public func close(_ place: ViewPlace) {
@@ -167,10 +169,7 @@ extension SpotsModel {
             fieldDrop = nil
             showsFieldDrop = false
         }
-        if list == nil {
-            endReview()
-            restPages()
-        }
+        if list == nil { endReview() }
     }
 
     func hasPlace(_ id: String?) -> Bool {
@@ -196,7 +195,7 @@ extension SpotsModel {
             if isInstall, transition.phase == .closed { hideFieldDrop() }
             if transition.phase == .closed {
                 endReview()
-                restPages()
+                closingPage = nil
             }
         }
     }
