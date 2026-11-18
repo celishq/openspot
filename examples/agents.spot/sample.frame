@@ -1,8 +1,23 @@
-row=openspot
-detail=claude
+grid=items
+grid.small=card
 
-row=website
-detail=codex
+view=card
+limit1=claude|0.62|working
+limit2=openai|0.28|waiting
+task1=waiting|Fix a flaky test|openai|website
+task2=working|Rewrite the README|claude|openspot
+task3=working|Add a pricing page|claude|website
 
-row=notes-app
-detail=claude
+repeat=items
+
+row=codex/702
+title=Fix a flaky test
+detail=website · waits for you · 41% context
+
+row=claude/611
+title=Rewrite the README
+detail=openspot · working · 34% context
+
+row=claude/4821
+title=Add a pricing page
+detail=website · working · 12% context
