@@ -208,7 +208,7 @@ class SampleSpotsCase: XCTestCase {
         var panel = try XCTUnwrap(SheetParts(output: last))
         for action in actions {
             if action.arguments.count == 2 { panel.set(action.arguments[1], of: action.arguments[0]) }
-            last = SpotOutput(text: try await SpotRuns(environment: TestEnvironment.values).answer(of: spot, action, input: panel.values, limit: 30))
+            last = SpotOutput(text: try await SpotRuns(environment: TestEnvironment.values).answer(of: spot, action, input: Message(action, inputs: panel.inputs).text, limit: 30))
             panel.take(last, answering: panel.generation)
         }
         return last

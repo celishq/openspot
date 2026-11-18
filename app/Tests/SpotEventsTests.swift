@@ -202,8 +202,8 @@ final class SpotEventsTests: SpotRunsCase {
     }
 
     func testAStayingScriptGetsTheValueOfItsEvent() {
-        XCTAssertEqual(SpotAction.show.block(input: TextBlock(fields: ReadReason(event: "music.track", value: "Song").fields).text, id: 3), "call=3\narg=show\nevent=music.track\nevent.value=Song\n\n")
-        XCTAssertEqual(SpotAction.show.block(input: TextBlock(fields: ReadReason.panel.fields).text, id: 3), "call=3\narg=show\nevent=panel.open\n\n")
+        XCTAssertEqual(Message(.show, event: ReadReason(event: "music.track", value: "Song")).block(id: 3), "call=3\narg=show\nevent=music.track\nevent.value=Song\n\n")
+        XCTAssertEqual(Message(.show, event: .panel).block(id: 3), "call=3\narg=show\nevent=panel.open\n\n")
     }
 
     func testASpotThatListsAnEventCanShowInTheMenuBar() throws {

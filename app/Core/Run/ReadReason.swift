@@ -33,8 +33,4 @@ public struct ReadReason: Equatable, Sendable {
     var isFrequent: Bool {
         isEvent || self == .want || [SpotEvent.searchText, SpotEvent.sheetText].contains(rawValue) || rawValue.hasPrefix(SpotEvent.clockPrefix)
     }
-
-    var fields: [TextBlock.Field] {
-        [.init(key: "event", value: rawValue)] + (value.map { [.init(key: "event.value", value: $0)] } ?? [])
-    }
 }

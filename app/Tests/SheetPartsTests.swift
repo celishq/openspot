@@ -228,7 +228,7 @@ final class SheetPartsTests: XCTestCase {
         panel.set("true", of: "left")
         panel.set("20", of: "brightness")
 
-        let block = try XCTUnwrap(TextBlock.blocks(in: panel.values).first)
+        let block = try XCTUnwrap(TextBlock.blocks(in: Message(.show, inputs: panel.inputs).text ?? "").first)
 
         XCTAssertNil(block.value("input.lights"))
         XCTAssertEqual(block.value("input.left"), "true")

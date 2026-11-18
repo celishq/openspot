@@ -74,7 +74,7 @@ final class SampleSpotsTests: SampleSpotsCase {
             defer { relay.end() }
             var frames = relay.start().makeAsyncIterator()
 
-            relay.send(.show, id: 1)
+            relay.send(Message(.show), id: 1)
             var sheet = try await self.next(&frames, of: relay)
             while FrameRoot(text: sheet ?? "").isMark { sheet = try await self.next(&frames, of: relay) }
             XCTAssertTrue(sheet?.contains("title=No message yet") == true, sheet ?? "")
@@ -82,7 +82,7 @@ final class SampleSpotsTests: SampleSpotsCase {
             var call = 2
             var seen: [String] = []
             while !seen.contains(where: { $0.contains("title=hello") }), call < 40 {
-                relay.send(SpotAction(arguments: ["send"]), input: "input.peer=127.0.0.1:\(port)\ninput.message=hello\n", id: call)
+                relay.send(Message(SpotAction(arguments: ["send"]), inputs: [.init(key: "peer", value: "127.0.0.1:\(port)"), .init(key: "message", value: "hello")]), id: call)
                 while let frame = try await self.next(&frames, of: relay) {
                     seen.append(frame)
                     if SpotOutput(text: frame).ends == [String(call)] { break }

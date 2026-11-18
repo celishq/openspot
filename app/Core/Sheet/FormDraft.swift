@@ -71,7 +71,7 @@ public struct FormDraft: Equatable, Sendable {
         }
     }
 
-    public var text: String {
-        TextBlock(fields: values.sorted { $0.key < $1.key }.map { .init(key: "input.\($0.key)", value: $0.value) }).text
+    public var inputs: [TextBlock.Field] {
+        values.sorted { $0.key < $1.key }.map { .init(key: $0.key, value: $0.value) }
     }
 }

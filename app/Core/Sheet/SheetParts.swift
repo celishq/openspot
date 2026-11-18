@@ -72,8 +72,8 @@ public struct SheetParts: Equatable, Sendable {
         focusLineOffsets = lines
     }
 
-    public var values: String {
-        TextBlock(fields: parts.compactMap { part in part.value.map { .init(key: "input.\(part.id)", value: $0) } }).text
+    public var inputs: [TextBlock.Field] {
+        parts.compactMap { part in part.value.map { .init(key: part.id, value: $0) } }
     }
 
     public var hint: String {

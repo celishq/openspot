@@ -1,10 +1,9 @@
 import Foundation
 
 struct FieldValues: Equatable, Sendable {
-    static let inputPrefix = "setting."
     static let hidden = "•••"
 
-    let input: String
+    let settings: [TextBlock.Field]
     let secrets: [String]
 
     init(of spot: Spot, in settings: [String: [String: String]], secrets kept: [String: String]) {
@@ -14,10 +13,10 @@ struct FieldValues: Equatable, Sendable {
         for field in spot.settings {
             let value = field.isSecret ? kept[field.id] : plain[field.id]
             guard let value, !value.isEmpty else { continue }
-            lines.append(.init(key: Self.inputPrefix + field.id, value: value))
+            lines.append(.init(key: field.id, value: value))
             if field.isSecret { secrets.append(value) }
         }
-        input = TextBlock(fields: lines).text
+        self.settings = lines
         self.secrets = secrets
     }
 

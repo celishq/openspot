@@ -138,18 +138,18 @@ final class SheetStreamTests: XCTestCase {
     }
 
     func testACallOfAStayingScriptIsOneBlock() {
-        XCTAssertEqual(SpotAction.show.block(id: 1), "call=1\narg=show\n\n")
-        XCTAssertEqual(SpotAction.show.block(input: TextBlock(fields: ReadReason.clock(60).fields).text, id: 5), "call=5\narg=show\nevent=clock.60\n\n")
-        XCTAssertEqual(SpotAction.press("swap").block(id: 2), "call=2\narg=swap\n\n")
-        XCTAssertEqual(SpotAction.set("input", to: "one\ntwo").block(id: 3), "call=3\narg=input\narg=one\\ntwo\n\n")
-        XCTAssertEqual(SpotAction.drop(paths: ["/a b.mov", "-rf.mov"]).block(id: 4), "call=4\narg=drop\narg=/a b.mov\narg=-rf.mov\n\n")
+        XCTAssertEqual(Message(.show).block(id: 1), "call=1\narg=show\n\n")
+        XCTAssertEqual(Message(.show, event: .clock(60)).block(id: 5), "call=5\narg=show\nevent=clock.60\n\n")
+        XCTAssertEqual(Message(.press("swap")).block(id: 2), "call=2\narg=swap\n\n")
+        XCTAssertEqual(Message(.set("input", to: "one\ntwo")).block(id: 3), "call=3\narg=input\narg=one\\ntwo\n\n")
+        XCTAssertEqual(Message(.drop(paths: ["/a b.mov", "-rf.mov"])).block(id: 4), "call=4\narg=drop\narg=/a b.mov\narg=-rf.mov\n\n")
     }
 
     func testTheBlockHoldsEachLineOfTheStdinOfTheCall() {
         let values = "input.input=one\\ntwo\ninput.source=auto\n"
 
         XCTAssertEqual(
-            SpotAction.set("source", to: "auto").block(input: values, id: 7),
+            Message(.set("source", to: "auto"), given: values).block(id: 7),
             "call=7\narg=source\narg=auto\ninput.input=one\\ntwo\ninput.source=auto\n\n"
         )
     }
@@ -164,9 +164,9 @@ final class SheetStreamTests: XCTestCase {
         let live = ScriptProcess(url: url, mode: .stays, limit: 60)
         var frames = live.start().makeAsyncIterator()
 
-        live.send(.show, id: 1)
+        live.send(Message(.show), id: 1)
         let first = try await frames.next()
-        live.send(.press("a"), id: 2)
+        live.send(Message(.press("a")), id: 2)
         let second = try await frames.next()
 
         XCTAssertEqual(first, "part=a\ntitle=1\n")

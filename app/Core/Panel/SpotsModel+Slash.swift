@@ -43,7 +43,7 @@ extension SpotsModel {
 
     private func call(_ action: CommandAction, of entry: Entry, _ text: String, onCard: Bool = false) {
         ask(action, on: (entry, nil)) { [sheets] in
-            try await sheets[entry.id]?.launch(action, input: SearchQuery(text: text).input, onCard: onCard)
+            try await sheets[entry.id]?.launch(action, search: SearchQuery(text: text), onCard: onCard)
         }
     }
 }

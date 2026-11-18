@@ -360,7 +360,7 @@ final class AgendaExampleTests: SampleSpotsCase {
             let form = try XCTUnwrap(ItemForm(output: SpotOutput(text: first)))
             let all = try XCTUnwrap(FormDraft(form: form).selectingAll())
 
-            let after = try await SpotRuns(environment: TestEnvironment.values).answer(of: agenda, calendars, input: all.text + "setting.calendars=B1 7D10\n", limit: 30)
+            let after = try await SpotRuns(environment: TestEnvironment.values).answer(of: agenda, calendars, input: (Message(calendars, inputs: all.inputs).text ?? "") + "setting.calendars=B1 7D10\n", limit: 30)
 
             XCTAssertEqual(all.values["calendars"], "B1\n7D10")
             XCTAssertFalse(FileManager.default.fileExists(atPath: folder.appendingPathComponent("setting-calendars").path))

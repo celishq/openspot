@@ -46,6 +46,20 @@ final class SpotRunsInlineTests: SpotRunsCase {
         return names.compactMap { runs.sheets[$0] }
     }
 
+    func testAnInlineSpotGetsTheEventAndTheSettingsInItsInput() async throws {
+        try inline(toml: "on = ['sheet.open']\n[settings.city]", """
+        function main([id], env, input) {
+          return `text=a\\ntitle=${input.trim().split("\\n").join(" ")}\\n`
+        }
+        """)
+        let sheet = try sheet()
+        runs.take(settings: [SpotSetting(spot: "script", key: "city", value: "Paris")])
+
+        sheet.read(need: .change)
+
+        try await wait("the show") { sheet.list.all.first?.title == "event=spot.change setting.city=Paris" }
+    }
+
     func testThreeSlowInlineSpotsShareOneWaitForTheirAnswers() async throws {
         runs(frameWait: .milliseconds(20))
         let sheets = try slowAnswering(["a", "b", "c"])

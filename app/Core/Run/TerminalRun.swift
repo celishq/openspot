@@ -38,9 +38,8 @@ public struct TerminalRun {
         SpotAction(arguments: arguments.isEmpty ? (spot.read == nil ? SpotAction.open : SpotAction.show).arguments : arguments)
     }
 
-    private func message(isRead: Bool) -> String? {
-        guard isRead else { return input }
-        return TextBlock(fields: ReadReason.sheet.fields).text + (input ?? "")
+    private func message(isRead: Bool) -> Message {
+        Message(action, event: isRead ? .sheet : nil, given: input)
     }
 
     public func start(isolation: isolated (any Actor)? = #isolation, frame: (String) -> Void) async -> End {
@@ -53,7 +52,7 @@ public struct TerminalRun {
         let program = swift.runnable(for: spot, builds: false)
         let caller = callers?.issue(for: spot, reason: isRead ? ReadReason.sheet.rawValue : nil)
         let process = ScriptProcess(
-            spot: spot, program: program, swift: swift, sending: spot.mode.stays ? nil : action, input: message(isRead: isRead), limit: isRead ? Self.readLimit : nil,
+            spot: spot, program: program, swift: swift, sending: spot.mode.stays ? nil : message(isRead: isRead), limit: isRead ? Self.readLimit : nil,
             errorLimit: Self.errorLimit, careful: careful, base: environment, folder: folder
         )
         usage?.track(process, of: spot.id)
@@ -62,7 +61,7 @@ public struct TerminalRun {
             var code: Int32 = 0
             do {
                 let frames = process.start()
-                if spot.mode.stays { process.send(action, input: message(isRead: isRead), id: Self.callID) }
+                if spot.mode.stays { process.send(message(isRead: isRead), id: Self.callID) }
                 for try await text in frames {
                     let head = spot.mode.stays ? FrameRoot(text: text) : nil
                     if head?.isMark != true { frame(text) }
@@ -89,7 +88,7 @@ public struct TerminalRun {
     private func inline(isolation: isolated (any Actor)? = #isolation, isRead: Bool, frame: (String) -> Void) async -> End {
         let script = InlineScript(spot: spot, api: nil, callers: callers, careful: careful, limit: Self.readLimit, base: environment ?? ProcessInfo.processInfo.environment)
         defer { script.end() }
-        let call = InlineCall(arguments: action.arguments, variables: ["OPENSPOT_ID": spot.id], input: message(isRead: isRead), reason: isRead ? ReadReason.sheet.rawValue : nil, limit: isRead ? Self.readLimit : nil)
+        let call = InlineCall(arguments: action.arguments, variables: ["OPENSPOT_ID": spot.id], input: message(isRead: isRead).text, reason: isRead ? ReadReason.sheet.rawValue : nil, limit: isRead ? Self.readLimit : nil)
         script.send(call)
         let outcome = await withTaskCancellationHandler {
             await call.outcome(limit: isRead ? Self.readLimit : nil)

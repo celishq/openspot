@@ -320,7 +320,7 @@ final class ShellHelperTests: XCTestCase {
         }
         let live = ScriptProcess(url: stays, mode: .stays, limit: 60)
         var frames = live.start().makeAsyncIterator()
-        live.send(action, input: input, id: 1)
+        live.send(Message(action, given: input), id: 1)
         var stayFrames: [String] = []
         while let frame = try await frames.next() {
             stayFrames.append(frame)
@@ -342,9 +342,9 @@ final class ShellHelperTests: XCTestCase {
         let live = ScriptProcess(url: url, mode: .stays, limit: 60)
         var frames = live.start().makeAsyncIterator()
 
-        live.send(.show, input: TextBlock(fields: ReadReason(event: "music.track", value: "Song").fields).text + "input.a=held\n", id: 1)
+        live.send(Message(.show, event: ReadReason(event: "music.track", value: "Song"), inputs: [.init(key: "a", value: "held")]), id: 1)
         live.send(text: SpotAction.stopEvent(id: 1))
-        live.send(.press("go"), id: 2)
+        live.send(Message(.press("go")), id: 2)
         live.end()
         var printed: [String] = []
         while let frame = try await frames.next() { printed.append(frame) }
@@ -358,7 +358,7 @@ final class ShellHelperTests: XCTestCase {
         let live = ScriptProcess(url: url, mode: .stays, limit: 60)
         var frames = live.start().makeAsyncIterator()
 
-        live.send(SpotAction(arguments: ["", "x"]), id: 1)
+        live.send(Message(SpotAction(arguments: ["", "x"])), id: 1)
         live.end()
         var printed: [String] = []
         while let frame = try await frames.next() { printed.append(frame) }
@@ -410,7 +410,7 @@ final class ShellHelperTests: XCTestCase {
         var frames = live.start().makeAsyncIterator()
 
         let first = try await frames.next()
-        live.send(.press("go"), id: 1)
+        live.send(Message(.press("go")), id: 1)
         let second = try await frames.next()
 
         XCTAssertEqual(first, "a=b\\\\c|\n")
