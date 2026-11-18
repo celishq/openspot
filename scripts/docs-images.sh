@@ -66,8 +66,8 @@ for example in "$work"/examples/*.example; do
   done
   size=""
   [ -n "$card" ] && size="--card $card"
-  OPENSPOT_PICTURE_ON_SCREEN=1 OPENSPOT_SPOTS="$work/spots" OPENSPOT_CONFIG="$work/config" OPENSPOT_CORE="$work/core" \
-    "$app" render spot "$name" $size "docs/images/$name.png"
+  "$app" --picture-on-screen --spots "$work/spots" --config "$work/config" --core "$work/core" \
+    render spot "$name" $size "docs/images/$name.png"
   cp "$example" "docs/images/$name.example"
   echo "docs/images/$name.png"
 done
@@ -77,7 +77,7 @@ rm "$work/spots/config.toml"
 for spot in system system-info battery cpu memory devices; do cp -R "spots/$spot.spot" "$work/spots/"; done
 cp -R examples/now-playing.spot "$work/spots/"
 cp docs/sample/config.toml "$work/config/config.toml"
-OPENSPOT_SPOTS="$work/spots" OPENSPOT_CONFIG="$work/config" OPENSPOT_CORE="$work/core" "$app" check >/dev/null
-OPENSPOT_PICTURE_ON_SCREEN=1 OPENSPOT_SPOTS="$work/spots" OPENSPOT_CONFIG="$work/config" OPENSPOT_CORE="$work/core" \
-  "$app" render panel docs/images/panel.png
+"$app" --spots "$work/spots" --config "$work/config" --core "$work/core" check >/dev/null
+"$app" --picture-on-screen --spots "$work/spots" --config "$work/config" --core "$work/core" \
+  render panel docs/images/panel.png
 echo docs/images/panel.png

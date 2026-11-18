@@ -39,6 +39,7 @@ final class CommandClientTests: XCTestCase {
     private var socket: CommandSocket?
 
     private var config: URL { folder.appendingPathComponent("config") }
+    private var handed: String { "--config \(config.path) " }
     private var client: URL { folder.appendingPathComponent("A.app/Contents/Helpers/openspot") }
 
     override func setUpWithError() throws {
@@ -187,17 +188,31 @@ final class CommandClientTests: XCTestCase {
     }
 
     func testWithNoSocketItStartsTheAppWithTheSameArguments() throws {
-        XCTAssertEqual(try run(client, ["guide"]).output, "app: guide\n")
+        XCTAssertEqual(try run(client, ["guide"]).output, "app: \(handed)guide\n")
+    }
+
+    func testAConfigGivenToTheCommandIsTheAppItReaches() throws {
+        let other = folder.appendingPathComponent("other", isDirectory: true)
+        try FileManager.default.createDirectory(at: other, withIntermediateDirectories: true)
+
+        let otherSocket = CommandSocket(folder: other, api: CommandAPI(mac: Mac(), places: .test(["OPENSPOT_CONFIG": other.path]), rates: .offline))
+        defer { otherSocket?.close() }
+        listen()
+
+        let answer = try run(client, ["--config", other.path, "setting", "set", "--spot", "home/tea", "tone", "warm"])
+
+        XCTAssertEqual(answer.code, 0, answer.errors)
+        XCTAssertEqual(ConfigFile(url: other.appendingPathComponent("config.toml")).read().setting("tone", of: "home/tea"), "warm")
     }
 
     func testWithNoWordsItAsksForHelp() throws {
-        XCTAssertEqual(try run(client, []).output, "app: help\n")
+        XCTAssertEqual(try run(client, []).output, "app: \(handed)help\n")
     }
 
     func testACallThatRunsAloneStartsTheApp() throws {
         listen()
 
-        XCTAssertEqual(try run(client, ["render", "sheet", "x.png"]).output, "app: render sheet x.png\n")
+        XCTAssertEqual(try run(client, ["render", "sheet", "x.png"]).output, "app: \(handed)render sheet x.png\n")
     }
 
     private func start(_ arguments: [String], variables: [String: String] = [:]) throws -> (process: Process, output: Pipe, errors: Pipe) {
@@ -219,7 +234,7 @@ final class CommandClientTests: XCTestCase {
     }
 
     func testALiveCallWithNoAppStartsItInTheBackgroundAndAsksItsSocket() async throws {
-        try "#!/bin/sh\nif [ $# -gt 0 ]; then echo \"app: $*\"; else touch '\(folder.appendingPathComponent("started").path)'; fi\n".writeScript(to: folder.appendingPathComponent("A.app/Contents/MacOS/Openspot"))
+        try "#!/bin/sh\nif [ $# -gt 2 ]; then echo \"app: $*\"; else touch '\(folder.appendingPathComponent("started").path)'; fi\n".writeScript(to: folder.appendingPathComponent("A.app/Contents/MacOS/Openspot"))
         let run = try start(["app", "status"])
 
         try await wait("the start of the app") { exists("started") }
@@ -248,7 +263,7 @@ final class CommandClientTests: XCTestCase {
 
             try await wait("the end of the call") { !run.process.isRunning }
 
-            XCTAssertEqual(String(decoding: run.output.fileHandleForReading.readDataToEndOfFile(), as: UTF8.self), "app: \(call.joined(separator: " "))\n")
+            XCTAssertEqual(String(decoding: run.output.fileHandleForReading.readDataToEndOfFile(), as: UTF8.self), "app: \(handed)\(call.joined(separator: " "))\n")
         }
     }
 
@@ -304,7 +319,7 @@ final class CommandClientTests: XCTestCase {
         listen()
 
         for call in [["emoji", "list", "--tone", "dark"], ["symbols", "list"]] {
-            XCTAssertEqual(try run(client, call).output, "app: \(call.joined(separator: " "))\n")
+            XCTAssertEqual(try run(client, call).output, "app: \(handed)\(call.joined(separator: " "))\n")
         }
     }
 
@@ -312,6 +327,6 @@ final class CommandClientTests: XCTestCase {
         let link = folder.appendingPathComponent("openspot")
         try FileManager.default.createSymbolicLink(at: link, withDestinationURL: client)
 
-        XCTAssertEqual(try run(link, ["spot", "new", "x"]).output, "app: spot new x\n")
+        XCTAssertEqual(try run(link, ["spot", "new", "x"]).output, "app: \(handed)spot new x\n")
     }
 }

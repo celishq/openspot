@@ -1,5 +1,5 @@
 ids() {
-  "$OPENSPOT" spot list --json </dev/null | python3 -I -c '
+  "$OPENSPOT" --config "$OPENSPOT_CONFIG" spot list --json </dev/null | python3 -I -c '
 import json, sys
 print("\n".join(spot["id"] for spot in json.load(sys.stdin)))
 '
@@ -10,7 +10,7 @@ own_id() {
 }
 
 lint() {
-  found=$("$OPENSPOT" check spots --json "$PLACE/spots" </dev/null 2>&1)
+  found=$("$OPENSPOT" --config "$OPENSPOT_CONFIG" check spots --json "$PLACE/spots" </dev/null 2>&1)
   echo "check: $found"
   [ "$found" = "[]" ]
 }

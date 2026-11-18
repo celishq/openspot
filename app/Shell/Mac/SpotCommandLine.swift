@@ -5,13 +5,13 @@ import OpenspotCore
 enum SpotCommandLine {
     private static let postedKeysPause: Duration = .milliseconds(100)
 
-    static func run(_ call: CommandLineCall) -> Never {
+    static func run(_ call: CommandLineCall, words: [String]) -> Never {
         enterBundle()
         let output = CommandOutput { text, isError in (isError ? FileHandle.standardError : FileHandle.standardOutput).write(Data(text.utf8)) }
         if call.rule.flags.contains(.startsScripts), !(call.value is PlaygroundCommand) { TerminalStop.watch() }
         var info = stat()
         let isPiped = fstat(0, &info) == 0 && (info.st_mode & S_IFMT == S_IFIFO || info.st_mode & S_IFMT == S_IFREG)
-        let request = CommandRequest(arguments: Array(CommandLine.arguments.dropFirst()), folder: FileManager.default.currentDirectoryPath, isPiped: isPiped)
+        let request = CommandRequest(arguments: words, folder: FileManager.default.currentDirectoryPath, isPiped: isPiped)
         if let work = CommandAPI(mac: SpotMac().mac, places: .standard, rates: .standard).work(for: call, request: request, input: { standardInput }, output: output) {
             Task {
                 let answer = await work()
@@ -55,7 +55,7 @@ enum SpotCommandLine {
             let glyphs = standardInput.split(separator: "\n").map(String.init)
             exit(SpotGlyphBook.write(GlyphBook(glyphs: glyphs, side: side, fontSize: fontSize), to: path) ? 0 : 1)
         default:
-            FileHandle.standardError.write(Data("openspot cannot do this: \(CommandLine.arguments.dropFirst().joined(separator: " "))\n\n\(CommandLineCall.usage)".utf8))
+            FileHandle.standardError.write(Data("openspot cannot do this: \(words.joined(separator: " "))\n\n\(CommandLineCall.usage)".utf8))
             exit(2)
         }
     }

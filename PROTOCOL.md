@@ -983,7 +983,8 @@ A spot asks the Mac and Openspot for things through one command, which works the
 - Each capability is `openspot <noun> <verb>`.
 - A noun names its commands, its events and its use, such as `openspot clipboard copy`, `clipboard.change` and
   `uses=clipboard`.
-- `openspot` reaches the Openspot app that it ships in, and within a spot, the app that ran the spot.
+- `openspot` reaches the Openspot app that it ships in, and within a spot, the app that ran the spot. `openspot --config <folder>
+  <call>` reaches the Openspot that runs on that config folder instead. No variable changes where a call goes.
 - A call that reads files or asks the Mac gives the same answer whether Openspot is running or not. A call that needs the
   running app starts it, and waits up to 10 seconds.
 - Ctrl-C stops a call, and the stopped work changes nothing.

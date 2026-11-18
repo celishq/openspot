@@ -5,7 +5,7 @@ nonisolated(unsafe) var connection: Int32 = -1
 
 func runAlone(_ app: AppBundle) -> Never {
     let program = app.program
-    var argv: [UnsafeMutablePointer<CChar>?] = ([program] + arguments).map { strdup($0) }
+    var argv: [UnsafeMutablePointer<CChar>?] = ([program] + handed + arguments).map { strdup($0) }
     argv.append(nil)
     execv(program, argv)
     fail("openspot cannot start \(program): \(String(cString: strerror(errno))).")
@@ -19,7 +19,7 @@ func fail(_ line: String, code: Int32 = 1) -> Never {
 
 func startInBackground(_ app: AppBundle) {
     let bundle = String(app.contents[..<(app.contents.lastIndex(of: "/") ?? app.contents.endIndex)])
-    let arguments = app.isApp ? ["/usr/bin/open", "-g", "-j", bundle] : [app.program]
+    let arguments = app.isApp ? ["/usr/bin/open", "-g", "-j", bundle] + (handed.isEmpty ? [] : ["--args"] + handed) : [app.program] + handed
     var actions: posix_spawn_file_actions_t?
     posix_spawn_file_actions_init(&actions)
     defer { posix_spawn_file_actions_destroy(&actions) }
@@ -127,11 +127,15 @@ func put(_ bytes: [UInt8], to descriptor: Int32) {
 }
 
 guard let app = AppBundle() else { fail("openspot cannot find the path of its own program.") }
-let arguments = CommandLine.arguments.count > 1 ? Array(CommandLine.arguments.dropFirst()) : ["help"]
+let given = Array(CommandLine.arguments.dropFirst())
+let named = given.count > 1 && given[0] == "--config" ? given[1] : nil
+let words = named == nil ? given : Array(given.dropFirst(2))
+let arguments = words.isEmpty ? ["help"] : words
+let config = named ?? app.configFolder()
+let handed = named != nil || !app.isApp ? config.map { ["--config", $0] } ?? [] : []
 if CommandKind.isPure(arguments) { runAlone(app) }
 let isLive = CommandKind.needsApp(arguments)
-connection = reachRun()
-let config = app.configFolder()
+if named == nil { connection = reachRun() }
 if connection < 0 { connection = config.map(reach) ?? -1 }
 if connection < 0 {
     guard isLive, let config else { runAlone(app) }

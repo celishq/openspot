@@ -7,6 +7,12 @@ import ScreenCaptureKit
 @MainActor
 final class SpotMotionProbe: NSObject {
     private static let openWindow: CFTimeInterval = 1
+    static let valued = [
+        "--probe": "OPENSPOT_PROBE", "--probe-spot": "OPENSPOT_SPOT", "--probe-action": "OPENSPOT_ACTION", "--probe-row": "OPENSPOT_ROW",
+        "--probe-text": "OPENSPOT_TEXT", "--probe-cycles": "OPENSPOT_CYCLES", "--probe-pause": "OPENSPOT_PAUSE", "--probe-keys": "OPENSPOT_KEYS",
+        "--shots": "OPENSPOT_SHOTS", "--appearance": "OPENSPOT_APPEARANCE", "--glass": "OPENSPOT_GLASS",
+    ]
+    static let switches = ["--seen": "OPENSPOT_SEEN"]
     private let model: SpotsModel
     private let panel: NSPanel
     private let output: String

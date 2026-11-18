@@ -6,9 +6,15 @@ import os
 @MainActor
 final class OpenspotApp: NSObject, NSApplicationDelegate {
     static func main() {
+        #if OPENSPOT_TOOLS
+        let launch = LaunchSettings(arguments: Array(CommandLine.arguments.dropFirst()), valued: LaunchSettings.valued.merging(SpotMotionProbe.valued) { $1 }, switches: LaunchSettings.switches.merging(SpotMotionProbe.switches) { $1 })
+        #else
+        let launch = LaunchSettings(arguments: Array(CommandLine.arguments.dropFirst()))
+        #endif
+        launch.apply()
         let environment = ProcessInfo.processInfo.environment
-        if let call = CommandLineCall(arguments: Array(CommandLine.arguments.dropFirst()), spot: environment[CallWords.spotVariable], reason: environment[CallWords.reasonVariable]) {
-            SpotCommandLine.run(call)
+        if let call = CommandLineCall(arguments: launch.words, spot: environment[CallWords.spotVariable], reason: environment[CallWords.reasonVariable]) {
+            SpotCommandLine.run(call, words: launch.words)
         }
         let app = NSApplication.shared
         #if OPENSPOT_TOOLS
