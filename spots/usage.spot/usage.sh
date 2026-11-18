@@ -1,13 +1,4 @@
 #!/bin/sh
-# title=Usage
-# keywords=Running spots, statistics
-# icon=gauge.with.dots.needle.33percent
-# detail=Use and cost of each spot
-# on=sheet.open
-# view=chart.swift
-# offers=card
-# pages=spot:*
-# uses=spots,clipboard
 
 here=$(dirname "$0")
 

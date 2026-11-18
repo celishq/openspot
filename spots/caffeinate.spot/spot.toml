@@ -1,0 +1,6 @@
+icon = "cup.and.saucer.fill"
+detail = "Keep the Mac awake"
+on = ["panel.open"]
+mode = "stay"
+offers = ["card"]
+uses = ["power"]

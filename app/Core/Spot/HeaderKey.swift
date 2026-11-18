@@ -9,11 +9,7 @@ public enum HeaderKey: String, CaseIterable, Sendable {
         key.hasPrefix(drawing)
     }
 
-    static func isWord(_ key: String) -> Bool {
-        !key.isEmpty && key.unicodeScalars.allSatisfy { ("a"..."z").contains($0) || ("0"..."9").contains($0) || $0 == "." || $0 == "-" }
-    }
-
     static func unknown(in header: TextBlock) -> String? {
-        header.fields.map(\.key).first { isWord($0) && HeaderKey(rawValue: $0) == nil && !isDrawing($0) }
+        header.fields.map(\.key).first { HeaderKey(rawValue: $0) == nil && !isDrawing($0) }
     }
 }

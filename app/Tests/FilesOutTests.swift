@@ -61,7 +61,7 @@ final class FilesOutTests: XCTestCase {
           drag) shift; printf 'toast=Took %s\\n' "$*" ;;
         esac
         """
-        try "#!/bin/sh\n# on=sheet.open\n\(body)\n".writeScript(to: spots.spotFile("shelf"))
+        try "#!/bin/sh\n\(body)\n".writeScript(to: spots.spotFile("shelf"), toml: "on = ['sheet.open']")
         await model.reload()
         model.press(GlobalKey(spot: "shelf", act: .float, trigger: .shake))
         try await wait("the rows") { model.sheets["shelf"]?.list.shown.count == 3 }

@@ -23,8 +23,8 @@ final class CallInputTests: SpotRunsCase {
     }
 
     func testACallCarriesTheValuesOfTheFieldsOfItsOwnHeaderAndOfNoOtherSpot() async throws {
-        try script(header: "on=sheet.open\n\nfield=folder\n\nfield=api-key", "env | grep '^OPENSPOT_SETTING_' | sort > '\(path("env"))'")
-        try script("other", header: "on=sheet.open\n\nfield=folder", log: "other", "")
+        try script(toml: "on = ['sheet.open']\n[settings.folder]\n[settings.api-key]", "env | grep '^OPENSPOT_SETTING_' | sort > '\(path("env"))'")
+        try script("other", toml: "on = ['sheet.open']\n[settings.folder]", log: "other", "")
         let sheet = try sheet()
         runs.take(settings: [
             SpotSetting(spot: "script", key: "folder", value: "/tmp/repos"),
@@ -40,7 +40,7 @@ final class CallInputTests: SpotRunsCase {
     }
 
     func testAnActionAndAPickOfARowCarryTheKeysOfThatRowOnStdin() async throws {
-        try script(header: "on=sheet.open", """
+        try script(toml: "on = ['sheet.open']", """
         case "$1" in
           read) printf 'row=a\\ntitle=A\\nmeeting=https://meet.example/a\\n\\nrow=b\\ntitle=B\\n' ;;
           *) { echo "$*"; cat; echo; } >> '\(path("input"))' ;;
@@ -70,7 +70,7 @@ final class CallInputTests: SpotRunsCase {
             default: break
             }
         }
-        try script(header: "on=sheet.open\n\nfield=token\ntype=secret", """
+        try script(toml: "on = ['sheet.open']\n[settings.token]\ntype = 'secret'", """
         env > '\(path("env"))'
         echo "$*" > '\(path("arguments"))'
         in=$(cat)
@@ -102,7 +102,7 @@ final class CallInputTests: SpotRunsCase {
 
     func testAFormCallThatFailsHidesTheSecretInItsFailure() async throws {
         runs.onReport = { _, _ in }
-        try script(header: "on=sheet.open\n\nfield=token\ntype=secret", """
+        try script(toml: "on = ['sheet.open']\n[settings.token]\ntype = 'secret'", """
         token=$(sed -n 's/^setting.token=//p')
         case "$1" in
           login) echo "Cannot reach the server with $token" >&2; exit 1 ;;
@@ -120,7 +120,7 @@ final class CallInputTests: SpotRunsCase {
     }
 
     func testAPlainFieldNeverGetsTheSecretThatAnOlderHeaderKeptUnderItsKey() async throws {
-        try script(header: "on=sheet.open\n\nfield=token", "env > '\(path("env"))'\ncat > '\(path("input"))'")
+        try script(toml: "on = ['sheet.open']\n[settings.token]", "env > '\(path("env"))'\ncat > '\(path("input"))'")
         let sheet = try sheet()
         try secrets(["token": marker])
 
@@ -132,7 +132,7 @@ final class CallInputTests: SpotRunsCase {
     }
 
     func testASettingOver64KBIsNotPutInTheEnvironment() async throws {
-        try script(header: "on=sheet.open\n\nfield=notes\n\nfield=city", "env | grep '^OPENSPOT_SETTING_' | cut -c1-30 > '\(path("env"))'")
+        try script(toml: "on = ['sheet.open']\n[settings.notes]\n[settings.city]", "env | grep '^OPENSPOT_SETTING_' | cut -c1-30 > '\(path("env"))'")
         let sheet = try sheet()
         runs.take(settings: [
             SpotSetting(spot: "script", key: "notes", value: String(repeating: "n", count: 65_537)),

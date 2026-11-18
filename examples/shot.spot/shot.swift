@@ -1,11 +1,4 @@
 #!/usr/bin/env swift
-// title=Shot
-// icon=camera.viewfinder
-// detail=Take a picture of the screen and mark it
-// uses=screen,clipboard
-// offers=card
-// mode=stay
-// source=shot
 
 // Openspot builds this file with the Swift files of `shot/`. A press takes a picture with `openspot screen shot`, and
 // its call stays open while the editor shows. Closing the editor copies the picture and ends the call; a second press of

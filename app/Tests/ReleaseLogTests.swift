@@ -16,7 +16,7 @@ final class ReleaseLogTests: XCTestCase {
     private let mine = try! AccountKey(words: "abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon about".split(separator: " ").map(String.init))
     private let theirs = try! AccountKey.make()
 
-    private func spot(_ script: String = "#!/bin/sh\n# title=Cups\n", extra: [SpotPackage.File] = []) throws -> SpotPackage {
+    private func spot(_ script: String = "#!/bin/sh\necho Cups\n", extra: [SpotPackage.File] = []) throws -> SpotPackage {
         try SpotPackage(files: [
             SpotPackage.File(path: "cups.spot/cups.sh", isExecutable: true, contents: Data(script.utf8)),
             SpotPackage.File(path: "cups.spot/readme.md", isExecutable: false, contents: Data("Counts cups.\n".utf8))
@@ -52,7 +52,7 @@ final class ReleaseLogTests: XCTestCase {
     func testAChangeSignedByTheSameKeyIsTheNextVersionOfTheSameAddress() throws {
         let first = try spot().signed(by: mine)
 
-        let second = try editing(first, "cups.spot/cups.sh", to: "#!/bin/sh\n# title=Mugs\n").signed(by: mine)
+        let second = try editing(first, "cups.spot/cups.sh", to: "#!/bin/sh\necho Mugs\n").signed(by: mine)
 
         let releases = try log(of: second).releases
         XCTAssertEqual(releases.map(\.version), [1, 2])
@@ -63,7 +63,7 @@ final class ReleaseLogTests: XCTestCase {
     func testAChangeSignedByAnotherKeyIsANewAddressThatKeepsTheLog() throws {
         let first = try spot().signed(by: mine)
 
-        let copy = try editing(first, "cups.spot/cups.sh", to: "#!/bin/sh\n# title=Mugs\n").signed(by: theirs)
+        let copy = try editing(first, "cups.spot/cups.sh", to: "#!/bin/sh\necho Mugs\n").signed(by: theirs)
 
         let releases = try log(of: copy).releases
         XCTAssertEqual(releases.map(\.publicKey), [mine.publicKey, theirs.publicKey])
@@ -87,7 +87,7 @@ final class ReleaseLogTests: XCTestCase {
 
     func testALogWithABrokenLinkOrABadSignatureIsRefused() throws {
         let first = try spot().signed(by: mine)
-        let second = try editing(first, "cups.spot/cups.sh", to: "#!/bin/sh\n# title=Mugs\n").signed(by: mine)
+        let second = try editing(first, "cups.spot/cups.sh", to: "#!/bin/sh\necho Mugs\n").signed(by: mine)
         let lines = try log(of: second).text.split(separator: "\n").map(String.init)
 
         XCTAssertThrowsError(try ReleaseLog(text: lines[1] + "\n")) { error in
@@ -108,8 +108,8 @@ final class ReleaseLogTests: XCTestCase {
 
     func testTheReviewOfAReleaseSaysItsVersionOrThatAnotherKeySignedIt() throws {
         let first = try log(of: spot().signed(by: mine))
-        let second = try log(of: editing(spot().signed(by: mine), "cups.spot/cups.sh", to: "#!/bin/sh\n# title=Mugs\n").signed(by: mine))
-        let copy = try log(of: editing(spot().signed(by: mine), "cups.spot/cups.sh", to: "#!/bin/sh\n# title=Mugs\n").signed(by: theirs))
+        let second = try log(of: editing(spot().signed(by: mine), "cups.spot/cups.sh", to: "#!/bin/sh\necho Mugs\n").signed(by: mine))
+        let copy = try log(of: editing(spot().signed(by: mine), "cups.spot/cups.sh", to: "#!/bin/sh\necho Mugs\n").signed(by: theirs))
 
         XCTAssertEqual(second.review(over: nil).lines, [])
         XCTAssertEqual(second.review(over: first).lines, ["Update to version 2"])

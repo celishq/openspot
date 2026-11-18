@@ -10,36 +10,37 @@ This guide shows how to write one, a task at a time. The [protocol](PROTOCOL.md)
 Press the Openspot hotkey, and the **panel** opens. It has a search field, and a grid of **cards** under it. Each card is
 a spot. Press a card, and its **sheet** opens: a bigger view of that spot, with its text, its controls and its list.
 
-A spot is a script in a spot folder, such as `cups.spot/cups.sh` in the spots folder. Openspot runs it when something
-happens, the spot prints what to show, and Openspot draws it. When the user presses something, Openspot runs the spot
-again with the id of what was pressed. The [protocol](PROTOCOL.md) gives every rule of that loop.
+A spot is a folder in the spots folder, such as `cups.spot`, with a script and a `spot.toml` that describes it. Openspot
+runs the script when something happens, the spot prints what to show, and Openspot draws it. When the user presses
+something, Openspot runs the spot again with the id of what was pressed. The [protocol](PROTOCOL.md) gives every rule of that loop.
 
 ## Your first spot
 
-The smallest spot is a script. Press its card, and it runs.
+The smallest spot is a folder, such as `morning.spot`, with two files. `spot.toml` is the spot's **manifest**: it gives
+the spot a name and an icon. `morning.sh` is the script, named after the folder. Press the spot's card, and the script
+runs.
 
-```sh
-#!/bin/sh
-say hello
+```toml
+title = "Morning"
+icon = "sun.max"
 ```
 
-Comment lines at the top give it a name and an icon. These lines are the **header**.
-
 ```sh
 #!/bin/sh
-# title=Morning
-# icon=sun.max
 open -a Calendar
 ```
 
-To show something, add an `on=` line. It tells Openspot when to ask the spot what to show. Here, Openspot asks when the
-sheet opens, and the spot prints a title and a detail.
+To show something, add `on` to the manifest. It lists when Openspot asks the spot what to show. Here, Openspot asks when
+the sheet opens, and the spot prints a title and a detail.
+
+```toml
+title = "Cups today"
+icon = "cup.and.saucer.fill"
+on = ["sheet.open"]
+```
 
 ```sh
 #!/bin/sh
-# title=Cups today
-# icon=cup.and.saucer.fill
-# on=sheet.open
 printf 'text=cups\ntitle=3\ndetail=Last at 14:20\n'
 ```
 
@@ -52,11 +53,13 @@ with **Last at 14:20** at the end of the line.
 
 Try each example of this page in the playground before you put it in the spots folder.
 
-- **Playground.** Open the Playground spot, or run `openspot playground open [file]`. Type a spot, or pick one from Examples.
-  It runs in a panel of its own: pick its sheet or its card, and type in the panel's search to try its answers. Under
+- **Playground.** Open the Playground spot, or run `openspot playground open [file]`. Type a script, or pick a spot from
+  Examples, which brings its manifest too. A file runs with the `spot.toml` of its folder. The spot runs in a panel of
+  its own: pick its sheet or its card, and type in the panel's search to try its answers. Under
   it, you see each call with its arguments, its stdin, what it printed, its stderr and how it ended. When you open a
   file, edits go straight to the file.
-- **New spot.** `openspot spot new <name> --from <kind>` writes a working spot that you can change. The kinds are
+- **New spot.** `openspot spot new <name> --from <kind>` writes a working spot folder, its `spot.toml` and its script,
+  that you can change. The kinds are
   `button`, `list`, `number` and `form`.
 - **One call.** `openspot spot run <id> [call] [value]...` runs one call the way Openspot does, and prints everything the
   spot prints. With no call, it asks the spot what to show. While Openspot is open, the script gets the variables of
@@ -73,11 +76,14 @@ Try each example of this page in the playground before you put it in the spots f
 A list lets the user search and pick. Print one `row` block for each item. When the user picks a row, Openspot runs your
 spot with `open` and the id of the row.
 
+```toml
+title = "Apps"
+icon = "square.grid.2x2"
+on = ["sheet.open"]
+```
+
 ```sh
 #!/bin/sh
-# title=Apps
-# icon=square.grid.2x2
-# on=sheet.open
 . "$OPENSPOT_SH"
 case "$1" in
   read) printf 'Mail\tMail\tYour inbox\tenvelope\nNotes\tNotes\tYour notes\tnote.text\n' | openspot_rows ;;
@@ -97,15 +103,18 @@ Learn more in [Rows](PROTOCOL.md#rows) and [The calls](PROTOCOL.md#the-calls).
 
 ## Open a row as a page
 
-A page shows the detail of a row as a sheet of its own, and keeps the list it came from. Name the pages in the header
-with `pages=`, give the row `push=true`, and print the page when `OPENSPOT_PAGE` holds its id.
+A page shows the detail of a row as a sheet of its own, and keeps the list it came from. Name the pages in the manifest
+with `pages`, give the row `push=true`, and print the page when `OPENSPOT_PAGE` holds its id.
+
+```toml
+title = "Fruit"
+icon = "leaf"
+on = ["sheet.open"]
+pages = ["*"]
+```
 
 ```sh
 #!/bin/sh
-# title=Fruit
-# icon=leaf
-# on=sheet.open
-# pages=*
 . "$OPENSPOT_SH"
 case "$OPENSPOT_PAGE" in
   '') printf 'row=apple\ntitle=Apple\npush=true\n\nrow=pear\ntitle=Pear\npush=true\n' ;;
@@ -124,17 +133,18 @@ Learn more in [Pages](PROTOCOL.md#pages).
 
 ## Show a value on a card
 
-A card can show one live value, such as free disk space. `on=panel.open` asks your spot each time the panel opens, and
-`on=clock.300` asks it again every 5 minutes while the card shows.
+A card can show one live value, such as free disk space. `panel.open` in `on` asks your spot each time the panel opens,
+and `clock.300` asks it again every 5 minutes while the card shows.
+
+```toml
+title = "Disk"
+icon = "internaldrive"
+on = ["panel.open", "clock.300"]
+offers = ["card", "menubar"]
+```
 
 ```sh
 #!/bin/sh
-# title=Disk
-# icon=internaldrive
-# on=panel.open
-# on=clock.300
-# offers=card
-# offers=menubar
 free=$(df -h / | awk 'NR==2 {print $4}')
 printf 'detail=%s free\n\ntext=free\ntitle=%s free\n' "$free" "$free"
 ```
@@ -144,8 +154,8 @@ printf 'detail=%s free\n\ntext=free\ntitle=%s free\n' "$free" "$free"
 ![The card of Disk, with the free space under its title](docs/images/show-a-value.png)
 
 The first block, `detail=…`, is the **head**: it isn't drawn, and its `detail` becomes the line under the card's title.
-The `text` block is the spot's **main block**. `offers=card` and `offers=menubar` name the places where the spot can show
-it: a card on the grid, and the menu bar, next to the clock. The user puts the spot in the menu bar from its Settings,
+The `text` block is the spot's **main block**. `card` and `menubar` in `offers` name the places where the spot can
+show it: a card on the grid, and the menu bar, next to the clock. The user puts the spot in the menu bar from its Settings,
 which `⌘⏎` on its card opens.
 
 A spot with a clock stays off the grid until the user adds it, so that a new spot doesn't fill the panel.
@@ -156,39 +166,45 @@ Learn more in [The main block and the card](PROTOCOL.md#the-main-block-and-the-c
 
 A button runs a command. Give each button an id. When the user presses it, Openspot runs your spot with that id.
 
-Buttons in the header turn the spot into a set of commands, with no card. The user finds each command in the main
+Commands in the manifest turn the spot into a set of commands, with no card. Each one is a `[commands.<id>]` table. The user finds each command in the main
 search, and gives it a hotkey in its Settings.
+
+```toml
+title = "Windows"
+icon = "macwindow"
+uses = ["screen"]
+
+[commands.full]
+title = "Full screen"
+icon = "rectangle.inset.filled"
+
+[commands.left]
+title = "Left side"
+icon = "rectangle.lefthalf.inset.filled"
+```
 
 ```sh
 #!/bin/sh
-# title=Windows
-# icon=macwindow
-# uses=screen
-#
-# button=full
-# title=Full screen
-# icon=rectangle.inset.filled
-#
-# button=left
-# title=Left side
-# icon=rectangle.lefthalf.inset.filled
 case "$1" in
   full) openspot window move "0 0 1 1" ;;
   left) openspot window move "0 0 1/2 1" ;;
 esac
 ```
 
-Add `confirm=` to a header button whose command can't be undone. The first press shows its words, and the second runs
+Add `confirm` to a command that can't be undone. The first press shows its words, and the second runs
 the command. Its hotkey asks the same way.
+
+```toml
+title = "Notes"
+icon = "note.text"
+
+[commands.clear]
+title = "Clear my notes"
+confirm = "Press again to clear your notes"
+```
 
 ```sh
 #!/bin/sh
-# title=Notes
-# icon=note.text
-#
-# button=clear
-# title=Clear my notes
-# confirm=Press again to clear your notes
 case "$1" in
   clear) rm -f "$OPENSPOT_DATA/notes" && echo 'toast=Cleared' ;;
 esac
@@ -197,10 +213,13 @@ esac
 A button that the spot prints acts on its rows. If no layout places it, it shows in the ⌘K menu of the sheet, and its
 shortcut works while a row is selected.
 
+```toml
+title = "Notes list"
+on = ["sheet.open"]
+```
+
 ```sh
 #!/bin/sh
-# title=Notes list
-# on=sheet.open
 . "$OPENSPOT_SH"
 case "$1" in
   read)
@@ -218,10 +237,13 @@ Select **Today** and press ⌘⌫ twice, and Openspot runs `notes-list.sh trash 
 A row can hold keys of its own, such as `path=`. An action on that row gets each of its keys on stdin, so the spot
 doesn't look the row up again.
 
+```toml
+title = "Downloads"
+on = ["sheet.open"]
+```
+
 ```sh
 #!/bin/sh
-# title=Downloads
-# on=sheet.open
 . "$OPENSPOT_SH"
 case "$1" in
   read)
@@ -242,10 +264,13 @@ Learn more in [Buttons and actions](PROTOCOL.md#buttons-and-actions).
 A button with `form=true` asks the user for values before it runs. Openspot runs it once with empty stdin to get the
 form, then again with the values the user typed.
 
+```toml
+title = "Quick note"
+on = ["sheet.open"]
+```
+
 ```sh
 #!/bin/sh
-# title=Quick note
-# on=sheet.open
 . "$OPENSPOT_SH"
 case "$1" in
   read) printf 'text=hint\ntitle=Press ⌘K to add a note\n\nbutton=add\ntitle=Add note\nform=true\nscope=spot\n' ;;
@@ -271,14 +296,17 @@ Learn more in [Buttons and actions](PROTOCOL.md#buttons-and-actions) and [The he
 A slash command runs a spot with text that the user types after its name, in one Return. Read the text with
 `value search`, and print a form when you need more.
 
+```toml
+title = "Notes"
+icon = "note.text"
+
+[commands.add]
+title = "Add note"
+placeholder = "What to note"
+```
+
 ```sh
 #!/bin/sh
-# title=Notes
-# icon=note.text
-#
-# button=add
-# title=Add note
-# placeholder=What to note
 . "$OPENSPOT_SH"
 case "$1" in
   add)
@@ -302,14 +330,17 @@ Learn more in [Slash commands](PROTOCOL.md#slash-commands).
 
 ## Answer the main search
 
-A spot can answer what the user types in the main search, like a calculator. Add `on=search.text` with a pattern. When
+A spot can answer what the user types in the main search, like a calculator. Add `search.text` with a pattern to `on`. When
 the text matches, Openspot asks your spot right away and shows its answer first.
 
+```toml
+title = "Calculator"
+icon = "equal.square"
+on = ["search.text ^[0-9(]"]
+uses = ["clipboard"]
+```
+
 ```js
-// title=Calculator
-// icon=equal.square
-// on=search.text ^[0-9(]
-// uses=clipboard
 function main(args, env) {
   if (args[0] === "read")
     return openspot.call(["calc", "solve", env.OPENSPOT_VALUE]).stdout;
@@ -330,11 +361,13 @@ Learn more in [Places](PROTOCOL.md#places) and [Modes](PROTOCOL.md#modes).
 Events let a spot update when something happens on the Mac, such as another app coming to the front. A filter after the
 event narrows it down.
 
+```toml
+title = "Notes"
+on = ["sheet.open", "app.front com\\.apple\\.Notes"]
+```
+
 ```sh
 #!/bin/sh
-# title=Notes
-# on=sheet.open
-# on=app.front com\.apple\.Notes
 printf 'text=n\ntitle=%s\n' "$OPENSPOT_REASON"
 ```
 
@@ -347,12 +380,14 @@ Bring Notes to the front while the sheet shows, and Openspot asks the spot again
 Some events bring a value. `system.load` comes every 5 seconds while the sheet shows, with the load of the Mac in
 `OPENSPOT_VALUE`, so the spot starts no tool to measure it.
 
+```toml
+title = "Load"
+icon = "gauge.with.needle"
+on = ["sheet.open", "system.load"]
+```
+
 ```sh
 #!/bin/sh
-# title=Load
-# icon=gauge.with.needle
-# on=sheet.open
-# on=system.load
 case "${OPENSPOT_VALUE-}" in
   cpu=*)
     cpu=${OPENSPOT_VALUE#cpu=}
@@ -373,15 +408,17 @@ Learn more in [Events](PROTOCOL.md#events).
 
 ## Combine spots on one card
 
-One card can show several spots side by side, such as the battery, the CPU and the memory. You write only a header, and
-Openspot fills the card with the main blocks of the spots that it names.
+One card can show several spots side by side, such as the battery, the CPU and the memory. You write only a manifest,
+and Openspot fills the card with the main blocks of the spots that it names.
+
+```toml
+title = "System"
+"grid.large" = ["battery battery cpu    cpu", "battery battery memory memory"]
+to = "system-info"
+```
 
 ```sh
 #!/bin/sh
-# title=System
-# grid.large=battery battery cpu    cpu
-# grid.large=battery battery memory memory
-# to=system-info
 ```
 
 <!-- card: large -->
@@ -394,15 +431,18 @@ Learn more in [Cards of other spots](PROTOCOL.md#cards-of-other-spots).
 
 ## Let the user choose a setting
 
-A setting keeps a choice of the user, such as a folder. Name it in the header with a `field` block, and the spot's
-Settings list it. The user opens them with `⌘⏎` on the spot's card, or with **Settings** in its ⌘K menu.
+A setting keeps a choice of the user, such as a folder. Name it in the manifest with a `[settings.<key>]` table,
+and the spot's Settings list it. The user opens them with `⌘⏎` on the spot's card, or with **Settings** in its ⌘K menu.
+
+```toml
+title = "Repos"
+on = ["sheet.open"]
+
+[settings.folder]
+```
 
 ```sh
 #!/bin/sh
-# title=Repos
-# on=sheet.open
-#
-# field=folder
 case "$1" in
   read) printf 'text=folder\ntitle=%s\n' "${OPENSPOT_SETTING_FOLDER:-Choose a folder in Settings}" ;;
   folder)
@@ -418,17 +458,20 @@ esac
 In the Settings of Repos, choose **Folder**, and Openspot runs `repos.sh folder`. The spot asks for a folder and keeps it.
 Each later call gets it in `OPENSPOT_SETTING_FOLDER`, so the spot reads its setting with no `openspot` call.
 
-A field with `type=secret` keeps a value that no other program should see, such as the token of a service. Openspot
+A setting with `type = "secret"` keeps a value that no other program should see, such as the token of a service. Openspot
 asks for it in a form of its own, keeps it in the Keychain, and gives it to each call only on stdin, as
 `setting.token`. A secret has 8 characters or more.
 
+```toml
+title = "Weather"
+on = ["sheet.open"]
+
+[settings.token]
+type = "secret"
+```
+
 ```sh
 #!/bin/sh
-# title=Weather
-# on=sheet.open
-#
-# field=token
-# type=secret
 . "$OPENSPOT_SH"
 if [ -n "$(value setting.token)" ]; then
   printf 'text=state\ntitle=Signed in\n'
@@ -442,14 +485,17 @@ Learn more in [Settings](PROTOCOL.md#settings).
 ## Write a spot in Swift
 
 A spot can be a Swift program, for work that a shell script does badly. Openspot builds it once, and runs the built
-program at each call. Each `source=` line names one more Swift file, or a folder of them, to build with it.
+program at each call. Each item of `source` names one more Swift file, or a folder of them, to build with it.
+
+```toml
+title = "Cups today"
+icon = "cup.and.saucer.fill"
+on = ["sheet.open"]
+source = ["cups.swift"]
+```
 
 ```swift
 #!/usr/bin/env swift
-// title=Cups today
-// icon=cup.and.saucer.fill
-// on=sheet.open
-// source=cups.swift
 print("text=cups\ntitle=\(cups) cups")
 ```
 
@@ -459,7 +505,7 @@ let cups = 3
 
 ![The sheet of Cups today: one line, 3 cups](docs/images/swift-spot.png)
 
-The first file is the spot: its header is in `//` lines, and its code runs first. `cups.swift` sits next to it. The
+The first file is the spot, and its code runs first. `cups.swift` sits next to it. The
 first call waits for the build, which needs the Command Line Tools. A spot that you share carries its built program, so
 the Mac that gets it needs no tools.
 
@@ -467,15 +513,18 @@ Learn more in [A Swift spot](PROTOCOL.md#a-swift-spot).
 
 ## Draw your own view
 
-A view draws what blocks can't. Name a SwiftUI file with `view=` in the header, and print a `view` block where it
-draws. The view reads the keys of its block, and the rows of the frame.
+A view draws what blocks can't. Name a SwiftUI file with `view` in the manifest, and print a `view` block where
+it draws. The view reads the keys of its block, and the rows of the frame.
+
+```toml
+title = "Cups this week"
+icon = "chart.bar"
+on = ["sheet.open"]
+view = "week.swift"
+```
 
 ```sh
 #!/bin/sh
-# title=Cups this week
-# icon=chart.bar
-# on=sheet.open
-# view=week.swift
 printf 'view=week\n\n'
 printf 'row=mon\ntitle=Monday\ncups=3\n\n'
 printf 'row=tue\ntitle=Tuesday\ncups=1\n\n'
@@ -518,12 +567,15 @@ Learn more in [Views](PROTOCOL.md#views).
 A view that takes its colours, sizes and fonts from `spot.theme` looks like the rest of Openspot, and changes with it when
 you [change the look](#change-the-look-of-openspot).
 
+```toml
+title = "Steps"
+icon = "figure.walk"
+on = ["sheet.open"]
+view = "steps.swift"
+```
+
 ```sh
 #!/bin/sh
-# title=Steps
-# icon=figure.walk
-# on=sheet.open
-# view=steps.swift
 printf 'view=steps\nvalue=6200\ngoal=10000\n'
 ```
 

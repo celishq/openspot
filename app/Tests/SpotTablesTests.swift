@@ -14,59 +14,59 @@ final class SpotTablesTests: XCTestCase {
         try? FileManager.default.removeItem(at: folder)
     }
 
-    private func fault(ofHeader header: String) -> String? {
+    private func fault(of toml: String) -> String? {
         do {
-            _ = try SpotFile(script: URL(fileURLWithPath: "/none/probe.sh"), header: SpotHeader(text: "#!/bin/sh\n" + header).block, id: "probe")
+            _ = try SpotFile(script: URL(fileURLWithPath: "/none/probe.sh"), header: SpotToml(text: toml, folder: "/none").block(of: "probe.sh"), id: "probe")
             return nil
         } catch {
             return (error as? SpotError)?.reason
         }
     }
 
-    private func findings(_ script: String) async throws -> [String] {
-        try script.writeScript(to: folder.spotFile("probe"))
+    private func findings(_ script: String, toml: String = "") async throws -> [String] {
+        try script.writeScript(to: folder.spotFile("probe"), toml: toml)
         return await SpotCheck(folder: SpotsFolder(url: folder)).findings().map(\.fault)
     }
 
-    func testAHeaderKeyThatOpenspotDoesNotKnowIsAFault() {
-        XCTAssertEqual(fault(ofHeader: "# titel=Coffee\n# on=sheet.open\n"), "Probe has an unknown key in its header: titel")
-        XCTAssertNil(fault(ofHeader: "# title=Coffee\n# on=sheet.open\n# pages=day:*\n"))
+    func testAKeyThatOpenspotDoesNotKnowIsAFault() {
+        XCTAssertEqual(fault(of: "titel = 'Coffee'\non = ['sheet.open']"), "Probe has an unknown key in its spot.toml: titel")
+        XCTAssertEqual(fault(of: "title = 'T'\nTitle = 'U'"), "T has an unknown key in its spot.toml: Title")
+        XCTAssertEqual(fault(of: "title = 'T'\n[look]\ncolour = 'red'"), "T has an unknown key in its spot.toml: look")
+        XCTAssertNil(fault(of: "title = 'Coffee'\non = ['sheet.open']\npages = ['day:*']\n# Set CITY=Paris to change it"))
     }
 
-    func testACommentInAHeaderThatIsNoKeyOfTheContractDoesNotStopTheSpot() {
-        XCTAssertNil(fault(ofHeader: "# title=T\n# shellcheck disable=SC2034\n# vim: set ts=2:\n# Set CITY=Paris to change it\n# on=sheet.open\n"))
-        XCTAssertNil(fault(ofHeader: "# title=T\n#\n# button=go\n# title=Go\n# shellcheck disable=SC2034\n"))
-        XCTAssertEqual(fault(ofHeader: "# title=T\n# read-on=sheet.open\n"), "T has an unknown key in its header: read-on")
+    func testAKeyThatACommandOrASettingDoesNotTakeIsAFault() {
+        XCTAssertEqual(fault(of: "title = 'T'\n[commands.go]\ntitle = 'Go'\ncolour = 'red'"), "T has an unknown key on the command go: colour")
+        XCTAssertEqual(fault(of: "title = 'T'\n[settings.look]\ntitel = 'Look'"), "T has an unknown key on the setting look: titel")
     }
 
-    func testAKeyThatAHeaderBlockDoesNotTakeIsAFault() {
-        XCTAssertEqual(fault(ofHeader: "# title=T\n#\n# button=go\n# title=Go\n# colour=red\n"), "T has an unknown key on the button go: colour")
-        XCTAssertEqual(fault(ofHeader: "# title=T\n#\n# field=look\n# titel=Look\n"), "T has an unknown key on the field look: titel")
+    func testASpotTomlThatCannotBeReadIsAFaultThatNamesItsLine() {
+        XCTAssertEqual(fault(of: "title = 'T'\non sheet.open"), "Probe cannot load: spot.toml, line 2: expected a key and a value")
     }
 
-    func testAHeaderFieldThatAsksForAHotkeyIsAFault() {
+    func testASettingThatAsksForAHotkeyIsAFault() {
         XCTAssertEqual(
-            fault(ofHeader: "# title=T\n# on=sheet.open\n#\n# field=key\n# type=hotkey\n# title=Shortcut\n"),
+            fault(of: "title = 'T'\non = ['sheet.open']\n[settings.key]\ntype = 'hotkey'\ntitle = 'Shortcut'"),
             "T has an unknown type on the field `key`: `hotkey`. Use `type=secret`, or no type."
         )
-        XCTAssertNil(fault(ofHeader: "# title=T\n# on=sheet.open\n#\n# field=token\n# type=secret\n"))
+        XCTAssertNil(fault(of: "title = 'T'\non = ['sheet.open']\n[settings.token]\ntype = 'secret'"))
     }
 
-    func testTwoFieldsThatGiveOneVariableAreAFaultThatNamesBoth() {
+    func testTwoSettingsThatGiveOneVariableAreAFaultThatNamesBoth() {
         XCTAssertEqual(
-            fault(ofHeader: "# title=T\n# on=sheet.open\n#\n# field=api-key\n#\n# field=api_key\n"),
+            fault(of: "title = 'T'\non = ['sheet.open']\n[settings.api-key]\n[settings.api_key]"),
             "T has field=api-key and field=api_key, which both give `OPENSPOT_SETTING_API_KEY`. Rename one of them."
         )
     }
 
     func testARowHoldsKeysOfItsOwnWhichACheckDoesNotReport() async throws {
-        let faults = try await findings("#!/bin/sh\n# on=sheet.open\nprintf 'row=a\\ntitle=A\\nruns=38\\n\\nrow=b\\ntitle=B\\npush.replace=true\\n'\n")
+        let faults = try await findings("#!/bin/sh\nprintf 'row=a\\ntitle=A\\nruns=38\\n\\nrow=b\\ntitle=B\\npush.replace=true\\n'\n", toml: "on = ['sheet.open']")
 
         XCTAssertEqual(faults, [])
     }
 
     func testAHeadKeyThatOpenspotDoesNotKnowIsReportedByACheck() async throws {
-        let faults = try await findings("#!/bin/sh\n# on=sheet.open\nprintf 'title=T\\ntoost=Saved\\n\\nrow=a\\ntitle=A\\n'\n")
+        let faults = try await findings("#!/bin/sh\nprintf 'title=T\\ntoost=Saved\\n\\nrow=a\\ntitle=A\\n'\n", toml: "on = ['sheet.open']")
 
         XCTAssertEqual(faults, ["the head has an unknown key: toost"])
     }
@@ -141,7 +141,7 @@ final class SpotTablesTests: XCTestCase {
     }
 
     func testTheAccountUseOnASpotThatDoesNotShipInOpenspotIsReportedByACheck() async throws {
-        let faults = try await findings("#!/bin/sh\n# title=Mine\n# uses=account, network\n")
+        let faults = try await findings("#!/bin/sh\n", toml: "title = 'Mine'\nuses = ['account', 'network']")
 
         XCTAssertEqual(faults, ["Mine has uses=account, which only a spot of Openspot takes. Remove it"])
     }

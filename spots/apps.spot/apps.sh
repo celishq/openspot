@@ -1,9 +1,4 @@
 #!/bin/sh
-# icon=/System/Applications/Apps.app
-# detail=Open app
-# on=panel.open
-# offers=card
-# offers=search
 data=$OPENSPOT_DATA
 pending="$data/uninstall"
 kept="$data/uninstall-kept"

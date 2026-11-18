@@ -1,8 +1,4 @@
 #!/bin/sh
-# title=System details
-# icon=gauge.with.dots.needle.50percent
-# on=sheet.open
-# offers=card
 here=$(dirname "$0")
 . "$OPENSPOT_SH"
 

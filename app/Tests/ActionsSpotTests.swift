@@ -15,7 +15,7 @@ final class ActionsSpotTests: BuiltInCase {
 
     func testEachCommandAsksTheAPIAndTurnOffTurnsTheSpotOff() async throws {
         let actions = try spot("actions")
-        try "#!/bin/sh\n# title=Caffeinate\n".writeScript(to: core.appendingPathComponent("caffeinate.spot/caffeinate.sh"))
+        try "#!/bin/sh\n".writeScript(to: core.appendingPathComponent("caffeinate.spot/caffeinate.sh"), toml: "title = 'Caffeinate'")
 
         for act in ["settings", "edit", "share", "delete"] {
             try await actions.perform(SpotAction(arguments: [act, "weather"]), timeout: 60)
@@ -50,7 +50,7 @@ final class ActionsSpotTests: BuiltInCase {
 
     func testAWhenFunctionThatReturnsAnyTextSaysYes() async throws {
         let js = try temporaryFolder().appendingPathComponent("hooks.js")
-        try "// title=Hooks\n//\n// button=go\n// title=Go\n// when=named\n// offers=actions\nfunction named(id) { return id === \"a\" ? \"yes\" : \"\"; }\n".write(to: js, atomically: true, encoding: .utf8)
+        try "function named(id) { return id === \"a\" ? \"yes\" : \"\"; }\n".writeInline(to: js, toml: "title = 'Hooks'\n[commands.go]\ntitle = 'Go'\nwhen = 'named'\noffers = ['actions']")
         let hooks = try XCTUnwrap(try SpotFile(file: js, id: "hooks")?.spots.first)
 
         let a = await hooks.hook("named", card: "a", origin: "mine")

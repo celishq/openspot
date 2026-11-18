@@ -14,9 +14,9 @@ final class PanelKeysTests: PanelCase {
     private let right = ActionKey(name: "right")
 
     private func showGrid() async throws {
-        try script("alpha", header: "title=Alpha", "true")
-        try script("beta", header: "title=Beta", "true")
-        try script("weather", header: "title=Weather\non=sheet.open\npress=open", ":")
+        try script("alpha", toml: "title = 'Alpha'", "true")
+        try script("beta", toml: "title = 'Beta'", "true")
+        try script("weather", toml: "title = 'Weather'\non = ['sheet.open']\npress = 'open'", ":")
         await model.reload()
         model.isShown = true
         model.panelWillShow()
@@ -27,7 +27,7 @@ final class PanelKeysTests: PanelCase {
     }
 
     private func openInfo() async throws {
-        try script("info", header: "on=sheet.open\npages=a", """
+        try script("info", toml: "on = ['sheet.open']\npages = ['a']", """
         if [ -n "$OPENSPOT_PAGE" ]; then printf 'text=detail\\ntitle=Detail\\n'; else printf 'text=first\\ntitle=First\\n'; fi
         """)
         await model.reload()
@@ -85,7 +85,7 @@ final class PanelKeysTests: PanelCase {
     }
 
     func testASearchThatFindsNoSpotTeachesTheSlash() async throws {
-        try script("list", header: "title=List\non=sheet.open", "printf 'row=a\\ntitle=A\\n'")
+        try script("list", toml: "title = 'List'\non = ['sheet.open']", "printf 'row=a\\ntitle=A\\n'")
         await model.reload()
 
         model.query = "zzz"
@@ -159,7 +159,7 @@ final class PanelKeysTests: PanelCase {
     }
 
     func testInASheetOfRowsTheArrowsMoveByLinesAndReturnPicksTheRow() async throws {
-        try script("fruit", header: "on=sheet.open", "printf 'row=a\\ntitle=Apple\\n\\nrow=b\\ntitle=Banana\\n\\nrow=c\\ntitle=Cherry\\n'")
+        try script("fruit", toml: "on = ['sheet.open']", "printf 'row=a\\ntitle=Apple\\n\\nrow=b\\ntitle=Banana\\n\\nrow=c\\ntitle=Cherry\\n'")
         await model.reload()
         model.isShown = true
         model.panelWillShow()
@@ -267,7 +267,7 @@ final class PanelKeysTests: PanelCase {
     }
 
     func testEscWhileAKeyIsRecordedStopsTheRecordingAndKeepsTheSheet() async throws {
-        try script("draw", header: "title=Draw\non=sheet.open", "printf 'row=float\\ntitle=Float\\ntype=hotkey\\nshortcut=Record\\n'")
+        try script("draw", toml: "title = 'Draw'\non = ['sheet.open']", "printf 'row=float\\ntitle=Float\\ntype=hotkey\\nshortcut=Record\\n'")
         await model.reload()
         model.isShown = true
         model.panelWillShow()
@@ -302,7 +302,7 @@ final class PanelKeysTests: PanelCase {
     private func writePick(key: String? = nil) throws {
         try FileManager.default.createDirectory(at: pickData, withIntermediateDirectories: true)
         if let key { try key.write(to: pickData.appendingPathComponent("key"), atomically: true, encoding: .utf8) }
-        try script("pick", header: "title=Pick\non=sheet.open", """
+        try script("pick", toml: "title = 'Pick'\non = ['sheet.open']", """
         data='\(pickData.path)'
         [ "$1" = read ] || echo "$*" >> "$data/calls"
         case "$1" in
@@ -325,7 +325,7 @@ final class PanelKeysTests: PanelCase {
 
     private func openChoice() async throws {
         try FileManager.default.createDirectory(at: pickData, withIntermediateDirectories: true)
-        try script("choice", header: "title=Choice\non=sheet.open", """
+        try script("choice", toml: "title = 'Choice'\non = ['sheet.open']", """
         data='\(pickData.path)'
         [ "$1" = read ] || echo "$*" >> "$data/calls"
         [ "$1" = key ] && printf %s "$2" > "$data/key"
@@ -736,7 +736,7 @@ final class PanelKeysTests: PanelCase {
     }
 
     private func openKeyRow() async throws {
-        try script("draw", header: "title=Draw\non=sheet.open", "printf 'row=float\\ntitle=Float\\ntype=hotkey\\nshortcut=Record\\n'")
+        try script("draw", toml: "title = 'Draw'\non = ['sheet.open']", "printf 'row=float\\ntitle=Float\\ntype=hotkey\\nshortcut=Record\\n'")
         await model.reload()
         model.isShown = true
         model.panelWillShow()
@@ -805,7 +805,7 @@ final class PanelKeysTests: PanelCase {
     }
 
     func testAKeyOfAnotherSpotSaysItOpensThatSpot() async throws {
-        try script("shelf", header: "title=Shelf", "true")
+        try script("shelf", toml: "title = 'Shelf'", "true")
         _ = try model.files.config.change { $0.assign(.key(try XCTUnwrap(Shortcut(text: "ctrl+option+s"))), to: "shelf", act: .open) }
         try await openKeyRow()
 
@@ -817,7 +817,7 @@ final class PanelKeysTests: PanelCase {
     }
 
     func testCommandYOpensTheHistoryOfASpotWhoseReturnRunsItsCommand() async throws {
-        try script("dictate", header: "title=Dictate\non=sheet.open\n\nbutton=dictate\ntitle=Dictate", "printf 'row=a\\ntitle=Said\\n'")
+        try script("dictate", toml: "title = 'Dictate'\non = ['sheet.open']\n[commands.dictate]\ntitle = 'Dictate'", "printf 'row=a\\ntitle=Said\\n'")
         await model.reload()
         model.isShown = true
         model.panelWillShow()

@@ -22,9 +22,9 @@ final class SpotLoadTests: PanelCase {
         for name in ["a", "b"] {
             let file = core.appendingPathComponent("\(name).spot/\(name).sh")
             try FileManager.default.createDirectory(at: file.deletingLastPathComponent(), withIntermediateDirectories: true)
-            try "#!/bin/sh\n# title=\(name)\n:\n".writeScript(to: file)
+            try "#!/bin/sh\n:\n".writeScript(to: file, toml: "title = '\(name)'")
         }
-        try script("own", header: "title=Own", ":")
+        try script("own", toml: "title = 'Own'", ":")
     }
 
     func testAReloadStatsNoFileOnTheMainThread() async throws {
@@ -57,7 +57,7 @@ final class SpotLoadTests: PanelCase {
         try model.files.config.change { $0.set(setting: ReservedSetting.icon, of: "own", to: "cup.and.saucer") }
         await model.reload()
         let header = try XCTUnwrap(model.entries.first { $0.id == "own" }).spot.header
-        try script("other", header: "title=Other", ":")
+        try script("other", toml: "title = 'Other'", ":")
 
         await model.reload()
 
@@ -69,7 +69,7 @@ final class SpotLoadTests: PanelCase {
         await model.reload()
         let package = folder.appendingPathComponent("drop/cups.spot")
         try FileManager.default.createDirectory(at: package, withIntermediateDirectories: true)
-        try "#!/bin/sh\n# title=Cups\n:\n".writeScript(to: package.appendingPathComponent("cups.sh"))
+        try "#!/bin/sh\n:\n".writeScript(to: package.appendingPathComponent("cups.sh"), toml: "title = 'Cups'")
         model.review([package])
         try await wait("the review") { self.model.isReviewing }
         try SpotPackage(contentsOf: package).add(to: spots)

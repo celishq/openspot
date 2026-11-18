@@ -41,7 +41,7 @@ public struct AgentPrompt: Equatable, Sendable {
     }
 
     private var writing: String {
-        "Write it as a script in a new spot folder in \(folder.path), such as weather.spot/weather.sh. Its ID is the name of the folder with no extension."
+        "Write it as a script in a new spot folder in \(folder.path), such as weather.spot/weather.sh, and describe it in weather.spot/spot.toml. Its ID is the name of the folder with no extension."
     }
 
     public func fixing(_ file: URL, faults: [String]) -> String {

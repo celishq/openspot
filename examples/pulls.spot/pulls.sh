@@ -1,11 +1,4 @@
 #!/bin/sh
-# title=Pull requests
-# icon=arrow.triangle.pull
-# detail=On GitHub
-# on=clock.120
-# uses=network,clipboard
-# offers=card
-# offers=menubar
 export LC_ALL=en_US.UTF-8
 export PATH="$PATH:/opt/homebrew/bin:/usr/local/bin"
 

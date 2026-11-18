@@ -1,11 +1,4 @@
 #!/bin/sh
-# title=Settings
-# icon=gearshape
-# detail=Choose your key
-# on=sheet.open
-# uses=app
-# offers=card
-# offers=search
 
 # The settings of the app alone. Each spot keeps its own in its Settings sheet, which ⌘⏎ on its card opens.
 

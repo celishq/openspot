@@ -1,10 +1,4 @@
 #!/bin/sh
-# icon=cup.and.saucer.fill
-# detail=Keep the Mac awake
-# on=panel.open
-# mode=stay
-# offers=card
-# uses=power
 
 # One process answers every call. The call that turns Caffeinate on stays open while `caffeinate` runs, so Openspot
 # keeps this process until it ends, and a quit of Openspot ends `caffeinate` too. With the lid on, a hold also runs

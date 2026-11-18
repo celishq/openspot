@@ -4,13 +4,15 @@ import XCTest
 final class PlaygroundTests: XCTestCase {
     func testThePlaygroundRunsAScriptOfEachStayingModeAsOneThatStaysWhileInUse() throws {
         let folder = try temporaryFolder()
-        let modes = try ["stay", "always", "once", "inline"].map { mode in
-            let file = folder.appendingPathComponent("\(mode).sh")
-            try "#!/bin/sh\n# mode=\(mode)\n".write(to: file, atomically: true, encoding: .utf8)
+        let modes = try ["stay", "once", "inline"].map { mode in
+            let file = folder.appendingPathComponent("\(mode).spot/\(mode).sh")
+            try FileManager.default.createDirectory(at: file.deletingLastPathComponent(), withIntermediateDirectories: true)
+            try "mode = \"\(mode)\"\n".write(to: file.deletingLastPathComponent().appendingPathComponent("spot.toml"), atomically: true, encoding: .utf8)
+            try "#!/bin/sh\n".write(to: file, atomically: true, encoding: .utf8)
             return Playground.command(file: file).mode
         }
 
-        XCTAssertEqual(modes, [.stay, .stay, .once, .once])
+        XCTAssertEqual(modes, [.stay, .once, .once])
     }
 
     func testANamedFileRunsInPlaceWithTheIDOfItsSpotsFolder() {
@@ -24,7 +26,7 @@ final class PlaygroundTests: XCTestCase {
         XCTAssertEqual(place("/p/spots/home.spot/cups.sh", "").id, "home/cups")
         XCTAssertEqual(place("/p/spots/cups.spot/cups.js", "").id, "cups")
         XCTAssertEqual(place("/elsewhere/tools/cups.sh", "").id, "cups")
-        XCTAssertEqual(place(nil, "// title=A\n").url.path, "/t/playground/playground.js")
+        XCTAssertEqual(place(nil, "function main() { return '' }\n").url.path, "/t/playground/playground.js")
         XCTAssertEqual(place(nil, "#!/bin/sh\n").id, "playground")
     }
 

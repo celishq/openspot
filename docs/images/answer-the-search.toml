@@ -1,0 +1,4 @@
+title = "Calculator"
+icon = "equal.square"
+on = ["search.text ^[0-9(]"]
+uses = ["clipboard"]

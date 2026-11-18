@@ -1,12 +1,4 @@
 #!/bin/sh
-# icon=/System/Applications/Shortcuts.app
-# detail=Run a shortcut
-# on=panel.open
-# on=sheet.open
-# drop=*
-# uses=clipboard
-# offers=card
-# offers=search
 . "$OPENSPOT_SH"
 input="$OPENSPOT_DATA/input"
 kept="$OPENSPOT_DATA/rows"

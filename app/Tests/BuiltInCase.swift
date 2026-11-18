@@ -101,8 +101,7 @@ class BuiltInCase: XCTestCase {
         return try XCTUnwrap(try place.scan().scripts.first { $0.id == "openspot/\(name)" })
     }
 
-    func script(_ name: String, _ header: String) throws {
-        let lines = header.split(separator: "\n", omittingEmptySubsequences: false).map { "# \($0)\n" }.joined()
-        try "#!/bin/sh\n\(lines)".writeScript(to: spots.appendingPathComponent(name))
+    func script(_ name: String, _ toml: String) throws {
+        try "#!/bin/sh\n".writeScript(to: spots.spotFile((name as NSString).deletingPathExtension), toml: toml)
     }
 }

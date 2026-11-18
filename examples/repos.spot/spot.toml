@@ -1,0 +1,10 @@
+icon = "arrow.triangle.branch"
+detail = "Open a git repo"
+on = ["sheet.open"]
+uses = ["clipboard"]
+offers = ["card"]
+
+[settings.folder]
+
+[settings.editor]
+title = "Default app"

@@ -1,0 +1,11 @@
+title = "Confetti"
+icon = "party.popper"
+detail = "Celebrate on each screen"
+mode = "stay"
+source = ["confetti"]
+
+[commands.play]
+title = "Play"
+
+[settings.look]
+title = "Look"

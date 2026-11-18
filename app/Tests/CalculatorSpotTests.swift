@@ -115,7 +115,8 @@ final class CalculatorSpotTests: SampleSpotsCase {
         let spots = folder.appendingPathComponent("spots", isDirectory: true)
         try FileManager.default.createDirectory(at: spots, withIntermediateDirectories: true)
         defer { try? FileManager.default.removeItem(at: folder) }
-        try FileManager.default.copyItem(at: try calculator.url, to: spots.appendingPathComponent(try calculator.url.lastPathComponent))
+        let source = try calculator.url.deletingLastPathComponent()
+        try FileManager.default.copyItem(at: source, to: spots.appendingPathComponent(source.lastPathComponent))
         let suite = "openspot-calc-\(UUID().uuidString)"
         let defaults = try XCTUnwrap(UserDefaults(suiteName: suite))
         defer { defaults.removePersistentDomain(forName: suite) }

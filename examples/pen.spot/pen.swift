@@ -1,14 +1,4 @@
 #!/usr/bin/env swift
-// title=Pen
-// icon=pencil.tip
-// detail=Draw on screen
-// keywords=draw, annotate, marker, arrow, pencil, малювати, олівець
-// mode=stay
-// source=pen
-//
-// button=draw
-// title=Draw on screen
-// icon=pencil.tip.crop.circle
 
 // Openspot builds this file with the Swift files of `pen/`. The call that opens the overlay stays open while it shows,
 // so its card shows it running and a quit of Openspot closes it. A second press, of the card or of the key, closes it.

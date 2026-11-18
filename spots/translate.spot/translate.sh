@@ -1,10 +1,4 @@
 #!/bin/sh
-# icon=translate
-# detail=Between languages
-# placeholder=Text to translate
-# on=sheet.open
-# uses=clipboard
-# offers=card
 . "$OPENSPOT_SH"
 export LC_ALL=en_US.UTF-8
 

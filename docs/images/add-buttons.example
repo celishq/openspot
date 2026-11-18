@@ -1,6 +1,4 @@
 #!/bin/sh
-# title=Notes list
-# on=sheet.open
 . "$OPENSPOT_SH"
 case "$1" in
   read)

@@ -57,7 +57,7 @@ public final class CommandAPI: @unchecked Sendable {
         }
         guard let needed = call.use else { return call }
         if runs.callers.isCareful, !caller.uses.contains(needed.use) {
-            return CommandLineCall(name: call.name, call: CallFault.refused("Careful mode stopped \(caller.name), because it \(needed.words) without `uses=\(needed.use.rawValue)` in its header. Add it, or turn Careful mode off."))
+            return CommandLineCall(name: call.name, call: CallFault.refused("Careful mode stopped \(caller.name), because it \(needed.words) without `\(needed.use.rawValue)` in the `uses` of its spot.toml. Add it, or turn Careful mode off."))
         }
         Task { @MainActor in runs.used(needed, by: caller) }
         return call

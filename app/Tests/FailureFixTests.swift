@@ -47,7 +47,7 @@ final class FailureFixTests: SpotRunsCase {
     }
 
     func testTheFixOfACallThatTheSpotMadeAndThatFailedJoinsTheFailureOfTheSpot() async throws {
-        try script(header: "uses=screen", "\(openspot("window move 0 0 1 1")) > /dev/null || exit 1")
+        try script(toml: "uses = ['screen']", "\(openspot("window move 0 0 1 1")) > /dev/null || exit 1")
         _ = try scanned()
 
         try XCTUnwrap(runs.sheets["script"]).pressCard()
@@ -74,7 +74,7 @@ final class FailureFixTests: SpotRunsCase {
     }
 
     func testAFailureAfterALaterCallThatWorkedHasNoFix() async throws {
-        try script(header: "uses=screen", "\(openspot("window move 0 0 1 1")) > /dev/null\n\(openspot("help")) > /dev/null\necho 'It broke.' >&2\nexit 1")
+        try script(toml: "uses = ['screen']", "\(openspot("window move 0 0 1 1")) > /dev/null\n\(openspot("help")) > /dev/null\necho 'It broke.' >&2\nexit 1")
         _ = try scanned()
 
         try XCTUnwrap(runs.sheets["script"]).pressCard()

@@ -14,9 +14,10 @@ final class ShellHelperTests: XCTestCase {
         try? FileManager.default.removeItem(at: folder)
     }
 
-    private func script(_ body: String, shell: String = "/bin/sh", header: String = "") throws -> URL {
-        let url = folder.appendingPathComponent(UUID().uuidString)
-        try "#!\(shell)\n\(header). \"$OPENSPOT_SH\"\n\(body)\n".writeScript(to: url)
+    private func script(_ body: String, shell: String = "/bin/sh", toml: String = "") throws -> URL {
+        let name = UUID().uuidString
+        let url = folder.appendingPathComponent(name).appendingPathComponent(name)
+        try "#!\(shell)\n. \"$OPENSPOT_SH\"\n\(body)\n".writeScript(to: url, toml: toml)
         return url
     }
 
@@ -66,7 +67,7 @@ final class ShellHelperTests: XCTestCase {
         let fence = "(version 1)(allow default)(deny file-write* (subpath \"/private/var/tmp\") (subpath \"/private/tmp\") (subpath \"/private/var/folders\"))"
         let once = try script("printf '[%s][%s][%s]' \"$(esc 'a\\b\nc')\" \"$(value a)\" \"$(value b)\"")
         let served = try script("main() { printf '%s|%s|' \"$1\" \"$(value secret)\"; openspot_input; /bin/cat; kept=yes; return 3; }\nopenspot_serve main \"$@\"\nprintf '|%s|%s' \"$?\" \"$kept\"")
-        let stays = try script("count=0\nmain() { count=$((count + 1)); printf '%s|%s|%s|%s|' \"$count\" \"$(esc \"$1\")\" \"$#\" \"$(value secret)\"; openspot_input; /bin/cat; }\nopenspot_serve main", header: "# mode=stay\n")
+        let stays = try script("count=0\nmain() { count=$((count + 1)); printf '%s|%s|%s|%s|' \"$count\" \"$(esc \"$1\")\" \"$#\" \"$(value secret)\"; openspot_input; /bin/cat; }\nopenspot_serve main", toml: "mode = 'stay'")
         let tool = URL(fileURLWithPath: "/usr/bin/sandbox-exec")
         let calls = "call=1\narg=a\\\\b\\nc\narg=\ninput=secret=hunter2\\nb=1\n\ncall=2\n\ncall=3\ninput=secret=two\n\n"
 
@@ -87,8 +88,8 @@ final class ShellHelperTests: XCTestCase {
         let temp = folder.appendingPathComponent("temp")
         try FileManager.default.createDirectory(at: temp, withIntermediateDirectories: true)
         let once = try script("main() { printf '%s' \"$(value a)\"; }\nopenspot_serve main")
-        let stays = try script("main() { printf '%s' \"$(value a)\"; }\nopenspot_serve main", header: "# mode=stay\n")
-        let stopped = try script("main() { kill -TERM $$; }\nopenspot_serve main", header: "# mode=stay\n")
+        let stays = try script("main() { printf '%s' \"$(value a)\"; }\nopenspot_serve main", toml: "mode = 'stay'")
+        let stopped = try script("main() { kill -TERM $$; }\nopenspot_serve main", toml: "mode = 'stay'")
         var base = ProcessInfo.processInfo.environment
         base["TMPDIR"] = temp.path
 
@@ -115,7 +116,7 @@ final class ShellHelperTests: XCTestCase {
           esac
         }
         openspot_serve main
-        """, header: "# mode=stay\n")
+        """, toml: "mode = 'stay'")
         var calls = ""
         for id in 1...20 {
             let word = ["none", "half", "all", "raw"][id % 4]
@@ -133,7 +134,7 @@ final class ShellHelperTests: XCTestCase {
     }
 
     func testServeStartsNoProcessOfItsOwnAndLeavesNoneWhenTheFunctionExits() async throws {
-        let stays = try script("main() { /usr/bin/pgrep -P $$ > /dev/null; printf 'none=%s\\n' \"$?\"; }\nopenspot_serve main", header: "# mode=stay\n")
+        let stays = try script("main() { /usr/bin/pgrep -P $$ > /dev/null; printf 'none=%s\\n' \"$?\"; }\nopenspot_serve main", toml: "mode = 'stay'")
         let once = try script("trap '/usr/bin/pgrep -P $$ > /dev/null; printf none=%s \"$?\"' EXIT\nmain() { exit 0; }\nopenspot_serve main")
 
         for shell in ["/bin/sh", "/bin/dash"] {
@@ -154,7 +155,7 @@ final class ShellHelperTests: XCTestCase {
           esac
         }
         openspot_serve main
-        """, header: "# mode=stay\n")
+        """, toml: "mode = 'stay'")
 
         for shell in ["/bin/sh", "/bin/dash"] {
             let output = try await output(of: url, shell: shell, input: "call=1\narg=child\ninput=secret=old\n\ncall=2\narg=next\ninput=b=new\n\n")
@@ -312,7 +313,7 @@ final class ShellHelperTests: XCTestCase {
         let input = "note=x\\ny\n"
         let variables = ["OPENSPOT_REASON": "panel"]
         let once = try script(Self.shownCall)
-        let stays = try script(Self.shownCall, header: "# mode=stay\n")
+        let stays = try script(Self.shownCall, toml: "mode = 'stay'")
 
         var onceText = ""
         for try await frame in ScriptProcess(url: once, arguments: action.arguments, mode: .once(input: input), limit: 60, variables: variables).start() {
@@ -338,7 +339,7 @@ final class ShellHelperTests: XCTestCase {
         main() { printf 'got=%s|%s|%s\\n' "$1" "${OPENSPOT_VALUE-none}" "$(value a)"; }
         openspot_serve main "$@"
         printf 'over=1\\n'
-        """, header: "# mode=stay\n")
+        """, toml: "mode = 'stay'")
         let live = ScriptProcess(url: url, mode: .stays, limit: 60)
         var frames = live.start().makeAsyncIterator()
 
@@ -354,7 +355,7 @@ final class ShellHelperTests: XCTestCase {
     }
 
     func testServeKeepsAnEmptyFirstArgument() async throws {
-        let url = try script("main() { printf 'count=%s|%s\\n' \"$#\" \"$2\"; }\nopenspot_serve main \"$@\"", header: "# mode=stay\n")
+        let url = try script("main() { printf 'count=%s|%s\\n' \"$#\" \"$2\"; }\nopenspot_serve main \"$@\"", toml: "mode = 'stay'")
         let live = ScriptProcess(url: url, mode: .stays, limit: 60)
         var frames = live.start().makeAsyncIterator()
 
@@ -404,7 +405,7 @@ final class ShellHelperTests: XCTestCase {
         while IFS= read -r line; do
           [ -z "$line" ] || printf 'got=%s\\n---\\n' "$line"
         done
-        """, header: "# mode=stay\n")
+        """, toml: "mode = 'stay'")
         let live = ScriptProcess(url: url, mode: .stays, limit: 3)
         defer { live.end() }
         var frames = live.start().makeAsyncIterator()
@@ -418,7 +419,7 @@ final class ShellHelperTests: XCTestCase {
     }
 
     func testAStayingRunHasNoVariableThatNamesItsLife() async throws {
-        let url = try script("printf 'stay=%s\\n---\\n' \"${OPENSPOT_STAY-}\"", header: "# mode=stay\n")
+        let url = try script("printf 'stay=%s\\n---\\n' \"${OPENSPOT_STAY-}\"", toml: "mode = 'stay'")
         let live = ScriptProcess(url: url, mode: .stays, limit: 3)
         defer { live.end() }
         var frames = live.start().makeAsyncIterator()
@@ -429,7 +430,7 @@ final class ShellHelperTests: XCTestCase {
     }
 
     func testTheHelperReadsAllOfStdinInAScriptThatSaysStayFalse() async throws {
-        let url = try script("printf '%s' \"$(value a)\"", header: "# title=Once\n# mode=once\n")
+        let url = try script("printf '%s' \"$(value a)\"", toml: "title = 'Once'\nmode = 'once'")
 
         let output = try await ScriptProcess.output(url: url, input: "a=one\n", limit: 60)
 

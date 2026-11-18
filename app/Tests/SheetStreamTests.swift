@@ -13,9 +13,9 @@ final class SheetStreamTests: XCTestCase {
         try? FileManager.default.removeItem(at: folder)
     }
 
-    private func script(_ body: String, name: String = "script") throws -> URL {
+    private func script(_ body: String, name: String = "script", toml: String = "") throws -> URL {
         let url = folder.spotFile(name)
-        try "#!/bin/sh\n\(body)\n".writeScript(to: url)
+        try "#!/bin/sh\n\(body)\n".writeScript(to: url, toml: toml)
         return url
     }
 
@@ -184,7 +184,7 @@ final class SheetStreamTests: XCTestCase {
     }
 
     func testAScriptThatStaysIsAList() throws {
-        let url = try script("# mode=stay\n# on=panel.open")
+        let url = try script("", toml: "mode = 'stay'\non = ['panel.open']")
         let command = try XCTUnwrap(try SpotFile(file: url, id: "script")).spots.first
 
         XCTAssertEqual(command?.mode, .stay)
@@ -193,7 +193,7 @@ final class SheetStreamTests: XCTestCase {
     }
 
     func testAPlainFirstReadOfAStayingScriptGivesItsFirstFrame() async throws {
-        let url = try script("# mode=stay\nwhile IFS= read -r line; do case \"$line\" in call=*) call=${line#call=} ;; esac; [ -n \"$line\" ] || printf 'end=%s\\n\\ntext=a\\ntitle=A\\n---\\n' \"$call\"; done")
+        let url = try script("while IFS= read -r line; do case \"$line\" in call=*) call=${line#call=} ;; esac; [ -n \"$line\" ] || printf 'end=%s\\n\\ntext=a\\ntitle=A\\n---\\n' \"$call\"; done")
         let command = Spot(id: "a", name: "A", url: url, kind: .list, mode: .stay)
 
         let output = try await command.items(timeout: 60)

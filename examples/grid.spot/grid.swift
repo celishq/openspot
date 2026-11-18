@@ -1,11 +1,4 @@
 #!/usr/bin/env swift
-// title=Grid
-// icon=square.grid.3x3
-// detail=Drag over a grid to place the front window
-// on=panel.open
-// offers=card
-// mode=stay
-// source=grid
 
 // Openspot builds this file with the Swift files of `grid/`, and keeps one process while the panel shows, so a press
 // shows the grid at once. The call of a press stays open until the person picks a block or hides the grid, and the

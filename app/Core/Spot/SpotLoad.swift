@@ -75,7 +75,8 @@ public struct SpotLoad: Sendable {
 
     public func stamp(of spot: Spot) -> [Int]? {
         guard let own = stamp[spot.url.path] else { return nil }
-        return (sources[spot.url.path] ?? []).reduce(own) { $0 + (stamp[$1] ?? []) }
+        let toml = spot.url.deletingLastPathComponent().appendingPathComponent(SpotToml.fileName).path
+        return ([toml] + (sources[spot.url.path] ?? [])).reduce(own) { $0 + (stamp[$1] ?? []) }
     }
 
     public func faultSpots(of scan: ScanResult, prompt: AgentPrompt) -> [Spot] {

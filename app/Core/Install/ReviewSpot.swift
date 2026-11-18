@@ -39,7 +39,7 @@ public struct ReviewSpot: Equatable, Sendable {
             : !programs.isEmpty ? "Holds a program that you cannot read" : primary.subtitle ?? (runs.isEmpty ? quiet : "Runs by itself")
         let uses = SpotUse.allCases.filter { use in scan.scripts.contains { $0.uses.contains(use) } }
         let present = spot.files.map(\.path).filter { FileManager.default.fileExists(atPath: folder.appendingPathComponent($0).path) }
-        let installed = Set(present.flatMap { (try? SpotUse.set(SpotHeader(url: folder.appendingPathComponent($0)).block.value("uses"), of: $0)) ?? [] })
+        let installed = Set(present.flatMap { (try? SpotUse.set(SpotToml(beside: folder.appendingPathComponent($0)).block(of: $0).value("uses"), of: $0)) ?? [] })
         let grown = spot.replaced(in: folder).isEmpty ? [] : uses.filter { !installed.contains($0) }
         let canAlso = Self.canAlso(spot, uses: Set(uses), id: primary.id)
         let readme = spot.readme
@@ -128,8 +128,7 @@ public struct ReviewSpot: Equatable, Sendable {
         let placed = Set(scan.files.flatMap(\.spots).flatMap(\.places))
         return scan.scripts.compactMap { script in
             var moments: [String] = switch script.mode {
-            case .always: ["keeps running while Openspot runs"]
-            case .stay: ["keeps running while it is in use"]
+            case .stay: [script.readsAtLaunch ? "keeps running while Openspot runs" : "keeps running while it is in use"]
             case .once, .inline: []
             }
             for moment in script.read?.moments ?? [] {
@@ -164,7 +163,7 @@ public struct ReviewSpot: Equatable, Sendable {
         if !found(["pbpaste"]).isEmpty { lines.append("Read the clipboard with pbpaste in place of openspot clipboard") }
         for arguments in texts.flatMap(calls) {
             guard let needed = SpotUseCall(arguments: arguments, of: id), !uses.contains(needed.use) else { continue }
-            let line = "Call openspot \(arguments[0]) \(arguments[1]) without uses=\(needed.use.rawValue)"
+            let line = "Call openspot \(arguments[0]) \(arguments[1]) without \(needed.use.rawValue) in the uses of its spot.toml"
             if !lines.contains(line) { lines.append(line) }
         }
         return lines

@@ -127,23 +127,38 @@ public struct SpotsFolder: Sendable {
         var loose = entries.filter { !Self.isFolder($0) }
         for entry in entries where entry.pathExtension != SpotPackage.fileExtension && Self.isFolder(entry) && ((try? Self.sorted(in: entry)) ?? []).contains(where: Self.isScript) {
             let target = url.appendingPathComponent(entry.lastPathComponent + "." + SpotPackage.fileExtension, isDirectory: true)
-            if !FileManager.default.fileExists(atPath: target.path) { try FileManager.default.moveItem(at: entry, to: target) }
+            guard !FileManager.default.fileExists(atPath: target.path) else { continue }
+            let scripts = try Self.sorted(in: entry).filter(Self.isScript)
+            try FileManager.default.moveItem(at: entry, to: target)
+            try Self.describe(scripts.map(\.lastPathComponent), in: target)
         }
         let scripts = loose.filter(Self.isScript)
         for script in scripts where loose.contains(script) {
             let name = Self.stem(of: script.lastPathComponent)
-            var group = loose.filter { Self.stem(of: $0.lastPathComponent) == name }
-            if let view = SpotHeader(url: script).block.value(HeaderKey.view), !view.contains("/") {
-                group += loose.filter { ($0.lastPathComponent == view || ViewLibrary.isLibrary($0.lastPathComponent, of: view)) && !group.contains($0) }
-            }
+            let group = loose.filter { Self.stem(of: $0.lastPathComponent) == name }
             let target = url.appendingPathComponent(name + "." + SpotPackage.fileExtension, isDirectory: true)
             try FileManager.default.createDirectory(at: target, withIntermediateDirectories: true)
+            if !FileManager.default.fileExists(atPath: target.appendingPathComponent(script.lastPathComponent).path) {
+                try Self.describe([script.lastPathComponent], in: target)
+            }
             for file in group {
                 loose.removeAll { $0 == file }
                 let place = url.appendingPathComponent(Self.wrapped(file.lastPathComponent, into: name))
                 if !FileManager.default.fileExists(atPath: place.path) { try FileManager.default.moveItem(at: file, to: place) }
             }
         }
+    }
+
+    private static func describe(_ scripts: [String], in folder: URL) throws {
+        let file = folder.appendingPathComponent(SpotToml.fileName)
+        guard !FileManager.default.fileExists(atPath: file.path) else { return }
+        let main = folder.deletingPathExtension().lastPathComponent
+        let tables = scripts.map { script in
+            let name = (script as NSString).deletingPathExtension
+            let title = "\(HeaderKey.title.rawValue) = \(ConfigDocument.Value.string(SpotFile.name(of: URL(fileURLWithPath: script))).text)\n"
+            return name == main ? title : "[scripts.\(name)]\n" + title
+        }
+        try tables.sorted { !$0.hasPrefix("[") && $1.hasPrefix("[") }.joined(separator: "\n").write(to: file, atomically: true, encoding: .utf8)
     }
 
     private static func wrapped(_ file: String, into name: String) -> String {
@@ -155,7 +170,11 @@ public struct SpotsFolder: Sendable {
     }
 
     static func isScript(_ url: URL) -> Bool {
-        !isFolder(url) && SpotFile.runs(url)
+        isScript(url, toml: SpotToml(beside: url))
+    }
+
+    static func isScript(_ url: URL, toml: SpotToml) -> Bool {
+        !isFolder(url) && SpotFile.runs(url, toml: toml)
     }
 
     private static func isFolder(_ url: URL) -> Bool {

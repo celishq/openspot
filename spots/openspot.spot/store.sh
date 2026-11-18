@@ -1,13 +1,4 @@
 #!/bin/sh
-# title=Store
-# icon=bag
-# detail=Get spots
-# keywords=store, get spots
-# on=sheet.open
-# uses=spots,account
-# view=store.swift
-# offers=card
-# offers=window
 
 # Prints a toast of the last line of a text, such as what a failed `openspot` call said.
 toast() {

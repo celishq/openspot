@@ -22,7 +22,7 @@ public final class PlaygroundPanel {
     }
 
     @discardableResult
-    public func place(file: URL?, text: String, spots real: URL? = nil) async throws -> String {
+    public func place(file: URL?, text: String, manifest: String, spots real: URL? = nil) async throws -> String {
         let (source, id) = Playground.place(of: file, text: text, spots: real ?? spots, scratch: spots)
         let target = SpotID(id).file(in: spots, extension: source.pathExtension)
         let manager = FileManager.default
@@ -33,6 +33,9 @@ public final class PlaygroundPanel {
             try manager.copyItem(at: file.deletingLastPathComponent(), to: target.deletingLastPathComponent())
         }
         try manager.createDirectory(at: target.deletingLastPathComponent(), withIntermediateDirectories: true)
+        if file == nil {
+            try manifest.write(to: target.deletingLastPathComponent().appendingPathComponent(SpotToml.fileName), atomically: true, encoding: .utf8)
+        }
         try? manager.removeItem(at: target)
         try text.write(to: target, atomically: true, encoding: .utf8)
         if target.pathExtension != SpotFile.inlineExtension {

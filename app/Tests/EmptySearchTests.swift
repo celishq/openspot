@@ -13,7 +13,7 @@ final class EmptySearchTests: PanelCase {
     }
 
     func testASearchThatFoundNothingCountsByItsFoldedTextWhenItIsClearedOrThePanelHides() async throws {
-        try script("coffee", header: "title=Coffee", "true")
+        try script("coffee", toml: "title = 'Coffee'", "true")
         await model.reload()
         model.isShown = true
         model.panelWillShow()
@@ -27,7 +27,7 @@ final class EmptySearchTests: PanelCase {
     }
 
     func testASearchThatFoundOnlyAnAnswerUnderTheResultsCountsAsMissed() async throws {
-        try script("make", header: "title=Make\non=search.text .\nanswers=last", #"printf 'row=%s\ntitle=Make\n' "$OPENSPOT_VALUE""#)
+        try script("make", toml: "title = 'Make'\non = ['search.text .']\nanswers = 'last'", #"printf 'row=%s\ntitle=Make\n' "$OPENSPOT_VALUE""#)
         await model.reload()
         model.isShown = true
         model.panelWillShow()
@@ -41,7 +41,7 @@ final class EmptySearchTests: PanelCase {
     }
 
     func testASearchThatFoundASpotOrIsShortCountsNothing() async throws {
-        try script("coffee", header: "title=Coffee", "true")
+        try script("coffee", toml: "title = 'Coffee'", "true")
         await model.reload()
         model.isShown = true
         model.panelWillShow()

@@ -1,0 +1,4 @@
+title = "System details"
+icon = "gauge.with.dots.needle.50percent"
+on = ["sheet.open"]
+offers = ["card"]

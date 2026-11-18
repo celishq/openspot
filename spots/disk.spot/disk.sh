@@ -1,9 +1,4 @@
 #!/bin/sh
-# detail=The space in use
-# icon=internaldrive
-# on=disk.mount
-# offers=card
-# offers=menubar
 # `show <report>` draws a report of `df -k` that is given, such as the one of sample.sh.
 if [ "$1" = show ] && [ -n "${2-}" ]; then report=$2; else report=$(df -k /System/Volumes/Data); fi
 printf '%s\n' "$report" | awk 'NR == 2 {

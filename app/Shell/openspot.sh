@@ -2,18 +2,34 @@
 # `openspot_row`, `openspot_rows`, `openspot_serve`, `openspot_keep` and `openspot_paste`.
 # Loading starts `cat` once, and each function starts `sed`, `tr` or `awk` only above 1 KB, where a shell loop is too slow.
 
-# Whether the header of the script says `mode=stay` or `mode=always`: the comment lines at its top, read with no process.
+# Whether the spot.toml beside the script says `mode = "stay"` for it, read with no process: its top level for the script
+# named after its folder, and its `[scripts.<name>]` table for another script.
 _openspot_stays=
+_openspot_name=${0##*/}
+_openspot_name=${_openspot_name%.*}
+_openspot_folder=${0%/*}
+[ "$_openspot_folder" = "$0" ] && _openspot_folder=.
+_openspot_table=
+case ${_openspot_folder##*/} in
+  "$_openspot_name".spot) ;;
+  *.spot) _openspot_table=scripts.$_openspot_name ;;
+esac
+_openspot_in=
+[ -z "$_openspot_table" ] && _openspot_in=1
 while IFS= read -r _openspot_line; do
-  case $_openspot_line in
-    '#'*) _openspot_line=${_openspot_line#\#} ;;
-    *) break ;;
-  esac
   _openspot_line=${_openspot_line#"${_openspot_line%%[! ]*}"}
   case $_openspot_line in
-    mode=stay | mode=always) _openspot_stays=1 ;;
+    '['*)
+      _openspot_in=
+      case $_openspot_line in "[$_openspot_table]"*) [ -n "$_openspot_table" ] && _openspot_in=1 ;; esac
+      ;;
+    mode=* | mode\ *)
+      _openspot_line=${_openspot_line#mode}
+      _openspot_line=${_openspot_line#"${_openspot_line%%[!= ]*}"}
+      case $_openspot_in$_openspot_line in 1\"stay\"* | 1\'stay\'*) _openspot_stays=1 ;; esac
+      ;;
   esac
-done < "$0" 2>/dev/null
+done < "$_openspot_folder/spot.toml" 2>/dev/null
 
 # All of stdin, read once now, because each `$(value id)` runs in a subshell that would lose it. A staying script keeps
 # its stdin for its calls, so this leaves it alone there, and `openspot_serve` fills it with the stdin of each call.

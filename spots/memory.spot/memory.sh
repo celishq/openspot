@@ -1,11 +1,4 @@
 #!/bin/sh
-# title=Memory
-# icon=memorychip
-# detail=The memory in use
-# on=system.load
-# mode=stay
-# offers=card
-# offers=menubar
 
 # Prints the memory in use, as a share of the whole, with a tone when little is left.
 draw() {

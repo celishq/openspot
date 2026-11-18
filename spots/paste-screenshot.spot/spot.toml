@@ -1,0 +1,5 @@
+title = "Paste latest screenshot"
+icon = "doc.on.clipboard.fill"
+detail = "From the screenshot folder"
+uses = ["clipboard"]
+offers = ["card"]

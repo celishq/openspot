@@ -60,7 +60,7 @@ final class CommandNounTests: XCTestCase {
     }
 
     func testARunOfAnotherSpotCountsOnItWithItsCaller() async throws {
-        try "#!/bin/sh\n# title=Echo\n# on=sheet.open\necho 'title=hi'\n".writeScript(to: folder.appendingPathComponent("spots/echo.sh"))
+        try "#!/bin/sh\necho 'title=hi'\n".writeScript(to: folder.appendingPathComponent("spots/echo.sh"), toml: "title = 'Echo'\non = ['sheet.open']")
         let caller = Spot(id: "board", name: "Board", url: folder.appendingPathComponent("board.sh"), dataName: "board", uses: [.spots])
 
         let answer = try await ask(["spot", "run", "echo"], from: caller)
@@ -72,7 +72,7 @@ final class CommandNounTests: XCTestCase {
 
     func testARunThatOpenspotRefusesCountsNothing() async throws {
         let core = folder.appendingPathComponent("core", isDirectory: true)
-        try "#!/bin/sh\n# title=Keyed\n# uses=account\n# on=sheet.open\necho 'title=hi'\n".writeScript(to: core.appendingPathComponent("openspot.spot/keyed.sh"))
+        try "#!/bin/sh\necho 'title=hi'\n".writeScript(to: core.appendingPathComponent("openspot.spot/keyed.sh"), toml: "title = 'Keyed'\nuses = ['account']\non = ['sheet.open']")
         api = CommandAPI(mac: Mac(), places: .test(["OPENSPOT_CONFIG": folder.path, "OPENSPOT_CORE": core.path]), app: FakeRunningApp(), runs: runs, rates: .offline, nouns: nouns)
         let caller = Spot(id: "board", name: "Board", url: folder.appendingPathComponent("board.sh"), dataName: "board", uses: [.spots])
 
@@ -99,7 +99,7 @@ final class CommandNounTests: XCTestCase {
         let refused = try await ask(["bell", "ring", "hi"], from: spot(uses: []))
         let declared = try await ask(["bell", "ring", "hi"], from: spot(uses: [.network]))
 
-        XCTAssertEqual(refused.errors, "Careful mode stopped Chime, because it rang a bell without `uses=network` in its header. Add it, or turn Careful mode off.\n")
+        XCTAssertEqual(refused.errors, "Careful mode stopped Chime, because it rang a bell without `network` in the `uses` of its spot.toml. Add it, or turn Careful mode off.\n")
         XCTAssertEqual(declared.output, "rang hi\n")
     }
 

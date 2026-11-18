@@ -62,18 +62,19 @@ public final class KeptScan: Sendable {
             let key = "\(origin) \(folder.path)"
             visited.insert(key)
             if let kept = kept.withLock({ $0[key] }), kept.states == states { return kept.entries }
-            let entries = files.map { Self.entry(of: $0, origin: origin) }
+            let toml = SpotToml(folder: folder)
+            let entries = files.filter { $0.lastPathComponent != SpotToml.fileName }.map { Self.entry(of: $0, origin: origin, toml: toml) }
             kept.withLock { $0[key] = Kept(states: states, entries: entries) }
             return entries
         }
     }
 
-    private static func entry(of file: URL, origin: SpotLoad.Origin) -> SpotLoad.Entry {
+    private static func entry(of file: URL, origin: SpotLoad.Origin, toml: SpotToml) -> SpotLoad.Entry {
         let id = SpotID(file: file).description
         let added = origin == .own ? (try? file.resourceValues(forKeys: [.creationDateKey]).creationDate) : nil
         ScanWork.meter?.parse()
         do {
-            let parsed = SpotLoad.Entry(id: id, file: file, origin: origin, spots: try SpotFile(file: file, id: id)?.spots, refusal: nil, added: added)
+            let parsed = SpotLoad.Entry(id: id, file: file, origin: origin, spots: try SpotFile(file: file, id: id, toml: toml)?.spots, refusal: nil, added: added)
             return SpotLoad.Entry(id: id, file: file, origin: origin, spots: parsed.spots?.map(parsed.placed), refusal: nil, added: added)
         } catch {
             let reason = (error as? SpotError)?.reason ?? String(describing: error)

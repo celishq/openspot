@@ -47,7 +47,8 @@ final class MetricSpotsTests: SpotRunsCase {
         let lines = try String(contentsOf: source, encoding: .utf8).components(separatedBy: "\n")
         let header = lines.dropFirst().prefix { $0.hasPrefix("#") }.count + 1
         let body = lines.prefix(header) + ["echo $$ >> '\(path("pids"))'"] + lines.dropFirst(header)
-        try body.joined(separator: "\n").writeScript(to: folder.appendingPathComponent("\(name).spot/\(name).sh"))
+        let toml = try String(contentsOf: source.deletingLastPathComponent().appendingPathComponent(SpotToml.fileName), encoding: .utf8)
+        try body.joined(separator: "\n").writeScript(to: folder.appendingPathComponent("\(name).spot/\(name).sh"), toml: toml)
     }
 
     private func title(_ id: String) -> String? {

@@ -78,11 +78,11 @@ final class FirstLaunchTests: XCTestCase {
     }
 
     @MainActor
-    private func firstLaunch(header: String?) async throws -> (SpotsModel, FakeHost) {
+    private func firstLaunch(toml: String?) async throws -> (SpotsModel, FakeHost) {
         let core = root.appendingPathComponent("core", isDirectory: true)
         try FileManager.default.createDirectory(at: spots, withIntermediateDirectories: true)
         try FileManager.default.createDirectory(at: core.appendingPathComponent("openspot.spot"), withIntermediateDirectories: true)
-        if let header { try TestSpot(header: header, body: "printf 'row=a\\ntitle=A\\n'").write(to: core.spotFile("openspot/hello")) }
+        if let toml { try TestSpot(toml: toml, body: "printf 'row=a\\ntitle=A\\n'").write(to: core.spotFile("openspot/hello")) }
         let suite = "openspot-first-\(UUID().uuidString)"
         let defaults = try XCTUnwrap(UserDefaults(suiteName: suite))
         let host = FakeHost()
@@ -102,7 +102,7 @@ final class FirstLaunchTests: XCTestCase {
 
     @MainActor
     func testTheFirstLaunchOpensTheSpotThatStartsIt() async throws {
-        let (model, host) = try await firstLaunch(header: "title=Hello\non=sheet.open\noffers=none\nstarts=first-launch")
+        let (model, host) = try await firstLaunch(toml: "title = 'Hello'\non = ['sheet.open']\noffers = ['none']\nstarts = 'first-launch'")
 
         await model.beginFirstLaunch()
 
@@ -112,7 +112,7 @@ final class FirstLaunchTests: XCTestCase {
 
     @MainActor
     func testWithNoSpotThatStartsItTheFirstLaunchShowsTheGrid() async throws {
-        let (model, host) = try await firstLaunch(header: "title=Hello\non=sheet.open\noffers=none")
+        let (model, host) = try await firstLaunch(toml: "title = 'Hello'\non = ['sheet.open']\noffers = ['none']")
 
         await model.beginFirstLaunch()
 

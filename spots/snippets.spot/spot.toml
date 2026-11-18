@@ -1,0 +1,5 @@
+icon = "text.quote"
+detail = "Copy text"
+on = ["panel.open"]
+uses = ["clipboard"]
+offers = ["card", "search"]

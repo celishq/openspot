@@ -42,7 +42,7 @@ final class SettingsSpotTests: BuiltInCase {
     }
 
     func testTheSheetListsOnlyTheSettingsOfTheAppAndNoneOfASpot() async throws {
-        try script("cups.sh", "title=Cups\non=clock.60\non=sheet.open\n\nbutton=fill\ntitle=Fill\n\nfield=size")
+        try script("cups.sh", "title = 'Cups'\non = ['clock.60', 'sheet.open']\n[commands.fill]\ntitle = 'Fill'\n[settings.size]")
         try file.set(setting: "theme", of: "cups", to: "dark")
         try file.assign(.shake, to: "cups", act: .float)
 

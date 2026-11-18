@@ -1,11 +1,4 @@
 #!/bin/sh
-# title=Now playing
-# icon=music.note
-# detail=The song in Music, with its controls
-# on=panel.open
-# on=clock.5
-# offers=card
-# offers=menubar
 . "$OPENSPOT_SH"
 cover="$OPENSPOT_DATA/cover.jpg"
 

@@ -1,12 +1,4 @@
 #!/bin/sh
-# title=Themes
-# icon=paintpalette
-# detail=Change the look
-# keywords=theme, look
-# on=sheet.open
-# uses=app,clipboard
-# offers=card
-# pages=prompt:*
 . "$OPENSPOT_SH"
 nl='
 '

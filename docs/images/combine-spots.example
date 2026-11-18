@@ -1,5 +1,1 @@
 #!/bin/sh
-# title=System
-# grid.large=battery battery cpu    cpu
-# grid.large=battery battery memory memory
-# to=system-info

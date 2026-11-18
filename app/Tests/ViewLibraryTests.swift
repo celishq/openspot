@@ -200,9 +200,9 @@ final class ViewLibraryTests: XCTestCase {
         let spots = folder.appendingPathComponent("spots")
         let own = spots.appendingPathComponent("openspot.spot")
         try FileManager.default.createDirectory(at: own, withIntermediateDirectories: true)
-        try "#!/bin/sh\n# title=Icon\n# view=icon.swift\n".writeScript(to: own.appendingPathComponent("icon.sh"))
+        try "#!/bin/sh\n".writeScript(to: own.appendingPathComponent("icon.sh"), toml: "title = 'Icon'\nview = 'icon.swift'")
         try Data(view.utf8).write(to: own.appendingPathComponent("icon.swift"))
-        try "#!/bin/sh\n# title=Quit\n".writeScript(to: own.appendingPathComponent("quit.sh"))
+        try "#!/bin/sh\n".writeScript(to: own.appendingPathComponent("quit.sh"), toml: "title = 'Quit'")
         try Data(view.utf8).write(to: own.appendingPathComponent("loose.swift"))
 
         let built = try await views.buildViews(under: spots)
@@ -288,8 +288,8 @@ final class ViewLibraryTests: XCTestCase {
         for name in ["lost", "bad"] {
             try FileManager.default.createDirectory(at: spots.appendingPathComponent(name + ".spot"), withIntermediateDirectories: true)
         }
-        try "#!/bin/sh\n# view=lost.swift\n".writeScript(to: spots.appendingPathComponent("lost.spot/lost.sh"))
-        try "#!/bin/sh\n# view=bad.swift\n".writeScript(to: spots.appendingPathComponent("bad.spot/bad.sh"))
+        try "#!/bin/sh\n".writeScript(to: spots.appendingPathComponent("lost.spot/lost.sh"), toml: "view = 'lost.swift'")
+        try "#!/bin/sh\n".writeScript(to: spots.appendingPathComponent("bad.spot/bad.sh"), toml: "view = 'bad.swift'")
         try Data("struct".utf8).write(to: spots.appendingPathComponent("bad.spot/bad.swift"))
         let views = try tools(compiler: "echo 'bad.swift:1:7: error: expected identifier' >&2; exit 1")
 
@@ -304,8 +304,9 @@ final class ViewLibraryTests: XCTestCase {
     private var sharedCups: SpotPackage {
         get throws {
             try SpotPackage(files: [
-                .init(path: "home.spot/cups.sh", isExecutable: true, contents: Data("#!/bin/sh\n# view=cups.swift\n".utf8)),
-                .init(path: "home.spot/cups.swift", isExecutable: false, contents: Data(view.utf8))
+                .init(path: "home.spot/cups.sh", isExecutable: true, contents: Data("#!/bin/sh\n".utf8)),
+                .init(path: "home.spot/cups.swift", isExecutable: false, contents: Data(view.utf8)),
+                .init(path: "home.spot/spot.toml", isExecutable: false, contents: Data("[scripts.cups]\nview = 'cups.swift'\n".utf8))
             ])
         }
     }
@@ -317,7 +318,7 @@ final class ViewLibraryTests: XCTestCase {
         let compiled = try await spot.compiled(views: try tools())
 
         XCTAssertFalse(compiled.needsCompile)
-        XCTAssertEqual(compiled.files.map(\.path), ["home.spot/cups.sh", "home.spot/cups.swift", "home.spot/\(built)"])
+        XCTAssertEqual(compiled.files.map(\.path), ["home.spot/cups.sh", "home.spot/cups.swift", "home.spot/spot.toml", "home.spot/\(built)"])
         XCTAssertEqual(compiled.files.last?.contents, Data("both".utf8))
         XCTAssertEqual(compiled.files.last?.isExecutable, false)
     }
@@ -338,8 +339,8 @@ final class ViewLibraryTests: XCTestCase {
         let spots = folder.appendingPathComponent("spots")
         let cups = spots.appendingPathComponent("cups.spot")
         try FileManager.default.createDirectory(at: cups, withIntermediateDirectories: true)
-        try "#!/bin/sh\n# view=cups.swift\n".writeScript(to: cups.appendingPathComponent("cups.sh"))
-        try "#!/bin/sh\n".writeScript(to: cups.appendingPathComponent("other.sh"))
+        try "#!/bin/sh\n".writeScript(to: cups.appendingPathComponent("cups.sh"), toml: "view = 'cups.swift'")
+        try "#!/bin/sh\n".writeScript(to: cups.appendingPathComponent("other.sh"), toml: "")
         try Data(view.utf8).write(to: cups.appendingPathComponent("cups.swift"))
         try Data("built".utf8).write(to: cups.appendingPathComponent(built))
         let place = SpotsFolder(url: spots)
@@ -355,7 +356,7 @@ final class ViewLibraryTests: XCTestCase {
         let spots = folder.appendingPathComponent("spots")
         let cups = spots.appendingPathComponent("cups.spot")
         try FileManager.default.createDirectory(at: cups, withIntermediateDirectories: true)
-        try "#!/bin/sh\n# view=cups.swift\n".writeScript(to: cups.appendingPathComponent("cups.sh"))
+        try "#!/bin/sh\n".writeScript(to: cups.appendingPathComponent("cups.sh"), toml: "view = 'cups.swift'")
         try Data(view.utf8).write(to: cups.appendingPathComponent("cups.swift"))
         let stale = (ViewLibrary.path(beside: "cups.swift", text: Data("struct Old {}".utf8)) as NSString).lastPathComponent
         for name in [built, stale] { try Data("built".utf8).write(to: cups.appendingPathComponent(name)) }
@@ -364,20 +365,20 @@ final class ViewLibraryTests: XCTestCase {
 
         let shared = try SpotPackage(sharing: spot, from: scan)
 
-        XCTAssertEqual(shared.files.map(\.path), ["cups.spot/\(built)", "cups.spot/cups.sh", "cups.spot/cups.swift"])
+        XCTAssertEqual(shared.files.map(\.path), ["cups.spot/\(built)", "cups.spot/cups.sh", "cups.spot/cups.swift", "cups.spot/spot.toml"])
     }
 
     func testABuildBesideTheSourceRemovesItsOldLibrary() async throws {
         let spots = folder.appendingPathComponent("spots")
         let own = spots.appendingPathComponent("cups.spot")
         try FileManager.default.createDirectory(at: own, withIntermediateDirectories: true)
-        try "#!/bin/sh\n# view=cups.swift\n".writeScript(to: own.appendingPathComponent("cups.sh"))
+        try "#!/bin/sh\n".writeScript(to: own.appendingPathComponent("cups.sh"), toml: "view = 'cups.swift'")
         try Data(view.utf8).write(to: own.appendingPathComponent("cups.swift"))
         let stale = (ViewLibrary.path(beside: "cups.swift", text: Data("struct Old {}".utf8)) as NSString).lastPathComponent
         try Data("old".utf8).write(to: own.appendingPathComponent(stale))
 
         _ = try await tools().buildViews(under: spots)
 
-        XCTAssertEqual(try FileManager.default.contentsOfDirectory(atPath: own.path).sorted(), [built, "cups.sh", "cups.swift"].sorted())
+        XCTAssertEqual(try FileManager.default.contentsOfDirectory(atPath: own.path).sorted(), [built, "cups.sh", "cups.swift", "spot.toml"].sorted())
     }
 }

@@ -1,0 +1,12 @@
+title = "Dictate"
+icon = "mic"
+detail = "Convert speech to text"
+mode = "stay"
+on = ["sheet.open"]
+offers = ["card", "menubar"]
+uses = ["clipboard", "network"]
+source = ["dictate"]
+
+[commands.dictate]
+title = "Dictate"
+icon = "mic"

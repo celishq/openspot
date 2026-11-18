@@ -1,0 +1,3 @@
+title = "Apps"
+icon = "square.grid.2x2"
+on = ["sheet.open"]

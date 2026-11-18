@@ -40,8 +40,8 @@ class PanelCase: XCTestCase {
     let escape = ActionKey(name: "escape")
     let toGrid = ActionKey(name: "escape", isCommand: true)
 
-    func script(_ name: String, header: String, _ body: String) throws {
-        try TestSpot(header: header, body: "\(body)").write(to: spots.spotFile(name))
+    func script(_ name: String, toml: String, _ body: String) throws {
+        try TestSpot(toml: toml, body: "\(body)").write(to: spots.spotFile(name))
     }
 
     var titles: [String] {
@@ -49,10 +49,10 @@ class PanelCase: XCTestCase {
     }
 
     func openList() async throws {
-        try script("list", header: "title=List\non=sheet.open\npages=*", """
+        try script("list", toml: "title = 'List'\non = ['sheet.open']\npages = ['*']", """
         if [ -n "$OPENSPOT_PAGE" ]; then printf 'row=x\\ntitle=Detail %s\\n' "$OPENSPOT_PAGE"; else printf 'row=a\\ntitle=A\\npush=true\\n'; fi
         """)
-        try script("other", header: "on=sheet.open", "printf 'row=o\\ntitle=Other\\n'")
+        try script("other", toml: "on = ['sheet.open']", "printf 'row=o\\ntitle=Other\\n'")
         await model.reload()
         model.isShown = true
         model.panelWillShow()

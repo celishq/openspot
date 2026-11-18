@@ -265,7 +265,7 @@ final class SpotsModelDragTests: XCTestCase {
     }
 
     func testTheShelfLeavesOutASpotWithNoCardOfItsOwn() async throws {
-        try "#!/bin/sh\n# on=panel.open\n# offers=search\n".writeScript(to: spots.appendingPathComponent("rows.spot/rows.sh"))
+        try "#!/bin/sh\n".writeScript(to: spots.appendingPathComponent("rows.spot/rows.sh"), toml: "on = ['panel.open']\noffers = ['search']")
         await model.reload()
 
         XCTAssertFalse(order.contains("rows"))
@@ -599,7 +599,7 @@ final class SpotsModelDragTests: XCTestCase {
 
     func testAPublishThatAccountFinishesGoesBackToTheSheetBehindAccount() async throws {
         try FileManager.default.createDirectory(at: core.appendingPathComponent("openspot.spot"), withIntermediateDirectories: true)
-        try "#!/bin/sh\n# on=sheet.open\nprintf 'row=x\\ntitle=X\\n'\n".writeScript(to: spots.appendingPathComponent("b.spot/b.sh"))
+        try "#!/bin/sh\nprintf 'row=x\\ntitle=X\\n'\n".writeScript(to: spots.appendingPathComponent("b.spot/b.sh"), toml: "on = ['sheet.open']")
         await model.reload()
         try "Does a.".write(to: spots.appendingPathComponent("a.spot/readme.md"), atomically: true, encoding: .utf8)
         model.endEditing(moving: false)
@@ -694,9 +694,9 @@ final class SpotsModelDragTests: XCTestCase {
     }
 
     func testTheStoreFindsTheCardOfASpotThatIsOffByItsStoreID() async throws {
-        try "#!/bin/sh\n# detail=Counts down\n".writeScript(to: core.appendingPathComponent("timer.spot/timer.sh"))
+        try "#!/bin/sh\n".writeScript(to: core.appendingPathComponent("timer.spot/timer.sh"), toml: "detail = 'Counts down'")
         let friends = folder.appendingPathComponent("friends", isDirectory: true)
-        try "#!/bin/sh\n# title=Shared\n".writeScript(to: friends.appendingPathComponent("shared.spot/shared.sh"))
+        try "#!/bin/sh\n".writeScript(to: friends.appendingPathComponent("shared.spot/shared.sh"), toml: "title = 'Shared'")
         _ = try ConfigFile(url: folder.appendingPathComponent("config/config.toml")).change { $0.add(store: Store(url: friends)) }
         await model.reload()
 

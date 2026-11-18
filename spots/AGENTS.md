@@ -5,8 +5,8 @@ These rules hold for the core spots in `spots/` and the spots in `examples/`. A 
 
 ## Rules
 
-- A spot opens with its header, as [The header](../PROTOCOL.md#the-header) shows. `openspot check spots` reports a spot
-  with no header.
+- A spot folder describes each of its spots in its `spot.toml`, as [The manifest](../PROTOCOL.md#the-manifest) shows.
+  A script holds no header.
 - A spot may hold comments.
 - A spot keeps its state in `OPENSPOT_DATA`. A folder from `mktemp` that the spot removes is not state.
 - A core spot does no work all day: it reads on an event, never on a clock. An example may poll, and its readme
@@ -19,7 +19,7 @@ These rules hold for the core spots in `spots/` and the spots in `examples/`. A 
 
 ## Checks
 
-`make verify` runs `scripts/check-spots.sh`. It fails on a core spot with `on=clock.`, and on a spot that names
+`make verify` runs `scripts/check-spots.sh`. It fails on a core spot with a `clock.` event in its `spot.toml`, and on a spot that names
 `TMPDIR` or `/tmp` outside `mktemp`. `scripts/breaks/spot-clocks.txt` and `scripts/breaks/spot-state.txt` list
 today's breaks. The comment and motion checks scan only `app/` and `scripts/`.
 

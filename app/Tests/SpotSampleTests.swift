@@ -20,9 +20,9 @@ final class SpotSampleTests: XCTestCase {
     private var spots: URL { folder.appendingPathComponent("spots") }
     private var store: URL { folder.appendingPathComponent("store") }
 
-    private func spot(_ header: String, body: String = "", named name: String = "timer") throws -> Spot {
+    private func spot(_ toml: String, body: String = "", named name: String = "timer") throws -> Spot {
         let url = spots.spotFile(name)
-        try "#!/bin/sh\n\(header)\n\(body)\n".writeScript(to: url)
+        try "#!/bin/sh\n\(body)\n".writeScript(to: url, toml: toml)
         return try XCTUnwrap(try SpotFile(file: url, id: name)?.spots.first)
     }
 
@@ -32,17 +32,17 @@ final class SpotSampleTests: XCTestCase {
     }
 
     func testASampleScriptBesideASpotGivesItASampleAndIsNoSpotOfItsOwn() throws {
-        let timer = try spot("# title=Timer")
+        let timer = try spot("title = 'Timer'")
         let sample = SpotSample.script(beside: timer.url)
         try "#!/bin/sh\nprintf 'row=a\\ntitle=Sample\\n'\n".writeScript(to: sample)
 
-        XCTAssertEqual(try spot("# title=Timer").sample, sample)
-        XCTAssertNil(try spot("# title=Plain", named: "plain").sample)
+        XCTAssertEqual(try spot("title = 'Timer'").sample, sample)
+        XCTAssertNil(try spot("title = 'Plain'", named: "plain").sample)
         XCTAssertNil(try SpotFile(file: sample, id: "timer/sample"))
     }
 
     func testAScriptNamedSampleInItsOwnFolderIsASpot() throws {
-        let spot = try self.spot("# title=Sample", named: "sample")
+        let spot = try self.spot("title = 'Sample'", named: "sample")
 
         XCTAssertEqual(spot.name, "Sample")
         XCTAssertNil(spot.sample)
@@ -50,7 +50,7 @@ final class SpotSampleTests: XCTestCase {
 
     func testTheCaptureRunsTheSampleScriptAndKeepsItsTextBesideTheSpot() async throws {
         try "#!/bin/sh\nprintf 'row=a\\ntitle=Sample\\n'\n".writeScript(to: SpotSample.script(beside: spots.spotFile("timer")))
-        let spot = try self.spot("# title=Timer", body: "printf 'row=a\\ntitle=Real\\n'")
+        let spot = try self.spot("title = 'Timer'", body: "printf 'row=a\\ntitle=Real\\n'")
 
         try await SpotSample.capture(of: spot, runs: runs)
 
@@ -59,7 +59,7 @@ final class SpotSampleTests: XCTestCase {
     }
 
     func testTheSampleOfASwiftSpotWithSourcesRunsItsSampleScriptAndBuildsNothing() async throws {
-        try "#!/usr/bin/env swift\n// title=Cups\n// on=sheet.open\n// source=more.swift\nprint(\"row=r\\ntitle=\\(real)\")\n".writeScript(to: core.appendingPathComponent("cups.spot/cups.swift"))
+        try "#!/usr/bin/env swift\nprint(\"row=r\\ntitle=\\(real)\")\n".writeScript(to: core.appendingPathComponent("cups.spot/cups.swift"), toml: "title = 'Cups'\non = ['sheet.open']\nsource = ['more.swift']")
         try "let real = \"Real row\"\n".write(to: core.appendingPathComponent("cups.spot/more.swift"), atomically: true, encoding: .utf8)
         try "#!/bin/sh\nprintf 'row=s\\ntitle=Sample row\\n'\n".writeScript(to: core.appendingPathComponent("cups.spot/sample.sh"))
 
@@ -91,7 +91,7 @@ final class SpotSampleTests: XCTestCase {
 
     func testASharedSpotShowsItsKeptSampleAndRunsNoScript() async throws {
         let shared = store.appendingPathComponent("shared.spot")
-        try "#!/bin/sh\n# title=Shared\n".writeScript(to: shared.appendingPathComponent("shared.sh"))
+        try "#!/bin/sh\n".writeScript(to: shared.appendingPathComponent("shared.sh"), toml: "title = 'Shared'")
         try "#!/bin/sh\nprintf 'row=s\\ntitle=Ran\\n'\n".writeScript(to: shared.appendingPathComponent("sample.sh"))
         try "row=s\ntitle=Kept\n".write(to: shared.appendingPathComponent("sample.frame"), atomically: true, encoding: .utf8)
 

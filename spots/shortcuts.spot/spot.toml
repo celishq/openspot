@@ -1,0 +1,6 @@
+icon = "/System/Applications/Shortcuts.app"
+detail = "Run a shortcut"
+on = ["panel.open", "sheet.open"]
+drop = "*"
+uses = ["clipboard"]
+offers = ["card", "search"]

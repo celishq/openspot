@@ -6,10 +6,10 @@ final class SpotCatalogTests: XCTestCase {
 
     override func setUpWithError() throws {
         folder = FileManager.default.temporaryDirectory.appendingPathComponent("openspot-store-list-\(UUID().uuidString)")
-        try "#!/bin/sh\n# detail=Counts down\n".writeScript(to: core.appendingPathComponent("timer.spot/timer.sh"))
-        try "#!/bin/sh\n# title=Apps\n".writeScript(to: core.appendingPathComponent("apps.spot/apps.sh"))
-        try "#!/bin/sh\n# title=Mine\n".writeScript(to: spots.appendingPathComponent("mine.spot/mine.sh"))
-        try "#!/bin/sh\n# title=Shared\n# detail=From a friend\n".writeScript(to: store.appendingPathComponent("shared.spot/shared.sh"))
+        try "#!/bin/sh\n".writeScript(to: core.appendingPathComponent("timer.spot/timer.sh"), toml: "detail = 'Counts down'")
+        try "#!/bin/sh\n".writeScript(to: core.appendingPathComponent("apps.spot/apps.sh"), toml: "title = 'Apps'")
+        try "#!/bin/sh\n".writeScript(to: spots.appendingPathComponent("mine.spot/mine.sh"), toml: "title = 'Mine'")
+        try "#!/bin/sh\n".writeScript(to: store.appendingPathComponent("shared.spot/shared.sh"), toml: "title = 'Shared'\ndetail = 'From a friend'")
     }
 
     override func tearDownWithError() throws {
@@ -32,7 +32,7 @@ final class SpotCatalogTests: XCTestCase {
 
     func testEachStoreFolderListsItsSpotsWithTheFolderTheyCameFrom() throws {
         let friends = folder.appendingPathComponent("friends", isDirectory: true)
-        try "#!/bin/sh\n# title=Clock\n".writeScript(to: friends.appendingPathComponent("clock.spot/clock.sh"))
+        try "#!/bin/sh\n".writeScript(to: friends.appendingPathComponent("clock.spot/clock.sh"), toml: "title = 'Clock'")
         let shelf = list(stores: [Store(url: friends), Store(url: folder.appendingPathComponent("gone")), Store(url: store)])
 
         XCTAssertEqual(shelf.items.map(\.id), ["apps", "clock", "mine", "shared", "timer"])
@@ -46,7 +46,7 @@ final class SpotCatalogTests: XCTestCase {
     func testTheBuiltInStoreIsNamedOpenspotAndComesFromTheExamplesOfTheApp() throws {
         let examples = folder.appendingPathComponent("examples", isDirectory: true)
         let builtIn = try XCTUnwrap(Store.builtIn(environment: ["OPENSPOT_EXAMPLES": examples.path]))
-        try "#!/bin/sh\n# title=Year\n".writeScript(to: examples.appendingPathComponent("year.spot/year.sh"))
+        try "#!/bin/sh\n".writeScript(to: examples.appendingPathComponent("year.spot/year.sh"), toml: "title = 'Year'")
 
         XCTAssertEqual(builtIn.name, "Openspot")
         XCTAssertTrue(builtIn.isBuiltIn)
@@ -88,7 +88,7 @@ final class SpotCatalogTests: XCTestCase {
         XCTAssertEqual(list().items.first { $0.id == "mine" }?.publication, .current)
         XCTAssertFalse(list().items.contains { $0.origin == .store && $0.id == "mine" })
 
-        try "#!/bin/sh\n# title=Mine\necho changed\n".writeScript(to: spots.appendingPathComponent("mine.spot/mine.sh"))
+        try "#!/bin/sh\necho changed\n".writeScript(to: spots.appendingPathComponent("mine.spot/mine.sh"), toml: "title = 'Mine'")
         XCTAssertEqual(list().items.first { $0.id == "mine" }?.publication, .changed)
     }
 

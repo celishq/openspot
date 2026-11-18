@@ -1,8 +1,4 @@
 #!/bin/sh
-# title=Repos
-# on=sheet.open
-#
-# field=folder
 case "$1" in
   read) printf 'text=folder\ntitle=%s\n' "${OPENSPOT_SETTING_FOLDER:-Choose a folder in Settings}" ;;
   folder)

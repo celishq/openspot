@@ -3,11 +3,14 @@
 `draft` · `openspot help calendar` and `openspot help reminders` print this guide. It builds on `openspot guide`, whose
 rules it names by their IDs.
 
+```toml
+title = "Today"
+icon = "calendar"
+on = ["panel.open"]
+```
+
 ```text
 #!/bin/sh
-# title=Today
-# icon=calendar
-# on=panel.open
 case "$1" in
   read) openspot calendar events ;;
   open) openspot calendar show "$2" ;;

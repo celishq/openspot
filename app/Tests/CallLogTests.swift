@@ -53,7 +53,7 @@ final class CallLogTests: SpotRunsCase {
     }
 
     func testATimedReadThatEndsWellLeavesNoRecordAndAPanelReadDoes() async throws {
-        try script(header: "on=panel.open", "echo \"title=$OPENSPOT_REASON\"")
+        try script(toml: "on = ['panel.open']", "echo \"title=$OPENSPOT_REASON\"")
         let sheet = try sheet()
 
         sheet.read(reason: .clock(60))
@@ -66,7 +66,7 @@ final class CallLogTests: SpotRunsCase {
     }
 
     func testATimedReadThatFailsLeavesARecord() async throws {
-        try script(header: "on=panel.open", "echo 'The sensor is gone.' >&2; exit 2")
+        try script(toml: "on = ['panel.open']", "echo 'The sensor is gone.' >&2; exit 2")
         let sheet = try sheet()
 
         sheet.read(reason: .clock(60))

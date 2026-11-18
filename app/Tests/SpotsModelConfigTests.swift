@@ -19,7 +19,7 @@ final class SpotsModelConfigTests: PanelCase {
         )
         model = SpotsModel(host: host, files: files, runs: SpotRuns(stopPause: 0.2, prepare: { await host.prepare($0, glyphs: $1) }))
         host.model = model
-        for name in ["a", "b", "c"] { try script(name, header: "title=\(name)", ":") }
+        for name in ["a", "b", "c"] { try script(name, toml: "title = '\(name)'", ":") }
         await model.reload()
     }
 

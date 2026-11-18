@@ -1,20 +1,19 @@
 import Foundation
 
 struct TestSpot {
-    let header: String
+    let toml: String
     let body: String
 
-    init(header: String = "", body: String = "") {
-        self.header = header
+    init(toml: String = "", body: String = "") {
+        self.toml = toml
         self.body = body
     }
 
     var text: String {
-        let lines = header.isEmpty ? [] : header.split(separator: "\n", omittingEmptySubsequences: false).map { $0.isEmpty ? "#" : "# \($0)" }
-        return "#!/bin/sh\n\(lines.joined(separator: "\n"))\n\(body)\n"
+        "#!/bin/sh\n\(body)\n"
     }
 
     func write(to url: URL) throws {
-        try text.writeScript(to: url)
+        try text.writeScript(to: url, toml: toml)
     }
 }

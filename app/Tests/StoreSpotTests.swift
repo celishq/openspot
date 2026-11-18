@@ -10,10 +10,10 @@ final class StoreSpotTests: BuiltInCase {
 
     override func setUp() async throws {
         try await super.setUp()
-        try "#!/bin/sh\n# detail=Counts down\n".writeScript(to: core.appendingPathComponent("timer.spot/timer.sh"))
+        try "#!/bin/sh\n".writeScript(to: core.appendingPathComponent("timer.spot/timer.sh"), toml: "detail = 'Counts down'")
         try "#!/bin/sh\n".writeScript(to: core.appendingPathComponent("timer.spot/sample.sh"))
-        try "#!/bin/sh\n# title=Shared\n".writeScript(to: root.appendingPathComponent("examples/shared.spot/shared.sh"))
-        try "#!/bin/sh\n# title=Mine\n".writeScript(to: spots.appendingPathComponent("mine.spot/mine.sh"))
+        try "#!/bin/sh\n".writeScript(to: root.appendingPathComponent("examples/shared.spot/shared.sh"), toml: "title = 'Shared'")
+        try "#!/bin/sh\n".writeScript(to: spots.appendingPathComponent("mine.spot/mine.sh"), toml: "title = 'Mine'")
     }
 
     private func items() async throws -> [[String]] {
@@ -43,7 +43,7 @@ final class StoreSpotTests: BuiltInCase {
 
     private func friends() throws -> URL {
         let friends = root.appendingPathComponent("friends")
-        try "#!/bin/sh\n# title=Clock\n".writeScript(to: friends.appendingPathComponent("clock.spot/clock.sh"))
+        try "#!/bin/sh\n".writeScript(to: friends.appendingPathComponent("clock.spot/clock.sh"), toml: "title = 'Clock'")
         return friends
     }
 
@@ -78,7 +78,7 @@ final class StoreSpotTests: BuiltInCase {
         let before = try await runs.answer(of: store, .read, limit: 60)
         XCTAssertEqual(SpotOutput(text: before).parts.first?.values["folder"], ["\(friends.path)\tfriends\tfound\tadded"])
 
-        try "#!/bin/sh\n# title=Year\n".writeScript(to: examples.appendingPathComponent("year.spot/year.sh"))
+        try "#!/bin/sh\n".writeScript(to: examples.appendingPathComponent("year.spot/year.sh"), toml: "title = 'Year'")
         let text = try await runs.answer(of: store, .read, limit: 60)
 
         XCTAssertEqual(SpotOutput(text: text).parts.first?.values["folder"], ["\(examples.path)\tOpenspot\tfound\tbuiltin", "\(friends.path)\tfriends\tfound\tadded"])

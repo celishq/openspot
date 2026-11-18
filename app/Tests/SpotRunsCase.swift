@@ -40,15 +40,15 @@ class SpotRunsCase: XCTestCase {
     }
 
     @discardableResult
-    func script(_ name: String = "script", header: String = "", log: String = "log", _ body: String = "") throws -> URL {
+    func script(_ name: String = "script", toml: String = "", log: String = "log", _ body: String = "") throws -> URL {
         let url = folder.spotFile(name)
-        try TestSpot(header: header, body: "echo $$ >> '\(path("pids"))'\necho \"$*\" >> '\(path(log))'\n\(body)").write(to: url)
+        try TestSpot(toml: toml, body: "echo $$ >> '\(path("pids"))'\necho \"$*\" >> '\(path(log))'\n\(body)").write(to: url)
         return url
     }
 
     @discardableResult
     func script(body: String) throws -> URL {
-        try script("script", header: "", body)
+        try script("script", toml: "", body)
     }
 
     func scanned() throws -> ScanResult {
@@ -94,8 +94,8 @@ class SpotRunsCase: XCTestCase {
     }
 
     @discardableResult
-    func staying(header: String = "mode=stay\noffers=card\noffers=menubar", head: String = "", frame: String = "row=a\\ntitle=A\\n") throws -> URL {
-        try script(header: header, """
+    func staying(toml: String = "mode = 'stay'\noffers = ['card', 'menubar']", head: String = "", frame: String = "row=a\\ntitle=A\\n") throws -> URL {
+        try script(toml: toml, """
         trap 'touch "\(path("ended"))"' EXIT
         while IFS= read -r line; do
           printf '%s\\n' "$line" >> '\(path("blocks"))'

@@ -1,0 +1,139 @@
+[scripts.actions]
+title = "Card actions"
+icon = "ellipsis.circle"
+detail = "Share, set, edit, change the icon of, delete or turn off a spot"
+uses = ["spots"]
+
+[scripts.actions.commands.share]
+title = "Share"
+shortcut = "cmd+shift+c"
+close = true
+offers = ["actions mine, core"]
+
+[scripts.actions.commands.settings]
+title = "Settings"
+shortcut = "cmd+return"
+offers = ["actions"]
+
+[scripts.actions.commands.edit]
+title = "Edit"
+shortcut = "cmd+e"
+offers = ["actions mine, core"]
+
+[scripts.actions.commands.icon]
+title = "Change Icon"
+offers = ["actions"]
+
+[scripts.actions.commands."icon.draw"]
+title = "Draw…"
+
+[scripts.actions.commands."icon.file"]
+title = "Choose File…"
+
+[scripts.actions.commands."icon.reset"]
+title = "Reset Icon"
+when = "hasIcon"
+
+[scripts.actions.commands.delete]
+title = "Delete"
+shortcut = "cmd+backspace"
+offers = ["actions mine"]
+
+[scripts.actions.commands.off]
+title = "Turn off"
+shortcut = "cmd+backspace"
+close = true
+offers = ["actions core"]
+
+[scripts.icon]
+title = "Icon"
+icon = "paintbrush.pointed"
+detail = "Draw the icon of a spot"
+on = ["sheet.open"]
+view = "icon.swift"
+uses = ["spots"]
+drop = "png,jpg,jpeg,heic,gif,tiff,svg,pdf,icns"
+offers = ["none"]
+
+[scripts.make]
+title = "Make a spot"
+icon = "plus"
+detail = "Make a spot that does what you typed"
+on = ["search.text \\S"]
+answers = "last"
+uses = ["clipboard"]
+
+[scripts.new]
+title = "New spot"
+icon = "plus"
+detail = "Make your own"
+on = ["sheet.open"]
+uses = ["clipboard"]
+edits = "spots"
+offers = ["card"]
+
+[scripts.playground]
+title = "Playground"
+icon = "hammer"
+detail = "Try a spot and see each call"
+keywords = ["sandbox"]
+offers = ["card"]
+
+[scripts.quit]
+title = "Quit"
+icon = "power"
+detail = "Openspot"
+uses = ["app"]
+offers = ["card"]
+
+[scripts.settings]
+title = "Settings"
+icon = "gearshape"
+detail = "Choose your key"
+on = ["sheet.open"]
+uses = ["app"]
+offers = ["card", "search"]
+
+[scripts.spots]
+title = "Spots"
+icon = "puzzlepiece.extension"
+detail = "Edit Spots"
+keywords = ["edit spots"]
+offers = ["card"]
+
+[scripts.store]
+title = "Store"
+icon = "bag"
+detail = "Get spots"
+keywords = ["store", "get spots"]
+on = ["sheet.open"]
+uses = ["spots", "account"]
+view = "store.swift"
+offers = ["card", "window"]
+
+[scripts.themes]
+title = "Themes"
+icon = "paintpalette"
+detail = "Change the look"
+keywords = ["theme", "look"]
+on = ["sheet.open"]
+uses = ["app", "clipboard"]
+offers = ["card"]
+pages = ["prompt:*"]
+
+[scripts.updates]
+title = "Updates"
+icon = "arrow.triangle.2.circlepath"
+on = ["app.launch", "app.update"]
+uses = ["app"]
+offers = ["card"]
+
+[scripts.welcome]
+title = "Welcome spot"
+icon = "hand.wave"
+on = ["sheet.open"]
+uses = ["app"]
+offers = ["none"]
+starts = "first-launch"
+view = "welcome.swift"
+pages = ["key", "agent"]

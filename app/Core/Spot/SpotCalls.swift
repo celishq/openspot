@@ -73,7 +73,7 @@ struct SpotCalls {
     func choose(for id: String) -> CommandAPI.Work {
         guard let app else { return CommandAnswer.notRunning("spot choose \(id)") }
         return CommandAnswer.work {
-            guard await app.choose(for: id) else { throw SpotError.failed(1, "Openspot has no spot `\(id)` that takes files. Add drop= to its header.") }
+            guard await app.choose(for: id) else { throw SpotError.failed(1, "Openspot has no spot `\(id)` that takes files. Add drop to its spot.toml.") }
             return ""
         }
     }

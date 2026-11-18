@@ -1,10 +1,4 @@
 #!/bin/sh
-# icon=link
-# detail=Open a link
-# on=panel.open
-# uses=network,clipboard
-# offers=card
-# offers=search
 data="$OPENSPOT_DATA/links.json"
 icons="$OPENSPOT_DATA/icons"
 . "$OPENSPOT_SH"

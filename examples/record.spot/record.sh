@@ -1,13 +1,4 @@
 #!/bin/sh
-# title=Record
-# icon=record.circle
-# detail=Record the screen, again to stop
-# uses=screen,clipboard
-# offers=card
-#
-# field=inputs
-# title=Sound and camera
-# icon=mic
 . "$OPENSPOT_SH"
 kept=${OPENSPOT_SETTING_INPUTS-}
 

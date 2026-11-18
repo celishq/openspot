@@ -1,12 +1,4 @@
 #!/usr/bin/env swift
-// title=Draw
-// icon=scribble.variable
-// detail=Sketch on a board
-// mode=stay
-// on=sheet.open
-// uses=files
-// source=model
-// source=app
 import AppKit
 
 // Draw is one process that Openspot keeps: it answers the sheet, and it is the board window.

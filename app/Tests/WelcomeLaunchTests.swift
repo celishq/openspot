@@ -21,6 +21,7 @@ final class WelcomeLaunchTests: XCTestCase {
             try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
         }
         try FileManager.default.createSymbolicLink(at: core.spotFile(Self.welcome), withDestinationURL: repoSpots.spotFile(Self.welcome))
+        try FileManager.default.createSymbolicLink(at: core.appendingPathComponent("openspot.spot/spot.toml"), withDestinationURL: repoSpots.appendingPathComponent("openspot.spot/spot.toml"))
         try FileManager.default.copyItem(at: Bundle(for: Self.self).bundleURL.deletingLastPathComponent().appendingPathComponent("openspot"), to: tools.appendingPathComponent("openspot"))
         let environment = ["OPENSPOT_SPOTS": spots.path, "OPENSPOT_CONFIG": config.path, "OPENSPOT_CORE": core.path]
         suite = "openspot-welcome-\(UUID().uuidString)"

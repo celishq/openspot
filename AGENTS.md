@@ -67,7 +67,7 @@ Write a doc that people read, such as `GUIDE.md` and `PROTOCOL.md`, the way Appl
 ## Comments
 
 - Code and the scripts in `scripts/` hold no comment and no docstring. A spot may; see [spots/AGENTS.md](spots/AGENTS.md). A name, a type or a test says what a comment would.
-- The one exception is a `// @todo #<id>` puzzle. The header of a spot script is not a comment: it is part of the spot.
+- The one exception is a `// @todo #<id>` puzzle.
 - `make verify` runs `scripts/check-comments.sh`, which fails on a comment.
 
 ## UX

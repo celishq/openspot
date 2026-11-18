@@ -4,7 +4,7 @@ import XCTest
 @MainActor
 final class PlaygroundCallTests: SpotRunsCase {
     func testTheRunsTellEachCallWithItsPartsAlsoAQuietOne() async throws {
-        try script(header: "on=sheet.open\non=sheet.text", "echo 'slow disk' >&2\nprintf 'row=a\\ntitle=%s\\n' \"$OPENSPOT_VALUE\"")
+        try script(toml: "on = ['sheet.open', 'sheet.text']", "echo 'slow disk' >&2\nprintf 'row=a\\ntitle=%s\\n' \"$OPENSPOT_VALUE\"")
         var calls: [PlaygroundCall] = []
         runs.onCall = { calls.append(PlaygroundCall(record: $0, reason: $1)) }
         let sheet = try sheet()
@@ -34,7 +34,7 @@ final class PlaygroundCallTests: SpotRunsCase {
     }
 
     func testTheRunsTellEachCallOfAStayingSpotOnceWhenItEnds() async throws {
-        try script(header: "mode=stay\noffers=card\noffers=menubar", """
+        try script(toml: "mode = 'stay'\noffers = ['card', 'menubar']", """
         while IFS= read -r line; do
           case "$line" in
             call=*) id=${line#call=}; name= ;;
@@ -95,20 +95,22 @@ final class PlaygroundCallTests: SpotRunsCase {
         XCTAssertEqual(playground.calls.first?.lines.first, "$ c29")
     }
 
-    func testThePresetsAreTheRunnableExamplesOfTheGuideAndEachSheetAsASpot() {
-        let guide = "# Guide\n\n```sh\n#!/bin/sh\n# title=Hello\nsay hi\n```\n\n```text\nnot run\n```\n\n```js\n// title=Sum\nfunction main() { return '' }\n```\n"
+    func testThePresetsAreTheRunnableExamplesOfTheGuideWithTheirManifestAndEachSheetAsASpot() {
+        let guide = "# Guide\n\n```toml\ntitle = \"Hello\"\n```\n\n```sh\n#!/bin/sh\nsay hi\n```\n\n```text\nnot run\n```\n\n```sh\nopenspot spot list\n```\n\n```toml\ntitle = \"Sum\"\non = [\"sheet.open\"]\n```\n\n```js\nfunction main() { return '' }\n```\n"
 
         let presets = Playground.presets(guide: guide)
 
         XCTAssertEqual(presets.prefix(2).map(\.name), ["Hello", "Sum"])
-        XCTAssertEqual(presets[1].text, "// title=Sum\nfunction main() { return '' }\n")
+        XCTAssertEqual(presets[1].manifest, "title = \"Sum\"\non = [\"sheet.open\"]\n")
+        XCTAssertEqual(presets[1].text, "function main() { return '' }\n")
         XCTAssertEqual(presets.count, 2 + SheetExamples.all.count)
         let sheet = try? XCTUnwrap(presets.last)
-        XCTAssertTrue(sheet?.text.hasPrefix("#!/bin/sh\n# title=\(SheetExamples.all.last?.name ?? "")\n# on=sheet.open\ncat <<'SHEET'\n") == true)
+        XCTAssertEqual(sheet?.manifest, "title = \"\(SheetExamples.all.last?.name ?? "")\"\non = [\"sheet.open\"]\n")
+        XCTAssertTrue(sheet?.text.hasPrefix("#!/bin/sh\ncat <<'SHEET'\n") == true)
     }
 
     func testAFileOfJavaScriptRunsAsJavaScript() {
-        XCTAssertEqual(Playground.fileExtension(of: "// title=Sum\n"), "js")
+        XCTAssertEqual(Playground.fileExtension(of: "function main() { return '' }\n"), "js")
         XCTAssertEqual(Playground.fileExtension(of: "#!/bin/sh\n"), "sh")
     }
 }

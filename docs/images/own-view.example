@@ -1,8 +1,4 @@
 #!/bin/sh
-# title=Cups this week
-# icon=chart.bar
-# on=sheet.open
-# view=week.swift
 printf 'view=week\n\n'
 printf 'row=mon\ntitle=Monday\ncups=3\n\n'
 printf 'row=tue\ntitle=Tuesday\ncups=1\n\n'

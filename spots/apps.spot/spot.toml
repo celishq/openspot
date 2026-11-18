@@ -1,0 +1,4 @@
+icon = "/System/Applications/Apps.app"
+detail = "Open app"
+on = ["panel.open"]
+offers = ["card", "search"]

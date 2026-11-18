@@ -42,9 +42,8 @@ final class SpotSettingsSheetTests: XCTestCase {
         ((try? String(contentsOf: log, encoding: .utf8)) ?? "").split(separator: "\n").map(String.init)
     }
 
-    private func script(_ name: String, header: String) throws {
-        let lines = header.split(separator: "\n", omittingEmptySubsequences: false).map { $0.isEmpty ? "#" : "# \($0)" }.joined(separator: "\n")
-        try "#!/bin/sh\n\(lines)\necho \"$*\" >> '\(log.path)'\n[ \"$1\" = read ] && printf 'row=own\\ntitle=Own\\n'\nexit 0\n".writeScript(to: spots.spotFile(name))
+    private func script(_ name: String, toml: String) throws {
+        try "#!/bin/sh\necho \"$*\" >> '\(log.path)'\n[ \"$1\" = read ] && printf 'row=own\\ntitle=Own\\n'\nexit 0\n".writeScript(to: spots.spotFile(name), toml: toml)
     }
 
     private func show(selecting id: String, search: String = "") async throws {
@@ -57,7 +56,7 @@ final class SpotSettingsSheetTests: XCTestCase {
     }
 
     func testCommandReturnOpensTheSettingsOfAListSpotFromItsCardAndNotItsOwnSheet() async throws {
-        try script("draw", header: "title=Draw\non=sheet.open\noffers=card\noffers=float")
+        try script("draw", toml: "title = 'Draw'\non = ['sheet.open']\noffers = ['card', 'float']")
         try await show(selecting: "draw")
         let settings = SpotSettings.sheetID(of: "draw")
 
@@ -79,7 +78,7 @@ final class SpotSettingsSheetTests: XCTestCase {
     }
 
     func testASpotWhoseReturnRunsItKeepsItsSettingsApartFromItsOwnSheet() async throws {
-        try script("conf", header: "title=Confetti\non=sheet.open\npress=open\noffers=card\noffers=float")
+        try script("conf", toml: "title = 'Confetti'\non = ['sheet.open']\npress = 'open'\noffers = ['card', 'float']")
         try await show(selecting: "conf")
 
         XCTAssertEqual(model.hint, "⏎ Run   ⌘⏎ Settings   ⌘K Actions")
@@ -94,7 +93,7 @@ final class SpotSettingsSheetTests: XCTestCase {
     }
 
     func testTheSettingsActOfACardOpensItsSettingsSheet() async throws {
-        try script("draw", header: "title=Draw\non=sheet.open")
+        try script("draw", toml: "title = 'Draw'\non = ['sheet.open']")
         try await show(selecting: "draw")
 
         XCTAssertTrue(model.act(.settings, on: "draw"))
@@ -104,8 +103,8 @@ final class SpotSettingsSheetTests: XCTestCase {
     }
 
     func testACardWithNothingElseToSetHasSettingsWithItsPlaceInTheMenuBarAndEachValueItKeeps() async throws {
-        try script("quit", header: "title=Quit")
-        try script("lock", header: "title=Lock")
+        try script("quit", toml: "title = 'Quit'")
+        try script("lock", toml: "title = 'Lock'")
         try model.files.config.set(setting: "theme", of: "lock", to: "dark")
         try await show(selecting: "quit")
 
@@ -125,7 +124,7 @@ final class SpotSettingsSheetTests: XCTestCase {
     }
 
     func testReturnOnAFieldRunsTheActionOfItsNameAndTheMenuBarRowTurnsItsPlaceOnAndOff() async throws {
-        try script("cups", header: "title=Cups\non=sheet.open\non=clock.60\noffers=card\noffers=float\n\nfield=size")
+        try script("cups", toml: "title = 'Cups'\non = ['sheet.open', 'clock.60']\noffers = ['card', 'float']\n[settings.size]")
         try await show(selecting: "cups", search: "cups")
         XCTAssertTrue(model.openSelectedSettings())
         try await wait("the rows") { model.openItems?.shown.map(\.run) == ["key:cups:open", "key:cups:float", "setting:cups:size", "menubar:cups"] }

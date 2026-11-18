@@ -1,0 +1,9 @@
+title = "Record"
+icon = "record.circle"
+detail = "Record the screen, again to stop"
+uses = ["screen", "clipboard"]
+offers = ["card"]
+
+[settings.inputs]
+title = "Sound and camera"
+icon = "mic"

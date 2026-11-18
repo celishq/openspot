@@ -21,11 +21,14 @@ final class ProtocolContractTests: XCTestCase {
         let doc = try RepoDoc("PROTOCOL.md")
         let pages = RepoDoc.tableRows(in: doc.section("Pages"))
         let headerKeys = Set(HeaderKey.allCases.map(\.rawValue) + [HeaderKey.drawing + "<size>"])
-        let docHeaderKeys = keys(RepoDoc.tableRows(in: doc.section("The header")).filter { !$0[0].hasPrefix("`button") && !$0[0].hasPrefix("`field") }.map { $0[0] })
-            + keys(pages.filter { $0[1] == "the header" }.map { $0[0] })
+        let manifest = RepoDoc.tableRows(in: doc.section("The manifest"))
+        let docHeaderKeys = keys(manifest.filter { !$0[0].hasPrefix("`[") }.map { $0[0] })
+            + keys(pages.filter { $0[1] == "the manifest" }.map { $0[0] })
 
         let headerKinds = Set(HeaderBlock.allCases.map(\.rawValue))
-        let docHeaderKinds = keys(RepoDoc.tableRows(in: doc.section("The header")).filter { $0[0].hasPrefix("`button") || $0[0].hasPrefix("`field") }.map { $0[0] })
+        let tables = ["commands": HeaderBlock.button.rawValue, "settings": HeaderBlock.field.rawValue]
+        let docHeaderKinds = manifest.filter { $0[0].hasPrefix("`[") }.flatMap { RepoDoc.code($0[0]) }
+            .map { table in tables[String(table.dropFirst().prefix { $0 != "." })] ?? table }
 
         let headKeys = Set(HeadKey.allCases.map(\.rawValue) + [HeaderKey.drawing + "<size>"])
         let docHeadKeys = keys([doc.section("The head").components(separatedBy: "- The head can come")[0]])

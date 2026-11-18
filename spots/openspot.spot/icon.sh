@@ -1,12 +1,4 @@
 #!/bin/sh
-# title=Icon
-# icon=paintbrush.pointed
-# detail=Draw the icon of a spot
-# on=sheet.open
-# view=icon.swift
-# uses=spots
-# drop=png,jpg,jpeg,heic,gif,tiff,svg,pdf,icns
-# offers=none
 data="$OPENSPOT_DATA/icons"
 target=$(cat "$data/target" 2>/dev/null)
 name=$(printf '%s' "$target" | tr '/' '_')

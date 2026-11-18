@@ -31,12 +31,11 @@ final class BigPasteTests: XCTestCase {
         let url = folder.spotFile("script")
         try """
         #!/bin/sh
-        # on=sheet.open
         case "$1" in
           read) printf 'field=input\\nvalue=\\n\\nfield=output\\nvalue=\\nreadonly=true\\n' ;;
           input) \(answer) ;;
         esac
-        """.writeScript(to: url)
+        """.writeScript(to: url, toml: "on = ['sheet.open']")
         runs.take(try SpotsFolder(url: folder).scan())
         return try XCTUnwrap(runs.sheets["script"])
     }

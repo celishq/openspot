@@ -2,14 +2,14 @@ import XCTest
 @testable import OpenspotCore
 
 final class GlobalKeyTests: XCTestCase {
-    private func command(header: String) throws -> Spot {
-        let block = SpotHeader(text: "#!/bin/sh\n\(header)\n").block
+    private func command(toml: String) throws -> Spot {
+        let block = try SpotToml(text: toml, folder: "/spots").block(of: "move.sh")
         let spot = try SpotFile(script: URL(fileURLWithPath: "/spots/move.sh"), header: block, id: "move")
         return try XCTUnwrap(spot.spots.first)
     }
 
     func testAHeaderListsEachCommandAsABlockAfterABlankCommentLine() throws {
-        let spot = try command(header: "# title=Move\n#\n# button=full\n# title=Full screen\n#\n# button=meet\n# title=Join: 09:30\n# icon=https://example.com/meet.png")
+        let spot = try command(toml: "title = 'Move'\n[commands.full]\ntitle = 'Full screen'\n[commands.meet]\ntitle = 'Join: 09:30'\nicon = 'https://example.com/meet.png'")
 
         XCTAssertEqual(spot.name, "Move")
         XCTAssertEqual(spot.offers.map(\.id), ["full", "meet"])
@@ -18,15 +18,15 @@ final class GlobalKeyTests: XCTestCase {
     }
 
     func testABadCommandRefusesTheSpotAndNamesTheFault() {
-        for block in ["# button=full", "# button=read\n# title=Read", "# button=full now\n# title=Full"] {
-            XCTAssertThrowsError(try command(header: block), block) { error in
+        for block in ["[commands.full]", "[commands.read]\ntitle = 'Read'", "[commands.'full now']\ntitle = 'Full'"] {
+            XCTAssertThrowsError(try command(toml: block), block) { error in
                 XCTAssertTrue((error as? SpotError)?.reason.contains("cannot read the button") == true, block)
             }
         }
     }
 
     func testASettingIsABlockWithATitleOrItsKey() throws {
-        let spot = try command(header: "# title=Repos\n#\n# field=folder\n#\n# field=editor\n# title=Default app\n# icon=app.badge")
+        let spot = try command(toml: "title = 'Repos'\n[settings.folder]\n[settings.editor]\ntitle = 'Default app'\nicon = 'app.badge'")
 
         XCTAssertEqual(spot.settings.map(\.id), ["folder", "editor"])
         XCTAssertEqual(spot.settings.map(\.title), ["Folder", "Default app"])
@@ -35,7 +35,7 @@ final class GlobalKeyTests: XCTestCase {
 
     func testOnlyACommandThatAScriptListsTakesItsKey() throws {
         let folder = try temporaryFolder()
-        try "#!/bin/sh\n# button=full\n# title=Full screen\n".writeScript(to: folder.spotFile("move"))
+        try "#!/bin/sh\n".writeScript(to: folder.spotFile("move"), toml: "[commands.full]\ntitle = 'Full screen'")
         let shortcut = try XCTUnwrap(Shortcut(text: "ctrl+up"))
         let listed = GlobalKey(spot: "move", command: "full", shortcut: shortcut)
         let unlisted = GlobalKey(spot: "move", command: "rm", shortcut: shortcut)
@@ -86,7 +86,7 @@ final class GlobalKeyTests: XCTestCase {
         let config = Config(text: "[[keys]]\nspot = \"notes\"\nopen = true\nkey = \"ctrl+option+n\"\n\n[[keys]]\nspot = \"mail\"\nopen = \"yes\"\nkey = \"ctrl+option+m\"\n")
         let notes = GlobalKey(spot: "notes", act: .open, trigger: .key(try XCTUnwrap(Shortcut(text: "ctrl+option+n"))))
         try "#!/bin/sh\n".writeScript(to: folder.spotFile("notes"))
-        try "#!/bin/sh\n# offers=none\n".writeScript(to: folder.spotFile("hidden"))
+        try "#!/bin/sh\n".writeScript(to: folder.spotFile("hidden"), toml: "offers = ['none']")
 
         XCTAssertEqual(config.keys, [notes])
         XCTAssertEqual(config.faults, ["config.toml: the key of mail takes open = true, or no open line."])
@@ -116,10 +116,10 @@ final class GlobalKeyTests: XCTestCase {
 
     func testAKeyWithNoCommandStaysOnlyForASpotThatOffersFloat() throws {
         let folder = try temporaryFolder()
-        try "#!/bin/sh\n# on=sheet.open\n# offers=float\n".writeScript(to: folder.spotFile("shelf"))
+        try "#!/bin/sh\n".writeScript(to: folder.spotFile("shelf"), toml: "on = ['sheet.open']\noffers = ['float']")
         try "#!/bin/sh\n".writeScript(to: folder.spotFile("notes"))
-        try "#!/bin/sh\n# on=clock.60\n# offers=card\n# offers=float\necho text=cups\n".writeScript(to: folder.spotFile("cups"))
-        try "#!/bin/sh\n# on=sheet.open\n".writeScript(to: folder.spotFile("sheet"))
+        try "#!/bin/sh\necho text=cups\n".writeScript(to: folder.spotFile("cups"), toml: "on = ['clock.60']\noffers = ['card', 'float']")
+        try "#!/bin/sh\n".writeScript(to: folder.spotFile("sheet"), toml: "on = ['sheet.open']")
         let shortcut = try XCTUnwrap(Shortcut(text: "ctrl+up"))
         let shelf = GlobalKey(spot: "shelf", act: .float, trigger: .key(shortcut))
         let cups = GlobalKey(spot: "cups", act: .float, trigger: .key(shortcut))

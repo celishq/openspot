@@ -8,6 +8,13 @@ public enum HeaderBlock: String, CaseIterable, Sendable {
         }
     }
 
+    var word: String {
+        switch self {
+        case .button: "command"
+        case .field: "setting"
+        }
+    }
+
     init?(block: TextBlock) {
         guard let kind = block.fields.first.flatMap({ HeaderBlock(rawValue: $0.key) }) else { return nil }
         self = kind
@@ -15,6 +22,6 @@ public enum HeaderBlock: String, CaseIterable, Sendable {
 
     static func unknown(in block: TextBlock) -> String? {
         guard let kind = HeaderBlock(block: block) else { return nil }
-        return block.fields.map(\.key).first { HeaderKey.isWord($0) && !kind.keys.contains($0) }
+        return block.fields.map(\.key).first { !kind.keys.contains($0) }
     }
 }

@@ -1,0 +1,7 @@
+title = "Draw"
+icon = "scribble.variable"
+detail = "Sketch on a board"
+mode = "stay"
+on = ["sheet.open"]
+uses = ["files"]
+source = ["model", "app"]

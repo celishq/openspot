@@ -1,10 +1,4 @@
 #!/bin/sh
-# title=CPU
-# detail=The use of all cores
-# on=system.load
-# mode=stay
-# offers=card
-# offers=menubar
 
 # Prints the use of all cores, the last of the points, with each point as a bar.
 draw() {

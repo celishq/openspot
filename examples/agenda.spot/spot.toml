@@ -1,0 +1,9 @@
+title = "Agenda"
+icon = "calendar"
+detail = "Today and tomorrow, with your reminders"
+on = ["panel.open", "sheet.text", "clock.60"]
+uses = ["calendar"]
+offers = ["card", "menubar"]
+
+[settings.calendars]
+icon = "calendar"

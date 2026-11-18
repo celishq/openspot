@@ -299,7 +299,7 @@ public final class SpotRuns {
     }
 
     func wants(_ spot: Spot) -> Bool {
-        if isInMenuBar(spot) || spot.mode == .always { return true }
+        if isInMenuBar(spot) || spot.mode == .stay && spot.readsAtLaunch { return true }
         if isPanelOpen, spot.mode.stays, spot.answers != nil { return true }
         guard let read = spot.read else { return false }
         return isPanelOpen && (read.has(.panel) || placed.contains(spot.id))
@@ -412,7 +412,7 @@ public final class SpotRuns {
 
     func used(_ call: SpotUseCall, by caller: Spot) {
         guard usage.used(call, by: caller, at: now()) else { return }
-        onReport(caller.id, .toast("\(caller.name) \(call.words) without `uses=\(call.use.rawValue)` in its header. Add it to stop this note."))
+        onReport(caller.id, .toast("\(caller.name) \(call.words) without `\(call.use.rawValue)` in the `uses` of its spot.toml. Add it to stop this note."))
     }
 
     private func track(_ process: ScriptProcess, of spot: String, caller: SpotCaller) {

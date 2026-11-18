@@ -1,0 +1,7 @@
+title = "Shot"
+icon = "camera.viewfinder"
+detail = "Take a picture of the screen and mark it"
+uses = ["screen", "clipboard"]
+offers = ["card"]
+mode = "stay"
+source = ["shot"]

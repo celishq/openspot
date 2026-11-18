@@ -2,10 +2,13 @@
 
 `draft` · `openspot help screen` prints this guide. It builds on `openspot guide`, whose rules it names by their IDs.
 
+```toml
+title = "Shot"
+icon = "camera.viewfinder"
+```
+
 ```sh
 #!/bin/sh
-# title=Shot
-# icon=camera.viewfinder
 file=$(openspot screen shot) || exit 1
 [ -n "$file" ] || exit 0
 openspot clipboard copy "$file" && echo "toast=Copied the picture."

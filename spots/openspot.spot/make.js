@@ -1,9 +1,3 @@
-// title=Make a spot
-// icon=plus
-// detail=Make a spot that does what you typed
-// on=search.text \S
-// answers=last
-// uses=clipboard
 
 /** The row under the results of every search. A pick copies a prompt that asks your agent to build a spot for the words. */
 function main([id, picked], env) {

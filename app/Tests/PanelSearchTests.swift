@@ -4,8 +4,8 @@ import XCTest
 @MainActor
 final class PanelSearchTests: PanelCase {
     private func showGrid() async throws {
-        try script("alpha", header: "title=Alpha", "true")
-        try script("beta", header: "title=Beta", "true")
+        try script("alpha", toml: "title = 'Alpha'", "true")
+        try script("beta", toml: "title = 'Beta'", "true")
         await model.reload()
         model.isShown = true
         model.panelWillShow()
@@ -31,8 +31,8 @@ final class PanelSearchTests: PanelCase {
 
     func testASpotThatOffersNoPlaceIsNotFound() async throws {
         try await showGrid()
-        try script("hidden", header: "title=Alphabet\noffers=none", "true")
-        try script("acts", header: "title=Alpha acts\n\nbutton=change\ntitle=Change\noffers=actions", "true")
+        try script("hidden", toml: "title = 'Alphabet'\noffers = ['none']", "true")
+        try script("acts", toml: "title = 'Alpha acts'\n[commands.change]\ntitle = 'Change'\noffers = ['actions']", "true")
         await model.reload()
 
         model.query = "al"

@@ -7,7 +7,7 @@ final class SlashCommandPanelTests: PanelCase {
     }
 
     private func writeNotes() throws {
-        try script("notes", header: "title=Notes\non=sheet.open\n\nbutton=add\ntitle=Add note\nplaceholder=What to add\n\nbutton=find\ntitle=Find note\nplaceholder=What to find", """
+        try script("notes", toml: "title = 'Notes'\non = ['sheet.open']\n[commands.add]\ntitle = 'Add note'\nplaceholder = 'What to add'\n[commands.find]\ntitle = 'Find note'\nplaceholder = 'What to find'", """
         stdin=$(cat)
         printf '%s\\n%s\\n' "$*" "$stdin" >> '\(input.path)'
         search=$(printf '%s\\n' "$stdin" | sed -n 's/^search=//p' | head -n 1)
@@ -38,7 +38,7 @@ final class SlashCommandPanelTests: PanelCase {
 
     func testASlashWordListsTheMatchingCommandsWithTheFirstHighlighted() async throws {
         try writeNotes()
-        try script("trash", header: "title=Trash", "printf 'toast=Emptied\\n'")
+        try script("trash", toml: "title = 'Trash'", "printf 'toast=Emptied\\n'")
         await open()
 
         type("/note buy milk")
@@ -79,7 +79,7 @@ final class SlashCommandPanelTests: PanelCase {
     }
 
     func testAStayingSpotAnswersASlashCommand() async throws {
-        try script("ping", header: "title=Ping\nmode=stay\n\nbutton=ping\ntitle=Ping\nplaceholder=What to ping\n\nbutton=pong\ntitle=Pong\nplaceholder=What to pong", """
+        try script("ping", toml: "title = 'Ping'\nmode = 'stay'\n[commands.ping]\ntitle = 'Ping'\nplaceholder = 'What to ping'\n[commands.pong]\ntitle = 'Pong'\nplaceholder = 'What to pong'", """
         . "$OPENSPOT_SH"
         main() { case "$1" in ping) openspot_kv toast "Ping $(value search)" ;; esac; }
         openspot_serve main "$@"
@@ -105,7 +105,7 @@ final class SlashCommandPanelTests: PanelCase {
     }
 
     func testWithNoTextReturnRunsTheCommandOfItsRow() async throws {
-        try script("solo", header: "title=Solo\n\nbutton=solo\ntitle=Solo\nplaceholder=What", "printf 'toast=Ran\\n'")
+        try script("solo", toml: "title = 'Solo'\n[commands.solo]\ntitle = 'Solo'\nplaceholder = 'What'", "printf 'toast=Ran\\n'")
         await open()
 
         type("/solo")
@@ -126,9 +126,9 @@ final class SlashCommandPanelTests: PanelCase {
 
     func testALoneSlashListsEveryCommandThatTakesText() async throws {
         try writeNotes()
-        try script("windows", header: "title=Windows\n\nbutton=full\ntitle=Full screen", "printf 'toast=Full\\n'")
-        try script("trash", header: "title=Trash", "printf 'toast=Emptied\\n'")
-        try script("say", header: "title=Say\nplaceholder=What to say", "printf 'toast=Said\\n'")
+        try script("windows", toml: "title = 'Windows'\n[commands.full]\ntitle = 'Full screen'", "printf 'toast=Full\\n'")
+        try script("trash", toml: "title = 'Trash'", "printf 'toast=Emptied\\n'")
+        try script("say", toml: "title = 'Say'\nplaceholder = 'What to say'", "printf 'toast=Said\\n'")
         await open()
 
         type("/")
@@ -139,7 +139,7 @@ final class SlashCommandPanelTests: PanelCase {
     }
 
     func testASpotWithAPlaceholderRunsOpenWithTheText() async throws {
-        try script("say", header: "title=Say\nplaceholder=What to say", """
+        try script("say", toml: "title = 'Say'\nplaceholder = 'What to say'", """
         stdin=$(cat)
         printf '%s\\n%s\\n' "$*" "$stdin" >> '\(input.path)'
         printf 'toast=Said\\n'
@@ -165,7 +165,7 @@ final class SlashCommandPanelTests: PanelCase {
     }
 
     func testAFormButtonOfASpotWithAPlaceholderOpensItsFormFilledByTheSpot() async throws {
-        try script("jot", header: "title=Jot\non=panel.open\non=sheet.open", """
+        try script("jot", toml: "title = 'Jot'\non = ['panel.open', 'sheet.open']", """
         . "$OPENSPOT_SH"
         case "$1" in
           new) printf 'title=New jot\\n\\nfield=text\\ntitle=Text\\n'; openspot_kv value "$(value search)" ;;
@@ -234,7 +234,7 @@ final class SlashCommandPanelTests: PanelCase {
     }
 
     func testASheetSpotGetsTheTextOnTheStdinOfItsRead() async throws {
-        try script("translate", header: "title=Translate\non=sheet.open\nplaceholder=Text to translate", """
+        try script("translate", toml: "title = 'Translate'\non = ['sheet.open']\nplaceholder = 'Text to translate'", """
         stdin=$(cat)
         printf '%s\\n%s\\n' "$*" "$stdin" >> '\(input.path)'
         printf 'field=input\\n'

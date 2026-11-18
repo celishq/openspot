@@ -1,0 +1,3 @@
+detail = "Its charge, and the time left"
+on = ["power.change"]
+offers = ["card", "menubar"]

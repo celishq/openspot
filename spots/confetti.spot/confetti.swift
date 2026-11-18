@@ -1,15 +1,4 @@
 #!/usr/bin/env swift
-// title=Confetti
-// icon=party.popper
-// detail=Celebrate on each screen
-// mode=stay
-// source=confetti
-//
-// button=play
-// title=Play
-//
-// field=look
-// title=Look
 
 // Openspot builds this file with the Swift files of `confetti/`, and keeps one process while a call plays: the call
 // ends when the last piece leaves the screens, so no process of Confetti runs at rest. The key that plays it is the key

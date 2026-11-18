@@ -164,7 +164,7 @@ final class NewSpotTests: BuiltInCase {
     }
 
     func testTheEditSheetIsTheSameFormForAChangeWithOpenInEditor() async throws {
-        try "#!/bin/sh\n# title=Weather\necho\n".writeScript(to: spots.spotFile("weather"))
+        try "#!/bin/sh\necho\n".writeScript(to: spots.spotFile("weather"), toml: "title = 'Weather'")
         let sheet = try editSheet(of: "weather")
 
         let output = SpotOutput(text: try await edit(sheet, .read))
@@ -183,7 +183,7 @@ final class NewSpotTests: BuiltInCase {
     }
 
     func testCopyPromptOnAnEditSheetCopiesTheChangeOfTheSpotsFileToTheEnd() async throws {
-        try "#!/bin/sh\n# title=Weather\necho\n".writeScript(to: spots.spotFile("weather"))
+        try "#!/bin/sh\necho\n".writeScript(to: spots.spotFile("weather"), toml: "title = 'Weather'")
 
         _ = try await edit(try editSheet(of: "weather"), .press("copy"), input: "describe=Add a refresh button\n")
 
@@ -194,7 +194,7 @@ final class NewSpotTests: BuiltInCase {
     }
 
     func testCopyPromptOnAnEmptyEditSheetAsksWhatToChangeWithTheLastFailure() async throws {
-        try "#!/bin/sh\n# title=Weather\necho\n".writeScript(to: spots.spotFile("weather"))
+        try "#!/bin/sh\necho\n".writeScript(to: spots.spotFile("weather"), toml: "title = 'Weather'")
 
         _ = try await edit(try editSheet(of: "weather"), .press("copy"), input: "describe=\n", variables: ["OPENSPOT_EDIT_FAILURE": "The server did not answer."])
 
@@ -205,8 +205,8 @@ final class NewSpotTests: BuiltInCase {
     }
 
     func testEachSpotKeepsADraftOfItsOwnApartFromNewSpot() async throws {
-        try "#!/bin/sh\n# title=Weather\necho\n".writeScript(to: spots.spotFile("weather"))
-        try "#!/bin/sh\n# title=Notes\necho\n".writeScript(to: spots.spotFile("notes"))
+        try "#!/bin/sh\necho\n".writeScript(to: spots.spotFile("weather"), toml: "title = 'Weather'")
+        try "#!/bin/sh\necho\n".writeScript(to: spots.spotFile("notes"), toml: "title = 'Notes'")
         let weather = try editSheet(of: "weather")
         let notes = try editSheet(of: "notes")
 
@@ -226,7 +226,7 @@ final class NewSpotTests: BuiltInCase {
     }
 
     func testACoreSpotIsCopiedIntoTheSpotsFolderFirstAndAnOwnCopyChangesInPlace() async throws {
-        try "#!/bin/sh\n# title=Cups\necho\n".writeScript(to: core.spotFile("cups"))
+        try "#!/bin/sh\necho\n".writeScript(to: core.spotFile("cups"), toml: "title = 'Cups'")
         try file.turn("cups", on: true)
         let sheet = try editSheet(of: "cups")
         let copy = spots.appendingPathComponent("cups.spot", isDirectory: true)
@@ -244,7 +244,7 @@ final class NewSpotTests: BuiltInCase {
         XCTAssertTrue(asking.contains(core.appendingPathComponent("cups.spot").path))
         XCTAssertTrue(asking.contains("Ask me what to change"))
 
-        try "#!/bin/sh\n# title=Cups\necho\n".writeScript(to: copy.appendingPathComponent("cups.sh"))
+        try "#!/bin/sh\necho\n".writeScript(to: copy.appendingPathComponent("cups.sh"), toml: "title = 'Cups'")
         _ = try await edit(try editSheet(of: "cups"), .press("copy"), input: "describe=Count in litres\n")
         let own = try saved("clipboard")
         XCTAssertTrue(own.hasPrefix("Change the Openspot spot in \(copy.appendingPathComponent("cups.sh").path): Count in litres"), own)
@@ -267,31 +267,6 @@ final class NewSpotTests: BuiltInCase {
             XCTFail("expected a fault")
         } catch {
             XCTAssertEqual((error as? SpotError)?.reason, "New spot cannot do that.")
-        }
-    }
-
-    private func blocks(_ fence: String) -> [String] {
-        guideText.components(separatedBy: "```\(fence)\n").dropFirst().map { $0.components(separatedBy: "```")[0] }
-    }
-
-    func testEachExampleScriptInTheGuideLoadsAndAnswers() async throws {
-        let scripts = blocks("sh").map { ($0, "sh") } + blocks("js").map { ($0, "js") }
-        XCTAssertGreaterThan(scripts.count, 5)
-        for (index, (script, kind)) in scripts.enumerated() where !script.contains("view=") {
-            let folder = root.appendingPathComponent("example-\(index)")
-            try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
-            let file = folder.spotFile("example", extension: kind)
-            try FileManager.default.createDirectory(at: file.deletingLastPathComponent(), withIntermediateDirectories: true)
-            if kind == "js" { try script.write(to: file, atomically: true, encoding: .utf8) } else { try script.writeScript(to: file) }
-            let header = SpotHeader(text: script).block
-            let named = header.fields.filter { $0.key.hasPrefix("grid.") }.flatMap { $0.value.split(separator: " ").map(String.init) } + header.values("to")
-            for name in Set(named) {
-                try "#!/bin/sh\n# on=clock.60\nprintf 'text=t\\ntitle=T\\n'\n".writeScript(to: folder.spotFile(name))
-            }
-
-            let faults = await SpotCheck(folder: SpotsFolder(url: folder), environment: TestEnvironment.values).faults()
-
-            XCTAssertEqual(faults, [], script)
         }
     }
 

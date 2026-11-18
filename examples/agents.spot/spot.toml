@@ -1,0 +1,3 @@
+icon = "sparkles"
+on = ["clock.5"]
+offers = ["card", "menubar"]

@@ -1,12 +1,4 @@
 #!/bin/sh
-# title=Relay
-# icon=antenna.radiowaves.left.and.right
-# detail=Send a line to another process, and see each line it sends back
-# mode=always
-# on=panel.open
-# uses=network
-# offers=card
-# offers=menubar
 . "$OPENSPOT_SH"
 port=${RELAY_PORT:-47800}
 state=$(mktemp -d "${TMPDIR:-/tmp}/relay.XXXXXX") || exit 1

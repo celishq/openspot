@@ -13,20 +13,20 @@ final class WidgetContractTests: XCTestCase {
         try FileManager.default.removeItem(at: folder)
     }
 
-    private func script(_ name: String, _ text: String) throws {
+    private func script(_ name: String, _ text: String, toml: String = "") throws {
         let url = folder.appendingPathComponent(name.inSpotFolder)
-        try text.writeScript(to: url)
+        try text.writeScript(to: url, toml: toml)
         try FileManager.default.setAttributes([.creationDate: Date(timeIntervalSince1970: 1_700_000_000)], ofItemAtPath: url.path)
     }
 
     private func widget(name: String = "Now", grid: [String] = ["power power"], size: String? = nil, more: String = "", file: String = "mine.sh") throws {
         let size = size ?? (grid.count == 1 ? "strip" : "large")
-        let lines = grid.map { "# grid.\(size)=\($0)\n" }.joined()
-        try script(file, "#!/bin/sh\n# title=\(name)\n\(lines)\(more)")
+        let lines = grid.map { "'\($0)'" }.joined(separator: ", ")
+        try script(file, "#!/bin/sh\n", toml: "title = '\(name)'\n'grid.\(size)' = [\(lines)]\(more)")
     }
 
     private func power(_ body: String = "printf 'graph=power\\ntitle=84%%\\nvalue=0.84\\ntone=good\\n'") throws {
-        try script("power.sh", "#!/bin/sh\n# on=clock.5\n\(body)\n")
+        try script("power.sh", "#!/bin/sh\n\(body)\n", toml: "on = ['clock.5']")
     }
 
     private var scan: ScanResult {
@@ -40,10 +40,10 @@ final class WidgetContractTests: XCTestCase {
 
     func testAWidgetInAFolderNamesItsOwnToolsByFileNameAndOthersByID() throws {
         try FileManager.default.createDirectory(at: folder.appendingPathComponent("morning"), withIntermediateDirectories: true)
-        try script("morning/power.sh", "#!/bin/sh\n# on=clock.5\nprintf 'title=1\\n'\n")
-        try script("morning/notes.sh", "#!/bin/sh\n# on=sheet.open\n")
+        try script("morning/power.sh", "#!/bin/sh\nprintf 'title=1\\n'\n", toml: "on = ['clock.5']")
+        try script("morning/notes.sh", "#!/bin/sh\n", toml: "on = ['sheet.open']")
         try power()
-        try widget(grid: ["power power morning/power morning/power"], more: "# to=notes\n", file: "morning/widgets.sh")
+        try widget(grid: ["power power morning/power morning/power"], more: "\nto = 'notes'", file: "morning/widgets.sh")
 
         let result = try scan
         let widget = try XCTUnwrap(result.spots.first { $0.kind == .widget })
@@ -91,7 +91,7 @@ final class WidgetContractTests: XCTestCase {
 
     func testAWidgetDrawingPlacesTheMetricThatEachWordNames() throws {
         try power()
-        try script("heat.sh", "#!/bin/sh\n# on=clock.5\nprintf 'title=1\\n'\n")
+        try script("heat.sh", "#!/bin/sh\nprintf 'title=1\\n'\n", toml: "on = ['clock.5']")
         try widget(name: "Mine", grid: ["heat heat power", "heat heat power"])
 
         let command = try XCTUnwrap(try scan.spots.first { $0.kind == .widget })
@@ -167,10 +167,10 @@ final class WidgetContractTests: XCTestCase {
 
     func testEachSpotCanShowInTheMenuBarAndOnlyOneThatOffersItWithAValueShowsTheValue() throws {
         try script("one.sh", "#!/bin/sh\n")
-        try script("two.sh", "#!/bin/sh\n# on=panel.open\n")
-        try script("three.sh", "#!/bin/sh\n# mode=stay\n# offers=menubar\n")
-        try script("four.sh", "#!/bin/sh\n# on=clock.5\n# offers=menubar\n")
-        try script("five.sh", "#!/bin/sh\n# on=clock.5\n")
+        try script("two.sh", "#!/bin/sh\n", toml: "on = ['panel.open']")
+        try script("three.sh", "#!/bin/sh\n", toml: "mode = 'stay'\noffers = ['menubar']")
+        try script("four.sh", "#!/bin/sh\n", toml: "on = ['clock.5']\noffers = ['menubar']")
+        try script("five.sh", "#!/bin/sh\n", toml: "on = ['clock.5']")
 
         XCTAssertEqual(try scan.refused, [])
         XCTAssertEqual(try scan.scripts.filter(\.canShowInMenuBar).map(\.id), ["five", "four", "one", "three", "two"])
@@ -196,14 +196,14 @@ final class WidgetContractTests: XCTestCase {
 
     func testACardDrawnAtTwoSizesIsRefused() throws {
         try power()
-        try widget(grid: ["power"], more: "# grid.large=power\n")
+        try widget(grid: ["power"], more: "\n'grid.large' = ['power']")
 
         XCTAssertEqual(try scan.refused.first?.reason, "Now draws its card at more than one size. Keep the grid lines of one size, such as grid.large")
     }
 
     func testACardOfOtherSpotsRefusesAKeyOfASpotThatRuns() throws {
         try power()
-        try widget(more: "# icon=cpu\n# detail=Now\n# keywords=load\n# on=clock.60\n")
+        try widget(more: "\nicon = 'cpu'\ndetail = 'Now'\nkeywords = ['load']\non = ['clock.60']")
 
         XCTAssertEqual(try scan.refused.first?.reason, "Now draws a card of other spots, so it takes no on. Keep title, icon, detail, keywords, to and its grid lines, or draw its own blocks with grid lines in its output")
     }
@@ -219,7 +219,7 @@ final class WidgetContractTests: XCTestCase {
 
     func testAWidgetThatOpensAMissingCommandIsLeftOutAndReported() throws {
         try power()
-        try widget(more: "# to=nothing\n")
+        try widget(more: "\nto = 'nothing'")
 
         let scan = try scan
 
@@ -291,15 +291,15 @@ final class WidgetContractTests: XCTestCase {
 
     func testTheCheckReportsARefusedHeaderAndABadMetric() async throws {
         try power("echo nonsense")
-        try script("broken.sh", "#!/bin/sh\n# mode=huge\n")
+        try script("broken.sh", "#!/bin/sh\n", toml: "mode = 'huge'")
 
         let faults = await SpotCheck(folder: SpotsFolder(url: folder)).faults()
 
-        XCTAssertEqual(faults, ["broken: Broken has an unknown mode: huge. Use once, stay or always", "power: It sent a metric Openspot cannot read."])
+        XCTAssertEqual(faults, ["broken: Broken has an unknown mode: huge. Use once or stay", "power: It sent a metric Openspot cannot read."])
     }
 
     func testTheCheckReportsAListThatFails() async throws {
-        try script("tools.sh", "#!/bin/sh\n# on=sheet.open\necho gone >&2\nexit 1\n")
+        try script("tools.sh", "#!/bin/sh\necho gone >&2\nexit 1\n", toml: "on = ['sheet.open']")
 
         let faults = await SpotCheck(folder: SpotsFolder(url: folder)).faults()
 
@@ -307,7 +307,7 @@ final class WidgetContractTests: XCTestCase {
     }
 
     func testTheCheckFaultsAPartOrAnActionCalledRead() async throws {
-        try script("tools.sh", "#!/bin/sh\n# on=sheet.open\nprintf 'button=read\\ntitle=A\\n\\nrow=a\\ntitle=A\\n\\ntext=read\\ntitle=B\\n'\n")
+        try script("tools.sh", "#!/bin/sh\nprintf 'button=read\\ntitle=A\\n\\nrow=a\\ntitle=A\\n\\ntext=read\\ntitle=B\\n'\n", toml: "on = ['sheet.open']")
 
         let faults = await SpotCheck(folder: SpotsFolder(url: folder)).faults()
 

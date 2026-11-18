@@ -11,27 +11,21 @@ public struct SpotFile: Equatable, Sendable {
         self.spots = spots
     }
 
-    public init?(file url: URL, id: String) throws {
+    public init?(file url: URL, id: String, toml: SpotToml? = nil) throws {
         if SwiftProgram.isProgram(url) { return nil }
-        if Self.runs(url) {
-            let header = SpotHeader(url: url)
-            guard !header.isTooLong else {
-                throw SpotError.fault("\(header.block.value(HeaderKey.title) ?? Self.name(of: url)) has a header over \(SpotHeader.limit / 1024) KB. Keep the header shorter.")
-            }
-            try self.init(script: url, header: header.block, id: id)
-        } else {
-            return nil
-        }
+        let toml = toml ?? SpotToml(beside: url)
+        guard Self.runs(url, toml: toml) else { return nil }
+        try self.init(script: url, header: toml.block(of: url), id: id)
     }
 
     public init(script url: URL, header: TextBlock, id: String) throws {
         let name = header.value(HeaderKey.title) ?? Self.name(of: url)
         if let key = HeaderKey.unknown(in: header) {
-            throw SpotError.fault("\(name) has an unknown key in its header: \(key)")
+            throw SpotError.fault("\(name) has an unknown key in its \(SpotToml.fileName): \(key)")
         }
         for block in header.children {
             guard let key = HeaderBlock.unknown(in: block), let kind = HeaderBlock(block: block) else { continue }
-            throw SpotError.fault("\(name) has an unknown key on the \(kind.rawValue) \(block.value(kind) ?? ""): \(key)")
+            throw SpotError.fault("\(name) has an unknown key on the \(kind.word) \(block.value(kind) ?? ""): \(key)")
         }
         if header.fields.contains(where: { HeaderKey.isDrawing($0.key) }) {
             self.init(id: id, spots: [try Self.drawn(header, name: name, id: id, url: url)])
@@ -48,7 +42,7 @@ public struct SpotFile: Equatable, Sendable {
         let isInline = url.pathExtension == Self.inlineExtension && !FileManager.default.isExecutableFile(atPath: url.path)
         let modeName = header.value(HeaderKey.mode) ?? SpotMode.once.rawValue
         guard let named = SpotMode(rawValue: modeName), named != .inline else {
-            throw SpotError.fault("\(name) has an unknown mode: \(modeName). Use once, stay or always")
+            throw SpotError.fault("\(name) has an unknown mode: \(modeName). Use once or stay")
         }
         if isInline, named != .once {
             throw SpotError.fault("\(name) is a .js file, which runs inline, so it takes no mode=\(modeName)")
@@ -140,10 +134,10 @@ public struct SpotFile: Equatable, Sendable {
         self.init(id: id, spots: [command])
     }
 
-    static func runs(_ url: URL) -> Bool {
-        if SpotSample.isScript(url) { return false }
+    static func runs(_ url: URL, toml: SpotToml) -> Bool {
+        if SpotSample.isScript(url) || !toml.describes(url.lastPathComponent) { return false }
         if FileManager.default.isExecutableFile(atPath: url.path) { return true }
-        return url.pathExtension == inlineExtension && !SpotHeader(url: url).block.fields.isEmpty
+        return url.pathExtension == inlineExtension && toml.isWritten
     }
 
     private static func sample(beside url: URL) -> URL? {
@@ -209,7 +203,7 @@ public struct SpotFile: Equatable, Sendable {
         guard !name.contains("/") else { return name }
         let files = (try? FileManager.default.contentsOfDirectory(at: url.deletingLastPathComponent(), includingPropertiesForKeys: nil)) ?? []
         let own = files.first { $0.deletingPathExtension().lastPathComponent == name && $0.lastPathComponent != url.lastPathComponent
-            && (try? $0.resourceValues(forKeys: [.isDirectoryKey]).isDirectory) != true && runs($0) }
+            && (try? $0.resourceValues(forKeys: [.isDirectoryKey]).isDirectory) != true && runs($0, toml: SpotToml(beside: $0)) }
         return own.map { SpotID(file: $0).description } ?? name
     }
 }

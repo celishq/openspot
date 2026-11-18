@@ -17,7 +17,7 @@ public enum Place: String, CaseIterable, Sendable {
                 throw SpotError.fault("\(name) has offers=\(word). Write one place on each line, such as offers=card and offers=search")
             }
             if word == OfferedAction.place {
-                throw SpotError.fault("\(name) offers actions in its header. Write offers=actions on a button, such as after button=change")
+                throw SpotError.fault("\(name) offers actions at its top level. Write offers = [\"actions\"] on a command, such as in [commands.change]")
             }
             guard let place = Place(rawValue: word) else {
                 throw SpotError.fault("\(name) offers an unknown place: \(word). Use card, search, menubar, float, window or none")

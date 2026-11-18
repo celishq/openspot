@@ -1,10 +1,4 @@
 #!/bin/sh
-# title=Liquid battery
-# icon=battery.100
-# detail=The battery as a liquid that fills its card from the bottom
-# on=panel.open
-# view=battery.swift
-# offers=card
 case "$1" in
   read) report=$(pmset -g batt) ;;
   show) report=$2 ;;

@@ -41,9 +41,8 @@ final class SoleCommandTests: XCTestCase {
         folder.appendingPathComponent("spots", isDirectory: true)
     }
 
-    private func script(_ name: String, header: String) throws {
-        let lines = header.split(separator: "\n", omittingEmptySubsequences: false).map { $0.isEmpty ? "#" : "# \($0)" }.joined(separator: "\n")
-        try "#!/bin/sh\n\(lines)\nprintf 'toast=Ran %s\\n' \"$1\"\n".writeScript(to: spots.appendingPathComponent("\(name).sh"))
+    private func script(_ name: String, toml: String) throws {
+        try "#!/bin/sh\nprintf 'toast=Ran %s\\n' \"$1\"\n".writeScript(to: spots.spotFile(name), toml: toml)
     }
 
     private func entry(_ id: String) throws -> SpotsModel.Entry {
@@ -51,7 +50,7 @@ final class SoleCommandTests: XCTestCase {
     }
 
     func testTheFirstReturnRecordsTheKeyAndTheNextReturnRunsTheCommand() async throws {
-        try script("dictate", header: "title=Dictate\n\nbutton=dictate\ntitle=Dictate")
+        try script("dictate", toml: "title = 'Dictate'\n[commands.dictate]\ntitle = 'Dictate'")
         await model.reload()
         model.isShown = true
         model.panelWillShow()
@@ -95,7 +94,7 @@ final class SoleCommandTests: XCTestCase {
     }
 
     func testACommandWithConfirmAsksForASecondPressOfItsCard() async throws {
-        try script("wipe", header: "title=Wipe\n\nbutton=wipe\ntitle=Wipe\nconfirm=Press again to wipe")
+        try script("wipe", toml: "title = 'Wipe'\n[commands.wipe]\ntitle = 'Wipe'\nconfirm = 'Press again to wipe'")
         _ = try model.files.config.change { $0.assign(.tap(.option), to: "wipe", act: .command("wipe")) }
         await model.reload()
         model.isShown = true
@@ -114,8 +113,8 @@ final class SoleCommandTests: XCTestCase {
     }
 
     func testAGlobalKeyOfACommandWithConfirmShowsItsCardAskingAndReturnRunsIt() async throws {
-        try script("wipe", header: "title=Wipe\n\nbutton=wipe\ntitle=Wipe\nconfirm=Press again to wipe")
-        try script("other", header: "title=Other\n\nbutton=other\ntitle=Other")
+        try script("wipe", toml: "title = 'Wipe'\n[commands.wipe]\ntitle = 'Wipe'\nconfirm = 'Press again to wipe'")
+        try script("other", toml: "title = 'Other'\n[commands.other]\ntitle = 'Other'")
         _ = try model.files.config.change { $0.assign(.tap(.option), to: "wipe", act: .command("wipe")) }
         await model.reload()
         let key = try XCTUnwrap(model.assignedKeys.first { $0.spot == "wipe" })
@@ -132,7 +131,7 @@ final class SoleCommandTests: XCTestCase {
     }
 
     func testACommandWithConfirmAsksForASecondPressInTheMenu() async throws {
-        try script("wipe", header: "title=Wipe\non=sheet.open\n\nbutton=wipe\ntitle=Wipe\nconfirm=Press again to wipe\n\nbutton=keep\ntitle=Keep")
+        try script("wipe", toml: "title = 'Wipe'\non = ['sheet.open']\n[commands.wipe]\ntitle = 'Wipe'\nconfirm = 'Press again to wipe'\n[commands.keep]\ntitle = 'Keep'")
         await model.reload()
         model.isShown = true
         model.panelWillShow()
@@ -147,7 +146,7 @@ final class SoleCommandTests: XCTestCase {
     }
 
     func testTheFooterOfASpotWithOneCommandAndNoSheetNamesWhatReturnDoes() async throws {
-        try script("party", header: "title=Party\non=panel.open\n\nbutton=play\ntitle=Play")
+        try script("party", toml: "title = 'Party'\non = ['panel.open']\n[commands.play]\ntitle = 'Play'")
         await model.reload()
         model.isShown = true
         model.panelWillShow()
@@ -164,7 +163,7 @@ final class SoleCommandTests: XCTestCase {
     }
 
     func testReturnOnASpotWithTwoCommandsOnlyOpensTheirKeys() async throws {
-        try script("windows", header: "title=Windows\n\nbutton=left\ntitle=Left\n\nbutton=right\ntitle=Right")
+        try script("windows", toml: "title = 'Windows'\n[commands.left]\ntitle = 'Left'\n[commands.right]\ntitle = 'Right'")
         await model.reload()
         model.isShown = true
         model.panelWillShow()
@@ -177,9 +176,8 @@ final class SoleCommandTests: XCTestCase {
     }
 
     func testReturnRunsTheOneCommandOfASpotWithRowsAndCommandYOpensTheRowsAsHistory() async throws {
-        let lines = ["title=Dictate", "on=sheet.open", "on=app.update", "", "button=dictate", "title=Dictate"].map { $0.isEmpty ? "#" : "# \($0)" }
-        try "#!/bin/sh\n\(lines.joined(separator: "\n"))\ncase \"$1\" in read) printf 'row=one\\ntitle=Hello there\\n\\nrow=two\\ntitle=Second\\n' ;; esac\n"
-            .writeScript(to: spots.appendingPathComponent("dictate.sh"))
+        try "#!/bin/sh\ncase \"$1\" in read) printf 'row=one\\ntitle=Hello there\\n\\nrow=two\\ntitle=Second\\n' ;; esac\n"
+            .writeScript(to: spots.spotFile("dictate"), toml: "title = 'Dictate'\non = ['sheet.open', 'app.update']\n[commands.dictate]\ntitle = 'Dictate'")
         await model.reload()
         model.isShown = true
         model.panelWillShow()
@@ -221,9 +219,8 @@ final class SoleCommandTests: XCTestCase {
     }
 
     func testARowThatSaysCloseFalseNamesItsEnterAndKeepsThePanelOpen() async throws {
-        let lines = ["title=Get", "on=sheet.open"].map { "# \($0)" }
-        try "#!/bin/sh\n\(lines.joined(separator: "\n"))\ncase \"$1\" in read) printf 'button=open\\ntitle=Copy\\n\\nrow=model\\ntitle=Download\\nopen=Download\\nclose=false\\n\\nrow=text\\ntitle=Hello\\n' ;; esac\n"
-            .writeScript(to: spots.appendingPathComponent("get.sh"))
+        try "#!/bin/sh\ncase \"$1\" in read) printf 'button=open\\ntitle=Copy\\n\\nrow=model\\ntitle=Download\\nopen=Download\\nclose=false\\n\\nrow=text\\ntitle=Hello\\n' ;; esac\n"
+            .writeScript(to: spots.spotFile("get"), toml: "title = 'Get'\non = ['sheet.open']")
         await model.reload()
         model.isShown = true
         model.panelWillShow()
@@ -241,9 +238,8 @@ final class SoleCommandTests: XCTestCase {
     }
 
     func testASheetWithSearchOffShowsOnlyItsOwnRowsAsItsHistory() async throws {
-        let lines = ["title=Dictate", "on=sheet.open", "", "button=dictate", "title=Dictate"].map { $0.isEmpty ? "#" : "# \($0)" }
-        try "#!/bin/sh\n\(lines.joined(separator: "\n"))\ncase \"$1\" in read) printf 'row=whisper\\ntitle=Download\\npin=top\\n\\nsearch=off\\n' ;; esac\n"
-            .writeScript(to: spots.appendingPathComponent("dictate.sh"))
+        try "#!/bin/sh\ncase \"$1\" in read) printf 'row=whisper\\ntitle=Download\\npin=top\\n\\nsearch=off\\n' ;; esac\n"
+            .writeScript(to: spots.spotFile("dictate"), toml: "title = 'Dictate'\non = ['sheet.open']\n[commands.dictate]\ntitle = 'Dictate'")
         await model.reload()
         model.isShown = true
         model.panelWillShow()
@@ -257,8 +253,7 @@ final class SoleCommandTests: XCTestCase {
     }
 
     func testAClickOnTheMenuBarIconOfASpotThatReturnRunsDoesWhatReturnDoes() async throws {
-        let lines = ["title=Pen", "icon=pencil.tip", "", "button=draw", "title=Draw on screen"].map { $0.isEmpty ? "#" : "# \($0)" }
-        try "#!/bin/sh\n\(lines.joined(separator: "\n"))\nexit 0\n".writeScript(to: spots.appendingPathComponent("pen.sh"))
+        try "#!/bin/sh\nexit 0\n".writeScript(to: spots.spotFile("pen"), toml: "title = 'Pen'\nicon = 'pencil.tip'\n[commands.draw]\ntitle = 'Draw on screen'")
         await model.reload()
 
         model.openFromMenuBar("pen")
@@ -270,7 +265,7 @@ final class SoleCommandTests: XCTestCase {
     }
 
     func testAnOpenKeyOfASpotWithOneCommandRecordsItsKeyAndThenRunsTheCommand() async throws {
-        try script("dictate", header: "title=Dictate\n\nbutton=dictate\ntitle=Dictate")
+        try script("dictate", toml: "title = 'Dictate'\n[commands.dictate]\ntitle = 'Dictate'")
         await model.reload()
         let open = GlobalKey(spot: "dictate", act: .open, trigger: .key(try XCTUnwrap(Shortcut(text: "ctrl+option+d"))))
 
@@ -287,7 +282,7 @@ final class SoleCommandTests: XCTestCase {
     }
 
     func testAKeyRecordedOnARowThatStaysOpenKeepsThePanelOpen() async throws {
-        try "#!/bin/sh\n# on=sheet.open\ncase \"$1\" in read) printf 'row=k\\ntitle=Key\\ntype=hotkey\\nclose=false\\nshortcut=Record\\n' ;; esac\n".writeScript(to: spots.appendingPathComponent("keys.sh"))
+        try "#!/bin/sh\ncase \"$1\" in read) printf 'row=k\\ntitle=Key\\ntype=hotkey\\nclose=false\\nshortcut=Record\\n' ;; esac\n".writeScript(to: spots.spotFile("keys"), toml: "on = ['sheet.open']")
         await model.reload()
         model.isShown = true
         model.panelWillShow()
@@ -303,7 +298,7 @@ final class SoleCommandTests: XCTestCase {
     }
 
     func testAnOpenKeyOfACommandWithConfirmShowsItsCardAskingAndReturnRunsIt() async throws {
-        try script("wipe", header: "title=Wipe\n\nbutton=wipe\ntitle=Wipe\nconfirm=Press again to wipe")
+        try script("wipe", toml: "title = 'Wipe'\n[commands.wipe]\ntitle = 'Wipe'\nconfirm = 'Press again to wipe'")
         _ = try model.files.config.change { $0.assign(.tap(.option), to: "wipe", act: .command("wipe")) }
         await model.reload()
 
@@ -317,7 +312,7 @@ final class SoleCommandTests: XCTestCase {
     }
 
     func testKeysOpenTheSettingsOfTheirSpotWhichGrowFromItsCard() async throws {
-        try script("dictate", header: "title=Dictate")
+        try script("dictate", toml: "title = 'Dictate'")
         await model.reload()
         model.isShown = true
         model.panelWillShow()

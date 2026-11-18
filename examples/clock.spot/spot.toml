@@ -1,0 +1,5 @@
+title = "World clock"
+icon = "globe"
+mode = "stay"
+on = ["app.launch"]
+offers = ["card", "menubar"]

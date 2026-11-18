@@ -143,7 +143,7 @@ final class CommandAPITests: XCTestCase {
 
     func testASecretIsNeverPrintedAndOnlyOpenspotsFormChangesIt() async throws {
         let spots = folder.appendingPathComponent("spots", isDirectory: true)
-        try TestSpot(header: "title=Weather\n\nfield=token\ntype=secret\n\nfield=key\ntype=secret", body: "echo").write(to: spots.spotFile("weather"))
+        try TestSpot(toml: "title = 'Weather'\n[settings.token]\ntype = 'secret'\n[settings.key]\ntype = 'secret'", body: "echo").write(to: spots.spotFile("weather"))
         let places = environment.merging(["OPENSPOT_SPOTS": spots.path]) { _, new in new }
         let spot = places.merging(["OPENSPOT_ID": "weather"]) { _, new in new }
         try AppPlaces.test(places).secrets.keep("MARKER-7f3c", key: "token", of: "weather")

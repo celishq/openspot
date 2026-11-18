@@ -1,10 +1,4 @@
 #!/bin/sh
-# title=Devices
-# icon=airpods
-# detail=The lowest battery of your Bluetooth devices
-# on=device.connect
-# offers=card
-# offers=menubar
 . "$OPENSPOT_SH"
 
 # Prints one line for each battery of each connected device: its name, the part, then the level.

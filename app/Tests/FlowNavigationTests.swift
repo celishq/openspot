@@ -76,7 +76,7 @@ final class FlowNavigationTests: PanelCase {
     }
 
     func testTheHintOfAPageSaysThatEscGoesBack() async throws {
-        try script("info", header: "on=sheet.open\npages=a", """
+        try script("info", toml: "on = ['sheet.open']\npages = ['a']", """
         if [ -n "$OPENSPOT_PAGE" ]; then printf 'text=detail\\ntitle=Detail\\n'; else printf 'text=first\\ntitle=First\\n\\nrow=a\\ntitle=A\\npush=true\\n'; fi
         """)
         await model.reload()
@@ -298,7 +298,7 @@ final class FlowNavigationTests: PanelCase {
     }
 
     func testASheetWithNoCardGrowsFromTheFieldAndShrinksBackIntoIt() async throws {
-        try script("hidden", header: "on=sheet.open\noffers=search", "printf 'row=h\\ntitle=Hidden\\n'")
+        try script("hidden", toml: "on = ['sheet.open']\noffers = ['search']", "printf 'row=h\\ntitle=Hidden\\n'")
         await model.reload()
         model.isShown = true
         model.panelWillShow()

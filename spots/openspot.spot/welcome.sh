@@ -1,13 +1,4 @@
 #!/bin/sh
-# title=Welcome spot
-# icon=hand.wave
-# on=sheet.open
-# uses=app
-# offers=none
-# starts=first-launch
-# view=welcome.swift
-# pages=key
-# pages=agent
 . "$OPENSPOT_SH"
 keyfile="$OPENSPOT_DATA/welcome-key"
 here=$(cd "${0%/*}" && pwd)

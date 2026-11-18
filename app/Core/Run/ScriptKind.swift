@@ -15,7 +15,7 @@ enum ScriptKind: Equatable {
         } else {
             switch spot.mode {
             case .inline: self = .inline
-            case .stay, .always: self = .stay
+            case .stay: self = .stay
             case .once: self = .once
             }
         }

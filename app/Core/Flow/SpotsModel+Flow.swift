@@ -20,7 +20,7 @@ extension SpotsModel {
             return true
         }
         if let page = sheet.page, !spot.takes(page: page) {
-            host.notify("\(spot.name) takes no page \(page). Add pages=\(page) to its header")
+            host.notify("\(spot.name) takes no page \(page). Add \(page) to the pages of its spot.toml")
             return true
         }
         let moves = isShown

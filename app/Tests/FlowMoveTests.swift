@@ -13,7 +13,7 @@ final class FlowMoveTests: PanelCase {
     }
 
     private func writeFlow() throws {
-        try script("flow", header: "title=Flow\non=sheet.open\npages=n*\npages=swapped", """
+        try script("flow", toml: "title = 'Flow'\non = ['sheet.open']\npages = ['n*', 'swapped']", """
         case "$1" in
           read) printf 'button=done\\ntitle=Done\\nscope=spot\\n\\nbutton=top\\ntitle=Top\\nscope=spot\\n\\nbutton=next\\ntitle=Next\\nscope=spot\\n\\nbutton=swap\\ntitle=Swap\\nscope=spot\\n\\nbutton=hand\\ntitle=Hand\\nscope=spot\\n\\nrow=x\\ntitle=Page %s\\n' "${OPENSPOT_PAGE-first}" ;;
           done) printf 'pop=true\\n' ;;
@@ -99,7 +99,7 @@ final class FlowMoveTests: PanelCase {
     }
 
     func testAReadThatPushesMovesNothing() async throws {
-        try script("reader", header: "title=Reader\non=sheet.open", "printf 'push=elsewhere\\n\\nrow=r\\ntitle=R\\n'")
+        try script("reader", toml: "title = 'Reader'\non = ['sheet.open']", "printf 'push=elsewhere\\n\\nrow=r\\ntitle=R\\n'")
         await model.reload()
         model.isShown = true
         model.panelWillShow()
@@ -123,12 +123,12 @@ final class FlowMoveTests: PanelCase {
 
     func testAPushOfAPageThatTheSpotDoesNotTakeMovesNothingAndSaysSo() async throws {
         try await openList()
-        try script("narrow", header: "title=Narrow\non=sheet.open\npages=ok:*", "printf 'row=n\\ntitle=N\\n'")
+        try script("narrow", toml: "title = 'Narrow'\non = ['sheet.open']\npages = ['ok:*']", "printf 'row=n\\ntitle=N\\n'")
         await model.reload()
 
         XCTAssertTrue(model.push(FlowSheet(spot: "narrow", page: "bad")))
 
         XCTAssertEqual(model.openSheetID, "list")
-        XCTAssertEqual(host.notes.last, "Narrow takes no page bad. Add pages=bad to its header")
+        XCTAssertEqual(host.notes.last, "Narrow takes no page bad. Add bad to the pages of its spot.toml")
     }
 }

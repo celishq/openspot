@@ -1,16 +1,4 @@
 #!/bin/sh
-# title=Agenda
-# icon=calendar
-# detail=Today and tomorrow, with your reminders
-# on=panel.open
-# on=sheet.text
-# on=clock.60
-# uses=calendar
-# offers=card
-# offers=menubar
-#
-# field=calendars
-# icon=calendar
 . "$OPENSPOT_SH"
 
 hidden=${OPENSPOT_SETTING_CALENDARS-}

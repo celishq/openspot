@@ -1,17 +1,4 @@
 #!/usr/bin/env swift
-// title=Dictate
-// icon=mic
-// detail=Convert speech to text
-// mode=stay
-// on=sheet.open
-// offers=card
-// offers=menubar
-// uses=clipboard,network
-// source=dictate
-//
-// button=dictate
-// title=Dictate
-// icon=mic
 
 // Openspot builds this file with the Swift files of `dictate/`, and keeps one process while the sheet shows, while the
 // menu bar shows Dictate, or while a dictation or the download of the speech model runs. Each of those two is one call

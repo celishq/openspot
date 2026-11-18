@@ -12,18 +12,18 @@ final class SpotManifestTests: XCTestCase {
         try? FileManager.default.removeItem(at: folder)
     }
 
-    private func spot(_ text: String = "#!/bin/sh\n# title=Timer\n", extra: [SpotPackage.File] = []) throws -> SpotPackage {
+    private func spot(_ text: String = "#!/bin/sh\necho Timer\n", extra: [SpotPackage.File] = []) throws -> SpotPackage {
         try SpotPackage(files: [SpotPackage.File(path: "tools.spot/timer.sh", isExecutable: true, contents: Data(text.utf8))] + extra)
     }
 
     func testEqualFilesGiveAnEqualManifestAndHash() throws {
         XCTAssertEqual(try spot().manifest(of: "tools.spot"), try spot().manifest(of: "tools.spot"))
         XCTAssertEqual(try spot().manifest(of: "tools.spot").hash, try spot().manifest(of: "tools.spot").hash)
-        XCTAssertNotEqual(try spot().manifest(of: "tools.spot").hash, try spot("#!/bin/sh\n# title=Clock\n").manifest(of: "tools.spot").hash)
+        XCTAssertNotEqual(try spot().manifest(of: "tools.spot").hash, try spot("#!/bin/sh\necho Clock\n").manifest(of: "tools.spot").hash)
     }
 
     func testAModeChangeIsAChange() throws {
-        let plain = try SpotPackage(files: [SpotPackage.File(path: "tools.spot/timer.sh", isExecutable: false, contents: Data("#!/bin/sh\n# title=Timer\n".utf8))])
+        let plain = try SpotPackage(files: [SpotPackage.File(path: "tools.spot/timer.sh", isExecutable: false, contents: Data("#!/bin/sh\necho Timer\n".utf8))])
 
         XCTAssertNotEqual(plain.manifest(of: "tools.spot"), try spot().manifest(of: "tools.spot"))
     }
@@ -45,7 +45,7 @@ final class SpotManifestTests: XCTestCase {
         let readme = SpotPackage.File(path: "tools.spot/readme.md", isExecutable: false, contents: Data("Old.".utf8))
         try spot(extra: [readme]).write(to: folder)
 
-        try spot("#!/bin/sh\n# title=Clock\n").write(to: folder)
+        try spot("#!/bin/sh\necho Clock\n").write(to: folder)
 
         XCTAssertEqual(try SpotPackage(contentsOf: folder.appendingPathComponent("tools.spot")).files.map(\.path), ["tools.spot/timer.sh"])
     }

@@ -1,0 +1,6 @@
+title = "Pull requests"
+icon = "arrow.triangle.pull"
+detail = "On GitHub"
+on = ["clock.120"]
+uses = ["network", "clipboard"]
+offers = ["card", "menubar"]

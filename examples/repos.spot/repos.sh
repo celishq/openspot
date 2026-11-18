@@ -1,14 +1,4 @@
 #!/bin/sh
-# icon=arrow.triangle.branch
-# detail=Open a git repo
-# on=sheet.open
-# uses=clipboard
-# offers=card
-#
-# field=folder
-#
-# field=editor
-# title=Default app
 export LC_ALL=en_US.UTF-8
 . "$OPENSPOT_SH"
 editors='Visual Studio Code

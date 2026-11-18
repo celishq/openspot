@@ -4,7 +4,7 @@ Fixes and new spots are welcome. For a large change, open an issue first.
 
 ## Add a spot
 
-Add one spot folder to [`spots`](spots). The [guide](GUIDE.md) shows how, and the [protocol](PROTOCOL.md) gives every rule.
+Add one spot folder, with its `spot.toml` and its scripts, to [`spots`](spots). The [guide](GUIDE.md) shows how, and the [protocol](PROTOCOL.md) gives every rule.
 
 ## Change the app
 

@@ -1,0 +1,4 @@
+detail = "The space in use"
+icon = "internaldrive"
+on = ["disk.mount"]
+offers = ["card", "menubar"]

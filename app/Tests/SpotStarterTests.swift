@@ -28,6 +28,21 @@ final class SpotStarterTests: XCTestCase {
         }
     }
 
+    func testEachStarterDescribesItsSpotInSpotTomlAndItsScriptHoldsNoHeader() throws {
+        for starter in SpotStarter.allCases {
+            let place = folder.appendingPathComponent(starter.rawValue)
+
+            let file = try starter.write(name: "Say \"hi\"", in: place)
+
+            let manifest = try ConfigDocument(text: String(contentsOf: file.deletingLastPathComponent().appendingPathComponent("spot.toml"), encoding: .utf8))
+            let script = try String(contentsOf: file, encoding: .utf8).components(separatedBy: "\n")
+            XCTAssertEqual(manifest.values["title"], .string("Say \"hi\""), "\(starter)")
+            XCTAssertEqual(manifest.values["icon"], .string(starter.symbol), "\(starter)")
+            XCTAssertEqual(script.first, "#!/bin/sh", "\(starter)")
+            XCTAssertFalse(script.dropFirst().contains { $0.hasPrefix("#") }, "\(starter)")
+        }
+    }
+
     func testAPickOfTheListStarterReadsAKeyOfItsRow() async throws {
         _ = try SpotStarter.list.write(name: "Weather", in: folder)
         let spot = try XCTUnwrap(SpotsFolder(url: folder).scan().spots.first)
