@@ -3,6 +3,7 @@ import Foundation
 public enum FlowMove: Equatable, Sendable {
     case push(spot: String?, page: String?, title: String?, replace: Bool)
     case pop(all: Bool)
+    case popSpot
 
     init?(block: TextBlock, own: String? = nil) {
         let push = block.value(HeadKey.push).flatMap { $0 == "true" ? own : $0 }
@@ -15,6 +16,8 @@ public enum FlowMove: Equatable, Sendable {
             self = .pop(all: false)
         case (false, "all"?):
             self = .pop(all: true)
+        case (false, "spot"?):
+            self = .popSpot
         default:
             return nil
         }

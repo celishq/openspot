@@ -420,6 +420,7 @@ went through. A spot pushes a sheet onto the flow and pops its own sheet off it.
 | `push.replace=true`   | a row, or a press      | The pushed sheet takes the place of the one that shows, so going back skips it.       |
 | `pop=true`            | a press                | Takes the spot's sheet off. On its first sheet, that goes back to whoever pushed it, or to the grid.  |
 | `pop=all`             | a press                | Goes back to the spot's first sheet.                                                  |
+| `pop=spot`            | a press                | Takes the spot's sheet off with all its pages, in one motion, back to whoever pushed it, or to the grid. |
 
 - Each call of a page, a read or a press, gets the page's id in `OPENSPOT_PAGE`. The first sheet of a spot gets none.
 - A press moves the flow with the keys in the head of its frame. A read never moves it, and a frame moves it one way at

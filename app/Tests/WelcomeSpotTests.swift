@@ -147,8 +147,8 @@ final class WelcomeSpotTests: BuiltInCase {
         XCTAssertEqual(button.title, "Start using Openspot")
         XCTAssertEqual(button.key, ActionKey(name: "return"))
         let opened = await app.opened
-        XCTAssertEqual(opened, ["pop openspot/welcome all"])
-        XCTAssertEqual(done.move, .pop(all: false))
+        XCTAssertEqual(opened, [])
+        XCTAssertEqual(done.move, .popSpot)
         XCTAssertEqual(done.toast, Shortcut.standard.openHint)
     }
 

@@ -105,7 +105,7 @@ extension SpotsModel {
         stopRecording()
         showSheet(nil, moving: moving)
         runs.closeOpen()
-        endFlow()
+        endFlow(resetsPages: false)
     }
 
     public func close(_ place: ViewPlace) {
@@ -167,7 +167,10 @@ extension SpotsModel {
             fieldDrop = nil
             showsFieldDrop = false
         }
-        if list == nil { endReview() }
+        if list == nil {
+            endReview()
+            restPages()
+        }
     }
 
     func hasPlace(_ id: String?) -> Bool {
@@ -191,7 +194,10 @@ extension SpotsModel {
                 }
             }
             if isInstall, transition.phase == .closed { hideFieldDrop() }
-            if transition.phase == .closed { endReview() }
+            if transition.phase == .closed {
+                endReview()
+                restPages()
+            }
         }
     }
 
