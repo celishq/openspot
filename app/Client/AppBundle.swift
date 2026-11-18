@@ -5,6 +5,7 @@ struct AppBundle {
     private static let stateKey = "<key>OpenspotDevState</key>"
 
     let contents: String
+    let isApp: Bool
 
     init?() {
         var size = UInt32(PATH_MAX)
@@ -12,19 +13,20 @@ struct AppBundle {
         guard _NSGetExecutablePath(&path, &size) == 0, let real = realpath(path, nil) else { return nil }
         defer { free(real) }
         contents = Self.parent(of: Self.parent(of: String(cString: real)))
+        isApp = access(contents + "/Info.plist", F_OK) == 0
     }
 
     var program: String {
         contents + "/MacOS/Openspot"
     }
 
-    var configFolder: String? {
-        if let named = getenv("OPENSPOT_CONFIG").map({ String(cString: $0) }), !named.isEmpty { return named }
-        if let state = devState, !state.isEmpty { return state }
+    func configFolder() -> String? {
+        if isApp, let state = devState(), !state.isEmpty { return state }
+        if !isApp, let named = getenv("OPENSPOT_CONFIG").map({ String(cString: $0) }), !named.isEmpty { return named }
         return getenv("HOME").map { String(cString: $0) + "/.config/openspot" }
     }
 
-    private var devState: String? {
+    private func devState() -> String? {
         guard let file = fopen(contents + "/Info.plist", "r") else { return nil }
         defer { fclose(file) }
         var bytes: [UInt8] = []

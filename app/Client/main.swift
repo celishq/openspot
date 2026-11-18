@@ -17,10 +17,9 @@ func fail(_ line: String, code: Int32 = 1) -> Never {
     exit(code)
 }
 
-func startInBackground(_ app: AppBundle, config: String) {
+func startInBackground(_ app: AppBundle) {
     let bundle = String(app.contents[..<(app.contents.lastIndex(of: "/") ?? app.contents.endIndex)])
-    var arguments = access(app.contents + "/Info.plist", F_OK) == 0 ? ["/usr/bin/open", "-g", "-j", bundle] : [app.program]
-    if arguments.count > 1, getenv("OPENSPOT_CONFIG") != nil { arguments += ["--env", "OPENSPOT_CONFIG=" + config] }
+    let arguments = app.isApp ? ["/usr/bin/open", "-g", "-j", bundle] : [app.program]
     var actions: posix_spawn_file_actions_t?
     posix_spawn_file_actions_init(&actions)
     defer { posix_spawn_file_actions_destroy(&actions) }
@@ -38,7 +37,7 @@ func startInBackground(_ app: AppBundle, config: String) {
 }
 
 func reachStarted(_ app: AppBundle, config: String) -> Int32 {
-    startInBackground(app, config: config)
+    startInBackground(app)
     var waited = 0.0
     while waited < startWaitSeconds {
         let reached = reach(config)
@@ -128,9 +127,10 @@ let arguments = CommandLine.arguments.count > 1 ? Array(CommandLine.arguments.dr
 if CommandKind.isPure(arguments) { runAlone(app) }
 let isLive = CommandKind.needsApp(arguments)
 connection = reachRun()
-if connection < 0 { connection = app.configFolder.map(reach) ?? -1 }
+let config = app.configFolder()
+if connection < 0 { connection = config.map(reach) ?? -1 }
 if connection < 0 {
-    guard isLive, let config = app.configFolder else { runAlone(app) }
+    guard isLive, let config else { runAlone(app) }
     connection = reachStarted(app, config: config)
 }
 signal(SIGINT) { _ in

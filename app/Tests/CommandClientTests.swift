@@ -112,6 +112,22 @@ final class CommandClientTests: XCTestCase {
         XCTAssertNil(try AccountStore.standard(environment: ["OPENSPOT_CONFIG": config.path], home: folder, devState: nil).key())
     }
 
+    func testACommandInsideAnAppReachesItsOwnAppWhateverItsConfigVariableNames() throws {
+        let own = folder.appendingPathComponent("own", isDirectory: true)
+        try FileManager.default.createDirectory(at: own, withIntermediateDirectories: true)
+        try "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<plist version=\"1.0\"><dict><key>OpenspotDevState</key><string>\(own.path)</string></dict></plist>\n"
+            .write(to: folder.appendingPathComponent("A.app/Contents/Info.plist"), atomically: true, encoding: .utf8)
+        listen()
+        let ownSocket = CommandSocket(folder: own, api: CommandAPI(mac: Mac(), places: .test(["OPENSPOT_CONFIG": own.path]), rates: .offline))
+        defer { ownSocket?.close() }
+
+        let answer = try run(client, ["setting", "set", "--spot", "home/tea", "tone", "warm"])
+
+        XCTAssertEqual(answer.code, 0, answer.errors)
+        XCTAssertEqual(ConfigFile(url: own.appendingPathComponent("config.toml")).read().setting("tone", of: "home/tea"), "warm")
+        XCTAssertNil(ConfigFile(url: config.appendingPathComponent("config.toml")).read().setting("tone", of: "home/tea"))
+    }
+
     func testTheRunningAppAnswersACalcSum() throws {
         listen()
 
