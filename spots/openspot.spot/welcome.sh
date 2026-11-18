@@ -122,8 +122,7 @@ case "$1" in
     ;;
   done)
     current
-    openspot spot pop openspot/welcome --all || exit 1
-    printf 'pop=true\ntoast=Press `%s` to open Openspot\n' "$(label "$now")"
+    printf 'pop=spot\ntoast=Press `%s` to open Openspot\n' "$(label "$now")"
     ;;
   *)
     echo 'Welcome cannot do that.' >&2

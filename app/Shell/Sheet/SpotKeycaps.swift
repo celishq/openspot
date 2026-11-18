@@ -209,6 +209,7 @@ private struct Keycap: View {
     private static let legendArrival = AnyTransition.scale(scale: legendScale).combined(with: .opacity).animation(SpotMotion.pop)
 
     @State private var isIn = false
+    @Environment(\.spotIsHeld) private var isHeld
 
     var body: some View {
         let face = KeyFace(size: size, radius: Self.corner)
@@ -248,7 +249,7 @@ private struct Keycap: View {
             .id(cap.symbol)
             .transition(Self.legendArrival)
         }
-        .scaleEffect(isIn ? 1 : Self.legendScale)
+        .scaleEffect(isIn || isHeld ? 1 : Self.legendScale)
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .clipShape(face)
     }

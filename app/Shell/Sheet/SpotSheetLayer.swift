@@ -25,8 +25,10 @@ struct SpotSheetLayer: View {
             cardWidth: isInstall ? SpotFieldView.rect.width : frame?.width ?? SpotFieldView.rect.width,
             hasCardLook: card?.look != nil,
             morph: morph,
-            cardState: card?.state
+            cardState: card?.state,
+            held: closingPage
         )
+        .environment(\.spotIsHeld, closingPage != nil)
         .id(entry.id)
         .morph(progress, opacity: contentOpacity)
         .overlay(alignment: .topLeading) {
@@ -69,7 +71,8 @@ struct SpotSheetLayer: View {
             room: room,
             fit: edges.sheetStart?.rect(around: from) ?? sheetRect,
             leaving: leaving(edges, around: room),
-            field: showsField ? AnyView(SpotFieldLook(query: model.searchText, title: entry.state.title)) : nil
+            field: showsField ? AnyView(SpotFieldLook(query: model.searchText, title: entry.state.title)) : nil,
+            glass: edges.sheetStart == nil || edges.sheetStartsOnMark ? 1 : MotionTokens.hiddenOpacity
         )
     }
 
@@ -96,6 +99,10 @@ struct SpotSheetLayer: View {
         }
         .environment(\.spotIsHeld, true)
         return SheetStep.Leaving(look: AnyView(look), from: page.rect, rect: edge.rect(around: room))
+    }
+
+    private var closingPage: SheetPage? {
+        isOpen ? nil : model.closingPage.flatMap { $0.spot == entry.id ? $0 : nil }
     }
 
     private var progress: Double {

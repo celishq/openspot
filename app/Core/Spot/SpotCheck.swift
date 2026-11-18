@@ -116,7 +116,7 @@ public struct SpotCheck: Sendable {
     static func moveFaults(of output: SpotOutput, in script: Spot, among scripts: [Spot]) -> [String] {
         var faults: [String] = []
         if let move = output.move {
-            let word = if case .pop = move { "pop" } else { "push" }
+            let word = if case .push = move { "push" } else { "pop" }
             faults.append("the read prints \(word), which moves nothing in a read. Print it from a press")
         }
         for item in output.items {

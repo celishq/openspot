@@ -9,15 +9,16 @@ final class FlowMoveTests: PanelCase {
         model.isShown = true
         model.panelWillShow()
         model.press("flow")
-        try await wait("the flow") { self.model.transition.phase == .open && self.titles == ["Page first"] && self.model.sheets["flow"]?.spot.actions.count == 5 }
+        try await wait("the flow") { self.model.transition.phase == .open && self.titles == ["Page first"] && self.model.sheets["flow"]?.spot.actions.count == 6 }
     }
 
     private func writeFlow() throws {
         try script("flow", header: "title=Flow\non=sheet.open\npages=n*\npages=swapped", """
         case "$1" in
-          read) printf 'button=done\\ntitle=Done\\nscope=spot\\n\\nbutton=top\\ntitle=Top\\nscope=spot\\n\\nbutton=next\\ntitle=Next\\nscope=spot\\n\\nbutton=swap\\ntitle=Swap\\nscope=spot\\n\\nbutton=hand\\ntitle=Hand\\nscope=spot\\n\\nrow=x\\ntitle=Page %s\\n' "${OPENSPOT_PAGE-first}" ;;
+          read) printf 'button=done\\ntitle=Done\\nscope=spot\\n\\nbutton=top\\ntitle=Top\\nscope=spot\\n\\nbutton=next\\ntitle=Next\\nscope=spot\\n\\nbutton=swap\\ntitle=Swap\\nscope=spot\\n\\nbutton=hand\\ntitle=Hand\\nscope=spot\\n\\nbutton=leave\\ntitle=Leave\\nscope=spot\\n\\nrow=x\\ntitle=Page %s\\n' "${OPENSPOT_PAGE-first}" ;;
           done) printf 'pop=true\\n' ;;
           top) printf 'pop=all\\n' ;;
+          leave) printf 'pop=spot\\n' ;;
           next) printf 'push=n%s\\n' "${#OPENSPOT_PAGE}" ;;
           swap) printf 'push=swapped\\npush.replace=true\\n' ;;
           hand) printf 'push.spot=other\\n' ;;
@@ -26,7 +27,7 @@ final class FlowMoveTests: PanelCase {
     }
 
     private func openFlowSheetInPlace() async throws {
-        try await wait("the flow over the list") { self.model.openSheetID == "flow" && self.titles == ["Page first"] && self.model.sheets["flow"]?.spot.actions.count == 5 }
+        try await wait("the flow over the list") { self.model.openSheetID == "flow" && self.titles == ["Page first"] && self.model.sheets["flow"]?.spot.actions.count == 6 }
     }
 
     private func pressFlow(_ id: String) throws {
@@ -84,6 +85,55 @@ final class FlowMoveTests: PanelCase {
         try pressFlow("done")
 
         try await wait("the grid") { self.model.openSheetID == nil }
+    }
+
+    func testPopSpotFromAPageWithNothingBehindItsSpotGoesToTheGridWithNoStepBack() async throws {
+        try await openFlowSpot()
+        try pressFlow("next")
+        try await wait("the first page") { self.titles == ["Page n0"] }
+        try pressFlow("next")
+        try await wait("the second page") { self.titles == ["Page n2"] && self.model.flowEdges.from == nil }
+        host.edgeChanges = []
+
+        try pressFlow("leave")
+
+        try await wait("the grid") { self.model.openSheetID == nil }
+        XCTAssertNil(host.edgeChanges.first { $0.edges.from != nil })
+        XCTAssertEqual(model.flow.pages, [])
+    }
+
+    func testASheetThatClosesKeepsItsPageUntilItsMotionEnds() async throws {
+        try await openFlowSpot()
+        try pressFlow("next")
+        try await wait("the first page") { self.titles == ["Page n0"] && self.model.flowEdges.from == nil }
+        host.heldEnds = []
+
+        try pressFlow("leave")
+
+        try await wait("the close") { self.model.openSheetID == nil }
+        XCTAssertNil(model.sheets["flow"]?.page)
+        XCTAssertEqual(model.closingPage?.page, "n0")
+        XCTAssertEqual(model.closingPage?.list.all.map(\.title), ["Page n0"])
+        let ends = host.heldEnds ?? []
+        host.heldEnds = nil
+        ends.forEach { $0() }
+        XCTAssertNil(model.closingPage)
+    }
+
+    func testPopSpotFromAPageGoesBackToTheSpotThatPushedItInOneStep() async throws {
+        try writeFlow()
+        try await openList()
+        XCTAssertTrue(model.push(FlowSheet(spot: "flow")))
+        try await openFlowSheetInPlace()
+        try pressFlow("next")
+        try await wait("the first page") { self.titles == ["Page n0"] && self.model.flowEdges.from == nil }
+        host.edgeChanges = []
+
+        try pressFlow("leave")
+
+        try await wait("the list") { self.model.openSheetID == "list" && self.titles == ["A"] && self.model.flowEdges.from == nil }
+        XCTAssertEqual(host.edgeChanges.filter { $0.edges.sheetStart != nil }.count, 1)
+        XCTAssertEqual(model.flow.pages, [FlowSheet(spot: "list")])
     }
 
     func testAPressPushesAnotherSpotOverItsSheet() async throws {
