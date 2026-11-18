@@ -340,7 +340,7 @@ public final class SpotRuns {
 
     func stay(_ spot: Spot, limit: TimeInterval?) -> (ScriptProcess, AsyncThrowingStream<String, Error>, SpotCaller) {
         let caller = callers.issue(for: spot)
-        let script = ScriptProcess(url: swift.runnable(for: spot), name: spot.url.path, mode: .stays, limit: limit, stopPause: stopPause, dataName: spot.dataName, variables: ["OPENSPOT_ID": spot.id], careful: isCareful ? spot.uses : nil, base: environment, build: swift.build(of: spot))
+        let script = ScriptProcess(spot: spot, program: swift.runnable(for: spot), swift: swift, sending: nil, input: nil, limit: limit, stopPause: stopPause, careful: isCareful ? spot.uses : nil, base: environment)
         track(script, of: spot.id, caller: caller)
         let frames = script.start()
         keep(script)
@@ -371,9 +371,8 @@ public final class SpotRuns {
                 halt()
             }, nil)
         case .stay, .once:
-            let sent = action.sent(input: input)
             let caller = callers.issue(for: spot, reason: variables[ReadReason.variable], keepsFix: true)
-            let process = ScriptProcess(url: swift.runnable(for: spot), name: spot.url.path, arguments: sent.arguments, mode: .once(input: sent.input), limit: limit, stopPause: stopPause, dataName: spot.dataName, variables: variables.merging(["OPENSPOT_ID": spot.id]) { given, _ in given }, careful: isCareful ? spot.uses : nil, base: environment, build: swift.build(of: spot))
+            let process = ScriptProcess(spot: spot, program: swift.runnable(for: spot), swift: swift, sending: action, input: input, limit: limit, stopPause: stopPause, variables: variables, careful: isCareful ? spot.uses : nil, base: environment)
             track(process, of: spot.id, caller: caller)
             process.fix = { caller.takeFix() }
             let stream = process.start()

@@ -47,14 +47,10 @@ public struct TerminalRun {
         let swift = SwiftProgram()
         let program = swift.runnable(for: spot, builds: false)
         let caller = callers?.issue(for: spot)
-        let variables = ["OPENSPOT_ID": spot.id].merging(isRead ? ReadReason.sheet.variables : [:]) { _, new in new }
-        let process: ScriptProcess
-        if spot.mode.stays {
-            process = ScriptProcess(url: program, name: spot.url.path, mode: .stays, limit: isRead ? Self.readLimit : nil, dataName: spot.dataName, variables: variables, errorLimit: Self.errorLimit, careful: careful, base: environment, folder: folder, build: swift.build(of: spot))
-        } else {
-            let sent = action.sent(input: input)
-            process = ScriptProcess(url: program, name: spot.url.path, arguments: sent.arguments, mode: .once(input: sent.input), limit: isRead ? Self.readLimit : nil, dataName: spot.dataName, variables: variables, errorLimit: Self.errorLimit, careful: careful, base: environment, folder: folder, build: swift.build(of: spot))
-        }
+        let process = ScriptProcess(
+            spot: spot, program: program, swift: swift, sending: spot.mode.stays ? nil : action, input: input, limit: isRead ? Self.readLimit : nil,
+            variables: isRead ? ReadReason.sheet.variables : [:], errorLimit: Self.errorLimit, careful: careful, base: environment, folder: folder
+        )
         usage?.track(process, of: spot.id)
         if let callers, let caller { callers.attach(process, to: caller) }
         return await withTaskCancellationHandler {
@@ -86,7 +82,7 @@ public struct TerminalRun {
     }
 
     private func inline(isolation: isolated (any Actor)? = #isolation, isRead: Bool, frame: (String) -> Void) async -> End {
-        let script = InlineScript(spot: spot, api: nil, callers: callers, careful: careful, limit: Self.readLimit)
+        let script = InlineScript(spot: spot, api: nil, callers: callers, careful: careful, limit: Self.readLimit, base: environment ?? ProcessInfo.processInfo.environment)
         defer { script.end() }
         let call = InlineCall(arguments: action.arguments, variables: ["OPENSPOT_ID": spot.id].merging(isRead ? ReadReason.sheet.variables : [:]) { _, new in new }, input: input, limit: isRead ? Self.readLimit : nil)
         script.send(call)

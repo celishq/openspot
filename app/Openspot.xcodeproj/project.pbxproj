@@ -322,6 +322,7 @@
 		5D8A80E9F7685D375860E11D /* Spot.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6FA8009A9A17D22296C068AE /* Spot.swift */; };
 		5E6F9A2B2B99EBC6E769187D /* SpotsWindowPlace.swift in Sources */ = {isa = PBXBuildFile; fileRef = 543D5468269D31A816BBADA7 /* SpotsWindowPlace.swift */; };
 		5E808A7E4C6D203BFF8C0EA5 /* CalendarClockTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A05218DA6386B0D1CDEFB08D /* CalendarClockTests.swift */; };
+		5EC92E52042ECDAA4B7D63B6 /* ScriptProcess+Spot.swift in Sources */ = {isa = PBXBuildFile; fileRef = 461FE2CF805E82EFB2F6EAED /* ScriptProcess+Spot.swift */; };
 		5F5088AAC216D2195A19EC65 /* Reminder.swift in Sources */ = {isa = PBXBuildFile; fileRef = A56D434310F89086FEC10833 /* Reminder.swift */; };
 		602124D016AE98E23D58DF96 /* RemindersCall.swift in Sources */ = {isa = PBXBuildFile; fileRef = BD70FD0BDE402F1CC3C8861A /* RemindersCall.swift */; };
 		6032F37899249BBB6B0BE6AA /* GridShade.swift in Sources */ = {isa = PBXBuildFile; fileRef = ADC8A751A82EE02999D85596 /* GridShade.swift */; };
@@ -1216,6 +1217,7 @@
 		45C3CAB633A9588120D478D5 /* CalcFormatsTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CalcFormatsTests.swift; sourceTree = "<group>"; };
 		45CAF1E356EB763F6FDA572B /* ShelfExampleTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ShelfExampleTests.swift; sourceTree = "<group>"; };
 		45EEB330E5CC278FDED6D88C /* ReposSpotTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReposSpotTests.swift; sourceTree = "<group>"; };
+		461FE2CF805E82EFB2F6EAED /* ScriptProcess+Spot.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "ScriptProcess+Spot.swift"; sourceTree = "<group>"; };
 		463CB312ED9C3F491198FEEB /* PlaygroundCalls.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PlaygroundCalls.swift; sourceTree = "<group>"; };
 		464948DCFF0FC33897C14FB8 /* TestSpot.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TestSpot.swift; sourceTree = "<group>"; };
 		465AADBC2B4DBBB3B10D5794 /* ReleaseLog.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReleaseLog.swift; sourceTree = "<group>"; };
@@ -2119,6 +2121,7 @@
 				4B34F0EE9609556532E5F215 /* Icon.swift */,
 				347C690A39CF114C90A03B03 /* ScriptCall.swift */,
 				BB3BF554F43314B713EEC4F0 /* ScriptProcess.swift */,
+				461FE2CF805E82EFB2F6EAED /* ScriptProcess+Spot.swift */,
 				0383AE293F5B24573C60D19B /* SheetFrames.swift */,
 				E6AD21E62E3935AAA7245C95 /* SpotAction.swift */,
 				C78014302E470D2322828E33 /* SpotOutput.swift */,
@@ -3999,6 +4002,7 @@
 				66255A8D8D61C67E712D877A /* ScriptCall.swift in Sources */,
 				9DB50B8C721CC3D8164C5728 /* ScriptKind.swift in Sources */,
 				A54A8BCA63FF8D34823A3ACC /* ScriptLink.swift in Sources */,
+				5EC92E52042ECDAA4B7D63B6 /* ScriptProcess+Spot.swift in Sources */,
 				2D6F6E09E97F7B1A842E73A6 /* ScriptProcess.swift in Sources */,
 				1616312F8EC663985BB98057 /* ScrollWindow.swift in Sources */,
 				EDB973809E23BE75233DBD4D /* SearchIndex.swift in Sources */,
