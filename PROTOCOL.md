@@ -266,14 +266,7 @@ confirm=Press again to forget
   - any other text, such as `😀`, shows as it is.
 - `tone` is `good`, `warn` or `bad`. On a text, it colours the detail, or the title when there's no detail.
 - `color=#RRGGBB` on a text or a number draws a thin bar of that colour at its leading edge.
-- `look` is the box of a text, a number or a button: `tile` or `bare`, and on a button also `chip` or `strong`. On a text,
-  `heading` draws its title large and bold and its detail under it, with no box. An `icon` that names an image file
-  draws between them, a little apart from each, only its shape, in the system accent colour and at its own proportions.
-  A `note` that names an image file draws the same way under the detail, as a hand-drawn note, and the next block stands
-  close under it. On a card, a `note` draws at the top right of its icon. Its rows take the height
-  of its words, and the gap under it is as wide as the one before the rows of buttons at the end of a sheet. `align`
-  lines up its title, picture and detail on the left, in the centre or on the right. On a text, `card` draws it like a
-  spot's card on the grid, as tall as one: its icon in a disc, then its title and detail, on the fill of a tile.
+- `look` is the box of a text, a number or a button: `tile` or `bare`, and on a button also `chip` or `strong`.
 - `align=left`, `right` or `center` places a block that is smaller than its place.
 
 ## Layouts

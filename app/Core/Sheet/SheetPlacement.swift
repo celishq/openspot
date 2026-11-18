@@ -49,27 +49,11 @@ public struct SheetPlacement: Equatable, Sendable {
         }
         var rowGaps = Array(repeating: gap, count: max(rows.count - 1, 0))
         if let first = Self.firstEndButtonRow(parts: parts, layout: layout), first > 0 { rowGaps[first - 1] = SpotTokens.partGroupGap }
-        for part in parts where part.look == .heading || part.look == .card {
-            guard let letter = layout.letter(of: part), let area = layout.areas[letter] else { continue }
-            let band = area.y0...area.y1
-            let isShared = parts.contains { other in
-                guard other.id != part.id, let place = layout.letter(of: other).flatMap({ layout.areas[$0] }) else { return false }
-                return place.y0 <= area.y1 && place.y1 >= area.y0
-            }
-            guard !isShared, !band.contains(where: layout.hasDivider(inRow:)) else { continue }
-            let width = columnX(area.x1) + cell - columnX(area.x0) - 2 * SheetHeading.side
-            let need = part.look == .heading ? SheetHeading.height(of: part, width: width) : SpotTokens.cell
-            let each = (need - gap * CGFloat(band.count - 1)) / CGFloat(band.count)
-            for y in band { heights[y] = max(each, SpotTokens.dividerHeight) }
-            if part.look == .heading, rowGaps.indices.contains(area.y1) { rowGaps[area.y1] = part.note == nil ? SpotTokens.partHeadingBottom : SheetHeading.noteBottom }
-        }
         let gaps = rowGaps.reduce(0, +)
-        let opensWithHeading = parts.contains { $0.look == .heading && layout.letter(of: $0).flatMap { layout.areas[$0] }?.y0 == 0 }
-        let lead = opensWithHeading ? SpotTokens.partHeadingTop - SpotTokens.rowGap : 0
         var filled: CGFloat?
         if !fillRows.isEmpty {
             let room = SpotTokens.partsMaxHeight - (repeatArea == nil ? 0 : SpotTokens.partFieldRoom)
-            let free = room - heights.reduce(0, +) - gaps - lead
+            let free = room - heights.reduce(0, +) - gaps
             if free > 0 {
                 for y in fillRows { heights[y] += free / CGFloat(fillRows.count) }
                 filled = room
@@ -77,7 +61,7 @@ public struct SheetPlacement: Equatable, Sendable {
         }
 
         var rowY: [CGFloat] = []
-        var y: CGFloat = lead
+        var y: CGFloat = 0
         for (index, row) in heights.enumerated() {
             rowY.append(y)
             y += row + (rowGaps.indices.contains(index) ? rowGaps[index] : gap)
@@ -136,8 +120,6 @@ public struct SheetPlacement: Equatable, Sendable {
                 }
             }
 
-            if item.part.look == .heading { place = Self.moved(place, left: SheetHeading.side, right: SheetHeading.side) }
-
             frames[item.part.id] = Frame(
                 rect: place,
                 isOnTop: !under.isEmpty,
@@ -154,7 +136,7 @@ public struct SheetPlacement: Equatable, Sendable {
             CGRect(x: 0, y: rowY[$0], width: SpotTokens.partsWidth, height: SpotTokens.dividerHeight)
         }
         repeatFrame = repeatArea.map(rect)
-        height = rows.isEmpty ? 0 : filled ?? lead + heights.reduce(0, +) + gaps
+        height = rows.isEmpty ? 0 : filled ?? heights.reduce(0, +) + gaps
     }
 
     private static func firstEndButtonRow(parts: [SpotPart], layout: SheetLayout) -> Int? {

@@ -4,7 +4,7 @@ public enum PartCatalog {
     static let keys: Set<String> = [
         "title", "detail", "icon", "min", "max", "color", "value", "display",
         "placeholder", "readonly", "required", "type", "close", "confirm", "scope", "form", "align", "look",
-        "shortcut", "tone", "unit", "recording", "note"
+        "shortcut", "tone", "unit", "recording"
     ]
     private static let optionKeys: Set<String> = ["option", "title", "icon"]
 

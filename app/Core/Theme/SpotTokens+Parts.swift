@@ -56,11 +56,6 @@ extension SpotTokens {
     public static let partSeamClearance: CGFloat = 22
     public static let dividerHeight: CGFloat = 1
     public static let partGroupGap: CGFloat = 24
-    public static let partHeadingTop: CGFloat = 24
-    public static let partHeadingBottom: CGFloat = 24
-    public static let cardNote = CGSize(width: 10, height: 13)
-    public static let cardNoteOffset = CGSize(width: 30, height: 5)
-    public static var cardGlyphGap: CGFloat { padding - 5 }
     public static let keycapSide: CGFloat = 52
     public static let keycapGap: CGFloat = 6
     public static let keycapPlus: CGFloat = 12

@@ -5,6 +5,7 @@
 # uses=app
 # offers=none
 # starts=first-launch
+# view=welcome.swift
 # pages=key
 # pages=agent
 . "$OPENSPOT_SH"
@@ -49,29 +50,32 @@ label() {
   printf '%s%s' "$marks" "$rest"
 }
 
-# Prints one thing to try on the last page, drawn like a spot's card: its id, title, detail, icon and the hand-drawn number on its icon.
+# Prints one thing to try on the last page, which welcome.swift draws like a spot's card: its title, detail, icon and the
+# hand-drawn number on its icon.
 card() {
-  printf '\ntext=%s\nlook=card\ntitle=%s\ndetail=%s\nicon=%s\nnote=%s\n' "$1" "$2" "$3" "$4" "$5"
+  printf 'card.title=%s\ncard.detail=%s\ncard.icon=%s\ncard.note=%s\n' "$1" "$2" "$3" "$4"
 }
 
-# Prints the heading of a page: its words in large type, the words under them, then a hand-drawn note when it names one.
+# Prints the heading of a page, which welcome.swift draws: its words in large type, the words under them, then a hand-drawn
+# note when it names one. It keeps the height of its grid lines.
 heading() {
-  printf '\ntext=head\nlook=heading\ntitle=%s\ndetail=%s\n' "$1" "$2"
+  printf '\nview=head\ngrow=false\ntitle=%s\ndetail=%s\n' "$1" "$2"
   [ -z "${3-}" ] || printf 'note=%s\n' "$3"
 }
 
 # Prints the first page: what a spot is, a handwritten "even this onboarding" in the accent colour, then Continue.
 welcome() {
-  printf 'grid=head head head head\ngrid=next next next next\n'
-  printf '\ntext=head\nlook=heading\ntitle=Everything is a disposable spot\nicon=%s/even-this-onboarding.svg\n' "$here"
-  printf 'detail=Make a script or an app for anything. Keep it, throw it away, or share it in one click.\n'
+  printf 'grid=head head head head\ngrid=head head head head\ngrid=head head head head\ngrid=head head head head\n'
+  printf 'grid=next next next next\n'
+  heading 'Everything is a disposable spot' 'Make a script or an app for anything. Keep it, throw it away, or share it in one click.'
+  printf 'icon=%s/even-this-onboarding.svg\n' "$here"
   printf '\nbutton=next\ntitle=Continue\nlook=strong\nshortcut=return\n'
 }
 
 # Prints the key page: the chosen key, or the key that opens Openspot, then Use this key and Record another key. With an argument, the field records at once.
 keys() {
   shown=$(chosen)
-  printf 'grid=head head head head\ngrid=key key key key\ngrid=key key key key\ngrid=key key key key\ngrid=use use use use\ngrid=record record record record\n'
+  printf 'grid=head head head head\ngrid=head head head head\ngrid=key key key key\ngrid=key key key key\ngrid=key key key key\ngrid=use use use use\ngrid=record record record record\n'
   heading 'Choose your key' 'It opens Openspot from any app.'
   printf '\nfield=key\ntype=hotkey\n'
   openspot_kv value "${shown:-$now}"
@@ -82,10 +86,11 @@ keys() {
 
 # Prints the last page: the two things to try, a spot of your own and a change by your agent, then Start using Openspot.
 agent() {
-  printf 'grid=head head head head\ngrid=new new new new\ngrid=edit edit edit edit\ngrid=done done done done\n'
+  printf 'grid=head head head head\ngrid=head head head head\ngrid=head head head head\ngrid=head head head head\n'
+  printf 'grid=head head head head\ngrid=head head head head\ngrid=done done done done\n'
   heading 'Make it yours' 'Easily, with any of your favourite agents' "$here/note-and-pls.svg"
-  card new 'Create your own spot' 'Open New spot and describe it.' plus "$here/note-1.svg"
-  card edit 'Change it with your agent' 'Select it and press ⌘E.' pencil "$here/note-2.svg"
+  card 'Create your own spot' 'Open New spot and describe it.' plus "$here/note-1.svg"
+  card 'Change it with your agent' 'Select it and press ⌘E.' pencil "$here/note-2.svg"
   printf '\nbutton=done\ntitle=Start using Openspot\nlook=strong\nshortcut=return\n'
 }
 
