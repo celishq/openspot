@@ -2,6 +2,7 @@ import Foundation
 
 public struct AnswerPattern: Equatable, @unchecked Sendable {
     public let text: String
+    public private(set) var isLast = false
     private let expression: NSRegularExpression
 
     public init?(_ text: String) {
@@ -10,11 +11,17 @@ public struct AnswerPattern: Equatable, @unchecked Sendable {
         self.expression = expression
     }
 
+    func last() -> AnswerPattern {
+        var pattern = self
+        pattern.isLast = true
+        return pattern
+    }
+
     public func matches(_ query: String) -> Bool {
         expression.firstMatch(in: query, range: NSRange(query.startIndex..., in: query)) != nil
     }
 
     public static func == (one: AnswerPattern, two: AnswerPattern) -> Bool {
-        one.text == two.text
+        one.text == two.text && one.isLast == two.isLast
     }
 }

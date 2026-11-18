@@ -1519,6 +1519,19 @@ final class SpotsModelTests: XCTestCase {
         XCTAssertFalse(model.visible.contains { $0.id.hasPrefix("calc") })
     }
 
+    func testASpotWithAnswersLastAnswersUnderTheResults() async throws {
+        try await showAnswers()
+        try script("make", header: "title=Make\non=search.text .\nanswers=last", #"printf 'row=%s\ntitle=Make\n' "$OPENSPOT_VALUE""#)
+        await model.reload()
+
+        model.searchText = "notes"
+        model.landSearch()
+        try await wait("the last answer") { model.visible.last?.id == "make\nnotes" }
+
+        XCTAssertEqual(model.visible.map(\.id), ["notes", "make\nnotes"])
+        XCTAssertEqual(model.selectedEntry?.id, "notes")
+    }
+
     func testAnAnswerThatDrawsALargeCardTakesTwoFullRowsAndAPressSendsItsMainValue() async throws {
         let body = #"case "$1" in read) printf 'grid.large=sum sum sum sum\ngrid.large=answer answer answer answer\nmain=answer\n\ntext=sum\ntitle=%s\n\nnumber=answer\nvalue=14\n' "$OPENSPOT_VALUE" ;; open) printf 'toast=Picked %s\n' "$2" ;; esac"#
         try script("calc", header: "title=Calc\non=search.text ^[0-9]", body)

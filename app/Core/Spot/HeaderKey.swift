@@ -1,5 +1,5 @@
 public enum HeaderKey: String, CaseIterable, Sendable {
-    case title, icon, detail, keywords, placeholder, on, emits, offers, drop, edits, view, source, mode, press, uses, pages, to
+    case title, icon, detail, keywords, placeholder, on, emits, offers, drop, edits, view, source, mode, press, uses, pages, to, answers
 
     public static let drawing = "grid."
 

@@ -123,6 +123,7 @@ The header says what a spot is. Openspot reads it without running the spot.
 | `uses`        | What the spot uses, split by commas: `app`, `spots`, `screen`, `clipboard`, `calendar`, `power`, `network`, `files`. See [Trust](#trust). |
 | `grid.<size>` | A card made of other spots. Each word is a spot id. See [Cards of other spots](#cards-of-other-spots).                           |
 | `to`          | The spot that opens when the user presses a card of other spots. See [Cards of other spots](#cards-of-other-spots).              |
+| `answers`     | `last`: the answers of `on=search.text` show under the other results, not first. See [Places](#places).                         |
 
 | Block         | Meaning                                                                                                                                                                                                                                                                      |
 | ------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -691,6 +692,8 @@ The user decides where a spot shows. A spot only offers, with one `offers` line 
   pattern matches, with no pause. A newer text stops the older call. The answer should be fast.
 - Its rows show first in the main search until the newest text has an answer, and go at once when the pattern no longer
   matches. A pick of a row sends `<spot> open <row id>`.
+- With `answers=last`, its rows show under the other results instead, such as a row that offers to make a spot of the
+  typed words. A search that finds only such rows counts as a search that found nothing.
 - A spot whose only event is `search.text` has no card.
 - An answer can be one card instead of rows: its head has `grid.large=` or `grid.strip=` lines, and its main block has a
   `value`. A pick of the card sends `<spot> open <value>`.

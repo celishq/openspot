@@ -55,7 +55,10 @@ public struct SpotFile: Equatable, Sendable {
         }
         let mode = isInline ? SpotMode.inline : named
         let namedPlaces = try Place.read(header.values(HeaderKey.offers), of: name)
-        let answers = on?.answers
+        let order = header.value(HeaderKey.answers)
+        guard order == nil || order == "last" else { throw SpotError.fault("\(name) has an unknown answers: \(order ?? ""). Use answers=last") }
+        guard order == nil || on?.answers != nil else { throw SpotError.fault("\(name) has answers=last, which needs on=search.text") }
+        let answers = order == nil ? on?.answers : on?.answers?.last()
         let answersOnly = answers != nil && read == nil
         if let field = header.children.compactMap({ $0.value(HeaderBlock.field) }).first(where: ReservedSetting.isReserved) {
             throw SpotError.fault("\(name) has field=\(field), a key that Openspot keeps for the person. Give the field another name.")

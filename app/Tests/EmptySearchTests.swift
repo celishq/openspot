@@ -26,6 +26,20 @@ final class EmptySearchTests: PanelCase {
         XCTAssertEqual(searches, ["timezone": 1, "weather": 1])
     }
 
+    func testASearchThatFoundOnlyAnAnswerUnderTheResultsCountsAsMissed() async throws {
+        try script("make", header: "title=Make\non=search.text .\nanswers=last", #"printf 'row=%s\ntitle=Make\n' "$OPENSPOT_VALUE""#)
+        await model.reload()
+        model.isShown = true
+        model.panelWillShow()
+
+        search("timezon")
+        try await wait("the last answer") { model.visible.map(\.id) == ["make\ntimezon"] }
+        search("timezone")
+        search("")
+
+        XCTAssertEqual(searches, ["timezone": 1])
+    }
+
     func testASearchThatFoundASpotOrIsShortCountsNothing() async throws {
         try script("coffee", header: "title=Coffee", "true")
         await model.reload()
