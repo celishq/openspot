@@ -9,7 +9,7 @@ public struct SpotFacts: Equatable, Sendable {
     let baseSymbol: String
     public let subtitle: String?
     public let read: SpotRead?
-    public let offeredPlaces: Set<Place>
+    public let isGlobal: Bool
     public let isFound: Bool
     public let answers: AnswerPattern?
     public internal(set) var order: Int
@@ -25,9 +25,9 @@ public struct SpotFacts: Equatable, Sendable {
     public let emits: [String]
     public let pages: [String]
     public internal(set) var uses: Set<SpotUse>
-    public let offers: [HeaderButton]
+    public let offers: [Manifest.Command]
     public internal(set) var offeredActions: [OfferedAction]
-    public let settings: [HeaderField]
+    public let settings: [Manifest.Setting]
     public internal(set) var holdsSettings = false
     public internal(set) var isBuiltIn = false
     public let keywords: [String]

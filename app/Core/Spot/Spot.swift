@@ -45,12 +45,12 @@ public struct Spot: Equatable, Sendable {
         growsFromField: Bool = false,
         mode: SpotMode = .once,
         drop: [String] = [],
-        offeredPlaces: Set<Place> = [],
+        isGlobal: Bool = false,
         dataName: String? = nil,
         isOnGrid: Bool = true,
-        offers: [HeaderButton] = [],
+        offers: [Manifest.Command] = [],
         offeredActions: [OfferedAction] = [],
-        settings: [HeaderField] = [],
+        settings: [Manifest.Setting] = [],
         view: String? = nil,
         viewDate: Date? = nil,
         sources: [String] = [],
@@ -65,7 +65,7 @@ public struct Spot: Equatable, Sendable {
     ) {
         header = Header(SpotFacts(
             id: id, name: name, url: url, size: size, headerIcon: icon, baseSymbol: symbol, subtitle: subtitle, read: read,
-            offeredPlaces: offeredPlaces, isFound: isFound, answers: answers, order: order,
+            isGlobal: isGlobal, isFound: isFound, answers: answers, order: order,
             host: host, growsFromField: growsFromField, mode: mode, drop: drop,
             dataName: dataName, isOnGrid: isOnGrid, view: view, viewDate: viewDate, sources: sources, emits: emits, pages: pages, uses: uses,
             offers: offers, offeredActions: offeredActions, settings: settings, keywords: keywords, placeholder: placeholder, sample: sample,
@@ -130,7 +130,6 @@ public struct Spot: Equatable, Sendable {
         header.facts.read
     }
 
-    public var isGlobal: Bool { self.offeredPlaces.contains(.search) }
     public var reachesAccountKey: Bool {
         SpotUse.reachesAccountKey(self.uses, isBuiltIn: self.isBuiltIn)
     }
@@ -263,7 +262,7 @@ public struct Spot: Equatable, Sendable {
     }
 
     public var readsState: Bool {
-        (self.read?.has(.panel) == true || self.read?.has(.event(SpotEvent.appLaunch)) == true) && !isGlobal && !self.mode.stays
+        (self.read?.has(.panel) == true || self.read?.has(.event(SpotEvent.appLaunch)) == true) && !self.isGlobal && !self.mode.stays
     }
 
     public var readsAtLaunch: Bool {
@@ -272,7 +271,7 @@ public struct Spot: Equatable, Sendable {
 
     public var readsOfferedRows: Bool {
         guard let read = self.read else { return false }
-        return isGlobal && !read.has(.panel) && read.seconds == nil
+        return self.isGlobal && !read.has(.panel) && read.seconds == nil
     }
 
     public var canShowInMenuBar: Bool {

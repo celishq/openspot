@@ -20,8 +20,8 @@ final class DocExampleTests: SampleSpotsCase {
         return check.terminationStatus == 0 ? nil : text
     }
 
-    private func described(_ text: String, of language: String) throws -> TextBlock {
-        try SpotToml(text: text, folder: "example.spot").block(of: "example.\(language)")
+    private func described(_ text: String, of language: String) throws -> Manifest {
+        try Manifest(text: text, folder: "example.spot").script("example.\(language)")
     }
 
     func testEachRunnableExampleOfTheDocsRunsInAFolderOfItsOwnWithTheManifestBeforeIt() async throws {
@@ -35,7 +35,7 @@ final class DocExampleTests: SampleSpotsCase {
                     if fence.language == "swift", !fence.text.hasPrefix("#!") {
                         let spot = fences[..<index].lastIndex { runnable.contains($0.language) && ($0.language != "swift" || $0.text.hasPrefix("#!")) }
                         let named = spot.flatMap { $0 > 0 && fences[$0 - 1].language == "toml" ? try? described(fences[$0 - 1].text, of: fences[$0].language) : nil }
-                        XCTAssertNotNil(named?.value("view") ?? named?.value("source"), "\(place) is Swift that no view or source of the spot.toml before the example above it names. Make it a view or a source, or put it in a text fence.")
+                        XCTAssertNotNil(named?.view ?? named?.source.first, "\(place) is Swift that no view or source of the spot.toml before the example above it names. Make it a view or a source, or put it in a text fence.")
                         continue
                     }
                     let isSpot = fence.text.hasPrefix("#!") || fence.language == "js"
@@ -51,7 +51,7 @@ final class DocExampleTests: SampleSpotsCase {
                     let folder = home.appendingPathComponent("example-\(doc.path.replacingOccurrences(of: "/", with: "-"))-\(index)")
                     let file = folder.spotFile("example", extension: fence.language)
                     try FileManager.default.createDirectory(at: file.deletingLastPathComponent(), withIntermediateDirectories: true)
-                    try before.write(to: file.deletingLastPathComponent().appendingPathComponent(SpotToml.fileName), atomically: true, encoding: .utf8)
+                    try before.write(to: file.deletingLastPathComponent().appendingPathComponent(Manifest.fileName), atomically: true, encoding: .utf8)
                     if fence.language == "js" {
                         try fence.text.write(to: file, atomically: true, encoding: .utf8)
                     } else {
@@ -59,22 +59,16 @@ final class DocExampleTests: SampleSpotsCase {
                         if fence.language == "sh" { XCTAssertNil(try syntaxFault(of: file), place) }
                     }
                     let manifest = try described(before, of: fence.language)
-                    let named = manifest.values("source")
+                    let named = manifest.source
                     let sources = named.isEmpty ? [] : fences[(index + 1)...].prefix { $0.language == "swift" && !$0.text.hasPrefix("#!") }
                     XCTAssertEqual(sources.count, named.count, "\(place) names \(named.count) sources, and \(sources.count) Swift examples follow it")
                     for (name, source) in zip(named, sources) {
                         try source.text.write(to: file.deletingLastPathComponent().appendingPathComponent(name), atomically: true, encoding: .utf8)
                     }
-                    if let view = manifest.value("view") {
+                    if let view = manifest.view {
                         let source = fences[(index + 1)...].first { $0.language == "swift" }
                         XCTAssertNotNil(source, "\(place) names the view \(view), and no Swift example follows it")
                         try source?.text.write(to: file.deletingLastPathComponent().appendingPathComponent(view), atomically: true, encoding: .utf8)
-                    }
-                    let others = manifest.fields.filter { $0.key.hasPrefix("grid.") }.flatMap { $0.value.split(separator: " ").map(String.init) } + manifest.values("to")
-                    for name in Set(others) {
-                        let other = folder.spotFile(name)
-                        try "#!/bin/sh\nprintf 'text=t\\ntitle=T\\n'\n".writeScript(to: other)
-                        try "on = [\"clock.60\"]\n".write(to: other.deletingLastPathComponent().appendingPathComponent(SpotToml.fileName), atomically: true, encoding: .utf8)
                     }
 
                     let faults = await SpotCheck(folder: SpotsFolder(url: folder), views: ViewLibrary(cache: home.appendingPathComponent("views")), programs: SwiftProgram(cache: home.appendingPathComponent("programs")), environment: TestEnvironment.values).faults()

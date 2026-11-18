@@ -54,7 +54,7 @@ public struct FrameCheck: Equatable, Sendable {
 
     private static func rootFaults(_ root: TextBlock?, of output: SpotOutput) -> [String] {
         var faults: [String] = []
-        for field in root?.fields ?? [] where HeaderKey.isDrawing(field.key) && !CardFace.places.contains(String(field.key.dropFirst(HeaderKey.drawing.count))) {
+        for field in root?.fields ?? [] where RootKey.isDrawing(field.key) && !CardFace.places.contains(String(field.key.dropFirst(RootKey.drawing.count))) {
             faults.append("the root draws \(field.key), which is not a place")
         }
         for drawing in output.face.drawings.values {

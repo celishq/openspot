@@ -3,8 +3,8 @@ import XCTest
 
 final class GlobalKeyTests: XCTestCase {
     private func command(toml: String) throws -> Spot {
-        let block = try SpotToml(text: toml, folder: "/spots").block(of: "move.sh")
-        let spot = try SpotFile(script: URL(fileURLWithPath: "/spots/move.sh"), header: block, id: "move")
+        let manifest = try Manifest(text: toml, folder: "/spots").script("move.sh")
+        let spot = try SpotFile(script: URL(fileURLWithPath: "/spots/move.sh"), manifest: manifest, id: "move")
         return try XCTUnwrap(spot.spots.first)
     }
 
@@ -20,7 +20,7 @@ final class GlobalKeyTests: XCTestCase {
     func testABadCommandRefusesTheSpotAndNamesTheFault() {
         for block in ["[commands.full]", "[commands.show]\ntitle = 'Show'", "[commands.'full now']\ntitle = 'Full'"] {
             XCTAssertThrowsError(try command(toml: block), block) { error in
-                XCTAssertTrue((error as? SpotError)?.reason.contains("cannot read the button") == true, block)
+                XCTAssertTrue((error as? SpotError)?.reason.contains("cannot read [commands.") == true, block)
             }
         }
     }

@@ -43,7 +43,7 @@ extension String {
 
     private static func describe(_ url: URL, toml: String, isNeeded: Bool) throws {
         let folder = url.deletingLastPathComponent()
-        let file = folder.appendingPathComponent(SpotToml.fileName)
+        let file = folder.appendingPathComponent(Manifest.fileName)
         let name = url.deletingPathExtension().lastPathComponent
         let isMain = folder.pathExtension != SpotPackage.fileExtension || folder.deletingPathExtension().lastPathComponent == name
         let old = (try? String(contentsOf: file, encoding: .utf8)) ?? ""

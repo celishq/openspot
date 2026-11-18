@@ -13,14 +13,14 @@ public struct Playground: Equatable, Sendable {
     public init() {}
 
     public static func command(file: URL) -> Spot {
-        let manifest = (try? SpotToml(beside: file).block(of: file)) ?? TextBlock(fields: [])
+        let manifest = (try? Manifest(beside: file).script(file)) ?? Manifest(text: nil, folder: "")
         return Spot(
             id: file.lastPathComponent,
             name: file.lastPathComponent,
             url: file,
             kind: .list,
-            read: (try? SpotRead(on: manifest.values("on"), of: file.lastPathComponent)) ?? nil,
-            mode: manifest.value("mode").flatMap(SpotMode.init(rawValue:)).map { $0.stays ? .stay : .once } ?? .once
+            read: (try? SpotRead(on: manifest.on, of: file.lastPathComponent)) ?? nil,
+            mode: manifest.mode.flatMap(SpotMode.init(rawValue:)).map { $0.stays ? .stay : .once } ?? .once
         )
     }
 

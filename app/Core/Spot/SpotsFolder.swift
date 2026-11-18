@@ -150,12 +150,12 @@ public struct SpotsFolder: Sendable {
     }
 
     private static func describe(_ scripts: [String], in folder: URL) throws {
-        let file = folder.appendingPathComponent(SpotToml.fileName)
+        let file = folder.appendingPathComponent(Manifest.fileName)
         guard !FileManager.default.fileExists(atPath: file.path) else { return }
         let main = folder.deletingPathExtension().lastPathComponent
         let tables = scripts.map { script in
             let name = (script as NSString).deletingPathExtension
-            let title = "\(HeaderKey.title.rawValue) = \(ConfigDocument.Value.string(SpotFile.name(of: URL(fileURLWithPath: script))).text)\n"
+            let title = "title = \(ConfigDocument.Value.string(SpotFile.name(of: URL(fileURLWithPath: script))).text)\n"
             return name == main ? title : "[scripts.\(name)]\n" + title
         }
         try tables.sorted { !$0.hasPrefix("[") && $1.hasPrefix("[") }.joined(separator: "\n").write(to: file, atomically: true, encoding: .utf8)
@@ -170,11 +170,11 @@ public struct SpotsFolder: Sendable {
     }
 
     static func isScript(_ url: URL) -> Bool {
-        isScript(url, toml: SpotToml(beside: url))
+        isScript(url, manifest: Manifest(beside: url))
     }
 
-    static func isScript(_ url: URL, toml: SpotToml) -> Bool {
-        !isFolder(url) && SpotFile.runs(url, toml: toml)
+    static func isScript(_ url: URL, manifest: Manifest) -> Bool {
+        !isFolder(url) && SpotFile.runs(url, manifest: manifest)
     }
 
     private static func isFolder(_ url: URL) -> Bool {

@@ -58,7 +58,7 @@ public struct SpotCheck: Sendable {
         let known = Set(SpotEvent.known + scan.scripts.flatMap(\.emits))
         for script in scan.scripts {
             for event in script.read?.events ?? [] where !known.contains(event) {
-                let fault = "\(script.name) reads on \(event), which Openspot does not raise and no spot names in its emits. Add emits=\(event) to the spot that raises it, or fix the name"
+                let fault = "\(script.name) reads on \(event), which Openspot does not raise and no spot names in its emits. Add emits = [\"\(event)\"] to the spot that raises it, or fix the name"
                 findings.append(Finding(spot: script.id, file: script.url.path, fault: fault))
             }
             for event in script.read?.events ?? [] where script.emits.contains(event) {
@@ -97,8 +97,8 @@ public struct SpotCheck: Sendable {
             }
         }
         for script in scan.scripts where !script.isBuiltIn {
-            guard SpotRead.words((try? SpotToml(beside: script.url).block(of: script.url))?.value(HeaderKey.uses)).contains(SpotUse.account.rawValue) else { continue }
-            let fault = "\(script.name) has uses=account, which only a spot of Openspot takes. Remove it"
+            guard (try? Manifest(beside: script.url).script(script.url))?.uses.contains(SpotUse.account.rawValue) == true else { continue }
+            let fault = "\(script.name) has account in its uses, which only a spot of Openspot takes. Remove it"
             findings.append(Finding(spot: script.id, file: script.url.path, fault: fault))
         }
         for script in scan.scripts {
@@ -118,7 +118,7 @@ public struct SpotCheck: Sendable {
         for item in output.items {
             guard case .push(_, let page?, _, _)? = item.move, !script.takes(page: page) else { continue }
             let pattern = page.firstIndex(of: ":").map { "\(page[..<$0]):*" } ?? page
-            faults.append("the row \(item.run) pushes the page \(page) of \(script.id), which takes no such page. Add pages=\(pattern) to \(script.id)")
+            faults.append("the row \(item.run) pushes the page \(page) of \(script.id), which takes no such page. Add pages = [\"\(pattern)\"] to \(script.id)")
         }
         return faults
     }
@@ -138,7 +138,7 @@ public struct SpotCheck: Sendable {
             var seen: Set<String> = []
             var told: Set<String> = []
             for line in block {
-                guard let key = line.split(separator: "=", maxSplits: 1).first.map(String.init), !lists.contains(key), !HeaderKey.isDrawing(key) else { continue }
+                guard let key = line.split(separator: "=", maxSplits: 1).first.map(String.init), !lists.contains(key), !RootKey.isDrawing(key) else { continue }
                 if !seen.insert(key).inserted, told.insert(key).inserted { faults.append("the block \(name) has \(key) twice, \(fix)") }
             }
         }

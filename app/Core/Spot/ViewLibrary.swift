@@ -462,7 +462,7 @@ public struct ViewLibrary: Sendable {
             .filter { FileManager.default.isExecutableFile(atPath: $0.path) && !$0.hasDirectoryPath }
             .sorted { $0.path < $1.path }
         for script in scripts {
-            guard let name = try? SpotToml(beside: script).block(of: script).value("view"), !name.hasPrefix("/") else { continue }
+            guard let name = (try? Manifest(beside: script).script(script))?.view, !name.hasPrefix("/") else { continue }
             let source = script.deletingLastPathComponent().appendingPathComponent(name)
             guard let data = try? Data(contentsOf: source) else { continue }
             let library = URL(fileURLWithPath: Self.path(beside: source.path, text: data))

@@ -16,7 +16,7 @@ final class SpotTablesTests: XCTestCase {
 
     private func fault(of toml: String) -> String? {
         do {
-            _ = try SpotFile(script: URL(fileURLWithPath: "/none/probe.sh"), header: SpotToml(text: toml, folder: "/none").block(of: "probe.sh"), id: "probe")
+            _ = try SpotFile(script: URL(fileURLWithPath: "/none/probe.sh"), manifest: Manifest(text: toml, folder: "/none").script("probe.sh"), id: "probe")
             return nil
         } catch {
             return (error as? SpotError)?.reason
@@ -36,8 +36,8 @@ final class SpotTablesTests: XCTestCase {
     }
 
     func testAKeyThatACommandOrASettingDoesNotTakeIsAFault() {
-        XCTAssertEqual(fault(of: "title = 'T'\n[commands.go]\ntitle = 'Go'\ncolour = 'red'"), "T has an unknown key on the command go: colour")
-        XCTAssertEqual(fault(of: "title = 'T'\n[settings.look]\ntitel = 'Look'"), "T has an unknown key on the setting look: titel")
+        XCTAssertEqual(fault(of: "title = 'T'\n[commands.go]\ntitle = 'Go'\ncolour = 'red'"), "T has an unknown key in [commands.go]: colour")
+        XCTAssertEqual(fault(of: "title = 'T'\n[settings.look]\ntitel = 'Look'"), "T has an unknown key in [settings.look]: titel")
     }
 
     func testASpotTomlThatCannotBeReadIsAFaultThatNamesItsLine() {
@@ -47,7 +47,7 @@ final class SpotTablesTests: XCTestCase {
     func testASettingThatAsksForAHotkeyIsAFault() {
         XCTAssertEqual(
             fault(of: "title = 'T'\non = ['sheet.open']\n[settings.key]\ntype = 'hotkey'\ntitle = 'Shortcut'"),
-            "T has an unknown type on the field `key`: `hotkey`. Use `type=secret`, or no type."
+            "T has an unknown type in [settings.key]: `hotkey`. Use `type = \"secret\"`, or no type."
         )
         XCTAssertNil(fault(of: "title = 'T'\non = ['sheet.open']\n[settings.token]\ntype = 'secret'"))
     }
@@ -136,6 +136,6 @@ final class SpotTablesTests: XCTestCase {
     func testTheAccountUseOnASpotThatDoesNotShipInOpenspotIsReportedByACheck() async throws {
         let faults = try await findings("#!/bin/sh\n", toml: "title = 'Mine'\nuses = ['account', 'network']")
 
-        XCTAssertEqual(faults, ["Mine has uses=account, which only a spot of Openspot takes. Remove it"])
+        XCTAssertEqual(faults, ["Mine has account in its uses, which only a spot of Openspot takes. Remove it"])
     }
 }

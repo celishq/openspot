@@ -2,6 +2,7 @@ import Foundation
 
 public struct SpotFile: Equatable, Sendable {
     public static let inlineExtension = "js"
+    private static let search = "search"
 
     public let id: String
     public let spots: [Spot]
@@ -11,108 +12,108 @@ public struct SpotFile: Equatable, Sendable {
         self.spots = spots
     }
 
-    public init?(file url: URL, id: String, toml: SpotToml? = nil, isApp: Bool = false) throws {
+    public init?(file url: URL, id: String, manifest: Manifest? = nil, isApp: Bool = false) throws {
         if SwiftProgram.isProgram(url) { return nil }
-        let toml = toml ?? SpotToml(beside: url)
-        guard Self.runs(url, toml: toml) else { return nil }
-        try self.init(script: url, header: toml.block(of: url), id: id, isApp: isApp)
+        let manifest = manifest ?? Manifest(beside: url)
+        guard Self.runs(url, manifest: manifest) else { return nil }
+        try self.init(script: url, manifest: manifest.script(url), id: id, isApp: isApp)
     }
 
-    public init(script url: URL, header: TextBlock, id: String, isApp: Bool = false) throws {
-        let name = header.value(HeaderKey.title) ?? Self.name(of: url)
-        if let key = HeaderKey.unknown(in: header, isApp: isApp) {
-            throw SpotError.fault("\(name) has an unknown key in its \(SpotToml.fileName): \(key)")
+    public init(script url: URL, manifest: Manifest, id: String, isApp: Bool = false) throws {
+        let name = manifest.title ?? Self.name(of: url)
+        if let key = manifest.unknownKey(isApp: isApp) {
+            throw SpotError.fault("\(name) has an unknown key in its \(Manifest.fileName): \(key)")
         }
-        for block in header.children {
-            guard let key = HeaderBlock.unknown(in: block), let kind = HeaderBlock(block: block) else { continue }
-            throw SpotError.fault("\(name) has an unknown key on the \(kind.word) \(block.value(kind) ?? ""): \(key)")
+        let tables = manifest.commands.map { ($0.section, $0.unknownKey) } + manifest.settings.map { ($0.section, $0.unknownKey) }
+        if let (section, key) = tables.first(where: { $0.1 != nil }) {
+            throw SpotError.fault("\(name) has an unknown key in \(section): \(key ?? "")")
         }
-        let icon = Icon(text: header.value(HeaderKey.icon)).map { Self.placed($0, beside: url) }
-        let on = try SpotRead(on: header.values(HeaderKey.on), of: name)
+        let icon = Icon(text: manifest.icon).map { Self.placed($0, beside: url) }
+        let on = try SpotRead(on: manifest.on, of: name)
         let read = on?.moments.isEmpty == false ? on : nil
-        let emits = SpotRead.words(header.value(HeaderKey.emits))
-        if let word = emits.first(where: { !SpotEvent.isName($0) }) {
-            throw SpotError.fault("\(name) has an unknown event in its emits: \(word). Write a word with a dot, such as emits=music.track")
+        if let word = manifest.emits.first(where: { !SpotEvent.isName($0) }) {
+            throw SpotError.fault("\(name) has an unknown event in its emits: \(word). Write a word with a dot, such as emits = [\"music.track\"]")
         }
-        let uses = try SpotUse.set(header.value(HeaderKey.uses), of: name)
+        let uses = try SpotUse.set(manifest.uses, of: name)
         let isInline = url.pathExtension == Self.inlineExtension && !FileManager.default.isExecutableFile(atPath: url.path)
-        let modeName = header.value(HeaderKey.mode) ?? SpotMode.once.rawValue
+        let modeName = manifest.mode ?? SpotMode.once.rawValue
         guard let named = SpotMode(rawValue: modeName), named != .inline else {
             throw SpotError.fault("\(name) has an unknown mode: \(modeName). Use once or stay")
         }
         if isInline, named != .once {
-            throw SpotError.fault("\(name) is a .js file, which runs inline, so it takes no mode=\(modeName)")
+            throw SpotError.fault("\(name) is a .js file, which runs inline, so it takes no mode = \"\(modeName)\"")
         }
         let mode = isInline ? SpotMode.inline : named
-        let places = try Place.read(header.values(HeaderKey.offers), of: name)
-        let order = header.value(HeaderKey.answers)
-        guard order == nil || order == "last" else { throw SpotError.fault("\(name) has an unknown answers: \(order ?? ""). Use answers=last") }
-        guard order == nil || on?.answers != nil else { throw SpotError.fault("\(name) has answers=last, which needs on=search.text") }
+        let isGlobal = try Self.isGlobal(manifest.offers, of: name)
+        let order = manifest.answers
+        guard order == nil || order == "last" else { throw SpotError.fault("\(name) has an unknown answers: \(order ?? ""). Use answers = \"last\"") }
+        guard order == nil || on?.answers != nil else {
+            throw SpotError.fault("\(name) has answers = \"last\", which needs search.text in its on, such as on = [\"search.text ^[0-9]\"]")
+        }
         let answers = order == nil ? on?.answers : on?.answers?.last()
         let answersOnly = answers != nil && read == nil
-        if let field = header.children.compactMap({ $0.value(HeaderBlock.field) }).first(where: ReservedSetting.isReserved) {
-            throw SpotError.fault("\(name) has field=\(field), a key that Openspot keeps for the person. Give the field another name.")
+        if let setting = manifest.settings.first(where: { ReservedSetting.isReserved($0.id) }) {
+            throw SpotError.fault("\(name) has \(setting.section), a key that Openspot keeps for the person. Give the setting another name.")
         }
-        if let field = header.children.first(where: { HeaderBlock(block: $0) == .field && $0.value("type").map { $0 != HeaderField.secret } == true }) {
-            throw SpotError.fault("\(name) has an unknown type on the field `\(field.value(HeaderBlock.field) ?? "")`: `\(field.value("type") ?? "")`. Use `type=secret`, or no type.")
+        if let setting = manifest.settings.first(where: { $0.type.map { $0 != Manifest.Setting.secret } == true }) {
+            throw SpotError.fault("\(name) has an unknown type in \(setting.section): `\(setting.type ?? "")`. Use `type = \"secret\"`, or no type.")
         }
-        let buttons = header.children.filter { HeaderBlock(block: $0) == .button }
-        let offeredActions = try OfferedAction.read(buttons, owner: id, of: name, isInline: mode == .inline)
+        let offeredActions = try OfferedAction.read(manifest.commands, owner: id, of: name, isInline: mode == .inline)
         let offeredIDs = Set(offeredActions.map(\.action.id))
-        let offers = try buttons.filter { !offeredIDs.contains($0.value(HeaderBlock.button) ?? "") }.map { block in
-            guard let offer = HeaderButton(block: block) else {
-                throw SpotError.fault("\(name) cannot read the button \(block.value(HeaderBlock.button) ?? ""). Give it an ID with no space and a title, such as button=left with title=Left side")
-            }
-            return offer
+        let offers = manifest.commands.filter { !offeredIDs.contains($0.id) }
+        if let command = offers.first(where: { $0.title.isEmpty || $0.id == "show" || $0.id.contains(where: \.isWhitespace) }) {
+            throw SpotError.fault("\(name) cannot read \(command.section). Give it an ID with no space and a title, such as [commands.left] with title = \"Left side\"")
         }
-        let view = header.value(HeaderKey.view)
+        let view = manifest.view
         if let view, URL(fileURLWithPath: view).pathExtension != SwiftProgram.sourceExtension {
-            throw SpotError.fault("\(name) needs a Swift file for its view, such as view=\(url.deletingPathExtension().lastPathComponent).swift")
+            throw SpotError.fault("\(name) needs a Swift file for its view, such as view = \"\(url.deletingPathExtension().lastPathComponent).swift\"")
         }
-        let sources = header.values(HeaderKey.source)
+        let sources = manifest.source
         if !sources.isEmpty, url.pathExtension != SwiftProgram.sourceExtension {
-            throw SpotError.fault("\(name) has source=\(sources[0]), which only a Swift spot takes. Remove it, or write the spot in a .swift file")
+            throw SpotError.fault("\(name) has source = [\"\(sources[0])\"], which only a Swift spot takes. Remove it, or write the spot in a .swift file")
         }
         if let source = sources.first(where: { !SpotPackage.isSafe(entry: $0) || $0.isEmpty }) {
-            throw SpotError.fault("\(name) has source=\(source), which is outside its folder. Name a Swift file or a folder beside the spot, such as source=model")
+            throw SpotError.fault("\(name) has source = [\"\(source)\"], which is outside its folder. Name a Swift file or a folder beside the spot, such as source = [\"model\"]")
         }
         if let source = sources.first(where: { $0.split(separator: "/", omittingEmptySubsequences: false).contains { $0.isEmpty || $0 == "." } }) {
-            throw SpotError.fault("\(name) has `source=\(source)`, which is not a plain path. Write it with no `.`, no `..` and no `/` at its start or end, such as `source=model`.")
+            throw SpotError.fault("\(name) has `source = [\"\(source)\"]`, which is not a plain path. Write it with no `.`, no `..` and no `/` at its start or end, such as `source = [\"model\"]`.")
         }
-        let editsWord = header.value(HeaderKey.edits)
-        let edits = editsWord.flatMap(SpotEdits.init(rawValue:))
-        guard editsWord == nil || edits != nil else { throw SpotError.fault("\(name) has an unknown edits: \(editsWord ?? ""). Use edits=spots.") }
-        let startsWord = header.value(HeaderKey.starts)
-        let starts = startsWord.flatMap(SpotStart.init(rawValue:))
-        guard startsWord == nil || starts != nil else { throw SpotError.fault("\(name) has an unknown starts: \(startsWord ?? ""). Use starts=first-launch.") }
-        try Place.check(places, read: read, of: name)
-        let isFound = !answersOnly && (offeredActions.isEmpty || !places.isEmpty)
+        let edits = manifest.edits.flatMap(SpotEdits.init(rawValue:))
+        guard manifest.edits == nil || edits != nil else { throw SpotError.fault("\(name) has an unknown edits: \(manifest.edits ?? ""). Use edits = \"spots\".") }
+        let starts = manifest.starts.flatMap(SpotStart.init(rawValue:))
+        guard manifest.starts == nil || starts != nil else {
+            throw SpotError.fault("\(name) has an unknown starts: \(manifest.starts ?? ""). Use starts = \"first-launch\".")
+        }
+        if isGlobal, read?.has(.panel) != true, read?.has(.sheet) != true, read?.seconds == nil {
+            throw SpotError.fault("\(name) needs panel.open, sheet.open or a clock in its on, such as on = [\"clock.60\"], to join the main search")
+        }
+        let isFound = !answersOnly && (offeredActions.isEmpty || isGlobal)
         let command = Spot(
             id: id,
             name: name,
             url: url,
             kind: .list,
             icon: icon,
-            subtitle: header.value(HeaderKey.detail),
+            subtitle: manifest.detail,
             read: read,
             isFound: isFound,
             answers: answers,
             mode: mode,
-            drop: header.value(HeaderKey.drop)?.split(separator: ",").map { $0.trimmingCharacters(in: .whitespaces) } ?? [],
-            offeredPlaces: places,
+            drop: manifest.drop,
+            isGlobal: isGlobal,
             dataName: SpotID(id).name,
             isOnGrid: isFound && offers.isEmpty && read?.seconds == nil,
             offers: offers,
             offeredActions: offeredActions,
-            settings: header.children.filter { HeaderBlock(block: $0) == .field }.compactMap { HeaderField(setting: $0) },
+            settings: manifest.settings.filter { Manifest.Setting.isKey($0.id) },
             view: view.map { Self.path($0, beside: url) },
             viewDate: view.flatMap { Self.viewDate(of: Self.path($0, beside: url), script: url) },
             sources: sources,
-            emits: emits,
-            pages: header.values(HeaderKey.pages),
+            emits: manifest.emits,
+            pages: manifest.pages,
             uses: uses,
-            keywords: header.list(HeaderKey.keywords),
-            placeholder: header.value(HeaderKey.placeholder),
+            keywords: manifest.keywords,
+            placeholder: manifest.placeholder,
             sample: Self.sample(beside: url),
             edits: edits,
             starts: starts
@@ -120,10 +121,20 @@ public struct SpotFile: Equatable, Sendable {
         self.init(id: id, spots: [command])
     }
 
-    static func runs(_ url: URL, toml: SpotToml) -> Bool {
-        if SpotSample.isScript(url) || !toml.describes(url.lastPathComponent) { return false }
+    static func runs(_ url: URL, manifest: Manifest) -> Bool {
+        if SpotSample.isScript(url) || !manifest.describes(url.lastPathComponent) { return false }
         if FileManager.default.isExecutableFile(atPath: url.path) { return true }
-        return url.pathExtension == inlineExtension && toml.isWritten
+        return url.pathExtension == inlineExtension && manifest.isWritten
+    }
+
+    private static func isGlobal(_ offers: [String], of name: String) throws -> Bool {
+        for word in offers.map({ $0.trimmingCharacters(in: .whitespaces) }) where word != search {
+            if word == OfferedAction.place {
+                throw SpotError.fault("\(name) offers actions at its top level. Write offers = [\"actions\"] on a command, such as in [commands.change]")
+            }
+            throw SpotError.fault("\(name) offers an unknown place: \(word). Use offers = [\"search\"]")
+        }
+        return !offers.isEmpty
     }
 
     private static func sample(beside url: URL) -> URL? {

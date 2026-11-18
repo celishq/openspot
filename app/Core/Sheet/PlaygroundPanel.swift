@@ -34,7 +34,7 @@ public final class PlaygroundPanel {
         }
         try manager.createDirectory(at: target.deletingLastPathComponent(), withIntermediateDirectories: true)
         if file == nil {
-            try manifest.write(to: target.deletingLastPathComponent().appendingPathComponent(SpotToml.fileName), atomically: true, encoding: .utf8)
+            try manifest.write(to: target.deletingLastPathComponent().appendingPathComponent(Manifest.fileName), atomically: true, encoding: .utf8)
         }
         try? manager.removeItem(at: target)
         try text.write(to: target, atomically: true, encoding: .utf8)

@@ -67,7 +67,7 @@ public actor AccountSheet {
     public nonisolated var spot: Spot {
         Spot(
             id: Self.id, name: "Account", url: URL(fileURLWithPath: NSTemporaryDirectory()), kind: .list, icon: .symbol("person.crop.circle"),
-            subtitle: "Signs what you publish", read: .sheet, host: .account(self), offeredPlaces: [.search], dataName: "account",
+            subtitle: "Signs what you publish", read: .sheet, host: .account(self), isGlobal: true, dataName: "account",
             isOnGrid: false, view: Self.card, pages: Page.allCases.map(\.rawValue), uses: [.app, .account, .clipboard]
         ).builtIn()
     }

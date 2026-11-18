@@ -1,11 +1,11 @@
 import XCTest
 @testable import OpenspotCore
 
-final class SpotManifestTests: XCTestCase {
+final class SpotDigestTests: XCTestCase {
     private var folder: URL!
 
     override func setUpWithError() throws {
-        folder = FileManager.default.temporaryDirectory.appendingPathComponent("openspot-manifest-\(UUID().uuidString)")
+        folder = FileManager.default.temporaryDirectory.appendingPathComponent("openspot-digest-\(UUID().uuidString)")
     }
 
     override func tearDownWithError() throws {
@@ -16,29 +16,29 @@ final class SpotManifestTests: XCTestCase {
         try SpotPackage(files: [SpotPackage.File(path: "tools.spot/timer.sh", isExecutable: true, contents: Data(text.utf8))] + extra)
     }
 
-    func testEqualFilesGiveAnEqualManifestAndHash() throws {
-        XCTAssertEqual(try spot().manifest(of: "tools.spot"), try spot().manifest(of: "tools.spot"))
-        XCTAssertEqual(try spot().manifest(of: "tools.spot").hash, try spot().manifest(of: "tools.spot").hash)
-        XCTAssertNotEqual(try spot().manifest(of: "tools.spot").hash, try spot("#!/bin/sh\necho Clock\n").manifest(of: "tools.spot").hash)
+    func testEqualFilesGiveAnEqualDigestAndHash() throws {
+        XCTAssertEqual(try spot().digest(of: "tools.spot"), try spot().digest(of: "tools.spot"))
+        XCTAssertEqual(try spot().digest(of: "tools.spot").hash, try spot().digest(of: "tools.spot").hash)
+        XCTAssertNotEqual(try spot().digest(of: "tools.spot").hash, try spot("#!/bin/sh\necho Clock\n").digest(of: "tools.spot").hash)
     }
 
     func testAModeChangeIsAChange() throws {
         let plain = try SpotPackage(files: [SpotPackage.File(path: "tools.spot/timer.sh", isExecutable: false, contents: Data("#!/bin/sh\necho Timer\n".utf8))])
 
-        XCTAssertNotEqual(plain.manifest(of: "tools.spot"), try spot().manifest(of: "tools.spot"))
+        XCTAssertNotEqual(plain.digest(of: "tools.spot"), try spot().digest(of: "tools.spot"))
     }
 
     func testTheWrittenFilesLeaveOutWhatAPublishBuilds() throws {
         let program = SpotPackage.File(path: "tools.spot/timer.program", isExecutable: true, contents: Data([0, 1]))
         let library = SpotPackage.File(path: "tools.spot/glass.view", isExecutable: false, contents: Data([2]))
 
-        XCTAssertEqual(try spot(extra: [program, library]).manifest(of: "tools.spot").written, try spot().manifest(of: "tools.spot"))
+        XCTAssertEqual(try spot(extra: [program, library]).digest(of: "tools.spot").written, try spot().digest(of: "tools.spot"))
     }
 
-    func testAManifestLeavesOutTheReleaseLog() throws {
+    func testADigestLeavesOutTheReleaseLog() throws {
         let log = SpotPackage.File(path: "tools.spot/releases.jsonl", isExecutable: false, contents: Data("{}\n".utf8))
 
-        XCTAssertEqual(try spot(extra: [log]).manifest(of: "tools.spot"), try spot().manifest(of: "tools.spot"))
+        XCTAssertEqual(try spot(extra: [log]).digest(of: "tools.spot"), try spot().digest(of: "tools.spot"))
     }
 
     func testAWriteReplacesTheOldSpotFolderWhole() throws {

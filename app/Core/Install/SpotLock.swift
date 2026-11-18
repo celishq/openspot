@@ -173,8 +173,8 @@ public struct SpotLock: Equatable, Sendable {
             canDo = ["Cannot review it: \((error as? SpotError)?.reason ?? error.localizedDescription)"]
         }
         let release = try spot.flatMap { spot in try spot.roots.first.flatMap { try spot.releaseLog(in: $0)?.last } }
-        let manifest = try spot.map { SpotManifest($0.files) } ?? SpotManifest(walking: paths, in: folder)
-        return Facts(hash: manifest.hash, uses: uses, canDo: canDo, release: release)
+        let digest = try spot.map { SpotDigest($0.files) } ?? SpotDigest(walking: paths, in: folder)
+        return Facts(hash: digest.hash, uses: uses, canDo: canDo, release: release)
     }
 
     public func remove(_ id: String, from folder: URL, discard: (URL) throws -> Void = { try FileManager.default.trashItem(at: $0, resultingItemURL: nil) }) throws -> Entry {

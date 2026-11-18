@@ -21,18 +21,15 @@ final class ProtocolContractTests: XCTestCase {
         let doc = try RepoDoc("PROTOCOL.md")
         let appWords = RepoDoc.tableRows(in: try RepoDoc("spots/AGENTS.md").section("The app's own words"))
         let pages = RepoDoc.tableRows(in: doc.section("Pages"))
-        let headerKeys = Set(HeaderKey.allCases.map(\.rawValue))
+        let manifestKeys = Manifest.keys
         let manifest = RepoDoc.tableRows(in: doc.section("The manifest"))
-        let docHeaderKeys = keys(manifest.filter { !$0[0].hasPrefix("`[") }.map { $0[0] })
+        let docManifestKeys = keys(manifest.filter { !$0[0].hasPrefix("`[") }.map { $0[0] })
             + keys(pages.filter { $0[1] == "the manifest" }.map { $0[0] })
             + keys(appWords.filter { $0[1] == "`spot.toml`" }.map { $0[0] })
 
-        let headerKinds = Set(HeaderBlock.allCases.map(\.rawValue))
-        let tables = ["commands": HeaderBlock.button.rawValue, "settings": HeaderBlock.field.rawValue]
-        let docHeaderKinds = manifest.filter { $0[0].hasPrefix("`[") }.flatMap { RepoDoc.code($0[0]) }
-            .map { table in tables[String(table.dropFirst().prefix { $0 != "." })] ?? table }
+        let docTables = manifest.filter { $0[0].hasPrefix("`[") }.flatMap { RepoDoc.code($0[0]) }.map { String($0.dropFirst().prefix { $0 != "." }) }
 
-        let rootKeys = Set(RootKey.allCases.map(\.rawValue) + [HeaderKey.drawing + "<size>"])
+        let rootKeys = Set(RootKey.allCases.map(\.rawValue) + [RootKey.drawing + "<size>"])
         let docRootKeys = keys([doc.section("The root").components(separatedBy: "- The root can come")[0]])
             + keys(appWords.filter { $0[1] == "the root" }.map { $0[0] })
 
@@ -68,8 +65,8 @@ final class ProtocolContractTests: XCTestCase {
         let docFunctions = RepoDoc.tableRows(in: doc.section("The calls")).flatMap { RepoDoc.code($0[0]) }
             .map { String($0.prefix { $0 != " " }) }.filter { $0.range(of: #"^[a-z_]+$"#, options: .regularExpression) != nil }
 
-        return compare("header key", code: headerKeys, doc: Set(docHeaderKeys))
-            + compare("header block", code: headerKinds, doc: Set(docHeaderKinds))
+        return compare("manifest key", code: manifestKeys, doc: Set(docManifestKeys))
+            + compare("manifest table", code: Manifest.tables, doc: Set(docTables))
             + compare("root key", code: rootKeys, doc: Set(docRootKeys))
             + compare("block kind", code: BlockKind.words, doc: Set(docKinds))
             + compare("item key", code: Set(ItemKey.allCases.map(\.rawValue)), doc: Set(docItemKeys))

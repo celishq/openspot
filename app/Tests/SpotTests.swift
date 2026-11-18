@@ -2,8 +2,8 @@ import XCTest
 @testable import OpenspotCore
 
 final class SpotTests: XCTestCase {
-    private func dataName(id: String, header: [TextBlock.Field] = []) throws -> String? {
-        try SpotFile(script: URL(fileURLWithPath: "/p/\(id).sh"), header: TextBlock(fields: header), id: id).spots.first?.dataName
+    private func dataName(id: String) throws -> String? {
+        try SpotFile(script: URL(fileURLWithPath: "/p/\(id).sh"), manifest: Manifest(text: nil, folder: "/p"), id: id).spots.first?.dataName
     }
 
     func testTheDataFolderOfASpotIsItsName() throws {

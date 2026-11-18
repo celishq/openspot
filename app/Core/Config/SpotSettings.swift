@@ -58,7 +58,7 @@ public struct SpotSettings: Equatable, Sendable {
     public let file: ConfigFile
     let secrets: SecretStore
     public let spot: String
-    let fields: [HeaderField]
+    let fields: [Manifest.Setting]
     let showsInMenuBar: Bool
     let keys: [Key]
     var isWindowByDefault = false
@@ -114,7 +114,7 @@ public struct SpotSettings: Equatable, Sendable {
 
     private func kept(in config: Config) -> [SpotSetting] {
         config.settings.filter { value in
-            value.spot == spot && !ReservedSetting.isReserved(value.key) && HeaderField(setting: value.key) != nil && !fields.contains { $0.id == value.key }
+            value.spot == spot && !ReservedSetting.isReserved(value.key) && Manifest.Setting.isKey(value.key) && !fields.contains { $0.id == value.key }
         }
     }
 
@@ -128,7 +128,7 @@ public struct SpotSettings: Equatable, Sendable {
         let named = fields.map { field in
             (field, field.isSecret ? secrets[field.id].map { _ in Self.secretWord } : config.setting(field.id, of: spot).flatMap { $0.isEmpty ? nil : $0 })
         }
-        let kept = kept(in: config).compactMap { value in HeaderField(setting: value.key).map { ($0, Optional(value.value)) } }
+        let kept = kept(in: config).map { value in (Manifest.Setting(id: value.key), Optional(value.value)) }
         blocks += (named + kept).map(fieldRow)
         if showsInMenuBar {
             blocks.append(TextBlock(fields: [
@@ -155,7 +155,7 @@ public struct SpotSettings: Equatable, Sendable {
         ] + (text.map { [.init(key: "value", value: $0)] } ?? [.init(key: "detail", value: Self.unsetKey), .init(key: "hides", value: Self.clear)]))
     }
 
-    private func fieldRow(_ field: HeaderField, _ value: String?) -> TextBlock {
+    private func fieldRow(_ field: Manifest.Setting, _ value: String?) -> TextBlock {
         TextBlock(fields: [
             .init(key: "text", value: Row.setting(field.id).id(of: spot)), .init(key: "title", value: field.title),
             .init(key: "detail", value: value ?? "Not set"), .init(key: "icon", value: Self.valueIcon)
