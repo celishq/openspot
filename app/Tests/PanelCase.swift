@@ -9,6 +9,10 @@ class PanelCase: XCTestCase {
     var host: FakeHost!
     var model: SpotsModel!
 
+    var stopPause: TimeInterval {
+        0.2
+    }
+
     override func setUp() async throws {
         folder = FileManager.default.temporaryDirectory.appendingPathComponent("openspot-panel-case-\(UUID().uuidString)")
         try FileManager.default.createDirectory(at: spots, withIntermediateDirectories: true)
@@ -21,7 +25,7 @@ class PanelCase: XCTestCase {
             home: folder,
             defaults: defaults
         )
-        model = SpotsModel(host: host, files: files, runs: SpotRuns(stopPause: 0.2, prepare: { await host.prepare($0, glyphs: $1) }))
+        model = SpotsModel(host: host, files: files, runs: SpotRuns(stopPause: stopPause, prepare: { await host.prepare($0, glyphs: $1) }))
         host.model = model
     }
 

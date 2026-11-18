@@ -104,7 +104,7 @@ Learn more in [Rows](PROTOCOL.md#rows) and [The calls](PROTOCOL.md#the-calls).
 ## Open a row as a page
 
 A page shows the detail of a row as a sheet of its own, and keeps the list it came from. Name the pages in the manifest
-with `pages`, give the row `push=true`, and print the page when `route` holds its id.
+with `pages`, give the row a `route=` with the page's id, and print the page when `route` holds that id.
 
 ```toml
 title = "Fruit"
@@ -118,7 +118,7 @@ pages = ["*"]
 . "$OPENSPOT_SH"
 route=$(value route)
 case "$route" in
-  '') printf 'row=apple\ntitle=Apple\npush=true\n\nrow=pear\ntitle=Pear\npush=true\n' ;;
+  '') printf 'row=apple\ntitle=Apple\nroute=apple\n\nrow=pear\ntitle=Pear\nroute=pear\n' ;;
   *) openspot_row "$route:color" "Color" "Green" ;;
 esac
 ```
@@ -126,9 +126,10 @@ esac
 Pick **Apple**, and its page opens in place of the list, with one row, **Color**. Press `⌘[` to go back to the list,
 and `⌘]` to go forward to the page again. Esc takes the page off, so `⌘]` has nothing to go to. `⌘Esc` goes back to the grid.
 
-Each call of a page gets its id as `route=` on stdin, so a press on the page knows which page it came from. A press can
-move the flow too: print `pop=true` after it saves, and the list shows again. A row or a press with `push.spot=` pushes
-another spot, which reads what to show from its page, as a web page reads its URL.
+A pick of such a row opens the page at once, with no call to the spot. Each call of a page gets its id as `route=` on
+stdin, so a press on the page knows which page it came from. A press can move the flow too: run `openspot route back`
+after it saves, and the list shows again. A row with `push.spot=` pushes another spot, which reads what to show from
+its page, as a web page reads its URL.
 
 Learn more in [Pages](PROTOCOL.md#pages).
 
@@ -207,7 +208,7 @@ confirm = "Press again to clear your notes"
 ```sh
 #!/bin/sh
 case "$1" in
-  clear) rm -f "$OPENSPOT_DATA/notes" && echo 'toast=Cleared' ;;
+  clear) rm -f "$OPENSPOT_DATA/notes" ;;
 esac
 ```
 
@@ -281,7 +282,7 @@ case "$1" in
       printf 'title=New note\n\nfield=note\ntitle=Note\n'
     else
       printf '%s\n' "$note" >> "$OPENSPOT_DATA/notes"
-      openspot_kv toast "Saved"
+      openspot toast Saved
     fi
     ;;
 esac
@@ -290,7 +291,7 @@ esac
 Choose **Add note**, and a form with one field opens. Type a note and press Return. The spot saves it, and a toast says
 **Saved**. `value input.note` reads the field from stdin.
 
-Learn more in [Buttons and actions](PROTOCOL.md#buttons-and-actions) and [The head](PROTOCOL.md#the-head).
+Learn more in [Buttons and actions](PROTOCOL.md#buttons-and-actions) and [The openspot command](PROTOCOL.md#the-openspot-command).
 
 ## Run a command with text
 
@@ -317,7 +318,7 @@ case "$1" in
       printf 'title=New note\n\nfield=note\ntitle=Note\n'
     else
       printf '%s\n' "$note" >> "$OPENSPOT_DATA/notes"
-      openspot_kv toast "Saved"
+      openspot toast Saved
     fi
     ;;
 esac

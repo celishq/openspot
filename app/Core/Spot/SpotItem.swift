@@ -86,7 +86,7 @@ public struct SpotItem: Equatable, Sendable {
             openTitle: block.value(RowKey.open),
             staysOnPick: block.flag(RowKey.close) == false,
             focusSubtitle: block.value(RowKey.focus),
-            move: FlowMove(block: block, own: run).flatMap { if case .push = $0 { $0 } else { nil } },
+            move: FlowMove(item: block, own: run),
             bars: Self.bars(values: block.values(RowKey.value), max: block.value(RowKey.max).flatMap(Double.init)),
             section: block.value(RowKey.section)
         )

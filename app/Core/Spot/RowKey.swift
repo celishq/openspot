@@ -4,6 +4,9 @@ public enum RowKey: String, CaseIterable, Sendable {
     case pushSpot = "push.spot"
     case pushTitle = "push.title"
     case pushReplace = "push.replace"
+    case route
+    case routeTitle = "route.title"
+    case routeReplace = "route.replace"
 
     public static let hotkey = "hotkey"
     public static let toggle = "toggle"

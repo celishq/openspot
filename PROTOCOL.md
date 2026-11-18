@@ -387,8 +387,8 @@ offers = ["actions"]
 - With `type=multiple`, a choice picks several options. A checkmark marks each option in a `value` line. Return sends the
   option of its row, and `⇧⌘A` sends each option without a checkmark. The spot keeps the picks and prints the form again.
 - A form can print itself again, such as with a `title` that says what's wrong. Then it stays open.
-- When the call with the values prints `select=<row id>` in its head, that row is selected after the sheet reads again,
-  such as the row that the form made.
+- When the call with the values prints `select=<row id>` in its head, or runs `openspot select <row id>`, that row is
+  selected after the sheet reads again, such as the row that the form made.
 
 ## Rows
 
@@ -415,7 +415,7 @@ Rows are a list that the user searches and picks from. See [Show a list](GUIDE.m
 | `open`     | What Return does on this row, in place of the `title` of `button=open`.                        |
 | `close`    | `false` keeps the panel open after a pick of this row, or a hotkey it records.                 |
 | `file`     | The file the row stands for. See [Files out](#files-out).                                      |
-| `push`     | A page that a pick pushes, in place of `<spot> open <id>`, with `push.spot` and `push.title`. See [Pages](#pages). |
+| `route`    | A route that a pick opens at once, in place of `<spot> open <id>`, with `route.title` and `route.replace`. See [Pages](#pages). |
 
 - Rows go into a `repeat`, or into a plain list when there's none.
 - Openspot searches the rows itself, and puts recent picks first. `recents=false` in the head turns that off, and
@@ -438,13 +438,16 @@ grid=a a d e
 
 ### Pages
 
-A page is a sheet of a spot that shows the detail of one of its rows, and a flow is the row of sheets that the person
-went through. A spot pushes a sheet onto the flow and pops its own sheet off it. See
-[Open a row as a page](GUIDE.md#open-a-row-as-a-page) for an example.
+A page is a sheet of a spot that shows one of its routes, such as the detail of a row, and a flow is the row of sheets
+that the person went through. A route is the id of a page, such as `photo/12`. A spot opens its own routes and takes its
+own sheets off. See [Open a row as a page](GUIDE.md#open-a-row-as-a-page) for an example.
 
 | Key                   | Where                  | Does                                                                                 |
 | --------------------- | ---------------------- | ------------------------------------------------------------------------------------ |
-| `pages=<pattern>`     | the manifest           | The pages that a push may show of this spot, such as `["text:*"]`.                    |
+| `pages=<pattern>`     | the manifest           | The routes that the spot may show, such as `["text:*"]`.                             |
+| `route=<route>`       | a row                  | A pick opens that route at once, with no call.                                       |
+| `route.title=<words>` | a row                  | The title of the route's sheet, which its edge names. By default, the row's title.   |
+| `route.replace=true`  | a row                  | The route's sheet takes the place of the one that shows, so going back skips it.     |
 | `push=<page id>`      | a row, or a press      | Pushes that page over the sheet that shows. On a row, `push=true` pushes the row's id. |
 | `push.spot=<spot id>` | a row, or a press      | Pushes a sheet of that spot instead. With no `push=`, its first sheet.               |
 | `push.title=<words>`  | a row, or a press      | The title of the pushed sheet, which its edge names. By default, the row's title.     |
@@ -452,18 +455,34 @@ went through. A spot pushes a sheet onto the flow and pops its own sheet off it.
 | `pop=true`            | a press                | Takes the spot's sheet off. On its first sheet, that goes back to whoever pushed it, or to the grid.  |
 | `pop=all`             | a press                | Goes back to the spot's first sheet.                                                  |
 
-- Each call of a page, a show or a press, gets the page's id as `route=` on stdin. The first sheet of a spot gets none.
-- A press moves the flow with the keys in the head of its frame. A read never moves it, and a frame moves it one way at
-  most: a push or a pop.
-- A pushed page must match a `pages=` line of the spot that shows it, where `*` stands for any text. A spot with no
-  sheet gets the call `<spot> open <page id>` instead of a push.
+A press moves the flow while it runs, such as after a form saves, with `openspot route`:
+
+```sh
+openspot route push photo/12 --title Beach
+openspot route back
+openspot route back --root
+openspot route close
+```
+
+- `route push` shows a route of the spot over the sheet that shows. `--title` names its edge, and `--replace` takes the
+  place of the sheet that shows, so going back skips it.
+- `route back` takes the spot's sheet off, as Esc does. On its first sheet, that goes back to whoever pushed it, or to
+  the grid. `--root` goes back to the spot's first sheet.
+- `route close` takes each sheet of the spot off, back to the sheet that pushed the spot, or to the grid.
+- Each call of a page, a show or a press, gets the page's route as `route=` on stdin. The first sheet of a spot gets none.
+- A spot moves only its own routes, and only while its sheet shows. A move of another spot's sheet does nothing.
+- A read never moves the flow: `openspot route` fails in a read. A frame of a press moves it one way at most, with the
+  keys in its head: a push or a pop.
+- A route must match a `pages=` line of the spot that shows it, where `*` stands for any text. A spot with no
+  sheet gets the call `<spot> open <route>` instead of a push.
 - A spot takes off only its own sheets. It never takes off another spot's sheet and never closes the panel.
 - The panel keeps the last 20 sheets. `⌘[` or a swipe to the right goes back, `⌘]` or a swipe to the left goes forward, Esc
-  and `pop=` take the sheet off so that nothing waits ahead, and `⌘Esc` goes back to the grid. A line left of the sheet
+  and `route back` take the sheet off so that nothing waits ahead, and `⌘Esc` goes back to the grid. A line left of the sheet
   stands for each sheet behind it, and a line right of it for each sheet ahead. A sheet
   that comes back shows what it last showed at once, and reads again.
 - `openspot spot open <id>` starts a new flow on a spot. `openspot spot push <id> [page] [--replace] [--title <words>]` and
-  `openspot spot pop <id> [--all]` move the flow that shows, as the keys do.
+  `openspot spot pop <id> [--all]` move the flow that shows, as the keys do. From a terminal, `openspot route` moves the
+  sheet that shows, whatever its spot.
 
 ## The head
 
@@ -481,6 +500,9 @@ effects of the frame.
   - `push=`, `push.spot=`, `push.title=`, `push.replace=` and `pop=` move the flow after a press: see [Pages](#pages);
   - `call=<n>` and `end=<n>` mark the calls of a staying spot (see [Modes](#modes)).
 - The head can come anywhere in the frame. Openspot skips and reports a second head.
+- A command does each effect from the call instead, the same way as in a terminal: `openspot toast <words>` in place of
+  `toast=`, `open <url>` in place of `link=`, `openspot select <item>` in place of `select=`, and `openspot route` in
+  place of `push=` and `pop=`. See [The openspot command](#the-openspot-command).
 
 ## The main block and the card
 
@@ -1092,9 +1114,14 @@ A spot asks the Mac and Openspot for things through one command, which works the
     `reminders add`, `reminders done`, `spot add`, `spot remove` and `spot delete`;
   - calls that change Openspot or its places: `app quit`, each call of `theme` but `theme list` and `theme open`, `update install`, and `setting set` of a key that Openspot
     keeps for the user (see [Settings](#settings));
+  - calls that move the flow of sheets: `route push`, `route back` and `route close`;
   - calls that open a window or the panel: `spot open`, `spot choose`, `spot settings`, `spot edit`, `spot prompt`, `spot share`, `spot review`, `grid edit`, `setting change`, `theme open`,
     `update check`, `calendar show` and `reminders show`.
-- `calendar add --dry-run` and `reminders add --dry-run` change nothing, so they work in a read.
+- `calendar add --dry-run` and `reminders add --dry-run` change nothing, so they work in a read. `toast` and `select`
+  work in a read too.
+- Within a spot, `toast`, `select` and `route` act for the call that ran them. When that call is out of date, since a
+  newer value stopped it or its sheet closed, they do nothing and exit with code 0, as its frames do. From a terminal,
+  they act on the sheet that shows.
 - `openspot batch` runs one call for each line of stdin, and prints `---` after each. It stops at the first failure.
 - Each call that lists or reports, such as `app status`, `power readings`, `account show`, `spot list`, `spot stats`, `store list`, `setting list` and
   `theme list`,
@@ -1106,6 +1133,11 @@ The commands that try a spot are in [Try your spot](GUIDE.md#try-your-spot). The
 | -------------------------------------------------- | ----------------------------------------------------------------------------------------------- |
 | `openspot guide [topic \| --topics]`               | Prints the guide, then this protocol. A topic prints one section or the page of a noun, such as `screen`, and `--topics` lists them. |
 | `openspot version`                                 | Prints the version of Openspot, as `openspot --version` does.                                   |
+| `openspot toast <words>...`                        | Shows a short message, even when the panel is closed.                                           |
+| `openspot select <item>`                           | Selects an item of the spot's sheet once the spot's next frame shows.                           |
+| `openspot route push <route> [--title <words>] [--replace]` | Shows a route of the spot over the sheet that shows. See [Pages](#pages).              |
+| `openspot route back [--root]`                     | Goes back one sheet of the spot, or to its first sheet. See [Pages](#pages).                    |
+| `openspot route close`                             | Takes each sheet of the spot off. See [Pages](#pages).                                          |
 | `openspot spot open <id> [--select]`               | Opens the panel on a spot, as a new flow. See [Pages](#pages). `--select` only selects its card. |
 | `openspot spot push <id> [page]`                   | Pushes a spot, or a page of it, over the flow that shows. See [Pages](#pages).                  |
 | `openspot spot pop <id> [--all]`                   | Goes back one sheet of a spot that shows, or to its first sheet. See [Pages](#pages).           |

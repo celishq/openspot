@@ -46,6 +46,13 @@ extension SpotsModel {
         return start < flow.index && popPage(steps: flow.index - start)
     }
 
+    private func close(in id: String) {
+        guard flow.current?.spot == id else { return }
+        var start = flow.index
+        while start > 0, flow.pages[start - 1].spot == id { start -= 1 }
+        if start == 0 { closeSheet(moving: isShown) } else { popPage(steps: flow.index - start + 1) }
+    }
+
     @discardableResult
     public func popPage(steps: Int = 1) -> Bool {
         guard openSheetID != nil, let page = flow.pop(steps: steps) else { return false }
@@ -73,6 +80,7 @@ extension SpotsModel {
         case .pop(true): pop(in: id, all: true)
         case .pop(false) where flow.behind == nil && flow.current?.spot == id: closeSheet(moving: isShown)
         case .pop: pop(in: id)
+        case .close: close(in: id)
         case .push(let spot, let page, let title, let replace): push(FlowSheet(spot: spot ?? id, page: page, title: title), replace: replace)
         }
     }

@@ -284,8 +284,8 @@ extension SpotsModel {
             _ = changeSetting(key, of: settings.spot)
             return
         }
-        if action == nil, case .push(let spot, let page, let title, _)? = item.move, spot.map(opensSheet) ?? true {
-            push(FlowSheet(spot: spot ?? entry.id, page: page, title: title ?? (page == nil ? nil : item.title)))
+        if action == nil, case .push(let spot, let page, let title, let replace)? = item.move, spot.map(opensSheet) ?? true {
+            push(FlowSheet(spot: spot ?? entry.id, page: page, title: title ?? (page == nil ? nil : item.title)), replace: replace)
             return
         }
         if place.isDetached {

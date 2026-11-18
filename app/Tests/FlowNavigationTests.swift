@@ -335,4 +335,32 @@ final class FlowNavigationTests: PanelCase {
         try await wait("the grid") { self.model.openSheetID == nil }
         XCTAssertEqual(model.sheets["list"]?.pageStates.count, 0)
     }
+
+    func testAnItemWithARouteOpensItAtOnceWithNoCallAndOneThatReplacesTakesThePlaceOfThePage() async throws {
+        let calls = folder.appendingPathComponent("calls")
+        try script("routes", toml: "title = 'Routes'\non = ['sheet.open']\npages = ['*']", """
+        echo "$1" >> '\(calls.path)'
+        page=$(sed -n 's/^route=//p')
+        case "$page" in
+          '') printf 'row=a\\ntitle=A\\nroute=photo/1\\nroute.title=Photo\\n' ;;
+          photo/1) printf 'row=b\\ntitle=B\\nroute=photo/2\\nroute.replace=true\\n' ;;
+          *) printf 'row=x\\ntitle=Detail %s\\n' "$page" ;;
+        esac
+        """)
+        await model.reload()
+        model.isShown = true
+        model.panelWillShow()
+        model.press("routes")
+        try await wait("the first sheet") { self.titles == ["A"] }
+
+        model.runSelectedItem()
+        try await wait("the photo") { self.titles == ["B"] }
+        XCTAssertEqual(model.flow.current, FlowSheet(spot: "routes", page: "photo/1", title: "Photo"))
+        model.runSelectedItem()
+
+        try await wait("the next photo") { self.titles == ["Detail photo/2"] }
+        XCTAssertEqual(model.flow.pages, [FlowSheet(spot: "routes"), FlowSheet(spot: "routes", page: "photo/2", title: "B")])
+        let said = try String(contentsOf: calls, encoding: .utf8).split(separator: "\n")
+        XCTAssertEqual(said, ["show", "show", "show"])
+    }
 }

@@ -351,7 +351,7 @@ public final class SpotRuns {
         return (script, frames, caller)
     }
 
-    func frames(of spot: Spot, _ action: SpotAction, input: String?, limit: TimeInterval?, reason: String? = nil, variables given: [String: String] = [:]) -> (stream: AsyncThrowingStream<String, Error>, halt: () -> Void, process: ScriptProcess?) {
+    func frames(of spot: Spot, _ action: SpotAction, input: String?, limit: TimeInterval?, reason: String? = nil, variables given: [String: String] = [:], call: OpenCall? = nil) -> (stream: AsyncThrowingStream<String, Error>, halt: () -> Void, process: ScriptProcess?) {
         let variables = given.merging(editing(spot)) { given, _ in given }
         switch ScriptKind(of: spot) {
         case .settings(let settings):
@@ -376,6 +376,7 @@ public final class SpotRuns {
             }, nil)
         case .stay, .once:
             let caller = callers.issue(for: spot, reason: reason, keepsFix: true)
+            caller.call = call
             let process = ScriptProcess(spot: spot, program: swift.runnable(for: spot), swift: swift, sending: action, input: input, limit: limit, stopPause: stopPause, variables: variables, careful: isCareful ? spot.uses : nil, base: environment)
             track(process, of: spot.id, caller: caller)
             process.fix = { caller.takeFix() }

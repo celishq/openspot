@@ -175,6 +175,7 @@ final class StayLink: ScriptLink {
         records[id] = record
         call.made.halt = { [weak script] in script?.send(text: SpotAction.stopEvent(id: id)) }
         if case .ask = request.purpose { askReason = request.reason?.rawValue }
+        caller?.call = call
         noteReason()
         script.send(request.action, input: run.map { $0.message(of: request, values: $0.fieldValues) } ?? request.input, id: id)
         guard isTimed else { return }

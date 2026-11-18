@@ -173,10 +173,12 @@ final class InlineScript: @unchecked Sendable {
         variables = call.variables
         reason = call.reason
         caller?.reason = call.reason
+        caller?.call = call.opened
         defer {
             variables = [:]
             reason = nil
             caller?.reason = nil
+            caller?.call = nil
         }
         let result = function.call(withArguments: [call.arguments, env, call.input ?? ""])
         try rethrow()
