@@ -200,11 +200,11 @@ public struct ViewLibrary: Sendable {
             public func cornerButton(_ symbol: String, label: String, card id: String, action: @escaping () -> Void) -> AnyView { cornerMaker(symbol, label, id, action) }
 
             public func loop(period: Double, fill colors: [Color], path: @escaping (Double, CGRect) -> Path) -> some View {
-                SpotLoop(period: period, size: size, isPlaying: isShown, look: .fill(colors), path: path)
+                SpotLoop(period: period, size: size, values: values, isPlaying: isShown, look: .fill(colors), path: path)
             }
 
             public func loop(period: Double, stroke color: Color, width: CGFloat, path: @escaping (Double, CGRect) -> Path) -> some View {
-                SpotLoop(period: period, size: size, isPlaying: isShown, look: .stroke(color, width), path: path)
+                SpotLoop(period: period, size: size, values: values, isPlaying: isShown, look: .stroke(color, width), path: path)
             }
         }
 
@@ -216,6 +216,7 @@ public struct ViewLibrary: Sendable {
 
             let period: Double
             let size: CGSize
+            let values: [String: [String]]
             let isPlaying: Bool
             let look: Look
             let path: (Double, CGRect) -> Path
@@ -223,7 +224,7 @@ public struct ViewLibrary: Sendable {
             final class Stage: NSView {
                 let shape = CAShapeLayer()
                 let paint = CAGradientLayer()
-                var key: (Double, CGSize, Bool, Look)?
+                var key: (Double, CGSize, [String: [String]], Look)?
 
                 override var isFlipped: Bool { true }
 
@@ -236,8 +237,14 @@ public struct ViewLibrary: Sendable {
                 required init?(coder: NSCoder) { nil }
 
                 func take(_ loop: SpotLoop) {
-                    if let key, key.0 == loop.period, key.1 == loop.size, key.2 == loop.isPlaying, key.3 == loop.look { return }
-                    key = (loop.period, loop.size, loop.isPlaying, loop.look)
+                    if key == nil || key?.0 != loop.period || key?.1 != loop.size || key?.2 != loop.values || key?.3 != loop.look {
+                        key = (loop.period, loop.size, loop.values, loop.look)
+                        build(loop)
+                    }
+                    play(loop.isPlaying)
+                }
+
+                private func build(_ loop: SpotLoop) {
                     let rect = CGRect(origin: .zero, size: loop.size)
                     let steps = max(2, Int(loop.period * 10))
                     let paths = (0...steps).map { loop.path(loop.period * Double($0) / Double(steps), rect).cgPath }
@@ -263,14 +270,30 @@ public struct ViewLibrary: Sendable {
                         shape.strokeColor = NSColor(color).cgColor
                         shape.lineWidth = width
                     }
-                    CATransaction.commit()
-                    guard loop.isPlaying else { return }
+                    shape.speed = 1
+                    shape.timeOffset = 0
+                    shape.beginTime = 0
                     let wave = CAKeyframeAnimation(keyPath: "path")
                     wave.values = paths
                     wave.duration = loop.period
                     wave.repeatCount = .infinity
                     wave.isRemovedOnCompletion = false
                     shape.add(wave, forKey: "loop")
+                    CATransaction.commit()
+                }
+
+                private func play(_ isPlaying: Bool) {
+                    guard isPlaying != (shape.speed != 0) else { return }
+                    if isPlaying {
+                        let paused = shape.timeOffset
+                        shape.speed = 1
+                        shape.timeOffset = 0
+                        shape.beginTime = 0
+                        shape.beginTime = shape.convertTime(CACurrentMediaTime(), from: nil) - paused
+                    } else {
+                        shape.timeOffset = shape.convertTime(CACurrentMediaTime(), from: nil)
+                        shape.speed = 0
+                    }
                 }
             }
 
