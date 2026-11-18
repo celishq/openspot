@@ -248,4 +248,44 @@ final class SlashCommandPanelTests: PanelCase {
         try await wait("the text in the read") { self.sent.contains("search=hello world") }
         XCTAssertTrue(sent.contains("read\n"), sent)
     }
+
+    private func writeGrowth() throws {
+        try script("growth", header: "title=Growth\non=sheet.open\nplaceholder=From", """
+        stdin=$(cat)
+        printf '%s\\n%s\\n' "$*" "$stdin" >> '\(input.path)'
+        search=$(printf '%s\\n' "$stdin" | sed -n 's/^search=//p' | head -n 1)
+        case "$1" in
+          run) printf 'toast=Ran\\n' ;;
+          *)
+            printf 'grid=from\\ngrid=run\\n'
+            [ -z "$search" ] || printf 'slash=run\\n'
+            printf '\\nfield=from\\nvalue=%s\\n\\nbutton=run\\ntitle=Run\\nshortcut=return\\nclose=true\\n' "$search" ;;
+        esac
+        """)
+    }
+
+    func testTheTextOfASlashCommandPressesTheButtonThatTheSheetNamesOnce() async throws {
+        try writeGrowth()
+        await open()
+
+        type("/growth 3000 4000")
+        model.runSelected()
+
+        try await wait("the toast") { self.host.confirms == ["Ran"] }
+        try await wait("the close") { self.host.dismissals == 1 }
+        XCTAssertEqual(sent.components(separatedBy: "run\n").count - 1, 1, sent)
+    }
+
+    func testASheetThatNamesAButtonOpensWithNoPressWithoutText() async throws {
+        try writeGrowth()
+        await open()
+
+        type("/growth")
+        model.runSelected()
+
+        try await wait("the sheet") { self.model.openSheetID == "growth" }
+        try await wait("the read") { self.sent.contains("read\n") }
+        XCTAssertFalse(sent.contains("run\n"), sent)
+        XCTAssertEqual(host.confirms, [])
+    }
 }

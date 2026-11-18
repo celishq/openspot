@@ -28,6 +28,7 @@ public struct SpotOutput: Equatable, Sendable {
     public private(set) var ends: [String] = []
     public private(set) var start: String?
     public private(set) var select: String?
+    public private(set) var slash: String?
     public private(set) var move: FlowMove?
     public let isPicture: Bool
     public let isMark: Bool
@@ -187,6 +188,7 @@ public struct SpotOutput: Equatable, Sendable {
         toast = block.value(HeadKey.toast)
         link = block.value(HeadKey.link)
         select = block.value(HeadKey.select)
+        slash = block.value(HeadKey.slash)
         move = FlowMove(block: block)
         if let end = block.value(HeadKey.end) { ends.append(end) }
         start = block.value(HeadKey.call)

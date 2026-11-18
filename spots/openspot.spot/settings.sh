@@ -36,6 +36,7 @@ sheet() {
   [ -z "$slow" ] || printf '\nrow=slow_motion\ntitle=Slow motion\ndetail=Every motion ten times slower\nicon=tortoise\nvalue=%s\n' "$slow"
   [ -z "$login" ] || printf '\nrow=open_at_login\ntitle=Open at login\nicon=power\nvalue=%s\n' "$login"
   [ -z "$link" ] || printf '\nrow=command_link\ntitle=Use openspot in Terminal\ndetail=The command line tool\nicon=terminal\nvalue=%s\n' "$link"
+  printf '\nrow=import_raycast\ntitle=Import from Raycast\ndetail=Bring your script commands\nicon=square.and.arrow.down\npush.spot=openspot/import\n'
 }
 
 case "$1" in

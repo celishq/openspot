@@ -321,6 +321,7 @@ final class SheetPartsTests: XCTestCase {
     func testTheCatalogReportsWhatAPartCannotHold() {
         XCTAssertEqual(FrameCheck(text: lights).partFaults, [])
         XCTAssertEqual(FrameCheck(text: "text=a\ncolour=red\n").partFaults, ["the part a has an unknown key: colour"])
+        XCTAssertEqual(FrameCheck(text: "field=a\ngrow=false\n").partFaults, [])
         XCTAssertEqual(FrameCheck(text: "choice=a\noption=en:English\n").partFaults, ["the part a has an unknown key: option"])
         XCTAssertEqual(FrameCheck(text: "choice=a\ncolor=red\n").partFaults, ["the part a needs a color as #rrggbb: red"])
         XCTAssertEqual(FrameCheck(text: "text=a\nshortcut=nope+a\n").partFaults, ["the part a has an unknown key combination: nope+a"])

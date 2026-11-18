@@ -1,6 +1,6 @@
 public enum HeadKey: String, CaseIterable, Sendable {
     case grid, main, title, detail, active, recents, search, shown
-    case toast, link, progress, select
+    case toast, link, progress, select, slash
     case push
     case pushSpot = "push.spot"
     case pushTitle = "push.title"

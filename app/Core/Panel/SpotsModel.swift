@@ -574,6 +574,9 @@ public final class SpotsModel {
             _ = chooseFiles(for: id)
         case .move(let move):
             self.move(move, in: id)
+        case .slash(let part):
+            sheets[id]?.press(part)
+            if part.closes, isShown { host.dismiss() }
         }
     }
 

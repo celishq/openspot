@@ -152,8 +152,9 @@ extension SpotRun {
         }
     }
 
-    public func type(_ text: String) {
+    public func type(_ text: String, fromSlash: Bool = false) {
         typed = text
+        slashText = fromSlash ? text : nil
         if list.holdsItems { search(text) }
         read(need: .change)
     }

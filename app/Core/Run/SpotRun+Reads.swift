@@ -34,6 +34,10 @@ extension SpotRun {
             purpose: .ask(.read(generation: panel?.generation, reports: need != .clock, query: query, tells: reason != .panel))
         ))
         self.typed = nil
+        if isSent, let text = slashText, typed == text {
+            slashText = nil
+            carriesSlash = true
+        }
         if isSent {
             readReason = reason
             if !list.holdsItems || list.hasFailed { list.beginLoading() }

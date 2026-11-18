@@ -235,7 +235,7 @@ confirm=Press again to forget
 | `picture` | An image that fills its place.                                                                                  | `icon`                                                               |                        |
 | `view`    | The SwiftUI view the header names (see [Views](#views)).                                                        | any key the view reads                                               |                        |
 | `switch`  | A switch, or with `type=tick` a round tick before its words, for a thing to do.                                 | `value`: `true` or `false`, `type`                                   | `<id> true` or `false` |
-| `field`   | A text field, or another input with a `type`.                                                                   | `value`, `type`, `placeholder`, `required`, `readonly`, `min`, `max`, `recording` | `<id> <value>`         |
+| `field`   | A text field, or another input with a `type`.                                                                   | `value`, `type`, `placeholder`, `required`, `readonly`, `min`, `max`, `recording`, `grow` | `<id> <value>`         |
 | `choice`  | A menu of the `option` blocks after it, a list when it covers two lines or more, or swatches of `color` lines.  | `color`, `value`, `type`                                             | `<id> <option id>`     |
 | `option`  | One option of the `choice` right before it.                                                                     | `title`, `icon`                                                      |                        |
 | `button`  | A button, or an action (see [Buttons and actions](#buttons-and-actions)).                                       | `shortcut`, `confirm`, `close`, `look`, `form`, `scope`              | `<id>`                 |
@@ -243,6 +243,7 @@ confirm=Press again to forget
 | `repeat`  | The place of the rows (see [Rows](#rows)).                                                                      | `grid` lines                                                         |                        |
 | `row`     | One item of a list (see [Rows](#rows)).                                                                         | the keys in [Rows](#rows)                                            | `open <id>`            |
 
+- A field on a sheet takes the free height of the sheet, and `grow=false` keeps it at the height of its grid lines.
 - A field's `type`: none for one line of text, `multiline` for several lines, `slider` from `min` to `max` (0 to 100 by
   default), which sends a whole number when the user lets go, and `hotkey` for a hotkey that a press records.
 - A `hotkey` field shows as keycaps. With no `grid=` line, it takes two lines of the full width.
@@ -447,6 +448,8 @@ effects of the frame.
   - `link=<url>` opens the URL;
   - `progress=<0 to 1>` shows progress. With it, `title` and `detail` show only while the call runs;
   - `select=<row id>` asks the spot again with that row selected;
+  - `slash=<button id>` presses that placed button once, when the read got the text of a slash command: see
+    [Slash commands](#slash-commands);
   - `push=`, `push.spot=`, `push.title=`, `push.replace=` and `pop=` move the flow after a press: see [Pages](#pages);
   - `call=<n>` and `end=<n>` mark the calls of a staying spot (see [Modes](#modes)).
 - The head can come anywhere in the frame. Openspot skips and reports a second head.
@@ -632,6 +635,10 @@ buy milk /notes            Return runs notes add, with search=buy milk on stdin
 | A `button` with a `placeholder`        | `<spot> <id>`                                      |
 | A spot with a `placeholder`, no sheet  | `<spot> open`                                      |
 | A spot with a `placeholder` and sheet  | Its sheet opens, and the read of the sheet gets it |
+
+- A read that gets the text of a slash command can print `slash=<button id>` in its head, when the text gives it all it
+  needs. Openspot then presses that placed button once, as Return on it would, so the command runs in one Return. A read
+  without the text of a slash command never presses it.
 
 - The first frame of the call decides what shows. A frame with fields is a form, as for a `form=true` button, and Return
   in it sends the values to the same call. Other blocks open the spot's sheet with them. A frame with nothing to show,
@@ -1018,12 +1025,12 @@ A spot asks the Mac and Openspot for things through one command, which works the
   - calls that wait for the user: `color pick` and `folder pick`;
   - calls that capture the screen: `screen shot`, `screen record start` and `screen record stop`;
   - calls that change the Mac or the user's data: `window move`, `clipboard copy`, `clipboard paste`, `power lid-closed`, `calendar add`,
-    `reminders add`, `reminders done`, `spot add`, `spot remove` and `spot delete`;
+    `reminders add`, `reminders done`, `spot add`, `spot remove`, `spot delete` and `import raycast`;
   - calls that change Openspot or its places: `app quit`, each call of `theme` but `theme list` and `theme open`, `update install`, and `setting set` of a key that Openspot
     keeps for the user (see [Settings](#settings));
   - calls that open a window or the panel: `spot open`, `spot choose`, `spot settings`, `spot edit`, `spot prompt`, `spot share`, `spot review`, `grid edit`, `setting change`, `theme open`,
     `update check`, `calendar show` and `reminders show`.
-- `calendar add --dry-run` and `reminders add --dry-run` change nothing, so they work in a read.
+- `calendar add --dry-run`, `reminders add --dry-run` and `import raycast --dry-run` change nothing, so they work in a read.
 - `openspot batch` runs one call for each line of stdin, and prints `---` after each. It stops at the first failure.
 - Each call that lists or reports, such as `app status`, `power readings`, `account show`, `spot list`, `spot stats`, `store list`, `setting list` and
   `theme list`,
@@ -1046,6 +1053,7 @@ The commands that try a spot are in [Try your spot](GUIDE.md#try-your-spot). The
 | `openspot spot delete <id>`                        | Moves a spot to the Trash, and `⌘Z` in the panel puts it back.                                  |
 | `openspot spot add <git url, folder or .spot>`     | Adds a spot, and records it in `spots.lock`. An update that needs a new use also needs `--yes`. |
 | `openspot spot remove <id>`                        | Moves a spot that `spot add` added to the Trash.                                                |
+| `openspot import raycast <folder> [--dry-run]`     | Turns each Raycast script command in a folder into a spot, and prints a row for each file: `added`, `kept` when it was imported before, or `skipped` with the reason. `--dry-run` changes nothing. |
 | `openspot spot stats`                              | Prints what each spot cost and used. See [Stats](#stats).                                       |
 | `openspot grid edit`                               | Opens the panel in Edit Spots, to arrange the grid.                                             |
 | `openspot store list [--json]`                     | Prints each spot of the store and its step: `get`, `publish`, or `added` once you have it.      |

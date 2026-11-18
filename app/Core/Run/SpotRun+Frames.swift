@@ -106,6 +106,7 @@ extension SpotRun {
                 takeRows()
             }
             if list.search == .script, !list.query.isEmpty, list.query != query { self.ask() }
+            takeSlash(lines)
         case .answer:
             return
         case .search(let query):
@@ -154,6 +155,13 @@ extension SpotRun {
         await takeAnswer(lines, frame: frame, to: .read(generation: nil, reports: false, query: list.query), keeping: work?.keeping ?? editing, answers: false)
         if !spot.readsState { state = keepingLevel(state.taking(lines)) }
         return true
+    }
+
+    private func takeSlash(_ lines: SpotOutput) {
+        guard carriesSlash else { return }
+        carriesSlash = false
+        guard let id = lines.slash, let part = lines.parts.first(where: { $0.id == id && $0.isPressable }) else { return }
+        onReport(.slash(part))
     }
 
     func takeMove(_ lines: SpotOutput) {

@@ -15,6 +15,7 @@ public final class SpotRun {
         case landed
         case closed
         case move(FlowMove)
+        case slash(SpotPart)
     }
 
     public enum ReadNeed: Sendable {
@@ -219,6 +220,8 @@ public final class SpotRun {
     @ObservationIgnored var pauses: [String: Task<Void, Never>] = [:]
     @ObservationIgnored var editing: String?
     @ObservationIgnored var typed: String?
+    @ObservationIgnored var slashText: String?
+    @ObservationIgnored var carriesSlash = false
     @ObservationIgnored var waitingFiles: [SpotAction] = []
     @ObservationIgnored var waitingKeys: [String] = []
     @ObservationIgnored var clockRead: Date?
