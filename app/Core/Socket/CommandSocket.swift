@@ -19,11 +19,7 @@ public final class CommandSocket: @unchecked Sendable {
         guard let real = realpath(folder.path, nil) else { return nil }
         path = SocketPath.of(config: String(cString: real))
         free(real)
-        var address = sockaddr_un()
-        address.sun_family = sa_family_t(AF_UNIX)
-        let bytes = Array(path.utf8)
-        guard bytes.count < MemoryLayout.size(ofValue: address.sun_path) else { return nil }
-        withUnsafeMutableBytes(of: &address.sun_path) { $0.copyBytes(from: bytes) }
+        guard let address = SocketPath.address(of: path) else { return nil }
         if path.hasPrefix(SocketPath.folder + "/") {
             mkdir(SocketPath.folder, 0o700)
             var info = stat()

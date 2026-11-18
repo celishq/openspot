@@ -51,8 +51,7 @@ func reachStarted(_ app: AppBundle, config: String) -> Int32 {
 
 func reachRun() -> Int32 {
     guard ChannelDescriptor.isChannel(ChannelDescriptor.number) else { return -1 }
-    var quiet: Int32 = 1
-    setsockopt(ChannelDescriptor.number, SOL_SOCKET, SO_NOSIGPIPE, &quiet, socklen_t(MemoryLayout<Int32>.size))
+    SocketOption.quiet(ChannelDescriptor.number)
     var pair: [Int32] = [-1, -1]
     guard socketpair(AF_UNIX, SOCK_STREAM, 0, &pair) == 0 else { return -1 }
     defer { close(pair[1]) }
@@ -64,23 +63,18 @@ func reachRun() -> Int32 {
         return -1
     }
     _ = fcntl(pair[0], F_SETFD, FD_CLOEXEC)
-    var on: Int32 = 1
-    setsockopt(pair[0], SOL_SOCKET, SO_NOSIGPIPE, &on, socklen_t(MemoryLayout<Int32>.size))
+    SocketOption.quiet(pair[0])
     return pair[0]
 }
 
 func reach(_ config: String) -> Int32 {
     guard let real = realpath(config, nil) else { return -1 }
-    let path = Array(SocketPath.of(config: String(cString: real)).utf8)
+    let path = SocketPath.of(config: String(cString: real))
     free(real)
-    var address = sockaddr_un()
-    address.sun_family = sa_family_t(AF_UNIX)
-    guard path.count < MemoryLayout.size(ofValue: address.sun_path) else { return -1 }
-    withUnsafeMutableBytes(of: &address.sun_path) { $0.copyBytes(from: path) }
+    guard let address = SocketPath.address(of: path) else { return -1 }
     let descriptor = socket(AF_UNIX, SOCK_STREAM, 0)
     guard descriptor >= 0 else { return -1 }
-    var on: Int32 = 1
-    setsockopt(descriptor, SOL_SOCKET, SO_NOSIGPIPE, &on, socklen_t(MemoryLayout<Int32>.size))
+    SocketOption.quiet(descriptor)
     let result = withUnsafePointer(to: address) {
         $0.withMemoryRebound(to: sockaddr.self, capacity: 1) { connect(descriptor, $0, socklen_t(MemoryLayout<sockaddr_un>.size)) }
     }
@@ -112,18 +106,6 @@ func deliver(_ line: [UInt8], on socket: Int32) -> Bool {
         }
     }
     return true
-}
-
-func put(_ bytes: [UInt8], to descriptor: Int32) {
-    var offset = 0
-    while offset < bytes.count {
-        let count = bytes.withUnsafeBytes { write(descriptor, $0.baseAddress! + offset, bytes.count - offset) }
-        if count > 0 {
-            offset += count
-        } else if errno != EINTR {
-            return
-        }
-    }
 }
 
 guard let app = AppBundle() else { fail("openspot cannot find the path of its own program.") }
@@ -168,8 +150,8 @@ while true {
         if case .text(let method)? = line["method"] {
             let text: [UInt8] = if case .text(let text)? = line["params"]?["text"] { text } else { [] }
             switch String(decoding: method, as: UTF8.self) {
-            case "stdout": put(text, to: STDOUT_FILENO)
-            case "stderr": put(text, to: STDERR_FILENO)
+            case "stdout": _ = deliver(text, on: STDOUT_FILENO)
+            case "stderr": _ = deliver(text, on: STDERR_FILENO)
             case "stdin": input.want()
             default: break
             }

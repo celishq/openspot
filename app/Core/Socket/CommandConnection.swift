@@ -37,8 +37,7 @@ final class CommandConnection: @unchecked Sendable {
         self.asked = asked
         (input, inputEnd) = AsyncStream.makeStream(of: String.self)
         _ = fcntl(descriptor, F_SETFL, fcntl(descriptor, F_GETFL) | O_NONBLOCK)
-        var on: Int32 = 1
-        setsockopt(descriptor, SOL_SOCKET, SO_NOSIGPIPE, &on, socklen_t(MemoryLayout<Int32>.size))
+        SocketOption.quiet(descriptor)
         reads = DispatchSource.makeReadSource(fileDescriptor: descriptor, queue: queue)
         reads.setEventHandler { [self] in receive() }
         reads.setCancelHandler { [self] in release() }

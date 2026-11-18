@@ -9,6 +9,15 @@ enum SocketPath {
         return folder + "/" + hash(config) + ".socket"
     }
 
+    static func address(of path: String) -> sockaddr_un? {
+        var address = sockaddr_un()
+        address.sun_family = sa_family_t(AF_UNIX)
+        let bytes = Array(path.utf8)
+        guard bytes.count < MemoryLayout.size(ofValue: address.sun_path) else { return nil }
+        withUnsafeMutableBytes(of: &address.sun_path) { $0.copyBytes(from: bytes) }
+        return address
+    }
+
     static var folder: String {
         "/tmp/openspot-\(getuid())"
     }

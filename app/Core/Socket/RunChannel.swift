@@ -47,8 +47,7 @@ final class RunChannel: @unchecked Sendable {
                     continue
                 }
                 _ = fcntl(descriptor, F_SETFD, FD_CLOEXEC)
-                var on: Int32 = 1
-                setsockopt(descriptor, SOL_SOCKET, SO_NOSIGPIPE, &on, socklen_t(MemoryLayout<Int32>.size))
+                SocketOption.quiet(descriptor)
                 var ready = ChannelDescriptor.ready
                 guard write(descriptor, &ready, 1) == 1 else {
                     Darwin.close(descriptor)
