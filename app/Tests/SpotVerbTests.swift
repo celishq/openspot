@@ -32,12 +32,11 @@ final class SpotVerbTests: XCTestCase {
             "  editor) open -t \"$OPENSPOT_EDIT_FILE\" ;;",
             "esac"
         ]
-        try FileManager.default.createDirectory(at: core.appendingPathComponent("openspot.spot"), withIntermediateDirectories: true)
-        try FileManager.default.copyItem(at: repoSpots.appendingPathComponent("openspot.spot/spot.toml"), to: core.appendingPathComponent("openspot.spot/spot.toml"))
-        try editor.joined(separator: "\n").appending("\n").writeScript(to: core.appendingPathComponent("openspot.spot/change.sh"), toml: "title = 'Change'\non = ['sheet.open']\nedits = 'spots'")
-        for name in ["actions.js", "icon.sh", "icon.swift"] {
-            try FileManager.default.createSymbolicLink(at: core.appendingPathComponent("openspot.spot/\(name)"), withDestinationURL: repoSpots.appendingPathComponent("openspot.spot/\(name)"))
-        }
+        let app = core.appendingPathComponent("openspot.spot")
+        try editor.joined(separator: "\n").appending("\n").writeScript(to: app.appendingPathComponent("change.sh"), toml: "title = 'Change'\non = ['sheet.open']\nedits = 'spots'")
+        try actions.writeInline(to: app.appendingPathComponent("actions.js"), toml: actionsToml)
+        try icon.writeScript(to: app.appendingPathComponent("icon.sh"), toml: "title = 'Icon'\nicon = 'paintbrush.pointed'\non = ['sheet.open']\nview = 'icon.swift'\nuses = ['spots']\ndrop = 'png,svg'")
+        try "import SwiftUI\n\nstruct SpotView: View {\n    let spot: SpotInput\n\n    var body: some View {\n        Color.clear\n    }\n}\n".write(to: app.appendingPathComponent("icon.swift"), atomically: true, encoding: .utf8)
         try "#!/bin/sh\necho\n".writeScript(to: core.spotFile("cups"), toml: "title = 'Cups'")
         let files = AppPlaces(
             environment: ["OPENSPOT_SPOTS": spots.path, "OPENSPOT_CONFIG": folder.appendingPathComponent("config").path, "OPENSPOT_CORE": core.path],
@@ -60,9 +59,74 @@ final class SpotVerbTests: XCTestCase {
         try? FileManager.default.removeItem(at: folder)
     }
 
-    private var repoSpots: URL {
-        URL(fileURLWithPath: #filePath).deletingLastPathComponent().deletingLastPathComponent().deletingLastPathComponent().appendingPathComponent("spots")
-    }
+    private let actions = """
+        const calls = {
+          settings: (id) => ["spot", "settings", id],
+          edit: (id) => ["spot", "edit", id],
+          share: (id) => ["spot", "share", id],
+          delete: (id) => ["spot", "delete", id],
+          off: (id) => ["setting", "set", "--spot", id, "enabled", "false"],
+          "icon.draw": (id) => ["spot", "run", "openspot/icon", "draw", id],
+          "icon.file": (id) => ["spot", "run", "openspot/icon", "file", id],
+        };
+
+        function main(args) {
+          const [act, id] = args;
+          if (calls[act]) openspot.call(calls[act](id));
+          return "";
+        }
+
+        function hasIcon(id) {
+          return "";
+        }
+
+        """
+
+    private let actionsToml = """
+        title = 'Card actions'
+        icon = 'ellipsis.circle'
+        uses = ['spots']
+        [commands.share]
+        title = 'Share'
+        shortcut = 'cmd+shift+c'
+        close = true
+        offers = ['actions mine, core']
+        [commands.settings]
+        title = 'Settings'
+        shortcut = 'cmd+return'
+        offers = ['actions']
+        [commands.edit]
+        title = 'Edit'
+        shortcut = 'cmd+e'
+        offers = ['actions mine, core']
+        [commands.icon]
+        title = 'Change Icon'
+        offers = ['actions']
+        [commands."icon.draw"]
+        title = 'Draw…'
+        [commands."icon.file"]
+        title = 'Choose File…'
+        [commands."icon.reset"]
+        title = 'Reset Icon'
+        when = 'hasIcon'
+        [commands.delete]
+        title = 'Delete'
+        shortcut = 'cmd+backspace'
+        offers = ['actions mine']
+        [commands.off]
+        title = 'Turn off'
+        shortcut = 'cmd+backspace'
+        close = true
+        offers = ['actions core']
+        """
+
+    private let icon = """
+        #!/bin/sh
+        case "$1" in
+          show) printf 'frame=\\ntitle=Icon\\ngrid=drawer drawer\\ngrid=clear save\\n\\nview=drawer\\ndots=.\\n\\nbutton=clear\\ntitle=Clear\\nclose=false\\n\\nbutton=save\\ntitle=Save\\nshortcut=return\\nlook=strong\\n' ;;
+        esac
+
+        """
 
     private var spots: URL {
         folder.appendingPathComponent("spots", isDirectory: true)

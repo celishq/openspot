@@ -252,6 +252,9 @@ A view that moves on its own, such as a liquid, a clock hand or a GIF, keeps the
 
 - A test proves behaviour through the public surface: inputs in, outputs out.
 - Fakes stand in only at I/O: the disk, the process, the clock.
+- A test of Core builds each spot it runs, with each kind of part that the real one prints, so a change of the protocol
+  never waits on a spot that has not moved. Only a test of one real spot, or a rule over every spot that ships, reads
+  `spots/` or `examples/`.
 - Write the failing test first, then the code that passes it.
 - Write a script for a test with `writeScript(to:)`. macOS checks a new executable file on its first run, for 150 ms or more.
 - Give a test a short pause through a setting, such as `stopPause`, and keep one test of the real time.

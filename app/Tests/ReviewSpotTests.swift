@@ -45,15 +45,18 @@ final class ReviewSpotTests: XCTestCase {
         XCTAssertTrue(text.contains("home.spot/lib.sh\nlib code\n"), text)
     }
 
-    func testTheReviewOfTheInlineCalculatorShowsItsText() throws {
-        let repo = URL(fileURLWithPath: #filePath).deletingLastPathComponent().deletingLastPathComponent().deletingLastPathComponent()
-        let place = SpotsFolder(url: folder, core: repo.appendingPathComponent("spots"), enabled: ["calculator"])
-        let scan = try place.scan()
-        let calculator = try XCTUnwrap(scan.spots.first { SpotsFolder.coreID(of: $0) == "calculator" })
+    func testTheReviewOfASharedInlineCoreSpotShowsItsText() throws {
+        let core = try temporaryFolder()
+        let sums = core.appendingPathComponent("sums.spot")
+        try "function main(args) { return 'frame=\\ngrid.large=answer\\n\\nnumber=answer\\nvalue=3\\n\\nbutton=open\\ntitle=Copy\\n' }\n".writeInline(to: sums.appendingPathComponent("sums.js"), toml: "title = 'Sums'\nicon = 'equal.square'\ndetail = 'Sums'\non = ['search.text ^[0-9]']\nuses = ['clipboard']")
+        try "#!/bin/sh\nprintf 'frame=\\ngrid.large=answer\\n\\nnumber=answer\\nvalue=3\\ntitle=1 + 2\\n\\nbutton=open\\ntitle=Copy\\n'\n".writeScript(to: sums.appendingPathComponent("sample.sh"))
+        try "# Sums\n\nAdds numbers.\n".write(to: sums.appendingPathComponent("readme.md"), atomically: true, encoding: .utf8)
+        let scan = try SpotsFolder(url: folder, core: core, enabled: ["sums"]).scan()
+        let shared = try XCTUnwrap(scan.spots.first { SpotsFolder.coreID(of: $0) == "sums" })
 
-        let text = try shown(ReviewSpot(spot: SpotPackage(sharing: calculator, from: scan), folder: folder, canAdd: false))
+        let text = try shown(ReviewSpot(spot: SpotPackage(sharing: shared, from: scan), folder: folder, canAdd: false))
 
-        XCTAssertTrue(text.contains("calculator.js\n"), text)
+        XCTAssertTrue(text.contains("sums.js\n"), text)
         XCTAssertTrue(text.contains("function main("), text)
     }
 
