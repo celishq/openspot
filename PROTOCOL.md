@@ -1177,7 +1177,9 @@ openspot app quit
   after it happens.
 - Openspot knows which spot makes each call of `openspot` by the link it gives each process of the spot on file descriptor 11, not
   from the variables of the process. Each process that the spot starts inherits it, so leave fd 11 open. An app that the spot
-  opens doesn't get it, and the link ends with the spot's process.
+  opens doesn't get it, and the link ends with the spot's process. A process of the spot that closed fd 11 is still known by
+  the process group that Openspot started it in. A call that runs in a process of its own, such as one that the running app hands
+  back, runs with the rights of the spot's process and nothing more.
   Only the user's own processes can reach the API.
 - No spot and no Terminal reads a secret (see [Settings](#settings)): `setting get` and `setting list` print `•••` for
   it, to its own spot too, and `setting set` of it fails. Only Openspot's own form changes it.
