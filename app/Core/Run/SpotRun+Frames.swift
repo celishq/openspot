@@ -223,7 +223,7 @@ extension SpotRun {
             panel = nil
         } else if let current = panel?.generation {
             rows()
-            panel?.take(lines, answering: generation ?? current, keeping: keeping)
+            guard panel?.take(lines, answering: generation ?? current, keeping: keeping) == true else { return }
             partsAnswers += 1
             onReport(.parts)
         } else {

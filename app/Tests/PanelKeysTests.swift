@@ -17,7 +17,10 @@ final class PanelKeysTests: PanelCase {
         try script("alpha", toml: "title = 'Alpha'", "true")
         try script("beta", toml: "title = 'Beta'", "true")
         try script("weather", toml: "title = 'Weather'\non = ['sheet.open']\n[commands.hot]\ntitle = 'Hot'\n[commands.cold]\ntitle = 'Cold'", ":")
-        _ = try model.files.config.change { $0.arrangement.set(isOnGrid: true, of: "weather") }
+        _ = try model.files.config.change {
+            $0.arrangement.arrange(["alpha", "beta", "weather"])
+            $0.arrangement.set(isOnGrid: true, of: "weather")
+        }
         await model.reload()
         model.isShown = true
         model.panelWillShow()
@@ -330,6 +333,7 @@ final class PanelKeysTests: PanelCase {
         try script("choice", toml: "title = 'Choice'\non = ['sheet.open']", """
         data='\(pickData.path)'
         [ "$1" = show ] || echo "$*" >> "$data/calls"
+        while [ -f "$data/hold-$1" ]; do sleep 0.01; done
         [ "$1" = key ] && printf %s "$2" > "$data/key"
         [ "$1" = use ] && printf '\\033]9;Used\\007'
         case "$1" in
@@ -370,6 +374,28 @@ final class PanelKeysTests: PanelCase {
         try await wait("the sent key") { self.pickCalls == ["record", "key option+space"] && self.model.sheets["choice"]?.calls.isEmpty == true }
         XCTAssertEqual(keyField?.control, .shortcut("option+space"))
         XCTAssertEqual(model.openParts?.selectedPart?.id, "use")
+    }
+
+    func testAReadThatAnswersBeforeTheRecordedKeyDoesNotRecordAgain() async throws {
+        try await openChoice()
+        let heldRead = pickData.appendingPathComponent("hold-show")
+        let heldKey = pickData.appendingPathComponent("hold-key")
+        try Data().write(to: heldRead)
+        try Data().write(to: heldKey)
+        model.sheets["choice"]?.read(need: .change)
+        XCTAssertTrue(model.handleKey(escape))
+        try await wait("the recording") { self.model.recording == "key" }
+        model.record(code: 49, modifiers: .option)
+        try await wait("the sent key") { self.pickCalls == ["record", "key option+space"] }
+
+        try FileManager.default.removeItem(at: heldRead)
+        try await wait("the end of the read") { self.model.sheets["choice"]?.calls.map(\.key) == ["part:key"] }
+        await nextTurn()
+        try FileManager.default.removeItem(at: heldKey)
+
+        try await wait("the end of the key") { self.model.sheets["choice"]?.calls.isEmpty == true }
+        await nextTurn()
+        XCTAssertNil(model.recording)
     }
 
     func testSpacePressesTheFocusedButton() async throws {
