@@ -80,6 +80,11 @@ public struct MetricValue: Equatable, Sendable {
         return tone != nil && symbol == nil ? .status : .value
     }
 
+    public var ringWords: String? {
+        guard kind == .gauge else { return nil }
+        return title.hasSuffix("%") ? String(title.dropLast()) : title
+    }
+
     public var fill: Double {
         Swift.min(Swift.max(value ?? 0, 0), 1)
     }

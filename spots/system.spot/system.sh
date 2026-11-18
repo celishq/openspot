@@ -5,12 +5,13 @@ data=$OPENSPOT_DATA
 event=$(value event)
 load=$(value event.value)
 
-# Prints the block that the script of another spot prints as words, without its root and its bar, with $1 before its
-# detail.
+# Prints the block that the script of another spot prints as words named $1, without its root and its bar, with $2
+# before its detail.
 words() {
-  label=$1
-  shift
-  "$@" | /usr/bin/sed -e '1,/^$/d' -e 's/^graph=/text=/' -e '/^value=/d' -e "s/^detail=/detail=$label/"
+  name=$1
+  label=$2
+  shift 2
+  "$@" | /usr/bin/sed -E -e '1,/^$/d' -e "s/^(graph|view|text|number)=.*/text=$name/" -e '/^value=/d' -e "s/^detail=/detail=$label/"
 }
 
 # Prints the text kept in file $1 of the data folder, or nothing.
@@ -21,7 +22,7 @@ kept() {
 # Prints the battery. A change of the power source reads it again.
 battery() {
   if [ "$event" = power.change ] || [ ! -f "$data/battery" ]; then
-    words 'Battery · ' "$here/../battery.spot/battery.sh" show | openspot_keep "$data/battery"
+    words battery 'Battery · ' "$here/../battery.spot/battery.sh" show | openspot_keep "$data/battery"
   fi
   kept battery
 }
@@ -34,13 +35,13 @@ devices() {
   elif [ "$event" = panel.open ] && [ $(($(/bin/date +%s) - $(/usr/bin/stat -f %m "$data/devices"))) -ge 300 ]; then again=1
   fi
   if [ -n "$again" ]; then
-    words '' "$here/../devices.spot/devices.sh" show "$("$here/../devices.spot/devices.sh" levels)" | openspot_keep "$data/devices"
+    words devices '' "$here/../devices.spot/devices.sh" show "$("$here/../devices.spot/devices.sh" levels)" | openspot_keep "$data/devices"
   fi
   kept devices
 }
 
 # Prints the use of all cores, with the trend of the last 30 points as bars. The load that Openspot measures every 5
-# seconds adds a point. With no point yet, it measures the use now and keeps no point.
+# seconds adds a point. Until two points make a trend, it prints the last point, or the use measured now, as words.
 cpu() {
   set -- $(kept trend)
   case $load in
@@ -53,6 +54,10 @@ cpu() {
   esac
   [ $# -gt 0 ] || set -- $(ps -A -o %cpu= | LC_ALL=C awk -v cores="$(/usr/sbin/sysctl -n hw.ncpu)" '{ sum += $1 } END { print int(sum / cores) }')
   eval "now=\${$#}"
+  if [ $# -lt 2 ]; then
+    printf 'text=cpu\ntitle=%s%%\ndetail=CPU\n' "$now"
+    return
+  fi
   printf 'graph=cpu\ntitle=%s%%\ndetail=CPU\nmax=100\n' "$now"
   for point; do printf 'value=%s\n' "$point"; done
 }

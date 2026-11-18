@@ -112,24 +112,24 @@ final class AgendaExampleTests: SampleSpotsCase {
 
             let output = try await agenda.items(timeout: 30)
 
-            let next = try XCTUnwrap(output.parts.first { $0.id == "next" })
+            let next = try XCTUnwrap(output.face.parts.first { $0.id == "next" })
             XCTAssertEqual(next.control, .number("in 12 min", unit: nil))
             XCTAssertEqual(next.title, "Standup")
             XCTAssertEqual(next.color, "#1BADF8")
-            let ticks = output.parts.filter { $0.look == .tick }
+            let ticks = output.face.parts.filter { $0.look == .tick }
             XCTAssertEqual(ticks.map(\.id), ["R1", "R3"])
             XCTAssertEqual(ticks.map(\.control), [.toggle(false), .toggle(false)])
             XCTAssertEqual(ticks.map(\.title), ["Call mom", "Water the plants"])
             XCTAssertEqual(ticks.map(\.detail), [nil, nil])
-            XCTAssertEqual(output.parts.filter { $0.id.hasPrefix("due-") }.map(\.detail), ["Late", "18:00"])
+            XCTAssertEqual(output.face.parts.filter { $0.id.hasPrefix("due-") }.map(\.detail), ["Late", "18:00"])
             let time = DateFormatter()
             time.dateFormat = "HH:mm"
-            XCTAssertEqual(output.parts.first { $0.id == "at" }?.control, .number(time.string(from: Date().addingTimeInterval(750)), unit: nil))
+            XCTAssertEqual(output.face.parts.first { $0.id == "at" }?.control, .number(time.string(from: Date().addingTimeInterval(750)), unit: nil))
             XCTAssertEqual(output.face.drawing(for: .large), [["next", "next", "next", "next"], ["next", "next", "next", "next"], ["R1", "R1", "R1", "due-R1"], ["R3", "R3", "R3", "due-R3"]])
             XCTAssertEqual(output.face.drawing(for: .square), [["next", "next"], ["next", "next"], ["todo", "late"]])
-            XCTAssertEqual(output.parts.first { $0.id == "todo" }?.title, "3 to do")
-            XCTAssertEqual(output.parts.first { $0.id == "late" }?.title, "1 late")
-            XCTAssertEqual(output.parts.first { $0.id == "late" }?.textTone, .bad)
+            XCTAssertEqual(output.face.parts.first { $0.id == "todo" }?.title, "3 to do")
+            XCTAssertEqual(output.face.parts.first { $0.id == "late" }?.title, "1 late")
+            XCTAssertEqual(output.face.parts.first { $0.id == "late" }?.textTone, .bad)
             XCTAssertEqual(output.face.drawing(for: .strip), [["next"]])
             XCTAssertEqual(output.face.drawing(for: .wide), [["next"]])
             XCTAssertEqual(output.face.drawing(for: .small), [["at"]])
@@ -155,7 +155,7 @@ final class AgendaExampleTests: SampleSpotsCase {
 
             XCTAssertEqual(far.face.drawing(for: .strip), [["next"]])
             XCTAssertEqual(output.face.drawing(for: .strip), [["next", "next", "next", "join-now"]])
-            XCTAssertEqual(output.parts.first { $0.id == "join-now" }?.title, "Join")
+            XCTAssertEqual(output.face.parts.first { $0.id == "join-now" }?.title, "Join")
             XCTAssertFalse(output.actions.contains { $0.id == "join-now" })
             XCTAssertEqual(try self.read("opened", in: folder), "https://meet.google.com/abc-defg-hij\n")
         }
@@ -264,7 +264,7 @@ final class AgendaExampleTests: SampleSpotsCase {
             try self.fakeOpenspot(in: folder)
             let output = try await agenda.items(timeout: 30)
             let row = try XCTUnwrap(output.items.first { $0.title == "Call mom" }?.run)
-            let card = try XCTUnwrap(output.parts.first { $0.title == "Water the plants" }?.id)
+            let card = try XCTUnwrap(output.face.parts.first { $0.title == "Water the plants" }?.id)
             let done = try XCTUnwrap(output.items.first { $0.title == "Take pills" }?.run)
 
             try await agenda.perform(.action(CommandAction(id: "tick", title: "Mark as done"), item: SpotItem(title: "Call mom", run: row)), input: "item.text=\(row)\nitem.done=false\n", timeout: 30)
@@ -305,7 +305,7 @@ final class AgendaExampleTests: SampleSpotsCase {
             try await agenda.perform(.item(SpotItem(title: "Allow Calendar", run: "allow-calendar")), timeout: 30)
 
             XCTAssertEqual(output.items.map(\.run), ["allow-calendar", "allow-reminders"])
-            XCTAssertEqual(output.parts.first { $0.id == "next" }?.control, .number("Allow", unit: nil))
+            XCTAssertEqual(output.face.parts.first { $0.id == "next" }?.control, .number("Allow", unit: nil))
             XCTAssertTrue(try self.calls(in: folder).contains("act|calendar events|"))
         }
     }

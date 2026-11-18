@@ -57,6 +57,56 @@ final class ItemsTests: PanelCase {
         XCTAssertEqual(output.errors, [])
     }
 
+    func testABlockThatOnlyASizePlacesStaysOutOfASheetWithItsOwnGrid() {
+        let output = SpotOutput(text: """
+        frame=
+        grid=items
+        grid.bar=count
+
+        number=count
+        value=5
+        title=Pull requests
+
+        repeat=items
+
+        text=a
+        title=A
+        """)
+
+        XCTAssertEqual(output.parts.map(\.id), [])
+        XCTAssertEqual(output.items.map(\.run), ["a"])
+        XCTAssertEqual(output.barred.metric?.value("value"), "5")
+    }
+
+    func testAChoiceIsNeverAnItemSoTheSheetDrawsItsPicker() {
+        let output = SpotOutput(text: """
+        frame=
+        title=Look
+
+        choice=look
+        title=Look
+        value=colorful
+
+        option=colorful
+        title=Colorful
+
+        option=plain
+        title=Plain
+        """)
+
+        XCTAssertEqual(output.items, [])
+        XCTAssertEqual(output.parts.map(\.id), ["look"])
+        XCTAssertEqual(output.parts.first?.control, .menu([.init(id: "colorful", title: "Colorful"), .init(id: "plain", title: "Plain")], value: "colorful"))
+    }
+
+    func testATextItemWithOneValueShowsARingWithItsDetail() {
+        let output = SpotOutput(text: "text=mac\ntitle=This Mac\ndetail=84%\nvalue=0.84\n\ntext=swap\ntitle=Swap\ndetail=2 GB\n")
+
+        XCTAssertEqual(output.items.first?.ring?.fill, 0.84)
+        XCTAssertEqual(output.items.first?.ring?.ringWords, "84")
+        XCTAssertNil(output.items.last?.ring)
+    }
+
     func testARowIsAnUnknownKind() {
         let output = SpotOutput(text: "row=a\ntitle=A\n\ntext=b\ntitle=B\n")
 

@@ -814,7 +814,7 @@ final class SpotsModelTests: XCTestCase {
         try script("agenda", toml: "on = ['sheet.open']\n[settings.pick]", """
         case "$1" in
           pick) printf 'frame=\\ntitle=Pick\n\nchoice=shown\ntitle=Shown\ntype=multiple\nvalue=a\n\noption=a\ntitle=Apple\n\noption=b\ntitle=Banana\n' ;;
-          *) printf 'frame=\\ngrid=items\ngrid.wide=next\n\nnumber=next\nvalue=09:30\n\nrepeat=items\n\ntext=e\ntitle=Standup\n' ;;
+          *) printf 'frame=\\ngrid=next\ngrid=items\ngrid.wide=next\n\nnumber=next\nvalue=09:30\n\nrepeat=items\n\ntext=e\ntitle=Standup\n' ;;
         esac
         """)
         await model.reload()

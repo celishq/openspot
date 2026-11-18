@@ -192,7 +192,7 @@ struct SpotRowsView: View {
                     .font(SpotType.body)
                     .foregroundStyle(SpotTheme.ink)
                     .lineLimit(1)
-                if let subtitle = item.subtitle {
+                if let subtitle = item.subtitle, item.ring == nil {
                     Text(subtitle)
                         .font(SpotType.detail)
                         .modifier(SpotSecondaryText())
@@ -202,6 +202,9 @@ struct SpotRowsView: View {
             Spacer(minLength: 0)
             if !item.bars.isEmpty {
                 RowBars(bars: item.bars, tone: item.tone)
+            }
+            if let ring = item.ring {
+                SpotLineMark(value: ring, words: ring.ringWords)
             }
             if let shortcut = item.shortcut {
                 LiveKeyLabel(text: shortcut, isRecording: recording == item.run, words: recordingWords, keys: keys)

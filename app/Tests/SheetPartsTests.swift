@@ -93,7 +93,7 @@ final class SheetPartsTests: XCTestCase {
         let outputCheck = FrameCheck(text: "frame=\ngrid.strip=next next next join-now\n\nnumber=next\nvalue=09:30\n\nbutton=join-now\ntitle=Join\n\nbutton=tick\ntitle=Mark as done\n".placed)
         let output = outputCheck.output
 
-        XCTAssertEqual(output.parts.map(\.id), ["next", "join-now"])
+        XCTAssertEqual(output.face.parts.map(\.id), ["next", "join-now"])
         XCTAssertEqual(output.actions.map(\.id), ["tick"])
         XCTAssertEqual(output.face.drawing(for: .strip), [["next", "next", "next", "join-now"]])
         XCTAssertEqual(outputCheck.partFaults, [])

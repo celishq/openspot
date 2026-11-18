@@ -315,7 +315,7 @@ doesn't, it's an **action** in the ⌘K menu.
 ## Items
 
 Items are a list that the user searches and picks from. An item is any block that the layout doesn't place, except a
-`button`, which is an action, and a `section`, which titles the items after it.
+`button`, which is an action, a `choice`, which the sheet draws, and a `section`, which titles the items after it.
 
 ```ini
 text=milk
@@ -333,7 +333,7 @@ close=false
 | `detail`        | The line under the title.                                                                      |
 | `icon`          | The icon.                                                                                      |
 | `tone`          | A dot of its colour on the icon.                                                               |
-| `value`         | `true` draws a checkmark. More lines draw a bar each, oldest first; `-` is a bar with no value. |
+| `value`         | `true` draws a checkmark, and a number from 0 to 1 a ring around the `detail`. More lines draw a bar each, oldest first; `-` is a bar with no value. |
 | `max`           | The value of a full bar. By default, the largest `value`.                                      |
 | `parent`        | Where the item sits in its spot. The main search shows `<spot> › <parent>`.                    |
 | `keywords`      | Words that find the item but don't show, split by commas.                                      |

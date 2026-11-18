@@ -58,7 +58,7 @@ public struct FrameCheck: Equatable, Sendable {
             faults.append("the root draws \(field.key), which is not a place")
         }
         for drawing in output.face.drawings.values {
-            for id in Set(drawing.joined()) where id != SheetLayout.empty && !output.parts.contains(where: { $0.id == id }) {
+            for id in Set(drawing.joined()) where id != SheetLayout.empty && !output.face.parts.contains(where: { $0.id == id }) {
                 faults.append("the card drawing names \(id), which no component has")
             }
         }

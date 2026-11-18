@@ -30,9 +30,10 @@ public struct SpotItem: Equatable, Sendable {
     public let staysOnPick: Bool
     public let move: FlowMove?
     public let bars: [Double?]
+    public let ring: MetricValue?
     public let section: String?
 
-    public init(title: String, subtitle: String? = nil, run: String, picture: Icon? = nil, parent: String? = nil, hides: [String]? = nil, keywords: [String] = [], shortcut: String? = nil, records: Bool = false, takesShake: Bool = false, isOn: Bool = false, isToggle: Bool = false, tone: MetricValue.Tone? = nil, file: String? = nil, fields: String? = nil, card: SpotState? = nil, pin: Pin? = nil, openTitle: String? = nil, staysOnPick: Bool = false, move: FlowMove? = nil, bars: [Double?] = [], section: String? = nil) {
+    public init(title: String, subtitle: String? = nil, run: String, picture: Icon? = nil, parent: String? = nil, hides: [String]? = nil, keywords: [String] = [], shortcut: String? = nil, records: Bool = false, takesShake: Bool = false, isOn: Bool = false, isToggle: Bool = false, tone: MetricValue.Tone? = nil, file: String? = nil, fields: String? = nil, card: SpotState? = nil, pin: Pin? = nil, openTitle: String? = nil, staysOnPick: Bool = false, move: FlowMove? = nil, bars: [Double?] = [], ring: MetricValue? = nil, section: String? = nil) {
         self.title = title
         self.subtitle = subtitle
         self.run = run
@@ -54,6 +55,7 @@ public struct SpotItem: Equatable, Sendable {
         self.staysOnPick = staysOnPick
         self.move = move
         self.bars = bars
+        self.ring = ring
         self.section = section
     }
 
@@ -82,6 +84,7 @@ public struct SpotItem: Equatable, Sendable {
             staysOnPick: block.flag(ItemKey.close) == false,
             move: FlowMove(item: block),
             bars: Self.bars(values: block.values(ItemKey.value), max: block.value(ItemKey.max).flatMap(Double.init)),
+            ring: kind == .text && block.values(ItemKey.value).count == 1 ? SpotPart.mark(block).flatMap { $0.kind == .gauge ? $0 : nil } : nil,
             section: section
         )
     }

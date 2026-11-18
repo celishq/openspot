@@ -114,7 +114,7 @@ public struct SpotPart: Equatable, Sendable, Identifiable {
         mark = control == .none && kind == .text ? Self.mark(block) : nil
     }
 
-    private static func mark(_ block: TextBlock) -> MetricValue? {
+    static func mark(_ block: TextBlock) -> MetricValue? {
         guard let data = BlockKind.text.data?(block) else { return nil }
         guard data.value != nil || data.points != nil else { return nil }
         return MetricValue(
@@ -161,8 +161,7 @@ public struct SpotPart: Equatable, Sendable, Identifiable {
     }
 
     public var ringWords: String? {
-        guard mark?.kind == .gauge, let detail else { return nil }
-        return detail.hasSuffix("%") ? String(detail.dropLast()) : detail
+        detail == nil ? nil : mark?.ringWords
     }
 
     public var fillsHeight: Bool {

@@ -78,6 +78,7 @@ public struct SpotOutput: Equatable, Sendable {
         let repeated = repeats.first.flatMap { block in block.value(BlockKind.repeated).map { (block, $0) } }
         if let (block, _) = repeated { drawing = RepeatDrawing(block: block) }
         let placed = Self.placed(by: head)
+        let inSheet = head.flatMap { SheetLayout(block: $0) }.map { Set($0.areas.keys) }
         var runs = Set<String>()
         var listed: [TextBlock] = []
         var section: String?
@@ -100,6 +101,8 @@ public struct SpotOutput: Equatable, Sendable {
                     if kind.holdsValue { values.append((block, kind)) }
                     every.append(part)
                     if isPlaced {
+                        if let id, inSheet?.contains(id) ?? true { parts.append(part) }
+                    } else if kind == .choice {
                         parts.append(part)
                     } else if let item = SpotItem(block: block, kind: kind, section: section) {
                         listed.append(block)
