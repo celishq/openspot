@@ -55,6 +55,19 @@ extension SpotTokens {
     public static var partFieldRoom: CGFloat { listRow + rowGap }
     public static let partSeamClearance: CGFloat = 22
     public static let dividerHeight: CGFloat = 1
+    public static let partGroupGap: CGFloat = 24
+    public static let keycapSide: CGFloat = 52
+    public static let keycapGap: CGFloat = 6
+    public static let keycapPlus: CGFloat = 12
+    public static let keycapHintGap: CGFloat = 4
+    public static let keycapHintLine: CGFloat = 13
+    public static let keycapStatusGap: CGFloat = 8
+    public static let keycapStatusInset: CGFloat = 16
+    public static let keycapCorner: CGFloat = 8
+    public static let keycapEdge: CGFloat = 2.5
+    public static let keycapLitEdge: CGFloat = 2
+    public static let keycapGlow: CGFloat = 2.5
+    public static let keycapDashLine: CGFloat = 1.5
     public static let menuMargin: CGFloat = 16
     public static let backdropSteps: [CGFloat] = [5, 3.5, 2]
     public static let backdropReach: CGFloat = 3

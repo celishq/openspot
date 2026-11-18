@@ -10,6 +10,7 @@ extension SpotsModel {
             state: entry.shownState,
             form: form,
             recording: recording,
+            keys: keys,
             selection: { [weak self] in
                 guard let sheet = self?.sheets[id] else { return 0 }
                 return sheet.panel?.selectedPart == nil ? sheet.selection : Int.max

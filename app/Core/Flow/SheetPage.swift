@@ -12,9 +12,11 @@ public struct SheetPage: Equatable, Sendable {
     public let rect: CGRect
     public let showsField: Bool
     public let query: String
+    public let recording: String?
+    public let keyStatus: String?
 
     @MainActor
-    init(run: SpotRun, rect: CGRect, query: String) {
+    init(run: SpotRun, rect: CGRect, query: String, recording: String? = nil, keyStatus: String? = nil) {
         spot = run.spot.id
         page = run.page
         state = run.shownState
@@ -26,5 +28,7 @@ public struct SheetPage: Equatable, Sendable {
         self.rect = rect
         showsField = run.showsField
         self.query = query
+        self.recording = recording
+        self.keyStatus = keyStatus
     }
 }

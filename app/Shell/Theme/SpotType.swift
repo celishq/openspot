@@ -46,6 +46,9 @@ enum SpotType {
     @MainActor static var titleMeasure: NSFont { faces.titleMeasure }
     @MainActor static var detailMeasure: NSFont { faces.detailMeasure }
     static var input: Font { faces.input }
+    static let keycapSymbol = Font.system(size: 22, weight: .medium)
+    static let keycapKey = Font.system(size: 17, weight: .medium)
+    static let keycapName = Font.system(size: 9, weight: .medium)
     static let action = Font.system(size: 11, weight: .medium)
     static let metric = Font.system(size: 30, weight: .semibold, design: .rounded).monospacedDigit()
     static let ringValue = Font.system(size: 20, weight: .semibold, design: .rounded).monospacedDigit()

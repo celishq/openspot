@@ -68,7 +68,7 @@ final class SoleCommandTests: XCTestCase {
         XCTAssertEqual(model.recordingWords, "Press keys or shake")
         model.record(code: 125, modifiers: .command)
         XCTAssertEqual(model.recording, "key:dictate:key.dictate")
-        XCTAssertEqual(host.notes.last, "`⌘Down` belongs to the apps on the Mac. Hold `⌥` or `⌃` with a key, or tap one key such as `⌥`.")
+        XCTAssertEqual(host.notes.last, "`⌘↓` belongs to apps. Hold `⌥` or `⌃` with a key, or tap one key such as `⌥`.")
         XCTAssertEqual(model.openItems?.shown.first { $0.run == "key:dictate:key.dictate" }?.subtitle, "Press ⏎ to set")
         model.recordTap(.option)
         try await wait("the tap in the file") {

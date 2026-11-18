@@ -70,4 +70,15 @@ enum SpotTheme {
     @MainActor static var window: Color { loaded.window }
     @MainActor static var confirm: Color { loaded.confirm }
     @MainActor static var onConfirm: Color { loaded.onConfirm }
+    static let onAccent = Color.white
+    static let capGlow = 0.28
+    static let capBlank = 0.55
+    static let capFace = color(dark: .white.withAlphaComponent(0.08), light: .white.withAlphaComponent(0.6))
+    static let capRim = color(dark: .white.withAlphaComponent(0.14), light: .black.withAlphaComponent(0.1))
+    static let capEdge = color(dark: .black.withAlphaComponent(0.35), light: .black.withAlphaComponent(0.14))
+    static let well = color(dark: .black.withAlphaComponent(0.22), light: .black.withAlphaComponent(0.05))
+
+    private static func color(dark: NSColor, light: NSColor) -> Color {
+        Color(nsColor: NSColor(name: nil) { isDark($0) ? dark : light })
+    }
 }

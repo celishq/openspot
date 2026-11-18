@@ -78,7 +78,9 @@ final class FakeHost: SpotsHost {
         confirms.append(text)
     }
 
-    func applyConfig(_ config: Config) {}
+    func applyConfig(_ config: Config) {
+        if let key = config.panelKey { model?.entryKey = key }
+    }
 
     var paints: [Theme.Colours] = []
     var layOuts: [Theme.Layout] = []
@@ -91,7 +93,11 @@ final class FakeHost: SpotsHost {
         layOuts.append(layout)
     }
 
-    func setEntryKey(on isOn: Bool) {}
+    var entryKeyIsOn = true
+
+    func setEntryKey(on isOn: Bool) {
+        entryKeyIsOn = isOn
+    }
 
     var held: [[GlobalKey]] = []
 

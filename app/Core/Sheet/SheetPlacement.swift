@@ -47,9 +47,8 @@ public struct SheetPlacement: Equatable, Sendable {
         if let repeatArea {
             for y in repeatArea.y0...repeatArea.y1 where !layout.hasDivider(inRow: y) { fillRows.insert(y) }
         }
-        let endsInButtons = Self.endsInButtons(parts: parts, layout: layout)
         var rowGaps = Array(repeating: gap, count: max(rows.count - 1, 0))
-        if endsInButtons { rowGaps[rowGaps.count - 1] = SpotTokens.padding }
+        if let first = Self.firstEndButtonRow(parts: parts, layout: layout), first > 0 { rowGaps[first - 1] = SpotTokens.partGroupGap }
         let gaps = rowGaps.reduce(0, +)
         var filled: CGFloat?
         if !fillRows.isEmpty {
@@ -140,11 +139,19 @@ public struct SheetPlacement: Equatable, Sendable {
         height = rows.isEmpty ? 0 : filled ?? heights.reduce(0, +) + gaps
     }
 
-    private static func endsInButtons(parts: [SpotPart], layout: SheetLayout) -> Bool {
-        let last = layout.rows.count - 1
-        guard last > 0, !layout.hasDivider(inRow: last) else { return false }
-        let inLast = parts.filter { part in layout.letter(of: part).flatMap { layout.areas[$0] }.map { $0.y1 == last } ?? false }
-        return !inLast.isEmpty && inLast.allSatisfy { $0.isPressable && layout.letter(of: $0).flatMap { layout.areas[$0] }?.y0 == last }
+    private static func firstEndButtonRow(parts: [SpotPart], layout: SheetLayout) -> Int? {
+        let isButtons = { (row: Int) -> Bool in
+            guard !layout.hasDivider(inRow: row) else { return false }
+            let held = parts.compactMap { part in layout.letter(of: part).flatMap { layout.areas[$0] }.map { (part, $0) } }
+                .filter { $0.1.y0 <= row && $0.1.y1 >= row }
+            return !held.isEmpty && held.allSatisfy { $0.0.isPressable && $0.1.y0 == row && $0.1.y1 == row }
+        }
+        var first: Int?
+        for row in layout.rows.indices.reversed() {
+            guard isButtons(row) else { break }
+            first = row
+        }
+        return first
     }
 
     private static func side(_ align: SpotPart.Align?, default fallback: Side) -> Side {

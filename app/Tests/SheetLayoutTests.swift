@@ -105,9 +105,30 @@ final class SheetLayoutTests: XCTestCase {
         """).frames
 
         let note = try XCTUnwrap(frames["note"]).rect, save = try XCTUnwrap(frames["save"]).rect
-        XCTAssertEqual(save.minY - note.maxY, SpotTokens.padding)
+        XCTAssertEqual(save.minY - note.maxY, SpotTokens.partGroupGap)
         XCTAssertEqual(save.maxY, SpotTokens.partsMaxHeight)
-        XCTAssertGreaterThan(SpotTokens.padding, SpotTokens.partGap)
+        XCTAssertGreaterThan(SpotTokens.partGroupGap, SpotTokens.partGap)
+    }
+
+    func testTheRowsOfButtonsAtTheEndStandApartTogetherWithTheRowGapBetweenThem() throws {
+        let frames = try placement("""
+        grid=note
+        grid=save
+        grid=cancel
+
+        text=note
+        title=Note
+
+        button=save
+        title=Save
+
+        button=cancel
+        title=Cancel
+        """).frames
+
+        let note = try XCTUnwrap(frames["note"]).rect, save = try XCTUnwrap(frames["save"]).rect, cancel = try XCTUnwrap(frames["cancel"]).rect
+        XCTAssertEqual(save.minY - note.maxY, SpotTokens.partGroupGap)
+        XCTAssertEqual(cancel.minY - save.maxY, SpotTokens.partGap)
     }
 
     func testTilesHaveTheOneRowHeightAndGap() throws {
@@ -307,6 +328,16 @@ final class SheetLayoutTests: XCTestCase {
 
         XCTAssertEqual(sheet.lines.count, 1)
         XCTAssertEqual(try XCTUnwrap(sheet.frames["left"]).rect.width, SpotTokens.partsWidth)
+    }
+
+    func testAHotkeyFieldWithNoDrawingTakesTwoLinesOfTheFullWidth() throws {
+        let sheet = try placement("title=Welcome\n\nfield=key\ntype=hotkey\n")
+        let placed = try placement("grid=key\ngrid=go\n\nfield=key\ntype=hotkey\n\nbutton=go\ntitle=Go\n")
+
+        let key = try XCTUnwrap(sheet.frames["key"]).rect
+        XCTAssertEqual(key.width, SpotTokens.partsWidth)
+        XCTAssertEqual(key.height, 2 * SpotTokens.listRow + SpotTokens.partGap)
+        XCTAssertEqual(try XCTUnwrap(placed.frames["key"]).rect.height, SpotTokens.listRow)
     }
 
     func testAPartStartsWithItsPartKey() throws {

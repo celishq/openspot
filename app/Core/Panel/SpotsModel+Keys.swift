@@ -64,7 +64,9 @@ extension SpotsModel {
 
     private var recordingRows: [KeyRow] {
         let cancel = KeyRow("escape", command: nil, shift: nil, words: "Cancel") { [self] _ in
+            let field = recordsField ? recording : nil
             stopRecording()
+            if let field { focusAfterRecording(field) }
             return true
         }
         return [cancel]

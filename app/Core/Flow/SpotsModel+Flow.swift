@@ -70,7 +70,9 @@ extension SpotsModel {
     func move(_ move: FlowMove, in id: String) {
         guard openSheetID == id else { return }
         switch move {
-        case .pop(let all): pop(in: id, all: all)
+        case .pop(true): pop(in: id, all: true)
+        case .pop(false) where flow.behind == nil && flow.current?.spot == id: closeSheet(moving: isShown)
+        case .pop: pop(in: id)
         case .push(let spot, let page, let title, let replace): push(FlowSheet(spot: spot ?? id, page: page, title: title), replace: replace)
         }
     }

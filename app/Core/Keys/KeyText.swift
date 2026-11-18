@@ -1,7 +1,9 @@
 import Foundation
 
 struct KeyText: Equatable {
-    private static let names: [(name: String, label: String)] = [("return", "⏎"), ("backspace", "⌫"), ("escape", "Esc")]
+    private static let names: [(name: String, label: String)] = [
+        ("return", "⏎"), ("backspace", "⌫"), ("escape", "Esc"), ("left", "←"), ("right", "→"), ("up", "↑"), ("down", "↓")
+    ]
     private static let markOrder: [Shortcut.Modifiers] = [.control, .option, .shift, .command]
 
     let modifiers: Shortcut.Modifiers
@@ -39,9 +41,15 @@ struct KeyText: Equatable {
         (Shortcut.Modifiers.all.filter(modifiers.contains).compactMap(\.word) + [name]).joined(separator: "+")
     }
 
+    var marks: String {
+        Self.markOrder.filter(modifiers.contains).compactMap(\.mark).joined()
+    }
+
+    var keyLabel: String {
+        Self.names.first { $0.name == name }?.label ?? (name.count == 1 ? name.uppercased() : name.capitalized)
+    }
+
     var label: String {
-        let marks = Self.markOrder.filter(modifiers.contains).compactMap(\.mark).joined()
-        let key = Self.names.first { $0.name == name }?.label ?? (name.count == 1 ? name.uppercased() : name.capitalized)
-        return marks + key
+        marks + keyLabel
     }
 }

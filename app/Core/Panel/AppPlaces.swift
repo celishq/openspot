@@ -10,6 +10,7 @@ public struct AppPlaces: Sendable {
     public let account: AccountStore
     public let secrets: SecretStore
     public let config: ConfigFile
+    public let systemKeys: SystemKeys
     public let spots: SpotsFolder
     public let store: URL
     public let examples: Store?
@@ -35,6 +36,7 @@ public struct AppPlaces: Sendable {
         configFolder = own ?? SpotsFolder.defaultConfig(home: home)
         account = .standard(own: own)
         secrets = .standard(own: own)
+        systemKeys = .standard(home: home)
         config = .standard(in: configFolder, disk: disk)
         spots = .standard(environment: environment, home: home, enabled: [], disabled: [])
         store = SpotCatalog.url(environment: environment, home: home)

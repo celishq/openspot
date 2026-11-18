@@ -695,15 +695,15 @@ final class SpotsModelTests: XCTestCase {
         try await wait("the end of the read") { !model.runs.isReading }
     }
 
-    func testAFirstLaunchOpensThePanelOnTheGridAndNamesTheKeyWhenItCloses() async {
+    func testAFirstLaunchOpensThePanelOnTheGridAndSaysNothingWhenItCloses() async {
         await model.beginFirstLaunch()
 
         XCTAssertEqual(host.presents, 1)
         XCTAssertNil(model.openSheetID)
-        XCTAssertEqual(host.confirms, [])
         model.panelWillHide()
         model.panelDidHide()
-        XCTAssertEqual(host.confirms, [model.entryKey.openHint])
+        XCTAssertEqual(host.confirms, [])
+        XCTAssertFalse(model.isFirstLaunch)
     }
 
     func testAFormOfSeveralPicksStaysOpenThroughEachPickReadsTheSpotAgainAndSelectsAllOnCommandShiftA() async throws {

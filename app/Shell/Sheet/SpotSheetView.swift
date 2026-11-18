@@ -77,6 +77,7 @@ private struct SheetContentView: View {
                         onPress: { model.pressPart($0) },
                         recordingPart: content.recording,
                         onRecord: { model.toggleRecording($0) },
+                        keys: content.keys,
                         list: list,
                         onRun: { model.runItem($0) },
                         onDragOut: { model.dragOut($0, of: entry.id) },
@@ -104,7 +105,7 @@ private struct SheetContentView: View {
                         }
                         .buttonStyle(.plain)
                     } else {
-                        SpotRowsView(list: list, recording: content.recording, recordingWords: model.recordingWords, onRun: { model.runItem($0) }, onPoint: { model.point(at: .item($0)) }, selection: selection, onDragOut: { model.dragOut($0, of: entry.id) })
+                        SpotRowsView(list: list, recording: content.isHeld ? nil : content.recording, recordingWords: model.recordingWords, keys: model.keys, onRun: { model.runItem($0) }, onPoint: { model.point(at: .item($0)) }, selection: selection, onDragOut: { model.dragOut($0, of: entry.id) })
                     }
                 }
             }

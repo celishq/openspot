@@ -22,7 +22,7 @@ public struct SheetParts: Equatable, Sendable {
     public private(set) var pictureTimes: [String: Double]
     private var focusOffsets: [Int] = []
     private var focusLineOffsets: [[Int]] = []
-    private var selected: String?
+    public private(set) var selected: String?
 
     public init?(output: SpotOutput) {
         guard !output.parts.isEmpty else { return nil }
@@ -36,8 +36,7 @@ public struct SheetParts: Equatable, Sendable {
     private static func pictureTimes(of parts: [SpotPart]) -> [String: Double] {
         var times: [String: Double] = [:]
         for part in parts {
-            guard case .image(let path) = part.control else { continue }
-            times[path] = PictureFile(path: path).changed
+            if case .image(let path) = part.control { times[path] = PictureFile(path: path).changed }
         }
         return times
     }

@@ -116,6 +116,7 @@ The header says what a spot is. Openspot reads it without running the spot.
 | `offers`      | A place where the spot can show: `card`, `search`, `menubar`, `float` or `window`. One line each. See [Places](#places).         |
 | `drop`        | The files its card takes: extensions such as `mov,mkv`, `folder`, or `*`. See [The calls](#the-calls).                           |
 | `edits`       | `spots`: its sheet is also the Edit sheet of each spot. Only a spot of the app takes it. |
+| `starts`      | `first-launch`: its sheet opens in place of the grid when Openspot starts for the first time. |
 | `view`        | A SwiftUI file next to the spot, such as `view=cups.swift`. See [Views](#views).                                                 |
 | `source`      | A Swift file, or a folder of Swift files, that a Swift spot is built with. One line each. See [A Swift spot](#a-swift-spot).     |
 | `mode`        | `once` (the default), `stay` or `always`. See [Modes](#modes).                                                                   |
@@ -234,7 +235,7 @@ confirm=Press again to forget
 | `picture` | An image that fills its place.                                                                                  | `icon`                                                               |                        |
 | `view`    | The SwiftUI view the header names (see [Views](#views)).                                                        | any key the view reads                                               |                        |
 | `switch`  | A switch, or with `type=tick` a round tick before its words, for a thing to do.                                 | `value`: `true` or `false`, `type`                                   | `<id> true` or `false` |
-| `field`   | A text field, or another input with a `type`.                                                                   | `value`, `type`, `placeholder`, `required`, `readonly`, `min`, `max` | `<id> <value>`         |
+| `field`   | A text field, or another input with a `type`.                                                                   | `value`, `type`, `placeholder`, `required`, `readonly`, `min`, `max`, `recording` | `<id> <value>`         |
 | `choice`  | A menu of the `option` blocks after it, a list when it covers two lines or more, or swatches of `color` lines.  | `color`, `value`, `type`                                             | `<id> <option id>`     |
 | `option`  | One option of the `choice` right before it.                                                                     | `title`, `icon`                                                      |                        |
 | `button`  | A button, or an action (see [Buttons and actions](#buttons-and-actions)).                                       | `shortcut`, `confirm`, `close`, `look`, `form`, `scope`              | `<id>`                 |
@@ -244,6 +245,16 @@ confirm=Press again to forget
 
 - A field's `type`: none for one line of text, `multiline` for several lines, `slider` from `min` to `max` (0 to 100 by
   default), which sends a whole number when the user lets go, and `hotkey` for a hotkey that a press records.
+- A `hotkey` field shows as keycaps. With no `grid=` line, it takes two lines of the full width.
+- A `hotkey` field records a key in Openspot when the user presses Return on it or clicks it, and when a new frame of
+  the spot gives it `recording=true`. A frame that shows again, such as on a step back, records nothing.
+- A `hotkey` field with a key gives the focus to the part after it.
+- While a field records, every key goes to it. Esc stops the recording and brings back the key it had. A key that makes a shortcut ends the recording, sends
+  `<id> <key>`, and moves the focus past the field.
+- While a sheet with a `hotkey` field shows, Openspot's own keys are off, so only a press of a button saves a key, and a
+  key that nothing on the sheet takes does nothing.
+- The line under the keycaps comes from Openspot: whether the key is free, what macOS or another spot does with it, or
+  which app took it.
 - `type=multiple` lets a choice pick several options (see [Buttons and actions](#buttons-and-actions)).
 - Every kind also takes `title`, `detail`, `tone` and `icon`. Openspot skips a key that a kind doesn't take.
 - A `text` that covers two lines or more shows its `detail` under its `title`, on as many lines as the place holds.
@@ -333,6 +344,9 @@ A button is a verb. If the layout places it, the sheet draws it. If not, it's an
   header its hotkey in the spot's [Settings](#settings).
 - An action needs a `title`. `openspot check spots` reports an action with no title, or with a shortcut it can't use.
 - `shortcut=escape` presses the button instead of closing the sheet, like a Cancel button.
+- A placed button with a `shortcut` shows its key at its end, such as `⏎` or `Esc`.
+- Return presses the button with `shortcut=return`; Space presses the part that has the focus, as Return does on a
+  part with no such button.
 - In a ⌘K menu of more than 5 rows, a field searches them, so only a `shortcut` with `cmd` works there.
 - Return on a row runs the action `open`. `button=open` gives it a `title`, and `close=false` keeps the panel open after
   a pick.
@@ -404,7 +418,7 @@ went through. A spot pushes a sheet onto the flow and pops its own sheet off it.
 | `push.spot=<spot id>` | a row, or a press      | Pushes a sheet of that spot instead. With no `push=`, its first sheet.               |
 | `push.title=<words>`  | a row, or a press      | The title of the pushed sheet, which its edge names. By default, the row's title.     |
 | `push.replace=true`   | a row, or a press      | The pushed sheet takes the place of the one that shows, so going back skips it.       |
-| `pop=true`            | a press                | Takes the spot's sheet off. On its first sheet, that goes back to whoever pushed it.  |
+| `pop=true`            | a press                | Takes the spot's sheet off. On its first sheet, that goes back to whoever pushed it, or to the grid.  |
 | `pop=all`             | a press                | Goes back to the spot's first sheet.                                                  |
 
 - Each call of a page, a read or a press, gets the page's id in `OPENSPOT_PAGE`. The first sheet of a spot gets none.

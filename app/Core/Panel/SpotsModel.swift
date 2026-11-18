@@ -123,6 +123,7 @@ public final class SpotsModel {
             let shown = transition.shown
             if shown != openSheetID {
                 openSheetID = shown
+                recordAskedField()
                 takeMode()
                 if shown != nil, followsHint { takeSheetHint(HintWords(hint)) }
             }
@@ -155,7 +156,32 @@ public final class SpotsModel {
 
     public var entryKey = Shortcut.standard
     public var recording: String? {
-        didSet { takeMode() }
+        didSet {
+            keys.clear()
+            takeMode()
+        }
+    }
+    public let keys = KeyRecording()
+    @ObservationIgnored var entryKeyIsOff = false
+    @ObservationIgnored var askedAnswer: String?
+
+    public func hold(_ modifiers: Shortcut.Modifiers) {
+        guard recording != nil, let code = keys.hold(modifiers) else { return }
+        record(code: code, modifiers: modifiers)
+    }
+
+    public func releaseKey() {
+        keys.release()
+    }
+
+    public func appCameToFront(_ name: String) {
+        guard recordsField else { return }
+        keys.appCameToFront(name)
+    }
+
+    public func inputSourceChanged() {
+        guard recordsField else { return }
+        keys.inputSourceChanged()
     }
     public internal(set) var mode = PanelMode.grid
 
@@ -311,6 +337,7 @@ public final class SpotsModel {
             host.notify("Openspot could not save the spots. \(Self.reason(error))")
         }
         await reload()
+        if let first = runs.firstLaunchSheet { push(FlowSheet(spot: first)) }
         host.present()
     }
 
@@ -476,7 +503,10 @@ public final class SpotsModel {
         selected = 0
         runs.panelOpened(readsToEnd: isWarming)
         askAnswers()
-        host.nextFrame { [weak self] in self?.isShown = true }
+        host.nextFrame { [weak self] in
+            self?.isShown = true
+            self?.recordAskedField()
+        }
     }
 
     public func panelWillHide() {
@@ -486,6 +516,7 @@ public final class SpotsModel {
         closeMenu()
         endEditing(moving: false)
         isShown = false
+        takeEntryKey()
     }
 
     public func waitForReads() async {
@@ -524,8 +555,11 @@ public final class SpotsModel {
         case .listChange:
             markFound(id)
             if mayMove(id) { updateVisible() }
+        case .parts:
+            if id == openSheetID { recordAskedField() }
         case .frame(let frame):
             markFound(id)
+            if id == openSheetID { takeKeyField() }
             if let spot = sheets[id]?.spot, spot.holdsSettings, let owner = spot.settingsSheet?.spot, keyFrames.updateValue(frame, forKey: id) != frame {
                 settingsChanged(of: owner)
             }

@@ -144,6 +144,7 @@ final class SpotsPanel: NSPanel {
         case .flagsChanged: takeFlags(event)
         case .pressure: takePressure(event)
         case .keyDown: if takeKey(event) { return }
+        case .keyUp: model?.releaseKey()
         case .scrollWheel: if takeSwipe(event) { return }
         case .rightMouseDown: if takeRightClick(event) { return }
         default: break
@@ -153,6 +154,7 @@ final class SpotsPanel: NSPanel {
     }
 
     private func takeFlags(_ event: NSEvent) {
+        model?.hold(event.keyModifiers)
         if let modifier = tap.take(event.keyModifiers, at: event.timestamp), model?.recording != nil {
             model?.recordTap(modifier)
         }
@@ -167,12 +169,14 @@ final class SpotsPanel: NSPanel {
         }
         let key = event.actionKey
         if model.recording != nil {
+            if event.isARepeat { return true }
             if let key, model.handleKey(key) { return true }
             model.record(code: UInt32(event.keyCode), modifiers: event.keyModifiers)
             return true
         }
-        guard let key, !textKeeps(key) else { return false }
-        return model.handleKey(key)
+        if let key, textKeeps(key) { return false }
+        if let key, model.handleKey(key) { return true }
+        return model.takesEveryKey
     }
 
     private func takeRightClick(_ event: NSEvent) -> Bool {
@@ -265,6 +269,29 @@ final class SpotsPanel: NSPanel {
         return true
     }
 
+    private static let inputSourceChange = Notification.Name("com.apple.Carbon.TISNotifySelectedKeyboardInputSourceChanged")
+
+    private func watchFrontApp(model: SpotsModel) {
+        NSWorkspace.shared.notificationCenter.addObserver(forName: NSWorkspace.didActivateApplicationNotification, object: nil, queue: .main) { [weak model] note in
+            guard let app = note.userInfo?[NSWorkspace.applicationUserInfoKey] as? NSRunningApplication,
+                  app.processIdentifier != ProcessInfo.processInfo.processIdentifier,
+                  let name = app.localizedName else { return }
+            MainActor.assumeIsolated {
+                guard let model, model.recording != nil else { return }
+                model.appCameToFront(name)
+            }
+        }
+    }
+
+    private func watchInputSource(model: SpotsModel) {
+        DistributedNotificationCenter.default().addObserver(forName: Self.inputSourceChange, object: nil, queue: .main) { [weak model] _ in
+            MainActor.assumeIsolated {
+                guard let model, model.recording != nil else { return }
+                model.inputSourceChanged()
+            }
+        }
+    }
+
     private func watchPaste(model: SpotsModel) {
         NSEvent.addLocalMonitorForEvents(matching: .keyDown) { [weak model] event in
             let isTaken = MainActor.assumeIsolated {
@@ -310,6 +337,8 @@ final class SpotsPanel: NSPanel {
         hosting.sizingOptions = []
         panel.contentView = hosting
         panel.watchPaste(model: model)
+        panel.watchFrontApp(model: model)
+        panel.watchInputSource(model: model)
         panel.center()
         panel.followSides()
         panel.takeBackdrop()

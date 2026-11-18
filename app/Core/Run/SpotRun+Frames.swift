@@ -228,11 +228,15 @@ extension SpotRun {
         } else if let current = panel?.generation {
             rows()
             panel?.take(lines, answering: generation ?? current, keeping: keeping)
+            partsAnswers += 1
+            onReport(.parts)
         } else {
             partsArrival {
                 panel = SheetParts(output: lines)
                 rows()
             }
+            partsAnswers += 1
+            onReport(.parts)
         }
     }
 

@@ -38,6 +38,7 @@ public struct SpotFacts: Equatable, Sendable {
     public let placeholder: String?
     public let sample: URL?
     public let edits: SpotEdits?
+    public let starts: SpotStart?
     public internal(set) var editedFile: URL?
 
     public var editsSpots: Bool {

@@ -213,6 +213,10 @@ public final class SpotRuns {
         openID.flatMap { sheets[$0] }?.close()
     }
 
+    public var firstLaunchSheet: String? {
+        sheets.values.lazy.map(\.spot).first { $0.starts == .firstLaunch && $0.isBuiltIn }?.id
+    }
+
     public var isReading: Bool {
         sheets.values.contains(where: \.isReading)
     }

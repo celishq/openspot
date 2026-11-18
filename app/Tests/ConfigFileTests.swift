@@ -67,7 +67,7 @@ final class ConfigFileTests: XCTestCase {
         let config = Config(text: "panel-key = \"k\"\n")
 
         XCTAssertNil(config.panelKey)
-        XCTAssertEqual(config.faults, ["config.toml: panel-key cannot use k. Hold cmd, ctrl or option with a letter, a digit, an arrow, space, return or tab."])
+        XCTAssertEqual(config.faults, ["config.toml: panel-key cannot use k. Hold cmd, ctrl or option with a letter, a digit, a sign, an arrow, space, return or tab."])
     }
 
     func testAKeyThatIsNotTextIsAFault() {

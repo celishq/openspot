@@ -57,19 +57,19 @@ final class SpotPictureStore {
             let height = properties?[kCGImagePropertyPixelHeight] as? Int ?? 0
             let short = min(width, height)
             let long = max(width, height)
-            let side = short > shortSide ? long * shortSide / short : long
+            let filled = short > shortSide ? long * shortSide / short : long
             let options: [CFString: Any] = [
                 kCGImageSourceCreateThumbnailFromImageAlways: true,
                 kCGImageSourceCreateThumbnailWithTransform: true,
                 kCGImageSourceShouldCacheImmediately: true,
-                kCGImageSourceThumbnailMaxPixelSize: max(side, 1)
+                kCGImageSourceThumbnailMaxPixelSize: max(filled, 1)
             ]
             if let image = CGImageSourceCreateThumbnailAtIndex(source, 0, options as CFDictionary) { return image }
         }
         guard let picture = NSImage(contentsOfFile: path), picture.size.width > 0, picture.size.height > 0 else { return nil }
         let size = picture.size
         let fill = max(1, CGFloat(shortSide) / min(size.width, size.height))
-        var rect = CGRect(x: 0, y: 0, width: (size.width * fill).rounded(), height: (size.height * fill).rounded())
+        var rect = CGRect(x: 0, y: 0, width: max((size.width * fill).rounded(), 1), height: max((size.height * fill).rounded(), 1))
         return picture.cgImage(forProposedRect: &rect, context: nil, hints: nil)
     }
 }

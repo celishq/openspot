@@ -10,6 +10,7 @@ struct SheetPartsView: View {
     let onPress: (SpotPart) -> Void
     var recordingPart: String?
     var onRecord: (SpotPart) -> Void = { _ in }
+    var keys: KeyRecording?
     var list = ItemList()
     var onRun: (SpotItem) -> Void = { _ in }
     var onDragOut: ([SpotItem]) -> Void = { _ in }
@@ -23,7 +24,6 @@ struct SheetPartsView: View {
     var views = SpotViews.shared
     @FocusState private var focus: String?
     @Environment(\.spotIsHeld) private var isHeld
-
 
     private var shape: SpotRoundShape {
         SpotRoundShape(surface.inner())
@@ -162,6 +162,8 @@ struct SheetPartsView: View {
             image(path)
         case .progress(let level):
             progress(part, level: level)
+        case .shortcut(let text):
+            shortcut(part, text: text)
         default:
             if part.press == .line {
                 lineButton(part, frame)
@@ -321,6 +323,10 @@ struct SheetPartsView: View {
 
     private func centeredLine(_ part: SpotPart, isActive: Bool) -> some View {
         pressLabel(part, words: part.title ?? part.id.capitalized, font: SpotType.body.weight(.medium))
+            .frame(maxWidth: .infinity)
+            .overlay(alignment: .trailing) {
+                if let key = part.key { SpotButtonKey(label: key.label) }
+            }
             .padding(.horizontal, SpotTokens.padding)
             .frame(maxWidth: .infinity, maxHeight: .infinity)
             .spotFill(isActive: isActive, otherwise: SpotTheme.ink.opacity(SpotTheme.selectedFill), in: shape)
@@ -342,8 +348,6 @@ struct SheetPartsView: View {
                 .tint(SpotTheme.accent)
         case .menu(let options, let value):
             menu(part, frame, options: options, value: value)
-        case .shortcut(let text):
-            shortcut(part, text: text)
         case .swatches(let colors, let value):
             if let color = colors.first {
                 swatch(part, color: color, isChosen: color == value, size: SpotTokens.smallSwatch)
@@ -394,7 +398,10 @@ struct SheetPartsView: View {
 
     private func shortcut(_ part: SpotPart, text: String) -> some View {
         Button { onRecord(part) } label: {
-            SpotKeyLabel(text: text, isRecording: recordingPart == part.id)
+            LiveKeycaps(value: text, isRecording: recordingPart == part.id, keys: keys)
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+                .background(SpotTheme.well, in: shape)
+                .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
     }
@@ -532,6 +539,17 @@ struct SheetPartsView: View {
         .font(SpotType.body)
         .foregroundStyle(SpotTheme.ink)
         .background(SpotTheme.ink.opacity(SpotTheme.fill), in: shape)
+    }
+}
+
+private struct LiveKeycaps: View {
+    let value: String
+    let isRecording: Bool
+    let keys: KeyRecording?
+
+    var body: some View {
+        let live = isRecording ? keys : nil
+        SpotKeycaps(value: value, held: live?.held ?? [], isRecording: isRecording, status: keys?.status, pressed: live?.pressed, isKeyDown: live?.isKeyDown == true)
     }
 }
 

@@ -182,7 +182,7 @@ final class SpotAPITests: XCTestCase {
         XCTAssertEqual(file.read().panelKey, Shortcut(text: "option+space"))
         XCTAssertEqual(file.read().fixKey, Shortcut(text: "ctrl+option+f"))
         XCTAssertEqual(shake.code, 1)
-        XCTAssertEqual(shake.errors, "Openspot cannot use `shake`. Hold cmd, ctrl or option with a letter, a digit, an arrow, space, return or tab.\n")
+        XCTAssertEqual(shake.errors, "Openspot cannot use `shake`. Hold cmd, ctrl or option with a letter, a digit, a sign, an arrow, space, return or tab.\n")
         XCTAssertEqual(bad.code, 1)
         XCTAssertEqual(file.read().keys, [])
     }

@@ -26,13 +26,13 @@ final class NewSpotTests: BuiltInCase {
         try String(contentsOf: root.appendingPathComponent(name), encoding: .utf8)
     }
 
-    func testItIsASmallListThatTheConfigOpensWithCommandN() throws {
+    func testItIsAListThatTheDefaultGridShowsAsAStripAndOpensWithCommandN() throws {
         let spot = try newSpot()
         let defaults = Config(text: try String(contentsOf: repo.appendingPathComponent("app/defaults.toml"), encoding: .utf8))
 
         XCTAssertEqual(spot.name, "New spot")
         XCTAssertEqual(spot.kind, .list)
-        XCTAssertEqual(defaults.arrangement.size(of: spot.id), .small)
+        XCTAssertEqual(defaults.arrangement.size(of: spot.id), .strip)
         XCTAssertTrue(spot.isOnGrid)
         XCTAssertEqual(SpotArrangement().spot(openedBy: ActionKey(name: "n", isCommand: true), over: defaults.arrangement), spot.id)
     }

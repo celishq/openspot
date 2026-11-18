@@ -21,6 +21,11 @@ public enum MotionTokens {
     public static var fadeOut: Double { SpotTokens.layout.motion.fadeOut * slow }
     public static var press: Double { SpotTokens.layout.motion.press * slow }
     public static var pressBounce: Double { SpotTokens.layout.motion.pressBounce }
+    public static var pop: Double { 0.32 * slow }
+    public static let popBounce = 0.35
+    public static let keycapArrivalScale = 0.85
+    public static let keycapLeastScale = 0.6
+    public static let keycapLegendScale = 0.7
     public static let shrinkCurve = (x1: 0.2, y1: 0.1, x2: 0.2, y2: 1.0)
 
     public static var growSettle: Double { SpotTokens.layout.motion.settle * slow }
