@@ -329,6 +329,7 @@ final class PanelKeysTests: PanelCase {
         data='\(pickData.path)'
         [ "$1" = read ] || echo "$*" >> "$data/calls"
         [ "$1" = key ] && printf %s "$2" > "$data/key"
+        [ "$1" = use ] && printf 'toast=Used\\n'
         case "$1" in
           read|key|record)
             printf 'grid=key\\ngrid=key\\ngrid=use\\ngrid=record\\n\\nfield=key\\ntype=hotkey\\nvalue=%s\\n' "$(cat "$data/key" 2>/dev/null || printf ctrl+space)"
@@ -448,6 +449,40 @@ final class PanelKeysTests: PanelCase {
 
         XCTAssertNil(model.openSheetID)
         XCTAssertFalse(model.takesEveryKey)
+    }
+
+    func testEscThatStopsARecordingGivesTheFocusToThePartAfterAFieldWithAKey() async throws {
+        try await openChoice()
+        XCTAssertTrue(model.handleKey(escape))
+        try await wait("the recording") { self.model.recording == "key" }
+
+        XCTAssertTrue(model.handleKey(escape))
+
+        XCTAssertNil(model.recording)
+        XCTAssertEqual(model.openParts?.selectedPart?.id, "use")
+    }
+
+    func testAnAnswerWithNoPartsDoesNotRecordAgain() async throws {
+        try await openChoice()
+        XCTAssertTrue(model.handleKey(escape))
+        try await wait("the recording") { self.model.recording == "key" }
+        XCTAssertTrue(model.handleKey(escape))
+
+        XCTAssertTrue(model.handleKey(enter))
+
+        try await wait("the toast") { self.host.confirms.contains("Used") && self.model.sheets["choice"]?.calls.isEmpty == true }
+        XCTAssertNil(model.recording)
+    }
+
+    func testTheOpenKeyTurnsOffAgainWhenThePanelShowsOverAKeyField() async throws {
+        try await openPick(key: "option+space")
+        await nextTurn()
+        model.panelWillHide()
+        try await wait("the open key") { self.host.entryKeyIsOn }
+
+        model.panelWillShow()
+
+        try await wait("the open key off") { !self.host.entryKeyIsOn }
     }
 
     func testTheOpenKeyComesBackWhenThePanelHidesOverAKeyField() async throws {

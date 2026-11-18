@@ -101,6 +101,7 @@ extension SpotsModel {
     public func closeSheet(moving: Bool) {
         pendingAsk = nil
         keys.status = nil
+        askedAnswer = nil
         stopRecording()
         showSheet(nil, moving: moving)
         runs.closeOpen()
@@ -121,6 +122,7 @@ extension SpotsModel {
         finishPick()
         for entry in entries where entry.spot.answers != nil { sheets[entry.id]?.answer("") }
         runs.panelClosed()
+        if isFirstLaunch, !isWarming { isFirstLaunch = false }
         endReview()
         if let heldLayout { lay(heldLayout) }
     }
@@ -220,7 +222,7 @@ extension SpotsModel {
 
     func bringParts(of id: String, _ bring: () -> Void) {
         change(transition.id == id && transition.isOpen ? PanelMotion.sheet(isOpen: true) : nil, bring)
-        if id == openSheetID { takeKeyField() }
+        if id == openSheetID { recordAskedField() }
     }
 
     public func change(_ motion: PanelMotion?, _ body: () -> Void, completion: @escaping @MainActor () -> Void = {}) {

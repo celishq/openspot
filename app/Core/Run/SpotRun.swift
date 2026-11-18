@@ -9,6 +9,7 @@ public final class SpotRun {
         case failure(String)
         case failureWithFix(String, URL)
         case frame(String)
+        case parts
         case listChange
         case chooseFiles
         case landed
@@ -193,6 +194,7 @@ public final class SpotRun {
     }
     public internal(set) var failure: String?
     @ObservationIgnored public internal(set) var calls: [ScriptCall] = []
+    @ObservationIgnored public internal(set) var partsAnswers = 0
     @ObservationIgnored var workCalls: [ScriptCall] = []
     public internal(set) var work: [ScriptCall] = []
     @ObservationIgnored public var onReport: (Report) -> Void = { _ in }

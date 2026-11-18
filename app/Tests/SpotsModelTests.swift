@@ -703,6 +703,7 @@ final class SpotsModelTests: XCTestCase {
         model.panelWillHide()
         model.panelDidHide()
         XCTAssertEqual(host.confirms, [])
+        XCTAssertFalse(model.isFirstLaunch)
     }
 
     func testAFormOfSeveralPicksStaysOpenThroughEachPickReadsTheSpotAgainAndSelectsAllOnCommandShiftA() async throws {

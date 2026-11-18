@@ -123,7 +123,7 @@ public final class SpotsModel {
             let shown = transition.shown
             if shown != openSheetID {
                 openSheetID = shown
-                takeKeyField()
+                recordAskedField()
                 takeMode()
                 if shown != nil, followsHint { takeSheetHint(HintWords(hint)) }
             }
@@ -163,6 +163,7 @@ public final class SpotsModel {
     }
     public let keys = KeyRecording()
     @ObservationIgnored var entryKeyIsOff = false
+    @ObservationIgnored var askedAnswer: String?
 
     public func hold(_ modifiers: Shortcut.Modifiers) {
         guard recording != nil, let code = keys.hold(modifiers) else { return }
@@ -504,6 +505,7 @@ public final class SpotsModel {
         askAnswers()
         host.nextFrame { [weak self] in
             self?.isShown = true
+            self?.recordAskedField()
         }
     }
 
@@ -553,9 +555,11 @@ public final class SpotsModel {
         case .listChange:
             markFound(id)
             if mayMove(id) { updateVisible() }
+        case .parts:
+            if id == openSheetID { recordAskedField() }
         case .frame(let frame):
             markFound(id)
-            if id == openSheetID { recordAskedField() }
+            if id == openSheetID { takeKeyField() }
             if let spot = sheets[id]?.spot, spot.holdsSettings, let owner = spot.settingsSheet?.spot, keyFrames.updateValue(frame, forKey: id) != frame {
                 settingsChanged(of: owner)
             }

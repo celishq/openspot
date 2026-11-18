@@ -85,7 +85,11 @@ extension SpotsModel {
 
     func recordAskedField() {
         takeKeyField()
-        guard isShown, !isWarming, recording == nil, let part = openParts?.parts.first(where: \.asksToRecord) else { return }
+        guard isShown, !isWarming, recording == nil, let id = openSheetID, let run = sheets[id],
+              let part = openParts?.parts.first(where: \.asksToRecord) else { return }
+        let answer = "\(id)#\(run.partsAnswers)"
+        guard askedAnswer != answer else { return }
+        askedAnswer = answer
         toggleRecording(part)
     }
 
