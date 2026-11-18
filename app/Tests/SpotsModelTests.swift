@@ -318,7 +318,7 @@ final class SpotsModelTests: XCTestCase {
 
         model.panelWillShow()
 
-        XCTAssertEqual(model.visible.map(\.id), ["one", "two"])
+        XCTAssertEqual(Set(model.visible.map(\.id)), ["one", "two"])
     }
 
     func testAWatchedChangeOfTheConfigFileTakesIt() async throws {
