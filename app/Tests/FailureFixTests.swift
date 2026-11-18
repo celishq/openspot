@@ -57,20 +57,20 @@ final class FailureFixTests: SpotRunsCase {
         XCTAssertEqual(told.first?.fix?.absoluteString, "x-apple.systempreferences:accessibility")
     }
 
-    func testOnlyTheTokenOfAOnceCallKeepsAFixAfterItsRelease() throws {
-        let tokens = CallerTokens()
+    func testOnlyTheCallerOfAOnceCallKeepsAFixAfterItsRelease() throws {
+        let callers = SpotCallers()
         let spot = Spot(id: "s", name: "S", url: URL(fileURLWithPath: "/s.sh"))
         let fix = try XCTUnwrap(URL(string: "x-apple.systempreferences:accessibility"))
-        let staying = tokens.issue(for: spot)
-        let once = tokens.issue(for: spot, keepsFix: true)
-        tokens.note(fix, of: staying)
-        tokens.note(fix, of: once)
+        let staying = callers.issue(for: spot)
+        let once = callers.issue(for: spot, keepsFix: true)
+        staying.note(fix)
+        once.note(fix)
 
-        tokens.release(staying)
-        tokens.release(once)
+        callers.release(staying)
+        callers.release(once)
 
-        XCTAssertNil(tokens.fix(of: staying))
-        XCTAssertEqual(tokens.fix(of: once), fix)
+        XCTAssertNil(staying.takeFix())
+        XCTAssertEqual(once.takeFix(), fix)
     }
 
     func testAFailureAfterALaterCallThatWorkedHasNoFix() async throws {

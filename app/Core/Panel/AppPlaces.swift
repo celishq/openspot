@@ -1,15 +1,20 @@
 import Foundation
 
-public struct AppPlaces {
+public struct AppPlaces: Sendable {
     public let environment: [String: String]
     public let home: URL
-    public let defaults: UserDefaults
+    nonisolated(unsafe) public let defaults: UserDefaults
     public let trash: @Sendable (URL) throws -> URL
     public let kinds: @Sendable ([String]) -> FileKinds
     public let defaultConfig: URL?
     public let account: AccountStore
     public let secrets: SecretStore
     public let config: ConfigFile
+    public let spots: SpotsFolder
+    public let store: URL
+    public let examples: Store?
+    public let lock: SpotLock
+    let configFolder: URL
 
     public init(
         environment: [String: String],
@@ -26,9 +31,15 @@ public struct AppPlaces {
         self.trash = trash
         self.kinds = kinds
         self.defaultConfig = defaultConfig
-        account = .standard(environment: environment, home: home)
-        secrets = .standard(environment: environment, home: home)
-        config = ConfigFile(url: ConfigFile.standard(environment: environment, home: home).url, disk: disk)
+        let own = SpotsFolder.ownConfig(environment: environment)
+        configFolder = own ?? SpotsFolder.defaultConfig(home: home)
+        account = .standard(own: own)
+        secrets = .standard(own: own)
+        config = .standard(in: configFolder, disk: disk)
+        spots = .standard(environment: environment, home: home, enabled: [], disabled: [])
+        store = SpotCatalog.url(environment: environment, home: home)
+        examples = Store.builtIn(environment: environment)
+        lock = .standard(environment: environment, home: home)
     }
 
     public static func systemTrash(_ url: URL) throws -> URL {
@@ -47,19 +58,19 @@ public struct AppPlaces {
     }
 
     public func folder(_ config: Config) -> SpotsFolder {
-        .standard(environment: environment, home: home, enabled: config.arrangement.enabled, disabled: config.arrangement.disabled)
+        SpotsFolder(url: spots.url, core: spots.core, enabled: config.arrangement.enabled, disabled: config.arrangement.disabled, wrapsLooseFiles: true)
     }
 
-    public var store: URL {
-        SpotCatalog.url(environment: environment, home: home)
+    public func readSpots() -> SpotsFolder {
+        folder(config.read())
     }
 
     public var log: CallLog {
-        CallLog(folder: SpotsFolder.config(environment: environment, home: home).appendingPathComponent("logs", isDirectory: true))
+        CallLog(folder: configFolder.appendingPathComponent("logs", isDirectory: true))
     }
 
     public var stats: URL {
-        SpotsFolder.config(environment: environment, home: home).appendingPathComponent("stats", isDirectory: true)
+        configFolder.appendingPathComponent("stats", isDirectory: true)
     }
 
     public func recent(of id: String) -> [String] {

@@ -12,7 +12,7 @@ extension AppPlaces {
 
 extension CommandRequest {
     static func test(_ arguments: [String] = [], in environment: [String: String] = [:]) -> CommandRequest {
-        CommandRequest(arguments: arguments, folder: environment["PWD"] ?? FileManager.default.temporaryDirectory.path, token: environment[CallerTokens.variable])
+        CommandRequest(arguments: arguments, folder: environment["PWD"] ?? FileManager.default.temporaryDirectory.path)
     }
 }
 

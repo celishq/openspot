@@ -8,7 +8,7 @@ struct Account: Sendable {
     let store: AccountStore
     let allows: @Sendable (String) async -> Bool
 
-    func admit(_ caller: CallerTokens.Caller?) throws {
+    func admit(_ caller: Spot?) throws {
         guard caller?.reachesAccountKey == true else { throw SpotError.failed(1, Self.refusal) }
     }
 

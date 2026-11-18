@@ -4,14 +4,14 @@ struct CallContext {
     let mac: Mac
     let api: CommandAPI
     let request: CommandRequest
-    let environment: [String: String]
+    let places: AppPlaces
     let app: (any RunningApp)?
     let runs: SpotRuns?
     let account: Account?
     let secrets: SecretStore
     let trash: @Sendable (URL) throws -> URL
     let raise: (@Sendable (SpotEvent) async -> Void)?
-    let caller: CallerTokens.Caller?
+    let caller: Spot?
     let spot: String?
     let isRead: Bool
     let input: @Sendable () async -> String
@@ -29,19 +29,15 @@ struct CallContext {
         request.place
     }
 
-    var keyCaller: CallerTokens.Caller? {
-        request.isBound ? caller : nil
-    }
-
     var isCareful: Bool {
-        runs?.tokens.isCareful == true
+        runs?.callers.isCareful == true
     }
 
     var careful: Set<SpotUse>? {
         isCareful ? Set(SpotUse.allCases) : nil
     }
 
-    var fence: (caller: CallerTokens.Caller, mode: CarefulMode)? {
+    var fence: (caller: Spot, mode: CarefulMode)? {
         guard isCareful, let caller, !caller.uses.contains(.files) else { return nil }
         return (caller, CarefulMode(uses: caller.uses))
     }

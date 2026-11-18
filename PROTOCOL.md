@@ -983,6 +983,8 @@ A spot asks the Mac and Openspot for things through one command, which works the
 - Each capability is `openspot <noun> <verb>`.
 - A noun names its commands, its events and its use, such as `openspot clipboard copy`, `clipboard.change` and
   `uses=clipboard`.
+- `openspot` reaches the Openspot app that it ships in, and within a spot, the app that ran the spot. `openspot --config <folder>
+  <call>` reaches the Openspot that runs on that config folder instead. No variable changes where a call goes.
 - A call that reads files or asks the Mac gives the same answer whether Openspot is running or not. A call that needs the
   running app starts it, and waits up to 10 seconds.
 - Ctrl-C stops a call, and the stopped work changes nothing.
@@ -1173,7 +1175,11 @@ openspot app quit
 
 - Openspot asks nothing in daily use. It shows what a spot can do when the user adds or updates it, and shows each use
   after it happens.
-- Openspot knows which spot makes each call of `openspot` from its own records, not from the variables of the process.
+- Openspot knows which spot makes each call of `openspot` by the link it gives each process of the spot on file descriptor 11, not
+  from the variables of the process. Each process that the spot starts inherits it, so leave fd 11 open. An app that the spot
+  opens doesn't get it, and the link ends with the spot's process. A process of the spot that closed fd 11 is still known by
+  the process group that Openspot started it in. A call that runs in a process of its own, such as one that the running app hands
+  back, runs with the rights of the spot's process and nothing more.
   Only the user's own processes can reach the API.
 - No spot and no Terminal reads a secret (see [Settings](#settings)): `setting get` and `setting list` print `•••` for
   it, to its own spot too, and `setting set` of it fails. Only Openspot's own form changes it.

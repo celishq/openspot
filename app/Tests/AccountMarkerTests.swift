@@ -33,13 +33,11 @@ final class AccountMarkerTests: BuiltInCase {
         ]
         var said: [String] = []
         for caller in callers {
-            for isBound in [true, false] {
-                for arguments in verbs {
-                    let request = CommandRequest(arguments: arguments, folder: root.path, token: caller.map { runs.tokens.issue(for: $0) }, isBound: isBound)
-                    guard let call = api.call(of: request), let work = api.work(for: api.admit(call, request: request), request: request, input: { "" }) else { continue }
-                    let answer = await work()
-                    said.append("\(arguments) from \(caller?.id ?? "Terminal") gave \(answer.output)\(answer.errors)")
-                }
+            for arguments in verbs {
+                let request = CommandRequest(arguments: arguments, folder: root.path, caller: caller.map { runs.callers.issue(for: $0) })
+                guard let call = api.call(of: request), let work = api.work(for: api.admit(call, request: request), request: request, input: { "" }) else { continue }
+                let answer = await work()
+                said.append("\(arguments) from \(caller?.id ?? "Terminal") gave \(answer.output)\(answer.errors)")
             }
         }
         return said

@@ -49,7 +49,7 @@ final class CheckScriptTests: XCTestCase {
 
     private func cleanTree() throws -> URL {
         let root = try temporaryFolder()
-        for folder in ["app/Core", "app/Shell", "app/Client", "app/Tests", "scripts/breaks", "spots", "examples"] {
+        for folder in ["app/Core", "app/Shell", "app/Client", "app/Shared", "app/Tests", "scripts/breaks", "spots", "examples"] {
             try FileManager.default.createDirectory(at: root.appendingPathComponent(folder), withIntermediateDirectories: true)
         }
         for list in Self.lists {

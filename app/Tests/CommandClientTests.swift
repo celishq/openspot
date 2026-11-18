@@ -39,6 +39,7 @@ final class CommandClientTests: XCTestCase {
     private var socket: CommandSocket?
 
     private var config: URL { folder.appendingPathComponent("config") }
+    private var handed: String { "--config \(config.path) " }
     private var client: URL { folder.appendingPathComponent("A.app/Contents/Helpers/openspot") }
 
     override func setUpWithError() throws {
@@ -80,18 +81,16 @@ final class CommandClientTests: XCTestCase {
         return (printed, said, process.terminationStatus)
     }
 
-    func testTheTokenOfACallerNamesItsSpotAndNoOtherVariableDoes() async throws {
+    func testNoVariableNamesTheSpotOfACaller() async throws {
         let runs = await SpotRuns()
         socket = CommandSocket(folder: config, api: CommandAPI(mac: Mac(), places: .test(["OPENSPOT_CONFIG": config.path]), runs: runs, rates: .offline))
-        let token = runs.tokens.issue(for: Spot(id: "home/coffee", name: "Coffee", url: folder.appendingPathComponent("coffee.sh")))
+        _ = runs.callers.issue(for: Spot(id: "home/coffee", name: "Coffee", url: folder.appendingPathComponent("coffee.sh")))
 
-        let named = try run(client, ["setting", "set", "tone", "warm"], variables: [CallerTokens.variable: token])
-        let claimed = try run(client, ["setting", "set", "tone", "cold"], variables: ["OPENSPOT_ID": "home/tea"])
+        let claimed = try run(client, ["setting", "set", "tone", "cold"], variables: ["OPENSPOT_ID": "home/tea", "OPENSPOT_TOKEN": "0123456789abcdef0123456789abcdef"])
 
-        XCTAssertEqual(named.code, 0, named.errors)
         XCTAssertNotEqual(claimed.code, 0)
         let kept = ConfigFile(url: config.appendingPathComponent("config.toml")).read()
-        XCTAssertEqual(kept.setting("tone", of: "home/coffee"), "warm")
+        XCTAssertNil(kept.setting("tone", of: "home/coffee"))
         XCTAssertNil(kept.setting("tone", of: "home/tea"))
     }
 
@@ -100,7 +99,8 @@ final class CommandClientTests: XCTestCase {
         let app = FakeRunningApp()
         socket = CommandSocket(folder: config, api: CommandAPI(mac: Mac(), places: .test(["OPENSPOT_CONFIG": config.path]), app: app, runs: runs, rates: .offline))
         let account = Spot(id: "openspot/account", name: "Account", url: folder.appendingPathComponent("account.sh"), uses: [.account]).builtIn()
-        let copied = [CallerTokens.variable: runs.tokens.issue(for: account)]
+        _ = runs.callers.issue(for: account)
+        let copied = ["OPENSPOT_TOKEN": "0123456789abcdef0123456789abcdef"]
         let refused = "Only Openspot's Store can reach your account key.\n"
 
         XCTAssertEqual(try run(client, ["store", "publish", "mine"]).errors, refused)
@@ -112,6 +112,22 @@ final class CommandClientTests: XCTestCase {
         let opened = await app.opened
         XCTAssertEqual(opened, [])
         XCTAssertNil(try AccountStore.standard(environment: ["OPENSPOT_CONFIG": config.path], home: folder, devState: nil).key())
+    }
+
+    func testACommandInsideAnAppReachesItsOwnAppWhateverItsConfigVariableNames() throws {
+        let own = folder.appendingPathComponent("own", isDirectory: true)
+        try FileManager.default.createDirectory(at: own, withIntermediateDirectories: true)
+        try "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<plist version=\"1.0\"><dict><key>OpenspotDevState</key><string>\(own.path)</string></dict></plist>\n"
+            .write(to: folder.appendingPathComponent("A.app/Contents/Info.plist"), atomically: true, encoding: .utf8)
+        listen()
+        let ownSocket = CommandSocket(folder: own, api: CommandAPI(mac: Mac(), places: .test(["OPENSPOT_CONFIG": own.path]), rates: .offline))
+        defer { ownSocket?.close() }
+
+        let answer = try run(client, ["setting", "set", "--spot", "home/tea", "tone", "warm"])
+
+        XCTAssertEqual(answer.code, 0, answer.errors)
+        XCTAssertEqual(ConfigFile(url: own.appendingPathComponent("config.toml")).read().setting("tone", of: "home/tea"), "warm")
+        XCTAssertNil(ConfigFile(url: config.appendingPathComponent("config.toml")).read().setting("tone", of: "home/tea"))
     }
 
     func testTheRunningAppAnswersACalcSum() throws {
@@ -173,17 +189,31 @@ final class CommandClientTests: XCTestCase {
     }
 
     func testWithNoSocketItStartsTheAppWithTheSameArguments() throws {
-        XCTAssertEqual(try run(client, ["guide"]).output, "app: guide\n")
+        XCTAssertEqual(try run(client, ["guide"]).output, "app: \(handed)guide\n")
+    }
+
+    func testAConfigGivenToTheCommandIsTheAppItReaches() throws {
+        let other = folder.appendingPathComponent("other", isDirectory: true)
+        try FileManager.default.createDirectory(at: other, withIntermediateDirectories: true)
+
+        let otherSocket = CommandSocket(folder: other, api: CommandAPI(mac: Mac(), places: .test(["OPENSPOT_CONFIG": other.path]), rates: .offline))
+        defer { otherSocket?.close() }
+        listen()
+
+        let answer = try run(client, ["--config", other.path, "setting", "set", "--spot", "home/tea", "tone", "warm"])
+
+        XCTAssertEqual(answer.code, 0, answer.errors)
+        XCTAssertEqual(ConfigFile(url: other.appendingPathComponent("config.toml")).read().setting("tone", of: "home/tea"), "warm")
     }
 
     func testWithNoWordsItAsksForHelp() throws {
-        XCTAssertEqual(try run(client, []).output, "app: help\n")
+        XCTAssertEqual(try run(client, []).output, "app: \(handed)help\n")
     }
 
     func testACallThatRunsAloneStartsTheApp() throws {
         listen()
 
-        XCTAssertEqual(try run(client, ["render", "sheet", "x.png"]).output, "app: render sheet x.png\n")
+        XCTAssertEqual(try run(client, ["render", "sheet", "x.png"]).output, "app: \(handed)render sheet x.png\n")
     }
 
     private func start(_ arguments: [String], variables: [String: String] = [:]) throws -> (process: Process, output: Pipe, errors: Pipe) {
@@ -205,7 +235,7 @@ final class CommandClientTests: XCTestCase {
     }
 
     func testALiveCallWithNoAppStartsItInTheBackgroundAndAsksItsSocket() async throws {
-        try "#!/bin/sh\nif [ $# -gt 0 ]; then echo \"app: $*\"; else touch '\(folder.appendingPathComponent("started").path)'; fi\n".writeScript(to: folder.appendingPathComponent("A.app/Contents/MacOS/Openspot"))
+        try "#!/bin/sh\nif [ $# -gt 2 ]; then echo \"app: $*\"; else touch '\(folder.appendingPathComponent("started").path)'; fi\n".writeScript(to: folder.appendingPathComponent("A.app/Contents/MacOS/Openspot"))
         let run = try start(["app", "status"])
 
         try await wait("the start of the app") { exists("started") }
@@ -234,7 +264,7 @@ final class CommandClientTests: XCTestCase {
 
             try await wait("the end of the call") { !run.process.isRunning }
 
-            XCTAssertEqual(String(decoding: run.output.fileHandleForReading.readDataToEndOfFile(), as: UTF8.self), "app: \(call.joined(separator: " "))\n")
+            XCTAssertEqual(String(decoding: run.output.fileHandleForReading.readDataToEndOfFile(), as: UTF8.self), "app: \(handed)\(call.joined(separator: " "))\n")
         }
     }
 
@@ -290,7 +320,7 @@ final class CommandClientTests: XCTestCase {
         listen()
 
         for call in [["emoji", "list", "--tone", "dark"], ["symbols", "list"]] {
-            XCTAssertEqual(try run(client, call).output, "app: \(call.joined(separator: " "))\n")
+            XCTAssertEqual(try run(client, call).output, "app: \(handed)\(call.joined(separator: " "))\n")
         }
     }
 
@@ -298,6 +328,6 @@ final class CommandClientTests: XCTestCase {
         let link = folder.appendingPathComponent("openspot")
         try FileManager.default.createSymbolicLink(at: link, withDestinationURL: client)
 
-        XCTAssertEqual(try run(link, ["spot", "new", "x"]).output, "app: spot new x\n")
+        XCTAssertEqual(try run(link, ["spot", "new", "x"]).output, "app: \(handed)spot new x\n")
     }
 }

@@ -154,8 +154,8 @@ final class SpotUsesTests: SpotRunsCase {
         XCTAssertEqual(code, "0")
     }
 
-    func testASpotThatDropsItsTokenIsStillKnownByItsProcessGroup() async throws {
-        try script(header: "", "OPENSPOT_CONFIG='\(config.path)' /usr/bin/env -u OPENSPOT_TOKEN '\(client.path)' setting list > /dev/null && echo done >> '\(path("done"))'")
+    func testASpotThatClosesItsChannelIsStillKnownByItsProcessGroup() async throws {
+        try script(header: "", "OPENSPOT_CONFIG='\(config.path)' /bin/bash -c \"exec 11>&-; '\(client.path)' setting list\" > /dev/null && echo done >> '\(path("done"))'")
         _ = try scanned()
 
         try await press()
@@ -165,7 +165,7 @@ final class SpotUsesTests: SpotRunsCase {
     }
 
     func testAChildThatOutlivesItsSpotsProcessIsStillTheSpot() async throws {
-        try script(header: "", "( \(untilRelease); OPENSPOT_CONFIG='\(config.path)' /usr/bin/env -u OPENSPOT_TOKEN '\(client.path)' setting list > /dev/null; echo done >> '\(path("done"))' ) > /dev/null 2>&1 &")
+        try script(header: "", "( \(untilRelease); OPENSPOT_CONFIG='\(config.path)' '\(client.path)' setting list > /dev/null; echo done >> '\(path("done"))' ) > /dev/null 2>&1 &")
         _ = try scanned()
         try XCTUnwrap(runs.sheets["script"]).pressCard()
         try await wait("the start of the call") { self.log().count == 1 }

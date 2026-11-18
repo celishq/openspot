@@ -3,7 +3,7 @@
 lint || exit 1
 kept=$(pbpaste)
 id=$(own_id)
-"$OPENSPOT" spot run "$id" open </dev/null || "$OPENSPOT" spot run "$id" </dev/null
+"$OPENSPOT" --config "$OPENSPOT_CONFIG" spot run "$id" open </dev/null || "$OPENSPOT" --config "$OPENSPOT_CONFIG" spot run "$id" </dev/null
 copied=$(pbpaste)
 printf "%s" "$kept" | pbcopy
 echo "copied: $copied"

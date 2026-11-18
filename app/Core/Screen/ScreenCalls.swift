@@ -3,7 +3,7 @@ import Foundation
 struct ScreenCalls {
     let mac: (any MacScreen)?
     let folder: URL
-    let fence: (caller: CallerTokens.Caller, mode: CarefulMode)?
+    let fence: (caller: Spot, mode: CarefulMode)?
 
     func sources() -> CommandAPI.Work {
         CommandAnswer.work { [mac] in ScreenDevice.rows(of: try await Self.screen(mac).devices()) }

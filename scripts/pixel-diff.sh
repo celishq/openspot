@@ -96,12 +96,12 @@ shoot() {
   codesign --force --deep -s - "$app" 2>/dev/null
   fixtures
   run() {
-    OPENSPOT_SPOTS="$work/state/spots" OPENSPOT_CONFIG="$work/state/config" OPENSPOT_CORE="$work/state/core" "$@"
+    "$app/Contents/MacOS/Openspot" --spots "$work/state/spots" --config "$work/state/config" --core "$work/state/core" "$@"
   }
-  run "$app/Contents/MacOS/Openspot" check spots >/dev/null || true
+  run check spots >/dev/null || true
   for look in dark light; do
-    run env OPENSPOT_PROBE="$out/probe.txt" OPENSPOT_ACTION=pixels OPENSPOT_SHOTS="$out/$look" OPENSPOT_SEEN=1 OPENSPOT_GLASS=off OPENSPOT_APPEARANCE="$look" \
-      "$app/Contents/MacOS/Openspot" >"$out/run-$look.log" 2>&1
+    run --probe "$out/probe.txt" --probe-action pixels --shots "$out/$look" --seen --glass off --appearance "$look" \
+      >"$out/run-$look.log" 2>&1
     stop
   done
   mkdir -p "$out/picture"

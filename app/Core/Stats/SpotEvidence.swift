@@ -47,8 +47,8 @@ public struct SpotEvidence: Equatable, Sendable {
             : goals.joined(separator: " ")
     }
 
-    static func read(of id: String, runs: SpotRuns?, environment: [String: String], app: String) async -> SpotEvidence? {
-        SpotEvidence(of: id, in: await StatsLog.days(days, runs: runs, environment: environment), app: app)
+    static func read(of id: String, runs: SpotRuns?, stats: URL, app: String) async -> SpotEvidence? {
+        SpotEvidence(of: id, in: await StatsLog.days(days, runs: runs, stats: stats), app: app)
     }
 
     var text: String {

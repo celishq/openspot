@@ -104,7 +104,7 @@ final class SpotCatalogTests: XCTestCase {
     func testGetTurnsOnACoreSpotByTheIDThatTheListPrints() async throws {
         let id = try XCTUnwrap(list().items.first { $0.origin == .core && !$0.isAdded }?.id)
 
-        let item = try await list().get(id, config: config, environment: [:])
+        let item = try await list().get(id, config: config, lock: AppPlaces.test().lock)
 
         XCTAssertEqual(item.spot.name, "Timer")
         XCTAssertTrue(config.read().arrangement.enabled.contains(id))
@@ -112,7 +112,7 @@ final class SpotCatalogTests: XCTestCase {
 
     func testGetOfAnIDThatTheStoreLacksSaysHowToSeeEachOne() async {
         do {
-            _ = try await list().get("gone", config: config, environment: [:])
+            _ = try await list().get("gone", config: config, lock: AppPlaces.test().lock)
             XCTFail("a get of a missing spot passed")
         } catch {
             XCTAssertEqual((error as? SpotError)?.reason, "`gone` is not a spot of the store. Run `openspot store list` to see each one.")

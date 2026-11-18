@@ -5,7 +5,6 @@ public struct CommandRequest: Equatable, Sendable {
         struct Params: Decodable {
             let argv: [String]
             let cwd: String
-            let token: String?
             let piped: Bool?
         }
 
@@ -20,22 +19,20 @@ public struct CommandRequest: Equatable, Sendable {
     public let id: Int?
     public let arguments: [String]
     public let folder: String
-    public var token: String?
-    public var isBound: Bool
+    public var caller: SpotCaller?
     public let isPiped: Bool
 
-    public init(arguments: [String], folder: String, token: String? = nil, isBound: Bool = false, isPiped: Bool = true, id: Int? = nil) {
+    public init(arguments: [String], folder: String, caller: SpotCaller? = nil, isPiped: Bool = true, id: Int? = nil) {
         self.id = id
         self.arguments = arguments
         self.folder = folder
-        self.token = token
-        self.isBound = isBound
+        self.caller = caller
         self.isPiped = isPiped
     }
 
     init?(line: Data) {
         guard let line = try? JSONDecoder().decode(Line.self, from: line), line.jsonrpc == "2.0", line.method == Self.method else { return nil }
-        self.init(arguments: line.params.argv, folder: line.params.cwd, token: line.params.token, isPiped: line.params.piped ?? false, id: line.id)
+        self.init(arguments: line.params.argv, folder: line.params.cwd, isPiped: line.params.piped ?? false, id: line.id)
     }
 
     var place: URL {
@@ -43,6 +40,6 @@ public struct CommandRequest: Equatable, Sendable {
     }
 
     func asking(_ arguments: [String]) -> CommandRequest {
-        CommandRequest(arguments: arguments, folder: folder, token: token, isBound: isBound)
+        CommandRequest(arguments: arguments, folder: folder, caller: caller)
     }
 }

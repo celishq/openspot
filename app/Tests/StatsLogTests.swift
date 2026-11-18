@@ -179,7 +179,7 @@ final class StatsLogTests: SpotRunsCase {
 
     func testACallThatNeedsAUseIsCountedAndLoggedAndToldOnceADayAcrossAStart() throws {
         let usage = StatsLog(folder: stats, at: day, pause: 60)
-        let caller = CallerTokens.Caller(id: "a", name: "Alpha", uses: [.network])
+        let caller = Spot(id: "a", name: "Alpha", url: URL(fileURLWithPath: "/a.sh"), uses: [.network])
         let quit = try XCTUnwrap(SpotUseCall(arguments: ["app", "quit"], of: "a"))
 
         XCTAssertTrue(usage.used(quit, by: caller, at: day))
@@ -287,8 +287,8 @@ final class StatsLogTests: SpotRunsCase {
         let usage = StatsLog(at: day)
         let quit = try XCTUnwrap(SpotUseCall(arguments: ["app", "quit"], of: "a"))
 
-        _ = usage.used(quit, by: .init(id: "a", name: "Alpha", uses: [.app]), at: day)
-        _ = usage.used(quit, by: .init(id: "b", name: "Beta", uses: []), at: day)
+        _ = usage.used(quit, by: Spot(id: "a", name: "Alpha", url: URL(fileURLWithPath: "/a.sh"), uses: [.app]), at: day)
+        _ = usage.used(quit, by: Spot(id: "b", name: "Beta", url: URL(fileURLWithPath: "/b.sh"), uses: []), at: day)
 
         XCTAssertEqual(usage.days(1, at: day).first?.uses.map(\.spot), ["b"])
         XCTAssertEqual(usage.counts["a"]?.calls, ["app.quit": 1])
@@ -319,7 +319,7 @@ final class StatsLogTests: SpotRunsCase {
         usage.called(spot("b", "Beta", uses: [.network]), CallOutcome(seconds: 0.25), at: day)
         usage.called(spot("b", "Beta", uses: [.network]), CallOutcome(seconds: 0.25), at: day)
         usage.add(ProcessTime(cpu: 1.5, wakeups: 7, read: 0, written: 10), to: "b", at: day)
-        _ = usage.used(try XCTUnwrap(SpotUseCall(arguments: ["screen", "shot"], of: "b")), by: .init(id: "b", name: "Beta", uses: [.network]), at: day.addingTimeInterval(60))
+        _ = usage.used(try XCTUnwrap(SpotUseCall(arguments: ["screen", "shot"], of: "b")), by: Spot(id: "b", name: "Beta", url: URL(fileURLWithPath: "/b.sh"), uses: [.network]), at: day.addingTimeInterval(60))
 
         let text = try Stats(days: usage.days(1, at: day), spot: nil).text(.frame)
 
