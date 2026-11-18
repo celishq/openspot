@@ -198,6 +198,110 @@ public struct ViewLibrary: Sendable {
             public func media(_ source: String) -> AnyView { mediaMaker(source) }
 
             public func cornerButton(_ symbol: String, label: String, card id: String, action: @escaping () -> Void) -> AnyView { cornerMaker(symbol, label, id, action) }
+
+            public func loop(period: Double, fill colors: Color..., path: @escaping (Double, CGRect) -> Path) -> some View {
+                SpotLoop(key: .init(period: period, size: size, values: values, look: .fill(colors)), isPlaying: isShown, path: path)
+            }
+
+            public func loop(period: Double, stroke color: Color, width: CGFloat, path: @escaping (Double, CGRect) -> Path) -> some View {
+                SpotLoop(key: .init(period: period, size: size, values: values, look: .stroke(color, width)), isPlaying: isShown, path: path)
+            }
+        }
+
+        struct SpotLoop: NSViewRepresentable {
+            enum Look: Equatable {
+                case fill([Color])
+                case stroke(Color, CGFloat)
+            }
+
+            struct Key: Equatable {
+                let period: Double
+                let size: CGSize
+                let values: [String: [String]]
+                let look: Look
+            }
+
+            let key: Key
+            let isPlaying: Bool
+            let path: (Double, CGRect) -> Path
+
+            final class Stage: NSView {
+                let shape = CAShapeLayer()
+                private let paint: CAGradientLayer?
+                private var key: Key?
+
+                override var isFlipped: Bool { true }
+
+                init(look: Look) {
+                    if case .fill = look { paint = CAGradientLayer() } else { paint = nil }
+                    super.init(frame: .zero)
+                    wantsLayer = true
+                    if let paint {
+                        paint.mask = shape
+                        layer?.addSublayer(paint)
+                    } else {
+                        shape.fillColor = nil
+                        layer?.addSublayer(shape)
+                    }
+                }
+
+                required init?(coder: NSCoder) { nil }
+
+                func take(_ loop: SpotLoop) {
+                    if key != loop.key {
+                        key = loop.key
+                        build(loop)
+                    }
+                    play(loop.isPlaying)
+                }
+
+                private func build(_ loop: SpotLoop) {
+                    let rect = CGRect(origin: .zero, size: loop.key.size)
+                    let period = loop.key.period
+                    let steps = max(2, Int(period * 10))
+                    let paths = (0...steps).map { loop.path(period * Double($0) / Double(steps), rect).cgPath }
+                    CATransaction.begin()
+                    CATransaction.setDisableActions(true)
+                    paint?.frame = rect
+                    shape.frame = rect
+                    shape.path = paths[0]
+                    switch loop.key.look {
+                    case .fill(let colors):
+                        paint?.colors = (colors.count == 1 ? colors + colors : colors).map { NSColor($0).cgColor }
+                    case .stroke(let color, let width):
+                        shape.strokeColor = NSColor(color).cgColor
+                        shape.lineWidth = width
+                    }
+                    shape.speed = 1
+                    shape.timeOffset = 0
+                    shape.beginTime = 0
+                    let wave = CAKeyframeAnimation(keyPath: "path")
+                    wave.values = paths
+                    wave.duration = period
+                    wave.repeatCount = .infinity
+                    wave.isRemovedOnCompletion = false
+                    shape.add(wave, forKey: "loop")
+                    CATransaction.commit()
+                }
+
+                private func play(_ isPlaying: Bool) {
+                    guard isPlaying != (shape.speed != 0) else { return }
+                    if isPlaying {
+                        let paused = shape.timeOffset
+                        shape.speed = 1
+                        shape.timeOffset = 0
+                        shape.beginTime = 0
+                        shape.beginTime = shape.convertTime(CACurrentMediaTime(), from: nil) - paused
+                    } else {
+                        shape.timeOffset = shape.convertTime(CACurrentMediaTime(), from: nil)
+                        shape.speed = 0
+                    }
+                }
+            }
+
+            func makeNSView(context: Context) -> Stage { Stage(look: key.look) }
+
+            func updateNSView(_ stage: Stage, context: Context) { stage.take(self) }
         }
 
         public struct SpotMetric: View {
@@ -374,7 +478,7 @@ public struct ViewLibrary: Sendable {
 
     public func build(source: Data, named name: String, kinds: [String]) async throws -> Data {
         let module = "View\(Self.name(of: source).prefix(16))"
-        let flags = ["-emit-library", "-parse-as-library", "-O", "-module-name", module, "-Xfrontend", "-import-module", "-Xfrontend", "SwiftUI"]
+        let flags = ["-emit-library", "-parse-as-library", "-O", "-module-name", module, "-Xfrontend", "-import-module", "-Xfrontend", "SwiftUI", "-Xfrontend", "-import-module", "-Xfrontend", "AppKit"]
         let files = [SwiftBuild.File(name: Self.preludeName, data: Data(Self.prelude.utf8)), SwiftBuild.File(name: name, data: source)]
         return try await SwiftBuild(tools: tools).output(of: files, flags: flags, kinds: kinds, toolsFault: Self.toolsFault, fault: Self.sourceFault)
     }

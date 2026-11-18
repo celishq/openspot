@@ -158,6 +158,10 @@ public final class SpotsModel {
         didSet { takeMode() }
     }
     public internal(set) var mode = PanelMode.grid
+
+    public var cardsMove: Bool {
+        isShown && mode == .grid
+    }
     @ObservationIgnored private var problems: [String] = []
     public internal(set) var menuSession: ActionMenuSession? {
         didSet {

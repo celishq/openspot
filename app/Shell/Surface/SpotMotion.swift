@@ -11,7 +11,7 @@ extension EnvironmentValues {
     @Entry var spotDrawsGlass = true
     #endif
     @Entry var spotIsHeld = false
-    @Entry var spotIsStill = false
+    @Entry var spotMoves = true
 }
 
 enum SpotMotion {

@@ -2,12 +2,9 @@ import SwiftUI
 
 /// The battery as a liquid that fills the card from the bottom to its level, like a glass, with a surface that rolls
 /// slowly. It is red when the battery runs low and green otherwise. The words turn white where the liquid covers them.
-/// On power, a bolt shows and a few small bubbles rise. It moves only while the panel shows it.
+/// On power, a bolt shows and a few small bubbles rise. Openspot plays its motion, only while the card shows.
 struct SpotView: View {
     let spot: SpotInput
-    @State private var start = Date()
-
-    private static let fill = 1.1
 
     private var level: Double { min(1, max(0, Double(spot["value"] ?? "") ?? 0)) }
     private var isCharging: Bool { spot["tone"] == "good" }
@@ -18,21 +15,18 @@ struct SpotView: View {
     }
 
     var body: some View {
-        TimelineView(.animation(minimumInterval: 1 / 30, paused: !spot.isShown)) { context in
-            let time = context.date.timeIntervalSince(start)
-            let liquid = Liquid(time: time, level: spot.isShown ? level * (1 - pow(1 - min(time / Self.fill, 1), 3)) : level)
-            ZStack {
-                liquid.fill(LinearGradient(colors: colors, startPoint: .top, endPoint: .bottom))
-                liquid.surface.stroke(.white.opacity(0.55), lineWidth: 1)
-                if isCharging {
-                    Bubbles(time: time).clipShape(liquid)
-                }
-                words(over: false)
-                words(over: true).clipShape(liquid)
+        let level = level
+        ZStack {
+            spot.loop(period: Liquid.period, fill: colors[0], colors[1]) { time, rect in Liquid(time: time, level: level).path(in: rect) }
+            spot.loop(period: Liquid.period, stroke: .white.opacity(0.55), width: 1) { time, rect in Liquid(time: time, level: level).surface.path(in: rect) }
+            if isCharging {
+                spot.loop(period: Bubbles.period, fill: .white.opacity(0.4)) { time, rect in Bubbles(time: time).path(in: rect) }
+                    .clipShape(Liquid(time: 0, level: level))
             }
+            words(over: false)
+            words(over: true).clipShape(Liquid(time: 0, level: level))
         }
         .frame(width: spot.size.width, height: spot.size.height)
-        .onAppear { start = Date() }
     }
 
     private func words(over: Bool) -> some View {
@@ -44,6 +38,9 @@ struct SpotView: View {
 struct Liquid: Shape {
     let time: Double
     let level: Double
+
+    /// The time after which the surface rolls the same way again.
+    static let period = 20 * Double.pi
 
     /// The line of the surface alone.
     var surface: Surface { Surface(liquid: self) }
@@ -86,28 +83,28 @@ struct Surface: Shape {
     }
 }
 
-/// A few small bubbles that rise slowly through the card, drawn in one canvas.
-struct Bubbles: View {
+/// A few small bubbles that rise slowly through the card, as one path.
+struct Bubbles: Shape {
     let time: Double
+
+    /// The time after which each bubble is where it started.
+    static let period = 20.0
 
     private static func hash(_ n: Double) -> Double {
         let value = sin(n * 12.9898) * 43758.5453
         return value - value.rounded(.down)
     }
 
-    var body: some View {
-        Canvas { context, size in
-            for index in 0..<7 {
-                let n = Double(index)
-                let rise = time * (0.12 + 0.12 * Self.hash(n + 3.1)) + Self.hash(n + 7.7)
-                let y = size.height * (1.05 - (rise - rise.rounded(.down)) * 1.1)
-                let x = 4 + Self.hash(n + 1.3) * max(size.width - 8, 0) + 1.5 * sin(time * 1.5 + n)
-                let radius = 1 + 1.4 * Self.hash(n + 5.9)
-                let ring = Path(ellipseIn: CGRect(x: x - radius, y: y - radius, width: radius * 2, height: radius * 2))
-                context.fill(ring, with: .color(.white.opacity(0.35)))
-                context.stroke(ring, with: .color(.white.opacity(0.5)), lineWidth: 0.6)
-            }
+    func path(in rect: CGRect) -> Path {
+        var path = Path()
+        for index in 0..<7 {
+            let n = Double(index)
+            let rise = time * Double(2 + index % 3) / Self.period + Self.hash(n + 7.7)
+            let y = rect.height * (1.05 - (rise - rise.rounded(.down)) * 1.1)
+            let x = 4 + Self.hash(n + 1.3) * max(rect.width - 8, 0) + 1.5 * sin(2 * .pi * 5 * time / Self.period + n)
+            let radius = 1 + 1.4 * Self.hash(n + 5.9)
+            path.addEllipse(in: CGRect(x: rect.minX + x - radius, y: rect.minY + y - radius, width: radius * 2, height: radius * 2))
         }
-        .allowsHitTesting(false)
+        return path
     }
 }
