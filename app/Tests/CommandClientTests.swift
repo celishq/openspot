@@ -80,18 +80,16 @@ final class CommandClientTests: XCTestCase {
         return (printed, said, process.terminationStatus)
     }
 
-    func testTheTokenOfACallerNamesItsSpotAndNoOtherVariableDoes() async throws {
+    func testNoVariableNamesTheSpotOfACaller() async throws {
         let runs = await SpotRuns()
         socket = CommandSocket(folder: config, api: CommandAPI(mac: Mac(), places: .test(["OPENSPOT_CONFIG": config.path]), runs: runs, rates: .offline))
         let token = runs.tokens.issue(for: Spot(id: "home/coffee", name: "Coffee", url: folder.appendingPathComponent("coffee.sh")))
 
-        let named = try run(client, ["setting", "set", "tone", "warm"], variables: [CallerTokens.variable: token])
-        let claimed = try run(client, ["setting", "set", "tone", "cold"], variables: ["OPENSPOT_ID": "home/tea"])
+        let claimed = try run(client, ["setting", "set", "tone", "cold"], variables: ["OPENSPOT_ID": "home/tea", "OPENSPOT_TOKEN": token])
 
-        XCTAssertEqual(named.code, 0, named.errors)
         XCTAssertNotEqual(claimed.code, 0)
         let kept = ConfigFile(url: config.appendingPathComponent("config.toml")).read()
-        XCTAssertEqual(kept.setting("tone", of: "home/coffee"), "warm")
+        XCTAssertNil(kept.setting("tone", of: "home/coffee"))
         XCTAssertNil(kept.setting("tone", of: "home/tea"))
     }
 
@@ -100,7 +98,7 @@ final class CommandClientTests: XCTestCase {
         let app = FakeRunningApp()
         socket = CommandSocket(folder: config, api: CommandAPI(mac: Mac(), places: .test(["OPENSPOT_CONFIG": config.path]), app: app, runs: runs, rates: .offline))
         let account = Spot(id: "openspot/account", name: "Account", url: folder.appendingPathComponent("account.sh"), uses: [.account]).builtIn()
-        let copied = [CallerTokens.variable: runs.tokens.issue(for: account)]
+        let copied = ["OPENSPOT_TOKEN": runs.tokens.issue(for: account)]
         let refused = "Only Openspot's Store can reach your account key.\n"
 
         XCTAssertEqual(try run(client, ["store", "publish", "mine"]).errors, refused)

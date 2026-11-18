@@ -25,12 +25,13 @@ public final class CommandAPI: @unchecked Sendable {
         self.nouns = nouns
         calendar = CalendarCalls(mac: mac.calendar)
         reminders = RemindersCalls(mac: mac.reminders)
+        runs?.tokens.serve(by: self)
     }
 
-    public func request(_ request: CommandRequest, from peer: pid_t) -> CommandRequest {
+    public func request(_ request: CommandRequest, from peer: pid_t, token: String? = nil) -> CommandRequest {
         guard let runs else { return request }
         var request = request
-        (request.token, request.isBound) = runs.tokens.token(of: peer, claimed: request.token)
+        (request.token, request.isBound) = token.map { ($0, true) } ?? runs.tokens.token(of: peer)
         return request
     }
 

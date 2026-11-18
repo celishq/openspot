@@ -46,10 +46,7 @@ public final class CommandSocket: @unchecked Sendable {
         source.setEventHandler {
             while case let connection = accept(listener, nil, nil), connection >= 0 {
                 _ = fcntl(connection, F_SETFD, FD_CLOEXEC)
-                _ = CommandConnection(descriptor: connection, limits: limits) { link, line in
-                    let caller = peer(connection)
-                    DispatchQueue.global().async { Self.answer(line, on: link, from: caller, api) }
-                }
+                Self.serve(connection, limits: limits, peer: peer, token: nil, api)
             }
         }
         source.setCancelHandler { Darwin.close(listener) }
@@ -61,14 +58,21 @@ public final class CommandSocket: @unchecked Sendable {
         unlink(path)
     }
 
-    private static func answer(_ line: Data, on link: CommandConnection, from peer: pid_t?, _ api: CommandAPI) {
+    static func serve(_ connection: Int32, limits: CommandConnection.Limits = CommandConnection.Limits(), peer: @escaping @Sendable (Int32) -> pid_t? = CommandSocket.peer(of:), token: String?, _ api: CommandAPI) {
+        _ = CommandConnection(descriptor: connection, limits: limits) { link, line in
+            let caller = peer(connection)
+            DispatchQueue.global().async { Self.answer(line, on: link, from: caller, token: token, api) }
+        }
+    }
+
+    private static func answer(_ line: Data, on link: CommandConnection, from peer: pid_t?, token: String?, _ api: CommandAPI) {
         guard let asked = CommandRequest(line: line) else {
             return link.end(fault(unreadableCode, "Openspot cannot read this request.", id: nil))
         }
         guard let peer else {
             return link.end(fault(strangerCode, "Openspot cannot tell which process sent this call.", id: asked.id))
         }
-        let request = api.request(asked, from: peer)
+        let request = api.request(asked, from: peer, token: token)
         let output = CommandOutput { text, isError in link.notify(isError ? "stderr" : "stdout", text: text) }
         guard let work = api.work(for: request, input: { await link.stdin() }, isSandboxed: CallerTokens.isSandboxedApart(peer), output: output) else {
             return link.end(fault(aloneCode, "Run this call in a process of its own.", id: request.id))

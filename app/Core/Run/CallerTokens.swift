@@ -21,9 +21,9 @@ public final class CallerTokens: @unchecked Sendable {
         var hasEnded = false
         var keepsFix = false
         var fix: URL?
+        var channel: RunChannel?
     }
 
-    public static let variable = "OPENSPOT_TOKEN"
     private static let reason = ReadReason.variable
     private static let fixLimit = 64
 
@@ -32,6 +32,7 @@ public final class CallerTokens: @unchecked Sendable {
     private var groups: [pid_t: String] = [:]
     private var fixes: [String: URL] = [:]
     private var careful = false
+    private weak var api: CommandAPI?
 
     private static let sandboxed = "sandboxed"
     private static let sandboxCheck: (@convention(c) (pid_t, UnsafePointer<CChar>?, Int32) -> Int32)? =
@@ -54,6 +55,19 @@ public final class CallerTokens: @unchecked Sendable {
         let token = String(format: "%016llx%016llx", random.next() as UInt64, random.next() as UInt64)
         lock.withLock { records[token] = Record(caller: Caller(id: spot.id, name: spot.name, uses: spot.uses, isBuiltIn: spot.isBuiltIn, dataName: spot.dataName), reason: reason, keepsFix: keepsFix) }
         return token
+    }
+
+    func serve(by api: CommandAPI) {
+        lock.withLock { self.api = api }
+    }
+
+    func channel(for token: String) -> RunChannel? {
+        lock.withLock {
+            guard let api, records[token] != nil else { return nil }
+            let channel = RunChannel { CommandSocket.serve($0, token: token, api) }
+            records[token]?.channel = channel
+            return channel
+        }
     }
 
     public var isCareful: Bool {
@@ -81,6 +95,8 @@ public final class CallerTokens: @unchecked Sendable {
 
     func release(_ token: String) {
         lock.withLock {
+            records[token]?.channel?.close()
+            records[token]?.channel = nil
             if let fix = records[token]?.fix {
                 if fixes.count >= Self.fixLimit { fixes = [:] }
                 fixes[token] = fix
@@ -120,9 +136,9 @@ public final class CallerTokens: @unchecked Sendable {
         return variables
     }
 
-    public func token(of peer: pid_t, claimed: String?) -> (token: String?, isBound: Bool) {
+    public func token(of peer: pid_t) -> (token: String?, isBound: Bool) {
         let group = getpgid(peer)
-        guard group > 0 else { return (claimed, false) }
+        guard group > 0 else { return (nil, false) }
         let known: String? = lock.withLock {
             guard let token = groups[group], let record = records[token] else { return nil }
             guard kill(group, 0) != 0 || Self.start(of: group) == record.start else {
@@ -132,7 +148,7 @@ public final class CallerTokens: @unchecked Sendable {
             return token
         }
         if let known { return (known, true) }
-        guard isCareful, caller(of: claimed) == nil, Self.isSandboxed(peer) else { return (claimed, false) }
+        guard isCareful, Self.isSandboxed(peer) else { return (nil, false) }
         return (Self.sandboxed, false)
     }
 

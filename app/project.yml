@@ -33,6 +33,7 @@ targets:
       - path: Core
       - path: Client/CommandKind.swift
       - path: Client/SocketPath.swift
+      - path: Client/ChannelDescriptor.swift
     dependencies:
       - package: secp256k1
         product: P256K

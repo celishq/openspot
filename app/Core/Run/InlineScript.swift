@@ -63,7 +63,6 @@ final class InlineScript: @unchecked Sendable {
         token = tokens?.issue(for: spot)
         environment = ScriptProcess.environment(base: base, app: Bundle.main.executablePath ?? "", dataName: spot.dataName)
             .merging(["OPENSPOT_ID": spot.id]) { _, new in new }
-            .merging(token.map { [CallerTokens.variable: $0] } ?? [:]) { _, new in new }
     }
 
     deinit {
@@ -168,7 +167,7 @@ final class InlineScript: @unchecked Sendable {
             if let result, result.isString { return result.toString() ?? "" }
             return result?.toBool() == true ? "true" : ""
         }
-        let env = environment.filter { ["OPENSPOT_ID", CallerTokens.variable].contains($0.key) }.merging(call.variables) { _, new in new }
+        let env = environment.filter { $0.key == "OPENSPOT_ID" }.merging(call.variables) { _, new in new }
         variables = call.variables
         if let token { tokens?.setReason(call.variables[ReadReason.variable], of: token) }
         defer {
@@ -231,7 +230,7 @@ final class InlineScript: @unchecked Sendable {
            let work = api.work(for: api.admit(call, request: request), request: request, input: { input ?? "" }) {
             return answer { await work() }
         }
-        let child = ScriptProcess(url: URL(fileURLWithPath: "/usr/bin/env"), arguments: ["openspot"] + arguments, mode: .once(input: input), dataName: dataName, variables: self.environment.filter { ["OPENSPOT_ID", CallerTokens.variable].contains($0.key) }.merging(variables) { _, new in new }, careful: careful?.uses, base: base)
+        let child = ScriptProcess(url: URL(fileURLWithPath: "/usr/bin/env"), arguments: ["openspot"] + arguments, mode: .once(input: input), dataName: dataName, variables: self.environment.filter { $0.key == "OPENSPOT_ID" }.merging(variables) { _, new in new }, careful: careful?.uses, base: base)
         return answer { await Self.answer(of: child) }
     }
 

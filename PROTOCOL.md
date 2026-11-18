@@ -1173,7 +1173,9 @@ openspot app quit
 
 - Openspot asks nothing in daily use. It shows what a spot can do when the user adds or updates it, and shows each use
   after it happens.
-- Openspot knows which spot makes each call of `openspot` from its own records, not from the variables of the process.
+- Openspot knows which spot makes each call of `openspot` by the link it gives each process of the spot on file descriptor 11, not
+  from the variables of the process. Each process that the spot starts inherits it, so leave fd 11 open. An app that the spot
+  opens doesn't get it, and the link ends with the spot's process.
   Only the user's own processes can reach the API.
 - No spot and no Terminal reads a secret (see [Settings](#settings)): `setting get` and `setting list` print `•••` for
   it, to its own spot too, and `setting set` of it fails. Only Openspot's own form changes it.

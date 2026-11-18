@@ -5,7 +5,6 @@ public struct CommandRequest: Equatable, Sendable {
         struct Params: Decodable {
             let argv: [String]
             let cwd: String
-            let token: String?
             let piped: Bool?
         }
 
@@ -35,7 +34,7 @@ public struct CommandRequest: Equatable, Sendable {
 
     init?(line: Data) {
         guard let line = try? JSONDecoder().decode(Line.self, from: line), line.jsonrpc == "2.0", line.method == Self.method else { return nil }
-        self.init(arguments: line.params.argv, folder: line.params.cwd, token: line.params.token, isPiped: line.params.piped ?? false, id: line.id)
+        self.init(arguments: line.params.argv, folder: line.params.cwd, isPiped: line.params.piped ?? false, id: line.id)
     }
 
     var place: URL {

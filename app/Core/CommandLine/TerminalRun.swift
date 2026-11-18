@@ -47,7 +47,7 @@ public struct TerminalRun {
         let swift = SwiftProgram()
         let program = swift.runnable(for: spot, builds: false)
         let token = tokens?.issue(for: spot)
-        let variables = ["OPENSPOT_ID": spot.id].merging(isRead ? ReadReason.sheet.variables : [:]) { _, new in new }.merging(token.map { [CallerTokens.variable: $0] } ?? [:]) { _, new in new }
+        let variables = ["OPENSPOT_ID": spot.id].merging(isRead ? ReadReason.sheet.variables : [:]) { _, new in new }
         let process: ScriptProcess
         if spot.mode.stays {
             process = ScriptProcess(url: program, name: spot.url.path, mode: .stays, limit: isRead ? Self.readLimit : nil, dataName: spot.dataName, variables: variables, errorLimit: Self.errorLimit, careful: careful, base: environment, folder: folder, build: swift.build(of: spot))
@@ -57,6 +57,7 @@ public struct TerminalRun {
         }
         usage?.track(process, of: spot.id)
         if let tokens, let token {
+            process.channel = tokens.channel(for: token)
             process.onStart { group in tokens.enter(group, token: token) }
             process.onExit { _ in tokens.release(token) }
         }

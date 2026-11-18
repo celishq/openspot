@@ -45,6 +45,7 @@ public final class ScriptProcess: @unchecked Sendable {
     private var unended: String?
     private var reader = SheetFrames()
     var fix: @Sendable () -> URL? = { nil }
+    var channel: RunChannel?
 
     public init(url: URL, name: String? = nil, arguments: [String] = [], mode: Mode = .once(input: nil), limit: TimeInterval? = nil, stopPause: TimeInterval = 2, dataName: String? = nil, variables: [String: String] = [:], errorLimit: Int? = 64 * 1024, careful: Set<SpotUse>? = nil, base: [String: String]? = nil, folder: URL? = nil, build: (@Sendable () async throws -> URL)? = nil) {
         self.name = name
@@ -142,6 +143,7 @@ public final class ScriptProcess: @unchecked Sendable {
         }
         let started: pid_t
         do {
+            defer { channel?.spawned() }
             started = try spawn(input: hasInput ? input.fileHandleForReading : nil, output: output.fileHandleForWriting, errors: errors.fileHandleForWriting, environment: environment, fence: fence)
         } catch {
             abandon()
@@ -393,6 +395,13 @@ public final class ScriptProcess: @unchecked Sendable {
         }
         posix_spawn_file_actions_adddup2(&actions, output.fileDescriptor, STDOUT_FILENO)
         posix_spawn_file_actions_adddup2(&actions, errors.fileDescriptor, STDERR_FILENO)
+        if let child = channel?.childEnd {
+            if child == ChannelDescriptor.number {
+                posix_spawn_file_actions_addinherit_np(&actions, child)
+            } else {
+                posix_spawn_file_actions_adddup2(&actions, child, ChannelDescriptor.number)
+            }
+        }
         if let folder { posix_spawn_file_actions_addchdir(&actions, folder.path) }
         var attributes: posix_spawnattr_t?
         posix_spawnattr_init(&attributes)

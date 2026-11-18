@@ -50,6 +50,22 @@ func reachStarted(_ app: AppBundle, config: String) -> Int32 {
     fail("Openspot did not start within \(seconds) seconds, so this call did not run. Open Openspot, then run it again.", code: 3)
 }
 
+func reachRun() -> Int32 {
+    guard ChannelDescriptor.isChannel(ChannelDescriptor.number) else { return -1 }
+    var pair: [Int32] = [-1, -1]
+    guard socketpair(AF_UNIX, SOCK_STREAM, 0, &pair) == 0 else { return -1 }
+    let sent = ChannelDescriptor.send(pair[1], over: ChannelDescriptor.number)
+    close(pair[1])
+    guard sent else {
+        close(pair[0])
+        return -1
+    }
+    _ = fcntl(pair[0], F_SETFD, FD_CLOEXEC)
+    var on: Int32 = 1
+    setsockopt(pair[0], SOL_SOCKET, SO_NOSIGPIPE, &on, socklen_t(MemoryLayout<Int32>.size))
+    return pair[0]
+}
+
 func reach(_ config: String) -> Int32 {
     guard let real = realpath(config, nil) else { return -1 }
     let path = Array(SocketPath.of(config: String(cString: real)).utf8)
@@ -76,10 +92,9 @@ func request() -> [UInt8] {
     let argv = arguments.map(JSON.quoted).joined(separator: ",")
     var folder = [CChar](repeating: 0, count: Int(PATH_MAX))
     let cwd = getcwd(&folder, folder.count) == nil ? "" : String(decoding: folder.prefix { $0 != 0 }.map(UInt8.init(bitPattern:)), as: UTF8.self)
-    let token = getenv("OPENSPOT_TOKEN").map { "\"token\":" + JSON.quoted(String(cString: $0)) + "," } ?? ""
     var info = stat()
     let isPiped = fstat(STDIN_FILENO, &info) == 0 && (info.st_mode & S_IFMT == S_IFIFO || info.st_mode & S_IFMT == S_IFREG)
-    let line = "{\"jsonrpc\":\"2.0\",\"id\":1,\"method\":\"ask\",\"params\":{\"argv\":[\(argv)],\"cwd\":\(JSON.quoted(cwd)),\(token)\"piped\":\(isPiped)}}\n"
+    let line = "{\"jsonrpc\":\"2.0\",\"id\":1,\"method\":\"ask\",\"params\":{\"argv\":[\(argv)],\"cwd\":\(JSON.quoted(cwd)),\"piped\":\(isPiped)}}\n"
     return Array(line.utf8)
 }
 
@@ -112,7 +127,8 @@ guard let app = AppBundle() else { fail("openspot cannot find the path of its ow
 let arguments = CommandLine.arguments.count > 1 ? Array(CommandLine.arguments.dropFirst()) : ["help"]
 if CommandKind.isPure(arguments) { runAlone(app) }
 let isLive = CommandKind.needsApp(arguments)
-connection = app.configFolder.map(reach) ?? -1
+connection = reachRun()
+if connection < 0 { connection = app.configFolder.map(reach) ?? -1 }
 if connection < 0 {
     guard isLive, let config = app.configFolder else { runAlone(app) }
     connection = reachStarted(app, config: config)
