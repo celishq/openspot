@@ -71,7 +71,7 @@ public struct SpotLoad: Sendable {
 
     public func stamp(of spot: Spot) -> [Int]? {
         guard let own = stamp[spot.url.path] else { return nil }
-        let toml = spot.url.deletingLastPathComponent().appendingPathComponent(SpotToml.fileName).path
+        let toml = spot.url.deletingLastPathComponent().appendingPathComponent(Manifest.fileName).path
         return ([toml] + (sources[spot.url.path] ?? [])).reduce(own) { $0 + (stamp[$1] ?? []) }
     }
 

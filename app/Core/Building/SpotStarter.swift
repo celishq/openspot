@@ -27,7 +27,7 @@ public enum SpotStarter: String, CaseIterable, Sendable {
         try FileManager.default.createDirectory(at: place, withIntermediateDirectories: true)
         let file = place.appendingPathComponent("\(slug).sh")
         let title = name.components(separatedBy: .newlines).joined(separator: " ").trimmingCharacters(in: .whitespaces)
-        try manifest(title).text.write(to: place.appendingPathComponent(SpotToml.fileName), atomically: true, encoding: .utf8)
+        try manifest(title).text.write(to: place.appendingPathComponent(Manifest.fileName), atomically: true, encoding: .utf8)
         try text.write(to: file, atomically: true, encoding: .utf8)
         try FileManager.default.setAttributes([.posixPermissions: 0o755], ofItemAtPath: file.path)
         return file

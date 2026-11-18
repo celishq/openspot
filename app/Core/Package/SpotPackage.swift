@@ -147,8 +147,8 @@ public struct SpotPackage: Equatable, Sendable {
         files.first { $0.path == "\(root)/\(name)" }?.text
     }
 
-    public func manifest(of root: String) -> SpotManifest {
-        SpotManifest(released(in: root))
+    public func digest(of root: String) -> SpotDigest {
+        SpotDigest(released(in: root))
     }
 
     public func write(to folder: URL) throws {

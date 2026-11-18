@@ -341,14 +341,14 @@ final class SpotsFolderTests: XCTestCase {
             let file = folder.spotFile(name, extension: "js")
             try FileManager.default.createDirectory(at: file.deletingLastPathComponent(), withIntermediateDirectories: true)
             try "function main() { return '' }\n".write(to: file, atomically: true, encoding: .utf8)
-            try toml?.write(to: file.deletingLastPathComponent().appendingPathComponent(SpotToml.fileName), atomically: true, encoding: .utf8)
+            try toml?.write(to: file.deletingLastPathComponent().appendingPathComponent(Manifest.fileName), atomically: true, encoding: .utf8)
         }
 
         let scan = try scan
         XCTAssertEqual(scan.spots.map(\.id), ["sum"])
         XCTAssertEqual(scan.spots.map(\.mode), [.inline])
         XCTAssertEqual(scan.refused, [
-            ScanResult.Refusal(file: "stays", reason: "Stays is a .js file, which runs inline, so it takes no mode=stay"),
+            ScanResult.Refusal(file: "stays", reason: "Stays is a .js file, which runs inline, so it takes no mode = \"stay\""),
         ])
     }
 
@@ -431,7 +431,7 @@ final class SpotsFolderTests: XCTestCase {
         XCTAssertEqual(try scan.files, [])
         XCTAssertEqual(try scan.refused, [
             ScanResult.Refusal(file: "b", reason: "B has an unknown mode: huge. Use once or stay"),
-            ScanResult.Refusal(file: "f", reason: "F needs on=panel.open, on=sheet.open or a clock, such as on=clock.60, to join the main search")
+            ScanResult.Refusal(file: "f", reason: "F needs panel.open, sheet.open or a clock in its on, such as on = [\"clock.60\"], to join the main search")
         ])
     }
 
@@ -442,7 +442,7 @@ final class SpotsFolderTests: XCTestCase {
 
         XCTAssertEqual(try scan.spots.map(\.id), ["n", "o"])
         XCTAssertEqual(try scan.refused, [
-            ScanResult.Refusal(file: "m", reason: "M has an unknown filter in on=search.text [0-9. Write a regular expression after the event, such as on=search.text ^[0-9]"),
+            ScanResult.Refusal(file: "m", reason: "M has an unknown filter in its on: search.text [0-9. Write a regular expression after the event, such as on = [\"search.text ^[0-9]\"]"),
         ])
     }
 

@@ -7,7 +7,7 @@ final class SpotRunsInlineTests: SpotRunsCase {
         let url = folder.spotFile(name, extension: "js")
         try FileManager.default.createDirectory(at: url.deletingLastPathComponent(), withIntermediateDirectories: true)
         try "\(body)\n".write(to: url, atomically: true, encoding: .utf8)
-        try toml.write(to: url.deletingLastPathComponent().appendingPathComponent(SpotToml.fileName), atomically: true, encoding: .utf8)
+        try toml.write(to: url.deletingLastPathComponent().appendingPathComponent(Manifest.fileName), atomically: true, encoding: .utf8)
     }
 
     private func answering() throws {

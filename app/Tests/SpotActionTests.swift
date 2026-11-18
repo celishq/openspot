@@ -12,8 +12,8 @@ final class SpotActionTests: XCTestCase {
         XCTAssertEqual(SpotAction.toggle(state).arguments, ["wifi", "false"])
     }
 
-    func testTheCommandOfAHeaderButtonSendsItsOwnID() throws {
-        let offer = try XCTUnwrap(HeaderButton(block: TextBlock(fields: [.init(key: "button", value: "add"), .init(key: "title", value: "Add")])))
+    func testTheCommandOfAManifestSendsItsOwnID() throws {
+        let offer = try XCTUnwrap(Manifest(text: "[commands.add]\ntitle = 'Add'", folder: "/spots").commands.first)
         XCTAssertEqual(SpotAction.action(CommandAction.command(offer), item: nil).arguments, ["add"])
     }
 

@@ -9,8 +9,8 @@ final class SpotKeysTests: XCTestCase {
         return try XCTUnwrap(file?.spots.first)
     }
 
-    private func block(_ toml: String) throws -> TextBlock {
-        try SpotToml(text: toml, folder: "/spots").block(of: "cups.sh")
+    private func manifest(_ toml: String) throws -> Manifest {
+        try Manifest(text: toml, folder: "/spots").script("cups.sh")
     }
 
     func testAScriptWithCommandsHasNoCardOnTheGridAndStaysInTheScan() throws {
@@ -68,7 +68,7 @@ final class SpotKeysTests: XCTestCase {
 
         XCTAssertEqual(spot.offeredActions.first?.hooks[.when], "hasIcon")
         XCTAssertThrowsError(try SpotFile(file: shell, id: "shell")) { XCTAssertTrue((($0 as? SpotError)?.reason ?? "").contains("only a JavaScript spot"), "\($0)") }
-        XCTAssertThrowsError(try SpotFile(file: wrong, id: "wrong")) { XCTAssertTrue((($0 as? SpotError)?.reason ?? "").contains("such as when=hasIcon"), "\($0)") }
+        XCTAssertThrowsError(try SpotFile(file: wrong, id: "wrong")) { XCTAssertTrue((($0 as? SpotError)?.reason ?? "").contains("such as when = \"hasIcon\""), "\($0)") }
     }
 
     func testAnActionsFilterNamesTheOriginsOfTheCardsItFits() throws {
@@ -80,7 +80,7 @@ final class SpotKeysTests: XCTestCase {
     func testActionsIsAPlaceOfACommandOnly() throws {
         let cases = [
             ("offers = ['actions']", "on a command"),
-            ("[commands.go]\ntitle = 'Go'\noffers = ['card']", "offers=actions"),
+            ("[commands.go]\ntitle = 'Go'\noffers = ['card']", "offers = [\"actions\"]"),
             ("[commands.go]\ntitle = 'Go'\noffers = ['actions planets']", "mine, core or builtin"),
             ("[commands.go]\ntitle = 'Go'\noffers = ['actions']\n[commands.'go.far']\ntitle = 'Far'\noffers = ['actions']", "submenu of go")
         ]
@@ -93,7 +93,7 @@ final class SpotKeysTests: XCTestCase {
 
     func testAnUnknownPlaceRefusesTheSpot() throws {
         XCTAssertThrowsError(try spot("on = ['panel.open']\noffers = ['dock']")) { error in
-            XCTAssertEqual((error as? SpotError)?.reason, "Script offers an unknown place: dock. Use search")
+            XCTAssertEqual((error as? SpotError)?.reason, "Script offers an unknown place: dock. Use offers = [\"search\"]")
         }
     }
 
@@ -117,7 +117,7 @@ final class SpotKeysTests: XCTestCase {
     }
 
     func testAViewIsASwiftFileBesideTheScript() throws {
-        let spot = try XCTUnwrap(try SpotFile(script: URL(fileURLWithPath: "/spots/home/cups.sh"), header: block("view = 'cups.swift'"), id: "home/cups").spots.first)
+        let spot = try XCTUnwrap(try SpotFile(script: URL(fileURLWithPath: "/spots/home/cups.sh"), manifest: manifest("view = 'cups.swift'"), id: "home/cups").spots.first)
 
         XCTAssertEqual(spot.view, "/spots/home/cups.swift")
     }
@@ -126,12 +126,12 @@ final class SpotKeysTests: XCTestCase {
         let folder = try temporaryFolder()
         let view = folder.appendingPathComponent("cups.swift")
         try "".write(to: view, atomically: true, encoding: .utf8)
-        let header = try block("view = 'cups.swift'")
+        let manifest = try manifest("view = 'cups.swift'")
         let script = folder.appendingPathComponent("cups.sh")
-        let before = try SpotFile(script: script, header: header, id: "cups").spots.first
+        let before = try SpotFile(script: script, manifest: manifest, id: "cups").spots.first
 
         try FileManager.default.setAttributes([.modificationDate: Date(timeIntervalSince1970: 1_000_000)], ofItemAtPath: view.path)
-        let after = try SpotFile(script: script, header: header, id: "cups").spots.first
+        let after = try SpotFile(script: script, manifest: manifest, id: "cups").spots.first
 
         XCTAssertNotEqual(before, after)
     }
@@ -145,33 +145,33 @@ final class SpotKeysTests: XCTestCase {
         try "".write(to: real.appendingPathComponent("cups.swift"), atomically: true, encoding: .utf8)
         try FileManager.default.createSymbolicLink(at: linked, withDestinationURL: real)
 
-        let deeper = try SpotFile(script: real.appendingPathComponent("cups.sh"), header: block("view = 'views/cups.swift'"), id: "cups").spots.first
-        let throughLink = try SpotFile(script: linked.appendingPathComponent("cups.sh"), header: block("view = 'cups.swift'"), id: "cups").spots.first
+        let deeper = try SpotFile(script: real.appendingPathComponent("cups.sh"), manifest: manifest("view = 'views/cups.swift'"), id: "cups").spots.first
+        let throughLink = try SpotFile(script: linked.appendingPathComponent("cups.sh"), manifest: manifest("view = 'cups.swift'"), id: "cups").spots.first
 
         XCTAssertNil(deeper?.viewDate)
         XCTAssertNil(throughLink?.viewDate)
     }
 
     func testAnAnswersPatternIsTheWholeEvent() throws {
-        let header = try block(#"on = ['search.text ^\s*([0-9,.]|(?i:today|now)\b)']"#)
+        let manifest = try manifest(#"on = ['search.text ^\s*([0-9,.]|(?i:today|now)\b)']"#)
 
-        let spot = try XCTUnwrap(try SpotFile(script: URL(fileURLWithPath: "/spots/calc.sh"), header: header, id: "calc").spots.first)
+        let spot = try XCTUnwrap(try SpotFile(script: URL(fileURLWithPath: "/spots/calc.sh"), manifest: manifest, id: "calc").spots.first)
 
         XCTAssertEqual(spot.answers?.text, #"^\s*([0-9,.]|(?i:today|now)\b)"#)
         XCTAssertEqual(["1,5", "Today", "notes"].map { spot.answers?.matches($0) }, [true, true, false])
     }
 
     func testAPictureOnTheWebKeepsItsURL() throws {
-        let spot = try XCTUnwrap(try SpotFile(script: URL(fileURLWithPath: "/spots/home/cups.sh"), header: block("icon = 'https://example.com/cups.png'"), id: "home/cups").spots.first)
+        let spot = try XCTUnwrap(try SpotFile(script: URL(fileURLWithPath: "/spots/home/cups.sh"), manifest: manifest("icon = 'https://example.com/cups.png'"), id: "home/cups").spots.first)
 
         XCTAssertEqual(spot.icon, .image("https://example.com/cups.png"))
     }
 
     func testAViewThatIsNoSwiftFileIsRefused() throws {
-        let header = try block("title = 'Cups'\nview = 'cups.txt'")
+        let manifest = try manifest("title = 'Cups'\nview = 'cups.txt'")
 
-        XCTAssertThrowsError(try SpotFile(script: URL(fileURLWithPath: "/spots/cups.sh"), header: header, id: "cups")) { error in
-            XCTAssertEqual((error as? SpotError)?.reason, "Cups needs a Swift file for its view, such as view=cups.swift")
+        XCTAssertThrowsError(try SpotFile(script: URL(fileURLWithPath: "/spots/cups.sh"), manifest: manifest, id: "cups")) { error in
+            XCTAssertEqual((error as? SpotError)?.reason, "Cups needs a Swift file for its view, such as view = \"cups.swift\"")
         }
     }
 

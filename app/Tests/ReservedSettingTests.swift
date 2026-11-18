@@ -43,7 +43,7 @@ final class ReservedSettingTests: XCTestCase {
         defer { try? FileManager.default.removeItem(at: url) }
 
         XCTAssertThrowsError(try SpotFile(file: url, id: "notes")) { error in
-            XCTAssertEqual((error as? SpotError)?.reason, "Notes has field=menubar, a key that Openspot keeps for the person. Give the field another name.")
+            XCTAssertEqual((error as? SpotError)?.reason, "Notes has [settings.menubar], a key that Openspot keeps for the person. Give the setting another name.")
         }
     }
 }

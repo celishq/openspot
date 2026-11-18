@@ -369,7 +369,7 @@ final class SwiftProgramTests: XCTestCase {
         let refused = try SpotsFolder(url: folder).scan().refused
 
         XCTAssertEqual(refused.map(\.reason), ["./words.swift", "more/", "more//Mark.swift", "."].enumerated().map { index, source in
-            "S\(index) has `source=\(source)`, which is not a plain path. Write it with no `.`, no `..` and no `/` at its start or end, such as `source=model`."
+            "S\(index) has `source = [\"\(source)\"]`, which is not a plain path. Write it with no `.`, no `..` and no `/` at its start or end, such as `source = [\"model\"]`."
         })
     }
 
@@ -625,9 +625,9 @@ final class SwiftProgramTests: XCTestCase {
         let refused = try SpotsFolder(url: folder).scan().refused
 
         XCTAssertEqual(refused.map(\.reason), [
-            "Root has source=/tmp/words.swift, which is outside its folder. Name a Swift file or a folder beside the spot, such as source=model",
-            "Shell has source=words.swift, which only a Swift spot takes. Remove it, or write the spot in a .swift file",
-            "Up has source=../other/words.swift, which is outside its folder. Name a Swift file or a folder beside the spot, such as source=model"
+            "Root has source = [\"/tmp/words.swift\"], which is outside its folder. Name a Swift file or a folder beside the spot, such as source = [\"model\"]",
+            "Shell has source = [\"words.swift\"], which only a Swift spot takes. Remove it, or write the spot in a .swift file",
+            "Up has source = [\"../other/words.swift\"], which is outside its folder. Name a Swift file or a folder beside the spot, such as source = [\"model\"]"
         ])
     }
 

@@ -12,7 +12,7 @@ extension SpotPackage {
     public func releaseLog(in root: String) throws -> ReleaseLog? {
         guard let text = text(of: ReleaseLog.fileName, in: root) else { return nil }
         let log = try ReleaseLog(text: text)
-        guard log.names(SpotManifest(released(in: root))) else {
+        guard log.names(SpotDigest(released(in: root))) else {
             throw SpotError.fault("\(root) does not match its last release, so a file changed after it was signed.")
         }
         return log
@@ -23,7 +23,7 @@ extension SpotPackage {
         let path = "\(root)/\(ReleaseLog.fileName)"
         let current = try files.first { $0.path == path }.map { try ReleaseLog(text: $0.text ?? "") } ?? ReleaseLog(releases: [])
         let released = released(in: root)
-        guard !current.names(SpotManifest(released)) else { return self }
+        guard !current.names(SpotDigest(released)) else { return self }
         let readme = text(of: SpotReadme.name, in: root) ?? ""
         let log = try current.signing(released, readme: readme, by: key, at: date)
         return try SpotPackage(files: files.filter { $0.path != path } + [File(path: path, isExecutable: false, contents: Data(log.text.utf8))])

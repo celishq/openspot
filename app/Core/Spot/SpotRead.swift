@@ -36,12 +36,12 @@ public struct SpotRead: Equatable, Sendable {
             var filter: AnswerPattern?
             if let filterText {
                 guard let pattern = AnswerPattern(filterText) else {
-                    throw SpotError.fault("\(name) has an unknown filter in on=\(line). Write a regular expression after the event, such as on=search.text ^[0-9]")
+                    throw SpotError.fault("\(name) has an unknown filter in its on: \(line). Write a regular expression after the event, such as on = [\"search.text ^[0-9]\"]")
                 }
                 filter = pattern
             }
             if filter != nil, SpotEvent.valueless.contains(event) || event.hasPrefix(SpotEvent.clockPrefix) {
-                throw SpotError.fault("\(name) has a filter in on=\(line), and \(event) takes none. Write on=\(event) alone. A filter follows only an event with a value, such as on=app.front com\\.apple\\.Notes")
+                throw SpotError.fault("\(name) has a filter in its on: \(line), and \(event) takes none. Write \"\(event)\" alone. A filter follows only an event with a value, such as on = ['app.front com\\.apple\\.Notes']")
             }
             switch event {
             case SpotEvent.sheetOpen: moments.append(.sheet)
@@ -51,29 +51,25 @@ public struct SpotRead: Equatable, Sendable {
                 if !moments.contains(.sheet) { moments.append(.sheet) }
             case SpotEvent.searchText:
                 guard let filter else {
-                    throw SpotError.fault("\(name) needs a pattern of the texts that it answers, such as on=search.text ^[0-9]")
+                    throw SpotError.fault("\(name) needs a pattern of the texts that it answers, such as on = [\"search.text ^[0-9]\"]")
                 }
                 answers = filter
             case let word where word.hasPrefix(SpotEvent.clockPrefix):
                 guard let seconds = Int(word.dropFirst(SpotEvent.clockPrefix.count)), seconds > 0 else {
-                    throw SpotError.fault("\(name) has an unknown clock: \(word). Write a whole number of seconds, such as on=clock.60")
+                    throw SpotError.fault("\(name) has an unknown clock: \(word). Write a whole number of seconds, such as on = [\"clock.60\"]")
                 }
                 moments.append(.every(TimeInterval(seconds)))
             case let word where SpotEvent.isName(word):
                 moments.append(.event(word))
                 if let filter { filters[word] = filter }
             default:
-                throw SpotError.fault("\(name) has an unknown event in on=\(line). Write a word with a dot, such as on=sheet.open or on=music.track")
+                throw SpotError.fault("\(name) has an unknown event in its on: \(line). Write a word with a dot, such as on = [\"sheet.open\"] or on = [\"music.track\"]")
             }
         }
         self.moments = moments
         self.answers = answers
         self.searchesSheet = searchesSheet
         self.filters = filters
-    }
-
-    static func words(_ text: String?) -> [String] {
-        text.map { $0.split(separator: ",", omittingEmptySubsequences: false).map { $0.trimmingCharacters(in: .whitespaces) } } ?? []
     }
 
     public var events: [String] {

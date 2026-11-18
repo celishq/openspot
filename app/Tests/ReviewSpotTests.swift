@@ -18,7 +18,7 @@ final class ReviewSpotTests: XCTestCase {
     }
 
     private func review(_ toml: String, path: String = "weather.spot/weather.sh", body: String = "") throws -> ReviewSpot {
-        let manifest = ((path as NSString).deletingLastPathComponent as NSString).appendingPathComponent(SpotToml.fileName)
+        let manifest = ((path as NSString).deletingLastPathComponent as NSString).appendingPathComponent(Manifest.fileName)
         return try ReviewSpot(spot: spot([(path, "#!/bin/sh\n\(body)", true)] + (toml.isEmpty ? [] : [(manifest, toml, false)])), folder: folder)
     }
 

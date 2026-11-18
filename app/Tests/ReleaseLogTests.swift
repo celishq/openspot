@@ -39,7 +39,7 @@ final class ReleaseLogTests: XCTestCase {
         XCTAssertNotNil(release.address)
         XCTAssertNil(release.previous)
         XCTAssertEqual(release.content, "Counts cups.\n")
-        XCTAssertEqual(try release.manifest().sorted.map(\.path), ["cups.spot/cups.sh", "cups.spot/readme.md"])
+        XCTAssertEqual(try release.digest().sorted.map(\.path), ["cups.spot/cups.sh", "cups.spot/readme.md"])
     }
 
     func testASpotWhoseFilesTheLastReleaseNamesIsSentAsItIs() throws {
@@ -102,8 +102,8 @@ final class ReleaseLogTests: XCTestCase {
         let program = SpotPackage.File(path: "cups.spot/cups.program", isExecutable: true, contents: Data([0xCF, 0xFA]))
         let log = try log(of: spot(extra: [program]).signed(by: mine))
 
-        XCTAssertTrue(log.names(SpotManifest(try spot().files), built: false))
-        XCTAssertFalse(log.names(SpotManifest(try spot().files)))
+        XCTAssertTrue(log.names(SpotDigest(try spot().files), built: false))
+        XCTAssertFalse(log.names(SpotDigest(try spot().files)))
     }
 
     func testTheReviewOfAReleaseSaysItsVersionOrThatAnotherKeySignedIt() throws {

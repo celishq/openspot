@@ -15,22 +15,22 @@ public struct SpotFiles: Sendable {
 
     init(folder: URL) {
         let names = ((try? FileManager.default.contentsOfDirectory(atPath: folder.path)) ?? []).filter { !$0.hasPrefix(".") }.sorted()
-        let toml = SpotToml(folder: folder)
+        let manifest = Manifest(folder: folder)
         self.init(names.map { name in
             let url = folder.appendingPathComponent(name)
-            let isScript = SpotsFolder.isScript(url, toml: toml)
-            return File(path: url.path, isScript: isScript, view: isScript ? (try? toml.block(of: name))?.value(HeaderKey.view) : nil)
+            let isScript = SpotsFolder.isScript(url, manifest: manifest)
+            return File(path: url.path, isScript: isScript, view: isScript ? (try? manifest.script(name))?.view : nil)
         })
     }
 
     init(package: SpotPackage) {
-        let tomls = Dictionary(package.files.filter { ($0.path as NSString).lastPathComponent == SpotToml.fileName }.map { file in
+        let manifests = Dictionary(package.files.filter { ($0.path as NSString).lastPathComponent == Manifest.fileName }.map { file in
             let folder = (file.path as NSString).deletingLastPathComponent
-            return (folder, SpotToml(text: file.text, folder: folder))
+            return (folder, Manifest(text: file.text, folder: folder))
         }) { first, _ in first }
         self.init(package.files.map { file in
             let folder = (file.path as NSString).deletingLastPathComponent
-            let view = file.isExecutable ? (try? (tomls[folder] ?? SpotToml(text: nil, folder: folder)).block(of: file.path))?.value(HeaderKey.view) : nil
+            let view = file.isExecutable ? (try? (manifests[folder] ?? Manifest(text: nil, folder: folder)).script(file.path))?.view : nil
             return File(path: file.path, isScript: file.isExecutable, view: view)
         })
     }

@@ -53,7 +53,7 @@ final class SpotCheckTests: XCTestCase {
         try "#!/bin/sh\n".writeScript(to: folder.spotFile("player"), toml: "emits = ['music.track']")
         let named = await SpotCheck(folder: SpotsFolder(url: folder)).findings()
 
-        XCTAssertEqual(alone.map(\.fault), ["Song reads on music.track, which Openspot does not raise and no spot names in its emits. Add emits=music.track to the spot that raises it, or fix the name"])
+        XCTAssertEqual(alone.map(\.fault), ["Song reads on music.track, which Openspot does not raise and no spot names in its emits. Add emits = [\"music.track\"] to the spot that raises it, or fix the name"])
         XCTAssertEqual(named, [])
     }
 
@@ -98,7 +98,7 @@ final class SpotCheckTests: XCTestCase {
         let findings = await SpotCheck(folder: SpotsFolder(url: folder)).findings()
 
         XCTAssertEqual(findings.map(\.fault), [
-            "the row c pushes the page c of clips, which takes no such page. Add pages=c to clips",
+            "the row c pushes the page c of clips, which takes no such page. Add pages = [\"c\"] to clips",
         ])
     }
 

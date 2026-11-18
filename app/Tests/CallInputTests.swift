@@ -131,15 +131,15 @@ final class CallInputTests: SpotRunsCase {
         XCTAssertFalse(text("input").contains(marker))
     }
 
-    private func settingsSheet(fields: [HeaderField], config: String = "") throws -> String {
+    private func settingsSheet(fields: [Manifest.Setting], config: String = "") throws -> String {
         let file = ConfigFile(url: folder.appendingPathComponent("config.toml"))
         try config.write(to: file.url, atomically: true, encoding: .utf8)
         let settings = SpotSettings(file: file, secrets: try secrets(["token": marker]), spot: "script", fields: fields, showsInMenuBar: false, keys: [])
         return try settings.answer(["show"])
     }
 
-    private func field(_ key: String, secret: Bool) throws -> HeaderField {
-        try XCTUnwrap(HeaderField(setting: TextBlock(fields: [.init(key: "field", value: key)] + (secret ? [.init(key: "type", value: "secret")] : []))))
+    private func field(_ key: String, secret: Bool) throws -> Manifest.Setting {
+        try XCTUnwrap(Manifest(text: "[settings.\(key)]\n" + (secret ? "type = 'secret'" : ""), folder: "/spots").settings.first)
     }
 
     func testTheSettingsSheetShowsThatASecretIsSetAndNotItsValue() throws {

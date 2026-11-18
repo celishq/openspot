@@ -194,8 +194,8 @@ public struct SwiftProgram: Sendable {
 
     static func sources(of script: SpotPackage.File, in files: [SpotPackage.File]) -> [SwiftBuild.File] {
         let folder = (script.path as NSString).deletingLastPathComponent
-        let toml = SpotToml(text: files.first { $0.path == (folder.isEmpty ? SpotToml.fileName : "\(folder)/\(SpotToml.fileName)") }?.text, folder: folder)
-        let names = (try? toml.block(of: script.path).values(HeaderKey.source)) ?? []
+        let manifest = Manifest(text: files.first { $0.path == (folder.isEmpty ? Manifest.fileName : "\(folder)/\(Manifest.fileName)") }?.text, folder: folder)
+        let names = (try? manifest.script(script.path).source) ?? []
         return names.flatMap { name -> [SwiftBuild.File] in
             let path = folder.isEmpty ? name : "\(folder)/\(name)"
             let inner = files.filter { $0.path == path || ($0.path as NSString).deletingLastPathComponent == path && isSource($0.path) }.sorted { $0.path < $1.path }
@@ -224,7 +224,7 @@ public struct SwiftProgram: Sendable {
             .sorted { $0.path < $1.path }
         for script in scripts {
             let source = try Data(contentsOf: script)
-            let more = try Self.sources(named: (try? SpotToml(beside: script).block(of: script).values(HeaderKey.source)) ?? [], beside: script)
+            let more = try Self.sources(named: (try? Manifest(beside: script).script(script).source) ?? [], beside: script)
             let program = URL(fileURLWithPath: Self.path(beside: script.path, hash: Self.name(of: source, with: more)))
             try await build(source: source, with: more).write(to: program)
             try FileManager.default.setAttributes([.posixPermissions: 0o755], ofItemAtPath: program.path)

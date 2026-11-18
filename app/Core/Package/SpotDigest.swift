@@ -1,7 +1,7 @@
 import CryptoKit
 import Foundation
 
-public struct SpotManifest: Hashable, Sendable {
+public struct SpotDigest: Hashable, Sendable {
     public struct File: Hashable, Sendable {
         public let path: String
         public let sha256: String
@@ -41,8 +41,8 @@ public struct SpotManifest: Hashable, Sendable {
         files.sorted { $0.path < $1.path }
     }
 
-    public var written: SpotManifest {
-        SpotManifest(Array(files).filter { !Self.isBuilt($0.path) })
+    public var written: SpotDigest {
+        SpotDigest(Array(files).filter { !Self.isBuilt($0.path) })
     }
 
     static func isBuilt(_ path: String) -> Bool {
