@@ -2,7 +2,7 @@ import Foundation
 
 public struct CardFace: Equatable, Sendable {
     public static let bar = "bar"
-    public static let places = ["small", "wide", "square", "strip", "large", bar]
+    public static let places = SpotSize.all.map(\.name) + [bar]
 
     public private(set) var drawings: [String: [[String]]]
     public private(set) var parts: [SpotPart]
