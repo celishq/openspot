@@ -64,6 +64,7 @@ public final class CallerTokens: @unchecked Sendable {
     func channel(for token: String) -> RunChannel? {
         lock.withLock {
             guard let api, records[token] != nil else { return nil }
+            if let kept = records[token]?.channel { return kept }
             let channel = RunChannel { CommandSocket.serve($0, token: token, api) }
             records[token]?.channel = channel
             return channel

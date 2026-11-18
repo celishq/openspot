@@ -51,11 +51,15 @@ func reachStarted(_ app: AppBundle, config: String) -> Int32 {
 
 func reachRun() -> Int32 {
     guard ChannelDescriptor.isChannel(ChannelDescriptor.number) else { return -1 }
+    var quiet: Int32 = 1
+    setsockopt(ChannelDescriptor.number, SOL_SOCKET, SO_NOSIGPIPE, &quiet, socklen_t(MemoryLayout<Int32>.size))
     var pair: [Int32] = [-1, -1]
     guard socketpair(AF_UNIX, SOCK_STREAM, 0, &pair) == 0 else { return -1 }
-    let sent = ChannelDescriptor.send(pair[1], over: ChannelDescriptor.number)
-    close(pair[1])
-    guard sent else {
+    defer { close(pair[1]) }
+    var ready = pollfd(fd: pair[0], events: Int16(POLLIN), revents: 0)
+    var mark: UInt8 = 0
+    guard ChannelDescriptor.send(pair[1], over: ChannelDescriptor.number),
+          poll(&ready, 1, Int32(startWaitSeconds * 1000)) == 1, read(pair[0], &mark, 1) == 1, mark == ChannelDescriptor.ready else {
         close(pair[0])
         return -1
     }

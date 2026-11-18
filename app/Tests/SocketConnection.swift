@@ -26,10 +26,13 @@ final class SocketConnection {
         var pair: [Int32] = [-1, -1]
         XCTAssertEqual(socketpair(AF_UNIX, SOCK_STREAM, 0, &pair), 0)
         XCTAssertTrue(ChannelDescriptor.send(pair[1], over: channel.childEnd ?? -1))
-        Darwin.close(pair[1])
+        defer { Darwin.close(pair[1]) }
         descriptor = pair[0]
         var time = timeval(tv_sec: 10, tv_usec: 0)
         setsockopt(descriptor, SOL_SOCKET, SO_RCVTIMEO, &time, socklen_t(MemoryLayout<timeval>.size))
+        var ready: UInt8 = 0
+        XCTAssertEqual(read(descriptor, &ready, 1), 1)
+        XCTAssertEqual(ready, ChannelDescriptor.ready)
         isConnected = true
     }
 

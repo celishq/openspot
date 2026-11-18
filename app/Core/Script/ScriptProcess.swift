@@ -143,7 +143,6 @@ public final class ScriptProcess: @unchecked Sendable {
         }
         let started: pid_t
         do {
-            defer { channel?.spawned() }
             started = try spawn(input: hasInput ? input.fileHandleForReading : nil, output: output.fileHandleForWriting, errors: errors.fileHandleForWriting, environment: environment, fence: fence)
         } catch {
             abandon()

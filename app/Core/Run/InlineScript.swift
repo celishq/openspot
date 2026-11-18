@@ -231,6 +231,7 @@ final class InlineScript: @unchecked Sendable {
             return answer { await work() }
         }
         let child = ScriptProcess(url: URL(fileURLWithPath: "/usr/bin/env"), arguments: ["openspot"] + arguments, mode: .once(input: input), dataName: dataName, variables: self.environment.filter { $0.key == "OPENSPOT_ID" }.merging(variables) { _, new in new }, careful: careful?.uses, base: base)
+        child.channel = token.flatMap { tokens?.channel(for: $0) }
         return answer { await Self.answer(of: child) }
     }
 
