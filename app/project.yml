@@ -31,10 +31,7 @@ targets:
     platform: macOS
     sources:
       - path: Core
-      - path: Client/CommandKind.swift
-      - path: Client/SocketPath.swift
-      - path: Client/SocketOption.swift
-      - path: Client/ChannelDescriptor.swift
+      - path: Shared
     dependencies:
       - package: secp256k1
         product: P256K
@@ -193,6 +190,7 @@ targets:
     platform: macOS
     sources:
       - path: Client
+      - path: Shared
     settings:
       base:
         PRODUCT_NAME: openspot

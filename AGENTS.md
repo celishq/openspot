@@ -7,6 +7,7 @@
   - `Core/` — the spot contract and loading. It imports no UI framework; see [Core and Shell](#core-and-shell).
   - `Shell/` — the menu bar app, the panel and the hotkey. Imports AppKit and SwiftUI.
   - `Client/` — the `openspot` command, which talks to the running app.
+  - `Shared/` — the files that both `Client/` and `Core/` compile: how the command finds the app's socket and its run's link.
   - `StandIn/` — a small program for tests: a capability that needs no Mac feature. It does not ship.
   - `Views/` — `openspot-views`, which a Release build runs to compile each view of the core spots and the examples into a
     `.view`, and each Swift spot into a `.program`, beside its source, so that it runs on a Mac with no developer tools. It does not ship.

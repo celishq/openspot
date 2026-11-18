@@ -1,9 +1,9 @@
 #!/bin/sh
 . "$(dirname "$0")/checks.sh"
-need app/Core app/Shell app/Client
+need app/Core app/Shell app/Client app/Shared
 found=$(mktemp)
 trap 'rm -f "$found"' EXIT
-find app/Core app/Shell app/Client -name '*.swift' | sort | while read -r file; do
+find app/Core app/Shell app/Client app/Shared -name '*.swift' | sort | while read -r file; do
   awk -v f="$file" '
     BEGIN {
       n = split(f, part, "/"); base = part[n]; sub(/\.swift$/, "", base); sub(/\+.*/, "", base)
