@@ -550,7 +550,7 @@ final class PanelKeysTests: PanelCase {
 
         model.record(code: 8, modifiers: .command)
 
-        XCTAssertEqual(model.keyStatus, "`⌘C` belongs to the apps on the Mac. Hold `⌥` or `⌃` with a key.")
+        XCTAssertEqual(model.keyStatus, "`⌘C` belongs to apps. Hold `⌥` or `⌃` with a key.")
         XCTAssertEqual(model.recording, "key")
         XCTAssertEqual(keyField?.value, "")
     }
@@ -561,7 +561,7 @@ final class PanelKeysTests: PanelCase {
 
         model.record(code: 122, modifiers: .option)
 
-        XCTAssertEqual(model.keyStatus, "Hold ⌃, ⌥ or ⌘ with a letter, a digit, a sign, an arrow, Space, Return or Tab.")
+        XCTAssertEqual(model.keyStatus, "Openspot cannot use that key. Try a letter, a digit, a sign or an arrow.")
         XCTAssertEqual(model.recording, "key")
         XCTAssertEqual(keyField?.value, "")
     }
@@ -578,6 +578,19 @@ final class PanelKeysTests: PanelCase {
 
         XCTAssertFalse(model.isKeyDown)
         XCTAssertEqual(model.pressedKey, "Space")
+        XCTAssertEqual(model.recording, "key")
+    }
+
+    func testShiftAndAKeySaysWhatItTypesInEveryAppAndKeepsRecording() async throws {
+        try await openPick()
+        try await wait("the recording") { self.model.recording == "key" }
+
+        model.record(code: 13, modifiers: .shift)
+        XCTAssertEqual(model.pressedKey, "W")
+        XCTAssertEqual(model.keyStatus, "`⇧W` types a capital W in every app. Hold `⌃`, `⌥` or `⌘` with it.")
+        model.record(code: 18, modifiers: .shift)
+        XCTAssertEqual(model.keyStatus, "`⇧1` types in every app. Hold `⌃`, `⌥` or `⌘` with it.")
+
         XCTAssertEqual(model.recording, "key")
     }
 
@@ -618,7 +631,7 @@ final class PanelKeysTests: PanelCase {
 
         model.appCameToFront("Raycast")
 
-        XCTAssertEqual(model.keyStatus, "⇧⌘ and a key opened Raycast. Change that key in Raycast, or press another one.")
+        XCTAssertEqual(model.keyStatus, "⇧⌘ and a key opened Raycast. Change it there, or press another key.")
         XCTAssertEqual(model.heldKeys, [])
         XCTAssertEqual(model.recording, "key")
     }
@@ -683,6 +696,51 @@ final class PanelKeysTests: PanelCase {
         model.record(code: 49, modifiers: .command)
 
         XCTAssertEqual(host.notes, ["⌘Space opens Spotlight."])
+    }
+
+    func testAModifierAddedWhileTheKeyIsHeldMakesTheShortcut() async throws {
+        try await openPick()
+        try await wait("the recording") { self.model.recording == "key" }
+        model.record(code: 13, modifiers: .shift)
+        XCTAssertNotNil(model.keyStatus)
+
+        model.hold([.shift, .option])
+
+        XCTAssertNil(model.recording)
+        try await wait("the kept key") { self.keyField?.value == Shortcut(code: 13, modifiers: [.shift, .option])?.text }
+    }
+
+    func testNewModifiersAfterARefusedKeyClearItsWords() async throws {
+        try await openPick()
+        try await wait("the recording") { self.model.recording == "key" }
+        model.record(code: 13, modifiers: .shift)
+        model.releaseKey()
+        model.hold([])
+
+        model.hold(.command)
+
+        XCTAssertNil(model.keyStatus)
+        XCTAssertEqual(model.recording, "key")
+    }
+
+    func testAKeyThatMacOSTakesForInputSourcesSaysHowToFreeIt() async throws {
+        let folder = self.folder.appendingPathComponent("Library/Preferences", isDirectory: true)
+        try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
+        let entry: [String: Any] = ["enabled": true, "value": ["parameters": [32, 49, 262144], "type": "standard"] as [String: Any]]
+        let data = try PropertyListSerialization.data(fromPropertyList: ["AppleSymbolicHotKeys": ["60": entry]], format: .binary, options: 0)
+        try data.write(to: folder.appendingPathComponent("com.apple.symbolichotkeys.plist"))
+        try await openPick()
+        try await wait("the recording") { self.model.recording == "key" }
+        model.toggleRecording(id: "key")
+        model.toggleRecording(id: "key")
+        try await wait("the taken keys") { !self.model.takenKeys.isEmpty }
+
+        model.hold(.control)
+        model.hold([])
+        model.inputSourceChanged()
+
+        XCTAssertEqual(model.keyStatus, "`⌃Space` switches the input source. Free it in Keyboard Shortcuts.")
+        XCTAssertEqual(model.recording, "key")
     }
 
     func testAKeyOfAnotherSpotSaysItOpensThatSpot() async throws {

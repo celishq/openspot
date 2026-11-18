@@ -22,6 +22,7 @@ enum SpotMotion {
     }
 
     static let press = Animation.spring(duration: MotionTokens.press, bounce: MotionTokens.pressBounce)
+    static let pop = Animation.spring(duration: MotionTokens.pop, bounce: MotionTokens.popBounce)
 
     static func animation(_ motion: PanelMotion) -> Animation {
         switch motion {

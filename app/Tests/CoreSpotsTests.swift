@@ -91,6 +91,16 @@ final class CoreSpotsTests: XCTestCase {
         }
     }
 
+    func testTheDefaultGridOpensWithNewSpotAsAStripThenSpotsAndStoreWide() throws {
+        let repo = URL(fileURLWithPath: #filePath).deletingLastPathComponent().deletingLastPathComponent().deletingLastPathComponent()
+        let defaults = Config(text: try String(contentsOf: repo.appendingPathComponent("app/defaults.toml"), encoding: .utf8)).arrangement
+
+        XCTAssertEqual(defaults.choices.prefix(3).map(\.id), ["openspot/new", "openspot/spots", "openspot/store"])
+        XCTAssertEqual(defaults.size(of: "openspot/new"), .strip)
+        XCTAssertEqual(defaults.size(of: "openspot/spots"), .wide)
+        XCTAssertEqual(defaults.size(of: "openspot/store"), .wide)
+    }
+
     @MainActor func testAMetricThatAGetTurnsOnShowsItsCard() throws {
         let repo = URL(fileURLWithPath: #filePath).deletingLastPathComponent().deletingLastPathComponent().deletingLastPathComponent()
         let defaults = Config(text: try String(contentsOf: repo.appendingPathComponent("app/defaults.toml"), encoding: .utf8)).arrangement

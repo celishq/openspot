@@ -36,8 +36,9 @@ public struct SheetParts: Equatable, Sendable {
     private static func pictureTimes(of parts: [SpotPart]) -> [String: Double] {
         var times: [String: Double] = [:]
         for part in parts {
-            guard case .image(let path) = part.control else { continue }
-            times[path] = PictureFile(path: path).changed
+            if case .image(let path) = part.control { times[path] = PictureFile(path: path).changed }
+            if let path = part.image { times[path] = PictureFile(path: path).changed }
+            if let path = part.note { times[path] = PictureFile(path: path).changed }
         }
         return times
     }

@@ -15,14 +15,14 @@ final class CatalogSpotTests: BuiltInCase {
         }
     }
 
-    func testItIsASmallCardOnTheGridWithItsLetterThatAKeywordFinds() throws {
+    func testItIsAWideCardOnTheDefaultGridThatAKeywordFinds() throws {
         let spot = try catalog
         let defaults = Config(text: try String(contentsOf: repoSpots.deletingLastPathComponent().appendingPathComponent("app/defaults.toml"), encoding: .utf8))
 
         XCTAssertEqual(spot.name, "Spots")
         XCTAssertEqual(spot.subtitle, "Edit Spots")
         XCTAssertNil(spot.read)
-        XCTAssertEqual(defaults.arrangement.size(of: spot.id), .small)
+        XCTAssertEqual(defaults.arrangement.size(of: spot.id), .wide)
         XCTAssertTrue(spot.isOnGrid)
         XCTAssertEqual(spot.keywords, ["edit spots"])
     }

@@ -1,7 +1,6 @@
 #!/bin/sh
-# title=Welcome
+# title=Welcome spot
 # icon=hand.wave
-# detail=Openspot in three steps
 # on=sheet.open
 # uses=app
 # offers=none
@@ -10,6 +9,7 @@
 # pages=agent
 . "$OPENSPOT_SH"
 keyfile="$OPENSPOT_DATA/welcome-key"
+here=$(cd "${0%/*}" && pwd)
 
 # Prints the key that the person recorded, or nothing.
 chosen() {
@@ -27,46 +27,42 @@ $state
 EOF2
 }
 
-# Prints one line of a page: its id, its words and its icon.
-line() {
-  printf '\ntext=%s\nlook=tile\ntitle=%s\nicon=%s\n' "$1" "$2" "$3"
+# Prints one thing to try on the last page, drawn like a spot's card: its id, title, detail, icon and the hand-drawn number on its icon.
+card() {
+  printf '\ntext=%s\nlook=card\ntitle=%s\ndetail=%s\nicon=%s\nnote=%s\n' "$1" "$2" "$3" "$4" "$5"
 }
 
-# Prints the heading of a page: its words, the line under them, and its icon.
-head() {
-  line head "$1" "$3"
-  printf 'detail=%s\n' "$2"
+# Prints the heading of a page: its words in large type, the words under them, then a hand-drawn note when it names one.
+heading() {
+  printf '\ntext=head\nlook=heading\ntitle=%s\ndetail=%s\n' "$1" "$2"
+  [ -z "${3-}" ] || printf 'note=%s\n' "$3"
 }
 
-# Prints the first page: what Openspot is, then Continue.
+# Prints the first page: what a spot is, a handwritten "even this onboarding" in the accent colour, then Continue.
 welcome() {
-  printf 'grid=head head head head\ngrid=head head head head\ngrid=opens opens opens opens\ngrid=spots spots spots spots\ngrid=agents agents agents agents\ngrid=next next next next\n'
-  head 'Welcome to Openspot' 'The launcher that grows with you' hand.wave
-  line opens 'One key opens it from any app' keyboard
-  line spots 'Each tool on it is a spot' square.grid.2x2
-  line agents 'Your agent makes and changes spots' sparkles
+  printf 'grid=head head head head\ngrid=next next next next\n'
+  printf '\ntext=head\nlook=heading\ntitle=Everything is a disposable spot\nicon=%s/even-this-onboarding.svg\n' "$here"
+  printf 'detail=Make a script or an app for anything. Keep it, throw it away, or share it in one click.\n'
   printf '\nbutton=next\ntitle=Continue\nlook=strong\nshortcut=return\n'
 }
 
-# Prints the key page: the chosen key, or the key that opens Openspot, then Use this key and Record new combination.
+# Prints the key page: the chosen key, or the key that opens Openspot, then Use this key and Record another key.
 keys() {
   shown=$(chosen)
-  printf 'grid=head head head head\ngrid=head head head head\ngrid=key key key key\ngrid=key key key key\ngrid=use use use use\ngrid=record record record record\n'
-  head 'Choose your key' 'It opens Openspot from any app' keyboard
+  printf 'grid=head head head head\ngrid=key key key key\ngrid=key key key key\ngrid=key key key key\ngrid=use use use use\ngrid=record record record record\n'
+  heading 'Choose your key' 'It opens Openspot from any app.'
   printf '\nfield=key\ntype=hotkey\n'
   openspot_kv value "${shown:-$now}"
   printf '\nbutton=use\ntitle=Use this key\nlook=strong\nshortcut=return\n'
-  printf '\nbutton=record\ntitle=Record new combination\nrecords=key\nshortcut=escape\n'
+  printf '\nbutton=record\ntitle=Record another key\nrecords=key\nshortcut=escape\n'
 }
 
-# Prints the last page: how an agent changes any spot, then Start using Openspot.
+# Prints the last page: the two things to try, a spot of your own and a change by your agent, then Start using Openspot.
 agent() {
-  printf 'grid=head head head head\ngrid=head head head head\ngrid=file file file file\ngrid=new new new new\ngrid=edit edit edit edit\ngrid=copy copy copy copy\ngrid=done done done done\n'
-  head 'Make it yours' 'Your agent writes and changes spots' sparkles
-  line file 'Each spot is one small file' doc.text
-  line new 'Ask your agent for a new one' sparkles
-  line edit 'Select a spot and press ⌘E' pencil
-  line copy '⌘⏎ copies the prompt for your agent' doc.on.clipboard
+  printf 'grid=head head head head\ngrid=new new new new\ngrid=edit edit edit edit\ngrid=done done done done\n'
+  heading 'Make it yours' 'Easily, with any of your favourite agents' "$here/note-and-pls.svg"
+  card new 'Create your own spot' 'Open New spot and describe it.' plus "$here/note-1.svg"
+  card edit 'Change it with your agent' 'Select it and press ⌘E.' pencil "$here/note-2.svg"
   printf '\nbutton=done\ntitle=Start using Openspot\nlook=strong\nshortcut=return\n'
 }
 

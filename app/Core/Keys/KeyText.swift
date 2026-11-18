@@ -1,7 +1,9 @@
 import Foundation
 
 struct KeyText: Equatable {
-    private static let names: [(name: String, label: String)] = [("return", "⏎"), ("backspace", "⌫"), ("escape", "Esc")]
+    private static let names: [(name: String, label: String)] = [
+        ("return", "⏎"), ("backspace", "⌫"), ("escape", "Esc"), ("left", "←"), ("right", "→"), ("up", "↑"), ("down", "↓")
+    ]
     private static let markOrder: [Shortcut.Modifiers] = [.control, .option, .shift, .command]
 
     let modifiers: Shortcut.Modifiers

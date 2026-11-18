@@ -20,11 +20,11 @@ final class WelcomeSpotTests: BuiltInCase {
         try XCTUnwrap(output.parts.first { $0.id == id })
     }
 
-    private func assertHead(_ output: SpotOutput, _ title: String, _ detail: String, icon: String, file: StaticString = #filePath, line: UInt = #line) throws {
+    private func assertHead(_ output: SpotOutput, _ title: String, _ detail: String, file: StaticString = #filePath, line: UInt = #line) throws {
         let head = try part("head", in: output)
+        XCTAssertEqual(head.look, .heading, file: file, line: line)
         XCTAssertEqual(head.title, title, file: file, line: line)
         XCTAssertEqual(head.detail, detail, file: file, line: line)
-        XCTAssertEqual(head.symbol, icon, file: file, line: line)
     }
 
     func testItTakesTheLaunchRoleWithTwoPagesAndOffersNoCard() throws {
@@ -32,17 +32,18 @@ final class WelcomeSpotTests: BuiltInCase {
 
         XCTAssertEqual(spot.edits, .launch)
         XCTAssertFalse(spot.offersCard)
-        XCTAssertEqual(spot.name, "Welcome")
-        XCTAssertEqual(spot.subtitle, "Openspot in three steps")
+        XCTAssertEqual(spot.name, "Welcome spot")
+        XCTAssertNil(spot.subtitle)
         XCTAssertEqual(spot.symbol, "hand.wave")
         XCTAssertEqual(spot.pages, ["key", "agent"])
     }
 
-    func testTheFirstSheetWelcomesWithThreeLinesAndContinue() async throws {
+    func testTheFirstSheetSaysEverythingIsASpotUnderItsDrawingAndContinues() async throws {
         let output = try await read()
 
-        try assertHead(output, "Welcome to Openspot", "The launcher that grows with you", icon: "hand.wave")
-        XCTAssertEqual(output.parts.map(\.id).sorted(), ["agents", "head", "next", "opens", "spots"])
+        try assertHead(output, "Everything is a disposable spot", "Make a script or an app for anything. Keep it, throw it away, or share it in one click.")
+        XCTAssertEqual(try part("head", in: output).image.map { URL(fileURLWithPath: $0).lastPathComponent }, "even-this-onboarding.svg")
+        XCTAssertEqual(output.parts.map(\.id).sorted(), ["head", "next"])
         let next = try part("next", in: output)
         XCTAssertEqual(next.title, "Continue")
         XCTAssertEqual(next.key, ActionKey(name: "return"))
@@ -59,13 +60,13 @@ final class WelcomeSpotTests: BuiltInCase {
 
         let output = try await read(page: "key")
 
-        try assertHead(output, "Choose your key", "It opens Openspot from any app", icon: "keyboard")
+        try assertHead(output, "Choose your key", "It opens Openspot from any app.")
         XCTAssertEqual(try part("key", in: output).control, .shortcut("option+space"))
         let use = try part("use", in: output)
         XCTAssertEqual(use.title, "Use this key")
         XCTAssertEqual(use.key, ActionKey(name: "return"))
         let record = try part("record", in: output)
-        XCTAssertEqual(record.title, "Record new combination")
+        XCTAssertEqual(record.title, "Record another key")
         XCTAssertEqual(record.records, "key")
         XCTAssertEqual(record.key, ActionKey(name: "escape"))
         XCTAssertEqual(output.parts.map(\.id).sorted(), ["head", "key", "record", "use"])
@@ -113,16 +114,35 @@ final class WelcomeSpotTests: BuiltInCase {
         XCTAssertEqual(file.read().panelKey, Shortcut(text: "option+space"))
     }
 
-    func testTheLastPageSaysAnAgentChangesAnySpotAndDoneLeaves() async throws {
+    func testTheLastPageShowsTwoNumberedCardsToTryAndDoneLeaves() async throws {
         let output = try await read(page: "agent")
         let done = try await answer(["done"])
+        let name = { (path: String?) in path.map { URL(fileURLWithPath: $0).lastPathComponent } }
 
-        try assertHead(output, "Make it yours", "Your agent writes and changes spots", icon: "sparkles")
-        XCTAssertEqual(output.parts.map(\.id).sorted(), ["copy", "done", "edit", "file", "head", "new"])
+        try assertHead(output, "Make it yours", "Easily, with any of your favourite agents")
+        XCTAssertEqual(name(try part("head", in: output).note), "note-and-pls.svg")
+        XCTAssertEqual(output.parts.map(\.id).sorted(), ["done", "edit", "head", "new"])
+        for (id, title, symbol, note) in [("new", "Create your own spot", "plus", "note-1.svg"), ("edit", "Change it with your agent", "pencil", "note-2.svg")] {
+            let card = try part(id, in: output)
+            XCTAssertEqual(card.look, .card, id)
+            XCTAssertEqual(card.title, title, id)
+            XCTAssertEqual(card.symbol, symbol, id)
+            XCTAssertEqual(name(card.note), note, id)
+        }
         let button = try part("done", in: output)
         XCTAssertEqual(button.title, "Start using Openspot")
         XCTAssertEqual(button.key, ActionKey(name: "return"))
         XCTAssertEqual(done.move, .pop(all: true))
+    }
+
+    func testEachDrawingThatAPageNamesIsAFileBesideTheScript() async throws {
+        for page in [nil, "key", "agent"] {
+            let output = try await read(page: page)
+
+            for path in output.parts.flatMap({ [$0.image, $0.note].compactMap { $0 } }) {
+                XCTAssertTrue(FileManager.default.fileExists(atPath: path), path)
+            }
+        }
     }
 
     func testEachBlockOfEachPageHasAPlaceSoNoButtonBecomesAnAction() async throws {

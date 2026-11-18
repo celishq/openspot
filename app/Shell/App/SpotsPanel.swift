@@ -243,6 +243,8 @@ final class SpotsPanel: NSPanel {
         return true
     }
 
+    private static let inputSourceChange = Notification.Name("com.apple.Carbon.TISNotifySelectedKeyboardInputSourceChanged")
+
     private func watchFrontApp(model: SpotsModel) {
         NSWorkspace.shared.notificationCenter.addObserver(forName: NSWorkspace.didActivateApplicationNotification, object: nil, queue: .main) { [weak model] note in
             guard let app = note.userInfo?[NSWorkspace.applicationUserInfoKey] as? NSRunningApplication,
@@ -251,6 +253,15 @@ final class SpotsPanel: NSPanel {
             MainActor.assumeIsolated {
                 guard let model, model.recording != nil else { return }
                 model.appCameToFront(name)
+            }
+        }
+    }
+
+    private func watchInputSource(model: SpotsModel) {
+        DistributedNotificationCenter.default().addObserver(forName: Self.inputSourceChange, object: nil, queue: .main) { [weak model] _ in
+            MainActor.assumeIsolated {
+                guard let model, model.recording != nil else { return }
+                model.inputSourceChanged()
             }
         }
     }
@@ -301,6 +312,7 @@ final class SpotsPanel: NSPanel {
         panel.contentView = hosting
         panel.watchPaste(model: model)
         panel.watchFrontApp(model: model)
+        panel.watchInputSource(model: model)
         panel.center()
         panel.followSides()
         return panel

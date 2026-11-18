@@ -110,6 +110,27 @@ final class SheetLayoutTests: XCTestCase {
         XCTAssertGreaterThan(SheetPlacement.groupGap, SheetPlacement.gap)
     }
 
+    func testTheRowsOfButtonsAtTheEndStandApartTogetherWithTheRowGapBetweenThem() throws {
+        let frames = try placement("""
+        grid=note
+        grid=save
+        grid=cancel
+
+        text=note
+        title=Note
+
+        button=save
+        title=Save
+
+        button=cancel
+        title=Cancel
+        """).frames
+
+        let note = try XCTUnwrap(frames["note"]).rect, save = try XCTUnwrap(frames["save"]).rect, cancel = try XCTUnwrap(frames["cancel"]).rect
+        XCTAssertEqual(save.minY - note.maxY, SheetPlacement.groupGap)
+        XCTAssertEqual(cancel.minY - save.maxY, SheetPlacement.gap)
+    }
+
     func testTilesHaveTheOneRowHeightAndGap() throws {
         let sheet = try XCTUnwrap(SheetParts(output: SpotOutput(text: "text=a\ntitle=A\nlook=tile\n\ntext=b\ntitle=B\nlook=tile\n"))).placement
 
@@ -344,6 +365,12 @@ final class SheetLayoutTests: XCTestCase {
         XCTAssertEqual(FrameCheck(text: "grid=a\n\ntext=a\ntitle=A\n").sheetFaults, [])
         XCTAssertEqual(FrameCheck(text: "grid=a\n\ntitle=A\n\ntext=a\ntitle=A\n").sheetFaults, ["cannot read the block that starts: title=A"])
         XCTAssertEqual(FrameCheck(text: "grid=a\n").sheetFaults, ["the sheet has no parts"])
+    }
+
+    func testATallHeadingOnOneRowIsNoStretchedRow() {
+        let sheet = "grid=head\ngrid=go\n\ntext=head\nlook=heading\ntitle=Everything is a disposable spot\ndetail=Make a script or an app for anything. Keep it, throw it away, or share it in one click.\n\nbutton=go\ntitle=Go\n"
+
+        XCTAssertEqual(FrameCheck(text: sheet).partFaults, [])
     }
 
     func testTheFaultsThatComeFromSize() {

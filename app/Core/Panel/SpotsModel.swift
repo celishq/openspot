@@ -149,12 +149,16 @@ public final class SpotsModel {
     public var recording: String? {
         didSet {
             if recording == nil, !heldKeys.isEmpty { heldKeys = [] }
+            lastHeld = []
             if pressedKey != nil { pressedKey = nil }
+            pressedCode = nil
             if isKeyDown { isKeyDown = false }
             takeMode()
         }
     }
     public private(set) var heldKeys: Shortcut.Modifiers = []
+    @ObservationIgnored private var lastHeld: Shortcut.Modifiers = []
+    @ObservationIgnored var pressedCode: UInt32?
     public internal(set) var pressedKey: String?
     public internal(set) var isKeyDown = false
     @ObservationIgnored var entryKeyIsOff = false
@@ -163,6 +167,12 @@ public final class SpotsModel {
     public func hold(_ modifiers: Shortcut.Modifiers) {
         guard recording != nil, modifiers != heldKeys else { return }
         heldKeys = modifiers
+        if !modifiers.isEmpty { lastHeld = modifiers }
+        if isKeyDown, let code = pressedCode {
+            record(code: code, modifiers: modifiers)
+        } else if !modifiers.isEmpty, keyStatus != nil {
+            keyStatus = nil
+        }
     }
 
     public func releaseKey() {
@@ -171,7 +181,15 @@ public final class SpotsModel {
 
     public func appCameToFront(_ name: String) {
         guard recordsField, !heldKeys.isEmpty else { return }
-        keyStatus = "\(heldKeys.marks) and a key opened \(name). Change that key in \(name), or press another one."
+        keyStatus = "\(heldKeys.marks) and a key opened \(name). Change it there, or press another key."
+        heldKeys = []
+    }
+
+    public func inputSourceChanged() {
+        let held = heldKeys.isEmpty ? lastHeld : heldKeys
+        guard recordsField, !held.isEmpty else { return }
+        let key = takenKeys.first { $0.shortcut.modifiers == held && SystemKeys.switchesInput($0) }
+        keyStatus = "`\(key?.shortcut.label ?? held.marks)` switches the input source. Free it in Keyboard Shortcuts."
         heldKeys = []
     }
     public internal(set) var mode = PanelMode.grid

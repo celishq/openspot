@@ -16,6 +16,7 @@ struct SpotTheme {
     let capFace: NSColor
     let capRim: NSColor
     let capEdge: NSColor
+    let well: NSColor
     let fillStrength: Double
     let selectedStrength: Double
     let discStrength: Double
@@ -38,6 +39,7 @@ struct SpotTheme {
         capFace: .white.withAlphaComponent(0.08),
         capRim: .white.withAlphaComponent(0.14),
         capEdge: .black.withAlphaComponent(0.35),
+        well: .black.withAlphaComponent(0.22),
         fillStrength: 0.1,
         selectedStrength: 0.22,
         discStrength: 0.2,
@@ -61,6 +63,7 @@ struct SpotTheme {
         capFace: .white.withAlphaComponent(0.6),
         capRim: .black.withAlphaComponent(0.1),
         capEdge: .black.withAlphaComponent(0.14),
+        well: .black.withAlphaComponent(0.05),
         fillStrength: 0.08,
         selectedStrength: 0.12,
         discStrength: 0,
@@ -128,6 +131,7 @@ struct SpotTheme {
     static let capFace = color(\.capFace)
     static let capRim = color(\.capRim)
     static let capEdge = color(\.capEdge)
+    static let well = color(\.well)
 
     private static func color(_ part: KeyPath<SpotTheme, NSColor> & Sendable) -> Color {
         Color(nsColor: NSColor(name: nil) { palette(for: $0)[keyPath: part] })

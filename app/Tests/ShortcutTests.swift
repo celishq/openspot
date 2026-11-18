@@ -57,8 +57,16 @@ final class ShortcutTests: XCTestCase {
         XCTAssertEqual(Shortcut(text: "ctrl+right")?.code, 124)
         XCTAssertEqual(Shortcut(text: "ctrl+down")?.code, 125)
         XCTAssertEqual(Shortcut(text: "ctrl+up")?.code, 126)
-        XCTAssertEqual(shortcut.label, "⌃⌥Left")
+        XCTAssertEqual(shortcut.label, "⌃⌥←")
         XCTAssertEqual(Shortcut(code: 126, modifiers: [.control]), Shortcut(text: "ctrl+up"))
+    }
+
+    func testAnArrowKeyShowsItsArrowAndReadsBackFromIt() {
+        XCTAssertEqual(Shortcut.keyLabel(of: 123), "←")
+        XCTAssertEqual(Shortcut.keyLabel(of: 124), "→")
+        XCTAssertEqual(Shortcut.keyLabel(of: 125), "↓")
+        XCTAssertEqual(Shortcut.keyLabel(of: 126), "↑")
+        XCTAssertEqual(KeyText(label: "⌃⌥↑"), KeyText(modifiers: [.control, .option], name: "up"))
     }
 
     func testAKeyIsFoundByItsCode() {

@@ -10,6 +10,8 @@ public enum MotionTokens {
     public static let fadeOut = 0.12 * slow
     public static let press = 0.2 * slow
     public static let pressBounce = 0.2
+    public static let pop = 0.32 * slow
+    public static let popBounce = 0.35
 
     public static let growSettle = 0.25 * slow
     public static let answerPause = 0.15

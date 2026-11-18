@@ -61,7 +61,7 @@ final class WelcomeLaunchTests: XCTestCase {
 
     private func launch() async throws {
         await model.beginFirstLaunch()
-        try await wait("the welcome") { self.model.openSheetID == Self.welcome && self.model.openParts?.parts.first { $0.id == "head" }?.title == "Welcome to Openspot" }
+        try await wait("the welcome") { self.model.openSheetID == Self.welcome && self.model.openParts?.parts.first { $0.id == "head" }?.title == "Everything is a disposable spot" }
         try await wait("the focus on continue") { self.focus == "next" }
     }
 
@@ -91,7 +91,7 @@ final class WelcomeLaunchTests: XCTestCase {
         try await toLastPage()
 
         XCTAssertEqual(shownPages, [nil, "key", "agent"])
-        XCTAssertEqual(model.flow.pages.dropLast().map { model.title(of: $0) }, ["Welcome", "Choose your key"])
+        XCTAssertEqual(model.flow.pages.dropLast().map { model.title(of: $0) }, ["Welcome spot", "Choose your key"])
         XCTAssertTrue(press("return"))
 
         try await wait("the grid") { self.model.openSheetID == nil }
@@ -122,6 +122,19 @@ final class WelcomeLaunchTests: XCTestCase {
         XCTAssertEqual(model.files.config.read().panelKey, .standard)
         XCTAssertTrue(press("return"))
         try await wait("the key page again") { self.keyField?.value == "ctrl+space" && self.focus == "use" }
+    }
+
+    func testThePageThatEscLeavesWhileItRecordsStillShowsItsFieldRecording() async throws {
+        try await launch()
+        try await toKeyPage()
+        XCTAssertTrue(press("escape"))
+        XCTAssertEqual(model.recording, "key")
+
+        XCTAssertTrue(press("escape"))
+
+        XCTAssertNil(model.recording)
+        XCTAssertEqual(model.flowEdges.leavingPage?.page, "key")
+        XCTAssertEqual(model.flowEdges.leavingPage?.recording, "key")
     }
 
     func testANewKeyIsSavedByReturnAndTheToastNamesIt() async throws {

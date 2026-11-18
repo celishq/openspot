@@ -1,10 +1,13 @@
 import AppKit
+import OpenspotCore
 import SwiftUI
 
 enum SpotType {
     static let titleSize: CGFloat = 13
     static let detailSize: CGFloat = 11
     static let title = Font.system(size: titleSize, weight: .medium)
+    static let heading = Font.system(size: SheetHeading.titleSize, weight: .bold)
+    static let lead = Font.system(size: SheetHeading.detailSize)
     static let body = Font.system(size: 13)
     static let detail = Font.system(size: detailSize)
     @MainActor static let titleMeasure = NSFont.systemFont(ofSize: titleSize, weight: .medium)

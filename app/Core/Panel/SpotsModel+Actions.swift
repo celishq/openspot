@@ -199,16 +199,22 @@ extension SpotsModel {
         let part = openParts?.parts.first { $0.id == recording }
         let item = openItems?.shown.first { $0.run == recording }
         let isField = recordsField
+        if isField { pressedCode = code }
         guard let shortcut = Shortcut(code: code, modifiers: modifiers) else {
             guard isField else { return host.notify("Hold cmd, ctrl or option with a letter, a digit, a sign, an arrow, space, return or tab.") }
             pressedKey = Shortcut.keyLabel(of: code)
             isKeyDown = pressedKey != nil
+            if let key = pressedKey, modifiers.contains(.shift), !modifiers.makesShortcut {
+                let typed = key.count == 1 && key.first?.isLetter == true ? "types a capital \(key)" : "types"
+                keyStatus = "`⇧\(key)` \(typed) in every app. Hold `⌃`, `⌥` or `⌘` with it."
+                return
+            }
             keyStatus = pressedKey == nil && modifiers.makesShortcut
-                ? "Hold ⌃, ⌥ or ⌘ with a letter, a digit, a sign, an arrow, Space, Return or Tab."
+                ? "Openspot cannot use that key. Try a letter, a digit, a sign or an arrow."
                 : "Hold ⌃, ⌥ or ⌘ with a key."
             return
         }
-        let appWords = "`\(shortcut.label)` belongs to the apps on the Mac. Hold `⌥` or `⌃` with a key"
+        let appWords = "`\(shortcut.label)` belongs to apps. Hold `⌥` or `⌃` with a key"
         if takesShake, shortcut.isAppKey {
             host.notify("\(appWords), or tap one key such as `⌥`.")
             return

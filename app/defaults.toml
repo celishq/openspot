@@ -1,4 +1,17 @@
 [[spots]]
+id = "openspot/new"
+size = "strip"
+key = "cmd+n"
+
+[[spots]]
+id = "openspot/spots"
+size = "wide"
+
+[[spots]]
+id = "openspot/store"
+size = "wide"
+
+[[spots]]
 id = "apps"
 
 [[spots]]
@@ -44,26 +57,13 @@ id = "snippets"
 size = "small"
 
 [[spots]]
-id = "translate"
-size = "small"
-
-[[spots]]
-id = "openspot/spots"
-size = "small"
-
-[[spots]]
-id = "openspot/store"
-size = "small"
-
-[[spots]]
 id = "openspot/settings"
 size = "small"
 key = "cmd+,"
 
 [[spots]]
-id = "openspot/new"
+id = "translate"
 size = "small"
-key = "cmd+n"
 
 [[spots]]
 id = "openspot/quit"

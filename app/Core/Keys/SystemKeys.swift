@@ -4,6 +4,7 @@ public struct SystemKeys: Sendable {
     private static let uses: [Int: String] = [
         60: "switches to the previous input source", 61: "switches to the next input source", 64: "opens Spotlight", 65: "opens a Finder search"
     ]
+    private static let inputSources: Set<Int> = [60, 61]
     private static let masks: [(mask: Int, modifier: Shortcut.Modifiers)] = [
         (131072, .shift), (262144, .control), (524288, .option), (1048576, .command)
     ]
@@ -40,5 +41,9 @@ public struct SystemKeys: Sendable {
             if mask & entry.mask != 0 { held.insert(entry.modifier) }
         }
         return Shortcut(code: UInt32(code), modifiers: modifiers).map { TakenKey(shortcut: $0, use: use) }
+    }
+
+    public static func switchesInput(_ key: TakenKey) -> Bool {
+        inputSources.contains { uses[$0] == key.use }
     }
 }

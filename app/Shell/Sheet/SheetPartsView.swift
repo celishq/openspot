@@ -31,6 +31,10 @@ struct SheetPartsView: View {
     private static let swatchSize: CGFloat = 22
     private static let smallSwatch: CGFloat = 16
     private static let lineGap: CGFloat = 8
+    private static let headingFit = SpotPictureStore.Fit(width: SheetPlacement.width, height: SheetHeading.pictureHeight)
+    private static let noteFit = SpotPictureStore.Fit(width: SheetPlacement.width, height: SheetHeading.noteHeight)
+    private static let cardNoteFit = SpotPictureStore.Fit(width: 10, height: 13)
+    private static let cardNoteOffset = CGSize(width: 30, height: 5)
     private static let barGap: CGFloat = 3
     private static let narrowCell: CGFloat = 80
     private static let narrowGap: CGFloat = 2
@@ -173,6 +177,10 @@ struct SheetPartsView: View {
         default:
             if part.press == .line {
                 lineButton(part, frame)
+            } else if part.look == .heading {
+                heading(part, frame)
+            } else if part.look == .card {
+                card(part)
             } else {
                 labelled(part, frame).modifier(TileLook(isOn: part.look == .tile))
             }
@@ -197,6 +205,65 @@ struct SheetPartsView: View {
         } else {
             line(part, frame)
         }
+    }
+
+    private func heading(_ part: SpotPart, _ frame: SheetPlacement.Frame) -> some View {
+        let side = Self.alignment(frame).horizontal
+        let words: TextAlignment = side == .center ? .center : side == .trailing ? .trailing : .leading
+        let hasTitle = part.title != nil, hasPicture = part.image != nil
+        return VStack(alignment: side, spacing: 0) {
+            if let title = part.title {
+                Text(title).font(SpotType.heading).foregroundStyle(SpotTheme.ink)
+            }
+            if let image = part.image {
+                drawing(image, fit: Self.headingFit, alignment: Alignment(horizontal: side, vertical: .center))
+                    .frame(height: SheetHeading.pictureHeight)
+                    .padding(.top, hasTitle ? SheetHeading.pictureGap : 0)
+            }
+            if let detail = part.detail {
+                Text(detail).font(SpotType.lead).modifier(SpotSecondaryText())
+                    .padding(.top, hasPicture ? SheetHeading.pictureGap : hasTitle ? SheetHeading.gap : 0)
+            }
+            if let note = part.note {
+                drawing(note, fit: Self.noteFit, alignment: Alignment(horizontal: side, vertical: .center))
+                    .frame(height: SheetHeading.noteHeight)
+                    .padding(.top, hasTitle || hasPicture || part.detail != nil ? SheetHeading.noteGap : 0)
+            }
+        }
+        .multilineTextAlignment(words)
+        .fixedSize(horizontal: false, vertical: true)
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: Alignment(horizontal: side, vertical: .top))
+    }
+
+    private func drawing(_ path: String, fit: SpotPictureStore.Fit, alignment: Alignment) -> some View {
+        SheetPicture(arrived: SpotPictureStore.Key(path: path, changed: panel.pictureTimes[path], fit: fit), tint: SpotTheme.accent, alignment: alignment)
+    }
+
+    private func card(_ part: SpotPart) -> some View {
+        HStack(spacing: SpotTokens.padding - 5) {
+            Image(systemName: part.symbol ?? "square.dashed")
+                .font(SpotType.glyph)
+                .foregroundStyle(SpotTheme.glassInk)
+                .frame(width: SpotTokens.glyphSize, height: SpotTokens.glyphSize)
+                .background(SpotTheme.ink.opacity(SpotTheme.disc), in: Circle())
+                .overlay(alignment: .topLeading) {
+                    if let note = part.note {
+                        drawing(note, fit: Self.cardNoteFit, alignment: .center)
+                            .frame(width: Self.cardNoteFit.width, height: Self.cardNoteFit.height)
+                            .offset(Self.cardNoteOffset)
+                    }
+                }
+            VStack(alignment: .leading, spacing: SpotType.lineGap) {
+                Text(part.title ?? "").font(SpotType.title).modifier(SpotInk()).lineLimit(1)
+                if let detail = part.detail {
+                    Text(detail).font(SpotType.detail).modifier(SpotSecondaryText()).lineLimit(1)
+                }
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
+        }
+        .padding(SpotTokens.padding)
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .background(SpotTheme.ink.opacity(SpotTheme.fill), in: SpotRoundShape(radius: SpotTokens.radius))
     }
 
     private func stacked(_ part: SpotPart, title: String, detail: String) -> some View {
@@ -404,6 +471,8 @@ struct SheetPartsView: View {
     private func shortcut(_ part: SpotPart, text: String) -> some View {
         Button { onRecord(part) } label: {
             LiveKeycaps(value: text, isRecording: recordingPart == part.id, held: heldKeys, status: keyStatus, pressed: pressedKey, isKeyDown: isKeyDown)
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+                .background(SpotTheme.well, in: shape)
                 .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
@@ -612,12 +681,14 @@ private struct TileLook: ViewModifier {
 
 private struct SheetPicture: View {
     let arrived: SpotPictureStore.Key
+    var tint: Color?
+    var alignment = Alignment.leading
     @State private var followed: (from: SpotPictureStore.Key, changed: Double?)?
     @State private var loaded: (key: SpotPictureStore.Key, image: CGImage)?
     @Environment(\.spotIsHeld) private var isHeld
 
     private var key: SpotPictureStore.Key {
-        followed.flatMap { $0.from == arrived ? SpotPictureStore.Key(path: arrived.path, changed: $0.changed) : nil } ?? arrived
+        followed.flatMap { $0.from == arrived ? SpotPictureStore.Key(path: arrived.path, changed: $0.changed, fit: arrived.fit) : nil } ?? arrived
     }
 
     var body: some View {
@@ -625,8 +696,17 @@ private struct SheetPicture: View {
         Color.clear
             .overlay {
                 if let image = SpotPictureStore.shared.cached(key) ?? (loaded?.key == key ? loaded?.image : nil) {
-                    Image(decorative: image, scale: SpotPictureStore.scale).resizable().scaledToFill()
-                } else {
+                    if let tint {
+                        Image(decorative: image, scale: SpotPictureStore.scale)
+                            .renderingMode(.template)
+                            .resizable()
+                            .scaledToFit()
+                            .foregroundStyle(tint)
+                            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: alignment)
+                    } else {
+                        Image(decorative: image, scale: SpotPictureStore.scale).resizable().scaledToFill()
+                    }
+                } else if tint == nil {
                     SpotTheme.ink.opacity(SpotTheme.fill)
                 }
             }
