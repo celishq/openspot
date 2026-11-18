@@ -3,8 +3,9 @@ import SwiftUI
 
 struct GridCardsMove: ViewModifier {
     let model: SpotsModel
+    @Environment(\.spotMoves) private var moves
 
     func body(content: Content) -> some View {
-        content.environment(\.spotMoves, model.cardsMove)
+        content.environment(\.spotMoves, moves && model.cardsMove)
     }
 }

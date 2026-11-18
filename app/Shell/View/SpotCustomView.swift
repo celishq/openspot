@@ -13,7 +13,6 @@ struct SpotCustomView: View, @MainActor Equatable {
     let views: SpotViews
     var send: ((String) -> Void)?
     @Environment(\.spotIsShown) private var isShown
-    @Environment(\.spotIsStill) private var isStill
     @Environment(\.spotMoves) private var moves
     @Environment(\.spotCards) private var cards
     @Environment(\.spotViewPlace) private var place
@@ -103,7 +102,7 @@ struct SpotCustomView: View, @MainActor Equatable {
 
     private var input: [String: Any] {
         [
-            "isShown": isShown && moves && !isStill,
+            "isShown": isShown && moves,
             "rows": rows,
             "selection": selection as Any,
             "close": close,
