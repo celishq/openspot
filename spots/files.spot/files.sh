@@ -3,8 +3,8 @@
 case "$1" in
   show)
     texts=$(value search; value search.alt)
-    printf 'button=reveal\ntitle=Show in Finder\nshortcut=cmd+return\nclose=true\n\n'
-    printf 'button=copy\ntitle=Copy path\nshortcut=cmd+shift+c\nclose=true\n\n'
+    printf 'button=reveal\ntitle=Show in Finder\nshortcut=cmd+return\n\n'
+    printf 'button=copy\ntitle=Copy path\nshortcut=cmd+shift+c\n\n'
     predicate=''
     while IFS= read -r text; do
       query=$(printf '%s' "$text" | tr -d '"\\*')

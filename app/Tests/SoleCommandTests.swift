@@ -176,7 +176,7 @@ final class SoleCommandTests: XCTestCase {
     }
 
     func testReturnRunsTheOneCommandOfASpotWithRowsAndCommandYOpensTheRowsAsHistory() async throws {
-        try "#!/bin/sh\ncase \"$1\" in show) printf 'row=one\\ntitle=Hello there\\n\\nrow=two\\ntitle=Second\\n' ;; esac\n"
+        try "#!/bin/sh\ncase \"$1\" in show) printf 'text=one\\ntitle=Hello there\\n\\ntext=two\\ntitle=Second\\n' ;; esac\n"
             .writeScript(to: spots.spotFile("dictate"), toml: "title = 'Dictate'\non = ['sheet.open', 'app.update']\n[commands.dictate]\ntitle = 'Dictate'")
         await model.reload()
         model.isShown = true
@@ -211,15 +211,15 @@ final class SoleCommandTests: XCTestCase {
 
     func testAKeyRowSaysSetUntilItHasAKeyAndChangeAfter() {
         let spot = Spot(id: "d", name: "d", url: URL(fileURLWithPath: "/d.sh"))
-        let unset = SpotOutput(text: "row=key:d:d\ntitle=Dictate\ntype=hotkey\nshortcut=\(Trigger.unset)\n").items.first
-        let set = SpotOutput(text: "row=key:d:d\ntitle=Dictate\ntype=hotkey\nshortcut=option\n").items.first
+        let unset = SpotOutput(text: "field=key:d:d\ntitle=Dictate\ntype=hotkey\n").items.first
+        let set = SpotOutput(text: "field=key:d:d\ntitle=Dictate\ntype=hotkey\nvalue=option\n").items.first
 
         XCTAssertEqual(ActionMenu(spot: spot, item: unset)?.rows.first?.title, "Set")
         XCTAssertEqual(ActionMenu(spot: spot, item: set)?.rows.first?.title, "Change")
     }
 
     func testARowThatSaysCloseFalseNamesItsEnterAndKeepsThePanelOpen() async throws {
-        try "#!/bin/sh\ncase \"$1\" in show) printf 'button=open\\ntitle=Copy\\n\\nrow=model\\ntitle=Download\\nopen=Download\\nclose=false\\n\\nrow=text\\ntitle=Hello\\n' ;; esac\n"
+        try "#!/bin/sh\ncase \"$1\" in show) printf 'button=open\\ntitle=Copy\\n\\ntext=model\\ntitle=Download\\nopen.title=Download\\nclose=false\\n\\ntext=text\\ntitle=Hello\\n' ;; esac\n"
             .writeScript(to: spots.spotFile("get"), toml: "title = 'Get'\non = ['sheet.open']")
         await model.reload()
         model.isShown = true
@@ -237,8 +237,8 @@ final class SoleCommandTests: XCTestCase {
         XCTAssertEqual(host.dismissals, 1)
     }
 
-    func testASheetWithSearchOffShowsOnlyItsOwnRowsAsItsHistory() async throws {
-        try "#!/bin/sh\ncase \"$1\" in show) printf 'row=whisper\\ntitle=Download\\npin=top\\n\\nframe=\\nsearch=off\\n' ;; esac\n"
+    func testASheetWithAGridAndNoSearchFieldShowsOnlyItsOwnItemsAsItsHistory() async throws {
+        try "#!/bin/sh\ncase \"$1\" in show) printf 'text=whisper\\ntitle=Download\\npin=top\\n\\nframe=\\ngrid=list\\n' ;; esac\n"
             .writeScript(to: spots.spotFile("dictate"), toml: "title = 'Dictate'\non = ['sheet.open']\n[commands.dictate]\ntitle = 'Dictate'")
         await model.reload()
         model.isShown = true
@@ -282,7 +282,7 @@ final class SoleCommandTests: XCTestCase {
     }
 
     func testAKeyRecordedOnARowThatStaysOpenKeepsThePanelOpen() async throws {
-        try "#!/bin/sh\ncase \"$1\" in show) printf 'row=k\\ntitle=Key\\ntype=hotkey\\nclose=false\\nshortcut=Record\\n' ;; esac\n".writeScript(to: spots.spotFile("keys"), toml: "on = ['sheet.open']")
+        try "#!/bin/sh\ncase \"$1\" in show) printf 'field=k\\ntitle=Key\\ntype=hotkey\\nclose=false\\n' ;; esac\n".writeScript(to: spots.spotFile("keys"), toml: "on = ['sheet.open']")
         await model.reload()
         model.isShown = true
         model.panelWillShow()

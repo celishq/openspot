@@ -46,7 +46,7 @@ final class SpotFloatTests: XCTestCase {
         try script("list", toml: "on = ['sheet.open']", """
         \(TestSpot.event)
         case "$1" in
-          show) printf 'row=a\\ntitle=%s\\n\\nrow=b\\ntitle=Banana\\n\\nbutton=trash\\ntitle=Trash\\nshortcut=cmd+backspace\\n\\nbutton=rename\\ntitle=Rename\\nform=true\\n' "$ev" ;;
+          show) printf 'text=a\\ntitle=%s\\n\\ntext=b\\ntitle=Banana\\n\\nbutton=trash\\ntitle=Trash\\nshortcut=cmd+backspace\\n\\nbutton=rename\\ntitle=Rename\\nform=true\\n' "$ev" ;;
           open) printf '\\033]9;Opened %s\\007' "$2" ;;
           trash) printf '\\033]9;Trashed %s\\007' "$2" ;;
         esac
@@ -67,7 +67,7 @@ final class SpotFloatTests: XCTestCase {
     }
 
     func testAFloatThatOpensDuringADragFollowsItAndOneWithNoDragDoesNot() async throws {
-        try script("list", toml: "on = ['sheet.open']", "printf 'row=a\\ntitle=A\\n'")
+        try script("list", toml: "on = ['sheet.open']", "printf 'text=a\\ntitle=A\\n'")
         await model.reload()
 
         host.isMouseDown = true
@@ -135,7 +135,7 @@ final class SpotFloatTests: XCTestCase {
     }
 
     func testAFloatOfPartsKeepsItsValuesWhenThePanelClosesAndDropsThemWhenItCloses() async throws {
-        try script("note", toml: "on = ['sheet.open']", "printf 'field=note\\nvalue=hi\\n'")
+        try script("note", toml: "on = ['sheet.open']", "printf 'frame=\\ngrid=note\\n\\nfield=note\\nvalue=hi\\n'")
         await model.reload()
         model.press(try key("note"))
         try await wait("the parts") { model.sheets["note"]?.panel != nil }
@@ -153,7 +153,7 @@ final class SpotFloatTests: XCTestCase {
     }
 
     func testAFloatOfPartsWithNoFieldKeepsItsPartsWhenItCloses() async throws {
-        try script("note", toml: "on = ['sheet.open']", "printf 'text=hi\\ntitle=Hi\\n'")
+        try script("note", toml: "on = ['sheet.open']", "printf 'frame=\\ngrid=hi\\n\\ntext=hi\\ntitle=Hi\\n'")
         await model.reload()
         model.press(try key("note"))
         try await wait("the parts") { model.sheets["note"]?.panel != nil }
@@ -167,7 +167,7 @@ final class SpotFloatTests: XCTestCase {
     func testADropOnAFloatGoesToItsScriptAndLeavesThePanel() async throws {
         try script("shelf", toml: "on = ['sheet.open']\ndrop = '*'", """
         case "$1" in
-          show) printf 'row=a\\n' ;;
+          show) printf 'text=a\\n' ;;
           drop) shift; printf '\\033]9;Kept %s\\007' "$*" ;;
         esac
         """)
@@ -197,7 +197,7 @@ final class SpotFloatTests: XCTestCase {
         let given = folder.appendingPathComponent("given").path
         try script("keys", toml: "title = 'Keys'\non = ['sheet.open']", """
         case "$1" in
-          show) printf 'button=open\\ntitle=Change\\nclose=false\\n\\nrow=panel-key\\ntitle=Open\\nshortcut=ctrl+space\\n\\nrow=float:shelf\\ntitle=Float\\nshortcut=Record\\nshake=true\\n' ;;
+          show) printf 'button=open\\ntitle=Change\\nclose=false\\n\\nfield=panel-key\\ntype=hotkey\\ntitle=Open\\nvalue=ctrl+space\\n\\nfield=float:shelf\\ntype=hotkey\\ntitle=Float\\nshake=true\\n' ;;
           *) printf '%s %s' "$1" "$2" > '\(given)' ;;
         esac
         """)
@@ -239,7 +239,7 @@ final class SpotFloatTests: XCTestCase {
     }
 
     private func windowSpot() async throws {
-        try script("store", toml: "on = ['sheet.open']\noffers = ['card', 'window']", "printf 'row=a\\ntitle=Apple\\n'")
+        try script("store", toml: "on = ['sheet.open']\noffers = ['card', 'window']", "printf 'text=a\\ntitle=Apple\\n'")
         await model.reload()
     }
 
@@ -282,7 +282,7 @@ final class SpotFloatTests: XCTestCase {
 
     func testAWindowReadsAgainWhenTheSpotsChange() async throws {
         let log = folder.appendingPathComponent("reads")
-        try script("store", toml: "on = ['sheet.open']\noffers = ['card', 'window']", "echo read >> '\(log.path)'\nprintf 'row=a\\ntitle=Apple\\n'")
+        try script("store", toml: "on = ['sheet.open']\noffers = ['card', 'window']", "echo read >> '\(log.path)'\nprintf 'text=a\\ntitle=Apple\\n'")
         await model.reload()
         model.press("store")
         let reads = { ((try? String(contentsOf: log, encoding: .utf8)) ?? "").split(separator: "\n").count }

@@ -65,7 +65,7 @@ public struct CommandAction: Equatable, Sendable {
             title: title,
             key: key,
             scope: scope,
-            after: block.flag("close") == true ? .close : .stay,
+            after: block.flag("close") == false ? .stay : .close,
             isForm: block.flag("form") ?? false,
             confirm: block.value("confirm"),
             placeholder: block.value("placeholder")

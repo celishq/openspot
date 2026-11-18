@@ -107,29 +107,29 @@ card() {
   if [ -n "$holder" ]; then echo "$(left) · lid closed"; else left; fi
 }
 
-# Prints the row of one duration. The row of the duration that runs carries the id of its call, so that a pick of it
+# Prints the item of one duration. The item of the duration that runs carries the id of its call, so that a pick of it
 # is a new call that starts it again, and not a second press that would stop it, and shows the time it has left.
 duration() {
   if awake && [ "$1" = "$picked" ]; then
-    printf 'row=%s.%s\ntitle=%s\ndetail=%s\n' "$1" "$held" "$2" "$(left)"
+    printf 'text=%s.%s\ntitle=%s\ndetail=%s\n' "$1" "$held" "$2" "$(left)"
   else
-    printf 'row=%s\ntitle=%s\n' "$1" "$2"
+    printf 'text=%s\ntitle=%s\n' "$1" "$2"
   fi
 }
 
-# Prints the rows of the sheet, with Turn off first while the Mac is kept awake.
+# Prints the items of the sheet, with Turn off first while the Mac is kept awake.
 sheet() {
   printf 'frame=\nrecents=false\n\n'
   printf 'button=open\ntitle=Select\n\n'
-  printf 'button=start\ntitle=Keep awake for…\nscope=spot\nform=true\nclose=true\nplaceholder=Minutes, such as 45\n\n'
-  awake && printf 'row=off\ntitle=Turn off\n\n'
+  printf 'button=start\ntitle=Keep awake for…\nscope=spot\nform=true\nplaceholder=Minutes, such as 45\n\n'
+  awake && printf 'text=off\ntitle=Turn off\n\n'
   duration 1800 '30 minutes'; echo
   duration 7200 '2 hours'; echo
-  printf 'row=custom\ntitle=Custom…\n\n'
+  printf 'text=custom\ntitle=Custom…\n\n'
   duration 0 'Until turned off'; echo
-  printf 'row=display\ntitle=Keep the display on\ndetail=Off lets the screen lock\nicon=display\npin=bottom\ntype=toggle\nvalue=%s\nclose=false\n' "${display:-true}"
+  printf 'switch=display\ntitle=Keep the display on\ndetail=Off lets the screen lock\nicon=display\npin=bottom\nvalue=%s\nclose=false\n' "${display:-true}"
   [ "$lidded" = true ] || return 0
-  printf '\nrow=lid\ntitle=Work with the lid closed\ndetail=Can grow hot in a bag\nicon=laptopcomputer\npin=bottom\ntype=toggle\nvalue=%s\nclose=false\n' "${lid:-false}"
+  printf '\nswitch=lid\ntitle=Work with the lid closed\ndetail=Can grow hot in a bag\nicon=laptopcomputer\npin=bottom\nvalue=%s\nclose=false\n' "${lid:-false}"
 }
 
 # Runs `caffeinate` for the duration picked, or for the seconds given after it, or until it is stopped, in a watcher
@@ -206,8 +206,8 @@ toast() {
 }
 
 # Answers one call. Each answer is one write, so that it never mixes with the frame of a watcher that ends. The call
-# that turns Caffeinate on prints the rows before it starts, and then only a head with the time left, which the card
-# shows while that call runs: a call that prints rows is not shown as running.
+# that turns Caffeinate on prints the items before it starts, and then only a head with the time left, which the card
+# shows while that call runs: a call that prints items is not shown as running.
 serve() {
   lid_on
   display_on
@@ -234,15 +234,14 @@ serve() {
           ;;
       esac
       ;;
-    'open lid' | 'open display')
-      if "$2"_on; then next=false; else next=true; fi
+    'lid '* | 'display '*)
       if awake; then
         seconds=$(remaining)
         release
-        "$2"_keep "$next"
+        "$1"_keep "$2"
         begin "$call" "$picked" "$seconds"
       else
-        "$2"_keep "$next"
+        "$1"_keep "$2"
         printf 'call=%s\n---\n%s\n---\nend=%s\n---\n' "$call" "$(sheet)" "$call"
       fi
       ;;

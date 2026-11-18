@@ -16,7 +16,7 @@ final class SlashCommandPanelTests: PanelCase {
           add)
             if [ "$search" = ask ]; then printf 'frame=\\ntitle=Add a note\\n\\nfield=name\\ntitle=Name\\n'; else printf '\\033]9;Saved %s%s\\007' "$search" "$name"; fi ;;
           find) printf 'text=Found %s\\n' "$search" ;;
-          *) printf 'row=a\\ntitle=A\\n' ;;
+          *) printf 'text=a\\ntitle=A\\n' ;;
         esac
         """)
     }
@@ -169,7 +169,7 @@ final class SlashCommandPanelTests: PanelCase {
         . "$OPENSPOT_SH"
         case "$1" in
           new) printf 'frame=\\ntitle=New jot\\n\\nfield=text\\ntitle=Text\\n'; openspot_kv value "$(value search)" ;;
-          *) printf 'row=a\\ntitle=A\\n\\nbutton=new\\ntitle=New jot\\nscope=spot\\nform=true\\nplaceholder=What to jot\\n' ;;
+          *) printf 'text=a\\ntitle=A\\n\\nbutton=new\\ntitle=New jot\\nscope=spot\\nform=true\\nplaceholder=What to jot\\n' ;;
         esac
         """)
         await open()

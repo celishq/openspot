@@ -43,15 +43,15 @@ struct AccountFrame {
     mutating func button(_ id: String, _ title: String, _ look: Look = .plain) {
         var fields: [TextBlock.Field] = [.init(key: "button", value: id), .init(key: "title", value: title)]
         switch look {
-        case .plain: break
-        case .main: fields += [.init(key: "shortcut", value: "cmd+return"), .init(key: "look", value: "strong")]
-        case .close: fields.append(.init(key: "close", value: "true"))
-        case .picked: fields.append(.init(key: "look", value: "strong"))
+        case .plain: fields.append(.init(key: "close", value: "false"))
+        case .main: fields += [.init(key: "shortcut", value: "cmd+return"), .init(key: "look", value: "strong"), .init(key: "close", value: "false")]
+        case .close: break
+        case .picked: fields += [.init(key: "look", value: "strong"), .init(key: "close", value: "false")]
         }
         blocks.append(TextBlock(fields: fields))
     }
 
     mutating func howAction() {
-        blocks.append(TextBlock(fields: [.init(key: "button", value: "how"), .init(key: "title", value: "How it works"), .init(key: "scope", value: "spot")]))
+        blocks.append(TextBlock(fields: [.init(key: "button", value: "how"), .init(key: "title", value: "How it works"), .init(key: "scope", value: "spot"), .init(key: "close", value: "false")]))
     }
 }

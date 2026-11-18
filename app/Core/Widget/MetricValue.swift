@@ -52,7 +52,8 @@ public struct MetricValue: Equatable, Sendable {
     }
 
     public init?(output: SpotOutput) {
-        let rows = output.items.map { Row(title: $0.title, detail: $0.subtitle, tone: $0.tone) }
+        let main = output.metric?.fields.first?.value
+        let rows = output.items.filter { $0.run != main }.map { Row(title: $0.title, detail: $0.subtitle, tone: $0.tone) }
         guard let block = output.metric, let data = output.metricData else {
             guard output.errors.isEmpty || !rows.isEmpty else { return nil }
             self.init(title: rows.isEmpty ? "–" : String(rows.count), rows: rows.isEmpty ? nil : rows, isHidden: rows.isEmpty)

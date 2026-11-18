@@ -56,7 +56,7 @@ final class SpotStarterTests: XCTestCase {
         }
 
         XCTAssertEqual(rows.map(\.run), ["first", "second"])
-        XCTAssertEqual(try String(contentsOf: said, encoding: .utf8), "toast You picked the row that says: Hello again\n")
+        XCTAssertEqual(try String(contentsOf: said, encoding: .utf8), "toast You picked the item that says: Hello again\n")
     }
 
     func testANameThatAnotherSpotHasIsRefused() throws {

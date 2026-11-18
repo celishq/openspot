@@ -27,7 +27,7 @@ final class FlowMoveTests: PanelCase {
         os='\(client.path)'
         page=$(sed -n 's/^route=//p')
         case "$1" in
-          show) printf 'button=done\\ntitle=Done\\nscope=spot\\n\\nbutton=top\\ntitle=Top\\nscope=spot\\n\\nbutton=next\\ntitle=Next\\nscope=spot\\n\\nbutton=swap\\ntitle=Swap\\nscope=spot\\n\\nrow=x\\ntitle=Page %s\\n' "${page:-first}" ;;
+          show) printf 'button=done\\ntitle=Done\\nscope=spot\\n\\nbutton=top\\ntitle=Top\\nscope=spot\\n\\nbutton=next\\ntitle=Next\\nscope=spot\\n\\nbutton=swap\\ntitle=Swap\\nscope=spot\\n\\ntext=x\\ntitle=Page %s\\n' "${page:-first}" ;;
           done) "$os" route back ;;
           top) "$os" route back --root ;;
           next) "$os" route push "n${#page}" ;;
@@ -110,7 +110,7 @@ final class FlowMoveTests: PanelCase {
 
     func testAPushOfAPageThatTheSpotDoesNotTakeMovesNothingAndSaysSo() async throws {
         try await openList()
-        try script("narrow", toml: "title = 'Narrow'\non = ['sheet.open']\npages = ['ok:*']", "printf 'row=n\\ntitle=N\\n'")
+        try script("narrow", toml: "title = 'Narrow'\non = ['sheet.open']\npages = ['ok:*']", "printf 'text=n\\ntitle=N\\n'")
         await model.reload()
 
         XCTAssertTrue(model.push(FlowSheet(spot: "narrow", page: "bad")))

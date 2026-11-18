@@ -16,6 +16,8 @@ public struct SpotOutput: Equatable, Sendable {
     public private(set) var pick = ItemPick.close
     public private(set) var pickForm: CommandAction?
     public private(set) var parts: [SpotPart] = []
+    private var every: [SpotPart] = []
+    private(set) var searchField: TextBlock?
     public private(set) var errors: [String] = []
     public private(set) var layout: SheetLayout?
     public private(set) var value: TextBlock?
@@ -31,7 +33,9 @@ public struct SpotOutput: Equatable, Sendable {
     public let isMark: Bool
 
     static let open = "open"
-    private static let rowsArea = "rows"
+    static let itemsArea = "items"
+    private static let searchType = "search"
+    private static let spotFilter = "spot"
 
     static func grouping(_ blocks: [TextBlock]) -> [TextBlock] {
         var grouped: [TextBlock] = []
@@ -72,26 +76,32 @@ public struct SpotOutput: Equatable, Sendable {
         if let (block, _) = repeated { drawing = RepeatDrawing(block: block) }
         let placed = Self.placed(by: head)
         var runs = Set<String>()
-        var rows: [TextBlock] = []
+        var listed: [TextBlock] = []
+        var section: String?
         var values: [(block: TextBlock, kind: BlockKind)] = []
         for (index, block) in blocks.enumerated() {
             let word = block.fields.first?.key
             if word == BlockKind.repeated { continue }
-            if word == BlockKind.row {
-                rows.append(block)
-                if let item = SpotItem(block: block) {
-                    if runs.insert(item.run).inserted { items.append(item) }
-                } else {
-                    errors.append(block.firstLine)
-                }
-            } else if let kind = BlockKind.of(block, in: kinds) {
-                if kind.presses, let id = block.value(kind.word), !placed.contains(id) {
+            if let kind = BlockKind.of(block, in: kinds) {
+                let id = block.value(kind.word)
+                let isPlaced = id.map(placed.contains) ?? false
+                if kind.presses, let id, !isPlaced {
                     take(action: id, block)
+                } else if Self.isSearch(block) {
+                    searchField = block
+                } else if kind == .section, !isPlaced {
+                    section = block.value("title")
                 } else if let part = SpotPart(block: block, kind: kind) {
                     if kind.field != nil { fields.append(Field(block: block, kind: kind)) }
                     if view == nil, kind.isOpen { view = block }
                     if kind.holdsValue { values.append((block, kind)) }
-                    parts.append(part)
+                    every.append(part)
+                    if isPlaced {
+                        parts.append(part)
+                    } else if let item = SpotItem(block: block, kind: kind, section: section) {
+                        listed.append(block)
+                        if runs.insert(item.run).inserted { items.append(item) }
+                    }
                 } else {
                     errors.append(block.firstLine)
                 }
@@ -107,21 +117,27 @@ public struct SpotOutput: Equatable, Sendable {
             }
         }
         let repeating = repeated.map { (area: $0.1, perLine: drawing.perLine ?? drawing.columns) }
-            ?? (!rows.isEmpty && !parts.isEmpty ? (area: Self.rowsArea, perLine: 1) : nil)
-        let layout = SheetLayout(block: head, repeating: repeating, repeats: repeats.count)
+            ?? (!items.isEmpty && !parts.isEmpty ? (area: Self.itemsArea, perLine: 1) : nil)
+        let layout = SheetLayout(block: head, repeating: repeating, repeats: repeats.count, skipping: searchField?.fields.first?.value)
             ?? repeating.map { SheetLayout(flat: parts, repeating: $0) }
         self.layout = layout
-        let fields = rows.map { $0.fields.flatMap { [$0.key, $0.value] } }
+        let fields = listed.map { $0.fields.flatMap { [$0.key, $0.value] } }
         parts = parts.map { $0.drawn(in: layout).holding(rows: fields) }
-        face = CardFace(head: head, parts: parts)
+        face = CardFace(head: head, parts: every)
         let main = head?.value(RootKey.main)
-        let held = main.map { id in values.first { $0.block.fields.first?.value == id } } ?? (values.count == 1 ? values.first : nil)
+        let placedValues = values.filter { placed.contains($0.block.fields.first?.value ?? "") }
+        let sole = placedValues.isEmpty ? values : placedValues
+        let held = main.map { id in values.first { $0.block.fields.first?.value == id } } ?? (sole.count == 1 ? sole.first : nil)
         value = held?.block
         valueKind = held?.kind
     }
 
+    private static func isSearch(_ block: TextBlock) -> Bool {
+        block.fields.first?.key == BlockKind.field.word && block.value("type") == searchType
+    }
+
     public var control: SpotPart? {
-        guard items.isEmpty, actions.isEmpty, parts.count == 1, let part = parts.first else { return nil }
+        guard actions.isEmpty, every.count == 1, let part = every.first else { return nil }
         switch part.control {
         case .toggle, .slider: return part
         default: return nil
@@ -162,15 +178,16 @@ public struct SpotOutput: Equatable, Sendable {
     }
 
     public var valuePart: SpotPart? {
-        value.flatMap { block in parts.first { $0.id == block.fields.first?.value } }
+        value.flatMap { block in every.first { $0.id == block.fields.first?.value } }
     }
 
     public var perLine: Int? {
         layout?.repeated?.perLine
     }
 
-    public var hidesSearch: Bool {
-        summary?.value(RootKey.search) == "off"
+    public var search: ItemSearch {
+        if searchField?.value("filter") == Self.spotFilter { return .script }
+        return searchField != nil || summary?.value(RootKey.grid) == nil ? .local : .off
     }
 
     public var keepsRecent: Bool {

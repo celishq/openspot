@@ -26,7 +26,7 @@ final class PanelAskTests: PanelCase {
 
     func testAFailureShowsAfterItsAskWasLeft() async throws {
         try script("notes", toml: "title = 'Notes'\non = ['sheet.open']", """
-        [ "$1" = add ] || { printf 'row=a\\ntitle=A\\nopen=add\\n'; exit 0; }
+        [ "$1" = add ] || { printf 'text=a\\ntitle=A\\nopen.title=add\\n'; exit 0; }
         touch '\(called.path)'
         while [ ! -f '\(go.path)' ]; do sleep 0.02; done
         echo 'No notes folder' >&2

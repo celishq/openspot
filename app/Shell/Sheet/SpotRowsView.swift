@@ -192,9 +192,7 @@ struct SpotRowsView: View {
                     .font(SpotType.body)
                     .foregroundStyle(SpotTheme.ink)
                     .lineLimit(1)
-                if let focus = item.focusSubtitle {
-                    RowDetail(text: item.subtitle, focus: focus, run: item.run, selectedRun: selectedRun)
-                } else if let subtitle = item.subtitle {
+                if let subtitle = item.subtitle {
                     Text(subtitle)
                         .font(SpotType.detail)
                         .modifier(SpotSecondaryText())
@@ -268,20 +266,6 @@ private struct RowSwitch: View {
             .allowsHitTesting(false)
             .accessibilityElement()
             .accessibilityValue(isOn ? "On" : "Off")
-    }
-}
-
-private struct RowDetail: View {
-    let text: String?
-    let focus: String
-    let run: String
-    let selectedRun: () -> String?
-
-    var body: some View {
-        Text(selectedRun() == run ? focus : text ?? "")
-            .font(SpotType.detail)
-            .modifier(SpotSecondaryText())
-            .lineLimit(1)
     }
 }
 

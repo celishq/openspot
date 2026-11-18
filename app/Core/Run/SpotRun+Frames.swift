@@ -73,7 +73,7 @@ extension SpotRun {
     }
 
     static func search(of lines: SpotOutput, in spot: Spot) -> ItemSearch {
-        lines.hidesSearch ? .off : spot.read?.searchesSheet == true ? .script : .local
+        spot.read?.searchesSheet == true ? .script : lines.search
     }
 
     func takeAnswer(_ lines: SpotOutput, frame: String, to ask: Ask, keeping: String? = nil, answers: Bool = true) async {

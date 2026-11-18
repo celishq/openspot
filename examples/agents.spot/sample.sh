@@ -1,2 +1,2 @@
 #!/bin/sh
-printf 'row=openspot\ndetail=claude\n\nrow=website\ndetail=codex\n\nrow=notes-app\ndetail=claude\n'
+printf 'text=openspot\ntitle=openspot\ndetail=claude\n\ntext=website\ntitle=website\ndetail=codex\n\ntext=notes-app\ntitle=notes-app\ndetail=claude\n'

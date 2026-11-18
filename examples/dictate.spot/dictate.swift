@@ -3,7 +3,7 @@
 // Openspot builds this file with the Swift files of `dictate/`, and keeps one process while the sheet shows, while the
 // menu bar shows Dictate, or while a dictation or the download of the speech model runs. Each of those two is one call
 // that stays open until it ends. A second press of the Dictate key finishes a dictation, and a second press of the card
-// or of the download row stops it. The texts, the model and the place of the pill stay in the data folder.
+// or of the download item stops it. The texts, the model and the place of the pill stay in the data folder.
 //
 // The speech model loads with the first dictation and stays loaded only while the process runs. Put Dictate in the menu
 // bar to keep it loaded, so that each dictation starts at once.
@@ -54,23 +54,24 @@ func sheet(downloading share: Double? = nil) -> String {
     var blocks: [String] = []
     if !FileManager.default.fileExists(atPath: model.path) {
         if let download {
-            blocks.append("row=whisper\ntitle=Downloading speech model\ndetail=\(percent(download.share))\nicon=arrow.down.circle\nopen=Stop\nclose=false\nhides=delete\npin=top")
+            blocks.append("text=whisper\ntitle=Downloading speech model\ndetail=\(percent(download.share))\nicon=arrow.down.circle\nopen.title=Stop\nclose=false\nhides=delete\npin=top")
         } else {
-            blocks.append("row=whisper\ntitle=Download speech model\ndetail=1.6 GB\nicon=arrow.down.circle\nopen=Download\nclose=false\nhides=delete\npin=top")
+            blocks.append("text=whisper\ntitle=Download speech model\ndetail=1.6 GB\nicon=arrow.down.circle\nopen.title=Download\nclose=false\nhides=delete\npin=top")
         }
     }
     let past = texts()
     if past.isEmpty {
-        root.append("search=off")
+        root.append("grid=items")
+        blocks.append("repeat=items")
     } else {
         blocks.append("button=open\ntitle=Copy")
-        blocks.append("button=delete\ntitle=Delete\nshortcut=cmd+backspace")
-        blocks += past.map { "row=\($0.0)\ntitle=\(Link.value($0.1))\ndetail=\(age($0.0))" }
+        blocks.append("button=delete\ntitle=Delete\nshortcut=cmd+backspace\nclose=false")
+        blocks += past.map { "text=\($0.0)\ntitle=\(Link.value($0.1))\ndetail=\(age($0.0))" }
     }
     return ([root.joined(separator: "\n")] + blocks).joined(separator: "\n\n")
 }
 
-/// Ends the held call and shows the rows that it changed.
+/// Ends the held call and shows the items that it changed.
 func release() {
     guard let id = held else { return }
     held = nil
@@ -90,7 +91,7 @@ func toast(_ text: String, then done: @escaping () -> Void = {}) {
     Tool.run(["openspot", "toast", text]) { _, _, _ in done() }
 }
 
-/// Downloads the model in a call that stays open until the model lands. The rows come before the call's own output.
+/// Downloads the model in a call that stays open until the model lands. The items come before the call's own output.
 func fetch(in id: String, saying words: String? = nil) {
     held = id
     download = Download(to: model, progress: { share in show(share, in: id) }) { end in

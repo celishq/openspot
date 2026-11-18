@@ -64,13 +64,13 @@ final class SpotSettingsTests: XCTestCase {
 
     func testAValueWithANewLineStaysInItsRow() async throws {
         try "#!/bin/sh\n".writeScript(to: folder.spotFile("move"), toml: "title = 'Move'\n[settings.place]\ntitle = 'Place'")
-        try file.set(setting: "place", of: "move", to: "far\n\nrow=other\ntitle=Other")
+        try file.set(setting: "place", of: "move", to: "far\n\ntext=other\ntitle=Other")
         let settings = try XCTUnwrap(try spot("move").settingsSpot)
 
         let items = try await rows(of: settings, in: SpotRuns())
 
         XCTAssertEqual(items.map(\.run), ["key:move:open", "setting:move:place", "menubar:move"])
-        XCTAssertEqual(items.first { $0.run == "setting:move:place" }?.subtitle, "far\n\nrow=other\ntitle=Other")
+        XCTAssertEqual(items.first { $0.run == "setting:move:place" }?.subtitle, "far\n\ntext=other\ntitle=Other")
     }
 
     func testAKeyRowTakesAKeyAndRemoveTakesItAway() async throws {
@@ -95,7 +95,7 @@ final class SpotSettingsTests: XCTestCase {
     }
 
     func testASpotWithOneCommandAndAReadKeepsItsOwnSheetAndItsSettingsApart() async throws {
-        try "#!/bin/sh\n[ \"$1\" = show ] && printf 'row=own\\ntitle=Own\\n'\nexit 0\n".writeScript(to: folder.spotFile("move"), toml: "title = 'Move'\non = ['sheet.open']\noffers = ['card', 'float']\n[commands.left]\ntitle = 'Left side'")
+        try "#!/bin/sh\n[ \"$1\" = show ] && printf 'text=own\\ntitle=Own\\n'\nexit 0\n".writeScript(to: folder.spotFile("move"), toml: "title = 'Move'\non = ['sheet.open']\noffers = ['card', 'float']\n[commands.left]\ntitle = 'Left side'")
         let move = try spot("move")
         let runs = SpotRuns()
 
@@ -123,7 +123,7 @@ final class SpotSettingsTests: XCTestCase {
         title = 'Default app'
         icon = 'app.badge'
         """
-        try "#!/bin/sh\nprintf 'row=own\\ntitle=Own\\n'\n".writeScript(to: folder.spotFile("shelf"), toml: toml)
+        try "#!/bin/sh\nprintf 'text=own\\ntitle=Own\\n'\n".writeScript(to: folder.spotFile("shelf"), toml: toml)
         try file.set(setting: "folder", of: "shelf", to: "~/Code")
         try file.set(setting: "theme", of: "shelf", to: "dark")
         try file.set(setting: "theme", of: "other", to: "light")

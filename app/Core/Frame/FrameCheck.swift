@@ -8,16 +8,26 @@ public struct FrameCheck: Equatable, Sendable {
         FrameParses.meter?.add()
         let blocks = SpotOutput.grouping(TextBlock.blocks(in: text))
         let output = SpotOutput(grouped: blocks, kinds: kinds)
-        let rows = blocks.filter { $0.fields.first?.key == BlockKind.row }
-        let taken = Self.calls.filter { $0 != "drag" || rows.contains { $0.value(RowKey.file) != nil } }
         let root = FrameRoot(blocks: blocks, kinds: kinds).block
         let placed = SpotOutput.placed(by: root)
+        let listed = blocks.filter { block in
+            guard let kind = BlockKind.of(block, in: kinds), let id = block.value(kind.word) else { return false }
+            return !placed.contains(id) && !kind.presses && kind != .section && block != output.searchField
+        }
+        let taken = Self.calls.filter { $0 != "drag" || listed.contains { $0.value(ItemKey.file) != nil } }
         var faults: [String] = []
         for block in blocks {
             guard let kind = BlockKind.of(block, in: kinds), let id = block.value(kind.word) else { continue }
+            if listed.contains(block) {
+                if taken.contains(id) { faults.append("an item cannot be called \(id)") }
+                if kind == .hotkey { faults += kind.faults(block) }
+                if let file = block.value(ItemKey.file), !file.hasPrefix("/") {
+                    faults.append("the item \(id) names the file \(file), which does not start with /")
+                }
+                continue
+            }
             guard kind.presses, !placed.contains(id) else {
                 faults += PartCatalog.faults(in: block, kind: kind)
-                if kind.isOpen, block.value(BlockKind.row) != nil { faults.append("the view \(id) has the key `row`, which starts a row block. Give the key another name.") }
                 continue
             }
             if taken.contains(id), id != SpotOutput.open { faults.append("an action cannot be called \(id)") }
@@ -29,11 +39,6 @@ public struct FrameCheck: Equatable, Sendable {
         faults += Self.rootFaults(root, of: output)
         for id in taken where output.parts.contains(where: { $0.id == id }) {
             faults.append("a part cannot be called \(id)")
-        }
-        for row in rows {
-            if let file = row.value(RowKey.file), !file.hasPrefix("/") {
-                faults.append("the row \(row.value(RowKey.row) ?? "") names the file \(file), which does not start with /")
-            }
         }
         let carded = Set(output.face.drawings.values.flatMap { $0.joined() })
         let sheet = output.parts.filter { !carded.contains($0.id) || output.layout?.areas[$0.id] != nil }

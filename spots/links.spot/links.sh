@@ -136,20 +136,20 @@ prepare
 
 case "$1" in
   show)
-    printf 'button=copy\ntitle=Copy\nshortcut=cmd+return\nclose=true\n\n'
-    printf 'button=reveal\ntitle=Show in Finder\nshortcut=cmd+r\nclose=true\n\n'
-    printf 'button=edit\ntitle=Edit\nshortcut=cmd+e\nform=true\n\n'
-    printf 'button=delete\ntitle=Delete\nshortcut=cmd+backspace\nconfirm=Press again to delete\n\n'
-    printf 'button=new\ntitle=New link\nshortcut=cmd+n\nscope=spot\nform=true\nplaceholder=Link to add\n\n'
+    printf 'button=copy\ntitle=Copy\nshortcut=cmd+return\n\n'
+    printf 'button=reveal\ntitle=Show in Finder\nshortcut=cmd+r\n\n'
+    printf 'button=edit\ntitle=Edit\nshortcut=cmd+e\nform=true\nclose=false\n\n'
+    printf 'button=delete\ntitle=Delete\nshortcut=cmd+backspace\nconfirm=Press again to delete\nclose=false\n\n'
+    printf 'button=new\ntitle=New link\nshortcut=cmd+n\nscope=spot\nform=true\nclose=false\nplaceholder=Link to add\n\n'
     [ -s "$data" ] || exit 0
     set --
     for icon in "$icons"/*.png; do [ -e "$icon" ] && set -- "$@" "${icon##*/}"; done
     jq -r --arg icons "$icons" --arg home "$HOME" "$esc"'$ARGS.positional as $found | .[]
       | if (.url | test("^[/~]")) then
-          "row=\(.id | esc)\ntitle=\(.title | esc)\ndetail=\(.url | esc)\nicon=\(.url | if startswith("~") then $home + .[1:] else . end | esc)\n"
+          "text=\(.id | esc)\ntitle=\(.title | esc)\ndetail=\(.url | esc)\nicon=\(.url | if startswith("~") then $home + .[1:] else . end | esc)\n"
         else
           (.url | sub("^[a-zA-Z][a-zA-Z0-9+.-]*:(//)?"; "") | sub("[/?#].*$"; "")) as $host
-          | "row=\(.id | esc)\ntitle=\(.title | esc)\ndetail=\($host | esc)\nhides=reveal\n"
+          | "text=\(.id | esc)\ntitle=\(.title | esc)\ndetail=\($host | esc)\nhides=reveal\n"
           + (if ($found | index($host + ".png")) then "icon=\("\($icons)/\($host).png" | esc)\n" else "icon=link\n" end)
         end' "$data" --args "$@"
     ;;

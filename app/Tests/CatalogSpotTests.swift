@@ -70,11 +70,8 @@ final class CatalogSpotTests: BuiltInCase {
         XCTAssertTrue(sheet.contains("apps.sh"))
     }
 
-    func testARowIsOnByItsValue() throws {
-        let on = try XCTUnwrap(TextBlock.blocks(in: "row=apps\ntitle=Apps\nvalue=true\n").first)
-        let old = try XCTUnwrap(TextBlock.blocks(in: "row=apps\ntitle=Apps\non=true\n").first)
-
-        XCTAssertEqual(SpotItem(block: on)?.isOn, true)
-        XCTAssertEqual(SpotItem(block: old)?.isOn, false)
+    func testAnItemIsOnByItsValue() throws {
+        XCTAssertEqual(SpotOutput(text: "text=apps\ntitle=Apps\nvalue=true\n").items.first?.isOn, true)
+        XCTAssertEqual(SpotOutput(text: "text=apps\ntitle=Apps\non=true\n").items.first?.isOn, false)
     }
 }

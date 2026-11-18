@@ -119,7 +119,7 @@ final class DictateExampleTests: SampleSpotsCase {
         XCTAssertEqual(offer?.pin, .top)
         XCTAssertEqual(offer?.openTitle, "Download")
         XCTAssertEqual(offer?.staysOnPick, true)
-        XCTAssertTrue(SpotOutput(text: frames[1]).hidesSearch)
+        XCTAssertEqual(SpotOutput(text: frames[1]).search, .off)
         let head = try XCTUnwrap(frames.compactMap { SpotOutput(text: $0).summary }.first { $0.value("progress") != nil })
         XCTAssertEqual(head.value("detail"), "0% of 1.6 GB")
         XCTAssertTrue(toasts(in: folder).contains { $0.hasPrefix("Dictate is ready.") })

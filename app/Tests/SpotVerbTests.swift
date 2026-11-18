@@ -26,8 +26,8 @@ final class SpotVerbTests: XCTestCase {
         let editor = [
             "#!/bin/sh",
             "case \"$1\" in",
-            "  show) printf 'frame=\\ngrid=describe\\ngrid=copy\\n\\nfield=describe\\ntype=multiline\\n\\nbutton=copy\\ntitle=Copy prompt\\nlook=strong\\nshortcut=cmd+return\\n'",
-            "    [ -z \"${OPENSPOT_EDIT_FILE-}\" ] || printf '\\nbutton=editor\\ntitle=Open in editor\\nscope=spot\\nclose=true\\n' ;;",
+            "  show) printf 'frame=\\ngrid=describe\\ngrid=copy\\n\\nfield=describe\\ntype=multiline\\n\\nbutton=copy\\ntitle=Copy prompt\\nlook=strong\\nshortcut=cmd+return\\nclose=false\\n'",
+            "    [ -z \"${OPENSPOT_EDIT_FILE-}\" ] || printf '\\nbutton=editor\\ntitle=Open in editor\\nscope=spot\\n' ;;",
             "  copy) echo \"$OPENSPOT_EDIT|${OPENSPOT_EDIT_FILE-}|${OPENSPOT_EDIT_FAILURE-}\" >> '\(folder.path)/edits' ;;",
             "  editor) open -t \"$OPENSPOT_EDIT_FILE\" ;;",
             "esac"

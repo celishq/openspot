@@ -38,15 +38,15 @@ final class PlaygroundTests: XCTestCase {
 
     func testTextDrawsASheetAndReportsItsFaults() {
         var playground = Playground()
-        playground.take(text: "frame=\ngrid=b\n\ntext=a\ntitle=A\n")
+        playground.take(text: "frame=\ngrid=a\ngrid=a b\n\ntext=a\ntitle=A\n")
 
         XCTAssertEqual(playground.panel?.parts.map(\.id), ["a"])
-        XCTAssertEqual(playground.faults, ["the part a is not in the drawing"])
+        XCTAssertEqual(playground.faults, ["each grid line needs the same number of columns"])
     }
 
     func testTextThatDrawsNothingLeavesTheLastSheet() {
         var playground = Playground()
-        playground.take(text: "text=a\ntitle=A\n")
+        playground.take(text: "frame=\ngrid=a\n\ntext=a\ntitle=A\n")
         playground.take(text: "gri")
 
         XCTAssertEqual(playground.panel?.parts.map(\.id), ["a"])
@@ -56,7 +56,7 @@ final class PlaygroundTests: XCTestCase {
 
     func testAChangeShowsAtOnceAndIsLogged() {
         var playground = Playground()
-        playground.take(text: "switch=a\nvalue=false\n")
+        playground.take(text: "frame=\ngrid=a\n\nswitch=a\nvalue=false\n")
 
         playground.set("true", of: "a")
         playground.press("a")
@@ -68,10 +68,10 @@ final class PlaygroundTests: XCTestCase {
     func testAFrameOfAScriptShowsItsTextAndFaults() {
         var playground = Playground()
 
-        playground.note(frame: "frame=\ngrid=b\n\ntext=a\ntitle=A\n")
+        playground.note(frame: "frame=\ngrid=a\ngrid=a b\n\ntext=a\ntitle=A\n")
 
-        XCTAssertEqual(playground.text, "frame=\ngrid=b\n\ntext=a\ntitle=A\n")
-        XCTAssertEqual(playground.faults, ["the part a is not in the drawing"])
+        XCTAssertEqual(playground.text, "frame=\ngrid=a\ngrid=a b\n\ntext=a\ntitle=A\n")
+        XCTAssertEqual(playground.faults, ["each grid line needs the same number of columns"])
         XCTAssertNil(playground.panel)
     }
 }

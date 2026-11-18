@@ -15,12 +15,13 @@ public struct SheetLayout: Equatable, Sendable {
             && first.repeated?.perLine == second.repeated?.perLine
     }
 
-    public init?(block: TextBlock?, repeating: (area: String, perLine: Int)? = nil, repeats: Int = 0) {
+    public init?(block: TextBlock?, repeating: (area: String, perLine: Int)? = nil, repeats: Int = 0, skipping search: String? = nil) {
         let block = block ?? TextBlock(fields: [])
-        let rows = block.values("grid").filter { !$0.isEmpty }.map(Self.words)
+        var rows = block.values("grid").filter { !$0.isEmpty }.map(Self.words).filter { $0.contains { $0 != search } }
         repeated = repeating
         repeatCount = repeats
         guard !rows.isEmpty else { return nil }
+        if let repeating, !rows.joined().contains(repeating.area) { rows.append(Array(repeating: repeating.area, count: rows.map(\.count).max() ?? 1)) }
         self.rows = rows
         isDrawn = true
         areas = Self.areas(in: rows)

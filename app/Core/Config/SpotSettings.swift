@@ -112,7 +112,7 @@ public struct SpotSettings: Equatable, Sendable {
         var blocks = [
             RootKey.block([.init(key: "recents", value: "false")]),
             TextBlock(fields: [.init(key: "button", value: Self.open), .init(key: "title", value: "Change"), .init(key: "close", value: "false")]),
-            TextBlock(fields: [.init(key: "button", value: Self.clear), .init(key: "title", value: "Remove"), .init(key: "shortcut", value: "cmd+backspace")])
+            TextBlock(fields: [.init(key: "button", value: Self.clear), .init(key: "title", value: "Remove"), .init(key: "shortcut", value: "cmd+backspace"), .init(key: "close", value: "false")])
         ]
         blocks += keys.map { key in keyRow(key, config.keys.first { $0.spot == spot && $0.act == key.act }) }
         let named = fields.map { field in
@@ -122,7 +122,7 @@ public struct SpotSettings: Equatable, Sendable {
         blocks += (named + kept).map(fieldRow)
         if showsInMenuBar {
             blocks.append(TextBlock(fields: [
-                .init(key: "row", value: Row.menuBar.id(of: spot)), .init(key: "title", value: "Show in the menu bar"), .init(key: "icon", value: Self.menuBarIcon),
+                .init(key: "text", value: Row.menuBar.id(of: spot)), .init(key: "title", value: "Show in the menu bar"), .init(key: "icon", value: Self.menuBarIcon),
                 .init(key: "hides", value: Self.clear), .init(key: "value", value: String(config.arrangement.menuBar.contains(spot)))
             ]))
         }
@@ -132,15 +132,14 @@ public struct SpotSettings: Equatable, Sendable {
     private func keyRow(_ key: Key, _ given: GlobalKey?) -> TextBlock {
         let text = given?.trigger.text
         return TextBlock(fields: [
-            .init(key: "row", value: Row.key(key.act).id(of: spot)), .init(key: "title", value: key.title), .init(key: "icon", value: key.icon),
-            .init(key: "type", value: "hotkey"), .init(key: "shake", value: "true"), .init(key: "close", value: "false"),
-            .init(key: "shortcut", value: text ?? "Record")
-        ] + (text == nil ? [.init(key: "detail", value: Self.unsetKey), .init(key: "hides", value: Self.clear)] : []))
+            .init(key: "field", value: Row.key(key.act).id(of: spot)), .init(key: "type", value: "hotkey"), .init(key: "title", value: key.title),
+            .init(key: "icon", value: key.icon), .init(key: "shake", value: "true"), .init(key: "close", value: "false")
+        ] + (text.map { [.init(key: "value", value: $0)] } ?? [.init(key: "detail", value: Self.unsetKey), .init(key: "hides", value: Self.clear)]))
     }
 
     private func fieldRow(_ field: HeaderField, _ value: String?) -> TextBlock {
         TextBlock(fields: [
-            .init(key: "row", value: Row.setting(field.id).id(of: spot)), .init(key: "title", value: field.title),
+            .init(key: "text", value: Row.setting(field.id).id(of: spot)), .init(key: "title", value: field.title),
             .init(key: "detail", value: value ?? "Not set"), .init(key: "icon", value: Self.valueIcon)
         ] + (value == nil ? [.init(key: "hides", value: Self.clear)] : []))
     }

@@ -17,7 +17,7 @@ public struct SpotAction: Equatable, Sendable {
     }
 
     public static func item(_ item: SpotItem) -> SpotAction {
-        SpotAction(arguments: ["open", item.run])
+        item.isToggle ? SpotAction(arguments: [item.run, item.isOn ? "false" : "true"]) : SpotAction(arguments: ["open", item.run])
     }
 
     public static func action(_ action: CommandAction, item: SpotItem?) -> SpotAction {

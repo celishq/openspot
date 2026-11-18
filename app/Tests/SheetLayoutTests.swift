@@ -136,7 +136,7 @@ final class SheetLayoutTests: XCTestCase {
     }
 
     func testTilesHaveTheOneRowHeightAndGap() throws {
-        let sheet = try XCTUnwrap(SheetParts(output: SpotOutput(text: "text=a\ntitle=A\nlook=tile\n\ntext=b\ntitle=B\nlook=tile\n"))).placement
+        let sheet = try XCTUnwrap(SheetParts(output: SpotOutput(text: "frame=\ngrid.large=a b\n\ntext=a\ntitle=A\nlook=tile\n\ntext=b\ntitle=B\nlook=tile\n"))).placement
 
         XCTAssertEqual(try XCTUnwrap(sheet.frames["a"]).rect.height, SpotTokens.listRow)
         XCTAssertEqual(try XCTUnwrap(sheet.frames["b"]).rect.minY, SpotTokens.listRow + SpotTokens.partGap)
@@ -275,7 +275,7 @@ final class SheetLayoutTests: XCTestCase {
     option=x
     title=X
 
-    row=1
+    text=1
     title=one
     icon=😀
     """
@@ -301,25 +301,28 @@ final class SheetLayoutTests: XCTestCase {
     }
 
     func testRowsAloneNeedNoDrawing() {
-        let linesCheck = FrameCheck(text: "repeat=a\ngrid=a b c d e f g\n\nrow=1\ntitle=one\nicon=😀\n")
+        let linesCheck = FrameCheck(text: "repeat=a\ngrid=a b c d e f g\n\ntext=1\ntitle=one\nicon=😀\n")
         let lines = linesCheck.output
 
         XCTAssertEqual(lines.perLine, 7)
         XCTAssertEqual(linesCheck.sheetFaults, [])
-        XCTAssertEqual(output("row=1\ntitle=one\n").perLine, nil)
+        XCTAssertEqual(output("text=1\ntitle=one\n").perLine, nil)
     }
 
     func testTheFaultsOfARepeat() {
         func faults(_ text: String) -> [String] { FrameCheck(text: text).partFaults }
         let part = "\n\ntext=a\ntitle=A\n"
 
-        XCTAssertEqual(faults("frame=\ngrid=a\n\nrepeat=z\ngrid=x y" + part), ["the repeat names z, which the drawing does not have"])
+        XCTAssertEqual(faults("frame=\ngrid=a\n\nrepeat=z\ngrid=x y" + part), [])
         XCTAssertEqual(faults("frame=\ngrid=a\ngrid=b\n\nrepeat=a\ngrid=x y" + part), ["the part a stands on the repeated area a", "the part a sits in rows that stretch, so draw a choice over two lines for a list"])
         XCTAssertEqual(faults("frame=\ngrid=a\ngrid=b\ngrid=c\n\nrepeat=b\n\nrepeat=c" + part), ["a sheet can repeat only one area"])
     }
 
     func testASheetWithNoDrawingIsOneColumnOfLines() throws {
         let sheet = try placement("""
+        frame=
+        grid.large=lights left power battery
+
         section=lights
         title=Lights
 
@@ -340,7 +343,7 @@ final class SheetLayoutTests: XCTestCase {
     }
 
     func testAHotkeyFieldWithNoDrawingTakesTwoLinesOfTheFullWidth() throws {
-        let sheet = try placement("frame=\ntitle=Welcome\n\nfield=key\ntype=hotkey\n")
+        let sheet = try placement("frame=\ntitle=Welcome\ngrid.large=key\n\nfield=key\ntype=hotkey\n")
         let placed = try placement("frame=\ngrid=key\ngrid=go\n\nfield=key\ntype=hotkey\n\nbutton=go\ntitle=Go\n")
 
         let key = try XCTUnwrap(sheet.frames["key"]).rect
@@ -362,7 +365,6 @@ final class SheetLayoutTests: XCTestCase {
         func faults(_ text: String) -> [String] { FrameCheck(text: text).partFaults }
 
         XCTAssertEqual(faults("frame=\ngrid=a b\ngrid=a\n\ntext=a\ntitle=A\n\ntext=b\ntitle=B\n"), ["each grid line needs the same number of columns"])
-        XCTAssertEqual(faults("frame=\ngrid=a\n\ntext=a\ntitle=A\n\ntext=b\ntitle=B\n"), ["the part b is not in the drawing"])
         XCTAssertEqual(faults("frame=\ngrid=a\ngrid.small=b\n\ntext=a\ntitle=A\n\ntext=b\ntitle=B\n"), [])
         XCTAssertEqual(faults("frame=\ngrid=a\n\ntext=a\ntitle=A\n\ntext=a\ntitle=B\n"), ["two parts are called a"])
         XCTAssertEqual(faults("frame=\ngrid=a b\n\nbutton=a\nlook=strong\nicon=play\n\nbutton=b\nlook=strong\nicon=stop\n"), ["only one part can use look=strong"])
@@ -379,8 +381,8 @@ final class SheetLayoutTests: XCTestCase {
     func testTheFaultsThatComeFromSize() {
         func faults(_ text: String) -> [String] { FrameCheck(text: text).partFaults }
 
-        XCTAssertEqual(faults("field=a\ntype=slider\nvalue=255\n"), ["the part a has a level of 255, outside 0 to 100"])
-        XCTAssertEqual(faults("field=a\ntype=slider\nvalue=255\nmax=255\n"), [])
+        XCTAssertEqual(faults("frame=\ngrid=a\n\nfield=a\ntype=slider\nvalue=255\n"), ["the part a has a level of 255, outside 0 to 100"])
+        XCTAssertEqual(faults("frame=\ngrid=a\n\nfield=a\ntype=slider\nvalue=255\nmax=255\n"), [])
         XCTAssertEqual(faults("frame=\ngrid=a b c d\ngrid=a b c d\n\nnumber=a\nvalue=1\n\ntext=b\ntitle=B\n\ntext=c\ntitle=C\n\ntext=d\ntitle=D\n"), ["the part a needs at least 2 columns of 4 for its number"])
         XCTAssertEqual(faults("frame=\ngrid=a a\n\nnumber=a\nvalue=1\ntitle=CPU\n"), ["the part a needs at least 2 rows for its number and title"])
         XCTAssertEqual(faults("frame=\ngrid=p p\n\ngraph=p\nvalue=0.01\n"), ["the part p needs at least 2 rows for its title and bar"])

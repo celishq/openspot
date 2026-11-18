@@ -2,11 +2,11 @@
 # change since its last version, and the spots it shows, is shown on, starts and is started by. An unused spot offers
 # Move to Trash first.
 function buttons(improve, unused) {
-  if (unused) printf "button=delete\ntitle=Move to Trash\nshortcut=return\nconfirm=Press again to move it to the Trash\n\nbutton=open\ntitle=Open\n\n"
-  else printf "button=open\ntitle=Open\nshortcut=return\n\n"
-  if (improve) printf "button=improve\ntitle=Improve\nshortcut=cmd+return\n\n"
-  printf "button=settings\ntitle=Settings\n"
-  if (!unused) printf "\nbutton=delete\ntitle=Move to Trash\nconfirm=Press again to move it to the Trash\n"
+  if (unused) printf "button=delete\ntitle=Move to Trash\nshortcut=return\nconfirm=Press again to move it to the Trash\nclose=false\n\nbutton=open\ntitle=Open\nclose=false\n\n"
+  else printf "button=open\ntitle=Open\nshortcut=return\nclose=false\n\n"
+  if (improve) printf "button=improve\ntitle=Improve\nshortcut=cmd+return\nclose=false\n\n"
+  printf "button=settings\ntitle=Settings\nclose=false\n"
+  if (!unused) printf "\nbutton=delete\ntitle=Move to Trash\nconfirm=Press again to move it to the Trash\nclose=false\n"
 }
 
 END {

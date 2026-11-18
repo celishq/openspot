@@ -243,7 +243,7 @@ final class CommandClientTests: XCTestCase {
         try await wait("the end of the call") { !run.process.isRunning }
 
         let printed = String(decoding: run.output.fileHandleForReading.readDataToEndOfFile(), as: UTF8.self)
-        XCTAssertTrue(printed.hasPrefix("version="), printed)
+        XCTAssertTrue(printed.hasPrefix("text=status\nversion="), printed)
         XCTAssertEqual(run.process.terminationStatus, 0)
     }
 

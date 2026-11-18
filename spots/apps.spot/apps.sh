@@ -73,9 +73,9 @@ quit_app() {
 }
 
 apps() {
-  printf 'button=reveal\ntitle=Show in Finder\nshortcut=cmd+return\nclose=true\n\n'
-  printf 'button=quit\ntitle=Quit\nshortcut=cmd+shift+q\n\n'
-  printf 'button=uninstall\ntitle=Delete\nshortcut=cmd+backspace\n\n'
+  printf 'button=reveal\ntitle=Show in Finder\nshortcut=cmd+return\n\n'
+  printf 'button=quit\ntitle=Quit\nshortcut=cmd+shift+q\nclose=false\n\n'
+  printf 'button=uninstall\ntitle=Delete\nshortcut=cmd+backspace\nclose=false\n\n'
   live="$data/running"
   { echo; running; } > "$live"
   find_apps
@@ -101,8 +101,8 @@ uninstall_sheet() {
   printf '\n'
   printf 'repeat=files\n\n'
   printf 'button=open\ntitle=Keep or move to Trash\nclose=false\n\n'
-  printf 'button=cancel\ntitle=Cancel\nshortcut=escape\nscope=spot\n\n'
-  printf 'button=remove\ntitle=Move to Trash\nshortcut=cmd+return\nscope=spot\n\n'
+  printf 'button=cancel\ntitle=Cancel\nshortcut=escape\nscope=spot\nclose=false\n\n'
+  printf 'button=remove\ntitle=Move to Trash\nshortcut=cmd+return\nscope=spot\nclose=false\n\n'
   printf '%s\n' "$files" | while IFS= read -r path; do
     if chosen "$path"; then ticked=true; else ticked=false; fi
     where=$(dirname "$path" | sed "s#^$HOME#~#")

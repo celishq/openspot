@@ -44,8 +44,8 @@ esac
 
 frame=$(openspot spot stats --days 14) || exit 1
 
-# Prints the sheet: the chart, then the rows that list.awk orders.
-printf '%s\n' "$frame" | awk -f "$here/stats.awk" -f "$here/list.awk" | sort -t "$(printf '\t')" -k1,1n -k2,2 | {
+# Prints the sheet: the chart, then the items that list.awk orders.
+printf '%s\n' "$frame" | awk -f "$here/stats.awk" -f "$here/list.awk" | sort -t "$(printf '\t')" -k1,1n -k2,2n | {
   printf 'frame=\ngrid=chart\ngrid=chart\ngrid=chart\ngrid=chart\ngrid=spots\ngrid.small=top\nrecents=false\n\n'
   printf 'view=chart\ngrow=false\n\n'
   first=1

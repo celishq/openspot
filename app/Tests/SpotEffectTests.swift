@@ -33,7 +33,7 @@ final class SpotEffectTests: PanelCase {
         in=$(cat)
         route=$(printf '%s\\n' "$in" | sed -n 's/^route=//p')
         case "$1" in
-          show) echo "${route:-first}" >> '\(path("routes"))'; \(show) printf '\(buttons)row=a\\ntitle=Page %s\\n\\nrow=b\\ntitle=B\\n\\nrow=c\\ntitle=C\\n' "${route:-first}" ;;
+          show) echo "${route:-first}" >> '\(path("routes"))'; \(show) printf '\(buttons)text=a\\ntitle=Page %s\\n\\ntext=b\\ntitle=B\\n\\ntext=c\\ntitle=C\\n' "${route:-first}" ;;
           next) "$os" route push "n${#route}" --title "Next page" ;;
           root) "$os" route back --root ;;
           back) "$os" route back ;;

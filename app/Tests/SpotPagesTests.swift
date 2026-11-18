@@ -8,7 +8,7 @@ final class SpotPagesTests: SpotRunsCase {
     }
 
     func testEachReadOfAPageNamesItAndTheFirstSheetNamesNone() async throws {
-        try script(toml: "on = ['sheet.open']", "page=$(sed -n 's/^route=//p')\necho \"${page:-none}\" >> '\(path("pages"))'\nprintf 'row=a\\ntitle=Page %s\\n' \"${page:-first}\"")
+        try script(toml: "on = ['sheet.open']", "page=$(sed -n 's/^route=//p')\necho \"${page:-none}\" >> '\(path("pages"))'\nprintf 'text=a\\ntitle=Page %s\\n' \"${page:-first}\"")
         let sheet = try sheet()
         runs.panelOpened()
         sheet.open(onReady: {})
@@ -22,7 +22,7 @@ final class SpotPagesTests: SpotRunsCase {
     }
 
     func testAPageThatComesBackShowsItsRowsAtOnceAndReadsAgain() async throws {
-        try script(toml: "on = ['sheet.open']", "page=$(sed -n 's/^route=//p')\nprintf 'row=a\\ntitle=Page %s\\n' \"${page:-first}\"")
+        try script(toml: "on = ['sheet.open']", "page=$(sed -n 's/^route=//p')\nprintf 'text=a\\ntitle=Page %s\\n' \"${page:-first}\"")
         let sheet = try sheet()
         runs.panelOpened()
         sheet.open(onReady: {})
@@ -38,7 +38,7 @@ final class SpotPagesTests: SpotRunsCase {
     }
 
     func testAPressOnAPageNamesItToo() async throws {
-        try script(toml: "on = ['sheet.open']", "[ \"$1\" = go ] && echo \"$(sed -n 's/^route=//p')\" >> '\(path("pages"))'\nprintf 'button=go\\ntitle=Go\\nscope=spot\\n\\nrow=a\\ntitle=A\\n'")
+        try script(toml: "on = ['sheet.open']", "[ \"$1\" = go ] && echo \"$(sed -n 's/^route=//p')\" >> '\(path("pages"))'\nprintf 'button=go\\ntitle=Go\\nscope=spot\\n\\ntext=a\\ntitle=A\\n'")
         let sheet = try sheet()
         runs.panelOpened()
         sheet.open(onReady: {})
@@ -56,7 +56,7 @@ final class SpotPagesTests: SpotRunsCase {
           printf '%s\\n' "$line" >> '\(path("blocks"))'
           case "$line" in
             call=*) id=${line#call=} ;;
-            '') printf 'end=%s\\n\\nrow=a\\ntitle=A\\n---\\n' "$id" ;;
+            '') printf 'end=%s\\n\\ntext=a\\ntitle=A\\n---\\n' "$id" ;;
           esac
         done
         """)
@@ -74,7 +74,7 @@ final class SpotPagesTests: SpotRunsCase {
     func testAnInlineScriptGetsThePage() async throws {
         let url = folder.spotFile("script", extension: "js")
         try FileManager.default.createDirectory(at: url.deletingLastPathComponent(), withIntermediateDirectories: true)
-        try "function main(args, env, input) { return `row=a\\ntitle=Page ${openspot.value('route', input) || 'first'}\\n` }\n".writeInline(to: url, toml: "on = ['sheet.open']")
+        try "function main(args, env, input) { return `text=a\\ntitle=Page ${openspot.value('route', input) || 'first'}\\n` }\n".writeInline(to: url, toml: "on = ['sheet.open']")
         let sheet = try sheet()
         runs.panelOpened()
         sheet.open(onReady: {})

@@ -35,8 +35,8 @@ final class ProtocolContractTests: XCTestCase {
 
         let docKinds = keys(RepoDoc.tableRows(in: doc.section("Blocks")).map { $0[0] })
 
-        let rowRows = RepoDoc.tableRows(in: doc.section("Rows"))
-        let docRowKeys = keys(rowRows.map { $0[0] }) + keys(pages.filter { $0[1].contains("a row") }.map { $0[0] })
+        let itemRows = RepoDoc.tableRows(in: doc.section("Items"))
+        let docItemKeys = keys(itemRows.map { $0[0] }) + keys(pages.filter { $0[1].contains("an item") }.map { $0[0] })
 
         let events = Set(SpotEvent.known + [SpotEvent.clockPrefix + "<seconds>"])
         let docEvents = keys(RepoDoc.tableRows(in: doc.section("Events")).map { $0[0] })
@@ -69,7 +69,7 @@ final class ProtocolContractTests: XCTestCase {
             + compare("header block", code: headerKinds, doc: Set(docHeaderKinds))
             + compare("root key", code: rootKeys, doc: Set(docRootKeys))
             + compare("block kind", code: BlockKind.words, doc: Set(docKinds))
-            + compare("row key", code: Set(RowKey.allCases.map(\.rawValue)), doc: Set(docRowKeys))
+            + compare("item key", code: Set(ItemKey.allCases.map(\.rawValue)), doc: Set(docItemKeys))
             + compare("event", code: events, doc: Set(docEvents))
             + compare("place", code: places, doc: Set(docPlaces))
             + compare("use", code: uses, doc: Set(docUses))

@@ -3,7 +3,6 @@ import Foundation
 public struct BlockKind: Sendable, Equatable {
     public typealias Data = (value: Double?, points: [Double]?)
 
-    public static let row = "row"
     public static let repeated = "repeat"
     public static let option = "option"
 
@@ -57,7 +56,7 @@ public struct BlockKind: Sendable, Equatable {
 
     public static let all = [text, number, gauge, graph, picture, view, toggle, slider, hotkey, field, choice, button, section]
 
-    static let listWords = [row, repeated, option]
+    static let listWords = [repeated, option]
 
     public static var words: Set<String> {
         Set(all.map(\.word) + listWords)

@@ -50,7 +50,7 @@ final class CardFaceTests: XCTestCase {
     func testOnlyASwitchThatIsTheWholeCardSaysWhetherTheCardIsOn() {
         let state = { (text: String) in SpotState(output: SpotOutput(text: text), header: SpotState(title: "Clock")).on }
         XCTAssertEqual(state("switch=power\nvalue=true\n"), true)
-        XCTAssertNil(state("switch=power\nvalue=true\n\nrow=a\ntitle=A\n"))
+        XCTAssertNil(state("switch=power\nvalue=true\n\ntext=a\ntitle=A\n"))
         XCTAssertNil(state("switch=power\nvalue=true\n\ntext=bar\ntitle=Bar\n"))
         XCTAssertNil(state("frame=\nmain=power\n\nswitch=power\nvalue=true\n\ntext=bar\ntitle=Bar\n"))
         XCTAssertNil(SpotState(title: "Clock").taking(SpotOutput(text: "frame=\nmain=power\n\nswitch=power\nvalue=true\n\ntext=bar\ntitle=Bar\n")).on)
@@ -116,8 +116,8 @@ final class CardFaceTests: XCTestCase {
     }
 
     func testAnAnswerWithNoMainValueOrNoFullWidthDrawingIsItsRows() {
-        let noMain = SpotOutput(text: "frame=\ngrid.strip=a b\n\nnumber=a\nvalue=1\n\nnumber=b\nvalue=2\n\nrow=r\ntitle=R\n")
-        let wide = SpotOutput(text: "frame=\ngrid.wide=a\n\nnumber=a\nvalue=1\n\nrow=r\ntitle=R\n")
+        let noMain = SpotOutput(text: "frame=\ngrid.strip=a b\n\nnumber=a\nvalue=1\n\nnumber=b\nvalue=2\n\ntext=r\ntitle=R\n")
+        let wide = SpotOutput(text: "frame=\ngrid.wide=a\n\nnumber=a\nvalue=1\n\ntext=r\ntitle=R\n")
         let strip = SpotOutput(text: "frame=\ngrid.strip=a\n\nnumber=a\nvalue=1\n")
 
         XCTAssertEqual(noMain.answers.map(\.run), ["r"])

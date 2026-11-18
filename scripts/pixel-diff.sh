@@ -17,7 +17,7 @@ fixtures() {
   cp -R spots/openspot.spot "$work/state/core/"
   spot rows Rows list.bullet sheet.open <<'SPOT'
 #!/bin/sh
-printf "row=a\ntitle=Alpha\ndetail=The first row\nicon=star\n\nrow=b\ntitle=Beta\ndetail=The second row\nicon=heart\nvalue=true\n\nrow=c\ntitle=Gamma\nicon=bolt\ntone=good\nshortcut=⌃⌥K\n\nrow=d\ntitle=Delta\nicon=leaf\n"
+printf "text=a\ntitle=Alpha\ndetail=The first row\nicon=star\n\ntext=b\ntitle=Beta\ndetail=The second row\nicon=heart\nvalue=true\n\ntext=c\ntitle=Gamma\nicon=bolt\ntone=good\nshortcut=⌃⌥K\n\ntext=d\ntitle=Delta\nicon=leaf\n"
 SPOT
   spot parts Parts square.grid.2x2 sheet.open <<'SPOT'
 #!/bin/sh
@@ -32,7 +32,7 @@ if [ "$1" = add ]; then
   printf "%s\n" "frame=" "title=Add a thing" "" "field=name" "title=Name" "placeholder=A name" "" "field=note" "title=Note" "type=multiline" "" "switch=on" "title=Keep it" "value=true"
   exit 0
 fi
-printf "button=add\ntitle=Add\nform=true\nscope=spot\n\nrow=a\ntitle=One\n\nrow=b\ntitle=Two\n"
+printf "button=add\ntitle=Add\nform=true\nscope=spot\n\ntext=a\ntitle=One\n\ntext=b\ntitle=Two\n"
 SPOT
   spot cups Coffee cup.and.saucer.fill panel.open <<'SPOT'
 #!/bin/sh

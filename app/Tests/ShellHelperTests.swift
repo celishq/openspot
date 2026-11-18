@@ -380,7 +380,7 @@ final class ShellHelperTests: XCTestCase {
 
     func testAValueWithANewLineAndAKeyLineAddsNoRow() async throws {
         let url = try script("""
-        bad=$(printf 'one\\n\\nrow=x\\ntitle=x')
+        bad=$(printf 'one\\n\\ntext=x\\ntitle=x')
         openspot_row a "$bad" "$bad" 'a\\b'
         openspot_kv tone good
         printf 'b\\tBack\\\\slash\\t\\t\\tvalue=true\\tkeywords=c\\\\d\\n' | openspot_rows
@@ -390,12 +390,12 @@ final class ShellHelperTests: XCTestCase {
 
         let items = SpotOutput(text: output).items
         XCTAssertEqual(items.map(\.run), ["a", "b"], output)
-        XCTAssertEqual(items.first?.title, "one\n\nrow=x\ntitle=x")
-        XCTAssertEqual(items.first?.subtitle, "one\n\nrow=x\ntitle=x")
+        XCTAssertEqual(items.first?.title, "one\n\ntext=x\ntitle=x")
+        XCTAssertEqual(items.first?.subtitle, "one\n\ntext=x\ntitle=x")
         XCTAssertEqual(items.last?.title, "Back\\slash")
         XCTAssertEqual(items.last?.isOn, true)
         XCTAssertEqual(items.last?.keywords, ["c\\d"])
-        XCTAssertEqual(TextBlock.blocks(in: output).first { $0.value("row") == "a" }?.value("tone"), "good")
+        XCTAssertEqual(TextBlock.blocks(in: output).first { $0.value("text") == "a" }?.value("tone"), "good")
     }
 
     func testAStayingScriptIsNotBlockedAndKeepsItsCallsOnStdin() async throws {

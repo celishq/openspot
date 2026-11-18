@@ -21,11 +21,11 @@ sheet() {
   printf 'frame=\ngrid=describe describe describe\ngrid=describe describe describe\ngrid=describe describe describe\ngrid=copy copy copy\n\n'
   printf 'field=describe\ntype=multiline\nplaceholder=%s\n' "$placeholder"
   openspot_kv value "$1"
-  printf '\nbutton=copy\ntitle=%s\nlook=strong\nshortcut=cmd+return\n\n' "${2:-Copy prompt}"
-  printf 'button=clear\ntitle=Clear\nscope=spot\n\n'
-  [ -z "${OPENSPOT_EDIT_FILE-}" ] || printf 'button=editor\ntitle=Open in editor\nscope=spot\nclose=true\n\n'
-  printf 'button=guide\ntitle=Read the guide\nscope=spot\nclose=true\n'
-  [ -n "$edit" ] || printf '\nbutton=folder\ntitle=Open spots folder\nscope=spot\nclose=true\n'
+  printf '\nbutton=copy\ntitle=%s\nlook=strong\nshortcut=cmd+return\nclose=false\n\n' "${2:-Copy prompt}"
+  printf 'button=clear\ntitle=Clear\nscope=spot\nclose=false\n\n'
+  [ -z "${OPENSPOT_EDIT_FILE-}" ] || printf 'button=editor\ntitle=Open in editor\nscope=spot\n\n'
+  printf 'button=guide\ntitle=Read the guide\nscope=spot\n'
+  [ -n "$edit" ] || printf '\nbutton=folder\ntitle=Open spots folder\nscope=spot\n'
 }
 
 # Prints the prompt for the agent: to change the spot of OPENSPOT_EDIT, or to build a new one, as the words say.

@@ -47,7 +47,7 @@ final class CommandAPITests: XCTestCase {
 
         XCTAssertEqual(answer.code, 0)
         XCTAssertEqual(answer.output.components(separatedBy: "---\n").count, 3)
-        XCTAssertTrue(answer.output.hasPrefix("row=4\n"), answer.output)
+        XCTAssertTrue(answer.output.hasPrefix("text=4\n"), answer.output)
     }
 
     func testAStoppedBatchRunsNoMoreLines() async throws {
@@ -66,7 +66,7 @@ final class CommandAPITests: XCTestCase {
 
         XCTAssertEqual(answer.code, 2)
         XCTAssertEqual(answer.errors, "openspot batch cannot run `color pick`, because it does not print data. Run it on its own.\n")
-        XCTAssertFalse(answer.output.contains("row=6"))
+        XCTAssertFalse(answer.output.contains("text=6"))
     }
 
     func testABatchRunsNoCallThatReadsStdin() async throws {
@@ -229,7 +229,7 @@ final class CommandAPITests: XCTestCase {
 
         let answer = await work()
 
-        XCTAssertTrue(answer.output.hasPrefix("row=a\ntitle=Alpha\n"), answer.output)
+        XCTAssertTrue(answer.output.hasPrefix("text=a\ntitle=Alpha\n"), answer.output)
     }
 
     func testStatsWithNoAppToReachReadTheFiles() async throws {

@@ -298,13 +298,13 @@ final class DrawSpotTests: XCTestCase {
         let sheet = runs.sheet(for: try draw())
         runs.panelOpened()
         sheet.open {}
-        await link.frame("frame=\nrecents=false\n\nrow=0:new\ntitle=New board\n\nrow=0:flows\ntitle=Flows\n", of: link.sent[0])
+        await link.frame("frame=\nrecents=false\n\ntext=0:new\ntitle=New board\n\ntext=0:flows\ntitle=Flows\n", of: link.sent[0])
         await link.end(link.sent[0])
 
         sheet.pick(try row("flows", in: sheet))
         let held = try XCTUnwrap(link.sent.last)
         XCTAssertEqual(held.request.action.arguments, ["open", "0:flows"])
-        await link.frame("call=2\n\nrow=1:new\ntitle=New board\n\nrow=1:flows\ntitle=Flows\n", of: held)
+        await link.frame("call=2\n\ntext=1:new\ntitle=New board\n\ntext=1:flows\ntitle=Flows\n", of: held)
         sheet.close()
         runs.panelClosed()
         try await wait("the sleep of the work that shows after a second") { clock.sleepCount > 0 }

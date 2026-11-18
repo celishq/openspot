@@ -11,13 +11,13 @@ nl='
 list() {
   themes=$(openspot theme list) || exit 1
   printf 'frame=\nrecents=false\n\nbutton=open\ntitle=Use\nclose=false\n\n'
-  printf 'button=duplicate\ntitle=Duplicate\n\nbutton=rename\ntitle=Rename\nform=true\n\n'
-  printf 'button=delete\ntitle=Move to Trash\nshortcut=cmd+backspace\nconfirm=Press again to move the theme to the Trash\n\n'
-  printf 'button=file\ntitle=Open file\nclose=true\n\nbutton=prompt\ntitle=Copy prompt\n'
+  printf 'button=duplicate\ntitle=Duplicate\nclose=false\n\nbutton=rename\ntitle=Rename\nform=true\nclose=false\n\n'
+  printf 'button=delete\ntitle=Move to Trash\nshortcut=cmd+backspace\nconfirm=Press again to move the theme to the Trash\nclose=false\n\n'
+  printf 'button=file\ntitle=Open file\n\nbutton=prompt\ntitle=Copy prompt\nclose=false\n'
   printf '%s\n' "$themes" | awk 'BEGIN { RS = ""; FS = "\n" }
     { delete f
       for (i = 1; i <= NF; i++) { n = index($i, "="); f[substr($i, 1, n - 1)] = substr($i, n + 1) }
-      printf "\nrow=%s\ntitle=%s\nicon=paintpalette\n", f["theme"], f["theme"]
+      printf "\ntext=%s\ntitle=%s\nicon=paintpalette\n", f["text"], f["text"]
       if (f["builtin"] == "true") printf "detail=Built in\nhides=rename\nhides=delete\nhides=file\n"
       if (f["used"] == "true") printf "value=true\n" }'
 }
@@ -27,7 +27,7 @@ page() {
   printf 'frame=\ngrid=describe describe describe\ngrid=describe describe describe\ngrid=describe describe describe\ngrid=copy copy copy\n\n'
   printf 'field=describe\ntype=multiline\nplaceholder=Describe the look you want for %s\n' "$2"
   openspot_kv value "$1"
-  printf '\nbutton=copy\ntitle=%s\nlook=strong\nshortcut=cmd+return\n' "${3:-Copy prompt}"
+  printf '\nbutton=copy\ntitle=%s\nlook=strong\nshortcut=cmd+return\nclose=false\n' "${3:-Copy prompt}"
 }
 
 route=$(value route)
@@ -76,7 +76,7 @@ case "$route" in
         ;;
       rename)
         if [ -z "$(value input.name)" ]; then
-          printf 'frame=\ntitle=Rename %s\n\nfield=name\ntitle=Name\n' "$2"
+          printf 'frame=\ntitle=Rename %s\ngrid=name\n\nfield=name\ntitle=Name\n' "$2"
           openspot_kv value "$2"
           exit 0
         fi

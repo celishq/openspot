@@ -27,7 +27,7 @@ final class SpotStateTests: XCTestCase {
     }
 
     func testActiveInTheHeadSaysWhetherTheCardIsOnAndWinsOverTheMainSwitch() throws {
-        XCTAssertEqual(try state("frame=\ndetail=25m left\nactive=true\n\nrow=off\ntitle=Turn off").on, true)
+        XCTAssertEqual(try state("frame=\ndetail=25m left\nactive=true\n\ntext=off\ntitle=Turn off").on, true)
         XCTAssertEqual(try state("frame=\ndetail=Off\nactive=false").on, false)
         XCTAssertEqual(try state("frame=\nactive=false\n\nswitch=power\nvalue=true").on, false)
         XCTAssertEqual(try state("frame=\ndetail=Off\n\nswitch=power\nvalue=true").on, true)

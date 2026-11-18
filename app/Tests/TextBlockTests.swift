@@ -71,6 +71,9 @@ final class TextBlockTests: XCTestCase {
 
     func testAMetricReadsItsKeys() {
         let output = SpotOutput(text: """
+        frame=
+        main=m
+
         text=m
         title=6 open
         detail=Today
@@ -81,11 +84,11 @@ final class TextBlockTests: XCTestCase {
         value=3
         max=9
 
-        row=Fix "tray"
+        text=Fix "tray"
         detail=failing
         tone=bad
 
-        row=Docs
+        text=Docs
         """)
 
         XCTAssertEqual(MetricValue(output: output), MetricValue(
@@ -104,20 +107,19 @@ final class TextBlockTests: XCTestCase {
         XCTAssertEqual(MetricValue(output: SpotOutput(text: "text=m\ntitle=A\ntone=purple\nfuture=key")), MetricValue(title: "A"))
     }
 
-    func testAnItemNeedsARowIdAndTakesItAsItsTitleWhenItHasNone() {
-        XCTAssertNil(SpotItem(block: TextBlock.blocks(in: "row=")[0]))
-        XCTAssertNil(SpotItem(block: TextBlock.blocks(in: "title=Only")[0]))
-        XCTAssertEqual(SpotItem(block: TextBlock.blocks(in: "row=😀")[0])?.title, "😀")
+    func testAnItemNeedsAnIdAndTakesItAsItsTitleWhenItHasNone() {
+        XCTAssertEqual(SpotOutput(text: "text=").items, [])
+        XCTAssertEqual(SpotOutput(text: "text=😀").items.first?.title, "😀")
         XCTAssertEqual(
-            SpotItem(block: TextBlock.blocks(in: "row=a\ntitle=A\ndetail=B\nicon=/f\nhides=x\nhides=y")[0]),
-            SpotItem(title: "A", subtitle: "B", run: "a", picture: .file("/f"), hides: ["x", "y"])
+            SpotOutput(text: "text=a\ntitle=A\ndetail=B\nicon=/f\nhides=x\nhides=y").items,
+            [SpotItem(title: "A", subtitle: "B", run: "a", picture: .file("/f"), hides: ["x", "y"])]
         )
     }
 
-    func testARowWithMoreThanOneValueDrawsABarForEachUpToItsMax() throws {
-        let bars = try XCTUnwrap(SpotItem(block: TextBlock.blocks(in: "row=a\nvalue=2\nvalue=-\nvalue=4\nsection=Used")[0]))
-        let capped = try XCTUnwrap(SpotItem(block: TextBlock.blocks(in: "row=a\nvalue=2\nvalue=4\nmax=8")[0]))
-        let check = try XCTUnwrap(SpotItem(block: TextBlock.blocks(in: "row=a\nvalue=true")[0]))
+    func testAnItemWithMoreThanOneValueDrawsABarForEachUpToItsMax() throws {
+        let bars = try XCTUnwrap(SpotOutput(text: "section=used\ntitle=Used\n\ntext=a\nvalue=2\nvalue=-\nvalue=4").items.first)
+        let capped = try XCTUnwrap(SpotOutput(text: "text=a\nvalue=2\nvalue=4\nmax=8").items.first)
+        let check = try XCTUnwrap(SpotOutput(text: "text=a\nvalue=true").items.first)
 
         XCTAssertEqual(bars.bars, [0.5, nil, 1])
         XCTAssertEqual(bars.section, "Used")
@@ -125,7 +127,7 @@ final class TextBlockTests: XCTestCase {
         XCTAssertFalse(bars.isOn)
         XCTAssertEqual(capped.bars, [0.25, 0.5])
         XCTAssertEqual(check.bars, [])
-        XCTAssertEqual(SpotItem(block: TextBlock.blocks(in: "row=a\nvalue=nan\nvalue=2")[0])?.bars, [nil, 1])
+        XCTAssertEqual(SpotOutput(text: "text=a\nvalue=nan\nvalue=2").items.first?.bars, [nil, 1])
         XCTAssertTrue(check.isOn)
     }
 
@@ -147,7 +149,7 @@ final class TextBlockTests: XCTestCase {
 
     func testAnItemShowsItsPathAsItsSpotThenItsParent() {
         let spot = Spot(id: "s", name: "System Settings", url: URL(fileURLWithPath: "/settings.sh"))
-        let volume = SpotItem(block: TextBlock.blocks(in: "row=v\ntitle=Volume\ndetail=Loud\nparent=Sound")[0])
+        let volume = SpotOutput(text: "text=v\ntitle=Volume\ndetail=Loud\nparent=Sound").items.first
 
         XCTAssertEqual(volume?.parent, "Sound")
         XCTAssertEqual(volume?.path(in: spot), "System Settings › Sound")

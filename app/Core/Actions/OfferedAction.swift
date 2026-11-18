@@ -39,7 +39,7 @@ public struct OfferedAction: Equatable, Sendable {
             }
             var hooks: [ActionHook: String] = [:]
             for hook in ActionHook.allCases { hooks[hook] = try function(hook, of: block, name: name, isInline: isInline) }
-            let menuAction = CommandAction(id: action.id, title: action.title, key: action.key, scope: .spot, after: action.after, isForm: action.isForm, confirm: action.confirm)
+            let menuAction = CommandAction(id: action.id, title: action.title, key: action.key, scope: .spot, after: block.flag("close") == true ? .close : .stay, isForm: action.isForm, confirm: action.confirm)
             let origins = try parent?.origins ?? Self.origins(String((line ?? place).dropFirst(place.count)), of: name)
             offered.append(OfferedAction(action: menuAction, owner: owner, group: name, origins: origins, hooks: hooks))
         }

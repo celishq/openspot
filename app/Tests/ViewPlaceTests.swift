@@ -23,9 +23,9 @@ final class ViewPlaceTests: XCTestCase {
         model = SpotsModel(host: host, files: files, runs: SpotRuns(stopPause: 0.2))
         host.model = model
         for name in ["list", "other"] {
-            try TestSpot(toml: "on = ['sheet.open']", body: "printf 'row=a\\ntitle=Apple\\n'").write(to: spots.spotFile(name))
+            try TestSpot(toml: "on = ['sheet.open']", body: "printf 'text=a\\ntitle=Apple\\n'").write(to: spots.spotFile(name))
         }
-        try TestSpot(toml: "on = ['sheet.open']\noffers = ['card', 'window']", body: "printf 'row=a\\ntitle=Apple\\n'").write(to: spots.spotFile("store"))
+        try TestSpot(toml: "on = ['sheet.open']\noffers = ['card', 'window']", body: "printf 'text=a\\ntitle=Apple\\n'").write(to: spots.spotFile("store"))
         await model.reload()
     }
 

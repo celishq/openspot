@@ -18,10 +18,12 @@ detail=1.4 s CPU a day
 
 repeat=spots
 
-row=apps
+section=used
+title=Used · last 14 days
+
+text=apps
 title=Apps
 detail=13.1 a day · 1.2 s CPU
-section=Used · last 14 days
 route=spot:apps
 value=9
 value=14
@@ -41,10 +43,9 @@ acts=13.07
 cpu=1.229
 state=used
 
-row=links
+text=links
 title=Links
 detail=4.8 a day · 343 ms CPU
-section=Used · last 14 days
 route=spot:links
 value=-
 value=-
@@ -64,10 +65,12 @@ acts=4.82
 cpu=0.343
 state=used
 
-row=paste
+section=failing
+title=Failing
+
+text=paste
 title=Paste screenshot
 detail=4 of 19 failed · stopped with an error
-section=Failing
 route=spot:paste
 tone=bad
 value=0
@@ -88,10 +91,12 @@ acts=1.36
 cpu=0.221
 state=bad
 
-row=shortcuts
+section=slow
+title=Slow to answer
+
+text=shortcuts
 title=Shortcuts
 detail=95 in 100 answer within 1.6 s · half within 400 ms
-section=Slow to answer
 route=spot:shortcuts
 tone=warn
 value=2
@@ -112,10 +117,12 @@ acts=1.57
 cpu=1.421
 state=warn
 
-row=devices
+section=unused
+title=Unused for 14 days
+
+text=devices
 title=Devices
 detail=1.1 s CPU a day, 857 ms while hidden
-section=Unused for 14 days
 route=spot:devices
 value=0
 value=0

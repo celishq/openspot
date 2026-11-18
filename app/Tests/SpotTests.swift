@@ -75,7 +75,7 @@ final class SpotTests: XCTestCase {
 
     func testOpeningGivesTheKindAndTheActionsThatItPrints() async throws {
         let command = try writeCommand(kind: .launch, read: .panel, """
-        printf 'frame=\\nactive=true\\n\\nbutton=open\\ntitle=Select\\n\\nbutton=copy\\ntitle=Copy\\n\\nrow=a\\ntitle=A\\n'
+        printf 'frame=\\nactive=true\\n\\nbutton=open\\ntitle=Select\\n\\nbutton=copy\\ntitle=Copy\\n\\ntext=a\\ntitle=A\\n'
         """)
 
         let opened = try await command.opened(timeout: 60)
@@ -88,7 +88,7 @@ final class SpotTests: XCTestCase {
 
     func testReadsTheItemsACommandPrintsForRead() async throws {
         let command = try writeCommand(kind: .list, """
-        [ "$1" = show ] && [ -z "$2" ] && printf 'row=/Safari.app\\ntitle=Safari\\n'
+        [ "$1" = show ] && [ -z "$2" ] && printf 'text=/Safari.app\\ntitle=Safari\\n'
         """)
 
         let lines = try await command.items(timeout: 60)
@@ -98,7 +98,7 @@ final class SpotTests: XCTestCase {
 
     func testPassesTheSearchToAList() async throws {
         let command = try writeCommand(kind: .list, """
-        printf 'row=%s\\ntitle=%s\\n' "$1" "$(sed -n 's/^search=//p')"
+        printf 'text=%s\\ntitle=%s\\n' "$1" "$(sed -n 's/^search=//p')"
         """)
 
         let lines = try await command.items(query: "rep", timeout: 60)

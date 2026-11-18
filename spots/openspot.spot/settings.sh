@@ -23,12 +23,12 @@ sheet() {
   link=$(value "$1" link)
   slow=$(value "$1" slow)
   printf 'frame=\nrecents=false\n\nbutton=open\ntitle=Change\nclose=false\n'
-  printf '\nrow=panel-key\ntitle=Open Openspot\nicon=keyboard\ntype=hotkey\nshortcut=%s\n' "$(value "$1" panel-key)"
-  printf '\nrow=fix-key\ntitle=Open a fix\nicon=wrench.and.screwdriver\ntype=hotkey\nshortcut=%s\n' "$(value "$1" fix-key)"
-  printf '\nrow=careful_mode\ntitle=Careful mode\ndetail=Spots get only what their uses name\nicon=lock.shield\nvalue=%s\n' "$(value "$1" careful)"
-  [ -z "$slow" ] || printf '\nrow=slow_motion\ntitle=Slow motion\ndetail=Every motion ten times slower\nicon=tortoise\nvalue=%s\n' "$slow"
-  [ -z "$login" ] || printf '\nrow=open_at_login\ntitle=Open at login\nicon=power\nvalue=%s\n' "$login"
-  [ -z "$link" ] || printf '\nrow=command_link\ntitle=Use openspot in Terminal\ndetail=The command line tool\nicon=terminal\nvalue=%s\n' "$link"
+  printf '\nfield=panel-key\ntype=hotkey\ntitle=Open Openspot\nicon=keyboard\nvalue=%s\n' "$(value "$1" panel-key)"
+  printf '\nfield=fix-key\ntype=hotkey\ntitle=Open a fix\nicon=wrench.and.screwdriver\nvalue=%s\n' "$(value "$1" fix-key)"
+  printf '\ntext=careful_mode\ntitle=Careful mode\ndetail=Spots get only what their uses name\nicon=lock.shield\nvalue=%s\n' "$(value "$1" careful)"
+  [ -z "$slow" ] || printf '\ntext=slow_motion\ntitle=Slow motion\ndetail=Every motion ten times slower\nicon=tortoise\nvalue=%s\n' "$slow"
+  [ -z "$login" ] || printf '\ntext=open_at_login\ntitle=Open at login\nicon=power\nvalue=%s\n' "$login"
+  [ -z "$link" ] || printf '\ntext=command_link\ntitle=Use openspot in Terminal\ndetail=The command line tool\nicon=terminal\nvalue=%s\n' "$link"
 }
 
 case "$1" in

@@ -100,7 +100,7 @@ final class EventsTests: XCTestCase {
             event("daily", "Standup", at(10, day: 11), at(10, 15, day: 11))
         ])
 
-        let ids = rows(try await calendar(store).events(days: 2, hiding: [])).compactMap { $0.value("row") }
+        let ids = rows(try await calendar(store).events(days: 2, hiding: [])).compactMap { $0.value("text") }
 
         XCTAssertEqual(ids.count, 2)
         XCTAssertEqual(Set(ids).count, 2)
@@ -153,7 +153,7 @@ final class EventsTests: XCTestCase {
 
         let rows = rows(try await calendar(store).calendars())
 
-        XCTAssertEqual(rows.map { $0.value("row") }, ["A8E2", "B1"])
+        XCTAssertEqual(rows.map { $0.value("text") }, ["A8E2", "B1"])
         XCTAssertEqual(rows[0].value("title"), "Work")
         XCTAssertEqual(rows[0].value("detail"), "iCloud")
         XCTAssertEqual(rows[0].value("color"), "#1BADF8")

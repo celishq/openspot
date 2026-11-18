@@ -8,8 +8,8 @@ function name(id) { return title[id] != "" ? title[id] : id }
 function perday(id) { return seen[id] > 0 ? cpu[id] / seen[id] : 0 }
 function join(list, part, gap) { return list (list == "" ? "" : gap) part }
 
-/^row=/ {
-  n++; rec[n] = $0; id = substr($1, 5); ids[n] = id
+/^text=/ {
+  n++; rec[n] = $0; id = substr($1, 6); ids[n] = id
   for (i = 2; i <= NF; i++) {
     if ($i ~ /^title=/) title[id] = substr($i, 7)
     else if ($i ~ /^cpu=/) cpu[id] = substr($i, 5)
@@ -19,7 +19,7 @@ function join(list, part, gap) { return list (list == "" ? "" : gap) part }
 /^use=/ { if ($0 ~ /\ndeclared=false/) for (i = 1; i <= NF; i++) if ($i ~ /^spot=/) undeclared[substr($i, 6)]++ }
 /^search=/ { searches++; searched[searches] = substr($1, 8); searchedTimes[searches] = substr($2, 7) }
 
-# Loads row r: each key once in v, its keys in order in keys, the acts of each day in days, the days that counted acts,
+# Loads spot r: each key once in v, its keys in order in keys, the acts of each day in days, the days that counted acts,
 # and the spots it shows in shows, the cards it is on in cards.
 function load(r,   lines, count, i, k) {
   delete v; delete keys; delete days; delete shows; delete cards
@@ -47,4 +47,4 @@ function state() {
 }
 
 # Whether the loaded spot offers Improve: it fails, answers slowly, or makes a call its header doesn't declare.
-function improves(   s) { s = state(); return s == "bad" || s == "warn" || undeclared[v["row"]] > 0 }
+function improves(   s) { s = state(); return s == "bad" || s == "warn" || undeclared[v["text"]] > 0 }

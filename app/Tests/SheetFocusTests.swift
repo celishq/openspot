@@ -85,7 +85,7 @@ final class SheetFocusTests: XCTestCase {
     }
 
     func testAPartWithNothingToUseTakesNoFocus() throws {
-        let sheet = try panel("text=mac\ntitle=This Mac\n\nfield=log\nvalue=Done\nreadonly=true\n\nswitch=wifi\nvalue=true\n")
+        let sheet = try panel("frame=\ngrid=mac\ngrid=log\ngrid=wifi\n\ntext=mac\ntitle=This Mac\n\nfield=log\nvalue=Done\nreadonly=true\n\nswitch=wifi\nvalue=true\n")
 
         XCTAssertEqual(sheet.focusOrder.map(\.id), ["wifi"])
     }
@@ -100,7 +100,7 @@ final class SheetFocusTests: XCTestCase {
     }
 
     func testTheRowsKeepTheArrowsUntilTheFocusLeavesThemForThePartsBelow() throws {
-        var sheet = try panel("frame=\ngrid=top\ngrid=list\ngrid=add\n\nbutton=top\ntitle=Top\n\nrepeat=list\n\nbutton=add\ntitle=Add\n\nrow=a\ntitle=A\n")
+        var sheet = try panel("frame=\ngrid=top\ngrid=list\ngrid=add\n\nbutton=top\ntitle=Top\n\nrepeat=list\n\nbutton=add\ntitle=Add\n\ntext=a\ntitle=A\n")
 
         XCTAssertFalse(sheet.takesArrows)
         XCTAssertNil(sheet.selectedPart)
@@ -112,7 +112,7 @@ final class SheetFocusTests: XCTestCase {
     }
 
     func testRowsWithNoPartBelowKeepTheFocus() throws {
-        var sheet = try panel("frame=\ngrid=top\ngrid=list\n\nbutton=top\ntitle=Top\n\nrepeat=list\n\nrow=a\ntitle=A\n")
+        var sheet = try panel("frame=\ngrid=top\ngrid=list\n\nbutton=top\ntitle=Top\n\nrepeat=list\n\ntext=a\ntitle=A\n")
 
         XCTAssertFalse(sheet.leaveRows())
         XCTAssertNil(sheet.selectedPart)

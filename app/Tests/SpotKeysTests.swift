@@ -217,7 +217,7 @@ final class SpotKeysTests: XCTestCase {
     func testAFrameCopiesNoHeader() throws {
         let spot = Spot(id: "a", name: "A", url: URL(fileURLWithPath: "/spots/a.sh"), read: .sheet, keywords: ["one", "two"])
 
-        let framed = spot.taking(SpotOutput(text: "frame=\ntitle=Open\nrow=x\ntitle=X\n"))
+        let framed = spot.taking(SpotOutput(text: "frame=\ntitle=Open\ntext=x\ntitle=X\n"))
 
         XCTAssertTrue(framed.header === spot.header)
         XCTAssertLessThan(MemoryLayout<Spot>.size, MemoryLayout<SpotFacts>.size / 2)

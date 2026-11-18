@@ -43,14 +43,12 @@ public struct FaultSpot: Equatable, Sendable {
             TextBlock(fields: [
                 .init(key: "button", value: Self.editPart),
                 .init(key: "title", value: "Edit"),
-                .init(key: "shortcut", value: "cmd+e"),
-                .init(key: "close", value: "true")
+                .init(key: "shortcut", value: "cmd+e")
             ]),
             TextBlock(fields: [
                 .init(key: "button", value: Self.fixPart),
                 .init(key: "title", value: "Copy prompt for AI"),
                 .init(key: "shortcut", value: "cmd+return"),
-                .init(key: "close", value: "true"),
                 .init(key: "look", value: "strong")
             ])
         ].map(\.text).joined(separator: "\n")

@@ -12,4 +12,4 @@ sessions() {
   done
 }
 
-sessions | sed 's/\\/\\\\/g' | awk -F'\t' 'NF { printf "row=%s\ndetail=%s\n\n", $2, $1 }'
+sessions | sed 's/\\/\\\\/g' | awk -F'\t' 'NF { printf "text=%s\ntitle=%s\ndetail=%s\n\n", $2, $2, $1 }'

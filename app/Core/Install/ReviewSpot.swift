@@ -101,7 +101,6 @@ public struct ReviewSpot: Equatable, Sendable {
                 .init(key: "button", value: Self.installPart),
                 .init(key: "title", value: "Add"),
                 .init(key: "shortcut", value: "cmd+return"),
-                .init(key: "close", value: "true"),
                 .init(key: "look", value: "strong")
             ]).text
         ].joined(separator: "\n")

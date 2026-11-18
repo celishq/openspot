@@ -212,7 +212,7 @@ printf 'frame=\n\ntext=done\ntitle=Copied\n'
 - Openspot draws each frame as soon as it arrives.
 - The first frame of a call replaces what shows. A later frame of the same call replaces it too when it holds a root.
 - A later frame with no root changes only the blocks it prints. A block whose id shows takes the place of that block,
-  and a block with a new id joins the end, such as a new row. The root stays as it was.
+  and a block with a new id joins the end, such as a new item. The root stays as it was.
 - A frame with only a root doesn't change what shows. Its `progress`, `title` and `detail` show on the running call
   (see [The root](#the-root)).
 - A spot keeps no state between calls. Each call gets the values on stdin, and prints its frames again, or nothing.
@@ -220,15 +220,15 @@ printf 'frame=\n\ntext=done\ntitle=Copied\n'
 - When a newer change makes a call out of date, Openspot ignores what it prints.
 - Print a value that comes from data with a helper, so that it can't add a line or a block: `openspot_kv`,
   `openspot_row` or `esc` in a shell, and `openspot.frame` in JavaScript. `openspot check spots` warns of a line with no `=`,
-  of a key that shows twice in a block where only a list repeats, and of a key that the root or a kind doesn't take. A
-  row can hold keys of its own, which Openspot skips.
+  of a key that shows twice in a block where only a list repeats, and of a key that the root or a kind doesn't take. An
+  item can hold keys of its own, which Openspot sends back as `item.<key>` when it's picked.
 - Openspot reads `ESC ] 9;4;1;<percent>` as `progress` and `ESC ] 9;<text>` as a toast, and removes other escape codes.
-- A read that prints the same frame as the one that shows, with only a root and rows, changes nothing, so Openspot skips
+- A read that prints the same frame as the one that shows, with only a root and items, changes nothing, so Openspot skips
   it. A frame with another block, or over 256 KB, is drawn again.
 
 ## Blocks
 
-A block is one thing on the sheet or the card: words, a number, a switch, a row.
+A block is one thing on the sheet or the card: words, a number, a switch, an item of a list.
 
 ```ini
 frame=
@@ -246,7 +246,7 @@ value=true
 
 repeat=nets
 
-row=home
+text=home
 title=Home
 icon=wifi
 value=true
@@ -259,7 +259,7 @@ confirm=Press again to forget
 
 - A spot prints blocks, and the layout places them. Openspot picks every size, gap and colour.
 - A block is `<kind>=<id>`. The id names its place in the layout, the call it sends, and what moves when it changes.
-  Ids must be unique in one frame. Only a `row` can use the id `search`, `form` or `value`, because stdin uses them.
+  Ids must be unique in one frame. An id is never `show`, `open`, `drop` or `drag`.
 - Each kind keeps its data in `value`. A kind that shows several values repeats it.
 
 | Kind      | Shows                                                                                                           | Its own keys                                                         | Sends                  |
@@ -274,13 +274,12 @@ confirm=Press again to forget
 | `choice`  | A menu of the `option` blocks after it, a list when it covers two lines or more, or swatches of `color` lines.  | `color`, `value`, `type`                                             | `<id> <option id>`     |
 | `option`  | One option of the `choice` right before it.                                                                     | `title`, `icon`                                                      |                        |
 | `button`  | A button, or an action (see [Buttons and actions](#buttons-and-actions)).                                       | `shortcut`, `confirm`, `close`, `look`, `form`, `scope`              | `<id>`                 |
-| `section` | A title over the blocks after it.                                                                               |                                                                      |                        |
-| `repeat`  | The place of the rows (see [Rows](#rows)).                                                                      | `grid` lines                                                         |                        |
-| `row`     | One item of a list (see [Rows](#rows)).                                                                         | the keys in [Rows](#rows)                                            | `open <id>`            |
+| `section` | A title over the blocks after it, or over the items after it when the layout doesn't place it.                  |                                                                      |                        |
+| `repeat`  | The place of the items (see [Items](#items)).                                                                   | `grid` lines                                                         |                        |
 
 - A field's `type`: none for one line of text, `multiline` for several lines, `slider` from `min` to `max` (0 to 100 by
   default), which sends a whole number when the user lets go, and `hotkey` for a hotkey that a press records.
-- A `hotkey` field shows as keycaps. With no `grid=` line, it takes two lines of the full width.
+- A `hotkey` field shows as keycaps.
 - A `hotkey` field records a key in Openspot when the user presses Return on it or clicks it, and when a new frame of
   the spot gives it `recording=true`. A frame that shows again, such as on a step back, records nothing.
 - A `hotkey` field with a key gives the focus to the part after it.
@@ -290,6 +289,7 @@ confirm=Press again to forget
   key that nothing on the sheet takes does nothing.
 - The line under the keycaps comes from Openspot: whether the key is free, what macOS or another spot does with it, or
   which app took it.
+- `type=search` makes a field the search field of the items (see [Items](#items)).
 - `type=multiple` lets a choice pick several options (see [Buttons and actions](#buttons-and-actions)).
 - Every kind also takes `title`, `detail`, `tone` and `icon`. Openspot skips a key that a kind doesn't take.
 - A `text` that covers two lines or more shows its `detail` under its `title`, on as many lines as the place holds.
@@ -334,22 +334,22 @@ divider across its line.
 - A card layout can have more lines than the card has room for. A size with no layout uses the layout of the next
   smaller size. A spot with no card layout shows the default card (see
   [The main block and the card](#the-main-block-and-the-card)).
-- With no `grid=` line, the sheet shows each block that isn't a button in one column, in the order printed, then the
-  rows. A `section` starts a new group.
+- With no `grid=` line, the layout is a search field over the items: each block that isn't a button is an item (see
+  [Items](#items)).
 
 ## Buttons and actions
 
 A button is a verb. If the layout places it, the sheet draws it. If not, it's an **action** in the ⌘K menu. See
 [Add buttons](GUIDE.md#add-buttons) for an example.
 
-- An action sends `<spot> <id> <row id>` while a row is selected, and `<spot> <id>` when none is.
-- `scope` says when the ⌘K menu shows an action: `scope=item`, the default, only while a row is selected, and
+- An action sends `<spot> <id> <item id>` while an item is selected, and `<spot> <id>` when none is.
+- `scope` says when the ⌘K menu shows an action: `scope=item`, the default, only while an item is selected, and
   `scope=spot` always.
-- A command of the manifest with `offers = ["actions"]` shows in the ⌘K menu of every card, under the spot's name, while no row
+- A command of the manifest with `offers = ["actions"]` shows in the ⌘K menu of every card, under the spot's name, while no item
   is selected. Its press sends `<spot> <id> <card spot id>`. It isn't a command of the spot, so it gets no hotkey.
 - A command whose ID is the ID of an offered command, a dot and a name, such as `[commands."change.draw"]` after
   `[commands.change]`, shows in the submenu of that action and fits the same cards. It takes no `offers`. → or a press
-  opens the submenu, and ← goes back. A search finds its rows too.
+  opens the submenu, and ← goes back. A search finds its actions too.
 - A filter after `actions`, a comma list, names the cards it fits by where their spot comes from: `mine`, a spot in the
   user's folder or a file of it that doesn't load; `core`, a spot that comes with Openspot and can be turned off; and
   `builtin`, a spot of Openspot itself, such as Settings. With no filter, it fits every card.
@@ -376,9 +376,10 @@ offers = ["actions"]
 - The ⌘K menu lists the spot's own actions first, then Openspot's under them, then the actions of other spots, grouped
   by spot, A to Z by its name. Each group of another spot has a header, which a search hides. Openspot's own actions, such as Edit,
   Delete and Change Icon, come from its built-in spots in the same way.
-- `close=true` closes the panel after the call. `confirm` asks for a second press.
+- A press of a button or an action closes the panel. `close=false` keeps it open, such as for Delete or Star.
+  `confirm` asks for a second press.
 - A button `shortcut` is a letter, a digit, `return`, `backspace` or `,`, after `cmd+`, `shift+`, both or neither, such as
-  `cmd+shift+n`, or `escape` alone. A row `shortcut` is any text (see [Rows](#rows)). The user gives a command of the
+  `cmd+shift+n`, or `escape` alone. The user gives a command of the
   manifest its hotkey in the spot's [Settings](#settings).
 - An action needs a `title`. `openspot check spots` reports an action with no title, or with a shortcut it can't use.
 - `shortcut=escape` presses the button instead of closing the sheet, like a Cancel button.
@@ -386,53 +387,77 @@ offers = ["actions"]
 - Return presses the button with `shortcut=return`; Space presses the part that has the focus, as Return does on a
   part with no such button.
 - In a ⌘K menu of more than 5 rows, a field searches them, so only a `shortcut` with `cmd` works there.
-- Return on a row runs the action `open`. `button=open` gives it a `title`, and `close=false` keeps the panel open after
+- Return on an item runs the action `open`. `button=open` gives it a `title`, and `close=false` keeps the panel open after
   a pick.
 - A button with `form=true` asks for values first. Its call runs once with empty stdin, and prints a `title` in its root
   and one `field`, `choice` or `switch` for each value. Then the same call runs again with the values on stdin.
-- A form with only one `choice` shows its options as rows under the search field. Return or a click sends one.
+- A form with only one `choice` shows its options as items under the search field. Return or a click sends one.
 - With `type=multiple`, a choice picks several options. A checkmark marks each option in a `value` line. Return sends the
-  option of its row, and `⇧⌘A` sends each option without a checkmark. The spot keeps the picks and prints the form again.
+  option of its item, and `⇧⌘A` sends each option without a checkmark. The spot keeps the picks and prints the form again.
 - A form can print itself again, such as with a `title` that says what's wrong. Then it stays open.
-- When the call with the values runs `openspot select <row id>`, that row is selected after the sheet reads again, such
-  as the row that the form made.
+- When the call with the values runs `openspot select <item id>`, that item is selected after the sheet reads again, such
+  as the item that the form made.
 
-## Rows
+## Items
 
-Rows are a list that the user searches and picks from. See [Show a list](GUIDE.md#show-a-list) for an example.
+Items are a list that the user searches and picks from. See [Show a list](GUIDE.md#show-a-list) for an example.
 
-| Key        | Meaning                                                                                        |
-| ---------- | ---------------------------------------------------------------------------------------------- |
-| `row`      | The id. A pick sends `<spot> open <id>`.                                                       |
-| `title`    | The first line. By default, the id.                                                            |
-| `detail`   | The line under the title.                                                                      |
-| `icon`     | The icon.                                                                                      |
-| `parent`   | Where the row sits in its spot. The main search shows `<spot> › <parent>`.                     |
-| `tone`     | A dot of its colour on the icon.                                                               |
-| `value`    | `true` draws a checkmark at the end. More than one line draws a bar for each, oldest first, in the colour of `tone`; `-` is a bar with no value. |
-| `max`      | The value of a full bar. By default, the largest `value`.                                      |
-| `section`  | A title over the first row of a run of rows with the same `section`. A search hides it.        |
-| `hides`    | The id of an action that this row doesn't offer. One line for each action.                     |
-| `keywords` | Words that find the row but don't show, split by commas.                                       |
-| `shortcut` | Any text, such as `⌃⌥K`, that shows at the end of the row.                                     |
-| `type`     | `hotkey`: a pick records a new hotkey and sends `<id> <hotkey>`. `toggle`: a switch at the end, on while `value=true`, for a choice that a pick turns on and off. |
-| `shake`    | `true` lets a shake of the pointer, or a tap of one modifier, be the hotkey a pick records.    |
-| `pin`      | `top` or `bottom`: the row stays above or under the rows that scroll, even in a search.        |
-| `focus`    | The line under the title while the row is selected, in place of `detail`.                      |
-| `open`     | What Return does on this row, in place of the `title` of `button=open`.                        |
-| `close`    | `false` keeps the panel open after a pick of this row, or a hotkey it records.                 |
-| `file`     | The file the row stands for. See [Files out](#files-out).                                      |
-| `route`    | A route that a pick opens at once, in place of `<spot> open <id>`, with `route.title` and `route.replace`. See [Pages](#pages). |
+```ini
+text=milk
+title=Milk
+detail=2 left
+icon=cart
 
-- Rows go into a `repeat`, or into a plain list when there's none.
-- Openspot searches the rows itself, and puts recent picks first. `recents=false` in the root turns that off, and
-  `search=off` shows the rows with no search field.
-- `⌘↓` selects the last row, and `⌘↑` the first.
-- With `sheet.text` in `on`, each change of the sheet's search text asks the spot, and the spot prints the rows that
-  match. It also asks when the sheet opens, as `sheet.open` does. Each call gets the search text on stdin as
-  `search=<text>`.
-- A `repeat` has its own `grid=` lines, in which each word is the place of one row. The layout repeats down for as long
-  as there are rows. Rows take the places in the order each word first shows.
+switch=sync
+title=Sync
+value=true
+close=false
+
+field=key
+type=hotkey
+title=Open the list
+close=false
+```
+
+An item is any block that the layout doesn't place, except a `button`, which is an action, and a `section`, which
+titles the items after it. Each item draws as one line of the list:
+
+- A `text`, and any other kind, draws its `icon`, `title`, `detail` and `tone`. `value=true` marks it with a checkmark,
+  and more than one `value` line draws a bar for each, up to `max`. A pick sends `<spot> open <id>`.
+- A `switch` draws a switch at its end, on while `value=true`. A pick sends `<spot> <id> true` or `false`.
+- A `field` with `type=hotkey` shows its key from `value`. A pick records a new key and sends `<spot> <id> <key>`.
+  `shake=true` lets a shake of the pointer, or a tap of one modifier, be the key.
+
+| Key             | Meaning                                                                                        |
+| --------------- | ---------------------------------------------------------------------------------------------- |
+| `title`         | The first line. By default, the id.                                                            |
+| `detail`        | The line under the title.                                                                      |
+| `icon`          | The icon.                                                                                      |
+| `tone`          | A dot of its colour on the icon.                                                               |
+| `value`         | `true` draws a checkmark at the end. More than one line draws a bar for each, oldest first, in the colour of `tone`; `-` is a bar with no value. |
+| `max`           | The value of a full bar. By default, the largest `value`.                                      |
+| `parent`        | Where the item sits in its spot. The main search shows `<spot> › <parent>`.                    |
+| `keywords`      | Words that find the item but don't show, split by commas.                                      |
+| `pin`           | `top` or `bottom`: the item stays above or under the items that scroll, even in a search.      |
+| `hides`         | The id of an action that this item doesn't offer. One line for each action.                    |
+| `file`          | The file the item stands for. See [Files out](#files-out).                                     |
+| `open.title`    | What Return does on this item, in place of the `title` of `button=open`.                       |
+| `route`         | A route that a pick opens at once, in place of `<spot> open <id>`, with `route.title` and `route.replace`. See [Pages](#pages). |
+| `close`         | `false` keeps the panel open after a pick of this item, or a key it records.                   |
+| `shake`         | `true` on a `hotkey` field: a shake or a tap of one modifier can be its key.                   |
+
+- A pick of an item closes the panel. `close=false` keeps it open, such as for a switch.
+- Items go into the `repeat` that the layout places. With no `repeat`, they go under the blocks that the layout places.
+  A frame has one `repeat`.
+- With no `grid=` line, the sheet is a search field over the items. With a `grid=` line, it has a search field only
+  when it prints a `field` with `type=search`, which shows at the top of the sheet.
+- Openspot searches the items itself, and puts recent picks first. `recents=false` in the root turns that off.
+- With `filter=spot` on the search field, each change of the search text asks the spot, and the spot prints the items
+  that match. Each call gets `event=sheet.text` and the search text as `search=<text>` on stdin. `sheet.text` in `on` does
+  the same for a sheet with no search field.
+- `⌘↓` selects the last item, and `⌘↑` the first.
+- A `repeat` has its own `grid=` lines, in which each word is the place of one item. The layout repeats down for as long
+  as there are items. Items take the places in the order each word first shows.
 
 ```ini
 repeat=photos
@@ -440,21 +465,20 @@ grid=a a b c
 grid=a a d e
 ```
 
-- A row draws its `icon`, `title`, `detail`, `tone`, `value` and `shortcut`. To show more, give the row an action, or
-  draw it with a `view`.
+- To show more than one line, give the item an action, or draw it with a `view` that the layout places.
 
 ### Pages
 
-A page is a sheet of a spot that shows one of its routes, such as the detail of a row, and a flow is the row of sheets
+A page is a sheet of a spot that shows one of its routes, such as the detail of an item, and a flow is the row of sheets
 that the person went through. A route is the id of a page, such as `photo/12`. A spot opens its own routes and takes its
-own sheets off. See [Open a row as a page](GUIDE.md#open-a-row-as-a-page) for an example.
+own sheets off. See [Open an item as a page](GUIDE.md#open-an-item-as-a-page) for an example.
 
 | Key                   | Where                  | Does                                                                                 |
 | --------------------- | ---------------------- | ------------------------------------------------------------------------------------ |
 | `pages=<pattern>`     | the manifest           | The routes that the spot may show, such as `["text:*"]`.                             |
-| `route=<route>`       | a row                  | A pick opens that route at once, with no call.                                       |
-| `route.title=<words>` | a row                  | The title of the route's sheet, which its edge names. By default, the row's title.   |
-| `route.replace=true`  | a row                  | The route's sheet takes the place of the one that shows, so going back skips it.     |
+| `route=<route>`       | an item                | A pick opens that route at once, with no call.                                       |
+| `route.title=<words>` | an item                | The title of the route's sheet, which its edge names. By default, the item's title.  |
+| `route.replace=true`  | an item                | The route's sheet takes the place of the one that shows, so going back skips it.     |
 
 A press moves the flow while it runs, such as after a form saves, with `openspot route`:
 
@@ -500,7 +524,7 @@ value=true
 ```
 
 - `frame=<route>` starts it. The route can be empty, as in `frame=`.
-- Its layout keys: `grid=` and `grid.<size>=` lines, `main`, `title`, `detail` and `active` for the card, `recents` and `search`.
+- Its layout keys: `grid=` and `grid.<size>=` lines, `main`, `title`, `detail` and `active` for the card, and `recents`.
 - `progress=<0 to 1>` shows progress. With it, `title` and `detail` show only while the call runs.
 - `shown=true` puts the card of a spot of the app on the grid, and `shown=false` takes it off. Openspot skips it in
   the frame of any other spot.
@@ -598,25 +622,25 @@ out.
 | Call                               | When                                                                      |
 | ---------------------------------- | ------------------------------------------------------------------------- |
 | `<spot> show`                      | An event that its manifest lists.                                         |
-| `<spot> open [row id]`             | A pick of a row, or a press of a card with no sheet or with `press = "open"`. |
-| `<spot> <id> [row id] [value]`     | A change or a press of a block.                                           |
+| `<spot> open [item id]`            | A pick of an item, or a press of a card with no sheet or with `press = "open"`. |
+| `<spot> <id> [item id] [value]`    | A change or a press of a block, such as a pick of a `switch` item.        |
 | `<spot> drop <path> [path]...`     | A drop of files on its card.                                              |
-| `<spot> drag <row id> [row id]...` | A drag of rows that stand for files out of its sheet.                     |
+| `<spot> drag <item id> [item id]...` | A drag of items that stand for files out of its sheet.                  |
 | `<spot> <command>`                 | A press of the hotkey the user gave a command.                            |
 | `<spot> <command>`, `<spot> open`  | A [slash command](#slash-commands), with `search=<text>` on stdin.        |
 
 - `show` asks what to show. `open`, `drop` and `drag` are default ids. A block can't use any of the four, but a button
   can use `open`.
 - A new default id reaches only a spot that asks for it.
-- A drop on a card waits for the card's running call. A drop on a card with rows opens its sheet, and the call can
-  select the new row with `openspot select`.
+- A drop on a card waits for the card's running call. A drop on a card with items opens its sheet, and the call can
+  select the new item with `openspot select`.
 - A spot's hotkeys run one at a time, in order, and never stop a call. A staying spot gets each press at once, in
   order, so a second press can end the call of the first, while fewer than 8 calls of its hotkeys are open. Openspot
   drops a press past that with a toast. Only the user gives a command a hotkey.
 
 Each call has three parts:
 
-- **Arguments:** `<id> [item] [value]`: the id, its row, then its values, so that `case "$1"` handles each call. A value
+- **Arguments:** `<id> [item] [value]`: the id, its item, then its values, so that `case "$1"` handles each call. A value
   over 64 KB goes only on stdin, as `input.value=`.
 - **Variables:** `OPENSPOT_ID`, the spot's id, `OPENSPOT_DATA`, a
   folder for its files that one spot folder shares, `OPENSPOT_SH`, the shell helper, `PATH`, and `LC_ALL`, which is
@@ -639,7 +663,7 @@ Each call has three parts:
 | `search.alt=`    | Each other text the user may have meant, such as the same keys in another keyboard layout.             |
 | `input.<id>=`    | Each input of the sheet or of a form, such as a field. A value that isn't an input comes as `input.value=`. |
 | `setting.<key>=` | Each setting of the manifest that has a value, a secret too (see [Settings](#settings)).               |
-| `item.<key>=`    | On an action or a pick of a row that holds a key of its own, such as `meeting=`, or `push.spot=`, each key of the row. |
+| `item.<key>=`    | On an action or a pick of an item that holds a key of its own, such as `meeting=`, each key of the item. |
 
 ```ini
 event=sheet.text
@@ -652,7 +676,7 @@ setting.city=Paris
 ```
 
 - The calls of a form get no `item.` keys.
-- Each process that the spot starts inherits its stdin, with each setting and the keys of the row, unless the spot reads
+- Each process that the spot starts inherits its stdin, with each setting and the keys of the item, unless the spot reads
   it first or closes it for that process, such as `curl "$url" </dev/null`.
 
 The shell helper reads and writes values for you:
@@ -664,8 +688,8 @@ The shell helper reads and writes values for you:
 | `openspot_value <key> <text>`               | Prints each value of the key from a text, such as the frame that an `openspot` call prints.           |
 | `openspot_input`                            | Prints the stdin of the call as it came.                                                              |
 | `openspot_kv <key> <value>`                 | Prints one line, with its value escaped.                                                              |
-| `openspot_row <id> <title> [detail] [icon]` | Prints one row.                                                                                       |
-| `openspot_rows [kind]`                      | Prints a row, or a block of that kind, for each tab-separated line of stdin: id, title, detail, icon. |
+| `openspot_row <id> <title> [detail] [icon]` | Prints one item, a `text` block.                                                                      |
+| `openspot_rows [kind]`                      | Prints an item, a `text` block or one of that kind, for each tab-separated line of stdin: id, title, detail, icon. |
 | `openspot_serve <function> "$@"`            | Runs the function with the three parts of each call, in each mode.                                    |
 | `openspot_keep <file> [text]`               | Keeps the text, or all of stdin, in the file as a whole, so a reader never gets half of it.           |
 | `openspot_paste <text>`                     | Pastes the text into the front app, then puts back the text that the clipboard held, or clears it.    |
@@ -685,7 +709,7 @@ title = "Echo"
 ```sh
 #!/bin/sh
 . "$OPENSPOT_SH"
-printf 'field=note\ntitle=Note\n\ntext=echo\n'
+printf 'frame=\ngrid=note\ngrid=echo\n\nfield=note\ntitle=Note\n\ntext=echo\n'
 openspot_kv title "$(value input.note)"
 ```
 
@@ -787,14 +811,14 @@ offers = ["card", "float"]
   Done button.
 - `search.text <pattern>` in `on` makes a spot answer the main search. Openspot asks it at each change of a text that the
   pattern matches, with no pause. A newer text stops the older call. The answer should be fast.
-- Its rows show first in the main search until the newest text has an answer, and go at once when the pattern no longer
-  matches. A pick of a row sends `<spot> open <row id>`.
-- With `answers = "last"`, its rows show under the other results instead, such as a row that offers to make a spot of the
-  typed words. A search that finds only such rows counts as a search that found nothing.
+- Its items show first in the main search until the newest text has an answer, and go at once when the pattern no longer
+  matches. A pick of an item sends `<spot> open <item id>`.
+- With `answers = "last"`, its items show under the other results instead, such as an item that offers to make a spot of
+  the typed words. A search that finds only such items counts as a search that found nothing.
 - A spot whose only event is `search.text` has no card.
-- An answer can be one card instead of rows: its root has `grid.large=` or `grid.strip=` lines, and its main block has a
+- An answer can be one card instead of items: its root has `grid.large=` or `grid.strip=` lines, and its main block has a
   `value`. A pick of the card sends `<spot> open <value>`.
-- `openspot calc solve <words>...` prints the answer to a sum, a conversion or a date as a row.
+- `openspot calc solve <words>...` prints the answer to a sum, a conversion or a date as an item.
 - Every spot can show in the menu bar when the user puts it there. A spot that offers `menubar` shows its main `text`,
   `number` or `graph` there. A read that prints nothing hides it until the next read. Any other spot shows its icon, and
   a click does what Return does.
@@ -821,7 +845,7 @@ on = ["sheet.open"]
 function main(args, env, input) {
   if (args[0] === "show")
     return openspot.frame({
-      row: "hi",
+      text: "hi",
       title: `Hello from ${openspot.value("event", input)}`,
     });
   return "";
@@ -853,7 +877,7 @@ on = ["app.launch", "panel.open"]
 . "$OPENSPOT_SH"
 main() {
   case "$1" in
-    show) printf 'field=message\ntitle=Message\n\nbutton=send\ntitle=Send\nshortcut=cmd+return\n' ;;
+    show) printf 'frame=\ngrid=message\ngrid=send\n\nfield=message\ntitle=Message\n\nbutton=send\ntitle=Send\nshortcut=cmd+return\n' ;;
     send) openspot toast "Sent: $(value input.message)" ;;
   esac
 }
@@ -936,7 +960,7 @@ view = "cups.swift"
 
 ```sh
 #!/bin/sh
-printf 'view=cups\ntitle=3\nvalue=1\nvalue=0\nvalue=2\n'
+printf 'frame=\ngrid=cups\n\nview=cups\ntitle=3\nvalue=1\nvalue=0\nvalue=2\n'
 ```
 
 ```swift
@@ -1054,7 +1078,7 @@ A card of other spots shows the main blocks of the spots it names. See
 
 ## Files out
 
-A row can stand for a file that the user drags into another app.
+An item can stand for a file that the user drags into another app.
 
 ```toml
 title = "Shelf"
@@ -1084,12 +1108,12 @@ case "$1" in
 esac
 ```
 
-- A row with `file=<path>` stands for that file. The user can drag it into any app that takes files. The path must start
+- An item with `file=<path>` stands for that file. The user can drag it into any app that takes files. The path must start
   with `/`.
 - The other app copies or moves the file. A read should leave out each file that no longer exists.
-- When a drag ends in another app, Openspot sends `<spot> drag <row id>...`. A drag with no drop sends nothing. If the
+- When a drag ends in another app, Openspot sends `<spot> drag <item id>...`. A drag with no drop sends nothing. If the
   call prints nothing, Openspot asks the spot again.
-- Dragging the icon in the head of the sheet drags every row that has a `file`.
+- Dragging the icon in the head of the sheet drags every item that has a `file`.
 
 ## The openspot command
 
@@ -1175,8 +1199,8 @@ The commands that try a spot are in [Try your spot](GUIDE.md#try-your-spot). The
 | `openspot prompt new [words]...`                   | Prints a prompt that asks a coding agent to build a spot that does what the words say.          |
 | `openspot prompt change <id> [words]...`           | Prints a prompt that asks a coding agent to change a spot as the words say, with what [Stats](#stats) counted of it over 14 days. With no words, its goal follows those counts. |
 | `openspot prompt theme <name> [words]...`          | Prints a prompt that asks a coding agent to change a theme as the words say.                    |
-| `openspot emoji list [--tone name]`                | Prints each emoji as a row, with its name in the language of the Mac.                           |
-| `openspot symbols list`                            | Prints each symbol of the Character Viewer as a row.                                            |
+| `openspot emoji list [--tone name]`                | Prints each emoji as an item, with its name in the language of the Mac.                         |
+| `openspot symbols list`                            | Prints each symbol of the Character Viewer as an item.                                          |
 | `openspot translate text [--from code] [--to code]` | Translates the text on stdin. `openspot translate languages` prints the languages it knows.     |
 | `openspot theme <verb>`                            | Lists the themes, and uses, makes and changes one: `list`, `use`, `new`, `duplicate`, `rename`, `delete`, `open` and `reload`. See [Change the look of Openspot](GUIDE.md#change-the-look-of-openspot). |
 | `openspot account show [--json]`                   | Prints the public facts of the account that signs what you publish. See [Trust](#trust).        |
@@ -1191,7 +1215,7 @@ on its card, a press of the card with `⌘`, or **Settings** in its ⌘K menu op
   has a card or rows in the search, the hotkey of each command in its manifest, and **Float** when it has a view to
   float; then what the spot itself does, each setting, set or not, and each value it keeps that no setting names, such
   as a look; and last **Show in the menu bar**, which every spot has.
-- Each shortcut is a row with `type=hotkey` (see [Rows](#rows)). Return on it records a key, and `⌘⌫` removes the key.
+- Each shortcut is a `field` item with `type=hotkey` (see [Items](#items)). Return on it records a key, and `⌘⌫` removes the key.
 - Openspot makes the Settings sheet, and it grows from the spot's card. Its rows never show in the spot's own sheet.
 - The Settings spot of Openspot holds only the settings of the app: its keys, Careful mode, Slow
   motion, Open at login and the `openspot` command. The Themes spot of Openspot changes its look.
@@ -1255,13 +1279,13 @@ openspot spot stats --days 7
   The version `-` holds the counts with no known version, such as those kept before versions, and sorts first.
 - `--openmetrics` prints each counter as [OpenMetrics](https://openmetrics.io) text, labelled by `spot`, and by
   `version` with `--by version`, so that any tool for metrics can read it.
-- It prints a `row=<id>` block for each spot, the most CPU first, then a `use=<n>` block for each call that needs a
+- It prints an item, a `text=<id>` block, for each spot, the most CPU first, then a `use=<n>` block for each call that needs a
   use, the newest first, then a `search=<text>` block for each search that found nothing. `--json` prints the days.
 
-| Row key              | Meaning                                                               |
+| Item key             | Meaning                                                               |
 | -------------------- | --------------------------------------------------------------------- |
 | `title`, `detail`    | The name of the spot, and its numbers in words.                       |
-| `version`, `since`   | With `--by version`, the version of the row, and when it was first counted. |
+| `version`, `since`   | With `--by version`, the version of the item, and when it was first counted. |
 | `runs`, `failures`   | The calls that ended, and those that failed.                          |
 | `cpu`, `seconds`     | The CPU seconds of its processes, and the wall time of its calls.     |
 | `read`, `written`    | The bytes its processes read and wrote.                               |

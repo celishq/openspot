@@ -43,7 +43,7 @@ final class SpotSettingsSheetTests: XCTestCase {
     }
 
     private func script(_ name: String, toml: String) throws {
-        try "#!/bin/sh\necho \"$*\" >> '\(log.path)'\n[ \"$1\" = show ] && printf 'row=own\\ntitle=Own\\n'\nexit 0\n".writeScript(to: spots.spotFile(name), toml: toml)
+        try "#!/bin/sh\necho \"$*\" >> '\(log.path)'\n[ \"$1\" = show ] && printf 'text=own\\ntitle=Own\\n'\nexit 0\n".writeScript(to: spots.spotFile(name), toml: toml)
     }
 
     private func show(selecting id: String, search: String = "") async throws {

@@ -20,7 +20,7 @@ final class DrawSheetTests: XCTestCase {
     }
 
     private func rows(_ frame: String) -> [[String]] {
-        frame.components(separatedBy: "\n\n").map { $0.split(separator: "\n").map(String.init) }.filter { $0.first?.hasPrefix("row=") == true }
+        frame.components(separatedBy: "\n\n").map { $0.split(separator: "\n").map(String.init) }.filter { $0.first?.hasPrefix("text=") == true }
     }
 
     func testTheSheetListsANewBoardThenEachBoardNewestFirst() throws {
@@ -31,7 +31,7 @@ final class DrawSheetTests: XCTestCase {
 
         let rows = rows(Sheet(shelf: Shelf(folder: folder), now: now).frame())
 
-        XCTAssertEqual(rows.map { $0[0] }, ["row=0:new", "row=0:fresh", "row=0:flows", "row=0:old", "row=0:last-year"])
+        XCTAssertEqual(rows.map { $0[0] }, ["text=0:new", "text=0:fresh", "text=0:flows", "text=0:old", "text=0:last-year"])
         XCTAssertEqual(rows.map { $0[1] }, ["title=New board", "title=Fresh", "title=Flows", "title=Old plan", "title=Last year"])
         XCTAssertEqual(rows.map { $0[2] }, ["detail=A blank board", "detail=Edited just now", "detail=Edited 2 min ago", "detail=Edited 2 h ago", "detail=Edited Dec 11"])
         XCTAssertEqual(rows[0].suffix(2), ["hides=rename", "hides=delete"])
@@ -52,7 +52,7 @@ final class DrawSheetTests: XCTestCase {
 
         let rows = rows(sheet.frame())
 
-        XCTAssertEqual(rows.map { $0[0] }, ["row=0:new", "row=0:Work/plan"])
+        XCTAssertEqual(rows.map { $0[0] }, ["text=0:new", "text=0:Work/plan"])
         XCTAssertEqual(rows[1][2], "detail=Work · Edited 1 min ago")
         XCTAssertEqual(URL(fileURLWithPath: String(rows[1][3].dropFirst(5))).resolvingSymlinksInPath().path, picture.resolvingSymlinksInPath().path)
         XCTAssertEqual(sheet.file(named: "Work/plan")?.lastPathComponent, "plan.json")
@@ -79,7 +79,7 @@ final class DrawSheetTests: XCTestCase {
 
         XCTAssertTrue(first.contains("button=0:new\n"))
         XCTAssertTrue(second.contains("button=1:new\n"))
-        XCTAssertEqual(rows(second).map { $0[0] }, ["row=1:new", "row=1:flows"])
+        XCTAssertEqual(rows(second).map { $0[0] }, ["text=1:new", "text=1:flows"])
         XCTAssertEqual(Sheet.name(in: "1:flows"), "flows")
         XCTAssertEqual(Sheet.name(in: "12:Work/a:b"), "Work/a:b")
         XCTAssertEqual(Sheet.name(in: "rename"), "rename")

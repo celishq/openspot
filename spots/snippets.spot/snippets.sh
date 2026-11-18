@@ -40,12 +40,12 @@ required=true"'
 case "$1" in
   show)
     printf 'button=open\ntitle=Copy\n\n'
-    printf 'button=paste\ntitle=Paste\nshortcut=cmd+return\nclose=true\n\n'
-    printf 'button=edit\ntitle=Edit\nshortcut=cmd+e\nform=true\n\n'
-    printf 'button=delete\ntitle=Delete\nshortcut=cmd+backspace\nconfirm=Press again to delete\n\n'
-    printf 'button=new\ntitle=New snippet\nshortcut=cmd+n\nscope=spot\nform=true\nplaceholder=Text to keep\n\n'
+    printf 'button=paste\ntitle=Paste\nshortcut=cmd+return\n\n'
+    printf 'button=edit\ntitle=Edit\nshortcut=cmd+e\nform=true\nclose=false\n\n'
+    printf 'button=delete\ntitle=Delete\nshortcut=cmd+backspace\nconfirm=Press again to delete\nclose=false\n\n'
+    printf 'button=new\ntitle=New snippet\nshortcut=cmd+n\nscope=spot\nform=true\nclose=false\nplaceholder=Text to keep\n\n'
     [ -s "$data" ] || exit 0
-    jq -r "$esc"'.[] | "row=\(.id | esc)\ntitle=\(.title | esc)\ndetail=\(.content | gsub("\\s+"; " ") | .[0:200] | esc)\n"' "$data"
+    jq -r "$esc"'.[] | "text=\(.id | esc)\ntitle=\(.title | esc)\ndetail=\(.content | gsub("\\s+"; " ") | .[0:200] | esc)\n"' "$data"
     ;;
   new)
     title=$(value input.title)

@@ -52,7 +52,6 @@ public enum SheetExamples {
         look=chip
         title=Copy
         shortcut=cmd+return
-        close=true
 
         """),
         Example(name: "a picture with actions", text: """
@@ -250,7 +249,6 @@ public enum SheetExamples {
         look=strong
         icon=checkmark
         shortcut=cmd+return
-        close=true
 
         """),
         Example(name: "a drawing of settings", text: """
@@ -330,59 +328,59 @@ public enum SheetExamples {
     option=light
     title=Light
 
-    row=grin
+    text=grin
     title=Grinning face
     icon=😀
 
-    row=joy
+    text=joy
     title=Tears of joy
     icon=😂
 
-    row=love
+    text=love
     title=Heart eyes
     icon=😍
 
-    row=think
+    text=think
     title=Thinking face
     icon=🤔
 
-    row=party
+    text=party
     title=Party face
     icon=🥳
 
-    row=cool
+    text=cool
     title=Sunglasses
     icon=😎
 
-    row=wave
+    text=wave
     title=Waving hand
     icon=👋
 
-    row=dog
+    text=dog
     title=Dog face
     icon=🐶
 
-    row=fox
+    text=fox
     title=Fox
     icon=🦊
 
-    row=flower
+    text=flower
     title=Cherry blossom
     icon=🌸
 
-    row=fire
+    text=fire
     title=Fire
     icon=🔥
 
-    row=pizza
+    text=pizza
     title=Pizza
     icon=🍕
 
-    row=rocket
+    text=rocket
     title=Rocket
     icon=🚀
 
-    row=heart
+    text=heart
     title=Red heart
     icon=❤️
 

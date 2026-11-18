@@ -6,7 +6,7 @@ public enum FlowMove: Equatable, Sendable {
     case close
 
     init?(item block: TextBlock) {
-        guard let route = block.value(RowKey.route) else { return nil }
-        self = .push(spot: nil, page: route, title: block.value(RowKey.routeTitle), replace: block.flag(RowKey.routeReplace) == true)
+        guard let route = block.value(ItemKey.route) else { return nil }
+        self = .push(spot: nil, page: route, title: block.value(ItemKey.routeTitle), replace: block.flag(ItemKey.routeReplace) == true)
     }
 }

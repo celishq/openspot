@@ -212,21 +212,21 @@ openspot_kv() {
   printf '\n'
 }
 
-# Prints one row after a blank line: its id and title, and its detail and icon when they are given, each written for you
-# (protocol: The calls). More lines of the row can follow with `openspot_kv`.
+# Prints one item, a `text` block, after a blank line: its id and title, and its detail and icon when they are given, each
+# written for you (protocol: The calls). More lines of the item can follow with `openspot_kv`.
 openspot_row() {
   printf '\n'
-  openspot_kv row "$1"
+  openspot_kv text "$1"
   openspot_kv title "${2-}"
   [ -z "${3-}" ] || openspot_kv detail "$3"
   [ -z "${4-}" ] || openspot_kv icon "$4"
 }
 
-# Prints a block for each line of stdin, a row or one of the kind given, such as `text`. A line holds its id, title, detail
+# Prints an item for each line of stdin, a `text` block or one of the kind given, such as `switch`. A line holds its id, title, detail
 # and icon split by tabs, and after them any more `key=value` fields of the block. Each backslash is written for you, and an
 # empty field prints no line (protocol: The calls).
 openspot_rows() {
-  LC_ALL=C /usr/bin/sed 's/\\/\\\\/g' | LC_ALL=C /usr/bin/awk -F '\t' -v kind="${1:-row}" '
+  LC_ALL=C /usr/bin/sed 's/\\/\\\\/g' | LC_ALL=C /usr/bin/awk -F '\t' -v kind="${1:-text}" '
     NF {
       printf "\n%s=%s\n", kind, $1
       if ($2 != "") printf "title=%s\n", $2

@@ -22,7 +22,7 @@ struct SpotList {
         let inMenuBar: Bool
 
         var blocks: [[(String, String?)]] {
-            [[("spot", id), ("name", name), ("icon", icon), ("detail", detail), ("openKey", openKey), ("float", String(float)), ("floatKey", floatKey), ("menubar", String(menubar)), ("inMenuBar", String(inMenuBar))]]
+            [[("text", id), ("title", name), ("icon", icon), ("detail", detail), ("openKey", openKey), ("float", String(float)), ("floatKey", floatKey), ("menubar", String(menubar)), ("inMenuBar", String(inMenuBar))]]
                 + buttons.map { [("button", $0.id), ("title", $0.title), ("icon", $0.icon), ("key", $0.key)] }
                 + fields.map { [("field", $0.id), ("title", $0.title), ("icon", $0.icon)] }
         }
@@ -37,7 +37,7 @@ struct SpotList {
         let own: Bool
 
         var blocks: [[(String, String?)]] {
-            [[("spot", id), ("name", name), ("icon", icon), ("detail", detail), ("on", String(on)), ("own", String(own))]]
+            [[("text", id), ("title", name), ("icon", icon), ("detail", detail), ("on", String(on)), ("own", String(own))]]
         }
     }
 
@@ -47,7 +47,7 @@ struct SpotList {
         let value: String
 
         var blocks: [[(String, String?)]] {
-            [[("field", key), ("spot", spot), ("value", value)]]
+            [[("text", "\(spot).\(key)"), ("key", key), ("spot", spot), ("value", value)]]
         }
     }
 

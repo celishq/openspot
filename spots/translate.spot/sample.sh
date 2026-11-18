@@ -6,5 +6,5 @@ printf "choice=source\nvalue=auto\n\noption=auto\ntitle=Auto (English)\n$languag
 printf 'field=input\nplaceholder=Type or paste text\nvalue=Good morning! Shall we meet for lunch at noon?\n\n'
 printf "choice=target\nvalue=fr\n$languages\n"
 printf 'field=output\nvalue=Bonjour ! On se retrouve pour déjeuner à midi ?\nplaceholder=Translation\nreadonly=true\n\n'
-printf 'button=swap\nicon=arrow.up.arrow.down\nshortcut=cmd+shift+s\n\n'
-printf 'button=copy\nalign=right\nlook=chip\ntitle=Copy\nshortcut=cmd+return\nclose=true\n'
+printf 'button=swap\nicon=arrow.up.arrow.down\nshortcut=cmd+shift+s\nclose=false\n\n'
+printf 'button=copy\nalign=right\nlook=chip\ntitle=Copy\nshortcut=cmd+return\n'

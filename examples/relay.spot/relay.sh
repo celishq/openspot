@@ -19,7 +19,7 @@ sheet() {
   openspot_kv value "$(cat "$state/peer")"
   printf '\n'
   printf 'field=message\ntype=multiline\nplaceholder=Hello\n\n'
-  printf 'button=send\ntitle=Send\nshortcut=cmd+return\n'
+  printf 'button=send\ntitle=Send\nshortcut=cmd+return\nclose=false\n'
 }
 
 listen() {

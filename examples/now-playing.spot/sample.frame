@@ -19,13 +19,16 @@ button=prev
 title=Previous
 icon=backward.fill
 look=bare
+close=false
 
 button=play
 title=Pause
 icon=pause.fill
 look=bare
+close=false
 
 button=next
 title=Next
 icon=forward.fill
 look=bare
+close=false

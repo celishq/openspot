@@ -1,8 +1,11 @@
-row=openspot
+text=openspot
+title=openspot
 detail=claude
 
-row=website
+text=website
+title=website
 detail=codex
 
-row=notes-app
+text=notes-app
+title=notes-app
 detail=claude

@@ -28,7 +28,7 @@ final class CalculatorSpotTests: SampleSpotsCase {
 
     func testAnAnswerIsALargeCardOfAFaintSumOverTheAnswerWhosePickCopiesThePlainValue() async throws {
         try await withPrivateHome { home in
-            try "row=1234.5\ntitle=1,234.5\ndetail=1000 + 234.5\n".write(to: home.appendingPathComponent("calc-answer"), atomically: true, encoding: .utf8)
+            try "text=1234.5\ntitle=1,234.5\ndetail=1000 + 234.5\n".write(to: home.appendingPathComponent("calc-answer"), atomically: true, encoding: .utf8)
 
             let answers = try await self.calculator.items(query: "1000+234.5", timeout: 60).answers
 
@@ -43,7 +43,7 @@ final class CalculatorSpotTests: SampleSpotsCase {
 
     func testACardOfFreshRatesShowsTheSumWithNoDayOfItsRatesAndItsSymbolFaint() async throws {
         try await withPrivateHome { home in
-            try "row=13.46\ntitle=13,46 €\ndetail=15 USD in EUR\nunit=€\nrates=Nov 10\n".write(to: home.appendingPathComponent("calc-answer"), atomically: true, encoding: .utf8)
+            try "text=13.46\ntitle=13,46 €\ndetail=15 USD in EUR\nunit=€\nrates=Nov 10\n".write(to: home.appendingPathComponent("calc-answer"), atomically: true, encoding: .utf8)
 
             let answers = try await self.calculator.items(query: "15 usd in eur", timeout: 60).answers
 
@@ -54,7 +54,7 @@ final class CalculatorSpotTests: SampleSpotsCase {
 
     func testATimeInAnotherZoneKeepsTheZoneItWasReadIn() async throws {
         try await withPrivateHome { home in
-            try "row=2026-11-11 07:00\ntitle=Wed 7:00 AM\ndetail=Wed 3:00 PM · Tokyo\nunit=AM\n".write(to: home.appendingPathComponent("calc-answer"), atomically: true, encoding: .utf8)
+            try "text=2026-11-11 07:00\ntitle=Wed 7:00 AM\ndetail=Wed 3:00 PM · Tokyo\nunit=AM\n".write(to: home.appendingPathComponent("calc-answer"), atomically: true, encoding: .utf8)
 
             let answers = try await self.calculator.items(query: "3pm tokyo in berlin", timeout: 60).answers
 
@@ -64,7 +64,7 @@ final class CalculatorSpotTests: SampleSpotsCase {
 
     func testAnAnswerFromOldRatesIsACardWhoseSumWarnsWithTheAgeOfItsRates() async throws {
         try await withPrivateHome { home in
-            try "row=13.46\ntitle=13,46 €\ndetail=15 USD in EUR\nunit=€\nrates=Nov 2, 9 days old\ntone=warn\n".write(to: home.appendingPathComponent("calc-answer"), atomically: true, encoding: .utf8)
+            try "text=13.46\ntitle=13,46 €\ndetail=15 USD in EUR\nunit=€\nrates=Nov 2, 9 days old\ntone=warn\n".write(to: home.appendingPathComponent("calc-answer"), atomically: true, encoding: .utf8)
 
             let answers = try await self.calculator.items(query: "15 usd in eur", timeout: 60).answers
 

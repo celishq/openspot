@@ -73,8 +73,8 @@ Try each example of this page in the playground before you put it in the spots f
 
 ## Show a list
 
-A list lets the user search and pick. Print one `row` block for each item. When the user picks a row, Openspot runs your
-spot with `open` and the id of the row.
+A list lets the user search and pick. Print one `text` block for each item. When the user picks an item, Openspot runs
+your spot with `open` and the id of the item.
 
 ```toml
 title = "Apps"
@@ -93,18 +93,18 @@ esac
 
 ![The sheet of Apps: two rows, Mail and Notes](docs/images/show-a-list.png)
 
-The sheet shows two rows, **Mail** and **Notes**. Type in the sheet's search field, and Openspot filters the rows for
+The sheet shows two items, **Mail** and **Notes**. Type in the sheet's search field, and Openspot filters the items for
 you. Pick **Notes**, and Openspot runs `apps.sh open Notes`.
 
 The first argument tells your spot what to do. `show` asks what to show. Any other word is something the user did. The
-shell helper, `$OPENSPOT_SH`, prints rows for you and escapes each value.
+shell helper, `$OPENSPOT_SH`, prints items for you and escapes each value.
 
-Learn more in [Rows](PROTOCOL.md#rows) and [The calls](PROTOCOL.md#the-calls).
+Learn more in [Items](PROTOCOL.md#items) and [The calls](PROTOCOL.md#the-calls).
 
-## Open a row as a page
+## Open an item as a page
 
-A page shows the detail of a row as a sheet of its own, and keeps the list it came from. Name the pages in the manifest
-with `pages`, give the row a `route=` with the page's id, and print the page when `route` holds that id.
+A page shows the detail of an item as a sheet of its own, and keeps the list it came from. Name the pages in the manifest
+with `pages`, give the item a `route=` with the page's id, and print the page when `route` holds that id.
 
 ```toml
 title = "Fruit"
@@ -118,18 +118,17 @@ pages = ["*"]
 . "$OPENSPOT_SH"
 route=$(value route)
 case "$route" in
-  '') printf 'row=apple\ntitle=Apple\nroute=apple\n\nrow=pear\ntitle=Pear\nroute=pear\n' ;;
+  '') printf 'text=apple\ntitle=Apple\nroute=apple\n\ntext=pear\ntitle=Pear\nroute=pear\n' ;;
   *) openspot_row "$route:color" "Color" "Green" ;;
 esac
 ```
 
-Pick **Apple**, and its page opens in place of the list, with one row, **Color**. Press `⌘[` to go back to the list,
+Pick **Apple**, and its page opens in place of the list, with one item, **Color**. Press `⌘[` to go back to the list,
 and `⌘]` to go forward to the page again. Esc takes the page off, so `⌘]` has nothing to go to. `⌘Esc` goes back to the grid.
 
-A pick of such a row opens the page at once, with no call to the spot. Each call of a page gets its id as `route=` on
+A pick of such an item opens the page at once, with no call to the spot. Each call of a page gets its id as `route=` on
 stdin, so a press on the page knows which page it came from. A press can move the flow too: run `openspot route back`
-after it saves, and the list shows again. A row with `push.spot=` pushes another spot, which reads what to show from
-its page, as a web page reads its URL.
+after it saves, and the list shows again.
 
 Learn more in [Pages](PROTOCOL.md#pages).
 
@@ -212,8 +211,8 @@ case "$1" in
 esac
 ```
 
-A button that the spot prints acts on its rows. If no layout places it, it shows in the ⌘K menu of the sheet, and its
-shortcut works while a row is selected.
+A button that the spot prints acts on its items. If no layout places it, it shows in the ⌘K menu of the sheet, and its
+shortcut works while an item is selected. A press closes the panel; `close=false` keeps it open.
 
 ```toml
 title = "Notes list"
@@ -236,8 +235,8 @@ esac
 
 Select **Today** and press ⌘⌫ twice, and Openspot runs `notes-list.sh trash today`.
 
-A row can hold keys of its own, such as `path=`. An action on that row gets each of its keys on stdin, as `item.path=`,
-so the spot doesn't look the row up again.
+An item can hold keys of its own, such as `path=`. An action on that item gets each of its keys on stdin, as `item.path=`,
+so the spot doesn't look the item up again.
 
 ```toml
 title = "Downloads"
@@ -257,7 +256,7 @@ case "$1" in
 esac
 ```
 
-Select **Report.pdf** and press ⌘O, and `value item.path` prints the path that the row holds.
+Select **Report.pdf** and press ⌘O, and `value item.path` prints the path that the item holds.
 
 Learn more in [Buttons and actions](PROTOCOL.md#buttons-and-actions).
 
@@ -534,10 +533,10 @@ view = "week.swift"
 
 ```sh
 #!/bin/sh
-printf 'view=week\n\n'
-printf 'row=mon\ntitle=Monday\ncups=3\n\n'
-printf 'row=tue\ntitle=Tuesday\ncups=1\n\n'
-printf 'row=wed\ntitle=Wednesday\ncups=2\n'
+printf 'frame=\ngrid=week\n\nview=week\n\n'
+printf 'text=mon\ntitle=Monday\ncups=3\n\n'
+printf 'text=tue\ntitle=Tuesday\ncups=1\n\n'
+printf 'text=wed\ntitle=Wednesday\ncups=2\n'
 ```
 
 ```swift
@@ -565,8 +564,8 @@ struct SpotView: View {
 
 ![The sheet of Cups this week: three bars, a cup and a Done button over the rows Monday, Tuesday and Wednesday](docs/images/own-view.png)
 
-`spot.rows` holds each row with its keys, so the bars need no second copy of the data. In a sheet, Openspot draws the
-rows under the view. `spot.isShown` is false while the panel is hidden: stop a motion or a timer then, as the cup stops
+`spot.rows` holds each item with its keys, so the bars need no second copy of the data. In a sheet, Openspot draws the
+items under the view, which the layout places. `spot.isShown` is false while the panel is hidden: stop a motion or a timer then, as the cup stops
 its pulse. `spot.close()` closes the sheet, as Esc does.
 
 Learn more in [Views](PROTOCOL.md#views).
@@ -585,7 +584,7 @@ view = "steps.swift"
 
 ```sh
 #!/bin/sh
-printf 'view=steps\nvalue=6200\ngoal=10000\n'
+printf 'frame=\ngrid=steps\n\nview=steps\nvalue=6200\ngoal=10000\n'
 ```
 
 ```swift

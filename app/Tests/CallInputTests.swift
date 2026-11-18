@@ -42,7 +42,7 @@ final class CallInputTests: SpotRunsCase {
     func testAnActionAndAPickOfARowCarryTheKeysOfThatRowOnStdin() async throws {
         try script(toml: "on = ['sheet.open']", """
         case "$1" in
-          show) printf 'row=a\\ntitle=A\\nmeeting=https://meet.example/a\\n\\nrow=b\\ntitle=B\\n' ;;
+          show) printf 'text=a\\ntitle=A\\nmeeting=https://meet.example/a\\n\\ntext=b\\ntitle=B\\n' ;;
           *) { echo "$*"; cat; echo; } >> '\(path("input"))' ;;
         esac
         """)
@@ -55,8 +55,8 @@ final class CallInputTests: SpotRunsCase {
         try await wait("the action") { self.text("input").contains("join a") && sheet.calls.isEmpty }
         sheet.pick(row)
 
-        try await wait("the pick") { self.text("input").contains("open a\nitem.row=a") && self.text("input").hasSuffix("\n\n") }
-        XCTAssertEqual(text("input"), "join a\nitem.row=a\nitem.title=A\nitem.meeting=https://meet.example/a\n\nopen a\nitem.row=a\nitem.title=A\nitem.meeting=https://meet.example/a\n\n")
+        try await wait("the pick") { self.text("input").contains("open a\nitem.text=a") && self.text("input").hasSuffix("\n\n") }
+        XCTAssertEqual(text("input"), "join a\nitem.text=a\nitem.title=A\nitem.meeting=https://meet.example/a\n\nopen a\nitem.text=a\nitem.title=A\nitem.meeting=https://meet.example/a\n\n")
     }
 
     func testTheValueOfASecretFieldGoesOnlyOnStdinAndTheHostRecordsItNowhere() async throws {
@@ -76,7 +76,7 @@ final class CallInputTests: SpotRunsCase {
         in=$(cat)
         token=$(printf '%s\\n' "$in" | sed -n 's/^setting.token=//p')
         printf '%s' "$token" > '\(path("seen"))'
-        printf '\\033]9;Got %s\\007row=a\\ntitle=%s\\n---\\n' "$token" "$token"
+        printf '\\033]9;Got %s\\007text=a\\ntitle=%s\\n---\\n' "$token" "$token"
         echo "Cannot reach the server with $token" >&2
         exit 1
         """)

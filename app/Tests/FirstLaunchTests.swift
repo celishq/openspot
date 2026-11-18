@@ -82,7 +82,7 @@ final class FirstLaunchTests: XCTestCase {
         let core = root.appendingPathComponent("core", isDirectory: true)
         try FileManager.default.createDirectory(at: spots, withIntermediateDirectories: true)
         try FileManager.default.createDirectory(at: core.appendingPathComponent("openspot.spot"), withIntermediateDirectories: true)
-        if let toml { try TestSpot(toml: toml, body: "printf 'row=a\\ntitle=A\\n'").write(to: core.spotFile("openspot/hello")) }
+        if let toml { try TestSpot(toml: toml, body: "printf 'text=a\\ntitle=A\\n'").write(to: core.spotFile("openspot/hello")) }
         let suite = "openspot-first-\(UUID().uuidString)"
         let defaults = try XCTUnwrap(UserDefaults(suiteName: suite))
         let host = FakeHost()

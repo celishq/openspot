@@ -97,7 +97,7 @@ public struct SpotPart: Equatable, Sendable, Identifiable {
         detail = block.value("detail")
         key = kind == .hotkey ? nil : block.value("shortcut").flatMap(ActionKey.init(text:))
         asksToRecord = kind == .hotkey && block.flag("recording") == true
-        closes = block.flag("close") ?? false
+        closes = block.flag("close") ?? kind.presses
         grows = block.flag("grow") ?? true
         align = block.value("align").flatMap(Align.init(rawValue:))
         let named = block.value("look").flatMap(Look.init(rawValue:))

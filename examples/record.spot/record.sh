@@ -24,13 +24,13 @@ case "$1" in
       for word in $picked; do toggle "$word"; done
       if [ -n "$kept" ]; then openspot setting set inputs "$kept"; else openspot setting set inputs; fi
     fi
-    printf 'frame=\ntitle=Sound and camera\n\nchoice=inputs\ntitle=Sound and camera\ntype=multiple\n'
+    printf 'frame=\ntitle=Sound and camera\ngrid=inputs\n\nchoice=inputs\ntitle=Sound and camera\ntype=multiple\n'
     for word in $kept; do printf 'value=%s\n' "$word"; done
     openspot screen sources | awk 'BEGIN { RS = ""; FS = "\n" }
-      $1 ~ /^row=(system|mic:.+|camera:.+)$/ {
+      $1 ~ /^text=(system|mic:.+|camera:.+)$/ {
         title = ""
         for (i = 2; i <= NF; i++) if ($i ~ /^title=/) title = substr($i, 7)
-        printf "\noption=%s\ntitle=%s\n", substr($1, 5), title
+        printf "\noption=%s\ntitle=%s\n", substr($1, 6), title
       }'
     exit 0
     ;;

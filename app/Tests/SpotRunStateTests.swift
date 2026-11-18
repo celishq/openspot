@@ -32,7 +32,7 @@ final class SpotRunStateTests: XCTestCase {
         try await wait("\(count) sleeps on the clock") { self.clock.sleepCount == count }
     }
 
-    private func opened(searches: Bool = false, frame: String = "row=a\ntitle=A\n") async -> (SpotRun, FakeLink) {
+    private func opened(searches: Bool = false, frame: String = "text=a\ntitle=A\n") async -> (SpotRun, FakeLink) {
         let (sheet, link) = sheet(read: SpotRead(moments: [.sheet], searchesSheet: searches))
         sheet.open {}
         await link.frame(frame, of: link.sent[0])
@@ -45,7 +45,7 @@ final class SpotRunStateTests: XCTestCase {
 
         sheet.open {}
         sheet.close()
-        await link.frame("row=a\ntitle=A\n", of: link.sent[0])
+        await link.frame("text=a\ntitle=A\n", of: link.sent[0])
         await link.end(link.sent[0])
 
         XCTAssertTrue(link.sent[0].made.isStopped)
@@ -74,7 +74,7 @@ final class SpotRunStateTests: XCTestCase {
         try await wait("the search") { link.sent.count == 2 }
 
         sheet.close()
-        await link.frame("row=b\ntitle=B\n\nrow=c\ntitle=C\n", of: link.sent[1])
+        await link.frame("text=b\ntitle=B\n\ntext=c\ntitle=C\n", of: link.sent[1])
         await link.end(link.sent[1])
 
         XCTAssertTrue(link.sent[1].made.isStopped)
@@ -82,7 +82,7 @@ final class SpotRunStateTests: XCTestCase {
     }
 
     func testAnOlderAnswerDoesNotReplaceANewerChange() async throws {
-        let (sheet, link) = await opened(frame: "field=a\ntitle=start\nvalue=x\n")
+        let (sheet, link) = await opened(frame: "frame=\ngrid=a\n\nfield=a\ntitle=start\nvalue=x\n")
         let part = try XCTUnwrap(sheet.panel?.parts.first)
         sheet.set(part, to: "old")
         try await sleeps()
@@ -93,9 +93,9 @@ final class SpotRunStateTests: XCTestCase {
         try await sleeps(2)
         clock.advance(by: 0.3)
         try await wait("the newer call") { link.sent.count == 3 }
-        await link.frame("field=a\ntitle=new\nvalue=x\n", of: link.sent[2])
+        await link.frame("frame=\ngrid=a\n\nfield=a\ntitle=new\nvalue=x\n", of: link.sent[2])
         await link.end(link.sent[2])
-        await link.frame("field=a\ntitle=old\nvalue=x\n", of: link.sent[1])
+        await link.frame("frame=\ngrid=a\n\nfield=a\ntitle=old\nvalue=x\n", of: link.sent[1])
         await link.end(link.sent[1])
 
         XCTAssertEqual(link.arguments().dropFirst().map(\.last), ["old", "new"])
@@ -109,7 +109,7 @@ final class SpotRunStateTests: XCTestCase {
         sheet.read(need: .change)
         XCTAssertEqual(link.sent.count, 1)
 
-        await link.frame("row=a\ntitle=A\n", of: link.sent[0])
+        await link.frame("text=a\ntitle=A\n", of: link.sent[0])
         await link.end(link.sent[0])
 
         XCTAssertEqual(link.sent.count, 2)
@@ -171,7 +171,7 @@ final class SpotRunStateTests: XCTestCase {
         let (sheet, link) = await opened()
 
         sheet.pick(SpotItem(title: "A", run: "a"))
-        await link.frame("row=b\ntitle=B\n", of: link.sent[1])
+        await link.frame("text=b\ntitle=B\n", of: link.sent[1])
         await link.end(link.sent[1])
 
         XCTAssertEqual(link.arguments(), [["show"], ["open", "a"]])

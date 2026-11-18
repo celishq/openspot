@@ -29,7 +29,7 @@ final class PanelKeysTests: PanelCase {
     private func openInfo() async throws {
         try script("info", toml: "on = ['sheet.open']\npages = ['a']", """
         page=$(sed -n 's/^route=//p')
-        if [ -n "$page" ]; then printf 'text=detail\\ntitle=Detail\\n'; else printf 'text=first\\ntitle=First\\n'; fi
+        if [ -n "$page" ]; then printf 'frame=\\ngrid=detail\\n\\ntext=detail\\ntitle=Detail\\n'; else printf 'frame=\\ngrid=first\\n\\ntext=first\\ntitle=First\\n'; fi
         """)
         await model.reload()
         model.isShown = true
@@ -86,7 +86,7 @@ final class PanelKeysTests: PanelCase {
     }
 
     func testASearchThatFindsNoSpotTeachesTheSlash() async throws {
-        try script("list", toml: "title = 'List'\non = ['sheet.open']", "printf 'row=a\\ntitle=A\\n'")
+        try script("list", toml: "title = 'List'\non = ['sheet.open']", "printf 'text=a\\ntitle=A\\n'")
         await model.reload()
 
         model.query = "zzz"
@@ -160,7 +160,7 @@ final class PanelKeysTests: PanelCase {
     }
 
     func testInASheetOfRowsTheArrowsMoveByLinesAndReturnPicksTheRow() async throws {
-        try script("fruit", toml: "on = ['sheet.open']", "printf 'row=a\\ntitle=Apple\\n\\nrow=b\\ntitle=Banana\\n\\nrow=c\\ntitle=Cherry\\n'")
+        try script("fruit", toml: "on = ['sheet.open']", "printf 'text=a\\ntitle=Apple\\n\\ntext=b\\ntitle=Banana\\n\\ntext=c\\ntitle=Cherry\\n'")
         await model.reload()
         model.isShown = true
         model.panelWillShow()
@@ -268,7 +268,7 @@ final class PanelKeysTests: PanelCase {
     }
 
     func testEscWhileAKeyIsRecordedStopsTheRecordingAndKeepsTheSheet() async throws {
-        try script("draw", toml: "title = 'Draw'\non = ['sheet.open']", "printf 'row=float\\ntitle=Float\\ntype=hotkey\\nshortcut=Record\\n'")
+        try script("draw", toml: "title = 'Draw'\non = ['sheet.open']", "printf 'field=float\\ntitle=Float\\ntype=hotkey\\n'")
         await model.reload()
         model.isShown = true
         model.panelWillShow()
@@ -315,7 +315,7 @@ final class PanelKeysTests: PanelCase {
             key=$(cat "$data/key" 2>/dev/null)
             printf 'frame=\\ntitle=Choose your key\\ngrid=key\\ngrid=keep\\ngrid=again\\n\\nfield=key\\ntype=hotkey\\nvalue=%s\\n' "$key"
             [ -n "$key" ] || printf 'recording=true\\n'
-            printf '\\nbutton=keep\\ntitle=Keep\\n\\nbutton=again\\ntitle=Try again\\nshortcut=escape\\n' ;;
+            printf '\\nbutton=keep\\ntitle=Keep\\nclose=false\\n\\nbutton=again\\ntitle=Try again\\nshortcut=escape\\nclose=false\\n' ;;
         esac
         """)
     }
@@ -335,7 +335,7 @@ final class PanelKeysTests: PanelCase {
           show|key|record)
             printf 'frame=\\ngrid=key\\ngrid=key\\ngrid=use\\ngrid=record\\n\\nfield=key\\ntype=hotkey\\nvalue=%s\\n' "$(cat "$data/key" 2>/dev/null || printf ctrl+space)"
             [ "$1" != record ] || printf 'recording=true\\n'
-            printf '\\nbutton=use\\ntitle=Use\\nshortcut=return\\n\\nbutton=record\\ntitle=Record\\nshortcut=escape\\n' ;;
+            printf '\\nbutton=use\\ntitle=Use\\nshortcut=return\\nclose=false\\n\\nbutton=record\\ntitle=Record\\nshortcut=escape\\nclose=false\\n' ;;
         esac
         """)
         await model.reload()
@@ -737,7 +737,7 @@ final class PanelKeysTests: PanelCase {
     }
 
     private func openKeyRow() async throws {
-        try script("draw", toml: "title = 'Draw'\non = ['sheet.open']", "printf 'row=float\\ntitle=Float\\ntype=hotkey\\nshortcut=Record\\n'")
+        try script("draw", toml: "title = 'Draw'\non = ['sheet.open']", "printf 'field=float\\ntitle=Float\\ntype=hotkey\\n'")
         await model.reload()
         model.isShown = true
         model.panelWillShow()
@@ -818,7 +818,7 @@ final class PanelKeysTests: PanelCase {
     }
 
     func testCommandYOpensTheHistoryOfASpotWhoseReturnRunsItsCommand() async throws {
-        try script("dictate", toml: "title = 'Dictate'\non = ['sheet.open']\n[commands.dictate]\ntitle = 'Dictate'", "printf 'row=a\\ntitle=Said\\n'")
+        try script("dictate", toml: "title = 'Dictate'\non = ['sheet.open']\n[commands.dictate]\ntitle = 'Dictate'", "printf 'text=a\\ntitle=Said\\n'")
         await model.reload()
         model.isShown = true
         model.panelWillShow()

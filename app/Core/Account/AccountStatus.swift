@@ -13,6 +13,6 @@ struct AccountStatus: PrintedRecord {
     }
 
     var blocks: [[(String, String?)]] {
-        [[("signedIn", String(signedIn)), ("npub", npub), ("handle", handle), ("since", since), ("backedUp", backedUp.map(String.init)), ("sync", sync.map(String.init))]]
+        [[("text", "account"), ("signedIn", String(signedIn)), ("npub", npub), ("handle", handle), ("since", since), ("backedUp", backedUp.map(String.init)), ("sync", sync.map(String.init))]]
     }
 }

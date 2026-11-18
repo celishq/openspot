@@ -41,7 +41,7 @@ public struct Event: Equatable, Sendable {
         let meeting = meeting
         let isOn = !isAllDay && start <= clock.now && clock.now < end
         var fields: [TextBlock.Field] = [
-            .init(key: "row", value: CalendarItemID.event(id, start: start).text),
+            .init(key: "text", value: CalendarItemID.event(id, start: start).text),
             .init(key: "title", value: title),
             .init(key: "detail", value: "\(when(clock)) · \(calendar.title)"),
             .init(key: "icon", value: meeting == nil ? "calendar" : "video"),

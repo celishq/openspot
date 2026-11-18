@@ -71,7 +71,7 @@ branch() {
 
 # Prints the form that asks for the editor, with this title.
 form() {
-  printf 'frame=\n'
+  printf 'frame=\ngrid=editor\n'
   openspot_kv title "$1"
   printf '\nchoice=editor\ntitle=Default app\n'
   openspot_kv value "$editor"
@@ -157,7 +157,7 @@ case "$1" in
   show)
     if [ -z "$folder" ]; then
       printf 'button=open\ntitle=Choose\n\n'
-      printf 'row=choose\ntitle=Choose the folder of your repos\ndetail=Repos lists each git repo inside it\nicon=folder.badge.plus\n'
+      printf 'text=choose\ntitle=Choose the folder of your repos\ndetail=Repos lists each git repo inside it\nicon=folder.badge.plus\n'
       exit 0
     fi
     repos=""
@@ -174,21 +174,21 @@ case "$1" in
     index=0
     installed | while IFS= read -r app; do
       index=$((index + 1))
-      [ "$app" = "$editor" ] || [ "$app" = "$finder" ] || { printf 'button=in-%s\nclose=true\n' "$index"; openspot_kv title "Open in $(name "$app")"; printf '\n'; }
+      [ "$app" = "$editor" ] || [ "$app" = "$finder" ] || { printf 'button=in-%s\n' "$index"; openspot_kv title "Open in $(name "$app")"; printf '\n'; }
     done
     index=0
     printf '%s\n' "$hosts" | while IFS= read -r each; do
       [ -n "$each" ] || continue
       index=$((index + 1))
-      printf 'button=page-%s\nclose=true\n' "$index"
+      printf 'button=page-%s\n' "$index"
       openspot_kv title "Open on $(site "$each")"
       printf '\n'
     done
-    printf 'button=reveal\ntitle=Show in Finder\nshortcut=cmd+return\nclose=true\n\n'
-    printf 'button=terminal\ntitle=Open in Terminal\nshortcut=cmd+t\nclose=true\n\n'
-    printf 'button=copy\ntitle=Copy path\nshortcut=cmd+shift+c\nclose=true\n\n'
+    printf 'button=reveal\ntitle=Show in Finder\nshortcut=cmd+return\n\n'
+    printf 'button=terminal\ntitle=Open in Terminal\nshortcut=cmd+t\n\n'
+    printf 'button=copy\ntitle=Copy path\nshortcut=cmd+shift+c\n\n'
     printf 'button=editor\ntitle=Change default app\nscope=spot\nform=true\n\n'
-    printf 'button=folder\ntitle=Change folder\nscope=spot\nclose=true\n\n'
+    printf 'button=folder\ntitle=Change folder\nscope=spot\n\n'
     printf '%s' "$repos" | while IFS="$tab" read -r repo url; do
       openspot_row "$repo" "${repo##*/}" "$(branch "$repo")" "$repo"
       [ -z "$url" ] || openspot_kv page "$url"

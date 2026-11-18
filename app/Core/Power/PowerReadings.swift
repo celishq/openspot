@@ -18,7 +18,7 @@ struct PowerReadings: PrintedRecord {
     }
 
     var blocks: [[(String, String?)]] {
-        [watts.map { ($0.key, String(format: "%.2f", $0.value)) } + [(Self.pressureKey, thermalPressure)]]
+        [[("text", "power")] + watts.map { ($0.key, String(format: "%.2f", $0.value)) } + [(Self.pressureKey, thermalPressure)]]
     }
 
     func encode(to encoder: Encoder) throws {

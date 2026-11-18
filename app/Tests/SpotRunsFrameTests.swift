@@ -7,7 +7,7 @@ final class SpotRunsFrameTests: SpotRunsCase {
         try script(toml: "on = ['sheet.open']", """
         case "$1" in
           show) printf 'frame=\\ngrid=go\\ngrid=a\\ngrid=b\\n\\nbutton=go\\ntitle=Go\\n\\ntext=a\\ntitle=A\\n\\ntext=b\\ntitle=B\\n' ;;
-          go) printf 'text=only\\ntitle=Only\\n' ;;
+          go) printf 'frame=\\ngrid=only\\n\\ntext=only\\ntitle=Only\\n' ;;
         esac
         """)
         let sheet = try sheet()
@@ -37,7 +37,7 @@ final class SpotRunsFrameTests: SpotRunsCase {
     }
 
     func testALaterFrameWithNoRootAddsARowWithANewIdToTheList() async throws {
-        try script(toml: "on = ['sheet.open']", "printf 'frame=\\n\\nrow=a\\ntitle=A\\n---\\n'\nprintf 'row=b\\ntitle=B\\n'")
+        try script(toml: "on = ['sheet.open']", "printf 'frame=\\n\\ntext=a\\ntitle=A\\n---\\n'\nprintf 'text=b\\ntitle=B\\n'")
         let sheet = try sheet()
         runs.panelOpened()
         sheet.open {}
@@ -47,7 +47,7 @@ final class SpotRunsFrameTests: SpotRunsCase {
     }
 
     func testALaterFrameWithARootEmptiesWhatItDoesNotPrint() async throws {
-        try script(toml: "on = ['sheet.open']", "printf 'frame=\\n\\nrow=a\\ntitle=A\\n\\ntext=a2\\ntitle=A\\n---\\n'\nprintf 'frame=\\n\\ntext=t\\ntitle=T\\n'")
+        try script(toml: "on = ['sheet.open']", "printf 'frame=\\ngrid=a2\\n\\ntext=a\\ntitle=A\\n\\ntext=a2\\ntitle=A\\n---\\n'\nprintf 'frame=\\ngrid=t\\n\\ntext=t\\ntitle=T\\n'")
         let sheet = try sheet()
         runs.panelOpened()
         sheet.open {}
@@ -59,7 +59,7 @@ final class SpotRunsFrameTests: SpotRunsCase {
     func testAFrameOfOnlyARootKeepsThePicture() async throws {
         try script(toml: "on = ['sheet.open']", """
         case "$1" in
-          show) printf 'row=a\\ntitle=A\\n' ;;
+          show) printf 'text=a\\ntitle=A\\n' ;;
           open) printf 'frame=\\ntitle=Other\\n---\\n'; \(untilRelease) ;;
         esac
         """)
@@ -78,7 +78,7 @@ final class SpotRunsFrameTests: SpotRunsCase {
     func testProgressInAHeadShowsOnTheRunningCall() async throws {
         try script(toml: "on = ['sheet.open']", """
         case "$1" in
-          show) printf 'row=a\\ntitle=A\\n' ;;
+          show) printf 'text=a\\ntitle=A\\n' ;;
           open) printf 'frame=\\nprogress=0.4\\ntitle=Copying\\ndetail=2 of 5\\n---\\n'; \(untilRelease) ;;
         esac
         """)
@@ -98,7 +98,7 @@ final class SpotRunsFrameTests: SpotRunsCase {
     func testATerminalCodeShowsProgressOnTheRunningCallAndANotificationAsAToast() async throws {
         try script(toml: "on = ['sheet.open']", """
         case "$1" in
-          show) printf 'row=a\\ntitle=A\\n' ;;
+          show) printf 'text=a\\ntitle=A\\n' ;;
           open) printf '\\033]9;Copied\\007\\033]9;4;1;40\\007'; \(untilRelease) ;;
         esac
         """)
@@ -118,8 +118,8 @@ final class SpotRunsFrameTests: SpotRunsCase {
     func testAMainGaugeOfARunningCallIsNoLongerItsProgress() async throws {
         try script(toml: "on = ['sheet.open']", """
         case "$1" in
-          show) printf 'row=a\\ntitle=A\\n' ;;
-          open) printf 'graph=g\\nvalue=0.4\\n---\\n'; \(untilRelease) ;;
+          show) printf 'text=a\\ntitle=A\\n' ;;
+          open) printf 'frame=\\ngrid=g\\n\\ngraph=g\\nvalue=0.4\\n---\\n'; \(untilRelease) ;;
         esac
         """)
         let sheet = try sheet()
@@ -135,7 +135,7 @@ final class SpotRunsFrameTests: SpotRunsCase {
 
     func testAReadThatEndsWithOnlyAHeadShowsNothingAndKeepsItsHead() async throws {
         try script(toml: "on = ['sheet.open']", """
-        if [ -f '\(path("second"))' ]; then printf 'frame=\\nrecents=false\\n'; else touch '\(path("second"))'; printf 'row=a\\ntitle=A\\n'; fi
+        if [ -f '\(path("second"))' ]; then printf 'frame=\\nrecents=false\\n'; else touch '\(path("second"))'; printf 'text=a\\ntitle=A\\n'; fi
         """)
         let sheet = try sheet()
         sheet.open {}
@@ -152,8 +152,8 @@ final class SpotRunsFrameTests: SpotRunsCase {
         while IFS= read -r line; do
           case "$line" in
             call=*) call=${line#call=} ;;
-            arg=show) printf 'end=%s\\n\\nrow=a\\ntitle=A\\n---\\n' "$call" ;;
-            arg=open) printf 'end=%s\\n---\\n' "$call"; printf 'frame=\\n\\ntext=peer\\ntitle=Peer\\n---\\n' ;;
+            arg=show) printf 'end=%s\\n\\ntext=a\\ntitle=A\\n---\\n' "$call" ;;
+            arg=open) printf 'end=%s\\n---\\n' "$call"; printf 'frame=\\ngrid=peer\\n\\ntext=peer\\ntitle=Peer\\n---\\n' ;;
           esac
         done
         """)
@@ -173,7 +173,7 @@ final class SpotRunsFrameTests: SpotRunsCase {
         while IFS= read -r line; do
           case "$line" in
             call=*) call=${line#call=}; printf 'call=%s\\n---\\n' "$call" ;;
-            arg=show) printf 'text=a\\ntitle=A\\n\\ntext=b\\ntitle=B\\n---\\ntext=b\\ntitle=B2\\n---\\nend=%s\\n---\\n' "$call" ;;
+            arg=show) printf 'frame=\\ngrid=a\\ngrid=b\\n\\ntext=a\\ntitle=A\\n\\ntext=b\\ntitle=B\\n---\\ntext=b\\ntitle=B2\\n---\\nend=%s\\n---\\n' "$call" ;;
           esac
         done
         """)
@@ -189,7 +189,7 @@ final class SpotRunsFrameTests: SpotRunsCase {
         while IFS= read -r line; do
           case "$line" in
             call=*) call=${line#call=} ;;
-            arg=show) printf 'row=a\\ntitle=A\\n---\\n'; printf 'end=%s\\n---\\n' "$call" ;;
+            arg=show) printf 'text=a\\ntitle=A\\n---\\n'; printf 'end=%s\\n---\\n' "$call" ;;
           esac
         done
         """)
@@ -206,9 +206,9 @@ final class SpotRunsFrameTests: SpotRunsCase {
     func testAnOutdatedAnswerChangesNothingAndAReadFollowsItsEnd() async throws {
         try script(toml: "on = ['sheet.open']", """
         case "$1" in
-          show) printf 'switch=a\\nvalue=%s\\n\\nswitch=b\\nvalue=%s\\n' "$(cat '\(path("a"))' 2>/dev/null || echo false)" "$(cat '\(path("b"))' 2>/dev/null || echo false)" ;;
-          a) \(untilRelease); echo "$2" > '\(path("a"))'; printf 'switch=a\\nvalue=%s\\n\\nswitch=b\\nvalue=false\\n' "$2" ;;
-          b) echo "$2" > '\(path("b"))'; printf 'switch=a\\nvalue=false\\n\\nswitch=b\\nvalue=%s\\n' "$2" ;;
+          show) printf 'frame=\\ngrid=a\\ngrid=b\\n\\nswitch=a\\nvalue=%s\\n\\nswitch=b\\nvalue=%s\\n' "$(cat '\(path("a"))' 2>/dev/null || echo false)" "$(cat '\(path("b"))' 2>/dev/null || echo false)" ;;
+          a) \(untilRelease); echo "$2" > '\(path("a"))'; printf 'frame=\\ngrid=a\\ngrid=b\\n\\nswitch=a\\nvalue=%s\\n\\nswitch=b\\nvalue=false\\n' "$2" ;;
+          b) echo "$2" > '\(path("b"))'; printf 'frame=\\ngrid=a\\ngrid=b\\n\\nswitch=a\\nvalue=false\\n\\nswitch=b\\nvalue=%s\\n' "$2" ;;
         esac
         """)
         let sheet = try sheet()

@@ -26,14 +26,13 @@ public struct SpotItem: Equatable, Sendable {
     public var isPinned: Bool {
         pin != nil
     }
-    public let focusSubtitle: String?
     public let openTitle: String?
     public let staysOnPick: Bool
     public let move: FlowMove?
     public let bars: [Double?]
     public let section: String?
 
-    public init(title: String, subtitle: String? = nil, run: String, picture: Icon? = nil, parent: String? = nil, hides: [String]? = nil, keywords: [String] = [], shortcut: String? = nil, records: Bool = false, takesShake: Bool = false, isOn: Bool = false, isToggle: Bool = false, tone: MetricValue.Tone? = nil, file: String? = nil, fields: String? = nil, card: SpotState? = nil, pin: Pin? = nil, openTitle: String? = nil, staysOnPick: Bool = false, focusSubtitle: String? = nil, move: FlowMove? = nil, bars: [Double?] = [], section: String? = nil) {
+    public init(title: String, subtitle: String? = nil, run: String, picture: Icon? = nil, parent: String? = nil, hides: [String]? = nil, keywords: [String] = [], shortcut: String? = nil, records: Bool = false, takesShake: Bool = false, isOn: Bool = false, isToggle: Bool = false, tone: MetricValue.Tone? = nil, file: String? = nil, fields: String? = nil, card: SpotState? = nil, pin: Pin? = nil, openTitle: String? = nil, staysOnPick: Bool = false, move: FlowMove? = nil, bars: [Double?] = [], section: String? = nil) {
         self.title = title
         self.subtitle = subtitle
         self.run = run
@@ -52,45 +51,43 @@ public struct SpotItem: Equatable, Sendable {
         self.card = card
         self.pin = pin
         self.openTitle = openTitle
-        self.focusSubtitle = focusSubtitle
         self.staysOnPick = staysOnPick
         self.move = move
         self.bars = bars
         self.section = section
     }
 
-    public init?(block: TextBlock) {
-        guard let run = block.value(RowKey.row) else { return nil }
-        let title = block.value(RowKey.title) ?? run
-        let hides = block.values(RowKey.hides)
+    init?(block: TextBlock, kind: BlockKind, section: String?) {
+        guard let run = block.value(kind.word) else { return nil }
+        let hides = block.values(ItemKey.hides)
+        let records = kind == .hotkey
         self.init(
-            title: title,
-            subtitle: block.value(RowKey.detail),
+            title: block.value(ItemKey.title) ?? run,
+            subtitle: block.value(ItemKey.detail),
             run: run,
-            picture: Icon(text: block.value(RowKey.icon)),
-            parent: block.value(RowKey.parent),
+            picture: Icon(text: block.value(ItemKey.icon)),
+            parent: block.value(ItemKey.parent),
             hides: hides.isEmpty ? nil : hides,
-            keywords: block.list(RowKey.keywords),
-            shortcut: block.value(RowKey.shortcut),
-            records: block.value(RowKey.type) == RowKey.hotkey,
-            takesShake: block.flag(RowKey.shake) ?? false,
-            isOn: block.flag(RowKey.value) ?? false,
-            isToggle: block.value(RowKey.type) == RowKey.toggle,
-            tone: block.value(RowKey.tone).flatMap(MetricValue.Tone.init),
-            file: block.value(RowKey.file).flatMap { $0.hasPrefix("/") ? $0 : nil },
+            keywords: block.list(ItemKey.keywords),
+            shortcut: records ? block.value(ItemKey.value) ?? Trigger.unset : nil,
+            records: records,
+            takesShake: records && block.flag(ItemKey.shake) == true,
+            isOn: !records && block.flag(ItemKey.value) == true,
+            isToggle: kind == .toggle,
+            tone: block.value(ItemKey.tone).flatMap(MetricValue.Tone.init),
+            file: block.value(ItemKey.file).flatMap { $0.hasPrefix("/") ? $0 : nil },
             fields: Self.fields(of: block),
-            pin: block.value(RowKey.pin).flatMap(Pin.init(rawValue:)),
-            openTitle: block.value(RowKey.open),
-            staysOnPick: block.flag(RowKey.close) == false,
-            focusSubtitle: block.value(RowKey.focus),
+            pin: block.value(ItemKey.pin).flatMap(Pin.init(rawValue:)),
+            openTitle: block.value(ItemKey.openTitle),
+            staysOnPick: block.flag(ItemKey.close) == false,
             move: FlowMove(item: block),
-            bars: Self.bars(values: block.values(RowKey.value), max: block.value(RowKey.max).flatMap(Double.init)),
-            section: block.value(RowKey.section)
+            bars: Self.bars(values: block.values(ItemKey.value), max: block.value(ItemKey.max).flatMap(Double.init)),
+            section: section
         )
     }
 
     private static func fields(of block: TextBlock) -> String? {
-        guard block.fields.contains(where: { RowKey(rawValue: $0.key) == nil }) else { return nil }
+        guard block.fields.dropFirst().contains(where: { ItemKey(rawValue: $0.key) == nil && $0.key != Self.type }) else { return nil }
         return TextBlock(fields: block.fields.map { .init(key: "item.\($0.key)", value: $0.value) }).text
     }
 
@@ -100,6 +97,8 @@ public struct SpotItem: Equatable, Sendable {
         let top = max ?? numbers.compactMap { $0 }.max() ?? 0
         return numbers.map { number in number.map { top > 0 ? Swift.min(Swift.max($0 / top, 0), 1) : 0 } }
     }
+
+    private static let type = "type"
 
     public var symbol: String? {
         picture?.symbol

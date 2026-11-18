@@ -132,10 +132,10 @@ final class SpotEventsTests: SpotRunsCase {
     }
 
     func testASpotThatOffersRowsAndReadsOnlyAsItsSheetOpensReadsAsTheSpotsLoadAndNotAtAPanelOpen() async throws {
-        try script("offer", toml: "on = ['sheet.open']\noffers = ['search']", log: "offer", "\(reasons)\nprintf 'row=a\\ntitle=A\\n'")
+        try script("offer", toml: "on = ['sheet.open']\noffers = ['search']", log: "offer", "\(reasons)\nprintf 'text=a\\ntitle=A\\n'")
         _ = try scanned()
         try await wait("the rows of the first load") { self.runs.sheets["offer"]?.list.all.map(\.title) == ["A"] }
-        try script("offer", toml: "on = ['sheet.open']\noffers = ['search']", log: "offer", "\(reasons)\nprintf 'row=b\\ntitle=B\\n'")
+        try script("offer", toml: "on = ['sheet.open']\noffers = ['search']", log: "offer", "\(reasons)\nprintf 'text=b\\ntitle=B\\n'")
 
         runs.panelOpened()
         runs.panelClosed()

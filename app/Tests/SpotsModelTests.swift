@@ -78,7 +78,7 @@ final class SpotsModelTests: XCTestCase {
 
     func testAKeyThatTheAPISetsReadsAgainASpotWhoseRowsOnlyItsSheetReads() async throws {
         let reads = folder.appendingPathComponent("reads").path
-        try script("offer", toml: "title = 'Offer'\non = ['sheet.open']\noffers = ['search']", "echo read >> '\(reads)'\nprintf 'row=a\\ntitle=A\\n'")
+        try script("offer", toml: "title = 'Offer'\non = ['sheet.open']\noffers = ['search']", "echo read >> '\(reads)'\nprintf 'text=a\\ntitle=A\\n'")
         await model.reload()
         try await wait("the read of the load") { ((try? String(contentsOfFile: reads, encoding: .utf8)) ?? "") == "read\n" }
         let trigger = try XCTUnwrap(Trigger(text: "ctrl+option+l"))
@@ -140,7 +140,7 @@ final class SpotsModelTests: XCTestCase {
     }
 
     private func openList() async throws {
-        try script("list", toml: "on = ['sheet.open']", "printf 'row=a\\ntitle=Apple\\n\\nrow=b\\ntitle=Banana\\n'")
+        try script("list", toml: "on = ['sheet.open']", "printf 'text=a\\ntitle=Apple\\n\\ntext=b\\ntitle=Banana\\n'")
         await model.reload()
         model.isShown = true
         model.panelWillShow()
@@ -149,9 +149,9 @@ final class SpotsModelTests: XCTestCase {
     }
 
     func testASheetTakesTheLookOfItsCardOnlyWhenItsScriptDrawsTheCard() async throws {
-        try script("agenda", toml: "on = ['panel.open']", "printf 'frame=\\ngrid.small=next\\n\\nnumber=next\\nvalue=09:30\\n\\nrow=e\\ntitle=Standup\\n'")
-        try script("year", toml: "on = ['panel.open']\nview = 'year.swift'", "printf 'view=year\\ntitle=2026\\n\\nrow=e\\ntitle=Standup\\n'")
-        try script("list", toml: "on = ['panel.open']", "printf 'row=a\\ntitle=Apple\\n'")
+        try script("agenda", toml: "on = ['panel.open']", "printf 'frame=\\ngrid.small=next\\n\\nnumber=next\\nvalue=09:30\\n\\ntext=e\\ntitle=Standup\\n'")
+        try script("year", toml: "on = ['panel.open']\nview = 'year.swift'", "printf 'view=year\\ntitle=2026\\n\\ntext=e\\ntitle=Standup\\n'")
+        try script("list", toml: "on = ['panel.open']", "printf 'text=a\\ntitle=Apple\\n'")
         await model.reload()
         model.panelWillShow()
 
@@ -358,7 +358,7 @@ final class SpotsModelTests: XCTestCase {
     }
 
     func testPointingAtARowSelectsItUnlessItsMenuIsOpen() async throws {
-        try script("list", toml: "on = ['sheet.open']", "printf 'button=copy\\ntitle=Copy\\nshortcut=cmd+c\\n\\nbutton=mark\\ntitle=Mark\\n\\nrow=a\\ntitle=Apple\\n\\nrow=b\\ntitle=Banana\\n'")
+        try script("list", toml: "on = ['sheet.open']", "printf 'button=copy\\ntitle=Copy\\nshortcut=cmd+c\\n\\nbutton=mark\\ntitle=Mark\\n\\ntext=a\\ntitle=Apple\\n\\ntext=b\\ntitle=Banana\\n'")
         await model.reload()
         model.isShown = true
         model.panelWillShow()
@@ -388,7 +388,7 @@ final class SpotsModelTests: XCTestCase {
         let picks = folder.appendingPathComponent("picks").path
         try script("list", toml: "on = ['sheet.open']", """
         case "$1" in
-          show) printf 'row=a\\ntitle=Apple\\n\\nrow=b\\ntitle=Banana\\n' ;;
+          show) printf 'text=a\\ntitle=Apple\\n\\ntext=b\\ntitle=Banana\\n' ;;
           *) echo "$1 $2" >> '\(picks)' ;;
         esac
         """)
@@ -407,7 +407,7 @@ final class SpotsModelTests: XCTestCase {
     }
 
     func testAnArrowRightAfterAKeyMovesInTheRowsOfTheNewText() async throws {
-        try script("list", toml: "on = ['sheet.open']", "printf 'row=a\\ntitle=Apple\\n\\nrow=b\\ntitle=Banana\\n\\nrow=c\\ntitle=Blueberry\\n'")
+        try script("list", toml: "on = ['sheet.open']", "printf 'text=a\\ntitle=Apple\\n\\ntext=b\\ntitle=Banana\\n\\ntext=c\\ntitle=Blueberry\\n'")
         await model.reload()
         model.isShown = true
         model.panelWillShow()
@@ -438,7 +438,7 @@ final class SpotsModelTests: XCTestCase {
         try script("list", toml: "on = ['sheet.open']", """
         case "$1" in
           new) printf 'frame=\\ntitle=New\\n\\nfield=a\\ntitle=A\\n' ;;
-          *) printf 'button=new\\ntitle=New\\nscope=spot\\nform=true\\n\\nrow=a\\ntitle=Apple\\n' ;;
+          *) printf 'button=new\\ntitle=New\\nscope=spot\\nform=true\\n\\ntext=a\\ntitle=Apple\\n' ;;
         esac
         """)
         await model.reload()
@@ -455,7 +455,7 @@ final class SpotsModelTests: XCTestCase {
     }
 
     func testAListDrawsAheadOnlyThePicturesOfTheRowsOnItsFirstScreen() async throws {
-        try script("apps", toml: "on = ['sheet.open']", "for i in $(seq 1 100); do printf 'row=a%s\\ntitle=App %s\\nicon=/Applications/A%s.app\\n\\n' $i $i $i; done")
+        try script("apps", toml: "on = ['sheet.open']", "for i in $(seq 1 100); do printf 'text=a%s\\ntitle=App %s\\nicon=/Applications/A%s.app\\n\\n' $i $i $i; done")
         await model.reload()
         model.isShown = true
         model.panelWillShow()
@@ -468,7 +468,7 @@ final class SpotsModelTests: XCTestCase {
     }
 
     func testAListDrawsAheadTheRowsItShowsFirstWithARecentPickOnTop() async throws {
-        try script("apps", toml: "on = ['sheet.open']", "for i in $(seq 1 100); do printf 'row=a%s\\ntitle=App %s\\nicon=/Applications/A%s.app\\n\\n' $i $i $i; done")
+        try script("apps", toml: "on = ['sheet.open']", "for i in $(seq 1 100); do printf 'text=a%s\\ntitle=App %s\\nicon=/Applications/A%s.app\\n\\n' $i $i $i; done")
         let host = FakeHost()
         let ranked = SpotsModel(host: host, files: model.files, runs: SpotRuns(stopPause: 0.2, recent: { _ in ["a50"] }, prepare: { await host.prepare($0, glyphs: $1) }))
         host.model = ranked
@@ -484,7 +484,7 @@ final class SpotsModelTests: XCTestCase {
     }
 
     func testAListAsksForThePicturesOfAllItsGlyphsOnce() async throws {
-        try script("faces", toml: "on = ['sheet.open']", "for i in $(seq 1 100); do printf 'row=f%s\\ntitle=Face %s\\nicon=😀\\n\\n' $i $i; done")
+        try script("faces", toml: "on = ['sheet.open']", "for i in $(seq 1 100); do printf 'text=f%s\\ntitle=Face %s\\nicon=😀\\n\\n' $i $i; done")
         await model.reload()
         model.isShown = true
         model.panelWillShow()
@@ -508,7 +508,7 @@ final class SpotsModelTests: XCTestCase {
 
     func testAReadOfTheSameRowsGivesTheGlyphsItCollectedBefore() async throws {
         let calls = folder.appendingPathComponent("calls").path
-        try script("faces", toml: "on = ['sheet.open']", "echo x >> '\(calls)'; printf 'frame=\\ntitle=Read %s\\n\\n' $(wc -l < '\(calls)'); for i in $(seq 1 100); do printf 'row=f%s\\ntitle=Face %s\\nicon=😀\\n\\n' $i $i; done")
+        try script("faces", toml: "on = ['sheet.open']", "echo x >> '\(calls)'; printf 'frame=\\ntitle=Read %s\\n\\n' $(wc -l < '\(calls)'); for i in $(seq 1 100); do printf 'text=f%s\\ntitle=Face %s\\nicon=😀\\n\\n' $i $i; done")
         await model.reload()
         model.isShown = true
         model.panelWillShow()
@@ -552,7 +552,7 @@ final class SpotsModelTests: XCTestCase {
 
     func testOpeningASheetClosesTheRunOfTheSheetBefore() async throws {
         try await openList()
-        try script("other", toml: "on = ['sheet.open']", "printf 'row=a\\ntitle=A\\n'")
+        try script("other", toml: "on = ['sheet.open']", "printf 'text=a\\ntitle=A\\n'")
         await model.reload()
 
         model.pushFirst("other", moving: true)
@@ -579,7 +579,7 @@ final class SpotsModelTests: XCTestCase {
     }
 
     func testAPanelThatHidesCutsASheetOfPartsAndItsRun() async throws {
-        try script("parts", toml: "on = ['sheet.open']", "printf 'text=a\\ntitle=A\\n'")
+        try script("parts", toml: "on = ['sheet.open']", "printf 'frame=\\ngrid=a\\n\\ntext=a\\ntitle=A\\n'")
         await model.reload()
         model.isShown = true
         model.panelWillShow()
@@ -619,7 +619,7 @@ final class SpotsModelTests: XCTestCase {
           edit) printf 'frame=\\ntitle=Edit\\n\\nfield=e\\ntitle=E\\n' ;;
           *)
             echo read >> '\(reads)'
-            printf 'button=new\\ntitle=New\\nscope=spot\\nform=true\\n\\nbutton=edit\\ntitle=Edit\\nscope=spot\\nform=true\\n\\nrow=a\\ntitle=Apple\\n' ;;
+            printf 'button=new\\ntitle=New\\nscope=spot\\nform=true\\n\\nbutton=edit\\ntitle=Edit\\nscope=spot\\nform=true\\n\\ntext=a\\ntitle=Apple\\n' ;;
         esac
         """)
         await model.reload()
@@ -648,8 +648,8 @@ final class SpotsModelTests: XCTestCase {
     }
 
     func testThePanelsShowAndHideStepsSelectTheFirstCardAndLeaveEditSpots() async throws {
-        try script("list", toml: "on = ['sheet.open']", "printf 'row=a\\ntitle=Apple\\n'")
-        try script("other", toml: "on = ['sheet.open']", "printf 'row=a\\ntitle=A\\n'")
+        try script("list", toml: "on = ['sheet.open']", "printf 'text=a\\ntitle=Apple\\n'")
+        try script("other", toml: "on = ['sheet.open']", "printf 'text=a\\ntitle=A\\n'")
         await model.reload()
         model.selected = 1
         model.beginEditing()
@@ -717,7 +717,7 @@ final class SpotsModelTests: XCTestCase {
             printf 'frame=\\ntitle=Pick\n\nchoice=shown\ntitle=Shown\ntype=multiple\nvalue=a\n\noption=a\ntitle=Apple\n\noption=b\ntitle=Banana\n\noption=c\ntitle=Cherry\n' ;;
           *)
             echo read >> '\(reads)'
-            printf 'button=pick\ntitle=Pick\nscope=spot\nform=true\n\nrow=a\ntitle=Apple\n' ;;
+            printf 'button=pick\ntitle=Pick\nscope=spot\nform=true\n\ntext=a\ntitle=Apple\n' ;;
         esac
         """)
         let sends = { ((try? String(contentsOfFile: sent, encoding: .utf8)) ?? "").split(separator: "\n").map(String.init) }
@@ -755,7 +755,7 @@ final class SpotsModelTests: XCTestCase {
             input=$(cat)
             [ -z "$input" ] || printf '%s\n' "$input" >> '\(sent)'
             printf 'frame=\\ntitle=Pick\n\nchoice=shown\ntitle=Shown\ntype=multiple\nvalue=a\n\noption=a\ntitle=Apple\n\noption=b\ntitle=Banana\n\noption=c\ntitle=Blueberry\n' ;;
-          *) printf 'button=pick\ntitle=Pick\nscope=spot\nform=true\n\nrow=a\ntitle=Apple\n' ;;
+          *) printf 'button=pick\ntitle=Pick\nscope=spot\nform=true\n\ntext=a\ntitle=Apple\n' ;;
         esac
         """)
         let sends = { ((try? String(contentsOfFile: sent, encoding: .utf8)) ?? "").split(separator: "\n").map(String.init) }
@@ -791,7 +791,7 @@ final class SpotsModelTests: XCTestCase {
         try script("list", toml: "on = ['sheet.open']\n[settings.pick]", """
         case "$1" in
           pick) printf 'frame=\\ntitle=Pick\n\nchoice=shown\ntitle=Shown\ntype=multiple\nvalue=a\n\noption=a\ntitle=Apple\n\noption=b\ntitle=Banana\n\noption=c\ntitle=Cherry\n' ;;
-          *) printf 'row=a\ntitle=Apple\n' ;;
+          *) printf 'text=a\ntitle=Apple\n' ;;
         esac
         """)
         await model.reload()
@@ -814,7 +814,7 @@ final class SpotsModelTests: XCTestCase {
         try script("agenda", toml: "on = ['sheet.open']\n[settings.pick]", """
         case "$1" in
           pick) printf 'frame=\\ntitle=Pick\n\nchoice=shown\ntitle=Shown\ntype=multiple\nvalue=a\n\noption=a\ntitle=Apple\n\noption=b\ntitle=Banana\n' ;;
-          *) printf 'frame=\\ngrid=items\ngrid.wide=next\n\nnumber=next\nvalue=09:30\n\nrepeat=items\n\nrow=e\ntitle=Standup\n' ;;
+          *) printf 'frame=\\ngrid=items\ngrid.wide=next\n\nnumber=next\nvalue=09:30\n\nrepeat=items\n\ntext=e\ntitle=Standup\n' ;;
         esac
         """)
         await model.reload()
@@ -838,7 +838,7 @@ final class SpotsModelTests: XCTestCase {
           new)
             n=0; while [ ! -f '\(gate)' ] && [ $n -lt 1500 ]; do sleep 0.02; n=$((n + 1)); done
             printf 'frame=\\ntitle=New\\n\\nfield=a\\ntitle=A\\n' ;;
-          *) printf 'button=new\\ntitle=New\\nscope=spot\\nform=true\\n\\nrow=a\\ntitle=Apple\\n' ;;
+          *) printf 'button=new\\ntitle=New\\nscope=spot\\nform=true\\n\\ntext=a\\ntitle=Apple\\n' ;;
         esac
         """)
         await model.reload()
@@ -868,7 +868,7 @@ final class SpotsModelTests: XCTestCase {
 
     func testASheetThatOpensWhileAnotherShowsTakesItsPlaceWithNoCollapseAndNoCard() async throws {
         try await openList()
-        try script("other", toml: "on = ['sheet.open']", "printf 'row=a\\ntitle=A\\n'")
+        try script("other", toml: "on = ['sheet.open']", "printf 'text=a\\ntitle=A\\n'")
         await model.reload()
         try await wait("the open list") { model.transition.phase == .open }
         host.motions = []
@@ -884,8 +884,8 @@ final class SpotsModelTests: XCTestCase {
     }
 
     func testASpotThatTheAPIOpensOpensInPlaceOfTheListWithNoCollapse() async throws {
-        try script("build", toml: "on = ['sheet.open']", "printf 'row=g\\ntitle=Guide\\n'")
-        try script("picker", toml: "on = ['sheet.open']", "printf 'row=new\\ntitle=New spot\\n'")
+        try script("build", toml: "on = ['sheet.open']", "printf 'text=g\\ntitle=Guide\\n'")
+        try script("picker", toml: "on = ['sheet.open']", "printf 'text=new\\ntitle=New spot\\n'")
         await model.reload()
         model.setOnGrid(false, for: "build")
         model.isShown = true
@@ -908,8 +908,8 @@ final class SpotsModelTests: XCTestCase {
     }
 
     func testTheGridSearchFindsASpotByItsName() async throws {
-        try script("list", toml: "on = ['sheet.open']", "printf 'row=a\\ntitle=Apple\\n'")
-        try script("other", toml: "on = ['sheet.open']", "printf 'row=a\\ntitle=A\\n'")
+        try script("list", toml: "on = ['sheet.open']", "printf 'text=a\\ntitle=Apple\\n'")
+        try script("other", toml: "on = ['sheet.open']", "printf 'text=a\\ntitle=A\\n'")
         await model.reload()
 
         model.searchText = "oth"
@@ -935,8 +935,8 @@ final class SpotsModelTests: XCTestCase {
 
     func testCommandReturnInAMultilineFieldPressesItsButtonAndCommandKOpensTheActions() async throws {
         let calls = try await openParts(
-            "frame=\ngrid=describe describe\\ngrid=. copy\\n\\nfield=describe\\ntype=multiline\\n\\nbutton=copy\\ntitle=Copy prompt\\nlook=strong\\nshortcut=cmd+return\\n\\n"
-                + "button=guide\\ntitle=Read the guide\\nscope=spot\\nclose=true\\n"
+            "frame=\ngrid=describe describe\\ngrid=. copy\\n\\nfield=describe\\ntype=multiline\\n\\nbutton=copy\\ntitle=Copy prompt\\nlook=strong\\nshortcut=cmd+return\\nclose=false\\n\\n"
+                + "button=guide\\ntitle=Read the guide\\nscope=spot\\n"
         )
         XCTAssertEqual(model.openParts?.selectedPart?.id, "describe")
         XCTAssertEqual(model.hint, "⌘⏎ Copy prompt   ⌘K Actions")
@@ -994,7 +994,7 @@ final class SpotsModelTests: XCTestCase {
 
     func testDownOnTheLastRowReachesTheButtonBelowAndUpComesBack() async throws {
         let calls = try await openParts(
-            "frame=\ngrid=list\\ngrid=add\\n\\nrepeat=list\\n\\nbutton=add\\ntitle=Add\\n\\nrow=a\\ntitle=A\\n\\nrow=b\\ntitle=B\\n"
+            "frame=\ngrid=list\\ngrid=add\\n\\nrepeat=list\\n\\nbutton=add\\ntitle=Add\\nclose=false\\n\\ntext=a\\ntitle=A\\n\\ntext=b\\ntitle=B\\n"
         )
         try await wait("the rows") { model.openItems?.shown.count == 2 }
 
@@ -1013,7 +1013,7 @@ final class SpotsModelTests: XCTestCase {
 
     func testEnterRunsASpotWithPressOpenCommandEnterOpensItsSettingsAndTheMenuOpensItsSheet() async throws {
         let log = folder.appendingPathComponent("calls")
-        try script("conf", toml: "on = ['sheet.open']\npress = 'open'", "if [ \"$1\" = show ]; then printf 'row=a\\ntitle=A\\n'; else echo \"$@\" >> '\(log.path)'; fi")
+        try script("conf", toml: "on = ['sheet.open']\npress = 'open'", "if [ \"$1\" = show ]; then printf 'text=a\\ntitle=A\\n'; else echo \"$@\" >> '\(log.path)'; fi")
         await model.reload()
         model.isShown = true
         model.panelWillShow()
@@ -1042,7 +1042,7 @@ final class SpotsModelTests: XCTestCase {
 
     func testAClickWithCommandOpensTheSettingsOfASpotWithPressOpen() async throws {
         let log = folder.appendingPathComponent("calls")
-        try script("conf", toml: "on = ['sheet.open']\npress = 'open'", "if [ \"$1\" = show ]; then printf 'row=a\\ntitle=A\\n'; else echo \"$@\" >> '\(log.path)'; fi")
+        try script("conf", toml: "on = ['sheet.open']\npress = 'open'", "if [ \"$1\" = show ]; then printf 'text=a\\ntitle=A\\n'; else echo \"$@\" >> '\(log.path)'; fi")
         await model.reload()
         model.isShown = true
         model.panelWillShow()
@@ -1054,7 +1054,7 @@ final class SpotsModelTests: XCTestCase {
     }
 
     func testCommandEnterOpensTheSettingsOfASpotWithNoPressOpenAndNotItsOwnSheet() async throws {
-        try script("list", toml: "on = ['sheet.open']", "printf 'row=a\\ntitle=A\\n'")
+        try script("list", toml: "on = ['sheet.open']", "printf 'text=a\\ntitle=A\\n'")
         await model.reload()
         model.isShown = true
         model.panelWillShow()
@@ -1065,8 +1065,8 @@ final class SpotsModelTests: XCTestCase {
     }
 
     func testTheGridSearchFindsAGlobalSpotWithNoKeyBesideARowOfTheSameName() async throws {
-        try script("apps", toml: "title = 'Apps'\non = ['panel.open']\noffers = ['search']", "printf 'row=shortcuts\\ntitle=Shortcuts\\n'")
-        try script("shortcuts", toml: "title = 'Shortcuts'\non = ['panel.open']\noffers = ['search']", "printf 'row=daily\\ntitle=Daily\\n'")
+        try script("apps", toml: "title = 'Apps'\non = ['panel.open']\noffers = ['search']", "printf 'text=shortcuts\\ntitle=Shortcuts\\n'")
+        try script("shortcuts", toml: "title = 'Shortcuts'\non = ['panel.open']\noffers = ['search']", "printf 'text=daily\\ntitle=Daily\\n'")
         await model.reload()
         model.isShown = true
         model.panelWillShow()
@@ -1079,7 +1079,7 @@ final class SpotsModelTests: XCTestCase {
     }
 
     func testTheGridSearchFindsASpotThatOffersSearchAndItsRows() async throws {
-        try script("settings", toml: "title = 'System Settings'\non = ['panel.open']\noffers = ['search']", "printf 'row=sound\\ntitle=Sound Settings\\n'")
+        try script("settings", toml: "title = 'System Settings'\non = ['panel.open']\noffers = ['search']", "printf 'text=sound\\ntitle=Sound Settings\\n'")
         await model.reload()
         model.isShown = true
         model.panelWillShow()
@@ -1112,7 +1112,7 @@ final class SpotsModelTests: XCTestCase {
         try script("list", toml: "on = ['sheet.open']", """
         case "$1" in
           pick) printf 'frame=\\ntitle=Pick\n\nchoice=shown\ntitle=Shown\ntype=multiple\nvalue=a\n\noption=a\ntitle=Apple\n\noption=b\ntitle=Banana\n' ;;
-          *) printf 'button=pick\ntitle=Pick\nscope=spot\nform=true\n\nrow=a\ntitle=Apple\n' ;;
+          *) printf 'button=pick\ntitle=Pick\nscope=spot\nform=true\n\ntext=a\ntitle=Apple\n' ;;
         esac
         """)
         await model.reload()
@@ -1183,7 +1183,7 @@ final class SpotsModelTests: XCTestCase {
         try script("list", toml: "on = ['sheet.open']", """
         case "$1" in
           pick) printf 'frame=\\ntitle=Pick\n\nchoice=shown\ntitle=Shown\nvalue=a\n\noption=a\ntitle=Apple\n\noption=b\ntitle=Banana\n' ;;
-          *) printf 'button=pick\ntitle=Pick\nscope=spot\nform=true\n\nrow=a\ntitle=Apple\n' ;;
+          *) printf 'button=pick\ntitle=Pick\nscope=spot\nform=true\n\ntext=a\ntitle=Apple\n' ;;
         esac
         """)
         await model.reload()
@@ -1206,7 +1206,7 @@ final class SpotsModelTests: XCTestCase {
     }
 
     func testAKeyInTheSearchOfALongSheetTellsNeitherThePanelNorTheField() async throws {
-        try script("fruit", toml: "on = ['sheet.open']", "for i in $(seq 1 50); do printf 'row=a%s\\ntitle=Apple %s\\n\\nrow=p%s\\ntitle=Pear %s\\n\\n' $i $i $i $i; done")
+        try script("fruit", toml: "on = ['sheet.open']", "for i in $(seq 1 50); do printf 'text=a%s\\ntitle=Apple %s\\n\\ntext=p%s\\ntitle=Pear %s\\n\\n' $i $i $i $i; done")
         await model.reload()
         model.isShown = true
         model.panelWillShow()
@@ -1305,7 +1305,7 @@ final class SpotsModelTests: XCTestCase {
     }
 
     func testASheetThatOpensOverTheMenuClosesItFirstInTheUpdateThatShowsTheSheet() async throws {
-        try script("notes", toml: "title = 'Notes'\non = ['sheet.open']", "printf 'row=a\\ntitle=A\\n'")
+        try script("notes", toml: "title = 'Notes'\non = ['sheet.open']", "printf 'text=a\\ntitle=A\\n'")
         model.placeMenu(try await openWeatherMenu())
         try await wait("the grow") { model.menuSession?.phase != .opening }
         let motions = host.motions.count
@@ -1328,7 +1328,7 @@ final class SpotsModelTests: XCTestCase {
     }
 
     func testAMenuThatFoldsAsASheetOpensGivesItsFootToTheSheetsStart() async throws {
-        try script("notes", toml: "title = 'Notes'\non = ['sheet.open']", "printf 'row=a\\ntitle=A\\n'")
+        try script("notes", toml: "title = 'Notes'\non = ['sheet.open']", "printf 'text=a\\ntitle=A\\n'")
         let frame = try await openWeatherMenu()
         model.placeMenu(frame)
         try await wait("the grow") { model.menuSession?.phase != .opening }
@@ -1481,9 +1481,9 @@ final class SpotsModelTests: XCTestCase {
     }
 
     private func showAnswers(slow: String = "none") async throws {
-        let body = #"\#(TestSpot.event); case "$val" in \#(slow)) sleep 0.5 ;; esac; case "$1" in show) [ -n "$val" ] && printf 'row=%s\ntitle=Is %s\ndetail=Read %s\n' "$val" "$val" "$val" ;; open) printf '\033]9;Picked %s\007' "$2" ;; esac"#
+        let body = #"\#(TestSpot.event); case "$val" in \#(slow)) sleep 0.5 ;; esac; case "$1" in show) [ -n "$val" ] && printf 'text=%s\ntitle=Is %s\ndetail=Read %s\n' "$val" "$val" "$val" ;; open) printf '\033]9;Picked %s\007' "$2" ;; esac"#
         try script("calc", toml: "title = 'Calc'\non = ['search.text ^[0-9]']", body)
-        try script("notes", toml: "title = 'Notes 2'\non = ['sheet.open']", "printf 'row=a\\ntitle=A\\n'")
+        try script("notes", toml: "title = 'Notes 2'\non = ['sheet.open']", "printf 'text=a\\ntitle=A\\n'")
         await model.reload()
         model.isShown = true
         model.panelWillShow()
@@ -1521,7 +1521,7 @@ final class SpotsModelTests: XCTestCase {
 
     func testASpotWithAnswersLastAnswersUnderTheResults() async throws {
         try await showAnswers()
-        try script("make", toml: "title = 'Make'\non = ['search.text .']\nanswers = 'last'", #"\#(TestSpot.event); printf 'row=%s\ntitle=Make\n' "$val""#)
+        try script("make", toml: "title = 'Make'\non = ['search.text .']\nanswers = 'last'", #"\#(TestSpot.event); printf 'text=%s\ntitle=Make\n' "$val""#)
         await model.reload()
 
         model.searchText = "notes"
@@ -1535,7 +1535,7 @@ final class SpotsModelTests: XCTestCase {
     func testAnAnswerThatDrawsALargeCardTakesTwoFullRowsAndAPressSendsItsMainValue() async throws {
         let body = #"\#(TestSpot.event); case "$1" in show) printf 'frame=\ngrid.large=sum sum sum sum\ngrid.large=answer answer answer answer\nmain=answer\n\ntext=sum\ntitle=%s\n\nnumber=answer\nvalue=14\n' "$val" ;; open) printf '\033]9;Picked %s\007' "$2" ;; esac"#
         try script("calc", toml: "title = 'Calc'\non = ['search.text ^[0-9]']", body)
-        try script("notes", toml: "title = 'Notes 2'\non = ['sheet.open']", "printf 'row=a\\ntitle=A\\n'")
+        try script("notes", toml: "title = 'Notes 2'\non = ['sheet.open']", "printf 'text=a\\ntitle=A\\n'")
         await model.reload()
         model.isShown = true
         model.panelWillShow()
@@ -1591,7 +1591,7 @@ final class SpotsModelTests: XCTestCase {
 
     func testAnAnswerIsAskedAgainWhenThePanelShowsAgain() async throws {
         let calls = folder.appendingPathComponent("calls").path
-        let body = #"\#(TestSpot.event); [ "$1" = show ] && [ -n "$val" ] && echo x >> '\#(calls)' && printf 'row=%s\ntitle=Call %s\n' "$val" "$(wc -l < '\#(calls)' | tr -d ' ')""#
+        let body = #"\#(TestSpot.event); [ "$1" = show ] && [ -n "$val" ] && echo x >> '\#(calls)' && printf 'text=%s\ntitle=Call %s\n' "$val" "$(wc -l < '\#(calls)' | tr -d ' ')""#
         try script("calc", toml: "title = 'Calc'\non = ['search.text ^[0-9]']", body)
         await model.reload()
         model.isShown = true
@@ -1629,7 +1629,7 @@ final class SpotsModelTests: XCTestCase {
           const text = id === "open" ? row : openspot.value("event.value", input)
           if (id === "open") { openspot.call(["toast", `Picked ${text}`]); return "" }
           if (text === "12") { const end = Date.now() + 300; while (Date.now() < end) {} }
-          return `row=${text}\\ntitle=Is ${text}\\n`
+          return `text=${text}\\ntitle=Is ${text}\\n`
         }
         """.writeInline(to: spots.spotFile("calc", extension: "js"), toml: "title = 'Calc'\non = ['search.text ^[0-9]']")
         await model.reload()
@@ -1652,7 +1652,7 @@ final class SpotsModelTests: XCTestCase {
         try script("calc", toml: "title = 'Calc'\nmode = 'stay'\non = ['search.text ^[0-9]']\noffers = ['card', 'menubar']", """
         while IFS= read -r line; do
           case "$line" in call=*) call=${line#call=}; text= ;; event.value=*) text=${line#event.value=} ;; esac
-          [ -n "$line" ] || { [ -n "$text" ] && printf 'end=%s\\n\\nrow=%s\\ntitle=%s\\n---\\n' "$call" "$text" "$text" || printf 'end=%s\\n---\\n' "$call"; }
+          [ -n "$line" ] || { [ -n "$text" ] && printf 'end=%s\\n\\ntext=%s\\ntitle=%s\\n---\\n' "$call" "$text" "$text" || printf 'end=%s\\n---\\n' "$call"; }
         done
         """)
         await model.reload()
@@ -1670,7 +1670,7 @@ final class SpotsModelTests: XCTestCase {
     }
 
     func testAnAnswerAndARowOfItsSpotWithOneIdShowOnce() async throws {
-        try script("both", toml: "title = 'Both'\non = ['panel.open', 'search.text ^[0-9]']\noffers = ['search']", "printf 'row=7\\ntitle=7 days\\n'")
+        try script("both", toml: "title = 'Both'\non = ['panel.open', 'search.text ^[0-9]']\noffers = ['search']", "printf 'text=7\\ntitle=7 days\\n'")
         await model.reload()
         model.isShown = true
         model.panelWillShow()
@@ -1683,7 +1683,7 @@ final class SpotsModelTests: XCTestCase {
     }
 
     func testAnAnswerLeavesTheFailureOfTheSpotsRead() async throws {
-        let body = #"\#(TestSpot.event); [ -n "$val" ] || { echo 'Openspot cannot read.' >&2; exit 1; }; printf 'row=%s\ntitle=%s\n' "$val" "$val""#
+        let body = #"\#(TestSpot.event); [ -n "$val" ] || { echo 'Openspot cannot read.' >&2; exit 1; }; printf 'text=%s\ntitle=%s\n' "$val" "$val""#
         try script("calc", toml: "title = 'Calc'\non = ['panel.open', 'search.text ^[0-9]']", body)
         await model.reload()
         model.isShown = true
@@ -1726,7 +1726,7 @@ final class SpotsModelTests: XCTestCase {
     }
 
     func testAnOpenKeyShowsThePanelWithTheSheetOfItsSpot() async throws {
-        try script("list", toml: "on = ['sheet.open']", "printf 'row=a\\ntitle=Apple\\n'")
+        try script("list", toml: "on = ['sheet.open']", "printf 'text=a\\ntitle=Apple\\n'")
         await model.reload()
 
         model.press(GlobalKey(spot: "list", act: .open, trigger: .key(try XCTUnwrap(Shortcut(text: "ctrl+option+l")))))
@@ -1757,7 +1757,7 @@ final class SpotsModelTests: XCTestCase {
     }
 
     func testTheAPIOpensASheetWithThePanelHiddenAndNoSpotForAnUnknownID() async throws {
-        try script("list", toml: "on = ['sheet.open']", "printf 'row=a\\ntitle=Apple\\n'")
+        try script("list", toml: "on = ['sheet.open']", "printf 'text=a\\ntitle=Apple\\n'")
         await model.reload()
 
         XCTAssertFalse(model.push(FlowSheet(spot: "gone")))
@@ -1769,7 +1769,7 @@ final class SpotsModelTests: XCTestCase {
 
     func testAKeyOfTheConfigOpensTheSheetOfItsSpotFromTheGridAndFromEditSpots() async throws {
         let new = spots.spotFile("new")
-        try "#!/bin/sh\nprintf 'row=g\\ntitle=Guide\\n'\n".writeScript(to: new, toml: "on = ['sheet.open']")
+        try "#!/bin/sh\nprintf 'text=g\\ntitle=Guide\\n'\n".writeScript(to: new, toml: "on = ['sheet.open']")
         try FileManager.default.createDirectory(at: folder.appendingPathComponent("config"), withIntermediateDirectories: true)
         try "[[spots]]\nid = \"new\"\ngrid = false\nkey = \"cmd+n\"\n".write(to: folder.appendingPathComponent("config/config.toml"), atomically: true, encoding: .utf8)
         await model.reload()

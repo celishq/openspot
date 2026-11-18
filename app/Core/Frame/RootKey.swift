@@ -1,5 +1,5 @@
 public enum RootKey: String, CaseIterable, Sendable {
-    case frame, grid, main, title, detail, active, recents, search, shown, progress
+    case frame, grid, main, title, detail, active, recents, shown, progress
     case end, call
 
     private static let names = Set(allCases.map(\.rawValue))

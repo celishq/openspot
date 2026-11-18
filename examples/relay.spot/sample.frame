@@ -22,3 +22,4 @@ placeholder=Hello
 button=send
 title=Send
 shortcut=cmd+return
+close=false

@@ -306,7 +306,7 @@ final class SpotRunsWorkTests: SpotRunsCase {
     func testARunningActionOrPickShowsOnItsRowOfTheMenu() async throws {
         try script(toml: "on = ['sheet.open']", """
         case "$1" in
-          show) printf 'button=go\\ntitle=Go\\nscope=spot\\n\\nbutton=copy\\ntitle=Copy\\n\\nrow=a\\ntitle=A\\n' ;;
+          show) printf 'button=go\\ntitle=Go\\nscope=spot\\n\\nbutton=copy\\ntitle=Copy\\n\\ntext=a\\ntitle=A\\n' ;;
           go) sleep 30 ;;
           open) sleep 30 ;;
         esac
@@ -356,7 +356,7 @@ final class SpotRunsWorkTests: SpotRunsCase {
     func testAPressOfAPartWithinOneSecondOfItsStartDoesNothing() async throws {
         try script(toml: "on = ['sheet.open']", """
         case "$1" in
-          show) printf 'frame=\\ngrid=go\\n\\nbutton=go\\ntitle=Go\\n' ;;
+          show) printf 'frame=\\ngrid=go\\n\\nbutton=go\\ntitle=Go\\nclose=false\\n' ;;
           go) sleep 0.2; touch '\(path("done"))' ;;
         esac
         """)
@@ -377,7 +377,7 @@ final class SpotRunsWorkTests: SpotRunsCase {
     func testAPickOrAnActionWithinOneSecondOfItsStartDoesNothing() async throws {
         try script(toml: "on = ['sheet.open']", """
         case "$1" in
-          show) printf 'button=go\\ntitle=Go\\nscope=spot\\n\\nrow=a\\ntitle=A\\n' ;;
+          show) printf 'button=go\\ntitle=Go\\nscope=spot\\n\\ntext=a\\ntitle=A\\n' ;;
           go) sleep 0.2; touch '\(path("action"))' ;;
           open) sleep 0.2; touch '\(path("pick"))' ;;
         esac
@@ -415,7 +415,7 @@ final class SpotRunsWorkTests: SpotRunsCase {
     func testASecondAskForAFormWithinOneSecondLeavesTheFirstRunning() async throws {
         try script(toml: "on = ['sheet.open']", """
         case "$1" in
-          show) printf 'button=new\\ntitle=New\\nscope=spot\\nform=true\\n\\nrow=a\\ntitle=A\\n' ;;
+          show) printf 'button=new\\ntitle=New\\nscope=spot\\nform=true\\n\\ntext=a\\ntitle=A\\n' ;;
           new) \(untilRelease); printf 'frame=\\ntitle=New\\n\\nfield=a\\ntitle=A\\n' ;;
         esac
         """)
@@ -437,7 +437,7 @@ final class SpotRunsWorkTests: SpotRunsCase {
     func testAPickAsksWithAFormAndASubmitCanAnswerWithTheFormAgain() async throws {
         try script(toml: "on = ['sheet.open']", """
         case "$1" in
-          show) printf 'button=open\\ntitle=Open\\nform=true\\n\\nrow=a\\ntitle=A\\n' ;;
+          show) printf 'button=open\\ntitle=Open\\nform=true\\n\\ntext=a\\ntitle=A\\n' ;;
           open) case "$(cat)" in *name=x*) ;; *) printf 'frame=\\ntitle=Name\\n\\nfield=name\\ntitle=Name\\n' ;; esac ;;
         esac
         """)
@@ -463,7 +463,7 @@ final class SpotRunsWorkTests: SpotRunsCase {
     func testAChangeAnswersWithTheFormOfItsScriptOrIsDone() async throws {
         try script(toml: "on = ['sheet.open']", """
         case "$1" in
-          show) printf 'row=a\\ntitle=A\\n' ;;
+          show) printf 'text=a\\ntitle=A\\n' ;;
           editor) printf 'frame=\\ntitle=Editor\\n\\nchoice=editor\\ntitle=Editor\\n\\noption=zed\\ntitle=Zed\\n' ;;
           folder) touch "\(path("folder"))" ;;
         esac
@@ -482,7 +482,7 @@ final class SpotRunsWorkTests: SpotRunsCase {
     func testQuittingStopsEachCall() async throws {
         try script(toml: "on = ['sheet.open']", """
         trap 'touch "\(path("stopped"))"; exit 0' TERM
-        printf 'text=a\\ntitle=A\\n---\\n'
+        printf 'frame=\\ngrid=a\\n\\ntext=a\\ntitle=A\\n---\\n'
         \(String.longLoop)
         """)
         try script("deaf", "echo $$ > '\(path("deaf-pid"))'\ntrap '' TERM\n\(String.longLoop)")
@@ -558,7 +558,7 @@ final class SpotRunsWorkTests: SpotRunsCase {
     }
 
     func testAReadThatWaitsToRunAgainDoesNotRunAfterAQuit() async throws {
-        try script(toml: "on = ['sheet.open']", "printf 'row=a\\ntitle=A\\n---\\n'\nsleep 30")
+        try script(toml: "on = ['sheet.open']", "printf 'text=a\\ntitle=A\\n---\\n'\nsleep 30")
         let sheet = try sheet()
         sheet.open {}
         try await wait("the row") { sheet.list.shown.count == 1 }

@@ -3,8 +3,8 @@ import XCTest
 
 final class SpotOutputTests: XCTestCase {
     func testAScriptPrintsWhetherRecentPicksMoveUp() {
-        let plain = SpotOutput(text: "row=a\ntitle=A\n")
-        let printed = SpotOutput(text: "frame=\nrecents=false\n\nrow=a\ntitle=A\n")
+        let plain = SpotOutput(text: "text=a\ntitle=A\n")
+        let printed = SpotOutput(text: "frame=\nrecents=false\n\ntext=a\ntitle=A\n")
 
         XCTAssertTrue(plain.keepsRecent)
         XCTAssertFalse(printed.keepsRecent)
@@ -21,12 +21,12 @@ final class SpotOutputTests: XCTestCase {
         shortcut=cmd+return
         close=true
 
-        row=/Applications/Safari.app
+        text=/Applications/Safari.app
         title=Safari
         detail=Browser
         icon=/Applications/Safari.app
 
-        row=off
+        text=off
         title=Off
         icon=power
         """)
@@ -41,7 +41,7 @@ final class SpotOutputTests: XCTestCase {
     }
 
     func testTheFirstKeyOfABlockNamesItsKind() {
-        let output = SpotOutput(text: "frame=\ntitle=Places\n\ndetail=Late\nrow=kyiv\ntitle=Kyiv\n\nrow=lviv\ntitle=Lviv\n")
+        let output = SpotOutput(text: "frame=\ntitle=Places\n\ndetail=Late\ntext=kyiv\ntitle=Kyiv\n\ntext=lviv\ntitle=Lviv\n")
 
         XCTAssertEqual(output.items.map(\.run), ["lviv"])
         XCTAssertEqual(output.errors, ["detail=Late"])
@@ -52,7 +52,7 @@ final class SpotOutputTests: XCTestCase {
         let alone = SpotOutput(text: "badge=new\ntitle=New\n")
 
         XCTAssertEqual(output.summary?.value("title"), "Mine")
-        XCTAssertEqual(output.parts.map(\.id), ["a"])
+        XCTAssertEqual(output.items.map(\.run), ["a"])
         XCTAssertTrue(output.isPicture)
         XCTAssertEqual(output.errors, ["badge=new"])
         XCTAssertNil(alone.summary)
@@ -65,17 +65,17 @@ final class SpotOutputTests: XCTestCase {
 
         XCTAssertNil(output.summary)
         XCTAssertNil(output.layout)
-        XCTAssertEqual(output.parts.map(\.id), ["a"])
+        XCTAssertEqual(output.items.map(\.run), ["a"])
         XCTAssertEqual(output.errors, ["title=Mine", "toast=Saved"])
     }
 
     func testTheRootIsTheBlockThatStartsWithFrameAtAnyPlaceAndItsRouteMayBeEmpty() {
-        let first = SpotOutput(text: "frame=\ntitle=Mine\nrecents=false\n\nrow=a\ntitle=A\n")
-        let after = SpotOutput(text: "row=a\ntitle=A\n\nframe=photo/12\nsearch=off\n")
+        let first = SpotOutput(text: "frame=\ntitle=Mine\nrecents=false\n\ntext=a\ntitle=A\n")
+        let after = SpotOutput(text: "text=a\ntitle=A\n\nframe=photo/12\nrecents=false\n")
 
         XCTAssertEqual(first.summary?.value("title"), "Mine")
         XCTAssertFalse(first.keepsRecent)
-        XCTAssertTrue(after.hidesSearch)
+        XCTAssertFalse(after.keepsRecent)
         XCTAssertEqual(after.items.map(\.run), ["a"])
         XCTAssertEqual(first.errors + after.errors, [])
     }
@@ -90,12 +90,11 @@ final class SpotOutputTests: XCTestCase {
 
         button=delete
         title=Delete
-        close=true
         confirm=Delete this?
         """)
 
         XCTAssertEqual(output.actions, [
-            CommandAction(id: "new", title: "New", key: ActionKey(text: "cmd+n"), scope: .spot, isForm: true),
+            CommandAction(id: "new", title: "New", key: ActionKey(text: "cmd+n"), scope: .spot, after: .close, isForm: true),
             CommandAction(id: "delete", title: "Delete", after: .close, confirm: "Delete this?")
         ])
     }
@@ -130,9 +129,9 @@ final class SpotOutputTests: XCTestCase {
     }
 
     func testReportsARowWithNoIdAndABlockThatSaysNothing() {
-        let output = SpotOutput(text: "row=\ndetail=x\n\nnot an item\n\nrow=1\ntitle=Kept\n")
+        let output = SpotOutput(text: "text=\ndetail=x\n\nnot an item\n\ntext=1\ntitle=Kept\n")
 
-        XCTAssertEqual(output.errors, ["row=", "not an item"])
+        XCTAssertEqual(output.errors, ["text=", "not an item"])
         XCTAssertEqual(output.items.map(\.title), ["Kept"])
     }
 
@@ -141,7 +140,7 @@ final class SpotOutputTests: XCTestCase {
     }
 
     func testKeepsTheFirstItemOfEachRunValue() {
-        XCTAssertEqual(SpotOutput(text: "row=same\ntitle=One\n\nrow=same\ntitle=Two\n").items.map(\.title), ["One"])
+        XCTAssertEqual(SpotOutput(text: "text=same\ntitle=One\n\ntext=same\ntitle=Two\n").items.map(\.title), ["One"])
     }
 
     func testNoOutputIsNothing() {
@@ -154,7 +153,7 @@ final class SpotOutputTests: XCTestCase {
         XCTAssertEqual(SpotOutput(text: "frame=\ntitle=Hi\n").kind, .launch)
         XCTAssertEqual(SpotOutput(text: "switch=power\nvalue=true\n").kind, .toggle)
         XCTAssertEqual(SpotOutput(text: "field=volume\ntype=slider\nvalue=7\n").kind, .slider)
-        XCTAssertEqual(SpotOutput(text: "switch=power\nvalue=true\n\nrow=a\ntitle=A\n").kind, .list)
+        XCTAssertEqual(SpotOutput(text: "switch=power\nvalue=true\n\ntext=a\ntitle=A\n").kind, .list)
         XCTAssertEqual(SpotOutput(text: "button=new\ntitle=New\n").kind, .list)
     }
 
@@ -168,7 +167,7 @@ final class SpotOutputTests: XCTestCase {
         XCTAssertEqual(try kind("text=m\ntitle=Up\ntone=good\n"), .status)
         XCTAssertEqual(try kind("graph=m\ntitle=84%\nvalue=0.84\n"), .gauge)
         XCTAssertEqual(try kind("graph=m\ntitle=2\nvalue=1\nvalue=2\n"), .trend)
-        XCTAssertEqual(try kind("row=Build\n"), .rows)
+        XCTAssertEqual(try kind("text=Build\n\ntext=Test\n"), .rows)
     }
 
     func testAGraphReadsItsBarsFromValueLines() throws {
@@ -180,10 +179,10 @@ final class SpotOutputTests: XCTestCase {
     }
 
     func testRowsCountThemselvesUnlessATitleIsPrinted() throws {
-        let rows = "row=One\ndetail=2m\ntone=bad\n\nrow=Two\n"
+        let rows = "text=One\ndetail=2m\ntone=bad\n\ntext=Two\n"
 
         let counted = try XCTUnwrap(MetricValue(output: SpotOutput(text: rows)))
-        let titled = try XCTUnwrap(MetricValue(output: SpotOutput(text: "text=m\ntitle=Many\n\n" + rows)))
+        let titled = try XCTUnwrap(MetricValue(output: SpotOutput(text: "frame=\nmain=m\n\ntext=m\ntitle=Many\n\n" + rows)))
 
         XCTAssertEqual(counted.title, "2")
         XCTAssertEqual(counted.rows, [.init(title: "One", detail: "2m", tone: .bad), .init(title: "Two")])
@@ -191,7 +190,7 @@ final class SpotOutputTests: XCTestCase {
     }
 
     func testATintIsAnUnknownKey() {
-        XCTAssertEqual(FrameCheck(text: "text=m\ntitle=1\ntint=green\n").partFaults, ["the part m has an unknown key: tint"])
+        XCTAssertEqual(FrameCheck(text: "frame=\ngrid=m\n\ntext=m\ntitle=1\ntint=green\n").partFaults, ["the part m has an unknown key: tint"])
     }
 
     func testPrintingNothingHidesAMetric() {
@@ -201,7 +200,7 @@ final class SpotOutputTests: XCTestCase {
 
     func testAReadingOfRowsCountsZeroWhenThereIsNothingToShow() throws {
         var reading = MetricReading(label: "Agents")
-        reading.take(try XCTUnwrap(MetricValue(output: SpotOutput(text: "row=One\n"))))
+        reading.take(try XCTUnwrap(MetricValue(output: SpotOutput(text: "text=One\n\ntext=Two\n"))))
         reading.take(try XCTUnwrap(MetricValue(output: SpotOutput(text: ""))))
 
         XCTAssertEqual(reading.kind, .rows)
@@ -242,7 +241,7 @@ final class SpotOutputTests: XCTestCase {
     }
 
     func testARowReadsEachKeyword() {
-        let output = SpotOutput(text: "row=😀\ntitle=grinning face\nkeywords=happy, big smile,,\n")
+        let output = SpotOutput(text: "text=😀\ntitle=grinning face\nkeywords=happy, big smile,,\n")
 
         XCTAssertEqual(output.items.first?.keywords, ["happy", "big smile"])
     }
@@ -267,22 +266,22 @@ final class SpotOutputTests: XCTestCase {
     }
 
     func testARowDrawsItsOwnKeys() throws {
-        let output = SpotOutput(text: "row=r\ntitle=R\nas=big\nname=Big\n")
+        let output = SpotOutput(text: "text=r\ntitle=R\nas=big\nname=Big\n")
 
         let row = try XCTUnwrap(output.items.first)
-        XCTAssertEqual(row, SpotItem(title: "R", run: "r", fields: "item.row=r\nitem.title=R\nitem.as=big\nitem.name=Big\n"))
+        XCTAssertEqual(row, SpotItem(title: "R", run: "r", fields: "item.text=r\nitem.title=R\nitem.as=big\nitem.name=Big\n"))
     }
 
     func testAGraphOfOneValueIsAGaugeAFieldTypeIsItsInputAndAnOldKindIsReported() {
-        let output = SpotOutput(text: "graph=g\nvalue=0.5\n\nfield=s\ntype=slider\nvalue=40\n\nfield=k\ntype=hotkey\nvalue=ctrl+k\n\nswitch=t\ntype=tick\n\nswitch=w\nlook=tick\n\ngauge=old\nvalue=1\n")
+        let output = SpotOutput(text: "frame=\ngrid=g\ngrid=s\ngrid=k\ngrid=t\ngrid=w\n\ngraph=g\nvalue=0.5\n\nfield=s\ntype=slider\nvalue=40\n\nfield=k\ntype=hotkey\nvalue=ctrl+k\n\nswitch=t\ntype=tick\n\nswitch=w\nlook=tick\n\ngauge=old\nvalue=1\n")
 
         XCTAssertEqual(output.parts.map(\.control), [.progress(level: 50), .slider(level: 40, min: 0, max: 100), .shortcut("ctrl+k"), .toggle(false), .toggle(false)])
         XCTAssertEqual(output.parts.map(\.look), [nil, nil, nil, .tick, nil])
         XCTAssertEqual(output.errors, ["gauge=old"])
     }
 
-    func testARowOfTypeToggleIsAToggleThatShowsWhetherItIsOn() {
-        let items = SpotOutput(text: "row=on\ntype=toggle\nvalue=true\n\nrow=off\ntype=toggle\nvalue=false\n\nrow=picked\nvalue=true\n\nrow=plain\n").items
+    func testASwitchItemIsAToggleThatShowsWhetherItIsOn() {
+        let items = SpotOutput(text: "switch=on\nvalue=true\n\nswitch=off\nvalue=false\n\ntext=picked\nvalue=true\n\ntext=plain\n").items
 
         XCTAssertEqual(items.map(\.isToggle), [true, true, false, false])
         XCTAssertEqual(items.map(\.isOn), [true, false, true, false])

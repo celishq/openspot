@@ -14,7 +14,7 @@ final class SpotRunsStayTests: SpotRunsCase {
           if [ "$name" = new ] && [ -z "$filled" ]; then
             printf 'frame=\\ntitle=New\\nend=%%s\\n\\nfield=a\\ntitle=A\\n---\\n' "$call"
           else
-            printf 'end=%%s\\n\\nbutton=new\\ntitle=New\\nscope=spot\\nform=true\\n\\nrow=a\\ntitle=A\\n---\\n' "$call"
+            printf 'end=%%s\\n\\nbutton=new\\ntitle=New\\nscope=spot\\nform=true\\n\\ntext=a\\ntitle=A\\n---\\n' "$call"
           fi
           ;;
       esac
@@ -32,7 +32,7 @@ final class SpotRunsStayTests: SpotRunsCase {
           case "$name" in
             stop) ;;
             go) ( while [ ! -f '%@' ]; do sleep 0.05; done; printf 'end=%%s\\n---\\n' "$id" ) & ;;
-            *) printf 'button=go\\ntitle=Go\\nscope=spot\\n\\nrow=a\\ntitle=A\\n\\nend=%%s\\n---\\n' "$id" ;;
+            *) printf 'button=go\\ntitle=Go\\nscope=spot\\n\\ntext=a\\ntitle=A\\n\\nend=%%s\\n---\\n' "$id" ;;
           esac
           name= ;;
       esac
@@ -50,7 +50,7 @@ final class SpotRunsStayTests: SpotRunsCase {
         '')
           case "$name" in
             hold) sleep 600 > /dev/null 2>&1 & echo $! >> '%@' ;;
-            ?*) printf 'end=%%s\\n\\nrow=a\\ntitle=A\\n---\\n' "$call" ;;
+            ?*) printf 'end=%%s\\n\\ntext=a\\ntitle=A\\n---\\n' "$call" ;;
           esac
           name= ;;
       esac
@@ -168,10 +168,10 @@ final class SpotRunsStayTests: SpotRunsCase {
           case "$line" in
             call=*) call=${line#call=} ;;
             '')
-              printf 'text=peer\\ntitle=Early\\n---\\n'
+              printf 'frame=\\ngrid=peer\\n\\ntext=peer\\ntitle=Early\\n---\\n'
               \(untilRelease)
-              printf 'end=%s\\n\\nrow=a\\ntitle=A\\n---\\n' "$call"
-              printf 'text=peer\\ntitle=Late\\n---\\n' ;;
+              printf 'end=%s\\n\\ntext=a\\ntitle=A\\n---\\n' "$call"
+              printf 'frame=\\ngrid=peer\\n\\ntext=peer\\ntitle=Late\\n---\\n' ;;
           esac
         done
         """)
@@ -219,7 +219,7 @@ final class SpotRunsStayTests: SpotRunsCase {
     }
 
     func testAnActionReachesTheRunningStayingScript() async throws {
-        try staying(frame: "button=go\\ntitle=Go\\n\\nrow=a\\ntitle=A\\n")
+        try staying(frame: "button=go\\ntitle=Go\\n\\ntext=a\\ntitle=A\\n")
         let sheet = try sheet()
         runs.panelOpened()
         sheet.open {}
@@ -261,13 +261,13 @@ final class SpotRunsStayTests: SpotRunsCase {
             while read -r line; do
               case "$line" in
                 call=*) id=${line#call=} ;;
-                "") printf 'call=%s\\n\\nrow=a\\ntitle=A\\n---\\nrow=a\\ntitle=A\\n\\nrow=b\\ntitle=B\\n---\\nend=%s\\n---\\n' "$id" "$id" ;;
+                "") printf 'call=%s\\n\\ntext=a\\ntitle=A\\n---\\ntext=a\\ntitle=A\\n\\ntext=b\\ntitle=B\\n---\\nend=%s\\n---\\n' "$id" "$id" ;;
               esac
             done
             """)
             try script("once", toml: "on = ['sheet.open']", """
             case "$1" in
-              show) printf 'button=add\\ntitle=Add\\nform=true\\nscope=spot\\n\\nrow=a\\ntitle=A\\n' ;;
+              show) printf 'button=add\\ntitle=Add\\nform=true\\nscope=spot\\n\\ntext=a\\ntitle=A\\n' ;;
               add) case "$(cat)" in *name=*) printf '\\033]9;Saved\\007' ;; *) printf 'frame=\\ntitle=Name\\n\\nfield=name\\ntitle=Name\\n' ;; esac ;;
             esac
             """)
@@ -413,7 +413,7 @@ final class SpotRunsStayTests: SpotRunsCase {
     }
 
     func testASearchReachesTheRunningStayingScript() async throws {
-        try staying(toml: "mode = 'stay'\non = ['sheet.text']\noffers = ['card', 'menubar']", frame: "row=a\\ntitle=A\\n")
+        try staying(toml: "mode = 'stay'\non = ['sheet.text']\noffers = ['card', 'menubar']", frame: "text=a\\ntitle=A\\n")
         let sheet = try sheet()
         runs.panelOpened()
         sheet.open {}
@@ -436,7 +436,7 @@ final class SpotRunsStayTests: SpotRunsCase {
             event.value=*) text=${line#event.value=} ;;
           esac
           [ -n "$line" ] || [ -z "$call" ] || {
-            if [ -n "$text" ]; then printf 'end=%s\\n\\nrow=%s\\ntitle=%s\\n---\\n' "$call" "$text" "$text"; else printf 'end=%s\\n---\\n' "$call"; fi
+            if [ -n "$text" ]; then printf 'end=%s\\n\\ntext=%s\\ntitle=%s\\n---\\n' "$call" "$text" "$text"; else printf 'end=%s\\n---\\n' "$call"; fi
           }
         done
         """
@@ -472,7 +472,7 @@ final class SpotRunsStayTests: SpotRunsCase {
     func testThePictureOfAStayingScriptIsNoAnswerOfTheSearch() async throws {
         try script(toml: "on = ['app.launch', 'search.text ^[0-9]', 'panel.open']\nmode = 'stay'\noffers = ['card', 'menubar']", """
         while IFS= read -r line; do
-          case "$line" in call=*) call=${line#call=} ;; arg=12) printf 'row=clock\\ntitle=Clock\\n---\\n' ;; esac
+          case "$line" in call=*) call=${line#call=} ;; arg=12) printf 'text=clock\\ntitle=Clock\\n---\\n' ;; esac
           [ -n "$line" ] || printf 'end=%s\\n---\\n' "$call"
         done
         """)
@@ -491,7 +491,7 @@ final class SpotRunsStayTests: SpotRunsCase {
         . "$OPENSPOT_SH"
         main() {
           case "$1" in
-            show) text=$(value event.value); if [ -n "$text" ]; then printf 'row=%s\\ntitle=Is %s\\n' "$text" "$text"; else printf 'row=a\\ntitle=A\\n'; fi ;;
+            show) text=$(value event.value); if [ -n "$text" ]; then printf 'text=%s\\ntitle=Is %s\\n' "$text" "$text"; else printf 'text=a\\ntitle=A\\n'; fi ;;
           esac
         }
         openspot_serve main "$@"
@@ -515,7 +515,7 @@ final class SpotRunsStayTests: SpotRunsCase {
             arg=*) [ -n "$name" ] || name=${line#arg=} ;;
             '')
               [ "$name" = power ] && exit 3
-              [ -f '\#(path("started"))' ] || printf 'end=%s\n\nrow=a\ntitle=A\n---\n' "$id"
+              [ -f '\#(path("started"))' ] || printf 'end=%s\n\ntext=a\ntitle=A\n---\n' "$id"
               touch '\#(path("started"))' ;;
           esac
         done
@@ -540,7 +540,7 @@ final class SpotRunsStayTests: SpotRunsCase {
           case "$line" in
             call=*) id=${line#call=} ;;
             '')
-              [ -f '\#(path("started"))' ] || printf 'end=%s\n\nrow=a\ntitle=A\n---\n' "$id"
+              [ -f '\#(path("started"))' ] || printf 'end=%s\n\ntext=a\ntitle=A\n---\n' "$id"
               touch '\#(path("started"))' ;;
           esac
         done
@@ -611,7 +611,7 @@ final class SpotRunsStayTests: SpotRunsCase {
         while IFS= read -r line; do
           case "$line" in
             call=*) id=${line#call=} ;;
-            '') printf 'end=%s\n\nrow=a\ntitle=A\n---\n' "$id" ;;
+            '') printf 'end=%s\n\ntext=a\ntitle=A\n---\n' "$id" ;;
           esac
         done
         """#)
@@ -657,7 +657,7 @@ final class SpotRunsStayTests: SpotRunsCase {
 
     func testAStayingMenuBarScriptGoesOnWhenItsSheetAndThePanelCloseAndAScanComes() async throws {
         menuBar.insert("script")
-        try staying(toml: "mode = 'stay'\noffers = ['card', 'menubar']", frame: "text=n\\ntitle=3\\n\\nrow=a\\ntitle=A\\n")
+        try staying(toml: "mode = 'stay'\noffers = ['card', 'menubar']", frame: "frame=\\ngrid=n\\n\\ntext=n\\ntitle=3\\n\\ntext=a\\ntitle=A\\n")
         let sheet = try sheet()
         try await wait("the row") { sheet.list.shown.count == 1 }
         runs.panelOpened()
@@ -698,7 +698,7 @@ final class SpotRunsStayTests: SpotRunsCase {
 
     func testASheetOfARunningStayingScriptOpensAtOnceWithItsLastFrame() async throws {
         menuBar.insert("script")
-        try staying(toml: "mode = 'stay'\noffers = ['card', 'menubar']", head: "\\nframe=\\nmain=n\\n", frame: "text=n\\ntitle=3\\n\\ntext=a\\ntitle=A\\n")
+        try staying(toml: "mode = 'stay'\noffers = ['card', 'menubar']", head: "\\nframe=\\nmain=n\\ngrid=n\\ngrid=a\\n", frame: "text=n\\ntitle=3\\n\\ntext=a\\ntitle=A\\n")
         let sheet = try sheet()
         try await wait("the mark") { !self.runs.menuBarMarks.isEmpty }
         XCTAssertNil(sheet.panel)
@@ -914,7 +914,7 @@ final class SpotRunsStayTests: SpotRunsCase {
         while IFS= read -r line; do
           case "$line" in
             call=*) call=${line#call=} ;;
-            '') \(untilRelease); printf 'end=%s\\n\\nrow=a\\ntitle=A\\n---\\n' "$call" ;;
+            '') \(untilRelease); printf 'end=%s\\n\\ntext=a\\ntitle=A\\n---\\n' "$call" ;;
           esac
         done
         """)
@@ -945,9 +945,9 @@ final class SpotRunsStayTests: SpotRunsCase {
             stop=*) touch '\(path("stopped"))'; args=stop ;;
             '')
               case "$args" in
-                ' show a') ( \(untilRelease); printf 'end=%s\\n\\nrow=o\\ntitle=Old\\n---\\n' "$call"; printf '\\033]9;Done\\007' ) & ;;
-                ' show ab') printf 'end=%s\\n\\nrow=n\\ntitle=New\\n---\\n' "$call" ;;
-                ' show') printf 'end=%s\\n\\nrow=x\\ntitle=X\\n---\\n' "$call" ;;
+                ' show a') ( \(untilRelease); printf 'end=%s\\n\\ntext=o\\ntitle=Old\\n---\\n' "$call"; printf '\\033]9;Done\\007' ) & ;;
+                ' show ab') printf 'end=%s\\n\\ntext=n\\ntitle=New\\n---\\n' "$call" ;;
+                ' show') printf 'end=%s\\n\\ntext=x\\ntitle=X\\n---\\n' "$call" ;;
               esac ;;
           esac
         done
@@ -1044,7 +1044,7 @@ final class SpotRunsStayTests: SpotRunsCase {
     }
 
     func testTheFirstPartsOfAStayingScriptArriveThroughTheArrival() async throws {
-        try staying(frame: "text=a\\ntitle=A\\n")
+        try staying(frame: "frame=\\ngrid=a\\n\\ntext=a\\ntitle=A\\n")
         let sheet = try sheet()
         var arrivals = 0
         runs.partsArrival = { _, bring in
@@ -1074,7 +1074,7 @@ final class SpotRunsStayTests: SpotRunsCase {
                 i=0; while [ $i -lt 300 ]; do printf 'frame=\ntitle=Frame %s of the long call\n---\n' "$i"; i=$((i+1)); done
                 printf 'end=%s\n---\n' "$id"
               else
-                printf 'button=go\ntitle=Go\nscope=spot\n\nrow=a\ntitle=A\n\nend=%s\n---\n' "$id"
+                printf 'button=go\ntitle=Go\nscope=spot\n\ntext=a\ntitle=A\n\nend=%s\n---\n' "$id"
               fi
               name= ;;
           esac
@@ -1099,7 +1099,7 @@ final class SpotRunsStayTests: SpotRunsCase {
             call=*) id=${line#call=} ;;
             '')
               n=$((n+1))
-              if [ $n -eq 1 ]; then printf 'row=a\ntitle=A\n\nend=%s\n---\n' "$id"; else printf 'row=b\ntitle=B\n---\n'; fi
+              if [ $n -eq 1 ]; then printf 'text=a\ntitle=A\n\nend=%s\n---\n' "$id"; else printf 'text=b\ntitle=B\n---\n'; fi
               ;;
           esac
         done
@@ -1127,8 +1127,8 @@ final class SpotRunsStayTests: SpotRunsCase {
           case "$line" in
             call=*) id=${line#call=} ;;
             '')
-              if [ "$id" = 1 ]; then printf 'row=a\ntitle=A\n\nend=1\n---\n'; fi
-              if [ "$id" = \#(last) ]; then printf 'end=2\n\nrow=old\ntitle=Old\n---\n\033]9;done\007'; id=; fi
+              if [ "$id" = 1 ]; then printf 'text=a\ntitle=A\n\nend=1\n---\n'; fi
+              if [ "$id" = \#(last) ]; then printf 'end=2\n\ntext=old\ntitle=Old\n---\n\033]9;done\007'; id=; fi
               ;;
           esac
         done

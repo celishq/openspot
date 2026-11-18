@@ -4,7 +4,7 @@ import XCTest
 @MainActor
 final class PlaygroundCallTests: SpotRunsCase {
     func testTheRunsTellEachCallWithItsPartsAlsoAQuietOne() async throws {
-        try script(toml: "on = ['sheet.open', 'sheet.text']", "echo 'slow disk' >&2\nprintf 'row=a\\ntitle=%s\\n' \"$(sed -n 's/^event.value=//p')\"")
+        try script(toml: "on = ['sheet.open', 'sheet.text']", "echo 'slow disk' >&2\nprintf 'text=a\\ntitle=%s\\n' \"$(sed -n 's/^event.value=//p')\"")
         var calls: [PlaygroundCall] = []
         runs.onCall = { calls.append(PlaygroundCall(record: $0, reason: $1)) }
         let sheet = try sheet()
@@ -14,7 +14,7 @@ final class PlaygroundCallTests: SpotRunsCase {
         sheet.search("rep")
         try await wait("the search") { calls.count == 2 }
 
-        XCTAssertEqual(calls[0].lines.dropLast(), ["$ show · event=sheet.open", "> row=a", "> title=", "! slow disk"])
+        XCTAssertEqual(calls[0].lines.dropLast(), ["$ show · event=sheet.open", "> text=a", "> title=", "! slow disk"])
         XCTAssertTrue(calls[0].lines.last?.hasPrefix("= ") == true)
         XCTAssertEqual(calls[1].lines.first, "$ show · event=sheet.text event.value=rep")
         XCTAssertTrue(calls[1].lines.contains("< search=rep"), "\(calls[1].lines)")
@@ -44,7 +44,7 @@ final class PlaygroundCallTests: SpotRunsCase {
               case "$name" in
                 stop) ;;
                 go) ( while [ ! -f '\(path("done"))' ]; do sleep 0.05; done; printf 'end=%s\\n---\\n' "$id" ) & ;;
-                *) printf 'button=go\\ntitle=Go\\nscope=spot\\n\\nrow=a\\ntitle=A\\n\\nend=%s\\n---\\n' "$id" ;;
+                *) printf 'button=go\\ntitle=Go\\nscope=spot\\n\\ntext=a\\ntitle=A\\n\\nend=%s\\n---\\n' "$id" ;;
               esac
               name= ;;
           esac

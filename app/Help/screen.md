@@ -19,7 +19,7 @@ openspot clipboard copy "$file" && openspot toast "Copied the picture."
 
 | Command                                                                                | Does                                                                   |
 | -------------------------------------------------------------------------------------- | ---------------------------------------------------------------------- |
-| `openspot screen sources`                                                              | Prints each display, window, microphone and camera as a row.      |
+| `openspot screen sources`                                                              | Prints each display, window, microphone and camera as an item.      |
 | `openspot screen shot [source] [--cursor] [file]`                                      | Takes a picture, and prints its path.                                  |
 | `openspot screen record start [source] [input]... [--cursor] [--events <file>] [file]` | Starts a recording, and prints nothing.                                |
 | `openspot screen record stop`                                                          | Ends the recording, and prints the path of each file, the video first. After a recording that ended by itself, it prints its files and why it ended. |
@@ -27,8 +27,8 @@ openspot clipboard copy "$file" && openspot toast "Copied the picture."
 
 ## Sources
 
-A source is one word that says what to capture (S2). The id of each row that `openspot screen sources` prints is its word,
-so a script can show the rows in its sheet and keep the picks of the person with `openspot setting`.
+A source is one word that says what to capture (S2). The id of each item that `openspot screen sources` prints is its word,
+so a script can show the items in its sheet and keep the picks of the person with `openspot setting`.
 
 | Source                                   | Captures                                                    |
 | ---------------------------------------- | ----------------------------------------------------------- |
@@ -92,7 +92,7 @@ With no file, it goes to the folder where macOS keeps screenshots, with a name s
 | --------------------------------------------------------------------------------------- | --------------------------------------------------------------------- |
 | A capture writes a file and prints its path, and the script chains the next act.        | A copy, an upload or an editor inside the command.                    |
 | A recording runs in a helper, so a short call starts it and another stops it.           | One call that records until a stop, whose result a stopped call loses. |
-| A source is one word, the id of its row in `sources`.                                    | A flag for each kind of source.                                       |
+| A source is one word, the id of its item in `sources`.                                    | A flag for each kind of source.                                       |
 | Openspot draws its own overlay to pick a source.                                        | The sharing picker of macOS, which cannot pick an area.               |
 | The camera writes its own file.                                                         | A camera bubble drawn into the video.                                 |
 | The events are JSON lines.                                                              | A new text format.                                                    |
