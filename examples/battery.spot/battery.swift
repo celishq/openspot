@@ -17,10 +17,10 @@ struct SpotView: View {
     var body: some View {
         let level = level
         ZStack {
-            spot.loop(period: Liquid.period, fill: colors) { time, rect in Liquid(time: time, level: level).path(in: rect) }
+            spot.loop(period: Liquid.period, fill: colors[0], colors[1]) { time, rect in Liquid(time: time, level: level).path(in: rect) }
             spot.loop(period: Liquid.period, stroke: .white.opacity(0.55), width: 1) { time, rect in Liquid(time: time, level: level).surface.path(in: rect) }
             if isCharging {
-                spot.loop(period: Bubbles.period, fill: [.white.opacity(0.4), .white.opacity(0.4)]) { time, rect in Bubbles(time: time).path(in: rect) }
+                spot.loop(period: Bubbles.period, fill: .white.opacity(0.4)) { time, rect in Bubbles(time: time).path(in: rect) }
                     .clipShape(Liquid(time: 0, level: level))
             }
             words(over: false)

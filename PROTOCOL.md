@@ -906,12 +906,13 @@ five groups. Each colour and strength is the one of the appearance that shows.
   `openspot check spots` reports one.
 - `spot.close()` closes only the open sheet, the float or the window of the view's own spot. It does nothing on a card,
   in the sheet that `spot.sheet(id)` draws, and in a card that `spot.card(id)` draws. A view can call it from any thread.
-- `spot.loop(period:fill:path:)` and `spot.loop(period:stroke:width:path:)` draw a shape that moves on its own, such as a
-  wave. `path` gives the shape at each time from 0 to `period` in a rect of the view's size, and the shape at `period`
-  must equal the one at 0. Openspot draws it about ten times a second of the loop, and macOS plays it between those
-  steps. Openspot draws it again only when the spot's values or the view's size change, so `path` reads nothing else.
-  It plays only while `spot.isShown` is true, and a pause holds it where it is. A `TimelineView` or a timer that redraws
-  the view on each frame slows Openspot instead.
+- `spot.loop(period:fill:path:)` and `spot.loop(period:stroke:width:path:)` draw a shape that moves on its own, such
+  as a wave. A fill takes one colour, or several for a gradient from top to bottom. `path` gives the shape at each
+  time from 0 to `period` in a rect of the view's size, and the shape at `period` must equal the one at 0. Openspot
+  draws it about ten times a second of the loop, and macOS plays it between those steps. Openspot draws it again only
+  when the spot's values or the view's size change, so `path` reads nothing else. It plays only while `spot.isShown`
+  is true, and a pause holds it where it is. A `TimelineView` or a timer that redraws the view on each frame slows
+  Openspot instead.
 - Openspot removes a view while its place is hidden, and builds it again at the next show, so its `@State` starts
   anew. A view that reads `spot.isShown` stays built instead, and must stop its timers and its motion while it's false.
 - `openspot spot stats` counts each run of the `body` of `SpotView` and the time of that one `body` (see

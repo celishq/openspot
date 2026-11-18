@@ -199,12 +199,12 @@ public struct ViewLibrary: Sendable {
 
             public func cornerButton(_ symbol: String, label: String, card id: String, action: @escaping () -> Void) -> AnyView { cornerMaker(symbol, label, id, action) }
 
-            public func loop(period: Double, fill colors: [Color], path: @escaping (Double, CGRect) -> Path) -> some View {
-                SpotLoop(period: period, size: size, values: values, isPlaying: isShown, look: .fill(colors), path: path)
+            public func loop(period: Double, fill colors: Color..., path: @escaping (Double, CGRect) -> Path) -> some View {
+                SpotLoop(key: .init(period: period, size: size, values: values, look: .fill(colors)), isPlaying: isShown, path: path)
             }
 
             public func loop(period: Double, stroke color: Color, width: CGFloat, path: @escaping (Double, CGRect) -> Path) -> some View {
-                SpotLoop(period: period, size: size, values: values, isPlaying: isShown, look: .stroke(color, width), path: path)
+                SpotLoop(key: .init(period: period, size: size, values: values, look: .stroke(color, width)), isPlaying: isShown, path: path)
             }
         }
 
@@ -214,59 +214,61 @@ public struct ViewLibrary: Sendable {
                 case stroke(Color, CGFloat)
             }
 
-            let period: Double
-            let size: CGSize
-            let values: [String: [String]]
+            struct Key: Equatable {
+                let period: Double
+                let size: CGSize
+                let values: [String: [String]]
+                let look: Look
+            }
+
+            let key: Key
             let isPlaying: Bool
-            let look: Look
             let path: (Double, CGRect) -> Path
 
             final class Stage: NSView {
                 let shape = CAShapeLayer()
-                let paint = CAGradientLayer()
-                var key: (Double, CGSize, [String: [String]], Look)?
+                private let paint: CAGradientLayer?
+                private var key: Key?
 
                 override var isFlipped: Bool { true }
 
-                init() {
+                init(look: Look) {
+                    if case .fill = look { paint = CAGradientLayer() } else { paint = nil }
                     super.init(frame: .zero)
                     wantsLayer = true
-                    layer?.addSublayer(paint)
+                    if let paint {
+                        paint.mask = shape
+                        layer?.addSublayer(paint)
+                    } else {
+                        shape.fillColor = nil
+                        layer?.addSublayer(shape)
+                    }
                 }
 
                 required init?(coder: NSCoder) { nil }
 
                 func take(_ loop: SpotLoop) {
-                    if key == nil || key?.0 != loop.period || key?.1 != loop.size || key?.2 != loop.values || key?.3 != loop.look {
-                        key = (loop.period, loop.size, loop.values, loop.look)
+                    if key != loop.key {
+                        key = loop.key
                         build(loop)
                     }
                     play(loop.isPlaying)
                 }
 
                 private func build(_ loop: SpotLoop) {
-                    let rect = CGRect(origin: .zero, size: loop.size)
-                    let steps = max(2, Int(loop.period * 10))
-                    let paths = (0...steps).map { loop.path(loop.period * Double($0) / Double(steps), rect).cgPath }
+                    let rect = CGRect(origin: .zero, size: loop.key.size)
+                    let period = loop.key.period
+                    let steps = max(2, Int(period * 10))
+                    let paths = (0...steps).map { loop.path(period * Double($0) / Double(steps), rect).cgPath }
                     CATransaction.begin()
                     CATransaction.setDisableActions(true)
-                    paint.frame = rect
+                    paint?.frame = rect
                     shape.frame = rect
-                    shape.removeAllAnimations()
                     shape.path = paths[0]
-                    switch loop.look {
+                    switch loop.key.look {
                     case .fill(let colors):
-                        paint.isHidden = false
-                        paint.colors = colors.map { NSColor($0).cgColor }
-                        shape.fillColor = NSColor.black.cgColor
-                        shape.strokeColor = nil
-                        shape.removeFromSuperlayer()
-                        paint.mask = shape
+                        paint?.colors = (colors.count == 1 ? colors + colors : colors).map { NSColor($0).cgColor }
                     case .stroke(let color, let width):
-                        paint.mask = nil
-                        paint.isHidden = true
-                        if shape.superlayer == nil { layer?.addSublayer(shape) }
-                        shape.fillColor = nil
                         shape.strokeColor = NSColor(color).cgColor
                         shape.lineWidth = width
                     }
@@ -275,7 +277,7 @@ public struct ViewLibrary: Sendable {
                     shape.beginTime = 0
                     let wave = CAKeyframeAnimation(keyPath: "path")
                     wave.values = paths
-                    wave.duration = loop.period
+                    wave.duration = period
                     wave.repeatCount = .infinity
                     wave.isRemovedOnCompletion = false
                     shape.add(wave, forKey: "loop")
@@ -297,7 +299,7 @@ public struct ViewLibrary: Sendable {
                 }
             }
 
-            func makeNSView(context: Context) -> Stage { Stage() }
+            func makeNSView(context: Context) -> Stage { Stage(look: key.look) }
 
             func updateNSView(_ stage: Stage, context: Context) { stage.take(self) }
         }
