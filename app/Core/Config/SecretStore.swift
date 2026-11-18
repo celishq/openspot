@@ -25,9 +25,11 @@ public final class SecretStore: Equatable, Sendable {
         home: URL = FileManager.default.homeDirectoryForCurrentUser,
         devState: String? = Bundle.main.object(forInfoDictionaryKey: "OpenspotDevState") as? String
     ) -> SecretStore {
-        let isOwnState = [environment["OPENSPOT_CONFIG"], devState].contains { $0?.isEmpty == false }
-        let folder = SpotsFolder.config(environment: environment, home: home, devState: devState)
-        return SecretStore(file: isOwnState ? folder.appendingPathComponent(fileName) : nil)
+        standard(own: SpotsFolder.ownConfig(environment: environment, devState: devState))
+    }
+
+    static func standard(own: URL?) -> SecretStore {
+        SecretStore(file: own?.appendingPathComponent(fileName))
     }
 
     @discardableResult

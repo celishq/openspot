@@ -6,7 +6,6 @@ public enum AppCache {
         home: URL = FileManager.default.homeDirectoryForCurrentUser,
         devState: String? = Bundle.main.object(forInfoDictionaryKey: "OpenspotDevState") as? String
     ) -> URL {
-        let own = [environment["OPENSPOT_CONFIG"], devState].compactMap { $0 }.first { !$0.isEmpty }
-        return own.map { URL(fileURLWithPath: $0, isDirectory: true) } ?? home.appendingPathComponent("Library/Caches/openspot", isDirectory: true)
+        SpotsFolder.ownConfig(environment: environment, devState: devState) ?? home.appendingPathComponent("Library/Caches/openspot", isDirectory: true)
     }
 }

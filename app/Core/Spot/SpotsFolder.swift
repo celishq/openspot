@@ -51,10 +51,19 @@ public struct SpotsFolder: Sendable {
         home: URL,
         devState: String? = Bundle.main.object(forInfoDictionaryKey: "OpenspotDevState") as? String
     ) -> URL {
-        for path in [environment["OPENSPOT_CONFIG"], devState] {
-            if let path, !path.isEmpty { return URL(fileURLWithPath: path, isDirectory: true).standardized }
-        }
-        return home.appendingPathComponent(".config/openspot", isDirectory: true)
+        ownConfig(environment: environment, devState: devState) ?? defaultConfig(home: home)
+    }
+
+    static func ownConfig(
+        environment: [String: String],
+        devState: String? = Bundle.main.object(forInfoDictionaryKey: "OpenspotDevState") as? String
+    ) -> URL? {
+        [environment["OPENSPOT_CONFIG"], devState].compactMap { $0 }.first { !$0.isEmpty }
+            .map { URL(fileURLWithPath: $0, isDirectory: true).standardized }
+    }
+
+    static func defaultConfig(home: URL) -> URL {
+        home.appendingPathComponent(".config/openspot", isDirectory: true)
     }
 
     public func scan(hosted: [Spot] = []) throws -> ScanResult {

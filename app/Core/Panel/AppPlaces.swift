@@ -10,6 +10,7 @@ public struct AppPlaces {
     public let account: AccountStore
     public let secrets: SecretStore
     public let config: ConfigFile
+    let configFolder: URL
 
     public init(
         environment: [String: String],
@@ -26,9 +27,11 @@ public struct AppPlaces {
         self.trash = trash
         self.kinds = kinds
         self.defaultConfig = defaultConfig
-        account = .standard(environment: environment, home: home)
-        secrets = .standard(environment: environment, home: home)
-        config = ConfigFile(url: ConfigFile.standard(environment: environment, home: home).url, disk: disk)
+        let own = SpotsFolder.ownConfig(environment: environment)
+        configFolder = own ?? SpotsFolder.defaultConfig(home: home)
+        account = .standard(own: own)
+        secrets = .standard(own: own)
+        config = .standard(in: configFolder, disk: disk)
     }
 
     public static func systemTrash(_ url: URL) throws -> URL {
@@ -55,11 +58,11 @@ public struct AppPlaces {
     }
 
     public var log: CallLog {
-        CallLog(folder: SpotsFolder.config(environment: environment, home: home).appendingPathComponent("logs", isDirectory: true))
+        CallLog(folder: configFolder.appendingPathComponent("logs", isDirectory: true))
     }
 
     public var stats: URL {
-        SpotsFolder.config(environment: environment, home: home).appendingPathComponent("stats", isDirectory: true)
+        configFolder.appendingPathComponent("stats", isDirectory: true)
     }
 
     public func recent(of id: String) -> [String] {

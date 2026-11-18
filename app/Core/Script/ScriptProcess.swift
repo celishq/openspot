@@ -71,7 +71,7 @@ public final class ScriptProcess: @unchecked Sendable {
         let contents = URL(fileURLWithPath: app).deletingLastPathComponent().deletingLastPathComponent()
         let helpers = contents.appendingPathComponent("Helpers").path
         let config = SpotsFolder.config(environment: base, home: home(of: base))
-        let data = dataFolder(base: base, dataName: dataName)
+        let data = dataFolder(config: config, dataName: dataName)
         try? FileManager.default.createDirectory(at: data, withIntermediateDirectories: true)
         var paths = [helpers] + (base["PATH"] ?? "").split(separator: ":").map(String.init)
         paths += commonPaths.filter { !paths.contains($0) }
@@ -82,7 +82,11 @@ public final class ScriptProcess: @unchecked Sendable {
     }
 
     static func dataFolder(base: [String: String], dataName: String?) -> URL {
-        var data = SpotsFolder.config(environment: base, home: home(of: base)).appendingPathComponent("data", isDirectory: true)
+        dataFolder(config: SpotsFolder.config(environment: base, home: home(of: base)), dataName: dataName)
+    }
+
+    private static func dataFolder(config: URL, dataName: String?) -> URL {
+        var data = config.appendingPathComponent("data", isDirectory: true)
         if let dataName { data.appendPathComponent(URL(fileURLWithPath: dataName).lastPathComponent, isDirectory: true) }
         return data
     }
