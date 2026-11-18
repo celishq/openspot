@@ -97,7 +97,11 @@ extension SpotsModel {
             land(found, of: finding)
         }
         finding = Finding(ask: ask, answers: Array(answers), sources: sources.map(\.spot), job: job)
-        if !answers.isEmpty || visible.contains(where: \.isAnswer) { show(answers + foundSpots.filter { !ids.contains($0.id) }) }
+        if !answers.isEmpty || visible.contains(where: \.isAnswer) { show(Self.placed(Array(answers), around: foundSpots.filter { !ids.contains($0.id) })) }
+    }
+
+    private static func placed(_ answers: [Entry], around found: [Entry]) -> [Entry] {
+        answers.filter { $0.spot.answers?.isLast != true } + found + answers.filter { $0.spot.answers?.isLast == true }
     }
 
     @concurrent
@@ -119,8 +123,8 @@ extension SpotsModel {
         foundSpots = found.matches.compactMap { match in
             match.list == 0 ? spots[match.item.run] : Entry(spot: finding.sources[match.list - 1], item: match.item)
         }
-        show(finding.answers + foundSpots.filter { !ids.contains($0.id) })
-        if !isEditing { missedSearch.landed(query, found: !visible.isEmpty) }
+        show(Self.placed(finding.answers, around: foundSpots.filter { !ids.contains($0.id) }))
+        if !isEditing { missedSearch.landed(query, found: visible.contains { $0.spot.answers?.isLast != true }) }
     }
 
     private func show(_ next: [Entry]) {
