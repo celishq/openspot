@@ -59,9 +59,13 @@ final class SampleSpotsTests: SampleSpotsCase {
                 "spots": SpotsFolder(url: folder.appendingPathComponent("none"), core: root.appendingPathComponent("spots"), enabled: shipped),
                 "examples": SpotsFolder(url: root.appendingPathComponent("examples"))
             ]
-            for (name, place) in places {
-                let faults = await SpotCheck(folder: place, timeout: 60, views: views, environment: TestEnvironment.values).faults()
-
+            let found = await withTaskGroup(of: (String, [String]).self) { group in
+                for (name, place) in places {
+                    group.addTask { (name, await SpotCheck(folder: place, timeout: 60, views: views, environment: TestEnvironment.values).faults()) }
+                }
+                return await group.reduce(into: [:]) { $0[$1.0] = $1.1 }
+            }
+            for (name, faults) in found {
                 XCTAssertEqual(faults, [], name)
             }
         }
