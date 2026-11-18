@@ -68,15 +68,16 @@ welcome() {
   printf '\nbutton=next\ntitle=Continue\nlook=strong\nshortcut=return\n'
 }
 
-# Prints the key page: the chosen key, or the key that opens Openspot, then Use this key and Record another key.
+# Prints the key page: the chosen key, or the key that opens Openspot, then Use this key and Record another key. With an argument, the field records at once.
 keys() {
   shown=$(chosen)
   printf 'grid=head head head head\ngrid=key key key key\ngrid=key key key key\ngrid=key key key key\ngrid=use use use use\ngrid=record record record record\n'
   heading 'Choose your key' 'It opens Openspot from any app.'
   printf '\nfield=key\ntype=hotkey\n'
   openspot_kv value "${shown:-$now}"
+  [ -z "${1-}" ] || printf 'recording=true\n'
   printf '\nbutton=use\ntitle=Use this key\nlook=strong\nshortcut=return\n'
-  printf '\nbutton=record\ntitle=Record another key\nrecords=key\nshortcut=escape\n'
+  printf '\nbutton=record\ntitle=Record another key\nshortcut=escape\n'
 }
 
 # Prints the last page: the two things to try, a spot of your own and a change by your agent, then Start using Openspot.
@@ -101,6 +102,10 @@ case "$1" in
     printf '%s\n' "$2" > "$keyfile"
     current
     keys
+    ;;
+  record)
+    current
+    keys recording
     ;;
   use)
     key=$(chosen)

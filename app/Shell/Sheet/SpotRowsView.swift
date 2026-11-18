@@ -6,7 +6,7 @@ struct SpotRowsView: View {
     let list: ItemList
     var recording: String?
     var recordingWords = "Press keys"
-    var heldKeys: () -> Shortcut.Modifiers = { [] }
+    var keys: KeyRecording?
     let onRun: (SpotItem) -> Void
     var onPoint: (SpotItem) -> Void = { _ in }
     var selection: (() -> Int)?
@@ -206,7 +206,7 @@ struct SpotRowsView: View {
                 RowBars(bars: item.bars, tone: item.tone)
             }
             if let shortcut = item.shortcut {
-                LiveKeyLabel(text: shortcut, isRecording: recording == item.run, words: recordingWords, held: heldKeys)
+                LiveKeyLabel(text: shortcut, isRecording: recording == item.run, words: recordingWords, keys: keys)
             }
             if item.isToggle {
                 RowSwitch(isOn: item.isOn)
@@ -229,10 +229,10 @@ private struct LiveKeyLabel: View {
     let text: String
     let isRecording: Bool
     let words: String
-    let held: () -> Shortcut.Modifiers
+    let keys: KeyRecording?
 
     var body: some View {
-        SpotKeyLabel(text: text, isRecording: isRecording, recordingWords: words, held: isRecording ? held() : [])
+        SpotKeyLabel(text: text, isRecording: isRecording, recordingWords: words, held: isRecording ? keys?.held ?? [] : [])
     }
 }
 

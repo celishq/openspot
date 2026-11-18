@@ -75,7 +75,7 @@ extension SpotsModel {
     private func standEdges() {
         edgeStep += 1
         guard flowEdges.shown != nil, let open = openSheetID, let run = sheets[open], let rect = shownSheetRect else { return }
-        let page = formRect == nil ? SheetPage(run: run, rect: rect, query: searchText, recording: recording, keyStatus: keyStatus) : nil
+        let page = formRect == nil ? SheetPage(run: run, rect: rect, query: searchText, recording: recording, keyStatus: keys.status) : nil
         flowEdges = flowEdges.standing(at: rect, holding: page, in: flow, title: title(of:))
     }
 

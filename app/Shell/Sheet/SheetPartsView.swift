@@ -10,10 +10,7 @@ struct SheetPartsView: View {
     let onPress: (SpotPart) -> Void
     var recordingPart: String?
     var onRecord: (SpotPart) -> Void = { _ in }
-    var heldKeys: () -> Shortcut.Modifiers = { [] }
-    var keyStatus: () -> String? = { nil }
-    var pressedKey: () -> String? = { nil }
-    var isKeyDown: () -> Bool = { false }
+    var keys: KeyRecording?
     var list = ItemList()
     var onRun: (SpotItem) -> Void = { _ in }
     var onDragOut: ([SpotItem]) -> Void = { _ in }
@@ -468,7 +465,7 @@ struct SheetPartsView: View {
 
     private func shortcut(_ part: SpotPart, text: String) -> some View {
         Button { onRecord(part) } label: {
-            LiveKeycaps(value: text, isRecording: recordingPart == part.id, held: heldKeys, status: keyStatus, pressed: pressedKey, isKeyDown: isKeyDown)
+            LiveKeycaps(value: text, isRecording: recordingPart == part.id, keys: keys)
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
                 .background(SpotTheme.well, in: shape)
                 .contentShape(Rectangle())
@@ -615,13 +612,11 @@ struct SheetPartsView: View {
 private struct LiveKeycaps: View {
     let value: String
     let isRecording: Bool
-    let held: () -> Shortcut.Modifiers
-    let status: () -> String?
-    let pressed: () -> String?
-    let isKeyDown: () -> Bool
+    let keys: KeyRecording?
 
     var body: some View {
-        SpotKeycaps(value: value, held: isRecording ? held() : [], isRecording: isRecording, status: status(), pressed: isRecording ? pressed() : nil, isKeyDown: isRecording && isKeyDown())
+        let live = isRecording ? keys : nil
+        SpotKeycaps(value: value, held: live?.held ?? [], isRecording: isRecording, status: keys?.status, pressed: live?.pressed, isKeyDown: live?.isKeyDown == true)
     }
 }
 

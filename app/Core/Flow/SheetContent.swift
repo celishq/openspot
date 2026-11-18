@@ -6,7 +6,7 @@ public struct SheetContent {
     public let state: SpotState
     public let form: FormDraft?
     public let recording: String?
-    public let keyStatus: String?
+    public let keys: KeyRecording
     public let isHeld: Bool
     public let takesFiles: Bool
     public let selection: () -> Int
@@ -16,13 +16,14 @@ public struct SheetContent {
     public let work: (SpotPart) -> ScriptCall?
     public let create: () -> CommandAction?
 
+    @MainActor
     public init(page: SheetPage) {
         panel = page.panel
         list = page.list
         state = page.state
         form = nil
         recording = page.recording
-        keyStatus = page.keyStatus
+        keys = KeyRecording(status: page.keyStatus)
         isHeld = true
         takesFiles = false
         selection = { page.selection }
@@ -34,7 +35,7 @@ public struct SheetContent {
     }
 
     init(
-        panel: SheetParts?, list: ItemList, state: SpotState, form: FormDraft?, recording: String?,
+        panel: SheetParts?, list: ItemList, state: SpotState, form: FormDraft?, recording: String?, keys: KeyRecording,
         selection: @escaping () -> Int, selectedPart: @escaping () -> String?, nudge: @escaping () -> SheetParts.Nudge,
         menuOpening: @escaping () -> SheetParts.MenuOpening?, work: @escaping (SpotPart) -> ScriptCall?, create: @escaping () -> CommandAction?
     ) {
@@ -43,7 +44,7 @@ public struct SheetContent {
         self.state = state
         self.form = form
         self.recording = recording
-        keyStatus = nil
+        self.keys = keys
         isHeld = false
         takesFiles = list.hasFiles
         self.selection = selection

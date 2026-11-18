@@ -310,7 +310,11 @@ final class PanelKeysTests: PanelCase {
           again) rm -f "$data/key" ;;
         esac
         case "$1" in
-          read|key|again) printf 'title=Choose your key\\ngrid=key\\ngrid=keep\\ngrid=again\\n\\nfield=key\\ntype=hotkey\\nvalue=%s\\n\\nbutton=keep\\ntitle=Keep\\n\\nbutton=again\\ntitle=Try again\\nshortcut=escape\\n' "$(cat "$data/key" 2>/dev/null)" ;;
+          read|key|again)
+            key=$(cat "$data/key" 2>/dev/null)
+            printf 'title=Choose your key\\ngrid=key\\ngrid=keep\\ngrid=again\\n\\nfield=key\\ntype=hotkey\\nvalue=%s\\n' "$key"
+            [ -n "$key" ] || printf 'recording=true\\n'
+            printf '\\nbutton=keep\\ntitle=Keep\\n\\nbutton=again\\ntitle=Try again\\nshortcut=escape\\n' ;;
         esac
         """)
     }
@@ -326,7 +330,10 @@ final class PanelKeysTests: PanelCase {
         [ "$1" = read ] || echo "$*" >> "$data/calls"
         [ "$1" = key ] && printf %s "$2" > "$data/key"
         case "$1" in
-          read|key) printf 'grid=key\\ngrid=key\\ngrid=use\\ngrid=record\\n\\nfield=key\\ntype=hotkey\\nvalue=%s\\n\\nbutton=use\\ntitle=Use\\nshortcut=return\\n\\nbutton=record\\ntitle=Record\\nrecords=key\\nshortcut=escape\\n' "$(cat "$data/key" 2>/dev/null || printf ctrl+space)" ;;
+          read|key|record)
+            printf 'grid=key\\ngrid=key\\ngrid=use\\ngrid=record\\n\\nfield=key\\ntype=hotkey\\nvalue=%s\\n' "$(cat "$data/key" 2>/dev/null || printf ctrl+space)"
+            [ "$1" != record ] || printf 'recording=true\\n'
+            printf '\\nbutton=use\\ntitle=Use\\nshortcut=return\\n\\nbutton=record\\ntitle=Record\\nshortcut=escape\\n' ;;
         esac
         """)
         await model.reload()
@@ -337,28 +344,27 @@ final class PanelKeysTests: PanelCase {
         await nextTurn()
     }
 
-    func testARecordsButtonRecordsItsFieldAndEscBringsTheKeyBack() async throws {
+    func testAFrameThatAsksToRecordRecordsItsFieldAndEscBringsTheKeyBack() async throws {
         try await openChoice()
         XCTAssertNil(model.recording)
 
         XCTAssertTrue(model.handleKey(escape))
-        XCTAssertEqual(model.recording, "key")
+        try await wait("the recording") { self.model.recording == "key" }
         XCTAssertTrue(model.handleKey(escape))
-        await nextTurn()
 
         XCTAssertNil(model.recording)
         XCTAssertEqual(keyField?.control, .shortcut("ctrl+space"))
-        XCTAssertEqual(model.openParts?.selectedPart?.id, "use")
-        XCTAssertTrue(pickCalls.isEmpty)
+        XCTAssertEqual(pickCalls, ["record"])
     }
 
     func testAKeyRecordedThroughTheButtonIsSentAndTheFocusGoesToUse() async throws {
         try await openChoice()
         XCTAssertTrue(model.handleKey(escape))
+        try await wait("the recording") { self.model.recording == "key" }
 
         model.record(code: 49, modifiers: .option)
 
-        try await wait("the sent key") { self.pickCalls == ["key option+space"] && self.model.sheets["choice"]?.calls.isEmpty == true }
+        try await wait("the sent key") { self.pickCalls == ["record", "key option+space"] && self.model.sheets["choice"]?.calls.isEmpty == true }
         XCTAssertEqual(keyField?.control, .shortcut("option+space"))
         XCTAssertEqual(model.openParts?.selectedPart?.id, "use")
     }
@@ -371,7 +377,7 @@ final class PanelKeysTests: PanelCase {
 
         XCTAssertTrue(model.handleKey(ActionKey(name: " ")))
 
-        XCTAssertEqual(model.recording, "key")
+        try await wait("the recording") { self.model.recording == "key" }
     }
 
     private func openPick(key: String? = nil) async throws {
@@ -420,7 +426,7 @@ final class PanelKeysTests: PanelCase {
         XCTAssertEqual(model.openParts?.selectedPart?.id, "key")
     }
 
-    func testAPressThatLeavesTheFieldEmptyRecordsAgain() async throws {
+    func testAPressWhoseFrameAsksToRecordRecordsAgain() async throws {
         try await openPick()
         try await wait("the recording") { self.model.recording == "key" }
         XCTAssertTrue(model.handleKey(escape))
@@ -468,13 +474,13 @@ final class PanelKeysTests: PanelCase {
         try await wait("the press of again") { (try? String(contentsOf: self.pickData.appendingPathComponent("calls"), encoding: .utf8))?.contains("again") == true }
     }
 
-    func testAnEmptyHotkeyFieldRecordsAsSoonAsItsSheetShows() async throws {
+    func testAFieldThatAsksToRecordRecordsAsSoonAsItsSheetShows() async throws {
         try await openPick()
 
         try await wait("the recording") { self.model.recording == "key" }
     }
 
-    func testAnEmptyHotkeyFieldRecordsWhenItsPartsComeAfterItsSheet() async throws {
+    func testAFieldThatAsksToRecordRecordsWhenItsPartsComeAfterItsSheet() async throws {
         try writePick()
         await model.reload()
         model.isShown = true
@@ -487,7 +493,7 @@ final class PanelKeysTests: PanelCase {
         try await wait("the recording") { self.model.recording == "key" }
     }
 
-    func testAnEmptyFieldDoesNotRecordWhileThePanelHides() async throws {
+    func testAFieldThatAsksToRecordDoesNotRecordWhileThePanelHides() async throws {
         try writePick()
         await model.reload()
         model.isShown = true
@@ -500,21 +506,6 @@ final class PanelKeysTests: PanelCase {
         try await wait("the key field") { self.keyField != nil }
         await nextTurn()
         XCTAssertNil(model.recording)
-    }
-
-    func testAnEmptyFieldRecordsWhenThePanelShowsAgain() async throws {
-        try writePick()
-        await model.reload()
-        model.isShown = true
-        model.panelWillShow()
-        await nextTurn()
-        model.pushFirst("pick", moving: false)
-        model.panelWillHide()
-        try await wait("the key field") { self.keyField != nil }
-
-        model.panelWillShow()
-
-        try await wait("the recording") { self.model.recording == "key" }
     }
 
     func testAFieldWithAKeyDoesNotRecordUntilPressed() async throws {
@@ -531,15 +522,15 @@ final class PanelKeysTests: PanelCase {
 
     func testHeldKeysShowOnlyWhileRecording() async throws {
         model.hold([.option])
-        XCTAssertEqual(model.heldKeys, [])
+        XCTAssertEqual(model.keys.held, [])
 
         try await openPick()
         try await wait("the recording") { self.model.recording == "key" }
         model.hold([.option])
-        XCTAssertEqual(model.heldKeys, [.option])
+        XCTAssertEqual(model.keys.held, [.option])
 
         model.stopRecording()
-        XCTAssertEqual(model.heldKeys, [])
+        XCTAssertEqual(model.keys.held, [])
     }
 
     func testEscWhileAFieldRecordsStopsOnlyTheRecording() async throws {
@@ -563,7 +554,7 @@ final class PanelKeysTests: PanelCase {
 
         model.record(code: 36, modifiers: [])
 
-        XCTAssertEqual(model.keyStatus, "Hold ⌃, ⌥ or ⌘ with a key.")
+        XCTAssertEqual(model.keys.status, "Hold ⌃, ⌥ or ⌘ with a key.")
         XCTAssertEqual(model.recording, "key")
         XCTAssertEqual(keyField?.value, "")
         XCTAssertFalse(pickCalls.contains { $0.hasPrefix("key") })
@@ -575,7 +566,7 @@ final class PanelKeysTests: PanelCase {
 
         model.record(code: 49, modifiers: .option)
 
-        XCTAssertEqual(model.keyStatus, "⌥Space is free.")
+        XCTAssertEqual(model.keys.status, "⌥Space is free.")
         try await wait("the key call") { self.pickCalls.contains("key option+space") }
     }
 
@@ -585,7 +576,7 @@ final class PanelKeysTests: PanelCase {
 
         model.record(code: 8, modifiers: .command)
 
-        XCTAssertEqual(model.keyStatus, "`⌘C` belongs to apps. Hold `⌥` or `⌃` with a key.")
+        XCTAssertEqual(model.keys.status, "`⌘C` belongs to apps. Hold `⌥` or `⌃` with a key.")
         XCTAssertEqual(model.recording, "key")
         XCTAssertEqual(keyField?.value, "")
     }
@@ -596,7 +587,7 @@ final class PanelKeysTests: PanelCase {
 
         model.record(code: 122, modifiers: .option)
 
-        XCTAssertEqual(model.keyStatus, "Openspot cannot use that key. Try a letter, a digit, a sign or an arrow.")
+        XCTAssertEqual(model.keys.status, "Openspot cannot use that key. Try a letter, a digit, a sign or an arrow.")
         XCTAssertEqual(model.recording, "key")
         XCTAssertEqual(keyField?.value, "")
     }
@@ -604,15 +595,15 @@ final class PanelKeysTests: PanelCase {
     func testAPressedKeyIsDownUntilItsRelease() async throws {
         try await openPick()
         try await wait("the recording") { self.model.recording == "key" }
-        XCTAssertFalse(model.isKeyDown)
+        XCTAssertFalse(model.keys.isKeyDown)
 
         model.record(code: 49, modifiers: [])
-        XCTAssertTrue(model.isKeyDown)
-        XCTAssertEqual(model.pressedKey, "Space")
+        XCTAssertTrue(model.keys.isKeyDown)
+        XCTAssertEqual(model.keys.pressed, "Space")
         model.releaseKey()
 
-        XCTAssertFalse(model.isKeyDown)
-        XCTAssertEqual(model.pressedKey, "Space")
+        XCTAssertFalse(model.keys.isKeyDown)
+        XCTAssertEqual(model.keys.pressed, "Space")
         XCTAssertEqual(model.recording, "key")
     }
 
@@ -621,10 +612,10 @@ final class PanelKeysTests: PanelCase {
         try await wait("the recording") { self.model.recording == "key" }
 
         model.record(code: 13, modifiers: .shift)
-        XCTAssertEqual(model.pressedKey, "W")
-        XCTAssertEqual(model.keyStatus, "`⇧W` types a capital W in every app. Hold `⌃`, `⌥` or `⌘` with it.")
+        XCTAssertEqual(model.keys.pressed, "W")
+        XCTAssertEqual(model.keys.status, "`⇧W` types a capital W in every app. Hold `⌃`, `⌥` or `⌘` with it.")
         model.record(code: 18, modifiers: .shift)
-        XCTAssertEqual(model.keyStatus, "`⇧1` types in every app. Hold `⌃`, `⌥` or `⌘` with it.")
+        XCTAssertEqual(model.keys.status, "`⇧1` types in every app. Hold `⌃`, `⌥` or `⌘` with it.")
 
         XCTAssertEqual(model.recording, "key")
     }
@@ -632,18 +623,18 @@ final class PanelKeysTests: PanelCase {
     func testAPressThatMakesNoShortcutShowsItsKeyUntilAKeyIsRecorded() async throws {
         try await openPick()
         try await wait("the recording") { self.model.recording == "key" }
-        XCTAssertNil(model.pressedKey)
+        XCTAssertNil(model.keys.pressed)
 
         model.record(code: 1, modifiers: [])
-        XCTAssertEqual(model.pressedKey, "S")
-        XCTAssertEqual(model.keyStatus, "Hold ⌃, ⌥ or ⌘ with a key.")
+        XCTAssertEqual(model.keys.pressed, "S")
+        XCTAssertEqual(model.keys.status, "Hold ⌃, ⌥ or ⌘ with a key.")
         model.record(code: 8, modifiers: .command)
-        XCTAssertEqual(model.pressedKey, "C")
+        XCTAssertEqual(model.keys.pressed, "C")
         model.record(code: 36, modifiers: [])
-        XCTAssertEqual(model.pressedKey, "⏎")
+        XCTAssertEqual(model.keys.pressed, "⏎")
         model.record(code: 49, modifiers: .option)
 
-        XCTAssertNil(model.pressedKey)
+        XCTAssertNil(model.keys.pressed)
         XCTAssertEqual(keyField?.value, "option+space")
     }
 
@@ -656,7 +647,7 @@ final class PanelKeysTests: PanelCase {
         model.toggleRecording(id: "key")
 
         XCTAssertEqual(model.recording, "key")
-        XCTAssertNil(model.pressedKey)
+        XCTAssertNil(model.keys.pressed)
     }
 
     func testAnAppThatOpensWhileKeysAreHeldIsNamedAndTheRecordingGoesOn() async throws {
@@ -666,8 +657,8 @@ final class PanelKeysTests: PanelCase {
 
         model.appCameToFront("Raycast")
 
-        XCTAssertEqual(model.keyStatus, "⇧⌘ and a key opened Raycast. Change it there, or press another key.")
-        XCTAssertEqual(model.heldKeys, [])
+        XCTAssertEqual(model.keys.status, "⇧⌘ and a key opened Raycast. Change it there, or press another key.")
+        XCTAssertEqual(model.keys.held, [])
         XCTAssertEqual(model.recording, "key")
     }
 
@@ -677,7 +668,7 @@ final class PanelKeysTests: PanelCase {
 
         model.appCameToFront("Raycast")
 
-        XCTAssertNil(model.keyStatus)
+        XCTAssertNil(model.keys.status)
         XCTAssertEqual(model.recording, "key")
     }
 
@@ -688,11 +679,11 @@ final class PanelKeysTests: PanelCase {
 
         model.appCameToFront("Raycast")
 
-        XCTAssertNil(model.keyStatus)
-        XCTAssertEqual(model.heldKeys, [.command])
+        XCTAssertNil(model.keys.status)
+        XCTAssertEqual(model.keys.held, [.command])
     }
 
-    func testAFieldThatTurnsEmptyRecordsAgain() async throws {
+    func testAFieldWhoseNewFrameAsksToRecordRecordsAgain() async throws {
         try await openPick()
         try await wait("the recording") { self.model.recording == "key" }
         model.record(code: 49, modifiers: .option)
@@ -727,7 +718,7 @@ final class PanelKeysTests: PanelCase {
         try await openKeyRow()
 
         model.toggleRecording(id: "float")
-        try await wait("the taken keys") { !self.model.takenKeys.isEmpty }
+        try await wait("the taken keys") { !self.model.keys.taken.isEmpty }
         model.record(code: 49, modifiers: .command)
 
         XCTAssertEqual(host.notes, ["⌘Space opens Spotlight."])
@@ -737,7 +728,7 @@ final class PanelKeysTests: PanelCase {
         try await openPick()
         try await wait("the recording") { self.model.recording == "key" }
         model.record(code: 13, modifiers: .shift)
-        XCTAssertNotNil(model.keyStatus)
+        XCTAssertNotNil(model.keys.status)
 
         model.hold([.shift, .option])
 
@@ -754,7 +745,7 @@ final class PanelKeysTests: PanelCase {
 
         model.hold(.command)
 
-        XCTAssertNil(model.keyStatus)
+        XCTAssertNil(model.keys.status)
         XCTAssertEqual(model.recording, "key")
     }
 
@@ -768,13 +759,13 @@ final class PanelKeysTests: PanelCase {
         try await wait("the recording") { self.model.recording == "key" }
         model.toggleRecording(id: "key")
         model.toggleRecording(id: "key")
-        try await wait("the taken keys") { !self.model.takenKeys.isEmpty }
+        try await wait("the taken keys") { !self.model.keys.taken.isEmpty }
 
         model.hold(.control)
         model.hold([])
         model.inputSourceChanged()
 
-        XCTAssertEqual(model.keyStatus, "`⌃Space` switches the input source. Free it in Keyboard Shortcuts.")
+        XCTAssertEqual(model.keys.status, "`⌃Space` switches the input source. Free it in Keyboard Shortcuts.")
         XCTAssertEqual(model.recording, "key")
     }
 
@@ -784,7 +775,7 @@ final class PanelKeysTests: PanelCase {
         try await openKeyRow()
 
         model.toggleRecording(id: "float")
-        try await wait("the taken keys") { !self.model.takenKeys.isEmpty }
+        try await wait("the taken keys") { !self.model.keys.taken.isEmpty }
         model.record(code: 1, modifiers: [.control, .option])
 
         XCTAssertEqual(host.notes, ["⌃⌥S opens Shelf."])

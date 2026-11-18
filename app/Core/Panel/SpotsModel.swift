@@ -123,7 +123,7 @@ public final class SpotsModel {
             let shown = transition.shown
             if shown != openSheetID {
                 openSheetID = shown
-                recordEmptyField()
+                takeKeyField()
                 takeMode()
                 if shown != nil, followsHint { takeSheetHint(HintWords(hint)) }
             }
@@ -157,54 +157,32 @@ public final class SpotsModel {
     public var entryKey = Shortcut.standard
     public var recording: String? {
         didSet {
-            if recording == nil, !heldKeys.isEmpty { heldKeys = [] }
-            lastHeld = []
-            if pressedKey != nil { pressedKey = nil }
-            pressedCode = nil
-            if isKeyDown { isKeyDown = false }
+            keys.clear()
             takeMode()
         }
     }
-    public private(set) var heldKeys: Shortcut.Modifiers = []
-    @ObservationIgnored private var lastHeld: Shortcut.Modifiers = []
-    @ObservationIgnored var pressedCode: UInt32?
-    public internal(set) var pressedKey: String?
-    public internal(set) var isKeyDown = false
+    public let keys = KeyRecording()
     @ObservationIgnored var entryKeyIsOff = false
-    @ObservationIgnored var pressedSheet: String?
 
     public func hold(_ modifiers: Shortcut.Modifiers) {
-        guard recording != nil, modifiers != heldKeys else { return }
-        heldKeys = modifiers
-        if !modifiers.isEmpty { lastHeld = modifiers }
-        if isKeyDown, let code = pressedCode {
-            record(code: code, modifiers: modifiers)
-        } else if !modifiers.isEmpty, keyStatus != nil {
-            keyStatus = nil
-        }
+        guard recording != nil, let code = keys.hold(modifiers) else { return }
+        record(code: code, modifiers: modifiers)
     }
 
     public func releaseKey() {
-        if isKeyDown { isKeyDown = false }
+        keys.release()
     }
 
     public func appCameToFront(_ name: String) {
-        guard recordsField, !heldKeys.isEmpty else { return }
-        keyStatus = "\(heldKeys.marks) and a key opened \(name). Change it there, or press another key."
-        heldKeys = []
+        guard recordsField else { return }
+        keys.appCameToFront(name)
     }
 
     public func inputSourceChanged() {
-        let held = heldKeys.isEmpty ? lastHeld : heldKeys
-        guard recordsField, !held.isEmpty else { return }
-        let key = takenKeys.first { $0.shortcut.modifiers == held && SystemKeys.switchesInput($0) }
-        keyStatus = "`\(key?.shortcut.label ?? held.marks)` switches the input source. Free it in Keyboard Shortcuts."
-        heldKeys = []
+        guard recordsField else { return }
+        keys.inputSourceChanged()
     }
     public internal(set) var mode = PanelMode.grid
-    public internal(set) var keyStatus: String?
-    @ObservationIgnored var takenKeys: [TakenKey] = []
-    @ObservationIgnored var filledFields: Set<String> = []
 
     public var cardsMove: Bool {
         isShown && mode == .grid
@@ -526,7 +504,6 @@ public final class SpotsModel {
         askAnswers()
         host.nextFrame { [weak self] in
             self?.isShown = true
-            self?.recordEmptyField()
         }
     }
 
@@ -578,7 +555,7 @@ public final class SpotsModel {
             if mayMove(id) { updateVisible() }
         case .frame(let frame):
             markFound(id)
-            if id == openSheetID { recordClearedField() }
+            if id == openSheetID { recordAskedField() }
             if let spot = sheets[id]?.spot, spot.holdsSettings, let owner = spot.settingsSheet?.spot, keyFrames.updateValue(frame, forKey: id) != frame {
                 settingsChanged(of: owner)
             }

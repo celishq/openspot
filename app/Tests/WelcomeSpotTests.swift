@@ -67,9 +67,20 @@ final class WelcomeSpotTests: BuiltInCase {
         XCTAssertEqual(use.key, ActionKey(name: "return"))
         let record = try part("record", in: output)
         XCTAssertEqual(record.title, "Record another key")
-        XCTAssertEqual(record.records, "key")
         XCTAssertEqual(record.key, ActionKey(name: "escape"))
         XCTAssertEqual(output.parts.map(\.id).sorted(), ["head", "key", "record", "use"])
+        XCTAssertFalse(try part("key", in: output).asksToRecord)
+        XCTAssertNil(output.move)
+    }
+
+    func testRecordAsksTheKeyFieldToRecordAndKeepsTheKey() async throws {
+        try file.set("panel-key", to: "option+space")
+
+        let output = try await answer(["record"])
+
+        let key = try part("key", in: output)
+        XCTAssertTrue(key.asksToRecord)
+        XCTAssertEqual(key.control, .shortcut("option+space"))
         XCTAssertNil(output.move)
     }
 

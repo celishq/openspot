@@ -77,6 +77,7 @@ final class WelcomeLaunchTests: XCTestCase {
 
     private func recordOptionSpace() async throws {
         XCTAssertTrue(press("escape"))
+        try await wait("the recording") { self.model.recording == "key" }
         model.record(code: 49, modifiers: .option)
         try await wait("the kept key") { self.hasEnded && self.keyField?.value == "option+space" }
     }
@@ -107,34 +108,19 @@ final class WelcomeLaunchTests: XCTestCase {
         XCTAssertEqual(model.files.config.read().panelKey, .standard)
     }
 
-    func testEscRecordsAndEscAgainGoesBackToTheWelcomeWithTheKeyKept() async throws {
+    func testEscRecordsAndEscAgainStopsWithTheKeyKept() async throws {
         try await launch()
         try await toKeyPage()
 
         XCTAssertTrue(press("escape"))
-        XCTAssertEqual(model.recording, "key")
-        XCTAssertEqual(model.hint, "Esc Back")
+        try await wait("the recording") { self.model.recording == "key" }
+        XCTAssertEqual(model.hint, "Esc Cancel")
         XCTAssertTrue(press("escape"))
 
-        try await wait("the welcome again") { self.model.flow.index == 0 && self.focus == "next" }
         XCTAssertNil(model.recording)
-        XCTAssertEqual(model.openSheetID, Self.welcome)
+        XCTAssertEqual(model.flow.index, 1)
+        XCTAssertEqual(keyField?.value, "ctrl+space")
         XCTAssertEqual(model.files.config.read().panelKey, .standard)
-        XCTAssertTrue(press("return"))
-        try await wait("the key page again") { self.keyField?.value == "ctrl+space" && self.focus == "use" }
-    }
-
-    func testThePageThatEscLeavesWhileItRecordsStillShowsItsFieldRecording() async throws {
-        try await launch()
-        try await toKeyPage()
-        XCTAssertTrue(press("escape"))
-        XCTAssertEqual(model.recording, "key")
-
-        XCTAssertTrue(press("escape"))
-
-        XCTAssertNil(model.recording)
-        XCTAssertEqual(model.flowEdges.leavingPage?.page, "key")
-        XCTAssertEqual(model.flowEdges.leavingPage?.recording, "key")
     }
 
     func testANewKeyIsSavedByReturnAndTheToastNamesIt() async throws {
@@ -159,7 +145,7 @@ final class WelcomeLaunchTests: XCTestCase {
         XCTAssertEqual(focus, "record")
         XCTAssertTrue(press(" "))
 
-        XCTAssertEqual(model.recording, "key")
+        try await wait("the recording") { self.model.recording == "key" }
     }
 
     func testBackFromTheLastPageShowsTheSavedKeyAndReturnComesBack() async throws {

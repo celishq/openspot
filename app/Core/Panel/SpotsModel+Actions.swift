@@ -75,11 +75,6 @@ extension SpotsModel {
     }
 
     public func pressPart(_ part: SpotPart) {
-        if let id = part.records {
-            if recording == nil, let field = openParts?.parts.first(where: { $0.id == id }), case .shortcut = field.control { toggleRecording(field) }
-            return
-        }
-        pressedSheet = openSheetID
         openSheet?.press(part)
         if part.closes, isShown { host.dismiss() }
     }
@@ -88,19 +83,17 @@ extension SpotsModel {
         toggleRecording(id: part.id)
     }
 
-    func recordEmptyField() {
-        recordField { $0.control == .shortcut("") }
-        if recording == nil, let parts = openParts, parts.selected == nil, let field = keyField, field.control != .shortcut(""),
-           parts.selectedPart?.id == field.id {
-            focusAfterRecording(field.id)
-        }
+    func recordAskedField() {
+        takeKeyField()
+        guard isShown, !isWarming, recording == nil, let part = openParts?.parts.first(where: \.asksToRecord) else { return }
+        toggleRecording(part)
     }
 
-    func recordClearedField() {
-        let filled = filledFields
-        let pressed = pressedSheet == openSheetID
-        pressedSheet = nil
-        recordField { $0.control == .shortcut("") && (pressed || filled.contains($0.id)) }
+    func takeKeyField() {
+        takeEntryKey()
+        guard recording == nil, let parts = openParts, parts.selected == nil, let field = keyField, field.control != .shortcut(""),
+              parts.selectedPart?.id == field.id else { return }
+        focusAfterRecording(field.id)
     }
 
     func focusAfterRecording(_ field: String) {
@@ -114,33 +107,14 @@ extension SpotsModel {
         openSheet?.focusPart(order[index + 1].id)
     }
 
-    private func recordField(where takes: (SpotPart) -> Bool) {
-        takeEntryKey()
-        let parts = openParts?.parts ?? []
-        filledFields = Set(parts.compactMap { part in
-            guard case .shortcut(let text) = part.control, !text.isEmpty else { return nil }
-            return part.id
-        })
-        guard isShown, !isWarming, recording == nil, let sheet = openSheetID, let id = parts.first(where: takes)?.id else { return }
-        DispatchQueue.main.async { [weak self] in
-            guard let self, isShown, !isWarming, recording == nil, openSheetID == sheet,
-                  let part = openParts?.parts.first(where: { $0.id == id && $0.control == .shortcut("") })
-            else { return }
-            toggleRecording(part)
-        }
-    }
-
     public func toggleRecording(id: String) {
         if recording == id {
             stopRecording()
         } else {
             recording = id
-            keyStatus = nil
+            keys.start()
             if openParts?.parts.contains(where: { $0.id == id }) == true { openSheet?.focusPart(id) }
-            if !entryKeyIsOff {
-                entryKeyIsOff = true
-                host.setEntryKey(on: false)
-            }
+            takeEntryKey()
             readTakenKeys()
         }
     }
@@ -155,12 +129,8 @@ extension SpotsModel {
                 guard case .key(let shortcut) = key.trigger else { continue }
                 taken.append(TakenKey(shortcut: shortcut, use: "opens \(names[key.spot] ?? key.spot)"))
             }
-            await self?.take(taken)
+            await self?.keys.take(taken)
         }
-    }
-
-    private func take(_ taken: [TakenKey]) {
-        takenKeys = taken
     }
 
     public func stopRecording() {
@@ -182,13 +152,10 @@ extension SpotsModel {
     }
 
     func takeEntryKey() {
-        DispatchQueue.main.async { [weak self] in
-            guard let self else { return }
-            let off = isShown && (recording != nil || holdsKeyField)
-            guard off != entryKeyIsOff else { return }
-            entryKeyIsOff = off
-            host.setEntryKey(on: !off)
-        }
+        let off = isShown && (recording != nil || holdsKeyField)
+        guard off != entryKeyIsOff else { return }
+        entryKeyIsOff = off
+        host.setEntryKey(on: !off)
     }
 
     var recordsField: Bool {
@@ -199,37 +166,24 @@ extension SpotsModel {
         let part = openParts?.parts.first { $0.id == recording }
         let item = openItems?.shown.first { $0.run == recording }
         let isField = recordsField
-        if isField { pressedCode = code }
+        if isField { keys.press(code) }
         guard let shortcut = Shortcut(code: code, modifiers: modifiers) else {
             guard isField else { return host.notify("Hold cmd, ctrl or option with a letter, a digit, a sign, an arrow, space, return or tab.") }
-            pressedKey = Shortcut.keyLabel(of: code)
-            isKeyDown = pressedKey != nil
-            if let key = pressedKey, modifiers.contains(.shift), !modifiers.makesShortcut {
-                let typed = key.count == 1 && key.first?.isLetter == true ? "types a capital \(key)" : "types"
-                keyStatus = "`⇧\(key)` \(typed) in every app. Hold `⌃`, `⌥` or `⌘` with it."
-                return
-            }
-            keyStatus = pressedKey == nil && modifiers.makesShortcut
-                ? "Openspot cannot use that key. Try a letter, a digit, a sign or an arrow."
-                : "Hold ⌃, ⌥ or ⌘ with a key."
+            keys.refuse(code: code, modifiers: modifiers)
             return
         }
-        let appWords = "`\(shortcut.label)` belongs to apps. Hold `⌥` or `⌃` with a key"
         if takesShake, shortcut.isAppKey {
-            host.notify("\(appWords), or tap one key such as `⌥`.")
+            host.notify("\(KeyRecording.appWords(shortcut)), or tap one key such as `⌥`.")
             return
         }
         if isField, shortcut.isAppKey {
-            pressedKey = shortcut.keyLabel
-            isKeyDown = true
-            keyStatus = "\(appWords)."
+            keys.refuseAppKey(shortcut)
             return
         }
-        let check = KeyCheck(taken: takenKeys)
         if item != nil {
-            if check.use(of: shortcut) != nil { host.notify(check.words(for: shortcut)) }
+            if keys.use(of: shortcut) != nil { host.notify(keys.words(for: shortcut)) }
         } else if isField {
-            keyStatus = check.words(for: shortcut)
+            keys.check(shortcut)
         }
         stopRecording()
         if let part {
