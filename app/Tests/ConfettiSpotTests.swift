@@ -75,20 +75,21 @@ final class ConfettiSpotTests: SampleSpotsCase {
 
         let frames = try await answer("call=1\narg=look\ninput.look=broken\n\n", from: script, until: "1")
 
-        XCTAssertEqual(try read("calls", in: folder), "setting set look Broken\n")
-        XCTAssertEqual(frames.compactMap { SpotOutput(text: $0).toast }, ["Broken cannot play. Line 2: `nope` is not a colour. Write it as `#RRGGBB`, such as `#FF4D6D`."])
+        XCTAssertEqual(try read("calls", in: folder), "setting set look Broken\ntoast Broken cannot play. Line 2: `nope` is not a colour. Write it as `#RRGGBB`, such as `#FF4D6D`.\n")
+        XCTAssertEqual(frames.compactMap { SpotOutput(text: $0).toast }, [])
     }
 
     func testAPlayOfTheKeptLookThatCannotPlayEndsItsCallAndTheEndOfStdinEndsTheSpot() async throws {
         let folder = try temporaryFolder()
         try FileManager.default.createDirectory(at: folder.appendingPathComponent("looks"), withIntermediateDirectories: true)
         try "title=Broken\nshape=moon\n".write(to: folder.appendingPathComponent("looks/broken.look"), atomically: true, encoding: .utf8)
-        let script = staying(try await program(in: folder), data: folder, tools: folder)
+        try "#!/bin/sh\necho \"$*\" >> '\(folder.path)/calls'\n".writeScript(to: folder.appendingPathComponent("tools/openspot"))
+        let script = staying(try await program(in: folder), data: folder, tools: folder.appendingPathComponent("tools"))
 
-        let frames = try await answer("call=1\narg=show\n\ncall=2\narg=play\nsetting.look=Broken\n\n", from: script, until: "2")
+        _ = try await answer("call=1\narg=show\n\ncall=2\narg=play\nsetting.look=Broken\n\n", from: script, until: "2")
         script.end()
 
-        XCTAssertTrue(frames.contains { SpotOutput(text: $0).toast?.hasPrefix("Broken cannot play. Line 2: there is no shape `moon`.") == true })
+        XCTAssertTrue(try read("calls", in: folder).hasPrefix("toast Broken cannot play. Line 2: there is no shape `moon`."))
         try await wait("the end of the spot") { !script.isRunning }
     }
 }

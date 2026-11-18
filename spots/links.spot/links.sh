@@ -162,7 +162,7 @@ case "$1" in
     values=$(checked) || exit 1
     load | jq -c --arg id "$id" --argjson v "$values" '. + [{id: $id, title: $v.title, url: $v.url}]' | store
     fetch_missing "$values" >/dev/null 2>&1 </dev/null
-    printf 'select=%s\n' "$id"
+    openspot select "$id"
     ;;
   edit)
     if [ -z "$(value input.title)$(value input.url)" ]; then
@@ -172,7 +172,7 @@ case "$1" in
     values=$(checked) || exit 1
     load | jq -c --arg id "$2" --argjson v "$values" 'map(if .id == $id then .title = $v.title | .url = $v.url else . end)' | store
     fetch_missing "$values" >/dev/null 2>&1 </dev/null
-    printf 'select=%s\n' "$2"
+    openspot select "$2"
     ;;
   delete)
     load | jq -c --arg id "$2" 'map(select(.id != $id))' | store
@@ -180,7 +180,7 @@ case "$1" in
   copy)
     url=$(link "$2") || exit 1
     printf '%s' "$url" | openspot clipboard copy
-    echo "toast=Copied"
+    openspot toast Copied
     ;;
   reveal)
     url=$(link "$2") || exit 1

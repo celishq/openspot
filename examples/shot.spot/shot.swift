@@ -27,10 +27,10 @@ func openspot(_ words: [String], then: @escaping (Int32, String, String) -> Void
     do { try process.run() } catch { then(1, "", "Openspot cannot run `openspot`.") }
 }
 
-/// Ends a call with a toast.
+/// Shows a toast, then ends a call.
 func end(_ call: String, saying text: String) {
-    if !text.isEmpty { Link.frame("toast=\(Link.value(text))") }
-    Link.end(call)
+    guard !text.isEmpty else { return Link.end(call) }
+    openspot(["toast", text]) { _, _, _ in Link.end(call) }
 }
 
 /// Takes a picture and opens it in the editor, or ends the call when the person takes none or the call stopped.

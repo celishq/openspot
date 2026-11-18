@@ -98,9 +98,9 @@ final class CalculatorSpotTests: SampleSpotsCase {
 
     func testAPickCopiesThePlainValue() async throws {
         try await withPrivateHome { home in
-            let toast = try await self.calculator.perform(.item(SpotItem(title: "13,46 €", run: "13.46")), timeout: 60)
+            try await self.calculator.perform(.item(SpotItem(title: "13,46 €", run: "13.46")), timeout: 60)
 
-            XCTAssertEqual(toast, "Copied 13.46")
+            XCTAssertEqual(self.toasts(in: home), ["Copied 13.46"])
             XCTAssertEqual(try String(contentsOf: home.appendingPathComponent("clipboard"), encoding: .utf8), "13.46")
         }
     }

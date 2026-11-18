@@ -88,6 +88,8 @@ class SampleSpotsCase: XCTestCase {
           'setting get') cat "\(folder.path)/setting-$3" 2>/dev/null ;;
           'setting set') if [ $# -ge 4 ]; then printf '%s' "$4" > "\(folder.path)/setting-$3"; else rm -f "\(folder.path)/setting-$3"; fi ;;
           'folder pick') cat '\(folder.path)/picked' 2>/dev/null ;;
+          'toast '*) shift; printf '%s\\n' "$*" >> '\(folder.path)/toasts' ;;
+          'select '*) printf '%s\\n' "$2" >> '\(folder.path)/selected' ;;
         esac
         """
     }
@@ -153,6 +155,10 @@ class SampleSpotsCase: XCTestCase {
         return try XCTUnwrap(actions.first { $0.id == id })
     }
 
+    func toasts(in folder: URL) -> [String] {
+        ((try? read("toasts", in: folder)) ?? "").split(separator: "\n").map(String.init)
+    }
+
     func read(_ name: String, in folder: URL) throws -> String {
         try String(contentsOf: folder.appendingPathComponent(name), encoding: .utf8)
     }
@@ -173,7 +179,7 @@ class SampleSpotsCase: XCTestCase {
         """#
         let script = """
         #!/bin/sh
-        if [ "$1" = clipboard ]; then
+        if [ "$1" = clipboard ] || [ "$1" = toast ]; then
           \(Self.fakeOpenspot(in: folder))
           exit 0
         fi

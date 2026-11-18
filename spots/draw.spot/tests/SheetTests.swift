@@ -65,9 +65,9 @@ final class DrawSheetTests: XCTestCase {
     }
 
     func testTheHeadOfTheFrameHoldsTheLinesOfTheCall() {
-        let frame = Sheet(shelf: Shelf(folder: folder), now: now).frame(head: ["end=4", "toast=Done"])
+        let frame = Sheet(shelf: Shelf(folder: folder), now: now).frame(head: ["end=4", "call=5"])
 
-        XCTAssertTrue(frame.hasPrefix("recents=false\nend=4\ntoast=Done\n\nbutton=open\n"))
+        XCTAssertTrue(frame.hasPrefix("recents=false\nend=4\ncall=5\n\nbutton=open\n"))
     }
 
     func testEachTurnGivesTheRowsAndTheNewButtonOtherIDsAndTheSameNames() throws {

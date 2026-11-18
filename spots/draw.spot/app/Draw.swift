@@ -71,7 +71,7 @@ final class Draw: NSObject, NSApplicationDelegate {
             let row = arguments.dropFirst().first.map(Sheet.name(in:))
             let word = Sheet.name(in: arguments.first ?? "")
             let changes = ["open", "new", "delete"].contains(word) || (word == "rename" && input["input.name"] != nil)
-            guard !changes || holds() else { return host.send("end=\(id)\ntoast=\(Draw.busy)") }
+            guard !changes || holds() else { return end(id, saying: Draw.busy) }
             switch word {
             case "show": host.send(sheet.frame(head: ["end=\(id)"]))
             case "open": open(row == "new" ? nil : row, call: id)
@@ -97,10 +97,10 @@ final class Draw: NSObject, NSApplicationDelegate {
     private func open(_ name: String?, call: Int) {
         let file: URL
         if let name {
-            guard let found = sheet.file(named: name) else { return host.send("end=\(call)\ntoast=This board is gone.") }
+            guard let found = sheet.file(named: name) else { return end(call, saying: "This board is gone.") }
             file = found
         } else {
-            guard let made = try? shelf.make(in: nil) else { return host.send("end=\(call)\ntoast=Draw cannot make a board in \(shelf.folder.path).") }
+            guard let made = try? shelf.make(in: nil) else { return end(call, saying: "Draw cannot make a board in \(shelf.folder.path).") }
             file = made
         }
         let desk = desk ?? Desk(folder: shelf.folder, shows: shows)
@@ -111,7 +111,7 @@ final class Draw: NSObject, NSApplicationDelegate {
         do {
             try desk.open(file)
         } catch {
-            return host.send("end=\(call)\ntoast=\(Desk.unreadable)")
+            return end(call, saying: Desk.unreadable)
         }
         desk.listChanged()
         guard held == nil else { return host.send("end=\(call)") }
@@ -122,7 +122,7 @@ final class Draw: NSObject, NSApplicationDelegate {
 
     /// Asks for the new name of a board, or gives it the name that the person typed.
     private func rename(_ name: String?, to title: String?, call: Int, argument: String) {
-        guard let file = name.flatMap(sheet.file(named:)) else { return host.send("end=\(call)\ntoast=This board is gone.") }
+        guard let file = name.flatMap(sheet.file(named:)) else { return end(call, saying: "This board is gone.") }
         let title = (title ?? "").replacingOccurrences(of: "\n", with: " ").trimmingCharacters(in: .whitespaces)
         guard !title.isEmpty else {
             return host.send(Sheet.renameForm(title: Titles.shared.title(of: file), head: ["end=\(call)"]))
@@ -131,15 +131,16 @@ final class Draw: NSObject, NSApplicationDelegate {
             open.rename(title)
             Saves.shared.wait()
         } else if (try? shelf.rename(file, to: title)) == nil {
-            return host.send("end=\(call)\ntoast=Draw cannot rename it, so it keeps its name.")
+            return end(call, saying: "Draw cannot rename it, so it keeps its name.")
         }
         desk?.listChanged()
-        host.send("end=\(call)\nselect=\(Call.written(argument))")
+        host.call(["select", argument])
+        host.send("end=\(call)")
     }
 
     /// Moves a board with its picture and its images to the Trash, and closes its tab.
     private func delete(_ name: String?, call: Int) {
-        guard let file = name.flatMap(sheet.file(named:)) else { return host.send("end=\(call)\ntoast=This board is gone.") }
+        guard let file = name.flatMap(sheet.file(named:)) else { return end(call, saying: "This board is gone.") }
         let title = Titles.shared.title(of: file)
         desk?.close(boardsAt: [file])
         let trash = home.appendingPathComponent(".Trash", isDirectory: true)
@@ -150,10 +151,18 @@ final class Draw: NSObject, NSApplicationDelegate {
                 try FileManager.default.moveItem(at: part, to: trash.appendingPathComponent(stem).appendingPathExtension(part.pathExtension))
             }
         } catch {
-            return host.send(sheet.frame(head: ["end=\(call)", "toast=\(Call.written("Draw cannot move \(title) to the Trash, so it stays."))"]))
+            host.call(["toast", "Draw cannot move \(title) to the Trash, so it stays."])
+            return host.send(sheet.frame(head: ["end=\(call)"]))
         }
         desk?.listChanged()
-        host.send(sheet.frame(head: ["end=\(call)", "toast=\(Call.written("Moved \(title) to the Trash."))"]))
+        host.call(["toast", "Moved \(title) to the Trash."])
+        host.send(sheet.frame(head: ["end=\(call)"]))
+    }
+
+    /// Ends a call with a toast that says why.
+    private func end(_ call: Int, saying toast: String) {
+        host.call(["toast", toast])
+        host.send("end=\(call)")
     }
 
     /// Shows the folder of the boards in Finder.

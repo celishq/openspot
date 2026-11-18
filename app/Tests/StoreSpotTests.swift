@@ -2,6 +2,8 @@ import XCTest
 @testable import OpenspotCore
 
 final class StoreSpotTests: BuiltInCase {
+    private var effects: (() -> [String])!
+
     private var store: Spot {
         get throws {
             try spot("store")
@@ -14,6 +16,7 @@ final class StoreSpotTests: BuiltInCase {
         try "#!/bin/sh\n".writeScript(to: core.appendingPathComponent("timer.spot/sample.sh"))
         try "#!/bin/sh\n".writeScript(to: root.appendingPathComponent("examples/shared.spot/shared.sh"), toml: "title = 'Shared'")
         try "#!/bin/sh\n".writeScript(to: spots.appendingPathComponent("mine.spot/mine.sh"), toml: "title = 'Mine'")
+        effects = try recordEffects()
     }
 
     private func items() async throws -> [[String]] {
@@ -54,7 +57,7 @@ final class StoreSpotTests: BuiltInCase {
         let text = try await answer(["gallery", "add"])
 
         XCTAssertEqual(file.read().stores.map(\.url.path), [friends.path])
-        XCTAssertEqual(SpotOutput(text: text).summary?.value("toast"), "Added the store friends with 1 spot.")
+        XCTAssertEqual(effects(), ["toast Added the store friends with 1 spot."])
         XCTAssertEqual(SpotOutput(text: text).parts.first?.values["folder"]?.last, "\(friends.path)\tfriends\tfound\tadded")
         XCTAssertEqual(TextBlock.blocks(in: text).first { $0.value("row") == "clock" }?.value("store"), friends.path)
     }
@@ -64,9 +67,9 @@ final class StoreSpotTests: BuiltInCase {
         try FileManager.default.createDirectory(at: empty, withIntermediateDirectories: true)
         try pick(empty)
 
-        let text = try await answer(["gallery", "add"])
+        _ = try await answer(["gallery", "add"])
 
-        XCTAssertEqual(SpotOutput(text: text).summary?.value("toast"), "empty has no spot folder, so it cannot be a store. Pick a folder that holds a folder such as weather.spot.")
+        XCTAssertEqual(effects(), ["toast empty has no spot folder, so it cannot be a store. Pick a folder that holds a folder such as weather.spot."])
         XCTAssertEqual(file.read().stores, [])
     }
 
@@ -149,17 +152,17 @@ final class StoreSpotTests: BuiltInCase {
     }
 
     func testAFailedGetSaysWhyInAToast() async throws {
-        let got = SpotOutput(text: try await runs.answer(of: store, SpotAction(arguments: ["gallery", "get:nothing"]), limit: 60)).summary?.value("toast")
+        _ = try await runs.answer(of: store, SpotAction(arguments: ["gallery", "get:nothing"]), limit: 60)
 
-        XCTAssertNotNil(got)
+        XCTAssertEqual(effects().map { $0.hasPrefix("toast ") }, [true])
     }
 
     func testPublishDoesNothingUntilTheStoreOpensIt() async throws {
         _ = try AccountStore.standard(environment: ["OPENSPOT_CONFIG": root.path], home: root, devState: nil).keyMadeOnce()
 
-        let text = try await runs.answer(of: store, SpotAction(arguments: ["gallery", "publish:mine"]), limit: 60)
+        _ = try await runs.answer(of: store, SpotAction(arguments: ["gallery", "publish:mine"]), limit: 60)
 
-        XCTAssertNil(SpotOutput(text: text).summary?.value("toast"))
+        XCTAssertEqual(effects(), [])
         let opened = await app.opened
         XCTAssertEqual(opened, [])
         XCTAssertFalse(FileManager.default.fileExists(atPath: root.appendingPathComponent("store/mine.spot").path))

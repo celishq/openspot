@@ -56,7 +56,7 @@ case "$1" in
     fi
     id=$(uuidgen)
     load | jq -c --arg id "$id" --arg title "$title" --arg content "${text%x}" '. + [{id: $id, title: $title, content: $content}]' | store
-    printf 'select=%s\n' "$id"
+    openspot select "$id"
     ;;
   edit)
     title=$(value input.title)
@@ -66,7 +66,7 @@ case "$1" in
       exit 0
     fi
     load | jq -c --arg id "$2" --arg title "$title" --arg content "${text%x}" 'map(if .id == $id then .title = $title | .content = $content else . end)' | store
-    printf 'select=%s\n' "$2"
+    openspot select "$2"
     ;;
   delete)
     load | jq -c --arg id "$2" 'map(select(.id != $id))' | store
@@ -84,6 +84,6 @@ case "$1" in
   open)
     text=$(content "$2" && printf x) || exit 1
     printf '%s' "${text%x}" | openspot clipboard copy
-    echo "toast=Copied"
+    openspot toast Copied
     ;;
 esac

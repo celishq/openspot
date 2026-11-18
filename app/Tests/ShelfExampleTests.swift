@@ -21,6 +21,7 @@ final class ShelfExampleTests: SampleSpotsCase {
             XCTAssertEqual(kept.map(\.title), ["a.txt", "b\\c.txt"])
             XCTAssertEqual(kept.map(\.file), files)
             XCTAssertEqual(kept.map(\.subtitle), ["~", "~"])
+            XCTAssertEqual(try self.read("selected", in: folder), "\(files[0])\n\(files[0])\n")
 
             _ = try await shelf.perform(.drag(runs: [files[0]]), timeout: 60)
 

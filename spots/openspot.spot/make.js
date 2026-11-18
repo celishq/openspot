@@ -4,7 +4,8 @@ function main([id, picked], env, input) {
   if (id === "open") {
     const prompt = openspot.call(["prompt", "new", picked])
     if (prompt.code !== 0 || openspot.call(["clipboard", "copy"], prompt.stdout).code !== 0) return ""
-    return openspot.frame({ toast: "Prompt copied. Paste it into your agent." })
+    openspot.call(["toast", "Prompt copied. Paste it into your agent."])
+    return ""
   }
   const text = openspot.value("event.value", input).trim()
   if (!text) return ""

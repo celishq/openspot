@@ -80,23 +80,27 @@ func show(_ share: Double, in id: String) {
     Link.frame("progress=\(String(format: "%.3f", share))\ntitle=Downloading speech model\ndetail=\(percent(share))")
 }
 
+/// Shows a toast with `openspot toast`, then calls `done`.
+func toast(_ text: String, then done: @escaping () -> Void = {}) {
+    Tool.run(["openspot", "toast", text]) { _, _, _ in done() }
+}
+
 /// Downloads the model in a call that stays open until the model lands. The rows come before the call's own output.
-func fetch(in id: String, toast: String? = nil) {
+func fetch(in id: String, saying words: String? = nil) {
     held = id
     download = Download(to: model, progress: { share in show(share, in: id) }) { end in
         download = nil
         Link.start(id)
         switch end {
-        case .landed: Link.frame("toast=Dictate is ready. Press your Dictate key to speak.")
-        case .failed: Link.frame("toast=Openspot cannot download the speech model. Press Download again to go on from where it stopped.")
-        case .wrongSize: Link.frame("toast=The speech model came in the wrong size, so Dictate removed it. Press Download to fetch it again.")
-        case .stopped: break
+        case .landed: toast("Dictate is ready. Press your Dictate key to speak.", then: release)
+        case .failed: toast("Openspot cannot download the speech model. Press Download again to go on from where it stopped.", then: release)
+        case .wrongSize: toast("The speech model came in the wrong size, so Dictate removed it. Press Download to fetch it again.", then: release)
+        case .stopped: release()
         }
-        release()
     }
     Link.frame(sheet())
     show(download?.share ?? 0, in: id)
-    if let toast { Link.frame("toast=\(toast)") }
+    if let words { toast(words) }
 }
 
 /// A press of the Dictate key, or Return on the card: starts a dictation in this call, or finishes the one that runs.
@@ -106,11 +110,11 @@ func dictate(_ id: String) {
         return answer(id)
     }
     guard Tool.path(of: "whisper-server") != nil else {
-        return answer(id, "toast=Openspot cannot find the speech engine. Install it with `brew install whisper-cpp`.")
+        return toast("Openspot cannot find the speech engine. Install it with `brew install whisper-cpp`.") { answer(id) }
     }
     guard FileManager.default.fileExists(atPath: model.path) else {
-        guard let download else { return fetch(in: id, toast: "Dictate is downloading its speech model of 1.6 GB.") }
-        return answer(id, "toast=Dictate is downloading its speech model: \(Int(download.share * 100))%.")
+        guard let download else { return fetch(in: id, saying: "Dictate is downloading its speech model of 1.6 GB.") }
+        return toast("Dictate is downloading its speech model: \(Int(download.share * 100))%.") { answer(id) }
     }
     if dictation == nil { dictation = Dictation(whisper: whisper, folder: data, ended: release) }
     held = id
@@ -129,7 +133,7 @@ func answer(_ id: String, _ frame: String? = nil) {
 func copy(_ stamp: String, in id: String) {
     guard let text = texts().first(where: { $0.0 == stamp })?.1 else { return answer(id) }
     Tool.run(["openspot", "clipboard", "copy"], input: text) { code, _, fault in
-        answer(id, "toast=\(code == 0 ? "Copied" : Link.value(fault.trimmingCharacters(in: .whitespacesAndNewlines)))")
+        toast(code == 0 ? "Copied" : fault.trimmingCharacters(in: .whitespacesAndNewlines)) { answer(id) }
     }
 }
 

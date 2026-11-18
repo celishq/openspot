@@ -1,8 +1,8 @@
 #!/bin/sh
 
-# Prints a toast of the last line of a text, such as what a failed `openspot` call said.
+# Shows a toast of the last line of a text, such as what a failed `openspot` call said.
 toast() {
-  printf 'toast=%s\n\n' "$(printf '%s\n' "$1" | tail -n 1)"
+  openspot toast "$(printf '%s\n' "$1" | tail -n 1)"
 }
 
 # Gets spot $1 from the store, and says in a toast that it did, or why it did not.

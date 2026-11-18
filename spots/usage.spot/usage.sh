@@ -21,7 +21,7 @@ case "$route" in
       open) exec openspot spot open "$id" ;;
       settings) exec openspot spot settings "$id" ;;
       improve) exec openspot spot edit "$id" ;;
-      delete) openspot spot delete "$id" && printf 'pop=true\n' ; exit ;;
+      delete) openspot spot delete "$id" && openspot route back; exit ;;
     esac
     page "$id"
     exit
@@ -34,12 +34,12 @@ case "$1" in
     case "$2" in
       search:*)
         openspot prompt new "A spot for what I search in Openspot as \"${2#search:}\", which finds nothing yet" | openspot clipboard copy || exit 1
-        printf 'toast=Prompt copied. Paste it into your agent.\n'
+        openspot toast 'Prompt copied. Paste it into your agent.'
         exit
         ;;
     esac
     ;;
-  chart) printf 'push=spot:%s\npush.title=%s\n' "$2" "$(openspot spot stats --days 14 --spot "$2" | sed -n 's/^title=//p' | head -n 1)"; exit ;;
+  chart) openspot route push "spot:$2" --title "$(openspot spot stats --days 14 --spot "$2" | sed -n 's/^title=//p' | head -n 1)"; exit ;;
 esac
 
 frame=$(openspot spot stats --days 14) || exit 1

@@ -4,9 +4,8 @@ port=${RELAY_PORT:-47800}
 state=$(mktemp -d "${TMPDIR:-/tmp}/relay.XXXXXX") || exit 1
 printf '127.0.0.1:%s' "$port" > "$state/peer"
 
-# Prints the whole sheet, with a line of head first when it is given, since each frame with a block is the whole picture.
+# Prints the whole sheet, since each frame with a block is the whole picture.
 sheet() {
-  [ -z "${1-}" ] || printf '%s\n' "$1"
   printf 'grid=last last last\ngrid=last last last\ngrid=peer peer peer\ngrid=- - -\n'
   printf 'grid=message message message\ngrid=message message message\ngrid=. . send\n\n'
   if [ -s "$state/last" ]; then
@@ -27,7 +26,8 @@ listen() {
   while :; do
     nc -l 127.0.0.1 "$port" 2>/dev/null | while IFS= read -r line; do
       printf '%s' "$line" > "$state/last.new" && mv "$state/last.new" "$state/last"
-      sheet "$(openspot_kv toast "$line")"
+      openspot toast "$line"
+      sheet
       printf -- '---\n'
     done
     sleep 1
@@ -41,9 +41,9 @@ main() {
       peer=$(value input.peer)
       printf '%s' "$peer" > "$state/peer.new" && mv "$state/peer.new" "$state/peer"
       if { value input.message; echo; } | nc -w 1 "${peer%:*}" "${peer##*:}" 2>/dev/null; then
-        printf 'toast=Sent\n'
+        openspot toast Sent
       else
-        openspot_kv toast "Nothing listens on $peer. Start Relay there first."
+        openspot toast "Nothing listens on $peer. Start Relay there first."
       fi ;;
   esac
 }

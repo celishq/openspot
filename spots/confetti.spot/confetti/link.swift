@@ -55,6 +55,22 @@ enum Link {
         write(text + "\n---\n")
     }
 
+    /// Shows a toast through `openspot toast` for the call that plays, and waits for its end.
+    static func toast(_ text: String) {
+        let words = ["toast", text]
+        let argv = (["/usr/bin/env", "openspot"] + words).map { strdup($0) } + [nil]
+        defer { argv.forEach { free($0) } }
+        var actions: posix_spawn_file_actions_t?
+        posix_spawn_file_actions_init(&actions)
+        defer { posix_spawn_file_actions_destroy(&actions) }
+        posix_spawn_file_actions_addopen(&actions, STDIN_FILENO, "/dev/null", O_RDONLY, 0)
+        posix_spawn_file_actions_addopen(&actions, STDOUT_FILENO, "/dev/null", O_WRONLY, 0)
+        var child: pid_t = 0
+        guard posix_spawn(&child, argv[0], &actions, nil, argv, environ) == 0 else { return }
+        var status: Int32 = 0
+        while waitpid(child, &status, 0) < 0, errno == EINTR {}
+    }
+
     /// Ends a call.
     static func end(_ id: String) {
         write("end=\(id)\n---\n")

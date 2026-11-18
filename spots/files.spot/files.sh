@@ -32,7 +32,7 @@ EOF
     ;;
   copy)
     printf '%s' "$2" | openspot clipboard copy
-    echo "toast=Copied"
+    openspot toast Copied
     ;;
   open)
     open "$2"

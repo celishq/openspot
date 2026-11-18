@@ -46,6 +46,14 @@ class BuiltInCase: XCTestCase {
         return { ((try? String(contentsOf: log, encoding: .utf8)) ?? "").split(separator: "\n").map(String.init) }
     }
 
+    func recordEffects() throws -> () -> [String] {
+        let log = root.appendingPathComponent("effects")
+        let app = tools.appendingPathComponent("openspot-app")
+        try FileManager.default.moveItem(at: tools.appendingPathComponent("openspot"), to: app)
+        try fake("openspot", "case \"$1\" in toast | select | route) echo \"$*\" >> '\(log.path)'; exit 0 ;; esac\nexec '\(app.path)' \"$@\"")
+        return { ((try? String(contentsOf: log, encoding: .utf8)) ?? "").split(separator: "\n").map(String.init) }
+    }
+
     var opensAtLogin: Bool {
         mac.isOn
     }

@@ -40,6 +40,6 @@ case "$1" in
       exec openspot update install
     fi
     printf '%s' "$calls" > "$warned.$$" && mv "$warned.$$" "$warned"
-    printf 'toast=Restarting stops %s. Press again to restart.\n' "$(calls "$calls")"
+    openspot toast "Restarting stops $(calls "$calls"). Press again to restart."
     ;;
 esac

@@ -31,7 +31,7 @@ final class GridExampleTests: SampleSpotsCase {
     }
 
     private func grid(in folder: URL, pick: String = "", openspot: String = "echo \"$*\" >> '%@/calls'") async throws -> (ScriptProcess, SpotFrames) {
-        try "#!/bin/sh\n\(openspot.replacingOccurrences(of: "%@", with: folder.path))\n".writeScript(to: folder.appendingPathComponent("tools/openspot"))
+        try "#!/bin/sh\n[ \"$1\" = toast ] && { shift; echo \"$*\" >> '\(folder.path)/toasts'; exit 0; }\n\(openspot.replacingOccurrences(of: "%@", with: folder.path))\n".writeScript(to: folder.appendingPathComponent("tools/openspot"))
         try "#!/bin/sh\necho \"$*\" >> '\(folder.path)/opened'\n".writeScript(to: folder.appendingPathComponent("tools/open"))
         let program = try await swiftSpot("grid", in: folder, standIns: standIn(folder))
         let script = staying(program, as: "grid", home: folder, variables: ["GRID_PICK": pick])
@@ -109,7 +109,7 @@ final class GridExampleTests: SampleSpotsCase {
 
         XCTAssertEqual(calls(in: folder), "window move 0 0 3/6 1\n")
         XCTAssertEqual(notes(in: folder), "show\nland\n")
-        XCTAssertEqual(frames.toasts, [])
+        XCTAssertEqual(toasts(in: folder), [])
     }
 
     func testAMoveWithoutAccessibilityOpensItsSettingsAndShowsNoFailure() async throws {
@@ -122,7 +122,7 @@ final class GridExampleTests: SampleSpotsCase {
         try await wait("the end of the press") { frames.ends == ["1"] }
 
         XCTAssertEqual(try read("opened", in: folder), "\(Self.link)\n")
-        XCTAssertEqual(frames.toasts, [])
+        XCTAssertEqual(toasts(in: folder), [])
     }
 
     func testAMoveThatFailsForAnotherReasonSaysWhy() async throws {
@@ -133,7 +133,7 @@ final class GridExampleTests: SampleSpotsCase {
         script.send(text: "call=1\narg=open\n\n")
         try await wait("the end of the press") { frames.ends == ["1"] }
 
-        XCTAssertEqual(frames.toasts, ["Openspot cannot find a window to move."])
+        XCTAssertEqual(toasts(in: folder), ["Openspot cannot find a window to move."])
         XCTAssertFalse(FileManager.default.fileExists(atPath: folder.appendingPathComponent("opened").path))
     }
 

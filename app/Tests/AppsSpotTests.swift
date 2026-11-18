@@ -92,14 +92,14 @@ final class AppsSpotTests: SampleSpotsCase {
             let kept = try await apps.items(input: "event=spot.change\n", timeout: 60)
             XCTAssertEqual(kept.items.first { $0.run == preferences.path }?.isOn, false)
             try await apps.perform(.item(SpotItem(title: "Zed", run: support.deletingLastPathComponent().path)), timeout: 60)
-            let toast = try await apps.perform(.press("remove"), timeout: 60)
+            try await apps.perform(.press("remove"), timeout: 60)
 
             let said = try String(contentsOf: folder.appendingPathComponent("osascript-args"), encoding: .utf8)
             XCTAssertTrue(said.contains(app.path + "\n"))
             XCTAssertTrue(said.contains(cache.deletingLastPathComponent().path + "\n"))
             XCTAssertFalse(said.contains(preferences.path))
             XCTAssertTrue(said.contains(support.deletingLastPathComponent().path + "\n"))
-            XCTAssertEqual(toast, "Moved Zed and 2 of its files to the Trash")
+            XCTAssertEqual(self.toasts(in: folder), ["Moved Zed and 2 of its files to the Trash"])
             let after = try await apps.items(input: "event=spot.change\n", timeout: 60)
             XCTAssertTrue(after.parts.isEmpty)
         }

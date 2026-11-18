@@ -52,7 +52,7 @@ run() {
     exit 1
   fi
   if [ ! -s "$out" ]; then
-    printf 'toast=Ran %s.\n' "$(esc "$name")"
+    openspot toast "Ran $name."
     return
   fi
   case $(file -b --mime-type "$out") in
@@ -67,7 +67,7 @@ run() {
       openspot clipboard copy "$file" || exit 1
       ;;
   esac
-  printf 'toast=Copied the result of %s.\n' "$(esc "$name")"
+  openspot toast "Copied the result of $name."
 }
 
 case "$1" in

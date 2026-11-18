@@ -144,7 +144,7 @@ case "$1" in
     ;;
   copy)
     value input.output | openspot clipboard copy
-    printf 'toast=Copied\n'
+    openspot toast Copied
     ;;
   swap)
     translate

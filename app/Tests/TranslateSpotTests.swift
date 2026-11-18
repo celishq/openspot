@@ -119,7 +119,8 @@ final class TranslateSpotTests: SampleSpotsCase {
 
             let output = try await Self.drive(translate, [.set("source", to: "ru"), .set("target", to: "en"), .set("input", to: "one\ntwo"), .press("copy")])
 
-            XCTAssertEqual(output.summary?.value("toast"), "Copied")
+            XCTAssertNil(output.summary?.value("toast"))
+            XCTAssertEqual(self.toasts(in: folder), ["Copied"])
             XCTAssertEqual(try self.read("clipboard", in: folder), "OnE\nTWO")
             XCTAssertFalse(FileManager.default.fileExists(atPath: folder.appendingPathComponent("direct").path))
         }

@@ -44,11 +44,11 @@ case "$state" in
     code=$?
     file=$(printf '%s\n' "$files" | head -n 1)
     [ -n "$file" ] || exit 1
-    openspot clipboard copy "$file" && echo "toast=Copied the recording."
+    openspot clipboard copy "$file" && openspot toast 'Copied the recording.'
     exit "$code"
     ;;
 esac
 openspot screen record start $kept || exit 1
 state=$(openspot screen record status | head -n 1)
-[ "$state" = "state=recording" ] && echo "toast=Recording the screen. Run Record again to stop it."
+[ "$state" = "state=recording" ] && openspot toast 'Recording the screen. Run Record again to stop it.'
 exit 0

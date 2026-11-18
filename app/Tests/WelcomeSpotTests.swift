@@ -56,9 +56,11 @@ final class WelcomeSpotTests: BuiltInCase {
     }
 
     func testContinuePushesTheKeyPage() async throws {
-        let output = try await answer(["next"])
+        let effects = try recordEffects()
 
-        XCTAssertEqual(output.move, .push(spot: nil, page: "key", title: "Choose your key", replace: false))
+        _ = try await answer(["next"])
+
+        XCTAssertEqual(effects(), ["route push key --title Choose your key"])
     }
 
     func testTheKeyPageShowsTheCurrentKeyChosenWithUseAndRecord() async throws {
@@ -107,33 +109,36 @@ final class WelcomeSpotTests: BuiltInCase {
 
     func testARecordedKeyShowsUntilUseSavesItAndPushesTheLastPage() async throws {
         try file.set("panel-key", to: "option+space")
+        let effects = try recordEffects()
 
         let kept = try await answer(["key", "ctrl+option+space"])
         let again = try await read(page: "key")
         let before = file.read().panelKey
-        let used = try await answer(["use"])
+        _ = try await answer(["use"])
         let after = try await read(page: "key")
 
         XCTAssertEqual(try part("key", in: kept).control, .shortcut("ctrl+option+space"))
         XCTAssertEqual(try part("key", in: again).control, .shortcut("ctrl+option+space"))
         XCTAssertEqual(before, Shortcut(text: "option+space"))
         XCTAssertEqual(file.read().panelKey, Shortcut(text: "ctrl+option+space"))
-        XCTAssertEqual(used.move, .push(spot: nil, page: "agent", title: "Make it yours", replace: false))
+        XCTAssertEqual(effects(), ["route push agent --title Make it yours"])
         XCTAssertEqual(try part("key", in: after).control, .shortcut("ctrl+option+space"))
     }
 
     func testUseWithTheCurrentKeyPushesTheLastPageAndChangesNothing() async throws {
         try file.set("panel-key", to: "option+space")
+        let effects = try recordEffects()
 
-        let used = try await answer(["use"])
+        _ = try await answer(["use"])
 
-        XCTAssertEqual(used.move, .push(spot: nil, page: "agent", title: "Make it yours", replace: false))
+        XCTAssertEqual(effects(), ["route push agent --title Make it yours"])
         XCTAssertEqual(file.read().panelKey, Shortcut(text: "option+space"))
     }
 
     func testTheLastPageShowsTwoNumberedCardsToTryAndDoneLeaves() async throws {
+        let effects = try recordEffects()
         let output = try await read(page: "agent")
-        let done = try await answer(["done"])
+        _ = try await answer(["done"])
 
         try assertHead(output, "Make it yours", "Easily, with any of your favourite agents")
         let head = try part("head", in: output)
@@ -148,8 +153,7 @@ final class WelcomeSpotTests: BuiltInCase {
         XCTAssertEqual(button.key, ActionKey(name: "return"))
         let opened = await app.opened
         XCTAssertEqual(opened, ["pop openspot/welcome all"])
-        XCTAssertEqual(done.move, .pop(all: false))
-        XCTAssertEqual(done.toast, Shortcut.standard.openHint)
+        XCTAssertEqual(effects(), ["route back", "toast \(Shortcut.standard.openHint)"])
     }
 
     func testEachDrawingThatAPageNamesIsAFileBesideTheScript() async throws {

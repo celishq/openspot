@@ -100,7 +100,7 @@ final class DictateExampleTests: SampleSpotsCase {
         XCTAssertEqual(rows(first).map(\.run), ["2000", "1000"])
         XCTAssertEqual(rows(first).map(\.title), ["Second, with a back\\slash", "First words"])
         XCTAssertEqual(rows(frames).map(\.run), ["1000"])
-        XCTAssertEqual(frames.compactMap { SpotOutput(text: $0).toast }, ["Copied"])
+        XCTAssertEqual(toasts(in: folder), ["Copied"])
         XCTAssertEqual(try read("clipboard", in: folder), "First words")
         XCTAssertEqual(try read("data/history", in: folder), "1000\tFirst words\n")
     }
@@ -122,7 +122,7 @@ final class DictateExampleTests: SampleSpotsCase {
         XCTAssertTrue(SpotOutput(text: frames[1]).hidesSearch)
         let head = try XCTUnwrap(frames.compactMap { SpotOutput(text: $0).summary }.first { $0.value("progress") != nil })
         XCTAssertEqual(head.value("detail"), "0% of 1.6 GB")
-        XCTAssertTrue(frames.contains { SpotOutput(text: $0).toast?.hasPrefix("Dictate is ready.") == true })
+        XCTAssertTrue(toasts(in: folder).contains { $0.hasPrefix("Dictate is ready.") })
         XCTAssertEqual(try Data(contentsOf: folder.appendingPathComponent("data/\(Self.model)")), bytes)
         XCTAssertFalse(FileManager.default.fileExists(atPath: folder.appendingPathComponent("data/\(Self.model).part").path))
         XCTAssertEqual(try read("curl-calls", in: folder).filter { $0 == "\n" }.count, 1)
@@ -144,9 +144,9 @@ final class DictateExampleTests: SampleSpotsCase {
         script.send(text: "call=2\narg=dictate\n\n")
         let resumed = try await Self.collect(&frames, until: ["2"])
 
-        XCTAssertTrue(broken.contains { SpotOutput(text: $0).toast?.hasPrefix("Openspot cannot download the speech model.") == true })
+        XCTAssertTrue(toasts(in: folder).contains { $0.hasPrefix("Openspot cannot download the speech model.") })
         XCTAssertEqual(kept.count, 100_000)
-        XCTAssertTrue(resumed.contains { SpotOutput(text: $0).toast == "Dictate is downloading its speech model of 1.6 GB." })
+        XCTAssertTrue(toasts(in: folder).contains("Dictate is downloading its speech model of 1.6 GB."))
         XCTAssertEqual(try Data(contentsOf: folder.appendingPathComponent("data/\(Self.model)")), bytes)
         XCTAssertTrue(try read("curl-calls", in: folder).split(separator: "\n").allSatisfy { $0.contains("-C -") })
     }
@@ -195,7 +195,7 @@ final class DictateExampleTests: SampleSpotsCase {
 
         let frames = try await frames(script, sending: "call=1\narg=open\narg=whisper\n\n", until: ["1"])
 
-        XCTAssertTrue(frames.contains { SpotOutput(text: $0).toast?.hasPrefix("The speech model came in the wrong size") == true })
+        XCTAssertTrue(toasts(in: folder).contains { $0.hasPrefix("The speech model came in the wrong size") })
         XCTAssertFalse(FileManager.default.fileExists(atPath: folder.appendingPathComponent("data/\(Self.model)").path))
         XCTAssertFalse(FileManager.default.fileExists(atPath: folder.appendingPathComponent("data/\(Self.model).part").path))
     }

@@ -31,7 +31,7 @@ case "$1" in
     for path; do
       grep -qxF "$path" "$list" || printf '%s\n' "$path" >> "$list"
     done
-    openspot_kv select "$1"
+    openspot select "$1"
     ;;
   drag | remove)
     shift

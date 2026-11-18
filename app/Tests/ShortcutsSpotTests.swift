@@ -118,13 +118,13 @@ final class ShortcutsSpotTests: SampleSpotsCase {
             try "18°C, sunny\nWind 3 m/s".write(to: folder.appendingPathComponent("result"), atomically: true, encoding: .utf8)
             let row = try await shortcut("Say \\ \"hi\" (now)", of: shortcuts)
 
-            let toast = try await shortcuts.perform(.item(row), timeout: 60)
+            try await shortcuts.perform(.item(row), timeout: 60)
 
             let arguments = try runArguments(in: folder)
             XCTAssertEqual(Array(arguments.prefix(3)), ["run", "Say \\ \"hi\" (now)", "-o"])
             XCTAssertFalse(arguments.contains("-i"))
             XCTAssertEqual(try read("clipboard", in: folder), "18°C, sunny\nWind 3 m/s")
-            XCTAssertEqual(toast, "Copied the result of Say \\ \"hi\" (now).")
+            XCTAssertEqual(self.toasts(in: folder), ["Copied the result of Say \\ \"hi\" (now)."])
         }
     }
 
@@ -134,9 +134,9 @@ final class ShortcutsSpotTests: SampleSpotsCase {
             try Self.fakeShortcuts(in: folder)
             let row = try await shortcut("Take a break", of: shortcuts)
 
-            let toast = try await shortcuts.perform(.item(row), timeout: 60)
+            try await shortcuts.perform(.item(row), timeout: 60)
 
-            XCTAssertEqual(toast, "Ran Take a break.")
+            XCTAssertEqual(self.toasts(in: folder), ["Ran Take a break."])
             XCTAssertFalse(FileManager.default.fileExists(atPath: folder.appendingPathComponent("clipboard").path))
         }
     }
@@ -145,19 +145,19 @@ final class ShortcutsSpotTests: SampleSpotsCase {
         let shortcuts = try shortcuts()
         try await withPrivateHome { folder in
             try Self.fakeShortcuts(in: folder)
-            try "#!/bin/sh\nprintf '%s\\n' \"$@\" > '\(folder.path)/openspot-args'\n".writeScript(to: folder.appendingPathComponent("tools/openspot"))
+            try "#!/bin/sh\n[ \"$1\" = toast ] || printf '%s\\n' \"$@\" > '\(folder.path)/openspot-args'\n\(Self.fakeOpenspot(in: folder))\n".writeScript(to: folder.appendingPathComponent("tools/openspot"))
             let png = try XCTUnwrap(Data(base64Encoded: "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg=="))
             try png.write(to: folder.appendingPathComponent("result"))
             let row = try await shortcut("Video to audio", of: shortcuts)
 
-            let toast = try await shortcuts.perform(.item(row), timeout: 60)
+            try await shortcuts.perform(.item(row), timeout: 60)
 
             let copy = try read("openspot-args", in: folder).split(separator: "\n").map(String.init)
             XCTAssertEqual(Array(copy.prefix(2)), ["clipboard", "copy"])
             let file = try XCTUnwrap(copy.last)
             XCTAssertEqual(URL(fileURLWithPath: file).lastPathComponent, "Video to audio.png")
             XCTAssertEqual(try Data(contentsOf: URL(fileURLWithPath: file)), png)
-            XCTAssertEqual(toast, "Copied the result of Video to audio.")
+            XCTAssertEqual(self.toasts(in: folder), ["Copied the result of Video to audio."])
         }
     }
 

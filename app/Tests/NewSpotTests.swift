@@ -3,6 +3,7 @@ import XCTest
 
 final class NewSpotTests: BuiltInCase {
     private var guideText = ""
+    private var effects: (() -> [String])!
     private var repo: URL {
         repoSpots.deletingLastPathComponent()
     }
@@ -16,6 +17,7 @@ final class NewSpotTests: BuiltInCase {
         try FileManager.default.moveItem(at: tools.appendingPathComponent("openspot"), to: real)
         try fake("openspot", "[ \"$1 $2\" = 'clipboard copy' ] && exec cat > '\(root.path)/clipboard'\nexec '\(real.path)' \"$@\"")
         try fake("open", "echo \"$@\" > '\(root.path)/opened'")
+        effects = try recordEffects()
     }
 
     private func newSpot() throws -> Spot {
@@ -74,9 +76,9 @@ final class NewSpotTests: BuiltInCase {
     }
 
     func testAPickOfMakeASpotCopiesThePromptThatBuildsTheTypedWords() async throws {
-        let toast = try await spot("make").perform(SpotAction(arguments: ["open", "time in kyiv"]), timeout: 60)
+        try await spot("make").perform(SpotAction(arguments: ["open", "time in kyiv"]), timeout: 60)
 
-        XCTAssertEqual(toast, AgentPrompt.copied)
+        XCTAssertEqual(effects(), ["toast \(AgentPrompt.copied)"])
         let prompt = try saved("clipboard")
         XCTAssertTrue(prompt.hasPrefix("Build an Openspot spot that does this: time in kyiv\n\(AgentPrompt.finishAlone)\n"), prompt)
     }
@@ -84,9 +86,9 @@ final class NewSpotTests: BuiltInCase {
     func testAfterACopyTheNextOpenStartsEmpty() async throws {
         let spot = try newSpot()
 
-        let toast = try await spot.perform(.press("copy"), input: "input.describe=Show the weather\n", timeout: 60)
+        try await spot.perform(.press("copy"), input: "input.describe=Show the weather\n", timeout: 60)
 
-        XCTAssertEqual(toast, AgentPrompt.copied)
+        XCTAssertEqual(effects(), ["toast \(AgentPrompt.copied)"])
         let reopened = try await spot.answer(.show, timeout: 60)
         XCTAssertEqual(reopened.parts.first?.value ?? "", "")
     }
@@ -108,9 +110,9 @@ final class NewSpotTests: BuiltInCase {
     func testCopyPromptWithWordsCopiesThePromptThatBuildsTheSpotToTheEnd() async throws {
         let spot = try newSpot()
 
-        let toast = try await spot.perform(.press("copy"), input: "input.describe=Show the weather\\nin Kyiv\n", timeout: 60)
+        try await spot.perform(.press("copy"), input: "input.describe=Show the weather\\nin Kyiv\n", timeout: 60)
 
-        XCTAssertEqual(toast, AgentPrompt.copied)
+        XCTAssertEqual(effects(), ["toast \(AgentPrompt.copied)"])
         let prompt = try saved("clipboard")
         XCTAssertTrue(prompt.hasPrefix("Build an Openspot spot that does this: Show the weather\nin Kyiv\n\(AgentPrompt.finishAlone)\n"), prompt)
         XCTAssertTrue(prompt.contains(spots.path))
@@ -119,9 +121,9 @@ final class NewSpotTests: BuiltInCase {
     }
 
     func testCopyPromptWithAnEmptyFieldCopiesThePromptThatAsksWhatToBuild() async throws {
-        let toast = try await newSpot().perform(.press("copy"), input: "input.describe=  \n", timeout: 60)
+        try await newSpot().perform(.press("copy"), input: "input.describe=  \n", timeout: 60)
 
-        XCTAssertEqual(toast, AgentPrompt.copied)
+        XCTAssertEqual(effects(), ["toast \(AgentPrompt.copied)"])
         let prompt = try saved("clipboard")
         XCTAssertTrue(prompt.hasPrefix("Help me build an Openspot spot. Start by asking me what the spot should do"), prompt)
         XCTAssertFalse(prompt.contains("Build an Openspot spot that does this"))

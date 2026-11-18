@@ -162,12 +162,12 @@ hold() {
 # Starts a hold on a call, as `hold` takes it, and prints the head that keeps the call running. A new pick, with no
 # seconds given, gets a toast, and so does a hold that lost the lid.
 begin() {
-  said=
-  hold "$@" || said="toast=$(toast "$2" lost)
-"
-  [ $# -ge 3 ] || [ -n "$said" ] || said="toast=$(toast "$2")
-"
-  printf '%s%s\n---\ncall=%s\n---\n%sdetail=%s\n---\n' "$ended" "$(sheet)" "$1" "$said" "$(card)"
+  if ! hold "$@"; then
+    openspot toast "$(toast "$2" lost)"
+  elif [ $# -lt 3 ]; then
+    openspot toast "$(toast "$2")"
+  fi
+  printf '%s%s\n---\ncall=%s\n---\ndetail=%s\n---\n' "$ended" "$(sheet)" "$1" "$(card)"
 }
 
 # Stops `caffeinate`, and sets `ended` to the frame that ends the call that turned it on.
@@ -214,7 +214,8 @@ serve() {
   case "$1 $2" in
     'open off')
       release
-      printf '%scall=%s\n---\ntoast=Caffeinate is off\n%s\n---\nend=%s\n---\n' "$ended" "$call" "$(sheet)" "$call"
+      openspot toast 'Caffeinate is off'
+      printf '%scall=%s\n---\n%s\n---\nend=%s\n---\n' "$ended" "$call" "$(sheet)" "$call"
       ;;
     start* | 'open custom')
       minutes=$(given input.minutes)
@@ -224,7 +225,8 @@ serve() {
           printf 'call=%s\n---\ntitle=Keep the Mac awake\n\nfield=minutes\ntitle=Minutes\nplaceholder=45\n---\nend=%s\n---\n' "$call" "$call"
           ;;
         *[!0-9]* | 0*)
-          printf 'call=%s\n---\ntoast=Caffeinate takes minutes as a number, such as 45.\n%s\n---\nend=%s\n---\n' "$call" "$(sheet)" "$call"
+          openspot toast 'Caffeinate takes minutes as a number, such as 45.'
+          printf 'call=%s\n---\n%s\n---\nend=%s\n---\n' "$call" "$(sheet)" "$call"
           ;;
         *)
           release

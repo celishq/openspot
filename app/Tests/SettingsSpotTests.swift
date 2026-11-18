@@ -181,20 +181,21 @@ final class SettingsSpotTests: BuiltInCase {
 
     func testTheLinkRowIsOffUntilALinkPointsAtTheAppAndAPickLinksAndRemovesIt() async throws {
         offerLink()
+        let effects = try recordEffects()
 
         let off = try await items()
         XCTAssertEqual(off.map(\.run), ["panel-key", "fix-key", "careful_mode", "command_link"])
         XCTAssertEqual(off.last?.title, "Use openspot in Terminal")
         XCTAssertEqual(off.last?.isOn, false)
 
-        let installed = try await call(["open", "command_link"])
-        XCTAssertEqual(installed, "Installed openspot")
+        try await call(["open", "command_link"])
+        XCTAssertEqual(effects(), ["toast Installed openspot"])
         XCTAssertEqual(try FileManager.default.destinationOfSymbolicLink(atPath: linkFile.path), root.appendingPathComponent("Openspot.app/Contents/Helpers/openspot").path)
         let on = try await items()
         XCTAssertEqual(on.last?.isOn, true)
 
-        let removed = try await call(["open", "command_link"])
-        XCTAssertEqual(removed, "Removed openspot")
+        try await call(["open", "command_link"])
+        XCTAssertEqual(effects(), ["toast Installed openspot", "toast Removed openspot"])
         XCTAssertFalse(FileManager.default.fileExists(atPath: linkFile.path))
         XCTAssertEqual(mac.elevated, [])
     }

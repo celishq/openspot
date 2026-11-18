@@ -183,7 +183,7 @@ case "$1" in
         noun=reminders
         [ "$2" = add-event ] && noun=calendar
         added=$(openspot "$noun" add "$(value search)" </dev/null) || { printf '%s\n' "$added"; exit 1; }
-        printf 'toast=Added %s.\n' "$(field title "$added")"
+        openspot toast "Added $(field title "$added")."
         ;;
       reminder:*) openspot reminders show "$2" </dev/null ;;
       *) openspot calendar show "$2" </dev/null ;;

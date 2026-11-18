@@ -93,7 +93,7 @@ case "$1" in
       *) welcome ;;
     esac
     ;;
-  next) printf 'push=key\npush.title=Choose your key\n' ;;
+  next) openspot route push key --title 'Choose your key' ;;
   key)
     printf '%s\n' "$2" > "$keyfile"
     current
@@ -109,12 +109,13 @@ case "$1" in
       openspot setting set --spot openspot panel-key "$key" || exit 1
       rm -f "$keyfile"
     fi
-    printf 'push=agent\npush.title=Make it yours\n'
+    openspot route push agent --title 'Make it yours'
     ;;
   done)
     current
     openspot spot pop openspot/welcome --all || exit 1
-    printf 'pop=true\ntoast=Press `%s` to open Openspot\n' "$(label "$now")"
+    openspot route back || exit 1
+    openspot toast "Press \`$(label "$now")\` to open Openspot"
     ;;
   *)
     echo 'Welcome cannot do that.' >&2

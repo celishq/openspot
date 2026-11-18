@@ -251,10 +251,10 @@ final class AgendaExampleTests: SampleSpotsCase {
         try await withPrivateHome { folder in
             try self.fakeOpenspot(in: folder)
 
-            let toast = try await agenda.perform(.item(SpotItem(title: "Add reminder", run: "add-reminder")), input: "search=Call Ana tomorrow 9am\n", timeout: 30)
+            try await agenda.perform(.item(SpotItem(title: "Add reminder", run: "add-reminder")), input: "search=Call Ana tomorrow 9am\n", timeout: 30)
 
-            XCTAssertEqual(toast, "Added Call Ana.")
             XCTAssertTrue(try self.calls(in: folder).contains("act|reminders add Call Ana tomorrow 9am|"))
+            XCTAssertTrue(try self.calls(in: folder).contains("act|toast Added Call Ana.|"))
         }
     }
 

@@ -30,15 +30,20 @@ func moved(status: Int32, text: String, call: String) {
     let lines = text.split(separator: "\n").map(String.init)
     guard status != 0 else { return Link.end(call) }
     guard let link = lines.first(where: { $0.hasPrefix("link=") }).map({ String($0.dropFirst(5)) }) else {
-        Link.frame("toast=\(Link.value(lines.last ?? "Openspot cannot move the window."))")
-        return Link.end(call)
+        return run(["openspot", "toast", lines.last ?? "Openspot cannot move the window."]) { Link.end(call) }
     }
-    let open = Process()
-    open.executableURL = URL(fileURLWithPath: "/usr/bin/env")
-    open.arguments = ["open", link]
-    open.standardInput = FileHandle.nullDevice
-    open.terminationHandler = { _ in DispatchQueue.main.async { Link.end(call) } }
-    do { try open.run() } catch { Link.end(call) }
+    run(["open", link]) { Link.end(call) }
+}
+
+/// Runs a command, then calls `done` on the main queue.
+func run(_ words: [String], done: @escaping () -> Void) {
+    let process = Process()
+    process.executableURL = URL(fileURLWithPath: "/usr/bin/env")
+    process.arguments = words
+    process.standardInput = FileHandle.nullDevice
+    process.standardOutput = FileHandle.nullDevice
+    process.terminationHandler = { _ in DispatchQueue.main.async(execute: done) }
+    do { try process.run() } catch { done() }
 }
 
 /// Answers `pick` and `frames` with the math of the grid and quits, so a test reaches it with no window.

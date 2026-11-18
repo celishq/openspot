@@ -314,7 +314,8 @@ final class LinksSpotTests: SampleSpotsCase {
             var draft = FormDraft(form: try await links.form(new, item: nil, timeout: 60))
             draft.set("Work", for: "title")
             draft.set("~/My Work", for: "url")
-            let run = try await links.submit(new, item: nil, draft: draft, timeout: 60)
+            _ = try await links.submit(new, item: nil, draft: draft, timeout: 60)
+            let run = try self.read("selected", in: folder).trimmingCharacters(in: .newlines)
             let all = try await links.items(timeout: 60).items
             let item = try XCTUnwrap(all.first { $0.run == run })
 

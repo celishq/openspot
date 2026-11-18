@@ -47,7 +47,7 @@ var plays: [String: Play] = [:]
 func play(_ id: String, call: String) {
     let (look, faults) = Look.read(shelf.file(of: id))
     if let fault = faults.first {
-        Link.frame("toast=\(Link.value("\(shelf.title(of: id)) cannot play. \(fault)"))")
+        Link.toast("\(shelf.title(of: id)) cannot play. \(fault)")
         return Link.end(call)
     }
     plays[call] = Play(look) {

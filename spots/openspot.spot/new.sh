@@ -16,13 +16,12 @@ fi
 nl='
 '
 
-# Prints the sheet with these words in its field, the head lines in $2 before its layout, and the words of its button in $3.
+# Prints the sheet with these words in its field, and the words of its button in $2.
 sheet() {
-  printf '%s' "$2"
   printf 'grid=describe describe describe\ngrid=describe describe describe\ngrid=describe describe describe\ngrid=copy copy copy\n\n'
   printf 'field=describe\ntype=multiline\nplaceholder=%s\n' "$placeholder"
   openspot_kv value "$1"
-  printf '\nbutton=copy\ntitle=%s\nlook=strong\nshortcut=cmd+return\n\n' "${3:-Copy prompt}"
+  printf '\nbutton=copy\ntitle=%s\nlook=strong\nshortcut=cmd+return\n\n' "${2:-Copy prompt}"
   printf 'button=clear\ntitle=Clear\nscope=spot\n\n'
   [ -z "${OPENSPOT_EDIT_FILE-}" ] || printf 'button=editor\ntitle=Open in editor\nscope=spot\nclose=true\n\n'
   printf 'button=guide\ntitle=Read the guide\nscope=spot\nclose=true\n'
@@ -66,7 +65,8 @@ case "$1" in
     words=$(prompt "$text") || exit 1
     printf '%s' "$words" | openspot clipboard copy || exit 1
     mkdir -p "${copied%/*}" && printf '%s' "$typed" > "$copied.$$" && mv "$copied.$$" "$copied"
-    sheet "$typed" "toast=Prompt copied. Paste it into your agent.$nl" "✓ Copied"
+    openspot toast 'Prompt copied. Paste it into your agent.'
+    sheet "$typed" "✓ Copied"
     printf -- '---\n'
     sleep 1.5
     sheet "$typed"

@@ -19,6 +19,7 @@ final class DrawSpotTests: XCTestCase {
         boards = home.appendingPathComponent(".config/openspot/data/draw/boards")
         try FileManager.default.createDirectory(at: boards, withIntermediateDirectories: true)
         try "#!/bin/sh\necho \"$1\" > '\(home.path)/opened'\n".writeScript(to: home.appendingPathComponent("tools/open"))
+        try FileManager.default.copyItem(at: Bundle(for: Self.self).bundleURL.deletingLastPathComponent().appendingPathComponent("openspot"), to: home.appendingPathComponent("tools/openspot"))
     }
 
     override func tearDown() async throws {
@@ -63,6 +64,7 @@ final class DrawSpotTests: XCTestCase {
     private func opened(_ spot: Spot) async throws -> SpotRun {
         runs = SpotRuns(environment: environment, readLimit: 120, stopPause: 20)
         started.append(runs)
+        runs.api = CommandAPI(mac: Mac(), places: .test(["OPENSPOT_CONFIG": home.appendingPathComponent(".config/openspot").path]), app: FakeRunningApp(), runs: runs, rates: .offline)
         let count = records.count
         runs.onCall = { [unowned self] record, _ in records.append(record) }
         let sheet = runs.sheet(for: spot)

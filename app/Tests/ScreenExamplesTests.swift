@@ -15,6 +15,7 @@ final class ScreenExamplesTests: SampleSpotsCase {
           'screen sources') printf 'row=display:1\\ntitle=Built-in\\n\\nrow=window:7\\ntitle=Notes\\n\\nrow=system\\ntitle=Sound of the Mac\\n\\nrow=mic:A1\\ntitle=Desk\\n\\nrow=mic:B2\\ntitle=Headset\\n\\nrow=camera:C3\\ntitle=FaceTime\\n' ;;
           'screen shot') cat '\(path)/shot' 2>/dev/null || true ;;
           'clipboard copy') printf '%s' "$3" > '\(path)/clipboard' ;;
+          'toast '*) shift; printf '%s\\n' "$*" >> '\(path)/toasts' ;;
           'screen record')
             case "$3" in
               status) if [ -f '\(path)/ended' ]; then printf 'state=ended\\nfile=\(path)/talk.mp4\\n'; elif [ -f '\(path)/recording' ]; then printf 'state=recording\\nfile=\(path)/talk.mp4\\n'; else printf 'state=idle\\n'; fi ;;
@@ -33,13 +34,13 @@ final class ScreenExamplesTests: SampleSpotsCase {
         try await withPrivateHome(settings: ["inputs": "mic:B2 system"]) { folder in
             try self.fakeScreen(in: folder)
 
-            let started = try await record.perform(.open, timeout: 60)
-            XCTAssertEqual(started, "Recording the screen. Run Record again to stop it.")
+            try await record.perform(.open, timeout: 60)
+            XCTAssertEqual(self.toasts(in: folder), ["Recording the screen. Run Record again to stop it."])
             XCTAssertTrue(try self.read("calls", in: folder).contains("screen record start mic:B2 system\n"))
             XCTAssertFalse(try self.read("calls", in: folder).contains("setting get"))
 
-            let stopped = try await record.perform(.open, timeout: 60)
-            XCTAssertEqual(stopped, "Copied the recording.")
+            try await record.perform(.open, timeout: 60)
+            XCTAssertEqual(self.toasts(in: folder), ["Recording the screen. Run Record again to stop it.", "Copied the recording."])
             XCTAssertEqual(try self.read("clipboard", in: folder), folder.path + "/talk.mp4")
         }
     }
@@ -144,7 +145,7 @@ final class ScreenExamplesTests: SampleSpotsCase {
 
         XCTAssertEqual(try read("calls", in: folder), "screen shot\n")
         XCTAssertEqual(notes(in: folder), "")
-        XCTAssertEqual(frames.toasts, [])
+        XCTAssertEqual(toasts(in: folder), [])
     }
 
     func testAShotOpensItsEditorInTheCallAndCopiesThePictureWhenTheEditorCloses() async throws {
@@ -158,7 +159,7 @@ final class ScreenExamplesTests: SampleSpotsCase {
 
         XCTAssertEqual(notes(in: folder), "edit a.png\n")
         XCTAssertEqual(try read("clipboard", in: folder), picture.path)
-        XCTAssertEqual(frames.toasts, ["Copied the picture."])
+        XCTAssertEqual(toasts(in: folder), ["Copied the picture."])
     }
 
     func testAPictureThatCannotOpenSaysSoAndCopiesNothing() async throws {
@@ -171,7 +172,7 @@ final class ScreenExamplesTests: SampleSpotsCase {
         script.send(text: "call=1\narg=open\n\n")
         try await wait("the end of the press") { frames.ends == ["1"] }
 
-        XCTAssertEqual(frames.toasts, ["Openspot cannot open b.png to mark it."])
+        XCTAssertEqual(toasts(in: folder), ["Openspot cannot open b.png to mark it."])
         XCTAssertEqual(notes(in: folder), "")
         XCTAssertFalse(FileManager.default.fileExists(atPath: folder.appendingPathComponent("clipboard").path))
     }

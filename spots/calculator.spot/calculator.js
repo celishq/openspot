@@ -24,8 +24,8 @@ function card(row) {
 /** The card of the answer of a sum, a conversion or a date for a read. A pick copies the plain value. */
 function main([id, picked], env, input) {
   if (id === "open") {
-    if (picked === "offline" || openspot.call(["clipboard", "copy"], picked).code !== 0) return ""
-    return openspot.frame({ toast: `Copied ${picked}` })
+    if (picked !== "offline" && openspot.call(["clipboard", "copy"], picked).code === 0) openspot.call(["toast", `Copied ${picked}`])
+    return ""
   }
   const text = openspot.value("event.value", input)
   if (!text) return ""

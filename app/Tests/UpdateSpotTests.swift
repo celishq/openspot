@@ -54,14 +54,15 @@ final class UpdateSpotTests: BuiltInCase {
     func testWithRunningWorkTheFirstPressWarnsAndTheSecondRestarts() async throws {
         await app.set(update: "0.3.0", calls: 2)
         let spot = try spot("updates")
+        let effects = try recordEffects()
 
-        let warning = try await spot.perform(.open, timeout: 60)
+        try await spot.perform(.open, timeout: 60)
         let warned = try await spot.state(timeout: 60)
         let first = await app.installs
         _ = try await spot.perform(.open, timeout: 60)
         let second = await app.installs
 
-        XCTAssertEqual(warning, "Restarting stops 2 calls. Press again to restart.")
+        XCTAssertEqual(effects(), ["toast Restarting stops 2 calls. Press again to restart."])
         XCTAssertEqual(warned, SpotState(title: "Restart", subtitle: "Stops 2 calls"))
         XCTAssertEqual(first, 0)
         XCTAssertEqual(second, 1)
@@ -69,10 +70,11 @@ final class UpdateSpotTests: BuiltInCase {
 
     func testOneRunningCallIsNamedInTheSingular() async throws {
         await app.set(update: "0.3.0", calls: 1)
+        let effects = try recordEffects()
 
-        let warning = try await spot("updates").perform(.open, timeout: 60)
+        try await spot("updates").perform(.open, timeout: 60)
 
-        XCTAssertEqual(warning, "Restarting stops 1 call. Press again to restart.")
+        XCTAssertEqual(effects(), ["toast Restarting stops 1 call. Press again to restart."])
     }
 
     func testWhenTheWorkChangesAPressWarnsAgain() async throws {
@@ -94,10 +96,11 @@ final class UpdateSpotTests: BuiltInCase {
         await app.set(update: nil, calls: 2)
         _ = try await spot.state(timeout: 60)
         await app.set(update: "0.4.0", calls: 2)
+        let effects = try recordEffects()
 
-        let warning = try await spot.perform(.open, timeout: 60)
+        try await spot.perform(.open, timeout: 60)
 
-        XCTAssertEqual(warning, "Restarting stops 2 calls. Press again to restart.")
+        XCTAssertEqual(effects(), ["toast Restarting stops 2 calls. Press again to restart."])
         let installs = await app.installs
         XCTAssertEqual(installs, 0)
     }

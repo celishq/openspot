@@ -181,9 +181,9 @@ EOF
     fi
     rm -f "$pending" "$kept"
     case $# in
-      1) printf 'toast=Moved %s to the Trash\n' "$name" ;;
-      2) printf 'toast=Moved %s and 1 of its files to the Trash\n' "$name" ;;
-      *) printf 'toast=Moved %s and %s of its files to the Trash\n' "$name" "$(($# - 1))" ;;
+      1) openspot toast "Moved $name to the Trash" ;;
+      2) openspot toast "Moved $name and 1 of its files to the Trash" ;;
+      *) openspot toast "Moved $name and $(($# - 1)) of its files to the Trash" ;;
     esac
     ;;
 esac

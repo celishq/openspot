@@ -63,7 +63,7 @@ case "$1" in
     ;;
   open)
     printf '%s' "$2" | openspot clipboard copy
-    echo "toast=Copied"
+    openspot toast Copied
     ;;
   paste)
     previous=$(openspot clipboard read; printf x)

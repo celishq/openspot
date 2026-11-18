@@ -52,9 +52,9 @@ case "$1" in
         ;;
       command_link)
         if [ "$(status link)" = true ]; then
-          openspot setting set --spot openspot link false && echo 'toast=Removed openspot'
+          openspot setting set --spot openspot link false && openspot toast 'Removed openspot'
         else
-          openspot setting set --spot openspot link true && echo 'toast=Installed openspot'
+          openspot setting set --spot openspot link true && openspot toast 'Installed openspot'
         fi
         ;;
       *)

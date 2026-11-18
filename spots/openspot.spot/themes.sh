@@ -7,10 +7,10 @@ nl='
 # so its rows hide Rename, Move to Trash and Open file. Copy prompt pushes the page `prompt:<name>`, where the person
 # describes a look and copies a prompt that hands the theme to their agent.
 
-# Prints the list of themes with the head lines in $1 before it.
+# Prints the list of themes.
 list() {
   themes=$(openspot theme list) || exit 1
-  printf '%srecents=false\n\nbutton=open\ntitle=Use\nclose=false\n\n' "${1-}"
+  printf 'recents=false\n\nbutton=open\ntitle=Use\nclose=false\n\n'
   printf 'button=duplicate\ntitle=Duplicate\n\nbutton=rename\ntitle=Rename\nform=true\n\n'
   printf 'button=delete\ntitle=Move to Trash\nshortcut=cmd+backspace\nconfirm=Press again to move the theme to the Trash\n\n'
   printf 'button=file\ntitle=Open file\nclose=true\n\nbutton=prompt\ntitle=Copy prompt\n'
@@ -53,7 +53,7 @@ case "$route" in
         words=$(openspot prompt theme "$theme" "$typed") || exit 1
         printf '%s' "$words" | openspot clipboard copy || exit 1
         rm -f "$draft"
-        printf 'toast=Prompt copied. Paste it into your agent.\n'
+        openspot toast 'Prompt copied. Paste it into your agent.'
         page "$typed" "$theme" "✓ Copied"
         printf -- '---\n'
         sleep 1.5
@@ -71,7 +71,8 @@ case "$route" in
       open) openspot theme use "$2" >/dev/null && list ;;
       duplicate)
         said=$(openspot theme duplicate "$2") || exit 1
-        list "toast=$said$nl"
+        openspot toast "$said"
+        list
         ;;
       rename)
         if [ -z "$(value input.name)" ]; then
@@ -82,14 +83,16 @@ case "$route" in
         name=$(value input.name)
         said=$(openspot theme rename "$2" "$name") || exit 1
         name=${said#"Renamed the theme $2 to "}
-        list "select=${name%.}$nl"
+        openspot select "${name%.}"
+        list
         ;;
       delete)
         said=$(openspot theme delete "$2") || exit 1
-        list "toast=$said$nl"
+        openspot toast "$said"
+        list
         ;;
       file) exec openspot theme open "$2" ;;
-      prompt) printf 'push=prompt:%s\npush.title=%s\n' "$2" "$2" ;;
+      prompt) openspot route push "prompt:$2" --title "$2" ;;
       *)
         echo 'Themes cannot do that.' >&2
         exit 1
