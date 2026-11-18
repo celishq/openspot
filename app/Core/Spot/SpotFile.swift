@@ -111,7 +111,7 @@ public struct SpotFile: Equatable, Sendable {
             icon: icon,
             subtitle: header.value(HeaderKey.detail),
             read: read,
-            isFound: !answersOnly,
+            isFound: !answersOnly && !places.isEmpty,
             answers: answers,
             mode: mode,
             pressRuns: press == "open",
