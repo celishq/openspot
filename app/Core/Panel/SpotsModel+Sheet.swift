@@ -121,10 +121,6 @@ extension SpotsModel {
         finishPick()
         for entry in entries where entry.spot.answers != nil { sheets[entry.id]?.answer("") }
         runs.panelClosed()
-        if isFirstLaunch, !isWarming {
-            isFirstLaunch = false
-            host.confirm(entryKey.openHint)
-        }
         endReview()
         if let heldLayout { lay(heldLayout) }
     }

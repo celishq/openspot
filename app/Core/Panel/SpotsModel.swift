@@ -358,7 +358,7 @@ public final class SpotsModel {
             host.notify("Openspot could not save the spots. \(Self.reason(error))")
         }
         await reload()
-        if let launch = runs.launchSheet { push(FlowSheet(spot: launch, page: nil, title: nil)) }
+        if let first = runs.firstLaunchSheet { push(FlowSheet(spot: first)) }
         host.present()
     }
 

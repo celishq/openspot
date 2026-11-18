@@ -77,6 +77,15 @@ final class FlowMoveTests: PanelCase {
         XCTAssertNil(model.flow.ahead)
     }
 
+    func testOnePopOnAFirstSheetWithNothingBehindItGoesBackToTheGrid() async throws {
+        try await openFlowSpot()
+        XCTAssertNil(model.flow.behind)
+
+        try pressFlow("done")
+
+        try await wait("the grid") { self.model.openSheetID == nil }
+    }
+
     func testAPressPushesAnotherSpotOverItsSheet() async throws {
         try writeFlow()
         try await openList()

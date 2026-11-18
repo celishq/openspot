@@ -27,10 +27,10 @@ final class WelcomeSpotTests: BuiltInCase {
         XCTAssertEqual(head.detail, detail, file: file, line: line)
     }
 
-    func testItTakesTheLaunchRoleWithTwoPagesAndOffersNoCard() throws {
+    func testItStartsTheFirstLaunchWithTwoPagesAndOffersNoCard() throws {
         let spot = try welcome
 
-        XCTAssertEqual(spot.edits, .launch)
+        XCTAssertEqual(spot.starts, .firstLaunch)
         XCTAssertFalse(spot.offersCard)
         XCTAssertEqual(spot.name, "Welcome spot")
         XCTAssertNil(spot.subtitle)
@@ -132,7 +132,10 @@ final class WelcomeSpotTests: BuiltInCase {
         let button = try part("done", in: output)
         XCTAssertEqual(button.title, "Start using Openspot")
         XCTAssertEqual(button.key, ActionKey(name: "return"))
-        XCTAssertEqual(done.move, .pop(all: true))
+        let opened = await app.opened
+        XCTAssertEqual(opened, ["pop openspot/welcome all"])
+        XCTAssertEqual(done.move, .pop(all: false))
+        XCTAssertEqual(done.toast, Shortcut.standard.openHint)
     }
 
     func testEachDrawingThatAPageNamesIsAFileBesideTheScript() async throws {

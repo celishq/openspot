@@ -179,10 +179,6 @@ public final class SpotRuns {
         editor != nil
     }
 
-    public var launchSheet: String? {
-        sheets.values.lazy.map(\.spot).first { $0.edits == .launch && $0.isBuiltIn }?.id
-    }
-
     private var editor: Spot? {
         sheets.values.lazy.map(\.spot).first { $0.editsSpots && $0.isBuiltIn }
     }
@@ -215,6 +211,10 @@ public final class SpotRuns {
 
     public func closeOpen() {
         openID.flatMap { sheets[$0] }?.close()
+    }
+
+    public var firstLaunchSheet: String? {
+        sheets.values.lazy.map(\.spot).first { $0.starts == .firstLaunch }?.id
     }
 
     public var isReading: Bool {

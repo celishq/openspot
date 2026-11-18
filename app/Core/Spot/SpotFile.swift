@@ -99,7 +99,10 @@ public struct SpotFile: Equatable, Sendable {
         }
         let editsWord = header.value(HeaderKey.edits)
         let edits = editsWord.flatMap(SpotEdits.init(rawValue:))
-        guard editsWord == nil || edits != nil else { throw SpotError.fault("\(name) has an unknown edits: \(editsWord ?? ""). Use edits=spots or edits=launch.") }
+        guard editsWord == nil || edits != nil else { throw SpotError.fault("\(name) has an unknown edits: \(editsWord ?? ""). Use edits=spots.") }
+        let startsWord = header.value(HeaderKey.starts)
+        let starts = startsWord.flatMap(SpotStart.init(rawValue:))
+        guard startsWord == nil || starts != nil else { throw SpotError.fault("\(name) has an unknown starts: \(startsWord ?? ""). Use starts=first-launch.") }
         let places: Set<Place> = namedPlaces ?? (offeredActions.isEmpty && !answersOnly ? [.card] : [])
         let kind: SpotKind = mode.stays || places.contains(.search) || read?.has(.sheet) == true || read?.seconds != nil ? .list : .launch
         try Place.check(places, read: read, mode: mode, kind: kind, of: name)
@@ -131,7 +134,8 @@ public struct SpotFile: Equatable, Sendable {
             keywords: header.list(HeaderKey.keywords),
             placeholder: header.value(HeaderKey.placeholder),
             sample: Self.sample(beside: url),
-            edits: edits
+            edits: edits,
+            starts: starts
         )
         self.init(id: id, spots: [command])
     }

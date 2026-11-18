@@ -115,7 +115,8 @@ The header says what a spot is. Openspot reads it without running the spot.
 | `emits`       | The events the spot raises, split by commas. See [Events](#events).                                                              |
 | `offers`      | A place where the spot can show: `card`, `search`, `menubar`, `float` or `window`. One line each. See [Places](#places).         |
 | `drop`        | The files its card takes: extensions such as `mov,mkv`, `folder`, or `*`. See [The calls](#the-calls).                           |
-| `edits`       | `spots`: its sheet is also the Edit sheet of each spot. `launch`: its sheet opens in place of the grid at the first launch, and `pop=true` on that first sheet, or `pop=all` on any of its pages, takes it off: back to the sheet that pushed it, or to the grid. Only a spot of the app takes it. |
+| `edits`       | `spots`: its sheet is also the Edit sheet of each spot. Only a spot of the app takes it. |
+| `starts`      | `first-launch`: its sheet opens in place of the grid when Openspot starts for the first time. |
 | `view`        | A SwiftUI file next to the spot, such as `view=cups.swift`. See [Views](#views).                                                 |
 | `source`      | A Swift file, or a folder of Swift files, that a Swift spot is built with. One line each. See [A Swift spot](#a-swift-spot).     |
 | `mode`        | `once` (the default), `stay` or `always`. See [Modes](#modes).                                                                   |
@@ -426,7 +427,7 @@ went through. A spot pushes a sheet onto the flow and pops its own sheet off it.
 | `push.spot=<spot id>` | a row, or a press      | Pushes a sheet of that spot instead. With no `push=`, its first sheet.               |
 | `push.title=<words>`  | a row, or a press      | The title of the pushed sheet, which its edge names. By default, the row's title.     |
 | `push.replace=true`   | a row, or a press      | The pushed sheet takes the place of the one that shows, so going back skips it.       |
-| `pop=true`            | a press                | Takes the spot's sheet off. On its first sheet, that goes back to whoever pushed it.  |
+| `pop=true`            | a press                | Takes the spot's sheet off. On its first sheet, that goes back to whoever pushed it, or to the grid.  |
 | `pop=all`             | a press                | Goes back to the spot's first sheet.                                                  |
 
 - Each call of a page, a read or a press, gets the page's id in `OPENSPOT_PAGE`. The first sheet of a spot gets none.

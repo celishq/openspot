@@ -4,7 +4,7 @@
 # on=sheet.open
 # uses=app
 # offers=none
-# edits=launch
+# starts=first-launch
 # pages=key
 # pages=agent
 . "$OPENSPOT_SH"
@@ -25,6 +25,28 @@ current() {
   done <<EOF2
 $state
 EOF2
+}
+
+# Prints a key text such as option+k as its marks, such as ⌥K.
+label() {
+  marks=''
+  rest=$1
+  while :; do
+    case $rest in
+      ctrl+*) marks="${marks}⌃" ;;
+      option+*) marks="${marks}⌥" ;;
+      shift+*) marks="${marks}⇧" ;;
+      cmd+*) marks="${marks}⌘" ;;
+      *) break ;;
+    esac
+    rest=${rest#*+}
+  done
+  case $rest in
+    space) rest=Space ;; tab) rest=Tab ;; return) rest=⏎ ;; backspace) rest=⌫ ;; escape) rest=Esc ;;
+    left) rest=← ;; right) rest=→ ;; up) rest=↑ ;; down) rest=↓ ;;
+    *) rest=$(printf '%s' "$rest" | tr '[:lower:]' '[:upper:]') ;;
+  esac
+  printf '%s%s' "$marks" "$rest"
 }
 
 # Prints one thing to try on the last page, drawn like a spot's card: its id, title, detail, icon and the hand-drawn number on its icon.
@@ -88,7 +110,11 @@ case "$1" in
     fi
     printf 'push=agent\npush.title=Make it yours\n'
     ;;
-  done) printf 'pop=all\n' ;;
+  done)
+    current
+    openspot spot pop openspot/welcome --all || exit 1
+    printf 'pop=true\ntoast=Press `%s` to open Openspot\n' "$(label "$now")"
+    ;;
   *)
     echo 'Welcome cannot do that.' >&2
     exit 1

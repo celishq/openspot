@@ -77,16 +77,12 @@ final class FirstLaunchTests: XCTestCase {
         XCTAssertEqual(try XCTUnwrap(Shortcut(text: "option+k")).openHint, "Press `⌥K` to open Openspot")
     }
 
-    private static let launchHeader = "title=Hello\non=sheet.open\noffers=none\nedits=launch"
-
     @MainActor
-    private func firstLaunch(core launch: Bool, own: Bool = false, header: String = FirstLaunchTests.launchHeader, body: String = "printf 'row=a\\ntitle=A\\n'") async throws -> (SpotsModel, FakeHost) {
+    private func firstLaunch(header: String?) async throws -> (SpotsModel, FakeHost) {
         let core = root.appendingPathComponent("core", isDirectory: true)
         try FileManager.default.createDirectory(at: spots, withIntermediateDirectories: true)
         try FileManager.default.createDirectory(at: core.appendingPathComponent("openspot.spot"), withIntermediateDirectories: true)
-        let spot = TestSpot(header: header, body: body)
-        if launch { try spot.write(to: core.spotFile("openspot/hello")) }
-        if own { try spot.write(to: spots.spotFile("mine/hello")) }
+        if let header { try TestSpot(header: header, body: "printf 'row=a\\ntitle=A\\n'").write(to: core.spotFile("openspot/hello")) }
         let suite = "openspot-first-\(UUID().uuidString)"
         let defaults = try XCTUnwrap(UserDefaults(suiteName: suite))
         let host = FakeHost()
@@ -95,7 +91,7 @@ final class FirstLaunchTests: XCTestCase {
             home: root,
             defaults: defaults
         )
-        let model = SpotsModel(host: host, files: files, runs: SpotRuns(stopPause: 0.2, prepare: { await host.prepare($0, glyphs: $1) }))
+        let model = SpotsModel(host: host, files: files, runs: SpotRuns(stopPause: 0.2))
         host.model = model
         addTeardownBlock { @MainActor in
             model.quit()
@@ -105,108 +101,22 @@ final class FirstLaunchTests: XCTestCase {
     }
 
     @MainActor
-    func testTheFirstLaunchOpensOnTheLaunchSpot() async throws {
-        let (model, host) = try await firstLaunch(core: true)
+    func testTheFirstLaunchOpensTheSpotThatStartsIt() async throws {
+        let (model, host) = try await firstLaunch(header: "title=Hello\non=sheet.open\noffers=none\nstarts=first-launch")
 
         await model.beginFirstLaunch()
 
-        try await wait("the launch sheet") { model.openSheetID == "openspot/hello" }
+        try await wait("the first sheet") { model.openSheetID == "openspot/hello" }
         XCTAssertEqual(host.presents, 1)
     }
 
     @MainActor
-    func testWithNoLaunchSpotTheFirstLaunchShowsTheGrid() async throws {
-        let (model, host) = try await firstLaunch(core: false)
+    func testWithNoSpotThatStartsItTheFirstLaunchShowsTheGrid() async throws {
+        let (model, host) = try await firstLaunch(header: "title=Hello\non=sheet.open\noffers=none")
 
         await model.beginFirstLaunch()
 
         XCTAssertEqual(host.presents, 1)
         XCTAssertNil(model.openSheetID)
-    }
-
-    @MainActor
-    func testAnOwnSpotCannotTakeTheLaunchRole() async throws {
-        let (model, _) = try await firstLaunch(core: false, own: true)
-
-        await model.reload()
-
-        XCTAssertTrue(model.sheets.keys.contains("mine/hello"), "\(model.sheets.keys)")
-        XCTAssertNil(model.runs.launchSheet)
-    }
-
-    @MainActor
-    func testTheBuiltInSpotTakesTheLaunchRoleBesideAnOwnOne() async throws {
-        let (model, _) = try await firstLaunch(core: true, own: true)
-
-        await model.reload()
-
-        XCTAssertTrue(model.sheets.keys.contains("mine/hello"), "\(model.sheets.keys)")
-        XCTAssertEqual(model.runs.launchSheet, "openspot/hello")
-    }
-
-    private static let pagedBody = """
-    case "$1" in
-      read) printf 'button=next\\ntitle=Next\\nscope=spot\\n\\nbutton=back\\ntitle=Back\\nscope=spot\\n\\nbutton=top\\ntitle=Top\\nscope=spot\\n\\nrow=x\\ntitle=Page %s\\n' "${OPENSPOT_PAGE-first}" ;;
-      next) printf 'push=n%s\\n' "${#OPENSPOT_PAGE}" ;;
-      back) printf 'pop=true\\n' ;;
-      top) printf 'pop=all\\n' ;;
-    esac
-    """
-
-    @MainActor
-    private func pagedLaunch() async throws -> SpotsModel {
-        let (model, _) = try await firstLaunch(core: true, header: Self.launchHeader + "\npages=n*", body: Self.pagedBody)
-        await model.beginFirstLaunch()
-        try await wait("the launch sheet") { model.openSheetID == "openspot/hello" && model.sheets["openspot/hello"]?.spot.actions.count == 3 }
-        return model
-    }
-
-    @MainActor
-    private func press(_ id: String, in model: SpotsModel) throws {
-        let sheet = try XCTUnwrap(model.sheets["openspot/hello"])
-        sheet.run(try XCTUnwrap(sheet.spot.actions.first { $0.id == id }), item: nil)
-    }
-
-    @MainActor
-    func testAllFromAPageOfTheLaunchSpotShowsTheGrid() async throws {
-        let model = try await pagedLaunch()
-        try press("next", in: model)
-        try await wait("the first page") { model.flow.current?.page == "n0" }
-
-        try press("top", in: model)
-
-        try await wait("the grid") { model.openSheetID == nil }
-        XCTAssertTrue(model.flow.pages.isEmpty)
-    }
-
-    @MainActor
-    func testOnePopFromAPageOfTheLaunchSpotGoesBackOnePage() async throws {
-        let model = try await pagedLaunch()
-        try press("next", in: model)
-        try await wait("the first page") { model.flow.current?.page == "n0" }
-        try press("next", in: model)
-        try await wait("the second page") { model.flow.current?.page == "n2" }
-
-        try press("back", in: model)
-
-        try await wait("the first page again") { model.flow.current?.page == "n0" }
-        XCTAssertEqual(model.openSheetID, "openspot/hello")
-    }
-
-    @MainActor
-    func testAllFromTheLaunchSpotPushedOverAnotherSpotGoesBackToIt() async throws {
-        let (model, _) = try await firstLaunch(core: true, own: true, header: Self.launchHeader + "\npages=n*", body: Self.pagedBody)
-        await model.reload()
-        XCTAssertTrue(model.push(FlowSheet(spot: "mine/hello")))
-        try await wait("the other sheet") { model.openSheetID == "mine/hello" }
-        XCTAssertTrue(model.push(FlowSheet(spot: "openspot/hello")))
-        try await wait("the launch sheet") { model.openSheetID == "openspot/hello" && model.sheets["openspot/hello"]?.spot.actions.count == 3 }
-        try press("next", in: model)
-        try await wait("the first page") { model.flow.current?.page == "n0" }
-
-        try press("top", in: model)
-
-        try await wait("the other sheet again") { model.openSheetID == "mine/hello" }
-        XCTAssertEqual(model.flow.pages.count, 1)
     }
 }

@@ -64,7 +64,8 @@ public struct Spot: Equatable, Sendable {
         keywords: [String] = [],
         placeholder: String? = nil,
         sample: URL? = nil,
-        edits: SpotEdits? = nil
+        edits: SpotEdits? = nil,
+        starts: SpotStart? = nil
     ) {
         header = Header(SpotFacts(
             id: id, name: name, url: url, size: size, headerIcon: icon, baseSymbol: symbol, subtitle: subtitle, read: read,
@@ -72,7 +73,7 @@ public struct Spot: Equatable, Sendable {
             opens: opens, host: host, growsFromField: growsFromField, mode: mode, pressRuns: pressRuns, drop: drop,
             dataName: dataName, isOnGrid: isOnGrid, view: view, viewDate: viewDate, sources: sources, emits: emits, pages: pages, uses: uses,
             offers: offers, offeredActions: offeredActions, settings: settings, keywords: keywords, placeholder: placeholder, sample: sample,
-            edits: edits
+            edits: edits, starts: starts
         ))
         self.kind = kind
         self.pick = pick

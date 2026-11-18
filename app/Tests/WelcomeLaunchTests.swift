@@ -148,9 +148,7 @@ final class WelcomeLaunchTests: XCTestCase {
         XCTAssertEqual(model.files.config.read().panelKey, key)
         XCTAssertTrue(press("return"))
 
-        try await wait("the grid") { self.model.openSheetID == nil }
-        host.dismiss()
-        XCTAssertEqual(host.confirms.last, key.openHint)
+        try await wait("the grid") { self.model.openSheetID == nil && self.host.confirms.last == key.openHint }
     }
 
     func testTheArrowsReachRecordAndSpacePressesIt() async throws {
@@ -189,14 +187,13 @@ final class WelcomeLaunchTests: XCTestCase {
         XCTAssertEqual(model.openSheetID, Self.welcome)
     }
 
-    func testClosingThePanelBeforeUseKeepsTheOldKeyAndTheToastNamesIt() async throws {
+    func testClosingThePanelBeforeUseKeepsTheOldKey() async throws {
         try await launch()
         try await toKeyPage()
         try await recordOptionSpace()
 
         host.dismiss()
 
-        XCTAssertEqual(host.confirms.last, Shortcut.standard.openHint)
         XCTAssertEqual(model.files.config.read().panelKey, .standard)
     }
 
