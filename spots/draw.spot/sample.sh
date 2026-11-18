@@ -1,6 +1,6 @@
 #!/bin/sh
 # The sheet of Draw over three boards, as `Sheet` prints it. The test `testTheSampleIsTheSheetOverSampleBoards` compares the two.
-printf 'recents=false\n\n'
+printf 'frame=\nrecents=false\n\n'
 printf 'button=open\ntitle=Open\nclose=true\n\n'
 printf 'button=0:new\ntitle=New board\nshortcut=cmd+n\nscope=spot\nclose=true\n\n'
 printf 'button=rename\ntitle=Rename\nshortcut=cmd+r\nform=true\n\n'

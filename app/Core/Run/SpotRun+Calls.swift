@@ -21,7 +21,6 @@ extension SpotRun {
     func take(_ text: String, _ lines: SpotOutput, of call: OpenCall) async {
         if call.answered == nil { call.answered = Date().timeIntervalSince(call.begin) }
         call.made.take(lines)
-        call.selected = lines.select ?? call.selected
         switch call.request.purpose {
         case .ask(let ask):
             if lines.isPicture {
@@ -33,7 +32,6 @@ extension SpotRun {
             }
         case .work(let work):
             if work.first?.take(lines) == true, !lines.fields.isEmpty { return }
-            takeMove(lines)
             if lines.isPicture {
                 if await takePicture(lines, frame: text, of: work) {
                     call.showedPicture = true

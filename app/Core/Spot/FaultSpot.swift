@@ -17,16 +17,16 @@ public struct FaultSpot: Equatable, Sendable {
         self.prompt = prompt
     }
 
-    public func answer(_ arguments: [String], base: [String: String]? = nil) async throws -> String {
+    func answer(_ arguments: [String], base: [String: String]? = nil) async throws -> HostAnswer {
         switch arguments.first {
         case "show":
-            return sheet
+            return HostAnswer(frame: sheet)
         case Self.fixPart:
             let toast = try await prompt.copy(prompt.fixing(file, faults: faults), base: base)
-            return TextBlock(fields: [.init(key: "toast", value: toast)]).text
+            return HostAnswer(frame: "", effects: [.toast(toast)])
         case Self.editPart:
             _ = try await ScriptProcess.output(url: URL(fileURLWithPath: "/usr/bin/env"), arguments: ["open", "-t", file.path], base: base)
-            return ""
+            return HostAnswer(frame: "")
         default:
             throw SpotError.failed(1, "This sheet cannot do that.")
         }
@@ -34,7 +34,7 @@ public struct FaultSpot: Equatable, Sendable {
 
     private var sheet: String {
         [
-            TextBlock(fields: [.init(key: "grid", value: "fault fault"), .init(key: "grid", value: "\(Self.editPart) \(Self.fixPart)")]),
+            RootKey.block([.init(key: "grid", value: "fault fault"), .init(key: "grid", value: "\(Self.editPart) \(Self.fixPart)")]),
             TextBlock(fields: [
                 .init(key: "field", value: "fault"),
                 .init(key: "readonly", value: "true"),

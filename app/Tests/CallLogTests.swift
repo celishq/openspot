@@ -12,7 +12,7 @@ final class CallLogTests: SpotRunsCase {
     }
 
     func testACallLeavesItsArgumentsItsInputItsFramesItsErrorsAndItsExit() async throws {
-        try script(body: "cat > /dev/null; printf 'title=Half\\n---\\ntitle=Done\\n'; echo 'The server did not answer.' >&2; exit 3")
+        try script(body: "cat > /dev/null; printf 'frame=\\ntitle=Half\\n---\\ntitle=Done\\n'; echo 'The server did not answer.' >&2; exit 3")
         let sheet = try sheet()
 
         sheet.run(CommandAction(id: "send", title: "Send"), item: SpotItem(title: "Home", run: "home"))

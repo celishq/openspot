@@ -78,7 +78,7 @@ final class FlowNavigationTests: PanelCase {
     func testTheHintOfAPageSaysThatEscGoesBack() async throws {
         try script("info", toml: "on = ['sheet.open']\npages = ['a']", """
         page=$(sed -n 's/^route=//p')
-        if [ -n "$page" ]; then printf 'text=detail\\ntitle=Detail\\n'; else printf 'text=first\\ntitle=First\\n\\nrow=a\\ntitle=A\\npush=true\\n'; fi
+        if [ -n "$page" ]; then printf 'text=detail\\ntitle=Detail\\n'; else printf 'text=first\\ntitle=First\\n\\nrow=a\\ntitle=A\\nroute=a\\n'; fi
         """)
         await model.reload()
         model.isShown = true

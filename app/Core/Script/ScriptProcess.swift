@@ -343,7 +343,7 @@ public final class ScriptProcess: @unchecked Sendable {
             let line = lastErrors.text
             let last = reader.finish()
             lock.withLock { unended = last }
-            let fix = last.flatMap { FrameHead(text: $0).link }.flatMap(URL.init(string:)) ?? given
+            let fix = last.flatMap { FrameRoot(text: $0).link }.flatMap(URL.init(string:)) ?? given
             finish(throwing: fix.map { SpotError.failedWithFix(exitCode, line, $0) } ?? SpotError.failed(exitCode, line))
             return
         }

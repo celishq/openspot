@@ -62,7 +62,7 @@ final class AppCallsSocketTests: XCTestCase {
 
     func testASpotRunSendsEachFrameAsItComes() throws {
         let go = folder.appendingPathComponent("go")
-        try spot("slow", "printf 'title=one\\n---\\n'; i=0; while [ ! -f '\(go.path)' ] && [ $i -lt 1000 ]; do sleep 0.01; i=$((i+1)); done; printf 'title=two\\n'")
+        try spot("slow", "printf 'frame=\\ntitle=one\\n---\\n'; i=0; while [ ! -f '\(go.path)' ] && [ $i -lt 1000 ]; do sleep 0.01; i=$((i+1)); done; printf 'frame=\\ntitle=two\\n'")
         listen()
         let connection = connect()
         defer { connection.close() }
@@ -72,8 +72,8 @@ final class AppCallsSocketTests: XCTestCase {
         FileManager.default.createFile(atPath: go.path, contents: nil)
         let rest = try connection.exchange()
 
-        XCTAssertEqual((first["params"] as? [String: Any])?["text"] as? String, "title=one\n")
-        XCTAssertEqual(rest.stdout, "---\ntitle=two\n")
+        XCTAssertEqual((first["params"] as? [String: Any])?["text"] as? String, "frame=\ntitle=one\n")
+        XCTAssertEqual(rest.stdout, "---\nframe=\ntitle=two\n")
         XCTAssertEqual(rest.code, 0)
     }
 
@@ -114,7 +114,7 @@ final class AppCallsSocketTests: XCTestCase {
 
     func testACheckInTheAppReadsARelativeFolderOfItsCallerAndRunsEachReadInCarefulMode() async throws {
         let leak = outside.appendingPathComponent("leak")
-        try spot("leaky", toml: "on = ['sheet.open']", "echo a > '\(leak.path)'; printf 'title=Leaky\\n'")
+        try spot("leaky", toml: "on = ['sheet.open']", "echo a > '\(leak.path)'; printf 'frame=\\ntitle=Leaky\\n'")
         let runs = await SpotRuns()
         await MainActor.run { runs.isCareful = true }
         listen(runs: runs)
@@ -130,7 +130,7 @@ final class AppCallsSocketTests: XCTestCase {
         let token = folder.appendingPathComponent("token")
         let go = folder.appendingPathComponent("go")
         let client = Bundle(for: Self.self).bundleURL.deletingLastPathComponent().appendingPathComponent("openspot")
-        try spot("reader", toml: "on = ['sheet.open']", "'\(client.path)' setting get tone > '\(token.path)'; i=0; while [ ! -f '\(go.path)' ] && [ $i -lt 1000 ]; do sleep 0.01; i=$((i+1)); done; printf 'title=Reader\\n'")
+        try spot("reader", toml: "on = ['sheet.open']", "'\(client.path)' setting get tone > '\(token.path)'; i=0; while [ ! -f '\(go.path)' ] && [ $i -lt 1000 ]; do sleep 0.01; i=$((i+1)); done; printf 'frame=\\ntitle=Reader\\n'")
         let runs = await SpotRuns()
         await MainActor.run { runs.isCareful = true }
         listen(runs: runs)

@@ -26,11 +26,11 @@ case "$1" in
   show)
     if [ -z "$ready" ]; then
       rm -f "$warned"
-      printf 'title=Updates\ndetail=%s\nshown=false\n' "$version"
+      printf 'frame=\ntitle=Updates\ndetail=%s\nshown=false\n' "$version"
     elif warned; then
-      printf 'title=Restart\ndetail=Stops %s\nshown=true\n' "$(calls "$calls")"
+      printf 'frame=\ntitle=Restart\ndetail=Stops %s\nshown=true\n' "$(calls "$calls")"
     else
-      printf 'title=Restart\ndetail=Update %s\nshown=true\n' "$ready"
+      printf 'frame=\ntitle=Restart\ndetail=Update %s\nshown=true\n' "$ready"
     fi
     ;;
   open)

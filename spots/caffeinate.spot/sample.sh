@@ -1,5 +1,5 @@
 #!/bin/sh
-printf 'detail=1h 24m left\nactive=true\nrecents=false\n\n'
+printf 'frame=\ndetail=1h 24m left\nactive=true\nrecents=false\n\n'
 printf 'button=open\ntitle=Select\n\n'
 printf 'row=off\ntitle=Turn off\n\n'
 printf 'row=1800\ntitle=30 minutes\n\nrow=7200\ntitle=2 hours\n\n'

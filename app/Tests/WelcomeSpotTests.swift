@@ -78,7 +78,6 @@ final class WelcomeSpotTests: BuiltInCase {
         XCTAssertEqual(record.key, ActionKey(name: "escape"))
         XCTAssertEqual(output.parts.map(\.id).sorted(), ["head", "key", "record", "use"])
         XCTAssertFalse(try part("key", in: output).asksToRecord)
-        XCTAssertNil(output.move)
     }
 
     func testRecordAsksTheKeyFieldToRecordAndKeepsTheKey() async throws {
@@ -89,7 +88,6 @@ final class WelcomeSpotTests: BuiltInCase {
         let key = try part("key", in: output)
         XCTAssertTrue(key.asksToRecord)
         XCTAssertEqual(key.control, .shortcut("option+space"))
-        XCTAssertNil(output.move)
     }
 
     func testTheKeyPageWithNoKeyInTheFileShowsTheStandardKey() async throws {

@@ -96,9 +96,9 @@ final class AccountMarkerTests: BuiltInCase {
         let frame = { (arguments: [String], input: String?, page: String?) async -> String in
             let message = (arguments == ["show"] ? "event=sheet.open\n" : "") + (page.map { "route=\($0)\n" } ?? "") + (input ?? "")
             do {
-                let text = try await self.runs.answer(of: sheet.spot, SpotAction(arguments: arguments), input: message, limit: 60)
-                lines += text.split(separator: "\n").filter { line in ["toast=", "push=", "pop="].contains { line.hasPrefix($0) } }.map(String.init)
-                return text
+                let answer = try await sheet.answer(arguments, input: message)
+                lines.append("\(answer.effects)")
+                return answer.frame
             } catch {
                 failures.append((error as? SpotError)?.reason ?? "\(error)")
                 return ""

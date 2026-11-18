@@ -1,5 +1,5 @@
 #!/bin/sh
-printf 'grid=tone tone tone tone tone tone tone\ngrid=a a a a a a a\n\nrepeat=a\ngrid=a b c d e f g\n\n'
+printf 'frame=\ngrid=tone tone tone tone tone tone tone\ngrid=a a a a a a a\n\nrepeat=a\ngrid=a b c d e f g\n\n'
 printf 'button=open\ntitle=Copy\n\n'
 printf 'button=paste\ntitle=Paste\nshortcut=cmd+return\nclose=true\n\n'
 printf 'button=next-tone\ntitle=Next skin tone\nshortcut=cmd+t\nscope=spot\n\n'

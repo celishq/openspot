@@ -24,11 +24,9 @@ public struct SpotOutput: Equatable, Sendable {
     public private(set) var face = CardFace.none
     public private(set) var drawing = RepeatDrawing.list
     public private(set) var toast: String?
-    public private(set) var link: String?
     public private(set) var ends: [String] = []
     public private(set) var start: String?
     public private(set) var select: String?
-    public private(set) var move: FlowMove?
     public let isPicture: Bool
     public let isMark: Bool
 
@@ -65,7 +63,7 @@ public struct SpotOutput: Equatable, Sendable {
     }
 
     init(grouped blocks: [TextBlock], kinds: [BlockKind]) {
-        let frame = FrameHead(blocks: blocks, kinds: kinds)
+        let frame = FrameRoot(blocks: blocks, kinds: kinds)
         isPicture = frame.isPicture
         isMark = frame.isMark
         let head = frame.block
@@ -97,9 +95,13 @@ public struct SpotOutput: Equatable, Sendable {
                 } else {
                     errors.append(block.firstLine)
                 }
-            } else if summary == nil, index == frame.index {
+            } else if index == frame.index {
                 summary = block
-                take(effects: block)
+                take(marks: block)
+            } else if RootKey.isMark(block) {
+                take(marks: block)
+            } else if word == SheetFrames.notice {
+                toast = block.value(SheetFrames.notice)
             } else {
                 errors.append(block.firstLine)
             }
@@ -112,7 +114,7 @@ public struct SpotOutput: Equatable, Sendable {
         let fields = rows.map { $0.fields.flatMap { [$0.key, $0.value] } }
         parts = parts.map { $0.drawn(in: layout).holding(rows: fields) }
         face = CardFace(head: head, parts: parts)
-        let main = head?.value(HeadKey.main)
+        let main = head?.value(RootKey.main)
         let held = main.map { id in values.first { $0.block.fields.first?.value == id } } ?? (values.count == 1 ? values.first : nil)
         value = held?.block
         valueKind = held?.kind
@@ -135,7 +137,7 @@ public struct SpotOutput: Equatable, Sendable {
     }
 
     public var progress: Double? {
-        summary?.number(HeadKey.progress).map { min(max($0, 0), 1) }
+        summary?.number(RootKey.progress).map { min(max($0, 0), 1) }
     }
 
     func selecting(_ row: String?) -> SpotOutput {
@@ -147,9 +149,7 @@ public struct SpotOutput: Equatable, Sendable {
     public func withoutEffects() -> SpotOutput {
         var output = self
         output.toast = nil
-        output.link = nil
         output.select = nil
-        output.move = nil
         output.ends = []
         output.start = nil
         return output
@@ -170,11 +170,11 @@ public struct SpotOutput: Equatable, Sendable {
     }
 
     public var hidesSearch: Bool {
-        summary?.value(HeadKey.search) == "off"
+        summary?.value(RootKey.search) == "off"
     }
 
     public var keepsRecent: Bool {
-        summary?.flag(HeadKey.recents) != false
+        summary?.flag(RootKey.recents) != false
     }
 
     public var kind: SpotKind {
@@ -183,13 +183,9 @@ public struct SpotOutput: Equatable, Sendable {
         return items.isEmpty && actions.isEmpty && parts.isEmpty ? .launch : .list
     }
 
-    private mutating func take(effects block: TextBlock) {
-        toast = block.value(HeadKey.toast)
-        link = block.value(HeadKey.link)
-        select = block.value(HeadKey.select)
-        move = FlowMove(block: block)
-        if let end = block.value(HeadKey.end) { ends.append(end) }
-        start = block.value(HeadKey.call)
+    private mutating func take(marks block: TextBlock) {
+        if let end = block.value(RootKey.end) { ends.append(end) }
+        start = block.value(RootKey.call) ?? start
     }
 
     private mutating func take(action id: String, _ block: TextBlock) {

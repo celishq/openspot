@@ -59,7 +59,7 @@ public enum SpotStarter: String, CaseIterable, Sendable {
         case .button:
             """
             #!/bin/sh
-            echo 'toast=It works. Change this file to make it do more.'
+            openspot toast 'It works. Change this file to make it do more.'
 
             """
         case .list:
@@ -72,7 +72,7 @@ public enum SpotStarter: String, CaseIterable, Sendable {
                 printf 'row=second\\ntitle=Second row\\ndetail=Press Enter to pick it\\nnote=Hello again\\n'
                 ;;
               open)
-                openspot_kv toast "You picked the row that says: $(value item.note)"
+                openspot toast "You picked the row that says: $(value item.note)"
                 ;;
             esac
 
@@ -80,7 +80,7 @@ public enum SpotStarter: String, CaseIterable, Sendable {
         case .number:
             """
             #!/bin/sh
-            printf 'title=%s\\ndetail=Reads each time the panel opens\\n' "$(date +%H:%M)"
+            printf 'frame=\\ntitle=%s\\ndetail=Reads each time the panel opens\\n' "$(date +%H:%M)"
 
             """
         case .form:
@@ -89,13 +89,13 @@ public enum SpotStarter: String, CaseIterable, Sendable {
             . "$OPENSPOT_SH"
             case "$1" in
               show)
-                printf 'grid=note\\ngrid=save\\n\\n'
+                printf 'frame=\\ngrid=note\\ngrid=save\\n\\n'
                 printf 'field=note\\ntitle=Note\\nplaceholder=Write a note\\n\\n'
                 printf 'button=save\\ntitle=Save\\nshortcut=cmd+return\\nlook=strong\\nclose=true\\n'
                 ;;
               save)
                 printf '%s\\n' "$(value input.note)" >> "$OPENSPOT_DATA/notes.txt"
-                echo 'toast=Saved'
+                openspot toast Saved
                 ;;
             esac
 

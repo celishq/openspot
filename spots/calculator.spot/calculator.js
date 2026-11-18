@@ -14,7 +14,7 @@ function fields(text) {
  * of old rates, in the tone that warns. A pick copies the plain value. */
 function card(row) {
   return openspot.frame([
-    { "grid.large": ["sum sum sum sum", "answer answer answer answer", "answer answer answer answer"], main: "answer" },
+    { frame: "", "grid.large": ["sum sum sum sum", "answer answer answer answer", "answer answer answer answer"], main: "answer" },
     { text: "sum", detail: row.tone ? `${row.detail} · rates of ${row.rates}` : row.detail, tone: row.tone },
     { number: "answer", value: row.row, display: row.title, unit: row.unit },
     { button: "open", title: "Copy" },

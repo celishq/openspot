@@ -1,5 +1,5 @@
 #!/bin/sh
-printf 'main=next\nrecents=false\ngrid=items\ngrid.small=at\ngrid.wide=next\ngrid.strip=next\n'
+printf 'frame=\nmain=next\nrecents=false\ngrid=items\ngrid.small=at\ngrid.wide=next\ngrid.strip=next\n'
 printf 'grid.square=next next\ngrid.square=next next\ngrid.large=next next next next\ngrid.large=next next next next\n'
 printf 'grid.square=todo late\ngrid.large=r1 r1 r1 due-r1\ngrid.large=r2 r2 r2 due-r2\n\n'
 printf 'number=next\nvalue=14:30\ntitle=Design review\ncolor=#1BADF8\n\nnumber=at\nvalue=14:30\ntitle=Design review\n\n'

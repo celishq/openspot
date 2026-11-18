@@ -38,7 +38,7 @@ final class PlaygroundTests: XCTestCase {
 
     func testTextDrawsASheetAndReportsItsFaults() {
         var playground = Playground()
-        playground.take(text: "grid=b\n\ntext=a\ntitle=A\n")
+        playground.take(text: "frame=\ngrid=b\n\ntext=a\ntitle=A\n")
 
         XCTAssertEqual(playground.panel?.parts.map(\.id), ["a"])
         XCTAssertEqual(playground.faults, ["the part a is not in the drawing"])
@@ -68,9 +68,9 @@ final class PlaygroundTests: XCTestCase {
     func testAFrameOfAScriptShowsItsTextAndFaults() {
         var playground = Playground()
 
-        playground.note(frame: "grid=b\n\ntext=a\ntitle=A\n")
+        playground.note(frame: "frame=\ngrid=b\n\ntext=a\ntitle=A\n")
 
-        XCTAssertEqual(playground.text, "grid=b\n\ntext=a\ntitle=A\n")
+        XCTAssertEqual(playground.text, "frame=\ngrid=b\n\ntext=a\ntitle=A\n")
         XCTAssertEqual(playground.faults, ["the part a is not in the drawing"])
         XCTAssertNil(playground.panel)
     }

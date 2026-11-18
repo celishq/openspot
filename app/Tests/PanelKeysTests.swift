@@ -313,7 +313,7 @@ final class PanelKeysTests: PanelCase {
         case "$1" in
           show|key|again)
             key=$(cat "$data/key" 2>/dev/null)
-            printf 'title=Choose your key\\ngrid=key\\ngrid=keep\\ngrid=again\\n\\nfield=key\\ntype=hotkey\\nvalue=%s\\n' "$key"
+            printf 'frame=\\ntitle=Choose your key\\ngrid=key\\ngrid=keep\\ngrid=again\\n\\nfield=key\\ntype=hotkey\\nvalue=%s\\n' "$key"
             [ -n "$key" ] || printf 'recording=true\\n'
             printf '\\nbutton=keep\\ntitle=Keep\\n\\nbutton=again\\ntitle=Try again\\nshortcut=escape\\n' ;;
         esac
@@ -330,10 +330,10 @@ final class PanelKeysTests: PanelCase {
         data='\(pickData.path)'
         [ "$1" = show ] || echo "$*" >> "$data/calls"
         [ "$1" = key ] && printf %s "$2" > "$data/key"
-        [ "$1" = use ] && printf 'toast=Used\\n'
+        [ "$1" = use ] && printf '\\033]9;Used\\007'
         case "$1" in
           show|key|record)
-            printf 'grid=key\\ngrid=key\\ngrid=use\\ngrid=record\\n\\nfield=key\\ntype=hotkey\\nvalue=%s\\n' "$(cat "$data/key" 2>/dev/null || printf ctrl+space)"
+            printf 'frame=\\ngrid=key\\ngrid=key\\ngrid=use\\ngrid=record\\n\\nfield=key\\ntype=hotkey\\nvalue=%s\\n' "$(cat "$data/key" 2>/dev/null || printf ctrl+space)"
             [ "$1" != record ] || printf 'recording=true\\n'
             printf '\\nbutton=use\\ntitle=Use\\nshortcut=return\\n\\nbutton=record\\ntitle=Record\\nshortcut=escape\\n' ;;
         esac

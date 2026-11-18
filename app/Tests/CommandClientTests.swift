@@ -142,8 +142,8 @@ final class CommandClientTests: XCTestCase {
     func testStdinStderrAndTheCodeComeThroughTheSocket() throws {
         listen()
 
-        XCTAssertEqual(try run(client, ["check", "sheet"], input: "title=Hi\n").output, "the sheet has no parts\n1 faults.\n")
-        XCTAssertEqual(try run(client, ["check", "sheet"], input: "title=Hi\n").code, 1)
+        XCTAssertEqual(try run(client, ["check", "sheet"], input: "frame=\ntitle=Hi\n").output, "the sheet has no parts\n1 faults.\n")
+        XCTAssertEqual(try run(client, ["check", "sheet"], input: "frame=\ntitle=Hi\n").code, 1)
         let unknown = try run(client, ["calc", "2+2"])
         XCTAssertTrue(unknown.errors.hasPrefix("openspot cannot do this: calc 2+2\n"))
         XCTAssertEqual(unknown.code, 2)
@@ -179,13 +179,13 @@ final class CommandClientTests: XCTestCase {
         process.standardOutput = output
         process.standardInput = stdin
         try process.run()
-        stdin.fileHandleForWriting.write(Data("title=Hi\n".utf8))
+        stdin.fileHandleForWriting.write(Data("frame=\ntitle=Hi\n".utf8))
         stdin.fileHandleForWriting.write(Data("text=Привіт\n".utf8))
         try stdin.fileHandleForWriting.close()
         let printed = String(decoding: output.fileHandleForReading.readDataToEndOfFile(), as: UTF8.self)
         process.waitUntilExit()
 
-        XCTAssertEqual(printed, "the sheet has no parts\nthe head has an unknown key: text\n2 faults.\n")
+        XCTAssertEqual(printed, "the sheet has no parts\nthe root has an unknown key: text\n2 faults.\n")
     }
 
     func testWithNoSocketItStartsTheAppWithTheSameArguments() throws {

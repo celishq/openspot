@@ -1,5 +1,5 @@
 #!/bin/sh
-printf 'grid.large=cover cover cover song song song\ngrid.large=cover cover cover time time time\ngrid.large=cover cover cover prev play next\nmain=song\n\n'
+printf 'frame=\ngrid.large=cover cover cover song song song\ngrid.large=cover cover cover time time time\ngrid.large=cover cover cover prev play next\nmain=song\n\n'
 printf 'picture=cover\nicon=music.note\n\n'
 printf 'text=song\ntitle=Midnight Drive\ndetail=Neon Coast\n\n'
 printf 'graph=time\ntitle=1:42\nvalue=0.42\n\n'

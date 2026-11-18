@@ -117,17 +117,16 @@ final class SpotRunsInlineTests: SpotRunsCase {
         try inline(toml: "on = ['search.text ^[0-9]']", """
         function main([id, row], env, input) {
           const text = id === "open" ? row : openspot.value("event.value", input)
-          if (id === "open") return `toast=Picked ${text}\\n`
+          if (id === "open") return `text=picked\\ntitle=Picked ${text}\\n`
           return `row=${text}\\ntitle=${text}\\n`
         }
         """)
         let sheet = try sheet()
-        var toasts: [String] = []
-        sheet.onReport = { if case .toast(let text) = $0 { toasts.append(text) } }
+        let frames = FrameLog(sheet)
 
         sheet.pick(SpotItem(title: "5", run: "5"))
 
-        try await wait("the toast") { toasts == ["Picked 5"] }
+        try await wait("the frame of the pick") { frames.last == "text=picked\ntitle=Picked 5\n" }
     }
 
     func testAThrownErrorIsTheFailureOfTheCall() async throws {
@@ -226,12 +225,12 @@ final class SpotRunsInlineTests: SpotRunsCase {
     }
 
     func testMainReadsItsStdinAsItsInput() async throws {
-        try inline(toml: "title = 'Script'", "function main(args, env, input) { return `toast=Saved ${input}` }")
+        try inline(toml: "title = 'Script'", "function main(args, env, input) { return `text=saved\\ntitle=Saved ${input}` }")
         let spot = try XCTUnwrap(try scanned().scripts.first)
 
         let text = try await runs.answer(of: spot, SpotAction(arguments: ["save"]), input: "a=1", limit: 60)
 
-        XCTAssertEqual(SpotOutput(text: text).toast, "Saved a=1")
+        XCTAssertEqual(SpotOutput(text: text).parts.first?.title, "Saved a=1")
     }
 
     private func runs(limit: TimeInterval = 10, idle: TimeInterval = 30, frameWait: DispatchTimeInterval = .milliseconds(2), log: CallLog? = nil) {

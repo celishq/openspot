@@ -43,6 +43,7 @@ final class StayLink: ScriptLink {
     private var askReason: String?
     private var lastPicture: SpotOutput?
     private var printing: Int?
+    private var drawn: (call: Int, text: String?)?
     private var count = 0
     private var failures: [Date] = []
     private var stamp: [Int]?
@@ -249,7 +250,11 @@ final class StayLink: ScriptLink {
     private func follow(_ script: ScriptProcess, _ frames: AsyncThrowingStream<String, Error>) async {
         var failure: Error?
         do {
-            for try await text in frames {
+            for try await frame in frames {
+                let call = printing
+                let next = await FrameStream.next(frame, after: drawn?.call == call ? drawn?.text : nil)
+                drawn = call.map { ($0, next.drawn) }
+                let text = next.text
                 let lines = await runs.intake(text, of: run?.spot.id)
                 guard self.script === script, let run else {
                     run?.report(toastOf: lines)

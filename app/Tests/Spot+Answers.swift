@@ -40,14 +40,14 @@ extension Spot {
         return form
     }
 
-    func submit(_ action: CommandAction, item: SpotItem?, draft: FormDraft, timeout: TimeInterval) async throws -> String {
-        try await output(.action(action, item: item), input: draft.text, timeout: timeout).select ?? ""
+    func submit(_ action: CommandAction, item: SpotItem?, draft: FormDraft, timeout: TimeInterval) async throws {
+        _ = try await output(.action(action, item: item), input: draft.text, timeout: timeout)
     }
 
     @discardableResult
     func perform(_ action: SpotAction, input: String? = nil, page: String? = nil, timeout: TimeInterval) async throws -> String? {
         let route = page.map { "route=\($0)\n" } ?? ""
-        return try await output(action, input: route + (input ?? ""), timeout: timeout).summary?.value("toast")
+        return try await output(action, input: route + (input ?? ""), timeout: timeout).toast
     }
 
     func hook(_ function: String, card: String, origin: String) async -> Bool {

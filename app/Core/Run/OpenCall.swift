@@ -6,6 +6,7 @@ final class OpenCall {
     let made: ScriptCall
     let begin = Date()
     var frames: [String] = []
+    var drawn: String?
     var hasAnswer = false
     var answered: TimeInterval?
     var showedPicture = false

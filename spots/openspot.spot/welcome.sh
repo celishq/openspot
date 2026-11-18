@@ -56,7 +56,7 @@ heading() {
 
 # Prints the first page: what a spot is, a handwritten "even this onboarding" in the accent colour, then Continue.
 welcome() {
-  printf 'grid=head head head head\ngrid=head head head head\ngrid=head head head head\ngrid=head head head head\n'
+  printf 'frame=\ngrid=head head head head\ngrid=head head head head\ngrid=head head head head\ngrid=head head head head\n'
   printf 'grid=next next next next\n'
   heading 'Everything is a disposable spot' 'Make a script or an app for anything. Keep it, throw it away, or share it in one click.'
   printf 'icon=%s/even-this-onboarding.svg\n' "$here"
@@ -66,7 +66,7 @@ welcome() {
 # Prints the key page: the chosen key, or the key that opens Openspot, then Use this key and Record another key. With an argument, the field records at once.
 keys() {
   shown=$(chosen)
-  printf 'grid=head head head head\ngrid=head head head head\ngrid=key key key key\ngrid=key key key key\ngrid=key key key key\ngrid=use use use use\ngrid=record record record record\n'
+  printf 'frame=key\ngrid=head head head head\ngrid=head head head head\ngrid=key key key key\ngrid=key key key key\ngrid=key key key key\ngrid=use use use use\ngrid=record record record record\n'
   heading 'Choose your key' 'It opens Openspot from any app.'
   printf '\nfield=key\ntype=hotkey\n'
   openspot_kv value "${shown:-$now}"
@@ -77,7 +77,7 @@ keys() {
 
 # Prints the last page: the two things to try, a spot of your own and a change by your agent, then Start using Openspot.
 agent() {
-  printf 'grid=head head head head\ngrid=head head head head\ngrid=head head head head\ngrid=head head head head\n'
+  printf 'frame=agent\ngrid=head head head head\ngrid=head head head head\ngrid=head head head head\ngrid=head head head head\n'
   printf 'grid=head head head head\ngrid=head head head head\ngrid=done done done done\n'
   heading 'Make it yours' 'Easily, with any of your favourite agents' "$here/note-and-pls.svg"
   card 'Create your own spot' 'Open New spot and describe it.' plus "$here/note-1.svg"

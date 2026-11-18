@@ -1,5 +1,6 @@
 #!/bin/sh
 cat <<'EOF'
+frame=
 grid=chart
 grid=chart
 grid=chart

@@ -71,7 +71,7 @@ final class SpotSampleTests: XCTestCase {
     func testTheSampleOfASpotIsWhatItsSampleScriptPrintsAndNoneWithoutOne() async throws {
         try "#!/bin/sh\nprintf 'row=r\\ntitle=Real row\\n'\n".writeScript(to: core.appendingPathComponent("timer.spot/timer.sh"))
         try "#!/bin/sh\nprintf 'row=s\\ntitle=Sample row\\n'\n".writeScript(to: core.appendingPathComponent("timer.spot/sample.sh"))
-        try "#!/bin/sh\nprintf 'title=Real row\\n'\n".writeScript(to: core.appendingPathComponent("coin.spot/coin.sh"))
+        try "#!/bin/sh\nprintf 'frame=\\ntitle=Real row\\n'\n".writeScript(to: core.appendingPathComponent("coin.spot/coin.sh"))
 
         let sample = try await output(of: "timer")
         let none = try await output(of: "coin")
@@ -81,7 +81,7 @@ final class SpotSampleTests: XCTestCase {
     }
 
     func testASpotWithOnlyAKeptSampleShowsIt() async throws {
-        try "#!/bin/sh\nprintf 'title=Real row\\n'\n".writeScript(to: core.appendingPathComponent("coin.spot/coin.sh"))
+        try "#!/bin/sh\nprintf 'frame=\\ntitle=Real row\\n'\n".writeScript(to: core.appendingPathComponent("coin.spot/coin.sh"))
         try "row=s\ntitle=Kept\n".write(to: core.appendingPathComponent("coin.spot/sample.frame"), atomically: true, encoding: .utf8)
 
         let sample = try await output(of: "coin")

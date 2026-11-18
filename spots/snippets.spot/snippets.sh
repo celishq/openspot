@@ -23,7 +23,7 @@ content() {
 
 # Prints the form with this title and these values.
 form() {
-  jq -nr --arg title "$1" --argjson v "$2" "$esc"'"title=\($title)
+  jq -nr --arg title "$1" --argjson v "$2" "$esc"'"frame=\ntitle=\($title)
 
 field=title
 title=Name

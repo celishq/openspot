@@ -76,7 +76,7 @@ final class CallInputTests: SpotRunsCase {
         in=$(cat)
         token=$(printf '%s\\n' "$in" | sed -n 's/^setting.token=//p')
         printf '%s' "$token" > '\(path("seen"))'
-        printf 'toast=Got %s\\n\\nrow=a\\ntitle=%s\\n---\\n' "$token" "$token"
+        printf '\\033]9;Got %s\\007row=a\\ntitle=%s\\n---\\n' "$token" "$token"
         echo "Cannot reach the server with $token" >&2
         exit 1
         """)

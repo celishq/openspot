@@ -13,7 +13,7 @@ final class PanelAskTests: PanelCase {
     func testASettingFormDoesNotOpenInAHiddenPanel() async throws {
         try script("editor", toml: "title = 'Editor'\non = ['sheet.open']\n[settings.editor]", """
         touch '\(called.path)'
-        [ "$1" = editor ] && printf 'title=Editor\\n\\nfield=editor\\ntitle=Editor\\n'
+        [ "$1" = editor ] && printf 'frame=\\ntitle=Editor\\n\\nfield=editor\\ntitle=Editor\\n'
         """)
         await model.reload()
 

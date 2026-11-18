@@ -343,7 +343,7 @@ final class ReviewSpotTests: XCTestCase {
     func testAddPutsItInTheFolderThatTheNextScanReads() async throws {
         let answer = try await filed("title = 'Weather'\nicon = 'sun.max'").add()
 
-        XCTAssertEqual(SpotOutput(text: answer).summary?.value("toast"), "Weather added")
+        XCTAssertEqual(answer.effects, [.toast("Weather added")])
         let scan = try SpotsFolder(url: folder.appendingPathComponent("spots")).scan()
         XCTAssertEqual(scan.spots.map(\.name), ["Weather"])
         XCTAssertEqual(scan.refused, [])
@@ -373,7 +373,7 @@ final class ReviewSpotTests: XCTestCase {
         XCTAssertEqual(command.read, .sheet)
         XCTAssertTrue(command.growsFromField)
         let answer = try await command.host?.answer(["show"], input: nil)
-        XCTAssertEqual(answer, try review.answer(["show"]))
+        XCTAssertEqual(answer?.frame, try review.answer(["show"]))
     }
 
     func testAnUnknownCallFails() throws {

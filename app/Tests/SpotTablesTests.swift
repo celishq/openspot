@@ -58,19 +58,19 @@ final class SpotTablesTests: XCTestCase {
         XCTAssertEqual(faults, [])
     }
 
-    func testAHeadKeyThatOpenspotDoesNotKnowIsReportedByACheck() async throws {
-        let faults = try await findings("#!/bin/sh\nprintf 'title=T\\ntoost=Saved\\n\\nrow=a\\ntitle=A\\n'\n", toml: "on = ['sheet.open']")
+    func testARootKeyThatOpenspotDoesNotKnowIsReportedByACheck() async throws {
+        let faults = try await findings("#!/bin/sh\nprintf 'frame=\\ntitle=T\\ntoost=Saved\\n\\nrow=a\\ntitle=A\\n'\n", toml: "on = ['sheet.open']")
 
-        XCTAssertEqual(faults, ["the head has an unknown key: toost"])
+        XCTAssertEqual(faults, ["the root has an unknown key: toost"])
     }
 
     func testOnlyShownInTheHeadOfASpotOfTheAppMovesItsCardOnOrOffTheGrid() throws {
         let spot = Spot(id: "u", name: "U", url: URL(fileURLWithPath: "/none/u.sh"), read: .panel)
 
-        XCTAssertFalse(try spot.builtIn().state(of: SpotOutput(text: "title=U\nshown=false\n")).isOnGrid)
-        XCTAssertTrue(try spot.builtIn().state(of: SpotOutput(text: "title=U\nshown=true\n")).isOnGrid)
-        XCTAssertTrue(try spot.builtIn().state(of: SpotOutput(text: "title=U\ngrid=false\n")).isOnGrid)
-        XCTAssertTrue(try spot.state(of: SpotOutput(text: "title=U\nshown=false\n")).isOnGrid)
+        XCTAssertFalse(try spot.builtIn().state(of: SpotOutput(text: "frame=\ntitle=U\nshown=false\n")).isOnGrid)
+        XCTAssertTrue(try spot.builtIn().state(of: SpotOutput(text: "frame=\ntitle=U\nshown=true\n")).isOnGrid)
+        XCTAssertTrue(try spot.builtIn().state(of: SpotOutput(text: "frame=\ntitle=U\ngrid=false\n")).isOnGrid)
+        XCTAssertTrue(try spot.state(of: SpotOutput(text: "frame=\ntitle=U\nshown=false\n")).isOnGrid)
     }
 
     func testANewKindOfBlockIsOneValueOfTheTable() {
@@ -83,7 +83,7 @@ final class SpotTablesTests: XCTestCase {
             data: { ($0.number("value"), nil) },
             field: { block, name, label in ItemForm.Field(name: name, label: label, value: block.value("value")) }
         )
-        let frame = "title=T\n\nmeter=m\ntitle=M\nvalue=3\nsteps=0\ncolour=red\n"
+        let frame = "frame=\ntitle=T\n\nmeter=m\ntitle=M\nvalue=3\nsteps=0\ncolour=red\n"
 
         let check = FrameCheck(text: frame, kinds: BlockKind.all + [meter])
 

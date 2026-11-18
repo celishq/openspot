@@ -91,7 +91,7 @@ public struct SpotCheck: Sendable {
                 findings += output.errors.map { found("cannot read the item \($0)") }
                 findings += Self.brokenBlocks(in: text).map(found)
                 findings += check.partFaults.map(found)
-                findings += Self.moveFaults(of: output, in: script, among: scan.scripts).map(found)
+                findings += Self.moveFaults(of: output, in: script).map(found)
             } catch {
                 findings.append(found(Self.reason(error)))
             }
@@ -113,18 +113,12 @@ public struct SpotCheck: Sendable {
         return findings
     }
 
-    static func moveFaults(of output: SpotOutput, in script: Spot, among scripts: [Spot]) -> [String] {
+    static func moveFaults(of output: SpotOutput, in script: Spot) -> [String] {
         var faults: [String] = []
-        if let move = output.move {
-            let word = if case .push = move { "push" } else { "pop" }
-            faults.append("the read prints \(word), which moves nothing in a read. Print it from a press")
-        }
         for item in output.items {
-            guard case .push(let spot, let page?, _, _)? = item.move else { continue }
-            let target = spot ?? script.id
-            guard let taker = scripts.first(where: { $0.id == target }), !taker.takes(page: page) else { continue }
+            guard case .push(_, let page?, _, _)? = item.move, !script.takes(page: page) else { continue }
             let pattern = page.firstIndex(of: ":").map { "\(page[..<$0]):*" } ?? page
-            faults.append("the row \(item.run) pushes the page \(page) of \(target), which takes no such page. Add pages=\(pattern) to \(target)")
+            faults.append("the row \(item.run) pushes the page \(page) of \(script.id), which takes no such page. Add pages=\(pattern) to \(script.id)")
         }
         return faults
     }

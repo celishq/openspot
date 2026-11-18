@@ -50,16 +50,16 @@ final class SheetStreamTests: XCTestCase {
     func testATerminalProgressCodeIsAFrameWithItsValue() {
         var reader = SheetFrames()
 
-        XCTAssertEqual(reader.read(Data("Copying\u{1b}]9;4;1;42\u{07}".utf8)), ["progress=0.42\n"])
+        XCTAssertEqual(reader.read(Data("Copying\u{1b}]9;4;1;42\u{07}".utf8)), ["frame=\nprogress=0.42\n"])
         XCTAssertEqual(reader.read(Data("\u{1b}]9;4;1".utf8)), [])
-        XCTAssertEqual(reader.read(Data(";50\u{1b}\\\n".utf8)), ["progress=0.5\n"])
+        XCTAssertEqual(reader.read(Data(";50\u{1b}\\\n".utf8)), ["frame=\nprogress=0.5\n"])
         XCTAssertEqual(reader.read(Data("\u{1b}]9;4;3;0\u{07}\u{1b}]9;4;0;0\u{07}".utf8)), [])
     }
 
     func testATerminalNotificationCodeIsAFrameWithItsToast() {
         var reader = SheetFrames()
 
-        XCTAssertEqual(reader.read(Data("\u{1b}]9;Build done\u{07}".utf8)), ["toast=Build done\n"])
+        XCTAssertEqual(reader.read(Data("\u{1b}]9;Build done\u{07}".utf8)), [TextBlock(fields: [.init(key: SheetFrames.notice, value: "Build done")]).text])
     }
 
     func testEachOtherEscapeCodeLeavesTheText() {
@@ -121,7 +121,7 @@ final class SheetStreamTests: XCTestCase {
     }
 
     func testAFrameReplacesTheWholeSheet() throws {
-        var panel = try XCTUnwrap(SheetParts(output: SpotOutput(text: "grid=a b\n\ntext=a\ntitle=A\n\ntext=b\ntitle=B\n")))
+        var panel = try XCTUnwrap(SheetParts(output: SpotOutput(text: "frame=\ngrid=a b\n\ntext=a\ntitle=A\n\ntext=b\ntitle=B\n")))
 
         panel.take(SpotOutput(text: "text=c\ntitle=C\n"), answering: panel.generation)
 

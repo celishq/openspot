@@ -518,7 +518,7 @@ final class SpotDropTests: XCTestCase {
     }
 
     func testADropShowsItsFramesAndItsToastAndKeepsItsLastFrame() async throws {
-        let sheet = try sheet(toml: "drop = 'mov'", "printf 'title=42%%\\nprogress=0.42\\n---\\n'\n\(untilRelease)\nprintf 'toast=Done\\n'")
+        let sheet = try sheet(toml: "drop = 'mov'", "printf 'frame=\\ntitle=42%%\\nprogress=0.42\\n---\\n'\n\(untilRelease)\nprintf '\\033]9;Done\\007'")
         var toasts: [String] = []
         sheet.onReport = { if case .toast(let text) = $0 { toasts.append(text) } }
         let frames = FrameLog(sheet)
@@ -531,7 +531,7 @@ final class SpotDropTests: XCTestCase {
         XCTAssertEqual(sheet.calls.first?.fill, 0.42)
         FileManager.default.createFile(atPath: path("release"), contents: Data())
         try await wait("the toast") { toasts == ["Done"] }
-        XCTAssertEqual(frames.last, "toast=Done\n")
+        XCTAssertEqual(frames.last, TextBlock(fields: [.init(key: SheetFrames.notice, value: "Done")]).text)
     }
 
     func testAFailedDropTellsThePerson() async throws {
@@ -571,18 +571,5 @@ final class SpotDropTests: XCTestCase {
         XCTAssertTrue(sheet.drop([file]))
 
         try await wait("the read after the call") { self.log() == ["drop \(file)", "show"] }
-    }
-
-    func testADropThatSelectsARowReadsAgainWithThatRowSelected() async throws {
-        let rows = "printf 'row=a\\ntitle=A\\n\\nrow=b\\ntitle=B\\n'"
-        let sheet = try sheet(toml: "on = ['sheet.open']\ndrop = 'mov'", "case \"$1\" in\n  show) \(rows) ;;\n  drop) printf 'toast=Added\\nselect=b\\n' ;;\nesac")
-        sheet.open {}
-        try await wait("the rows") { sheet.list.shown.count == 2 }
-        XCTAssertEqual(sheet.list.selectedItem?.run, "a")
-        let file = file("b.mov")
-
-        XCTAssertTrue(sheet.drop([file]))
-
-        try await wait("the read with b selected") { self.log() == ["show", "drop \(file)", "show"] && sheet.list.selectedItem?.run == "b" }
     }
 }

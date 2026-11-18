@@ -81,13 +81,13 @@ final class CallRouteTests: XCTestCase {
 
     func testEachCallThatTheAppAnswersGivesTheSameAnswerAlone() async throws {
         try "#!/bin/sh\necho\n".writeScript(to: spots.spotFile("weather"), toml: "mode = 'huge'")
-        try "#!/bin/sh\nprintf 'title=Notes\\n'\n".writeScript(to: spots.spotFile("notes"), toml: "on = ['sheet.open']")
+        try "#!/bin/sh\nprintf 'frame=\\ntitle=Notes\\n'\n".writeScript(to: spots.spotFile("notes"), toml: "on = ['sheet.open']")
         try "#!/bin/sh\nprintf 'args=%s\\nfolder=%s\\ntone=%s\\n---\\n' \"$*\" \"$PWD\" \"$TONE\"; cat; echo 'said' >&2; exit 3\n".writeScript(to: spots.spotFile("echo"))
         let calls: [([String], String?)] = [
             (["check", "spots"], nil),
             (["check", "spots", "--json"], nil),
             (["check", "spots", "config/spots"], nil),
-            (["check", "sheet"], "title=Hi\n"),
+            (["check", "sheet"], "frame=\ntitle=Hi\n"),
             (["spot", "run", "echo", "open", "home"], "note=hi\n"),
             (["spot", "run", "echo"], nil),
             (["spot", "run", "gone"], nil),

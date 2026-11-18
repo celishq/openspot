@@ -15,7 +15,7 @@ END {
   load(r)
   if (nshows) {
     for (i = 1; i <= nshows; i++) { list = join(list, name(shows[i]) " " seconds(perday(shows[i])), " · "); cost += perday(shows[i]) }
-    printf "grid=cpu cpu\ngrid=shows shows\n\n"
+    printf "frame=spot:%s\ngrid=cpu cpu\ngrid=shows shows\n\n", want
     printf "number=cpu\nvalue=%.3f\ndisplay=%s\ntitle=CPU a day of the spots it shows\n\n", cost, seconds(cost)
     printf "text=shows\ntitle=Shows\ndetail=%s\n\n", list
     buttons(0, 0)
@@ -33,7 +33,7 @@ END {
   for (i = 1; i <= ndays; i++) graph = graph "value=" (days[i] == "-" ? 0 : days[i]) "\n"
   d = v["seen"] > 0 ? v["seen"] : 1
   day = v["cpu"] / d
-  printf "grid=acts acts\ngrid=perday cpu\ngrid=answers memory\n"
+  printf "frame=spot:%s\ngrid=acts acts\ngrid=perday cpu\ngrid=answers memory\n", want
   if (change != "") printf "grid=change change\ngrid=changecpu changecpu\n"
   if (on != "") printf "grid=cards cards\n"
   if (by != "") printf "grid=by by\n"

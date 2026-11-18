@@ -75,7 +75,7 @@ final class SpotTests: XCTestCase {
 
     func testOpeningGivesTheKindAndTheActionsThatItPrints() async throws {
         let command = try writeCommand(kind: .launch, read: .panel, """
-        printf 'active=true\\n\\nbutton=open\\ntitle=Select\\n\\nbutton=copy\\ntitle=Copy\\n\\nrow=a\\ntitle=A\\n'
+        printf 'frame=\\nactive=true\\n\\nbutton=open\\ntitle=Select\\n\\nbutton=copy\\ntitle=Copy\\n\\nrow=a\\ntitle=A\\n'
         """)
 
         let opened = try await command.opened(timeout: 60)
@@ -108,7 +108,7 @@ final class SpotTests: XCTestCase {
 
     func testAFormIsTheCallOfItsActionWithEmptyStdin() async throws {
         let command = try writeCommand(kind: .list, """
-        [ "$1" = new ] && [ -z "$(cat)" ] && printf 'title=New\\n\\nfield=title\\ntitle=Name\\n'
+        [ "$1" = new ] && [ -z "$(cat)" ] && printf 'frame=\\ntitle=New\\n\\nfield=title\\ntitle=Name\\n'
         """)
 
         let form = try await command.form(CommandAction(id: "new", title: "New", isForm: true), item: nil, timeout: 60)
@@ -118,7 +118,7 @@ final class SpotTests: XCTestCase {
 
     func testAFormOfARowGetsTheRunOfThatRow() async throws {
         let command = try writeCommand(kind: .list, """
-        [ "$1 $2" = "edit one" ] && printf 'title=Edit\\n\\nfield=title\\ntitle=Name\\n'
+        [ "$1 $2" = "edit one" ] && printf 'frame=\\ntitle=Edit\\n\\nfield=title\\ntitle=Name\\n'
         """)
 
         let form = try await command.form(CommandAction(id: "edit", title: "Edit", isForm: true), item: SpotItem(title: "One", run: "one"), timeout: 60)
@@ -152,15 +152,14 @@ final class SpotTests: XCTestCase {
         }
     }
 
-    func testSubmitGivesTheValuesAndReturnsTheNewRun() async throws {
+    func testSubmitGivesTheValuesOnStdin() async throws {
         let command = try writeCommand(kind: .list, """
-        [ "$1" = new ] && cat > '\(marker.path)' && echo 'select=abc'
+        [ "$1" = new ] && cat > '\(marker.path)'
         """)
         let form = ItemForm(title: "New", fields: [.init(name: "title", label: "Name", value: "One")])
 
-        let run = try await command.submit(CommandAction(id: "new", title: "New", isForm: true), item: nil, draft: FormDraft(form: form), timeout: 60)
+        try await command.submit(CommandAction(id: "new", title: "New", isForm: true), item: nil, draft: FormDraft(form: form), timeout: 60)
 
-        XCTAssertEqual(run, "abc")
         XCTAssertEqual(try String(contentsOf: marker, encoding: .utf8), "input.title=One\n")
     }
 
@@ -185,7 +184,7 @@ final class SpotTests: XCTestCase {
     func testAnActionCanPrintAToast() async throws {
         let quiet = try writeCommand(kind: .launch, "echo done > /dev/null")
         let quietToast = try await quiet.perform(quiet.click, timeout: 60)
-        let loud = try writeCommand(kind: .launch, "echo 'toast=All done'")
+        let loud = try writeCommand(kind: .launch, "printf '\\033]9;All done\\007'")
         let loudToast = try await loud.perform(loud.click, timeout: 60)
 
         XCTAssertNil(quietToast)

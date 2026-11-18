@@ -45,13 +45,18 @@ final class SpotStarterTests: XCTestCase {
 
     func testAPickOfTheListStarterReadsAKeyOfItsRow() async throws {
         _ = try SpotStarter.list.write(name: "Weather", in: folder)
+        let tools = try temporaryFolder()
+        let said = tools.appendingPathComponent("said")
+        try "#!/bin/sh\nprintf '%s\\n' \"$*\" > '\(said.path)'\n".writeScript(to: tools.appendingPathComponent("openspot"))
         let spot = try XCTUnwrap(SpotsFolder(url: folder).scan().spots.first)
         let rows = try await spot.answer(.show, timeout: 10).items
 
-        let picked = try await spot.answer(SpotAction(arguments: ["open", "second"]), input: rows.last?.fields, timeout: 10)
+        _ = try await TestEnvironment.with(["PATH": "\(tools.path):/usr/bin:/bin"]) {
+            try await spot.answer(SpotAction(arguments: ["open", "second"]), input: rows.last?.fields, timeout: 10)
+        }
 
         XCTAssertEqual(rows.map(\.run), ["first", "second"])
-        XCTAssertEqual(picked.toast, "You picked the row that says: Hello again")
+        XCTAssertEqual(try String(contentsOf: said, encoding: .utf8), "toast You picked the row that says: Hello again\n")
     }
 
     func testANameThatAnotherSpotHasIsRefused() throws {

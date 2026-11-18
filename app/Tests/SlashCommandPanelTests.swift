@@ -14,7 +14,7 @@ final class SlashCommandPanelTests: PanelCase {
         name=$(printf '%s\\n' "$stdin" | sed -n 's/^input\\.name=//p' | head -n 1)
         case "$1" in
           add)
-            if [ "$search" = ask ]; then printf 'title=Add a note\\n\\nfield=name\\ntitle=Name\\n'; else printf 'toast=Saved %s%s\\n' "$search" "$name"; fi ;;
+            if [ "$search" = ask ]; then printf 'frame=\\ntitle=Add a note\\n\\nfield=name\\ntitle=Name\\n'; else printf '\\033]9;Saved %s%s\\007' "$search" "$name"; fi ;;
           find) printf 'text=Found %s\\n' "$search" ;;
           *) printf 'row=a\\ntitle=A\\n' ;;
         esac
@@ -38,7 +38,7 @@ final class SlashCommandPanelTests: PanelCase {
 
     func testASlashWordListsTheMatchingCommandsWithTheFirstHighlighted() async throws {
         try writeNotes()
-        try script("trash", toml: "title = 'Trash'", "printf 'toast=Emptied\\n'")
+        try script("trash", toml: "title = 'Trash'", "printf '\\033]9;Emptied\\007'")
         await open()
 
         type("/note buy milk")
@@ -81,7 +81,7 @@ final class SlashCommandPanelTests: PanelCase {
     func testAStayingSpotAnswersASlashCommand() async throws {
         try script("ping", toml: "title = 'Ping'\nmode = 'stay'\n[commands.ping]\ntitle = 'Ping'\nplaceholder = 'What to ping'\n[commands.pong]\ntitle = 'Pong'\nplaceholder = 'What to pong'", """
         . "$OPENSPOT_SH"
-        main() { case "$1" in ping) openspot_kv toast "Ping $(value search)" ;; esac; }
+        main() { case "$1" in ping) printf '\\033]9;Ping %s\\007' "$(value search)" ;; esac; }
         openspot_serve main "$@"
         """)
         await open()
@@ -105,7 +105,7 @@ final class SlashCommandPanelTests: PanelCase {
     }
 
     func testWithNoTextReturnRunsTheCommandOfItsRow() async throws {
-        try script("solo", toml: "title = 'Solo'\n[commands.solo]\ntitle = 'Solo'\nplaceholder = 'What'", "printf 'toast=Ran\\n'")
+        try script("solo", toml: "title = 'Solo'\n[commands.solo]\ntitle = 'Solo'\nplaceholder = 'What'", "printf '\\033]9;Ran\\007'")
         await open()
 
         type("/solo")
@@ -126,9 +126,9 @@ final class SlashCommandPanelTests: PanelCase {
 
     func testALoneSlashListsEveryCommandThatTakesText() async throws {
         try writeNotes()
-        try script("windows", toml: "title = 'Windows'\n[commands.full]\ntitle = 'Full screen'", "printf 'toast=Full\\n'")
-        try script("trash", toml: "title = 'Trash'", "printf 'toast=Emptied\\n'")
-        try script("say", toml: "title = 'Say'\nplaceholder = 'What to say'", "printf 'toast=Said\\n'")
+        try script("windows", toml: "title = 'Windows'\n[commands.full]\ntitle = 'Full screen'", "printf '\\033]9;Full\\007'")
+        try script("trash", toml: "title = 'Trash'", "printf '\\033]9;Emptied\\007'")
+        try script("say", toml: "title = 'Say'\nplaceholder = 'What to say'", "printf '\\033]9;Said\\007'")
         await open()
 
         type("/")
@@ -142,7 +142,7 @@ final class SlashCommandPanelTests: PanelCase {
         try script("say", toml: "title = 'Say'\nplaceholder = 'What to say'", """
         stdin=$(cat)
         printf '%s\\n%s\\n' "$*" "$stdin" >> '\(input.path)'
-        printf 'toast=Said\\n'
+        printf '\\033]9;Said\\007'
         """)
         await open()
 
@@ -168,7 +168,7 @@ final class SlashCommandPanelTests: PanelCase {
         try script("jot", toml: "title = 'Jot'\non = ['panel.open', 'sheet.open']", """
         . "$OPENSPOT_SH"
         case "$1" in
-          new) printf 'title=New jot\\n\\nfield=text\\ntitle=Text\\n'; openspot_kv value "$(value search)" ;;
+          new) printf 'frame=\\ntitle=New jot\\n\\nfield=text\\ntitle=Text\\n'; openspot_kv value "$(value search)" ;;
           *) printf 'row=a\\ntitle=A\\n\\nbutton=new\\ntitle=New jot\\nscope=spot\\nform=true\\nplaceholder=What to jot\\n' ;;
         esac
         """)

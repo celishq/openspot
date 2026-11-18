@@ -119,7 +119,7 @@ duration() {
 
 # Prints the rows of the sheet, with Turn off first while the Mac is kept awake.
 sheet() {
-  printf 'recents=false\n\n'
+  printf 'frame=\nrecents=false\n\n'
   printf 'button=open\ntitle=Select\n\n'
   printf 'button=start\ntitle=Keep awake for…\nscope=spot\nform=true\nclose=true\nplaceholder=Minutes, such as 45\n\n'
   awake && printf 'row=off\ntitle=Turn off\n\n'
@@ -167,7 +167,7 @@ begin() {
   elif [ $# -lt 3 ]; then
     openspot toast "$(toast "$2")"
   fi
-  printf '%s%s\n---\ncall=%s\n---\ndetail=%s\n---\n' "$ended" "$(sheet)" "$1" "$(card)"
+  printf '%s%s\n---\ncall=%s\n---\nframe=\ndetail=%s\n---\n' "$ended" "$(sheet)" "$1" "$(card)"
 }
 
 # Stops `caffeinate`, and sets `ended` to the frame that ends the call that turned it on.
@@ -222,7 +222,7 @@ serve() {
       [ -n "$minutes" ] || minutes=$(given search)
       case $minutes in
         '')
-          printf 'call=%s\n---\ntitle=Keep the Mac awake\n\nfield=minutes\ntitle=Minutes\nplaceholder=45\n---\nend=%s\n---\n' "$call" "$call"
+          printf 'call=%s\n---\nframe=\ntitle=Keep the Mac awake\n\nfield=minutes\ntitle=Minutes\nplaceholder=45\n---\nend=%s\n---\n' "$call" "$call"
           ;;
         *[!0-9]* | 0*)
           openspot toast 'Caffeinate takes minutes as a number, such as 45.'
@@ -254,6 +254,7 @@ serve() {
       now=
       awake && now="call=$held
 ---
+frame=
 detail=$(card)
 ---
 "

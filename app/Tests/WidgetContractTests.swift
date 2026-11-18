@@ -40,7 +40,7 @@ final class WidgetContractTests: XCTestCase {
 
     func testAWidgetInAFolderNamesItsOwnToolsByFileNameAndOthersByID() throws {
         try FileManager.default.createDirectory(at: folder.appendingPathComponent("morning"), withIntermediateDirectories: true)
-        try script("morning/power.sh", "#!/bin/sh\nprintf 'title=1\\n'\n", toml: "on = ['clock.5']")
+        try script("morning/power.sh", "#!/bin/sh\nprintf 'frame=\\ntitle=1\\n'\n", toml: "on = ['clock.5']")
         try script("morning/notes.sh", "#!/bin/sh\n", toml: "on = ['sheet.open']")
         try power()
         try widget(grid: ["power power morning/power morning/power"], more: "\nto = 'notes'", file: "morning/widgets.sh")
@@ -91,7 +91,7 @@ final class WidgetContractTests: XCTestCase {
 
     func testAWidgetDrawingPlacesTheMetricThatEachWordNames() throws {
         try power()
-        try script("heat.sh", "#!/bin/sh\nprintf 'title=1\\n'\n", toml: "on = ['clock.5']")
+        try script("heat.sh", "#!/bin/sh\nprintf 'frame=\\ntitle=1\\n'\n", toml: "on = ['clock.5']")
         try widget(name: "Mine", grid: ["heat heat power", "heat heat power"])
 
         let command = try XCTUnwrap(try scan.spots.first { $0.kind == .widget })

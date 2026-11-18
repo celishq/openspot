@@ -11,7 +11,7 @@ icon = "camera.viewfinder"
 #!/bin/sh
 file=$(openspot screen shot) || exit 1
 [ -n "$file" ] || exit 0
-openspot clipboard copy "$file" && echo "toast=Copied the picture."
+openspot clipboard copy "$file" && openspot toast "Copied the picture."
 ```
 
 `openspot screen` takes pictures and recordings of the screen. Each one goes to a file, and the command prints the path

@@ -358,7 +358,7 @@ public struct Spot: Equatable, Sendable {
         guard output.summary != nil || output.errors.isEmpty else { throw SpotError.badState }
         var state = SpotState(output: output, header: headerState)
         if self.view != nil { state = state.holding(output.view) }
-        guard self.isBuiltIn, let isOnGrid = output.summary?.flag(HeadKey.shown) else { return state }
+        guard self.isBuiltIn, let isOnGrid = output.summary?.flag(RootKey.shown) else { return state }
         return state.onGrid(isOnGrid)
     }
 

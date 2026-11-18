@@ -3,31 +3,41 @@ import XCTest
 
 @MainActor
 final class FlowMoveTests: PanelCase {
+    private var client: URL!
+
+    override func setUp() async throws {
+        try await super.setUp()
+        client = folder.appendingPathComponent("A.app/Contents/Helpers/openspot")
+        try FileManager.default.createDirectory(at: client.deletingLastPathComponent(), withIntermediateDirectories: true)
+        try FileManager.default.copyItem(at: Bundle(for: Self.self).bundleURL.deletingLastPathComponent().appendingPathComponent("openspot"), to: client)
+        model.runs.api = CommandAPI(mac: Mac(), places: model.files, app: ModelApp(model: model), runs: model.runs, rates: .offline)
+    }
+
     func openFlowSpot() async throws {
         try writeFlow()
         await model.reload()
         model.isShown = true
         model.panelWillShow()
         model.press("flow")
-        try await wait("the flow") { self.model.transition.phase == .open && self.titles == ["Page first"] && self.model.sheets["flow"]?.spot.actions.count == 5 }
+        try await wait("the flow") { self.model.transition.phase == .open && self.titles == ["Page first"] && self.model.sheets["flow"]?.spot.actions.count == 4 }
     }
 
     private func writeFlow() throws {
         try script("flow", toml: "title = 'Flow'\non = ['sheet.open']\npages = ['n*', 'swapped']", """
+        os='\(client.path)'
         page=$(sed -n 's/^route=//p')
         case "$1" in
-          show) printf 'button=done\\ntitle=Done\\nscope=spot\\n\\nbutton=top\\ntitle=Top\\nscope=spot\\n\\nbutton=next\\ntitle=Next\\nscope=spot\\n\\nbutton=swap\\ntitle=Swap\\nscope=spot\\n\\nbutton=hand\\ntitle=Hand\\nscope=spot\\n\\nrow=x\\ntitle=Page %s\\n' "${page:-first}" ;;
-          done) printf 'pop=true\\n' ;;
-          top) printf 'pop=all\\n' ;;
-          next) printf 'push=n%s\\n' "${#page}" ;;
-          swap) printf 'push=swapped\\npush.replace=true\\n' ;;
-          hand) printf 'push.spot=other\\n' ;;
+          show) printf 'button=done\\ntitle=Done\\nscope=spot\\n\\nbutton=top\\ntitle=Top\\nscope=spot\\n\\nbutton=next\\ntitle=Next\\nscope=spot\\n\\nbutton=swap\\ntitle=Swap\\nscope=spot\\n\\nrow=x\\ntitle=Page %s\\n' "${page:-first}" ;;
+          done) "$os" route back ;;
+          top) "$os" route back --root ;;
+          next) "$os" route push "n${#page}" ;;
+          swap) "$os" route push swapped --replace ;;
         esac
         """)
     }
 
     private func openFlowSheetInPlace() async throws {
-        try await wait("the flow over the list") { self.model.openSheetID == "flow" && self.titles == ["Page first"] && self.model.sheets["flow"]?.spot.actions.count == 5 }
+        try await wait("the flow over the list") { self.model.openSheetID == "flow" && self.titles == ["Page first"] && self.model.sheets["flow"]?.spot.actions.count == 4 }
     }
 
     private func pressFlow(_ id: String) throws {
@@ -85,30 +95,6 @@ final class FlowMoveTests: PanelCase {
         try pressFlow("done")
 
         try await wait("the grid") { self.model.openSheetID == nil }
-    }
-
-    func testAPressPushesAnotherSpotOverItsSheet() async throws {
-        try writeFlow()
-        try await openList()
-        XCTAssertTrue(model.push(FlowSheet(spot: "flow")))
-        try await openFlowSheetInPlace()
-
-        try pressFlow("hand")
-
-        try await wait("the other spot") { self.model.openSheetID == "other" && self.titles == ["Other"] }
-        try await wait("the bars behind") { self.model.flowEdges.titles(on: .behind) == ["Flow", "List"] }
-    }
-
-    func testAReadThatPushesMovesNothing() async throws {
-        try script("reader", toml: "title = 'Reader'\non = ['sheet.open']", "printf 'push=elsewhere\\n\\nrow=r\\ntitle=R\\n'")
-        await model.reload()
-        model.isShown = true
-        model.panelWillShow()
-        model.press("reader")
-
-        try await wait("the reader") { self.titles == ["R"] && !self.model.runs.isReading }
-
-        XCTAssertEqual(model.flow.pages, [FlowSheet(spot: "reader")])
     }
 
     func testTheCommandStepsBackOnlyWithinTheSpotThatShows() async throws {

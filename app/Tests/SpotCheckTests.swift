@@ -100,28 +100,31 @@ final class SpotCheckTests: XCTestCase {
         XCTAssertFalse(FileManager.default.fileExists(atPath: far.path))
     }
 
-    func testARowThatPushesAPageThatNoSpotTakesIsAFaultThatNamesThePagesLine() async throws {
-        try "#!/bin/sh\n".writeScript(to: folder.spotFile("translate"), toml: "pages = ['text:*']")
+    func testARowWithARouteThatTheSpotDoesNotTakeIsAFaultThatNamesThePagesLine() async throws {
         let file = folder.spotFile("clips")
-        try "#!/bin/sh\nprintf 'row=a\\npush=text:a\\npush.spot=translate\\n\\nrow=b\\npush=word:b\\npush.spot=translate\\n\\nrow=c\\npush=true\\n'\n".writeScript(to: file, toml: "on = ['sheet.open']")
+        try "#!/bin/sh\nprintf 'row=a\\nroute=text:a\\n\\nrow=c\\nroute=c\\n'\n".writeScript(to: file, toml: "on = ['sheet.open']\npages = ['text:*']")
 
         let findings = await SpotCheck(folder: SpotsFolder(url: folder)).findings()
 
         XCTAssertEqual(findings.map(\.fault), [
-            "the row b pushes the page word:b of translate, which takes no such page. Add pages=word:* to translate",
             "the row c pushes the page c of clips, which takes no such page. Add pages=c to clips",
         ])
     }
 
-    func testAReadThatPushesOrAFrameWithBothMovesIsAFault() async throws {
-        try "#!/bin/sh\nprintf 'push=a\\npop=true\\n\\nrow=r\\n'\n".writeScript(to: folder.spotFile("both"), toml: "on = ['sheet.open']\npages = ['*']")
-        try "#!/bin/sh\nprintf 'push=a\\n\\nrow=r\\n'\n".writeScript(to: folder.spotFile("reads"), toml: "on = ['sheet.open']\npages = ['*']")
+    func testAnEffectInTheRootIsAnUnknownKeyThatACheckReports() async throws {
+        let root = "frame=\\ntoast=Saved\\nlink=https://a.b\\nselect=r\\npush=a\\npush.title=A\\npush.spot=b\\npush.replace=true\\npop=true\\n"
+        try "#!/bin/sh\nprintf '\(root)\\nrow=r\\n'\n".writeScript(to: folder.spotFile("old"), toml: "on = ['sheet.open']\npages = ['*']")
 
         let findings = await SpotCheck(folder: SpotsFolder(url: folder)).findings()
 
-        XCTAssertEqual(findings.map(\.line), [
-            "both: the frame holds both push and pop, and moves nothing. Print one of them",
-            "reads: the read prints push, which moves nothing in a read. Print it from a press",
-        ])
+        XCTAssertEqual(findings.map(\.fault), ["toast", "link", "select", "push", "push.title", "push.spot", "push.replace", "pop"].map { "the root has an unknown key: \($0)" })
+    }
+
+    func testABlockThatStartsWithAnEffectIsAnItemThatACheckCannotRead() async throws {
+        try "#!/bin/sh\nprintf 'toast=Saved\\n\\npop=true\\n\\nrow=r\\n'\n".writeScript(to: folder.spotFile("old"), toml: "on = ['sheet.open']")
+
+        let findings = await SpotCheck(folder: SpotsFolder(url: folder)).findings()
+
+        XCTAssertEqual(findings.map(\.fault), ["cannot read the item toast=Saved", "cannot read the item pop=true"])
     }
 }

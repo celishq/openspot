@@ -1,5 +1,5 @@
 #!/bin/sh
-printf 'recents=false\n\n'
+printf 'frame=\nrecents=false\n\n'
 printf 'button=reveal\ntitle=Show in Finder\nshortcut=cmd+return\n\n'
 printf 'button=remove\ntitle=Remove from Shelf\nshortcut=cmd+backspace\n\n'
 printf 'button=clear\ntitle=Clear Shelf\nscope=spot\n'

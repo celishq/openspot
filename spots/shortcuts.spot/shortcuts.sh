@@ -22,6 +22,7 @@ all_rows() {
 
 # Prints the head of the list: the files that the next run takes, when there are some, and the buttons.
 head_of_list() {
+  printf 'frame=\n'
   if [ -s "$input" ]; then
     count=$(wc -l <"$input" | tr -d ' ')
     if [ "$count" = 1 ]; then
@@ -31,6 +32,8 @@ head_of_list() {
     fi
     printf 'detail=Pick a shortcut\n\n'
     printf 'button=cancel\ntitle=Cancel\nshortcut=escape\nscope=spot\n\n'
+  else
+    printf '\n'
   fi
   printf 'button=open\ntitle=Run\n\n'
   printf 'button=clipboard\ntitle=Run with clipboard\nshortcut=cmd+return\nclose=true\n\n'

@@ -3,11 +3,14 @@ import Foundation
 extension SpotRuns {
     func take(_ effect: SpotEffect, from caller: SpotCaller?) -> Bool {
         guard let caller else { return takeFromPerson(effect) }
-        guard let run = sheets[caller.spot.id] else { return true }
-        let call = caller.call
-        if let call, run.isOutOfDate(call) { return true }
-        run.take(effect, of: call)
+        take(effect, of: caller.spot.id, call: caller.call)
         return true
+    }
+
+    func take(_ effect: SpotEffect, of spot: String, call: OpenCall?) {
+        guard let run = sheets[spot] else { return }
+        if let call, run.isOutOfDate(call) { return }
+        run.take(effect, of: call)
     }
 
     private func takeFromPerson(_ effect: SpotEffect) -> Bool {

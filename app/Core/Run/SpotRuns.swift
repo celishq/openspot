@@ -281,7 +281,7 @@ public final class SpotRuns {
             defer { script.end() }
             script.send(.show, input: TextBlock(fields: ReadReason.panel.fields).text + (input ?? ""), id: 1)
             for try await frame in frames {
-                let head = FrameHead(text: frame)
+                let head = FrameRoot(text: frame)
                 if !head.isMark || head.end == "1" { return frame }
             }
             return ""
@@ -358,7 +358,11 @@ public final class SpotRuns {
             let (stream, halt) = answered { try settings.answer(action.arguments) }
             return (stream, halt, nil)
         case .host(let sheet):
-            let (stream, halt) = answered { [environment] in try await sheet.answer(action.arguments, input: input, base: environment) }
+            let (stream, halt) = answered { [environment, weak self] in
+                let answer = try await sheet.answer(action.arguments, input: input, base: environment)
+                for effect in answer.effects { await self?.take(effect, of: spot.id, call: call) }
+                return answer.frame
+            }
             return (stream, halt, nil)
         case .inline:
             let call = InlineCall(arguments: action.arguments, variables: variables, input: input, reason: reason, limit: limit)

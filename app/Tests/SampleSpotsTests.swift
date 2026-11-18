@@ -82,7 +82,7 @@ final class SampleSpotsTests: SampleSpotsCase {
 
             relay.send(.show, id: 1)
             var sheet = try await self.next(&frames, of: relay)
-            while FrameHead(text: sheet ?? "").isMark { sheet = try await self.next(&frames, of: relay) }
+            while FrameRoot(text: sheet ?? "").isMark { sheet = try await self.next(&frames, of: relay) }
             XCTAssertTrue(sheet?.contains("title=No message yet") == true, sheet ?? "")
 
             var call = 2

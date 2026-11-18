@@ -9,7 +9,7 @@ struct AccountFrame {
     private var blocks: [TextBlock] = []
 
     var text: String {
-        ([TextBlock(fields: head)] + blocks).map(\.text).joined(separator: "\n")
+        ([RootKey.block(head)] + blocks).map(\.text).joined(separator: "\n")
     }
 
     mutating func head(_ key: String, _ value: String) {
@@ -22,10 +22,6 @@ struct AccountFrame {
 
     mutating func wordGrid() {
         for first in stride(from: 1, through: AccountPhrase.wordCount, by: 2) { grid("w\(first) w\(first + 1)") }
-    }
-
-    mutating func toast(_ text: String?) {
-        if let text { head("toast", text) }
     }
 
     mutating func block(_ values: [String: String], order: [String]) {

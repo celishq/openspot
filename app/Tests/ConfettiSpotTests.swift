@@ -32,7 +32,7 @@ final class ConfettiSpotTests: SampleSpotsCase {
         var seen: [String] = []
         for try await frame in frames {
             seen.append(frame)
-            if FrameHead(text: frame).end == end { break }
+            if FrameRoot(text: frame).end == end { break }
         }
         return seen
     }

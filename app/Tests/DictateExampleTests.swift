@@ -63,7 +63,7 @@ final class DictateExampleTests: SampleSpotsCase {
         var left = ends
         while !left.isEmpty, let frame = try await frames.next() {
             seen.append(frame)
-            if let end = FrameHead(text: frame).end { left.remove(end) }
+            if let end = FrameRoot(text: frame).end { left.remove(end) }
         }
         return seen
     }
@@ -96,7 +96,7 @@ final class DictateExampleTests: SampleSpotsCase {
 
         let frames = try await frames(script, sending: "call=1\narg=show\n\ncall=2\narg=open\narg=1000\n\ncall=3\narg=delete\narg=2000\n\n", until: ["1", "2", "3"])
 
-        let first = Array(frames.prefix { FrameHead(text: $0).end != "1" })
+        let first = Array(frames.prefix { FrameRoot(text: $0).end != "1" })
         XCTAssertEqual(rows(first).map(\.run), ["2000", "1000"])
         XCTAssertEqual(rows(first).map(\.title), ["Second, with a back\\slash", "First words"])
         XCTAssertEqual(rows(frames).map(\.run), ["1000"])

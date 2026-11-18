@@ -3,6 +3,7 @@ import XCTest
 
 final class CardFaceTests: XCTestCase {
     private let clock = """
+    frame=
     grid.wide=time power
     grid.large=time time power power
     grid.large=date date date date
@@ -51,24 +52,24 @@ final class CardFaceTests: XCTestCase {
         XCTAssertEqual(state("switch=power\nvalue=true\n"), true)
         XCTAssertNil(state("switch=power\nvalue=true\n\nrow=a\ntitle=A\n"))
         XCTAssertNil(state("switch=power\nvalue=true\n\ntext=bar\ntitle=Bar\n"))
-        XCTAssertNil(state("main=power\n\nswitch=power\nvalue=true\n\ntext=bar\ntitle=Bar\n"))
-        XCTAssertNil(SpotState(title: "Clock").taking(SpotOutput(text: "main=power\n\nswitch=power\nvalue=true\n\ntext=bar\ntitle=Bar\n")).on)
+        XCTAssertNil(state("frame=\nmain=power\n\nswitch=power\nvalue=true\n\ntext=bar\ntitle=Bar\n"))
+        XCTAssertNil(SpotState(title: "Clock").taking(SpotOutput(text: "frame=\nmain=power\n\nswitch=power\nvalue=true\n\ntext=bar\ntitle=Bar\n")).on)
     }
 
     func testTheHeadCanNameASwitchAsMain() {
-        let outputCheck = FrameCheck(text: "main=power\n\nswitch=power\nvalue=true\n\ntext=bar\ntitle=Bar\n")
+        let outputCheck = FrameCheck(text: "frame=\nmain=power\n\nswitch=power\nvalue=true\n\ntext=bar\ntitle=Bar\n")
         let output = outputCheck.output
         XCTAssertEqual(output.value?.value("switch"), "power")
         XCTAssertEqual(outputCheck.partFaults, [])
     }
 
     func testANameThatNoValueHasAndAnUnknownPlaceAreFaults() {
-        XCTAssertEqual(FrameCheck(text: "main=gone\n\nbutton=go\ntitle=Go\n").partFaults, ["the head names gone as main, which no text, number, gauge, graph, switch or slider has"])
-        XCTAssertEqual(FrameCheck(text: "grid.tray=a\n\ntext=a\ntitle=A\n").partFaults, ["the head draws grid.tray, which is not a place"])
+        XCTAssertEqual(FrameCheck(text: "frame=\nmain=gone\n\nbutton=go\ntitle=Go\n").partFaults, ["the root names gone as main, which no text, number, gauge, graph, switch or slider has"])
+        XCTAssertEqual(FrameCheck(text: "frame=\ngrid.tray=a\n\ntext=a\ntitle=A\n").partFaults, ["the root draws grid.tray, which is not a place"])
     }
 
     func testACardDrawingThatNamesNoComponentIsAFault() {
-        XCTAssertEqual(FrameCheck(text: "grid.wide=a b\n\ntext=a\ntitle=A\n").partFaults, ["the card drawing names b, which no component has"])
+        XCTAssertEqual(FrameCheck(text: "frame=\ngrid.wide=a b\n\ntext=a\ntitle=A\n").partFaults, ["the card drawing names b, which no component has"])
     }
 
     func testAChangeOnTheCardShowsBeforeTheAnswer() {
@@ -79,6 +80,7 @@ final class CardFaceTests: XCTestCase {
 
     func testAnAnswerThatDrawsALargeCardIsOneCardWhosePressSendsItsMainValue() {
         let answer = SpotOutput(text: """
+        frame=
         grid.large=sum sum sum sum
         grid.large=answer answer answer answer
         main=answer
@@ -98,14 +100,14 @@ final class CardFaceTests: XCTestCase {
     }
 
     func testAnAnswerCardTakesTheWordForEnterFromItsOpenButton() {
-        let answer = SpotOutput(text: "grid.large=a\n\nnumber=a\nvalue=14\n\nbutton=open\ntitle=Copy\n")
+        let answer = SpotOutput(text: "frame=\ngrid.large=a\n\nnumber=a\nvalue=14\n\nbutton=open\ntitle=Copy\n")
 
         XCTAssertEqual(answer.answers.first?.openTitle, "Copy")
     }
 
     func testANumberDrawsItsUnitFaintWhereItShows() {
-        let price = SpotOutput(text: "grid.large=a\n\nnumber=a\nvalue=13.46\ndisplay=$13.46\nunit=$\n").parts.first
-        let plain = SpotOutput(text: "grid.large=a\n\nnumber=a\nvalue=14\n").parts.first
+        let price = SpotOutput(text: "frame=\ngrid.large=a\n\nnumber=a\nvalue=13.46\ndisplay=$13.46\nunit=$\n").parts.first
+        let plain = SpotOutput(text: "frame=\ngrid.large=a\n\nnumber=a\nvalue=14\n").parts.first
 
         XCTAssertEqual(price?.numberPieces.map(\.text), ["$", "13.46"])
         XCTAssertEqual(price?.numberPieces.map(\.isUnit), [true, false])
@@ -114,9 +116,9 @@ final class CardFaceTests: XCTestCase {
     }
 
     func testAnAnswerWithNoMainValueOrNoFullWidthDrawingIsItsRows() {
-        let noMain = SpotOutput(text: "grid.strip=a b\n\nnumber=a\nvalue=1\n\nnumber=b\nvalue=2\n\nrow=r\ntitle=R\n")
-        let wide = SpotOutput(text: "grid.wide=a\n\nnumber=a\nvalue=1\n\nrow=r\ntitle=R\n")
-        let strip = SpotOutput(text: "grid.strip=a\n\nnumber=a\nvalue=1\n")
+        let noMain = SpotOutput(text: "frame=\ngrid.strip=a b\n\nnumber=a\nvalue=1\n\nnumber=b\nvalue=2\n\nrow=r\ntitle=R\n")
+        let wide = SpotOutput(text: "frame=\ngrid.wide=a\n\nnumber=a\nvalue=1\n\nrow=r\ntitle=R\n")
+        let strip = SpotOutput(text: "frame=\ngrid.strip=a\n\nnumber=a\nvalue=1\n")
 
         XCTAssertEqual(noMain.answers.map(\.run), ["r"])
         XCTAssertEqual(wide.answers.map(\.run), ["r"])

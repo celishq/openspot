@@ -67,7 +67,7 @@ final class DrawSheetTests: XCTestCase {
     func testTheHeadOfTheFrameHoldsTheLinesOfTheCall() {
         let frame = Sheet(shelf: Shelf(folder: folder), now: now).frame(head: ["end=4", "call=5"])
 
-        XCTAssertTrue(frame.hasPrefix("recents=false\nend=4\ncall=5\n\nbutton=open\n"))
+        XCTAssertTrue(frame.hasPrefix("frame=\nrecents=false\nend=4\ncall=5\n\nbutton=open\n"))
     }
 
     func testEachTurnGivesTheRowsAndTheNewButtonOtherIDsAndTheSameNames() throws {
@@ -98,7 +98,7 @@ final class DrawSheetTests: XCTestCase {
     }
 
     func testTheRenameFormHoldsTheTitleOfTheBoard() {
-        XCTAssertEqual(Sheet.renameForm(title: "Flows", head: ["end=3"]), "end=3\ntitle=Rename board\n\nfield=name\ntitle=Name\nvalue=Flows\nrequired=true\n")
+        XCTAssertEqual(Sheet.renameForm(title: "Flows", head: ["end=3"]), "frame=\nend=3\ntitle=Rename board\n\nfield=name\ntitle=Name\nvalue=Flows\nrequired=true\n")
     }
 
     func testTheSampleIsTheSheetOverSampleBoards() throws {

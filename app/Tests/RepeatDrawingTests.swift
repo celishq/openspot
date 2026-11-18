@@ -25,7 +25,7 @@ final class RepeatDrawingTests: XCTestCase {
     }
 
     func testOneLineOfSingleCellsIsAGrid() {
-        let outputCheck = FrameCheck(text: "grid=tone\ngrid=a\n\nrepeat=a\ngrid=a b c d e f g\n\nchoice=tone\n\noption=none\ntitle=Yellow\n\nrow=x\ntitle=x\n")
+        let outputCheck = FrameCheck(text: "frame=\ngrid=tone\ngrid=a\n\nrepeat=a\ngrid=a b c d e f g\n\nchoice=tone\n\noption=none\ntitle=Yellow\n\nrow=x\ntitle=x\n")
         let output = outputCheck.output
 
         XCTAssertEqual(output.drawing.perLine, 7)

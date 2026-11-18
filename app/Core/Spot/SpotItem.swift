@@ -15,9 +15,6 @@ public struct SpotItem: Equatable, Sendable {
     public let isToggle: Bool
     public let tone: MetricValue.Tone?
     public let file: String?
-    public var to: String? {
-        if case .push(let spot?, _, _, _)? = move { spot } else { nil }
-    }
     public let fields: String?
     public let card: SpotState?
     public let pin: Pin?
@@ -86,14 +83,14 @@ public struct SpotItem: Equatable, Sendable {
             openTitle: block.value(RowKey.open),
             staysOnPick: block.flag(RowKey.close) == false,
             focusSubtitle: block.value(RowKey.focus),
-            move: FlowMove(item: block, own: run),
+            move: FlowMove(item: block),
             bars: Self.bars(values: block.values(RowKey.value), max: block.value(RowKey.max).flatMap(Double.init)),
             section: block.value(RowKey.section)
         )
     }
 
     private static func fields(of block: TextBlock) -> String? {
-        guard block.value(RowKey.pushSpot) != nil || block.fields.contains(where: { RowKey(rawValue: $0.key) == nil }) else { return nil }
+        guard block.fields.contains(where: { RowKey(rawValue: $0.key) == nil }) else { return nil }
         return TextBlock(fields: block.fields.map { .init(key: "item.\($0.key)", value: $0.value) }).text
     }
 

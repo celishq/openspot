@@ -110,7 +110,7 @@ public struct SpotSettings: Equatable, Sendable {
 
     func sheet(in config: Config, secrets: [String: String]) -> String {
         var blocks = [
-            TextBlock(fields: [.init(key: "recents", value: "false")]),
+            RootKey.block([.init(key: "recents", value: "false")]),
             TextBlock(fields: [.init(key: "button", value: Self.open), .init(key: "title", value: "Change"), .init(key: "close", value: "false")]),
             TextBlock(fields: [.init(key: "button", value: Self.clear), .init(key: "title", value: "Remove"), .init(key: "shortcut", value: "cmd+backspace")])
         ]

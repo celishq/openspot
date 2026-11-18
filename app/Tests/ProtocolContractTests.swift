@@ -30,14 +30,13 @@ final class ProtocolContractTests: XCTestCase {
         let docHeaderKinds = manifest.filter { $0[0].hasPrefix("`[") }.flatMap { RepoDoc.code($0[0]) }
             .map { table in tables[String(table.dropFirst().prefix { $0 != "." })] ?? table }
 
-        let headKeys = Set(HeadKey.allCases.map(\.rawValue) + [HeaderKey.drawing + "<size>"])
-        let docHeadKeys = keys([doc.section("The head").components(separatedBy: "- The head can come")[0]])
+        let rootKeys = Set(RootKey.allCases.map(\.rawValue) + [HeaderKey.drawing + "<size>"])
+        let docRootKeys = keys([doc.section("The root").components(separatedBy: "- The root can come")[0]])
 
         let docKinds = keys(RepoDoc.tableRows(in: doc.section("Blocks")).map { $0[0] })
 
         let rowRows = RepoDoc.tableRows(in: doc.section("Rows"))
-        let docRowKeys = keys(rowRows.map { $0[0] }) + keys(rowRows.filter { $0[0] == "`push`" }.map { $0[1] }).filter { $0.hasPrefix("push.") }
-            + keys(pages.filter { $0[1].contains("a row") }.map { $0[0] })
+        let docRowKeys = keys(rowRows.map { $0[0] }) + keys(pages.filter { $0[1].contains("a row") }.map { $0[0] })
 
         let events = Set(SpotEvent.known + [SpotEvent.clockPrefix + "<seconds>"])
         let docEvents = keys(RepoDoc.tableRows(in: doc.section("Events")).map { $0[0] })
@@ -68,7 +67,7 @@ final class ProtocolContractTests: XCTestCase {
 
         return compare("header key", code: headerKeys, doc: Set(docHeaderKeys))
             + compare("header block", code: headerKinds, doc: Set(docHeaderKinds))
-            + compare("head key", code: headKeys, doc: Set(docHeadKeys))
+            + compare("root key", code: rootKeys, doc: Set(docRootKeys))
             + compare("block kind", code: BlockKind.words, doc: Set(docKinds))
             + compare("row key", code: Set(RowKey.allCases.map(\.rawValue)), doc: Set(docRowKeys))
             + compare("event", code: events, doc: Set(docEvents))

@@ -109,7 +109,7 @@ final class CommandSocketTests: XCTestCase {
     }
 
     func testStdinComesInChunksOnlyWhenTheCallPullsIt() throws {
-        let answer = try ask(["check", "sheet"], input: ["title=", "Hi\n"])
+        let answer = try ask(["check", "sheet"], input: ["frame=\ntitle=", "Hi\n"])
 
         XCTAssertEqual(answer.stdout, "the sheet has no parts\n1 faults.\n")
         XCTAssertEqual(answer.code, 1)

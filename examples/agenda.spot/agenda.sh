@@ -26,7 +26,7 @@ toggle() {
 calendars_form() {
   calendars=$(openspot calendar calendars </dev/null) || { printf '%s\n' "$calendars"; exit 1; }
   lists=$(openspot reminders lists </dev/null) || { printf '%s\n' "$lists"; exit 1; }
-  printf 'title=Calendars\n\nchoice=calendars\ntitle=Calendars\ntype=multiple\n'
+  printf 'frame=\ntitle=Calendars\n\nchoice=calendars\ntitle=Calendars\ntype=multiple\n'
   { printf '%s\n' "$calendars" | sed 's/^row=/row=calendar /'; printf '\n'; printf '%s\n' "$lists" | sed 's/^row=/row=list.bullet /'; } |
     awk -v hidden=" $hidden " 'BEGIN { RS = ""; FS = "\n" }
       /^row=/ {
@@ -91,7 +91,7 @@ card() {
   fi
   strip=next
   [ -z "$join" ] || strip='next next next join-now'
-  printf 'main=next\nrecents=false\ngrid=items\ngrid.small=at\ngrid.wide=next\ngrid.strip=%s\n' "$strip"
+  printf 'frame=\nmain=next\nrecents=false\ngrid=items\ngrid.small=at\ngrid.wide=next\ngrid.strip=%s\n' "$strip"
   printf 'grid.square=next next\ngrid.square=next next\ngrid.large=next next next next\ngrid.large=next next next next\n'
   if [ "$late" -gt 0 ]; then
     printf 'grid.square=todo late\n'

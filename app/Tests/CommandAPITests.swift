@@ -164,7 +164,7 @@ final class CommandAPITests: XCTestCase {
     }
 
     func testASheetOnStdinIsChecked() async throws {
-        let answer = try await answer(["check", "sheet"], input: "title=Hi\n")
+        let answer = try await answer(["check", "sheet"], input: "frame=\ntitle=Hi\n")
 
         XCTAssertEqual(answer.output, "the sheet has no parts\n1 faults.\n")
         XCTAssertEqual(answer.code, 1)

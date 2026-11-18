@@ -44,7 +44,7 @@ case "$1" in
     [ -n "$target" ] || { printf 'text=none\ntitle=No spot\ndetail=Choose Change Icon › Draw… in the menu of a card\n'; exit 0; }
     dots=$(cat "$data/$name.draft" 2>/dev/null || cat "$data/$name.dots" 2>/dev/null)
     [ ${#dots} -eq 81 ] || dots=$empty
-    printf 'title=%s\ngrid=drawer drawer\ngrid=clear save\n\n' "$target"
+    printf 'frame=\ntitle=%s\ngrid=drawer drawer\ngrid=clear save\n\n' "$target"
     printf 'view=drawer\ndots=%s\n\n' "$dots"
     printf 'button=clear\ntitle=Clear\n\n'
     printf 'button=save\ntitle=Save\nshortcut=return\nlook=strong\nclose=true\n'

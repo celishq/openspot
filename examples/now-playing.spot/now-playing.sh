@@ -5,7 +5,7 @@ cover="$OPENSPOT_DATA/cover.jpg"
 # Prints the card: the cover, the song and its artist, how far it played, and the controls. It takes the title, the
 # artist, the share played from 0 to 1, the time played, whether it plays, and the path of the cover.
 card() {
-  printf 'grid.large=cover cover cover song song song\ngrid.large=cover cover cover time time time\ngrid.large=cover cover cover prev play next\nmain=song\n\n'
+  printf 'frame=\ngrid.large=cover cover cover song song song\ngrid.large=cover cover cover time time time\ngrid.large=cover cover cover prev play next\nmain=song\n\n'
   printf 'picture=cover\n'; openspot_kv icon "$6"; printf '\n'
   printf 'text=song\n'; openspot_kv title "$1"; openspot_kv detail "$2"; printf '\n'
   printf 'graph=time\n'; openspot_kv title "$4"; openspot_kv value "$3"; printf '\n'

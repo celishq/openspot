@@ -80,7 +80,7 @@ final class SpotRunTests: XCTestCase {
     }
 
     func testAnAnswerThatKeepsTheCardOnTellsNoReaderOfWhetherItIsOn() async throws {
-        let sheet = try make("n=$(cat '\(path("n"))' 2>/dev/null); echo $((n + 1)) > '\(path("n"))'; printf 'detail=Read %s\\n\\nswitch=power\\nvalue=true\\n' \"$n\"", read: .panel)
+        let sheet = try make("n=$(cat '\(path("n"))' 2>/dev/null); echo $((n + 1)) > '\(path("n"))'; printf 'frame=\\ndetail=Read %s\\n\\nswitch=power\\nvalue=true\\n' \"$n\"", read: .panel)
         sheet.read()
         try await wait("the card on") { sheet.isOn }
         let detail = sheet.state.subtitle
@@ -94,7 +94,7 @@ final class SpotRunTests: XCTestCase {
     }
 
     func testARepeatedFrameTellsNoReader() async throws {
-        let sheet = try make("printf 'detail=Same\\n\\nrow=a\\ntitle=A\\n'", read: .panel)
+        let sheet = try make("printf 'frame=\\ndetail=Same\\n\\nrow=a\\ntitle=A\\n'", read: .panel)
         nonisolated(unsafe) var frames = 0
         let report = sheet.onReport
         sheet.onReport = {
@@ -123,7 +123,7 @@ final class SpotRunTests: XCTestCase {
     }
 
     func testAFrameOver256KBIsKeptNowhereSoItsRepeatIsParsedAgain() async throws {
-        let sheet = try make("printf 'detail=Long\\n\\nrow=a\\ntitle=A\\nnote=%s\\n' \"$(head -c 270000 /dev/zero | tr '\\0' n)\"", read: .panel)
+        let sheet = try make("printf 'frame=\\ndetail=Long\\n\\nrow=a\\ntitle=A\\nnote=%s\\n' \"$(head -c 270000 /dev/zero | tr '\\0' n)\"", read: .panel)
         sheet.read()
         try await wait("the first answer") { sheet.list.all.count == 1 && !sheet.isReading }
         let parses = FrameParses()
@@ -139,7 +139,7 @@ final class SpotRunTests: XCTestCase {
 
     func testARepeatedFrameStillShowsItsToastAndAChangedFrameIsApplied() async throws {
         try "1".write(toFile: path("n"), atomically: true, encoding: .utf8)
-        let sheet = try make("printf 'toast=Hi\n\nrow=a\ntitle=%s\n' \"$(cat '\(path("n"))')\"", read: .panel)
+        let sheet = try make("printf '\\033]9;Hi\\007row=a\ntitle=%s\n' \"$(cat '\(path("n"))')\"", read: .panel)
         nonisolated(unsafe) var toasts = 0
         sheet.onReport = { if case .toast = $0 { toasts += 1 } }
         sheet.read()
@@ -328,7 +328,7 @@ final class SpotRunTests: XCTestCase {
     func testClosingStopsAScriptThatKeepsPrinting() async throws {
         let sheet = try make("""
         echo $$ > '\(path("pid"))'
-        printf 'title=Sheet\\n\\ntext=a\\ntitle=0\\n---\\n'
+        printf 'frame=\\ntitle=Sheet\\n\\ntext=a\\ntitle=0\\n---\\n'
         sleep 5
         touch '\(path("went-on"))'
         printf 'text=a\\ntitle=1\\n---\\n'
@@ -354,7 +354,7 @@ final class SpotRunTests: XCTestCase {
     }
 
     func testAToastIsReported() async throws {
-        let sheet = try make("printf 'text=a\\ntitle=A\\n---\\n'\nprintf 'toast=Later\\n\\ntext=a\\ntitle=B\\n---\\n'")
+        let sheet = try make("printf 'text=a\\ntitle=A\\n---\\n'\nprintf '\\033]9;Later\\007text=a\\ntitle=B\\n---\\n'")
         var toasts: [String] = []
         sheet.onReport = { if case .toast(let text) = $0 { toasts.append(text) } }
 
@@ -371,7 +371,7 @@ final class SpotRunTests: XCTestCase {
       case "$line" in
         call=*) call=${line#call=} ;;
         arg=a) count=$((count + 1)) ;;
-        '') printf 'grid=a\\nend=%%s\\n\\nbutton=a\\ntitle=%%s\\n---\\n' "$call" "$count" ;;
+        '') printf 'frame=\\ngrid=a\\nend=%%s\\n\\nbutton=a\\ntitle=%%s\\n---\\n' "$call" "$count" ;;
       esac
     done
     """
@@ -422,7 +422,7 @@ final class SpotRunTests: XCTestCase {
           case "$line" in
             call=*) call=${line#call=} ;;
             arg=copy) sleep 0.2; touch '\(path("copied"))' ;;
-            '') printf 'grid=copy\\nend=%s\\n\\nbutton=copy\\ntitle=Copy\\n---\\n' "$call" ;;
+            '') printf 'frame=\\ngrid=copy\\nend=%s\\n\\nbutton=copy\\ntitle=Copy\\n---\\n' "$call" ;;
           esac
         done
         """, mode: .stay)

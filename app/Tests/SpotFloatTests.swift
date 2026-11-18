@@ -47,8 +47,8 @@ final class SpotFloatTests: XCTestCase {
         \(TestSpot.event)
         case "$1" in
           show) printf 'row=a\\ntitle=%s\\n\\nrow=b\\ntitle=Banana\\n\\nbutton=trash\\ntitle=Trash\\nshortcut=cmd+backspace\\n\\nbutton=rename\\ntitle=Rename\\nform=true\\n' "$ev" ;;
-          open) printf 'toast=Opened %s\\n' "$2" ;;
-          trash) printf 'toast=Trashed %s\\n' "$2" ;;
+          open) printf '\\033]9;Opened %s\\007' "$2" ;;
+          trash) printf '\\033]9;Trashed %s\\007' "$2" ;;
         esac
         """)
         await model.reload()
@@ -168,7 +168,7 @@ final class SpotFloatTests: XCTestCase {
         try script("shelf", toml: "on = ['sheet.open']\ndrop = '*'", """
         case "$1" in
           show) printf 'row=a\\n' ;;
-          drop) shift; printf 'toast=Kept %s\\n' "$*" ;;
+          drop) shift; printf '\\033]9;Kept %s\\007' "$*" ;;
         esac
         """)
         await model.reload()
@@ -223,7 +223,7 @@ final class SpotFloatTests: XCTestCase {
     }
 
     func testAFloatOfACardWithNoReadRunsNothingUntilItsCardIsPressed() async throws {
-        try script("go", toml: "title = 'Go'", "printf 'toast=Went\\n'")
+        try script("go", toml: "title = 'Go'", "printf '\\033]9;Went\\007'")
         await model.reload()
 
         model.press(try key("go"))

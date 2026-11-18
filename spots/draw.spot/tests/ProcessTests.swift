@@ -100,9 +100,9 @@ final class DrawProcessTests: XCTestCase {
         second.take(.ask(id: 2, arguments: ["rename", "0:flows"], input: [:]))
 
         let frames = try frames(of: "second")
-        XCTAssertTrue(frames[1].hasPrefix("recents=false\nend=1\n"))
+        XCTAssertTrue(frames[1].hasPrefix("frame=\nrecents=false\nend=1\n"))
         XCTAssertTrue(frames[1].contains("row=0:flows\ntitle=Flows\n"))
-        XCTAssertTrue(frames[2].hasPrefix("end=2\ntitle=Rename board\n"))
+        XCTAssertTrue(frames[2].hasPrefix("frame=\nend=2\ntitle=Rename board\n"))
     }
 
     func testTheBoardsAreFreeWhenTheDrawThatHeldThemEnds() throws {

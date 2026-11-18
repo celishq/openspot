@@ -22,7 +22,7 @@ sheet() {
   login=$(value "$1" login)
   link=$(value "$1" link)
   slow=$(value "$1" slow)
-  printf 'recents=false\n\nbutton=open\ntitle=Change\nclose=false\n'
+  printf 'frame=\nrecents=false\n\nbutton=open\ntitle=Change\nclose=false\n'
   printf '\nrow=panel-key\ntitle=Open Openspot\nicon=keyboard\ntype=hotkey\nshortcut=%s\n' "$(value "$1" panel-key)"
   printf '\nrow=fix-key\ntitle=Open a fix\nicon=wrench.and.screwdriver\ntype=hotkey\nshortcut=%s\n' "$(value "$1" fix-key)"
   printf '\nrow=careful_mode\ntitle=Careful mode\ndetail=Spots get only what their uses name\nicon=lock.shield\nvalue=%s\n' "$(value "$1" careful)"

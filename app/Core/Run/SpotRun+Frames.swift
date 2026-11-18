@@ -156,10 +156,6 @@ extension SpotRun {
         return true
     }
 
-    func takeMove(_ lines: SpotOutput) {
-        if let move = lines.move { onReport(.move(move)) }
-    }
-
     func takeEffects(_ lines: SpotOutput, frame: String) {
         report(toastOf: lines)
         onReport(.frame(frame))

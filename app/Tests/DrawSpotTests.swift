@@ -298,7 +298,7 @@ final class DrawSpotTests: XCTestCase {
         let sheet = runs.sheet(for: try draw())
         runs.panelOpened()
         sheet.open {}
-        await link.frame("recents=false\n\nrow=0:new\ntitle=New board\n\nrow=0:flows\ntitle=Flows\n", of: link.sent[0])
+        await link.frame("frame=\nrecents=false\n\nrow=0:new\ntitle=New board\n\nrow=0:flows\ntitle=Flows\n", of: link.sent[0])
         await link.end(link.sent[0])
 
         sheet.pick(try row("flows", in: sheet))

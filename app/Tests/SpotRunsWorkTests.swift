@@ -3,7 +3,7 @@ import XCTest
 
 @MainActor
 final class SpotRunsWorkTests: SpotRunsCase {
-    private static let progress = "printf 'title=42%%\\ndetail=2 min left\\nprogress=0.42\\n---\\n'\nsleep 30"
+    private static let progress = "printf 'frame=\\ntitle=42%%\\ndetail=2 min left\\nprogress=0.42\\n---\\n'\nsleep 30"
 
     private func steps(_ steps: [(file: String, frame: String)]) -> String {
         steps.map { "while [ ! -e '\(path($0.file))' ]; do sleep 0.02; done\nprintf '\($0.frame)\\n---\\n'" }.joined(separator: "\n") + "\nsleep 30"
@@ -14,7 +14,7 @@ final class SpotRunsWorkTests: SpotRunsCase {
     }
 
     func testAReadTellsNoReaderOfTheWorkOfItsCard() async throws {
-        try script(toml: "on = ['panel.open']", "printf 'title=Same\\n'")
+        try script(toml: "on = ['panel.open']", "printf 'frame=\\ntitle=Same\\n'")
         let sheet = try sheet()
         sheet.read(need: .change)
         try await wait("the first read") { self.log().count == 1 && sheet.calls.isEmpty }
@@ -141,10 +141,10 @@ final class SpotRunsWorkTests: SpotRunsCase {
 
     func testTheSpotShowsASpinnerWithNoValueAndARingFromValue() async throws {
         try script(body: steps([
-            ("half", "progress=0.42"),
-            ("over", "progress=7"),
-            ("under", "progress=-1"),
-            ("none", "title=Almost")
+            ("half", "frame=\\nprogress=0.42"),
+            ("over", "frame=\\nprogress=7"),
+            ("under", "frame=\\nprogress=-1"),
+            ("none", "frame=\\ntitle=Almost")
         ]))
         let sheet = try sheet()
         sheet.pressCard()
@@ -165,7 +165,7 @@ final class SpotRunsWorkTests: SpotRunsCase {
     }
 
     func testAFramesWordsShowOnTheSpotOnlyWhileItsCallRuns() async throws {
-        try script(toml: "title = 'Encode'\ndetail = 'Videos'", "printf 'title=42%%\\ndetail=2 min left\\n---\\n'\nwhile [ ! -e '\(path("end"))' ]; do sleep 0.02; done")
+        try script(toml: "title = 'Encode'\ndetail = 'Videos'", "printf 'frame=\\ntitle=42%%\\ndetail=2 min left\\n---\\n'\nwhile [ ! -e '\(path("end"))' ]; do sleep 0.02; done")
         let sheet = try sheet()
         sheet.pressCard()
         try await wait("the frame") { sheet.calls.first?.status != nil }
@@ -184,7 +184,7 @@ final class SpotRunsWorkTests: SpotRunsCase {
     }
 
     func testAFrameWithOnlyATitleKeepsTheDetailOfTheSpot() async throws {
-        try script(toml: "title = 'Encode'\ndetail = 'Videos'", "printf 'title=42%%\\n---\\n'\nsleep 30")
+        try script(toml: "title = 'Encode'\ndetail = 'Videos'", "printf 'frame=\\ntitle=42%%\\n---\\n'\nsleep 30")
         let sheet = try sheet()
         sheet.pressCard()
         try await wait("the frame") { sheet.calls.first?.status != nil }
@@ -215,7 +215,7 @@ final class SpotRunsWorkTests: SpotRunsCase {
 
     func testTheMenuBarShowsTheOldestCallOfAllScriptsAndHowManyRun() async throws {
         try script("a", "sleep 30")
-        try script("z", "printf 'progress=0.25\\n---\\n'\nsleep 30")
+        try script("z", "printf 'frame=\\nprogress=0.25\\n---\\n'\nsleep 30")
         _ = try scanned()
         let a = try XCTUnwrap(runs.sheets["a"])
         let z = try XCTUnwrap(runs.sheets["z"])
@@ -239,9 +239,9 @@ final class SpotRunsWorkTests: SpotRunsCase {
     func testTheSpotShowsItsOldestCall() async throws {
         try script(toml: "on = ['sheet.open']", """
         case "$1" in
-          show) printf 'grid=a b\\n\\nbutton=a\\ntitle=A\\n\\nbutton=b\\ntitle=B\\n' ;;
-          a) printf 'title=A\\n---\\n'; sleep 30 ;;
-          b) printf 'title=B\\n---\\n'; sleep 30 ;;
+          show) printf 'frame=\\ngrid=a b\\n\\nbutton=a\\ntitle=A\\n\\nbutton=b\\ntitle=B\\n' ;;
+          a) printf 'frame=\\ntitle=A\\n---\\n'; sleep 30 ;;
+          b) printf 'frame=\\ntitle=B\\n---\\n'; sleep 30 ;;
         esac
         """)
         let sheet = try sheet()
@@ -263,7 +263,7 @@ final class SpotRunsWorkTests: SpotRunsCase {
     func testARunningPartShowsOnThatPartOnly() async throws {
         try script(toml: "on = ['sheet.open']", """
         case "$1" in
-          show) printf 'grid=go other\\n\\nbutton=go\\ntitle=Go\\n\\ntext=other\\ntitle=Other\\n' ;;
+          show) printf 'frame=\\ngrid=go other\\n\\nbutton=go\\ntitle=Go\\n\\ntext=other\\ntitle=Other\\n' ;;
           go) sleep 30 ;;
         esac
         """)
@@ -286,8 +286,8 @@ final class SpotRunsWorkTests: SpotRunsCase {
     func testAPartWhoseCallDrewItsOwnFrameShowsThatFrameAndNoWork() async throws {
         try script(toml: "on = ['sheet.open']", """
         case "$1" in
-          show) printf 'grid=go\\n\\nbutton=go\\ntitle=Go\\n' ;;
-          go) printf 'grid=go\\n\\nbutton=go\\ntitle=Done\\n---\\n'; sleep 30 ;;
+          show) printf 'frame=\\ngrid=go\\n\\nbutton=go\\ntitle=Go\\n' ;;
+          go) printf 'frame=\\ngrid=go\\n\\nbutton=go\\ntitle=Done\\n---\\n'; sleep 30 ;;
         esac
         """)
         let sheet = try sheet()
@@ -356,7 +356,7 @@ final class SpotRunsWorkTests: SpotRunsCase {
     func testAPressOfAPartWithinOneSecondOfItsStartDoesNothing() async throws {
         try script(toml: "on = ['sheet.open']", """
         case "$1" in
-          show) printf 'grid=go\\n\\nbutton=go\\ntitle=Go\\n' ;;
+          show) printf 'frame=\\ngrid=go\\n\\nbutton=go\\ntitle=Go\\n' ;;
           go) sleep 0.2; touch '\(path("done"))' ;;
         esac
         """)
@@ -416,7 +416,7 @@ final class SpotRunsWorkTests: SpotRunsCase {
         try script(toml: "on = ['sheet.open']", """
         case "$1" in
           show) printf 'button=new\\ntitle=New\\nscope=spot\\nform=true\\n\\nrow=a\\ntitle=A\\n' ;;
-          new) \(untilRelease); printf 'title=New\\n\\nfield=a\\ntitle=A\\n' ;;
+          new) \(untilRelease); printf 'frame=\\ntitle=New\\n\\nfield=a\\ntitle=A\\n' ;;
         esac
         """)
         let sheet = try sheet()
@@ -438,7 +438,7 @@ final class SpotRunsWorkTests: SpotRunsCase {
         try script(toml: "on = ['sheet.open']", """
         case "$1" in
           show) printf 'button=open\\ntitle=Open\\nform=true\\n\\nrow=a\\ntitle=A\\n' ;;
-          open) case "$(cat)" in *name=x*) ;; *) printf 'title=Name\\n\\nfield=name\\ntitle=Name\\n' ;; esac ;;
+          open) case "$(cat)" in *name=x*) ;; *) printf 'frame=\\ntitle=Name\\n\\nfield=name\\ntitle=Name\\n' ;; esac ;;
         esac
         """)
         let sheet = try sheet()
@@ -460,37 +460,11 @@ final class SpotRunsWorkTests: SpotRunsCase {
         XCTAssertEqual(done, .done)
     }
 
-    func testASubmitSelectsTheRowThatItsHeadNamesAndNoBareLine() async throws {
-        try script(toml: "on = ['sheet.open']", """
-        case "$1" in
-          show) printf 'button=add\\ntitle=Add\\nform=true\\nscope=spot\\n\\nrow=a\\ntitle=A\\n\\nrow=b\\ntitle=B\\n\\nrow=c\\ntitle=C\\n' ;;
-          add) case "$(cat)" in *name=bare*) echo c ;; *name=*) printf 'select=b\\n---\\ntoast=Saved\\n' ;; *) printf 'title=Name\\n\\nfield=name\\ntitle=Name\\n' ;; esac ;;
-        esac
-        """)
-        let sheet = try sheet()
-        sheet.open {}
-        try await wait("the read") { sheet.spot.actions.count == 1 }
-        let action = try XCTUnwrap(sheet.spot.actions.first)
-        let asked = try await sheet.form(action, item: nil)
-        var draft = FormDraft(form: try XCTUnwrap(asked))
-
-        draft.set("x", for: "name")
-        let named = try await sheet.submit(action, item: nil, draft: draft)
-        try await wait("the row the head names") { sheet.list.selectedItem?.run == "b" }
-        draft.set("bare", for: "name")
-        let bare = try await sheet.submit(action, item: nil, draft: draft)
-        try await wait("the read after the bare line") { sheet.calls.isEmpty && !sheet.list.isLoading }
-
-        XCTAssertEqual(named, .done)
-        XCTAssertEqual(bare, .done)
-        XCTAssertEqual(sheet.list.selectedItem?.run, "b")
-    }
-
     func testAChangeAnswersWithTheFormOfItsScriptOrIsDone() async throws {
         try script(toml: "on = ['sheet.open']", """
         case "$1" in
           show) printf 'row=a\\ntitle=A\\n' ;;
-          editor) printf 'title=Editor\\n\\nchoice=editor\\ntitle=Editor\\n\\noption=zed\\ntitle=Zed\\n' ;;
+          editor) printf 'frame=\\ntitle=Editor\\n\\nchoice=editor\\ntitle=Editor\\n\\noption=zed\\ntitle=Zed\\n' ;;
           folder) touch "\(path("folder"))" ;;
         esac
         """)

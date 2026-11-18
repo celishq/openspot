@@ -9,9 +9,9 @@ struct Sheet {
     var turn = 0
     var now = Date()
 
-    /// The frame of the sheet, with these lines in its head.
+    /// The frame of the sheet, with these lines in its root.
     func frame(head: [String] = []) -> String {
-        var blocks = [(["recents=false"] + head).joined(separator: "\n")]
+        var blocks = [(["frame=", "recents=false"] + head).joined(separator: "\n")]
         blocks.append("button=open\ntitle=Open\nclose=true")
         blocks.append("button=\(turn):new\ntitle=New board\nshortcut=cmd+n\nscope=spot\nclose=true")
         blocks.append("button=rename\ntitle=Rename\nshortcut=cmd+r\nform=true")
@@ -30,7 +30,7 @@ struct Sheet {
 
     /// The form that asks for the new name of a board.
     static func renameForm(title: String, head: [String]) -> String {
-        (head + ["title=Rename board"]).joined(separator: "\n") + "\n\n" + ["field=name", "title=Name", "value=\(title)", "required=true"].map(line).joined(separator: "\n") + "\n"
+        (["frame="] + head + ["title=Rename board"]).joined(separator: "\n") + "\n\n" + ["field=name", "title=Name", "value=\(title)", "required=true"].map(line).joined(separator: "\n") + "\n"
     }
 
     /// What an argument of a call names, without the number that starts it: `new`, or the place of a board.

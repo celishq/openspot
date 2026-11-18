@@ -148,14 +148,14 @@ offers = ["card", "menubar"]
 ```sh
 #!/bin/sh
 free=$(df -h / | awk 'NR==2 {print $4}')
-printf 'detail=%s free\n\ntext=free\ntitle=%s free\n' "$free" "$free"
+printf 'frame=\ndetail=%s free\n\ntext=free\ntitle=%s free\n' "$free" "$free"
 ```
 
 <!-- card: wide -->
 <!-- draw: df() { printf 'Filesystem Size Used Avail\n/dev/disk 994Gi 738Gi 256Gi\n'; }; . "$EXAMPLE" -->
 ![The card of Disk, with the free space under its title](docs/images/show-a-value.png)
 
-The first block, `detail=…`, is the **head**: it isn't drawn, and its `detail` becomes the line under the card's title.
+The first block, `frame=`, is the **root**: it isn't drawn, and its `detail` becomes the line under the card's title.
 The `text` block is the spot's **main block**. `card` and `menubar` in `offers` name the places where the spot can
 show it: a card on the grid, and the menu bar, next to the clock. The user puts the spot in the menu bar from its Settings,
 which `⌘⏎` on its card opens.
@@ -279,7 +279,7 @@ case "$1" in
   add)
     note=$(value input.note)
     if [ -z "$note" ]; then
-      printf 'title=New note\n\nfield=note\ntitle=Note\n'
+      printf 'frame=\ntitle=New note\n\nfield=note\ntitle=Note\n'
     else
       printf '%s\n' "$note" >> "$OPENSPOT_DATA/notes"
       openspot toast Saved
@@ -315,7 +315,7 @@ case "$1" in
     note=$(value input.note)
     [ -n "$note" ] || note=$(value search)
     if [ -z "$note" ]; then
-      printf 'title=New note\n\nfield=note\ntitle=Note\n'
+      printf 'frame=\ntitle=New note\n\nfield=note\ntitle=Note\n'
     else
       printf '%s\n' "$note" >> "$OPENSPOT_DATA/notes"
       openspot toast Saved

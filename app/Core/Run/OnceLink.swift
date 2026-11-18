@@ -32,10 +32,12 @@ final class OnceLink: ScriptLink {
                 for try await frame in stream {
                     guard !made.isStopped else { break }
                     runs.add(frame, to: &call.frames)
-                    let lines = await runs.intake(frame, of: id)
+                    let next = await FrameStream.next(frame, after: call.drawn)
+                    call.drawn = next.drawn
+                    let lines = await runs.intake(next.text, of: id)
                     guard !made.isStopped else { break }
                     guard let run else { continue }
-                    await run.take(frame, lines, of: call)
+                    await run.take(next.text, lines, of: call)
                     if case .ask(.read) = request.purpose, lines.isPicture, !run.isWanted, !made.isStopped { run.stop(made) }
                 }
             } catch {

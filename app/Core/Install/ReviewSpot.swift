@@ -73,10 +73,10 @@ public struct ReviewSpot: Equatable, Sendable {
         self.lock = lock
     }
 
-    func add() async throws -> String {
+    func add() async throws -> HostAnswer {
         guard canAdd, let source, let lock else { throw SpotError.failed(1, "This sheet cannot do that.") }
         _ = try await lock.add(.file(source), to: folder, isConfirmed: true, replaces: shared.replaced(in: folder), expecting: shared)
-        return TextBlock(fields: [.init(key: "toast", value: "\(name) added")]).text
+        return HostAnswer(frame: "", effects: [.toast("\(name) added")])
     }
 
     public var spot: Spot {
@@ -93,9 +93,9 @@ public struct ReviewSpot: Equatable, Sendable {
     }
 
     private var sheet: String {
-        guard canAdd else { return [TextBlock(fields: [.init(key: "grid", value: "review")]).text, reviewPart.text].joined(separator: "\n") }
+        guard canAdd else { return [RootKey.block([.init(key: "grid", value: "review")]).text, reviewPart.text].joined(separator: "\n") }
         return [
-            TextBlock(fields: [.init(key: "grid", value: "review"), .init(key: "grid", value: Self.installPart)]).text,
+            RootKey.block([.init(key: "grid", value: "review"), .init(key: "grid", value: Self.installPart)]).text,
             reviewPart.text,
             TextBlock(fields: [
                 .init(key: "button", value: Self.installPart),

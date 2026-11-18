@@ -64,7 +64,7 @@ public struct TerminalRun {
                 let frames = process.start()
                 if spot.mode.stays { process.send(action, input: message(isRead: isRead), id: Self.callID) }
                 for try await text in frames {
-                    let head = spot.mode.stays ? FrameHead(text: text) : nil
+                    let head = spot.mode.stays ? FrameRoot(text: text) : nil
                     if head?.isMark != true { frame(text) }
                     if head?.end == String(Self.callID) { process.end() }
                 }

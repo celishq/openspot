@@ -44,8 +44,13 @@ func percent(_ share: Double) -> String {
     "\(Int(share * 100))% of 1.6 GB"
 }
 
-/// The rows of the sheet: the download of the model while it is missing, then the past texts.
-func sheet() -> String {
+/// The whole sheet: its root, with the share of a download when it names one, the download of the model while it is
+/// missing, then the past texts.
+func sheet(downloading share: Double? = nil) -> String {
+    var root = ["frame="]
+    if let share {
+        root.append("progress=\(String(format: "%.3f", share))\ntitle=Downloading speech model\ndetail=\(percent(share))")
+    }
     var blocks: [String] = []
     if !FileManager.default.fileExists(atPath: model.path) {
         if let download {
@@ -56,13 +61,13 @@ func sheet() -> String {
     }
     let past = texts()
     if past.isEmpty {
-        blocks.append("search=off")
+        root.append("search=off")
     } else {
         blocks.append("button=open\ntitle=Copy")
         blocks.append("button=delete\ntitle=Delete\nshortcut=cmd+backspace")
         blocks += past.map { "row=\($0.0)\ntitle=\(Link.value($0.1))\ndetail=\(age($0.0))" }
     }
-    return blocks.joined(separator: "\n\n")
+    return ([root.joined(separator: "\n")] + blocks).joined(separator: "\n\n")
 }
 
 /// Ends the held call and shows the rows that it changed.
@@ -73,11 +78,11 @@ func release() {
     Link.frame(sheet())
 }
 
-/// Shows the share of the download on the card while its call runs. Its frames hold only a head, so that the card shows
-/// the call as running.
+/// Shows the share of the download on the card while its call runs, in a whole sheet whose root holds the share, so that
+/// the card shows the call as running.
 func show(_ share: Double, in id: String) {
     Link.start(id)
-    Link.frame("progress=\(String(format: "%.3f", share))\ntitle=Downloading speech model\ndetail=\(percent(share))")
+    Link.frame(sheet(downloading: share))
 }
 
 /// Shows a toast with `openspot toast`, then calls `done`.

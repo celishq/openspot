@@ -89,8 +89,8 @@ value=true
 - In a value, `\n` is a new line and `\\` is a backslash. There are no other escapes.
 - An empty value is no value. Openspot never splits a value, so a URL or a time stays whole.
 - The first key of a block is its kind, and its value is the block's id. `switch=wifi` is a switch with the id `wifi`.
-- The head is the block that starts with a key of the head (see [The head](#the-head)). A block that starts with any
-  other unknown key is an error, and Openspot skips it.
+- The root is the block that starts with `frame=` (see [The root](#the-root)). A block that starts with any other
+  unknown key is an error, and Openspot skips it.
 - In a frame, Openspot skips a line with an unknown key, and `openspot check spots` reports it. In the manifest, an
   unknown key is a fault (see [The manifest](#the-manifest)).
 - Anything with its own title or icon is a block of its own, such as an `option` after a `choice`.
@@ -172,27 +172,29 @@ confirm = "Press again to empty the Trash"
 
 ```sh
 #!/bin/sh
-case "$1" in empty) echo 'toast=Emptied' ;; esac
+case "$1" in empty) openspot toast Emptied ;; esac
 ```
 
 ## Frames
 
-A frame is everything a spot shows at one time. Each new frame replaces the last one, so a spot can show progress and
-then the result.
+A frame is everything a spot shows at one time. A spot can print several frames in one call, so it can show progress,
+then the result, or change one block while the rest stays.
 
 ```text
  what the spot prints              what it is
 ┌──────────────────────────────┐
-│ grid=title                   │ ─┐
-│ grid=wifi                    │  ├─ the head: layout and effects, not drawn
-│ toast=Saved                  │ ─┘
+│ frame=                       │ ─┐
+│ grid=title                   │  ├─ the root: the layout, not drawn
+│ grid=wifi                    │ ─┘
 │                              │
 │ text=title                   │ ─┐
 │ title=Wi-Fi                  │  │
 │                              │  ├─ blocks: each one is drawn
 │ switch=wifi                  │  │
 │ value=true                   │ ─┘
-│ ---                          │ ─── the end of this frame; the next one replaces it
+│ ---                          │ ─── the end of this frame
+│ switch=wifi                  │ ─┬─ a later frame with no root:
+│ value=false                  │ ─┘  it changes only this switch
 └──────────────────────────────┘
 ```
 
@@ -203,28 +205,33 @@ on = ["sheet.open"]
 
 ```sh
 #!/bin/sh
-printf 'progress=0.5\ntitle=Copying\n---\n'
-printf 'text=done\ntitle=Copied\n'
+printf 'frame=\nprogress=0.5\ntitle=Copying\n---\n'
+printf 'frame=\n\ntext=done\ntitle=Copied\n'
 ```
 
 - Openspot draws each frame as soon as it arrives.
-- A spot keeps no state between calls. Each call gets the values on stdin, and prints the whole frame again, or nothing.
-- A frame with only a head doesn't change what shows, but its effects happen, such as a toast (see [The head](#the-head)).
+- The first frame of a call replaces what shows. A later frame of the same call replaces it too when it holds a root.
+- A later frame with no root changes only the blocks it prints. A block whose id shows takes the place of that block,
+  and a block with a new id joins the end, such as a new row. The root stays as it was.
+- A frame with only a root doesn't change what shows. Its `progress`, `title` and `detail` show on the running call
+  (see [The root](#the-root)).
+- A spot keeps no state between calls. Each call gets the values on stdin, and prints its frames again, or nothing.
 - If a read prints nothing, the spot shows nothing. If another call prints nothing, Openspot asks the spot again.
 - When a newer change makes a call out of date, Openspot ignores what it prints.
 - Print a value that comes from data with a helper, so that it can't add a line or a block: `openspot_kv`,
   `openspot_row` or `esc` in a shell, and `openspot.frame` in JavaScript. `openspot check spots` warns of a line with no `=`,
-  of a key that shows twice in a block where only a list repeats, and of a key that the head or a kind doesn't take. A
+  of a key that shows twice in a block where only a list repeats, and of a key that the root or a kind doesn't take. A
   row can hold keys of its own, which Openspot skips.
 - Openspot reads `ESC ] 9;4;1;<percent>` as `progress` and `ESC ] 9;<text>` as a toast, and removes other escape codes.
-- A read that prints the same frame as the one that shows, with only a head and rows, changes nothing, so Openspot skips
-  it. Its toast still shows. A frame with another block, or over 256 KB, is drawn again.
+- A read that prints the same frame as the one that shows, with only a root and rows, changes nothing, so Openspot skips
+  it. A frame with another block, or over 256 KB, is drawn again.
 
 ## Blocks
 
 A block is one thing on the sheet or the card: words, a number, a switch, a row.
 
 ```ini
+frame=
 grid=title title title title
 grid=wifi  wifi  wifi  wifi
 grid=nets  nets  nets  nets
@@ -316,7 +323,7 @@ grid=note  note  note       ├─────────┬──────�
 Three words make three columns. `nets` covers the last column of two lines, `.` leaves a cell empty, and `-` draws a
 divider across its line.
 
-- Each `grid=` line of the head is one line of the sheet. Each word is one cell: the id of a block, `.` for an empty
+- Each `grid=` line of the root is one line of the sheet. Each word is one cell: the id of a block, `.` for an empty
   cell, or `-` for a divider across the line.
 - The words of a line set the columns. A block fills the rectangle of cells that its id covers, and each id must cover a
   rectangle. A smaller block inside a bigger one sits on top of it, at the edge it touches.
@@ -381,14 +388,14 @@ offers = ["actions"]
 - In a ⌘K menu of more than 5 rows, a field searches them, so only a `shortcut` with `cmd` works there.
 - Return on a row runs the action `open`. `button=open` gives it a `title`, and `close=false` keeps the panel open after
   a pick.
-- A button with `form=true` asks for values first. Its call runs once with empty stdin, and prints a `title` in its head
+- A button with `form=true` asks for values first. Its call runs once with empty stdin, and prints a `title` in its root
   and one `field`, `choice` or `switch` for each value. Then the same call runs again with the values on stdin.
 - A form with only one `choice` shows its options as rows under the search field. Return or a click sends one.
 - With `type=multiple`, a choice picks several options. A checkmark marks each option in a `value` line. Return sends the
   option of its row, and `⇧⌘A` sends each option without a checkmark. The spot keeps the picks and prints the form again.
 - A form can print itself again, such as with a `title` that says what's wrong. Then it stays open.
-- When the call with the values prints `select=<row id>` in its head, or runs `openspot select <row id>`, that row is
-  selected after the sheet reads again, such as the row that the form made.
+- When the call with the values runs `openspot select <row id>`, that row is selected after the sheet reads again, such
+  as the row that the form made.
 
 ## Rows
 
@@ -418,7 +425,7 @@ Rows are a list that the user searches and picks from. See [Show a list](GUIDE.m
 | `route`    | A route that a pick opens at once, in place of `<spot> open <id>`, with `route.title` and `route.replace`. See [Pages](#pages). |
 
 - Rows go into a `repeat`, or into a plain list when there's none.
-- Openspot searches the rows itself, and puts recent picks first. `recents=false` in the head turns that off, and
+- Openspot searches the rows itself, and puts recent picks first. `recents=false` in the root turns that off, and
   `search=off` shows the rows with no search field.
 - `⌘↓` selects the last row, and `⌘↑` the first.
 - With `sheet.text` in `on`, each change of the sheet's search text asks the spot, and the spot prints the rows that
@@ -448,12 +455,6 @@ own sheets off. See [Open a row as a page](GUIDE.md#open-a-row-as-a-page) for an
 | `route=<route>`       | a row                  | A pick opens that route at once, with no call.                                       |
 | `route.title=<words>` | a row                  | The title of the route's sheet, which its edge names. By default, the row's title.   |
 | `route.replace=true`  | a row                  | The route's sheet takes the place of the one that shows, so going back skips it.     |
-| `push=<page id>`      | a row, or a press      | Pushes that page over the sheet that shows. On a row, `push=true` pushes the row's id. |
-| `push.spot=<spot id>` | a row, or a press      | Pushes a sheet of that spot instead. With no `push=`, its first sheet.               |
-| `push.title=<words>`  | a row, or a press      | The title of the pushed sheet, which its edge names. By default, the row's title.     |
-| `push.replace=true`   | a row, or a press      | The pushed sheet takes the place of the one that shows, so going back skips it.       |
-| `pop=true`            | a press                | Takes the spot's sheet off. On its first sheet, that goes back to whoever pushed it, or to the grid.  |
-| `pop=all`             | a press                | Goes back to the spot's first sheet.                                                  |
 
 A press moves the flow while it runs, such as after a form saves, with `openspot route`:
 
@@ -471,8 +472,7 @@ openspot route close
 - `route close` takes each sheet of the spot off, back to the sheet that pushed the spot, or to the grid.
 - Each call of a page, a show or a press, gets the page's route as `route=` on stdin. The first sheet of a spot gets none.
 - A spot moves only its own routes, and only while its sheet shows. A move of another spot's sheet does nothing.
-- A read never moves the flow: `openspot route` fails in a read. A frame of a press moves it one way at most, with the
-  keys in its head: a push or a pop.
+- A read never moves the flow: `openspot route` fails in a read.
 - A route must match a `pages=` line of the spot that shows it, where `*` stands for any text. A spot with no
   sheet gets the call `<spot> open <route>` instead of a push.
 - A spot takes off only its own sheets. It never takes off another spot's sheet and never closes the panel.
@@ -481,37 +481,44 @@ openspot route close
   stands for each sheet behind it, and a line right of it for each sheet ahead. A sheet
   that comes back shows what it last showed at once, and reads again.
 - `openspot spot open <id>` starts a new flow on a spot. `openspot spot push <id> [page] [--replace] [--title <words>]` and
-  `openspot spot pop <id> [--all]` move the flow that shows, as the keys do. From a terminal, `openspot route` moves the
+  `openspot spot pop <id> [--all]` move the flow that shows, as `openspot route` does. From a terminal, `openspot route` moves the
   sheet that shows, whatever its spot.
 
-## The head
+## The root
 
-The head is the block of a frame that starts with one of its keys. Openspot doesn't draw it. It holds the layout and the
-effects of the frame.
+The root is the block of a frame that starts with `frame=`. It holds the layout of the frame and the words of the card,
+and Openspot doesn't draw it.
 
+```ini
+frame=
+title=Wi-Fi
+detail=Home
+grid=wifi
+
+switch=wifi
+value=true
+```
+
+- `frame=<route>` starts it. The route can be empty, as in `frame=`.
 - Its layout keys: `grid=` and `grid.<size>=` lines, `main`, `title`, `detail` and `active` for the card, `recents` and `search`.
+- `progress=<0 to 1>` shows progress. With it, `title` and `detail` show only while the call runs.
 - `shown=true` puts the card of a spot of the app on the grid, and `shown=false` takes it off. Openspot skips it in
   the frame of any other spot.
-- Its effects:
-  - `toast=Saved` shows a short message at once, even when the panel is closed;
-  - `link=<url>` opens the URL;
-  - `progress=<0 to 1>` shows progress. With it, `title` and `detail` show only while the call runs;
-  - `select=<row id>` asks the spot again with that row selected;
-  - `push=`, `push.spot=`, `push.title=`, `push.replace=` and `pop=` move the flow after a press: see [Pages](#pages);
-  - `call=<n>` and `end=<n>` mark the calls of a staying spot (see [Modes](#modes)).
-- The head can come anywhere in the frame. Openspot skips and reports a second head.
-- A command does each effect from the call instead, the same way as in a terminal: `openspot toast <words>` in place of
-  `toast=`, `open <url>` in place of `link=`, `openspot select <item>` in place of `select=`, and `openspot route` in
-  place of `push=` and `pop=`. See [The openspot command](#the-openspot-command).
+- `call=<n>` and `end=<n>` mark the calls of a staying spot (see [Modes](#modes)), in the root or in a block of their own.
+- The root can come anywhere in the frame. Openspot skips and reports a second root.
+- A block that starts with another key of the root, such as `title=`, is not a root. Openspot skips it as a block of an
+  unknown kind.
+- A frame holds no effect. A command does each one from the call, the same way as in a terminal: `openspot toast <words>`,
+  `open <url>`, `openspot select <item>` and `openspot route`. See [The openspot command](#the-openspot-command).
 
 ## The main block and the card
 
 The main block stands for the spot on its card and in the menu bar.
 
-- `main=<id>` in the head names it. Without `main=`, the main block is the only `text`, `number`, `graph`, `switch` or
+- `main=<id>` in the root names it. Without `main=`, the main block is the only `text`, `number`, `graph`, `switch` or
   slider in the frame.
 - The menu bar and a card of other spots show a main `text`, `number` or `graph`.
-- `active=true` in the head shows on the card that the spot's thing is on, and `active=false` that it is off.
+- `active=true` in the root shows on the card that the spot's thing is on, and `active=false` that it is off.
 - A spot has a sheet when its manifest has `sheet.open`, `sheet.text` or a `clock` in `on`, `search` in `offers`, or
   `mode = "stay"`. Without any of these, such as with only `panel.open` or `app.front` in `on`, it has no sheet, and its
   rows never show.
@@ -601,8 +608,8 @@ out.
 - `show` asks what to show. `open`, `drop` and `drag` are default ids. A block can't use any of the four, but a button
   can use `open`.
 - A new default id reaches only a spot that asks for it.
-- A drop on a card waits for the card's running call. A drop on a card with rows opens its sheet, and the frame can
-  select the new row with `select=`.
+- A drop on a card waits for the card's running call. A drop on a card with rows opens its sheet, and the call can
+  select the new row with `openspot select`.
 - A spot's hotkeys run one at a time, in order, and never stop a call. A staying spot gets each press at once, in
   order, so a second press can end the call of the first, while fewer than 8 calls of its hotkeys are open. Openspot
   drops a press past that with a toast. Only the user gives a command a hotkey.
@@ -785,7 +792,7 @@ offers = ["card", "float"]
 - With `answers = "last"`, its rows show under the other results instead, such as a row that offers to make a spot of the
   typed words. A search that finds only such rows counts as a search that found nothing.
 - A spot whose only event is `search.text` has no card.
-- An answer can be one card instead of rows: its head has `grid.large=` or `grid.strip=` lines, and its main block has a
+- An answer can be one card instead of rows: its root has `grid.large=` or `grid.strip=` lines, and its main block has a
   `value`. A pick of the card sends `<spot> open <value>`.
 - `openspot calc solve <words>...` prints the answer to a sum, a conversion or a date as a row.
 - Every spot can show in the menu bar when the user puts it there. A spot that offers `menubar` shows its main `text`,
@@ -827,7 +834,8 @@ function main(args, env, input) {
   a line of its own, or `""` when there's none.
 - `openspot.call(["calc", "solve", "2+2"])` runs the `openspot` command and returns `{ stdout, code }`. A second argument
   gives its stdin.
-- `openspot.frame(object)` writes an object, or a list of objects, as blocks.
+- `openspot.frame(object)` writes an object, or a list of objects, as blocks. An object whose first key is `frame`, such as
+  `{ frame: "", title: "Hi" }`, is the root.
 - It has no files, no network and no process of its own. It runs one call at a time, on a thread of its own.
 - Openspot waits 2 ms for its frame in the same keystroke, and shows a later frame on the next one.
 - A call has 10 seconds. After that it fails as a slow read, and the spot answers its next call.
@@ -846,7 +854,7 @@ on = ["app.launch", "panel.open"]
 main() {
   case "$1" in
     show) printf 'field=message\ntitle=Message\n\nbutton=send\ntitle=Send\nshortcut=cmd+return\n' ;;
-    send) openspot_kv toast "Sent: $(value input.message)" ;;
+    send) openspot toast "Sent: $(value input.message)" ;;
   esac
 }
 openspot_serve main "$@"
@@ -866,10 +874,10 @@ setting.city=Paris
   no call starts a second copy.
 - `openspot_serve main "$@"` runs `main` with the three parts of each call, and prints `call=<n>` before its output and
   `end=<n>` after it. The same `main` works in every mode.
-- The spot can print frames at any time. It must end each call with `end=<n>` in a head. A frame of only `call=<n>`
-  starts the output of that call.
+- The spot can print frames at any time. It must end each call with `end=<n>`. A frame of only `call=<n>` starts the
+  output of that call, so the next frame replaces what shows.
 - A second press of a running call sends the block `stop=<n>`. The call ends 2 seconds later, unless the spot prints a
-  frame for it first, such as a head of only `call=<n>`; then the call runs on to its `end`. That is how a spot keeps a
+  frame for it first, such as a frame of only `call=<n>`; then the call runs on to its `end`. That is how a spot keeps a
   window open and brings it to the front at a second press. A form, and a call stopped by a newer value of its block,
   stop at once. `openspot_serve` reads stdin only between calls, so it can't see a stop while `main` runs. A newer
   search text sends `stop=<n>` for the read of the older text, so only the newest answer shows. A read after the first gets `stop=<n>` after 10 seconds, and fails

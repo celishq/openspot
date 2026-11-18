@@ -178,18 +178,6 @@ final class SpotRunStateTests: XCTestCase {
         XCTAssertEqual(sheet.list.shown.map(\.run), ["b"])
     }
 
-    func testWorkThatNamesARowReadsAndSelectsIt() async throws {
-        let (sheet, link) = await opened()
-
-        sheet.pick(SpotItem(title: "A", run: "a"))
-        await link.frame("select=b\n", of: link.sent[1])
-        await link.end(link.sent[1])
-        await link.frame("row=a\ntitle=A\n\nrow=b\ntitle=B\n", of: link.sent[2])
-        await link.end(link.sent[2])
-
-        XCTAssertEqual(sheet.selectedItem?.run, "b")
-    }
-
     func testWorkShowsOnceTheClockHasRunOneSecond() async throws {
         let (sheet, link) = sheet(kind: .launch, read: nil)
 
@@ -457,7 +445,7 @@ final class SpotRunStateTests: XCTestCase {
         async let answer = sheet.form(action, item: nil)
         try await wait("the form call") { link.sent.count == 2 }
 
-        await link.frame("title=New\n\nfield=a\ntitle=A\n", of: link.sent[1])
+        await link.frame("frame=\ntitle=New\n\nfield=a\ntitle=A\n", of: link.sent[1])
         await link.frame("toast=Ready\n", of: link.sent[1])
         await link.end(link.sent[1])
 

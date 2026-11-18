@@ -12,7 +12,7 @@ final class SpotRunsStayTests: SpotRunsCase {
         ?*) filled=1 ;;
         '')
           if [ "$name" = new ] && [ -z "$filled" ]; then
-            printf 'title=New\\nend=%%s\\n\\nfield=a\\ntitle=A\\n---\\n' "$call"
+            printf 'frame=\\ntitle=New\\nend=%%s\\n\\nfield=a\\ntitle=A\\n---\\n' "$call"
           else
             printf 'end=%%s\\n\\nbutton=new\\ntitle=New\\nscope=spot\\nform=true\\n\\nrow=a\\ntitle=A\\n---\\n' "$call"
           fi
@@ -268,7 +268,7 @@ final class SpotRunsStayTests: SpotRunsCase {
             try script("once", toml: "on = ['sheet.open']", """
             case "$1" in
               show) printf 'button=add\\ntitle=Add\\nform=true\\nscope=spot\\n\\nrow=a\\ntitle=A\\n' ;;
-              add) case "$(cat)" in *name=*) printf 'select=a\\n' ;; *) printf 'title=Name\\n\\nfield=name\\ntitle=Name\\n' ;; esac ;;
+              add) case "$(cat)" in *name=*) printf '\\033]9;Saved\\007' ;; *) printf 'frame=\\ntitle=Name\\n\\nfield=name\\ntitle=Name\\n' ;; esac ;;
             esac
             """)
             let stay = try sheet("stay")
@@ -301,7 +301,7 @@ final class SpotRunsStayTests: SpotRunsCase {
           printf '%s\\n' "$line" >> '\(path("asked"))'
           case "$line" in
             call=*) call=${line#call=} ;;
-            arg=new) \(untilRelease); printf 'title=New\\n\\nfield=a\\ntitle=A\\n---\\n' ;;
+            arg=new) \(untilRelease); printf 'frame=\\ntitle=New\\n\\nfield=a\\ntitle=A\\n---\\n' ;;
             arg=show) printf 'end=%s\\n\\nbutton=new\\ntitle=New\\nscope=spot\\nform=true\\n---\\n' "$call" ;;
           esac
         done
@@ -352,7 +352,7 @@ final class SpotRunsStayTests: SpotRunsCase {
       case "$line" in
         call=*) call=${line#call=} ;;
         arg=new) ;;
-        arg=done) printf 'toast=Done already\\nend=%%s\\n---\\n' "$call" ;;
+        arg=done) printf '\\033]9;Done already\\007end=%%s\\n---\\n' "$call" ;;
         arg=show) printf 'end=%%s\\n\\nbutton=new\\ntitle=New\\nscope=spot\\nform=true\\n\\nbutton=done\\ntitle=Done\\nscope=spot\\nform=true\\n---\\n' "$call" ;;
       esac
     done
@@ -698,7 +698,7 @@ final class SpotRunsStayTests: SpotRunsCase {
 
     func testASheetOfARunningStayingScriptOpensAtOnceWithItsLastFrame() async throws {
         menuBar.insert("script")
-        try staying(toml: "mode = 'stay'\noffers = ['card', 'menubar']", head: "main=n\\n", frame: "text=n\\ntitle=3\\n\\ntext=a\\ntitle=A\\n")
+        try staying(toml: "mode = 'stay'\noffers = ['card', 'menubar']", head: "\\nframe=\\nmain=n\\n", frame: "text=n\\ntitle=3\\n\\ntext=a\\ntitle=A\\n")
         let sheet = try sheet()
         try await wait("the mark") { !self.runs.menuBarMarks.isEmpty }
         XCTAssertNil(sheet.panel)
@@ -945,7 +945,7 @@ final class SpotRunsStayTests: SpotRunsCase {
             stop=*) touch '\(path("stopped"))'; args=stop ;;
             '')
               case "$args" in
-                ' show a') ( \(untilRelease); printf 'end=%s\\n\\nrow=o\\ntitle=Old\\n---\\n' "$call"; printf 'toast=Done\\n---\\n' ) & ;;
+                ' show a') ( \(untilRelease); printf 'end=%s\\n\\nrow=o\\ntitle=Old\\n---\\n' "$call"; printf '\\033]9;Done\\007' ) & ;;
                 ' show ab') printf 'end=%s\\n\\nrow=n\\ntitle=New\\n---\\n' "$call" ;;
                 ' show') printf 'end=%s\\n\\nrow=x\\ntitle=X\\n---\\n' "$call" ;;
               esac ;;
@@ -1071,7 +1071,7 @@ final class SpotRunsStayTests: SpotRunsCase {
             '')
               if [ "$name" = go ]; then
                 printf 'call=%s\n---\n' "$id"
-                i=0; while [ $i -lt 300 ]; do printf 'title=Frame %s of the long call\n---\n' "$i"; i=$((i+1)); done
+                i=0; while [ $i -lt 300 ]; do printf 'frame=\ntitle=Frame %s of the long call\n---\n' "$i"; i=$((i+1)); done
                 printf 'end=%s\n---\n' "$id"
               else
                 printf 'button=go\ntitle=Go\nscope=spot\n\nrow=a\ntitle=A\n\nend=%s\n---\n' "$id"
@@ -1128,7 +1128,7 @@ final class SpotRunsStayTests: SpotRunsCase {
             call=*) id=${line#call=} ;;
             '')
               if [ "$id" = 1 ]; then printf 'row=a\ntitle=A\n\nend=1\n---\n'; fi
-              if [ "$id" = \#(last) ]; then printf 'end=2\n\nrow=old\ntitle=Old\n---\ntoast=done\n---\n'; id=; fi
+              if [ "$id" = \#(last) ]; then printf 'end=2\n\nrow=old\ntitle=Old\n---\n\033]9;done\007'; id=; fi
               ;;
           esac
         done

@@ -58,7 +58,7 @@ final class FilesOutTests: XCTestCase {
         let body = """
         case "$1" in
           show) printf 'row=a\\nfile=/a.png\\n\\nrow=b\\nfile=/b.png\\n\\nrow=c\\n' ;;
-          drag) shift; printf 'toast=Took %s\\n' "$*" ;;
+          drag) shift; printf '\\033]9;Took %s\\007' "$*" ;;
         esac
         """
         try "#!/bin/sh\n\(body)\n".writeScript(to: spots.spotFile("shelf"), toml: "on = ['sheet.open']")

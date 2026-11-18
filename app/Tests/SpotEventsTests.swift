@@ -121,8 +121,8 @@ final class SpotEventsTests: SpotRunsCase {
     }
 
     func testTheLaunchReadsEachSpotThatListsItWantedOrNot() async throws {
-        try script("news", toml: "on = ['app.launch']\noffers = ['card', 'menubar']", log: "news", "\(reasons)\nprintf 'title=N\\n'")
-        try script("other", toml: "on = ['app.update']\noffers = ['card', 'menubar']", log: "other", "printf 'title=O\\n'")
+        try script("news", toml: "on = ['app.launch']\noffers = ['card', 'menubar']", log: "news", "\(reasons)\nprintf 'frame=\\ntitle=N\\n'")
+        try script("other", toml: "on = ['app.update']\noffers = ['card', 'menubar']", log: "other", "printf 'frame=\\ntitle=O\\n'")
         _ = try scanned()
 
         runs.launched()
@@ -148,7 +148,7 @@ final class SpotEventsTests: SpotRunsCase {
     }
 
     func testAPanelThatHidesLetsALaunchReadFinish() async throws {
-        try script("news", toml: "on = ['app.launch']\noffers = ['card', 'menubar']", log: "news", "sleep 0.3\necho done >> '\(path("done"))'\nprintf 'title=N\\n'")
+        try script("news", toml: "on = ['app.launch']\noffers = ['card', 'menubar']", log: "news", "sleep 0.3\necho done >> '\(path("done"))'\nprintf 'frame=\\ntitle=N\\n'")
         _ = try scanned()
 
         runs.launched()

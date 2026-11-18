@@ -3,6 +3,7 @@ import XCTest
 
 final class SheetPartsTests: XCTestCase {
     private let lights = """
+    frame=
     grid=lights
     grid=left
     grid=brightness
@@ -89,7 +90,7 @@ final class SheetPartsTests: XCTestCase {
     }
 
     func testAButtonThatOnlyACardDrawingPlacesIsAPartOfTheCardAndNoAction() {
-        let outputCheck = FrameCheck(text: "grid.strip=next next next join-now\n\nnumber=next\nvalue=09:30\n\nbutton=join-now\ntitle=Join\n\nbutton=tick\ntitle=Mark as done\n")
+        let outputCheck = FrameCheck(text: "frame=\ngrid.strip=next next next join-now\n\nnumber=next\nvalue=09:30\n\nbutton=join-now\ntitle=Join\n\nbutton=tick\ntitle=Mark as done\n")
         let output = outputCheck.output
 
         XCTAssertEqual(output.parts.map(\.id), ["next", "join-now"])
@@ -105,7 +106,7 @@ final class SheetPartsTests: XCTestCase {
     }
 
     func testAViewBlockKeepsItsOwnKeysForItsViewAndOtherPartsKeepNone() {
-        let output = SpotOutput(text: "title=Card\n\nview=steps\nstep=words\nword=flip\nword=column\n\ntext=note\ntitle=Hi\n")
+        let output = SpotOutput(text: "frame=\ntitle=Card\n\nview=steps\nstep=words\nword=flip\nword=column\n\ntext=note\ntitle=Hi\n")
 
         XCTAssertEqual(output.parts.first { $0.id == "steps" }?.values["word"], ["flip", "column"])
         XCTAssertEqual(output.parts.first { $0.id == "steps" }?.values["step"], ["words"])
@@ -275,11 +276,11 @@ final class SheetPartsTests: XCTestCase {
 
     func testTheHintListsTheKeysOfItsParts() throws {
         XCTAssertEqual(try panel(lights).hint, "⌘Q Quit   Esc Close")
-        XCTAssertEqual(try panel("grid=swap\n\nbutton=swap\nicon=arrow.up.arrow.down\nshortcut=cmd+shift+s\n").hint, "⇧⌘S Swap   Esc Close")
+        XCTAssertEqual(try panel("frame=\ngrid=swap\n\nbutton=swap\nicon=arrow.up.arrow.down\nshortcut=cmd+shift+s\n").hint, "⇧⌘S Swap   Esc Close")
     }
 
     func testAButtonCanTakeEscapeAndThenTheHintHasNoCloseOfItsOwn() throws {
-        let sheet = try panel("grid=cancel remove\n\nbutton=cancel\ntitle=Cancel\nshortcut=escape\n\nbutton=remove\ntitle=Move to Trash\nshortcut=cmd+return\n")
+        let sheet = try panel("frame=\ngrid=cancel remove\n\nbutton=cancel\ntitle=Cancel\nshortcut=escape\n\nbutton=remove\ntitle=Move to Trash\nshortcut=cmd+return\n")
 
         XCTAssertEqual(sheet.parts.first?.key, ActionKey(name: "escape"))
         XCTAssertEqual(sheet.hint, "Esc Cancel   ⌘⏎ Move to Trash")
@@ -294,13 +295,13 @@ final class SheetPartsTests: XCTestCase {
         XCTAssertEqual(action.actions, [])
         XCTAssertEqual(action.errors, [])
         XCTAssertEqual(actionCheck.sheetFaults, [key, "the button c needs a title"])
-        XCTAssertEqual(FrameCheck(text: "grid=b\n\nbutton=b\ntitle=B\nshortcut=ctrl+k\n").partFaults, [key])
+        XCTAssertEqual(FrameCheck(text: "frame=\ngrid=b\n\nbutton=b\ntitle=B\nshortcut=ctrl+k\n").partFaults, [key])
     }
 
     func testASheetOfRowsDrawsKeysOnlyWhenItsDrawingPlacesAButtonWithAKey() throws {
         let rows = "repeat=files\n\nrow=a\ntitle=A\n\n"
-        let drawn = try XCTUnwrap(SheetParts(output: SpotOutput(text: "grid=files\ngrid=cancel\n\n\(rows)button=cancel\nshortcut=escape\n")))
-        let actions = SheetParts(output: SpotOutput(text: "grid=files\n\n\(rows)text=t\n\nbutton=reveal\nshortcut=cmd+return\n"))
+        let drawn = try XCTUnwrap(SheetParts(output: SpotOutput(text: "frame=\ngrid=files\ngrid=cancel\n\n\(rows)button=cancel\nshortcut=escape\n")))
+        let actions = SheetParts(output: SpotOutput(text: "frame=\ngrid=files\n\n\(rows)text=t\n\nbutton=reveal\nshortcut=cmd+return\n"))
 
         XCTAssertTrue(drawn.drawsKeys)
         XCTAssertEqual(actions?.drawsKeys, false)
@@ -312,7 +313,7 @@ final class SheetPartsTests: XCTestCase {
     }
 
     func testTheHintSaysThatAPressStopsARunningPart() throws {
-        let sheet = try panel("grid=quit swap\n\nbutton=quit\ntitle=Quit\nshortcut=cmd+q\n\nbutton=swap\ntitle=Swap\nshortcut=cmd+s\n")
+        let sheet = try panel("frame=\ngrid=quit swap\n\nbutton=quit\ntitle=Quit\nshortcut=cmd+q\n\nbutton=swap\ntitle=Swap\nshortcut=cmd+s\n")
 
         XCTAssertEqual(sheet.hint(stopping: { $0.id == "quit" }), "⌘Q Stop   ⌘S Swap   Esc Close")
         XCTAssertEqual(sheet.hint(stopping: { _ in false }), sheet.hint)
@@ -359,6 +360,7 @@ final class SheetPartsTests: XCTestCase {
 
     func testArrowsSelectThePartsThatReturnCanUse() throws {
         var sheet = try panel("""
+        frame=
         grid=key
         grid=note
         grid=wifi
@@ -414,7 +416,7 @@ final class SheetPartsTests: XCTestCase {
     func testALineWithNoIconKeepsTheIconColumnOnlyInAListWhereALineHasOne() throws {
         let list = try panel("section=cpu\ntitle=CPU\n\ntext=all\ntitle=All\nicon=cpu\n\ntext=top\ntitle=launchd\n")
         let plain = try panel("text=top\ntitle=launchd\n")
-        let drawn = try panel("grid=all top\n\ntext=all\ntitle=All\nicon=cpu\n\ntext=top\ntitle=launchd\n")
+        let drawn = try panel("frame=\ngrid=all top\n\ntext=all\ntitle=All\nicon=cpu\n\ntext=top\ntitle=launchd\n")
 
         XCTAssertEqual(list.parts.map(list.keepsIconColumn), [false, false, true])
         XCTAssertEqual(plain.parts.map(plain.keepsIconColumn), [false])
@@ -469,7 +471,7 @@ final class SheetPartsTests: XCTestCase {
     }
 
     func testANumberShowsItsValueLargeWithItsTitleAsTheLabel() throws {
-        let part = try XCTUnwrap(SpotOutput(text: "grid=cpu cpu\ngrid=cpu cpu\n\nnumber=cpu\nvalue=42%\ntitle=CPU\n").parts.first)
+        let part = try XCTUnwrap(SpotOutput(text: "frame=\ngrid=cpu cpu\ngrid=cpu cpu\n\nnumber=cpu\nvalue=42%\ntitle=CPU\n").parts.first)
 
         XCTAssertEqual(part.control, .number("42%", unit: nil))
         XCTAssertEqual(part.title, "CPU")
@@ -478,13 +480,13 @@ final class SheetPartsTests: XCTestCase {
 
     func testAChoiceDrawnOverTwoLinesIsAListAndOverOneLineAMenu() throws {
         let choice = "choice=c\nvalue=a\n\noption=a\ntitle=A\n\noption=b\ntitle=B\n"
-        let tall = try XCTUnwrap(SpotOutput(text: "grid=c\ngrid=c\n\n" + choice).parts.first)
-        let short = try XCTUnwrap(SpotOutput(text: "grid=c\n\n" + choice).parts.first)
-        var sheet = try XCTUnwrap(SheetParts(output: SpotOutput(text: "grid=c\ngrid=c\n\n" + choice)))
+        let tall = try XCTUnwrap(SpotOutput(text: "frame=\ngrid=c\ngrid=c\n\n" + choice).parts.first)
+        let short = try XCTUnwrap(SpotOutput(text: "frame=\ngrid=c\n\n" + choice).parts.first)
+        var sheet = try XCTUnwrap(SheetParts(output: SpotOutput(text: "frame=\ngrid=c\ngrid=c\n\n" + choice)))
 
         XCTAssertEqual(tall.control, .list([.init(id: "a", title: "A"), .init(id: "b", title: "B")], value: "a"))
         XCTAssertEqual(short.control, .menu([.init(id: "a", title: "A"), .init(id: "b", title: "B")], value: "a"))
-        sheet.take(SpotOutput(text: "grid=c\ngrid=c\n\nchoice=c\nvalue=a\n\noption=a\ntitle=A\n"), answering: sheet.generation)
+        sheet.take(SpotOutput(text: "frame=\ngrid=c\ngrid=c\n\nchoice=c\nvalue=a\n\noption=a\ntitle=A\n"), answering: sheet.generation)
         XCTAssertEqual(sheet.parts.first?.control, .list([.init(id: "a", title: "A")], value: "a"))
     }
 
