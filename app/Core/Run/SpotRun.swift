@@ -200,7 +200,7 @@ public final class SpotRun {
     @ObservationIgnored let runs: SpotRuns
     @ObservationIgnored let prepare: ([SpotItem], [String]) async -> Void
     @ObservationIgnored var glyphs: (rows: [SpotItem], glyphs: [String]) = ([], [])
-    @ObservationIgnored var link: ScriptLink
+    @ObservationIgnored var link: ScriptMode
     @ObservationIgnored var answered: Date? {
         didSet { settle() }
     }
@@ -238,24 +238,19 @@ public final class SpotRun {
 
     nonisolated deinit {}
 
-    private static func link(for spot: Spot, runs: SpotRuns) -> ScriptLink {
-        if let link = runs.standIn?(spot) { return link }
-        return switch ScriptKind(of: spot) {
-        case .once, .settings, .host: OnceLink(runs: runs)
-        case .stay: StayLink(runs: runs)
-        case .inline: InlineLink(runs: runs)
-        }
+    private static func link(for spot: Spot, runs: SpotRuns) -> ScriptMode {
+        runs.standIn?(spot) ?? runs.mode(of: spot).init(runs: runs)
     }
 
-    var script: ScriptKind {
-        ScriptKind(of: spot)
+    var script: any ScriptMode.Type {
+        runs.mode(of: spot)
     }
 
     public func update(_ new: Spot) {
         let header = spot.headerState
         if new.answers != spot.answers { answer("") }
-        let next = ScriptKind(of: new)
-        if next.keepsState != script.keepsState || (next == .inline) != (script == .inline) {
+        let next = runs.mode(of: new)
+        if next.keepsState != script.keepsState || (next == InlineMode.self) != (script == InlineMode.self) {
             let old = link
             link = Self.link(for: new, runs: runs)
             link.run = self

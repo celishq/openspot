@@ -5,14 +5,14 @@ import XCTest
 final class SpotRunStateTests: XCTestCase {
     private var clock: FakeClock!
     private var runs: SpotRuns!
-    private var links: [String: FakeLink] = [:]
+    private var links: [String: FakeMode] = [:]
     private var records: [CallLog.Record] = []
 
     override func setUp() async throws {
         clock = FakeClock()
         runs = SpotRuns(clock: clock.value)
         runs.standIn = { [unowned self] spot in
-            let link = FakeLink()
+            let link = FakeMode()
             links[spot.id] = link
             return link
         }
@@ -23,7 +23,7 @@ final class SpotRunStateTests: XCTestCase {
         runs.quit()
     }
 
-    private func sheet(kind: SpotKind = .list, read: SpotRead? = .sheet, mode: SpotMode = .once) -> (SpotRun, FakeLink) {
+    private func sheet(kind: SpotKind = .list, read: SpotRead? = .sheet, mode: SpotMode = .once) -> (SpotRun, FakeMode) {
         let sheet = runs.sheet(for: Spot(id: "script", name: "Script", url: URL(fileURLWithPath: "/script.spot/script.sh"), kind: kind, read: read, mode: mode))
         return (sheet, links["script"]!)
     }
@@ -32,7 +32,7 @@ final class SpotRunStateTests: XCTestCase {
         try await wait("\(count) sleeps on the clock") { self.clock.sleepCount == count }
     }
 
-    private func opened(searches: Bool = false, frame: String = "text=a\ntitle=A\n") async -> (SpotRun, FakeLink) {
+    private func opened(searches: Bool = false, frame: String = "text=a\ntitle=A\n") async -> (SpotRun, FakeMode) {
         let (sheet, link) = sheet(read: SpotRead(moments: [.sheet], searchesSheet: searches))
         sheet.open {}
         await link.frame(frame, of: link.sent[0])
@@ -191,13 +191,13 @@ final class SpotRunStateTests: XCTestCase {
         XCTAssertEqual(sheet.work.map(\.id), [link.sent[0].made.id])
     }
 
-    private func inMenuBar(read: SpotRead? = nil) -> (SpotRun, FakeLink) {
+    private func inMenuBar(read: SpotRead? = nil) -> (SpotRun, FakeMode) {
         let spot = Spot(id: "script", name: "Script", url: URL(fileURLWithPath: "/script.spot/script.sh"), read: read)
         runs.take(ScanResult(files: [SpotFile(id: "script", spots: [spot])], refused: []), menuBar: ["script"])
         return (runs.sheets["script"]!, links["script"]!)
     }
 
-    private func readInMenuBar() async -> (SpotRun, FakeLink, Int) {
+    private func readInMenuBar() async -> (SpotRun, FakeMode, Int) {
         let (sheet, link) = inMenuBar(read: SpotRead(moments: [.panel, .sheet, .event("clipboard.change")]))
         for call in link.sent { await link.end(call) }
         sheet.read(need: .change, reason: .panel)
@@ -298,7 +298,7 @@ final class SpotRunStateTests: XCTestCase {
             return fake.now()
         }, sleep: fake.sleep))
         runs.standIn = { [unowned self] spot in
-            let link = FakeLink()
+            let link = FakeMode()
             links[spot.id] = link
             return link
         }
@@ -426,7 +426,7 @@ final class SpotRunStateTests: XCTestCase {
             try await fake.sleep(duration, tolerance)
         }))
         runs.standIn = { [unowned self] spot in
-            let link = FakeLink()
+            let link = FakeMode()
             links[spot.id] = link
             return link
         }

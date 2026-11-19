@@ -1,7 +1,7 @@
 import Foundation
 
 @MainActor
-final class StayLink: ScriptLink {
+final class StayMode: ScriptMode {
     @MainActor
     final class Record {
         let call: OpenCall
@@ -57,6 +57,23 @@ final class StayLink: ScriptLink {
     }
 
     nonisolated deinit {}
+
+    static var keepsState: Bool {
+        true
+    }
+
+    static func answer(of spot: Spot, _ action: SpotAction, input: String?, limit: TimeInterval?, variables: [String: String], in runs: SpotRuns) async throws -> String {
+        guard action == .show else { return try await collect(of: spot, action, input: input, limit: limit, variables: variables, in: runs) }
+        let (script, frames, caller) = runs.stay(spot, limit: limit)
+        caller.reason = ReadReason.panel.rawValue
+        defer { script.end() }
+        script.send(Message(.show, event: .panel, given: input), id: 1)
+        for try await frame in frames {
+            let head = FrameRoot(text: frame)
+            if !head.isMark || head.end == "1" { return frame }
+        }
+        return ""
+    }
 
     var isAsking: Bool {
         endingAsks > 0 || records.values.contains { $0.ask.map { !$0.isAnswer } ?? false }

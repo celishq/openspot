@@ -1,19 +1,27 @@
 import Foundation
 
 @MainActor
-final class OnceLink: ScriptLink {
+class OnceMode: ScriptMode {
     weak var run: SpotRun?
     private let runs: SpotRuns
-    private var asking: [ScriptCall] = []
+    private let asking = AskingCalls()
 
-    init(runs: SpotRuns) {
+    required init(runs: SpotRuns) {
         self.runs = runs
     }
 
     nonisolated deinit {}
 
     var isAsking: Bool {
-        asking.contains { !$0.isStopped }
+        asking.isAsking
+    }
+
+    class var answersInApp: Bool {
+        false
+    }
+
+    class func frames(of spot: Spot, _ message: Message, limit: TimeInterval?, reason: String?, variables: [String: String], call: OpenCall?, in runs: SpotRuns) -> Frames {
+        runs.process(of: spot, message, limit: limit, reason: reason, variables: variables, call: call)
     }
 
     func send(_ call: OpenCall) -> Bool {
@@ -22,11 +30,10 @@ final class OnceLink: ScriptLink {
         let made = call.made
         let id = run.spot.id
         let values = run.fieldValues
-        let (stream, halt, process) = runs.frames(of: run.spot, run.message(of: request, values: values), limit: request.limit, reason: request.reason?.rawValue, call: call)
+        let (stream, halt, process) = runs.mode(of: run.spot).frames(of: run.spot, run.message(of: request, values: values), limit: request.limit, reason: request.reason?.rawValue, variables: [:], call: call, in: runs)
         made.halt = halt
-        if case .ask(let ask) = request.purpose, !ask.isAnswer { asking.append(made) }
-        run.track(made)
-        Task { [weak self, weak run, runs] in
+        asking.open(call, in: run)
+        Task { [weak run, runs, asking] in
             var end = ScriptCall.End.ended
             do {
                 for try await frame in stream {
@@ -45,10 +52,7 @@ final class OnceLink: ScriptLink {
             }
             runs.dropFinished()
             if let failed = process?.failedFrame { call.frames.append(failed) }
-            let last = made.isStopped ? .stopped : end
-            await run?.takeEnd(of: call, last)
-            self?.asking.removeAll { $0 === made }
-            run?.finish(call, last, errors: process?.errors ?? "")
+            await asking.close(call, made.isStopped ? .stopped : end, errors: process?.errors ?? "", in: run)
         }
         return true
     }

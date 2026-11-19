@@ -558,7 +558,7 @@ final class SpotRunsStayTests: SpotRunsCase {
         runs.panelOpened()
         sheet.open {}
         try await wait("the row") { sheet.list.shown.count == 1 }
-        let link = try XCTUnwrap(sheet.link as? StayLink)
+        let link = try XCTUnwrap(sheet.link as? StayMode)
         sheet.read(need: .change)
         let timer = try XCTUnwrap(link.records.values.first?.timer)
 
@@ -582,7 +582,7 @@ final class SpotRunsStayTests: SpotRunsCase {
         runs.panelOpened()
         sheet.open {}
         try await wait("the row") { sheet.list.shown.count == 1 }
-        let link = try XCTUnwrap(sheet.link as? StayLink)
+        let link = try XCTUnwrap(sheet.link as? StayMode)
         sheet.read(need: .change)
         let timer = try XCTUnwrap(link.records.values.first?.timer)
         try await wait("the sleep of the timer") { clock.isSleeping(for: 10) }
@@ -619,7 +619,7 @@ final class SpotRunsStayTests: SpotRunsCase {
         runs.panelOpened()
         sheet.open {}
         try await wait("the row") { sheet.list.shown.count == 1 && !sheet.isReading }
-        let link = try XCTUnwrap(sheet.link as? StayLink)
+        let link = try XCTUnwrap(sheet.link as? StayMode)
 
         holds = true
         sheet.read(need: .change)
@@ -1108,7 +1108,7 @@ final class SpotRunsStayTests: SpotRunsCase {
         runs.panelOpened()
         sheet.open {}
         try await wait("the row") { sheet.list.shown.count == 1 }
-        let link = try XCTUnwrap(sheet.link as? StayLink)
+        let link = try XCTUnwrap(sheet.link as? StayMode)
 
         for round in 1...150 {
             sheet.list.search("t\(round)")
@@ -1117,11 +1117,11 @@ final class SpotRunsStayTests: SpotRunsCase {
         }
 
         XCTAssertLessThanOrEqual(link.records.values.filter { !$0.isDropped }.count, 1)
-        XCTAssertLessThanOrEqual(link.records.values.filter(\.isDropped).count, StayLink.droppedLimit)
+        XCTAssertLessThanOrEqual(link.records.values.filter(\.isDropped).count, StayMode.droppedLimit)
     }
 
     func testALateAnswerToACallPastTheLimitOfStoppedCallsChangesNothing() async throws {
-        let last = StayLink.droppedLimit + 3
+        let last = StayMode.droppedLimit + 3
         try script(toml: "mode = 'stay'\non = ['sheet.text']", #"""
         while IFS= read -r line; do
           case "$line" in

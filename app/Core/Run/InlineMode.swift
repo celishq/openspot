@@ -1,10 +1,10 @@
 import Foundation
 
 @MainActor
-final class InlineLink: ScriptLink {
+final class InlineMode: ScriptMode {
     weak var run: SpotRun?
     private let runs: SpotRuns
-    private var asking: [ScriptCall] = []
+    private let asking = AskingCalls()
 
     init(runs: SpotRuns) {
         self.runs = runs
@@ -13,7 +13,23 @@ final class InlineLink: ScriptLink {
     nonisolated deinit {}
 
     var isAsking: Bool {
-        asking.contains { !$0.isStopped }
+        asking.isAsking
+    }
+
+    static func frames(of spot: Spot, _ message: Message, limit: TimeInterval?, reason: String?, variables: [String: String], call: OpenCall?, in runs: SpotRuns) -> Frames {
+        let inline = InlineCall(arguments: message.action.arguments, variables: runs.variables(of: spot, given: variables), input: message.text, reason: reason, limit: limit)
+        runs.script(of: spot).send(inline)
+        let (stream, halt) = runs.answered {
+            switch await inline.outcome(limit: limit) {
+            case .frame(let text): return text
+            case .failed(let error): throw error
+            case .dropped: return ""
+            }
+        }
+        return (stream, {
+            inline.stop()
+            halt()
+        }, nil)
     }
 
     func send(_ call: OpenCall) -> Bool {
@@ -21,8 +37,7 @@ final class InlineLink: ScriptLink {
         let request = call.request
         let inline = InlineCall(arguments: request.action.arguments, input: run.message(of: request, values: run.fieldValues).text, reason: request.reason?.rawValue, limit: request.limit, opened: call)
         call.made.halt = { inline.stop() }
-        if case .ask(let ask) = request.purpose, !ask.isAnswer { asking.append(call.made) }
-        run.track(call.made)
+        asking.open(call, in: run)
         runs.script(of: run.spot).send(inline)
         let wait = { (deadline: DispatchTime) in
             if DispatchTime.now() < deadline { self.runs.frameWaits += 1 }
@@ -45,13 +60,13 @@ final class InlineLink: ScriptLink {
 
     func end() {
         if let run { runs.dropScript(of: run.spot.id) }
-        asking = []
+        asking.dropAll()
     }
 
     private func take(_ outcome: InlineCall.Outcome, of call: OpenCall) {
         let made = call.made
         guard let run else {
-            asking.removeAll { $0 === made }
+            asking.drop(made)
             return
         }
         var text: String?
@@ -71,15 +86,13 @@ final class InlineLink: ScriptLink {
             return run.take(answers: text, to: query, of: call, end, errors: errors)
         }
         let first = end
-        Task { [weak run, runs] in
+        Task { [weak run, runs, asking] in
             var end = first
             if let run, let text {
                 let lines = await runs.intake(text, of: run.spot.id)
                 if made.isStopped { end = .stopped } else { await run.take(text, lines, of: call) }
             }
-            await run?.takeEnd(of: call, end)
-            self.asking.removeAll { $0 === made }
-            run?.finish(call, end, errors: errors)
+            await asking.close(call, end, errors: errors, in: run)
         }
     }
 

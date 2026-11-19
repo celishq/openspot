@@ -292,7 +292,7 @@ final class DrawSpotTests: XCTestCase {
 
     func testTheCallThatOpensTheStudioKeepsDrawWantedAndShowsNoWork() async throws {
         let clock = FakeClock()
-        let link = FakeLink()
+        let link = FakeMode()
         runs = SpotRuns(clock: clock.value)
         runs.standIn = { _ in link }
         let sheet = runs.sheet(for: try draw())
