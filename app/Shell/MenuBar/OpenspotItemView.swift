@@ -1,26 +1,25 @@
 import OpenspotCore
 import SwiftUI
 
-struct SpotMenuBarIconView: View {
+struct OpenspotItemView: View {
     let model: SpotsModel
     let image: NSImage
     let toast: Toast?
-    var isWorking = false
 
     private static var leave: Animation { SpotMotion.fade(isShown: false) }
     private static var arrive: Animation { SpotMotion.press }
 
     var body: some View {
         ZStack {
-            swap.scaleEffect(isWorking ? MotionTokens.menuBarWorkScale : 1).opacity(isWorking ? MotionTokens.hiddenOpacity : 1)
+            swap.opacity(isRunning ? MotionTokens.hiddenOpacity : 1)
             ZStack {
-                Capsule().padding(.vertical, SpotTokens.menuBarPillInset)
-                swap.scaleEffect(isWorking ? MotionTokens.menuBarWorkScale : 1).blendMode(.destinationOut)
+                Capsule().frame(height: SpotTokens.menuBarPill.height)
+                swap.blendMode(.destinationOut)
             }
             .compositingGroup()
-            .opacity(isWorking ? 1 : MotionTokens.hiddenOpacity)
+            .opacity(isRunning ? 1 : MotionTokens.hiddenOpacity)
         }
-        .animation(SpotMotion.fade(isShown: isWorking), value: isWorking)
+        .animation(SpotMotion.fade(isShown: isRunning), value: isRunning)
         .foregroundStyle(.primary)
         .frame(maxWidth: .infinity, maxHeight: .infinity)
     }
@@ -34,6 +33,10 @@ struct SpotMenuBarIconView: View {
                     removal: .scale(scale: MotionTokens.menuBarSwapScale).combined(with: .opacity).animation(Self.leave)
                 ))
         }
+    }
+
+    private var isRunning: Bool {
+        model.runningSummary != nil
     }
 
     private var symbol: String? {

@@ -1,7 +1,7 @@
 import OpenspotCore
 import SwiftUI
 
-struct SpotMenuBarMarkView: View {
+struct MenuBarMarkItemView: View {
     let mark: MenuBarMark
 
     private var markColour: Color {

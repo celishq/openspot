@@ -6,8 +6,8 @@ import SwiftUI
 final class OpenspotItem {
     private static let name = "Openspot"
 
-    private let item = NSStatusBar.system.statusItem(withLength: SpotTokens.menuBarIconWidth)
-    private var icon: MenuBarHost<SpotMenuBarIconView>?
+    private let item = NSStatusBar.system.statusItem(withLength: SpotTokens.menuBarPill.width)
+    private var icon: MenuBarHost<OpenspotItemView>?
     private var drag: SpotMenuBarDrag?
 
     init(model: SpotsModel, toast: Toast?, target: AnyObject, action: Selector, onDragEnter: @escaping () -> Void, onDrop: @escaping ([URL]) -> Void) {
@@ -16,12 +16,11 @@ final class OpenspotItem {
         #else
         let image = NSImage(named: "MenuBarIcon")
         #endif
-        item.button?.image = image
         item.button?.setAccessibilityLabel(Self.name)
         item.button?.target = target
         item.button?.action = action
         drag = item.button.map { SpotMenuBarDrag(button: $0, onEnter: onDragEnter, onDrop: onDrop) }
-        icon = makeIcon(model: model, toast: toast)
+        icon = image.flatMap { makeIcon(model: model, image: $0, toast: toast) }
     }
 
     var frame: NSRect? {
@@ -33,16 +32,15 @@ final class OpenspotItem {
     }
 
     func show(running summary: String?) {
-        icon?.rootView.isWorking = summary != nil
         item.button?.toolTip = summary
         item.button?.setAccessibilityLabel(summary ?? Self.name)
     }
 
-    private func makeIcon(model: SpotsModel, toast: Toast?) -> MenuBarHost<SpotMenuBarIconView>? {
-        guard let button = item.button, let image = button.image else { return nil }
-        button.image = nil
-        let host = MenuBarHost(rootView: SpotMenuBarIconView(model: model, image: image, toast: toast))
-        host.frame = NSRect(x: 0, y: 0, width: SpotTokens.menuBarIconWidth, height: button.bounds.height)
+    private func makeIcon(model: SpotsModel, image: NSImage, toast: Toast?) -> MenuBarHost<OpenspotItemView>? {
+        guard let button = item.button else { return nil }
+        let host = MenuBarHost(rootView: OpenspotItemView(model: model, image: image, toast: toast))
+        let height = max(button.bounds.height, SpotTokens.menuBarPill.height)
+        host.frame = NSRect(x: 0, y: (button.bounds.height - height) / 2, width: SpotTokens.menuBarPill.width, height: height)
         host.autoresizingMask = [.width, .height]
         button.addSubview(host)
         return host

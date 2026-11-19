@@ -43,7 +43,6 @@ public enum MotionTokens {
     public static let menuStartScale = 0.9
     public static let hiddenOpacity = 0.001
     public static let edgeScrollSpeed = 500.0
-    public static let menuBarWorkScale = 0.72
     public static let menuBarSwapScale = 0.5
 
     public static let cardTurn = 12.0
