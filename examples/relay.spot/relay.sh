@@ -27,8 +27,9 @@ listen() {
     nc -l 127.0.0.1 "$port" 2>/dev/null | while IFS= read -r line; do
       printf '%s' "$line" > "$state/last.new" && mv "$state/last.new" "$state/last"
       openspot toast "$line"
-      sheet
-      printf -- '---\n'
+      # One write, so that the lines of a call never land inside the frame.
+      frame=$(sheet)
+      printf '%s\n---\n' "$frame"
     done
     sleep 1
   done

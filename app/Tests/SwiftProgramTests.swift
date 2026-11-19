@@ -508,17 +508,21 @@ final class SwiftProgramTests: XCTestCase {
 
     func testTheSheetOfAStayingSpotThatIsBuiltStaysHeldForItsAnswerAndSaysNothing() async throws {
         let swift = try cachingWithTools("int main(void) { char line[64]; while (fgets(line, sizeof line, stdin)) {} return 0; }")
+        let release = folder.appendingPathComponent("release").path
+        let tools = folder.appendingPathComponent("tools")
+        try FileManager.default.moveItem(at: tools.appendingPathComponent("swiftc"), to: tools.appendingPathComponent("held-swiftc"))
+        try "#!/bin/sh\nn=0; while [ ! -f '\(release)' ] && [ $n -lt 1500 ]; do sleep 0.02; n=$((n + 1)); done\nexec '\(tools.path)/held-swiftc' \"$@\"\n"
+            .writeScript(to: tools.appendingPathComponent("swiftc"))
         let clock = FakeClock()
         let runs = SpotRuns(clock: clock.value, swift: swift)
         defer { runs.quit() }
-        let spot = try stayingSpot()
-        _ = try await swift.built(spot.url, with: spot.sources)
-        let sheet = runs.sheet(for: spot)
+        let sheet = runs.sheet(for: try stayingSpot())
         var isReady = false
 
         runs.panelOpened()
         sheet.open { isReady = true }
         try await wait("the pause after which a spot that is being built says so") { clock.isSleeping(for: 0.5) }
+        FileManager.default.createFile(atPath: release, contents: Data())
         try await wait("the start of the built program") { runs.processes.contains(where: \.isRunning) }
         clock.advance(by: 0.5)
         try await wait("the end of the pause") { sheet.pauses[SpotRun.buildKey] == nil }
