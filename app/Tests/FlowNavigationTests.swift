@@ -70,7 +70,7 @@ final class FlowNavigationTests: PanelCase {
         XCTAssertTrue(model.push(FlowSheet(spot: "list", route: "a")))
 
         try await wait("the page") { self.titles == ["Detail a"] }
-        XCTAssertEqual(model.flowEdges.titles(on: .behind), ["List"])
+        try await wait("the step to settle") { self.model.flowEdges.from == nil && self.model.flowEdges.titles(on: .behind) == ["List"] }
         XCTAssertEqual(model.flow.current?.title, "A")
         XCTAssertEqual(model.flow.pages, [FlowSheet(spot: "list"), FlowSheet(spot: "list", route: "a")])
     }
