@@ -108,6 +108,16 @@ final class NumberReadingTests: XCTestCase {
         XCTAssertEqual(try part("number=battery\nvalue=84\nmax=100\nlook=ring\n").numberLook(columns: 2, rows: 1), .ring)
     }
 
+    func testANumberPrintedAsARowShowsItsValueOrItsRingOnTheRight() throws {
+        let frame = Frame(text: "frame=\ngrid=cpu\ngrid=cpu\n\nnumber=cpu\nvalue=10\nmax=100\n\nnumber=cpu-1\ntitle=WindowServer\nvalue=32.7\nunit=%\n\nnumber=device-1\ntitle=AirPods\nvalue=74\nmax=100\nunit=%\n")
+
+        XCTAssertEqual(frame.items.map(\.run), ["cpu-1", "device-1"])
+        XCTAssertEqual(frame.items.first?.number?.text, "32.7%")
+        XCTAssertNil(frame.items.first?.ring)
+        XCTAssertEqual(frame.items.last?.ring?.fill, 0.74)
+        XCTAssertEqual(frame.items.last?.ring?.ringWords, "74")
+    }
+
     func testANumberWithAMaxIsAGaugeInTheMenuBar() throws {
         let value = try XCTUnwrap(MetricValue(output: Frame(text: "number=battery\ntitle=Battery\nvalue=84\nmax=100\nunit=%\n")))
 

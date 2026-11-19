@@ -56,7 +56,7 @@ struct SheetPartsView: View {
                     .offset(x: line.minX, y: line.minY)
             }
             if let area = sheet.repeatFrame {
-                SpotItemsView(list: list, onRun: onRun, selection: selection, onDragOut: onDragOut)
+                SpotItemsView(list: list, onRun: onRun, selection: selection, onDragOut: onDragOut, room: area.height)
                     .frame(width: area.width, height: area.height)
                     .mask(alignment: .top) { Rectangle().frame(height: area.height + SpotTokens.padding) }
                     .offset(x: area.minX, y: area.minY)

@@ -3,7 +3,19 @@ here=$(dirname "$0")
 . "$OPENSPOT_SH"
 data=$OPENSPOT_DATA
 event=$(value event)
-[ "$1" = show ] || exit 0
+
+# A row of a device opens the Bluetooth settings, and a row of a process or the swap opens Activity Monitor.
+case $1 in
+  show) ;;
+  open)
+    case $2 in
+      device-*) open "x-apple.systempreferences:com.apple.BluetoothSettings" ;;
+      *) open -a "Activity Monitor" ;;
+    esac
+    exit 0
+    ;;
+  *) exit 0 ;;
+esac
 load=$(value event.value)
 
 # Prints the number that the script of another spot prints, named $1, without its root and its bar.
@@ -85,8 +97,8 @@ device_rows() {
     return "headphones"
   }
   NF {
-    printf "device-%d\t%s%s\t%s%%\t%s\tvalue=%.2f\t%s\n", NR, $1, ($2 == "" ? "" : ", " tolower($2)), $3, symbol($1, $2), $3 / 100, ($3 <= 20 ? "tone=bad" : "")
-  }' | openspot_items text
+    printf "device-%d\t%s%s\t\t%s\tvalue=%d\tmax=100\tunit=%%\topen.title=Bluetooth Settings\t%s\n", NR, $1, ($2 == "" ? "" : ", " tolower($2)), symbol($1, $2), $3, ($3 <= 20 ? "tone=bad" : "")
+  }' | openspot_items number
 }
 
 # Prints the three processes that use the most CPU, and the three that hold the most memory with the swap.
@@ -94,13 +106,13 @@ process_rows() {
   printf 'section=top-cpu\ntitle=CPU\n'
   ps -Aco pcpu=,comm= -r | head -3 | awk '{
     cpu = $1; $1 = ""; sub(/^ /, "")
-    printf "cpu-%d\t%s\t%s%%\n", NR, $0, cpu
-  }' | openspot_items text
-  printf 'section=top-memory\ntitle=Memory\n\ntext=swap\ntitle=Swap\ndetail=%s\n\n' "$(/usr/sbin/sysctl -n vm.swapusage | awk '{ mb = $6 + 0; print (mb >= 1024 ? sprintf("%.1f GB", mb / 1024) : sprintf("%d MB", mb)) }')"
+    printf "cpu-%d\t%s\t\t\tvalue=%s\tunit=%%\topen.title=Activity Monitor\n", NR, $0, cpu
+  }' | openspot_items number
+  printf 'section=top-memory\ntitle=Memory\n\nnumber=swap\ntitle=Swap\n%s\nopen.title=Activity Monitor\n\n' "$(/usr/sbin/sysctl -n vm.swapusage | awk '{ mb = $6 + 0; printf "value=%d\ndisplay=%s", mb, (mb >= 1024 ? sprintf("%.1f GB", mb / 1024) : sprintf("%d MB", mb)) }')"
   ps -Aco rss=,comm= -m | head -3 | awk '{
     kb = $1; $1 = ""; sub(/^ /, "")
-    printf "memory-%d\t%s\t%s\n", NR, $0, (kb >= 1048576 ? sprintf("%.1f GB", kb / 1048576) : sprintf("%d MB", kb / 1024))
-  }' | openspot_items text
+    printf "memory-%d\t%s\t\t\tvalue=%d\tdisplay=%s\topen.title=Activity Monitor\n", NR, $0, kb, (kb >= 1048576 ? sprintf("%.1f GB", kb / 1048576) : sprintf("%d MB", kb / 1024))
+  }' | openspot_items number
 }
 
 printf 'frame=\ngrid.wide=battery cpu\n'

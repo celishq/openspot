@@ -11,6 +11,7 @@ struct SpotItemsView: View {
     var onPoint: (SpotItem) -> Void = { _ in }
     var selection: (() -> Int)?
     var onDragOut: ([SpotItem]) -> Void = { _ in }
+    var room = SpotTokens.listRoom
 
     private static var bottomFade: CGFloat { 2 * SpotTokens.padding }
 
@@ -82,7 +83,7 @@ struct SpotItemsView: View {
     }
 
     private var bottomInset: CGFloat {
-        SpotTokens.sheetFits(rows: list.lineCount, perLine: list.perLine) ? SpotTokens.padding : Self.bottomFade
+        SpotTokens.rowsFit(rows: list.lineCount, perLine: list.perLine, in: room) ? SpotTokens.padding : Self.bottomFade
     }
 
     private var pinnedScroll: some View {
@@ -192,7 +193,7 @@ struct SpotItemsView: View {
                     .font(SpotType.body)
                     .foregroundStyle(SpotTheme.ink)
                     .lineLimit(1)
-                if let subtitle = item.subtitle, item.ring == nil {
+                if let subtitle = item.subtitle, item.ring == nil || item.number != nil {
                     Text(subtitle)
                         .font(SpotType.detail)
                         .modifier(SpotSecondaryText())
@@ -200,6 +201,12 @@ struct SpotItemsView: View {
                 }
             }
             Spacer(minLength: 0)
+            if item.ring == nil, let number = item.number {
+                Text(number.text)
+                    .font(SpotType.value)
+                    .foregroundStyle(SpotToneWords.colour(of: item.tone) ?? SpotTheme.ink)
+                    .lineLimit(1)
+            }
             if !item.bars.isEmpty {
                 ItemBars(bars: item.bars, tone: item.tone)
             }

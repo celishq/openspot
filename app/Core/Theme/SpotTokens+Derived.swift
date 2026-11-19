@@ -46,17 +46,27 @@ extension SpotTokens {
         (partsWidth - listRowGap * CGFloat(perLine - 1)) / CGFloat(perLine)
     }
 
-    public static func sheetRect(rows: Int, perLine: Int = 1, hasField: Bool = true, setsApart: Bool = false, header: CGFloat = 0) -> CGRect {
+    public static var listRoom: CGFloat { sheetMaxHeight - sheetRowsTop - padding }
+
+    public static func rowsHeight(rows: Int, perLine: Int = 1) -> CGFloat {
         let lines = CGFloat(max((rows + perLine - 1) / perLine, 1))
         let line = perLine > 1 ? square(perLine: perLine) : listRow
-        let height = sheetRowsTop - (hasField ? 0 : listRow + rowGap) + lines * line + (lines - 1) * listRowGap + padding
+        return lines * line + (lines - 1) * listRowGap
+    }
+
+    public static func rowsFit(rows: Int, perLine: Int = 1, in room: CGFloat = listRoom) -> Bool {
+        rowsHeight(rows: rows, perLine: perLine) < room
+    }
+
+    public static func sheetRect(rows: Int, perLine: Int = 1, hasField: Bool = true, setsApart: Bool = false, header: CGFloat = 0) -> CGRect {
+        let height = sheetRowsTop - (hasField ? 0 : listRow + rowGap) + rowsHeight(rows: rows, perLine: perLine) + padding
             + (setsApart ? pinRuleRoom + listRowGap : 0) + header
         return CGRect(x: halo, y: halo, width: gridWidth, height: min(height, sheetMaxHeight))
     }
 
     public static func firstScreen(perLine: Int) -> Int {
         let line = perLine > 1 ? square(perLine: perLine) : listRow
-        let lines = ((sheetMaxHeight - sheetRowsTop - padding) / (line + listRowGap)).rounded(.up)
+        let lines = (listRoom / (line + listRowGap)).rounded(.up)
         return (Int(lines) + 1) * max(perLine, 1)
     }
 
@@ -74,9 +84,6 @@ extension SpotTokens {
         return CGSize(width: gridWidth, height: min(sheetFieldDrop + content + padding, sheetMaxHeight))
     }
 
-    public static func sheetFits(rows: Int, perLine: Int = 1) -> Bool {
-        sheetRect(rows: rows, perLine: perLine).height < sheetMaxHeight
-    }
 
     public static func panelRect(_ panel: SheetParts, header: CGFloat = 0) -> CGRect {
         let field = panel.showsField ? SpotTokens.partFieldRoom : 0

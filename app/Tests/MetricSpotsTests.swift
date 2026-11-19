@@ -137,11 +137,32 @@ final class MetricSpotsTests: SpotRunsCase {
 
         for frame in frames {
             XCTAssertTrue(frame.contains("grid=battery cpu memory devices\ngrid=battery cpu memory devices\n"), frame)
-            XCTAssertTrue(frame.contains("section=top-cpu\ntitle=CPU\n\ntext=cpu-1\n"), frame)
-            XCTAssertTrue(frame.contains("text=swap\ntitle=Swap\n"), frame)
+            XCTAssertTrue(frame.contains("section=top-cpu\ntitle=CPU\n\nnumber=cpu-1\n"), frame)
+            XCTAssertTrue(frame.contains("number=swap\ntitle=Swap\n"), frame)
             XCTAssertFalse(frame.contains("text=mac\n"), frame)
         }
         XCTAssertEqual(log("tools.log").filter { $0 == "system_profiler" }, ["system_profiler"])
+    }
+
+    func testSystemsRowsShowTheirValueAndOpenActivityMonitorOrBluetoothSettings() async throws {
+        try copy("system")
+        try "#!/bin/sh\nprintf '%s\\n' \"$*\" >> '\(path("open.log"))'\n".writeScript(to: folder.appendingPathComponent("tools/open"))
+        let script = folder.appendingPathComponent("system.spot/system.sh")
+        func run(_ arguments: [String]) async throws -> String {
+            var text = ""
+            for try await frame in ScriptProcess(url: script, arguments: arguments, mode: .once(input: "event=sheet.open\n"), limit: 60, dataName: "system", base: runs.environment).start() { text += frame }
+            return text
+        }
+
+        let frame = try await run(["show"])
+        let rows = Frame(text: frame).items
+        let process = try XCTUnwrap(rows.first { $0.run == "cpu-1" })
+        _ = try await run(["open", process.run])
+        _ = try await run(["open", "device-1"])
+
+        XCTAssertNotNil(process.number, frame)
+        XCTAssertEqual(process.openTitle, "Activity Monitor")
+        XCTAssertEqual(log("open.log"), ["-a Activity Monitor", "x-apple.systempreferences:com.apple.BluetoothSettings"])
     }
 
     func testSystemReadsTheBatteryAndTheDevicesAgainOverWhatAnOlderFormKept() async throws {

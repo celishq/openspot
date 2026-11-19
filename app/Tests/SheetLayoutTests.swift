@@ -49,6 +49,15 @@ final class SheetLayoutTests: XCTestCase {
     title=Copy
     """
 
+    func testRowsFitTheRoomTheyAreGivenNotTheWholeSheet() {
+        let three = SpotTokens.rowsHeight(rows: 3)
+
+        XCTAssertEqual(three, SpotTokens.listRow * 3 + SpotTokens.listRowGap * 2)
+        XCTAssertTrue(SpotTokens.rowsFit(rows: 3))
+        XCTAssertFalse(SpotTokens.rowsFit(rows: 3, in: three - 1))
+        XCTAssertEqual(SpotTokens.sheetRect(rows: 3).height, SpotTokens.sheetRowsTop + three + SpotTokens.padding)
+    }
+
     func testASheetWithRowsKeepsRoomForTheFieldOnlyWhenItSearches() throws {
         let numbers = "number=cpu\nvalue=1\nvalue=2\n\ntext=a\ntitle=A\n"
         let still = try XCTUnwrap(SheetParts(output: output("frame=\ngrid=cpu\ngrid=cpu\n\n" + numbers)))
