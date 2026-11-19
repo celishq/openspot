@@ -11,7 +11,7 @@ public struct ShowEvents: Equatable, Sendable {
     public static let panel = ShowEvents(moments: [.panel])
     public static let sheet = ShowEvents(moments: [.sheet])
 
-    public let moments: [Moment]
+    public private(set) var moments: [Moment]
     public let answers: AnswerPattern?
     public let searchesSheet: Bool
     private let filters: [String: AnswerPattern]
@@ -70,6 +70,12 @@ public struct ShowEvents: Equatable, Sendable {
         self.answers = answers
         self.searchesSheet = searchesSheet
         self.filters = filters
+    }
+
+    public func adding(_ moment: Moment) -> ShowEvents {
+        var events = self
+        if !has(moment) { events.moments.append(moment) }
+        return events
     }
 
     public var events: [String] {
