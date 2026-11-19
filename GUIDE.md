@@ -30,13 +30,12 @@ icon = "sun.max"
 open -a Calendar
 ```
 
-To show something, add `on` to the manifest. It lists when Openspot asks the spot what to show. Here, Openspot asks when
-the sheet opens, and the spot prints a title and a detail.
+To show something, print it. Openspot asks the spot what to show each time its sheet opens, and here the spot prints a
+title and a detail.
 
 ```toml
 title = "Cups today"
 icon = "cup.and.saucer.fill"
-on = ["sheet.open"]
 ```
 
 ```sh
@@ -79,7 +78,6 @@ your spot with `open` and the id of the item.
 ```toml
 title = "Apps"
 icon = "square.grid.2x2"
-on = ["sheet.open"]
 ```
 
 ```sh
@@ -109,7 +107,6 @@ with `pages`, give the item a `route=` with the page's id, and print the page wh
 ```toml
 title = "Fruit"
 icon = "leaf"
-on = ["sheet.open"]
 pages = ["*"]
 ```
 
@@ -223,7 +220,6 @@ shortcut works while an item is selected. A press closes the panel; `close=false
 
 ```toml
 title = "Notes list"
-on = ["sheet.open"]
 ```
 
 ```sh
@@ -247,7 +243,6 @@ so the spot doesn't look the item up again.
 
 ```toml
 title = "Downloads"
-on = ["sheet.open"]
 ```
 
 ```sh
@@ -274,7 +269,6 @@ form, then again with the values the user typed.
 
 ```toml
 title = "Quick note"
-on = ["sheet.open"]
 ```
 
 ```sh
@@ -424,7 +418,6 @@ and the spot's Settings list it. The user opens them with `⌘⏎` on the spot's
 
 ```toml
 title = "Repos"
-on = ["sheet.open"]
 
 [settings.folder]
 ```
@@ -456,7 +449,6 @@ asks for it in a form of its own, keeps it in the Keychain, and gives it to each
 
 ```toml
 title = "Weather"
-on = ["sheet.open"]
 
 [settings.token]
 type = "secret"
@@ -482,7 +474,6 @@ program at each call. Each item of `source` names one more Swift file, or a fold
 ```toml
 title = "Cups today"
 icon = "cup.and.saucer.fill"
-on = ["sheet.open"]
 source = ["cups.swift"]
 ```
 
@@ -511,7 +502,6 @@ it draws. The view reads the keys of its block, and the rows of the frame.
 ```toml
 title = "Cups this week"
 icon = "chart.bar"
-on = ["sheet.open"]
 view = "week.swift"
 ```
 
@@ -562,7 +552,6 @@ you [change the look](#change-the-look-of-openspot).
 ```toml
 title = "Steps"
 icon = "figure.walk"
-on = ["sheet.open"]
 view = "steps.swift"
 ```
 

@@ -35,7 +35,7 @@ final class BigPasteTests: XCTestCase {
           show) printf 'frame=\\ngrid=input\\ngrid=output\\n\\nfield=input\\nvalue=\\n\\nfield=output\\nvalue=\\nreadonly=true\\n' ;;
           input) \(answer) ;;
         esac
-        """.writeScript(to: url, toml: "on = ['sheet.open']")
+        """.writeScript(to: url, toml: "")
         runs.take(try SpotsFolder(url: folder).scan())
         return try XCTUnwrap(runs.sheets["script"])
     }

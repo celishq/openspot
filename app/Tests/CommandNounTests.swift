@@ -60,7 +60,7 @@ final class CommandNounTests: XCTestCase {
     }
 
     func testARunOfAnotherSpotCountsOnItWithItsCaller() async throws {
-        try "#!/bin/sh\necho 'title=hi'\n".writeScript(to: folder.appendingPathComponent("spots/echo.sh"), toml: "title = 'Echo'\non = ['sheet.open']")
+        try "#!/bin/sh\necho 'title=hi'\n".writeScript(to: folder.appendingPathComponent("spots/echo.sh"), toml: "title = 'Echo'")
         let caller = Spot(id: "board", name: "Board", url: folder.appendingPathComponent("board.sh"), dataName: "board", uses: [.spots])
 
         let answer = try await ask(["spot", "run", "echo"], from: caller)
@@ -72,7 +72,7 @@ final class CommandNounTests: XCTestCase {
 
     func testARunThatOpenspotRefusesCountsNothing() async throws {
         let core = folder.appendingPathComponent("core", isDirectory: true)
-        try "#!/bin/sh\necho 'title=hi'\n".writeScript(to: core.appendingPathComponent("openspot.spot/keyed.sh"), toml: "title = 'Keyed'\nuses = ['account']\non = ['sheet.open']")
+        try "#!/bin/sh\necho 'title=hi'\n".writeScript(to: core.appendingPathComponent("openspot.spot/keyed.sh"), toml: "title = 'Keyed'\nuses = ['account']")
         api = CommandAPI(mac: Mac(), places: .test(["OPENSPOT_CONFIG": folder.path, "OPENSPOT_CORE": core.path]), app: FakeRunningApp(), runs: runs, rates: .offline, nouns: nouns)
         let caller = Spot(id: "board", name: "Board", url: folder.appendingPathComponent("board.sh"), dataName: "board", uses: [.spots])
 

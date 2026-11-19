@@ -107,7 +107,7 @@ final class MetricContractTests: XCTestCase {
     }
 
     func testTheCheckReportsAListThatFails() async throws {
-        try script("tools.sh", "#!/bin/sh\necho gone >&2\nexit 1\n", toml: "on = ['sheet.open']")
+        try script("tools.sh", "#!/bin/sh\necho gone >&2\nexit 1\n", toml: "")
 
         let faults = await SpotCheck(folder: SpotsFolder(url: folder)).faults()
 
@@ -115,16 +115,16 @@ final class MetricContractTests: XCTestCase {
     }
 
     func testTheCheckFaultsAPartOrAnActionCalledShow() async throws {
-        try script("tools.sh", "#!/bin/sh\nprintf 'button=show\\ntitle=A\\n\\ntext=a\\ntitle=A\\n\\ntext=show\\ntitle=B\\n'\n", toml: "on = ['sheet.open']")
+        try script("tools.sh", "#!/bin/sh\nprintf 'button=show\\ntitle=A\\n\\ntext=a\\ntitle=A\\n\\ntext=show\\ntitle=B\\n'\n", toml: "")
 
         let faults = await SpotCheck(folder: SpotsFolder(url: folder)).faults()
 
         XCTAssertEqual(faults, ["tools: an action cannot be called show", "tools: an item cannot be called show"])
     }
 
-    func testTheCheckDoesNotRunAScriptWithNoRead() async throws {
+    func testTheCheckDoesNotRunAScriptWithCommandsAndNoEvents() async throws {
         let marker = folder.appendingPathComponent("marker")
-        try script("once.sh", "#!/bin/sh\ntouch '\(marker.path)'\n")
+        try script("once.sh", "#!/bin/sh\ntouch '\(marker.path)'\n", toml: TestSpot.command)
 
         let faults = await SpotCheck(folder: SpotsFolder(url: folder)).faults()
 

@@ -16,7 +16,7 @@ final class PlacesTests: PanelCase {
     }
 
     func testASpotWithNoOffersCanBeACardInTheMenuBarAFloatAndAWindow() async throws {
-        try script("shelf", toml: "title = 'Shelf'\non = ['sheet.open']", "printf 'text=a\\ntitle=A\\n'")
+        try script("shelf", toml: "title = 'Shelf'", "printf 'text=a\\ntitle=A\\n'")
         _ = try model.files.config.change { $0.arrangement.set(isInMenuBar: true, of: "shelf") }
         await model.reload()
 
@@ -38,9 +38,9 @@ final class PlacesTests: PanelCase {
 
     func testAnOldPlaceInOffersIsAnUnknownValueAndOnlySearchStays() throws {
         for place in ["card", "menubar", "float", "window", "none"] {
-            try script(place, toml: "on = ['sheet.open']\noffers = ['\(place)']", "")
+            try script(place, toml: "offers = ['\(place)']", "")
         }
-        try script("found", toml: "on = ['sheet.open']\noffers = ['search']", "")
+        try script("found", toml: "offers = ['search']", "")
 
         let scan = try SpotsFolder(url: spots).scan()
 
@@ -51,8 +51,8 @@ final class PlacesTests: PanelCase {
     func testACardOfOtherSpotsPressAndToAreUnknownKeysSoTheSpotDoesNotLoad() throws {
         try script("cups", toml: "on = ['clock.60']", "")
         try script("board", toml: "'grid.large' = ['cups cups']\nto = 'cups'", "")
-        try script("pressed", toml: "on = ['sheet.open']\npress = 'open'", "")
-        try script("led", toml: "on = ['sheet.open']\nto = 'cups'", "")
+        try script("pressed", toml: "press = 'open'", "")
+        try script("led", toml: "to = 'cups'", "")
 
         let scan = try SpotsFolder(url: spots).scan()
 

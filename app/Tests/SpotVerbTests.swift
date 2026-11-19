@@ -33,9 +33,9 @@ final class SpotVerbTests: XCTestCase {
             "esac"
         ]
         let app = core.appendingPathComponent("openspot.spot")
-        try editor.joined(separator: "\n").appending("\n").writeScript(to: app.appendingPathComponent("change.sh"), toml: "title = 'Change'\non = ['sheet.open']\nedits = 'spots'")
+        try editor.joined(separator: "\n").appending("\n").writeScript(to: app.appendingPathComponent("change.sh"), toml: "title = 'Change'\nedits = 'spots'")
         try actions.writeInline(to: app.appendingPathComponent("actions.js"), toml: actionsToml)
-        try icon.writeScript(to: app.appendingPathComponent("icon.sh"), toml: "title = 'Icon'\nicon = 'paintbrush.pointed'\non = ['sheet.open']\nview = 'icon.swift'\nuses = ['spots']\ndrop = 'png,svg'")
+        try icon.writeScript(to: app.appendingPathComponent("icon.sh"), toml: "title = 'Icon'\nicon = 'paintbrush.pointed'\nview = 'icon.swift'\nuses = ['spots']\ndrop = 'png,svg'")
         try "import SwiftUI\n\nstruct SpotView: View {\n    let spot: SpotInput\n\n    var body: some View {\n        Color.clear\n    }\n}\n".write(to: app.appendingPathComponent("icon.swift"), atomically: true, encoding: .utf8)
         try "#!/bin/sh\necho\n".writeScript(to: core.spotFile("cups"), toml: "title = 'Cups'")
         let files = AppPlaces(
@@ -179,7 +179,7 @@ final class SpotVerbTests: XCTestCase {
 
     func testTheFooterOfASpotOfThePersonLeavesEditToTheActionsMenu() async throws {
         try script("weather", toml: "title = 'Weather'")
-        try script("notes", toml: "title = 'Notes'\non = ['sheet.open']")
+        try script("notes", toml: "title = 'Notes'")
 
         _ = try await select("weather")
         XCTAssertEqual(model.hint, "⏎ Open   ⌘⏎ Settings   ⌘K Actions")
@@ -430,7 +430,7 @@ final class SpotVerbTests: XCTestCase {
     }
 
     func testTheFormOfASecretKeepsItInTheStoreNotTheConfigAndRefusesAShortOne() async throws {
-        try script("weather", toml: "title = 'Weather'\non = ['sheet.open']\n[settings.token]\ntype = 'secret'")
+        try script("weather", toml: "title = 'Weather'\n[settings.token]\ntype = 'secret'")
         await model.reload()
         model.isShown = true
         model.panelWillShow()

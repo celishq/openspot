@@ -35,8 +35,8 @@ final class AppWordsTests: XCTestCase {
     func testOnlyASpotOfTheAppGetsTheVariablesOfTheApp() async throws {
         let folder = try temporaryFolder()
         let body = "printf 'text=v\\ntitle=%s\\n' \"" + variables.map { "${\($0)-none}" }.joined(separator: "|") + "\""
-        try write(folder.appendingPathComponent("core/openspot.spot/app.sh"), toml: "title = 'App'\non = ['sheet.open']", body: body)
-        try write(folder.appendingPathComponent("mine/mine.spot/mine.sh"), toml: "title = 'Mine'\non = ['sheet.open']", body: body)
+        try write(folder.appendingPathComponent("core/openspot.spot/app.sh"), toml: "title = 'App'", body: body)
+        try write(folder.appendingPathComponent("mine/mine.spot/mine.sh"), toml: "title = 'Mine'", body: body)
         let scan = try SpotsFolder(url: folder.appendingPathComponent("mine"), core: folder.appendingPathComponent("core")).scan()
         let environment = TestEnvironment.values.merging(["OPENSPOT_CONFIG": folder.path, "OPENSPOT_SPOTS": folder.path]) { _, new in new }
         let runs = SpotRuns(environment: environment)

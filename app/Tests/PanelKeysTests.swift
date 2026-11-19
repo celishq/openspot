@@ -31,7 +31,7 @@ final class PanelKeysTests: PanelCase {
     }
 
     private func openInfo() async throws {
-        try script("info", toml: "on = ['sheet.open']\npages = ['a']", """
+        try script("info", toml: "pages = ['a']", """
         page=$(sed -n 's/^route=//p')
         if [ -n "$page" ]; then printf 'frame=\\ngrid=detail\\n\\ntext=detail\\ntitle=Detail\\n'; else printf 'frame=\\ngrid=first\\n\\ntext=first\\ntitle=First\\n'; fi
         """)
@@ -90,7 +90,7 @@ final class PanelKeysTests: PanelCase {
     }
 
     func testASearchThatFindsNoSpotTeachesTheSlash() async throws {
-        try script("list", toml: "title = 'List'\non = ['sheet.open']", "printf 'text=a\\ntitle=A\\n'")
+        try script("list", toml: "title = 'List'", "printf 'text=a\\ntitle=A\\n'")
         await model.reload()
 
         model.query = "zzz"
@@ -164,7 +164,7 @@ final class PanelKeysTests: PanelCase {
     }
 
     func testInASheetOfRowsTheArrowsMoveByLinesAndReturnPicksTheRow() async throws {
-        try script("fruit", toml: "on = ['sheet.open']", "printf 'text=a\\ntitle=Apple\\n\\ntext=b\\ntitle=Banana\\n\\ntext=c\\ntitle=Cherry\\n'")
+        try script("fruit", toml: "", "printf 'text=a\\ntitle=Apple\\n\\ntext=b\\ntitle=Banana\\n\\ntext=c\\ntitle=Cherry\\n'")
         await model.reload()
         model.isShown = true
         model.panelWillShow()
@@ -272,7 +272,7 @@ final class PanelKeysTests: PanelCase {
     }
 
     func testEscWhileAKeyIsRecordedStopsTheRecordingAndKeepsTheSheet() async throws {
-        try script("draw", toml: "title = 'Draw'\non = ['sheet.open']", "printf 'field=float\\ntitle=Float\\ntype=hotkey\\n'")
+        try script("draw", toml: "title = 'Draw'", "printf 'field=float\\ntitle=Float\\ntype=hotkey\\n'")
         await model.reload()
         model.isShown = true
         model.panelWillShow()
@@ -307,7 +307,7 @@ final class PanelKeysTests: PanelCase {
     private func writePick(key: String? = nil) throws {
         try FileManager.default.createDirectory(at: pickData, withIntermediateDirectories: true)
         if let key { try key.write(to: pickData.appendingPathComponent("key"), atomically: true, encoding: .utf8) }
-        try script("pick", toml: "title = 'Pick'\non = ['sheet.open']", """
+        try script("pick", toml: "title = 'Pick'", """
         data='\(pickData.path)'
         [ "$1" = show ] || echo "$*" >> "$data/calls"
         case "$1" in
@@ -331,7 +331,7 @@ final class PanelKeysTests: PanelCase {
     private func openChoice() async throws {
         takeCalls()
         try FileManager.default.createDirectory(at: pickData, withIntermediateDirectories: true)
-        try script("choice", toml: "title = 'Choice'\non = ['sheet.open']", """
+        try script("choice", toml: "title = 'Choice'", """
         data='\(pickData.path)'
         [ "$1" = show ] || echo "$*" >> "$data/calls"
         while [ -f "$data/hold-$1" ]; do sleep 0.01; done
@@ -765,7 +765,7 @@ final class PanelKeysTests: PanelCase {
     }
 
     private func openKeyRow() async throws {
-        try script("draw", toml: "title = 'Draw'\non = ['sheet.open']", "printf 'field=float\\ntitle=Float\\ntype=hotkey\\n'")
+        try script("draw", toml: "title = 'Draw'", "printf 'field=float\\ntitle=Float\\ntype=hotkey\\n'")
         await model.reload()
         model.isShown = true
         model.panelWillShow()

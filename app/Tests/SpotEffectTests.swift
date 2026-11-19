@@ -27,7 +27,7 @@ final class SpotEffectTests: PanelCase {
 
     private func writeFlow(show: String = "") throws {
         let buttons = ["next", "root", "back", "close", "saved", "pick", "late", "other"].map { "button=\($0)\\ntitle=\($0)\\nscope=spot\\n\\n" }.joined()
-        try script("flow", toml: "title = 'Flow'\non = ['sheet.open']\npages = ['*']", """
+        try script("flow", toml: "title = 'Flow'\npages = ['*']", """
         os='\(client.path)'
         codes='\(path("codes"))'
         in=$(cat)

@@ -11,7 +11,7 @@ final class ItemsTests: PanelCase {
         ((try? String(contentsOf: log, encoding: .utf8)) ?? "").split(separator: "\n").map(String.init)
     }
 
-    private func open(_ frame: String, toml: String = "on = ['sheet.open']") async throws {
+    private func open(_ frame: String, toml: String = "") async throws {
         let body = "#!/bin/sh\ncase \"$1\" in\nshow) sed -n 's/^search=/search /p' >> '\(log.path)'\ncat <<'EOF'\n\(frame)\nEOF\n;;\n*) echo \"$*\" >> '\(log.path)' ;;\nesac\n"
         try body.writeScript(to: spots.spotFile("items"), toml: toml)
         await model.reload()

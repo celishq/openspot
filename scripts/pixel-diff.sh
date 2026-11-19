@@ -6,7 +6,8 @@ usage="Usage: sh scripts/pixel-diff.sh shoot <name> | compare <name> <name>"
 
 spot() {
   mkdir -p "$work/state/spots/$1.spot"
-  printf 'title = "%s"\nicon = "%s"\non = ["%s"]\n' "$2" "$3" "$4" > "$work/state/spots/$1.spot/spot.toml"
+  printf 'title = "%s"\nicon = "%s"\n' "$2" "$3" > "$work/state/spots/$1.spot/spot.toml"
+  [ -z "$4" ] || printf 'on = ["%s"]\n' "$4" >> "$work/state/spots/$1.spot/spot.toml"
   cat > "$work/state/spots/$1.spot/$1.sh"
   chmod +x "$work/state/spots/$1.spot/$1.sh"
 }
@@ -15,18 +16,18 @@ fixtures() {
   rm -rf "$work/state"
   mkdir -p "$work/state/spots" "$work/state/config" "$work/state/core"
   cp -R spots/openspot.spot "$work/state/core/"
-  spot rows Rows list.bullet sheet.open <<'SPOT'
+  spot rows Rows list.bullet "" <<'SPOT'
 #!/bin/sh
 printf "text=a\ntitle=Alpha\ndetail=The first row\nicon=star\n\ntext=b\ntitle=Beta\ndetail=The second row\nicon=heart\nvalue=true\n\ntext=c\ntitle=Gamma\nicon=bolt\ntone=good\nshortcut=⌃⌥K\n\ntext=d\ntitle=Delta\nicon=leaf\n"
 SPOT
-  spot parts Parts square.grid.2x2 sheet.open <<'SPOT'
+  spot parts Parts square.grid.2x2 "" <<'SPOT'
 #!/bin/sh
 printf "%s\n" "frame=" "grid=n n g g" "grid=t t t t" "grid=s s s s" "grid=f f f f" "grid=- - - -" "grid=b b c c" "grid.large=n n g g" "grid.large=t t t t" "" \
   "number=n" "title=Cups today" "value=3" "" "number=g" "title=Load" "value=42" "max=100" "unit=%" "" "number=t" "title=Disk" "detail=Half full" "value=50" "max=100" "unit=%" "tone=warn" "" \
   "switch=s" "title=Focus" "detail=Until 18:00" "value=true" "" "field=f" "type=slider" "title=Volume" "value=40" "" \
   "button=b" "title=Go" "look=strong" "" "choice=c" "title=Mode" "value=x" "" "option=x" "title=One" "" "option=y" "title=Two"
 SPOT
-  spot asks Asks plus.circle sheet.open <<'SPOT'
+  spot asks Asks plus.circle "" <<'SPOT'
 #!/bin/sh
 if [ "$1" = add ]; then
   printf "%s\n" "frame=" "title=Add a thing" "" "field=name" "title=Name" "placeholder=A name" "" "field=note" "title=Note" "type=multiline" "" "switch=on" "title=Keep it" "value=true"

@@ -29,10 +29,10 @@ final class SpotTablesTests: XCTestCase {
     }
 
     func testAKeyThatOpenspotDoesNotKnowIsAFault() {
-        XCTAssertEqual(fault(of: "titel = 'Coffee'\non = ['sheet.open']"), "Probe has an unknown key in its spot.toml: titel")
+        XCTAssertEqual(fault(of: "titel = 'Coffee'"), "Probe has an unknown key in its spot.toml: titel")
         XCTAssertEqual(fault(of: "title = 'T'\nTitle = 'U'"), "T has an unknown key in its spot.toml: Title")
         XCTAssertEqual(fault(of: "title = 'T'\n[look]\ncolour = 'red'"), "T has an unknown key in its spot.toml: look")
-        XCTAssertNil(fault(of: "title = 'Coffee'\non = ['sheet.open']\npages = ['day:*']\n# Set CITY=Paris to change it"))
+        XCTAssertNil(fault(of: "title = 'Coffee'\npages = ['day:*']\n# Set CITY=Paris to change it"))
     }
 
     func testAKeyThatACommandOrASettingDoesNotTakeIsAFault() {
@@ -46,20 +46,20 @@ final class SpotTablesTests: XCTestCase {
 
     func testASettingThatAsksForAHotkeyIsAFault() {
         XCTAssertEqual(
-            fault(of: "title = 'T'\non = ['sheet.open']\n[settings.key]\ntype = 'hotkey'\ntitle = 'Shortcut'"),
+            fault(of: "title = 'T'\n[settings.key]\ntype = 'hotkey'\ntitle = 'Shortcut'"),
             "T has an unknown type in [settings.key]: `hotkey`. Use `type = \"secret\"`, or no type."
         )
-        XCTAssertNil(fault(of: "title = 'T'\non = ['sheet.open']\n[settings.token]\ntype = 'secret'"))
+        XCTAssertNil(fault(of: "title = 'T'\n[settings.token]\ntype = 'secret'"))
     }
 
     func testARowHoldsKeysOfItsOwnWhichACheckDoesNotReport() async throws {
-        let faults = try await findings("#!/bin/sh\nprintf 'text=a\\ntitle=A\\nruns=38\\n\\ntext=b\\ntitle=B\\npush.replace=true\\n'\n", toml: "on = ['sheet.open']")
+        let faults = try await findings("#!/bin/sh\nprintf 'text=a\\ntitle=A\\nruns=38\\n\\ntext=b\\ntitle=B\\npush.replace=true\\n'\n", toml: "")
 
         XCTAssertEqual(faults, [])
     }
 
     func testARootKeyThatOpenspotDoesNotKnowIsReportedByACheck() async throws {
-        let faults = try await findings("#!/bin/sh\nprintf 'frame=\\ntitle=T\\ntoost=Saved\\n\\ntext=a\\ntitle=A\\n'\n", toml: "on = ['sheet.open']")
+        let faults = try await findings("#!/bin/sh\nprintf 'frame=\\ntitle=T\\ntoost=Saved\\n\\ntext=a\\ntitle=A\\n'\n", toml: "")
 
         XCTAssertEqual(faults, ["the root has an unknown key: toost"])
     }

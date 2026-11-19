@@ -82,7 +82,7 @@ final class SpotUsesTests: SpotRunsCase {
     }
 
     private func caller(toml: String = "", _ words: String) throws {
-        try script(toml: toml, "OPENSPOT_CONFIG='\(config.path)' '\(client.path)' \(words) > /dev/null 2> '\(path("errors"))'; echo $? >> '\(path("done"))'")
+        try script(toml: "\(toml)\n\(TestSpot.command)", "OPENSPOT_CONFIG='\(config.path)' '\(client.path)' \(words) > /dev/null 2> '\(path("errors"))'; echo $? >> '\(path("done"))'")
     }
 
     private func pressed() async throws -> (code: String, errors: String) {
@@ -165,7 +165,7 @@ final class SpotUsesTests: SpotRunsCase {
     }
 
     func testAChildThatOutlivesItsSpotsProcessIsStillTheSpot() async throws {
-        try script(toml: "", "( \(untilRelease); OPENSPOT_CONFIG='\(config.path)' '\(client.path)' setting list > /dev/null; echo done >> '\(path("done"))' ) > /dev/null 2>&1 &")
+        try script(toml: TestSpot.command, "( \(untilRelease); OPENSPOT_CONFIG='\(config.path)' '\(client.path)' setting list > /dev/null; echo done >> '\(path("done"))' ) > /dev/null 2>&1 &")
         _ = try scanned()
         try XCTUnwrap(runs.sheets["script"]).pressCard()
         try await wait("the start of the call") { self.log().count == 1 }
@@ -178,7 +178,7 @@ final class SpotUsesTests: SpotRunsCase {
     }
 
     func testAReadIsKnownFromTheAppsRecordAndNotFromTheVariables() async throws {
-        try script(toml: "on = ['sheet.open']", "OPENSPOT_CONFIG='\(config.path)' /usr/bin/env '\(client.path)' spot remove other > /dev/null 2> '\(path("errors"))'; echo $? >> '\(path("done"))'")
+        try script(toml: "", "OPENSPOT_CONFIG='\(config.path)' /usr/bin/env '\(client.path)' spot remove other > /dev/null 2> '\(path("errors"))'; echo $? >> '\(path("done"))'")
         let sheet = try sheet()
         runs.panelOpened()
 

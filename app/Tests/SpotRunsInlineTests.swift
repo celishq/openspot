@@ -47,7 +47,7 @@ final class SpotRunsInlineTests: SpotRunsCase {
     }
 
     func testAnInlineSpotGetsTheEventAndTheSettingsInItsInput() async throws {
-        try inline(toml: "on = ['sheet.open']\n[settings.city]", """
+        try inline(toml: "[settings.city]", """
         function main([id], env, input) {
           return `text=a\\ntitle=${input.trim().split("\\n").join(" ")}\\n`
         }
@@ -144,7 +144,7 @@ final class SpotRunsInlineTests: SpotRunsCase {
     }
 
     func testAThrownErrorIsTheFailureOfTheCall() async throws {
-        try inline(toml: "on = ['sheet.open']", "function main() { throw new Error('No sky today') }")
+        try inline(toml: "", "function main() { throw new Error('No sky today') }")
         let (sheet, told) = try toldSheet()
 
         sheet.open {}
@@ -180,7 +180,7 @@ final class SpotRunsInlineTests: SpotRunsCase {
     }
 
     private func counting() throws {
-        try inline(toml: "on = ['sheet.open']", "let n = 0\nfunction main() { n += 1; return `text=n\\ntitle=${n}\\n` }\nfunction asked() { n += 1; return true }")
+        try inline(toml: "", "let n = 0\nfunction main() { n += 1; return `text=n\\ntitle=${n}\\n` }\nfunction asked() { n += 1; return true }")
     }
 
     func testAHookAndACallOfOneSpotShareOneLoadedScript() async throws {
@@ -254,7 +254,7 @@ final class SpotRunsInlineTests: SpotRunsCase {
 
     func testAnEndlessLoopFailsAsTooSlowAndTheSpotAnswersItsNextCall() async throws {
         runs(limit: 0.5)
-        try inline(toml: "on = ['sheet.open']", """
+        try inline(toml: "", """
         function main(args, env, input) {
           if (openspot.value("event", input) === "sheet.open") while (true) {}
           return "text=a\\ntitle=A\\n"
@@ -280,7 +280,7 @@ final class SpotRunsInlineTests: SpotRunsCase {
     }
 
     private func callingSpot() throws -> Spot {
-        try inline(toml: "on = ['sheet.open']", "function main() { return openspot.call([\"calc\", \"solve\", \"1\"]).stdout }")
+        try inline(toml: "", "function main() { return openspot.call([\"calc\", \"solve\", \"1\"]).stdout }")
         return try XCTUnwrap(try scanned().scripts.first)
     }
 
@@ -312,7 +312,7 @@ final class SpotRunsInlineTests: SpotRunsCase {
 
     func testACallThatHangsInOpenspotCallEndsAtItsLimitAndTheNextCallGetsANewScript() async throws {
         try fakeOpenspot("echo $$ > '\(path("child"))'\nexec sleep 30")
-        try inline(toml: "on = ['sheet.open']", """
+        try inline(toml: "", """
         function main(args, env, input) {
           if (openspot.value("event", input) === "sheet.open") openspot.call(["calc", "solve", "1"])
           return "text=a\\ntitle=A\\n"
@@ -348,7 +348,7 @@ final class SpotRunsInlineTests: SpotRunsCase {
     func testATimedScriptKeepsItsContextPastItsIdleTimeUntilItsNextRead() async throws {
         runs(idle: 0.1)
         try inline(toml: "on = ['clock.60']", "function main() { return 'text=n\\ntitle=3\\n' }")
-        try inline("other", toml: "on = ['sheet.open']", "function main() { return 'text=n\\ntitle=4\\n' }")
+        try inline("other", toml: "", "function main() { return 'text=n\\ntitle=4\\n' }")
         let sheet = try sheet()
         let other = try XCTUnwrap(runs.sheets["other"])
         let isLoaded = { (id: String) in self.runs.loaded[id]?.script.isRunning == true }
@@ -364,7 +364,7 @@ final class SpotRunsInlineTests: SpotRunsCase {
     func testEachCallGoesInTheCallLogWithItsArgumentsStdinAndFailure() async throws {
         let log = CallLog(folder: folder.appendingPathComponent("logs"))
         runs(log: log)
-        try inline(toml: "on = ['sheet.open']", "function main(args) { if (args[0] === 'save') throw new Error('No sky today'); return 'text=a\\n' }")
+        try inline(toml: "", "function main(args) { if (args[0] === 'save') throw new Error('No sky today'); return 'text=a\\n' }")
         let (sheet, told) = try toldSheet()
         sheet.open {}
         try await wait("the rows") { sheet.list.shown.count == 1 }
@@ -378,7 +378,7 @@ final class SpotRunsInlineTests: SpotRunsCase {
     }
 
     func testTheCPUTimeOfItsThreadCountsInItsUsage() async throws {
-        try inline(toml: "on = ['sheet.open']", "function main() { let x = 0; for (let i = 0; i < 1e7; i++) { x = (x * 31 + i) % 1000003 } return 'text=a\\n' }")
+        try inline(toml: "", "function main() { let x = 0; for (let i = 0; i < 1e7; i++) { x = (x * 31 + i) % 1000003 } return 'text=a\\n' }")
         let sheet = try sheet()
         sheet.open {}
 
@@ -387,7 +387,7 @@ final class SpotRunsInlineTests: SpotRunsCase {
     }
 
     func testARunWithALimitStopsWaitingForAFunctionThatRunsTooLong() async throws {
-        try inline(toml: "on = ['sheet.open']", "function main() { const end = Date.now() + 2000; while (Date.now() < end) {} }")
+        try inline(toml: "", "function main() { const end = Date.now() + 2000; while (Date.now() < end) {} }")
         let spot = try XCTUnwrap(try scanned().scripts.first)
 
         do {

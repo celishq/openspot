@@ -113,7 +113,8 @@ final class DrawSpotTests: XCTestCase {
         XCTAssertEqual(rows.map(\.title), ["New board", "Plan", "Flows", "Old plan"])
         XCTAssertEqual(rows.map(\.run), ["0:new", "0:Work/plan", "0:flows", "0:old"])
         XCTAssertEqual(rows.map(\.subtitle), ["A blank board", "Work · Edited 1 min ago", "Edited 2 min ago", "Edited 2 h ago"])
-        XCTAssertEqual(spot.on?.searchesSheet, false)
+        XCTAssertTrue(spot.hasSheet)
+        XCTAssertNotEqual(spot.on?.searchesSheet, true)
     }
 
     func testARenameKeepsTheFiguresAndChangesTheTitle() async throws {

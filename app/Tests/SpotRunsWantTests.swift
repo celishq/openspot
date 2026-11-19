@@ -5,7 +5,7 @@ import XCTest
 @MainActor
 final class SpotRunsWantTests: SpotRunsCase {
     func testClosingThePanelClosesASheetOfPartsAndTheNextOpenReads() async throws {
-        try script(toml: "on = ['sheet.open']", "printf 'frame=\\ngrid=a\\n\\nfield=a\\nvalue=one\\n'")
+        try script(toml: "", "printf 'frame=\\ngrid=a\\n\\nfield=a\\nvalue=one\\n'")
         let sheet = try sheet()
         sheet.open {}
         try await wait("the part") { sheet.panel != nil }
@@ -21,7 +21,7 @@ final class SpotRunsWantTests: SpotRunsCase {
     }
 
     func testClosingThePanelLeavesASheetOfRowsOpen() async throws {
-        try script(toml: "on = ['sheet.open']", "printf 'text=a\\ntitle=A\\n'")
+        try script(toml: "", "printf 'text=a\\ntitle=A\\n'")
         let sheet = try sheet()
         sheet.open {}
         try await wait("the row") { sheet.list.shown.count == 1 }
@@ -70,7 +70,7 @@ final class SpotRunsWantTests: SpotRunsCase {
     }
 
     func testEachMomentReadsOnlyTheScriptsThatListIt() async throws {
-        try script("onsheet", toml: "on = ['sheet.open']", log: "onsheet", "printf 'text=s\\ntitle=S\\n'")
+        try script("onsheet", toml: "", log: "onsheet", "printf 'text=s\\ntitle=S\\n'")
         try script("ontimer", toml: "on = ['clock.600']", log: "ontimer", "printf 'text=t\\ntitle=T\\n'")
         try script("onpanel", toml: "on = ['panel.open']", log: "onpanel", "printf 'text=m\\ntitle=P\\n'")
         _ = try scanned()
@@ -110,7 +110,7 @@ final class SpotRunsWantTests: SpotRunsCase {
     }
 
     func testAStreamOfAnOpenSheetOfRowsStopsWhenThePanelClosesAndStartsWhenItOpens() async throws {
-        try script(toml: "on = ['sheet.open']", "printf 'text=a\\ntitle=A\\n---\\n'\nsleep 5\ntouch '\(path("went-on"))'")
+        try script(toml: "", "printf 'text=a\\ntitle=A\\n---\\n'\nsleep 5\ntouch '\(path("went-on"))'")
         let sheet = try sheet()
         runs.panelOpened()
         sheet.open {}

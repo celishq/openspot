@@ -11,7 +11,7 @@ final class PanelAskTests: PanelCase {
     }
 
     func testASettingFormDoesNotOpenInAHiddenPanel() async throws {
-        try script("editor", toml: "title = 'Editor'\non = ['sheet.open']\n[settings.editor]", """
+        try script("editor", toml: "title = 'Editor'\n[settings.editor]", """
         touch '\(called.path)'
         [ "$1" = editor ] && printf 'frame=\\ntitle=Editor\\n\\nfield=editor\\ntitle=Editor\\n'
         """)
@@ -25,7 +25,7 @@ final class PanelAskTests: PanelCase {
     }
 
     func testAFailureShowsAfterItsAskWasLeft() async throws {
-        try script("notes", toml: "title = 'Notes'\non = ['sheet.open']", """
+        try script("notes", toml: "title = 'Notes'", """
         [ "$1" = add ] || { printf 'text=a\\ntitle=A\\nopen.title=add\\n'; exit 0; }
         touch '\(called.path)'
         while [ ! -f '\(go.path)' ]; do sleep 0.02; done

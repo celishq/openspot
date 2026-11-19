@@ -306,7 +306,7 @@ final class SpotsFolderTests: XCTestCase {
     }
 
     func testReadSaysWhatKindOfSpotItIsBeforeAnyRun() throws {
-        try write("a.sh", toml: "on = ['sheet.open']")
+        try write("a.sh", toml: "")
         try write("b.sh", toml: "on = ['panel.open']")
         try write("c.sh", toml: "on = ['panel.open']\noffers = ['search']")
 

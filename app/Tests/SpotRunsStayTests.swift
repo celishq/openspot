@@ -58,7 +58,7 @@ final class SpotRunsStayTests: SpotRunsCase {
     """
 
     private func holding() throws {
-        try script(toml: "mode = 'stay'\non = ['sheet.open']", String(format: Self.holds, path("ended"), path("blocks"), path("children")))
+        try script(toml: "mode = 'stay'", String(format: Self.holds, path("ended"), path("blocks"), path("children")))
     }
 
     func testAHeldCallKeepsItsStayingScriptPastTheReadLimitTheSheetAndThePanel() async throws {
@@ -257,7 +257,7 @@ final class SpotRunsStayTests: SpotRunsCase {
     func testEachFrameOfASpotIsParsedOnceAndOffTheMainThread() async throws {
         let parses = FrameParses()
         try await FrameParses.$meter.withValue(parses) {
-            try script("stay", toml: "mode = 'stay'\non = ['sheet.open']", """
+            try script("stay", toml: "mode = 'stay'", """
             while read -r line; do
               case "$line" in
                 call=*) id=${line#call=} ;;
@@ -265,7 +265,7 @@ final class SpotRunsStayTests: SpotRunsCase {
               esac
             done
             """)
-            try script("once", toml: "on = ['sheet.open']", """
+            try script("once", toml: "", """
             case "$1" in
               show) printf 'button=add\\ntitle=Add\\nform=true\\nscope=spot\\n\\ntext=a\\ntitle=A\\n' ;;
               add) case "$(cat)" in *name=*) printf 'frame=\\ntitle=Saved\\n' ;; *) printf 'frame=\\ntitle=Name\\n\\nfield=name\\ntitle=Name\\n' ;; esac ;;
@@ -974,7 +974,7 @@ final class SpotRunsStayTests: SpotRunsCase {
     private func slowStaying(limit: TimeInterval = 1) throws -> (sheet: SpotRun, told: () -> [String]) {
         runs.quit()
         runs = SpotRuns(showLimit: limit, clock: clock.value, stopPause: 0.2)
-        try script(toml: "mode = 'stay'\non = ['sheet.open']", """
+        try script(toml: "mode = 'stay'", """
         first=; [ -f '\(path("started"))' ] || first=1; touch '\(path("started"))'
         while IFS= read -r line; do
           printf '%s\\n' "$line" >> '\(path("blocks"))'

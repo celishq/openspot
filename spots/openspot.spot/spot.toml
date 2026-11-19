@@ -96,7 +96,6 @@ title = "Quit"
 title = "Settings"
 icon = "gearshape"
 detail = "Choose your key"
-on = ["sheet.open"]
 uses = ["app"]
 offers = ["search"]
 

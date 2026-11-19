@@ -21,7 +21,7 @@ final class SpotKeysTests: XCTestCase {
 
     func testOffersHoldsOnlySearchAndASpotWithNoOffersStartsOnTheGrid() throws {
         let search = try spot("on = ['panel.open']\noffers = ['search']")
-        let plain = try spot("on = ['sheet.open']")
+        let plain = try spot("")
         let clock = try spot("on = ['clock.60']")
 
         XCTAssertEqual([search.isGlobal, search.isFound, search.headerState.isOnGrid], [true, true, true])

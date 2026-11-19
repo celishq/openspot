@@ -226,7 +226,7 @@ final class SwiftProgramTests: XCTestCase {
     private func carriedSpots() throws -> (several: Spot, single: Spot) {
         let several = try spotOfSeveralFiles()
         try script(program(of: main, with: severalFiles), "#!/bin/sh\necho text=carried\n")
-        try script("one.swift", "#!/bin/sh\necho text=source\n", toml: "title = 'One'\non = ['sheet.open']")
+        try script("one.swift", "#!/bin/sh\necho text=source\n", toml: "title = 'One'")
         try script(program(of: "#!/bin/sh\necho text=source\n", named: "one.swift"), "#!/bin/sh\necho text=carried\n")
         let single = try XCTUnwrap(try SpotsFolder(url: folder).scan().spots.first { $0.id == "one" })
         return (several, single)
@@ -447,7 +447,7 @@ final class SwiftProgramTests: XCTestCase {
     private let main = "#!/usr/bin/env swift\nprint(\"text=\\(word)\\(mark())\")\n"
 
     private func spotOfSeveralFiles(word: String = "hello") throws -> Spot {
-        try script("hello.swift", main, toml: "title = 'Hello'\non = ['sheet.open']\nsource = ['words.swift', 'more']")
+        try script("hello.swift", main, toml: "title = 'Hello'\nsource = ['words.swift', 'more']")
         try Data("let word = \"\(word)\"\n".utf8).write(to: folder.appendingPathComponent("hello.spot/words.swift"))
         let more = folder.appendingPathComponent("hello.spot/more")
         try FileManager.default.createDirectory(at: more, withIntermediateDirectories: true)
@@ -470,7 +470,7 @@ final class SwiftProgramTests: XCTestCase {
     }
 
     private func stayingSpot() throws -> Spot {
-        try script("slow.swift", "#!/usr/bin/env swift\nprint(mark())\n", toml: "title = 'Slow'\nmode = 'stay'\non = ['sheet.open']\nsource = ['more']")
+        try script("slow.swift", "#!/usr/bin/env swift\nprint(mark())\n", toml: "title = 'Slow'\nmode = 'stay'\nsource = ['more']")
         let more = folder.appendingPathComponent("slow.spot/more")
         try FileManager.default.createDirectory(at: more, withIntermediateDirectories: true)
         try Data("func mark() -> String { \"!\" }\n".utf8).write(to: more.appendingPathComponent("Mark.swift"))
@@ -654,7 +654,7 @@ final class SwiftProgramTests: XCTestCase {
 
     func testAReleaseAppRunsASwiftSpotOnAMacWithNoDeveloperTools() async throws {
         let spot = try spotOfSeveralFiles()
-        try script("one.swift", "#!/usr/bin/env swift\nprint(\"text=one\")\n", toml: "title = 'One'\non = ['sheet.open']")
+        try script("one.swift", "#!/usr/bin/env swift\nprint(\"text=one\")\n", toml: "title = 'One'")
         let one = try XCTUnwrap(try SpotsFolder(url: folder).scan().spots.first { $0.id == "one" })
         _ = try await cachingWithTools().buildPrograms(under: folder)
         let built = builds

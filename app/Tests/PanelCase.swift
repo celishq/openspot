@@ -57,11 +57,11 @@ class PanelCase: XCTestCase {
     }
 
     func openList() async throws {
-        try script("list", toml: "title = 'List'\non = ['sheet.open']\npages = ['*']", """
+        try script("list", toml: "title = 'List'\npages = ['*']", """
         page=$(sed -n 's/^route=//p')
         if [ -n "$page" ]; then printf 'text=x\\ntitle=Detail %s\\n' "$page"; else printf 'text=a\\ntitle=A\\nroute=a\\n'; fi
         """)
-        try script("other", toml: "on = ['sheet.open']", "printf 'text=o\\ntitle=Other\\n'")
+        try script("other", toml: "", "printf 'text=o\\ntitle=Other\\n'")
         await model.reload()
         model.isShown = true
         model.panelWillShow()

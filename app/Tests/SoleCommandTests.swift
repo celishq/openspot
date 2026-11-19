@@ -209,7 +209,7 @@ final class SoleCommandTests: XCTestCase {
 
     func testARowThatSaysCloseFalseNamesItsEnterAndKeepsThePanelOpen() async throws {
         try "#!/bin/sh\ncase \"$1\" in show) printf 'button=open\\ntitle=Copy\\n\\ntext=model\\ntitle=Download\\nopen.title=Download\\nclose=false\\n\\ntext=text\\ntitle=Hello\\n' ;; esac\n"
-            .writeScript(to: spots.spotFile("get"), toml: "title = 'Get'\non = ['sheet.open']")
+            .writeScript(to: spots.spotFile("get"), toml: "title = 'Get'")
         await model.reload()
         model.isShown = true
         model.panelWillShow()
@@ -254,7 +254,7 @@ final class SoleCommandTests: XCTestCase {
     }
 
     func testAKeyRecordedOnARowThatStaysOpenKeepsThePanelOpen() async throws {
-        try "#!/bin/sh\ncase \"$1\" in show) printf 'field=k\\ntitle=Key\\ntype=hotkey\\nclose=false\\n' ;; esac\n".writeScript(to: spots.spotFile("keys"), toml: "on = ['sheet.open']")
+        try "#!/bin/sh\ncase \"$1\" in show) printf 'field=k\\ntitle=Key\\ntype=hotkey\\nclose=false\\n' ;; esac\n".writeScript(to: spots.spotFile("keys"), toml: "")
         await model.reload()
         model.isShown = true
         model.panelWillShow()

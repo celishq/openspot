@@ -32,7 +32,7 @@ final class CarefulModeTests: SpotRunsCase {
     }
 
     private func trying(uses: String = "") throws -> SpotRun {
-        try script(toml: "on = ['sheet.open']\nuses = [\(uses.split(separator: ",").map { "'\($0)'" }.joined(separator: ", "))]", """
+        try script(toml: "uses = [\(uses.split(separator: ",").map { "'\($0)'" }.joined(separator: ", "))]", """
         r=
         echo a > "$OPENSPOT_DATA/kept" 2>/dev/null && r="${r}data "
         echo a > "${TMPDIR:-/tmp}/careful-$$" 2>/dev/null && r="${r}temp " && rm -f "${TMPDIR:-/tmp}/careful-$$"
@@ -86,7 +86,7 @@ final class CarefulModeTests: SpotRunsCase {
 
     func testOnAStayingSpotIsCarefulToo() async throws {
         runs.isCareful = true
-        try script(toml: "mode = 'stay'\non = ['sheet.open']", """
+        try script(toml: "mode = 'stay'", """
         echo a > '\(outside.path)/written' 2>/dev/null && r=files || r=kept
         while IFS= read -r line; do
           case "$line" in call=*) call=${line#call=} ;; esac
@@ -100,7 +100,7 @@ final class CarefulModeTests: SpotRunsCase {
     }
 
     func testAStayingSpotStartsAgainInTheNewModeWhenTheModeChanges() async throws {
-        try script(toml: "mode = 'stay'\non = ['sheet.open']", """
+        try script(toml: "mode = 'stay'", """
         echo a > '\(outside.path)/written-$$' 2>/dev/null && r=files || r=kept
         while IFS= read -r line; do
           case "$line" in call=*) call=${line#call=} ;; esac
@@ -132,7 +132,7 @@ final class CarefulModeTests: SpotRunsCase {
         let script = folder.spotFile("script", extension: "js")
         try FileManager.default.createDirectory(at: script.deletingLastPathComponent(), withIntermediateDirectories: true)
         try "function main() { return `text=t\\ntitle=${openspot.call([\"color\", \"pick\"]).stdout.trim()}\\n` }\n"
-            .writeInline(to: script, toml: "on = ['sheet.open']")
+            .writeInline(to: script, toml: "")
         let sheet = try sheet()
         let before = try await result(of: sheet)
         XCTAssertEqual(before, "files", "the helper ran as the person")

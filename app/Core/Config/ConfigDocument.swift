@@ -55,7 +55,7 @@ public struct ConfigDocument: Equatable, Sendable {
     public private(set) var head: [String] = []
     public private(set) var values: [String: Value] = [:]
     public private(set) var keys: [String] = []
-    public private(set) var sections: [Table] = []
+    public internal(set) var sections: [Table] = []
     public var tables: [Table] = []
 
     public init() {}

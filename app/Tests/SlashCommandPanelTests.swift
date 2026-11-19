@@ -253,7 +253,7 @@ final class SlashCommandPanelTests: PanelCase {
     }
 
     func testASheetSpotGetsTheTextOnTheStdinOfItsRead() async throws {
-        try script("translate", toml: "title = 'Translate'\non = ['sheet.open']\nplaceholder = 'Text to translate'", """
+        try script("translate", toml: "title = 'Translate'\nplaceholder = 'Text to translate'", """
         stdin=$(cat)
         printf '%s\\n%s\\n' "$*" "$stdin" >> '\(input.path)'
         printf 'field=input\\n'
