@@ -124,6 +124,21 @@ final class MetricSpotsTests: SpotRunsCase {
         try await wait("the read of the device") { self.log("tools.log") == ["system_profiler", "system_profiler"] && !self.runs.isShowing }
     }
 
+    func testSystemReadsTheBatteryAndTheDevicesAgainOverWhatAnOlderFormKept() async throws {
+        try copy("system")
+        let data = ScriptProcess.dataFolder(base: runs.environment, dataName: "system")
+        try FileManager.default.createDirectory(at: data, withIntermediateDirectories: true)
+        try "text=battery\ntitle=50%\n".write(to: data.appendingPathComponent("battery"), atomically: true, encoding: .utf8)
+        try "text=devices\ntitle=50%\n".write(to: data.appendingPathComponent("devices"), atomically: true, encoding: .utf8)
+        runs.listen(to: mac)
+        _ = try scanned()
+        runs.take(grid: ["system"])
+        runs.panelOpened()
+        let number = { (id: String) in self.runs.sheets["system"]?.state.face.parts.first { $0.id == id }?.number?.text }
+
+        try await wait("the numbers") { number("battery") == "84%" && number("devices") == "–" && !self.runs.isShowing }
+    }
+
     func testSystemDrawsItsOwnCardOfTheBatteryTheCPUTheMemoryAndTheDevicesAtTheirEvents() async throws {
         try copy("system")
         runs.listen(to: mac)

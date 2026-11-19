@@ -19,23 +19,23 @@ kept() {
 
 # Prints the battery. A change of the power source reads it again.
 battery() {
-  if [ "$event" = power.change ] || [ ! -f "$data/battery" ]; then
-    borrowed battery "$here/../battery.spot/battery.sh" show | openspot_keep "$data/battery"
+  if [ "$event" = power.change ] || [ ! -f "$data/battery.number" ]; then
+    borrowed battery "$here/../battery.spot/battery.sh" show | openspot_keep "$data/battery.number"
   fi
-  kept battery
+  kept battery.number
 }
 
 # Prints the device with the lowest battery. A device that connects reads them again, and so does a panel open after
 # 5 minutes, since the Bluetooth report takes a second.
 devices() {
   again=
-  if [ "$event" = device.connect ] || [ ! -f "$data/devices" ]; then again=1
-  elif [ "$event" = panel.open ] && [ $(($(/bin/date +%s) - $(/usr/bin/stat -f %m "$data/devices"))) -ge 300 ]; then again=1
+  if [ "$event" = device.connect ] || [ ! -f "$data/devices.number" ]; then again=1
+  elif [ "$event" = panel.open ] && [ $(($(/bin/date +%s) - $(/usr/bin/stat -f %m "$data/devices.number"))) -ge 300 ]; then again=1
   fi
   if [ -n "$again" ]; then
-    borrowed devices "$here/../devices.spot/devices.sh" show "$("$here/../devices.spot/devices.sh" levels)" | openspot_keep "$data/devices"
+    borrowed devices "$here/../devices.spot/devices.sh" show "$("$here/../devices.spot/devices.sh" levels)" | openspot_keep "$data/devices.number"
   fi
-  kept devices
+  kept devices.number
 }
 
 # Prints the use of all cores, with the trend of the last 30 points. The load that Openspot measures every 5 seconds adds
