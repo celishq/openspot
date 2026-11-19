@@ -32,6 +32,23 @@ struct FoldedText {
         return next == word.count
     }
 
+    func spellsAcrossGaps(_ word: [UInt32]) -> Bool {
+        for start in starts {
+            var next = 0
+            var offset = Int(start)
+            while next < word.count, offset < letters.count, letters[offset] == word[next] || Self.isGap(letters[offset]) {
+                if letters[offset] == word[next] { next += 1 }
+                offset += 1
+            }
+            if next == word.count { return true }
+        }
+        return false
+    }
+
+    private static func isGap(_ code: UInt32) -> Bool {
+        code < 128 && !(97...122).contains(code) && !(48...57).contains(code)
+    }
+
     func spellsInOneWord(_ word: [UInt32]) -> Bool {
         for index in starts.indices {
             let end = index + 1 < starts.count ? Int(starts[index + 1]) : letters.count
