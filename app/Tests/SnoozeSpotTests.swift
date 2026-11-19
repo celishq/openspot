@@ -1,5 +1,6 @@
 import JavaScriptCore
 import XCTest
+@testable import OpenspotCore
 
 final class SnoozeSpotTests: XCTestCase {
     private let defaults = "{ morning: [8, 0], evening: [19, 0], later: 3, weekend: 6 }"
@@ -19,6 +20,14 @@ final class SnoozeSpotTests: XCTestCase {
         let text = try XCTUnwrap(context.evaluateScript(script)?.toString())
         XCTAssertNil(context.exception)
         return try XCTUnwrap(JSONSerialization.jsonObject(with: Data(text.utf8)) as? [String: String])
+    }
+
+    func testReturnOnSnoozeTabOpensItsListAndItsKeysSnoozeOrOpenAll() throws {
+        let examples = URL(fileURLWithPath: #filePath).deletingLastPathComponent().deletingLastPathComponent().deletingLastPathComponent().appendingPathComponent("examples")
+        let spot = try XCTUnwrap(try SpotsFolder(url: examples).scan().spots.first { $0.id == "snooze-tab" })
+
+        XCTAssertEqual(spot.mainAct, .sheet)
+        XCTAssertEqual(spot.offers.map(\.id), ["snooze", "wake"])
     }
 
     func testEachTileOfAWednesdayAfternoon() throws {

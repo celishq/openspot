@@ -1,6 +1,6 @@
 #!/bin/sh
 # Snooze closes the front Safari tab once the person picks a time on the snooze sheet, and due opens it again.
-# The sheet lists each snoozed tab: Return opens it now, and Remove forgets it. A timer keeps "<url> <title>".
+# The sheet lists each snoozed tab: Return opens it now, and Remove forgets it. Open All opens every one now. A timer keeps "<url> <title>".
 . "$OPENSPOT_SH"
 
 # Prints each timer as a line: id, time, url, title, split by tabs.
@@ -42,6 +42,11 @@ case "$1" in
     ;;
   remove)
     [ -n "$2" ] && [ "$2" != none ] && openspot timer remove "$2" >/dev/null
+    ;;
+  wake)
+    timers | while IFS="$(printf '\t')" read -r id at url title; do
+      openspot timer remove "$id" >/dev/null && open "$url"
+    done
     ;;
   snooze)
     url=$(osascript -e 'tell application "Safari" to get URL of current tab of front window' 2>/dev/null)

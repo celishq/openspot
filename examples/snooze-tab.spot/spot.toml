@@ -6,3 +6,7 @@ uses = ["timer"]
 
 [commands.snooze]
 title = "Snooze Tab"
+
+[commands.wake]
+title = "Open All"
+icon = "arrow.uturn.backward"
