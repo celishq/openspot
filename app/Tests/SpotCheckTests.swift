@@ -56,6 +56,20 @@ final class SpotCheckTests: XCTestCase {
         XCTAssertEqual(findings.map(\.spot), ["notes"])
     }
 
+    func testDueIsTakenOnlyInASpotThatUsesTimers() async throws {
+        let printsDue = "#!/bin/sh\nprintf 'text=due\\ntitle=Due\\n'\n"
+        try printsDue.writeScript(to: folder.spotFile("later"), toml: "title = 'Later'\nuses = ['timer']")
+        try printsDue.writeScript(to: folder.spotFile("bills"), toml: "title = 'Bills'")
+        try "#!/bin/sh\n".writeScript(to: folder.spotFile("tabs"), toml: "title = 'Tabs'\nuses = ['timer']\n[commands.due]\ntitle = 'Due'")
+
+        let findings = await SpotCheck(folder: SpotsFolder(url: folder)).findings()
+
+        XCTAssertEqual(findings.map { "\($0.spot ?? ""): \($0.fault)" }.sorted(), [
+            "later: an item cannot be called due",
+            "tabs: a command cannot be called due, since a timer calls the spot with due"
+        ])
+    }
+
     func testAnEventThatNoSpotRaisesIsAFaultThatNamesTheFix() async throws {
         try "#!/bin/sh\nprintf 'text=t\\ntitle=T\\n'\n".writeScript(to: folder.spotFile("song"), toml: "on = ['music.track', 'clipboard.change']")
 

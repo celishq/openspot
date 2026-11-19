@@ -12,8 +12,9 @@ public struct Message: Equatable, Sendable {
     public var searchForms: [String]
     public var given: String?
     public var settings: [TextBlock.Field]
+    public var timer: [TextBlock.Field]
 
-    public init(_ action: SpotAction, event: ShowEvent? = nil, route: String? = nil, item: [TextBlock.Field] = [], inputs: [TextBlock.Field] = [], search: String? = nil, searchForms: [String] = [], given: String? = nil, settings: [TextBlock.Field] = []) {
+    public init(_ action: SpotAction, event: ShowEvent? = nil, route: String? = nil, item: [TextBlock.Field] = [], inputs: [TextBlock.Field] = [], search: String? = nil, searchForms: [String] = [], given: String? = nil, settings: [TextBlock.Field] = [], timer: [TextBlock.Field] = []) {
         self.action = action
         self.event = event
         self.route = route
@@ -23,6 +24,7 @@ public struct Message: Equatable, Sendable {
         self.searchForms = searchForms
         self.given = given
         self.settings = settings
+        self.timer = timer
     }
 
     var keys: [TextBlock.Field] {
@@ -34,6 +36,7 @@ public struct Message: Equatable, Sendable {
         if let route { keys.append(.init(key: "route", value: route)) }
         keys += item.map { .init(key: "item.\($0.key)", value: $0.value) }
         keys += inputs.map { .init(key: "input.\($0.key)", value: $0.value) }
+        keys += timer.map { .init(key: "timer.\($0.key)", value: $0.value) }
         if let search { keys.append(.init(key: "search", value: search)) }
         keys += searchForms.map { .init(key: "search.alt", value: $0) }
         return keys

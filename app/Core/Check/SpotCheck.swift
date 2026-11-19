@@ -84,7 +84,7 @@ public struct SpotCheck: Sendable {
             func found(_ fault: String) -> Finding { Finding(spot: script.id, file: script.url.path, fault: fault) }
             do {
                 let text = try await runs.answer(of: script, .show, limit: timeout)
-                let check = FrameCheck(text: text, isApp: script.isBuiltIn)
+                let check = FrameCheck(text: text, isApp: script.isBuiltIn, calls: script.calls)
                 let output = check.output
                 _ = try script.state(of: output)
                 if script.on?.seconds != nil, MetricValue(output: output) == nil { throw SpotError.badMetric }
@@ -95,6 +95,9 @@ public struct SpotCheck: Sendable {
             } catch {
                 findings.append(found(Self.reason(error)))
             }
+        }
+        for script in scan.scripts where script.uses.contains(.timer) && script.offers.contains(where: { $0.id == SpotTimer.call }) {
+            findings.append(Finding(spot: script.id, file: script.url.path, fault: "a command cannot be called \(SpotTimer.call), since a timer calls the spot with \(SpotTimer.call)"))
         }
         for script in scan.scripts where !script.isBuiltIn {
             guard (try? Manifest(beside: script.url).script(script.url))?.uses.contains(SpotUse.account.rawValue) == true else { continue }

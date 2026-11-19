@@ -83,9 +83,10 @@ makes a call at each of these:
 | `<spot> drop <path> [path]...`       | A drop of files on its card.                                          |
 | `<spot> drag <item id> [item id]...` | A drag of items that stand for files out of its sheet.                |
 | `<spot> <command>`                   | A press of a command's hotkey, or a [slash command](#slash-commands). |
+| `<spot> due <timer id>`              | A [timer](#act-at-a-time) of the spot comes due.                      |
 
 - **Arguments:** `<id> [item] [value]`, so that `case "$1"` handles each call. `show`, `open`, `drop` and `drag` are
-  Openspot's own ids: no block takes them, except a button `open`. A value over 64 KB comes only as `input.value=`.
+  Openspot's own ids: no block takes them, except a button `open`. In a spot that uses `timer`, `due` is one too. A value over 64 KB comes only as `input.value=`.
 - **Variables:** `OPENSPOT_ID`, the spot's id; `OPENSPOT_DATA`, the data folder of its spot folder; `OPENSPOT_SH`, the
   shell helper; `PATH`, with the `openspot` command first, then the user's paths, `/opt/homebrew/bin`,
   `/usr/local/bin`, `/usr/bin`, `/bin`, `/usr/sbin` and `/sbin`; and `LC_ALL=en_US.UTF-8`, so each tool reads text as
@@ -522,6 +523,40 @@ An offered action is a command of one spot that shows in the ⌘K menu of every 
 - In a JavaScript spot, `when=<function>` on an offered button gets the card's spot id and its origin, and returns
   whether the action shows. `hotkey=<function>` returns the card's hotkey. The ⌘K menu waits 2 ms for them.
 
+## Act at a time
+
+A timer calls its spot back at a time the spot chose, such as the end of a snooze, even when the panel is closed.
+
+```toml
+title = "Stretch"
+icon = "figure.walk"
+on = ["sheet.open"]
+uses = ["timer"]
+```
+
+```sh
+#!/bin/sh
+case "$1" in
+  show) printf 'button=later\ntitle=Remind me in an hour\nscope=spot\n' ;;
+  later) openspot timer add "$(date -u -v+1H +%Y-%m-%dT%H:%M:%SZ)" "Time to stretch" ;;
+  due) openspot toast "$(sed -n 's/^event.value=//p')" ;;
+esac
+```
+
+A press of Remind me in an hour adds a timer. An hour later, Openspot calls `stretch due <timer id>`, and the spot
+shows the toast Time to stretch.
+
+- `openspot timer add <time> [value]` takes an ISO 8601 time with its offset, such as `2026-11-20T08:00:00+01:00`, and
+  prints the timer's id. A time that has passed comes due at once.
+- At the time, Openspot calls `<spot> due <timer id>` with `event=timer.due`, `event.value=` the value, and
+  `timer.late=` the seconds it came late, such as after the Mac slept or Openspot was quit. Openspot drops the timer as
+  it calls, and draws nothing that the call prints.
+- `openspot timer list` prints each timer of the spot as an item, with its value as the `title` and its time in `at`.
+  `openspot timer remove <id>` removes one.
+- A timer belongs to the spot that added it, and no other spot sees it. It lasts until it comes due, also across a
+  restart. A spot holds at most 1000 timers, each with a value of at most 4 KB. A timer of a spot that is off or gone
+  comes due into nothing.
+
 ## The life of a call
 
 A call starts, prints and ends. These rules say how long it can take, and what happens when it stops.
@@ -619,6 +654,7 @@ Each key that a call can find in its message.
 | `input.<id>=`    | Each input of the sheet or of a form. A value that isn't an input comes as `input.value=`.                |
 | `setting.<key>=` | Each [setting](#settings) that has a value, a secret too.                                                 |
 | `item.<key>=`    | On an action or a press of an item that holds a key of its own, each key of the item. A form gets none.   |
+| `timer.<key>=`   | On a `due`, the timer's `id`, and `late`, the seconds it came late. See [Act at a time](#act-at-a-time).  |
 
 ## Blocks
 

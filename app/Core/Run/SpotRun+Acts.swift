@@ -92,6 +92,11 @@ extension SpotRun {
         startWaitingKey()
     }
 
+    func due(_ timer: SpotTimer, late: Int) {
+        let message = Message(SpotAction(arguments: [SpotTimer.call, timer.id]), timer: [.init(key: "id", value: timer.id), .init(key: "late", value: String(max(0, late)))])
+        send(Call(message: message, key: "\(SpotTimer.call).\(timer.id)", event: ShowEvent(event: SpotTimer.event, value: timer.value), purpose: .act(Act(showsAfter: false))))
+    }
+
     func startWaitingKey() {
         while !waitingKeys.isEmpty, script.keepsState || running(Self.globalKey) == nil {
             act(Message(.press(waitingKeys.removeFirst())), key: Self.globalKey)

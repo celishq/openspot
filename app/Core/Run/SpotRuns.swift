@@ -55,6 +55,8 @@ public final class SpotRuns {
     public private(set) var runningSummary: String?
     public private(set) var actSpot: String?
     @ObservationIgnored var ticks: Task<Void, Never>?
+    @ObservationIgnored var timers: SpotTimers
+    @ObservationIgnored var timerWatch: Task<Void, Never>?
     @ObservationIgnored var nextShow: Date?
     @ObservationIgnored var answerMatches = AnswerMatches()
     @ObservationIgnored private var lastSearch: SearchQuery?
@@ -101,6 +103,7 @@ public final class SpotRuns {
         frameWait: DispatchTimeInterval = .milliseconds(2),
         log: CallLog? = nil,
         stats: URL? = nil,
+        timers: URL? = nil,
         swift: SwiftProgram = SwiftProgram(),
         callers: SpotCallers = SpotCallers()
     ) {
@@ -109,6 +112,7 @@ public final class SpotRuns {
         self.log = log
         self.swift = swift
         usage = StatsLog(folder: stats, at: clock.now(), now: clock.now)
+        self.timers = SpotTimers(file: timers)
         self.inlineIdle = inlineIdle
         self.frameWait = frameWait
         self.showLimit = showLimit
@@ -230,6 +234,8 @@ public final class SpotRuns {
         hasQuit = true
         ticks?.cancel()
         ticks = nil
+        timerWatch?.cancel()
+        timerWatch = nil
         clipboardWatch?.cancel()
         clipboardWatch = nil
         loadWatch?.cancel()

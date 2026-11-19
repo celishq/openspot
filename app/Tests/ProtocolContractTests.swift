@@ -73,7 +73,7 @@ final class ProtocolContractTests: XCTestCase {
             + compare("event", code: events, doc: Set(docEvents))
             + compare("place", code: places, doc: Set(docPlaces))
             + compare("use", code: uses, doc: Set(docUses))
-            + compare("call", code: Set(FrameCheck.calls), doc: Set(docCalls))
+            + compare("call", code: Set(FrameCheck.calls + [SpotTimer.call]), doc: Set(docCalls))
             + compare("shell helper", code: functions, doc: Set(docFunctions))
             + compare("variable", code: read.union(docVariables.intersection(set)), doc: docVariables)
     }

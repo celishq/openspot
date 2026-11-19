@@ -28,6 +28,7 @@ It shows what a spot can do when you add or update it, and shows each use after 
 | `clipboard` | `clipboard copy`, `clipboard paste` and `clipboard read`                                                                                                        |
 | `calendar`  | each call of `calendar` and `reminders`                                                                                                                         |
 | `power`     | `power lid-closed`                                                                                                                                              |
+| `timer`     | each call of `timer`                                                                                                                                            |
 | `network`   | No call. The spot reaches the network.                                                                                                                          |
 | `files`     | No call. The spot writes outside its data folder.                                                                                                               |
 | `account`   | `store publish`. Only a spot of `spots/openspot.spot` can have it; see [The account](#the-account).                                                             |

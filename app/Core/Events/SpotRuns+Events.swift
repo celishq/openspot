@@ -18,6 +18,7 @@ extension SpotRuns {
     }
 
     public func launched() {
+        readTimers()
         for sheet in sheets.values where sheet.spot.showsAtLaunch {
             sheet.showToEnd(event: ShowEvent(event: SpotEvent.appLaunch, value: nil))
         }
@@ -136,6 +137,7 @@ extension SpotRuns {
         }
         sheets.values.forEach { $0.settleScript() }
         updateClock()
+        scheduleTimers()
     }
 
     private func show(_ name: String, _ value: String?, showsEachSpot: Bool) {

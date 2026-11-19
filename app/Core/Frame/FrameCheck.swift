@@ -4,7 +4,7 @@ public struct FrameCheck: Equatable, Sendable {
     public let output: Frame
     public let partFaults: [String]
 
-    public init(text: String, kinds: [BlockKind] = BlockKind.all, isApp: Bool = false) {
+    public init(text: String, kinds: [BlockKind] = BlockKind.all, isApp: Bool = false, calls: [String] = FrameCheck.calls) {
         FrameParses.meter?.add()
         let blocks = Frame.grouping(TextBlock.blocks(in: text))
         let output = Frame(grouped: blocks, kinds: kinds)
@@ -14,7 +14,7 @@ public struct FrameCheck: Equatable, Sendable {
             guard let kind = BlockKind.of(block, in: kinds), let id = block.value(kind.word) else { return false }
             return !placed.contains(id) && !kind.presses && kind != .section && block != output.searchField
         }
-        let taken = Self.calls.filter { $0 != "drag" || listed.contains { $0.value(ItemKey.file) != nil } }
+        let taken = calls.filter { $0 != "drag" || listed.contains { $0.value(ItemKey.file) != nil } }
         var faults: [String] = []
         for block in blocks {
             guard let kind = BlockKind.of(block, in: kinds), let id = block.value(kind.word) else { continue }
