@@ -2,10 +2,56 @@
 
 `2.0` `draft`
 
-This is the contract between a spot and Openspot: what a spot declares, the message it gets, the frames it prints and
-the commands it calls. To learn by example, start with the [guide](GUIDE.md). What the user chooses, such as the keys
-and places of a spot, is in [What the user chooses](GUIDE.md#what-the-user-chooses), and what Openspot shows the user
-about a spot is in [Trust](TRUST.md).
+This is the contract between a spot and Openspot. It opens with an overview of the parts and how they flow, then the
+principles that shape them, then the details of each part. To learn by example, start with the [guide](GUIDE.md). What
+the user chooses, such as the keys and places of a spot, is in [What the user chooses](GUIDE.md#what-the-user-chooses),
+and what Openspot shows the user about a spot is in [Trust](TRUST.md).
+
+## Overview
+
+A spot is a small program that Openspot runs when something happens. What it prints flows one way, into what the
+person sees, and the person's next act starts the flow again.
+
+```text
+  ┌──────────────────────── the person acts, or the Mac changes ◄────────────────────────┐
+  ▼                                                                                      │
+event ──► call ──► spot ──► frame ──► Openspot draws it in each place ──► the person sees it
+                    │
+                    └──► openspot <noun> <verb>      each effect, such as a toast or a copy
+```
+
+| Part     | What it is                                                                                              |
+| -------- | ------------------------------------------------------------------------------------------------------- |
+| Spot     | A folder that Openspot runs: a script, its manifest and its files. See [A spot](#a-spot).                |
+| Manifest | `spot.toml`, which names the spot and lists when Openspot asks it. See [The manifest](#the-manifest).    |
+| Event    | A thing that happens, such as the panel opening or the battery changing. See [Events](#events).          |
+| Call     | One run of the spot: an id on its arguments and a message on stdin. See [The calls](#the-calls).         |
+| Frame    | What a call prints: everything the spot shows at one time. See [Frames](#frames).                        |
+| Block    | One thing in a frame, such as a text, a number or a switch. See [Blocks](#blocks).                       |
+| Item     | A block that no layout places: a row the person searches and picks. See [Items](#items).                 |
+| Page     | A sheet that shows one route of the spot, such as an item's detail. See [Pages](#pages).                 |
+| Layout   | The grid lines of a frame, which place its blocks for each size. See [Layouts](#layouts).                |
+| Place    | Where Openspot draws a frame: a card, the menu bar, a sheet, a float or a window. See [Places](#places).  |
+| Command  | `openspot <noun> <verb>`, the one way a spot changes anything. See [The openspot command](#the-openspot-command). |
+| Mode     | How the program runs: a process per call, one process that stays, or JavaScript. See [Modes](#modes).    |
+| View     | A SwiftUI file for a look that blocks can't give. See [Views](#views).                                   |
+
+## Principles
+
+These rules hold for every part, and the details follow from them.
+
+- **A spot gives data, and Openspot draws it.** A block says what a thing is, and its place picks how it looks, such as
+  a ring or a bar for a [number](#numbers). Openspot picks every size, gap and colour.
+- **A frame describes, and a command acts.** Printing a frame never changes the Mac. Each effect is an
+  [openspot command](#the-openspot-command), and a show runs none that changes anything.
+- **The person chooses the places and the keys.** The spot lays out each [place](#places) it cares about, and the
+  person decides where it shows and which keys run it.
+- **A spot keeps no state between calls.** Openspot asks it again at each [event](#events) it lists, and each answer
+  replaces what it showed, so a call can end at any time.
+- **Each meaning has one form.** Every call is `<id> [item] [value]`, and a key such as `title`, `detail` or `icon`
+  means the same on every block.
+- **Text first.** A spot is any program that prints lines of `key=value`. A [view](#views) is only for a look that
+  blocks can't give.
 
 ## A spot
 
