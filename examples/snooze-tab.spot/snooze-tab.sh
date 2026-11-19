@@ -1,6 +1,7 @@
 #!/bin/sh
 # Snooze closes the front Safari tab once the person picks a time on the snooze sheet, and due opens it again.
-# The sheet lists each snoozed tab: Return opens it now, and Remove forgets it. Open All opens every one now. A timer keeps "<url> <title>".
+# The sheet lists each snoozed tab: Return opens it now, Remove forgets it, and Snooze Front Tab snoozes another.
+# Open All opens every one now. A timer keeps "<url> <title>".
 . "$OPENSPOT_SH"
 
 # Prints each timer as a line: id, time, url, title, split by tabs.
@@ -24,10 +25,11 @@ when() {
 
 case "$1" in
   show)
+    printf 'button=snooze\ntitle=Snooze Front Tab\nscope=spot\nshortcut=cmd+s\n\n'
     printf 'button=remove\ntitle=Remove\nshortcut=cmd+backspace\n\n'
     listed=$(timers)
     if [ -z "$listed" ]; then
-      openspot_item none "No snoozed tabs" "Press the Snooze Tab key on a Safari tab." moon.zzz
+      openspot_item none "No snoozed tabs" "Press ⌘S to snooze the front Safari tab." moon.zzz
       exit 0
     fi
     printf '%s\n' "$listed" | while IFS="$(printf '\t')" read -r id at url title; do
