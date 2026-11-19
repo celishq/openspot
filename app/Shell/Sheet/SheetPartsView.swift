@@ -58,7 +58,7 @@ struct SheetPartsView: View {
             if let area = sheet.repeatFrame {
                 SpotItemsView(list: list, onRun: onRun, selection: selection, onDragOut: onDragOut)
                     .frame(width: area.width, height: area.height)
-                    .clipped()
+                    .mask(alignment: .top) { Rectangle().frame(height: area.height + SpotTokens.padding) }
                     .offset(x: area.minX, y: area.minY)
             }
             ForEach(panel.parts) { part in
@@ -466,8 +466,9 @@ struct SheetPartsView: View {
     }
 
     private func number(_ part: SpotPart, _ frame: SheetPlacement.Frame) -> some View {
-        SpotNumberView(part: part, look: part.numberLook(inSheet: frame.rect.size) ?? .stat, font: SpotType.number, leastScale: SpotType.leastValueScale, alignment: part.look == .bare ? .trailing : .leading)
-            .padding(part.look == .bare ? 0 : SpotTokens.padding)
+        let look = part.numberLook(inSheet: frame.rect.size) ?? .stat
+        return SpotNumberView(part: part, look: look, font: SpotType.number, leastScale: SpotType.leastValueScale, alignment: part.look == .bare ? .trailing : .leading)
+            .padding(part.look == .bare ? 0 : look == .ring ? SpotTokens.partGap : SpotTokens.padding)
             .background(SpotTheme.ink.opacity(part.look == .bare ? 0 : SpotTheme.fill), in: shape)
     }
 

@@ -105,7 +105,7 @@ process_rows() {
 
 printf 'frame=\ngrid.wide=battery cpu\n'
 printf 'grid.large=battery battery cpu cpu\ngrid.large=battery battery memory memory\ngrid.large=battery battery devices devices\n'
-printf 'grid=battery cpu\ngrid=battery cpu\ngrid=memory devices\ngrid=memory devices\n\n'
+printf 'grid=battery cpu memory devices\ngrid=battery cpu memory devices\n\n'
 battery
 printf '\n'
 cpu

@@ -81,6 +81,13 @@ final class NumberReadingTests: XCTestCase {
         XCTAssertEqual(try part("number=cpu\nvalue=1\nvalue=2\n").numberLook(columns: 2, rows: 1), .bar)
     }
 
+    func testASeriesWithAMaxIsARingOfItsLastValueInANarrowPlace() throws {
+        let cpu = try part("number=cpu\nmax=100\nvalue=10\nvalue=40\n")
+
+        XCTAssertEqual(cpu.numberLook(columns: 0.9, rows: 1.4), .ring)
+        XCTAssertEqual(cpu.numberLook(columns: 2, rows: 2), .stat)
+    }
+
     func testAValueWithAMaxIsARingInASmallPlace() throws {
         XCTAssertEqual(try part("number=battery\nvalue=84\nmax=100\n").numberLook(columns: 1, rows: 1), .ring)
     }

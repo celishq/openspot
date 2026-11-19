@@ -316,9 +316,9 @@ square place          wide place
 - `value` is the number, and each more `value` line adds a point of a series, oldest first. The last point is the one
   that shows. `max` is the value of a full ring or bar, and by default the largest point.
 - `unit` follows the value, as in `84%` or `12 kg`, and `display` shows instead of the value, as in `display=–`.
-- With `max`, one value is a ring in a square or a small place and a bar in a wide one. A series is its last value
-  over its bars in a place of two rows or more. In a lower one it's a bar of its last value, or of its points with no
-  `max`. Any other number is big text.
+- A series is its last value over its bars in a place of two rows or more and two columns or more.
+- Otherwise, with `max`, one value or the last point of a series is a ring in a place as tall as it's wide, and a bar
+  in a wider one. A series with no `max` is a bar of its points, and any other number is big text.
 - `look=ring` or `look=bar` picks the drawing whatever the place.
 
 ### Buttons and actions

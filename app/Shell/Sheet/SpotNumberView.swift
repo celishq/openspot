@@ -55,32 +55,41 @@ struct SpotNumberView: View {
     }
 
     private var ring: some View {
-        VStack(alignment: .leading, spacing: 0) {
-            label
-            GeometryReader { room in
-                let side = min(room.size.width, room.size.height)
-                let line = side > SpotTokens.wordsRingSide ? SpotTokens.metricBigRingLine : SpotTokens.metricRingLine
-                ZStack {
-                    SpotRing(fill: reading?.fill ?? 0, line: line, colour: colour)
-                    VStack(spacing: 0) {
-                        shown
-                            .font(side > SpotTokens.wordsRingSide ? SpotType.ringValue : SpotType.controlValue)
-                            .foregroundStyle(SpotTheme.ink)
-                            .lineLimit(1)
-                            .minimumScaleFactor(SpotType.leastValueScale)
-                        if side > SpotTokens.wordsRingSide, let detail = part.detail {
-                            Text(detail)
-                                .font(SpotType.small)
-                                .modifier(SpotSecondaryText())
-                                .lineLimit(1)
-                                .minimumScaleFactor(SpotType.leastWordsScale)
-                        }
-                    }
-                    .padding(line / 2 + line + SpotTokens.ringInsideGap)
-                }
-                .frame(width: side, height: side)
-                .frame(width: room.size.width, height: room.size.height)
+        GeometryReader { room in
+            let isBig = min(room.size.width, room.size.height) > SpotTokens.wordsRingSide
+            VStack(alignment: isBig ? .leading : .center, spacing: SpotType.lineGap) {
+                if isBig { label }
+                ringFace(isBig: isBig)
+                if !isBig { label.minimumScaleFactor(SpotType.leastWordsScale) }
             }
+            .frame(width: room.size.width, height: room.size.height)
+        }
+    }
+
+    private func ringFace(isBig: Bool) -> some View {
+        GeometryReader { room in
+            let side = min(room.size.width, room.size.height)
+            let line = isBig ? SpotTokens.metricBigRingLine : side >= SpotTokens.glyph ? SpotTokens.metricRingLine : SpotTokens.lineRingLine
+            ZStack {
+                SpotRing(fill: reading?.fill ?? reading?.scaledPoints.last ?? 0, line: line, colour: colour)
+                VStack(spacing: 0) {
+                    shown
+                        .font(isBig ? SpotType.ringValue : SpotType.controlValue)
+                        .foregroundStyle(SpotTheme.ink)
+                        .lineLimit(1)
+                        .minimumScaleFactor(SpotType.leastValueScale)
+                    if isBig, let detail = part.detail {
+                        Text(detail)
+                            .font(SpotType.small)
+                            .modifier(SpotSecondaryText())
+                            .lineLimit(1)
+                            .minimumScaleFactor(SpotType.leastWordsScale)
+                    }
+                }
+                .padding(line / 2 + line + SpotTokens.ringInsideGap)
+            }
+            .frame(width: side, height: side)
+            .frame(width: room.size.width, height: room.size.height)
         }
     }
 

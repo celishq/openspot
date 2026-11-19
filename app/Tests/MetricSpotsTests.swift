@@ -124,7 +124,7 @@ final class MetricSpotsTests: SpotRunsCase {
         try await wait("the read of the device") { self.log("tools.log") == ["system_profiler", "system_profiler"] && !self.runs.isShowing }
     }
 
-    func testSystemsSheetShowsItsBarsOverTheTopProcessesAndTheSwapAndKeepsTheBluetoothReport() async throws {
+    func testSystemsSheetShowsItsNumbersInOneRowOverTheTopProcessesAndTheSwapAndKeepsTheBluetoothReport() async throws {
         try copy("system")
         let script = folder.appendingPathComponent("system.spot/system.sh")
         var frames: [String] = []
@@ -136,7 +136,7 @@ final class MetricSpotsTests: SpotRunsCase {
         }
 
         for frame in frames {
-            XCTAssertTrue(frame.contains("grid=battery cpu\ngrid=battery cpu\ngrid=memory devices\ngrid=memory devices\n"), frame)
+            XCTAssertTrue(frame.contains("grid=battery cpu memory devices\ngrid=battery cpu memory devices\n"), frame)
             XCTAssertTrue(frame.contains("section=top-cpu\ntitle=CPU\n\ntext=cpu-1\n"), frame)
             XCTAssertTrue(frame.contains("text=swap\ntitle=Swap\n"), frame)
             XCTAssertFalse(frame.contains("text=mac\n"), frame)
