@@ -238,7 +238,7 @@ final class SoleCommandTests: XCTestCase {
         try await wait("the rows") { model.openItems?.shown.count == 1 }
         XCTAssertEqual(model.openItems?.shown.map(\.run), ["whisper"])
         XCTAssertEqual(model.openItems?.search, .off)
-        XCTAssertEqual(model.sheets["dictate"]?.shape.hasField, false)
+        XCTAssertEqual(model.sheets["dictate"]?.top.hasField, false)
     }
 
     func testAnOpenKeyOfASpotWithOneCommandRunsTheCommandAtOnce() async throws {

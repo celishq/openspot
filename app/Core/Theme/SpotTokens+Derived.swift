@@ -58,9 +58,9 @@ extension SpotTokens {
         rowsHeight(rows: rows, perLine: perLine) < room
     }
 
-    public static func sheetRect(rows: Int, perLine: Int = 1, hasField: Bool = true, setsApart: Bool = false, header: CGFloat = 0) -> CGRect {
-        let height = sheetRowsTop - (hasField ? 0 : listRow + rowGap) + rowsHeight(rows: rows, perLine: perLine) + padding
-            + (setsApart ? pinRuleRoom + listRowGap : 0) + header
+    public static func sheetRect(rows: Int, perLine: Int = 1, setsApart: Bool = false, top: SheetTop = .plain) -> CGRect {
+        let height = top.rowsTop + rowsHeight(rows: rows, perLine: perLine) + padding
+            + (setsApart ? pinRuleRoom + listRowGap : 0)
         return CGRect(x: halo, y: halo, width: gridWidth, height: min(height, sheetMaxHeight))
     }
 
@@ -85,9 +85,9 @@ extension SpotTokens {
     }
 
 
-    public static func panelRect(_ panel: SheetParts, header: CGFloat = 0) -> CGRect {
-        let field = panel.showsField ? SpotTokens.partFieldRoom : 0
-        let height = sheetFieldDrop + header + field + panel.placement.height + padding
+    public static func panelRect(_ panel: SheetParts) -> CGRect {
+        let field = panel.top.hasField ? SpotTokens.partFieldRoom : 0
+        let height = panel.top.fieldY + field + panel.placement.height + padding
         return CGRect(x: halo, y: halo, width: gridWidth, height: min(height, sheetMaxHeight))
     }
 

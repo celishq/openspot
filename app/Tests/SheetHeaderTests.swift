@@ -24,10 +24,10 @@ final class SheetHeaderTests: XCTestCase {
         var panel = try XCTUnwrap(SheetParts(output: Frame(text: text)))
         let flat = SpotTokens.panelRect(panel).height
 
-        panel.place(header: line)
+        panel.place(top: SheetTop(header: line, hasField: false))
 
         XCTAssertEqual(panel.placement.height, SpotTokens.partsMaxHeight - line)
-        XCTAssertEqual(SpotTokens.panelRect(panel, header: line).height, flat)
-        XCTAssertEqual(SpotTokens.sheetRect(rows: 1, header: line).height - SpotTokens.sheetRect(rows: 1).height, line)
+        XCTAssertEqual(SpotTokens.panelRect(panel).height, flat)
+        XCTAssertEqual(SpotTokens.sheetRect(rows: 1, top: SheetTop(header: line, hasField: true)).height - SpotTokens.sheetRect(rows: 1).height, line)
     }
 }

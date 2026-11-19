@@ -23,15 +23,14 @@ public struct SheetParts: Equatable, Sendable {
     private var focusOffsets: [Int] = []
     private var focusLineOffsets: [[Int]] = []
     public private(set) var selected: String?
-    public let searches: Bool
-    private var header: CGFloat = 0
+    public private(set) var top: SheetTop
 
     public init?(output: Frame) {
         guard !output.parts.isEmpty else { return nil }
         parts = output.parts
         layout = output.layout
-        searches = output.search != .off
-        placement = Self.placement(of: output.parts, in: output.layout, searches: searches)
+        top = SheetTop(showsRows: output.layout?.repeated != nil, search: output.search, header: 0)
+        placement = Self.placement(of: output.parts, in: output.layout, room: top.partsRoom)
         pictureTimes = Self.pictureTimes(of: output.parts)
         orderFocus()
     }
@@ -44,13 +43,13 @@ public struct SheetParts: Equatable, Sendable {
         return times
     }
 
-    private static func placement(of parts: [SpotPart], in layout: SheetLayout?, searches: Bool, header: CGFloat = 0) -> SheetPlacement {
-        SheetPlacement(parts: parts, layout: layout ?? SheetLayout(flat: parts), searches: searches, header: header)
+    private static func placement(of parts: [SpotPart], in layout: SheetLayout?, room: CGFloat) -> SheetPlacement {
+        SheetPlacement(parts: parts, layout: layout ?? SheetLayout(flat: parts), room: room)
     }
 
-    mutating func place(header: CGFloat? = nil) {
-        if let header { self.header = header }
-        placement = Self.placement(of: parts, in: layout, searches: searches, header: self.header)
+    mutating func place(top: SheetTop? = nil) {
+        if let top { self.top = top }
+        placement = Self.placement(of: parts, in: layout, room: self.top.partsRoom)
         orderFocus()
     }
 
@@ -97,10 +96,6 @@ public struct SheetParts: Equatable, Sendable {
 
     public var showsRows: Bool {
         layout?.repeated != nil
-    }
-
-    public var showsField: Bool {
-        showsRows && searches
     }
 
     public var kind: SheetKind {

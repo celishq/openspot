@@ -167,7 +167,7 @@ final class SpotRunTests: XCTestCase {
 
         XCTAssertEqual(sheet.shownState.subtitle, "A detail longer than its header")
         XCTAssertTrue(sheet.showsField)
-        XCTAssertEqual(sheet.headerExtra, 9)
+        XCTAssertEqual(sheet.top, SheetTop(header: 9, hasField: true))
         XCTAssertEqual(sheet.sheetRect.height, SpotTokens.sheetRect(rows: 1).height + 9)
     }
 

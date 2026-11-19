@@ -4,17 +4,17 @@ import SwiftUI
 struct SpotFieldLook: View {
     let query: String
     let title: String
-    let header: CGFloat
+    let top: SheetTop
 
     var body: some View {
         ZStack(alignment: .topLeading) {
-            SpotSurfaceShape(rect: SpotFieldView.sheetRow(header: header), radius: SpotFieldView.sheetRadius)
+            SpotSurfaceShape(rect: SpotFieldView.sheetRow(top: top), radius: SpotFieldView.sheetRadius)
                 .fill(SpotTheme.highlight.opacity(SpotTheme.fill))
             SpotFieldPrompt.glyph
-                .offset(x: SpotFieldView.sheetGlyphLeft, y: SpotFieldView.sheetTop(header: header))
+                .offset(x: SpotFieldView.sheetGlyphLeft, y: SpotFieldView.sheetTop(top: top))
             words
                 .frame(height: SpotTokens.cell)
-                .offset(x: SpotFieldView.sheetTextLeft, y: SpotFieldView.sheetTop(header: header))
+                .offset(x: SpotFieldView.sheetTextLeft, y: SpotFieldView.sheetTop(top: top))
         }
         .frame(width: SpotTokens.panelWidth, height: SpotTokens.panelHeight, alignment: .topLeading)
         .allowsHitTesting(false)

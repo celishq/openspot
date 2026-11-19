@@ -63,8 +63,8 @@ final class SheetLayoutTests: XCTestCase {
         let still = try XCTUnwrap(SheetParts(output: output("frame=\ngrid=cpu\ngrid=cpu\n\n" + numbers)))
         let searched = try XCTUnwrap(SheetParts(output: output("frame=\ngrid=cpu\ngrid=cpu\ngrid=find\n\nfield=find\ntype=search\n\n" + numbers)))
 
-        XCTAssertFalse(still.showsField)
-        XCTAssertTrue(searched.showsField)
+        XCTAssertFalse(still.top.hasField)
+        XCTAssertTrue(searched.top.hasField)
         XCTAssertEqual(still.placement.height, SpotTokens.partsMaxHeight)
         XCTAssertEqual(searched.placement.height, SpotTokens.partsMaxHeight - SpotTokens.partFieldRoom)
     }

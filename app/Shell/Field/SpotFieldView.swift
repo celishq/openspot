@@ -32,8 +32,8 @@ struct SpotFieldView: View {
     }
 
     private var searchField: some View {
-        let place = isInSheet ? Self.sheetRow(header: model.fieldHeader) : Self.rect
-        let top = isInSheet ? Self.sheetTop(header: model.fieldHeader) : SpotTokens.halo
+        let place = isInSheet ? Self.sheetRow(top: model.fieldTop) : Self.rect
+        let top = isInSheet ? Self.sheetTop(top: model.fieldTop) : SpotTokens.halo
         let glyphLeft = isInSheet ? Self.sheetGlyphLeft : SpotTokens.halo + SpotTokens.padding
         return ZStack(alignment: .topLeading) {
             SpotSurface(rect: place, radius: fieldRadius, glass: isInstall ? 0 : 1, cut: sheetShape)
@@ -94,16 +94,16 @@ struct SpotFieldView: View {
         .frame(width: SpotTokens.panelWidth, height: SpotTokens.panelHeight, alignment: .topLeading)
     }
 
-    static func sheetRow(header: CGFloat) -> CGRect {
+    static func sheetRow(top: SheetTop) -> CGRect {
         CGRect(
             x: SpotTokens.halo + SpotTokens.padding,
-            y: SpotTokens.halo + SpotTokens.sheetFieldDrop + header,
+            y: SpotTokens.halo + top.fieldY,
             width: SpotTokens.gridWidth - 2 * SpotTokens.padding,
             height: SpotTokens.listRow
         )
     }
-    static func sheetTop(header: CGFloat) -> CGFloat {
-        SpotTokens.halo + SpotTokens.sheetFieldDrop + header - (SpotTokens.cell - SpotTokens.listRow) / 2
+    static func sheetTop(top: SheetTop) -> CGFloat {
+        SpotTokens.halo + top.fieldY - (SpotTokens.cell - SpotTokens.listRow) / 2
     }
     static var sheetGlyphLeft: CGFloat { SpotTokens.halo + 2 * SpotTokens.padding + (SpotTokens.listIconSize - SpotTokens.glyph) / 2 }
     static var sheetTextLeft: CGFloat { SpotTokens.halo + 2 * SpotTokens.padding + SpotTokens.listIconSize + SpotTokens.fieldTextGap }
@@ -127,7 +127,7 @@ struct SpotFieldView: View {
     }
 
     private var promptLayer: some View {
-        let top = isInSheet ? Self.sheetTop(header: model.fieldHeader) : SpotTokens.halo
+        let top = isInSheet ? Self.sheetTop(top: model.fieldTop) : SpotTokens.halo
         let left = fieldTextLeft
         return promptWords
             .frame(height: SpotTokens.cell)
@@ -162,7 +162,7 @@ struct SpotFieldView: View {
         let header = CGRect(x: SpotTokens.padding, y: SpotTokens.padding, width: SpotTokens.gridWidth - 2 * SpotTokens.padding, height: SpotTokens.glyph)
         let line = SpotType.inputLine
         let rest = SpotTokens.halo + (SpotTokens.cell - line) / 2
-        let drop = SpotTokens.sheetFieldDrop + model.fieldHeader - (SpotTokens.cell - SpotTokens.listRow) / 2
+        let drop = model.fieldTop.fieldY - (SpotTokens.cell - SpotTokens.listRow) / 2
         return { progress in
             let words = CGRect(x: SpotTokens.halo, y: rest + drop * CGFloat(progress), width: SpotTokens.gridWidth, height: line)
             return morph.crossing(of: words, header: header, at: progress)

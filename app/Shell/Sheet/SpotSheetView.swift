@@ -69,7 +69,7 @@ private struct SheetContentView: View {
                 .morph(progress, offset: { [rowCardDrop] in SheetMorph.place(onCard: CGSize(width: 0, height: rowCardDrop), at: $0) })
             VStack(alignment: .leading, spacing: SpotTokens.rowGap) {
                 if let panel = content.panel {
-                    if panel.showsField { Color.clear.frame(height: SpotTokens.listRow) }
+                    if top.hasField { Color.clear.frame(height: SpotTokens.listRow) }
                     SheetPartsView(
                         panel: panel,
                         act: content.act,
@@ -98,14 +98,14 @@ private struct SheetContentView: View {
                         selection: { [model] in model.form?.draft.choices?.selected ?? 0 }
                     )
                 } else {
-                    if list.search != .off { Color.clear.frame(height: SpotTokens.listRow) }
+                    if top.hasField { Color.clear.frame(height: SpotTokens.listRow) }
                     if let create = content.create() {
                         Button { model.createFromSearch() } label: {
                             CreateLabel(model: model, title: create.title, shape: row)
                         }
                         .buttonStyle(.plain)
                     } else {
-                        SpotItemsView(list: list, recording: content.isHeld ? nil : content.recording, recordingWords: model.recordingWords, keys: model.keys, onRun: { model.runItem($0) }, onPoint: { model.point(at: .item($0)) }, selection: selection, onDragOut: { model.dragOut($0, of: entry.id) }, room: SpotTokens.listRoom - headerExtra)
+                        SpotItemsView(list: list, recording: content.isHeld ? nil : content.recording, recordingWords: model.recordingWords, keys: model.keys, onRun: { model.runItem($0) }, onPoint: { model.point(at: .item($0)) }, selection: selection, onDragOut: { model.dragOut($0, of: entry.id) }, room: top.listRoom)
                     }
                 }
             }
@@ -158,12 +158,12 @@ private struct SheetContentView: View {
         }
     }
 
-    private var headerExtra: CGFloat {
-        model.sheets[entry.id]?.headerExtra ?? 0
+    private var top: SheetTop {
+        model.sheets[entry.id]?.top ?? .plain
     }
 
     private var hasSecondLine: Bool {
-        headerExtra > 0
+        top.header > 0
     }
 
     private var showsCardWords: Bool {
@@ -238,7 +238,7 @@ private struct SheetContentView: View {
     }
 
     private var firstRow: CGRect {
-        CGRect(x: SpotTokens.padding, y: SpotTokens.sheetFieldDrop + headerExtra, width: rect.width - 2 * SpotTokens.padding, height: SpotTokens.listRow)
+        CGRect(x: SpotTokens.padding, y: top.fieldY, width: rect.width - 2 * SpotTokens.padding, height: SpotTokens.listRow)
     }
 
     private var isSmallCard: Bool {
