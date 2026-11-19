@@ -196,7 +196,9 @@ public final class SpotRun {
     @ObservationIgnored public internal(set) var calls: [ScriptCall] = []
     @ObservationIgnored public internal(set) var partsAnswers = 0
     @ObservationIgnored var actCalls: [ScriptCall] = []
-    public internal(set) var acts: [ScriptCall] = []
+    public internal(set) var acts: [ScriptCall] = [] {
+        didSet { if acts.first?.detail != oldValue.first?.detail { settle() } }
+    }
     @ObservationIgnored public var onReport: (Report) -> Void = { _ in }
     @ObservationIgnored public var partsArrival: (() -> Void) -> Void = { $0() }
     @ObservationIgnored let runs: SpotRuns
@@ -306,12 +308,10 @@ public final class SpotRun {
         if field != showsField { showsField = field }
         let header = rows.perLine > 1 ? 0 : SheetHeader.shared.extra(for: shownState.subtitle)
         let nextTop = SheetTop(showsRows: panel?.showsRows ?? true, search: rows.search, header: header)
-        if nextTop != top {
-            top = nextTop
-            if var placed = panel {
-                placed.place(top: nextTop)
-                panel = placed
-            }
+        if nextTop != top { top = nextTop }
+        if var placed = panel, placed.top != nextTop {
+            placed.place(top: nextTop)
+            panel = placed
         }
         let rect = panel.map(SpotTokens.panelRect)
         if rect != partsRect { partsRect = rect }

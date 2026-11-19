@@ -81,6 +81,18 @@ final class NumberReadingTests: XCTestCase {
         XCTAssertEqual(try part("number=cpu\nvalue=1\nvalue=2\n").numberLook(columns: 2, rows: 1), .bar)
     }
 
+    func testASeriesWithNoMaxIsABarInAPlaceOfOneColumn() throws {
+        XCTAssertEqual(try part("number=cpu\nvalue=1\nvalue=2\n").numberLook(columns: 1, rows: 2), .bar)
+    }
+
+    func testANumberRowSendsNoKeyOfTheBlockAsItsOwn() {
+        let plain = Frame(text: "number=a\nvalue=1\nmax=5\nunit=%\ndisplay=1 of 5\n").items.first
+        let own = Frame(text: "number=a\nvalue=1\nmax=5\nmeeting=42\n").items.first
+
+        XCTAssertEqual(plain?.fields, [])
+        XCTAssertEqual(own?.fields.first { $0.key == "meeting" }?.value, "42")
+    }
+
     func testASeriesWithAMaxIsARingOfItsLastValueInANarrowPlace() throws {
         let cpu = try part("number=cpu\nmax=100\nvalue=10\nvalue=40\n")
 

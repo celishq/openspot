@@ -8,6 +8,7 @@ extension SpotsModel {
             panel: shownParts(of: id),
             list: sheets[id]?.list ?? ItemList(),
             state: entry.shownState,
+            top: sheets[id]?.top ?? .plain,
             form: form,
             recording: recording,
             keys: keys,

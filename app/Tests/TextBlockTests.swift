@@ -79,10 +79,6 @@ final class TextBlockTests: XCTestCase {
         detail=Today
         icon=star
         tone=warn
-        value=1
-        value=wide
-        value=3
-        max=9
 
         text=Fix "tray"
         detail=failing

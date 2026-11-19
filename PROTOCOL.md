@@ -375,7 +375,7 @@ close=false
 | `close`         | `false` keeps the panel open after a pick of this item, or a key it records.                   |
 | `shake`         | `true` on a `hotkey` field: a shake or a tap of one modifier can be its key.                   |
 
-- A `number` item shows its value on the right of its title, or with `max` a ring of it, as in
+- A `number` item shows its value on the right of its title, a ring of it with `max`, or the bars of a series, as in
   [Numbers](#numbers).
 - A pick of a text sends `<spot> open <id>`, of a switch `<spot> <id> true` or `false`, and of a `hotkey` field
   records a key. A pick closes the panel, unless the item has `close=false`. An item can hold keys of its own, such as

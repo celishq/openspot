@@ -55,6 +55,7 @@ enum SpotType {
     static let controlValue = Font.system(size: 11, weight: .semibold, design: .rounded).monospacedDigit()
     static let menuBar = Font.system(size: 13, weight: .medium).monospacedDigit()
     static let small = Font.system(size: 10, weight: .medium)
+    static let smallLine: CGFloat = 13
     static let strong = Font.system(size: 13, weight: .semibold)
     static let rowIcon = Font.system(size: 14)
     static let glyph = Font.system(size: 17, weight: .semibold)

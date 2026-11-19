@@ -319,8 +319,8 @@ final class SheetPartsTests: XCTestCase {
         XCTAssertEqual(FrameCheck(text: "choice=a\noption=en:English\n".placed).partFaults, ["the part a has an unknown key: option"])
         XCTAssertEqual(FrameCheck(text: "choice=a\ncolor=red\n".placed).partFaults, ["the part a needs a color as #rrggbb: red"])
         XCTAssertEqual(FrameCheck(text: "text=a\nshortcut=nope+a\n".placed).partFaults, ["the part a has an unknown key combination: nope+a"])
-        XCTAssertEqual(FrameCheck(text: "text=a\ntitle=A\ndetail=9%\nvalue=0.09\ntone=bad\n".placed).partFaults, [])
-        XCTAssertEqual(FrameCheck(text: "text=a\ntitle=A\ndetail=9%\nvalue=0.09\ntone=red\n".placed).partFaults, ["the part a has an unknown tone: red"])
+        XCTAssertEqual(FrameCheck(text: "text=a\ntitle=A\ndetail=9%\ntone=bad\n".placed).partFaults, [])
+        XCTAssertEqual(FrameCheck(text: "text=a\ntitle=A\ndetail=9%\ntone=red\n".placed).partFaults, ["the part a has an unknown tone: red"])
     }
 
     func testTheCallsOfAPanel() {

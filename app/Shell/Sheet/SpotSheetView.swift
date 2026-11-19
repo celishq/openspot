@@ -159,7 +159,7 @@ private struct SheetContentView: View {
     }
 
     private var top: SheetTop {
-        model.sheets[entry.id]?.top ?? .plain
+        content.top
     }
 
     private var hasSecondLine: Bool {

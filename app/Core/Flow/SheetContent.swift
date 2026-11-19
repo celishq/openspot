@@ -4,6 +4,7 @@ public struct SheetContent {
     public let panel: SheetParts?
     public let list: ItemList
     public let state: SpotState
+    public let top: SheetTop
     public let form: FormDraft?
     public let recording: String?
     public let keys: KeyRecording
@@ -21,6 +22,7 @@ public struct SheetContent {
         panel = page.panel
         list = page.list
         state = page.state
+        top = page.top
         form = nil
         recording = page.recording
         keys = KeyRecording(status: page.keyStatus)
@@ -35,13 +37,14 @@ public struct SheetContent {
     }
 
     init(
-        panel: SheetParts?, list: ItemList, state: SpotState, form: FormDraft?, recording: String?, keys: KeyRecording,
+        panel: SheetParts?, list: ItemList, state: SpotState, top: SheetTop, form: FormDraft?, recording: String?, keys: KeyRecording,
         selection: @escaping () -> Int, selectedPart: @escaping () -> String?, nudge: @escaping () -> SheetParts.Nudge,
         menuOpening: @escaping () -> SheetParts.MenuOpening?, act: @escaping (SpotPart) -> ScriptCall?, create: @escaping () -> CommandAction?
     ) {
         self.panel = panel
         self.list = list
         self.state = state
+        self.top = top
         self.form = form
         self.recording = recording
         self.keys = keys

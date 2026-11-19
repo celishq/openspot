@@ -58,7 +58,7 @@ struct SpotNumberView: View {
     private var ring: some View {
         GeometryReader { room in
             let isBig = min(room.size.width, room.size.height) > SpotTokens.wordsRingSide
-            let column = min(room.size.width, room.size.height - SpotType.detailLine - SpotType.lineGap)
+            let column = min(room.size.width, room.size.height - SpotType.smallLine - SpotType.lineGap)
             Group {
                 if isBig {
                     VStack(alignment: .leading, spacing: SpotType.lineGap) {

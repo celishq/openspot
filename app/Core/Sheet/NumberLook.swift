@@ -10,7 +10,7 @@ public enum NumberLook: Equatable, Sendable {
         case .ring: self = .ring
         case .bar: self = .bar
         default:
-            if reading.isSeries, rows >= 2, columns >= 2 || reading.max == nil {
+            if reading.isSeries, rows >= 2, columns >= 2 {
                 self = .stat
             } else if reading.level != nil {
                 self = columns <= rows ? .ring : .bar

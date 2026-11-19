@@ -171,6 +171,30 @@ final class SpotRunTests: XCTestCase {
         XCTAssertEqual(sheet.sheetRect.height, SpotTokens.sheetRect(rows: 1).height + 9)
     }
 
+    func testANewPanelTakesTheTopOfTheRunWhenTheRunsTopStaysTheSame() async throws {
+        let kept = SheetHeader.shared
+        SheetHeader.shared = SheetHeader(width: { $0.count > 10 ? .infinity : 0 }, secondLine: 9)
+        defer { SheetHeader.shared = kept }
+        try "1".write(toFile: path("n"), atomically: true, encoding: .utf8)
+        let url = folder.spotFile("script")
+        try """
+        #!/bin/sh
+        if [ "$(cat '\(path("n"))')" = 1 ]; then printf 'frame=\\ngrid=a\\n\\nnumber=a\\nvalue=1\\n\\ntext=b\\ntitle=B\\n'
+        else printf 'frame=\\ngrid=a\\n\\nnumber=a\\nvalue=2\\n'; fi
+        """.writeScript(to: url)
+        let made = SpotRuns()
+        runs.append(made)
+        let sheet = made.sheet(for: Spot(id: "script", name: "script", url: url, kind: .list, subtitle: "A detail longer than its header", on: ShowEvents(moments: [.sheet])))
+        sheet.open {}
+        try await wait("the parts and rows") { sheet.panel?.showsRows == true && !sheet.isShowing }
+        XCTAssertEqual(sheet.top, SheetTop(header: 9, hasField: false))
+
+        sheet.panel = SheetParts(output: Frame(text: "frame=\ngrid=a\n\nnumber=a\nvalue=2\n"))
+
+        XCTAssertEqual(sheet.top, SheetTop(header: 9, hasField: false))
+        XCTAssertEqual(sheet.panel?.top, sheet.top)
+    }
+
     func testANewValueOfAPartTellsNoReaderOfTheRectOrTheKindOfTheParts() async throws {
         let sheet = try make("printf 'frame=\\ngrid=a\\ngrid=b\\n\\nfield=a\\ntitle=Name\\nvalue=%s\\n\\ntext=b\\ntitle=B\\n' \"$2\"")
         sheet.open {}
