@@ -355,7 +355,7 @@ export_page() {
   if [ -z "$file" ]; then
     printf 'frame=export\nrecents=false\ngrid=where\ngrid=where\ngrid=choose\n\n'
     printf 'text=where\ntitle=Export your data from Raycast\n'
-    printf 'detail=In Raycast, run Export Settings & Data, or go to Settings → Advanced and click Export. Raycast saves a .rayconfig file.\n\n'
+    printf 'detail=In Raycast, run **Export Settings & Data**, or go to **Settings → Advanced** and click **Export**. Raycast saves a **.rayconfig** file.\n\n'
     printf 'button=choose\ntitle=Choose Export File…\nlook=strong\nshortcut=return\nclose=false\n'
     return
   fi
