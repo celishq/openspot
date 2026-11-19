@@ -85,6 +85,13 @@ final class NumberReadingTests: XCTestCase {
         XCTAssertEqual(try part("number=battery\nvalue=84\nmax=100\n").numberLook(columns: 1, rows: 1), .ring)
     }
 
+    func testAValueWithAMaxIsABarAcrossAWideSheet() throws {
+        let battery = try part("number=battery\nvalue=84\nmax=100\n")
+
+        XCTAssertEqual(battery.numberLook(inSheetHeight: SpotTokens.listRow * 2), .bar)
+        XCTAssertEqual(try part("number=cpu\nvalue=1\nvalue=2\n").numberLook(inSheetHeight: SpotTokens.listRow * 2), .stat)
+    }
+
     func testALookTheSpotNamesWinsOverThePlace() throws {
         XCTAssertEqual(try part("number=battery\nvalue=84\nmax=100\nlook=bar\n").numberLook(columns: 2, rows: 2), .bar)
         XCTAssertEqual(try part("number=battery\nvalue=84\nmax=100\nlook=ring\n").numberLook(columns: 2, rows: 1), .ring)

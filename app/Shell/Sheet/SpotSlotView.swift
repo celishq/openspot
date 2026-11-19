@@ -5,6 +5,7 @@ struct SpotSlotView: View {
     let part: SpotPart
     var tone: MetricValue.Tone?
     var height: CGFloat?
+    var look: NumberLook = .stat
     let onSlot: (String, String?) -> Void
 
     var body: some View {
@@ -42,7 +43,7 @@ struct SpotSlotView: View {
         case .text(let text, let placeholder, let isReadOnly):
             SpotSlotField(text: text, placeholder: placeholder ?? part.title ?? "", isReadOnly: isReadOnly) { onSlot(part.id, $0) }
         case .number:
-            SpotNumberView(part: part, font: SpotType.slotNumber(size: numberSize), leastScale: numberSize > SpotType.slotNumberSize ? SpotType.leastBigNumberScale : SpotType.leastNumberScale)
+            SpotNumberView(part: part, look: look, font: SpotType.slotNumber(size: numberSize), leastScale: numberSize > SpotType.slotNumberSize ? SpotType.leastBigNumberScale : SpotType.leastNumberScale)
         case .image(let path):
             picture(icon: .image(path))
         default:

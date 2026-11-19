@@ -3,6 +3,8 @@ import Foundation
 extension SpotTokens {
     public static let groupTitleBand: CGFloat = groupTitleHeight + placeGap
 
+    public static var wordsRingSide: CGFloat { glyph * 2 }
+
     public static let rimPoint: CGFloat = 1 - 0.5.squareRoot()
 
     public static let hintKeyInset: CGFloat = hintHeight / 2 + hintPillInset - hintKeyHeight / 2

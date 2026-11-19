@@ -145,6 +145,10 @@ public struct SpotPart: Equatable, Sendable, Identifiable {
         number.map { NumberLook(reading: $0, named: look, columns: columns, rows: rows) }
     }
 
+    public func numberLook(inSheetHeight height: CGFloat) -> NumberLook? {
+        numberLook(columns: 4, rows: (height / SpotTokens.listRow).rounded(.down))
+    }
+
     static func options(of block: TextBlock) -> [Option] {
         block.children.compactMap { child in
             child.value("option").map { Option(id: $0, title: child.value("title") ?? $0, icon: child.value("icon")) }

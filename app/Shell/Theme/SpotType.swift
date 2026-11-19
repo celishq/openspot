@@ -65,6 +65,8 @@ enum SpotType {
     static let cornerFault = Font.system(size: 10, weight: .semibold)
     static let number = Font.system(size: 24, weight: .semibold, design: .rounded).monospacedDigit()
     static let lineGap: CGFloat = 1
+    static let barLineGap: CGFloat = lineGap + 2
+    static let ringValue = Font.system(size: 20, weight: .semibold, design: .rounded).monospacedDigit()
     static var titleLine: CGFloat { faces.sizes.title + 3 }
     static var detailLine: CGFloat { faces.sizes.detail + 3 }
     static var inputLine: CGFloat { faces.sizes.input + 4 }

@@ -155,7 +155,7 @@ struct SheetPartsView: View {
             list(part, items: items, value: value)
                 .overlay(alignment: .topTrailing) { cornerMark(part, frame) }
         case .number:
-            number(part)
+            number(part, frame)
         case .image(let path):
             image(path)
         case .shortcut(let text):
@@ -464,8 +464,8 @@ struct SheetPartsView: View {
         }
     }
 
-    private func number(_ part: SpotPart) -> some View {
-        SpotNumberView(part: part, font: SpotType.number, leastScale: SpotType.leastValueScale, alignment: part.look == .bare ? .trailing : .leading)
+    private func number(_ part: SpotPart, _ frame: SheetPlacement.Frame) -> some View {
+        SpotNumberView(part: part, look: part.numberLook(inSheetHeight: frame.rect.height) ?? .stat, font: SpotType.number, leastScale: SpotType.leastValueScale, alignment: part.look == .bare ? .trailing : .leading)
             .padding(.horizontal, part.look == .bare ? 0 : SpotTokens.padding)
             .background(SpotTheme.ink.opacity(part.look == .bare ? 0 : SpotTheme.fill), in: shape)
     }
