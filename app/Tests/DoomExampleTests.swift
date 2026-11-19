@@ -37,7 +37,7 @@ final class DoomExampleTests: SampleSpotsCase {
         size=$(cat '\(folder.path)/size' 2>/dev/null)
         if [ -n "$size" ]; then
           head -c $((size / 2)) /dev/zero > "$out"
-          sleep 1
+          n=0; while [ ! -f '\(folder.path)/release' ] && [ $n -lt 1500 ]; do sleep 0.02; n=$((n + 1)); done
           head -c $((size - size / 2)) /dev/zero >> "$out"
         else
           echo 'not the real file' > "$out"
@@ -278,7 +278,9 @@ final class DoomExampleTests: SampleSpotsCase {
             try self.fakeClang(in: folder)
             try "3090826".write(to: folder.appendingPathComponent("size"), atomically: true, encoding: .utf8)
 
-            let run = await self.press(doom)
+            let run = await self.press(doom) { frame in
+                if frame.contains("progress=0.50") { self.release(in: folder) }
+            }
 
             XCTAssertTrue(run.frames.contains { $0.contains("title=Downloading the Doom engine\nprogress=0.50\ndetail=50%") }, "\(run.frames)")
             XCTAssertTrue(run.frames.contains { $0.contains("title=Downloading the Doom engine\nprogress=1.00\ndetail=100%") }, "\(run.frames)")
