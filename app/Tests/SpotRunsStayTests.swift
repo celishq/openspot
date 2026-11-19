@@ -1124,7 +1124,6 @@ final class SpotRunsStayTests: SpotRunsCase {
     }
 
     func testALateAnswerToACallPastTheLimitOfStoppedCallsChangesNothing() async throws {
-        takeCalls()
         let last = StayMode.droppedLimit + 3
         try script(toml: "mode = 'stay'\non = ['sheet.text']", #"""
         while IFS= read -r line; do
@@ -1132,16 +1131,16 @@ final class SpotRunsStayTests: SpotRunsCase {
             call=*) id=${line#call=} ;;
             '')
               if [ "$id" = 1 ]; then printf 'text=a\ntitle=A\n\nend=1\n---\n'; fi
-              if [ "$id" = \#(last) ]; then printf 'end=2\n\ntext=old\ntitle=Old\n---\n'; \#(TestSpot.toast) done; id=; fi
+              if [ "$id" = \#(last) ]; then printf 'end=2\n\ntext=old\ntitle=Old\n---\nend=%s\n\ntext=fresh\ntitle=Fresh\n---\n' "$id"; id=; fi
               ;;
           esac
         done
         """#)
         let sheet = try sheet()
-        nonisolated(unsafe) var toasts: [String] = []
+        nonisolated(unsafe) var shown: [[String]] = []
         let report = sheet.onReport
         sheet.onReport = {
-            if case .toast(let text) = $0 { toasts.append(text) }
+            shown.append(sheet.list.all.map(\.run))
             report($0)
         }
         runs.panelOpened()
@@ -1153,7 +1152,7 @@ final class SpotRunsStayTests: SpotRunsCase {
             sheet.ask()
         }
 
-        try await wait("the late answer") { toasts == ["done"] }
-        XCTAssertEqual(sheet.list.all.map(\.run), ["a"])
+        try await wait("the answer after the late one") { sheet.list.all.map(\.run) == ["fresh"] }
+        XCTAssertFalse(shown.contains { $0.contains("old") })
     }
 }

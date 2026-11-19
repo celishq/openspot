@@ -163,7 +163,8 @@ The sheet shows Copying at half its progress, then the row Copied in its place.
   Openspot ignores what an out-of-date call prints.
 - Print a value that comes from data with `openspot_kv`, `openspot_item`, `esc` or `openspot.frame`, so that it can't
   add a line or a block.
-- Openspot reads `ESC ] 9;4;1;<percent>` as progress and `ESC ] 9;<text>` as a toast, and removes other escape codes.
+- Openspot removes escape codes, such as colours and terminal progress, from the output. Show progress with
+  `progress=` and a message with `openspot toast`.
 
 ### The root
 
