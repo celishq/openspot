@@ -116,10 +116,10 @@ final class GlobalKeyTests: XCTestCase {
 
     func testAFloatKeyStaysForEachSpotThatLoads() throws {
         let folder = try temporaryFolder()
-        try "#!/bin/sh\n".writeScript(to: folder.spotFile("shelf"), toml: "on = ['sheet.open']")
+        try "#!/bin/sh\n".writeScript(to: folder.spotFile("shelf"), toml: "")
         try "#!/bin/sh\n".writeScript(to: folder.spotFile("notes"))
         try "#!/bin/sh\necho text=cups\n".writeScript(to: folder.spotFile("cups"), toml: "on = ['clock.60']")
-        try "#!/bin/sh\n".writeScript(to: folder.spotFile("sheet"), toml: "on = ['sheet.open']")
+        try "#!/bin/sh\n".writeScript(to: folder.spotFile("sheet"), toml: "")
         let shortcut = try XCTUnwrap(Shortcut(text: "ctrl+up"))
         let shelf = GlobalKey(spot: "shelf", act: .float, trigger: .key(shortcut))
         let cups = GlobalKey(spot: "cups", act: .float, trigger: .key(shortcut))

@@ -205,7 +205,7 @@ final class SpotDropTests: XCTestCase {
     }
 
     func testADropRunsOneCallWithEachPathAsItsOwnArgument() async throws {
-        let sheet = try sheet(toml: "drop = 'mov'", """
+        let sheet = try sheet(toml: "drop = 'mov'\n\(TestSpot.command)", """
         printf '%s\\n' "$#" > '\(path("arguments"))'
         for argument; do printf '%s\\n' "$argument" >> '\(path("arguments"))'; done
         """)
@@ -239,7 +239,7 @@ final class SpotDropTests: XCTestCase {
     }
 
     private func busySheet() async throws -> SpotRun {
-        let sheet = try sheet(toml: "on = ['sheet.open']\ndrop = 'mov'", """
+        let sheet = try sheet(toml: "drop = 'mov'", """
         case "$1" in
           show) printf 'button=work\\ntitle=Work\\nscope=spot\\n\\ntext=a\\ntitle=A\\n' ;;
           work) \(untilRelease); touch '\(path("worked"))' ;;
@@ -279,7 +279,7 @@ final class SpotDropTests: XCTestCase {
     }
 
     func testAWaitingDropRunsAfterASecondPressStopsTheRunningCard() async throws {
-        let sheet = try sheet(toml: "drop = 'mov'", "case \"$2\" in *first.mov) sleep 30 ;; esac")
+        let sheet = try sheet(toml: "drop = 'mov'\n\(TestSpot.command)", "case \"$2\" in *first.mov) sleep 30 ;; esac")
         let first = file("first.mov")
         let second = file("second.mov")
         XCTAssertTrue(sheet.drop([first]))
@@ -295,7 +295,7 @@ final class SpotDropTests: XCTestCase {
     }
 
     func testAWaitingDropRunsAfterTheRunningCallFails() async throws {
-        let sheet = try sheet(toml: "on = ['sheet.open']\ndrop = 'mov'", """
+        let sheet = try sheet(toml: "drop = 'mov'", """
         case "$1" in
           show) printf 'button=work\\ntitle=Work\\nscope=spot\\n\\ntext=a\\ntitle=A\\n' ;;
           work) sleep 0.2; echo gone >&2; exit 3 ;;
@@ -327,7 +327,7 @@ final class SpotDropTests: XCTestCase {
     }
 
     func testASecondDropWaitsForTheFirstDrop() async throws {
-        let sheet = try sheet(toml: "drop = 'mov'", "case \"$2\" in *first.mov) \(untilRelease); touch '\(path("first-done"))' ;; esac")
+        let sheet = try sheet(toml: "drop = 'mov'\n\(TestSpot.command)", "case \"$2\" in *first.mov) \(untilRelease); touch '\(path("first-done"))' ;; esac")
         let first = file("first.mov")
         let second = file("second.mov")
 
@@ -425,7 +425,7 @@ final class SpotDropTests: XCTestCase {
     }
 
     func testAClickOnACardWithNoDropRunsItsCall() async throws {
-        let sheet = try sheet()
+        let sheet = try sheet(toml: TestSpot.command)
 
         sheet.pressCard()
 
@@ -468,7 +468,7 @@ final class SpotDropTests: XCTestCase {
 
     func testADropHasNoTimeLimitAndGoesOnWithThePanelClosed() async throws {
         runs = SpotRuns(showLimit: 0.2, clock: RunClock { [unowned self] in self.time })
-        let sheet = try sheet(toml: "drop = 'mov'", "sleep 0.5\ntouch '\(path("done"))'")
+        let sheet = try sheet(toml: "drop = 'mov'\n\(TestSpot.command)", "sleep 0.5\ntouch '\(path("done"))'")
         runs.panelOpened()
         var failures: [String] = []
         sheet.onReport = { if case .failure(let text) = $0 { failures.append(text) } }
@@ -482,7 +482,8 @@ final class SpotDropTests: XCTestCase {
     }
 
     func testADropShowsItsFramesAndItsToastAndKeepsItsLastFrame() async throws {
-        let sheet = try sheet(toml: "drop = 'mov'", "printf 'frame=\\ntitle=42%%\\nprogress=0.42\\n---\\n'\n\(untilRelease)\nprintf '\\033]9;Done\\007'")
+        runs.api = CommandAPI(mac: Mac(), places: .test(["OPENSPOT_CONFIG": folder.path]), app: FakeRunningApp(), runs: runs, rates: .offline)
+        let sheet = try sheet(toml: "drop = 'mov'", "printf 'frame=\\ntitle=42%%\\nprogress=0.42\\n---\\n'\n\(untilRelease)\n\(TestSpot.toast) Done")
         var toasts: [String] = []
         sheet.onReport = { if case .toast(let text) = $0 { toasts.append(text) } }
         let frames = FrameLog(sheet)
@@ -495,11 +496,11 @@ final class SpotDropTests: XCTestCase {
         XCTAssertEqual(sheet.calls.first?.fill, 0.42)
         FileManager.default.createFile(atPath: path("release"), contents: Data())
         try await wait("the toast") { toasts == ["Done"] }
-        XCTAssertEqual(frames.last, TextBlock(fields: [.init(key: SheetFrames.notice, value: "Done")]).text)
+        XCTAssertEqual(frames.last, "frame=\ntitle=42%\nprogress=0.42\n")
     }
 
     func testAFailedDropTellsThePerson() async throws {
-        let sheet = try sheet(toml: "drop = 'mov'", "echo broken >&2\nexit 2")
+        let sheet = try sheet(toml: "drop = 'mov'\n\(TestSpot.command)", "echo broken >&2\nexit 2")
         var failures: [String] = []
         sheet.onReport = { if case .failure(let text) = $0 { failures.append(text) } }
 
@@ -509,7 +510,7 @@ final class SpotDropTests: XCTestCase {
     }
 
     func testAStoppedDropChangesNothingAndItsSilenceIsNoAnswer() async throws {
-        let sheet = try sheet(toml: "on = ['sheet.open']\ndrop = 'mov'", """
+        let sheet = try sheet(toml: "drop = 'mov'", """
         case "$1" in
           show) printf 'text=a\\ntitle=A\\n' ;;
           drop) sleep 5; touch '\(path("went-on"))' ;;
@@ -529,7 +530,7 @@ final class SpotDropTests: XCTestCase {
     }
 
     func testADropWithNoFrameReadsOnce() async throws {
-        let sheet = try sheet(toml: "on = ['sheet.open']\ndrop = 'mov'", "[ \"$1\" = show ] && printf 'text=a\\ntitle=A\\n'\nexit 0")
+        let sheet = try sheet(toml: "drop = 'mov'", "[ \"$1\" = show ] && printf 'text=a\\ntitle=A\\n'\nexit 0")
         let file = file("a.mov")
 
         XCTAssertTrue(sheet.drop([file]))

@@ -27,6 +27,7 @@ public enum SheetExamples {
         title=English
 
         field=input
+        type=multiline
         value=Good morning
         placeholder=Type or paste text
 
@@ -40,6 +41,7 @@ public enum SheetExamples {
         title=German
 
         field=output
+        type=multiline
         value=Bonjour
         readonly=true
 
@@ -118,10 +120,12 @@ public enum SheetExamples {
         option=mp4
         title=MP4
 
-        graph=status
+        number=status
         title=Converting
         detail=1:12 left
-        value=0.62
+        value=62
+        max=100
+        unit=%
 
         field=log
         value=frame= 4120 fps= 96\\nframe= 4216 fps= 97
@@ -182,7 +186,7 @@ public enum SheetExamples {
         value=61%
         title=Memory
 
-        graph=history
+        number=history
         value=2
         value=4
         value=3

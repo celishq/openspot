@@ -30,7 +30,7 @@ public struct SpotFile: Equatable, Sendable {
         }
         let icon = Icon(text: manifest.icon).map { Self.placed($0, beside: url) }
         let parsed = try ShowEvents(on: manifest.on, of: name)
-        let on = parsed?.moments.isEmpty == false ? parsed : nil
+        var on = parsed?.moments.isEmpty == false ? parsed : nil
         if let word = manifest.emits.first(where: { !SpotEvent.isName($0) }) {
             throw SpotError.fault("\(name) has an unknown event in its emits: \(word). Write a word with a dot, such as emits = [\"music.track\"]")
         }
@@ -85,7 +85,7 @@ public struct SpotFile: Equatable, Sendable {
             throw SpotError.fault("\(name) has an unknown starts: \(manifest.starts ?? ""). Use starts = \"first-launch\".")
         }
         if isGlobal, on?.has(.panel) != true, on?.has(.sheet) != true, on?.seconds == nil {
-            throw SpotError.fault("\(name) needs panel.open, sheet.open or a clock in its on, such as on = [\"clock.60\"], to join the main search")
+            on = on?.adding(.sheet) ?? .sheet
         }
         let isFound = !answersOnly && (offeredActions.isEmpty || isGlobal)
         let command = Spot(

@@ -47,19 +47,12 @@ final class SheetStreamTests: XCTestCase {
         XCTAssertNil(reader.finish())
     }
 
-    func testATerminalProgressCodeIsAFrameWithItsValue() {
+    func testATerminalProgressOrNotificationCodeLeavesTheText() {
         var reader = SheetFrames()
 
-        XCTAssertEqual(reader.read(Data("Copying\u{1b}]9;4;1;42\u{07}".utf8)), ["frame=\nprogress=0.42\n"])
-        XCTAssertEqual(reader.read(Data("\u{1b}]9;4;1".utf8)), [])
-        XCTAssertEqual(reader.read(Data(";50\u{1b}\\\n".utf8)), ["frame=\nprogress=0.5\n"])
-        XCTAssertEqual(reader.read(Data("\u{1b}]9;4;3;0\u{07}\u{1b}]9;4;0;0\u{07}".utf8)), [])
-    }
-
-    func testATerminalNotificationCodeIsAFrameWithItsToast() {
-        var reader = SheetFrames()
-
-        XCTAssertEqual(reader.read(Data("\u{1b}]9;Build done\u{07}".utf8)), [TextBlock(fields: [.init(key: SheetFrames.notice, value: "Build done")]).text])
+        XCTAssertEqual(reader.read(Data("Copying\u{1b}]9;4;1;42\u{07}\u{1b}]9;4;1".utf8)), [])
+        XCTAssertEqual(reader.read(Data(";50\u{1b}\\ now\n\u{1b}]9;Build done\u{07}done".utf8)), [])
+        XCTAssertEqual(reader.finish(), "Copying now\ndone")
     }
 
     func testEachOtherEscapeCodeLeavesTheText() {

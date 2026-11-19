@@ -11,7 +11,7 @@ final class ItemsTests: PanelCase {
         ((try? String(contentsOf: log, encoding: .utf8)) ?? "").split(separator: "\n").map(String.init)
     }
 
-    private func open(_ frame: String, toml: String = "on = ['sheet.open']") async throws {
+    private func open(_ frame: String, toml: String = "") async throws {
         let body = "#!/bin/sh\ncase \"$1\" in\nshow) sed -n 's/^search=/search /p' >> '\(log.path)'\ncat <<'EOF'\n\(frame)\nEOF\n;;\n*) echo \"$*\" >> '\(log.path)' ;;\nesac\n"
         try body.writeScript(to: spots.spotFile("items"), toml: toml)
         await model.reload()
@@ -99,12 +99,11 @@ final class ItemsTests: PanelCase {
         XCTAssertEqual(output.parts.first?.control, .menu([.init(id: "colorful", title: "Colorful"), .init(id: "plain", title: "Plain")], value: "colorful"))
     }
 
-    func testATextItemWithOneValueShowsARingWithItsDetail() {
-        let output = Frame(text: "text=mac\ntitle=This Mac\ndetail=84%\nvalue=0.84\n\ntext=swap\ntitle=Swap\ndetail=2 GB\n")
+    func testATextItemsNumberIsNoMarkAndANumberItemWithAMaxFills() {
+        let output = Frame(text: "text=mac\ntitle=This Mac\ndetail=84%\nvalue=0.84\n\nnumber=swap\ntitle=Swap\nvalue=84\nmax=100\n")
 
-        XCTAssertEqual(output.items.first?.ring?.fill, 0.84)
-        XCTAssertEqual(output.items.first?.ring?.ringWords, "84")
-        XCTAssertNil(output.items.last?.ring)
+        XCTAssertNil(output.items.first?.number)
+        XCTAssertEqual(output.items.last?.number?.fill, 0.84)
     }
 
     func testARowIsAnUnknownKind() {
@@ -125,16 +124,19 @@ final class ItemsTests: PanelCase {
         XCTAssertEqual(placed.search, .off)
     }
 
-    func testASearchFieldFiltersInsideOpenspotAndWithFilterSpotTheSpotFilters() {
+    func testASearchFieldFiltersInsideOpenspot() {
         let local = Frame(text: "frame=\ngrid=find\ngrid=a\n\nfield=find\ntype=search\n\ntext=a\ntitle=A\n\ntext=b\ntitle=B\n")
-        let spot = Frame(text: "field=find\ntype=search\nfilter=spot\n\ntext=b\ntitle=B\n")
 
         XCTAssertEqual(local.search, .local)
         XCTAssertEqual(local.items.map(\.run), ["b"])
         XCTAssertEqual(local.layout?.rows, [["a"], [Frame.itemsArea]])
-        XCTAssertEqual(spot.search, .script)
-        XCTAssertEqual(spot.items.map(\.run), ["b"])
-        XCTAssertEqual(spot.parts, [])
+    }
+
+    func testFilterOnASearchFieldIsAnUnknownKey() {
+        let text = "field=find\ntype=search\nfilter=spot\n\ntext=b\ntitle=B\n"
+
+        XCTAssertEqual(Frame(text: text).search, .local)
+        XCTAssertEqual(FrameCheck(text: text).partFaults, ["the part find has an unknown key: filter"])
     }
 
     func testAnItemIsSearchedAndPickedAsAMessage() async throws {
@@ -196,13 +198,5 @@ final class ItemsTests: PanelCase {
 
         try await wait("the key") { self.calls.contains("key ctrl+option+a") }
         XCTAssertEqual(host.dismissals, 0)
-    }
-
-    func testASearchFieldWithFilterSpotSendsEachText() async throws {
-        try await open("field=find\ntype=search\nfilter=spot\n\ntext=a\ntitle=A\n")
-
-        model.searchText = "mi"
-
-        try await wait("the text") { self.calls.contains("search mi") }
     }
 }

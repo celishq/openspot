@@ -23,12 +23,14 @@ public struct SheetParts: Equatable, Sendable {
     private var focusOffsets: [Int] = []
     private var focusLineOffsets: [[Int]] = []
     public private(set) var selected: String?
+    public private(set) var top: SheetTop
 
     public init?(output: Frame) {
         guard !output.parts.isEmpty else { return nil }
         parts = output.parts
         layout = output.layout
-        placement = Self.placement(of: output.parts, in: output.layout)
+        top = SheetTop(showsRows: output.layout?.repeated != nil, search: output.search, header: 0)
+        placement = Self.placement(of: output.parts, in: output.layout, room: top.partsRoom)
         pictureTimes = Self.pictureTimes(of: output.parts)
         orderFocus()
     }
@@ -41,12 +43,13 @@ public struct SheetParts: Equatable, Sendable {
         return times
     }
 
-    private static func placement(of parts: [SpotPart], in layout: SheetLayout?) -> SheetPlacement {
-        SheetPlacement(parts: parts, layout: layout ?? SheetLayout(flat: parts))
+    private static func placement(of parts: [SpotPart], in layout: SheetLayout?, room: CGFloat) -> SheetPlacement {
+        SheetPlacement(parts: parts, layout: layout ?? SheetLayout(flat: parts), room: room)
     }
 
-    mutating func place() {
-        placement = Self.placement(of: parts, in: layout)
+    mutating func place(top: SheetTop? = nil) {
+        if let top { self.top = top }
+        placement = Self.placement(of: parts, in: layout, room: self.top.partsRoom)
         orderFocus()
     }
 

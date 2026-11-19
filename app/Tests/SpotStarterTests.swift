@@ -59,6 +59,16 @@ final class SpotStarterTests: XCTestCase {
         XCTAssertEqual(try String(contentsOf: said, encoding: .utf8), "toast You picked the item that says: Hello again\n")
     }
 
+    func testTheButtonStarterIsOneCommandThatReturnRuns() throws {
+        _ = try SpotStarter.button.write(name: "Weather today", in: folder)
+
+        let spot = try XCTUnwrap(SpotsFolder(url: folder).scan().spots.first)
+
+        XCTAssertEqual(spot.mainAct, .command("run"))
+        XCTAssertFalse(spot.hasSheet)
+        XCTAssertEqual(spot.offers.map(\.title), ["Weather today"])
+    }
+
     func testANameThatAnotherSpotHasIsRefused() throws {
         _ = try SpotStarter.button.write(name: "Weather", in: folder)
 

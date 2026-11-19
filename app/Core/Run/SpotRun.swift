@@ -176,6 +176,7 @@ public final class SpotRun {
     public private(set) var partsKind: SheetKind?
     public private(set) var sheetRect = SpotTokens.sheetRect(rows: 0)
     public private(set) var showsField = true
+    public private(set) var top = SheetTop.plain
     @ObservationIgnored var heardKind: SheetKind? {
         didSet { settle() }
     }
@@ -183,6 +184,7 @@ public final class SpotRun {
         didSet {
             guard state != oldValue else { return }
             if (state.on == true) != isOn { isOn = state.on == true }
+            if state.subtitle != oldValue.subtitle { settle() }
             onReport(.listChange)
         }
     }
@@ -194,7 +196,9 @@ public final class SpotRun {
     @ObservationIgnored public internal(set) var calls: [ScriptCall] = []
     @ObservationIgnored public internal(set) var partsAnswers = 0
     @ObservationIgnored var actCalls: [ScriptCall] = []
-    public internal(set) var acts: [ScriptCall] = []
+    public internal(set) var acts: [ScriptCall] = [] {
+        didSet { if acts.first?.detail != oldValue.first?.detail { settle() } }
+    }
     @ObservationIgnored public var onReport: (Report) -> Void = { _ in }
     @ObservationIgnored public var partsArrival: (() -> Void) -> Void = { $0() }
     @ObservationIgnored let runs: SpotRuns
@@ -275,20 +279,18 @@ public final class SpotRun {
     public struct Shape: Equatable, Sendable {
         public let rows: Int
         public let perLine: Int
-        public let hasField: Bool
         public let setsApart: Bool
 
-        public init(rows: Int, perLine: Int, hasField: Bool = true, setsApart: Bool = false) {
+        public init(rows: Int, perLine: Int, setsApart: Bool = false) {
             self.rows = rows
             self.perLine = perLine
-            self.hasField = hasField
             self.setsApart = setsApart
         }
     }
 
     func layOut() {
         if var next = parts {
-            next.place()
+            next.place(top: top)
             panel = next
         }
         settle()
@@ -297,19 +299,26 @@ public final class SpotRun {
     func settle() {
         let next = rows.isBento
             ? Shape(rows: rows.drawing.lineCount(rows: rows.shown.count) * rows.drawing.columns, perLine: rows.drawing.columns)
-            : Shape(rows: rows.lineCount, perLine: rows.perLine, hasField: rows.search != .off, setsApart: rows.setsApart)
+            : Shape(rows: rows.lineCount, perLine: rows.perLine, setsApart: rows.setsApart)
         if next != shape { shape = next }
         let waits = showsSheet && answered == nil && panel == nil && rows.search == .local && rows.isLoading && !rows.holdsItems
         let nextKind = heardKind ?? (waits ? .waiting : panel?.kind ?? .rows)
         if nextKind != kind { kind = nextKind }
+        let field = nextKind.showsField && rows.search != .off
+        if field != showsField { showsField = field }
+        let header = rows.perLine > 1 ? 0 : SheetHeader.shared.extra(for: shownState.subtitle)
+        let nextTop = SheetTop(showsRows: panel?.showsRows ?? true, search: rows.search, header: header)
+        if nextTop != top { top = nextTop }
+        if var placed = panel, placed.top != nextTop {
+            placed.place(top: nextTop)
+            panel = placed
+        }
         let rect = panel.map(SpotTokens.panelRect)
         if rect != partsRect { partsRect = rect }
         let parts = panel?.kind
         if parts != partsKind { partsKind = parts }
-        let sheet = rect ?? SpotTokens.sheetRect(rows: next.rows, perLine: next.perLine, hasField: next.hasField, setsApart: next.setsApart)
+        let sheet = rect ?? SpotTokens.sheetRect(rows: next.rows, perLine: next.perLine, setsApart: next.setsApart, top: nextTop)
         if sheet != sheetRect { sheetRect = sheet }
-        let field = nextKind.showsField && rows.search != .off
-        if field != showsField { showsField = field }
     }
 
     func hear(_ lines: Frame?) {

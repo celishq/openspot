@@ -12,7 +12,7 @@ final class CallMessageTests: SpotRunsCase {
     }
 
     func testAShowCallCarriesItsEventOnStdinAndNotInTheEnvironment() async throws {
-        try script(toml: "on = ['sheet.open']", keeps)
+        try script(toml: "", keeps)
         let sheet = try sheet()
 
         sheet.show(need: .change)
@@ -24,7 +24,7 @@ final class CallMessageTests: SpotRunsCase {
     }
 
     func testStdinHoldsTheInputsTheSettingsTheRouteAndThePickedItem() async throws {
-        try script(toml: "on = ['sheet.open']\n[settings.city]\n[settings.token]\ntype = 'secret'", """
+        try script(toml: "[settings.city]\n[settings.token]\ntype = 'secret'", """
         case "$1" in
           show) printf 'frame=\\ngrid=search\\ngrid=title\\n\\nfield=search\\ntitle=Find\\nvalue=\\n\\nfield=title\\nvalue=Groceries\\n\\ntext=a\\ntitle=A\\nmeeting=42\\n' ;;
           *) \(keeps) ;;
@@ -67,7 +67,7 @@ final class CallMessageTests: SpotRunsCase {
     }
 
     func testAStayingSpotGetsTheSameBlockAfterItsCall() async throws {
-        try script(toml: "on = ['sheet.open']\nmode = 'stay'\n[settings.city]", """
+        try script(toml: "mode = 'stay'\n[settings.city]", """
         while IFS= read -r line; do
           printf '%s\\n' "$line" >> '\(path("stdin"))'
           case $line in

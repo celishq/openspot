@@ -1,6 +1,8 @@
 import Foundation
 
 struct TestSpot {
+    static let toast = "'\(Bundle(for: FakeHost.self).bundleURL.deletingLastPathComponent().appendingPathComponent("openspot").path)' toast"
+    static let command = "[commands.go]\ntitle = 'Go'"
     static let event = #"in=$(cat); ev=$(printf '%s\n' "$in" | sed -n 's/^event=//p'); val=$(printf '%s\n' "$in" | sed -n 's/^event\.value=//p')"#
 
     let toml: String

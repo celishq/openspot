@@ -48,9 +48,25 @@ final class SpotSettingsTests: XCTestCase {
         XCTAssertEqual(press, "toast=Left\n")
     }
 
+    func testASpotHasASheetUnlessItHasCommandsAndNoEvents() throws {
+        try "#!/bin/sh\n".writeScript(to: folder.spotFile("notes"), toml: "title = 'Notes'")
+        try "#!/bin/sh\n".writeScript(to: folder.spotFile("move"), toml: "title = 'Move'\n[commands.left]\ntitle = 'Left'")
+        try "#!/bin/sh\n".writeScript(to: folder.spotFile("shelf"), toml: "title = 'Shelf'\non = ['sheet.open']\n[commands.left]\ntitle = 'Left'\n[commands.right]\ntitle = 'Right'")
+        try "#!/bin/sh\n".writeScript(to: folder.spotFile("sum"), toml: "title = 'Sum'\non = ['search.text ^[0-9]']")
+        let notes = try spot("notes")
+        let move = try spot("move")
+        let shelf = try spot("shelf")
+
+        XCTAssertEqual([notes.hasSheet, move.hasSheet, shelf.hasSheet], [true, false, true])
+        XCTAssertEqual([notes.mainAct, move.mainAct, shelf.mainAct], [.sheet, .command("left"), .sheet])
+        XCTAssertEqual([notes.opensToKeys, move.opensToKeys, shelf.opensToKeys], [false, true, false])
+        XCTAssertEqual([notes.keepsHistory, move.keepsHistory, shelf.keepsHistory], [false, false, false])
+        XCTAssertFalse(try XCTUnwrap(try scan().scripts.first { $0.id == "sum" }).hasSheet)
+    }
+
     func testAShakeOnAFloatRowTakesTheShakeFromTheSpotThatHadIt() async throws {
-        try "#!/bin/sh\n".writeScript(to: folder.spotFile("shelf"), toml: "title = 'Shelf'\non = ['sheet.open']")
-        try "#!/bin/sh\n".writeScript(to: folder.spotFile("notes"), toml: "title = 'Notes'\non = ['sheet.open']")
+        try "#!/bin/sh\n".writeScript(to: folder.spotFile("shelf"), toml: "title = 'Shelf'")
+        try "#!/bin/sh\n".writeScript(to: folder.spotFile("notes"), toml: "title = 'Notes'")
         let runs = SpotRuns()
 
         _ = try await runs.answer(of: try XCTUnwrap(try spot("shelf").settingsSpot), .set("key:shelf:float", to: "shake"), limit: 60)
@@ -160,7 +176,7 @@ final class SpotSettingsTests: XCTestCase {
     }
 
     func testTheSheetOfSettingsRunsNoScriptAndTakesNoKeyItCannotUse() async throws {
-        try "#!/bin/sh\necho ran >> '\(folder.appendingPathComponent("ran").path)'\n".writeScript(to: folder.spotFile("shelf"), toml: "title = 'Shelf'\non = ['sheet.open']")
+        try "#!/bin/sh\necho ran >> '\(folder.appendingPathComponent("ran").path)'\n".writeScript(to: folder.spotFile("shelf"), toml: "title = 'Shelf'")
         let settings = try XCTUnwrap(try spot("shelf").settingsSpot)
         let runs = SpotRuns()
 

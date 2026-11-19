@@ -4,7 +4,7 @@ import XCTest
 @MainActor
 final class SpotRunsFrameTests: SpotRunsCase {
     func testAnActionsFrameWithABlockReplacesTheWholeSheet() async throws {
-        try script(toml: "on = ['sheet.open']", """
+        try script(toml: "", """
         case "$1" in
           show) printf 'frame=\\ngrid=go\\ngrid=a\\ngrid=b\\n\\nbutton=go\\ntitle=Go\\n\\ntext=a\\ntitle=A\\n\\ntext=b\\ntitle=B\\n' ;;
           go) printf 'frame=\\ngrid=only\\n\\ntext=only\\ntitle=Only\\n' ;;
@@ -23,7 +23,7 @@ final class SpotRunsFrameTests: SpotRunsCase {
     }
 
     func testALaterFrameWithNoRootChangesOnlyTheBlocksItPrintsAndANewIdJoins() async throws {
-        try script(toml: "on = ['sheet.open']", """
+        try script(toml: "", """
         printf 'frame=\\ngrid=a b\\ngrid=c c\\n\\ntext=a\\ntitle=A\\n\\ntext=b\\ntitle=B\\n---\\n'
         printf 'text=b\\ntitle=B2\\n\\ntext=c\\ntitle=C\\n'
         """)
@@ -37,7 +37,7 @@ final class SpotRunsFrameTests: SpotRunsCase {
     }
 
     func testALaterFrameWithNoRootAddsARowWithANewIdToTheList() async throws {
-        try script(toml: "on = ['sheet.open']", "printf 'frame=\\n\\ntext=a\\ntitle=A\\n---\\n'\nprintf 'text=b\\ntitle=B\\n'")
+        try script(toml: "", "printf 'frame=\\n\\ntext=a\\ntitle=A\\n---\\n'\nprintf 'text=b\\ntitle=B\\n'")
         let sheet = try sheet()
         runs.panelOpened()
         sheet.open {}
@@ -47,7 +47,7 @@ final class SpotRunsFrameTests: SpotRunsCase {
     }
 
     func testALaterFrameWithARootEmptiesWhatItDoesNotPrint() async throws {
-        try script(toml: "on = ['sheet.open']", "printf 'frame=\\ngrid=a2\\n\\ntext=a\\ntitle=A\\n\\ntext=a2\\ntitle=A\\n---\\n'\nprintf 'frame=\\ngrid=t\\n\\ntext=t\\ntitle=T\\n'")
+        try script(toml: "", "printf 'frame=\\ngrid=a2\\n\\ntext=a\\ntitle=A\\n\\ntext=a2\\ntitle=A\\n---\\n'\nprintf 'frame=\\ngrid=t\\n\\ntext=t\\ntitle=T\\n'")
         let sheet = try sheet()
         runs.panelOpened()
         sheet.open {}
@@ -57,7 +57,7 @@ final class SpotRunsFrameTests: SpotRunsCase {
     }
 
     func testAFrameOfOnlyARootKeepsThePicture() async throws {
-        try script(toml: "on = ['sheet.open']", """
+        try script(toml: "", """
         case "$1" in
           show) printf 'text=a\\ntitle=A\\n' ;;
           open) printf 'frame=\\ntitle=Other\\n---\\n'; \(untilRelease) ;;
@@ -76,7 +76,7 @@ final class SpotRunsFrameTests: SpotRunsCase {
     }
 
     func testProgressInAHeadShowsOnTheRunningCall() async throws {
-        try script(toml: "on = ['sheet.open']", """
+        try script(toml: "", """
         case "$1" in
           show) printf 'text=a\\ntitle=A\\n' ;;
           open) printf 'frame=\\nprogress=0.4\\ntitle=Copying\\ndetail=2 of 5\\n---\\n'; \(untilRelease) ;;
@@ -95,31 +95,11 @@ final class SpotRunsFrameTests: SpotRunsCase {
         openGate()
     }
 
-    func testATerminalCodeShowsProgressOnTheRunningCallAndANotificationAsAToast() async throws {
-        try script(toml: "on = ['sheet.open']", """
-        case "$1" in
-          show) printf 'text=a\\ntitle=A\\n' ;;
-          open) printf '\\033]9;Copied\\007\\033]9;4;1;40\\007'; \(untilRelease) ;;
-        esac
-        """)
-        let sheet = try sheet()
-        var toasts: [String] = []
-        sheet.onReport = { if case .toast(let text) = $0 { toasts.append(text) } }
-        sheet.open {}
-        try await wait("the row") { sheet.list.shown.count == 1 && sheet.calls.isEmpty }
-
-        sheet.pick(try XCTUnwrap(sheet.list.selectedItem))
-
-        try await wait("the progress and the toast") { sheet.calls.first?.fill == 0.4 && toasts == ["Copied"] }
-        XCTAssertEqual(sheet.list.shown.map(\.run), ["a"])
-        openGate()
-    }
-
     func testAMainGaugeOfARunningCallIsNoLongerItsProgress() async throws {
-        try script(toml: "on = ['sheet.open']", """
+        try script(toml: "", """
         case "$1" in
           show) printf 'text=a\\ntitle=A\\n' ;;
-          open) printf 'frame=\\ngrid=g\\n\\ngraph=g\\nvalue=0.4\\n---\\n'; \(untilRelease) ;;
+          open) printf 'frame=\\ngrid=g\\n\\nnumber=g\\nvalue=40\\nmax=100\\n---\\n'; \(untilRelease) ;;
         esac
         """)
         let sheet = try sheet()
@@ -134,7 +114,7 @@ final class SpotRunsFrameTests: SpotRunsCase {
     }
 
     func testAReadThatEndsWithOnlyAHeadShowsNothingAndKeepsItsHead() async throws {
-        try script(toml: "on = ['sheet.open']", """
+        try script(toml: "", """
         if [ -f '\(path("second"))' ]; then printf 'frame=\\nrecents=false\\n'; else touch '\(path("second"))'; printf 'text=a\\ntitle=A\\n'; fi
         """)
         let sheet = try sheet()
@@ -204,7 +184,7 @@ final class SpotRunsFrameTests: SpotRunsCase {
     }
 
     func testAnOutdatedAnswerChangesNothingAndAReadFollowsItsEnd() async throws {
-        try script(toml: "on = ['sheet.open']", """
+        try script(toml: "", """
         case "$1" in
           show) printf 'frame=\\ngrid=a\\ngrid=b\\n\\nswitch=a\\nvalue=%s\\n\\nswitch=b\\nvalue=%s\\n' "$(cat '\(path("a"))' 2>/dev/null || echo false)" "$(cat '\(path("b"))' 2>/dev/null || echo false)" ;;
           a) \(untilRelease); echo "$2" > '\(path("a"))'; printf 'frame=\\ngrid=a\\ngrid=b\\n\\nswitch=a\\nvalue=%s\\n\\nswitch=b\\nvalue=false\\n' "$2" ;;

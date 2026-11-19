@@ -22,6 +22,7 @@ final class SpotFloatTests: XCTestCase {
         )
         model = SpotsModel(host: host, files: files, runs: SpotRuns(stopPause: 0.2))
         host.model = model
+        model.runs.api = CommandAPI(mac: Mac(), places: files, app: ModelApp(model: model), runs: model.runs, rates: .offline)
     }
 
     override func tearDown() async throws {
@@ -43,12 +44,12 @@ final class SpotFloatTests: XCTestCase {
     }
 
     private func floatList() async throws {
-        try script("list", toml: "on = ['sheet.open']", """
+        try script("list", toml: "", """
         \(TestSpot.event)
         case "$1" in
           show) printf 'text=a\\ntitle=%s\\n\\ntext=b\\ntitle=Banana\\n\\nbutton=trash\\ntitle=Trash\\nshortcut=cmd+backspace\\n\\nbutton=rename\\ntitle=Rename\\nform=true\\n' "$ev" ;;
-          open) printf '\\033]9;Opened %s\\007' "$2" ;;
-          trash) printf '\\033]9;Trashed %s\\007' "$2" ;;
+          open) \(TestSpot.toast) "Opened $2" ;;
+          trash) \(TestSpot.toast) "Trashed $2" ;;
         esac
         """)
         await model.reload()
@@ -67,7 +68,7 @@ final class SpotFloatTests: XCTestCase {
     }
 
     func testAFloatThatOpensDuringADragFollowsItAndOneWithNoDragDoesNot() async throws {
-        try script("list", toml: "on = ['sheet.open']", "printf 'text=a\\ntitle=A\\n'")
+        try script("list", toml: "", "printf 'text=a\\ntitle=A\\n'")
         await model.reload()
 
         host.isMouseDown = true
@@ -135,7 +136,7 @@ final class SpotFloatTests: XCTestCase {
     }
 
     func testAFloatOfPartsKeepsItsValuesWhenThePanelClosesAndDropsThemWhenItCloses() async throws {
-        try script("note", toml: "on = ['sheet.open']", "printf 'frame=\\ngrid=note\\n\\nfield=note\\nvalue=hi\\n'")
+        try script("note", toml: "", "printf 'frame=\\ngrid=note\\n\\nfield=note\\nvalue=hi\\n'")
         await model.reload()
         model.press(try key("note"))
         try await wait("the parts") { model.sheets["note"]?.panel != nil }
@@ -153,7 +154,7 @@ final class SpotFloatTests: XCTestCase {
     }
 
     func testAFloatOfPartsWithNoFieldKeepsItsPartsWhenItCloses() async throws {
-        try script("note", toml: "on = ['sheet.open']", "printf 'frame=\\ngrid=hi\\n\\ntext=hi\\ntitle=Hi\\n'")
+        try script("note", toml: "", "printf 'frame=\\ngrid=hi\\n\\ntext=hi\\ntitle=Hi\\n'")
         await model.reload()
         model.press(try key("note"))
         try await wait("the parts") { model.sheets["note"]?.panel != nil }
@@ -165,10 +166,10 @@ final class SpotFloatTests: XCTestCase {
     }
 
     func testADropOnAFloatGoesToItsScriptAndLeavesThePanel() async throws {
-        try script("shelf", toml: "on = ['sheet.open']\ndrop = '*'", """
+        try script("shelf", toml: "drop = '*'", """
         case "$1" in
           show) printf 'text=a\\n' ;;
-          drop) shift; printf '\\033]9;Kept %s\\007' "$*" ;;
+          drop) shift; \(TestSpot.toast) "Kept $*" ;;
         esac
         """)
         await model.reload()
@@ -195,7 +196,7 @@ final class SpotFloatTests: XCTestCase {
 
     func testAShakeWhileARowThatTakesOneRecordsGivesItTheShake() async throws {
         let given = folder.appendingPathComponent("given").path
-        try script("keys", toml: "title = 'Keys'\non = ['sheet.open']", """
+        try script("keys", toml: "title = 'Keys'", """
         case "$1" in
           show) printf 'button=open\\ntitle=Change\\nclose=false\\n\\nfield=panel-key\\ntype=hotkey\\ntitle=Open\\nvalue=ctrl+space\\n\\nfield=float:shelf\\ntype=hotkey\\ntitle=Float\\nshake=true\\n' ;;
           *) printf '%s %s' "$1" "$2" > '\(given)' ;;
@@ -234,7 +235,7 @@ final class SpotFloatTests: XCTestCase {
     }
 
     private func windowSpot() async throws {
-        try script("store", toml: "on = ['sheet.open']", "printf 'text=a\\ntitle=Apple\\n'")
+        try script("store", toml: "", "printf 'text=a\\ntitle=Apple\\n'")
         _ = try model.files.config.change { $0.arrangement.set(isWindow: true, of: "store") }
         await model.reload()
     }
@@ -278,7 +279,7 @@ final class SpotFloatTests: XCTestCase {
 
     func testAWindowReadsAgainWhenTheSpotsChange() async throws {
         let log = folder.appendingPathComponent("reads")
-        try script("store", toml: "on = ['sheet.open']", "echo read >> '\(log.path)'\nprintf 'text=a\\ntitle=Apple\\n'")
+        try script("store", toml: "", "echo read >> '\(log.path)'\nprintf 'text=a\\ntitle=Apple\\n'")
         _ = try model.files.config.change { $0.arrangement.set(isWindow: true, of: "store") }
         await model.reload()
         model.press("store")

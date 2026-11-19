@@ -21,7 +21,7 @@ repeat=spots
 section=used
 title=Used · last 14 days
 
-text=apps
+number=apps
 title=Apps
 detail=13.1 a day · 1.2 s CPU
 route=spot:apps
@@ -43,7 +43,7 @@ acts=13.07
 cpu=1.229
 state=used
 
-text=links
+number=links
 title=Links
 detail=4.8 a day · 343 ms CPU
 route=spot:links
@@ -68,7 +68,7 @@ state=used
 section=failing
 title=Failing
 
-text=paste
+number=paste
 title=Paste screenshot
 detail=4 of 19 failed · stopped with an error
 route=spot:paste
@@ -94,7 +94,7 @@ state=bad
 section=slow
 title=Slow to answer
 
-text=shortcuts
+number=shortcuts
 title=Shortcuts
 detail=95 in 100 answer within 1.6 s · half within 400 ms
 route=spot:shortcuts
@@ -120,7 +120,7 @@ state=warn
 section=unused
 title=Unused for 14 days
 
-text=devices
+number=devices
 title=Devices
 detail=1.1 s CPU a day, 857 ms while hidden
 route=spot:devices

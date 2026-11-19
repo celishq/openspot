@@ -137,20 +137,60 @@ final class SpotRunTests: XCTestCase {
         XCTAssertEqual(parses.count, 1)
     }
 
-    func testARepeatedFrameStillShowsItsToastAndAChangedFrameIsApplied() async throws {
+    func testAChangedFrameAfterARepeatedOneIsApplied() async throws {
         try "1".write(toFile: path("n"), atomically: true, encoding: .utf8)
-        let sheet = try make("printf '\\033]9;Hi\\007text=a\ntitle=%s\n' \"$(cat '\(path("n"))')\"", on: .panel)
-        nonisolated(unsafe) var toasts = 0
-        sheet.onReport = { if case .toast = $0 { toasts += 1 } }
+        let sheet = try make("printf 'text=a\ntitle=%s\n' \"$(cat '\(path("n"))')\"", on: .panel)
         sheet.show()
-        try await wait("the first answer") { toasts == 1 && !sheet.isShowing }
+        try await wait("the first answer") { sheet.list.all.map(\.title) == ["1"] && !sheet.isShowing }
 
         sheet.show(need: .change)
-        try await wait("the toast of the same frame") { toasts == 2 && !sheet.isShowing && sheet.calls.isEmpty }
+        try await wait("the same frame") { !sheet.isShowing && sheet.calls.isEmpty }
         try "2".write(toFile: path("n"), atomically: true, encoding: .utf8)
         sheet.show(need: .change)
 
         try await wait("the new row") { sheet.list.all.map(\.title) == ["2"] }
+    }
+
+    func testASearchedListWithALongDetailGrowsItsHeaderAndItsSheetByTheSecondLine() async throws {
+        let kept = SheetHeader.shared
+        SheetHeader.shared = SheetHeader(width: { $0.count > 10 ? .infinity : 0 }, secondLine: 9)
+        defer { SheetHeader.shared = kept }
+        let url = folder.spotFile("script")
+        try "#!/bin/sh\nprintf 'text=a\\ntitle=A\\n'\n".writeScript(to: url)
+        let made = SpotRuns()
+        runs.append(made)
+        let sheet = made.sheet(for: Spot(id: "script", name: "script", url: url, kind: .list, subtitle: "A detail longer than its header", on: ShowEvents(moments: [.sheet])))
+        sheet.open {}
+        try await wait("the row") { sheet.list.all.count == 1 && !sheet.isShowing }
+
+        XCTAssertEqual(sheet.shownState.subtitle, "A detail longer than its header")
+        XCTAssertTrue(sheet.showsField)
+        XCTAssertEqual(sheet.top, SheetTop(header: 9, hasField: true))
+        XCTAssertEqual(sheet.sheetRect.height, SpotTokens.sheetRect(rows: 1).height + 9)
+    }
+
+    func testANewPanelTakesTheTopOfTheRunWhenTheRunsTopStaysTheSame() async throws {
+        let kept = SheetHeader.shared
+        SheetHeader.shared = SheetHeader(width: { $0.count > 10 ? .infinity : 0 }, secondLine: 9)
+        defer { SheetHeader.shared = kept }
+        try "1".write(toFile: path("n"), atomically: true, encoding: .utf8)
+        let url = folder.spotFile("script")
+        try """
+        #!/bin/sh
+        if [ "$(cat '\(path("n"))')" = 1 ]; then printf 'frame=\\ngrid=a\\n\\nnumber=a\\nvalue=1\\n\\ntext=b\\ntitle=B\\n'
+        else printf 'frame=\\ngrid=a\\n\\nnumber=a\\nvalue=2\\n'; fi
+        """.writeScript(to: url)
+        let made = SpotRuns()
+        runs.append(made)
+        let sheet = made.sheet(for: Spot(id: "script", name: "script", url: url, kind: .list, subtitle: "A detail longer than its header", on: ShowEvents(moments: [.sheet])))
+        sheet.open {}
+        try await wait("the parts and rows") { sheet.panel?.showsRows == true && !sheet.isShowing }
+        XCTAssertEqual(sheet.top, SheetTop(header: 9, hasField: false))
+
+        sheet.panel = SheetParts(output: Frame(text: "frame=\ngrid=a\n\nnumber=a\nvalue=2\n"))
+
+        XCTAssertEqual(sheet.top, SheetTop(header: 9, hasField: false))
+        XCTAssertEqual(sheet.panel?.top, sheet.top)
     }
 
     func testANewValueOfAPartTellsNoReaderOfTheRectOrTheKindOfTheParts() async throws {
@@ -158,7 +198,7 @@ final class SpotRunTests: XCTestCase {
         sheet.open {}
         try await wait("the parts") { sheet.panel != nil }
         let part = try XCTUnwrap(sheet.panel?.parts.first)
-        XCTAssertEqual(sheet.partsRect, sheet.panel.map(SpotTokens.panelRect))
+        XCTAssertEqual(sheet.partsRect, sheet.panel.map { SpotTokens.panelRect($0) })
         XCTAssertEqual(sheet.partsKind, .parts)
         nonisolated(unsafe) var changed = false
         withObservationTracking {
@@ -351,17 +391,6 @@ final class SpotRunTests: XCTestCase {
         sheet.open {}
 
         try await wait("the later frame") { sheet.panel?.parts.first?.title == "1" }
-    }
-
-    func testAToastIsReported() async throws {
-        let sheet = try make("printf 'text=a\\ntitle=A\\n---\\n'\nprintf '\\033]9;Later\\007text=a\\ntitle=B\\n---\\n'")
-        var toasts: [String] = []
-        sheet.onReport = { if case .toast(let text) = $0 { toasts.append(text) } }
-
-        runs.last?.panelOpened()
-        sheet.open {}
-
-        try await wait("the toast") { toasts == ["Later"] }
     }
 
     private static let counter = """

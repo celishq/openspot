@@ -21,10 +21,8 @@ public struct SpotPart: Equatable, Sendable, Identifiable {
         case menu([Option], value: String?)
         case text(String, placeholder: String?, isReadOnly: Bool)
         case list([Option], value: String?)
-        case number(String, unit: String?)
-        case chart([Double])
+        case number(NumberReading)
         case image(String)
-        case progress(level: Double)
         case shortcut(String)
     }
 
@@ -63,7 +61,6 @@ public struct SpotPart: Equatable, Sendable, Identifiable {
     let grows: Bool
     public let align: Align?
     public let look: Look?
-    public let mark: MetricValue?
     public private(set) var values: [String: [String]]
 
     public private(set) var items: [[String]] = []
@@ -98,7 +95,7 @@ public struct SpotPart: Equatable, Sendable, Identifiable {
         key = kind == .hotkey ? nil : block.value("shortcut").flatMap(ActionKey.init(text:))
         asksToRecord = kind == .hotkey && block.flag("recording") == true
         closes = block.flag("close") ?? kind.presses
-        grows = block.flag("grow") ?? true
+        grows = block.flag("grow") ?? (kind != .field || block.value("type") == "multiline")
         align = block.value("align").flatMap(Align.init(rawValue:))
         let named = block.value("look").flatMap(Look.init(rawValue:))
         look = block.value("type").flatMap { kind.looks[$0] } ?? (named == .tick ? nil : named)
@@ -111,29 +108,31 @@ public struct SpotPart: Equatable, Sendable, Identifiable {
         symbol = kind.presses ? nil : icon?.symbol
         press = kind.presses ? icon?.symbol.map(Press.symbol) ?? .line : .none
         control = kind.control(block)
-        mark = control == .none && kind == .text ? Self.mark(block) : nil
-    }
-
-    static func mark(_ block: TextBlock) -> MetricValue? {
-        guard let data = BlockKind.text.data?(block) else { return nil }
-        guard data.value != nil || data.points != nil else { return nil }
-        return MetricValue(
-            title: block.value("detail") ?? "",
-            tone: block.value("tone").flatMap(MetricValue.Tone.init),
-            value: data.value,
-            points: data.points,
-            max: block.number("max")
-        )
     }
 
     public var numberPieces: [NumberPiece] {
-        guard case .number(let number, let unit) = control else { return [] }
+        guard let reading = number else { return [] }
+        let number = reading.text
+        let unit = reading.unit
         guard let unit, let range = number.range(of: unit, options: .backwards) else { return [NumberPiece(text: number, isUnit: false)] }
         return [
             NumberPiece(text: String(number[..<range.lowerBound]), isUnit: false),
             NumberPiece(text: unit, isUnit: true),
             NumberPiece(text: String(number[range.upperBound...]), isUnit: false),
         ].filter { !$0.text.isEmpty }
+    }
+
+    public var number: NumberReading? {
+        guard case .number(let reading) = control else { return nil }
+        return reading
+    }
+
+    public func numberLook(columns: Double, rows: Double) -> NumberLook? {
+        number.map { NumberLook(reading: $0, columns: columns, rows: rows) }
+    }
+
+    public func numberLook(inSheet size: CGSize) -> NumberLook? {
+        numberLook(columns: size.width / SpotTokens.cell, rows: size.height / SpotTokens.cell)
     }
 
     static func options(of block: TextBlock) -> [Option] {
@@ -144,7 +143,7 @@ public struct SpotPart: Equatable, Sendable, Identifiable {
 
     public var value: String? {
         switch control {
-        case .none, .number, .chart, .image, .progress: nil
+        case .none, .number, .image: nil
         case .toggle(let on): on ? "true" : "false"
         case .slider(let level, _, _): String(Int(level.rounded()))
         case .swatches(_, let value), .menu(_, let value), .list(_, let value): value
@@ -160,14 +159,10 @@ public struct SpotPart: Equatable, Sendable, Identifiable {
         return part
     }
 
-    public var ringWords: String? {
-        detail == nil ? nil : mark?.ringWords
-    }
-
     public var fillsHeight: Bool {
         if isOpen { return true }
         return switch control {
-        case .text, .list, .number, .chart, .image, .progress: true
+        case .text, .list, .number, .image: true
         default: false
         }
     }
@@ -194,7 +189,8 @@ public struct SpotPart: Equatable, Sendable, Identifiable {
         guard grows else { return false }
         if isOpen { return true }
         return switch control {
-        case .text, .list, .chart, .image: true
+        case .text, .list, .image: true
+        case .number(let reading): reading.isSeries
         default: false
         }
     }
@@ -218,7 +214,7 @@ public struct SpotPart: Equatable, Sendable, Identifiable {
 
     public mutating func set(_ value: String) {
         switch control {
-        case .none, .number, .chart, .image, .progress: break
+        case .none, .number, .image: break
         case .list(let items, _): control = .list(items, value: value)
         case .toggle: control = .toggle(value == "true")
         case .slider(_, let low, let high): control = .slider(level: Double(value) ?? low, min: low, max: high)

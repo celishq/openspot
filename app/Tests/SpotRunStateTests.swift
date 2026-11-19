@@ -23,8 +23,8 @@ final class SpotRunStateTests: XCTestCase {
         runs.quit()
     }
 
-    private func sheet(kind: SpotKind = .list, on: ShowEvents? = .sheet, mode: SpotMode = .once) -> (SpotRun, FakeMode) {
-        let sheet = runs.sheet(for: Spot(id: "script", name: "Script", url: URL(fileURLWithPath: "/script.spot/script.sh"), kind: kind, on: on, mode: mode))
+    private func sheet(kind: SpotKind = .list, on: ShowEvents? = .sheet, mode: SpotMode = .once, offers: [Manifest.Command] = []) -> (SpotRun, FakeMode) {
+        let sheet = runs.sheet(for: Spot(id: "script", name: "Script", url: URL(fileURLWithPath: "/script.spot/script.sh"), kind: kind, on: on, mode: mode, offers: offers))
         return (sheet, links["script"]!)
     }
 
@@ -339,7 +339,7 @@ final class SpotRunStateTests: XCTestCase {
     }
 
     func testQuickPressesOfAKeyWaitUpToTheirLimit() async throws {
-        let (sheet, link) = sheet(kind: .launch, on: nil)
+        let (sheet, link) = sheet(kind: .launch, on: nil, offers: Manifest(text: TestSpot.command, folder: "").commands)
 
         for _ in 0..<10 { sheet.pressKey("go") }
         var ended = 0
@@ -352,7 +352,7 @@ final class SpotRunStateTests: XCTestCase {
     }
 
     func testAStayingSpotHoldsNoMoreKeyPressesThanTheLimit() async throws {
-        let (sheet, link) = sheet(kind: .launch, on: nil, mode: .stay)
+        let (sheet, link) = sheet(kind: .launch, on: nil, mode: .stay, offers: Manifest(text: TestSpot.command, folder: "").commands)
         var toasts: [String] = []
         sheet.onReport = { if case .toast(let text) = $0 { toasts.append(text) } }
 

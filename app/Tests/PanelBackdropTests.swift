@@ -12,7 +12,7 @@ final class PanelBackdropTests: PanelCase {
     }
 
     func testTheBackdropOfTheGridEndsUnderItsLastCard() async throws {
-        try script("list", toml: "title = 'List'\non = ['sheet.open']", "printf 'text=a\\ntitle=A\\n'")
+        try script("list", toml: "title = 'List'", "printf 'text=a\\ntitle=A\\n'")
         await model.reload()
 
         let cards = SpotGrid.height(of: model.placements)
@@ -64,7 +64,7 @@ final class PanelBackdropTests: PanelCase {
     }
 
     func testATypedKeyThatLeavesTheBackdropAsItIsTellsNoReaderOfIt() async throws {
-        try script("list", toml: "title = 'List'\non = ['sheet.open']", "printf 'text=a\\ntitle=A\\n'")
+        try script("list", toml: "title = 'List'", "printf 'text=a\\ntitle=A\\n'")
         await model.reload()
         model.query = "l"
         let rect = model.backdrop
@@ -78,7 +78,7 @@ final class PanelBackdropTests: PanelCase {
     }
 
     func testTheBackdropSpansTheSidePanelsAndASearchNarrowsItToTheMainPanel() async throws {
-        try script("list", toml: "title = 'List'\non = ['sheet.open']", "printf 'text=a\\ntitle=A\\n'")
+        try script("list", toml: "title = 'List'", "printf 'text=a\\ntitle=A\\n'")
         await model.reload()
         model.panels = GridPanels(hasLeft: true, hasRight: true)
         let side = SpotTokens.gridWidth + SpotTokens.columnGap

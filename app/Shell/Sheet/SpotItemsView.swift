@@ -11,6 +11,7 @@ struct SpotItemsView: View {
     var onPoint: (SpotItem) -> Void = { _ in }
     var selection: (() -> Int)?
     var onDragOut: ([SpotItem]) -> Void = { _ in }
+    var room = SpotTokens.listRoom
 
     private static var bottomFade: CGFloat { 2 * SpotTokens.padding }
 
@@ -82,7 +83,7 @@ struct SpotItemsView: View {
     }
 
     private var bottomInset: CGFloat {
-        SpotTokens.sheetFits(rows: list.lineCount, perLine: list.perLine) ? SpotTokens.padding : Self.bottomFade
+        SpotTokens.rowsFit(rows: list.lineCount, perLine: list.perLine, in: room) ? SpotTokens.padding : Self.bottomFade
     }
 
     private var pinnedScroll: some View {
@@ -192,7 +193,7 @@ struct SpotItemsView: View {
                     .font(SpotType.body)
                     .foregroundStyle(SpotTheme.ink)
                     .lineLimit(1)
-                if let subtitle = item.subtitle, item.ring == nil {
+                if let subtitle = item.subtitle {
                     Text(subtitle)
                         .font(SpotType.detail)
                         .modifier(SpotSecondaryText())
@@ -200,11 +201,8 @@ struct SpotItemsView: View {
                 }
             }
             Spacer(minLength: 0)
-            if !item.bars.isEmpty {
-                ItemBars(bars: item.bars, tone: item.tone)
-            }
-            if let ring = item.ring {
-                SpotLineMark(value: ring, words: ring.ringWords)
+            if let number = item.number {
+                SpotRowNumber(number: number, tone: item.tone)
             }
             if let shortcut = item.shortcut {
                 LiveKeyLabel(text: shortcut, isRecording: recording == item.run, words: recordingWords, keys: keys)
@@ -234,26 +232,6 @@ private struct LiveKeyLabel: View {
 
     var body: some View {
         SpotKeyLabel(text: text, isRecording: isRecording, recordingWords: words, held: isRecording ? keys?.held ?? [] : [])
-    }
-}
-
-private struct ItemBars: View {
-    let bars: [Double?]
-    let tone: MetricValue.Tone?
-
-    var body: some View {
-        HStack(alignment: .bottom, spacing: SpotTokens.rowBarGap) {
-            ForEach(bars.indices, id: \.self) { index in
-                Rectangle()
-                    .fill(bars[index].map { $0 > 0 ? colour : SpotTheme.ink.opacity(SpotTheme.fill) } ?? SpotTheme.ink.opacity(SpotTheme.fill))
-                    .frame(width: SpotTokens.rowBarWidth, height: max(SpotTokens.rowBarFloor, SpotTokens.rowBarHeight * (bars[index] ?? 0)))
-            }
-        }
-        .frame(height: SpotTokens.rowBarHeight, alignment: .bottom)
-    }
-
-    private var colour: Color {
-        SpotToneWords.colour(of: tone) ?? SpotTheme.ink
     }
 }
 

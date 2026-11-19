@@ -28,7 +28,6 @@ public struct Frame: Equatable, Sendable {
     public private(set) var view: TextBlock?
     public private(set) var face = CardFace.none
     public private(set) var drawing = RepeatDrawing.list
-    public private(set) var toast: String?
     public private(set) var ends: [String] = []
     public private(set) var start: String?
     public private(set) var select: String?
@@ -38,7 +37,6 @@ public struct Frame: Equatable, Sendable {
     static let open = "open"
     static let itemsArea = "items"
     private static let searchType = "search"
-    private static let spotFilter = "spot"
 
     static func grouping(_ blocks: [TextBlock]) -> [TextBlock] {
         var grouped: [TextBlock] = []
@@ -116,8 +114,6 @@ public struct Frame: Equatable, Sendable {
                 take(marks: block)
             } else if RootKey.isMark(block) {
                 take(marks: block)
-            } else if word == SheetFrames.notice {
-                toast = block.value(SheetFrames.notice)
             } else {
                 errors.append(block.firstLine)
             }
@@ -163,11 +159,7 @@ public struct Frame: Equatable, Sendable {
     }
 
     public var metric: TextBlock? {
-        valueKind?.data == nil ? nil : value
-    }
-
-    var metricData: BlockKind.Data? {
-        value.flatMap { valueKind?.data?($0) }
+        valueKind?.isReading == true ? value : nil
     }
 
     public var progress: Double? {
@@ -182,7 +174,6 @@ public struct Frame: Equatable, Sendable {
 
     public func withoutEffects() -> Frame {
         var output = self
-        output.toast = nil
         output.select = nil
         output.ends = []
         output.start = nil
@@ -204,7 +195,6 @@ public struct Frame: Equatable, Sendable {
     }
 
     public var search: ItemSearch {
-        if searchField?.value("filter") == Self.spotFilter { return .script }
         return searchField != nil || root?.value(RootKey.grid) == nil ? .local : .off
     }
 

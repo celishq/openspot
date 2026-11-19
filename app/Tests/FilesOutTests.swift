@@ -22,6 +22,7 @@ final class FilesOutTests: XCTestCase {
         )
         model = SpotsModel(host: host, files: files, runs: SpotRuns(stopPause: 0.2))
         host.model = model
+        model.runs.api = CommandAPI(mac: Mac(), places: files, app: ModelApp(model: model), runs: model.runs, rates: .offline)
     }
 
     override func tearDown() async throws {
@@ -58,10 +59,10 @@ final class FilesOutTests: XCTestCase {
         let body = """
         case "$1" in
           show) printf 'text=a\\nfile=/a.png\\n\\ntext=b\\nfile=/b.png\\n\\ntext=c\\n' ;;
-          drag) shift; printf '\\033]9;Took %s\\007' "$*" ;;
+          drag) shift; \(TestSpot.toast) "Took $*" ;;
         esac
         """
-        try "#!/bin/sh\n\(body)\n".writeScript(to: spots.spotFile("shelf"), toml: "on = ['sheet.open']")
+        try "#!/bin/sh\n\(body)\n".writeScript(to: spots.spotFile("shelf"), toml: "")
         await model.reload()
         model.press(GlobalKey(spot: "shelf", act: .float, trigger: .shake))
         try await wait("the rows") { model.sheets["shelf"]?.list.shown.count == 3 }

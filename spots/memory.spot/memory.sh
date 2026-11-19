@@ -7,8 +7,7 @@ draw() {
   elif [ "$used" -ge 85 ]; then detail="Little left" tone=warn
   else detail="In use" tone=
   fi
-  case $used in ?) value=0.0$used ;; ??) value=0.$used ;; *) value=1 ;; esac
-  printf 'frame=\ngrid=memory\ngrid=memory\ngrid.bar=memory\n\ngraph=memory\ntitle=%s%%\ndetail=%s\nvalue=%s\ntone=%s\n' "$used" "$detail" "$value" "$tone"
+  printf 'frame=\ngrid=memory\ngrid=memory\ngrid.bar=memory\n\nnumber=memory\ntitle=Memory\nvalue=%s\nmax=100\nunit=%%\ndetail=%s\ntone=%s\n' "$used" "$detail" "$tone"
 }
 
 # Prints the memory in use now, as a percent.
@@ -17,7 +16,7 @@ measure() {
 }
 
 # `show <percent>` draws the share that is given, such as the one of sample.sh. With none, as when another spot such as
-# System details looks, it measures the memory now.
+# System looks, it measures the memory now.
 if [ "$1" = show ]; then
   draw "${2:-$(measure)}"
   exit 0

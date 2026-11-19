@@ -154,6 +154,6 @@ extension SpotRun {
     }
 
     func showOnce() {
-        if spot.on != nil { show(need: .change) }
+        if spot.hasSheet { show(need: .change) }
     }
 }

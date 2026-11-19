@@ -59,7 +59,7 @@ final class SpotSampleTests: XCTestCase {
     }
 
     func testTheSampleOfASwiftSpotWithSourcesRunsItsSampleScriptAndBuildsNothing() async throws {
-        try "#!/usr/bin/env swift\nprint(\"text=r\\ntitle=\\(real)\")\n".writeScript(to: core.appendingPathComponent("cups.spot/cups.swift"), toml: "title = 'Cups'\non = ['sheet.open']\nsource = ['more.swift']")
+        try "#!/usr/bin/env swift\nprint(\"text=r\\ntitle=\\(real)\")\n".writeScript(to: core.appendingPathComponent("cups.spot/cups.swift"), toml: "title = 'Cups'\nsource = ['more.swift']")
         try "let real = \"Real row\"\n".write(to: core.appendingPathComponent("cups.spot/more.swift"), atomically: true, encoding: .utf8)
         try "#!/bin/sh\nprintf 'text=s\\ntitle=Sample row\\n'\n".writeScript(to: core.appendingPathComponent("cups.spot/sample.sh"))
 

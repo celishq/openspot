@@ -7,17 +7,18 @@ uses = ["spots"]
 [scripts.actions.commands.share]
 title = "Share"
 shortcut = "cmd+shift+c"
-close = true
 offers = ["actions mine, core"]
 
 [scripts.actions.commands.settings]
 title = "Settings"
 shortcut = "cmd+return"
+close = false
 offers = ["actions"]
 
 [scripts.actions.commands.edit]
 title = "Edit"
 shortcut = "cmd+e"
+close = false
 offers = ["actions mine, core"]
 
 [scripts.actions.commands.icon]
@@ -26,23 +27,26 @@ offers = ["actions"]
 
 [scripts.actions.commands."icon.draw"]
 title = "Draw…"
+close = false
 
 [scripts.actions.commands."icon.file"]
 title = "Choose File…"
+close = false
 
 [scripts.actions.commands."icon.reset"]
 title = "Reset Icon"
+close = false
 when = "hasIcon"
 
 [scripts.actions.commands.delete]
 title = "Delete"
 shortcut = "cmd+backspace"
+close = false
 offers = ["actions mine"]
 
 [scripts.actions.commands.off]
 title = "Turn off"
 shortcut = "cmd+backspace"
-close = true
 offers = ["actions core"]
 
 [scripts.icon]
@@ -92,7 +96,6 @@ title = "Quit"
 title = "Settings"
 icon = "gearshape"
 detail = "Choose your key"
-on = ["sheet.open"]
 uses = ["app"]
 offers = ["search"]
 

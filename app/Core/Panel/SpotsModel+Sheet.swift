@@ -12,6 +12,14 @@ extension SpotsModel {
         return !isEditing && openSheet?.partsKind?.takesKeys != false
     }
 
+    public var fieldTop: SheetTop {
+        transition.id.flatMap { sheets[$0]?.top } ?? .plain
+    }
+
+    public var openTop: SheetTop {
+        openSheet?.top ?? .plain
+    }
+
     public var openParts: SheetParts? {
         shownParts(of: openSheetID)
     }

@@ -27,6 +27,7 @@ final class SpotLoadedTheme {
     func lay(_ next: Theme.Layout) {
         SpotTokens.take(next)
         SpotType.take(next.type)
+        SheetHeader.shared = SpotType.sheetHeader
         SpotBackdropEdge.draw()
         viewThemes = [:]
         layout += 1

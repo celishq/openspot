@@ -23,7 +23,7 @@ final class FlowMoveTests: PanelCase {
     }
 
     private func writeFlow() throws {
-        try script("flow", toml: "title = 'Flow'\non = ['sheet.open']\npages = ['n*', 'swapped']", """
+        try script("flow", toml: "title = 'Flow'\npages = ['n*', 'swapped']", """
         os='\(client.path)'
         page=$(sed -n 's/^route=//p')
         case "$1" in
@@ -160,7 +160,7 @@ final class FlowMoveTests: PanelCase {
 
     func testAPushOfAPageThatTheSpotDoesNotTakeMovesNothingAndSaysSo() async throws {
         try await openList()
-        try script("narrow", toml: "title = 'Narrow'\non = ['sheet.open']\npages = ['ok:*']", "printf 'text=n\\ntitle=N\\n'")
+        try script("narrow", toml: "title = 'Narrow'\npages = ['ok:*']", "printf 'text=n\\ntitle=N\\n'")
         await model.reload()
 
         XCTAssertTrue(model.push(FlowSheet(spot: "narrow", route: "bad")))

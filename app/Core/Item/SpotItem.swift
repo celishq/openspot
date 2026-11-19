@@ -29,11 +29,10 @@ public struct SpotItem: Equatable, Sendable {
     public let openTitle: String?
     public let staysOnPick: Bool
     public let move: FlowMove?
-    public let bars: [Double?]
-    public let ring: MetricValue?
     public let section: String?
+    public let number: NumberReading?
 
-    public init(title: String, subtitle: String? = nil, run: String, picture: Icon? = nil, parent: String? = nil, hides: [String]? = nil, keywords: [String] = [], shortcut: String? = nil, records: Bool = false, takesShake: Bool = false, isOn: Bool = false, isToggle: Bool = false, tone: MetricValue.Tone? = nil, file: String? = nil, fields: [TextBlock.Field] = [], card: SpotState? = nil, pin: Pin? = nil, openTitle: String? = nil, staysOnPick: Bool = false, move: FlowMove? = nil, bars: [Double?] = [], ring: MetricValue? = nil, section: String? = nil) {
+    public init(title: String, subtitle: String? = nil, run: String, picture: Icon? = nil, parent: String? = nil, hides: [String]? = nil, keywords: [String] = [], shortcut: String? = nil, records: Bool = false, takesShake: Bool = false, isOn: Bool = false, isToggle: Bool = false, tone: MetricValue.Tone? = nil, file: String? = nil, fields: [TextBlock.Field] = [], card: SpotState? = nil, pin: Pin? = nil, openTitle: String? = nil, staysOnPick: Bool = false, move: FlowMove? = nil, section: String? = nil, number: NumberReading? = nil) {
         self.title = title
         self.subtitle = subtitle
         self.run = run
@@ -54,15 +53,15 @@ public struct SpotItem: Equatable, Sendable {
         self.openTitle = openTitle
         self.staysOnPick = staysOnPick
         self.move = move
-        self.bars = bars
-        self.ring = ring
         self.section = section
+        self.number = number
     }
 
     init?(block: TextBlock, kind: BlockKind, section: String?) {
         guard let run = block.value(kind.word) else { return nil }
         let hides = block.values(ItemKey.hides)
         let records = kind == .hotkey
+        let number = kind == .number ? NumberReading(block: block) : nil
         self.init(
             title: block.value(ItemKey.title) ?? run,
             subtitle: block.value(ItemKey.detail),
@@ -83,22 +82,14 @@ public struct SpotItem: Equatable, Sendable {
             openTitle: block.value(ItemKey.openTitle),
             staysOnPick: block.flag(ItemKey.close) == false,
             move: FlowMove(item: block),
-            bars: Self.bars(values: block.values(ItemKey.value), max: block.value(ItemKey.max).flatMap(Double.init)),
-            ring: kind == .text && block.values(ItemKey.value).count == 1 ? SpotPart.mark(block).flatMap { $0.kind == .gauge ? $0 : nil } : nil,
-            section: section
+            section: section,
+            number: number
         )
     }
 
     private static func fields(of block: TextBlock) -> [TextBlock.Field] {
-        guard block.fields.dropFirst().contains(where: { ItemKey(rawValue: $0.key) == nil && $0.key != Self.type }) else { return [] }
+        guard block.fields.dropFirst().contains(where: { ItemKey(rawValue: $0.key) == nil && !PartCatalog.keys.contains($0.key) && $0.key != Self.type }) else { return [] }
         return block.fields
-    }
-
-    private static func bars(values: [String], max: Double?) -> [Double?] {
-        guard values.count > 1 else { return [] }
-        let numbers = values.map { Double($0).flatMap { $0.isFinite ? $0 : nil } }
-        let top = max ?? numbers.compactMap { $0 }.max() ?? 0
-        return numbers.map { number in number.map { top > 0 ? Swift.min(Swift.max($0 / top, 0), 1) : 0 } }
     }
 
     private static let type = "type"

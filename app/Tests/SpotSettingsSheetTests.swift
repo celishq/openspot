@@ -56,7 +56,7 @@ final class SpotSettingsSheetTests: XCTestCase {
     }
 
     func testCommandReturnOpensTheSettingsOfAListSpotFromItsCardAndNotItsOwnSheet() async throws {
-        try script("draw", toml: "title = 'Draw'\non = ['sheet.open']")
+        try script("draw", toml: "title = 'Draw'")
         try await show(selecting: "draw")
         let settings = SpotSettings.sheetID(of: "draw")
 
@@ -78,7 +78,7 @@ final class SpotSettingsSheetTests: XCTestCase {
     }
 
     func testTheSettingsActOfACardOpensItsSettingsSheet() async throws {
-        try script("draw", toml: "title = 'Draw'\non = ['sheet.open']")
+        try script("draw", toml: "title = 'Draw'")
         try await show(selecting: "draw")
 
         XCTAssertTrue(model.act(.settings, on: "draw"))

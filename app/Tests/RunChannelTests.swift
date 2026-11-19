@@ -43,7 +43,7 @@ final class RunChannelTests: SpotRunsCase {
     }
 
     func testACallOfASpotReachesTheAppThatRanItWhateverItsConfigVariableNames() async throws {
-        try script(toml: "", "\(call("setting set tone warm")) 2> '\(path("errors"))'; echo $? >> '\(path("done"))'")
+        try script(toml: TestSpot.command, "\(call("setting set tone warm")) 2> '\(path("errors"))'; echo $? >> '\(path("done"))'")
 
         try await press()
 
@@ -52,7 +52,7 @@ final class RunChannelTests: SpotRunsCase {
     }
 
     func testTwoCallsAtOnceInOneRunEachGetTheirOwnAnswer() async throws {
-        try script(toml: "", "\(call("calc solve 1+1")) > '\(path("one"))' & \(call("calc solve 20+22")) > '\(path("two"))'; wait; echo 0 >> '\(path("done"))'")
+        try script(toml: TestSpot.command, "\(call("calc solve 1+1")) > '\(path("one"))' & \(call("calc solve 20+22")) > '\(path("two"))'; wait; echo 0 >> '\(path("done"))'")
 
         try await press()
 
@@ -64,7 +64,7 @@ final class RunChannelTests: SpotRunsCase {
         for shell in ["/bin/bash", "/bin/zsh", "/bin/sh"] {
             try? FileManager.default.removeItem(atPath: path("done"))
             try? FileManager.default.removeItem(at: config.appendingPathComponent("config.toml"))
-            try script(toml: "", "\(shell) -c \"\(call("setting set tone \(URL(fileURLWithPath: shell).lastPathComponent)").replacingOccurrences(of: "\"", with: "\\\""))\"; echo $? >> '\(path("done"))'")
+            try script(toml: TestSpot.command, "\(shell) -c \"\(call("setting set tone \(URL(fileURLWithPath: shell).lastPathComponent)").replacingOccurrences(of: "\"", with: "\\\""))\"; echo $? >> '\(path("done"))'")
 
             try await press()
 
@@ -75,7 +75,7 @@ final class RunChannelTests: SpotRunsCase {
 
     func testInCarefulModeACallOfASpotStillReachesItsApp() async throws {
         runs.isCareful = true
-        try script(toml: "uses = ['spots']", "\(call("setting set tone careful")) 2> '\(path("errors"))'; echo $? >> '\(path("done"))'")
+        try script(toml: "uses = ['spots']\n\(TestSpot.command)", "\(call("setting set tone careful")) 2> '\(path("errors"))'; echo $? >> '\(path("done"))'")
 
         try await press()
 
@@ -86,7 +86,7 @@ final class RunChannelTests: SpotRunsCase {
     func testAProcessOutsideTheRunWithTheRunsWholeEnvironmentIsNotTheSpot() async throws {
         let socket = try XCTUnwrap(CommandSocket(folder: config, api: try XCTUnwrap(runs.api)))
         defer { socket.close() }
-        try script(toml: "", "env > '\(path("env"))'; echo 0 >> '\(path("done"))'; \(untilRelease)")
+        try script(toml: TestSpot.command, "env > '\(path("env"))'; echo 0 >> '\(path("done"))'; \(untilRelease)")
         _ = try scanned()
         try XCTUnwrap(runs.sheets["script"]).pressCard()
         try await wait("the environment of the run") { self.log("done").count == 1 }
@@ -111,7 +111,7 @@ final class RunChannelTests: SpotRunsCase {
     }
 
     func testTheChannelEndsWithTheRun() async throws {
-        try script(toml: "", "( \(untilRelease); \(call("setting set tone late")); echo $? >> '\(path("late"))' ) > /dev/null 2>&1 & echo 0 >> '\(path("done"))'")
+        try script(toml: TestSpot.command, "( \(untilRelease); \(call("setting set tone late")); echo $? >> '\(path("late"))' ) > /dev/null 2>&1 & echo 0 >> '\(path("done"))'")
         try await press()
         try await allEnded()
 
@@ -136,7 +136,7 @@ final class RunChannelTests: SpotRunsCase {
     }
 
     func testAStayingSpotIsKnownInEachCall() async throws {
-        try script(toml: "mode = 'stay'\non = ['sheet.open']", """
+        try script(toml: "mode = 'stay'", """
         while IFS= read -r line; do
           case "$line" in call=*) call=${line#call=} ;; esac
           [ -n "$line" ] || { \(call("setting set tone stay$call")); printf 'end=%s\\n\\ntext=a\\n---\\n' "$call"; }
@@ -155,7 +155,7 @@ final class RunChannelTests: SpotRunsCase {
         let script = folder.spotFile("script", extension: "js")
         try FileManager.default.createDirectory(at: script.deletingLastPathComponent(), withIntermediateDirectories: true)
         try "function main(args, env) { openspot.call(['setting', 'set', 'tone', 'inline']); return 'text=t\\ntitle=done\\n' }\n"
-            .writeInline(to: script, toml: "on = ['sheet.open']")
+            .writeInline(to: script, toml: "")
         let sheet = try sheet()
         runs.panelOpened()
 
@@ -181,7 +181,7 @@ final class RunChannelTests: SpotRunsCase {
         let script = folder.spotFile("script", extension: "js")
         try FileManager.default.createDirectory(at: script.deletingLastPathComponent(), withIntermediateDirectories: true)
         try "function main(args, env) { openspot.call(['spot', 'run', 'writer', 'inline']); return 'text=t\\ntitle=done\\n' }\n"
-            .writeInline(to: script, toml: "on = ['sheet.open']\nuses = ['spots']")
+            .writeInline(to: script, toml: "uses = ['spots']")
         let sheet = try sheet()
         runs.panelOpened()
 
@@ -194,7 +194,7 @@ final class RunChannelTests: SpotRunsCase {
     func testACallThatTheRunSendsAsItEndsStillReachesItsAppAsTheSpot() async throws {
         let socket = try XCTUnwrap(CommandSocket(folder: elsewhere, api: try XCTUnwrap(runs.api)))
         defer { socket.close() }
-        try script(toml: "", "( \(call("setting set tone late")); echo $? >> '\(path("done"))' ) > /dev/null 2>&1 &")
+        try script(toml: TestSpot.command, "( \(call("setting set tone late")); echo $? >> '\(path("done"))' ) > /dev/null 2>&1 &")
 
         _ = try scanned()
         try XCTUnwrap(runs.sheets["script"]).pressCard()
@@ -205,7 +205,7 @@ final class RunChannelTests: SpotRunsCase {
     }
 
     func testABurstOfCallsFromOneRunAllReachItsApp() async throws {
-        try script(toml: "", "for i in $(seq 64); do ( \(call("setting set tone burst")) 2>> '\(path("errors"))'; echo $? >> '\(path("codes"))' ) & done; wait; echo 0 >> '\(path("done"))'")
+        try script(toml: TestSpot.command, "for i in $(seq 64); do ( \(call("setting set tone burst")) 2>> '\(path("errors"))'; echo $? >> '\(path("codes"))' ) & done; wait; echo 0 >> '\(path("done"))'")
 
         try await press()
 

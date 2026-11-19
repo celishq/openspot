@@ -163,7 +163,7 @@ class SampleSpotsCase: XCTestCase {
         try String(contentsOf: folder.appendingPathComponent(name), encoding: .utf8)
     }
 
-    func pickColor(answer: String, in folder: URL) async throws -> String? {
+    func pickColor(answer: String, in folder: URL) async throws {
         let script = "#!/bin/sh\n[ \"$1 $2\" = 'color pick' ] && { printf '%s' '\(answer)'; exit 0; }\n\(Self.fakeOpenspot(in: folder))\n"
         try script.writeScript(to: folder.appendingPathComponent("tools/openspot"))
         let picker = try XCTUnwrap(try scan.spots.first { $0.name == "Color picker" })

@@ -28,6 +28,7 @@ final class SheetLayoutTests: XCTestCase {
     title=English
 
     field=input
+    type=multiline
     value=Hello
 
     choice=target
@@ -37,6 +38,7 @@ final class SheetLayoutTests: XCTestCase {
     title=Russian
 
     field=output
+    type=multiline
     value=Привет
     readonly=true
 
@@ -48,6 +50,48 @@ final class SheetLayoutTests: XCTestCase {
     align=right
     title=Copy
     """
+
+    func testOnlyAMultilineFieldTakesTheFreeHeight() throws {
+        let line = try placement("frame=\ngrid=a\ngrid=b\n\nfield=a\ntitle=Name\n\nbutton=b\ntitle=Go\n")
+        let multiline = try placement("frame=\ngrid=a\ngrid=b\n\nfield=a\ntype=multiline\n\nbutton=b\ntitle=Go\n")
+
+        XCTAssertEqual(try XCTUnwrap(line.frames["a"]).rect.height, SpotTokens.listRow)
+        XCTAssertGreaterThan(try XCTUnwrap(multiline.frames["a"]).rect.height, SpotTokens.listRow)
+    }
+
+    func testTheCheckTakesGrowOnABlock() {
+        XCTAssertEqual(FrameCheck(text: "frame=\ngrid=v\ngrid=f\n\nview=v\ngrow=false\n\nfield=f\ntype=search\n\ntext=a\n").partFaults, [])
+    }
+
+    func testRowsFitTheRoomTheyAreGivenNotTheWholeSheet() {
+        let three = SpotTokens.rowsHeight(rows: 3)
+
+        XCTAssertEqual(three, SpotTokens.listRow * 3 + SpotTokens.listRowGap * 2)
+        XCTAssertTrue(SpotTokens.rowsFit(rows: 3))
+        XCTAssertFalse(SpotTokens.rowsFit(rows: 3, in: three - 1))
+        XCTAssertEqual(SpotTokens.sheetRect(rows: 3).height, SpotTokens.sheetRowsTop + three + SpotTokens.padding)
+    }
+
+    func testASheetWithRowsKeepsRoomForTheFieldOnlyWhenItSearches() throws {
+        let numbers = "number=cpu\nvalue=1\nvalue=2\n\ntext=a\ntitle=A\n"
+        let still = try XCTUnwrap(SheetParts(output: output("frame=\ngrid=cpu\ngrid=cpu\n\n" + numbers)))
+        let searched = try XCTUnwrap(SheetParts(output: output("frame=\ngrid=cpu\ngrid=cpu\ngrid=find\n\nfield=find\ntype=search\n\n" + numbers)))
+
+        XCTAssertFalse(still.top.hasField)
+        XCTAssertTrue(searched.top.hasField)
+        XCTAssertEqual(still.placement.height, SpotTokens.partsMaxHeight)
+        XCTAssertEqual(searched.placement.height, SpotTokens.partsMaxHeight - SpotTokens.partFieldRoom)
+    }
+
+    func testTheRowsUnderTheBlocksTakeTheFreeHeightAndTheBlocksKeepTheirLines() throws {
+        let panel = try XCTUnwrap(SheetParts(output: output("frame=\ngrid=cpu\ngrid=cpu\n\nnumber=cpu\nvalue=1\nvalue=2\n\ntext=a\ntitle=A\n")))
+        let cpu = try XCTUnwrap(panel.placement.frames["cpu"]).rect
+        let rows = try XCTUnwrap(panel.placement.repeatFrame)
+
+        XCTAssertEqual(cpu.height, SpotTokens.listRow * 2 + SpotTokens.partGap)
+        XCTAssertEqual(rows.minY, cpu.maxY + SpotTokens.partGap)
+        XCTAssertEqual(panel.placement.height, SpotTokens.partsMaxHeight)
+    }
 
     func testABlockThatDoesNotGrowKeepsTheHeightOfItsLines() throws {
         let grown = try placement("frame=\ngrid=note\ngrid=note\ngrid=note\ngrid=go\n\nfield=note\ntype=multiline\n\nbutton=go\ntitle=Go\n")
@@ -280,12 +324,12 @@ final class SheetLayoutTests: XCTestCase {
     icon=😀
     """
 
-    func testARepeatedAreaSharesTheFreeHeightUnderTheField() throws {
+    func testARepeatedAreaSharesTheFreeHeightOfASheetWithNoSearchField() throws {
         let sheet = try placement(picker)
         let area = try XCTUnwrap(sheet.repeatFrame)
 
         XCTAssertEqual(area.minY, SpotTokens.listRow + SpotTokens.partGap)
-        XCTAssertEqual(sheet.height, SpotTokens.partsMaxHeight - SpotTokens.partFieldRoom)
+        XCTAssertEqual(sheet.height, SpotTokens.partsMaxHeight)
         XCTAssertEqual(area.maxY, sheet.height)
         XCTAssertFalse(sheet.overflows)
     }
@@ -353,10 +397,10 @@ final class SheetLayoutTests: XCTestCase {
     }
 
     func testAPartStartsWithItsPartKey() throws {
-        let first = output("frame=\ngrid=job\ngrid=job\n\ngraph=job\ntitle=Copying\nvalue=0.3\n")
+        let first = output("frame=\ngrid=job\ngrid=job\n\nnumber=job\ntitle=Copying\nvalue=30\nmax=100\n")
         let later = output("frame=\ngrid=p\ngrid=p\n\nblock=progress\npart=job\ncell=p\ntitle=Copying\nlevel=30\n")
 
-        XCTAssertEqual(first.parts.first?.control, .progress(level: 30))
+        XCTAssertEqual(first.parts.first?.number?.fill, 0.3)
         XCTAssertEqual(later.parts, [])
         XCTAssertEqual(later.errors, ["block=progress"])
     }
@@ -385,9 +429,9 @@ final class SheetLayoutTests: XCTestCase {
         XCTAssertEqual(faults("frame=\ngrid=a\n\nfield=a\ntype=slider\nvalue=255\nmax=255\n"), [])
         XCTAssertEqual(faults("frame=\ngrid=a b c d\ngrid=a b c d\n\nnumber=a\nvalue=1\n\ntext=b\ntitle=B\n\ntext=c\ntitle=C\n\ntext=d\ntitle=D\n"), ["the part a needs at least 2 columns of 4 for its number"])
         XCTAssertEqual(faults("frame=\ngrid=a a\n\nnumber=a\nvalue=1\ntitle=CPU\n"), ["the part a needs at least 2 rows for its number and title"])
-        XCTAssertEqual(faults("frame=\ngrid=p p\n\ngraph=p\nvalue=0.01\n"), ["the part p needs at least 2 rows for its title and bar"])
+        XCTAssertEqual(faults("frame=\ngrid=p p\n\nnumber=p\nvalue=1\nmax=100\n"), ["the part p needs at least 2 rows for its title and bar"])
         XCTAssertEqual(faults("frame=\ngrid=a b c d\n\ntext=a\ntitle=A very long title indeed\n\ntext=b\ntitle=B\n\ntext=c\ntitle=C\n\ntext=d\ntitle=D\n"), ["the title of the part a may not fit its cell"])
-        XCTAssertEqual(faults("frame=\ngrid=a b\ngrid=t b\n\ntext=a\ntitle=Item\n\ntext=t\ntitle=Other\n\nfield=b\nvalue=Hi\n"), ["the part a sits in rows that stretch, so draw a choice over two lines for a list", "the part t sits in rows that stretch, so draw a choice over two lines for a list"])
+        XCTAssertEqual(faults("frame=\ngrid=a b\ngrid=t b\n\ntext=a\ntitle=Item\n\ntext=t\ntitle=Other\n\nfield=b\ntype=multiline\nvalue=Hi\n"), ["the part a sits in rows that stretch, so draw a choice over two lines for a list", "the part t sits in rows that stretch, so draw a choice over two lines for a list"])
         XCTAssertEqual(faults(String(repeating: "frame=\ngrid=a\n", count: 20) + "\nfield=a\nvalue=Hi\n"), ["the drawing is too tall: 914pt of 446pt"])
     }
 

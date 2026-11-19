@@ -156,7 +156,7 @@ final class ReviewSpotTests: XCTestCase {
     }
 
     func testAPlainScriptRunsOnlyWhenItIsUsed() throws {
-        let review = try review("title = 'Weather'\non = ['sheet.open']")
+        let review = try review("title = 'Weather'")
 
         XCTAssertEqual(review.subtitle, "Runs only when you use it")
         let text = try shown(review)
@@ -256,7 +256,7 @@ final class ReviewSpotTests: XCTestCase {
     }
 
     func testAStayingScriptSaysSo() throws {
-        let review = try review("title = 'Weather'\nmode = 'stay'\non = ['sheet.open']")
+        let review = try review("title = 'Weather'\nmode = 'stay'")
 
         let text = try shown(review)
         XCTAssertTrue(text.contains("Weather: keeps running while it is in use"), text)

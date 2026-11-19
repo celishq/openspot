@@ -19,7 +19,7 @@ final class MetricContractTests: XCTestCase {
         try FileManager.default.setAttributes([.creationDate: Date(timeIntervalSince1970: 1_700_000_000)], ofItemAtPath: url.path)
     }
 
-    private func power(_ body: String = "printf 'graph=power\\ntitle=84%%\\nvalue=0.84\\ntone=good\\n'") throws {
+    private func power(_ body: String = "printf 'number=power\\nvalue=84\\nmax=100\\nunit=%%\\ntone=good\\n'") throws {
         try script("power.sh", "#!/bin/sh\n\(body)\n", toml: "on = ['clock.5']")
     }
 
@@ -33,7 +33,7 @@ final class MetricContractTests: XCTestCase {
 
         let value = try await metric.read(timeout: 60)
 
-        XCTAssertEqual(value, MetricValue(title: "84%", tone: .good, value: 0.84))
+        XCTAssertEqual(value, MetricValue(title: "84%", tone: .good, number: .of("value=84\nmax=100\nunit=%")))
     }
 
     func testAMetricThatPrintsNonsenseFails() async throws {
@@ -71,22 +71,22 @@ final class MetricContractTests: XCTestCase {
     }
 
     func testAGaugeStaysBetweenEmptyAndFull() {
-        XCTAssertEqual(MetricValue(title: "", value: 2).fill, 1)
-        XCTAssertEqual(MetricValue(title: "", value: -1).fill, 0)
+        XCTAssertEqual(NumberReading.of("value=2\nmax=1").fill, 1)
+        XCTAssertEqual(NumberReading.of("value=-1\nmax=1").fill, 0)
     }
 
     func testATrendScalesFromZeroToItsHighest() {
-        XCTAssertEqual(MetricValue(title: "", points: [10, 20, 40]).scaledPoints, [0.25, 0.5, 1])
-        XCTAssertEqual(MetricValue(title: "", points: [7, 7]).scaledPoints, [1, 1])
-        XCTAssertEqual(MetricValue(title: "", points: [0, 0]).scaledPoints, [0, 0])
+        XCTAssertEqual(NumberReading.of("value=10\nvalue=20\nvalue=40").scaledPoints, [0.25, 0.5, 1])
+        XCTAssertEqual(NumberReading.of("value=7\nvalue=7").scaledPoints, [1, 1])
+        XCTAssertEqual(NumberReading.of("value=0\nvalue=0").scaledPoints, [0, 0])
     }
 
     func testATrendWithATopValueScalesToIt() {
-        XCTAssertEqual(MetricValue(title: "", points: [25, 50], max: 100).scaledPoints, [0.25, 0.5])
+        XCTAssertEqual(NumberReading.of("value=25\nvalue=50\nmax=100").scaledPoints, [0.25, 0.5])
     }
 
     func testAPointAboveTheTopValueStaysFull() {
-        XCTAssertEqual(MetricValue(title: "", points: [50, 200], max: 100).scaledPoints, [0.5, 1])
+        XCTAssertEqual(NumberReading.of("value=50\nvalue=200\nmax=100").scaledPoints, [0.5, 1])
     }
 
     func testTheCheckReportsNoFaultsForAGoodFolder() async throws {
@@ -107,7 +107,7 @@ final class MetricContractTests: XCTestCase {
     }
 
     func testTheCheckReportsAListThatFails() async throws {
-        try script("tools.sh", "#!/bin/sh\necho gone >&2\nexit 1\n", toml: "on = ['sheet.open']")
+        try script("tools.sh", "#!/bin/sh\necho gone >&2\nexit 1\n", toml: "")
 
         let faults = await SpotCheck(folder: SpotsFolder(url: folder)).faults()
 
@@ -115,16 +115,16 @@ final class MetricContractTests: XCTestCase {
     }
 
     func testTheCheckFaultsAPartOrAnActionCalledShow() async throws {
-        try script("tools.sh", "#!/bin/sh\nprintf 'button=show\\ntitle=A\\n\\ntext=a\\ntitle=A\\n\\ntext=show\\ntitle=B\\n'\n", toml: "on = ['sheet.open']")
+        try script("tools.sh", "#!/bin/sh\nprintf 'button=show\\ntitle=A\\n\\ntext=a\\ntitle=A\\n\\ntext=show\\ntitle=B\\n'\n", toml: "")
 
         let faults = await SpotCheck(folder: SpotsFolder(url: folder)).faults()
 
         XCTAssertEqual(faults, ["tools: an action cannot be called show", "tools: an item cannot be called show"])
     }
 
-    func testTheCheckDoesNotRunAScriptWithNoRead() async throws {
+    func testTheCheckDoesNotRunAScriptWithCommandsAndNoEvents() async throws {
         let marker = folder.appendingPathComponent("marker")
-        try script("once.sh", "#!/bin/sh\ntouch '\(marker.path)'\n")
+        try script("once.sh", "#!/bin/sh\ntouch '\(marker.path)'\n", toml: TestSpot.command)
 
         let faults = await SpotCheck(folder: SpotsFolder(url: folder)).faults()
 

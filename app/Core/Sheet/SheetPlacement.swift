@@ -24,12 +24,13 @@ public struct SheetPlacement: Equatable, Sendable {
     public let lines: [CGRect]
     public let height: CGFloat
     public let repeatFrame: CGRect?
+    private let room: CGFloat
 
     public var overflows: Bool {
-        height > SpotTokens.partsMaxHeight - (repeatFrame == nil ? 0 : SpotTokens.partFieldRoom)
+        height > room
     }
 
-    public init(parts: [SpotPart], layout: SheetLayout) {
+    public init(parts: [SpotPart], layout: SheetLayout, room: CGFloat = SpotTokens.partsMaxHeight) {
         let rows = layout.rows
         let gap = SpotTokens.partGap
         let columns = max(rows.map(\.count).max() ?? 1, 1)
@@ -37,13 +38,14 @@ public struct SheetPlacement: Equatable, Sendable {
         let columnX = { (x: Int) in CGFloat(x) * (cell + gap) }
 
         var heights = rows.indices.map { layout.hasDivider(inRow: $0) ? SpotTokens.dividerHeight : SpotTokens.listRow }
+        let repeatArea = layout.repeated.flatMap { layout.areas[$0.area] }
+        self.room = room
         var fillRows = Set<Int>()
-        for part in parts {
+        for part in parts where repeatArea == nil {
             guard let letter = layout.letter(of: part), let area = layout.areas[letter] else { continue }
             guard part.growsRow else { continue }
             for y in area.y0...area.y1 where !layout.hasDivider(inRow: y) { fillRows.insert(y) }
         }
-        let repeatArea = layout.repeated.flatMap { layout.areas[$0.area] }
         if let repeatArea {
             for y in repeatArea.y0...repeatArea.y1 where !layout.hasDivider(inRow: y) { fillRows.insert(y) }
         }
@@ -52,7 +54,6 @@ public struct SheetPlacement: Equatable, Sendable {
         let gaps = rowGaps.reduce(0, +)
         var filled: CGFloat?
         if !fillRows.isEmpty {
-            let room = SpotTokens.partsMaxHeight - (repeatArea == nil ? 0 : SpotTokens.partFieldRoom)
             let free = room - heights.reduce(0, +) - gaps
             if free > 0 {
                 for y in fillRows { heights[y] += free / CGFloat(fillRows.count) }

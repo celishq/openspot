@@ -8,7 +8,7 @@ final class SpotPagesTests: SpotRunsCase {
     }
 
     func testEachReadOfAPageNamesItAndTheFirstSheetNamesNone() async throws {
-        try script(toml: "on = ['sheet.open']", "page=$(sed -n 's/^route=//p')\necho \"${page:-none}\" >> '\(path("pages"))'\nprintf 'text=a\\ntitle=Page %s\\n' \"${page:-first}\"")
+        try script(toml: "", "page=$(sed -n 's/^route=//p')\necho \"${page:-none}\" >> '\(path("pages"))'\nprintf 'text=a\\ntitle=Page %s\\n' \"${page:-first}\"")
         let sheet = try sheet()
         runs.panelOpened()
         sheet.open(onReady: {})
@@ -22,7 +22,7 @@ final class SpotPagesTests: SpotRunsCase {
     }
 
     func testAPageThatComesBackShowsItsRowsAtOnceAndReadsAgain() async throws {
-        try script(toml: "on = ['sheet.open']", "page=$(sed -n 's/^route=//p')\nprintf 'text=a\\ntitle=Page %s\\n' \"${page:-first}\"")
+        try script(toml: "", "page=$(sed -n 's/^route=//p')\nprintf 'text=a\\ntitle=Page %s\\n' \"${page:-first}\"")
         let sheet = try sheet()
         runs.panelOpened()
         sheet.open(onReady: {})
@@ -38,7 +38,7 @@ final class SpotPagesTests: SpotRunsCase {
     }
 
     func testAPressOnAPageNamesItToo() async throws {
-        try script(toml: "on = ['sheet.open']", "[ \"$1\" = go ] && echo \"$(sed -n 's/^route=//p')\" >> '\(path("pages"))'\nprintf 'button=go\\ntitle=Go\\nscope=spot\\n\\ntext=a\\ntitle=A\\n'")
+        try script(toml: "", "[ \"$1\" = go ] && echo \"$(sed -n 's/^route=//p')\" >> '\(path("pages"))'\nprintf 'button=go\\ntitle=Go\\nscope=spot\\n\\ntext=a\\ntitle=A\\n'")
         let sheet = try sheet()
         runs.panelOpened()
         sheet.open(onReady: {})
@@ -51,7 +51,7 @@ final class SpotPagesTests: SpotRunsCase {
     }
 
     func testAStayingScriptGetsThePageWithEachCall() async throws {
-        try script(toml: "mode = 'stay'\non = ['sheet.open']", """
+        try script(toml: "mode = 'stay'", """
         while IFS= read -r line; do
           printf '%s\\n' "$line" >> '\(path("blocks"))'
           case "$line" in
@@ -74,7 +74,7 @@ final class SpotPagesTests: SpotRunsCase {
     func testAnInlineScriptGetsThePage() async throws {
         let url = folder.spotFile("script", extension: "js")
         try FileManager.default.createDirectory(at: url.deletingLastPathComponent(), withIntermediateDirectories: true)
-        try "function main(args, env, input) { return `text=a\\ntitle=Page ${openspot.value('route', input) || 'first'}\\n` }\n".writeInline(to: url, toml: "on = ['sheet.open']")
+        try "function main(args, env, input) { return `text=a\\ntitle=Page ${openspot.value('route', input) || 'first'}\\n` }\n".writeInline(to: url, toml: "")
         let sheet = try sheet()
         runs.panelOpened()
         sheet.open(onReady: {})

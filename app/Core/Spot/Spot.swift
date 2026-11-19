@@ -65,6 +65,7 @@ public struct Spot: Equatable, Sendable {
     ) {
         header = Header(SpotFacts(
             id: id, name: name, url: url, size: size, headerIcon: icon, baseSymbol: symbol, subtitle: subtitle, on: on,
+            hasSheet: on != nil || answers == nil && offers.isEmpty && offeredActions.isEmpty,
             isGlobal: isGlobal, isFound: isFound, answers: answers, order: order,
             host: host, growsFromField: growsFromField, mode: mode, drop: drop,
             dataName: dataName, isOnGrid: isOnGrid, view: view, viewDate: viewDate, sources: sources, emits: emits, pages: pages, uses: uses,
@@ -160,7 +161,7 @@ public struct Spot: Equatable, Sendable {
     }
 
     public var keepsHistory: Bool {
-        soleCommand != nil && !self.opensToKeys && self.on != nil
+        soleCommand != nil && self.hasSheet
     }
 
     private var settingKeys: [SpotSettings.Key] {
@@ -181,7 +182,7 @@ public struct Spot: Equatable, Sendable {
             keys: settingKeys,
             isWindowByDefault: isWindow
         )
-        if self.on == nil, !self.offers.isEmpty {
+        if !self.hasSheet, !self.offers.isEmpty {
             spot.opensToKeys = true
         }
         return spot

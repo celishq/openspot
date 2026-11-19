@@ -35,6 +35,10 @@ class PanelCase: XCTestCase {
         try? FileManager.default.removeItem(at: folder)
     }
 
+    func takeCalls() {
+        model.runs.api = CommandAPI(mac: Mac(), places: model.files, app: ModelApp(model: model), runs: model.runs, rates: .offline)
+    }
+
     var spots: URL {
         folder.appendingPathComponent("spots", isDirectory: true)
     }
@@ -53,11 +57,11 @@ class PanelCase: XCTestCase {
     }
 
     func openList() async throws {
-        try script("list", toml: "title = 'List'\non = ['sheet.open']\npages = ['*']", """
+        try script("list", toml: "title = 'List'\npages = ['*']", """
         page=$(sed -n 's/^route=//p')
         if [ -n "$page" ]; then printf 'text=x\\ntitle=Detail %s\\n' "$page"; else printf 'text=a\\ntitle=A\\nroute=a\\n'; fi
         """)
-        try script("other", toml: "on = ['sheet.open']", "printf 'text=o\\ntitle=Other\\n'")
+        try script("other", toml: "", "printf 'text=o\\ntitle=Other\\n'")
         await model.reload()
         model.isShown = true
         model.panelWillShow()

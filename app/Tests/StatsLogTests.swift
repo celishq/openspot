@@ -6,7 +6,7 @@ final class StatsLogTests: SpotRunsCase {
     private static let busyLoop = "i=0; while [ $i -lt 50000 ]; do i=$((i + 1)); done"
 
     func testABusyScriptCountsItsCPUTime() async throws {
-        try script(toml: "on = ['sheet.open']", "\(Self.busyLoop)\nprintf 'text=a\\ntitle=A\\n'")
+        try script(toml: "", "\(Self.busyLoop)\nprintf 'text=a\\ntitle=A\\n'")
         let sheet = try sheet()
 
         runs.panelOpened()
@@ -19,7 +19,7 @@ final class StatsLogTests: SpotRunsCase {
     }
 
     func testAStayingScriptCountsItsCPUTimeWhileItRuns() async throws {
-        try script(toml: "mode = 'stay'\non = ['sheet.open']", """
+        try script(toml: "mode = 'stay'", """
         \(Self.busyLoop)
         touch '\(path("busy"))'
         while IFS= read -r line; do
@@ -42,7 +42,7 @@ final class StatsLogTests: SpotRunsCase {
     func testAStayingProcessPutsItsCPUTimeOnTheDayItWasSpent() async throws {
         runs.quit()
         runs = SpotRuns(clock: clock.value, stopPause: 0.2, stats: folder.appendingPathComponent("stats"))
-        try script(toml: "mode = 'stay'\non = ['sheet.open']", """
+        try script(toml: "mode = 'stay'", """
         \(Self.busyLoop)
         touch '\(path("busy"))'
         \(untilRelease)
@@ -71,7 +71,7 @@ final class StatsLogTests: SpotRunsCase {
     }
 
     func testAFailedCallIsTheLastFaultAndAFailure() async throws {
-        try script(toml: "on = ['sheet.open']", "echo 'No network.' >&2\nexit 3")
+        try script(toml: "", "echo 'No network.' >&2\nexit 3")
         let sheet = try sheet()
 
         runs.panelOpened()
@@ -195,7 +195,7 @@ final class StatsLogTests: SpotRunsCase {
     }
 
     func testTheRunsTellTheUsageWhichSpotOwnsEachView() throws {
-        try script(toml: "on = ['sheet.open']\nview = 'cups.swift'", "printf 'view=cups\n'")
+        try script(toml: "view = 'cups.swift'", "printf 'view=cups\n'")
         let view = try XCTUnwrap(try scanned().scripts.first?.view)
 
         runs.usage.drew(view: view, seconds: 0.5)
@@ -205,7 +205,7 @@ final class StatsLogTests: SpotRunsCase {
     }
 
     func testOpeningASheetAndPickingARowAtOnceIsOneActAndTheReadIsCountedByItsReason() async throws {
-        try script(toml: "on = ['sheet.open']", "printf 'text=a\\ntitle=A\\n'")
+        try script(toml: "", "printf 'text=a\\ntitle=A\\n'")
         let sheet = try sheet()
 
         runs.panelOpened()

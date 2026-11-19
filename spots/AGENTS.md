@@ -20,7 +20,7 @@ These rules hold for the core spots in `spots/` and the spots in `examples/`. A 
 ## The app's own words
 
 The spots of `spots/openspot.spot/` are parts of the app, such as Settings and New spot, and take a few words that no
-other spot gets. In any other spot, `edits` and `shown` are unknown keys, `account` is removed from its uses,
+other spot gets. In any other spot, `edits`, `starts` and `shown` are unknown keys, `account` is removed from its uses,
 and the variables are absent. `builtin` names these spots to the others.
 
 ```toml
@@ -31,6 +31,7 @@ edits = "spots"
 | Word                    | Where       | Does                                                                                           |
 | ----------------------- | ----------- | ---------------------------------------------------------------------------------------------- |
 | `edits`                 | `spot.toml` | `edits = "spots"`: its sheet is also the Edit sheet of each spot.                              |
+| `starts`                | `spot.toml` | `starts = "first-launch"`: its sheet opens in place of the grid when Openspot first starts.    |
 | `account`               | `uses`      | It may publish with the account key; [The account](../TRUST.md#the-account) says how.          |
 | `shown`                 | the root    | `shown=true` puts the spot's card on the grid, and `shown=false` takes it off.                 |
 | `builtin`               | a filter    | After `actions` in `offers`, and as the origin that `when` gets: a spot of the app.            |

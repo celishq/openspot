@@ -76,7 +76,7 @@ final class FlowNavigationTests: PanelCase {
     }
 
     func testTheHintOfAPageSaysThatEscGoesBack() async throws {
-        try script("info", toml: "on = ['sheet.open']\npages = ['a']", """
+        try script("info", toml: "pages = ['a']", """
         page=$(sed -n 's/^route=//p')
         if [ -n "$page" ]; then printf 'frame=\\ngrid=detail\\n\\ntext=detail\\ntitle=Detail\\n'; else printf 'frame=\\ngrid=first\\n\\ntext=first\\ntitle=First\\n\\ntext=a\\ntitle=A\\nroute=a\\n'; fi
         """)
@@ -301,7 +301,7 @@ final class FlowNavigationTests: PanelCase {
     }
 
     func testASheetWithNoCardGrowsFromTheFieldAndShrinksBackIntoIt() async throws {
-        try script("hidden", toml: "on = ['sheet.open']", "printf 'text=h\\ntitle=Hidden\\n'")
+        try script("hidden", toml: "", "printf 'text=h\\ntitle=Hidden\\n'")
         _ = try model.files.config.change { $0.arrangement.set(isOnGrid: false, of: "hidden") }
         await model.reload()
         model.isShown = true
@@ -341,7 +341,7 @@ final class FlowNavigationTests: PanelCase {
 
     func testAnItemWithARouteOpensItAtOnceWithNoCallAndOneThatReplacesTakesThePlaceOfThePage() async throws {
         let calls = folder.appendingPathComponent("calls")
-        try script("routes", toml: "title = 'Routes'\non = ['sheet.open']\npages = ['*']", """
+        try script("routes", toml: "title = 'Routes'\npages = ['*']", """
         echo "$1" >> '\(calls.path)'
         page=$(sed -n 's/^route=//p')
         case "$page" in

@@ -9,6 +9,7 @@ public struct SpotFacts: Equatable, Sendable {
     let baseSymbol: String
     public let subtitle: String?
     public let on: ShowEvents?
+    public let hasSheet: Bool
     public let isGlobal: Bool
     public let isFound: Bool
     public let answers: AnswerPattern?

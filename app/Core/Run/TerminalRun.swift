@@ -35,7 +35,7 @@ public struct TerminalRun {
     }
 
     var action: SpotAction {
-        SpotAction(arguments: arguments.isEmpty ? (spot.on == nil ? SpotAction.open : SpotAction.show).arguments : arguments)
+        SpotAction(arguments: arguments.isEmpty ? (spot.hasSheet ? SpotAction.show : SpotAction.open).arguments : arguments)
     }
 
     private func message(isInShow: Bool) -> Message {

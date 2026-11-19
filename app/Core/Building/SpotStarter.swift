@@ -47,8 +47,10 @@ public enum SpotStarter: String, CaseIterable, Sendable {
         manifest.set("title", to: .string(title))
         manifest.set("icon", to: .string(symbol))
         switch self {
-        case .button: manifest.set("detail", to: .string("Press to run it"))
-        case .list, .form: manifest.set("on", to: .strings(["sheet.open"]))
+        case .button:
+            manifest.set("detail", to: .string("Press to run it"))
+            manifest.sections.append(ConfigDocument.Table("commands.run", [("title", .string(title))]))
+        case .list, .form: break
         case .number: manifest.set("on", to: .strings(["panel.open"]))
         }
         return manifest

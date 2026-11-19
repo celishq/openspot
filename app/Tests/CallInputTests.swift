@@ -23,8 +23,8 @@ final class CallInputTests: SpotRunsCase {
     }
 
     func testACallCarriesTheValuesOfTheFieldsOfItsOwnHeaderAndOfNoOtherSpot() async throws {
-        try script(toml: "on = ['sheet.open']\n[settings.folder]\n[settings.api-key]", "grep '^setting\\.' | sort > '\(path("env"))'")
-        try script("other", toml: "on = ['sheet.open']\n[settings.folder]", log: "other", "")
+        try script(toml: "[settings.folder]\n[settings.api-key]", "grep '^setting\\.' | sort > '\(path("env"))'")
+        try script("other", toml: "[settings.folder]", log: "other", "")
         let sheet = try sheet()
         runs.take(settings: [
             SpotSetting(spot: "script", key: "folder", value: "/tmp/repos"),
@@ -40,7 +40,7 @@ final class CallInputTests: SpotRunsCase {
     }
 
     func testAnActionAndAPickOfARowCarryTheKeysOfThatRowOnStdin() async throws {
-        try script(toml: "on = ['sheet.open']", """
+        try script(toml: "", """
         case "$1" in
           show) printf 'text=a\\ntitle=A\\nmeeting=https://meet.example/a\\n\\ntext=b\\ntitle=B\\n' ;;
           *) { echo "$*"; cat; echo; } >> '\(path("input"))' ;;
@@ -63,6 +63,7 @@ final class CallInputTests: SpotRunsCase {
         let logs = folder.appendingPathComponent("logs")
         let stats = folder.appendingPathComponent("stats")
         runs = SpotRuns(environment: ProcessInfo.processInfo.environment, clock: clock.value, stopPause: 0.2, log: CallLog(folder: logs), stats: stats)
+        takeCalls()
         var told: [String] = []
         runs.onReport = { _, report in
             switch report {
@@ -70,13 +71,14 @@ final class CallInputTests: SpotRunsCase {
             default: break
             }
         }
-        try script(toml: "on = ['sheet.open']\n[settings.token]\ntype = 'secret'", """
+        try script(toml: "[settings.token]\ntype = 'secret'", """
         env > '\(path("env"))'
         echo "$*" > '\(path("arguments"))'
         in=$(cat)
         token=$(printf '%s\\n' "$in" | sed -n 's/^setting.token=//p')
         printf '%s' "$token" > '\(path("seen"))'
-        printf '\\033]9;Got %s\\007text=a\\ntitle=%s\\n---\\n' "$token" "$token"
+        \(TestSpot.toast) "Got $token"
+        printf 'text=a\\ntitle=%s\\n---\\n' "$token"
         echo "Cannot reach the server with $token" >&2
         exit 1
         """)
@@ -102,7 +104,7 @@ final class CallInputTests: SpotRunsCase {
 
     func testAFormCallThatFailsHidesTheSecretInItsFailure() async throws {
         runs.onReport = { _, _ in }
-        try script(toml: "on = ['sheet.open']\n[settings.token]\ntype = 'secret'", """
+        try script(toml: "[settings.token]\ntype = 'secret'", """
         token=$(sed -n 's/^setting.token=//p')
         case "$1" in
           login) echo "Cannot reach the server with $token" >&2; exit 1 ;;
@@ -120,7 +122,7 @@ final class CallInputTests: SpotRunsCase {
     }
 
     func testAPlainFieldNeverGetsTheSecretThatAnOlderHeaderKeptUnderItsKey() async throws {
-        try script(toml: "on = ['sheet.open']\n[settings.token]", "env > '\(path("env"))'\ncat > '\(path("input"))'")
+        try script(toml: "[settings.token]", "env > '\(path("env"))'\ncat > '\(path("input"))'")
         let sheet = try sheet()
         try secrets(["token": marker])
 

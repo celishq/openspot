@@ -11,6 +11,7 @@ public struct SheetPage: Equatable, Sendable {
     public let fieldTitle: String
     public let rect: CGRect
     public let showsField: Bool
+    public let top: SheetTop
     public let query: String
     public let recording: String?
     public let keyStatus: String?
@@ -27,6 +28,7 @@ public struct SheetPage: Equatable, Sendable {
         fieldTitle = run.state.title
         self.rect = rect
         showsField = run.showsField
+        top = run.top
         self.query = query
         self.recording = recording
         self.keyStatus = keyStatus

@@ -28,7 +28,7 @@ extension SpotRun {
                 call.hasAnswer = true
             } else {
                 call.lastHead = lines
-                takeEffects(lines, frame: text)
+                takeEffects(frame: text)
             }
         case .act(let act):
             if act.first?.take(lines) == true, !lines.fields.isEmpty { return }
@@ -38,11 +38,10 @@ extension SpotRun {
                     drewFrame(call.made)
                 }
             } else {
-                takeEffects(lines, frame: text)
+                takeEffects(frame: text)
             }
         case .form:
             if !lines.fields.isEmpty || call.form.fields.isEmpty { call.form = lines }
-            report(toastOf: lines)
         }
     }
 
@@ -50,7 +49,7 @@ extension SpotRun {
         if lines.isPicture {
             await takePicture(lines, frame: text, of: nil)
         } else {
-            takeEffects(lines, frame: text)
+            takeEffects(frame: text)
         }
     }
 
@@ -133,7 +132,7 @@ extension SpotRun {
             if let undo = act.undo { state = undo }
         case (.act(let act), .ended):
             answered = nil
-            if let selected = call.selected, spot.on != nil {
+            if let selected = call.selected, spot.hasSheet {
                 show(selecting: selected, need: .change)
             } else if !call.showedPicture, act.showsAfter {
                 showOnce()

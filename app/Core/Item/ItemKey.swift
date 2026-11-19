@@ -1,5 +1,5 @@
 public enum ItemKey: String, CaseIterable, Sendable {
-    case title, detail, icon, tone, value, max, parent, keywords, pin, hides, file, close, shake
+    case title, detail, icon, tone, value, parent, keywords, pin, hides, file, close, shake
     case openTitle = "open.title"
     case route
     case routeTitle = "route.title"

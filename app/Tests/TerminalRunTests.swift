@@ -63,9 +63,9 @@ final class TerminalRunTests: XCTestCase {
         XCTAssertTrue(end.errors.hasSuffix("a the end\n"))
     }
 
-    func testARunWithNoCallReadsASpotThatReadsAndOpensOneThatDoesNot() async throws {
-        let reads = try spot("reads", toml: "on = ['sheet.open']", "\(TestSpot.event)\necho \"$1 $ev\"")
-        let opens = try spot("opens", "echo \"$1\"")
+    func testARunWithNoCallShowsASpotWithASheetAndOpensOneWithCommandsAndNoEvents() async throws {
+        let reads = try spot("reads", "\(TestSpot.event)\necho \"$1 $ev\"")
+        let opens = try spot("opens", toml: "[commands.left]\ntitle = 'Left'", "echo \"$1\"")
         var said: [String] = []
 
         _ = await TerminalRun(spot: reads, arguments: [], input: nil).start { said.append($0) }

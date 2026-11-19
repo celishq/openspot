@@ -273,10 +273,7 @@ final class StayMode: ScriptMode {
                 drawn = call.map { ($0, next.drawn) }
                 let text = next.text
                 let lines = await runs.intake(text, of: run?.spot.id)
-                guard self.script === script, let run else {
-                    run?.report(toastOf: lines)
-                    continue
-                }
+                guard self.script === script, let run else { continue }
                 await take(text, lines, in: run)
             }
         } catch {

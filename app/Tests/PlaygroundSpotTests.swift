@@ -5,7 +5,7 @@ final class PlaygroundSpotTests: BuiltInCase {
     func testAPressOpensThePlayground() async throws {
         let spot = try spot("playground")
 
-        _ = try await spot.perform(.press("playground"), timeout: 60)
+        try await spot.perform(.press("playground"), timeout: 60)
 
         let opened = await app.opened
         XCTAssertEqual(opened, ["playground  careful=false"])

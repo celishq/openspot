@@ -599,7 +599,7 @@ final class SpotsModelDragTests: XCTestCase {
 
     func testAPublishThatAccountFinishesGoesBackToTheSheetBehindAccount() async throws {
         try FileManager.default.createDirectory(at: core.appendingPathComponent("openspot.spot"), withIntermediateDirectories: true)
-        try "#!/bin/sh\nprintf 'text=x\\ntitle=X\\n'\n".writeScript(to: spots.appendingPathComponent("b.spot/b.sh"), toml: "on = ['sheet.open']")
+        try "#!/bin/sh\nprintf 'text=x\\ntitle=X\\n'\n".writeScript(to: spots.appendingPathComponent("b.spot/b.sh"), toml: "")
         await model.reload()
         try "Does a.".write(to: spots.appendingPathComponent("a.spot/readme.md"), atomically: true, encoding: .utf8)
         model.endEditing(moving: false)

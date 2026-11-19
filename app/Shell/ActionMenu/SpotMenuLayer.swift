@@ -36,7 +36,7 @@ struct SpotMenuLayer: View {
     }
 
     private var bounds: CGRect {
-        ActionMenuFrame.bounds(under: fieldIsInSheet ? SpotTokens.halo + SpotTokens.sheetRowsTop : SpotTokens.gridTop, in: panels.frame)
+        ActionMenuFrame.bounds(under: fieldIsInSheet ? SpotTokens.halo + model.openTop.fieldY + SpotTokens.partFieldRoom : SpotTokens.gridTop, in: panels.frame)
     }
 
     private static func rect(_ rect: CGRect, scaledBy scale: CGFloat, from corner: UnitPoint) -> CGRect {

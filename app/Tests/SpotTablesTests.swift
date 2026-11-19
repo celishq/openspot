@@ -29,10 +29,10 @@ final class SpotTablesTests: XCTestCase {
     }
 
     func testAKeyThatOpenspotDoesNotKnowIsAFault() {
-        XCTAssertEqual(fault(of: "titel = 'Coffee'\non = ['sheet.open']"), "Probe has an unknown key in its spot.toml: titel")
+        XCTAssertEqual(fault(of: "titel = 'Coffee'"), "Probe has an unknown key in its spot.toml: titel")
         XCTAssertEqual(fault(of: "title = 'T'\nTitle = 'U'"), "T has an unknown key in its spot.toml: Title")
         XCTAssertEqual(fault(of: "title = 'T'\n[look]\ncolour = 'red'"), "T has an unknown key in its spot.toml: look")
-        XCTAssertNil(fault(of: "title = 'Coffee'\non = ['sheet.open']\npages = ['day:*']\n# Set CITY=Paris to change it"))
+        XCTAssertNil(fault(of: "title = 'Coffee'\npages = ['day:*']\n# Set CITY=Paris to change it"))
     }
 
     func testAKeyThatACommandOrASettingDoesNotTakeIsAFault() {
@@ -46,20 +46,20 @@ final class SpotTablesTests: XCTestCase {
 
     func testASettingThatAsksForAHotkeyIsAFault() {
         XCTAssertEqual(
-            fault(of: "title = 'T'\non = ['sheet.open']\n[settings.key]\ntype = 'hotkey'\ntitle = 'Shortcut'"),
+            fault(of: "title = 'T'\n[settings.key]\ntype = 'hotkey'\ntitle = 'Shortcut'"),
             "T has an unknown type in [settings.key]: `hotkey`. Use `type = \"secret\"`, or no type."
         )
-        XCTAssertNil(fault(of: "title = 'T'\non = ['sheet.open']\n[settings.token]\ntype = 'secret'"))
+        XCTAssertNil(fault(of: "title = 'T'\n[settings.token]\ntype = 'secret'"))
     }
 
     func testARowHoldsKeysOfItsOwnWhichACheckDoesNotReport() async throws {
-        let faults = try await findings("#!/bin/sh\nprintf 'text=a\\ntitle=A\\nruns=38\\n\\ntext=b\\ntitle=B\\npush.replace=true\\n'\n", toml: "on = ['sheet.open']")
+        let faults = try await findings("#!/bin/sh\nprintf 'text=a\\ntitle=A\\nruns=38\\n\\ntext=b\\ntitle=B\\npush.replace=true\\n'\n", toml: "")
 
         XCTAssertEqual(faults, [])
     }
 
     func testARootKeyThatOpenspotDoesNotKnowIsReportedByACheck() async throws {
-        let faults = try await findings("#!/bin/sh\nprintf 'frame=\\ntitle=T\\ntoost=Saved\\n\\ntext=a\\ntitle=A\\n'\n", toml: "on = ['sheet.open']")
+        let faults = try await findings("#!/bin/sh\nprintf 'frame=\\ntitle=T\\ntoost=Saved\\n\\ntext=a\\ntitle=A\\n'\n", toml: "")
 
         XCTAssertEqual(faults, ["the root has an unknown key: toost"])
     }
@@ -85,9 +85,9 @@ final class SpotTablesTests: XCTestCase {
             name: "meter",
             keys: ["steps"],
             holdsValue: true,
-            control: { .number($0.value("value") ?? "", unit: "steps") },
+            isReading: true,
+            control: { .number(NumberReading(block: $0)) },
             faults: { $0.value("steps") == "0" ? ["the part \($0.fields.first?.value ?? "") needs a step"] : [] },
-            data: { ($0.number("value"), nil) },
             field: { block, name, label in ItemForm.Field(name: name, label: label, value: block.value("value")) }
         )
         let frame = "frame=\ntitle=T\ngrid=m\ngrid=m\n\nmeter=m\ntitle=M\nvalue=3\nsteps=0\ncolour=red\n"
@@ -95,7 +95,7 @@ final class SpotTablesTests: XCTestCase {
         let check = FrameCheck(text: frame, kinds: BlockKind.all + [meter])
 
         XCTAssertEqual(check.output.parts.map(\.kind), ["meter"])
-        XCTAssertEqual(check.output.parts.first?.control, .number("3", unit: "steps"))
+        XCTAssertEqual(check.output.parts.first?.number?.text, "3")
         XCTAssertEqual(check.partFaults, ["the part m has an unknown key: colour", "the part m needs a step"])
         XCTAssertEqual(check.output.metric?.value("value"), "3")
         XCTAssertEqual(ItemForm(output: check.output)?.fields.map(\.name), ["m"])
@@ -104,12 +104,12 @@ final class SpotTablesTests: XCTestCase {
     }
 
     func testABlockIsReadByTheKindThatItsWordAndItsTypeName() {
-        let output = Frame(text: "frame=\ngrid=one\ngrid=bars\ngrid=level\ngrid=key\ngrid=name\ngrid=done\n\ngraph=one\nvalue=0.5\n\ngraph=bars\nvalue=1\nvalue=2\n\nfield=level\ntype=slider\n\nfield=key\ntype=hotkey\n\nfield=name\n\nswitch=done\ntype=tick\n")
+        let output = Frame(text: "frame=\ngrid=one\ngrid=bars\ngrid=level\ngrid=key\ngrid=name\ngrid=done\n\nnumber=one\nvalue=0.5\nmax=1\n\nnumber=bars\nvalue=1\nvalue=2\n\nfield=level\ntype=slider\n\nfield=key\ntype=hotkey\n\nfield=name\n\nswitch=done\ntype=tick\n")
 
-        XCTAssertEqual(output.parts.map(\.kind), ["gauge", "graph", "slider", "hotkey", "field", "switch"])
+        XCTAssertEqual(output.parts.map(\.kind), ["number", "number", "slider", "hotkey", "field", "switch"])
         XCTAssertEqual(output.parts.last?.look, .tick)
         XCTAssertEqual(output.fields.map(\.kind.name), ["slider", "field", "switch"])
-        XCTAssertEqual(BlockKind.words, ["text", "number", "graph", "picture", "view", "switch", "field", "choice", "option", "button", "section", "repeat"])
+        XCTAssertEqual(BlockKind.words, ["text", "number", "picture", "view", "switch", "field", "choice", "option", "button", "section", "repeat"])
     }
 
     private func unknownKeys(in frame: String) -> [String] {

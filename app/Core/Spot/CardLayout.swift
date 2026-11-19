@@ -26,6 +26,13 @@ public struct CardLayout: Equatable, Sendable {
         slots = names.compactMap { areas[$0] }
     }
 
+    public func cells(of slot: SheetArea, on card: SpotSize) -> (columns: Double, rows: Double) {
+        (
+            Double(slot.x1 - slot.x0 + 1) / Double(columns) * Double(card.columns),
+            Double(slot.y1 - slot.y0 + 1) / Double(rows) * Double(card.rows)
+        )
+    }
+
     public func rect(of slot: SheetArea, in room: CGSize, gap: CGFloat, sideGap: CGFloat) -> CGRect {
         let middle = columns > 1 && columns.isMultiple(of: 2) ? columns / 2 : nil
         let extra = middle == nil ? 0 : sideGap - gap

@@ -97,7 +97,7 @@ show() {
   options
   printf '\n'
 
-  printf 'field=input\nplaceholder=Type or paste text\n'
+  printf 'field=input\ntype=multiline\nplaceholder=Type or paste text\n'
   openspot_kv value "$input"
   printf '\n'
 
@@ -105,7 +105,7 @@ show() {
   options
   printf '\n'
 
-  printf 'field=output\nvalue=%s\nplaceholder=Translation\nreadonly=true\n\n' "$output"
+  printf 'field=output\ntype=multiline\nvalue=%s\nplaceholder=Translation\nreadonly=true\n\n' "$output"
 
   printf 'button=swap\nicon=arrow.up.arrow.down\nshortcut=cmd+shift+s\nclose=false\n\n'
 

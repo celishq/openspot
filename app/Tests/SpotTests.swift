@@ -181,16 +181,6 @@ final class SpotTests: XCTestCase {
         XCTAssertEqual(try String(contentsOf: marker, encoding: .utf8), "focus true\n")
     }
 
-    func testAnActionCanPrintAToast() async throws {
-        let quiet = try writeCommand(kind: .launch, "echo done > /dev/null")
-        let quietToast = try await quiet.perform(quiet.click, timeout: 60)
-        let loud = try writeCommand(kind: .launch, "printf '\\033]9;All done\\007'")
-        let loudToast = try await loud.perform(loud.click, timeout: 60)
-
-        XCTAssertNil(quietToast)
-        XCTAssertEqual(loudToast, "All done")
-    }
-
     func testAFailureCarriesTheLastLineOfItsErrorOutput() async throws {
         let command = try writeCommand(kind: .launch, "echo first >&2\necho 'No screenshot found.' >&2\nexit 3")
 

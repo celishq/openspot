@@ -306,7 +306,7 @@ final class SpotsFolderTests: XCTestCase {
     }
 
     func testReadSaysWhatKindOfSpotItIsBeforeAnyRun() throws {
-        try write("a.sh", toml: "on = ['sheet.open']")
+        try write("a.sh", toml: "")
         try write("b.sh", toml: "on = ['panel.open']")
         try write("c.sh", toml: "on = ['panel.open']\noffers = ['search']")
 
@@ -426,12 +426,10 @@ final class SpotsFolderTests: XCTestCase {
 
     func testRefusesAHeaderWithAFault() throws {
         try write("b.sh", toml: "mode = 'huge'")
-        try write("f.sh", toml: "offers = ['search']")
 
         XCTAssertEqual(try scan.files, [])
         XCTAssertEqual(try scan.refused, [
-            ScanResult.Refusal(file: "b", reason: "B has an unknown mode: huge. Use once or stay"),
-            ScanResult.Refusal(file: "f", reason: "F needs panel.open, sheet.open or a clock in its on, such as on = [\"clock.60\"], to join the main search")
+            ScanResult.Refusal(file: "b", reason: "B has an unknown mode: huge. Use once or stay")
         ])
     }
 
