@@ -2,10 +2,14 @@ import Foundation
 @testable import OpenspotCore
 
 @MainActor
-final class FakeLink: ScriptLink {
+final class FakeMode: ScriptMode {
     weak var run: SpotRun?
     private(set) var sent: [OpenCall] = []
     private var open: [OpenCall] = []
+
+    init() {}
+
+    init(runs: SpotRuns) {}
 
     var isAsking: Bool {
         open.contains { call in

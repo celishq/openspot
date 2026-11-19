@@ -1,6 +1,16 @@
 import Foundation
 
 extension SpotRuns {
+    func mode(of spot: Spot) -> any ScriptMode.Type {
+        if spot.holdsSettings, spot.settingsSheet != nil { return SettingsMode.self }
+        if spot.host != nil { return HostMode.self }
+        return switch spot.mode {
+        case .inline: InlineMode.self
+        case .stay: StayMode.self
+        case .once: OnceMode.self
+        }
+    }
+
     func script(of spot: Spot) -> InlineScript {
         let stamp = stamps[spot.id]
         if let kept = loaded[spot.id], kept.stamp == stamp, !kept.script.hasEnded { return kept.script }
