@@ -467,8 +467,9 @@ struct SheetPartsView: View {
 
     private func number(_ part: SpotPart, _ frame: SheetPlacement.Frame) -> some View {
         let look = part.numberLook(inSheet: frame.rect.size) ?? .stat
-        return SpotNumberView(part: part, look: look, font: SpotType.number, leastScale: SpotType.leastValueScale, alignment: part.look == .bare ? .trailing : .leading)
-            .padding(part.look == .bare ? 0 : look == .ring ? SpotTokens.partGap : SpotTokens.padding)
+        let inset = part.look == .bare ? 0 : look == .ring ? SpotTokens.partGap : SpotTokens.padding
+        return SpotNumberView(part: part, look: look, font: SpotType.number, leastScale: SpotType.leastValueScale, alignment: part.look == .bare ? .trailing : .leading, inset: inset)
+            .frame(width: frame.rect.width, height: frame.rect.height)
             .background(SpotTheme.ink.opacity(part.look == .bare ? 0 : SpotTheme.fill), in: shape)
     }
 

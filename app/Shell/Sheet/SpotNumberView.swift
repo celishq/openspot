@@ -7,6 +7,7 @@ struct SpotNumberView: View {
     let font: Font
     let leastScale: CGFloat
     var alignment: HorizontalAlignment = .leading
+    var inset: CGFloat = 0
 
     private var reading: NumberReading? {
         part.number
@@ -18,10 +19,10 @@ struct SpotNumberView: View {
 
     var body: some View {
         switch look {
-        case .ring: ring
-        case .bar: bar
-        case .stat where reading?.isSeries == true: trend
-        case .stat: stat
+        case .ring: ring.padding(inset)
+        case .bar: bar.padding(.horizontal, inset)
+        case .stat where reading?.isSeries == true: trend.padding(inset)
+        case .stat: stat.padding(.horizontal, inset)
         }
     }
 
