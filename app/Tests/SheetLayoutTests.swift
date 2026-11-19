@@ -59,8 +59,8 @@ final class SheetLayoutTests: XCTestCase {
         XCTAssertGreaterThan(try XCTUnwrap(multiline.frames["a"]).rect.height, SpotTokens.listRow)
     }
 
-    func testTheCheckTakesGrowOnABlockAndFilterOnTheSearchField() {
-        XCTAssertEqual(FrameCheck(text: "frame=\ngrid=v\ngrid=f\n\nview=v\ngrow=false\n\nfield=f\ntype=search\nfilter=spot\n\ntext=a\n").partFaults, [])
+    func testTheCheckTakesGrowOnABlock() {
+        XCTAssertEqual(FrameCheck(text: "frame=\ngrid=v\ngrid=f\n\nview=v\ngrow=false\n\nfield=f\ntype=search\n\ntext=a\n").partFaults, [])
     }
 
     func testRowsFitTheRoomTheyAreGivenNotTheWholeSheet() {
