@@ -17,10 +17,10 @@ struct RepoDoc {
     }
 
     static func all() throws -> [RepoDoc] {
-        try ["", "app/", "app/Help/", "spots/"].flatMap { folder in
-            try FileManager.default.contentsOfDirectory(atPath: repo.appendingPathComponent(folder).path)
-                .filter { $0.hasSuffix(".md") }.sorted().map { try RepoDoc(folder + $0) }
-        }
+        let help = try FileManager.default.contentsOfDirectory(atPath: repo.appendingPathComponent("app/Help").path)
+            .filter { $0.hasSuffix(".md") }.sorted().map { "app/Help/" + $0 }
+        return try (["AGENTS.md", "CLAUDE.md", "CONTRIBUTING.md", "GUIDE.md", "PROTOCOL.md", "README.md", "TRUST.md", "spots/AGENTS.md"] + help)
+            .map(RepoDoc.init)
     }
 
     var folder: URL {
