@@ -148,13 +148,18 @@ private struct SheetContentView: View {
             if form == nil, selectedName {
                 SelectedName(list: list, selection: selection, fallback: state.subtitle)
             } else if form == nil, let subtitle {
+                let lines = title == nil && hasSecondLine ? 2 : 1
                 Text(subtitle)
                     .font(SpotType.detail)
-                    .frame(height: SpotType.detailLine)
+                    .frame(height: SpotType.detailLine * CGFloat(lines), alignment: .topLeading)
                     .modifier(SpotSecondaryText())
-                    .lineLimit(1)
+                    .lineLimit(lines)
             }
         }
+    }
+
+    private var hasSecondLine: Bool {
+        (model.sheets[entry.id]?.headerExtra ?? 0) > 0
     }
 
     private var showsCardWords: Bool {

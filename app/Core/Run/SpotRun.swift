@@ -176,6 +176,7 @@ public final class SpotRun {
     public private(set) var partsKind: SheetKind?
     public private(set) var sheetRect = SpotTokens.sheetRect(rows: 0)
     public private(set) var showsField = true
+    public private(set) var headerExtra: CGFloat = 0
     @ObservationIgnored var heardKind: SheetKind? {
         didSet { settle() }
     }
@@ -288,7 +289,7 @@ public final class SpotRun {
 
     func layOut() {
         if var next = parts {
-            next.place()
+            next.place(header: headerExtra)
             panel = next
         }
         settle()
@@ -302,14 +303,22 @@ public final class SpotRun {
         let waits = showsSheet && answered == nil && panel == nil && rows.search == .local && rows.isLoading && !rows.holdsItems
         let nextKind = heardKind ?? (waits ? .waiting : panel?.kind ?? .rows)
         if nextKind != kind { kind = nextKind }
-        let rect = panel.map(SpotTokens.panelRect)
+        let field = nextKind.showsField && rows.search != .off
+        if field != showsField { showsField = field }
+        let extra = field || rows.perLine > 1 ? 0 : SheetHeader.shared.extra(for: shownState.subtitle)
+        if extra != headerExtra {
+            headerExtra = extra
+            if var placed = panel {
+                placed.place(header: extra)
+                panel = placed
+            }
+        }
+        let rect = panel.map { SpotTokens.panelRect($0, header: extra) }
         if rect != partsRect { partsRect = rect }
         let parts = panel?.kind
         if parts != partsKind { partsKind = parts }
-        let sheet = rect ?? SpotTokens.sheetRect(rows: next.rows, perLine: next.perLine, hasField: next.hasField, setsApart: next.setsApart)
+        let sheet = rect ?? SpotTokens.sheetRect(rows: next.rows, perLine: next.perLine, hasField: next.hasField, setsApart: next.setsApart, header: extra)
         if sheet != sheetRect { sheetRect = sheet }
-        let field = nextKind.showsField && rows.search != .off
-        if field != showsField { showsField = field }
     }
 
     func hear(_ lines: Frame?) {

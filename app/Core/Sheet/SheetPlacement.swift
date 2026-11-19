@@ -24,13 +24,13 @@ public struct SheetPlacement: Equatable, Sendable {
     public let lines: [CGRect]
     public let height: CGFloat
     public let repeatFrame: CGRect?
-    private let fieldRoom: CGFloat
+    private let topRoom: CGFloat
 
     public var overflows: Bool {
-        height > SpotTokens.partsMaxHeight - fieldRoom
+        height > SpotTokens.partsMaxHeight - topRoom
     }
 
-    public init(parts: [SpotPart], layout: SheetLayout, searches: Bool = true) {
+    public init(parts: [SpotPart], layout: SheetLayout, searches: Bool = true, header: CGFloat = 0) {
         let rows = layout.rows
         let gap = SpotTokens.partGap
         let columns = max(rows.map(\.count).max() ?? 1, 1)
@@ -39,7 +39,7 @@ public struct SheetPlacement: Equatable, Sendable {
 
         var heights = rows.indices.map { layout.hasDivider(inRow: $0) ? SpotTokens.dividerHeight : SpotTokens.listRow }
         let repeatArea = layout.repeated.flatMap { layout.areas[$0.area] }
-        fieldRoom = repeatArea != nil && searches ? SpotTokens.partFieldRoom : 0
+        topRoom = (repeatArea != nil && searches ? SpotTokens.partFieldRoom : 0) + header
         var fillRows = Set<Int>()
         for part in parts where repeatArea == nil {
             guard let letter = layout.letter(of: part), let area = layout.areas[letter] else { continue }
@@ -54,7 +54,7 @@ public struct SheetPlacement: Equatable, Sendable {
         let gaps = rowGaps.reduce(0, +)
         var filled: CGFloat?
         if !fillRows.isEmpty {
-            let room = SpotTokens.partsMaxHeight - fieldRoom
+            let room = SpotTokens.partsMaxHeight - topRoom
             let free = room - heights.reduce(0, +) - gaps
             if free > 0 {
                 for y in fillRows { heights[y] += free / CGFloat(fillRows.count) }

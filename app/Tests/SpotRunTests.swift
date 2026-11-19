@@ -158,7 +158,7 @@ final class SpotRunTests: XCTestCase {
         sheet.open {}
         try await wait("the parts") { sheet.panel != nil }
         let part = try XCTUnwrap(sheet.panel?.parts.first)
-        XCTAssertEqual(sheet.partsRect, sheet.panel.map(SpotTokens.panelRect))
+        XCTAssertEqual(sheet.partsRect, sheet.panel.map { SpotTokens.panelRect($0) })
         XCTAssertEqual(sheet.partsKind, .parts)
         nonisolated(unsafe) var changed = false
         withObservationTracking {

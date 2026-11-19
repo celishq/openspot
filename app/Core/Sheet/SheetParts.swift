@@ -24,6 +24,7 @@ public struct SheetParts: Equatable, Sendable {
     private var focusLineOffsets: [[Int]] = []
     public private(set) var selected: String?
     public let searches: Bool
+    private var header: CGFloat = 0
 
     public init?(output: Frame) {
         guard !output.parts.isEmpty else { return nil }
@@ -43,12 +44,13 @@ public struct SheetParts: Equatable, Sendable {
         return times
     }
 
-    private static func placement(of parts: [SpotPart], in layout: SheetLayout?, searches: Bool) -> SheetPlacement {
-        SheetPlacement(parts: parts, layout: layout ?? SheetLayout(flat: parts), searches: searches)
+    private static func placement(of parts: [SpotPart], in layout: SheetLayout?, searches: Bool, header: CGFloat = 0) -> SheetPlacement {
+        SheetPlacement(parts: parts, layout: layout ?? SheetLayout(flat: parts), searches: searches, header: header)
     }
 
-    mutating func place() {
-        placement = Self.placement(of: parts, in: layout, searches: searches)
+    mutating func place(header: CGFloat? = nil) {
+        if let header { self.header = header }
+        placement = Self.placement(of: parts, in: layout, searches: searches, header: self.header)
         orderFocus()
     }
 

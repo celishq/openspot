@@ -5,6 +5,8 @@ extension SpotTokens {
 
     public static var wordsRingSide: CGFloat { glyph * 2 }
 
+    public static var sheetWordsWidth: CGFloat { gridWidth - 2 * padding - 2 * glyph - 2 * wordsGap }
+
     public static let rimPoint: CGFloat = 1 - 0.5.squareRoot()
 
     public static let hintKeyInset: CGFloat = hintHeight / 2 + hintPillInset - hintKeyHeight / 2
@@ -44,11 +46,11 @@ extension SpotTokens {
         (partsWidth - listRowGap * CGFloat(perLine - 1)) / CGFloat(perLine)
     }
 
-    public static func sheetRect(rows: Int, perLine: Int = 1, hasField: Bool = true, setsApart: Bool = false) -> CGRect {
+    public static func sheetRect(rows: Int, perLine: Int = 1, hasField: Bool = true, setsApart: Bool = false, header: CGFloat = 0) -> CGRect {
         let lines = CGFloat(max((rows + perLine - 1) / perLine, 1))
         let line = perLine > 1 ? square(perLine: perLine) : listRow
         let height = sheetRowsTop - (hasField ? 0 : listRow + rowGap) + lines * line + (lines - 1) * listRowGap + padding
-            + (setsApart ? pinRuleRoom + listRowGap : 0)
+            + (setsApart ? pinRuleRoom + listRowGap : 0) + header
         return CGRect(x: halo, y: halo, width: gridWidth, height: min(height, sheetMaxHeight))
     }
 
@@ -76,9 +78,9 @@ extension SpotTokens {
         sheetRect(rows: rows, perLine: perLine).height < sheetMaxHeight
     }
 
-    public static func panelRect(_ panel: SheetParts) -> CGRect {
+    public static func panelRect(_ panel: SheetParts, header: CGFloat = 0) -> CGRect {
         let field = panel.showsField ? SpotTokens.partFieldRoom : 0
-        let height = sheetFieldDrop + field + panel.placement.height + padding
+        let height = sheetFieldDrop + header + field + panel.placement.height + padding
         return CGRect(x: halo, y: halo, width: gridWidth, height: min(height, sheetMaxHeight))
     }
 
