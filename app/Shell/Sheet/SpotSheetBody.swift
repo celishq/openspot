@@ -17,7 +17,7 @@ struct SpotSheetBody: View {
 
     var body: some View {
         if let panel {
-            if panel.showsRows { Color.clear.frame(height: SpotTokens.listRow) }
+            if panel.showsField { Color.clear.frame(height: SpotTokens.listRow) }
             SheetPartsView(panel: panel, onSet: onSet, onPress: onPress, list: list, onRun: onPick, selection: selection, viewSource: viewSource, views: views)
         } else {
             SpotItemsView(list: list, onRun: onPick, onPoint: onPick, selection: selection)

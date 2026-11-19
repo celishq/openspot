@@ -77,7 +77,7 @@ extension SpotTokens {
     }
 
     public static func panelRect(_ panel: SheetParts) -> CGRect {
-        let field = panel.showsRows ? SpotTokens.partFieldRoom : 0
+        let field = panel.showsField ? SpotTokens.partFieldRoom : 0
         let height = sheetFieldDrop + field + panel.placement.height + padding
         return CGRect(x: halo, y: halo, width: gridWidth, height: min(height, sheetMaxHeight))
     }

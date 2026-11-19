@@ -49,6 +49,27 @@ final class SheetLayoutTests: XCTestCase {
     title=Copy
     """
 
+    func testASheetWithRowsKeepsRoomForTheFieldOnlyWhenItSearches() throws {
+        let numbers = "number=cpu\nvalue=1\nvalue=2\n\ntext=a\ntitle=A\n"
+        let still = try XCTUnwrap(SheetParts(output: output("frame=\ngrid=cpu\ngrid=cpu\n\n" + numbers)))
+        let searched = try XCTUnwrap(SheetParts(output: output("frame=\ngrid=cpu\ngrid=cpu\ngrid=find\n\nfield=find\ntype=search\n\n" + numbers)))
+
+        XCTAssertFalse(still.showsField)
+        XCTAssertTrue(searched.showsField)
+        XCTAssertEqual(still.placement.height, SpotTokens.partsMaxHeight)
+        XCTAssertEqual(searched.placement.height, SpotTokens.partsMaxHeight - SpotTokens.partFieldRoom)
+    }
+
+    func testTheRowsUnderTheBlocksTakeTheFreeHeightAndTheBlocksKeepTheirLines() throws {
+        let panel = try XCTUnwrap(SheetParts(output: output("frame=\ngrid=cpu\ngrid=cpu\n\nnumber=cpu\nvalue=1\nvalue=2\n\ntext=a\ntitle=A\n")))
+        let cpu = try XCTUnwrap(panel.placement.frames["cpu"]).rect
+        let rows = try XCTUnwrap(panel.placement.repeatFrame)
+
+        XCTAssertEqual(cpu.height, SpotTokens.listRow * 2 + SpotTokens.partGap)
+        XCTAssertEqual(rows.minY, cpu.maxY + SpotTokens.partGap)
+        XCTAssertEqual(panel.placement.height, SpotTokens.partsMaxHeight)
+    }
+
     func testABlockThatDoesNotGrowKeepsTheHeightOfItsLines() throws {
         let grown = try placement("frame=\ngrid=note\ngrid=note\ngrid=note\ngrid=go\n\nfield=note\ntype=multiline\n\nbutton=go\ntitle=Go\n")
         let kept = try placement("frame=\ngrid=note\ngrid=note\ngrid=note\ngrid=go\n\nfield=note\ntype=multiline\ngrow=false\n\nbutton=go\ntitle=Go\n")
@@ -280,12 +301,12 @@ final class SheetLayoutTests: XCTestCase {
     icon=😀
     """
 
-    func testARepeatedAreaSharesTheFreeHeightUnderTheField() throws {
+    func testARepeatedAreaSharesTheFreeHeightOfASheetWithNoSearchField() throws {
         let sheet = try placement(picker)
         let area = try XCTUnwrap(sheet.repeatFrame)
 
         XCTAssertEqual(area.minY, SpotTokens.listRow + SpotTokens.partGap)
-        XCTAssertEqual(sheet.height, SpotTokens.partsMaxHeight - SpotTokens.partFieldRoom)
+        XCTAssertEqual(sheet.height, SpotTokens.partsMaxHeight)
         XCTAssertEqual(area.maxY, sheet.height)
         XCTAssertFalse(sheet.overflows)
     }

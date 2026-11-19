@@ -108,10 +108,10 @@ struct SpotNumberView: View {
                     .lineLimit(1)
                     .minimumScaleFactor(leastScale)
             }
-            if reading?.isSeries == true {
+            if reading?.isSeries == true, reading?.max == nil {
                 bars.frame(height: SpotTokens.lineTrendHeight)
             } else {
-                line(fill: reading?.fill ?? 0)
+                line(fill: reading?.fill ?? reading?.scaledPoints.last ?? 0)
             }
         }
     }

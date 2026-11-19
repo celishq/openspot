@@ -145,8 +145,8 @@ public struct SpotPart: Equatable, Sendable, Identifiable {
         number.map { NumberLook(reading: $0, named: look, columns: columns, rows: rows) }
     }
 
-    public func numberLook(inSheetHeight height: CGFloat) -> NumberLook? {
-        numberLook(columns: 4, rows: (height / SpotTokens.listRow).rounded(.down))
+    public func numberLook(inSheet size: CGSize) -> NumberLook? {
+        numberLook(columns: size.width / SpotTokens.cell, rows: size.height / SpotTokens.cell)
     }
 
     static func options(of block: TextBlock) -> [Option] {
