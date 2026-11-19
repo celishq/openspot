@@ -3759,7 +3759,7 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/sh;
-			shellScript = "daemons=\"$TARGET_BUILD_DIR/$CONTENTS_FOLDER_PATH/Library/LaunchDaemons\"\nmkdir -p \"$daemons\"\nrm -f \"$TARGET_BUILD_DIR/$EXECUTABLE_FOLDER_PATH/openspot-power\"\ncp \"$BUILT_PRODUCTS_DIR/openspot-power\" \"$TARGET_BUILD_DIR/$EXECUTABLE_FOLDER_PATH/openspot-power\"\ncp \"$SRCROOT/Power/openspot.celis.ai.power.plist\" \"$daemons/\"\n";
+			shellScript = "daemons=\"$TARGET_BUILD_DIR/$CONTENTS_FOLDER_PATH/Library/LaunchDaemons\"\nmkdir -p \"$daemons\"\nrm -f \"$TARGET_BUILD_DIR/$EXECUTABLE_FOLDER_PATH/openspot-power\"\ncp \"$BUILT_PRODUCTS_DIR/openspot-power\" \"$TARGET_BUILD_DIR/$EXECUTABLE_FOLDER_PATH/openspot-power\"\nrm -f \"$daemons\"/*.power.plist\nsed \"s/openspot\\.celis\\.ai/$PRODUCT_BUNDLE_IDENTIFIER/g\" \"$SRCROOT/Power/openspot.celis.ai.power.plist\" > \"$daemons/$PRODUCT_BUNDLE_IDENTIFIER.power.plist\"\n";
 		};
 		483CB758F22DD0EEA8575ACE /* Copy the core spots and their defaults */ = {
 			isa = PBXShellScriptBuildPhase;
@@ -5072,7 +5072,7 @@
 					"$(inherited)",
 					"-ObjC",
 				);
-				PRODUCT_BUNDLE_IDENTIFIER = openspot.celis.ai;
+				PRODUCT_BUNDLE_IDENTIFIER = openspot.celis.ai.dev;
 				SDKROOT = macosx;
 				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "$(inherited) OPENSPOT_TOOLS";
 			};
@@ -5288,7 +5288,7 @@
 					"$(inherited)",
 					"@executable_path/../Frameworks",
 				);
-				PRODUCT_BUNDLE_IDENTIFIER = openspot.celis.ai.power;
+				PRODUCT_BUNDLE_IDENTIFIER = openspot.celis.ai.dev.power;
 				PRODUCT_NAME = "openspot-power";
 				SDKROOT = macosx;
 				SKIP_INSTALL = YES;
