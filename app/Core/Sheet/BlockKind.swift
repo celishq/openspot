@@ -79,10 +79,15 @@ public struct BlockKind: Sendable, Equatable {
 
     static let number = BlockKind(
         name: "number",
+        keys: ["chart"],
         holdsValue: true,
         isReading: true,
         takesColor: true,
-        control: { .number(NumberReading(block: $0)) }
+        control: { .number(NumberReading(block: $0)) },
+        faults: { block in
+            let chart = block.value("chart").flatMap { NumberLook.Chart(rawValue: $0) == nil ? $0 : nil }
+            return PartCatalog.keyFaults(in: block) + (chart.map { ["the part \(block.value("number") ?? "") has an unknown chart: \($0)"] } ?? [])
+        }
     )
 
     static let picture = BlockKind(name: "picture", control: { Icon(text: $0.value("icon"))?.image.map(SpotPart.Control.image) ?? .none })

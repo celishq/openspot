@@ -13,7 +13,7 @@ detail=Neon Coast
 
 number=time
 max=1
-look=bar
+chart=bar
 display=1:42
 value=0.42
 

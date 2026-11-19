@@ -33,7 +33,7 @@ public struct SpotPart: Equatable, Sendable, Identifiable {
     }
 
     public enum Look: String, Equatable, Sendable {
-        case tile, chip, strong, bare, tick, ring, bar
+        case tile, chip, strong, bare, tick
     }
 
     public enum Align: String, Equatable, Sendable {
@@ -128,7 +128,7 @@ public struct SpotPart: Equatable, Sendable, Identifiable {
     }
 
     public func numberLook(columns: Double, rows: Double) -> NumberLook? {
-        number.map { NumberLook(reading: $0, named: look, columns: columns, rows: rows) }
+        number.map { NumberLook(reading: $0, columns: columns, rows: rows) }
     }
 
     public func numberLook(inSheet size: CGSize) -> NumberLook? {
