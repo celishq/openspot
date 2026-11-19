@@ -50,6 +50,7 @@ public struct SpotPart: Equatable, Sendable, Identifiable {
     public let isSection: Bool
     public let title: String?
     public let detail: String?
+    public let detailWords: AttributedString
     public let symbol: String?
     public let file: String?
     public let glyph: String?
@@ -95,7 +96,9 @@ public struct SpotPart: Equatable, Sendable, Identifiable {
         values = kind.isOpen ? Dictionary(grouping: block.fields, by: \.key).mapValues { $0.map(\.value) } : [:]
         isSection = kind == .section
         title = block.value("title")
-        detail = block.value("detail")
+        let words = Self.words(of: block.value("detail") ?? "")
+        detailWords = words
+        detail = block.value("detail").map { _ in String(words.characters) }
         key = kind == .hotkey ? nil : block.value("shortcut").flatMap(ActionKey.init(text:))
         asksToRecord = kind == .hotkey && block.flag("recording") == true
         closes = block.flag("close") ?? false
@@ -113,6 +116,16 @@ public struct SpotPart: Equatable, Sendable, Identifiable {
         press = kind.presses ? icon?.symbol.map(Press.symbol) ?? .line : .none
         control = kind.control(block)
         mark = control == .none && kind == .text ? Self.mark(block) : nil
+    }
+
+    static func words(of text: String) -> AttributedString {
+        let pieces = text.components(separatedBy: "**")
+        guard pieces.count > 1, pieces.count % 2 == 1 else { return AttributedString(text) }
+        return pieces.enumerated().reduce(into: AttributedString()) { words, piece in
+            var next = AttributedString(piece.element)
+            if piece.offset % 2 == 1 { next.inlinePresentationIntent = .stronglyEmphasized }
+            words += next
+        }
     }
 
     private static func mark(_ block: TextBlock) -> MetricValue? {

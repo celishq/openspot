@@ -188,14 +188,14 @@ struct SheetPartsView: View {
 
     @ViewBuilder
     private func labelled(_ part: SpotPart, _ frame: SheetPlacement.Frame) -> some View {
-        if frame.hasDetailUnderTitle, part.control == .none, part.press == .none, part.mark == nil, let title = part.title, let detail = part.detail {
-            stacked(part, title: title, detail: detail)
+        if frame.hasDetailUnderTitle, part.control == .none, part.press == .none, part.mark == nil, let title = part.title, part.detail != nil {
+            stacked(part, title: title)
         } else {
             line(part, frame)
         }
     }
 
-    private func stacked(_ part: SpotPart, title: String, detail: String) -> some View {
+    private func stacked(_ part: SpotPart, title: String) -> some View {
         HStack(alignment: .firstTextBaseline, spacing: SpotTokens.partLineGap) {
             if let symbol = part.symbol {
                 Image(systemName: symbol)
@@ -206,9 +206,9 @@ struct SheetPartsView: View {
                 Text(title).font(SpotType.body).foregroundStyle(SpotTheme.ink).lineLimit(1)
                 Group {
                     if let colour = SpotToneWords.colour(of: part.textTone) {
-                        Text(detail).foregroundStyle(colour)
+                        Text(part.detailWords).foregroundStyle(colour)
                     } else {
-                        Text(detail).modifier(SpotSecondaryText())
+                        Text(part.detailWords).modifier(SpotSecondaryText())
                     }
                 }
                 .font(SpotType.detail)
@@ -244,8 +244,8 @@ struct SheetPartsView: View {
             if let mark = part.mark {
                 SpotLineMark(value: mark, words: part.ringWords)
             }
-            if let detail = part.detail, part.ringWords == nil {
-                SpotToneWords(text: detail, tone: part.textTone)
+            if part.detail != nil, part.ringWords == nil {
+                SpotToneWords(text: part.detailWords, tone: part.textTone)
                     .frame(minWidth: part.mark == nil ? nil : SpotTokens.markValueWidth, alignment: .trailing)
                     .layoutPriority(2)
             }

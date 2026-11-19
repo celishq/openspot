@@ -3,6 +3,7 @@ import Foundation
 enum ImportCall: NounCall {
     case raycast(String, isDry: Bool, form: PrintForm, skip: [String])
     case rayconfig(String, isDry: Bool, form: PrintForm, skip: [String])
+    case extensions(String?, form: PrintForm)
 
     static let noun = CommandNoun("import", group: .build, verbs: [
         CommandVerb("raycast", "<folder> [--skip <file>]... [--dry-run] [--json]", "Turns each Raycast script command in a folder into a spot of your spots folder, and prints what it added, kept and skipped. A script it imported before stays as it is, and --skip leaves out a file by its path in the folder. --dry-run changes nothing.", rule: CallRule(use: .spots, used: "imported spots", read: .changes("changes your spots"))) { words in
@@ -12,6 +13,10 @@ enum ImportCall: NounCall {
         CommandVerb("rayconfig", "<file> [--skip links|snippets]... [--dry-run] [--json]", "Opens a Raycast export with the passphrase on stdin, adds its quicklinks to Links and its snippets to Snippets, and prints a row for each kind of data it holds. --skip leaves out a kind. --dry-run changes nothing.", rule: CallRule(use: .spots, used: "imported Raycast data", read: .changes("changes your links and snippets"), flags: .readsInput)) { words in
             guard let fit = words.fit, let file = fit.rest.first, fit.rest.count == 1 else { return nil }
             return Self.rayconfig(file, isDry: fit.has("--dry-run"), form: fit.has(PrintForm.jsonWord) ? .json : .frame, skip: fit.values("--skip"))
+        },
+        CommandVerb("extensions", "[folder] [--json]", "Prints a row for each Raycast extension in a folder, ~/.config/raycast/extensions when none is given: the spot that does its job, whether you have it or can get it, or else that an agent can make one. It changes nothing.", rule: CallRule(use: .spots, used: "read your Raycast extensions")) { words in
+            guard let fit = words.fit, fit.rest.count <= 1 else { return nil }
+            return Self.extensions(fit.rest.first, form: fit.has(PrintForm.jsonWord) ? .json : .frame)
         }
     ])
 
@@ -27,6 +32,13 @@ enum ImportCall: NounCall {
 
     func work(in context: CallContext) -> CommandAPI.Work? {
         switch self {
+        case .extensions(let path, let form):
+            let folder = path.map { URL(fileURLWithPath: ($0 as NSString).expandingTildeInPath, relativeTo: context.folder).standardizedFileURL } ?? RaycastExtension.folder(home: context.places.home)
+            return CommandAnswer.work { [places = context.places] in
+                let config = places.config.read()
+                let catalog = SpotCatalog(published: places.store, folder: places.folder(config), arrangement: config.arrangement, stores: Store.all(builtIn: places.examples, config: config))
+                return try form.text(of: RaycastExtensionImport(folder: folder).run(catalog: catalog))
+            }
         case .raycast(let path, let isDry, let form, let skip):
             let folder = URL(fileURLWithPath: (path as NSString).expandingTildeInPath, relativeTo: context.folder).standardizedFileURL
             return CommandAnswer.work { [places = context.places, app = context.app] in

@@ -259,6 +259,7 @@ confirm=Press again to forget
 - `type=multiple` lets a choice pick several options (see [Buttons and actions](#buttons-and-actions)).
 - Every kind also takes `title`, `detail`, `tone` and `icon`. Openspot skips a key that a kind doesn't take.
 - A `text` that covers two lines or more shows its `detail` under its `title`, on as many lines as the place holds.
+- Two stars around words of a `detail`, such as `Open **Settings**`, draw them in bold.
 - `icon` draws according to its value:
   - a path of an image file, such as `cups.png`, draws the image;
   - an `https://` URL draws an image from the web, which Openspot downloads once and keeps;
@@ -1058,6 +1059,7 @@ The commands that try a spot are in [Try your spot](GUIDE.md#try-your-spot). The
 | `openspot spot remove <id>`                        | Moves a spot that `spot add` added to the Trash.                                                |
 | `openspot import raycast <folder> [--dry-run]`     | Turns each Raycast script command in a folder into a spot, and prints a row for each file: `added`, `kept` when it was imported before, or `skipped` with the reason. `--skip <file>` leaves out a file by its path in the folder. `--dry-run` changes nothing. |
 | `openspot import rayconfig <file> [--dry-run]`    | Opens a Raycast export with its passphrase on stdin, adds its quicklinks to Links and its snippets to Snippets, and prints a row for each kind of data it holds, with what it added or why it skipped it. `--skip links` or `--skip snippets` leaves out a kind. `--dry-run` changes nothing. |
+| `openspot import extensions [folder]`              | Prints a row for each Raycast extension in `~/.config/raycast/extensions`, or in the folder: the spot that does its job, and whether you have it or can get it, or else that an agent can make one with `prompt convert`. It changes nothing. |
 | `openspot spot stats`                              | Prints what each spot cost and used. See [Stats](#stats).                                       |
 | `openspot grid edit`                               | Opens the panel in Edit Spots, to arrange the grid.                                             |
 | `openspot store list [--json]`                     | Prints each spot of the store and its step: `get`, `publish`, or `added` once you have it.      |
@@ -1076,6 +1078,7 @@ The commands that try a spot are in [Try your spot](GUIDE.md#try-your-spot). The
 | `openspot prompt new [words]...`                   | Prints a prompt that asks a coding agent to build a spot that does what the words say.          |
 | `openspot prompt change <id> [words]...`           | Prints a prompt that asks a coding agent to change a spot as the words say, with what [Stats](#stats) counted of it over 14 days. With no words, its goal follows those counts. |
 | `openspot prompt theme <name> [words]...`          | Prints a prompt that asks a coding agent to change a theme as the words say.                    |
+| `openspot prompt convert <folder>...`              | Prints a prompt that asks a coding agent to turn each Raycast extension folder into a spot of its own, from its manifest and its source. |
 | `openspot emoji list [--tone name]`                | Prints each emoji as a row, with its name in the language of the Mac.                           |
 | `openspot symbols list`                            | Prints each symbol of the Character Viewer as a row.                                            |
 | `openspot translate text [--from code] [--to code]` | Translates the text on stdin. `openspot translate languages` prints the languages it knows.     |

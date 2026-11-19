@@ -40,6 +40,36 @@ public struct AgentPrompt: Equatable, Sendable {
         """
     }
 
+    public func converting(_ extensions: [RaycastExtension]) -> String {
+        let opening = extensions.count == 1
+            ? "Turn this Raycast extension into an Openspot spot."
+            : "Turn each of these \(extensions.count) Raycast extensions into an Openspot spot of its own. Build one spot at a time, and finish it before the next."
+        let list = extensions.map { found in
+            let commands = found.commands.map { command in
+                switch command.mode {
+                case "menu-bar": "\(command.title) (menu bar)"
+                case "no-view": "\(command.title) (no view)"
+                default: command.title
+                }
+            }
+            let icon = found.icon.map { " Its icon: \($0.path)." } ?? ""
+            return "- \(found.title) (\(found.folder.path)): \(found.summary) Its commands: \(commands.joined(separator: ", ")).\(icon)"
+        }
+        return """
+        \(opening)
+        \(list.joined(separator: "\n"))
+
+        Each folder holds the extension's package.json, which lists its commands and preferences, and its built JavaScript. Each .js.map file holds the original TypeScript in sourcesContent: read the code there.
+        Don't port Raycast or @raycast/api. Rebuild what each command does with Openspot's own blocks: a List becomes rows, a Detail a text page, a Form fields, the actions of an ActionPanel buttons, a menu-bar command a menu bar card, and a no-view command a call that ends in a toast. Call the service's own API or command-line tool, and keep a token or a key in a setting field of type secret.
+        Copy the icon of each extension into its spot folder and name the copy in the header, such as # icon=icon.png, so the spot looks as it did in Raycast. An extension with no icon gets an SF Symbol that fits it.
+        Leave out a command that needs a service of Raycast itself, such as Raycast AI, and tell me which ones you left out.
+        \(Self.finishAlone)
+
+        Write each spot as a script in a new spot folder in \(folder.path), such as linear.spot/linear.sh. Its ID is the name of the folder with no extension.
+        \(steps(for: "<id>"))
+        """
+    }
+
     private var writing: String {
         "Write it as a script in a new spot folder in \(folder.path), such as weather.spot/weather.sh. Its ID is the name of the folder with no extension."
     }

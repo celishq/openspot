@@ -39,4 +39,20 @@ final class SheetListKeysTests: PanelCase {
         XCTAssertTrue(changed)
         XCTAssertEqual(content.selection(), Int.max)
     }
+
+    func testALineMoveUnderAViewMovesTheSelectionThatTheViewReads() async throws {
+        let frame = "grid=preview\\ngrid=files\\ngrid=import\\n\\nview=preview\\ngrow=false\\n\\nrepeat=files\\n\\nbutton=import\\ntitle=Import\\nlook=strong\\nshortcut=cmd+return\\n\\nrow=a\\ntitle=A\\n\\nrow=b\\ntitle=B\\n"
+        try script("list", header: "title=List\non=sheet.open\nview=preview.swift", "printf '\(frame)'")
+        await model.reload()
+        model.isShown = true
+        model.panelWillShow()
+        model.press("list")
+        try await wait("the sheet") { self.titles == ["A", "B"] }
+        let content = try model.sheetContent(of: XCTUnwrap(model.entry("list")))
+
+        model.moveItemLine(by: 1)
+
+        XCTAssertEqual(content.selection(), 1)
+        XCTAssertEqual(content.list.run(at: content.selection()), "b")
+    }
 }

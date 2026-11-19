@@ -105,6 +105,20 @@ final class ViewPlaceTests: XCTestCase {
         XCTAssertEqual(model.runs.floating, [])
     }
 
+    func testOpeningAWindowThatIsOpenReadsItAgain() async throws {
+        let shown = folder.appendingPathComponent("shown")
+        try "first".write(to: shown, atomically: true, encoding: .utf8)
+        try TestSpot(header: "on=sheet.open\noffers=window", body: "printf 'row=a\\ntitle=%s\\n' \"$(cat '\(shown.path)')\"").write(to: spots.spotFile("board"))
+        await model.reload()
+        model.openWindow("board")
+        try await wait("the first words") { self.model.sheets["board"]?.list.all.first?.title == "first" }
+
+        try "second".write(to: shown, atomically: true, encoding: .utf8)
+        model.openWindow("board")
+
+        try await wait("the second words") { self.model.sheets["board"]?.list.all.first?.title == "second" }
+    }
+
     func testAViewInASampleClosesNothing() async throws {
         try await openList()
         try await floatOther()

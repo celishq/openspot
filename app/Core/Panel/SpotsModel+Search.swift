@@ -120,8 +120,11 @@ extension SpotsModel {
         mainSearch = found.search
         let ids = Set(finding.answers.map(\.id))
         let spots = Dictionary(cards.map { ($0.id, $0) }, uniquingKeysWith: { first, _ in first })
+        let shown = Set(found.matches.filter { $0.list == 0 }.map(\.item.run))
         foundSpots = found.matches.compactMap { match in
-            match.list == 0 ? spots[match.item.run] : Entry(spot: finding.sources[match.list - 1], item: match.item)
+            if match.list == 0 { return spots[match.item.run] }
+            if let to = match.item.to, shown.contains(to) { return nil }
+            return Entry(spot: finding.sources[match.list - 1], item: match.item)
         }
         show(Self.placed(finding.answers, around: foundSpots.filter { !ids.contains($0.id) }))
         if !isEditing { missedSearch.landed(query, found: visible.contains { $0.spot.answers?.isLast != true }) }

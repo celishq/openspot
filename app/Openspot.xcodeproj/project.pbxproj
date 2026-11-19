@@ -175,6 +175,7 @@
 		2E6289851258F7C98015CF13 /* SpotWorkMark.swift in Sources */ = {isa = PBXBuildFile; fileRef = A4C4B6D534512FDE9597D758 /* SpotWorkMark.swift */; };
 		2EBD9CFB75C7508F3D0E966C /* HeadKey.swift in Sources */ = {isa = PBXBuildFile; fileRef = 53B016C1A51A0DA0853339B8 /* HeadKey.swift */; };
 		2F06D03355A53E364547DE9E /* SpotPower.swift in Sources */ = {isa = PBXBuildFile; fileRef = 44FFAA538D32C0C53E15E0C1 /* SpotPower.swift */; };
+		2F422D924CFB5809079472EB /* RaycastExtensionImport.swift in Sources */ = {isa = PBXBuildFile; fileRef = B111CD6BEBE1BAA41A5636F2 /* RaycastExtensionImport.swift */; };
 		2FACD63893D8E0A53425B8F5 /* SpotPlaygroundFile.swift in Sources */ = {isa = PBXBuildFile; fileRef = DFA63D8D2AC6C9CEA447D4F6 /* SpotPlaygroundFile.swift */; };
 		30203CE7D1C72A2606A89CFD /* CallInputTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = E75C18A9074E1B6060A20101 /* CallInputTests.swift */; };
 		308E4A6E1A9C16D53ECE5570 /* CalendarClock.swift in Sources */ = {isa = PBXBuildFile; fileRef = CC23A55EB94A4EF24BD0D2F7 /* CalendarClock.swift */; };
@@ -313,6 +314,7 @@
 		55ACEDBB37B7CF30AF25457F /* LaunchSettingsTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = AE67B48020CB65712DB3B5B4 /* LaunchSettingsTests.swift */; };
 		56DA577218F96B95BF3E1DC0 /* SpotLiftedCard.swift in Sources */ = {isa = PBXBuildFile; fileRef = FF54036BAB7C42C5F74AB672 /* SpotLiftedCard.swift */; };
 		577D71A519F841B9DF675F17 /* FoldedText.swift in Sources */ = {isa = PBXBuildFile; fileRef = 96BBB062EF397B6F7064CC2D /* FoldedText.swift */; };
+		57E33380DAA1EFFBBEF0CFB8 /* RaycastAnalog.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4D8A0C7E0349AE96B32B9188 /* RaycastAnalog.swift */; };
 		57F4C983F926CD8DB5DEF569 /* SwiftProgramTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = D880CE78C17279A773F315C7 /* SwiftProgramTests.swift */; };
 		5838D3EE16775AE94775A099 /* SpotPicture.swift in Sources */ = {isa = PBXBuildFile; fileRef = E0954917F36E916E72EDBABC /* SpotPicture.swift */; };
 		584B3B1AAC551B161393533F /* MotionTokens.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0175D569E5CAC0641A87D16B /* MotionTokens.swift */; };
@@ -407,6 +409,7 @@
 		769F3C87CAC846A0738C812D /* ActionHook.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2176BD66BF1EDB10AA654949 /* ActionHook.swift */; };
 		772449C84B65F805F600AB73 /* SpotSelectionScope.swift in Sources */ = {isa = PBXBuildFile; fileRef = 908A62C3A1D621D230E2637F /* SpotSelectionScope.swift */; };
 		772AED2E50FA0118C7C0C426 /* ViewBuilds.swift in Sources */ = {isa = PBXBuildFile; fileRef = 512BF6DBBEACDE1F6DB00ACC /* ViewBuilds.swift */; };
+		77A2B1099229A7959B57AC8A /* RaycastExtension.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1CAAFA6E2B370971A2E48EF1 /* RaycastExtension.swift */; };
 		77BEAA45A47F0153AD74F0E0 /* SpotChoiceMenu.swift in Sources */ = {isa = PBXBuildFile; fileRef = 51D21CF903F24FBEACCADEC5 /* SpotChoiceMenu.swift */; };
 		77E3E9CE762B85341645C212 /* ThemeColor+AppKit.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2783D4EFCAFAC78D4EFF7F8B /* ThemeColor+AppKit.swift */; };
 		783C0CC5185B8D8ACBA7FFFA /* SpotHover.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7FBA5882CA947E9AF6565AF0 /* SpotHover.swift */; };
@@ -742,6 +745,7 @@
 		C9A6927AE246BECC782C696A /* TranslationTargets.swift in Sources */ = {isa = PBXBuildFile; fileRef = F41C347771AC823987473F35 /* TranslationTargets.swift */; };
 		C9D26DAF8D6E073BEB6E59C3 /* SpotGridTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 70703B1BFAD84794E4BDC0F9 /* SpotGridTests.swift */; };
 		CAA2F6DFFD029A5E9F219782 /* GuideCall.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0960588E5C8E206704C7E9A5 /* GuideCall.swift */; };
+		CAA89D24FF14C9529CB00BD3 /* RaycastExtensionImportTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4E62220C736D946E244CA0B5 /* RaycastExtensionImportTests.swift */; };
 		CAF11BC00C1A336D4407A417 /* RecordingRequestTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8F99DEC42898AF5970046749 /* RecordingRequestTests.swift */; };
 		CAF798E29C5188ED3ED33396 /* KeptScan.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0888DEB28198F562D2D74750 /* KeptScan.swift */; };
 		CB83B9F016413242D3F233E9 /* SpotNumberView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9C68834210DCB95BB1E521A5 /* SpotNumberView.swift */; };
@@ -1113,6 +1117,7 @@
 		1BDF9593FE28B31C6655ECD9 /* CalendarAccess.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CalendarAccess.swift; sourceTree = "<group>"; };
 		1BE313B422EC952BB6E4703F /* SpotReadme.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SpotReadme.swift; sourceTree = "<group>"; };
 		1BF69273AA1F98E8F02DF94C /* StatsTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StatsTests.swift; sourceTree = "<group>"; };
+		1CAAFA6E2B370971A2E48EF1 /* RaycastExtension.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RaycastExtension.swift; sourceTree = "<group>"; };
 		1CAD5CE39CAD25C7A95410C8 /* StayLink.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StayLink.swift; sourceTree = "<group>"; };
 		1D203723750660C5ACB1972C /* HookAnswers.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HookAnswers.swift; sourceTree = "<group>"; };
 		1D7B8FC971C5895746897ABA /* GlyphKeywords.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GlyphKeywords.swift; sourceTree = "<group>"; };
@@ -1305,12 +1310,14 @@
 		4CC48EEEE73E01DA1768C18C /* ReminderStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReminderStore.swift; sourceTree = "<group>"; };
 		4CF096BD2E9025B33FF465C8 /* EmojiCatalogTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EmojiCatalogTests.swift; sourceTree = "<group>"; };
 		4D2C497D48D5B61AE9209EED /* SpotPackageTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SpotPackageTests.swift; sourceTree = "<group>"; };
+		4D8A0C7E0349AE96B32B9188 /* RaycastAnalog.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RaycastAnalog.swift; sourceTree = "<group>"; };
 		4D92094FEFE2DE6DF031020E /* CommandStop.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CommandStop.swift; sourceTree = "<group>"; };
 		4DA18669F2527198666078FB /* TerminalRunTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TerminalRunTests.swift; sourceTree = "<group>"; };
 		4DBC34E608E3257CB95CE670 /* SpotEvent.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SpotEvent.swift; sourceTree = "<group>"; };
 		4DC0207B11DC84FB401C64BE /* SpotMotion.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SpotMotion.swift; sourceTree = "<group>"; };
 		4DCC0D902384959C75273844 /* SpotScreen.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SpotScreen.swift; sourceTree = "<group>"; };
 		4E0B67E537A4FA55D86942D0 /* SpotSurface.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SpotSurface.swift; sourceTree = "<group>"; };
+		4E62220C736D946E244CA0B5 /* RaycastExtensionImportTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RaycastExtensionImportTests.swift; sourceTree = "<group>"; };
 		4E8B1BB39193373CC49D93C2 /* SettingCalls.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingCalls.swift; sourceTree = "<group>"; };
 		4F24F0582E0B95BF77DAE274 /* OnceLink.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OnceLink.swift; sourceTree = "<group>"; };
 		4F6658AC35B5F39C8150B5F0 /* ScreenCalls.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScreenCalls.swift; sourceTree = "<group>"; };
@@ -1683,6 +1690,7 @@
 		B0A35A1257346DBCF67B5B62 /* SpotMenuBar.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SpotMenuBar.swift; sourceTree = "<group>"; };
 		B0E60E2E582ECCBE8512675F /* GlobalKey.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GlobalKey.swift; sourceTree = "<group>"; };
 		B0E6B805269E3C70F2DE814C /* SpotsModel+Editing.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "SpotsModel+Editing.swift"; sourceTree = "<group>"; };
+		B111CD6BEBE1BAA41A5636F2 /* RaycastExtensionImport.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RaycastExtensionImport.swift; sourceTree = "<group>"; };
 		B111F36D10ABCCFFA327E84A /* ConfigDocumentTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ConfigDocumentTests.swift; sourceTree = "<group>"; };
 		B1676F1A9C3F0901AD19016D /* ShellHelperTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ShellHelperTests.swift; sourceTree = "<group>"; };
 		B1C0B9EE5490BB2E4EA1E7A2 /* CalcDateTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CalcDateTests.swift; sourceTree = "<group>"; };
@@ -2489,12 +2497,15 @@
 			children = (
 				C0717E048B989C7955ED38D1 /* Gzip.swift */,
 				7098BE8FDAF3BACE34C240A0 /* ImportCall.swift */,
+				4D8A0C7E0349AE96B32B9188 /* RaycastAnalog.swift */,
 				7C8333634902237E8F619E64 /* RaycastArgument.swift */,
 				2EFDBCEF53990FEEA1A32152 /* RaycastBody.swift */,
 				3BB9FFF5221CD56B0942EE4C /* RaycastCipher.swift */,
 				24C104157FEF80D3DCFADD91 /* RaycastDataImport.swift */,
 				54B40209C02D900023FECDC8 /* RaycastExport.swift */,
 				518C1F303F494B2F4B43C87A /* RaycastExports.swift */,
+				1CAAFA6E2B370971A2E48EF1 /* RaycastExtension.swift */,
+				B111CD6BEBE1BAA41A5636F2 /* RaycastExtensionImport.swift */,
 				3F661AB53B81D74FEBC41CE3 /* RaycastImport.swift */,
 				6C34C95674874AF4BE7A4413 /* RaycastScript.swift */,
 				97030D6A52E127E78EC8C578 /* RaycastSpot.swift */,
@@ -2704,6 +2715,7 @@
 				CC28FE12C41249E1D812880C /* RaycastDataImportTests.swift */,
 				CF8439A727D43063EF4AF000 /* RaycastExport+Test.swift */,
 				A855D03BBCFA1FD35EB39A88 /* RaycastExportTests.swift */,
+				4E62220C736D946E244CA0B5 /* RaycastExtensionImportTests.swift */,
 				8FE2A290F752B302B03335FE /* RaycastImportTests.swift */,
 				052EAE8BB94757D7CC63E175 /* RaycastScriptTests.swift */,
 				8F22959E7A92D8F02050C31D /* RecordingEndTests.swift */,
@@ -4094,12 +4106,15 @@
 				9AC85DF09B2C50C4B5643787 /* ProcessTime.swift in Sources */,
 				291BB46E3F11A4DA495F0F15 /* PromptCall.swift in Sources */,
 				3437A2C405435BA87227A167 /* PromptCalls.swift in Sources */,
+				57E33380DAA1EFFBBEF0CFB8 /* RaycastAnalog.swift in Sources */,
 				9FCA11F0BDE2B3B0CA30670E /* RaycastArgument.swift in Sources */,
 				08BD694A2FFBFD6E6B84EC53 /* RaycastBody.swift in Sources */,
 				0E58BAF3A8A5AFE3B34BAD6F /* RaycastCipher.swift in Sources */,
 				413D879C89BF63F963291757 /* RaycastDataImport.swift in Sources */,
 				5DDE09A71975EC0E511FBE88 /* RaycastExport.swift in Sources */,
 				15DFB0514BBD8C553EA7D1DC /* RaycastExports.swift in Sources */,
+				77A2B1099229A7959B57AC8A /* RaycastExtension.swift in Sources */,
+				2F422D924CFB5809079472EB /* RaycastExtensionImport.swift in Sources */,
 				45F69AA22CAFDE4EDF0082FF /* RaycastImport.swift in Sources */,
 				4D2F745ADF640C618F3074F0 /* RaycastScript.swift in Sources */,
 				2BDB61372A8CD70451EF8601 /* RaycastSpot.swift in Sources */,
@@ -4684,6 +4699,7 @@
 				B164C377B382F66CA0566CC6 /* RaycastDataImportTests.swift in Sources */,
 				9690D8C11FBCB840B325C00D /* RaycastExport+Test.swift in Sources */,
 				55977C9EE9013CDE30DEF9B8 /* RaycastExportTests.swift in Sources */,
+				CAA89D24FF14C9529CB00BD3 /* RaycastExtensionImportTests.swift in Sources */,
 				4F2FF0D8BF5E9E8F4A2F8588 /* RaycastImportTests.swift in Sources */,
 				F479895B4C0D1818B4193D89 /* RaycastScriptTests.swift in Sources */,
 				29B43C88112D8F6E6CFDBA0A /* RecordingEndTests.swift in Sources */,

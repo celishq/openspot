@@ -533,4 +533,18 @@ final class SheetPartsTests: XCTestCase {
         let lost = try XCTUnwrap(still.placement.repeatFrame).height - XCTUnwrap(searching.placement.repeatFrame).height
         XCTAssertEqual(lost, SpotTokens.partFieldRoom, accuracy: 0.5)
     }
+    func testATextDrawsTheWordsBetweenTwoStarsOfItsDetailInBold() throws {
+        let part = try XCTUnwrap(SpotPart(block: TextBlock(fields: [.init(key: "text", value: "where"), .init(key: "detail", value: "Open **Settings → Extensions** now.")])))
+
+        XCTAssertEqual(part.detail, "Open Settings → Extensions now.")
+        let bold = part.detailWords.runs.filter { $0.inlinePresentationIntent == .stronglyEmphasized }.map { String(part.detailWords[$0.range].characters) }
+        XCTAssertEqual(bold, ["Settings → Extensions"])
+    }
+
+    func testADetailWithNoStarsKeepsItsUnderscoresAndBackticks() throws {
+        let part = try XCTUnwrap(SpotPart(block: TextBlock(fields: [.init(key: "text", value: "where"), .init(key: "detail", value: "my_file_name `x`")])))
+
+        XCTAssertEqual(part.detail, "my_file_name `x`")
+        XCTAssertEqual(String(part.detailWords.characters), "my_file_name `x`")
+    }
 }

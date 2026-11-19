@@ -17,7 +17,7 @@ final class SpotViews {
     @ObservationIgnored private var loaded: [URL: Make] = [:]
     @ObservationIgnored private var libraries: [String: URL] = [:]
     @ObservationIgnored private let builds: ViewBuilds
-    @ObservationIgnored private var reads: [String: ViewReads] = [:]
+    private var reads: [String: ViewReads] = [:]
 
     static let shared = SpotViews()
 
@@ -62,7 +62,7 @@ final class SpotViews {
 
     private func ready(_ source: String, _ make: @escaping Make, from url: URL, reads: ViewReads) {
         libraries[source] = url
-        self.reads[source] = reads
+        if self.reads[source] != reads { self.reads[source] = reads }
         phases[source] = .ready(make)
     }
 

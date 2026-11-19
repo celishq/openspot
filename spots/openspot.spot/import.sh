@@ -2,11 +2,14 @@
 # title=Import from Raycast
 # icon=square.and.arrow.down
 # detail=Bring your scripts and data
-# keywords=raycast, import, script commands, quicklinks, snippets
+# keywords=raycast, import, script commands, quicklinks, snippets, extensions
 # on=sheet.open
 # drop=folder,rayconfig
 # pages=scripts
 # pages=export
+# pages=analogs
+# pages=extensions
+# view=import.swift
 # uses=app,spots,files
 . "$OPENSPOT_SH"
 
@@ -23,6 +26,11 @@ marker="$OPENSPOT_DATA/raycast-opening"
 # What the person left out, one per line: scripts by their path in the folder, and kinds of data by their id. Each starts ticked.
 scripts_off="$OPENSPOT_DATA/raycast-scripts-off"
 export_off="$OPENSPOT_DATA/raycast-export-off"
+extensions_off="$OPENSPOT_DATA/raycast-extensions-off"
+# The folder where Raycast keeps the extensions it installed. A test keeps another one here.
+extensions_folder=$(cat "$OPENSPOT_DATA/raycast-extensions" 2>/dev/null) || extensions_folder="$HOME/.config/raycast/extensions"
+nl='
+'
 
 # Takes line $2 out of file $1 when it is there, or puts it in when it is not.
 flip() {
@@ -98,6 +106,111 @@ ticked() {
   '
 }
 
+# Prints the rows of the Raycast extensions: first each one that a spot of Openspot does the job of, which opens the spot or gets
+# it, then each one that an agent can make a spot of, with a tick that the person can take off. The first line counts the
+# ticked ones.
+extension_rows() {
+  openspot import extensions "$extensions_folder" | OFF="$(cat "$extensions_off" 2>/dev/null)" awk '
+    BEGIN { n = split(ENVIRON["OFF"], lines, "\n"); for (i = 1; i <= n; i++) left[lines[i]] = 1 }
+    /^row=/ { id = substr($0, 5); icon = ""; spot = ""; name = "" }
+    /^title=/ { title = $0 }
+    /^detail=/ { detail = $0 }
+    /^outcome=/ { outcome = substr($0, 9) }
+    /^spot=/ { spot = substr($0, 6) }
+    /^spot\.title=/ { name = $0 }
+    /^icon=/ { icon = $0 }
+    /^folder=/ { folder = $0 }
+    /^$/ && id != "" {
+      block = "row=" outcome ":" id "\n" title "\n" detail "\n" (icon == "" ? "icon=puzzlepiece.extension" : icon) "\n"
+      if (outcome == "use") found = found block "section=Ready to use\nspot=" spot "\n" name "\nopen=Open\npush.spot=" spot "\n\n"
+      else if (outcome == "get") { got[++gets] = block "spot=" spot "\n" name "\n"; on[gets] = !(id in left); if (on[gets]) { taken++; added = substr(name, 12) } }
+      else { made[++count] = block folder "\nhides=learn\n"; ticked[count] = !(id in left); if (ticked[count]) chosen++; names[count] = substr(title, 7) }
+      id = ""
+    }
+    END {
+      for (i = 1; i <= gets; i++) add = add got[i] "section=To add · " taken + 0 " of " gets "\nvalue=" (on[i] ? "true\nopen=Untick" : "false\nopen=Tick") "\n\n"
+      for (i = 1; i <= count; i++) make = make made[i] "section=Without an analog · " chosen + 0 " of " count "\nvalue=" (ticked[i] ? "true\nopen=Untick" : "false\nopen=Tick") "\n\n"
+      for (i = 1; i <= count; i++) if (ticked[i]) one = names[i]
+      printf "count=%d\none=%s\nadds=%d\nadded=%s\n\n%s%s%s", chosen, one, taken, added, found, add, make
+    }
+  '
+}
+
+# Prints the folder of each ticked extension that an agent can make a spot of, one per line.
+ticked_extensions() {
+  extension_rows | awk '/^row=make:/ { take = 0 } /^value=true$/ { take = 1 } /^folder=/ { folder = substr($0, 8) } /^$/ { if (take && folder != "") print folder; take = 0; folder = "" }'
+}
+
+# Prints the page that says what Openspot looks for, with title $1, when it finds none of it.
+no_extensions() {
+  printf 'recents=false\nsearch=off\ngrid=where\ngrid=where\n\ntext=where\n'
+  openspot_kv title "$1"
+  printf 'detail=Openspot looks in ~/.config/raycast/extensions, where Raycast keeps the extensions you installed from its Store.\n'
+}
+
+# Prints the head of a page of extensions: the head lines in $1, the preview, the list, and the button whose id is $2.
+extension_head() {
+  printf '%s' "$1"
+  printf 'recents=false\nsearch=off\ngrid=preview\ngrid=preview\ngrid=preview\ngrid=preview\ngrid=extensions\n'
+  [ -n "$2" ] && printf 'grid=%s\n' "$2"
+  printf '\nview=preview\ngrow=false\n\nrepeat=extensions\n\nbutton=open\ntitle=Select\nclose=false\n'
+}
+
+# Prints the rows of $1 whose id starts with one of the words that follow.
+extension_blocks() {
+  printf '%s\n' "$1" | awk -v RS= -v ORS='\n\n' -v kinds="$2" '$0 ~ "^row=(" kinds "):"'
+}
+
+# Prints the page of the extensions that a spot of Openspot does the job of, with the head lines in $1: the spots ready to use,
+# then the spots to add, each with a tick, and Add for the ticked ones.
+analogs_page() {
+  found=$(extension_rows) || exit 1
+  rows=$(extension_blocks "$found" 'use|get')
+  if [ -z "$rows" ]; then
+    printf '%s\n' "$found" | grep -q '^row=' && no_extensions "None of your extensions has an analog" || no_extensions "No Raycast extensions on this Mac"
+    return
+  fi
+  adds=$(openspot_value adds "$found")
+  if [ "${adds:-0}" -gt 0 ]; then
+    extension_head "$1" add
+    if [ "$adds" -eq 1 ]; then words="Add $(openspot_value added "$found")"; else words="Add $adds spots"; fi
+    printf '\nbutton=add\nlook=strong\nshortcut=cmd+return\n'
+    openspot_kv title "$words"
+  else
+    extension_head "$1" ""
+  fi
+  printf '\nbutton=learn\ntitle=Learn More\nshortcut=cmd+i\n'
+  printf '\n%s\n' "$rows"
+}
+
+
+# Prints the page of the extensions that an agent can make a spot of, with the words of its Copy button in $1 and the head
+# lines in $2.
+extensions_page() {
+  found=$(extension_rows) || exit 1
+  rows=$(extension_blocks "$found" make)
+  if [ -z "$rows" ]; then
+    printf '%s\n' "$found" | grep -q '^row=' && no_extensions "Every extension has an analog" || no_extensions "No Raycast extensions on this Mac"
+    return
+  fi
+  count=$(openspot_value count "$found")
+  one=$(openspot_value one "$found")
+  if [ "${count:-0}" -gt 0 ]; then
+    extension_head "$2" copy
+    if [ -n "$1" ]; then words=$1; elif [ "$count" -eq 1 ]; then words="Copy prompt for $one"; else words="Copy prompt for $count extensions"; fi
+    printf '\nbutton=copy\nlook=strong\nshortcut=cmd+return\n'
+    openspot_kv title "$words"
+  else
+    extension_head "$2" ""
+  fi
+  printf '\n%s\n' "$rows"
+}
+
+# Prints the spot of each ticked extension that a spot to add does the job of, one per line.
+ticked_analogs() {
+  extension_rows | awk '/^row=get:/ { get = 1 } /^value=true$/ { take = 1 } /^spot=/ { spot = substr($0, 6) } /^$/ { if (get && take) print spot; get = 0; take = 0; spot = "" }'
+}
+
 # Says whether export $1 is opening now. A mark older than a minute is from an Open that was stopped.
 is_opening() {
   [ -n "$(find "$marker" -mmin -1 2>/dev/null)" ] && [ "$(cat "$marker")" = "$1" ]
@@ -146,6 +259,26 @@ hub() {
   else
     printf 'detail=Enter the passphrase to open it\n'
   fi
+  outcomes=$(openspot import extensions "$extensions_folder" | grep '^outcome=')
+  ready=$(printf '%s\n' "$outcomes" | grep -c '^outcome=use$')
+  to_add=$(printf '%s\n' "$outcomes" | grep -c '^outcome=get$')
+  to_make=$(printf '%s\n' "$outcomes" | grep -c '^outcome=make$')
+  printf '\nrow=analogs\ntitle=Extension analogs\nicon=puzzlepiece.extension\npush=analogs\npush.title=Analogs\n'
+  if [ -z "$outcomes" ]; then
+    printf 'detail=No extensions on this Mac\n'
+  elif [ $((ready + to_add)) -eq 0 ]; then
+    printf 'detail=None of your extensions has one\n'
+  else
+    printf 'detail=%d ready to use · %d to add\n' "$ready" "$to_add"
+  fi
+  printf '\nrow=extensions\ntitle=Make extensions with AI\nicon=sparkles\npush=extensions\npush.title=Make with AI\n'
+  if [ -z "$outcomes" ]; then
+    printf 'detail=No extensions on this Mac\n'
+  elif [ "$to_make" -eq 0 ]; then
+    printf 'detail=Every extension has an analog\n'
+  else
+    printf 'detail=%d without an analog\n' "$to_make"
+  fi
 }
 
 # Prints the page that asks to choose again, because the folder or the export at $1 is gone.
@@ -174,7 +307,7 @@ scripts_page() {
   if [ -z "$folder" ]; then
     printf 'recents=false\nsearch=off\ngrid=where\ngrid=where\ngrid=choose\n\n'
     printf 'text=where\ntitle=Choose your script commands folder\n'
-    printf 'detail=Raycast lists it in Settings → Extensions → Script Commands. Each script becomes a spot, and Raycast keeps its copy.\n\n'
+    printf 'detail=Raycast lists it in **Settings → Extensions → Script Commands**. Each script becomes a spot, and Raycast keeps its copy.\n\n'
     printf 'button=choose\ntitle=Choose Folder…\nlook=strong\nshortcut=return\n'
     return
   fi
@@ -273,6 +406,8 @@ case "$1" in
     case "${OPENSPOT_PAGE-}" in
       scripts) scripts_page ;;
       export) export_page ;;
+      analogs) analogs_page ;;
+      extensions) extensions_page ;;
       *) hub ;;
     esac
     ;;
@@ -341,8 +476,39 @@ case "$1" in
       *) openspot_kv toast "Added $added spots. Find them on the grid." ;;
     esac
     ;;
+  learn)
+    [ -n "${2-}" ] || { echo "Select a spot first." >&2; exit 1; }
+    spot=$(extension_rows | awk -v want="$2" -v RS= '$0 ~ "^row=" want "\n"' | sed -n 's/^spot=//p')
+    printf '%s' "$spot" > "$OPENSPOT_DATA/store-show"
+    openspot spot open openspot/store
+    ;;
+  add)
+    spots=$(ticked_analogs)
+    [ -n "$spots" ] || { echo "Tick a spot to add first." >&2; exit 1; }
+    names=""
+    for spot in $spots; do
+      openspot store get "$spot" >/dev/null || exit 1
+      name=$(extension_rows | awk -v spot="$spot" '/^spot=/ { s = substr($0, 6) } /^spot\.title=/ { if (s == spot) { print substr($0, 12); exit } }')
+      names="${names:+$names, }$name"
+    done
+    analogs_page "toast=Added $names.$nl"
+    ;;
+  copy)
+    set --
+    while IFS= read -r folder; do set -- "$@" "$folder"; done <<EOF
+$(ticked_extensions)
+EOF
+    [ $# -gt 0 ] || { echo "Tick an extension first." >&2; exit 1; }
+    openspot prompt convert "$@" | openspot clipboard copy || exit 1
+    extensions_page "✓ Copied" "toast=Prompt copied. Paste it into your agent.$nl"
+    printf -- '---\n'
+    sleep 1.5
+    extensions_page
+    ;;
   open)
     case "$2" in
+      make:*) flip "$extensions_off" "${2#make:}" ;;
+      get:*) flip "$extensions_off" "${2#get:}" ;;
       added:*)
         if [ "${OPENSPOT_PAGE-}" = export ]; then
           flip "$export_off" "${2#added:}"

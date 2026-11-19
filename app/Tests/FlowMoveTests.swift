@@ -77,6 +77,18 @@ final class FlowMoveTests: PanelCase {
         XCTAssertNil(model.flow.ahead)
     }
 
+    func testOpeningASpotInAWindowKeepsThePageOfTheOpenSheet() async throws {
+        try script("board", header: "title=Board\non=sheet.open\noffers=window", "printf 'row=b\\ntitle=Board\\n'")
+        try await openFlowSpot()
+        try pressFlow("next")
+        try await wait("the next page") { self.titles == ["Page n0"] }
+
+        XCTAssertTrue(model.open("board"))
+
+        XCTAssertEqual(model.flow.current?.page, "n0")
+        XCTAssertEqual(model.sheets["flow"]?.page, "n0")
+    }
+
     func testOnePopOnAFirstSheetWithNothingBehindItGoesBackToTheGrid() async throws {
         try await openFlowSpot()
         XCTAssertNil(model.flow.behind)

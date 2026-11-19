@@ -1060,6 +1060,20 @@ final class SpotsModelTests: XCTestCase {
         XCTAssertEqual(model.visible.map(\.id), ["shortcuts", "apps\nshortcuts"])
     }
 
+    func testTheGridSearchLeavesOutARowThatOnlyOpensASpotItAlreadyFound() async throws {
+        try script("importer", header: "title=Import Stuff", "true")
+        try script("settings", header: "title=Settings\non=panel.open\noffers=search", "printf 'row=importer\\ntitle=Import Stuff\\npush.spot=importer\\n\\nrow=other\\ntitle=Import Other\\n'")
+        await model.reload()
+        model.isShown = true
+        model.panelWillShow()
+
+        model.searchText = "import"
+        model.landSearch()
+
+        try await wait("the other row") { model.visible.contains { $0.id == "settings\nother" } }
+        XCTAssertEqual(model.visible.map(\.id), ["importer", "settings\nother"])
+    }
+
     func testTheGridSearchFindsASpotThatOffersSearchAndItsRows() async throws {
         try script("settings", header: "title=System Settings\non=panel.open\noffers=search", "printf 'row=sound\\ntitle=Sound Settings\\n'")
         await model.reload()

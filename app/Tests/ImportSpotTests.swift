@@ -16,6 +16,32 @@ final class ImportSpotTests: BuiltInCase {
         root.appendingPathComponent("home/Raycast 2026-11-18.rayconfig")
     }
 
+    private var copied: URL {
+        root.appendingPathComponent("copied")
+    }
+
+    private var extensions: URL {
+        root.appendingPathComponent("home/.config/raycast/extensions")
+    }
+
+    private func install(_ folder: String, name: String, title: String) throws {
+        let url = extensions.appendingPathComponent(folder)
+        try FileManager.default.createDirectory(at: url, withIntermediateDirectories: true)
+        try #"{"name":"\#(name)","title":"\#(title)","description":"\#(title) in Raycast.","commands":[{"name":"run","title":"Run","mode":"view"}]}"#.write(to: url.appendingPathComponent("package.json"), atomically: true, encoding: .utf8)
+    }
+
+    private func showExtensions() throws {
+        try install("a1", name: "linear", title: "Linear")
+        try install("b2", name: "jira", title: "Jira")
+        try install("c3", name: "translate", title: "Google Translate")
+        try install("d4", name: "caffeinate", title: "Caffeinate")
+        try FileManager.default.copyItem(at: repoSpots.appendingPathComponent("caffeinate.spot"), to: core.appendingPathComponent("caffeinate.spot"))
+        try FileManager.default.copyItem(at: repoSpots.appendingPathComponent("translate.spot"), to: spots.appendingPathComponent("translate.spot"))
+        let data = root.appendingPathComponent("data/openspot")
+        try FileManager.default.createDirectory(at: data, withIntermediateDirectories: true)
+        try extensions.path.write(to: data.appendingPathComponent("raycast-extensions"), atomically: true, encoding: .utf8)
+    }
+
     private var log: URL {
         root.appendingPathComponent("calls")
     }
@@ -30,7 +56,7 @@ final class ImportSpotTests: BuiltInCase {
         try RaycastExport.file(RaycastExport.testPayload, passphrase: "openspot-test").write(to: export)
         let real = tools.appendingPathComponent("openspot-real")
         try FileManager.default.moveItem(at: tools.appendingPathComponent("openspot"), to: real)
-        try fake("openspot", "echo \"$*\" >> '\(log.path)'\ncase \"$1 $2\" in 'spot open'|'spot push'|'spot choose') exit 0 ;; esac\nexec '\(real.path)' \"$@\"")
+        try fake("openspot", "echo \"$*\" >> '\(log.path)'\ncase \"$1 $2\" in 'spot open'|'spot push'|'spot choose') exit 0 ;; 'store get') echo \"Turned on $3.\"; exit 0 ;; 'clipboard copy') cat > '\(copied.path)'; exit 0 ;; esac\nexec '\(real.path)' \"$@\"")
     }
 
     private func answer(_ arguments: [String], page: String? = nil, input: String? = nil) async throws -> String {
@@ -57,7 +83,7 @@ final class ImportSpotTests: BuiltInCase {
     func testTheHubHasARowForEachSourceThatOpensItsPage() async throws {
         let text = try await answer(["read"])
 
-        XCTAssertEqual(rows(text), ["scripts", "export"])
+        XCTAssertEqual(rows(text), ["scripts", "export", "analogs", "extensions"])
         XCTAssertEqual(block("scripts", in: text)?.value("push"), "scripts")
         XCTAssertEqual(block("export", in: text)?.value("push"), "export")
         XCTAssertEqual(blocks(text).first?.value("search"), "off")
@@ -224,5 +250,98 @@ final class ImportSpotTests: BuiltInCase {
         XCTAssertEqual(block("choose", in: page)?.value("shortcut"), "cmd+o")
         XCTAssertFalse(page.contains("grid=choose"), page)
         XCTAssertEqual(try calls().last, "spot choose openspot/import")
+    }
+
+    func testTheAnalogsPageOpensTheSpotsReadyToUseAndTicksTheSpotsToAdd() async throws {
+        try showExtensions()
+
+        let page = try await answer(["read"], page: "analogs")
+        let hub = try await answer(["read"])
+
+        XCTAssertEqual(rows(page), ["use:translate", "get:caffeinate"])
+        XCTAssertEqual(block("use:translate", in: page)?.value("push.spot"), "translate")
+        XCTAssertEqual(block("use:translate", in: page)?.value("section"), "Ready to use")
+        XCTAssertEqual(block("use:translate", in: page)?.value("detail"), "→ Translate")
+        XCTAssertEqual(block("use:translate", in: page)?.value("spot"), "translate")
+        XCTAssertEqual(block("use:translate", in: page)?.value("spot.title"), "Translate")
+        XCTAssertEqual(block("get:caffeinate", in: page)?.value("section"), "To add · 1 of 1")
+        XCTAssertEqual(block("get:caffeinate", in: page)?.value("value"), "true")
+        XCTAssertEqual(block("get:caffeinate", in: page)?.value("open"), "Untick")
+        XCTAssertEqual(block("use:translate", in: page)?.value("open"), "Open")
+
+        XCTAssertEqual(block("preview", in: page)?.fields.first?.key, "view")
+        XCTAssertEqual(block("add", in: page)?.value("title"), "Add Caffeinate")
+        XCTAssertEqual(block("add", in: page)?.value("shortcut"), "cmd+return")
+        XCTAssertNil(block("copy", in: page))
+        XCTAssertEqual(block("analogs", in: hub)?.value("detail"), "1 ready to use · 1 to add")
+        XCTAssertEqual(block("extensions", in: hub)?.value("detail"), "2 without an analog")
+    }
+
+    func testLearnMoreOpensTheStoreOnTheSpotOfTheRow() async throws {
+        try showExtensions()
+
+        let page = try await answer(["read"], page: "analogs")
+        _ = try await answer(["learn", "get:caffeinate"], page: "analogs")
+        let shown = try String(contentsOf: root.appendingPathComponent("data/openspot/store-show"), encoding: .utf8)
+
+        XCTAssertEqual(block("learn", in: page)?.value("title"), "Learn More")
+        XCTAssertEqual(block("learn", in: page)?.value("shortcut"), "cmd+i")
+        XCTAssertNil(block("get:caffeinate", in: page)?.value("hides"))
+        XCTAssertNil(block("use:translate", in: page)?.value("hides"))
+        XCTAssertEqual(shown, "caffeinate")
+        XCTAssertEqual(try calls().last, "spot open openspot/store")
+    }
+
+    func testAddGetsTheTickedAnalogs() async throws {
+        try showExtensions()
+
+        let added = try await answer(["add"], page: "analogs")
+        _ = try await answer(["open", "get:caffeinate"], page: "analogs")
+        let page = try await answer(["read"], page: "analogs")
+
+        XCTAssertTrue(try calls().contains("store get caffeinate"))
+        XCTAssertTrue(added.hasPrefix("toast=Added Caffeinate.\n"), added)
+        XCTAssertEqual(block("get:caffeinate", in: page)?.value("value"), "false")
+        XCTAssertEqual(block("get:caffeinate", in: page)?.value("open"), "Tick")
+        XCTAssertNil(block("add", in: page))
+    }
+
+    func testTheMakePageTicksEachExtensionWithNoAnalogForOnePrompt() async throws {
+        try showExtensions()
+
+        let page = try await answer(["read"], page: "extensions")
+
+        XCTAssertEqual(rows(page), ["make:jira", "make:linear"])
+        XCTAssertEqual(block("make:linear", in: page)?.value("section"), "Without an analog · 2 of 2")
+        XCTAssertEqual(block("make:linear", in: page)?.value("value"), "true")
+        XCTAssertEqual(block("make:linear", in: page)?.value("hides"), "learn")
+        XCTAssertNil(block("learn", in: page))
+        XCTAssertEqual(block("copy", in: page)?.value("title"), "Copy prompt for 2 extensions")
+        XCTAssertEqual(block("copy", in: page)?.value("shortcut"), "cmd+return")
+        XCTAssertNil(block("add", in: page))
+    }
+
+    func testCopyPutsAPromptForTheTickedExtensionsOnTheClipboardAndFlashesCopied() async throws {
+        try showExtensions()
+        _ = try await answer(["open", "make:jira"], page: "extensions")
+
+        let page = try await answer(["read"], page: "extensions")
+        let frames = try await answer(["copy"], page: "extensions").components(separatedBy: "recents=false\n")
+        let prompt = try String(contentsOf: copied, encoding: .utf8)
+
+        XCTAssertEqual(block("copy", in: page)?.value("title"), "Copy prompt for Linear")
+        XCTAssertEqual(frames.count, 3)
+        XCTAssertEqual(frames.first, "toast=Prompt copied. Paste it into your agent.\n")
+        XCTAssertEqual(block("copy", in: frames[1])?.value("title"), "✓ Copied")
+        XCTAssertEqual(block("copy", in: frames.last ?? "")?.value("title"), "Copy prompt for Linear")
+        XCTAssertTrue(prompt.hasPrefix("Turn this Raycast extension into an Openspot spot."), prompt)
+        XCTAssertTrue(prompt.contains("Linear (\(extensions.appendingPathComponent("a1").path))"), prompt)
+        XCTAssertFalse(prompt.contains("Jira"), prompt)
+    }
+
+    func testThePageSaysWhenRaycastKeepsNoExtensions() async throws {
+        let page = try await answer(["read"], page: "extensions")
+
+        XCTAssertEqual(block("where", in: page)?.value("title"), "No Raycast extensions on this Mac")
     }
 }

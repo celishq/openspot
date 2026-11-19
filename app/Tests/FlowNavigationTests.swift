@@ -334,4 +334,35 @@ final class FlowNavigationTests: PanelCase {
         try await wait("the grid") { self.model.openSheetID == nil }
         XCTAssertEqual(model.sheets["list"]?.pageStates.count, 0)
     }
+
+    func testEscOnAListWithNoSearchThatAnotherSpotPushedGoesBackToIt() async throws {
+        try script("menu", header: "title=Menu\non=sheet.open", "printf 'row=go\ntitle=Go\npush.spot=hub\n'")
+        try script("hub", header: "title=Hub\non=sheet.open\npages=a", "printf 'recents=false\nsearch=off\n\nrow=a\ntitle=A\npush=a\n'")
+        await model.reload()
+        model.isShown = true
+        model.panelWillShow()
+        model.press("menu")
+        try await wait("the menu") { self.model.openSheetID == "menu" && self.titles == ["Go"] }
+        XCTAssertTrue(model.push(FlowSheet(spot: "hub")))
+        try await wait("the hub") { self.model.openSheetID == "hub" && self.titles == ["A"] && !self.model.runs.isReading }
+
+        XCTAssertTrue(model.handleKey(escape))
+
+        try await wait("the menu again") { self.model.openSheetID == "menu" }
+    }
+    func testEscOnAListWithNoSearchThatTheSearchOpenedGoesBackToTheGrid() async throws {
+        try script("hub", header: "title=Hub\non=sheet.open\npages=a", "printf 'recents=false\\nsearch=off\\n\\nrow=a\\ntitle=A\\npush=a\\n'")
+        await model.reload()
+        model.isShown = true
+        model.panelWillShow()
+        model.searchText = "hub"
+        model.landSearch()
+        try await wait("the found hub") { self.model.visible.map(\.id) == ["hub"] }
+        XCTAssertTrue(model.handleSearchKey(ActionKey(name: "return")))
+        try await wait("the hub") { self.model.openSheetID == "hub" && self.titles == ["A"] && !self.model.runs.isReading }
+
+        XCTAssertTrue(model.handleKey(escape))
+
+        try await wait("the grid") { self.model.openSheetID == nil }
+    }
 }

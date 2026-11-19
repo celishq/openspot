@@ -49,7 +49,7 @@ spots:
 	for spot in spots/*.spot; do [ "$$spot" = spots/openspot.spot ] || ln -sfn "$(CURDIR)/$$spot" $(HOME)/.config/openspot/spots/; done
 
 dev-state:
-	rm -rf .temp/openspot
+	find .temp/openspot -mindepth 1 -maxdepth 1 ! -name views -exec rm -rf {} + 2>/dev/null || true
 	mkdir -p .temp/openspot/spots
 	[ -n "$(EMPTY)" ] || cp -R spots/. .temp/openspot/spots/
 	rm -rf .temp/openspot/spots/openspot.spot
