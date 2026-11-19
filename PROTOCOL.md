@@ -61,8 +61,8 @@ A spot is a folder that Openspot runs: a manifest that names it, and a script th
   `home/lights` for `home.spot/lights.sh`. A script that `spot.toml` doesn't describe can hold shared code.
 - `sample.sh` prints what the spot would show, with made-up data. Publish ships its output as `sample.frame`, which the
   store of spots shows, and where a click runs nothing.
-- A line of `readme.md` that holds only a Markdown image of a file in the folder shows that PNG, JPEG, MOV or MP4. An
-  `https` picture is fetched once, with no cookies, and an `https` video shows as a link.
+- A line of `readme.md` that holds only a Markdown image of a file in the folder shows that PNG, JPEG, GIF, MOV or MP4.
+  An `https` picture is fetched once, with no cookies, and an `https` video shows as a link.
 - Openspot moves a loose script into a spot folder of its name, and writes a `spot.toml` with the script's title.
 - An agent can do anything the user does, with `openspot spot run <id> <call>` and `openspot event emit`. A spot can't
   tell who called it.
@@ -468,7 +468,7 @@ Openspot draws a view where the layout puts its `view` block. Use it for a chart
 | `spot.card(id)`, `spot.cardSize(id)`            | The card of a spot, by the id that `openspot store list` prints, and its size.                              |
 | `spot.sheet(id)`                                | The sheet of a spot from its `sample.sh`, where a click runs nothing.                                       |
 | `spot.tip(text)`, `spot.tipDelay`               | A tip in the look of Openspot's own, to show on hover, after that delay.                                    |
-| `spot.media(path)`                              | A PNG or JPEG picture, or a MOV or MP4 video, at its size or less.                                          |
+| `spot.media(path)`                              | A PNG, JPEG or GIF picture, or a MOV or MP4 video, at its size or less.                                     |
 | `spot.loop(...)`                                | A shape that moves in a loop, played by macOS.                                                              |
 | `spot.cornerButton`                             | The round button on the rim of a card, by its id and an action.                                             |
 | `spot.columnGap`, `spot.rowGap`, `spot.columns` | The gaps between cards, and how many columns of cards a window holds.                                       |

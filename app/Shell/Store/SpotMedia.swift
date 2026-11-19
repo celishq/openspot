@@ -3,20 +3,28 @@ import OpenspotCore
 import SwiftUI
 
 struct SpotMedia: View {
-    private static let pictures: Set<String> = ["png", "jpg", "jpeg"]
+    private static let pictures: Set<String> = ["png", "jpg", "jpeg", "gif"]
     private static let videos: Set<String> = ["mov", "mp4"]
     private static var edge: SpotRoundShape { SpotRoundShape(radius: SpotTokens.mediaRadius) }
 
     let source: String
     @State private var picture: NSImage?
     @State private var video: (player: AVPlayer, size: CGSize)?
+    @State private var frames: PictureFrames?
+    @Environment(\.spotIsShown) private var isShown
+    @Environment(\.spotMoves) private var moves
 
     private var kind: String {
         (URL(string: source)?.path ?? source).split(separator: ".").last.map { $0.lowercased() } ?? ""
     }
 
     var body: some View {
-        if let picture {
+        if let frames {
+            SpotMovingPicture(frames: frames, gravity: .resizeAspect, isPlaying: isShown && moves)
+                .aspectRatio(frames.size, contentMode: .fit)
+                .frame(maxWidth: frames.size.width)
+                .clipShape(Self.edge)
+        } else if let picture {
             Image(nsImage: picture)
                 .resizable()
                 .aspectRatio(contentMode: .fit)
@@ -38,7 +46,9 @@ struct SpotMedia: View {
 
     private func load() async {
         let kind = kind
-        if Self.pictures.contains(kind), let path = await WebPictures.shared.path(of: source) {
+        if PictureFrames.moves(source), let frames = await SpotPictureStore.shared.frames(SpotPictureStore.Key(path: source, changed: nil)) {
+            self.frames = frames
+        } else if Self.pictures.contains(kind), let path = await WebPictures.shared.path(of: source) {
             picture = await Task.detached(priority: .userInitiated) { NSImage(contentsOfFile: path) }.value
         } else if Self.videos.contains(kind), !WebPictures.isWeb(source) {
             let asset = AVURLAsset(url: URL(fileURLWithPath: source))

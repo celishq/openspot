@@ -87,7 +87,7 @@ Settings, `⌘Y` its History, `⌘K` the menu of all acts. Openspot makes these 
 
 ## Core and Shell
 
-- `Core/` imports only Foundation, CoreGraphics, CryptoKit, CommonCrypto, JavaScriptCore, Observation, os, P256K, Security
+- `Core/` imports only Foundation, CoreGraphics, CryptoKit, CommonCrypto, ImageIO, JavaScriptCore, Observation, os, P256K, Security
   and Synchronization. `make verify` runs `scripts/check-core.sh`, which fails on any other import, also after an attribute
   such as `@preconcurrency`.
 - Logic that a window needs goes in `Core/`. Only drawing and window handling go in `Shell/`.
