@@ -59,7 +59,7 @@ title = "Refresh"
 - The keys at the top describe the script named after the folder, such as `weather.sh`. `[scripts.<name>]` describes
   each other script with the same keys, and its tables are `[scripts.<name>.commands.<id>]` and
   `[scripts.<name>.settings.<key>]`. A script holds no header.
-- A value is a string in quotes, `true` or `false`, or a list in brackets. `on`, `offers`, `source`, `pages`, `uses`,
+- A value is a string in quotes, a number, `true` or `false`, or a list in brackets. `on`, `offers`, `source`, `pages`, `uses`,
   `emits` and `keywords` take a list.
 - A wrong or unknown key, such as `titel`, keeps the spot from loading, and its fault names the key. The keys that only
   the app's own spots take are in [The app's own words](spots/AGENTS.md#the-apps-own-words).
@@ -75,7 +75,6 @@ title = "Refresh"
 | `emits`       | The events the spot raises.                                                                                    |
 | `offers`      | `search`: its items show in the [main search](#the-main-search).                                               |
 | `drop`        | The files its card takes: extensions such as `mov,mkv`, `folder`, or `*`. See [Files out](#files-out).        |
-| `starts`      | `first-launch`: its sheet opens in place of the grid when Openspot starts for the first time.                  |
 | `view`        | A SwiftUI file in the spot folder, such as `"cups.swift"`. See [Views](#views).                                |
 | `source`      | The Swift files, or folders of them, that a [Swift spot](#a-swift-spot) is built with.                         |
 | `mode`        | `once`, the default, or `stay`. See [Modes](#modes).                                                           |
@@ -84,8 +83,8 @@ title = "Refresh"
 
 | Table              | Meaning                                                                                                    |
 | ------------------ | ---------------------------------------------------------------------------------------------------------- |
-| `[commands.<id>]`  | A command, with its `title` and `icon`, which the user can give a hotkey. `confirm = "<words>"` shows the words at the first press and runs it at the second, `placeholder` lists it as a slash command, and `close = false` keeps the panel open after a slash command that shows nothing. |
-| `[settings.<key>]` | A [setting](#settings), with its `title`, by default its key, and `icon`.                                  |
+| `[commands.<id>]`  | A command, with its `title` and `icon`, which the user can give a hotkey. `confirm = "<words>"` shows the words at the first press and runs it at the second, `placeholder` lists it as a slash command, and `close = false` keeps the panel open after a slash command that shows nothing. It also takes the keys of a [button](#buttons-and-actions): `shortcut`, `scope` and `form`, and `offers`. |
+| `[settings.<key>]` | A [setting](#settings), with its `title`, by default its key with a capital first letter, and `icon`.      |
 
 ### Settings
 
@@ -139,7 +138,7 @@ openspot_kv title "$(value input.note)"
 | `search=`        | The search text, and `search.alt=` each text the user may have meant, such as in another keyboard layout. |
 | `input.<id>=`    | Each input of the sheet or of a form. A value that isn't an input comes as `input.value=`.         |
 | `setting.<key>=` | Each [setting](#settings) that has a value, a secret too.                                          |
-| `item.<key>=`    | On an action or a pick of an item, each key of its own that the item holds. A form gets none.      |
+| `item.<key>=`    | On an action or a pick of an item that holds a key of its own, each key of the item. A form gets none. |
 
 The shell helper, `. "$OPENSPOT_SH"`, reads stdin once and keeps it, and writes values for you. After it loads, read
 stdin with `value` or `openspot_input`, not `cat`: the function of `openspot_serve` gets an empty stdin.
@@ -179,8 +178,8 @@ An event makes Openspot ask a spot what to show. List in `on` each event at whic
 | `disk.mount`       | When a disk or a volume mounts.                                           | its path      |
 | `device.connect`   | When a USB device connects. A Bluetooth device raises no event.           | its name      |
 
-- Text after a space in `on` is a filter, a regular expression that the value must match. Only `search.text`,
-  `app.front`, `app.update` and an event that a spot emits take one.
+- Text after a space in `on` is a filter, a regular expression that the value must match. Any event with a value
+  takes one, and `search.text` needs one.
 - The sheet asks its spot at each open, whether `on` lists `sheet.open` or not. Openspot asks a spot only while one of its
   places shows, except at `app.launch` and `app.update`. A spot has one show at a time.
 - Openspot also asks after a call that printed nothing, with `spot.change`, and with `spot.want` when a place starts to
@@ -284,7 +283,7 @@ close=false
 - `look` is the box of a text, a number or a button: `tile` or `bare`, on a number also `ring` or `bar`, and on a button
   also `chip` or `strong`.
   `align=left`, `right` or `center` places a block that is smaller than its place.
-- A field's `type`: none for one line, `multiline`, `slider` from `min` to `max`, 0 to 100 by default, `search` for the
+- A field's `type`: none for one line, `multiline`, `slider` from `min` to `max`, 0 to 100 by default, which sends a whole number, `search` for the
   search field of the [items](#items), which `filter=spot` hands to the spot, and `hotkey`. A choice with
   `type=multiple` picks several options.
 - `grow=false` keeps a block to its own lines where it would take the free height; see [Layouts](#layouts).
@@ -333,15 +332,16 @@ doesn't, it's an **action** in the ⌘K menu.
 - A press closes the panel, unless the button has `close=false`. `confirm` asks for a second press. Return on an item
   runs the action `open`, and `button=open` gives it a `title`.
 - `shortcut` is a letter, a digit, `return`, `backspace` or `,`, after `cmd+`, `shift+`, both or neither, or `escape`
-  alone, which presses the button instead of closing the sheet. In a ⌘K menu of more than 5 rows, only a `shortcut`
+  alone, which presses the button instead of closing the sheet. In a ⌘K menu of 3 rows or more, only a `shortcut`
   with `cmd` works, since a field searches the rows.
 - `form=true` asks for values first: the call runs once with empty stdin and prints a `title` in its root and a
   `field`, `choice` or `switch` for each value, then runs again with the values. A form that prints itself again,
   such as with what's wrong, stays open. In a choice with `type=multiple`, a `value` line marks each pick.
 - A command with `offers = ["actions"]` shows in the ⌘K menu of every card, under the spot's name, and sends
-  `<spot> <id> <card spot id>`. A command `<offered id>.<name>`, such as `[commands."change.draw"]`, shows in its
-  submenu. A filter after `actions`, such as `actions,mine`, fits only the cards of the user's spots, and
-  `actions,core` those of the spots that come with Openspot.
+  `<spot> <id> <card spot id>`. It keeps the panel open, unless it has `close = true`. A command
+  `<offered id>.<name>`, such as `[commands."change.draw"]`, shows in its submenu. Origins after a space, such as
+  `offers = ["actions mine, core"]`, fit only the cards of the user's spots (`mine`) or of the spots that come with
+  Openspot (`core`).
 - In a JavaScript spot, `when=<function>` on an offered button gets the card's spot id and its origin, and returns
   whether the action shows. `hotkey=<function>` returns the card's hotkey. The menu waits 2 ms for them.
 
@@ -414,8 +414,8 @@ such as `photo/12`.
 An item can stand for a file that the user drags into another app, such as `file=/Users/me/Report.pdf`, and a card
 can take files dropped on it.
 
-- `file=<path>` makes the item stand for that file, and the path starts with `/`. A show leaves out a file that no
-  longer exists. When a drag ends in another app, Openspot sends `<spot> drag <item id>...`.
+- `file=<path>` makes the item stand for that file, and the path starts with `/`. A drag carries only the files that
+  still exist. When a drag ends in another app, Openspot sends `<spot> drag <item id>...`.
 - `drop` in the manifest names the files a card takes, and a drop sends `<spot> drop <path>...`. It waits for the
   card's running call, opens the sheet of a spot whose Return opens it, and the call can select the new item.
 
@@ -456,7 +456,17 @@ grid.bar=free
 | `bar`                                       | The menu bar, next to the clock. A click opens the sheet under it.    |
 
 - The sheet, a float and a window draw the `grid=` lines. A size with no layout uses the next smaller one. A card with
-  none shows the icon, title and detail, and the menu bar the icon. The menu bar shows a `text` or a `number`, and a show that prints nothing hides it until the next show.
+  none shows the icon, title and detail, and the menu bar the icon. The menu bar shows a `text` or a `number` by its own rule, in
+  [The menu bar](#the-menu-bar), and a show that prints nothing hides it until the next show.
+
+### The menu bar
+
+The menu bar shows the block that `grid.bar` places, small, beside the clock.
+
+- A `number` with one value and a `max` is a small ring with its value. A series is its last 8 bars with its value.
+- A `text` with a `tone` and no `icon` is a dot of its tone and its title. Any other `text` is its title.
+- With no block in `grid.bar`, the items are counted by their tone. A `switch` or slider in `grid.bar` hides it.
+- `look` doesn't apply here.
 
 ### The card
 
@@ -507,11 +517,12 @@ start ──► frame ──► frame ──► ... ──► end    exit 0: don
   └──► stop: a newer value, a second press or a quit; terminate signal, then kill
 ```
 
-- A `show` has 10 seconds to print its first frame or end. Other calls have no limit. A frame holds at most 32 MB.
+- A `show` has 10 seconds to print its first frame or end. Other calls have no limit. A frame holds at most 32 MB, and
+  past it the call shows nothing more.
 - A new value of a block stops the older call of that block, and a second press stops a running call: its process
   group gets the terminate signal, then the kill signal. A stopped call changes nothing.
-- A spot's hotkeys run one at a time, in order, and never stop a call. A staying spot gets each press at once, while
-  fewer than 8 calls of its hotkeys are open.
+- A spot's hotkeys run one at a time, in order, and never stop a call. At most 8 presses wait, and a later one is
+  dropped. A staying spot gets each press at once, while fewer than 8 calls of its hotkeys are open.
 - Exit code 0 is success. With any other code, the user sees the last line of stderr. A failure can print
   `link=<url>`, a page that helps fix it. A failed show at `panel.open` only marks its card.
 - A stop can come at any time, and two calls can run at once. Never leave a file half written.
@@ -574,7 +585,8 @@ openspot_serve main "$@"
   every mode. A frame of only `call=<n>` starts the output of that call.
 - A second press of a running call sends `stop=<n>`. The call ends 2 seconds later, unless the spot prints a frame for
   it first; then it runs on to its `end`, which is how a spot brings its window to the front. A form, and a call that a
-  newer value or search text stopped, stop at once. A show after the first gets `stop=<n>` after 10 seconds.
+  newer value or search text stopped, stop at once. A show after the first gets `stop=<n>` after 10 seconds, and
+  after 2 such slow shows Openspot ends the spot.
 - When no place shows the spot and no call waits, Openspot closes its stdin. The spot ends with each process it
   started, or its group gets the terminate signal 2 seconds later, and the kill signal 2 seconds after that.
 - After 3 failures in one minute, Openspot starts the spot again only when its file changes. Keep what must survive in
