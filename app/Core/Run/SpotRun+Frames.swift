@@ -72,11 +72,11 @@ extension SpotRun {
         list.stopLoading()
     }
 
-    static func search(of lines: SpotOutput, in spot: Spot) -> ItemSearch {
+    static func search(of lines: Frame, in spot: Spot) -> ItemSearch {
         spot.on?.searchesSheet == true ? .script : lines.search
     }
 
-    func takeAnswer(_ lines: SpotOutput, frame: String, to ask: Ask, keeping: String? = nil, answers: Bool = true) async {
+    func takeAnswer(_ lines: Frame, frame: String, to ask: Ask, keeping: String? = nil, answers: Bool = true) async {
         if case .answer(let query) = ask { return takeAnswers(lines.answers, to: query) }
         if case .show = ask, !frame.isEmpty, frame == shownFrame, lines.parts.isEmpty, panel == nil, !list.hasFailed { return takeRepeat(lines, answers: answers) }
         let next: ItemList.Rows? = if case .show = ask { await newRows(lines.items, search: Self.search(of: lines, in: spot)) } else { nil }
@@ -129,7 +129,7 @@ extension SpotRun {
 
     private static let shownFrameLimit = 256 * 1024
 
-    private func takeRepeat(_ lines: SpotOutput, answers: Bool) {
+    private func takeRepeat(_ lines: Frame, answers: Bool) {
         report(toastOf: lines)
         if answers { answered = runs.now() }
         takeValue(lines)
@@ -146,7 +146,7 @@ extension SpotRun {
     }
 
     @discardableResult
-    func takePicture(_ lines: SpotOutput, frame: String, of act: Act?) async -> Bool {
+    func takePicture(_ lines: Frame, frame: String, of act: Act?) async -> Bool {
         if let generation = act?.generation, let current = panel?.generation, generation != current {
             takeEffects(lines, frame: frame)
             return false
@@ -156,7 +156,7 @@ extension SpotRun {
         return true
     }
 
-    func takeEffects(_ lines: SpotOutput, frame: String) {
+    func takeEffects(_ lines: Frame, frame: String) {
         report(toastOf: lines)
         onReport(.frame(frame))
     }
@@ -180,7 +180,7 @@ extension SpotRun {
         Array(items.prefix(SpotTokens.firstScreen(perLine: list.perLine)))
     }
 
-    func takeState(_ lines: SpotOutput?) {
+    func takeState(_ lines: Frame?) {
         guard let lines, let next = try? spot.state(of: lines) else {
             if lines == nil { state = spot.headerState }
             return
@@ -193,7 +193,7 @@ extension SpotRun {
         return next.withLevel(level)
     }
 
-    private func takeValue(_ lines: SpotOutput) {
+    private func takeValue(_ lines: Frame) {
         let value = MetricValue(output: lines.hasBar ? lines.barred : lines)
         changeReading {
             $0.hasBar = lines.hasBar
@@ -201,7 +201,7 @@ extension SpotRun {
         }
     }
 
-    func report(toastOf lines: SpotOutput) {
+    func report(toastOf lines: Frame) {
         if let text = lines.toast { onReport(.toast(fieldValues.hiding(text))) }
     }
 
@@ -217,7 +217,7 @@ extension SpotRun {
         list = next
     }
 
-    private func takePanel(_ lines: SpotOutput, generation: Int?, keeping: String?, rows: () -> Void) {
+    private func takePanel(_ lines: Frame, generation: Int?, keeping: String?, rows: () -> Void) {
         if lines.parts.isEmpty {
             rows()
             panel = nil

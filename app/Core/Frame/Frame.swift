@@ -1,14 +1,14 @@
 import Foundation
 
-public struct SpotOutput: Equatable, Sendable {
+public struct Frame: Equatable, Sendable {
     public struct Field: Equatable, Sendable {
         public let block: TextBlock
         let kind: BlockKind
     }
 
-    public static let empty = SpotOutput(grouped: [], kinds: [])
+    public static let empty = Frame(grouped: [], kinds: [])
 
-    public private(set) var summary: TextBlock?
+    public private(set) var root: TextBlock?
     public private(set) var items: [SpotItem] = []
     public private(set) var fields: [Field] = []
     public private(set) var actions: [CommandAction] = []
@@ -65,8 +65,8 @@ public struct SpotOutput: Equatable, Sendable {
         self.init(grouped: Self.grouping(TextBlock.blocks(in: text)), kinds: kinds)
     }
 
-    @concurrent static func reading(_ text: String) async -> SpotOutput {
-        SpotOutput(text: text)
+    @concurrent static func reading(_ text: String) async -> Frame {
+        Frame(text: text)
     }
 
     init(grouped blocks: [TextBlock], kinds: [BlockKind]) {
@@ -112,7 +112,7 @@ public struct SpotOutput: Equatable, Sendable {
                     errors.append(block.firstLine)
                 }
             } else if index == frame.index {
-                summary = block
+                root = block
                 take(marks: block)
             } else if RootKey.isMark(block) {
                 take(marks: block)
@@ -154,7 +154,7 @@ public struct SpotOutput: Equatable, Sendable {
         }
     }
 
-    public var barred: SpotOutput {
+    public var barred: Frame {
         var output = self
         output.value = barValue
         output.valueKind = barKind
@@ -171,16 +171,16 @@ public struct SpotOutput: Equatable, Sendable {
     }
 
     public var progress: Double? {
-        summary?.number(RootKey.progress).map { min(max($0, 0), 1) }
+        root?.number(RootKey.progress).map { min(max($0, 0), 1) }
     }
 
-    func selecting(_ row: String?) -> SpotOutput {
+    func selecting(_ row: String?) -> Frame {
         var output = self
         output.select = row
         return output
     }
 
-    public func withoutEffects() -> SpotOutput {
+    public func withoutEffects() -> Frame {
         var output = self
         output.toast = nil
         output.select = nil
@@ -205,11 +205,11 @@ public struct SpotOutput: Equatable, Sendable {
 
     public var search: ItemSearch {
         if searchField?.value("filter") == Self.spotFilter { return .script }
-        return searchField != nil || summary?.value(RootKey.grid) == nil ? .local : .off
+        return searchField != nil || root?.value(RootKey.grid) == nil ? .local : .off
     }
 
     public var keepsRecent: Bool {
-        summary?.flag(RootKey.recents) != false
+        root?.flag(RootKey.recents) != false
     }
 
     public var kind: SpotKind {

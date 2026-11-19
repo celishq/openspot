@@ -48,7 +48,7 @@ public struct CallRule: Equatable, Sendable {
     }
 
     func refusal(of name: String) -> String? {
-        act.words.map { "`openspot \(name)` \($0), so it cannot run in a read. Run it from a pick or an action." }
+        act.words.map { "`openspot \(name)` \($0), so it cannot run in a show. Run it from a pick or an action." }
     }
 
     var isBatched: Bool {

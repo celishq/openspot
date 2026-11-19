@@ -2,8 +2,8 @@ import XCTest
 @testable import OpenspotCore
 
 final class SheetLayoutTests: XCTestCase {
-    private func output(_ text: String) -> SpotOutput {
-        SpotOutput(text: text)
+    private func output(_ text: String) -> Frame {
+        Frame(text: text)
     }
 
     private func placement(_ text: String) throws -> SheetPlacement {
@@ -136,7 +136,7 @@ final class SheetLayoutTests: XCTestCase {
     }
 
     func testTilesHaveTheOneRowHeightAndGap() throws {
-        let sheet = try XCTUnwrap(SheetParts(output: SpotOutput(text: "frame=\ngrid.large=a b\n\ntext=a\ntitle=A\nlook=tile\n\ntext=b\ntitle=B\nlook=tile\n"))).placement
+        let sheet = try XCTUnwrap(SheetParts(output: Frame(text: "frame=\ngrid.large=a b\n\ntext=a\ntitle=A\nlook=tile\n\ntext=b\ntitle=B\nlook=tile\n"))).placement
 
         XCTAssertEqual(try XCTUnwrap(sheet.frames["a"]).rect.height, SpotTokens.listRow)
         XCTAssertEqual(try XCTUnwrap(sheet.frames["b"]).rect.minY, SpotTokens.listRow + SpotTokens.partGap)

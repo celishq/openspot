@@ -3,7 +3,7 @@ import XCTest
 
 final class SheetFocusTests: XCTestCase {
     private func panel(_ text: String) throws -> SheetParts {
-        try XCTUnwrap(SheetParts(output: SpotOutput(text: text)))
+        try XCTUnwrap(SheetParts(output: Frame(text: text)))
     }
 
     private let confetti = """

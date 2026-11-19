@@ -22,8 +22,8 @@ final class ReviewSpotTests: XCTestCase {
         return try ReviewSpot(spot: spot([(path, "#!/bin/sh\n\(body)", true)] + (toml.isEmpty ? [] : [(manifest, toml, false)])), folder: folder)
     }
 
-    private func sheet(_ review: ReviewSpot) throws -> SpotOutput {
-        SpotOutput(text: try review.answer(["show"]))
+    private func sheet(_ review: ReviewSpot) throws -> Frame {
+        Frame(text: try review.answer(["show"]))
     }
 
     private func shown(_ review: ReviewSpot) throws -> String {

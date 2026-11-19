@@ -43,10 +43,10 @@ public final class ScriptCall: Identifiable {
         status?.value("detail")
     }
 
-    func take(_ output: SpotOutput) {
+    func take(_ output: Frame) {
         heard += 1
         guard !output.isPicture else { return }
-        status = output.summary
+        status = output.root
     }
 
     func stop() {

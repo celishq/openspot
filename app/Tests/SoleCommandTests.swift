@@ -200,8 +200,8 @@ final class SoleCommandTests: XCTestCase {
 
     func testAKeyRowSaysSetUntilItHasAKeyAndChangeAfter() {
         let spot = Spot(id: "d", name: "d", url: URL(fileURLWithPath: "/d.sh"))
-        let unset = SpotOutput(text: "field=key:d:d\ntitle=Dictate\ntype=hotkey\n").items.first
-        let set = SpotOutput(text: "field=key:d:d\ntitle=Dictate\ntype=hotkey\nvalue=option\n").items.first
+        let unset = Frame(text: "field=key:d:d\ntitle=Dictate\ntype=hotkey\n").items.first
+        let set = Frame(text: "field=key:d:d\ntitle=Dictate\ntype=hotkey\nvalue=option\n").items.first
 
         XCTAssertEqual(ActionMenu(spot: spot, item: unset)?.rows.first?.title, "Set")
         XCTAssertEqual(ActionMenu(spot: spot, item: set)?.rows.first?.title, "Change")

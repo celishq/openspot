@@ -126,7 +126,7 @@ final class DoomExampleTests: SampleSpotsCase {
                 try await Task.sleep(for: .milliseconds(10))
             }
             runs.panelClosed()
-            let drawing = SpotOutput(text: log.last ?? "").layout?.rows
+            let drawing = Frame(text: log.last ?? "").layout?.rows
             pictures.append((sheet.state.face.hasView ? sheet.state.values["picture"]?.last : nil, drawing))
         }
         return pictures

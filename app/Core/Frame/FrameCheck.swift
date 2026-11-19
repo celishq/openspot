@@ -1,15 +1,15 @@
 public struct FrameCheck: Equatable, Sendable {
-    public static let calls = ["show", SpotOutput.open, "drop", "drag"]
+    public static let calls = ["show", Frame.open, "drop", "drag"]
 
-    public let output: SpotOutput
+    public let output: Frame
     public let partFaults: [String]
 
     public init(text: String, kinds: [BlockKind] = BlockKind.all, isApp: Bool = false) {
         FrameParses.meter?.add()
-        let blocks = SpotOutput.grouping(TextBlock.blocks(in: text))
-        let output = SpotOutput(grouped: blocks, kinds: kinds)
+        let blocks = Frame.grouping(TextBlock.blocks(in: text))
+        let output = Frame(grouped: blocks, kinds: kinds)
         let root = FrameRoot(blocks: blocks, kinds: kinds).block
-        let placed = SpotOutput.placed(by: root)
+        let placed = Frame.placed(by: root)
         let listed = blocks.filter { block in
             guard let kind = BlockKind.of(block, in: kinds), let id = block.value(kind.word) else { return false }
             return !placed.contains(id) && !kind.presses && kind != .section && block != output.searchField
@@ -30,8 +30,8 @@ public struct FrameCheck: Equatable, Sendable {
                 faults += PartCatalog.faults(in: block, kind: kind)
                 continue
             }
-            if taken.contains(id), id != SpotOutput.open { faults.append("an action cannot be called \(id)") }
-            if id != SpotOutput.open, CommandAction(id: id, block: block) == nil { faults += PartCatalog.actionFaults(in: block) }
+            if taken.contains(id), id != Frame.open { faults.append("an action cannot be called \(id)") }
+            if id != Frame.open, CommandAction(id: id, block: block) == nil { faults += PartCatalog.actionFaults(in: block) }
         }
         faults += Self.rootFaults(root, of: output)
         for id in taken where output.parts.contains(where: { $0.id == id }) {
@@ -52,7 +52,7 @@ public struct FrameCheck: Equatable, Sendable {
         (output.parts.isEmpty && output.perLine == nil ? ["the sheet has no parts"] : []) + output.errors.map { "cannot read the block that starts: \($0)" } + partFaults
     }
 
-    private static func rootFaults(_ root: TextBlock?, of output: SpotOutput) -> [String] {
+    private static func rootFaults(_ root: TextBlock?, of output: Frame) -> [String] {
         var faults: [String] = []
         for field in root?.fields ?? [] where RootKey.isDrawing(field.key) && !CardFace.places.contains(String(field.key.dropFirst(RootKey.drawing.count))) {
             faults.append("the root draws \(field.key), which is not a place")

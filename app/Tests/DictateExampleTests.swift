@@ -73,7 +73,7 @@ final class DictateExampleTests: SampleSpotsCase {
     }
 
     private func rows(_ frames: [String]) -> [SpotItem] {
-        frames.map { SpotOutput(text: $0) }.last { !$0.items.isEmpty }?.items ?? []
+        frames.map { Frame(text: $0) }.last { !$0.items.isEmpty }?.items ?? []
     }
 
     func testItIsAStayingSwiftSpotWithNoClockAndNoBuildOfItsOwn() throws {
@@ -119,8 +119,8 @@ final class DictateExampleTests: SampleSpotsCase {
         XCTAssertEqual(offer?.pin, .top)
         XCTAssertEqual(offer?.openTitle, "Download")
         XCTAssertEqual(offer?.staysOnPick, true)
-        XCTAssertEqual(SpotOutput(text: frames[1]).search, .off)
-        let head = try XCTUnwrap(frames.compactMap { SpotOutput(text: $0).summary }.first { $0.value("progress") != nil })
+        XCTAssertEqual(Frame(text: frames[1]).search, .off)
+        let head = try XCTUnwrap(frames.compactMap { Frame(text: $0).root }.first { $0.value("progress") != nil })
         XCTAssertEqual(head.value("detail"), "0% of 1.6 GB")
         XCTAssertTrue(toasts(in: folder).contains { $0.hasPrefix("Dictate is ready.") })
         XCTAssertEqual(try Data(contentsOf: folder.appendingPathComponent("data/\(Self.model)")), bytes)

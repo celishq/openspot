@@ -28,7 +28,7 @@ final class SpotFrames: @unchecked Sendable {
     }
 
     var toasts: [String] {
-        all.compactMap { SpotOutput(text: $0).toast }
+        all.compactMap { Frame(text: $0).toast }
     }
 
     private func take(_ frame: String) {

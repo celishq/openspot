@@ -29,7 +29,7 @@ final class SpotSettingsTests: XCTestCase {
     }
 
     private func rows(of spot: Spot, in runs: SpotRuns) async throws -> [SpotItem] {
-        SpotOutput(text: try await runs.answer(of: spot, .show, limit: 1)).items
+        Frame(text: try await runs.answer(of: spot, .show, limit: 1)).items
     }
 
     func testAScriptWithCommandsAndNoReadOpensToItsSettingsWhichHoldItsKeys() async throws {
@@ -144,7 +144,7 @@ final class SpotSettingsTests: XCTestCase {
         XCTAssertEqual(before.map(\.records), [true, true, true, true, false, false, false, false, false])
         XCTAssertEqual(before.map { $0.hides ?? [] }, [["clear"], ["clear"], ["clear"], ["clear"], [], ["clear"], [], ["clear"], ["clear"]])
         let own = try await runs.answer(of: shelf, .show, limit: 60)
-        XCTAssertEqual(SpotOutput(text: own).items.map(\.run), ["own"])
+        XCTAssertEqual(Frame(text: own).items.map(\.run), ["own"])
 
         _ = try await runs.answer(of: settings, SpotAction(arguments: ["open", "menubar:shelf"]), limit: 1)
         XCTAssertEqual(file.read().arrangement.menuBar, ["shelf"])

@@ -16,7 +16,7 @@ final class RepeatDrawingTests: XCTestCase {
     """
 
     func testARepeatWithNoDrawingIsAList() {
-        let output = SpotOutput(text: apps)
+        let output = Frame(text: apps)
 
         XCTAssertEqual(output.drawing, .list)
         XCTAssertEqual(output.perLine, 1)

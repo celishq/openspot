@@ -201,7 +201,7 @@ final class SettingsSpotTests: BuiltInCase {
     }
 
     func testAHotkeyItemShowsItsKeyAndRecordsANewOne() {
-        let items = SpotOutput(text: "field=open\ntitle=Open\ntype=hotkey\nvalue=ctrl+k\nshake=true\n\ntext=shown\ntitle=Shown\nshortcut=cmd+k\nshake=true\n\ntext=other\ntitle=Other\n").items
+        let items = Frame(text: "field=open\ntitle=Open\ntype=hotkey\nvalue=ctrl+k\nshake=true\n\ntext=shown\ntitle=Shown\nshortcut=cmd+k\nshake=true\n\ntext=other\ntitle=Other\n").items
 
         XCTAssertEqual(items.map(\.shortcut), ["ctrl+k", nil, nil])
         XCTAssertEqual(items.map(\.records), [true, false, false])

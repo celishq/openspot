@@ -388,7 +388,7 @@ final class ShellHelperTests: XCTestCase {
 
         let output = try await ScriptProcess.output(url: url, limit: 60)
 
-        let items = SpotOutput(text: output).items
+        let items = Frame(text: output).items
         XCTAssertEqual(items.map(\.run), ["a", "b"], output)
         XCTAssertEqual(items.first?.title, "one\n\ntext=x\ntitle=x")
         XCTAssertEqual(items.first?.subtitle, "one\n\ntext=x\ntitle=x")

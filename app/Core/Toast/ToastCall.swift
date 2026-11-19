@@ -4,7 +4,7 @@ enum ToastCall: NounCall {
     case show(String)
 
     static let noun = CommandNoun("toast", group: .build, verbs: [
-        CommandVerb("", "<words>...", "Shows a short message, even when the panel is closed. It works in a read too.", rule: CallRule(flags: .needsApp)) { words in
+        CommandVerb("", "<words>...", "Shows a short message, even when the panel is closed. It works in a show too.", rule: CallRule(flags: .needsApp)) { words in
             words.none ? nil : Self.show(words.rest.joined(separator: " "))
         }
     ])

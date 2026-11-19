@@ -330,7 +330,7 @@ final class ViewLibraryTests: XCTestCase {
         let review = try ReviewSpot(spot: try SpotPackage(files: files), folder: folder)
 
         XCTAssertEqual(review.subtitle, "Holds a program that you cannot read")
-        let part = try XCTUnwrap(SpotOutput(text: try review.answer(["show"])).parts.first { $0.id == "review" })
+        let part = try XCTUnwrap(Frame(text: try review.answer(["show"])).parts.first { $0.id == "review" })
         guard case .text(let text, _, _) = part.control else { throw SpotError.badForm }
         XCTAssertTrue(text.hasPrefix("\(review.name)\n\nProgram that Openspot cannot show\nhome.spot/\(built)\nIt can do all that you can. Add it only if you trust the sender.\nThe source beside it may not match the program.\n\n"), text)
     }

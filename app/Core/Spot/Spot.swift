@@ -314,7 +314,7 @@ public struct Spot: Equatable, Sendable {
         self.drop.map { $0.lowercased() }
     }
 
-    public func taking(_ output: SpotOutput) -> Spot {
+    public func taking(_ output: Frame) -> Spot {
         var command = self
         command.actions = output.actions
         command.openTitle = output.openTitle
@@ -325,12 +325,12 @@ public struct Spot: Equatable, Sendable {
         return command
     }
 
-    public func state(of output: SpotOutput) throws -> SpotState {
+    public func state(of output: Frame) throws -> SpotState {
         guard showsState else { return headerState }
-        guard output.summary != nil || output.errors.isEmpty else { throw SpotError.badState }
+        guard output.root != nil || output.errors.isEmpty else { throw SpotError.badState }
         var state = SpotState(output: output, header: headerState)
         if self.view != nil { state = state.holding(output.view) }
-        guard self.isBuiltIn, let isOnGrid = output.summary?.flag(RootKey.shown) else { return state }
+        guard self.isBuiltIn, let isOnGrid = output.root?.flag(RootKey.shown) else { return state }
         return state.onGrid(isOnGrid)
     }
 

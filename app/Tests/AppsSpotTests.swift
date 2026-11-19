@@ -75,8 +75,8 @@ final class AppsSpotTests: SampleSpotsCase {
             try await apps.perform(SpotAction(arguments: ["uninstall", app.path]), timeout: 60)
             let sheet = try await apps.items(input: "event=spot.change\n", timeout: 60)
 
-            XCTAssertEqual(sheet.summary?.value("title"), "Delete Zed")
-            XCTAssertEqual(sheet.summary?.value("detail"), "Move the app and its files to the Trash. A folder found only by the app's name waits for your tick.")
+            XCTAssertEqual(sheet.root?.value("title"), "Delete Zed")
+            XCTAssertEqual(sheet.root?.value("detail"), "Move the app and its files to the Trash. A folder found only by the app's name waits for your tick.")
             XCTAssertEqual(sheet.parts.map(\.id), [])
             XCTAssertEqual(sheet.actions.map(\.id), ["cancel", "remove"])
             XCTAssertEqual(sheet.actions.map(\.key), [ActionKey(name: "escape"), ActionKey(name: "return", isCommand: true)])

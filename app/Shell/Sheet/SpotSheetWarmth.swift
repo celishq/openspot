@@ -8,7 +8,7 @@ enum SpotSheetWarmth {
     private static let rows = ["star", "folder", "doc", "gear", "clock"].map { SpotItem(title: $0.capitalized, subtitle: "Row", run: $0, picture: .symbol($0)) }
 
     static func draw() {
-        let sheets = [SheetExamples.all[0], SheetExamples.tiles].map { SpotOutput(text: $0.text) }
+        let sheets = [SheetExamples.all[0], SheetExamples.tiles].map { Frame(text: $0.text) }
         let view = VStack(alignment: .leading, spacing: 0) {
             ForEach(Array(sheets.enumerated()), id: \.offset) { _, output in
                 if let panel = SheetParts(output: output) {

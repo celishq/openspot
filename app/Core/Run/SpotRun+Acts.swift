@@ -175,7 +175,7 @@ extension SpotRun {
         return nil
     }
 
-    private static func form(in output: SpotOutput) -> ItemForm? {
+    private static func form(in output: Frame) -> ItemForm? {
         ItemForm(output: output).flatMap { $0.fields.isEmpty ? nil : $0 }
     }
 

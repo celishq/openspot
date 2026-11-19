@@ -26,7 +26,7 @@ final class ItemsTests: PanelCase {
     }
 
     func testATextThatTheGridDoesNotPlaceIsAnItemAndAButtonOrASectionKeepsItsRole() {
-        let output = SpotOutput(text: """
+        let output = Frame(text: """
         frame=
         grid=head
 
@@ -58,7 +58,7 @@ final class ItemsTests: PanelCase {
     }
 
     func testABlockThatOnlyASizePlacesStaysOutOfASheetWithItsOwnGrid() {
-        let output = SpotOutput(text: """
+        let output = Frame(text: """
         frame=
         grid=items
         grid.bar=count
@@ -79,7 +79,7 @@ final class ItemsTests: PanelCase {
     }
 
     func testAChoiceIsNeverAnItemSoTheSheetDrawsItsPicker() {
-        let output = SpotOutput(text: """
+        let output = Frame(text: """
         frame=
         title=Look
 
@@ -100,7 +100,7 @@ final class ItemsTests: PanelCase {
     }
 
     func testATextItemWithOneValueShowsARingWithItsDetail() {
-        let output = SpotOutput(text: "text=mac\ntitle=This Mac\ndetail=84%\nvalue=0.84\n\ntext=swap\ntitle=Swap\ndetail=2 GB\n")
+        let output = Frame(text: "text=mac\ntitle=This Mac\ndetail=84%\nvalue=0.84\n\ntext=swap\ntitle=Swap\ndetail=2 GB\n")
 
         XCTAssertEqual(output.items.first?.ring?.fill, 0.84)
         XCTAssertEqual(output.items.first?.ring?.ringWords, "84")
@@ -108,15 +108,15 @@ final class ItemsTests: PanelCase {
     }
 
     func testARowIsAnUnknownKind() {
-        let output = SpotOutput(text: "row=a\ntitle=A\n\ntext=b\ntitle=B\n")
+        let output = Frame(text: "row=a\ntitle=A\n\ntext=b\ntitle=B\n")
 
         XCTAssertEqual(output.items.map(\.run), ["b"])
         XCTAssertEqual(output.errors, ["row=a"])
     }
 
     func testWithNoGridTheSheetIsASearchFieldOverEachBlock() {
-        let output = SpotOutput(text: "text=a\ntitle=A\n\nfield=name\ntitle=Name\n")
-        let placed = SpotOutput(text: "frame=\ngrid=a\n\ntext=a\ntitle=A\n\ntext=b\ntitle=B\n")
+        let output = Frame(text: "text=a\ntitle=A\n\nfield=name\ntitle=Name\n")
+        let placed = Frame(text: "frame=\ngrid=a\n\ntext=a\ntitle=A\n\ntext=b\ntitle=B\n")
 
         XCTAssertEqual(output.parts, [])
         XCTAssertEqual(output.items.map(\.run), ["a", "name"])
@@ -126,12 +126,12 @@ final class ItemsTests: PanelCase {
     }
 
     func testASearchFieldFiltersInsideOpenspotAndWithFilterSpotTheSpotFilters() {
-        let local = SpotOutput(text: "frame=\ngrid=find\ngrid=a\n\nfield=find\ntype=search\n\ntext=a\ntitle=A\n\ntext=b\ntitle=B\n")
-        let spot = SpotOutput(text: "field=find\ntype=search\nfilter=spot\n\ntext=b\ntitle=B\n")
+        let local = Frame(text: "frame=\ngrid=find\ngrid=a\n\nfield=find\ntype=search\n\ntext=a\ntitle=A\n\ntext=b\ntitle=B\n")
+        let spot = Frame(text: "field=find\ntype=search\nfilter=spot\n\ntext=b\ntitle=B\n")
 
         XCTAssertEqual(local.search, .local)
         XCTAssertEqual(local.items.map(\.run), ["b"])
-        XCTAssertEqual(local.layout?.rows, [["a"], [SpotOutput.itemsArea]])
+        XCTAssertEqual(local.layout?.rows, [["a"], [Frame.itemsArea]])
         XCTAssertEqual(spot.search, .script)
         XCTAssertEqual(spot.items.map(\.run), ["b"])
         XCTAssertEqual(spot.parts, [])

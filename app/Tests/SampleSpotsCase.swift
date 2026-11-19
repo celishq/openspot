@@ -146,8 +146,8 @@ class SampleSpotsCase: XCTestCase {
     }
 
     @MainActor
-    static func answer(of spot: Spot, _ arguments: [String], input: String) async throws -> SpotOutput {
-        SpotOutput(text: try await SpotRuns(environment: TestEnvironment.values).answer(of: spot, SpotAction(arguments: arguments), input: input, limit: 30))
+    static func answer(of spot: Spot, _ arguments: [String], input: String) async throws -> Frame {
+        Frame(text: try await SpotRuns(environment: TestEnvironment.values).answer(of: spot, SpotAction(arguments: arguments), input: input, limit: 30))
     }
 
     func action(_ id: String, of spot: Spot) async throws -> CommandAction {
@@ -198,17 +198,17 @@ class SampleSpotsCase: XCTestCase {
         return try XCTUnwrap(try scan.spots.first { $0.name == "Translate" })
     }
 
-    func text(of id: String, in output: SpotOutput) -> String? {
+    func text(of id: String, in output: Frame) -> String? {
         output.parts.first { $0.id == id }?.value
     }
 
     @MainActor
-    static func drive(_ spot: Spot, _ actions: [SpotAction]) async throws -> SpotOutput {
+    static func drive(_ spot: Spot, _ actions: [SpotAction]) async throws -> Frame {
         var last = try await spot.items(timeout: 60)
         var panel = try XCTUnwrap(SheetParts(output: last))
         for action in actions {
             if action.arguments.count == 2 { panel.set(action.arguments[1], of: action.arguments[0]) }
-            last = SpotOutput(text: try await SpotRuns(environment: TestEnvironment.values).answer(of: spot, action, input: Message(action, inputs: panel.inputs).text, limit: 30))
+            last = Frame(text: try await SpotRuns(environment: TestEnvironment.values).answer(of: spot, action, input: Message(action, inputs: panel.inputs).text, limit: 30))
             panel.take(last, answering: panel.generation)
         }
         return last

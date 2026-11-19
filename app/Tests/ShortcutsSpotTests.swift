@@ -75,7 +75,7 @@ final class ShortcutsSpotTests: SampleSpotsCase {
             XCTAssertEqual(same, first)
             XCTAssertEqual(changed.count, 2)
             XCTAssertEqual(changed.first, first.first)
-            XCTAssertEqual(SpotOutput(text: changed.last ?? "").items.map(\.title), ["Make a GIF", "Video to audio"])
+            XCTAssertEqual(Frame(text: changed.last ?? "").items.map(\.title), ["Make a GIF", "Video to audio"])
         }
     }
 
@@ -196,10 +196,10 @@ final class ShortcutsSpotTests: SampleSpotsCase {
             try await shortcuts.perform(.item(row), timeout: 60)
             let second = try runArguments(in: folder)
 
-            XCTAssertEqual(sheet.summary?.value("title"), "Run with 2 files")
+            XCTAssertEqual(sheet.root?.value("title"), "Run with 2 files")
             XCTAssertEqual(sheet.actions.first { $0.id == "cancel" }?.key, ActionKey(name: "escape"))
             XCTAssertEqual(Array(first.prefix(6)), ["run", "Video to audio", "-i", files[0], "-i", files[1]])
-            XCTAssertNil(after.summary?.value("title"))
+            XCTAssertNil(after.root?.value("title"))
             XCTAssertFalse(second.contains("-i"))
         }
     }
@@ -217,9 +217,9 @@ final class ShortcutsSpotTests: SampleSpotsCase {
             try await shortcuts.perform(.press("cancel"), timeout: 60)
             let cancelled = try await shortcuts.items(timeout: 60)
 
-            XCTAssertEqual(dropped.summary?.value("title"), "Run with a.mov")
-            XCTAssertNil(reopened.summary?.value("title"))
-            XCTAssertNil(cancelled.summary?.value("title"))
+            XCTAssertEqual(dropped.root?.value("title"), "Run with a.mov")
+            XCTAssertNil(reopened.root?.value("title"))
+            XCTAssertNil(cancelled.root?.value("title"))
         }
     }
 

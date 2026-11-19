@@ -21,7 +21,7 @@ final class ClockExampleTests: SampleSpotsCase {
         var tick: String?
         var hasEnded = false
         while answer == nil || tick == nil, let frame = try await frames.next() {
-            let output = SpotOutput(text: frame)
+            let output = Frame(text: frame)
             if output.ends == ["1"] { hasEnded = true }
             guard output.isPicture else { continue }
             if hasEnded { tick = frame } else { answer = frame }

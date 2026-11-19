@@ -41,7 +41,7 @@ final class StayMode: ScriptMode {
     private(set) var records: [Int: Record] = [:]
     private var droppedBelow = 0
     private var askReason: String?
-    private var lastPicture: SpotOutput?
+    private var lastPicture: Frame?
     private var printing: Int?
     private var drawn: (call: Int, text: String?)?
     private var count = 0
@@ -294,7 +294,7 @@ final class StayMode: ScriptMode {
         run?.lost()
     }
 
-    private func take(_ text: String, _ lines: SpotOutput, in run: SpotRun) async {
+    private func take(_ text: String, _ lines: Frame, in run: SpotRun) async {
         let ends = lines.ends.compactMap { Int($0) }
         let start = lines.start.flatMap(Int.init)
         let late = ends.filter(isDropped)
@@ -336,7 +336,7 @@ final class StayMode: ScriptMode {
         await close(ends, in: run)
     }
 
-    private func answer(_ id: Int, _ record: Record, _ text: String, _ lines: SpotOutput, in run: SpotRun) async {
+    private func answer(_ id: Int, _ record: Record, _ text: String, _ lines: Frame, in run: SpotRun) async {
         await end(id, record, frame: (text, lines), in: run)
         settle()
     }
@@ -349,7 +349,7 @@ final class StayMode: ScriptMode {
         if !ids.isEmpty { settle() }
     }
 
-    private func end(_ id: Int, _ record: Record, frame: (text: String, lines: SpotOutput)? = nil, in run: SpotRun) async {
+    private func end(_ id: Int, _ record: Record, frame: (text: String, lines: Frame)? = nil, in run: SpotRun) async {
         let asks = record.ask?.isAnswer == false
         remove(id)
         if asks { endingAsks += 1 }

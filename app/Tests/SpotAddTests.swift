@@ -204,8 +204,8 @@ final class SpotAddTests: XCTestCase {
     func testAddAndRemoveCannotRunInARead() throws {
         let read = environment
 
-        XCTAssertEqual(CommandLineCall(arguments: ["spot", "add", "x"], environment: read, reason: "sheet")?.value as? CallFault, .refused("`openspot spot add` changes your spots folder, so it cannot run in a read. Run it from a pick or an action."))
-        XCTAssertEqual(CommandLineCall(arguments: ["spot", "remove", "x"], environment: read, reason: "sheet")?.value as? CallFault, .refused("`openspot spot remove` changes your spots folder, so it cannot run in a read. Run it from a pick or an action."))
+        XCTAssertEqual(CommandLineCall(arguments: ["spot", "add", "x"], environment: read, reason: "sheet")?.value as? CallFault, .refused("`openspot spot add` changes your spots folder, so it cannot run in a show. Run it from a pick or an action."))
+        XCTAssertEqual(CommandLineCall(arguments: ["spot", "remove", "x"], environment: read, reason: "sheet")?.value as? CallFault, .refused("`openspot spot remove` changes your spots folder, so it cannot run in a show. Run it from a pick or an action."))
     }
 
     private func files(in folder: URL) throws -> [String: Data] {

@@ -26,7 +26,7 @@ final class SpotSampleTests: XCTestCase {
         return try XCTUnwrap(try SpotFile(file: url, id: name)?.spots.first)
     }
 
-    private func output(of id: String) async throws -> SpotOutput? {
+    private func output(of id: String) async throws -> Frame? {
         let items = SpotCatalog(published: store, folder: SpotsFolder(url: spots, core: core), arrangement: SpotArrangement(), stores: [Store(url: store)]).items(publications: false)
         return await SpotSample.output(of: try XCTUnwrap(items.first { $0.id == id }), runs: runs)
     }
@@ -55,7 +55,7 @@ final class SpotSampleTests: XCTestCase {
         try await SpotSample.capture(of: spot, runs: runs)
 
         let sample = try String(contentsOf: SpotSample.text(beside: spot.url), encoding: .utf8)
-        XCTAssertEqual(SpotOutput(text: sample).items.map(\.title), ["Sample"])
+        XCTAssertEqual(Frame(text: sample).items.map(\.title), ["Sample"])
     }
 
     func testTheSampleOfASwiftSpotWithSourcesRunsItsSampleScriptAndBuildsNothing() async throws {

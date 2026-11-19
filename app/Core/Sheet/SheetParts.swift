@@ -24,7 +24,7 @@ public struct SheetParts: Equatable, Sendable {
     private var focusLineOffsets: [[Int]] = []
     public private(set) var selected: String?
 
-    public init?(output: SpotOutput) {
+    public init?(output: Frame) {
         guard !output.parts.isEmpty else { return nil }
         parts = output.parts
         layout = output.layout
@@ -191,7 +191,7 @@ public struct SheetParts: Equatable, Sendable {
     }
 
     @discardableResult
-    public mutating func take(_ output: SpotOutput, answering generation: Int, keeping id: String? = nil) -> Bool {
+    public mutating func take(_ output: Frame, answering generation: Int, keeping id: String? = nil) -> Bool {
         guard generation == self.generation, !output.parts.isEmpty else { return false }
         let kept = parts.first { $0.id == id }?.value
         parts = output.parts

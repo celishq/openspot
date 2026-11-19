@@ -74,10 +74,10 @@ final class SpotTablesTests: XCTestCase {
     func testOnlyShownInTheHeadOfASpotOfTheAppMovesItsCardOnOrOffTheGrid() throws {
         let spot = Spot(id: "u", name: "U", url: URL(fileURLWithPath: "/none/u.sh"), on: .panel)
 
-        XCTAssertFalse(try spot.builtIn().state(of: SpotOutput(text: "frame=\ntitle=U\nshown=false\n")).isOnGrid)
-        XCTAssertTrue(try spot.builtIn().state(of: SpotOutput(text: "frame=\ntitle=U\nshown=true\n")).isOnGrid)
-        XCTAssertTrue(try spot.builtIn().state(of: SpotOutput(text: "frame=\ntitle=U\ngrid=false\n")).isOnGrid)
-        XCTAssertTrue(try spot.state(of: SpotOutput(text: "frame=\ntitle=U\nshown=false\n")).isOnGrid)
+        XCTAssertFalse(try spot.builtIn().state(of: Frame(text: "frame=\ntitle=U\nshown=false\n")).isOnGrid)
+        XCTAssertTrue(try spot.builtIn().state(of: Frame(text: "frame=\ntitle=U\nshown=true\n")).isOnGrid)
+        XCTAssertTrue(try spot.builtIn().state(of: Frame(text: "frame=\ntitle=U\ngrid=false\n")).isOnGrid)
+        XCTAssertTrue(try spot.state(of: Frame(text: "frame=\ntitle=U\nshown=false\n")).isOnGrid)
     }
 
     func testANewKindOfBlockIsOneValueOfTheTable() {
@@ -100,11 +100,11 @@ final class SpotTablesTests: XCTestCase {
         XCTAssertEqual(check.output.metric?.value("value"), "3")
         XCTAssertEqual(ItemForm(output: check.output)?.fields.map(\.name), ["m"])
         XCTAssertTrue(check.output.isPicture)
-        XCTAssertEqual(SpotOutput(text: frame).errors, ["meter=m"])
+        XCTAssertEqual(Frame(text: frame).errors, ["meter=m"])
     }
 
     func testABlockIsReadByTheKindThatItsWordAndItsTypeName() {
-        let output = SpotOutput(text: "frame=\ngrid=one\ngrid=bars\ngrid=level\ngrid=key\ngrid=name\ngrid=done\n\ngraph=one\nvalue=0.5\n\ngraph=bars\nvalue=1\nvalue=2\n\nfield=level\ntype=slider\n\nfield=key\ntype=hotkey\n\nfield=name\n\nswitch=done\ntype=tick\n")
+        let output = Frame(text: "frame=\ngrid=one\ngrid=bars\ngrid=level\ngrid=key\ngrid=name\ngrid=done\n\ngraph=one\nvalue=0.5\n\ngraph=bars\nvalue=1\nvalue=2\n\nfield=level\ntype=slider\n\nfield=key\ntype=hotkey\n\nfield=name\n\nswitch=done\ntype=tick\n")
 
         XCTAssertEqual(output.parts.map(\.kind), ["gauge", "graph", "slider", "hotkey", "field", "switch"])
         XCTAssertEqual(output.parts.last?.look, .tick)

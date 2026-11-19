@@ -85,7 +85,7 @@ final class SampleSpotsTests: SampleSpotsCase {
                 relay.send(Message(SpotAction(arguments: ["send"]), inputs: [.init(key: "peer", value: "127.0.0.1:\(port)"), .init(key: "message", value: "hello")]), id: call)
                 while let frame = try await self.next(&frames, of: relay) {
                     seen.append(frame)
-                    if SpotOutput(text: frame).ends == [String(call)] { break }
+                    if Frame(text: frame).ends == [String(call)] { break }
                 }
                 call += 1
             }

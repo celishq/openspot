@@ -90,8 +90,8 @@ Use it to show what the words will make before the person presses Enter.
 
 The `calendar` verbs need the person's leave to use Calendars, and the `reminders` verbs need it for Reminders.
 
-- Openspot never asks at its start. A verb outside a read asks macOS the first time, and goes on with the answer (E6).
-- In a read, a verb that has not asked yet prints `status=unasked` and exits 0, so that the script can offer an item that
+- Openspot never asks at its start. A verb outside a show asks macOS the first time, and goes on with the answer (E6).
+- In a show, a verb that has not asked yet prints `status=unasked` and exits 0, so that the script can offer an item that
   asks (E7).
 - When the person said no, the verb fails with `link=` to its pane in Privacy & Security (E8).
 
@@ -99,8 +99,8 @@ A verb never prints an empty list in place of a list that it cannot read.
 
 ## Rules
 
-- `add`, `done` and `show` fail in a read, so that nothing changes or opens by surprise (protocol: The openspot command). The lists and `add --dry-run`
-  work in a read (E9).
+- `add`, `done` and `show` fail in a show, so that nothing changes or opens by surprise (protocol: The openspot command). The lists and `add --dry-run`
+  work in a show (E9).
 - A list is in the order of time: an event by its start, and a reminder by its due time, so that a ticked one keeps its
   place.
 

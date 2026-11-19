@@ -28,7 +28,7 @@ final class FakeMode: ScriptMode {
     func frame(_ text: String, of call: OpenCall) async {
         guard !call.made.isStopped else { return }
         call.frames.append(text)
-        await run?.take(text, SpotOutput(text: text), of: call)
+        await run?.take(text, Frame(text: text), of: call)
     }
 
     func end(_ call: OpenCall, _ end: ScriptCall.End = .ended) async {

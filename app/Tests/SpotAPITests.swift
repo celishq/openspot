@@ -274,8 +274,8 @@ final class SpotAPITests: XCTestCase {
     func testAReadCannotQuitOrRestartTheApp() {
         let read: [String: String] = [:]
 
-        XCTAssertEqual(CommandLineCall(arguments: ["app", "quit"], environment: read, reason: "panel")?.value as? CallFault, .refused("`openspot app quit` ends Openspot, so it cannot run in a read. Run it from a pick or an action."))
-        XCTAssertEqual(CommandLineCall(arguments: ["update", "install"], environment: read, reason: "panel")?.value as? CallFault, .refused("`openspot update install` restarts Openspot, so it cannot run in a read. Run it from a pick or an action."))
+        XCTAssertEqual(CommandLineCall(arguments: ["app", "quit"], environment: read, reason: "panel")?.value as? CallFault, .refused("`openspot app quit` ends Openspot, so it cannot run in a show. Run it from a pick or an action."))
+        XCTAssertEqual(CommandLineCall(arguments: ["update", "install"], environment: read, reason: "panel")?.value as? CallFault, .refused("`openspot update install` restarts Openspot, so it cannot run in a show. Run it from a pick or an action."))
         XCTAssertEqual(CommandLineCall(arguments: ["app", "status"], environment: read, reason: "panel")?.value as? AppCall, .status(.frame))
     }
 
@@ -299,7 +299,7 @@ final class SpotAPITests: XCTestCase {
             let answer = try await XCTUnwrap(appWork(arguments))()
             XCTAssertEqual(answer.code, 3, arguments.joined(separator: " "))
         }
-        XCTAssertEqual(CommandLineCall(arguments: ["spot", "open", "notes"], environment: [:], reason: "panel")?.value as? CallFault, .refused("`openspot spot open` opens the panel, so it cannot run in a read. Run it from a pick or an action."))
+        XCTAssertEqual(CommandLineCall(arguments: ["spot", "open", "notes"], environment: [:], reason: "panel")?.value as? CallFault, .refused("`openspot spot open` opens the panel, so it cannot run in a show. Run it from a pick or an action."))
     }
 
     func testTheRunningAppAsksForFilesForASpotThatTakesThem() async throws {
@@ -310,7 +310,7 @@ final class SpotAPITests: XCTestCase {
         XCTAssertEqual(chose, CommandAnswer())
         XCTAssertEqual(opened, ["choose shelf", "choose gone"])
         XCTAssertEqual(gone.errors, "Openspot has no spot `gone` that takes files. Add drop to its spot.toml.\n")
-        XCTAssertEqual(CommandLineCall(arguments: ["spot", "choose", "shelf"], environment: [:], reason: "panel")?.value as? CallFault, .refused("`openspot spot choose` opens a window, so it cannot run in a read. Run it from a pick or an action."))
+        XCTAssertEqual(CommandLineCall(arguments: ["spot", "choose", "shelf"], environment: [:], reason: "panel")?.value as? CallFault, .refused("`openspot spot choose` opens a window, so it cannot run in a show. Run it from a pick or an action."))
     }
 
     func testThePromptAsksForASpotInTheSpotsFolder() async throws {

@@ -5,7 +5,7 @@ let keywordFolder = URL(fileURLWithPath: CommandLine.arguments[2])
 let rounds = 30
 
 func items(_ name: String) -> [SpotItem] {
-    SpotOutput(text: (try? String(contentsOf: data.appendingPathComponent("\(name).txt"), encoding: .utf8)) ?? "").items
+    Frame(text: (try? String(contentsOf: data.appendingPathComponent("\(name).txt"), encoding: .utf8)) ?? "").items
 }
 
 func glyphItems() -> [SpotItem] {

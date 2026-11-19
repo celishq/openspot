@@ -113,7 +113,7 @@ public struct SpotCheck: Sendable {
         return findings
     }
 
-    static func moveFaults(of output: SpotOutput, in script: Spot) -> [String] {
+    static func moveFaults(of output: Frame, in script: Spot) -> [String] {
         var faults: [String] = []
         for item in output.items {
             guard case .push(_, let page?, _, _)? = item.move, !script.takes(route: page) else { continue }

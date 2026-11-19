@@ -8,15 +8,15 @@ final class WelcomeSpotTests: BuiltInCase {
         }
     }
 
-    private func answer(_ arguments: [String]) async throws -> SpotOutput {
+    private func answer(_ arguments: [String]) async throws -> Frame {
         try await welcome.answer(SpotAction(arguments: arguments), timeout: 60)
     }
 
-    private func read(page: String? = nil) async throws -> SpotOutput {
+    private func read(page: String? = nil) async throws -> Frame {
         try await welcome.items(page: page, timeout: 60)
     }
 
-    private func part(_ id: String, in output: SpotOutput) throws -> SpotPart {
+    private func part(_ id: String, in output: Frame) throws -> SpotPart {
         try XCTUnwrap(output.parts.first { $0.id == id })
     }
 
@@ -24,7 +24,7 @@ final class WelcomeSpotTests: BuiltInCase {
         path.map { URL(fileURLWithPath: $0).lastPathComponent }
     }
 
-    private func assertHead(_ output: SpotOutput, _ title: String, _ detail: String, file: StaticString = #filePath, line: UInt = #line) throws {
+    private func assertHead(_ output: Frame, _ title: String, _ detail: String, file: StaticString = #filePath, line: UInt = #line) throws {
         let head = try part("head", in: output)
         XCTAssertEqual(head.kind, "view", file: file, line: line)
         XCTAssertFalse(head.growsRow, file: file, line: line)

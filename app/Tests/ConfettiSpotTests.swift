@@ -57,11 +57,11 @@ final class ConfettiSpotTests: SampleSpotsCase {
         let frames = try await answer("call=1\narg=look\nsetting.look=Gold\n\n", from: script, until: "1")
         let sample = try await ScriptProcess.output(url: spotFolder.appendingPathComponent("sample.sh"), base: TestEnvironment.values)
 
-        let form = try XCTUnwrap(frames.compactMap { ItemForm(output: SpotOutput(text: $0)) }.first)
+        let form = try XCTUnwrap(frames.compactMap { ItemForm(output: Frame(text: $0)) }.first)
         let choice = try XCTUnwrap(form.soleChoice)
         XCTAssertEqual(choice.value, "gold")
         XCTAssertEqual(choice.options.map(\.id), ["colorful", "gold", "metallic"])
-        let sampled = try XCTUnwrap(ItemForm(output: SpotOutput(text: sample))?.soleChoice)
+        let sampled = try XCTUnwrap(ItemForm(output: Frame(text: sample))?.soleChoice)
         XCTAssertEqual(sampled.options, choice.options)
     }
 
@@ -76,7 +76,7 @@ final class ConfettiSpotTests: SampleSpotsCase {
         let frames = try await answer("call=1\narg=look\ninput.look=broken\n\n", from: script, until: "1")
 
         XCTAssertEqual(try read("calls", in: folder), "setting set look Broken\ntoast Broken cannot play. Line 2: `nope` is not a colour. Write it as `#RRGGBB`, such as `#FF4D6D`.\n")
-        XCTAssertEqual(frames.compactMap { SpotOutput(text: $0).toast }, [])
+        XCTAssertEqual(frames.compactMap { Frame(text: $0).toast }, [])
     }
 
     func testAPlayOfTheKeptLookThatCannotPlayEndsItsCallAndTheEndOfStdinEndsTheSpot() async throws {

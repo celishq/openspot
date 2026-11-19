@@ -12,13 +12,13 @@ extension SpotRun {
         runs.usage.acted(spot, at: runs.now())
     }
 
-    func answer(to message: Message, key: String) async throws -> SpotOutput? {
+    func answer(to message: Message, key: String) async throws -> Frame? {
         try await withCheckedThrowingContinuation { waiting in
             if !send(Call(message: message, key: key, purpose: .form(waiting))) { waiting.resume(returning: nil) }
         }
     }
 
-    func take(_ text: String, _ lines: SpotOutput, of call: OpenCall) async {
+    func take(_ text: String, _ lines: Frame, of call: OpenCall) async {
         if call.answered == nil { call.answered = Date().timeIntervalSince(call.begin) }
         call.made.take(lines)
         switch call.request.purpose {
@@ -46,7 +46,7 @@ extension SpotRun {
         }
     }
 
-    func take(_ text: String, _ lines: SpotOutput) async {
+    func take(_ text: String, _ lines: Frame) async {
         if lines.isPicture {
             await takePicture(lines, frame: text, of: nil)
         } else {
@@ -55,7 +55,7 @@ extension SpotRun {
     }
 
     func take(answers text: String?, to query: String, of call: OpenCall, _ end: ScriptCall.End, errors: String) {
-        takeAnswers(text.map { SpotOutput(text: $0).answers } ?? [], to: query)
+        takeAnswers(text.map { Frame(text: $0).answers } ?? [], to: query)
         call.hasAnswer = text != nil
         finish(call, end, errors: errors)
     }
@@ -98,7 +98,7 @@ extension SpotRun {
         runs.record(spot, request.action, input: values.hiding(request.message.text), frames: call.frames.map(values.hiding), errors: values.hiding(errors), end: end, event: request.event, started: call.made.started, begin: call.begin)
     }
 
-    private func answer(_ waiting: CheckedContinuation<SpotOutput?, Error>, of call: OpenCall, _ end: ScriptCall.End) {
+    private func answer(_ waiting: CheckedContinuation<Frame?, Error>, of call: OpenCall, _ end: ScriptCall.End) {
         switch end {
         case .stopped: waiting.resume(returning: nil)
         case .ended: waiting.resume(returning: call.form.selecting(call.selected))

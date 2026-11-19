@@ -291,9 +291,9 @@ public final class SpotRuns {
         updateClock()
     }
 
-    func intake(_ frame: String, of id: String?) async -> SpotOutput {
+    func intake(_ frame: String, of id: String?) async -> Frame {
         let shown = id.flatMap { sheets[$0] }.flatMap { $0.shownFrame == frame ? $0.lastAnswer : nil }
-        let lines = if let shown { shown } else { await SpotOutput.reading(frame) }
+        let lines = if let shown { shown } else { await Frame.reading(frame) }
         guard let id, opening.moving == id else { return lines }
         sheets[id]?.hear(lines)
         await opening.waitForMotion(of: id)

@@ -47,7 +47,7 @@ final class SpotTests: XCTestCase {
     }
 
     func testOnlyASpotWithAViewKeepsTheValuesOfItsViewBlock() throws {
-        let output = SpotOutput(text: "view=cups\ntitle=3\npoint=1\npoint=2\n")
+        let output = Frame(text: "view=cups\ntitle=3\npoint=1\npoint=2\n")
         let plain = Spot(id: "cups", name: "Cups", url: URL(fileURLWithPath: "/spots/cups.sh"), on: .panel)
         let drawn = Spot(id: "cups", name: "Cups", url: URL(fileURLWithPath: "/spots/cups.sh"), on: .panel, view: "/spots/cups.swift")
 

@@ -426,7 +426,7 @@ final class SwiftProgramTests: XCTestCase {
 
         XCTAssertEqual(review.name, "Hello")
         XCTAssertEqual(review.subtitle, "Holds a program that you cannot read")
-        let part = try XCTUnwrap(SpotOutput(text: try review.answer(["show"])).parts.first { $0.id == "review" })
+        let part = try XCTUnwrap(Frame(text: try review.answer(["show"])).parts.first { $0.id == "review" })
         guard case .text(let text, _, _) = part.control else { throw SpotError.badForm }
         XCTAssertTrue(text.hasPrefix("Hello\n\nProgram that Openspot cannot show\nhello.spot/\(carried)\nIt can do all that you can. Add it only if you trust the sender.\nThe source beside it may not match the program.\n\n"), text)
     }

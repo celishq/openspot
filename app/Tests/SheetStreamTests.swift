@@ -121,18 +121,18 @@ final class SheetStreamTests: XCTestCase {
     }
 
     func testAFrameReplacesTheWholeSheet() throws {
-        var panel = try XCTUnwrap(SheetParts(output: SpotOutput(text: "frame=\ngrid=a b\n\ntext=a\ntitle=A\n\ntext=b\ntitle=B\n")))
+        var panel = try XCTUnwrap(SheetParts(output: Frame(text: "frame=\ngrid=a b\n\ntext=a\ntitle=A\n\ntext=b\ntitle=B\n")))
 
-        panel.take(SpotOutput(text: "frame=\ngrid.large=c\n\ntext=c\ntitle=C\n"), answering: panel.generation)
+        panel.take(Frame(text: "frame=\ngrid.large=c\n\ntext=c\ntitle=C\n"), answering: panel.generation)
 
         XCTAssertEqual(panel.parts.map(\.id), ["c"])
         XCTAssertNil(panel.layout)
     }
 
     func testAFrameKeepsTheTextThePersonIsTyping() throws {
-        var panel = try XCTUnwrap(SheetParts(output: SpotOutput(text: "frame=\ngrid=a\n\nfield=a\nvalue=typed\n")))
+        var panel = try XCTUnwrap(SheetParts(output: Frame(text: "frame=\ngrid=a\n\nfield=a\nvalue=typed\n")))
 
-        panel.take(SpotOutput(text: "frame=\ngrid=a\n\nfield=a\nvalue=old\n"), answering: panel.generation, keeping: "a")
+        panel.take(Frame(text: "frame=\ngrid=a\n\nfield=a\nvalue=old\n"), answering: panel.generation, keeping: "a")
 
         XCTAssertEqual(panel.parts.first?.value, "typed")
     }

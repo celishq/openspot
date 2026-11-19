@@ -8,7 +8,7 @@ enum EventCall: NounCall {
             guard let name = words.rest.first, words.rest.count <= 2 else { return nil }
             guard SpotEvent.isName(name) else { return CallFault.refused("`\(name)` is not an event. Name one with a dot, such as `music.track`.") }
             guard words.reason != name else {
-                return CallFault.refused("`openspot event emit \(name)` runs in a read of `\(name)`, so it would read that spot again without end, and Openspot did not raise it. Raise it from an action, or raise another event.")
+                return CallFault.refused("`openspot event emit \(name)` runs in a show of `\(name)`, so it would show that spot again without end, and Openspot did not raise it. Raise it from an action, or raise another event.")
             }
             return Self.emit(name: name, value: words.rest.dropFirst().first)
         }

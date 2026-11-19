@@ -45,7 +45,7 @@ public final class SpotRun {
     enum Purpose {
         case ask(Ask)
         case act(Act)
-        case form(CheckedContinuation<SpotOutput?, Error>)
+        case form(CheckedContinuation<Frame?, Error>)
     }
 
     struct Call {
@@ -204,7 +204,7 @@ public final class SpotRun {
     @ObservationIgnored var answered: Date? {
         didSet { settle() }
     }
-    @ObservationIgnored var lastAnswer: SpotOutput?
+    @ObservationIgnored var lastAnswer: Frame?
     @ObservationIgnored var shownFrame: String?
     @ObservationIgnored var shownEvent: ShowEvent?
     @ObservationIgnored var finishesShow = false
@@ -312,7 +312,7 @@ public final class SpotRun {
         if field != showsField { showsField = field }
     }
 
-    func hear(_ lines: SpotOutput?) {
+    func hear(_ lines: Frame?) {
         guard let lines else {
             heardKind = nil
             return

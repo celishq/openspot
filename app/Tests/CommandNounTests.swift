@@ -85,7 +85,7 @@ final class CommandNounTests: XCTestCase {
     func testTheRuleOfAVerbRefusesItInARead() {
         XCTAssertEqual(
             CommandLineCall(arguments: ["bell", "ring", "hi"], reason: "panel.open", nouns: nouns)?.value as? CallFault,
-            .refused("`openspot bell ring` rings a bell, so it cannot run in a read. Run it from a pick or an action.")
+            .refused("`openspot bell ring` rings a bell, so it cannot run in a show. Run it from a pick or an action.")
         )
         XCTAssertEqual(CommandLineCall(arguments: ["bell", "count"], reason: "panel.open", nouns: nouns)?.value as? BellCall, .count)
     }

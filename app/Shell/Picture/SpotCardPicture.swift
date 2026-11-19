@@ -9,7 +9,7 @@ enum SpotCardPicture {
 
     static func run(text: String, size: SpotSize, path: String) -> Never {
         SpotPicture.start()
-        let output = SpotOutput(text: text)
+        let output = Frame(text: text)
         let face = output.face
         guard let layout = face.layout(for: size) else {
             FileHandle.standardError.write(Data("The card has no drawing for the size \(size.name). Print grid.\(size.name)= lines.\n".utf8))

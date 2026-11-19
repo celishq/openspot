@@ -3,9 +3,9 @@ import Foundation
 
 @MainActor
 extension Spot {
-    private func output(_ action: SpotAction, input: String? = nil, timeout: TimeInterval) async throws -> SpotOutput {
+    private func output(_ action: SpotAction, input: String? = nil, timeout: TimeInterval) async throws -> Frame {
         let message = (input ?? "") + TestSettings.text
-        return SpotOutput(text: try await SpotRuns(environment: TestEnvironment.values).answer(of: self, action, input: message.isEmpty ? nil : message, limit: timeout))
+        return Frame(text: try await SpotRuns(environment: TestEnvironment.values).answer(of: self, action, input: message.isEmpty ? nil : message, limit: timeout))
     }
 
     func state(timeout: TimeInterval) async throws -> SpotState {
@@ -19,13 +19,13 @@ extension Spot {
         return (taking(output), try state(of: output))
     }
 
-    func items(query: String = "", input: String? = nil, page: String? = nil, timeout: TimeInterval) async throws -> SpotOutput {
+    func items(query: String = "", input: String? = nil, page: String? = nil, timeout: TimeInterval) async throws -> Frame {
         let event = query.isEmpty ? nil : ShowEvent.text(query, inSheet: self.answers == nil)
         let message = Message(.show, event: event, route: page, search: query.isEmpty ? nil : query, given: input).text
         return try await output(.show, input: message?.isEmpty == true ? nil : message, timeout: timeout)
     }
 
-    func answer(_ action: SpotAction, input: String? = nil, timeout: TimeInterval) async throws -> SpotOutput {
+    func answer(_ action: SpotAction, input: String? = nil, timeout: TimeInterval) async throws -> Frame {
         try await output(action, input: input, timeout: timeout)
     }
 

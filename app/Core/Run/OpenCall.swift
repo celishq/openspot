@@ -10,10 +10,10 @@ final class OpenCall {
     var hasAnswer = false
     var answered: TimeInterval?
     var showedPicture = false
-    var lastHead: SpotOutput?
-    var pushed: SpotOutput?
+    var lastHead: Frame?
+    var pushed: Frame?
     var selected: String?
-    var form = SpotOutput.empty
+    var form = Frame.empty
 
     init(_ request: SpotRun.Call, started: Date) {
         self.request = request

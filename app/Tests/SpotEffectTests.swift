@@ -154,7 +154,7 @@ final class SpotEffectTests: PanelCase {
 
         try await wait("the read") { self.log("codes").contains("read 1") }
 
-        XCTAssertTrue(log("errors").joined().contains("cannot run in a read"), log("errors").joined())
+        XCTAssertTrue(log("errors").joined().contains("cannot run in a show"), log("errors").joined())
         XCTAssertEqual(model.flow.pages, [FlowSheet(spot: "flow")])
     }
 

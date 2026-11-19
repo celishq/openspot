@@ -51,7 +51,7 @@ public struct MetricValue: Equatable, Sendable {
         self.isHidden = isHidden
     }
 
-    public init?(output: SpotOutput) {
+    public init?(output: Frame) {
         let main = output.metric?.fields.first?.value
         let rows = output.items.filter { $0.run != main }.map { Row(title: $0.title, detail: $0.subtitle, tone: $0.tone) }
         guard let block = output.metric, let data = output.metricData else {

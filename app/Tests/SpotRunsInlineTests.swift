@@ -231,7 +231,7 @@ final class SpotRunsInlineTests: SpotRunsCase {
 
         let text = try await runs.answer(of: spot, SpotAction(arguments: ["show"]), limit: 60)
 
-        let items = SpotOutput(text: text).items
+        let items = Frame(text: text).items
         XCTAssertEqual(items.map(\.run), ["a", "b"], text)
         XCTAssertEqual(items.first?.title, "one\n\ntext=x\ntitle=x")
         XCTAssertEqual(items.first?.hides, ["x", "y"])
@@ -244,7 +244,7 @@ final class SpotRunsInlineTests: SpotRunsCase {
 
         let text = try await runs.answer(of: spot, SpotAction(arguments: ["save"]), input: "a=1", limit: 60)
 
-        XCTAssertEqual(SpotOutput(text: text).parts.first?.title, "Saved a=1")
+        XCTAssertEqual(Frame(text: text).parts.first?.title, "Saved a=1")
     }
 
     private func runs(limit: TimeInterval = 10, idle: TimeInterval = 30, frameWait: DispatchTimeInterval = .milliseconds(2), log: CallLog? = nil) {

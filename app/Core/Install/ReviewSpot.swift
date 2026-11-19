@@ -43,7 +43,7 @@ public struct ReviewSpot: Equatable, Sendable {
         let grown = spot.replaced(in: folder).isEmpty ? [] : uses.filter { !installed.contains($0) }
         let canAlso = Self.canAlso(spot, uses: Set(uses), id: primary.id)
         let readme = spot.readme
-        let rows = spot.sampleText.map { SpotOutput(text: $0).items.map(\.title) } ?? []
+        let rows = spot.sampleText.map { Frame(text: $0).items.map(\.title) } ?? []
         canDo = canAlso.map { "Can also: \($0)" } + runs.map { "Runs by itself: \($0)" }
         trust = [
             Self.section("Uses", uses.isEmpty ? [] : [uses.map(\.rawValue).joined(separator: ", ")]),
