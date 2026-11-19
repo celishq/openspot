@@ -184,6 +184,7 @@ public final class SpotRun {
         didSet {
             guard state != oldValue else { return }
             if (state.on == true) != isOn { isOn = state.on == true }
+            if state.subtitle != oldValue.subtitle { settle() }
             onReport(.listChange)
         }
     }
@@ -305,7 +306,7 @@ public final class SpotRun {
         if nextKind != kind { kind = nextKind }
         let field = nextKind.showsField && rows.search != .off
         if field != showsField { showsField = field }
-        let extra = field || rows.perLine > 1 ? 0 : SheetHeader.shared.extra(for: shownState.subtitle)
+        let extra = rows.perLine > 1 ? 0 : SheetHeader.shared.extra(for: shownState.subtitle)
         if extra != headerExtra {
             headerExtra = extra
             if var placed = panel {

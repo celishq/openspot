@@ -12,6 +12,14 @@ extension SpotsModel {
         return !isEditing && openSheet?.partsKind?.takesKeys != false
     }
 
+    public var fieldHeader: CGFloat {
+        transition.id.flatMap { sheets[$0]?.headerExtra } ?? 0
+    }
+
+    public var openHeader: CGFloat {
+        openSheet?.headerExtra ?? 0
+    }
+
     public var openParts: SheetParts? {
         shownParts(of: openSheetID)
     }

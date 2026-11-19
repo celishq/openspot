@@ -71,7 +71,7 @@ struct SpotSheetLayer: View {
             room: room,
             fit: edges.sheetStart?.rect(around: from) ?? sheetRect,
             leaving: leaving(edges, around: room),
-            field: showsField ? AnyView(SpotFieldLook(query: model.searchText, title: entry.state.title)) : nil,
+            field: showsField ? AnyView(SpotFieldLook(query: model.searchText, title: entry.state.title, header: model.sheets[entry.id]?.headerExtra ?? 0)) : nil,
             glass: edges.sheetStart == nil || edges.sheetStartsOnMark ? 1 : MotionTokens.hiddenOpacity
         )
     }
@@ -94,7 +94,7 @@ struct SpotSheetLayer: View {
             .frame(width: page.rect.width, height: page.rect.height, alignment: .topLeading)
             .offset(x: page.rect.minX, y: page.rect.minY)
             if page.showsField {
-                SpotFieldLook(query: page.query, title: page.fieldTitle)
+                SpotFieldLook(query: page.query, title: page.fieldTitle, header: page.headerExtra)
             }
         }
         .environment(\.spotIsHeld, true)

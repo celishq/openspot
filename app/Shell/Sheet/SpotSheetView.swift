@@ -105,7 +105,7 @@ private struct SheetContentView: View {
                         }
                         .buttonStyle(.plain)
                     } else {
-                        SpotItemsView(list: list, recording: content.isHeld ? nil : content.recording, recordingWords: model.recordingWords, keys: model.keys, onRun: { model.runItem($0) }, onPoint: { model.point(at: .item($0)) }, selection: selection, onDragOut: { model.dragOut($0, of: entry.id) })
+                        SpotItemsView(list: list, recording: content.isHeld ? nil : content.recording, recordingWords: model.recordingWords, keys: model.keys, onRun: { model.runItem($0) }, onPoint: { model.point(at: .item($0)) }, selection: selection, onDragOut: { model.dragOut($0, of: entry.id) }, room: SpotTokens.listRoom - headerExtra)
                     }
                 }
             }
@@ -158,8 +158,12 @@ private struct SheetContentView: View {
         }
     }
 
+    private var headerExtra: CGFloat {
+        model.sheets[entry.id]?.headerExtra ?? 0
+    }
+
     private var hasSecondLine: Bool {
-        (model.sheets[entry.id]?.headerExtra ?? 0) > 0
+        headerExtra > 0
     }
 
     private var showsCardWords: Bool {
@@ -234,7 +238,7 @@ private struct SheetContentView: View {
     }
 
     private var firstRow: CGRect {
-        CGRect(x: SpotTokens.padding, y: SpotTokens.sheetFieldDrop, width: rect.width - 2 * SpotTokens.padding, height: SpotTokens.listRow)
+        CGRect(x: SpotTokens.padding, y: SpotTokens.sheetFieldDrop + headerExtra, width: rect.width - 2 * SpotTokens.padding, height: SpotTokens.listRow)
     }
 
     private var isSmallCard: Bool {

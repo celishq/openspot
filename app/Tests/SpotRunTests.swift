@@ -153,6 +153,24 @@ final class SpotRunTests: XCTestCase {
         try await wait("the new row") { sheet.list.all.map(\.title) == ["2"] }
     }
 
+    func testASearchedListWithALongDetailGrowsItsHeaderAndItsSheetByTheSecondLine() async throws {
+        let kept = SheetHeader.shared
+        SheetHeader.shared = SheetHeader(width: { $0.count > 10 ? .infinity : 0 }, secondLine: 9)
+        defer { SheetHeader.shared = kept }
+        let url = folder.spotFile("script")
+        try "#!/bin/sh\nprintf 'text=a\\ntitle=A\\n'\n".writeScript(to: url)
+        let made = SpotRuns()
+        runs.append(made)
+        let sheet = made.sheet(for: Spot(id: "script", name: "script", url: url, kind: .list, subtitle: "A detail longer than its header", on: ShowEvents(moments: [.sheet])))
+        sheet.open {}
+        try await wait("the row") { sheet.list.all.count == 1 && !sheet.isShowing }
+
+        XCTAssertEqual(sheet.shownState.subtitle, "A detail longer than its header")
+        XCTAssertTrue(sheet.showsField)
+        XCTAssertEqual(sheet.headerExtra, 9)
+        XCTAssertEqual(sheet.sheetRect.height, SpotTokens.sheetRect(rows: 1).height + 9)
+    }
+
     func testANewValueOfAPartTellsNoReaderOfTheRectOrTheKindOfTheParts() async throws {
         let sheet = try make("printf 'frame=\\ngrid=a\\ngrid=b\\n\\nfield=a\\ntitle=Name\\nvalue=%s\\n\\ntext=b\\ntitle=B\\n' \"$2\"")
         sheet.open {}
