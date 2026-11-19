@@ -1,0 +1,7 @@
+title = "Snooze Tab"
+icon = "moon.zzz"
+detail = "Close the front Safari tab and bring it back later"
+uses = ["timer"]
+
+[commands.snooze]
+title = "Snooze Tab"
