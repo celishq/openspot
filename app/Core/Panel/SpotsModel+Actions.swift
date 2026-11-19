@@ -22,11 +22,17 @@ extension SpotsModel {
         arrangement.spot(openedBy: key, over: defaultArrangement).flatMap { id in entry(id) == nil ? nil : id }
     }
 
-    static func editsText(_ key: ActionKey) -> Bool {
+    public static func editsText(_ key: ActionKey) -> Bool {
         key.isCommand && !key.isShift && ["backspace", "a", "c", "v", "x", "z"].contains(key.name)
     }
 
     func handleRowsPanelKey(_ key: ActionKey, _ panel: SheetParts) -> Bool {
+        if key == ActionKey(name: "down", isCommand: true), let main = panel.parts.first(where: { $0.look == .strong && $0.isPressable }), panel.selectedPart?.id != main.id {
+            openSheet?.landRows()
+            _ = openSheet?.leaveRows()
+            openSheet?.focusPart(main.id)
+            return true
+        }
         if let part = panel.selectedPart { return handleFocusKey(key, part) }
         openSheet?.landRows()
         guard key == ActionKey(name: "down"), openItems?.isOnLastLine != false else { return false }
@@ -322,6 +328,11 @@ extension SpotsModel {
                 if self?.menuSession?.phase == .open { self?.menuSession?.phase = .settled }
             })
         }
+    }
+
+    func menuOpens(on target: Target) -> Bool {
+        guard let menu = actionMenu(on: target) else { return false }
+        return menu.holdsMore || (openParts?.drawsKeys == true && !menu.rows.isEmpty)
     }
 
     func actionMenu(on target: Target) -> ActionMenu? {

@@ -10,7 +10,7 @@ extension SpotRun {
         let action = SpotAction.set(part.id, to: value)
         let send: () -> Void = { [weak self] in self?.change(action, key: key, generation: generation, keeping: keeping, closes: false) }
         switch part.control {
-        case .text: after(Self.textPause, key: key, send)
+        case .text, .secret: after(Self.textPause, key: key, send)
         case .slider: after(Self.sliderPause, key: key, send)
         default:
             pauses[key]?.cancel()

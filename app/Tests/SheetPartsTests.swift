@@ -511,4 +511,26 @@ final class SheetPartsTests: XCTestCase {
         XCTAssertEqual(FrameCheck(text: "switch=done\nvalue=true\ntype=tick\n").partFaults, [])
     }
 
+
+    func testASecretFieldHidesItsTextOnOneLineAndTakesItsValue() throws {
+        var part = try XCTUnwrap(try panel("field=pass\ntype=secret\nplaceholder=Passphrase\nvalue=abc\n").parts.first)
+
+        XCTAssertEqual(part.control, .secret("abc", placeholder: "Passphrase"))
+        XCTAssertTrue(part.isEditable)
+        XCTAssertFalse(part.fillsHeight)
+        part.set("abcd")
+        XCTAssertEqual(part.value, "abcd")
+        XCTAssertEqual(FrameCheck(text: "field=pass\ntype=secret\n").partFaults, [])
+    }
+
+    func testASheetOfRowsWithSearchOffKeepsNoRoomForTheField() throws {
+        let rows = "grid=kinds\ngrid=go\n\nrepeat=kinds\n\nbutton=go\ntitle=Go\n\nrow=a\ntitle=A\n"
+        let searching = try panel(rows)
+        let still = try panel("search=off\n" + rows)
+
+        XCTAssertTrue(searching.holdsSearch)
+        XCTAssertFalse(still.holdsSearch)
+        let lost = try XCTUnwrap(still.placement.repeatFrame).height - XCTUnwrap(searching.placement.repeatFrame).height
+        XCTAssertEqual(lost, SpotTokens.partFieldRoom, accuracy: 0.5)
+    }
 }

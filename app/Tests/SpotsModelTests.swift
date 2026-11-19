@@ -578,24 +578,6 @@ final class SpotsModelTests: XCTestCase {
         XCTAssertFalse(host.motions.isEmpty)
     }
 
-    func testAPanelThatHidesCutsASheetOfPartsAndItsRun() async throws {
-        try script("parts", header: "on=sheet.open", "printf 'text=a\\ntitle=A\\n'")
-        await model.reload()
-        model.isShown = true
-        model.panelWillShow()
-        model.pushFirst("parts", moving: true)
-        try await wait("the open sheet") { model.openSheetID == "parts" && model.openParts != nil }
-
-        host.motions = []
-        model.panelWillHide()
-        model.panelDidHide()
-
-        XCTAssertNil(model.openSheetID)
-        XCTAssertNil(model.runs.openID)
-        XCTAssertEqual(host.motions.compactMap { $0 }, [])
-        XCTAssertFalse(host.motions.isEmpty)
-    }
-
     func testASizeInAReadLeavesTheCardAtItsDefaultSize() async throws {
         try script("grow", header: "on=panel.open", "printf 'detail=Read\\nsize=large\\n'")
         await model.reload()

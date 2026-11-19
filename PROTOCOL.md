@@ -244,7 +244,7 @@ confirm=Press again to forget
 | `row`     | One item of a list (see [Rows](#rows)).                                                                         | the keys in [Rows](#rows)                                            | `open <id>`            |
 
 - A field on a sheet takes the free height of the sheet, and `grow=false` keeps it at the height of its grid lines.
-- A field's `type`: none for one line of text, `multiline` for several lines, `slider` from `min` to `max` (0 to 100 by
+- A field's `type`: none for one line of text, `secret` for one line that shows dots, such as a passphrase, `multiline` for several lines, `slider` from `min` to `max` (0 to 100 by
   default), which sends a whole number when the user lets go, and `hotkey` for a hotkey that a press records.
 - A `hotkey` field shows as keycaps. With no `grid=` line, it takes two lines of the full width.
 - A `hotkey` field records a key in Openspot when the user presses Return on it or clicks it, and when a new frame of
@@ -390,7 +390,8 @@ Rows are a list that the user searches and picks from. See [Show a list](GUIDE.m
 - Rows go into a `repeat`, or into a plain list when there's none.
 - Openspot searches the rows itself, and puts recent picks first. `recents=false` in the head turns that off, and
   `search=off` shows the rows with no search field.
-- `⌘↓` selects the last row, and `⌘↑` the first.
+- `⌘↓` selects the last row, and `⌘↑` the first. On a sheet with a `look=strong` button under its rows, `⌘↓` moves to that
+  button, so Return presses it.
 - With `on=sheet.text`, each change of the sheet's search text asks the spot, and the spot prints the rows that match.
   It also asks when the sheet opens, as `on=sheet.open` does. Each call gets the search text on stdin as
   `search=<text>`.
@@ -428,6 +429,8 @@ went through. A spot pushes a sheet onto the flow and pops its own sheet off it.
 - A pushed page must match a `pages=` line of the spot that shows it, where `*` stands for any text. A spot with no
   sheet gets the call `<spot> open <page id>` instead of a push.
 - A spot takes off only its own sheets. It never takes off another spot's sheet and never closes the panel.
+- When the panel hides and opens again within 90 seconds, it shows the sheet it showed, with what was typed in it. After a longer
+  time it opens on the grid. A staying spot's sheet closes when the panel hides.
 - The panel keeps the last 20 sheets. `⌘[` or a swipe to the right goes back, `⌘]` or a swipe to the left goes forward, Esc
   and `pop=` take the sheet off so that nothing waits ahead, and `⌘Esc` goes back to the grid. A line left of the sheet
   stands for each sheet behind it, and a line right of it for each sheet ahead. A sheet
@@ -1025,12 +1028,12 @@ A spot asks the Mac and Openspot for things through one command, which works the
   - calls that wait for the user: `color pick` and `folder pick`;
   - calls that capture the screen: `screen shot`, `screen record start` and `screen record stop`;
   - calls that change the Mac or the user's data: `window move`, `clipboard copy`, `clipboard paste`, `power lid-closed`, `calendar add`,
-    `reminders add`, `reminders done`, `spot add`, `spot remove`, `spot delete` and `import raycast`;
+    `reminders add`, `reminders done`, `spot add`, `spot remove`, `spot delete`, `import raycast` and `import rayconfig`;
   - calls that change Openspot or its places: `app quit`, each call of `theme` but `theme list` and `theme open`, `update install`, and `setting set` of a key that Openspot
     keeps for the user (see [Settings](#settings));
   - calls that open a window or the panel: `spot open`, `spot choose`, `spot settings`, `spot edit`, `spot prompt`, `spot share`, `spot review`, `grid edit`, `setting change`, `theme open`,
     `update check`, `calendar show` and `reminders show`.
-- `calendar add --dry-run`, `reminders add --dry-run` and `import raycast --dry-run` change nothing, so they work in a read.
+- `calendar add --dry-run`, `reminders add --dry-run`, `import raycast --dry-run` and `import rayconfig --dry-run` change nothing, so they work in a read.
 - `openspot batch` runs one call for each line of stdin, and prints `---` after each. It stops at the first failure.
 - Each call that lists or reports, such as `app status`, `power readings`, `account show`, `spot list`, `spot stats`, `store list`, `setting list` and
   `theme list`,
@@ -1053,7 +1056,8 @@ The commands that try a spot are in [Try your spot](GUIDE.md#try-your-spot). The
 | `openspot spot delete <id>`                        | Moves a spot to the Trash, and `⌘Z` in the panel puts it back.                                  |
 | `openspot spot add <git url, folder or .spot>`     | Adds a spot, and records it in `spots.lock`. An update that needs a new use also needs `--yes`. |
 | `openspot spot remove <id>`                        | Moves a spot that `spot add` added to the Trash.                                                |
-| `openspot import raycast <folder> [--dry-run]`     | Turns each Raycast script command in a folder into a spot, and prints a row for each file: `added`, `kept` when it was imported before, or `skipped` with the reason. `--dry-run` changes nothing. |
+| `openspot import raycast <folder> [--dry-run]`     | Turns each Raycast script command in a folder into a spot, and prints a row for each file: `added`, `kept` when it was imported before, or `skipped` with the reason. `--skip <file>` leaves out a file by its path in the folder. `--dry-run` changes nothing. |
+| `openspot import rayconfig <file> [--dry-run]`    | Opens a Raycast export with its passphrase on stdin, adds its quicklinks to Links and its snippets to Snippets, and prints a row for each kind of data it holds, with what it added or why it skipped it. `--skip links` or `--skip snippets` leaves out a kind. `--dry-run` changes nothing. |
 | `openspot spot stats`                              | Prints what each spot cost and used. See [Stats](#stats).                                       |
 | `openspot grid edit`                               | Opens the panel in Edit Spots, to arrange the grid.                                             |
 | `openspot store list [--json]`                     | Prints each spot of the store and its step: `get`, `publish`, or `added` once you have it.      |

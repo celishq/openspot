@@ -25,7 +25,7 @@ extension SpotRun {
         switch call.request.purpose {
         case .ask(let ask):
             if lines.isPicture {
-                await takeAnswer(lines, frame: text, to: ask, keeping: call.hasAnswer ? typedPart : nil)
+                await takeAnswer(lines, frame: text, to: ask, keeping: typedPart)
                 call.hasAnswer = true
             } else {
                 call.lastHead = lines

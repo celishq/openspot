@@ -29,7 +29,7 @@ public struct RaycastImport: Sendable {
         self.folder = folder
     }
 
-    public func run(into spots: URL, taken: Set<String>, isDry: Bool) throws -> [Item] {
+    public func run(into spots: URL, taken: Set<String>, isDry: Bool, skip: Set<String> = []) throws -> [Item] {
         guard FileManager.default.fileExists(atPath: folder.path) else { throw SpotError.failed(1, "There is no folder \(folder.path).") }
         var used = taken
         var items: [Item] = []
@@ -47,6 +47,10 @@ public struct RaycastImport: Sendable {
             let relative = String(file.path.dropFirst(folder.path.count + 1))
             guard case .success(let script) = parsed[file] else {
                 if case .failure(let skip) = parsed[file] { items.append(Item(file: relative, title: nil, id: nil, outcome: .skipped, reason: skip.reason)) }
+                continue
+            }
+            if skip.contains(relative) {
+                items.append(Item(file: relative, title: script.title, id: nil, outcome: .skipped, reason: "Left out"))
                 continue
             }
             let place = Self.place(of: script, source: file, in: spots, used: used)

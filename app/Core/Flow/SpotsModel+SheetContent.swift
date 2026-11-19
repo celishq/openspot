@@ -13,7 +13,7 @@ extension SpotsModel {
             keys: keys,
             selection: { [weak self] in
                 guard let sheet = self?.sheets[id] else { return 0 }
-                return sheet.panel?.selectedPart == nil ? sheet.selection : Int.max
+                return sheet.selectedPart == nil ? sheet.selection : Int.max
             },
             selectedPart: { [weak self] in self?.sheets[id]?.selectedPart?.id },
             nudge: { [weak self] in self?.sheets[id]?.nudge ?? .rest },

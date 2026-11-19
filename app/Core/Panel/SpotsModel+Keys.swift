@@ -46,7 +46,7 @@ extension SpotsModel {
         if spotDrop != nil { return "Nothing runs until you press ⌘⏎" }
         let escape = KeyRow.hint(of: [escapeRow])
         if let parts = openParts, !parts.showsRows || parts.drawsKeys {
-            let hasActions = target.flatMap(actionMenu(on:)) != nil
+            let hasActions = target.map(menuOpens(on:)) ?? false
             return parts.hint(escape: escapeWords, stopping: { work(of: $0) != nil }, actions: hasActions)
         }
         if let confirm = confirmRow.hint { return [confirm, settingsRow.hint, "⌘K Actions"].compactMap { $0 }.joined(separator: "   ") }
@@ -260,7 +260,7 @@ extension SpotsModel {
             escapeRow,
             KeyRow("k", command: true) { [self] _ in
                 guard let target else { return nil }
-                guard actionMenu(on: target)?.holdsMore == true else { return false }
+                guard menuOpens(on: target) else { return false }
                 openMenu(on: target)
                 return menu != nil
             },

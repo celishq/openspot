@@ -144,6 +144,8 @@ struct SheetPartsView: View {
         case .text(let text, let placeholder, let isReadOnly):
             textArea(part, frame, text: text, placeholder: placeholder, isReadOnly: isReadOnly)
                 .overlay(alignment: .topTrailing) { cornerMark(part, frame) }
+        case .secret(let text, let placeholder):
+            secretField(part, text: text, placeholder: placeholder)
         case .slider(let level, let low, let high):
             slider(part, level: level, low: low, high: high)
         case .swatches(let colors, let value) where colors.count > 1:
@@ -539,6 +541,21 @@ struct SheetPartsView: View {
         .font(SpotType.body)
         .foregroundStyle(SpotTheme.ink)
         .background(SpotTheme.ink.opacity(SpotTheme.fill), in: shape)
+    }
+}
+
+extension SheetPartsView {
+    private func secretField(_ part: SpotPart, text: String, placeholder: String?) -> some View {
+        let prompt = Text(placeholder ?? part.title ?? "").foregroundStyle(SpotTheme.ink.opacity(SpotTheme.secondary))
+        return SecureField(part.title ?? part.id, text: Binding(get: { text }, set: { onSet(part, $0) }), prompt: prompt)
+            .labelsHidden()
+            .textFieldStyle(.plain)
+            .focused($focus, equals: part.id)
+            .font(SpotType.body)
+            .foregroundStyle(SpotTheme.ink)
+            .padding(.horizontal, SpotTokens.padding)
+            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .leading)
+            .background(SpotTheme.ink.opacity(SpotTheme.fill), in: shape)
     }
 }
 

@@ -20,6 +20,7 @@ public struct SpotPart: Equatable, Sendable, Identifiable {
         case swatches([String], value: String?)
         case menu([Option], value: String?)
         case text(String, placeholder: String?, isReadOnly: Bool)
+        case secret(String, placeholder: String?)
         case list([Option], value: String?)
         case number(String, unit: String?)
         case chart([Double])
@@ -148,7 +149,7 @@ public struct SpotPart: Equatable, Sendable, Identifiable {
         case .toggle(let on): on ? "true" : "false"
         case .slider(let level, _, _): String(Int(level.rounded()))
         case .swatches(_, let value), .menu(_, let value), .list(_, let value): value
-        case .text(let text, _, _): text
+        case .text(let text, _, _), .secret(let text, _): text
         case .shortcut(let text): text
         }
     }
@@ -205,13 +206,15 @@ public struct SpotPart: Equatable, Sendable, Identifiable {
     }
 
     public var isEditable: Bool {
-        if case .text(_, _, false) = control { return true }
-        return false
+        switch control {
+        case .text(_, _, false), .secret: true
+        default: false
+        }
     }
 
     public var isFocusable: Bool {
         switch control {
-        case .toggle, .shortcut, .menu, .slider: true
+        case .toggle, .shortcut, .menu, .slider, .secret: true
         case .text(_, _, let isReadOnly): !isReadOnly
         default: press != .none
         }
@@ -228,6 +231,7 @@ public struct SpotPart: Equatable, Sendable, Identifiable {
         case .shortcut: control = .shortcut(value)
         case .text(_, let placeholder, let isReadOnly):
             control = .text(value, placeholder: placeholder, isReadOnly: isReadOnly)
+        case .secret(_, let placeholder): control = .secret(value, placeholder: placeholder)
         }
     }
 }

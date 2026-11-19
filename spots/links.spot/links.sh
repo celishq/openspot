@@ -5,6 +5,7 @@
 # uses=network,clipboard
 # offers=card
 # offers=search
+# pages=query:*
 data="$OPENSPOT_DATA/links.json"
 icons="$OPENSPOT_DATA/icons"
 . "$OPENSPOT_SH"
@@ -140,8 +141,26 @@ placeholder=example.com or ~/Downloads"'
 
 prepare
 
+# Prints the page that asks for the text of a link that holds {query}.
+query_page() {
+  load | jq -e -r --arg id "$1" "$esc"'.[] | select(.id == $id) | "grid=query\ngrid=go\n\nfield=query\ntitle=\(.title | esc)\nplaceholder=\(.title | esc)\ngrow=false\n\nbutton=go\ntitle=Open\nlook=strong\nshortcut=return\nclose=true\n"' || {
+    echo "This link is gone." >&2
+    exit 1
+  }
+}
+
+# Prints how many items an import added, in a toast.
+added() {
+  case "$1" in
+    0) echo "toast=No new $2s" ;;
+    1) echo "toast=Added 1 $2" ;;
+    *) echo "toast=Added $1 $2s" ;;
+  esac
+}
+
 case "$1" in
   read)
+    case "${OPENSPOT_PAGE-}" in query:*) query_page "${OPENSPOT_PAGE#query:}"; exit 0 ;; esac
     printf 'button=copy\ntitle=Copy\nshortcut=cmd+return\nclose=true\n\n'
     printf 'button=reveal\ntitle=Show in Finder\nshortcut=cmd+r\nclose=true\n\n'
     printf 'button=edit\ntitle=Edit\nshortcut=cmd+e\nform=true\n\n'
@@ -153,10 +172,12 @@ case "$1" in
     jq -r --arg icons "$icons" --arg home "$HOME" "$esc"'$ARGS.positional as $found | .[]
       | if (.url | test("^[/~]")) then
           "row=\(.id | esc)\ntitle=\(.title | esc)\ndetail=\(.url | esc)\nicon=\(.url | if startswith("~") then $home + .[1:] else . end | esc)\n"
+          + (if (.url | contains("{query}")) then "push=query:\(.id | esc)\n" else "" end)
         else
           (.url | sub("^[a-zA-Z][a-zA-Z0-9+.-]*:(//)?"; "") | sub("[/?#].*$"; "")) as $host
           | "row=\(.id | esc)\ntitle=\(.title | esc)\ndetail=\($host | esc)\nhides=reveal\n"
           + (if ($found | index($host + ".png")) then "icon=\("\($icons)/\($host).png" | esc)\n" else "icon=link\n" end)
+          + (if (.url | contains("{query}")) then "push=query:\(.id | esc)\n" else "" end)
         end' "$data" --args "$@"
     ;;
   new)
@@ -182,6 +203,18 @@ case "$1" in
     ;;
   delete)
     load | jq -c --arg id "$2" 'map(select(.id != $id))' | store
+    ;;
+  go)
+    url=$(link "${OPENSPOT_PAGE#query:}") || exit 1
+    open "$(jq -nr --arg url "$url" --arg text "$(value query)" '$url | gsub("\\{query\\}"; ($text | @uri))')"
+    ;;
+  import)
+    given=$(value links)
+    new=$(load | jq -c --argjson given "${given:-[]}" '[.[].url] as $have | [$given[] | select(.url as $url | $have | index($url) | not)] | unique_by(.url)')
+    count=$(printf '%s' "$new" | jq 'length')
+    ids=$(i=0; while [ "$i" -lt "$count" ]; do uuidgen; i=$((i + 1)); done | jq -R . | jq -sc .)
+    load | jq -c --argjson new "$new" --argjson ids "$ids" '. + [$new | to_entries[] | {id: $ids[.key], title: .value.title, url: .value.url}]' | store
+    added "$count" link
     ;;
   copy)
     url=$(link "$2") || exit 1

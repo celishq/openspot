@@ -152,9 +152,12 @@ public struct BlockKind: Sendable, Equatable {
 
     static let field = BlockKind(
         name: "field",
-        control: { .text($0.value("value") ?? "", placeholder: $0.value("placeholder"), isReadOnly: $0.flag("readonly") ?? false) },
+        control: { block in
+            guard block.value("type") != ItemForm.Field.Kind.secret.rawValue else { return .secret(block.value("value") ?? "", placeholder: block.value("placeholder")) }
+            return .text(block.value("value") ?? "", placeholder: block.value("placeholder"), isReadOnly: block.flag("readonly") ?? false)
+        },
         field: { block, name, label in
-            let type: ItemForm.Field.Kind = block.value("type") == ItemForm.Field.Kind.multiline.rawValue ? .multiline : .text
+            let type = ItemForm.Field.Kind(rawValue: block.value("type") ?? "").flatMap { [.multiline, .secret].contains($0) ? $0 : nil } ?? .text
             return ItemForm.Field(name: name, label: label, type: type, value: block.value("value"), required: block.flag("required"), placeholder: block.value("placeholder"))
         }
     )

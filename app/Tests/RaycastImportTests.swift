@@ -243,4 +243,15 @@ final class RaycastImportTests: XCTestCase {
         XCTAssertFalse(none.frames.joined().contains("slash=run"), none.frames.joined())
         XCTAssertFalse(confirms.frames.joined().contains("slash=run"), confirms.frames.joined())
     }
+
+    func testAScriptLeftOutIsNotImported() async throws {
+        try script("hello.sh", header: ["title Say Hello", "mode compact"], body: "echo hello")
+        try script("dashboard/weather.sh", header: ["title Current Weather", "mode compact"], body: "echo sunny")
+
+        let answer = try await answer(["import", "raycast", scripts.path, "--skip", "dashboard/weather.sh", "--json"])
+        let items = try JSONSerialization.jsonObject(with: Data(answer.output.utf8)) as? [[String: Any]] ?? []
+
+        XCTAssertEqual(items.map { "\($0["outcome"] ?? "") \($0["reason"] ?? "")" }, ["skipped Left out", "added "])
+        XCTAssertEqual(try SpotsFolder(url: spots).scan().spots.map(\.id), ["say-hello"])
+    }
 }
