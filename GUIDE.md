@@ -17,16 +17,20 @@ something, Openspot runs the spot again with the id of what was pressed. The [pr
 ## Your first spot
 
 The smallest spot is a folder, such as `morning.spot`, with two files. `spot.toml` is the spot's **manifest**: it gives
-the spot a name and an icon. `morning.sh` is the script, named after the folder. Press the spot's card, and the script
-runs.
+the spot a name, an icon and a command. `morning.sh` is the script, named after the folder. Press the spot's card, and
+Openspot runs the script with the command's id, `morning`.
 
 ```toml
 title = "Morning"
 icon = "sun.max"
+
+[commands.morning]
+title = "Open Calendar"
 ```
 
 ```sh
 #!/bin/sh
+[ "$1" = morning ] || exit 0
 open -a Calendar
 ```
 
