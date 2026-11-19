@@ -35,6 +35,10 @@ class PanelCase: XCTestCase {
         try? FileManager.default.removeItem(at: folder)
     }
 
+    func takeCalls() {
+        model.runs.api = CommandAPI(mac: Mac(), places: model.files, app: ModelApp(model: model), runs: model.runs, rates: .offline)
+    }
+
     var spots: URL {
         folder.appendingPathComponent("spots", isDirectory: true)
     }

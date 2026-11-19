@@ -565,7 +565,8 @@ final class SpotRunsReadTests: SpotRunsCase {
     }
 
     func testACallWithOnlyAToastReadsOnce() async throws {
-        try script(toml: "on = ['sheet.open']", "[ \"$1\" = show ] && printf 'text=a\\ntitle=A\\n'\n[ \"$1\" = open ] && printf '\\033]9;Done\\007'\nexit 0")
+        takeCalls()
+        try script(toml: "on = ['sheet.open']", "[ \"$1\" = show ] && printf 'text=a\\ntitle=A\\n'\n[ \"$1\" = open ] && \(TestSpot.toast) Done\nexit 0")
         let sheet = try sheet()
         var toasts: [String] = []
         sheet.onReport = { if case .toast(let text) = $0 { toasts.append(text) } }

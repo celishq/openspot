@@ -31,7 +31,7 @@ struct FrameStream: Sendable {
 
     private static func draws(_ block: TextBlock) -> Bool {
         guard let key = block.fields.first?.key else { return false }
-        return key != RootKey.frame.rawValue && !RootKey.marks.contains(key) && key != SheetFrames.notice
+        return key != RootKey.frame.rawValue && !RootKey.marks.contains(key)
     }
 
     private static func id(of block: TextBlock) -> String? {

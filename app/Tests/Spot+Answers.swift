@@ -42,10 +42,9 @@ extension Spot {
         _ = try await output(.action(action, item: item), input: Message(.action(action, item: item), inputs: draft.inputs).text, timeout: timeout)
     }
 
-    @discardableResult
-    func perform(_ action: SpotAction, input: String? = nil, page: String? = nil, timeout: TimeInterval) async throws -> String? {
+    func perform(_ action: SpotAction, input: String? = nil, page: String? = nil, timeout: TimeInterval) async throws {
         let route = page.map { "route=\($0)\n" } ?? ""
-        return try await output(action, input: route + (input ?? ""), timeout: timeout).toast
+        _ = try await output(action, input: route + (input ?? ""), timeout: timeout)
     }
 
     func hook(_ function: String, card: String, origin: String) async -> Bool {

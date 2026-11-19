@@ -2,6 +2,11 @@ import XCTest
 @testable import OpenspotCore
 
 final class SlashCommandPanelTests: PanelCase {
+    override func setUp() async throws {
+        try await super.setUp()
+        takeCalls()
+    }
+
     private var input: URL {
         folder.appendingPathComponent("input")
     }
@@ -14,7 +19,7 @@ final class SlashCommandPanelTests: PanelCase {
         name=$(printf '%s\\n' "$stdin" | sed -n 's/^input\\.name=//p' | head -n 1)
         case "$1" in
           add)
-            if [ "$search" = ask ]; then printf 'frame=\\ntitle=Add a note\\n\\nfield=name\\ntitle=Name\\n'; else printf '\\033]9;Saved %s%s\\007' "$search" "$name"; fi ;;
+            if [ "$search" = ask ]; then printf 'frame=\\ntitle=Add a note\\n\\nfield=name\\ntitle=Name\\n'; else \(TestSpot.toast) "Saved $search$name"; fi ;;
           find) printf 'text=Found %s\\n' "$search" ;;
           *) printf 'text=a\\ntitle=A\\n' ;;
         esac
@@ -38,7 +43,7 @@ final class SlashCommandPanelTests: PanelCase {
 
     func testASlashWordListsTheMatchingCommandsWithTheFirstHighlighted() async throws {
         try writeNotes()
-        try script("trash", toml: "title = 'Trash'", "printf '\\033]9;Emptied\\007'")
+        try script("trash", toml: "title = 'Trash'", "\(TestSpot.toast) Emptied")
         await open()
 
         type("/note buy milk")
@@ -53,7 +58,7 @@ final class SlashCommandPanelTests: PanelCase {
 
     func testASpotThatThePersonKeepsOutOfSearchIsNotFoundAndListsNoCommand() async throws {
         try writeNotes()
-        try script("trash", toml: "title = 'Trash'", "printf '\\033]9;Emptied\\007'")
+        try script("trash", toml: "title = 'Trash'", "\(TestSpot.toast) Emptied")
         _ = try model.files.config.change { $0.arrangement.arrange(["notes"]) }
         try String(contentsOf: model.files.config.url, encoding: .utf8).appending("search = false\n").write(to: model.files.config.url, atomically: true, encoding: .utf8)
         await open()
@@ -96,7 +101,7 @@ final class SlashCommandPanelTests: PanelCase {
     func testAStayingSpotAnswersASlashCommand() async throws {
         try script("ping", toml: "title = 'Ping'\nmode = 'stay'\n[commands.ping]\ntitle = 'Ping'\nplaceholder = 'What to ping'\n[commands.pong]\ntitle = 'Pong'\nplaceholder = 'What to pong'", """
         . "$OPENSPOT_SH"
-        main() { case "$1" in ping) printf '\\033]9;Ping %s\\007' "$(value search)" ;; esac; }
+        main() { case "$1" in ping) \(TestSpot.toast) "Ping $(value search)" ;; esac; }
         openspot_serve main "$@"
         """)
         await open()
@@ -120,7 +125,7 @@ final class SlashCommandPanelTests: PanelCase {
     }
 
     func testWithNoTextReturnRunsTheCommandOfItsRow() async throws {
-        try script("solo", toml: "title = 'Solo'\n[commands.solo]\ntitle = 'Solo'\nplaceholder = 'What'", "printf '\\033]9;Ran\\007'")
+        try script("solo", toml: "title = 'Solo'\n[commands.solo]\ntitle = 'Solo'\nplaceholder = 'What'", "\(TestSpot.toast) Ran")
         await open()
 
         type("/solo")
@@ -141,9 +146,9 @@ final class SlashCommandPanelTests: PanelCase {
 
     func testALoneSlashListsEveryCommandThatTakesText() async throws {
         try writeNotes()
-        try script("windows", toml: "title = 'Windows'\n[commands.full]\ntitle = 'Full screen'", "printf '\\033]9;Full\\007'")
-        try script("trash", toml: "title = 'Trash'", "printf '\\033]9;Emptied\\007'")
-        try script("say", toml: "title = 'Say'\nplaceholder = 'What to say'", "printf '\\033]9;Said\\007'")
+        try script("windows", toml: "title = 'Windows'\n[commands.full]\ntitle = 'Full screen'", "\(TestSpot.toast) Full")
+        try script("trash", toml: "title = 'Trash'", "\(TestSpot.toast) Emptied")
+        try script("say", toml: "title = 'Say'\nplaceholder = 'What to say'", "\(TestSpot.toast) Said")
         await open()
 
         type("/")
@@ -157,7 +162,7 @@ final class SlashCommandPanelTests: PanelCase {
         try script("say", toml: "title = 'Say'\nplaceholder = 'What to say'", """
         stdin=$(cat)
         printf '%s\\n%s\\n' "$*" "$stdin" >> '\(input.path)'
-        printf '\\033]9;Said\\007'
+        \(TestSpot.toast) Said
         """)
         await open()
 

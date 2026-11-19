@@ -256,10 +256,10 @@ final class NewSpotTests: BuiltInCase {
     func testTheActionsOpenTheGuideAndTheFolder() async throws {
         let spot = try newSpot()
 
-        _ = try await spot.perform(SpotAction(arguments: ["guide"]), timeout: 60)
+        try await spot.perform(SpotAction(arguments: ["guide"]), timeout: 60)
         XCTAssertTrue(try saved("opened").contains("GUIDE.md"))
 
-        _ = try await spot.perform(SpotAction(arguments: ["folder"]), timeout: 60)
+        try await spot.perform(SpotAction(arguments: ["folder"]), timeout: 60)
         XCTAssertTrue(try saved("opened").contains(spots.path))
     }
 

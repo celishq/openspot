@@ -482,7 +482,8 @@ final class SpotDropTests: XCTestCase {
     }
 
     func testADropShowsItsFramesAndItsToastAndKeepsItsLastFrame() async throws {
-        let sheet = try sheet(toml: "drop = 'mov'", "printf 'frame=\\ntitle=42%%\\nprogress=0.42\\n---\\n'\n\(untilRelease)\nprintf '\\033]9;Done\\007'")
+        runs.api = CommandAPI(mac: Mac(), places: .test(["OPENSPOT_CONFIG": folder.path]), app: FakeRunningApp(), runs: runs, rates: .offline)
+        let sheet = try sheet(toml: "drop = 'mov'", "printf 'frame=\\ntitle=42%%\\nprogress=0.42\\n---\\n'\n\(untilRelease)\n\(TestSpot.toast) Done")
         var toasts: [String] = []
         sheet.onReport = { if case .toast(let text) = $0 { toasts.append(text) } }
         let frames = FrameLog(sheet)
@@ -495,7 +496,7 @@ final class SpotDropTests: XCTestCase {
         XCTAssertEqual(sheet.calls.first?.fill, 0.42)
         FileManager.default.createFile(atPath: path("release"), contents: Data())
         try await wait("the toast") { toasts == ["Done"] }
-        XCTAssertEqual(frames.last, TextBlock(fields: [.init(key: SheetFrames.notice, value: "Done")]).text)
+        XCTAssertEqual(frames.last, "frame=\ntitle=42%\nprogress=0.42\n")
     }
 
     func testAFailedDropTellsThePerson() async throws {

@@ -63,6 +63,7 @@ final class CallInputTests: SpotRunsCase {
         let logs = folder.appendingPathComponent("logs")
         let stats = folder.appendingPathComponent("stats")
         runs = SpotRuns(environment: ProcessInfo.processInfo.environment, clock: clock.value, stopPause: 0.2, log: CallLog(folder: logs), stats: stats)
+        takeCalls()
         var told: [String] = []
         runs.onReport = { _, report in
             switch report {
@@ -76,7 +77,8 @@ final class CallInputTests: SpotRunsCase {
         in=$(cat)
         token=$(printf '%s\\n' "$in" | sed -n 's/^setting.token=//p')
         printf '%s' "$token" > '\(path("seen"))'
-        printf '\\033]9;Got %s\\007text=a\\ntitle=%s\\n---\\n' "$token" "$token"
+        \(TestSpot.toast) "Got $token"
+        printf 'text=a\\ntitle=%s\\n---\\n' "$token"
         echo "Cannot reach the server with $token" >&2
         exit 1
         """)

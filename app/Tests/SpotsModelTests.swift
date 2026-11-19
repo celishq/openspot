@@ -1455,8 +1455,9 @@ final class SpotsModelTests: XCTestCase {
     }
 
     private func showAnswers(slow: String = "none") async throws {
-        let body = #"\#(TestSpot.event); case "$val" in \#(slow)) sleep 0.5 ;; esac; case "$1" in show) [ -n "$val" ] && printf 'text=%s\ntitle=Is %s\ndetail=Read %s\n' "$val" "$val" "$val" ;; open) printf '\033]9;Picked %s\007' "$2" ;; esac"#
+        let body = #"\#(TestSpot.event); case "$val" in \#(slow)) sleep 0.5 ;; esac; case "$1" in show) [ -n "$val" ] && printf 'text=%s\ntitle=Is %s\ndetail=Read %s\n' "$val" "$val" "$val" ;; open) \#(TestSpot.toast) "Picked $2" ;; esac"#
         try script("calc", toml: "title = 'Calc'\non = ['search.text ^[0-9]']", body)
+        model.runs.api = CommandAPI(mac: Mac(), places: model.files, app: ModelApp(model: model), runs: model.runs, rates: .offline)
         try script("notes", toml: "title = 'Notes 2'\non = ['sheet.open']", "printf 'text=a\\ntitle=A\\n'")
         await model.reload()
         model.isShown = true
@@ -1507,8 +1508,9 @@ final class SpotsModelTests: XCTestCase {
     }
 
     func testAnAnswerThatDrawsALargeCardTakesTwoFullRowsAndAPressSendsItsValue() async throws {
-        let body = #"\#(TestSpot.event); case "$1" in show) printf 'frame=\ngrid.large=answer answer answer answer\ngrid.large=answer answer answer answer\n\nnumber=answer\ntitle=%s\nvalue=14\n' "$val" ;; open) printf '\033]9;Picked %s\007' "$2" ;; esac"#
+        let body = #"\#(TestSpot.event); case "$1" in show) printf 'frame=\ngrid.large=answer answer answer answer\ngrid.large=answer answer answer answer\n\nnumber=answer\ntitle=%s\nvalue=14\n' "$val" ;; open) \#(TestSpot.toast) "Picked $2" ;; esac"#
         try script("calc", toml: "title = 'Calc'\non = ['search.text ^[0-9]']", body)
+        model.runs.api = CommandAPI(mac: Mac(), places: model.files, app: ModelApp(model: model), runs: model.runs, rates: .offline)
         try script("notes", toml: "title = 'Notes 2'\non = ['sheet.open']", "printf 'text=a\\ntitle=A\\n'")
         await model.reload()
         model.isShown = true
@@ -1567,6 +1569,7 @@ final class SpotsModelTests: XCTestCase {
         let calls = folder.appendingPathComponent("calls").path
         let body = #"\#(TestSpot.event); [ "$1" = show ] && [ -n "$val" ] && echo x >> '\#(calls)' && printf 'text=%s\ntitle=Call %s\n' "$val" "$(wc -l < '\#(calls)' | tr -d ' ')""#
         try script("calc", toml: "title = 'Calc'\non = ['search.text ^[0-9]']", body)
+        model.runs.api = CommandAPI(mac: Mac(), places: model.files, app: ModelApp(model: model), runs: model.runs, rates: .offline)
         await model.reload()
         model.isShown = true
         model.panelWillShow()

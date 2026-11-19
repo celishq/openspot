@@ -22,6 +22,7 @@ final class SpotFloatTests: XCTestCase {
         )
         model = SpotsModel(host: host, files: files, runs: SpotRuns(stopPause: 0.2))
         host.model = model
+        model.runs.api = CommandAPI(mac: Mac(), places: files, app: ModelApp(model: model), runs: model.runs, rates: .offline)
     }
 
     override func tearDown() async throws {
@@ -47,8 +48,8 @@ final class SpotFloatTests: XCTestCase {
         \(TestSpot.event)
         case "$1" in
           show) printf 'text=a\\ntitle=%s\\n\\ntext=b\\ntitle=Banana\\n\\nbutton=trash\\ntitle=Trash\\nshortcut=cmd+backspace\\n\\nbutton=rename\\ntitle=Rename\\nform=true\\n' "$ev" ;;
-          open) printf '\\033]9;Opened %s\\007' "$2" ;;
-          trash) printf '\\033]9;Trashed %s\\007' "$2" ;;
+          open) \(TestSpot.toast) "Opened $2" ;;
+          trash) \(TestSpot.toast) "Trashed $2" ;;
         esac
         """)
         await model.reload()
@@ -168,7 +169,7 @@ final class SpotFloatTests: XCTestCase {
         try script("shelf", toml: "on = ['sheet.open']\ndrop = '*'", """
         case "$1" in
           show) printf 'text=a\\n' ;;
-          drop) shift; printf '\\033]9;Kept %s\\007' "$*" ;;
+          drop) shift; \(TestSpot.toast) "Kept $*" ;;
         esac
         """)
         await model.reload()

@@ -268,7 +268,7 @@ final class SpotRunsStayTests: SpotRunsCase {
             try script("once", toml: "on = ['sheet.open']", """
             case "$1" in
               show) printf 'button=add\\ntitle=Add\\nform=true\\nscope=spot\\n\\ntext=a\\ntitle=A\\n' ;;
-              add) case "$(cat)" in *name=*) printf '\\033]9;Saved\\007' ;; *) printf 'frame=\\ntitle=Name\\n\\nfield=name\\ntitle=Name\\n' ;; esac ;;
+              add) case "$(cat)" in *name=*) printf 'frame=\\ntitle=Saved\\n' ;; *) printf 'frame=\\ntitle=Name\\n\\nfield=name\\ntitle=Name\\n' ;; esac ;;
             esac
             """)
             let stay = try sheet("stay")
@@ -352,7 +352,7 @@ final class SpotRunsStayTests: SpotRunsCase {
       case "$line" in
         call=*) call=${line#call=} ;;
         arg=new) ;;
-        arg=done) printf '\\033]9;Done already\\007end=%%s\\n---\\n' "$call" ;;
+        arg=done) \(TestSpot.toast) 'Done already'; printf 'end=%%s\\n---\\n' "$call" ;;
         arg=show) printf 'end=%%s\\n\\nbutton=new\\ntitle=New\\nscope=spot\\nform=true\\n\\nbutton=done\\ntitle=Done\\nscope=spot\\nform=true\\n---\\n' "$call" ;;
       esac
     done
@@ -361,6 +361,7 @@ final class SpotRunsStayTests: SpotRunsCase {
     private func silentFormSheet(limit: TimeInterval = 10) async throws -> (SpotRun, CommandAction, CommandAction) {
         runs.quit()
         runs = SpotRuns(environment: ProcessInfo.processInfo.environment, showLimit: limit, clock: clock.value, stopPause: 0.2)
+        takeCalls()
         try script(toml: "mode = 'stay'", String(format: Self.silentForm, path("asked")))
         let sheet = try sheet()
         runs.panelOpened()
@@ -935,6 +936,7 @@ final class SpotRunsStayTests: SpotRunsCase {
     }
 
     func testANewerSearchStopsTheOlderOneOfAStayingScriptAndItsLateAnswerChangesNothing() async throws {
+        takeCalls()
         try script(toml: "mode = 'stay'\non = ['sheet.text']", """
         while IFS= read -r line; do
           printf '%s\\n' "$line" >> '\(path("blocks"))'
@@ -945,7 +947,7 @@ final class SpotRunsStayTests: SpotRunsCase {
             stop=*) touch '\(path("stopped"))'; args=stop ;;
             '')
               case "$args" in
-                ' show a') ( \(untilRelease); printf 'end=%s\\n\\ntext=o\\ntitle=Old\\n---\\n' "$call"; printf '\\033]9;Done\\007' ) & ;;
+                ' show a') ( \(untilRelease); printf 'end=%s\\n\\ntext=o\\ntitle=Old\\n---\\n' "$call"; \(TestSpot.toast) Done ) & ;;
                 ' show ab') printf 'end=%s\\n\\ntext=n\\ntitle=New\\n---\\n' "$call" ;;
                 ' show') printf 'end=%s\\n\\ntext=x\\ntitle=X\\n---\\n' "$call" ;;
               esac ;;
@@ -953,7 +955,8 @@ final class SpotRunsStayTests: SpotRunsCase {
         done
         """)
         let sheet = try sheet()
-        let frames = FrameLog(sheet)
+        var toasts: [String] = []
+        sheet.onReport = { if case .toast(let text) = $0 { toasts.append(text) } }
         runs.panelOpened()
         sheet.open {}
         try await wait("the first rows") { sheet.list.search == .script && sheet.list.shown.count == 1 }
@@ -965,7 +968,7 @@ final class SpotRunsStayTests: SpotRunsCase {
         try await wait("the newer answer") { sheet.list.shown.map(\.run) == ["n"] }
         XCTAssertTrue(exists("stopped"))
         openGate()
-        try await wait("the frame after the late answer") { frames.last?.contains("Done") == true }
+        try await wait("the toast after the late answer") { toasts == ["Done"] }
         XCTAssertEqual(sheet.list.shown.map(\.run), ["n"])
     }
     private func slowStaying(limit: TimeInterval = 1) throws -> (sheet: SpotRun, told: () -> [String]) {
@@ -1121,6 +1124,7 @@ final class SpotRunsStayTests: SpotRunsCase {
     }
 
     func testALateAnswerToACallPastTheLimitOfStoppedCallsChangesNothing() async throws {
+        takeCalls()
         let last = StayMode.droppedLimit + 3
         try script(toml: "mode = 'stay'\non = ['sheet.text']", #"""
         while IFS= read -r line; do
@@ -1128,7 +1132,7 @@ final class SpotRunsStayTests: SpotRunsCase {
             call=*) id=${line#call=} ;;
             '')
               if [ "$id" = 1 ]; then printf 'text=a\ntitle=A\n\nend=1\n---\n'; fi
-              if [ "$id" = \#(last) ]; then printf 'end=2\n\ntext=old\ntitle=Old\n---\n\033]9;done\007'; id=; fi
+              if [ "$id" = \#(last) ]; then printf 'end=2\n\ntext=old\ntitle=Old\n---\n'; \#(TestSpot.toast) done; id=; fi
               ;;
           esac
         done

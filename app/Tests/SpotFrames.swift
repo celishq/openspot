@@ -27,10 +27,6 @@ final class SpotFrames: @unchecked Sendable {
         all.compactMap { FrameRoot(text: $0).end }
     }
 
-    var toasts: [String] {
-        all.compactMap { Frame(text: $0).toast }
-    }
-
     private func take(_ frame: String) {
         lock.withLock { seen.append(frame) }
     }

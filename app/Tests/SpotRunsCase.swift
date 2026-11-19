@@ -51,6 +51,10 @@ class SpotRunsCase: XCTestCase {
         try script("script", toml: "", body)
     }
 
+    func takeCalls() {
+        runs.api = CommandAPI(mac: Mac(), places: .test(["OPENSPOT_CONFIG": folder.path]), app: FakeRunningApp(), runs: runs, rates: .offline)
+    }
+
     func scanned() throws -> ScanResult {
         let load = KeptScan.shared.load(SpotsFolder(url: folder))
         let scan = try load.result(enabled: [], disabled: [], hosted: [])

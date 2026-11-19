@@ -92,7 +92,7 @@ final class ThemesSpotTests: BuiltInCase {
     func testThePromptOfAnOwnThemeNamesItsFile() async throws {
         try theme("Night", "")
 
-        _ = try await themes.perform(SpotAction(arguments: ["copy"]), input: "input.describe=Darker\n", page: "prompt:Night", timeout: 60)
+        try await themes.perform(SpotAction(arguments: ["copy"]), input: "input.describe=Darker\n", page: "prompt:Night", timeout: 60)
 
         let prompt = try String(contentsOf: root.appendingPathComponent("clipboard"), encoding: .utf8)
         XCTAssertTrue(prompt.contains("theme use 'Night'. Then change the file \(root.appendingPathComponent("themes/Night.theme/theme.toml").path)."), prompt)
