@@ -8,7 +8,7 @@ card() {
   printf 'frame=\ngrid.large=cover cover cover song song song\ngrid.large=cover cover cover time time time\ngrid.large=cover cover cover prev play next\ngrid.bar=song\n\n'
   printf 'picture=cover\n'; openspot_kv icon "$6"; printf '\n'
   printf 'text=song\n'; openspot_kv title "$1"; openspot_kv detail "$2"; printf '\n'
-  printf 'number=time\nmax=1\nlook=bar\n'; openspot_kv display "$4"; openspot_kv value "$3"; printf '\n'
+  printf 'number=time\nmax=1\nchart=bar\n'; openspot_kv display "$4"; openspot_kv value "$3"; printf '\n'
   printf 'button=prev\ntitle=Previous\nicon=backward.fill\nlook=bare\nclose=false\n\n'
   if [ "$5" = playing ]; then printf 'button=play\ntitle=Pause\nicon=pause.fill\nlook=bare\nclose=false\n\n'; else printf 'button=play\ntitle=Play\nicon=play.fill\nlook=bare\nclose=false\n\n'; fi
   printf 'button=next\ntitle=Next\nicon=forward.fill\nlook=bare\nclose=false\n'

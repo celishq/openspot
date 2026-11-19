@@ -5,11 +5,15 @@ public enum NumberLook: Equatable, Sendable {
     case ring
     case bar
 
-    init(reading: NumberReading, named: SpotPart.Look?, columns: Double, rows: Double) {
-        switch named {
+    public enum Chart: String, Equatable, Sendable {
+        case ring, bar
+    }
+
+    init(reading: NumberReading, columns: Double, rows: Double) {
+        switch reading.chart {
         case .ring: self = .ring
         case .bar: self = .bar
-        default:
+        case nil:
             if reading.isSeries, rows >= 2, columns >= 2 {
                 self = .stat
             } else if reading.level != nil {

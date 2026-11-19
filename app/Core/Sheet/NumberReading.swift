@@ -8,6 +8,7 @@ public struct NumberReading: Equatable, Sendable {
     public let max: Double?
     public let scaledPoints: [Double?]
     public let isSeries: Bool
+    public let chart: NumberLook.Chart?
 
     init(block: TextBlock) {
         let lines = block.values("value")
@@ -18,6 +19,7 @@ public struct NumberReading: Equatable, Sendable {
         let points = numbers.compactMap { $0 }
         let top = max ?? points.max() ?? 0
         self.unit = unit
+        chart = block.value("chart").flatMap(NumberLook.Chart.init(rawValue:))
         self.points = points
         self.max = max
         bare = shown

@@ -115,9 +115,24 @@ final class NumberReadingTests: XCTestCase {
         XCTAssertEqual(series.numberLook(inSheet: CGSize(width: SpotTokens.partsWidth, height: SpotTokens.cell * 2)), .stat)
     }
 
-    func testALookTheSpotNamesWinsOverThePlace() throws {
-        XCTAssertEqual(try part("number=battery\nvalue=84\nmax=100\nlook=bar\n").numberLook(columns: 2, rows: 2), .bar)
-        XCTAssertEqual(try part("number=battery\nvalue=84\nmax=100\nlook=ring\n").numberLook(columns: 2, rows: 1), .ring)
+    func testAChartTheSpotNamesWinsOverThePlace() throws {
+        XCTAssertEqual(try part("number=battery\nvalue=84\nmax=100\nchart=bar\n").numberLook(columns: 2, rows: 2), .bar)
+        XCTAssertEqual(try part("number=battery\nvalue=84\nmax=100\nchart=ring\n").numberLook(columns: 2, rows: 1), .ring)
+    }
+
+    func testALookOfRingOrBarIsAnUnknownLookAndDrawsByThePlace() throws {
+        let block = try XCTUnwrap(TextBlock.blocks(in: "number=battery\nvalue=84\nmax=100\nlook=bar\n").first)
+
+        XCTAssertEqual(PartCatalog.faults(in: block), ["the part battery has an unknown look: bar"])
+        XCTAssertEqual(try part("number=battery\nvalue=84\nmax=100\nlook=bar\n").numberLook(columns: 1, rows: 1), .ring)
+    }
+
+    func testAChartIsAKeyOfANumberOnly() throws {
+        let text = try XCTUnwrap(TextBlock.blocks(in: "text=t\ntitle=T\nchart=ring\n").first)
+        let number = try XCTUnwrap(TextBlock.blocks(in: "number=n\nvalue=1\nchart=pie\n").first)
+
+        XCTAssertEqual(PartCatalog.faults(in: text), ["the part t has an unknown key: chart"])
+        XCTAssertEqual(PartCatalog.faults(in: number), ["the part n has an unknown chart: pie"])
     }
 
     func testANumberPrintedAsARowShowsItsValueOrItsRingOnTheRight() throws {
