@@ -144,18 +144,18 @@ openspot_kv title "$(value input.note)"
 The shell helper, `. "$OPENSPOT_SH"`, reads stdin once and keeps it, and writes values for you. After it loads, read
 stdin with `value` or `openspot_input`, not `cat`: the function of `openspot_serve` gets an empty stdin.
 
-| Function                                    | Does                                                                                     |
-| ------------------------------------------- | ---------------------------------------------------------------------------------------- |
-| `esc <text>`                                | Prints text as a value.                                                                  |
-| `value <key>`                               | Prints each value of the key from stdin, one per line, in order.                         |
-| `openspot_value <key> <text>`               | Prints each value of the key from a text, such as what an `openspot` call printed.       |
-| `openspot_input`                            | Prints the stdin of the call as it came.                                                 |
-| `openspot_kv <key> <value>`                 | Prints one line, with its value escaped.                                                 |
-| `openspot_row <id> <title> [detail] [icon]` | Prints one item, a `text` block.                                                         |
-| `openspot_rows [kind]`                      | Prints an item for each tab-separated line of stdin: id, title, detail, icon.            |
-| `openspot_serve <function> "$@"`            | Runs the function with the three parts of each call, in each [mode](#modes).             |
-| `openspot_keep <file> [text]`               | Keeps the text, or stdin, in the file as a whole, or fails and keeps the old file.       |
-| `openspot_paste <text>`                     | Pastes the text into the front app and puts the clipboard back. It needs `clipboard` in `uses`. |
+| Function                                     | Does                                                                                     |
+| -------------------------------------------- | ---------------------------------------------------------------------------------------- |
+| `esc <text>`                                 | Prints text as a value.                                                                  |
+| `value <key>`                                | Prints each value of the key from stdin, one per line, in order.                         |
+| `openspot_value <key> <text>`                | Prints each value of the key from a text, such as what an `openspot` call printed.       |
+| `openspot_input`                             | Prints the stdin of the call as it came.                                                 |
+| `openspot_kv <key> <value>`                  | Prints one line, with its value escaped.                                                 |
+| `openspot_item <id> <title> [detail] [icon]` | Prints one item, a `text` block.                                                         |
+| `openspot_items [kind]`                      | Prints an item for each tab-separated line of stdin: id, title, detail, icon.            |
+| `openspot_serve <function> "$@"`             | Runs the function with the three parts of each call, in each [mode](#modes).             |
+| `openspot_keep <file> [text]`                | Keeps the text, or stdin, in the file as a whole, or fails and keeps the old file.       |
+| `openspot_paste <text>`                      | Pastes the text into the front app and puts the clipboard back. It needs `clipboard` in `uses`. |
 
 ### Events
 
@@ -226,7 +226,7 @@ printf 'frame=\n\ntext=done\ntitle=Copied\n'
   no root changes only the blocks it prints: a block whose id shows takes its place, and a new id joins the end.
 - A spot keeps no state between calls. If a show prints nothing, the spot shows nothing. If another call prints
   nothing, Openspot asks the spot again. Openspot ignores what an out-of-date call prints.
-- Print a value that comes from data with `openspot_kv`, `openspot_row`, `esc` or `openspot.frame`, so that it can't
+- Print a value that comes from data with `openspot_kv`, `openspot_item`, `esc` or `openspot.frame`, so that it can't
   add a line or a block.
 - Openspot reads `ESC ] 9;4;1;<percent>` as progress and `ESC ] 9;<text>` as a toast, and removes other escape codes.
 
@@ -607,12 +607,12 @@ struct SpotView: View {
 | `spot.loop(...)`    | A shape that moves in a loop, played by macOS.                        |
 | `spot.cornerButton` | The round button on the rim of a card, by its id and an action.       |
 | `spot.columnGap`, `spot.rowGap`, `spot.columns` | The gaps of the grid, and how many columns a window holds. |
-| `spot.rows`, `spot.selection` | Each `row` block of the frame, in a sheet or a window, and the id of the selected one. |
+| `spot.items`, `spot.selection` | Each item of the frame, in a sheet or a window, and the id of the selected one. |
 | `spot.isShown`      | Whether its place shows now. It's false while the panel is hidden.    |
 | `spot.close()`      | Closes the sheet, the float or the window of its own spot.            |
 
 - The view fills its place, gets the keys of its block in each frame, and keeps its `@State`. On a card, it only draws.
-  In a sheet, it takes clicks and keys. In a window, a sheet with one `view` block fills it and draws `spot.rows`.
+  In a sheet, it takes clicks and keys. In a window, a sheet with one `view` block fills it and draws `spot.items`.
 - `SpotMetric(spot, value:, detail:, mark:, onFill:)` draws a big number with its detail and an SF Symbol `mark`.
 - `spot.loop(period:fill:path:)` and `spot.loop(period:stroke:width:path:)` draw a shape at each time from 0 to
   `period`, and the shape at `period` equals the one at 0. It plays only while `spot.isShown` is true. Never redraw on

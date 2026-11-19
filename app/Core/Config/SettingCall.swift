@@ -22,12 +22,12 @@ public enum SettingCall: NounCall {
             "set", "[--spot id] <key> [value]",
             "Keeps a value for the spot, or removes it with no value. The person's choices of a spot: enabled, menubar (true or false), open, float and key.<command> (a key such as ctrl+option+k, or shake; none takes it away). Of the spot openspot: login, link, careful, slow (true or false), panel-key and fix-key."
         ) { words in
-            pair(words, sets: true) { spot, key, value in reserved(spot, key, value, isRead: words.isRead) ?? Self.set(spot: spot, key: key, value: value) }
+            pair(words, sets: true) { spot, key, value in reserved(spot, key, value, isInShow: words.isInShow) ?? Self.set(spot: spot, key: key, value: value) }
         },
         CommandVerb("list", "[--json]", "Prints a field=<key> block with spot and value for each value that a spot keeps. --json prints them as JSON.", rule: CallRule(use: .spots, used: "read the settings of each spot")) { words in
             words.form.map(Self.list)
         },
-        CommandVerb("change", "[--spot id] <key>", "Runs the action of the setting in the panel, which can ask with a form.", rule: CallRule(read: .changes("opens a form"), flags: .needsApp)) { words in
+        CommandVerb("change", "[--spot id] <key>", "Runs the action of the setting in the panel, which can ask with a form.", rule: CallRule(inShow: .changes("opens a form"), flags: .needsApp)) { words in
             pair(words, sets: false) { spot, key, _ in Self.change(spot: spot, key: key) }
         }
     ], loose: { verb, rest, caller in
@@ -51,7 +51,7 @@ public enum SettingCall: NounCall {
         return call(spot, key, rest.dropFirst().first)
     }
 
-    private static func reserved(_ spot: String, _ key: String, _ value: String?, isRead: Bool) -> (any NounCall)? {
+    private static func reserved(_ spot: String, _ key: String, _ value: String?, isInShow: Bool) -> (any NounCall)? {
         let flag = value.flatMap { ["true": true, "false": false][$0] }
         let isApp = spot == ReservedSetting.appSpot && ReservedSetting.appKeys.contains(key)
         let name = "setting set \(isApp ? "--spot \(spot) " : "")\(key)"
@@ -60,7 +60,7 @@ public enum SettingCall: NounCall {
             return changing(call(flag), act)
         }
         func changing(_ call: SettingCall, _ act: String) -> any NounCall {
-            guard isRead, let refusal = CallRule(read: .changes(act)).refusal(of: name) else { return call }
+            guard isInShow, let refusal = CallRule(inShow: .changes(act)).refusal(of: name) else { return call }
             return CallFault.refused(refusal)
         }
         if isApp {
@@ -90,7 +90,7 @@ public enum SettingCall: NounCall {
         }
         return switch self {
         case .get(let spot, _) where other(spot): CallRule(use: .spots, used: "read a setting of another spot")
-        case .set(let spot, _, _) where other(spot), .change(let spot, _) where other(spot): CallRule(use: .spots, used: "changed a setting of another spot", read: rule.read)
+        case .set(let spot, _, _) where other(spot), .change(let spot, _) where other(spot): CallRule(use: .spots, used: "changed a setting of another spot", inShow: rule.inShow)
         case .turn(_, let isOn): CallRule(use: .spots, used: isOn ? "turned on a spot" : "turned off a spot")
         case .menuBar: CallRule(use: .app, used: "changed the menu bar")
         case .key, .appKey: CallRule(use: .app, used: "changed a key")

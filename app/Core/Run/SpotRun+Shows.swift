@@ -3,17 +3,17 @@ import Foundation
 extension SpotRun {
     public func afterAnswer(_ work: @escaping () -> Void) {
         waiter = work
-        read()
+        show()
     }
 
-    public func read(selecting run: String? = nil, need: ReadNeed = .moment, reason: ReadReason? = nil) {
-        let reason = reason ?? (need == .change ? .change : showsSheet ? .sheet : .panel)
-        let wantsSheetAnswer = reason == .sheet && spot.read?.has(.sheet) == true && readReason != .sheet
+    public func show(selecting run: String? = nil, need: ShowNeed = .moment, event: ShowEvent? = nil) {
+        let event = event ?? (need == .change ? .change : showsSheet ? .sheet : .panel)
+        let wantsSheetAnswer = event == .sheet && spot.on?.has(.sheet) == true && shownEvent != .sheet
         if let run { selecting = run }
         if link.isAsking {
-            if need == .change { readsAgain = true }
+            if need == .change { showsAgain = true }
             if wantsSheetAnswer { sheetAgain = true }
-            if reason.isEvent { eventAgain = reason }
+            if event.isEvent { eventAgain = event }
             return
         }
         if need == .moment, !wantsSheetAnswer, let answered, runs.now().timeIntervalSince(answered) < Self.answerAge {
@@ -25,14 +25,14 @@ extension SpotRun {
         let search = typed.isEmpty ? nil : SearchQuery(text: typed)
         let isSent = send(Call(
             message: Message(.show, inputs: showsSheet ? panel?.inputs ?? [] : [], search: search?.text, searchForms: search?.forms ?? []),
-            key: Self.readKey,
-            limit: runs.readLimit,
-            reason: reason,
-            purpose: .ask(.read(generation: panel?.generation, reports: need != .clock, query: query, tells: reason != .panel))
+            key: Self.showKey,
+            limit: runs.showLimit,
+            event: event,
+            purpose: .ask(.show(generation: panel?.generation, reports: need != .clock, query: query, tells: event != .panel))
         ))
         self.typed = nil
         if isSent {
-            readReason = reason
+            shownEvent = event
             if !list.holdsItems || list.hasFailed { list.beginLoading() }
         }
     }
@@ -68,8 +68,8 @@ extension SpotRun {
         send(Call(
             message: Message(.show, inputs: showsSheet ? panel?.inputs ?? [] : [], search: search.text, searchForms: search.forms),
             key: Self.searchKey,
-            limit: runs.readLimit,
-            reason: .text(query, inSheet: true),
+            limit: runs.showLimit,
+            event: .text(query, inSheet: true),
             purpose: .ask(.search(query))
         ))
     }
@@ -88,8 +88,8 @@ extension SpotRun {
         send(Call(
             message: Message(.show, search: search.text, searchForms: search.forms),
             key: Self.answerKey,
-            limit: runs.readLimit,
-            reason: .text(text, inSheet: false),
+            limit: runs.showLimit,
+            event: .text(text, inSheet: false),
             purpose: .ask(.answer(text))
         ))
     }
@@ -113,7 +113,7 @@ extension SpotRun {
         waiting.forEach { $0() }
     }
 
-    var isReading: Bool {
+    var isShowing: Bool {
         link.isAsking
     }
 
@@ -123,37 +123,37 @@ extension SpotRun {
         list.select(run: run)
     }
 
-    func readToEnd(reason: ReadReason? = nil) {
-        finishesRead = true
-        read(need: .change, reason: reason)
+    func showToEnd(event: ShowEvent? = nil) {
+        finishesShow = true
+        show(need: .change, event: event)
     }
 
     func answerArrived() {
         hasAsked = true
-        finishesRead = false
+        finishesShow = false
         let work = waiter
         waiter = nil
         work?()
         runs.opening.startMotion(of: spot.id)
     }
 
-    func readAgainIfAsked() {
+    func showAgainIfAsked() {
         guard !link.isAsking else { return }
         if sheetAgain {
             sheetAgain = false
-            readsAgain = false
-            read(need: .change, reason: .sheet)
+            showsAgain = false
+            show(need: .change, event: .sheet)
             guard !link.isAsking else { return }
         }
-        guard readsAgain || eventAgain != nil else { return }
-        let need: ReadNeed = readsAgain ? .change : .clock
-        let reason = eventAgain
-        readsAgain = false
+        guard showsAgain || eventAgain != nil else { return }
+        let need: ShowNeed = showsAgain ? .change : .clock
+        let event = eventAgain
+        showsAgain = false
         eventAgain = nil
-        read(need: need, reason: reason)
+        show(need: need, event: event)
     }
 
-    func readOnce() {
-        if spot.read != nil { read(need: .change) }
+    func showOnce() {
+        if spot.on != nil { show(need: .change) }
     }
 }

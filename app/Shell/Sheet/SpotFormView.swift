@@ -15,7 +15,7 @@ struct SpotFormView: View {
 
     var body: some View {
         if let choices = draft.choices {
-            SpotRowsView(list: choices, onRun: onChoose, selection: selection)
+            SpotItemsView(list: choices, onRun: onChoose, selection: selection)
         } else {
             fields
         }

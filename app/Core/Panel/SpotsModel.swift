@@ -110,7 +110,7 @@ public final class SpotsModel {
     public private(set) var openSheetID: String?
     public internal(set) var flow = Flow() {
         didSet {
-            for gone in Set(oldValue.pages).subtracting(flow.pages) { sheets[gone.spot]?.forget(page: gone.page) }
+            for gone in Set(oldValue.pages).subtracting(flow.pages) { sheets[gone.spot]?.forget(route: gone.route) }
         }
     }
     public internal(set) var flowEdges = FlowEdges()
@@ -323,8 +323,8 @@ public final class SpotsModel {
         runs.sheets
     }
 
-    public var workCount: Int {
-        runs.work.count
+    public var actCount: Int {
+        runs.acts.count
     }
 
     public func beginFirstLaunch() async {
@@ -402,8 +402,8 @@ public final class SpotsModel {
         let stamps = fileStamps
         await reload()
         guard isShown else { return }
-        for entry in entries where entry.spot.read?.has(.panel) == true && fileStamps[entry.id] != stamps[entry.id] {
-            sheets[entry.id]?.read(need: .change)
+        for entry in entries where entry.spot.on?.has(.panel) == true && fileStamps[entry.id] != stamps[entry.id] {
+            sheets[entry.id]?.show(need: .change)
         }
     }
 
@@ -446,10 +446,10 @@ public final class SpotsModel {
             }
         }
         if case .value(let spot, let caller) = change {
-            if caller != spot, let sheet = sheets[spot], sheet.isWanted { sheet.read(need: .change) }
-            if let settings = sheets[SpotSettings.sheetID(of: spot)], settings.isOpen { settings.read(need: .change) }
+            if caller != spot, let sheet = sheets[spot], sheet.isWanted { sheet.show(need: .change) }
+            if let settings = sheets[SpotSettings.sheetID(of: spot)], settings.isOpen { settings.show(need: .change) }
         }
-        runs.readOfferedRows()
+        runs.showOfferedItems()
     }
 
     func write(_ section: Config.Section, _ work: (inout Config) throws -> Void) throws {
@@ -499,7 +499,7 @@ public final class SpotsModel {
         isPanelHidden = false
         finishPick()
         selected = 0
-        runs.panelOpened(readsToEnd: isWarming)
+        runs.panelOpened(showsToEnd: isWarming)
         askAnswers()
         host.nextFrame { [weak self] in
             self?.isShown = true
@@ -517,15 +517,15 @@ public final class SpotsModel {
         takeEntryKey()
     }
 
-    public func waitForReads() async {
+    public func waitForShows() async {
         let end = ContinuousClock.now + Self.loadLimit
-        while runs.isReading, ContinuousClock.now < end {
+        while runs.isShowing, ContinuousClock.now < end {
             try? await Task.sleep(for: Self.loadPause)
         }
     }
 
     public func updateIsReady(_ version: String) {
-        runs.raise(.named(SpotEvent.appUpdate, value: version, readsEachSpot: true))
+        runs.raise(.named(SpotEvent.appUpdate, value: version, showsEachSpot: true))
     }
 
     public func allows(_ reason: String) async -> Bool {

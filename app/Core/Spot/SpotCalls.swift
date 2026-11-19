@@ -136,10 +136,10 @@ struct SpotCalls {
         }
     }
 
-    func push(_ id: String, page: String?, title: String?, replace: Bool) -> CommandAPI.Work {
+    func push(_ id: String, route: String?, title: String?, replace: Bool) -> CommandAPI.Work {
         guard let app else { return CommandAnswer.notRunning("spot push \(id)") }
         return CommandAnswer.work {
-            guard await app.push(id, page: page, title: title, replace: replace) else {
+            guard await app.push(id, route: route, title: title, replace: replace) else {
                 throw SpotError.failed(1, "Openspot has no spot `\(id)`. Run `openspot spot list` to see each one.")
             }
             return ""

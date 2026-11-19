@@ -16,14 +16,14 @@ public final class SpotRun {
         case move(FlowMove)
     }
 
-    public enum ReadNeed: Sendable {
+    public enum ShowNeed: Sendable {
         case moment
         case clock
         case change
     }
 
     enum Ask {
-        case read(generation: Int?, reports: Bool, query: String = "", tells: Bool = true)
+        case show(generation: Int?, reports: Bool, query: String = "", tells: Bool = true)
         case search(String)
         case answer(String)
 
@@ -33,10 +33,10 @@ public final class SpotRun {
         }
     }
 
-    struct Work {
+    struct Act {
         var generation: Int?
         var keeping: String?
-        var readsAfter = true
+        var showsAfter = true
         var undo: SpotState?
         var ended: (() -> Void)?
         var first: FirstFrame?
@@ -44,7 +44,7 @@ public final class SpotRun {
 
     enum Purpose {
         case ask(Ask)
-        case work(Work)
+        case act(Act)
         case form(CheckedContinuation<SpotOutput?, Error>)
     }
 
@@ -52,7 +52,7 @@ public final class SpotRun {
         var message: Message
         let key: String
         var limit: TimeInterval?
-        var reason: ReadReason?
+        var event: ShowEvent?
         var purpose: Purpose
 
         var action: SpotAction {
@@ -65,9 +65,9 @@ public final class SpotRun {
     static let sliderPause: Duration = .milliseconds(100)
     static let buildPause: Duration = .milliseconds(500)
     static let pressPause: TimeInterval = 1
-    static let workPause: TimeInterval = 1
+    static let actPause: TimeInterval = 1
     static let waitingLimit = 8
-    static let readKey = "read"
+    static let showKey = "show"
     static let searchKey = "search"
     static let answerKey = "answer"
     static let cardKey = "card"
@@ -193,8 +193,8 @@ public final class SpotRun {
     public internal(set) var failure: String?
     @ObservationIgnored public internal(set) var calls: [ScriptCall] = []
     @ObservationIgnored public internal(set) var partsAnswers = 0
-    @ObservationIgnored var workCalls: [ScriptCall] = []
-    public internal(set) var work: [ScriptCall] = []
+    @ObservationIgnored var actCalls: [ScriptCall] = []
+    public internal(set) var acts: [ScriptCall] = []
     @ObservationIgnored public var onReport: (Report) -> Void = { _ in }
     @ObservationIgnored public var partsArrival: (() -> Void) -> Void = { $0() }
     @ObservationIgnored let runs: SpotRuns
@@ -206,22 +206,22 @@ public final class SpotRun {
     }
     @ObservationIgnored var lastAnswer: SpotOutput?
     @ObservationIgnored var shownFrame: String?
-    @ObservationIgnored var readReason: ReadReason?
-    @ObservationIgnored var finishesRead = false
+    @ObservationIgnored var shownEvent: ShowEvent?
+    @ObservationIgnored var finishesShow = false
     @ObservationIgnored var hasAsked = false
     @ObservationIgnored var waiter: (() -> Void)?
     @ObservationIgnored var selecting: String?
-    @ObservationIgnored var readsAgain = false
+    @ObservationIgnored var showsAgain = false
     @ObservationIgnored var sheetAgain = false
-    @ObservationIgnored var eventAgain: ReadReason?
+    @ObservationIgnored var eventAgain: ShowEvent?
     @ObservationIgnored var pauses: [String: Task<Void, Never>] = [:]
     @ObservationIgnored var editing: String?
     @ObservationIgnored var typed: String?
     @ObservationIgnored var waitingFiles: [SpotAction] = []
     @ObservationIgnored var waitingKeys: [String] = []
-    @ObservationIgnored var clockRead: Date?
-    public internal(set) var page: String?
-    @ObservationIgnored var pageStates: [(page: String?, state: PageState)] = []
+    @ObservationIgnored var clockShown: Date?
+    public internal(set) var route: String?
+    @ObservationIgnored var pageStates: [(route: String?, state: PageState)] = []
 
     init(spot: Spot, runs: SpotRuns, recent: [String], prepare: @escaping ([SpotItem], [String]) async -> Void) {
         self.spot = spot
@@ -269,7 +269,7 @@ public final class SpotRun {
     }
 
     public var awaitsAnswer: Bool {
-        spot.readsState && !hasAsked
+        spot.showsState && !hasAsked
     }
 
     public struct Shape: Equatable, Sendable {

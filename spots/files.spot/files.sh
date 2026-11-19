@@ -25,7 +25,7 @@ EOF
             if (index(folder, home) == 1) folder = "~" substr(folder, length(home) + 1)
             printf "%s\t%s\t%s\t%s\n", $0, $NF, folder, $0
           }' \
-      | openspot_rows
+      | openspot_items
     ;;
   reveal)
     open -R "$2"

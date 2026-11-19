@@ -30,7 +30,7 @@ extension SpotsModel {
     }
 
     func readWindows() {
-        for id in runs.floating where place(ofSheet: id) == .window { sheets[id]?.read(need: .change) }
+        for id in runs.floating where place(ofSheet: id) == .window { sheets[id]?.show(need: .change) }
     }
 
     public func land(_ id: String) {

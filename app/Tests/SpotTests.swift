@@ -26,10 +26,10 @@ final class SpotTests: XCTestCase {
         try? FileManager.default.removeItem(at: folder)
     }
 
-    private func writeCommand(kind: SpotKind, subtitle: String? = nil, read: SpotRead? = nil, _ body: String) throws -> Spot {
+    private func writeCommand(kind: SpotKind, subtitle: String? = nil, on: ShowEvents? = nil, _ body: String) throws -> Spot {
         let url = folder.appendingPathComponent("command.sh")
         try "#!/bin/sh\n\(body)\n".writeScript(to: url)
-        return Spot(id: "test/Command", name: "Command", url: url, kind: kind, subtitle: subtitle, read: read)
+        return Spot(id: "test/Command", name: "Command", url: url, kind: kind, subtitle: subtitle, on: on)
     }
 
     private var marker: URL {
@@ -37,7 +37,7 @@ final class SpotTests: XCTestCase {
     }
 
     func testReadsTheStateACommandPrintsForRead() async throws {
-        let command = try writeCommand(kind: .toggle, read: .panel, """
+        let command = try writeCommand(kind: .toggle, on: .panel, """
         [ "$1" = show ] && [ -z "$2" ] && printf 'switch=focus\\ntitle=Focus\\ndetail=On\\nvalue=true\\n'
         """)
 
@@ -48,8 +48,8 @@ final class SpotTests: XCTestCase {
 
     func testOnlyASpotWithAViewKeepsTheValuesOfItsViewBlock() throws {
         let output = SpotOutput(text: "view=cups\ntitle=3\npoint=1\npoint=2\n")
-        let plain = Spot(id: "cups", name: "Cups", url: URL(fileURLWithPath: "/spots/cups.sh"), read: .panel)
-        let drawn = Spot(id: "cups", name: "Cups", url: URL(fileURLWithPath: "/spots/cups.sh"), read: .panel, view: "/spots/cups.swift")
+        let plain = Spot(id: "cups", name: "Cups", url: URL(fileURLWithPath: "/spots/cups.sh"), on: .panel)
+        let drawn = Spot(id: "cups", name: "Cups", url: URL(fileURLWithPath: "/spots/cups.sh"), on: .panel, view: "/spots/cups.swift")
 
         XCTAssertEqual(try plain.state(of: output).values, [:])
         XCTAssertEqual(try drawn.state(of: output).values, ["view": ["cups"], "title": ["3"], "point": ["1", "2"]])
@@ -57,7 +57,7 @@ final class SpotTests: XCTestCase {
     }
 
     func testAStateKeepsWhatItLeavesOutFromTheHeader() async throws {
-        let command = try writeCommand(kind: .toggle, subtitle: "Header", read: .panel, "printf 'switch=power\\nvalue=true\\n'")
+        let command = try writeCommand(kind: .toggle, subtitle: "Header", on: .panel, "printf 'switch=power\\nvalue=true\\n'")
 
         let state = try await command.state(timeout: 60)
 
@@ -74,7 +74,7 @@ final class SpotTests: XCTestCase {
     }
 
     func testOpeningGivesTheKindAndTheActionsThatItPrints() async throws {
-        let command = try writeCommand(kind: .launch, read: .panel, """
+        let command = try writeCommand(kind: .launch, on: .panel, """
         printf 'frame=\\nactive=true\\n\\nbutton=open\\ntitle=Select\\n\\nbutton=copy\\ntitle=Copy\\n\\ntext=a\\ntitle=A\\n'
         """)
 
@@ -135,7 +135,7 @@ final class SpotTests: XCTestCase {
     }
 
     func testAClickOnACardWithAReadSendsOpen() async throws {
-        let command = try writeCommand(kind: .launch, read: .panel, "echo \"$1\" > '\(marker.path)'")
+        let command = try writeCommand(kind: .launch, on: .panel, "echo \"$1\" > '\(marker.path)'")
 
         try await command.perform(command.click, timeout: 60)
 
@@ -164,7 +164,7 @@ final class SpotTests: XCTestCase {
     }
 
     func testOutputThatIsNotAStateFails() async throws {
-        let command = try writeCommand(kind: .toggle, read: .panel, "echo nonsense")
+        let command = try writeCommand(kind: .toggle, on: .panel, "echo nonsense")
 
         do {
             _ = try await command.state(timeout: 60)

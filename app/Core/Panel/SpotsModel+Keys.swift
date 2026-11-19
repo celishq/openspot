@@ -47,7 +47,7 @@ extension SpotsModel {
         let escape = KeyRow.hint(of: [escapeRow])
         if let parts = openParts, !parts.showsRows || parts.drawsKeys {
             let hasActions = target.flatMap(actionMenu(on:)) != nil
-            return parts.hint(escape: escapeWords, stopping: { work(of: $0) != nil }, actions: hasActions)
+            return parts.hint(escape: escapeWords, stopping: { act(of: $0) != nil }, actions: hasActions)
         }
         if let confirm = confirmRow.hint { return [confirm, settingsRow.hint, "⌘K Actions"].compactMap { $0 }.joined(separator: "   ") }
         if let slashHint { return slashHint }
@@ -55,7 +55,7 @@ extension SpotsModel {
         if openSheetID == nil, slash == nil, finding == nil, !query.isEmpty, visible.isEmpty { return "\(SearchPrompt.slashHint)   \(escape)" }
         let keys = target.flatMap { target in
             actionMenu(on: target)?.hint(
-                stopping: { sheets[target.entry.id]?.work(of: $0, item: target.item) != nil },
+                stopping: { sheets[target.entry.id]?.act(of: $0, item: target.item) != nil },
                 second: [settingsRow.hint].compactMap { $0 }
             )
         } ?? escape

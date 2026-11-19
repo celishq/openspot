@@ -38,8 +38,8 @@ final class SpotTomlTests: XCTestCase {
         XCTAssertEqual(scan.refused, [])
         XCTAssertEqual(Set(scan.spots.map(\.name)), ["Weather", "Rain radar"])
         let weather = try XCTUnwrap(scan.spots.first { $0.name == "Weather" })
-        XCTAssertEqual(weather.read?.has(.sheet), true)
-        XCTAssertEqual(weather.read?.seconds, 300)
+        XCTAssertEqual(weather.on?.has(.sheet), true)
+        XCTAssertEqual(weather.on?.seconds, 300)
         XCTAssertEqual(weather.uses, [.network, .clipboard])
         XCTAssertEqual(weather.offers.map(\.id), ["refresh"])
         XCTAssertEqual(weather.settings.map(\.id), ["city"])
@@ -63,7 +63,7 @@ final class SpotTomlTests: XCTestCase {
         let scan = try SpotsFolder(url: spots).scan()
 
         XCTAssertEqual(scan.spots.map(\.name), ["Brew"])
-        XCTAssertNil(scan.spots.first?.read)
+        XCTAssertNil(scan.spots.first?.on)
     }
 
     func testALooseScriptThatOpenspotMovesIntoAFolderGetsASpotToml() throws {

@@ -240,7 +240,7 @@ final class AgendaExampleTests: SampleSpotsCase {
         defer { runs.quit() }
         let sheet = runs.sheet(for: spot)
         sheet.open {}
-        try await wait("the first rows") { !sheet.list.shown.isEmpty && !sheet.isReading }
+        try await wait("the first rows") { !sheet.list.shown.isEmpty && !sheet.isShowing }
         sheet.search(text)
         try await wait("the rows of the text") { sheet.list.shown.count < 7 }
         return sheet.list.shown.map(\.run)

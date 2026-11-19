@@ -38,7 +38,7 @@ final class SpotEventsTests: SpotRunsCase {
     }
 
     func testEachOnLineIsOneEventWithAFilterOfItsValue() throws {
-        let read = try XCTUnwrap(try SpotRead(on: ["panel.open", "clock.60", "music.track", "clipboard.change", "app.front com\\.apple\\.Notes", "search.text ^[0-9]", "sheet.text"], of: "Clock"))
+        let read = try XCTUnwrap(try ShowEvents(on: ["panel.open", "clock.60", "music.track", "clipboard.change", "app.front com\\.apple\\.Notes", "search.text ^[0-9]", "sheet.text"], of: "Clock"))
 
         XCTAssertEqual(read.moments, [.panel, .every(60), .event("music.track"), .event("clipboard.change"), .event("app.front"), .sheet])
         XCTAssertEqual(read.answers?.text, "^[0-9]")
@@ -46,13 +46,13 @@ final class SpotEventsTests: SpotRunsCase {
         XCTAssertTrue(read.admits("app.front", value: "com.apple.Notes"))
         XCTAssertFalse(read.admits("app.front", value: "com.apple.Safari"))
         XCTAssertTrue(read.admits("music.track", value: nil))
-        XCTAssertNil(try SpotRead(on: [], of: "Clock"))
+        XCTAssertNil(try ShowEvents(on: [], of: "Clock"))
     }
 
     func testALineThatIsNoEventIsAFaultThatNamesIt() {
         func fault(_ line: String) -> String? {
             do {
-                _ = try SpotRead(on: [line], of: "Clock")
+                _ = try ShowEvents(on: [line], of: "Clock")
                 return nil
             } catch {
                 return (error as? SpotError)?.reason
@@ -76,11 +76,11 @@ final class SpotEventsTests: SpotRunsCase {
         try script("other", toml: "on = ['panel.open', 'other.event']", log: "other", "printf 'text=o\\ntitle=O\\n'")
         _ = try scanned()
         runs.panelOpened()
-        try await wait("the panel reads") { self.log("listens") == ["show"] && self.log("other") == ["show"] && !self.runs.isReading }
+        try await wait("the panel reads") { self.log("listens") == ["show"] && self.log("other") == ["show"] && !self.runs.isShowing }
 
         runs.raise(.named("music.track", value: "Song"))
 
-        try await wait("the event read") { self.log("reasons") == ["panel.open none", "music.track Song"] && !self.runs.isReading }
+        try await wait("the event read") { self.log("reasons") == ["panel.open none", "music.track Song"] && !self.runs.isShowing }
         XCTAssertEqual(log("other"), ["show"])
     }
 
@@ -89,7 +89,7 @@ final class SpotEventsTests: SpotRunsCase {
         try script(toml: "on = ['clipboard.change']", "\(reasons)\nprintf 'text=t\\ntitle=T\\n'")
         _ = try scanned()
 
-        try await wait("the first read") { self.log("reasons") == ["spot.want none"] && !self.runs.isReading }
+        try await wait("the first read") { self.log("reasons") == ["spot.want none"] && !self.runs.isShowing }
 
         runs.raise(.named("clipboard.change", value: nil))
 
@@ -102,11 +102,11 @@ final class SpotEventsTests: SpotRunsCase {
         try script("unwanted", toml: "on = ['music.track']", log: "unwanted", "printf 'text=u\\ntitle=U\\n'")
         _ = try scanned()
 
-        try await wait("the first read of the wanted spot") { self.log("wanted") == ["show"] && !self.runs.isReading }
+        try await wait("the first read of the wanted spot") { self.log("wanted") == ["show"] && !self.runs.isShowing }
 
         runs.raise(.named("music.track", value: "Song"))
 
-        try await wait("the event read of the wanted spot") { self.log("wanted") == ["show", "show"] && !self.runs.isReading }
+        try await wait("the event read of the wanted spot") { self.log("wanted") == ["show", "show"] && !self.runs.isShowing }
         try await allEnded()
         XCTAssertEqual(log("unwanted"), [])
     }
@@ -115,7 +115,7 @@ final class SpotEventsTests: SpotRunsCase {
         try script("unwanted", toml: "on = ['app.update']", log: "unwanted", "printf 'text=u\\ntitle=U\\n'")
         _ = try scanned()
 
-        runs.raise(.named("app.update", value: "2.0", readsEachSpot: true))
+        runs.raise(.named("app.update", value: "2.0", showsEachSpot: true))
 
         try await wait("the read of the unwanted spot") { self.log("unwanted") == ["show"] }
     }
@@ -127,7 +127,7 @@ final class SpotEventsTests: SpotRunsCase {
 
         runs.launched()
 
-        try await wait("the launch read") { self.log("reasons") == ["app.launch none"] && !self.runs.isReading }
+        try await wait("the launch read") { self.log("reasons") == ["app.launch none"] && !self.runs.isShowing }
         XCTAssertEqual(log("other"), [])
     }
 
@@ -162,7 +162,7 @@ final class SpotEventsTests: SpotRunsCase {
         try script("unwanted", toml: "on = ['app.update']", log: "unwanted", "echo 'No news.' >&2\nexit 1")
         let (_, told) = try toldSheet()
 
-        runs.raise(.named("app.update", value: "2.0", readsEachSpot: true))
+        runs.raise(.named("app.update", value: "2.0", showsEachSpot: true))
 
         try await wait("the failure") { told() == ["No news."] }
     }
@@ -173,14 +173,14 @@ final class SpotEventsTests: SpotRunsCase {
         try script("other", toml: "on = ['clock.600']", log: "other", "printf 'text=o\\ntitle=O\\n'")
         menuBar.insert("other")
         _ = try scanned()
-        try await wait("the read of the other spot") { self.log("other") == ["show"] && !self.runs.isReading }
+        try await wait("the read of the other spot") { self.log("other") == ["show"] && !self.runs.isShowing }
         try await allEnded()
         XCTAssertEqual(log("reasons"), [])
 
         menuBar.insert("script")
         _ = try scanned()
 
-        try await wait("the first read") { self.log("reasons") == ["spot.want none"] && !self.runs.isReading }
+        try await wait("the first read") { self.log("reasons") == ["spot.want none"] && !self.runs.isShowing }
         _ = try scanned()
         try await allEnded()
         XCTAssertEqual(log("reasons"), ["spot.want none"])
@@ -190,7 +190,7 @@ final class SpotEventsTests: SpotRunsCase {
         menuBar.insert("script")
         try script(toml: "on = ['music.track']", "\(reasons)\n[ -z \"$val\" ] || \(untilRelease)\nprintf 'text=t\\ntitle=T\\n'")
         _ = try scanned()
-        try await wait("the first read") { self.log("reasons") == ["spot.want none"] && !self.runs.isReading }
+        try await wait("the first read") { self.log("reasons") == ["spot.want none"] && !self.runs.isShowing }
 
         runs.raise(.named("music.track", value: "A"))
         try await wait("the read of A") { self.log("reasons").count == 2 }
@@ -198,11 +198,11 @@ final class SpotEventsTests: SpotRunsCase {
         runs.raise(.named("music.track", value: "C"))
         openGate()
 
-        try await wait("the read of C") { self.log("reasons") == ["spot.want none", "music.track A", "music.track C"] && !self.runs.isReading }
+        try await wait("the read of C") { self.log("reasons") == ["spot.want none", "music.track A", "music.track C"] && !self.runs.isShowing }
     }
 
     func testAStayingScriptGetsTheValueOfItsEvent() {
-        XCTAssertEqual(Message(.show, event: ReadReason(event: "music.track", value: "Song")).block(id: 3), "call=3\narg=show\nevent=music.track\nevent.value=Song\n\n")
+        XCTAssertEqual(Message(.show, event: ShowEvent(event: "music.track", value: "Song")).block(id: 3), "call=3\narg=show\nevent=music.track\nevent.value=Song\n\n")
         XCTAssertEqual(Message(.show, event: .panel).block(id: 3), "call=3\narg=show\nevent=panel.open\n\n")
     }
 
@@ -217,10 +217,10 @@ final class SpotEventsTests: SpotRunsCase {
         _ = try scanned()
         runs.listen(to: mac)
 
-        try await wait("the first read") { self.log("reasons") == ["spot.want none"] && !self.runs.isReading }
+        try await wait("the first read") { self.log("reasons") == ["spot.want none"] && !self.runs.isShowing }
 
         mac.heard?(.named(SpotEvent.frontApp, value: "com.apple.Safari"))
-        try await wait("the front app read") { self.log("reasons") == ["spot.want none", "app.front com.apple.Safari"] && !self.runs.isReading }
+        try await wait("the front app read") { self.log("reasons") == ["spot.want none", "app.front com.apple.Safari"] && !self.runs.isShowing }
         mac.heard?(.named(SpotEvent.screenWake, value: nil))
 
         try await wait("the screen wake read") { self.log("reasons") == ["spot.want none", "app.front com.apple.Safari", "screen.wake none"] }
@@ -231,7 +231,7 @@ final class SpotEventsTests: SpotRunsCase {
         try script(toml: "on = ['clock.600']", "\(reasons)\nprintf 'text=t\\ntitle=T\\n'")
         _ = try scanned()
         runs.listen(to: mac)
-        try await wait("the first read") { self.log("reasons") == ["clock.600 none"] && !self.runs.isReading }
+        try await wait("the first read") { self.log("reasons") == ["clock.600 none"] && !self.runs.isShowing }
 
         mac.heard?(.wake)
 
@@ -244,7 +244,7 @@ final class SpotEventsTests: SpotRunsCase {
         _ = try scanned()
         runs.listen(to: mac)
         try await wait("a look at the clipboard") { self.mac.looks > 1 }
-        try await wait("the first read") { self.log("reasons") == ["spot.want none"] && !self.runs.isReading }
+        try await wait("the first read") { self.log("reasons") == ["spot.want none"] && !self.runs.isShowing }
 
         mac.count += 1
 
@@ -302,7 +302,7 @@ final class SpotEventsTests: SpotRunsCase {
         try script(toml: "on = ['clipboard.change']", "\(reasons)\nprintf 'text=t\\ntitle=T\\n'")
         _ = try scanned()
         runs.listen(to: mac)
-        try await wait("the first read") { self.log("reasons") == ["spot.want none"] && !self.runs.isReading }
+        try await wait("the first read") { self.log("reasons") == ["spot.want none"] && !self.runs.isShowing }
         mac.count = 1
 
         runs.panelOpened()
@@ -350,7 +350,7 @@ final class SpotEventsTests: SpotRunsCase {
         _ = try scanned()
         XCTAssertTrue(runs.watchesLoad)
         XCTAssertEqual(mac.samples, 1)
-        try await wait("the first reads") { self.log("one-reasons") == ["spot.want none"] && self.log("two-reasons") == ["spot.want none"] && !self.runs.isReading }
+        try await wait("the first reads") { self.log("one-reasons") == ["spot.want none"] && self.log("two-reasons") == ["spot.want none"] && !self.runs.isShowing }
         try await wait("the sleep of the watch") { fake.isSleeping(for: 5) }
         mac.sample = LoadSample(busy: 30, total: 100, memory: 61)
 
@@ -374,7 +374,7 @@ final class SpotEventsTests: SpotRunsCase {
         runs.listen(to: mac)
         menuBar = ["one"]
         _ = try scanned()
-        try await wait("the first read") { self.log("reasons") == ["spot.want none"] && !self.runs.isReading }
+        try await wait("the first read") { self.log("reasons") == ["spot.want none"] && !self.runs.isShowing }
         menuBar = []
         _ = try scanned()
         fake.advance(by: 3)
@@ -383,14 +383,14 @@ final class SpotEventsTests: SpotRunsCase {
         menuBar = ["one"]
         _ = try scanned()
 
-        try await wait("the load at once") { self.log("reasons").contains("system.load cpu=20 memory=40") && !self.runs.isReading }
+        try await wait("the load at once") { self.log("reasons").contains("system.load cpu=20 memory=40") && !self.runs.isShowing }
         menuBar = []
         _ = try scanned()
         fake.advance(by: 11)
         mac.sample = LoadSample(busy: 50, total: 200, memory: 40)
         menuBar = ["one"]
         _ = try scanned()
-        try await wait("the watch") { self.runs.watchesLoad && fake.isSleeping(for: 5) && !self.runs.isReading }
+        try await wait("the watch") { self.runs.watchesLoad && fake.isSleeping(for: 5) && !self.runs.isShowing }
         try await allEnded()
 
         XCTAssertEqual(log("reasons").filter { $0.hasPrefix("system.load") }, ["system.load cpu=20 memory=40"])
@@ -398,7 +398,7 @@ final class SpotEventsTests: SpotRunsCase {
 
     func testTheEventsOfTheMacThatCarryAValueTakeAFilter() throws {
         for line in ["power.change battery", "disk.mount ^/Volumes/", "device.connect Keyboard", "system.load cpu=9[0-9]"] {
-            XCTAssertNotNil(try SpotRead(on: [line], of: "Probe"))
+            XCTAssertNotNil(try ShowEvents(on: [line], of: "Probe"))
         }
     }
 

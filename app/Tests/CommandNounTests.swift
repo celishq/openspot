@@ -6,7 +6,7 @@ private enum BellCall: NounCall {
     case count
 
     static let noun = CommandNoun("bell", group: .app, guide: "screen", verbs: [
-        CommandVerb("ring", "<words>...", "Rings the bell with the words.", rule: CallRule(use: .network, used: "rang a bell", read: .changes("rings a bell"))) { words in
+        CommandVerb("ring", "<words>...", "Rings the bell with the words.", rule: CallRule(use: .network, used: "rang a bell", inShow: .changes("rings a bell"))) { words in
             words.none ? nil : Self.ring(words.rest.joined(separator: " "))
         },
         CommandVerb("count", "", "Counts the lines on stdin.", rule: CallRule(flags: .readsInput)) { $0.none ? Self.count : nil }

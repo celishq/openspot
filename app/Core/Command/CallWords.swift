@@ -16,7 +16,7 @@ public struct CallWords: Sendable {
         fit = form.fit(rest)
     }
 
-    var isRead: Bool {
+    var isInShow: Bool {
         reason != nil
     }
 

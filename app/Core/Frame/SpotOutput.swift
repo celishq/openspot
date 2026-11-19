@@ -128,7 +128,7 @@ public struct SpotOutput: Equatable, Sendable {
             ?? repeating.map { SheetLayout(flat: parts, repeating: $0) }
         self.layout = layout
         let fields = listed.map { $0.fields.flatMap { [$0.key, $0.value] } }
-        parts = parts.map { $0.drawn(in: layout).holding(rows: fields) }
+        parts = parts.map { $0.drawn(in: layout).holding(items: fields) }
         face = CardFace(head: head, parts: every)
         let placedValues = values.filter { placed.contains($0.block.fields.first?.value ?? "") }
         let sole = placedValues.isEmpty ? values : placedValues

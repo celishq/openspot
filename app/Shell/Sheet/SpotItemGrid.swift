@@ -1,7 +1,7 @@
 import OpenspotCore
 import SwiftUI
 
-struct SpotRowGrid: View {
+struct SpotItemGrid: View {
     @Environment(\.spotSurfaceEdge) private var surface
     let list: ItemList
     let selection: () -> Int

@@ -13,14 +13,14 @@ enum SpotPanelPicture {
             await model.reload()
             model.panelWillShow()
             try? await Task.sleep(for: .milliseconds(300))
-            await model.waitForReads()
+            await model.waitForShows()
             for sheet in model.sheets.values {
                 guard let sampled = sheet.spot.sampled else { continue }
                 sheet.update(sampled)
-                sheet.read(need: .change)
+                sheet.show(need: .change)
             }
             try? await Task.sleep(for: .milliseconds(300))
-            await model.waitForReads()
+            await model.waitForShows()
             model.selected = -1
             let shapes = [(SpotFieldView.rect, SurfaceEdge(card: .strip).radius)] + model.placements.map {
                 ($0.rect.offsetBy(dx: SpotTokens.halo, dy: SpotTokens.gridTop), SurfaceEdge(card: $0.size).radius)

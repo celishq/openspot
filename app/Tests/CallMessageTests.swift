@@ -15,8 +15,8 @@ final class CallMessageTests: SpotRunsCase {
         try script(toml: "on = ['sheet.open']", keeps)
         let sheet = try sheet()
 
-        sheet.read(need: .change)
-        try await wait("the show") { self.text("calls").hasSuffix("\n\n") && !sheet.isReading }
+        sheet.show(need: .change)
+        try await wait("the show") { self.text("calls").hasSuffix("\n\n") && !sheet.isShowing }
         sheet.answer("milk")
 
         try await wait("the answer") { self.text("calls").contains("event=search.text") && sheet.calls.isEmpty }
@@ -37,9 +37,9 @@ final class CallMessageTests: SpotRunsCase {
         runs.take(settings: [SpotSetting(spot: "script", key: "city", value: "Paris")])
         runs.panelOpened()
         sheet.open {}
-        try await wait("the sheet") { sheet.panel != nil && sheet.list.all.count == 1 && !sheet.isReading }
-        sheet.show(page: "photo/12")
-        try await wait("the route") { !sheet.isReading }
+        try await wait("the sheet") { sheet.panel != nil && sheet.list.all.count == 1 && !sheet.isShowing }
+        sheet.show(route: "photo/12")
+        try await wait("the route") { !sheet.isShowing }
 
         sheet.pick(try XCTUnwrap(sheet.list.all.first))
         try await wait("the pick") { self.text("calls").hasSuffix("\n\n") && sheet.calls.isEmpty }

@@ -57,11 +57,11 @@ public struct SpotCheck: Sendable {
         var findings = scan.refused.map { Finding(spot: $0.file, file: SpotID($0.file).file(in: folder.url)?.path, fault: $0.reason) }
         let known = Set(SpotEvent.known + scan.scripts.flatMap(\.emits))
         for script in scan.scripts {
-            for event in script.read?.events ?? [] where !known.contains(event) {
+            for event in script.on?.events ?? [] where !known.contains(event) {
                 let fault = "\(script.name) reads on \(event), which Openspot does not raise and no spot names in its emits. Add emits = [\"\(event)\"] to the spot that raises it, or fix the name"
                 findings.append(Finding(spot: script.id, file: script.url.path, fault: fault))
             }
-            for event in script.read?.events ?? [] where script.emits.contains(event) {
+            for event in script.on?.events ?? [] where script.emits.contains(event) {
                 let fault = "\(script.name) reads on \(event) and raises it, so a raise from its read would read it again without end. Raise it from an action, or rename one of them"
                 findings.append(Finding(spot: script.id, file: script.url.path, fault: fault))
             }
@@ -78,7 +78,7 @@ public struct SpotCheck: Sendable {
         }
         let runs = await SpotRuns(environment: environment, swift: programs, callers: callers ?? SpotCallers())
         if careful != nil { await MainActor.run { runs.isCareful = true } }
-        for var script in scan.scripts where script.read != nil && !unbuilt.contains(script.id) {
+        for var script in scan.scripts where script.on != nil && !unbuilt.contains(script.id) {
             guard !Task.isCancelled else { return findings }
             if let careful { script.uses.formIntersection(careful) }
             func found(_ fault: String) -> Finding { Finding(spot: script.id, file: script.url.path, fault: fault) }
@@ -87,7 +87,7 @@ public struct SpotCheck: Sendable {
                 let check = FrameCheck(text: text, isApp: script.isBuiltIn)
                 let output = check.output
                 _ = try script.state(of: output)
-                if script.read?.seconds != nil, MetricValue(output: output) == nil { throw SpotError.badMetric }
+                if script.on?.seconds != nil, MetricValue(output: output) == nil { throw SpotError.badMetric }
                 findings += output.errors.map { found("cannot read the item \($0)") }
                 findings += Self.brokenBlocks(in: text).map(found)
                 findings += check.partFaults.map(found)
@@ -116,7 +116,7 @@ public struct SpotCheck: Sendable {
     static func moveFaults(of output: SpotOutput, in script: Spot) -> [String] {
         var faults: [String] = []
         for item in output.items {
-            guard case .push(_, let page?, _, _)? = item.move, !script.takes(page: page) else { continue }
+            guard case .push(_, let page?, _, _)? = item.move, !script.takes(route: page) else { continue }
             let pattern = page.firstIndex(of: ":").map { "\(page[..<$0]):*" } ?? page
             faults.append("the row \(item.run) pushes the page \(page) of \(script.id), which takes no such page. Add pages = [\"\(pattern)\"] to \(script.id)")
         }
@@ -128,7 +128,7 @@ public struct SpotCheck: Sendable {
     }
 
     static func brokenBlocks(in text: String) -> [String] {
-        let fix = "as a value with a new line prints. Print each value from data with openspot_kv, openspot_row or esc"
+        let fix = "as a value with a new line prints. Print each value from data with openspot_kv, openspot_item or esc"
         let lists: Set<String> = ["grid", "value", "hides", "color"]
         var faults: [String] = []
         let blocks = text.components(separatedBy: "\n").split { $0.isEmpty || $0 == SheetFrames.mark }

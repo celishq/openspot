@@ -139,7 +139,7 @@ final class CarefulModeTests: SpotRunsCase {
         try FileManager.default.removeItem(at: outside.appendingPathComponent("written"))
 
         runs.isCareful = true
-        sheet.read(need: .change)
+        sheet.show(need: .change)
 
         try await wait("the read in Careful mode") { sheet.reading.value?.title == "kept" }
     }

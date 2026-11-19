@@ -19,12 +19,12 @@ final class CalendarAddTests: XCTestCase {
         FakeReminderStore(defaultList: family)
     }
 
-    private func events(_ store: FakeEventStore, isRead: Bool = false) -> Events {
-        Events(store: store, isRead: isRead)
+    private func events(_ store: FakeEventStore, isInShow: Bool = false) -> Events {
+        Events(store: store, isInShow: isInShow)
     }
 
-    private func reminders(_ store: FakeReminderStore, isRead: Bool = false) -> Reminders {
-        Reminders(store: store, isRead: isRead)
+    private func reminders(_ store: FakeReminderStore, isInShow: Bool = false) -> Reminders {
+        Reminders(store: store, isInShow: isInShow)
     }
 
     private func row(_ text: String) throws -> TextBlock {
@@ -100,8 +100,8 @@ final class CalendarAddTests: XCTestCase {
         let eventStore = eventStore()
         let reminderStore = reminderStore()
 
-        let event = try row(try await events(eventStore, isRead: true).add("Standup tomorrow 10am", isDry: true))
-        let reminder = try row(try await reminders(reminderStore, isRead: true).add("Call mom tomorrow 9am", isDry: true))
+        let event = try row(try await events(eventStore, isInShow: true).add("Standup tomorrow 10am", isDry: true))
+        let reminder = try row(try await reminders(reminderStore, isInShow: true).add("Call mom tomorrow 9am", isDry: true))
 
         XCTAssertEqual(event.value("text"), "event:new")
         XCTAssertEqual(event.value("title"), "Standup")

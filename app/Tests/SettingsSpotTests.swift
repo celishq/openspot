@@ -27,9 +27,9 @@ final class SettingsSpotTests: BuiltInCase {
         XCTAssertEqual(spot.kind, .list)
         XCTAssertTrue(spot.isGlobal)
         XCTAssertTrue(spot.isFound)
-        XCTAssertFalse(spot.read?.has(.panel) == true)
-        XCTAssertTrue(spot.readsOfferedRows)
-        XCTAssertTrue(spot.read?.has(.sheet) == true)
+        XCTAssertFalse(spot.on?.has(.panel) == true)
+        XCTAssertTrue(spot.showsOfferedItems)
+        XCTAssertTrue(spot.on?.has(.sheet) == true)
         XCTAssertEqual(SpotArrangement().spot(openedBy: ActionKey(name: ",", isCommand: true), over: defaults.arrangement), spot.id)
     }
 

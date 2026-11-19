@@ -210,11 +210,11 @@ final class SpotRunsStayTests: SpotRunsCase {
         runs.panelOpened()
 
         sheet.open {}
-        XCTAssertTrue(sheet.isReading)
+        XCTAssertTrue(sheet.isShowing)
         let limit = ContinuousClock.now + .seconds(60)
-        while sheet.isReading, ContinuousClock.now < limit { await Task.yield() }
+        while sheet.isShowing, ContinuousClock.now < limit { await Task.yield() }
 
-        XCTAssertFalse(sheet.isReading)
+        XCTAssertFalse(sheet.isShowing)
         XCTAssertEqual(sheet.list.shown.count, 1)
     }
 
@@ -360,7 +360,7 @@ final class SpotRunsStayTests: SpotRunsCase {
 
     private func silentFormSheet(limit: TimeInterval = 10) async throws -> (SpotRun, CommandAction, CommandAction) {
         runs.quit()
-        runs = SpotRuns(environment: ProcessInfo.processInfo.environment, readLimit: limit, clock: clock.value, stopPause: 0.2)
+        runs = SpotRuns(environment: ProcessInfo.processInfo.environment, showLimit: limit, clock: clock.value, stopPause: 0.2)
         try script(toml: "mode = 'stay'", String(format: Self.silentForm, path("asked")))
         let sheet = try sheet()
         runs.panelOpened()
@@ -527,7 +527,7 @@ final class SpotRunsStayTests: SpotRunsCase {
         let before = sheet.state
         sheet.state = before.switched(on: true)
 
-        sheet.send(SpotRun.Call(message: Message(.press("power")), key: SpotRun.cardKey, purpose: .work(SpotRun.Work(undo: before))))
+        sheet.send(SpotRun.Call(message: Message(.press("power")), key: SpotRun.cardKey, purpose: .act(SpotRun.Act(undo: before))))
 
         XCTAssertTrue(sheet.isCardRunning)
         try await wait("the undo of the switch") { sheet.state == before }
@@ -559,7 +559,7 @@ final class SpotRunsStayTests: SpotRunsCase {
         sheet.open {}
         try await wait("the row") { sheet.list.shown.count == 1 }
         let link = try XCTUnwrap(sheet.link as? StayMode)
-        sheet.read(need: .change)
+        sheet.show(need: .change)
         let timer = try XCTUnwrap(link.records.values.first?.timer)
 
         link.end()
@@ -567,7 +567,7 @@ final class SpotRunsStayTests: SpotRunsCase {
         clock.advance(by: 60)
 
         XCTAssertTrue(link.records.isEmpty)
-        XCTAssertFalse(sheet.isReading)
+        XCTAssertFalse(sheet.isShowing)
         XCTAssertEqual(told(), [])
         XCTAssertEqual(logged.map(\.end), [.exited(0), .stopped])
         XCTAssertEqual(logged.last?.frames, [])
@@ -583,7 +583,7 @@ final class SpotRunsStayTests: SpotRunsCase {
         sheet.open {}
         try await wait("the row") { sheet.list.shown.count == 1 }
         let link = try XCTUnwrap(sheet.link as? StayMode)
-        sheet.read(need: .change)
+        sheet.show(need: .change)
         let timer = try XCTUnwrap(link.records.values.first?.timer)
         try await wait("the sleep of the timer") { clock.isSleeping(for: 10) }
 
@@ -593,7 +593,7 @@ final class SpotRunsStayTests: SpotRunsCase {
         await timer.value
 
         XCTAssertEqual(told(), ["Script took too long, so Openspot stopped it."])
-        XCTAssertFalse(sheet.isReading)
+        XCTAssertFalse(sheet.isShowing)
         XCTAssertEqual(link.records.values.map(\.isDropped), [true])
     }
 
@@ -618,12 +618,12 @@ final class SpotRunsStayTests: SpotRunsCase {
         let (sheet, told) = try toldSheet()
         runs.panelOpened()
         sheet.open {}
-        try await wait("the row") { sheet.list.shown.count == 1 && !sheet.isReading }
+        try await wait("the row") { sheet.list.shown.count == 1 && !sheet.isShowing }
         let link = try XCTUnwrap(sheet.link as? StayMode)
 
         holds = true
-        sheet.read(need: .change)
-        try await wait("the answer") { !holds && !sheet.isReading && link.records.isEmpty }
+        sheet.show(need: .change)
+        try await wait("the answer") { !holds && !sheet.isShowing && link.records.isEmpty }
 
         XCTAssertEqual(told(), [])
         XCTAssertNil(sheet.failure)
@@ -970,7 +970,7 @@ final class SpotRunsStayTests: SpotRunsCase {
     }
     private func slowStaying(limit: TimeInterval = 1) throws -> (sheet: SpotRun, told: () -> [String]) {
         runs.quit()
-        runs = SpotRuns(readLimit: limit, clock: clock.value, stopPause: 0.2)
+        runs = SpotRuns(showLimit: limit, clock: clock.value, stopPause: 0.2)
         try script(toml: "mode = 'stay'\non = ['sheet.open']", """
         first=; [ -f '\(path("started"))' ] || first=1; touch '\(path("started"))'
         while IFS= read -r line; do
@@ -995,12 +995,12 @@ final class SpotRunsStayTests: SpotRunsCase {
         try await wait("the first answer") { sheet.reading.value?.title == "1" }
         FileManager.default.createFile(atPath: path("slow"), contents: Data())
 
-        sheet.read(need: .change)
+        sheet.show(need: .change)
 
         try await wait("the failure") { told() == ["Script took too long, so Openspot stopped it."] }
         try await wait("the stop of the slow read") { self.blocks(ids: true).contains { $0.contains("stop=2") } }
         try FileManager.default.removeItem(atPath: path("slow"))
-        sheet.read(need: .change)
+        sheet.show(need: .change)
         try await wait("the answer after the late one") { sheet.reading.value?.title == "3" }
         XCTAssertFalse(frames.frames.contains { $0.contains("title=2") })
     }
@@ -1011,10 +1011,10 @@ final class SpotRunsStayTests: SpotRunsCase {
         sheet.open {}
         try await wait("the first answer") { sheet.reading.value?.title == "1" }
         FileManager.default.createFile(atPath: path("slow"), contents: Data())
-        sheet.read(need: .change)
+        sheet.show(need: .change)
         try await wait("the first failure") { told().count == 1 }
 
-        sheet.read(need: .change)
+        sheet.show(need: .change)
 
         try await wait("the second failure") { told().count == 2 }
         try await wait("a new process") { self.log("pids").count == 2 }
@@ -1027,15 +1027,15 @@ final class SpotRunsStayTests: SpotRunsCase {
         sheet.open {}
         try await wait("the first answer") { sheet.reading.value?.title == "1" }
         FileManager.default.createFile(atPath: path("slow"), contents: Data())
-        sheet.read(need: .change)
+        sheet.show(need: .change)
         try await wait("the first failure") { told().count == 1 }
         try FileManager.default.removeItem(atPath: path("slow"))
         try await wait("the late answer of the slow read") { self.log("answered").contains("2") }
-        sheet.read(need: .change)
+        sheet.show(need: .change)
         try await wait("the answer in time") { sheet.reading.value?.title == "3" }
         FileManager.default.createFile(atPath: path("slow"), contents: Data())
 
-        sheet.read(need: .change)
+        sheet.show(need: .change)
 
         try await wait("the second failure") { told().count == 2 }
         try await wait("the late answer from the same process") { self.log("answered").contains("4") || self.log("pids").count > 1 }

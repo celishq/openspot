@@ -77,7 +77,7 @@ final class ViewLibraryTests: XCTestCase {
             @State private var word = "state"
 
             var body: some View {
-                let rows = spot.rows.map { "\\($0.id):\\($0["title"] ?? "-"):\\($0.all("tag").joined(separator: "+"))" }
+                let rows = spot.items.map { "\\($0.id):\\($0["title"] ?? "-"):\\($0.all("tag").joined(separator: "+"))" }
                 let _ = spot.send("\\(word) \\(spot.isShown) \\(rows.joined(separator: ","))")
                 let _ = spot.isShown ? () : spot.close()
                 Text(word)
@@ -88,7 +88,7 @@ final class ViewLibraryTests: XCTestCase {
         let rows = [["row", "a", "title", "One", "tag", "x", "tag", "y"], ["row", "b"]]
         var closed = 0
         var times: [Duration] = []
-        let card: [String: Any] = ["isShown": false, "rows": rows, "close": { closed += 1 }, "bodyTime": { (time: Duration) in times.append(time) }]
+        let card: [String: Any] = ["isShown": false, "items": rows, "close": { closed += 1 }, "bodyTime": { (time: Duration) in times.append(time) }]
 
         let sent = try await drawn(text, values: ["view": ["words"], "row": ["mine"]], card: card)
 
@@ -143,7 +143,7 @@ final class ViewLibraryTests: XCTestCase {
 
     @MainActor
     func testAViewWithNoHostWordsShowsAndHasNoRows() async throws {
-        let sent = try await drawn(view.replacingOccurrences(of: "Text(", with: "let _ = spot.send(\"\\(spot.rows.count) \\(spot.isShown) \\(spot[\"row\"] ?? \"-\")\")\n        Text("), values: ["title": ["Hi"], "row": ["mine"]], card: [:])
+        let sent = try await drawn(view.replacingOccurrences(of: "Text(", with: "let _ = spot.send(\"\\(spot.items.count) \\(spot.isShown) \\(spot[\"row\"] ?? \"-\")\")\n        Text("), values: ["title": ["Hi"], "row": ["mine"]], card: [:])
 
         XCTAssertEqual(sent, ["0 true mine"])
     }

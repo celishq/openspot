@@ -14,10 +14,10 @@ final class SpotPagesTests: SpotRunsCase {
         sheet.open(onReady: {})
         try await wait("the first sheet") { self.titles(sheet) == ["Page first"] }
 
-        sheet.show(page: "detail")
+        sheet.show(route: "detail")
         try await wait("the page") { self.titles(sheet) == ["Page detail"] }
 
-        XCTAssertEqual(sheet.page, "detail")
+        XCTAssertEqual(sheet.route, "detail")
         XCTAssertEqual(log("pages"), ["none", "detail"])
     }
 
@@ -27,11 +27,11 @@ final class SpotPagesTests: SpotRunsCase {
         runs.panelOpened()
         sheet.open(onReady: {})
         try await wait("the first sheet") { self.titles(sheet) == ["Page first"] }
-        sheet.show(page: "detail")
+        sheet.show(route: "detail")
         try await wait("the page") { self.titles(sheet) == ["Page detail"] }
-        try await wait("the end of the read") { !self.runs.isReading }
+        try await wait("the end of the read") { !self.runs.isShowing }
 
-        sheet.show(page: nil)
+        sheet.show(route: nil)
 
         XCTAssertEqual(titles(sheet), ["Page first"])
         try await wait("the read of the first sheet") { self.log().count == 3 }
@@ -42,8 +42,8 @@ final class SpotPagesTests: SpotRunsCase {
         let sheet = try sheet()
         runs.panelOpened()
         sheet.open(onReady: {})
-        sheet.show(page: "detail")
-        try await wait("the page") { !sheet.spot.actions.isEmpty && !self.runs.isReading }
+        sheet.show(route: "detail")
+        try await wait("the page") { !sheet.spot.actions.isEmpty && !self.runs.isShowing }
 
         sheet.run(try XCTUnwrap(sheet.spot.actions.first), item: nil)
 
@@ -65,7 +65,7 @@ final class SpotPagesTests: SpotRunsCase {
         sheet.open(onReady: {})
         try await wait("the first read") { self.blocks(ids: true).count == 1 }
 
-        sheet.show(page: "detail")
+        sheet.show(route: "detail")
 
         try await wait("the read of the page") { self.blocks(ids: true).last?.contains("route=detail") == true }
         XCTAssertFalse(blocks(ids: true)[0].contains("route="))
@@ -80,7 +80,7 @@ final class SpotPagesTests: SpotRunsCase {
         sheet.open(onReady: {})
         try await wait("the first sheet") { self.titles(sheet) == ["Page first"] }
 
-        sheet.show(page: "detail")
+        sheet.show(route: "detail")
 
         try await wait("the page") { self.titles(sheet) == ["Page detail"] }
     }

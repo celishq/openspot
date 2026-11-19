@@ -8,8 +8,8 @@ final class SpotRunsReadTests: SpotRunsCase {
         let sheet = try sheet()
 
         runs.panelOpened()
-        XCTAssertTrue(runs.isReading)
-        try await wait("the answer") { !self.runs.isReading }
+        XCTAssertTrue(runs.isShowing)
+        try await wait("the answer") { !self.runs.isShowing }
         runs.panelClosed()
         runs.panelOpened()
         try await pause(0.1)
@@ -25,7 +25,7 @@ final class SpotRunsReadTests: SpotRunsCase {
         runs.quit()
         runs.panelOpened()
 
-        XCTAssertFalse(runs.isReading)
+        XCTAssertFalse(runs.isShowing)
     }
 
     func testAReadThatAnswersWithItsHeadAtItsEndIsReadingUntilTheAnswerIsIn() async throws {
@@ -34,9 +34,9 @@ final class SpotRunsReadTests: SpotRunsCase {
 
         runs.panelOpened()
         let limit = ContinuousClock.now + .seconds(60)
-        while runs.isReading, ContinuousClock.now < limit { await Task.yield() }
+        while runs.isShowing, ContinuousClock.now < limit { await Task.yield() }
 
-        XCTAssertFalse(runs.isReading)
+        XCTAssertFalse(runs.isShowing)
         XCTAssertEqual(sheet.state.title, "Read")
     }
 
@@ -125,12 +125,12 @@ final class SpotRunsReadTests: SpotRunsCase {
             act()
             expected.append(reason)
             try await wait("the \(reason) read") { self.log("reasons") == expected }
-            try await wait("the end of the \(reason) read") { !self.runs.isReading }
+            try await wait("the end of the \(reason) read") { !self.runs.isShowing }
         }
 
         try await step("panel.open") { runs.panelOpened() }
         try await step("sheet.open") { sheet.open(onReady: {}) }
-        try await step("spot.change") { sheet.read(need: .change) }
+        try await step("spot.change") { sheet.show(need: .change) }
     }
 
     func testAReadOnItsClockSaysSo() async throws {
@@ -138,7 +138,7 @@ final class SpotRunsReadTests: SpotRunsCase {
         let sheet = try sheet()
         runs.panelOpened()
         sheet.open(onReady: {})
-        try await wait("the sheet read") { self.log("reasons") == ["sheet.open"] && !self.runs.isReading }
+        try await wait("the sheet read") { self.log("reasons") == ["sheet.open"] && !self.runs.isShowing }
 
         time += 61
         runs.raise(.clock)
@@ -176,7 +176,7 @@ final class SpotRunsReadTests: SpotRunsCase {
         runs.panelOpened()
         try await pause(0.1)
 
-        XCTAssertFalse(runs.isReading)
+        XCTAssertFalse(runs.isShowing)
         XCTAssertFalse(exists("runs"))
     }
 
@@ -210,7 +210,7 @@ final class SpotRunsReadTests: SpotRunsCase {
     func testAScriptThatLeavesTheFolderLosesItsSheetAndItsRead() async throws {
         let url = try script(toml: "on = ['sheet.open']", "sleep 0.2\ntouch '\(path("went-on"))'")
         let sheet = try sheet()
-        sheet.read()
+        sheet.show()
 
         try FileManager.default.removeItem(at: url)
         _ = try scanned()
@@ -224,9 +224,9 @@ final class SpotRunsReadTests: SpotRunsCase {
         try script(toml: "on = ['sheet.open']", "sleep 0.2\nprintf 'text=a\\ntitle=A\\n'")
         let sheet = try sheet()
 
-        sheet.read()
-        sheet.read()
-        sheet.read()
+        sheet.show()
+        sheet.show()
+        sheet.show()
 
         try await wait("the row") { sheet.list.shown.count == 1 }
         XCTAssertEqual(log(), ["show"])
@@ -237,7 +237,7 @@ final class SpotRunsReadTests: SpotRunsCase {
         let sheet = try sheet()
 
         runs.panelOpened()
-        try await wait("the row") { sheet.list.shown.count == 1 && !self.runs.isReading }
+        try await wait("the row") { sheet.list.shown.count == 1 && !self.runs.isShowing }
         sheet.open {}
         time += 4
         sheet.close()
@@ -296,7 +296,7 @@ final class SpotRunsReadTests: SpotRunsCase {
         try script(toml: "on = ['sheet.open']", "printf 'text=a\\ntitle=A\\n'")
         let sheet = try sheet()
         sheet.open {}
-        try await wait("the row") { sheet.list.shown.count == 1 && !self.runs.isReading }
+        try await wait("the row") { sheet.list.shown.count == 1 && !self.runs.isShowing }
         sheet.close()
 
         time += 5
@@ -310,7 +310,7 @@ final class SpotRunsReadTests: SpotRunsCase {
         let sheet = try sheet()
         runs.panelOpened()
         sheet.open {}
-        try await wait("the parts") { sheet.panel != nil && !sheet.isReading }
+        try await wait("the parts") { sheet.panel != nil && !sheet.isShowing }
         runs.panelClosed()
         runs.panelOpened()
         var partsAtOpen: String?
@@ -327,7 +327,7 @@ final class SpotRunsReadTests: SpotRunsCase {
         let sheet = try sheet()
         runs.panelOpened()
         sheet.open {}
-        try await wait("the parts") { sheet.panel != nil && !sheet.isReading }
+        try await wait("the parts") { sheet.panel != nil && !sheet.isShowing }
         runs.panelClosed()
         runs.panelOpened()
         time += 5
@@ -335,8 +335,8 @@ final class SpotRunsReadTests: SpotRunsCase {
         sheet.open {}
 
         XCTAssertEqual(sheet.panel?.parts.first?.title, "Go")
-        XCTAssertTrue(sheet.isReading)
-        try await wait("the second read") { self.log().count == 2 && !sheet.isReading }
+        XCTAssertTrue(sheet.isShowing)
+        try await wait("the second read") { self.log().count == 2 && !sheet.isShowing }
         XCTAssertEqual(sheet.panel?.parts.first?.title, "Go")
     }
 
@@ -345,7 +345,7 @@ final class SpotRunsReadTests: SpotRunsCase {
         let sheet = try sheet()
         runs.panelOpened()
         sheet.open {}
-        try await wait("the field") { sheet.panel != nil && !sheet.isReading }
+        try await wait("the field") { sheet.panel != nil && !sheet.isShowing }
         sheet.set(try XCTUnwrap(sheet.panel?.parts.first), to: "typed")
         runs.panelClosed()
         runs.panelOpened()
@@ -361,7 +361,7 @@ final class SpotRunsReadTests: SpotRunsCase {
         try script(toml: "on = ['sheet.open']", "printf 'frame=\\ngrid=steps\\n\\nview=steps\\n'")
         let sheet = try sheet()
         sheet.open {}
-        try await wait("the view") { sheet.panel != nil && !sheet.isReading }
+        try await wait("the view") { sheet.panel != nil && !sheet.isShowing }
 
         sheet.set(try XCTUnwrap(sheet.panel?.parts.first { $0.kind == "view" }), to: "pick 4 ecology")
 
@@ -372,7 +372,7 @@ final class SpotRunsReadTests: SpotRunsCase {
         menuBar.insert("fast")
         try script("fast", toml: "on = ['clock.1']", "printf 'frame=\\ntitle=1\\n'")
         _ = try scanned()
-        try await wait("the first read") { self.log().count == 1 && !self.runs.isReading }
+        try await wait("the first read") { self.log().count == 1 && !self.runs.isShowing }
         try await pause(0.1)
 
         time += 1
@@ -386,7 +386,7 @@ final class SpotRunsReadTests: SpotRunsCase {
         try script(toml: "on = ['clock.600']", "\(TestSpot.event)\necho \"$ev\" >> '\(path("reasons"))'\nprintf 'text=a\\ntitle=A\\n'")
         try script("idle", toml: "on = ['clock.600']", log: "idle", "printf 'text=b\\ntitle=B\\n'")
         _ = try scanned()
-        try await wait("the first read") { self.log("reasons") == ["clock.600"] && !self.runs.isReading }
+        try await wait("the first read") { self.log("reasons") == ["clock.600"] && !self.runs.isShowing }
 
         time += 10
         runs.woke()
@@ -434,7 +434,7 @@ final class SpotRunsReadTests: SpotRunsCase {
         menuBar.insert("slow")
         try script("slow", toml: "on = ['clock.60']", log: "slow", "printf 'frame=\\ntitle=1\\n'")
         _ = try scanned()
-        try await wait("the first reads") { self.log("fast").count == 1 && self.log("slow").count == 1 && !self.runs.isReading }
+        try await wait("the first reads") { self.log("fast").count == 1 && self.log("slow").count == 1 && !self.runs.isShowing }
 
         time += 4
         runs.raise(.clock)
@@ -496,8 +496,8 @@ final class SpotRunsReadTests: SpotRunsCase {
         try script(toml: "on = ['sheet.open']", "sleep 0.2\nprintf 'text=a\\ntitle=A\\n'")
         let sheet = try sheet()
 
-        sheet.read()
-        sheet.read(need: .change)
+        sheet.show()
+        sheet.show(need: .change)
 
         try await wait("two reads") { self.log() == ["show", "show"] }
     }

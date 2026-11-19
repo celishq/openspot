@@ -70,7 +70,7 @@ final class FlowMoveTests: PanelCase {
         try pressFlow("swap")
 
         try await wait("the swapped page") { self.titles == ["Page swapped"] }
-        XCTAssertEqual(model.flow.pages, [FlowSheet(spot: "flow"), FlowSheet(spot: "flow", page: "swapped")])
+        XCTAssertEqual(model.flow.pages, [FlowSheet(spot: "flow"), FlowSheet(spot: "flow", route: "swapped")])
     }
 
     func testAllOnTheFirstSheetStaysAndOnePopReturnsToTheSpotThatPushedIt() async throws {
@@ -80,7 +80,7 @@ final class FlowMoveTests: PanelCase {
         try await openFlowSheetInPlace()
 
         try pressFlow("top")
-        try await wait("the end of the press") { self.model.sheets["flow"]?.calls.isEmpty == true && !self.model.runs.isReading }
+        try await wait("the end of the press") { self.model.sheets["flow"]?.calls.isEmpty == true && !self.model.runs.isShowing }
         XCTAssertEqual(model.openSheetID, "flow")
 
         try pressFlow("done")
@@ -122,8 +122,8 @@ final class FlowMoveTests: PanelCase {
         try pressFlow("leave")
 
         try await wait("the close") { self.model.openSheetID == nil }
-        XCTAssertNil(model.sheets["flow"]?.page)
-        XCTAssertEqual(model.closingPage?.page, "n0")
+        XCTAssertNil(model.sheets["flow"]?.route)
+        XCTAssertEqual(model.closingPage?.route, "n0")
         XCTAssertEqual(model.closingPage?.list.all.map(\.title), ["Page n0"])
         let ends = host.heldEnds ?? []
         host.heldEnds = nil
@@ -163,7 +163,7 @@ final class FlowMoveTests: PanelCase {
         try script("narrow", toml: "title = 'Narrow'\non = ['sheet.open']\npages = ['ok:*']", "printf 'text=n\\ntitle=N\\n'")
         await model.reload()
 
-        XCTAssertTrue(model.push(FlowSheet(spot: "narrow", page: "bad")))
+        XCTAssertTrue(model.push(FlowSheet(spot: "narrow", route: "bad")))
 
         XCTAssertEqual(model.openSheetID, "list")
         XCTAssertEqual(host.notes.last, "Narrow takes no page bad. Add bad to the pages of its spot.toml")

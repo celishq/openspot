@@ -23,8 +23,8 @@ final class SpotRunStateTests: XCTestCase {
         runs.quit()
     }
 
-    private func sheet(kind: SpotKind = .list, read: SpotRead? = .sheet, mode: SpotMode = .once) -> (SpotRun, FakeMode) {
-        let sheet = runs.sheet(for: Spot(id: "script", name: "Script", url: URL(fileURLWithPath: "/script.spot/script.sh"), kind: kind, read: read, mode: mode))
+    private func sheet(kind: SpotKind = .list, on: ShowEvents? = .sheet, mode: SpotMode = .once) -> (SpotRun, FakeMode) {
+        let sheet = runs.sheet(for: Spot(id: "script", name: "Script", url: URL(fileURLWithPath: "/script.spot/script.sh"), kind: kind, on: on, mode: mode))
         return (sheet, links["script"]!)
     }
 
@@ -33,7 +33,7 @@ final class SpotRunStateTests: XCTestCase {
     }
 
     private func opened(searches: Bool = false, frame: String = "text=a\ntitle=A\n") async -> (SpotRun, FakeMode) {
-        let (sheet, link) = sheet(read: SpotRead(moments: [.sheet], searchesSheet: searches))
+        let (sheet, link) = sheet(on: ShowEvents(moments: [.sheet], searchesSheet: searches))
         sheet.open {}
         await link.frame(frame, of: link.sent[0])
         await link.end(link.sent[0])
@@ -105,30 +105,30 @@ final class SpotRunStateTests: XCTestCase {
 
     func testAReadAskedDuringAReadRunsAfterIt() async throws {
         let (sheet, link) = sheet()
-        sheet.read(need: .change)
-        sheet.read(need: .change)
+        sheet.show(need: .change)
+        sheet.show(need: .change)
         XCTAssertEqual(link.sent.count, 1)
 
         await link.frame("text=a\ntitle=A\n", of: link.sent[0])
         await link.end(link.sent[0])
 
         XCTAssertEqual(link.sent.count, 2)
-        XCTAssertTrue(sheet.isReading)
+        XCTAssertTrue(sheet.isShowing)
     }
 
     func testAReadThatPrintsNothingAnswersWithNoRows() async throws {
         let (sheet, link) = await opened()
 
-        sheet.read(need: .change)
+        sheet.show(need: .change)
         await link.end(link.sent[1])
 
         XCTAssertEqual(sheet.list.shown.count, 0)
-        XCTAssertFalse(sheet.isReading)
+        XCTAssertFalse(sheet.isShowing)
         XCTAssertTrue(sheet.calls.isEmpty)
     }
 
     func testAToggleThatFailsIsUndone() async throws {
-        let (sheet, link) = sheet(kind: .toggle, read: nil)
+        let (sheet, link) = sheet(kind: .toggle, on: nil)
         var failures: [String] = []
         sheet.onReport = { if case .failure(let text) = $0 { failures.append(text) } }
 
@@ -142,7 +142,7 @@ final class SpotRunStateTests: XCTestCase {
     }
 
     func testAToggleStoppedByASecondPressIsUndone() async throws {
-        let (sheet, link) = sheet(kind: .toggle, read: nil)
+        let (sheet, link) = sheet(kind: .toggle, on: nil)
         sheet.pressCard()
         clock.advance(by: 0.5)
         sheet.pressCard()
@@ -179,28 +179,28 @@ final class SpotRunStateTests: XCTestCase {
     }
 
     func testWorkShowsOnceTheClockHasRunOneSecond() async throws {
-        let (sheet, link) = sheet(kind: .launch, read: nil)
+        let (sheet, link) = sheet(kind: .launch, on: nil)
 
         sheet.pressCard()
         try await sleeps()
         clock.advance(by: 0.9)
-        XCTAssertTrue(sheet.work.isEmpty)
+        XCTAssertTrue(sheet.acts.isEmpty)
         clock.advance(by: 0.1)
 
-        try await wait("the shown work") { !sheet.work.isEmpty }
-        XCTAssertEqual(sheet.work.map(\.id), [link.sent[0].made.id])
+        try await wait("the shown work") { !sheet.acts.isEmpty }
+        XCTAssertEqual(sheet.acts.map(\.id), [link.sent[0].made.id])
     }
 
-    private func inMenuBar(read: SpotRead? = nil) -> (SpotRun, FakeMode) {
-        let spot = Spot(id: "script", name: "Script", url: URL(fileURLWithPath: "/script.spot/script.sh"), read: read)
+    private func inMenuBar(on: ShowEvents? = nil) -> (SpotRun, FakeMode) {
+        let spot = Spot(id: "script", name: "Script", url: URL(fileURLWithPath: "/script.spot/script.sh"), on: on)
         runs.take(ScanResult(files: [SpotFile(id: "script", spots: [spot])], refused: []), menuBar: ["script"])
         return (runs.sheets["script"]!, links["script"]!)
     }
 
     private func readInMenuBar() async -> (SpotRun, FakeMode, Int) {
-        let (sheet, link) = inMenuBar(read: SpotRead(moments: [.panel, .sheet, .event("clipboard.change")]))
+        let (sheet, link) = inMenuBar(on: ShowEvents(moments: [.panel, .sheet, .event("clipboard.change")]))
         for call in link.sent { await link.end(call) }
-        sheet.read(need: .change, reason: .panel)
+        sheet.show(need: .change, event: .panel)
         return (sheet, link, link.sent.count - 1)
     }
 
@@ -208,12 +208,12 @@ final class SpotRunStateTests: XCTestCase {
         let (sheet, link, first) = await readInMenuBar()
 
         sheet.open {}
-        sheet.read(need: .clock, reason: ReadReason(event: "clipboard.change", value: nil))
+        sheet.show(need: .clock, event: ShowEvent(event: "clipboard.change", value: nil))
         await link.end(link.sent[first])
-        XCTAssertEqual(link.sent.dropFirst(first).map(\.request.reason?.rawValue), ["panel.open", "sheet.open"])
+        XCTAssertEqual(link.sent.dropFirst(first).map(\.request.event?.rawValue), ["panel.open", "sheet.open"])
         await link.end(link.sent[first + 1])
 
-        XCTAssertEqual(link.sent.dropFirst(first).map(\.request.reason?.rawValue), ["panel.open", "sheet.open", "clipboard.change"])
+        XCTAssertEqual(link.sent.dropFirst(first).map(\.request.event?.rawValue), ["panel.open", "sheet.open", "clipboard.change"])
     }
 
     func testASheetThatClosesDuringAReadGetsNoReadForItsOpen() async throws {
@@ -224,13 +224,13 @@ final class SpotRunStateTests: XCTestCase {
         await link.end(link.sent[first])
 
         XCTAssertFalse(link.sent[first].made.isStopped)
-        XCTAssertEqual(link.sent.dropFirst(first).map(\.request.reason?.rawValue), ["panel.open"])
+        XCTAssertEqual(link.sent.dropFirst(first).map(\.request.event?.rawValue), ["panel.open"])
     }
 
     func testWorkShorterThanItsPauseTellsNoReaderOfTheWorkOrTheMenuBar() async throws {
         let (sheet, link) = inMenuBar()
         nonisolated(unsafe) var told: [String] = []
-        withObservationTracking { _ = sheet.work } onChange: { told.append("work") }
+        withObservationTracking { _ = sheet.acts } onChange: { told.append("work") }
         withObservationTracking { _ = sheet.shownState } onChange: { told.append("state") }
         withObservationTracking { _ = self.runs.menuBarMarks } onChange: { told.append("marks") }
         withObservationTracking { _ = self.runs.runningSummary } onChange: { told.append("summary") }
@@ -251,26 +251,26 @@ final class SpotRunStateTests: XCTestCase {
         clock.advance(by: 1)
         try await wait("the summary") { self.runs.runningSummary == "Script is running" }
         XCTAssertEqual(told, 1)
-        XCTAssertEqual(runs.workSpot, "script")
+        XCTAssertEqual(runs.actSpot, "script")
         await link.end(link.sent[0])
 
         XCTAssertNil(runs.runningSummary)
-        XCTAssertTrue(sheet.work.isEmpty)
+        XCTAssertTrue(sheet.acts.isEmpty)
     }
 
     func testANewReadingTellsTheReaderOfTheMarksAndTheSameReadingDoesNot() async throws {
-        let (sheet, link) = inMenuBar(read: SpotRead(moments: [.every(60)]))
+        let (sheet, link) = inMenuBar(on: ShowEvents(moments: [.every(60)]))
         try await wait("the first read") { link.sent.count == 1 }
         await link.frame("frame=\ngrid.bar=n\n\nnumber=n\nvalue=3\n", of: link.sent[0])
         await link.end(link.sent[0])
         nonisolated(unsafe) var told = 0
         withObservationTracking { _ = self.runs.menuBarMarks } onChange: { told += 1 }
 
-        sheet.read(need: .change)
+        sheet.show(need: .change)
         await link.frame("frame=\ngrid.bar=n\n\nnumber=n\nvalue=3\n", of: link.sent[1])
         await link.end(link.sent[1])
         XCTAssertEqual(told, 0)
-        sheet.read(need: .change)
+        sheet.show(need: .change)
         await link.frame("frame=\ngrid.bar=n\n\nnumber=n\nvalue=4\n", of: link.sent[2])
         await link.end(link.sent[2])
 
@@ -302,7 +302,7 @@ final class SpotRunStateTests: XCTestCase {
             links[spot.id] = link
             return link
         }
-        let (_, link) = inMenuBar(read: SpotRead(moments: [.every(60)]))
+        let (_, link) = inMenuBar(on: ShowEvents(moments: [.every(60)]))
         await link.end(link.sent[0])
         let before = looks
 
@@ -312,7 +312,7 @@ final class SpotRunStateTests: XCTestCase {
     }
 
     func testTheClockSleepsUntilTheNextReadIsDue() async throws {
-        let (_, link) = inMenuBar(read: SpotRead(moments: [.every(60)]))
+        let (_, link) = inMenuBar(on: ShowEvents(moments: [.every(60)]))
         await link.end(link.sent[0])
         try await wait("the schedule") { self.clock.isSleeping(for: 60) }
 
@@ -326,7 +326,7 @@ final class SpotRunStateTests: XCTestCase {
     }
 
     func testASpotThatComesBackReadsAtOnce() async throws {
-        let spot = Spot(id: "script", name: "Script", url: URL(fileURLWithPath: "/script.spot/script.sh"), read: SpotRead(moments: [.every(60)]))
+        let spot = Spot(id: "script", name: "Script", url: URL(fileURLWithPath: "/script.spot/script.sh"), on: ShowEvents(moments: [.every(60)]))
         let scan = ScanResult(files: [SpotFile(id: "script", spots: [spot])], refused: [])
         runs.take(scan, menuBar: ["script"])
         await links["script"]!.end(links["script"]!.sent[0])
@@ -339,7 +339,7 @@ final class SpotRunStateTests: XCTestCase {
     }
 
     func testQuickPressesOfAKeyWaitUpToTheirLimit() async throws {
-        let (sheet, link) = sheet(kind: .launch, read: nil)
+        let (sheet, link) = sheet(kind: .launch, on: nil)
 
         for _ in 0..<10 { sheet.pressKey("go") }
         var ended = 0
@@ -352,7 +352,7 @@ final class SpotRunStateTests: XCTestCase {
     }
 
     func testAStayingSpotHoldsNoMoreKeyPressesThanTheLimit() async throws {
-        let (sheet, link) = sheet(kind: .launch, read: nil, mode: .stay)
+        let (sheet, link) = sheet(kind: .launch, on: nil, mode: .stay)
         var toasts: [String] = []
         sheet.onReport = { if case .toast(let text) = $0 { toasts.append(text) } }
 
@@ -368,7 +368,7 @@ final class SpotRunStateTests: XCTestCase {
     }
 
     func testASecondPressStopsAStayingCallThatSaysNothingAfterTheStopPause() async throws {
-        let (sheet, link) = sheet(kind: .launch, read: nil, mode: .stay)
+        let (sheet, link) = sheet(kind: .launch, on: nil, mode: .stay)
         sheet.pressCard()
         clock.advance(by: 2)
 
@@ -382,7 +382,7 @@ final class SpotRunStateTests: XCTestCase {
     }
 
     func testAStayingCallThatPrintsAFrameAfterTheStopKeepsRunning() async throws {
-        let (sheet, link) = sheet(kind: .launch, read: nil, mode: .stay)
+        let (sheet, link) = sheet(kind: .launch, on: nil, mode: .stay)
         sheet.pressCard()
         clock.advance(by: 2)
 
@@ -397,7 +397,7 @@ final class SpotRunStateTests: XCTestCase {
     }
 
     func testAThirdPressStartsTheStopPauseAgain() async throws {
-        let (sheet, _) = sheet(kind: .launch, read: nil, mode: .stay)
+        let (sheet, _) = sheet(kind: .launch, on: nil, mode: .stay)
         sheet.pressCard()
         clock.advance(by: 2)
         sheet.pressCard()
@@ -430,13 +430,13 @@ final class SpotRunStateTests: XCTestCase {
             links[spot.id] = link
             return link
         }
-        let (sheet, _) = sheet(kind: .launch, read: nil)
+        let (sheet, _) = sheet(kind: .launch, on: nil)
 
         sheet.pressCard()
         try await sleeps()
         clock.advance(by: 1)
 
-        try await wait("the shown work") { !sheet.work.isEmpty }
+        try await wait("the shown work") { !sheet.acts.isEmpty }
     }
 
     func testAFormCallAnswersWithItsFrameOfFieldsAndTheRowItNames() async throws {

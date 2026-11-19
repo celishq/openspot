@@ -196,7 +196,7 @@ final class PanelKeysTests: PanelCase {
 
     func testEscPopsAPageOfASheetOfPartsAsItDoesInASheetOfRows() async throws {
         try await openInfo()
-        XCTAssertTrue(model.push(FlowSheet(spot: "info", page: "a")))
+        XCTAssertTrue(model.push(FlowSheet(spot: "info", route: "a")))
         try await wait("the page of parts") { self.model.openParts?.parts.first?.title == "Detail" }
         try await wait("the step to settle") { self.model.flowEdges.from == nil }
 
@@ -382,7 +382,7 @@ final class PanelKeysTests: PanelCase {
         let heldKey = pickData.appendingPathComponent("hold-key")
         try Data().write(to: heldRead)
         try Data().write(to: heldKey)
-        model.sheets["choice"]?.read(need: .change)
+        model.sheets["choice"]?.show(need: .change)
         XCTAssertTrue(model.handleKey(escape))
         try await wait("the recording") { self.model.recording == "key" }
         model.record(code: 49, modifiers: .option)

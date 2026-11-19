@@ -91,7 +91,7 @@ public struct ViewLibrary: Sendable {
             case \(SpotSize.all.map(\.name).joined(separator: ", "))
         }
 
-        public struct SpotRow: Identifiable {
+        public struct SpotItem: Identifiable {
             let fields: [String]
 
             public var id: String { fields.count > 1 ? fields[1] : "" }
@@ -103,14 +103,14 @@ public struct ViewLibrary: Sendable {
             }
         }
 
-        public struct SpotRows: RandomAccessCollection {
+        public struct SpotItems: RandomAccessCollection {
             let fields: [[String]]
 
             public var startIndex: Int { 0 }
 
             public var endIndex: Int { fields.count }
 
-            public subscript(index: Int) -> SpotRow { SpotRow(fields: fields[index]) }
+            public subscript(index: Int) -> SpotItem { SpotItem(fields: fields[index]) }
         }
 
         public struct SpotInput {
@@ -128,7 +128,7 @@ public struct ViewLibrary: Sendable {
             public let rowGap: CGFloat
             public let columns: Int
             public let tipDelay: Duration
-            public let rows: SpotRows
+            public let items: SpotItems
             public let isShown: Bool
             public let selection: String?
             let closer: () -> Void
@@ -151,7 +151,7 @@ public struct ViewLibrary: Sendable {
                 tipMaker = card["tip"] as? (String) -> AnyView ?? { AnyView(Text($0)) }
                 mediaMaker = card["media"] as? (String) -> AnyView ?? { _ in AnyView(EmptyView()) }
                 cornerMaker = card["cornerButton"] as? (String, String, String, @escaping () -> Void) -> AnyView ?? { _, _, _, _ in AnyView(EmptyView()) }
-                rows = SpotRows(fields: card["rows"] as? [[String]] ?? [])
+                items = SpotItems(fields: card["items"] as? [[String]] ?? [])
                 isShown = card["isShown"] as? Bool ?? true
                 selection = card["selection"] as? String
                 closer = card["close"] as? () -> Void ?? {}

@@ -21,7 +21,7 @@ final class CalculatorSpotTests: SampleSpotsCase {
     func testTheCalculatorOnlyAnswersAndHasNoCard() throws {
         let calculator = try calculator
 
-        XCTAssertNil(calculator.read)
+        XCTAssertNil(calculator.on)
         XCTAssertFalse(calculator.isOnGrid)
         XCTAssertFalse(calculator.isFound)
     }

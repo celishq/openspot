@@ -342,7 +342,7 @@ final class ShellHelperTests: XCTestCase {
         let live = ScriptProcess(url: url, mode: .stays, limit: 60)
         var frames = live.start().makeAsyncIterator()
 
-        live.send(Message(.show, event: ReadReason(event: "music.track", value: "Song"), inputs: [.init(key: "a", value: "held")]), id: 1)
+        live.send(Message(.show, event: ShowEvent(event: "music.track", value: "Song"), inputs: [.init(key: "a", value: "held")]), id: 1)
         live.send(text: SpotAction.stopEvent(id: 1))
         live.send(Message(.press("go")), id: 2)
         live.end()
@@ -381,9 +381,9 @@ final class ShellHelperTests: XCTestCase {
     func testAValueWithANewLineAndAKeyLineAddsNoRow() async throws {
         let url = try script("""
         bad=$(printf 'one\\n\\ntext=x\\ntitle=x')
-        openspot_row a "$bad" "$bad" 'a\\b'
+        openspot_item a "$bad" "$bad" 'a\\b'
         openspot_kv tone good
-        printf 'b\\tBack\\\\slash\\t\\t\\tvalue=true\\tkeywords=c\\\\d\\n' | openspot_rows
+        printf 'b\\tBack\\\\slash\\t\\t\\tvalue=true\\tkeywords=c\\\\d\\n' | openspot_items
         """)
 
         let output = try await ScriptProcess.output(url: url, limit: 60)

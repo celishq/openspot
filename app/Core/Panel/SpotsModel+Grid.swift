@@ -203,8 +203,8 @@ extension SpotsModel {
         runs.runningSummary
     }
 
-    public func openWork() -> Bool {
-        guard let id = runs.workSpot else { return false }
+    public func openAct() -> Bool {
+        guard let id = runs.actSpot else { return false }
         let spot = { self.visible.firstIndex { $0.id == id } }
         if isShown, openSheetID == nil, spot() == selected {
             host.dismiss()
@@ -216,12 +216,12 @@ extension SpotsModel {
         return true
     }
 
-    public func work(of part: SpotPart) -> ScriptCall? {
-        openSheet?.work(of: part)
+    public func act(of part: SpotPart) -> ScriptCall? {
+        openSheet?.act(of: part)
     }
 
-    public func work(of row: ActionMenu.Row) -> ScriptCall? {
-        menuTarget.flatMap { sheets[$0.entry.id]?.work(of: row, item: $0.item) }
+    public func act(of row: ActionMenu.Row) -> ScriptCall? {
+        menuTarget.flatMap { sheets[$0.entry.id]?.act(of: row, item: $0.item) }
     }
 
     public func openFromMenuBar(_ id: String) {

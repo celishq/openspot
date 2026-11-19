@@ -21,7 +21,7 @@ public final class SpotRuns {
     @ObservationIgnored public var onReport: (String, SpotRun.Report) -> Void = { _, _ in }
     @ObservationIgnored public var partsArrival: (String, () -> Void) -> Void = { _, bring in bring() }
     @ObservationIgnored public let opening: SheetOpening
-    public let readLimit: TimeInterval
+    public let showLimit: TimeInterval
     let inlineIdle: TimeInterval
     let frameWait: DispatchTimeInterval
     public nonisolated let usage: StatsLog
@@ -51,11 +51,11 @@ public final class SpotRuns {
     @ObservationIgnored private var grid: Set<String> = []
     @ObservationIgnored private var menuBar: Set<String> = []
     public private(set) var menuBarMarks: [(id: String, mark: MenuBarMark)] = []
-    @ObservationIgnored public private(set) var work: [(id: String, call: ScriptCall)] = []
+    @ObservationIgnored public private(set) var acts: [(id: String, call: ScriptCall)] = []
     public private(set) var runningSummary: String?
-    public private(set) var workSpot: String?
+    public private(set) var actSpot: String?
     @ObservationIgnored var ticks: Task<Void, Never>?
-    @ObservationIgnored var nextRead: Date?
+    @ObservationIgnored var nextShow: Date?
     @ObservationIgnored var answerMatches = AnswerMatches()
     @ObservationIgnored private var lastSearch: SearchQuery?
     @ObservationIgnored private(set) var searchBuilds = 0
@@ -73,7 +73,7 @@ public final class SpotRuns {
     @ObservationIgnored var standIn: ((Spot) -> ScriptMode)?
     @ObservationIgnored public var api: CommandAPI?
     @ObservationIgnored private let log: CallLog?
-    @ObservationIgnored public var onCall: ((CallLog.Record, ReadReason?) -> Void)?
+    @ObservationIgnored public var onCall: ((CallLog.Record, ShowEvent?) -> Void)?
     @ObservationIgnored var frameWaits = 0
     @ObservationIgnored var answerWaits: [(DispatchTime) -> Void]?
     @ObservationIgnored private let swift: SwiftProgram
@@ -89,7 +89,7 @@ public final class SpotRuns {
 
     public init(
         environment: [String: String] = ProcessInfo.processInfo.environment,
-        readLimit: TimeInterval = 10,
+        showLimit: TimeInterval = 10,
         opening: SheetOpening = SheetOpening(),
         clock: RunClock = RunClock(),
         stopPause: TimeInterval = 2,
@@ -111,7 +111,7 @@ public final class SpotRuns {
         usage = StatsLog(folder: stats, at: clock.now(), now: clock.now)
         self.inlineIdle = inlineIdle
         self.frameWait = frameWait
-        self.readLimit = readLimit
+        self.showLimit = showLimit
         self.opening = opening
         self.clock = clock
         now = clock.now
@@ -141,16 +141,16 @@ public final class SpotRuns {
             if sheet.isOpen { onReport(id, .closed) }
             if floating.remove(id) != nil { onReport(id, .landed) }
             sheet.close()
-            sheet.stopReads()
+            sheet.stopShows()
         }
         scripts.forEach { sheet(for: $0).scanned(stamps[$0.id]) }
         showMarks()
-        showWork()
+        showActs()
         swift.prune(keeping: scripts.map(\.url), with: Dictionary(scripts.map { ($0.url, $0.sources) }) { first, _ in first })
         usage.take(views: scripts)
         usage.take(versions: stamps.mapValues(SpotLoad.version(of:)))
         updateClock()
-        readOfferedRows()
+        showOfferedItems()
     }
 
     public func sheet(for spot: Spot) -> SpotRun {
@@ -216,8 +216,8 @@ public final class SpotRuns {
         sheets.values.lazy.map(\.spot).first { $0.starts == .firstLaunch && $0.isBuiltIn }?.id
     }
 
-    public var isReading: Bool {
-        sheets.values.contains(where: \.isReading)
+    public var isShowing: Bool {
+        sheets.values.contains(where: \.isShowing)
     }
 
     public func panelClosed() {
@@ -259,14 +259,14 @@ public final class SpotRuns {
         menuBar.contains(spot.id) && spot.canShowInMenuBar
     }
 
-    func showWork() {
-        let next = order.flatMap { id in (sheets[id]?.work ?? []).map { (id: id, call: $0) } }.sorted { $0.call.started < $1.call.started }
-        guard !next.elementsEqual(work, by: { $0.id == $1.id && $0.call === $1.call }) else { return }
-        work = next
+    func showActs() {
+        let next = order.flatMap { id in (sheets[id]?.acts ?? []).map { (id: id, call: $0) } }.sorted { $0.call.started < $1.call.started }
+        guard !next.elementsEqual(acts, by: { $0.id == $1.id && $0.call === $1.call }) else { return }
+        acts = next
         let name = next.first.map { sheets[$0.id]?.spot.name ?? $0.id }
         let summary = name.map { next.count > 1 ? "\(next.count) running. \($0) is the oldest" : "\($0) is running" }
         if summary != runningSummary { runningSummary = summary }
-        if next.first?.id != workSpot { workSpot = next.first?.id }
+        if next.first?.id != actSpot { actSpot = next.first?.id }
     }
 
     public func takesDrag(_ id: String) -> Bool {
@@ -278,9 +278,9 @@ public final class SpotRuns {
     }
 
     func wants(_ spot: Spot) -> Bool {
-        if isInMenuBar(spot) || spot.mode == .stay && spot.readsAtLaunch { return true }
+        if isInMenuBar(spot) || spot.mode == .stay && spot.showsAtLaunch { return true }
         guard isPanelOpen else { return false }
-        return spot.mode.stays && spot.answers != nil || spot.read?.has(.panel) == true || grid.contains(spot.id)
+        return spot.mode.stays && spot.answers != nil || spot.on?.has(.panel) == true || grid.contains(spot.id)
     }
 
     public func take(grid next: Set<String>) {
@@ -301,8 +301,8 @@ public final class SpotRuns {
         return lines
     }
 
-    private static func isQuiet(_ reason: ReadReason?, _ end: ScriptCall.End) -> Bool {
-        guard reason?.isFrequent == true else { return false }
+    private static func isQuiet(_ event: ShowEvent?, _ end: ScriptCall.End) -> Bool {
+        guard event?.isFrequent == true else { return false }
         if case .failed = end { return false }
         return true
     }
@@ -311,7 +311,7 @@ public final class SpotRuns {
         if let log { log.add(frame, to: &frames) } else if onCall != nil { frames.append(frame) }
     }
 
-    func record(_ spot: Spot, _ action: SpotAction, input: String?, frames: [String], errors: String, end: ScriptCall.End, reason: ReadReason?, started: Date, begin: Date) {
+    func record(_ spot: Spot, _ action: SpotAction, input: String?, frames: [String], errors: String, end: ScriptCall.End, event: ShowEvent?, started: Date, begin: Date) {
         guard !spot.reachesAccountKey else { return }
         let record = CallLog.Record(
             spot: spot.id,
@@ -323,8 +323,8 @@ public final class SpotRuns {
             started: started,
             seconds: Date().timeIntervalSince(begin)
         )
-        onCall?(record, reason)
-        guard let log, !Self.isQuiet(reason, end) else { return }
+        onCall?(record, event)
+        guard let log, !Self.isQuiet(event, end) else { return }
         log.write(record)
     }
 

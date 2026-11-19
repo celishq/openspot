@@ -21,7 +21,7 @@ final class CatalogSpotTests: BuiltInCase {
 
         XCTAssertEqual(spot.name, "Spots")
         XCTAssertEqual(spot.subtitle, "Edit Spots")
-        XCTAssertNil(spot.read)
+        XCTAssertNil(spot.on)
         XCTAssertEqual(defaults.arrangement.size(of: spot.id), .wide)
         XCTAssertEqual(defaults.arrangement.isOnGrid(of: spot.id), true)
         XCTAssertEqual(spot.keywords, ["edit spots"])

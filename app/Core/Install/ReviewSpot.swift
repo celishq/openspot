@@ -80,7 +80,7 @@ public struct ReviewSpot: Equatable, Sendable {
     }
 
     public var spot: Spot {
-        Spot(id: Self.id, name: name, url: folder, kind: .list, symbol: symbol, subtitle: subtitle, read: .sheet, order: .max, host: .review(self), growsFromField: true)
+        Spot(id: Self.id, name: name, url: folder, kind: .list, symbol: symbol, subtitle: subtitle, on: .sheet, order: .max, host: .review(self), growsFromField: true)
     }
 
     public func answer(_ arguments: [String]) throws -> String {
@@ -126,10 +126,10 @@ public struct ReviewSpot: Equatable, Sendable {
     private static func selfRuns(in scan: ScanResult) -> [String] {
         return scan.scripts.compactMap { script in
             var moments: [String] = switch script.mode {
-            case .stay: [script.readsAtLaunch ? "keeps running while Openspot runs" : "keeps running while it is in use"]
+            case .stay: [script.showsAtLaunch ? "keeps running while Openspot runs" : "keeps running while it is in use"]
             case .once, .inline: []
             }
-            for moment in script.read?.moments ?? [] {
+            for moment in script.on?.moments ?? [] {
                 switch moment {
                 case .panel: moments.append("when the panel opens")
                 case .every(let seconds): moments.append("every \(Int(seconds)) seconds")

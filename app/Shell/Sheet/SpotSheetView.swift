@@ -72,7 +72,7 @@ private struct SheetContentView: View {
                     if panel.showsRows { Color.clear.frame(height: SpotTokens.listRow) }
                     SheetPartsView(
                         panel: panel,
-                        work: content.work,
+                        act: content.act,
                         onSet: { model.setPart($0, to: $1) },
                         onPress: { model.pressPart($0) },
                         recordingPart: content.recording,
@@ -105,7 +105,7 @@ private struct SheetContentView: View {
                         }
                         .buttonStyle(.plain)
                     } else {
-                        SpotRowsView(list: list, recording: content.isHeld ? nil : content.recording, recordingWords: model.recordingWords, keys: model.keys, onRun: { model.runItem($0) }, onPoint: { model.point(at: .item($0)) }, selection: selection, onDragOut: { model.dragOut($0, of: entry.id) })
+                        SpotItemsView(list: list, recording: content.isHeld ? nil : content.recording, recordingWords: model.recordingWords, keys: model.keys, onRun: { model.runItem($0) }, onPoint: { model.point(at: .item($0)) }, selection: selection, onDragOut: { model.dragOut($0, of: entry.id) })
                     }
                 }
             }

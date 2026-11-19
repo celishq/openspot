@@ -95,7 +95,7 @@ final class SpotEffectTests: PanelCase {
 
         XCTAssertEqual(code, "next 0")
         try await wait("the pushed page") { self.titles.first == "Page n0" }
-        XCTAssertEqual(model.flow.current, FlowSheet(spot: "flow", page: "n0", title: "Next page"))
+        XCTAssertEqual(model.flow.current, FlowSheet(spot: "flow", route: "n0", title: "Next page"))
         XCTAssertEqual(log("routes").last, "n0")
     }
 
@@ -110,7 +110,7 @@ final class SpotEffectTests: PanelCase {
         try await wait("the second page") { self.titles.first == "Page n2" }
 
         _ = try await pressed("back")
-        try await wait("one page back") { self.titles.first == "Page n0" && self.model.flow.current?.page == "n0" }
+        try await wait("one page back") { self.titles.first == "Page n0" && self.model.flow.current?.route == "n0" }
         _ = try await pressed("next")
         try await wait("the second page again") { self.titles.first == "Page n2" }
         _ = try await pressed("root")
@@ -145,7 +145,7 @@ final class SpotEffectTests: PanelCase {
 
         try await wait("both moves") { self.log("codes").count == 2 }
         XCTAssertEqual(log("codes"), ["go 0", "go 0"])
-        XCTAssertEqual(model.flow.current, FlowSheet(spot: "list", page: "a", title: "A"))
+        XCTAssertEqual(model.flow.current, FlowSheet(spot: "list", route: "a", title: "A"))
         XCTAssertEqual(titles, ["Detail a"])
     }
 

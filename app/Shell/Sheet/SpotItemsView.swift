@@ -1,7 +1,7 @@
 import OpenspotCore
 import SwiftUI
 
-struct SpotRowsView: View {
+struct SpotItemsView: View {
     @Environment(\.spotSurfaceEdge) private var surface
     let list: ItemList
     var recording: String?
@@ -77,7 +77,7 @@ struct SpotRowsView: View {
         Group {
             if list.isBento { bentoScroll } else if isGrid { grid } else { lineScroll }
         }
-        .modifier(RowsFade(bottom: Self.bottomFade))
+        .modifier(ItemsFade(bottom: Self.bottomFade))
         .padding(.vertical, -SpotTokens.padding)
     }
 
@@ -88,7 +88,7 @@ struct SpotRowsView: View {
     private var pinnedScroll: some View {
         ScrollViewReader { proxy in
             ScrollView(showsIndicators: false) { lines }
-                .modifier(RowsFollow(selection: selected, items: list.shown, proxy: proxy))
+                .modifier(ItemsFollow(selection: selected, items: list.shown, proxy: proxy))
                 .onChange(of: list.landedSearches) {
                     guard let run = list.scrolling.first?.run else { return }
                     DispatchQueue.main.async { proxy.scrollTo(run, anchor: .top) }
@@ -101,7 +101,7 @@ struct SpotRowsView: View {
             ScrollView(showsIndicators: false) { lines }
                 .safeAreaPadding(.top, SpotTokens.padding)
                 .safeAreaPadding(.bottom, bottomInset)
-                .modifier(RowsFollow(selection: selected, items: list.shown, proxy: proxy))
+                .modifier(ItemsFollow(selection: selected, items: list.shown, proxy: proxy))
                 .onChange(of: list.landedSearches) {
                     guard let run = list.shown.first?.run else { return }
                     DispatchQueue.main.async { proxy.scrollTo(run, anchor: .top) }
@@ -110,7 +110,7 @@ struct SpotRowsView: View {
     }
 
     private var grid: some View {
-        SpotRowGrid(list: list, selection: selected, bottomInset: bottomInset, bottomFade: Self.bottomFade, onRun: onRun, onPoint: onPoint, onDragOut: onDragOut)
+        SpotItemGrid(list: list, selection: selected, bottomInset: bottomInset, bottomFade: Self.bottomFade, onRun: onRun, onPoint: onPoint, onDragOut: onDragOut)
     }
 
     private var lines: some View {
@@ -155,7 +155,7 @@ struct SpotRowsView: View {
                 .padding(.top, SpotTokens.padding)
                 .padding(.bottom, bottomInset)
             }
-            .modifier(RowsFollow(selection: selected, items: list.shown, proxy: proxy, motion: SpotMotion.move))
+            .modifier(ItemsFollow(selection: selected, items: list.shown, proxy: proxy, motion: SpotMotion.move))
             .onChange(of: list.landedSearches) {
                 guard let run = list.shown.first?.run else { return }
                 DispatchQueue.main.async { proxy.scrollTo(run, anchor: .top) }
@@ -201,7 +201,7 @@ struct SpotRowsView: View {
             }
             Spacer(minLength: 0)
             if !item.bars.isEmpty {
-                RowBars(bars: item.bars, tone: item.tone)
+                ItemBars(bars: item.bars, tone: item.tone)
             }
             if let ring = item.ring {
                 SpotLineMark(value: ring, words: ring.ringWords)
@@ -210,7 +210,7 @@ struct SpotRowsView: View {
                 LiveKeyLabel(text: shortcut, isRecording: recording == item.run, words: recordingWords, keys: keys)
             }
             if item.isToggle {
-                RowSwitch(isOn: item.isOn)
+                ItemSwitch(isOn: item.isOn)
             } else if item.isOn {
                 Image(systemName: "checkmark")
                     .font(SpotType.body.weight(.semibold))
@@ -237,7 +237,7 @@ private struct LiveKeyLabel: View {
     }
 }
 
-private struct RowBars: View {
+private struct ItemBars: View {
     let bars: [Double?]
     let tone: MetricValue.Tone?
 
@@ -257,7 +257,7 @@ private struct RowBars: View {
     }
 }
 
-private struct RowSwitch: View {
+private struct ItemSwitch: View {
     let isOn: Bool
 
     var body: some View {
@@ -272,7 +272,7 @@ private struct RowSwitch: View {
     }
 }
 
-private struct RowsFade: ViewModifier {
+private struct ItemsFade: ViewModifier {
     let bottom: CGFloat
     @State private var edges = SpotScrollEdges()
 
@@ -302,7 +302,7 @@ private struct BentoRing: View {
         let index = selection()
         if index < count {
             let area = drawing.area(of: index)
-            let size = SpotRowsView.size(of: area, step: step)
+            let size = SpotItemsView.size(of: area, step: step)
             Color.clear
                 .frame(width: size.width, height: size.height)
                 .modifier(SpotSelectionRing(isSelected: true, shape: SpotRoundShape(surface.inner()), marksMenu: true))
@@ -311,7 +311,7 @@ private struct BentoRing: View {
     }
 }
 
-private struct RowsFollow: ViewModifier {
+private struct ItemsFollow: ViewModifier {
     let selection: () -> Int
     let items: [SpotItem]
     let proxy: ScrollViewProxy

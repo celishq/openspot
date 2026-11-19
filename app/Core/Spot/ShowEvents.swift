@@ -1,6 +1,6 @@
 import Foundation
 
-public struct SpotRead: Equatable, Sendable {
+public struct ShowEvents: Equatable, Sendable {
     public enum Moment: Equatable, Sendable {
         case panel
         case sheet
@@ -8,8 +8,8 @@ public struct SpotRead: Equatable, Sendable {
         case event(String)
     }
 
-    public static let panel = SpotRead(moments: [.panel])
-    public static let sheet = SpotRead(moments: [.sheet])
+    public static let panel = ShowEvents(moments: [.panel])
+    public static let sheet = ShowEvents(moments: [.sheet])
 
     public let moments: [Moment]
     public let answers: AnswerPattern?
@@ -99,7 +99,7 @@ public struct SpotRead: Equatable, Sendable {
         return nil
     }
 
-    public static func == (one: SpotRead, two: SpotRead) -> Bool {
+    public static func == (one: ShowEvents, two: ShowEvents) -> Bool {
         one.moments == two.moments && one.answers == two.answers && one.searchesSheet == two.searchesSheet && one.filters == two.filters
     }
 }

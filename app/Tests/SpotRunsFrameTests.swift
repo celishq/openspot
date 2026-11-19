@@ -141,7 +141,7 @@ final class SpotRunsFrameTests: SpotRunsCase {
         sheet.open {}
         try await wait("the row") { sheet.list.shown.count == 1 && sheet.calls.isEmpty }
 
-        sheet.read(need: .change)
+        sheet.show(need: .change)
 
         try await wait("the empty answer") { sheet.list.shown.isEmpty && sheet.calls.isEmpty }
         XCTAssertFalse(sheet.spot.keepsRecent)

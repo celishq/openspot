@@ -6,10 +6,10 @@ public enum ClipboardCall: NounCall {
     case read
 
     static let noun = CommandNoun("clipboard", group: .mac, verbs: [
-        CommandVerb("copy", "[file]", "Copies the file as Finder does, or the text on stdin.", rule: CallRule(use: .clipboard, used: "copied to the clipboard", read: .changes("changes the clipboard"))) { words in
+        CommandVerb("copy", "[file]", "Copies the file as Finder does, or the text on stdin.", rule: CallRule(use: .clipboard, used: "copied to the clipboard", inShow: .changes("changes the clipboard"))) { words in
             words.rest.count <= 1 ? Self.copy(words.rest.first) : nil
         },
-        CommandVerb("paste", "", "Pastes the clipboard into the front app.", rule: CallRule(use: .clipboard, used: "pasted the clipboard", read: .changes("types in the front app"))) { $0.none ? Self.paste : nil },
+        CommandVerb("paste", "", "Pastes the clipboard into the front app.", rule: CallRule(use: .clipboard, used: "pasted the clipboard", inShow: .changes("types in the front app"))) { $0.none ? Self.paste : nil },
         CommandVerb("read", "", "Prints the text on the clipboard, or nothing when it holds none.", rule: CallRule(use: .clipboard, used: "read the clipboard")) { $0.none ? Self.read : nil }
     ])
 

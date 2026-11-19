@@ -6,7 +6,7 @@ final class PlaygroundCallTests: SpotRunsCase {
     func testTheRunsTellEachCallWithItsPartsAlsoAQuietOne() async throws {
         try script(toml: "on = ['sheet.open', 'sheet.text']", "echo 'slow disk' >&2\nprintf 'text=a\\ntitle=%s\\n' \"$(sed -n 's/^event.value=//p')\"")
         var calls: [PlaygroundCall] = []
-        runs.onCall = { calls.append(PlaygroundCall(record: $0, reason: $1)) }
+        runs.onCall = { calls.append(PlaygroundCall(record: $0, event: $1)) }
         let sheet = try sheet()
 
         sheet.open(onReady: {})
@@ -22,12 +22,12 @@ final class PlaygroundCallTests: SpotRunsCase {
 
     func testTheCallsOfASpotThatUsesTheAccountStayOutOfTheLog() {
         var calls: [PlaygroundCall] = []
-        runs.onCall = { calls.append(PlaygroundCall(record: $0, reason: $1)) }
+        runs.onCall = { calls.append(PlaygroundCall(record: $0, event: $1)) }
         let url = URL(fileURLWithPath: path("account.sh"))
 
         for uses in [Set<SpotUse>([.account]), []] {
             let spot = Spot(id: "account", name: "Account", url: url, dataName: "account", uses: uses).builtIn()
-            runs.record(spot, SpotAction(arguments: ["show"]), input: nil, frames: ["word=secret\n"], errors: "", end: .ended, reason: nil, started: Date(), begin: Date())
+            runs.record(spot, SpotAction(arguments: ["show"]), input: nil, frames: ["word=secret\n"], errors: "", end: .ended, event: nil, started: Date(), begin: Date())
         }
 
         XCTAssertEqual(calls.map(\.lines.first), ["$ show"])
@@ -51,7 +51,7 @@ final class PlaygroundCallTests: SpotRunsCase {
         done
         """)
         var calls: [PlaygroundCall] = []
-        runs.onCall = { calls.append(PlaygroundCall(record: $0, reason: $1)) }
+        runs.onCall = { calls.append(PlaygroundCall(record: $0, event: $1)) }
         let sheet = try sheet()
         runs.panelOpened()
         sheet.open {}
@@ -82,14 +82,14 @@ final class PlaygroundCallTests: SpotRunsCase {
     func testACallPrintsEachArgumentAndHowItEnded() {
         let record = CallLog.Record(spot: "a", arguments: ["move", "row 1", "true"], input: nil, frames: ["toast=Hi\n", "text=t\n"], errors: "", end: .failed("It took too long."), started: Date(), seconds: 1)
 
-        XCTAssertEqual(PlaygroundCall(record: record, reason: nil).lines, ["$ move 'row 1' true", "> toast=Hi", "> ---", "> text=t", "= It took too long."])
+        XCTAssertEqual(PlaygroundCall(record: record, event: nil).lines, ["$ move 'row 1' true", "> toast=Hi", "> ---", "> text=t", "= It took too long."])
     }
 
     func testThePlaygroundKeepsTheNewestCallsFirst() {
         var playground = Playground()
         let record = { (id: String) in CallLog.Record(spot: "a", arguments: [id], input: nil, frames: [], errors: "", end: .exited(0), started: Date(), seconds: 0) }
 
-        for index in 0..<30 { playground.take(call: PlaygroundCall(record: record("c\(index)"), reason: nil)) }
+        for index in 0..<30 { playground.take(call: PlaygroundCall(record: record("c\(index)"), event: nil)) }
 
         XCTAssertEqual(playground.calls.count, 20)
         XCTAssertEqual(playground.calls.first?.lines.first, "$ c29")

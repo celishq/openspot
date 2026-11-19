@@ -517,7 +517,7 @@ final class SpotsModelTests: XCTestCase {
         let sheet = try XCTUnwrap(model.sheets["faces"])
         try await wait("the end of the first read") { sheet.calls.isEmpty }
 
-        sheet.read(need: .change)
+        sheet.show(need: .change)
         try await wait("the second read") { (try? String(contentsOfFile: calls, encoding: .utf8))?.count == 4 }
         try await wait("the end of the second read") { sheet.calls.isEmpty }
 
@@ -685,14 +685,14 @@ final class SpotsModelTests: XCTestCase {
         model.panelWillShow()
         let start = ContinuousClock.now
 
-        await model.waitForReads()
+        await model.waitForShows()
 
         let waited = ContinuousClock.now - start
-        XCTAssertTrue(model.runs.isReading)
+        XCTAssertTrue(model.runs.isShowing)
         XCTAssertGreaterThanOrEqual(waited, .seconds(2))
         XCTAssertLessThan(waited, .seconds(20))
         FileManager.default.createFile(atPath: gate, contents: nil)
-        try await wait("the end of the read") { !model.runs.isReading }
+        try await wait("the end of the read") { !model.runs.isShowing }
     }
 
     func testAFirstLaunchOpensThePanelOnTheGridAndSaysNothingWhenItCloses() async {
@@ -1430,7 +1430,7 @@ final class SpotsModelTests: XCTestCase {
         let builds = model.spotListBuilds
         let answered = sheet.answered
 
-        sheet.read(need: .change)
+        sheet.show(need: .change)
         try await wait("the next answer") { sheet.answered != answered && sheet.answered != nil }
         model.searchText = "st"
         model.landSearch()
@@ -1443,12 +1443,12 @@ final class SpotsModelTests: XCTestCase {
         try script("move", toml: "title = 'Move'\n[commands.left]\ntitle = 'Left side'", ":")
         await model.reload()
         let sheet = try XCTUnwrap(model.sheets["move"])
-        sheet.read(need: .change)
+        sheet.show(need: .change)
         try await wait("the keys") { sheet.answered != nil }
         let holds = host.held.count
         let answered = sheet.answered
 
-        sheet.read(need: .change)
+        sheet.show(need: .change)
         try await wait("the next answer") { sheet.answered != answered && sheet.answered != nil }
 
         XCTAssertEqual(host.held.count, holds)

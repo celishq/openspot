@@ -78,7 +78,7 @@ final class DocExampleTests: SampleSpotsCase {
                         XCTFail("\(place) does not load")
                         continue
                     }
-                    if spot.read == nil {
+                    if spot.on == nil {
                         let calls = spot.offers.map(\.id) + spot.offeredActions.map(\.action.id)
                         for call in calls.isEmpty ? ["open"] : calls {
                             do {

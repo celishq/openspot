@@ -33,7 +33,7 @@ final class CallInputTests: SpotRunsCase {
             SpotSetting(spot: "other", key: "folder", value: "/tmp/other")
         ])
 
-        sheet.read(need: .change)
+        sheet.show(need: .change)
 
         try await wait("the call") { self.text("env").hasSuffix("\n") }
         XCTAssertEqual(text("env"), "setting.api-key=k1\nsetting.folder=/tmp/repos\n")
@@ -47,8 +47,8 @@ final class CallInputTests: SpotRunsCase {
         esac
         """)
         let sheet = try sheet()
-        sheet.read(need: .change)
-        try await wait("the rows") { sheet.list.all.count == 2 && !sheet.isReading }
+        sheet.show(need: .change)
+        try await wait("the rows") { sheet.list.all.count == 2 && !sheet.isShowing }
         let row = try XCTUnwrap(sheet.list.all.first)
 
         sheet.run(CommandAction(id: "join", title: "Join"), item: row)
@@ -124,9 +124,9 @@ final class CallInputTests: SpotRunsCase {
         let sheet = try sheet()
         try secrets(["token": marker])
 
-        sheet.read(need: .change)
+        sheet.show(need: .change)
 
-        try await wait("the call") { self.text("env").contains("OPENSPOT_ID") && !sheet.isReading }
+        try await wait("the call") { self.text("env").contains("OPENSPOT_ID") && !sheet.isShowing }
         XCTAssertFalse(text("env").contains(marker))
         XCTAssertFalse(text("input").contains(marker))
     }

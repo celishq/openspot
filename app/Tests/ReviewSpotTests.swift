@@ -355,7 +355,7 @@ final class ReviewSpotTests: XCTestCase {
         XCTAssertEqual(command.name, "Weather")
         XCTAssertEqual(command.subtitle, "Runs only when you use it")
         XCTAssertEqual(command.kind, .list)
-        XCTAssertEqual(command.read, .sheet)
+        XCTAssertEqual(command.on, .sheet)
         XCTAssertTrue(command.growsFromField)
         let answer = try await command.host?.answer(["show"], input: nil)
         XCTAssertEqual(answer?.frame, try review.answer(["show"]))

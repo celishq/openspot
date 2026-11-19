@@ -57,7 +57,7 @@ final class WelcomeLaunchTests: XCTestCase {
     }
 
     private var shownPages: [String?] {
-        model.flow.pages.map(\.page)
+        model.flow.pages.map(\.route)
     }
 
     private func launch() async throws {

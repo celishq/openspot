@@ -87,7 +87,7 @@ extension SpotsModel {
         if place(ofSheet: id) == .window { return openWindow(id) }
         if openSheetID == nil { endFlow() }
         flow.push(FlowSheet(spot: id, title: title))
-        sheets[id]?.show(page: nil)
+        sheets[id]?.show(route: nil)
         waitPush(moving: moving && openSheetID != nil && openSheetID != id && flow.index > 0)
         present(id, moving: moving)
     }
@@ -288,8 +288,8 @@ extension SpotsModel {
             _ = changeSetting(key, of: settings.spot)
             return
         }
-        if action == nil, case .push(let spot, let page, let title, let replace)? = item.move, spot.map(opensSheet) ?? true {
-            push(FlowSheet(spot: spot ?? entry.id, page: page, title: title ?? (page == nil ? nil : item.title)), replace: replace)
+        if action == nil, case .push(let spot, let route, let title, let replace)? = item.move, spot.map(opensSheet) ?? true {
+            push(FlowSheet(spot: spot ?? entry.id, route: route, title: title ?? (route == nil ? nil : item.title)), replace: replace)
             return
         }
         if place.isDetached {

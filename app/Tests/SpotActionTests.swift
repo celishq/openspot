@@ -24,7 +24,7 @@ final class SpotActionTests: XCTestCase {
     func testAClickOnACardWithAReadKeySendsOpenWithNoRow() {
         let url = URL(fileURLWithPath: "/x")
 
-        XCTAssertEqual(Spot(id: "a", name: "A", url: url, read: .panel).click.arguments, ["open"])
+        XCTAssertEqual(Spot(id: "a", name: "A", url: url, on: .panel).click.arguments, ["open"])
     }
 
     func testAClickOnAFileWithNoReadSendsOpenWithNoRow() {

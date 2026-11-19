@@ -49,8 +49,8 @@ final class SpotPlaygroundModel {
         panel = PlaygroundPanel(host: host, scratch: folder, defaults: UserDefaults(suiteName: "openspot-playground") ?? .standard)
         host.onNote = { [weak self] in self?.playground.record($0) }
         panel.model.runs.isCareful = isCareful
-        panel.model.runs.onCall = { [weak self] record, reason in
-            self?.playground.take(call: PlaygroundCall(record: record, reason: reason))
+        panel.model.runs.onCall = { [weak self] record, event in
+            self?.playground.take(call: PlaygroundCall(record: record, event: event))
             if let frame = record.frames.last { self?.playground.note(frame: frame) }
         }
         if file == nil { edit(Self.starter) }
@@ -87,7 +87,7 @@ final class SpotPlaygroundModel {
         guard let id else { return }
         await panel.model.reload()
         panel.model.panelWillShow()
-        if place == .sheet { panel.model.sheets[id]?.read(need: .change) }
+        if place == .sheet { panel.model.sheets[id]?.show(need: .change) }
     }
 
     func close() {
