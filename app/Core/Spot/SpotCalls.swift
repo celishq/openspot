@@ -115,6 +115,7 @@ struct SpotCalls {
                 return CommandAnswer(errors: "Openspot has no spot \(id) in \(spots.url.path). Run `openspot check spots` to see each file that does not load.\n", code: 1)
             }
             if let careful { spot.uses.formIntersection(careful) }
+            if let runs { spot = spot.knowing(sheet: await runs.knownSheet(of: id)) }
             let text = await input?()
             let usage = caller == nil || spot.reachesAccountKey ? nil : runs?.usage
             let run = TerminalRun(spot: spot, arguments: arguments, input: text, careful: careful == nil ? nil : spot.uses, callers: runs?.callers, environment: places.environment, folder: folder, usage: usage)

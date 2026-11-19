@@ -845,7 +845,7 @@ final class PanelKeysTests: PanelCase {
         XCTAssertEqual(host.notes, ["⌃⌥S opens Shelf."])
     }
 
-    func testCommandYOpensTheHistoryOfASpotWhoseReturnRunsItsCommand() async throws {
+    func testCommandYOpensTheHistoryOfASpotWithASheetAndOneCommand() async throws {
         try script("dictate", toml: "title = 'Dictate'\non = ['sheet.open']\n[commands.dictate]\ntitle = 'Dictate'", "printf 'text=a\\ntitle=Said\\n'")
         await model.reload()
         model.isShown = true

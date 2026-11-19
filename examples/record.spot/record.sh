@@ -18,6 +18,7 @@ toggle() {
 }
 
 case "$1" in
+  show) exit 0 ;;
   inputs)
     picked=$(value input.inputs)
     if [ -n "$picked" ]; then

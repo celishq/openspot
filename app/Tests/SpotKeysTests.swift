@@ -97,11 +97,10 @@ final class SpotKeysTests: XCTestCase {
         }
     }
 
-    func testASpotThatOffersSearchWithNoReadingEventReadsAtEachOpenOfItsSheet() throws {
+    func testASpotThatOffersSearchWithNoReadingEventReadsItsItemsAsTheSpotsLoad() throws {
         for toml in ["offers = ['search']", "on = ['clipboard.change']\noffers = ['search']"] {
             let spot = try spot(toml)
 
-            XCTAssertEqual(spot.on?.has(.sheet), true, toml)
             XCTAssertTrue(spot.showsOfferedItems, toml)
         }
     }

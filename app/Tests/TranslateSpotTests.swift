@@ -26,7 +26,7 @@ final class TranslateSpotTests: SampleSpotsCase {
             let output = try await translate.items(timeout: 60)
 
             XCTAssertEqual(translate.mode, .once)
-            XCTAssertEqual(translate.on, .sheet)
+            XCTAssertNil(translate.on)
             XCTAssertEqual(translate.kind, .list)
             XCTAssertEqual(output.kind, .list)
             let faults = try await translate.sheetFaults(timeout: 60)

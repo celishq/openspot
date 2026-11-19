@@ -268,6 +268,11 @@ public final class SpotRun {
         if new.headerState != header { takeState(lastAnswer) }
     }
 
+    func know(sheet: Bool) {
+        guard spot.hasSheet != sheet else { return }
+        spot = spot.knowing(sheet: sheet)
+    }
+
     func restartScript() {
         link.restart()
     }

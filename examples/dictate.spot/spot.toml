@@ -2,7 +2,6 @@ title = "Dictate"
 icon = "mic"
 detail = "Convert speech to text"
 mode = "stay"
-on = ["sheet.open"]
 uses = ["clipboard", "network"]
 source = ["dictate"]
 

@@ -28,7 +28,7 @@ final class SettingsSpotTests: BuiltInCase {
         XCTAssertTrue(spot.isFound)
         XCTAssertFalse(spot.on?.has(.panel) == true)
         XCTAssertTrue(spot.showsOfferedItems)
-        XCTAssertTrue(spot.on?.has(.sheet) == true)
+        XCTAssertNil(spot.on)
         XCTAssertEqual(SpotArrangement().spot(openedBy: ActionKey(name: ",", isCommand: true), over: defaults.arrangement), spot.id)
     }
 
@@ -99,7 +99,7 @@ final class SettingsSpotTests: BuiltInCase {
     func testAKeyRecordedOnARowGoesToTheFileAndTheListReadsItAgain() async throws {
         let runs = SpotRuns(environment: TestEnvironment.values)
         defer { runs.quit() }
-        let sheet = runs.sheet(for: try settings)
+        let sheet = runs.sheet(for: try settings.knowing(sheet: true))
         sheet.open {}
         for _ in 0..<6000 where sheet.list.shown.isEmpty { try await Task.sleep(for: .milliseconds(10)) }
         let item = try XCTUnwrap(sheet.list.selectedItem)

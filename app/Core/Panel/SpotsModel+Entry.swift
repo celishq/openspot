@@ -104,7 +104,7 @@ extension SpotsModel {
         }
 
         @MainActor public var soleCommand: String? {
-            kind == .list ? spot.soleCommand : nil
+            kind == .list && spot.runsSoleCommand ? spot.soleCommand : nil
         }
 
         public static func == (lhs: Entry, rhs: Entry) -> Bool {

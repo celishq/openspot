@@ -17,26 +17,30 @@ something, Openspot runs the spot again with the id of what was pressed. The [pr
 ## Your first spot
 
 The smallest spot is a folder, such as `morning.spot`, with two files. `spot.toml` is the spot's **manifest**: it gives
-the spot a name and an icon. `morning.sh` is the script, named after the folder. Press the spot's card, and the script
-runs.
+the spot a name, an icon and a command. `morning.sh` is the script, named after the folder. Press the spot's card, and
+the script runs with the id of the command, `start`.
 
 ```toml
 title = "Morning"
 icon = "sun.max"
+
+[commands.start]
+title = "Start the day"
 ```
 
 ```sh
 #!/bin/sh
-open -a Calendar
+case "$1" in
+  start) open -a Calendar ;;
+esac
 ```
 
-To show something, add `on` to the manifest. It lists when Openspot asks the spot what to show. Here, Openspot asks when
-the sheet opens, and the spot prints a title and a detail.
+To show something, print it. Openspot asks the spot what to show with `show` when its sheet opens, and here the spot
+prints a title and a detail.
 
 ```toml
 title = "Cups today"
 icon = "cup.and.saucer.fill"
-on = ["sheet.open"]
 ```
 
 ```sh
@@ -79,7 +83,6 @@ your spot with `open` and the id of the item.
 ```toml
 title = "Apps"
 icon = "square.grid.2x2"
-on = ["sheet.open"]
 ```
 
 ```sh
@@ -109,7 +112,6 @@ with `pages`, give the item a `route=` with the page's id, and print the page wh
 ```toml
 title = "Fruit"
 icon = "leaf"
-on = ["sheet.open"]
 pages = ["*"]
 ```
 
@@ -223,7 +225,6 @@ shortcut works while an item is selected. A press closes the panel; `close=false
 
 ```toml
 title = "Notes list"
-on = ["sheet.open"]
 ```
 
 ```sh
@@ -247,7 +248,6 @@ so the spot doesn't look the item up again.
 
 ```toml
 title = "Downloads"
-on = ["sheet.open"]
 ```
 
 ```sh
@@ -274,7 +274,6 @@ form, then again with the values the user typed.
 
 ```toml
 title = "Quick note"
-on = ["sheet.open"]
 ```
 
 ```sh
@@ -371,7 +370,7 @@ event narrows it down.
 
 ```toml
 title = "Notes"
-on = ["sheet.open", "app.front com\\.apple\\.Notes"]
+on = ["app.front com\\.apple\\.Notes"]
 ```
 
 ```sh
@@ -384,7 +383,7 @@ printf 'text=n\ntitle=%s\n' "$(value event)"
 ![The sheet of Notes after Notes came to the front: one line, app.front](docs/images/respond-to-the-mac.png)
 
 Bring Notes to the front while the sheet shows, and Openspot asks the spot again. `value event` says why:
-`sheet.open` or `app.front`.
+`sheet.open` when the sheet opens, or `app.front`.
 
 Some events bring a value. `system.load` comes every 5 seconds while the sheet shows, with the load of the Mac in
 `event.value`, so the spot starts no tool to measure it.
@@ -392,7 +391,7 @@ Some events bring a value. `system.load` comes every 5 seconds while the sheet s
 ```toml
 title = "Load"
 icon = "gauge.with.needle"
-on = ["sheet.open", "system.load"]
+on = ["system.load"]
 ```
 
 ```sh
@@ -424,7 +423,6 @@ and the spot's Settings list it. The user opens them with `⌘⏎` on the spot's
 
 ```toml
 title = "Repos"
-on = ["sheet.open"]
 
 [settings.folder]
 ```
@@ -456,7 +454,6 @@ asks for it in a form of its own, keeps it in the Keychain, and gives it to each
 
 ```toml
 title = "Weather"
-on = ["sheet.open"]
 
 [settings.token]
 type = "secret"
@@ -482,7 +479,6 @@ program at each call. Each item of `source` names one more Swift file, or a fold
 ```toml
 title = "Cups today"
 icon = "cup.and.saucer.fill"
-on = ["sheet.open"]
 source = ["cups.swift"]
 ```
 
@@ -511,7 +507,6 @@ it draws. The view reads the keys of its block, and the rows of the frame.
 ```toml
 title = "Cups this week"
 icon = "chart.bar"
-on = ["sheet.open"]
 view = "week.swift"
 ```
 
@@ -562,7 +557,6 @@ you [change the look](#change-the-look-of-openspot).
 ```toml
 title = "Steps"
 icon = "figure.walk"
-on = ["sheet.open"]
 view = "steps.swift"
 ```
 
@@ -617,13 +611,17 @@ Every spot answers the same keys, so a user learns them once. Openspot gives eac
 
 | Key          | What it does                                                                                              |
 | ------------ | --------------------------------------------------------------------------------------------------------- |
-| Return       | The main act of the spot: it runs the spot's one command, or opens its sheet.                             |
+| Return       | The main act of the spot: it opens the spot's sheet, or with no sheet, runs its one command.              |
 | `⌘` Return   | Opens the spot's Settings: its keys, each setting and its places.                                         |
-| `⌘Y`         | Opens the items of a spot whose Return runs its command, as its **History**.                              |
+| `⌘Y`         | Opens the items of a spot that has a sheet and one command, as its **History**.                           |
 | `⌘K`         | Opens the menu of all acts, when it holds more than the footer shows.                                     |
 
-- A spot with one command in its manifest, such as Dictate, runs that command on Return, even before it has a hotkey.
-  Its items are its History, on `⌘Y` and in its ⌘K menu. Any other spot opens its sheet on Return.
+- A spot has a sheet when its `show` prints something. Openspot runs each spot's `show` once when the spots load, and
+  again when a spot's files change, to learn it.
+- A spot with a sheet opens it on Return. With one command, such as Dictate, its items are also its History, on `⌘Y`
+  and in its ⌘K menu.
+- A spot with no sheet and one command, such as Confetti, runs that command on Return, even before it has a hotkey.
+  With several commands, Return opens its keys.
 - A press of its card, its open hotkey, a click of it in the menu bar and its slash command with no text do what Return
   does. The click in the menu bar opens the sheet under the menu bar item. A press with `⌘` opens its Settings.
 - The ⌘K menu of a card starts with the acts that Openspot adds, always in this order: first what the user does with

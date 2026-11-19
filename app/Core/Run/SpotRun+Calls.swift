@@ -132,7 +132,7 @@ extension SpotRun {
             if let undo = act.undo { state = undo }
         case (.act(let act), .ended):
             answered = nil
-            if let selected = call.selected, spot.on != nil {
+            if let selected = call.selected, spot.hasSheet {
                 show(selecting: selected, need: .change)
             } else if !call.showedPicture, act.showsAfter {
                 showOnce()

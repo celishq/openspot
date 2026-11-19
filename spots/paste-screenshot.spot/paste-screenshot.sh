@@ -1,4 +1,5 @@
 #!/bin/sh
+[ "$1" != show ] || exit 0
 folder() {
   dir=$(defaults read com.apple.screencapture "$1" 2>/dev/null || defaults read com.apple.screencapture location 2>/dev/null || echo "$HOME/Desktop")
   case "$dir" in "~"*) dir="$HOME${dir#\~}" ;; esac

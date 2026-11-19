@@ -67,7 +67,7 @@ final class DrawSpotTests: XCTestCase {
         runs.api = CommandAPI(mac: Mac(), places: .test(["OPENSPOT_CONFIG": home.appendingPathComponent(".config/openspot").path]), app: FakeRunningApp(), runs: runs, rates: .offline)
         let count = records.count
         runs.onCall = { [unowned self] record, _ in records.append(record) }
-        let sheet = runs.sheet(for: spot)
+        let sheet = runs.sheet(for: spot.knowing(sheet: true))
         sheet.onReport = { [unowned self] report in
             if case .toast(let text) = report { toasts.append(text) }
         }
@@ -113,7 +113,7 @@ final class DrawSpotTests: XCTestCase {
         XCTAssertEqual(rows.map(\.title), ["New board", "Plan", "Flows", "Old plan"])
         XCTAssertEqual(rows.map(\.run), ["0:new", "0:Work/plan", "0:flows", "0:old"])
         XCTAssertEqual(rows.map(\.subtitle), ["A blank board", "Work · Edited 1 min ago", "Edited 2 min ago", "Edited 2 h ago"])
-        XCTAssertEqual(spot.on?.searchesSheet, false)
+        XCTAssertNil(spot.on)
     }
 
     func testARenameKeepsTheFiguresAndChangesTheTitle() async throws {

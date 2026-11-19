@@ -8,7 +8,7 @@ extension SpotRun {
 
     public func show(selecting run: String? = nil, need: ShowNeed = .moment, event: ShowEvent? = nil) {
         let event = event ?? (need == .change ? .change : showsSheet ? .sheet : .panel)
-        let wantsSheetAnswer = event == .sheet && spot.on?.has(.sheet) == true && shownEvent != .sheet
+        let wantsSheetAnswer = event == .sheet && shownEvent != .sheet
         if let run { selecting = run }
         if link.isAsking {
             if need == .change { showsAgain = true }
@@ -154,6 +154,6 @@ extension SpotRun {
     }
 
     func showOnce() {
-        if spot.on != nil { show(need: .change) }
+        if spot.hasSheet { show(need: .change) }
     }
 }

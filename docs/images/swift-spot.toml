@@ -1,4 +1,3 @@
 title = "Cups today"
 icon = "cup.and.saucer.fill"
-on = ["sheet.open"]
 source = ["cups.swift"]

@@ -1,7 +1,7 @@
 title = "Agents"
 icon = "sparkles"
 detail = "Claude Code and Codex at work"
-on = ["panel.open", "sheet.open", "clock.5"]
+on = ["panel.open", "clock.5"]
 view = "card.swift"
 source = ["agents"]
 
