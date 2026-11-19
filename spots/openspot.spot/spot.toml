@@ -53,6 +53,7 @@ offers = ["actions core"]
 title = "Icon"
 icon = "paintbrush.pointed"
 detail = "Draw the icon of a spot"
+on = ["sheet.open"]
 view = "icon.swift"
 uses = ["spots"]
 drop = "png,jpg,jpeg,heic,gif,tiff,svg,pdf,icns"
@@ -69,6 +70,7 @@ uses = ["clipboard"]
 title = "New spot"
 icon = "plus"
 detail = "Make your own"
+on = ["sheet.open"]
 uses = ["clipboard"]
 edits = "spots"
 
@@ -94,6 +96,7 @@ title = "Quit"
 title = "Settings"
 icon = "gearshape"
 detail = "Choose your key"
+on = ["sheet.open"]
 uses = ["app"]
 offers = ["search"]
 
@@ -111,6 +114,7 @@ title = "Store"
 icon = "bag"
 detail = "Get spots"
 keywords = ["store", "get spots"]
+on = ["sheet.open"]
 uses = ["spots", "account"]
 view = "store.swift"
 
@@ -119,6 +123,7 @@ title = "Themes"
 icon = "paintpalette"
 detail = "Change the look"
 keywords = ["theme", "look"]
+on = ["sheet.open"]
 uses = ["app", "clipboard"]
 pages = ["prompt:*"]
 
@@ -134,6 +139,7 @@ title = "Update"
 [scripts.welcome]
 title = "Welcome spot"
 icon = "hand.wave"
+on = ["sheet.open"]
 uses = ["app"]
 starts = "first-launch"
 view = "welcome.swift"

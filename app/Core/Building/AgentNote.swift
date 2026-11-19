@@ -39,8 +39,8 @@ public struct AgentNote: Equatable, Sendable {
 
         1. Make a spot: `openspot spot new "<name>" --from button`. In place of `button`, use `list`, `number` or `form`.
            It prints the file to change.
-        2. Try a call as the app makes it: `openspot spot run <id> [call] [value]...`. With no call, it shows a spot that has a
-           sheet, one whose `show` prints something, and opens a spot that has none.
+        2. Try a call as the app makes it: `openspot spot run <id> [call] [value]...`. With no call, it reads a spot whose
+           `spot.toml` lists an event in `on`, and runs a spot that lists none.
         3. Look at the card: `openspot render spot <id> --card wide card.png`, then open `card.png`.
         4. Check: `openspot check spots --json` must print `[]`. Fix each fault that it lists, then check again.
         5. At the end of your answer to the person, run `openspot spot open <id> --select`. It opens the panel with the spot selected.

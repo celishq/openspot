@@ -8,7 +8,7 @@ final class SpotPlaygroundModel {
     nonisolated private static let watchPause: Duration = .milliseconds(500)
     private static let editPause: Duration = .milliseconds(300)
     private static let starter = "#!/bin/sh\n. \"$OPENSPOT_SH\"\nprintf 'text=hello\\ntitle=Hello\\ndetail=%s\\n' \"$(value event)\"\n"
-    private static let starterManifest = "title = \"Hello\"\n"
+    private static let starterManifest = "title = \"Hello\"\non = [\"sheet.open\"]\n"
 
     private(set) var playground = Playground()
     private(set) var source = ""

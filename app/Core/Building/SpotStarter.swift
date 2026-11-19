@@ -42,15 +42,13 @@ public enum SpotStarter: String, CaseIterable, Sendable {
         return words.map { String(String.UnicodeScalarView($0)) }.joined(separator: "-")
     }
 
-    private static let runCommand = "[commands.run]\ntitle = \"Run\"\n"
-
     private func manifest(title: String) -> ConfigDocument {
-        var manifest = self == .button ? (try? ConfigDocument(text: Self.runCommand)) ?? ConfigDocument() : ConfigDocument()
+        var manifest = ConfigDocument()
         manifest.set("title", to: .string(title))
         manifest.set("icon", to: .string(symbol))
         switch self {
         case .button: manifest.set("detail", to: .string("Press to run it"))
-        case .list, .form: break
+        case .list, .form: manifest.set("on", to: .strings(["sheet.open"]))
         case .number: manifest.set("on", to: .strings(["panel.open"]))
         }
         return manifest
@@ -61,9 +59,7 @@ public enum SpotStarter: String, CaseIterable, Sendable {
         case .button:
             """
             #!/bin/sh
-            case "$1" in
-              run) openspot toast 'It works. Change this file to make it do more.' ;;
-            esac
+            openspot toast 'It works. Change this file to make it do more.'
 
             """
         case .list:

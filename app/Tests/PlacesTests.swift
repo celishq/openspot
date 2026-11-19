@@ -78,8 +78,8 @@ final class PlacesTests: PanelCase {
         XCTAssertFalse(log("counted").contains("open"))
     }
 
-    func testACardPressTheOpenKeyAndABareSlashCommandAllRunTheOneCommandOfASpotWithNoSheet() async throws {
-        try script("wipe", toml: "title = 'Wipe'\n[commands.wipe]\ntitle = 'Wipe'\nplaceholder = 'What'", logged("wipe"))
+    func testACardPressTheOpenKeyAndABareSlashCommandAllRunTheOneCommand() async throws {
+        try script("wipe", toml: "title = 'Wipe'\non = ['sheet.open']\n[commands.wipe]\ntitle = 'Wipe'\nplaceholder = 'What'", "\(logged("wipe"))\nprintf 'text=a\\ntitle=A\\n'")
         _ = try model.files.config.change {
             $0.assign(.tap(.option), to: "wipe", act: .command("wipe"))
             $0.arrangement.set(isOnGrid: true, of: "wipe")

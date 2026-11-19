@@ -83,7 +83,7 @@ final class DictateExampleTests: SampleSpotsCase {
         XCTAssertEqual(spot.mode, .stay)
         XCTAssertEqual(spot.sources, ["dictate"])
         XCTAssertEqual(spot.soleCommand, "dictate")
-        XCTAssertNil(spot.on)
+        XCTAssertEqual(spot.on?.moments, [.sheet])
         XCTAssertEqual(files.sorted(), ["dictate", "dictate.swift", "readme.md", "spot.toml"])
     }
 

@@ -122,13 +122,13 @@ final class MetricContractTests: XCTestCase {
         XCTAssertEqual(faults, ["tools: an action cannot be called show", "tools: an item cannot be called show"])
     }
 
-    func testTheCheckRunsTheShowOfASpotWithNoRead() async throws {
+    func testTheCheckDoesNotRunAScriptWithNoRead() async throws {
         let marker = folder.appendingPathComponent("marker")
-        try script("once.sh", "#!/bin/sh\n[ \"$1\" = show ] && touch '\(marker.path)'\nexit 0\n")
+        try script("once.sh", "#!/bin/sh\ntouch '\(marker.path)'\n")
 
         let faults = await SpotCheck(folder: SpotsFolder(url: folder)).faults()
 
         XCTAssertEqual(faults, [])
-        XCTAssertTrue(FileManager.default.fileExists(atPath: marker.path))
+        XCTAssertFalse(FileManager.default.fileExists(atPath: marker.path))
     }
 }

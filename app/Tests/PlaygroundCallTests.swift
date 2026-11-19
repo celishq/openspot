@@ -105,7 +105,7 @@ final class PlaygroundCallTests: SpotRunsCase {
         XCTAssertEqual(presets[1].text, "function main() { return '' }\n")
         XCTAssertEqual(presets.count, 2 + SheetExamples.all.count)
         let sheet = try? XCTUnwrap(presets.last)
-        XCTAssertEqual(sheet?.manifest, "title = \"\(SheetExamples.all.last?.name ?? "")\"\n")
+        XCTAssertEqual(sheet?.manifest, "title = \"\(SheetExamples.all.last?.name ?? "")\"\non = [\"sheet.open\"]\n")
         XCTAssertTrue(sheet?.text.hasPrefix("#!/bin/sh\ncat <<'SHEET'\n") == true)
     }
 

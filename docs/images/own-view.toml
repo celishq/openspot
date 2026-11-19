@@ -1,3 +1,4 @@
 title = "Cups this week"
 icon = "chart.bar"
+on = ["sheet.open"]
 view = "week.swift"

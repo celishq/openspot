@@ -78,7 +78,7 @@ public struct SpotCheck: Sendable {
         }
         let runs = await SpotRuns(environment: environment, swift: programs, callers: callers ?? SpotCallers())
         if careful != nil { await MainActor.run { runs.isCareful = true } }
-        for var script in scan.scripts where !unbuilt.contains(script.id) {
+        for var script in scan.scripts where script.on != nil && !unbuilt.contains(script.id) {
             guard !Task.isCancelled else { return findings }
             if let careful { script.uses.formIntersection(careful) }
             func found(_ fault: String) -> Finding { Finding(spot: script.id, file: script.url.path, fault: fault) }

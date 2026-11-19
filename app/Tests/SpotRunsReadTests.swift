@@ -232,7 +232,7 @@ final class SpotRunsReadTests: SpotRunsCase {
         XCTAssertEqual(log(), ["show"])
     }
 
-    func testASheetAsksAfterAYoungPanelAnswerButNotAgainWithinFiveSecondsOfItsOwn() async throws {
+    func testAPanelOpenAndASheetOpenWithinFiveSecondsRunOnce() async throws {
         try script(toml: "on = ['panel.open']\noffers = ['search']", "printf 'text=a\\ntitle=A\\n'")
         let sheet = try sheet()
 
@@ -244,7 +244,7 @@ final class SpotRunsReadTests: SpotRunsCase {
         sheet.open {}
         try await pause(0.15)
 
-        XCTAssertEqual(log(), ["show", "show"])
+        XCTAssertEqual(log(), ["show"])
     }
 
     func testASheetOpenThatTheSpotListsReadsAfterAYoungPanelAnswer() async throws {
@@ -279,6 +279,17 @@ final class SpotRunsReadTests: SpotRunsCase {
 
         try await wait("the second read") { self.log("reasons").count == 2 }
         XCTAssertEqual(log("reasons").first, "panel.open")
+    }
+
+    func testAPanelOpenAndASheetOpenAtOnceRunOnce() async throws {
+        try script(toml: "on = ['panel.open']", "sleep 0.2\nprintf 'frame=\\ndetail=Off\\n\\ntext=a\\ntitle=A\\n'")
+        let sheet = try sheet()
+
+        runs.panelOpened()
+        sheet.open {}
+
+        try await wait("the row") { sheet.list.shown.count == 1 }
+        XCTAssertEqual(log(), ["show"])
     }
 
     func testAnAnswerOlderThanFiveSecondsIsReadAgain() async throws {

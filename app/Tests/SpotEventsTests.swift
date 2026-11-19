@@ -67,7 +67,7 @@ final class SpotEventsTests: SpotRunsCase {
             XCTAssertEqual(fault(line), "Clock has a filter in its on: \(line), and \(event) takes none. Write \"\(event)\" alone. A filter follows only an event with a value, such as on = ['app.front com\\.apple\\.Notes']")
         }
         for word in ["music", "music.", "clipboard", "60"] {
-            XCTAssertEqual(fault(word), "Clock has an unknown event in its on: \(word). Write a word with a dot, such as on = [\"panel.open\"] or on = [\"music.track\"]")
+            XCTAssertEqual(fault(word), "Clock has an unknown event in its on: \(word). Write a word with a dot, such as on = [\"sheet.open\"] or on = [\"music.track\"]")
         }
     }
 

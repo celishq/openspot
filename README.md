@@ -57,6 +57,7 @@ listening on a port and kills the process when you pick it, which comes in handy
 ```toml
 title = "Ports"
 icon = "network"
+on = ["sheet.open"]
 ```
 
 ```sh

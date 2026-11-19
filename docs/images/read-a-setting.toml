@@ -1,3 +1,4 @@
 title = "Repos"
+on = ["sheet.open"]
 
 [settings.folder]

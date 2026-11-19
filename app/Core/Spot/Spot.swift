@@ -22,7 +22,7 @@ public struct Spot: Equatable, Sendable {
     public private(set) var openTitle: String?
     public private(set) var actions: [CommandAction]
     public private(set) var settingsSheet: SpotSettings?
-    public private(set) var hasSheet: Bool
+    public private(set) var opensToKeys = false
     private var chosenIcon: Icon?
 
     public init(
@@ -75,7 +75,6 @@ public struct Spot: Equatable, Sendable {
         self.pick = pick
         self.openTitle = openTitle
         self.actions = actions
-        hasSheet = on != nil
     }
 
     @inlinable
@@ -96,7 +95,7 @@ public struct Spot: Equatable, Sendable {
         (left.header === right.header || left.header.facts == right.header.facts) && left.kind == right.kind && left.pick == right.pick
             && left.pickForm == right.pickForm && left.keepsRecent == right.keepsRecent && left.openTitle == right.openTitle
             && left.actions == right.actions && left.settingsSheet == right.settingsSheet
-            && left.hasSheet == right.hasSheet && left.chosenIcon == right.chosenIcon
+            && left.opensToKeys == right.opensToKeys && left.chosenIcon == right.chosenIcon
     }
 
     public var icon: Icon? {
@@ -152,7 +151,7 @@ public struct Spot: Equatable, Sendable {
         switch kind {
         case .toggle: .toggle
         case .slider: MainAct.none
-        case .launch, .list: hasSheet ? .sheet : soleCommand.map(MainAct.command) ?? .sheet
+        case .launch, .list: soleCommand.map(MainAct.command) ?? .sheet
         }
     }
 
@@ -161,22 +160,7 @@ public struct Spot: Equatable, Sendable {
     }
 
     public var keepsHistory: Bool {
-        soleCommand != nil && hasSheet
-    }
-
-    public var opensToKeys: Bool {
-        settingsSheet != nil && !hasSheet && !self.offers.isEmpty
-    }
-
-    public var runsSoleCommand: Bool {
-        soleCommand != nil && !hasSheet
-    }
-
-    func knowing(sheet: Bool?) -> Spot {
-        guard let sheet, sheet != hasSheet else { return self }
-        var spot = self
-        spot.hasSheet = sheet
-        return spot
+        soleCommand != nil && !self.opensToKeys && self.on != nil
     }
 
     private var settingKeys: [SpotSettings.Key] {
@@ -197,6 +181,9 @@ public struct Spot: Equatable, Sendable {
             keys: settingKeys,
             isWindowByDefault: isWindow
         )
+        if self.on == nil, !self.offers.isEmpty {
+            spot.opensToKeys = true
+        }
         return spot
     }
 
@@ -283,7 +270,8 @@ public struct Spot: Equatable, Sendable {
     }
 
     public var showsOfferedItems: Bool {
-        self.isGlobal && self.on?.has(.panel) != true && self.on?.seconds == nil
+        guard let on = self.on else { return false }
+        return self.isGlobal && !on.has(.panel) && on.seconds == nil
     }
 
     public var canShowInMenuBar: Bool {

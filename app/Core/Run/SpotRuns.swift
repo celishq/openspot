@@ -70,10 +70,6 @@ public final class SpotRuns {
     @ObservationIgnored private(set) var processes: [ScriptProcess] = []
     @ObservationIgnored var loaded: [String: (stamp: [Int]?, script: InlineScript)] = [:]
     @ObservationIgnored private(set) var stamps: [String: [Int]] = [:]
-    @ObservationIgnored let learnsSheets: Bool
-    @ObservationIgnored var sheetFacts: [String: SheetFact] = [:]
-    @ObservationIgnored var unlearned: [String] = []
-    @ObservationIgnored var learning: Task<Void, Never>?
     @ObservationIgnored var standIn: ((Spot) -> ScriptMode)?
     @ObservationIgnored public var api: CommandAPI?
     @ObservationIgnored private let log: CallLog?
@@ -106,10 +102,8 @@ public final class SpotRuns {
         log: CallLog? = nil,
         stats: URL? = nil,
         swift: SwiftProgram = SwiftProgram(),
-        callers: SpotCallers = SpotCallers(),
-        learnsSheets: Bool = false
+        callers: SpotCallers = SpotCallers()
     ) {
-        self.learnsSheets = learnsSheets
         self.environment = environment
         self.callers = callers
         self.log = log
@@ -134,7 +128,6 @@ public final class SpotRuns {
         let scripts = scan.scripts
         self.stamps = stamps
         for (id, kept) in loaded where kept.stamp != stamps[id] { dropScript(of: id) }
-        takeSheetFacts(of: scripts)
         self.menuBar = menuBar
         order = scripts.map(\.id)
         let owners = Dictionary(scan.spots.map { ($0.id, $0) }, uniquingKeysWith: { first, _ in first })
@@ -158,11 +151,9 @@ public final class SpotRuns {
         usage.take(versions: stamps.mapValues(SpotLoad.version(of:)))
         updateClock()
         showOfferedItems()
-        learnNextSheet()
     }
 
-    public func sheet(for scanned: Spot) -> SpotRun {
-        let spot = scanned.knowing(sheet: knownSheet(of: scanned.id))
+    public func sheet(for spot: Spot) -> SpotRun {
         if let sheet = sheets[spot.id] {
             sheet.update(spot)
             return sheet
@@ -237,9 +228,6 @@ public final class SpotRuns {
 
     public func quit() {
         hasQuit = true
-        learning?.cancel()
-        learning = nil
-        unlearned = []
         ticks?.cancel()
         ticks = nil
         clipboardWatch?.cancel()
@@ -285,8 +273,8 @@ public final class SpotRuns {
         dragTakers.contains(id)
     }
 
-    public func answer(of spot: Spot, _ action: SpotAction, input: String? = nil, limit: TimeInterval? = nil, event: ShowEvent? = nil, variables: [String: String] = [:]) async throws -> String {
-        try await mode(of: spot).answer(of: spot, action, input: input, limit: limit, event: event, variables: variables, in: self)
+    public func answer(of spot: Spot, _ action: SpotAction, input: String? = nil, limit: TimeInterval? = nil, variables: [String: String] = [:]) async throws -> String {
+        try await mode(of: spot).answer(of: spot, action, input: input, limit: limit, variables: variables, in: self)
     }
 
     func wants(_ spot: Spot) -> Bool {

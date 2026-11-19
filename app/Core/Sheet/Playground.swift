@@ -85,6 +85,7 @@ public struct Playground: Equatable, Sendable {
         return examples + SheetExamples.all.map { example in
             var manifest = ConfigDocument()
             manifest.set("title", to: .string(example.name))
+            manifest.set("on", to: .strings(["sheet.open"]))
             return (example.name, manifest.text, "#!/bin/sh\ncat <<'SHEET'\n\(example.text)\nSHEET\n")
         }
     }

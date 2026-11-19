@@ -290,8 +290,7 @@ public final class SpotsModel {
             recent: { files.recent(of: $0) },
             prepare: { [unowned host] in await host.prepare($0, glyphs: $1) },
             log: files.log,
-            stats: files.stats,
-            learnsSheets: true
+            stats: files.stats
         )
         self.runs.secrets = files.secrets
         self.runs.onReport = { [weak self] id, report in self?.take(report, of: id) }

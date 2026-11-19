@@ -165,7 +165,7 @@ final class SoleCommandTests: XCTestCase {
         XCTAssertNil(model.recording)
     }
 
-    func testReturnOpensTheSheetOfASpotWithRowsAndOneCommandWhoseMenuRunsTheCommandAndCommandYOpensTheRowsAsHistory() async throws {
+    func testReturnRunsTheOneCommandOfASpotWithRowsAndCommandYOpensTheRowsAsHistory() async throws {
         try "#!/bin/sh\ncase \"$1\" in show) printf 'text=one\\ntitle=Hello there\\n\\ntext=two\\ntitle=Second\\n' ;; dictate) \(TestSpot.toast) 'Ran dictate' ;; esac\n"
             .writeScript(to: spots.spotFile("dictate"), toml: "title = 'Dictate'\non = ['sheet.open', 'app.update']\n[commands.dictate]\ntitle = 'Dictate'")
         await model.reload()
@@ -176,11 +176,11 @@ final class SoleCommandTests: XCTestCase {
         model.selected = try XCTUnwrap(model.visible.firstIndex { $0.id == "dictate" })
 
         XCTAssertEqual(try entry("dictate").spot.soleCommand, "dictate")
-        XCTAssertTrue(try entry("dictate").spot.opensOnReturn)
-        XCTAssertEqual(model.hint, "⏎ Open   ⌘⏎ Settings   ⌘K Actions")
+        XCTAssertFalse(try entry("dictate").spot.opensOnReturn)
+        XCTAssertEqual(model.hint, "⏎ Dictate   ⌘⏎ Settings   ⌘K Actions")
         XCTAssertTrue(model.handleKey(ActionKey(name: "k", isCommand: true)))
         let menu = try XCTUnwrap(model.menu)
-        XCTAssertEqual(menu.rows.map(\.title), ["Open", "History", "Dictate"])
+        XCTAssertEqual(menu.rows.map(\.title), ["Dictate", "History"])
         XCTAssertEqual(menu.rows.first { $0.title == "History" }?.keyLabel, "⌘Y")
         model.closeMenu()
 
@@ -188,13 +188,12 @@ final class SoleCommandTests: XCTestCase {
         try await wait("its History with a search typed") { model.openSheetID == "dictate" }
         model.closeSheet(moving: false)
 
-        model.runSelected()
+        model.run(.history, on: SpotsModel.Target(entry: try entry("dictate"), item: nil))
         try await wait("its own rows") { model.openItems?.shown.map(\.run) == ["one", "two"] }
         XCTAssertEqual(model.openSheetID, "dictate")
         model.closeSheet(moving: false)
 
-        let command = try XCTUnwrap(menu.rows.first { $0.title == "Dictate" }?.action)
-        model.run(command, on: SpotsModel.Target(entry: try entry("dictate"), item: nil))
+        model.runSelected()
         try await wait("the command") { host.confirms == ["Ran dictate"] }
         XCTAssertNil(model.recording)
     }
