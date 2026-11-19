@@ -97,9 +97,12 @@ final class SpotKeysTests: XCTestCase {
         }
     }
 
-    func testOffersSearchNeedsAnEventThatReadsItsItems() throws {
-        XCTAssertThrowsError(try spot("on = ['clipboard.change']\noffers = ['search']")) { error in
-            XCTAssertTrue((error as? SpotError)?.reason.contains("to join the main search") == true, "\(error)")
+    func testASpotThatOffersSearchWithNoReadingEventReadsAtEachOpenOfItsSheet() throws {
+        for toml in ["offers = ['search']", "on = ['clipboard.change']\noffers = ['search']"] {
+            let spot = try spot(toml)
+
+            XCTAssertEqual(spot.on?.has(.sheet), true, toml)
+            XCTAssertTrue(spot.showsOfferedItems, toml)
         }
     }
 
