@@ -13,7 +13,7 @@ enum TimerCall: NounCall {
         },
         CommandVerb("remove", "<id>", "Removes a timer of the spot.", rule: CallRule(use: .timer, used: "removed a timer", flags: .needsApp)) { $0.one.map(Self.remove) },
         CommandVerb("pick", "", "Opens the snooze sheet and waits. Prints the time of the tile the person picks, or `someday`, or exits 1 when the sheet closes with no pick.", rule: CallRule(use: .timer, used: "picked a time", inShow: .waits, flags: .needsApp)) { $0.none ? Self.pick : nil },
-        CommandVerb("list", "", "Prints each timer of the spot as an item: its id, its value as the title, and its time in `at`.", rule: CallRule(use: .timer, used: "listed its timers", flags: .needsApp)) { $0.none ? Self.list : nil }
+        CommandVerb("list", "", "Prints each timer of the spot as an item: its id, its value as the title, and its time in `at`.", rule: CallRule(use: .timer, used: "listed its timers")) { $0.none ? Self.list : nil }
     ])
 
     static let picker = "openspot/snooze"
