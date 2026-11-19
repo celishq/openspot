@@ -38,7 +38,6 @@ public struct Frame: Equatable, Sendable {
     static let open = "open"
     static let itemsArea = "items"
     private static let searchType = "search"
-    private static let spotFilter = "spot"
 
     static func grouping(_ blocks: [TextBlock]) -> [TextBlock] {
         var grouped: [TextBlock] = []
@@ -200,7 +199,6 @@ public struct Frame: Equatable, Sendable {
     }
 
     public var search: ItemSearch {
-        if searchField?.value("filter") == Self.spotFilter { return .script }
         return searchField != nil || root?.value(RootKey.grid) == nil ? .local : .off
     }
 

@@ -124,16 +124,19 @@ final class ItemsTests: PanelCase {
         XCTAssertEqual(placed.search, .off)
     }
 
-    func testASearchFieldFiltersInsideOpenspotAndWithFilterSpotTheSpotFilters() {
+    func testASearchFieldFiltersInsideOpenspot() {
         let local = Frame(text: "frame=\ngrid=find\ngrid=a\n\nfield=find\ntype=search\n\ntext=a\ntitle=A\n\ntext=b\ntitle=B\n")
-        let spot = Frame(text: "field=find\ntype=search\nfilter=spot\n\ntext=b\ntitle=B\n")
 
         XCTAssertEqual(local.search, .local)
         XCTAssertEqual(local.items.map(\.run), ["b"])
         XCTAssertEqual(local.layout?.rows, [["a"], [Frame.itemsArea]])
-        XCTAssertEqual(spot.search, .script)
-        XCTAssertEqual(spot.items.map(\.run), ["b"])
-        XCTAssertEqual(spot.parts, [])
+    }
+
+    func testFilterOnASearchFieldIsAnUnknownKey() {
+        let text = "field=find\ntype=search\nfilter=spot\n\ntext=b\ntitle=B\n"
+
+        XCTAssertEqual(Frame(text: text).search, .local)
+        XCTAssertEqual(FrameCheck(text: text).partFaults, ["the part find has an unknown key: filter"])
     }
 
     func testAnItemIsSearchedAndPickedAsAMessage() async throws {
@@ -195,13 +198,5 @@ final class ItemsTests: PanelCase {
 
         try await wait("the key") { self.calls.contains("key ctrl+option+a") }
         XCTAssertEqual(host.dismissals, 0)
-    }
-
-    func testASearchFieldWithFilterSpotSendsEachText() async throws {
-        try await open("field=find\ntype=search\nfilter=spot\n\ntext=a\ntitle=A\n")
-
-        model.searchText = "mi"
-
-        try await wait("the text") { self.calls.contains("search mi") }
     }
 }
