@@ -89,34 +89,38 @@ final class SpotVerbTests: XCTestCase {
         [commands.share]
         title = 'Share'
         shortcut = 'cmd+shift+c'
-        close = true
         offers = ['actions mine, core']
         [commands.settings]
         title = 'Settings'
         shortcut = 'cmd+return'
+        close = false
         offers = ['actions']
         [commands.edit]
         title = 'Edit'
         shortcut = 'cmd+e'
+        close = false
         offers = ['actions mine, core']
         [commands.icon]
         title = 'Change Icon'
         offers = ['actions']
         [commands."icon.draw"]
         title = 'Draw…'
+        close = false
         [commands."icon.file"]
         title = 'Choose File…'
+        close = false
         [commands."icon.reset"]
         title = 'Reset Icon'
+        close = false
         when = 'hasIcon'
         [commands.delete]
         title = 'Delete'
         shortcut = 'cmd+backspace'
+        close = false
         offers = ['actions mine']
         [commands.off]
         title = 'Turn off'
         shortcut = 'cmd+backspace'
-        close = true
         offers = ['actions core']
         """
 
@@ -264,10 +268,26 @@ final class SpotVerbTests: XCTestCase {
         XCTAssertEqual(saved("calls"), "star weather\n")
     }
 
+    func testAnOfferedActionClosesThePanelUnlessItHasCloseFalse() async throws {
+        let calls = folder.appendingPathComponent("calls").path
+        try script("weather", toml: "title = 'Weather'")
+        try "#!/bin/sh\necho \"$@\" >> '\(calls)'\n".writeScript(to: spots.spotFile("stars"), toml: "title = 'Stars'\n[commands.star]\ntitle = 'Star'\nclose = false\noffers = ['actions']\n[commands.mark]\ntitle = 'Mark'\noffers = ['actions']")
+        _ = try await select("weather")
+
+        for title in ["Star", "Mark"] {
+            XCTAssertTrue(model.handleKey(ActionKey(name: "k", isCommand: true)))
+            model.menu?.select(try XCTUnwrap(model.menu?.rows.first { $0.title == title }?.action))
+            XCTAssertTrue(model.handleKey(ActionKey(name: "return")))
+            try await wait("the call of \(title)") { saved("calls")?.contains(title.lowercased()) == true }
+            try await wait("the menu closed") { model.menu == nil }
+            XCTAssertEqual(host.dismissals, title == "Star" ? 0 : 1)
+        }
+    }
+
     func testAMenuRowThatAnotherSpotRunsKeepsTheMenuUntilItsRunEnds() async throws {
         let gate = folder.appendingPathComponent("gate").path
         try script("weather", toml: "title = 'Weather'")
-        try "#!/bin/sh\n[ \"$1\" = star ] && touch '\(gate).run' && while [ ! -f '\(gate)' ]; do sleep 0.01; done; true\n".writeScript(to: spots.spotFile("stars"), toml: "title = 'Stars'\n[commands.star]\ntitle = 'Star'\noffers = ['actions']")
+        try "#!/bin/sh\n[ \"$1\" = star ] && touch '\(gate).run' && while [ ! -f '\(gate)' ]; do sleep 0.01; done; true\n".writeScript(to: spots.spotFile("stars"), toml: "title = 'Stars'\n[commands.star]\ntitle = 'Star'\nclose = false\noffers = ['actions']")
         _ = try await select("weather")
         XCTAssertTrue(model.handleKey(ActionKey(name: "k", isCommand: true)))
         let row = try XCTUnwrap(model.menu?.rows.last)
