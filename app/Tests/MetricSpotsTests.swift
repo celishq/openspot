@@ -83,7 +83,7 @@ final class MetricSpotsTests: SpotRunsCase {
 
         XCTAssertEqual(log("pids").count, started)
         XCTAssertEqual(log("tools.log"), tools)
-        XCTAssertEqual(runs.sheets["cpu"]?.reading.value?.points?.count, 12)
+        XCTAssertEqual(runs.sheets["cpu"]?.reading.value?.number?.points.count, 12)
     }
 
     func testCPUAndMemoryShowAValueOnAReadWithNoLoad() async throws {

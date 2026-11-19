@@ -61,7 +61,6 @@ public struct SpotPart: Equatable, Sendable, Identifiable {
     let grows: Bool
     public let align: Align?
     public let look: Look?
-    public let mark: MetricValue?
     public private(set) var values: [String: [String]]
 
     public private(set) var items: [[String]] = []
@@ -109,19 +108,6 @@ public struct SpotPart: Equatable, Sendable, Identifiable {
         symbol = kind.presses ? nil : icon?.symbol
         press = kind.presses ? icon?.symbol.map(Press.symbol) ?? .line : .none
         control = kind.control(block)
-        mark = control == .none && kind == .text ? Self.mark(block) : nil
-    }
-
-    static func mark(_ block: TextBlock) -> MetricValue? {
-        guard let data = BlockKind.text.data?(block) else { return nil }
-        guard data.value != nil || data.points != nil else { return nil }
-        return MetricValue(
-            title: block.value("detail") ?? "",
-            tone: block.value("tone").flatMap(MetricValue.Tone.init),
-            value: data.value,
-            points: data.points,
-            max: block.number("max")
-        )
     }
 
     public var numberPieces: [NumberPiece] {
@@ -171,10 +157,6 @@ public struct SpotPart: Equatable, Sendable, Identifiable {
         var part = self
         part.control = .list(options, value: value)
         return part
-    }
-
-    public var ringWords: String? {
-        detail == nil ? nil : mark?.ringWords
     }
 
     public var fillsHeight: Bool {

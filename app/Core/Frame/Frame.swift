@@ -163,11 +163,7 @@ public struct Frame: Equatable, Sendable {
     }
 
     public var metric: TextBlock? {
-        valueKind?.data == nil ? nil : value
-    }
-
-    var metricData: BlockKind.Data? {
-        value.flatMap { valueKind?.data?($0) }
+        valueKind?.isReading == true ? value : nil
     }
 
     public var progress: Double? {

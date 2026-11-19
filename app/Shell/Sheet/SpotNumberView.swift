@@ -83,7 +83,7 @@ struct SpotNumberView: View {
             let side = min(room.size.width, room.size.height)
             let line = isBig ? SpotTokens.metricBigRingLine : side >= SpotTokens.glyph ? SpotTokens.metricRingLine : SpotTokens.lineRingLine
             ZStack {
-                SpotRing(fill: reading?.fill ?? reading?.scaledPoints.last ?? 0, line: line, colour: colour)
+                SpotRing(fill: reading?.level ?? 0, line: line, colour: colour)
                 VStack(spacing: 0) {
                     shown
                         .font(isBig ? SpotType.ringValue : SpotType.controlValue)
@@ -132,7 +132,7 @@ struct SpotNumberView: View {
             if reading?.isSeries == true, reading?.max == nil {
                 bars.frame(height: SpotTokens.lineTrendHeight)
             } else {
-                line(fill: reading?.fill ?? reading?.scaledPoints.last ?? 0)
+                line(fill: reading?.level ?? 0)
             }
         }
     }

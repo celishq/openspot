@@ -265,7 +265,7 @@ close=false
 
 | Kind      | Shows                                                                                                           | Its own keys                                                         | Sends                  |
 | --------- | --------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------- | ---------------------- |
-| `text`    | Words, and a small mark: a bar from `value`, or with `max` a bar for each `value` line.                         | `value`, `max`                                                       |                        |
+| `text`    | Words.                                                                                                          | `value`                                                              |                        |
 | `number`  | One `value`, or a series of `value` lines, oldest first, with its `title` as the label. See [Numbers](#numbers). | `value`, `max`, `unit`, `display`                                    |                        |
 | `picture` | An image that fills its place.                                                                                  | `icon`                                                               |                        |
 | `view`    | The SwiftUI view the manifest names (see [Views](#views)).                                                      | any key the view reads                                               |                        |
@@ -314,7 +314,7 @@ square place          wide place
 ```
 
 - `value` is the number, and each more `value` line adds a point of a series, oldest first. The last point is the one
-  that shows. `max` is the value of a full ring or bar, and by default the largest point.
+  that shows, and `-` is a point with no value, drawn as a gap. `max` is the value of a full ring or bar, and by default the largest point.
 - `unit` follows the value, as in `84%` or `12 kg`, and `display` shows instead of the value, as in `display=–`.
 - A series is its last value over its bars in a place of two rows or more and two columns or more.
 - Otherwise, with `max`, one value or the last point of a series is a ring in a place as tall as it's wide, and a bar
@@ -364,8 +364,7 @@ close=false
 | `detail`        | The line under the title.                                                                      |
 | `icon`          | The icon.                                                                                      |
 | `tone`          | A dot of its colour on the icon.                                                               |
-| `value`         | `true` draws a checkmark, and a number from 0 to 1 a ring around the `detail`. More lines draw a bar each, oldest first; `-` is a bar with no value. |
-| `max`           | The value of a full bar. By default, the largest `value`.                                      |
+| `value`         | `true` draws a checkmark.                                                                      |
 | `parent`        | Where the item sits in its spot. The main search shows `<spot> › <parent>`.                    |
 | `keywords`      | Words that find the item but don't show, split by commas.                                      |
 | `pin`           | `top` or `bottom`: the item stays above or under the items that scroll, even in a search.      |

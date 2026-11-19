@@ -85,9 +85,9 @@ final class SpotTablesTests: XCTestCase {
             name: "meter",
             keys: ["steps"],
             holdsValue: true,
+            isReading: true,
             control: { .number(NumberReading(block: $0)) },
             faults: { $0.value("steps") == "0" ? ["the part \($0.fields.first?.value ?? "") needs a step"] : [] },
-            data: { ($0.number("value"), nil) },
             field: { block, name, label in ItemForm.Field(name: name, label: label, value: block.value("value")) }
         )
         let frame = "frame=\ntitle=T\ngrid=m\ngrid=m\n\nmeter=m\ntitle=M\nvalue=3\nsteps=0\ncolour=red\n"

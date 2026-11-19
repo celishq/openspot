@@ -392,21 +392,6 @@ final class SheetPartsTests: XCTestCase {
         XCTAssertEqual(sheet.selectedPart?.id, "key")
     }
 
-    func testALineWithAValueCarriesALevelMarkInItsTone() throws {
-        let part = try XCTUnwrap(try panel("text=left\ntitle=AirPods left\ndetail=12%\nvalue=0.12\ntone=bad\n").parts.first)
-
-        XCTAssertEqual(part.control, SpotPart.Control.none)
-        XCTAssertEqual(part.mark?.kind, .gauge)
-        XCTAssertEqual(part.mark?.fill, 0.12)
-        XCTAssertEqual(part.mark?.tone, .bad)
-    }
-
-    func testALevelRingsItsNumberWithNoPercentSignAndATrendOrAPlainLineDoesNot() throws {
-        let parts = try panel("text=mac\ntitle=Mac\ndetail=80%\nvalue=0.8\n\ntext=cpu\ntitle=CPU\ndetail=30%\nmax=100\nvalue=3\n\ntext=swap\ntitle=Swap\ndetail=0 MB\n").parts
-
-        XCTAssertEqual(parts.map(\.ringWords), ["80", nil, nil])
-    }
-
     func testALineWithNoIconKeepsTheIconColumnOnlyInAListWhereALineHasOne() throws {
         let list = try XCTUnwrap(SheetParts(output: Frame(text: "frame=\ngrid.large=cpu all top\n\nsection=cpu\ntitle=CPU\n\ntext=all\ntitle=All\nicon=cpu\n\ntext=top\ntitle=launchd\n")))
         let plain = try XCTUnwrap(SheetParts(output: Frame(text: "frame=\ngrid.large=top\n\ntext=top\ntitle=launchd\n")))
@@ -417,19 +402,10 @@ final class SheetPartsTests: XCTestCase {
         XCTAssertEqual(drawn.parts.map(drawn.keepsIconColumn), [false, false])
     }
 
-    func testALineWithPointsAndADetailCarriesATrendMark() throws {
-        let part = try XCTUnwrap(try panel("text=cpu\ntitle=All cores\ndetail=30%\nmax=100\nvalue=20\nvalue=40\n").parts.first)
-
-        XCTAssertEqual(part.control, SpotPart.Control.none)
-        XCTAssertEqual(part.mark?.kind, .trend)
-        XCTAssertEqual(part.mark?.scaledPoints, [0.2, 0.4])
-    }
-
     func testPointsWithNoDetailStillDrawANumberSeries() throws {
         let part = try XCTUnwrap(try panel("number=history\nvalue=2\nvalue=4\n").parts.first)
 
         XCTAssertEqual(part.number?.points, [2, 4])
-        XCTAssertNil(part.mark)
     }
 
     func testTheArrowsScrollASheetWithNothingToSelect() throws {
@@ -469,7 +445,7 @@ final class SheetPartsTests: XCTestCase {
 
         XCTAssertEqual(part.number?.text, "42%")
         XCTAssertEqual(part.title, "CPU")
-        XCTAssertEqual(MetricValue(output: Frame(text: "number=cpu\nvalue=42%\ntitle=CPU\n".placed)), MetricValue(title: "42%", detail: "CPU"))
+        XCTAssertEqual(MetricValue(output: Frame(text: "number=cpu\nvalue=42%\ntitle=CPU\n".placed)), MetricValue(title: "42%", detail: "CPU", number: .of("value=42%")))
     }
 
     func testAChoiceDrawnOverTwoLinesIsAListAndOverOneLineAMenu() throws {

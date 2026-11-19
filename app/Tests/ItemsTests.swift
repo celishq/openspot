@@ -99,12 +99,11 @@ final class ItemsTests: PanelCase {
         XCTAssertEqual(output.parts.first?.control, .menu([.init(id: "colorful", title: "Colorful"), .init(id: "plain", title: "Plain")], value: "colorful"))
     }
 
-    func testATextItemWithOneValueShowsARingWithItsDetail() {
-        let output = Frame(text: "text=mac\ntitle=This Mac\ndetail=84%\nvalue=0.84\n\ntext=swap\ntitle=Swap\ndetail=2 GB\n")
+    func testATextItemsNumberIsNoMarkAndANumberItemWithAMaxFills() {
+        let output = Frame(text: "text=mac\ntitle=This Mac\ndetail=84%\nvalue=0.84\n\nnumber=swap\ntitle=Swap\nvalue=84\nmax=100\n")
 
-        XCTAssertEqual(output.items.first?.ring?.fill, 0.84)
-        XCTAssertEqual(output.items.first?.ring?.ringWords, "84")
-        XCTAssertNil(output.items.last?.ring)
+        XCTAssertNil(output.items.first?.number)
+        XCTAssertEqual(output.items.last?.number?.fill, 0.84)
     }
 
     func testARowIsAnUnknownKind() {

@@ -96,8 +96,6 @@ final class TextBlockTests: XCTestCase {
             detail: "Today",
             symbol: "star",
             tone: .warn,
-            points: [1, 3],
-            max: 9,
             rows: [.init(title: "Fix \"tray\"", detail: "failing", tone: .bad), .init(title: "Docs")]
         ))
     }
@@ -116,18 +114,18 @@ final class TextBlockTests: XCTestCase {
         )
     }
 
-    func testAnItemWithMoreThanOneValueDrawsABarForEachUpToItsMax() throws {
-        let bars = try XCTUnwrap(Frame(text: "section=used\ntitle=Used\n\ntext=a\nvalue=2\nvalue=-\nvalue=4").items.first)
-        let capped = try XCTUnwrap(Frame(text: "text=a\nvalue=2\nvalue=4\nmax=8").items.first)
+    func testANumberItemOfMoreThanOneValueDrawsABarForEachUpToItsMaxWithAGapForADash() throws {
+        let bars = try XCTUnwrap(Frame(text: "section=used\ntitle=Used\n\nnumber=a\nvalue=2\nvalue=-\nvalue=4").items.first)
+        let capped = try XCTUnwrap(Frame(text: "number=a\nvalue=2\nvalue=4\nmax=8").items.first)
         let check = try XCTUnwrap(Frame(text: "text=a\nvalue=true").items.first)
 
-        XCTAssertEqual(bars.bars, [0.5, nil, 1])
+        XCTAssertEqual(bars.number?.scaledPoints, [0.5, nil, 1])
+        XCTAssertEqual(bars.number?.text, "4")
         XCTAssertEqual(bars.section, "Used")
-        XCTAssertEqual(bars.fields, [])
         XCTAssertFalse(bars.isOn)
-        XCTAssertEqual(capped.bars, [0.25, 0.5])
-        XCTAssertEqual(check.bars, [])
-        XCTAssertEqual(Frame(text: "text=a\nvalue=nan\nvalue=2").items.first?.bars, [nil, 1])
+        XCTAssertEqual(capped.number?.scaledPoints, [0.25, 0.5])
+        XCTAssertNil(check.number)
+        XCTAssertEqual(Frame(text: "number=a\nvalue=nan\nvalue=2").items.first?.number?.scaledPoints, [nil, 1])
         XCTAssertTrue(check.isOn)
     }
 

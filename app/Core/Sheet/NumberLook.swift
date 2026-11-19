@@ -12,7 +12,7 @@ public enum NumberLook: Equatable, Sendable {
         default:
             if reading.isSeries, rows >= 2, columns >= 2 || reading.max == nil {
                 self = .stat
-            } else if reading.fill != nil || reading.isSeries && reading.max != nil {
+            } else if reading.level != nil {
                 self = columns <= rows ? .ring : .bar
             } else if reading.isSeries {
                 self = .bar

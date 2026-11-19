@@ -114,7 +114,6 @@ final class NumberReadingTests: XCTestCase {
         XCTAssertEqual(frame.items.map(\.run), ["cpu-1", "device-1"])
         XCTAssertEqual(frame.items.first?.number?.text, "32.7%")
         XCTAssertNil(frame.items.first?.number?.fill)
-        XCTAssertNil(frame.items.last?.ring)
         XCTAssertEqual(frame.items.last?.number?.fill, 0.74)
         XCTAssertEqual(frame.items.last?.number?.bare, "74")
     }
@@ -124,7 +123,7 @@ final class NumberReadingTests: XCTestCase {
 
         XCTAssertEqual(value.kind, .gauge)
         XCTAssertEqual(value.title, "84%")
-        XCTAssertEqual(value.fill, 0.84)
+        XCTAssertEqual(value.number?.fill, 0.84)
     }
 
     func testASeriesIsATrendInTheMenuBar() throws {
@@ -132,6 +131,6 @@ final class NumberReadingTests: XCTestCase {
 
         XCTAssertEqual(value.kind, .trend)
         XCTAssertEqual(value.title, "25%")
-        XCTAssertEqual(value.scaledPoints, [0.12, 0.25])
+        XCTAssertEqual(value.number?.scaledPoints, [0.12, 0.25])
     }
 }

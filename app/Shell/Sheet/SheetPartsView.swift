@@ -183,7 +183,7 @@ struct SheetPartsView: View {
 
     @ViewBuilder
     private func labelled(_ part: SpotPart, _ frame: SheetPlacement.Frame) -> some View {
-        if frame.hasDetailUnderTitle, part.control == .none, part.press == .none, part.mark == nil, let title = part.title, let detail = part.detail {
+        if frame.hasDetailUnderTitle, part.control == .none, part.press == .none, let title = part.title, let detail = part.detail {
             stacked(part, title: title, detail: detail)
         } else {
             line(part, frame)
@@ -236,12 +236,8 @@ struct SheetPartsView: View {
             if part.title != nil || part.detail != nil {
                 Spacer(minLength: 0)
             }
-            if let mark = part.mark {
-                SpotLineMark(value: mark, words: part.ringWords)
-            }
-            if let detail = part.detail, part.ringWords == nil {
+            if let detail = part.detail {
                 SpotToneWords(text: detail, tone: part.textTone)
-                    .frame(minWidth: part.mark == nil ? nil : SpotTokens.markValueWidth, alignment: .trailing)
                     .layoutPriority(2)
             }
             if case .symbol(let symbol) = part.press {

@@ -1,8 +1,6 @@
 import Foundation
 
 public struct BlockKind: Sendable, Equatable {
-    public typealias Data = (value: Double?, points: [Double]?)
-
     public static let repeated = "repeat"
     public static let option = "option"
 
@@ -12,12 +10,12 @@ public struct BlockKind: Sendable, Equatable {
     let keys: Set<String>
     let isOpen: Bool
     let holdsValue: Bool
+    let isReading: Bool
     let takesColor: Bool
     let presses: Bool
     let looks: [String: SpotPart.Look]
     let control: @Sendable (TextBlock) -> SpotPart.Control
     let faults: @Sendable (TextBlock) -> [String]
-    let data: (@Sendable (TextBlock) -> Data)?
     let field: (@Sendable (TextBlock, String, String) -> ItemForm.Field)?
 
     init(
@@ -27,12 +25,12 @@ public struct BlockKind: Sendable, Equatable {
         keys: Set<String> = [],
         isOpen: Bool = false,
         holdsValue: Bool = false,
+        isReading: Bool = false,
         takesColor: Bool = false,
         presses: Bool = false,
         looks: [String: SpotPart.Look] = [:],
         control: @escaping @Sendable (TextBlock) -> SpotPart.Control = { _ in .none },
         faults: @escaping @Sendable (TextBlock) -> [String] = PartCatalog.keyFaults,
-        data: (@Sendable (TextBlock) -> Data)? = nil,
         field: (@Sendable (TextBlock, String, String) -> ItemForm.Field)? = nil
     ) {
         self.name = name
@@ -41,12 +39,12 @@ public struct BlockKind: Sendable, Equatable {
         self.keys = keys
         self.isOpen = isOpen
         self.holdsValue = holdsValue
+        self.isReading = isReading
         self.takesColor = takesColor
         self.presses = presses
         self.looks = looks
         self.control = control
         self.faults = faults
-        self.data = data
         self.field = field
     }
 
@@ -75,19 +73,16 @@ public struct BlockKind: Sendable, Equatable {
     static let text = BlockKind(
         name: "text",
         holdsValue: true,
-        takesColor: true,
-        data: { block in block.value("max") == nil ? (block.number("value"), nil) : (nil, points(of: block)) }
+        isReading: true,
+        takesColor: true
     )
 
     static let number = BlockKind(
         name: "number",
         holdsValue: true,
+        isReading: true,
         takesColor: true,
-        control: { .number(NumberReading(block: $0)) },
-        data: { block in
-            let reading = NumberReading(block: block)
-            return (reading.fill, reading.isSeries ? reading.points : nil)
-        }
+        control: { .number(NumberReading(block: $0)) }
     )
 
     static let picture = BlockKind(name: "picture", control: { Icon(text: $0.value("icon"))?.image.map(SpotPart.Control.image) ?? .none })
@@ -163,11 +158,6 @@ public struct BlockKind: Sendable, Equatable {
     static let button = BlockKind(name: "button", presses: true, faults: PartCatalog.shortcutFaults)
 
     static let section = BlockKind(name: "section")
-
-    private static func points(of block: TextBlock) -> [Double]? {
-        let points = block.values("value").compactMap(Double.init).filter(\.isFinite)
-        return points.isEmpty ? nil : points
-    }
 
     private static func range(of block: TextBlock) -> (low: Double, high: Double) {
         (block.number("min") ?? 0, block.number("max") ?? 100)

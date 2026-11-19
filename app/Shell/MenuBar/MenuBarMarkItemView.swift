@@ -59,12 +59,12 @@ struct MenuBarMarkItemView: View {
             .frame(width: SpotTokens.menuBarRing, height: SpotTokens.menuBarRing)
     }
 
-    private func bars(_ points: [Double]) -> some View {
+    private func bars(_ points: [Double?]) -> some View {
         HStack(alignment: .bottom, spacing: SpotTokens.menuBarBarGap) {
             ForEach(Array(points.enumerated()), id: \.offset) { index, point in
                 Capsule()
-                    .fill(markColour.opacity(index == points.count - 1 ? 1 : SpotTheme.oldBar))
-                    .frame(width: SpotTokens.menuBarBar, height: max(CGFloat(point) * SpotTokens.menuBarBarsHeight, SpotTokens.menuBarBar))
+                    .fill(markColour.opacity(point == nil ? 0 : index == points.count - 1 ? 1 : SpotTheme.oldBar))
+                    .frame(width: SpotTokens.menuBarBar, height: max(CGFloat(point ?? 0) * SpotTokens.menuBarBarsHeight, SpotTokens.menuBarBar))
             }
         }
         .frame(height: SpotTokens.menuBarBarsHeight, alignment: .bottom)

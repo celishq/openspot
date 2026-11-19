@@ -174,8 +174,8 @@ final class FrameTests: XCTestCase {
         let value = try XCTUnwrap(MetricValue(output: Frame(text: "number=m\nmax=10\nvalue=1\nvalue=2\n")))
 
         XCTAssertEqual(value.kind, .trend)
-        XCTAssertEqual(value.points, [1, 2])
-        XCTAssertNil(value.value)
+        XCTAssertEqual(value.number?.points, [1, 2])
+        XCTAssertNil(value.number?.fill)
     }
 
     func testRowsCountThemselvesUnlessATitleIsPrinted() throws {

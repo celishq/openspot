@@ -15,7 +15,7 @@ public struct MenuBarMark: Equatable, Sendable {
         case counts([Count])
         case text(String)
         case ring(fill: Double, title: String)
-        case bars([Double], title: String)
+        case bars([Double?], title: String)
         case status(String)
         case icon
     }
@@ -52,9 +52,9 @@ public struct MenuBarMark: Equatable, Sendable {
             }
             content = counts.isEmpty ? .text(value.title) : .counts(counts)
         case .gauge:
-            content = .ring(fill: value.fill, title: value.title)
+            content = .ring(fill: value.number?.fill ?? 0, title: value.title)
         case .trend:
-            content = .bars(Array(value.scaledPoints.suffix(Self.barCount)), title: value.title)
+            content = .bars(Array((value.number?.scaledPoints ?? []).suffix(Self.barCount)), title: value.title)
         case .status:
             content = .status(value.title)
         case .value:

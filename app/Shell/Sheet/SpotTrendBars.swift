@@ -2,7 +2,7 @@ import OpenspotCore
 import SwiftUI
 
 struct SpotTrendBars: View {
-    let points: [Double]
+    let points: [Double?]
     let colour: Color
 
     var body: some View {
@@ -11,6 +11,7 @@ struct SpotTrendBars: View {
             let count = Int((room.width + SpotTokens.trendGap) / step)
             let shown = Array(points.suffix(count))
             for (index, point) in shown.enumerated() {
+                guard let point else { continue }
                 let height = max(CGFloat(point) * room.height, SpotTokens.trendBar)
                 let rect = CGRect(
                     x: room.width - CGFloat(shown.count - index) * step + SpotTokens.trendGap,
