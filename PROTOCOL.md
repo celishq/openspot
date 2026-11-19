@@ -291,7 +291,7 @@ square place          wide place
 - A series is its last value over its bars in a place of two rows or more and two columns or more.
 - Otherwise, with `max`, one value or the last point of a series is a ring in a place as tall as it's wide, and a bar
   in a wider one. A series with no `max` is a bar of its points, and any other number is big text.
-- `look=ring` or `look=bar` picks the drawing whatever the place.
+- `chart=ring` or `chart=bar` picks the drawing whatever the place. Only a number takes `chart`.
 
 ## Show again when something happens
 
@@ -301,7 +301,8 @@ gets `event=system.load` and `event.value=cpu=12 memory=40`. [Events](#events) l
 
 - Text after a space in `on` is a filter, a regular expression that the value must match. Any event with a value
   takes one, and `search.text` needs one.
-- The sheet asks its spot at each open, whether `on` lists `sheet.open` or not. Openspot asks a spot only while one of its
+- The sheet asks its spot at each open. With `sheet.open` in `on`, it asks again even when it read the spot a moment
+  ago. Openspot asks a spot only while one of its
   places shows, except at `app.launch` and `app.update`. A spot has one show at a time.
 - Openspot also asks after a call that printed nothing, with `spot.change`, and with `spot.want` when a place starts to
   show a spot whose events haven't come yet.
@@ -316,7 +317,7 @@ the sheet draws it. When it doesn't, it's an **action** in the ⌘K menu.
 
 - An action sends `<spot> <id> <item id>` while an item is selected, and `<spot> <id>` when none is. `scope=item`, the
   default, shows it only while an item is selected, and `scope=spot` always. An action needs a `title`.
-- A press closes the panel, unless the button has `close=false`. `confirm` asks for a second press. Return on an item
+- Every act closes the panel: a press, a pick, a command and an offered action, unless it has `close=false`. `confirm` asks for a second press. Return on an item
   runs the action `open`, and `button=open` gives it a `title`.
 - `shortcut` is a letter, a digit, `return`, `backspace` or `,`, after `cmd+`, `shift+`, both or neither, or `escape`
   alone, which presses the button instead of closing the sheet. In a ⌘K menu of 3 rows or more, only a `shortcut`
@@ -387,7 +388,7 @@ close=false
   and its own `grid=` lines give each item a place, repeated down for as long as there are items.
 - With a `grid=` line, only a `field` with `type=search` adds a search field over the items. Openspot searches the
   items and puts recent picks first, unless the root has `recents=false`.
-- With `filter=spot` on the search field, or `sheet.text` in `on`, each change of the text asks the spot with
+- With `sheet.text` in `on`, each change of the text asks the spot with
   `event=sheet.text` and `search=<text>`, and the spot prints the items that match.
 
 ### The main search
@@ -395,8 +396,8 @@ close=false
 `offers = ["search"]` shows the spot's items in the main search, and `search.text` in `on` makes it answer what the
 user types.
 
-- `search` in `offers` needs `panel.open`, `sheet.open` or a `clock` in `on`. With only `sheet.open`, Openspot reads the
-  items when it loads the spots and at each open of the sheet.
+- With no `panel.open` or clock in `on`, Openspot reads the items when it loads the spots and at each open of the
+  sheet.
 - `search.text <pattern>` asks the spot at each change of a text that matches, and a newer text stops the older call.
   Its items show first, or under the others with `answers = "last"`. A spot whose only event is `search.text` has no card.
 - An answer can be one card instead of items: its root has `grid.large=` or `grid.strip=` lines, and a pick sends
@@ -623,7 +624,7 @@ offers = ["actions"]
 ```
 
 - A command with `offers = ["actions"]` shows in the ⌘K menu of every card, under the spot's name, and sends
-  `<spot> <id> <card spot id>`. It keeps the panel open, unless it has `close = true`. A command
+  `<spot> <id> <card spot id>`. It closes the panel, unless it has `close = false`. A command
   `<offered id>.<name>`, such as `[commands."change.draw"]`, shows in its submenu. Origins after a space, such as
   `offers = ["actions mine, core"]`, fit only the cards of the user's spots (`mine`) or of the spots that come with
   Openspot (`core`).
@@ -710,7 +711,7 @@ title = "Refresh"
 
 | Table              | Meaning                                                                                                    |
 | ------------------ | ---------------------------------------------------------------------------------------------------------- |
-| `[commands.<id>]`  | A command, with its `title` and `icon`, which the user can give a hotkey. `confirm = "<words>"` shows the words at the first press and runs it at the second, `placeholder` lists it as a slash command, and `close = false` keeps the panel open after a slash command that shows nothing. It also takes the keys of a [button](#buttons-and-actions): `shortcut`, `scope` and `form`, and [`offers`](#offered-actions). |
+| `[commands.<id>]`  | A command, with its `title` and `icon`, which the user can give a hotkey. `confirm = "<words>"` shows the words at the first press and runs it at the second, `placeholder` lists it as a slash command, and `close = false` keeps the panel open after it runs, from a slash command that shows nothing or from the ⌘K menu. It also takes the keys of a [button](#buttons-and-actions): `shortcut`, `scope` and `form`, and [`offers`](#offered-actions). |
 | `[settings.<key>]` | A [setting](#settings), with its `title`, by default its key with a capital first letter, and `icon`.      |
 
 ## The message
@@ -748,11 +749,10 @@ Each kind of block, the keys of its own and the call it sends.
   detail, or the title with no detail. `color=#RRGGBB` on a text or a number draws a bar of that colour at its edge.
 - `icon` is an image file, such as `cups.png`; an `https://` image, downloaded once; the Finder icon of a path with a
   `/` or a leading `~`; an SF Symbol, such as `wifi`; or any other text, such as `😀`.
-- `look` is the box of a text, a number or a button: `tile` or `bare`, on a number also `ring` or `bar`, and on a button
-  also `chip` or `strong`.
+- `look` is the box of a text, a number or a button: `tile` or `bare`, and on a button also `chip` or `strong`.
   `align=left`, `right` or `center` places a block that is smaller than its place.
 - A field's `type`: none for one line, `multiline`, `slider` from `min` to `max`, 0 to 100 by default, which sends a whole number, `search` for the
-  search field of the [items](#items), which `filter=spot` hands to the spot, and `hotkey`. A choice with
+  search field of the [items](#items), and `hotkey`. A choice with
   `type=multiple` picks several options.
 - `grow=false` keeps a block to its own lines where it would take the free height; see [Layouts](#layouts).
 - A `hotkey` field shows keycaps, and records a key at Return or a click on it, or when a new frame gives it
