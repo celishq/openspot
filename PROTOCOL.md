@@ -11,10 +11,8 @@ and what Openspot shows the user about a spot is in [Trust](TRUST.md).
 
 ## Overview
 
-A spot answers calls with frames, and makes each change through `openspot` commands. Its manifest says when to call it.
-A frame holds blocks, and its layout, a few optional `grid=` lines, says where each block goes.
-
-What a spot prints flows one way, into what the user sees, and what the user does next starts it again.
+A spot answers calls with frames, and makes each change through `openspot` commands. What it prints flows one way, into
+what the user sees, and what the user does next starts it again.
 
 ```text
   ┌──────────────────────── the user presses, or the Mac changes ◄───────────────────────┐
@@ -24,35 +22,27 @@ event ──► call ──► spot ──► frame ──► Openspot draws it 
                     └──► openspot <noun> <verb>      each change, such as a toast or a copy
 ```
 
-| Word    | What it is                                                                                                                                                                                         |
-| ------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Spot    | A folder that Openspot runs: a script and its manifest, `spot.toml`. See [A spot](#a-spot).                                                                                                        |
-| Call    | One run of the spot. Its event is the reason the call came, and its mode is how the program runs. See [The calls](#the-calls).                                                                     |
-| Frame   | Everything a call shows at one time. See [Frames](#frames).                                                                                                                                        |
-| Block   | One thing in a frame, such as a text, a number or a switch. An item is a block that no layout places, in a list that the user can search. See [Show things with blocks](#show-things-with-blocks). |
-| Command | `openspot <noun> <verb>`, the one way a spot changes anything. See [The openspot command](#the-openspot-command).                                                                                  |
-
-Where a frame shows is its place. A card shows the spot in the panel, which Openspot's hotkey opens, and the spot's sheet
-fills the panel when the user opens the spot. A spot can also show in the menu bar, in a float, a small window at the
-pointer, and in a window, a normal window that holds its sheet. The user chooses the places, and the spot only adds a
-layout for the ones it cares about; see [Places](#places).
+- **Spot:** a folder that Openspot runs, a script and its manifest, `spot.toml`, which says when to call it. See [A spot](#a-spot).
+- **Call:** one run of the spot. Its event is why it came, and its mode is how it runs. See [The calls](#the-calls).
+- **Frame:** everything a call shows at one time, its blocks and its layout. See [Frames](#frames).
+- **Block:** one thing in a frame, such as a text, a number or a switch. See [Show things with blocks](#show-things-with-blocks).
+- **Command:** `openspot <noun> <verb>`, the one way a spot changes anything. See [The openspot command](#the-openspot-command).
 
 ## Principles
 
 These rules hold everywhere, and the details follow from them.
 
-- **A spot gives data, and Openspot draws it.** A block says what a thing is, and its place chooses how it looks, such
-  as a ring or a bar for a [number](#numbers). Openspot chooses every width, gap and colour.
+- **A spot gives data, and Openspot draws it.** A block says what a thing is, and its place chooses its look, such as a
+  ring or a bar for a [number](#numbers). Openspot chooses every width, gap and colour.
 - **A frame describes, and a command changes.** Printing a frame never changes the Mac, and a `show` call runs no
   command that changes anything.
-- **The user chooses the places and the keys.** The spot lays out each place it cares about, and the user decides
-  where it shows and which keys run it.
-- **A spot keeps no state between calls.** Openspot asks it again at each event it lists, and each show replaces what
-  the last one showed, so a call can end at any time.
-- **Each meaning has one form.** Every call is `<id> [item] [value]`, and a key such as `title`, `detail` or `icon`
-  means the same on every block.
-- **Text first.** A spot is any program that prints lines of `key=value`. A [view](#views), a SwiftUI file of the
-  spot, is only for a look that blocks can't give.
+- **The user chooses the places and the keys.** The spot lays out each place it cares about.
+- **A spot keeps no state between calls.** Openspot asks it again at each event it lists, and each show replaces the
+  last, so a call can end at any time.
+- **Each meaning has one form.** Every call is `<id> [item] [value]`, and a key such as `title` means the same on every
+  block.
+- **Text first.** A spot is any program that prints lines of `key=value`. A [view](#views) is only for a look that
+  blocks can't give.
 
 # Print blocks
 
@@ -61,18 +51,8 @@ the minimum a spot needs.
 
 ## A spot
 
-Make a spot from a manifest and a script. This one is whole: `spot.toml` names it, and the script prints what to show.
-
-```toml
-title = "Wi-Fi"
-```
-
-```sh
-#!/bin/sh
-printf 'text=title\ntitle=Wi-Fi\ndetail=Home · 82 Mb/s\n'
-```
-
-When the user opens its sheet, it shows a search field over one row: Wi-Fi, with Home · 82 Mb/s under it.
+A spot is a folder that Openspot runs: a manifest that names it, and a script that prints what to show. See
+[Your first spot](GUIDE.md#your-first-spot).
 
 - A **spot folder** is a folder `<name>.spot` in the spots folder, such as `coffee.spot`. It holds `spot.toml`, the
   [manifest](#the-manifest), its scripts, a `readme.md`, a `sample.sh` and any file they need. Its scripts share one
@@ -90,20 +70,7 @@ When the user opens its sheet, it shows a search field over one row: Wi-Fi, with
 ## The calls
 
 A call works like a CGI call: arguments and the message on stdin go in, and frames come out. The message is one block
-of what the call knows.
-
-```toml
-title = "Echo"
-```
-
-```sh
-#!/bin/sh
-. "$OPENSPOT_SH"
-printf 'frame=\ngrid=note\ngrid=echo\n\nfield=note\ntitle=Note\n\ntext=echo\n'
-openspot_kv title "$(value input.note)"
-```
-
-The sheet shows a Note field, and the text under it repeats what the user types.
+of what the call knows. See [Show a list](GUIDE.md#show-a-list) and [Ask for values](GUIDE.md#ask-for-values).
 
 A **press** is a click or a key that the user aims at a spot, such as Return on an item or a command's hotkey. Openspot
 makes a call at each of these:
@@ -145,22 +112,10 @@ stdin with `value` or `openspot_input`, not `cat`: the function of `openspot_ser
 
 ## Frames
 
-A call can print several frames, so a spot can show progress, then the result, or change one block while the rest
-stays.
+A frame is everything a call shows at one time. A call can print several, so a spot can show progress, then the result,
+or change one block while the rest stays.
 
-```toml
-title = "Copy"
-```
-
-```sh
-#!/bin/sh
-printf 'frame=\nprogress=0.5\ntitle=Copying\n---\n'
-printf 'frame=\n\ntext=done\ntitle=Copied\n'
-```
-
-The sheet shows Copying at half its progress, then the row Copied in its place.
-
-- Openspot draws each frame as soon as it arrives.
+- Openspot draws each frame as soon as it arrives. [The format](#the-format) says where a frame ends.
 - The first frame of a call replaces what shows, and so does a later frame with a `frame=` line. A later frame with no
   `frame=` line changes only the blocks it prints: a block whose id already shows replaces that block, and a new id joins
   the end.
@@ -173,8 +128,8 @@ The sheet shows Copying at half its progress, then the row Copied in its place.
 
 ### The root
 
-The root is the block that starts with `frame=`, such as the first block of each frame in the example above. It holds
-the layout of the frame and the words of the card, and isn't drawn.
+The root is the block that starts with `frame=`. It holds the layout of the frame and the words of the card, and isn't
+drawn.
 
 - `frame=<route>` starts it. The route is the name of the sheet the frame is for, and can be empty; see
   [Pages](#pages).
@@ -187,27 +142,14 @@ the layout of the frame and the words of the card, and isn't drawn.
 
 ## Show things with blocks
 
-Print one block for each thing the spot shows: words, a number, a switch, an item of a list.
-
-```ini
-text=title
-title=Wi-Fi
-detail=Home · 82 Mb/s
-
-switch=wifi
-value=true
-
-button=forget
-title=Forget
-close=false
-```
-
-With no layout, the text and the switch are rows of a list, and the button is an **action**, a row of the ⌘K
-menu. [Layouts](#layouts) places them.
+Print one block for each thing the spot shows: words, a number, a switch, an item of a list. See
+[Your first spot](GUIDE.md#your-first-spot).
 
 - The first key of a block is its kind, and its value is the block's id. Anything with its own title or icon is a block.
 - The id names the block in the layout, the call it sends and what moves when it changes, and is unique in a
   frame. Each kind keeps its data in `value`, and a kind that shows several values repeats it.
+- With no layout, a `text` or a `switch` is a row of the list, and a `button` is an **action**, a row of the ⌘K menu.
+  [Layouts](#layouts) places them.
 - [Blocks](#blocks) lists each kind, its own keys and the keys that every kind takes.
 
 # Lay out and react
@@ -216,7 +158,7 @@ Here you place blocks where you want them, show a spot outside its sheet, and an
 
 ## Layouts
 
-Write a layout the way you write CSS grid areas.
+A layout places the blocks of a frame. Write it the way you write CSS grid areas.
 
 ```text
 grid=title title title      title
@@ -235,30 +177,31 @@ grid=note  note  note       note
 
 ## Places
 
-Lay out each place the spot cares about with `grid.<size>=` lines, where the size names a place in the table below.
-
-```ini
-frame=
-grid.small=free
-grid.wide=free total
-grid.bar=free
-```
+A place is where a frame shows. Lay out each place the spot cares about with `grid.<size>=` lines, where the size names
+a place in the table below. See [Show a value on a card](GUIDE.md#show-a-value-on-a-card).
 
 | Size                                        | Where                                                              |
 | ------------------------------------------- | ------------------------------------------------------------------ |
 | `small`, `wide`, `square`, `strip`, `large` | A card in the panel. The user chooses its size.                    |
 | `bar`                                       | The menu bar, next to the clock. A click opens the sheet under it. |
 
+- A card shows the spot in the panel, which Openspot's hotkey opens, and the spot's sheet fills the panel when the user
+  opens the spot. A spot can also show in the menu bar, in a float, a small window at the pointer, and in a window, a normal window that
+  holds its sheet.
+- The user chooses the places, and the spot only adds a layout for the ones it cares about.
 - The sheet, a float and a window draw the `grid=` lines. A size with no layout uses the next smaller one. A card with
   none shows the icon, title and detail, and the menu bar the icon. The menu bar shows a `text` or a `number` by its own rule, in
   [The menu bar](#the-menu-bar), and a show that prints nothing hides it until the next show.
 
 ### The card
 
-The card stands for the spot in the panel. Its **value** is the one `text`, `number`, `switch` or slider that
-its layout places, or else the one among the items. `active=true` in the root shows that the spot's thing is on. A
-card whose frame holds only one switch or slider draws it, and a press changes it. Any other press does what Return
-does; see [The keys of a spot](GUIDE.md#the-keys-of-a-spot).
+The card stands for the spot in the panel.
+
+- Its **value** is the one `text`, `number`, `switch` or slider that its layout places, or else the one among the
+  items.
+- `active=true` in the root shows that the spot's thing is on.
+- A card whose frame holds only one switch or slider draws it, and a press changes it. Any other press does what Return
+  does; see [The keys of a spot](GUIDE.md#the-keys-of-a-spot).
 
 ### The menu bar
 
@@ -277,20 +220,9 @@ data, and Openspot chooses how to draw it for each place.
 
 ```ini
 number=battery
-title=Battery
 value=84
 max=100
 unit=%
-detail=3:12 left
-```
-
-```text
-square card           wide card
-  Battery             Battery            84%
- ╭───────╮            ━━━━━━━━━━━━━━━━━──────
- │ 84%   │
- │3:12 l.│
- ╰───────╯
 ```
 
 - `value` is the number, and each more `value` line adds a point of a series, oldest first. The last point is the one
@@ -303,10 +235,11 @@ square card           wide card
 
 ## Show again when something happens
 
-Events, such as the panel opening or the battery changing, make Openspot ask a spot what to show. List in `on` each
-event at which a show is safe and useful, such as `on = ["system.load"]`, and the show gets `event=system.load` and
-`event.value=cpu=12 memory=40`. [Events](#events) lists each one.
+Events, such as the panel opening or the battery changing, make Openspot ask a spot what to show. See
+[Respond to the Mac](GUIDE.md#respond-to-the-mac).
 
+- List in `on` each event at which a show is safe and useful, such as `on = ["system.load"]`, and the show gets
+  `event=system.load` and `event.value=cpu=12 memory=40`. [Events](#events) lists each one.
 - Text after a space in `on` is a filter, a regular expression that the value must match. Any event with a value
   takes one, and `search.text` needs one.
 - The sheet asks its spot at each open, unless it asked the spot less than 5 seconds ago. With `sheet.open` in `on`,
@@ -320,8 +253,8 @@ event at which a show is safe and useful, such as `on = ["system.load"]`, and th
 
 ## Buttons and actions
 
-A button is a verb, such as Forget in [Show things with blocks](#show-things-with-blocks), that the sheet draws where the
-layout places it.
+A button is a verb, such as Forget, that the sheet draws where the layout places it. See
+[Add buttons](GUIDE.md#add-buttons) and [Ask for values](GUIDE.md#ask-for-values).
 
 - An action sends `<spot> <id> <item id>` while an item is selected, and `<spot> <id>` when none is. `scope=item`, the
   default, shows it only while an item is selected, and `scope=spot` always. An action needs a `title`.
@@ -340,10 +273,6 @@ layout places it.
 A spot asks the Mac and Openspot for everything it does through `openspot <noun> <verb>`, which works the same in a
 terminal. [The openspot commands](app/Help/commands.md), which `openspot guide commands` prints, lists each one.
 
-```sh
-openspot toast Saved
-```
-
 - A noun names its commands, its events and its use, such as `openspot clipboard copy`, `clipboard.change` and
   `clipboard` in `uses`. When macOS already has a command, such as `open <url>`, use it.
 - `openspot toast <words>` shows the words for a moment, `openspot select <item>` selects an item once the next frame
@@ -358,18 +287,7 @@ openspot toast Saved
 
 ## Items
 
-Items are the list that the user searches and presses. A block that the layout doesn't place is no item when it's a
-`button`, which is an action, a `choice`, which the sheet draws, or a `section`, which titles the items after it.
-
-```ini
-text=milk
-title=Milk
-detail=2 left
-
-switch=sync
-value=true
-close=false
-```
+Items are the list that the user searches and presses. See [Show a list](GUIDE.md#show-a-list).
 
 | Key          | Meaning                                                                                         |
 | ------------ | ----------------------------------------------------------------------------------------------- |
@@ -388,6 +306,8 @@ close=false
 | `close`      | `false` keeps the panel open after a press of this item, or a key it records.                   |
 | `shake`      | `true` on a `hotkey` field: a shake or a tap of one modifier can be its key.                    |
 
+- A block that the layout doesn't place is an item, unless it's a `button`, which is an action, a `choice`, which the
+  sheet draws, or a `section`, which titles the items after it.
 - A `number` item shows its value on the right of its title, a ring of it with `max`, or the bars of a series, as in
   [Numbers](#numbers).
 - A press of a text sends `<spot> open <id>`, of a switch `<spot> <id> true` or `false`, and of a `hotkey` field
@@ -402,9 +322,11 @@ close=false
 
 ### The main search
 
-The main search, the panel's own search field, lists items from every spot. `offers = ["search"]` adds the spot's items
-to it, and `search.text` in `on` makes the spot answer what the user types.
+The main search, the panel's own search field, lists items from every spot. See
+[Answer the main search](GUIDE.md#answer-the-main-search).
 
+- `offers = ["search"]` adds the spot's items to it, and `search.text` in `on` makes the spot answer what the user
+  types.
 - With no `panel.open` or clock in `on`, Openspot asks for the items when it loads the spots and at each open of the
   sheet.
 - `search.text <pattern>` asks the spot at each change of a text that matches, and a newer text stops the older call.
@@ -414,9 +336,11 @@ to it, and `search.text` in `on` makes the spot answer what the user types.
 
 ## Settings
 
-A setting keeps a choice of the user, such as a city or a token. Each call gets each setting that has a value on stdin,
-so the spot reads it with no `openspot` call, such as `setting.city=Paris`.
+A setting keeps a choice of the user, such as a city or a token. See
+[Let the user choose a setting](GUIDE.md#let-the-user-choose-a-setting).
 
+- Each call gets each setting that has a value on stdin, such as `setting.city=Paris`, so the spot reads it with no
+  `openspot` call.
 - Return on a setting in the spot's Settings runs the call with the same id, which can answer with a form.
 - `type = "secret"` keeps a value of 8 characters or more, such as a token. Openspot asks for it in its own form, gives
   it on stdin only, and hides the exact value in the call log, the stats, a toast and a failure line.
@@ -431,7 +355,8 @@ of its own, or a place in another spot's ⌘K menu.
 
 ## Pages
 
-A spot can show more than one sheet, each named by its route, such as `photo/12` for the detail of an item.
+A spot can show more than one sheet, each named by its route, such as `photo/12` for the detail of an item. See
+[Open an item as a page](GUIDE.md#open-an-item-as-a-page).
 
 | Key                   | Where        | Does                                                                   |
 | --------------------- | ------------ | ---------------------------------------------------------------------- |
@@ -451,9 +376,12 @@ A spot can show more than one sheet, each named by its route, such as `photo/12`
 
 ## Modes
 
-Openspot starts a process for each call, `mode = "once"`, unless the manifest says otherwise. `mode = "stay"` keeps
-one process, which gets each call on stdin while one of its places shows, or from launch to quit with `app.launch` in
-`on`. A `.js` file with no execute permission runs inside Openspot.
+A mode says how Openspot runs the program of a spot.
+
+- Openspot starts a process for each call, `mode = "once"`, unless the manifest says otherwise.
+- `mode = "stay"` keeps one process, which gets each call on stdin while one of its places shows, or from launch to
+  quit with `app.launch` in `on`.
+- A `.js` file with no execute permission runs inside Openspot.
 
 ### A staying spot
 
@@ -477,9 +405,8 @@ main() {
 openspot_serve main "$@"
 ```
 
-The sheet shows a Send button, and each press shows the toast Sent from the same process. Write a staying spot with
-`openspot_serve`, as here: it runs `main` with the arguments of each call, so the same `main` works in every mode.
-
+- Write a staying spot with `openspot_serve`, as here: it runs `main` with the arguments of each call, so the same
+  `main` works in every mode.
 - A second press of a running call stops it. The call ends 2 seconds later, unless the spot prints a frame for it
   first; then it runs on to its end, which is how a spot brings its window to the front. A form, and a call that a
   newer value or search text stopped, stop at once.
@@ -497,21 +424,7 @@ The sheet shows a Send button, and each press shows the toast Sent from the same
 ### A JavaScript spot
 
 A JavaScript spot runs inside Openspot, so it answers in the same keystroke. Use it for a spot that answers as the user
-types.
-
-```toml
-title = "Hello"
-```
-
-```js
-function main(args, env, input) {
-  if (args[0] !== "show") return "";
-  return openspot.frame({
-    text: "hi",
-    title: `Hello from ${openspot.value("event", input)}`,
-  });
-}
-```
+types; [Answer the main search](GUIDE.md#answer-the-main-search) shows one.
 
 - `main(args, env, input)` gets the arguments, the variables and the message of a call, and returns the text of a
   frame.
@@ -536,29 +449,8 @@ A Swift spot is a program that Openspot builds once and runs at each call. Use i
 
 ## Views
 
-Openspot draws a view where the layout puts its `view` block. Use it for a chart, a board or a look of your own.
-
-```toml
-title = "Cups today"
-view = "cups.swift"
-```
-
-```sh
-#!/bin/sh
-printf 'frame=\ngrid=cups\n\nview=cups\ntitle=3\n'
-```
-
-```swift
-import SwiftUI
-
-struct SpotView: View {
-    let spot: SpotInput
-
-    var body: some View {
-        Text(spot["title"] ?? "–").font(.largeTitle.bold())
-    }
-}
-```
+Openspot draws a view where the layout puts its `view` block. Use it for a chart, a board or a look of your own;
+[Draw your own view](GUIDE.md#draw-your-own-view) shows one.
 
 - The file declares `struct SpotView: View` with `let spot: SpotInput`, with no top-level code and no method
   `update()`. A `view=<id>` block draws it in its place.
@@ -597,40 +489,30 @@ struct SpotView: View {
 
 ## Files out
 
-An item can stand for a file that the user drags into another app, such as `file=/Users/me/Report.pdf`, and a card
-can take files dropped on it.
+An item can stand for a file that the user drags into another app, and a card can take files dropped on it.
 
-- `file=<path>` makes the item stand for that file, and the path starts with `/`. A drag carries only the files that
-  still exist. When a drag ends in another app, Openspot sends `<spot> drag <item id>...`.
+- `file=<path>` makes the item stand for that file, such as `file=/Users/me/Report.pdf`, and the path starts with `/`.
+  A drag carries only the files that still exist. When a drag ends in another app, Openspot sends
+  `<spot> drag <item id>...`.
 - `drop` in the manifest names the files a card takes, and a drop sends `<spot> drop <path>...`. It waits for the
   card's running call, opens the sheet of a spot whose Return opens it, and the call can select the new item.
 
 ## Slash commands
 
-A slash command runs a command or a spot that has a `placeholder`, with the text the user typed, in one Return.
-
-```text
-buy milk /notes            Return runs notes add, with search=buy milk on stdin
-```
+A slash command runs a command or a spot that has a `placeholder`, with the text the user typed, in one Return. See
+[Run a command with text](GUIDE.md#run-a-command-with-text).
 
 - `/` at the start of a word, with a letter after it, lists the commands, the `scope=spot` buttons of a sheet and the
   spots with a `placeholder` whose name matches. `/` alone lists them all. A word that matches none stays text.
-- The call gets the rest of the line as `search=<text>`, with the arguments of a plain press. With no text, a command
-  runs as its hotkey does, and a spot does what Return does on its card. A command with `confirm` isn't listed.
+- The call gets the rest of the line, the words before and after the command, as `search=<text>`, with the arguments
+  of a plain press. With no text, a command runs as its hotkey does, and a spot does what Return does on its card. A
+  command with `confirm` isn't listed.
 - A first frame with fields is a form, whose values go to the same call. Other blocks open the sheet. A frame with
   nothing to show, or the end of the call, closes the panel, unless the command has `close = false`.
 
 ## Offered actions
 
 An offered action is a command of one spot that shows in the ⌘K menu of every card, so that it can work on any spot.
-
-```toml
-title = "Draw"
-
-[commands.change]
-title = "Change"
-offers = ["actions"]
-```
 
 - A command with `offers = ["actions"]` shows in the ⌘K menu of every card, under the spot's name, and sends
   `<spot> <id> <card spot id>`. It closes the panel, unless it has `close = false`. A command
