@@ -716,6 +716,7 @@ Each kind of block, the keys of its own and the call it sends.
 - `icon` is an image file, such as `cups.png`; an `https://` image, downloaded once; the Finder icon of a path with a
   `/` or a leading `~`; an SF Symbol, such as `wifi`; or any other text, such as `😀`.
 - `look` is the box of a text, a number or a button: `tile` or `bare`, and on a button also `chip` or `strong`.
+  An item with `look=tile` in a `repeat` shows its title and detail under its icon.
   `align=left`, `right` or `center` places a block that is smaller than its area.
 - A field's `type`: none for one line, `multiline`, `slider` from `min` to `max`, 0 to 100 by default, which sends a whole number, `search` for the
   search field of the [items](#items), and `hotkey`. A choice with

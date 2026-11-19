@@ -172,8 +172,7 @@ struct SpotItemsView: View {
     }
 
     private func bentoCell(_ item: SpotItem, size: CGSize) -> some View {
-        SpotItemIcon(item: item, size: min(size.width, size.height) * SpotTokens.tileIconShare)
-            .overlay(alignment: .bottomTrailing) { SpotToneDot(tone: item.tone, side: min(size.width, size.height) * SpotTokens.tileIconShare) }
+        bentoFace(item, side: min(size.width, size.height))
             .frame(width: size.width, height: size.height)
         .background(SpotTheme.ink.opacity(SpotTheme.fill), in: row)
         .contentShape(row)
@@ -182,6 +181,16 @@ struct SpotItemsView: View {
         .modifier(SpotFileDragSource(items: [item], hasFiles: item.file != nil, onDrop: onDragOut))
         .accessibilityLabel(item.title)
         .accessibilityAddTraits(.isButton)
+    }
+
+    @ViewBuilder
+    private func bentoFace(_ item: SpotItem, side: CGFloat) -> some View {
+        if item.showsWords {
+            SpotTileWords(item: item, side: side)
+        } else {
+            SpotItemIcon(item: item, size: side * SpotTokens.tileIconShare)
+                .overlay(alignment: .bottomTrailing) { SpotToneDot(tone: item.tone, side: side * SpotTokens.tileIconShare) }
+        }
     }
 
     private func rowLabel(_ item: SpotItem) -> some View {

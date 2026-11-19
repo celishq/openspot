@@ -9,6 +9,9 @@ extension SpotTokens {
     public static let cardLineReach: CGFloat = 6
     public static var mediaRadius: CGFloat { layout.radius.media }
     public static let tileIconShare: CGFloat = 0.5
+    public static let wordsTileCircleShare: CGFloat = 0.36
+    public static let wordsTileIconShare: CGFloat = 0.5
+    public static let wordsTileGap: CGFloat = 4
     public static let pictureScale: CGFloat = 2
     public static let pictureRimLine: CGFloat = 0.5
     public static let offScreen = CGPoint(x: -9000, y: -9000)

@@ -99,6 +99,12 @@ final class ItemsTests: PanelCase {
         XCTAssertEqual(output.parts.first?.control, .menu([.init(id: "colorful", title: "Colorful"), .init(id: "plain", title: "Plain")], value: "colorful"))
     }
 
+    func testAnItemWithTheTileLookShowsItsWordsInItsCell() {
+        let output = Frame(text: "frame=\ngrid=times\n\nrepeat=times\ngrid=a b c\n\ntext=later\ntitle=Later\ndetail=17:20\nicon=cup.and.saucer.fill\nlook=tile\n\ntext=star\ntitle=Star\nicon=star\n")
+
+        XCTAssertEqual(output.items.map(\.showsWords), [true, false])
+    }
+
     func testATextItemsNumberIsNoMarkAndANumberItemWithAMaxFills() {
         let output = Frame(text: "text=mac\ntitle=This Mac\ndetail=84%\nvalue=0.84\n\nnumber=swap\ntitle=Swap\nvalue=84\nmax=100\n")
 

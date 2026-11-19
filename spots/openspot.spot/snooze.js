@@ -77,15 +77,40 @@ function words(date, now) {
   return date.toLocaleDateString("en-US", { month: "short", day: "numeric" })
 }
 
-/** The sheet: one view of the tiles, each with its icon, title and the time it stands for. */
+/** The sheet: a grid of tiles, three in a row, each with its icon, its title and the time it stands for. Pick Date
+ * opens the page where the person types a time. */
 function sheet(now, choices) {
   const moments = times(now, choices)
-  const view = { view: "tiles" }
-  tiles.forEach(([id, title, icon, none], index) => {
+  const blocks = [{ frame: "", title: "Snooze until", grid: "tiles" }, { repeat: "tiles", grid: "a b c" }]
+  for (const [id, title, icon, none] of tiles) {
     const moment = moments[id]
-    view[`tile.${index + 1}`] = [id, title, icon, moment ? words(moment, now) : none].join("|")
-  })
-  return openspot.frame([{ frame: "", title: "Snooze until", grid: "tiles" }, view])
+    const tile = { text: id, title, detail: moment ? words(moment, now) : none, icon, look: "tile" }
+    if (id === "date") tile.route = "date"
+    blocks.push(tile)
+  }
+  return openspot.frame(blocks)
+}
+
+/** The moment that typed words name, such as `fri 3pm` or `dec 24`, read by the calculator; a day with no time takes
+ * the morning. Nil when the words name no moment to come. */
+function typed(text, now, choices) {
+  const answer = openspot.call(["calc", "solve", text]).stdout
+  const match = /^text=(\d{4})-(\d{2})-(\d{2})(?: (\d{2}):(\d{2}))?$/m.exec(answer)
+  if (!match) return null
+  const [hour, minute] = match[4] ? [Number(match[4]), Number(match[5])] : choices.morning
+  const moment = new Date(Number(match[1]), Number(match[2]) - 1, Number(match[3]), hour, minute)
+  return moment > now ? moment : null
+}
+
+/** The Pick Date page: the moment the typed words name, which Return picks, or a hint while they name none. */
+function page(search, now, choices) {
+  const moment = search.trim() ? typed(search, now, choices) : null
+  if (!moment) {
+    const title = search.trim() ? "No time to come in these words" : "Type a time"
+    return openspot.frame([{ text: "hint", title, detail: "Such as fri 3pm, tomorrow 9:30 or dec 24", icon: "calendar.badge.clock" }])
+  }
+  const title = moment.toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric" })
+  return openspot.frame([{ text: iso(moment), title: `${title}, ${moment.getHours()}:${two(moment.getMinutes())}`, detail: "Return snoozes until then", icon: "calendar.badge.clock" }])
 }
 
 /** The form of a setting row of the snooze's Settings. */
@@ -104,19 +129,21 @@ function form(key) {
   ])
 }
 
-/** A press of a tile replies with its moment, `someday`, or the picked date; a settings row asks for its value. */
+/** A press of a tile, or of the typed moment, replies with its moment or `someday`; a settings row asks for its value. */
 function main([id, value], env, input) {
-  if (id === "show") return sheet(new Date(), choices(input))
+  const now = new Date()
+  if (id === "show") {
+    if (openspot.value("route", input).trim() === "date") return page(openspot.value("search", input), now, choices(input))
+    return sheet(now, choices(input))
+  }
   if (["morning", "evening", "later", "weekend"].includes(id)) {
     const chosen = value || openspot.value(`input.${id}`, input).trim()
     if (!chosen) return form(id)
     openspot.call(["setting", "set", id, chosen])
     return ""
   }
-  if (id !== "tiles" || !value) return ""
-  const [tile, picked] = value.split(" ")
-  const moment = tile === "date" ? picked : tile === "someday" ? "someday" : iso(times(new Date(), choices(input))[tile])
-  if (!moment) return ""
+  if (id !== "open" || !value || value === "hint" || value === "date") return ""
+  const moment = value.includes("T") ? value : value === "someday" ? "someday" : iso(times(now, choices(input))[value])
   openspot.call(["spot", "reply", moment])
   return ""
 }
