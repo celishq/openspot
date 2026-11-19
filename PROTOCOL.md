@@ -285,7 +285,9 @@ close=false
   also `chip` or `strong`.
   `align=left`, `right` or `center` places a block that is smaller than its place.
 - A field's `type`: none for one line, `multiline`, `slider` from `min` to `max`, 0 to 100 by default, `search` for the
-  search field of the [items](#items), and `hotkey`. A choice with `type=multiple` picks several options.
+  search field of the [items](#items), which `filter=spot` hands to the spot, and `hotkey`. A choice with
+  `type=multiple` picks several options.
+- `grow=false` keeps a block to its own lines where it would take the free height; see [Layouts](#layouts).
 - A `hotkey` field shows keycaps, and records a key at Return or a click on it, or when a new frame gives it
   `recording=true`. Every key goes to it, Esc brings back its key, and a shortcut sends `<id> <key>`. While a sheet
   with one shows, Openspot's own keys are off.
@@ -433,8 +435,8 @@ grid=note  note  note       note
   cell, or `-` for a divider. The words of a line set the columns.
 - A block fills the rectangle of cells that its id covers. A smaller block inside a bigger one sits on top of it, at
   the edge it touches.
-- A `view`, a list, a chart, an image or a `multiline` field takes the free height of the sheet, unless it has
-  `grow=false`. With no `grid=` line, the layout is a search field over the items.
+- A `view`, a list, a series of a `number`, an image or a `multiline` field takes the free height of the sheet, unless
+  it has `grow=false`. With no `grid=` line, the layout is a search field over the items.
 
 ## Places
 

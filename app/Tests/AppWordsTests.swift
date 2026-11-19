@@ -21,6 +21,17 @@ final class AppWordsTests: XCTestCase {
         XCTAssertEqual(scan.refused.map(\.reason), ["Mine has an unknown key in its spot.toml: edits"])
     }
 
+    func testOnlyASpotOfTheAppTakesTheKeyStarts() throws {
+        let folder = try temporaryFolder()
+        try write(folder.appendingPathComponent("core/openspot.spot/welcome.sh"), toml: "title = 'Welcome'\nstarts = 'first-launch'")
+        try write(folder.appendingPathComponent("mine/hello.spot/hello.sh"), toml: "title = 'Mine'\nstarts = 'first-launch'")
+
+        let scan = try SpotsFolder(url: folder.appendingPathComponent("mine"), core: folder.appendingPathComponent("core")).scan()
+
+        XCTAssertEqual(scan.spots.map(\.id), ["openspot/welcome"])
+        XCTAssertEqual(scan.refused.map(\.reason), ["Mine has an unknown key in its spot.toml: starts"])
+    }
+
     func testOnlyASpotOfTheAppGetsTheVariablesOfTheApp() async throws {
         let folder = try temporaryFolder()
         let body = "printf 'text=v\\ntitle=%s\\n' \"" + variables.map { "${\($0)-none}" }.joined(separator: "|") + "\""

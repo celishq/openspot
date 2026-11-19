@@ -7,7 +7,7 @@ public struct Manifest: Equatable, Sendable {
         "uses", "pages", "answers"
     ]
     public static let tables: Set<String> = [Command.table, Setting.table]
-    static let appKeys: Set<String> = ["edits"]
+    static let appKeys: Set<String> = ["edits", "starts"]
     static let limit = 65_536
     private static let scriptsTable = "scripts"
 

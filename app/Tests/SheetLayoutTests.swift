@@ -28,6 +28,7 @@ final class SheetLayoutTests: XCTestCase {
     title=English
 
     field=input
+    type=multiline
     value=Hello
 
     choice=target
@@ -37,6 +38,7 @@ final class SheetLayoutTests: XCTestCase {
     title=Russian
 
     field=output
+    type=multiline
     value=Привет
     readonly=true
 
@@ -48,6 +50,18 @@ final class SheetLayoutTests: XCTestCase {
     align=right
     title=Copy
     """
+
+    func testOnlyAMultilineFieldTakesTheFreeHeight() throws {
+        let line = try placement("frame=\ngrid=a\ngrid=b\n\nfield=a\ntitle=Name\n\nbutton=b\ntitle=Go\n")
+        let multiline = try placement("frame=\ngrid=a\ngrid=b\n\nfield=a\ntype=multiline\n\nbutton=b\ntitle=Go\n")
+
+        XCTAssertEqual(try XCTUnwrap(line.frames["a"]).rect.height, SpotTokens.listRow)
+        XCTAssertGreaterThan(try XCTUnwrap(multiline.frames["a"]).rect.height, SpotTokens.listRow)
+    }
+
+    func testTheCheckTakesGrowOnABlockAndFilterOnTheSearchField() {
+        XCTAssertEqual(FrameCheck(text: "frame=\ngrid=v\ngrid=f\n\nview=v\ngrow=false\n\nfield=f\ntype=search\nfilter=spot\n\ntext=a\n").partFaults, [])
+    }
 
     func testRowsFitTheRoomTheyAreGivenNotTheWholeSheet() {
         let three = SpotTokens.rowsHeight(rows: 3)
@@ -417,7 +431,7 @@ final class SheetLayoutTests: XCTestCase {
         XCTAssertEqual(faults("frame=\ngrid=a a\n\nnumber=a\nvalue=1\ntitle=CPU\n"), ["the part a needs at least 2 rows for its number and title"])
         XCTAssertEqual(faults("frame=\ngrid=p p\n\nnumber=p\nvalue=1\nmax=100\n"), ["the part p needs at least 2 rows for its title and bar"])
         XCTAssertEqual(faults("frame=\ngrid=a b c d\n\ntext=a\ntitle=A very long title indeed\n\ntext=b\ntitle=B\n\ntext=c\ntitle=C\n\ntext=d\ntitle=D\n"), ["the title of the part a may not fit its cell"])
-        XCTAssertEqual(faults("frame=\ngrid=a b\ngrid=t b\n\ntext=a\ntitle=Item\n\ntext=t\ntitle=Other\n\nfield=b\nvalue=Hi\n"), ["the part a sits in rows that stretch, so draw a choice over two lines for a list", "the part t sits in rows that stretch, so draw a choice over two lines for a list"])
+        XCTAssertEqual(faults("frame=\ngrid=a b\ngrid=t b\n\ntext=a\ntitle=Item\n\ntext=t\ntitle=Other\n\nfield=b\ntype=multiline\nvalue=Hi\n"), ["the part a sits in rows that stretch, so draw a choice over two lines for a list", "the part t sits in rows that stretch, so draw a choice over two lines for a list"])
         XCTAssertEqual(faults(String(repeating: "frame=\ngrid=a\n", count: 20) + "\nfield=a\nvalue=Hi\n"), ["the drawing is too tall: 914pt of 446pt"])
     }
 

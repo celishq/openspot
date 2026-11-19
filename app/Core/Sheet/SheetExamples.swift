@@ -27,6 +27,7 @@ public enum SheetExamples {
         title=English
 
         field=input
+        type=multiline
         value=Good morning
         placeholder=Type or paste text
 
@@ -40,6 +41,7 @@ public enum SheetExamples {
         title=German
 
         field=output
+        type=multiline
         value=Bonjour
         readonly=true
 
