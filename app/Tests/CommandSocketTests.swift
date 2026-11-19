@@ -15,7 +15,7 @@ final class CommandSocketTests: XCTestCase {
         func quit() async {}
         func apply(_ theme: Theme) async {}
         func open(_ id: String) async -> Bool { true }
-        func push(_ id: String, page: String?, title: String?, replace: Bool) async -> Bool { true }
+        func push(_ id: String, route: String?, title: String?, replace: Bool) async -> Bool { true }
         func pop(_ id: String, all: Bool) async -> Bool { true }
         func review(_ id: String) async -> Bool { true }
         func act(_ act: CardAct, on id: String) async -> Bool { true }

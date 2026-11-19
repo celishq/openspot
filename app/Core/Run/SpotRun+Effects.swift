@@ -3,7 +3,7 @@ import Foundation
 extension SpotRun {
     func isOutOfDate(_ call: OpenCall) -> Bool {
         guard !call.made.isStopped else { return true }
-        guard case .work(let work) = call.request.purpose, let generation = work.generation else { return false }
+        guard case .act(let act) = call.request.purpose, let generation = act.generation else { return false }
         return panel?.generation != generation
     }
 

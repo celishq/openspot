@@ -66,7 +66,7 @@ final class PlacesTests: PanelCase {
         await model.reload()
         model.isShown = true
         model.panelWillShow()
-        try await wait("the panel read") { self.log("counted") == ["show"] && !self.model.runs.isReading }
+        try await wait("the panel read") { self.log("counted") == ["show"] && !self.model.runs.isShowing }
 
         model.press("plain")
         try await wait("the sheet of plain") { self.model.openSheetID == "plain" }
@@ -149,7 +149,7 @@ final class PlacesTests: PanelCase {
         model.isShown = true
         model.panelWillShow()
 
-        try await wait("the read of the card") { self.log("shown") == ["show"] && !self.model.runs.isReading }
+        try await wait("the read of the card") { self.log("shown") == ["show"] && !self.model.runs.isShowing }
         XCTAssertEqual(log("hidden"), [])
     }
 }

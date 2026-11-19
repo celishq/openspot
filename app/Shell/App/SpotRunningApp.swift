@@ -16,7 +16,7 @@ struct SpotRunningApp: RunningApp {
     }
 
     func status() async -> (update: String?, calls: Int, isFirstLaunch: Bool) {
-        await MainActor.run { (update?.readyVersion, model.workCount, model.isFirstLaunch) }
+        await MainActor.run { (update?.readyVersion, model.actCount, model.isFirstLaunch) }
     }
 
     func slowMotion(_ isOn: Bool?) async -> Bool? {
@@ -51,8 +51,8 @@ struct SpotRunningApp: RunningApp {
         await model.open(id)
     }
 
-    func push(_ id: String, page: String?, title: String?, replace: Bool) async -> Bool {
-        await model.push(FlowSheet(spot: id, page: page, title: title), replace: replace)
+    func push(_ id: String, route: String?, title: String?, replace: Bool) async -> Bool {
+        await model.push(FlowSheet(spot: id, route: route, title: title), replace: replace)
     }
 
     func pop(_ id: String, all: Bool) async -> Bool {

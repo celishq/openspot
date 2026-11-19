@@ -9,18 +9,18 @@ extension Spot {
     }
 
     func state(timeout: TimeInterval) async throws -> SpotState {
-        guard readsState else { return headerState }
+        guard showsState else { return headerState }
         return try state(of: try await output(.show, timeout: timeout))
     }
 
     func opened(timeout: TimeInterval) async throws -> (spot: Spot, state: SpotState) {
-        guard readsState else { return (self, headerState) }
+        guard showsState else { return (self, headerState) }
         let output = try await output(.show, timeout: timeout)
         return (taking(output), try state(of: output))
     }
 
     func items(query: String = "", input: String? = nil, page: String? = nil, timeout: TimeInterval) async throws -> SpotOutput {
-        let event = query.isEmpty ? nil : ReadReason.text(query, inSheet: self.answers == nil)
+        let event = query.isEmpty ? nil : ShowEvent.text(query, inSheet: self.answers == nil)
         let message = Message(.show, event: event, route: page, search: query.isEmpty ? nil : query, given: input).text
         return try await output(.show, input: message?.isEmpty == true ? nil : message, timeout: timeout)
     }
@@ -78,6 +78,6 @@ extension Spot {
 
 extension ScanResult {
     var metrics: [Spot] {
-        scripts.filter { $0.read?.seconds != nil }
+        scripts.filter { $0.on?.seconds != nil }
     }
 }

@@ -21,7 +21,7 @@ case "$1" in
       [ -e "$path" ] || continue
       folder=${path%/*}
       case "$folder" in "$HOME"*) folder="~${folder#"$HOME"}" ;; esac
-      openspot_row "$path" "${path##*/}" "$folder" "$path"
+      openspot_item "$path" "${path##*/}" "$folder" "$path"
       openspot_kv file "$path"
     done < "$list"
     ;;

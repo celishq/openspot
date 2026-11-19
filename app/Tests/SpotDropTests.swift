@@ -467,7 +467,7 @@ final class SpotDropTests: XCTestCase {
     }
 
     func testADropHasNoTimeLimitAndGoesOnWithThePanelClosed() async throws {
-        runs = SpotRuns(readLimit: 0.2, clock: RunClock { [unowned self] in self.time })
+        runs = SpotRuns(showLimit: 0.2, clock: RunClock { [unowned self] in self.time })
         let sheet = try sheet(toml: "drop = 'mov'", "sleep 0.5\ntouch '\(path("done"))'")
         runs.panelOpened()
         var failures: [String] = []
@@ -475,7 +475,7 @@ final class SpotDropTests: XCTestCase {
         XCTAssertTrue(sheet.drop([file("a.mov")]))
 
         runs.panelClosed()
-        XCTAssertEqual(sheet.calls.first?.doesWork, true)
+        XCTAssertEqual(sheet.calls.first?.isAct, true)
 
         try await wait("the end of the work") { self.exists("done") && sheet.calls.isEmpty }
         XCTAssertEqual(failures, [])

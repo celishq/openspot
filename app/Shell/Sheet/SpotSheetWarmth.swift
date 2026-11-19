@@ -15,7 +15,7 @@ enum SpotSheetWarmth {
                     SpotSheetPreview(panel: panel, list: SpotSheetPicture.list(of: output))
                 }
             }
-            SpotRowsView(list: ItemList(items: rows), onRun: { _ in })
+            SpotItemsView(list: ItemList(items: rows), onRun: { _ in })
                 .frame(width: SpotTokens.panelWidth, height: CGFloat(rows.count) * SpotTokens.listRow)
         }
         let host = NSHostingView(rootView: view.preferredColorScheme(.dark))

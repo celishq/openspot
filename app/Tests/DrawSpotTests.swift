@@ -62,7 +62,7 @@ final class DrawSpotTests: XCTestCase {
     }
 
     private func opened(_ spot: Spot) async throws -> SpotRun {
-        runs = SpotRuns(environment: environment, readLimit: 120, stopPause: 20)
+        runs = SpotRuns(environment: environment, showLimit: 120, stopPause: 20)
         started.append(runs)
         runs.api = CommandAPI(mac: Mac(), places: .test(["OPENSPOT_CONFIG": home.appendingPathComponent(".config/openspot").path]), app: FakeRunningApp(), runs: runs, rates: .offline)
         let count = records.count
@@ -113,7 +113,7 @@ final class DrawSpotTests: XCTestCase {
         XCTAssertEqual(rows.map(\.title), ["New board", "Plan", "Flows", "Old plan"])
         XCTAssertEqual(rows.map(\.run), ["0:new", "0:Work/plan", "0:flows", "0:old"])
         XCTAssertEqual(rows.map(\.subtitle), ["A blank board", "Work · Edited 1 min ago", "Edited 2 min ago", "Edited 2 h ago"])
-        XCTAssertEqual(spot.read?.searchesSheet, false)
+        XCTAssertEqual(spot.on?.searchesSheet, false)
     }
 
     func testARenameKeepsTheFiguresAndChangesTheTitle() async throws {
@@ -214,7 +214,7 @@ final class DrawSpotTests: XCTestCase {
         try await wait("the end of the second open") { self.ended(["open", "1:plan"]) }
         XCTAssertEqual(sheet.calls.map(\.id), [held.id])
         XCTAssertEqual(processes(of: program), first)
-        XCTAssertTrue(sheet.work.isEmpty)
+        XCTAssertTrue(sheet.acts.isEmpty)
 
         sheet.pick(SpotItem(title: "New board", run: "1:new"))
         try await wait("the end of the new board's call") { self.ended(["open", "1:new"]) }
@@ -320,7 +320,7 @@ final class DrawSpotTests: XCTestCase {
         for read in link.sent.dropFirst() where read.request.action == .show { await link.end(read) }
         XCTAssertEqual(sheet.calls.map(\.id), [held.made.id])
         XCTAssertTrue(sheet.isWanted)
-        XCTAssertTrue(sheet.work.isEmpty)
+        XCTAssertTrue(sheet.acts.isEmpty)
         XCTAssertNil(runs.runningSummary)
 
         await link.end(held)

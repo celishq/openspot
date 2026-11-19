@@ -130,7 +130,7 @@ final class ScreenExamplesTests: SampleSpotsCase {
         let shot = try example("Shot")
 
         XCTAssertEqual(shot.mode, .stay)
-        XCTAssertNil(shot.read)
+        XCTAssertNil(shot.on)
         XCTAssertEqual(shot.sources, ["shot"])
         XCTAssertEqual(shot.uses, [.screen, .clipboard])
     }

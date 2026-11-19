@@ -50,7 +50,7 @@ enum SpotCardPicture {
                 }
                 SpotPicture(of: stage, size: CGSize(width: card.width + 2 * margin, height: card.height + 2 * margin), path: path).save(after: settle)
             }
-            if let sheet = model.sheets[id], entry.spot.readsState {
+            if let sheet = model.sheets[id], entry.spot.showsState {
                 sheet.afterAnswer(draw)
             } else {
                 draw()

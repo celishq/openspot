@@ -23,8 +23,8 @@ final class StayMode: ScriptMode {
             return true
         }
 
-        var isWork: Bool {
-            guard !isDropped, case .work = call.request.purpose else { return false }
+        var isAct: Bool {
+            guard !isDropped, case .act = call.request.purpose else { return false }
             return true
         }
     }
@@ -65,7 +65,7 @@ final class StayMode: ScriptMode {
     static func answer(of spot: Spot, _ action: SpotAction, input: String?, limit: TimeInterval?, variables: [String: String], in runs: SpotRuns) async throws -> String {
         guard action == .show else { return try await collect(of: spot, action, input: input, limit: limit, variables: variables, in: runs) }
         let (script, frames, caller) = runs.stay(spot, limit: limit)
-        caller.reason = ReadReason.panel.rawValue
+        caller.reason = ShowEvent.panel.rawValue
         defer { script.end() }
         script.send(Message(.show, event: .panel, given: input), id: 1)
         for try await frame in frames {
@@ -80,15 +80,15 @@ final class StayMode: ScriptMode {
     }
 
     private var holdsScript: Bool {
-        records.values.contains { $0.isWork || $0.isForm }
+        records.values.contains { $0.isAct || $0.isForm }
     }
 
     func send(_ call: OpenCall) -> Bool {
         switch call.request.purpose {
-        case .ask(.read):
+        case .ask(.show):
             guard run?.isWanted == true else { return false }
             guard let script else {
-                start(reason: call.request.reason)
+                start(event: call.request.event)
                 return self.script != nil
             }
             open(call, on: script, isTimed: true)
@@ -98,8 +98,8 @@ final class StayMode: ScriptMode {
         case .ask(.answer(let text)):
             stop(\.isAnswer)
             if !post(call, isTimed: true) { run?.takeAnswers([], to: text) }
-        case .work(let work):
-            call.request.purpose = .work(SpotRun.Work(keeping: work.keeping, readsAfter: false, undo: work.undo, first: work.first))
+        case .act(let act):
+            call.request.purpose = .act(SpotRun.Act(keeping: act.keeping, showsAfter: false, undo: act.undo, first: act.first))
             if post(call, isTimed: false) { run?.track(call.made) }
         case .form:
             guard !records.values.contains(where: \.isForm), post(call, isTimed: true) else { return false }
@@ -138,7 +138,7 @@ final class StayMode: ScriptMode {
     }
 
     private func end(because why: String) {
-        let held = records.values.contains(where: \.isWork)
+        let held = records.values.contains(where: \.isAct)
         end()
         guard held, let run else { return }
         run.onReport(.toast("\(run.spot.name) stopped, since \(why). Start it again to go on."))
@@ -158,20 +158,20 @@ final class StayMode: ScriptMode {
         settle()
     }
 
-    private var startReason: ReadReason {
+    private var startEvent: ShowEvent {
         guard let run else { return .panel }
         return !run.places.isEmpty ? .sheet : .panel
     }
 
-    private func start(reason: ReadReason? = nil) {
+    private func start(event: ShowEvent? = nil) {
         guard let run, givenUp == nil else { return }
-        let (script, frames, caller) = runs.stay(run.spot, limit: runs.readLimit)
+        let (script, frames, caller) = runs.stay(run.spot, limit: runs.showLimit)
         self.script = script
         self.caller = caller
         slowAsks = 0
-        let reason = reason ?? startReason
-        let read = SpotRun.Call(message: Message(.show), key: SpotRun.readKey, reason: reason, purpose: .ask(.read(generation: nil, reports: true)))
-        open(OpenCall(read, started: runs.now()), on: script, isTimed: false)
+        let event = event ?? startEvent
+        let show = SpotRun.Call(message: Message(.show), key: SpotRun.showKey, event: event, purpose: .ask(.show(generation: nil, reports: true)))
+        open(OpenCall(show, started: runs.now()), on: script, isTimed: false)
         Task { await follow(script, frames) }
     }
 
@@ -192,12 +192,12 @@ final class StayMode: ScriptMode {
         let request = call.request
         records[id] = record
         call.made.halt = { [weak script] in script?.send(text: SpotAction.stopEvent(id: id)) }
-        if case .ask = request.purpose { askReason = request.reason?.rawValue }
+        if case .ask = request.purpose { askReason = request.event?.rawValue }
         caller?.call = call
         noteReason()
         script.send(run.map { $0.message(of: request, values: $0.fieldValues) } ?? request.message, id: id)
         guard isTimed else { return }
-        let limit = runs.readLimit
+        let limit = runs.showLimit
         record.timer = Task { [weak self, weak script, sleep = runs.clock.sleep] in
             try? await sleep(.seconds(limit), .seconds(limit / 10))
             guard !Task.isCancelled, let script else { return }
@@ -327,7 +327,7 @@ final class StayMode: ScriptMode {
                 }
                 lastPicture = lines
             }
-            if let record = (printing.map { [$0] } ?? ends).compactMap({ records[$0] }).first(where: \.isWork) {
+            if let record = (printing.map { [$0] } ?? ends).compactMap({ records[$0] }).first(where: \.isAct) {
                 await run.take(text, lines, of: record.call)
             } else {
                 await run.take(text, lines)

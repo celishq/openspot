@@ -138,7 +138,7 @@ final class OpenspotApp: NSObject, NSApplicationDelegate {
     }
 
     @objc private func pressItem() {
-        if !model.openWork() { togglePanel() }
+        if !model.openAct() { togglePanel() }
     }
 
     @objc func togglePanel() {

@@ -4,13 +4,13 @@ import XCTest
 @MainActor
 final class SpotRunsCallTests: SpotRunsCase {
     func testAReadAtThePanelThatTakesTooLongMarksItsCardAndTellsNoOne() async throws {
-        runs = SpotRuns(readLimit: 0.3)
+        runs = SpotRuns(showLimit: 0.3)
         try script(toml: "on = ['panel.open']", "sleep 30")
         let sheet = try sheet()
         var failures: [String] = []
         sheet.onReport = { if case .failure(let text) = $0 { failures.append(text) } }
 
-        sheet.read()
+        sheet.show()
 
         try await wait("the time limit") { sheet.failure != nil }
         XCTAssertEqual(sheet.failure, "Script took too long, so Openspot stopped it.")
@@ -18,8 +18,8 @@ final class SpotRunsCallTests: SpotRunsCase {
     }
 
     func testAReadHasTenSecondsAndAnyOtherNameHasNoLimit() async throws {
-        XCTAssertEqual(SpotRuns().readLimit, 10)
-        runs = SpotRuns(readLimit: 1.5)
+        XCTAssertEqual(SpotRuns().showLimit, 10)
+        runs = SpotRuns(showLimit: 1.5)
         try script(toml: "on = ['sheet.open']", """
         case "$1" in
           show) [ -f '\(path("slow"))' ] && sleep 30; touch '\(path("slow"))'; printf 'frame=\\ntitle=1\\n\\ntext=a\\ntitle=A\\n' ;;
@@ -29,12 +29,12 @@ final class SpotRunsCallTests: SpotRunsCase {
         let sheet = try sheet()
         var failures: [String] = []
         sheet.onReport = { if case .failure(let text) = $0 { failures.append(text) } }
-        sheet.read()
+        sheet.show()
         try await wait("the row") { sheet.list.shown.count == 1 }
         sheet.pick(try XCTUnwrap(sheet.list.selectedItem))
         try await wait("the work") { self.log().contains("open a") }
 
-        sheet.read(need: .change)
+        sheet.show(need: .change)
         try await wait("the time limit") { !failures.isEmpty }
         XCTAssertEqual(failures, ["Script took too long, so Openspot stopped it."])
         XCTAssertEqual(sheet.list.shown.count, 1)
@@ -224,7 +224,7 @@ final class SpotRunsCallTests: SpotRunsCase {
         try script(toml: "on = ['sheet.open']", "printf 'text=a\\ntitle=A\\n---\\n'\nsleep 5\ntouch '\(path("went-on"))'")
         let sheet = try sheet()
 
-        sheet.read()
+        sheet.show()
         try await wait("the row") { sheet.list.shown.count == 1 }
         try await allEnded()
 
@@ -235,7 +235,7 @@ final class SpotRunsCallTests: SpotRunsCase {
         try script(toml: "on = ['sheet.open']", "printf 'text=a\\ntitle=A\\n'")
         let sheet = try sheet()
 
-        sheet.read()
+        sheet.show()
 
         try await wait("the row") { sheet.list.shown.count == 1 && sheet.calls.isEmpty }
         try await wait("no process kept") { self.runs.processes.isEmpty }
@@ -250,7 +250,7 @@ final class SpotRunsCallTests: SpotRunsCase {
         let sheet = try sheet()
         sheet.open {}
         try await wait("the row") { sheet.list.shown.count == 1 && sheet.calls.isEmpty }
-        sheet.read(need: .change)
+        sheet.show(need: .change)
         XCTAssertFalse(sheet.calls.isEmpty)
 
         sheet.close()
@@ -285,7 +285,7 @@ final class SpotRunsCallTests: SpotRunsCase {
         sheet.press(try XCTUnwrap(sheet.panel?.parts.first))
         try await wait("the first frame") { sheet.panel?.parts.map(\.title) == ["half"] }
         let call = try XCTUnwrap(sheet.calls.first)
-        XCTAssertTrue(call.doesWork)
+        XCTAssertTrue(call.isAct)
         XCTAssertEqual(call.action.arguments, ["go"])
         sheet.close()
         runs.panelClosed()
@@ -339,7 +339,7 @@ final class SpotRunsCallTests: SpotRunsCase {
         sheet.open {}
 
         try await wait("the read") { sheet.panel?.parts.last?.title == "idle" }
-        XCTAssertEqual(sheet.calls.filter(\.doesWork).first?.fill, 0.5)
+        XCTAssertEqual(sheet.calls.filter(\.isAct).first?.fill, 0.5)
     }
 
     func testANewValueStopsTheOlderCallOfThatPartAndNoOther() async throws {

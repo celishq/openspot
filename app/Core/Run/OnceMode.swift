@@ -30,7 +30,7 @@ class OnceMode: ScriptMode {
         let made = call.made
         let id = run.spot.id
         let values = run.fieldValues
-        let (stream, halt, process) = runs.mode(of: run.spot).frames(of: run.spot, run.message(of: request, values: values), limit: request.limit, reason: request.reason?.rawValue, variables: [:], call: call, in: runs)
+        let (stream, halt, process) = runs.mode(of: run.spot).frames(of: run.spot, run.message(of: request, values: values), limit: request.limit, reason: request.event?.rawValue, variables: [:], call: call, in: runs)
         made.halt = halt
         asking.open(call, in: run)
         Task { [weak run, runs, asking] in
@@ -45,7 +45,7 @@ class OnceMode: ScriptMode {
                     guard !made.isStopped else { break }
                     guard let run else { continue }
                     await run.take(next.text, lines, of: call)
-                    if case .ask(.read) = request.purpose, lines.isPicture, !run.isWanted, !made.isStopped { run.stop(made) }
+                    if case .ask(.show) = request.purpose, lines.isPicture, !run.isWanted, !made.isStopped { run.stop(made) }
                 }
             } catch {
                 end = .failed(error)

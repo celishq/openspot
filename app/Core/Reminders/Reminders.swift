@@ -6,12 +6,12 @@ public struct Reminders {
 
     private let store: any ReminderStore
     private let clock: CalendarClock
-    private let isRead: Bool
+    private let isInShow: Bool
 
-    public init(store: any ReminderStore, now: Date = Date(), clock: Calendar = .current, locale: Locale = .current, isRead: Bool) {
+    public init(store: any ReminderStore, now: Date = Date(), clock: Calendar = .current, locale: Locale = .current, isInShow: Bool) {
         self.store = store
         self.clock = CalendarClock(now: now, calendar: clock, locale: locale)
-        self.isRead = isRead
+        self.isInShow = isInShow
     }
 
     public func due(days: Int, hiding hidden: [String]) async throws -> String {
@@ -57,7 +57,7 @@ public struct Reminders {
     }
 
     private func isAllowed() async throws -> Bool {
-        try await store.isAllowed(isRead: isRead, refusal: Self.refusal, pane: Self.pane)
+        try await store.isAllowed(isInShow: isInShow, refusal: Self.refusal, pane: Self.pane)
     }
 
     private static func text(_ rows: [TextBlock]) -> String {

@@ -65,7 +65,7 @@ final class FirstLaunchTests: XCTestCase {
         XCTAssertTrue(starting.contains("settings"))
         let scan = try SpotsFolder(url: spots, core: place.core, enabled: Set(starting)).scan()
         XCTAssertEqual(scan.refused, [])
-        XCTAssertFalse(scan.scripts.contains { $0.read?.seconds != nil })
+        XCTAssertFalse(scan.scripts.contains { $0.on?.seconds != nil })
     }
 
     func testWithNoCoreFolderNoSpotsStartOn() {

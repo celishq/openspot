@@ -81,7 +81,7 @@ apps() {
   find_apps
   awk -F'\t' 'NR == FNR { live[$0] = 1; next }
       { printf "%s\t%s\t\t%s\t%s\t%s\n", $2, $1, $2, ($2 in live ? "value=true" : "hides=quit"), ($2 ~ /^\/System\// ? "hides=uninstall" : "") }' "$live" "$found" |
-    openspot_rows
+    openspot_items
 }
 
 # Prints the sheet that asks which files of an app go to the Trash.
@@ -106,7 +106,7 @@ uninstall_sheet() {
   printf '%s\n' "$files" | while IFS= read -r path; do
     if chosen "$path"; then ticked=true; else ticked=false; fi
     where=$(dirname "$path" | sed "s#^$HOME#~#")
-    openspot_row "$path" "$(basename "$path")" "$where" "$path"
+    openspot_item "$path" "$(basename "$path")" "$where" "$path"
     openspot_kv value "$ticked"
   done
 }

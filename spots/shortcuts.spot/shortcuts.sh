@@ -8,7 +8,7 @@ app=/System/Applications/Shortcuts.app
 rows() {
   parent=''
   [ "$1" = none ] || parent="parent=$1"
-  shortcuts list --folder-name "$1" | LC_ALL=C tr -d '\t' | parent=$parent app=$app awk 'NF { printf "%s\t%s\t\t%s\t%s\n", $0, $0, ENVIRON["app"], ENVIRON["parent"] }' | openspot_rows
+  shortcuts list --folder-name "$1" | LC_ALL=C tr -d '\t' | parent=$parent app=$app awk 'NF { printf "%s\t%s\t\t%s\t%s\n", $0, $0, ENVIRON["app"], ENVIRON["parent"] }' | openspot_items
 }
 
 # Prints an item for each shortcut in no folder, then for each shortcut in each folder. It fails when Shortcuts gives no list.

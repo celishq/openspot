@@ -22,7 +22,7 @@ struct SpotView: View {
     }
 
     private var dots: [Dot] {
-        spot.rows.filter { $0["state"] != nil }.map { row in
+        spot.items.filter { $0["state"] != nil }.map { row in
             Dot(id: row.id, title: row["title"] ?? row.id, acts: Double(row["acts"] ?? "") ?? 0, cpu: Double(row["cpu"] ?? "") ?? 0, state: row["state"] ?? "")
         }
     }

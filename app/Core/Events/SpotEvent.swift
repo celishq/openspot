@@ -6,7 +6,7 @@ public enum SpotEvent: Equatable, Sendable {
     case sleep
     case clock
     case query(String)
-    case named(String, value: String?, readsEachSpot: Bool = false)
+    case named(String, value: String?, showsEachSpot: Bool = false)
 
     public static let frontApp = "app.front"
     public static let clipboard = "clipboard.change"

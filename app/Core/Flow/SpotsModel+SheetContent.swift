@@ -18,7 +18,7 @@ extension SpotsModel {
             selectedPart: { [weak self] in self?.sheets[id]?.selectedPart?.id },
             nudge: { [weak self] in self?.sheets[id]?.nudge ?? .rest },
             menuOpening: { [weak self] in self?.sheets[id]?.menuOpening },
-            work: { [weak self] in self?.work(of: $0) },
+            act: { [weak self] in self?.act(of: $0) },
             create: { [weak self] in self?.createAction }
         )
     }

@@ -29,8 +29,8 @@ public struct SpotFile: Equatable, Sendable {
             throw SpotError.fault("\(name) has an unknown key in \(section): \(key ?? "")")
         }
         let icon = Icon(text: manifest.icon).map { Self.placed($0, beside: url) }
-        let on = try SpotRead(on: manifest.on, of: name)
-        let read = on?.moments.isEmpty == false ? on : nil
+        let parsed = try ShowEvents(on: manifest.on, of: name)
+        let on = parsed?.moments.isEmpty == false ? parsed : nil
         if let word = manifest.emits.first(where: { !SpotEvent.isName($0) }) {
             throw SpotError.fault("\(name) has an unknown event in its emits: \(word). Write a word with a dot, such as emits = [\"music.track\"]")
         }
@@ -47,11 +47,11 @@ public struct SpotFile: Equatable, Sendable {
         let isGlobal = try Self.isGlobal(manifest.offers, of: name)
         let order = manifest.answers
         guard order == nil || order == "last" else { throw SpotError.fault("\(name) has an unknown answers: \(order ?? ""). Use answers = \"last\"") }
-        guard order == nil || on?.answers != nil else {
+        guard order == nil || parsed?.answers != nil else {
             throw SpotError.fault("\(name) has answers = \"last\", which needs search.text in its on, such as on = [\"search.text ^[0-9]\"]")
         }
-        let answers = order == nil ? on?.answers : on?.answers?.last()
-        let answersOnly = answers != nil && read == nil
+        let answers = order == nil ? parsed?.answers : parsed?.answers?.last()
+        let answersOnly = answers != nil && on == nil
         if let setting = manifest.settings.first(where: { ReservedSetting.isReserved($0.id) }) {
             throw SpotError.fault("\(name) has \(setting.section), a key that Openspot keeps for the person. Give the setting another name.")
         }
@@ -84,7 +84,7 @@ public struct SpotFile: Equatable, Sendable {
         guard manifest.starts == nil || starts != nil else {
             throw SpotError.fault("\(name) has an unknown starts: \(manifest.starts ?? ""). Use starts = \"first-launch\".")
         }
-        if isGlobal, read?.has(.panel) != true, read?.has(.sheet) != true, read?.seconds == nil {
+        if isGlobal, on?.has(.panel) != true, on?.has(.sheet) != true, on?.seconds == nil {
             throw SpotError.fault("\(name) needs panel.open, sheet.open or a clock in its on, such as on = [\"clock.60\"], to join the main search")
         }
         let isFound = !answersOnly && (offeredActions.isEmpty || isGlobal)
@@ -95,14 +95,14 @@ public struct SpotFile: Equatable, Sendable {
             kind: .list,
             icon: icon,
             subtitle: manifest.detail,
-            read: read,
+            on: on,
             isFound: isFound,
             answers: answers,
             mode: mode,
             drop: manifest.drop,
             isGlobal: isGlobal,
             dataName: SpotID(id).name,
-            isOnGrid: isFound && offers.isEmpty && read?.seconds == nil,
+            isOnGrid: isFound && offers.isEmpty && on?.seconds == nil,
             offers: offers,
             offeredActions: offeredActions,
             settings: manifest.settings.filter { Manifest.Setting.isKey($0.id) },

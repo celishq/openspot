@@ -190,7 +190,7 @@ case "$1" in
     printf 'button=editor\ntitle=Change default app\nscope=spot\nform=true\n\n'
     printf 'button=folder\ntitle=Change folder\nscope=spot\n\n'
     printf '%s' "$repos" | while IFS="$tab" read -r repo url; do
-      openspot_row "$repo" "${repo##*/}" "$(branch "$repo")" "$repo"
+      openspot_item "$repo" "${repo##*/}" "$(branch "$repo")" "$repo"
       [ -z "$url" ] || openspot_kv page "$url"
       own=$( [ -z "$url" ] || host "$url")
       index=0
@@ -206,7 +206,7 @@ case "$1" in
       case "$shown" in
         "$HOME"/*) shown="~${shown#"$HOME"}" ;;
       esac
-      openspot_row choose "No git repos in $shown" "Choose another folder" folder.badge.questionmark
+      openspot_item choose "No git repos in $shown" "Choose another folder" folder.badge.questionmark
     fi
     ;;
   open)

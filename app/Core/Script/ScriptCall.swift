@@ -27,7 +27,7 @@ public final class ScriptCall: Identifiable {
 
     nonisolated deinit {}
 
-    public var doesWork: Bool {
+    public var isAct: Bool {
         action.arguments.first != SpotAction.show.arguments.first
     }
 

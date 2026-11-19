@@ -23,7 +23,7 @@ draw() {
     if (low == "") { printf "devices\t–\tNo devices\t\tvalue=0\n"; exit }
     symbol = name ~ /AirPods/ ? "airpods" : name ~ /Keyboard/ ? "keyboard" : name ~ /Mouse/ ? "magicmouse" : "headphones"
     printf "devices\t%d%%\t%s\t%s\tvalue=%.2f\t%s\n", low, name, symbol, low / 100, (low <= 20 ? "tone=bad" : "")
-  }' | openspot_rows graph
+  }' | openspot_items graph
 }
 
 case $1 in

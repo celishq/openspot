@@ -13,7 +13,7 @@ public struct SheetContent {
     public let selectedPart: () -> String?
     public let nudge: () -> SheetParts.Nudge
     public let menuOpening: () -> SheetParts.MenuOpening?
-    public let work: (SpotPart) -> ScriptCall?
+    public let act: (SpotPart) -> ScriptCall?
     public let create: () -> CommandAction?
 
     @MainActor
@@ -30,14 +30,14 @@ public struct SheetContent {
         selectedPart = { page.selectedPart }
         nudge = { .rest }
         menuOpening = { nil }
-        work = { _ in nil }
+        act = { _ in nil }
         create = { nil }
     }
 
     init(
         panel: SheetParts?, list: ItemList, state: SpotState, form: FormDraft?, recording: String?, keys: KeyRecording,
         selection: @escaping () -> Int, selectedPart: @escaping () -> String?, nudge: @escaping () -> SheetParts.Nudge,
-        menuOpening: @escaping () -> SheetParts.MenuOpening?, work: @escaping (SpotPart) -> ScriptCall?, create: @escaping () -> CommandAction?
+        menuOpening: @escaping () -> SheetParts.MenuOpening?, act: @escaping (SpotPart) -> ScriptCall?, create: @escaping () -> CommandAction?
     ) {
         self.panel = panel
         self.list = list
@@ -51,7 +51,7 @@ public struct SheetContent {
         self.selectedPart = selectedPart
         self.nudge = nudge
         self.menuOpening = menuOpening
-        self.work = work
+        self.act = act
         self.create = create
     }
 }

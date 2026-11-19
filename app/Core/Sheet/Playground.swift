@@ -19,7 +19,7 @@ public struct Playground: Equatable, Sendable {
             name: file.lastPathComponent,
             url: file,
             kind: .list,
-            read: (try? SpotRead(on: manifest.on, of: file.lastPathComponent)) ?? nil,
+            on: (try? ShowEvents(on: manifest.on, of: file.lastPathComponent)) ?? nil,
             mode: manifest.mode.flatMap(SpotMode.init(rawValue:)).map { $0.stays ? .stay : .once } ?? .once
         )
     }

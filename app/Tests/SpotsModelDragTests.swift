@@ -621,12 +621,12 @@ final class SpotsModelDragTests: XCTestCase {
         await model.reload()
         try "Does a.".write(to: spots.appendingPathComponent("a.spot/readme.md"), atomically: true, encoding: .utf8)
 
-        model.push(FlowSheet(spot: AccountSheet.id, page: "publish:a"))
+        model.push(FlowSheet(spot: AccountSheet.id, route: "publish:a"))
         _ = try await model.runs.answer(of: model.account.spot, SpotAction(arguments: ["new"]), input: "route=publish:a\n", limit: 60)
         _ = try await model.runs.answer(of: model.account.spot, SpotAction(arguments: ["create"]), input: "route=publish:a\ninput.handle=tony\n", limit: 60)
 
         XCTAssertNotNil(try model.files.account.key())
-        XCTAssertNotEqual(model.flow.current?.page, "publish:a")
+        XCTAssertNotEqual(model.flow.current?.route, "publish:a")
         XCTAssertFalse(FileManager.default.fileExists(atPath: store.appendingPathComponent("a.spot").path))
         XCTAssertEqual(host.asked, [])
     }

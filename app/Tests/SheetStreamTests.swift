@@ -189,7 +189,7 @@ final class SheetStreamTests: XCTestCase {
 
         XCTAssertEqual(command?.mode, .stay)
         XCTAssertEqual(command?.kind, .list)
-        XCTAssertEqual(command?.readsState, false)
+        XCTAssertEqual(command?.showsState, false)
     }
 
     func testAPlainFirstReadOfAStayingScriptGivesItsFirstFrame() async throws {

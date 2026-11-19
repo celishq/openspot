@@ -1,5 +1,5 @@
 # The shell helper of Openspot. `. "$OPENSPOT_SH"` gives `esc`, `value`, `openspot_value`, `openspot_input`, `openspot_kv`,
-# `openspot_row`, `openspot_rows`, `openspot_serve`, `openspot_keep` and `openspot_paste`.
+# `openspot_item`, `openspot_items`, `openspot_serve`, `openspot_keep` and `openspot_paste`.
 # Loading starts `cat` once, and each function starts `sed`, `tr` or `awk` only above 1 KB, where a shell loop is too slow.
 
 # Whether the spot.toml beside the script says `mode = "stay"` for it, read with no process: its top level for the script
@@ -214,7 +214,7 @@ openspot_kv() {
 
 # Prints one item, a `text` block, after a blank line: its id and title, and its detail and icon when they are given, each
 # written for you (protocol: The calls). More lines of the item can follow with `openspot_kv`.
-openspot_row() {
+openspot_item() {
   printf '\n'
   openspot_kv text "$1"
   openspot_kv title "${2-}"
@@ -225,7 +225,7 @@ openspot_row() {
 # Prints an item for each line of stdin, a `text` block or one of the kind given, such as `switch`. A line holds its id, title, detail
 # and icon split by tabs, and after them any more `key=value` fields of the block. Each backslash is written for you, and an
 # empty field prints no line (protocol: The calls).
-openspot_rows() {
+openspot_items() {
   LC_ALL=C /usr/bin/sed 's/\\/\\\\/g' | LC_ALL=C /usr/bin/awk -F '\t' -v kind="${1:-text}" '
     NF {
       printf "\n%s=%s\n", kind, $1

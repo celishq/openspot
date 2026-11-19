@@ -2,7 +2,7 @@
 . "$OPENSPOT_SH"
 case "$1" in
   show)
-    openspot_row today Today
+    openspot_item today Today
     printf '\nbutton=trash\ntitle=Move to Trash\nshortcut=cmd+backspace\nconfirm=Press again to delete\n'
     ;;
   trash) rm -f "$OPENSPOT_DATA/$2" ;;

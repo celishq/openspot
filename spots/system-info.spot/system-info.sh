@@ -20,17 +20,17 @@ function symbol(name, part) {
 }
 {
   printf "device-%d\t%s%s\t%s%%\t%s\tvalue=%.2f\t%s\n", NR, $1, ($2 == "" ? "" : ", " tolower($2)), $3, symbol($1, $2), $3 / 100, ($3 <= 20 ? "tone=bad" : "")
-}' | openspot_rows text
+}' | openspot_items text
 
 printf 'section=cpu\ntitle=CPU\n\ntext=cpu-all\ntitle=All cores\nicon=cpu\n%s\n\n' "$(reading cpu.sh)"
 ps -Aco pcpu=,comm= -r | head -3 | awk '{
   cpu = $1; $1 = ""; sub(/^ /, "")
   printf "cpu-%d\t%s\t%s%%\n", NR, $0, cpu
-}' | openspot_rows text
+}' | openspot_items text
 
 printf 'section=memory\ntitle=Memory\n\ntext=memory-used\ntitle=Used\nicon=memorychip\n%s\n\n' "$(reading memory.sh)"
 printf 'text=swap\ntitle=Swap\ndetail=%s\n\n' "$(/usr/sbin/sysctl -n vm.swapusage | awk '{ mb = $6 + 0; print (mb >= 1024 ? sprintf("%.1f GB", mb / 1024) : sprintf("%d MB", mb)) }')"
 ps -Aco rss=,comm= -m | head -3 | awk '{
   kb = $1; $1 = ""; sub(/^ /, "")
   printf "memory-%d\t%s\t%s\n", NR, $0, (kb >= 1048576 ? sprintf("%.1f GB", kb / 1048576) : sprintf("%d MB", kb / 1024))
-}' | openspot_rows text
+}' | openspot_items text

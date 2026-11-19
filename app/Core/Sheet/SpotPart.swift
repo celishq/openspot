@@ -66,12 +66,12 @@ public struct SpotPart: Equatable, Sendable, Identifiable {
     public let mark: MetricValue?
     public private(set) var values: [String: [String]]
 
-    public private(set) var rows: [[String]] = []
+    public private(set) var items: [[String]] = []
 
-    func holding(rows: [[String]]) -> SpotPart {
-        guard isOpen, !rows.isEmpty else { return self }
+    func holding(items: [[String]]) -> SpotPart {
+        guard isOpen, !items.isEmpty else { return self }
         var part = self
-        part.rows = rows
+        part.items = items
         return part
     }
 

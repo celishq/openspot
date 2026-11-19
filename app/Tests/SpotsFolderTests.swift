@@ -281,8 +281,8 @@ final class SpotsFolderTests: XCTestCase {
         XCTAssertEqual(command.kind, .list)
         XCTAssertEqual(command.size, .wide)
         XCTAssertEqual(command.symbol, "app")
-        XCTAssertNil(command.read)
-        XCTAssertFalse(command.readsState)
+        XCTAssertNil(command.on)
+        XCTAssertFalse(command.showsState)
         XCTAssertEqual(command.pick, .close)
         XCTAssertFalse(command.isGlobal)
         XCTAssertEqual(command.mode, .once)
@@ -313,14 +313,14 @@ final class SpotsFolderTests: XCTestCase {
         let commands = try scan.spots
 
         XCTAssertEqual(commands.map(\.kind), [.list, .list, .list])
-        XCTAssertEqual(commands.map(\.readsState), [false, true, false])
+        XCTAssertEqual(commands.map(\.showsState), [false, true, false])
         XCTAssertTrue(commands[2].isGlobal)
     }
 
     func testReadIsAListOfPlacesBesideItsSeconds() throws {
         try write("a.sh", toml: "on = ['panel.open', 'sheet.open', 'clock.30']")
 
-        let read = try XCTUnwrap(try scan.spots.first?.read)
+        let read = try XCTUnwrap(try scan.spots.first?.on)
 
         XCTAssertEqual(read.moments, [.panel, .sheet, .every(30)])
         XCTAssertEqual(read.seconds, 30)
@@ -372,7 +372,7 @@ final class SpotsFolderTests: XCTestCase {
 
         XCTAssertEqual(scan.spots.map(\.id), ["a"])
         XCTAssertEqual(scan.spots.map(\.headerState.isOnGrid), [false])
-        XCTAssertEqual(scan.metrics.map(\.read?.seconds), [30])
+        XCTAssertEqual(scan.metrics.map(\.on?.seconds), [30])
     }
 
     func testASpotThatOffersSearchAndCardHasACard() throws {
@@ -401,7 +401,7 @@ final class SpotsFolderTests: XCTestCase {
         XCTAssertEqual(metric.id, "cups")
         XCTAssertEqual(metric.name, "Cups")
         XCTAssertEqual(metric.symbol, "cup.and.saucer")
-        XCTAssertEqual(metric.read?.seconds, 30)
+        XCTAssertEqual(metric.on?.seconds, 30)
     }
 
     func testAMetricIsAlsoAList() throws {
@@ -412,7 +412,7 @@ final class SpotsFolderTests: XCTestCase {
         XCTAssertEqual(scan.metrics.map(\.id), ["pulls"])
         XCTAssertEqual(scan.spots.map(\.id), ["pulls"])
         XCTAssertEqual(scan.spots.first?.kind, .list)
-        XCTAssertEqual(scan.spots.first?.readsState, false)
+        XCTAssertEqual(scan.spots.first?.showsState, false)
     }
 
     func testTheNewestFileComesFirstAndTheFolderSetsTheRest() throws {

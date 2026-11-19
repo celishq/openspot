@@ -3,12 +3,12 @@ import Foundation
 enum RouteCall: NounCall {
     case move(FlowMove, name: String)
 
-    private static let rule = CallRule(read: .changes("moves the panel"), flags: .needsApp)
+    private static let rule = CallRule(inShow: .changes("moves the panel"), flags: .needsApp)
 
     static let noun = CommandNoun("route", group: .build, verbs: [
         CommandVerb("push", "<route> [--title <words>] [--replace]", "Shows a route of the spot over the sheet that shows. --replace takes the place of the sheet that shows.", rule: rule) { words in
             guard let fit = words.fit, fit.rest.count == 1 else { return nil }
-            return Self.move(.push(spot: nil, page: fit.rest[0], title: fit.value("--title"), replace: fit.has("--replace")), name: "route push")
+            return Self.move(.push(spot: nil, route: fit.rest[0], title: fit.value("--title"), replace: fit.has("--replace")), name: "route push")
         },
         CommandVerb("back", "[--root]", "Goes back one sheet of the spot, or with --root to its first sheet.", rule: rule) { words in
             guard let fit = words.fit, fit.rest.isEmpty else { return nil }

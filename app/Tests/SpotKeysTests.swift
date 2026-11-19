@@ -184,7 +184,7 @@ final class SpotKeysTests: XCTestCase {
     }
 
     func testAFrameCopiesNoHeader() throws {
-        let spot = Spot(id: "a", name: "A", url: URL(fileURLWithPath: "/spots/a.sh"), read: .sheet, keywords: ["one", "two"])
+        let spot = Spot(id: "a", name: "A", url: URL(fileURLWithPath: "/spots/a.sh"), on: .sheet, keywords: ["one", "two"])
 
         let framed = spot.taking(SpotOutput(text: "frame=\ntitle=Open\ntext=x\ntitle=X\n"))
 

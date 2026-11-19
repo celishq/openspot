@@ -88,19 +88,19 @@ extension SpotsModel {
         }
 
         @MainActor public var isActive: Bool {
-            isOn || work != nil
+            isOn || act != nil
         }
 
         @MainActor public var shownState: SpotState {
             run?.shownState ?? fixedState
         }
 
-        @MainActor public var work: ScriptCall? {
-            run?.work.first
+        @MainActor public var act: ScriptCall? {
+            run?.acts.first
         }
 
         @MainActor public var stopsOnPress: Bool {
-            run?.cardWork != nil
+            run?.cardAct != nil
         }
 
         @MainActor public var soleCommand: String? {

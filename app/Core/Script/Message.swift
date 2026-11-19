@@ -4,7 +4,7 @@ public struct Message: Equatable, Sendable {
     static let argumentLimit = 65_536
 
     public var action: SpotAction
-    public var event: ReadReason?
+    public var event: ShowEvent?
     public var route: String?
     public var item: [TextBlock.Field]
     public var inputs: [TextBlock.Field]
@@ -13,7 +13,7 @@ public struct Message: Equatable, Sendable {
     public var given: String?
     public var settings: [TextBlock.Field]
 
-    public init(_ action: SpotAction, event: ReadReason? = nil, route: String? = nil, item: [TextBlock.Field] = [], inputs: [TextBlock.Field] = [], search: String? = nil, searchForms: [String] = [], given: String? = nil, settings: [TextBlock.Field] = []) {
+    public init(_ action: SpotAction, event: ShowEvent? = nil, route: String? = nil, item: [TextBlock.Field] = [], inputs: [TextBlock.Field] = [], search: String? = nil, searchForms: [String] = [], given: String? = nil, settings: [TextBlock.Field] = []) {
         self.action = action
         self.event = event
         self.route = route

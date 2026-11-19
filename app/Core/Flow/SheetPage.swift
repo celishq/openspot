@@ -2,7 +2,7 @@ import Foundation
 
 public struct SheetPage: Equatable, Sendable {
     public let spot: String
-    public let page: String?
+    public let route: String?
     public let state: SpotState
     public let list: ItemList
     public let panel: SheetParts?
@@ -18,7 +18,7 @@ public struct SheetPage: Equatable, Sendable {
     @MainActor
     init(run: SpotRun, rect: CGRect, query: String, recording: String? = nil, keyStatus: String? = nil) {
         spot = run.spot.id
-        page = run.page
+        route = run.route
         state = run.shownState
         list = run.list
         panel = run.panel

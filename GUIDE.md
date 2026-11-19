@@ -86,7 +86,7 @@ on = ["sheet.open"]
 #!/bin/sh
 . "$OPENSPOT_SH"
 case "$1" in
-  show) printf 'Mail\tMail\tYour inbox\tenvelope\nNotes\tNotes\tYour notes\tnote.text\n' | openspot_rows ;;
+  show) printf 'Mail\tMail\tYour inbox\tenvelope\nNotes\tNotes\tYour notes\tnote.text\n' | openspot_items ;;
   open) open -a "$2" ;;
 esac
 ```
@@ -119,7 +119,7 @@ pages = ["*"]
 route=$(value route)
 case "$route" in
   '') printf 'text=apple\ntitle=Apple\nroute=apple\n\ntext=pear\ntitle=Pear\nroute=pear\n' ;;
-  *) openspot_row "$route:color" "Color" "Green" ;;
+  *) openspot_item "$route:color" "Color" "Green" ;;
 esac
 ```
 
@@ -231,7 +231,7 @@ on = ["sheet.open"]
 . "$OPENSPOT_SH"
 case "$1" in
   show)
-    openspot_row today Today
+    openspot_item today Today
     printf '\nbutton=trash\ntitle=Move to Trash\nshortcut=cmd+backspace\nconfirm=Press again to delete\n'
     ;;
   trash) rm -f "$OPENSPOT_DATA/$2" ;;
@@ -255,7 +255,7 @@ on = ["sheet.open"]
 . "$OPENSPOT_SH"
 case "$1" in
   show)
-    openspot_row report Report.pdf
+    openspot_item report Report.pdf
     openspot_kv path "$HOME/Downloads/Report.pdf"
     printf '\nbutton=reveal\ntitle=Show in Finder\nshortcut=cmd+o\n'
     ;;
@@ -531,7 +531,7 @@ struct SpotView: View {
 
     var body: some View {
         HStack(alignment: .bottom, spacing: 8) {
-            ForEach(spot.rows) { row in
+            ForEach(spot.items) { row in
                 RoundedRectangle(cornerRadius: 4)
                     .fill(spot.accent)
                     .frame(width: 28, height: 16 * CGFloat(Int(row["cups"] ?? "") ?? 0))
@@ -548,7 +548,7 @@ struct SpotView: View {
 
 ![The sheet of Cups this week: three bars, a cup and a Done button over the rows Monday, Tuesday and Wednesday](docs/images/own-view.png)
 
-`spot.rows` holds each item with its keys, so the bars need no second copy of the data. In a sheet, Openspot draws the
+`spot.items` holds each item with its keys, so the bars need no second copy of the data. In a sheet, Openspot draws the
 items under the view, which the layout places. `spot.isShown` is false while the panel is hidden: stop a motion or a timer then, as the cup stops
 its pulse. `spot.close()` closes the sheet, as Esc does.
 

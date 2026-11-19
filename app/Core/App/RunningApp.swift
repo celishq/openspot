@@ -9,7 +9,7 @@ public protocol RunningApp: Sendable {
     func quit() async
     func apply(_ theme: Theme) async
     func open(_ id: String) async -> Bool
-    func push(_ id: String, page: String?, title: String?, replace: Bool) async -> Bool
+    func push(_ id: String, route: String?, title: String?, replace: Bool) async -> Bool
     func pop(_ id: String, all: Bool) async -> Bool
     func review(_ id: String) async -> Bool
     func act(_ act: CardAct, on id: String) async -> Bool

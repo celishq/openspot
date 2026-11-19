@@ -3,7 +3,7 @@ import Foundation
 extension SpotRuns {
     func answer(_ function: String, of spot: Spot, card: String, origin: String, until deadline: DispatchTime? = nil, later: @escaping @MainActor (String) -> Void) -> String? {
         let script = script(of: spot)
-        let call = InlineCall(arguments: [card, origin], function: function, limit: readLimit)
+        let call = InlineCall(arguments: [card, origin], function: function, limit: showLimit)
         script.send(call)
         let outcome = call.wait(until: deadline ?? .now() + frameWait) { outcome in
             let answer = Self.text(of: outcome)

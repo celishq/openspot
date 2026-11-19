@@ -8,24 +8,24 @@ extension SpotRuns {
         case .sleep: usage.flush()
         case .clock: updateClock()
         case .query(let text): ask(text)
-        case .named(let name, let value, let readsEachSpot): read(name, value, readsEachSpot: readsEachSpot)
+        case .named(let name, let value, let showsEachSpot): show(name, value, showsEachSpot: showsEachSpot)
         }
     }
 
-    public func panelOpened(readsToEnd: Bool = false) {
+    public func panelOpened(showsToEnd: Bool = false) {
         guard !hasQuit else { return }
-        openPanel(readsToEnd: readsToEnd)
+        openPanel(showsToEnd: showsToEnd)
     }
 
     public func launched() {
-        for sheet in sheets.values where sheet.spot.readsAtLaunch {
-            sheet.readToEnd(reason: ReadReason(event: SpotEvent.appLaunch, value: nil))
+        for sheet in sheets.values where sheet.spot.showsAtLaunch {
+            sheet.showToEnd(event: ShowEvent(event: SpotEvent.appLaunch, value: nil))
         }
     }
 
-    public func readOfferedRows() {
-        for sheet in sheets.values where sheet.spot.readsOfferedRows {
-            sheet.readToEnd()
+    public func showOfferedItems() {
+        for sheet in sheets.values where sheet.spot.showsOfferedItems {
+            sheet.showToEnd()
         }
     }
 
@@ -45,7 +45,7 @@ extension SpotRuns {
     }
 
     func watchLoad() {
-        let isWanted = sheets.values.contains { $0.isWanted && $0.spot.read?.has(.event(SpotEvent.systemLoad)) == true }
+        let isWanted = sheets.values.contains { $0.isWanted && $0.spot.on?.has(.event(SpotEvent.systemLoad)) == true }
         guard let source, isWanted, !hasQuit else {
             loadWatch?.cancel()
             loadWatch = nil
@@ -82,7 +82,7 @@ extension SpotRuns {
     }
 
     func watchClipboard(looksNow: Bool = false) {
-        let isWanted = sheets.values.contains { $0.isWanted && $0.spot.read?.has(.event(SpotEvent.clipboard)) == true }
+        let isWanted = sheets.values.contains { $0.isWanted && $0.spot.on?.has(.event(SpotEvent.clipboard)) == true }
         guard let source, isWanted, !hasQuit else {
             clipboardWatch?.cancel()
             clipboardWatch = nil
@@ -108,7 +108,7 @@ extension SpotRuns {
         }
     }
 
-    private func openPanel(readsToEnd: Bool = false) {
+    private func openPanel(showsToEnd: Bool = false) {
         let wasOpen = isPanelOpen
         isPanelOpen = true
         if !wasOpen { sheets.values.forEach { $0.panelOpened() } }
@@ -118,29 +118,29 @@ extension SpotRuns {
             watchClipboard(looksNow: true)
         }
         updateClock()
-        readPanel(toEnd: readsToEnd)
+        showPanel(toEnd: showsToEnd)
     }
 
-    private func readPanel(toEnd: Bool = false) {
-        for sheet in sheets.values where sheet.spot.read?.has(.panel) == true {
-            if toEnd { sheet.readToEnd(reason: .panel) } else { sheet.read(need: .moment, reason: .panel) }
+    private func showPanel(toEnd: Bool = false) {
+        for sheet in sheets.values where sheet.spot.on?.has(.panel) == true {
+            if toEnd { sheet.showToEnd(event: .panel) } else { sheet.show(need: .moment, event: .panel) }
         }
         sheets.values.forEach { $0.settleScript() }
     }
 
     private func wake() {
         let time = now()
-        for sheet in sheets.values where sheet.isWanted && sheet.spot.read?.seconds != nil {
-            sheet.clockRead = time
-            sheet.read(need: .clock, reason: .clock(sheet.spot.read?.seconds))
+        for sheet in sheets.values where sheet.isWanted && sheet.spot.on?.seconds != nil {
+            sheet.clockShown = time
+            sheet.show(need: .clock, event: .clock(sheet.spot.on?.seconds))
         }
         sheets.values.forEach { $0.settleScript() }
         updateClock()
     }
 
-    private func read(_ name: String, _ value: String?, readsEachSpot: Bool) {
-        for sheet in sheets.values where (readsEachSpot || sheet.isWanted) && sheet.spot.read?.admits(name, value: value) == true {
-            sheet.read(need: readsEachSpot ? .change : .clock, reason: ReadReason(event: name, value: value))
+    private func show(_ name: String, _ value: String?, showsEachSpot: Bool) {
+        for sheet in sheets.values where (showsEachSpot || sheet.isWanted) && sheet.spot.on?.admits(name, value: value) == true {
+            sheet.show(need: showsEachSpot ? .change : .clock, event: ShowEvent(event: name, value: value))
         }
     }
 

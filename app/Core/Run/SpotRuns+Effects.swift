@@ -20,7 +20,7 @@ extension SpotRuns {
             onReport("", .toast(text))
         case .select(let item):
             guard let open else { return false }
-            open.read(selecting: item, need: .change)
+            open.show(selecting: item, need: .change)
         case .route(let move):
             guard let open else { return false }
             onReport(open.spot.id, .move(move))

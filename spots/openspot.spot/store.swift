@@ -119,7 +119,7 @@ struct SpotView: View {
         let hasSample: Bool
         let words: String
 
-        init?(_ row: SpotRow) {
+        init?(_ row: SpotItem) {
             guard !row.id.isEmpty, let state = row["step"] else { return nil }
             (id, name, self.state, origin, detail, size) = (row.id, row["title"] ?? row.id, state, row["origin"] ?? "", row["detail"] ?? "", row["size"] ?? "")
             store = row["store"] ?? ""
@@ -147,7 +147,7 @@ struct SpotView: View {
     }
 
     var body: some View {
-        let all = spot.rows.compactMap(Item.init)
+        let all = spot.items.compactMap(Item.init)
         let items = kept(all)
         HStack(spacing: 0) {
             sidebar(all)

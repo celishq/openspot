@@ -44,7 +44,7 @@ public actor AccountSheet {
 
         var effect: SpotEffect {
             switch self {
-            case .push(let page): .route(.push(spot: nil, page: page.rawValue, title: nil, replace: false))
+            case .push(let page): .route(.push(spot: nil, route: page.rawValue, title: nil, replace: false))
             case .pop: .route(.pop(all: false))
             case .popAll: .route(.pop(all: true))
             }
@@ -67,7 +67,7 @@ public actor AccountSheet {
     public nonisolated var spot: Spot {
         Spot(
             id: Self.id, name: "Account", url: URL(fileURLWithPath: NSTemporaryDirectory()), kind: .list, icon: .symbol("person.crop.circle"),
-            subtitle: "Signs what you publish", read: .sheet, host: .account(self), isGlobal: true, dataName: "account",
+            subtitle: "Signs what you publish", on: .sheet, host: .account(self), isGlobal: true, dataName: "account",
             isOnGrid: false, view: Self.card, pages: Page.allCases.map(\.rawValue), uses: [.app, .account, .clipboard]
         ).builtIn()
     }

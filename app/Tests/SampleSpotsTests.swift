@@ -196,7 +196,7 @@ final class SampleSpotsTests: SampleSpotsCase {
 
         let lines = try await files.items(query: "a", timeout: 60)
 
-        XCTAssertEqual(files.read?.searchesSheet, true)
+        XCTAssertEqual(files.on?.searchesSheet, true)
         XCTAssertEqual(lines.items, [])
     }
 

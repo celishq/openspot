@@ -41,8 +41,8 @@ final class SpotCheckTests: XCTestCase {
         let findings = await SpotCheck(folder: SpotsFolder(url: folder)).findings()
 
         XCTAssertEqual(findings.map(\.fault), [
-            "the block text=a has a line with no =, as a value with a new line prints. Print each value from data with openspot_kv, openspot_row or esc",
-            "the block text=b has title twice, as a value with a new line prints. Print each value from data with openspot_kv, openspot_row or esc"
+            "the block text=a has a line with no =, as a value with a new line prints. Print each value from data with openspot_kv, openspot_item or esc",
+            "the block text=b has title twice, as a value with a new line prints. Print each value from data with openspot_kv, openspot_item or esc"
         ])
     }
 

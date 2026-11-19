@@ -117,18 +117,18 @@ final class SheetPartsTests: XCTestCase {
         let output = SpotOutput(text: "frame=\ngrid=gallery\ngrid=note\n\nview=gallery\nmode=all\n\ntext=a\ntitle=One\ntag=x\ntag=y\n\ntext=b\ndetail=two\\nlines\n\ntext=note\ntitle=Hi\n")
 
         let gallery = output.parts.first { $0.id == "gallery" }
-        XCTAssertEqual(gallery?.rows, [["text", "a", "title", "One", "tag", "x", "tag", "y"], ["text", "b", "detail", "two\nlines"]])
+        XCTAssertEqual(gallery?.items, [["text", "a", "title", "One", "tag", "x", "tag", "y"], ["text", "b", "detail", "two\nlines"]])
         XCTAssertEqual(gallery?.values, ["view": ["gallery"], "mode": ["all"]])
-        XCTAssertEqual(output.parts.first { $0.id == "note" }?.rows, [])
+        XCTAssertEqual(output.parts.first { $0.id == "note" }?.items, [])
         XCTAssertEqual(output.items.map(\.run), ["a", "b"])
     }
 
     func testTheRowsOfAFrameAreBuiltOnceForAllItsViewBlocks() {
         let output = SpotOutput(text: "frame=\ngrid=one\ngrid=two\n\nview=one\n\nview=two\n\ntext=a\ntitle=One\n\ntext=b\n")
 
-        let places = output.parts.map { $0.rows.withUnsafeBufferPointer { $0.baseAddress } }
+        let places = output.parts.map { $0.items.withUnsafeBufferPointer { $0.baseAddress } }
 
-        XCTAssertEqual(output.parts.map(\.rows.count), [2, 2])
+        XCTAssertEqual(output.parts.map(\.items.count), [2, 2])
         XCTAssertEqual(places[0], places[1])
     }
 
@@ -136,7 +136,7 @@ final class SheetPartsTests: XCTestCase {
         let output = SpotOutput(text: "frame=\ngrid=gallery\n\nview=gallery\nmode=all\n")
 
         XCTAssertEqual(output.parts.first?.values, ["view": ["gallery"], "mode": ["all"]])
-        XCTAssertEqual(output.parts.first?.rows, [])
+        XCTAssertEqual(output.parts.first?.items, [])
     }
 
     func testATextsToneColoursItsWordsAndAGaugeKeepsItsOwn() {

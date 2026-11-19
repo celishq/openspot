@@ -34,7 +34,7 @@ public struct Spot: Equatable, Sendable {
         symbol: String = "app",
         icon: Icon? = nil,
         subtitle: String? = nil,
-        read: SpotRead? = nil,
+        on: ShowEvents? = nil,
         pick: ItemPick = .close,
         isFound: Bool = true,
         answers: AnswerPattern? = nil,
@@ -64,7 +64,7 @@ public struct Spot: Equatable, Sendable {
         starts: SpotStart? = nil
     ) {
         header = Header(SpotFacts(
-            id: id, name: name, url: url, size: size, headerIcon: icon, baseSymbol: symbol, subtitle: subtitle, read: read,
+            id: id, name: name, url: url, size: size, headerIcon: icon, baseSymbol: symbol, subtitle: subtitle, on: on,
             isGlobal: isGlobal, isFound: isFound, answers: answers, order: order,
             host: host, growsFromField: growsFromField, mode: mode, drop: drop,
             dataName: dataName, isOnGrid: isOnGrid, view: view, viewDate: viewDate, sources: sources, emits: emits, pages: pages, uses: uses,
@@ -126,8 +126,8 @@ public struct Spot: Equatable, Sendable {
         image.map(FileIcon.image) ?? file.map(FileIcon.init(path:))
     }
 
-    public var read: SpotRead? {
-        header.facts.read
+    public var on: ShowEvents? {
+        header.facts.on
     }
 
     public var reachesAccountKey: Bool {
@@ -160,7 +160,7 @@ public struct Spot: Equatable, Sendable {
     }
 
     public var keepsHistory: Bool {
-        soleCommand != nil && !self.opensToKeys && self.read != nil
+        soleCommand != nil && !self.opensToKeys && self.on != nil
     }
 
     private var settingKeys: [SpotSettings.Key] {
@@ -181,7 +181,7 @@ public struct Spot: Equatable, Sendable {
             keys: settingKeys,
             isWindowByDefault: isWindow
         )
-        if self.read == nil, !self.offers.isEmpty {
+        if self.on == nil, !self.offers.isEmpty {
             spot.opensToKeys = true
         }
         return spot
@@ -197,7 +197,7 @@ public struct Spot: Equatable, Sendable {
             size: self.size,
             symbol: header.facts.baseSymbol,
             icon: self.icon,
-            read: .sheet,
+            on: .sheet,
             isFound: false,
             isOnGrid: false
         )
@@ -216,7 +216,7 @@ public struct Spot: Equatable, Sendable {
             size: owner.size,
             symbol: owner.header.facts.baseSymbol,
             icon: owner.icon,
-            read: self.read,
+            on: self.on,
             isFound: false,
             mode: self.mode,
             dataName: self.dataName,
@@ -261,17 +261,17 @@ public struct Spot: Equatable, Sendable {
         SpotState(title: self.name, subtitle: self.subtitle, isOnGrid: self.isOnGrid)
     }
 
-    public var readsState: Bool {
-        (self.read?.has(.panel) == true || self.read?.has(.event(SpotEvent.appLaunch)) == true) && !self.isGlobal && !self.mode.stays
+    public var showsState: Bool {
+        (self.on?.has(.panel) == true || self.on?.has(.event(SpotEvent.appLaunch)) == true) && !self.isGlobal && !self.mode.stays
     }
 
-    public var readsAtLaunch: Bool {
-        self.read?.has(.event(SpotEvent.appLaunch)) == true
+    public var showsAtLaunch: Bool {
+        self.on?.has(.event(SpotEvent.appLaunch)) == true
     }
 
-    public var readsOfferedRows: Bool {
-        guard let read = self.read else { return false }
-        return self.isGlobal && !read.has(.panel) && read.seconds == nil
+    public var showsOfferedItems: Bool {
+        guard let on = self.on else { return false }
+        return self.isGlobal && !on.has(.panel) && on.seconds == nil
     }
 
     public var canShowInMenuBar: Bool {
@@ -321,12 +321,12 @@ public struct Spot: Equatable, Sendable {
         command.pick = output.pick
         command.pickForm = output.pickForm
         command.keepsRecent = output.keepsRecent
-        if readsState { command.kind = output.kind }
+        if showsState { command.kind = output.kind }
         return command
     }
 
     public func state(of output: SpotOutput) throws -> SpotState {
-        guard readsState else { return headerState }
+        guard showsState else { return headerState }
         guard output.summary != nil || output.errors.isEmpty else { throw SpotError.badState }
         var state = SpotState(output: output, header: headerState)
         if self.view != nil { state = state.holding(output.view) }
@@ -348,8 +348,8 @@ public struct Spot: Equatable, Sendable {
         }
     }
 
-    public func takes(page: String) -> Bool {
-        self.pages.contains { fnmatch($0, page, 0) == 0 }
+    public func takes(route: String) -> Bool {
+        self.pages.contains { fnmatch($0, route, 0) == 0 }
     }
 
 }

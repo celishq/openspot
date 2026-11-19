@@ -57,7 +57,7 @@ final class AccountSheetTests: BuiltInCase {
     }
 
     private func push(_ page: String) -> SpotEffect {
-        .route(.push(spot: nil, page: page, title: nil, replace: false))
+        .route(.push(spot: nil, route: page, title: nil, replace: false))
     }
 
     private func block(_ id: String, in frame: String) -> [String: String] {
@@ -79,7 +79,7 @@ final class AccountSheetTests: BuiltInCase {
 
         XCTAssertEqual(spot.name, "Account")
         XCTAssertTrue(spot.isFound)
-        XCTAssertFalse(spot.read?.has(.panel) == true)
+        XCTAssertFalse(spot.on?.has(.panel) == true)
         XCTAssertTrue(spot.reachesAccountKey)
         XCTAssertEqual(spot.view, AccountSheet.card)
     }
@@ -195,7 +195,7 @@ final class AccountSheetTests: BuiltInCase {
     }
 
     func testAPageThatACallerNamesPublishesNothing() async throws {
-        XCTAssertFalse(try account.takes(page: "publish:evil"))
+        XCTAssertFalse(try account.takes(route: "publish:evil"))
 
         _ = try await frame(["new"], page: "publish:evil")
         let made = try await effects(["create"], input: "input.handle=tony\n", page: "publish:evil")

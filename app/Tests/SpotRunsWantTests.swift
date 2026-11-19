@@ -130,7 +130,7 @@ final class SpotRunsWantTests: SpotRunsCase {
         menuBar.insert("script")
         try script(toml: "on = ['clock.1']", "printf 'text=t\\ntitle=1\\n'")
         _ = try scanned()
-        try await wait("the first read") { self.log().count == 1 && !self.runs.isReading }
+        try await wait("the first read") { self.log().count == 1 && !self.runs.isShowing }
 
         time += 1
 
@@ -184,7 +184,7 @@ final class SpotRunsWantTests: SpotRunsCase {
         let stayer = try XCTUnwrap(runs.sheets["stayer"])
 
         stayer.pressKey("go")
-        try await wait("the call and the first read") { self.blocks().contains("arg=go") && self.blocks().filter { $0 == "arg=show" }.count == 1 && !self.runs.isReading }
+        try await wait("the call and the first read") { self.blocks().contains("arg=go") && self.blocks().filter { $0 == "arg=show" }.count == 1 && !self.runs.isShowing }
         time += 1
 
         try await wait("the read from the clock") { self.blocks().filter { $0 == "arg=show" }.count == 2 }

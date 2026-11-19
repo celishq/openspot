@@ -18,8 +18,8 @@ final class RemindersTests: XCTestCase {
         Reminder(id: id, title: title, due: due, isAllDay: allDay, list: family, doneAt: doneAt)
     }
 
-    private func reminders(_ store: FakeReminderStore, isRead: Bool = true) -> Reminders {
-        Reminders(store: store, now: at(9, 40), clock: clock, locale: Locale(identifier: "en_GB"), isRead: isRead)
+    private func reminders(_ store: FakeReminderStore, isInShow: Bool = true) -> Reminders {
+        Reminders(store: store, now: at(9, 40), clock: clock, locale: Locale(identifier: "en_GB"), isInShow: isInShow)
     }
 
     private func rows(_ text: String) -> [TextBlock] {
@@ -78,8 +78,8 @@ final class RemindersTests: XCTestCase {
         let text = try await reminders(store).due(days: 1, hiding: [])
         let id = try XCTUnwrap(rows(text).first?.value("text"))
 
-        let ticked = try await reminders(store, isRead: false).done(id, true)
-        let opened = try await reminders(store, isRead: false).done(id, false)
+        let ticked = try await reminders(store, isInShow: false).done(id, true)
+        let opened = try await reminders(store, isInShow: false).done(id, false)
 
         XCTAssertEqual(ticked, "")
         XCTAssertEqual(opened, "")
@@ -91,7 +91,7 @@ final class RemindersTests: XCTestCase {
 
         for id in ["reminder:gone", "event:late/1700000000", "late"] {
             do {
-                _ = try await reminders(store, isRead: false).done(id, true)
+                _ = try await reminders(store, isInShow: false).done(id, true)
                 XCTFail("\(id) was ticked")
             } catch SpotError.failed(1, let message) {
                 XCTAssertEqual(message, "Openspot cannot find \(id). Read the list again, and use the id of one of its rows.")
@@ -108,7 +108,7 @@ final class RemindersTests: XCTestCase {
 
         let refused = FakeReminderStore(reminders: [], access: .unasked, answer: .denied)
         do {
-            _ = try await reminders(refused, isRead: false).due(days: 1, hiding: [])
+            _ = try await reminders(refused, isInShow: false).due(days: 1, hiding: [])
             XCTFail("a refusal printed a list")
         } catch SpotError.failedWithFix(1, let message, let link) {
             XCTAssertEqual(refused.asks, 1)
