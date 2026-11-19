@@ -5,7 +5,7 @@ extension SpotsModel {
         keptStoreCards()[id]?.entry
     }
 
-    public func sample(_ id: String) async -> SpotOutput? {
+    public func sample(_ id: String) async -> Frame? {
         guard let item = storeItem(id) else { return nil }
         return await SpotSample.output(of: item, runs: runs)
     }

@@ -29,7 +29,7 @@ public struct SpotEvidence: Equatable, Sendable {
         }
         if count.cost.memory > 0 { facts.append("Its own process held at most \(count.cost.memory / 1_048_576) MB.") }
         if !undeclared.isEmpty {
-            facts.append("Calls that its header does not declare: " + undeclared.sorted { $0.key < $1.key }.map { "\($0.key) \($0.value) \($0.value == 1 ? "time" : "times")" }.joined(separator: ", ") + ".")
+            facts.append("Calls that its spot.toml does not declare: " + undeclared.sorted { $0.key < $1.key }.map { "\($0.key) \($0.value) \($0.value == 1 ? "time" : "times")" }.joined(separator: ", ") + ".")
         }
         let versions = Stats(days: days, spot: id, byVersion: true).rows
         if let last = versions.last, versions.count > 1 {
@@ -38,7 +38,7 @@ public struct SpotEvidence: Equatable, Sendable {
         }
         var goals: [String] = []
         if count.failures.count > 0 { goals.append("Make every call pass, and keep what works.") }
-        if !undeclared.isEmpty { goals.append("Declare each use in its header, or remove the call that needs it.") }
+        if !undeclared.isEmpty { goals.append("Declare each use in its spot.toml, or remove the call that needs it.") }
         self.id = id
         self.facts = facts
         self.app = app

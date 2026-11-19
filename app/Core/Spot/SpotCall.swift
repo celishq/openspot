@@ -10,7 +10,7 @@ public enum SpotCall: NounCall {
     case add(String?, isConfirmed: Bool)
     case remove(String)
     case open(String)
-    case push(String, page: String?, title: String?, replace: Bool)
+    case push(String, route: String?, title: String?, replace: Bool)
     case pop(String, all: Bool)
     case choose(String)
     case act(CardAct, String)
@@ -35,35 +35,35 @@ public enum SpotCall: NounCall {
         ) { $0.fit.flatMap(stats) },
         CommandVerb(
             "list", "[--core] [--json]",
-            "Prints a spot=<id> block for each spot that the app loads, with a button=<id> or field=<id> block for each of its own. --core prints each spot that comes with the app, and whether it is on. --json prints them as JSON, with their keys."
+            "Prints an item, a text=<id> block, for each spot that the app loads, with a button=<id> or field=<id> block for each of its own. --core prints each spot that comes with the app, and whether it is on. --json prints them as JSON, with their keys."
         ) { words in
             words.fit.flatMap { $0.rest.isEmpty ? Self.list(core: $0.has("--core"), form: $0.form) : nil }
         },
         CommandVerb(
             "add", "[git url | folder | file.spot] [--yes]",
             "Puts a spot in the spots folder, a git one at its newest commit, and records it in spots.lock. A source that spots.lock has already updates its spot. With no source, it adds each spot of spots.lock that is missing, at its commit. An update that adds a use needs --yes.",
-            rule: CallRule(use: .spots, used: "added a spot", read: .changes(folder))
+            rule: CallRule(use: .spots, used: "added a spot", inShow: .changes(folder))
         ) { words in
             guard let fit = words.fit, fit.rest.count <= 1 else { return nil }
             return Self.add(fit.rest.first, isConfirmed: fit.has("--yes"))
         },
-        CommandVerb("remove", "<id>", "Moves a spot that spot add added to the Trash, and drops it from spots.lock.", rule: CallRule(use: .spots, used: "removed a spot", read: .changes(folder))) { $0.one.map(Self.remove) },
-        CommandVerb("open", "<id> [--select]", "Opens the panel on a spot, as a new flow. --select only selects its card on the grid.", rule: CallRule(read: .changes(panel), flags: .needsApp)) { words in
+        CommandVerb("remove", "<id>", "Moves a spot that spot add added to the Trash, and drops it from spots.lock.", rule: CallRule(use: .spots, used: "removed a spot", inShow: .changes(folder))) { $0.one.map(Self.remove) },
+        CommandVerb("open", "<id> [--select]", "Opens the panel on a spot, as a new flow. --select only selects its card on the grid.", rule: CallRule(inShow: .changes(panel), flags: .needsApp)) { words in
             guard let fit = words.fit, fit.rest.count == 1 else { return nil }
             return fit.has("--select") ? Self.show(fit.rest[0]) : Self.open(fit.rest[0])
         },
-        CommandVerb("push", "<id> [page] [--replace] [--title <words>]", "Pushes a spot, or a page of it, over the flow that shows.", rule: CallRule(read: .changes(panel))) { $0.fit.flatMap(push) },
-        CommandVerb("pop", "<id> [--all]", "Goes back one sheet of a spot that shows, or to its first sheet.", rule: CallRule(read: .changes("moves the panel"))) { words in
+        CommandVerb("push", "<id> [page] [--replace] [--title <words>]", "Pushes a spot, or a page of it, over the flow that shows.", rule: CallRule(inShow: .changes(panel))) { $0.fit.flatMap(push) },
+        CommandVerb("pop", "<id> [--all]", "Goes back one sheet of a spot that shows, or to its first sheet.", rule: CallRule(inShow: .changes("moves the panel"))) { words in
             guard let fit = words.fit, fit.rest.count == 1 else { return nil }
             return Self.pop(fit.rest[0], all: fit.has("--all"))
         },
-        CommandVerb("choose", "<id>", "Asks for files and drops them on a spot that takes them.", rule: CallRule(read: .changes(window))) { $0.one.map(Self.choose) },
-        act(.settings, "Opens the Settings of a spot, as the row of a card's menu does.", rule: CallRule(read: .changes(window))),
-        act(.edit, "Opens the file of a spot to edit, as the row of a card's menu does.", rule: CallRule(use: .spots, used: "opened the file of a spot", read: .changes(window))),
-        act(.prompt, "Copies a prompt to change a spot, as the row of a card's menu does.", rule: CallRule(use: .spots, used: "copied a prompt to change a spot", read: .changes(window))),
-        act(.share, "Shares a spot, as the row of a card's menu does.", rule: CallRule(use: .spots, used: "shared a spot", read: .changes(window))),
-        act(.delete, "Deletes a spot, as the row of a card's menu does.", rule: CallRule(use: .spots, used: "deleted a spot", read: .changes(folder))),
-        CommandVerb("review", "<id>", "Shows the whole text of a spot that comes with the app, and what of it runs by itself.", rule: CallRule(read: .changes(panel), flags: .needsApp)) { $0.one.map(Self.review) }
+        CommandVerb("choose", "<id>", "Asks for files and drops them on a spot that takes them.", rule: CallRule(inShow: .changes(window))) { $0.one.map(Self.choose) },
+        act(.settings, "Opens the Settings of a spot, as the row of a card's menu does.", rule: CallRule(inShow: .changes(window))),
+        act(.edit, "Opens the file of a spot to edit, as the row of a card's menu does.", rule: CallRule(use: .spots, used: "opened the file of a spot", inShow: .changes(window))),
+        act(.prompt, "Copies a prompt to change a spot, as the row of a card's menu does.", rule: CallRule(use: .spots, used: "copied a prompt to change a spot", inShow: .changes(window))),
+        act(.share, "Shares a spot, as the row of a card's menu does.", rule: CallRule(use: .spots, used: "shared a spot", inShow: .changes(window))),
+        act(.delete, "Deletes a spot, as the row of a card's menu does.", rule: CallRule(use: .spots, used: "deleted a spot", inShow: .changes(folder))),
+        CommandVerb("review", "<id>", "Shows the whole text of a spot that comes with the app, and what of it runs by itself.", rule: CallRule(inShow: .changes(panel), flags: .needsApp)) { $0.one.map(Self.review) }
     ])
 
     private static func act(_ act: CardAct, _ about: String, rule: CallRule) -> CommandVerb {
@@ -80,7 +80,7 @@ public enum SpotCall: NounCall {
 
     private static func push(_ words: CommandForm.Words) -> SpotCall? {
         guard let id = words.rest.first, words.rest.count <= 2 else { return nil }
-        return .push(id, page: words.rest.dropFirst().first, title: words.value("--title"), replace: words.has("--replace"))
+        return .push(id, route: words.rest.dropFirst().first, title: words.value("--title"), replace: words.has("--replace"))
     }
 
     func work(in context: CallContext) -> CommandAPI.Work? {
@@ -96,7 +96,7 @@ public enum SpotCall: NounCall {
         case .add(nil, let isConfirmed): spots.restore(isConfirmed: isConfirmed)
         case .remove(let id): spots.remove(id)
         case .open(let id): spots.open(id)
-        case .push(let id, let page, let title, let replace): spots.push(id, page: page, title: title, replace: replace)
+        case .push(let id, let route, let title, let replace): spots.push(id, route: route, title: title, replace: replace)
         case .pop(let id, let all): spots.pop(id, all: all)
         case .choose(let id): spots.choose(for: id)
         case .act(let act, let id): spots.act(act, id)

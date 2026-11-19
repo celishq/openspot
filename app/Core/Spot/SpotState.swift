@@ -36,8 +36,8 @@ public struct SpotState: Equatable, Sendable {
         self.face = face
     }
 
-    public init(output: SpotOutput, header: SpotState) {
-        let block = output.summary
+    public init(output: Frame, header: SpotState) {
+        let block = output.root
         let control = output.control
         var on: Bool?
         if case .toggle(let value)? = control?.control { on = value }
@@ -62,7 +62,7 @@ public struct SpotState: Equatable, Sendable {
         return SpotState(title: title, subtitle: subtitle, on: on, level: level, min: self.min, max: self.max, isOnGrid: isOnGrid, values: values, control: control, face: face)
     }
 
-    public func taking(_ output: SpotOutput) -> SpotState {
+    public func taking(_ output: Frame) -> SpotState {
         var on = self.on
         var level = self.level
         let part = output.parts.first { $0.id == control }

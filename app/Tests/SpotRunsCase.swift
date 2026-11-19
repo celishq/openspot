@@ -40,15 +40,19 @@ class SpotRunsCase: XCTestCase {
     }
 
     @discardableResult
-    func script(_ name: String = "script", header: String = "", log: String = "log", _ body: String = "") throws -> URL {
+    func script(_ name: String = "script", toml: String = "", log: String = "log", _ body: String = "") throws -> URL {
         let url = folder.spotFile(name)
-        try TestSpot(header: header, body: "echo $$ >> '\(path("pids"))'\necho \"$*\" >> '\(path(log))'\n\(body)").write(to: url)
+        try TestSpot(toml: toml, body: "echo $$ >> '\(path("pids"))'\necho \"$*\" >> '\(path(log))'\n\(body)").write(to: url)
         return url
     }
 
     @discardableResult
     func script(body: String) throws -> URL {
-        try script("script", header: "", body)
+        try script("script", toml: "", body)
+    }
+
+    func takeCalls() {
+        runs.api = CommandAPI(mac: Mac(), places: .test(["OPENSPOT_CONFIG": folder.path]), app: FakeRunningApp(), runs: runs, rates: .offline)
     }
 
     func scanned() throws -> ScanResult {
@@ -94,8 +98,8 @@ class SpotRunsCase: XCTestCase {
     }
 
     @discardableResult
-    func staying(header: String = "mode=stay\noffers=card\noffers=menubar", head: String = "", frame: String = "row=a\\ntitle=A\\n") throws -> URL {
-        try script(header: header, """
+    func staying(toml: String = "mode = 'stay'", head: String = "", frame: String = "text=a\\ntitle=A\\n") throws -> URL {
+        try script(toml: toml, """
         trap 'touch "\(path("ended"))"' EXIT
         while IFS= read -r line; do
           printf '%s\\n' "$line" >> '\(path("blocks"))'
@@ -108,7 +112,7 @@ class SpotRunsCase: XCTestCase {
     func blocks(ids: Bool = false) -> [String] {
         let text = (try? String(contentsOfFile: path("blocks"), encoding: .utf8)) ?? ""
         return text.components(separatedBy: "\n\n").filter { !$0.isEmpty }.map { block in
-            ids ? block : block.split(separator: "\n").filter { !$0.hasPrefix("call=") && !$0.hasPrefix("env.") }.joined(separator: "\n")
+            ids ? block : block.split(separator: "\n").filter { line in !["call=", "event=", "event.value=", "route=", "setting."].contains { line.hasPrefix($0) } }.joined(separator: "\n")
         }
     }
 

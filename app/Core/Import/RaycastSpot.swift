@@ -34,28 +34,29 @@ public struct RaycastSpot: Sendable {
         !script.arguments.isEmpty || script.mode == .fullOutput
     }
 
-    var header: [String] {
-        var lines = ["title=\(Self.value(script.title))"]
-        lines.append("icon=\(Self.value(icon))")
-        if let description = script.description { lines.append("detail=\(Self.value(description))") }
-        if let package = script.package { lines.append("keywords=\(Self.value(package))") }
-        if let first = script.arguments.first, !first.placeholder.isEmpty { lines.append("placeholder=\(Self.value(first.placeholder))") }
+    var manifest: ConfigDocument {
+        var manifest = ConfigDocument()
+        manifest.set("title", to: .string(Self.value(script.title)))
+        manifest.set("icon", to: .string(Self.value(icon)))
+        if let description = script.description { manifest.set("detail", to: .string(Self.value(description))) }
+        if let package = script.package { manifest.set("keywords", to: .strings([Self.value(package)])) }
+        if let first = script.arguments.first, !first.placeholder.isEmpty { manifest.set("placeholder", to: .string(Self.value(first.placeholder))) }
         if script.mode == .inline, let seconds = script.refreshSeconds {
-            lines += ["on=panel.open", "on=clock.\(seconds)", "offers=card", "offers=menubar"]
+            manifest.set("on", to: .strings(["panel.open", "clock.\(seconds)"]))
         } else if hasSheet {
-            lines.append("on=sheet.open")
-        } else if script.confirms {
-            lines += ["", "button=run", "title=\(Self.value(script.title))", "confirm=Press again to run \(Self.value(script.title))"]
+            manifest.set("on", to: .strings(["sheet.open"]))
+        } else {
+            var run: [(String, ConfigDocument.Value?)] = [("title", .string(Self.value(script.title)))]
+            if script.confirms { run.append(("confirm", .string("Press again to run \(Self.value(script.title))"))) }
+            manifest.sections.append(ConfigDocument.Table("commands.run", run))
         }
-        return lines
+        return manifest
     }
 
     public var text: String {
-        let header = header.map { $0.isEmpty ? "#" : "# \($0)" }.joined(separator: "\n")
         let place = script.directory.map { ($0 as NSString).expandingTildeInPath } ?? source.deletingLastPathComponent().path
         return """
         #!/bin/sh
-        \(header)
         . "$OPENSPOT_SH"
         script="$(dirname "$0")"/\(Self.quoted(copy))
         place=\(Self.quoted(place))
@@ -84,6 +85,7 @@ public struct RaycastSpot: Sendable {
         try manager.createDirectory(at: staging.appendingPathComponent(Self.folder), withIntermediateDirectories: true)
         let wrapper = staging.appendingPathComponent("\(name).sh")
         try text.write(to: wrapper, atomically: true, encoding: .utf8)
+        try manifest.text.write(to: staging.appendingPathComponent(Manifest.fileName), atomically: true, encoding: .utf8)
         try manager.setAttributes([.posixPermissions: 0o755], ofItemAtPath: wrapper.path)
         let original = staging.appendingPathComponent(copy)
         try manager.copyItem(at: source.resolvingSymlinksInPath(), to: original)

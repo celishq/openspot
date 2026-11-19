@@ -28,8 +28,8 @@ final class SpotUsesTests: SpotRunsCase {
         try await super.tearDown()
     }
 
-    private func lister(header: String = "") throws {
-        try script(header: header, "OPENSPOT_CONFIG='\(config.path)' '\(client.path)' setting list > /dev/null && echo done >> '\(path("done"))'")
+    private func lister(toml: String = "") throws {
+        try script(toml: toml, "OPENSPOT_CONFIG='\(config.path)' '\(client.path)' setting list > /dev/null && echo done >> '\(path("done"))'")
     }
 
     private func press() async throws {
@@ -50,14 +50,14 @@ final class SpotUsesTests: SpotRunsCase {
         try await press()
         try await pause()
 
-        XCTAssertEqual(toasts, ["Script read the settings of each spot without `uses=spots` in its header. Add it to stop this note."])
+        XCTAssertEqual(toasts, ["Script read the settings of each spot without `spots` in the `uses` of its spot.toml. Add it to stop this note."])
         time += 24 * 60 * 60
         try await press()
         try await wait("the toast of the next day") { self.toasts.count == 2 }
     }
 
     func testADeclaredUseShowsNoToast() async throws {
-        try lister(header: "uses=spots")
+        try lister(toml: "uses = ['spots']")
         _ = try scanned()
 
         try await press()
@@ -81,8 +81,8 @@ final class SpotUsesTests: SpotRunsCase {
         XCTAssertEqual(toasts, [])
     }
 
-    private func caller(header: String = "", _ words: String) throws {
-        try script(header: header, "OPENSPOT_CONFIG='\(config.path)' '\(client.path)' \(words) > /dev/null 2> '\(path("errors"))'; echo $? >> '\(path("done"))'")
+    private func caller(toml: String = "", _ words: String) throws {
+        try script(toml: "\(toml)\n\(TestSpot.command)", "OPENSPOT_CONFIG='\(config.path)' '\(client.path)' \(words) > /dev/null 2> '\(path("errors"))'; echo $? >> '\(path("done"))'")
     }
 
     private func pressed() async throws -> (code: String, errors: String) {
@@ -91,7 +91,7 @@ final class SpotUsesTests: SpotRunsCase {
     }
 
     func testASpotOfThePersonThatNamesTheAccountUseCannotPublish() async throws {
-        try caller(header: "uses=account", "store publish script")
+        try caller(toml: "uses = ['account']", "store publish script")
         let found = try scanned()
 
         let (code, errors) = try await pressed()
@@ -102,7 +102,7 @@ final class SpotUsesTests: SpotRunsCase {
     }
 
     func testASpotCannotChangeCarefulMode() async throws {
-        try caller(header: "uses=app", "setting set --spot openspot careful false")
+        try caller(toml: "uses = ['app']", "setting set --spot openspot careful false")
         _ = try scanned()
 
         let (code, errors) = try await pressed()
@@ -120,7 +120,7 @@ final class SpotUsesTests: SpotRunsCase {
         let (code, errors) = try await pressed()
 
         XCTAssertEqual(code, "1")
-        XCTAssertEqual(errors, "Careful mode stopped Script, because it read the settings of each spot without `uses=spots` in its header. Add it, or turn Careful mode off.\n")
+        XCTAssertEqual(errors, "Careful mode stopped Script, because it read the settings of each spot without `spots` in the `uses` of its spot.toml. Add it, or turn Careful mode off.\n")
         XCTAssertEqual(toasts, [])
     }
 
@@ -146,7 +146,7 @@ final class SpotUsesTests: SpotRunsCase {
 
     func testInCarefulModeADeclaredUseRuns() async throws {
         runs.isCareful = true
-        try caller(header: "uses=spots", "setting list")
+        try caller(toml: "uses = ['spots']", "setting list")
         _ = try scanned()
 
         let (code, _) = try await pressed()
@@ -155,17 +155,17 @@ final class SpotUsesTests: SpotRunsCase {
     }
 
     func testASpotThatClosesItsChannelIsStillKnownByItsProcessGroup() async throws {
-        try script(header: "", "OPENSPOT_CONFIG='\(config.path)' /bin/bash -c \"exec 11>&-; '\(client.path)' setting list\" > /dev/null && echo done >> '\(path("done"))'")
+        try script(toml: "", "OPENSPOT_CONFIG='\(config.path)' /bin/bash -c \"exec 11>&-; '\(client.path)' setting list\" > /dev/null && echo done >> '\(path("done"))'")
         _ = try scanned()
 
         try await press()
 
         try await wait("the toast") { !self.toasts.isEmpty }
-        XCTAssertEqual(toasts, ["Script read the settings of each spot without `uses=spots` in its header. Add it to stop this note."])
+        XCTAssertEqual(toasts, ["Script read the settings of each spot without `spots` in the `uses` of its spot.toml. Add it to stop this note."])
     }
 
     func testAChildThatOutlivesItsSpotsProcessIsStillTheSpot() async throws {
-        try script(header: "", "( \(untilRelease); OPENSPOT_CONFIG='\(config.path)' '\(client.path)' setting list > /dev/null; echo done >> '\(path("done"))' ) > /dev/null 2>&1 &")
+        try script(toml: TestSpot.command, "( \(untilRelease); OPENSPOT_CONFIG='\(config.path)' '\(client.path)' setting list > /dev/null; echo done >> '\(path("done"))' ) > /dev/null 2>&1 &")
         _ = try scanned()
         try XCTUnwrap(runs.sheets["script"]).pressCard()
         try await wait("the start of the call") { self.log().count == 1 }
@@ -178,18 +178,18 @@ final class SpotUsesTests: SpotRunsCase {
     }
 
     func testAReadIsKnownFromTheAppsRecordAndNotFromTheVariables() async throws {
-        try script(header: "on=sheet.open", "OPENSPOT_CONFIG='\(config.path)' /usr/bin/env -u OPENSPOT_REASON '\(client.path)' spot remove other > /dev/null 2> '\(path("errors"))'; echo $? >> '\(path("done"))'")
+        try script(toml: "", "OPENSPOT_CONFIG='\(config.path)' /usr/bin/env '\(client.path)' spot remove other > /dev/null 2> '\(path("errors"))'; echo $? >> '\(path("done"))'")
         let sheet = try sheet()
         runs.panelOpened()
 
         sheet.open {}
 
         try await wait("the read") { self.log("done").count == 1 }
-        XCTAssertEqual(try String(contentsOfFile: path("errors"), encoding: .utf8), "`openspot spot remove` changes your spots folder, so it cannot run in a read. Run it from a pick or an action.\n")
+        XCTAssertEqual(try String(contentsOfFile: path("errors"), encoding: .utf8), "`openspot spot remove` changes your spots folder, so it cannot run in a show. Run it from a pick or an action.\n")
     }
 
     func testAnUnknownUseRefusesTheSpot() throws {
-        try script(header: "uses=camera")
+        try script(toml: "uses = ['camera']")
 
         XCTAssertEqual(try SpotsFolder(url: folder).scan().refused.map(\.reason), [
             "Script has an unknown use in its uses: camera. Use app, spots, screen, clipboard, calendar, power, network or files"

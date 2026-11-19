@@ -1,15 +1,7 @@
 #!/bin/sh
-# title=Usage
-# keywords=Running spots, statistics
-# icon=gauge.with.dots.needle.33percent
-# detail=Use and cost of each spot
-# on=sheet.open
-# view=chart.swift
-# offers=card
-# pages=spot:*
-# uses=spots,clipboard
 
 here=$(dirname "$0")
+. "$OPENSPOT_SH"
 
 # Prints the change of spot $1 since its last version against the versions before it.
 change() {
@@ -21,14 +13,15 @@ page() {
   openspot spot stats --days 14 | awk -v want="$1" -v change="$(change "$1")" -f "$here/stats.awk" -f "$here/page.awk"
 }
 
-case "$OPENSPOT_PAGE" in
+route=$(value route)
+case "$route" in
   spot:*)
-    id=${OPENSPOT_PAGE#spot:}
+    id=${route#spot:}
     case "$1" in
       open) exec openspot spot open "$id" ;;
       settings) exec openspot spot settings "$id" ;;
       improve) exec openspot spot edit "$id" ;;
-      delete) openspot spot delete "$id" && printf 'pop=true\n' ; exit ;;
+      delete) openspot spot delete "$id" && openspot route back; exit ;;
     esac
     page "$id"
     exit
@@ -41,19 +34,19 @@ case "$1" in
     case "$2" in
       search:*)
         openspot prompt new "A spot for what I search in Openspot as \"${2#search:}\", which finds nothing yet" | openspot clipboard copy || exit 1
-        printf 'toast=Prompt copied. Paste it into your agent.\n'
+        openspot toast 'Prompt copied. Paste it into your agent.'
         exit
         ;;
     esac
     ;;
-  chart) printf 'push=spot:%s\npush.title=%s\n' "$2" "$(openspot spot stats --days 14 --spot "$2" | sed -n 's/^title=//p' | head -n 1)"; exit ;;
+  chart) openspot route push "spot:$2" --title "$(openspot spot stats --days 14 --spot "$2" | sed -n 's/^title=//p' | head -n 1)"; exit ;;
 esac
 
 frame=$(openspot spot stats --days 14) || exit 1
 
-# Prints the sheet: the chart, then the rows that list.awk orders.
-printf '%s\n' "$frame" | awk -f "$here/stats.awk" -f "$here/list.awk" | sort -t "$(printf '\t')" -k1,1n -k2,2 | {
-  printf 'grid=chart\ngrid=chart\ngrid=chart\ngrid=chart\ngrid=spots\ngrid.small=top\nrecents=false\n\n'
+# Prints the sheet: the chart, then the items that list.awk orders.
+printf '%s\n' "$frame" | awk -f "$here/stats.awk" -f "$here/list.awk" | sort -t "$(printf '\t')" -k1,1n -k2,2n | {
+  printf 'frame=\ngrid=chart\ngrid=chart\ngrid=chart\ngrid=chart\ngrid=spots\ngrid.small=top\nrecents=false\n\n'
   printf 'view=chart\ngrow=false\n\n'
   first=1
   while IFS="$(printf '\t')" read -r _ _ block; do

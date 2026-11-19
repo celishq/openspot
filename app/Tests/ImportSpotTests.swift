@@ -56,12 +56,16 @@ final class ImportSpotTests: BuiltInCase {
         try RaycastExport.file(RaycastExport.testPayload, passphrase: "openspot-test").write(to: export)
         let real = tools.appendingPathComponent("openspot-real")
         try FileManager.default.moveItem(at: tools.appendingPathComponent("openspot"), to: real)
-        try fake("openspot", "echo \"$*\" >> '\(log.path)'\ncase \"$1 $2\" in 'spot open'|'spot push'|'spot choose') exit 0 ;; 'store get') echo \"Turned on $3.\"; exit 0 ;; 'clipboard copy') cat > '\(copied.path)'; exit 0 ;; esac\nexec '\(real.path)' \"$@\"")
+        try fake("openspot", "echo \"$*\" >> '\(log.path)'\n[ \"$1\" = toast ] && exit 0\ncase \"$1 $2\" in 'spot open'|'spot push'|'spot choose') exit 0 ;; 'store get') echo \"Turned on $3.\"; exit 0 ;; 'clipboard copy') cat > '\(copied.path)'; exit 0 ;; esac\nexec '\(real.path)' \"$@\"")
     }
 
     private func answer(_ arguments: [String], page: String? = nil, input: String? = nil) async throws -> String {
-        let action = arguments == ["read"] ? SpotAction.read : SpotAction(arguments: arguments)
-        return try await runs.answer(of: try sheet, action, input: input, limit: 60, variables: page.map { ["OPENSPOT_PAGE": $0] } ?? [:])
+        let route = page.map { "route=\($0)\n" } ?? ""
+        return try await runs.answer(of: try sheet, SpotAction(arguments: arguments), input: route + (input ?? ""), limit: 60)
+    }
+
+    private func toast() throws -> String? {
+        try calls().last { $0.hasPrefix("toast ") }.map { String($0.dropFirst(6)) }
     }
 
     private func blocks(_ text: String) -> [TextBlock] {
@@ -69,7 +73,8 @@ final class ImportSpotTests: BuiltInCase {
     }
 
     private func rows(_ text: String) -> [String] {
-        blocks(text).compactMap { $0.value("row") }
+        let placed = Set(blocks(text).first { $0.fields.first?.key == "frame" }?.values("grid").flatMap { $0.split(separator: " ").map(String.init) } ?? [])
+        return blocks(text).compactMap { $0.value("text") }.filter { !placed.contains($0) }
     }
 
     private func block(_ id: String, in text: String) -> TextBlock? {
@@ -81,18 +86,18 @@ final class ImportSpotTests: BuiltInCase {
     }
 
     func testTheHubHasARowForEachSourceThatOpensItsPage() async throws {
-        let text = try await answer(["read"])
+        let text = try await answer(["show"])
 
         XCTAssertEqual(rows(text), ["scripts", "export", "analogs", "extensions"])
-        XCTAssertEqual(block("scripts", in: text)?.value("push"), "scripts")
-        XCTAssertEqual(block("export", in: text)?.value("push"), "export")
-        XCTAssertEqual(blocks(text).first?.value("search"), "off")
+        XCTAssertEqual(block("scripts", in: text)?.value("route"), "scripts")
+        XCTAssertEqual(block("export", in: text)?.value("route"), "export")
+        XCTAssertEqual(blocks(text).first?.fields.first?.key, "frame")
         XCTAssertFalse(text.contains("button="), text)
     }
 
     func testEachPageSaysWhereToFindItsSourceInRaycast() async throws {
-        let scriptsPage = try await answer(["read"], page: "scripts")
-        let exportPage = try await answer(["read"], page: "export")
+        let scriptsPage = try await answer(["show"], page: "scripts")
+        let exportPage = try await answer(["show"], page: "export")
 
         XCTAssertTrue(block("where", in: scriptsPage)?.value("detail")?.contains("Settings → Extensions → Script Commands") == true, scriptsPage)
         XCTAssertEqual(block("choose", in: scriptsPage)?.value("title"), "Choose Folder…")
@@ -104,12 +109,12 @@ final class ImportSpotTests: BuiltInCase {
         _ = try await answer(["choose"], page: "scripts")
         _ = try await answer(["drop", scripts.path])
         _ = try await answer(["drop", export.path])
-        let hub = try await answer(["read"])
+        let hub = try await answer(["show"])
 
         XCTAssertEqual(try calls().prefix(5), [
             "spot choose openspot/import",
-            "spot open openspot/import", "spot push openspot/import scripts --title Script Commands",
-            "spot open openspot/import", "spot push openspot/import export --title Settings & Data"
+            "spot open openspot/import", "spot push openspot/import scripts",
+            "spot open openspot/import", "spot push openspot/import export"
         ])
         XCTAssertEqual(block("export", in: hub)?.value("detail"), "Enter the passphrase to open it")
         XCTAssertTrue(try sheet.takesFolders)
@@ -119,10 +124,11 @@ final class ImportSpotTests: BuiltInCase {
     func testTheScriptsPageListsWhatItAddsAndImportsIt() async throws {
         _ = try await answer(["drop", scripts.path])
 
-        let page = try await answer(["read"], page: "scripts")
-        let toast = try await sheet.perform(SpotAction(arguments: ["import"]), page: "scripts", timeout: 60)
-        let after = try await answer(["read"], page: "scripts")
-        let hub = try await answer(["read"])
+        let page = try await answer(["show"], page: "scripts")
+        try await sheet.perform(SpotAction(arguments: ["import"]), page: "scripts", timeout: 60)
+        let toast = try toast()
+        let after = try await answer(["show"], page: "scripts")
+        let hub = try await answer(["show"])
 
         XCTAssertEqual(rows(page), ["source", "added:say-hello", "skipped:notes.template.sh"])
         XCTAssertEqual(block("import", in: page)?.value("title"), "Import")
@@ -141,7 +147,7 @@ final class ImportSpotTests: BuiltInCase {
     func testTheExportPageAsksForThePassphraseAndSaysWhereItIs() async throws {
         _ = try await answer(["drop", export.path])
 
-        let text = try await answer(["read"], page: "export", input: "passphrase=openspot-test\n")
+        let text = try await answer(["show"], page: "export", input: "input.passphrase=openspot-test\n")
 
         XCTAssertEqual(block("passphrase", in: text)?.value("type"), "secret")
         XCTAssertEqual(block("passphrase", in: text)?.value("placeholder"), "Passphrase from Raycast → Settings → Advanced")
@@ -156,8 +162,8 @@ final class ImportSpotTests: BuiltInCase {
     func testOpenKeepsTheLayoutWhileItOpensThenListsWhatItAdds() async throws {
         _ = try await answer(["drop", export.path])
 
-        let frames = try await answer(["unlock"], page: "export", input: "passphrase=openspot-test\n").components(separatedBy: "---\n")
-        let open = try await answer(["read"], page: "export", input: "passphrase=openspot-test\n")
+        let frames = try await answer(["unlock"], page: "export", input: "input.passphrase=openspot-test\n").components(separatedBy: "---\n")
+        let open = try await answer(["show"], page: "export", input: "input.passphrase=openspot-test\n")
 
         XCTAssertEqual(block("unlock", in: frames[0])?.value("title"), "Opening…")
         XCTAssertEqual(blocks(frames[0]).first?.values("grid"), ["file", "passphrase", "unlock"])
@@ -172,8 +178,8 @@ final class ImportSpotTests: BuiltInCase {
     func testAWrongPassphraseIsARedLineWithAPlainHintUnderIt() async throws {
         _ = try await answer(["drop", export.path])
 
-        _ = try await answer(["unlock"], page: "export", input: "passphrase=wrong-pass\n")
-        let text = try await answer(["read"], page: "export", input: "passphrase=wrong-pass\n")
+        _ = try await answer(["unlock"], page: "export", input: "input.passphrase=wrong-pass\n")
+        let text = try await answer(["show"], page: "export", input: "input.passphrase=wrong-pass\n")
 
         XCTAssertEqual(block("failure", in: text)?.value("title"), "Wrong passphrase")
         XCTAssertEqual(block("failure", in: text)?.value("tone"), "bad")
@@ -184,15 +190,16 @@ final class ImportSpotTests: BuiltInCase {
 
     func testImportAddsTheLinksAndSnippetsAndMarksThemImported() async throws {
         _ = try await answer(["drop", export.path])
-        _ = try await answer(["unlock"], page: "export", input: "passphrase=openspot-test\n")
+        _ = try await answer(["unlock"], page: "export", input: "input.passphrase=openspot-test\n")
 
-        let toast = try await sheet.perform(SpotAction(arguments: ["import"]), page: "export", timeout: 60)
-        let after = try await answer(["read"], page: "export")
-        let hub = try await answer(["read"])
+        try await sheet.perform(SpotAction(arguments: ["import"]), page: "export", timeout: 60)
+        let toast = try toast()
+        let after = try await answer(["show"], page: "export")
+        let hub = try await answer(["show"])
 
         XCTAssertEqual(toast, "Added 1 link to Links and Added 1 snippet to Snippets.")
         XCTAssertEqual(rows(after), ["source", "done:links", "done:snippets", "skipped:hotkeys", "skipped:aliases"])
-        XCTAssertEqual(block("done:links", in: after)?.value("push.spot"), "links")
+        XCTAssertEqual(block("done:links", in: after)?.value("spot"), "links")
         XCTAssertNil(block("import", in: after))
         XCTAssertEqual(block("export", in: hub)?.value("detail"), "Imported")
     }
@@ -201,22 +208,22 @@ final class ImportSpotTests: BuiltInCase {
         _ = try await answer(["drop", export.path])
         try export.path.write(to: root.appendingPathComponent("data/openspot/raycast-opening"), atomically: true, encoding: .utf8)
 
-        let text = try await answer(["read"], page: "export", input: "passphrase=openspot-test\n")
+        let text = try await answer(["show"], page: "export", input: "input.passphrase=openspot-test\n")
 
         XCTAssertEqual(block("unlock", in: text)?.value("title"), "Opening…")
     }
 
     func testAChangeOfThePassphraseRedrawsNothing() async throws {
-        let text = try await answer(["passphrase", "abc"], page: "export", input: "passphrase=abc\n")
+        let text = try await answer(["passphrase", "abc"], page: "export", input: "input.passphrase=abc\n")
 
-        XCTAssertEqual(blocks(text).map { $0.fields.first?.key }, ["recents"])
+        XCTAssertEqual(blocks(text).map { $0.fields.first?.key }, ["frame"])
     }
 
     func testReturnOnAScriptUnticksItAndImportLeavesItOut() async throws {
         _ = try await answer(["drop", scripts.path])
 
-        _ = try await answer(["open", "added:say-hello"], page: "scripts", input: "path=hello.sh\n")
-        let page = try await answer(["read"], page: "scripts")
+        _ = try await answer(["open", "added:say-hello"], page: "scripts", input: "item.path=hello.sh\n")
+        let page = try await answer(["show"], page: "scripts")
 
         XCTAssertEqual(block("added:say-hello", in: page)?.value("value"), "false")
         XCTAssertEqual(block("added:say-hello", in: page)?.value("section"), "To add · 0 of 1")
@@ -225,11 +232,12 @@ final class ImportSpotTests: BuiltInCase {
 
     func testReturnOnAKindUnticksItAndImportLeavesItOut() async throws {
         _ = try await answer(["drop", export.path])
-        _ = try await answer(["unlock"], page: "export", input: "passphrase=openspot-test\n")
+        _ = try await answer(["unlock"], page: "export", input: "input.passphrase=openspot-test\n")
 
         _ = try await answer(["open", "added:snippets"], page: "export")
-        let page = try await answer(["read"], page: "export")
-        let toast = try await sheet.perform(SpotAction(arguments: ["import"]), page: "export", timeout: 60)
+        let page = try await answer(["show"], page: "export")
+        try await sheet.perform(SpotAction(arguments: ["import"]), page: "export", timeout: 60)
+        let toast = try toast()
 
         XCTAssertEqual(block("added:snippets", in: page)?.value("value"), "false")
         XCTAssertEqual(block("added:links", in: page)?.value("value"), "true")
@@ -238,9 +246,9 @@ final class ImportSpotTests: BuiltInCase {
 
     func testTheTopRowNamesTheChoiceAndOpensTheChooserAndChangeIsInTheMenu() async throws {
         _ = try await answer(["drop", export.path])
-        _ = try await answer(["unlock"], page: "export", input: "passphrase=openspot-test\n")
+        _ = try await answer(["unlock"], page: "export", input: "input.passphrase=openspot-test\n")
 
-        let page = try await answer(["read"], page: "export")
+        let page = try await answer(["show"], page: "export")
         _ = try await answer(["open", "source"], page: "export")
 
         XCTAssertEqual(rows(page).first, "source")
@@ -255,19 +263,18 @@ final class ImportSpotTests: BuiltInCase {
     func testTheAnalogsPageOpensTheSpotsReadyToUseAndTicksTheSpotsToAdd() async throws {
         try showExtensions()
 
-        let page = try await answer(["read"], page: "analogs")
-        let hub = try await answer(["read"])
+        let page = try await answer(["show"], page: "analogs")
+        let hub = try await answer(["show"])
 
         XCTAssertEqual(rows(page), ["use:translate", "get:caffeinate"])
-        XCTAssertEqual(block("use:translate", in: page)?.value("push.spot"), "translate")
         XCTAssertEqual(block("use:translate", in: page)?.value("section"), "Ready to use")
         XCTAssertEqual(block("use:translate", in: page)?.value("detail"), "→ Translate")
         XCTAssertEqual(block("use:translate", in: page)?.value("spot"), "translate")
         XCTAssertEqual(block("use:translate", in: page)?.value("spot.title"), "Translate")
         XCTAssertEqual(block("get:caffeinate", in: page)?.value("section"), "To add · 1 of 1")
         XCTAssertEqual(block("get:caffeinate", in: page)?.value("value"), "true")
-        XCTAssertEqual(block("get:caffeinate", in: page)?.value("open"), "Untick")
-        XCTAssertEqual(block("use:translate", in: page)?.value("open"), "Open")
+        XCTAssertEqual(block("get:caffeinate", in: page)?.value("open.title"), "Untick")
+        XCTAssertEqual(block("use:translate", in: page)?.value("open.title"), "Open")
 
         XCTAssertEqual(block("preview", in: page)?.fields.first?.key, "view")
         XCTAssertEqual(block("add", in: page)?.value("title"), "Add Caffeinate")
@@ -280,7 +287,7 @@ final class ImportSpotTests: BuiltInCase {
     func testLearnMoreOpensTheStoreOnTheSpotOfTheRow() async throws {
         try showExtensions()
 
-        let page = try await answer(["read"], page: "analogs")
+        let page = try await answer(["show"], page: "analogs")
         _ = try await answer(["learn", "get:caffeinate"], page: "analogs")
         let shown = try String(contentsOf: root.appendingPathComponent("data/openspot/store-show"), encoding: .utf8)
 
@@ -297,19 +304,20 @@ final class ImportSpotTests: BuiltInCase {
 
         let added = try await answer(["add"], page: "analogs")
         _ = try await answer(["open", "get:caffeinate"], page: "analogs")
-        let page = try await answer(["read"], page: "analogs")
+        let page = try await answer(["show"], page: "analogs")
 
         XCTAssertTrue(try calls().contains("store get caffeinate"))
-        XCTAssertTrue(added.hasPrefix("toast=Added Caffeinate.\n"), added)
+        XCTAssertEqual(try toast(), "Added Caffeinate.")
+        XCTAssertNotNil(block("add", in: added))
         XCTAssertEqual(block("get:caffeinate", in: page)?.value("value"), "false")
-        XCTAssertEqual(block("get:caffeinate", in: page)?.value("open"), "Tick")
+        XCTAssertEqual(block("get:caffeinate", in: page)?.value("open.title"), "Tick")
         XCTAssertNil(block("add", in: page))
     }
 
     func testTheMakePageTicksEachExtensionWithNoAnalogForOnePrompt() async throws {
         try showExtensions()
 
-        let page = try await answer(["read"], page: "extensions")
+        let page = try await answer(["show"], page: "extensions")
 
         XCTAssertEqual(rows(page), ["make:jira", "make:linear"])
         XCTAssertEqual(block("make:linear", in: page)?.value("section"), "Without an analog · 2 of 2")
@@ -325,14 +333,14 @@ final class ImportSpotTests: BuiltInCase {
         try showExtensions()
         _ = try await answer(["open", "make:jira"], page: "extensions")
 
-        let page = try await answer(["read"], page: "extensions")
-        let frames = try await answer(["copy"], page: "extensions").components(separatedBy: "recents=false\n")
+        let page = try await answer(["show"], page: "extensions")
+        let frames = try await answer(["copy"], page: "extensions").components(separatedBy: "frame=extensions\n").filter { !$0.isEmpty }
         let prompt = try String(contentsOf: copied, encoding: .utf8)
 
         XCTAssertEqual(block("copy", in: page)?.value("title"), "Copy prompt for Linear")
-        XCTAssertEqual(frames.count, 3)
-        XCTAssertEqual(frames.first, "toast=Prompt copied. Paste it into your agent.\n")
-        XCTAssertEqual(block("copy", in: frames[1])?.value("title"), "✓ Copied")
+        XCTAssertEqual(frames.count, 2)
+        XCTAssertEqual(try toast(), "Prompt copied. Paste it into your agent.")
+        XCTAssertEqual(block("copy", in: frames[0])?.value("title"), "✓ Copied")
         XCTAssertEqual(block("copy", in: frames.last ?? "")?.value("title"), "Copy prompt for Linear")
         XCTAssertTrue(prompt.hasPrefix("Turn this Raycast extension into an Openspot spot."), prompt)
         XCTAssertTrue(prompt.contains("Linear (\(extensions.appendingPathComponent("a1").path))"), prompt)
@@ -340,7 +348,7 @@ final class ImportSpotTests: BuiltInCase {
     }
 
     func testThePageSaysWhenRaycastKeepsNoExtensions() async throws {
-        let page = try await answer(["read"], page: "extensions")
+        let page = try await answer(["show"], page: "extensions")
 
         XCTAssertEqual(block("where", in: page)?.value("title"), "No Raycast extensions on this Mac")
     }

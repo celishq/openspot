@@ -51,11 +51,11 @@ enum SpotType {
     static let keycapName = Font.system(size: 9, weight: .medium)
     static let action = Font.system(size: 11, weight: .medium)
     static let metric = Font.system(size: 30, weight: .semibold, design: .rounded).monospacedDigit()
-    static let ringValue = Font.system(size: 20, weight: .semibold, design: .rounded).monospacedDigit()
     static let value = Font.system(size: 15, weight: .semibold, design: .rounded).monospacedDigit()
     static let controlValue = Font.system(size: 11, weight: .semibold, design: .rounded).monospacedDigit()
     static let menuBar = Font.system(size: 13, weight: .medium).monospacedDigit()
     static let small = Font.system(size: 10, weight: .medium)
+    static let smallLine: CGFloat = 13
     static let strong = Font.system(size: 13, weight: .semibold)
     static let rowIcon = Font.system(size: 14)
     static let glyph = Font.system(size: 17, weight: .semibold)
@@ -66,6 +66,8 @@ enum SpotType {
     static let cornerFault = Font.system(size: 10, weight: .semibold)
     static let number = Font.system(size: 24, weight: .semibold, design: .rounded).monospacedDigit()
     static let lineGap: CGFloat = 1
+    static let barLineGap: CGFloat = lineGap + 2
+    static let ringValue = Font.system(size: 20, weight: .semibold, design: .rounded).monospacedDigit()
     static var titleLine: CGFloat { faces.sizes.title + 3 }
     static var detailLine: CGFloat { faces.sizes.detail + 3 }
     static var inputLine: CGFloat { faces.sizes.input + 4 }

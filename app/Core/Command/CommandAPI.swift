@@ -41,7 +41,7 @@ public final class CommandAPI: @unchecked Sendable {
     }
 
     private func values(of request: CommandRequest) -> (spot: String?, reason: String?) {
-        guard runs != nil else { return (places.environment[CallWords.spotVariable], places.environment[CallWords.reasonVariable]) }
+        guard runs != nil else { return (places.environment[CallWords.spotVariable], nil) }
         let spot = request.caller?.spot.id
         return (spot?.isEmpty == false ? spot : nil, request.caller?.reason)
     }
@@ -57,7 +57,7 @@ public final class CommandAPI: @unchecked Sendable {
         }
         guard let needed = call.use else { return call }
         if runs.callers.isCareful, !caller.uses.contains(needed.use) {
-            return CommandLineCall(name: call.name, call: CallFault.refused("Careful mode stopped \(caller.name), because it \(needed.words) without `uses=\(needed.use.rawValue)` in its header. Add it, or turn Careful mode off."))
+            return CommandLineCall(name: call.name, call: CallFault.refused("Careful mode stopped \(caller.name), because it \(needed.words) without `\(needed.use.rawValue)` in the `uses` of its spot.toml. Add it, or turn Careful mode off."))
         }
         Task { @MainActor in runs.used(needed, by: caller) }
         return call
@@ -79,7 +79,7 @@ public final class CommandAPI: @unchecked Sendable {
         let (spot, reason) = values(of: request)
         let work = call.call.work(in: CallContext(
             mac: mac, api: self, request: request, places: places, app: app, runs: runs, account: account, secrets: places.secrets, trash: places.trash, raise: raise, caller: caller,
-            spot: spot, isRead: reason != nil, input: input, output: output, calendar: calendar, reminders: reminders, rates: rates, nouns: nouns
+            spot: spot, isInShow: reason != nil, input: input, output: output, calendar: calendar, reminders: reminders, rates: rates, nouns: nouns
         ))
         guard let work, let spotCaller = request.caller, caller != nil else { return work }
         return {

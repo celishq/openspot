@@ -8,8 +8,7 @@ extension SpotsModel {
     }
 
     var shelfCards: [Entry] {
-        let parts = Set(cards.flatMap { $0.spot.places + ($0.spot.opens.map { [$0] } ?? []) })
-        return cards.filter { !$0.isOnGrid && $0.item == nil && $0.spot.offersCard && $0.spot.fault == nil && !parts.contains($0.id) }
+        cards.filter { !$0.isOnGrid && $0.item == nil && $0.spot.isFound && $0.spot.fault == nil }
     }
 
     var grid: SpotGrid {
@@ -63,7 +62,7 @@ extension SpotsModel {
         if spotListIsStale {
             spotListIsStale = false
             spotListBuilds += 1
-            spotList.replace(cards.filter(\.spot.isFound).map(Self.foundItem))
+            spotList.replace(cards.filter(\.isFound).map(Self.foundItem))
             commands = CommandIndex(cards)
         }
         let command = isEditing ? nil : SlashCommand(query)
@@ -121,9 +120,9 @@ extension SpotsModel {
         let ids = Set(finding.answers.map(\.id))
         let spots = Dictionary(cards.map { ($0.id, $0) }, uniquingKeysWith: { first, _ in first })
         let shown = Set(found.matches.filter { $0.list == 0 }.map(\.item.run))
-        foundSpots = found.matches.compactMap { match in
+        foundSpots = found.matches.compactMap { match -> Entry? in
             if match.list == 0 { return spots[match.item.run] }
-            if let to = match.item.to, shown.contains(to) { return nil }
+            if match.item.fields.contains(where: { $0.key == "spot" && shown.contains($0.value) }) { return nil }
             return Entry(spot: finding.sources[match.list - 1], item: match.item)
         }
         show(Self.placed(finding.answers, around: foundSpots.filter { !ids.contains($0.id) }))
@@ -151,7 +150,7 @@ extension SpotsModel {
             }
             return entry.isOnGrid == (placements[index].group == .shelf)
         }
-        return entry.spot.isFound || entry.spot.isGlobal || entry.spot.answers != nil
+        return entry.isFound || entry.spot.isGlobal || entry.spot.answers != nil
     }
 
     func noteMiss() {
@@ -169,7 +168,7 @@ extension SpotsModel {
 
     func markFound(_ id: String) {
         guard !spotListIsStale else { return }
-        let card = card(id: id).flatMap { $0.spot.isFound ? Self.foundItem($0) : nil }
+        let card = card(id: id).flatMap { $0.isFound ? Self.foundItem($0) : nil }
         if spotList.all.first(where: { $0.run == id }) != card { spotListIsStale = true }
     }
 

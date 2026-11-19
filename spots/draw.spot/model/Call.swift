@@ -1,7 +1,7 @@
 import Foundation
 
-/// One block that Openspot writes to a staying spot: a call with its number, its arguments and what the person filled
-/// in, or a stop of an earlier call.
+/// One block that Openspot writes to a staying spot: a call with its number, its arguments and the lines of its
+/// message, or a stop of an earlier call.
 enum Call: Equatable {
     case ask(id: Int, arguments: [String], input: [String: String])
     case stop(Int)
@@ -21,8 +21,9 @@ enum Call: Equatable {
                 return
             case "call": id = Int(value)
             case "arg": arguments.append(Call.text(value))
-            case "input": input = Call.values(in: Call.text(value))
-            default: continue
+            default:
+                let key = String(line[..<cut])
+                if input[key] == nil { input[key] = Call.text(value) }
             }
         }
         guard let id else { return nil }
@@ -49,16 +50,5 @@ enum Call: Equatable {
     /// A text as a value of one line.
     static func written(_ text: String) -> String {
         text.replacingOccurrences(of: "\\", with: "\\\\").replacingOccurrences(of: "\n", with: "\\n")
-    }
-
-    /// The first value of each key in the lines of a call's stdin.
-    private static func values(in stdin: String) -> [String: String] {
-        var values: [String: String] = [:]
-        for line in stdin.split(separator: "\n") {
-            guard let cut = line.firstIndex(of: "=") else { continue }
-            let key = String(line[..<cut])
-            if values[key] == nil { values[key] = text(String(line[line.index(after: cut)...])) }
-        }
-        return values
     }
 }

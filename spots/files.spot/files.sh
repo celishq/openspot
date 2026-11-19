@@ -1,16 +1,10 @@
 #!/bin/sh
-# icon=doc.text.magnifyingglass
-# detail=Find a file
-# on=sheet.open
-# on=sheet.text
-# uses=clipboard
-# offers=card
-texts=$(sed -n 's/^search=//p; s/^form=//p')
 . "$OPENSPOT_SH"
 case "$1" in
-  read)
-    printf 'button=reveal\ntitle=Show in Finder\nshortcut=cmd+return\nclose=true\n\n'
-    printf 'button=copy\ntitle=Copy path\nshortcut=cmd+shift+c\nclose=true\n\n'
+  show)
+    texts=$(value search; value search.alt)
+    printf 'button=reveal\ntitle=Show in Finder\nshortcut=cmd+return\n\n'
+    printf 'button=copy\ntitle=Copy path\nshortcut=cmd+shift+c\n\n'
     predicate=''
     while IFS= read -r text; do
       query=$(printf '%s' "$text" | tr -d '"\\*')
@@ -31,14 +25,14 @@ EOF
             if (index(folder, home) == 1) folder = "~" substr(folder, length(home) + 1)
             printf "%s\t%s\t%s\t%s\n", $0, $NF, folder, $0
           }' \
-      | openspot_rows
+      | openspot_items
     ;;
   reveal)
     open -R "$2"
     ;;
   copy)
     printf '%s' "$2" | openspot clipboard copy
-    echo "toast=Copied"
+    openspot toast Copied
     ;;
   open)
     open "$2"

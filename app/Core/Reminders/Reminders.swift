@@ -6,12 +6,12 @@ public struct Reminders {
 
     private let store: any ReminderStore
     private let clock: CalendarClock
-    private let isRead: Bool
+    private let isInShow: Bool
 
-    public init(store: any ReminderStore, now: Date = Date(), clock: Calendar = .current, locale: Locale = .current, isRead: Bool) {
+    public init(store: any ReminderStore, now: Date = Date(), clock: Calendar = .current, locale: Locale = .current, isInShow: Bool) {
         self.store = store
         self.clock = CalendarClock(now: now, calendar: clock, locale: locale)
-        self.isRead = isRead
+        self.isInShow = isInShow
     }
 
     public func due(days: Int, hiding hidden: [String]) async throws -> String {
@@ -52,12 +52,12 @@ public struct Reminders {
         }
         let due = entry.date.map { entry.hasTime ? $0 : clock.calendar.startOfDay(for: $0) }
         let reminder = Reminder(id: "new", title: entry.title, due: due, isAllDay: due != nil && !entry.hasTime, list: list, doneAt: nil)
-        guard !isDry else { return Self.text([TextBlock(fields: [.init(key: "row", value: "reminder:new")] + reminder.row(clock).fields.dropFirst())]) }
+        guard !isDry else { return Self.text([TextBlock(fields: [.init(key: "text", value: "reminder:new")] + reminder.row(clock).fields.dropFirst())]) }
         return Self.text([try store.add(reminder).row(clock)])
     }
 
     private func isAllowed() async throws -> Bool {
-        try await store.isAllowed(isRead: isRead, refusal: Self.refusal, pane: Self.pane)
+        try await store.isAllowed(isInShow: isInShow, refusal: Self.refusal, pane: Self.pane)
     }
 
     private static func text(_ rows: [TextBlock]) -> String {

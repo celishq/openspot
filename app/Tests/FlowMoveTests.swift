@@ -3,6 +3,16 @@ import XCTest
 
 @MainActor
 final class FlowMoveTests: PanelCase {
+    private var client: URL!
+
+    override func setUp() async throws {
+        try await super.setUp()
+        client = folder.appendingPathComponent("A.app/Contents/Helpers/openspot")
+        try FileManager.default.createDirectory(at: client.deletingLastPathComponent(), withIntermediateDirectories: true)
+        try FileManager.default.copyItem(at: Bundle(for: Self.self).bundleURL.deletingLastPathComponent().appendingPathComponent("openspot"), to: client)
+        model.runs.api = CommandAPI(mac: Mac(), places: model.files, app: ModelApp(model: model), runs: model.runs, rates: .offline)
+    }
+
     func openFlowSpot() async throws {
         try writeFlow()
         await model.reload()
@@ -13,14 +23,16 @@ final class FlowMoveTests: PanelCase {
     }
 
     private func writeFlow() throws {
-        try script("flow", header: "title=Flow\non=sheet.open\npages=n*\npages=swapped", """
+        try script("flow", toml: "title = 'Flow'\npages = ['n*', 'swapped']", """
+        os='\(client.path)'
+        page=$(sed -n 's/^route=//p')
         case "$1" in
-          read) printf 'button=done\\ntitle=Done\\nscope=spot\\n\\nbutton=top\\ntitle=Top\\nscope=spot\\n\\nbutton=next\\ntitle=Next\\nscope=spot\\n\\nbutton=swap\\ntitle=Swap\\nscope=spot\\n\\nbutton=hand\\ntitle=Hand\\nscope=spot\\n\\nrow=x\\ntitle=Page %s\\n' "${OPENSPOT_PAGE-first}" ;;
-          done) printf 'pop=true\\n' ;;
-          top) printf 'pop=all\\n' ;;
-          next) printf 'push=n%s\\n' "${#OPENSPOT_PAGE}" ;;
-          swap) printf 'push=swapped\\npush.replace=true\\n' ;;
-          hand) printf 'push.spot=other\\n' ;;
+          show) printf 'button=done\\ntitle=Done\\nscope=spot\\n\\nbutton=top\\ntitle=Top\\nscope=spot\\n\\nbutton=next\\ntitle=Next\\nscope=spot\\n\\nbutton=swap\\ntitle=Swap\\nscope=spot\\n\\nbutton=leave\\ntitle=Leave\\nscope=spot\\n\\ntext=x\\ntitle=Page %s\\n' "${page:-first}" ;;
+          done) "$os" route back ;;
+          top) "$os" route back --root ;;
+          leave) "$os" route close ;;
+          next) "$os" route push "n${#page}" ;;
+          swap) "$os" route push swapped --replace ;;
         esac
         """)
     }
@@ -58,7 +70,7 @@ final class FlowMoveTests: PanelCase {
         try pressFlow("swap")
 
         try await wait("the swapped page") { self.titles == ["Page swapped"] }
-        XCTAssertEqual(model.flow.pages, [FlowSheet(spot: "flow"), FlowSheet(spot: "flow", page: "swapped")])
+        XCTAssertEqual(model.flow.pages, [FlowSheet(spot: "flow"), FlowSheet(spot: "flow", route: "swapped")])
     }
 
     func testAllOnTheFirstSheetStaysAndOnePopReturnsToTheSpotThatPushedIt() async throws {
@@ -68,7 +80,7 @@ final class FlowMoveTests: PanelCase {
         try await openFlowSheetInPlace()
 
         try pressFlow("top")
-        try await wait("the end of the press") { self.model.sheets["flow"]?.calls.isEmpty == true && !self.model.runs.isReading }
+        try await wait("the end of the press") { self.model.sheets["flow"]?.calls.isEmpty == true && !self.model.runs.isShowing }
         XCTAssertEqual(model.openSheetID, "flow")
 
         try pressFlow("done")
@@ -78,15 +90,16 @@ final class FlowMoveTests: PanelCase {
     }
 
     func testOpeningASpotInAWindowKeepsThePageOfTheOpenSheet() async throws {
-        try script("board", header: "title=Board\non=sheet.open\noffers=window", "printf 'row=b\\ntitle=Board\\n'")
+        try script("board", toml: "title = 'Board'", "printf 'text=b\\ntitle=Board\\n'")
+        _ = try model.files.config.change { $0.arrangement.set(isWindow: true, of: "board") }
         try await openFlowSpot()
         try pressFlow("next")
         try await wait("the next page") { self.titles == ["Page n0"] }
 
         XCTAssertTrue(model.open("board"))
 
-        XCTAssertEqual(model.flow.current?.page, "n0")
-        XCTAssertEqual(model.sheets["flow"]?.page, "n0")
+        XCTAssertEqual(model.flow.current?.route, "n0")
+        XCTAssertEqual(model.sheets["flow"]?.route, "n0")
     }
 
     func testOnePopOnAFirstSheetWithNothingBehindItGoesBackToTheGrid() async throws {
@@ -98,28 +111,53 @@ final class FlowMoveTests: PanelCase {
         try await wait("the grid") { self.model.openSheetID == nil }
     }
 
-    func testAPressPushesAnotherSpotOverItsSheet() async throws {
+    func testCloseFromAPageWithNothingBehindItsSpotGoesToTheGridWithNoStepBack() async throws {
+        try await openFlowSpot()
+        try pressFlow("next")
+        try await wait("the first page") { self.titles == ["Page n0"] }
+        try pressFlow("next")
+        try await wait("the second page") { self.titles == ["Page n2"] && self.model.flowEdges.from == nil }
+        host.edgeChanges = []
+
+        try pressFlow("leave")
+
+        try await wait("the grid") { self.model.openSheetID == nil }
+        XCTAssertNil(host.edgeChanges.first { $0.edges.from != nil })
+        XCTAssertEqual(model.flow.pages, [])
+    }
+
+    func testASheetThatClosesKeepsItsPageUntilItsMotionEnds() async throws {
+        try await openFlowSpot()
+        try pressFlow("next")
+        try await wait("the first page") { self.titles == ["Page n0"] && self.model.flowEdges.from == nil }
+        host.heldEnds = []
+
+        try pressFlow("leave")
+
+        try await wait("the close") { self.model.openSheetID == nil }
+        XCTAssertNil(model.sheets["flow"]?.route)
+        XCTAssertEqual(model.closingPage?.route, "n0")
+        XCTAssertEqual(model.closingPage?.list.all.map(\.title), ["Page n0"])
+        let ends = host.heldEnds ?? []
+        host.heldEnds = nil
+        ends.forEach { $0() }
+        XCTAssertNil(model.closingPage)
+    }
+
+    func testCloseFromAPageGoesBackToTheSpotThatPushedItInOneStep() async throws {
         try writeFlow()
         try await openList()
         XCTAssertTrue(model.push(FlowSheet(spot: "flow")))
         try await openFlowSheetInPlace()
+        try pressFlow("next")
+        try await wait("the first page") { self.titles == ["Page n0"] && self.model.flowEdges.from == nil }
+        host.edgeChanges = []
 
-        try pressFlow("hand")
+        try pressFlow("leave")
 
-        try await wait("the other spot") { self.model.openSheetID == "other" && self.titles == ["Other"] }
-        try await wait("the bars behind") { self.model.flowEdges.titles(on: .behind) == ["Flow", "List"] }
-    }
-
-    func testAReadThatPushesMovesNothing() async throws {
-        try script("reader", header: "title=Reader\non=sheet.open", "printf 'push=elsewhere\\n\\nrow=r\\ntitle=R\\n'")
-        await model.reload()
-        model.isShown = true
-        model.panelWillShow()
-        model.press("reader")
-
-        try await wait("the reader") { self.titles == ["R"] && !self.model.runs.isReading }
-
-        XCTAssertEqual(model.flow.pages, [FlowSheet(spot: "reader")])
+        try await wait("the list") { self.model.openSheetID == "list" && self.titles == ["A"] && self.model.flowEdges.from == nil }
+        XCTAssertEqual(host.edgeChanges.filter { $0.edges.sheetStart != nil }.count, 1)
+        XCTAssertEqual(model.flow.pages, [FlowSheet(spot: "list")])
     }
 
     func testTheCommandStepsBackOnlyWithinTheSpotThatShows() async throws {
@@ -135,12 +173,12 @@ final class FlowMoveTests: PanelCase {
 
     func testAPushOfAPageThatTheSpotDoesNotTakeMovesNothingAndSaysSo() async throws {
         try await openList()
-        try script("narrow", header: "title=Narrow\non=sheet.open\npages=ok:*", "printf 'row=n\\ntitle=N\\n'")
+        try script("narrow", toml: "title = 'Narrow'\npages = ['ok:*']", "printf 'text=n\\ntitle=N\\n'")
         await model.reload()
 
-        XCTAssertTrue(model.push(FlowSheet(spot: "narrow", page: "bad")))
+        XCTAssertTrue(model.push(FlowSheet(spot: "narrow", route: "bad")))
 
         XCTAssertEqual(model.openSheetID, "list")
-        XCTAssertEqual(host.notes.last, "Narrow takes no page bad. Add pages=bad to its header")
+        XCTAssertEqual(host.notes.last, "Narrow takes no page bad. Add bad to the pages of its spot.toml")
     }
 }

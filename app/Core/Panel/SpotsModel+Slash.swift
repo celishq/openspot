@@ -16,11 +16,9 @@ extension SpotsModel {
             return call(button, of: entry, text)
         }
         switch entry.spot.mainAct {
-        case .run:
-            call(CommandAction(id: SpotAction.open.arguments[0], title: entry.state.title, scope: .spot, after: .close), of: entry, text, onCard: true)
         case .sheet:
             pushFirst(entry.id, moving: true)
-            sheets[entry.id]?.type(text, fromSlash: true)
+            sheets[entry.id]?.type(text)
         default:
             run(seen: entry)
         }
@@ -45,7 +43,7 @@ extension SpotsModel {
 
     private func call(_ action: CommandAction, of entry: Entry, _ text: String, onCard: Bool = false) {
         ask(action, on: (entry, nil)) { [sheets] in
-            try await sheets[entry.id]?.launch(action, input: SearchQuery(text: text).input, onCard: onCard)
+            try await sheets[entry.id]?.launch(action, search: SearchQuery(text: text), onCard: onCard)
         }
     }
 }

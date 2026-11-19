@@ -11,21 +11,19 @@ public final class SpotRun {
         case frame(String)
         case parts
         case listChange
-        case chooseFiles
         case landed
         case closed
         case move(FlowMove)
-        case slash(SpotPart)
     }
 
-    public enum ReadNeed: Sendable {
+    public enum ShowNeed: Sendable {
         case moment
         case clock
         case change
     }
 
     enum Ask {
-        case read(generation: Int?, reports: Bool, query: String = "", tells: Bool = true)
+        case show(generation: Int?, reports: Bool, query: String = "", tells: Bool = true)
         case search(String)
         case answer(String)
 
@@ -35,10 +33,10 @@ public final class SpotRun {
         }
     }
 
-    struct Work {
+    struct Act {
         var generation: Int?
         var keeping: String?
-        var readsAfter = true
+        var showsAfter = true
         var undo: SpotState?
         var ended: (() -> Void)?
         var first: FirstFrame?
@@ -46,20 +44,19 @@ public final class SpotRun {
 
     enum Purpose {
         case ask(Ask)
-        case work(Work)
-        case form(CheckedContinuation<SpotOutput?, Error>)
+        case act(Act)
+        case form(CheckedContinuation<Frame?, Error>)
     }
 
     struct Call {
-        let action: SpotAction
+        var message: Message
         let key: String
-        var input: String?
         var limit: TimeInterval?
-        var reason: ReadReason?
+        var event: ShowEvent?
         var purpose: Purpose
 
-        var variables: [String: String] {
-            reason?.variables ?? [:]
+        var action: SpotAction {
+            message.action
         }
     }
 
@@ -68,9 +65,9 @@ public final class SpotRun {
     static let sliderPause: Duration = .milliseconds(100)
     static let buildPause: Duration = .milliseconds(500)
     static let pressPause: TimeInterval = 1
-    static let workPause: TimeInterval = 1
+    static let actPause: TimeInterval = 1
     static let waitingLimit = 8
-    static let readKey = "read"
+    static let showKey = "show"
     static let searchKey = "search"
     static let answerKey = "answer"
     static let cardKey = "card"
@@ -179,6 +176,7 @@ public final class SpotRun {
     public private(set) var partsKind: SheetKind?
     public private(set) var sheetRect = SpotTokens.sheetRect(rows: 0)
     public private(set) var showsField = true
+    public private(set) var top = SheetTop.plain
     @ObservationIgnored var heardKind: SheetKind? {
         didSet { settle() }
     }
@@ -186,6 +184,7 @@ public final class SpotRun {
         didSet {
             guard state != oldValue else { return }
             if (state.on == true) != isOn { isOn = state.on == true }
+            if state.subtitle != oldValue.subtitle { settle() }
             onReport(.listChange)
         }
     }
@@ -196,37 +195,37 @@ public final class SpotRun {
     public internal(set) var failure: String?
     @ObservationIgnored public internal(set) var calls: [ScriptCall] = []
     @ObservationIgnored public internal(set) var partsAnswers = 0
-    @ObservationIgnored var workCalls: [ScriptCall] = []
-    public internal(set) var work: [ScriptCall] = []
+    @ObservationIgnored var actCalls: [ScriptCall] = []
+    public internal(set) var acts: [ScriptCall] = [] {
+        didSet { if acts.first?.detail != oldValue.first?.detail { settle() } }
+    }
     @ObservationIgnored public var onReport: (Report) -> Void = { _ in }
     @ObservationIgnored public var partsArrival: (() -> Void) -> Void = { $0() }
     @ObservationIgnored let runs: SpotRuns
     @ObservationIgnored let prepare: ([SpotItem], [String]) async -> Void
     @ObservationIgnored var glyphs: (rows: [SpotItem], glyphs: [String]) = ([], [])
-    @ObservationIgnored var link: ScriptLink
+    @ObservationIgnored var link: ScriptMode
     @ObservationIgnored var answered: Date? {
         didSet { settle() }
     }
-    @ObservationIgnored var lastAnswer: SpotOutput?
+    @ObservationIgnored var lastAnswer: Frame?
     @ObservationIgnored var shownFrame: String?
-    @ObservationIgnored var readReason: ReadReason?
-    @ObservationIgnored var finishesRead = false
+    @ObservationIgnored var shownEvent: ShowEvent?
+    @ObservationIgnored var finishesShow = false
     @ObservationIgnored var hasAsked = false
     @ObservationIgnored var waiter: (() -> Void)?
     @ObservationIgnored var selecting: String?
-    @ObservationIgnored var readsAgain = false
+    @ObservationIgnored var showsAgain = false
     @ObservationIgnored var sheetAgain = false
-    @ObservationIgnored var eventAgain: ReadReason?
+    @ObservationIgnored var eventAgain: ShowEvent?
     @ObservationIgnored var pauses: [String: Task<Void, Never>] = [:]
     @ObservationIgnored var editing: String?
     @ObservationIgnored var typed: String?
-    @ObservationIgnored var slashText: String?
-    @ObservationIgnored var carriesSlash = false
     @ObservationIgnored var waitingFiles: [SpotAction] = []
     @ObservationIgnored var waitingKeys: [String] = []
-    @ObservationIgnored var clockRead: Date?
-    public internal(set) var page: String?
-    @ObservationIgnored var pageStates: [(page: String?, state: PageState)] = []
+    @ObservationIgnored var clockShown: Date?
+    public internal(set) var route: String?
+    @ObservationIgnored var pageStates: [(route: String?, state: PageState)] = []
 
     init(spot: Spot, runs: SpotRuns, recent: [String], prepare: @escaping ([SpotItem], [String]) async -> Void) {
         self.spot = spot
@@ -243,24 +242,19 @@ public final class SpotRun {
 
     nonisolated deinit {}
 
-    private static func link(for spot: Spot, runs: SpotRuns) -> ScriptLink {
-        if let link = runs.standIn?(spot) { return link }
-        return switch ScriptKind(of: spot) {
-        case .once, .settings, .host: OnceLink(runs: runs)
-        case .stay: StayLink(runs: runs)
-        case .inline: InlineLink(runs: runs)
-        }
+    private static func link(for spot: Spot, runs: SpotRuns) -> ScriptMode {
+        runs.standIn?(spot) ?? runs.mode(of: spot).init(runs: runs)
     }
 
-    var script: ScriptKind {
-        ScriptKind(of: spot)
+    var script: any ScriptMode.Type {
+        runs.mode(of: spot)
     }
 
     public func update(_ new: Spot) {
         let header = spot.headerState
         if new.answers != spot.answers { answer("") }
-        let next = ScriptKind(of: new)
-        if next.keepsState != script.keepsState || (next == .inline) != (script == .inline) {
+        let next = runs.mode(of: new)
+        if next.keepsState != script.keepsState || (next == InlineMode.self) != (script == InlineMode.self) {
             let old = link
             link = Self.link(for: new, runs: runs)
             link.run = self
@@ -279,26 +273,24 @@ public final class SpotRun {
     }
 
     public var awaitsAnswer: Bool {
-        spot.readsState && !hasAsked
+        spot.showsState && !hasAsked
     }
 
     public struct Shape: Equatable, Sendable {
         public let rows: Int
         public let perLine: Int
-        public let hasField: Bool
         public let setsApart: Bool
 
-        public init(rows: Int, perLine: Int, hasField: Bool = true, setsApart: Bool = false) {
+        public init(rows: Int, perLine: Int, setsApart: Bool = false) {
             self.rows = rows
             self.perLine = perLine
-            self.hasField = hasField
             self.setsApart = setsApart
         }
     }
 
     func layOut() {
         if var next = parts {
-            next.place()
+            next.place(top: top)
             panel = next
         }
         settle()
@@ -307,22 +299,29 @@ public final class SpotRun {
     func settle() {
         let next = rows.isBento
             ? Shape(rows: rows.drawing.lineCount(rows: rows.shown.count) * rows.drawing.columns, perLine: rows.drawing.columns)
-            : Shape(rows: rows.lineCount, perLine: rows.perLine, hasField: rows.search != .off, setsApart: rows.setsApart)
+            : Shape(rows: rows.lineCount, perLine: rows.perLine, setsApart: rows.setsApart)
         if next != shape { shape = next }
         let waits = showsSheet && answered == nil && panel == nil && rows.search == .local && rows.isLoading && !rows.holdsItems
         let nextKind = heardKind ?? (waits ? .waiting : panel?.kind ?? .rows)
         if nextKind != kind { kind = nextKind }
+        let field = nextKind.showsField && rows.search != .off
+        if field != showsField { showsField = field }
+        let header = rows.perLine > 1 ? 0 : SheetHeader.shared.extra(for: shownState.subtitle)
+        let nextTop = SheetTop(showsRows: panel?.showsRows ?? true, search: rows.search, header: header)
+        if nextTop != top { top = nextTop }
+        if var placed = panel, placed.top != nextTop {
+            placed.place(top: nextTop)
+            panel = placed
+        }
         let rect = panel.map(SpotTokens.panelRect)
         if rect != partsRect { partsRect = rect }
         let parts = panel?.kind
         if parts != partsKind { partsKind = parts }
-        let sheet = rect ?? SpotTokens.sheetRect(rows: next.rows, perLine: next.perLine, hasField: next.hasField, setsApart: next.setsApart)
+        let sheet = rect ?? SpotTokens.sheetRect(rows: next.rows, perLine: next.perLine, setsApart: next.setsApart, top: nextTop)
         if sheet != sheetRect { sheetRect = sheet }
-        let field = nextKind.showsField && rows.search != .off
-        if field != showsField { showsField = field }
     }
 
-    func hear(_ lines: SpotOutput?) {
+    func hear(_ lines: Frame?) {
         guard let lines else {
             heardKind = nil
             return

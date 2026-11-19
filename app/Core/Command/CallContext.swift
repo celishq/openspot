@@ -13,7 +13,7 @@ struct CallContext {
     let raise: (@Sendable (SpotEvent) async -> Void)?
     let caller: Spot?
     let spot: String?
-    let isRead: Bool
+    let isInShow: Bool
     let input: @Sendable () async -> String
     let output: CommandOutput
     let calendar: CalendarCalls

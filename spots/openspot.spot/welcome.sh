@@ -1,13 +1,4 @@
 #!/bin/sh
-# title=Welcome spot
-# icon=hand.wave
-# on=sheet.open
-# uses=app
-# offers=none
-# starts=first-launch
-# view=welcome.swift
-# pages=key
-# pages=agent
 . "$OPENSPOT_SH"
 keyfile="$OPENSPOT_DATA/welcome-key"
 here=$(cd "${0%/*}" && pwd)
@@ -65,44 +56,44 @@ heading() {
 
 # Prints the first page: what a spot is, a handwritten "even this onboarding" in the accent colour, then Continue.
 welcome() {
-  printf 'grid=head head head head\ngrid=head head head head\ngrid=head head head head\ngrid=head head head head\n'
+  printf 'frame=\ngrid=head head head head\ngrid=head head head head\ngrid=head head head head\ngrid=head head head head\n'
   printf 'grid=next next next next\n'
   heading 'Everything is a disposable spot' 'Make a script or an app for anything. Keep it, throw it away, or share it in one click.'
   printf 'icon=%s/even-this-onboarding.svg\n' "$here"
-  printf '\nbutton=next\ntitle=Continue\nlook=strong\nshortcut=return\n'
+  printf '\nbutton=next\ntitle=Continue\nlook=strong\nshortcut=return\nclose=false\n'
 }
 
 # Prints the key page: the chosen key, or the key that opens Openspot, then Use this key and Record another key. With an argument, the field records at once.
 keys() {
   shown=$(chosen)
-  printf 'grid=head head head head\ngrid=head head head head\ngrid=key key key key\ngrid=key key key key\ngrid=key key key key\ngrid=use use use use\ngrid=record record record record\n'
+  printf 'frame=key\ngrid=head head head head\ngrid=head head head head\ngrid=key key key key\ngrid=key key key key\ngrid=key key key key\ngrid=use use use use\ngrid=record record record record\n'
   heading 'Choose your key' 'It opens Openspot from any app.'
   printf '\nfield=key\ntype=hotkey\n'
   openspot_kv value "${shown:-$now}"
   [ -z "${1-}" ] || printf 'recording=true\n'
-  printf '\nbutton=use\ntitle=Use this key\nlook=strong\nshortcut=return\n'
-  printf '\nbutton=record\ntitle=Record another key\nshortcut=escape\n'
+  printf '\nbutton=use\ntitle=Use this key\nlook=strong\nshortcut=return\nclose=false\n'
+  printf '\nbutton=record\ntitle=Record another key\nshortcut=escape\nclose=false\n'
 }
 
 # Prints the last page: the two things to try, a spot of your own and a change by your agent, then Start using Openspot.
 agent() {
-  printf 'grid=head head head head\ngrid=head head head head\ngrid=head head head head\ngrid=head head head head\n'
+  printf 'frame=agent\ngrid=head head head head\ngrid=head head head head\ngrid=head head head head\ngrid=head head head head\n'
   printf 'grid=head head head head\ngrid=head head head head\ngrid=done done done done\n'
   heading 'Make it yours' 'Easily, with any of your favourite agents' "$here/note-and-pls.svg"
   card 'Create your own spot' 'Open New spot and describe it.' plus "$here/note-1.svg"
   card 'Change it with your agent' 'Select it and press ⌘E.' pencil "$here/note-2.svg"
-  printf '\nbutton=done\ntitle=Start using Openspot\nlook=strong\nshortcut=return\n'
+  printf '\nbutton=done\ntitle=Start using Openspot\nlook=strong\nshortcut=return\nclose=false\n'
 }
 
 case "$1" in
-  read)
-    case "${OPENSPOT_PAGE-}" in
+  show)
+    case "$(value route)" in
       key) current; keys ;;
       agent) agent ;;
       *) welcome ;;
     esac
     ;;
-  next) printf 'push=key\npush.title=Choose your key\n' ;;
+  next) openspot route push key --title 'Choose your key' ;;
   key)
     printf '%s\n' "$2" > "$keyfile"
     current
@@ -118,12 +109,12 @@ case "$1" in
       openspot setting set --spot openspot panel-key "$key" || exit 1
       rm -f "$keyfile"
     fi
-    printf 'push=agent\npush.title=Make it yours\n'
+    openspot route push agent --title 'Make it yours'
     ;;
   done)
     current
-    openspot spot pop openspot/welcome --all || exit 1
-    printf 'pop=true\ntoast=Press `%s` to open Openspot\n' "$(label "$now")"
+    openspot route close || exit 1
+    openspot toast "Press \`$(label "$now")\` to open Openspot"
     ;;
   *)
     echo 'Welcome cannot do that.' >&2

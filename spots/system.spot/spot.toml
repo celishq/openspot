@@ -1,0 +1,4 @@
+title = "System"
+icon = "macbook"
+detail = "Battery, CPU, memory and devices"
+on = ["panel.open", "system.load", "power.change", "device.connect"]

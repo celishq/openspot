@@ -1,10 +1,4 @@
 #!/bin/sh
-# icon=cup.and.saucer.fill
-# detail=Keep the Mac awake
-# on=panel.open
-# mode=stay
-# offers=card
-# uses=power
 
 # One process answers every call. The call that turns Caffeinate on stays open while `caffeinate` runs, so Openspot
 # keeps this process until it ends, and a quit of Openspot ends `caffeinate` too. With the lid on, a hold also runs
@@ -113,29 +107,29 @@ card() {
   if [ -n "$holder" ]; then echo "$(left) · lid closed"; else left; fi
 }
 
-# Prints the row of one duration. The row of the duration that runs carries the id of its call, so that a pick of it
+# Prints the item of one duration. The item of the duration that runs carries the id of its call, so that a pick of it
 # is a new call that starts it again, and not a second press that would stop it, and shows the time it has left.
 duration() {
   if awake && [ "$1" = "$picked" ]; then
-    printf 'row=%s.%s\ntitle=%s\ndetail=%s\n' "$1" "$held" "$2" "$(left)"
+    printf 'text=%s.%s\ntitle=%s\ndetail=%s\n' "$1" "$held" "$2" "$(left)"
   else
-    printf 'row=%s\ntitle=%s\n' "$1" "$2"
+    printf 'text=%s\ntitle=%s\n' "$1" "$2"
   fi
 }
 
-# Prints the rows of the sheet, with Turn off first while the Mac is kept awake.
+# Prints the items of the sheet, with Turn off first while the Mac is kept awake.
 sheet() {
-  printf 'recents=false\n\n'
+  printf 'frame=\nrecents=false\n\n'
   printf 'button=open\ntitle=Select\n\n'
-  printf 'button=start\ntitle=Keep awake for…\nscope=spot\nform=true\nclose=true\nplaceholder=Minutes, such as 45\n\n'
-  awake && printf 'row=off\ntitle=Turn off\n\n'
+  printf 'button=start\ntitle=Keep awake for…\nscope=spot\nform=true\nplaceholder=Minutes, such as 45\n\n'
+  awake && printf 'text=off\ntitle=Turn off\n\n'
   duration 1800 '30 minutes'; echo
   duration 7200 '2 hours'; echo
-  printf 'row=custom\ntitle=Custom…\n\n'
+  printf 'text=custom\ntitle=Custom…\nform=true\n\n'
   duration 0 'Until turned off'; echo
-  printf 'row=display\ntitle=Keep the display on\ndetail=Off lets the screen lock\nicon=display\npin=bottom\ntype=toggle\nvalue=%s\nclose=false\n' "${display:-true}"
+  printf 'switch=display\ntitle=Keep the display on\ndetail=Off lets the screen lock\nicon=display\npin=bottom\nvalue=%s\nclose=false\n' "${display:-true}"
   [ "$lidded" = true ] || return 0
-  printf '\nrow=lid\ntitle=Work with the lid closed\ndetail=Can grow hot in a bag\nicon=laptopcomputer\npin=bottom\ntype=toggle\nvalue=%s\nclose=false\n' "${lid:-false}"
+  printf '\nswitch=lid\ntitle=Work with the lid closed\ndetail=Can grow hot in a bag\nicon=laptopcomputer\npin=bottom\nvalue=%s\nclose=false\n' "${lid:-false}"
 }
 
 # Runs `caffeinate` for the duration picked, or for the seconds given after it, or until it is stopped, in a watcher
@@ -168,12 +162,12 @@ hold() {
 # Starts a hold on a call, as `hold` takes it, and prints the head that keeps the call running. A new pick, with no
 # seconds given, gets a toast, and so does a hold that lost the lid.
 begin() {
-  said=
-  hold "$@" || said="toast=$(toast "$2" lost)
-"
-  [ $# -ge 3 ] || [ -n "$said" ] || said="toast=$(toast "$2")
-"
-  printf '%s%s\n---\ncall=%s\n---\n%sdetail=%s\n---\n' "$ended" "$(sheet)" "$1" "$said" "$(card)"
+  if ! hold "$@"; then
+    openspot toast "$(toast "$2" lost)"
+  elif [ $# -lt 3 ]; then
+    openspot toast "$(toast "$2")"
+  fi
+  printf '%s%s\n---\ncall=%s\n---\nframe=\ndetail=%s\n---\n' "$ended" "$(sheet)" "$1" "$(card)"
 }
 
 # Stops `caffeinate`, and sets `ended` to the frame that ends the call that turned it on.
@@ -189,9 +183,9 @@ release() {
   held=
 }
 
-# Prints a value of the stdin of the call, which comes escaped on its input line.
+# Prints a value of the stdin of the call, whose lines follow its arguments in the block of the call.
 given() {
-  printf '%b\n' "$input" | sed -n "s/^$1=//p" | head -n 1
+  printf '%s' "$input" | sed -n "s/^$1=//p" | head -n 1
 }
 
 # Prints the toast of a hold of that many seconds, which says, after `lost`, that it could not work with the lid closed,
@@ -212,25 +206,27 @@ toast() {
 }
 
 # Answers one call. Each answer is one write, so that it never mixes with the frame of a watcher that ends. The call
-# that turns Caffeinate on prints the rows before it starts, and then only a head with the time left, which the card
-# shows while that call runs: a call that prints rows is not shown as running.
+# that turns Caffeinate on prints the items before it starts, and then only a head with the time left, which the card
+# shows while that call runs: a call that prints items is not shown as running.
 serve() {
   lid_on
   display_on
   case "$1 $2" in
     'open off')
       release
-      printf '%scall=%s\n---\ntoast=Caffeinate is off\n%s\n---\nend=%s\n---\n' "$ended" "$call" "$(sheet)" "$call"
+      openspot toast 'Caffeinate is off'
+      printf '%scall=%s\n---\n%s\n---\nend=%s\n---\n' "$ended" "$call" "$(sheet)" "$call"
       ;;
     start* | 'open custom')
-      minutes=$(given minutes)
+      minutes=$(given input.minutes)
       [ -n "$minutes" ] || minutes=$(given search)
       case $minutes in
         '')
-          printf 'call=%s\n---\ntitle=Keep the Mac awake\n\nfield=minutes\ntitle=Minutes\nplaceholder=45\n---\nend=%s\n---\n' "$call" "$call"
+          printf 'call=%s\n---\nframe=\ntitle=Keep the Mac awake\n\nfield=minutes\ntitle=Minutes\nplaceholder=45\n---\nend=%s\n---\n' "$call" "$call"
           ;;
         *[!0-9]* | 0*)
-          printf 'call=%s\n---\ntoast=Caffeinate takes minutes as a number, such as 45.\n%s\n---\nend=%s\n---\n' "$call" "$(sheet)" "$call"
+          openspot toast 'Caffeinate takes minutes as a number, such as 45.'
+          printf 'call=%s\n---\n%s\n---\nend=%s\n---\n' "$call" "$(sheet)" "$call"
           ;;
         *)
           release
@@ -238,15 +234,14 @@ serve() {
           ;;
       esac
       ;;
-    'open lid' | 'open display')
-      if "$2"_on; then next=false; else next=true; fi
+    'lid '* | 'display '*)
       if awake; then
         seconds=$(remaining)
         release
-        "$2"_keep "$next"
+        "$1"_keep "$2"
         begin "$call" "$picked" "$seconds"
       else
-        "$2"_keep "$next"
+        "$1"_keep "$2"
         printf 'call=%s\n---\n%s\n---\nend=%s\n---\n' "$call" "$(sheet)" "$call"
       fi
       ;;
@@ -258,6 +253,7 @@ serve() {
       now=
       awake && now="call=$held
 ---
+frame=
 detail=$(card)
 ---
 "
@@ -271,7 +267,6 @@ input=
 while IFS= read -r line; do
   case $line in
     call=*) call=${line#call=}; input=; set -- ;;
-    input=*) input=${line#input=} ;;
     arg=*) set -- "$@" "${line#arg=}" ;;
     stop=*)
       if [ "${line#stop=}" = "$held" ]; then
@@ -283,6 +278,8 @@ while IFS= read -r line; do
       [ -z "$call" ] || serve "$@"
       call=
       ;;
+    *) [ -z "$call" ] || input="$input$line
+" ;;
   esac
 done
 release

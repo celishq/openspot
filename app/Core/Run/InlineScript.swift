@@ -12,7 +12,7 @@ final class InlineScript: @unchecked Sendable {
     private static let timeLimit: TimeLimit? = dlsym(UnsafeMutableRawPointer(bitPattern: -2), "JSContextGroupSetExecutionTimeLimit")
         .map { unsafeBitCast($0, to: TimeLimit.self) }
 
-    private static let frame = """
+    private static let library = """
     openspot.frame = function frame(value) {
       if (Array.isArray(value)) return value.map(frame).join("\\n")
       const write = (one) => String(one).replace(/\\\\/g, "\\\\\\\\").replace(/\\n/g, "\\\\n")
@@ -22,6 +22,10 @@ final class InlineScript: @unchecked Sendable {
         for (const one of Array.isArray(each) ? each : [each]) text += `${key}=${write(one)}\\n`
       }
       return text
+    }
+    openspot.value = function value(key, text) {
+      const read = (one) => one.replace(/\\\\(n|\\\\)/g, (_, kind) => kind === "n" ? "\\n" : "\\\\")
+      return String(text || "").split("\\n").filter((line) => line.startsWith(key + "=")).map((line) => read(line.slice(key.length + 1))).join("\\n")
     }
     """
 
@@ -47,6 +51,7 @@ final class InlineScript: @unchecked Sendable {
     private var context: JSContext?
     private var thrown: JSValue?
     private var variables: [String: String] = [:]
+    private var reason: String?
 
     init(spot: Spot, api: CommandAPI?, callers: SpotCallers? = nil, careful: Set<SpotUse>? = nil, limit: TimeInterval = 10, idle: TimeInterval = 30, base: [String: String] = ProcessInfo.processInfo.environment, spent: @escaping @Sendable (TimeInterval) -> Void = { _ in }) {
         self.careful = careful.map(CarefulMode.init)
@@ -166,10 +171,14 @@ final class InlineScript: @unchecked Sendable {
         }
         let env = [CallWords.spotVariable: name].merging(call.variables) { _, new in new }
         variables = call.variables
-        caller?.reason = call.variables[ReadReason.variable]
+        reason = call.reason
+        caller?.reason = call.reason
+        caller?.call = call.opened
         defer {
             variables = [:]
+            reason = nil
             caller?.reason = nil
+            caller?.call = nil
         }
         let result = function.call(withArguments: [call.arguments, env, call.input ?? ""])
         try rethrow()
@@ -195,7 +204,7 @@ final class InlineScript: @unchecked Sendable {
         let openspot = JSValue(newObjectIn: context)
         openspot?.setObject(ask, forKeyedSubscript: "call" as NSString)
         context.setObject(openspot, forKeyedSubscript: "openspot" as NSString)
-        context.evaluateScript(Self.frame)
+        context.evaluateScript(Self.library)
         let text = try String(contentsOf: url, encoding: .utf8)
         context.evaluateScript(text, withSourceURL: url)
         try rethrow()
@@ -219,7 +228,7 @@ final class InlineScript: @unchecked Sendable {
     private func ask(_ arguments: [String], input: String?) -> CommandAnswer {
         guard !condition.withLock({ isOverdue }) else { return Self.late }
         let own = [CallWords.spotVariable: name].merging(variables) { _, new in new }
-        guard let call = CommandLineCall(arguments: arguments, spot: own[CallWords.spotVariable], reason: own[CallWords.reasonVariable]) else {
+        guard let call = CommandLineCall(arguments: arguments, spot: own[CallWords.spotVariable], reason: reason) else {
             return CommandAnswer(errors: "openspot needs a call, such as calc solve 2+2.\n", code: 2)
         }
         let request = CommandRequest(arguments: arguments, folder: base["PWD"] ?? FileManager.default.currentDirectoryPath, caller: caller)

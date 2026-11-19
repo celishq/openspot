@@ -62,7 +62,8 @@ final class SnippetsSpotTests: SampleSpotsCase {
             var draft = FormDraft(form: form)
             draft.set("Hello", for: "title")
             draft.set(text, for: "content")
-            let run = try await snippets.submit(new, item: nil, draft: draft, timeout: 60)
+            _ = try await snippets.submit(new, item: nil, draft: draft, timeout: 60)
+            let run = try self.read("selected", in: folder).trimmingCharacters(in: .newlines)
 
             let lines = try await snippets.items(timeout: 60)
             XCTAssertEqual(lines.errors, [])
@@ -110,14 +111,14 @@ final class SnippetsSpotTests: SampleSpotsCase {
     func testImportAddsEachSnippetOnceWithItsKeywordAsASearchWord() async throws {
         let snippets = try XCTUnwrap(try scan.spots.first { $0.name == "Snippets" })
         try await withPrivateHome { _ in
-            let input = #"snippets=[{"title":"Email","text":"hello@example.com","keyword":";mail"},{"title":"Signature","text":"Best,\\nTest User"}]"# + "\n"
+            let input = #"input.snippets=[{"title":"Email","text":"hello@example.com","keyword":";mail"},{"title":"Signature","text":"Best,\\nTest User"}]"# + "\n"
 
             let first = try await Self.answer(of: snippets, ["import"], input: input)
             let second = try await Self.answer(of: snippets, ["import"], input: input)
             let items = try await snippets.items(timeout: 60).items
 
-            XCTAssertEqual(first.summary?.value("toast"), "Added 2 snippets")
-            XCTAssertEqual(second.summary?.value("toast"), "No new snippets")
+            XCTAssertEqual(first.items.first { $0.run == "added" }?.title, "Added 2 snippets")
+            XCTAssertEqual(second.items.first { $0.run == "added" }?.title, "No new snippets")
             XCTAssertEqual(items.map(\.title), ["Email", "Signature"])
             XCTAssertEqual(items.first?.keywords, [";mail"])
         }

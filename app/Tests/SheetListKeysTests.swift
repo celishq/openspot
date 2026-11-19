@@ -3,8 +3,8 @@ import XCTest
 
 final class SheetListKeysTests: PanelCase {
     private func open(_ actions: String) async throws {
-        let frame = "grid=files\\ngrid=import\\n\\nrepeat=files\\n\\nbutton=import\\ntitle=Import\\nlook=strong\\nshortcut=cmd+return\\n\(actions)\\nrow=a\\ntitle=A\\n\\nrow=b\\ntitle=B\\n"
-        try script("list", header: "title=List\non=sheet.open", "printf '\(frame)'")
+        let frame = "frame=\\ngrid=files\\ngrid=import\\n\\nrepeat=files\\n\\nbutton=import\\ntitle=Import\\nlook=strong\\nshortcut=cmd+return\\n\(actions)\\ntext=a\\ntitle=A\\n\\ntext=b\\ntitle=B\\n"
+        try script("list", toml: "title = 'List'\non = ['sheet.open']", "printf '\(frame)'")
         await model.reload()
         model.isShown = true
         model.panelWillShow()
@@ -41,8 +41,8 @@ final class SheetListKeysTests: PanelCase {
     }
 
     func testALineMoveUnderAViewMovesTheSelectionThatTheViewReads() async throws {
-        let frame = "grid=preview\\ngrid=files\\ngrid=import\\n\\nview=preview\\ngrow=false\\n\\nrepeat=files\\n\\nbutton=import\\ntitle=Import\\nlook=strong\\nshortcut=cmd+return\\n\\nrow=a\\ntitle=A\\n\\nrow=b\\ntitle=B\\n"
-        try script("list", header: "title=List\non=sheet.open\nview=preview.swift", "printf '\(frame)'")
+        let frame = "frame=\\ngrid=preview\\ngrid=files\\ngrid=import\\n\\nview=preview\\ngrow=false\\n\\nrepeat=files\\n\\nbutton=import\\ntitle=Import\\nlook=strong\\nshortcut=cmd+return\\n\\ntext=a\\ntitle=A\\n\\ntext=b\\ntitle=B\\n"
+        try script("list", toml: "title = 'List'\non = ['sheet.open']\nview = 'preview.swift'", "printf '\(frame)'")
         await model.reload()
         model.isShown = true
         model.panelWillShow()

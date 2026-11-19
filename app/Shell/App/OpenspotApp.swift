@@ -13,7 +13,7 @@ final class OpenspotApp: NSObject, NSApplicationDelegate {
         #endif
         launch.apply(keepsCallData: true)
         let environment = ProcessInfo.processInfo.environment
-        if let call = CommandLineCall(arguments: launch.words, spot: environment[CallWords.spotVariable], reason: environment[CallWords.reasonVariable]) {
+        if let call = CommandLineCall(arguments: launch.words, spot: environment[CallWords.spotVariable]) {
             SpotCommandLine.run(call, words: launch.words)
         }
         launch.apply(keepsCallData: false)
@@ -138,7 +138,7 @@ final class OpenspotApp: NSObject, NSApplicationDelegate {
     }
 
     @objc private func pressItem() {
-        if !model.openWork() { togglePanel() }
+        if !model.openAct() { togglePanel() }
     }
 
     @objc func togglePanel() {

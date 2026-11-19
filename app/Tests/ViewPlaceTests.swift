@@ -23,9 +23,10 @@ final class ViewPlaceTests: XCTestCase {
         model = SpotsModel(host: host, files: files, runs: SpotRuns(stopPause: 0.2))
         host.model = model
         for name in ["list", "other"] {
-            try TestSpot(header: "on=sheet.open", body: "printf 'row=a\\ntitle=Apple\\n'").write(to: spots.spotFile(name))
+            try TestSpot(toml: "", body: "printf 'text=a\\ntitle=Apple\\n'").write(to: spots.spotFile(name))
         }
-        try TestSpot(header: "on=sheet.open\noffers=card\noffers=window", body: "printf 'row=a\\ntitle=Apple\\n'").write(to: spots.spotFile("store"))
+        try TestSpot(toml: "", body: "printf 'text=a\\ntitle=Apple\\n'").write(to: spots.spotFile("store"))
+        _ = try model.files.config.change { $0.arrangement.set(isWindow: true, of: "store") }
         await model.reload()
     }
 
@@ -108,7 +109,7 @@ final class ViewPlaceTests: XCTestCase {
     func testOpeningAWindowThatIsOpenReadsItAgain() async throws {
         let shown = folder.appendingPathComponent("shown")
         try "first".write(to: shown, atomically: true, encoding: .utf8)
-        try TestSpot(header: "on=sheet.open\noffers=window", body: "printf 'row=a\\ntitle=%s\\n' \"$(cat '\(shown.path)')\"").write(to: spots.spotFile("board"))
+        try TestSpot(toml: "", body: "printf 'text=a\\ntitle=%s\\n' \"$(cat '\(shown.path)')\"").write(to: spots.spotFile("board"))
         await model.reload()
         model.openWindow("board")
         try await wait("the first words") { self.model.sheets["board"]?.list.all.first?.title == "first" }

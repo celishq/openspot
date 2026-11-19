@@ -22,7 +22,7 @@ final class SpotsPanel: NSPanel {
         ignoresMouseEvents = true
         open { orderFrontRegardless() }
         Task { @MainActor [weak self] in
-            await self?.model?.waitForReads()
+            await self?.model?.waitForShows()
             self?.contentView?.layoutSubtreeIfNeeded()
             self?.displayIfNeeded()
             try? await Task.sleep(for: .seconds(2 * MotionTokens.fadeIn))

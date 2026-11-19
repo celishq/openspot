@@ -33,6 +33,7 @@ public final class SpotsModel {
     private func takeCards() {
         let next = entries.filter { $0.id != fieldSheet }
         if next != cards { cards = next }
+        runs.take(grid: Set(entries.lazy.filter(\.isOnGrid).map(\.id)))
     }
     @ObservationIgnored var storeCards: [String: (entry: Entry, item: SpotCatalog.Item)]?
     @ObservationIgnored private var entryPlaces: [String: Int] = [:]
@@ -111,10 +112,11 @@ public final class SpotsModel {
     public private(set) var openSheetID: String?
     public internal(set) var flow = Flow() {
         didSet {
-            for gone in Set(oldValue.pages).subtracting(flow.pages) { sheets[gone.spot]?.forget(page: gone.page) }
+            for gone in Set(oldValue.pages).subtracting(flow.pages) { sheets[gone.spot]?.forget(route: gone.route) }
         }
     }
     public internal(set) var flowEdges = FlowEdges()
+    public internal(set) var closingPage: SheetPage?
     @ObservationIgnored var edgeStep = 0
     @ObservationIgnored var landedStep = -1
     @ObservationIgnored var waitingPush = false
@@ -323,12 +325,8 @@ public final class SpotsModel {
         runs.sheets
     }
 
-    public func reading(of id: String) -> MetricReading? {
-        runs.sheets[id]?.reading
-    }
-
-    public var workCount: Int {
-        runs.work.count
+    public var actCount: Int {
+        runs.acts.count
     }
 
     public func beginFirstLaunch() async {
@@ -379,7 +377,7 @@ public final class SpotsModel {
         var scan = (try? load.result(enabled: folder.enabled, disabled: folder.disabled, hosted: hosted)) ?? ScanResult(files: [SpotFile(id: "openspot", spots: hosted)], refused: [])
         let faults = load.faultSpots(of: scan, prompt: host.agentPrompt(for: folder.url))
         if !faults.isEmpty { scan.files.append(SpotFile(id: FaultSpot.fileID, spots: faults)) }
-        scan.addSettings(in: files.config, secrets: files.secrets, read: config)
+        scan.addSettings(in: files.config, secrets: files.secrets, read: config, defaults: defaultArrangement)
         let carded = Set(faults.map(\.id))
         let problems = scan.refused.filter { !carded.contains($0.file) }.map { "\($0.file) was not loaded: \($0.reason)" }
         runs.isCareful = config.isCareful
@@ -406,8 +404,8 @@ public final class SpotsModel {
         let stamps = fileStamps
         await reload()
         guard isShown else { return }
-        for entry in entries where entry.spot.read?.has(.panel) == true && fileStamps[entry.id] != stamps[entry.id] {
-            sheets[entry.id]?.read(need: .change)
+        for entry in entries where entry.spot.on?.has(.panel) == true && fileStamps[entry.id] != stamps[entry.id] {
+            sheets[entry.id]?.show(need: .change)
         }
     }
 
@@ -450,10 +448,10 @@ public final class SpotsModel {
             }
         }
         if case .value(let spot, let caller) = change {
-            if caller != spot, let sheet = sheets[spot], sheet.isWanted { sheet.read(need: .change) }
-            if let settings = sheets[SpotSettings.sheetID(of: spot)], settings.isOpen { settings.read(need: .change) }
+            if caller != spot, let sheet = sheets[spot], sheet.isWanted { sheet.show(need: .change) }
+            if let settings = sheets[SpotSettings.sheetID(of: spot)], settings.isOpen { settings.show(need: .change) }
         }
-        runs.readOfferedRows()
+        runs.showOfferedItems()
     }
 
     func write(_ section: Config.Section, _ work: (inout Config) throws -> Void) throws {
@@ -509,7 +507,7 @@ public final class SpotsModel {
         hiddenAt = nil
         finishPick()
         selected = 0
-        runs.panelOpened(readsToEnd: isWarming)
+        runs.panelOpened(showsToEnd: isWarming)
         askAnswers()
         host.nextFrame { [weak self] in
             self?.isShown = true
@@ -527,15 +525,15 @@ public final class SpotsModel {
         takeEntryKey()
     }
 
-    public func waitForReads() async {
+    public func waitForShows() async {
         let end = ContinuousClock.now + Self.loadLimit
-        while runs.isReading, ContinuousClock.now < end {
+        while runs.isShowing, ContinuousClock.now < end {
             try? await Task.sleep(for: Self.loadPause)
         }
     }
 
     public func updateIsReady(_ version: String) {
-        runs.raise(.named(SpotEvent.appUpdate, value: version, readsEachSpot: true))
+        runs.raise(.named(SpotEvent.appUpdate, value: version, showsEachSpot: true))
     }
 
     public func allows(_ reason: String) async -> Bool {
@@ -578,13 +576,8 @@ public final class SpotsModel {
                 showSheet(nil, moving: false)
                 endFlow()
             }
-        case .chooseFiles:
-            _ = chooseFiles(for: id)
         case .move(let move):
             self.move(move, in: id)
-        case .slash(let part):
-            sheets[id]?.press(part)
-            if part.closes, isShown { host.dismiss() }
         }
     }
 

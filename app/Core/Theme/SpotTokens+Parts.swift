@@ -37,8 +37,7 @@ extension SpotTokens {
     public static let lineRingSide: CGFloat = 30
     public static let lineRingLine: CGFloat = 2
 
-    public static let menuBarIconWidth: CGFloat = 30
-    public static let menuBarPillInset: CGFloat = 2
+    public static let menuBarPill = CGSize(width: 40, height: 24)
     public static let menuBarGap: CGFloat = 5
     public static let menuBarCountGap: CGFloat = 3
     public static let menuBarPadding: CGFloat = 6
@@ -79,11 +78,8 @@ extension SpotTokens {
     public static let swatchSize: CGFloat = 22
     public static let smallSwatch: CGFloat = 16
     public static let partLineGap: CGFloat = 8
-    public static let partBarGap: CGFloat = 3
-    public static let partBarRadius: CGFloat = 2
     public static let narrowCell: CGFloat = 80
     public static let narrowGap: CGFloat = 2
-    public static let markValueWidth: CGFloat = 36
     public static let partSymbolWidth: CGFloat = 22
     public static let chipPaddingY: CGFloat = 5
     public static let choiceChevronGap: CGFloat = 4
@@ -92,8 +88,6 @@ extension SpotTokens {
     public static let colorBarGap: CGFloat = 8
 
     public static let slotSwitchGap: CGFloat = 8
-    public static let slotBarGap: CGFloat = 2
-    public static let slotBarRadius: CGFloat = 1.5
     public static let slotButton: CGFloat = 28
     public static let slotChipPaddingX: CGFloat = 12
 

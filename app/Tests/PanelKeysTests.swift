@@ -14,9 +14,13 @@ final class PanelKeysTests: PanelCase {
     private let right = ActionKey(name: "right")
 
     private func showGrid() async throws {
-        try script("alpha", header: "title=Alpha", "true")
-        try script("beta", header: "title=Beta", "true")
-        try script("weather", header: "title=Weather\non=sheet.open\npress=open", ":")
+        try script("alpha", toml: "title = 'Alpha'", "true")
+        try script("beta", toml: "title = 'Beta'", "true")
+        try script("weather", toml: "title = 'Weather'\non = ['sheet.open']\n[commands.hot]\ntitle = 'Hot'\n[commands.cold]\ntitle = 'Cold'", ":")
+        _ = try model.files.config.change {
+            $0.arrangement.arrange(["alpha", "beta", "weather"])
+            $0.arrangement.set(isOnGrid: true, of: "weather")
+        }
         await model.reload()
         model.isShown = true
         model.panelWillShow()
@@ -27,8 +31,9 @@ final class PanelKeysTests: PanelCase {
     }
 
     private func openInfo() async throws {
-        try script("info", header: "on=sheet.open\npages=a", """
-        if [ -n "$OPENSPOT_PAGE" ]; then printf 'text=detail\\ntitle=Detail\\n'; else printf 'text=first\\ntitle=First\\n'; fi
+        try script("info", toml: "pages = ['a']", """
+        page=$(sed -n 's/^route=//p')
+        if [ -n "$page" ]; then printf 'frame=\\ngrid=detail\\n\\ntext=detail\\ntitle=Detail\\n'; else printf 'frame=\\ngrid=first\\n\\ntext=first\\ntitle=First\\n'; fi
         """)
         await model.reload()
         model.isShown = true
@@ -85,7 +90,7 @@ final class PanelKeysTests: PanelCase {
     }
 
     func testASearchThatFindsNoSpotTeachesTheSlash() async throws {
-        try script("list", header: "title=List\non=sheet.open", "printf 'row=a\\ntitle=A\\n'")
+        try script("list", toml: "title = 'List'", "printf 'text=a\\ntitle=A\\n'")
         await model.reload()
 
         model.query = "zzz"
@@ -122,7 +127,7 @@ final class PanelKeysTests: PanelCase {
         XCTAssertEqual(host.dismissals, 1)
     }
 
-    func testOnTheGridTheArrowsMoveBetweenCardsAndReturnRunsTheSelectedOne() async throws {
+    func testOnTheGridTheArrowsMoveBetweenCardsAndReturnOpensTheSelectedOne() async throws {
         try await showGrid()
         XCTAssertEqual(model.selected, 0)
 
@@ -134,7 +139,7 @@ final class PanelKeysTests: PanelCase {
         XCTAssertTrue(model.handleSearchKey(up))
 
         XCTAssertTrue(model.handleSearchKey(enter))
-        XCTAssertEqual(host.dismissals, 1)
+        try await wait("the sheet of the selected card") { self.model.openSheetID == "alpha" }
     }
 
     func testReturnAndTheArrowsStayWithAFieldThatIsNotTheSearchField() async throws {
@@ -159,7 +164,7 @@ final class PanelKeysTests: PanelCase {
     }
 
     func testInASheetOfRowsTheArrowsMoveByLinesAndReturnPicksTheRow() async throws {
-        try script("fruit", header: "on=sheet.open", "printf 'row=a\\ntitle=Apple\\n\\nrow=b\\ntitle=Banana\\n\\nrow=c\\ntitle=Cherry\\n'")
+        try script("fruit", toml: "", "printf 'text=a\\ntitle=Apple\\n\\ntext=b\\ntitle=Banana\\n\\ntext=c\\ntitle=Cherry\\n'")
         await model.reload()
         model.isShown = true
         model.panelWillShow()
@@ -191,7 +196,7 @@ final class PanelKeysTests: PanelCase {
 
     func testEscPopsAPageOfASheetOfPartsAsItDoesInASheetOfRows() async throws {
         try await openInfo()
-        XCTAssertTrue(model.push(FlowSheet(spot: "info", page: "a")))
+        XCTAssertTrue(model.push(FlowSheet(spot: "info", route: "a")))
         try await wait("the page of parts") { self.model.openParts?.parts.first?.title == "Detail" }
         try await wait("the step to settle") { self.model.flowEdges.from == nil }
 
@@ -267,7 +272,7 @@ final class PanelKeysTests: PanelCase {
     }
 
     func testEscWhileAKeyIsRecordedStopsTheRecordingAndKeepsTheSheet() async throws {
-        try script("draw", header: "title=Draw\non=sheet.open", "printf 'row=float\\ntitle=Float\\ntype=hotkey\\nshortcut=Record\\n'")
+        try script("draw", toml: "title = 'Draw'", "printf 'field=float\\ntitle=Float\\ntype=hotkey\\n'")
         await model.reload()
         model.isShown = true
         model.panelWillShow()
@@ -302,19 +307,19 @@ final class PanelKeysTests: PanelCase {
     private func writePick(key: String? = nil) throws {
         try FileManager.default.createDirectory(at: pickData, withIntermediateDirectories: true)
         if let key { try key.write(to: pickData.appendingPathComponent("key"), atomically: true, encoding: .utf8) }
-        try script("pick", header: "title=Pick\non=sheet.open", """
+        try script("pick", toml: "title = 'Pick'", """
         data='\(pickData.path)'
-        [ "$1" = read ] || echo "$*" >> "$data/calls"
+        [ "$1" = show ] || echo "$*" >> "$data/calls"
         case "$1" in
           key) printf %s "$2" > "$data/key" ;;
           again) rm -f "$data/key" ;;
         esac
         case "$1" in
-          read|key|again)
+          show|key|again)
             key=$(cat "$data/key" 2>/dev/null)
-            printf 'title=Choose your key\\ngrid=key\\ngrid=keep\\ngrid=again\\n\\nfield=key\\ntype=hotkey\\nvalue=%s\\n' "$key"
+            printf 'frame=\\ntitle=Choose your key\\ngrid=key\\ngrid=keep\\ngrid=again\\n\\nfield=key\\ntype=hotkey\\nvalue=%s\\n' "$key"
             [ -n "$key" ] || printf 'recording=true\\n'
-            printf '\\nbutton=keep\\ntitle=Keep\\n\\nbutton=again\\ntitle=Try again\\nshortcut=escape\\n' ;;
+            printf '\\nbutton=keep\\ntitle=Keep\\nclose=false\\n\\nbutton=again\\ntitle=Try again\\nshortcut=escape\\nclose=false\\n' ;;
         esac
         """)
     }
@@ -324,17 +329,19 @@ final class PanelKeysTests: PanelCase {
     }
 
     private func openChoice() async throws {
+        takeCalls()
         try FileManager.default.createDirectory(at: pickData, withIntermediateDirectories: true)
-        try script("choice", header: "title=Choice\non=sheet.open", """
+        try script("choice", toml: "title = 'Choice'", """
         data='\(pickData.path)'
-        [ "$1" = read ] || echo "$*" >> "$data/calls"
+        [ "$1" = show ] || echo "$*" >> "$data/calls"
+        while [ -f "$data/hold-$1" ]; do sleep 0.01; done
         [ "$1" = key ] && printf %s "$2" > "$data/key"
-        [ "$1" = use ] && printf 'toast=Used\\n'
+        [ "$1" = use ] && \(TestSpot.toast) Used
         case "$1" in
-          read|key|record)
-            printf 'grid=key\\ngrid=key\\ngrid=use\\ngrid=record\\n\\nfield=key\\ntype=hotkey\\nvalue=%s\\n' "$(cat "$data/key" 2>/dev/null || printf ctrl+space)"
+          show|key|record)
+            printf 'frame=\\ngrid=key\\ngrid=key\\ngrid=use\\ngrid=record\\n\\nfield=key\\ntype=hotkey\\nvalue=%s\\n' "$(cat "$data/key" 2>/dev/null || printf ctrl+space)"
             [ "$1" != record ] || printf 'recording=true\\n'
-            printf '\\nbutton=use\\ntitle=Use\\nshortcut=return\\n\\nbutton=record\\ntitle=Record\\nshortcut=escape\\n' ;;
+            printf '\\nbutton=use\\ntitle=Use\\nshortcut=return\\nclose=false\\n\\nbutton=record\\ntitle=Record\\nshortcut=escape\\nclose=false\\n' ;;
         esac
         """)
         await model.reload()
@@ -368,6 +375,28 @@ final class PanelKeysTests: PanelCase {
         try await wait("the sent key") { self.pickCalls == ["record", "key option+space"] && self.model.sheets["choice"]?.calls.isEmpty == true }
         XCTAssertEqual(keyField?.control, .shortcut("option+space"))
         XCTAssertEqual(model.openParts?.selectedPart?.id, "use")
+    }
+
+    func testAReadThatAnswersBeforeTheRecordedKeyDoesNotRecordAgain() async throws {
+        try await openChoice()
+        let heldRead = pickData.appendingPathComponent("hold-show")
+        let heldKey = pickData.appendingPathComponent("hold-key")
+        try Data().write(to: heldRead)
+        try Data().write(to: heldKey)
+        model.sheets["choice"]?.show(need: .change)
+        XCTAssertTrue(model.handleKey(escape))
+        try await wait("the recording") { self.model.recording == "key" }
+        model.record(code: 49, modifiers: .option)
+        try await wait("the sent key") { self.pickCalls == ["record", "key option+space"] }
+
+        try FileManager.default.removeItem(at: heldRead)
+        try await wait("the end of the read") { self.model.sheets["choice"]?.calls.map(\.key) == ["part:key"] }
+        await nextTurn()
+        try FileManager.default.removeItem(at: heldKey)
+
+        try await wait("the end of the key") { self.model.sheets["choice"]?.calls.isEmpty == true }
+        await nextTurn()
+        XCTAssertNil(model.recording)
     }
 
     func testSpacePressesTheFocusedButton() async throws {
@@ -736,7 +765,7 @@ final class PanelKeysTests: PanelCase {
     }
 
     private func openKeyRow() async throws {
-        try script("draw", header: "title=Draw\non=sheet.open", "printf 'row=float\\ntitle=Float\\ntype=hotkey\\nshortcut=Record\\n'")
+        try script("draw", toml: "title = 'Draw'", "printf 'field=float\\ntitle=Float\\ntype=hotkey\\n'")
         await model.reload()
         model.isShown = true
         model.panelWillShow()
@@ -805,7 +834,7 @@ final class PanelKeysTests: PanelCase {
     }
 
     func testAKeyOfAnotherSpotSaysItOpensThatSpot() async throws {
-        try script("shelf", header: "title=Shelf", "true")
+        try script("shelf", toml: "title = 'Shelf'", "true")
         _ = try model.files.config.change { $0.assign(.key(try XCTUnwrap(Shortcut(text: "ctrl+option+s"))), to: "shelf", act: .open) }
         try await openKeyRow()
 
@@ -817,7 +846,7 @@ final class PanelKeysTests: PanelCase {
     }
 
     func testCommandYOpensTheHistoryOfASpotWhoseReturnRunsItsCommand() async throws {
-        try script("dictate", header: "title=Dictate\non=sheet.open\n\nbutton=dictate\ntitle=Dictate", "printf 'row=a\\ntitle=Said\\n'")
+        try script("dictate", toml: "title = 'Dictate'\non = ['sheet.open']\n[commands.dictate]\ntitle = 'Dictate'", "printf 'text=a\\ntitle=Said\\n'")
         await model.reload()
         model.isShown = true
         model.panelWillShow()

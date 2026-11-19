@@ -40,7 +40,7 @@
 - One primary type per file. The filename matches it. A file of extensions is named `Type+Topic.swift`.
   `scripts/check-files.sh` fails on a file that breaks this.
 - Nouns own their data. Verbs are methods on the noun that owns the data.
-- A toast or a failure line follows "Messages" in `PROTOCOL.md`.
+- A toast or a failure line follows [Write a message](GUIDE.md#write-a-message).
 
 ## Docs
 
@@ -60,23 +60,25 @@ Write a doc that people read, such as `GUIDE.md` and `PROTOCOL.md`, the way Appl
   fails on a gap the list lacks and on a listed gap that is gone.
 - It fails when an `sh`, `js` or `swift` example of GUIDE.md, PROTOCOL.md or `app/Help/` does not run (`DocExampleTests`).
   An example that needs a network, an account or a tool that not every Mac has goes in a `text` fence.
-- The docs are `AGENTS.md`, `spots/AGENTS.md`, `GUIDE.md`, `PROTOCOL.md`, `CONTRIBUTING.md`, `README.md` and `app/Help/`. The code is the
-  truth for how the app works, so no doc describes the app's code. Before you add a sentence, look for one that says it
-  already, and link to it, since no check finds a repeat.
+- The docs are `AGENTS.md`, `spots/AGENTS.md`, `GUIDE.md`, `PROTOCOL.md`, `TRUST.md`, `CONTRIBUTING.md`, `README.md`
+  and `app/Help/`. `PROTOCOL.md` holds only the contract of a spot. What the user chooses is in `GUIDE.md`, the words of
+  the app's own spots in `spots/AGENTS.md`, what Openspot shows the user about a spot in `TRUST.md`, and the reference of
+  the `openspot` commands in `app/Help/`. The code is the truth for how the app works, so no doc describes the app's
+  code. Before you add a sentence, look for one that says it already, and link to it, since no check finds a repeat.
 
 ## Comments
 
 - Code and the scripts in `scripts/` hold no comment and no docstring. A spot may; see [spots/AGENTS.md](spots/AGENTS.md). A name, a type or a test says what a comment would.
-- The one exception is a `// @todo #<id>` puzzle. The header of a spot script is not a comment: it is part of the spot.
+- The one exception is a `// @todo #<id>` puzzle.
 - `make verify` runs `scripts/check-comments.sh`, which fails on a comment.
 
 ## UX
 
-Each spot follows [The keys of a spot](PROTOCOL.md#the-keys-of-a-spot): Return does its main act, `⌘` Return opens its
+Each spot follows [The keys of a spot](GUIDE.md#the-keys-of-a-spot): Return does its main act, `⌘` Return opens its
 Settings, `⌘Y` its History, `⌘K` the menu of all acts. Openspot makes these for every spot, so a rule changes in one place.
 
 - Settings follow the level they change. openspot's Settings hold only the app's rows. Each spot's own Settings hold its
-  keys first, Open, each command and Float, then its fields and its menu bar, with the same Not set and `⌘⌫` Remove on
+  keys first, Open, each command and Float, then its fields, its menu bar and its window, with the same Not set and `⌘⌫` Remove on
   every key row.
 - A card's ⌘K menu holds the standard acts in one order, which `spots/openspot.spot/actions.js` offers to every card.
   A key that a footer already shows does not need a ⌘K menu of its own.
@@ -250,6 +252,9 @@ A view that moves on its own, such as a liquid, a clock hand or a GIF, keeps the
 
 - A test proves behaviour through the public surface: inputs in, outputs out.
 - Fakes stand in only at I/O: the disk, the process, the clock.
+- A test of Core builds each spot it runs, with each kind of part that the real one prints, so a change of the protocol
+  never waits on a spot that has not moved. Only a test of one real spot, or a rule over every spot that ships, reads
+  `spots/` or `examples/`.
 - Write the failing test first, then the code that passes it.
 - Write a script for a test with `writeScript(to:)`. macOS checks a new executable file on its first run, for 150 ms or more.
 - Give a test a short pause through a setting, such as `stopPause`, and keep one test of the real time.

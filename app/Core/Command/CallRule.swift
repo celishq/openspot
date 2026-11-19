@@ -1,7 +1,7 @@
 import Foundation
 
 public struct CallRule: Equatable, Sendable {
-    public enum Read: Equatable, Sendable {
+    public enum InShow: Equatable, Sendable {
         case free
         case changes(String)
         case waits
@@ -26,20 +26,20 @@ public struct CallRule: Equatable, Sendable {
 
     public var use: SpotUse?
     public var used: String
-    public var read: Read
+    public var inShow: InShow
     public var flags: Flags
     public var onlyPerson: String?
 
-    public init(use: SpotUse? = nil, used: String = "", read: Read = .free, flags: Flags = [], onlyPerson: String? = nil) {
+    public init(use: SpotUse? = nil, used: String = "", inShow: InShow = .free, flags: Flags = [], onlyPerson: String? = nil) {
         self.use = use
         self.used = used
-        self.read = read
+        self.inShow = inShow
         self.flags = flags
         self.onlyPerson = onlyPerson
     }
 
     var act: (effect: String, words: String?) {
-        switch read {
+        switch inShow {
         case .free: ("read", nil)
         case .changes(let act): ("changes", act)
         case .waits: ("waits", "waits for the person")
@@ -48,10 +48,10 @@ public struct CallRule: Equatable, Sendable {
     }
 
     func refusal(of name: String) -> String? {
-        act.words.map { "`openspot \(name)` \($0), so it cannot run in a read. Run it from a pick or an action." }
+        act.words.map { "`openspot \(name)` \($0), so it cannot run in a show. Run it from a pick or an action." }
     }
 
     var isBatched: Bool {
-        flags.isDisjoint(with: [.startsScripts, .readsInput, .ownProcess]) && read != .waits && read != .captures
+        flags.isDisjoint(with: [.startsScripts, .readsInput, .ownProcess]) && inShow != .waits && inShow != .captures
     }
 }

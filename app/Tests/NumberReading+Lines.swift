@@ -1,0 +1,7 @@
+@testable import OpenspotCore
+
+extension NumberReading {
+    static func of(_ lines: String) -> NumberReading {
+        NumberReading(block: TextBlock.blocks(in: "number=n\n" + lines)[0])
+    }
+}

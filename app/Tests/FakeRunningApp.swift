@@ -62,8 +62,8 @@ actor FakeRunningApp: RunningApp {
         return id != "gone"
     }
 
-    func push(_ id: String, page: String?, title: String?, replace: Bool) -> Bool {
-        opened.append((["push", id, page, replace ? "replace" : nil, title].compactMap { $0 }).joined(separator: " "))
+    func push(_ id: String, route: String?, title: String?, replace: Bool) -> Bool {
+        opened.append((["push", id, route, replace ? "replace" : nil, title].compactMap { $0 }).joined(separator: " "))
         return id != "gone"
     }
 

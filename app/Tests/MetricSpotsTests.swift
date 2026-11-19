@@ -47,7 +47,8 @@ final class MetricSpotsTests: SpotRunsCase {
         let lines = try String(contentsOf: source, encoding: .utf8).components(separatedBy: "\n")
         let header = lines.dropFirst().prefix { $0.hasPrefix("#") }.count + 1
         let body = lines.prefix(header) + ["echo $$ >> '\(path("pids"))'"] + lines.dropFirst(header)
-        try body.joined(separator: "\n").writeScript(to: folder.appendingPathComponent("\(name).spot/\(name).sh"))
+        let toml = try String(contentsOf: source.deletingLastPathComponent().appendingPathComponent(Manifest.fileName), encoding: .utf8)
+        try body.joined(separator: "\n").writeScript(to: folder.appendingPathComponent("\(name).spot/\(name).sh"), toml: toml)
     }
 
     private func title(_ id: String) -> String? {
@@ -58,7 +59,7 @@ final class MetricSpotsTests: SpotRunsCase {
         let scan = try scanned()
 
         for id in metrics {
-            let read = try XCTUnwrap(scan.spots.first { $0.id == id }?.read, id)
+            let read = try XCTUnwrap(scan.spots.first { $0.id == id }?.on, id)
             XCTAssertNil(read.seconds, id)
         }
     }
@@ -68,7 +69,7 @@ final class MetricSpotsTests: SpotRunsCase {
         runs.listen(to: mac)
         mac.sample = LoadSample(busy: 10, total: 100, memory: 40)
         _ = try scanned()
-        try await wait("the first reads") { self.title("battery") == "84%" && self.title("disk") == "40%" && self.runs.watchesLoad && !self.runs.isReading }
+        try await wait("the first reads") { self.title("battery") == "84%" && self.title("disk") == "40%" && self.runs.watchesLoad && !self.runs.isShowing }
         let started = log("pids").count
         let tools = log("tools.log")
         XCTAssertEqual(started, metrics.count)
@@ -77,12 +78,12 @@ final class MetricSpotsTests: SpotRunsCase {
             mac.sample = LoadSample(busy: UInt64(10 + step * 2), total: UInt64(100 + step * 10), memory: 40 + step)
             try await wait("the sleep of the load") { self.fake.isSleeping(for: 5) }
             fake.advance(by: 5)
-            try await wait("the load of step \(step)") { self.title("memory") == "\(40 + step)%" && self.title("cpu") == "20%" && !self.runs.isReading }
+            try await wait("the load of step \(step)") { self.title("memory") == "\(40 + step)%" && self.title("cpu") == "20%" && !self.runs.isShowing }
         }
 
         XCTAssertEqual(log("pids").count, started)
         XCTAssertEqual(log("tools.log"), tools)
-        XCTAssertEqual(runs.sheets["cpu"]?.reading.value?.points?.count, 12)
+        XCTAssertEqual(runs.sheets["cpu"]?.reading.value?.number?.points.count, 12)
     }
 
     func testCPUAndMemoryShowAValueOnAReadWithNoLoad() async throws {
@@ -97,29 +98,106 @@ final class MetricSpotsTests: SpotRunsCase {
         menuBar = ["battery"]
         runs.listen(to: mac)
         _ = try scanned()
-        try await wait("the first read") { self.title("battery") == "84%" && !self.runs.isReading }
+        try await wait("the first read") { self.title("battery") == "84%" && !self.runs.isShowing }
         fake.advance(by: 60)
         XCTAssertEqual(log("tools.log"), ["pmset"])
 
         runs.raise(.named(SpotEvent.powerChange, value: "ac"))
 
-        try await wait("the read of the change") { self.log("tools.log") == ["pmset", "pmset"] && !self.runs.isReading }
+        try await wait("the read of the change") { self.log("tools.log") == ["pmset", "pmset"] && !self.runs.isShowing }
     }
 
     func testTheDevicesAskTheBluetoothReportOnceInFiveMinutesUnlessADeviceConnects() async throws {
         menuBar = ["devices"]
         runs.listen(to: mac)
         _ = try scanned()
-        try await wait("the first read") { self.title("devices") == "–" && !self.runs.isReading }
+        try await wait("the first read") { self.title("devices") == "–" && !self.runs.isShowing }
         let script = folder.appendingPathComponent("devices.spot/devices.sh")
         var kept = ""
 
-        for try await frame in ScriptProcess(url: script, arguments: ["read"], limit: 60, dataName: "devices", variables: ["OPENSPOT_REASON": "spot.want"], base: runs.environment).start() { kept += frame }
+        for try await frame in ScriptProcess(url: script, arguments: ["show"], mode: .once(input: "event=spot.want\n"), limit: 60, dataName: "devices", base: runs.environment).start() { kept += frame }
         XCTAssertEqual(log("tools.log"), ["system_profiler"])
-        XCTAssertTrue(kept.contains("title=–"), kept)
+        XCTAssertTrue(kept.contains("display=–"), kept)
 
         runs.raise(.named(SpotEvent.deviceConnect, value: "Keyboard"))
 
-        try await wait("the read of the device") { self.log("tools.log") == ["system_profiler", "system_profiler"] && !self.runs.isReading }
+        try await wait("the read of the device") { self.log("tools.log") == ["system_profiler", "system_profiler"] && !self.runs.isShowing }
+    }
+
+    func testSystemsSheetShowsItsNumbersInOneRowOverTheTopProcessesAndTheSwapAndKeepsTheBluetoothReport() async throws {
+        try copy("system")
+        let script = folder.appendingPathComponent("system.spot/system.sh")
+        var frames: [String] = []
+
+        for event in ["sheet.open", "system.load"] {
+            var frame = ""
+            for try await text in ScriptProcess(url: script, arguments: ["show"], mode: .once(input: "event=\(event)\n"), limit: 60, dataName: "system", base: runs.environment).start() { frame += text }
+            frames.append(frame)
+        }
+
+        for frame in frames {
+            XCTAssertTrue(frame.contains("grid=battery cpu memory devices\ngrid=battery cpu memory devices\n"), frame)
+            XCTAssertTrue(frame.contains("section=top-cpu\ntitle=CPU\n\nnumber=cpu-1\n"), frame)
+            XCTAssertTrue(frame.contains("number=swap\ntitle=Swap\n"), frame)
+            XCTAssertFalse(frame.contains("text=mac\n"), frame)
+        }
+        XCTAssertEqual(log("tools.log").filter { $0 == "system_profiler" }, ["system_profiler"])
+    }
+
+    func testSystemsRowsShowTheirValueAndOpenActivityMonitorOrBluetoothSettings() async throws {
+        try copy("system")
+        try "#!/bin/sh\nprintf '%s\\n' \"$*\" >> '\(path("open.log"))'\n".writeScript(to: folder.appendingPathComponent("tools/open"))
+        let script = folder.appendingPathComponent("system.spot/system.sh")
+        func run(_ arguments: [String]) async throws -> String {
+            var text = ""
+            for try await frame in ScriptProcess(url: script, arguments: arguments, mode: .once(input: "event=sheet.open\n"), limit: 60, dataName: "system", base: runs.environment).start() { text += frame }
+            return text
+        }
+
+        let frame = try await run(["show"])
+        let rows = Frame(text: frame).items
+        let process = try XCTUnwrap(rows.first { $0.run == "cpu-1" })
+        _ = try await run(["open", process.run])
+        _ = try await run(["open", "device-1"])
+
+        XCTAssertNotNil(process.number, frame)
+        XCTAssertEqual(process.openTitle, "Activity Monitor")
+        XCTAssertEqual(log("open.log"), ["-a Activity Monitor", "x-apple.systempreferences:com.apple.BluetoothSettings"])
+    }
+
+    func testSystemReadsTheBatteryAndTheDevicesAgainOverWhatAnOlderFormKept() async throws {
+        try copy("system")
+        let data = ScriptProcess.dataFolder(base: runs.environment, dataName: "system")
+        try FileManager.default.createDirectory(at: data, withIntermediateDirectories: true)
+        try "text=battery\ntitle=50%\n".write(to: data.appendingPathComponent("battery"), atomically: true, encoding: .utf8)
+        try "text=devices\ntitle=50%\n".write(to: data.appendingPathComponent("devices"), atomically: true, encoding: .utf8)
+        runs.listen(to: mac)
+        _ = try scanned()
+        runs.take(grid: ["system"])
+        runs.panelOpened()
+        let number = { (id: String) in self.runs.sheets["system"]?.state.face.parts.first { $0.id == id }?.number?.text }
+
+        try await wait("the numbers") { number("battery") == "84%" && number("devices") == "–" && !self.runs.isShowing }
+    }
+
+    func testSystemDrawsItsOwnCardOfTheBatteryTheCPUTheMemoryAndTheDevicesAtTheirEvents() async throws {
+        try copy("system")
+        runs.listen(to: mac)
+        mac.sample = LoadSample(busy: 10, total: 100, memory: 40)
+        let scan = try scanned()
+        runs.take(grid: ["system"])
+        runs.panelOpened()
+        let titles = { Dictionary((self.runs.sheets["system"]?.state.face.parts ?? []).map { ($0.id, $0.number?.text ?? "") }) { first, _ in first } }
+        XCTAssertNil(try XCTUnwrap(scan.spots.first { $0.id == "system" }?.on).seconds)
+        try await wait("the first read") { titles()["battery"] == "84%" && titles()["devices"] == "–" && titles()["memory"] != nil && !self.runs.isShowing }
+
+        mac.sample = LoadSample(busy: 30, total: 200, memory: 55)
+        try await wait("the sleep of the load") { self.fake.isSleeping(for: 5) }
+        fake.advance(by: 5)
+        try await wait("the load") { titles()["memory"] == "55%" && titles()["cpu"] == "20%" && !self.runs.isShowing }
+        runs.raise(.named(SpotEvent.powerChange, value: "ac"))
+        try await wait("the read of the power") { self.log("tools.log").filter { $0 == "pmset" }.count == 2 && !self.runs.isShowing }
+        runs.raise(.named(SpotEvent.deviceConnect, value: "Keyboard"))
+        try await wait("the read of the device") { self.log("tools.log").filter { $0 == "system_profiler" }.count == 2 && !self.runs.isShowing }
     }
 }

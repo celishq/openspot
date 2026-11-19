@@ -18,7 +18,7 @@ struct SpotView: View {
     private var secondary: Color { theme.color.ink.opacity(theme.color.secondary) }
 
     var body: some View {
-        let row = spot.rows.first { $0.id == spot.selection } ?? spot.rows.first
+        let row = spot.items.first { $0.id == spot.selection } ?? spot.items.first
         let top = CGSize(width: spot.size.width, height: spot.size.height - Self.hint - theme.space.padding)
         VStack(spacing: theme.space.padding) {
             pair(row, size: top)
@@ -31,7 +31,7 @@ struct SpotView: View {
         .frame(width: spot.size.width, height: spot.size.height)
     }
 
-    private func hint(for row: SpotRow?) -> String {
+    private func hint(for row: SpotItem?) -> String {
         let id = row?.id ?? ""
         let name = row?["spot.title"] ?? ""
         if id.hasPrefix("use:") { return "⏎ Open \(name)  ·  ⌘I Learn More" }
@@ -39,7 +39,7 @@ struct SpotView: View {
         return "⏎ Tick or untick"
     }
 
-    private func pair(_ row: SpotRow?, size: CGSize) -> some View {
+    private func pair(_ row: SpotItem?, size: CGSize) -> some View {
         let room = CGSize(width: (size.width - Self.arrow) / 2 - theme.space.padding, height: size.height - Self.lines - theme.space.padding)
         return HStack(spacing: 0) {
             side(row?["title"] ?? "", "Raycast") { from(row) }
@@ -53,7 +53,7 @@ struct SpotView: View {
         .frame(width: size.width, height: size.height)
     }
 
-    private func place(of row: SpotRow?) -> String {
+    private func place(of row: SpotItem?) -> String {
         guard row?["spot"] != nil else { return "Made by your agent" }
         let detail = row?["detail"] ?? ""
         if detail.hasSuffix("in the Store") { return "In the Store" }
@@ -79,7 +79,7 @@ struct SpotView: View {
     }
 
     @ViewBuilder
-    private func from(_ row: SpotRow?) -> some View {
+    private func from(_ row: SpotItem?) -> some View {
         let icon = row?["icon"] ?? "puzzlepiece.extension"
         Group {
             if icon.hasPrefix("/") {
@@ -92,7 +92,7 @@ struct SpotView: View {
     }
 
     @ViewBuilder
-    private func to(_ row: SpotRow?, room: CGSize) -> some View {
+    private func to(_ row: SpotItem?, room: CGSize) -> some View {
         if let id = row?["spot"] {
             let size = spot.cardSize(id)
             let scale = size.width > 0 && size.height > 0 ? min(1, room.width / size.width, room.height / size.height) : 1

@@ -3,6 +3,10 @@ import Foundation
 extension SpotTokens {
     public static let groupTitleBand: CGFloat = groupTitleHeight + placeGap
 
+    public static var wordsRingSide: CGFloat { glyph * 2 }
+
+    public static var sheetWordsWidth: CGFloat { gridWidth - 2 * padding - 2 * glyph - 2 * wordsGap }
+
     public static let rimPoint: CGFloat = 1 - 0.5.squareRoot()
 
     public static let hintKeyInset: CGFloat = hintHeight / 2 + hintPillInset - hintKeyHeight / 2
@@ -27,8 +31,8 @@ extension SpotTokens {
         CGFloat(rows) * cell + CGFloat(rows - 1) * rowGap
     }
 
-    public static func cardPadding(for size: SpotSize, isWidget: Bool) -> CGFloat {
-        isWidget && size == .small ? controlPadding : padding
+    public static func cardPadding(for size: SpotSize, isDrawn: Bool) -> CGFloat {
+        isDrawn && size == .small ? controlPadding : padding
     }
 
     public static func pictureSide(in room: CGSize) -> CGFloat {
@@ -42,17 +46,27 @@ extension SpotTokens {
         (partsWidth - listRowGap * CGFloat(perLine - 1)) / CGFloat(perLine)
     }
 
-    public static func sheetRect(rows: Int, perLine: Int = 1, hasField: Bool = true, setsApart: Bool = false) -> CGRect {
+    public static var listRoom: CGFloat { sheetMaxHeight - sheetRowsTop - padding }
+
+    public static func rowsHeight(rows: Int, perLine: Int = 1) -> CGFloat {
         let lines = CGFloat(max((rows + perLine - 1) / perLine, 1))
         let line = perLine > 1 ? square(perLine: perLine) : listRow
-        let height = sheetRowsTop - (hasField ? 0 : listRow + rowGap) + lines * line + (lines - 1) * listRowGap + padding
+        return lines * line + (lines - 1) * listRowGap
+    }
+
+    public static func rowsFit(rows: Int, perLine: Int = 1, in room: CGFloat = listRoom) -> Bool {
+        rowsHeight(rows: rows, perLine: perLine) < room
+    }
+
+    public static func sheetRect(rows: Int, perLine: Int = 1, setsApart: Bool = false, top: SheetTop = .plain) -> CGRect {
+        let height = top.rowsTop + rowsHeight(rows: rows, perLine: perLine) + padding
             + (setsApart ? pinRuleRoom + listRowGap : 0)
         return CGRect(x: halo, y: halo, width: gridWidth, height: min(height, sheetMaxHeight))
     }
 
     public static func firstScreen(perLine: Int) -> Int {
         let line = perLine > 1 ? square(perLine: perLine) : listRow
-        let lines = ((sheetMaxHeight - sheetRowsTop - padding) / (line + listRowGap)).rounded(.up)
+        let lines = (listRoom / (line + listRowGap)).rounded(.up)
         return (Int(lines) + 1) * max(perLine, 1)
     }
 
@@ -70,13 +84,10 @@ extension SpotTokens {
         return CGSize(width: gridWidth, height: min(sheetFieldDrop + content + padding, sheetMaxHeight))
     }
 
-    public static func sheetFits(rows: Int, perLine: Int = 1) -> Bool {
-        sheetRect(rows: rows, perLine: perLine).height < sheetMaxHeight
-    }
 
     public static func panelRect(_ panel: SheetParts) -> CGRect {
-        let field = panel.holdsSearch ? SpotTokens.partFieldRoom : 0
-        let height = sheetFieldDrop + field + panel.placement.height + padding
+        let field = panel.top.hasField ? SpotTokens.partFieldRoom : 0
+        let height = panel.top.fieldY + field + panel.placement.height + padding
         return CGRect(x: halo, y: halo, width: gridWidth, height: min(height, sheetMaxHeight))
     }
 

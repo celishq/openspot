@@ -11,6 +11,7 @@ public final class SpotCaller: @unchecked Sendable, Equatable {
     private var channelValue: RunChannel?
     private var groupValue: (id: pid_t, start: UInt64)?
     private var endedValue = false
+    private var callValue: OpenCall?
 
     init(spot: Spot, reason: String? = nil, keepsFix: Bool = false) {
         self.spot = spot
@@ -25,6 +26,11 @@ public final class SpotCaller: @unchecked Sendable, Equatable {
     var reason: String? {
         get { lock.withLock { reasonValue } }
         set { lock.withLock { reasonValue = newValue } }
+    }
+
+    var call: OpenCall? {
+        get { lock.withLock { callValue } }
+        set { lock.withLock { callValue = newValue } }
     }
 
     var group: (id: pid_t, start: UInt64)? {
@@ -62,6 +68,7 @@ public final class SpotCaller: @unchecked Sendable, Equatable {
     func end() {
         let channel = lock.withLock {
             endedValue = true
+            callValue = nil
             defer { channelValue = nil }
             return channelValue
         }

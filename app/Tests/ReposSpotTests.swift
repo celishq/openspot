@@ -23,11 +23,11 @@ final class ReposSpotTests: SampleSpotsCase {
 
     @discardableResult
     private func kept<T>(in folder: URL, _ body: () async throws -> T) async throws -> T {
-        var settings: [String: String?] = [:]
+        var settings: [String: String] = [:]
         for key in ["folder", "editor"] {
-            settings["OPENSPOT_SETTING_\(key.uppercased())"] = try? String(contentsOf: folder.appendingPathComponent("setting-\(key)"), encoding: .utf8)
+            settings[key] = try? String(contentsOf: folder.appendingPathComponent("setting-\(key)"), encoding: .utf8)
         }
-        return try await TestEnvironment.with(settings, body)
+        return try await TestSettings.with(settings, body)
     }
 
     func testWithNoFolderItAsksForOneAndKeepsThePick() async throws {
@@ -156,7 +156,7 @@ final class ReposSpotTests: SampleSpotsCase {
             let pages = repos.taking(output).actions.filter { $0.title.hasPrefix("Open on ") }
             let app = try XCTUnwrap(output.items.first { $0.title == "app" })
             let github = try XCTUnwrap(pages.first { $0.title == "Open on GitHub" })
-            try await kept(in: folder) { try await repos.perform(.action(github, item: app), input: app.fields, timeout: 60) }
+            try await kept(in: folder) { try await repos.perform(.action(github, item: app), input: Message(.action(github, item: app), item: app.fields).text, timeout: 60) }
 
             XCTAssertEqual(pages.map(\.title), ["Open on git.example.com", "Open on GitHub", "Open on GitLab"])
             XCTAssertEqual(output.items.map(\.title), ["app", "lab", "local", "own"])

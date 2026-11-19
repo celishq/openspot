@@ -1,0 +1,4 @@
+title = "Shelf"
+icon = "tray.full"
+detail = "Keeps files at hand"
+drop = "*"

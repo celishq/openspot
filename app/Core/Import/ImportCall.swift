@@ -6,15 +6,15 @@ enum ImportCall: NounCall {
     case extensions(String?, form: PrintForm)
 
     static let noun = CommandNoun("import", group: .build, verbs: [
-        CommandVerb("raycast", "<folder> [--skip <file>]... [--dry-run] [--json]", "Turns each Raycast script command in a folder into a spot of your spots folder, and prints what it added, kept and skipped. A script it imported before stays as it is, and --skip leaves out a file by its path in the folder. --dry-run changes nothing.", rule: CallRule(use: .spots, used: "imported spots", read: .changes("changes your spots"))) { words in
+        CommandVerb("raycast", "<folder> [--skip <file>]... [--dry-run] [--json]", "Turns each Raycast script command in a folder into a spot of your spots folder, and prints what it added, kept and skipped. A script it imported before stays as it is, and --skip leaves out a file by its path in the folder. --dry-run changes nothing.", rule: CallRule(use: .spots, used: "imported spots", inShow: .changes("changes your spots"))) { words in
             guard let fit = words.fit, let folder = fit.rest.first, fit.rest.count == 1 else { return nil }
             return Self.raycast(folder, isDry: fit.has("--dry-run"), form: fit.has(PrintForm.jsonWord) ? .json : .frame, skip: fit.values("--skip"))
         },
-        CommandVerb("rayconfig", "<file> [--skip links|snippets]... [--dry-run] [--json]", "Opens a Raycast export with the passphrase on stdin, adds its quicklinks to Links and its snippets to Snippets, and prints a row for each kind of data it holds. --skip leaves out a kind. --dry-run changes nothing.", rule: CallRule(use: .spots, used: "imported Raycast data", read: .changes("changes your links and snippets"), flags: .readsInput)) { words in
+        CommandVerb("rayconfig", "<file> [--skip links|snippets]... [--dry-run] [--json]", "Opens a Raycast export with the passphrase on stdin, adds its quicklinks to Links and its snippets to Snippets, and prints a row for each kind of data it holds. --skip leaves out a kind. --dry-run changes nothing.", rule: CallRule(use: .spots, used: "imported Raycast data", inShow: .changes("changes your links and snippets"), flags: .readsInput)) { words in
             guard let fit = words.fit, let file = fit.rest.first, fit.rest.count == 1 else { return nil }
             return Self.rayconfig(file, isDry: fit.has("--dry-run"), form: fit.has(PrintForm.jsonWord) ? .json : .frame, skip: fit.values("--skip"))
         },
-        CommandVerb("extensions", "[folder] [--json]", "Prints a row for each Raycast extension in a folder, ~/.config/raycast/extensions when none is given: the spot that does its job, whether you have it or can get it, or else that an agent can make one. It changes nothing.", rule: CallRule(use: .spots, used: "read your Raycast extensions")) { words in
+        CommandVerb("extensions", "[folder] [--json]", "Prints an item for each Raycast extension in a folder, ~/.config/raycast/extensions when none is given: the spot that does its job, whether you have it or can get it, or else that an agent can make one. It changes nothing.", rule: CallRule(use: .spots, used: "read your Raycast extensions")) { words in
             guard let fit = words.fit, fit.rest.count <= 1 else { return nil }
             return Self.extensions(fit.rest.first, form: fit.has(PrintForm.jsonWord) ? .json : .frame)
         }
@@ -26,7 +26,7 @@ enum ImportCall: NounCall {
         default: return rule
         }
         var rule = rule
-        rule.read = .free
+        rule.inShow = .free
         return rule
     }
 

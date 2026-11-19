@@ -19,22 +19,23 @@ enum RaycastBody {
     static let toastLast = """
     [ "$status" -eq 0 ] || fail
     line=$(lines | tail -n 1)
-    [ -z "$line" ] || openspot_kv toast "$line"
+    [ -z "$line" ] || openspot toast "$line"
     """
 
     static var toast: String {
         """
-        [ "$1" = read ] && exit 0
+        [ "$1" = show ] && exit 0
         launch
         \(toastLast)
         """
     }
 
     static let inline = """
-    [ "$1" = read ] || exit 0
+    [ "$1" = show ] || exit 0
     launch
     [ "$status" -eq 0 ] || fail
     line=$(lines | head -n 1)
+    printf 'frame=\\ngrid.bar=output\\n'
     openspot_kv detail "$line"
     printf '\\ntext=output\\n'
     openspot_kv title "$line"
@@ -61,7 +62,7 @@ enum RaycastBody {
         if arguments.contains(where: \.isEncoded) { parts.append(encode) }
         parts += numbered.filter { $0.argument.isChoice }.map { pick($0.number, $0.argument) }
         parts.append(fields(numbered, title: title, confirms: confirms, closes: mode == .silent, again: mode == .fullOutput && arguments.isEmpty && !confirms))
-        parts.append((["slash="] + numbered.map { "arg\($0.number)=$(value arg\($0.number))" }).joined(separator: "\n"))
+        parts.append(numbered.map { "arg\($0.number)=$(value input.arg\($0.number))" }.joined(separator: "\n"))
         let shows = mode == .fullOutput
         let output = "printf '\\nfield=output\\ntype=multiline\\nreadonly=true\\n'\nopenspot_kv value \"$1\""
         parts.append("output() {\n  fields output\n" + output.split(separator: "\n").map { "  \($0)" }.joined(separator: "\n") + "\n}")
@@ -71,13 +72,11 @@ enum RaycastBody {
         }
         let values = numbered.filter { $0.argument.isChoice }.map { "    arg\($0.number)=$(pick\($0.number) \"$arg\($0.number)\")" }
         let ran = shows ? "    output \"$output\"\n    [ \"$status\" -eq 0 ] || fail" : toastLast.split(separator: "\n").map { "    \($0)" }.joined(separator: "\n")
-        let filled = numbered.filter { !$0.argument.isOptional }.map { "[ -n \"$arg\($0.number)\" ]" }
-        let marks = "    [ -z \"$(value search)\" ] || { \((filled.isEmpty ? ["true"] : filled).joined(separator: " && ")) && slash=1; }"
-        let first = numbered.isEmpty ? nil : spread(numbered) + (confirms ? "" : "\n" + marks)
+        let first = numbered.isEmpty ? nil : spread(numbered)
         let opens = shows && arguments.isEmpty && !confirms
             ? "    output 'Running…'\n    printf -- '---\\n'\n    launch\n    output \"$output\"\n    [ \"$status\" -eq 0 ] || fail"
             : "    fields"
-        parts.append((["case \"$1\" in", "  run)"] + checks + values + ["    launch" + (given.isEmpty ? "" : " \(given)"), ran, "    ;;", "  read)"]
+        parts.append((["case \"$1\" in", "  run)"] + checks + values + ["    launch" + (given.isEmpty ? "" : " \(given)"), ran, "    ;;", "  show)"]
             + (first.map { [$0] } ?? []) + [opens, "    ;;", "esac"]).joined(separator: "\n"))
         return parts.joined(separator: "\n")
     }
@@ -103,10 +102,9 @@ enum RaycastBody {
     static func fields(_ numbered: [(number: Int, argument: RaycastArgument)], title: String, confirms: Bool, closes: Bool, again: Bool) -> String {
         let hints = numbered.isEmpty && !again
         let grid = (hints ? ["hint"] : []) + numbered.map { "arg\($0.number)" }
-        var lines = ["fields() {", "  printf 'search=off\\n" + grid.map { "grid=\($0)\\n" }.joined() + "'"]
+        var lines = ["fields() {", "  printf 'frame=\\n" + grid.map { "grid=\($0)\\n" }.joined() + "'"]
         lines.append("  [ \"$1\" != output ] || printf 'grid=output\\ngrid=output\\ngrid=output\\n'")
         if !again { lines.append("  printf 'grid=run\\n'") }
-        if !confirms { lines.append("  [ -z \"$slash\" ] || printf 'slash=run\\n'") }
         if hints { lines += ["  printf '\\ntext=hint\\n'", "  openspot_kv title \(RaycastSpot.quoted("Press Return to run \(title)"))"] }
         for (number, argument) in numbered {
             let label = RaycastSpot.quoted(label(number, argument))
@@ -121,7 +119,7 @@ enum RaycastBody {
         }
         lines.append("  printf '\\nbutton=run\\ntitle=\(again ? "Run Again" : "Run")\\n\(again ? "" : "look=strong\\n")shortcut=\(again ? "cmd+r" : "return")\\nscope=spot\\n'")
         if confirms { lines.append("  printf 'confirm=Press again to run\\n'") }
-        if closes { lines.append("  printf 'close=true\\n'") }
+        if !closes { lines.append("  printf 'close=false\\n'") }
         lines.append("}")
         return lines.joined(separator: "\n")
     }

@@ -2,7 +2,7 @@ import Foundation
 
 extension SpotsModel {
     public func float(_ id: String) {
-        guard let entry = cards.first(where: { $0.id == id && $0.kind != .widget }) else { return }
+        guard let entry = cards.first(where: { $0.id == id }) else { return }
         if runs.floating.contains(id), !host.isMouseDown {
             land(id)
             return
@@ -26,7 +26,7 @@ extension SpotsModel {
             return
         }
         if runs.floating.contains(id) {
-            sheets[id]?.read(need: .change)
+            sheets[id]?.show(need: .change)
         } else {
             runs.float(id)
         }
@@ -34,7 +34,7 @@ extension SpotsModel {
     }
 
     func readWindows() {
-        for id in runs.floating where place(ofSheet: id) == .window { sheets[id]?.read(need: .change) }
+        for id in runs.floating where place(ofSheet: id) == .window { sheets[id]?.show(need: .change) }
     }
 
     public func land(_ id: String) {
@@ -92,8 +92,8 @@ extension SpotsModel {
     public func pressFloatCard(_ id: String) {
         guard let entry = card(id: id) else { return }
         switch entry.kind {
-        case .toggle, .launch: sheets[id]?.pressCard()
-        case .list, .slider, .widget: break
+        case .toggle: sheets[id]?.pressCard()
+        case .launch, .list, .slider: break
         }
     }
 }

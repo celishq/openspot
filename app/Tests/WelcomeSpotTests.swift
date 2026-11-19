@@ -8,15 +8,15 @@ final class WelcomeSpotTests: BuiltInCase {
         }
     }
 
-    private func answer(_ arguments: [String]) async throws -> SpotOutput {
+    private func answer(_ arguments: [String]) async throws -> Frame {
         try await welcome.answer(SpotAction(arguments: arguments), timeout: 60)
     }
 
-    private func read(page: String? = nil) async throws -> SpotOutput {
+    private func read(page: String? = nil) async throws -> Frame {
         try await welcome.items(page: page, timeout: 60)
     }
 
-    private func part(_ id: String, in output: SpotOutput) throws -> SpotPart {
+    private func part(_ id: String, in output: Frame) throws -> SpotPart {
         try XCTUnwrap(output.parts.first { $0.id == id })
     }
 
@@ -24,7 +24,7 @@ final class WelcomeSpotTests: BuiltInCase {
         path.map { URL(fileURLWithPath: $0).lastPathComponent }
     }
 
-    private func assertHead(_ output: SpotOutput, _ title: String, _ detail: String, file: StaticString = #filePath, line: UInt = #line) throws {
+    private func assertHead(_ output: Frame, _ title: String, _ detail: String, file: StaticString = #filePath, line: UInt = #line) throws {
         let head = try part("head", in: output)
         XCTAssertEqual(head.kind, "view", file: file, line: line)
         XCTAssertFalse(head.growsRow, file: file, line: line)
@@ -36,7 +36,7 @@ final class WelcomeSpotTests: BuiltInCase {
         let spot = try welcome
 
         XCTAssertEqual(spot.starts, .firstLaunch)
-        XCTAssertFalse(spot.offersCard)
+        XCTAssertEqual(Config(text: try String(contentsOf: URL(fileURLWithPath: #filePath).deletingLastPathComponent().deletingLastPathComponent().appendingPathComponent("defaults.toml"), encoding: .utf8)).arrangement.isOnGrid(of: "openspot/welcome"), false)
         XCTAssertEqual(spot.name, "Welcome spot")
         XCTAssertNil(spot.subtitle)
         XCTAssertEqual(spot.symbol, "hand.wave")
@@ -56,9 +56,11 @@ final class WelcomeSpotTests: BuiltInCase {
     }
 
     func testContinuePushesTheKeyPage() async throws {
-        let output = try await answer(["next"])
+        let effects = try recordEffects()
 
-        XCTAssertEqual(output.move, .push(spot: nil, page: "key", title: "Choose your key", replace: false))
+        _ = try await answer(["next"])
+
+        XCTAssertEqual(effects(), ["route push key --title Choose your key"])
     }
 
     func testTheKeyPageShowsTheCurrentKeyChosenWithUseAndRecord() async throws {
@@ -76,7 +78,6 @@ final class WelcomeSpotTests: BuiltInCase {
         XCTAssertEqual(record.key, ActionKey(name: "escape"))
         XCTAssertEqual(output.parts.map(\.id).sorted(), ["head", "key", "record", "use"])
         XCTAssertFalse(try part("key", in: output).asksToRecord)
-        XCTAssertNil(output.move)
     }
 
     func testRecordAsksTheKeyFieldToRecordAndKeepsTheKey() async throws {
@@ -87,7 +88,6 @@ final class WelcomeSpotTests: BuiltInCase {
         let key = try part("key", in: output)
         XCTAssertTrue(key.asksToRecord)
         XCTAssertEqual(key.control, .shortcut("option+space"))
-        XCTAssertNil(output.move)
     }
 
     func testTheKeyPageWithNoKeyInTheFileShowsTheStandardKey() async throws {
@@ -107,33 +107,36 @@ final class WelcomeSpotTests: BuiltInCase {
 
     func testARecordedKeyShowsUntilUseSavesItAndPushesTheLastPage() async throws {
         try file.set("panel-key", to: "option+space")
+        let effects = try recordEffects()
 
         let kept = try await answer(["key", "ctrl+option+space"])
         let again = try await read(page: "key")
         let before = file.read().panelKey
-        let used = try await answer(["use"])
+        _ = try await answer(["use"])
         let after = try await read(page: "key")
 
         XCTAssertEqual(try part("key", in: kept).control, .shortcut("ctrl+option+space"))
         XCTAssertEqual(try part("key", in: again).control, .shortcut("ctrl+option+space"))
         XCTAssertEqual(before, Shortcut(text: "option+space"))
         XCTAssertEqual(file.read().panelKey, Shortcut(text: "ctrl+option+space"))
-        XCTAssertEqual(used.move, .push(spot: nil, page: "agent", title: "Make it yours", replace: false))
+        XCTAssertEqual(effects(), ["route push agent --title Make it yours"])
         XCTAssertEqual(try part("key", in: after).control, .shortcut("ctrl+option+space"))
     }
 
     func testUseWithTheCurrentKeyPushesTheLastPageAndChangesNothing() async throws {
         try file.set("panel-key", to: "option+space")
+        let effects = try recordEffects()
 
-        let used = try await answer(["use"])
+        _ = try await answer(["use"])
 
-        XCTAssertEqual(used.move, .push(spot: nil, page: "agent", title: "Make it yours", replace: false))
+        XCTAssertEqual(effects(), ["route push agent --title Make it yours"])
         XCTAssertEqual(file.read().panelKey, Shortcut(text: "option+space"))
     }
 
     func testTheLastPageShowsTwoNumberedCardsToTryAndDoneLeaves() async throws {
+        let effects = try recordEffects()
         let output = try await read(page: "agent")
-        let done = try await answer(["done"])
+        _ = try await answer(["done"])
 
         try assertHead(output, "Make it yours", "Easily, with any of your favourite agents")
         let head = try part("head", in: output)
@@ -147,9 +150,8 @@ final class WelcomeSpotTests: BuiltInCase {
         XCTAssertEqual(button.title, "Start using Openspot")
         XCTAssertEqual(button.key, ActionKey(name: "return"))
         let opened = await app.opened
-        XCTAssertEqual(opened, ["pop openspot/welcome all"])
-        XCTAssertEqual(done.move, .pop(all: false))
-        XCTAssertEqual(done.toast, Shortcut.standard.openHint)
+        XCTAssertEqual(opened, [])
+        XCTAssertEqual(effects(), ["route close", "toast \(Shortcut.standard.openHint)"])
     }
 
     func testEachDrawingThatAPageNamesIsAFileBesideTheScript() async throws {

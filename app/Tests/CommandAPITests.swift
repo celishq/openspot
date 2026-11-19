@@ -47,7 +47,7 @@ final class CommandAPITests: XCTestCase {
 
         XCTAssertEqual(answer.code, 0)
         XCTAssertEqual(answer.output.components(separatedBy: "---\n").count, 3)
-        XCTAssertTrue(answer.output.hasPrefix("row=4\n"), answer.output)
+        XCTAssertTrue(answer.output.hasPrefix("text=4\n"), answer.output)
     }
 
     func testAStoppedBatchRunsNoMoreLines() async throws {
@@ -66,7 +66,7 @@ final class CommandAPITests: XCTestCase {
 
         XCTAssertEqual(answer.code, 2)
         XCTAssertEqual(answer.errors, "openspot batch cannot run `color pick`, because it does not print data. Run it on its own.\n")
-        XCTAssertFalse(answer.output.contains("row=6"))
+        XCTAssertFalse(answer.output.contains("text=6"))
     }
 
     func testABatchRunsNoCallThatReadsStdin() async throws {
@@ -143,7 +143,7 @@ final class CommandAPITests: XCTestCase {
 
     func testASecretIsNeverPrintedAndOnlyOpenspotsFormChangesIt() async throws {
         let spots = folder.appendingPathComponent("spots", isDirectory: true)
-        try TestSpot(header: "title=Weather\n\nfield=token\ntype=secret\n\nfield=key\ntype=secret", body: "echo").write(to: spots.spotFile("weather"))
+        try TestSpot(toml: "title = 'Weather'\n[settings.token]\ntype = 'secret'\n[settings.key]\ntype = 'secret'", body: "echo").write(to: spots.spotFile("weather"))
         let places = environment.merging(["OPENSPOT_SPOTS": spots.path]) { _, new in new }
         let spot = places.merging(["OPENSPOT_ID": "weather"]) { _, new in new }
         try AppPlaces.test(places).secrets.keep("MARKER-7f3c", key: "token", of: "weather")
@@ -164,7 +164,7 @@ final class CommandAPITests: XCTestCase {
     }
 
     func testASheetOnStdinIsChecked() async throws {
-        let answer = try await answer(["check", "sheet"], input: "title=Hi\n")
+        let answer = try await answer(["check", "sheet"], input: "frame=\ntitle=Hi\n")
 
         XCTAssertEqual(answer.output, "the sheet has no parts\n1 faults.\n")
         XCTAssertEqual(answer.code, 1)
@@ -229,7 +229,7 @@ final class CommandAPITests: XCTestCase {
 
         let answer = await work()
 
-        XCTAssertTrue(answer.output.hasPrefix("row=a\ntitle=Alpha\n"), answer.output)
+        XCTAssertTrue(answer.output.hasPrefix("text=a\ntitle=Alpha\n"), answer.output)
     }
 
     func testStatsWithNoAppToReachReadTheFiles() async throws {

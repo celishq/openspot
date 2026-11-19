@@ -75,8 +75,8 @@ final class PanelDiskTests: PanelCase {
     }
 
     func testADragReadsItsFilesOnceAwayFromTheMainThreadAndEachTickReadsNone() async throws {
-        try script("shelf", header: "title=Shelf\non=sheet.open\ndrop=mov", "true")
-        try script("notes", header: "title=Notes\non=sheet.open\ndrop=txt", "true")
+        try script("shelf", toml: "title = 'Shelf'\ndrop = 'mov'", "true")
+        try script("notes", toml: "title = 'Notes'\ndrop = 'txt'", "true")
         await model.reload()
         model.isShown = true
         model.panelWillShow()
@@ -105,7 +105,7 @@ final class PanelDiskTests: PanelCase {
     }
 
     func testACheckOfADropThatNoDragBroughtReadsNothingAndTellsNoReader() async throws {
-        try script("shelf", header: "title=Shelf\non=sheet.open\ndrop=mov", "true")
+        try script("shelf", toml: "title = 'Shelf'\ndrop = 'mov'", "true")
         await model.reload()
         model.isShown = true
         model.panelWillShow()
@@ -122,12 +122,12 @@ final class PanelDiskTests: PanelCase {
     }
 
     func testAReviewThatLandsAfterThePanelClosedIsDropped() async throws {
-        try script("cups", header: "title=Cups", "true")
+        try script("cups", toml: "title = 'Cups'", "true")
         await model.reload()
         model.isShown = true
         let package = folder.appendingPathComponent("drop/tea.spot")
         try FileManager.default.createDirectory(at: package, withIntermediateDirectories: true)
-        try "#!/bin/sh\n# title=Tea\n:\n".writeScript(to: package.appendingPathComponent("tea.sh"))
+        try "#!/bin/sh\n:\n".writeScript(to: package.appendingPathComponent("tea.sh"), toml: "title = 'Tea'")
 
         model.review([package])
         XCTAssertTrue(model.handleKey(ActionKey(name: "escape")))
@@ -140,8 +140,8 @@ final class PanelDiskTests: PanelCase {
     }
 
     func testCommandZRightAfterADeleteNeverUndoesAnOlderRemoval() async throws {
-        try script("first", header: "title=First", "true")
-        try script("second", header: "title=Second", "true")
+        try script("first", toml: "title = 'First'", "true")
+        try script("second", toml: "title = 'Second'", "true")
         await model.reload()
         model.isShown = true
         model.panelWillShow()
@@ -159,8 +159,8 @@ final class PanelDiskTests: PanelCase {
     }
 
     func testOnlyTheLatestDeleteIsTheOneThatCommandZPutsBack() async throws {
-        try script("first", header: "title=First", "true")
-        try script("second", header: "title=Second", "true")
+        try script("first", toml: "title = 'First'", "true")
+        try script("second", toml: "title = 'Second'", "true")
         await model.reload()
         model.isShown = true
         model.panelWillShow()
@@ -211,7 +211,7 @@ final class PanelDiskTests: PanelCase {
     }
 
     func testDeleteMovesTheFilesAwayFromTheMainThreadAndCommandZPutsThemBack() async throws {
-        try script("gone", header: "title=Gone", "true")
+        try script("gone", toml: "title = 'Gone'", "true")
         await model.reload()
         model.isShown = true
         model.panelWillShow()

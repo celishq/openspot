@@ -13,14 +13,14 @@ public struct Playground: Equatable, Sendable {
     public init() {}
 
     public static func command(file: URL) -> Spot {
-        let header = SpotHeader(url: file).block
+        let manifest = (try? Manifest(beside: file).script(file)) ?? Manifest(text: nil, folder: "")
         return Spot(
             id: file.lastPathComponent,
             name: file.lastPathComponent,
             url: file,
             kind: .list,
-            read: (try? SpotRead(on: header.values("on"), of: file.lastPathComponent)) ?? nil,
-            mode: header.value("mode").flatMap(SpotMode.init(rawValue:)).map { $0.stays ? .stay : .once } ?? .once
+            on: (try? ShowEvents(on: manifest.on, of: file.lastPathComponent)) ?? nil,
+            mode: manifest.mode.flatMap(SpotMode.init(rawValue:)).map { $0.stays ? .stay : .once } ?? .once
         )
     }
 
@@ -58,18 +58,35 @@ public struct Playground: Equatable, Sendable {
         calls = Array(([call] + calls).prefix(Self.callLength))
     }
 
-    public static func presets(guide: String) -> [(name: String, text: String)] {
-        let fences = ["```sh\n", "```js\n"]
-        var examples: [(name: String, text: String)] = []
-        var rest = guide[...]
-        while let start = fences.compactMap({ rest.range(of: $0) }).min(by: { $0.lowerBound < $1.lowerBound }) {
-            rest = rest[start.upperBound...]
-            guard let end = rest.range(of: "```") else { break }
-            let text = String(rest[..<end.lowerBound])
-            rest = rest[end.upperBound...]
-            if let name = SpotHeader(text: text).block.value("title") { examples.append((name, text)) }
+    public static func presets(guide: String) -> [(name: String, manifest: String, text: String)] {
+        var examples: [(name: String, manifest: String, text: String)] = []
+        var fence: (language: String, lines: [String])?
+        var manifest: String?
+        for line in guide.components(separatedBy: "\n") {
+            guard let open = fence else {
+                if line.hasPrefix("```") { fence = (String(line.dropFirst(3)), []) }
+                continue
+            }
+            guard line == "```" else {
+                fence?.lines.append(line)
+                continue
+            }
+            let text = open.lines.map { $0 + "\n" }.joined()
+            fence = nil
+            if open.language == "toml" {
+                manifest = text
+                continue
+            }
+            defer { manifest = nil }
+            guard ["sh", "js"].contains(open.language), let manifest,
+                  case .string(let name) = (try? ConfigDocument(text: manifest))?.values["title"] else { continue }
+            examples.append((name, manifest, text))
         }
-        return examples + SheetExamples.all.map { ($0.name, "#!/bin/sh\n# title=\($0.name)\n# on=sheet.open\ncat <<'SHEET'\n\($0.text)\nSHEET\n") }
+        return examples + SheetExamples.all.map { example in
+            var manifest = ConfigDocument()
+            manifest.set("title", to: .string(example.name))
+            return (example.name, manifest.text, "#!/bin/sh\ncat <<'SHEET'\n\(example.text)\nSHEET\n")
+        }
     }
 
     public static func place(of file: URL?, text: String, spots: URL, scratch: URL) -> (url: URL, id: String) {
@@ -82,6 +99,6 @@ public struct Playground: Equatable, Sendable {
     }
 
     public static func fileExtension(of text: String) -> String {
-        text.hasPrefix("//") ? SpotFile.inlineExtension : "sh"
+        text.hasPrefix("#!") ? "sh" : SpotFile.inlineExtension
     }
 }

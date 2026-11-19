@@ -17,16 +17,16 @@ public struct FaultSpot: Equatable, Sendable {
         self.prompt = prompt
     }
 
-    public func answer(_ arguments: [String], base: [String: String]? = nil) async throws -> String {
+    func answer(_ arguments: [String], base: [String: String]? = nil) async throws -> HostAnswer {
         switch arguments.first {
-        case "read":
-            return sheet
+        case "show":
+            return HostAnswer(frame: sheet)
         case Self.fixPart:
             let toast = try await prompt.copy(prompt.fixing(file, faults: faults), base: base)
-            return TextBlock(fields: [.init(key: "toast", value: toast)]).text
+            return HostAnswer(frame: "", effects: [.toast(toast)])
         case Self.editPart:
             _ = try await ScriptProcess.output(url: URL(fileURLWithPath: "/usr/bin/env"), arguments: ["open", "-t", file.path], base: base)
-            return ""
+            return HostAnswer(frame: "")
         default:
             throw SpotError.failed(1, "This sheet cannot do that.")
         }
@@ -34,7 +34,7 @@ public struct FaultSpot: Equatable, Sendable {
 
     private var sheet: String {
         [
-            TextBlock(fields: [.init(key: "grid", value: "fault fault"), .init(key: "grid", value: "\(Self.editPart) \(Self.fixPart)")]),
+            RootKey.block([.init(key: "grid", value: "fault fault"), .init(key: "grid", value: "\(Self.editPart) \(Self.fixPart)")]),
             TextBlock(fields: [
                 .init(key: "field", value: "fault"),
                 .init(key: "readonly", value: "true"),
@@ -43,14 +43,12 @@ public struct FaultSpot: Equatable, Sendable {
             TextBlock(fields: [
                 .init(key: "button", value: Self.editPart),
                 .init(key: "title", value: "Edit"),
-                .init(key: "shortcut", value: "cmd+e"),
-                .init(key: "close", value: "true")
+                .init(key: "shortcut", value: "cmd+e")
             ]),
             TextBlock(fields: [
                 .init(key: "button", value: Self.fixPart),
                 .init(key: "title", value: "Copy prompt for AI"),
                 .init(key: "shortcut", value: "cmd+return"),
-                .init(key: "close", value: "true"),
                 .init(key: "look", value: "strong")
             ])
         ].map(\.text).joined(separator: "\n")

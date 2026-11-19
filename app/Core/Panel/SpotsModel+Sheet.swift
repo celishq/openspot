@@ -12,6 +12,14 @@ extension SpotsModel {
         return !isEditing && openSheet?.partsKind?.takesKeys != false
     }
 
+    public var fieldTop: SheetTop {
+        transition.id.flatMap { sheets[$0]?.top } ?? .plain
+    }
+
+    public var openTop: SheetTop {
+        openSheet?.top ?? .plain
+    }
+
     public var openParts: SheetParts? {
         shownParts(of: openSheetID)
     }
@@ -53,7 +61,7 @@ extension SpotsModel {
     }
 
     public func place(ofSheet id: String) -> SheetPlace {
-        entry(id)?.spot.offersWindow == true ? .window : .panel
+        arrangement.isWindow(of: id) ?? defaultArrangement.isWindow(of: id) ?? false ? .window : .panel
     }
 
     func presentSheet(of id: String, moving: Bool, showingPanel: () -> Void = {}) {
@@ -68,12 +76,11 @@ extension SpotsModel {
     }
 
     @discardableResult
-    func openKeys(of id: String, recording act: GlobalKey.Act? = nil) -> Bool {
+    func openKeys(of id: String) -> Bool {
         guard let entry = entry(id), let settings = settingsSheet(of: entry) else { return false }
         let moves = isShown
         if !moves { host.show() }
         pushFirst(settings, moving: moves)
-        if let act { toggleRecording(id: SpotSettings.Row.key(act).id(of: id)) }
         return true
     }
 
@@ -88,17 +95,19 @@ extension SpotsModel {
         if place(ofSheet: id) == .window { return openWindow(id) }
         if openSheetID == nil { endFlow() }
         flow.push(FlowSheet(spot: id, title: title))
-        sheets[id]?.show(page: nil)
+        sheets[id]?.show(route: nil)
         waitPush(moving: moving && openSheetID != nil && openSheetID != id && flow.index > 0)
         present(id, moving: moving)
     }
 
     func present(_ id: String, moving: Bool) {
+        closingPage = nil
         if let shown = openSheetID, shown != id { stopRecording() }
         sheets[id]?.open(waits: moving) { [weak self] in self?.showSheet(id, moving: moving) }
     }
 
     public func closeSheet(moving: Bool) {
+        closingPage = moving ? openSheetID.flatMap { id in sheets[id].map { SheetPage(run: $0, rect: $0.sheetRect, query: searchText) } } : nil
         pendingAsk = nil
         keys.status = nil
         askedAnswer = nil
@@ -192,7 +201,10 @@ extension SpotsModel {
                 }
             }
             if isInstall, transition.phase == .closed { hideFieldDrop() }
-            if transition.phase == .closed { endReview() }
+            if transition.phase == .closed {
+                endReview()
+                closingPage = nil
+            }
         }
     }
 
@@ -285,12 +297,12 @@ extension SpotsModel {
             _ = changeSetting(key, of: settings.spot)
             return
         }
-        if action == nil, case .push(let spot, let page, let title, _)? = item.move, spot.map(opensSheet) ?? true {
-            push(FlowSheet(spot: spot ?? entry.id, page: page, title: title ?? (page == nil ? nil : item.title)))
+        if action == nil, case .push(let spot, let route, let title, let replace)? = item.move, spot.map(opensSheet) ?? true {
+            push(FlowSheet(spot: spot ?? entry.id, route: route, title: title ?? (route == nil ? nil : item.title)), replace: replace)
             return
         }
         if place.isDetached {
-            if action == nil, entry.spot.pickForm != nil || item.records { return press(entry.id) }
+            if action == nil, (entry.spot.pickForm ?? item.form) != nil || item.records { return press(entry.id) }
             remember(item, of: entry)
             sheets[entry.id]?.list.select(run: item.run)
         } else {
@@ -298,7 +310,7 @@ extension SpotsModel {
                 toggleRecording(id: item.run)
                 return
             }
-            if action == nil, let form = entry.spot.pickForm {
+            if action == nil, let form = entry.spot.pickForm ?? item.form {
                 openForm(form, on: (entry, item))
                 return
             }

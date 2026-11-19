@@ -27,8 +27,8 @@ public final class ScriptCall: Identifiable {
 
     nonisolated deinit {}
 
-    public var doesWork: Bool {
-        action.arguments.first != SpotAction.read.arguments.first
+    public var isAct: Bool {
+        action.arguments.first != SpotAction.show.arguments.first
     }
 
     public var fill: Double? {
@@ -43,10 +43,10 @@ public final class ScriptCall: Identifiable {
         status?.value("detail")
     }
 
-    func take(_ output: SpotOutput) {
+    func take(_ output: Frame) {
         heard += 1
         guard !output.isPicture else { return }
-        status = output.summary
+        status = output.root
     }
 
     func stop() {

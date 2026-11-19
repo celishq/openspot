@@ -13,9 +13,9 @@ final class SheetStreamTests: XCTestCase {
         try? FileManager.default.removeItem(at: folder)
     }
 
-    private func script(_ body: String, name: String = "script") throws -> URL {
+    private func script(_ body: String, name: String = "script", toml: String = "") throws -> URL {
         let url = folder.spotFile(name)
-        try "#!/bin/sh\n\(body)\n".writeScript(to: url)
+        try "#!/bin/sh\n\(body)\n".writeScript(to: url, toml: toml)
         return url
     }
 
@@ -47,19 +47,12 @@ final class SheetStreamTests: XCTestCase {
         XCTAssertNil(reader.finish())
     }
 
-    func testATerminalProgressCodeIsAFrameWithItsValue() {
+    func testATerminalProgressOrNotificationCodeLeavesTheText() {
         var reader = SheetFrames()
 
-        XCTAssertEqual(reader.read(Data("Copying\u{1b}]9;4;1;42\u{07}".utf8)), ["progress=0.42\n"])
-        XCTAssertEqual(reader.read(Data("\u{1b}]9;4;1".utf8)), [])
-        XCTAssertEqual(reader.read(Data(";50\u{1b}\\\n".utf8)), ["progress=0.5\n"])
-        XCTAssertEqual(reader.read(Data("\u{1b}]9;4;3;0\u{07}\u{1b}]9;4;0;0\u{07}".utf8)), [])
-    }
-
-    func testATerminalNotificationCodeIsAFrameWithItsToast() {
-        var reader = SheetFrames()
-
-        XCTAssertEqual(reader.read(Data("\u{1b}]9;Build done\u{07}".utf8)), ["toast=Build done\n"])
+        XCTAssertEqual(reader.read(Data("Copying\u{1b}]9;4;1;42\u{07}\u{1b}]9;4;1".utf8)), [])
+        XCTAssertEqual(reader.read(Data(";50\u{1b}\\ now\n\u{1b}]9;Build done\u{07}done".utf8)), [])
+        XCTAssertEqual(reader.finish(), "Copying now\ndone")
     }
 
     func testEachOtherEscapeCodeLeavesTheText() {
@@ -121,36 +114,36 @@ final class SheetStreamTests: XCTestCase {
     }
 
     func testAFrameReplacesTheWholeSheet() throws {
-        var panel = try XCTUnwrap(SheetParts(output: SpotOutput(text: "grid=a b\n\ntext=a\ntitle=A\n\ntext=b\ntitle=B\n")))
+        var panel = try XCTUnwrap(SheetParts(output: Frame(text: "frame=\ngrid=a b\n\ntext=a\ntitle=A\n\ntext=b\ntitle=B\n")))
 
-        panel.take(SpotOutput(text: "text=c\ntitle=C\n"), answering: panel.generation)
+        panel.take(Frame(text: "frame=\ngrid.large=c\n\ntext=c\ntitle=C\n"), answering: panel.generation)
 
         XCTAssertEqual(panel.parts.map(\.id), ["c"])
         XCTAssertNil(panel.layout)
     }
 
     func testAFrameKeepsTheTextThePersonIsTyping() throws {
-        var panel = try XCTUnwrap(SheetParts(output: SpotOutput(text: "field=a\nvalue=typed\n")))
+        var panel = try XCTUnwrap(SheetParts(output: Frame(text: "frame=\ngrid=a\n\nfield=a\nvalue=typed\n")))
 
-        panel.take(SpotOutput(text: "field=a\nvalue=old\n"), answering: panel.generation, keeping: "a")
+        panel.take(Frame(text: "frame=\ngrid=a\n\nfield=a\nvalue=old\n"), answering: panel.generation, keeping: "a")
 
         XCTAssertEqual(panel.parts.first?.value, "typed")
     }
 
     func testACallOfAStayingScriptIsOneBlock() {
-        XCTAssertEqual(SpotAction.read.block(id: 1), "call=1\narg=read\n\n")
-        XCTAssertEqual(SpotAction.read.block(variables: ReadReason.clock(60).variables, id: 5), "call=5\narg=read\nenv.OPENSPOT_REASON=clock.60\n\n")
-        XCTAssertEqual(SpotAction.press("swap").block(id: 2), "call=2\narg=swap\n\n")
-        XCTAssertEqual(SpotAction.set("input", to: "one\ntwo").block(id: 3), "call=3\narg=input\narg=one\\ntwo\n\n")
-        XCTAssertEqual(SpotAction.drop(paths: ["/a b.mov", "-rf.mov"]).block(id: 4), "call=4\narg=drop\narg=/a b.mov\narg=-rf.mov\n\n")
+        XCTAssertEqual(Message(.show).block(id: 1), "call=1\narg=show\n\n")
+        XCTAssertEqual(Message(.show, event: .clock(60)).block(id: 5), "call=5\narg=show\nevent=clock.60\n\n")
+        XCTAssertEqual(Message(.press("swap")).block(id: 2), "call=2\narg=swap\n\n")
+        XCTAssertEqual(Message(.set("input", to: "one\ntwo")).block(id: 3), "call=3\narg=input\narg=one\\ntwo\n\n")
+        XCTAssertEqual(Message(.drop(paths: ["/a b.mov", "-rf.mov"])).block(id: 4), "call=4\narg=drop\narg=/a b.mov\narg=-rf.mov\n\n")
     }
 
-    func testTheBlockHoldsTheStdinOfTheCallAsOneInput() {
-        let values = "input=one\\ntwo\nsource=auto\n"
+    func testTheBlockHoldsEachLineOfTheStdinOfTheCall() {
+        let values = "input.input=one\\ntwo\ninput.source=auto\n"
 
         XCTAssertEqual(
-            SpotAction.set("source", to: "auto").block(input: values, id: 7),
-            "call=7\narg=source\narg=auto\ninput=input=one\\\\ntwo\\nsource=auto\\n\n\n"
+            Message(.set("source", to: "auto"), given: values).block(id: 7),
+            "call=7\narg=source\narg=auto\ninput.input=one\\ntwo\ninput.source=auto\n\n"
         )
     }
 
@@ -164,9 +157,9 @@ final class SheetStreamTests: XCTestCase {
         let live = ScriptProcess(url: url, mode: .stays, limit: 60)
         var frames = live.start().makeAsyncIterator()
 
-        live.send(.read, id: 1)
+        live.send(Message(.show), id: 1)
         let first = try await frames.next()
-        live.send(.press("a"), id: 2)
+        live.send(Message(.press("a")), id: 2)
         let second = try await frames.next()
 
         XCTAssertEqual(first, "part=a\ntitle=1\n")
@@ -184,16 +177,16 @@ final class SheetStreamTests: XCTestCase {
     }
 
     func testAScriptThatStaysIsAList() throws {
-        let url = try script("# mode=stay\n# on=panel.open")
+        let url = try script("", toml: "mode = 'stay'\non = ['panel.open']")
         let command = try XCTUnwrap(try SpotFile(file: url, id: "script")).spots.first
 
         XCTAssertEqual(command?.mode, .stay)
         XCTAssertEqual(command?.kind, .list)
-        XCTAssertEqual(command?.readsState, false)
+        XCTAssertEqual(command?.showsState, false)
     }
 
     func testAPlainFirstReadOfAStayingScriptGivesItsFirstFrame() async throws {
-        let url = try script("# mode=stay\nwhile IFS= read -r line; do case \"$line\" in call=*) call=${line#call=} ;; esac; [ -n \"$line\" ] || printf 'end=%s\\n\\ntext=a\\ntitle=A\\n---\\n' \"$call\"; done")
+        let url = try script("while IFS= read -r line; do case \"$line\" in call=*) call=${line#call=} ;; esac; [ -n \"$line\" ] || printf 'end=%s\\n\\nframe=\\ngrid=a\\n\\ntext=a\\ntitle=A\\n---\\n' \"$call\"; done")
         let command = Spot(id: "a", name: "A", url: url, kind: .list, mode: .stay)
 
         let output = try await command.items(timeout: 60)

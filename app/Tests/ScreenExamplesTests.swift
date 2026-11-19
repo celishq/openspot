@@ -12,9 +12,10 @@ final class ScreenExamplesTests: SampleSpotsCase {
         case "$1 $2" in
           'setting get') cat "\(path)/setting-$key" 2>/dev/null ;;
           'setting set') if [ $# -ge 4 ]; then printf '%s' "$4" > "\(path)/setting-$3"; else rm -f "\(path)/setting-$3"; fi ;;
-          'screen sources') printf 'row=display:1\\ntitle=Built-in\\n\\nrow=window:7\\ntitle=Notes\\n\\nrow=system\\ntitle=Sound of the Mac\\n\\nrow=mic:A1\\ntitle=Desk\\n\\nrow=mic:B2\\ntitle=Headset\\n\\nrow=camera:C3\\ntitle=FaceTime\\n' ;;
+          'screen sources') printf 'text=display:1\\ntitle=Built-in\\n\\ntext=window:7\\ntitle=Notes\\n\\ntext=system\\ntitle=Sound of the Mac\\n\\ntext=mic:A1\\ntitle=Desk\\n\\ntext=mic:B2\\ntitle=Headset\\n\\ntext=camera:C3\\ntitle=FaceTime\\n' ;;
           'screen shot') cat '\(path)/shot' 2>/dev/null || true ;;
           'clipboard copy') printf '%s' "$3" > '\(path)/clipboard' ;;
+          'toast '*) shift; printf '%s\\n' "$*" >> '\(path)/toasts' ;;
           'screen record')
             case "$3" in
               status) if [ -f '\(path)/ended' ]; then printf 'state=ended\\nfile=\(path)/talk.mp4\\n'; elif [ -f '\(path)/recording' ]; then printf 'state=recording\\nfile=\(path)/talk.mp4\\n'; else printf 'state=idle\\n'; fi ;;
@@ -30,16 +31,16 @@ final class ScreenExamplesTests: SampleSpotsCase {
 
     func testRecordStartsWithTheInputsOfItsSettingAndTheNextRunStopsAndCopiesTheVideo() async throws {
         let record = try example("Record")
-        try await withPrivateHome(["OPENSPOT_SETTING_INPUTS": "mic:B2 system"]) { folder in
+        try await withPrivateHome(settings: ["inputs": "mic:B2 system"]) { folder in
             try self.fakeScreen(in: folder)
 
-            let started = try await record.perform(.open, timeout: 60)
-            XCTAssertEqual(started, "Recording the screen. Run Record again to stop it.")
+            try await record.perform(.press("record"), timeout: 60)
+            XCTAssertEqual(self.toasts(in: folder), ["Recording the screen. Run Record again to stop it."])
             XCTAssertTrue(try self.read("calls", in: folder).contains("screen record start mic:B2 system\n"))
             XCTAssertFalse(try self.read("calls", in: folder).contains("setting get"))
 
-            let stopped = try await record.perform(.open, timeout: 60)
-            XCTAssertEqual(stopped, "Copied the recording.")
+            try await record.perform(.press("record"), timeout: 60)
+            XCTAssertEqual(self.toasts(in: folder), ["Recording the screen. Run Record again to stop it.", "Copied the recording."])
             XCTAssertEqual(try self.read("clipboard", in: folder), folder.path + "/talk.mp4")
         }
     }
@@ -51,7 +52,7 @@ final class ScreenExamplesTests: SampleSpotsCase {
             FileManager.default.createFile(atPath: folder.appendingPathComponent("ended").path, contents: Data())
 
             do {
-                try await record.perform(.open, timeout: 60)
+                try await record.perform(.press("record"), timeout: 60)
                 XCTFail("the run says why the recording ended")
             } catch {
                 XCTAssertTrue("\(error)".contains("The recording ended as macOS stopped it."), "\(error)")
@@ -64,7 +65,7 @@ final class ScreenExamplesTests: SampleSpotsCase {
 
     func testTheInputsSettingListsTheSoundMicsAndCamerasWithTheKeptOnesOn() async throws {
         let record = try example("Record")
-        try await withPrivateHome(["OPENSPOT_SETTING_INPUTS": "mic:B2 camera:C3"]) { folder in
+        try await withPrivateHome(settings: ["inputs": "mic:B2 camera:C3"]) { folder in
             try self.fakeScreen(in: folder)
 
             let form = try await record.form(CommandAction(id: "inputs", title: "Sound and camera"), item: nil, timeout: 60)
@@ -81,7 +82,7 @@ final class ScreenExamplesTests: SampleSpotsCase {
         try await withPrivateHome { folder in
             try self.fakeScreen(in: folder)
             let pick = { (input: String, kept: String) in
-                _ = try await SpotRuns(environment: TestEnvironment.values).answer(of: record, inputs, input: "inputs=\(input)\n", limit: 60, variables: ["OPENSPOT_SETTING_INPUTS": kept])
+                _ = try await SpotRuns(environment: TestEnvironment.values).answer(of: record, inputs, input: "input.inputs=\(input)\nsetting.inputs=\(kept)\n", limit: 60)
                 return (try? self.read("setting-inputs", in: folder)) ?? ""
             }
 
@@ -129,7 +130,7 @@ final class ScreenExamplesTests: SampleSpotsCase {
         let shot = try example("Shot")
 
         XCTAssertEqual(shot.mode, .stay)
-        XCTAssertNil(shot.read)
+        XCTAssertNil(shot.on)
         XCTAssertEqual(shot.sources, ["shot"])
         XCTAssertEqual(shot.uses, [.screen, .clipboard])
     }
@@ -139,12 +140,12 @@ final class ScreenExamplesTests: SampleSpotsCase {
         let (script, frames) = try await shot(in: folder)
         defer { script.stop() }
 
-        script.send(text: "call=1\narg=open\n\n")
+        script.send(text: "call=1\narg=shoot\n\n")
         try await wait("the end of the press") { frames.ends == ["1"] }
 
         XCTAssertEqual(try read("calls", in: folder), "screen shot\n")
         XCTAssertEqual(notes(in: folder), "")
-        XCTAssertEqual(frames.toasts, [])
+        XCTAssertEqual(toasts(in: folder), [])
     }
 
     func testAShotOpensItsEditorInTheCallAndCopiesThePictureWhenTheEditorCloses() async throws {
@@ -153,12 +154,12 @@ final class ScreenExamplesTests: SampleSpotsCase {
         let (script, frames) = try await shot(in: folder, picture: picture.path + "\n")
         defer { script.stop() }
 
-        script.send(text: "call=1\narg=open\n\n")
+        script.send(text: "call=1\narg=shoot\n\n")
         try await wait("the end of the press") { frames.ends == ["1"] }
 
         XCTAssertEqual(notes(in: folder), "edit a.png\n")
         XCTAssertEqual(try read("clipboard", in: folder), picture.path)
-        XCTAssertEqual(frames.toasts, ["Copied the picture."])
+        XCTAssertEqual(toasts(in: folder), ["Copied the picture."])
     }
 
     func testAPictureThatCannotOpenSaysSoAndCopiesNothing() async throws {
@@ -168,10 +169,10 @@ final class ScreenExamplesTests: SampleSpotsCase {
         let (script, frames) = try await shot(in: folder, picture: file.path)
         defer { script.stop() }
 
-        script.send(text: "call=1\narg=open\n\n")
+        script.send(text: "call=1\narg=shoot\n\n")
         try await wait("the end of the press") { frames.ends == ["1"] }
 
-        XCTAssertEqual(frames.toasts, ["Openspot cannot open b.png to mark it."])
+        XCTAssertEqual(toasts(in: folder), ["Openspot cannot open b.png to mark it."])
         XCTAssertEqual(notes(in: folder), "")
         XCTAssertFalse(FileManager.default.fileExists(atPath: folder.appendingPathComponent("clipboard").path))
     }
@@ -182,9 +183,9 @@ final class ScreenExamplesTests: SampleSpotsCase {
         let (script, frames) = try await shot(in: folder, picture: picture.path, holds: true)
         defer { script.stop() }
 
-        script.send(text: "call=1\narg=open\n\n")
+        script.send(text: "call=1\narg=shoot\n\n")
         try await wait("the editor") { self.notes(in: folder) == "edit a.png\n" }
-        script.send(text: "call=2\narg=open\n\n")
+        script.send(text: "call=2\narg=shoot\n\n")
         try await wait("the end of the second press") { frames.ends == ["2"] }
         script.send(text: "stop=1\n\n")
         try await wait("the editor in front again") { self.notes(in: folder) == "edit a.png\nfront\nfront\n" }
@@ -200,7 +201,7 @@ final class ScreenExamplesTests: SampleSpotsCase {
         let (script, frames) = try await shot(in: folder, picture: picture.path, holds: true)
         defer { script.stop() }
 
-        script.send(text: "call=1\narg=open\n\n")
+        script.send(text: "call=1\narg=shoot\n\n")
         try await wait("the editor") { self.notes(in: folder) == "edit a.png\n" }
         script.end()
 

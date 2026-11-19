@@ -70,22 +70,21 @@ final class TextBlockTests: XCTestCase {
     }
 
     func testAMetricReadsItsKeys() {
-        let output = SpotOutput(text: """
+        let output = Frame(text: """
+        frame=
+        grid=m
+
         text=m
         title=6 open
         detail=Today
         icon=star
         tone=warn
-        value=1
-        value=wide
-        value=3
-        max=9
 
-        row=Fix "tray"
+        text=Fix "tray"
         detail=failing
         tone=bad
 
-        row=Docs
+        text=Docs
         """)
 
         XCTAssertEqual(MetricValue(output: output), MetricValue(
@@ -93,39 +92,36 @@ final class TextBlockTests: XCTestCase {
             detail: "Today",
             symbol: "star",
             tone: .warn,
-            points: [1, 3],
-            max: 9,
             rows: [.init(title: "Fix \"tray\"", detail: "failing", tone: .bad), .init(title: "Docs")]
         ))
     }
 
     func testAMetricSkipsABadToneAndNeedsATitle() {
-        XCTAssertNil(MetricValue(output: SpotOutput(text: "text=m\ndetail=Only")))
-        XCTAssertEqual(MetricValue(output: SpotOutput(text: "text=m\ntitle=A\ntone=purple\nfuture=key")), MetricValue(title: "A"))
+        XCTAssertNil(MetricValue(output: Frame(text: "text=m\ndetail=Only")))
+        XCTAssertEqual(MetricValue(output: Frame(text: "text=m\ntitle=A\ntone=purple\nfuture=key")), MetricValue(title: "A"))
     }
 
-    func testAnItemNeedsARowIdAndTakesItAsItsTitleWhenItHasNone() {
-        XCTAssertNil(SpotItem(block: TextBlock.blocks(in: "row=")[0]))
-        XCTAssertNil(SpotItem(block: TextBlock.blocks(in: "title=Only")[0]))
-        XCTAssertEqual(SpotItem(block: TextBlock.blocks(in: "row=😀")[0])?.title, "😀")
+    func testAnItemNeedsAnIdAndTakesItAsItsTitleWhenItHasNone() {
+        XCTAssertEqual(Frame(text: "text=").items, [])
+        XCTAssertEqual(Frame(text: "text=😀").items.first?.title, "😀")
         XCTAssertEqual(
-            SpotItem(block: TextBlock.blocks(in: "row=a\ntitle=A\ndetail=B\nicon=/f\nhides=x\nhides=y")[0]),
-            SpotItem(title: "A", subtitle: "B", run: "a", picture: .file("/f"), hides: ["x", "y"])
+            Frame(text: "text=a\ntitle=A\ndetail=B\nicon=/f\nhides=x\nhides=y").items,
+            [SpotItem(title: "A", subtitle: "B", run: "a", picture: .file("/f"), hides: ["x", "y"])]
         )
     }
 
-    func testARowWithMoreThanOneValueDrawsABarForEachUpToItsMax() throws {
-        let bars = try XCTUnwrap(SpotItem(block: TextBlock.blocks(in: "row=a\nvalue=2\nvalue=-\nvalue=4\nsection=Used")[0]))
-        let capped = try XCTUnwrap(SpotItem(block: TextBlock.blocks(in: "row=a\nvalue=2\nvalue=4\nmax=8")[0]))
-        let check = try XCTUnwrap(SpotItem(block: TextBlock.blocks(in: "row=a\nvalue=true")[0]))
+    func testANumberItemOfMoreThanOneValueDrawsABarForEachUpToItsMaxWithAGapForADash() throws {
+        let bars = try XCTUnwrap(Frame(text: "section=used\ntitle=Used\n\nnumber=a\nvalue=2\nvalue=-\nvalue=4").items.first)
+        let capped = try XCTUnwrap(Frame(text: "number=a\nvalue=2\nvalue=4\nmax=8").items.first)
+        let check = try XCTUnwrap(Frame(text: "text=a\nvalue=true").items.first)
 
-        XCTAssertEqual(bars.bars, [0.5, nil, 1])
+        XCTAssertEqual(bars.number?.scaledPoints, [0.5, nil, 1])
+        XCTAssertEqual(bars.number?.text, "4")
         XCTAssertEqual(bars.section, "Used")
-        XCTAssertNil(bars.fields)
         XCTAssertFalse(bars.isOn)
-        XCTAssertEqual(capped.bars, [0.25, 0.5])
-        XCTAssertEqual(check.bars, [])
-        XCTAssertEqual(SpotItem(block: TextBlock.blocks(in: "row=a\nvalue=nan\nvalue=2")[0])?.bars, [nil, 1])
+        XCTAssertEqual(capped.number?.scaledPoints, [0.25, 0.5])
+        XCTAssertNil(check.number)
+        XCTAssertEqual(Frame(text: "number=a\nvalue=nan\nvalue=2").items.first?.number?.scaledPoints, [nil, 1])
         XCTAssertTrue(check.isOn)
     }
 
@@ -147,7 +143,7 @@ final class TextBlockTests: XCTestCase {
 
     func testAnItemShowsItsPathAsItsSpotThenItsParent() {
         let spot = Spot(id: "s", name: "System Settings", url: URL(fileURLWithPath: "/settings.sh"))
-        let volume = SpotItem(block: TextBlock.blocks(in: "row=v\ntitle=Volume\ndetail=Loud\nparent=Sound")[0])
+        let volume = Frame(text: "text=v\ntitle=Volume\ndetail=Loud\nparent=Sound").items.first
 
         XCTAssertEqual(volume?.parent, "Sound")
         XCTAssertEqual(volume?.path(in: spot), "System Settings › Sound")

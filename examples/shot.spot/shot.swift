@@ -1,11 +1,4 @@
 #!/usr/bin/env swift
-// title=Shot
-// icon=camera.viewfinder
-// detail=Take a picture of the screen and mark it
-// uses=screen,clipboard
-// offers=card
-// mode=stay
-// source=shot
 
 // Openspot builds this file with the Swift files of `shot/`. A press takes a picture with `openspot screen shot`, and
 // its call stays open while the editor shows. Closing the editor copies the picture and ends the call; a second press of
@@ -34,10 +27,10 @@ func openspot(_ words: [String], then: @escaping (Int32, String, String) -> Void
     do { try process.run() } catch { then(1, "", "Openspot cannot run `openspot`.") }
 }
 
-/// Ends a call with a toast.
+/// Shows a toast, then ends a call.
 func end(_ call: String, saying text: String) {
-    if !text.isEmpty { Link.frame("toast=\(Link.value(text))") }
-    Link.end(call)
+    guard !text.isEmpty else { return Link.end(call) }
+    openspot(["toast", text]) { _, _, _ in Link.end(call) }
 }
 
 /// Takes a picture and opens it in the editor, or ends the call when the person takes none or the call stopped.
@@ -72,7 +65,7 @@ func shoot(_ call: String) {
 Link.listen { call in
     Link.start(call.id)
     switch call.arguments.first {
-    case "open":
+    case "shoot":
         guard editing == nil else {
             editor?.front()
             return Link.end(call.id)

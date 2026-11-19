@@ -13,7 +13,7 @@ final class FlowKeepTests: PanelCase {
         let files = AppPlaces(environment: ["OPENSPOT_SPOTS": spots.path, "OPENSPOT_CONFIG": folder.appendingPathComponent("config").path], home: folder, defaults: defaults)
         model = SpotsModel(host: host, files: files, runs: SpotRuns(clock: clock.value, stopPause: 0.2, prepare: { await host.prepare($0, glyphs: $1) }))
         host.model = model
-        try script("parts", header: "on=sheet.open", "printf 'field=name\\ntitle=Name\\n'")
+        try script("parts", toml: "on = ['sheet.open']", "printf 'frame=\\ngrid=name\\n\\nfield=name\\ntitle=Name\\n'")
         await model.reload()
         model.isShown = true
         model.panelWillShow()

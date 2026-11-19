@@ -8,6 +8,7 @@ public enum SheetExamples {
 
     public static let all: [Example] = [
         Example(name: "text in, text out", text: """
+        frame=
         grid=source source . .
         grid=input input input input
         grid=input input input swap
@@ -26,6 +27,7 @@ public enum SheetExamples {
         title=English
 
         field=input
+        type=multiline
         value=Good morning
         placeholder=Type or paste text
 
@@ -39,6 +41,7 @@ public enum SheetExamples {
         title=German
 
         field=output
+        type=multiline
         value=Bonjour
         readonly=true
 
@@ -51,10 +54,10 @@ public enum SheetExamples {
         look=chip
         title=Copy
         shortcut=cmd+return
-        close=true
 
         """),
         Example(name: "a picture with actions", text: """
+        frame=
         grid=art art art art
         grid=art art art art
         grid=art art art art
@@ -89,6 +92,7 @@ public enum SheetExamples {
 
         """),
         Example(name: "a long task", text: """
+        frame=
         grid=file file file file
         grid=quality quality format format
         grid=status status status status
@@ -116,10 +120,12 @@ public enum SheetExamples {
         option=mp4
         title=MP4
 
-        graph=status
+        number=status
         title=Converting
         detail=1:12 left
-        value=0.62
+        value=62
+        max=100
+        unit=%
 
         field=log
         value=frame= 4120 fps= 96\\nframe= 4216 fps= 97
@@ -132,6 +138,7 @@ public enum SheetExamples {
 
         """),
         Example(name: "messages and a field", text: """
+        frame=
         grid=messages messages messages messages
         grid=question question question question
         grid=question question question question
@@ -162,6 +169,7 @@ public enum SheetExamples {
 
         """),
         Example(name: "numbers around a chart", text: """
+        frame=
         grid=cpu cpu memory memory
         grid=cpu cpu memory memory
         grid=history history history refresh
@@ -178,7 +186,7 @@ public enum SheetExamples {
         value=61%
         title=Memory
 
-        graph=history
+        number=history
         value=2
         value=4
         value=3
@@ -199,6 +207,7 @@ public enum SheetExamples {
 
         """),
         Example(name: "a list and a preview", text: """
+        frame=
         grid=items items preview preview
         grid=items items preview preview
         grid=items items preview copy
@@ -232,6 +241,7 @@ public enum SheetExamples {
 
         """),
         Example(name: "a drawing with a floating button", text: """
+        frame=
         grid=note note note note
         grid=note note note note
         grid=note note note save
@@ -243,10 +253,10 @@ public enum SheetExamples {
         look=strong
         icon=checkmark
         shortcut=cmd+return
-        close=true
 
         """),
         Example(name: "a drawing of settings", text: """
+        frame=
         grid=heating heating heating heating
         grid=room room room room
         grid=target target target target
@@ -302,6 +312,7 @@ public enum SheetExamples {
     ]
 
     public static let tiles = Example(name: "a grid of emoji", text: """
+    frame=
     grid=tone tone tone tone tone tone tone
     grid=a a a a a a a
 
@@ -321,59 +332,59 @@ public enum SheetExamples {
     option=light
     title=Light
 
-    row=grin
+    text=grin
     title=Grinning face
     icon=😀
 
-    row=joy
+    text=joy
     title=Tears of joy
     icon=😂
 
-    row=love
+    text=love
     title=Heart eyes
     icon=😍
 
-    row=think
+    text=think
     title=Thinking face
     icon=🤔
 
-    row=party
+    text=party
     title=Party face
     icon=🥳
 
-    row=cool
+    text=cool
     title=Sunglasses
     icon=😎
 
-    row=wave
+    text=wave
     title=Waving hand
     icon=👋
 
-    row=dog
+    text=dog
     title=Dog face
     icon=🐶
 
-    row=fox
+    text=fox
     title=Fox
     icon=🦊
 
-    row=flower
+    text=flower
     title=Cherry blossom
     icon=🌸
 
-    row=fire
+    text=fire
     title=Fire
     icon=🔥
 
-    row=pizza
+    text=pizza
     title=Pizza
     icon=🍕
 
-    row=rocket
+    text=rocket
     title=Rocket
     icon=🚀
 
-    row=heart
+    text=heart
     title=Red heart
     icon=❤️
 

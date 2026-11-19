@@ -1,0 +1,20 @@
+title = "Windows"
+icon = "macwindow"
+detail = "Give each command a key"
+uses = ["screen"]
+
+[commands.full]
+title = "Full screen"
+icon = "rectangle.inset.filled"
+
+[commands.center]
+title = "Centre"
+icon = "rectangle.center.inset.filled"
+
+[commands.left]
+title = "Left side"
+icon = "rectangle.lefthalf.inset.filled"
+
+[commands.right]
+title = "Right side"
+icon = "rectangle.righthalf.inset.filled"

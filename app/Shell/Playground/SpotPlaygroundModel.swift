@@ -7,15 +7,17 @@ import OpenspotCore
 final class SpotPlaygroundModel {
     nonisolated private static let watchPause: Duration = .milliseconds(500)
     private static let editPause: Duration = .milliseconds(300)
-    private static let starter = "#!/bin/sh\n# title=Hello\n# on=sheet.open\nprintf 'text=hello\\ntitle=Hello\\ndetail=%s\\n' \"$OPENSPOT_REASON\"\n"
+    private static let starter = "#!/bin/sh\n. \"$OPENSPOT_SH\"\nprintf 'text=hello\\ntitle=Hello\\ndetail=%s\\n' \"$(value event)\"\n"
+    private static let starterManifest = "title = \"Hello\"\n"
 
     private(set) var playground = Playground()
     private(set) var source = ""
+    @ObservationIgnored private var manifest = SpotPlaygroundModel.starterManifest
     private(set) var place = PlaygroundPlace.sheet
     private(set) var fault: String?
     private(set) var id: String?
     let file: URL?
-    let presets: [(name: String, text: String)]
+    let presets: [(name: String, manifest: String, text: String)]
     @ObservationIgnored let panel: PlaygroundPanel
     @ObservationIgnored private let host = SpotPlaygroundHost()
     @ObservationIgnored private let folder: URL
@@ -47,8 +49,8 @@ final class SpotPlaygroundModel {
         panel = PlaygroundPanel(host: host, scratch: folder, defaults: UserDefaults(suiteName: "openspot-playground") ?? .standard)
         host.onNote = { [weak self] in self?.playground.record($0) }
         panel.model.runs.isCareful = isCareful
-        panel.model.runs.onCall = { [weak self] record, reason in
-            self?.playground.take(call: PlaygroundCall(record: record, reason: reason))
+        panel.model.runs.onCall = { [weak self] record, event in
+            self?.playground.take(call: PlaygroundCall(record: record, event: event))
             if let frame = record.frames.last { self?.playground.note(frame: frame) }
         }
         if file == nil { edit(Self.starter) }
@@ -57,8 +59,9 @@ final class SpotPlaygroundModel {
 
     nonisolated deinit {}
 
-    func edit(_ text: String) {
+    func edit(_ text: String, manifest: String? = nil) {
         source = text
+        if let manifest { self.manifest = manifest }
         if let disk {
             let previous = writing
             writing = Task.detached {
@@ -84,7 +87,7 @@ final class SpotPlaygroundModel {
         guard let id else { return }
         await panel.model.reload()
         panel.model.panelWillShow()
-        if place == .sheet { panel.model.sheets[id]?.read(need: .change) }
+        if place == .sheet { panel.model.sheets[id]?.show(need: .change) }
     }
 
     func close() {
@@ -95,9 +98,9 @@ final class SpotPlaygroundModel {
 
     private func run(_ text: String) async {
         do {
-            let placed = try await panel.place(file: file, text: text, spots: spots)
+            let placed = try await panel.place(file: file, text: text, manifest: manifest, spots: spots)
             guard let url = panel.file, try SpotFile(file: url, id: placed)?.spots.first != nil else {
-                fault = "This text is no spot. Start it with #!/bin/sh, or with // lines of a JavaScript header."
+                fault = "This text is no spot. Start it with #!/bin/sh, or write it in JavaScript."
                 return
             }
             fault = nil

@@ -13,4 +13,5 @@ struct SheetStep {
     var fit: CGRect?
     var leaving: Leaving?
     var field: AnyView?
+    var glass = 1.0
 }

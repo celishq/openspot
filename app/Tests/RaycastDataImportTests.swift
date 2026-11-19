@@ -32,7 +32,7 @@ final class RaycastDataImportTests: XCTestCase {
     }
 
     private func rows(_ answer: CommandAnswer) -> [String] {
-        TextBlock.blocks(in: answer.output).compactMap { block in block.value("row").map { "\($0) \(block.value("outcome") ?? "") \(block.value("detail") ?? "")" } }
+        TextBlock.blocks(in: answer.output).compactMap { block in block.value("text").map { "\($0) \(block.value("outcome") ?? "") \(block.value("detail") ?? "")" } }
     }
 
     private func data(_ spot: String) -> String {
@@ -87,7 +87,8 @@ final class RaycastDataImportTests: XCTestCase {
     }
 
     func testASpotThatDoesNotTakeAnImportIsReportedAsSkipped() async throws {
-        try "#!/bin/sh\n# title=Links\n# on=sheet.open\necho 'row=a'\n".writeScript(to: config.appendingPathComponent("spots/links.spot/links.sh"))
+        try "#!/bin/sh\necho 'text=a'\n".writeScript(to: config.appendingPathComponent("spots/links.spot/links.sh"))
+        try "title = 'Links'\non = ['sheet.open']\n".write(to: config.appendingPathComponent("spots/links.spot/spot.toml"), atomically: true, encoding: .utf8)
 
         let answer = try await answer(["import", "rayconfig", export.path])
 

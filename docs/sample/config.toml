@@ -1,5 +1,5 @@
 [[spots]]
-id = "now-playing"
+id = "agents"
 size = "large"
 grid = true
 
@@ -27,3 +27,19 @@ grid = true
 id = "calendar"
 size = "small"
 grid = true
+
+[[spots]]
+id = "battery"
+grid = false
+
+[[spots]]
+id = "cpu"
+grid = false
+
+[[spots]]
+id = "memory"
+grid = false
+
+[[spots]]
+id = "devices"
+grid = false

@@ -55,7 +55,7 @@ final class RaycastExtensionImportTests: XCTestCase {
         let rows = blocks(answer)
 
         XCTAssertEqual(answer.code, 0, answer.errors)
-        XCTAssertEqual(rows.map { "\($0.value("row") ?? "") \($0.value("outcome") ?? "") \($0.value("spot") ?? "")" }, [
+        XCTAssertEqual(rows.map { "\($0.value("text") ?? "") \($0.value("outcome") ?? "") \($0.value("spot") ?? "")" }, [
             "caffeinate get caffeinate",
             "translate use translate",
             "spotify-player get now-playing",

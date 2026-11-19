@@ -19,7 +19,7 @@ enum SpotStorePicture {
             }
             model.openWindow(entry.id)
             if let view = entry.spot.view { await SpotViews.shared.load(view) }
-            await model.waitForReads()
+            await model.waitForShows()
             draw(model: model, id: entry.id, to: path)
         }
         NSApplication.shared.run()

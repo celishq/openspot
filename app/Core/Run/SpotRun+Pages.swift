@@ -8,22 +8,22 @@ extension SpotRun {
     }
 
     @discardableResult
-    public func show(page next: String?) -> Bool {
-        guard next != page else { return true }
-        forget(page: page)
-        pageStates.append((page, PageState(state: state, rows: rows, panel: panel)))
-        if let read = running(Self.readKey) { stop(read) }
+    public func show(route next: String?) -> Bool {
+        guard next != route else { return true }
+        forget(route: route)
+        pageStates.append((route, PageState(state: state, rows: rows, panel: panel)))
+        if let show = running(Self.showKey) { stop(show) }
         if let search = running(Self.searchKey) { stop(search) }
-        page = next
-        let kept = pageStates.first { $0.page == next }?.state
-        forget(page: next)
+        route = next
+        let kept = pageStates.first { $0.route == next }?.state
+        forget(route: next)
         state = kept?.state ?? spot.headerState
         list = kept?.rows ?? ItemList(recent: rows.recent, search: rows.search)
         panel = kept?.panel
         answered = nil
         lastAnswer = nil
         shownFrame = nil
-        if showsSheet { read(need: .change, reason: .sheet) }
+        if showsSheet { show(need: .change, event: .sheet) }
         return kept != nil
     }
 
@@ -32,14 +32,16 @@ extension SpotRun {
         runs.opening.holdMotion(of: spot.id, limited: true, start: start)
     }
 
-    func forget(page: String?) {
-        pageStates.removeAll { $0.page == page }
+    func forget(route: String?) {
+        pageStates.removeAll { $0.route == route }
     }
 
-    func sent(_ variables: [String: String], values: FieldValues) -> [String: String] {
-        let given = values.variables.merging(variables) { _, given in given }
-        guard let page else { return given }
-        return given.merging(["OPENSPOT_PAGE": page]) { _, own in own }
+    func message(of call: Call, values: FieldValues) -> Message {
+        var message = call.message
+        message.event = call.event
+        message.route = route
+        message.settings = values.settings
+        return message
     }
 
     var fieldValues: FieldValues {

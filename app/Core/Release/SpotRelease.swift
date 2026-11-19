@@ -24,7 +24,7 @@ public struct SpotRelease: Equatable, Sendable {
     ) throws -> SpotRelease {
         var tags: [[String]] = [["d", "\(address)@\(version)"]]
         if let previous { tags.append(["e", previous, "", previousMarker]) }
-        for file in SpotManifest(files).sorted {
+        for file in SpotDigest(files).sorted {
             tags.append(["file", file.path, file.sha256, String(file.size), file.isExecutable ? "755" : "644"])
         }
         let createdAt = Int(date.timeIntervalSince1970)
@@ -73,12 +73,12 @@ public struct SpotRelease: Equatable, Sendable {
         tags.first { $0.count >= 4 && $0[0] == "e" && $0[3] == Self.previousMarker }?[1]
     }
 
-    public func manifest() throws -> SpotManifest {
-        SpotManifest(try tags.filter { $0.first == "file" }.map { tag in
+    public func digest() throws -> SpotDigest {
+        SpotDigest(try tags.filter { $0.first == "file" }.map { tag in
             guard tag.count >= 5, let size = Int(tag[3]), ["755", "644"].contains(tag[4]) else {
                 throw SpotError.fault("A release names a file that Openspot cannot read.")
             }
-            return SpotManifest.File(path: tag[1], sha256: tag[2], size: size, isExecutable: tag[4] == "755")
+            return SpotDigest.File(path: tag[1], sha256: tag[2], size: size, isExecutable: tag[4] == "755")
         })
     }
 

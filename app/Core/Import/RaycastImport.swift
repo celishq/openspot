@@ -15,7 +15,7 @@ public struct RaycastImport: Sendable {
         public let reason: String?
 
         var blocks: [[(String, String?)]] {
-            [[("row", id ?? file), ("title", title ?? file), ("detail", reason ?? outcome.rawValue), ("outcome", outcome.rawValue), ("file", file)]]
+            [[("text", id ?? file), ("title", title ?? file), ("detail", reason ?? outcome.rawValue), ("outcome", outcome.rawValue), ("file", file)]]
         }
     }
 

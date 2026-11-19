@@ -1,10 +1,4 @@
 #!/bin/sh
-# icon=text.quote
-# detail=Copy text
-# on=panel.open
-# uses=clipboard
-# offers=card
-# offers=search
 export LC_ALL=en_US.UTF-8
 data="$OPENSPOT_DATA/snippets.json"
 . "$OPENSPOT_SH"
@@ -29,7 +23,7 @@ content() {
 
 # Prints the form with this title and these values.
 form() {
-  jq -nr --arg title "$1" --argjson v "$2" "$esc"'"title=\($title)
+  jq -nr --arg title "$1" --argjson v "$2" "$esc"'"frame=\ntitle=\($title)
 
 field=title
 title=Name
@@ -43,51 +37,51 @@ value=\($v.content | esc)
 required=true"'
 }
 
-# Prints how many snippets an import added, in a toast.
+# Prints how many snippets an import added, as the title of a block that the import reads.
 added() {
   case "$1" in
-    0) echo "toast=No new snippets" ;;
-    1) echo "toast=Added 1 snippet" ;;
-    *) echo "toast=Added $1 snippets" ;;
+    0) printf 'text=added\ntitle=No new snippets\n' ;;
+    1) printf 'text=added\ntitle=Added 1 snippet\n' ;;
+    *) printf 'text=added\ntitle=Added %s snippets\n' "$1" ;;
   esac
 }
 
 case "$1" in
-  read)
+  show)
     printf 'button=open\ntitle=Copy\n\n'
-    printf 'button=paste\ntitle=Paste\nshortcut=cmd+return\nclose=true\n\n'
-    printf 'button=edit\ntitle=Edit\nshortcut=cmd+e\nform=true\n\n'
-    printf 'button=delete\ntitle=Delete\nshortcut=cmd+backspace\nconfirm=Press again to delete\n\n'
-    printf 'button=new\ntitle=New snippet\nshortcut=cmd+n\nscope=spot\nform=true\nplaceholder=Text to keep\n\n'
+    printf 'button=paste\ntitle=Paste\nshortcut=cmd+return\n\n'
+    printf 'button=edit\ntitle=Edit\nshortcut=cmd+e\nform=true\nclose=false\n\n'
+    printf 'button=delete\ntitle=Delete\nshortcut=cmd+backspace\nconfirm=Press again to delete\nclose=false\n\n'
+    printf 'button=new\ntitle=New snippet\nshortcut=cmd+n\nscope=spot\nform=true\nclose=false\nplaceholder=Text to keep\n\n'
     [ -s "$data" ] || exit 0
-    jq -r "$esc"'.[] | "row=\(.id | esc)\ntitle=\(.title | esc)\ndetail=\(.content | gsub("\\s+"; " ") | .[0:200] | esc)\n" + (if .keyword then "keywords=\(.keyword | esc)\n" else "" end)' "$data"
+    jq -r "$esc"'.[] | "text=\(.id | esc)\ntitle=\(.title | esc)\ndetail=\(.content | gsub("\\s+"; " ") | .[0:200] | esc)\n" + (if .keyword then "keywords=\(.keyword | esc)\n" else "" end)' "$data"
     ;;
   new)
-    title=$(value title)
-    text=$(value content; printf x)
+    title=$(value input.title)
+    text=$(value input.content; printf x)
     if [ -z "$title${text%x}" ]; then
       form "New snippet" "$(jq -nc --arg content "$(value search)" '{title: "", content: $content}')"
       exit 0
     fi
     id=$(uuidgen)
     load | jq -c --arg id "$id" --arg title "$title" --arg content "${text%x}" '. + [{id: $id, title: $title, content: $content}]' | store
-    printf 'select=%s\n' "$id"
+    openspot select "$id"
     ;;
   edit)
-    title=$(value title)
-    text=$(value content; printf x)
+    title=$(value input.title)
+    text=$(value input.content; printf x)
     if [ -z "$title${text%x}" ]; then
       form "Edit snippet" "$(load | jq -c --arg id "$2" '.[] | select(.id == $id)')"
       exit 0
     fi
     load | jq -c --arg id "$2" --arg title "$title" --arg content "${text%x}" 'map(if .id == $id then .title = $title | .content = $content else . end)' | store
-    printf 'select=%s\n' "$2"
+    openspot select "$2"
     ;;
   delete)
     load | jq -c --arg id "$2" 'map(select(.id != $id))' | store
     ;;
   import)
-    given=$(value snippets)
+    given=$(value input.snippets)
     new=$(load | jq -c --argjson given "${given:-[]}" '[.[] | [.title, .content]] as $have | [$given[] | select([.title, .text] as $one | $have | index([$one]) | not)]')
     count=$(printf '%s' "$new" | jq 'length')
     ids=$(i=0; while [ "$i" -lt "$count" ]; do uuidgen; i=$((i + 1)); done | jq -R . | jq -sc .)
@@ -107,6 +101,6 @@ case "$1" in
   open)
     text=$(content "$2" && printf x) || exit 1
     printf '%s' "${text%x}" | openspot clipboard copy
-    echo "toast=Copied"
+    openspot toast Copied
     ;;
 esac

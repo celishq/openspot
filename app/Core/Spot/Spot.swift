@@ -34,27 +34,23 @@ public struct Spot: Equatable, Sendable {
         symbol: String = "app",
         icon: Icon? = nil,
         subtitle: String? = nil,
-        read: SpotRead? = nil,
+        on: ShowEvents? = nil,
         pick: ItemPick = .close,
         isFound: Bool = true,
         answers: AnswerPattern? = nil,
         order: Int = 0,
         openTitle: String? = nil,
         actions: [CommandAction] = [],
-        layout: WidgetLayout? = nil,
-        places: [String] = [],
-        opens: String? = nil,
         host: HostSheet? = nil,
         growsFromField: Bool = false,
         mode: SpotMode = .once,
-        pressRuns: Bool = false,
         drop: [String] = [],
-        offeredPlaces: Set<Place> = [.card, .menubar],
+        isGlobal: Bool = false,
         dataName: String? = nil,
         isOnGrid: Bool = true,
-        offers: [HeaderButton] = [],
+        offers: [Manifest.Command] = [],
         offeredActions: [OfferedAction] = [],
-        settings: [HeaderField] = [],
+        settings: [Manifest.Setting] = [],
         view: String? = nil,
         viewDate: Date? = nil,
         sources: [String] = [],
@@ -68,9 +64,10 @@ public struct Spot: Equatable, Sendable {
         starts: SpotStart? = nil
     ) {
         header = Header(SpotFacts(
-            id: id, name: name, url: url, size: size, headerIcon: icon, baseSymbol: symbol, subtitle: subtitle, read: read,
-            offeredPlaces: offeredPlaces, isFound: isFound, answers: answers, order: order, layout: layout, places: places,
-            opens: opens, host: host, growsFromField: growsFromField, mode: mode, pressRuns: pressRuns, drop: drop,
+            id: id, name: name, url: url, size: size, headerIcon: icon, baseSymbol: symbol, subtitle: subtitle, on: on,
+            hasSheet: on != nil || answers == nil && offers.isEmpty && offeredActions.isEmpty,
+            isGlobal: isGlobal, isFound: isFound, answers: answers, order: order,
+            host: host, growsFromField: growsFromField, mode: mode, drop: drop,
             dataName: dataName, isOnGrid: isOnGrid, view: view, viewDate: viewDate, sources: sources, emits: emits, pages: pages, uses: uses,
             offers: offers, offeredActions: offeredActions, settings: settings, keywords: keywords, placeholder: placeholder, sample: sample,
             edits: edits, starts: starts
@@ -130,25 +127,16 @@ public struct Spot: Equatable, Sendable {
         image.map(FileIcon.image) ?? file.map(FileIcon.init(path:))
     }
 
-    public var read: SpotRead? {
-        header.facts.read
+    public var on: ShowEvents? {
+        header.facts.on
     }
 
-    public var isGlobal: Bool { self.offeredPlaces.contains(.search) }
-    public var offersFloat: Bool { self.offeredPlaces.contains(.float) }
-    public var offersWindow: Bool { self.offeredPlaces.contains(.window) }
-    public var offersCard: Bool { self.offeredPlaces.contains(.card) }
-    public var offersMenuBar: Bool { self.offeredPlaces.contains(.menubar) }
     public var reachesAccountKey: Bool {
         SpotUse.reachesAccountKey(self.uses, isBuiltIn: self.isBuiltIn)
     }
 
     public var fault: FaultSpot? {
         if case .fault(let fault)? = self.host { fault } else { nil }
-    }
-
-    public var sizes: [SpotSize] {
-        kind == .widget ? [] : SpotSize.all
     }
 
     public func symbol(of command: String) -> String {
@@ -163,11 +151,8 @@ public struct Spot: Equatable, Sendable {
     public var mainAct: MainAct {
         switch kind {
         case .toggle: .toggle
-        case .launch: .run(closes: !takesDrops)
-        case .list where self.pressRuns: .run(closes: true)
-        case .list: soleCommand.map(MainAct.command) ?? .sheet
         case .slider: MainAct.none
-        case .widget: self.opens.map(MainAct.open) ?? MainAct.none
+        case .launch, .list: soleCommand.map(MainAct.command) ?? .sheet
         }
     }
 
@@ -176,18 +161,16 @@ public struct Spot: Equatable, Sendable {
     }
 
     public var keepsHistory: Bool {
-        soleCommand != nil && !self.opensToKeys && self.read != nil
+        soleCommand != nil && self.hasSheet
     }
 
     private var settingKeys: [SpotSettings.Key] {
         let icon = self.image ?? self.file ?? self.glyph ?? self.symbol
-        let open = self.offeredPlaces.isDisjoint(with: [.card, .search]) ? [] : [SpotSettings.Key(act: .open, title: "Open", icon: icon)]
         let commands = self.offers.map { SpotSettings.Key(act: .command($0.id), title: $0.title, icon: $0.icon ?? icon) }
-        let float = self.offersFloat ? [SpotSettings.Key(act: .float, title: "Float", icon: icon)] : []
-        return open + commands + float
+        return [SpotSettings.Key(act: .open, title: "Open", icon: icon)] + commands + [SpotSettings.Key(act: .float, title: "Float", icon: icon)]
     }
 
-    func takingSettings(in config: ConfigFile, secrets: SecretStore) -> Spot {
+    func takingSettings(in config: ConfigFile, secrets: SecretStore, isWindow: Bool = false) -> Spot {
         guard self.host == nil else { return self }
         var spot = self
         spot.settingsSheet = SpotSettings(
@@ -196,10 +179,10 @@ public struct Spot: Equatable, Sendable {
             spot: self.id,
             fields: self.settings,
             showsInMenuBar: canShowInMenuBar,
-            keys: settingKeys
+            keys: settingKeys,
+            isWindowByDefault: isWindow
         )
-        if self.read == nil, !self.offers.isEmpty {
-            spot.kind = .list
+        if !self.hasSheet, !self.offers.isEmpty {
             spot.opensToKeys = true
         }
         return spot
@@ -215,7 +198,7 @@ public struct Spot: Equatable, Sendable {
             size: self.size,
             symbol: header.facts.baseSymbol,
             icon: self.icon,
-            read: .sheet,
+            on: .sheet,
             isFound: false,
             isOnGrid: false
         )
@@ -234,7 +217,7 @@ public struct Spot: Equatable, Sendable {
             size: owner.size,
             symbol: owner.header.facts.baseSymbol,
             icon: owner.icon,
-            read: self.read,
+            on: self.on,
             isFound: false,
             mode: self.mode,
             dataName: self.dataName,
@@ -275,35 +258,25 @@ public struct Spot: Equatable, Sendable {
         return spot
     }
 
-    func offTheGrid() -> Spot {
-        var spot = self
-        spot.isOnGrid = false
-        return spot
-    }
-
     public var headerState: SpotState {
         SpotState(title: self.name, subtitle: self.subtitle, isOnGrid: self.isOnGrid)
     }
 
-    public var readsState: Bool {
-        (self.read?.has(.panel) == true || self.read?.has(.event(SpotEvent.appLaunch)) == true) && !isGlobal && !self.mode.stays
+    public var showsState: Bool {
+        (self.on?.has(.panel) == true || self.on?.has(.event(SpotEvent.appLaunch)) == true) && !self.isGlobal && !self.mode.stays
     }
 
-    public var readsAtLaunch: Bool {
-        self.read?.has(.event(SpotEvent.appLaunch)) == true
+    public var showsAtLaunch: Bool {
+        self.on?.has(.event(SpotEvent.appLaunch)) == true
     }
 
-    public var readsOfferedRows: Bool {
-        guard let read = self.read else { return false }
-        return isGlobal && !read.has(.panel) && read.seconds == nil
+    public var showsOfferedItems: Bool {
+        guard let on = self.on else { return false }
+        return self.isGlobal && !on.has(.panel) && on.seconds == nil
     }
 
     public var canShowInMenuBar: Bool {
         self.host == nil
-    }
-
-    public var showsValueInMenuBar: Bool {
-        offersMenuBar && (self.read?.seconds != nil || self.read?.hasEvent == true || self.mode.stays)
     }
 
     public var click: SpotAction {
@@ -342,23 +315,23 @@ public struct Spot: Equatable, Sendable {
         self.drop.map { $0.lowercased() }
     }
 
-    public func taking(_ output: SpotOutput) -> Spot {
+    public func taking(_ output: Frame) -> Spot {
         var command = self
         command.actions = output.actions
         command.openTitle = output.openTitle
         command.pick = output.pick
         command.pickForm = output.pickForm
         command.keepsRecent = output.keepsRecent
-        if readsState { command.kind = output.kind }
+        if showsState { command.kind = output.kind }
         return command
     }
 
-    public func state(of output: SpotOutput) throws -> SpotState {
-        guard readsState else { return headerState }
-        guard output.summary != nil || output.errors.isEmpty else { throw SpotError.badState }
+    public func state(of output: Frame) throws -> SpotState {
+        guard showsState else { return headerState }
+        guard output.root != nil || output.errors.isEmpty else { throw SpotError.badState }
         var state = SpotState(output: output, header: headerState)
         if self.view != nil { state = state.holding(output.view) }
-        guard self.isBuiltIn, let isOnGrid = output.summary?.flag(HeadKey.shown) else { return state }
+        guard self.isBuiltIn, let isOnGrid = output.root?.flag(RootKey.shown) else { return state }
         return state.onGrid(isOnGrid)
     }
 
@@ -369,16 +342,15 @@ public struct Spot: Equatable, Sendable {
     public func openTitle(hasItem: Bool) -> String? {
         if hasItem { return openTitle ?? "Open" }
         switch mainAct {
-        case .run: return "Run"
         case .toggle: return "Toggle"
         case .command(let command): return self.offers.first { $0.id == command }?.title ?? "Open"
-        case .sheet, .open: return "Open"
+        case .sheet: return "Open"
         case .none: return nil
         }
     }
 
-    public func takes(page: String) -> Bool {
-        self.pages.contains { fnmatch($0, page, 0) == 0 }
+    public func takes(route: String) -> Bool {
+        self.pages.contains { fnmatch($0, route, 0) == 0 }
     }
 
 }

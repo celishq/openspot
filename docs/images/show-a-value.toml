@@ -1,0 +1,3 @@
+title = "Disk"
+icon = "internaldrive"
+on = ["panel.open", "clock.300"]

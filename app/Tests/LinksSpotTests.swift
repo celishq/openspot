@@ -109,7 +109,7 @@ final class LinksSpotTests: SampleSpotsCase {
 
             try await self.savedLink("https://icons.test/page", in: links)
 
-            XCTAssertFalse(links.read?.has(.event(SpotEvent.appLaunch)) == true)
+            XCTAssertFalse(links.on?.has(.event(SpotEvent.appLaunch)) == true)
             XCTAssertTrue(FileManager.default.fileExists(atPath: icons.appendingPathComponent("icons.test.png").path))
         }
     }
@@ -140,7 +140,7 @@ final class LinksSpotTests: SampleSpotsCase {
             exec /bin/sleep 600
             """.writeScript(to: folder.appendingPathComponent("tools/sips"))
             let icons = folder.appendingPathComponent(".config/openspot/data/links/icons")
-            let save = ScriptProcess(url: links.url, arguments: ["new"], mode: .once(input: "title=Site\nurl=https://icons.test\n"), stopPause: 0.5, dataName: links.dataName, base: TestEnvironment.values)
+            let save = ScriptProcess(url: links.url, arguments: ["new"], mode: .once(input: "input.title=Site\ninput.url=https://icons.test\n"), stopPause: 0.5, dataName: links.dataName, base: TestEnvironment.values)
             let frames = save.start()
 
             try await self.wait("sips") { FileManager.default.fileExists(atPath: folder.appendingPathComponent("sips.pid").path) }
@@ -180,7 +180,7 @@ final class LinksSpotTests: SampleSpotsCase {
             """.writeScript(to: folder.appendingPathComponent("tools/curl"))
             let icons = folder.appendingPathComponent(".config/openspot/data/links/icons")
             let parts = { (try? FileManager.default.contentsOfDirectory(atPath: icons.path))?.filter { $0.hasPrefix(".") } ?? [] }
-            let save = ScriptProcess(url: links.url, arguments: ["new"], mode: .once(input: "title=Slow\nurl=https://slow.test\n"), stopPause: 0.5, dataName: links.dataName, base: TestEnvironment.values)
+            let save = ScriptProcess(url: links.url, arguments: ["new"], mode: .once(input: "input.title=Slow\ninput.url=https://slow.test\n"), stopPause: 0.5, dataName: links.dataName, base: TestEnvironment.values)
             let frames = save.start()
 
             try await self.wait("the part of the icon") { !parts().isEmpty }
@@ -314,7 +314,8 @@ final class LinksSpotTests: SampleSpotsCase {
             var draft = FormDraft(form: try await links.form(new, item: nil, timeout: 60))
             draft.set("Work", for: "title")
             draft.set("~/My Work", for: "url")
-            let run = try await links.submit(new, item: nil, draft: draft, timeout: 60)
+            _ = try await links.submit(new, item: nil, draft: draft, timeout: 60)
+            let run = try self.read("selected", in: folder).trimmingCharacters(in: .newlines)
             let all = try await links.items(timeout: 60).items
             let item = try XCTUnwrap(all.first { $0.run == run })
 
@@ -350,7 +351,7 @@ final class LinksSpotTests: SampleSpotsCase {
         }
     }
 
-    private let imported = #"links=[{"title":"Google Search","url":"https://www.google.com/search?q={query}"},{"title":"Downloads","url":"~/Downloads"}]"# + "\n"
+    private let imported = #"input.links=[{"title":"Google Search","url":"https://www.google.com/search?q={query}"},{"title":"Downloads","url":"~/Downloads"}]"# + "\n"
 
     func testImportAddsEachLinkOnce() async throws {
         let links = try XCTUnwrap(try scan.spots.first { $0.name == "Links" })
@@ -359,8 +360,8 @@ final class LinksSpotTests: SampleSpotsCase {
             let second = try await Self.answer(of: links, ["import"], input: self.imported)
             let items = try await links.items(timeout: 60).items
 
-            XCTAssertEqual(first.summary?.value("toast"), "Added 1 link")
-            XCTAssertEqual(second.summary?.value("toast"), "No new links")
+            XCTAssertEqual(first.items.first { $0.run == "added" }?.title, "Added 1 link")
+            XCTAssertEqual(second.items.first { $0.run == "added" }?.title, "No new links")
             XCTAssertEqual(items.map(\.title), ["Downloads", "Screenshots", "Google Search"])
         }
     }
@@ -371,10 +372,10 @@ final class LinksSpotTests: SampleSpotsCase {
             _ = try await Self.answer(of: links, ["import"], input: self.imported)
             let all = try await links.items(timeout: 60).items
             let item = try XCTUnwrap(all.first { $0.title == "Google Search" })
-            guard case .push(_, let page?, _, _)? = item.move else { return XCTFail("the row pushes no page: \(String(describing: item.move))") }
+            guard case .push(_, let page?, _, _)? = item.move else { return XCTFail("the item opens no route: \(String(describing: item.move))") }
 
             let sheet = try await links.items(page: page, timeout: 60)
-            try await links.perform(SpotAction(arguments: ["go"]), input: "query=hello world & more\n", page: page, timeout: 60)
+            try await links.perform(SpotAction(arguments: ["go"]), input: "input.query=hello world & more\n", page: page, timeout: 60)
 
             XCTAssertEqual(sheet.parts.map(\.id), ["query", "go"])
             XCTAssertEqual(try self.read("opened", in: folder), "https://www.google.com/search?q=hello%20world%20%26%20more\n")

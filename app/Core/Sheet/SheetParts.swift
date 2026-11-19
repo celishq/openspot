@@ -23,14 +23,14 @@ public struct SheetParts: Equatable, Sendable {
     private var focusOffsets: [Int] = []
     private var focusLineOffsets: [[Int]] = []
     public private(set) var selected: String?
-    private var searches = true
+    public private(set) var top: SheetTop
 
-    public init?(output: SpotOutput) {
+    public init?(output: Frame) {
         guard !output.parts.isEmpty else { return nil }
         parts = output.parts
         layout = output.layout
-        searches = !output.hidesSearch
-        placement = Self.placement(of: output.parts, in: output.layout, searches: searches)
+        top = SheetTop(showsRows: output.layout?.repeated != nil, search: output.search, header: 0)
+        placement = Self.placement(of: output.parts, in: output.layout, room: top.partsRoom)
         pictureTimes = Self.pictureTimes(of: output.parts)
         orderFocus()
     }
@@ -43,12 +43,13 @@ public struct SheetParts: Equatable, Sendable {
         return times
     }
 
-    private static func placement(of parts: [SpotPart], in layout: SheetLayout?, searches: Bool) -> SheetPlacement {
-        SheetPlacement(parts: parts, layout: layout ?? SheetLayout(flat: parts), searches: searches)
+    private static func placement(of parts: [SpotPart], in layout: SheetLayout?, room: CGFloat) -> SheetPlacement {
+        SheetPlacement(parts: parts, layout: layout ?? SheetLayout(flat: parts), room: room)
     }
 
-    mutating func place() {
-        placement = Self.placement(of: parts, in: layout, searches: searches)
+    mutating func place(top: SheetTop? = nil) {
+        if let top { self.top = top }
+        placement = Self.placement(of: parts, in: layout, room: self.top.partsRoom)
         orderFocus()
     }
 
@@ -74,8 +75,8 @@ public struct SheetParts: Equatable, Sendable {
         focusLineOffsets = lines
     }
 
-    public var values: String {
-        TextBlock(fields: parts.compactMap { part in part.value.map { .init(key: part.id, value: $0) } }).text
+    public var inputs: [TextBlock.Field] {
+        parts.compactMap { part in part.value.map { .init(key: part.id, value: $0) } }
     }
 
     public var hint: String {
@@ -95,10 +96,6 @@ public struct SheetParts: Equatable, Sendable {
 
     public var showsRows: Bool {
         layout?.repeated != nil
-    }
-
-    public var holdsSearch: Bool {
-        showsRows && searches
     }
 
     public var kind: SheetKind {
@@ -197,7 +194,7 @@ public struct SheetParts: Equatable, Sendable {
     }
 
     @discardableResult
-    public mutating func take(_ output: SpotOutput, answering generation: Int, keeping id: String? = nil) -> Bool {
+    public mutating func take(_ output: Frame, answering generation: Int, keeping id: String? = nil) -> Bool {
         guard generation == self.generation, !output.parts.isEmpty else { return false }
         let kept = parts.first { $0.id == id }?.value
         parts = output.parts

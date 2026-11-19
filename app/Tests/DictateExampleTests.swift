@@ -63,7 +63,7 @@ final class DictateExampleTests: SampleSpotsCase {
         var left = ends
         while !left.isEmpty, let frame = try await frames.next() {
             seen.append(frame)
-            if let end = FrameHead(text: frame).end { left.remove(end) }
+            if let end = FrameRoot(text: frame).end { left.remove(end) }
         }
         return seen
     }
@@ -73,7 +73,7 @@ final class DictateExampleTests: SampleSpotsCase {
     }
 
     private func rows(_ frames: [String]) -> [SpotItem] {
-        frames.map { SpotOutput(text: $0) }.last { !$0.items.isEmpty }?.items ?? []
+        frames.map { Frame(text: $0) }.last { !$0.items.isEmpty }?.items ?? []
     }
 
     func testItIsAStayingSwiftSpotWithNoClockAndNoBuildOfItsOwn() throws {
@@ -83,8 +83,8 @@ final class DictateExampleTests: SampleSpotsCase {
         XCTAssertEqual(spot.mode, .stay)
         XCTAssertEqual(spot.sources, ["dictate"])
         XCTAssertEqual(spot.soleCommand, "dictate")
-        XCTAssertEqual(spot.read?.moments, [.sheet])
-        XCTAssertEqual(files.sorted(), ["dictate", "dictate.swift", "readme.md"])
+        XCTAssertEqual(spot.on?.moments, [.sheet])
+        XCTAssertEqual(files.sorted(), ["dictate", "dictate.swift", "readme.md", "spot.toml"])
     }
 
     func testTheSheetListsPastTextsNewestFirstAndCopiesOrDeletesOne() async throws {
@@ -94,13 +94,13 @@ final class DictateExampleTests: SampleSpotsCase {
         try Data().write(to: folder.appendingPathComponent("data/\(Self.model)"))
         try "1000\tFirst words\n2000\tSecond, with a back\\slash\n".write(to: folder.appendingPathComponent("data/history"), atomically: true, encoding: .utf8)
 
-        let frames = try await frames(script, sending: "call=1\narg=read\n\ncall=2\narg=open\narg=1000\n\ncall=3\narg=delete\narg=2000\n\n", until: ["1", "2", "3"])
+        let frames = try await frames(script, sending: "call=1\narg=show\n\ncall=2\narg=open\narg=1000\n\ncall=3\narg=delete\narg=2000\n\n", until: ["1", "2", "3"])
 
-        let first = Array(frames.prefix { FrameHead(text: $0).end != "1" })
+        let first = Array(frames.prefix { FrameRoot(text: $0).end != "1" })
         XCTAssertEqual(rows(first).map(\.run), ["2000", "1000"])
         XCTAssertEqual(rows(first).map(\.title), ["Second, with a back\\slash", "First words"])
         XCTAssertEqual(rows(frames).map(\.run), ["1000"])
-        XCTAssertEqual(frames.compactMap { SpotOutput(text: $0).toast }, ["Copied"])
+        XCTAssertEqual(toasts(in: folder), ["Copied"])
         XCTAssertEqual(try read("clipboard", in: folder), "First words")
         XCTAssertEqual(try read("data/history", in: folder), "1000\tFirst words\n")
     }
@@ -111,7 +111,7 @@ final class DictateExampleTests: SampleSpotsCase {
         let script = try await staying(in: folder)
         defer { script.stop() }
 
-        let frames = try await frames(script, sending: "call=1\narg=read\n\ncall=2\narg=open\narg=whisper\n\n", until: ["1", "2"])
+        let frames = try await frames(script, sending: "call=1\narg=show\n\ncall=2\narg=open\narg=whisper\n\n", until: ["1", "2"])
         let offer = rows(Array(frames.prefix(2))).first
 
         XCTAssertEqual(offer?.run, "whisper")
@@ -119,10 +119,10 @@ final class DictateExampleTests: SampleSpotsCase {
         XCTAssertEqual(offer?.pin, .top)
         XCTAssertEqual(offer?.openTitle, "Download")
         XCTAssertEqual(offer?.staysOnPick, true)
-        XCTAssertTrue(SpotOutput(text: frames[1]).hidesSearch)
-        let head = try XCTUnwrap(frames.compactMap { SpotOutput(text: $0).summary }.first { $0.value("progress") != nil })
+        XCTAssertEqual(Frame(text: frames[1]).search, .off)
+        let head = try XCTUnwrap(frames.compactMap { Frame(text: $0).root }.first { $0.value("progress") != nil })
         XCTAssertEqual(head.value("detail"), "0% of 1.6 GB")
-        XCTAssertTrue(frames.contains { SpotOutput(text: $0).toast?.hasPrefix("Dictate is ready.") == true })
+        XCTAssertTrue(toasts(in: folder).contains { $0.hasPrefix("Dictate is ready.") })
         XCTAssertEqual(try Data(contentsOf: folder.appendingPathComponent("data/\(Self.model)")), bytes)
         XCTAssertFalse(FileManager.default.fileExists(atPath: folder.appendingPathComponent("data/\(Self.model).part").path))
         XCTAssertEqual(try read("curl-calls", in: folder).filter { $0 == "\n" }.count, 1)
@@ -144,9 +144,9 @@ final class DictateExampleTests: SampleSpotsCase {
         script.send(text: "call=2\narg=dictate\n\n")
         let resumed = try await Self.collect(&frames, until: ["2"])
 
-        XCTAssertTrue(broken.contains { SpotOutput(text: $0).toast?.hasPrefix("Openspot cannot download the speech model.") == true })
+        XCTAssertTrue(toasts(in: folder).contains { $0.hasPrefix("Openspot cannot download the speech model.") })
         XCTAssertEqual(kept.count, 100_000)
-        XCTAssertTrue(resumed.contains { SpotOutput(text: $0).toast == "Dictate is downloading its speech model of 1.6 GB." })
+        XCTAssertTrue(toasts(in: folder).contains("Dictate is downloading its speech model of 1.6 GB."))
         XCTAssertEqual(try Data(contentsOf: folder.appendingPathComponent("data/\(Self.model)")), bytes)
         XCTAssertTrue(try read("curl-calls", in: folder).split(separator: "\n").allSatisfy { $0.contains("-C -") })
     }
@@ -164,11 +164,11 @@ final class DictateExampleTests: SampleSpotsCase {
         try await wait("curl") { FileManager.default.fileExists(atPath: pidFile.path) }
         let curl = try XCTUnwrap(pid_t(try read("curl.pid", in: folder).trimmingCharacters(in: .whitespacesAndNewlines)))
         defer { kill(curl, SIGKILL) }
-        script.send(text: "call=2\narg=read\n\n")
+        script.send(text: "call=2\narg=show\n\n")
         let during = try await Self.collect(&frames, until: ["2"])
         script.send(text: "stop=1\n\n")
         _ = try await Self.collect(&frames, until: ["1"])
-        script.send(text: "call=3\narg=read\n\n")
+        script.send(text: "call=3\narg=show\n\n")
         let after = try await Self.collect(&frames, until: ["3"])
 
         XCTAssertNotEqual(kill(curl, 0), 0)
@@ -195,7 +195,7 @@ final class DictateExampleTests: SampleSpotsCase {
 
         let frames = try await frames(script, sending: "call=1\narg=open\narg=whisper\n\n", until: ["1"])
 
-        XCTAssertTrue(frames.contains { SpotOutput(text: $0).toast?.hasPrefix("The speech model came in the wrong size") == true })
+        XCTAssertTrue(toasts(in: folder).contains { $0.hasPrefix("The speech model came in the wrong size") })
         XCTAssertFalse(FileManager.default.fileExists(atPath: folder.appendingPathComponent("data/\(Self.model)").path))
         XCTAssertFalse(FileManager.default.fileExists(atPath: folder.appendingPathComponent("data/\(Self.model).part").path))
     }

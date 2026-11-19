@@ -32,8 +32,8 @@ final class SpotEvidenceTests: XCTestCase {
 
         let evidence = try XCTUnwrap(SpotEvidence(of: "weather", in: usage.days(14, at: day), app: "openspot"))
 
-        XCTAssertEqual(evidence.goal, "Declare each use in its header, or remove the call that needs it.")
-        XCTAssertTrue(evidence.facts.contains("Calls that its header does not declare: app.quit 1 time."), "\(evidence.facts)")
+        XCTAssertEqual(evidence.goal, "Declare each use in its spot.toml, or remove the call that needs it.")
+        XCTAssertTrue(evidence.facts.contains("Calls that its spot.toml does not declare: app.quit 1 time."), "\(evidence.facts)")
     }
 
     func testACleanSpotGetsItsShareOfAllSpotsAndTheGoalToJudge() throws {

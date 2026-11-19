@@ -1,16 +1,9 @@
 #!/bin/sh
-# title=CPU
-# detail=The use of all cores
-# on=system.load
-# mode=stay
-# offers=card
-# offers=menubar
 
 # Prints the use of all cores, the last of the points, with each point as a bar.
 draw() {
   [ $# -gt 0 ] || return 0
-  eval "now=\${$#}"
-  printf 'graph=cpu\ntitle=%s%%\nmax=100\n' "$now"
+  printf 'frame=\ngrid=cpu\ngrid=cpu\ngrid.bar=cpu\n\nnumber=cpu\ntitle=CPU\nmax=100\nunit=%%\n'
   for point; do printf 'value=%s\n' "$point"; done
 }
 
@@ -20,7 +13,7 @@ measure() {
 }
 
 # `show` draws the points that are given, such as the ones of sample.sh. With none, as when another spot such as System
-# details looks, it measures the use of all cores now, and keeps no point.
+# looks, it measures the use of all cores now, and keeps no point.
 if [ "$1" = show ]; then
   shift
   [ $# -gt 0 ] || set -- $(measure)
@@ -42,9 +35,10 @@ fi
 # Prints the use of all cores, from the load that Openspot measures every 5 seconds, and the trend of the last 30 points.
 # A read with no load, as when the panel opens, measures the use now after the trend, and keeps no point.
 main() {
-  case "$1:$OPENSPOT_VALUE" in
-    read:cpu=*)
-      now=${OPENSPOT_VALUE#cpu=}
+  load=$(value event.value)
+  case "$1:$load" in
+    show:cpu=*)
+      now=${load#cpu=}
       now=${now%% *}
       set -- $points "$now"
       [ $# -le 30 ] || shift $(($# - 30))

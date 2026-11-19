@@ -54,7 +54,8 @@ public struct ConfigDocument: Equatable, Sendable {
 
     public private(set) var head: [String] = []
     public private(set) var values: [String: Value] = [:]
-    public private(set) var sections: [Table] = []
+    public private(set) var keys: [String] = []
+    public internal(set) var sections: [Table] = []
     public var tables: [Table] = []
 
     public init() {}
@@ -94,6 +95,7 @@ public struct ConfigDocument: Equatable, Sendable {
             } else if tables.isEmpty {
                 guard values[key] == nil else { throw fault("\(key) is set twice") }
                 values[key] = value
+                keys.append(key)
             } else {
                 guard tables[tables.count - 1][key] == nil else { throw fault("\(key) is set twice") }
                 tables[tables.count - 1][key] = value
@@ -113,6 +115,7 @@ public struct ConfigDocument: Equatable, Sendable {
         } else {
             head.append(line)
         }
+        if values[key] == nil { keys.append(key) }
         values[key] = value
     }
 
@@ -129,6 +132,10 @@ public struct ConfigDocument: Equatable, Sendable {
         case "\"":
             rest.removeFirst()
             guard let result = quoted(&rest) else { return nil }
+            return isEnd(rest) ? .string(result) : nil
+        case "'":
+            rest.removeFirst()
+            guard let result = literal(&rest) else { return nil }
             return isEnd(rest) ? .string(result) : nil
         case "[":
             rest.removeFirst()
@@ -165,6 +172,9 @@ public struct ConfigDocument: Equatable, Sendable {
             case "\"":
                 guard let item = quoted(&rest) else { return nil }
                 result.append(item)
+            case "'":
+                guard let item = literal(&rest) else { return nil }
+                result.append(item)
             case "]":
                 return isEnd(rest) ? .strings(result) : nil
             default:
@@ -194,6 +204,12 @@ public struct ConfigDocument: Equatable, Sendable {
             }
         }
         return nil
+    }
+
+    private static func literal(_ rest: inout Substring.UnicodeScalarView) -> String? {
+        guard let end = rest.firstIndex(of: "'") else { return nil }
+        defer { rest = rest[rest.index(after: end)...] }
+        return String(rest[..<end])
     }
 
     private static func quoted(_ rest: inout Substring.UnicodeScalarView) -> String? {

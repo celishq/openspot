@@ -8,14 +8,14 @@ enum SpotSheetWarmth {
     private static let rows = ["star", "folder", "doc", "gear", "clock"].map { SpotItem(title: $0.capitalized, subtitle: "Row", run: $0, picture: .symbol($0)) }
 
     static func draw() {
-        let sheets = [SheetExamples.all[0], SheetExamples.tiles].map { SpotOutput(text: $0.text) }
+        let sheets = [SheetExamples.all[0], SheetExamples.tiles].map { Frame(text: $0.text) }
         let view = VStack(alignment: .leading, spacing: 0) {
             ForEach(Array(sheets.enumerated()), id: \.offset) { _, output in
                 if let panel = SheetParts(output: output) {
                     SpotSheetPreview(panel: panel, list: SpotSheetPicture.list(of: output))
                 }
             }
-            SpotRowsView(list: ItemList(items: rows), onRun: { _ in })
+            SpotItemsView(list: ItemList(items: rows), onRun: { _ in })
                 .frame(width: SpotTokens.panelWidth, height: CGFloat(rows.count) * SpotTokens.listRow)
         }
         let host = NSHostingView(rootView: view.preferredColorScheme(.dark))

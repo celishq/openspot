@@ -61,7 +61,7 @@ public struct AgentPrompt: Equatable, Sendable {
 
         Each folder holds the extension's package.json, which lists its commands and preferences, and its built JavaScript. Each .js.map file holds the original TypeScript in sourcesContent: read the code there.
         Don't port Raycast or @raycast/api. Rebuild what each command does with Openspot's own blocks: a List becomes rows, a Detail a text page, a Form fields, the actions of an ActionPanel buttons, a menu-bar command a menu bar card, and a no-view command a call that ends in a toast. Call the service's own API or command-line tool, and keep a token or a key in a setting field of type secret.
-        Copy the icon of each extension into its spot folder and name the copy in the header, such as # icon=icon.png, so the spot looks as it did in Raycast. An extension with no icon gets an SF Symbol that fits it.
+        Copy the icon of each extension into its spot folder and name the copy in its spot.toml, such as icon = "icon.png", so the spot looks as it did in Raycast. An extension with no icon gets an SF Symbol that fits it.
         Leave out a command that needs a service of Raycast itself, such as Raycast AI, and tell me which ones you left out.
         \(Self.finishAlone)
 
@@ -71,7 +71,7 @@ public struct AgentPrompt: Equatable, Sendable {
     }
 
     private var writing: String {
-        "Write it as a script in a new spot folder in \(folder.path), such as weather.spot/weather.sh. Its ID is the name of the folder with no extension."
+        "Write it as a script in a new spot folder in \(folder.path), such as weather.spot/weather.sh, and describe it in weather.spot/spot.toml. Its ID is the name of the folder with no extension."
     }
 
     public func fixing(_ file: URL, faults: [String]) -> String {

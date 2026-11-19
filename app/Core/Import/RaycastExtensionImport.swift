@@ -16,7 +16,7 @@ struct RaycastExtensionImport {
         let folder: String
 
         var blocks: [[(String, String?)]] {
-            [[("row", name), ("title", title), ("detail", detail), ("outcome", outcome.rawValue), ("spot", spot), ("spot.title", spotTitle), ("icon", icon), ("folder", folder)]]
+            [[("text", name), ("title", title), ("detail", detail), ("outcome", outcome.rawValue), ("spot", spot), ("spot.title", spotTitle), ("icon", icon), ("folder", folder)]]
         }
     }
 

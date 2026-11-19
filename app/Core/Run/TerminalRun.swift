@@ -6,7 +6,7 @@ public struct TerminalRun {
         public let errors: String
     }
 
-    private static let readLimit: TimeInterval = 10
+    private static let showLimit: TimeInterval = 10
     static let errorLimit = 1 << 20
     private static let callID = 1
 
@@ -35,21 +35,25 @@ public struct TerminalRun {
     }
 
     var action: SpotAction {
-        SpotAction(arguments: arguments.isEmpty ? (spot.read == nil ? SpotAction.open : SpotAction.read).arguments : arguments)
+        SpotAction(arguments: arguments.isEmpty ? (spot.hasSheet ? SpotAction.show : SpotAction.open).arguments : arguments)
+    }
+
+    private func message(isInShow: Bool) -> Message {
+        Message(action, event: isInShow ? .sheet : nil, given: input)
     }
 
     public func start(isolation: isolated (any Actor)? = #isolation, frame: (String) -> Void) async -> End {
         if spot.reachesAccountKey {
             return End(code: 1, errors: "\(spot.name) reaches your account key, so it runs only in the Openspot panel. Open it there.\n")
         }
-        let isRead = action == .read
-        if spot.mode == .inline { return await inline(isRead: isRead, frame: frame) }
+        let isInShow = action == .show
+        if spot.mode == .inline { return await inline(isInShow: isInShow, frame: frame) }
         let swift = SwiftProgram()
         let program = swift.runnable(for: spot, builds: false)
-        let caller = callers?.issue(for: spot)
+        let caller = callers?.issue(for: spot, reason: isInShow ? ShowEvent.sheet.rawValue : nil)
         let process = ScriptProcess(
-            spot: spot, program: program, swift: swift, sending: spot.mode.stays ? nil : action, input: input, limit: isRead ? Self.readLimit : nil,
-            variables: isRead ? ReadReason.sheet.variables : [:], errorLimit: Self.errorLimit, careful: careful, base: environment, folder: folder
+            spot: spot, program: program, swift: swift, sending: spot.mode.stays ? nil : message(isInShow: isInShow), limit: isInShow ? Self.showLimit : nil,
+            errorLimit: Self.errorLimit, careful: careful, base: environment, folder: folder
         )
         usage?.track(process, of: spot.id)
         if let callers, let caller { callers.attach(process, to: caller) }
@@ -57,9 +61,9 @@ public struct TerminalRun {
             var code: Int32 = 0
             do {
                 let frames = process.start()
-                if spot.mode.stays { process.send(action, input: input, variables: isRead ? ReadReason.sheet.variables : [:], id: Self.callID) }
+                if spot.mode.stays { process.send(message(isInShow: isInShow), id: Self.callID) }
                 for try await text in frames {
-                    let head = spot.mode.stays ? FrameHead(text: text) : nil
+                    let head = spot.mode.stays ? FrameRoot(text: text) : nil
                     if head?.isMark != true { frame(text) }
                     if head?.end == String(Self.callID) { process.end() }
                 }
@@ -81,13 +85,13 @@ public struct TerminalRun {
         }
     }
 
-    private func inline(isolation: isolated (any Actor)? = #isolation, isRead: Bool, frame: (String) -> Void) async -> End {
-        let script = InlineScript(spot: spot, api: nil, callers: callers, careful: careful, limit: Self.readLimit, base: environment ?? ProcessInfo.processInfo.environment)
+    private func inline(isolation: isolated (any Actor)? = #isolation, isInShow: Bool, frame: (String) -> Void) async -> End {
+        let script = InlineScript(spot: spot, api: nil, callers: callers, careful: careful, limit: Self.showLimit, base: environment ?? ProcessInfo.processInfo.environment)
         defer { script.end() }
-        let call = InlineCall(arguments: action.arguments, variables: ["OPENSPOT_ID": spot.id].merging(isRead ? ReadReason.sheet.variables : [:]) { _, new in new }, input: input, limit: isRead ? Self.readLimit : nil)
+        let call = InlineCall(arguments: action.arguments, variables: ["OPENSPOT_ID": spot.id], input: message(isInShow: isInShow).text, reason: isInShow ? ShowEvent.sheet.rawValue : nil, limit: isInShow ? Self.showLimit : nil)
         script.send(call)
         let outcome = await withTaskCancellationHandler {
-            await call.outcome(limit: isRead ? Self.readLimit : nil)
+            await call.outcome(limit: isInShow ? Self.showLimit : nil)
         } onCancel: {
             call.stop()
         }

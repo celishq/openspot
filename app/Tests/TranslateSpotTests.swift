@@ -26,7 +26,7 @@ final class TranslateSpotTests: SampleSpotsCase {
             let output = try await translate.items(timeout: 60)
 
             XCTAssertEqual(translate.mode, .once)
-            XCTAssertEqual(translate.read, .sheet)
+            XCTAssertTrue(translate.hasSheet)
             XCTAssertEqual(translate.kind, .list)
             XCTAssertEqual(output.kind, .list)
             let faults = try await translate.sheetFaults(timeout: 60)
@@ -53,7 +53,7 @@ final class TranslateSpotTests: SampleSpotsCase {
     func testTranslateTakesTheTextOfASlashCommandAsItsInput() async throws {
         try await withPrivateHome { folder in
             let translate = try self.fakeTranslate(in: folder)
-            let output = try await Self.answer(of: translate, ["read"], input: "source=ru\ntarget=en\nsearch=hi\n")
+            let output = try await Self.answer(of: translate, ["show"], input: "input.source=ru\ninput.target=en\nsearch=hi\n")
 
             XCTAssertEqual(self.text(of: "input", in: output), "hi")
         }
@@ -62,7 +62,7 @@ final class TranslateSpotTests: SampleSpotsCase {
     func testTheTextOfASlashCommandReplacesTheTextInTheField() async throws {
         try await withPrivateHome { folder in
             let translate = try self.fakeTranslate(in: folder)
-            let output = try await Self.answer(of: translate, ["read"], input: "source=ru\ntarget=en\ninput=old\nsearch=new\n")
+            let output = try await Self.answer(of: translate, ["show"], input: "input.source=ru\ninput.target=en\ninput.input=old\nsearch=new\n")
 
             XCTAssertEqual(self.text(of: "input", in: output), "new")
         }
@@ -119,7 +119,8 @@ final class TranslateSpotTests: SampleSpotsCase {
 
             let output = try await Self.drive(translate, [.set("source", to: "ru"), .set("target", to: "en"), .set("input", to: "one\ntwo"), .press("copy")])
 
-            XCTAssertEqual(output.summary?.value("toast"), "Copied")
+            XCTAssertNil(output.root?.value("toast"))
+            XCTAssertEqual(self.toasts(in: folder), ["Copied"])
             XCTAssertEqual(try self.read("clipboard", in: folder), "OnE\nTWO")
             XCTAssertFalse(FileManager.default.fileExists(atPath: folder.appendingPathComponent("direct").path))
         }

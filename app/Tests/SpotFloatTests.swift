@@ -22,6 +22,7 @@ final class SpotFloatTests: XCTestCase {
         )
         model = SpotsModel(host: host, files: files, runs: SpotRuns(stopPause: 0.2))
         host.model = model
+        model.runs.api = CommandAPI(mac: Mac(), places: files, app: ModelApp(model: model), runs: model.runs, rates: .offline)
     }
 
     override func tearDown() async throws {
@@ -34,8 +35,8 @@ final class SpotFloatTests: XCTestCase {
         folder.appendingPathComponent("spots", isDirectory: true)
     }
 
-    private func script(_ name: String, header: String, _ body: String) throws {
-        try TestSpot(header: header, body: "\(body)").write(to: spots.spotFile(name))
+    private func script(_ name: String, toml: String, _ body: String) throws {
+        try TestSpot(toml: toml, body: "\(body)").write(to: spots.spotFile(name))
     }
 
     private func key(_ spot: String) throws -> GlobalKey {
@@ -43,11 +44,12 @@ final class SpotFloatTests: XCTestCase {
     }
 
     private func floatList() async throws {
-        try script("list", header: "on=sheet.open", """
+        try script("list", toml: "", """
+        \(TestSpot.event)
         case "$1" in
-          read) printf 'row=a\\ntitle=%s\\n\\nrow=b\\ntitle=Banana\\n\\nbutton=trash\\ntitle=Trash\\nshortcut=cmd+backspace\\n\\nbutton=rename\\ntitle=Rename\\nform=true\\n' "$OPENSPOT_REASON" ;;
-          open) printf 'toast=Opened %s\\n' "$2" ;;
-          trash) printf 'toast=Trashed %s\\n' "$2" ;;
+          show) printf 'text=a\\ntitle=%s\\n\\ntext=b\\ntitle=Banana\\n\\nbutton=trash\\ntitle=Trash\\nshortcut=cmd+backspace\\n\\nbutton=rename\\ntitle=Rename\\nform=true\\n' "$ev" ;;
+          open) \(TestSpot.toast) "Opened $2" ;;
+          trash) \(TestSpot.toast) "Trashed $2" ;;
         esac
         """)
         await model.reload()
@@ -66,7 +68,7 @@ final class SpotFloatTests: XCTestCase {
     }
 
     func testAFloatThatOpensDuringADragFollowsItAndOneWithNoDragDoesNot() async throws {
-        try script("list", header: "on=sheet.open", "printf 'row=a\\ntitle=A\\n'")
+        try script("list", toml: "", "printf 'text=a\\ntitle=A\\n'")
         await model.reload()
 
         host.isMouseDown = true
@@ -134,7 +136,7 @@ final class SpotFloatTests: XCTestCase {
     }
 
     func testAFloatOfPartsKeepsItsValuesWhenThePanelClosesAndDropsThemWhenItCloses() async throws {
-        try script("note", header: "on=sheet.open", "printf 'field=note\\nvalue=hi\\n'")
+        try script("note", toml: "", "printf 'frame=\\ngrid=note\\n\\nfield=note\\nvalue=hi\\n'")
         await model.reload()
         model.press(try key("note"))
         try await wait("the parts") { model.sheets["note"]?.panel != nil }
@@ -152,7 +154,7 @@ final class SpotFloatTests: XCTestCase {
     }
 
     func testAFloatOfPartsWithNoFieldKeepsItsPartsWhenItCloses() async throws {
-        try script("note", header: "on=sheet.open", "printf 'text=hi\\ntitle=Hi\\n'")
+        try script("note", toml: "", "printf 'frame=\\ngrid=hi\\n\\ntext=hi\\ntitle=Hi\\n'")
         await model.reload()
         model.press(try key("note"))
         try await wait("the parts") { model.sheets["note"]?.panel != nil }
@@ -164,10 +166,10 @@ final class SpotFloatTests: XCTestCase {
     }
 
     func testADropOnAFloatGoesToItsScriptAndLeavesThePanel() async throws {
-        try script("shelf", header: "on=sheet.open\ndrop=*", """
+        try script("shelf", toml: "drop = '*'", """
         case "$1" in
-          read) printf 'row=a\\n' ;;
-          drop) shift; printf 'toast=Kept %s\\n' "$*" ;;
+          show) printf 'text=a\\n' ;;
+          drop) shift; \(TestSpot.toast) "Kept $*" ;;
         esac
         """)
         await model.reload()
@@ -194,9 +196,9 @@ final class SpotFloatTests: XCTestCase {
 
     func testAShakeWhileARowThatTakesOneRecordsGivesItTheShake() async throws {
         let given = folder.appendingPathComponent("given").path
-        try script("keys", header: "title=Keys\non=sheet.open", """
+        try script("keys", toml: "title = 'Keys'", """
         case "$1" in
-          read) printf 'button=open\\ntitle=Change\\nclose=false\\n\\nrow=panel-key\\ntitle=Open\\nshortcut=ctrl+space\\n\\nrow=float:shelf\\ntitle=Float\\nshortcut=Record\\nshake=true\\n' ;;
+          show) printf 'button=open\\ntitle=Change\\nclose=false\\n\\nfield=panel-key\\ntype=hotkey\\ntitle=Open\\nvalue=ctrl+space\\n\\nfield=float:shelf\\ntype=hotkey\\ntitle=Float\\nshake=true\\n' ;;
           *) printf '%s %s' "$1" "$2" > '\(given)' ;;
         esac
         """)
@@ -221,24 +223,20 @@ final class SpotFloatTests: XCTestCase {
         try await wait("the shake given to the row") { (try? String(contentsOfFile: given, encoding: .utf8)) == "float:shelf shake" }
     }
 
-    func testAFloatOfACardWithNoReadRunsNothingUntilItsCardIsPressed() async throws {
-        try script("go", header: "title=Go", "printf 'toast=Went\\n'")
+    func testAFloatOfASpotWithNoEventAsksItWhatToShow() async throws {
+        try script("go", toml: "title = 'Go'", "printf 'text=a\\ntitle=Went\\n'")
         await model.reload()
 
         model.press(try key("go"))
 
         XCTAssertEqual(host.floats, ["go"])
-        XCTAssertEqual(model.sheets["go"]?.isReading, false)
-        XCTAssertEqual(model.sheets["go"]?.calls.isEmpty, true)
-
-        model.pressFloatCard("go")
-
-        try await wait("the run") { host.confirms == ["Went"] }
+        try await wait("the read") { self.model.sheets["go"]?.list.shown.map(\.title) == ["Went"] }
         XCTAssertEqual(host.dismissals, 0)
     }
 
     private func windowSpot() async throws {
-        try script("store", header: "on=sheet.open\noffers=card\noffers=window", "printf 'row=a\\ntitle=Apple\\n'")
+        try script("store", toml: "", "printf 'text=a\\ntitle=Apple\\n'")
+        _ = try model.files.config.change { $0.arrangement.set(isWindow: true, of: "store") }
         await model.reload()
     }
 
@@ -281,13 +279,14 @@ final class SpotFloatTests: XCTestCase {
 
     func testAWindowReadsAgainWhenTheSpotsChange() async throws {
         let log = folder.appendingPathComponent("reads")
-        try script("store", header: "on=sheet.open\noffers=card\noffers=window", "echo read >> '\(log.path)'\nprintf 'row=a\\ntitle=Apple\\n'")
+        try script("store", toml: "", "echo read >> '\(log.path)'\nprintf 'text=a\\ntitle=Apple\\n'")
+        _ = try model.files.config.change { $0.arrangement.set(isWindow: true, of: "store") }
         await model.reload()
         model.press("store")
         let reads = { ((try? String(contentsOf: log, encoding: .utf8)) ?? "").split(separator: "\n").count }
         try await wait("the first read") { reads() == 1 }
 
-        try script("other", header: "title=Other", "true")
+        try script("other", toml: "title = 'Other'", "true")
         await model.reload()
 
         try await wait("a read after the load") { reads() == 2 }

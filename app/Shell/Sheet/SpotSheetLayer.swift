@@ -25,13 +25,15 @@ struct SpotSheetLayer: View {
             cardWidth: isInstall ? SpotFieldView.rect.width : frame?.width ?? SpotFieldView.rect.width,
             hasCardLook: card?.look != nil,
             morph: morph,
-            cardState: card?.state
+            cardState: card?.state,
+            held: closingPage
         )
+        .environment(\.spotIsHeld, closingPage != nil)
         .id(entry.id)
         .morph(progress, opacity: contentOpacity)
         .overlay(alignment: .topLeading) {
             if let look = card?.look, let frame {
-                MovingLook(model: model, id: entry.id) { isMoving in cardLook(look, size: card?.placement.size ?? look.size, readsLive: isMoving) }
+                cardLook(look, size: card?.placement.size ?? look.size)
                     .frame(width: frame.width, height: frame.height)
                     .morph(progress, opacity: SheetMorph.cardLook(at:))
                     .allowsHitTesting(false)
@@ -69,7 +71,8 @@ struct SpotSheetLayer: View {
             room: room,
             fit: edges.sheetStart?.rect(around: from) ?? sheetRect,
             leaving: leaving(edges, around: room),
-            field: showsField ? AnyView(SpotFieldLook(query: model.searchText, title: entry.state.title)) : nil
+            field: showsField ? AnyView(SpotFieldLook(query: model.searchText, title: entry.state.title, top: model.sheets[entry.id]?.top ?? .plain)) : nil,
+            glass: edges.sheetStart == nil || edges.sheetStartsOnMark ? 1 : MotionTokens.hiddenOpacity
         )
     }
 
@@ -91,11 +94,15 @@ struct SpotSheetLayer: View {
             .frame(width: page.rect.width, height: page.rect.height, alignment: .topLeading)
             .offset(x: page.rect.minX, y: page.rect.minY)
             if page.showsField {
-                SpotFieldLook(query: page.query, title: page.fieldTitle)
+                SpotFieldLook(query: page.query, title: page.fieldTitle, top: page.top)
             }
         }
         .environment(\.spotIsHeld, true)
         return SheetStep.Leaving(look: AnyView(look), from: page.rect, rect: edge.rect(around: room))
+    }
+
+    private var closingPage: SheetPage? {
+        isOpen ? nil : model.closingPage.flatMap { $0.spot == entry.id ? $0 : nil }
     }
 
     private var progress: Double {
@@ -136,29 +143,15 @@ struct SpotSheetLayer: View {
     }
 
     @ViewBuilder
-    private func cardLook(_ card: SpotsModel.Entry, size: SpotSize, readsLive: Bool) -> some View {
-        let reading: (String) -> MetricReading? = card.kind == .widget && readsLive ? { [model] in model.reading(of: $0) } : { _ in nil }
+    private func cardLook(_ card: SpotsModel.Entry, size: SpotSize) -> some View {
         if card.item == nil, let layout = card.state.face.layout(for: size) {
             SpotCardDrawing(layout: layout, face: card.state.face, card: size, view: { room in
                 card.spot.view.map { SpotCustomView(source: $0, values: card.state.values, card: size, room: room, views: SpotViews.shared) }
             }, onSlot: { _, _ in })
-            .padding(SpotTokens.cardPadding(for: size, isWidget: true))
+            .padding(SpotTokens.cardPadding(for: size, isDrawn: true))
         } else if card.item == nil, card.state.face.hasView, let view = card.spot.view {
             SpotCustomView(source: view, values: card.state.values, card: size, views: SpotViews.shared)
-        } else if let layout = card.spot.layout {
-            SpotWidgetView(layout: layout, places: card.spot.places, reading: reading, card: size)
-                .padding(SpotTokens.cardPadding(for: size, isWidget: true))
         }
-    }
-}
-
-private struct MovingLook<Look: View>: View {
-    let model: SpotsModel
-    let id: String
-    @ViewBuilder let look: (Bool) -> Look
-
-    var body: some View {
-        look(model.transition.phase != .open || model.transition.id != id)
     }
 }
 

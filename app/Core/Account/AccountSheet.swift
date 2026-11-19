@@ -42,11 +42,11 @@ public actor AccountSheet {
     private enum Move {
         case push(Page), pop, popAll
 
-        func write(to frame: inout AccountFrame) {
+        var effect: SpotEffect {
             switch self {
-            case .push(let page): frame.head("push", page.rawValue)
-            case .pop: frame.head("pop", "true")
-            case .popAll: frame.head("pop", "all")
+            case .push(let page): .route(.push(spot: nil, route: page.rawValue, title: nil, replace: false))
+            case .pop: .route(.pop(all: false))
+            case .popAll: .route(.pop(all: true))
             }
         }
     }
@@ -67,15 +67,15 @@ public actor AccountSheet {
     public nonisolated var spot: Spot {
         Spot(
             id: Self.id, name: "Account", url: URL(fileURLWithPath: NSTemporaryDirectory()), kind: .list, icon: .symbol("person.crop.circle"),
-            subtitle: "Signs what you publish", read: .sheet, host: .account(self), offeredPlaces: [.search], dataName: "account",
+            subtitle: "Signs what you publish", on: .sheet, host: .account(self), isGlobal: true, dataName: "account",
             isOnGrid: false, view: Self.card, pages: Page.allCases.map(\.rawValue), uses: [.app, .account, .clipboard]
         ).builtIn()
     }
 
-    func answer(_ arguments: [String], input: String?, variables: [String: String]) async throws -> String {
+    func answer(_ arguments: [String], input: String?) async throws -> HostAnswer {
         let fields = TextBlock.blocks(in: input ?? "").first
-        let reason = variables["OPENSPOT_REASON"]
-        let page = variables["OPENSPOT_PAGE"].flatMap(Page.init(rawValue:))
+        let reason = fields?.value("event")
+        let page = fields?.value("route").flatMap(Page.init(rawValue:))
         var toast: String?
         var phrase = ""
         var handle: String?
@@ -83,10 +83,10 @@ public actor AccountSheet {
         if reason != nil { shows = false }
         let action = arguments.first ?? ""
         switch action {
-        case "read":
+        case "show":
             break
         case "sign_in":
-            phrase = fields?.value("phrase") ?? ""
+            phrase = fields?.value("input.phrase") ?? ""
             let typed = AccountPhrase(phrase)
             if typed.canSignIn {
                 try await account.signIn(typed)
@@ -102,7 +102,7 @@ public actor AccountSheet {
         case "handle":
             handle = AccountHandle.suggestion(from: arguments.dropFirst().first ?? "")
         case "create":
-            let typed = AccountHandle.suggestion(from: fields?.value("handle") ?? "")
+            let typed = AccountHandle.suggestion(from: fields?.value("input.handle") ?? "")
             guard AccountHandle(typed) != nil else {
                 handle = typed
                 break
@@ -118,7 +118,7 @@ public actor AccountSheet {
             move = .push(.how)
         case "about":
             move = .push(.about)
-        case "show":
+        case "reveal":
             shows = true
         case "wrote":
             shows = false
@@ -144,7 +144,8 @@ public actor AccountSheet {
         default:
             throw SpotError.failed(1, "Account cannot do that.")
         }
-        return try await sheet(on: page, toast: toast, phrase: phrase, handle: handle, move: move)
+        let frame = try await sheet(on: page, phrase: phrase, handle: handle)
+        return HostAnswer(frame: frame, effects: [move?.effect, toast.map(SpotEffect.toast)].compactMap { $0 })
     }
 
     private func step(on page: Page?, _ facts: AccountStatus) -> Step {
@@ -185,40 +186,37 @@ public actor AccountSheet {
         Array((1...AccountPhrase.wordCount).shuffled().prefix(2)).sorted()
     }
 
-    private func sheet(on page: Page?, toast: String?, phrase: String, handle: String?, move: Move?) async throws -> String {
+    private func sheet(on page: Page?, phrase: String, handle: String?) async throws -> String {
         let facts = try account.status()
         var frame = AccountFrame()
-        move?.write(to: &frame)
         switch step(on: page, facts) {
-        case .restore: restore(&frame, facts, phrase: phrase, toast: toast)
-        case .check(let check): self.check(&frame, check, toast: toast)
-        case .choose: choose(&frame, toast: toast)
-        case .handle: self.handle(&frame, typed: handle, toast: toast)
-        case .how: how(&frame, toast: toast)
-        case .about: about(&frame, facts, toast: toast)
-        case .words: await words(&frame, facts, toast: toast)
-        case .account: account(&frame, facts, toast: toast)
-        case .leave: leave(&frame, facts, toast: toast)
+        case .restore: restore(&frame, facts, phrase: phrase)
+        case .check(let check): self.check(&frame, check)
+        case .choose: choose(&frame)
+        case .handle: self.handle(&frame, typed: handle)
+        case .how: how(&frame)
+        case .about: about(&frame, facts)
+        case .words: await words(&frame, facts)
+        case .account: account(&frame, facts)
+        case .leave: leave(&frame, facts)
         }
         return frame.text
     }
 
-    private func choose(_ frame: inout AccountFrame, toast: String?) {
+    private func choose(_ frame: inout AccountFrame) {
         frame.grid("head head", "head head", "new new", "own how")
-        frame.toast(toast)
         frame.line("head", "You need a key to publish", icon: "signature", detail: "Openspot signs your spots with it, so people know an update is from you.")
         frame.button("new", "Create a new key", .main)
         frame.button("own", "Use my own key")
         frame.howAction()
     }
 
-    private func handle(_ frame: inout AccountFrame, typed: String?, toast: String?) {
+    private func handle(_ frame: inout AccountFrame, typed: String?) {
         let value = typed ?? AccountHandle.suggestion(from: links.userName())
         let problem = typed != nil && AccountHandle(value) == nil ? AccountHandle.rule : nil
         frame.grid("head head", "head head", "label label", "handle handle")
         if problem != nil { frame.grid("status status") }
         frame.grid("create create")
-        frame.toast(toast)
         frame.line("head", "Pick your handle", icon: "at", detail: "It names you on the spots you publish, and in their links.")
         frame.block(["section": "label", "title": "Handle"], order: ["section", "title"])
         frame.block(["field": "handle", "grow": "false", "placeholder": "yourname", "value": value], order: ["field", "grow", "placeholder", "value"])
@@ -227,9 +225,8 @@ public actor AccountSheet {
         frame.howAction()
     }
 
-    private func how(_ frame: inout AccountFrame, toast: String?) {
+    private func how(_ frame: inout AccountFrame) {
         frame.grid("head", "head", "people", "icloud", "words", "private", "reset", "done")
-        frame.toast(toast)
         frame.line("head", "How your key works", icon: "key", detail: "Openspot signs each spot you publish with your key. There is no email, password or server.")
         frame.line("people", "Shows an update is yours", icon: "checkmark.seal")
         frame.line("icloud", "Kept in iCloud Keychain", icon: "icloud")
@@ -239,24 +236,22 @@ public actor AccountSheet {
         frame.button("done", "Done", .main)
     }
 
-    private func about(_ frame: inout AccountFrame, _ facts: AccountStatus, toast: String?) {
+    private func about(_ frame: inout AccountFrame, _ facts: AccountStatus) {
         frame.grid("head", "head", "private", "reset")
         if facts.sync == true { frame.grid("icloud") }
-        frame.grid("show")
-        frame.toast(toast)
+        frame.grid("reveal")
         frame.line("head", "Your 12 words are your key", icon: "key", detail: "They bring your key back on any Mac.")
         frame.line("private", "Anyone with them is you", icon: "eye.slash")
         frame.line("reset", "Nobody can reset them", icon: "exclamationmark.triangle", tone: "warn")
         if facts.sync == true { frame.line("icloud", "iCloud Keychain keeps a copy", icon: "icloud") }
-        frame.button("show", "Show my words", .main)
+        frame.button("reveal", "Show my words", .main)
         frame.howAction()
     }
 
-    private func words(_ frame: inout AccountFrame, _ facts: AccountStatus, toast: String?) async {
+    private func words(_ frame: inout AccountFrame, _ facts: AccountStatus) async {
         frame.grid("head head")
         frame.wordGrid()
         frame.grid("wrote wrote", "later later")
-        frame.toast(toast)
         do {
             let words = try await account.words()
             frame.line("head", "Write them down", icon: "pencil", detail: "In this order")
@@ -269,11 +264,10 @@ public actor AccountSheet {
         frame.howAction()
     }
 
-    private func account(_ frame: inout AccountFrame, _ facts: AccountStatus, toast: String?) {
+    private func account(_ frame: inout AccountFrame, _ facts: AccountStatus) {
         frame.grid("card card", "card card", "card card", "card card", "backup backup")
         if facts.sync != nil { frame.grid("sync sync") }
         frame.grid("about about", "- -", "how leave")
-        frame.toast(toast)
         let npub = facts.npub ?? ""
         var card = ["view": "card", "grow": "false", "npub": npub, "short": facts.shortNpub ?? ""]
         var order = ["view", "grow", "npub", "short"]
@@ -293,11 +287,10 @@ public actor AccountSheet {
         frame.button("leave", "Sign out…")
     }
 
-    private func leave(_ frame: inout AccountFrame, _ facts: AccountStatus, toast: String?) {
+    private func leave(_ frame: inout AccountFrame, _ facts: AccountStatus) {
         frame.grid("head", "head")
         if facts.backedUp != true { frame.grid("again") }
         frame.grid("sign_out", "cancel")
-        frame.toast(toast)
         let place = facts.sync == true ? "all your Macs" : "this Mac"
         let again = facts.backedUp == true ? " Your 12 words sign you in again." : ""
         frame.line("head", "Sign out of your account?", icon: "rectangle.portrait.and.arrow.right", detail: "It leaves \(place).\(again)")
@@ -307,7 +300,7 @@ public actor AccountSheet {
         frame.howAction()
     }
 
-    private func restore(_ frame: inout AccountFrame, _ facts: AccountStatus, phrase: String, toast: String?) {
+    private func restore(_ frame: inout AccountFrame, _ facts: AccountStatus, phrase: String) {
         let typed = phrase.isEmpty ? nil : AccountPhrase(phrase)
         let finished = (typed?.typed ?? []).dropLast(phrase.last?.isWhitespace == true ? 0 : 1)
         var status: (title: String, icon: String?, tone: String?, detail: String?)?
@@ -327,13 +320,12 @@ public actor AccountSheet {
         frame.grid("phrase phrase", "phrase phrase", "phrase phrase")
         if status != nil { frame.grid("status status") }
         frame.grid("sign_in sign_in")
-        frame.toast(toast)
         frame.block(["field": "phrase", "type": "multiline", "grow": "false", "placeholder": "Your 12 words, or an nsec", "value": phrase], order: ["field", "type", "grow", "placeholder", "value"])
         if let status { frame.line("status", status.title, icon: status.icon, tone: status.tone, detail: status.detail) }
         frame.button("sign_in", "Sign in", .main)
     }
 
-    private func check(_ frame: inout AccountFrame, _ check: WordCheck, toast: String?) {
+    private func check(_ frame: inout AccountFrame, _ check: WordCheck) {
         let (first, second) = (check.places[0], check.places[1])
         let choices = (try? account.choices(at: [first, second])) ?? [[], []]
         let ids = zip([first, second], choices).map { place, words in words.map { "pick-\(place)-\($0)" } }
@@ -342,7 +334,6 @@ public actor AccountSheet {
         frame.grid("second second")
         if ids[1].count == 4 { frame.grid("\(ids[1][0]) \(ids[1][1])", "\(ids[1][2]) \(ids[1][3])") }
         frame.grid("again again")
-        frame.toast(toast)
         if let mistake = check.mistake {
             frame.line("head", mistake, icon: "exclamationmark.triangle", tone: "bad")
         } else {

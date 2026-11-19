@@ -9,7 +9,7 @@ final class SystemSettingsSpotTests: SampleSpotsCase {
     }
 
     func testSystemSettingsReadsWhenThePanelOpens() throws {
-        let read = try XCTUnwrap(try scan.spots.first { $0.name == "System Settings" }?.read)
+        let read = try XCTUnwrap(try scan.spots.first { $0.name == "System Settings" }?.on)
 
         XCTAssertTrue(read.has(.panel))
     }

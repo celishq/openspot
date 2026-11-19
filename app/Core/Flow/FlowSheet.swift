@@ -2,21 +2,21 @@ import Foundation
 
 public struct FlowSheet: Hashable, Sendable {
     public let spot: String
-    public let page: String?
+    public let route: String?
     public let title: String?
 
-    public init(spot: String, page: String? = nil, title: String? = nil) {
+    public init(spot: String, route: String? = nil, title: String? = nil) {
         self.spot = spot
-        self.page = page
+        self.route = route
         self.title = title
     }
 
     public static func == (left: FlowSheet, right: FlowSheet) -> Bool {
-        left.spot == right.spot && left.page == right.page
+        left.spot == right.spot && left.route == right.route
     }
 
     public func hash(into hasher: inout Hasher) {
         hasher.combine(spot)
-        hasher.combine(page)
+        hasher.combine(route)
     }
 }

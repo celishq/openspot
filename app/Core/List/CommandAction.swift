@@ -15,7 +15,7 @@ public struct CommandAction: Equatable, Sendable {
 
     private static let commandPrefix = "openspot.command."
 
-    public static func command(_ offer: HeaderButton) -> CommandAction {
+    public static func command(_ offer: Manifest.Command) -> CommandAction {
         CommandAction(id: commandPrefix + offer.id, title: offer.title, scope: .spot, after: offer.closes ? .close : .stay, confirm: offer.confirm, placeholder: offer.placeholder)
     }
 
@@ -65,7 +65,7 @@ public struct CommandAction: Equatable, Sendable {
             title: title,
             key: key,
             scope: scope,
-            after: block.flag("close") == true ? .close : .stay,
+            after: block.flag("close") == false ? .stay : .close,
             isForm: block.flag("form") ?? false,
             confirm: block.value("confirm"),
             placeholder: block.value("placeholder")

@@ -12,16 +12,15 @@ extension SpotRun {
         runs.usage.acted(spot, at: runs.now())
     }
 
-    func answer(to action: SpotAction, key: String, input: String?) async throws -> SpotOutput? {
+    func answer(to message: Message, key: String) async throws -> Frame? {
         try await withCheckedThrowingContinuation { waiting in
-            if !send(Call(action: action, key: key, input: input, purpose: .form(waiting))) { waiting.resume(returning: nil) }
+            if !send(Call(message: message, key: key, purpose: .form(waiting))) { waiting.resume(returning: nil) }
         }
     }
 
-    func take(_ text: String, _ lines: SpotOutput, of call: OpenCall) async {
+    func take(_ text: String, _ lines: Frame, of call: OpenCall) async {
         if call.answered == nil { call.answered = Date().timeIntervalSince(call.begin) }
         call.made.take(lines)
-        call.selected = lines.select ?? call.selected
         switch call.request.purpose {
         case .ask(let ask):
             if lines.isPicture {
@@ -29,35 +28,33 @@ extension SpotRun {
                 call.hasAnswer = true
             } else {
                 call.lastHead = lines
-                takeEffects(lines, frame: text)
+                takeEffects(frame: text)
             }
-        case .work(let work):
-            if work.first?.take(lines) == true, !lines.fields.isEmpty { return }
-            takeMove(lines)
+        case .act(let act):
+            if act.first?.take(lines) == true, !lines.fields.isEmpty { return }
             if lines.isPicture {
-                if await takePicture(lines, frame: text, of: work) {
+                if await takePicture(lines, frame: text, of: act) {
                     call.showedPicture = true
                     drewFrame(call.made)
                 }
             } else {
-                takeEffects(lines, frame: text)
+                takeEffects(frame: text)
             }
         case .form:
             if !lines.fields.isEmpty || call.form.fields.isEmpty { call.form = lines }
-            report(toastOf: lines)
         }
     }
 
-    func take(_ text: String, _ lines: SpotOutput) async {
+    func take(_ text: String, _ lines: Frame) async {
         if lines.isPicture {
             await takePicture(lines, frame: text, of: nil)
         } else {
-            takeEffects(lines, frame: text)
+            takeEffects(frame: text)
         }
     }
 
     func take(answers text: String?, to query: String, of call: OpenCall, _ end: ScriptCall.End, errors: String) {
-        takeAnswers(text.map { SpotOutput(text: $0).answers } ?? [], to: query)
+        takeAnswers(text.map { Frame(text: $0).answers } ?? [], to: query)
         call.hasAnswer = text != nil
         finish(call, end, errors: errors)
     }
@@ -83,9 +80,9 @@ extension SpotRun {
             takeAnswers([], to: query)
         case .ask:
             break
-        case .work(let work):
-            work.first?.end(.stopped)
-            if let undo = work.undo { state = undo }
+        case .act(let act):
+            act.first?.end(.stopped)
+            if let undo = act.undo { state = undo }
             callEnded(call.made)
         case .form(let waiting):
             callEnded(call.made)
@@ -97,10 +94,10 @@ extension SpotRun {
         guard !script.answersInApp else { return }
         let request = call.request
         let values = fieldValues
-        runs.record(spot, request.action, input: values.hiding(request.input), frames: call.frames.map(values.hiding), errors: values.hiding(errors), end: end, reason: request.reason, started: call.made.started, begin: call.begin)
+        runs.record(spot, request.action, input: values.hiding(request.message.text), frames: call.frames.map(values.hiding), errors: values.hiding(errors), end: end, event: request.event, started: call.made.started, begin: call.begin)
     }
 
-    private func answer(_ waiting: CheckedContinuation<SpotOutput?, Error>, of call: OpenCall, _ end: ScriptCall.End) {
+    private func answer(_ waiting: CheckedContinuation<Frame?, Error>, of call: OpenCall, _ end: ScriptCall.End) {
         switch end {
         case .stopped: waiting.resume(returning: nil)
         case .ended: waiting.resume(returning: call.form.selecting(call.selected))
@@ -114,42 +111,42 @@ extension SpotRun {
             callEnded(call.made)
             return answer(waiting, of: call, end)
         }
-        if case .work(let work) = purpose {
-            if case .stopped = end { work.first?.end(.stopped) } else { work.first?.end(.done) }
+        if case .act(let act) = purpose {
+            if case .stopped = end { act.first?.end(.stopped) } else { act.first?.end(.done) }
         }
         let isAnswer = if case .ask(let ask) = purpose { ask.isAnswer } else { false }
         if case .ended = end, failure != nil, !isAnswer { failure = nil }
         switch (purpose, end) {
-        case (.ask(.read), .stopped):
+        case (.ask(.show), .stopped):
             typed = nil
             list.stopLoading()
             if !call.hasAnswer {
                 waiter = nil
-                readsAgain = false
+                showsAgain = false
                 sheetAgain = false
                 eventAgain = nil
             }
         case (.ask(let ask), .failed(let error)):
             take(error, of: ask)
-        case (.work(let work), .stopped):
-            if let undo = work.undo { state = undo }
-        case (.work(let work), .ended):
+        case (.act(let act), .stopped):
+            if let undo = act.undo { state = undo }
+        case (.act(let act), .ended):
             answered = nil
-            if let selected = call.selected, spot.read != nil {
-                read(selecting: selected, need: .change)
-            } else if !call.showedPicture, work.readsAfter {
-                readOnce()
+            if let selected = call.selected, spot.hasSheet {
+                show(selecting: selected, need: .change)
+            } else if !call.showedPicture, act.showsAfter {
+                showOnce()
             }
-        case (.work(let work), .failed(let error)):
+        case (.act(let act), .failed(let error)):
             answered = nil
-            if let undo = work.undo { state = undo }
+            if let undo = act.undo { state = undo }
             fail(error)
-            if work.readsAfter { readOnce() }
+            if act.showsAfter { showOnce() }
         default:
             break
         }
         callEnded(call.made)
-        if case .work(let work) = purpose { work.ended?() }
-        readAgainIfAsked()
+        if case .act(let act) = purpose { act.ended?() }
+        showAgainIfAsked()
     }
 }

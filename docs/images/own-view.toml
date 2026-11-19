@@ -1,0 +1,3 @@
+title = "Cups this week"
+icon = "chart.bar"
+view = "week.swift"

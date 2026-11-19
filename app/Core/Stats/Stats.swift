@@ -21,14 +21,12 @@ public struct Stats: Sendable {
 
     let days: [StatsLog.Day]
     let spot: String?
-    let cards: [Spot]
     let byVersion: Bool
     private let totals: [[String: StatsLog.Count]]
 
-    public init(days: [StatsLog.Day], spot: String?, cards: [Spot] = [], byVersion: Bool = false) {
+    public init(days: [StatsLog.Day], spot: String?, byVersion: Bool = false) {
         self.days = days
         self.spot = spot
-        self.cards = cards.filter { $0.kind == .widget }
         self.byVersion = byVersion
         totals = days.map(\.spots)
     }
@@ -89,11 +87,6 @@ public struct Stats: Sendable {
             for (id, count) in spots where spot == nil || spot == id {
                 sums[id] = sums[id].map { $0.adding(count) } ?? count
             }
-        }
-        for card in cards where sums[card.id] == nil && (spot == nil || spot == card.id) {
-            var count = StatsLog.Count()
-            count.name = card.name
-            sums[card.id] = count
         }
         return sums.sorted { ($0.value.cost.cpu, $1.key) > ($1.value.cost.cpu, $0.key) }.map { ($0.key, $0.value) }
     }

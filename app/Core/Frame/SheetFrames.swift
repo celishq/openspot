@@ -17,7 +17,6 @@ public struct SheetFrames: Sendable {
     private var line = Data()
     private var frame = ""
     private var escape = Escape.none
-    private var command = Data()
     public private(set) var isOverLimit = false
 
     public init(limit: Int = Self.limit) {
@@ -73,21 +72,16 @@ public struct SheetFrames: Sendable {
             switch escape {
             case .start:
                 escape = byte == UInt8(ascii: "[") ? .control : byte == UInt8(ascii: "]") ? .command : .none
-                command.removeAll(keepingCapacity: true)
             case .control:
                 if (0x40...0x7E).contains(byte) { escape = .none }
             case .command:
                 if byte == 0x07 {
                     escape = .none
-                    frames += Self.frame(of: command)
                 } else if byte == 0x1B {
                     escape = .commandEnd
-                } else {
-                    command.append(byte)
                 }
             case .commandEnd:
                 escape = .none
-                frames += Self.frame(of: command)
             case .none:
                 if byte == 0x1B {
                     escape = .start
@@ -110,16 +104,5 @@ public struct SheetFrames: Sendable {
         }
         defer { frame = "" }
         return frame.isEmpty ? nil : frame
-    }
-
-    private static func frame(of command: Data) -> [String] {
-        let text = String(decoding: command, as: UTF8.self)
-        if text.hasPrefix("9;4;") {
-            let parts = text.split(separator: ";", omittingEmptySubsequences: false)
-            guard parts.count >= 4, ["1", "2", "4"].contains(parts[2]), let percent = Double(parts[3]) else { return [] }
-            return [TextBlock(fields: [.init(key: "progress", value: "\(min(max(percent, 0), 100) / 100)")]).text]
-        }
-        guard text.hasPrefix("9;"), text.count > 2 else { return [] }
-        return [TextBlock(fields: [.init(key: "toast", value: String(text.dropFirst(2)))]).text]
     }
 }

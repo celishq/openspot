@@ -19,31 +19,33 @@ final class ProtocolContractTests: XCTestCase {
 
     private func gaps() throws -> [String] {
         let doc = try RepoDoc("PROTOCOL.md")
+        let appWords = RepoDoc.tableRows(in: try RepoDoc("spots/AGENTS.md").section("The app's own words"))
         let pages = RepoDoc.tableRows(in: doc.section("Pages"))
-        let headerKeys = Set(HeaderKey.allCases.map(\.rawValue) + [HeaderKey.drawing + "<size>"])
-        let docHeaderKeys = keys(RepoDoc.tableRows(in: doc.section("The header")).filter { !$0[0].hasPrefix("`button") && !$0[0].hasPrefix("`field") }.map { $0[0] })
-            + keys(pages.filter { $0[1] == "the header" }.map { $0[0] })
+        let manifestKeys = Manifest.keys
+        let manifest = RepoDoc.tableRows(in: doc.section("The manifest"))
+        let docManifestKeys = keys(manifest.filter { !$0[0].hasPrefix("`[") }.map { $0[0] })
+            + keys(pages.filter { $0[1] == "the manifest" }.map { $0[0] })
+            + keys(appWords.filter { $0[1] == "`spot.toml`" }.map { $0[0] })
 
-        let headerKinds = Set(HeaderBlock.allCases.map(\.rawValue))
-        let docHeaderKinds = keys(RepoDoc.tableRows(in: doc.section("The header")).filter { $0[0].hasPrefix("`button") || $0[0].hasPrefix("`field") }.map { $0[0] })
+        let docTables = manifest.filter { $0[0].hasPrefix("`[") }.flatMap { RepoDoc.code($0[0]) }.map { String($0.dropFirst().prefix { $0 != "." }) }
 
-        let headKeys = Set(HeadKey.allCases.map(\.rawValue) + [HeaderKey.drawing + "<size>"])
-        let docHeadKeys = keys([doc.section("The head").components(separatedBy: "- The head can come")[0]])
+        let rootKeys = Set(RootKey.allCases.map(\.rawValue) + [RootKey.drawing + "<size>"])
+        let docRootKeys = keys([doc.section("The root").components(separatedBy: "- The root can come")[0]])
+            + keys(appWords.filter { $0[1] == "the root" }.map { $0[0] })
 
         let docKinds = keys(RepoDoc.tableRows(in: doc.section("Blocks")).map { $0[0] })
 
-        let rowRows = RepoDoc.tableRows(in: doc.section("Rows"))
-        let docRowKeys = keys(rowRows.map { $0[0] }) + keys(rowRows.filter { $0[0] == "`push`" }.map { $0[1] }).filter { $0.hasPrefix("push.") }
-            + keys(pages.filter { $0[1].contains("a row") }.map { $0[0] })
+        let itemRows = RepoDoc.tableRows(in: doc.section("Items"))
+        let docItemKeys = keys(itemRows.map { $0[0] }) + keys(pages.filter { $0[1].contains("an item") }.map { $0[0] })
 
         let events = Set(SpotEvent.known + [SpotEvent.clockPrefix + "<seconds>"])
         let docEvents = keys(RepoDoc.tableRows(in: doc.section("Events")).map { $0[0] })
 
-        let places = Set(Place.allCases.map(\.rawValue) + [Place.none, OfferedAction.place])
+        let places = Set(CardFace.places)
         let docPlaces = keys(RepoDoc.tableRows(in: doc.section("Places")).map { $0[0] })
 
         let uses = Set(SpotUse.allCases.map(\.rawValue))
-        let docUses = keys(RepoDoc.tableRows(in: doc.section("Trust")).map { $0[0] })
+        let docUses = keys(RepoDoc.tableRows(in: try RepoDoc("TRUST.md").section("Uses")).map { $0[0] })
 
         let docCalls = RepoDoc.tableRows(in: doc.section("The calls")).flatMap { RepoDoc.code($0[0]) }
             .filter { $0.hasPrefix("<spot> ") }.map { $0.split(separator: " ")[1] }.filter { !$0.hasPrefix("<") }.map(String.init)
@@ -53,21 +55,21 @@ final class ProtocolContractTests: XCTestCase {
             let files = FileManager.default.enumerator(at: RepoDoc.repo.appendingPathComponent(folder), includingPropertiesForKeys: nil)?.compactMap { $0 as? URL } ?? []
             return try files.filter { ["sh", "js", "swift", "py"].contains($0.pathExtension) }.map { try String(contentsOf: $0, encoding: .utf8) }
         }
-        let read = Set(scripts.flatMap { RepoDoc.matches(variable, in: $0).map { $0[0] } }.filter { !$0.hasPrefix(FieldValues.variablePrefix) })
+        let read = Set(scripts.flatMap { RepoDoc.matches(variable, in: $0).map { $0[0] } })
         let core = FileManager.default.enumerator(at: RepoDoc.repo.appendingPathComponent("app/Core"), includingPropertiesForKeys: nil)?.compactMap { $0 as? URL } ?? []
         let set = Set(try core.filter { $0.pathExtension == "swift" }.flatMap { RepoDoc.matches(variable, in: try String(contentsOf: $0, encoding: .utf8)).map { $0[0] } })
-        let docVariables = Set(RepoDoc.matches(variable, in: doc.text).map { $0[0] }.filter { !$0.hasPrefix(FieldValues.variablePrefix) })
+        let docVariables = Set(RepoDoc.matches(variable, in: doc.text + appWords.map { $0[0] }.joined(separator: "\n")).map { $0[0] })
 
         let helper = try source("Shell/openspot.sh")
         let functions = Set(RepoDoc.matches(#"(?m)^([a-z][a-z_]*)\(\)"#, in: helper).map { $0[1] })
         let docFunctions = RepoDoc.tableRows(in: doc.section("The calls")).flatMap { RepoDoc.code($0[0]) }
             .map { String($0.prefix { $0 != " " }) }.filter { $0.range(of: #"^[a-z_]+$"#, options: .regularExpression) != nil }
 
-        return compare("header key", code: headerKeys, doc: Set(docHeaderKeys))
-            + compare("header block", code: headerKinds, doc: Set(docHeaderKinds))
-            + compare("head key", code: headKeys, doc: Set(docHeadKeys))
+        return compare("manifest key", code: manifestKeys, doc: Set(docManifestKeys))
+            + compare("manifest table", code: Manifest.tables, doc: Set(docTables))
+            + compare("root key", code: rootKeys, doc: Set(docRootKeys))
             + compare("block kind", code: BlockKind.words, doc: Set(docKinds))
-            + compare("row key", code: Set(RowKey.allCases.map(\.rawValue)), doc: Set(docRowKeys))
+            + compare("item key", code: Set(ItemKey.allCases.map(\.rawValue)), doc: Set(docItemKeys))
             + compare("event", code: events, doc: Set(docEvents))
             + compare("place", code: places, doc: Set(docPlaces))
             + compare("use", code: uses, doc: Set(docUses))
@@ -111,24 +113,24 @@ final class ProtocolContractTests: XCTestCase {
         }
     }
 
-    func testEachVerbOfTheTableIsOneThatPROTOCOLOrTheGuideOfItsNounNames() throws {
-        let protocolText = try RepoDoc("PROTOCOL.md").text
+    func testEachVerbOfTheTableIsOneThatTheDocsOrTheGuideOfItsNounNames() throws {
+        let protocolText = try ["PROTOCOL.md", "TRUST.md", "app/Help/commands.md"].map { try RepoDoc($0).text }.joined()
         for noun in CommandNoun.all {
             let text = try protocolText + (noun.guide.map { try RepoDoc("app/Help/\($0).md").text } ?? "")
             for verb in noun.verbs where !verb.about.isEmpty {
                 let phrase = ([noun.name] + verb.words).joined(separator: " ")
                 let listed = text.contains("`openspot \(phrase)") || text.contains("`\(phrase)")
                     || text.contains("`openspot \(noun.name) <verb>`") && text.contains("`\(verb.words.joined(separator: " "))`")
-                XCTAssertTrue(listed, "PROTOCOL.md and the guide of \(noun.name) do not name `openspot \(phrase)`")
+                XCTAssertTrue(listed, "PROTOCOL.md, TRUST.md, app/Help/commands.md and the guide of \(noun.name) do not name `openspot \(phrase)`")
             }
         }
     }
 
     func testEachStatusWordAndSourceIDThatCoreWritesIsOneTheDocsName() throws {
-        let protocolText = try RepoDoc("PROTOCOL.md").text
+        let commands = try RepoDoc("app/Help/commands.md").text
         let screen = try RepoDoc("app/Help/screen.md").text
         for status in TranslatedText.Status.allCases.map(\.rawValue) + [CalcRateFailure.offline, .unavailable].map(\.rawValue) {
-            XCTAssertTrue(protocolText.contains("`status=\(status)`"), "PROTOCOL.md does not name status=\(status)")
+            XCTAssertTrue(commands.contains("`status=\(status)`"), "app/Help/commands.md does not name status=\(status)")
         }
         for state in ScreenRecording.State.allCases {
             XCTAssertTrue(screen.contains("`state=\(state.rawValue)`"), "the guide of screen does not name state=\(state.rawValue)")

@@ -8,7 +8,7 @@ final class FlowNavigationTests: PanelCase {
 
         try await openPage()
 
-        XCTAssertEqual(model.flow.current, FlowSheet(spot: "list", page: "a"))
+        XCTAssertEqual(model.flow.current, FlowSheet(spot: "list", route: "a"))
         XCTAssertEqual(model.openSheetID, "list")
         XCTAssertEqual(host.dismissals, 0)
     }
@@ -19,7 +19,7 @@ final class FlowNavigationTests: PanelCase {
 
         XCTAssertTrue(model.handleKey(back))
         try await wait("the sheet before") { self.titles == ["A"] }
-        XCTAssertEqual(model.flow.ahead, FlowSheet(spot: "list", page: "a"))
+        XCTAssertEqual(model.flow.ahead, FlowSheet(spot: "list", route: "a"))
 
         XCTAssertTrue(model.handleKey(forward))
         try await wait("the page again") { self.titles == ["Detail a"] }
@@ -50,7 +50,7 @@ final class FlowNavigationTests: PanelCase {
 
         try await wait("the grid") { self.model.openSheetID == nil }
         XCTAssertNil(model.flow.current)
-        XCTAssertNil(model.sheets["list"]?.page)
+        XCTAssertNil(model.sheets["list"]?.route)
     }
 
     func testASpotThatOpensAnotherPushesItAndBackComesHome() async throws {
@@ -67,24 +67,25 @@ final class FlowNavigationTests: PanelCase {
     func testAPageOpensFromOutsideTheSpot() async throws {
         try await openList()
 
-        XCTAssertTrue(model.push(FlowSheet(spot: "list", page: "a")))
+        XCTAssertTrue(model.push(FlowSheet(spot: "list", route: "a")))
 
         try await wait("the page") { self.titles == ["Detail a"] }
-        XCTAssertEqual(model.flowEdges.titles(on: .behind), ["List"])
+        try await wait("the step to settle") { self.model.flowEdges.from == nil && self.model.flowEdges.titles(on: .behind) == ["List"] }
         XCTAssertEqual(model.flow.current?.title, "A")
-        XCTAssertEqual(model.flow.pages, [FlowSheet(spot: "list"), FlowSheet(spot: "list", page: "a")])
+        XCTAssertEqual(model.flow.pages, [FlowSheet(spot: "list"), FlowSheet(spot: "list", route: "a")])
     }
 
     func testTheHintOfAPageSaysThatEscGoesBack() async throws {
-        try script("info", header: "on=sheet.open\npages=a", """
-        if [ -n "$OPENSPOT_PAGE" ]; then printf 'text=detail\\ntitle=Detail\\n'; else printf 'text=first\\ntitle=First\\n\\nrow=a\\ntitle=A\\npush=true\\n'; fi
+        try script("info", toml: "pages = ['a']", """
+        page=$(sed -n 's/^route=//p')
+        if [ -n "$page" ]; then printf 'frame=\\ngrid=detail\\n\\ntext=detail\\ntitle=Detail\\n'; else printf 'frame=\\ngrid=first\\n\\ntext=first\\ntitle=First\\n\\ntext=a\\ntitle=A\\nroute=a\\n'; fi
         """)
         await model.reload()
         model.isShown = true
         model.panelWillShow()
         model.press("info")
         try await wait("the first sheet") { self.model.openParts?.parts.first?.title == "First" }
-        XCTAssertTrue(model.push(FlowSheet(spot: "info", page: "a")))
+        XCTAssertTrue(model.push(FlowSheet(spot: "info", route: "a")))
 
         try await wait("the page of parts") { self.model.openParts?.parts.first?.title == "Detail" }
 
@@ -110,9 +111,9 @@ final class FlowNavigationTests: PanelCase {
         try await openList()
         host.heldEnds = []
 
-        XCTAssertTrue(model.push(FlowSheet(spot: "list", page: "a")))
+        XCTAssertTrue(model.push(FlowSheet(spot: "list", route: "a")))
 
-        XCTAssertEqual(model.sheets["list"]?.page, "a")
+        XCTAssertEqual(model.sheets["list"]?.route, "a")
         let held = try XCTUnwrap(model.flowEdges.leavingPage)
         XCTAssertEqual(held.list.shown.map(\.title), ["A"])
         XCTAssertEqual(held.rect, model.flowEdges.from)
@@ -123,7 +124,7 @@ final class FlowNavigationTests: PanelCase {
         try await openList()
         host.heldEnds = []
 
-        XCTAssertTrue(model.push(FlowSheet(spot: "list", page: "a")))
+        XCTAssertTrue(model.push(FlowSheet(spot: "list", route: "a")))
 
         let page = try XCTUnwrap(model.flowEdges.leavingPage)
         let held = SheetContent(page: page)
@@ -169,19 +170,19 @@ final class FlowNavigationTests: PanelCase {
     func testPressesDuringAStepWaitForItThenMakeOneStepToTheNewestPage() async throws {
         try await openList()
         host.heldEnds = []
-        XCTAssertTrue(model.push(FlowSheet(spot: "list", page: "a")))
+        XCTAssertTrue(model.push(FlowSheet(spot: "list", route: "a")))
         try await wait("the step to move") { self.model.flowEdges.isMoving }
 
         XCTAssertTrue(model.handleKey(back))
         XCTAssertTrue(model.handleKey(forward))
         XCTAssertTrue(model.handleKey(back))
 
-        XCTAssertEqual(model.sheets["list"]?.page, "a")
+        XCTAssertEqual(model.sheets["list"]?.route, "a")
         let ends = host.heldEnds ?? []
         host.heldEnds = nil
         host.edgeChanges = []
         ends.forEach { $0() }
-        try await wait("one step to the newest page") { self.model.sheets["list"]?.page == nil && self.model.flowEdges.from == nil }
+        try await wait("one step to the newest page") { self.model.sheets["list"]?.route == nil && self.model.flowEdges.from == nil }
         XCTAssertEqual(model.flowEdges.titles(on: .ahead), ["A"])
         XCTAssertEqual(host.edgeChanges.filter { $0.motion == .flow }.count, 1)
     }
@@ -189,12 +190,12 @@ final class FlowNavigationTests: PanelCase {
     func testAPressStartsItsStepOnceTheStepBeforeIsLogicallyCompleteThoughItsAnimationStillRuns() async throws {
         try await openList()
         host.heldRemovals = []
-        XCTAssertTrue(model.push(FlowSheet(spot: "list", page: "a")))
+        XCTAssertTrue(model.push(FlowSheet(spot: "list", route: "a")))
         try await wait("the step to move") { self.model.flowEdges.isMoving }
 
         XCTAssertTrue(model.handleKey(back))
 
-        try await wait("the back step at the press") { self.model.sheets["list"]?.page == nil }
+        try await wait("the back step at the press") { self.model.sheets["list"]?.route == nil }
         let removals = host.heldRemovals ?? []
         host.heldRemovals = nil
         removals.forEach { $0() }
@@ -224,9 +225,10 @@ final class FlowNavigationTests: PanelCase {
         try await wait("the step to settle") { self.model.flowEdges.from == nil && self.model.flowEdges.titles(on: .ahead) == ["A"] }
         let start = try XCTUnwrap(host.edgeChanges.first?.edges)
         XCTAssertEqual(start.sheetStart, .bar(.behind, 0))
+        XCTAssertTrue(start.sheetStartsOnMark)
         XCTAssertEqual(start.leaving, .bar(.ahead, 0))
         XCTAssertFalse(start.edges.contains { $0.sheet == FlowSheet(spot: "list") })
-        XCTAssertEqual(start.leavingEdge?.sheet, FlowSheet(spot: "list", page: "a"))
+        XCTAssertEqual(start.leavingEdge?.sheet, FlowSheet(spot: "list", route: "a"))
     }
 
     func testAPushGrowsTheSheetOutOfANewLineOnTheRight() async throws {
@@ -238,8 +240,9 @@ final class FlowNavigationTests: PanelCase {
         try await wait("the step to settle") { self.model.flowEdges.from == nil && self.model.flowEdges.titles(on: .behind) == ["List"] }
         let start = try XCTUnwrap(host.edgeChanges.first?.edges)
         XCTAssertEqual(start.sheetStart, .bar(.ahead, 0))
+        XCTAssertFalse(start.sheetStartsOnMark)
         XCTAssertEqual(start.leaving, .bar(.behind, 0))
-        XCTAssertNil(host.edgeChanges.first { $0.edges.edges.contains { $0.sheet == FlowSheet(spot: "list", page: "a") } })
+        XCTAssertNil(host.edgeChanges.first { $0.edges.edges.contains { $0.sheet == FlowSheet(spot: "list", route: "a") } })
     }
 
     func testEscPopsThePageSoNothingWaitsAheadAndItLeavesNoLine() async throws {
@@ -294,11 +297,12 @@ final class FlowNavigationTests: PanelCase {
 
         try await wait("the other spot") { self.model.openSheetID == "other" && self.titles == ["Other"] }
         XCTAssertEqual(model.flow.pages, [FlowSheet(spot: "other")])
-        XCTAssertNil(model.sheets["list"]?.page)
+        XCTAssertNil(model.sheets["list"]?.route)
     }
 
     func testASheetWithNoCardGrowsFromTheFieldAndShrinksBackIntoIt() async throws {
-        try script("hidden", header: "on=sheet.open\noffers=search", "printf 'row=h\\ntitle=Hidden\\n'")
+        try script("hidden", toml: "", "printf 'text=h\\ntitle=Hidden\\n'")
+        _ = try model.files.config.change { $0.arrangement.set(isOnGrid: false, of: "hidden") }
         await model.reload()
         model.isShown = true
         model.panelWillShow()
@@ -327,7 +331,7 @@ final class FlowNavigationTests: PanelCase {
         try await openList()
         try await openPage()
         XCTAssertTrue(model.handleKey(back))
-        try await wait("the page kept") { self.model.sheets["list"]?.pageStates.map(\.page) == ["a"] }
+        try await wait("the page kept") { self.model.sheets["list"]?.pageStates.map(\.route) == ["a"] }
 
         XCTAssertTrue(model.handleKey(toGrid))
 
@@ -335,23 +339,24 @@ final class FlowNavigationTests: PanelCase {
         XCTAssertEqual(model.sheets["list"]?.pageStates.count, 0)
     }
 
-    func testEscOnAListWithNoSearchThatAnotherSpotPushedGoesBackToIt() async throws {
-        try script("menu", header: "title=Menu\non=sheet.open", "printf 'row=go\ntitle=Go\npush.spot=hub\n'")
-        try script("hub", header: "title=Hub\non=sheet.open\npages=a", "printf 'recents=false\nsearch=off\n\nrow=a\ntitle=A\npush=a\n'")
+    func testEscOnAListThatAnotherSpotPushedGoesBackToIt() async throws {
+        try script("menu", toml: "title = 'Menu'\non = ['sheet.open']", "printf 'text=go\\ntitle=Go\\n'")
+        try script("hub", toml: "title = 'Hub'\non = ['sheet.open']\npages = ['a']", "printf 'frame=\\nrecents=false\\ngrid=list\\n\\nrepeat=list\\n\\ntext=a\\ntitle=A\\nroute=a\\n'")
         await model.reload()
         model.isShown = true
         model.panelWillShow()
         model.press("menu")
         try await wait("the menu") { self.model.openSheetID == "menu" && self.titles == ["Go"] }
         XCTAssertTrue(model.push(FlowSheet(spot: "hub")))
-        try await wait("the hub") { self.model.openSheetID == "hub" && self.titles == ["A"] && !self.model.runs.isReading }
+        try await wait("the hub") { self.model.openSheetID == "hub" && self.titles == ["A"] && !self.model.runs.isShowing }
 
         XCTAssertTrue(model.handleKey(escape))
 
         try await wait("the menu again") { self.model.openSheetID == "menu" }
     }
-    func testEscOnAListWithNoSearchThatTheSearchOpenedGoesBackToTheGrid() async throws {
-        try script("hub", header: "title=Hub\non=sheet.open\npages=a", "printf 'recents=false\\nsearch=off\\n\\nrow=a\\ntitle=A\\npush=a\\n'")
+
+    func testEscOnAListThatTheSearchOpenedGoesBackToTheGrid() async throws {
+        try script("hub", toml: "title = 'Hub'\non = ['sheet.open']\npages = ['a']", "printf 'frame=\\nrecents=false\\ngrid=list\\n\\nrepeat=list\\n\\ntext=a\\ntitle=A\\nroute=a\\n'")
         await model.reload()
         model.isShown = true
         model.panelWillShow()
@@ -359,10 +364,38 @@ final class FlowNavigationTests: PanelCase {
         model.landSearch()
         try await wait("the found hub") { self.model.visible.map(\.id) == ["hub"] }
         XCTAssertTrue(model.handleSearchKey(ActionKey(name: "return")))
-        try await wait("the hub") { self.model.openSheetID == "hub" && self.titles == ["A"] && !self.model.runs.isReading }
+        try await wait("the hub") { self.model.openSheetID == "hub" && self.titles == ["A"] && !self.model.runs.isShowing }
 
         XCTAssertTrue(model.handleKey(escape))
 
         try await wait("the grid") { self.model.openSheetID == nil }
+    }
+
+    func testAnItemWithARouteOpensItAtOnceWithNoCallAndOneThatReplacesTakesThePlaceOfThePage() async throws {
+        let calls = folder.appendingPathComponent("calls")
+        try script("routes", toml: "title = 'Routes'\npages = ['*']", """
+        echo "$1" >> '\(calls.path)'
+        page=$(sed -n 's/^route=//p')
+        case "$page" in
+          '') printf 'text=a\\ntitle=A\\nroute=photo/1\\nroute.title=Photo\\n' ;;
+          photo/1) printf 'text=b\\ntitle=B\\nroute=photo/2\\nroute.replace=true\\n' ;;
+          *) printf 'text=x\\ntitle=Detail %s\\n' "$page" ;;
+        esac
+        """)
+        await model.reload()
+        model.isShown = true
+        model.panelWillShow()
+        model.press("routes")
+        try await wait("the first sheet") { self.titles == ["A"] }
+
+        model.runSelectedItem()
+        try await wait("the photo") { self.titles == ["B"] }
+        XCTAssertEqual(model.flow.current, FlowSheet(spot: "routes", route: "photo/1", title: "Photo"))
+        model.runSelectedItem()
+
+        try await wait("the next photo") { self.titles == ["Detail photo/2"] }
+        XCTAssertEqual(model.flow.pages, [FlowSheet(spot: "routes"), FlowSheet(spot: "routes", route: "photo/2", title: "B")])
+        let said = try String(contentsOf: calls, encoding: .utf8).split(separator: "\n")
+        XCTAssertEqual(said, ["show", "show", "show"])
     }
 }

@@ -5,6 +5,7 @@ struct SpotSlotView: View {
     let part: SpotPart
     var tone: MetricValue.Tone?
     var height: CGFloat?
+    var look: NumberLook = .stat
     let onSlot: (String, String?) -> Void
 
     var body: some View {
@@ -37,22 +38,12 @@ struct SpotSlotView: View {
             }
             .menuStyle(.borderlessButton)
             .fixedSize()
-        case .progress(let level):
-            ProgressView(value: min(max(level, 0), 100), total: 100)
-                .progressViewStyle(.linear)
-                .tint(SpotTheme.ink)
-                .controlSize(.small)
-        case .chart(let points):
-            VStack(alignment: .leading, spacing: SpotType.lineGap) {
-                if part.title != nil || part.detail != nil { words.fixedSize(horizontal: false, vertical: true) }
-                SpotBars(points: points, gap: SpotTokens.slotBarGap, radius: SpotTokens.slotBarRadius)
-            }
         case .shortcut(let text):
             SpotKeyLabel(text: text, isRecording: false)
         case .text(let text, let placeholder, let isReadOnly):
             SpotSlotField(text: text, placeholder: placeholder ?? part.title ?? "", isReadOnly: isReadOnly) { onSlot(part.id, $0) }
         case .number:
-            SpotNumberView(part: part, font: SpotType.slotNumber(size: numberSize), leastScale: numberSize > SpotType.slotNumberSize ? SpotType.leastBigNumberScale : SpotType.leastNumberScale)
+            SpotNumberView(part: part, look: look, font: SpotType.slotNumber(size: numberSize), leastScale: numberSize > SpotType.slotNumberSize ? SpotType.leastBigNumberScale : SpotType.leastNumberScale)
         case .image(let path):
             picture(icon: .image(path))
         default:

@@ -10,13 +10,19 @@ if [ ! -s "$out/data/settings.txt" ]; then
     OPENSPOT_SH="$PWD/app/Shell/openspot.sh" OPENSPOT_DATA="$PWD/$out/spot-data/$name" sh "spots/$name.spot/$name.sh" read >"$out/data/$name.txt"
   done
 fi
+manifest() {
+  awk -v want="$2" -v key="$3" '/^\[/ { section = substr($0, 2, length($0) - 2); next } section == want && $1 == key { sub(/^[^=]*= *"/, ""); sub(/"$/, ""); print; exit }' "$1"
+}
 if [ ! -s "$out/data/spots.txt" ]; then
   for file in spots/*.spot/*.sh; do
     case $file in spots/openspot.spot/*) continue ;; esac
     name=$(basename "$file" .sh)
-    title=$(sed -n 's/^# title=//p' "$file" | head -1)
-    detail=$(sed -n 's/^# detail=//p' "$file" | head -1)
-    printf 'row=%s\ntitle=%s\ndetail=%s\n\n' "$name" "${title:-$name}" "$detail"
+    folder=${file%/*}
+    section=
+    [ "$name.spot" = "${folder##*/}" ] || section="scripts.$name"
+    title=$(manifest "$folder/spot.toml" "$section" title)
+    detail=$(manifest "$folder/spot.toml" "$section" detail)
+    printf 'text=%s\ntitle=%s\ndetail=%s\n\n' "$name" "${title:-$name}" "$detail"
   done >"$out/data/spots.txt"
 fi
 package="$out/package"
