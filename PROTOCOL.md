@@ -24,13 +24,13 @@ event ──► call ──► spot ──► frame ──► Openspot draws it 
                     └──► openspot <noun> <verb>      each change, such as a toast or a copy
 ```
 
-| Word    | What it is                                                                                                       |
-| ------- | ---------------------------------------------------------------------------------------------------------------- |
-| Spot    | A folder that Openspot runs: a script and its manifest, `spot.toml`. See [A spot](#a-spot).                       |
-| Call    | One run of the spot. Its event is the reason the call came, and its mode is how the program runs. See [The calls](#the-calls). |
-| Frame   | Everything a call shows at one time. See [Frames](#frames).                                                      |
+| Word    | What it is                                                                                                                                                                                         |
+| ------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Spot    | A folder that Openspot runs: a script and its manifest, `spot.toml`. See [A spot](#a-spot).                                                                                                        |
+| Call    | One run of the spot. Its event is the reason the call came, and its mode is how the program runs. See [The calls](#the-calls).                                                                     |
+| Frame   | Everything a call shows at one time. See [Frames](#frames).                                                                                                                                        |
 | Block   | One thing in a frame, such as a text, a number or a switch. An item is a block that no layout places, in a list that the user can search. See [Show things with blocks](#show-things-with-blocks). |
-| Command | `openspot <noun> <verb>`, the one way a spot changes anything. See [The openspot command](#the-openspot-command). |
+| Command | `openspot <noun> <verb>`, the one way a spot changes anything. See [The openspot command](#the-openspot-command).                                                                                  |
 
 Where a frame shows is its place. A card shows the spot in the panel, which Openspot's hotkey opens, and the spot's sheet
 fills the panel when the user opens the spot. A spot can also show in the menu bar, in a float, a small window at the
@@ -108,14 +108,14 @@ The sheet shows a Note field, and the text under it repeats what the user types.
 A **press** is a click or a key that the user aims at a spot, such as Return on an item or a command's hotkey. Openspot
 makes a call at each of these:
 
-| Call                                 | When                                                                     |
-| ------------------------------------ | ------------------------------------------------------------------------ |
-| `<spot> show`                        | An [event](#events) that its manifest lists, or an open of its sheet.    |
-| `<spot> open <item id>`              | A press of an item.                                                      |
-| `<spot> <id> [item id] [value]`      | A change or a press of a block, such as a switch or a button.            |
-| `<spot> drop <path> [path]...`       | A drop of files on its card.                                             |
-| `<spot> drag <item id> [item id]...` | A drag of items that stand for files out of its sheet.                   |
-| `<spot> <command>`                   | A press of a command's hotkey, or a [slash command](#slash-commands).    |
+| Call                                 | When                                                                  |
+| ------------------------------------ | --------------------------------------------------------------------- |
+| `<spot> show`                        | An [event](#events) that its manifest lists, or an open of its sheet. |
+| `<spot> open <item id>`              | A press of an item.                                                   |
+| `<spot> <id> [item id] [value]`      | A change or a press of a block, such as a switch or a button.         |
+| `<spot> drop <path> [path]...`       | A drop of files on its card.                                          |
+| `<spot> drag <item id> [item id]...` | A drag of items that stand for files out of its sheet.                |
+| `<spot> <command>`                   | A press of a command's hotkey, or a [slash command](#slash-commands). |
 
 - **Arguments:** `<id> [item] [value]`, so that `case "$1"` handles each call. `show`, `open`, `drop` and `drag` are
   Openspot's own ids: no block takes them, except a button `open`. A value over 64 KB comes only as `input.value=`.
@@ -130,17 +130,17 @@ makes a call at each of these:
 The shell helper, `. "$OPENSPOT_SH"`, reads stdin once and keeps it, and writes values for you. After it loads, read
 stdin with `value` or `openspot_input`, not `cat`: the function of `openspot_serve` gets an empty stdin.
 
-| Function                                     | Does                                                                                     |
-| -------------------------------------------- | ---------------------------------------------------------------------------------------- |
-| `esc <text>`                                 | Prints text as a value.                                                                  |
-| `value <key>`                                | Prints each value of the key from stdin, one per line, in order.                         |
-| `openspot_value <key> <text>`                | Prints each value of the key from a text, such as what an `openspot` command printed.    |
-| `openspot_input`                             | Prints the stdin of the call as it came.                                                 |
-| `openspot_kv <key> <value>`                  | Prints one line, with its value escaped.                                                 |
-| `openspot_item <id> <title> [detail] [icon]` | Prints one item, a `text` block.                                                         |
-| `openspot_items [kind]`                      | Prints an item for each tab-separated line of stdin: id, title, detail, icon.            |
-| `openspot_serve <function> "$@"`             | Runs the function with the arguments of each call, in each [mode](#modes).               |
-| `openspot_keep <file> [text]`                | Keeps the text, or stdin, in the file as a whole, or fails and keeps the old file.       |
+| Function                                     | Does                                                                                            |
+| -------------------------------------------- | ----------------------------------------------------------------------------------------------- |
+| `esc <text>`                                 | Prints text as a value.                                                                         |
+| `value <key>`                                | Prints each value of the key from stdin, one per line, in order.                                |
+| `openspot_value <key> <text>`                | Prints each value of the key from a text, such as what an `openspot` command printed.           |
+| `openspot_input`                             | Prints the stdin of the call as it came.                                                        |
+| `openspot_kv <key> <value>`                  | Prints one line, with its value escaped.                                                        |
+| `openspot_item <id> <title> [detail] [icon]` | Prints one item, a `text` block.                                                                |
+| `openspot_items [kind]`                      | Prints an item for each tab-separated line of stdin: id, title, detail, icon.                   |
+| `openspot_serve <function> "$@"`             | Runs the function with the arguments of each call, in each [mode](#modes).                      |
+| `openspot_keep <file> [text]`                | Keeps the text, or stdin, in the file as a whole, or fails and keeps the old file.              |
 | `openspot_paste <text>`                      | Pastes the text into the front app and puts the clipboard back. It needs `clipboard` in `uses`. |
 
 ## Frames
@@ -150,7 +150,6 @@ stays.
 
 ```toml
 title = "Copy"
-on = ["sheet.open"]
 ```
 
 ```sh
@@ -245,10 +244,10 @@ grid.wide=free total
 grid.bar=free
 ```
 
-| Size                                        | Where                                                                 |
-| ------------------------------------------- | --------------------------------------------------------------------- |
-| `small`, `wide`, `square`, `strip`, `large` | A card in the panel. The user chooses its size.                       |
-| `bar`                                       | The menu bar, next to the clock. A click opens the sheet under it.    |
+| Size                                        | Where                                                              |
+| ------------------------------------------- | ------------------------------------------------------------------ |
+| `small`, `wide`, `square`, `strip`, `large` | A card in the panel. The user chooses its size.                    |
+| `bar`                                       | The menu bar, next to the clock. A click opens the sheet under it. |
 
 - The sheet, a float and a window draw the `grid=` lines. A size with no layout uses the next smaller one. A card with
   none shows the icon, title and detail, and the menu bar the icon. The menu bar shows a `text` or a `number` by its own rule, in
@@ -288,10 +287,10 @@ detail=3:12 left
 ```text
 square card           wide card
   Battery             Battery            84%
-  ╭─────╮             ━━━━━━━━━━━━━━━━━──────
+ ╭───────╮            ━━━━━━━━━━━━━━━━━──────
  │ 84%   │
  │3:12 l.│
-  ╰─────╯
+ ╰───────╯
 ```
 
 - `value` is the number, and each more `value` line adds a point of a series, oldest first. The last point is the one
@@ -310,8 +309,8 @@ event at which a show is safe and useful, such as `on = ["system.load"]`, and th
 
 - Text after a space in `on` is a filter, a regular expression that the value must match. Any event with a value
   takes one, and `search.text` needs one.
-- The sheet asks its spot at each open. With `sheet.open` in `on`, it asks again even when it asked the spot a moment
-  ago. Openspot asks a spot only while one of its
+- The sheet asks its spot at each open, unless it asked the spot less than 5 seconds ago. With `sheet.open` in `on`,
+  it asks again even then. Openspot asks a spot only while one of its
   places shows, except at `app.launch` and `app.update`. A spot has one show at a time.
 - Openspot also asks after a call that printed nothing, with `spot.change`, and with `spot.want` when a place starts to
   show a spot whose events haven't come yet.
@@ -372,22 +371,22 @@ value=true
 close=false
 ```
 
-| Key             | Meaning                                                                                        |
-| --------------- | ---------------------------------------------------------------------------------------------- |
-| `title`         | The first line. By default, the id.                                                            |
-| `detail`        | The line under the title.                                                                      |
-| `icon`          | The icon.                                                                                      |
-| `tone`          | A dot of its colour on the icon.                                                               |
-| `value`         | `true` draws a checkmark.                                                                      |
-| `parent`        | Where the item sits in its spot. The [main search](#the-main-search) shows `<spot> › <parent>`. |
-| `keywords`      | Words that find the item but don't show, split by commas.                                      |
-| `pin`           | `top` or `bottom`: the item stays above or under the items that scroll, even in a search.      |
-| `hides`         | The id of an action that this item doesn't offer. One line for each action.                    |
-| `file`          | The file the item stands for. See [Files out](#files-out).                                     |
-| `open.title`    | What Return does on this item, in place of the `title` of `button=open`.                       |
-| `route`         | A [route](#pages) that a press opens at once, in place of `<spot> open <id>`.                  |
-| `close`         | `false` keeps the panel open after a press of this item, or a key it records.                  |
-| `shake`         | `true` on a `hotkey` field: a shake or a tap of one modifier can be its key.                   |
+| Key          | Meaning                                                                                         |
+| ------------ | ----------------------------------------------------------------------------------------------- |
+| `title`      | The first line. By default, the id.                                                             |
+| `detail`     | The line under the title.                                                                       |
+| `icon`       | The icon.                                                                                       |
+| `tone`       | A dot of its colour on the icon.                                                                |
+| `value`      | `true` draws a checkmark.                                                                       |
+| `parent`     | Where the item sits in its spot. The [main search](#the-main-search) shows `<spot> › <parent>`. |
+| `keywords`   | Words that find the item but don't show, split by commas.                                       |
+| `pin`        | `top` or `bottom`: the item stays above or under the items that scroll, even in a search.       |
+| `hides`      | The id of an action that this item doesn't offer. One line for each action.                     |
+| `file`       | The file the item stands for. See [Files out](#files-out).                                      |
+| `open.title` | What Return does on this item, in place of the `title` of `button=open`.                        |
+| `route`      | A [route](#pages) that a press opens at once, in place of `<spot> open <id>`.                   |
+| `close`      | `false` keeps the panel open after a press of this item, or a key it records.                   |
+| `shake`      | `true` on a `hotkey` field: a shake or a tap of one modifier can be its key.                    |
 
 - A `number` item shows its value on the right of its title, a ring of it with `max`, or the bars of a series, as in
   [Numbers](#numbers).
@@ -434,18 +433,19 @@ of its own, or a place in another spot's ⌘K menu.
 
 A spot can show more than one sheet, each named by its route, such as `photo/12` for the detail of an item.
 
-| Key                   | Where                  | Does                                                                                 |
-| --------------------- | ---------------------- | ------------------------------------------------------------------------------------ |
-| `pages=<pattern>`     | the manifest           | The routes that the spot may show, such as `["text:*"]`.                             |
-| `route=<route>`       | an item                | A press opens that route at once, with no call.                                      |
-| `route.title=<words>` | an item                | The title of the route's sheet. By default, the item's title.                        |
-| `route.replace=true`  | an item                | The route's sheet replaces the one that shows, so going back skips it.               |
+| Key                   | Where        | Does                                                                   |
+| --------------------- | ------------ | ---------------------------------------------------------------------- |
+| `pages=<pattern>`     | the manifest | The routes that the spot may show, such as `["text:*"]`.               |
+| `route=<route>`       | an item      | A press opens that route at once, with no call.                        |
+| `route.title=<words>` | an item      | The title of the route's sheet. By default, the item's title.          |
+| `route.replace=true`  | an item      | The route's sheet replaces the one that shows, so going back skips it. |
 
 - A press moves between sheets while its call runs, such as after a form saves, with `openspot route`. `route push`
   shows a route over the sheet that shows, and `--replace` replaces it. `route back` takes the spot's sheet off, as Esc
   does, or with `--root` goes back to its first sheet. `route close` takes each sheet of the spot off.
 - Each call of a sheet with a route gets it as `route=`. A route matches a `pages=` line, where `*` stands for any
-  text. A spot with no sheet gets the call `<spot> open <route>` instead.
+  text. A spot with no sheet, one with commands and no event, gets the call `<spot> open <route>`
+  instead.
 - A spot moves only its own routes, while its sheet shows. It never takes off another spot's sheet and never closes the
   panel, and a show never moves between sheets.
 
@@ -463,7 +463,6 @@ on its stdout.
 ```toml
 title = "Relay"
 mode = "stay"
-on = ["sheet.open"]
 ```
 
 ```sh
@@ -502,13 +501,15 @@ types.
 
 ```toml
 title = "Hello"
-on = ["sheet.open"]
 ```
 
 ```js
 function main(args, env, input) {
   if (args[0] !== "show") return "";
-  return openspot.frame({ text: "hi", title: `Hello from ${openspot.value("event", input)}` });
+  return openspot.frame({
+    text: "hi",
+    title: `Hello from ${openspot.value("event", input)}`,
+  });
 }
 ```
 
@@ -539,7 +540,6 @@ Openspot draws a view where the layout puts its `view` block. Use it for a chart
 
 ```toml
 title = "Cups today"
-on = ["sheet.open"]
 view = "cups.swift"
 ```
 
@@ -563,25 +563,25 @@ struct SpotView: View {
 - The file declares `struct SpotView: View` with `let spot: SpotInput`, with no top-level code and no method
   `update()`. A `view=<id>` block draws it in its place.
 
-| Member              | Gives                                                                 |
-| ------------------- | --------------------------------------------------------------------- |
-| `spot["key"]`       | The last value of a key of its block, or nil. `spot.all("key")` gives each value. |
-| `spot.size`, `spot.card` | The width and height of its area, and the name of its card's size, such as `wide`, or nil off a whole card. |
-| `spot.inset`, `spot.corner` | The space a card keeps inside its edge, and its corner radius. |
-| `spot.ink`, `spot.secondary`, `spot.accent` | The colour of words, the opacity of a second line, and the accent colour. |
-| `spot.font`         | The fonts of the cards: `title`, `detail`, `metric` and `value`.      |
-| `spot.theme`        | The values of the theme; [Follow the theme in a view](GUIDE.md#follow-the-theme-in-a-view) lists them. |
-| `spot.send(v)`, `spot.answers` | Calls the spot with `<id> <v>`, as a field does, and changes at each answer, to end a busy state. |
-| `spot.card(id)`, `spot.cardSize(id)` | The card of a spot, by the id that `openspot store list` prints, and its size. |
-| `spot.sheet(id)`    | The sheet of a spot from its `sample.sh`, where a click runs nothing. |
-| `spot.tip(text)`, `spot.tipDelay` | A tip in the look of Openspot's own, to show on hover, after that delay. |
-| `spot.media(path)`  | A PNG or JPEG picture, or a MOV or MP4 video, at its size or less.    |
-| `spot.loop(...)`    | A shape that moves in a loop, played by macOS.                        |
-| `spot.cornerButton` | The round button on the rim of a card, by its id and an action.       |
-| `spot.columnGap`, `spot.rowGap`, `spot.columns` | The gaps between cards, and how many columns of cards a window holds. |
-| `spot.items`, `spot.selection` | Each item of the frame, in a sheet or a window, and the id of the selected one. |
-| `spot.isShown`      | Whether its place shows now. It's false while the panel is hidden.    |
-| `spot.close()`      | Closes the sheet, the float or the window of its own spot.            |
+| Member                                          | Gives                                                                                                       |
+| ----------------------------------------------- | ----------------------------------------------------------------------------------------------------------- |
+| `spot["key"]`                                   | The last value of a key of its block, or nil. `spot.all("key")` gives each value.                           |
+| `spot.size`, `spot.card`                        | The width and height of its area, and the name of its card's size, such as `wide`, or nil off a whole card. |
+| `spot.inset`, `spot.corner`                     | The space a card keeps inside its edge, and its corner radius.                                              |
+| `spot.ink`, `spot.secondary`, `spot.accent`     | The colour of words, the opacity of a second line, and the accent colour.                                   |
+| `spot.font`                                     | The fonts of the cards: `title`, `detail`, `metric` and `value`.                                            |
+| `spot.theme`                                    | The values of the theme; [Follow the theme in a view](GUIDE.md#follow-the-theme-in-a-view) lists them.      |
+| `spot.send(v)`, `spot.answers`                  | Calls the spot with `<id> <v>`, as a field does, and changes at each answer, to end a busy state.           |
+| `spot.card(id)`, `spot.cardSize(id)`            | The card of a spot, by the id that `openspot store list` prints, and its size.                              |
+| `spot.sheet(id)`                                | The sheet of a spot from its `sample.sh`, where a click runs nothing.                                       |
+| `spot.tip(text)`, `spot.tipDelay`               | A tip in the look of Openspot's own, to show on hover, after that delay.                                    |
+| `spot.media(path)`                              | A PNG or JPEG picture, or a MOV or MP4 video, at its size or less.                                          |
+| `spot.loop(...)`                                | A shape that moves in a loop, played by macOS.                                                              |
+| `spot.cornerButton`                             | The round button on the rim of a card, by its id and an action.                                             |
+| `spot.columnGap`, `spot.rowGap`, `spot.columns` | The gaps between cards, and how many columns of cards a window holds.                                       |
+| `spot.items`, `spot.selection`                  | Each item of the frame, in a sheet or a window, and the id of the selected one.                             |
+| `spot.isShown`                                  | Whether its place shows now. It's false while the panel is hidden.                                          |
+| `spot.close()`                                  | Closes the sheet, the float or the window of its own spot.                                                  |
 
 - The view fills its area, gets the keys of its block in each frame, and keeps its `@State`. On a card, it only draws.
   In a sheet, it takes clicks and keys. In a window, a sheet with one `view` block fills it and draws `spot.items`.
@@ -693,6 +693,8 @@ on = ["sheet.open"]
 title = "Refresh"
 ```
 
+- A spot has a sheet unless it has `[commands.<id>]` tables and no event in `on`. Such a spot runs its one command on
+  Return, or opens the keys of its commands. This one lists `sheet.open` to keep its sheet beside its command.
 - The keys at the top describe the script named after the folder, such as `weather.sh`. `[scripts.<name>]` describes
   each other script with the same keys, and its tables are `[scripts.<name>.commands.<id>]` and
   `[scripts.<name>.settings.<key>]`. A script holds no header.
@@ -701,58 +703,58 @@ title = "Refresh"
 - A wrong or unknown key, such as `titel`, keeps the spot from loading, and its fault names the key. The keys that only
   Openspot's own spots take are in [The app's own words](spots/AGENTS.md#the-apps-own-words).
 
-| Key           | Value                                                                                                          |
-| ------------- | -------------------------------------------------------------------------------------------------------------- |
-| `title`       | The name. By default, the file name.                                                                           |
-| `icon`        | The icon, as in a [block](#blocks). A path that doesn't start with `/` starts at the spot folder.             |
-| `detail`      | The line under the title.                                                                                      |
-| `keywords`    | More words that find the spot in the main search.                                                              |
-| `placeholder` | The text the spot takes in a [slash command](#slash-commands), such as `"Text to translate"`.                  |
-| `on`          | The [events](#events) at which Openspot asks the spot what to show.                                            |
-| `emits`       | The events the spot raises.                                                                                    |
-| `offers`      | `search`: its items show in the [main search](#the-main-search).                                               |
-| `drop`        | The files its card takes: extensions such as `mov,mkv`, `folder`, or `*`. See [Files out](#files-out).        |
-| `view`        | A SwiftUI file in the spot folder, such as `"cups.swift"`. See [Views](#views).                                |
-| `source`      | The Swift files, or folders of them, that a [Swift spot](#a-swift-spot) is built with.                         |
-| `mode`        | `once`, the default, or `stay`. See [Modes](#modes).                                                           |
-| `uses`        | What the spot uses, such as `network` or `screen`. [Uses](TRUST.md#uses) lists each one.                       |
-| `answers`     | `last`: the answers of `search.text` show under the other results, not first.                                  |
+| Key           | Value                                                                                                  |
+| ------------- | ------------------------------------------------------------------------------------------------------ |
+| `title`       | The name. By default, the file name.                                                                   |
+| `icon`        | The icon, as in a [block](#blocks). A path that doesn't start with `/` starts at the spot folder.      |
+| `detail`      | The line under the title.                                                                              |
+| `keywords`    | More words that find the spot in the main search.                                                      |
+| `placeholder` | The text the spot takes in a [slash command](#slash-commands), such as `"Text to translate"`.          |
+| `on`          | The [events](#events) at which Openspot asks the spot what to show. A sheet needs none.                |
+| `emits`       | The events the spot raises.                                                                            |
+| `offers`      | `search`: its items show in the [main search](#the-main-search).                                       |
+| `drop`        | The files its card takes: extensions such as `mov,mkv`, `folder`, or `*`. See [Files out](#files-out). |
+| `view`        | A SwiftUI file in the spot folder, such as `"cups.swift"`. See [Views](#views).                        |
+| `source`      | The Swift files, or folders of them, that a [Swift spot](#a-swift-spot) is built with.                 |
+| `mode`        | `once`, the default, or `stay`. See [Modes](#modes).                                                   |
+| `uses`        | What the spot uses, such as `network` or `screen`. [Uses](TRUST.md#uses) lists each one.               |
+| `answers`     | `last`: the answers of `search.text` show under the other results, not first.                          |
 
-| Table              | Meaning                                                                                                    |
-| ------------------ | ---------------------------------------------------------------------------------------------------------- |
+| Table              | Meaning                                                                                                                                                                                                                                                                                                                                                                                                                                                     |
+| ------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `[commands.<id>]`  | A command, with its `title` and `icon`, which the user can give a hotkey. `confirm = "<words>"` shows the words at the first press and runs it at the second, `placeholder` lists it as a slash command, and `close = false` keeps the panel open after it runs, from a slash command that shows nothing or from the ⌘K menu. It also takes the keys of a [button](#buttons-and-actions): `shortcut`, `scope` and `form`, and [`offers`](#offered-actions). |
-| `[settings.<key>]` | A [setting](#settings), with its `title`, by default its key with a capital first letter, and `icon`.      |
+| `[settings.<key>]` | A [setting](#settings), with its `title`, by default its key with a capital first letter, and `icon`.                                                                                                                                                                                                                                                                                                                                                       |
 
 ## The message
 
 Each key that a call can find in its message.
 
-| Key              | Holds                                                                                              |
-| ---------------- | -------------------------------------------------------------------------------------------------- |
-| `event=`         | On a `show`, the event that asked, such as `sheet.open`, and `event.value=` its value.             |
-| `route=`         | The [route](#pages) of the sheet that shows. The first sheet of a spot has none.                   |
+| Key              | Holds                                                                                                     |
+| ---------------- | --------------------------------------------------------------------------------------------------------- |
+| `event=`         | On a `show`, the event that asked, such as `sheet.open`, and `event.value=` its value.                    |
+| `route=`         | The [route](#pages) of the sheet that shows. The first sheet of a spot has none.                          |
 | `search=`        | The search text, and `search.alt=` each text the user may have meant, such as in another keyboard layout. |
-| `input.<id>=`    | Each input of the sheet or of a form. A value that isn't an input comes as `input.value=`.         |
-| `setting.<key>=` | Each [setting](#settings) that has a value, a secret too.                                          |
-| `item.<key>=`    | On an action or a press of an item that holds a key of its own, each key of the item. A form gets none. |
+| `input.<id>=`    | Each input of the sheet or of a form. A value that isn't an input comes as `input.value=`.                |
+| `setting.<key>=` | Each [setting](#settings) that has a value, a secret too.                                                 |
+| `item.<key>=`    | On an action or a press of an item that holds a key of its own, each key of the item. A form gets none.   |
 
 ## Blocks
 
 Each kind of block, the keys of its own and the call it sends.
 
-| Kind      | Shows                                                                                                           | Its own keys                                                         | Sends                  |
-| --------- | --------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------- | ---------------------- |
-| `text`    | Words.                                                                                                          | `value`                                                              |                        |
-| `number`  | One `value`, or a series of `value` lines, oldest first, with its `title` as the label. See [Numbers](#numbers). | `value`, `max`, `unit`, `display`                                    |                        |
-| `picture` | An image that fills its area.                                                                                   | `icon`                                                               |                        |
-| `view`    | The SwiftUI view the manifest names (see [Views](#views)).                                                      | any key the view reads                                               |                        |
-| `switch`  | A switch, or with `type=tick` a round tick before its words, for a thing to do.                                 | `value`: `true` or `false`, `type`                                   | `<id> true` or `false` |
-| `field`   | A text field, or another input with a `type`.                                                                   | `value`, `type`, `placeholder`, `required`, `readonly`, `min`, `max`, `recording` | `<id> <value>`         |
-| `choice`  | A menu of the `option` blocks after it, a list when it covers two lines or more, or swatches of `color` lines.  | `color`, `value`, `type`                                             | `<id> <option id>`     |
-| `option`  | One option of the `choice` right before it.                                                                     | `title`, `icon`                                                      |                        |
-| `button`  | A button, or an action (see [Buttons and actions](#buttons-and-actions)).                                       | `shortcut`, `confirm`, `close`, `look`, `form`, `scope`              | `<id>`                 |
-| `section` | A title over the blocks after it, or over the items after it when the layout doesn't place it.                  |                                                                      |                        |
-| `repeat`  | The place of the [items](#items).                                                                               | `grid` lines                                                         |                        |
+| Kind      | Shows                                                                                                            | Its own keys                                                                      | Sends                  |
+| --------- | ---------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------- | ---------------------- |
+| `text`    | Words.                                                                                                           | `value`                                                                           |                        |
+| `number`  | One `value`, or a series of `value` lines, oldest first, with its `title` as the label. See [Numbers](#numbers). | `value`, `max`, `unit`, `display`                                                 |                        |
+| `picture` | An image that fills its area.                                                                                    | `icon`                                                                            |                        |
+| `view`    | The SwiftUI view the manifest names (see [Views](#views)).                                                       | any key the view reads                                                            |                        |
+| `switch`  | A switch, or with `type=tick` a round tick before its words, for a thing to do.                                  | `value`: `true` or `false`, `type`                                                | `<id> true` or `false` |
+| `field`   | A text field, or another input with a `type`.                                                                    | `value`, `type`, `placeholder`, `required`, `readonly`, `min`, `max`, `recording` | `<id> <value>`         |
+| `choice`  | A menu of the `option` blocks after it, a list when it covers two lines or more, or swatches of `color` lines.   | `color`, `value`, `type`                                                          | `<id> <option id>`     |
+| `option`  | One option of the `choice` right before it.                                                                      | `title`, `icon`                                                                   |                        |
+| `button`  | A button, or an action (see [Buttons and actions](#buttons-and-actions)).                                        | `shortcut`, `confirm`, `close`, `look`, `form`, `scope`                           | `<id>`                 |
+| `section` | A title over the blocks after it, or over the items after it when the layout doesn't place it.                   |                                                                                   |                        |
+| `repeat`  | The place of the [items](#items).                                                                                | `grid` lines                                                                      |                        |
 
 - Every kind also takes `title`, `detail`, `tone` and `icon`. `tone` is `good`, `warn` or `bad`, and colours the
   detail, or the title with no detail. `color=#RRGGBB` on a text or a number draws a bar of that colour at its edge.
@@ -772,22 +774,22 @@ Each kind of block, the keys of its own and the call it sends.
 
 Each event that Openspot raises, when it raises it, and the value that the show gets as `event.value=`.
 
-| Event              | When Openspot raises it                                                   | Value         |
-| ------------------ | ------------------------------------------------------------------------- | ------------- |
-| `sheet.open`       | When the spot's sheet opens.                                              |               |
-| `panel.open`       | Each time the panel opens, and once when Openspot starts.                 |               |
-| `clock.<seconds>`  | Every that many seconds while a place of the spot shows, and when the Mac wakes. |        |
-| `search.text`      | At each change of the main search text.                                   | the text      |
-| `sheet.text`       | At each change of the sheet's search text, and when the sheet opens.      | the text      |
-| `clipboard.change` | When the clipboard changes.                                               |               |
-| `app.front`        | When another app comes to the front.                                      | its bundle ID |
-| `app.update`       | When Openspot has downloaded an update.                                   | its version   |
-| `app.launch`       | Once when Openspot starts.                                                |               |
-| `screen.wake`      | When the screen wakes.                                                    |               |
-| `system.load`      | Every 5 seconds while a place of the spot shows.                          | `cpu=<percent> memory=<percent>` |
-| `power.change`     | When the Mac moves to another power source, or its battery gains or loses a percent. | `ac`, `battery` or `ups` |
-| `disk.mount`       | When a disk or a volume mounts.                                           | its path      |
-| `device.connect`   | When a USB device connects. A Bluetooth device raises no event.           | its name      |
+| Event              | When Openspot raises it                                                              | Value                            |
+| ------------------ | ------------------------------------------------------------------------------------ | -------------------------------- |
+| `sheet.open`       | When the spot's sheet opens. List it to ask again within 5 seconds, or to give a spot with commands a sheet. |                                  |
+| `panel.open`       | Each time the panel opens, and once when Openspot starts.                            |                                  |
+| `clock.<seconds>`  | Every that many seconds while a place of the spot shows, and when the Mac wakes.     |                                  |
+| `search.text`      | At each change of the main search text.                                              | the text                         |
+| `sheet.text`       | At each change of the sheet's search text, and when the sheet opens.                 | the text                         |
+| `clipboard.change` | When the clipboard changes.                                                          |                                  |
+| `app.front`        | When another app comes to the front.                                                 | its bundle ID                    |
+| `app.update`       | When Openspot has downloaded an update.                                              | its version                      |
+| `app.launch`       | Once when Openspot starts.                                                           |                                  |
+| `screen.wake`      | When the screen wakes.                                                               |                                  |
+| `system.load`      | Every 5 seconds while a place of the spot shows.                                     | `cpu=<percent> memory=<percent>` |
+| `power.change`     | When the Mac moves to another power source, or its battery gains or loses a percent. | `ac`, `battery` or `ups`         |
+| `disk.mount`       | When a disk or a volume mounts.                                                      | its path                         |
+| `device.connect`   | When a USB device connects. A Bluetooth device raises no event.                      | its name                         |
 
 ## Versions
 
