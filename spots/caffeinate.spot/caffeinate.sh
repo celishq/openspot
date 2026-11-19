@@ -125,7 +125,7 @@ sheet() {
   awake && printf 'text=off\ntitle=Turn off\n\n'
   duration 1800 '30 minutes'; echo
   duration 7200 '2 hours'; echo
-  printf 'text=custom\ntitle=Custom…\n\n'
+  printf 'text=custom\ntitle=Custom…\nform=true\n\n'
   duration 0 'Until turned off'; echo
   printf 'switch=display\ntitle=Keep the display on\ndetail=Off lets the screen lock\nicon=display\npin=bottom\nvalue=%s\nclose=false\n' "${display:-true}"
   [ "$lidded" = true ] || return 0
