@@ -110,7 +110,7 @@ makes a call at each of these:
 
 | Call                                 | When                                                                     |
 | ------------------------------------ | ------------------------------------------------------------------------ |
-| `<spot> show`                        | An [event](#events) that its manifest lists, or an open of its sheet.    |
+| `<spot> show`                        | An [event](#events) that its manifest lists, an open of its sheet, or the load of the spots. |
 | `<spot> open <item id>`              | A press of an item.                                                      |
 | `<spot> <id> [item id] [value]`      | A change or a press of a block, such as a switch or a button.            |
 | `<spot> drop <path> [path]...`       | A drop of files on its card.                                             |
@@ -119,6 +119,7 @@ makes a call at each of these:
 
 - **Arguments:** `<id> [item] [value]`, so that `case "$1"` handles each call. `show`, `open`, `drop` and `drag` are
   Openspot's own ids: no block takes them, except a button `open`. A value over 64 KB comes only as `input.value=`.
+  Act only on the id you get: Openspot runs `show` when it loads the spots, and a `show` only prints.
 - **Variables:** `OPENSPOT_ID`, the spot's id; `OPENSPOT_DATA`, the data folder of its spot folder; `OPENSPOT_SH`, the
   shell helper; `PATH`, with the `openspot` command first, then the user's paths, `/opt/homebrew/bin`,
   `/usr/local/bin`, `/usr/bin`, `/bin`, `/usr/sbin` and `/sbin`; and `LC_ALL=en_US.UTF-8`, so each tool reads text as
@@ -150,7 +151,6 @@ stays.
 
 ```toml
 title = "Copy"
-on = ["sheet.open"]
 ```
 
 ```sh
@@ -310,11 +310,12 @@ event at which a show is safe and useful, such as `on = ["system.load"]`, and th
 
 - Text after a space in `on` is a filter, a regular expression that the value must match. Any event with a value
   takes one, and `search.text` needs one.
-- The sheet asks its spot at each open. With `sheet.open` in `on`, it asks again even when it asked the spot a moment
-  ago. Openspot asks a spot only while one of its
-  places shows, except at `app.launch` and `app.update`. A spot has one show at a time.
-- Openspot also asks after a call that printed nothing, with `spot.change`, and with `spot.want` when a place starts to
-  show a spot whose events haven't come yet.
+- The sheet asks its spot at each open, even when it asked the spot a moment ago for another place. Openspot asks a
+  spot only while one of its places shows, except at `app.launch` and `app.update`. A spot has one show at a time.
+- Openspot also asks a spot that has a sheet after a call that printed nothing, with `spot.change`. It asks with
+  `spot.want` when a place starts to show a spot whose events haven't come yet, and once when the spots load or a
+  spot's files change. A spot has a sheet when that show prints a block or an item. Return opens the sheet of a spot
+  that has one, and runs the one command of a spot that has none.
 - `openspot event emit <event> [value]` raises an event `<noun>.<verb>`, and starts Openspot first. A spot lists each
   event it raises in `emits`, and a show doesn't raise the event that caused it. `openspot check spots` reports an `on`
   event that nothing raises.
@@ -463,7 +464,6 @@ on its stdout.
 ```toml
 title = "Relay"
 mode = "stay"
-on = ["sheet.open"]
 ```
 
 ```sh
@@ -502,7 +502,6 @@ types.
 
 ```toml
 title = "Hello"
-on = ["sheet.open"]
 ```
 
 ```js
@@ -539,7 +538,6 @@ Openspot draws a view where the layout puts its `view` block. Use it for a chart
 
 ```toml
 title = "Cups today"
-on = ["sheet.open"]
 view = "cups.swift"
 ```
 
@@ -687,7 +685,6 @@ The manifest says what a spot is, so that Openspot can list it, find it and run 
 ```toml
 title = "Weather"
 icon = "cloud.sun"
-on = ["sheet.open"]
 
 [commands.refresh]
 title = "Refresh"
@@ -708,7 +705,7 @@ title = "Refresh"
 | `detail`      | The line under the title.                                                                                      |
 | `keywords`    | More words that find the spot in the main search.                                                              |
 | `placeholder` | The text the spot takes in a [slash command](#slash-commands), such as `"Text to translate"`.                  |
-| `on`          | The [events](#events) at which Openspot asks the spot what to show.                                            |
+| `on`          | The [events](#events) at which Openspot asks the spot what to show. A sheet needs none.                        |
 | `emits`       | The events the spot raises.                                                                                    |
 | `offers`      | `search`: its items show in the [main search](#the-main-search).                                               |
 | `drop`        | The files its card takes: extensions such as `mov,mkv`, `folder`, or `*`. See [Files out](#files-out).        |
@@ -774,7 +771,7 @@ Each event that Openspot raises, when it raises it, and the value that the show 
 
 | Event              | When Openspot raises it                                                   | Value         |
 | ------------------ | ------------------------------------------------------------------------- | ------------- |
-| `sheet.open`       | When the spot's sheet opens.                                              |               |
+| `sheet.open`       | When the spot's sheet opens. Each show at an open gets it, so `on` need not list it. |               |
 | `panel.open`       | Each time the panel opens, and once when Openspot starts.                 |               |
 | `clock.<seconds>`  | Every that many seconds while a place of the spot shows, and when the Mac wakes. |        |
 | `search.text`      | At each change of the main search text.                                   | the text      |
