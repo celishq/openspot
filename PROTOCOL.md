@@ -559,7 +559,7 @@ shows the toast Time to stretch.
 
 ### Let the person pick the time
 
-`openspot timer pick` opens the snooze sheet, a grid of big tiles such as Later Today, Tomorrow and Pick Date, and
+`openspot timer pick` opens the snooze sheet, a grid of big tiles such as Later, Tomorrow and Pick Date, and
 prints the time of the tile that the person picks.
 
 ```toml

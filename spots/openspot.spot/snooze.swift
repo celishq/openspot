@@ -1,16 +1,20 @@
 import SwiftUI
 
-/// The snooze sheet: a grid of big tiles, three in a row, each with its icon in a coloured circle, its title and the
-/// time it stands for. A click, Return on the selected tile, or its number key picks it. Pick Date turns the grid into a
+/// The snooze sheet: a grid of tiles, three in a row, centred in the sheet. Each tile holds its icon in the text colour
+/// on a faint circle, its title and the time it stands for, in Openspot's title and detail fonts. A ring marks the
+/// selected tile. A click, Return on the selected tile, or its number key picks it. Pick Date turns the grid into a
 /// calendar and a time, with Snooze to pick them.
 struct SpotView: View {
     let spot: SpotInput
 
     private static let columns = 3
     private static let gap: CGFloat = 10
-    private static let circle: CGFloat = 46
-    private static let glyph = Font.system(size: 20, weight: .semibold)
-    private static let hues: [Double] = [0.58, 0.08, 0.72, 0.12, 0.38, 0.95, 0.5, 0.82, 0.62]
+    private static let tallness: CGFloat = 1.3
+    private static let circle: CGFloat = 44
+    private static let glyph = Font.system(size: 19, weight: .semibold)
+    private static let rest = 0.04
+    private static let lit = 0.1
+    private static let ring = 0.8
 
     @State private var selected = 0
     @State private var isPickingDate = false
@@ -46,28 +50,40 @@ struct SpotView: View {
     }
 
     private var grid: some View {
-        let rows = max(1, (tiles.count + Self.columns - 1) / Self.columns)
-        let height = (spot.size.height - Self.gap * CGFloat(rows - 1)) / CGFloat(rows)
-        return LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: Self.gap), count: Self.columns), spacing: Self.gap) {
-            ForEach(Array(tiles.enumerated()), id: \.offset) { index, tile in
-                tileView(tile, index: index).frame(height: max(0, height))
+        let side = (spot.size.width - Self.gap * CGFloat(Self.columns - 1)) / CGFloat(Self.columns)
+        let rows = (tiles.count + Self.columns - 1) / Self.columns
+        return VStack(spacing: Self.gap) {
+            ForEach(0..<rows, id: \.self) { row in
+                HStack(spacing: Self.gap) {
+                    ForEach(0..<Self.columns, id: \.self) { column in
+                        let index = row * Self.columns + column
+                        if index < tiles.count {
+                            tileView(tiles[index], index: index).frame(width: side, height: side * Self.tallness)
+                        } else {
+                            Color.clear.frame(width: side, height: side * Self.tallness)
+                        }
+                    }
+                }
             }
         }
     }
 
     private func tileView(_ tile: Tile, index: Int) -> some View {
-        let color = Color(hue: Self.hues[index % Self.hues.count], saturation: 0.55, brightness: 0.92)
-        return VStack(spacing: 8) {
+        let isSelected = index == selected
+        return VStack(spacing: 7) {
             ZStack {
-                Circle().fill(color)
-                Image(systemName: tile.icon).font(Self.glyph).foregroundStyle(.white)
+                Circle().fill(theme.color.ink.opacity(0.12))
+                Image(systemName: tile.icon).font(Self.glyph).foregroundStyle(theme.color.ink)
             }
             .frame(width: Self.circle, height: Self.circle)
-            Text(tile.title).font(spot.font.title).foregroundStyle(theme.color.ink).lineLimit(1).minimumScaleFactor(0.75)
-            Text(tile.time.isEmpty ? " " : tile.time).font(spot.font.detail).foregroundStyle(theme.color.ink.opacity(theme.color.secondary)).lineLimit(1)
+            Text(tile.title).font(spot.font.title).foregroundStyle(theme.color.ink).lineLimit(1)
+            Text(tile.time).font(spot.font.detail).foregroundStyle(theme.color.ink.opacity(theme.color.secondary)).lineLimit(1)
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .background(theme.color.ink.opacity(index == selected ? 0.1 : 0.04), in: .rect(cornerRadius: spot.corner))
+        .background(theme.color.ink.opacity(isSelected ? Self.lit : Self.rest), in: .rect(cornerRadius: spot.corner))
+        .overlay {
+            if isSelected { RoundedRectangle(cornerRadius: spot.corner).strokeBorder(theme.color.ink.opacity(Self.ring), lineWidth: 1.5) }
+        }
         .contentShape(.rect)
         .onTapGesture { pick(index) }
         .onHover { if $0 { selected = index } }

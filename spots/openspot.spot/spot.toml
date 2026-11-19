@@ -160,7 +160,7 @@ title = "Evening"
 icon = "moon.stars"
 
 [scripts.snooze.settings.later]
-title = "Later Today"
+title = "Later"
 icon = "cup.and.saucer"
 
 [scripts.snooze.settings.weekend]

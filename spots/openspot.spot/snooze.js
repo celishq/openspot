@@ -1,14 +1,14 @@
-/** The tiles of the snooze sheet in reading order: id, title and icon. */
+/** The tiles of the snooze sheet in reading order: id, title, icon, and the words of a tile with no moment. */
 const tiles = [
-  ["hour", "In an Hour", "clock"],
-  ["later", "Later Today", "cup.and.saucer"],
-  ["evening", "This Evening", "moon.stars"],
-  ["tomorrow", "Tomorrow", "sunrise"],
-  ["weekend", "This Weekend", "sofa"],
-  ["week", "Next Week", "briefcase"],
+  ["hour", "In an Hour", "clock.fill"],
+  ["later", "Later", "cup.and.saucer.fill"],
+  ["evening", "Evening", "moon.stars.fill"],
+  ["tomorrow", "Tomorrow", "sunrise.fill"],
+  ["weekend", "Weekend", "sofa.fill"],
+  ["week", "Next Week", "briefcase.fill"],
   ["month", "In a Month", "calendar"],
-  ["someday", "Someday", "sparkles"],
-  ["date", "Pick Date", "calendar.badge.clock"],
+  ["someday", "Someday", "sparkles", "No date"],
+  ["date", "Pick Date", "calendar.badge.clock", "Choose…"],
 ]
 
 /** The hour and minute of a setting such as `8:30`, or the fallback. */
@@ -81,9 +81,9 @@ function words(date, now) {
 function sheet(now, choices) {
   const moments = times(now, choices)
   const view = { view: "tiles" }
-  tiles.forEach(([id, title, icon], index) => {
+  tiles.forEach(([id, title, icon, none], index) => {
     const moment = moments[id]
-    view[`tile.${index + 1}`] = [id, title, icon, moment ? words(moment, now) : ""].join("|")
+    view[`tile.${index + 1}`] = [id, title, icon, moment ? words(moment, now) : none].join("|")
   })
   return openspot.frame([{ frame: "", title: "Snooze until", grid: "tiles" }, view])
 }
@@ -93,7 +93,7 @@ function form(key) {
   const forms = {
     morning: ["Morning", "8:00", ["6:00", "7:00", "8:00", "9:00", "10:00"]],
     evening: ["Evening", "19:00", ["17:00", "18:00", "19:00", "20:00", "21:00"]],
-    later: ["Later Today", "3", ["1", "2", "3", "4", "6"]],
+    later: ["Later", "3", ["1", "2", "3", "4", "6"]],
     weekend: ["Weekend", "saturday", ["saturday", "sunday"]],
   }
   const [title, value, options] = forms[key]
