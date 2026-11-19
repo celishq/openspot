@@ -557,10 +557,38 @@ shows the toast Time to stretch.
   restart. A spot holds at most 1000 timers, each with a value of at most 4 KB. A timer of a spot that is off or gone
   comes due into nothing.
 
+### Let the person pick the time
+
+`openspot timer pick` opens the snooze sheet, a grid of big tiles such as Later Today, Tomorrow and Pick Date, and
+prints the time of the tile that the person picks.
+
+```toml
+title = "Remind me"
+icon = "bell"
+on = ["sheet.open"]
+uses = ["timer"]
+```
+
+```sh
+#!/bin/sh
+case "$1" in
+  show) printf 'button=later\ntitle=Remind me later\nscope=spot\n' ;;
+  later)
+    at=$(openspot timer pick) || exit 0
+    [ "$at" = someday ] || openspot timer add "$at" "Look at this again"
+    ;;
+  due) openspot toast "$(sed -n 's/^event.value=//p')" ;;
+esac
+```
+
+- It prints an ISO 8601 time with its offset, or `someday` for Someday, which has no time. A close of the sheet with
+  no pick prints nothing and exits 1.
+- The person sets the hours of the tiles, such as the morning and the evening, in the Settings of Snooze.
+
 ### Ask another spot
 
-`openspot spot ask <id>` opens the panel on another spot and waits for the value it gives back. Use it to make
-a picker that other spots share.
+`openspot spot ask <id>` opens the panel on another spot and waits for the value it gives back, as `timer pick` does
+with Snooze. Use it to make a picker that other spots share.
 
 - The asked spot gives the value with `openspot spot reply <value>`, which hides the panel. `spot ask` prints it.
 - A close of the asked spot's sheet with no reply ends the ask with exit 1, once the spot's running calls end. A newer

@@ -143,3 +143,26 @@ uses = ["app"]
 starts = "first-launch"
 view = "welcome.swift"
 pages = ["key", "agent"]
+
+[scripts.snooze]
+title = "Snooze"
+icon = "moon.zzz"
+detail = "Pick a time for later"
+on = ["sheet.open"]
+view = "snooze.swift"
+
+[scripts.snooze.settings.morning]
+title = "Morning"
+icon = "sunrise"
+
+[scripts.snooze.settings.evening]
+title = "Evening"
+icon = "moon.stars"
+
+[scripts.snooze.settings.later]
+title = "Later Today"
+icon = "cup.and.saucer"
+
+[scripts.snooze.settings.weekend]
+title = "Weekend"
+icon = "sofa"
