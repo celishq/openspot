@@ -36,6 +36,7 @@ function at(from, days, [hour, minute]) {
 /** The moment each tile stands for at `now`, by its id, or nil for one with no moment. */
 function times(now, choices) {
   const minutes = now.getHours() * 60 + now.getMinutes()
+  const morning = choices.morning[0] * 60 + choices.morning[1]
   const evening = choices.evening[0] * 60 + choices.evening[1]
   const later = new Date(now.getTime() + choices.later * 3600 * 1000)
   const weekday = now.getDay()
@@ -46,7 +47,7 @@ function times(now, choices) {
   month.setDate(Math.min(now.getDate(), lastDay))
   return {
     hour: new Date(now.getTime() + 3600 * 1000),
-    later: minutes >= evening ? at(now, 1, choices.morning) : later,
+    later: minutes < morning ? at(now, 0, choices.morning) : minutes >= evening ? at(now, 1, choices.morning) : later,
     evening: minutes >= evening ? at(now, 1, choices.evening) : at(now, 0, choices.evening),
     tomorrow: at(now, 1, choices.morning),
     weekend: at(now, toWeekend === 0 ? 7 : toWeekend, choices.morning),

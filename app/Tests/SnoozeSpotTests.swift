@@ -42,6 +42,13 @@ final class SnoozeSpotTests: XCTestCase {
         XCTAssertEqual(moments["evening"], "2026-11-19T19:00")
     }
 
+    func testAfterMidnightLaterIsThisMorning() throws {
+        let moments = try times(at: "2026, 10, 20, 1, 5")
+
+        XCTAssertEqual(moments["later"], "2026-11-20T08:00")
+        XCTAssertEqual(moments["evening"], "2026-11-20T19:00")
+    }
+
     func testOnAWeekendThisWeekendIsTheNextOne() throws {
         XCTAssertEqual(try times(at: "2026, 10, 21, 10, 0")["weekend"], "2026-11-28T08:00")
         XCTAssertEqual(try times(at: "2026, 10, 22, 10, 0")["weekend"], "2026-11-28T08:00")
