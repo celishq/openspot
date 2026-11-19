@@ -1,4 +1,0 @@
-title = "System details"
-icon = "gauge.with.dots.needle.50percent"
-detail = "Battery, devices, CPU and memory in detail"
-on = ["sheet.open"]

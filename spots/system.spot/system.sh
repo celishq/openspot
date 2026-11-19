@@ -3,6 +3,7 @@ here=$(dirname "$0")
 . "$OPENSPOT_SH"
 data=$OPENSPOT_DATA
 event=$(value event)
+[ "$1" = show ] || exit 0
 load=$(value event.value)
 
 # Prints the number that the script of another spot prints, named $1, without its root and its bar.
@@ -25,15 +26,16 @@ battery() {
   kept battery.number
 }
 
-# Prints the device with the lowest battery. A device that connects reads them again, and so does a panel open after
-# 5 minutes, since the Bluetooth report takes a second.
+# Prints the device with the lowest battery, and keeps the level of each device for its rows. A device that connects
+# reads them again, and so does a panel open after 5 minutes, since the Bluetooth report takes a second.
 devices() {
   again=
   if [ "$event" = device.connect ] || [ ! -f "$data/devices.number" ]; then again=1
   elif [ "$event" = panel.open ] && [ $(($(/bin/date +%s) - $(/usr/bin/stat -f %m "$data/devices.number"))) -ge 300 ]; then again=1
   fi
   if [ -n "$again" ]; then
-    borrowed devices "$here/../devices.spot/devices.sh" show "$("$here/../devices.spot/devices.sh" levels)" | openspot_keep "$data/devices.number"
+    "$here/../devices.spot/devices.sh" levels | openspot_keep "$data/devices.levels"
+    borrowed devices "$here/../devices.spot/devices.sh" show "$(kept devices.levels)" | openspot_keep "$data/devices.number"
   fi
   kept devices.number
 }
@@ -69,9 +71,41 @@ memory() {
   printf 'number=memory\ntitle=Memory\nvalue=%s\nmax=100\nunit=%%\ndetail=%s\ntone=%s\n' "$used" "$detail" "$tone"
 }
 
+# Prints a row for each device and each part of it, such as the case of AirPods, with its level as a ring.
+device_rows() {
+  [ -s "$data/devices.levels" ] || return 0
+  printf 'section=bluetooth\ntitle=Devices\n'
+  kept devices.levels | awk -F'\t' '
+  function symbol(name, part) {
+    if (name ~ /AirPods Max/) return "airpodsmax"
+    if (name ~ /AirPods Pro/) return part == "Case" ? "airpodspro.chargingcase.wireless" : part == "" ? "airpodspro" : "airpodpro." tolower(part)
+    if (name ~ /AirPods/) return part == "Case" ? "airpods.chargingcase" : part == "" ? "airpods" : "airpod." tolower(part)
+    if (name ~ /Keyboard/) return "keyboard"
+    if (name ~ /Mouse/) return "magicmouse"
+    return "headphones"
+  }
+  NF {
+    printf "device-%d\t%s%s\t%s%%\t%s\tvalue=%.2f\t%s\n", NR, $1, ($2 == "" ? "" : ", " tolower($2)), $3, symbol($1, $2), $3 / 100, ($3 <= 20 ? "tone=bad" : "")
+  }' | openspot_items text
+}
+
+# Prints the three processes that use the most CPU, and the three that hold the most memory with the swap.
+process_rows() {
+  printf 'section=top-cpu\ntitle=CPU\n'
+  ps -Aco pcpu=,comm= -r | head -3 | awk '{
+    cpu = $1; $1 = ""; sub(/^ /, "")
+    printf "cpu-%d\t%s\t%s%%\n", NR, $0, cpu
+  }' | openspot_items text
+  printf 'section=top-memory\ntitle=Memory\n\ntext=swap\ntitle=Swap\ndetail=%s\n\n' "$(/usr/sbin/sysctl -n vm.swapusage | awk '{ mb = $6 + 0; print (mb >= 1024 ? sprintf("%.1f GB", mb / 1024) : sprintf("%d MB", mb)) }')"
+  ps -Aco rss=,comm= -m | head -3 | awk '{
+    kb = $1; $1 = ""; sub(/^ /, "")
+    printf "memory-%d\t%s\t%s\n", NR, $0, (kb >= 1048576 ? sprintf("%.1f GB", kb / 1048576) : sprintf("%d MB", kb / 1024))
+  }' | openspot_items text
+}
+
 printf 'frame=\ngrid.wide=battery cpu\n'
 printf 'grid.large=battery battery cpu cpu\ngrid.large=battery battery memory memory\ngrid.large=battery battery devices devices\n'
-printf 'grid=battery\ngrid=battery\ngrid=cpu\ngrid=cpu\ngrid=memory\ngrid=memory\ngrid=devices\ngrid=devices\n\n'
+printf 'grid=battery cpu\ngrid=battery cpu\ngrid=memory devices\ngrid=memory devices\n\n'
 battery
 printf '\n'
 cpu
@@ -79,3 +113,5 @@ printf '\n'
 memory
 printf '\n'
 devices
+device_rows
+process_rows

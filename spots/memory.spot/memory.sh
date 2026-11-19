@@ -16,7 +16,7 @@ measure() {
 }
 
 # `show <percent>` draws the share that is given, such as the one of sample.sh. With none, as when another spot such as
-# System details looks, it measures the memory now.
+# System looks, it measures the memory now.
 if [ "$1" = show ]; then
   draw "${2:-$(measure)}"
   exit 0

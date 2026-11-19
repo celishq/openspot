@@ -13,7 +13,7 @@ measure() {
 }
 
 # `show` draws the points that are given, such as the ones of sample.sh. With none, as when another spot such as System
-# details looks, it measures the use of all cores now, and keeps no point.
+# looks, it measures the use of all cores now, and keeps no point.
 if [ "$1" = show ]; then
   shift
   [ $# -gt 0 ] || set -- $(measure)

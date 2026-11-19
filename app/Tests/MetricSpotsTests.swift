@@ -124,6 +124,26 @@ final class MetricSpotsTests: SpotRunsCase {
         try await wait("the read of the device") { self.log("tools.log") == ["system_profiler", "system_profiler"] && !self.runs.isShowing }
     }
 
+    func testSystemsSheetShowsItsBarsOverTheTopProcessesAndTheSwapAndKeepsTheBluetoothReport() async throws {
+        try copy("system")
+        let script = folder.appendingPathComponent("system.spot/system.sh")
+        var frames: [String] = []
+
+        for event in ["sheet.open", "system.load"] {
+            var frame = ""
+            for try await text in ScriptProcess(url: script, arguments: ["show"], mode: .once(input: "event=\(event)\n"), limit: 60, dataName: "system", base: runs.environment).start() { frame += text }
+            frames.append(frame)
+        }
+
+        for frame in frames {
+            XCTAssertTrue(frame.contains("grid=battery cpu\ngrid=battery cpu\ngrid=memory devices\ngrid=memory devices\n"), frame)
+            XCTAssertTrue(frame.contains("section=top-cpu\ntitle=CPU\n\ntext=cpu-1\n"), frame)
+            XCTAssertTrue(frame.contains("text=swap\ntitle=Swap\n"), frame)
+            XCTAssertFalse(frame.contains("text=mac\n"), frame)
+        }
+        XCTAssertEqual(log("tools.log").filter { $0 == "system_profiler" }, ["system_profiler"])
+    }
+
     func testSystemReadsTheBatteryAndTheDevicesAgainOverWhatAnOlderFormKept() async throws {
         try copy("system")
         let data = ScriptProcess.dataFolder(base: runs.environment, dataName: "system")

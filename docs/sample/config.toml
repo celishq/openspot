@@ -43,7 +43,3 @@ grid = false
 [[spots]]
 id = "devices"
 grid = false
-
-[[spots]]
-id = "system-info"
-grid = false
