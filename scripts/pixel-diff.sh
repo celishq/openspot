@@ -88,11 +88,11 @@ shoot() {
     stop
   done
   mkdir -p "$out/picture"
-  sh "$work/state/spots/parts.spot/parts.sh" | run "$app/Contents/MacOS/Openspot" render sheet "$out/picture/parts.png"
+  sh "$work/state/spots/parts.spot/parts.sh" | run render sheet "$out/picture/parts.png"
   for size in small wide large; do
-    sh "$work/state/spots/load.spot/load.sh" | run "$app/Contents/MacOS/Openspot" render card "$size" "$out/picture/load-$size.png"
+    sh "$work/state/spots/load.spot/load.sh" | run render card "$size" "$out/picture/load-$size.png"
   done
-  run "$app/Contents/MacOS/Openspot" render panel "$out/picture/panel.png"
+  run render panel "$out/picture/panel.png"
   find "$out" -name '*.png' | sort
 }
 
