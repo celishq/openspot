@@ -3,35 +3,34 @@ import Foundation
 
 @MainActor
 extension Spot {
-    private func output(_ action: SpotAction, input: String? = nil, variables: [String: String] = [:], timeout: TimeInterval) async throws -> SpotOutput {
-        SpotOutput(text: try await SpotRuns(environment: TestEnvironment.values).answer(of: self, action, input: input, limit: timeout, variables: variables))
+    private func output(_ action: SpotAction, input: String? = nil, timeout: TimeInterval) async throws -> Frame {
+        let message = (input ?? "") + TestSettings.text
+        return Frame(text: try await SpotRuns(environment: TestEnvironment.values).answer(of: self, action, input: message.isEmpty ? nil : message, limit: timeout))
     }
 
     func state(timeout: TimeInterval) async throws -> SpotState {
-        guard readsState else { return headerState }
-        return try state(of: try await output(.read, timeout: timeout))
+        guard showsState else { return headerState }
+        return try state(of: try await output(.show, timeout: timeout))
     }
 
     func opened(timeout: TimeInterval) async throws -> (spot: Spot, state: SpotState) {
-        guard readsState else { return (self, headerState) }
-        let output = try await output(.read, timeout: timeout)
+        guard showsState else { return (self, headerState) }
+        let output = try await output(.show, timeout: timeout)
         return (taking(output), try state(of: output))
     }
 
-    func items(query: String = "", input: String? = nil, page: String? = nil, timeout: TimeInterval) async throws -> SpotOutput {
-        let typed = query.isEmpty ? nil : TextBlock(fields: [.init(key: "search", value: query)]).text
-        let lines = [input, typed].compactMap { $0 }
-        let reason = query.isEmpty ? [:] : ReadReason.text(query, inSheet: self.answers == nil).variables
-        let variables = reason.merging(page.map { ["OPENSPOT_PAGE": $0] } ?? [:]) { _, new in new }
-        return try await output(.read, input: lines.isEmpty ? nil : lines.joined(), variables: variables, timeout: timeout)
+    func items(query: String = "", input: String? = nil, page: String? = nil, timeout: TimeInterval) async throws -> Frame {
+        let event = query.isEmpty ? nil : ShowEvent.text(query, inSheet: self.answers == nil)
+        let message = Message(.show, event: event, route: page, search: query.isEmpty ? nil : query, given: input).text
+        return try await output(.show, input: message?.isEmpty == true ? nil : message, timeout: timeout)
     }
 
-    func answer(_ action: SpotAction, input: String? = nil, timeout: TimeInterval) async throws -> SpotOutput {
+    func answer(_ action: SpotAction, input: String? = nil, timeout: TimeInterval) async throws -> Frame {
         try await output(action, input: input, timeout: timeout)
     }
 
     func sheetFaults(timeout: TimeInterval) async throws -> [String] {
-        FrameCheck(text: try await SpotRuns(environment: TestEnvironment.values).answer(of: self, .read, limit: timeout)).sheetFaults
+        FrameCheck(text: try await SpotRuns(environment: TestEnvironment.values).answer(of: self, .show, limit: timeout)).sheetFaults
     }
 
     func form(_ action: CommandAction, item: SpotItem?, timeout: TimeInterval) async throws -> ItemForm {
@@ -39,13 +38,14 @@ extension Spot {
         return form
     }
 
-    func submit(_ action: CommandAction, item: SpotItem?, draft: FormDraft, timeout: TimeInterval) async throws -> String {
-        try await output(.action(action, item: item), input: draft.text, timeout: timeout).select ?? ""
+    func submit(_ action: CommandAction, item: SpotItem?, draft: FormDraft, timeout: TimeInterval) async throws {
+        _ = try await output(.action(action, item: item), input: Message(.action(action, item: item), inputs: draft.inputs).text, timeout: timeout)
     }
 
     @discardableResult
     func perform(_ action: SpotAction, input: String? = nil, page: String? = nil, timeout: TimeInterval) async throws -> String? {
-        try await output(action, input: input, variables: page.map { ["OPENSPOT_PAGE": $0] } ?? [:], timeout: timeout).summary?.value("toast")
+        let route = page.map { "route=\($0)\n" } ?? ""
+        return try await output(action, input: route + (input ?? ""), timeout: timeout).toast
     }
 
     func hook(_ function: String, card: String, origin: String) async -> Bool {
@@ -71,13 +71,13 @@ extension Spot {
     }
 
     func read(timeout: TimeInterval) async throws -> MetricValue {
-        guard let value = MetricValue(output: try await output(.read, timeout: timeout)) else { throw SpotError.badMetric }
+        guard let value = MetricValue(output: try await output(.show, timeout: timeout)) else { throw SpotError.badMetric }
         return value
     }
 }
 
 extension ScanResult {
     var metrics: [Spot] {
-        scripts.filter { $0.read?.seconds != nil }
+        scripts.filter { $0.on?.seconds != nil }
     }
 }

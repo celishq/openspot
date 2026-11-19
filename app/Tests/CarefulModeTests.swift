@@ -32,7 +32,7 @@ final class CarefulModeTests: SpotRunsCase {
     }
 
     private func trying(uses: String = "") throws -> SpotRun {
-        try script(header: "on=sheet.open\(uses.isEmpty ? "" : "\nuses=\(uses)")", """
+        try script(toml: "on = ['sheet.open']\nuses = [\(uses.split(separator: ",").map { "'\($0)'" }.joined(separator: ", "))]", """
         r=
         echo a > "$OPENSPOT_DATA/kept" 2>/dev/null && r="${r}data "
         echo a > "${TMPDIR:-/tmp}/careful-$$" 2>/dev/null && r="${r}temp " && rm -f "${TMPDIR:-/tmp}/careful-$$"
@@ -86,7 +86,7 @@ final class CarefulModeTests: SpotRunsCase {
 
     func testOnAStayingSpotIsCarefulToo() async throws {
         runs.isCareful = true
-        try script(header: "mode=stay\non=sheet.open\noffers=card\noffers=menubar", """
+        try script(toml: "mode = 'stay'\non = ['sheet.open']", """
         echo a > '\(outside.path)/written' 2>/dev/null && r=files || r=kept
         while IFS= read -r line; do
           case "$line" in call=*) call=${line#call=} ;; esac
@@ -100,7 +100,7 @@ final class CarefulModeTests: SpotRunsCase {
     }
 
     func testAStayingSpotStartsAgainInTheNewModeWhenTheModeChanges() async throws {
-        try script(header: "mode=stay\non=sheet.open\noffers=card\noffers=menubar", """
+        try script(toml: "mode = 'stay'\non = ['sheet.open']", """
         echo a > '\(outside.path)/written-$$' 2>/dev/null && r=files || r=kept
         while IFS= read -r line; do
           case "$line" in call=*) call=${line#call=} ;; esac
@@ -131,15 +131,15 @@ final class CarefulModeTests: SpotRunsCase {
         runs = runs(environment: ProcessInfo.processInfo.environment.merging(["PATH": "\(bin.path):\(path)"]) { _, new in new })
         let script = folder.spotFile("script", extension: "js")
         try FileManager.default.createDirectory(at: script.deletingLastPathComponent(), withIntermediateDirectories: true)
-        try "// on=sheet.open\nfunction main() { return `text=t\\ntitle=${openspot.call([\"color\", \"pick\"]).stdout.trim()}\\n` }\n"
-            .write(to: script, atomically: true, encoding: .utf8)
+        try "function main() { return `text=t\\ntitle=${openspot.call([\"color\", \"pick\"]).stdout.trim()}\\n` }\n"
+            .writeInline(to: script, toml: "on = ['sheet.open']")
         let sheet = try sheet()
         let before = try await result(of: sheet)
         XCTAssertEqual(before, "files", "the helper ran as the person")
         try FileManager.default.removeItem(at: outside.appendingPathComponent("written"))
 
         runs.isCareful = true
-        sheet.read(need: .change)
+        sheet.show(need: .change)
 
         try await wait("the read in Careful mode") { sheet.reading.value?.title == "kept" }
     }

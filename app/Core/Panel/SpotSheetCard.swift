@@ -14,7 +14,6 @@ public struct SpotSheetCard {
         let owner = OwnedSheet.owner(of: sheetID)?.spot ?? sheetID
         let visible = model.visible
         let index = visible.firstIndex { $0.id == owner }
-            ?? visible.firstIndex { $0.kind == .widget && $0.spot.opens == owner }
         guard let index, let placement = model.placements.first(where: { $0.index == index }) else { return nil }
         let entry = visible[index]
         let face = entry.state.face

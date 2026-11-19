@@ -176,7 +176,7 @@ final class ActionMenuTests: XCTestCase {
     }
 
     func testEachKindOfSpotSaysWhatEnterDoes() {
-        XCTAssertEqual(command(kind: .launch).openTitle(hasItem: false), "Run")
+        XCTAssertEqual(command(kind: .launch).openTitle(hasItem: false), "Open")
         XCTAssertEqual(command(kind: .toggle).openTitle(hasItem: false), "Toggle")
         XCTAssertEqual(command(kind: .list).openTitle(hasItem: false), "Open")
         XCTAssertNil(command(kind: .slider).openTitle(hasItem: false))
@@ -219,11 +219,11 @@ final class ActionMenuTests: XCTestCase {
         let primary = menu.rows[0]
         let copy = menu.rows[1]
 
-        XCTAssertEqual(menu.title(of: primary), "Run")
+        XCTAssertEqual(menu.title(of: primary), "Open")
         XCTAssertEqual(menu.title(of: primary, isRunning: true), "Stop")
         XCTAssertEqual(menu.title(of: copy, isRunning: true), "Stop Copy")
         XCTAssertEqual(menu.hint(stopping: { $0.action == nil }), "⏎ Stop   ⌘C Copy")
-        XCTAssertEqual(menu.hint(stopping: { $0.action != nil }), "⏎ Run   ⌘C Stop Copy")
+        XCTAssertEqual(menu.hint(stopping: { $0.action != nil }), "⏎ Open   ⌘C Stop Copy")
         XCTAssertEqual(menu.hint(stopping: { _ in false }), menu.hint)
     }
 

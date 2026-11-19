@@ -47,7 +47,7 @@ extension SpotsModel {
         let escape = KeyRow.hint(of: [escapeRow])
         if let parts = openParts, !parts.showsRows || parts.drawsKeys {
             let hasActions = target.flatMap(actionMenu(on:)) != nil
-            return parts.hint(escape: escapeWords, stopping: { work(of: $0) != nil }, actions: hasActions)
+            return parts.hint(escape: escapeWords, stopping: { act(of: $0) != nil }, actions: hasActions)
         }
         if let confirm = confirmRow.hint { return [confirm, settingsRow.hint, "⌘K Actions"].compactMap { $0 }.joined(separator: "   ") }
         if let slashHint { return slashHint }
@@ -55,7 +55,7 @@ extension SpotsModel {
         if openSheetID == nil, slash == nil, finding == nil, !query.isEmpty, visible.isEmpty { return "\(SearchPrompt.slashHint)   \(escape)" }
         let keys = target.flatMap { target in
             actionMenu(on: target)?.hint(
-                stopping: { sheets[target.entry.id]?.work(of: $0, item: target.item) != nil },
+                stopping: { sheets[target.entry.id]?.act(of: $0, item: target.item) != nil },
                 second: [settingsRow.hint].compactMap { $0 }
             )
         } ?? escape
@@ -337,5 +337,36 @@ extension SpotsModel {
             moveSelection(dx: step, dy: 0)
         }
         return true
+    }
+
+    public func followHint() {
+        guard !followsHint else { return }
+        followsHint = true
+        takeHint()
+    }
+
+    private func takeHint() {
+        hintTakes += 1
+        let words = HintWords(withObservationTracking { hint } onChange: { [weak self] in
+            Task { @MainActor in self?.takeHint() }
+        })
+        let motion: PanelMotion? = isEditing || hintIsForEdit || fieldDrop != nil ? .fade : nil
+        hintIsForEdit = isEditing
+        if openSheetID == nil, spotDrop == nil {
+            if words != gridHint { change(motion, { gridHint = words }) }
+        } else {
+            takeSheetHint(words, motion: motion)
+        }
+    }
+
+    func takeSheetHint(_ words: HintWords, motion: PanelMotion? = nil) {
+        if words != sheetHint { change(motion, { sheetHint = words }) }
+    }
+
+    var selectedGlyphTitle: String? {
+        guard openSheetID == nil, let entry = selectedEntry,
+              placements.first(where: { $0.index == selected })?.size == .small
+        else { return nil }
+        return entry.state.title
     }
 }

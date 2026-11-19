@@ -5,7 +5,6 @@ import XCTest
 final class CaffeinateSpotTests: XCTestCase {
     private var folder: URL!
     private var runs: SpotRuns!
-    private var toasts: [String] = []
     private var environment: [String: String] = [:]
 
     override func setUp() async throws {
@@ -18,6 +17,7 @@ final class CaffeinateSpotTests: XCTestCase {
             """)
         try fake("openspot", """
             case "$1 $2" in
+              'toast '*) shift; printf '%s\\n' "$*" >> '\(f)/toasts' ;;
               'setting get') cat "\(f)/setting.$3" 2>/dev/null ;;
               'setting set') printf %s "$4" > "\(f)/setting.$3" ;;
               'power lid-closed')
@@ -100,7 +100,6 @@ final class CaffeinateSpotTests: XCTestCase {
     private func sheet() throws -> SpotRun {
         let spot = try spot()
         let sheet = runs.sheet(for: spot)
-        sheet.onReport = { [weak self] in if case .toast(let text) = $0 { self?.toasts.append(text) } }
         runs.panelOpened()
         sheet.open {}
         return sheet
@@ -156,7 +155,7 @@ final class CaffeinateSpotTests: XCTestCase {
 
         try await wait("caffeinate") { self.running().count == 1 }
         XCTAssertEqual(lines("lid"), [])
-        XCTAssertTrue(toasts.allSatisfy { !$0.contains("lid") })
+        XCTAssertTrue(lines("toasts").allSatisfy { !$0.contains("lid") })
     }
 
     func testTheRunningDurationShowsTheTimeItHasLeft() async throws {
@@ -272,7 +271,7 @@ final class CaffeinateSpotTests: XCTestCase {
 
         try await pick("1800", in: sheet)
         try await wait("caffeinate") { self.running().count == 1 }
-        try await wait("the toast") { self.toasts == ["Caffeinate is on for 30 minutes"] }
+        try await wait("the toast") { self.lines("toasts") == ["Caffeinate is on for 30 minutes"] }
         sheet.close()
         runs.panelClosed()
 
@@ -293,22 +292,22 @@ final class CaffeinateSpotTests: XCTestCase {
         let sheet = try sheet()
         let start = try await start(in: sheet)
 
-        let answer = try await sheet.launch(start, input: "search=45\n")
+        let answer = try await sheet.launch(start, search: SearchQuery(text: "45", layouts: []))
 
         XCTAssertEqual(answer, .done)
         try await wait("caffeinate") { self.running().count == 1 }
         XCTAssertEqual(flags(), ["-di -t 2700"])
-        try await wait("the toast") { self.toasts.last == "Caffeinate is on for 45 minutes" }
+        try await wait("the toast") { self.lines("toasts").last == "Caffeinate is on for 45 minutes" }
     }
 
     func testTextThatIsNoNumberShowsAnErrorAndTheDurations() async throws {
         let sheet = try sheet()
         let start = try await start(in: sheet)
 
-        let answer = try await sheet.launch(start, input: "search=soon\n")
+        let answer = try await sheet.launch(start, search: SearchQuery(text: "soon", layouts: []))
 
         XCTAssertEqual(answer, .shown)
-        try await wait("the toast") { self.toasts.last == "Caffeinate takes minutes as a number, such as 45." }
+        try await wait("the toast") { self.lines("toasts").last == "Caffeinate takes minutes as a number, such as 45." }
         XCTAssertTrue(running().isEmpty)
     }
 
@@ -322,7 +321,7 @@ final class CaffeinateSpotTests: XCTestCase {
         try await wait("the end of caffeinate") { self.running().isEmpty }
         try await wait("the end of the calls") { sheet.calls.isEmpty }
         try await wait("the rows without Turn off") { sheet.list.all.first?.run == "1800" }
-        XCTAssertEqual(toasts.last, "Caffeinate is off")
+        XCTAssertEqual(lines("toasts").last, "Caffeinate is off")
         XCTAssertEqual(sheet.shownState.subtitle, "Keep the Mac awake")
     }
 
@@ -348,7 +347,7 @@ final class CaffeinateSpotTests: XCTestCase {
 
         try await wait("one new caffeinate") { self.awake().count == 2 && self.running().count == 1 }
         try await wait("the one call") { sheet.calls.count == 1 }
-        try await wait("the toast again") { self.toasts == ["Caffeinate is on for 2 hours", "Caffeinate is on for 2 hours"] }
+        try await wait("the toast again") { self.lines("toasts") == ["Caffeinate is on for 2 hours", "Caffeinate is on for 2 hours"] }
         XCTAssertEqual(running(), [awake()[1]])
     }
 
@@ -428,7 +427,7 @@ final class CaffeinateSpotTests: XCTestCase {
 
         try await wait("caffeinate") { self.running().count == 1 }
         XCTAssertEqual(flags(), ["-di -t 1800"])
-        try await wait("the toast") { self.toasts.last == "Caffeinate is on for 30 minutes, but not with the lid closed. \(Self.approval)" }
+        try await wait("the toast") { self.lines("toasts").last == "Caffeinate is on for 30 minutes, but not with the lid closed. \(Self.approval)" }
         try await wait("the lid row off") { self.lidRow(in: sheet)?.isOn == false }
         XCTAssertEqual(lidClosed(), "false")
     }

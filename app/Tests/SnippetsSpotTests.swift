@@ -62,7 +62,8 @@ final class SnippetsSpotTests: SampleSpotsCase {
             var draft = FormDraft(form: form)
             draft.set("Hello", for: "title")
             draft.set(text, for: "content")
-            let run = try await snippets.submit(new, item: nil, draft: draft, timeout: 60)
+            _ = try await snippets.submit(new, item: nil, draft: draft, timeout: 60)
+            let run = try self.read("selected", in: folder).trimmingCharacters(in: .newlines)
 
             let lines = try await snippets.items(timeout: 60)
             XCTAssertEqual(lines.errors, [])

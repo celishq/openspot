@@ -2,14 +2,14 @@ import OpenspotCore
 import SwiftUI
 
 struct SpotCardDrawing: View {
-    let layout: WidgetLayout
+    let layout: CardLayout
     let face: CardFace
     let card: SpotSize
     var view: (CGSize) -> SpotCustomView? = { _ in nil }
     let onSlot: (String, String?) -> Void
 
     private var room: CGSize {
-        let inset = 2 * SpotTokens.cardPadding(for: card, isWidget: true)
+        let inset = 2 * SpotTokens.cardPadding(for: card, isDrawn: true)
         return CGSize(width: SpotTokens.width(columns: card.columns) - inset, height: SpotTokens.height(rows: card.rows) - inset)
     }
 

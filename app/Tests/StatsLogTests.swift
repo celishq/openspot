@@ -6,7 +6,7 @@ final class StatsLogTests: SpotRunsCase {
     private static let busyLoop = "i=0; while [ $i -lt 50000 ]; do i=$((i + 1)); done"
 
     func testABusyScriptCountsItsCPUTime() async throws {
-        try script(header: "on=sheet.open", "\(Self.busyLoop)\nprintf 'row=a\\ntitle=A\\n'")
+        try script(toml: "on = ['sheet.open']", "\(Self.busyLoop)\nprintf 'text=a\\ntitle=A\\n'")
         let sheet = try sheet()
 
         runs.panelOpened()
@@ -19,12 +19,12 @@ final class StatsLogTests: SpotRunsCase {
     }
 
     func testAStayingScriptCountsItsCPUTimeWhileItRuns() async throws {
-        try script(header: "mode=stay\non=sheet.open\noffers=card\noffers=menubar", """
+        try script(toml: "mode = 'stay'\non = ['sheet.open']", """
         \(Self.busyLoop)
         touch '\(path("busy"))'
         while IFS= read -r line; do
           case "$line" in call=*) call=${line#call=} ;; esac
-          [ -n "$line" ] || printf 'end=%s\\n\\nrow=a\\ntitle=A\\n---\\n' "$call"
+          [ -n "$line" ] || printf 'end=%s\\n\\ntext=a\\ntitle=A\\n---\\n' "$call"
         done
         """)
         let sheet = try sheet()
@@ -42,7 +42,7 @@ final class StatsLogTests: SpotRunsCase {
     func testAStayingProcessPutsItsCPUTimeOnTheDayItWasSpent() async throws {
         runs.quit()
         runs = SpotRuns(clock: clock.value, stopPause: 0.2, stats: folder.appendingPathComponent("stats"))
-        try script(header: "mode=stay\non=sheet.open\noffers=card\noffers=menubar", """
+        try script(toml: "mode = 'stay'\non = ['sheet.open']", """
         \(Self.busyLoop)
         touch '\(path("busy"))'
         \(untilRelease)
@@ -50,7 +50,7 @@ final class StatsLogTests: SpotRunsCase {
         touch '\(path("busy again"))'
         while IFS= read -r line; do
           case "$line" in call=*) call=${line#call=} ;; esac
-          [ -n "$line" ] || printf 'end=%s\\n\\nrow=a\\ntitle=A\\n---\\n' "$call"
+          [ -n "$line" ] || printf 'end=%s\\n\\ntext=a\\ntitle=A\\n---\\n' "$call"
         done
         """)
         let sheet = try sheet()
@@ -71,7 +71,7 @@ final class StatsLogTests: SpotRunsCase {
     }
 
     func testAFailedCallIsTheLastFaultAndAFailure() async throws {
-        try script(header: "on=sheet.open", "echo 'No network.' >&2\nexit 3")
+        try script(toml: "on = ['sheet.open']", "echo 'No network.' >&2\nexit 3")
         let sheet = try sheet()
 
         runs.panelOpened()
@@ -195,7 +195,7 @@ final class StatsLogTests: SpotRunsCase {
     }
 
     func testTheRunsTellTheUsageWhichSpotOwnsEachView() throws {
-        try script(header: "on=sheet.open\nview=cups.swift", "printf 'view=cups\n'")
+        try script(toml: "on = ['sheet.open']\nview = 'cups.swift'", "printf 'view=cups\n'")
         let view = try XCTUnwrap(try scanned().scripts.first?.view)
 
         runs.usage.drew(view: view, seconds: 0.5)
@@ -205,7 +205,7 @@ final class StatsLogTests: SpotRunsCase {
     }
 
     func testOpeningASheetAndPickingARowAtOnceIsOneActAndTheReadIsCountedByItsReason() async throws {
-        try script(header: "on=sheet.open", "printf 'row=a\\ntitle=A\\n'")
+        try script(toml: "on = ['sheet.open']", "printf 'text=a\\ntitle=A\\n'")
         let sheet = try sheet()
 
         runs.panelOpened()
@@ -324,7 +324,7 @@ final class StatsLogTests: SpotRunsCase {
         let text = try Stats(days: usage.days(1, at: day), spot: nil).text(.frame)
 
         XCTAssertEqual(text, """
-        row=b
+        text=b
         title=Beta
         detail=1.5 s CPU · 2 runs · 250 ms each
         runs=2
@@ -342,7 +342,7 @@ final class StatsLogTests: SpotRunsCase {
         call.screen.shot=1
         network=declared
 
-        row=a
+        text=a
         title=Alpha
         detail=40 ms CPU · 1 run · 2.0 s each
         runs=1
@@ -384,8 +384,8 @@ final class StatsLogTests: SpotRunsCase {
         let one = try Stats(days: usage.days(1, at: day), spot: "a").text(.frame)
         let two = try Stats(days: usage.days(2, at: day), spot: "a").text(.frame)
 
-        XCTAssertTrue(one.contains("row=a\ntitle=Alpha\ndetail=0 ms CPU · 1 run · 1.0 s each\nruns=1\n"), one)
-        XCTAssertFalse(one.contains("row=b"), one)
+        XCTAssertTrue(one.contains("text=a\ntitle=Alpha\ndetail=0 ms CPU · 1 run · 1.0 s each\nruns=1\n"), one)
+        XCTAssertFalse(one.contains("text=b"), one)
         XCTAssertTrue(two.contains("runs=2\n"), two)
         let json = try XCTUnwrap(JSONSerialization.jsonObject(with: Data(Stats(days: usage.days(2, at: day), spot: nil).text(.json).utf8)) as? [[String: Any]])
         XCTAssertEqual(json.map { $0["day"] as? String }, ["2026-11-11", "2026-11-10"])

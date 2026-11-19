@@ -53,7 +53,6 @@ public enum SheetFaults {
         guard let repeated = layout.repeated else { return [] }
         var faults: [String] = []
         if layout.repeatCount > 1 { faults.append("a sheet can repeat only one area") }
-        if layout.areas[repeated.area] == nil { faults.append("the repeat names \(repeated.area), which the drawing does not have") }
         for part in parts where layout.letter(of: part) == repeated.area {
             faults.append("the part \(part.id) stands on the repeated area \(repeated.area)")
         }

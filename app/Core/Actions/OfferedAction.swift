@@ -20,41 +20,44 @@ public struct OfferedAction: Equatable, Sendable {
         self.hooks = hooks
     }
 
-    static func read(_ buttons: [TextBlock], owner: String, of name: String, isInline: Bool) throws -> [OfferedAction] {
-        if let block = buttons.first(where: { $0.values("offers").contains { $0.split(separator: " ").first.map(String.init) != place } }) {
-            let word = block.values("offers").first { $0.split(separator: " ").first.map(String.init) != place } ?? ""
-            throw SpotError.fault("\(name) has offers=\(word) on the button \(block.value("button") ?? ""). A button offers only offers=actions")
+    static func read(_ commands: [Manifest.Command], owner: String, of name: String, isInline: Bool) throws -> [OfferedAction] {
+        let isOther = { (line: String) in line.split(separator: " ").first.map(String.init) != place }
+        if let command = commands.first(where: { $0.offers.contains(where: isOther) }) {
+            let word = command.offers.first(where: isOther) ?? ""
+            throw SpotError.fault("\(name) has offers = [\"\(word)\"] in \(command.section). A command offers only offers = [\"actions\"]")
         }
         var offered: [OfferedAction] = []
-        for block in buttons {
-            let button = block.value("button") ?? ""
-            let parent = button.lastIndex(of: ".").flatMap { dot in offered.first { $0.action.id == String(button[..<dot]) } }
-            let line = block.values("offers").first
+        for command in commands {
+            let parent = command.id.lastIndex(of: ".").flatMap { dot in offered.first { $0.action.id == String(command.id[..<dot]) } }
+            let line = command.offers.first
             guard line != nil || parent != nil else { continue }
-            guard let action = CommandAction(id: button, block: block) else {
-                throw SpotError.fault("\(name) cannot read the button \(button). Give it an ID with no space and a title, such as button=change with title=Change Icon")
+            let key = command.shortcut.map { ActionKey(text: $0) }
+            guard !command.title.isEmpty, key != .some(nil), CommandAction.Scope(rawValue: command.scope ?? CommandAction.Scope.item.rawValue) != nil else {
+                throw SpotError.fault("\(name) cannot read \(command.section). Give it an ID with no space and a title, such as [commands.change] with title = \"Change Icon\"")
             }
             if let parent, line != nil {
-                throw SpotError.fault("\(name) offers the button \(button), which shows in the submenu of \(parent.action.id) and takes its place. Remove its offers line")
+                throw SpotError.fault("\(name) offers \(command.section), which shows in the submenu of \(parent.action.id) and takes its place. Remove its offers")
             }
             var hooks: [ActionHook: String] = [:]
-            for hook in ActionHook.allCases { hooks[hook] = try function(hook, of: block, name: name, isInline: isInline) }
-            let menuAction = CommandAction(id: action.id, title: action.title, key: action.key, scope: .spot, after: action.after, isForm: action.isForm, confirm: action.confirm)
+            for hook in ActionHook.allCases { hooks[hook] = try function(hook, of: command, name: name, isInline: isInline) }
+            let menuAction = CommandAction(
+                id: command.id, title: command.title, key: key ?? nil, scope: .spot, after: command.close == true ? .close : .stay, isForm: command.form ?? false,
+                confirm: command.confirm
+            )
             let origins = try parent?.origins ?? Self.origins(String((line ?? place).dropFirst(place.count)), of: name)
             offered.append(OfferedAction(action: menuAction, owner: owner, group: name, origins: origins, hooks: hooks))
         }
         return offered
     }
 
-    private static func function(_ hook: ActionHook, of block: TextBlock, name: String, isInline: Bool) throws -> String? {
+    private static func function(_ hook: ActionHook, of command: Manifest.Command, name: String, isInline: Bool) throws -> String? {
         let word = hook.rawValue
-        guard let function = block.value(word) else { return nil }
-        let button = block.value("button") ?? ""
+        guard let function = command.hooks[hook] else { return nil }
         guard isInline else {
-            throw SpotError.fault("\(name) has \(word)=\(function) on the button \(button), which only a JavaScript spot can answer. Remove it, or write the spot as a .js file")
+            throw SpotError.fault("\(name) has \(word) = \"\(function)\" in \(command.section), which only a JavaScript spot can answer. Remove it, or write the spot as a .js file")
         }
         guard function.range(of: "^[A-Za-z_$][A-Za-z0-9_$]*$", options: .regularExpression) != nil else {
-            throw SpotError.fault("\(name) has \(word)=\(function) on the button \(button). Name a function of the spot, such as \(word)=\(hook.example)")
+            throw SpotError.fault("\(name) has \(word) = \"\(function)\" in \(command.section). Name a function of the spot, such as \(word) = \"\(hook.example)\"")
         }
         return function
     }

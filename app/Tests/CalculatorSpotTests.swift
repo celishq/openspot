@@ -21,20 +21,20 @@ final class CalculatorSpotTests: SampleSpotsCase {
     func testTheCalculatorOnlyAnswersAndHasNoCard() throws {
         let calculator = try calculator
 
-        XCTAssertNil(calculator.read)
+        XCTAssertNil(calculator.on)
         XCTAssertFalse(calculator.isOnGrid)
         XCTAssertFalse(calculator.isFound)
     }
 
-    func testAnAnswerIsALargeCardOfAFaintSumOverTheAnswerWhosePickCopiesThePlainValue() async throws {
+    func testAnAnswerIsALargeCardOfTheAnswerOverAFaintSumWhosePickCopiesThePlainValue() async throws {
         try await withPrivateHome { home in
-            try "row=1234.5\ntitle=1,234.5\ndetail=1000 + 234.5\n".write(to: home.appendingPathComponent("calc-answer"), atomically: true, encoding: .utf8)
+            try "text=1234.5\ntitle=1,234.5\ndetail=1000 + 234.5\n".write(to: home.appendingPathComponent("calc-answer"), atomically: true, encoding: .utf8)
 
             let answers = try await self.calculator.items(query: "1000+234.5", timeout: 60).answers
 
             XCTAssertEqual(answers.map(\.run), ["1234.5"])
             XCTAssertEqual(answers.first?.card?.face.answerSize, .large)
-            XCTAssertEqual(answers.first?.card?.face.parts.map(\.detail), ["1000 + 234.5", nil])
+            XCTAssertEqual(answers.first?.card?.face.parts.map(\.title), ["1000 + 234.5"])
             XCTAssertEqual(answers.first?.card?.face.parts.last?.control, .number("1,234.5", unit: nil))
             XCTAssertEqual(answers.first?.openTitle, "Copy")
             XCTAssertEqual(try String(contentsOf: home.appendingPathComponent("calc-asked"), encoding: .utf8), "1000+234.5\n")
@@ -43,34 +43,33 @@ final class CalculatorSpotTests: SampleSpotsCase {
 
     func testACardOfFreshRatesShowsTheSumWithNoDayOfItsRatesAndItsSymbolFaint() async throws {
         try await withPrivateHome { home in
-            try "row=13.46\ntitle=13,46 €\ndetail=15 USD in EUR\nunit=€\nrates=Nov 10\n".write(to: home.appendingPathComponent("calc-answer"), atomically: true, encoding: .utf8)
+            try "text=13.46\ntitle=13,46 €\ndetail=15 USD in EUR\nunit=€\nrates=Nov 10\n".write(to: home.appendingPathComponent("calc-answer"), atomically: true, encoding: .utf8)
 
             let answers = try await self.calculator.items(query: "15 usd in eur", timeout: 60).answers
 
-            XCTAssertEqual(answers.first?.card?.face.parts.map(\.detail), ["15 USD in EUR", nil])
+            XCTAssertEqual(answers.first?.card?.face.parts.map(\.title), ["15 USD in EUR"])
             XCTAssertEqual(answers.first?.card?.face.parts.last?.numberPieces.map(\.isUnit), [false, true])
         }
     }
 
     func testATimeInAnotherZoneKeepsTheZoneItWasReadIn() async throws {
         try await withPrivateHome { home in
-            try "row=2026-11-11 07:00\ntitle=Wed 7:00 AM\ndetail=Wed 3:00 PM · Tokyo\nunit=AM\n".write(to: home.appendingPathComponent("calc-answer"), atomically: true, encoding: .utf8)
+            try "text=2026-11-11 07:00\ntitle=Wed 7:00 AM\ndetail=Wed 3:00 PM · Tokyo\nunit=AM\n".write(to: home.appendingPathComponent("calc-answer"), atomically: true, encoding: .utf8)
 
             let answers = try await self.calculator.items(query: "3pm tokyo in berlin", timeout: 60).answers
 
-            XCTAssertEqual(answers.first?.card?.face.parts.first?.detail, "Wed 3:00 PM · Tokyo")
+            XCTAssertEqual(answers.first?.card?.face.parts.first?.title, "Wed 3:00 PM · Tokyo")
         }
     }
 
     func testAnAnswerFromOldRatesIsACardWhoseSumWarnsWithTheAgeOfItsRates() async throws {
         try await withPrivateHome { home in
-            try "row=13.46\ntitle=13,46 €\ndetail=15 USD in EUR\nunit=€\nrates=Nov 2, 9 days old\ntone=warn\n".write(to: home.appendingPathComponent("calc-answer"), atomically: true, encoding: .utf8)
+            try "text=13.46\ntitle=13,46 €\ndetail=15 USD in EUR\nunit=€\nrates=Nov 2, 9 days old\ntone=warn\n".write(to: home.appendingPathComponent("calc-answer"), atomically: true, encoding: .utf8)
 
             let answers = try await self.calculator.items(query: "15 usd in eur", timeout: 60).answers
 
             XCTAssertEqual(answers.map(\.run), ["13.46"])
-            XCTAssertEqual(answers.first?.card?.face.parts.first?.detail, "15 USD in EUR · rates of Nov 2, 9 days old")
-            XCTAssertEqual(answers.first?.card?.face.parts.first?.textTone, .warn)
+            XCTAssertEqual(answers.first?.card?.face.parts.first?.title, "15 USD in EUR · rates of Nov 2, 9 days old")
         }
     }
 
@@ -98,9 +97,9 @@ final class CalculatorSpotTests: SampleSpotsCase {
 
     func testAPickCopiesThePlainValue() async throws {
         try await withPrivateHome { home in
-            let toast = try await self.calculator.perform(.item(SpotItem(title: "13,46 €", run: "13.46")), timeout: 60)
+            try await self.calculator.perform(.item(SpotItem(title: "13,46 €", run: "13.46")), timeout: 60)
 
-            XCTAssertEqual(toast, "Copied 13.46")
+            XCTAssertEqual(self.toasts(in: home), ["Copied 13.46"])
             XCTAssertEqual(try String(contentsOf: home.appendingPathComponent("clipboard"), encoding: .utf8), "13.46")
         }
     }
@@ -115,7 +114,8 @@ final class CalculatorSpotTests: SampleSpotsCase {
         let spots = folder.appendingPathComponent("spots", isDirectory: true)
         try FileManager.default.createDirectory(at: spots, withIntermediateDirectories: true)
         defer { try? FileManager.default.removeItem(at: folder) }
-        try FileManager.default.copyItem(at: try calculator.url, to: spots.appendingPathComponent(try calculator.url.lastPathComponent))
+        let source = try calculator.url.deletingLastPathComponent()
+        try FileManager.default.copyItem(at: source, to: spots.appendingPathComponent(source.lastPathComponent))
         let suite = "openspot-calc-\(UUID().uuidString)"
         let defaults = try XCTUnwrap(UserDefaults(suiteName: suite))
         defer { defaults.removePersistentDomain(forName: suite) }

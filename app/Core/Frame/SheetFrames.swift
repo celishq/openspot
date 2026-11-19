@@ -2,6 +2,7 @@ import Foundation
 
 public struct SheetFrames: Sendable {
     public static let mark = "---"
+    public static let notice = "\u{1b}]9"
 
     private enum Escape: Sendable {
         case none
@@ -117,9 +118,9 @@ public struct SheetFrames: Sendable {
         if text.hasPrefix("9;4;") {
             let parts = text.split(separator: ";", omittingEmptySubsequences: false)
             guard parts.count >= 4, ["1", "2", "4"].contains(parts[2]), let percent = Double(parts[3]) else { return [] }
-            return [TextBlock(fields: [.init(key: "progress", value: "\(min(max(percent, 0), 100) / 100)")]).text]
+            return [TextBlock(fields: [.init(key: RootKey.frame.rawValue, value: ""), .init(key: RootKey.progress.rawValue, value: "\(min(max(percent, 0), 100) / 100)")]).text]
         }
         guard text.hasPrefix("9;"), text.count > 2 else { return [] }
-        return [TextBlock(fields: [.init(key: "toast", value: String(text.dropFirst(2)))]).text]
+        return [TextBlock(fields: [.init(key: notice, value: String(text.dropFirst(2)))]).text]
     }
 }

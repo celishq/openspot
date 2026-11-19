@@ -84,7 +84,7 @@ final class PowerCallTests: XCTestCase {
 
         let answer = try run(["power", "readings"])
 
-        XCTAssertEqual(answer.output, "watts=1.29\ncpu-watts=1.23\ngpu-watts=0.06\nane-watts=0.00\nthermal-pressure=nominal\n")
+        XCTAssertEqual(answer.output, "text=power\nwatts=1.29\ncpu-watts=1.23\ngpu-watts=0.06\nane-watts=0.00\nthermal-pressure=nominal\n")
         XCTAssertEqual(answer.code, 0)
     }
 

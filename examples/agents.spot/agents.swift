@@ -1,20 +1,4 @@
 #!/usr/bin/env swift
-// title=Agents
-// icon=sparkles
-// detail=Claude Code and Codex at work
-// on=panel.open
-// on=sheet.open
-// on=clock.5
-// offers=card
-// offers=menubar
-// view=card.swift
-// source=agents
-//
-// field=claude
-// title=Claude command
-//
-// field=codex
-// title=Codex command
 
 // Reads the sessions that Claude Code and Codex keep on disk: what each was last asked, whether it waits for you, and how
 // full its context is. Claude's usage limit comes from `claude -p /usage`, which takes a few seconds, so the spot keeps
@@ -27,14 +11,33 @@ let environment = ProcessInfo.processInfo.environment
 let home = FileManager.default.homeDirectoryForCurrentUser.path
 let data = URL(fileURLWithPath: environment["OPENSPOT_DATA"] ?? FileManager.default.currentDirectoryPath)
 let shell = environment["SHELL"] ?? "/bin/zsh"
-let claude = Command(text: setting("CLAUDE") ?? "claude")
-let codex = Command(text: setting("CODEX") ?? "codex")
+let message = String(decoding: FileHandle.standardInput.readDataToEndOfFile(), as: UTF8.self).split(separator: "\n").map(String.init)
+let claude = Command(text: setting("claude") ?? "claude")
+let codex = Command(text: setting("codex") ?? "codex")
 let arguments = Array(CommandLine.arguments.dropFirst())
+
+/// The first value of a key in the message on stdin, such as `setting.claude`, with its escapes read.
+func value(_ key: String) -> String? {
+    guard let line = message.first(where: { $0.hasPrefix("\(key)=") }) else { return nil }
+    var text = ""
+    var escaped = false
+    for character in line.dropFirst(key.count + 1) {
+        if escaped {
+            text.append(character == "n" ? "\n" : character)
+            escaped = false
+        } else if character == "\\" {
+            escaped = true
+        } else {
+            text.append(character)
+        }
+    }
+    return text
+}
 
 /// The value of a setting of the spot, or nil when it is not set.
 func setting(_ key: String) -> String? {
-    let value = environment["OPENSPOT_SETTING_\(key)"]?.trimmingCharacters(in: .whitespaces)
-    return value?.isEmpty == false ? value : nil
+    let text = value("setting.\(key)")?.trimmingCharacters(in: .whitespaces)
+    return text?.isEmpty == false ? text : nil
 }
 
 /// Runs a program and gives what it printed, or nil when it failed or took longer than the limit.
@@ -143,12 +146,10 @@ func board(claudeLimit: Limit?) -> String {
         button=new-claude
         title=New Claude session
         scope=spot
-        close=true
 
         button=new-codex
         title=New Codex session
         scope=spot
-        close=true
 
         """
 }
@@ -204,21 +205,19 @@ func start(_ command: Command) {
 
 /// Asks for a command in a form, or keeps the one the form gave.
 func change(_ key: String, title: String, current: Command) {
-    let input = String(decoding: FileHandle.standardInput.readDataToEndOfFile(), as: UTF8.self)
-    let given = input.split(separator: "\n").first { $0.hasPrefix("\(key)=") }.map { $0.dropFirst(key.count + 1).trimmingCharacters(in: .whitespaces) }
-    guard let given, !given.isEmpty else {
-        print("title=\(title)\n\nfield=\(key)\ntitle=Command\nvalue=\(current.text)\nplaceholder=\(key)")
+    guard let given = value("input.\(key)")?.trimmingCharacters(in: .whitespaces), !given.isEmpty else {
+        print("frame=\ngrid=\(key)\ntitle=\(title)\n\nfield=\(key)\ntitle=Command\nvalue=\(current.text)\nplaceholder=\(key)")
         return
     }
     guard openspot(["setting", "set", key, given]) else {
-        print("toast=Openspot cannot keep the command.")
+        _ = openspot(["toast", "Openspot cannot keep the command."])
         return
     }
     for name in ["folder", "usage"] { try? FileManager.default.removeItem(at: kept(name, Command(text: given))) }
 }
 
 switch arguments.first {
-case "read":
+case "show":
     let (limit, stale) = keptClaudeLimit()
     print(board(claudeLimit: limit), terminator: "")
     if stale {

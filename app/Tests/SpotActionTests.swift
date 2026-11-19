@@ -12,8 +12,8 @@ final class SpotActionTests: XCTestCase {
         XCTAssertEqual(SpotAction.toggle(state).arguments, ["wifi", "false"])
     }
 
-    func testTheCommandOfAHeaderButtonSendsItsOwnID() throws {
-        let offer = try XCTUnwrap(HeaderButton(block: TextBlock(fields: [.init(key: "button", value: "add"), .init(key: "title", value: "Add")])))
+    func testTheCommandOfAManifestSendsItsOwnID() throws {
+        let offer = try XCTUnwrap(Manifest(text: "[commands.add]\ntitle = 'Add'", folder: "/spots").commands.first)
         XCTAssertEqual(SpotAction.action(CommandAction.command(offer), item: nil).arguments, ["add"])
     }
 
@@ -24,7 +24,7 @@ final class SpotActionTests: XCTestCase {
     func testAClickOnACardWithAReadKeySendsOpenWithNoRow() {
         let url = URL(fileURLWithPath: "/x")
 
-        XCTAssertEqual(Spot(id: "a", name: "A", url: url, read: .panel).click.arguments, ["open"])
+        XCTAssertEqual(Spot(id: "a", name: "A", url: url, on: .panel).click.arguments, ["open"])
     }
 
     func testAClickOnAFileWithNoReadSendsOpenWithNoRow() {
@@ -38,9 +38,11 @@ final class SpotActionTests: XCTestCase {
     }
 
     func testAReadHasNoArgumentsAndItsTextGoesOnStdinWithEachForm() {
-        XCTAssertEqual(SpotAction.read.arguments, ["read"])
-        XCTAssertEqual(SearchQuery(text: "rep", layouts: []).input, "search=rep\n")
-        XCTAssertEqual(SearchQuery(text: "сафари", layouts: []).input, "search=сафари\nform=safari\n")
+        XCTAssertEqual(SpotAction.show.arguments, ["show"])
+        let rep = SearchQuery(text: "rep", layouts: [])
+        let safari = SearchQuery(text: "сафари", layouts: [])
+        XCTAssertEqual(Message(.show, search: rep.text, searchForms: rep.forms).text, "search=rep\n")
+        XCTAssertEqual(Message(.show, search: safari.text, searchForms: safari.forms).text, "search=сафари\nsearch.alt=safari\n")
     }
 
     func testAnActionSendsItsIdAndItsItem() {
@@ -53,7 +55,7 @@ final class SpotActionTests: XCTestCase {
     func testAValueOver64KilobytesInBytesLeavesTheArguments() {
         let long = String(repeating: "é", count: 32_769)
 
-        let sent = SpotAction.set("a", to: long).sent(input: "a=\(long)\nb=1\n")
+        let sent = Message(.set("a", to: long), given: "a=\(long)\nb=1\n").sent
 
         XCTAssertEqual(sent.arguments, ["a"])
         XCTAssertEqual(sent.input, "a=\(long)\nb=1\n")
@@ -62,14 +64,14 @@ final class SpotActionTests: XCTestCase {
     func testALongRunJoinsTheValuesOfAFormAsValue() {
         let long = String(repeating: "x", count: 65_537)
 
-        let sent = SpotAction(arguments: ["edit", long]).sent(input: "title=A\n")
+        let sent = Message(SpotAction(arguments: ["edit", long]), inputs: [.init(key: "title", value: "A")]).sent
 
         XCTAssertEqual(sent.arguments, ["edit"])
-        XCTAssertEqual(sent.input, "title=A\nvalue=\(long)\n")
+        XCTAssertEqual(sent.input, "input.title=A\ninput.value=\(long)\n")
     }
 
     func testAShortValueStaysAndStdinDoesNotChange() {
-        let sent = SpotAction.set("a", to: "b").sent(input: nil)
+        let sent = Message(.set("a", to: "b")).sent
 
         XCTAssertEqual(sent.arguments, ["a", "b"])
         XCTAssertNil(sent.input)

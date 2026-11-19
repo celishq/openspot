@@ -4,7 +4,7 @@ import SwiftUI
 /// folder, the built-in Openspot first, and Add Store…, and 12 with each spot as its card at the size it takes on the grid, under the title of
 /// its group. A plus on a card gets the spot, and a click opens a sheet with its readme, which it asks for then, and, when
 /// it has sample data, its sheet to try. A store whose folder is gone shows Locate… and Remove. A footer holds a hint, the
-/// sort and Done. Each spot is a row of the frame.
+/// sort and Done. Each spot is an item of the frame.
 struct SpotView: View {
     let spot: SpotInput
     @State private var query = ""
@@ -106,7 +106,7 @@ struct SpotView: View {
         }
     }
 
-    /// One spot of the store, from its row: its id, its name, what its button does, its origin, its description, its size,
+    /// One spot of the store, from its item: its id, its name, what its button does, its origin, its description, its size,
     /// whether it has sample data, and the folded words that a search compares, made once.
     private struct Item: Identifiable {
         let id: String
@@ -119,7 +119,7 @@ struct SpotView: View {
         let hasSample: Bool
         let words: String
 
-        init?(_ row: SpotRow) {
+        init?(_ row: SpotItem) {
             guard !row.id.isEmpty, let state = row["step"] else { return nil }
             (id, name, self.state, origin, detail, size) = (row.id, row["title"] ?? row.id, state, row["origin"] ?? "", row["detail"] ?? "", row["size"] ?? "")
             store = row["store"] ?? ""
@@ -147,7 +147,7 @@ struct SpotView: View {
     }
 
     var body: some View {
-        let all = spot.rows.compactMap(Item.init)
+        let all = spot.items.compactMap(Item.init)
         let items = kept(all)
         HStack(spacing: 0) {
             sidebar(all)

@@ -77,7 +77,7 @@ final class SpotMotionProbe: NSObject {
             model.beginEditing()
             return DispatchQueue.main.asyncAfter(deadline: .now() + 1) { self.pullTile() }
         }
-        let target = model.entries.first { spot == nil ? $0.kind == .widget && $0.spot.opens != nil : $0.id == spot }
+        let target = model.entries.first { spot == nil ? $0.isOnGrid && $0.spot.opensOnReturn : $0.id == spot }
         guard let target, let view = panel.contentView else { return finish(with: "no spot to open\n") }
         let link = view.displayLink(target: self, selector: #selector(tick))
         link.add(to: .main, forMode: .common)
@@ -94,7 +94,7 @@ final class SpotMotionProbe: NSObject {
             }
         }
         model.press(target.id)
-        whenRowsArrive {
+        whenItemsArrive {
             self.start = CACurrentMediaTime()
             switch action {
             case "typing": self.type(left: self.presses)
@@ -243,7 +243,7 @@ final class SpotMotionProbe: NSObject {
             self.model.closeMenu()
             guard let id = self.spot else { return self.finish(with: "shots\n") }
             self.model.press(id)
-            self.whenRowsArrive {
+            self.whenItemsArrive {
                 self.model.moveItemLine(by: 2)
                 _ = self.model.handleKey(ActionKey(name: "k", isCommand: true))
                 DispatchQueue.main.asyncAfter(deadline: .now() + 0.6) {
@@ -409,7 +409,7 @@ final class SpotMotionProbe: NSObject {
     }
 
     private func beginOpens() {
-        guard !model.runs.isReading else {
+        guard !model.runs.isShowing else {
             return DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) { self.beginOpens() }
         }
         guard let view = panel.contentView, let panel = panel as? SpotsPanel else { return finish(with: "no panel\n") }
@@ -437,7 +437,7 @@ final class SpotMotionProbe: NSObject {
     }
 
     private func beginSearch() {
-        guard !model.runs.isReading else {
+        guard !model.runs.isShowing else {
             return DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) { self.beginSearch() }
         }
         guard let view = panel.contentView else { return finish(with: "no panel\n") }
@@ -460,9 +460,9 @@ final class SpotMotionProbe: NSObject {
         DispatchQueue.main.asyncAfter(deadline: .now() + pause) { self.search(left: left - 1) }
     }
 
-    private func whenRowsArrive(_ work: @escaping @MainActor @Sendable () -> Void) {
+    private func whenItemsArrive(_ work: @escaping @MainActor @Sendable () -> Void) {
         guard let list = model.openItems, list.holdsItems, !list.isLoading else {
-            return DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) { self.whenRowsArrive(work) }
+            return DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) { self.whenItemsArrive(work) }
         }
         DispatchQueue.main.asyncAfter(deadline: .now() + 1, execute: work)
     }

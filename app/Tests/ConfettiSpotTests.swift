@@ -32,7 +32,7 @@ final class ConfettiSpotTests: SampleSpotsCase {
         var seen: [String] = []
         for try await frame in frames {
             seen.append(frame)
-            if FrameHead(text: frame).end == end { break }
+            if FrameRoot(text: frame).end == end { break }
         }
         return seen
     }
@@ -41,7 +41,7 @@ final class ConfettiSpotTests: SampleSpotsCase {
         let spot = try confetti
 
         XCTAssertEqual(spot.mode, .stay)
-        XCTAssertNil(spot.read)
+        XCTAssertNil(spot.on)
         XCTAssertEqual(spot.offers.map(\.id), ["play"])
         XCTAssertEqual(spot.settings.map(\.id), ["look"])
         XCTAssertEqual(spot.sources, ["confetti"])
@@ -54,14 +54,14 @@ final class ConfettiSpotTests: SampleSpotsCase {
         let script = staying(try await program(in: folder), data: folder, tools: folder)
         defer { script.stop() }
 
-        let frames = try await answer("call=1\narg=look\nenv.OPENSPOT_SETTING_LOOK=Gold\n\n", from: script, until: "1")
+        let frames = try await answer("call=1\narg=look\nsetting.look=Gold\n\n", from: script, until: "1")
         let sample = try await ScriptProcess.output(url: spotFolder.appendingPathComponent("sample.sh"), base: TestEnvironment.values)
 
-        let form = try XCTUnwrap(frames.compactMap { ItemForm(output: SpotOutput(text: $0)) }.first)
+        let form = try XCTUnwrap(frames.compactMap { ItemForm(output: Frame(text: $0)) }.first)
         let choice = try XCTUnwrap(form.soleChoice)
         XCTAssertEqual(choice.value, "gold")
         XCTAssertEqual(choice.options.map(\.id), ["colorful", "gold", "metallic"])
-        let sampled = try XCTUnwrap(ItemForm(output: SpotOutput(text: sample))?.soleChoice)
+        let sampled = try XCTUnwrap(ItemForm(output: Frame(text: sample))?.soleChoice)
         XCTAssertEqual(sampled.options, choice.options)
     }
 
@@ -73,22 +73,23 @@ final class ConfettiSpotTests: SampleSpotsCase {
         let script = staying(try await program(in: folder), data: folder, tools: folder.appendingPathComponent("tools"))
         defer { script.stop() }
 
-        let frames = try await answer("call=1\narg=look\ninput=look=broken\\n\n\n", from: script, until: "1")
+        let frames = try await answer("call=1\narg=look\ninput.look=broken\n\n", from: script, until: "1")
 
-        XCTAssertEqual(try read("calls", in: folder), "setting set look Broken\n")
-        XCTAssertEqual(frames.compactMap { SpotOutput(text: $0).toast }, ["Broken cannot play. Line 2: `nope` is not a colour. Write it as `#RRGGBB`, such as `#FF4D6D`."])
+        XCTAssertEqual(try read("calls", in: folder), "setting set look Broken\ntoast Broken cannot play. Line 2: `nope` is not a colour. Write it as `#RRGGBB`, such as `#FF4D6D`.\n")
+        XCTAssertEqual(frames.compactMap { Frame(text: $0).toast }, [])
     }
 
     func testAPlayOfTheKeptLookThatCannotPlayEndsItsCallAndTheEndOfStdinEndsTheSpot() async throws {
         let folder = try temporaryFolder()
         try FileManager.default.createDirectory(at: folder.appendingPathComponent("looks"), withIntermediateDirectories: true)
         try "title=Broken\nshape=moon\n".write(to: folder.appendingPathComponent("looks/broken.look"), atomically: true, encoding: .utf8)
-        let script = staying(try await program(in: folder), data: folder, tools: folder)
+        try "#!/bin/sh\necho \"$*\" >> '\(folder.path)/calls'\n".writeScript(to: folder.appendingPathComponent("tools/openspot"))
+        let script = staying(try await program(in: folder), data: folder, tools: folder.appendingPathComponent("tools"))
 
-        let frames = try await answer("call=1\narg=read\n\ncall=2\narg=play\nenv.OPENSPOT_SETTING_LOOK=Broken\n\n", from: script, until: "2")
+        _ = try await answer("call=1\narg=show\n\ncall=2\narg=play\nsetting.look=Broken\n\n", from: script, until: "2")
         script.end()
 
-        XCTAssertTrue(frames.contains { SpotOutput(text: $0).toast?.hasPrefix("Broken cannot play. Line 2: there is no shape `moon`.") == true })
+        XCTAssertTrue(try read("calls", in: folder).hasPrefix("toast Broken cannot play. Line 2: there is no shape `moon`."))
         try await wait("the end of the spot") { !script.isRunning }
     }
 }

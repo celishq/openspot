@@ -1,12 +1,4 @@
 #!/bin/sh
-# title=Icon
-# icon=paintbrush.pointed
-# detail=Draw the icon of a spot
-# on=sheet.open
-# view=icon.swift
-# uses=spots
-# drop=png,jpg,jpeg,heic,gif,tiff,svg,pdf,icns
-# offers=none
 data="$OPENSPOT_DATA/icons"
 target=$(cat "$data/target" 2>/dev/null)
 name=$(printf '%s' "$target" | tr '/' '_')
@@ -48,14 +40,14 @@ case "$1" in
     cp "$2" "$file"
     openspot setting set --spot "$target" icon "$file"
     ;;
-  read)
+  show)
     [ -n "$target" ] || { printf 'text=none\ntitle=No spot\ndetail=Choose Change Icon › Draw… in the menu of a card\n'; exit 0; }
     dots=$(cat "$data/$name.draft" 2>/dev/null || cat "$data/$name.dots" 2>/dev/null)
     [ ${#dots} -eq 81 ] || dots=$empty
-    printf 'title=%s\ngrid=drawer drawer\ngrid=clear save\n\n' "$target"
+    printf 'frame=\ntitle=%s\ngrid=drawer drawer\ngrid=clear save\n\n' "$target"
     printf 'view=drawer\ndots=%s\n\n' "$dots"
-    printf 'button=clear\ntitle=Clear\n\n'
-    printf 'button=save\ntitle=Save\nshortcut=return\nlook=strong\nclose=true\n'
+    printf 'button=clear\ntitle=Clear\nclose=false\n\n'
+    printf 'button=save\ntitle=Save\nshortcut=return\nlook=strong\n'
     ;;
   drawer)
     [ -n "$target" ] && [ ${#2} -eq 81 ] || exit 0

@@ -1,2 +1,2 @@
 #!/bin/sh
-printf 'text=time\ntitle=21:45\ndetail=Tokyo'
+printf 'frame=\ngrid.bar=time\n\ntext=time\ntitle=21:45\ndetail=Tokyo'

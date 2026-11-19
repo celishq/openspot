@@ -20,47 +20,55 @@ final class DocExampleTests: SampleSpotsCase {
         return check.terminationStatus == 0 ? nil : text
     }
 
-    func testEachRunnableExampleOfTheDocsRunsInAFolderOfItsOwn() async throws {
+    private func described(_ text: String, of language: String) throws -> Manifest {
+        try Manifest(text: text, folder: "example.spot").script("example.\(language)")
+    }
+
+    func testEachRunnableExampleOfTheDocsRunsInAFolderOfItsOwnWithTheManifestBeforeIt() async throws {
         try await withPrivateHome { home in
             var ran = 0
             for doc in try docs() {
                 let fences = doc.fences
                 for (index, fence) in fences.enumerated() where runnable.contains(fence.language) {
                     let place = "\(doc.path), example \(index + 1)"
+                    let before = index > 0 && fences[index - 1].language == "toml" ? fences[index - 1].text : nil
                     if fence.language == "swift", !fence.text.hasPrefix("#!") {
-                        let header = fences[..<index].last { runnable.contains($0.language) && ($0.language != "swift" || $0.text.hasPrefix("#!")) }.map { SpotHeader(text: $0.text).block }
-                        XCTAssertNotNil(header?.value("view") ?? header?.value("source"), "\(place) is Swift that no view= or source= of the example before it names. Make it a view or a source, or put it in a text fence.")
+                        let spot = fences[..<index].lastIndex { runnable.contains($0.language) && ($0.language != "swift" || $0.text.hasPrefix("#!")) }
+                        let named = spot.flatMap { $0 > 0 && fences[$0 - 1].language == "toml" ? try? described(fences[$0 - 1].text, of: fences[$0].language) : nil }
+                        XCTAssertNotNil(named?.view ?? named?.source.first, "\(place) is Swift that no view or source of the spot.toml before the example above it names. Make it a view or a source, or put it in a text fence.")
                         continue
                     }
-                    let isSpot = fence.text.hasPrefix("#!") || fence.text.hasPrefix("//")
+                    let isSpot = fence.text.hasPrefix("#!") || fence.language == "js"
                     if !isSpot {
                         let lines = fence.text.split(separator: "\n").filter { !$0.isEmpty }
                         XCTAssertTrue(fence.language == "sh" && lines.allSatisfy { $0.hasPrefix("openspot ") }, "\(place) is neither a spot nor openspot commands. Put it in a text fence.")
                         continue
                     }
+                    guard let before else {
+                        XCTFail("\(place) is a spot with no toml fence of its spot.toml right before it.")
+                        continue
+                    }
                     let folder = home.appendingPathComponent("example-\(doc.path.replacingOccurrences(of: "/", with: "-"))-\(index)")
                     let file = folder.spotFile("example", extension: fence.language)
+                    try FileManager.default.createDirectory(at: file.deletingLastPathComponent(), withIntermediateDirectories: true)
+                    try before.write(to: file.deletingLastPathComponent().appendingPathComponent(Manifest.fileName), atomically: true, encoding: .utf8)
                     if fence.language == "js" {
-                        try FileManager.default.createDirectory(at: file.deletingLastPathComponent(), withIntermediateDirectories: true)
                         try fence.text.write(to: file, atomically: true, encoding: .utf8)
                     } else {
                         try fence.text.writeScript(to: file)
                         if fence.language == "sh" { XCTAssertNil(try syntaxFault(of: file), place) }
                     }
-                    let header = SpotHeader(text: fence.text).block
-                    let sources = header.values("source").isEmpty ? [] : fences[(index + 1)...].prefix { $0.language == "swift" && !$0.text.hasPrefix("#!") }
-                    XCTAssertEqual(sources.count, header.values("source").count, "\(place) names \(header.values("source").count) sources, and \(sources.count) Swift examples follow it")
-                    for (name, source) in zip(header.values("source"), sources) {
+                    let manifest = try described(before, of: fence.language)
+                    let named = manifest.source
+                    let sources = named.isEmpty ? [] : fences[(index + 1)...].prefix { $0.language == "swift" && !$0.text.hasPrefix("#!") }
+                    XCTAssertEqual(sources.count, named.count, "\(place) names \(named.count) sources, and \(sources.count) Swift examples follow it")
+                    for (name, source) in zip(named, sources) {
                         try source.text.write(to: file.deletingLastPathComponent().appendingPathComponent(name), atomically: true, encoding: .utf8)
                     }
-                    if let view = header.value("view") {
+                    if let view = manifest.view {
                         let source = fences[(index + 1)...].first { $0.language == "swift" }
                         XCTAssertNotNil(source, "\(place) names the view \(view), and no Swift example follows it")
                         try source?.text.write(to: file.deletingLastPathComponent().appendingPathComponent(view), atomically: true, encoding: .utf8)
-                    }
-                    let named = header.fields.filter { $0.key.hasPrefix("grid.") }.flatMap { $0.value.split(separator: " ").map(String.init) } + header.values("to")
-                    for name in Set(named) {
-                        try "#!/bin/sh\n# on=clock.60\nprintf 'text=t\\ntitle=T\\n'\n".writeScript(to: folder.spotFile(name))
                     }
 
                     let faults = await SpotCheck(folder: SpotsFolder(url: folder), views: ViewLibrary(cache: home.appendingPathComponent("views")), programs: SwiftProgram(cache: home.appendingPathComponent("programs")), environment: TestEnvironment.values).faults()
@@ -70,7 +78,7 @@ final class DocExampleTests: SampleSpotsCase {
                         XCTFail("\(place) does not load")
                         continue
                     }
-                    if spot.read == nil, spot.kind != .widget {
+                    if spot.on == nil {
                         let calls = spot.offers.map(\.id) + spot.offeredActions.map(\.action.id)
                         for call in calls.isEmpty ? ["open"] : calls {
                             do {

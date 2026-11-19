@@ -7,16 +7,16 @@ final class SlashCommandPanelTests: PanelCase {
     }
 
     private func writeNotes() throws {
-        try script("notes", header: "title=Notes\non=sheet.open\n\nbutton=add\ntitle=Add note\nplaceholder=What to add\n\nbutton=find\ntitle=Find note\nplaceholder=What to find", """
+        try script("notes", toml: "title = 'Notes'\non = ['sheet.open']\n[commands.add]\ntitle = 'Add note'\nplaceholder = 'What to add'\n[commands.find]\ntitle = 'Find note'\nplaceholder = 'What to find'", """
         stdin=$(cat)
         printf '%s\\n%s\\n' "$*" "$stdin" >> '\(input.path)'
         search=$(printf '%s\\n' "$stdin" | sed -n 's/^search=//p' | head -n 1)
-        name=$(printf '%s\\n' "$stdin" | sed -n 's/^name=//p' | head -n 1)
+        name=$(printf '%s\\n' "$stdin" | sed -n 's/^input\\.name=//p' | head -n 1)
         case "$1" in
           add)
-            if [ "$search" = ask ]; then printf 'title=Add a note\\n\\nfield=name\\ntitle=Name\\n'; else printf 'toast=Saved %s%s\\n' "$search" "$name"; fi ;;
+            if [ "$search" = ask ]; then printf 'frame=\\ntitle=Add a note\\n\\nfield=name\\ntitle=Name\\n'; else printf '\\033]9;Saved %s%s\\007' "$search" "$name"; fi ;;
           find) printf 'text=Found %s\\n' "$search" ;;
-          *) printf 'row=a\\ntitle=A\\n' ;;
+          *) printf 'text=a\\ntitle=A\\n' ;;
         esac
         """)
     }
@@ -38,7 +38,7 @@ final class SlashCommandPanelTests: PanelCase {
 
     func testASlashWordListsTheMatchingCommandsWithTheFirstHighlighted() async throws {
         try writeNotes()
-        try script("trash", header: "title=Trash", "printf 'toast=Emptied\\n'")
+        try script("trash", toml: "title = 'Trash'", "printf '\\033]9;Emptied\\007'")
         await open()
 
         type("/note buy milk")
@@ -49,6 +49,21 @@ final class SlashCommandPanelTests: PanelCase {
         XCTAssertEqual(model.hint, "⏎ Add note \"buy milk\"")
         XCTAssertTrue(model.handleSearchKey(ActionKey(name: "down")))
         XCTAssertEqual(model.hint, "⏎ Find note \"buy milk\"")
+    }
+
+    func testASpotThatThePersonKeepsOutOfSearchIsNotFoundAndListsNoCommand() async throws {
+        try writeNotes()
+        try script("trash", toml: "title = 'Trash'", "printf '\\033]9;Emptied\\007'")
+        _ = try model.files.config.change { $0.arrangement.arrange(["notes"]) }
+        try String(contentsOf: model.files.config.url, encoding: .utf8).appending("search = false\n").write(to: model.files.config.url, atomically: true, encoding: .utf8)
+        await open()
+
+        type("notes")
+        XCTAssertFalse(model.visible.contains { $0.spot.id == "notes" })
+        type("/note")
+        XCTAssertEqual(model.visible.map(\.state.title), [])
+        type("trash")
+        XCTAssertEqual(model.visible.first?.id, "trash")
     }
 
     func testTheHintOfTheHighlightedCommandShowsUntilTextFollows() async throws {
@@ -79,9 +94,9 @@ final class SlashCommandPanelTests: PanelCase {
     }
 
     func testAStayingSpotAnswersASlashCommand() async throws {
-        try script("ping", header: "title=Ping\nmode=stay\n\nbutton=ping\ntitle=Ping\nplaceholder=What to ping\n\nbutton=pong\ntitle=Pong\nplaceholder=What to pong", """
+        try script("ping", toml: "title = 'Ping'\nmode = 'stay'\n[commands.ping]\ntitle = 'Ping'\nplaceholder = 'What to ping'\n[commands.pong]\ntitle = 'Pong'\nplaceholder = 'What to pong'", """
         . "$OPENSPOT_SH"
-        main() { case "$1" in ping) openspot_kv toast "Ping $(value search)" ;; esac; }
+        main() { case "$1" in ping) printf '\\033]9;Ping %s\\007' "$(value search)" ;; esac; }
         openspot_serve main "$@"
         """)
         await open()
@@ -105,7 +120,7 @@ final class SlashCommandPanelTests: PanelCase {
     }
 
     func testWithNoTextReturnRunsTheCommandOfItsRow() async throws {
-        try script("solo", header: "title=Solo\n\nbutton=solo\ntitle=Solo\nplaceholder=What", "printf 'toast=Ran\\n'")
+        try script("solo", toml: "title = 'Solo'\n[commands.solo]\ntitle = 'Solo'\nplaceholder = 'What'", "printf '\\033]9;Ran\\007'")
         await open()
 
         type("/solo")
@@ -126,9 +141,9 @@ final class SlashCommandPanelTests: PanelCase {
 
     func testALoneSlashListsEveryCommandThatTakesText() async throws {
         try writeNotes()
-        try script("windows", header: "title=Windows\n\nbutton=full\ntitle=Full screen", "printf 'toast=Full\\n'")
-        try script("trash", header: "title=Trash", "printf 'toast=Emptied\\n'")
-        try script("say", header: "title=Say\nplaceholder=What to say", "printf 'toast=Said\\n'")
+        try script("windows", toml: "title = 'Windows'\n[commands.full]\ntitle = 'Full screen'", "printf '\\033]9;Full\\007'")
+        try script("trash", toml: "title = 'Trash'", "printf '\\033]9;Emptied\\007'")
+        try script("say", toml: "title = 'Say'\nplaceholder = 'What to say'", "printf '\\033]9;Said\\007'")
         await open()
 
         type("/")
@@ -138,19 +153,18 @@ final class SlashCommandPanelTests: PanelCase {
         XCTAssertEqual(model.selected, 0)
     }
 
-    func testASpotWithAPlaceholderRunsOpenWithTheText() async throws {
-        try script("say", header: "title=Say\nplaceholder=What to say", """
+    func testASpotWithAPlaceholderOpensItsSheetWithTheText() async throws {
+        try script("say", toml: "title = 'Say'\nplaceholder = 'What to say'", """
         stdin=$(cat)
         printf '%s\\n%s\\n' "$*" "$stdin" >> '\(input.path)'
-        printf 'toast=Said\\n'
+        printf '\\033]9;Said\\007'
         """)
         await open()
 
         type("/say hi")
         model.runSelected()
 
-        try await wait("the toast") { self.host.confirms == ["Said"] }
-        XCTAssertTrue(sent.contains("open\nsearch=hi"), sent)
+        try await wait("the show of its sheet") { self.model.openSheetID == "say" && self.sent.hasPrefix("show\n") && self.sent.contains("search=hi") }
     }
 
     func testASlashAfterTheTextListsEveryCommandAndReturnSendsTheText() async throws {
@@ -165,11 +179,11 @@ final class SlashCommandPanelTests: PanelCase {
     }
 
     func testAFormButtonOfASpotWithAPlaceholderOpensItsFormFilledByTheSpot() async throws {
-        try script("jot", header: "title=Jot\non=panel.open\non=sheet.open", """
+        try script("jot", toml: "title = 'Jot'\non = ['panel.open', 'sheet.open']", """
         . "$OPENSPOT_SH"
         case "$1" in
-          new) printf 'title=New jot\\n\\nfield=text\\ntitle=Text\\n'; openspot_kv value "$(value search)" ;;
-          *) printf 'row=a\\ntitle=A\\n\\nbutton=new\\ntitle=New jot\\nscope=spot\\nform=true\\nplaceholder=What to jot\\n' ;;
+          new) printf 'frame=\\ntitle=New jot\\n\\nfield=text\\ntitle=Text\\n'; openspot_kv value "$(value search)" ;;
+          *) printf 'text=a\\ntitle=A\\n\\nbutton=new\\ntitle=New jot\\nscope=spot\\nform=true\\nplaceholder=What to jot\\n' ;;
         esac
         """)
         await open()
@@ -234,7 +248,7 @@ final class SlashCommandPanelTests: PanelCase {
     }
 
     func testASheetSpotGetsTheTextOnTheStdinOfItsRead() async throws {
-        try script("translate", header: "title=Translate\non=sheet.open\nplaceholder=Text to translate", """
+        try script("translate", toml: "title = 'Translate'\non = ['sheet.open']\nplaceholder = 'Text to translate'", """
         stdin=$(cat)
         printf '%s\\n%s\\n' "$*" "$stdin" >> '\(input.path)'
         printf 'field=input\\n'
@@ -246,6 +260,6 @@ final class SlashCommandPanelTests: PanelCase {
 
         try await wait("the sheet") { self.model.openSheetID == "translate" }
         try await wait("the text in the read") { self.sent.contains("search=hello world") }
-        XCTAssertTrue(sent.contains("read\n"), sent)
+        XCTAssertTrue(sent.contains("show\n"), sent)
     }
 }

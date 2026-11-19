@@ -1,13 +1,7 @@
 #!/bin/sh
-# title=Liquid battery
-# icon=battery.100
-# detail=The battery as a liquid that fills its card from the bottom
-# on=panel.open
-# view=battery.swift
-# offers=card
 case "$1" in
-  read) report=$(pmset -g batt) ;;
-  show) report=$2 ;;
+  show) report=$(pmset -g batt) ;;
+  report) report=$2 ;;
   *) exit 0 ;;
 esac
 printf '%s\n' "$report" | awk '
@@ -16,7 +10,7 @@ printf '%s\n' "$report" | awk '
   END {
     if (line == "") line = first
     if (line == "") {
-      printf "view=liquid\ntitle=–\ndetail=No battery\nicon=powerplug.fill\nvalue=0\n"
+      printf "frame=\ngrid=liquid\n\nview=liquid\ntitle=–\ndetail=No battery\nicon=powerplug.fill\nvalue=0\n"
       exit
     }
     $0 = line
@@ -33,5 +27,5 @@ printf '%s\n' "$report" | awk '
       tone = "good"
     }
     if (percent == 100) detail = "Full"
-    printf "view=liquid\ntitle=%d%%\ndetail=%s\nicon=%s\nvalue=%s\ntone=%s\n", percent, (detail == "" ? "On battery" : detail), symbol, percent / 100, tone
+    printf "frame=\ngrid=liquid\n\nview=liquid\ntitle=%d%%\ndetail=%s\nicon=%s\nvalue=%s\ntone=%s\n", percent, (detail == "" ? "On battery" : detail), symbol, percent / 100, tone
   }'

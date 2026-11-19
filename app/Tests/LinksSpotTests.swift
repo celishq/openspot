@@ -109,7 +109,7 @@ final class LinksSpotTests: SampleSpotsCase {
 
             try await self.savedLink("https://icons.test/page", in: links)
 
-            XCTAssertFalse(links.read?.has(.event(SpotEvent.appLaunch)) == true)
+            XCTAssertFalse(links.on?.has(.event(SpotEvent.appLaunch)) == true)
             XCTAssertTrue(FileManager.default.fileExists(atPath: icons.appendingPathComponent("icons.test.png").path))
         }
     }
@@ -140,7 +140,7 @@ final class LinksSpotTests: SampleSpotsCase {
             exec /bin/sleep 600
             """.writeScript(to: folder.appendingPathComponent("tools/sips"))
             let icons = folder.appendingPathComponent(".config/openspot/data/links/icons")
-            let save = ScriptProcess(url: links.url, arguments: ["new"], mode: .once(input: "title=Site\nurl=https://icons.test\n"), stopPause: 0.5, dataName: links.dataName, base: TestEnvironment.values)
+            let save = ScriptProcess(url: links.url, arguments: ["new"], mode: .once(input: "input.title=Site\ninput.url=https://icons.test\n"), stopPause: 0.5, dataName: links.dataName, base: TestEnvironment.values)
             let frames = save.start()
 
             try await self.wait("sips") { FileManager.default.fileExists(atPath: folder.appendingPathComponent("sips.pid").path) }
@@ -180,7 +180,7 @@ final class LinksSpotTests: SampleSpotsCase {
             """.writeScript(to: folder.appendingPathComponent("tools/curl"))
             let icons = folder.appendingPathComponent(".config/openspot/data/links/icons")
             let parts = { (try? FileManager.default.contentsOfDirectory(atPath: icons.path))?.filter { $0.hasPrefix(".") } ?? [] }
-            let save = ScriptProcess(url: links.url, arguments: ["new"], mode: .once(input: "title=Slow\nurl=https://slow.test\n"), stopPause: 0.5, dataName: links.dataName, base: TestEnvironment.values)
+            let save = ScriptProcess(url: links.url, arguments: ["new"], mode: .once(input: "input.title=Slow\ninput.url=https://slow.test\n"), stopPause: 0.5, dataName: links.dataName, base: TestEnvironment.values)
             let frames = save.start()
 
             try await self.wait("the part of the icon") { !parts().isEmpty }
@@ -314,7 +314,8 @@ final class LinksSpotTests: SampleSpotsCase {
             var draft = FormDraft(form: try await links.form(new, item: nil, timeout: 60))
             draft.set("Work", for: "title")
             draft.set("~/My Work", for: "url")
-            let run = try await links.submit(new, item: nil, draft: draft, timeout: 60)
+            _ = try await links.submit(new, item: nil, draft: draft, timeout: 60)
+            let run = try self.read("selected", in: folder).trimmingCharacters(in: .newlines)
             let all = try await links.items(timeout: 60).items
             let item = try XCTUnwrap(all.first { $0.run == run })
 

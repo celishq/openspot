@@ -66,12 +66,12 @@ public struct SpotPart: Equatable, Sendable, Identifiable {
     public let mark: MetricValue?
     public private(set) var values: [String: [String]]
 
-    public private(set) var rows: [[String]] = []
+    public private(set) var items: [[String]] = []
 
-    func holding(rows: [[String]]) -> SpotPart {
-        guard isOpen, !rows.isEmpty else { return self }
+    func holding(items: [[String]]) -> SpotPart {
+        guard isOpen, !items.isEmpty else { return self }
         var part = self
-        part.rows = rows
+        part.items = items
         return part
     }
 
@@ -97,7 +97,7 @@ public struct SpotPart: Equatable, Sendable, Identifiable {
         detail = block.value("detail")
         key = kind == .hotkey ? nil : block.value("shortcut").flatMap(ActionKey.init(text:))
         asksToRecord = kind == .hotkey && block.flag("recording") == true
-        closes = block.flag("close") ?? false
+        closes = block.flag("close") ?? kind.presses
         grows = block.flag("grow") ?? true
         align = block.value("align").flatMap(Align.init(rawValue:))
         let named = block.value("look").flatMap(Look.init(rawValue:))
@@ -114,7 +114,7 @@ public struct SpotPart: Equatable, Sendable, Identifiable {
         mark = control == .none && kind == .text ? Self.mark(block) : nil
     }
 
-    private static func mark(_ block: TextBlock) -> MetricValue? {
+    static func mark(_ block: TextBlock) -> MetricValue? {
         guard let data = BlockKind.text.data?(block) else { return nil }
         guard data.value != nil || data.points != nil else { return nil }
         return MetricValue(
@@ -161,8 +161,7 @@ public struct SpotPart: Equatable, Sendable, Identifiable {
     }
 
     public var ringWords: String? {
-        guard mark?.kind == .gauge, let detail else { return nil }
-        return detail.hasSuffix("%") ? String(detail.dropLast()) : detail
+        detail == nil ? nil : mark?.ringWords
     }
 
     public var fillsHeight: Bool {

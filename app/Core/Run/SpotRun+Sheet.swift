@@ -1,7 +1,7 @@
 import Foundation
 
 extension SpotRun {
-    public func open(need: ReadNeed = .moment, waits: Bool = false, onReady: @escaping () -> Void) {
+    public func open(need: ShowNeed = .moment, waits: Bool = false, onReady: @escaping () -> Void) {
         runs.willOpen(self)
         acted()
         settle()
@@ -13,8 +13,8 @@ extension SpotRun {
         } else {
             onReady()
         }
-        read(need: need)
-        if !isReading, answered == nil { dropUnshownSheet() }
+        show(need: need)
+        if !isShowing, answered == nil { dropUnshownSheet() }
         if answered == nil, runs.isBuilding(spot) {
             after(Self.buildPause, key: Self.buildKey) { [weak self] in self?.sayBuilding() }
         }
@@ -42,7 +42,7 @@ extension SpotRun {
         heardKind = nil
         if panel?.isSelectionMoved == true { panel?.clearSelection() }
         link.settle()
-        stopUnwantedRead()
+        stopUnwantedShow()
         runs.updateClock()
     }
 
@@ -74,9 +74,7 @@ extension SpotRun {
         settle()
         list.selectFirst()
         if panel == nil, answered != nil { panel = lastAnswer.flatMap(SheetParts.init(output:)) }
-        if let read = spot.read, spot.kind.opensSheet || read.has(.panel) {
-            self.read(reason: spot.kind.opensSheet ? .sheet : .panel)
-        }
+        show(event: spot.kind.opensSheet ? .sheet : .panel)
         link.settle()
         runs.updateClock()
     }
@@ -92,12 +90,12 @@ extension SpotRun {
             }
             if wasOpen { onReport(.closed) }
         }
-        stopUnwantedRead()
+        stopUnwantedShow()
         link.settle()
     }
 
     func panelOpened() {
-        if isOpen { read() }
+        if isOpen { show() }
         link.settle()
     }
 
@@ -105,8 +103,8 @@ extension SpotRun {
         link.scanned(stamp)
     }
 
-    func stopReads() {
-        if let read = running(Self.readKey) { stop(read) }
+    func stopShows() {
+        if let show = running(Self.showKey) { stop(show) }
         if let answer = running(Self.answerKey) { stop(answer) }
         link.end()
     }
@@ -128,16 +126,16 @@ extension SpotRun {
         pauses = [:]
         waitingFiles = []
         waitingKeys = []
-        readsAgain = false
+        showsAgain = false
         sheetAgain = false
         eventAgain = nil
         calls.forEach(stop)
         link.leave()
     }
 
-    private func stopUnwantedRead() {
+    private func stopUnwantedShow() {
         guard !isWanted else { return }
-        if let read = running(Self.readKey), !finishesRead { stop(read) }
+        if let show = running(Self.showKey), !finishesShow { stop(show) }
         if let search = running(Self.searchKey) { stop(search) }
     }
 

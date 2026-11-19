@@ -1,7 +1,8 @@
+frame=
 grid.large=cover cover cover song song song
 grid.large=cover cover cover time time time
 grid.large=cover cover cover prev play next
-main=song
+grid.bar=song
 
 picture=cover
 icon=music.note
@@ -18,13 +19,16 @@ button=prev
 title=Previous
 icon=backward.fill
 look=bare
+close=false
 
 button=play
 title=Pause
 icon=pause.fill
 look=bare
+close=false
 
 button=next
 title=Next
 icon=forward.fill
 look=bare
+close=false

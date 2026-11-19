@@ -1,0 +1,5 @@
+title = "Memory"
+icon = "memorychip"
+detail = "The memory in use"
+on = ["system.load"]
+mode = "stay"

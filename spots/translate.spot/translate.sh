@@ -1,15 +1,9 @@
 #!/bin/sh
-# icon=translate
-# detail=Between languages
-# placeholder=Text to translate
-# on=sheet.open
-# uses=clipboard
-# offers=card
 . "$OPENSPOT_SH"
 export LC_ALL=en_US.UTF-8
 
 saved="$OPENSPOT_DATA/translate"
-known="$OPENSPOT_DATA/translate-languages"
+known="$OPENSPOT_DATA/languages"
 settings='x-apple.systempreferences:com.apple.Localization-Settings.extension'
 
 # Prints a field of a block, as it is written, from the lines given.
@@ -28,13 +22,13 @@ languages() {
 
 # Prints the name of a language.
 name() {
-  [ -s "$known" ] && awk -v code="$1" -F= '$1 == "language" { found = $2 == code } $1 == "name" && found { print $2; exit }' "$known"
+  [ -s "$known" ] && awk -v code="$1" -F= '$1 == "text" { found = $2 == code } $1 == "title" && found { print $2; exit }' "$known"
 }
 
 # Prints the options of a language menu, each as a block.
 options() {
   if [ -s "$known" ]; then
-    awk -F= '$1 == "language" { code = $2 } $1 == "name" { print ""; print "option=" code; print "title=" $2 }' "$known"
+    awk -F= '$1 == "text" { code = $2 } $1 == "title" { print ""; print "option=" code; print "title=" $2 }' "$known"
   else
     printf '\noption=en\ntitle=English\n'
   fi
@@ -95,7 +89,7 @@ show() {
     corner=copy
   fi
 
-  printf 'grid=source source . .\ngrid=input input input input\ngrid=input input input swap\ngrid=- - - swap\n'
+  printf 'frame=\ngrid=source source . .\ngrid=input input input input\ngrid=input input input swap\ngrid=- - - swap\n'
   printf 'grid=target target . swap\ngrid=output output output output\ngrid=output output output %s\n' "$corner"
   printf '\n'
 
@@ -113,24 +107,24 @@ show() {
 
   printf 'field=output\nvalue=%s\nplaceholder=Translation\nreadonly=true\n\n' "$output"
 
-  printf 'button=swap\nicon=arrow.up.arrow.down\nshortcut=cmd+shift+s\n\n'
+  printf 'button=swap\nicon=arrow.up.arrow.down\nshortcut=cmd+shift+s\nclose=false\n\n'
 
   if [ "$corner" = settings ]; then
     printf 'button=settings\nalign=right\nlook=chip\ntitle=Open Settings\n'
   elif [ "$corner" = copy ]; then
-    printf 'button=copy\nalign=right\nlook=chip\ntitle=Copy\nshortcut=cmd+return\nclose=true\n'
+    printf 'button=copy\nalign=right\nlook=chip\ntitle=Copy\nshortcut=cmd+return\n'
   fi
 }
 
-input=$(value input; printf x)
+input=$(value input.input; printf x)
 input=${input%x}
 typed=$(value search)
 [ -z "$typed" ] || input=$typed
-source=$(value source)
-target=$(value target)
+source=$(value input.source)
+target=$(value input.target)
 [ -n "$source" ] || source=$(field source "$(cat "$saved" 2>/dev/null)")
 [ -n "$target" ] || target=$(field target "$(cat "$saved" 2>/dev/null)")
-if [ ! -s "$known" ] && { [ "$1" = read ] || [ -z "$1" ]; }; then
+if [ ! -s "$known" ] && { [ "$1" = show ] || [ -z "$1" ]; }; then
   (source=${source:-auto}; target=${target:-en}; output=; status=; detected=; show)
   printf -- '---\n'
 fi
@@ -149,8 +143,8 @@ case "$1" in
     open "$settings"
     ;;
   copy)
-    value output | openspot clipboard copy
-    printf 'toast=Copied\n'
+    value input.output | openspot clipboard copy
+    openspot toast Copied
     ;;
   swap)
     translate

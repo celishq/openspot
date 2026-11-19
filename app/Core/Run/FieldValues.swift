@@ -1,41 +1,23 @@
 import Foundation
 
 struct FieldValues: Equatable, Sendable {
-    static let variablePrefix = "OPENSPOT_SETTING_"
-    static let inputPrefix = "setting."
     static let hidden = "•••"
 
-    let variables: [String: String]
-    let input: String
+    let settings: [TextBlock.Field]
     let secrets: [String]
 
     init(of spot: Spot, in settings: [String: [String: String]], secrets kept: [String: String]) {
         let plain = settings[spot.id] ?? [:]
-        var variables: [String: String] = [:]
         var lines: [TextBlock.Field] = []
         var secrets: [String] = []
         for field in spot.settings {
-            if field.isSecret {
-                guard let value = kept[field.id], !value.isEmpty else { continue }
-                lines.append(.init(key: Self.inputPrefix + field.id, value: value))
-                secrets.append(value)
-            } else if let value = plain[field.id], !value.isEmpty, value.utf8.count <= SpotAction.argumentLimit {
-                variables[Self.variable(of: field.id)] = value
-            }
+            let value = field.isSecret ? kept[field.id] : plain[field.id]
+            guard let value, !value.isEmpty else { continue }
+            lines.append(.init(key: field.id, value: value))
+            if field.isSecret { secrets.append(value) }
         }
-        self.variables = variables
-        input = TextBlock(fields: lines).text
+        self.settings = lines
         self.secrets = secrets
-    }
-
-    static func variable(of key: String) -> String {
-        variablePrefix + String(key.uppercased().map { $0.isASCII && ($0.isLetter || $0.isNumber) ? $0 : "_" })
-    }
-
-    func input(with given: String?) -> String? {
-        guard !input.isEmpty else { return given }
-        guard let given, !given.isEmpty else { return input }
-        return given + (given.hasSuffix("\n") ? "" : "\n") + input
     }
 
     func hiding(_ text: String) -> String {

@@ -6,7 +6,7 @@ struct SpotActionMenuView: View, @MainActor Equatable {
     let menu: ActionMenu
     let frame: ActionMenuFrame
     var isSettled = true
-    var work: (ActionMenu.Row) -> ScriptCall? = { _ in nil }
+    var act: (ActionMenu.Row) -> ScriptCall? = { _ in nil }
     let onPress: (Int) -> Void
     var onPoint: (Int) -> Void = { _ in }
     var onSearch: @MainActor @Sendable (String) -> Void = { _ in }
@@ -47,7 +47,7 @@ struct SpotActionMenuView: View, @MainActor Equatable {
     }
 
     private func button(_ row: ActionMenu.Row, at index: Int) -> some View {
-        let call = work(row)
+        let call = act(row)
         let isConfirming = call == nil && menu.confirming != nil && row.action?.id == menu.confirming
         return Button {
             onPress(index)

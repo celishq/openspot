@@ -5,9 +5,11 @@ public struct SpotArrangement: Equatable, Sendable {
         public let id: String
         public var size: SpotSize?
         public var isOnGrid: Bool?
+        public var isFound: Bool?
         public var isEnabled: Bool?
         public var isGlobal: Bool?
         public var isInMenuBar: Bool?
+        public var isWindow: Bool?
         public var key: ActionKey?
         public var panel: GridPanel?
 
@@ -53,12 +55,20 @@ public struct SpotArrangement: Equatable, Sendable {
         choice(of: id)?.isOnGrid
     }
 
+    public func isFound(of id: String) -> Bool? {
+        choice(of: id)?.isFound
+    }
+
     public func panel(of id: String) -> GridPanel? {
         choice(of: id)?.panel
     }
 
     public func isGlobal(of id: String) -> Bool? {
         choice(of: id)?.isGlobal
+    }
+
+    public func isWindow(of id: String) -> Bool? {
+        choice(of: id)?.isWindow
     }
 
     public var menuBar: Set<String> {
@@ -104,6 +114,10 @@ public struct SpotArrangement: Equatable, Sendable {
         change(id) { $0.isInMenuBar = isInMenuBar }
     }
 
+    public mutating func set(isWindow: Bool, of id: String) {
+        change(id) { $0.isWindow = isWindow }
+    }
+
     private mutating func change(_ id: String, _ work: (inout Choice) -> Void) {
         if places[id] == nil { choices.append(Choice(id: id)) }
         choices.indices.filter { choices[$0].id == id }.forEach { work(&choices[$0]) }
@@ -115,9 +129,11 @@ public struct SpotArrangement: Equatable, Sendable {
                 ("id", .string(choice.id)),
                 ("size", (choice.size?.name).map { .string($0) }),
                 ("grid", choice.isOnGrid.map { .boolean($0) }),
+                ("search", choice.isFound.map { .boolean($0) }),
                 ("enabled", choice.isEnabled.map { .boolean($0) }),
                 ("global", choice.isGlobal.map { .boolean($0) }),
                 ("tray", choice.isInMenuBar.map { .boolean($0) }),
+                ("window", choice.isWindow.map { .boolean($0) }),
                 ("key", (choice.key?.text).map { .string($0) }),
                 ("side", (choice.panel?.rawValue).map { .string($0) })
             ])

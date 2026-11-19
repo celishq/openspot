@@ -1,0 +1,9 @@
+icon = "arrow.triangle.branch"
+detail = "Open a git repo"
+on = ["sheet.open"]
+uses = ["clipboard"]
+
+[settings.folder]
+
+[settings.editor]
+title = "Default app"

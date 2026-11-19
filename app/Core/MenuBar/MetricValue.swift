@@ -1,0 +1,97 @@
+import Foundation
+
+public struct MetricValue: Equatable, Sendable {
+    public enum Tone: String, Sendable {
+        case good
+        case warn
+        case bad
+    }
+
+    public struct Row: Equatable, Sendable {
+        public let title: String
+        public let detail: String?
+        public let tone: Tone?
+
+        public init(title: String, detail: String? = nil, tone: Tone? = nil) {
+            self.title = title
+            self.detail = detail
+            self.tone = tone
+        }
+    }
+
+    public let title: String
+    public let detail: String?
+    public let symbol: String?
+    public let tone: Tone?
+    public let value: Double?
+    public let points: [Double]?
+    public let max: Double?
+    public let rows: [Row]?
+    public let isHidden: Bool
+
+    public init(
+        title: String,
+        detail: String? = nil,
+        symbol: String? = nil,
+        tone: Tone? = nil,
+        value: Double? = nil,
+        points: [Double]? = nil,
+        max: Double? = nil,
+        rows: [Row]? = nil,
+        isHidden: Bool = false
+    ) {
+        self.title = title
+        self.detail = detail
+        self.symbol = symbol
+        self.tone = tone
+        self.value = value
+        self.points = points
+        self.max = max
+        self.rows = rows
+        self.isHidden = isHidden
+    }
+
+    public init?(output: Frame) {
+        let main = output.metric?.fields.first?.value
+        let rows = output.items.filter { $0.run != main }.map { Row(title: $0.title, detail: $0.subtitle, tone: $0.tone) }
+        guard let block = output.metric, let data = output.metricData else {
+            guard output.errors.isEmpty || !rows.isEmpty else { return nil }
+            self.init(title: rows.isEmpty ? "–" : String(rows.count), rows: rows.isEmpty ? nil : rows, isHidden: rows.isEmpty)
+            return
+        }
+        let isNumber = output.valueKind == .number
+        guard let title = (isNumber ? block.value("value") : block.value("title")) ?? (rows.isEmpty ? nil : String(rows.count)) else { return nil }
+        self.init(
+            title: title,
+            detail: isNumber ? block.value("title") : block.value("detail"),
+            symbol: Icon(text: block.value("icon"))?.symbol,
+            tone: block.value("tone").flatMap(Tone.init),
+            value: data.value,
+            points: data.points,
+            max: block.number("max"),
+            rows: rows.isEmpty ? nil : rows
+        )
+    }
+
+    public var kind: MetricKind {
+        if rows != nil { return .rows }
+        if value != nil { return .gauge }
+        if points != nil { return .trend }
+        return tone != nil && symbol == nil ? .status : .value
+    }
+
+    public var ringWords: String? {
+        guard kind == .gauge else { return nil }
+        return title.hasSuffix("%") ? String(title.dropLast()) : title
+    }
+
+    public var fill: Double {
+        Swift.min(Swift.max(value ?? 0, 0), 1)
+    }
+
+    public var scaledPoints: [Double] {
+        let points = points ?? []
+        guard let top = self.max ?? points.max(), top > 0 else { return points.map { _ in 0 } }
+        return points.map { Swift.min(Swift.max($0 / top, 0), 1) }
+    }
+}

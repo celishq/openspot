@@ -1,0 +1,5 @@
+icon = "link"
+detail = "Open a link"
+on = ["panel.open"]
+uses = ["network", "clipboard"]
+offers = ["search"]

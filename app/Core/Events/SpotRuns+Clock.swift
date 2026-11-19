@@ -11,23 +11,23 @@ extension SpotRuns {
         let time = now()
         var due: Date?
         for sheet in sheets.values {
-            guard let read = sheet.spot.read else { continue }
+            guard let on = sheet.spot.on else { continue }
             let isWanted = sheet.isWanted
-            if read.waitsForEvents {
+            if on.waitsForEvents {
                 if !isWanted {
-                    sheet.clockRead = nil
-                } else if sheet.clockRead == nil {
-                    sheet.clockRead = time
-                    sheet.read(need: .clock, reason: .clock(nil))
+                    sheet.clockShown = nil
+                } else if sheet.clockShown == nil {
+                    sheet.clockShown = time
+                    sheet.show(need: .clock, event: .clock(nil))
                 }
                 continue
             }
-            guard isWanted, let seconds = read.seconds else { continue }
-            if let last = sheet.clockRead, time.timeIntervalSince(last) < seconds {
+            guard isWanted, let seconds = on.seconds else { continue }
+            if let last = sheet.clockShown, time.timeIntervalSince(last) < seconds {
                 due = min(due ?? .distantFuture, last.addingTimeInterval(seconds))
             } else {
-                sheet.clockRead = time
-                sheet.read(need: .clock, reason: .clock(seconds))
+                sheet.clockShown = time
+                sheet.show(need: .clock, event: .clock(seconds))
                 due = min(due ?? .distantFuture, time.addingTimeInterval(seconds))
             }
         }
@@ -35,17 +35,17 @@ extension SpotRuns {
     }
 
     private func schedule(_ due: Date?) {
-        guard due != nextRead || ticks == nil && due != nil else { return }
+        guard due != nextShow || ticks == nil && due != nil else { return }
         ticks?.cancel()
         ticks = nil
-        nextRead = due
+        nextShow = due
         guard let due, !hasQuit else { return }
         let wait = Duration.seconds(max(0, due.timeIntervalSince(now())))
         ticks = Task { [weak self, sleep = clock.sleep] in
             try? await sleep(wait, wait / 10)
             guard !Task.isCancelled, let self else { return }
             ticks = nil
-            nextRead = nil
+            nextShow = nil
             updateClock()
         }
     }

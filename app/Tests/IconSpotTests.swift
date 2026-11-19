@@ -27,8 +27,6 @@ final class IconSpotTests: BuiltInCase {
         let icon = try icon
 
         XCTAssertEqual(icon.offeredActions, [])
-        XCTAssertFalse(icon.offersFloat)
-        XCTAssertFalse(icon.offersCard)
         XCTAssertTrue(icon.takesDrops)
     }
 
@@ -39,7 +37,7 @@ final class IconSpotTests: BuiltInCase {
         let output = try await icon.items(timeout: 60)
         let view = try await self.view()
         XCTAssertEqual(opened, ["open openspot/icon"])
-        XCTAssertEqual(output.summary?.value("title"), "weather")
+        XCTAssertEqual(output.root?.value("title"), "weather")
         XCTAssertEqual(view.value("dots"), empty)
         XCTAssertEqual(output.parts.filter { $0.kind == "button" }.map(\.id), ["clear", "save"])
     }

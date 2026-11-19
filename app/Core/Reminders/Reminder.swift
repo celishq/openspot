@@ -25,7 +25,7 @@ public struct Reminder: Equatable, Sendable {
     func row(_ clock: CalendarClock) -> TextBlock {
         let isLate = isLate(clock)
         var fields: [TextBlock.Field] = [
-            .init(key: "row", value: CalendarItemID.reminder(id).text),
+            .init(key: "text", value: CalendarItemID.reminder(id).text),
             .init(key: "title", value: title),
             .init(key: "detail", value: "\(when(clock, isLate: isLate)) · \(list.title)"),
             .init(key: "icon", value: doneAt == nil ? "circle" : "checkmark.circle.fill"),

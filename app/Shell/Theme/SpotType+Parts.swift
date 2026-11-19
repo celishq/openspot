@@ -1,7 +1,6 @@
 import SwiftUI
 
 extension SpotType {
-    static let barLineGap: CGFloat = lineGap + 2
     static let leastValueScale: CGFloat = 0.6
     static let leastWordsScale: CGFloat = 0.7
     static let leastViewScale: CGFloat = 0.5

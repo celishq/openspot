@@ -49,7 +49,7 @@ class SampleSpotsCase: XCTestCase {
         return String(decoding: output.fileHandleForReading.readDataToEndOfFile(), as: UTF8.self)
     }
 
-    func withPrivateHome(_ more: [String: String] = [:], _ body: (URL) async throws -> Void) async throws {
+    func withPrivateHome(_ more: [String: String] = [:], settings: [String: String] = [:], _ body: (URL) async throws -> Void) async throws {
         let folder = FileManager.default.temporaryDirectory.appendingPathComponent("openspot-home-\(UUID().uuidString)")
         let tools = folder.appendingPathComponent("tools")
         try FileManager.default.createDirectory(at: tools, withIntermediateDirectories: true)
@@ -74,7 +74,7 @@ class SampleSpotsCase: XCTestCase {
             "APP_FOLDERS": folder.appendingPathComponent("Applications").path
         ]
         try await TestEnvironment.with(home.merging(more) { _, new in new }) {
-            try await body(folder)
+            try await TestSettings.with(settings) { try await body(folder) }
         }
     }
 
@@ -88,6 +88,8 @@ class SampleSpotsCase: XCTestCase {
           'setting get') cat "\(folder.path)/setting-$3" 2>/dev/null ;;
           'setting set') if [ $# -ge 4 ]; then printf '%s' "$4" > "\(folder.path)/setting-$3"; else rm -f "\(folder.path)/setting-$3"; fi ;;
           'folder pick') cat '\(folder.path)/picked' 2>/dev/null ;;
+          'toast '*) shift; printf '%s\\n' "$*" >> '\(folder.path)/toasts' ;;
+          'select '*) printf '%s\\n' "$2" >> '\(folder.path)/selected' ;;
         esac
         """
     }
@@ -144,13 +146,17 @@ class SampleSpotsCase: XCTestCase {
     }
 
     @MainActor
-    static func answer(of spot: Spot, _ arguments: [String], input: String) async throws -> SpotOutput {
-        SpotOutput(text: try await SpotRuns(environment: TestEnvironment.values).answer(of: spot, SpotAction(arguments: arguments), input: input, limit: 30))
+    static func answer(of spot: Spot, _ arguments: [String], input: String) async throws -> Frame {
+        Frame(text: try await SpotRuns(environment: TestEnvironment.values).answer(of: spot, SpotAction(arguments: arguments), input: input, limit: 30))
     }
 
     func action(_ id: String, of spot: Spot) async throws -> CommandAction {
         let actions = try await spot.items(timeout: 60).actions
         return try XCTUnwrap(actions.first { $0.id == id })
+    }
+
+    func toasts(in folder: URL) -> [String] {
+        ((try? read("toasts", in: folder)) ?? "").split(separator: "\n").map(String.init)
     }
 
     func read(_ name: String, in folder: URL) throws -> String {
@@ -173,12 +179,12 @@ class SampleSpotsCase: XCTestCase {
         """#
         let script = """
         #!/bin/sh
-        if [ "$1" = clipboard ]; then
+        if [ "$1" = clipboard ] || [ "$1" = toast ]; then
           \(Self.fakeOpenspot(in: folder))
           exit 0
         fi
         if [ "$2" = languages ]; then
-          printf 'preferred=en\\npreferred=ru\\n\\nlanguage=en\\nname=English\\n\\nlanguage=ru\\nname=Russian\\n'
+          printf 'preferred=en\\npreferred=ru\\n\\ntext=en\\ntitle=English\\n\\ntext=ru\\ntitle=Russian\\n'
           exit 0
         fi
         from=$4
@@ -192,17 +198,17 @@ class SampleSpotsCase: XCTestCase {
         return try XCTUnwrap(try scan.spots.first { $0.name == "Translate" })
     }
 
-    func text(of id: String, in output: SpotOutput) -> String? {
+    func text(of id: String, in output: Frame) -> String? {
         output.parts.first { $0.id == id }?.value
     }
 
     @MainActor
-    static func drive(_ spot: Spot, _ actions: [SpotAction]) async throws -> SpotOutput {
+    static func drive(_ spot: Spot, _ actions: [SpotAction]) async throws -> Frame {
         var last = try await spot.items(timeout: 60)
         var panel = try XCTUnwrap(SheetParts(output: last))
         for action in actions {
             if action.arguments.count == 2 { panel.set(action.arguments[1], of: action.arguments[0]) }
-            last = SpotOutput(text: try await SpotRuns(environment: TestEnvironment.values).answer(of: spot, action, input: panel.values, limit: 30))
+            last = Frame(text: try await SpotRuns(environment: TestEnvironment.values).answer(of: spot, action, input: Message(action, inputs: panel.inputs).text, limit: 30))
             panel.take(last, answering: panel.generation)
         }
         return last
@@ -213,8 +219,8 @@ class SampleSpotsCase: XCTestCase {
         #!/bin/sh
         case "$1" in
           clipboard) \(Self.fakeOpenspot(in: folder)) ;;
-          emoji) printf 'row=👍\\ntitle=thumbs up, %s\\nicon=👍\\n\\n' "$4" ;;
-          symbols) printf 'row=→\\ntitle=rightwards arrow\\ndetail=Rightwards Arrows\\nicon=→\\n' ;;
+          emoji) printf 'text=👍\\ntitle=thumbs up, %s\\nicon=👍\\n\\n' "$4" ;;
+          symbols) printf 'text=→\\ntitle=rightwards arrow\\ndetail=Rightwards Arrows\\nicon=→\\n' ;;
         esac
 
         """

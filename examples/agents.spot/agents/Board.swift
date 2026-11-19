@@ -1,7 +1,8 @@
 import Foundation
 
-/// What the spot prints: the card's view, with each limit and the first six sessions, and a row for every session. The
-/// sessions that wait for you come first, then the most recently active; the limits follow the agent last active.
+/// What the spot prints: the card's view, with each limit and the first six sessions, the count of sessions for the menu
+/// bar, and an item for every session. The sessions that wait for you come first, then the most recently active; the
+/// limits follow the agent last active.
 struct Board {
     let sessions: [Session]
     let limits: [Limit]
@@ -18,12 +19,13 @@ struct Board {
         for (index, session) in ordered.prefix(6).enumerated() {
             card.append("task\(index + 1)=\(session.waits ? "waiting" : "working")|\(clean(title(session)))|\(session.agent.logo)|\(clean(session.project))")
         }
-        var blocks = ["grid=items\ngrid.small=card", card.joined(separator: "\n"), "repeat=items"]
+        let count = ordered.isEmpty ? [] : ["number=count\nvalue=\(ordered.count)\ntitle=Sessions"]
+        var blocks = ["frame=\ngrid=items\ngrid.small=card" + (count.isEmpty ? "" : "\ngrid.bar=count"), card.joined(separator: "\n")] + count + ["repeat=items"]
         for session in ordered {
             var detail = [session.project, session.waits ? "waits for you" : "working"]
             if let context = session.context { detail.append("\(Int((context * 100).rounded()))% context") }
             blocks.append("""
-                row=\(session.agent.rawValue)/\(session.pid)
+                text=\(session.agent.rawValue)/\(session.pid)
                 title=\(clean(title(session)))
                 detail=\(clean(detail.joined(separator: " · ")))
                 icon=\(logos.appendingPathComponent("\(session.agent.logo).png").path)

@@ -39,8 +39,8 @@ final class SpotFaultTests: XCTestCase {
         folder.appendingPathComponent("spots", isDirectory: true)
     }
 
-    private func script(_ name: String, header: String = "", _ body: String) throws {
-        try TestSpot(header: header, body: "\(body)").write(to: spots.spotFile(name))
+    private func script(_ name: String, toml: String = "", _ body: String) throws {
+        try TestSpot(toml: toml, body: "\(body)").write(to: spots.spotFile(name))
     }
 
     private func entry(_ id: String) -> SpotsModel.Entry? {
@@ -52,7 +52,7 @@ final class SpotFaultTests: XCTestCase {
     }
 
     private func openFault() async throws -> SheetParts {
-        try script("weather", header: "mode=huge", "echo")
+        try script("weather", toml: "mode = 'huge'", "echo")
         await model.reload()
         model.isShown = true
         model.press("weather")
@@ -61,7 +61,7 @@ final class SpotFaultTests: XCTestCase {
     }
 
     func testAFileThatDoesNotLoadKeepsAWideCardThatSaysHowToFixIt() async throws {
-        try script("weather", header: "mode=huge", "echo")
+        try script("weather", toml: "mode = 'huge'", "echo")
 
         await model.reload()
 
@@ -74,7 +74,7 @@ final class SpotFaultTests: XCTestCase {
     }
 
     func testAFaultCardStaysWideWhenThePersonChoseTheSmallSize() async throws {
-        try script("weather", header: "mode=huge", "echo")
+        try script("weather", toml: "mode = 'huge'", "echo")
         await model.reload()
 
         model.prefer(.small, for: "weather")
@@ -87,7 +87,7 @@ final class SpotFaultTests: XCTestCase {
 
         let text = sheet.parts.compactMap { if case .text(let value, _, _) = $0.control { value } else { nil } }.joined()
         XCTAssertTrue(text.contains(spots.spotFile("weather").path))
-        XCTAssertTrue(text.contains("Weather has an unknown mode: huge. Use once, stay or always"))
+        XCTAssertTrue(text.contains("Weather has an unknown mode: huge. Use once or stay"))
         XCTAssertEqual(Set(sheet.parts.map(\.id)).intersection(["fix", "edit"]), ["fix", "edit"])
     }
 
@@ -101,7 +101,7 @@ final class SpotFaultTests: XCTestCase {
 
         let prompt = try XCTUnwrap(saved("clipboard"))
         XCTAssertTrue(prompt.contains(spots.spotFile("weather").path))
-        XCTAssertTrue(prompt.contains("Weather has an unknown mode: huge. Use once, stay or always"))
+        XCTAssertTrue(prompt.contains("Weather has an unknown mode: huge. Use once or stay"))
         XCTAssertTrue(prompt.contains("check"))
     }
 
@@ -115,10 +115,10 @@ final class SpotFaultTests: XCTestCase {
     }
 
     func testAFileThatLoadsAgainTakesBackItsCard() async throws {
-        try script("weather", header: "mode=huge", "echo")
+        try script("weather", toml: "mode = 'huge'", "echo")
         await model.reload()
 
-        try script("weather", header: "mode=once", "echo")
+        try script("weather", toml: "mode = 'once'", "echo")
         await model.spotsChanged()
 
         XCTAssertEqual(entry("weather")?.state.title, "Weather")
@@ -132,6 +132,7 @@ final class SpotFaultTests: XCTestCase {
         model.tap("ping")
         try await wait("the failure") { entry("ping")?.failure != nil }
         XCTAssertEqual(entry("ping")?.failure, "Openspot cannot reach the server. Try again when the Mac is online.")
+        model.closeSheet(moving: false)
 
         try script("ping", "exit 0")
         await model.spotsChanged()
@@ -149,13 +150,13 @@ final class SpotFaultTests: XCTestCase {
     }
 
     func testAChangedScriptReadsAgainWhileTheOpenPanelShowsIt() async throws {
-        try script("cups", header: "on=panel.open", "printf 'title=One cup\\n'")
+        try script("cups", toml: "on = ['panel.open']", "printf 'frame=\\ntitle=One cup\\n'")
         await model.reload()
         model.isShown = true
         model.panelWillShow()
         try await wait("the first read") { entry("cups")?.state.title == "One cup" }
 
-        try script("cups", header: "on=panel.open", "printf 'title=Two cups\\n'")
+        try script("cups", toml: "on = ['panel.open']", "printf 'frame=\\ntitle=Two cups\\n'")
         await model.spotsChanged()
 
         try await wait("the read of the changed script") { entry("cups")?.state.title == "Two cups" }

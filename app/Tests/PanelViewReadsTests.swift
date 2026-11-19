@@ -36,7 +36,7 @@ final class PanelViewReadsTests: XCTestCase {
     }
 
     private func openList() async throws {
-        try TestSpot(header: "on=sheet.open", body: "printf 'row=a\\ntitle=Apple\\n\\nrow=b\\ntitle=Banana\\n'").write(to: spots.spotFile("list"))
+        try TestSpot(toml: "on = ['sheet.open']", body: "printf 'text=a\\ntitle=Apple\\n\\ntext=b\\ntitle=Banana\\n'").write(to: spots.spotFile("list"))
         await model.reload()
         model.isShown = true
         model.panelWillShow()

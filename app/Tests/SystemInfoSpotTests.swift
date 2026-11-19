@@ -7,7 +7,7 @@ final class SystemInfoSpotTests: SampleSpotsCase {
     }
 
     func testSystemDetailsReadsOnlyWhenItsSheetOpens() throws {
-        let read = try XCTUnwrap(try systemInfo().read)
+        let read = try XCTUnwrap(try systemInfo().on)
 
         XCTAssertTrue(read.has(.sheet))
         XCTAssertFalse(read.has(.panel))

@@ -1,0 +1,6 @@
+icon = "eyedropper"
+detail = "Copy a color"
+uses = ["screen", "clipboard"]
+
+[commands.pick]
+title = "Pick a color"

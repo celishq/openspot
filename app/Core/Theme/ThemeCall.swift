@@ -10,23 +10,23 @@ enum ThemeCall: NounCall, Equatable {
     case open(String?)
     case reload
 
-    private static let changes = CallRule.Read.changes("changes the theme")
+    private static let changes = CallRule.InShow.changes("changes the theme")
 
     static let noun = CommandNoun("theme", group: .app, verbs: [
         CommandVerb("list", "[--json]", "Prints each theme, with the built-in one and the one in use marked. --json prints them as JSON.") { $0.form.map(Self.list) },
-        CommandVerb("use", "<name>", "Draws Openspot with a theme.", rule: CallRule(use: .app, used: "switched the theme", read: changes)) { $0.one.map(Self.use) },
-        CommandVerb("new", "", "Makes a theme with the values of the built-in one, and uses it.", rule: CallRule(use: .app, used: "made a theme", read: changes)) { $0.none ? Self.new : nil },
-        CommandVerb("duplicate", "[name]", "Copies the theme in use, or the named one, and uses the copy.", rule: CallRule(use: .app, used: "made a theme", read: changes)) { words in
+        CommandVerb("use", "<name>", "Draws Openspot with a theme.", rule: CallRule(use: .app, used: "switched the theme", inShow: changes)) { $0.one.map(Self.use) },
+        CommandVerb("new", "", "Makes a theme with the values of the built-in one, and uses it.", rule: CallRule(use: .app, used: "made a theme", inShow: changes)) { $0.none ? Self.new : nil },
+        CommandVerb("duplicate", "[name]", "Copies the theme in use, or the named one, and uses the copy.", rule: CallRule(use: .app, used: "made a theme", inShow: changes)) { words in
             words.rest.count < 2 ? Self.duplicate(words.rest.first) : nil
         },
-        CommandVerb("rename", "<name> <new name>", "Renames a theme.", rule: CallRule(use: .app, used: "renamed a theme", read: changes)) { words in
+        CommandVerb("rename", "<name> <new name>", "Renames a theme.", rule: CallRule(use: .app, used: "renamed a theme", inShow: changes)) { words in
             words.rest.count == 2 ? Self.rename(words.rest[0], words.rest[1]) : nil
         },
-        CommandVerb("delete", "<name>", "Moves a theme to the Trash. Deleting the one in use switches to the built-in one.", rule: CallRule(use: .app, used: "deleted a theme", read: changes)) { $0.one.map(Self.delete) },
-        CommandVerb("open", "[name]", "Opens the file of the theme in use, or the named one, in the text editor. A built-in theme can't change, so it opens a copy, which it uses.", rule: CallRule(use: .app, used: "opened the theme", read: .changes("opens a window"))) { words in
+        CommandVerb("delete", "<name>", "Moves a theme to the Trash. Deleting the one in use switches to the built-in one.", rule: CallRule(use: .app, used: "deleted a theme", inShow: changes)) { $0.one.map(Self.delete) },
+        CommandVerb("open", "[name]", "Opens the file of the theme in use, or the named one, in the text editor. A built-in theme can't change, so it opens a copy, which it uses.", rule: CallRule(use: .app, used: "opened the theme", inShow: .changes("opens a window"))) { words in
             words.rest.count < 2 ? Self.open(words.rest.first) : nil
         },
-        CommandVerb("reload", "", "Reads the theme in use again from its file, and draws with it.", rule: CallRule(use: .app, used: "reloaded the theme", read: .changes("redraws Openspot"))) { $0.none ? Self.reload : nil }
+        CommandVerb("reload", "", "Reads the theme in use again from its file, and draws with it.", rule: CallRule(use: .app, used: "reloaded the theme", inShow: .changes("redraws Openspot"))) { $0.none ? Self.reload : nil }
     ])
 
     private struct PrintedTheme: PrintedRecord {
@@ -34,7 +34,7 @@ enum ThemeCall: NounCall, Equatable {
         let builtin, used: Bool
 
         var blocks: [[(String, String?)]] {
-            [[("theme", theme), ("builtin", builtin ? "true" : nil), ("used", used ? "true" : nil)]]
+            [[("text", theme), ("builtin", builtin ? "true" : nil), ("used", used ? "true" : nil)]]
         }
     }
 

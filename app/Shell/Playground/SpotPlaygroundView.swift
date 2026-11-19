@@ -64,7 +64,7 @@ struct SpotPlaygroundView: View {
     private var presets: some View {
         Menu("Examples") {
             ForEach(Array(model.presets.enumerated()), id: \.offset) { _, preset in
-                Button(preset.name) { model.edit(preset.text) }
+                Button(preset.name) { model.edit(preset.text, manifest: preset.manifest) }
             }
         }
         .menuStyle(.button)

@@ -1,11 +1,4 @@
 #!/bin/sh
-# title=New spot
-# icon=plus
-# detail=Make your own
-# on=sheet.open
-# uses=clipboard
-# edits=spots
-# offers=card
 . "$OPENSPOT_SH"
 folder="${OPENSPOT_SPOTS:-$OPENSPOT_CONFIG/spots}"
 
@@ -23,17 +16,16 @@ fi
 nl='
 '
 
-# Prints the sheet with these words in its field, the head lines in $2 before its layout, and the words of its button in $3.
+# Prints the sheet with these words in its field, and the words of its button in $2.
 sheet() {
-  printf '%s' "$2"
-  printf 'grid=describe describe describe\ngrid=describe describe describe\ngrid=describe describe describe\ngrid=copy copy copy\n\n'
+  printf 'frame=\ngrid=describe describe describe\ngrid=describe describe describe\ngrid=describe describe describe\ngrid=copy copy copy\n\n'
   printf 'field=describe\ntype=multiline\nplaceholder=%s\n' "$placeholder"
   openspot_kv value "$1"
-  printf '\nbutton=copy\ntitle=%s\nlook=strong\nshortcut=cmd+return\n\n' "${3:-Copy prompt}"
-  printf 'button=clear\ntitle=Clear\nscope=spot\n\n'
-  [ -z "${OPENSPOT_EDIT_FILE-}" ] || printf 'button=editor\ntitle=Open in editor\nscope=spot\nclose=true\n\n'
-  printf 'button=guide\ntitle=Read the guide\nscope=spot\nclose=true\n'
-  [ -n "$edit" ] || printf '\nbutton=folder\ntitle=Open spots folder\nscope=spot\nclose=true\n'
+  printf '\nbutton=copy\ntitle=%s\nlook=strong\nshortcut=cmd+return\nclose=false\n\n' "${2:-Copy prompt}"
+  printf 'button=clear\ntitle=Clear\nscope=spot\nclose=false\n\n'
+  [ -z "${OPENSPOT_EDIT_FILE-}" ] || printf 'button=editor\ntitle=Open in editor\nscope=spot\n\n'
+  printf 'button=guide\ntitle=Read the guide\nscope=spot\n'
+  [ -n "$edit" ] || printf '\nbutton=folder\ntitle=Open spots folder\nscope=spot\n'
 }
 
 # Prints the prompt for the agent: to change the spot of OPENSPOT_EDIT, or to build a new one, as the words say.
@@ -51,8 +43,8 @@ prompt() {
 # The words of the field: the ones on stdin when the sheet sends them, or else the draft that a last call kept. A draft that
 # was copied is done, so the sheet opens empty.
 case "$nl$(openspot_input)" in
-  *"${nl}describe="*)
-    typed=$(value describe; printf x)
+  *"${nl}input.describe="*)
+    typed=$(value input.describe; printf x)
     typed=${typed%x}
     mkdir -p "${draft%/*}" && printf '%s' "$typed" > "$draft.$$" && mv "$draft.$$" "$draft"
     ;;
@@ -67,13 +59,14 @@ case "$nl$(openspot_input)" in
 esac
 
 case "$1" in
-  read | describe) sheet "$typed" ;;
+  show | describe) sheet "$typed" ;;
   copy)
     text=$(printf '%s' "$typed" | awk '{ lines[NR] = $0 } END { s = ""; for (i = 1; i <= NR; i++) s = s (i > 1 ? "\n" : "") lines[i]; sub(/^[ \t\n]+/, "", s); sub(/[ \t\n]+$/, "", s); printf "%s", s }')
     words=$(prompt "$text") || exit 1
     printf '%s' "$words" | openspot clipboard copy || exit 1
     mkdir -p "${copied%/*}" && printf '%s' "$typed" > "$copied.$$" && mv "$copied.$$" "$copied"
-    sheet "$typed" "toast=Prompt copied. Paste it into your agent.$nl" "✓ Copied"
+    openspot toast 'Prompt copied. Paste it into your agent.'
+    sheet "$typed" "✓ Copied"
     printf -- '---\n'
     sleep 1.5
     sheet "$typed"

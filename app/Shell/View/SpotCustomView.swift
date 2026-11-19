@@ -4,7 +4,7 @@ import SwiftUI
 struct SpotCustomView: View, @MainActor Equatable {
     let source: String
     let values: [String: [String]]
-    var rows: [[String]] = []
+    var items: [[String]] = []
     let card: SpotSize
     var room: CGSize?
     var answers = 0
@@ -21,7 +21,7 @@ struct SpotCustomView: View, @MainActor Equatable {
     @Environment(\.colorScheme) private var scheme
 
     static func == (lhs: Self, rhs: Self) -> Bool {
-        lhs.source == rhs.source && lhs.values == rhs.values && lhs.rows == rhs.rows && lhs.card == rhs.card && lhs.room == rhs.room && lhs.answers == rhs.answers && lhs.selection == rhs.selection && lhs.date == rhs.date && lhs.views === rhs.views
+        lhs.source == rhs.source && lhs.values == rhs.values && lhs.items == rhs.items && lhs.card == rhs.card && lhs.room == rhs.room && lhs.answers == rhs.answers && lhs.selection == rhs.selection && lhs.date == rhs.date && lhs.views === rhs.views
             && (lhs.send == nil) == (rhs.send == nil)
     }
 
@@ -103,7 +103,7 @@ struct SpotCustomView: View, @MainActor Equatable {
     private var input: [String: Any] {
         [
             "isShown": isShown && moves,
-            "rows": rows,
+            "items": items,
             "selection": selection as Any,
             "close": close,
             "bodyTime": bodyTime,

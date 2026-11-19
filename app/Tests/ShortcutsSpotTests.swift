@@ -53,9 +53,9 @@ final class ShortcutsSpotTests: SampleSpotsCase {
         }
     }
 
-    private static func frames(of shortcuts: Spot) async throws -> [String] {
+    private static func frames(of shortcuts: Spot, event: String? = nil) async throws -> [String] {
         var frames: [String] = []
-        for try await frame in ScriptProcess(url: shortcuts.url, arguments: ["read"], limit: 60, dataName: shortcuts.dataName, base: TestEnvironment.values).start() {
+        for try await frame in ScriptProcess(url: shortcuts.url, arguments: ["show"], mode: .once(input: event.map { "event=\($0)\n" }), limit: 60, dataName: shortcuts.dataName, base: TestEnvironment.values).start() {
             frames.append(frame)
         }
         return frames
@@ -75,7 +75,7 @@ final class ShortcutsSpotTests: SampleSpotsCase {
             XCTAssertEqual(same, first)
             XCTAssertEqual(changed.count, 2)
             XCTAssertEqual(changed.first, first.first)
-            XCTAssertEqual(SpotOutput(text: changed.last ?? "").items.map(\.title), ["Make a GIF", "Video to audio"])
+            XCTAssertEqual(Frame(text: changed.last ?? "").items.map(\.title), ["Make a GIF", "Video to audio"])
         }
     }
 
@@ -88,7 +88,7 @@ final class ShortcutsSpotTests: SampleSpotsCase {
             try FileManager.default.removeItem(at: calls)
             try Self.fakeShortcuts(in: folder, loose: "echo 'Make a GIF'")
 
-            let opened = try await TestEnvironment.with(["OPENSPOT_REASON": "panel.open"]) { try await Self.frames(of: shortcuts) }
+            let opened = try await Self.frames(of: shortcuts, event: "panel.open")
 
             XCTAssertEqual(opened, first)
             XCTAssertFalse(FileManager.default.fileExists(atPath: calls.path))
@@ -118,13 +118,13 @@ final class ShortcutsSpotTests: SampleSpotsCase {
             try "18°C, sunny\nWind 3 m/s".write(to: folder.appendingPathComponent("result"), atomically: true, encoding: .utf8)
             let row = try await shortcut("Say \\ \"hi\" (now)", of: shortcuts)
 
-            let toast = try await shortcuts.perform(.item(row), timeout: 60)
+            try await shortcuts.perform(.item(row), timeout: 60)
 
             let arguments = try runArguments(in: folder)
             XCTAssertEqual(Array(arguments.prefix(3)), ["run", "Say \\ \"hi\" (now)", "-o"])
             XCTAssertFalse(arguments.contains("-i"))
             XCTAssertEqual(try read("clipboard", in: folder), "18°C, sunny\nWind 3 m/s")
-            XCTAssertEqual(toast, "Copied the result of Say \\ \"hi\" (now).")
+            XCTAssertEqual(self.toasts(in: folder), ["Copied the result of Say \\ \"hi\" (now)."])
         }
     }
 
@@ -134,9 +134,9 @@ final class ShortcutsSpotTests: SampleSpotsCase {
             try Self.fakeShortcuts(in: folder)
             let row = try await shortcut("Take a break", of: shortcuts)
 
-            let toast = try await shortcuts.perform(.item(row), timeout: 60)
+            try await shortcuts.perform(.item(row), timeout: 60)
 
-            XCTAssertEqual(toast, "Ran Take a break.")
+            XCTAssertEqual(self.toasts(in: folder), ["Ran Take a break."])
             XCTAssertFalse(FileManager.default.fileExists(atPath: folder.appendingPathComponent("clipboard").path))
         }
     }
@@ -145,19 +145,19 @@ final class ShortcutsSpotTests: SampleSpotsCase {
         let shortcuts = try shortcuts()
         try await withPrivateHome { folder in
             try Self.fakeShortcuts(in: folder)
-            try "#!/bin/sh\nprintf '%s\\n' \"$@\" > '\(folder.path)/openspot-args'\n".writeScript(to: folder.appendingPathComponent("tools/openspot"))
+            try "#!/bin/sh\n[ \"$1\" = toast ] || printf '%s\\n' \"$@\" > '\(folder.path)/openspot-args'\n\(Self.fakeOpenspot(in: folder))\n".writeScript(to: folder.appendingPathComponent("tools/openspot"))
             let png = try XCTUnwrap(Data(base64Encoded: "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg=="))
             try png.write(to: folder.appendingPathComponent("result"))
             let row = try await shortcut("Video to audio", of: shortcuts)
 
-            let toast = try await shortcuts.perform(.item(row), timeout: 60)
+            try await shortcuts.perform(.item(row), timeout: 60)
 
             let copy = try read("openspot-args", in: folder).split(separator: "\n").map(String.init)
             XCTAssertEqual(Array(copy.prefix(2)), ["clipboard", "copy"])
             let file = try XCTUnwrap(copy.last)
             XCTAssertEqual(URL(fileURLWithPath: file).lastPathComponent, "Video to audio.png")
             XCTAssertEqual(try Data(contentsOf: URL(fileURLWithPath: file)), png)
-            XCTAssertEqual(toast, "Copied the result of Video to audio.")
+            XCTAssertEqual(self.toasts(in: folder), ["Copied the result of Video to audio."])
         }
     }
 
@@ -196,10 +196,10 @@ final class ShortcutsSpotTests: SampleSpotsCase {
             try await shortcuts.perform(.item(row), timeout: 60)
             let second = try runArguments(in: folder)
 
-            XCTAssertEqual(sheet.summary?.value("title"), "Run with 2 files")
+            XCTAssertEqual(sheet.root?.value("title"), "Run with 2 files")
             XCTAssertEqual(sheet.actions.first { $0.id == "cancel" }?.key, ActionKey(name: "escape"))
             XCTAssertEqual(Array(first.prefix(6)), ["run", "Video to audio", "-i", files[0], "-i", files[1]])
-            XCTAssertNil(after.summary?.value("title"))
+            XCTAssertNil(after.root?.value("title"))
             XCTAssertFalse(second.contains("-i"))
         }
     }
@@ -212,14 +212,14 @@ final class ShortcutsSpotTests: SampleSpotsCase {
 
             try await shortcuts.perform(.drop(paths: [file]), timeout: 60)
             let dropped = try await shortcuts.items(timeout: 60)
-            let reopened = try await TestEnvironment.with(["OPENSPOT_REASON": "panel.open"]) { try await shortcuts.items(timeout: 60) }
+            let reopened = try await shortcuts.items(input: "event=panel.open\n", timeout: 60)
             try await shortcuts.perform(.drop(paths: [file]), timeout: 60)
             try await shortcuts.perform(.press("cancel"), timeout: 60)
             let cancelled = try await shortcuts.items(timeout: 60)
 
-            XCTAssertEqual(dropped.summary?.value("title"), "Run with a.mov")
-            XCTAssertNil(reopened.summary?.value("title"))
-            XCTAssertNil(cancelled.summary?.value("title"))
+            XCTAssertEqual(dropped.root?.value("title"), "Run with a.mov")
+            XCTAssertNil(reopened.root?.value("title"))
+            XCTAssertNil(cancelled.root?.value("title"))
         }
     }
 

@@ -11,9 +11,9 @@ final class PanelAskTests: PanelCase {
     }
 
     func testASettingFormDoesNotOpenInAHiddenPanel() async throws {
-        try script("editor", header: "title=Editor\non=sheet.open\n\nfield=editor", """
+        try script("editor", toml: "title = 'Editor'\non = ['sheet.open']\n[settings.editor]", """
         touch '\(called.path)'
-        [ "$1" = editor ] && printf 'title=Editor\\n\\nfield=editor\\ntitle=Editor\\n'
+        [ "$1" = editor ] && printf 'frame=\\ntitle=Editor\\n\\nfield=editor\\ntitle=Editor\\n'
         """)
         await model.reload()
 
@@ -25,8 +25,8 @@ final class PanelAskTests: PanelCase {
     }
 
     func testAFailureShowsAfterItsAskWasLeft() async throws {
-        try script("notes", header: "title=Notes\non=sheet.open", """
-        [ "$1" = add ] || { printf 'row=a\\ntitle=A\\nopen=add\\n'; exit 0; }
+        try script("notes", toml: "title = 'Notes'\non = ['sheet.open']", """
+        [ "$1" = add ] || { printf 'text=a\\ntitle=A\\nopen.title=add\\n'; exit 0; }
         touch '\(called.path)'
         while [ ! -f '\(go.path)' ]; do sleep 0.02; done
         echo 'No notes folder' >&2

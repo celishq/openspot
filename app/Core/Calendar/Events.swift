@@ -6,12 +6,12 @@ public struct Events {
 
     private let store: any EventStore
     private let clock: CalendarClock
-    private let isRead: Bool
+    private let isInShow: Bool
 
-    public init(store: any EventStore, now: Date = Date(), clock: Calendar = .current, locale: Locale = .current, isRead: Bool) {
+    public init(store: any EventStore, now: Date = Date(), clock: Calendar = .current, locale: Locale = .current, isInShow: Bool) {
         self.store = store
         self.clock = CalendarClock(now: now, calendar: clock, locale: locale)
-        self.isRead = isRead
+        self.isInShow = isInShow
     }
 
     public func events(days: Int, hiding hidden: [String]) async throws -> String {
@@ -52,12 +52,12 @@ public struct Events {
         let start = entry.hasTime ? date : clock.calendar.startOfDay(for: date)
         let end = entry.hasTime ? start.addingTimeInterval(entry.length ?? 3600) : clock.calendar.date(byAdding: .day, value: 1, to: start) ?? start
         let event = Event(id: "new", title: entry.title, start: start, end: end, isAllDay: !entry.hasTime, calendar: calendar, location: nil, url: nil, notes: nil)
-        guard !isDry else { return Self.text([TextBlock(fields: [.init(key: "row", value: "event:new")] + event.row(clock).fields.dropFirst())]) }
+        guard !isDry else { return Self.text([TextBlock(fields: [.init(key: "text", value: "event:new")] + event.row(clock).fields.dropFirst())]) }
         return Self.text([try store.add(event).row(clock)])
     }
 
     private func isAllowed() async throws -> Bool {
-        try await store.isAllowed(isRead: isRead, refusal: Self.refusal, pane: Self.pane)
+        try await store.isAllowed(isInShow: isInShow, refusal: Self.refusal, pane: Self.pane)
     }
 
     private static func text(_ rows: [TextBlock]) -> String {

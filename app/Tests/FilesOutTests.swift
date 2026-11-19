@@ -34,17 +34,17 @@ final class FilesOutTests: XCTestCase {
         folder.appendingPathComponent("spots", isDirectory: true)
     }
 
-    func testARowCarriesTheFileThatItNamesFromTheRoot() {
-        let outputCheck = FrameCheck(text: "row=a\nfile=/Users/me/a.png\n\nrow=b\nfile=b.png\n\nrow=c\n")
+    func testAnItemCarriesTheFileThatItNamesFromTheRoot() {
+        let outputCheck = FrameCheck(text: "text=a\nfile=/Users/me/a.png\n\ntext=b\nfile=b.png\n\ntext=c\n")
         let output = outputCheck.output
 
         XCTAssertEqual(output.items.map(\.file), ["/Users/me/a.png", nil, nil])
-        XCTAssertTrue(outputCheck.partFaults.contains("the row b names the file b.png, which does not start with /"))
+        XCTAssertTrue(outputCheck.partFaults.contains("the item b names the file b.png, which does not start with /"))
     }
 
     func testAComponentCannotTakeTheIdDragBesideRowsWithFiles() {
-        let filesCheck = FrameCheck(text: "row=a\nfile=/a.png\n\nbutton=drag\ntitle=Drag\n\nfield=note\n")
-        let noneCheck = FrameCheck(text: "row=a\n\nbutton=drag\ntitle=Drag\n\nfield=note\n")
+        let filesCheck = FrameCheck(text: "text=a\nfile=/a.png\n\nbutton=drag\ntitle=Drag\n\nfield=note\n")
+        let noneCheck = FrameCheck(text: "text=a\n\nbutton=drag\ntitle=Drag\n\nfield=note\n")
 
         XCTAssertTrue(filesCheck.partFaults.contains("an action cannot be called drag"))
         XCTAssertFalse(noneCheck.partFaults.contains("an action cannot be called drag"))
@@ -57,11 +57,11 @@ final class FilesOutTests: XCTestCase {
     func testADragOutTellsTheScriptAndADragOfEveryFileClosesTheFloat() async throws {
         let body = """
         case "$1" in
-          read) printf 'row=a\\nfile=/a.png\\n\\nrow=b\\nfile=/b.png\\n\\nrow=c\\n' ;;
-          drag) shift; printf 'toast=Took %s\\n' "$*" ;;
+          show) printf 'text=a\\nfile=/a.png\\n\\ntext=b\\nfile=/b.png\\n\\ntext=c\\n' ;;
+          drag) shift; printf '\\033]9;Took %s\\007' "$*" ;;
         esac
         """
-        try "#!/bin/sh\n# on=sheet.open\n\(body)\n".writeScript(to: spots.spotFile("shelf"))
+        try "#!/bin/sh\n\(body)\n".writeScript(to: spots.spotFile("shelf"), toml: "on = ['sheet.open']")
         await model.reload()
         model.press(GlobalKey(spot: "shelf", act: .float, trigger: .shake))
         try await wait("the rows") { model.sheets["shelf"]?.list.shown.count == 3 }

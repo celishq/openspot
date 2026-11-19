@@ -1,3 +1,5 @@
+frame=
+grid.bar=last
 grid=last last last
 grid=last last last
 grid=peer peer peer
@@ -21,3 +23,4 @@ placeholder=Hello
 button=send
 title=Send
 shortcut=cmd+return
+close=false

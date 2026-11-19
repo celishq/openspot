@@ -1,11 +1,4 @@
 #!/bin/sh
-# title=Pull requests
-# icon=arrow.triangle.pull
-# detail=On GitHub
-# on=clock.120
-# uses=network,clipboard
-# offers=card
-# offers=menubar
 export LC_ALL=en_US.UTF-8
 export PATH="$PATH:/opt/homebrew/bin:/usr/local/bin"
 
@@ -35,20 +28,22 @@ pulls() {
 }
 
 case "$1" in
-  read)
+  show)
     if ! command -v gh >/dev/null; then
       printf 'link=https://cli.github.com\n'
       echo "Pull requests need the gh tool. Install it, then open this again." >&2
       exit 1
     fi
     list=$(pulls) || exit 1
-    printf 'button=copy\ntitle=Copy link\nshortcut=cmd+return\nclose=true\n\n'
-    printf '%s' "$list" | jq -r "$defs"'.[] | "row=\(.url | esc)\ntitle=\(.title | esc)\ndetail=\(about)\nicon=\({good: "checkmark.circle", bad: "xmark.circle", warn: "clock"}[tone // ""] // "arrow.triangle.pull")"
+    count=$(printf '%s' "$list" | jq length)
+    [ "$count" -eq 0 ] || printf 'frame=\ngrid=items\ngrid.bar=count\n\nnumber=count\nvalue=%s\ntitle=Pull requests\n\nrepeat=items\n\n' "$count"
+    printf 'button=copy\ntitle=Copy link\nshortcut=cmd+return\n\n'
+    printf '%s' "$list" | jq -r "$defs"'.[] | "text=\(.url | esc)\ntitle=\(.title | esc)\ndetail=\(about)\nicon=\({good: "checkmark.circle", bad: "xmark.circle", warn: "clock"}[tone // ""] // "arrow.triangle.pull")"
       + (tone | if . then "\ntone=\(.)" else "" end) + "\n"'
     ;;
   copy)
     printf '%s' "$2" | pbcopy
-    echo "toast=Copied"
+    openspot toast Copied
     ;;
   open)
     open "$2"

@@ -105,7 +105,7 @@ final class AgentsTests: XCTestCase {
         XCTAssertEqual(Command(text: "codex").folder(alias: "", variable: "CODEX_HOME", home: "/Users/me"), nil)
     }
 
-    func testTheBoardPutsTheSessionsThatWaitFirstAndListsEachAsARow() {
+    func testTheBoardPutsTheSessionsThatWaitFirstAndListsEachAsAnItem() {
         let sessions = [
             Session(agent: .claude, id: "s1", pid: 41, folder: "/Users/me/Code/shop", task: "Add a cart page", waits: false, context: 0.5, pane: nil),
             Session(agent: .codex, id: "c1", pid: 7, folder: "/Users/me/Code/site", task: "Fix a flaky test", waits: true, context: 0.25, pane: nil),
@@ -113,9 +113,9 @@ final class AgentsTests: XCTestCase {
 
         let frame = Board(sessions: sessions, limits: [Limit(agent: .claude, used: 0.62)], logos: URL(fileURLWithPath: "/logos")).frame
 
-        XCTAssertTrue(frame.hasPrefix("grid=items\ngrid.small=card\n\nview=card\nlimit1=claude|0.62|working\ntask1=waiting|Fix a flaky test|openai|site\ntask2=working|Add a cart page|claude|shop\n\nrepeat=items\n\n"), frame)
-        XCTAssertTrue(frame.contains("row=codex/7\ntitle=Fix a flaky test\ndetail=site · waits for you · 25% context\nicon=/logos/openai.png\n"), frame)
-        XCTAssertTrue(frame.contains("row=claude/41\ntitle=Add a cart page\ndetail=shop · working · 50% context\nicon=/logos/claude.png\n"), frame)
+        XCTAssertTrue(frame.hasPrefix("frame=\ngrid=items\ngrid.small=card\ngrid.bar=count\n\nview=card\nlimit1=claude|0.62|working\ntask1=waiting|Fix a flaky test|openai|site\ntask2=working|Add a cart page|claude|shop\n\nnumber=count\nvalue=2\ntitle=Sessions\n\nrepeat=items\n\n"), frame)
+        XCTAssertTrue(frame.contains("text=codex/7\ntitle=Fix a flaky test\ndetail=site · waits for you · 25% context\nicon=/logos/openai.png\n"), frame)
+        XCTAssertTrue(frame.contains("text=claude/41\ntitle=Add a cart page\ndetail=shop · working · 50% context\nicon=/logos/claude.png\n"), frame)
     }
 
     func testTheBoardOrdersTheLimitsAndTheWorkingSessionsByTheirLastActivity() {

@@ -39,11 +39,11 @@ public struct ReviewSpot: Equatable, Sendable {
             : !programs.isEmpty ? "Holds a program that you cannot read" : primary.subtitle ?? (runs.isEmpty ? quiet : "Runs by itself")
         let uses = SpotUse.allCases.filter { use in scan.scripts.contains { $0.uses.contains(use) } }
         let present = spot.files.map(\.path).filter { FileManager.default.fileExists(atPath: folder.appendingPathComponent($0).path) }
-        let installed = Set(present.flatMap { (try? SpotUse.set(SpotHeader(url: folder.appendingPathComponent($0)).block.value("uses"), of: $0)) ?? [] })
+        let installed = Set(present.flatMap { (try? SpotUse.set(Manifest(beside: folder.appendingPathComponent($0)).script($0).uses, of: $0)) ?? [] })
         let grown = spot.replaced(in: folder).isEmpty ? [] : uses.filter { !installed.contains($0) }
         let canAlso = Self.canAlso(spot, uses: Set(uses), id: primary.id)
         let readme = spot.readme
-        let rows = spot.sampleText.map { SpotOutput(text: $0).items.map(\.title) } ?? []
+        let rows = spot.sampleText.map { Frame(text: $0).items.map(\.title) } ?? []
         canDo = canAlso.map { "Can also: \($0)" } + runs.map { "Runs by itself: \($0)" }
         trust = [
             Self.section("Uses", uses.isEmpty ? [] : [uses.map(\.rawValue).joined(separator: ", ")]),
@@ -73,19 +73,19 @@ public struct ReviewSpot: Equatable, Sendable {
         self.lock = lock
     }
 
-    func add() async throws -> String {
+    func add() async throws -> HostAnswer {
         guard canAdd, let source, let lock else { throw SpotError.failed(1, "This sheet cannot do that.") }
         _ = try await lock.add(.file(source), to: folder, isConfirmed: true, replaces: shared.replaced(in: folder), expecting: shared)
-        return TextBlock(fields: [.init(key: "toast", value: "\(name) added")]).text
+        return HostAnswer(frame: "", effects: [.toast("\(name) added")])
     }
 
     public var spot: Spot {
-        Spot(id: Self.id, name: name, url: folder, kind: .list, symbol: symbol, subtitle: subtitle, read: .sheet, order: .max, host: .review(self), growsFromField: true)
+        Spot(id: Self.id, name: name, url: folder, kind: .list, symbol: symbol, subtitle: subtitle, on: .sheet, order: .max, host: .review(self), growsFromField: true)
     }
 
     public func answer(_ arguments: [String]) throws -> String {
         switch arguments.first {
-        case "read":
+        case "show":
             return sheet
         default:
             throw SpotError.failed(1, "This sheet cannot do that.")
@@ -93,15 +93,14 @@ public struct ReviewSpot: Equatable, Sendable {
     }
 
     private var sheet: String {
-        guard canAdd else { return [TextBlock(fields: [.init(key: "grid", value: "review")]).text, reviewPart.text].joined(separator: "\n") }
+        guard canAdd else { return [RootKey.block([.init(key: "grid", value: "review")]).text, reviewPart.text].joined(separator: "\n") }
         return [
-            TextBlock(fields: [.init(key: "grid", value: "review"), .init(key: "grid", value: Self.installPart)]).text,
+            RootKey.block([.init(key: "grid", value: "review"), .init(key: "grid", value: Self.installPart)]).text,
             reviewPart.text,
             TextBlock(fields: [
                 .init(key: "button", value: Self.installPart),
                 .init(key: "title", value: "Add"),
                 .init(key: "shortcut", value: "cmd+return"),
-                .init(key: "close", value: "true"),
                 .init(key: "look", value: "strong")
             ]).text
         ].joined(separator: "\n")
@@ -125,23 +124,18 @@ public struct ReviewSpot: Equatable, Sendable {
     static let otherKeySubtitle = "Signed by another key"
 
     private static func selfRuns(in scan: ScanResult) -> [String] {
-        let placed = Set(scan.files.flatMap(\.spots).flatMap(\.places))
         return scan.scripts.compactMap { script in
             var moments: [String] = switch script.mode {
-            case .always: ["keeps running while Openspot runs"]
-            case .stay: ["keeps running while it is in use"]
+            case .stay: [script.showsAtLaunch ? "keeps running while Openspot runs" : "keeps running while it is in use"]
             case .once, .inline: []
             }
-            for moment in script.read?.moments ?? [] {
+            for moment in script.on?.moments ?? [] {
                 switch moment {
                 case .panel: moments.append("when the panel opens")
                 case .every(let seconds): moments.append("every \(Int(seconds)) seconds")
                 case .event(let name): moments.append("on \(name)")
                 case .sheet: break
                 }
-            }
-            if placed.contains(script.id), script.read?.seconds == nil, script.read?.has(.panel) != true {
-                moments.append("when the panel opens")
             }
             return moments.isEmpty ? nil : "\(script.name): \(moments.joined(separator: ", "))"
         }
@@ -164,7 +158,7 @@ public struct ReviewSpot: Equatable, Sendable {
         if !found(["pbpaste"]).isEmpty { lines.append("Read the clipboard with pbpaste in place of openspot clipboard") }
         for arguments in texts.flatMap(calls) {
             guard let needed = SpotUseCall(arguments: arguments, of: id), !uses.contains(needed.use) else { continue }
-            let line = "Call openspot \(arguments[0]) \(arguments[1]) without uses=\(needed.use.rawValue)"
+            let line = "Call openspot \(arguments[0]) \(arguments[1]) without \(needed.use.rawValue) in the uses of its spot.toml"
             if !lines.contains(line) { lines.append(line) }
         }
         return lines

@@ -7,7 +7,7 @@ enum SpotSheetPicture {
     private static let settle = 0.5
     private static let margin = SpotPictureStage<Color>.margin
 
-    static func list(of output: SpotOutput) -> ItemList {
+    static func list(of output: Frame) -> ItemList {
         var list = ItemList(items: output.items)
         list.take(drawing: output.drawing)
         return list
@@ -15,7 +15,7 @@ enum SpotSheetPicture {
 
     static func run(text: String, path: String, view source: String? = nil, spot: Spot? = nil) -> Never {
         SpotPicture.start()
-        let output = SpotOutput(text: text)
+        let output = Frame(text: text)
         let panel = SheetParts(output: output)
         guard panel != nil || !output.items.isEmpty else {
             FileHandle.standardError.write(Data("The sheet has no blocks and no rows.\n".utf8))

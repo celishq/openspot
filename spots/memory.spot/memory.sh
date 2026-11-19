@@ -1,11 +1,4 @@
 #!/bin/sh
-# title=Memory
-# icon=memorychip
-# detail=The memory in use
-# on=system.load
-# mode=stay
-# offers=card
-# offers=menubar
 
 # Prints the memory in use, as a share of the whole, with a tone when little is left.
 draw() {
@@ -15,7 +8,7 @@ draw() {
   else detail="In use" tone=
   fi
   case $used in ?) value=0.0$used ;; ??) value=0.$used ;; *) value=1 ;; esac
-  printf 'graph=memory\ntitle=%s%%\ndetail=%s\nvalue=%s\ntone=%s\n' "$used" "$detail" "$value" "$tone"
+  printf 'frame=\ngrid=memory\ngrid=memory\ngrid.bar=memory\n\ngraph=memory\ntitle=%s%%\ndetail=%s\nvalue=%s\ntone=%s\n' "$used" "$detail" "$value" "$tone"
 }
 
 # Prints the memory in use now, as a percent.
@@ -36,8 +29,9 @@ used=
 # Prints the memory from the load that Openspot measures every 5 seconds. A read with no load, as when the panel
 # opens, measures the memory now.
 main() {
-  case $OPENSPOT_VALUE in
-    *memory=*) used=${OPENSPOT_VALUE##*memory=} used=${used%% *} ;;
+  load=$(value event.value)
+  case $load in
+    *memory=*) used=${load##*memory=} used=${used%% *} ;;
     *) used=$(measure) ;;
   esac
   draw "$used"

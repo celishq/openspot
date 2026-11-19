@@ -57,7 +57,7 @@ final class WebPicturesTests: XCTestCase {
     }
 
     func testAnOutputNamesItsPicturesOnTheWebForARenderToFetch() {
-        let frame = "row=a\nicon=https://example.com/a.png\n\nchoice=c\n\noption=x\nicon=https://example.com/x.png\n\nrow=b\nicon=wifi\n"
+        let frame = "text=a\nicon=https://example.com/a.png\n\nchoice=c\n\noption=x\nicon=https://example.com/x.png\n\ntext=b\nicon=wifi\n"
 
         XCTAssertEqual(WebPictures.named(in: frame), ["https://example.com/a.png", "https://example.com/x.png"])
     }

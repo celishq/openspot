@@ -56,8 +56,8 @@ public struct ItemForm: Equatable, Sendable {
         fields.count == 1 && fields[0].type == .choice ? fields[0] : nil
     }
 
-    public init?(output: SpotOutput) {
-        guard let title = output.summary?.value(HeadKey.title) else { return nil }
+    public init?(output: Frame) {
+        guard let title = output.root?.value(RootKey.title) else { return nil }
         let fields = output.fields.compactMap { $0.kind.formField(of: $0.block) }
         guard fields.count == output.fields.count else { return nil }
         self.init(title: title, fields: fields)

@@ -23,7 +23,7 @@ final class ScriptProcessTests: XCTestCase {
     }
 
     func testRunningScriptsHoldNoThreadEach() async throws {
-        let spot = try writeSpot("stays.sh", "#!/bin/sh\nprintf 'title=A\\n---\\n'\nexec sleep 30\n")
+        let spot = try writeSpot("stays.sh", "#!/bin/sh\nprintf 'frame=\\ntitle=A\\n---\\n'\nexec sleep 30\n")
         let before = Self.threadCount()
         var processes: [ScriptProcess] = []
         for _ in 0..<16 {

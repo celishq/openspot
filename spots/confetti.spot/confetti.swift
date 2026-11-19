@@ -1,15 +1,4 @@
 #!/usr/bin/env swift
-// title=Confetti
-// icon=party.popper
-// detail=Celebrate on each screen
-// mode=stay
-// source=confetti
-//
-// button=play
-// title=Play
-//
-// field=look
-// title=Look
 
 // Openspot builds this file with the Swift files of `confetti/`, and keeps one process while a call plays: the call
 // ends when the last piece leaves the screens, so no process of Confetti runs at rest. The key that plays it is the key
@@ -58,7 +47,7 @@ var plays: [String: Play] = [:]
 func play(_ id: String, call: String) {
     let (look, faults) = Look.read(shelf.file(of: id))
     if let fault = faults.first {
-        Link.frame("toast=\(Link.value("\(shelf.title(of: id)) cannot play. \(fault)"))")
+        Link.toast("\(shelf.title(of: id)) cannot play. \(fault)")
         return Link.end(call)
     }
     plays[call] = Play(look) {
@@ -69,10 +58,10 @@ func play(_ id: String, call: String) {
 
 /// Answers the Look row of Settings: with no value, a form with a choice of each look; with one, keeps it and plays it.
 func look(_ call: Call) {
-    let picked = call.arguments.dropFirst().first ?? call.value("look") ?? ""
-    let current = shelf.chosen(call.variables["OPENSPOT_SETTING_LOOK"])
+    let picked = call.arguments.dropFirst().first ?? call.value("input.look") ?? ""
+    let current = shelf.chosen(call.value("setting.look"))
     guard shelf.ids.contains(picked) else {
-        var form = "title=Look\n\nchoice=look\ntitle=Look\nvalue=\(current)\n"
+        var form = "frame=\ntitle=Look\n\nchoice=look\ntitle=Look\nvalue=\(current)\n"
         for id in shelf.ids { form += "\noption=\(id)\ntitle=\(Link.value(shelf.title(of: id)))\n" }
         Link.frame(form)
         return Link.end(call.id)
@@ -94,7 +83,7 @@ func look(_ call: Call) {
 Link.listen { call in
     Link.start(call.id)
     switch call.arguments.first {
-    case "play", "open": play(shelf.chosen(call.variables["OPENSPOT_SETTING_LOOK"]), call: call.id)
+    case "play", "open": play(shelf.chosen(call.value("setting.look")), call: call.id)
     case "look": look(call)
     default: Link.end(call.id)
     }

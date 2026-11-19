@@ -1,0 +1,11 @@
+title = "Record"
+icon = "record.circle"
+detail = "Record the screen, again to stop"
+uses = ["screen", "clipboard"]
+
+[commands.record]
+title = "Record"
+
+[settings.inputs]
+title = "Sound and camera"
+icon = "mic"

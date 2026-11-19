@@ -5,7 +5,6 @@ public enum SpotKind: String, CaseIterable, Sendable {
     case toggle
     case list
     case slider
-    case widget
 
     public var opensSheet: Bool {
         self == .list

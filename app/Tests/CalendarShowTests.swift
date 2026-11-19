@@ -7,15 +7,15 @@ final class CalendarShowTests: XCTestCase {
     private let now = Date(timeIntervalSince1970: 1_794_300_000)
 
     private func events(_ store: FakeEventStore) -> Events {
-        Events(store: store, now: now, isRead: false)
+        Events(store: store, now: now, isInShow: false)
     }
 
     private func reminders(_ store: FakeReminderStore) -> Reminders {
-        Reminders(store: store, now: now, isRead: false)
+        Reminders(store: store, now: now, isInShow: false)
     }
 
     private func id(_ text: String) throws -> String {
-        try XCTUnwrap(TextBlock.blocks(in: text).first?.value("row"))
+        try XCTUnwrap(TextBlock.blocks(in: text).first?.value("text"))
     }
 
     func testAnEventOpensOnTheDayOfItsTime() async throws {

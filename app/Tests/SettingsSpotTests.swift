@@ -27,9 +27,9 @@ final class SettingsSpotTests: BuiltInCase {
         XCTAssertEqual(spot.kind, .list)
         XCTAssertTrue(spot.isGlobal)
         XCTAssertTrue(spot.isFound)
-        XCTAssertFalse(spot.read?.has(.panel) == true)
-        XCTAssertTrue(spot.readsOfferedRows)
-        XCTAssertTrue(spot.read?.has(.sheet) == true)
+        XCTAssertFalse(spot.on?.has(.panel) == true)
+        XCTAssertTrue(spot.showsOfferedItems)
+        XCTAssertTrue(spot.on?.has(.sheet) == true)
         XCTAssertEqual(SpotArrangement().spot(openedBy: ActionKey(name: ",", isCommand: true), over: defaults.arrangement), spot.id)
     }
 
@@ -42,7 +42,7 @@ final class SettingsSpotTests: BuiltInCase {
     }
 
     func testTheSheetListsOnlyTheSettingsOfTheAppAndNoneOfASpot() async throws {
-        try script("cups.sh", "title=Cups\non=clock.60\non=sheet.open\n\nbutton=fill\ntitle=Fill\n\nfield=size")
+        try script("cups.sh", "title = 'Cups'\non = ['clock.60', 'sheet.open']\n[commands.fill]\ntitle = 'Fill'\n[settings.size]")
         try file.set(setting: "theme", of: "cups", to: "dark")
         try file.assign(.shake, to: "cups", act: .float)
 
@@ -181,28 +181,29 @@ final class SettingsSpotTests: BuiltInCase {
 
     func testTheLinkRowIsOffUntilALinkPointsAtTheAppAndAPickLinksAndRemovesIt() async throws {
         offerLink()
+        let effects = try recordEffects()
 
         let off = try await items()
         XCTAssertEqual(off.map(\.run), ["panel-key", "fix-key", "careful_mode", "command_link"])
         XCTAssertEqual(off.last?.title, "Use openspot in Terminal")
         XCTAssertEqual(off.last?.isOn, false)
 
-        let installed = try await call(["open", "command_link"])
-        XCTAssertEqual(installed, "Installed openspot")
+        try await call(["open", "command_link"])
+        XCTAssertEqual(effects(), ["toast Installed openspot"])
         XCTAssertEqual(try FileManager.default.destinationOfSymbolicLink(atPath: linkFile.path), root.appendingPathComponent("Openspot.app/Contents/Helpers/openspot").path)
         let on = try await items()
         XCTAssertEqual(on.last?.isOn, true)
 
-        let removed = try await call(["open", "command_link"])
-        XCTAssertEqual(removed, "Removed openspot")
+        try await call(["open", "command_link"])
+        XCTAssertEqual(effects(), ["toast Installed openspot", "toast Removed openspot"])
         XCTAssertFalse(FileManager.default.fileExists(atPath: linkFile.path))
         XCTAssertEqual(mac.elevated, [])
     }
 
-    func testARowShowsItsKeyAndRecordsANewOneOnlyWithTypeHotkey() {
-        let items = SpotOutput(text: "row=open\ntitle=Open\ntype=hotkey\nshortcut=ctrl+k\nshake=true\n\nrow=shown\ntitle=Shown\nshortcut=cmd+k\n\nrow=other\ntitle=Other\n").items
+    func testAHotkeyItemShowsItsKeyAndRecordsANewOne() {
+        let items = Frame(text: "field=open\ntitle=Open\ntype=hotkey\nvalue=ctrl+k\nshake=true\n\ntext=shown\ntitle=Shown\nshortcut=cmd+k\nshake=true\n\ntext=other\ntitle=Other\n").items
 
-        XCTAssertEqual(items.map(\.shortcut), ["ctrl+k", "cmd+k", nil])
+        XCTAssertEqual(items.map(\.shortcut), ["ctrl+k", nil, nil])
         XCTAssertEqual(items.map(\.records), [true, false, false])
         XCTAssertEqual(items.map(\.takesShake), [true, false, false])
     }

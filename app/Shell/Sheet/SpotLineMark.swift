@@ -6,7 +6,7 @@ struct SpotLineMark: View {
     var words: String?
 
     private var colour: Color {
-        value.tone.map(SpotMetricView.colour) ?? SpotTheme.ink
+        SpotToneWords.colour(of: value.tone) ?? SpotTheme.ink
     }
 
     var body: some View {

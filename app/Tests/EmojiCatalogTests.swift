@@ -35,7 +35,7 @@ final class EmojiCatalogTests: XCTestCase {
 
     private func rows(tone: EmojiCatalog.Tone = .none, languages: [String] = ["en"]) throws -> [SpotItem] {
         let keywords = GlyphKeywords(folder: folder.appendingPathComponent("Keywords"), languages: languages)
-        return SpotOutput(text: try EmojiCatalog(resources: folder, languages: languages, keywords: keywords).rows(tone: tone)).items
+        return Frame(text: try EmojiCatalog(resources: folder, languages: languages, keywords: keywords).rows(tone: tone)).items
     }
 
     func testRowsFollowTheOrderOfTheMac() throws {
@@ -112,8 +112,8 @@ final class EmojiCatalogTests: XCTestCase {
     func testTheEmojiOfThisMac() throws {
         guard FileManager.default.fileExists(atPath: EmojiCatalog.standardResources.path) else { throw XCTSkip("No emoji files.") }
         let catalog = EmojiCatalog(languages: ["en"])
-        let plain = SpotOutput(text: try catalog.rows(tone: .none)).items
-        let toned = SpotOutput(text: try catalog.rows(tone: .medium)).items
+        let plain = Frame(text: try catalog.rows(tone: .none)).items
+        let toned = Frame(text: try catalog.rows(tone: .medium)).items
 
         XCTAssertGreaterThan(plain.count, 1000)
         XCTAssertEqual(toned.count, plain.count)

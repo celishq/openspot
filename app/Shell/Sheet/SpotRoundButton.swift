@@ -8,7 +8,7 @@ struct SpotRoundButton: View {
 
     let symbol: String
     let label: String
-    var work: ScriptCall?
+    var act: ScriptCall?
     var size: CGFloat = SpotTokens.glyph
     var look = Look.plain
     let action: () -> Void
@@ -16,8 +16,8 @@ struct SpotRoundButton: View {
     var body: some View {
         Button(action: action) {
             Group {
-                if let work {
-                    SpotWorkMark(call: work, side: size, stops: true)
+                if let act {
+                    SpotWorkMark(call: act, side: size, stops: true)
                 } else {
                     Image(systemName: symbol)
                         .font(SpotType.roundSymbol(side: size))
@@ -25,12 +25,12 @@ struct SpotRoundButton: View {
                         .frame(width: size, height: size)
                 }
             }
-                .spotFill(isActive: work != nil || look == .strong, otherwise: fill, in: Circle())
+                .spotFill(isActive: act != nil || look == .strong, otherwise: fill, in: Circle())
                 .background { if look == .floating { SpotFloatGlass(shape: Circle()) } }
                 .contentShape(Circle())
         }
         .buttonStyle(.plain)
-        .accessibilityLabel(work == nil ? label : "Stop")
+        .accessibilityLabel(act == nil ? label : "Stop")
     }
 
     private var fill: Color {

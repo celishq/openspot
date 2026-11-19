@@ -1,11 +1,4 @@
 #!/bin/sh
-# title=Shelf
-# icon=tray.full
-# detail=Keeps files at hand
-# drop=*
-# on=sheet.open
-# offers=card
-# offers=float
 list="$OPENSPOT_DATA/files"
 . "$OPENSPOT_SH"
 
@@ -18,17 +11,17 @@ forget() {
 }
 
 case "$1" in
-  read)
-    printf 'recents=false\n\n'
+  show)
+    printf 'frame=\nrecents=false\n\n'
     printf 'button=reveal\ntitle=Show in Finder\nshortcut=cmd+return\n\n'
-    printf 'button=remove\ntitle=Remove from Shelf\nshortcut=cmd+backspace\n\n'
-    printf 'button=clear\ntitle=Clear Shelf\nscope=spot\n\n'
+    printf 'button=remove\ntitle=Remove from Shelf\nshortcut=cmd+backspace\nclose=false\n\n'
+    printf 'button=clear\ntitle=Clear Shelf\nscope=spot\nclose=false\n\n'
     [ -f "$list" ] || exit 0
     while IFS= read -r path; do
       [ -e "$path" ] || continue
       folder=${path%/*}
       case "$folder" in "$HOME"*) folder="~${folder#"$HOME"}" ;; esac
-      openspot_row "$path" "${path##*/}" "$folder" "$path"
+      openspot_item "$path" "${path##*/}" "$folder" "$path"
       openspot_kv file "$path"
     done < "$list"
     ;;
@@ -38,7 +31,7 @@ case "$1" in
     for path; do
       grep -qxF "$path" "$list" || printf '%s\n' "$path" >> "$list"
     done
-    openspot_kv select "$1"
+    openspot select "$1"
     ;;
   drag | remove)
     shift

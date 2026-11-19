@@ -1,10 +1,4 @@
 #!/bin/sh
-# title=Emojis & Symbols
-# icon=face.smiling
-# detail=Copy an emoji or a symbol
-# on=sheet.open
-# uses=clipboard
-# offers=card
 export LC_ALL=en_US.UTF-8
 saved="$OPENSPOT_DATA/tone"
 tones="none light medium-light medium medium-dark dark"
@@ -16,7 +10,7 @@ remember() {
   printf '%s\n' "$1" > "$saved.$$" && mv "$saved.$$" "$saved"
 }
 
-# Prints the rows of the emoji in the tone and of the symbols. It keeps them for each tone, with the times of change of
+# Prints the items of the emoji in the tone and of the symbols. It keeps them for each tone, with the times of change of
 # the app and of macOS and the languages of the Mac, and makes them again when one of these differs.
 glyph_rows() {
   rows="$OPENSPOT_DATA/rows-$tone"
@@ -51,11 +45,11 @@ next_tone() {
 }
 
 case "$1" in
-  read)
-    printf 'grid=tone tone tone tone tone tone tone\ngrid=a a a a a a a\n\nrepeat=a\ngrid=a b c d e f g\n\n'
+  show)
+    printf 'frame=\ngrid=tone tone tone tone tone tone tone\ngrid=a a a a a a a\n\nrepeat=a\ngrid=a b c d e f g\n\nfield=search\ntype=search\n\n'
     printf 'button=open\ntitle=Copy\n\n'
-    printf 'button=paste\ntitle=Paste\nshortcut=cmd+return\nclose=true\n\n'
-    printf 'button=next-tone\ntitle=Next skin tone\nshortcut=cmd+t\nscope=spot\n\n'
+    printf 'button=paste\ntitle=Paste\nshortcut=cmd+return\n\n'
+    printf 'button=next-tone\ntitle=Next skin tone\nshortcut=cmd+t\nscope=spot\nclose=false\n\n'
     printf 'choice=tone\ntitle=Skin tone\nvalue=%s\n\n' "$tone"
     printf 'option=none\ntitle=Yellow\n\noption=light\ntitle=Light\n\noption=medium-light\ntitle=Medium light\n\n'
     printf 'option=medium\ntitle=Medium\n\noption=medium-dark\ntitle=Medium dark\n\noption=dark\ntitle=Dark\n\n'
@@ -69,7 +63,7 @@ case "$1" in
     ;;
   open)
     printf '%s' "$2" | openspot clipboard copy
-    echo "toast=Copied"
+    openspot toast Copied
     ;;
   paste)
     previous=$(openspot clipboard read; printf x)

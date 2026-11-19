@@ -1,19 +1,35 @@
 # The shell helper of Openspot. `. "$OPENSPOT_SH"` gives `esc`, `value`, `openspot_value`, `openspot_input`, `openspot_kv`,
-# `openspot_row`, `openspot_rows`, `openspot_serve`, `openspot_keep` and `openspot_paste`.
+# `openspot_item`, `openspot_items`, `openspot_serve`, `openspot_keep` and `openspot_paste`.
 # Loading starts `cat` once, and each function starts `sed`, `tr` or `awk` only above 1 KB, where a shell loop is too slow.
 
-# Whether the header of the script says `mode=stay` or `mode=always`: the comment lines at its top, read with no process.
+# Whether the spot.toml beside the script says `mode = "stay"` for it, read with no process: its top level for the script
+# named after its folder, and its `[scripts.<name>]` table for another script.
 _openspot_stays=
+_openspot_name=${0##*/}
+_openspot_name=${_openspot_name%.*}
+_openspot_folder=${0%/*}
+[ "$_openspot_folder" = "$0" ] && _openspot_folder=.
+_openspot_table=
+case ${_openspot_folder##*/} in
+  "$_openspot_name".spot) ;;
+  *.spot) _openspot_table=scripts.$_openspot_name ;;
+esac
+_openspot_in=
+[ -z "$_openspot_table" ] && _openspot_in=1
 while IFS= read -r _openspot_line; do
-  case $_openspot_line in
-    '#'*) _openspot_line=${_openspot_line#\#} ;;
-    *) break ;;
-  esac
   _openspot_line=${_openspot_line#"${_openspot_line%%[! ]*}"}
   case $_openspot_line in
-    mode=stay | mode=always) _openspot_stays=1 ;;
+    '['*)
+      _openspot_in=
+      case $_openspot_line in "[$_openspot_table]"*) [ -n "$_openspot_table" ] && _openspot_in=1 ;; esac
+      ;;
+    mode=* | mode\ *)
+      _openspot_line=${_openspot_line#mode}
+      _openspot_line=${_openspot_line#"${_openspot_line%%[!= ]*}"}
+      case $_openspot_in$_openspot_line in 1\"stay\"* | 1\'stay\'*) _openspot_stays=1 ;; esac
+      ;;
   esac
-done < "$0" 2>/dev/null
+done < "$_openspot_folder/spot.toml" 2>/dev/null
 
 # All of stdin, read once now, because each `$(value id)` runs in a subshell that would lose it. A staying script keeps
 # its stdin for its calls, so this leaves it alone there, and `openspot_serve` fills it with the stdin of each call.
@@ -50,8 +66,8 @@ esc() {
   done
 }
 
-# Prints the real text of each value of a key from stdin, one per line: `\n` as a new line and `\\` as a backslash. It prints
-# nothing when stdin has no such value.
+# Prints the real text of each value of a key from stdin, such as `value setting.city`, `value input.title` or `value event`,
+# one per line: `\n` as a new line and `\\` as a backslash. It prints nothing when stdin has no such value.
 value() (
   if [ "${#_openspot_stdin}" -gt 1024 ]; then
     printf %s "$_openspot_stdin" |
@@ -142,12 +158,10 @@ _openspot_decode() {
 }
 
 # Reads the next call block of a staying script from stdin, and fails at the end of stdin (protocol: Modes). It sets `_openspot_call`,
-# `_openspot_args` with one written argument on each line, and `_openspot_stdin`, and exports each variable of the call in
-# place of those of the call before. A stop block gives no call.
+# `_openspot_args` with one written argument on each line, and `_openspot_stdin` with the other lines of the block, the stdin
+# of the call. A stop block gives no call.
 _openspot_next() {
   _openspot_call= _openspot_args= _openspot_stdin= _openspot_count=0
-  for _openspot_name in $_openspot_env; do unset "$_openspot_name"; done
-  _openspot_env=
   while IFS= read -r _openspot_line; do
     case $_openspot_line in
       '') [ -z "$_openspot_call" ] || return 0 ;;
@@ -157,18 +171,7 @@ _openspot_next() {
         _openspot_args=$_openspot_args${_openspot_line#arg=}
         _openspot_count=$((_openspot_count + 1))
         ;;
-      env.OPENSPOT_*=*)
-        _openspot_name=${_openspot_line%%=*}
-        _openspot_name=${_openspot_name#env.}
-        case $_openspot_name in *[!A-Z0-9_]*) continue ;; esac
-        _openspot_decode "${_openspot_line#*=}"
-        export "$_openspot_name=$_openspot_text"
-        _openspot_env="$_openspot_env $_openspot_name"
-        ;;
-      input=*)
-        _openspot_decode "${_openspot_line#input=}"
-        _openspot_stdin=$_openspot_text
-        ;;
+      *) [ -z "$_openspot_call" ] || _openspot_stdin=$_openspot_stdin$_openspot_line$_openspot_nl ;;
     esac
   done
   return 1
@@ -209,21 +212,21 @@ openspot_kv() {
   printf '\n'
 }
 
-# Prints one row after a blank line: its id and title, and its detail and icon when they are given, each written for you
-# (protocol: The calls). More lines of the row can follow with `openspot_kv`.
-openspot_row() {
+# Prints one item, a `text` block, after a blank line: its id and title, and its detail and icon when they are given, each
+# written for you (protocol: The calls). More lines of the item can follow with `openspot_kv`.
+openspot_item() {
   printf '\n'
-  openspot_kv row "$1"
+  openspot_kv text "$1"
   openspot_kv title "${2-}"
   [ -z "${3-}" ] || openspot_kv detail "$3"
   [ -z "${4-}" ] || openspot_kv icon "$4"
 }
 
-# Prints a block for each line of stdin, a row or one of the kind given, such as `text`. A line holds its id, title, detail
+# Prints an item for each line of stdin, a `text` block or one of the kind given, such as `switch`. A line holds its id, title, detail
 # and icon split by tabs, and after them any more `key=value` fields of the block. Each backslash is written for you, and an
 # empty field prints no line (protocol: The calls).
-openspot_rows() {
-  LC_ALL=C /usr/bin/sed 's/\\/\\\\/g' | LC_ALL=C /usr/bin/awk -F '\t' -v kind="${1:-row}" '
+openspot_items() {
+  LC_ALL=C /usr/bin/sed 's/\\/\\\\/g' | LC_ALL=C /usr/bin/awk -F '\t' -v kind="${1:-text}" '
     NF {
       printf "\n%s=%s\n", kind, $1
       if ($2 != "") printf "title=%s\n", $2

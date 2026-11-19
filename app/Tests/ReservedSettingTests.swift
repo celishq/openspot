@@ -39,11 +39,11 @@ final class ReservedSettingTests: XCTestCase {
 
     func testAFieldOfAHeaderCannotTakeAReservedKey() throws {
         let url = FileManager.default.temporaryDirectory.appendingPathComponent("reserved-\(UUID().uuidString).sh")
-        try "#!/bin/sh\n# title=Notes\n#\n# field=menubar\n".writeScript(to: url)
+        try "#!/bin/sh\n".writeScript(to: url, toml: "title = 'Notes'\n[settings.menubar]")
         defer { try? FileManager.default.removeItem(at: url) }
 
         XCTAssertThrowsError(try SpotFile(file: url, id: "notes")) { error in
-            XCTAssertEqual((error as? SpotError)?.reason, "Notes has field=menubar, a key that Openspot keeps for the person. Give the field another name.")
+            XCTAssertEqual((error as? SpotError)?.reason, "Notes has [settings.menubar], a key that Openspot keeps for the person. Give the setting another name.")
         }
     }
 }

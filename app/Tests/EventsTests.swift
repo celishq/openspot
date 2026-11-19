@@ -19,8 +19,8 @@ final class EventsTests: XCTestCase {
         Event(id: id, title: title, start: start, end: end, isAllDay: allDay, calendar: work, location: nil, url: url, notes: notes)
     }
 
-    private func calendar(_ store: FakeEventStore, isRead: Bool = true) -> Events {
-        Events(store: store, now: at(9, 40), clock: clock, locale: Locale(identifier: "en_GB"), isRead: isRead)
+    private func calendar(_ store: FakeEventStore, isInShow: Bool = true) -> Events {
+        Events(store: store, now: at(9, 40), clock: clock, locale: Locale(identifier: "en_GB"), isInShow: isInShow)
     }
 
     private func rows(_ text: String) -> [TextBlock] {
@@ -100,7 +100,7 @@ final class EventsTests: XCTestCase {
             event("daily", "Standup", at(10, day: 11), at(10, 15, day: 11))
         ])
 
-        let ids = rows(try await calendar(store).events(days: 2, hiding: [])).compactMap { $0.value("row") }
+        let ids = rows(try await calendar(store).events(days: 2, hiding: [])).compactMap { $0.value("text") }
 
         XCTAssertEqual(ids.count, 2)
         XCTAssertEqual(Set(ids).count, 2)
@@ -119,7 +119,7 @@ final class EventsTests: XCTestCase {
     func testAReadThatHasNotAskedSaysUnaskedAndDoesNotAsk() async throws {
         let store = FakeEventStore(events: [event("standup", "Standup", at(10), at(11))], access: .unasked)
 
-        let text = try await calendar(store, isRead: true).events(days: 1, hiding: [])
+        let text = try await calendar(store, isInShow: true).events(days: 1, hiding: [])
 
         XCTAssertEqual(text, "status=unasked\n")
         XCTAssertEqual(store.asks, 0)
@@ -128,7 +128,7 @@ final class EventsTests: XCTestCase {
     func testACallOutsideAReadAsksFirstAndThenAnswers() async throws {
         let store = FakeEventStore(events: [event("standup", "Standup", at(10), at(11))], access: .unasked, answer: .allowed)
 
-        let rows = rows(try await calendar(store, isRead: false).events(days: 1, hiding: []))
+        let rows = rows(try await calendar(store, isInShow: false).events(days: 1, hiding: []))
 
         XCTAssertEqual(store.asks, 1)
         XCTAssertEqual(rows.map { $0.value("title") }, ["Standup"])
@@ -139,7 +139,7 @@ final class EventsTests: XCTestCase {
             let store = FakeEventStore(events: [event("standup", "Standup", at(10), at(11))], access: access, answer: answer)
 
             do {
-                _ = try await calendar(store, isRead: false).events(days: 1, hiding: [])
+                _ = try await calendar(store, isInShow: false).events(days: 1, hiding: [])
                 XCTFail("a refusal printed a list")
             } catch SpotError.failedWithFix(1, let message, let link) {
                 XCTAssertEqual(message, "Openspot has no access to your calendars. Allow Openspot in Privacy & Security › Calendars, then try again.")
@@ -153,7 +153,7 @@ final class EventsTests: XCTestCase {
 
         let rows = rows(try await calendar(store).calendars())
 
-        XCTAssertEqual(rows.map { $0.value("row") }, ["A8E2", "B1"])
+        XCTAssertEqual(rows.map { $0.value("text") }, ["A8E2", "B1"])
         XCTAssertEqual(rows[0].value("title"), "Work")
         XCTAssertEqual(rows[0].value("detail"), "iCloud")
         XCTAssertEqual(rows[0].value("color"), "#1BADF8")

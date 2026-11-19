@@ -23,8 +23,8 @@ final class CallInputTests: SpotRunsCase {
     }
 
     func testACallCarriesTheValuesOfTheFieldsOfItsOwnHeaderAndOfNoOtherSpot() async throws {
-        try script(header: "on=sheet.open\n\nfield=folder\n\nfield=api-key", "env | grep '^OPENSPOT_SETTING_' | sort > '\(path("env"))'")
-        try script("other", header: "on=sheet.open\n\nfield=folder", log: "other", "")
+        try script(toml: "on = ['sheet.open']\n[settings.folder]\n[settings.api-key]", "grep '^setting\\.' | sort > '\(path("env"))'")
+        try script("other", toml: "on = ['sheet.open']\n[settings.folder]", log: "other", "")
         let sheet = try sheet()
         runs.take(settings: [
             SpotSetting(spot: "script", key: "folder", value: "/tmp/repos"),
@@ -33,30 +33,30 @@ final class CallInputTests: SpotRunsCase {
             SpotSetting(spot: "other", key: "folder", value: "/tmp/other")
         ])
 
-        sheet.read(need: .change)
+        sheet.show(need: .change)
 
         try await wait("the call") { self.text("env").hasSuffix("\n") }
-        XCTAssertEqual(text("env"), "OPENSPOT_SETTING_API_KEY=k1\nOPENSPOT_SETTING_FOLDER=/tmp/repos\n")
+        XCTAssertEqual(text("env"), "setting.api-key=k1\nsetting.folder=/tmp/repos\n")
     }
 
     func testAnActionAndAPickOfARowCarryTheKeysOfThatRowOnStdin() async throws {
-        try script(header: "on=sheet.open", """
+        try script(toml: "on = ['sheet.open']", """
         case "$1" in
-          read) printf 'row=a\\ntitle=A\\nmeeting=https://meet.example/a\\n\\nrow=b\\ntitle=B\\n' ;;
+          show) printf 'text=a\\ntitle=A\\nmeeting=https://meet.example/a\\n\\ntext=b\\ntitle=B\\n' ;;
           *) { echo "$*"; cat; echo; } >> '\(path("input"))' ;;
         esac
         """)
         let sheet = try sheet()
-        sheet.read(need: .change)
-        try await wait("the rows") { sheet.list.all.count == 2 && !sheet.isReading }
+        sheet.show(need: .change)
+        try await wait("the rows") { sheet.list.all.count == 2 && !sheet.isShowing }
         let row = try XCTUnwrap(sheet.list.all.first)
 
         sheet.run(CommandAction(id: "join", title: "Join"), item: row)
         try await wait("the action") { self.text("input").contains("join a") && sheet.calls.isEmpty }
         sheet.pick(row)
 
-        try await wait("the pick") { self.text("input").contains("open a\nrow=a") && self.text("input").hasSuffix("\n\n") }
-        XCTAssertEqual(text("input"), "join a\nrow=a\ntitle=A\nmeeting=https://meet.example/a\n\nopen a\nrow=a\ntitle=A\nmeeting=https://meet.example/a\n\n")
+        try await wait("the pick") { self.text("input").contains("open a\nitem.text=a") && self.text("input").hasSuffix("\n\n") }
+        XCTAssertEqual(text("input"), "join a\nitem.text=a\nitem.title=A\nitem.meeting=https://meet.example/a\n\nopen a\nitem.text=a\nitem.title=A\nitem.meeting=https://meet.example/a\n\n")
     }
 
     func testTheValueOfASecretFieldGoesOnlyOnStdinAndTheHostRecordsItNowhere() async throws {
@@ -70,13 +70,13 @@ final class CallInputTests: SpotRunsCase {
             default: break
             }
         }
-        try script(header: "on=sheet.open\n\nfield=token\ntype=secret", """
+        try script(toml: "on = ['sheet.open']\n[settings.token]\ntype = 'secret'", """
         env > '\(path("env"))'
         echo "$*" > '\(path("arguments"))'
         in=$(cat)
         token=$(printf '%s\\n' "$in" | sed -n 's/^setting.token=//p')
         printf '%s' "$token" > '\(path("seen"))'
-        printf 'toast=Got %s\\n\\nrow=a\\ntitle=%s\\n---\\n' "$token" "$token"
+        printf '\\033]9;Got %s\\007text=a\\ntitle=%s\\n---\\n' "$token" "$token"
         echo "Cannot reach the server with $token" >&2
         exit 1
         """)
@@ -102,7 +102,7 @@ final class CallInputTests: SpotRunsCase {
 
     func testAFormCallThatFailsHidesTheSecretInItsFailure() async throws {
         runs.onReport = { _, _ in }
-        try script(header: "on=sheet.open\n\nfield=token\ntype=secret", """
+        try script(toml: "on = ['sheet.open']\n[settings.token]\ntype = 'secret'", """
         token=$(sed -n 's/^setting.token=//p')
         case "$1" in
           login) echo "Cannot reach the server with $token" >&2; exit 1 ;;
@@ -120,40 +120,26 @@ final class CallInputTests: SpotRunsCase {
     }
 
     func testAPlainFieldNeverGetsTheSecretThatAnOlderHeaderKeptUnderItsKey() async throws {
-        try script(header: "on=sheet.open\n\nfield=token", "env > '\(path("env"))'\ncat > '\(path("input"))'")
+        try script(toml: "on = ['sheet.open']\n[settings.token]", "env > '\(path("env"))'\ncat > '\(path("input"))'")
         let sheet = try sheet()
         try secrets(["token": marker])
 
-        sheet.read(need: .change)
+        sheet.show(need: .change)
 
-        try await wait("the call") { self.text("env").contains("OPENSPOT_ID") && !sheet.isReading }
+        try await wait("the call") { self.text("env").contains("OPENSPOT_ID") && !sheet.isShowing }
         XCTAssertFalse(text("env").contains(marker))
         XCTAssertFalse(text("input").contains(marker))
     }
 
-    func testASettingOver64KBIsNotPutInTheEnvironment() async throws {
-        try script(header: "on=sheet.open\n\nfield=notes\n\nfield=city", "env | grep '^OPENSPOT_SETTING_' | cut -c1-30 > '\(path("env"))'")
-        let sheet = try sheet()
-        runs.take(settings: [
-            SpotSetting(spot: "script", key: "notes", value: String(repeating: "n", count: 65_537)),
-            SpotSetting(spot: "script", key: "city", value: "Paris")
-        ])
-
-        sheet.read(need: .change)
-
-        try await wait("the call") { self.text("env").hasSuffix("\n") }
-        XCTAssertEqual(text("env"), "OPENSPOT_SETTING_CITY=Paris\n")
-    }
-
-    private func settingsSheet(fields: [HeaderField], config: String = "") throws -> String {
+    private func settingsSheet(fields: [Manifest.Setting], config: String = "") throws -> String {
         let file = ConfigFile(url: folder.appendingPathComponent("config.toml"))
         try config.write(to: file.url, atomically: true, encoding: .utf8)
         let settings = SpotSettings(file: file, secrets: try secrets(["token": marker]), spot: "script", fields: fields, showsInMenuBar: false, keys: [])
-        return try settings.answer(["read"])
+        return try settings.answer(["show"])
     }
 
-    private func field(_ key: String, secret: Bool) throws -> HeaderField {
-        try XCTUnwrap(HeaderField(setting: TextBlock(fields: [.init(key: "field", value: key)] + (secret ? [.init(key: "type", value: "secret")] : []))))
+    private func field(_ key: String, secret: Bool) throws -> Manifest.Setting {
+        try XCTUnwrap(Manifest(text: "[settings.\(key)]\n" + (secret ? "type = 'secret'" : ""), folder: "/spots").settings.first)
     }
 
     func testTheSettingsSheetShowsThatASecretIsSetAndNotItsValue() throws {

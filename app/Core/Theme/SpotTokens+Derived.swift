@@ -27,8 +27,8 @@ extension SpotTokens {
         CGFloat(rows) * cell + CGFloat(rows - 1) * rowGap
     }
 
-    public static func cardPadding(for size: SpotSize, isWidget: Bool) -> CGFloat {
-        isWidget && size == .small ? controlPadding : padding
+    public static func cardPadding(for size: SpotSize, isDrawn: Bool) -> CGFloat {
+        isDrawn && size == .small ? controlPadding : padding
     }
 
     public static func pictureSide(in room: CGSize) -> CGFloat {

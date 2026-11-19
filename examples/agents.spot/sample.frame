@@ -1,5 +1,7 @@
+frame=
 grid=items
 grid.small=card
+grid.bar=count
 
 view=card
 limit1=claude|0.62|working
@@ -8,16 +10,20 @@ task1=waiting|Fix a flaky test|openai|website
 task2=working|Rewrite the README|claude|openspot
 task3=working|Add a pricing page|claude|website
 
+number=count
+value=3
+title=Sessions
+
 repeat=items
 
-row=codex/702
+text=codex/702
 title=Fix a flaky test
 detail=website · waits for you · 41% context
 
-row=claude/611
+text=claude/611
 title=Rewrite the README
 detail=openspot · working · 34% context
 
-row=claude/4821
+text=claude/4821
 title=Add a pricing page
 detail=website · working · 12% context

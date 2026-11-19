@@ -25,7 +25,7 @@ struct SpotCardView: View, @MainActor Equatable {
         ZStack(alignment: .topLeading) { content }
             .environment(\.spotIsOnSolid, isFilled)
             .environment(\.spotViewPlace, SpotViewPlace(model: model))
-            .padding(drawnView != nil && !isDrawn ? 0 : SpotTokens.cardPadding(for: size, isWidget: entry.kind == .widget || isDrawn))
+            .padding(drawnView != nil && !isDrawn ? 0 : SpotTokens.cardPadding(for: size, isDrawn: isDrawn))
             .frame(width: SpotTokens.width(columns: size.columns), height: SpotTokens.height(rows: size.rows), alignment: .topLeading)
             .background(shape(of: .dropFill).fill(SpotTheme.accent).opacity(dropFill))
             .modifier(CardPress(shape: shape(of: .press), isFilled: isFilled, showsPress: showsPress))
@@ -57,19 +57,13 @@ struct SpotCardView: View, @MainActor Equatable {
 
     @ViewBuilder
     private var words: some View {
-        if let layout = entry.spot.layout {
-            SpotWidgetView(layout: layout, places: entry.spot.places, reading: reading, card: size)
-        } else if size == .small {
+        if size == .small {
             glyph.frame(maxWidth: .infinity, maxHeight: .infinity)
         } else if size.rows > 1 {
             tile
         } else {
             row
         }
-    }
-
-    private var reading: (String) -> MetricReading? {
-        entry.kind == .widget ? { [model] in model.reading(of: $0) } : { _ in nil }
     }
 
     private var ownView: String? {
@@ -99,7 +93,7 @@ struct SpotCardView: View, @MainActor Equatable {
     }
 
     static func showsPress(of entry: SpotsModel.Entry) -> Bool {
-        entry.kind != .slider && (entry.kind != .widget || entry.spot.opens != nil)
+        entry.kind != .slider
     }
 
     private var dropFill: Double {
@@ -169,7 +163,7 @@ struct SpotCardView: View, @MainActor Equatable {
         switch entry.kind {
         case .list where entry.spot.opensOnReturn:
             SpotCardArrow()
-        case .list, .launch, .toggle, .slider, .widget:
+        case .list, .launch, .toggle, .slider:
             EmptyView()
         }
     }

@@ -112,7 +112,7 @@ public struct SpotCatalog: Sendable {
 
     static func publication(of spot: SpotPackage, in store: URL) -> SpotPublication? {
         guard let root = spot.roots.first, let stored = try? SpotPackage(contentsOf: store.appendingPathComponent(root)) else { return nil }
-        return stored.manifest(of: root).written == spot.manifest(of: root).written ? .current : .changed
+        return stored.digest(of: root).written == spot.digest(of: root).written ? .current : .changed
     }
 
     func text(_ form: PrintForm) throws -> String {
@@ -127,7 +127,7 @@ public struct SpotCatalog: Sendable {
 
         var blocks: [[(String, String?)]] {
             [[
-                ("spot", id), ("name", name), ("icon", icon), ("detail", detail), ("size", size), ("origin", origin), ("added", String(added)), ("step", step),
+                ("text", id), ("title", name), ("icon", icon), ("detail", detail), ("size", size), ("origin", origin), ("added", String(added)), ("step", step),
                 ("published", published), ("path", path), ("store", store), ("sample", sample ? "true" : nil)
             ] + readme.map { ("readme", $0) }]
         }

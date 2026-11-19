@@ -73,7 +73,7 @@ struct SpotCalls {
     func choose(for id: String) -> CommandAPI.Work {
         guard let app else { return CommandAnswer.notRunning("spot choose \(id)") }
         return CommandAnswer.work {
-            guard await app.choose(for: id) else { throw SpotError.failed(1, "Openspot has no spot `\(id)` that takes files. Add drop= to its header.") }
+            guard await app.choose(for: id) else { throw SpotError.failed(1, "Openspot has no spot `\(id)` that takes files. Add drop to its spot.toml.") }
             return ""
         }
     }
@@ -136,10 +136,10 @@ struct SpotCalls {
         }
     }
 
-    func push(_ id: String, page: String?, title: String?, replace: Bool) -> CommandAPI.Work {
+    func push(_ id: String, route: String?, title: String?, replace: Bool) -> CommandAPI.Work {
         guard let app else { return CommandAnswer.notRunning("spot push \(id)") }
         return CommandAnswer.work {
-            guard await app.push(id, page: page, title: title, replace: replace) else {
+            guard await app.push(id, route: route, title: title, replace: replace) else {
                 throw SpotError.failed(1, "Openspot has no spot `\(id)`. Run `openspot spot list` to see each one.")
             }
             return ""
@@ -180,8 +180,7 @@ struct SpotCalls {
     func stats(days: Int, spot: String?, format: Stats.Form, byVersion: Bool) -> CommandAPI.Work {
         CommandAnswer.work { [places, runs] in
             let counts = await StatsLog.days(days, runs: runs, stats: places.stats)
-            let cards = (try? places.readSpots().scan().spots) ?? []
-            return try Stats(days: counts, spot: spot, cards: cards, byVersion: byVersion).text(format)
+            return try Stats(days: counts, spot: spot, byVersion: byVersion).text(format)
         }
     }
 }

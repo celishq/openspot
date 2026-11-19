@@ -32,8 +32,7 @@ final class SpotAPITests: XCTestCase {
     }
 
     private func answer(_ arguments: [String], host: Mac = Mac(), app: (any RunningApp)? = nil, reason: String? = nil) async throws -> CommandAnswer {
-        let environment = environment.merging(reason.map { ["OPENSPOT_REASON": $0] } ?? [:]) { _, new in new }
-        let call = try XCTUnwrap(CommandLineCall(arguments: arguments, environment: environment))
+        let call = try XCTUnwrap(CommandLineCall(arguments: arguments, environment: environment, reason: reason))
         let work = try XCTUnwrap(CommandAPI(mac: host, places: .test(environment), app: app ?? self.app, rates: .offline).work(for: call, request: .test(arguments, in: environment), input: { "" }))
         return await work()
     }
@@ -50,8 +49,8 @@ final class SpotAPITests: XCTestCase {
     }
 
     func testTheListHoldsEachScriptWithItsCommandsSettingsAndKeys() async throws {
-        try "#!/bin/sh\n# title=Move\n# icon=macwindow\n# on=sheet.open\n# offers=card\n# offers=float\n#\n# button=left\n# title=Left side\n#\n# field=folder\n".writeScript(to: spots.spotFile("move"))
-        try "#!/bin/sh\n# title=Cups\n# on=clock.60\n# offers=card\n# offers=menubar\n".writeScript(to: spots.spotFile("cups"))
+        try "#!/bin/sh\n".writeScript(to: spots.spotFile("move"), toml: "title = 'Move'\nicon = 'macwindow'\non = ['sheet.open']\n[commands.left]\ntitle = 'Left side'\n[settings.folder]")
+        try "#!/bin/sh\n".writeScript(to: spots.spotFile("cups"), toml: "title = 'Cups'\non = ['clock.60']")
         try file.write(keys: [
             GlobalKey(spot: "move", act: .command("left"), trigger: .key(try XCTUnwrap(Shortcut(text: "ctrl+option+left")))),
             GlobalKey(spot: "move", act: .float, trigger: .shake)
@@ -73,10 +72,10 @@ final class SpotAPITests: XCTestCase {
     }
 
     func testTheCoreListHoldsEachCoreSpotByNameAndWhetherItIsOn() async throws {
-        try "#!/bin/sh\n# detail=Open app\n# icon=star\n".writeScript(to: core.appendingPathComponent("zebra.spot/zebra.sh"))
+        try "#!/bin/sh\n".writeScript(to: core.appendingPathComponent("zebra.spot/zebra.sh"), toml: "detail = 'Open app'\nicon = 'star'")
         try "#!/bin/sh\n".writeScript(to: core.appendingPathComponent("apps.spot/apps.sh"))
         try "#!/bin/sh\n".writeScript(to: core.appendingPathComponent("files.spot/files.sh"))
-        try "#!/bin/sh\n# on=clock.5\n".writeScript(to: core.appendingPathComponent("cpu.spot/cpu.sh"))
+        try "#!/bin/sh\n".writeScript(to: core.appendingPathComponent("cpu.spot/cpu.sh"), toml: "on = ['clock.5']")
         try "#!/bin/sh\n".writeScript(to: spots.spotFile("files"))
         try file.turn("zebra", on: true)
 
@@ -273,11 +272,11 @@ final class SpotAPITests: XCTestCase {
     }
 
     func testAReadCannotQuitOrRestartTheApp() {
-        let read = ["OPENSPOT_REASON": "panel"]
+        let read: [String: String] = [:]
 
-        XCTAssertEqual(CommandLineCall(arguments: ["app", "quit"], environment: read)?.value as? CallFault, .refused("`openspot app quit` ends Openspot, so it cannot run in a read. Run it from a pick or an action."))
-        XCTAssertEqual(CommandLineCall(arguments: ["update", "install"], environment: read)?.value as? CallFault, .refused("`openspot update install` restarts Openspot, so it cannot run in a read. Run it from a pick or an action."))
-        XCTAssertEqual(CommandLineCall(arguments: ["app", "status"], environment: read)?.value as? AppCall, .status(.frame))
+        XCTAssertEqual(CommandLineCall(arguments: ["app", "quit"], environment: read, reason: "panel")?.value as? CallFault, .refused("`openspot app quit` ends Openspot, so it cannot run in a show. Run it from a pick or an action."))
+        XCTAssertEqual(CommandLineCall(arguments: ["update", "install"], environment: read, reason: "panel")?.value as? CallFault, .refused("`openspot update install` restarts Openspot, so it cannot run in a show. Run it from a pick or an action."))
+        XCTAssertEqual(CommandLineCall(arguments: ["app", "status"], environment: read, reason: "panel")?.value as? AppCall, .status(.frame))
     }
 
     func testTheRunningAppOpensASheetAReviewAndAChangeOfASetting() async throws {
@@ -300,7 +299,7 @@ final class SpotAPITests: XCTestCase {
             let answer = try await XCTUnwrap(appWork(arguments))()
             XCTAssertEqual(answer.code, 3, arguments.joined(separator: " "))
         }
-        XCTAssertEqual(CommandLineCall(arguments: ["spot", "open", "notes"], environment: ["OPENSPOT_REASON": "panel"])?.value as? CallFault, .refused("`openspot spot open` opens the panel, so it cannot run in a read. Run it from a pick or an action."))
+        XCTAssertEqual(CommandLineCall(arguments: ["spot", "open", "notes"], environment: [:], reason: "panel")?.value as? CallFault, .refused("`openspot spot open` opens the panel, so it cannot run in a show. Run it from a pick or an action."))
     }
 
     func testTheRunningAppAsksForFilesForASpotThatTakesThem() async throws {
@@ -310,8 +309,8 @@ final class SpotAPITests: XCTestCase {
         let opened = await app.opened
         XCTAssertEqual(chose, CommandAnswer())
         XCTAssertEqual(opened, ["choose shelf", "choose gone"])
-        XCTAssertEqual(gone.errors, "Openspot has no spot `gone` that takes files. Add drop= to its header.\n")
-        XCTAssertEqual(CommandLineCall(arguments: ["spot", "choose", "shelf"], environment: ["OPENSPOT_REASON": "panel"])?.value as? CallFault, .refused("`openspot spot choose` opens a window, so it cannot run in a read. Run it from a pick or an action."))
+        XCTAssertEqual(gone.errors, "Openspot has no spot `gone` that takes files. Add drop to its spot.toml.\n")
+        XCTAssertEqual(CommandLineCall(arguments: ["spot", "choose", "shelf"], environment: [:], reason: "panel")?.value as? CallFault, .refused("`openspot spot choose` opens a window, so it cannot run in a show. Run it from a pick or an action."))
     }
 
     func testThePromptAsksForASpotInTheSpotsFolder() async throws {

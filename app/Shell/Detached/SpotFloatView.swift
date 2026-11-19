@@ -49,14 +49,14 @@ struct SpotFloatView: View {
             if !fills { header(entry, run) }
             if let part = sole, let view = entry.spot.view {
                 GeometryReader { area in
-                    SpotCustomView(source: view, values: part.values, rows: part.rows, card: .square, room: area.size, answers: run.panel?.answered ?? 0, date: entry.spot.viewDate, views: .shared) { run.set(part, to: $0) }
+                    SpotCustomView(source: view, values: part.values, items: part.items, card: .square, room: area.size, answers: run.panel?.answered ?? 0, date: entry.spot.viewDate, views: .shared) { run.set(part, to: $0) }
                         .equatable()
                 }
                 .ignoresSafeArea(edges: [.horizontal, .bottom])
             } else if let parts = run.panel {
                 SheetPartsView(
                     panel: parts,
-                    work: { run.work(of: $0) },
+                    act: { run.act(of: $0) },
                     onSet: { run.set($0, to: $1) },
                     onPress: { part in
                         run.press(part)
@@ -72,7 +72,7 @@ struct SpotFloatView: View {
                     viewDate: entry.spot.viewDate
                 )
             } else {
-                SpotRowsView(
+                SpotItemsView(
                     list: run.list,
                     onRun: { model.pick($0, of: entry, in: place) },
                     selection: { run.selection },

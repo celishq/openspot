@@ -2,6 +2,8 @@ import XCTest
 @testable import OpenspotCore
 
 final class StoreSpotTests: BuiltInCase {
+    private var effects: (() -> [String])!
+
     private var store: Spot {
         get throws {
             try spot("store")
@@ -10,17 +12,18 @@ final class StoreSpotTests: BuiltInCase {
 
     override func setUp() async throws {
         try await super.setUp()
-        try "#!/bin/sh\n# detail=Counts down\n".writeScript(to: core.appendingPathComponent("timer.spot/timer.sh"))
+        try "#!/bin/sh\n".writeScript(to: core.appendingPathComponent("timer.spot/timer.sh"), toml: "detail = 'Counts down'")
         try "#!/bin/sh\n".writeScript(to: core.appendingPathComponent("timer.spot/sample.sh"))
-        try "#!/bin/sh\n# title=Shared\n".writeScript(to: root.appendingPathComponent("examples/shared.spot/shared.sh"))
-        try "#!/bin/sh\n# title=Mine\n".writeScript(to: spots.appendingPathComponent("mine.spot/mine.sh"))
+        try "#!/bin/sh\n".writeScript(to: root.appendingPathComponent("examples/shared.spot/shared.sh"), toml: "title = 'Shared'")
+        try "#!/bin/sh\n".writeScript(to: spots.appendingPathComponent("mine.spot/mine.sh"), toml: "title = 'Mine'")
+        effects = try recordEffects()
     }
 
     private func items() async throws -> [[String]] {
-        let text = try await runs.answer(of: store, .read, limit: 60)
-        XCTAssertEqual(SpotOutput(text: text).parts.map(\.id), ["gallery"])
+        let text = try await runs.answer(of: store, .show, limit: 60)
+        XCTAssertEqual(Frame(text: text).parts.map(\.id), ["gallery"])
         return TextBlock.blocks(in: text).compactMap { row in
-            row.value("row").map { [$0, row.value("title") ?? "", row.value("step") ?? "", row.value("origin") ?? "", row.value("detail") ?? "", row.value("size") ?? "", row.value("sample") == "true" ? "sample" : ""] }
+            row.value("text").map { [$0, row.value("title") ?? "", row.value("step") ?? "", row.value("origin") ?? "", row.value("detail") ?? "", row.value("size") ?? "", row.value("sample") == "true" ? "sample" : ""] }
         }
     }
 
@@ -43,7 +46,7 @@ final class StoreSpotTests: BuiltInCase {
 
     private func friends() throws -> URL {
         let friends = root.appendingPathComponent("friends")
-        try "#!/bin/sh\n# title=Clock\n".writeScript(to: friends.appendingPathComponent("clock.spot/clock.sh"))
+        try "#!/bin/sh\n".writeScript(to: friends.appendingPathComponent("clock.spot/clock.sh"), toml: "title = 'Clock'")
         return friends
     }
 
@@ -54,9 +57,9 @@ final class StoreSpotTests: BuiltInCase {
         let text = try await answer(["gallery", "add"])
 
         XCTAssertEqual(file.read().stores.map(\.url.path), [friends.path])
-        XCTAssertEqual(SpotOutput(text: text).summary?.value("toast"), "Added the store friends with 1 spot.")
-        XCTAssertEqual(SpotOutput(text: text).parts.first?.values["folder"]?.last, "\(friends.path)\tfriends\tfound\tadded")
-        XCTAssertEqual(TextBlock.blocks(in: text).first { $0.value("row") == "clock" }?.value("store"), friends.path)
+        XCTAssertEqual(effects(), ["toast Added the store friends with 1 spot."])
+        XCTAssertEqual(Frame(text: text).parts.first?.values["folder"]?.last, "\(friends.path)\tfriends\tfound\tadded")
+        XCTAssertEqual(TextBlock.blocks(in: text).first { $0.value("text") == "clock" }?.value("store"), friends.path)
     }
 
     func testAddStoreRefusesAFolderWithNoSpot() async throws {
@@ -64,9 +67,9 @@ final class StoreSpotTests: BuiltInCase {
         try FileManager.default.createDirectory(at: empty, withIntermediateDirectories: true)
         try pick(empty)
 
-        let text = try await answer(["gallery", "add"])
+        _ = try await answer(["gallery", "add"])
 
-        XCTAssertEqual(SpotOutput(text: text).summary?.value("toast"), "empty has no spot folder, so it cannot be a store. Pick a folder that holds a folder such as weather.spot.")
+        XCTAssertEqual(effects(), ["toast empty has no spot folder, so it cannot be a store. Pick a folder that holds a folder such as weather.spot."])
         XCTAssertEqual(file.read().stores, [])
     }
 
@@ -75,22 +78,22 @@ final class StoreSpotTests: BuiltInCase {
         let friends = try friends()
         _ = try file.change { $0.add(store: Store(url: friends)) }
         try FileManager.default.removeItem(at: examples)
-        let before = try await runs.answer(of: store, .read, limit: 60)
-        XCTAssertEqual(SpotOutput(text: before).parts.first?.values["folder"], ["\(friends.path)\tfriends\tfound\tadded"])
+        let before = try await runs.answer(of: store, .show, limit: 60)
+        XCTAssertEqual(Frame(text: before).parts.first?.values["folder"], ["\(friends.path)\tfriends\tfound\tadded"])
 
-        try "#!/bin/sh\n# title=Year\n".writeScript(to: examples.appendingPathComponent("year.spot/year.sh"))
-        let text = try await runs.answer(of: store, .read, limit: 60)
+        try "#!/bin/sh\n".writeScript(to: examples.appendingPathComponent("year.spot/year.sh"), toml: "title = 'Year'")
+        let text = try await runs.answer(of: store, .show, limit: 60)
 
-        XCTAssertEqual(SpotOutput(text: text).parts.first?.values["folder"], ["\(examples.path)\tOpenspot\tfound\tbuiltin", "\(friends.path)\tfriends\tfound\tadded"])
-        XCTAssertEqual(TextBlock.blocks(in: text).first { $0.value("row") == "year" }?.value("store"), examples.path)
+        XCTAssertEqual(Frame(text: text).parts.first?.values["folder"], ["\(examples.path)\tOpenspot\tfound\tbuiltin", "\(friends.path)\tfriends\tfound\tadded"])
+        XCTAssertEqual(TextBlock.blocks(in: text).first { $0.value("text") == "year" }?.value("store"), examples.path)
     }
 
     func testAGoneStoreSaysSoUntilRemoveDropsIt() async throws {
         let gone = root.appendingPathComponent("gone")
         _ = try file.change { $0.add(store: Store(url: gone)) }
 
-        let text = try await runs.answer(of: store, .read, limit: 60)
-        XCTAssertEqual(SpotOutput(text: text).parts.first?.values["folder"]?.last, "\(gone.path)\tgone\tmissing\tadded")
+        let text = try await runs.answer(of: store, .show, limit: 60)
+        XCTAssertEqual(Frame(text: text).parts.first?.values["folder"]?.last, "\(gone.path)\tgone\tmissing\tadded")
 
         try await call(["gallery", "remove:\(gone.path)"])
         XCTAssertEqual(file.read().stores, [])
@@ -121,8 +124,7 @@ final class StoreSpotTests: BuiltInCase {
         let spot = try store
 
         XCTAssertEqual(spot.name, "Store")
-        XCTAssertTrue(spot.offersWindow)
-        XCTAssertTrue(spot.offersCard)
+        XCTAssertEqual(Config(text: try String(contentsOf: URL(fileURLWithPath: #filePath).deletingLastPathComponent().deletingLastPathComponent().appendingPathComponent("defaults.toml"), encoding: .utf8)).arrangement.isWindow(of: "openspot/store"), true)
         XCTAssertEqual(spot.kind, .list)
         XCTAssertEqual(spot.view.map { URL(fileURLWithPath: $0).lastPathComponent }, "store.swift")
     }
@@ -149,17 +151,17 @@ final class StoreSpotTests: BuiltInCase {
     }
 
     func testAFailedGetSaysWhyInAToast() async throws {
-        let got = SpotOutput(text: try await runs.answer(of: store, SpotAction(arguments: ["gallery", "get:nothing"]), limit: 60)).summary?.value("toast")
+        _ = try await runs.answer(of: store, SpotAction(arguments: ["gallery", "get:nothing"]), limit: 60)
 
-        XCTAssertNotNil(got)
+        XCTAssertEqual(effects().map { $0.hasPrefix("toast ") }, [true])
     }
 
     func testPublishDoesNothingUntilTheStoreOpensIt() async throws {
         _ = try AccountStore.standard(environment: ["OPENSPOT_CONFIG": root.path], home: root, devState: nil).keyMadeOnce()
 
-        let text = try await runs.answer(of: store, SpotAction(arguments: ["gallery", "publish:mine"]), limit: 60)
+        _ = try await runs.answer(of: store, SpotAction(arguments: ["gallery", "publish:mine"]), limit: 60)
 
-        XCTAssertNil(SpotOutput(text: text).summary?.value("toast"))
+        XCTAssertEqual(effects(), [])
         let opened = await app.opened
         XCTAssertEqual(opened, [])
         XCTAssertFalse(FileManager.default.fileExists(atPath: root.appendingPathComponent("store/mine.spot").path))
@@ -179,14 +181,14 @@ final class StoreSpotTests: BuiltInCase {
         try "# Timer\n\nCounts down.\n".write(to: core.appendingPathComponent("timer.spot/readme.md"), atomically: true, encoding: .utf8)
         try "# Mine\n".write(to: spots.appendingPathComponent("mine.spot/readme.md"), atomically: true, encoding: .utf8)
 
-        for action in [SpotAction.read, SpotAction(arguments: ["gallery", "get:timer"]), SpotAction(arguments: ["gallery", "publish:timer"])] {
+        for action in [SpotAction.show, SpotAction(arguments: ["gallery", "get:timer"]), SpotAction(arguments: ["gallery", "publish:timer"])] {
             let text = try await SpotRuns(environment: TestEnvironment.values).answer(of: store, action, limit: 60)
-            XCTAssertNil(SpotOutput(text: text).parts.first?.values["readme"], "\(action.arguments)")
+            XCTAssertNil(Frame(text: text).parts.first?.values["readme"], "\(action.arguments)")
         }
         let asked = try await SpotRuns(environment: TestEnvironment.values).answer(of: store, SpotAction(arguments: ["gallery", "readme:timer"]), limit: 60)
 
-        XCTAssertEqual(SpotOutput(text: asked).parts.first?.values["readme"], ["timer", "timer\t# Timer", "timer\t", "timer\tCounts down."])
-        XCTAssertEqual(TextBlock.blocks(in: asked).compactMap { $0.value("row") }, ["mine", "shared", "timer"])
+        XCTAssertEqual(Frame(text: asked).parts.first?.values["readme"], ["timer", "timer\t# Timer", "timer\t", "timer\tCounts down."])
+        XCTAssertEqual(TextBlock.blocks(in: asked).compactMap { $0.value("text") }, ["mine", "shared", "timer"])
     }
 
     func testAReadmePictureOrVideoInTheSpotsFolderGetsItsFullPath() async throws {
@@ -195,7 +197,7 @@ final class StoreSpotTests: BuiltInCase {
 
         let text = try await SpotRuns(environment: TestEnvironment.values).answer(of: store, SpotAction(arguments: ["gallery", "readme:timer"]), limit: 60)
 
-        let lines = (SpotOutput(text: text).parts.first?.values["readme"] ?? []).filter { $0.hasPrefix("timer\t") }
+        let lines = (Frame(text: text).parts.first?.values["readme"] ?? []).filter { $0.hasPrefix("timer\t") }
         XCTAssertEqual(lines, ["timer\t![The sheet](\(folder.path)/shot.png)", "timer\t![](/tmp/a.mov)", "timer\t![Web](https://example.com/a.jpg)"])
     }
 }

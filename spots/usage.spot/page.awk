@@ -1,26 +1,17 @@
 # Prints the page of the spot want: its acts of each day, what it costs, how fast it answers, how it failed, its uses, the
-# change since its last version, and the spots it shows, is shown on, starts and is started by. An unused spot offers
-# Move to Trash first.
+# change since its last version, and the spots it starts and is started by. An unused spot offers Move to Trash first.
 function buttons(improve, unused) {
-  if (unused) printf "button=delete\ntitle=Move to Trash\nshortcut=return\nconfirm=Press again to move it to the Trash\n\nbutton=open\ntitle=Open\n\n"
-  else printf "button=open\ntitle=Open\nshortcut=return\n\n"
-  if (improve) printf "button=improve\ntitle=Improve\nshortcut=cmd+return\n\n"
-  printf "button=settings\ntitle=Settings\n"
-  if (!unused) printf "\nbutton=delete\ntitle=Move to Trash\nconfirm=Press again to move it to the Trash\n"
+  if (unused) printf "button=delete\ntitle=Move to Trash\nshortcut=return\nconfirm=Press again to move it to the Trash\nclose=false\n\nbutton=open\ntitle=Open\nclose=false\n\n"
+  else printf "button=open\ntitle=Open\nshortcut=return\nclose=false\n\n"
+  if (improve) printf "button=improve\ntitle=Improve\nshortcut=cmd+return\nclose=false\n\n"
+  printf "button=settings\ntitle=Settings\nclose=false\n"
+  if (!unused) printf "\nbutton=delete\ntitle=Move to Trash\nconfirm=Press again to move it to the Trash\nclose=false\n"
 }
 
 END {
   for (r = 1; r <= n && ids[r] != want; r++) {}
   if (r > n) { buttons(0, 0); exit }
   load(r)
-  if (nshows) {
-    for (i = 1; i <= nshows; i++) { list = join(list, name(shows[i]) " " seconds(perday(shows[i])), " · "); cost += perday(shows[i]) }
-    printf "grid=cpu cpu\ngrid=shows shows\n\n"
-    printf "number=cpu\nvalue=%.3f\ndisplay=%s\ntitle=CPU a day of the spots it shows\n\n", cost, seconds(cost)
-    printf "text=shows\ntitle=Shows\ndetail=%s\n\n", list
-    buttons(0, 0)
-    exit
-  }
   for (i = 1; i <= nkeys; i++) {
     k = keys[i]; x = v[k]
     if (k ~ /^reads\./) reads = join(reads, x " at " substr(k, 7), " · ")
@@ -29,13 +20,11 @@ END {
     else if (k ~ /^runs\.by\./) by = join(by, name(substr(k, 9)) " " times(x), " · ")
     else if (k ~ /^ran\./) ran = join(ran, name(substr(k, 5)) " " times(x), " · ")
   }
-  for (i = 1; i <= ncards; i++) on = join(on, name(cards[i]), " · ")
   for (i = 1; i <= ndays; i++) graph = graph "value=" (days[i] == "-" ? 0 : days[i]) "\n"
   d = v["seen"] > 0 ? v["seen"] : 1
   day = v["cpu"] / d
-  printf "grid=acts acts\ngrid=perday cpu\ngrid=answers memory\n"
+  printf "frame=spot:%s\ngrid=acts acts\ngrid=perday cpu\ngrid=answers memory\n", want
   if (change != "") printf "grid=change change\ngrid=changecpu changecpu\n"
-  if (on != "") printf "grid=cards cards\n"
   if (by != "") printf "grid=by by\n"
   if (ran != "") printf "grid=ran ran\n"
   printf "grid=hidden hidden\ngrid=failures failures\ngrid=reads reads\ngrid=uses uses\n\n"
@@ -49,7 +38,6 @@ END {
     printf "text=change\ntitle=Failed since %s\ndetail=%s\n\n", part[1], part[2]
     printf "text=changecpu\ntitle=CPU a call since\ndetail=%s\n\n", part[3]
   }
-  if (on != "") printf "text=cards\ntitle=Shown on\ndetail=%s\n\n", on
   if (by != "") printf "text=by\ntitle=Started by\ndetail=%s\n\n", by
   if (ran != "") printf "text=ran\ntitle=Starts\ndetail=%s\n\n", ran
   printf "text=hidden\ntitle=While hidden\ndetail=%s CPU a day · %d wakeups\n\n", seconds(v["hidden.cpu"] / d), v["hidden.wakeups"] / d

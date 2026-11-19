@@ -1,17 +1,8 @@
 #!/bin/sh
-# title=Store
-# icon=bag
-# detail=Get spots
-# keywords=store, get spots
-# on=sheet.open
-# uses=spots,account
-# view=store.swift
-# offers=card
-# offers=window
 
-# Prints a toast of the last line of a text, such as what a failed `openspot` call said.
+# Shows a toast of the last line of a text, such as what a failed `openspot` call said.
 toast() {
-  printf 'toast=%s\n\n' "$(printf '%s\n' "$1" | tail -n 1)"
+  openspot toast "$(printf '%s\n' "$1" | tail -n 1)"
 }
 
 # Gets spot $1 from the store, and says in a toast that it did, or why it did not.
@@ -31,22 +22,22 @@ remove() {
   said=$(openspot store remove "$1" 2>&1) || toast "$said"
 }
 
-# Prints the gallery: a folder line for each store with its path, its name, whether it is found and whether it is built in, a row for
+# Prints the gallery: a folder line for each store with its path, its name, whether it is found and whether it is built in, an item for
 # each spot with its id, its name, its step, its origin, its store, its description, its size and whether it has sample
 # data, and the readme of the spot that $1 names, a line after its id, when its sheet asks.
 gallery() {
-  printf 'view=gallery\n'
+  printf 'frame=\ngrid=gallery\n\nview=gallery\n'
   openspot store folders | awk 'BEGIN { RS = ""; FS = "\n" }
     { delete f
       for (i = 1; i <= NF; i++) { n = index($i, "="); f[substr($i, 1, n - 1)] = substr($i, n + 1) }
-      printf "folder=%s\t%s\t%s\t%s\n", f["store"], f["name"], (f["found"] == "true" ? "found" : "missing"), (f["builtin"] == "true" ? "builtin" : "added") }'
+      printf "folder=%s\t%s\t%s\t%s\n", f["text"], f["title"], (f["found"] == "true" ? "found" : "missing"), (f["builtin"] == "true" ? "builtin" : "added") }'
   openspot store list | awk -v want="${1-}" 'BEGIN { RS = ""; FS = "\n" }
     { delete f
       for (i = 1; i <= NF; i++) {
         n = index($i, "="); key = substr($i, 1, n - 1); f[key] = substr($i, n + 1)
-        if (key == "readme" && f["spot"] == want) readme = readme "readme=" want "\t" f[key] "\n"
+        if (key == "readme" && f["text"] == want) readme = readme "readme=" want "\t" f[key] "\n"
       }
-      rows = rows "\nrow=" f["spot"] "\ntitle=" f["name"] "\nstep=" (f["step"] == "publish" ? "added" : f["step"]) "\norigin=" f["origin"] "\n"
+      rows = rows "\ntext=" f["text"] "\ntitle=" f["title"] "\nstep=" (f["step"] == "publish" ? "added" : f["step"]) "\norigin=" f["origin"] "\n"
       if (f["store"] != "") rows = rows "store=" f["store"] "\n"
       if (f["detail"] != "") rows = rows "detail=" f["detail"] "\n"
       rows = rows "size=" f["size"] "\n"
@@ -55,7 +46,7 @@ gallery() {
 }
 
 case "$1" in
-  read)
+  show)
     gallery
     ;;
   gallery)

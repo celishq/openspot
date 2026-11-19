@@ -50,18 +50,22 @@ big config. Openspot sits somewhere in between.
 ## Your first spot
 
 A spot is just a script that prints a few lines, and Openspot draws them. Here's a small one that lists whatever is
-listening on a port and kills the process when you press its row, which comes in handy when something is sitting on
-:3000. Save it as `ports.sh` and open it with `openspot playground open ports.sh`:
+listening on a port and kills the process when you pick it, which comes in handy when something is sitting on
+:3000. Save it as `ports.spot/ports.sh`, with this `ports.spot/spot.toml` beside it, and open it with
+`openspot playground open ports.spot/ports.sh`:
+
+```toml
+title = "Ports"
+icon = "network"
+on = ["sheet.open"]
+```
 
 ```sh
 #!/bin/sh
-# title=Ports
-# icon=network
-# on=sheet.open
 [ "$1" = open ] && kill "$2"
 lsof -nP -iTCP -sTCP:LISTEN | awk 'NR > 1 && !seen[$2]++ {
   sub(/.*:/, ":", $9)
-  printf "row=%s\ntitle=%s\ndetail=%s\n\n", $2, $9, $1
+  printf "text=%s\ntitle=%s\ndetail=%s\n\n", $2, $9, $1
 }'
 ```
 
@@ -75,7 +79,8 @@ one task at a time, and the [protocol](PROTOCOL.md) has every rule.
 Security is a bit of a tradeoff here. Anything you write yourself runs with Openspot's permissions, which we call yolo
 mode, while spots from other people run in a sandbox through `sandbox-exec`. We know it's deprecated, but Bazel, Nix and
 Codex CLI still rely on the same Seatbelt sandbox, and every spot ships as source anyway, so you or your agent can read
-it before you add it.
+it before you add it. [TRUST.md](TRUST.md) says what Openspot shows you about a spot, and what a spot can and can't
+reach.
 
 ## Contributing
 

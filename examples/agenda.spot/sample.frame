@@ -1,4 +1,5 @@
-main=next
+frame=
+grid.bar=next
 recents=false
 grid=items
 grid.small=at
@@ -53,25 +54,26 @@ title=Open
 button=join
 title=Join call
 shortcut=cmd+j
-close=true
 
 button=tick
 title=Mark as done
 shortcut=cmd+shift+c
+close=false
 
 button=calendars
 title=Choose calendars
 form=true
 scope=spot
+close=false
 
-row=event:e1
+text=event:e1
 title=Team standup
 detail=09:30–09:45 · Work
 icon=video
 color=#1BADF8
 hides=tick
 
-row=event:e2
+text=event:e2
 title=Design review
 detail=14:30–15:30 · Work
 icon=video
@@ -79,7 +81,7 @@ color=#1BADF8
 meeting=https://example.com/call
 hides=tick
 
-row=event:e3
+text=event:e3
 title=Yoga
 detail=18:00–19:00 · Home
 icon=calendar
@@ -87,7 +89,7 @@ color=#63DA38
 hides=tick
 hides=join
 
-row=event:e4
+text=event:e4
 title=Lunch with Sam
 detail=Tomorrow 12:30–13:30 · Home
 icon=calendar
@@ -95,7 +97,7 @@ color=#63DA38
 hides=tick
 hides=join
 
-row=reminder:r1
+text=reminder:r1
 title=Send the invoice
 detail=Late · Yesterday · Tasks
 icon=circle
@@ -103,14 +105,14 @@ tone=bad
 done=false
 hides=join
 
-row=reminder:r2
+text=reminder:r2
 title=Book the dentist
 detail=Today 17:00 · Tasks
 icon=circle
 done=false
 hides=join
 
-row=reminder:r3
+text=reminder:r3
 title=Water the plants
 detail=Tomorrow · Home
 icon=circle

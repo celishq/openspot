@@ -51,7 +51,6 @@ enum SpotType {
     static let keycapName = Font.system(size: 9, weight: .medium)
     static let action = Font.system(size: 11, weight: .medium)
     static let metric = Font.system(size: 30, weight: .semibold, design: .rounded).monospacedDigit()
-    static let ringValue = Font.system(size: 20, weight: .semibold, design: .rounded).monospacedDigit()
     static let value = Font.system(size: 15, weight: .semibold, design: .rounded).monospacedDigit()
     static let controlValue = Font.system(size: 11, weight: .semibold, design: .rounded).monospacedDigit()
     static let menuBar = Font.system(size: 13, weight: .medium).monospacedDigit()
