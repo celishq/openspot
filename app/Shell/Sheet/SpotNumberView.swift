@@ -58,10 +58,21 @@ struct SpotNumberView: View {
     private var ring: some View {
         GeometryReader { room in
             let isBig = min(room.size.width, room.size.height) > SpotTokens.wordsRingSide
-            VStack(alignment: isBig ? .leading : .center, spacing: SpotType.lineGap) {
-                if isBig { label }
-                ringFace(isBig: isBig)
-                if !isBig { label.minimumScaleFactor(SpotType.leastWordsScale) }
+            let column = min(room.size.width, room.size.height - SpotType.detailLine - SpotType.lineGap)
+            Group {
+                if isBig {
+                    VStack(alignment: .leading, spacing: SpotType.lineGap) {
+                        label
+                        ringFace(isBig: true)
+                    }
+                } else if column >= SpotTokens.lineRingSide {
+                    VStack(spacing: SpotType.lineGap) {
+                        ringFace(isBig: false)
+                        label.minimumScaleFactor(SpotType.leastWordsScale)
+                    }
+                } else {
+                    ringFace(isBig: false)
+                }
             }
             .frame(width: room.size.width, height: room.size.height)
         }
