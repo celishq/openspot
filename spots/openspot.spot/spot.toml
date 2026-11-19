@@ -148,8 +148,8 @@ pages = ["key", "agent"]
 title = "Snooze"
 icon = "moon.zzz"
 detail = "Pick a time for later"
-on = ["sheet.open", "sheet.text"]
-pages = ["date"]
+on = ["sheet.open"]
+pages = ["date", "date/*"]
 
 [scripts.snooze.settings.morning]
 title = "Morning"

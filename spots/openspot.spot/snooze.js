@@ -92,26 +92,50 @@ function sheet(now, choices) {
   return openspot.frame(blocks)
 }
 
-/** The moment that typed words name, such as `fri 3pm` or `dec 24`, read by the calculator; a day with no time takes
- * the morning. Nil when the words name no moment to come. */
-function typed(text, now, choices) {
-  const answer = openspot.call(["calc", "solve", text]).stdout
-  const match = /^text=(\d{4})-(\d{2})-(\d{2})(?: (\d{2}):(\d{2}))?$/m.exec(answer)
-  if (!match) return null
-  const [hour, minute] = match[4] ? [Number(match[4]), Number(match[5])] : choices.morning
-  const moment = new Date(Number(match[1]), Number(match[2]) - 1, Number(match[3]), hour, minute)
-  return moment > now ? moment : null
+/** The parts of the day that a picked day offers: title, icon, and its hour and minute, from the person's choices for
+ * the morning and the evening. */
+function dayParts(choices) {
+  return [
+    ["Morning", "sunrise.fill", choices.morning],
+    ["Noon", "sun.max.fill", [12, 0]],
+    ["Afternoon", "cup.and.saucer.fill", [15, 0]],
+    ["Evening", "moon.stars.fill", choices.evening],
+    ["Night", "moon.zzz.fill", [21, 0]],
+  ]
 }
 
-/** The Pick Date page: the moment the typed words name, which Return picks, or a hint while they name none. */
-function page(search, now, choices) {
-  const moment = search.trim() ? typed(search, now, choices) : null
-  if (!moment) {
-    const title = search.trim() ? "No time to come in these words" : "Type a time"
-    return openspot.frame([{ text: "hint", title, detail: "Such as fri 3pm, tomorrow 9:30 or dec 24", icon: "calendar.badge.clock" }])
+/** The words of a day under its weekday: Today, Tomorrow, or its date. */
+function dayWords(day, now) {
+  const days = Math.round((at(day, 0, [0, 0]) - at(now, 0, [0, 0])) / 86400000)
+  if (days === 0) return "Today"
+  if (days === 1) return "Tomorrow"
+  return day.toLocaleDateString("en-US", { month: "short", day: "numeric" })
+}
+
+/** The Pick Date page: the next twelve days as tiles, each with its weekday and its date. A day is offered
+ * while one of its parts is still to come. */
+function days(now, choices) {
+  const blocks = [{ frame: "", grid: "days" }, { repeat: "days", grid: "a b c" }]
+  const last = dayParts(choices).map(([, , hour]) => hour).reduce((a, b) => (a[0] * 60 + a[1] > b[0] * 60 + b[1] ? a : b))
+  for (let offset = at(now, 0, last) > now ? 0 : 1, count = 0; count < 12; offset++, count++) {
+    const day = at(now, offset, [0, 0])
+    const route = `date/${day.getFullYear()}-${two(day.getMonth() + 1)}-${two(day.getDate())}`
+    const weekday = day.toLocaleDateString("en-US", { weekday: "long" })
+    blocks.push({ text: route, title: weekday, detail: dayWords(day, now), icon: "calendar", look: "tile", route, "route.title": `${weekday}, ${day.toLocaleDateString("en-US", { month: "long", day: "numeric" })}` })
   }
-  const title = moment.toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric" })
-  return openspot.frame([{ text: iso(moment), title: `${title}, ${moment.getHours()}:${two(moment.getMinutes())}`, detail: "Return snoozes until then", icon: "calendar.badge.clock" }])
+  return openspot.frame(blocks)
+}
+
+/** The page of one day: its parts still to come, each with the time it stands for. */
+function hours(route, now, choices) {
+  const [year, month, date] = route.slice("date/".length).split("-").map(Number)
+  const blocks = [{ frame: "", grid: "hours" }, { repeat: "hours", grid: "a b c" }]
+  for (const [title, icon, [hour, minute]] of dayParts(choices)) {
+    const moment = new Date(year, month - 1, date, hour, minute)
+    if (moment <= now) continue
+    blocks.push({ text: iso(moment), title, detail: `${hour}:${two(minute)}`, icon, look: "tile" })
+  }
+  return openspot.frame(blocks)
 }
 
 /** The form of a setting row of the snooze's Settings. */
@@ -130,11 +154,13 @@ function form(key) {
   ])
 }
 
-/** A press of a tile, or of the typed moment, replies with its moment or `someday`; a settings row asks for its value. */
+/** A press of a tile, or of a part of a picked day, replies with its moment or `someday`; a settings row asks for its value. */
 function main([id, value], env, input) {
   const now = new Date()
   if (id === "show") {
-    if (openspot.value("route", input).trim() === "date") return page(openspot.value("search", input), now, choices(input))
+    const route = openspot.value("route", input).trim()
+    if (route === "date") return days(now, choices(input))
+    if (route.startsWith("date/")) return hours(route, now, choices(input))
     return sheet(now, choices(input))
   }
   if (["morning", "evening", "later", "weekend"].includes(id)) {
@@ -143,7 +169,7 @@ function main([id, value], env, input) {
     openspot.call(["setting", "set", id, chosen])
     return ""
   }
-  if (id !== "open" || !value || value === "hint" || value === "date") return ""
+  if (id !== "open" || !value || value.startsWith("date")) return ""
   const moment = value.includes("T") ? value : value === "someday" ? "someday" : iso(times(now, choices(input))[value])
   openspot.call(["spot", "reply", moment])
   return ""

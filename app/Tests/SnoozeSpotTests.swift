@@ -22,6 +22,31 @@ final class SnoozeSpotTests: XCTestCase {
         return try XCTUnwrap(JSONSerialization.jsonObject(with: Data(text.utf8)) as? [String: String])
     }
 
+    private func frame(_ call: String) throws -> [TextBlock] {
+        let file = URL(fileURLWithPath: #filePath).deletingLastPathComponent().deletingLastPathComponent().deletingLastPathComponent().appendingPathComponent("spots/openspot.spot/snooze.js")
+        let context = try XCTUnwrap(JSContext())
+        context.evaluateScript("var openspot = { frame: (blocks) => blocks.map((b) => Object.entries(b).map(([k, v]) => `${k}=${v}`).join('\\n')).join('\\n\\n') + '\\n' }")
+        context.evaluateScript(try String(contentsOf: file, encoding: .utf8))
+        let text = try XCTUnwrap(context.evaluateScript(call)?.toString())
+        XCTAssertNil(context.exception)
+        return TextBlock.blocks(in: text)
+    }
+
+    func testPickDateOffersTwelveDaysFromTheFirstWithATimeToCome() throws {
+        let late = try frame("days(new Date(2026, 10, 20, 22, 30), \(defaults))").compactMap { $0.value("route") }
+        let early = try frame("days(new Date(2026, 10, 20, 10, 0), \(defaults))").compactMap { $0.value("route") }
+
+        XCTAssertEqual(late.count, 12)
+        XCTAssertEqual(late.first, "date/2026-11-21")
+        XCTAssertEqual(early.first, "date/2026-11-20")
+    }
+
+    func testADayOffersOnlyItsTimesToCome() throws {
+        let titles = try frame("hours('date/2026-11-20', new Date(2026, 10, 20, 16, 0), \(defaults))").compactMap { $0.value("look") == nil ? nil : $0.value("title") }
+
+        XCTAssertEqual(titles, ["Evening", "Night"])
+    }
+
     func testReturnOnSnoozeTabOpensItsListAndItsKeysSnoozeOrOpenAll() throws {
         let examples = URL(fileURLWithPath: #filePath).deletingLastPathComponent().deletingLastPathComponent().deletingLastPathComponent().appendingPathComponent("examples")
         let spot = try XCTUnwrap(try SpotsFolder(url: examples).scan().spots.first { $0.id == "snooze-tab" })
