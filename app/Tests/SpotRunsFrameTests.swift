@@ -119,7 +119,7 @@ final class SpotRunsFrameTests: SpotRunsCase {
         try script(toml: "on = ['sheet.open']", """
         case "$1" in
           show) printf 'text=a\\ntitle=A\\n' ;;
-          open) printf 'frame=\\ngrid=g\\n\\ngraph=g\\nvalue=0.4\\n---\\n'; \(untilRelease) ;;
+          open) printf 'frame=\\ngrid=g\\n\\nnumber=g\\nvalue=40\\nmax=100\\n---\\n'; \(untilRelease) ;;
         esac
         """)
         let sheet = try sheet()

@@ -98,7 +98,7 @@ final class SpotRunsWorkTests: SpotRunsCase {
             arg=*) [ -n "$name" ] || name=${line#arg=} ;;
             '')
               if [ "$name" != show ]; then \(untilRelease); fi
-              printf 'end=%s\\n\\ngraph=p\\ntitle=42%%\\nvalue=0.42\\n---\\n' "$call" ;;
+              printf 'end=%s\\n\\nnumber=p\\nvalue=42\\nmax=100\\n---\\n' "$call" ;;
           esac
         done
         """)

@@ -54,7 +54,7 @@ public struct BlockKind: Sendable, Equatable {
         first.name == second.name
     }
 
-    public static let all = [text, number, gauge, graph, picture, view, toggle, slider, hotkey, field, choice, button, section]
+    public static let all = [text, number, picture, view, toggle, slider, hotkey, field, choice, button, section]
 
     static let listWords = [repeated, option]
 
@@ -83,24 +83,11 @@ public struct BlockKind: Sendable, Equatable {
         name: "number",
         holdsValue: true,
         takesColor: true,
-        control: { .number($0.value("display") ?? $0.value("value") ?? "", unit: $0.value("unit").flatMap { $0.isEmpty ? nil : $0 }) },
-        data: { _ in (nil, nil) }
-    )
-
-    static let gauge = BlockKind(
-        name: "gauge",
-        word: "graph",
-        picks: { $0.values("value").count == 1 && $0.value("max") == nil },
-        holdsValue: true,
-        control: { .progress(level: ($0.number("value") ?? 0) * 100) },
-        data: { ($0.number("value"), nil) }
-    )
-
-    static let graph = BlockKind(
-        name: "graph",
-        holdsValue: true,
-        control: { .chart($0.values("value").compactMap(Double.init)) },
-        data: { (nil, points(of: $0)) }
+        control: { .number(NumberReading(block: $0)) },
+        data: { block in
+            let reading = NumberReading(block: block)
+            return (reading.fill, reading.isSeries ? reading.points : nil)
+        }
     )
 
     static let picture = BlockKind(name: "picture", control: { Icon(text: $0.value("icon"))?.image.map(SpotPart.Control.image) ?? .none })

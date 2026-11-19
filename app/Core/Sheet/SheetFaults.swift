@@ -69,13 +69,13 @@ public enum SheetFaults {
             let width = CGFloat(area.x1 - area.x0 + 1) * (columnWidth + SpotTokens.partGap) - SpotTokens.partGap
             let height = frame.isOnTop ? CGFloat.infinity : frame.rect.height
             switch part.control {
+            case .number(let reading) where reading.fill != nil || reading.isSeries:
+                if height < tallProgress { faults.append("the part \(part.id) needs at least 2 rows for its title and bar") }
             case .number:
                 if width < metricWidth {
                     faults.append("the part \(part.id) needs at least \(Int((metricWidth + SpotTokens.partGap) / (columnWidth + SpotTokens.partGap)) + 1) columns of \(columns) for its number")
                 }
                 if part.title != nil, height < tallMetric { faults.append("the part \(part.id) needs at least 2 rows for its number and title") }
-            case .progress:
-                if height < tallProgress { faults.append("the part \(part.id) needs at least 2 rows for its title and bar") }
             case .swatches(let colors, _):
                 if colors.count > 1, CGFloat(colors.count) * swatchWidth > width + SpotTokens.partGap { faults.append("the part \(part.id) needs more columns for its \(colors.count) colours") }
             default:

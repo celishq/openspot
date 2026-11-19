@@ -117,7 +117,7 @@ final class MetricSpotsTests: SpotRunsCase {
 
         for try await frame in ScriptProcess(url: script, arguments: ["show"], mode: .once(input: "event=spot.want\n"), limit: 60, dataName: "devices", base: runs.environment).start() { kept += frame }
         XCTAssertEqual(log("tools.log"), ["system_profiler"])
-        XCTAssertTrue(kept.contains("title=–"), kept)
+        XCTAssertTrue(kept.contains("display=–"), kept)
 
         runs.raise(.named(SpotEvent.deviceConnect, value: "Keyboard"))
 
@@ -131,7 +131,7 @@ final class MetricSpotsTests: SpotRunsCase {
         let scan = try scanned()
         runs.take(grid: ["system"])
         runs.panelOpened()
-        let titles = { Dictionary((self.runs.sheets["system"]?.state.face.parts ?? []).map { ($0.id, $0.title ?? "") }) { first, _ in first } }
+        let titles = { Dictionary((self.runs.sheets["system"]?.state.face.parts ?? []).map { ($0.id, $0.number?.text ?? "") }) { first, _ in first } }
         XCTAssertNil(try XCTUnwrap(scan.spots.first { $0.id == "system" }?.on).seconds)
         try await wait("the first read") { titles()["battery"] == "84%" && titles()["devices"] == "–" && titles()["memory"] != nil && !self.runs.isShowing }
 

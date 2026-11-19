@@ -28,7 +28,7 @@ END {
   if (by != "") printf "grid=by by\n"
   if (ran != "") printf "grid=ran ran\n"
   printf "grid=hidden hidden\ngrid=failures failures\ngrid=reads reads\ngrid=uses uses\n\n"
-  printf "graph=acts\ntitle=Acts, last 14 days\n%s\n", graph
+  printf "number=acts\ntitle=Acts, last 14 days\n%s\n", graph
   printf "number=perday\nvalue=%.1f\ntitle=acts a day\n\n", (counted ? v["acts"] / counted : 0)
   printf "number=cpu\nvalue=%.3f\ndisplay=%s\ntitle=CPU a day\n\n", day, seconds(day)
   printf "number=answers\nvalue=%s\ndisplay=%s\ntitle=Slow answers\n\n", v["p95"] + 0, (v["p95"] == "" ? "–" : seconds(v["p95"]))

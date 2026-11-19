@@ -353,10 +353,10 @@ final class SheetLayoutTests: XCTestCase {
     }
 
     func testAPartStartsWithItsPartKey() throws {
-        let first = output("frame=\ngrid=job\ngrid=job\n\ngraph=job\ntitle=Copying\nvalue=0.3\n")
+        let first = output("frame=\ngrid=job\ngrid=job\n\nnumber=job\ntitle=Copying\nvalue=30\nmax=100\n")
         let later = output("frame=\ngrid=p\ngrid=p\n\nblock=progress\npart=job\ncell=p\ntitle=Copying\nlevel=30\n")
 
-        XCTAssertEqual(first.parts.first?.control, .progress(level: 30))
+        XCTAssertEqual(first.parts.first?.number?.fill, 0.3)
         XCTAssertEqual(later.parts, [])
         XCTAssertEqual(later.errors, ["block=progress"])
     }
@@ -385,7 +385,7 @@ final class SheetLayoutTests: XCTestCase {
         XCTAssertEqual(faults("frame=\ngrid=a\n\nfield=a\ntype=slider\nvalue=255\nmax=255\n"), [])
         XCTAssertEqual(faults("frame=\ngrid=a b c d\ngrid=a b c d\n\nnumber=a\nvalue=1\n\ntext=b\ntitle=B\n\ntext=c\ntitle=C\n\ntext=d\ntitle=D\n"), ["the part a needs at least 2 columns of 4 for its number"])
         XCTAssertEqual(faults("frame=\ngrid=a a\n\nnumber=a\nvalue=1\ntitle=CPU\n"), ["the part a needs at least 2 rows for its number and title"])
-        XCTAssertEqual(faults("frame=\ngrid=p p\n\ngraph=p\nvalue=0.01\n"), ["the part p needs at least 2 rows for its title and bar"])
+        XCTAssertEqual(faults("frame=\ngrid=p p\n\nnumber=p\nvalue=1\nmax=100\n"), ["the part p needs at least 2 rows for its title and bar"])
         XCTAssertEqual(faults("frame=\ngrid=a b c d\n\ntext=a\ntitle=A very long title indeed\n\ntext=b\ntitle=B\n\ntext=c\ntitle=C\n\ntext=d\ntitle=D\n"), ["the title of the part a may not fit its cell"])
         XCTAssertEqual(faults("frame=\ngrid=a b\ngrid=t b\n\ntext=a\ntitle=Item\n\ntext=t\ntitle=Other\n\nfield=b\nvalue=Hi\n"), ["the part a sits in rows that stretch, so draw a choice over two lines for a list", "the part t sits in rows that stretch, so draw a choice over two lines for a list"])
         XCTAssertEqual(faults(String(repeating: "frame=\ngrid=a\n", count: 20) + "\nfield=a\nvalue=Hi\n"), ["the drawing is too tall: 914pt of 446pt"])

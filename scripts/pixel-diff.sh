@@ -22,7 +22,7 @@ SPOT
   spot parts Parts square.grid.2x2 sheet.open <<'SPOT'
 #!/bin/sh
 printf "%s\n" "frame=" "grid=n n g g" "grid=t t t t" "grid=s s s s" "grid=f f f f" "grid=- - - -" "grid=b b c c" "grid.large=n n g g" "grid.large=t t t t" "" \
-  "number=n" "title=Cups today" "value=3" "" "graph=g" "title=Load" "value=0.42" "" "text=t" "title=Disk" "detail=Half full" "value=0.5" "tone=warn" "" \
+  "number=n" "title=Cups today" "value=3" "" "number=g" "title=Load" "value=42" "max=100" "unit=%" "" "text=t" "title=Disk" "detail=Half full" "value=0.5" "tone=warn" "" \
   "switch=s" "title=Focus" "detail=Until 18:00" "value=true" "" "field=f" "type=slider" "title=Volume" "value=40" "" \
   "button=b" "title=Go" "look=strong" "" "choice=c" "title=Mode" "value=x" "" "option=x" "title=One" "" "option=y" "title=Two"
 SPOT
@@ -44,7 +44,7 @@ printf "switch=focus\ntitle=Focus\ndetail=Until 18:00\nvalue=true\n"
 SPOT
   spot load Load cpu panel.open <<'SPOT'
 #!/bin/sh
-printf "frame=\ngrid.small=ring\ngrid.wide=load ring\ngrid.large=load load\ngrid.large=ring cups\n\ngraph=load\ntitle=Load\nvalue=0.2\nvalue=0.5\nvalue=0.35\nvalue=0.8\nvalue=0.6\nmax=1\n\ngraph=ring\ntitle=Disk\nvalue=0.6\n\nnumber=cups\ntitle=Cups\nvalue=3\nunit=cups\ndisplay=3 cups\n"
+printf "frame=\ngrid.small=ring\ngrid.wide=load ring\ngrid.large=load load\ngrid.large=ring cups\n\nnumber=load\ntitle=Load\nvalue=20\nvalue=50\nvalue=35\nvalue=80\nvalue=60\nmax=100\nunit=%%\n\nnumber=ring\ntitle=Disk\nvalue=60\nmax=100\nunit=%%\n\nnumber=cups\ntitle=Cups\nvalue=3\nunit=cups\ndisplay=3 cups\n"
 SPOT
   {
     for id in rows asks cups focus; do printf '[[spots]]\nid = "%s"\nsize = "small"\ngrid = true\n\n' "$id"; done

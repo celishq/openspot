@@ -11,8 +11,10 @@ text=song
 title=Midnight Drive
 detail=Neon Coast
 
-graph=time
-title=1:42
+number=time
+max=1
+look=bar
+display=1:42
 value=0.42
 
 button=prev

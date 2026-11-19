@@ -60,7 +60,8 @@ public struct MetricValue: Equatable, Sendable {
             return
         }
         let isNumber = output.valueKind == .number
-        guard let title = (isNumber ? block.value("value") : block.value("title")) ?? (rows.isEmpty ? nil : String(rows.count)) else { return nil }
+        let shown = isNumber ? NumberReading(block: block).text : block.value("title")
+        guard let title = shown.flatMap({ $0.isEmpty ? nil : $0 }) ?? (rows.isEmpty ? nil : String(rows.count)) else { return nil }
         self.init(
             title: title,
             detail: isNumber ? block.value("title") : block.value("detail"),

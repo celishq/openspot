@@ -3,8 +3,7 @@
 # Prints the use of all cores, the last of the points, with each point as a bar.
 draw() {
   [ $# -gt 0 ] || return 0
-  eval "now=\${$#}"
-  printf 'frame=\ngrid=cpu\ngrid=cpu\ngrid.bar=cpu\n\ngraph=cpu\ntitle=%s%%\nmax=100\n' "$now"
+  printf 'frame=\ngrid=cpu\ngrid=cpu\ngrid.bar=cpu\n\nnumber=cpu\ntitle=CPU\nmax=100\nunit=%%\n'
   for point; do printf 'value=%s\n' "$point"; done
 }
 

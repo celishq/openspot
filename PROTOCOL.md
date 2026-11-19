@@ -266,8 +266,7 @@ close=false
 | Kind      | Shows                                                                                                           | Its own keys                                                         | Sends                  |
 | --------- | --------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------- | ---------------------- |
 | `text`    | Words, and a small mark: a bar from `value`, or with `max` a bar for each `value` line.                         | `value`, `max`                                                       |                        |
-| `number`  | A big number, with its `title` under it. `display` shows instead of `value`, and its `unit` part draws faint.   | `value`, `display`, `unit`                                           |                        |
-| `graph`   | One `value` from 0 to 1 is a ring in a square place and a bar in a wide one. More values are bars, newest last. | `value`, and `max` for bars                                          |                        |
+| `number`  | One `value`, or a series of `value` lines, oldest first, with its `title` as the label. See [Numbers](#numbers). | `value`, `max`, `unit`, `display`                                    |                        |
 | `picture` | An image that fills its place.                                                                                  | `icon`                                                               |                        |
 | `view`    | The SwiftUI view the manifest names (see [Views](#views)).                                                      | any key the view reads                                               |                        |
 | `switch`  | A switch, or with `type=tick` a round tick before its words, for a thing to do.                                 | `value`: `true` or `false`, `type`                                   | `<id> true` or `false` |
@@ -282,13 +281,44 @@ close=false
   detail, or the title with no detail. `color=#RRGGBB` on a text or a number draws a bar of that colour at its edge.
 - `icon` is an image file, such as `cups.png`; an `https://` image, downloaded once; the Finder icon of a path with a
   `/` or a leading `~`; an SF Symbol, such as `wifi`; or any other text, such as `😀`.
-- `look` is the box of a text, a number or a button: `tile` or `bare`, and on a button also `chip` or `strong`.
+- `look` is the box of a text, a number or a button: `tile` or `bare`, on a number also `ring` or `bar`, and on a button
+  also `chip` or `strong`.
   `align=left`, `right` or `center` places a block that is smaller than its place.
 - A field's `type`: none for one line, `multiline`, `slider` from `min` to `max`, 0 to 100 by default, `search` for the
   search field of the [items](#items), and `hotkey`. A choice with `type=multiple` picks several options.
 - A `hotkey` field shows keycaps, and records a key at Return or a click on it, or when a new frame gives it
   `recording=true`. Every key goes to it, Esc brings back its key, and a shortcut sends `<id> <key>`. While a sheet
   with one shows, Openspot's own keys are off.
+
+### Numbers
+
+A number shows a value, such as the battery, or a series, such as the use of the CPU over the last minutes. Print the
+data, and Openspot picks how to draw it for each place.
+
+```ini
+number=battery
+title=Battery
+value=84
+max=100
+unit=%
+detail=3:12 left
+```
+
+```text
+square place          wide place
+  Battery             Battery            84%
+  ╭─────╮             ━━━━━━━━━━━━━━━━━──────
+ │ 84%   │
+ │3:12 l.│
+  ╰─────╯
+```
+
+- `value` is the number, and each more `value` line adds a point of a series, oldest first. The last point is the one
+  that shows. `max` is the value of a full ring or bar, and by default the largest point.
+- `unit` follows the value, as in `84%` or `12 kg`, and `display` shows instead of the value, as in `display=–`.
+- With `max`, one value is a ring in a square or a small place and a bar in a wide one. A series is its last value
+  over its bars in a place of two rows or more, and a bar of its points in a lower one. Any other number is big text.
+- `look=ring` or `look=bar` picks the drawing whatever the place.
 
 ### Buttons and actions
 
@@ -422,12 +452,11 @@ grid.bar=free
 | `bar`                                       | The menu bar, next to the clock. A click opens the sheet under it.    |
 
 - The sheet, a float and a window draw the `grid=` lines. A size with no layout uses the next smaller one. A card with
-  none shows the icon, title and detail, and the menu bar the icon. The menu bar shows a `text`, a `number` or a
-  `graph`, and a show that prints nothing hides it until the next show.
+  none shows the icon, title and detail, and the menu bar the icon. The menu bar shows a `text` or a `number`, and a show that prints nothing hides it until the next show.
 
 ### The card
 
-The card stands for the spot on the grid. Its **value** is the one `text`, `number`, `graph`, `switch` or slider that
+The card stands for the spot on the grid. Its **value** is the one `text`, `number`, `switch` or slider that
 its layout places, or else the one among the items. `active=true` in the root shows that the spot's thing is on. A
 card whose frame holds only one switch or slider draws it, and a press changes it. Any other press does what Return
 does; see [The keys of a spot](GUIDE.md#the-keys-of-a-spot).

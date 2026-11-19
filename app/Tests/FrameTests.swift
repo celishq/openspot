@@ -165,13 +165,13 @@ final class FrameTests: XCTestCase {
         XCTAssertEqual(try kind("text=m\ntitle=3\n"), .value)
         XCTAssertEqual(try kind("text=m\ntitle=3\nicon=star\ntone=good\n"), .value)
         XCTAssertEqual(try kind("text=m\ntitle=Up\ntone=good\n"), .status)
-        XCTAssertEqual(try kind("graph=m\ntitle=84%\nvalue=0.84\n"), .gauge)
-        XCTAssertEqual(try kind("graph=m\ntitle=2\nvalue=1\nvalue=2\n"), .trend)
+        XCTAssertEqual(try kind("number=m\nvalue=84\nmax=100\nunit=%\n"), .gauge)
+        XCTAssertEqual(try kind("number=m\nvalue=1\nvalue=2\n"), .trend)
         XCTAssertEqual(try kind("text=Build\n\ntext=Test\n"), .rows)
     }
 
-    func testAGraphReadsItsBarsFromValueLines() throws {
-        let value = try XCTUnwrap(MetricValue(output: Frame(text: "graph=m\ntitle=2\nmax=10\nvalue=1\nvalue=2\n")))
+    func testANumberReadsItsBarsFromValueLines() throws {
+        let value = try XCTUnwrap(MetricValue(output: Frame(text: "number=m\nmax=10\nvalue=1\nvalue=2\n")))
 
         XCTAssertEqual(value.kind, .trend)
         XCTAssertEqual(value.points, [1, 2])
@@ -272,10 +272,11 @@ final class FrameTests: XCTestCase {
         XCTAssertEqual(row, SpotItem(title: "R", run: "r", fields: [.init(key: "text", value: "r"), .init(key: "title", value: "R"), .init(key: "as", value: "big"), .init(key: "name", value: "Big")]))
     }
 
-    func testAGraphOfOneValueIsAGaugeAFieldTypeIsItsInputAndAnOldKindIsReported() {
-        let output = Frame(text: "frame=\ngrid=g\ngrid=s\ngrid=k\ngrid=t\ngrid=w\n\ngraph=g\nvalue=0.5\n\nfield=s\ntype=slider\nvalue=40\n\nfield=k\ntype=hotkey\nvalue=ctrl+k\n\nswitch=t\ntype=tick\n\nswitch=w\nlook=tick\n\ngauge=old\nvalue=1\n")
+    func testANumberWithAMaxFillsAFieldTypeIsItsInputAndAnOldKindIsReported() throws {
+        let output = Frame(text: "frame=\ngrid=g\ngrid=s\ngrid=k\ngrid=t\ngrid=w\n\nnumber=g\nvalue=50\nmax=100\n\nfield=s\ntype=slider\nvalue=40\n\nfield=k\ntype=hotkey\nvalue=ctrl+k\n\nswitch=t\ntype=tick\n\nswitch=w\nlook=tick\n\ngauge=old\nvalue=1\n")
 
-        XCTAssertEqual(output.parts.map(\.control), [.progress(level: 50), .slider(level: 40, min: 0, max: 100), .shortcut("ctrl+k"), .toggle(false), .toggle(false)])
+        XCTAssertEqual(try XCTUnwrap(output.parts.first?.number).fill, 0.5)
+        XCTAssertEqual(output.parts.dropFirst().map(\.control), [.slider(level: 40, min: 0, max: 100), .shortcut("ctrl+k"), .toggle(false), .toggle(false)])
         XCTAssertEqual(output.parts.map(\.look), [nil, nil, nil, .tick, nil])
         XCTAssertEqual(output.errors, ["gauge=old"])
     }

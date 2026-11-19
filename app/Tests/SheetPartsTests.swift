@@ -100,7 +100,7 @@ final class SheetPartsTests: XCTestCase {
     }
 
     func testATextOrANumberTakesAColourForItsBarAndOtherPartsDoNot() {
-        let output = Frame(text: "number=next\nvalue=09:30\ncolor=#1BADF8\n\ntext=work\ncolor=#ff9500\n\nnumber=odd\nvalue=1\ncolor=blue\n\ngraph=disk\nvalue=0.5\ncolor=#1BADF8\n".placed)
+        let output = Frame(text: "number=next\nvalue=09:30\ncolor=#1BADF8\n\ntext=work\ncolor=#ff9500\n\nnumber=odd\nvalue=1\ncolor=blue\n\nswitch=disk\nvalue=true\ncolor=#1BADF8\n".placed)
 
         XCTAssertEqual(output.parts.map(\.color), ["#1BADF8", "#ff9500", nil, nil])
     }
@@ -139,8 +139,8 @@ final class SheetPartsTests: XCTestCase {
         XCTAssertEqual(output.parts.first?.items, [])
     }
 
-    func testATextsToneColoursItsWordsAndAGaugeKeepsItsOwn() {
-        let outputCheck = FrameCheck(text: "frame=\ngrid=due\ngrid=now\ngrid=disk\ngrid=disk\n\ntext=due\ndetail=Late\ntone=bad\n\ntext=now\ntitle=Standup\ntone=on\n\ngraph=disk\nvalue=0.9\ntone=bad\n")
+    func testATextsToneColoursItsWordsAndANumberKeepsItsOwn() {
+        let outputCheck = FrameCheck(text: "frame=\ngrid=due\ngrid=now\ngrid=disk\ngrid=disk\n\ntext=due\ndetail=Late\ntone=bad\n\ntext=now\ntitle=Standup\ntone=on\n\nnumber=disk\nvalue=90\nmax=100\ntone=bad\n")
         let output = outputCheck.output
 
         XCTAssertEqual(output.parts.map(\.textTone), [.bad, nil, nil])
@@ -178,18 +178,20 @@ final class SheetPartsTests: XCTestCase {
     }
 
     func testEachKindKeepsItsDataInValue() throws {
-        let parts = try panel("switch=wifi\nvalue=true\n\nfield=volume\ntype=slider\nvalue=40\nmax=100\n\nfield=name\nvalue=Ann\n\ngraph=history\nvalue=2\nvalue=4\n").parts
+        let parts = try panel("switch=wifi\nvalue=true\n\nfield=volume\ntype=slider\nvalue=40\nmax=100\n\nfield=name\nvalue=Ann\n\nnumber=history\nvalue=2\nvalue=4\n").parts
 
-        XCTAssertEqual(parts.map(\.control), [
-            .toggle(true), .slider(level: 40, min: 0, max: 100), .text("Ann", placeholder: nil, isReadOnly: false), .chart([2, 4])
+        XCTAssertEqual(parts.dropLast().map(\.control), [
+            .toggle(true), .slider(level: 40, min: 0, max: 100), .text("Ann", placeholder: nil, isReadOnly: false)
         ])
+        XCTAssertEqual(parts.last?.number?.points, [2, 4])
     }
 
     func testOnLevelTextAndPointAreNoLongerTheDataOfAKind() throws {
-        let parts = try panel("switch=wifi\non=true\n\nfield=volume\ntype=slider\nlevel=40\n\nfield=name\ntext=Ann\n\ngraph=history\npoint=2\n").parts
+        let parts = try panel("switch=wifi\non=true\n\nfield=volume\ntype=slider\nlevel=40\n\nfield=name\ntext=Ann\n\nnumber=history\npoint=2\n").parts
 
-        XCTAssertEqual(parts.map(\.control), [.toggle(false), .slider(level: 0, min: 0, max: 100), .text("", placeholder: nil, isReadOnly: false), .chart([])])
-        for (kind, key) in [("switch", "on"), ("field", "level"), ("field", "text"), ("graph", "point")] {
+        XCTAssertEqual(parts.dropLast().map(\.control), [.toggle(false), .slider(level: 0, min: 0, max: 100), .text("", placeholder: nil, isReadOnly: false)])
+        XCTAssertEqual(parts.last?.number?.points, [])
+        for (kind, key) in [("switch", "on"), ("field", "level"), ("field", "text"), ("number", "point")] {
             XCTAssertEqual(PartCatalog.faults(in: TextBlock(fields: [.init(key: kind, value: "a"), .init(key: key, value: "1")])), ["the part a has an unknown key: \(key)"])
         }
     }
@@ -423,10 +425,10 @@ final class SheetPartsTests: XCTestCase {
         XCTAssertEqual(part.mark?.scaledPoints, [0.2, 0.4])
     }
 
-    func testPointsWithNoDetailStillDrawAChartTile() throws {
-        let part = try XCTUnwrap(try panel("graph=history\nvalue=2\nvalue=4\n").parts.first)
+    func testPointsWithNoDetailStillDrawANumberSeries() throws {
+        let part = try XCTUnwrap(try panel("number=history\nvalue=2\nvalue=4\n").parts.first)
 
-        XCTAssertEqual(part.control, .chart([2, 4]))
+        XCTAssertEqual(part.number?.points, [2, 4])
         XCTAssertNil(part.mark)
     }
 
@@ -465,7 +467,7 @@ final class SheetPartsTests: XCTestCase {
     func testANumberShowsItsValueLargeWithItsTitleAsTheLabel() throws {
         let part = try XCTUnwrap(Frame(text: "frame=\ngrid=cpu cpu\ngrid=cpu cpu\n\nnumber=cpu\nvalue=42%\ntitle=CPU\n".placed).parts.first)
 
-        XCTAssertEqual(part.control, .number("42%", unit: nil))
+        XCTAssertEqual(part.number?.text, "42%")
         XCTAssertEqual(part.title, "CPU")
         XCTAssertEqual(MetricValue(output: Frame(text: "number=cpu\nvalue=42%\ntitle=CPU\n".placed)), MetricValue(title: "42%", detail: "CPU"))
     }

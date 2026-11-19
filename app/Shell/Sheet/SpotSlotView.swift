@@ -37,16 +37,6 @@ struct SpotSlotView: View {
             }
             .menuStyle(.borderlessButton)
             .fixedSize()
-        case .progress(let level):
-            ProgressView(value: min(max(level, 0), 100), total: 100)
-                .progressViewStyle(.linear)
-                .tint(SpotTheme.ink)
-                .controlSize(.small)
-        case .chart(let points):
-            VStack(alignment: .leading, spacing: SpotType.lineGap) {
-                if part.title != nil || part.detail != nil { words.fixedSize(horizontal: false, vertical: true) }
-                SpotBars(points: points, gap: SpotTokens.slotBarGap, radius: SpotTokens.slotBarRadius)
-            }
         case .shortcut(let text):
             SpotKeyLabel(text: text, isRecording: false)
         case .text(let text, let placeholder, let isReadOnly):

@@ -156,12 +156,8 @@ struct SheetPartsView: View {
                 .overlay(alignment: .topTrailing) { cornerMark(part, frame) }
         case .number:
             number(part)
-        case .chart(let points):
-            chart(points)
         case .image(let path):
             image(path)
-        case .progress(let level):
-            progress(part, level: level)
         case .shortcut(let text):
             shortcut(part, text: text)
         default:
@@ -474,36 +470,10 @@ struct SheetPartsView: View {
             .background(SpotTheme.ink.opacity(part.look == .bare ? 0 : SpotTheme.fill), in: shape)
     }
 
-    private func chart(_ points: [Double]) -> some View {
-        SpotBars(points: points, gap: SpotTokens.partBarGap, radius: SpotTokens.partBarRadius)
-            .padding(SpotTokens.padding)
-            .background(SpotTheme.ink.opacity(SpotTheme.fill), in: shape)
-    }
-
     private func image(_ path: String) -> some View {
         SheetPicture(arrived: SpotPictureStore.Key(path: path, changed: panel.pictureTimes[path]))
             .frame(maxWidth: .infinity, maxHeight: .infinity)
             .clipShape(shape)
-    }
-
-    private func progress(_ part: SpotPart, level: Double) -> some View {
-        VStack(spacing: SpotTokens.partLineGap) {
-            HStack {
-                Text(part.title ?? "")
-                    .font(SpotType.body)
-                    .foregroundStyle(SpotTheme.ink)
-                    .lineLimit(1)
-                Spacer(minLength: SpotTokens.partLineGap)
-                if let detail = part.detail {
-                    Text(detail).font(SpotType.detail).modifier(SpotSecondaryText()).lineLimit(1)
-                }
-            }
-            ProgressView(value: min(max(level, 0), 100), total: 100)
-                .progressViewStyle(.linear)
-                .tint(SpotTheme.ink)
-                .controlSize(.small)
-        }
-        .frame(maxHeight: .infinity)
     }
 
     @ViewBuilder

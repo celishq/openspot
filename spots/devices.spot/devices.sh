@@ -20,10 +20,10 @@ draw() {
   awk -F'\t' '
   $2 != "Case" && (low == "" || $3 + 0 < low + 0) { low = $3; name = $1 }
   END {
-    if (low == "") { printf "devices\t–\tNo devices\t\tvalue=0\n"; exit }
+    if (low == "") { printf "devices\tDevices\tNo devices\t\tdisplay=–\tvalue=0\tmax=100\n"; exit }
     symbol = name ~ /AirPods/ ? "airpods" : name ~ /Keyboard/ ? "keyboard" : name ~ /Mouse/ ? "magicmouse" : "headphones"
-    printf "devices\t%d%%\t%s\t%s\tvalue=%.2f\t%s\n", low, name, symbol, low / 100, (low <= 20 ? "tone=bad" : "")
-  }' | openspot_items graph
+    printf "devices\tDevices\t%s\t%s\tvalue=%d\tmax=100\tunit=%%\t%s\n", name, symbol, low, (low <= 20 ? "tone=bad" : "")
+  }' | openspot_items number
 }
 
 case $1 in

@@ -85,7 +85,7 @@ final class SpotTablesTests: XCTestCase {
             name: "meter",
             keys: ["steps"],
             holdsValue: true,
-            control: { .number($0.value("value") ?? "", unit: "steps") },
+            control: { .number(NumberReading(block: $0)) },
             faults: { $0.value("steps") == "0" ? ["the part \($0.fields.first?.value ?? "") needs a step"] : [] },
             data: { ($0.number("value"), nil) },
             field: { block, name, label in ItemForm.Field(name: name, label: label, value: block.value("value")) }
@@ -95,7 +95,7 @@ final class SpotTablesTests: XCTestCase {
         let check = FrameCheck(text: frame, kinds: BlockKind.all + [meter])
 
         XCTAssertEqual(check.output.parts.map(\.kind), ["meter"])
-        XCTAssertEqual(check.output.parts.first?.control, .number("3", unit: "steps"))
+        XCTAssertEqual(check.output.parts.first?.number?.text, "3")
         XCTAssertEqual(check.partFaults, ["the part m has an unknown key: colour", "the part m needs a step"])
         XCTAssertEqual(check.output.metric?.value("value"), "3")
         XCTAssertEqual(ItemForm(output: check.output)?.fields.map(\.name), ["m"])
@@ -104,12 +104,12 @@ final class SpotTablesTests: XCTestCase {
     }
 
     func testABlockIsReadByTheKindThatItsWordAndItsTypeName() {
-        let output = Frame(text: "frame=\ngrid=one\ngrid=bars\ngrid=level\ngrid=key\ngrid=name\ngrid=done\n\ngraph=one\nvalue=0.5\n\ngraph=bars\nvalue=1\nvalue=2\n\nfield=level\ntype=slider\n\nfield=key\ntype=hotkey\n\nfield=name\n\nswitch=done\ntype=tick\n")
+        let output = Frame(text: "frame=\ngrid=one\ngrid=bars\ngrid=level\ngrid=key\ngrid=name\ngrid=done\n\nnumber=one\nvalue=0.5\nmax=1\n\nnumber=bars\nvalue=1\nvalue=2\n\nfield=level\ntype=slider\n\nfield=key\ntype=hotkey\n\nfield=name\n\nswitch=done\ntype=tick\n")
 
-        XCTAssertEqual(output.parts.map(\.kind), ["gauge", "graph", "slider", "hotkey", "field", "switch"])
+        XCTAssertEqual(output.parts.map(\.kind), ["number", "number", "slider", "hotkey", "field", "switch"])
         XCTAssertEqual(output.parts.last?.look, .tick)
         XCTAssertEqual(output.fields.map(\.kind.name), ["slider", "field", "switch"])
-        XCTAssertEqual(BlockKind.words, ["text", "number", "graph", "picture", "view", "switch", "field", "choice", "option", "button", "section", "repeat"])
+        XCTAssertEqual(BlockKind.words, ["text", "number", "picture", "view", "switch", "field", "choice", "option", "button", "section", "repeat"])
     }
 
     private func unknownKeys(in frame: String) -> [String] {

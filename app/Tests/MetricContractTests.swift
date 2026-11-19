@@ -19,7 +19,7 @@ final class MetricContractTests: XCTestCase {
         try FileManager.default.setAttributes([.creationDate: Date(timeIntervalSince1970: 1_700_000_000)], ofItemAtPath: url.path)
     }
 
-    private func power(_ body: String = "printf 'graph=power\\ntitle=84%%\\nvalue=0.84\\ntone=good\\n'") throws {
+    private func power(_ body: String = "printf 'number=power\\nvalue=84\\nmax=100\\nunit=%%\\ntone=good\\n'") throws {
         try script("power.sh", "#!/bin/sh\n\(body)\n", toml: "on = ['clock.5']")
     }
 
@@ -33,7 +33,7 @@ final class MetricContractTests: XCTestCase {
 
         let value = try await metric.read(timeout: 60)
 
-        XCTAssertEqual(value, MetricValue(title: "84%", tone: .good, value: 0.84))
+        XCTAssertEqual(value, MetricValue(title: "84%", tone: .good, value: 0.84, max: 100))
     }
 
     func testAMetricThatPrintsNonsenseFails() async throws {
