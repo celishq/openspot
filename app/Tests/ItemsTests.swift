@@ -105,6 +105,16 @@ final class ItemsTests: PanelCase {
         XCTAssertEqual(output.items.map(\.showsWords), [true, false])
     }
 
+    func testASheetOfThreeLinesOfTilesFitsItsLines() async throws {
+        let tiles = (1...9).map { "text=t\($0)\ntitle=T\($0)\ndetail=D\nicon=star\nlook=tile\n" }.joined(separator: "\n")
+        try await open("frame=\ngrid=tiles\n\nrepeat=tiles\ngrid=a b c\n\n\(tiles)")
+
+        let sheet = try XCTUnwrap(model.sheets["items"]).sheetRect
+        let lines = 3 * SpotTokens.square(perLine: 3) + 2 * SpotTokens.listRowGap
+        XCTAssertLessThan(sheet.height, SpotTokens.sheetMaxHeight)
+        XCTAssertGreaterThanOrEqual(sheet.height, lines)
+    }
+
     func testATextItemsNumberIsNoMarkAndANumberItemWithAMaxFills() {
         let output = Frame(text: "text=mac\ntitle=This Mac\ndetail=84%\nvalue=0.84\n\nnumber=swap\ntitle=Swap\nvalue=84\nmax=100\n")
 

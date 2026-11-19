@@ -24,7 +24,7 @@ enum SpotSheetPicture {
         let views = SpotViews()
         let source = source.map { URL(fileURLWithPath: $0).path }
         let list = Self.list(of: output)
-        let size = panel.map { SpotTokens.panelRect($0).size } ?? SpotTokens.floatSize(rows: list.shown.count, setsApart: list.setsApart)
+        let size = panel.map { SpotTokens.panelRect($0).size } ?? SpotSheetBody.size(of: nil, rows: list.shown.count, perLine: list.perLine, setsApart: list.setsApart)
         let preview = SpotSheetPreview(panel: panel, title: spot?.name ?? "Sheet", subtitle: spot?.subtitle ?? (spot == nil ? "Preview" : ""), symbol: spot?.symbol ?? "square.dashed", list: list, viewSource: source, views: views, seed: URL(fileURLWithPath: path).lastPathComponent)
         let picture = SpotPicture(of: preview.padding(margin), size: CGSize(width: size.width + 2 * margin, height: size.height + 2 * margin), path: path)
         Task { @MainActor in
