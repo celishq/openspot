@@ -81,6 +81,8 @@ public final class SpotsModel {
         didSet { takePlacements() }
     }
     @ObservationIgnored var isPanelHidden = true
+    @ObservationIgnored var hiddenAt: Date?
+    public static let flowKeep: TimeInterval = 90
     @ObservationIgnored var heldLayout: Theme.Layout?
     @ObservationIgnored var laidOut = Theme.Layout()
     @ObservationIgnored var takenTheme = Theme()
@@ -497,6 +499,12 @@ public final class SpotsModel {
 
     public func panelWillShow() {
         isPanelHidden = false
+        if let hiddenAt, runs.now().timeIntervalSince(hiddenAt) > Self.flowKeep, let id = openSheetID {
+            runs.sheets[id]?.close()
+            showSheet(nil, moving: false)
+            endFlow()
+        }
+        hiddenAt = nil
         finishPick()
         selected = 0
         runs.panelOpened(showsToEnd: isWarming)

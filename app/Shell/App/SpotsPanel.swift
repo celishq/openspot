@@ -292,6 +292,18 @@ final class SpotsPanel: NSPanel {
         }
     }
 
+    private func watchSecretKeys(model: SpotsModel) {
+        NSEvent.addLocalMonitorForEvents(matching: .keyDown) { [weak self, weak model] event in
+            let isTaken = MainActor.assumeIsolated {
+                guard let self, let model, event.window === self, event.keyModifiers.contains(.command),
+                      (self.firstResponder as? NSTextView)?.delegate is NSSecureTextField,
+                      let key = event.actionKey, !SpotsModel.editsText(key) else { return false }
+                return model.handleKey(key)
+            }
+            return isTaken ? nil : event
+        }
+    }
+
     private func watchPaste(model: SpotsModel) {
         NSEvent.addLocalMonitorForEvents(matching: .keyDown) { [weak model] event in
             let isTaken = MainActor.assumeIsolated {
@@ -337,6 +349,7 @@ final class SpotsPanel: NSPanel {
         hosting.sizingOptions = []
         panel.contentView = hosting
         panel.watchPaste(model: model)
+        panel.watchSecretKeys(model: model)
         panel.watchFrontApp(model: model)
         panel.watchInputSource(model: model)
         panel.center()

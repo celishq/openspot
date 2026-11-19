@@ -145,6 +145,8 @@ struct SheetPartsView: View {
         case .text(let text, let placeholder, let isReadOnly):
             textArea(part, frame, text: text, placeholder: placeholder, isReadOnly: isReadOnly)
                 .overlay(alignment: .topTrailing) { cornerMark(part, frame) }
+        case .secret(let text, let placeholder):
+            secretField(part, text: text, placeholder: placeholder)
         case .slider(let level, let low, let high):
             slider(part, level: level, low: low, high: high)
         case .swatches(let colors, let value) where colors.count > 1:
@@ -183,14 +185,14 @@ struct SheetPartsView: View {
 
     @ViewBuilder
     private func labelled(_ part: SpotPart, _ frame: SheetPlacement.Frame) -> some View {
-        if frame.hasDetailUnderTitle, part.control == .none, part.press == .none, let title = part.title, let detail = part.detail {
-            stacked(part, title: title, detail: detail)
+        if frame.hasDetailUnderTitle, part.control == .none, part.press == .none, let title = part.title, part.detail != nil {
+            stacked(part, title: title)
         } else {
             line(part, frame)
         }
     }
 
-    private func stacked(_ part: SpotPart, title: String, detail: String) -> some View {
+    private func stacked(_ part: SpotPart, title: String) -> some View {
         HStack(alignment: .firstTextBaseline, spacing: SpotTokens.partLineGap) {
             if let symbol = part.symbol {
                 Image(systemName: symbol)
@@ -201,9 +203,9 @@ struct SheetPartsView: View {
                 Text(title).font(SpotType.body).foregroundStyle(SpotTheme.ink).lineLimit(1)
                 Group {
                     if let colour = SpotToneWords.colour(of: part.textTone) {
-                        Text(detail).foregroundStyle(colour)
+                        Text(part.detailWords).foregroundStyle(colour)
                     } else {
-                        Text(detail).modifier(SpotSecondaryText())
+                        Text(part.detailWords).modifier(SpotSecondaryText())
                     }
                 }
                 .font(SpotType.detail)
@@ -236,8 +238,8 @@ struct SheetPartsView: View {
             if part.title != nil || part.detail != nil {
                 Spacer(minLength: 0)
             }
-            if let detail = part.detail {
-                SpotToneWords(text: detail, tone: part.textTone)
+            if part.detail != nil {
+                SpotToneWords(text: part.detailWords, tone: part.textTone)
                     .layoutPriority(2)
             }
             if case .symbol(let symbol) = part.press {
@@ -508,6 +510,21 @@ struct SheetPartsView: View {
         .font(SpotType.body)
         .foregroundStyle(SpotTheme.ink)
         .background(SpotTheme.ink.opacity(SpotTheme.fill), in: shape)
+    }
+}
+
+extension SheetPartsView {
+    private func secretField(_ part: SpotPart, text: String, placeholder: String?) -> some View {
+        let prompt = Text(placeholder ?? part.title ?? "").foregroundStyle(SpotTheme.ink.opacity(SpotTheme.secondary))
+        return SecureField(part.title ?? part.id, text: Binding(get: { text }, set: { onSet(part, $0) }), prompt: prompt)
+            .labelsHidden()
+            .textFieldStyle(.plain)
+            .focused($focus, equals: part.id)
+            .font(SpotType.body)
+            .foregroundStyle(SpotTheme.ink)
+            .padding(.horizontal, SpotTokens.padding)
+            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .leading)
+            .background(SpotTheme.ink.opacity(SpotTheme.fill), in: shape)
     }
 }
 

@@ -4,6 +4,10 @@ extension SpotsModel {
     @discardableResult
     public func open(_ id: String) -> Bool {
         guard entry(id) != nil else { return false }
+        if place(ofSheet: id) == .window {
+            openWindow(id)
+            return true
+        }
         endFlow()
         return push(FlowSheet(spot: id))
     }

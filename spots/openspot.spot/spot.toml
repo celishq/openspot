@@ -58,6 +58,17 @@ view = "icon.swift"
 uses = ["spots"]
 drop = "png,jpg,jpeg,heic,gif,tiff,svg,pdf,icns"
 
+[scripts.import]
+title = "Import from Raycast"
+icon = "square.and.arrow.down"
+detail = "Bring your scripts and data"
+keywords = ["raycast", "import", "script commands", "quicklinks", "snippets", "extensions"]
+on = ["sheet.open"]
+drop = "folder,rayconfig"
+pages = ["scripts", "export", "analogs", "extensions"]
+view = "import.swift"
+uses = ["app", "spots", "files"]
+
 [scripts.make]
 title = "Make a spot"
 icon = "plus"

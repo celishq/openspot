@@ -339,6 +339,38 @@ final class FlowNavigationTests: PanelCase {
         XCTAssertEqual(model.sheets["list"]?.pageStates.count, 0)
     }
 
+    func testEscOnAListThatAnotherSpotPushedGoesBackToIt() async throws {
+        try script("menu", toml: "title = 'Menu'\non = ['sheet.open']", "printf 'text=go\\ntitle=Go\\n'")
+        try script("hub", toml: "title = 'Hub'\non = ['sheet.open']\npages = ['a']", "printf 'frame=\\nrecents=false\\ngrid=list\\n\\nrepeat=list\\n\\ntext=a\\ntitle=A\\nroute=a\\n'")
+        await model.reload()
+        model.isShown = true
+        model.panelWillShow()
+        model.press("menu")
+        try await wait("the menu") { self.model.openSheetID == "menu" && self.titles == ["Go"] }
+        XCTAssertTrue(model.push(FlowSheet(spot: "hub")))
+        try await wait("the hub") { self.model.openSheetID == "hub" && self.titles == ["A"] && !self.model.runs.isShowing }
+
+        XCTAssertTrue(model.handleKey(escape))
+
+        try await wait("the menu again") { self.model.openSheetID == "menu" }
+    }
+
+    func testEscOnAListThatTheSearchOpenedGoesBackToTheGrid() async throws {
+        try script("hub", toml: "title = 'Hub'\non = ['sheet.open']\npages = ['a']", "printf 'frame=\\nrecents=false\\ngrid=list\\n\\nrepeat=list\\n\\ntext=a\\ntitle=A\\nroute=a\\n'")
+        await model.reload()
+        model.isShown = true
+        model.panelWillShow()
+        model.searchText = "hub"
+        model.landSearch()
+        try await wait("the found hub") { self.model.visible.map(\.id) == ["hub"] }
+        XCTAssertTrue(model.handleSearchKey(ActionKey(name: "return")))
+        try await wait("the hub") { self.model.openSheetID == "hub" && self.titles == ["A"] && !self.model.runs.isShowing }
+
+        XCTAssertTrue(model.handleKey(escape))
+
+        try await wait("the grid") { self.model.openSheetID == nil }
+    }
+
     func testAnItemWithARouteOpensItAtOnceWithNoCallAndOneThatReplacesTakesThePlaceOfThePage() async throws {
         let calls = folder.appendingPathComponent("calls")
         try script("routes", toml: "title = 'Routes'\npages = ['*']", """

@@ -20,6 +20,7 @@ public struct SpotPart: Equatable, Sendable, Identifiable {
         case swatches([String], value: String?)
         case menu([Option], value: String?)
         case text(String, placeholder: String?, isReadOnly: Bool)
+        case secret(String, placeholder: String?)
         case list([Option], value: String?)
         case number(NumberReading)
         case image(String)
@@ -47,6 +48,7 @@ public struct SpotPart: Equatable, Sendable, Identifiable {
     public let isSection: Bool
     public let title: String?
     public let detail: String?
+    public let detailWords: AttributedString
     public let symbol: String?
     public let file: String?
     public let glyph: String?
@@ -91,7 +93,9 @@ public struct SpotPart: Equatable, Sendable, Identifiable {
         values = kind.isOpen ? Dictionary(grouping: block.fields, by: \.key).mapValues { $0.map(\.value) } : [:]
         isSection = kind == .section
         title = block.value("title")
-        detail = block.value("detail")
+        let words = Self.words(of: block.value("detail") ?? "")
+        detailWords = words
+        detail = block.value("detail").map { _ in String(words.characters) }
         key = kind == .hotkey ? nil : block.value("shortcut").flatMap(ActionKey.init(text:))
         asksToRecord = kind == .hotkey && block.flag("recording") == true
         closes = block.flag("close") ?? kind.presses
@@ -108,6 +112,16 @@ public struct SpotPart: Equatable, Sendable, Identifiable {
         symbol = kind.presses ? nil : icon?.symbol
         press = kind.presses ? icon?.symbol.map(Press.symbol) ?? .line : .none
         control = kind.control(block)
+    }
+
+    static func words(of text: String) -> AttributedString {
+        let pieces = text.components(separatedBy: "**")
+        guard pieces.count > 1, pieces.count % 2 == 1 else { return AttributedString(text) }
+        return pieces.enumerated().reduce(into: AttributedString()) { words, piece in
+            var next = AttributedString(piece.element)
+            if piece.offset % 2 == 1 { next.inlinePresentationIntent = .stronglyEmphasized }
+            words += next
+        }
     }
 
     public var numberPieces: [NumberPiece] {
@@ -147,7 +161,7 @@ public struct SpotPart: Equatable, Sendable, Identifiable {
         case .toggle(let on): on ? "true" : "false"
         case .slider(let level, _, _): String(Int(level.rounded()))
         case .swatches(_, let value), .menu(_, let value), .list(_, let value): value
-        case .text(let text, _, _): text
+        case .text(let text, _, _), .secret(let text, _): text
         case .shortcut(let text): text
         }
     }
@@ -200,13 +214,15 @@ public struct SpotPart: Equatable, Sendable, Identifiable {
     }
 
     public var isEditable: Bool {
-        if case .text(_, _, false) = control { return true }
-        return false
+        switch control {
+        case .text(_, _, false), .secret: true
+        default: false
+        }
     }
 
     public var isFocusable: Bool {
         switch control {
-        case .toggle, .shortcut, .menu, .slider: true
+        case .toggle, .shortcut, .menu, .slider, .secret: true
         case .text(_, _, let isReadOnly): !isReadOnly
         default: press != .none
         }
@@ -223,6 +239,7 @@ public struct SpotPart: Equatable, Sendable, Identifiable {
         case .shortcut: control = .shortcut(value)
         case .text(_, let placeholder, let isReadOnly):
             control = .text(value, placeholder: placeholder, isReadOnly: isReadOnly)
+        case .secret(_, let placeholder): control = .secret(value, placeholder: placeholder)
         }
     }
 }

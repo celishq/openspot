@@ -149,8 +149,8 @@ struct SpotNumberView: View {
 
     @ViewBuilder
     private var detail: some View {
-        if let detail = part.detail {
-            SpotToneWords(text: detail, tone: part.tone)
+        if part.detail != nil {
+            SpotToneWords(text: part.detailWords, tone: part.tone)
         }
     }
 

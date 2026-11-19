@@ -47,7 +47,7 @@ final class SettingsSpotTests: BuiltInCase {
 
         let items = try await items()
 
-        XCTAssertEqual(items.map(\.run), ["panel-key", "fix-key", "careful_mode"])
+        XCTAssertEqual(items.map(\.run), ["panel-key", "fix-key", "careful_mode", "import_raycast"])
         XCTAssertFalse(items.contains { $0.title == "Show in the menu bar" || $0.title == "Float" || $0.subtitle?.contains("Cups") == true })
     }
 
@@ -56,11 +56,11 @@ final class SettingsSpotTests: BuiltInCase {
 
         let items = try await items()
 
-        XCTAssertEqual(items.map(\.run), ["panel-key", "fix-key", "careful_mode"])
+        XCTAssertEqual(items.map(\.run), ["panel-key", "fix-key", "careful_mode", "import_raycast"])
         XCTAssertEqual(items.first?.title, "Open Openspot")
         XCTAssertEqual(items.first?.shortcut, "option+space")
-        XCTAssertEqual(items.map { $0.hides ?? [] }, [[], [], []])
-        XCTAssertEqual(items.map(\.takesShake), [false, false, false])
+        XCTAssertEqual(items.map { $0.hides ?? [] }, [[], [], [], []])
+        XCTAssertEqual(items.map(\.takesShake), [false, false, false, false])
     }
 
     func testTheSheetListsTheFixKeyAndChangesIt() async throws {
@@ -135,14 +135,14 @@ final class SettingsSpotTests: BuiltInCase {
         offerLogin()
 
         let off = try await items()
-        XCTAssertEqual(off.map(\.run), ["panel-key", "fix-key", "careful_mode", "open_at_login"])
-        XCTAssertEqual(off.last?.title, "Open at login")
-        XCTAssertEqual(off.last?.isOn, false)
+        XCTAssertEqual(off.map(\.run), ["panel-key", "fix-key", "careful_mode", "open_at_login", "import_raycast"])
+        XCTAssertEqual(off.first { $0.run == "open_at_login" }?.title, "Open at login")
+        XCTAssertEqual(off.first { $0.run == "open_at_login" }?.isOn, false)
 
         try await call(["open", "open_at_login"])
         XCTAssertTrue(opensAtLogin)
         let on = try await items()
-        XCTAssertEqual(on.last?.isOn, true)
+        XCTAssertEqual(on.first { $0.run == "open_at_login" }?.isOn, true)
 
         try await call(["open", "open_at_login"])
         XCTAssertFalse(opensAtLogin)
@@ -183,15 +183,15 @@ final class SettingsSpotTests: BuiltInCase {
         let effects = try recordEffects()
 
         let off = try await items()
-        XCTAssertEqual(off.map(\.run), ["panel-key", "fix-key", "careful_mode", "command_link"])
-        XCTAssertEqual(off.last?.title, "Use openspot in Terminal")
-        XCTAssertEqual(off.last?.isOn, false)
+        XCTAssertEqual(off.map(\.run), ["panel-key", "fix-key", "careful_mode", "command_link", "import_raycast"])
+        XCTAssertEqual(off.first { $0.run == "command_link" }?.title, "Use openspot in Terminal")
+        XCTAssertEqual(off.first { $0.run == "command_link" }?.isOn, false)
 
         try await call(["open", "command_link"])
         XCTAssertEqual(effects(), ["toast Installed openspot"])
         XCTAssertEqual(try FileManager.default.destinationOfSymbolicLink(atPath: linkFile.path), root.appendingPathComponent("Openspot.app/Contents/Helpers/openspot").path)
         let on = try await items()
-        XCTAssertEqual(on.last?.isOn, true)
+        XCTAssertEqual(on.first { $0.run == "command_link" }?.isOn, true)
 
         try await call(["open", "command_link"])
         XCTAssertEqual(effects(), ["toast Installed openspot", "toast Removed openspot"])

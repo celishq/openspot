@@ -37,6 +37,13 @@ struct PromptCalls {
         }
     }
 
+    func convert(_ folders: [URL]) -> CommandAPI.Work {
+        CommandAnswer.work { [mac, places] in
+            let extensions = try folders.map { try RaycastExtension(folder: $0) }
+            return Self.prompt(in: places.spots.url, mac: mac).converting(extensions)
+        }
+    }
+
     private static func prompt(in folder: URL, mac: Mac) -> AgentPrompt {
         AgentPrompt(folder: folder, guide: mac.guide ?? folder, app: AgentPrompt.command(of: Bundle.main.executablePath ?? "openspot"))
     }

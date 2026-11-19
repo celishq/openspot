@@ -24,9 +24,11 @@ remove() {
 
 # Prints the gallery: a folder line for each store with its path, its name, whether it is found and whether it is built in, an item for
 # each spot with its id, its name, its step, its origin, its store, its description, its size and whether it has sample
-# data, and the readme of the spot that $1 names, a line after its id, when its sheet asks.
+# data, and the readme of the spot that $1 names, a line after its id, when its sheet asks. With $2 the view opens the sheet of
+# that spot.
 gallery() {
   printf 'frame=\ngrid=gallery\n\nview=gallery\n'
+  [ -n "${2-}" ] && printf 'show=%s\n' "$2"
   openspot store folders | awk 'BEGIN { RS = ""; FS = "\n" }
     { delete f
       for (i = 1; i <= NF; i++) { n = index($i, "="); f[substr($i, 1, n - 1)] = substr($i, n + 1) }
@@ -47,7 +49,9 @@ gallery() {
 
 case "$1" in
   show)
-    gallery
+    show=$(cat "$OPENSPOT_DATA/store-show" 2>/dev/null)
+    rm -f "$OPENSPOT_DATA/store-show"
+    gallery "$show" "$show"
     ;;
   gallery)
     case "$2" in

@@ -645,10 +645,11 @@ Each kind of block, the keys of its own and the call it sends.
   `/` or a leading `~`; an SF Symbol, such as `wifi`; or any other text, such as `😀`.
 - `look` is the box of a text, a number or a button: `tile` or `bare`, and on a button also `chip` or `strong`.
   `align=left`, `right` or `center` places a block that is smaller than its area.
-- A field's `type`: none for one line, `multiline`, `slider` from `min` to `max`, 0 to 100 by default, which sends a whole number, `search` for the
+- A field's `type`: none for one line, `secret` for one line that shows dots, such as a passphrase, `multiline`, `slider` from `min` to `max`, 0 to 100 by default, which sends a whole number, `search` for the
   search field of the [items](#items), and `hotkey`. A choice with
   `type=multiple` lets the user choose several options.
 - `grow=false` keeps a block to its own lines where it would take the free height; see [Layouts](#layouts).
+- Two stars around words of a `detail`, such as `Open **Settings**`, draw them in bold.
 - A `hotkey` field shows keycaps, and records a key at Return or a click on it, or when a new frame gives it
   `recording=true`. Every key goes to it, Esc brings back its key, and a shortcut sends `<id> <key>`. While a sheet
   with one shows, Openspot's own keys are off.

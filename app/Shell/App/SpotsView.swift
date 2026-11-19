@@ -92,6 +92,7 @@ struct SpotsView: View {
         .background(alignment: .topLeading) { SpotBackdrop(model: model, motion: motion) }
         .environment(\.spotIsShown, model.isShown)
         .environment(\.spotViewPlace, SpotViewPlace(model: model))
+        .environment(\.spotCards, SpotCardSource(model: model))
         .environment(\.spotPanels, model.panels)
         .onChange(of: model.isShown) { _, isShown in
             if !isShown { dropTarget = nil }

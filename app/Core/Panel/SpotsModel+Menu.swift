@@ -94,6 +94,11 @@ extension SpotsModel {
         }
     }
 
+    func menuOpens(on target: Target) -> Bool {
+        guard let menu = actionMenu(on: target) else { return false }
+        return menu.holdsMore || (openParts?.drawsKeys == true && !menu.rows.isEmpty)
+    }
+
     func actionMenu(on target: Target) -> ActionMenu? {
         var none = HookAnswers()
         return actionMenu(on: target, answers: &none, asks: false)

@@ -267,4 +267,5 @@ final class SlashCommandPanelTests: PanelCase {
         try await wait("the text in the read") { self.sent.contains("search=hello world") }
         XCTAssertTrue(sent.contains("show\n"), sent)
     }
+
 }

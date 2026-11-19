@@ -25,7 +25,11 @@ extension SpotsModel {
             sheet.afterAnswer { [weak self] in self?.openWindow(id) }
             return
         }
-        if !runs.floating.contains(id) { runs.float(id) }
+        if runs.floating.contains(id) {
+            sheets[id]?.show(need: .change)
+        } else {
+            runs.float(id)
+        }
         host.window(entry)
     }
 

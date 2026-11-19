@@ -107,4 +107,20 @@ final class SnippetsSpotTests: SampleSpotsCase {
             }
         }
     }
+
+    func testImportAddsEachSnippetOnceWithItsKeywordAsASearchWord() async throws {
+        let snippets = try XCTUnwrap(try scan.spots.first { $0.name == "Snippets" })
+        try await withPrivateHome { _ in
+            let input = #"input.snippets=[{"title":"Email","text":"hello@example.com","keyword":";mail"},{"title":"Signature","text":"Best,\\nTest User"}]"# + "\n"
+
+            let first = try await Self.answer(of: snippets, ["import"], input: input)
+            let second = try await Self.answer(of: snippets, ["import"], input: input)
+            let items = try await snippets.items(timeout: 60).items
+
+            XCTAssertEqual(first.items.first { $0.run == "added" }?.title, "Added 2 snippets")
+            XCTAssertEqual(second.items.first { $0.run == "added" }?.title, "No new snippets")
+            XCTAssertEqual(items.map(\.title), ["Email", "Signature"])
+            XCTAssertEqual(items.first?.keywords, [";mail"])
+        }
+    }
 }

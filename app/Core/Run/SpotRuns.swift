@@ -222,7 +222,7 @@ public final class SpotRuns {
 
     public func panelClosed() {
         isPanelOpen = false
-        sheets.values.forEach { $0.leftPlace() }
+        sheets.values.forEach { $0.leftPlace(keepsOpen: true) }
         updateClock()
     }
 

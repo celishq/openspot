@@ -86,8 +86,8 @@ struct SpotSlotView: View {
             if let title = part.title {
                 Text(title).font(SpotType.body).foregroundStyle(part.detail == nil ? SpotToneWords.colour(of: part.textTone) ?? SpotTheme.ink : SpotTheme.ink).lineLimit(1)
             }
-            if let detail = part.detail {
-                SpotToneWords(text: detail, tone: part.textTone)
+            if part.detail != nil {
+                SpotToneWords(text: part.detailWords, tone: part.textTone)
             }
         }
         .modifier(SpotColorBar(color: part.color))

@@ -316,6 +316,7 @@ final class SheetPartsTests: XCTestCase {
     func testTheCatalogReportsWhatAPartCannotHold() {
         XCTAssertEqual(FrameCheck(text: lights.placed).partFaults, [])
         XCTAssertEqual(FrameCheck(text: "text=a\ncolour=red\n".placed).partFaults, ["the part a has an unknown key: colour"])
+        XCTAssertEqual(FrameCheck(text: "field=a\ngrow=false\n".placed).partFaults, [])
         XCTAssertEqual(FrameCheck(text: "choice=a\noption=en:English\n".placed).partFaults, ["the part a has an unknown key: option"])
         XCTAssertEqual(FrameCheck(text: "choice=a\ncolor=red\n".placed).partFaults, ["the part a needs a color as #rrggbb: red"])
         XCTAssertEqual(FrameCheck(text: "text=a\nshortcut=nope+a\n".placed).partFaults, ["the part a has an unknown key combination: nope+a"])
@@ -474,4 +475,29 @@ final class SheetPartsTests: XCTestCase {
         XCTAssertEqual(FrameCheck(text: "switch=done\nvalue=true\ntype=tick\n".placed).partFaults, [])
     }
 
+    func testASecretFieldHidesItsTextOnOneLineAndTakesItsValue() throws {
+        var part = try XCTUnwrap(try panel("field=pass\ntype=secret\nplaceholder=Passphrase\nvalue=abc\n").parts.first)
+
+        XCTAssertEqual(part.control, .secret("abc", placeholder: "Passphrase"))
+        XCTAssertTrue(part.isEditable)
+        XCTAssertFalse(part.fillsHeight)
+        part.set("abcd")
+        XCTAssertEqual(part.value, "abcd")
+        XCTAssertEqual(FrameCheck(text: "field=pass\ntype=secret\n".placed).partFaults, [])
+    }
+
+    func testATextDrawsTheWordsBetweenTwoStarsOfItsDetailInBold() throws {
+        let part = try XCTUnwrap(SpotPart(block: TextBlock(fields: [.init(key: "text", value: "where"), .init(key: "detail", value: "Open **Settings → Extensions** now.")])))
+
+        XCTAssertEqual(part.detail, "Open Settings → Extensions now.")
+        let bold = part.detailWords.runs.filter { $0.inlinePresentationIntent == .stronglyEmphasized }.map { String(part.detailWords[$0.range].characters) }
+        XCTAssertEqual(bold, ["Settings → Extensions"])
+    }
+
+    func testADetailWithNoStarsKeepsItsUnderscoresAndBackticks() throws {
+        let part = try XCTUnwrap(SpotPart(block: TextBlock(fields: [.init(key: "text", value: "where"), .init(key: "detail", value: "my_file_name `x`")])))
+
+        XCTAssertEqual(part.detail, "my_file_name `x`")
+        XCTAssertEqual(String(part.detailWords.characters), "my_file_name `x`")
+    }
 }

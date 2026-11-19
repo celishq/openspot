@@ -127,6 +127,7 @@ extension SpotsModel {
 
     public func panelDidHide() {
         isPanelHidden = true
+        hiddenAt = runs.now()
         noteMiss()
         finishPick()
         for entry in entries where entry.spot.answers != nil { sheets[entry.id]?.answer("") }
