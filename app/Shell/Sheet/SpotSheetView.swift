@@ -69,7 +69,7 @@ private struct SheetContentView: View {
                 .morph(progress, offset: { [rowCardDrop] in SheetMorph.place(onCard: CGSize(width: 0, height: rowCardDrop), at: $0) })
             VStack(alignment: .leading, spacing: SpotTokens.rowGap) {
                 if let panel = content.panel {
-                    if panel.showsRows { Color.clear.frame(height: SpotTokens.listRow) }
+                    if panel.showsField { Color.clear.frame(height: SpotTokens.listRow) }
                     SheetPartsView(
                         panel: panel,
                         act: content.act,
