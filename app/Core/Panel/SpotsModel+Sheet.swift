@@ -67,7 +67,11 @@ extension SpotsModel {
     func presentSheet(of id: String, moving: Bool, showingPanel: () -> Void = {}) {
         guard place(ofSheet: id) == .panel else { return openWindow(id) }
         showingPanel()
-        pushFirst(id, moving: moving)
+        guard !moving else { return pushFirst(id, moving: true) }
+        host.nextFrame { [weak self] in
+            guard let self else { return }
+            pushFirst(id, moving: isShown)
+        }
     }
 
     public func openSettings() {
