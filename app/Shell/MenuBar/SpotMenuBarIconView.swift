@@ -12,10 +12,10 @@ struct SpotMenuBarIconView: View {
 
     var body: some View {
         ZStack {
-            swap.scaleEffect(isWorking ? MotionTokens.menuBarWorkScale : 1).opacity(isWorking ? MotionTokens.hiddenOpacity : 1)
+            swap.opacity(isWorking ? MotionTokens.hiddenOpacity : 1)
             ZStack {
-                Capsule().padding(.vertical, SpotTokens.menuBarPillInset)
-                swap.scaleEffect(isWorking ? MotionTokens.menuBarWorkScale : 1).blendMode(.destinationOut)
+                Capsule().frame(height: SpotTokens.menuBarPillHeight)
+                swap.blendMode(.destinationOut)
             }
             .compositingGroup()
             .opacity(isWorking ? 1 : MotionTokens.hiddenOpacity)

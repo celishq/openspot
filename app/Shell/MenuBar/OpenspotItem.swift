@@ -42,7 +42,8 @@ final class OpenspotItem {
         guard let button = item.button, let image = button.image else { return nil }
         button.image = nil
         let host = MenuBarHost(rootView: SpotMenuBarIconView(model: model, image: image, toast: toast))
-        host.frame = NSRect(x: 0, y: 0, width: SpotTokens.menuBarIconWidth, height: button.bounds.height)
+        let height = max(button.bounds.height, SpotTokens.menuBarPillHeight)
+        host.frame = NSRect(x: 0, y: (button.bounds.height - height) / 2, width: SpotTokens.menuBarIconWidth, height: height)
         host.autoresizingMask = [.width, .height]
         button.addSubview(host)
         return host

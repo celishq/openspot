@@ -37,8 +37,8 @@ extension SpotTokens {
     public static let lineRingSide: CGFloat = 30
     public static let lineRingLine: CGFloat = 2
 
-    public static let menuBarIconWidth: CGFloat = 30
-    public static let menuBarPillInset: CGFloat = 2
+    public static let menuBarIconWidth: CGFloat = 40
+    public static let menuBarPillHeight: CGFloat = 24
     public static let menuBarGap: CGFloat = 5
     public static let menuBarCountGap: CGFloat = 3
     public static let menuBarPadding: CGFloat = 6
