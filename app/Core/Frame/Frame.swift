@@ -28,7 +28,6 @@ public struct Frame: Equatable, Sendable {
     public private(set) var view: TextBlock?
     public private(set) var face = CardFace.none
     public private(set) var drawing = RepeatDrawing.list
-    public private(set) var toast: String?
     public private(set) var ends: [String] = []
     public private(set) var start: String?
     public private(set) var select: String?
@@ -116,8 +115,6 @@ public struct Frame: Equatable, Sendable {
                 take(marks: block)
             } else if RootKey.isMark(block) {
                 take(marks: block)
-            } else if word == SheetFrames.notice {
-                toast = block.value(SheetFrames.notice)
             } else {
                 errors.append(block.firstLine)
             }
@@ -178,7 +175,6 @@ public struct Frame: Equatable, Sendable {
 
     public func withoutEffects() -> Frame {
         var output = self
-        output.toast = nil
         output.select = nil
         output.ends = []
         output.start = nil

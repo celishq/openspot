@@ -329,13 +329,14 @@ final class PanelKeysTests: PanelCase {
     }
 
     private func openChoice() async throws {
+        takeCalls()
         try FileManager.default.createDirectory(at: pickData, withIntermediateDirectories: true)
         try script("choice", toml: "title = 'Choice'\non = ['sheet.open']", """
         data='\(pickData.path)'
         [ "$1" = show ] || echo "$*" >> "$data/calls"
         while [ -f "$data/hold-$1" ]; do sleep 0.01; done
         [ "$1" = key ] && printf %s "$2" > "$data/key"
-        [ "$1" = use ] && printf '\\033]9;Used\\007'
+        [ "$1" = use ] && \(TestSpot.toast) Used
         case "$1" in
           show|key|record)
             printf 'frame=\\ngrid=key\\ngrid=key\\ngrid=use\\ngrid=record\\n\\nfield=key\\ntype=hotkey\\nvalue=%s\\n' "$(cat "$data/key" 2>/dev/null || printf ctrl+space)"

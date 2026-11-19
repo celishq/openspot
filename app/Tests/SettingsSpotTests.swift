@@ -12,8 +12,7 @@ final class SettingsSpotTests: BuiltInCase {
         try await settings.items(timeout: 60).items
     }
 
-    @discardableResult
-    private func call(_ arguments: [String]) async throws -> String? {
+    private func call(_ arguments: [String]) async throws {
         try await settings.perform(SpotAction(arguments: arguments), timeout: 60)
     }
 

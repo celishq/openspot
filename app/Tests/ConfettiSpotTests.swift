@@ -73,10 +73,9 @@ final class ConfettiSpotTests: SampleSpotsCase {
         let script = staying(try await program(in: folder), data: folder, tools: folder.appendingPathComponent("tools"))
         defer { script.stop() }
 
-        let frames = try await answer("call=1\narg=look\ninput.look=broken\n\n", from: script, until: "1")
+        _ = try await answer("call=1\narg=look\ninput.look=broken\n\n", from: script, until: "1")
 
         XCTAssertEqual(try read("calls", in: folder), "setting set look Broken\ntoast Broken cannot play. Line 2: `nope` is not a colour. Write it as `#RRGGBB`, such as `#FF4D6D`.\n")
-        XCTAssertEqual(frames.compactMap { Frame(text: $0).toast }, [])
     }
 
     func testAPlayOfTheKeptLookThatCannotPlayEndsItsCallAndTheEndOfStdinEndsTheSpot() async throws {

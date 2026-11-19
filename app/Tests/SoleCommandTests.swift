@@ -42,7 +42,7 @@ final class SoleCommandTests: XCTestCase {
     }
 
     private func script(_ name: String, toml: String) throws {
-        try "#!/bin/sh\nprintf '\\033]9;Ran %s\\007' \"$1\"\n".writeScript(to: spots.spotFile(name), toml: toml)
+        try "#!/bin/sh\n\(TestSpot.toast) \"Ran $1\"\n".writeScript(to: spots.spotFile(name), toml: toml)
     }
 
     private func entry(_ id: String) throws -> SpotsModel.Entry {
@@ -166,7 +166,7 @@ final class SoleCommandTests: XCTestCase {
     }
 
     func testReturnRunsTheOneCommandOfASpotWithRowsAndCommandYOpensTheRowsAsHistory() async throws {
-        try "#!/bin/sh\ncase \"$1\" in show) printf 'text=one\\ntitle=Hello there\\n\\ntext=two\\ntitle=Second\\n' ;; dictate) printf '\\033]9;Ran dictate\\007' ;; esac\n"
+        try "#!/bin/sh\ncase \"$1\" in show) printf 'text=one\\ntitle=Hello there\\n\\ntext=two\\ntitle=Second\\n' ;; dictate) \(TestSpot.toast) 'Ran dictate' ;; esac\n"
             .writeScript(to: spots.spotFile("dictate"), toml: "title = 'Dictate'\non = ['sheet.open', 'app.update']\n[commands.dictate]\ntitle = 'Dictate'")
         await model.reload()
         model.isShown = true

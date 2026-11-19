@@ -27,8 +27,7 @@ final class StoreSpotTests: BuiltInCase {
         }
     }
 
-    @discardableResult
-    private func call(_ arguments: [String]) async throws -> String? {
+    private func call(_ arguments: [String]) async throws {
         try await store.perform(SpotAction(arguments: arguments), timeout: 60)
     }
 

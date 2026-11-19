@@ -238,13 +238,13 @@ final class SampleSpotsTests: SampleSpotsCase {
 
     func testTheColorPickerCopiesAPickAndNothingOnACancel() async throws {
         try await withPrivateHome { folder in
-            _ = try await self.pickColor(answer: "#0080FF", in: folder)
+            try await self.pickColor(answer: "#0080FF", in: folder)
             XCTAssertEqual(self.toasts(in: folder), ["Copied #0080FF"])
             XCTAssertEqual(try self.read("clipboard", in: folder), "#0080FF")
             XCTAssertFalse(FileManager.default.fileExists(atPath: folder.appendingPathComponent("direct").path))
 
             try FileManager.default.removeItem(at: folder.appendingPathComponent("clipboard"))
-            _ = try await self.pickColor(answer: "", in: folder)
+            try await self.pickColor(answer: "", in: folder)
             XCTAssertEqual(self.toasts(in: folder), ["Copied #0080FF"])
             XCTAssertFalse(FileManager.default.fileExists(atPath: folder.appendingPathComponent("clipboard").path))
         }

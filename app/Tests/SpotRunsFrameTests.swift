@@ -95,26 +95,6 @@ final class SpotRunsFrameTests: SpotRunsCase {
         openGate()
     }
 
-    func testATerminalCodeShowsProgressOnTheRunningCallAndANotificationAsAToast() async throws {
-        try script(toml: "on = ['sheet.open']", """
-        case "$1" in
-          show) printf 'text=a\\ntitle=A\\n' ;;
-          open) printf '\\033]9;Copied\\007\\033]9;4;1;40\\007'; \(untilRelease) ;;
-        esac
-        """)
-        let sheet = try sheet()
-        var toasts: [String] = []
-        sheet.onReport = { if case .toast(let text) = $0 { toasts.append(text) } }
-        sheet.open {}
-        try await wait("the row") { sheet.list.shown.count == 1 && sheet.calls.isEmpty }
-
-        sheet.pick(try XCTUnwrap(sheet.list.selectedItem))
-
-        try await wait("the progress and the toast") { sheet.calls.first?.fill == 0.4 && toasts == ["Copied"] }
-        XCTAssertEqual(sheet.list.shown.map(\.run), ["a"])
-        openGate()
-    }
-
     func testAMainGaugeOfARunningCallIsNoLongerItsProgress() async throws {
         try script(toml: "on = ['sheet.open']", """
         case "$1" in

@@ -82,7 +82,6 @@ extension SpotRun {
         let next: ItemList.Rows? = if case .show = ask { await newRows(lines.items, search: Self.search(of: lines, in: spot)) } else { nil }
         lastAnswer = lines
         shownFrame = if case .show = ask, !frame.isEmpty, frame.utf8.count <= Self.shownFrameLimit { frame } else { nil }
-        report(toastOf: lines)
         spot = spot.taking(lines)
         switch ask {
         case .show(let generation, _, let query, _):
@@ -130,7 +129,6 @@ extension SpotRun {
     private static let shownFrameLimit = 256 * 1024
 
     private func takeRepeat(_ lines: Frame, answers: Bool) {
-        report(toastOf: lines)
         if answers { answered = runs.now() }
         takeValue(lines)
         let kept = selecting
@@ -148,7 +146,7 @@ extension SpotRun {
     @discardableResult
     func takePicture(_ lines: Frame, frame: String, of act: Act?) async -> Bool {
         if let generation = act?.generation, let current = panel?.generation, generation != current {
-            takeEffects(lines, frame: frame)
+            takeEffects(frame: frame)
             return false
         }
         await takeAnswer(lines, frame: frame, to: .show(generation: nil, reports: false, query: list.query), keeping: act?.keeping ?? editing, answers: false)
@@ -156,8 +154,7 @@ extension SpotRun {
         return true
     }
 
-    func takeEffects(_ lines: Frame, frame: String) {
-        report(toastOf: lines)
+    func takeEffects(frame: String) {
         onReport(.frame(frame))
     }
 
@@ -199,10 +196,6 @@ extension SpotRun {
             $0.hasBar = lines.hasBar
             if let value { $0.take(value) } else { $0.markStale() }
         }
-    }
-
-    func report(toastOf lines: Frame) {
-        if let text = lines.toast { onReport(.toast(fieldValues.hiding(text))) }
     }
 
     private func changeReading(_ change: (inout MetricReading) -> Void) {

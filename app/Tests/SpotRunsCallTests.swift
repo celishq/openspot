@@ -265,15 +265,18 @@ final class SpotRunsCallTests: SpotRunsCase {
     case "$1" in
       show) printf 'frame=\\ntitle=Sheet\\ngrid=go\\ngrid=bar\\n\\nbutton=go\\ntitle=Go\\nclose=false\\n\\ntext=bar\\ntitle=idle\\n' ;;
       go)
-        printf '\\033]9;Started\\007frame=\\ngrid=bar\\n\\ntext=bar\\ntitle=half\\n---\\n'
+        \(TestSpot.toast) Started
+        printf 'frame=\\ngrid=bar\\n\\ntext=bar\\ntitle=half\\n---\\n'
         sleep 0.3
         touch '%@'
-        printf '\\033]9;Done\\007text=bar\\ntitle=done\\n'
+        \(TestSpot.toast) Done
+        printf 'text=bar\\ntitle=done\\n'
         ;;
     esac
     """
 
     func testAWorkCallGoesOnWithTheSheetAndThePanelClosedAndItsLastPictureStands() async throws {
+        takeCalls()
         try script(toml: "on = ['sheet.open']", String(format: Self.worker, path("done")))
         let sheet = try sheet()
         var toasts: [String] = []
@@ -301,7 +304,7 @@ final class SpotRunsCallTests: SpotRunsCase {
         try script(toml: "on = ['panel.open']", """
         case "$1" in
           show) printf 'frame=\\ngrid=bar\\ndetail=Idle\\n\\ntext=a\\ntitle=A\\n\\ntext=bar\\ntitle=idle\\n' ;;
-          open) printf '\\033]9;Saved\\007frame=\\ngrid=bar\\ntitle=Other\\nactive=true\\n\\ntext=bar\\ntitle=work\\n' ;;
+          open) printf 'frame=\\ngrid=bar\\ntitle=Other\\nactive=true\\n\\ntext=bar\\ntitle=work\\n' ;;
         esac
         """)
         let sheet = try sheet()
@@ -309,12 +312,9 @@ final class SpotRunsCallTests: SpotRunsCase {
         try await wait("the state") { sheet.state.subtitle == "Idle" }
         sheet.open {}
         sheet.close()
-        var toasts: [String] = []
-        sheet.onReport = { if case .toast(let text) = $0 { toasts.append(text) } }
 
         sheet.pick(try XCTUnwrap(sheet.list.selectedItem))
 
-        try await wait("the toast") { toasts == ["Saved"] }
         try await wait("the new state") { sheet.state.on == true }
         XCTAssertEqual(sheet.state.title, "Other")
         XCTAssertEqual(sheet.list.shown.map(\.run), [])
