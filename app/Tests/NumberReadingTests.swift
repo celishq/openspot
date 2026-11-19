@@ -113,9 +113,10 @@ final class NumberReadingTests: XCTestCase {
 
         XCTAssertEqual(frame.items.map(\.run), ["cpu-1", "device-1"])
         XCTAssertEqual(frame.items.first?.number?.text, "32.7%")
-        XCTAssertNil(frame.items.first?.ring)
-        XCTAssertEqual(frame.items.last?.ring?.fill, 0.74)
-        XCTAssertEqual(frame.items.last?.ring?.ringWords, "74")
+        XCTAssertNil(frame.items.first?.number?.fill)
+        XCTAssertNil(frame.items.last?.ring)
+        XCTAssertEqual(frame.items.last?.number?.fill, 0.74)
+        XCTAssertEqual(frame.items.last?.number?.bare, "74")
     }
 
     func testANumberWithAMaxIsAGaugeInTheMenuBar() throws {

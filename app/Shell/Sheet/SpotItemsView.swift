@@ -193,7 +193,7 @@ struct SpotItemsView: View {
                     .font(SpotType.body)
                     .foregroundStyle(SpotTheme.ink)
                     .lineLimit(1)
-                if let subtitle = item.subtitle, item.ring == nil || item.number != nil {
+                if let subtitle = item.subtitle, item.ring == nil {
                     Text(subtitle)
                         .font(SpotType.detail)
                         .modifier(SpotSecondaryText())
@@ -201,11 +201,8 @@ struct SpotItemsView: View {
                 }
             }
             Spacer(minLength: 0)
-            if item.ring == nil, let number = item.number {
-                Text(number.text)
-                    .font(SpotType.value)
-                    .foregroundStyle(SpotToneWords.colour(of: item.tone) ?? SpotTheme.ink)
-                    .lineLimit(1)
+            if let number = item.number {
+                SpotRowNumber(number: number, tone: item.tone)
             }
             if !item.bars.isEmpty {
                 ItemBars(bars: item.bars, tone: item.tone)

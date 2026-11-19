@@ -2,6 +2,7 @@ import Foundation
 
 public struct NumberReading: Equatable, Sendable {
     public let text: String
+    public let bare: String
     public let unit: String?
     public let points: [Double]
     public let max: Double?
@@ -11,6 +12,7 @@ public struct NumberReading: Equatable, Sendable {
         let unit = block.value("unit").flatMap { $0.isEmpty ? nil : $0 }
         let shown = block.value("display") ?? values.last ?? ""
         self.unit = unit
+        bare = shown
         points = values.compactMap(Double.init).filter(\.isFinite)
         max = block.number("max")
         guard let unit, !shown.isEmpty, !shown.contains(unit) else {

@@ -154,23 +154,7 @@ struct SpotNumberView: View {
     }
 
     private var bars: some View {
-        Canvas { context, room in
-            let step = SpotTokens.trendBar + SpotTokens.trendGap
-            let count = Int((room.width + SpotTokens.trendGap) / step)
-            let points = Array((reading?.scaledPoints ?? []).suffix(count))
-            for (index, point) in points.enumerated() {
-                let height = max(CGFloat(point) * room.height, SpotTokens.trendBar)
-                let rect = CGRect(
-                    x: room.width - CGFloat(points.count - index) * step + SpotTokens.trendGap,
-                    y: room.height - height,
-                    width: SpotTokens.trendBar,
-                    height: height
-                )
-                let opacity = index == points.count - 1 ? 1 : SpotTheme.oldBar
-                context.fill(Path(roundedRect: rect, cornerRadius: SpotTokens.trendBar / 2), with: .color(colour.opacity(opacity)))
-            }
-        }
-        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        SpotTrendBars(points: reading?.scaledPoints ?? [], colour: colour)
     }
 
     private var shown: Text {

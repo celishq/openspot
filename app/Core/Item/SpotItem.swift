@@ -87,14 +87,10 @@ public struct SpotItem: Equatable, Sendable {
             staysOnPick: block.flag(ItemKey.close) == false,
             move: FlowMove(item: block),
             bars: number == nil ? Self.bars(values: block.values(ItemKey.value), max: block.value(ItemKey.max).flatMap(Double.init)) : [],
-            ring: number.map(Self.ring) ?? (kind == .text && block.values(ItemKey.value).count == 1 ? SpotPart.mark(block).flatMap { $0.kind == .gauge ? $0 : nil } : nil),
+            ring: kind == .text && block.values(ItemKey.value).count == 1 ? SpotPart.mark(block).flatMap { $0.kind == .gauge ? $0 : nil } : nil,
             section: section,
             number: number
         )
-    }
-
-    private static func ring(of number: NumberReading) -> MetricValue? {
-        number.fill.map { MetricValue(title: number.text, value: $0) }
     }
 
     private static func fields(of block: TextBlock) -> [TextBlock.Field] {
