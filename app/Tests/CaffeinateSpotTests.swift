@@ -170,8 +170,8 @@ final class CaffeinateSpotTests: XCTestCase {
     func testTheCustomRowAsksForMinutesAndKeepsTheMacAwakeForThem() async throws {
         let sheet = try sheet()
         try await wait("the custom row") { self.row("custom", in: sheet) != nil }
-        let open = CommandAction(id: "open", title: "Select")
         let item = try XCTUnwrap(row("custom", in: sheet))
+        let open = try XCTUnwrap(item.form)
 
         let form = try await sheet.form(open, item: item)
         var draft = FormDraft(form: try XCTUnwrap(form))

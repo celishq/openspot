@@ -305,6 +305,7 @@ Items are the list that the user searches and presses. See [Show a list](GUIDE.m
 | `route`      | A [route](#pages) that a press opens at once, in place of `<spot> open <id>`.                   |
 | `close`      | `false` keeps the panel open after a press of this item, or a key it records.                   |
 | `shake`      | `true` on a `hotkey` field: a shake or a tap of one modifier can be its key.                    |
+| `form`       | `true` asks for values with a form before the press runs, as a `form=true` button does.         |
 
 - A block that the layout doesn't place is an item, unless it's a `button`, which is an action, a `choice`, which the
   sheet draws, or a `section`, which titles the items after it.
