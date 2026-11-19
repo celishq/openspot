@@ -13,7 +13,7 @@ struct ModelApp: RunningApp {
     func installUpdate() async -> Bool { false }
     func quit() async {}
     func apply(_ theme: Theme) async {}
-    func open(_ id: String) async -> Bool { false }
+    func open(_ id: String) async -> Bool { await model.open(id) }
     func push(_ id: String, route: String?, title: String?, replace: Bool) async -> Bool { false }
     func pop(_ id: String, all: Bool) async -> Bool { await all ? model.pop(in: id, all: true) : model.pop(in: id) }
     func review(_ id: String) async -> Bool { false }

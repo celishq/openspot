@@ -557,6 +557,15 @@ shows the toast Time to stretch.
   restart. A spot holds at most 1000 timers, each with a value of at most 4 KB. A timer of a spot that is off or gone
   comes due into nothing.
 
+### Ask another spot
+
+`openspot spot ask <id>` opens the panel on another spot and waits for the value it gives back. Use it to make
+a picker that other spots share.
+
+- The asked spot gives the value with `openspot spot reply <value>`, which hides the panel. `spot ask` prints it.
+- A close of the asked spot's sheet with no reply ends the ask with exit 1, once the spot's running calls end. A newer
+  ask of the same spot ends the older one the same way. A spot can't ask itself.
+
 ## The life of a call
 
 A call starts, prints and ends. These rules say how long it can take, and what happens when it stops.

@@ -13,6 +13,7 @@ public final class SpotRun {
         case listChange
         case landed
         case closed
+        case replied
         case move(FlowMove)
     }
 

@@ -71,6 +71,7 @@ extension SpotRun {
         }
         log(call, end, errors: errors)
         ended(call, end)
+        runs.settleAsk(of: spot.id)
     }
 
     func lose(_ call: OpenCall, _ end: ScriptCall.End, errors: String = "") {

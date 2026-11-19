@@ -569,6 +569,8 @@ public final class SpotsModel {
                 showSheet(nil, moving: false)
                 endFlow()
             }
+        case .replied:
+            if id == openSheetID, isShown { host.dismiss() }
         case .move(let move):
             self.move(move, in: id)
         }
