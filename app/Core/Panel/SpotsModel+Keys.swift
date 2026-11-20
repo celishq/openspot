@@ -154,6 +154,7 @@ extension SpotsModel {
         guard let form else { return [] }
         let isList = form.draft.choices != nil
         let isMultiple = form.draft.isMultiple
+        let writesLines = form.draft.form.fields.contains { $0.type == .multiline }
         let move = { [self] (step: Int) -> @MainActor (ActionKey) -> Bool? in
             { [self] _ in
                 guard isList else { return nil }
@@ -162,12 +163,12 @@ extension SpotsModel {
             }
         }
         return [
-            KeyRow("return", words: isList ? (isMultiple ? "Select" : "Save") : nil) { [self] _ in
-                guard isList else { return nil }
+            KeyRow("return", words: writesLines ? nil : (isMultiple ? "Select" : "Save")) { [self] _ in
+                guard !writesLines else { return nil }
                 submitForm()
                 return true
             },
-            KeyRow("return", command: true, words: isList ? nil : "Save") { [self] _ in
+            KeyRow("return", command: true, words: writesLines ? "Save" : nil) { [self] _ in
                 submitForm()
                 return true
             },

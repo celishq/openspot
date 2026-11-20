@@ -817,6 +817,46 @@ final class SpotsModelTests: XCTestCase {
         XCTAssertNil(model.form)
     }
 
+    func testReturnSavesAFormOfFieldsAndCommandReturnSavesOneThatWritesLines() async throws {
+        let sent = folder.appendingPathComponent("sent").path
+        try script("list", toml: "", """
+        case "$1" in
+          add|note)
+            input=$(cat)
+            if [ -n "$input" ]; then printf '%s %s\n' "$1" "$(printf '%s' "$input" | tr '\n' ' ')" >> '\(sent)'; exit 0; fi
+            if [ "$1" = add ]; then
+              printf 'frame=\\ntitle=Add\n\nfield=name\ntitle=Name\n\nchoice=kind\ntitle=Kind\nvalue=a\n\noption=a\ntitle=A\n\noption=b\ntitle=B\n'
+            else
+              printf 'frame=\\ntitle=Note\n\nfield=text\ntitle=Text\ntype=multiline\n'
+            fi ;;
+          *) printf 'button=add\ntitle=Add\nscope=spot\nform=true\n\nbutton=note\ntitle=Note\nscope=spot\nform=true\n\ntext=a\ntitle=Apple\n' ;;
+        esac
+        """)
+        let sends = { ((try? String(contentsOfFile: sent, encoding: .utf8)) ?? "").split(separator: "\n").map(String.init) }
+        await model.reload()
+        model.isShown = true
+        model.panelWillShow()
+        model.press("list")
+        try await wait("the open list") { model.openSheetID == "list" && model.openEntry?.spot.actions.contains(where: \.isForm) == true }
+        let entry = try XCTUnwrap(model.openEntry)
+
+        model.openForm(try XCTUnwrap(entry.spot.actions.first { $0.id == "add" }), on: (entry, nil))
+        try await wait("the form of fields") { model.form?.draft.form.fields.count == 2 }
+        XCTAssertTrue(KeyRow.hint(of: model.formRows).hasPrefix("⏎ Save"), KeyRow.hint(of: model.formRows))
+        XCTAssertTrue(model.handleKey(ActionKey(name: "return")))
+        try await wait("the save on Return") { sends().count == 1 }
+        XCTAssertTrue(sends()[0].hasPrefix("add "), sends()[0])
+        try await wait("the form closed") { model.form == nil }
+
+        model.openForm(try XCTUnwrap(entry.spot.actions.first { $0.id == "note" }), on: (entry, nil))
+        try await wait("the form of lines") { model.form?.draft.form.fields.first?.type == .multiline }
+        XCTAssertTrue(KeyRow.hint(of: model.formRows).hasPrefix("⌘⏎ Save"), KeyRow.hint(of: model.formRows))
+        XCTAssertFalse(model.handleKey(ActionKey(name: "return")))
+        XCTAssertTrue(model.handleKey(ActionKey(name: "return", isCommand: true)))
+        try await wait("the save on Command-Return") { sends().count == 2 }
+        XCTAssertTrue(sends()[1].hasPrefix("note "), sends()[1])
+    }
+
     func testTheFormOfASettingMovesWithTheArrowsAndSearchesItsRows() async throws {
         try script("list", toml: "[settings.pick]", """
         case "$1" in
