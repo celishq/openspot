@@ -55,6 +55,10 @@ public struct ItemList: Equatable, Sendable {
         shown.count + sectionStarts.count
     }
 
+    public var sectionCount: Int {
+        sectionStarts.count
+    }
+
     public func run(at index: Int) -> String? {
         shown.indices.contains(index) ? shown[index].run : nil
     }
@@ -228,18 +232,23 @@ public struct ItemList: Equatable, Sendable {
 
     public func lineItem(at y: CGFloat) -> SpotItem? {
         let step = SpotTokens.listRow + SpotTokens.listRowGap
-        guard y >= 0, y.truncatingRemainder(dividingBy: step) < SpotTokens.listRow else { return nil }
-        let line = Int(y / step)
+        guard y >= 0 else { return nil }
         let rows = scrolling
-        if sectionStarts.isEmpty { return line < rows.count ? rows[rows.startIndex + line] : nil }
-        var at = 0
+        if sectionStarts.isEmpty {
+            let line = Int(y / step)
+            guard y.truncatingRemainder(dividingBy: step) < SpotTokens.listRow, line < rows.count else { return nil }
+            return rows[rows.startIndex + line]
+        }
+        var top: CGFloat = 0
         for item in rows {
             if sectionStarts[item.run] != nil {
-                if at == line { return nil }
-                at += 1
+                if y < top + SpotTokens.sectionRow { return nil }
+                top += SpotTokens.sectionRow + SpotTokens.listRowGap
+                if y < top { return nil }
             }
-            if at == line { return item }
-            at += 1
+            if y < top + SpotTokens.listRow { return item }
+            top += step
+            if y < top { return nil }
         }
         return nil
     }

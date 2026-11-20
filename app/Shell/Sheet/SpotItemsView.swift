@@ -86,7 +86,7 @@ struct SpotItemsView: View {
     }
 
     private var bottomInset: CGFloat {
-        SpotTokens.rowsFit(rows: list.lineCount, perLine: list.perLine, in: room) ? SpotTokens.padding : Self.bottomFade
+        SpotTokens.rowsFit(rows: list.lineCount, perLine: list.perLine, sections: list.sectionCount, in: room) ? SpotTokens.padding : Self.bottomFade
     }
 
     private var pinnedScroll: some View {
@@ -125,7 +125,7 @@ struct SpotItemsView: View {
                         .font(SpotType.detail.weight(.semibold))
                         .modifier(SpotSecondaryText())
                         .padding(.horizontal, SpotTokens.padding)
-                        .frame(maxWidth: .infinity, minHeight: SpotTokens.listRow, maxHeight: SpotTokens.listRow, alignment: .bottomLeading)
+                        .frame(maxWidth: .infinity, minHeight: SpotTokens.sectionRow, maxHeight: SpotTokens.sectionRow, alignment: .bottomLeading)
                 }
                 Button {
                     onRun(item)

@@ -288,11 +288,13 @@ public final class SpotRun {
         public let rows: Int
         public let perLine: Int
         public let setsApart: Bool
+        public let sections: Int
 
-        public init(rows: Int, perLine: Int, setsApart: Bool = false) {
+        public init(rows: Int, perLine: Int, setsApart: Bool = false, sections: Int = 0) {
             self.rows = rows
             self.perLine = perLine
             self.setsApart = setsApart
+            self.sections = sections
         }
     }
 
@@ -307,7 +309,7 @@ public final class SpotRun {
     func settle() {
         let next = rows.isBento
             ? Shape(rows: rows.drawing.lineCount(rows: rows.shown.count) * rows.drawing.columns, perLine: rows.drawing.columns)
-            : Shape(rows: rows.lineCount, perLine: rows.perLine, setsApart: rows.setsApart)
+            : Shape(rows: rows.lineCount, perLine: rows.perLine, setsApart: rows.setsApart, sections: rows.sectionCount)
         if next != shape { shape = next }
         let waits = showsSheet && answered == nil && panel == nil && rows.search == .local && rows.isLoading && !rows.holdsItems
         let nextKind = heardKind ?? (waits ? .waiting : panel?.kind ?? .rows)
@@ -325,7 +327,7 @@ public final class SpotRun {
         if rect != partsRect { partsRect = rect }
         let parts = panel?.kind
         if parts != partsKind { partsKind = parts }
-        let sheet = rect ?? SpotTokens.sheetRect(rows: next.rows, perLine: next.perLine, setsApart: next.setsApart, top: nextTop)
+        let sheet = rect ?? SpotTokens.sheetRect(rows: next.rows, perLine: next.perLine, sections: next.sections, setsApart: next.setsApart, top: nextTop)
         if sheet != sheetRect { sheetRect = sheet }
     }
 

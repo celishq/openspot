@@ -48,22 +48,23 @@ extension SpotTokens {
 
     public static var listRoom: CGFloat { sheetMaxHeight - sheetRowsTop - padding }
 
-    public static func rowsHeight(rows: Int, perLine: Int = 1) -> CGFloat {
+    public static func rowsHeight(rows: Int, perLine: Int = 1, sections: Int = 0) -> CGFloat {
         let lines = CGFloat(max((rows + perLine - 1) / perLine, 1))
         let line = perLine > 1 ? square(perLine: perLine) : listRow
-        return lines * line + (lines - 1) * listRowGap
+        let titles = perLine > 1 ? 0 : CGFloat(min(sections, rows)) * (listRow - sectionRow)
+        return lines * line + (lines - 1) * listRowGap - titles
     }
 
-    public static func rowsFit(rows: Int, perLine: Int = 1, in room: CGFloat = listRoom) -> Bool {
-        rowsHeight(rows: rows, perLine: perLine) < room
+    public static func rowsFit(rows: Int, perLine: Int = 1, sections: Int = 0, in room: CGFloat = listRoom) -> Bool {
+        rowsHeight(rows: rows, perLine: perLine, sections: sections) < room
     }
 
-    public static func listHeight(rows: Int, perLine: Int, setsApart: Bool) -> CGFloat {
-        rowsHeight(rows: rows, perLine: perLine) + (setsApart ? pinRuleRoom + listRowGap : 0)
+    public static func listHeight(rows: Int, perLine: Int, sections: Int = 0, setsApart: Bool) -> CGFloat {
+        rowsHeight(rows: rows, perLine: perLine, sections: sections) + (setsApart ? pinRuleRoom + listRowGap : 0)
     }
 
-    public static func sheetRect(rows: Int, perLine: Int = 1, setsApart: Bool = false, top: SheetTop = .plain) -> CGRect {
-        let height = top.rowsTop + listHeight(rows: rows, perLine: perLine, setsApart: setsApart) + padding
+    public static func sheetRect(rows: Int, perLine: Int = 1, sections: Int = 0, setsApart: Bool = false, top: SheetTop = .plain) -> CGRect {
+        let height = top.rowsTop + listHeight(rows: rows, perLine: perLine, sections: sections, setsApart: setsApart) + padding
         return CGRect(x: halo, y: halo, width: gridWidth, height: min(height, sheetMaxHeight))
     }
 
@@ -75,12 +76,12 @@ extension SpotTokens {
 
     public static var windowSize: CGSize { CGSize(width: width(columns: windowColumns) + 2 * padding, height: windowHeight) }
 
-    public static func floatSize(rows: Int, perLine: Int, parts: SheetParts? = nil, setsApart: Bool = false) -> CGSize {
+    public static func floatSize(rows: Int, perLine: Int, sections: Int = 0, parts: SheetParts? = nil, setsApart: Bool = false) -> CGSize {
         let content: CGFloat
         if let parts {
             content = parts.placement.height
         } else {
-            content = listHeight(rows: rows, perLine: perLine, setsApart: setsApart)
+            content = listHeight(rows: rows, perLine: perLine, sections: sections, setsApart: setsApart)
         }
         return CGSize(width: gridWidth, height: min(sheetFieldDrop + content + padding, sheetMaxHeight))
     }

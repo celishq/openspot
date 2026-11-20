@@ -9,13 +9,14 @@ final class ItemListTests: XCTestCase {
             SpotItem(title: "Three", run: "3", section: "Later")
         ])
         let step = SpotTokens.listRow + SpotTokens.listRowGap
+        let title = SpotTokens.sectionRow + SpotTokens.listRowGap
 
-        XCTAssertNil(list.lineItem(at: step / 2))
-        XCTAssertEqual(list.lineItem(at: step + 1)?.run, "1")
-        XCTAssertEqual(list.lineItem(at: 2 * step + 1)?.run, "2")
-        XCTAssertNil(list.lineItem(at: 3 * step + 1))
-        XCTAssertEqual(list.lineItem(at: 4 * step + 1)?.run, "3")
-        XCTAssertNil(list.lineItem(at: 2 * step - SpotTokens.listRowGap / 2))
+        XCTAssertNil(list.lineItem(at: title / 2))
+        XCTAssertEqual(list.lineItem(at: title + 1)?.run, "1")
+        XCTAssertEqual(list.lineItem(at: title + step + 1)?.run, "2")
+        XCTAssertNil(list.lineItem(at: title + 2 * step + 1))
+        XCTAssertEqual(list.lineItem(at: 2 * title + 2 * step + 1)?.run, "3")
+        XCTAssertNil(list.lineItem(at: title + step - SpotTokens.listRowGap / 2))
         XCTAssertNil(list.lineItem(at: 9 * step))
     }
 

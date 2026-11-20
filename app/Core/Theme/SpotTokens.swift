@@ -27,6 +27,7 @@ public enum SpotTokens {
     public static let toastGap: CGFloat = 10
     public static var listRow: CGFloat { layout.space.listRow }
     public static var listRowGap: CGFloat { layout.space.listRowGap }
+    public static var sectionRow: CGFloat { listRow - 12 }
     public static let listIconSize: CGFloat = 24
     public static let hintHeight: CGFloat = 14
     public static let hintPillInset: CGFloat = 4
