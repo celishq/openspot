@@ -11,7 +11,7 @@ struct SpotSheetBody: View {
     var viewSource: String?
     var views = SpotViews.shared
 
-    static func size(of panel: SheetParts?, rows: Int, perLine: Int = 1, setsApart: Bool = false) -> CGSize {
+    static func size(of panel: SheetParts?, rows: Int, perLine: Int, setsApart: Bool = false) -> CGSize {
         panel.map { SpotTokens.panelRect($0).size } ?? SpotTokens.floatSize(rows: rows, perLine: perLine, setsApart: setsApart)
     }
 
