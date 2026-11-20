@@ -13,6 +13,12 @@ extension SpotsModel {
     }
 
     @discardableResult
+    public func openAsked(_ id: String) -> Bool {
+        guard isShown, openSheetID != nil else { return open(id) }
+        return push(FlowSheet(spot: id))
+    }
+
+    @discardableResult
     public func push(_ sheet: FlowSheet, replace: Bool = false) -> Bool {
         guard let spot = entry(sheet.spot)?.spot else { return false }
         if sheet.route == nil, place(ofSheet: sheet.spot) == .window {

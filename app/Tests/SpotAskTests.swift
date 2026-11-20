@@ -17,7 +17,7 @@ final class SpotAskTests: PanelCase {
           open) '\(client.path)' spot reply "$2" ;;
         esac
         """)
-        try script("asker", toml: "title = 'Asker'", "exit 0")
+        try script("asker", toml: "title = 'Asker'", "[ \"$1\" = show ] && printf 'text=x\\ntitle=Snooze This\\n'; exit 0")
         await model.reload()
     }
 
@@ -66,6 +66,22 @@ final class SpotAskTests: PanelCase {
         model.runSelectedItem()
         let second = await newer.value
         XCTAssertEqual(second.output, "morning\n")
+    }
+
+    func testAnAskFromAnOpenSheetIsAStepOfItsFlowAndBackEndsIt() async throws {
+        model.isShown = true
+        model.panelWillShow()
+        model.press("asker")
+        try await wait("the asker") { self.model.transition.phase == .open && self.titles == ["Snooze This"] }
+
+        let asking = try ask("picker")
+        try await waitForPicker()
+
+        XCTAssertEqual(model.flow.pages.map(\.spot), ["asker", "picker"])
+        XCTAssertTrue(model.handleKey(escape))
+        let answer = await asking.value
+        XCTAssertEqual(answer.code, 1)
+        try await wait("the asker again") { self.model.flow.current?.spot == "asker" }
     }
 
     func testASpotCannotAskItself() async throws {

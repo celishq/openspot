@@ -34,7 +34,7 @@ case "$1" in
   show)
     printf 'button=remove\ntitle=Remove\nshortcut=cmd+backspace\n'
     openspot_item current "Snooze Current Tab" "Safari's front tab" moon.zzz
-    printf 'pin=top\nhides=remove\n'
+    printf 'pin=top\nhides=remove\nclose=false\n'
     timers | while IFS="$(printf '\t')" read -r id at url title; do
       openspot_item "$id" "${title:-$url}" "$(when "$at")" safari
     done

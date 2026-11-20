@@ -51,6 +51,10 @@ struct SpotRunningApp: RunningApp {
         await model.open(id)
     }
 
+    func ask(_ id: String) async -> Bool {
+        await model.openAsked(id)
+    }
+
     func push(_ id: String, route: String?, title: String?, replace: Bool) async -> Bool {
         await model.push(FlowSheet(spot: id, route: route, title: title), replace: replace)
     }
