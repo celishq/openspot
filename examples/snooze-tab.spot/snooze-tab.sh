@@ -30,7 +30,7 @@ snooze_front() {
   url=$(osascript -e 'tell application "Safari" to get URL of current tab of front window' 2>/dev/null)
   [ -n "$url" ] || { echo "Safari shows no tab." >&2; exit 1; }
   title=$(osascript -e 'tell application "Safari" to get name of current tab of front window' 2>/dev/null)
-  at=$(openspot spot ask openspot/snooze) || exit 0
+  at=$(openspot spot ask openspot/snooze --title "${title:-$url}") || exit 0
   if [ "$at" != someday ]; then
     openspot timer add "$at" "$url $title" >/dev/null || exit 1
   fi

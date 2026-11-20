@@ -15,7 +15,7 @@ public enum SpotCall: NounCall {
     case choose(String)
     case act(CardAct, String)
     case review(String)
-    case ask(String)
+    case ask(String, title: String?)
     case reply(String)
 
     private static let folder = "changes your spots folder"
@@ -65,7 +65,10 @@ public enum SpotCall: NounCall {
         act(.prompt, "Copies a prompt to change a spot, as the row of a card's menu does.", rule: CallRule(use: .spots, used: "copied a prompt to change a spot", inShow: .changes(window))),
         act(.share, "Shares a spot, as the row of a card's menu does.", rule: CallRule(use: .spots, used: "shared a spot", inShow: .changes(window))),
         act(.delete, "Deletes a spot, as the row of a card's menu does.", rule: CallRule(use: .spots, used: "deleted a spot", inShow: .changes(folder))),
-        CommandVerb("ask", "<id>", "Opens the panel on a spot and waits. Prints what the spot gives with `spot reply`, or exits 1 when its sheet closes with no reply.", rule: CallRule(inShow: .waits, flags: .needsApp)) { $0.one.map(Self.ask) },
+        CommandVerb("ask", "<id> [--title <words>]", "Shows a spot and waits, with the words as the title of its sheet. Prints what the spot gives with `spot reply`, or exits 1 when its sheet closes with no reply.", rule: CallRule(inShow: .waits, flags: .needsApp)) { words in
+            guard let fit = words.fit, fit.rest.count == 1 else { return nil }
+            return Self.ask(fit.rest[0], title: fit.value("--title"))
+        },
         CommandVerb("reply", "<value>", "Gives the value to the `spot ask` that opened this spot.", rule: CallRule(flags: .needsApp)) { $0.one.map(Self.reply) },
         CommandVerb("review", "<id>", "Shows the whole text of a spot that comes with the app, and what of it runs by itself.", rule: CallRule(inShow: .changes(panel), flags: .needsApp)) { $0.one.map(Self.review) }
     ])
@@ -105,7 +108,7 @@ public enum SpotCall: NounCall {
         case .choose(let id): spots.choose(for: id)
         case .act(let act, let id): spots.act(act, id)
         case .review(let id): spots.review(id)
-        case .ask(let id): spots.ask(id)
+        case .ask(let id, let title): spots.ask(id, title: title)
         case .reply(let value): spots.reply(value)
         }
     }

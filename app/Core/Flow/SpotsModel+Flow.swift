@@ -2,22 +2,22 @@ import Foundation
 
 extension SpotsModel {
     @discardableResult
-    public func open(_ id: String, from source: String? = nil) -> Bool {
+    public func open(_ id: String, from source: String? = nil, title: String? = nil) -> Bool {
         guard entry(id) != nil else { return false }
         afterShowing({ host.show() }) { [weak self] in
             guard let self else { return }
             endFlow()
-            push(FlowSheet(spot: id, source: source))
+            push(FlowSheet(spot: id, title: title, source: source))
         }
         return true
     }
 
     @discardableResult
-    public func openAsked(_ id: String, from caller: String?) -> Bool {
+    public func openAsked(_ id: String, from caller: String?, title: String? = nil) -> Bool {
         guard isShown, openSheetID != nil else {
-            return open(id, from: isShown ? selectedEntry.flatMap { $0.spot.id == caller ? $0.id : nil } : nil)
+            return open(id, from: isShown ? selectedEntry.flatMap { $0.spot.id == caller ? $0.id : nil } : nil, title: title)
         }
-        return push(FlowSheet(spot: id))
+        return push(FlowSheet(spot: id, title: title))
     }
 
     @discardableResult

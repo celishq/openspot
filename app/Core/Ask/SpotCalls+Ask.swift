@@ -1,13 +1,13 @@
 import Foundation
 
 extension SpotCalls {
-    func ask(_ id: String) -> CommandAPI.Work {
+    func ask(_ id: String, title: String?) -> CommandAPI.Work {
         guard let app, let runs else { return CommandAnswer.notRunning("spot ask \(id)") }
         if caller?.id == id {
             return { CommandAnswer(errors: "A spot cannot ask itself. Ask another spot, such as `openspot spot ask snooze`.\n", code: 1) }
         }
         return {
-            guard await app.ask(id, from: caller?.id) else {
+            guard await app.ask(id, from: caller?.id, title: title) else {
                 return CommandAnswer(errors: "Openspot has no spot `\(id)`. Run `openspot spot list` to see each one.\n", code: 1)
             }
             guard let value = await runs.ask(id) else { return CommandAnswer(code: 1) }

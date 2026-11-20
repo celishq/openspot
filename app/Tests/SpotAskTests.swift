@@ -21,10 +21,11 @@ final class SpotAskTests: PanelCase {
         await model.reload()
     }
 
-    private func ask(_ id: String, as spot: String = "asker") throws -> Task<CommandAnswer, Never> {
+    private func ask(_ id: String, as spot: String = "asker", title: String? = nil) throws -> Task<CommandAnswer, Never> {
         let api = try XCTUnwrap(model.runs.api)
         let caller = SpotCaller(spot: try XCTUnwrap(model.sheets[spot]?.spot))
-        let work = try XCTUnwrap(api.work(for: CommandRequest(arguments: ["spot", "ask", id], folder: folder.path, caller: caller), input: { "" }))
+        let words = ["spot", "ask", id] + (title.map { ["--title", $0] } ?? [])
+        let work = try XCTUnwrap(api.work(for: CommandRequest(arguments: words, folder: folder.path, caller: caller), input: { "" }))
         return Task { await work() }
     }
 
@@ -102,6 +103,15 @@ final class SpotAskTests: PanelCase {
         XCTAssertEqual(SpotSheetCard.of(model.transition.id, in: model)?.id, row)
         host.heldEnds?.forEach { $0() }
         host.heldEnds = nil
+        _ = await asking.value
+    }
+
+    func testAnAskNamesThePageItOpensWithItsTitle() async throws {
+        let asking = try ask("picker", title: "Example page")
+        try await waitForPicker()
+
+        XCTAssertEqual(model.flow.current?.title, "Example page")
+        XCTAssertTrue(model.handleKey(toGrid))
         _ = await asking.value
     }
 
