@@ -23,8 +23,8 @@ function choices(input) {
   return {
     morning: clock(value("morning"), [8, 0]),
     evening: clock(value("evening"), [19, 0]),
-    later: Number(value("later")) > 0 ? Number(value("later")) : 3,
-    weekend: value("weekend") === "sunday" ? 0 : 6,
+    later: parseInt(value("later"), 10) > 0 ? parseInt(value("later"), 10) : 3,
+    weekend: value("weekend").toLowerCase() === "sunday" ? 0 : 6,
   }
 }
 
@@ -138,23 +138,7 @@ function hours(route, now, choices) {
   return openspot.frame(blocks)
 }
 
-/** The form of a setting row of the snooze's Settings. */
-function form(key) {
-  const forms = {
-    morning: ["Morning", "8:00", ["6:00", "7:00", "8:00", "9:00", "10:00"]],
-    evening: ["Evening", "19:00", ["17:00", "18:00", "19:00", "20:00", "21:00"]],
-    later: ["Later", "3", ["1", "2", "3", "4", "6"]],
-    weekend: ["Weekend", "saturday", ["saturday", "sunday"]],
-  }
-  const [title, value, options] = forms[key]
-  return openspot.frame([
-    { frame: "", title },
-    { choice: key, title, value },
-    ...options.map((option) => ({ option, title: key === "later" ? `${option} hours` : option[0].toUpperCase() + option.slice(1) })),
-  ])
-}
-
-/** A press of a tile, or of a part of a picked day, replies with its moment or `someday`; a settings row asks for its value. */
+/** A press of a tile, or of a part of a picked day, replies with its moment or `someday`. */
 function main([id, value], env, input) {
   const now = new Date()
   if (id === "show") {
@@ -162,12 +146,6 @@ function main([id, value], env, input) {
     if (route === "date") return days(now, choices(input))
     if (route.startsWith("date/")) return hours(route, now, choices(input))
     return sheet(now, choices(input))
-  }
-  if (["morning", "evening", "later", "weekend"].includes(id)) {
-    const chosen = value || openspot.value(`input.${id}`, input).trim()
-    if (!chosen) return form(id)
-    openspot.call(["setting", "set", id, chosen])
-    return ""
   }
   if (id !== "open" || !value || value.startsWith("date")) return ""
   const moment = value.includes("T") ? value : value === "someday" ? "someday" : iso(times(now, choices(input))[value])

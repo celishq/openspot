@@ -343,7 +343,8 @@ A setting keeps a choice of the user, such as a city or a token. See
 
 - Each call gets each setting that has a value on stdin, such as `setting.city=Paris`, so the spot reads it with no
   `openspot` call.
-- Return on a setting in the spot's Settings runs the call with the same id, which can answer with a form.
+- Return on a setting in the spot's Settings runs the call with the same id, which can answer with a form. A setting
+  with `options`, such as `options = ["Saturday", "Sunday"]`, is a choice that Openspot shows and keeps, with no call.
 - `type = "secret"` keeps a value of 8 characters or more, such as a token. Openspot asks for it in its own form, gives
   it on stdin only, and hides the exact value in the call log, the stats, a toast and a failure line.
 - `openspot setting get <key>` prints a value, or `•••` for a secret. `openspot setting set <key> [value]` keeps a
@@ -684,7 +685,7 @@ title = "Refresh"
 | Table              | Meaning                                                                                                                                                                                                                                                                                                                                                                                                                                                     |
 | ------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `[commands.<id>]`  | A command, with its `title` and `icon`, which the user can give a hotkey. `confirm = "<words>"` shows the words at the first press and runs it at the second, `placeholder` lists it as a slash command, and `close = false` keeps the panel open after it runs, from a slash command that shows nothing or from the ⌘K menu. It also takes the keys of a [button](#buttons-and-actions): `shortcut`, `scope` and `form`, and [`offers`](#offered-actions). |
-| `[settings.<key>]` | A [setting](#settings), with its `title`, by default its key with a capital first letter, and `icon`.                                                                                                                                                                                                                                                                                                                                                       |
+| `[settings.<key>]` | A [setting](#settings), with its `title`, by default its key with a capital first letter, `icon`, and `options`, the values of a choice.                                                                                                                                                                                                                                                                                                                    |
 
 ## The message
 

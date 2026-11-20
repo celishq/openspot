@@ -154,15 +154,19 @@ pages = ["date", "date/*"]
 [scripts.snooze.settings.morning]
 title = "Morning"
 icon = "sunrise"
+options = ["6:00", "7:00", "8:00", "9:00", "10:00"]
 
 [scripts.snooze.settings.evening]
 title = "Evening"
 icon = "moon.stars"
+options = ["17:00", "18:00", "19:00", "20:00", "21:00"]
 
 [scripts.snooze.settings.later]
 title = "Later"
 icon = "cup.and.saucer"
+options = ["1 hour", "2 hours", "3 hours", "4 hours", "6 hours"]
 
 [scripts.snooze.settings.weekend]
 title = "Weekend"
 icon = "sofa"
+options = ["Saturday", "Sunday"]
