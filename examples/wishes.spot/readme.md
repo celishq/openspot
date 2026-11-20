@@ -6,10 +6,11 @@ Wishes keeps the things you want to buy, each with its name, its picture and its
   the price and the type, which you can change. Type a new type, such as Plants, to start a section of your own. Press
   Return to keep the wish.
 - **Open a wish.** Press Return on it, and its page opens in your browser.
-- **Group the list.** `⌘G` switches between product types, such as Books and Gadgets, and price ranges.
-- **Share the list.** `⌘S` copies the list as text under price ranges, and `⇧⌘S` under product types. Paste it into
-  any message.
-- **Fix a wish.** `⌘T` changes its type, `⌘E` its name and price, and `⌘⌫` removes it.
+- **Edit a wish.** `⌘E` opens the same form, with its link, name, price, type and picture. A wish that has no
+  picture or price reads its page again for them. `⌘⌫` removes a wish.
+- **Share the list.** Press Return on **Share list**, at the bottom, and paste the list into any message.
+- **Group the list.** Choose **Group by** in the Settings of Wishes, `⌘⏎` on its card: by type, such as Books and
+  Gadgets, or by price range. The shared list follows it.
 
 Some shops, such as those behind Cloudflare, don't let programs read their pages. Then Wishes reads the same page from
 an open tab of your browser: Chrome, Safari, Arc, Brave, Edge, Vivaldi or Opera. macOS asks once to let Openspot

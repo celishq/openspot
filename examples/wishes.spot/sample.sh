@@ -6,4 +6,5 @@ printf 'text=w1\ntitle=The Design of Everyday Things\ndetail=$18 · bookshop.org
 printf 'section=s2\ntitle=Clothes\n\n'
 printf 'text=w2\ntitle=Wool sweater\ndetail=€89 · example.com\nicon=tshirt\n\n'
 printf 'section=s3\ntitle=Gadgets\n\n'
-printf 'text=w3\ntitle=Noise cancelling headphones\ndetail=$349 · example.com\nicon=headphones\n'
+printf 'text=w3\ntitle=Noise cancelling headphones\ndetail=$349 · example.com\nicon=headphones\n\n'
+printf 'text=share\ntitle=Share list\ndetail=Copies your wishes as text, by type\nicon=square.and.arrow.up\npin=bottom\n'

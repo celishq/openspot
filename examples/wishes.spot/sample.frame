@@ -30,3 +30,9 @@ text=w3
 title=Noise cancelling headphones
 detail=$349 · example.com
 icon=headphones
+
+text=share
+title=Share list
+detail=Copies your wishes as text, by type
+icon=square.and.arrow.up
+pin=bottom

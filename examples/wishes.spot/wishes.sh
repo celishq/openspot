@@ -66,7 +66,7 @@ show() {
   printf 'frame=\nrecents=false\n'
   [ "$count" -eq 1 ] && printf 'detail=1 wish\n'
   [ "$count" -gt 1 ] && printf 'detail=%s wishes\n' "$count"
-  printf '\ntext=add\ntitle=Add wish\nicon=plus.circle.fill\npin=top\nform=true\nclose=false\nopen.title=Add Wish\n'
+  printf '\ntext=add\ntitle=Add wish\nicon=plus.circle.fill\npin=top\nform=true\nclose=false\nopen.title=Add Wish\nhides=edit\nhides=remove\n'
   [ "$count" -eq 0 ] && printf 'detail=Press Return, then paste a product link\n'
   printf '\n'
   [ "$count" -eq 0 ] && return
@@ -80,20 +80,10 @@ show() {
       printf "text=%s\ntitle=%s\ndetail=%s\nicon=%s\nurl=%s\nkeywords=%s,%s\nopen.title=Open in Browser\n\n", \
         $5, e($6), e(detail), e($9), e($10), e($8), e($11)
     }'
-  if [ "$group" = Price ]; then other=Type; else other=Price; fi
-  printf 'button=byprice\ntitle=Copy List by Price\nicon=doc.on.doc\nshortcut=cmd+s\nscope=spot\n\n'
-  printf 'button=bytype\ntitle=Copy List by Type\nicon=doc.on.doc\nshortcut=cmd+shift+s\nscope=spot\n\n'
-  printf 'button=group\ntitle=Group by %s\nicon=rectangle.3.group\nshortcut=cmd+g\nscope=spot\nclose=false\n\n' "$other"
-  printf 'button=type\ntitle=Change Type…\nicon=tag\nshortcut=cmd+t\nform=true\nclose=false\nhides=add\n\n'
-  printf 'button=edit\ntitle=Edit Name and Price…\nicon=pencil\nshortcut=cmd+e\nform=true\nclose=false\n\n'
-  printf 'button=copy\ntitle=Copy Link\nicon=link\nshortcut=cmd+shift+c\n\n'
+  if [ "$group" = Price ]; then by='by price range'; else by='by type'; fi
+  printf 'text=share\ntitle=Share list\ndetail=Copies your wishes as text, %s\nicon=square.and.arrow.up\npin=bottom\nopen.title=Copy List\nhides=edit\nhides=remove\n\n' "$by"
+  printf 'button=edit\ntitle=Edit\nicon=pencil\nshortcut=cmd+e\nform=true\nclose=false\n\n'
   printf 'button=remove\ntitle=Remove\nicon=trash\nshortcut=cmd+backspace\nconfirm=Press again to remove this wish\nclose=false\n'
-}
-
-# change <id> <column> <value> [<column> <value>]
-change() {
-  list | A="$3" B="$5" awk -F'\t' -v OFS='\t' -v id="$1" -v a="$2" -v b="${4:-0}" '
-    $1 == id { $a = ENVIRON["A"]; if (b > 0) $b = ENVIRON["B"] } { print }' | openspot_keep "$data"
 }
 
 # A link with no tracking words, such as utm_source or gclid, so that a shared list is short.
@@ -101,10 +91,88 @@ untrack() {
   perl -pe 'if (/^([^?#]*)\?([^#]*)(.*)$/s) { my ($a, $q, $z) = ($1, $2, $3); $q = join "&", grep { !/^(utm_\w+|gclid|gbraid|wbraid|gad_\w+|fbclid|yclid|msclkid|mc_[ce]id|_ga|_gl|srsltid)=/i } split /&/, $q; $_ = $a . ($q eq "" ? "" : "?$q") . $z }'
 }
 
+# Reads the page of a link, and prints one line: title, price, currency, picture, type, read, and the browser whose
+# open tab it read, with "file", "html" or "title" before it. A shop that hides its page from programs is read from a
+# tab of the same link, open in the person's browser.
+fetch() {
+  page=$(curl -sL --compressed --max-time 12 -A "$agent" -H 'Accept: text/html,application/xhtml+xml' \
+    -H 'Accept-Language: en-US,en;q=0.9' "$1" </dev/null | head -c 4000000 | perl "$here/page.pl" "$1" 2>/dev/null)
+  from=
+  if [ "$(printf '%s\n' "$page" | cut -f6)" != 1 ]; then
+    saved=$(mktemp -d)
+    open=$(perl -e 'alarm 60; exec @ARGV' osascript -l JavaScript "$here/tab.js" "$1" "$saved/page.html" 2>/dev/null)
+    from=$(printf '%s\n' "$open" | head -n 1)
+    case "$from" in
+      file\ *)
+        size=-1
+        for wait in 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20; do
+          now=$(wc -c 2>/dev/null < "$saved/page.html" | tr -d ' ')
+          [ -n "$now" ] && [ "$now" -gt 0 ] && [ "$now" = "$size" ] && break
+          size=${now:--1}
+          perl -e 'select undef, undef, undef, 0.5'
+        done
+        if [ -s "$saved/page.html" ]; then page=$(perl "$here/page.pl" "$1" < "$saved/page.html" 2>/dev/null); fi
+        ;;
+      ?*) page=$(printf '%s\n' "$open" | tail -n +2 | perl "$here/page.pl" "$1" 2>/dev/null) ;;
+    esac
+    rm -rf "$saved"
+  fi
+  printf '%s\t%s\n' "${page:-$tab$tab$tab${tab}Other${tab}0}" "$from"
+}
+
+# Prints the form of a wish: its title, link, name, price, currency, type, picture, whether the page was read, and from
+# where. A new wish and an edit share it, so each value is changed in one place.
+wishform() {
+  printf 'frame=\n'
+  openspot_kv title "$1"
+  printf '\nfield=link\ntitle=Link\nrequired=true\n'
+  openspot_kv value "$2"
+  printf '\nfield=name\ntitle=Name\nrequired=true\nplaceholder=What it is\n'
+  if [ -n "$3" ]; then openspot_kv value "$3"; fi
+  if [ "$8" = 0 ]; then printf 'detail=From the link: the shop hides its page. Open it in your browser, then try again.\ntone=warn\n'; fi
+  printf '\nfield=price\ntitle=Price\n'
+  if [ -n "$4" ]; then
+    openspot_kv value "$4${5:+ $5}"
+  else
+    guess=$(region)
+    openspot_kv placeholder "Such as 250${guess:+ $guess}"
+    case "$9" in
+      title\ *) openspot_kv detail "To read the price, turn on Allow JavaScript from Apple Events in ${9#title }."; printf 'tone=warn\n' ;;
+      *) if [ "$8" = 1 ]; then printf 'detail=The page shows no price.\n'; fi ;;
+    esac
+  fi
+  printf '\nchoice=type\ntitle=Type\n'
+  types | awk -v now="${6:-Other}" '$0 == now { printf "value=t%d\n", NR }'
+  types | awk '{ gsub(/\\/, "\\\\"); printf "\noption=t%d\ntitle=%s\n", NR, $0 }'
+  printf '\nfield=newtype\ntitle=Or a new type\nplaceholder=Such as Plants\n'
+  printf '\nfield=picture\ntitle=Picture\nplaceholder=A link to an image\n'
+  if [ -n "$7" ]; then openspot_kv value "$7"; fi
+}
+
+# Keeps the values of a sent form as the wish <id>, a new one or one that is there, in its place in the list.
+# keep <id> <currency of the page>
+keep() {
+  url=$(clean "$(value input.link)" | link | untrack)
+  given=$(perl "$here/page.pl" --price "$(value input.price)" 2>/dev/null)
+  price=$(printf '%s\n' "$given" | cut -f1)
+  currency=$(printf '%s\n' "$given" | cut -f2)
+  [ -n "$currency" ] || currency=$2
+  [ -n "$currency" ] || currency=$(region)
+  [ -n "$price" ] || currency=
+  type=$(clean "$(value input.newtype)")
+  if [ -z "$type" ]; then
+    picked=$(value input.type)
+    type=$(types | sed -n "${picked#t}p")
+  fi
+  picture=$(clean "$(value input.picture)")
+  case "$picture" in https://*) ;; http://*) picture="https://${picture#http://}" ;; *) picture= ;; esac
+  line=$(printf '%s\t%s\t%s\t%s\t%s\t%s\t%s' "$1" "${type:-Other}" "$price" "$currency" "$name" "$url" "$picture")
+  { list | L="$line" awk -F'\t' -v id="$1" '$1 == id { print ENVIRON["L"]; found = 1; next } { print } END { if (!found) print ENVIRON["L"] }'; } \
+    | openspot_keep "$data" || exit 1
+}
+
 # The form of a new wish. It asks for the link, then shows what the page gave, to change before it is kept.
-# The page that it read last waits in $OPENSPOT_DATA/page: link, title, price, currency, picture, type, read, and the
-# browser whose open tab it read, with "title" or "html" before it.
-# A shop that hides its page from programs is read from a tab of the same link, open in the person's browser.
+# The page that it read last waits in $OPENSPOT_DATA/page: the link, then the line that fetch prints.
 add() {
   typed=$(clean "$(value input.link)")
   url=$(printf '%s\n' "$typed" | link | untrack)
@@ -122,80 +190,50 @@ add() {
   read=$(cat "$OPENSPOT_DATA/page" 2>/dev/null)
   name=$(clean "$(value input.name)")
   if [ "$(printf '%s\n' "$read" | cut -f1)" != "$url" ]; then
-    page=$(curl -sL --compressed --max-time 12 -A "$agent" -H 'Accept: text/html,application/xhtml+xml' \
-      -H 'Accept-Language: en-US,en;q=0.9' "$url" </dev/null | head -c 4000000 | perl "$here/page.pl" "$url" 2>/dev/null)
-    from=
-    if [ "$(printf '%s\n' "$page" | cut -f6)" != 1 ]; then
-      saved=$(mktemp -d)
-      open=$(perl -e 'alarm 60; exec @ARGV' osascript -l JavaScript "$here/tab.js" "$url" "$saved/page.html" 2>/dev/null)
-      from=$(printf '%s\n' "$open" | head -n 1)
-      case "$from" in
-        file\ *)
-          size=-1
-          for wait in 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20; do
-            now=$(wc -c 2>/dev/null < "$saved/page.html" | tr -d ' ')
-            [ -n "$now" ] && [ "$now" -gt 0 ] && [ "$now" = "$size" ] && break
-            size=${now:--1}
-            perl -e 'select undef, undef, undef, 0.5'
-          done
-          if [ -s "$saved/page.html" ]; then
-            page=$(perl "$here/page.pl" "$url" < "$saved/page.html" 2>/dev/null)
-          fi
-          ;;
-        ?*) page=$(printf '%s\n' "$open" | tail -n +2 | perl "$here/page.pl" "$url" 2>/dev/null) ;;
-      esac
-      rm -rf "$saved"
-    fi
-    read=$(printf '%s\t%s\t%s' "$url" "${page:-$tab$tab$tab${tab}Other${tab}0}" "$from")
+    read=$(printf '%s\t%s' "$url" "$(fetch "$url")")
     printf '%s\n' "$read" | openspot_keep "$OPENSPOT_DATA/page"
     name=
   fi
   if [ -z "$name" ]; then
-    title=$(printf '%s\n' "$read" | cut -f2)
-    price=$(printf '%s\n' "$read" | cut -f3)
-    currency=$(printf '%s\n' "$read" | cut -f4)
-    type=$(printf '%s\n' "$read" | cut -f6)
-    seen=$(printf '%s\n' "$read" | cut -f7)
-    from=$(printf '%s\n' "$read" | cut -f8)
-    printf 'frame=\ntitle=New wish\n\nfield=link\ntitle=Link\nrequired=true\n'
-    openspot_kv value "$url"
-    printf '\nfield=name\ntitle=Name\nrequired=true\nplaceholder=What it is\n'
-    if [ -n "$title" ]; then openspot_kv value "$title"; fi
-    if [ "$seen" != 1 ]; then printf 'detail=From the link: the shop hides its page. Open it in your browser, then add it.\ntone=warn\n'; fi
-    printf '\nfield=price\ntitle=Price\n'
-    if [ -n "$price" ]; then
-      openspot_kv value "$price${currency:+ $currency}"
-    else
-      here_currency=$(region)
-      openspot_kv placeholder "Such as 250${here_currency:+ $here_currency}"
-      case "$from" in
-        title\ *) openspot_kv detail "To read the price, turn on Allow JavaScript from Apple Events in ${from#title }."; printf 'tone=warn\n' ;;
-        *) if [ "$seen" = 1 ]; then printf 'detail=The page shows no price.\n'; fi ;;
-      esac
-    fi
-    printf '\nchoice=type\ntitle=Type\n'
-    types | awk -v now="${type:-Other}" '$0 == now { printf "value=t%d\n", NR }'
-    types | awk '{ gsub(/\\/, "\\\\"); printf "\noption=t%d\ntitle=%s\n", NR, $0 }'
-    printf '\nfield=newtype\ntitle=Or a new type\nplaceholder=Such as Plants\n'
+    at() { printf '%s\n' "$read" | cut -f"$1"; }
+    wishform 'New wish' "$url" "$(at 2)" "$(at 3)" "$(at 4)" "$(at 6)" "$(at 5)" "$(at 7)" "$(at 8)"
     return
   fi
-  given=$(perl "$here/page.pl" --price "$(value input.price)" 2>/dev/null)
-  price=$(printf '%s\n' "$given" | cut -f1)
-  currency=$(printf '%s\n' "$given" | cut -f2)
-  [ -n "$currency" ] || currency=$(printf '%s\n' "$read" | cut -f4)
-  [ -n "$currency" ] || currency=$(region)
-  [ -n "$price" ] || currency=
-  type=$(clean "$(value input.newtype)")
-  if [ -z "$type" ]; then
-    picked=$(value input.type)
-    type=$(types | sed -n "${picked#t}p")
-  fi
-  [ -n "$type" ] || type=$(printf '%s\n' "$read" | cut -f6)
   id="w$(date +%s)$$"
-  { list; printf '%s\t%s\t%s\t%s\t%s\t%s\t%s\n' "$id" "${type:-Other}" "$price" "$currency" "$name" "$url" "$(printf '%s\n' "$read" | cut -f5)"; } \
-    | openspot_keep "$data" || exit 1
+  keep "$id" "$(printf '%s\n' "$read" | cut -f4)"
   rm -f "$OPENSPOT_DATA/page"
   openspot select "$id"
+}
+
+# The form of a wish that is there, with each of its values. A wish that lacks its picture, its price or a name of its
+# own, one taken from its link, reads its page again for them.
+edit() {
+  [ -n "$1" ] || return
+  [ -n "$(field "$1" 1)" ] || return
+  name=$(clean "$(value input.name)")
+  if [ -n "$name" ]; then
+    keep "$1" "$(field "$1" 4)"
+    openspot select "$1"
+    return
+  fi
+  url=$(field "$1" 6)
+  name=$(field "$1" 5)
+  price=$(field "$1" 3)
+  currency=$(field "$1" 4)
+  picture=$(field "$1" 7)
+  bare=$(printf '' | perl "$here/page.pl" "$url" 2>/dev/null | cut -f1)
+  if [ -z "$picture" ] || [ -z "$price" ] || [ "$name" = "$bare" ]; then
+    page=$(fetch "$url")
+    if [ "$(printf '%s\n' "$page" | cut -f6)" = 1 ]; then
+      [ "$name" != "$bare" ] || name=$(printf '%s\n' "$page" | cut -f1)
+      if [ -z "$price" ]; then
+        price=$(printf '%s\n' "$page" | cut -f2)
+        currency=$(printf '%s\n' "$page" | cut -f3)
+      fi
+    fi
+    [ -n "$picture" ] || picture=$(printf '%s\n' "$page" | cut -f4)
+  fi
+  wishform 'Edit wish' "$url" "$name" "$price" "$currency" "$(field "$1" 2)" "$picture" '' ''
 }
 
 # The currency of a price typed with none: the one of the shop's country, or else of the Mac's region.
@@ -211,43 +249,6 @@ region() {
   esac
 }
 
-retype() {
-  [ -n "$1" ] || return
-  new=$(clean "$(value input.new)")
-  picked=$(value input.type)
-  if [ -z "$new" ] && [ -z "$picked" ]; then
-    now=$(field "$1" 2)
-    printf 'frame=\ntitle=Type of %s\n\nchoice=type\ntitle=Type\n' "$(esc "$(field "$1" 5)")"
-    types | awk -v now="${now:-Other}" '$0 == now { printf "value=t%d\n", NR }'
-    types | awk '{ gsub(/\\/, "\\\\"); printf "\noption=t%d\ntitle=%s\n", NR, $0 }'
-    printf '\nfield=new\ntitle=New type\nplaceholder=Such as Plants\n'
-    return
-  fi
-  [ -n "$new" ] || new=$(types | sed -n "${picked#t}p")
-  if [ -n "$new" ]; then change "$1" 2 "$new"; fi
-}
-
-edit() {
-  [ -n "$1" ] || return
-  name=$(clean "$(value input.name)")
-  if [ -z "$name" ]; then
-    price=$(field "$1" 3)
-    currency=$(field "$1" 4)
-    printf 'frame=\ntitle=Edit wish\n\nfield=name\ntitle=Name\nrequired=true\n'
-    openspot_kv value "$(field "$1" 5)"
-    printf '\nfield=price\ntitle=Price\nplaceholder=Such as 29.99 EUR\n'
-    if [ -n "$price" ]; then openspot_kv value "$price${currency:+ $currency}"; fi
-    return
-  fi
-  typed=$(perl "$here/page.pl" --price "$(value input.price)" 2>/dev/null)
-  price=$(printf '%s\n' "$typed" | cut -f1)
-  currency=$(printf '%s\n' "$typed" | cut -f2)
-  [ -n "$currency" ] || currency=$(field "$1" 4)
-  [ -n "$currency" ] || currency=$(region)
-  [ -n "$price" ] || currency=
-  change "$1" 5 "$name" && change "$1" 3 "$price" 4 "$currency"
-}
-
 share() {
   arrange "$1" | awk -F'\t' '
     BEGIN { print "My wishlist" }
@@ -259,25 +260,16 @@ share() {
 case "$1" in
   show) show ;;
   open)
-    if [ "$2" = add ]; then
-      add
-    else
-      url=$(value item.url)
-      [ -n "$url" ] || url=$(field "$2" 6)
-      if [ -n "$url" ]; then open "$url"; fi
-    fi
+    case "$2" in
+      add) add ;;
+      share) if [ "$(value setting.group)" = Price ]; then share Price; else share Type; fi ;;
+      *)
+        url=$(value item.url)
+        [ -n "$url" ] || url=$(field "$2" 6)
+        if [ -n "$url" ]; then open "$url"; fi
+        ;;
+    esac
     ;;
-  byprice) share Price ;;
-  bytype) share Type ;;
-  group)
-    if [ "$(value setting.group)" = Price ]; then openspot setting set group Type; else openspot setting set group Price; fi
-    ;;
-  type) retype "$2" ;;
   edit) edit "$2" ;;
-  copy)
-    url=$(value item.url)
-    [ -n "$url" ] || url=$(field "$2" 6)
-    if [ -n "$url" ]; then printf '%s' "$url" | openspot clipboard copy && openspot toast 'Copied the link.'; fi
-    ;;
   remove) if [ -n "$2" ]; then list | awk -F'\t' -v id="$2" '$1 != id' | openspot_keep "$data"; fi ;;
 esac
