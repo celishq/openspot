@@ -96,7 +96,10 @@ final class SpotAskTests: PanelCase {
         let asking = try ask("picker")
         try await waitForPicker()
 
-        XCTAssertEqual(SpotSheetCard.of(model.openSheetID, in: model)?.id, row)
+        let source = try XCTUnwrap(SpotSheetCard.of(model.openSheetID, in: model))
+        XCTAssertEqual(source.id, row)
+        XCTAssertNil(source.look)
+        XCTAssertEqual(source.state?.title, "Snooze This")
         host.heldEnds = []
         XCTAssertTrue(model.handleKey(toGrid))
         XCTAssertEqual(model.transition.phase, .closing)
@@ -125,7 +128,8 @@ final class SpotAskTests: PanelCase {
         let asking = try ask("picker", title: "Example page")
         try await waitForPicker()
 
-        XCTAssertEqual(model.sheets["picker"]?.shownState.title, "Example page")
+        XCTAssertEqual(model.sheets["picker"]?.sheetState.title, "Example page")
+        XCTAssertEqual(model.sheets["picker"]?.shownState.title, "Picker")
         host.heldEnds = []
         XCTAssertTrue(model.handleKey(escape))
 

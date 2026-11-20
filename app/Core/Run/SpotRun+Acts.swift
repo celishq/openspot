@@ -44,9 +44,12 @@ extension SpotRun {
     }
 
     public var shownState: SpotState {
-        let titled = pageTitle.map { state.showing(title: $0, detail: nil) } ?? state
-        guard let call = acts.first else { return titled }
-        return titled.showing(title: call.title, detail: call.detail)
+        guard let call = acts.first else { return state }
+        return state.showing(title: call.title, detail: call.detail)
+    }
+
+    public var sheetState: SpotState {
+        pageTitle.map { shownState.showing(title: $0, detail: nil) } ?? shownState
     }
 
     public func pressCard() {

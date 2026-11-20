@@ -119,15 +119,15 @@ extension SpotsModel {
             return
         }
         guard openSheetID == page.spot else {
-            sheet.show(route: page.route, title: page.title)
+            sheet.show(route: page.route, title: page.route == nil ? page.title : nil)
             waitPush(moving: moving)
             return present(page.spot, moving: moving)
         }
         guard moving, sheet.route != page.route else {
-            sheet.show(route: page.route, title: page.title)
+            sheet.show(route: page.route, title: page.route == nil ? page.title : nil)
             return showEdges()
         }
-        pushIn { sheet.show(route: page.route, title: page.title) ? nil : sheet }
+        pushIn { sheet.show(route: page.route, title: page.route == nil ? page.title : nil) ? nil : sheet }
     }
 
     func endFlow() {
