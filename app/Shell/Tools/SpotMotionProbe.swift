@@ -101,6 +101,7 @@ final class SpotMotionProbe: NSObject {
             case "pick": self.pick()
             case "flow": self.step(through: [ActionKey(name: "[", isCommand: true), ActionKey(name: "]", isCommand: true), ActionKey(name: "escape")])
             case "history": self.step(through: self.history, reopening: target.id)
+            case "ask": self.step(through: [ActionKey(name: "escape")])
             default: self.arrow(left: self.presses)
             }
         }
