@@ -118,7 +118,6 @@ public final class SpotsModel {
     @ObservationIgnored var edgeStep = 0
     @ObservationIgnored var landedStep = -1
     @ObservationIgnored var waitingPush = false
-    @ObservationIgnored var wantedInSearch: Set<String> = []
     public internal(set) var transition = SheetTransition() {
         didSet {
             if transition.id != nil, transition.id != oldValue.id || (transition.phase == .closing && oldValue.phase != .closing), cardScroll != gridScroll { cardScroll = gridScroll }
@@ -499,7 +498,6 @@ public final class SpotsModel {
 
     public func panelWillShow() {
         isPanelHidden = false
-        wantedInSearch = []
         finishPick()
         selected = 0
         runs.panelOpened(showsToEnd: isWarming)

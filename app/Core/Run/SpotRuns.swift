@@ -58,6 +58,7 @@ public final class SpotRuns {
     @ObservationIgnored var timers: SpotTimers
     @ObservationIgnored var timerWatch: Task<Void, Never>?
     @ObservationIgnored var asks = SpotAsks()
+    @ObservationIgnored var wanted: Set<String> = []
     @ObservationIgnored var nextShow: Date?
     @ObservationIgnored var answerMatches = AnswerMatches()
     @ObservationIgnored private var lastSearch: SearchQuery?
@@ -285,6 +286,10 @@ public final class SpotRuns {
 
     public func answer(of spot: Spot, _ action: SpotAction, input: String? = nil, limit: TimeInterval? = nil, variables: [String: String] = [:]) async throws -> String {
         try await mode(of: spot).answer(of: spot, action, input: input, limit: limit, variables: variables, in: self)
+    }
+
+    func isOnGrid(_ id: String) -> Bool {
+        grid.contains(id)
     }
 
     func wants(_ spot: Spot) -> Bool {

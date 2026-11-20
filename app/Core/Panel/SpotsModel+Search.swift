@@ -123,16 +123,8 @@ extension SpotsModel {
             match.list == 0 ? spots[match.item.run] : Entry(spot: finding.sources[match.list - 1], item: match.item)
         }
         show(Self.placed(finding.answers, around: foundSpots.filter { !ids.contains($0.id) }))
-        askWanted(Set(foundSpots.compactMap { $0.item == nil ? nil : $0.spot.id }))
+        Set(foundSpots.compactMap { $0.item == nil ? nil : $0.spot.id }).forEach(runs.want)
         if !isEditing { missedSearch.landed(query, found: visible.contains { $0.spot.answers?.isLast != true }) }
-    }
-
-    private func askWanted(_ ids: Set<String>) {
-        for id in ids.subtracting(wantedInSearch) {
-            guard let sheet = sheets[id], sheet.spot.on?.has(.event(SpotEvent.spotWant)) == true else { continue }
-            wantedInSearch.insert(id)
-            sheet.show(need: .change, event: .want)
-        }
     }
 
     private func show(_ next: [Entry]) {

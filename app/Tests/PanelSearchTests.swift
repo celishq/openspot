@@ -52,6 +52,22 @@ final class PanelSearchTests: PanelCase {
         try await wait("the next want") { wants() == 2 }
     }
 
+    func testASpotThatListsWantIsAskedOnceWhenThePanelOpensWithItsCardOnTheGrid() async throws {
+        let log = folder.appendingPathComponent("card-wants")
+        try script("tabs", toml: "title = 'Tabs'\non = ['sheet.open', 'spot.want']", "sed -n 's/^event=//p' >> '\(log.path)'\nprintf 'text=current\\ntitle=Snooze Current Tab\\n'")
+        await model.reload()
+        let wants = { ((try? String(contentsOf: log, encoding: .utf8)) ?? "").split(separator: "\n").filter { $0 == "spot.want" }.count }
+
+        model.isShown = true
+        model.panelWillShow()
+        try await wait("the want") { wants() == 1 }
+        model.panelWillHide()
+        model.panelDidHide()
+        model.panelWillShow()
+
+        try await wait("the next want") { wants() == 2 }
+    }
+
     func testASpotThatOnlyOffersActionsIsNotFound() async throws {
         try await showGrid()
         try script("acts", toml: "title = 'Alpha acts'\n[commands.change]\ntitle = 'Change'\noffers = ['actions']", "true")

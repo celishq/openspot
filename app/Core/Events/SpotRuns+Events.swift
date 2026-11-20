@@ -109,9 +109,15 @@ extension SpotRuns {
         }
     }
 
+    func want(_ id: String) {
+        guard let sheet = sheets[id], sheet.spot.on?.has(.event(SpotEvent.spotWant)) == true, wanted.insert(id).inserted else { return }
+        sheet.show(need: .change, event: ShowEvent(event: SpotEvent.spotWant, value: nil))
+    }
+
     private func openPanel(showsToEnd: Bool = false) {
         let wasOpen = isPanelOpen
         isPanelOpen = true
+        if !wasOpen { wanted = [] }
         if !wasOpen { sheets.values.forEach { $0.panelOpened() } }
         if !wasOpen, clipboardWatch != nil {
             clipboardWatch?.cancel()
@@ -126,6 +132,7 @@ extension SpotRuns {
         for sheet in sheets.values where sheet.spot.on?.has(.panel) == true {
             if toEnd { sheet.showToEnd(event: .panel) } else { sheet.show(need: .moment, event: .panel) }
         }
+        sheets.keys.filter(isOnGrid).forEach(want)
         sheets.values.forEach { $0.settleScript() }
     }
 
