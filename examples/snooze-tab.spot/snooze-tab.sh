@@ -6,13 +6,7 @@
 
 # Prints each timer as a line: id, time, url, title, split by tabs.
 timers() {
-  openspot timer list 2>/dev/null | awk '
-    /^text=/ { id = substr($0, 6) }
-    /^title=/ { value = substr($0, 7) }
-    /^at=/ { at = substr($0, 4) }
-    /^$/ { if (id != "") print id "\t" at "\t" value; id = ""; value = ""; at = "" }
-    END { if (id != "") print id "\t" at "\t" value }
-  ' | while IFS="$(printf '\t')" read -r id at value; do
+  openspot timer list 2>/dev/null | openspot_rows text at title | while IFS="$(printf '\t')" read -r id at value; do
     printf '%s\t%s\t%s\t%s\n' "$id" "$at" "${value%% *}" "${value#* }"
   done
 }

@@ -107,6 +107,7 @@ stdin with `value` or `openspot_input`, not `cat`: the function of `openspot_ser
 | `openspot_kv <key> <value>`                  | Prints one line, with its value escaped.                                                        |
 | `openspot_item <id> <title> [detail] [icon]` | Prints one item, a `text` block.                                                                |
 | `openspot_items [kind]`                      | Prints an item for each tab-separated line of stdin: id, title, detail, icon.                   |
+| `openspot_rows <key>...`                     | Prints a tab-separated line for each block of stdin, with the value of each key, such as what an `openspot` command printed. |
 | `openspot_serve <function> "$@"`             | Runs the function with the arguments of each call, in each [mode](#modes).                      |
 | `openspot_keep <file> [text]`                | Keeps the text, or stdin, in the file as a whole, or fails and keeps the old file.              |
 | `openspot_paste <text>`                      | Pastes the text into the front app and puts the clipboard back. It needs `clipboard` in `uses`. |
