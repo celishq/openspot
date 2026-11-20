@@ -84,7 +84,7 @@ public struct SpotCheck: Sendable {
             func found(_ fault: String) -> Finding { Finding(spot: script.id, file: script.url.path, fault: fault) }
             do {
                 let text = try await runs.answer(of: script, .show, limit: timeout)
-                let check = FrameCheck(text: text, isApp: script.isBuiltIn, calls: script.reservedCalls)
+                let check = FrameCheck(text: text, isApp: script.isBuiltIn)
                 let output = check.output
                 _ = try script.state(of: output)
                 if script.on?.seconds != nil, MetricValue(output: output) == nil { throw SpotError.badMetric }
@@ -97,7 +97,7 @@ public struct SpotCheck: Sendable {
             }
         }
         for script in scan.scripts {
-            for command in script.offers where script.reservedCalls.contains(command.id) {
+            for command in script.offers where FrameCheck.calls.contains(command.id) {
                 findings.append(Finding(spot: script.id, file: script.url.path, fault: "a command cannot be called \(command.id), since Openspot calls the spot with \(command.id)"))
             }
         }

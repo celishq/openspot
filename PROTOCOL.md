@@ -85,8 +85,8 @@ makes a call at each of these:
 | `<spot> <command>`                   | A press of a command's hotkey, or a [slash command](#slash-commands). |
 | `<spot> due <timer id>`              | A [timer](#act-at-a-time) of the spot comes due.                      |
 
-- **Arguments:** `<id> [item] [value]`, so that `case "$1"` handles each call. `show`, `open`, `drop` and `drag` are
-  Openspot's own ids: no block takes them, except a button `open`. In a spot that uses `timer`, `due` is one too. A value over 64 KB comes only as `input.value=`.
+- **Arguments:** `<id> [item] [value]`, so that `case "$1"` handles each call. `show`, `open`, `drop`, `drag` and `due`
+  are Openspot's own ids: no block takes them, except a button `open`. A value over 64 KB comes only as `input.value=`.
 - **Variables:** `OPENSPOT_ID`, the spot's id; `OPENSPOT_DATA`, the data folder of its spot folder; `OPENSPOT_SH`, the
   shell helper; `PATH`, with the `openspot` command first, then the user's paths, `/opt/homebrew/bin`,
   `/usr/local/bin`, `/usr/bin`, `/bin`, `/usr/sbin` and `/sbin`; and `LC_ALL=en_US.UTF-8`, so each tool reads text as
