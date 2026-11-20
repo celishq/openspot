@@ -11,6 +11,7 @@ public final class SpotsModel {
         public let action: CommandAction
         public let item: SpotItem?
         public let openedSheet: Bool
+        public var tookSearch = false
     }
 
     public typealias Target = (entry: Entry, item: SpotItem?)

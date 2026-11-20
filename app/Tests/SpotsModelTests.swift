@@ -999,8 +999,9 @@ final class SpotsModelTests: XCTestCase {
           open)
             input=$(cat)
             printf '%s\n' "$input" | tr '\n' ' ' >> '\(sent)'; printf '\n' >> '\(sent)'
+            case "$input" in *input.link=*) exit 0 ;; esac
             printf 'frame=\\ntitle=New\n\nfield=link\ntitle=Link\n' ;;
-          *) printf 'text=add\ntitle=Add\npin=top\nform=true\n\ntext=a\ntitle=Apple\n' ;;
+          *) printf 'text=add\ntitle=Add\npin=top\nform=true\nclose=false\n\ntext=a\ntitle=Apple\n' ;;
         esac
         """)
         let sends = { ((try? String(contentsOfFile: sent, encoding: .utf8)) ?? "").split(separator: "\n").map(String.init) }
@@ -1017,6 +1018,11 @@ final class SpotsModelTests: XCTestCase {
         try await wait("the form") { model.form != nil }
         XCTAssertEqual(model.form?.draft.values["link"], "https://shop.example/p/1")
         XCTAssertTrue(sends().first?.contains("search=https://shop.example/p/1") == true, sends().first ?? "")
+
+        model.submitForm()
+        try await wait("the kept form") { model.form == nil }
+        XCTAssertEqual(model.searchText, "")
+        XCTAssertEqual(model.openSheetID, "list")
     }
 
     func testTheFootSaysThatAFormWaitsForItsSpot() async throws {

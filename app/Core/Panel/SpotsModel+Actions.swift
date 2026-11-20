@@ -149,7 +149,7 @@ extension SpotsModel {
             closeMenu()
             let opensSheet = openSheetID != id
             if opensSheet { pushFirst(id, moving: isShown) }
-            self.form = FormSession(draft: FormDraft(form: form, prefill: prefill), entry: target.entry, action: action, item: target.item, openedSheet: opensSheet)
+            self.form = FormSession(draft: FormDraft(form: form, prefill: prefill), entry: target.entry, action: action, item: target.item, openedSheet: opensSheet, tookSearch: !prefill.isEmpty)
         case .shown where target.entry.spot.kind.opensSheet:
             if openSheetID != id { pushFirst(id, moving: isShown) }
         case .shown, .done:
@@ -294,6 +294,7 @@ extension SpotsModel {
                 switch try await sheets[form.entry.id]?.submit(form.action, item: form.item, draft: draft) {
                 case .done? where self.form?.id == form.id:
                     self.form = nil
+                    if form.tookSearch, openSheet?.query.isEmpty == false { openSheet?.search("") }
                     if form.action.after == .close, isShown { host.dismiss() }
                 case .form(let next)? where self.form?.id == form.id:
                     let kept = FormDraft(form: next, after: self.form?.draft ?? draft)

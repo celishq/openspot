@@ -1,6 +1,6 @@
 #!/bin/sh
 # Wishes: keeps product links with their name, picture and price, and shares them as a list.
-# Each wish is one line of $OPENSPOT_DATA/wishes.tsv: id, type, price, currency, title, link, picture.
+# Each wish is one line of $OPENSPOT_DATA/wishes.tsv: id, type, price, currency, title, link, picture, notes.
 export LC_ALL=en_US.UTF-8
 . "$OPENSPOT_SH"
 
@@ -58,9 +58,9 @@ arrange() {
       picture = $7 ~ /^https:\/\// ? $7 : (type in icon ? icon[type] : "gift")
       if (group == "Price") {
         if ($3 == "") { key = 9; section = "No price" } else section = range($3 + 0, $4)
-        print key, $4, $3 + 0, section, $1, $5, price, shop, picture, $6, type
+        print key, $4, $3 + 0, section, $1, $5, price, shop, picture, $6, type, $8
       } else
-        print (type in order ? order[type] : 50), type, -NR, type, $1, $5, price, shop, picture, $6, type
+        print (type in order ? order[type] : 50), type, -NR, type, $1, $5, price, shop, picture, $6, type, $8
     }' | sort -t "$tab" -k1,1n -k2,2 -k3,3n
 }
 
@@ -82,6 +82,7 @@ show() {
       detail = $7
       if (group == "Price") detail = detail (detail == "" ? "" : " · ") $11
       detail = detail (detail == "" ? "" : " · ") $8
+      if ($12 != "") detail = detail " · " $12
       printf "text=%s\ntitle=%s\ndetail=%s\nicon=%s\nurl=%s\nkeywords=%s,%s\nopen.title=Open in Browser\n\n", \
         $5, e($6), e(detail), e($9), e($10), e($8), e($11)
     }'
@@ -127,8 +128,8 @@ fetch() {
   printf '%s\t%s\n' "${page:-$tab$tab$tab${tab}Other${tab}0}" "$from"
 }
 
-# Prints the form of a wish: its title, link, name, price, currency, type, picture, whether the page was read, and from
-# where. A new wish and an edit share it, so each value is changed in one place.
+# Prints the form of a wish: its title, link, name, price, currency, type, picture, whether the page was read, from
+# where, and its notes. A new wish and an edit share it, so each value is changed in one place.
 wishform() {
   printf 'frame=\n'
   openspot_kv title "$1"
@@ -156,6 +157,8 @@ wishform() {
     builtin | grep -qxF -- "$one" || printf 'remove=true\n'
   done
   printf '\noption=types\ntitle=Add type…\nicon=plus\nsend=true\n'
+  printf '\nfield=notes\ntitle=Notes\nplaceholder=Such as size M or a colour\n'
+  if [ -n "${10}" ]; then openspot_kv value "${10}"; fi
   printf '\nfield=picture\ntitle=Picture\nplaceholder=A link to an image\n'
   if [ -n "$7" ]; then openspot_kv value "$7"; fi
 }
@@ -175,7 +178,8 @@ keep() {
   type=$(unhex "${picked#t}")
   picture=$(clean "$(value input.picture)")
   case "$picture" in https://*) ;; http://*) picture="https://${picture#http://}" ;; *) picture= ;; esac
-  line=$(printf '%s\t%s\t%s\t%s\t%s\t%s\t%s' "$1" "${type:-Other}" "$price" "$currency" "$name" "$url" "$picture")
+  notes=$(clean "$(value input.notes)")
+  line=$(printf '%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s' "$1" "${type:-Other}" "$price" "$currency" "$name" "$url" "$picture" "$notes")
   { list | L="$line" awk -F'\t' -v id="$1" '$1 == id { print ENVIRON["L"]; found = 1; next } { print } END { if (!found) print ENVIRON["L"] }'; } \
     | openspot_keep "$data" || exit 1
   rm -f "$OPENSPOT_DATA/draft"
@@ -198,8 +202,8 @@ retype() {
   draft="$OPENSPOT_DATA/draft"
   if [ "$(value input.type)" = types ]; then
     forget
-    printf '%s\t%s\t%s\t%s\t%s\n' "$1" "$(clean "$(value input.link)")" "$(clean "$(value input.name)")" \
-      "$(clean "$(value input.price)")" "$(clean "$(value input.picture)")" | openspot_keep "$draft"
+    printf '%s\t%s\t%s\t%s\t%s\t%s\n' "$1" "$(clean "$(value input.link)")" "$(clean "$(value input.name)")" \
+      "$(clean "$(value input.price)")" "$(clean "$(value input.picture)")" "$(clean "$(value input.notes)")" | openspot_keep "$draft"
     printf 'frame=\ntitle=New type\n\nfield=newtype\ntitle=Name\nplaceholder=Such as Plants\nrequired=true\n'
     return 0
   fi
@@ -208,7 +212,7 @@ retype() {
   { own; printf '%s\n' "$new"; } | awk -v B="$(builtin | tr '\n' '|')" 'BEGIN { split(B, a, "|"); for (i in a) b[a[i]] = 1 } NF && !b[$0] && !seen[$0]++' \
     | openspot_keep "$kinds" || exit 1
   at() { cut -f"$(($1 + 1))" < "$draft"; }
-  wishform "$2" "$(at 1)" "$(at 2)" "$(at 3)" '' "$new" "$(at 4)" '' ''
+  wishform "$2" "$(at 1)" "$(at 2)" "$(at 3)" '' "$new" "$(at 4)" '' '' "$(at 5)"
 }
 
 # The form of a new wish. It asks for the link, then shows what the page gave, to change before it is kept.
@@ -276,7 +280,7 @@ edit() {
     fi
     [ -n "$picture" ] || picture=$(printf '%s\n' "$page" | cut -f4)
   fi
-  wishform 'Edit wish' "$url" "$name" "$price" "$currency" "$(field "$1" 2)" "$picture" '' ''
+  wishform 'Edit wish' "$url" "$name" "$price" "$currency" "$(field "$1" 2)" "$picture" '' '' "$(field "$1" 8)"
 }
 
 # The currency of a price typed with none: the one of the shop's country, or else of the Mac's region.
@@ -296,7 +300,7 @@ share() {
   arrange "$1" | awk -F'\t' '
     BEGIN { print "My wishlist" }
     $4 != last { last = $4; printf "\n%s\n", $4 }
-    { printf "• %s%s\n  %s\n", $6, ($7 == "" ? "" : " — " $7), $10 }' | openspot clipboard copy \
+    { printf "• %s%s%s\n  %s\n", $6, ($7 == "" ? "" : " — " $7), ($12 == "" ? "" : " (" $12 ")"), $10 }' | openspot clipboard copy \
     && openspot toast 'Copied your list. Paste it into a message.'
 }
 
