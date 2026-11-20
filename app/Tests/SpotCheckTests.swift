@@ -66,7 +66,7 @@ final class SpotCheckTests: XCTestCase {
 
         XCTAssertEqual(findings.map { "\($0.spot ?? ""): \($0.fault)" }.sorted(), [
             "later: an item cannot be called due",
-            "tabs: a command cannot be called due, since a timer calls the spot with due"
+            "tabs: a command cannot be called due, since Openspot calls the spot with due"
         ])
     }
 
