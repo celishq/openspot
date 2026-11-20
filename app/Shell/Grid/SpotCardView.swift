@@ -29,7 +29,6 @@ struct SpotCardView: View, @MainActor Equatable {
             .frame(width: SpotTokens.width(columns: size.columns), height: SpotTokens.height(rows: size.rows), alignment: .topLeading)
             .background(shape(of: .dropFill).fill(SpotTheme.accent).opacity(dropFill))
             .modifier(CardPress(shape: shape(of: .press), isFilled: isFilled, showsPress: showsPress))
-            .modifier(SpotPointerMove { model.point(at: .card(entry.id)) })
             .overlay(Color.clear.modifier(CardRing(model: model, index: index, shape: shape(of: .ring))).allowsHitTesting(false))
             .overlay(alignment: .topTrailing) { FailureMark(model: model, entry: entry, size: size) }
             .modifier(SpotGlass(shape: shape(of: .glass), isSolid: isFilled))

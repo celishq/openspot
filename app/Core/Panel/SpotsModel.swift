@@ -244,6 +244,7 @@ public final class SpotsModel {
         didSet { takeMode() }
     }
     public var tip: SpotTip?
+    public internal(set) var pointedCard: String?
     var shakes: [String: Int] = [:]
     public internal(set) var drag: SpotDrag?
     public let lift = SpotLift()

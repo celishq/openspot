@@ -483,8 +483,7 @@ Openspot draws a view where the layout puts its `view` block. Use it for a chart
   In a sheet, it takes clicks and keys. In a window, a sheet with one `view` block fills it and draws `spot.items`.
 - `SpotMetric(spot, value:, detail:, mark:, onFill:)` draws a big number with its detail and an SF Symbol `mark`.
 - `spot.loop(period:fill:path:)` and `spot.loop(period:stroke:width:path:)` draw a shape at each time from 0 to
-  `period`, and the shape at `period` equals the one at 0. It plays only while `spot.isShown` is true. Never redraw at
-  each screen refresh with a `TimelineView` or a timer.
+  `period`, and the shape at `period` equals the one at 0. It plays only while `spot.isShown` is true.
 - Openspot removes a view while its place is hidden, unless it reads `spot.isShown`, and then it stops its timers and
   its motion while that is false. It compiles the view at its first show and when the file changes, and a shared spot
   carries it as `<name>.<hash>.view`, used while the hash matches.

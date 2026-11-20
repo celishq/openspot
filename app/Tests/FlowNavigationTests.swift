@@ -53,6 +53,20 @@ final class FlowNavigationTests: PanelCase {
         XCTAssertNil(model.sheets["list"]?.route)
     }
 
+    func testClosingASheetEndsItsFlowInTheSameUpdateAsItsMotion() async throws {
+        try await openList()
+        try await openPage()
+        nonisolated(unsafe) var toldOutsideAChange = false
+        nonisolated(unsafe) let host = host
+        withObservationTracking { _ = model.flowEdges } onChange: { MainActor.assumeIsolated { toldOutsideAChange = host?.isChanging == false } }
+
+        XCTAssertTrue(model.handleKey(toGrid))
+
+        try await wait("the grid") { self.model.openSheetID == nil }
+        XCTAssertFalse(toldOutsideAChange)
+        XCTAssertEqual(model.flowEdges, FlowEdges())
+    }
+
     func testASpotThatOpensAnotherPushesItAndBackComesHome() async throws {
         try await openList()
 

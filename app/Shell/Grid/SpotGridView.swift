@@ -77,6 +77,7 @@ struct SpotGridView: View {
         }
         .frame(width: SpotTokens.width(columns: model.panels.columns), height: height, alignment: .topLeading)
         .contentShape(Rectangle())
+        .modifier(SpotPointerMove(at: { model.point(at: .grid($0)) }))
         .onDrop(of: [.fileURL], delegate: SpotGridDrop(model: model, target: $dropTarget))
     }
 

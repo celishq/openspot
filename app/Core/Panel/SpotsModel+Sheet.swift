@@ -138,9 +138,10 @@ extension SpotsModel {
         keys.status = nil
         askedAnswer = nil
         stopRecording()
-        showSheet(nil, moving: moving)
-        runs.closeOpen()
-        endFlow()
+        showSheet(nil, moving: moving) {
+            runs.closeOpen()
+            endFlow()
+        }
     }
 
     public func close(_ place: ViewPlace) {
@@ -163,8 +164,11 @@ extension SpotsModel {
         if let heldLayout { lay(heldLayout) }
     }
 
-    func showSheet(_ list: String?, moving: Bool) {
-        guard list != openSheetID else { return dropWaitingPush() }
+    func showSheet(_ list: String?, moving: Bool, ending: () -> Void = {}) {
+        guard list != openSheetID else {
+            dropWaitingPush()
+            return ending()
+        }
         if let list, openSheetID != nil, transition.isOpen {
             let swapped = takeWaitingPush { [weak self] in
                 self?.transition.show(list, moves: true)
@@ -179,11 +183,15 @@ extension SpotsModel {
             return
         }
         dropWaitingPush()
-        guard moving, hasPlace(list ?? transition.id) else { return cutSheet(to: list) }
+        guard moving, hasPlace(list ?? transition.id) else {
+            cutSheet(to: list)
+            return ending()
+        }
         guard let list else {
             animate(isOpen: false) {
                 transition.hide(moves: true)
                 holdFieldDrop()
+                ending()
             }
             return
         }

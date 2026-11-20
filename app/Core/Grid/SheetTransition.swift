@@ -25,6 +25,10 @@ public struct SheetTransition: Equatable, Sendable {
         phase == .opening || phase == .open
     }
 
+    public var isMoving: Bool {
+        phase == .opening || phase == .closing
+    }
+
     public mutating func show(_ id: String, moves: Bool, page: FlowSheet? = nil) {
         replaced = moves && isOpen && self.id != id ? self.id : nil
         if self.id != id { self.page = page }
