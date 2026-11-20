@@ -1,13 +1,50 @@
 #!/bin/sh
-# Snooze closes the front Safari tab once the person picks a time on the snooze sheet, and due opens it again.
-# The sheet starts with Snooze Current Tab, pinned, then lists each snoozed tab: Return opens it now, and Remove
-# forgets it. Open All opens every one now. The rows also show in the main search. A timer keeps "<url> <title>".
+# Snooze closes the front tab of the frontmost browser once the person picks a time on the snooze sheet, and due opens
+# it again in that browser. The sheet starts with Snooze Current Tab, pinned, then lists each snoozed tab: Return opens
+# it now, and Remove forgets it. Open All opens every one now. The rows also show in the main search.
+# A timer keeps "<browser id> <url> <title>".
 . "$OPENSPOT_SH"
 
-# Prints each timer as a line: id, time, url, title, split by tabs.
+# The browsers whose front tab AppleScript can read, by bundle id: Safari, or a browser built on Chromium.
+browser_kind() {
+  case "$1" in
+    com.apple.Safari|com.apple.SafariTechnologyPreview) printf safari ;;
+    com.google.Chrome|com.google.Chrome.canary|company.thebrowser.Browser|com.brave.Browser|com.microsoft.edgemac|com.vivaldi.Vivaldi|com.operasoftware.Opera) printf chromium ;;
+  esac
+}
+
+# The bundle id and the name of the frontmost app, which stays in front while the panel shows.
+front_id() {
+  lsappinfo info -only bundleid "$(lsappinfo front)" | sed -n 's/^.*bundleID="\([^"]*\)".*$/\1/p'
+}
+
+front_name() {
+  lsappinfo info -only name "$(lsappinfo front)" | sed -n '1s/^"\([^"]*\)".*$/\1/p'
+}
+
+# Prints the url and the title of the front tab of a browser, a line each, in one AppleScript call.
+read_tab() {
+  case "$(browser_kind "$1")" in
+    safari) tab="current tab" name="name" ;;
+    chromium) tab="active tab" name="title" ;;
+    *) return ;;
+  esac
+  osascript -e "tell application id \"$1\" to set front_tab to $tab of front window" \
+    -e "tell application id \"$1\" to return (URL of front_tab) & linefeed & ($name of front_tab)" 2>/dev/null
+}
+
+close_tab() {
+  case "$(browser_kind "$1")" in
+    safari) osascript -e "tell application id \"$1\" to close current tab of front window" >/dev/null 2>&1 ;;
+    chromium) osascript -e "tell application id \"$1\" to close active tab of front window" >/dev/null 2>&1 ;;
+  esac
+}
+
+# Prints each timer as a line: id, time, browser, url, title, split by tabs.
 timers() {
   openspot timer list 2>/dev/null | openspot_rows text at title | while IFS="$(printf '\t')" read -r id at value; do
-    printf '%s\t%s\t%s\t%s\n' "$id" "$at" "${value%% *}" "${value#* }"
+    rest=${value#* }
+    printf '%s\t%s\t%s\t%s\t%s\n' "$id" "$at" "${value%% *}" "${rest%% *}" "${rest#* }"
   done
 }
 
@@ -17,54 +54,77 @@ when() {
   date -r "$seconds" "+%a %b %-d, %-H:%M"
 }
 
-# The icon of a page: its site's favicon, which Openspot fetches once, or Safari's for a page with no web address.
+# The icon of a page: its site's favicon, which Openspot fetches once.
 icon() {
   case "$1" in
     http://*|https://*) printf '%s/favicon.ico' "$(printf '%s' "$1" | sed -E 's#^(https?://[^/]+).*#\1#')" ;;
-    *) printf safari ;;
+    *) printf moon.zzz ;;
   esac
 }
 
-# Snoozes the front Safari tab until the time the person picks, and closes it.
-snooze_front() {
-  url=$(osascript -e 'tell application "Safari" to get URL of current tab of front window' 2>/dev/null)
-  [ -n "$url" ] || { echo "Safari shows no tab." >&2; exit 1; }
-  title=$(osascript -e 'tell application "Safari" to get name of current tab of front window' 2>/dev/null)
-  at=$(openspot spot ask openspot/snooze --title "${title:-$url}") || exit 0
-  if [ "$at" != someday ]; then
-    openspot timer add "$at" "$url $title" >/dev/null || exit 1
+# Snoozes a tab of a browser until the time the person picks, and closes it. With no url known yet, it asks for the time
+# first and reads the tab after the pick, so the press never waits on the browser.
+snooze() {
+  browser=$1 url=$2 title=$3
+  if [ -z "$(browser_kind "$browser")" ]; then
+    echo "$(front_name) is not a browser that Snooze Tab can read. Use Safari, Chrome, Arc, Brave, Edge, Vivaldi or Opera." >&2
+    exit 1
   fi
-  osascript -e 'tell application "Safari" to close current tab of front window' >/dev/null
+  if [ -n "$url" ]; then
+    at=$(openspot spot ask openspot/snooze --title "${title:-$url}") || exit 0
+  else
+    at=$(openspot spot ask openspot/snooze) || exit 0
+    tab=$(read_tab "$browser")
+    url=$(printf '%s\n' "$tab" | sed -n 1p)
+    title=$(printf '%s\n' "$tab" | sed -n 2p)
+    [ -n "$url" ] || { echo "$(front_name) shows no tab." >&2; exit 1; }
+  fi
+  if [ "$at" != someday ]; then
+    openspot timer add "$at" "$browser $url $title" >/dev/null || exit 1
+  fi
+  close_tab "$browser"
   openspot toast "Snoozed the tab."
 }
 
 case "$1" in
   show)
+    browser=$(front_id)
+    tab=$([ -n "$(browser_kind "$browser")" ] && read_tab "$browser")
+    url=$(printf '%s\n' "$tab" | sed -n 1p)
+    title=$(printf '%s\n' "$tab" | sed -n 2p)
     printf 'button=remove\ntitle=Remove\nshortcut=cmd+backspace\n'
-    openspot_item current "Snooze Current Tab" "Safari's front tab" moon.zzz
+    openspot_item current "Snooze Current Tab" "${title:-${url:-The front tab of your browser}}" moon.zzz
     printf 'pin=top\nhides=remove\nclose=false\n'
-    timers | while IFS="$(printf '\t')" read -r id at url title; do
+    openspot_kv browser "$browser"
+    [ -z "$url" ] || openspot_kv link "$url"
+    [ -z "$title" ] || openspot_kv page "$title"
+    timers | while IFS="$(printf '\t')" read -r id at browser url title; do
       openspot_item "$id" "${title:-$url}" "$(when "$at")" "$(icon "$url")"
     done
     ;;
   open)
-    [ "$2" = current ] && { snooze_front; exit; }
-    url=$(timers | awk -F '\t' -v id="$2" '$1 == id { print $3 }')
-    [ -n "$url" ] || exit 0
-    openspot timer remove "$2" >/dev/null && open "$url"
+    if [ "$2" = current ]; then
+      snooze "$(value item.browser)" "$(value item.link)" "$(value item.page)"
+      exit
+    fi
+    timers | awk -F '\t' -v id="$2" '$1 == id { print $3 "\t" $4 }' | while IFS="$(printf '\t')" read -r browser url; do
+      openspot timer remove "$2" >/dev/null && open -b "$browser" "$url"
+    done
     ;;
   remove)
     [ -n "$2" ] && [ "$2" != current ] && openspot timer remove "$2" >/dev/null
     ;;
   wake)
-    timers | while IFS="$(printf '\t')" read -r id at url title; do
-      openspot timer remove "$id" >/dev/null && open "$url"
+    timers | while IFS="$(printf '\t')" read -r id at browser url title; do
+      openspot timer remove "$id" >/dev/null && open -b "$browser" "$url"
     done
     ;;
   snooze)
-    snooze_front
+    snooze "$(front_id)" "" ""
     ;;
   due)
-    open "$(value event.value | cut -d ' ' -f 1)"
+    value=$(value event.value)
+    rest=${value#* }
+    open -b "${value%% *}" "${rest%% *}"
     ;;
 esac
