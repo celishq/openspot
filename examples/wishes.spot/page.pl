@@ -41,6 +41,23 @@ sub currency {
     return '';
 }
 
+# A name from the words of the link, such as seneka-moralni-lysty for a shop that hides its page.
+sub slug {
+    my ($link) = @_;
+    my ($path) = $link =~ m{^https?://[^/?#]+([^?#]*)};
+    my $best = "";
+    for my $part (split m{/}, $path // "") {
+        $part =~ s/\.(html?|php|aspx?)$//i;
+        $part =~ s/%([0-9a-f]{2})/chr(hex($1))/gie;
+        next unless $part =~ /[-_]/ && $part =~ /\pL{3}/;
+        $best = $part if length($part) > length($best);
+    }
+    $best =~ s/[-_]+/ /g;
+    $best =~ s/(?:\s+[a-z]*\d[\w]*)+$//i if $best =~ /\pL{3}.*\s/;
+    $best =~ s/^\s+|\s+$//g;
+    return ucfirst $best;
+}
+
 sub plain {
     my ($text) = @_;
     return '' unless defined $text;
@@ -87,6 +104,8 @@ $title = plain($title);
 $title =~ s/^Amazon\.[a-z.]+\s*:\s*//i;
 $title = $1 if $title =~ /^(.{8,}?)\s+[|–—]\s+\S.*$/;
 $title = "" if $title =~ /^(just a moment|access denied|robot check|attention required|are you a human|pardon our interruption|403 forbidden|page not found|error)\b/i || $title !~ /\s/ && $title =~ /^[\w-]+\.[a-z.]+$/i;
+my $read = $title eq "" ? 0 : 1;
+$title = slug($url) if $title eq "";
 $title = substr($title, 0, 117) . '…' if length($title) > 118;
 
 my $core = $html =~ /id="(?:corePrice[^"]*|apex_desktop[^"]*|price_inside_buybox|priceblock_ourprice)"(.{0,4000})/s ? $1 : "";
@@ -133,4 +152,4 @@ my $type = 'Other';
 for my $pair (@types) { if ($words =~ $pair->[1]) { $type = $pair->[0]; last; } }
 $type = 'Books' if $type eq 'Gadgets' && $words =~ /\bkindle edition\b/;
 
-print join("\t", $title, $price, $currency, $image, $type), "\n";
+print join("\t", $title, $price, $currency, $image, $type, $read), "\n";

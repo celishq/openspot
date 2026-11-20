@@ -96,11 +96,16 @@ change() {
     $1 == id { $a = ENVIRON["A"]; if (b > 0) $b = ENVIRON["B"] } { print }' | openspot_keep "$data"
 }
 
+# A link with no tracking words, such as utm_source or gclid, so that a shared list is short.
+untrack() {
+  perl -pe 'if (/^([^?#]*)\?([^#]*)(.*)$/s) { my ($a, $q, $z) = ($1, $2, $3); $q = join "&", grep { !/^(utm_\w+|gclid|gbraid|wbraid|gad_\w+|fbclid|yclid|msclkid|mc_[ce]id|_ga|_gl|srsltid)=/i } split /&/, $q; $_ = $a . ($q eq "" ? "" : "?$q") . $z }'
+}
+
 # The form of a new wish. It asks for the link, then shows what the page gave, to change before it is kept.
-# The page that it read last waits in $OPENSPOT_DATA/page: link, title, price, currency, picture, type.
+# The page that it read last waits in $OPENSPOT_DATA/page: link, title, price, currency, picture, type, read.
 add() {
   typed=$(clean "$(value input.link)")
-  url=$(printf '%s\n' "$typed" | link)
+  url=$(printf '%s\n' "$typed" | link | untrack)
   if [ -z "$url" ]; then
     printf 'frame=\ntitle=New wish\n\nfield=link\ntitle=Link\nplaceholder=Paste a product link\nrequired=true\n'
     if [ -n "$typed" ]; then printf 'detail=A link starts with https://\ntone=warn\n'; fi
@@ -117,7 +122,7 @@ add() {
   if [ "$(printf '%s\n' "$read" | cut -f1)" != "$url" ]; then
     page=$(curl -sL --compressed --max-time 12 -A "$agent" -H 'Accept: text/html,application/xhtml+xml' \
       -H 'Accept-Language: en-US,en;q=0.9' "$url" </dev/null | head -c 4000000 | perl "$here/page.pl" "$url" 2>/dev/null)
-    read=$(printf '%s\t%s' "$url" "${page:-$tab$tab$tab$tab}")
+    read=$(printf '%s\t%s' "$url" "${page:-$tab$tab$tab${tab}Other${tab}0}")
     printf '%s\n' "$read" | openspot_keep "$OPENSPOT_DATA/page"
     name=
   fi
@@ -126,15 +131,24 @@ add() {
     price=$(printf '%s\n' "$read" | cut -f3)
     currency=$(printf '%s\n' "$read" | cut -f4)
     type=$(printf '%s\n' "$read" | cut -f6)
+    seen=$(printf '%s\n' "$read" | cut -f7)
     printf 'frame=\ntitle=New wish\n\nfield=link\ntitle=Link\nrequired=true\n'
     openspot_kv value "$url"
-    printf '\nfield=name\ntitle=Name\nrequired=true\n'
-    if [ -n "$title" ]; then openspot_kv value "$title"; else printf 'placeholder=The page gave no name\n'; fi
+    printf '\nfield=name\ntitle=Name\nrequired=true\nplaceholder=What it is\n'
+    if [ -n "$title" ]; then openspot_kv value "$title"; fi
+    if [ "$seen" != 1 ]; then printf 'detail=From the link: the shop hides its page.\ntone=warn\n'; fi
     printf '\nfield=price\ntitle=Price\n'
-    if [ -n "$price" ]; then openspot_kv value "$price${currency:+ $currency}"; else printf 'placeholder=The page shows no price. Such as 29.99 EUR\n'; fi
+    if [ -n "$price" ]; then
+      openspot_kv value "$price${currency:+ $currency}"
+    else
+      here_currency=$(region)
+      openspot_kv placeholder "Such as 250${here_currency:+ $here_currency}"
+      if [ "$seen" = 1 ]; then printf 'detail=The page shows no price.\n'; fi
+    fi
     printf '\nchoice=type\ntitle=Type\n'
     types | awk -v now="${type:-Other}" '$0 == now { printf "value=t%d\n", NR }'
     types | awk '{ gsub(/\\/, "\\\\"); printf "\noption=t%d\ntitle=%s\n", NR, $0 }'
+    printf '\nfield=newtype\ntitle=Or a new type\nplaceholder=Such as Plants\n'
     return
   fi
   given=$(perl "$here/page.pl" --price "$(value input.price)" 2>/dev/null)
@@ -143,8 +157,11 @@ add() {
   [ -n "$currency" ] || currency=$(printf '%s\n' "$read" | cut -f4)
   [ -n "$currency" ] || currency=$(region)
   [ -n "$price" ] || currency=
-  picked=$(value input.type)
-  type=$(types | sed -n "${picked#t}p")
+  type=$(clean "$(value input.newtype)")
+  if [ -z "$type" ]; then
+    picked=$(value input.type)
+    type=$(types | sed -n "${picked#t}p")
+  fi
   [ -n "$type" ] || type=$(printf '%s\n' "$read" | cut -f6)
   id="w$(date +%s)$$"
   { list; printf '%s\t%s\t%s\t%s\t%s\t%s\t%s\n' "$id" "${type:-Other}" "$price" "$currency" "$name" "$url" "$(printf '%s\n' "$read" | cut -f5)"; } \
@@ -153,8 +170,12 @@ add() {
   openspot select "$id"
 }
 
-# The currency of the Mac's region, for a price typed with none.
+# The currency of a price typed with none: the one of the shop's country, or else of the Mac's region.
 region() {
+  case "$(printf '%s' "${url:-}" | sed 's|^[a-z]*://||; s|[/:?#].*||; s|.*\.||')" in
+    ua) echo UAH; return ;; pl) echo PLN; return ;; uk) echo GBP; return ;; jp) echo JPY; return ;; cz) echo CZK; return ;;
+    de|fr|es|it|nl|be|at|ie|pt|fi|gr|ee|lv|lt|sk|si|lu|hr|eu) echo EUR; return ;;
+  esac
   case "$(defaults read -g AppleLocale 2>/dev/null | sed 's/@.*//; s/.*_//')" in
     US) echo USD ;; UA) echo UAH ;; GB) echo GBP ;; PL) echo PLN ;; JP) echo JPY ;; CA) echo CAD ;; AU) echo AUD ;;
     CH) echo CHF ;; SE) echo SEK ;; NO) echo NOK ;; DK) echo DKK ;; CZ) echo CZK ;; IN) echo INR ;; KR) echo KRW ;;

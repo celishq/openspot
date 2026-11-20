@@ -7,10 +7,10 @@ spot=$(cd "$(dirname "$0")/.." && pwd)
 tab=$(printf '\t')
 failed=0
 
-# reads <name> <link> <page> <title> <price> <currency> <picture> <type>
+# reads <name> <link> <page> <title> <price> <currency> <picture> <type> <read>
 reads() {
   got=$(printf '%s' "$3" | perl "$spot/page.pl" "$2")
-  want="$4$tab$5$tab$6$tab$7$tab$8"
+  want="$4$tab$5$tab$6$tab$7$tab$8$tab$9"
   [ "$got" = "$want" ] && return
   printf 'page.pl, %s:\n  want %s\n  got  %s\n' "$1" "$want" "$got"
   failed=1
@@ -27,31 +27,34 @@ prices() {
 reads 'the tags of a shop' 'https://shop.example/p/1' \
   '<meta property="og:title" content="Wool sweater | Shop"><meta content="https://shop.example/a.jpg" property="og:image">
    <meta property="product:price:amount" content="89.00"><meta property="product:price:currency" content="EUR">' \
-  'Wool sweater' 89 EUR 'https://shop.example/a.jpg' Clothes
+  'Wool sweater' 89 EUR 'https://shop.example/a.jpg' Clothes 1
 
 reads 'the data of a product' 'https://shop.example/p/2' \
   '<title>Tom&#39;s &amp; Co headphones</title>
    <script type="application/ld+json">{"@type":"Product","image":["\/img\/h.jpg"],"offers":{"price":"1.299,50","priceCurrency":"UAH"}}</script>' \
-  "Tom's & Co headphones" 1299.50 UAH 'https://shop.example/img/h.jpg' Gadgets
+  "Tom's & Co headphones" 1299.50 UAH 'https://shop.example/img/h.jpg' Gadgets 1
 
 reads 'a price that only shows' 'https://books.example/p/3' \
   '<title>A Light in the Attic | Books</title><p class="price_color">£51.77</p>' \
-  'A Light in the Attic' 51.77 GBP '' Books
+  'A Light in the Attic' 51.77 GBP '' Books 1
 
 reads 'a page with no price' 'https://shop.example/p/4' \
   '<meta property="og:title" content="Oak bookcase"><span class="price-note">Ask us</span>' \
-  'Oak bookcase' '' '' '' Home
+  'Oak bookcase' '' '' '' Home 1
 
 reads 'the price of another product on Amazon' 'https://www.amazon.com/dp/B000' \
   '<title>Amazon.com: Smart Speaker : Electronics</title><img data-old-hires="https://m.example/s.jpg">
    <li class="a-carousel-card"><span class="a-offscreen">$4499</span><span class="a-price">$44.99</span></li>' \
-  'Smart Speaker : Electronics' '' '' 'https://m.example/s.jpg' Gadgets
+  'Smart Speaker : Electronics' '' '' 'https://m.example/s.jpg' Gadgets 1
 
 reads 'the price of the product on Amazon' 'https://www.amazon.com/dp/B001' \
   '<title>Amazon.com: Desk lamp</title><div id="corePrice_feature_div"><span class="a-price-symbol">$</span><span class="a-price-whole">44<span class="a-price-decimal">.</span></span><span class="a-price-fraction">99</span></div>' \
-  'Desk lamp' 44.99 USD '' Home
+  'Desk lamp' 44.99 USD '' Home 1
 
-reads 'a page that a shop refused' 'https://shop.example/iphone-15' '<title>Just a moment...</title>' '' '' '' '' Gadgets
+reads 'a page that a shop refused, named from its link' 'https://shop.example/knyhy/seneka-moralni-lysty/?utm_source=x' '<title>Just a moment...</title>' \
+  'Seneka moralni lysty' '' '' '' Other 0
+
+reads 'a link of codes, with no words' 'https://www.amazon.com/dp/B09B8V1LZ3' '' '' '' '' '' Other 0
 
 prices '$29.99' 29.99 USD
 prices '29,99 eur' 29.99 EUR
