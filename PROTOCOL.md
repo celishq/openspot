@@ -691,7 +691,7 @@ Each key that a call can find in its message.
 | `input.<id>=`    | Each input of the sheet or of a form. A value that isn't an input comes as `input.value=`.                |
 | `setting.<key>=` | Each [setting](#settings) that has a value, a secret too.                                                 |
 | `item.<key>=`    | On an action or a press of an item that holds a key of its own, each key of the item. A form gets none.   |
-| `timer.<key>=`   | On a `due`, the timer's `id`, and `late`, the seconds it came late. See [Act at a time](#act-at-a-time).  |
+| `timer.late=`    | On a `due`, the seconds the timer came late. See [Act at a time](#act-at-a-time).                         |
 
 ## Blocks
 
