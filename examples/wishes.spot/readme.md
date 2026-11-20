@@ -6,7 +6,7 @@ Wishes keeps the things you want to buy, each with its name, its picture and its
   fills in the name, the price, the type and the picture, which you can change. The arrows move between the fields and
   the Save button, and `⌘↓` jumps to Save. Return moves on from a field and opens the list of types on Type. Press
   Return on Save, or `⌘⏎` anywhere, to keep the wish.
-- **Add notes.** Notes are yours to fill, such as a size or a colour. They show in the wish's line and in the shared
+- **Add notes.** Notes are yours to fill, such as a size or a colour. They show in the wish's line and on a line of their own in the shared
   list.
 - **Add or delete a type.** In the list of types, choose **Add type…**, type its name, such as Plants, and press
   Return: the wish comes back with it. To delete a type you added, press `⌘⌫` on it in the same list, then save the

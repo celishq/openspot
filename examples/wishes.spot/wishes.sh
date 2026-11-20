@@ -149,6 +149,8 @@ wishform() {
       *) if [ "$8" = 1 ]; then printf 'detail=The page shows no price.\n'; fi ;;
     esac
   fi
+  printf '\nfield=notes\ntitle=Notes\nplaceholder=Such as size M or a colour\n'
+  if [ -n "${10}" ]; then openspot_kv value "${10}"; fi
   printf '\nchoice=type\ntitle=Type\n'
   openspot_kv value "t$(hex "${6:-Other}")"
   { types; printf '%s\n' "${6:-Other}"; } | awk 'NF && !seen[$0]++' | while IFS= read -r one; do
@@ -157,8 +159,6 @@ wishform() {
     builtin | grep -qxF -- "$one" || printf 'remove=true\n'
   done
   printf '\noption=types\ntitle=Add type…\nicon=plus\nsend=true\n'
-  printf '\nfield=notes\ntitle=Notes\nplaceholder=Such as size M or a colour\n'
-  if [ -n "${10}" ]; then openspot_kv value "${10}"; fi
   printf '\nfield=picture\ntitle=Picture\nplaceholder=A link to an image\n'
   if [ -n "$7" ]; then openspot_kv value "$7"; fi
 }
@@ -300,7 +300,7 @@ share() {
   arrange "$1" | awk -F'\t' '
     BEGIN { print "My wishlist" }
     $4 != last { last = $4; printf "\n%s\n", $4 }
-    { printf "• %s%s%s\n  %s\n", $6, ($7 == "" ? "" : " — " $7), ($12 == "" ? "" : " (" $12 ")"), $10 }' | openspot clipboard copy \
+    { printf "• %s%s\n", $6, ($7 == "" ? "" : " — " $7); if ($12 != "") printf "  Note: %s\n", $12; printf "  %s\n", $10 }' | openspot clipboard copy \
     && openspot toast 'Copied your list. Paste it into a message.'
 }
 
