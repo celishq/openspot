@@ -271,7 +271,7 @@ A button is a verb, such as Forget, that the sheet draws where the layout places
   such as with what's wrong, stays open. In a choice with `type=multiple`, a `value` line marks each chosen option.
 - In a form, Return does the act of the part in focus: it moves on from a text field, opens the list of a choice,
   flips a switch and saves on Save. `⌘` Return saves from any part, and Return saves a form of one field. An `option`
-  with `send=true`, such as Edit types…, sends the form as soon as it's chosen. In a form of several parts, an `option` with
+  with `send=true`, such as Add type…, sends the form as soon as it's chosen. In a form of several parts, an `option` with
   `remove=true` can be deleted with `⌘⌫` in the list of its choice, and the form sends the id of each deleted one in `<choice id>.removed`.
 
 ## The openspot command

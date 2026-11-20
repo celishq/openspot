@@ -153,8 +153,9 @@ wishform() {
   { types; printf '%s\n' "${6:-Other}"; } | awk 'NF && !seen[$0]++' | while IFS= read -r one; do
     printf '\noption=t%s\n' "$(hex "$one")"
     openspot_kv title "$one"
+    builtin | grep -qxF -- "$one" || printf 'remove=true\n'
   done
-  printf '\noption=types\ntitle=Edit types…\nicon=pencil\nsend=true\n'
+  printf '\noption=types\ntitle=Add type…\nicon=plus\nsend=true\n'
   printf '\nfield=picture\ntitle=Picture\nplaceholder=A link to an image\n'
   if [ -n "$7" ]; then openspot_kv value "$7"; fi
 }
@@ -169,6 +170,7 @@ keep() {
   [ -n "$currency" ] || currency=$2
   [ -n "$currency" ] || currency=$(region)
   [ -n "$price" ] || currency=
+  forget
   picked=$(value input.type)
   type=$(unhex "${picked#t}")
   picture=$(clean "$(value input.picture)")
@@ -179,45 +181,40 @@ keep() {
   rm -f "$OPENSPOT_DATA/draft"
 }
 
-# Edit types… in the menu of a wish's type: the values of the wish wait in $OPENSPOT_DATA/draft while a form adds a
-# type and takes out the ones that are unticked, then the wish comes back with the new type chosen.
-# retype <the wish, add or its id> <title of its form> <its type before>, which prints a form and succeeds when the call
-# was one of these. A draft waits ten minutes for its Types form.
+# Deletes each type of your own that ⌘⌫ took out of the Type list, and moves its wishes to Other.
+forget() {
+  gone=$(value input.type.removed)
+  [ -n "$gone" ] || return 0
+  drop=$(printf '%s\n' "$gone" | while IFS= read -r id; do [ -n "$id" ] && unhex "${id#t}" && echo; done)
+  own | D="$drop" awk 'BEGIN { n = split(ENVIRON["D"], a, "\n"); for (i = 1; i <= n; i++) d[a[i]] = 1 } !d[$0]' | openspot_keep "$kinds" || exit 1
+  list | D="$drop" awk -F'\t' -v OFS='\t' 'BEGIN { n = split(ENVIRON["D"], a, "\n"); for (i = 1; i <= n; i++) d[a[i]] = 1 } d[$2] { $2 = "Other" } { print }' \
+    | openspot_keep "$data" || exit 1
+}
+
+# Add type… in the Type list: the values of the wish wait in $OPENSPOT_DATA/draft while a form of one field asks for
+# the new type, then the wish comes back with it chosen.
+# retype <the wish, add or its id> <title of its form>, which prints a form and succeeds when the call was one of these.
 retype() {
   draft="$OPENSPOT_DATA/draft"
   if [ "$(value input.type)" = types ]; then
+    forget
     printf '%s\t%s\t%s\t%s\t%s\n' "$1" "$(clean "$(value input.link)")" "$(clean "$(value input.name)")" \
       "$(clean "$(value input.price)")" "$(clean "$(value input.picture)")" | openspot_keep "$draft"
-    printf 'frame=\ntitle=Types\n\nfield=newtype\ntitle=New type\nplaceholder=Such as Plants\n'
-    if [ -n "$(own)" ]; then
-      printf '\nchoice=keep\ntitle=Your types\ntype=multiple\n'
-      own | while IFS= read -r one; do openspot_kv value "t$(hex "$one")"; done
-      own | while IFS= read -r one; do printf '\noption=t%s\nremove=true\n' "$(hex "$one")"; openspot_kv title "$one"; done
-    fi
+    printf 'frame=\ntitle=New type\n\nfield=newtype\ntitle=Name\nplaceholder=Such as Plants\nrequired=true\n'
     return 0
   fi
   new=$(clean "$(value input.newtype)")
-  kept=$(value input.keep)
-  gone=$(value input.keep.removed)
-  [ -s "$draft" ] && [ -z "$(value input.link)$(value input.name)$(value search)" ] || return 1
-  [ "$(cut -f1 < "$draft")" = "$1" ] && [ -n "$(find "$draft" -mmin -10)" ] || return 1
-  shift
-  if [ -n "$new$kept$gone" ]; then
-    { printf '%s\n' "$kept" | while IFS= read -r id; do [ -n "$id" ] && unhex "${id#t}" && echo; done; [ -z "$new" ] || printf '%s\n' "$new"; } \
-      | awk -v B="$(builtin | tr '\n' '|')" 'BEGIN { split(B, a, "|"); for (i in a) b[a[i]] = 1 } NF && !b[$0] && !seen[$0]++' | openspot_keep "$kinds" || exit 1
-  fi
+  [ -n "$new" ] && [ -s "$draft" ] && [ "$(cut -f1 < "$draft")" = "$1" ] || return 1
+  { own; printf '%s\n' "$new"; } | awk -v B="$(builtin | tr '\n' '|')" 'BEGIN { split(B, a, "|"); for (i in a) b[a[i]] = 1 } NF && !b[$0] && !seen[$0]++' \
+    | openspot_keep "$kinds" || exit 1
   at() { cut -f"$(($1 + 1))" < "$draft"; }
-  type=$2
-  types | grep -qxF -- "$type" || type=
-  [ -z "$new" ] || type=$new
-  [ -n "$type" ] || type=Other
-  wishform "$1" "$(at 1)" "$(at 2)" "$(at 3)" '' "$type" "$(at 4)" '' ''
+  wishform "$2" "$(at 1)" "$(at 2)" "$(at 3)" '' "$new" "$(at 4)" '' ''
 }
 
 # The form of a new wish. It asks for the link, then shows what the page gave, to change before it is kept.
 # The page that it read last waits in $OPENSPOT_DATA/page: the link, then the line that fetch prints.
 add() {
-  retype add 'New wish' "$(cut -f6 "$OPENSPOT_DATA/page" 2>/dev/null)" && return
+  retype add 'New wish' && return
   typed=$(clean "$(value input.link)")
   [ -n "$typed" ] || typed=$(clean "$(value search)")
   url=$(printf '%s\n' "$typed" | link | untrack)
@@ -255,7 +252,7 @@ add() {
 edit() {
   [ -n "$1" ] || return
   [ -n "$(field "$1" 1)" ] || return
-  retype "$1" 'Edit wish' "$(field "$1" 2)" && return
+  retype "$1" 'Edit wish' && return
   name=$(clean "$(value input.name)")
   if [ -n "$name" ]; then
     keep "$1" "$(field "$1" 4)"
