@@ -69,7 +69,7 @@ final class PanelSearchTests: PanelCase {
     }
 
     func testAFailedPressOfARowMarksThatRowAndNotTheSpotsCard() async throws {
-        try script("tabs", toml: "title = 'Tabs'\noffers = ['search']", "[ \"$1\" = open ] && { echo 'Ghostty is not a browser' >&2; exit 1; }\nprintf 'text=current\\ntitle=Snooze Current Tab\\n'")
+        try script("tabs", toml: "title = 'Tabs'\noffers = ['search']", "[ \"$1\" = open ] && { echo 'Ghostty is not a browser' >&2; exit 1; }\nprintf 'text=current\\ntitle=Snooze Current Tab\\nclose=false\\n'")
         await model.reload()
         model.isShown = true
         model.panelWillShow()
@@ -82,6 +82,17 @@ final class PanelSearchTests: PanelCase {
         try await wait("the failure") { self.model.failure(of: row) != nil }
         XCTAssertEqual(model.failure(of: row), "Ghostty is not a browser")
         XCTAssertNil(model.failure(of: try XCTUnwrap(model.entry("tabs"))))
+        XCTAssertEqual(host.notes, [])
+    }
+
+    func testAFailedPressWhileThePanelIsHiddenIsAToast() async throws {
+        try script("tabs", toml: "title = 'Tabs'\noffers = ['search']", "[ \"$1\" = open ] && { echo 'Ghostty is not a browser' >&2; exit 1; }\nprintf 'text=current\\ntitle=Snooze Current Tab\\n'")
+        await model.reload()
+        let entry = try XCTUnwrap(model.entry("tabs"))
+
+        model.pick(SpotItem(title: "Snooze Current Tab", run: "current"), of: entry)
+
+        try await wait("the toast") { self.host.notes == ["Ghostty is not a browser"] }
     }
 
     func testASpotThatOnlyOffersActionsIsNotFound() async throws {

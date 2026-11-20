@@ -232,7 +232,7 @@ private struct FailureMark: View {
     let size: SpotSize
 
     var body: some View {
-        if model.failure(of: entry) != nil {
+        if let failure = model.failure(of: entry) {
             let inset = SurfaceEdge(card: size).rim - SpotTokens.cornerMark / 2
             let cap = SpotRoundShape(radius: SpotTokens.cornerMarkRadius)
             Image(systemName: "exclamationmark.triangle.fill")
@@ -243,7 +243,7 @@ private struct FailureMark: View {
                 .overlay(cap.strokeBorder(SpotTheme.ink.opacity(SpotTheme.track)))
                 .offset(x: -inset, y: inset)
                 .accessibilityLabel("Last run failed")
-                .allowsHitTesting(false)
+                .modifier(SpotFailureTip(model: model, id: entry.id, text: failure))
         }
     }
 }

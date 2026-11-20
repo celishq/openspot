@@ -144,7 +144,8 @@ extension SpotRun {
         case (.act(let act), .failed(let error)):
             answered = nil
             if let undo = act.undo { state = undo }
-            fail(error, item: Self.item(of: call.request.action))
+            let fixes = if case .failedWithFix = error as? SpotError { true } else { false }
+            fail(error, tells: fixes || !runs.isPanelOpen, item: Self.item(of: call.request.action))
             if act.showsAfter { showOnce() }
         default:
             break
