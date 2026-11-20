@@ -68,6 +68,22 @@ final class PanelSearchTests: PanelCase {
         try await wait("the next want") { wants() == 2 }
     }
 
+    func testAFailedPressOfARowMarksThatRowAndNotTheSpotsCard() async throws {
+        try script("tabs", toml: "title = 'Tabs'\noffers = ['search']", "[ \"$1\" = open ] && { echo 'Ghostty is not a browser' >&2; exit 1; }\nprintf 'text=current\\ntitle=Snooze Current Tab\\n'")
+        await model.reload()
+        model.isShown = true
+        model.panelWillShow()
+        model.query = "snooze current"
+        try await wait("the row") { self.model.visible.contains { $0.item?.run == "current" } }
+        let row = try XCTUnwrap(model.visible.first { $0.item?.run == "current" })
+
+        model.pick(try XCTUnwrap(row.item), of: try XCTUnwrap(model.entry("tabs")))
+
+        try await wait("the failure") { self.model.failure(of: row) != nil }
+        XCTAssertEqual(model.failure(of: row), "Ghostty is not a browser")
+        XCTAssertNil(model.failure(of: try XCTUnwrap(model.entry("tabs"))))
+    }
+
     func testASpotThatOnlyOffersActionsIsNotFound() async throws {
         try await showGrid()
         try script("acts", toml: "title = 'Alpha acts'\n[commands.change]\ntitle = 'Change'\noffers = ['actions']", "true")

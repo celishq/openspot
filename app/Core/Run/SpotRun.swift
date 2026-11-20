@@ -193,6 +193,7 @@ public final class SpotRun {
         didSet { runs.showMarks(of: spot.id) }
     }
     public internal(set) var failure: String?
+    public internal(set) var failedItem: String?
     @ObservationIgnored public internal(set) var calls: [ScriptCall] = []
     @ObservationIgnored public internal(set) var partsAnswers = 0
     @ObservationIgnored var actCalls: [ScriptCall] = []

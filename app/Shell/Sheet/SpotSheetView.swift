@@ -105,7 +105,7 @@ private struct SheetContentView: View {
                         }
                         .buttonStyle(.plain)
                     } else {
-                        SpotItemsView(list: list, recording: content.isHeld ? nil : content.recording, recordingWords: model.recordingWords, keys: model.keys, onRun: { model.runItem($0) }, onPoint: { model.point(at: .item($0)) }, selection: selection, onDragOut: { model.dragOut($0, of: entry.id) }, room: top.listRoom)
+                        SpotItemsView(list: list, recording: content.isHeld ? nil : content.recording, recordingWords: model.recordingWords, keys: model.keys, onRun: { model.runItem($0) }, onPoint: { model.point(at: .item($0)) }, selection: selection, onDragOut: { model.dragOut($0, of: entry.id) }, failure: { [model, id = entry.id] in model.failure(of: $0, in: id) }, room: top.listRoom)
                     }
                 }
             }

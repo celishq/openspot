@@ -11,6 +11,7 @@ struct SpotItemsView: View {
     var onPoint: (SpotItem) -> Void = { _ in }
     var selection: (() -> Int)?
     var onDragOut: ([SpotItem]) -> Void = { _ in }
+    var failure: (String) -> String? = { _ in nil }
     var room = SpotTokens.listRoom
 
     private static var bottomFade: CGFloat { 2 * SpotTokens.padding }
@@ -216,6 +217,7 @@ struct SpotItemsView: View {
             if let shortcut = item.shortcut {
                 LiveKeyLabel(text: shortcut, isRecording: recording == item.run, words: recordingWords, keys: keys)
             }
+            ItemFailureMark(failure: { [failure, run = item.run] in failure(run) })
             if item.isToggle {
                 ItemSwitch(isOn: item.isOn)
             } else if item.isOn {
@@ -241,6 +243,19 @@ private struct LiveKeyLabel: View {
 
     var body: some View {
         SpotKeyLabel(text: text, isRecording: isRecording, recordingWords: words, held: isRecording ? keys?.held ?? [] : [])
+    }
+}
+
+private struct ItemFailureMark: View {
+    let failure: () -> String?
+
+    var body: some View {
+        if failure() != nil {
+            Image(systemName: "exclamationmark.triangle.fill")
+                .font(SpotType.body)
+                .foregroundStyle(SpotTheme.ink)
+                .accessibilityLabel("Last run failed")
+        }
     }
 }
 

@@ -1,6 +1,15 @@
 import Foundation
 
 extension SpotsModel {
+    public func failure(of entry: Entry) -> String? {
+        failure(of: entry.item?.run, in: entry.spot.id)
+    }
+
+    public func failure(of item: String?, in spot: String) -> String? {
+        guard let run = sheets[spot], run.failedItem == item else { return nil }
+        return run.failure
+    }
+
     public var selectedEntry: Entry? {
         let list = visible
         guard list.indices.contains(selected) else { return nil }
