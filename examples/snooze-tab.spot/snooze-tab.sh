@@ -2,7 +2,7 @@
 # Snooze closes the front tab of the frontmost browser once the person picks a time on the snooze sheet, and due opens
 # it again in that browser. The sheet starts with Snooze Current Tab, pinned, then lists each snoozed tab: Return opens
 # it now, Copy Link copies its url, and Remove forgets it. Open All opens every one now. The rows also show in the main search.
-# A timer keeps "<browser id> <url> <title>".
+# A timer keeps "<browser id> <url> <title>". A tab snoozed for Someday has no time, so it stays in the data folder.
 . "$OPENSPOT_SH"
 
 # The browsers whose front tab AppleScript can read, by bundle id: Safari, or a browser built on Chromium.
@@ -40,16 +40,29 @@ close_tab() {
   esac
 }
 
-# Prints each timer as a line: id, time, browser, url, title, split by tabs.
-timers() {
+somedays="$OPENSPOT_DATA/someday.tsv"
+
+# Prints each snoozed tab as a line: id, time or someday, browser, url, title, split by tabs. A Someday tab's id starts
+# with someday-.
+tabs() {
   openspot timer list 2>/dev/null | openspot_rows text at title | while IFS="$(printf '\t')" read -r id at value; do
     rest=${value#* }
     printf '%s\t%s\t%s\t%s\t%s\n' "$id" "$at" "${value%% *}" "${rest%% *}" "${rest#* }"
   done
+  [ -f "$somedays" ] && cat "$somedays"
+}
+
+# Forgets a snoozed tab: its timer, or its line of Someday.
+forget() {
+  case "$1" in
+    someday-*) grep -v "^$1	" "$somedays" | openspot_keep "$somedays" ;;
+    *) openspot timer remove "$1" >/dev/null ;;
+  esac
 }
 
 # The words of a time, such as Thu 8:00.
 when() {
+  [ "$1" = someday ] && { printf Someday; return; }
   seconds=$(date -j -u -f "%Y-%m-%dT%H:%M:%SZ" "$1" +%s 2>/dev/null) || { printf '%s' "$1"; return; }
   date -r "$seconds" "+%a %b %-d, %-H:%M"
 }
@@ -79,7 +92,9 @@ snooze() {
   url=$(printf '%s\n' "$tab" | sed -n 1p)
   title=$(printf '%s\n' "$tab" | sed -n 2p)
   [ -n "$url" ] || { echo "$(front_name) shows no tab." >&2; exit 1; }
-  if [ "$at" != someday ]; then
+  if [ "$at" = someday ]; then
+    { [ -f "$somedays" ] && cat "$somedays"; printf 'someday-%s\tsomeday\t%s\t%s\t%s\n' "$(date +%s)$$" "$browser" "$url" "$title"; } | openspot_keep "$somedays" || exit 1
+  else
     openspot timer add "$at" "$browser $url $title" >/dev/null || exit 1
   fi
   close_tab "$browser"
@@ -97,7 +112,7 @@ case "$1" in
     printf 'pin=top\nhides=remove\nhides=copy\nclose=false\n'
     openspot_kv browser "$browser"
     [ -z "$title" ] || openspot_kv page "$title"
-    timers | while IFS="$(printf '\t')" read -r id at browser url title; do
+    tabs | while IFS="$(printf '\t')" read -r id at browser url title; do
       openspot_item "$id" "${title:-$url}" "$(when "$at")" "$(icon "$url")"
     done
     ;;
@@ -106,20 +121,20 @@ case "$1" in
       snooze "$(value item.browser)" "$(value item.page)"
       exit
     fi
-    timers | awk -F '\t' -v id="$2" '$1 == id { print $3 "\t" $4 }' | while IFS="$(printf '\t')" read -r browser url; do
-      openspot timer remove "$2" >/dev/null && open -b "$browser" "$url"
+    tabs | awk -F '\t' -v id="$2" '$1 == id { print $3 "\t" $4 }' | while IFS="$(printf '\t')" read -r browser url; do
+      forget "$2" && open -b "$browser" "$url"
     done
     ;;
   remove)
-    [ -n "$2" ] && [ "$2" != current ] && openspot timer remove "$2" >/dev/null
+    [ -n "$2" ] && [ "$2" != current ] && forget "$2"
     ;;
   copy)
-    url=$(timers | awk -F '\t' -v id="$2" '$1 == id { print $4 }')
+    url=$(tabs | awk -F '\t' -v id="$2" '$1 == id { print $4 }')
     [ -n "$url" ] && printf '%s' "$url" | openspot clipboard copy && openspot toast "Copied the link."
     ;;
   wake)
-    timers | while IFS="$(printf '\t')" read -r id at browser url title; do
-      openspot timer remove "$id" >/dev/null && open -b "$browser" "$url"
+    tabs | while IFS="$(printf '\t')" read -r id at browser url title; do
+      forget "$id" && open -b "$browser" "$url"
     done
     ;;
   snooze)
