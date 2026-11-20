@@ -23,11 +23,11 @@ public struct SpotTimers: Equatable, Sendable {
     }
 
     var next: Date? {
-        list.map(\.at).min()
+        list.compactMap(\.at).min()
     }
 
     func of(_ spot: String) -> [SpotTimer] {
-        list.filter { $0.spot == spot }.sorted { $0.at < $1.at }
+        list.filter { $0.spot == spot }.sorted { ($0.at ?? .distantFuture) < ($1.at ?? .distantFuture) }
     }
 
     mutating func add(_ timer: SpotTimer) -> String? {
@@ -44,9 +44,9 @@ public struct SpotTimers: Equatable, Sendable {
     }
 
     mutating func takeDue(at time: Date) -> [SpotTimer] {
-        let due = list.filter { $0.at <= time }.sorted { $0.at < $1.at }
-        if !due.isEmpty { list.removeAll { $0.at <= time } }
-        return due
+        let due = list.filter { $0.at.map { $0 <= time } == true }
+        if !due.isEmpty { list.removeAll { $0.at.map { $0 <= time } == true } }
+        return due.sorted { ($0.at ?? .distantFuture) < ($1.at ?? .distantFuture) }
     }
 
     private static var encoder: JSONEncoder {

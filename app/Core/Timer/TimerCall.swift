@@ -6,7 +6,7 @@ enum TimerCall: NounCall {
     case list
 
     static let noun = CommandNoun("timer", group: .build, verbs: [
-        CommandVerb("add", "<time> [value]", "Calls the spot with `due <id>` at the time, an ISO 8601 time such as 2026-11-20T08:00:00+01:00, even when the panel is closed. Prints the timer's id.", rule: CallRule(use: .timer, used: "added a timer", flags: .needsApp)) { words in
+        CommandVerb("add", "<time> [value]", "Calls the spot with `due <id>` at the time, an ISO 8601 time such as 2026-11-20T08:00:00+01:00, even when the panel is closed, or keeps a timer that never comes due for `someday`. Prints the timer's id.", rule: CallRule(use: .timer, used: "added a timer", flags: .needsApp)) { words in
             guard (1...2).contains(words.rest.count) else { return nil }
             return Self.add(at: words.rest[0], value: words.rest.count > 1 ? words.rest[1] : nil)
         },
@@ -21,7 +21,8 @@ enum TimerCall: NounCall {
         }
         switch self {
         case .add(let text, let value):
-            guard let time = SpotTimer.time(of: text) else {
+            let time = SpotTimer.time(of: text)
+            guard time != nil || text == SpotTimer.someday else {
                 return { CommandAnswer(errors: "`\(text)` is not a time. Write an ISO 8601 time with its offset, such as 2026-11-20T08:00:00+01:00.\n", code: 1) }
             }
             return {

@@ -134,6 +134,23 @@ final class SpotTimersTests: PanelCase {
         try await wait("the call") { self.lines("later").count == 1 }
     }
 
+    func testASomedayTimerIsListedAndNeverComesDue() async throws {
+        let answer = try await call(["timer", "add", "someday", "later"], as: "later")
+        XCTAssertEqual(answer.code, 0, answer.errors)
+        let id = answer.output.trimmingCharacters(in: .whitespacesAndNewlines)
+        let soon = try await add(in: 60, "soon")
+
+        clock.advance(by: 3600 * 24 * 365)
+
+        try await wait("the timed call") { self.lines("later").contains { $0.hasPrefix("due \(soon)|") } }
+        XCTAssertEqual(lines("later").count, 1)
+        let listed = TextBlock.blocks(in: try await call(["timer", "list"], as: "later").output)
+        XCTAssertEqual(listed.map { $0.value("text") }, [id])
+        XCTAssertEqual(listed.first?.value("at"), "someday")
+        let removed = try await call(["timer", "remove", id], as: "later")
+        XCTAssertEqual(removed.code, 0)
+    }
+
     func testThePersonCannotAddATimer() async throws {
         let answer = try await call(["timer", "add", time(in: 60)], as: nil)
 

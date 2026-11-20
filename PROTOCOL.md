@@ -548,7 +548,8 @@ A press of Remind me in an hour adds a timer. An hour later, Openspot calls `str
 shows the toast Time to stretch.
 
 - `openspot timer add <time> [value]` takes an ISO 8601 time with its offset, such as `2026-11-20T08:00:00+01:00`, and
-  prints the timer's id. A time that has passed comes due at once.
+  prints the timer's id. A time that has passed comes due at once, and `someday` keeps a timer that never comes due,
+  until `timer remove`.
 - At the time, Openspot calls `<spot> due <timer id>` with `event=timer.due`, `event.value=` the value, and
   `timer.late=` the seconds it came late, such as after the Mac slept or Openspot was quit. Openspot drops the timer as
   it calls, and draws nothing that the call prints.

@@ -2,7 +2,7 @@
 # Snooze closes the front tab of the frontmost browser once the person picks a time on the snooze sheet, and due opens
 # it again in that browser. The sheet starts with Snooze Current Tab, pinned, then lists each snoozed tab: Return opens
 # it now, Copy Link copies its url, and Remove forgets it. Open All opens every one now. The rows also show in the main search.
-# A timer keeps "<browser id> <url> <title>". A tab snoozed for Someday has no time, so it stays in the data folder.
+# A timer keeps "<browser id> <url> <title>"; a tab snoozed for Someday is a timer with no time.
 . "$OPENSPOT_SH"
 
 # The browsers whose front tab AppleScript can read, by bundle id: Safari, or a browser built on Chromium.
@@ -40,24 +40,16 @@ close_tab() {
   esac
 }
 
-somedays="$OPENSPOT_DATA/someday.tsv"
-
-# Prints each snoozed tab as a line: id, time or someday, browser, url, title, split by tabs. A Someday tab's id starts
-# with someday-.
+# Prints each snoozed tab as a line: id, time or someday, browser, url, title, split by tabs.
 tabs() {
   openspot timer list 2>/dev/null | openspot_rows text at title | while IFS="$(printf '\t')" read -r id at value; do
     rest=${value#* }
     printf '%s\t%s\t%s\t%s\t%s\n' "$id" "$at" "${value%% *}" "${rest%% *}" "${rest#* }"
   done
-  [ -f "$somedays" ] && cat "$somedays"
 }
 
-# Forgets a snoozed tab: its timer, or its line of Someday.
 forget() {
-  case "$1" in
-    someday-*) grep -v "^$1	" "$somedays" | openspot_keep "$somedays" ;;
-    *) openspot timer remove "$1" >/dev/null ;;
-  esac
+  openspot timer remove "$1" >/dev/null
 }
 
 # The words of a time, such as Thu 8:00.
@@ -92,11 +84,7 @@ snooze() {
   url=$(printf '%s\n' "$tab" | sed -n 1p)
   title=$(printf '%s\n' "$tab" | sed -n 2p)
   [ -n "$url" ] || { echo "$(front_name) shows no tab." >&2; exit 1; }
-  if [ "$at" = someday ]; then
-    { [ -f "$somedays" ] && cat "$somedays"; printf 'someday-%s\tsomeday\t%s\t%s\t%s\n' "$(date +%s)$$" "$browser" "$url" "$title"; } | openspot_keep "$somedays" || exit 1
-  else
-    openspot timer add "$at" "$browser $url $title" >/dev/null || exit 1
-  fi
+  openspot timer add "$at" "$browser $url $title" >/dev/null || exit 1
   close_tab "$browser"
   openspot toast "Snoozed the tab."
 }

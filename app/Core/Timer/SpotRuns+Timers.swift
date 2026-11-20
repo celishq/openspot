@@ -6,7 +6,7 @@ extension SpotRuns {
         scheduleTimers()
     }
 
-    func addTimer(at time: Date, value: String?, of spot: String) -> Result<String, SpotError> {
+    func addTimer(at time: Date?, value: String?, of spot: String) -> Result<String, SpotError> {
         let id = String(UUID().uuidString.prefix(8)).lowercased()
         if let fault = timers.add(SpotTimer(id: id, spot: spot, at: time, value: value)) { return .failure(.fault(fault)) }
         timers.write()
@@ -33,7 +33,7 @@ extension SpotRuns {
         let due = timers.takeDue(at: time)
         if !due.isEmpty { timers.write() }
         for timer in due {
-            sheets[timer.spot]?.due(timer, late: Int(time.timeIntervalSince(timer.at)))
+            sheets[timer.spot]?.due(timer, late: Int(time.timeIntervalSince(timer.at ?? time)))
         }
         guard let next = timers.next else { return }
         let wait = Duration.seconds(max(0, next.timeIntervalSince(time)))
