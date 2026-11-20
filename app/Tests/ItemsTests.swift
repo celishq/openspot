@@ -102,7 +102,7 @@ final class ItemsTests: PanelCase {
     func testAnItemWithTheTileLookShowsItsWordsInItsCell() {
         let output = Frame(text: "frame=\ngrid=times\n\nrepeat=times\ngrid=a b c\n\ntext=later\ntitle=Later\ndetail=17:20\nicon=cup.and.saucer.fill\nlook=tile\n\ntext=star\ntitle=Star\nicon=star\n")
 
-        XCTAssertEqual(output.items.map(\.showsWords), [true, false])
+        XCTAssertEqual(output.items.map(\.look), [.tile, nil])
     }
 
     func testASheetOfThreeLinesOfTilesFitsItsLines() async throws {

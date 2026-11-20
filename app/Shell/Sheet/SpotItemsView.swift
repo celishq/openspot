@@ -185,7 +185,7 @@ struct SpotItemsView: View {
 
     @ViewBuilder
     private func bentoFace(_ item: SpotItem, side: CGFloat) -> some View {
-        if item.showsWords {
+        if item.look == .tile {
             SpotTileWords(item: item, side: side)
         } else {
             SpotItemIcon(item: item, size: side * SpotTokens.tileIconShare)
