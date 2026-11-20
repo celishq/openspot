@@ -103,7 +103,7 @@ extension SpotsModel {
         if place(ofSheet: id) == .window { return openWindow(id) }
         if openSheetID == nil { endFlow() }
         flow.push(FlowSheet(spot: id, title: title, source: source))
-        sheets[id]?.show(route: nil)
+        sheets[id]?.show(route: nil, title: title)
         waitPush(moving: moving && openSheetID != nil && openSheetID != id && flow.index > 0)
         present(id, moving: moving)
     }

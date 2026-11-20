@@ -225,6 +225,7 @@ public final class SpotRun {
     @ObservationIgnored var waitingKeys: [String] = []
     @ObservationIgnored var clockShown: Date?
     public internal(set) var route: String?
+    public internal(set) var pageTitle: String?
     @ObservationIgnored var pageStates: [(route: String?, state: PageState)] = []
 
     init(spot: Spot, runs: SpotRuns, recent: [String], prepare: @escaping ([SpotItem], [String]) async -> Void) {

@@ -8,7 +8,8 @@ extension SpotRun {
     }
 
     @discardableResult
-    public func show(route next: String?) -> Bool {
+    public func show(route next: String?, title: String? = nil) -> Bool {
+        if title != pageTitle { pageTitle = title }
         guard next != route else { return true }
         forget(route: route)
         pageStates.append((route, PageState(state: state, rows: rows, panel: panel)))

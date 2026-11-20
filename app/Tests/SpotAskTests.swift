@@ -117,6 +117,25 @@ final class SpotAskTests: PanelCase {
         _ = await asking.value
     }
 
+    func testAnAskedPageKeepsItsTitleWhileItStepsBack() async throws {
+        model.isShown = true
+        model.panelWillShow()
+        model.press("asker")
+        try await wait("the asker") { self.model.transition.phase == .open && self.titles == ["Snooze This"] }
+        let asking = try ask("picker", title: "Example page")
+        try await waitForPicker()
+
+        XCTAssertEqual(model.sheets["picker"]?.shownState.title, "Example page")
+        host.heldEnds = []
+        XCTAssertTrue(model.handleKey(escape))
+
+        XCTAssertEqual(model.flowEdges.leavingPage?.spot, "picker")
+        XCTAssertEqual(model.flowEdges.leavingPage?.state.title, "Example page")
+        host.heldEnds?.forEach { $0() }
+        host.heldEnds = nil
+        _ = await asking.value
+    }
+
     func testASpotCannotAskItself() async throws {
         let answer = await (try ask("picker", as: "picker")).value
 
