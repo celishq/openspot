@@ -212,13 +212,13 @@ takes its look from the surface's progress, by `SheetMorph`, and keeps no curve 
 
 ### Drawing
 
-A view that moves on its own, such as a liquid, a clock hand or a GIF, keeps the main thread free while it moves.
+A view that moves on its own, such as a liquid, a clock hand or a GIF, keeps each frame within the budget of an
+interaction.
 
-- A motion that runs on each frame runs in the render server: a Core Animation animation or a video layer, set up once
-  for each value. The main thread works only when a value changes. A `TimelineView` that redraws on each frame, or a
-  timer that writes state for each frame, breaks this rule.
-- Live content may sit in a glass, since a motion in the render server costs the glass no more than still content
-  does.
+- It may move with SwiftUI, such as an animation, keyframes or a `TimelineView`, or in the render server, such as a Core
+  Animation animation or a video layer. Its work on the main thread stays within the 4 ms of each frame that
+  [Performance](#performance) gives, so only the views that show the moving value read it.
+- Live content may sit in a glass.
 - A view moves only while its place shows: the panel is shown, its card is in sight, and no sheet, menu, Edit Spots or
   motion of the panel covers it. The model decides it, and a spot's view reads it as `spot.isShown`.
 - Openspot gives a spot's view each moving piece it needs, such as `spot.media`, so a spot never writes AppKit. Such a

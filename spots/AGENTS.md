@@ -11,9 +11,8 @@ These rules hold for the core spots in `spots/` and the spots in `examples/`. A 
 - A spot keeps its state in `OPENSPOT_DATA`. A folder from `mktemp` that the spot removes is not state.
 - A core spot does no work all day: it reads on an event, never on a clock. An example may poll, and its readme
   says so.
-- A spot's view moves only through the moving pieces that Openspot gives it, such as `spot.media`, and only while
-  `spot.isShown` is true. It redraws its `body` only when a value changes, never on each frame through a
-  `TimelineView` or a timer. [Drawing](../AGENTS.md#drawing) says why.
+- A spot's view moves only while `spot.isShown` is true, with SwiftUI's own motion or a moving piece that Openspot
+  gives it, such as `spot.media`. [Drawing](../AGENTS.md#drawing) says what each frame may cost.
 - The act that adds to a spot's list is its first item, pinned to the top, as [Show a list](../GUIDE.md#show-a-list)
   says.
 - A spot's own app, such as the board of Draw, keeps its own motion. The curves of `app/Shell/Surface/SpotMotion.swift`
