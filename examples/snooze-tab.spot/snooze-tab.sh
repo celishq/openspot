@@ -1,7 +1,7 @@
 #!/bin/sh
 # Snooze closes the front tab of the frontmost browser once the person picks a time on the snooze sheet, and due opens
 # it again in that browser. The sheet starts with Snooze Current Tab, pinned, then lists each snoozed tab: Return opens
-# it now, and Remove forgets it. Open All opens every one now. The rows also show in the main search.
+# it now, Copy Link copies its url, and Remove forgets it. Open All opens every one now. The rows also show in the main search.
 # A timer keeps "<browser id> <url> <title>".
 . "$OPENSPOT_SH"
 
@@ -92,9 +92,9 @@ case "$1" in
     tab=$([ -n "$(browser_kind "$browser")" ] && read_tab "$browser")
     url=$(printf '%s\n' "$tab" | sed -n 1p)
     title=$(printf '%s\n' "$tab" | sed -n 2p)
-    printf 'button=remove\ntitle=Remove\nshortcut=cmd+backspace\n'
+    printf 'button=remove\ntitle=Remove\nshortcut=cmd+backspace\n\nbutton=copy\ntitle=Copy Link\n'
     openspot_item current "Snooze Current Tab" "${title:-${url:-The front tab of your browser}}" moon.zzz
-    printf 'pin=top\nhides=remove\nclose=false\n'
+    printf 'pin=top\nhides=remove\nhides=copy\nclose=false\n'
     openspot_kv browser "$browser"
     [ -z "$url" ] || openspot_kv link "$url"
     [ -z "$title" ] || openspot_kv page "$title"
@@ -113,6 +113,10 @@ case "$1" in
     ;;
   remove)
     [ -n "$2" ] && [ "$2" != current ] && openspot timer remove "$2" >/dev/null
+    ;;
+  copy)
+    url=$(timers | awk -F '\t' -v id="$2" '$1 == id { print $4 }')
+    [ -n "$url" ] && printf '%s' "$url" | openspot clipboard copy && openspot toast "Copied the link."
     ;;
   wake)
     timers | while IFS="$(printf '\t')" read -r id at browser url title; do
