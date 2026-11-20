@@ -2,12 +2,12 @@ import Foundation
 
 extension SpotsModel {
     @discardableResult
-    public func open(_ id: String) -> Bool {
+    public func open(_ id: String, from source: String? = nil) -> Bool {
         guard entry(id) != nil else { return false }
         afterShowing({ host.show() }) { [weak self] in
             guard let self else { return }
             endFlow()
-            push(FlowSheet(spot: id))
+            push(FlowSheet(spot: id, source: source))
         }
         return true
     }
@@ -15,10 +15,7 @@ extension SpotsModel {
     @discardableResult
     public func openAsked(_ id: String, from caller: String?) -> Bool {
         guard isShown, openSheetID != nil else {
-            let row = isShown ? selectedEntry.flatMap { $0.spot.id == caller ? $0.id : nil } : nil
-            guard open(id) else { return false }
-            if row != sheetSource { sheetSource = row }
-            return true
+            return open(id, from: isShown ? selectedEntry.flatMap { $0.spot.id == caller ? $0.id : nil } : nil)
         }
         return push(FlowSheet(spot: id))
     }
@@ -42,7 +39,7 @@ extension SpotsModel {
         if !moves { host.show() }
         endEditing(moving: false)
         guard let route = sheet.route else {
-            pushFirst(sheet.spot, moving: moves, title: sheet.title)
+            pushFirst(sheet.spot, moving: moves, title: sheet.title, source: sheet.source)
             return true
         }
         if openSheetID == nil { endFlow() }
@@ -137,7 +134,6 @@ extension SpotsModel {
         for page in flow.pages where page.route != nil { sheets[page.spot]?.show(route: nil) }
         flow.clear()
         waitingPublish = nil
-        if sheetSource != nil { sheetSource = nil }
         showEdges()
     }
 

@@ -92,7 +92,7 @@ extension SpotsModel {
         return true
     }
 
-    public func pushFirst(_ id: String, moving: Bool, title: String? = nil) {
+    public func pushFirst(_ id: String, moving: Bool, title: String? = nil, source: String? = nil) {
         if let spot = sheets[id]?.spot, spot.opensToKeys {
             openKeys(of: id)
             return
@@ -102,7 +102,7 @@ extension SpotsModel {
         }
         if place(ofSheet: id) == .window { return openWindow(id) }
         if openSheetID == nil { endFlow() }
-        flow.push(FlowSheet(spot: id, title: title))
+        flow.push(FlowSheet(spot: id, title: title, source: source))
         sheets[id]?.show(route: nil)
         waitPush(moving: moving && openSheetID != nil && openSheetID != id && flow.index > 0)
         present(id, moving: moving)
@@ -170,7 +170,7 @@ extension SpotsModel {
         }
         closeMenu(keepsFoot: true)
         change(nil) {
-            transition.show(list, moves: true)
+            transition.show(list, moves: true, from: flow.current?.source)
             holdFieldDrop()
         }
         host.nextFrame { [weak self] in
@@ -180,7 +180,7 @@ extension SpotsModel {
 
     func cutSheet(to list: String?) {
         change(nil) {
-            if let list { transition.show(list, moves: false) } else { transition.hide(moves: false) }
+            if let list { transition.show(list, moves: false, from: flow.current?.source) } else { transition.hide(moves: false) }
             fieldDrop = nil
             showsFieldDrop = false
         }

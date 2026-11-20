@@ -84,7 +84,7 @@ final class SpotAskTests: PanelCase {
         try await wait("the asker again") { self.model.flow.current?.spot == "asker" }
     }
 
-    func testAnAskFromARowOfTheMainSearchGrowsFromThatRow() async throws {
+    func testAnAskFromARowOfTheMainSearchGrowsFromThatRowAndShrinksBackIntoIt() async throws {
         model.isShown = true
         model.panelWillShow()
         model.searchText = "snooze"
@@ -96,7 +96,12 @@ final class SpotAskTests: PanelCase {
         try await waitForPicker()
 
         XCTAssertEqual(SpotSheetCard.of(model.openSheetID, in: model)?.id, row)
+        host.heldEnds = []
         XCTAssertTrue(model.handleKey(toGrid))
+        XCTAssertEqual(model.transition.phase, .closing)
+        XCTAssertEqual(SpotSheetCard.of(model.transition.id, in: model)?.id, row)
+        host.heldEnds?.forEach { $0() }
+        host.heldEnds = nil
         _ = await asking.value
     }
 
