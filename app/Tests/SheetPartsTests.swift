@@ -140,7 +140,7 @@ final class SheetPartsTests: XCTestCase {
     }
 
     func testATextsToneColoursItsWordsAndANumberKeepsItsOwn() {
-        let outputCheck = FrameCheck(text: "frame=\ngrid=due\ngrid=now\ngrid=disk\ngrid=disk\n\ntext=due\ndetail=Late\ntone=bad\n\ntext=now\ntitle=Standup\ntone=on\n\nnumber=disk\nvalue=90\nmax=100\ntone=bad\n")
+        let outputCheck = FrameCheck(text: "frame=\ngrid=late\ngrid=now\ngrid=disk\ngrid=disk\n\ntext=late\ndetail=Late\ntone=bad\n\ntext=now\ntitle=Standup\ntone=on\n\nnumber=disk\nvalue=90\nmax=100\ntone=bad\n")
         let output = outputCheck.output
 
         XCTAssertEqual(output.parts.map(\.textTone), [.bad, nil, nil])
