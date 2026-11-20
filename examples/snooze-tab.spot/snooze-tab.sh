@@ -5,11 +5,12 @@
 # A timer keeps "<browser id> <url> <title>"; a tab snoozed for Someday is a timer with no time.
 . "$OPENSPOT_SH"
 
-# The browsers whose front tab AppleScript can read, by bundle id: Safari, or a browser built on Chromium.
-browser_kind() {
+# The words AppleScript uses for a browser's front tab and for its title, split by a tab, by bundle id: Safari's, or
+# those of a browser built on Chromium. A browser it cannot read has none.
+tab_words() {
   case "$1" in
-    com.apple.Safari|com.apple.SafariTechnologyPreview) printf safari ;;
-    com.google.Chrome|com.google.Chrome.canary|company.thebrowser.Browser|com.brave.Browser|com.microsoft.edgemac|com.vivaldi.Vivaldi|com.operasoftware.Opera) printf chromium ;;
+    com.apple.Safari|com.apple.SafariTechnologyPreview) printf 'current tab\tname' ;;
+    com.google.Chrome|com.google.Chrome.canary|company.thebrowser.Browser|com.brave.Browser|com.microsoft.edgemac|com.vivaldi.Vivaldi|com.operasoftware.Opera) printf 'active tab\ttitle' ;;
   esac
 }
 
@@ -24,20 +25,16 @@ front_name() {
 
 # Prints the url and the title of the front tab of a browser, a line each, in one AppleScript call.
 read_tab() {
-  case "$(browser_kind "$1")" in
-    safari) tab="current tab" name="name" ;;
-    chromium) tab="active tab" name="title" ;;
-    *) return ;;
-  esac
-  osascript -e "tell application id \"$1\" to set front_tab to $tab of front window" \
-    -e "tell application id \"$1\" to return (URL of front_tab) & linefeed & ($name of front_tab)" 2>/dev/null
+  words=$(tab_words "$1")
+  [ -n "$words" ] || return
+  osascript -e "tell application id \"$1\" to set front_tab to ${words%%	*} of front window" \
+    -e "tell application id \"$1\" to return (URL of front_tab) & linefeed & (${words#*	} of front_tab)" 2>/dev/null
 }
 
 close_tab() {
-  case "$(browser_kind "$1")" in
-    safari) osascript -e "tell application id \"$1\" to close current tab of front window" >/dev/null 2>&1 ;;
-    chromium) osascript -e "tell application id \"$1\" to close active tab of front window" >/dev/null 2>&1 ;;
-  esac
+  words=$(tab_words "$1")
+  [ -n "$words" ] || return
+  osascript -e "tell application id \"$1\" to close ${words%%	*} of front window" >/dev/null 2>&1
 }
 
 # Prints each snoozed tab as a line: id, time or someday, browser, url, title, split by tabs.
@@ -71,7 +68,7 @@ icon() {
 # for the same browser names the picker; the tab itself is read after the pick, so the timer keeps the tab it closes.
 snooze() {
   browser=$(front_id)
-  if [ -z "$(browser_kind "$browser")" ]; then
+  if [ -z "$(tab_words "$browser")" ]; then
     echo "$(front_name) is not a browser that Snooze Tab can read. Use Safari, Chrome, Arc, Brave, Edge, Vivaldi or Opera." >&2
     exit 1
   fi
@@ -92,7 +89,7 @@ snooze() {
 case "$1" in
   show)
     browser=$(front_id)
-    tab=$([ -n "$(browser_kind "$browser")" ] && read_tab "$browser")
+    tab=$(read_tab "$browser")
     url=$(printf '%s\n' "$tab" | sed -n 1p)
     title=$(printf '%s\n' "$tab" | sed -n 2p)
     printf 'button=remove\ntitle=Remove\nshortcut=cmd+backspace\n\nbutton=copy\ntitle=Copy Link\n'
