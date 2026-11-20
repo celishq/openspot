@@ -62,23 +62,23 @@ icon() {
   esac
 }
 
-# Snoozes a tab of a browser until the time the person picks, and closes it. With no url known yet, it asks for the time
-# first and reads the tab after the pick, so the press never waits on the browser.
+# Snoozes the front tab of the frontmost browser until the time the person picks, and closes it. A title read earlier
+# for the same browser names the picker; the tab itself is read after the pick, so the timer keeps the tab it closes.
 snooze() {
-  browser=$1 url=$2 title=$3
+  browser=$(front_id)
   if [ -z "$(browser_kind "$browser")" ]; then
     echo "$(front_name) is not a browser that Snooze Tab can read. Use Safari, Chrome, Arc, Brave, Edge, Vivaldi or Opera." >&2
     exit 1
   fi
-  if [ -n "$url" ]; then
-    at=$(openspot spot ask openspot/snooze --title "${title:-$url}") || exit 0
+  if [ "$1" = "$browser" ] && [ -n "$2" ]; then
+    at=$(openspot spot ask openspot/snooze --title "$2") || exit 0
   else
     at=$(openspot spot ask openspot/snooze) || exit 0
-    tab=$(read_tab "$browser")
-    url=$(printf '%s\n' "$tab" | sed -n 1p)
-    title=$(printf '%s\n' "$tab" | sed -n 2p)
-    [ -n "$url" ] || { echo "$(front_name) shows no tab." >&2; exit 1; }
   fi
+  tab=$(read_tab "$browser")
+  url=$(printf '%s\n' "$tab" | sed -n 1p)
+  title=$(printf '%s\n' "$tab" | sed -n 2p)
+  [ -n "$url" ] || { echo "$(front_name) shows no tab." >&2; exit 1; }
   if [ "$at" != someday ]; then
     openspot timer add "$at" "$browser $url $title" >/dev/null || exit 1
   fi
@@ -96,7 +96,6 @@ case "$1" in
     openspot_item current "Snooze Current Tab" "${title:-${url:-The front tab of your browser}}" moon.zzz
     printf 'pin=top\nhides=remove\nhides=copy\nclose=false\n'
     openspot_kv browser "$browser"
-    [ -z "$url" ] || openspot_kv link "$url"
     [ -z "$title" ] || openspot_kv page "$title"
     timers | while IFS="$(printf '\t')" read -r id at browser url title; do
       openspot_item "$id" "${title:-$url}" "$(when "$at")" "$(icon "$url")"
@@ -104,7 +103,7 @@ case "$1" in
     ;;
   open)
     if [ "$2" = current ]; then
-      snooze "$(value item.browser)" "$(value item.link)" "$(value item.page)"
+      snooze "$(value item.browser)" "$(value item.page)"
       exit
     fi
     timers | awk -F '\t' -v id="$2" '$1 == id { print $3 "\t" $4 }' | while IFS="$(printf '\t')" read -r browser url; do
@@ -124,7 +123,7 @@ case "$1" in
     done
     ;;
   snooze)
-    snooze "$(front_id)" "" ""
+    snooze "" ""
     ;;
   due)
     value=$(value event.value)
