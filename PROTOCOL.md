@@ -559,8 +559,8 @@ shows the toast Time to stretch.
 
 ### Let the person pick the time
 
-`openspot timer pick` opens the snooze sheet, a grid of big tiles such as Later, Tomorrow and Pick Date, and
-prints the time of the tile that the person picks.
+Snooze, a spot of Openspot, is a grid of big tiles such as Later, Tomorrow and Pick Date. Ask it with
+`openspot spot ask openspot/snooze`, and it prints the time of the tile that the person picks.
 
 ```toml
 title = "Remind me"
@@ -574,7 +574,7 @@ uses = ["timer"]
 case "$1" in
   show) printf 'button=later\ntitle=Remind me later\nscope=spot\n' ;;
   later)
-    at=$(openspot timer pick) || exit 0
+    at=$(openspot spot ask openspot/snooze) || exit 0
     [ "$at" = someday ] || openspot timer add "$at" "Look at this again"
     ;;
   due) openspot toast "$(sed -n 's/^event.value=//p')" ;;
@@ -587,8 +587,8 @@ esac
 
 ### Ask another spot
 
-`openspot spot ask <id>` opens the panel on another spot and waits for the value it gives back, as `timer pick` does
-with Snooze. Use it to make a picker that other spots share.
+`openspot spot ask <id>` opens the panel on another spot and waits for the value it gives back, as a spot does with
+Snooze. Use it to make a picker that other spots share.
 
 - The asked spot gives the value with `openspot spot reply <value>`, which hides the panel. `spot ask` prints it.
 - A close of the asked spot's sheet with no reply ends the ask with exit 1, once the spot's running calls end. A newer
