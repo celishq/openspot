@@ -57,7 +57,7 @@ public final class SpotRuns {
     @ObservationIgnored var ticks: Task<Void, Never>?
     @ObservationIgnored var timers: SpotTimers
     @ObservationIgnored var timerWatch: Task<Void, Never>?
-    @ObservationIgnored var asks: [String: CheckedContinuation<String?, Never>] = [:]
+    @ObservationIgnored var asks = SpotAsks()
     @ObservationIgnored var nextShow: Date?
     @ObservationIgnored var answerMatches = AnswerMatches()
     @ObservationIgnored private var lastSearch: SearchQuery?
@@ -201,7 +201,7 @@ public final class SpotRuns {
     func didClose(_ sheet: SpotRun) {
         if openID == sheet.spot.id { openID = nil }
         let id = sheet.spot.id
-        if asks[id] != nil { Task { [weak self] in self?.settleAsk(of: id) } }
+        if asks.isWaiting(for: id) { Task { [weak self] in self?.settleAsk(of: id) } }
     }
 
     public func float(_ id: String) {
@@ -239,8 +239,7 @@ public final class SpotRuns {
         ticks = nil
         timerWatch?.cancel()
         timerWatch = nil
-        asks.values.forEach { $0.resume(returning: nil) }
-        asks = [:]
+        asks.endAll()
         clipboardWatch?.cancel()
         clipboardWatch = nil
         loadWatch?.cancel()

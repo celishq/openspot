@@ -2,19 +2,17 @@ import Foundation
 
 extension SpotRuns {
     func ask(_ id: String) async -> String? {
-        asks.removeValue(forKey: id)?.resume(returning: nil)
-        return await withCheckedContinuation { asks[id] = $0 }
+        await withCheckedContinuation { asks.wait(for: id, $0) }
     }
 
     func reply(_ value: String, from id: String) -> Bool {
-        guard let ask = asks.removeValue(forKey: id) else { return false }
-        ask.resume(returning: value)
+        guard asks.reply(value, from: id) else { return false }
         onReport(id, .replied)
         return true
     }
 
     func settleAsk(of id: String) {
-        guard asks[id] != nil, let sheet = sheets[id], !sheet.isOpen, sheet.calls.allSatisfy(\.isStopped) else { return }
-        asks.removeValue(forKey: id)?.resume(returning: nil)
+        guard asks.isWaiting(for: id), let sheet = sheets[id], !sheet.isOpen, sheet.calls.allSatisfy(\.isStopped) else { return }
+        asks.end(id)
     }
 }
