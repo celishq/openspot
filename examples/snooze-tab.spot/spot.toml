@@ -2,6 +2,7 @@ title = "Snooze Tab"
 icon = "moon.zzz"
 detail = "Bring this tab back later"
 on = ["sheet.open"]
+offers = ["search"]
 uses = ["timer"]
 
 [commands.snooze]

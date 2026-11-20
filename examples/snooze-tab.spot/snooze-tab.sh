@@ -1,7 +1,7 @@
 #!/bin/sh
 # Snooze closes the front Safari tab once the person picks a time on the snooze sheet, and due opens it again.
-# The sheet lists each snoozed tab: Return opens it now, Remove forgets it, and Snooze Front Tab snoozes another.
-# Open All opens every one now. A timer keeps "<url> <title>".
+# The sheet starts with Snooze Current Tab, pinned, then lists each snoozed tab: Return opens it now, and Remove
+# forgets it. Open All opens every one now. The rows also show in the main search. A timer keeps "<url> <title>".
 . "$OPENSPOT_SH"
 
 # Prints each timer as a line: id, time, url, title, split by tabs.
@@ -23,27 +23,36 @@ when() {
   date -r "$seconds" "+%a %b %-d, %-H:%M"
 }
 
+# Snoozes the front Safari tab until the time the person picks, and closes it.
+snooze_front() {
+  url=$(osascript -e 'tell application "Safari" to get URL of current tab of front window' 2>/dev/null)
+  [ -n "$url" ] || { echo "Safari shows no tab." >&2; exit 1; }
+  title=$(osascript -e 'tell application "Safari" to get name of current tab of front window' 2>/dev/null)
+  at=$(openspot timer pick) || exit 0
+  if [ "$at" != someday ]; then
+    openspot timer add "$at" "$url $title" >/dev/null || exit 1
+  fi
+  osascript -e 'tell application "Safari" to close current tab of front window' >/dev/null
+  openspot toast "Snoozed the tab."
+}
+
 case "$1" in
   show)
-    printf 'button=snooze\ntitle=Snooze Front Tab\nscope=spot\nshortcut=cmd+s\n\n'
-    printf 'button=remove\ntitle=Remove\nshortcut=cmd+backspace\n\n'
-    listed=$(timers)
-    if [ -z "$listed" ]; then
-      openspot_item none "No snoozed tabs" "Press ⌘S to snooze the front Safari tab." moon.zzz
-      exit 0
-    fi
-    printf '%s\n' "$listed" | while IFS="$(printf '\t')" read -r id at url title; do
+    printf 'button=remove\ntitle=Remove\nshortcut=cmd+backspace\n'
+    openspot_item current "Snooze Current Tab" "Safari's front tab" moon.zzz
+    printf 'pin=top\nhides=remove\n'
+    timers | while IFS="$(printf '\t')" read -r id at url title; do
       openspot_item "$id" "${title:-$url}" "$(when "$at")" safari
     done
     ;;
   open)
-    [ "$2" = none ] && exit 0
+    [ "$2" = current ] && { snooze_front; exit; }
     url=$(timers | awk -F '\t' -v id="$2" '$1 == id { print $3 }')
     [ -n "$url" ] || exit 0
     openspot timer remove "$2" >/dev/null && open "$url"
     ;;
   remove)
-    [ -n "$2" ] && [ "$2" != none ] && openspot timer remove "$2" >/dev/null
+    [ -n "$2" ] && [ "$2" != current ] && openspot timer remove "$2" >/dev/null
     ;;
   wake)
     timers | while IFS="$(printf '\t')" read -r id at url title; do
@@ -51,15 +60,7 @@ case "$1" in
     done
     ;;
   snooze)
-    url=$(osascript -e 'tell application "Safari" to get URL of current tab of front window' 2>/dev/null)
-    [ -n "$url" ] || { echo "Safari shows no tab." >&2; exit 1; }
-    title=$(osascript -e 'tell application "Safari" to get name of current tab of front window' 2>/dev/null)
-    at=$(openspot timer pick) || exit 0
-    if [ "$at" != someday ]; then
-      openspot timer add "$at" "$url $title" >/dev/null || exit 1
-    fi
-    osascript -e 'tell application "Safari" to close current tab of front window' >/dev/null
-    openspot toast "Snoozed the tab."
+    snooze_front
     ;;
   due)
     open "$(value event.value | cut -d ' ' -f 1)"
