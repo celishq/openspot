@@ -133,10 +133,10 @@ struct SpotItemsView: View {
                     rowLabel(item)
                 }
                 .buttonStyle(.plain)
-                .modifier(SpotPointerMove { onPoint(item) })
                 .modifier(SpotFileDragSource(items: [item], hasFiles: item.file != nil, onDrop: onDragOut))
             }
         }
+        .modifier(SpotPointerMove(at: { [list, onPoint] in if let item = $0.flatMap({ list.lineItem(at: $0.y) }) { onPoint(item) } }))
     }
 
     private var bentoScroll: some View {
@@ -155,6 +155,14 @@ struct SpotItemsView: View {
                     }
                 }
                 .overlay(alignment: .topLeading) { BentoRing(selection: selected, count: list.shown.count, drawing: drawing, step: step) }
+                .modifier(SpotPointerMove(at: { [list, onPoint] point in
+                    guard let point else { return }
+                    let index = list.shown.indices.first { index in
+                        let area = drawing.area(of: index)
+                        return CGRect(origin: CGPoint(x: CGFloat(area.x0) * step, y: CGFloat(area.y0) * step), size: Self.size(of: area, step: step)).contains(point)
+                    }
+                    if let index { onPoint(list.shown[index]) }
+                }))
                 .frame(width: SpotTokens.partsWidth, height: max(CGFloat(lines) * step - SpotTokens.listRowGap, 0), alignment: .topLeading)
                 .padding(.top, SpotTokens.padding)
                 .padding(.bottom, bottomInset)
@@ -180,7 +188,6 @@ struct SpotItemsView: View {
         .background(SpotTheme.ink.opacity(SpotTheme.fill), in: row)
         .contentShape(row)
         .onTapGesture { onRun(item) }
-        .modifier(SpotPointerMove { onPoint(item) })
         .modifier(SpotFileDragSource(items: [item], hasFiles: item.file != nil, onDrop: onDragOut))
         .accessibilityLabel(item.title)
         .accessibilityAddTraits(.isButton)

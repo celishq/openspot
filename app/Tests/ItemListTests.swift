@@ -2,6 +2,23 @@ import XCTest
 @testable import OpenspotCore
 
 final class ItemListTests: XCTestCase {
+    func testAPointInTheLinesFindsTheRowUnderItPastEachSectionTitle() {
+        let list = ItemList(items: [
+            SpotItem(title: "One", run: "1", section: "Today"),
+            SpotItem(title: "Two", run: "2", section: "Today"),
+            SpotItem(title: "Three", run: "3", section: "Later")
+        ])
+        let step = SpotTokens.listRow + SpotTokens.listRowGap
+
+        XCTAssertNil(list.lineItem(at: step / 2))
+        XCTAssertEqual(list.lineItem(at: step + 1)?.run, "1")
+        XCTAssertEqual(list.lineItem(at: 2 * step + 1)?.run, "2")
+        XCTAssertNil(list.lineItem(at: 3 * step + 1))
+        XCTAssertEqual(list.lineItem(at: 4 * step + 1)?.run, "3")
+        XCTAssertNil(list.lineItem(at: 2 * step - SpotTokens.listRowGap / 2))
+        XCTAssertNil(list.lineItem(at: 9 * step))
+    }
+
     func testRowsFoundForOlderTextAreDroppedWhileNewerTextIsFound() {
         var list = ItemList(items: [SpotItem(title: "Apple", run: "a"), SpotItem(title: "Banana", run: "b")])
         let landed = list.landedSearches

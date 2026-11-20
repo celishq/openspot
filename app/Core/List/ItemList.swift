@@ -226,6 +226,24 @@ public struct ItemList: Equatable, Sendable {
         shown[topCount..<(shown.count - bottomCount)]
     }
 
+    public func lineItem(at y: CGFloat) -> SpotItem? {
+        let step = SpotTokens.listRow + SpotTokens.listRowGap
+        guard y >= 0, y.truncatingRemainder(dividingBy: step) < SpotTokens.listRow else { return nil }
+        let line = Int(y / step)
+        let rows = scrolling
+        if sectionStarts.isEmpty { return line < rows.count ? rows[rows.startIndex + line] : nil }
+        var at = 0
+        for item in rows {
+            if sectionStarts[item.run] != nil {
+                if at == line { return nil }
+                at += 1
+            }
+            if at == line { return item }
+            at += 1
+        }
+        return nil
+    }
+
     public mutating func moveToEdge(last: Bool) {
         landFinding()
         selected = last ? max(shown.count - 1, 0) : 0

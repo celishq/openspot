@@ -168,7 +168,9 @@ below is one a reviewer can check in a diff.
 - Build each thing made from the query once per query, and pass it on.
 - A list that can be long is lazy, or builds only the cells near the visible band. In a grid that is not lazy, a cell is a
   plain view with a tap and the button trait, not a `Button`.
-- One drop target on a container that holds still, not one per moving item.
+- One drop target and one pointer area on a container that holds still, not one per moving item. The panel takes no
+  pointer while a sheet grows or shrinks, since SwiftUI tests a still pointer against the panel on each frame in which
+  content moves under it.
 
 ### Motion
 

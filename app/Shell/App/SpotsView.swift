@@ -85,6 +85,7 @@ struct SpotsView: View {
         }
         .onDrop(of: [.fileURL], delegate: SpotAddDrop(model: model))
         .coordinateSpace(name: Self.panelSpace)
+        .allowsHitTesting(!model.transition.isMoving)
         .frame(width: SpotTokens.panelWidth, height: SpotTokens.panelHeight, alignment: .topLeading)
         .overlayPreferenceValue(SpotMenuAnchor.self, alignment: .topLeading) { item in
             SpotMenuLayer(model: model, item: item, fieldIsInSheet: fieldIsInSheet)

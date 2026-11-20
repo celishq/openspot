@@ -9,11 +9,9 @@ struct SpotEditControls: ViewModifier {
     let sizes: [SpotSize]
     let isResizing: Bool
     let isDragging: Bool
-    @State private var isHovered = false
 
     func body(content: Content) -> some View {
-        let showsHandle = isResizing || (isHovered && !isDragging)
-        return content
+        content
             .overlay(alignment: .topLeading) {
                 if turnsOff {
                     SpotCornerButton(symbol: "minus", label: "Turn off", corner: .leading, size: size, onHover: tip(.leadingCorner, text: "Turn off")) {
@@ -23,16 +21,10 @@ struct SpotEditControls: ViewModifier {
             }
             .overlay(alignment: .bottomTrailing) {
                 if sizes.count > 1 {
-                    SpotResizeHandle(size: size)
-                        .opacity(showsHandle ? 1 : MotionTokens.hiddenOpacity)
-                        .animation(SpotMotion.fade(isShown: showsHandle), value: showsHandle)
-                        .background(SpotHandleArea(model: model, id: id, size: size, sizes: sizes))
+                    PointedHandle(model: model, id: id, size: size, sizes: sizes, isResizing: isResizing, isDragging: isDragging)
                 }
             }
             .onDisappear { if model.tip?.id == id { model.tip = nil } }
-            .onHover { hovering in
-                if isHovered != hovering { isHovered = hovering }
-            }
     }
 
     private func tip(_ anchor: SpotTip.Anchor, text: String) -> (Bool) -> Void {
@@ -44,5 +36,22 @@ struct SpotEditControls: ViewModifier {
                 model.tip = nil
             }
         }
+    }
+}
+
+private struct PointedHandle: View {
+    let model: SpotsModel
+    let id: String
+    let size: SpotSize
+    let sizes: [SpotSize]
+    let isResizing: Bool
+    let isDragging: Bool
+
+    var body: some View {
+        let showsHandle = isResizing || (model.pointedCard == id && !isDragging)
+        SpotResizeHandle(size: size)
+            .opacity(showsHandle ? 1 : MotionTokens.hiddenOpacity)
+            .animation(SpotMotion.fade(isShown: showsHandle), value: showsHandle)
+            .background(SpotHandleArea(model: model, id: id, size: size, sizes: sizes))
     }
 }

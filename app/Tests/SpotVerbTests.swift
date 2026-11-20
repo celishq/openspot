@@ -526,17 +526,36 @@ final class SpotVerbTests: XCTestCase {
         try script("clock", toml: "title = 'Clock'")
         _ = try await select("weather")
 
-        model.point(at: .card("clock"))
+        let middle = { (id: String) in
+            let index = try XCTUnwrap(self.model.visible.firstIndex { $0.id == id })
+            let rect = try XCTUnwrap(self.model.placements.first { $0.index == index }).rect
+            return CGPoint(x: rect.midX, y: rect.midY)
+        }
+
+        model.point(at: .grid(try middle("clock")))
         XCTAssertEqual(model.selectedEntry?.id, "clock")
 
         XCTAssertTrue(model.handleKey(ActionKey(name: "k", isCommand: true)))
-        model.point(at: .card("weather"))
+        model.point(at: .grid(try middle("weather")))
         XCTAssertEqual(model.selectedEntry?.id, "clock")
         model.closeMenu()
 
         model.beginEditing()
-        model.point(at: .card("weather"))
+        model.point(at: .grid(try middle("weather")))
         XCTAssertEqual(model.selectedEntry?.id, "clock")
+        XCTAssertEqual(model.pointedCard, "weather")
+        model.point(at: .grid(nil))
+        XCTAssertNil(model.pointedCard)
+    }
+
+    func testAPointBetweenCardsPointsAtNoCard() async throws {
+        try script("weather", toml: "title = 'Weather'")
+        _ = try await select("weather")
+        let rect = try XCTUnwrap(model.placements.first).rect
+
+        model.point(at: .grid(CGPoint(x: rect.maxX + SpotTokens.columnGap / 2, y: rect.midY)))
+
+        XCTAssertNil(model.pointedCard)
     }
 
     func testOpeningTheMenuDimsEachOtherCardOnceItGrows() async throws {
