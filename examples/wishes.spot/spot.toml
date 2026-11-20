@@ -1,0 +1,11 @@
+title = "Wishes"
+icon = "gift"
+detail = "Things you want"
+keywords = ["wishlist", "gifts", "shopping"]
+on = ["panel.open"]
+uses = ["network", "clipboard"]
+
+[settings.group]
+title = "Group by"
+icon = "rectangle.3.group"
+options = ["Type", "Price"]

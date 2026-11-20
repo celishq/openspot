@@ -1,0 +1,32 @@
+frame=
+recents=false
+detail=3 wishes
+
+text=add
+title=Add wish
+icon=plus.circle.fill
+pin=top
+
+section=s1
+title=Books
+
+text=w1
+title=The Design of Everyday Things
+detail=$18 · bookshop.org
+icon=book
+
+section=s2
+title=Clothes
+
+text=w2
+title=Wool sweater
+detail=€89 · example.com
+icon=tshirt
+
+section=s3
+title=Gadgets
+
+text=w3
+title=Noise cancelling headphones
+detail=$349 · example.com
+icon=headphones
