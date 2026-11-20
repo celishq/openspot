@@ -10,6 +10,7 @@ struct SpotFormView: View {
     var focused: String?
     var onFocus: (String?) -> Void = { _ in }
     var onSave: () -> Void = {}
+    var onSend: (String, String) -> Void = { _, _ in }
     @FocusState private var focus: String?
 
     private var shape: SpotRoundShape {
@@ -112,7 +113,9 @@ struct SpotFormView: View {
                             set: { onValue(draft.picking(option.id, $0, in: field), field.name) }
                         ))
                     } else {
-                        Button(option.title) { onValue(option.id, field.name) }
+                        Button(option.title) {
+                            if option.sends { onSend(option.id, field.name) } else { onValue(option.id, field.name) }
+                        }
                     }
                 }
             } label: {

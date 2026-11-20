@@ -817,7 +817,7 @@ final class SpotsModelTests: XCTestCase {
         XCTAssertNil(model.form)
     }
 
-    func testReturnSavesAFormOfFieldsAndCommandReturnSavesOneThatWritesLines() async throws {
+    func testReturnSavesAFormOfOneFieldAndCommandReturnSavesOneThatWritesLines() async throws {
         let sent = folder.appendingPathComponent("sent").path
         try script("list", toml: "", """
         case "$1" in
@@ -825,7 +825,7 @@ final class SpotsModelTests: XCTestCase {
             input=$(cat)
             if [ -n "$input" ]; then printf '%s %s\n' "$1" "$(printf '%s' "$input" | tr '\n' ' ')" >> '\(sent)'; exit 0; fi
             if [ "$1" = add ]; then
-              printf 'frame=\\ntitle=Add\n\nfield=name\ntitle=Name\n\nchoice=kind\ntitle=Kind\nvalue=a\n\noption=a\ntitle=A\n\noption=b\ntitle=B\n'
+              printf 'frame=\\ntitle=Add\n\nfield=name\ntitle=Name\n'
             else
               printf 'frame=\\ntitle=Note\n\nfield=text\ntitle=Text\ntype=multiline\n'
             fi ;;
@@ -841,7 +841,7 @@ final class SpotsModelTests: XCTestCase {
         let entry = try XCTUnwrap(model.openEntry)
 
         model.openForm(try XCTUnwrap(entry.spot.actions.first { $0.id == "add" }), on: (entry, nil))
-        try await wait("the form of fields") { model.form?.draft.form.fields.count == 2 }
+        try await wait("the form of one field") { model.form?.draft.form.fields.count == 1 }
         XCTAssertTrue(KeyRow.hint(of: model.formRows).hasPrefix("⏎ Save"), KeyRow.hint(of: model.formRows))
         XCTAssertTrue(model.handleKey(ActionKey(name: "return")))
         try await wait("the save on Return") { sends().count == 1 }
@@ -897,6 +897,60 @@ final class SpotsModelTests: XCTestCase {
         XCTAssertEqual(model.form?.draft.values["gift"], "true")
         XCTAssertTrue(model.handleKey(ActionKey(name: "up", isCommand: true)))
         XCTAssertEqual(model.form?.draft.focus, "link")
+    }
+
+    func testReturnDoesTheActOfTheFocusedPartOfAForm() async throws {
+        let sent = folder.appendingPathComponent("sent").path
+        try script("list", toml: "", """
+        case "$1" in
+          add)
+            input=$(cat)
+            [ -z "$input" ] || { printf '%s\n' "$input" | tr '\n' ' ' >> '\(sent)'; printf '\n' >> '\(sent)'; }
+            printf 'frame=\\ntitle=Add\n\nfield=link\ntitle=Link\n\nfield=name\ntitle=Name\n\nchoice=kind\ntitle=Kind\nvalue=a\n\noption=a\ntitle=A\n\noption=b\ntitle=B\n\noption=more\ntitle=More…\nsend=true\n' ;;
+          *) printf 'button=add\ntitle=Add\nscope=spot\nform=true\nclose=false\n\ntext=a\ntitle=Apple\n' ;;
+        esac
+        """)
+        let sends = { ((try? String(contentsOfFile: sent, encoding: .utf8)) ?? "").split(separator: "\n").map(String.init) }
+        await model.reload()
+        model.isShown = true
+        model.panelWillShow()
+        model.press("list")
+        try await wait("the open list") { model.openSheetID == "list" && model.openEntry?.spot.actions.contains(where: \.isForm) == true }
+        let entry = try XCTUnwrap(model.openEntry)
+        model.openForm(try XCTUnwrap(entry.spot.actions.first { $0.id == "add" }), on: (entry, nil))
+        try await wait("the form") { model.form != nil }
+
+        XCTAssertTrue(model.handleKey(ActionKey(name: "return")))
+        XCTAssertEqual(model.form?.draft.focus, "name")
+        XCTAssertTrue(model.handleKey(ActionKey(name: "return")))
+        XCTAssertEqual(model.form?.draft.focus, "kind")
+        XCTAssertTrue(model.handleKey(ActionKey(name: "return")))
+        XCTAssertEqual(model.form?.draft.picking, "kind")
+        XCTAssertEqual(model.form?.draft.choices?.shown.map(\.title), ["A", "B", "More…"])
+        XCTAssertTrue(model.handleKey(ActionKey(name: "down")))
+        XCTAssertEqual(model.form?.draft.values["kind"], "a")
+        XCTAssertTrue(model.handleKey(ActionKey(name: "return")))
+        XCTAssertNil(model.form?.draft.picking)
+        XCTAssertEqual(model.form?.draft.values["kind"], "b")
+        XCTAssertEqual(model.form?.draft.focus, "kind")
+        XCTAssertTrue(model.handleKey(ActionKey(name: "return")))
+        XCTAssertTrue(model.handleKey(ActionKey(name: "escape")))
+        XCTAssertNil(model.form?.draft.picking)
+        XCTAssertNotNil(model.form)
+        XCTAssertTrue(sends().isEmpty)
+
+        XCTAssertTrue(model.handleKey(ActionKey(name: "down", isCommand: true)))
+        XCTAssertTrue(model.handleKey(ActionKey(name: "return")))
+        try await wait("the sent form") { sends().count == 1 }
+        XCTAssertTrue(sends()[0].contains("input.kind=b"))
+
+        try await wait("the form again") { model.form != nil && model.form?.draft.focus == "link" }
+        model.focusFormField("kind")
+        XCTAssertTrue(model.handleKey(ActionKey(name: "return")))
+        XCTAssertTrue(model.handleKey(ActionKey(name: "up", isCommand: false)))
+        model.chooseFormOption(SpotItem(title: "More…", run: "more"))
+        try await wait("the option that sends") { sends().count == 2 }
+        XCTAssertTrue(sends()[1].contains("input.kind=more"))
     }
 
     func testThePinnedActOfAListTakesTheSearchIntoItsFormAndItsFirstCall() async throws {

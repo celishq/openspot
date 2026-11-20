@@ -224,7 +224,7 @@ public final class SpotsModel {
     @ObservationIgnored var hintTakes = 0
     public var form: FormSession? {
         didSet {
-            let rect = form.map { SpotTokens.formRect($0.draft.form) }
+            let rect = form.map { $0.draft.pickedField.map { SpotTokens.choiceRect(options: $0.options.count) } ?? SpotTokens.formRect($0.draft.form) }
             if rect != formRect { formRect = rect }
             let hasChoices = form?.draft.choices != nil
             if hasChoices != formHasChoices { formHasChoices = hasChoices }

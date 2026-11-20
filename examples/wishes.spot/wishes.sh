@@ -152,7 +152,7 @@ wishform() {
     printf '\noption=t%s\n' "$(hex "$one")"
     openspot_kv title "$one"
   done
-  printf '\noption=types\ntitle=Edit types…\n'
+  printf '\noption=types\ntitle=Edit types…\nicon=pencil\nsend=true\n'
   printf '\nfield=picture\ntitle=Picture\nplaceholder=A link to an image\n'
   if [ -n "$7" ]; then openspot_kv value "$7"; fi
 }

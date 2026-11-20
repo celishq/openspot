@@ -93,16 +93,18 @@ extension SpotTokens {
     }
 
     public static func formRect(_ form: ItemForm) -> CGRect {
-        if let choice = form.soleChoice {
-            let rows = CGFloat(max(choice.options.count, 1))
-            let height = sheetRowsTop + rows * listRow + (rows - 1) * listRowGap + padding
-            return CGRect(x: halo, y: halo, width: gridWidth, height: min(height, sheetMaxHeight))
-        }
+        if let choice = form.soleChoice { return choiceRect(options: choice.options.count) }
         let fields = form.fields.reduce(CGFloat(0)) { sum, field in
             sum + formLabelHeight + formLabelGap + (field.type == .multiline ? formTextHeight : listRow)
         }
         let gaps = CGFloat(form.fields.count) * formFieldGap
         let height = sheetFieldDrop + fields + gaps + listRow + padding
+        return CGRect(x: halo, y: halo, width: gridWidth, height: min(height, sheetMaxHeight))
+    }
+
+    public static func choiceRect(options: Int) -> CGRect {
+        let rows = CGFloat(max(options, 1))
+        let height = sheetRowsTop + rows * listRow + (rows - 1) * listRowGap + padding
         return CGRect(x: halo, y: halo, width: gridWidth, height: min(height, sheetMaxHeight))
     }
 

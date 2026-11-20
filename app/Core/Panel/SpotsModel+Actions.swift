@@ -182,8 +182,34 @@ extension SpotsModel {
     }
 
     public func chooseFormOption(_ item: SpotItem) {
-        form?.draft.choose(item.run)
-        submitForm()
+        guard form?.draft.picking != nil else {
+            form?.draft.choose(item.run)
+            return submitForm()
+        }
+        takeFormPick(item.run)
+    }
+
+    func takeFormPick(_ id: String? = nil) {
+        guard var draft = form?.draft, let field = draft.pickedField else { return }
+        if let id { draft.choose(id) }
+        if let id = draft.choices?.selectedItem?.run, field.picks == nil, field.options.first(where: { $0.id == id })?.sends == true {
+            draft.endPicking()
+            if draft != form?.draft { form?.draft = draft }
+            return sendFormOption(id, of: field.name)
+        }
+        _ = draft.takePick()
+        if draft != form?.draft { form?.draft = draft }
+    }
+
+    public func sendFormOption(_ id: String, of name: String) {
+        guard let form else { return }
+        if let missing = form.draft.missing {
+            host.notify("Enter a value for \(missing.label).")
+            return
+        }
+        var draft = form.draft
+        draft.set(id, for: name)
+        send(form, draft)
     }
 
     public func setFormValue(_ text: String, for name: String) {

@@ -4,9 +4,10 @@ Wishes keeps the things you want to buy, each with its name, its picture and its
 
 - **Add a wish.** Paste a product link into the search, and press Return on **Add wish**. Wishes reads the page and
   fills in the name, the price, the type and the picture, which you can change. The arrows move between the fields and
-  the Save button, `⌘↓` jumps to Save, and `←` `→` change the type. Press Return to keep the wish.
-- **Shape your types.** Choose **Edit types…** in the menu of a type, then press Return. Type a new type, such as
-  Plants, or untick one to take it out, and press Return to go back to the wish.
+  the Save button, and `⌘↓` jumps to Save. Return moves on from a field and opens the list of types on Type. Press
+  Return on Save, or `⌘⏎` anywhere, to keep the wish.
+- **Shape your types.** Choose **Edit types…** in the list of types. Type a new type, such as Plants, or untick one
+  to take it out, then save to go back to the wish.
 - **Open a wish.** Press Return on it, and its page opens in your browser.
 - **Edit a wish.** `⌘E` opens the same form, with its link, name, price, type and picture. A wish that has no
   picture or price reads its page again for them. `⌘⌫` removes a wish.

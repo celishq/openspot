@@ -154,7 +154,8 @@ extension SpotsModel {
         guard let form else { return [] }
         let isList = form.draft.choices != nil
         let isMultiple = form.draft.isMultiple
-        let writesLines = form.draft.focusedField?.type == .multiline
+        let writesLines = !isList && form.draft.focusedField?.type == .multiline
+        let returnWords = writesLines ? nil : returnWords(of: form.draft)
         let move = { [self] (step: Int) -> @MainActor (ActionKey) -> Bool? in
             { [self] _ in
                 if isList {
@@ -178,12 +179,12 @@ extension SpotsModel {
             }
         }
         return [
-            KeyRow("return", words: writesLines ? nil : (isMultiple ? "Select" : "Save")) { [self] _ in
+            KeyRow("return", words: returnWords) { [self] _ in
                 guard !writesLines else { return nil }
-                submitForm()
+                pressReturn()
                 return true
             },
-            KeyRow("return", command: true, words: writesLines ? "Save" : nil) { [self] _ in
+            KeyRow("return", command: true, words: returnWords == "Save" || isList ? nil : "Save") { [self] _ in
                 submitForm()
                 return true
             },
@@ -198,11 +199,46 @@ extension SpotsModel {
             KeyRow("down", command: true, act: jump(1)),
             KeyRow("left", act: turn(-1)),
             KeyRow("right", act: turn(1)),
-            KeyRow("escape", words: isMultiple ? "Done" : "Cancel") { [self] _ in
-                if form.draft.choices?.query.isEmpty == false { self.form?.draft.search("") } else { cancelForm() }
+            KeyRow("escape", words: isMultiple || form.draft.pickedField?.picks != nil ? "Done" : form.draft.picking != nil ? "Back" : "Cancel") { [self] _ in
+                if form.draft.choices?.query.isEmpty == false {
+                    self.form?.draft.search("")
+                } else if form.draft.picking != nil {
+                    self.form?.draft.endPicking()
+                } else {
+                    cancelForm()
+                }
                 return true
             },
         ]
+    }
+
+    private func returnWords(of draft: FormDraft) -> String {
+        if let field = draft.pickedField { return field.picks == nil ? "Choose" : "Tick" }
+        if draft.choices != nil { return draft.isMultiple ? "Select" : "Save" }
+        switch draft.focusedField?.type {
+        case .choice: return draft.focusedField?.options.isEmpty == false ? "Choose" : "Save"
+        case .switch: return "Switch"
+        case .text, .secret: return draft.stops.count > 2 ? "Next" : "Save"
+        default: return "Save"
+        }
+    }
+
+    private func pressReturn() {
+        guard var draft = form?.draft else { return }
+        if draft.picking != nil { return takeFormPick() }
+        if draft.choices != nil { return submitForm() }
+        switch draft.focusedField?.type {
+        case .choice:
+            guard draft.pick() else { return submitForm() }
+        case .switch:
+            _ = draft.turn(by: 1)
+        case .text?, .secret?:
+            guard draft.stops.count > 2 else { return submitForm() }
+            draft.focus(on: draft.focus(movedBy: 1))
+        default:
+            return submitForm()
+        }
+        if draft != form?.draft { form?.draft = draft }
     }
 
     private var escapeWords: String {
