@@ -102,7 +102,9 @@ untrack() {
 }
 
 # The form of a new wish. It asks for the link, then shows what the page gave, to change before it is kept.
-# The page that it read last waits in $OPENSPOT_DATA/page: link, title, price, currency, picture, type, read.
+# The page that it read last waits in $OPENSPOT_DATA/page: link, title, price, currency, picture, type, read, and the
+# browser whose open tab it read, with "title" or "html" before it.
+# A shop that hides its page from programs is read from a tab of the same link, open in the person's browser.
 add() {
   typed=$(clean "$(value input.link)")
   url=$(printf '%s\n' "$typed" | link | untrack)
@@ -122,7 +124,15 @@ add() {
   if [ "$(printf '%s\n' "$read" | cut -f1)" != "$url" ]; then
     page=$(curl -sL --compressed --max-time 12 -A "$agent" -H 'Accept: text/html,application/xhtml+xml' \
       -H 'Accept-Language: en-US,en;q=0.9' "$url" </dev/null | head -c 4000000 | perl "$here/page.pl" "$url" 2>/dev/null)
-    read=$(printf '%s\t%s' "$url" "${page:-$tab$tab$tab${tab}Other${tab}0}")
+    from=
+    if [ "$(printf '%s\n' "$page" | cut -f6)" != 1 ]; then
+      open=$(perl -e 'alarm 60; exec @ARGV' osascript -l JavaScript "$here/tab.js" "$url" 2>/dev/null)
+      if [ -n "$open" ]; then
+        from=$(printf '%s\n' "$open" | head -n 1)
+        page=$(printf '%s\n' "$open" | tail -n +2 | perl "$here/page.pl" "$url" 2>/dev/null)
+      fi
+    fi
+    read=$(printf '%s\t%s\t%s' "$url" "${page:-$tab$tab$tab${tab}Other${tab}0}" "$from")
     printf '%s\n' "$read" | openspot_keep "$OPENSPOT_DATA/page"
     name=
   fi
@@ -132,18 +142,22 @@ add() {
     currency=$(printf '%s\n' "$read" | cut -f4)
     type=$(printf '%s\n' "$read" | cut -f6)
     seen=$(printf '%s\n' "$read" | cut -f7)
+    from=$(printf '%s\n' "$read" | cut -f8)
     printf 'frame=\ntitle=New wish\n\nfield=link\ntitle=Link\nrequired=true\n'
     openspot_kv value "$url"
     printf '\nfield=name\ntitle=Name\nrequired=true\nplaceholder=What it is\n'
     if [ -n "$title" ]; then openspot_kv value "$title"; fi
-    if [ "$seen" != 1 ]; then printf 'detail=From the link: the shop hides its page.\ntone=warn\n'; fi
+    if [ "$seen" != 1 ]; then printf 'detail=From the link: the shop hides its page. Open it in your browser, then add it.\ntone=warn\n'; fi
     printf '\nfield=price\ntitle=Price\n'
     if [ -n "$price" ]; then
       openspot_kv value "$price${currency:+ $currency}"
     else
       here_currency=$(region)
       openspot_kv placeholder "Such as 250${here_currency:+ $here_currency}"
-      if [ "$seen" = 1 ]; then printf 'detail=The page shows no price.\n'; fi
+      case "$from" in
+        title\ *) openspot_kv detail "To read the price, turn on Allow JavaScript from Apple Events in ${from#title }."; printf 'tone=warn\n' ;;
+        *) if [ "$seen" = 1 ]; then printf 'detail=The page shows no price.\n'; fi ;;
+      esac
     fi
     printf '\nchoice=type\ntitle=Type\n'
     types | awk -v now="${type:-Other}" '$0 == now { printf "value=t%d\n", NR }'

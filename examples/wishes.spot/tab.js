@@ -1,0 +1,55 @@
+// Reads a page that is already open in one of the person's browsers, for a shop that hides its pages from programs.
+// Run: osascript -l JavaScript tab.js <link>
+// It looks only at browsers that already run, and only at a tab whose link is the same, with no query.
+// It prints a first line, "html <browser>" or "title <browser>", then the HTML of the page, or a <title> alone when
+// the browser does not let Apple Events run JavaScript. It prints nothing when no open tab has the link.
+const browsers = [
+  ['com.google.Chrome', 'chrome'], ['company.thebrowser.Browser', 'chrome'], ['com.brave.Browser', 'chrome'],
+  ['com.microsoft.edgemac', 'chrome'], ['com.vivaldi.Vivaldi', 'chrome'], ['com.operasoftware.Opera', 'chrome'],
+  ['org.chromium.Chromium', 'chrome'], ['com.google.Chrome.canary', 'chrome'],
+  ['com.apple.Safari', 'safari'], ['com.apple.SafariTechnologyPreview', 'safari'],
+];
+const page = 'document.documentElement.outerHTML';
+
+function bare(link) {
+  return String(link || '').replace(/^[a-z]+:\/\//i, '').replace(/^www\./i, '').replace(/[?#].*$/, '').replace(/\/+$/, '').toLowerCase();
+}
+
+function escaped(text) {
+  return String(text || '').replace(/&/g, '&amp;').replace(/</g, '&lt;');
+}
+
+function run(args) {
+  const want = bare(args[0]);
+  if (!want) return '';
+  for (const [id, kind] of browsers) {
+    let app;
+    try {
+      app = Application(id);
+      if (!app.running()) continue;
+    } catch (e) {
+      continue;
+    }
+    let name = id;
+    try { name = app.name(); } catch (e) {}
+    let windows = [];
+    try { windows = app.windows(); } catch (e) { continue; }
+    for (const window of windows) {
+      let tabs = [];
+      try { tabs = window.tabs(); } catch (e) { continue; }
+      for (const tab of tabs) {
+        let link = '';
+        try { link = tab.url(); } catch (e) { continue; }
+        if (bare(link) !== want) continue;
+        try {
+          const html = kind === 'safari' ? app.doJavaScript(page, { in: tab }) : app.execute(tab, { javascript: page });
+          if (html) return 'html ' + name + '\n' + html;
+        } catch (e) {}
+        let title = '';
+        try { title = kind === 'safari' ? tab.name() : tab.title(); } catch (e) {}
+        return 'title ' + name + '\n<title>' + escaped(title) + '</title>';
+      }
+    }
+  }
+  return '';
+}

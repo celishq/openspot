@@ -103,6 +103,7 @@ $title //= $1 if $html =~ /<title[^>]*>(.*?)<\/title>/is;
 $title = plain($title);
 $title =~ s/^Amazon\.[a-z.]+\s*:\s*//i;
 $title = $1 if $title =~ /^(.{8,}?)\s+[|–—]\s+\S.*$/;
+$title = $1 if $title =~ /^(.{8,}?)\s+[-|–—]\s+(?:купити|купить|buy|shop|kaufen|kup|acheter|comprar|ціна|цена|price|замовити|заказать)\b.*$/i;
 $title = "" if $title =~ /^(just a moment|access denied|robot check|attention required|are you a human|pardon our interruption|403 forbidden|page not found|error)\b/i || $title !~ /\s/ && $title =~ /^[\w-]+\.[a-z.]+$/i;
 my $read = $title eq "" ? 0 : 1;
 $title = slug($url) if $title eq "";

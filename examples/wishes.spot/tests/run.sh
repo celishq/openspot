@@ -56,6 +56,13 @@ reads 'a page that a shop refused, named from its link' 'https://shop.example/kn
 
 reads 'a link of codes, with no words' 'https://www.amazon.com/dp/B09B8V1LZ3' '' '' '' '' '' Other 0
 
+reads 'a title with the shop''s buy words' 'https://shop.example/p/7' \
+  '<title>Сенека. Моральні листи до Луцилія - купити за низькою ціною в Україні</title>' \
+  'Сенека. Моральні листи до Луцилія' '' '' '' Other 1
+
+reads 'a title with a dash of its own' 'https://shop.example/p/8' '<title>Spider-Man - Into the Spider-Verse</title>' \
+  'Spider-Man - Into the Spider-Verse' '' '' '' Other 1
+
 prices '$29.99' 29.99 USD
 prices '29,99 eur' 29.99 EUR
 prices '1 299,50 грн' 1299.50 UAH
