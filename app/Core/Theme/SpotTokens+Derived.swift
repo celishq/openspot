@@ -101,8 +101,8 @@ extension SpotTokens {
         let fields = form.fields.reduce(CGFloat(0)) { sum, field in
             sum + formLabelHeight + formLabelGap + (field.type == .multiline ? formTextHeight : listRow)
         }
-        let gaps = CGFloat(max(form.fields.count - 1, 0)) * formFieldGap
-        let height = sheetFieldDrop + fields + gaps + padding
+        let gaps = CGFloat(form.fields.count) * formFieldGap
+        let height = sheetFieldDrop + fields + gaps + listRow + padding
         return CGRect(x: halo, y: halo, width: gridWidth, height: min(height, sheetMaxHeight))
     }
 

@@ -161,9 +161,19 @@ extension SpotsModel {
                     self.form?.draft.move(by: step)
                     return true
                 }
-                guard let draft = self.form?.draft, draft.takesFocus, draft.focusedField?.type != .multiline else { return nil }
+                guard let draft = self.form?.draft, draft.focusedField?.type != .multiline else { return nil }
                 let next = draft.focus(movedBy: step)
                 if next != draft.focus { self.form?.draft.focus(on: next) }
+                return true
+            }
+        }
+        let jump = { [self] (step: Int) -> @MainActor (ActionKey) -> Bool? in
+            { [self] key in isList ? nil : move(step * form.draft.stops.count)(key) }
+        }
+        let turn = { [self] (step: Int) -> @MainActor (ActionKey) -> Bool? in
+            { [self] _ in
+                guard !isList, var draft = self.form?.draft, draft.turn(by: step) else { return nil }
+                if draft != self.form?.draft { self.form?.draft = draft }
                 return true
             }
         }
@@ -184,6 +194,10 @@ extension SpotsModel {
             },
             KeyRow("up", act: move(-1)),
             KeyRow("down", act: move(1)),
+            KeyRow("up", command: true, act: jump(-1)),
+            KeyRow("down", command: true, act: jump(1)),
+            KeyRow("left", act: turn(-1)),
+            KeyRow("right", act: turn(1)),
             KeyRow("escape", words: isMultiple ? "Done" : "Cancel") { [self] _ in
                 if form.draft.choices?.query.isEmpty == false { self.form?.draft.search("") } else { cancelForm() }
                 return true

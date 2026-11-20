@@ -11,6 +11,34 @@ final class FormDraftTests: XCTestCase {
         XCTAssertEqual(FormDraft(form: form).values, ["title": "", "content": "old"])
     }
 
+    func testAChoiceOfSeveralPicksBesideAFieldKeepsItsPicksAndUnpicksOne() throws {
+        let form = try XCTUnwrap(ItemForm(output: Frame(text: "frame=\ntitle=Types\n\nfield=new\ntitle=New type\n\nchoice=keep\ntitle=Types\ntype=multiple\nvalue=b\nvalue=a\n\noption=a\ntitle=A\n\noption=b\ntitle=B\n\noption=c\ntitle=C\n")))
+        var draft = FormDraft(form: form)
+        let keep = try XCTUnwrap(form.fields.last)
+
+        XCTAssertEqual(draft.values["keep"], "a\nb")
+        draft.set(draft.picking("a", false, in: keep), for: "keep")
+        XCTAssertEqual(draft.picks(of: keep), ["b"])
+        draft.set(draft.picking("c", true, in: keep), for: "keep")
+        XCTAssertEqual(draft.picks(of: keep), ["b", "c"])
+    }
+
+    func testAFormThatComesBackAfterSaveFocusesItsFirstTextField() {
+        var sent = FormDraft(form: form)
+        sent.focus(on: FormDraft.save)
+        XCTAssertEqual(sent.focus, FormDraft.save)
+
+        XCTAssertEqual(FormDraft(form: form, after: sent).focus, "title")
+    }
+
+    func testAChoiceKeepsTheTitleOfItsOptionWhenItChanges() throws {
+        let form = ItemForm(title: "New", fields: [.init(name: "kind", label: "Kind", type: .choice, value: "a", options: [.init(id: "a", title: "A"), .init(id: "b", title: "B")])])
+        var draft = FormDraft(form: form)
+        XCTAssertEqual(draft.menuTitles["kind"], "A")
+        draft.set("b", for: "kind")
+        XCTAssertEqual(draft.menuTitles["kind"], "B")
+    }
+
     func testAFormReadsTheValueOfASwitchASliderAndAField() throws {
         let form = try XCTUnwrap(ItemForm(output: Frame(text: "frame=\ntitle=Repos\n\nswitch=hidden\ntitle=Hidden\nvalue=true\n\nfield=depth\ntype=slider\ntitle=Depth\nvalue=3\nmin=1\nmax=4\n\nfield=note\ntitle=Note\nvalue=Hi\n")))
 

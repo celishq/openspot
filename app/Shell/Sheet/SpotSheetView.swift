@@ -97,7 +97,8 @@ private struct SheetContentView: View {
                         onChoose: { model.chooseFormOption($0) },
                         selection: { [model] in model.form?.draft.choices?.selected ?? 0 },
                         focused: form.focus,
-                        onFocus: { model.focusFormField($0) }
+                        onFocus: { model.focusFormField($0) },
+                        onSave: { model.submitForm() }
                     )
                 } else {
                     if top.hasField { Color.clear.frame(height: SpotTokens.listRow) }

@@ -857,10 +857,10 @@ final class SpotsModelTests: XCTestCase {
         XCTAssertTrue(sends()[1].hasPrefix("note "), sends()[1])
     }
 
-    func testTheArrowsMoveBetweenTheTextFieldsOfAFormAndLeaveTheLinesOfAMultilineField() async throws {
+    func testTheArrowsWalkEachPartOfAFormWithSaveLastAndTurnAChoice() async throws {
         try script("list", toml: "", """
         case "$1" in
-          add) printf 'frame=\\ntitle=Add\n\nfield=link\ntitle=Link\n\nchoice=kind\ntitle=Kind\nvalue=a\n\noption=a\ntitle=A\n\nfield=name\ntitle=Name\n\nfield=note\ntitle=Note\ntype=multiline\n' ;;
+          add) printf 'frame=\\ntitle=Add\n\nfield=link\ntitle=Link\n\nchoice=kind\ntitle=Kind\nvalue=a\n\noption=a\ntitle=A\n\noption=b\ntitle=B\n\nfield=name\ntitle=Name\n\nfield=note\ntitle=Note\ntype=multiline\n\nswitch=gift\ntitle=Gift\nvalue=false\n' ;;
           *) printf 'button=add\ntitle=Add\nscope=spot\nform=true\n\ntext=a\ntitle=Apple\n' ;;
         esac
         """)
@@ -874,16 +874,28 @@ final class SpotsModelTests: XCTestCase {
         try await wait("the form") { model.form != nil }
 
         XCTAssertEqual(model.form?.draft.focus, "link")
+        XCTAssertFalse(model.handleKey(ActionKey(name: "right")))
+        XCTAssertTrue(model.handleKey(ActionKey(name: "down")))
+        XCTAssertEqual(model.form?.draft.focus, "kind")
+        XCTAssertTrue(model.handleKey(ActionKey(name: "right")))
+        XCTAssertEqual(model.form?.draft.values["kind"], "b")
+        XCTAssertTrue(model.handleKey(ActionKey(name: "right")))
+        XCTAssertEqual(model.form?.draft.values["kind"], "b")
         XCTAssertTrue(model.handleKey(ActionKey(name: "down")))
         XCTAssertEqual(model.form?.draft.focus, "name")
         XCTAssertTrue(model.handleKey(ActionKey(name: "down")))
         XCTAssertEqual(model.form?.draft.focus, "note")
         XCTAssertFalse(model.handleKey(ActionKey(name: "down")))
-        XCTAssertFalse(model.handleKey(ActionKey(name: "up")))
         model.focusFormField("name")
+        XCTAssertTrue(model.handleKey(ActionKey(name: "down", isCommand: true)))
+        XCTAssertEqual(model.form?.draft.focus, FormDraft.save)
+        XCTAssertTrue(model.handleKey(ActionKey(name: "down")))
+        XCTAssertEqual(model.form?.draft.focus, FormDraft.save)
         XCTAssertTrue(model.handleKey(ActionKey(name: "up")))
-        XCTAssertEqual(model.form?.draft.focus, "link")
-        XCTAssertTrue(model.handleKey(ActionKey(name: "up")))
+        XCTAssertEqual(model.form?.draft.focus, "gift")
+        XCTAssertTrue(model.handleKey(ActionKey(name: "right")))
+        XCTAssertEqual(model.form?.draft.values["gift"], "true")
+        XCTAssertTrue(model.handleKey(ActionKey(name: "up", isCommand: true)))
         XCTAssertEqual(model.form?.draft.focus, "link")
     }
 

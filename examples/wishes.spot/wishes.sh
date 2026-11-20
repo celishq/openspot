@@ -13,9 +13,12 @@ list() { [ -f "$data" ] && cat "$data"; }
 link() { grep -Eo 'https?://[^[:space:]<>"]+' | head -n 1; }
 clean() { printf '%s' "$1" | tr '\t\n\r' '   ' | sed 's/^ *//; s/ *$//'; }
 field() { list | awk -F'\t' -v id="$1" -v n="$2" '$1 == id { print $n; exit }'; }
+kinds="$OPENSPOT_DATA/types"
 types() {
-  { printf 'Books\nClothes\nGadgets\nHome\nBeauty\nToys\nSports\nOther\n'; list | cut -f2; } | awk 'NF && !seen[$0]++'
+  if [ -f "$kinds" ]; then cat "$kinds"; else { printf 'Books\nClothes\nGadgets\nHome\nBeauty\nToys\nSports\nOther\n'; list | cut -f2; }; fi | awk 'NF && !seen[$0]++'
 }
+hex() { printf '%s' "$1" | od -An -tx1 | tr -d ' \n'; }
+unhex() { printf '%s' "$1" | perl -pe 's/([0-9a-f]{2})/chr hex $1/ge'; }
 
 # Prints each wish with its section, in the order of the list:
 # three sort keys, section, id, title, price, shop, icon, link, type.
@@ -144,9 +147,12 @@ wishform() {
     esac
   fi
   printf '\nchoice=type\ntitle=Type\n'
-  types | awk -v now="${6:-Other}" '$0 == now { printf "value=t%d\n", NR }'
-  types | awk '{ gsub(/\\/, "\\\\"); printf "\noption=t%d\ntitle=%s\n", NR, $0 }'
-  printf '\nfield=newtype\ntitle=Or a new type\nplaceholder=Such as Plants\n'
+  openspot_kv value "t$(hex "${6:-Other}")"
+  { types; printf '%s\n' "${6:-Other}"; } | awk 'NF && !seen[$0]++' | while IFS= read -r one; do
+    printf '\noption=t%s\n' "$(hex "$one")"
+    openspot_kv title "$one"
+  done
+  printf '\noption=types\ntitle=Edit types…\n'
   printf '\nfield=picture\ntitle=Picture\nplaceholder=A link to an image\n'
   if [ -n "$7" ]; then openspot_kv value "$7"; fi
 }
@@ -161,21 +167,52 @@ keep() {
   [ -n "$currency" ] || currency=$2
   [ -n "$currency" ] || currency=$(region)
   [ -n "$price" ] || currency=
-  type=$(clean "$(value input.newtype)")
-  if [ -z "$type" ]; then
-    picked=$(value input.type)
-    type=$(types | sed -n "${picked#t}p")
-  fi
+  picked=$(value input.type)
+  type=$(unhex "${picked#t}")
   picture=$(clean "$(value input.picture)")
   case "$picture" in https://*) ;; http://*) picture="https://${picture#http://}" ;; *) picture= ;; esac
   line=$(printf '%s\t%s\t%s\t%s\t%s\t%s\t%s' "$1" "${type:-Other}" "$price" "$currency" "$name" "$url" "$picture")
   { list | L="$line" awk -F'\t' -v id="$1" '$1 == id { print ENVIRON["L"]; found = 1; next } { print } END { if (!found) print ENVIRON["L"] }'; } \
     | openspot_keep "$data" || exit 1
+  rm -f "$OPENSPOT_DATA/draft"
+}
+
+# Edit types… in the menu of a wish's type: the values of the wish wait in $OPENSPOT_DATA/draft while a form adds a
+# type and takes out the ones that are unticked, then the wish comes back with the new type chosen.
+# retype <the wish, add or its id> <title of its form> <its type before>, which prints a form and succeeds when the call
+# was one of these. A draft waits ten minutes for its Types form.
+retype() {
+  draft="$OPENSPOT_DATA/draft"
+  if [ "$(value input.type)" = types ]; then
+    printf '%s\t%s\t%s\t%s\t%s\n' "$1" "$(clean "$(value input.link)")" "$(clean "$(value input.name)")" \
+      "$(clean "$(value input.price)")" "$(clean "$(value input.picture)")" | openspot_keep "$draft"
+    printf 'frame=\ntitle=Types\n\nfield=newtype\ntitle=New type\nplaceholder=Such as Plants\n'
+    printf '\nchoice=keep\ntitle=Your types\ntype=multiple\n'
+    types | while IFS= read -r one; do openspot_kv value "t$(hex "$one")"; done
+    types | while IFS= read -r one; do printf '\noption=t%s\n' "$(hex "$one")"; openspot_kv title "$one"; done
+    return 0
+  fi
+  new=$(clean "$(value input.newtype)")
+  kept=$(value input.keep)
+  [ -s "$draft" ] && [ -z "$(value input.link)$(value input.name)$(value search)" ] || return 1
+  [ "$(cut -f1 < "$draft")" = "$1" ] && [ -n "$(find "$draft" -mmin -10)" ] || return 1
+  shift
+  if [ -n "$new$kept" ]; then
+    { printf '%s\n' "$kept" | while IFS= read -r id; do [ -n "$id" ] && unhex "${id#t}" && echo; done; [ -z "$new" ] || printf '%s\n' "$new"; } \
+      | awk 'NF && !seen[$0]++' | openspot_keep "$kinds" || exit 1
+  fi
+  at() { cut -f"$(($1 + 1))" < "$draft"; }
+  type=$2
+  types | grep -qxF -- "$type" || type=
+  [ -z "$new" ] || type=$new
+  [ -n "$type" ] || type=$(types | head -n 1)
+  wishform "$1" "$(at 1)" "$(at 2)" "$(at 3)" '' "$type" "$(at 4)" '' ''
 }
 
 # The form of a new wish. It asks for the link, then shows what the page gave, to change before it is kept.
 # The page that it read last waits in $OPENSPOT_DATA/page: the link, then the line that fetch prints.
 add() {
+  retype add 'New wish' "$(cut -f6 "$OPENSPOT_DATA/page" 2>/dev/null)" && return
   typed=$(clean "$(value input.link)")
   [ -n "$typed" ] || typed=$(clean "$(value search)")
   url=$(printf '%s\n' "$typed" | link | untrack)
@@ -213,6 +250,7 @@ add() {
 edit() {
   [ -n "$1" ] || return
   [ -n "$(field "$1" 1)" ] || return
+  retype "$1" 'Edit wish' "$(field "$1" 2)" && return
   name=$(clean "$(value input.name)")
   if [ -n "$name" ]; then
     keep "$1" "$(field "$1" 4)"

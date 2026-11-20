@@ -34,6 +34,22 @@ reads 'the data of a product' 'https://shop.example/p/2' \
    <script type="application/ld+json">{"@type":"Product","image":["\/img\/h.jpg"],"offers":{"price":"1.299,50","priceCurrency":"UAH"}}</script>' \
   "Tom's & Co headphones" 1299.50 UAH 'https://shop.example/img/h.jpg' Gadgets 1
 
+reads 'a book named by its breadcrumbs' 'https://sens.example/taiemnytsia/' \
+  '<title>Таємниця таємниць</title><div class="breadcrumbs"><ol><li>Інтернет-магазин книг</li><li>Проза</li></ol></div>' \
+  'Таємниця таємниць' '' '' '' Books 1
+
+reads 'a book named by its details' 'https://shop.example/p/9' \
+  '<title>Таємниця таємниць</title><dl><dt>Видавництво</dt><dd>КСД</dd><dt>Кількість сторінок</dt><dd>608</dd></dl>' \
+  'Таємниця таємниць' '' '' '' Books 1
+
+reads 'a phone in Ukrainian' 'https://shop.example/p/10' \
+  '<title>Смартфон Pixel 9 128 ГБ</title>' \
+  'Смартфон Pixel 9 128 ГБ' '' '' '' Gadgets 1
+
+reads 'a thing with no cue' 'https://shop.example/p/11' \
+  '<title>Таємний сад</title><p>Видавництво не вказано</p>' \
+  'Таємний сад' '' '' '' Other 1
+
 reads 'a price that only shows' 'https://books.example/p/3' \
   '<title>A Light in the Attic | Books</title><p class="price_color">£51.77</p>' \
   'A Light in the Attic' 51.77 GBP '' Books 1

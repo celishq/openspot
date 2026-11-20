@@ -167,18 +167,29 @@ $image = ($origin // '') . $image if $image =~ m{^/};
 $image =~ s{^http://}{https://};
 $image = '' unless $image =~ m{^https://\S+$};
 
-my $words = lc join(' ', $title, $meta{'og:type'} // '', plain(ld('category', '"([^"]*)"')), $url);
+my $crumbs = join(' ', $ld =~ /"BreadcrumbList".*?\]/s ? ($& =~ /"name"\s*:\s*"([^"]*)"/g) : ());
+while ($html =~ /<(?:nav|ol|ul|div)\b[^>]*(?:class|itemtype|id|aria-label)\s*=\s*["'][^"']*breadcrumb[^"']*["'][^>]*>(.{0,3000}?)<\/(?:nav|ol|ul)>/gis) {
+    $crumbs .= ' ' . plain($1 =~ s/<[^>]+>/ /gr);
+}
+my $kinds = join(' ', $ld =~ /"\@type"\s*:\s*"(\w+)"/g);
+my $words = lc join(' ', $title, $crumbs, $meta{'og:type'} // '', $kinds, plain(ld('category', '"([^"]*)"')), $url);
 my @types = (
-    [ Books   => qr/\b(books?|novel|paperback|hardcover|kindle|isbn|audiobook|manga|книг\w*)\b/ ],
-    [ Gadgets => qr/\b(phones?|iphone|ipad|macbook|laptop|tablet|headphones?|earbuds|airpods|camera|keyboard|mouse|monitor|charger|speaker|console|playstation|xbox|nintendo|drone|smartwatch|watch|electronics|gadgets?|usb|ssd|gpu|router|kindle)\b/ ],
-    [ Clothes => qr/\b(shirts?|t-shirts?|dress(es)?|jeans|jackets?|sneakers?|shoes?|boots|hoodies?|sweaters?|coats?|skirts?|pants|trousers|shorts|socks|scarf|hat|cap|clothing|clothes|apparel|fashion)\b/ ],
-    [ Home    => qr/\b(sofa|bookcases?|bookshel\w+|lamp|chair|table|desk|mug|pillow|blanket|kitchen|furniture|vase|candle|rug|shelf|bedding|cookware|home)\b/ ],
-    [ Beauty  => qr/\b(perfume|fragrance|lipstick|skincare|serum|shampoo|makeup|cosmetics?|moisturi[sz]er|beauty)\b/ ],
-    [ Toys    => qr/\b(lego|toys?|puzzles?|board game|dolls?|plush|games?)\b/ ],
-    [ Sports  => qr/\b(yoga|bike|bicycle|dumbbells?|fitness|running|tent|ski|snowboard|football|basketball|tennis|hiking|sports?)\b/ ],
+    [ Books   => qr/\b(books?|novel|paperback|hardcover|kindle|isbn|audiobook|manga|книг\w*|книжк\w*|роман\w*|література|литература|комікс\w*|манга)\b/ ],
+    [ Gadgets => qr/\b(phones?|iphone|ipad|macbook|laptop|tablet|headphones?|earbuds|airpods|camera|keyboard|mouse|monitor|charger|speaker|console|playstation|xbox|nintendo|drone|smartwatch|watch|electronics|gadgets?|usb|ssd|gpu|router|смартфон\w*|телефон\w*|ноутбук\w*|планшет\w*|навушник\w*|наушник\w*|годинник\w*|часы|колонк\w*|камер\w*|фотоапарат\w*|клавіатур\w*|клавиатур\w*|монітор\w*|монитор\w*|електронік\w*|электроник\w*|гаджет\w*|техніка|техника|консол\w*)\b/ ],
+    [ Clothes => qr/\b(shirts?|t-shirts?|dress(es)?|jeans|jackets?|sneakers?|shoes?|boots|hoodies?|sweaters?|coats?|skirts?|pants|trousers|shorts|socks|scarf|hat|cap|clothing|clothes|apparel|fashion|одяг\w*|одежд\w*|сукн\w*|плать\w*|футболк\w*|куртк\w*|взутт\w*|обув\w*|кросівк\w*|кроссовк\w*|светр\w*|свитер\w*|штан\w*|джинс\w*|пальт\w*|худі|худи|шкарпетк\w*|носк\w*|спідниц\w*|юбк\w*)\b/ ],
+    [ Home    => qr/\b(sofa|bookcases?|bookshel\w+|lamp|chair|table|desk|mug|pillow|blanket|kitchen|furniture|vase|candle|rug|shelf|bedding|cookware|home decor|homeware|меблі|мебель|ламп\w*|крісл\w*|кресл\w*|стіл|стол|чашк\w*|посуд\w*|подушк\w*|ковдр\w*|одеял\w*|кухн\w*|ваз\w*|свічк\w*|свеч\w*|килим\w*|ковер|полиц\w*|постіль\w*|постель\w*)\b/ ],
+    [ Beauty  => qr/\b(perfume|fragrance|lipstick|skincare|serum|shampoo|makeup|cosmetics?|moisturi[sz]er|beauty|парфум\w*|парфюм\w*|духи|помад\w*|сироват\w*|шампун\w*|косметик\w*|крем\w*|макіяж|макияж)\b/ ],
+    [ Toys    => qr/\b(lego|toys?|puzzles?|board game|dolls?|plush|games?|іграшк\w*|игрушк\w*|лего|пазл\w*|настільн\w* гр\w*|настольн\w* игр\w*|ляльк\w*|кукл\w*)\b/ ],
+    [ Sports  => qr/\b(yoga|bike|bicycle|dumbbells?|fitness|running|tent|ski|snowboard|football|basketball|tennis|hiking|sports?|йог\w*|велосипед\w*|гантел\w*|фітнес|фитнес|намет\w*|палатк\w*|лиж\w*|спорт\w*)\b/ ],
 );
 my $type = 'Other';
 for my $pair (@types) { if ($words =~ $pair->[1]) { $type = $pair->[0]; last; } }
 $type = 'Books' if $type eq 'Gadgets' && $words =~ /\bkindle edition\b/;
+$type = 'Books' if $type eq 'Other' && ($kinds =~ /\bBook\b/ || ($meta{'og:type'} // '') =~ /^books?\b/i);
+if ($type eq 'Other') {
+    my $text = $html =~ s/<script\b.*?<\/script>//gsir =~ s/<[^>]+>/ /gr;
+    my %cues = map { lc($_) => 1 } $text =~ /\b(isbn|кількість сторінок|количество страниц|number of pages|print length|видавництво|издательство|перекладач|переводчик|палітурка|переплет)\b/gi;
+    $type = 'Books' if keys(%cues) >= 2 || $text =~ /\bisbn\b[^0-9]{0,20}97[89]/i;
+}
 
 print join("\t", $title, $price, $currency, $image, $type, $read), "\n";
