@@ -1,12 +1,13 @@
 extension Manifest {
     public struct Setting: Equatable, Sendable {
         static let table = "settings"
-        static let keys: Set<String> = ["title", "icon", "type"]
+        static let keys: Set<String> = ["title", "icon", "type", "options"]
         static let secret = "secret"
 
         public let id: String
         public let title: String
         public let icon: String?
+        public let options: [String]
         let section: String
         let type: String?
         let unknownKey: String?
@@ -17,6 +18,7 @@ extension Manifest {
             title = values["title"]?.first ?? id.prefix(1).uppercased() + id.dropFirst()
             icon = values["icon"]?.first
             type = values["type"]?.first
+            options = values["options"] ?? []
             unknownKey = written.first { !Self.keys.contains($0) }
         }
 

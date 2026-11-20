@@ -20,7 +20,7 @@ public struct SheetPage: Equatable, Sendable {
     init(run: SpotRun, rect: CGRect, query: String, recording: String? = nil, keyStatus: String? = nil) {
         spot = run.spot.id
         route = run.route
-        state = run.shownState
+        state = run.sheetState
         list = run.list
         panel = run.panel
         selection = run.panel?.selectedPart == nil ? run.selection : Int.max

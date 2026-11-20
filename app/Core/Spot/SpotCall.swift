@@ -15,6 +15,8 @@ public enum SpotCall: NounCall {
     case choose(String)
     case act(CardAct, String)
     case review(String)
+    case ask(String, title: String?)
+    case reply(String)
 
     private static let folder = "changes your spots folder"
     private static let panel = "opens the panel"
@@ -52,7 +54,7 @@ public enum SpotCall: NounCall {
             guard let fit = words.fit, fit.rest.count == 1 else { return nil }
             return fit.has("--select") ? Self.show(fit.rest[0]) : Self.open(fit.rest[0])
         },
-        CommandVerb("push", "<id> [page] [--replace] [--title <words>]", "Pushes a spot, or a page of it, over the flow that shows.", rule: CallRule(inShow: .changes(panel))) { $0.fit.flatMap(push) },
+        CommandVerb("push", "<id> [page] [--replace] [--title <words>]", "Pushes a spot, or a page of it, over the flow that shows, or opens the panel on it when no sheet shows.", rule: CallRule(inShow: .changes(panel))) { $0.fit.flatMap(push) },
         CommandVerb("pop", "<id> [--all]", "Goes back one sheet of a spot that shows, or to its first sheet.", rule: CallRule(inShow: .changes("moves the panel"))) { words in
             guard let fit = words.fit, fit.rest.count == 1 else { return nil }
             return Self.pop(fit.rest[0], all: fit.has("--all"))
@@ -63,6 +65,11 @@ public enum SpotCall: NounCall {
         act(.prompt, "Copies a prompt to change a spot, as the row of a card's menu does.", rule: CallRule(use: .spots, used: "copied a prompt to change a spot", inShow: .changes(window))),
         act(.share, "Shares a spot, as the row of a card's menu does.", rule: CallRule(use: .spots, used: "shared a spot", inShow: .changes(window))),
         act(.delete, "Deletes a spot, as the row of a card's menu does.", rule: CallRule(use: .spots, used: "deleted a spot", inShow: .changes(folder))),
+        CommandVerb("ask", "<id> [--title <words>]", "Shows a spot and waits, with the words as the title of its sheet. Prints what the spot gives with `spot reply`, or exits 1 when its sheet closes with no reply.", rule: CallRule(inShow: .waits, flags: .needsApp)) { words in
+            guard let fit = words.fit, fit.rest.count == 1 else { return nil }
+            return Self.ask(fit.rest[0], title: fit.value("--title"))
+        },
+        CommandVerb("reply", "<value>", "Gives the value to the `spot ask` that opened this spot.", rule: CallRule(flags: .needsApp)) { $0.one.map(Self.reply) },
         CommandVerb("review", "<id>", "Shows the whole text of a spot that comes with the app, and what of it runs by itself.", rule: CallRule(inShow: .changes(panel), flags: .needsApp)) { $0.one.map(Self.review) }
     ])
 
@@ -101,6 +108,8 @@ public enum SpotCall: NounCall {
         case .choose(let id): spots.choose(for: id)
         case .act(let act, let id): spots.act(act, id)
         case .review(let id): spots.review(id)
+        case .ask(let id, let title): spots.ask(id, title: title)
+        case .reply(let value): spots.reply(value)
         }
     }
 }

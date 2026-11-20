@@ -1,6 +1,23 @@
 import Foundation
 
 extension SpotsModel {
+    public func failure(of entry: Entry) -> String? {
+        failure(of: entry.item?.run, in: entry.spot.id)
+    }
+
+    public func refusals(of item: String?, in spot: String) -> Int {
+        shakes[Self.shakeKey(of: item, in: spot)] ?? 0
+    }
+
+    static func shakeKey(of item: String?, in spot: String) -> String {
+        "\(spot)\n\(item ?? "")"
+    }
+
+    public func failure(of item: String?, in spot: String) -> String? {
+        guard let run = sheets[spot], run.failedItem == item else { return nil }
+        return run.failure
+    }
+
     public var selectedEntry: Entry? {
         let list = visible
         guard list.indices.contains(selected) else { return nil }
@@ -64,10 +81,18 @@ extension SpotsModel {
         arrangement.isWindow(of: id) ?? defaultArrangement.isWindow(of: id) ?? false ? .window : .panel
     }
 
-    func presentSheet(of id: String, moving: Bool, showingPanel: () -> Void = {}) {
+    func presentSheet(of id: String, showingPanel: () -> Void = {}) {
         guard place(ofSheet: id) == .panel else { return openWindow(id) }
+        afterShowing(showingPanel) { [weak self] in
+            guard let self else { return }
+            pushFirst(id, moving: isShown)
+        }
+    }
+
+    func afterShowing(_ showingPanel: () -> Void, _ open: @escaping @MainActor () -> Void) {
+        let wasShown = isShown
         showingPanel()
-        pushFirst(id, moving: moving)
+        if wasShown { open() } else { host.nextFrame(open) }
     }
 
     public func openSettings() {
@@ -84,7 +109,7 @@ extension SpotsModel {
         return true
     }
 
-    public func pushFirst(_ id: String, moving: Bool, title: String? = nil) {
+    public func pushFirst(_ id: String, moving: Bool, title: String? = nil, source: String? = nil) {
         if let spot = sheets[id]?.spot, spot.opensToKeys {
             openKeys(of: id)
             return
@@ -94,8 +119,9 @@ extension SpotsModel {
         }
         if place(ofSheet: id) == .window { return openWindow(id) }
         if openSheetID == nil { endFlow() }
-        flow.push(FlowSheet(spot: id, title: title))
-        sheets[id]?.show(route: nil)
+        let page = FlowSheet(spot: id, title: title, source: source)
+        flow.push(page)
+        sheets[id]?.show(page)
         waitPush(moving: moving && openSheetID != nil && openSheetID != id && flow.index > 0)
         present(id, moving: moving)
     }
@@ -127,6 +153,7 @@ extension SpotsModel {
 
     public func panelDidHide() {
         isPanelHidden = true
+        if !shakes.isEmpty { shakes = [:] }
         noteMiss()
         finishPick()
         for entry in entries where entry.spot.answers != nil { sheets[entry.id]?.answer("") }
@@ -162,7 +189,7 @@ extension SpotsModel {
         }
         closeMenu(keepsFoot: true)
         change(nil) {
-            transition.show(list, moves: true)
+            transition.show(list, moves: true, page: flow.current)
             holdFieldDrop()
         }
         host.nextFrame { [weak self] in
@@ -172,7 +199,7 @@ extension SpotsModel {
 
     func cutSheet(to list: String?) {
         change(nil) {
-            if let list { transition.show(list, moves: false) } else { transition.hide(moves: false) }
+            if let list { transition.show(list, moves: false, page: flow.current) } else { transition.hide(moves: false) }
             fieldDrop = nil
             showsFieldDrop = false
         }

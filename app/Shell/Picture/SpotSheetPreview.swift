@@ -14,7 +14,7 @@ struct SpotSheetPreview: View {
     var seed = ""
 
     var body: some View {
-        let frame = SpotSheetBody.size(of: panel, rows: list.shown.count, setsApart: list.setsApart)
+        let frame = SpotSheetBody.size(of: panel, rows: list.shown.count, perLine: list.perLine, setsApart: list.setsApart)
         VStack(alignment: .leading, spacing: SpotTokens.rowGap) {
             HStack(spacing: SpotTokens.wordsGap) {
                 Image(systemName: symbol)

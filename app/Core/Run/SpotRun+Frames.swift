@@ -229,7 +229,7 @@ extension SpotRun {
         }
     }
 
-    func fail(_ error: Error, tells: Bool = true) {
+    func fail(_ error: Error, tells: Bool = true, item: String? = nil) {
         let said = switch error as? SpotError {
         case .failed(_, let message) where !message.isEmpty, .failedWithFix(_, let message, _) where !message.isEmpty: message
         case .timedOut: "\(spot.name) took too long, so Openspot stopped it."
@@ -239,6 +239,7 @@ extension SpotRun {
         }
         let text = fieldValues.hiding(said)
         failure = text
+        if failedItem != item { failedItem = item }
         runs.usage.failed(spot, fault: text, at: runs.now())
         guard tells else { return Self.appLog.info("\(text, privacy: .public)") }
         if case .failedWithFix(_, _, let fix) = error as? SpotError { return onReport(.failureWithFix(text, fix)) }

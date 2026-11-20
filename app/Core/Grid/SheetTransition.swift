@@ -13,6 +13,7 @@ public struct SheetTransition: Equatable, Sendable {
     public private(set) var phase = Phase.closed
     public private(set) var motion = 0
     public private(set) var replaced: String?
+    public private(set) var page: FlowSheet?
 
     public init() {}
 
@@ -24,8 +25,9 @@ public struct SheetTransition: Equatable, Sendable {
         phase == .opening || phase == .open
     }
 
-    public mutating func show(_ id: String, moves: Bool) {
+    public mutating func show(_ id: String, moves: Bool, page: FlowSheet? = nil) {
         replaced = moves && isOpen && self.id != id ? self.id : nil
+        if self.id != id { self.page = page }
         self.id = id
         if !moves {
             motion += 1
@@ -51,6 +53,7 @@ public struct SheetTransition: Equatable, Sendable {
         } else {
             phase = .closed
             id = nil
+            page = nil
         }
     }
 
@@ -66,6 +69,7 @@ public struct SheetTransition: Equatable, Sendable {
         case .closing:
             self.phase = .closed
             id = nil
+            page = nil
         case .closed, .ready, .open:
             break
         }

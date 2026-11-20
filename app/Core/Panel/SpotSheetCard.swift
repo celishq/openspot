@@ -13,12 +13,13 @@ public struct SpotSheetCard {
         guard let sheetID else { return nil }
         let owner = OwnedSheet.owner(of: sheetID)?.spot ?? sheetID
         let visible = model.visible
-        let index = visible.firstIndex { $0.id == owner }
+        let source = sheetID == model.transition.id ? model.transition.page?.source : nil
+        let index = visible.firstIndex { $0.id == owner } ?? source.flatMap { source in visible.firstIndex { $0.id == source } }
         guard let index, let placement = model.placements.first(where: { $0.index == index }) else { return nil }
         let entry = visible[index]
         let face = entry.state.face
         let isDrawn = entry.item == nil && (face.layout(for: placement.size) != nil || face.hasView && entry.spot.view != nil)
-        return SpotSheetCard(id: entry.id, placement: placement, kind: entry.kind, look: entry.id != owner || isDrawn ? entry : nil, state: entry.id == sheetID ? nil : entry.shownState, left: model.panels.leftExtent)
+        return SpotSheetCard(id: entry.id, placement: placement, kind: entry.kind, look: isDrawn ? entry : nil, state: entry.id == sheetID ? nil : entry.shownState, left: model.panels.leftExtent)
     }
 
     public func frame(scrollOffset: CGFloat) -> CGRect {

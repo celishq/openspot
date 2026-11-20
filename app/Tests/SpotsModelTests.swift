@@ -1741,6 +1741,18 @@ final class SpotsModelTests: XCTestCase {
         try await wait("the open list") { model.openSheetID == "list" && host.shows == 1 }
     }
 
+    func testASheetOpenedWhileThePanelIsHiddenGrowsFromTheFieldOnceThePanelShows() async throws {
+        try script("list", toml: "", "printf 'text=a\\ntitle=Apple\\n'")
+        await model.reload()
+        XCTAssertFalse(model.isShown)
+
+        XCTAssertTrue(model.open("list"))
+
+        try await wait("the open list") { model.openSheetID == "list" }
+        XCTAssertEqual(host.shows, 1)
+        XCTAssertTrue(host.motions.contains(.sheet(isOpen: true)), "\(host.motions)")
+    }
+
     func testAKeyOfAScriptThatIsGoneShowsNothing() async throws {
         await model.reload()
 

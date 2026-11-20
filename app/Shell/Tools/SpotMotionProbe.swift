@@ -86,6 +86,16 @@ final class SpotMotionProbe: NSObject {
             start = CACurrentMediaTime()
             return press(target.id, left: presses)
         }
+        if action == "searchask" {
+            model.searchText = searchText
+            return DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) {
+                if let index = self.model.visible.firstIndex(where: { $0.item?.run == self.row }) { self.model.selected = index }
+                self.start = CACurrentMediaTime()
+                if !self.model.handleSearchKey(ActionKey(name: "return")) { _ = self.model.handleKey(ActionKey(name: "return")) }
+                DispatchQueue.main.asyncAfter(deadline: .now() + self.pause * 2) { _ = self.model.handleKey(ActionKey(name: "escape")) }
+                DispatchQueue.main.asyncAfter(deadline: .now() + self.pause * 4) { self.end() }
+            }
+        }
         if action == "keys" {
             if let placement = model.placements.first(where: { model.visible[$0.index].id == target.id }) { model.selected = placement.index } else { model.open(target.id) }
             return DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) {
@@ -101,6 +111,7 @@ final class SpotMotionProbe: NSObject {
             case "pick": self.pick()
             case "flow": self.step(through: [ActionKey(name: "[", isCommand: true), ActionKey(name: "]", isCommand: true), ActionKey(name: "escape")])
             case "history": self.step(through: self.history, reopening: target.id)
+            case "ask": self.step(through: [ActionKey(name: "escape")])
             default: self.arrow(left: self.presses)
             }
         }

@@ -48,6 +48,10 @@ extension SpotRun {
         return state.showing(title: call.title, detail: call.detail)
     }
 
+    public var sheetState: SpotState {
+        page.route == nil ? shownState.showing(title: page.title, detail: nil) : shownState
+    }
+
     public func pressCard() {
         if let running = running(Self.cardKey) { return pressAgain(running) }
         guard spot.kind == .toggle else { return act(Message(spot.click), key: Self.cardKey) }
@@ -90,6 +94,11 @@ extension SpotRun {
             onReport(.toast("\(spot.name) is still busy with \(Self.waitingLimit) presses, so Openspot dropped this one. Wait for one to end, then press again."))
         }
         startWaitingKey()
+    }
+
+    func due(_ timer: SpotTimer, late: Int) {
+        let message = Message(SpotAction(arguments: [SpotTimer.call, timer.id]), late: max(0, late))
+        send(Call(message: message, key: "\(SpotTimer.call).\(timer.id)", event: ShowEvent(event: SpotTimer.event, value: timer.value), purpose: .act(Act(showsAfter: false))))
     }
 
     func startWaitingKey() {
@@ -142,7 +151,7 @@ extension SpotRun {
         answered = nil
         return try await withCheckedThrowingContinuation { waiting in
             let first = FirstFrame(waiting)
-            if !send(Call(message: Message(call, search: search.text, searchForms: search.forms), key: key, purpose: .act(Act(first: first)))) { first.end(.stopped) }
+            if !send(Call(message: Message(call, search: search.text, searchForms: search.forms), key: key, purpose: .act(Act(first: first, started: runs.now())))) { first.end(.stopped) }
         }
     }
 
@@ -239,6 +248,8 @@ extension SpotRun {
 
     private func act(_ message: Message, key: String, as act: Act = Act()) {
         answered = nil
+        var act = act
+        act.started = runs.now()
         send(Call(message: message, key: key, purpose: .act(act)))
     }
 }

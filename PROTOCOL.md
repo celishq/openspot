@@ -83,9 +83,10 @@ makes a call at each of these:
 | `<spot> drop <path> [path]...`       | A drop of files on its card.                                          |
 | `<spot> drag <item id> [item id]...` | A drag of items that stand for files out of its sheet.                |
 | `<spot> <command>`                   | A press of a command's hotkey, or a [slash command](#slash-commands). |
+| `<spot> due <timer id>`              | A [timer](#act-at-a-time) of the spot comes due.                      |
 
-- **Arguments:** `<id> [item] [value]`, so that `case "$1"` handles each call. `show`, `open`, `drop` and `drag` are
-  Openspot's own ids: no block takes them, except a button `open`. A value over 64 KB comes only as `input.value=`.
+- **Arguments:** `<id> [item] [value]`, so that `case "$1"` handles each call. `show`, `open`, `drop`, `drag` and `due`
+  are Openspot's own ids: no block takes them, except a button `open`. A value over 64 KB comes only as `input.value=`.
 - **Variables:** `OPENSPOT_ID`, the spot's id; `OPENSPOT_DATA`, the data folder of its spot folder; `OPENSPOT_SH`, the
   shell helper; `PATH`, with the `openspot` command first, then the user's paths, `/opt/homebrew/bin`,
   `/usr/local/bin`, `/usr/bin`, `/bin`, `/usr/sbin` and `/sbin`; and `LC_ALL=en_US.UTF-8`, so each tool reads text as
@@ -106,6 +107,7 @@ stdin with `value` or `openspot_input`, not `cat`: the function of `openspot_ser
 | `openspot_kv <key> <value>`                  | Prints one line, with its value escaped.                                                        |
 | `openspot_item <id> <title> [detail] [icon]` | Prints one item, a `text` block.                                                                |
 | `openspot_items [kind]`                      | Prints an item for each tab-separated line of stdin: id, title, detail, icon.                   |
+| `openspot_rows <key>...`                     | Prints a tab-separated line for each block of stdin, with the value of each key, such as what an `openspot` command printed. |
 | `openspot_serve <function> "$@"`             | Runs the function with the arguments of each call, in each [mode](#modes).                      |
 | `openspot_keep <file> [text]`                | Keeps the text, or stdin, in the file as a whole, or fails and keeps the old file.              |
 | `openspot_paste <text>`                      | Pastes the text into the front app and puts the clipboard back. It needs `clipboard` in `uses`. |
@@ -342,7 +344,8 @@ A setting keeps a choice of the user, such as a city or a token. See
 
 - Each call gets each setting that has a value on stdin, such as `setting.city=Paris`, so the spot reads it with no
   `openspot` call.
-- Return on a setting in the spot's Settings runs the call with the same id, which can answer with a form.
+- Return on a setting in the spot's Settings runs the call with the same id, which can answer with a form. A setting
+  with `options`, such as `options = ["Saturday", "Sunday"]`, is a choice that Openspot shows and keeps, with no call.
 - `type = "secret"` keeps a value of 8 characters or more, such as a token. Openspot asks for it in its own form, gives
   it on stdin only, and hides the exact value in the call log, the stats, a toast and a failure line.
 - `openspot setting get <key>` prints a value, or `•••` for a secret. `openspot setting set <key> [value]` keeps a
@@ -523,6 +526,83 @@ An offered action is a command of one spot that shows in the ⌘K menu of every 
 - In a JavaScript spot, `when=<function>` on an offered button gets the card's spot id and its origin, and returns
   whether the action shows. `hotkey=<function>` returns the card's hotkey. The ⌘K menu waits 2 ms for them.
 
+## Act at a time
+
+A timer calls its spot back at a time the spot chose, such as the end of a snooze, even when the panel is closed.
+
+```toml
+title = "Stretch"
+icon = "figure.walk"
+on = ["sheet.open"]
+uses = ["timer"]
+```
+
+```sh
+#!/bin/sh
+case "$1" in
+  show) printf 'button=later\ntitle=Remind me in an hour\nscope=spot\n' ;;
+  later) openspot timer add "$(date -u -v+1H +%Y-%m-%dT%H:%M:%SZ)" "Time to stretch" ;;
+  due) openspot toast "$(sed -n 's/^event.value=//p')" ;;
+esac
+```
+
+A press of Remind me in an hour adds a timer. An hour later, Openspot calls `stretch due <timer id>`, and the spot
+shows the toast Time to stretch.
+
+- `openspot timer add <time> [value]` takes an ISO 8601 time with its offset, such as `2026-11-20T08:00:00+01:00`, and
+  prints the timer's id. A time that has passed comes due at once, and `someday` keeps a timer that never comes due,
+  until `timer remove`.
+- At the time, Openspot calls `<spot> due <timer id>` with `event=timer.due`, `event.value=` the value, and
+  `timer.late=` the seconds it came late, such as after the Mac slept or Openspot was quit. Openspot drops the timer as
+  it calls, and draws nothing that the call prints.
+- `openspot timer list` prints each timer of the spot as an item, with its value as the `title` and its time in `at`.
+  `openspot timer remove <id>` removes one.
+- A timer belongs to the spot that added it, and no other spot sees it. It lasts until it comes due, also across a
+  restart. A spot holds at most 1000 timers, each with a value of at most 4 KB. A timer of a spot that is off or gone
+  comes due into nothing.
+
+### Let the person pick the time
+
+Snooze, a spot of Openspot, is a grid of big tiles such as Later, Tomorrow and Pick Date. Ask it with
+`openspot spot ask openspot/snooze`, and it prints the time of the tile that the person picks.
+
+```toml
+title = "Remind me"
+icon = "bell"
+on = ["sheet.open"]
+uses = ["timer"]
+```
+
+```sh
+#!/bin/sh
+case "$1" in
+  show) printf 'button=later\ntitle=Remind me later\nscope=spot\n' ;;
+  later)
+    at=$(openspot spot ask openspot/snooze) || exit 0
+    [ "$at" = someday ] || openspot timer add "$at" "Look at this again"
+    ;;
+  due) openspot toast "$(sed -n 's/^event.value=//p')" ;;
+esac
+```
+
+- It prints an ISO 8601 time with its offset, or `someday` for Someday, which has no time. A close of the sheet with
+  no pick prints nothing and exits 1.
+- The person sets the hours of the tiles, such as the morning and the evening, in the Settings of Snooze.
+
+### Ask another spot
+
+`openspot spot ask <id>` shows another spot and waits for the value it gives back, as a spot does with Snooze. Use it
+to make a picker that other spots share.
+
+- The asked spot's sheet is a step of the flow that shows, over the sheet that asked. With no sheet shown, it grows
+  from the asking spot's selected row, such as a row of the main search, or opens the panel on it. A
+  press that asks keeps the panel open with `close=false`, so the step takes the sheet's place in one motion.
+- `--title <words>` names the asked sheet, such as the title of the tab that a snooze is for.
+- The asked spot gives the value with `openspot spot reply <value>`, and `spot ask` prints it. The press that replies
+  closes the panel as any press does.
+- A close of the asked spot's sheet with no reply ends the ask with exit 1, once the spot's running calls end. A newer
+  ask of the same spot ends the older one the same way. A spot can't ask itself.
+
 ## The life of a call
 
 A call starts, prints and ends. These rules say how long it can take, and what happens when it stops.
@@ -606,7 +686,7 @@ title = "Refresh"
 | Table              | Meaning                                                                                                                                                                                                                                                                                                                                                                                                                                                     |
 | ------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `[commands.<id>]`  | A command, with its `title` and `icon`, which the user can give a hotkey. `confirm = "<words>"` shows the words at the first press and runs it at the second, `placeholder` lists it as a slash command, and `close = false` keeps the panel open after it runs, from a slash command that shows nothing or from the ⌘K menu. It also takes the keys of a [button](#buttons-and-actions): `shortcut`, `scope` and `form`, and [`offers`](#offered-actions). |
-| `[settings.<key>]` | A [setting](#settings), with its `title`, by default its key with a capital first letter, and `icon`.                                                                                                                                                                                                                                                                                                                                                       |
+| `[settings.<key>]` | A [setting](#settings), with its `title`, by default its key with a capital first letter, `icon`, and `options`, the values of a choice.                                                                                                                                                                                                                                                                                                                    |
 
 ## The message
 
@@ -620,6 +700,7 @@ Each key that a call can find in its message.
 | `input.<id>=`    | Each input of the sheet or of a form. A value that isn't an input comes as `input.value=`.                |
 | `setting.<key>=` | Each [setting](#settings) that has a value, a secret too.                                                 |
 | `item.<key>=`    | On an action or a press of an item that holds a key of its own, each key of the item. A form gets none.   |
+| `timer.late=`    | On a `due`, the seconds the timer came late. See [Act at a time](#act-at-a-time).                         |
 
 ## Blocks
 
@@ -644,6 +725,7 @@ Each kind of block, the keys of its own and the call it sends.
 - `icon` is an image file, such as `cups.png`; an `https://` image, downloaded once; the Finder icon of a path with a
   `/` or a leading `~`; an SF Symbol, such as `wifi`; or any other text, such as `😀`.
 - `look` is the box of a text, a number or a button: `tile` or `bare`, and on a button also `chip` or `strong`.
+  An item with `look=tile` in a `repeat` shows its title and detail under its icon.
   `align=left`, `right` or `center` places a block that is smaller than its area.
 - A field's `type`: none for one line, `multiline`, `slider` from `min` to `max`, 0 to 100 by default, which sends a whole number, `search` for the
   search field of the [items](#items), and `hotkey`. A choice with
@@ -664,6 +746,7 @@ Each event that Openspot raises, when it raises it, and the value that the show 
 | `clock.<seconds>`  | Every that many seconds while a place of the spot shows, and when the Mac wakes.     |                                  |
 | `search.text`      | At each change of the main search text.                                              | the text                         |
 | `sheet.text`       | At each change of the sheet's search text, and when the sheet opens.                 | the text                         |
+| `spot.want`        | When the spot first shows in a panel open: its card on the grid, or its rows in the main search. |                                  |
 | `clipboard.change` | When the clipboard changes.                                                          |                                  |
 | `app.front`        | When another app comes to the front.                                                 | its bundle ID                    |
 | `app.update`       | When Openspot has downloaded an update.                                              | its version                      |

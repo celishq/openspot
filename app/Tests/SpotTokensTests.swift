@@ -26,8 +26,8 @@ final class SpotTokensTests: XCTestCase {
     }
 
     func testAFloatingSheetWithRowsSetApartHoldsTheRuleAsThePanelDoes() {
-        let plain = SpotTokens.floatSize(rows: 6)
-        let apart = SpotTokens.floatSize(rows: 6, setsApart: true)
+        let plain = SpotTokens.floatSize(rows: 6, perLine: 1)
+        let apart = SpotTokens.floatSize(rows: 6, perLine: 1, setsApart: true)
         let panel = SpotTokens.sheetRect(rows: 6, setsApart: true).height - SpotTokens.sheetRect(rows: 6).height
 
         XCTAssertEqual(apart.height - plain.height, panel)

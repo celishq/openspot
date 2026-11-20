@@ -31,13 +31,14 @@ struct SpotCardView: View, @MainActor Equatable {
             .modifier(CardPress(shape: shape(of: .press), isFilled: isFilled, showsPress: showsPress))
             .modifier(SpotPointerMove { model.point(at: .card(entry.id)) })
             .overlay(Color.clear.modifier(CardRing(model: model, index: index, shape: shape(of: .ring))).allowsHitTesting(false))
-            .overlay(alignment: .topTrailing) { FailureMark(entry: entry, size: size) }
+            .overlay(alignment: .topTrailing) { FailureMark(model: model, entry: entry, size: size) }
             .modifier(SpotGlass(shape: shape(of: .glass), isSolid: isFilled))
             .contentShape(shape(of: .hit))
             .onTapGesture { if let onTap { onTap() } else { model.tap(entry.id, opening: NSEvent.modifierFlags.contains(.command)) } }
             .animation(SpotMotion.fade(isShown: isFilled), value: isFilled)
             .scaleEffect(showsPress ? MotionTokens.pressedScale : 1)
             .animation(SpotMotion.press, value: showsPress)
+            .modifier(SpotShake(count: { [model, entry] in model.refusals(of: entry.item?.run, in: entry.spot.id) }))
     }
 
     @ViewBuilder
@@ -227,11 +228,12 @@ private struct CardPress: ViewModifier {
 }
 
 private struct FailureMark: View {
+    let model: SpotsModel
     let entry: SpotsModel.Entry
     let size: SpotSize
 
     var body: some View {
-        if entry.failure != nil {
+        if let failure = model.failure(of: entry) {
             let inset = SurfaceEdge(card: size).rim - SpotTokens.cornerMark / 2
             let cap = SpotRoundShape(radius: SpotTokens.cornerMarkRadius)
             Image(systemName: "exclamationmark.triangle.fill")
@@ -242,7 +244,7 @@ private struct FailureMark: View {
                 .overlay(cap.strokeBorder(SpotTheme.ink.opacity(SpotTheme.track)))
                 .offset(x: -inset, y: inset)
                 .accessibilityLabel("Last run failed")
-                .allowsHitTesting(false)
+                .modifier(SpotFailureTip(model: model, id: entry.id, text: failure))
         }
     }
 }

@@ -96,6 +96,11 @@ public struct SpotCheck: Sendable {
                 findings.append(found(Self.reason(error)))
             }
         }
+        for script in scan.scripts {
+            for command in script.offers where FrameCheck.calls.contains(command.id) {
+                findings.append(Finding(spot: script.id, file: script.url.path, fault: "a command cannot be called \(command.id), since Openspot calls the spot with \(command.id)"))
+            }
+        }
         for script in scan.scripts where !script.isBuiltIn {
             guard (try? Manifest(beside: script.url).script(script.url))?.uses.contains(SpotUse.account.rawValue) == true else { continue }
             let fault = "\(script.name) has account in its uses, which only a spot of Openspot takes. Remove it"

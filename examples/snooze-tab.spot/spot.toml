@@ -1,0 +1,13 @@
+title = "Snooze Tab"
+icon = "moon.zzz"
+detail = "Bring this tab back later"
+on = ["sheet.open", "spot.want"]
+offers = ["search"]
+uses = ["timer", "clipboard"]
+
+[commands.snooze]
+title = "Snooze Tab"
+
+[commands.wake]
+title = "Open All"
+icon = "arrow.uturn.backward"

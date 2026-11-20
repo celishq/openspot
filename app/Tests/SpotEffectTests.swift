@@ -135,6 +135,7 @@ final class SpotEffectTests: PanelCase {
         try await openList()
         try await openPage()
         try script("mover", toml: "title = 'Mover'", """
+        [ "$1" = open ] || exit 0
         '\(client.path)' route back; echo "go $?" >> '\(path("codes"))'
         '\(client.path)' route push x; echo "go $?" >> '\(path("codes"))'
         """)

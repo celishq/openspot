@@ -123,6 +123,7 @@ extension SpotsModel {
             match.list == 0 ? spots[match.item.run] : Entry(spot: finding.sources[match.list - 1], item: match.item)
         }
         show(Self.placed(finding.answers, around: foundSpots.filter { !ids.contains($0.id) }))
+        Set(foundSpots.compactMap { $0.item == nil ? nil : $0.spot.id }).forEach(runs.want)
         if !isEditing { missedSearch.landed(query, found: visible.contains { $0.spot.answers?.isLast != true }) }
     }
 

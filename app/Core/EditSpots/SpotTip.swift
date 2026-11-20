@@ -3,6 +3,7 @@ import Foundation
 public struct SpotTip: Equatable, Sendable {
     public enum Anchor: Equatable, Sendable {
         case leadingCorner, trailingCorner
+        case below(CGRect)
     }
 
     public let id: String

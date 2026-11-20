@@ -71,6 +71,7 @@ extension SpotRun {
         }
         log(call, end, errors: errors)
         ended(call, end)
+        runs.settleAsk(of: spot.id)
     }
 
     func lose(_ call: OpenCall, _ end: ScriptCall.End, errors: String = "") {
@@ -115,7 +116,10 @@ extension SpotRun {
             if case .stopped = end { act.first?.end(.stopped) } else { act.first?.end(.done) }
         }
         let isAnswer = if case .ask(let ask) = purpose { ask.isAnswer } else { false }
-        if case .ended = end, failure != nil, !isAnswer { failure = nil }
+        if case .ended = end, failure != nil, !isAnswer, failedItem == nil || Self.item(of: call.request.action) == failedItem {
+            failure = nil
+            failedItem = nil
+        }
         switch (purpose, end) {
         case (.ask(.show), .stopped):
             typed = nil
@@ -140,7 +144,9 @@ extension SpotRun {
         case (.act(let act), .failed(let error)):
             answered = nil
             if let undo = act.undo { state = undo }
-            fail(error)
+            let item = Self.item(of: call.request.action)
+            fail(error, item: item)
+            if runs.isPanelOpen, let started = act.started, runs.now().timeIntervalSince(started) < MotionTokens.refusalWindow { onReport(.refused(item)) }
             if act.showsAfter { showOnce() }
         default:
             break
@@ -148,5 +154,9 @@ extension SpotRun {
         callEnded(call.made)
         if case .act(let act) = purpose { act.ended?() }
         showAgainIfAsked()
+    }
+
+    static func item(of action: SpotAction) -> String? {
+        action.arguments.first == Frame.open && action.arguments.count > 1 ? action.arguments[1] : nil
     }
 }

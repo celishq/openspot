@@ -17,14 +17,15 @@ public enum SpotEvent: Equatable, Sendable {
     public static let powerChange = "power.change"
     public static let diskMount = "disk.mount"
     public static let deviceConnect = "device.connect"
+    public static let spotWant = "spot.want"
 
     public static let sheetOpen = "sheet.open"
     public static let panelOpen = "panel.open"
     public static let searchText = "search.text"
     public static let sheetText = "sheet.text"
     public static let clockPrefix = "clock."
-    public static let known = [sheetOpen, panelOpen, searchText, sheetText, clipboard, frontApp, appUpdate, appLaunch, screenWake, systemLoad, powerChange, diskMount, deviceConnect]
-    public static let valueless = [sheetOpen, panelOpen, sheetText, clipboard, screenWake, appLaunch]
+    public static let known = [sheetOpen, panelOpen, searchText, sheetText, spotWant, clipboard, frontApp, appUpdate, appLaunch, screenWake, systemLoad, powerChange, diskMount, deviceConnect]
+    public static let valueless = [sheetOpen, panelOpen, sheetText, spotWant, clipboard, screenWake, appLaunch]
 
     public static func isName(_ word: String) -> Bool {
         let parts = word.split(separator: ".", omittingEmptySubsequences: false)

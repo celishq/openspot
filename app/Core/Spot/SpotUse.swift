@@ -1,7 +1,7 @@
 import Foundation
 
 public enum SpotUse: String, CaseIterable, Codable, Sendable {
-    case app, spots, screen, clipboard, calendar, power, network, files
+    case app, spots, screen, clipboard, calendar, power, network, files, timer
     case account
 
     static func reachesAccountKey(_ uses: Set<SpotUse>, isBuiltIn: Bool) -> Bool {

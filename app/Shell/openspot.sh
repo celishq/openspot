@@ -222,6 +222,25 @@ openspot_item() {
   [ -z "${4-}" ] || openspot_kv icon "$4"
 }
 
+# Prints a line for each block of stdin, such as what an `openspot` command printed: the first value of each key given,
+# split by tabs, and an empty field for a key the block lacks.
+openspot_rows() {
+  LC_ALL=C /usr/bin/awk -v keys="$*" '
+    BEGIN { count = split(keys, wanted, " ") }
+    function flush(  line, i) {
+      if (!held) return
+      line = ""
+      for (i = 1; i <= count; i++) line = line (i > 1 ? "\t" : "") found[wanted[i]]
+      print line
+      split("", found)
+      held = 0
+    }
+    /^$/ { flush(); next }
+    { at = index($0, "="); if (at) { key = substr($0, 1, at - 1); if (!(key in found)) found[key] = substr($0, at + 1); held = 1 } }
+    END { flush() }
+  '
+}
+
 # Prints an item for each line of stdin, a `text` block or one of the kind given, such as `switch`. A line holds its id, title, detail
 # and icon split by tabs, and after them any more `key=value` fields of the block. Each backslash is written for you, and an
 # empty field prints no line (protocol: The calls).

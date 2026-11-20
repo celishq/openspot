@@ -3,9 +3,27 @@ import Foundation
 extension SpotsModel {
     @discardableResult
     public func open(_ id: String) -> Bool {
-        guard entry(id) != nil else { return false }
-        endFlow()
-        return push(FlowSheet(spot: id))
+        open(FlowSheet(spot: id))
+    }
+
+    @discardableResult
+    public func open(_ page: FlowSheet) -> Bool {
+        guard entry(page.spot) != nil else { return false }
+        afterShowing({ host.show() }) { [weak self] in
+            guard let self else { return }
+            endFlow()
+            push(page)
+        }
+        return true
+    }
+
+    @discardableResult
+    public func present(_ page: FlowSheet, from caller: String? = nil, replace: Bool = false) -> Bool {
+        guard isShown, openSheetID != nil else {
+            let row = isShown ? selectedEntry.flatMap { $0.spot.id == caller ? $0.id : nil } : nil
+            return open(FlowSheet(spot: page.spot, route: page.route, title: page.title, source: row))
+        }
+        return push(page, replace: replace)
     }
 
     @discardableResult
@@ -27,7 +45,7 @@ extension SpotsModel {
         if !moves { host.show() }
         endEditing(moving: false)
         guard let route = sheet.route else {
-            pushFirst(sheet.spot, moving: moves, title: sheet.title)
+            pushFirst(sheet.spot, moving: moves, title: sheet.title, source: sheet.source)
             return true
         }
         if openSheetID == nil { endFlow() }
@@ -107,19 +125,19 @@ extension SpotsModel {
             return
         }
         guard openSheetID == page.spot else {
-            sheet.show(route: page.route)
+            sheet.show(page)
             waitPush(moving: moving)
             return present(page.spot, moving: moving)
         }
         guard moving, sheet.route != page.route else {
-            sheet.show(route: page.route)
+            sheet.show(page)
             return showEdges()
         }
-        pushIn { sheet.show(route: page.route) ? nil : sheet }
+        pushIn { sheet.show(page) ? nil : sheet }
     }
 
     func endFlow() {
-        for page in flow.pages where page.route != nil { sheets[page.spot]?.show(route: nil) }
+        for page in flow.pages where page.route != nil { sheets[page.spot]?.show(FlowSheet(spot: page.spot)) }
         flow.clear()
         waitingPublish = nil
         showEdges()

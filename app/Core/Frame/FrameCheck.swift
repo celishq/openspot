@@ -1,5 +1,5 @@
 public struct FrameCheck: Equatable, Sendable {
-    public static let calls = ["show", Frame.open, "drop", "drag"]
+    public static let calls = ["show", Frame.open, "drop", "drag", SpotTimer.call]
 
     public let output: Frame
     public let partFaults: [String]

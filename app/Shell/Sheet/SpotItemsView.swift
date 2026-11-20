@@ -11,6 +11,9 @@ struct SpotItemsView: View {
     var onPoint: (SpotItem) -> Void = { _ in }
     var selection: (() -> Int)?
     var onDragOut: ([SpotItem]) -> Void = { _ in }
+    var failure: (String) -> String? = { _ in nil }
+    var tips: SpotsModel?
+    var shakes: (String) -> Int = { _ in 0 }
     var room = SpotTokens.listRoom
 
     private static var bottomFade: CGFloat { 2 * SpotTokens.padding }
@@ -172,8 +175,7 @@ struct SpotItemsView: View {
     }
 
     private func bentoCell(_ item: SpotItem, size: CGSize) -> some View {
-        SpotItemIcon(item: item, size: min(size.width, size.height) * SpotTokens.tileIconShare)
-            .overlay(alignment: .bottomTrailing) { SpotToneDot(tone: item.tone, side: min(size.width, size.height) * SpotTokens.tileIconShare) }
+        bentoFace(item, side: min(size.width, size.height))
             .frame(width: size.width, height: size.height)
         .background(SpotTheme.ink.opacity(SpotTheme.fill), in: row)
         .contentShape(row)
@@ -182,6 +184,16 @@ struct SpotItemsView: View {
         .modifier(SpotFileDragSource(items: [item], hasFiles: item.file != nil, onDrop: onDragOut))
         .accessibilityLabel(item.title)
         .accessibilityAddTraits(.isButton)
+    }
+
+    @ViewBuilder
+    private func bentoFace(_ item: SpotItem, side: CGFloat) -> some View {
+        if item.look == .tile {
+            SpotTileWords(item: item, side: side)
+        } else {
+            SpotItemIcon(item: item, size: side * SpotTokens.tileIconShare)
+                .overlay(alignment: .bottomTrailing) { SpotToneDot(tone: item.tone, side: side * SpotTokens.tileIconShare) }
+        }
     }
 
     private func rowLabel(_ item: SpotItem) -> some View {
@@ -207,6 +219,7 @@ struct SpotItemsView: View {
             if let shortcut = item.shortcut {
                 LiveKeyLabel(text: shortcut, isRecording: recording == item.run, words: recordingWords, keys: keys)
             }
+            ItemFailureMark(failure: { [failure, run = item.run] in failure(run) }, tips: tips, id: item.run)
             if item.isToggle {
                 ItemSwitch(isOn: item.isOn)
             } else if item.isOn {
@@ -221,6 +234,7 @@ struct SpotItemsView: View {
         .background(SpotTheme.ink.opacity(SpotTheme.fill), in: row)
         .modifier(SpotLiveSelectionRing(isSelected: { [selectedRun, run = item.run] in selectedRun() == run }, shape: row, marksMenu: true))
         .contentShape(row)
+        .modifier(SpotShake(count: { [shakes, run = item.run] in shakes(run) }))
     }
 }
 
@@ -232,6 +246,22 @@ private struct LiveKeyLabel: View {
 
     var body: some View {
         SpotKeyLabel(text: text, isRecording: isRecording, recordingWords: words, held: isRecording ? keys?.held ?? [] : [])
+    }
+}
+
+private struct ItemFailureMark: View {
+    let failure: () -> String?
+    let tips: SpotsModel?
+    let id: String
+
+    var body: some View {
+        if let text = failure() {
+            let mark = Image(systemName: "exclamationmark.triangle.fill")
+                .font(SpotType.body)
+                .foregroundStyle(SpotTheme.ink)
+                .accessibilityLabel("Last run failed")
+            if let tips { mark.modifier(SpotFailureTip(model: tips, id: id, text: text)) } else { mark }
+        }
     }
 }
 

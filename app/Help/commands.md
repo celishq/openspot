@@ -62,7 +62,7 @@ The commands that try a spot are in [Try your spot](../../GUIDE.md#try-your-spot
 | `openspot route back [--root]`                     | Goes back one sheet of the spot, or to its first sheet.                                         |
 | `openspot route close`                             | Takes each sheet of the spot off.                                                               |
 | `openspot spot open <id> [--select]`               | Opens the panel on a spot, as a new flow. `--select` only selects its card.                     |
-| `openspot spot push <id> [page]`                   | Pushes a spot, or a page of it, over the flow that shows.                                       |
+| `openspot spot push <id> [page]`                   | Pushes a spot, or a page of it, over the flow that shows, or opens the panel on it when no sheet shows. |
 | `openspot spot pop <id> [--all]`                   | Goes back one sheet of a spot that shows, or to its first sheet.                                |
 | `openspot spot choose <id>`                        | Asks for files, and drops the chosen ones on a spot that takes them, as a press of its card does. |
 | `openspot spot settings <id>`                      | Opens the Settings of a spot, as Settings in its ⌘K menu does.                                  |

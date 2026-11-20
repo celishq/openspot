@@ -193,6 +193,16 @@ final class ShellHelperTests: XCTestCase {
         }
     }
 
+    func testRowsPrintTheValuesOfEachBlockSplitByTabsInEachShell() async throws {
+        for shell in ["/bin/sh", "/bin/dash"] {
+            let url = try script("printf 'text=a\\ntitle=A one\\nat=t1\\n\\ntext=b\\nat=t2\\nat=t3\\n' | openspot_rows text at title", shell: shell)
+
+            let output = try await ScriptProcess.output(url: url, limit: 60)
+
+            XCTAssertEqual(output, "a\tt1\tA one\nb\tt2\t\n", shell)
+        }
+    }
+
     func testValueOfAnUnknownIdPrintsNothing() async throws {
         let url = try script("value none\nvalue a=\nprintf '%s' \"$(value ''; value a)\"")
 

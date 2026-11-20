@@ -99,6 +99,22 @@ final class ItemsTests: PanelCase {
         XCTAssertEqual(output.parts.first?.control, .menu([.init(id: "colorful", title: "Colorful"), .init(id: "plain", title: "Plain")], value: "colorful"))
     }
 
+    func testAnItemWithTheTileLookShowsItsWordsInItsCell() {
+        let output = Frame(text: "frame=\ngrid=times\n\nrepeat=times\ngrid=a b c\n\ntext=later\ntitle=Later\ndetail=17:20\nicon=cup.and.saucer.fill\nlook=tile\n\ntext=star\ntitle=Star\nicon=star\n")
+
+        XCTAssertEqual(output.items.map(\.look), [.tile, nil])
+    }
+
+    func testASheetOfThreeLinesOfTilesFitsItsLines() async throws {
+        let tiles = (1...9).map { "text=t\($0)\ntitle=T\($0)\ndetail=D\nicon=star\nlook=tile\n" }.joined(separator: "\n")
+        try await open("frame=\ngrid=tiles\n\nrepeat=tiles\ngrid=a b c\n\n\(tiles)")
+
+        let sheet = try XCTUnwrap(model.sheets["items"]).sheetRect
+        let lines = 3 * SpotTokens.square(perLine: 3) + 2 * SpotTokens.listRowGap
+        XCTAssertLessThan(sheet.height, SpotTokens.sheetMaxHeight)
+        XCTAssertGreaterThanOrEqual(sheet.height, lines)
+    }
+
     func testATextItemsNumberIsNoMarkAndANumberItemWithAMaxFills() {
         let output = Frame(text: "text=mac\ntitle=This Mac\ndetail=84%\nvalue=0.84\n\nnumber=swap\ntitle=Swap\nvalue=84\nmax=100\n")
 

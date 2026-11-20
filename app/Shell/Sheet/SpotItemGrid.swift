@@ -129,12 +129,21 @@ private struct SpotGridCell: View, Equatable {
 
     var body: some View {
         let shape = SpotRoundShape(surface.inner())
-        SpotItemIcon(item: item, size: SpotTokens.listIconSize)
-            .overlay(alignment: .bottomTrailing) { SpotToneDot(tone: item.tone, side: SpotTokens.listIconSize) }
+        face
             .frame(width: side, height: side)
             .background(SpotTheme.ink.opacity(SpotTheme.fill), in: shape)
             .accessibilityLabel(item.title)
             .accessibilityAddTraits(.isButton)
+    }
+
+    @ViewBuilder
+    private var face: some View {
+        if item.look == .tile {
+            SpotTileWords(item: item, side: side)
+        } else {
+            SpotItemIcon(item: item, size: SpotTokens.listIconSize)
+                .overlay(alignment: .bottomTrailing) { SpotToneDot(tone: item.tone, side: SpotTokens.listIconSize) }
+        }
     }
 }
 

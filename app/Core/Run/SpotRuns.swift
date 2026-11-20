@@ -55,6 +55,10 @@ public final class SpotRuns {
     public private(set) var runningSummary: String?
     public private(set) var actSpot: String?
     @ObservationIgnored var ticks: Task<Void, Never>?
+    @ObservationIgnored var timers: SpotTimers
+    @ObservationIgnored var timerWatch: Task<Void, Never>?
+    @ObservationIgnored var asks = SpotAsks()
+    @ObservationIgnored var wanted: Set<String> = []
     @ObservationIgnored var nextShow: Date?
     @ObservationIgnored var answerMatches = AnswerMatches()
     @ObservationIgnored private var lastSearch: SearchQuery?
@@ -101,6 +105,7 @@ public final class SpotRuns {
         frameWait: DispatchTimeInterval = .milliseconds(2),
         log: CallLog? = nil,
         stats: URL? = nil,
+        timers: URL? = nil,
         swift: SwiftProgram = SwiftProgram(),
         callers: SpotCallers = SpotCallers()
     ) {
@@ -109,6 +114,7 @@ public final class SpotRuns {
         self.log = log
         self.swift = swift
         usage = StatsLog(folder: stats, at: clock.now(), now: clock.now)
+        self.timers = SpotTimers(file: timers)
         self.inlineIdle = inlineIdle
         self.frameWait = frameWait
         self.showLimit = showLimit
@@ -195,6 +201,8 @@ public final class SpotRuns {
 
     func didClose(_ sheet: SpotRun) {
         if openID == sheet.spot.id { openID = nil }
+        let id = sheet.spot.id
+        if asks.isWaiting(for: id) { Task { [weak self] in self?.settleAsk(of: id) } }
     }
 
     public func float(_ id: String) {
@@ -230,6 +238,9 @@ public final class SpotRuns {
         hasQuit = true
         ticks?.cancel()
         ticks = nil
+        timerWatch?.cancel()
+        timerWatch = nil
+        asks.endAll()
         clipboardWatch?.cancel()
         clipboardWatch = nil
         loadWatch?.cancel()
@@ -275,6 +286,10 @@ public final class SpotRuns {
 
     public func answer(of spot: Spot, _ action: SpotAction, input: String? = nil, limit: TimeInterval? = nil, variables: [String: String] = [:]) async throws -> String {
         try await mode(of: spot).answer(of: spot, action, input: input, limit: limit, variables: variables, in: self)
+    }
+
+    func isOnGrid(_ id: String) -> Bool {
+        grid.contains(id)
     }
 
     func wants(_ spot: Spot) -> Bool {

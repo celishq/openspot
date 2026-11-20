@@ -10,7 +10,12 @@ struct SpotTipView: View {
 
     var body: some View {
         ZStack(alignment: .topLeading) {
-            if let tip = model.tip, model.isEditing, model.carry == nil, model.resize == nil, let top = top(of: tip) {
+            if let tip = model.tip, case .below(let mark) = tip.anchor {
+                SpotTipPill(text: tip.text, wraps: true)
+                    .frame(width: panelOrigin.x + mark.maxX, alignment: .trailing)
+                    .offset(y: panelOrigin.y + mark.maxY + SpotTokens.tipGap)
+                    .opacity(isShown ? 1 : MotionTokens.hiddenOpacity)
+            } else if let tip = model.tip, model.isEditing, model.carry == nil, model.resize == nil, let top = top(of: tip) {
                 SpotTipPill(text: tip.text)
                     .position(x: panelOrigin.x + top.x, y: panelOrigin.y + top.y + SpotTokens.tipGap + SpotTokens.hintPillHeight / 2)
                     .opacity(isShown ? 1 : MotionTokens.hiddenOpacity)

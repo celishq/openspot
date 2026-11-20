@@ -14,6 +14,7 @@ public final class SpotRun {
         case landed
         case closed
         case move(FlowMove)
+        case refused(String?)
     }
 
     public enum ShowNeed: Sendable {
@@ -40,6 +41,7 @@ public final class SpotRun {
         var undo: SpotState?
         var ended: (() -> Void)?
         var first: FirstFrame?
+        var started: Date?
     }
 
     enum Purpose {
@@ -193,6 +195,7 @@ public final class SpotRun {
         didSet { runs.showMarks(of: spot.id) }
     }
     public internal(set) var failure: String?
+    public internal(set) var failedItem: String?
     @ObservationIgnored public internal(set) var calls: [ScriptCall] = []
     @ObservationIgnored public internal(set) var partsAnswers = 0
     @ObservationIgnored var actCalls: [ScriptCall] = []
@@ -224,11 +227,16 @@ public final class SpotRun {
     @ObservationIgnored var waitingFiles: [SpotAction] = []
     @ObservationIgnored var waitingKeys: [String] = []
     @ObservationIgnored var clockShown: Date?
-    public internal(set) var route: String?
+    public internal(set) var page: FlowSheet
+
+    public var route: String? {
+        page.route
+    }
     @ObservationIgnored var pageStates: [(route: String?, state: PageState)] = []
 
     init(spot: Spot, runs: SpotRuns, recent: [String], prepare: @escaping ([SpotItem], [String]) async -> Void) {
         self.spot = spot
+        page = FlowSheet(spot: spot.id)
         self.runs = runs
         self.prepare = prepare
         link = Self.link(for: spot, runs: runs)

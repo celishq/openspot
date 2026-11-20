@@ -98,7 +98,7 @@ extension SpotsModel {
                 sheets[target.entry.id]?.run(action, item: target.item)
             }
         } else if action == .open || action == .history {
-            presentSheet(of: target.entry.id, moving: true)
+            presentSheet(of: target.entry.id)
         } else if let command = CommandAction.command(of: action) {
             if isShown { host.dismiss() }
             sheets[target.entry.id]?.pressKey(command)
@@ -166,6 +166,14 @@ extension SpotsModel {
             self.form = FormSession(draft: FormDraft(form: form), entry: entry, action: action, item: nil, openedSheet: true)
             return true
         }
+        if let field = entry.spot.settings.first(where: { $0.id == key && !$0.options.isEmpty }) {
+            pushFirst(id, moving: true)
+            let options = field.options.map { SpotPart.Option(id: $0, title: $0) }
+            let form = ItemForm(title: field.title, fields: [ItemForm.Field(name: key, label: field.title, type: .choice, value: runs.settings[id]?[key], options: options)])
+            let action = CommandAction(id: Self.optionPrefix + key, title: "Change \(field.title)", scope: .spot, after: .stay)
+            self.form = FormSession(draft: FormDraft(form: form), entry: entry, action: action, item: nil, openedSheet: true)
+            return true
+        }
         let action = CommandAction(id: key, title: "Change \(key)", scope: .spot, after: .close)
         ask(action, on: (entry, nil), whileShown: true) { try await sheet.change(action) }
         return true
@@ -199,6 +207,20 @@ extension SpotsModel {
     }
 
     private static let secretPrefix = "openspot.secret."
+    private static let optionPrefix = "openspot.option."
+
+    private func keepOption(_ form: FormSession, _ draft: FormDraft) {
+        let key = String(form.action.id.dropFirst(Self.optionPrefix.count))
+        let spot = form.entry.id
+        do {
+            let next = try files.config.change { $0.set(setting: key, of: spot, to: draft.values[key]) }
+            self.form = nil
+            closeSheet(moving: true)
+            configChanged(.value(spot: spot, caller: nil), to: next)
+        } catch {
+            host.notify("\(form.action.title) failed. \(Self.reason(error))")
+        }
+    }
 
     private func keepSecret(_ form: FormSession, _ draft: FormDraft) {
         let key = String(form.action.id.dropFirst(Self.secretPrefix.count))
@@ -231,6 +253,7 @@ extension SpotsModel {
 
     func send(_ form: FormSession, _ draft: FormDraft) {
         if form.action.id.hasPrefix(Self.secretPrefix) { return keepSecret(form, draft) }
+        if form.action.id.hasPrefix(Self.optionPrefix) { return keepOption(form, draft) }
         Task {
             do {
                 switch try await sheets[form.entry.id]?.submit(form.action, item: form.item, draft: draft) {
