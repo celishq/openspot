@@ -743,6 +743,7 @@ Each event that Openspot raises, when it raises it, and the value that the show 
 | `clock.<seconds>`  | Every that many seconds while a place of the spot shows, and when the Mac wakes.     |                                  |
 | `search.text`      | At each change of the main search text.                                              | the text                         |
 | `sheet.text`       | At each change of the sheet's search text, and when the sheet opens.                 | the text                         |
+| `spot.want`        | When the spot's rows first show in the main search, once each time the panel opens. |                                  |
 | `clipboard.change` | When the clipboard changes.                                                          |                                  |
 | `app.front`        | When another app comes to the front.                                                 | its bundle ID                    |
 | `app.update`       | When Openspot has downloaded an update.                                              | its version                      |

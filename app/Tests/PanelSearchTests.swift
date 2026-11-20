@@ -29,6 +29,29 @@ final class PanelSearchTests: PanelCase {
         XCTAssertEqual(ranks.countOnMain, 0)
     }
 
+    func testASpotThatListsWantIsAskedOnceWhenItsRowsFirstShowInEachPanelOpen() async throws {
+        let log = folder.appendingPathComponent("wants")
+        try script("tabs", toml: "title = 'Tabs'\non = ['sheet.open', 'spot.want']\noffers = ['search']", "sed -n 's/^event=//p' >> '\(log.path)'\nprintf 'text=current\\ntitle=Snooze Current Tab\\n'")
+        try script("other", toml: "title = 'Other'\noffers = ['search']", "printf 'text=x\\ntitle=Snore\\n'")
+        await model.reload()
+        let wants = { ((try? String(contentsOf: log, encoding: .utf8)) ?? "").split(separator: "\n").filter { $0 == "spot.want" }.count }
+        model.isShown = true
+        model.panelWillShow()
+
+        model.query = "snooze"
+        try await wait("the want") { wants() == 1 }
+        model.query = "snooze c"
+        model.query = "snooze cu"
+        try await wait("the rows") { self.shown.contains { $0.hasPrefix("tabs") } }
+        XCTAssertEqual(wants(), 1)
+        model.panelWillHide()
+        model.panelDidHide()
+        model.panelWillShow()
+        model.query = "snooze"
+
+        try await wait("the next want") { wants() == 2 }
+    }
+
     func testASpotThatOnlyOffersActionsIsNotFound() async throws {
         try await showGrid()
         try script("acts", toml: "title = 'Alpha acts'\n[commands.change]\ntitle = 'Change'\noffers = ['actions']", "true")
