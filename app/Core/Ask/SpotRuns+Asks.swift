@@ -6,9 +6,7 @@ extension SpotRuns {
     }
 
     func reply(_ value: String, from id: String) -> Bool {
-        guard asks.reply(value, from: id) else { return false }
-        onReport(id, .replied)
-        return true
+        asks.reply(value, from: id)
     }
 
     func settleAsk(of id: String) {

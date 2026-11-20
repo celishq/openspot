@@ -595,7 +595,8 @@ to make a picker that other spots share.
   from the asking spot's selected row, such as a row of the main search, or opens the panel on it. A
   press that asks keeps the panel open with `close=false`, so the step takes the sheet's place in one motion.
 - `--title <words>` names the asked sheet, such as the title of the tab that a snooze is for.
-- The asked spot gives the value with `openspot spot reply <value>`, which hides the panel. `spot ask` prints it.
+- The asked spot gives the value with `openspot spot reply <value>`, and `spot ask` prints it. The press that replies
+  closes the panel as any press does.
 - A close of the asked spot's sheet with no reply ends the ask with exit 1, once the spot's running calls end. A newer
   ask of the same spot ends the older one the same way. A spot can't ask itself.
 
