@@ -27,14 +27,32 @@ struct SpotFormView: View {
 
     private var fields: some View {
         VStack(alignment: .leading, spacing: SpotTokens.formFieldGap) {
-            ForEach(draft.form.fields, id: \.name) { field in
-                VStack(alignment: .leading, spacing: SpotTokens.formLabelGap) {
-                    Text(field.label)
-                        .font(SpotType.detail)
-                        .modifier(SpotSecondaryText())
-                        .frame(height: SpotTokens.formLabelHeight)
-                    control(for: field)
-                        .modifier(StopRing(isFocused: focused == field.name && field.type != .switch, hasBox: true))
+            ScrollViewReader { scroll in
+                ScrollView(.vertical) {
+                    VStack(alignment: .leading, spacing: SpotTokens.formFieldGap) {
+                        ForEach(draft.form.fields, id: \.name) { field in
+                            VStack(alignment: .leading, spacing: SpotTokens.formLabelGap) {
+                                Text(field.label)
+                                    .font(SpotType.detail)
+                                    .modifier(SpotSecondaryText())
+                                    .frame(height: SpotTokens.formLabelHeight)
+                                control(for: field)
+                                    .modifier(StopRing(isFocused: focused == field.name && field.type != .switch, hasBox: true))
+                            }
+                            .padding(.vertical, ringRoom)
+                            .id(field.name)
+                            .padding(.vertical, -ringRoom)
+                        }
+                    }
+                    .padding(ringRoom)
+                }
+                .scrollIndicators(.never)
+                .scrollBounceBehavior(.basedOnSize)
+                .frame(height: SpotTokens.formFieldsHeight(draft.form) + 2 * ringRoom)
+                .padding(-ringRoom)
+                .onChange(of: focused) { _, name in
+                    guard let name, name != FormDraft.save else { return }
+                    scroll.scrollTo(name)
                 }
             }
             Button(action: onSave) {
@@ -58,6 +76,10 @@ struct SpotFormView: View {
         .onChange(of: focus) { _, name in
             if name != focused, name != nil || typed(focused) != nil { onFocus(name) }
         }
+    }
+
+    private var ringRoom: CGFloat {
+        SpotTokens.focusGap + SpotTokens.ring
     }
 
     private func typed(_ name: String?) -> String? {

@@ -33,4 +33,16 @@ final class SpotTokensTests: XCTestCase {
         XCTAssertEqual(apart.height - plain.height, panel)
         XCTAssertGreaterThan(panel, 0)
     }
+
+    func testAFormTallerThanTheSheetScrollsItsFieldsAndKeepsSaveInsideTheSheet() {
+        let field = ItemForm.Field(name: "a", label: "A")
+        let tall = ItemForm(title: "Tall", fields: (0..<12).map { ItemForm.Field(name: "f\($0)", label: "F") })
+        let short = ItemForm(title: "Short", fields: [field])
+
+        let rect = SpotTokens.formRect(tall)
+        XCTAssertEqual(rect.height, SpotTokens.sheetMaxHeight)
+        let fields = SpotTokens.formFieldsHeight(tall)
+        XCTAssertEqual(SpotTokens.sheetFieldDrop + fields + SpotTokens.formFieldGap + SpotTokens.listRow + SpotTokens.padding, rect.height, accuracy: 0.5)
+        XCTAssertEqual(SpotTokens.formFieldsHeight(short), SpotTokens.formLabelHeight + SpotTokens.formLabelGap + SpotTokens.listRow)
+    }
 }
