@@ -119,19 +119,19 @@ extension SpotsModel {
             return
         }
         guard openSheetID == page.spot else {
-            sheet.show(route: page.route, title: page.route == nil ? page.title : nil)
+            sheet.show(page)
             waitPush(moving: moving)
             return present(page.spot, moving: moving)
         }
         guard moving, sheet.route != page.route else {
-            sheet.show(route: page.route, title: page.route == nil ? page.title : nil)
+            sheet.show(page)
             return showEdges()
         }
-        pushIn { sheet.show(route: page.route, title: page.route == nil ? page.title : nil) ? nil : sheet }
+        pushIn { sheet.show(page) ? nil : sheet }
     }
 
     func endFlow() {
-        for page in flow.pages where page.route != nil { sheets[page.spot]?.show(route: nil) }
+        for page in flow.pages where page.route != nil { sheets[page.spot]?.show(FlowSheet(spot: page.spot)) }
         flow.clear()
         waitingPublish = nil
         showEdges()

@@ -224,12 +224,16 @@ public final class SpotRun {
     @ObservationIgnored var waitingFiles: [SpotAction] = []
     @ObservationIgnored var waitingKeys: [String] = []
     @ObservationIgnored var clockShown: Date?
-    public internal(set) var route: String?
-    public internal(set) var pageTitle: String?
+    public internal(set) var page: FlowSheet
+
+    public var route: String? {
+        page.route
+    }
     @ObservationIgnored var pageStates: [(route: String?, state: PageState)] = []
 
     init(spot: Spot, runs: SpotRuns, recent: [String], prepare: @escaping ([SpotItem], [String]) async -> Void) {
         self.spot = spot
+        page = FlowSheet(spot: spot.id)
         self.runs = runs
         self.prepare = prepare
         link = Self.link(for: spot, runs: runs)

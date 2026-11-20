@@ -102,8 +102,9 @@ extension SpotsModel {
         }
         if place(ofSheet: id) == .window { return openWindow(id) }
         if openSheetID == nil { endFlow() }
-        flow.push(FlowSheet(spot: id, title: title, source: source))
-        sheets[id]?.show(route: nil, title: title)
+        let page = FlowSheet(spot: id, title: title, source: source)
+        flow.push(page)
+        sheets[id]?.show(page)
         waitPush(moving: moving && openSheetID != nil && openSheetID != id && flow.index > 0)
         present(id, moving: moving)
     }
@@ -170,7 +171,7 @@ extension SpotsModel {
         }
         closeMenu(keepsFoot: true)
         change(nil) {
-            transition.show(list, moves: true, from: flow.current?.source)
+            transition.show(list, moves: true, page: flow.current)
             holdFieldDrop()
         }
         host.nextFrame { [weak self] in
@@ -180,7 +181,7 @@ extension SpotsModel {
 
     func cutSheet(to list: String?) {
         change(nil) {
-            if let list { transition.show(list, moves: false, from: flow.current?.source) } else { transition.hide(moves: false) }
+            if let list { transition.show(list, moves: false, page: flow.current) } else { transition.hide(moves: false) }
             fieldDrop = nil
             showsFieldDrop = false
         }

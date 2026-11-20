@@ -38,7 +38,7 @@ final class CallMessageTests: SpotRunsCase {
         runs.panelOpened()
         sheet.open {}
         try await wait("the sheet") { sheet.panel != nil && sheet.list.all.count == 1 && !sheet.isShowing }
-        sheet.show(route: "photo/12")
+        sheet.show(FlowSheet(spot: sheet.spot.id, route: "photo/12"))
         try await wait("the route") { !sheet.isShowing }
 
         sheet.pick(try XCTUnwrap(sheet.list.all.first))

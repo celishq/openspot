@@ -49,7 +49,7 @@ extension SpotRun {
     }
 
     public var sheetState: SpotState {
-        pageTitle.map { shownState.showing(title: $0, detail: nil) } ?? shownState
+        page.route == nil ? shownState.showing(title: page.title, detail: nil) : shownState
     }
 
     public func pressCard() {

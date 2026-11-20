@@ -14,7 +14,7 @@ final class SpotPagesTests: SpotRunsCase {
         sheet.open(onReady: {})
         try await wait("the first sheet") { self.titles(sheet) == ["Page first"] }
 
-        sheet.show(route: "detail")
+        sheet.show(FlowSheet(spot: sheet.spot.id, route: "detail"))
         try await wait("the page") { self.titles(sheet) == ["Page detail"] }
 
         XCTAssertEqual(sheet.route, "detail")
@@ -27,11 +27,11 @@ final class SpotPagesTests: SpotRunsCase {
         runs.panelOpened()
         sheet.open(onReady: {})
         try await wait("the first sheet") { self.titles(sheet) == ["Page first"] }
-        sheet.show(route: "detail")
+        sheet.show(FlowSheet(spot: sheet.spot.id, route: "detail"))
         try await wait("the page") { self.titles(sheet) == ["Page detail"] }
         try await wait("the end of the read") { !self.runs.isShowing }
 
-        sheet.show(route: nil)
+        sheet.show(FlowSheet(spot: sheet.spot.id))
 
         XCTAssertEqual(titles(sheet), ["Page first"])
         try await wait("the read of the first sheet") { self.log().count == 3 }
@@ -42,7 +42,7 @@ final class SpotPagesTests: SpotRunsCase {
         let sheet = try sheet()
         runs.panelOpened()
         sheet.open(onReady: {})
-        sheet.show(route: "detail")
+        sheet.show(FlowSheet(spot: sheet.spot.id, route: "detail"))
         try await wait("the page") { !sheet.spot.actions.isEmpty && !self.runs.isShowing }
 
         sheet.run(try XCTUnwrap(sheet.spot.actions.first), item: nil)
@@ -65,7 +65,7 @@ final class SpotPagesTests: SpotRunsCase {
         sheet.open(onReady: {})
         try await wait("the first read") { self.blocks(ids: true).count == 1 }
 
-        sheet.show(route: "detail")
+        sheet.show(FlowSheet(spot: sheet.spot.id, route: "detail"))
 
         try await wait("the read of the page") { self.blocks(ids: true).last?.contains("route=detail") == true }
         XCTAssertFalse(blocks(ids: true)[0].contains("route="))
@@ -80,7 +80,7 @@ final class SpotPagesTests: SpotRunsCase {
         sheet.open(onReady: {})
         try await wait("the first sheet") { self.titles(sheet) == ["Page first"] }
 
-        sheet.show(route: "detail")
+        sheet.show(FlowSheet(spot: sheet.spot.id, route: "detail"))
 
         try await wait("the page") { self.titles(sheet) == ["Page detail"] }
     }
