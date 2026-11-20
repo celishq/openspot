@@ -14,6 +14,8 @@ These rules hold for the core spots in `spots/` and the spots in `examples/`. A 
 - A spot's view moves only through the moving pieces that Openspot gives it, such as `spot.media`, and only while
   `spot.isShown` is true. It redraws its `body` only when a value changes, never on each frame through a
   `TimelineView` or a timer. [Drawing](../AGENTS.md#drawing) says why.
+- The act that adds to a spot's list is its first item, pinned to the top, as [Show a list](../GUIDE.md#show-a-list)
+  says.
 - A spot's own app, such as the board of Draw, keeps its own motion. The curves of `app/Shell/Surface/SpotMotion.swift`
   are for the panel.
 

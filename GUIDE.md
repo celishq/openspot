@@ -101,6 +101,10 @@ you. Pick **Notes**, and Openspot runs `apps.sh open Notes`.
 The first argument tells your spot what to do. `show` asks what to show. Any other word is something the user did. The
 shell helper, `$OPENSPOT_SH`, prints items for you and escapes each value.
 
+When your spot has an act that adds to the list, such as Snooze Current Tab or New snippet, make it the first item and
+add `pin=top`, so it stays on top while the user types. An act on the selected item, such as Remove, stays a button;
+see [Add buttons](#add-buttons).
+
 Learn more in [Items](PROTOCOL.md#items) and [The calls](PROTOCOL.md#the-calls).
 
 ## Open an item as a page
