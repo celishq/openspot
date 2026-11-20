@@ -244,6 +244,7 @@ public final class SpotsModel {
         didSet { takeMode() }
     }
     public var tip: SpotTip?
+    var shakes: [String: Int] = [:]
     public internal(set) var drag: SpotDrag?
     public let lift = SpotLift()
     public internal(set) var landing: String?
@@ -571,6 +572,8 @@ public final class SpotsModel {
             }
         case .move(let move):
             self.move(move, in: id)
+        case .refused(let item):
+            shakes[Self.shakeKey(of: item, in: id), default: 0] += 1
         }
     }
 

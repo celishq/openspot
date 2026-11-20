@@ -38,6 +38,7 @@ struct SpotCardView: View, @MainActor Equatable {
             .animation(SpotMotion.fade(isShown: isFilled), value: isFilled)
             .scaleEffect(showsPress ? MotionTokens.pressedScale : 1)
             .animation(SpotMotion.press, value: showsPress)
+            .modifier(SpotShake(count: { [model, entry] in model.refusals(of: entry.item?.run, in: entry.spot.id) }))
     }
 
     @ViewBuilder

@@ -13,6 +13,7 @@ struct SpotItemsView: View {
     var onDragOut: ([SpotItem]) -> Void = { _ in }
     var failure: (String) -> String? = { _ in nil }
     var tips: SpotsModel?
+    var shakes: (String) -> Int = { _ in 0 }
     var room = SpotTokens.listRoom
 
     private static var bottomFade: CGFloat { 2 * SpotTokens.padding }
@@ -233,6 +234,7 @@ struct SpotItemsView: View {
         .background(SpotTheme.ink.opacity(SpotTheme.fill), in: row)
         .modifier(SpotLiveSelectionRing(isSelected: { [selectedRun, run = item.run] in selectedRun() == run }, shape: row, marksMenu: true))
         .contentShape(row)
+        .modifier(SpotShake(count: { [shakes, run = item.run] in shakes(run) }))
     }
 }
 

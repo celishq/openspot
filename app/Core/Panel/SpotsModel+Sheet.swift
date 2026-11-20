@@ -5,6 +5,14 @@ extension SpotsModel {
         failure(of: entry.item?.run, in: entry.spot.id)
     }
 
+    public func refusals(of item: String?, in spot: String) -> Int {
+        shakes[Self.shakeKey(of: item, in: spot)] ?? 0
+    }
+
+    static func shakeKey(of item: String?, in spot: String) -> String {
+        "\(spot)\n\(item ?? "")"
+    }
+
     public func failure(of item: String?, in spot: String) -> String? {
         guard let run = sheets[spot], run.failedItem == item else { return nil }
         return run.failure
@@ -145,6 +153,7 @@ extension SpotsModel {
 
     public func panelDidHide() {
         isPanelHidden = true
+        if !shakes.isEmpty { shakes = [:] }
         noteMiss()
         finishPick()
         for entry in entries where entry.spot.answers != nil { sheets[entry.id]?.answer("") }

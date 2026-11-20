@@ -145,7 +145,9 @@ extension SpotRun {
             answered = nil
             if let undo = act.undo { state = undo }
             let fixes = if case .failedWithFix = error as? SpotError { true } else { false }
-            fail(error, tells: fixes || !runs.isPanelOpen, item: Self.item(of: call.request.action))
+            let item = Self.item(of: call.request.action)
+            fail(error, tells: fixes || !runs.isPanelOpen, item: item)
+            if runs.isPanelOpen, let started = act.started, runs.now().timeIntervalSince(started) < MotionTokens.refusalWindow { onReport(.refused(item)) }
             if act.showsAfter { showOnce() }
         default:
             break

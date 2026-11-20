@@ -151,7 +151,7 @@ extension SpotRun {
         answered = nil
         return try await withCheckedThrowingContinuation { waiting in
             let first = FirstFrame(waiting)
-            if !send(Call(message: Message(call, search: search.text, searchForms: search.forms), key: key, purpose: .act(Act(first: first)))) { first.end(.stopped) }
+            if !send(Call(message: Message(call, search: search.text, searchForms: search.forms), key: key, purpose: .act(Act(first: first, started: runs.now())))) { first.end(.stopped) }
         }
     }
 
@@ -248,6 +248,8 @@ extension SpotRun {
 
     private func act(_ message: Message, key: String, as act: Act = Act()) {
         answered = nil
+        var act = act
+        act.started = runs.now()
         send(Call(message: message, key: key, purpose: .act(act)))
     }
 }
