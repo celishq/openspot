@@ -106,7 +106,7 @@ struct SpotFormView: View {
                 .background(SpotTheme.ink.opacity(SpotTheme.fill), in: shape)
         case .choice:
             Menu {
-                ForEach(field.options, id: \.id) { option in
+                ForEach(draft.options[field.name] ?? field.options, id: \.id) { option in
                     if field.picks != nil {
                         Toggle(option.title, isOn: Binding(
                             get: { draft.picked[field.name]?.contains(option.id) == true },

@@ -224,10 +224,12 @@ public final class SpotsModel {
     @ObservationIgnored var hintTakes = 0
     public var form: FormSession? {
         didSet {
-            let rect = form.map { $0.draft.pickedField.map { SpotTokens.choiceRect(options: $0.options.count) } ?? SpotTokens.formRect($0.draft.form) }
+            let rect = form.map { $0.draft.pickedField.map { [draft = $0.draft] field in SpotTokens.choiceRect(options: draft.options[field.name]?.count ?? field.options.count) } ?? SpotTokens.formRect($0.draft.form) }
             if rect != formRect { formRect = rect }
             let hasChoices = form?.draft.choices != nil
             if hasChoices != formHasChoices { formHasChoices = hasChoices }
+            let pickWord = form?.draft.pickedField?.label
+            if pickWord != formPickWord { formPickWord = pickWord }
             let isMultiple = form?.draft.isMultiple == true
             if isMultiple != formIsMultiple { formIsMultiple = isMultiple }
             let hint = HintWords(KeyRow.hint(of: formRows))
@@ -238,6 +240,7 @@ public final class SpotsModel {
     public private(set) var formRect: CGRect?
     public private(set) var formHasChoices = false
     public private(set) var formIsMultiple = false
+    public private(set) var formPickWord: String?
     public private(set) var formHint = HintWords("")
     @ObservationIgnored var pendingAsk: UUID?
     @ObservationIgnored var waits: [UUID: String] = [:]

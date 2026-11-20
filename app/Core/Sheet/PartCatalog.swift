@@ -6,7 +6,7 @@ public enum PartCatalog {
         "placeholder", "readonly", "required", "type", "close", "confirm", "scope", "form", "align", "look",
         "shortcut", "tone", "unit", "recording", "grow"
     ]
-    private static let optionKeys: Set<String> = ["option", "title", "icon", "send"]
+    private static let optionKeys: Set<String> = ["option", "title", "icon", "send", "remove"]
 
     public static func faults(in block: TextBlock, kinds: [BlockKind] = BlockKind.all) -> [String] {
         BlockKind.of(block, in: kinds).map { faults(in: block, kind: $0) } ?? []

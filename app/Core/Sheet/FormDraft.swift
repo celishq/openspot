@@ -10,6 +10,7 @@ public struct FormDraft: Equatable, Sendable {
     public private(set) var picking: String?
     public private(set) var picked: [String: Set<String>] = [:]
     public private(set) var menuTitles: [String: String] = [:]
+    public private(set) var options: [String: [SpotPart.Option]] = [:]
 
     public init(form: ItemForm, prefill: String = "") {
         self.form = form
@@ -24,6 +25,7 @@ public struct FormDraft: Equatable, Sendable {
         }
         if let first = form.fields.first(where: { $0.type == .text }), values[first.name]?.isEmpty == true { values[first.name] = prefill }
         self.values = values
+        for field in form.fields where field.type == .choice { options[field.name] = field.options }
         for field in form.fields where field.type == .choice { retitle(field) }
         if let choice = form.soleChoice {
             choices = ItemList(items: choice.options.map { option in
@@ -82,7 +84,7 @@ public struct FormDraft: Equatable, Sendable {
 
     public func picking(_ id: String, _ isOn: Bool, in field: ItemForm.Field) -> String {
         let now = picked[field.name] ?? []
-        return field.options.map(\.id).filter { $0 == id ? isOn : now.contains($0) }.joined(separator: "\n")
+        return (options[field.name] ?? field.options).map(\.id).filter { $0 == id ? isOn : now.contains($0) }.joined(separator: "\n")
     }
 
     public mutating func set(_ text: String, for name: String) {
@@ -106,10 +108,10 @@ public struct FormDraft: Equatable, Sendable {
     }
 
     public mutating func pick() -> Bool {
-        guard let field = focusedField, field.type == .choice, !field.options.isEmpty else { return false }
+        guard let field = focusedField, field.type == .choice, let first = options[field.name]?.first else { return false }
         picking = field.name
         choices = list(of: field)
-        choices?.select(run: field.picks == nil ? values[field.name] ?? "" : field.options[0].id)
+        choices?.select(run: field.picks == nil ? values[field.name] ?? "" : first.id)
         return true
     }
 
@@ -133,9 +135,37 @@ public struct FormDraft: Equatable, Sendable {
         return option
     }
 
+    public var removable: Bool {
+        guard let field = pickedField, let id = choices?.selectedItem?.run else { return false }
+        return options[field.name]?.first { $0.id == id }?.removes == true
+    }
+
+    public mutating func removePick() -> Bool {
+        guard removable, let field = pickedField, let id = choices?.selectedItem?.run else { return false }
+        let left = (options[field.name] ?? []).filter { $0.id != id }
+        options[field.name] = left
+        let key = Self.removed(of: field.name)
+        values[key] = ((values[key] ?? "").split(separator: "\n").map(String.init) + [id]).joined(separator: "\n")
+        if field.picks != nil {
+            set(picking(id, false, in: field), for: field.name)
+        } else if values[field.name] == id {
+            set(left.first { !$0.sends }?.id ?? "", for: field.name)
+        }
+        let query = choices?.query ?? ""
+        let place = choices?.selected ?? 0
+        choices = list(of: field)
+        choices?.search(query)
+        if let shown = choices?.shown, !shown.isEmpty { choices?.select(run: shown[min(place, shown.count - 1)].run) }
+        return true
+    }
+
+    public static func removed(of name: String) -> String {
+        "\(name).removed"
+    }
+
     private func list(of field: ItemForm.Field) -> ItemList {
         let picks = picked[field.name]
-        return ItemList(items: field.options.map { option in
+        return ItemList(items: (options[field.name] ?? field.options).map { option in
             SpotItem(title: option.title, run: option.id, picture: Icon(text: option.icon), isOn: picks?.contains(option.id) ?? (option.id == values[field.name]))
         })
     }
@@ -163,7 +193,7 @@ public struct FormDraft: Equatable, Sendable {
         guard let field = focusedField else { return false }
         switch field.type {
         case .choice where field.picks == nil:
-            let ids = field.options.filter { !$0.sends }.map(\.id)
+            let ids = (options[field.name] ?? field.options).filter { !$0.sends }.map(\.id)
             guard !ids.isEmpty else { return false }
             let now = ids.firstIndex(of: values[field.name] ?? "") ?? (step > 0 ? -1 : ids.count)
             let next = ids[min(max(now + step, 0), ids.count - 1)]

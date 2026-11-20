@@ -953,6 +953,45 @@ final class SpotsModelTests: XCTestCase {
         XCTAssertTrue(sends()[1].contains("input.kind=more"))
     }
 
+    func testCommandBackspaceInTheListOfAChoiceDeletesAnOptionThatTheSpotLetsGo() async throws {
+        let sent = folder.appendingPathComponent("sent").path
+        try script("list", toml: "", """
+        case "$1" in
+          add)
+            input=$(cat)
+            [ -z "$input" ] || { printf '%s\n' "$input" | tr '\n' ' ' >> '\(sent)'; printf '\n' >> '\(sent)'; exit 0; }
+            printf 'frame=\\ntitle=Types\n\nfield=new\ntitle=New type\n\nchoice=keep\ntitle=Your types\ntype=multiple\nvalue=a\nvalue=b\n\noption=a\ntitle=A\nremove=true\n\noption=b\ntitle=B\n' ;;
+          *) printf 'button=add\ntitle=Add\nscope=spot\nform=true\n\ntext=a\ntitle=Apple\n' ;;
+        esac
+        """)
+        let sends = { ((try? String(contentsOfFile: sent, encoding: .utf8)) ?? "").split(separator: "\n").map(String.init) }
+        await model.reload()
+        model.isShown = true
+        model.panelWillShow()
+        model.press("list")
+        try await wait("the open list") { model.openSheetID == "list" && model.openEntry?.spot.actions.contains(where: \.isForm) == true }
+        let entry = try XCTUnwrap(model.openEntry)
+        model.openForm(try XCTUnwrap(entry.spot.actions.first { $0.id == "add" }), on: (entry, nil))
+        try await wait("the form") { model.form != nil }
+
+        model.focusFormField("keep")
+        XCTAssertTrue(model.handleKey(ActionKey(name: "return")))
+        XCTAssertEqual(model.form?.draft.choices?.selectedItem?.run, "a")
+        XCTAssertTrue(KeyRow.hint(of: model.formRows).contains("⌘⌫ Delete"), KeyRow.hint(of: model.formRows))
+        XCTAssertTrue(model.handleKey(ActionKey(name: "backspace", isCommand: true)))
+        XCTAssertEqual(model.form?.draft.choices?.shown.map(\.title), ["B"])
+        XCTAssertFalse(KeyRow.hint(of: model.formRows).contains("Delete"))
+        XCTAssertFalse(model.handleKey(ActionKey(name: "backspace", isCommand: true)))
+        XCTAssertEqual(model.form?.draft.choices?.shown.map(\.title), ["B"])
+        XCTAssertTrue(model.handleKey(ActionKey(name: "escape")))
+        XCTAssertEqual(model.form?.draft.menuTitles["keep"], "B")
+
+        XCTAssertTrue(model.handleKey(ActionKey(name: "return", isCommand: true)))
+        try await wait("the sent form") { sends().count == 1 }
+        XCTAssertTrue(sends()[0].contains("input.keep=b"), sends()[0])
+        XCTAssertTrue(sends()[0].contains("input.keep.removed=a"), sends()[0])
+    }
+
     func testThePinnedActOfAListTakesTheSearchIntoItsFormAndItsFirstCall() async throws {
         let sent = folder.appendingPathComponent("sent").path
         try script("list", toml: "", """

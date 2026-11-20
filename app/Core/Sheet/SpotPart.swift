@@ -6,12 +6,14 @@ public struct SpotPart: Equatable, Sendable, Identifiable {
         public let title: String
         public let icon: String?
         public let sends: Bool
+        public let removes: Bool
 
-        public init(id: String, title: String, icon: String? = nil, sends: Bool = false) {
+        public init(id: String, title: String, icon: String? = nil, sends: Bool = false, removes: Bool = false) {
             self.id = id
             self.title = title
             self.icon = icon
             self.sends = sends
+            self.removes = removes
         }
     }
 
@@ -139,7 +141,7 @@ public struct SpotPart: Equatable, Sendable, Identifiable {
 
     static func options(of block: TextBlock) -> [Option] {
         block.children.compactMap { child in
-            child.value("option").map { Option(id: $0, title: child.value("title") ?? $0, icon: child.value("icon"), sends: child.value("send") == "true") }
+            child.value("option").map { Option(id: $0, title: child.value("title") ?? $0, icon: child.value("icon"), sends: child.value("send") == "true", removes: child.value("remove") == "true") }
         }
     }
 

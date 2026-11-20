@@ -14,9 +14,11 @@ link() { grep -Eo 'https?://[^[:space:]<>"]+' | head -n 1; }
 clean() { printf '%s' "$1" | tr '\t\n\r' '   ' | sed 's/^ *//; s/ *$//'; }
 field() { list | awk -F'\t' -v id="$1" -v n="$2" '$1 == id { print $n; exit }'; }
 kinds="$OPENSPOT_DATA/types"
-types() {
-  if [ -f "$kinds" ]; then cat "$kinds"; else { printf 'Books\nClothes\nGadgets\nHome\nBeauty\nToys\nSports\nOther\n'; list | cut -f2; }; fi | awk 'NF && !seen[$0]++'
+builtin() { printf 'Books\nClothes\nGadgets\nHome\nBeauty\nToys\nSports\nOther\n'; }
+own() {
+  if [ -f "$kinds" ]; then cat "$kinds"; else list | cut -f2; fi | awk -v B="$(builtin | tr '\n' '|')" 'BEGIN { split(B, a, "|"); for (i in a) b[a[i]] = 1 } NF && !b[$0] && !seen[$0]++'
 }
+types() { { builtin; own; } | awk 'NF && !seen[$0]++'; }
 hex() { printf '%s' "$1" | od -An -tx1 | tr -d ' \n'; }
 unhex() { printf '%s' "$1" | perl -pe 's/([0-9a-f]{2})/chr hex $1/ge'; }
 
@@ -187,25 +189,28 @@ retype() {
     printf '%s\t%s\t%s\t%s\t%s\n' "$1" "$(clean "$(value input.link)")" "$(clean "$(value input.name)")" \
       "$(clean "$(value input.price)")" "$(clean "$(value input.picture)")" | openspot_keep "$draft"
     printf 'frame=\ntitle=Types\n\nfield=newtype\ntitle=New type\nplaceholder=Such as Plants\n'
-    printf '\nchoice=keep\ntitle=Your types\ntype=multiple\n'
-    types | while IFS= read -r one; do openspot_kv value "t$(hex "$one")"; done
-    types | while IFS= read -r one; do printf '\noption=t%s\n' "$(hex "$one")"; openspot_kv title "$one"; done
+    if [ -n "$(own)" ]; then
+      printf '\nchoice=keep\ntitle=Your types\ntype=multiple\n'
+      own | while IFS= read -r one; do openspot_kv value "t$(hex "$one")"; done
+      own | while IFS= read -r one; do printf '\noption=t%s\nremove=true\n' "$(hex "$one")"; openspot_kv title "$one"; done
+    fi
     return 0
   fi
   new=$(clean "$(value input.newtype)")
   kept=$(value input.keep)
+  gone=$(value input.keep.removed)
   [ -s "$draft" ] && [ -z "$(value input.link)$(value input.name)$(value search)" ] || return 1
   [ "$(cut -f1 < "$draft")" = "$1" ] && [ -n "$(find "$draft" -mmin -10)" ] || return 1
   shift
-  if [ -n "$new$kept" ]; then
+  if [ -n "$new$kept$gone" ]; then
     { printf '%s\n' "$kept" | while IFS= read -r id; do [ -n "$id" ] && unhex "${id#t}" && echo; done; [ -z "$new" ] || printf '%s\n' "$new"; } \
-      | awk 'NF && !seen[$0]++' | openspot_keep "$kinds" || exit 1
+      | awk -v B="$(builtin | tr '\n' '|')" 'BEGIN { split(B, a, "|"); for (i in a) b[a[i]] = 1 } NF && !b[$0] && !seen[$0]++' | openspot_keep "$kinds" || exit 1
   fi
   at() { cut -f"$(($1 + 1))" < "$draft"; }
   type=$2
   types | grep -qxF -- "$type" || type=
   [ -z "$new" ] || type=$new
-  [ -n "$type" ] || type=$(types | head -n 1)
+  [ -n "$type" ] || type=Other
   wishform "$1" "$(at 1)" "$(at 2)" "$(at 3)" '' "$type" "$(at 4)" '' ''
 }
 

@@ -271,7 +271,8 @@ A button is a verb, such as Forget, that the sheet draws where the layout places
   such as with what's wrong, stays open. In a choice with `type=multiple`, a `value` line marks each chosen option.
 - In a form, Return does the act of the part in focus: it moves on from a text field, opens the list of a choice,
   flips a switch and saves on Save. `⌘` Return saves from any part, and Return saves a form of one field. An `option`
-  with `send=true`, such as Edit types…, sends the form as soon as it's chosen.
+  with `send=true`, such as Edit types…, sends the form as soon as it's chosen. In a form of several parts, an `option` with
+  `remove=true` can be deleted with `⌘⌫` in the list of its choice, and the form sends the id of each deleted one in `<choice id>.removed`.
 
 ## The openspot command
 
@@ -717,7 +718,7 @@ Each kind of block, the keys of its own and the call it sends.
 | `switch`  | A switch, or with `type=tick` a round tick before its words, for a thing to do.                                  | `value`: `true` or `false`, `type`                                                | `<id> true` or `false` |
 | `field`   | A text field, or another input with a `type`.                                                                    | `value`, `type`, `placeholder`, `required`, `readonly`, `min`, `max`, `recording` | `<id> <value>`         |
 | `choice`  | A menu of the `option` blocks after it, a list when it covers two lines or more, or swatches of `color` lines.   | `color`, `value`, `type`                                                          | `<id> <option id>`     |
-| `option`  | One option of the `choice` right before it.                                                                      | `title`, `icon`, `send`                                                           |                        |
+| `option`  | One option of the `choice` right before it.                                                                      | `title`, `icon`, `send`, `remove`                                                 |                        |
 | `button`  | A button, or an action (see [Buttons and actions](#buttons-and-actions)).                                        | `shortcut`, `confirm`, `close`, `look`, `form`, `scope`                           | `<id>`                 |
 | `section` | A title over the blocks after it, or over the items after it when the layout doesn't place it.                   |                                                                                   |                        |
 | `repeat`  | The place of the [items](#items).                                                                                | `grid` lines                                                                      |                        |

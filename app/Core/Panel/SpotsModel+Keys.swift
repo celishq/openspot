@@ -199,6 +199,11 @@ extension SpotsModel {
             KeyRow("down", command: true, act: jump(1)),
             KeyRow("left", act: turn(-1)),
             KeyRow("right", act: turn(1)),
+            KeyRow("backspace", command: true, words: form.draft.removable && searchText.isEmpty ? "Delete" : nil) { [self] _ in
+                guard searchText.isEmpty, var draft = self.form?.draft, draft.removePick() else { return nil }
+                self.form?.draft = draft
+                return true
+            },
             KeyRow("escape", words: isMultiple || form.draft.pickedField?.picks != nil ? "Done" : form.draft.picking != nil ? "Back" : "Cancel") { [self] _ in
                 if form.draft.choices?.query.isEmpty == false {
                     self.form?.draft.search("")
@@ -216,7 +221,7 @@ extension SpotsModel {
         if let field = draft.pickedField { return field.picks == nil ? "Choose" : "Tick" }
         if draft.choices != nil { return draft.isMultiple ? "Select" : "Save" }
         switch draft.focusedField?.type {
-        case .choice: return draft.focusedField?.options.isEmpty == false ? "Choose" : "Save"
+        case .choice: return draft.focusedField.flatMap { draft.options[$0.name] }?.isEmpty == false ? "Choose" : "Save"
         case .switch: return "Switch"
         case .text, .secret: return draft.stops.count > 2 ? "Next" : "Save"
         default: return "Save"
