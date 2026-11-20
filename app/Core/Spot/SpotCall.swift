@@ -54,7 +54,7 @@ public enum SpotCall: NounCall {
             guard let fit = words.fit, fit.rest.count == 1 else { return nil }
             return fit.has("--select") ? Self.show(fit.rest[0]) : Self.open(fit.rest[0])
         },
-        CommandVerb("push", "<id> [page] [--replace] [--title <words>]", "Pushes a spot, or a page of it, over the flow that shows.", rule: CallRule(inShow: .changes(panel))) { $0.fit.flatMap(push) },
+        CommandVerb("push", "<id> [page] [--replace] [--title <words>]", "Pushes a spot, or a page of it, over the flow that shows, or opens the panel on it when no sheet shows.", rule: CallRule(inShow: .changes(panel))) { $0.fit.flatMap(push) },
         CommandVerb("pop", "<id> [--all]", "Goes back one sheet of a spot that shows, or to its first sheet.", rule: CallRule(inShow: .changes("moves the panel"))) { words in
             guard let fit = words.fit, fit.rest.count == 1 else { return nil }
             return Self.pop(fit.rest[0], all: fit.has("--all"))

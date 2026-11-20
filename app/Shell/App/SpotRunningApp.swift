@@ -52,11 +52,11 @@ struct SpotRunningApp: RunningApp {
     }
 
     func ask(_ id: String, from caller: String?, title: String?) async -> Bool {
-        await model.openAsked(id, from: caller, title: title)
+        await model.present(FlowSheet(spot: id, title: title), from: caller)
     }
 
     func push(_ id: String, route: String?, title: String?, replace: Bool) async -> Bool {
-        await model.push(FlowSheet(spot: id, route: route, title: title), replace: replace)
+        await model.present(FlowSheet(spot: id, route: route, title: title), replace: replace)
     }
 
     func pop(_ id: String, all: Bool) async -> Bool {
