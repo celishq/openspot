@@ -98,7 +98,7 @@ extension SpotsModel {
                 sheets[target.entry.id]?.run(action, item: target.item)
             }
         } else if action == .open || action == .history {
-            presentSheet(of: target.entry.id, moving: true)
+            presentSheet(of: target.entry.id)
         } else if let command = CommandAction.command(of: action) {
             if isShown { host.dismiss() }
             sheets[target.entry.id]?.pressKey(command)

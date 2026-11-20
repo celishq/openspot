@@ -4,17 +4,12 @@ extension SpotsModel {
     @discardableResult
     public func open(_ id: String) -> Bool {
         guard entry(id) != nil else { return false }
-        guard isShown else {
-            host.show()
-            host.nextFrame { [weak self] in
-                guard let self else { return }
-                endFlow()
-                push(FlowSheet(spot: id))
-            }
-            return true
+        afterShowing({ host.show() }) { [weak self] in
+            guard let self else { return }
+            endFlow()
+            push(FlowSheet(spot: id))
         }
-        endFlow()
-        return push(FlowSheet(spot: id))
+        return true
     }
 
     @discardableResult

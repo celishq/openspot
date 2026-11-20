@@ -64,14 +64,18 @@ extension SpotsModel {
         arrangement.isWindow(of: id) ?? defaultArrangement.isWindow(of: id) ?? false ? .window : .panel
     }
 
-    func presentSheet(of id: String, moving: Bool, showingPanel: () -> Void = {}) {
+    func presentSheet(of id: String, showingPanel: () -> Void = {}) {
         guard place(ofSheet: id) == .panel else { return openWindow(id) }
-        showingPanel()
-        guard !moving else { return pushFirst(id, moving: true) }
-        host.nextFrame { [weak self] in
+        afterShowing(showingPanel) { [weak self] in
             guard let self else { return }
             pushFirst(id, moving: isShown)
         }
+    }
+
+    func afterShowing(_ showingPanel: () -> Void, _ open: @escaping @MainActor () -> Void) {
+        let wasShown = isShown
+        showingPanel()
+        if wasShown { open() } else { host.nextFrame(open) }
     }
 
     public func openSettings() {

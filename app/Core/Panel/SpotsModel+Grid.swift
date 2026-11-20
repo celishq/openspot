@@ -123,7 +123,7 @@ extension SpotsModel {
             run(entry)
             return
         }
-        presentSheet(of: id, moving: isShown) { host.show() }
+        presentSheet(of: id) { host.show() }
     }
 
 

@@ -73,7 +73,7 @@ extension SpotsModel {
             if isShown { host.dismiss() }
             return true
         }
-        presentSheet(of: id, moving: isShown) {
+        presentSheet(of: id) {
             isSettlingDrop = true
             host.present()
         }
