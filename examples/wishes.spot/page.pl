@@ -37,7 +37,7 @@ sub currency {
     my ($text) = @_;
     return '' unless defined $text;
     for my $pair (@symbols) { return $pair->[1] if $text =~ $pair->[0]; }
-    return $1 if $text =~ /(?<![A-Za-z])([A-Z]{3})(?![A-Za-z])/;
+    return $1 if $text =~ /(?<![A-Za-z])(USD|EUR|GBP|UAH|PLN|CHF|CZK|SEK|NOK|DKK|HUF|RON|BGN|TRY|ILS|AED|JPY|CNY|INR|KRW|CAD|AUD|NZD|BRL|MXN|SGD|HKD)(?![A-Za-z])/;
     return '';
 }
 

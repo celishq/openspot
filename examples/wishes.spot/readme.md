@@ -13,7 +13,6 @@ Wishes keeps the things you want to buy, each with its name, its picture and its
 
 Some shops, such as those behind Cloudflare, don't let programs read their pages. Then Wishes reads the same page from
 an open tab of your browser: Chrome, Safari, Arc, Brave, Edge, Vivaldi or Opera. macOS asks once to let Openspot
-control the browser, and the price needs **Allow JavaScript from Apple Events**, in View › Developer in Chrome, or in
-the Develop menu in Safari. With no such tab, Wishes takes the name from the link, and you type the price.
+control the browser. With no such tab, Wishes takes the name from the link, and you type the price.
 
 Wishes drops tracking words, such as `utm_source`, from each link.

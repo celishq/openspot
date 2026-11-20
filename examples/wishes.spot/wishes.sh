@@ -126,11 +126,25 @@ add() {
       -H 'Accept-Language: en-US,en;q=0.9' "$url" </dev/null | head -c 4000000 | perl "$here/page.pl" "$url" 2>/dev/null)
     from=
     if [ "$(printf '%s\n' "$page" | cut -f6)" != 1 ]; then
-      open=$(perl -e 'alarm 60; exec @ARGV' osascript -l JavaScript "$here/tab.js" "$url" 2>/dev/null)
-      if [ -n "$open" ]; then
-        from=$(printf '%s\n' "$open" | head -n 1)
-        page=$(printf '%s\n' "$open" | tail -n +2 | perl "$here/page.pl" "$url" 2>/dev/null)
-      fi
+      saved=$(mktemp -d)
+      open=$(perl -e 'alarm 60; exec @ARGV' osascript -l JavaScript "$here/tab.js" "$url" "$saved/page.html" 2>/dev/null)
+      from=$(printf '%s\n' "$open" | head -n 1)
+      case "$from" in
+        file\ *)
+          size=-1
+          for wait in 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20; do
+            now=$(wc -c 2>/dev/null < "$saved/page.html" | tr -d ' ')
+            [ -n "$now" ] && [ "$now" -gt 0 ] && [ "$now" = "$size" ] && break
+            size=${now:--1}
+            perl -e 'select undef, undef, undef, 0.5'
+          done
+          if [ -s "$saved/page.html" ]; then
+            page=$(perl "$here/page.pl" "$url" < "$saved/page.html" 2>/dev/null)
+          fi
+          ;;
+        ?*) page=$(printf '%s\n' "$open" | tail -n +2 | perl "$here/page.pl" "$url" 2>/dev/null) ;;
+      esac
+      rm -rf "$saved"
     fi
     read=$(printf '%s\t%s\t%s' "$url" "${page:-$tab$tab$tab${tab}Other${tab}0}" "$from")
     printf '%s\n' "$read" | openspot_keep "$OPENSPOT_DATA/page"

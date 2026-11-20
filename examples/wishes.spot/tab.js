@@ -1,8 +1,9 @@
 // Reads a page that is already open in one of the person's browsers, for a shop that hides its pages from programs.
-// Run: osascript -l JavaScript tab.js <link>
+// Run: osascript -l JavaScript tab.js <link> <file>
 // It looks only at browsers that already run, and only at a tab whose link is the same, with no query.
-// It prints a first line, "html <browser>" or "title <browser>", then the HTML of the page, or a <title> alone when
-// the browser does not let Apple Events run JavaScript. It prints nothing when no open tab has the link.
+// It prints a first line, "html <browser>", then the HTML of the page. A Chromium browser that does not let Apple Events
+// run JavaScript saves the page to the file instead, which it writes a moment later, and prints "file <browser>". A
+// browser that gives neither prints "title <browser>" and a <title> alone. It prints nothing when no open tab has the link.
 const browsers = [
   ['com.google.Chrome', 'chrome'], ['company.thebrowser.Browser', 'chrome'], ['com.brave.Browser', 'chrome'],
   ['com.microsoft.edgemac', 'chrome'], ['com.vivaldi.Vivaldi', 'chrome'], ['com.operasoftware.Opera', 'chrome'],
@@ -21,6 +22,7 @@ function escaped(text) {
 
 function run(args) {
   const want = bare(args[0]);
+  const file = args[1];
   if (!want) return '';
   for (const [id, kind] of browsers) {
     let app;
@@ -41,10 +43,22 @@ function run(args) {
         let link = '';
         try { link = tab.url(); } catch (e) { continue; }
         if (bare(link) !== want) continue;
+        if (kind === 'safari') {
+          try {
+            const source = tab.source();
+            if (source) return 'html ' + name + '\n' + source;
+          } catch (e) {}
+        }
         try {
           const html = kind === 'safari' ? app.doJavaScript(page, { in: tab }) : app.execute(tab, { javascript: page });
           if (html) return 'html ' + name + '\n' + html;
         } catch (e) {}
+        if (kind === 'chrome' && file) {
+          try {
+            app.save(tab, { in: Path(file), as: 'only html' });
+            return 'file ' + name;
+          } catch (e) {}
+        }
         let title = '';
         try { title = kind === 'safari' ? tab.name() : tab.title(); } catch (e) {}
         return 'title ' + name + '\n<title>' + escaped(title) + '</title>';

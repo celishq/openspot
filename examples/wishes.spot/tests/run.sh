@@ -68,6 +68,7 @@ prices '29,99 eur' 29.99 EUR
 prices '1 299,50 грн' 1299.50 UAH
 prices '1,299.00' 1299 ''
 prices 'soon' '' ''
+prices '526 UAN' 526 ''
 
 [ "$failed" = 0 ] && echo 'Wishes tests passed.'
 exit "$failed"
