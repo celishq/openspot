@@ -17,6 +17,14 @@ when() {
   date -r "$seconds" "+%a %b %-d, %-H:%M"
 }
 
+# The icon of a page: its site's favicon, which Openspot fetches once, or Safari's for a page with no web address.
+icon() {
+  case "$1" in
+    http://*|https://*) printf '%s/favicon.ico' "$(printf '%s' "$1" | sed -E 's#^(https?://[^/]+).*#\1#')" ;;
+    *) printf safari ;;
+  esac
+}
+
 # Snoozes the front Safari tab until the time the person picks, and closes it.
 snooze_front() {
   url=$(osascript -e 'tell application "Safari" to get URL of current tab of front window' 2>/dev/null)
@@ -36,7 +44,7 @@ case "$1" in
     openspot_item current "Snooze Current Tab" "Safari's front tab" moon.zzz
     printf 'pin=top\nhides=remove\nclose=false\n'
     timers | while IFS="$(printf '\t')" read -r id at url title; do
-      openspot_item "$id" "${title:-$url}" "$(when "$at")" safari
+      openspot_item "$id" "${title:-$url}" "$(when "$at")" "$(icon "$url")"
     done
     ;;
   open)
