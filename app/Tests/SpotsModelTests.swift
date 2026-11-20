@@ -1032,7 +1032,9 @@ final class SpotsModelTests: XCTestCase {
           add)
             while [ ! -e '\(gate)' ]; do sleep 0.05; done
             printf 'frame=\\ntitle=Add\n\nfield=name\ntitle=Name\n' ;;
-          *) printf 'button=add\ntitle=Add\nscope=spot\nform=true\n\ntext=a\ntitle=Apple\n' ;;
+          read) while [ ! -e '\(gate).read' ]; do sleep 0.05; done
+            printf 'frame=\\ntitle=Read\n\nfield=link\ntitle=Link\n' ;;
+          *) printf 'button=add\ntitle=Add\nscope=spot\nform=true\n\nbutton=read\ntitle=Read\nscope=spot\nform=true\nwait=Reading the page\n\ntext=a\ntitle=Apple\n' ;;
         esac
         """)
         await model.reload()
@@ -1041,10 +1043,16 @@ final class SpotsModelTests: XCTestCase {
         model.press("list")
         try await wait("the open list") { model.openSheetID == "list" && model.openEntry?.spot.actions.contains(where: \.isForm) == true }
         let entry = try XCTUnwrap(model.openEntry)
-        model.openForm(try XCTUnwrap(entry.spot.actions.first { $0.id == "add" }), on: (entry, nil))
+        model.openForm(try XCTUnwrap(entry.spot.actions.first { $0.id == "read" }), on: (entry, nil))
+        try await wait("the words of the spot") { model.waiting != nil }
+        XCTAssertEqual(model.waiting, HintWords("Reading the page…"))
+        FileManager.default.createFile(atPath: gate + ".read", contents: nil)
+        try await wait("the read form") { model.form != nil && model.waiting == nil }
+        model.cancelForm()
 
+        model.openForm(try XCTUnwrap(entry.spot.actions.first { $0.id == "add" }), on: (entry, nil))
         try await wait("the waiting words") { model.waiting != nil }
-        XCTAssertEqual(model.waiting, HintWords("Add…"))
+        XCTAssertEqual(model.waiting, HintWords("Loading…"))
         FileManager.default.createFile(atPath: gate, contents: nil)
         try await wait("the form") { model.form != nil }
         XCTAssertNil(model.waiting)

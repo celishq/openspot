@@ -126,7 +126,7 @@ extension SpotsModel {
     func ask(_ action: CommandAction, on target: Target, prefill: String = "", whileShown: Bool = false, waits: Bool = false, _ call: @escaping @MainActor () async throws -> CallAnswer?) {
         let ask = UUID()
         pendingAsk = ask
-        let wait = waits ? startWaiting("\(action.title)…") : nil
+        let wait = waits ? startWaiting(action.openWords) : nil
         Task {
             defer { if let wait { endWaiting(wait) } }
             do {
@@ -287,7 +287,7 @@ extension SpotsModel {
     func send(_ form: FormSession, _ draft: FormDraft) {
         if form.action.id.hasPrefix(Self.secretPrefix) { return keepSecret(form, draft) }
         if form.action.id.hasPrefix(Self.optionPrefix) { return keepOption(form, draft) }
-        let wait = startWaiting("\(form.action.title)…")
+        let wait = startWaiting(form.action.sendWords)
         Task {
             defer { endWaiting(wait) }
             do {

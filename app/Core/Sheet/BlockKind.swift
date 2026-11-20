@@ -160,7 +160,7 @@ public struct BlockKind: Sendable, Equatable {
         }
     )
 
-    static let button = BlockKind(name: "button", presses: true, faults: PartCatalog.shortcutFaults)
+    static let button = BlockKind(name: "button", keys: ["wait"], presses: true, faults: PartCatalog.shortcutFaults)
 
     static let section = BlockKind(name: "section")
 

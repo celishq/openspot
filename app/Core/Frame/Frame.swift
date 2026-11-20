@@ -218,7 +218,7 @@ public struct Frame: Equatable, Sendable {
             openTitle = block.value("title")
             pick = block.flag("close") == false ? .stay : .close
             if block.flag("form") == true {
-                pickForm = CommandAction(id: id, title: openTitle ?? "Open", after: pick == .close ? .close : .stay, isForm: true)
+                pickForm = CommandAction(id: id, title: openTitle ?? "Open", after: pick == .close ? .close : .stay, isForm: true, wait: block.value("wait"))
             }
         } else if let action = CommandAction(id: id, block: block) {
             actions.append(action)

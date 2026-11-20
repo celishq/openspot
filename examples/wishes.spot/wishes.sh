@@ -71,7 +71,7 @@ show() {
   printf 'frame=\nrecents=false\n'
   [ "$count" -eq 1 ] && printf 'detail=1 wish\n'
   [ "$count" -gt 1 ] && printf 'detail=%s wishes\n' "$count"
-  printf '\ntext=add\ntitle=Add wish\nicon=plus.circle.fill\npin=top\nform=true\nclose=false\nopen.title=Add Wish\nhides=edit\nhides=remove\n'
+  printf '\ntext=add\ntitle=Add wish\nicon=plus.circle.fill\npin=top\nform=true\nclose=false\nopen.title=Add Wish\nopen.wait=Reading the page\nhides=edit\nhides=remove\n'
   [ "$count" -eq 0 ] && printf 'detail=Press Return, then paste a product link\n'
   printf '\n'
   [ "$count" -eq 0 ] && return
@@ -88,7 +88,7 @@ show() {
     }'
   if [ "$group" = Price ]; then by='by price range'; else by='by type'; fi
   printf 'text=share\ntitle=Share list\ndetail=Copies your wishes as text, %s\nicon=square.and.arrow.up\npin=bottom\nopen.title=Copy List\nhides=edit\nhides=remove\n\n' "$by"
-  printf 'button=edit\ntitle=Edit\nicon=pencil\nshortcut=cmd+e\nform=true\nclose=false\n\n'
+  printf 'button=edit\ntitle=Edit\nicon=pencil\nshortcut=cmd+e\nform=true\nclose=false\nwait=Reading the page\n\n'
   printf 'button=remove\ntitle=Remove\nicon=trash\nshortcut=cmd+backspace\nconfirm=Press again to remove this wish\nclose=false\n'
 }
 

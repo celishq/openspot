@@ -31,6 +31,7 @@ public struct CommandAction: Equatable, Sendable {
     public let isForm: Bool
     public let confirm: String?
     public let placeholder: String?
+    public let wait: String?
 
     public init(
         id: String,
@@ -40,7 +41,8 @@ public struct CommandAction: Equatable, Sendable {
         after: After = .stay,
         isForm: Bool = false,
         confirm: String? = nil,
-        placeholder: String? = nil
+        placeholder: String? = nil,
+        wait: String? = nil
     ) {
         self.id = id
         self.title = title
@@ -50,6 +52,15 @@ public struct CommandAction: Equatable, Sendable {
         self.isForm = isForm
         self.confirm = confirm
         self.placeholder = placeholder
+        self.wait = wait
+    }
+
+    public var openWords: String {
+        wait.map { "\($0)…" } ?? "Loading…"
+    }
+
+    public var sendWords: String {
+        wait.map { "\($0)…" } ?? "Saving…"
     }
 
     public init?(id: String, block: TextBlock) {
@@ -68,7 +79,8 @@ public struct CommandAction: Equatable, Sendable {
             after: block.flag("close") == false ? .stay : .close,
             isForm: block.flag("form") ?? false,
             confirm: block.value("confirm"),
-            placeholder: block.value("placeholder")
+            placeholder: block.value("placeholder"),
+            wait: block.value("wait")
         )
     }
 }

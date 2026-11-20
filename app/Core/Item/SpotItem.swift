@@ -85,7 +85,7 @@ public struct SpotItem: Equatable, Sendable {
             pin: block.value(ItemKey.pin).flatMap(Pin.init(rawValue:)),
             openTitle: block.value(ItemKey.openTitle),
             staysOnPick: block.flag(ItemKey.close) == false,
-            form: block.flag(ItemKey.form) == true ? CommandAction(id: Frame.open, title: block.value(ItemKey.openTitle) ?? block.value(ItemKey.title) ?? run, after: block.flag(ItemKey.close) == false ? .stay : .close, isForm: true) : nil,
+            form: block.flag(ItemKey.form) == true ? CommandAction(id: Frame.open, title: block.value(ItemKey.openTitle) ?? block.value(ItemKey.title) ?? run, after: block.flag(ItemKey.close) == false ? .stay : .close, isForm: true, wait: block.value(ItemKey.openWait)) : nil,
             move: FlowMove(item: block),
             section: section,
             number: number,
