@@ -1,8 +1,9 @@
 // Reads a page that is already open in one of the person's browsers, for a shop that hides its pages from programs.
-// Run: osascript -l JavaScript tab.js <link> <file>
+// Run: osascript -l JavaScript tab.js <link> <file> [whole]
 // It looks only at browsers that already run, and only at a tab whose link is the same, with no query.
 // It prints a first line, "html <browser>", then the HTML of the page. A Chromium browser that does not let Apple Events
-// run JavaScript saves the page to the file instead, which it writes a moment later, and prints "file <browser>". A
+// run JavaScript saves the page to the file instead, which it writes a moment later, and prints "file <browser>". It saves
+// the HTML that the shop sent, or with "whole" the page as it shows, with a folder of its parts, which is slower. A
 // browser that gives neither prints "title <browser>" and a <title> alone. It prints nothing when no open tab has the link.
 const browsers = [
   ['com.google.Chrome', 'chrome'], ['company.thebrowser.Browser', 'chrome'], ['com.brave.Browser', 'chrome'],
@@ -23,6 +24,7 @@ function escaped(text) {
 function run(args) {
   const want = bare(args[0]);
   const file = args[1];
+  const whole = args[2] === 'whole';
   if (!want) return '';
   for (const [id, kind] of browsers) {
     let app;
@@ -55,7 +57,7 @@ function run(args) {
         } catch (e) {}
         if (kind === 'chrome' && file) {
           try {
-            app.save(tab, { in: Path(file), as: 'only html' });
+            app.save(tab, { in: Path(file), as: whole ? 'complete html' : 'only html' });
             return 'file ' + name;
           } catch (e) {}
         }

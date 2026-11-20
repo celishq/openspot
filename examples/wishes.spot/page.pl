@@ -98,6 +98,25 @@ while ($html =~ /<meta\b([^>]*)>/gis) {
 my $ld = join("\n", $html =~ /<script[^>]*application\/ld\+json[^>]*>(.*?)<\/script>/gis);
 sub ld { my ($key, $form) = @_; return $ld =~ /"$key"\s*:\s*$form/is ? $1 : undef; }
 
+# The picture of a product among the images of a page that names none: one that the page marks as the product's, or as
+# its gallery or cover, else the first large one. A logo, an icon or a sprite is never the product.
+sub shown_image {
+    my ($best, $first);
+    while ($html =~ /<img\b([^>]*)>/gis) {
+        my $tag = $1;
+        my ($src) = $tag =~ /\b(?:data-src|data-original|data-lazy-src|src)\s*=\s*["']([^"']+)["']/i;
+        ($src) = $tag =~ /\bsrcset\s*=\s*["']\s*([^\s"',]+)/i unless defined $src && $src !~ /^data:/i;
+        next unless defined $src && $src !~ /^data:/i;
+        next if $src =~ /logo|icon|sprite|pixel|spacer|avatar|badge|flag|payment|banner|\.svg(?:$|\?)/i
+            || $tag =~ /\b(?:class|id|alt)\s*=\s*["'][^"']*(?:logo|icon|avatar|banner)/i;
+        my ($width) = $tag =~ /\bwidth\s*=\s*["']?(\d+)/i;
+        next if defined $width && $width < 120;
+        return $src if $tag =~ /itemprop\s*=\s*["']image|(?:class|id)\s*=\s*["'][^"']*(?:product|gallery|cover|zoom|main-?image|primary)/i;
+        $first //= $src if $src =~ /\.(?:jpe?g|png|webp|avif)(?:$|\?)/i || (defined $width && $width >= 200);
+    }
+    return $first;
+}
+
 my $title = $meta{'og:title'} // $meta{'twitter:title'};
 $title //= $1 if $html =~ /<title[^>]*>(.*?)<\/title>/is;
 $title = plain($title);
@@ -131,10 +150,19 @@ $currency = '' if $price eq '';
 
 my $image = $meta{'og:image:secure_url'} // $meta{'og:image'} // $meta{'twitter:image'} // $meta{'twitter:image:src'}
     // ld('image', '\[?\s*"([^"]+)"') // ld('image', '\{[^}]*?"url"\s*:\s*"([^"]+)"')
-    // ($html =~ /data-old-hires="(https:[^"]+)"/ ? $1 : undef) // ($html =~ /"hiRes":"(https:[^"]+)"/ ? $1 : undef) // '';
+    // ($html =~ /data-old-hires="(https:[^"]+)"/ ? $1 : undef) // ($html =~ /"hiRes":"(https:[^"]+)"/ ? $1 : undef)
+    // shown_image() // '';
 $image = plain($image);
 my ($origin) = $url =~ m{^(https?://[^/?#]+)};
 $image = "https:$image" if $image =~ m{^//};
+if ($image ne '' && $image !~ m{^(?:https?:)?/} && defined $origin) {
+    my ($folder) = $url =~ m{^https?://[^/?#]+(/[^?#]*/)};
+    my $path = ($folder // '/') . $image;
+    1 while $path =~ s{/(?!\.\./)[^/]+/\.\./}{/};
+    $path =~ s{/\./}{/}g;
+    $path =~ s{^/(?:\.\./)+}{/};
+    $image = $path;
+}
 $image = ($origin // '') . $image if $image =~ m{^/};
 $image =~ s{^http://}{https://};
 $image = '' unless $image =~ m{^https://\S+$};

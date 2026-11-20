@@ -63,6 +63,17 @@ reads 'a title with the shop''s buy words' 'https://shop.example/p/7' \
 reads 'a title with a dash of its own' 'https://shop.example/p/8' '<title>Spider-Man - Into the Spider-Verse</title>' \
   'Spider-Man - Into the Spider-Verse' '' '' '' Other 1
 
+reads 'a picture among the images of a page' 'https://shop.example/p/9' \
+  '<title>Lamp</title><img src="/img/logo.png" class="logo"><img width="40" src="/a/tiny.jpg"><img class="product-gallery__photo" data-src="/media/lamp.webp" src="data:image/gif;base64,R0">' \
+  Lamp '' '' 'https://shop.example/media/lamp.webp' Home 1
+
+reads 'a picture at a path beside the page' 'https://shop.example/catalogue/cup/index.html' \
+  '<title>A cup</title><div class="item active"><img src="../../media/cup.jpg" alt="A cup"></div>' \
+  'A cup' '' '' 'https://shop.example/media/cup.jpg' Other 1
+
+reads 'no picture when a page has only its logo' 'https://shop.example/p/11' '<title>A mug</title><img src="/assets/logo.png">' \
+  'A mug' '' '' '' Home 1
+
 prices '$29.99' 29.99 USD
 prices '29,99 eur' 29.99 EUR
 prices '1 299,50 грн' 1299.50 UAH

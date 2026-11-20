@@ -98,9 +98,10 @@ fetch() {
   page=$(curl -sL --compressed --max-time 12 -A "$agent" -H 'Accept: text/html,application/xhtml+xml' \
     -H 'Accept-Language: en-US,en;q=0.9' "$1" </dev/null | head -c 4000000 | perl "$here/page.pl" "$1" 2>/dev/null)
   from=
-  if [ "$(printf '%s\n' "$page" | cut -f6)" != 1 ]; then
+  for how in sent whole; do
+    [ "$(printf '%s\n' "$page" | cut -f6)" != 1 ] || break
     saved=$(mktemp -d)
-    open=$(perl -e 'alarm 60; exec @ARGV' osascript -l JavaScript "$here/tab.js" "$1" "$saved/page.html" 2>/dev/null)
+    open=$(perl -e 'alarm 60; exec @ARGV' osascript -l JavaScript "$here/tab.js" "$1" "$saved/page.html" "$how" 2>/dev/null)
     from=$(printf '%s\n' "$open" | head -n 1)
     case "$from" in
       file\ *)
@@ -113,10 +114,11 @@ fetch() {
         done
         if [ -s "$saved/page.html" ]; then page=$(perl "$here/page.pl" "$1" < "$saved/page.html" 2>/dev/null); fi
         ;;
-      ?*) page=$(printf '%s\n' "$open" | tail -n +2 | perl "$here/page.pl" "$1" 2>/dev/null) ;;
+      ?*) page=$(printf '%s\n' "$open" | tail -n +2 | perl "$here/page.pl" "$1" 2>/dev/null); rm -rf "$saved"; break ;;
+      *) rm -rf "$saved"; break ;;
     esac
     rm -rf "$saved"
-  fi
+  done
   printf '%s\t%s\n' "${page:-$tab$tab$tab${tab}Other${tab}0}" "$from"
 }
 
@@ -175,6 +177,7 @@ keep() {
 # The page that it read last waits in $OPENSPOT_DATA/page: the link, then the line that fetch prints.
 add() {
   typed=$(clean "$(value input.link)")
+  [ -n "$typed" ] || typed=$(clean "$(value search)")
   url=$(printf '%s\n' "$typed" | link | untrack)
   if [ -z "$url" ]; then
     printf 'frame=\ntitle=New wish\n\nfield=link\ntitle=Link\nplaceholder=Paste a product link\nrequired=true\n'
