@@ -82,7 +82,7 @@ function words(date, now) {
  * opens the page where the person types a time. */
 function sheet(now, choices) {
   const moments = times(now, choices)
-  const blocks = [{ frame: "", title: "Snooze until", grid: "tiles" }, { repeat: "tiles", grid: "a b c" }]
+  const blocks = [{ frame: "", grid: "tiles" }, { repeat: "tiles", grid: "a b c" }]
   for (const [id, title, icon, none] of tiles) {
     const moment = moments[id]
     const tile = { text: id, title, detail: moment ? words(moment, now) : none, icon, look: "tile" }

@@ -111,6 +111,8 @@ final class SpotAskTests: PanelCase {
         try await waitForPicker()
 
         XCTAssertEqual(model.flow.current?.title, "Example page")
+        let entry = try XCTUnwrap(model.sheetEntry(model.openSheetID))
+        XCTAssertEqual(model.sheetContent(of: entry).state.title, "Example page")
         XCTAssertTrue(model.handleKey(toGrid))
         _ = await asking.value
     }
