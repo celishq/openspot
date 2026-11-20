@@ -301,10 +301,10 @@ final class NewSpotTests: BuiltInCase {
         for line in blocks.split(separator: "\n") where line.hasPrefix("| `") {
             let cells = line.split(separator: "|").map { $0.trimmingCharacters(in: .whitespaces) }
             let kind = cells[0].trimmingCharacters(in: CharacterSet(charactersIn: "`"))
-            guard cells.count > 2, BlockKind.all.contains(where: { $0.word == kind }) else { continue }
+            guard cells.count > 2, let block = BlockKind.all.first(where: { $0.word == kind }) else { continue }
             for item in cells[2].components(separatedBy: ", ") {
                 guard let word = item.split(separator: "`", omittingEmptySubsequences: false).dropFirst().first else { continue }
-                XCTAssertTrue(PartCatalog.keys.contains(String(word.split(separator: "=").first ?? word)), "\(kind): \(word)")
+                XCTAssertTrue(PartCatalog.keys.union(block.keys).contains(String(word.split(separator: "=").first ?? word)), "\(kind): \(word)")
             }
         }
     }
