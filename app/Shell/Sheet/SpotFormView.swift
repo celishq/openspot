@@ -7,6 +7,8 @@ struct SpotFormView: View {
     let onValue: (String, String) -> Void
     var onChoose: (SpotItem) -> Void = { _ in }
     var selection: (() -> Int)?
+    var focused: String?
+    var onFocus: (String?) -> Void = { _ in }
     @FocusState private var focus: String?
 
     private var shape: SpotRoundShape {
@@ -34,7 +36,13 @@ struct SpotFormView: View {
             }
         }
         .onAppear {
-            DispatchQueue.main.async { focus = draft.form.fields.first?.name }
+            DispatchQueue.main.async { focus = focused ?? draft.form.fields.first?.name }
+        }
+        .onChange(of: focused) { _, name in
+            if focus != name { focus = name }
+        }
+        .onChange(of: focus) { _, name in
+            if name != focused { onFocus(name) }
         }
     }
 

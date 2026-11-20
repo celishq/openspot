@@ -857,6 +857,88 @@ final class SpotsModelTests: XCTestCase {
         XCTAssertTrue(sends()[1].hasPrefix("note "), sends()[1])
     }
 
+    func testTheArrowsMoveBetweenTheTextFieldsOfAFormAndLeaveTheLinesOfAMultilineField() async throws {
+        try script("list", toml: "", """
+        case "$1" in
+          add) printf 'frame=\\ntitle=Add\n\nfield=link\ntitle=Link\n\nchoice=kind\ntitle=Kind\nvalue=a\n\noption=a\ntitle=A\n\nfield=name\ntitle=Name\n\nfield=note\ntitle=Note\ntype=multiline\n' ;;
+          *) printf 'button=add\ntitle=Add\nscope=spot\nform=true\n\ntext=a\ntitle=Apple\n' ;;
+        esac
+        """)
+        await model.reload()
+        model.isShown = true
+        model.panelWillShow()
+        model.press("list")
+        try await wait("the open list") { model.openSheetID == "list" && model.openEntry?.spot.actions.contains(where: \.isForm) == true }
+        let entry = try XCTUnwrap(model.openEntry)
+        model.openForm(try XCTUnwrap(entry.spot.actions.first { $0.id == "add" }), on: (entry, nil))
+        try await wait("the form") { model.form != nil }
+
+        XCTAssertEqual(model.form?.draft.focus, "link")
+        XCTAssertTrue(model.handleKey(ActionKey(name: "down")))
+        XCTAssertEqual(model.form?.draft.focus, "name")
+        XCTAssertTrue(model.handleKey(ActionKey(name: "down")))
+        XCTAssertEqual(model.form?.draft.focus, "note")
+        XCTAssertFalse(model.handleKey(ActionKey(name: "down")))
+        XCTAssertFalse(model.handleKey(ActionKey(name: "up")))
+        model.focusFormField("name")
+        XCTAssertTrue(model.handleKey(ActionKey(name: "up")))
+        XCTAssertEqual(model.form?.draft.focus, "link")
+        XCTAssertTrue(model.handleKey(ActionKey(name: "up")))
+        XCTAssertEqual(model.form?.draft.focus, "link")
+    }
+
+    func testThePinnedActOfAListTakesTheSearchIntoItsFormAndItsFirstCall() async throws {
+        let sent = folder.appendingPathComponent("sent").path
+        try script("list", toml: "", """
+        case "$1" in
+          open)
+            input=$(cat)
+            printf '%s\n' "$input" | tr '\n' ' ' >> '\(sent)'; printf '\n' >> '\(sent)'
+            printf 'frame=\\ntitle=New\n\nfield=link\ntitle=Link\n' ;;
+          *) printf 'text=add\ntitle=Add\npin=top\nform=true\n\ntext=a\ntitle=Apple\n' ;;
+        esac
+        """)
+        let sends = { ((try? String(contentsOfFile: sent, encoding: .utf8)) ?? "").split(separator: "\n").map(String.init) }
+        await model.reload()
+        model.isShown = true
+        model.panelWillShow()
+        model.press("list")
+        try await wait("the open list") { model.openSheetID == "list" && model.openItems?.shown.contains { $0.run == "add" } == true }
+        model.searchText = "https://shop.example/p/1"
+        model.landSearch()
+        let add = try XCTUnwrap(model.openItems?.shown.first { $0.run == "add" })
+        model.runItem(add)
+
+        try await wait("the form") { model.form != nil }
+        XCTAssertEqual(model.form?.draft.values["link"], "https://shop.example/p/1")
+        XCTAssertTrue(sends().first?.contains("search=https://shop.example/p/1") == true, sends().first ?? "")
+    }
+
+    func testTheFootSaysThatAFormWaitsForItsSpot() async throws {
+        let gate = folder.appendingPathComponent("gate").path
+        try script("list", toml: "", """
+        case "$1" in
+          add)
+            while [ ! -e '\(gate)' ]; do sleep 0.05; done
+            printf 'frame=\\ntitle=Add\n\nfield=name\ntitle=Name\n' ;;
+          *) printf 'button=add\ntitle=Add\nscope=spot\nform=true\n\ntext=a\ntitle=Apple\n' ;;
+        esac
+        """)
+        await model.reload()
+        model.isShown = true
+        model.panelWillShow()
+        model.press("list")
+        try await wait("the open list") { model.openSheetID == "list" && model.openEntry?.spot.actions.contains(where: \.isForm) == true }
+        let entry = try XCTUnwrap(model.openEntry)
+        model.openForm(try XCTUnwrap(entry.spot.actions.first { $0.id == "add" }), on: (entry, nil))
+
+        try await wait("the waiting words") { model.waiting != nil }
+        XCTAssertEqual(model.waiting, HintWords("Add…"))
+        FileManager.default.createFile(atPath: gate, contents: nil)
+        try await wait("the form") { model.form != nil }
+        XCTAssertNil(model.waiting)
+    }
+
     func testTheFormOfASettingMovesWithTheArrowsAndSearchesItsRows() async throws {
         try script("list", toml: "[settings.pick]", """
         case "$1" in

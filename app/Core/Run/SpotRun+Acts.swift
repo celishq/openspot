@@ -130,9 +130,9 @@ extension SpotRun {
         press(Message(.action(action, item: item), item: item?.fields ?? []), ended: ended)
     }
 
-    public func form(_ action: CommandAction, item: SpotItem?) async throws -> ItemForm? {
+    public func form(_ action: CommandAction, item: SpotItem?, search: String = "") async throws -> ItemForm? {
         let call = SpotAction.action(action, item: item)
-        guard let key = freeKey(call), let output = try await answer(to: Message(call), key: key) else { return nil }
+        guard let key = freeKey(call), let output = try await answer(to: Message(call, search: search.isEmpty ? nil : search), key: key) else { return nil }
         guard let form = ItemForm(output: output) else { throw SpotError.badForm }
         return form
     }

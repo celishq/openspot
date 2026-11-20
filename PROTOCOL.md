@@ -695,7 +695,7 @@ Each key that a call can find in its message.
 | ---------------- | --------------------------------------------------------------------------------------------------------- |
 | `event=`         | On a `show`, the event that asked, such as `sheet.open`, and `event.value=` its value.                    |
 | `route=`         | The [route](#pages) of the sheet that shows. The first sheet of a spot has none.                          |
-| `search=`        | The search text, and `search.alt=` each text the user may have meant, such as in another keyboard layout. |
+| `search=`        | The search text, and `search.alt=` each text the user may have meant, such as in another keyboard layout. A form opened from a search gets it in its first call, and its first text field holds it. |
 | `input.<id>=`    | Each input of the sheet or of a form. A value that isn't an input comes as `input.value=`.                |
 | `setting.<key>=` | Each [setting](#settings) that has a value, a secret too.                                                 |
 | `item.<key>=`    | On an action or a press of an item that holds a key of its own, each key of the item. A form gets none.   |

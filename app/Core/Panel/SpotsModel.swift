@@ -240,6 +240,9 @@ public final class SpotsModel {
     public private(set) var formIsMultiple = false
     public private(set) var formHint = HintWords("")
     @ObservationIgnored var pendingAsk: UUID?
+    @ObservationIgnored var waits: [UUID: String] = [:]
+    @ObservationIgnored var shownWait: UUID?
+    public internal(set) var waiting: HintWords?
     public var isEditing = false {
         didSet { takeMode() }
     }

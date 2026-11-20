@@ -118,15 +118,17 @@ extension SpotsModel {
         guard place(ofSheet: target.entry.id) == .panel else {
             return host.notify("\(action.title) asks with a form, which a window does not show yet.")
         }
-        ask(action, on: target, prefill: prefill) { [sheets] in
-            try await sheets[target.entry.id]?.form(action, item: target.item).map(CallAnswer.form)
+        ask(action, on: target, prefill: prefill, waits: true) { [sheets] in
+            try await sheets[target.entry.id]?.form(action, item: target.item, search: prefill).map(CallAnswer.form)
         }
     }
 
-    func ask(_ action: CommandAction, on target: Target, prefill: String = "", whileShown: Bool = false, _ call: @escaping @MainActor () async throws -> CallAnswer?) {
+    func ask(_ action: CommandAction, on target: Target, prefill: String = "", whileShown: Bool = false, waits: Bool = false, _ call: @escaping @MainActor () async throws -> CallAnswer?) {
         let ask = UUID()
         pendingAsk = ask
+        let wait = waits ? startWaiting("\(action.title)…") : nil
         Task {
+            defer { if let wait { endWaiting(wait) } }
             do {
                 guard let answer = try await call(), pendingAsk == ask else { return }
                 pendingAsk = nil
@@ -186,6 +188,11 @@ extension SpotsModel {
 
     public func setFormValue(_ text: String, for name: String) {
         form?.draft.set(text, for: name)
+    }
+
+    public func focusFormField(_ name: String?) {
+        guard let draft = form?.draft, draft.focusing(name) != draft.focus else { return }
+        form?.draft.focus(on: name)
     }
 
     public func cancelForm() {
@@ -254,7 +261,9 @@ extension SpotsModel {
     func send(_ form: FormSession, _ draft: FormDraft) {
         if form.action.id.hasPrefix(Self.secretPrefix) { return keepSecret(form, draft) }
         if form.action.id.hasPrefix(Self.optionPrefix) { return keepOption(form, draft) }
+        let wait = startWaiting("\(form.action.title)…")
         Task {
+            defer { endWaiting(wait) }
             do {
                 switch try await sheets[form.entry.id]?.submit(form.action, item: form.item, draft: draft) {
                 case .done? where self.form?.id == form.id:
@@ -270,5 +279,29 @@ extension SpotsModel {
                 host.notify("\(form.action.title) failed. \(Self.reason(error))")
             }
         }
+    }
+}
+
+extension SpotsModel {
+    static let waitPause: Duration = .milliseconds(300)
+
+    func startWaiting(_ words: String) -> UUID {
+        let id = UUID()
+        waits[id] = words
+        Task { [weak self] in
+            try? await Task.sleep(for: Self.waitPause, tolerance: .milliseconds(50))
+            guard let self, let words = self.waits[id] else { return }
+            self.shownWait = id
+            let hint = HintWords(words)
+            if self.waiting != hint { self.waiting = hint }
+        }
+        return id
+    }
+
+    func endWaiting(_ id: UUID) {
+        waits[id] = nil
+        guard shownWait == id else { return }
+        shownWait = nil
+        if waiting != nil { waiting = nil }
     }
 }

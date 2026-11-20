@@ -154,11 +154,16 @@ extension SpotsModel {
         guard let form else { return [] }
         let isList = form.draft.choices != nil
         let isMultiple = form.draft.isMultiple
-        let writesLines = form.draft.form.fields.contains { $0.type == .multiline }
+        let writesLines = form.draft.focusedField?.type == .multiline
         let move = { [self] (step: Int) -> @MainActor (ActionKey) -> Bool? in
             { [self] _ in
-                guard isList else { return nil }
-                self.form?.draft.move(by: step)
+                if isList {
+                    self.form?.draft.move(by: step)
+                    return true
+                }
+                guard let draft = self.form?.draft, draft.takesFocus, draft.focusedField?.type != .multiline else { return nil }
+                let next = draft.focus(movedBy: step)
+                if next != draft.focus { self.form?.draft.focus(on: next) }
                 return true
             }
         }

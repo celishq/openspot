@@ -4,12 +4,14 @@ public struct FormDraft: Equatable, Sendable {
     public let form: ItemForm
     public private(set) var values: [String: String]
     public private(set) var choices: ItemList?
+    public private(set) var focus: String?
 
     public init(form: ItemForm, prefill: String = "") {
         self.form = form
+        focus = form.fields.first { $0.takesFocus }?.name
         var values: [String: String] = [:]
         for field in form.fields { values[field.name] = field.value ?? "" }
-        if let first = form.fields.first, values[first.name]?.isEmpty == true { values[first.name] = prefill }
+        if let first = form.fields.first(where: { $0.type == .text }), values[first.name]?.isEmpty == true { values[first.name] = prefill }
         self.values = values
         if let choice = form.soleChoice {
             choices = ItemList(items: choice.options.map { option in
@@ -24,6 +26,7 @@ public struct FormDraft: Equatable, Sendable {
 
     public init(form: ItemForm, after draft: FormDraft) {
         self.init(form: form)
+        if let kept = focusing(draft.focus) { focus = kept }
         search(draft.choices?.query ?? "")
         if let run = draft.choices?.selectedItem?.run, choices?.shown.contains(where: { $0.run == run }) == true { choose(run) }
     }
@@ -63,6 +66,28 @@ public struct FormDraft: Equatable, Sendable {
 
     public mutating func set(_ text: String, for name: String) {
         values[name] = text
+    }
+
+    public var focusedField: ItemForm.Field? {
+        form.fields.first { $0.name == focus }
+    }
+
+    public var takesFocus: Bool {
+        form.fields.contains(where: \.takesFocus)
+    }
+
+    public func focusing(_ name: String?) -> String? {
+        form.fields.first { $0.name == name && $0.takesFocus }?.name
+    }
+
+    public func focus(movedBy step: Int) -> String? {
+        let names = form.fields.filter(\.takesFocus).map(\.name)
+        guard let now = names.firstIndex(where: { $0 == focus }) else { return step > 0 ? names.first : names.last }
+        return names[min(max(now + step, 0), names.count - 1)]
+    }
+
+    public mutating func focus(on name: String?) {
+        focus = focusing(name)
     }
 
     public var missing: ItemForm.Field? {

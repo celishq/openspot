@@ -345,7 +345,7 @@ extension SpotsModel {
                 return
             }
             if action == nil, let form = entry.spot.pickForm ?? item.form {
-                openForm(form, on: (entry, item))
+                openForm(form, on: (entry, item), prefill: item.pin == .top ? openItems?.query ?? "" : "")
                 return
             }
             if action != nil || (entry.spot.pick == .close && !item.staysOnPick) {
