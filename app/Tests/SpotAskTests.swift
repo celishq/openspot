@@ -17,7 +17,7 @@ final class SpotAskTests: PanelCase {
           open) '\(client.path)' spot reply "$2" ;;
         esac
         """)
-        try script("asker", toml: "title = 'Asker'", "[ \"$1\" = show ] && printf 'text=x\\ntitle=Snooze This\\n'; exit 0")
+        try script("asker", toml: "title = 'Asker'\noffers = ['search']", "[ \"$1\" = show ] && printf 'text=x\\ntitle=Snooze This\\n'; exit 0")
         await model.reload()
     }
 
@@ -82,6 +82,22 @@ final class SpotAskTests: PanelCase {
         let answer = await asking.value
         XCTAssertEqual(answer.code, 1)
         try await wait("the asker again") { self.model.flow.current?.spot == "asker" }
+    }
+
+    func testAnAskFromARowOfTheMainSearchGrowsFromThatRow() async throws {
+        model.isShown = true
+        model.panelWillShow()
+        model.searchText = "snooze"
+        try await wait("the row of the asker") { self.model.visible.contains { $0.spot.id == "asker" && $0.item?.run == "x" } }
+        model.selected = try XCTUnwrap(model.visible.firstIndex { $0.spot.id == "asker" && $0.item?.run == "x" })
+        let row = try XCTUnwrap(model.selectedEntry).id
+
+        let asking = try ask("picker")
+        try await waitForPicker()
+
+        XCTAssertEqual(SpotSheetCard.of(model.openSheetID, in: model)?.id, row)
+        XCTAssertTrue(model.handleKey(toGrid))
+        _ = await asking.value
     }
 
     func testASpotCannotAskItself() async throws {

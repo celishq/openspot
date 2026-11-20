@@ -108,6 +108,7 @@ public final class SpotsModel {
     }
     public internal(set) var confirming: GlobalKey?
     public private(set) var openSheetID: String?
+    public internal(set) var sheetSource: String?
     public internal(set) var flow = Flow() {
         didSet {
             for gone in Set(oldValue.pages).subtracting(flow.pages) { sheets[gone.spot]?.forget(route: gone.route) }

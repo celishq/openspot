@@ -51,8 +51,8 @@ struct SpotRunningApp: RunningApp {
         await model.open(id)
     }
 
-    func ask(_ id: String) async -> Bool {
-        await model.openAsked(id)
+    func ask(_ id: String, from caller: String?) async -> Bool {
+        await model.openAsked(id, from: caller)
     }
 
     func push(_ id: String, route: String?, title: String?, replace: Bool) async -> Bool {

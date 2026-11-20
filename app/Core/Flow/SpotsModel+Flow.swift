@@ -13,8 +13,13 @@ extension SpotsModel {
     }
 
     @discardableResult
-    public func openAsked(_ id: String) -> Bool {
-        guard isShown, openSheetID != nil else { return open(id) }
+    public func openAsked(_ id: String, from caller: String?) -> Bool {
+        guard isShown, openSheetID != nil else {
+            let row = isShown ? selectedEntry.flatMap { $0.spot.id == caller ? $0.id : nil } : nil
+            guard open(id) else { return false }
+            if row != sheetSource { sheetSource = row }
+            return true
+        }
         return push(FlowSheet(spot: id))
     }
 
@@ -132,6 +137,7 @@ extension SpotsModel {
         for page in flow.pages where page.route != nil { sheets[page.spot]?.show(route: nil) }
         flow.clear()
         waitingPublish = nil
+        if sheetSource != nil { sheetSource = nil }
         showEdges()
     }
 

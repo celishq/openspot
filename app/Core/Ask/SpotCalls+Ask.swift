@@ -7,7 +7,7 @@ extension SpotCalls {
             return { CommandAnswer(errors: "A spot cannot ask itself. Ask another spot, such as `openspot spot ask snooze`.\n", code: 1) }
         }
         return {
-            guard await app.ask(id) else {
+            guard await app.ask(id, from: caller?.id) else {
                 return CommandAnswer(errors: "Openspot has no spot `\(id)`. Run `openspot spot list` to see each one.\n", code: 1)
             }
             guard let value = await runs.ask(id) else { return CommandAnswer(code: 1) }

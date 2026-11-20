@@ -591,7 +591,8 @@ esac
 `openspot spot ask <id>` shows another spot and waits for the value it gives back, as a spot does with Snooze. Use it
 to make a picker that other spots share.
 
-- The asked spot's sheet is a step of the flow that shows, over the sheet that asked, or it opens the panel on it. A
+- The asked spot's sheet is a step of the flow that shows, over the sheet that asked. With no sheet shown, it grows
+  from the asking spot's selected row, such as a row of the main search, or opens the panel on it. A
   press that asks keeps the panel open with `close=false`, so the step takes the sheet's place in one motion.
 - The asked spot gives the value with `openspot spot reply <value>`, which hides the panel. `spot ask` prints it.
 - A close of the asked spot's sheet with no reply ends the ask with exit 1, once the spot's running calls end. A newer
