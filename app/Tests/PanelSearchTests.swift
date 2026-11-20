@@ -82,7 +82,7 @@ final class PanelSearchTests: PanelCase {
         try await wait("the failure") { self.model.failure(of: row) != nil }
         XCTAssertEqual(model.failure(of: row), "Ghostty is not a browser")
         XCTAssertNil(model.failure(of: try XCTUnwrap(model.entry("tabs"))))
-        XCTAssertEqual(host.notes, [])
+        XCTAssertEqual(host.notes, ["Ghostty is not a browser"])
     }
 
     func testAFailedPressWhileThePanelIsHiddenIsAToast() async throws {

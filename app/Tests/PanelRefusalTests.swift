@@ -31,7 +31,7 @@ final class PanelRefusalTests: PanelCase {
         model.pick(SpotItem(title: "Snooze Current Tab", run: "current", staysOnPick: true), of: entry)
 
         try await wait("the mark") { self.model.failure(of: "current", in: "tabs") != nil }
-        XCTAssertEqual(host.notes, [])
+        try await wait("the toast") { self.host.notes == ["Ghostty is not a browser"] }
         try await wait("the shake") { self.model.refusals(of: "current", in: "tabs") == 1 }
         XCTAssertEqual(model.refusals(of: nil, in: "tabs"), 0)
     }
