@@ -310,7 +310,7 @@ extension SpotsModel {
             return
         }
         if place.isDetached {
-            if action == nil, entry.spot.pickForm != nil || item.records { return press(entry.id) }
+            if action == nil, (entry.spot.pickForm ?? item.form) != nil || item.records { return press(entry.id) }
             remember(item, of: entry)
             sheets[entry.id]?.list.select(run: item.run)
         } else {
@@ -318,7 +318,7 @@ extension SpotsModel {
                 toggleRecording(id: item.run)
                 return
             }
-            if action == nil, let form = entry.spot.pickForm {
+            if action == nil, let form = entry.spot.pickForm ?? item.form {
                 openForm(form, on: (entry, item))
                 return
             }

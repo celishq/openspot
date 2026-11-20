@@ -40,6 +40,19 @@ prompt() {
   fi
 }
 
+# A search ends with a row that makes a spot of the typed words, and a pick of it copies their prompt.
+if [ "$(value event)" = search.text ]; then
+  text=$(value event.value | awk '{ sub(/^[ \t]+/, ""); sub(/[ \t]+$/, ""); print }')
+  [ -z "$text" ] || openspot_item "$text" 'Make a spot' "$text" plus
+  exit 0
+fi
+if [ "$1" = open ]; then
+  words=$(openspot prompt new "$2") || exit 1
+  printf '%s' "$words" | openspot clipboard copy || exit 1
+  openspot toast 'Prompt copied. Paste it into your agent.'
+  exit 0
+fi
+
 # The words of the field: the ones on stdin when the sheet sends them, or else the draft that a last call kept. A draft that
 # was copied is done, so the sheet opens empty.
 case "$nl$(openspot_input)" in

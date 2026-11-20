@@ -22,15 +22,33 @@ final class SpotPictureStore {
     private static var shortSide: Int { Int(max(SpotTokens.gridWidth, SpotTokens.sheetMaxHeight) * SpotTokens.pictureScale) }
     private static let byteLimit = 16 << 20
 
-    private let bitmaps = NSCache<NSString, Bitmap>()
+    private let bitmaps = NSCache<NSString, AnyObject>()
     private var loads: [Key: Task<CGImage?, Never>] = [:]
+    private var frameLoads: [Key: Task<PictureFrames?, Never>] = [:]
 
     private init() {
         bitmaps.totalCostLimit = Self.byteLimit
     }
 
     func cached(_ key: Key) -> CGImage? {
-        bitmaps.object(forKey: Self.name(of: key))?.image
+        (bitmaps.object(forKey: Self.name(of: key)) as? Bitmap)?.image
+    }
+
+    func cachedFrames(_ key: Key) -> PictureFrames? {
+        bitmaps.object(forKey: Self.name(of: key)) as? PictureFrames
+    }
+
+    func frames(_ key: Key) async -> PictureFrames? {
+        if let frames = cachedFrames(key) { return frames }
+        if let load = frameLoads[key] { return await load.value }
+        let shortSide = Self.shortSide
+        let bytes = Self.byteLimit
+        let load = Task.detached(priority: .userInitiated) { await WebPictures.shared.path(of: key.path).flatMap { PictureFile(path: $0).readFrames(shortSide: shortSide, bytes: bytes) } }
+        frameLoads[key] = load
+        let frames = await load.value
+        frameLoads[key] = nil
+        if let frames { bitmaps.setObject(frames, forKey: Self.name(of: key), cost: frames.bytes) }
+        return frames
     }
 
     func image(_ key: Key) async -> CGImage? {

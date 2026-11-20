@@ -58,19 +58,12 @@ view = "icon.swift"
 uses = ["spots"]
 drop = "png,jpg,jpeg,heic,gif,tiff,svg,pdf,icns"
 
-[scripts.make]
-title = "Make a spot"
-icon = "plus"
-detail = "Make a spot that does what you typed"
-on = ["search.text \\S"]
-answers = "last"
-uses = ["clipboard"]
-
 [scripts.new]
 title = "New spot"
 icon = "plus"
 detail = "Make your own"
-on = ["sheet.open"]
+on = ["sheet.open", "search.text \\S"]
+answers = "last"
 uses = ["clipboard"]
 edits = "spots"
 

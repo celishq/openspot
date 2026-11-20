@@ -47,6 +47,14 @@ final class SearchQueryTests: XCTestCase {
         XCTAssertEqual(titles("studio co", in: ["Visual Studio Code", "Xcode"]), ["Visual Studio Code"])
     }
 
+    func testWordsTypedWithoutSpacesFindTheTitle() {
+        XCTAssertEqual(titles("appstore", in: ["Notes", "App Store"]), ["App Store"])
+    }
+
+    func testAWordStartBeatsWordsTypedWithoutSpaces() {
+        XCTAssertEqual(titles("fontbook", in: ["Font Book", "Pro Fontbook"]), ["Pro Fontbook", "Font Book"])
+    }
+
     func testInitialsMatchEachWord() {
         XCTAssertEqual(titles("vsc", in: ["Xcode", "Visual Studio Code"]), ["Visual Studio Code"])
     }
