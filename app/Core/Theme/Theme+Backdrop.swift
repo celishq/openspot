@@ -26,7 +26,7 @@ extension Theme {
             self.style = style
             self.reach = reach
             blur = exact("backdrop-blur") ?? 3
-            size = exact("halo-size") ?? 60
+            size = exact("halo-size") ?? 80
             padding = exact("halo-padding") ?? 0
         }
     }
