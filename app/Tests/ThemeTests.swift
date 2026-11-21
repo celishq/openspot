@@ -61,6 +61,16 @@ final class ThemeTests: XCTestCase {
         XCTAssertEqual(dark.backdropTint, ThemeColor(text: "#282A3699"))
     }
 
+    func testTheVeilOverTheBlurIsAGreyOfTheBackgroundThatAThemeCanSet() {
+        let openspot = Theme(text: "").colours
+        let white = ThemeColor(text: "#FFFFFF")!, black = ThemeColor(text: "#000000")!
+        let set = Theme(text: "[light]\nbackdrop-veil = \"#11223344\"\n").colours.light
+
+        XCTAssertEqual(openspot.light.backdropVeil, white.mixed(with: ThemeColor(text: "#1C1C1C")!, by: 0.4).with(alpha: 0.2))
+        XCTAssertEqual(openspot.dark.backdropVeil, black.with(alpha: 0.25))
+        XCTAssertEqual(set.backdropVeil, ThemeColor(text: "#11223344"))
+    }
+
     func testAnOnColourIsTheBackgroundOrTheInkWhicheverReadsBetter() {
         let light = Theme(text: "[light]\nbackground = \"#EFF1F5\"\nink = \"#4C4F69\"\nhighlight = \"#EA76CB\"\n").colours.light
 
@@ -121,7 +131,7 @@ final class ThemeTests: XCTestCase {
         XCTAssertEqual([layout.motion.pressBounce, layout.motion.pressedScale, layout.motion.liftedScale, layout.motion.focusedScale], [0.2, 1.04, 1.05, 1.04])
         XCTAssertEqual(layout.backdrop.style, .blur)
         XCTAssertEqual(layout.backdrop.reach, .tiles)
-        XCTAssertEqual([layout.backdrop.blur, layout.backdrop.size, layout.backdrop.padding], [3, 30, 0])
+        XCTAssertEqual([layout.backdrop.blur, layout.backdrop.size, layout.backdrop.padding], [1.75, 30, 0])
     }
 
     func testCornerDensityTypeAndSpeedScaleWhatFollowsThem() {

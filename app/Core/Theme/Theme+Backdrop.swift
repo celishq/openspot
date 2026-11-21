@@ -25,7 +25,7 @@ extension Theme {
         init(style: Style, reach: Reach, exact: @escaping (String) -> Double?) {
             self.style = style
             self.reach = reach
-            blur = exact("backdrop-blur") ?? 3
+            blur = exact("backdrop-blur") ?? 1.75
             size = exact("halo-size") ?? 30
             padding = exact("halo-padding") ?? 0
         }

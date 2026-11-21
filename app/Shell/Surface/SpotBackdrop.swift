@@ -39,6 +39,7 @@ private struct BackdropShape: View, @preconcurrency Animatable {
             switch style {
             case .blur:
                 SpotBackdropBlur(radius: SpotTokens.backdrop.blur, fadingIn: rect)
+                SpotBackdropTint(color: SpotTheme.backdropVeil, fadingIn: rect)
             case .tint:
                 SpotBackdropTint(color: SpotTheme.backdropTint, fadingIn: rect)
             }
