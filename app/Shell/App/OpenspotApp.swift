@@ -67,6 +67,16 @@ final class OpenspotApp: NSObject, NSApplicationDelegate {
         )
         self.item = item
         toast?.item = item
+        toast?.front = { [weak self] in
+            guard let self else { return nil }
+            let app = NSWorkspace.shared.frontmostApplication
+            return ScreenPlace.toastWindow(
+                panel: model.isWarming ? nil : panel?.frame,
+                isPanelShown: model.isShown,
+                isAppInFront: app == .current,
+                front: { SpotFrontWindow.frame(of: app) }
+            )
+        }
         EditMenu.install()
         SpotKeyLayouts.start()
         panel = SpotsPanel.make(model: model)

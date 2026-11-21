@@ -29,14 +29,23 @@ public struct ScreenPlace: Sendable {
         return CGPoint(x: x.rounded(.down), y: y.rounded(.down))
     }
 
-    public func origin(ofToast size: CGSize, inset: CGFloat, under item: CGRect?) -> CGPoint? {
+    public func origin(ofToast size: CGSize, inset: CGFloat, under item: CGRect?, window: CGRect?, pointer: CGPoint) -> CGPoint? {
+        guard let target = screen(window: window, pointer: pointer) else { return nil }
         let lift = inset - SpotTokens.toastGap
-        if let item, let area = screens.first(where: { $0.frame.intersects(item) })?.area {
-            let x = min(max(item.midX - size.width / 2, area.minX), area.maxX - size.width)
-            return CGPoint(x: x.rounded(.down), y: (item.minY - size.height + lift).rounded(.down))
+        let area = target.area
+        guard let item, let home = screens.first(where: { $0.frame.intersects(item) }) else {
+            return CGPoint(x: (area.midX - size.width / 2).rounded(.down), y: (area.maxY - size.height + lift).rounded(.down))
         }
-        guard let area = screens.first?.area else { return nil }
-        return CGPoint(x: (area.midX - size.width / 2).rounded(.down), y: area.maxY - size.height + lift)
+        let isHome = home.frame == target.frame
+        let midX = isHome ? item.midX : item.midX + target.frame.maxX - home.frame.maxX
+        let top = isHome ? item.minY : area.maxY
+        let x = min(max(midX - size.width / 2, area.minX), area.maxX - size.width)
+        return CGPoint(x: x.rounded(.down), y: (top - size.height + lift).rounded(.down))
+    }
+
+    public static func toastWindow(panel: CGRect?, isPanelShown: Bool, isAppInFront: Bool, front: () -> CGRect?) -> CGRect? {
+        if let panel, isPanelShown { return panel }
+        return front() ?? (isAppInFront ? panel : nil)
     }
 
     private func screen(window: CGRect?, pointer: CGPoint) -> Screen? {
