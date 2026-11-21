@@ -779,7 +779,7 @@ used=true
 | `openspot theme open [name]`             | Opens the file of the theme in use, or the named one, and copies a built-in theme first.  |
 
 - A theme in use that is gone gives a toast at launch, and Openspot draws with `Openspot`.
-- Openspot comes with built-in themes, such as `Openspot`, with frosted glass, `Openspot Clear`, the same look with clear glass, and `Dracula`. A built-in theme can't change, be renamed or be
+- Openspot comes with built-in themes, such as `Openspot`, with frosted glass, `Openspot Liquid`, the same look with clear glass, and `Dracula`. Until you choose one, Openspot uses `Openspot Liquid` on macOS 26 and `Openspot` on a later macOS. A built-in theme can't change, be renamed or be
   deleted: `openspot theme duplicate` makes a copy of it that you can change.
 - A name can't be empty, start with `.`, or hold `/` or a new line, and the spaces around it are dropped. A folder that
   has the name of a built-in theme, in any case, is not a theme, and a toast at launch asks you to rename it.

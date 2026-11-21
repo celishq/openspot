@@ -72,12 +72,17 @@ final class ThemeTests: XCTestCase {
         XCTAssertEqual(set.layout.backdrop.shadow, 20)
     }
 
-    func testOpenspotClearIsOpenspotWithClearGlass() throws {
-        let clear = builtInURL.deletingLastPathComponent().deletingLastPathComponent().appendingPathComponent("Openspot Clear.theme/theme.toml")
+    func testOpenspotLiquidIsOpenspotWithClearTintedGlass() throws {
+        let liquid = builtInURL.deletingLastPathComponent().deletingLastPathComponent().appendingPathComponent("Openspot Liquid.theme/theme.toml")
+        let lines = { (text: String) in text.split(separator: "\n").filter { !$0.hasPrefix("glass") } }
         let frosted = try String(contentsOf: builtInURL, encoding: .utf8)
+        let clear = try String(contentsOf: liquid, encoding: .utf8)
 
-        XCTAssertEqual(try String(contentsOf: clear, encoding: .utf8), frosted.replacingOccurrences(of: "glass = \"regular\"", with: "glass = \"clear\""))
+        XCTAssertEqual(lines(clear), lines(frosted))
         XCTAssertEqual(Theme(text: frosted).colours.glass, .regular)
+        XCTAssertEqual(Theme(text: frosted).colours.light.glassTint.sample.alpha, 0)
+        XCTAssertEqual(Theme(text: clear).colours.glass, .clear)
+        XCTAssertEqual(Theme(text: clear).colours.light.glassTint, ThemeColor(text: "#C4C4C473"))
     }
 
     func testAnOnColourIsTheBackgroundOrTheInkWhicheverReadsBetter() {
@@ -260,7 +265,7 @@ final class ThemeTests: XCTestCase {
         XCTAssertEqual(Theme(text: Self.choices(of: document)).colours, Theme().colours)
         XCTAssertEqual(theme.layout, Theme().layout)
         XCTAssertEqual(theme.colours.light.solid, ThemeColor(text: "#1F1F1F"))
-        XCTAssertEqual([theme.colours.dark.glassTint, theme.colours.light.glassTint], [ThemeColor(text: "#2C2C2E73"), ThemeColor(text: "#C4C4C473")])
+        XCTAssertEqual([theme.colours.dark.glassTint, theme.colours.light.glassTint], [ThemeColor(text: "#2C2C2E00"), ThemeColor(text: "#C4C4C400")])
         XCTAssertEqual(theme.colours.dark.glyphOnSolid, .accent)
         XCTAssertEqual([theme.colours.dark.confirm, theme.colours.light.confirm], [ThemeColor(text: "#C72924"), ThemeColor(text: "#C72924")])
         XCTAssertEqual([theme.colours.dark.onConfirm, theme.colours.light.onConfirm], [ThemeColor(text: "#FFFFFF"), ThemeColor(text: "#FFFFFF")])
