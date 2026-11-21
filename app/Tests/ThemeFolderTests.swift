@@ -189,6 +189,19 @@ final class ThemeFolderTests: XCTestCase {
         XCTAssertEqual(try String(contentsOf: dusk, encoding: .utf8), "[dark]\nfill = 0.4\n")
     }
 
+    func testABuiltInThatCarriesTheBuiltInNameIsListedRightAfterIt() throws {
+        let shipped = folder.appendingPathComponent("Openspot.app/Themes")
+        let openspot = shipped.appendingPathComponent("openspot.theme/theme.toml")
+        for name in ["openspot", "Aurora", "Openspot Clear", "Zen"] {
+            let file = shipped.appendingPathComponent("\(name).theme/theme.toml")
+            try FileManager.default.createDirectory(at: file.deletingLastPathComponent(), withIntermediateDirectories: true)
+            try "".write(to: file, atomically: true, encoding: .utf8)
+        }
+        let themes = ThemeFolder(url: folder.appendingPathComponent("themes"), builtIn: openspot, config: ConfigFile(url: folder.appendingPathComponent("config.toml")))
+
+        XCTAssertEqual(themes.scan().names, ["Openspot", "Openspot Clear", "Aurora", "Zen"])
+    }
+
     func testThemesLiveBesideTheConfig() {
         let themes = ThemeFolder.standard(environment: ["OPENSPOT_CONFIG": "/tmp/openspot-config"], builtIn: nil)
 

@@ -72,6 +72,14 @@ final class ThemeTests: XCTestCase {
         XCTAssertEqual(set.layout.backdrop.shadow, 20)
     }
 
+    func testOpenspotClearIsOpenspotWithClearGlass() throws {
+        let clear = builtInURL.deletingLastPathComponent().deletingLastPathComponent().appendingPathComponent("Openspot Clear.theme/theme.toml")
+        let frosted = try String(contentsOf: builtInURL, encoding: .utf8)
+
+        XCTAssertEqual(try String(contentsOf: clear, encoding: .utf8), frosted.replacingOccurrences(of: "glass = \"regular\"", with: "glass = \"clear\""))
+        XCTAssertEqual(Theme(text: frosted).colours.glass, .regular)
+    }
+
     func testAnOnColourIsTheBackgroundOrTheInkWhicheverReadsBetter() {
         let light = Theme(text: "[light]\nbackground = \"#EFF1F5\"\nink = \"#4C4F69\"\nhighlight = \"#EA76CB\"\n").colours.light
 
@@ -107,10 +115,10 @@ final class ThemeTests: XCTestCase {
     func testOpenspotsChoicesGiveItsMeasuredValues() {
         let look = Theme().colours
 
-        XCTAssertEqual(look.dark.glassTint, ThemeColor(text: "#00000073"))
-        XCTAssertEqual(look.light.glassTint, ThemeColor(text: "#FFFFFF73"))
-        XCTAssertEqual(look.dark.glass, ThemeColor(text: "#00000000"))
-        XCTAssertEqual(look.light.glass, ThemeColor(text: "#FFFFFF80"))
+        XCTAssertEqual(look.dark.glassTint, ThemeColor(text: "#000000E6"))
+        XCTAssertEqual(look.light.glassTint, ThemeColor(text: "#FFFFFFE6"))
+        XCTAssertEqual(look.dark.glass, look.dark.glassTint)
+        XCTAssertEqual(look.light.glass, look.light.glassTint)
         XCTAssertEqual([look.dark.cornerFill, look.light.cornerFill], [ThemeColor(text: "#333333"), ThemeColor(text: "#FAFAFA")])
         XCTAssertEqual([look.dark.window, look.light.window], [ThemeColor(text: "#292929"), ThemeColor(text: "#EDEDED")])
         XCTAssertEqual([look.dark.onSolid, look.light.onSolid], [ThemeColor(text: "#000000"), ThemeColor(text: "#FFFFFF")])
@@ -118,7 +126,7 @@ final class ThemeTests: XCTestCase {
         XCTAssertEqual([look.light.fill, look.light.selected, look.light.disc, look.light.chip, look.light.control, look.light.track], [0.08, 0.12, 0, 0.1, 0.09, 0.12])
         XCTAssertEqual([look.dark.secondary, look.light.secondary], [0.7, 0.7])
         XCTAssertEqual(look.dark.accent, .accent)
-        XCTAssertEqual(look.glass, .clear)
+        XCTAssertEqual(look.glass, .regular)
     }
 
     func testOpenspotsChoicesGiveItsMeasuredSizes() {

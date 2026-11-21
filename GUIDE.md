@@ -731,7 +731,7 @@ openspot theme reload
 | `accent`     | `[dark]`, `[light]` | The colour of a selection, its ring and each chosen state.                                    | `accent`               |
 | `highlight`  | `[dark]`, `[light]` | The colour of the search field, the keys, the sliders and a filled card.                      | the `ink`              |
 | `good`, `warn`, `bad` | `[dark]`, `[light]` | The colours of a value that is fine, needs a look, or failed. `bad` also marks a press that deletes. | `green`, `orange`, `red` |
-| `glass`      | `[look]`            | `clear` shows what is behind the panel. `regular` frosts it, and the `background` tints it strongly. | `clear`         |
+| `glass`      | `[look]`            | `clear` shows what is behind the panel. `regular` frosts it, and the `background` tints it strongly. | `regular`       |
 | `backdrop`   | `[look]`            | `blur` blurs what is behind the panel. `tint` lays the `background` over it.                  | `blur`                 |
 | `reach`      | `[look]`            | `tiles` lays the backdrop as a soft halo around the tiles. `screen` covers the screen.         | `tiles`                |
 | `corner`     | `[look]`            | The corner of a card in points. Every other corner follows it.                                | `26`                   |
@@ -779,7 +779,7 @@ used=true
 | `openspot theme open [name]`             | Opens the file of the theme in use, or the named one, and copies a built-in theme first.  |
 
 - A theme in use that is gone gives a toast at launch, and Openspot draws with `Openspot`.
-- Openspot comes with built-in themes, such as `Openspot` and `Dracula`. A built-in theme can't change, be renamed or be
+- Openspot comes with built-in themes, such as `Openspot`, with frosted glass, `Openspot Clear`, the same look with clear glass, and `Dracula`. A built-in theme can't change, be renamed or be
   deleted: `openspot theme duplicate` makes a copy of it that you can change.
 - A name can't be empty, start with `.`, or hold `/` or a new line, and the spaces around it are dropped. A folder that
   has the name of a built-in theme, in any case, is not a theme, and a toast at launch asks you to rename it.

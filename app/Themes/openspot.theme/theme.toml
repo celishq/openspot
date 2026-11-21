@@ -17,7 +17,7 @@ glass-tint = "#C4C4C473"
 confirm = "#C72924"
 
 [look]
-glass = "clear"
+glass = "regular"
 backdrop = "blur"
 reach = "tiles"
 corner = 26

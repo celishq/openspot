@@ -11,7 +11,7 @@ extension Theme {
         }
 
         init(choices: ThemeValues, exact: ThemeValues) {
-            glass = choices.word("look", "glass") ?? .clear
+            glass = choices.word("look", "glass") ?? .regular
             dark = Appearance(isDark: true, glass: glass, choices: choices, exact: exact)
             light = Appearance(isDark: false, glass: glass, choices: choices, exact: exact)
         }
