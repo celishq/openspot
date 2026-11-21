@@ -731,7 +731,7 @@ openspot theme reload
 | `accent`     | `[dark]`, `[light]` | The colour of a selection, its ring and each chosen state.                                    | `accent`               |
 | `highlight`  | `[dark]`, `[light]` | The colour of the search field, the keys, the sliders and a filled card.                      | the `ink`              |
 | `good`, `warn`, `bad` | `[dark]`, `[light]` | The colours of a value that is fine, needs a look, or failed. `bad` also marks a press that deletes. | `green`, `orange`, `red` |
-| `glass`      | `[look]`            | `clear` shows what is behind the panel. `regular` frosts it, and the `background` tints it strongly. | `clear`         |
+| `glass`      | `[look]`            | `clear` shows what is behind the panel. `regular` frosts it, and the `background` tints it strongly. | `regular`       |
 | `backdrop`   | `[look]`            | `blur` blurs what is behind the panel. `tint` lays the `background` over it.                  | `blur`                 |
 | `reach`      | `[look]`            | `tiles` lays the backdrop as a soft halo around the tiles. `screen` covers the screen.         | `tiles`                |
 | `corner`     | `[look]`            | The corner of a card in points. Every other corner follows it.                                | `26`                   |
@@ -779,7 +779,7 @@ used=true
 | `openspot theme open [name]`             | Opens the file of the theme in use, or the named one, and copies a built-in theme first.  |
 
 - A theme in use that is gone gives a toast at launch, and Openspot draws with `Openspot`.
-- Openspot comes with built-in themes, such as `Openspot` and `Dracula`. A built-in theme can't change, be renamed or be
+- Openspot comes with built-in themes, such as `Openspot`, with frosted glass, `Openspot Liquid`, the same look with clear glass, and `Dracula`. Until you choose one, Openspot uses `Openspot Liquid` on macOS 26 and `Openspot` on a later macOS. A built-in theme can't change, be renamed or be
   deleted: `openspot theme duplicate` makes a copy of it that you can change.
 - A name can't be empty, start with `.`, or hold `/` or a new line, and the spaces around it are dropped. A folder that
   has the name of a built-in theme, in any case, is not a theme, and a toast at launch asks you to rename it.
@@ -808,6 +808,7 @@ press-bounce = 0
 | `glass-tint`, `corner-fill`, `window`     | `[dark]`, `[light]` | The tint of the glass, the fill behind a corner button, and a lifted card and a window. They follow `background`. |
 | `confirm`, `on-confirm`                   | `[dark]`, `[light]` | A press that asks again before it deletes, and its text. They follow `bad`.             |
 | `backdrop-tint`                           | `[dark]`, `[light]` | The colour of the backdrop `tint`. It follows `background`.                             |
+| `card-shadow`                             | `[dark]`, `[light]` | The colour of the soft shadow under each glass surface. Its strength is its alpha.       |
 | `fill`, `selected`, `disc`, `chip`, `control`, `track`, `secondary` | `[dark]`, `[light]` | Strengths from 0 to 1 of the `ink`: the field and a card, a chosen row, the disc behind a glyph, a chip, a button, a track and ring, and the second line of a row. |
 | `cell`, `glyph`, `list-row`, `menu-row`   | `[advanced]`        | The side of a grid cell, of a glyph, and the height of a row and a menu row, in points. |
 | `column-gap`, `row-gap`, `padding`, `list-row-gap`, `menu-padding` | `[advanced]` | The gaps and paddings in points. They follow `density`.                     |
@@ -816,6 +817,7 @@ press-bounce = 0
 | `grow`, `shrink`, `move`, `fade-in`, `fade-out`, `press`, `settle` | `[advanced]` | The time of each motion in seconds. They follow `speed`.                     |
 | `press-bounce`, `pressed-scale`, `lifted-scale`, `focused-scale` | `[advanced]` | The bounce of a press, and the scale of a pressed, a lifted and a focused card.   |
 | `backdrop-blur`, `halo-size`, `halo-padding` | `[advanced]`     | The strength of the backdrop's blur, how far its halo reaches past the tiles, from 16 to 90, and how far it holds its full strength, from 0 to 74. |
+| `card-shadow-size`                        | `[advanced]`     | How far the shadow under each glass surface spreads, in points.                        |
 
 - An exact value holds only in the file that sets it. A copy of `Openspot` keeps the exact values in its file, but a
   theme you write from scratch works out its own.

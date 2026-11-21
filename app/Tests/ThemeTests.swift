@@ -61,6 +61,30 @@ final class ThemeTests: XCTestCase {
         XCTAssertEqual(dark.backdropTint, ThemeColor(text: "#282A3699"))
     }
 
+    func testTheShadowOfACardIsAFaintBlackThatAThemeCanSetAndSize() {
+        let openspot = Theme(text: "")
+        let set = Theme(text: "[light]\ncard-shadow = \"#11223344\"\n\n[advanced]\ncard-shadow-size = 20\n")
+
+        XCTAssertEqual(openspot.colours.light.cardShadow, ThemeColor(text: "#000000")!.with(alpha: 0.04))
+        XCTAssertEqual(openspot.colours.dark.cardShadow, ThemeColor(text: "#000000")!.with(alpha: 0.15))
+        XCTAssertEqual(openspot.layout.backdrop.shadow, 24)
+        XCTAssertEqual(set.colours.light.cardShadow, ThemeColor(text: "#11223344"))
+        XCTAssertEqual(set.layout.backdrop.shadow, 20)
+    }
+
+    func testOpenspotLiquidIsOpenspotWithClearTintedGlass() throws {
+        let liquid = builtInURL.deletingLastPathComponent().deletingLastPathComponent().appendingPathComponent("Openspot Liquid.theme/theme.toml")
+        let lines = { (text: String) in text.split(separator: "\n").filter { !$0.hasPrefix("glass") } }
+        let frosted = try String(contentsOf: builtInURL, encoding: .utf8)
+        let clear = try String(contentsOf: liquid, encoding: .utf8)
+
+        XCTAssertEqual(lines(clear), lines(frosted))
+        XCTAssertEqual(Theme(text: frosted).colours.glass, .regular)
+        XCTAssertEqual(Theme(text: frosted).colours.light.glassTint.sample.alpha, 0)
+        XCTAssertEqual(Theme(text: clear).colours.glass, .clear)
+        XCTAssertEqual(Theme(text: clear).colours.light.glassTint, ThemeColor(text: "#C4C4C473"))
+    }
+
     func testAnOnColourIsTheBackgroundOrTheInkWhicheverReadsBetter() {
         let light = Theme(text: "[light]\nbackground = \"#EFF1F5\"\nink = \"#4C4F69\"\nhighlight = \"#EA76CB\"\n").colours.light
 
@@ -96,10 +120,10 @@ final class ThemeTests: XCTestCase {
     func testOpenspotsChoicesGiveItsMeasuredValues() {
         let look = Theme().colours
 
-        XCTAssertEqual(look.dark.glassTint, ThemeColor(text: "#00000073"))
-        XCTAssertEqual(look.light.glassTint, ThemeColor(text: "#FFFFFF73"))
-        XCTAssertEqual(look.dark.glass, ThemeColor(text: "#00000000"))
-        XCTAssertEqual(look.light.glass, ThemeColor(text: "#FFFFFF80"))
+        XCTAssertEqual(look.dark.glassTint, ThemeColor(text: "#000000E6"))
+        XCTAssertEqual(look.light.glassTint, ThemeColor(text: "#FFFFFFE6"))
+        XCTAssertEqual(look.dark.glass, look.dark.glassTint)
+        XCTAssertEqual(look.light.glass, look.light.glassTint)
         XCTAssertEqual([look.dark.cornerFill, look.light.cornerFill], [ThemeColor(text: "#333333"), ThemeColor(text: "#FAFAFA")])
         XCTAssertEqual([look.dark.window, look.light.window], [ThemeColor(text: "#292929"), ThemeColor(text: "#EDEDED")])
         XCTAssertEqual([look.dark.onSolid, look.light.onSolid], [ThemeColor(text: "#000000"), ThemeColor(text: "#FFFFFF")])
@@ -107,7 +131,7 @@ final class ThemeTests: XCTestCase {
         XCTAssertEqual([look.light.fill, look.light.selected, look.light.disc, look.light.chip, look.light.control, look.light.track], [0.08, 0.12, 0, 0.1, 0.09, 0.12])
         XCTAssertEqual([look.dark.secondary, look.light.secondary], [0.7, 0.7])
         XCTAssertEqual(look.dark.accent, .accent)
-        XCTAssertEqual(look.glass, .clear)
+        XCTAssertEqual(look.glass, .regular)
     }
 
     func testOpenspotsChoicesGiveItsMeasuredSizes() {
@@ -121,7 +145,7 @@ final class ThemeTests: XCTestCase {
         XCTAssertEqual([layout.motion.pressBounce, layout.motion.pressedScale, layout.motion.liftedScale, layout.motion.focusedScale], [0.2, 1.04, 1.05, 1.04])
         XCTAssertEqual(layout.backdrop.style, .blur)
         XCTAssertEqual(layout.backdrop.reach, .tiles)
-        XCTAssertEqual([layout.backdrop.blur, layout.backdrop.size, layout.backdrop.padding], [3, 60, 0])
+        XCTAssertEqual([layout.backdrop.blur, layout.backdrop.size, layout.backdrop.padding], [1, 30, 0])
     }
 
     func testCornerDensityTypeAndSpeedScaleWhatFollowsThem() {
@@ -216,7 +240,7 @@ final class ThemeTests: XCTestCase {
             "theme.toml: [look] corner is a number of points from 0 to 100, such as 3.",
             "theme.toml: [look] density is a factor from 0.25 to 4, such as 1.5.",
             "theme.toml: [look] speed is a factor from 0.25 to 4, such as 1.5.",
-            "theme.toml: [advanced] halo-size is a number of points from 16 to 90, such as 60.",
+            "theme.toml: [advanced] halo-size is a number of points from 16 to 90, such as 30.",
             "theme.toml: [advanced] grow is a time from 0 to 2 seconds, such as 0.2.",
             "theme.toml: [advanced] pressed-scale is a scale from 0.5 to 2, such as 1.04."
         ])
@@ -241,7 +265,7 @@ final class ThemeTests: XCTestCase {
         XCTAssertEqual(Theme(text: Self.choices(of: document)).colours, Theme().colours)
         XCTAssertEqual(theme.layout, Theme().layout)
         XCTAssertEqual(theme.colours.light.solid, ThemeColor(text: "#1F1F1F"))
-        XCTAssertEqual([theme.colours.dark.glassTint, theme.colours.light.glassTint], [ThemeColor(text: "#2C2C2E73"), ThemeColor(text: "#C4C4C473")])
+        XCTAssertEqual([theme.colours.dark.glassTint, theme.colours.light.glassTint], [ThemeColor(text: "#2C2C2E00"), ThemeColor(text: "#C4C4C400")])
         XCTAssertEqual(theme.colours.dark.glyphOnSolid, .accent)
         XCTAssertEqual([theme.colours.dark.confirm, theme.colours.light.confirm], [ThemeColor(text: "#C72924"), ThemeColor(text: "#C72924")])
         XCTAssertEqual([theme.colours.dark.onConfirm, theme.colours.light.onConfirm], [ThemeColor(text: "#FFFFFF"), ThemeColor(text: "#FFFFFF")])

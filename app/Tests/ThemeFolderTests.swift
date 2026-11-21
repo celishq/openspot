@@ -189,6 +189,37 @@ final class ThemeFolderTests: XCTestCase {
         XCTAssertEqual(try String(contentsOf: dusk, encoding: .utf8), "[dark]\nfill = 0.4\n")
     }
 
+    func testABuiltInThatCarriesTheBuiltInNameIsListedRightAfterIt() throws {
+        let shipped = folder.appendingPathComponent("Openspot.app/Themes")
+        let openspot = shipped.appendingPathComponent("openspot.theme/theme.toml")
+        for name in ["openspot", "Aurora", "Openspot Liquid", "Zen"] {
+            let file = shipped.appendingPathComponent("\(name).theme/theme.toml")
+            try FileManager.default.createDirectory(at: file.deletingLastPathComponent(), withIntermediateDirectories: true)
+            try "".write(to: file, atomically: true, encoding: .utf8)
+        }
+        let themes = ThemeFolder(url: folder.appendingPathComponent("themes"), builtIn: openspot, config: ConfigFile(url: folder.appendingPathComponent("config.toml")))
+
+        XCTAssertEqual(themes.scan().names, ["Openspot", "Openspot Liquid", "Aurora", "Zen"])
+    }
+
+    func testOnMacOS26TheLiquidThemeIsInUseUntilAThemeIsChosen() throws {
+        let shipped = folder.appendingPathComponent("Openspot.app/Themes")
+        let openspot = shipped.appendingPathComponent("openspot.theme/theme.toml")
+        for name in ["openspot", "Openspot Liquid"] {
+            let file = shipped.appendingPathComponent("\(name).theme/theme.toml")
+            try FileManager.default.createDirectory(at: file.deletingLastPathComponent(), withIntermediateDirectories: true)
+            try "".write(to: file, atomically: true, encoding: .utf8)
+        }
+        let config = ConfigFile(url: folder.appendingPathComponent("config.toml"))
+        let tahoe = ThemeFolder(url: folder.appendingPathComponent("themes"), builtIn: openspot, config: config, macOS: 26)
+        let later = ThemeFolder(url: folder.appendingPathComponent("themes"), builtIn: openspot, config: config, macOS: 27)
+
+        XCTAssertEqual(tahoe.readInUse(), "Openspot Liquid")
+        XCTAssertEqual(later.readInUse(), "Openspot")
+        XCTAssertEqual(try tahoe.use("Openspot"), "Openspot")
+        XCTAssertEqual(tahoe.readInUse(), "Openspot")
+    }
+
     func testThemesLiveBesideTheConfig() {
         let themes = ThemeFolder.standard(environment: ["OPENSPOT_CONFIG": "/tmp/openspot-config"], builtIn: nil)
 

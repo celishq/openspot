@@ -17,6 +17,7 @@ extension Theme {
         public let blur: Double
         public let size: Double
         public let padding: Double
+        public let shadow: Double
 
         public init() {
             self.init(style: .blur, reach: .tiles) { _ in nil }
@@ -25,9 +26,10 @@ extension Theme {
         init(style: Style, reach: Reach, exact: @escaping (String) -> Double?) {
             self.style = style
             self.reach = reach
-            blur = exact("backdrop-blur") ?? 3
-            size = exact("halo-size") ?? 60
+            blur = exact("backdrop-blur") ?? 1
+            size = exact("halo-size") ?? 30
             padding = exact("halo-padding") ?? 0
+            shadow = exact("card-shadow-size") ?? 24
         }
     }
 }

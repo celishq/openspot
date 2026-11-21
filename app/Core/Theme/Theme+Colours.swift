@@ -11,7 +11,7 @@ extension Theme {
         }
 
         init(choices: ThemeValues, exact: ThemeValues) {
-            glass = choices.word("look", "glass") ?? .clear
+            glass = choices.word("look", "glass") ?? .regular
             dark = Appearance(isDark: true, glass: glass, choices: choices, exact: exact)
             light = Appearance(isDark: false, glass: glass, choices: choices, exact: exact)
         }
@@ -44,6 +44,7 @@ extension Theme {
         public let confirm: ThemeColor
         public let onConfirm: ThemeColor
         public let backdropTint: ThemeColor
+        public let cardShadow: ThemeColor
         public let fill: Double
         public let selected: Double
         public let disc: Double
@@ -53,7 +54,7 @@ extension Theme {
         public let secondary: Double
 
         static let exactKinds: [(String, ThemeKind)] = [
-            "solid", "on-solid", "glyph-on-solid", "glass-tint", "corner-fill", "window", "confirm", "on-confirm", "backdrop-tint"
+            "solid", "on-solid", "glyph-on-solid", "glass-tint", "corner-fill", "window", "confirm", "on-confirm", "backdrop-tint", "card-shadow"
         ].map { ($0, ThemeKind.colour) } + ["fill", "selected", "disc", "chip", "control", "track", "secondary"].map { ($0, ThemeKind.strength) }
 
         private static let openspot = (
@@ -88,6 +89,7 @@ extension Theme {
             confirm = exact("confirm") ?? bad
             onConfirm = exact("on-confirm") ?? confirm.legible(background, or: ink)
             backdropTint = exact("backdrop-tint") ?? background.with(alpha: isDark ? 0.6 : 0.5)
+            cardShadow = exact("card-shadow") ?? ThemeColor.hex(HexColor(red: 0, green: 0, blue: 0)).with(alpha: isDark ? 0.15 : 0.04)
             let (ground, mark) = (background.sample, ink.sample)
             let strength = { (key: String) in
                 values.number(section, key) ?? Self.strength(anchor.strengths[key] ?? 0, keeping: (anchor.background, anchor.ink), on: ground, of: mark)

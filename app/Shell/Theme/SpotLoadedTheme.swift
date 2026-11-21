@@ -28,7 +28,6 @@ final class SpotLoadedTheme {
         SpotTokens.take(next)
         SpotType.take(next.type)
         SheetHeader.shared = SpotType.sheetHeader
-        SpotBackdropEdge.draw()
         viewThemes = [:]
         layout += 1
     }

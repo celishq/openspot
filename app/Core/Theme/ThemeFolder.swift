@@ -2,16 +2,19 @@ import Foundation
 
 public struct ThemeFolder: Sendable {
     public static let builtInName = "Openspot"
+    public static let liquidName = "Openspot Liquid"
     public static let builtInURL = Bundle.main.url(forResource: "theme", withExtension: "toml", subdirectory: "Themes/openspot.theme")
 
     public let url: URL
     public let builtIn: URL?
     public let config: ConfigFile
+    public let macOS: Int
 
-    public init(url: URL, builtIn: URL?, config: ConfigFile) {
+    public init(url: URL, builtIn: URL?, config: ConfigFile, macOS: Int = ProcessInfo.processInfo.operatingSystemVersion.majorVersion) {
         self.url = url
         self.builtIn = builtIn
         self.config = config
+        self.macOS = macOS
     }
 
     public init(config: ConfigFile, builtIn: URL? = builtInURL) {
@@ -48,7 +51,12 @@ public struct ThemeFolder: Sendable {
     }
 
     private func inUse(in scan: ThemeScan, chosen: String?) -> String {
-        chosen.flatMap { scan.find($0)?.name } ?? Self.builtInName
+        chosen.flatMap { scan.find($0)?.name } ?? firstName(in: scan)
+    }
+
+    private func firstName(in scan: ThemeScan) -> String {
+        guard macOS == 26 else { return Self.builtInName }
+        return scan.find(Self.liquidName)?.name ?? Self.builtInName
     }
 
     public func read() -> Theme {
@@ -58,7 +66,7 @@ public struct ThemeFolder: Sendable {
         let clashes = scan.clashes.map { "The folder \(folder(of: $0.own).path) has the name of the built-in theme \($0.builtIn), so Openspot skips it. Rename the folder." }
         let theme = clashes.reduce(Self.read(builtIn: builtIn, copy: scan.find(name)?.file)) { Theme(unreadable: $1, over: $0) }
         guard let chosen, chosen.caseInsensitiveCompare(name) != .orderedSame else { return theme }
-        return Theme(unreadable: "config.toml: the theme \(chosen) is not there, so Openspot uses the theme \(Self.builtInName). Run `openspot theme list` to see each one.", over: theme)
+        return Theme(unreadable: "config.toml: the theme \(chosen) is not there, so Openspot uses the theme \(name). Run `openspot theme list` to see each one.", over: theme)
     }
 
     public static func read(builtIn: URL?, copy: URL? = nil) -> Theme {

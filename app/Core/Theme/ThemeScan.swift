@@ -20,7 +20,8 @@ public struct ThemeScan: Sendable {
         clashes = sorted.compactMap { theme in
             names.first { Self.isTaken(theme.name, in: [$0]) }.map { (theme.name, $0) }
         }
-        items = [builtIn[0]] + builtIn.dropFirst().sorted { Self.order($0.name, $1.name) }
+        let first = builtIn[0].name
+        items = [builtIn[0]] + builtIn.dropFirst().sorted { Self.order($0.name, $1.name, after: first) }
             + sorted.filter { !Self.isTaken($0.name, in: names) }.map { Item(name: $0.name, file: $0.file, isBuiltIn: false) }
     }
 
@@ -34,6 +35,11 @@ public struct ThemeScan: Sendable {
 
     private static func isTaken(_ name: String, in names: [String]) -> Bool {
         names.contains { $0.caseInsensitiveCompare(name) == .orderedSame }
+    }
+
+    private static func order(_ one: String, _ other: String, after first: String) -> Bool {
+        let (isOne, isOther) = (one.hasPrefix(first), other.hasPrefix(first))
+        return isOne == isOther ? order(one, other) : isOne
     }
 
     private static func order(_ one: String, _ other: String) -> Bool {

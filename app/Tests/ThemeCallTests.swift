@@ -64,7 +64,7 @@ final class ThemeCallTests: XCTestCase {
         XCTAssertEqual(reloaded, CommandAnswer())
         let themes = await app.themes
         XCTAssertEqual(themes.last?.layout.backdrop.blur, 8)
-        XCTAssertEqual(themes.last?.colours.glass, .clear)
+        XCTAssertEqual(themes.last?.colours.glass, .regular)
     }
 
     func testTheListMarksEachBuiltInThemeAndPutsThemFirst() async throws {
