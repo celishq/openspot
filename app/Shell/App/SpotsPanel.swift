@@ -44,19 +44,10 @@ final class SpotsPanel: NSPanel {
     func place(over app: NSRunningApplication?) {
         guard model?.isShown != true || model?.isWarming == true else { return }
         let screens = ScreenPlace.Screen.all
-        let mainHeight = NSScreen.screens.first?.frame.maxY ?? 0
-        let window = screens.count < 2 ? nil : app.flatMap(Self.frontWindow).map { ScreenPlace.frame(ofBounds: $0, mainHeight: mainHeight) }
+        let window = screens.count < 2 ? nil : SpotFrontWindow.frame(of: app)
         let center = NSSize(width: frame.width - place.left - appliedRight, height: frame.height)
         guard let origin = ScreenPlace(screens: screens).origin(of: center, window: window, pointer: NSEvent.mouseLocation) else { return }
         setFrameOrigin(NSPoint(x: origin.x - place.left, y: origin.y))
-    }
-
-    private static func frontWindow(of app: NSRunningApplication) -> CGRect? {
-        let windows = CGWindowListCopyWindowInfo([.optionOnScreenOnly, .excludeDesktopElements], kCGNullWindowID) as? [[String: Any]] ?? []
-        let front = windows.first {
-            ($0[kCGWindowOwnerPID as String] as? pid_t) == app.processIdentifier && ($0[kCGWindowLayer as String] as? Int) == 0
-        }
-        return (front?[kCGWindowBounds as String] as? NSDictionary).flatMap { CGRect(dictionaryRepresentation: $0) }
     }
 
     func show() {
