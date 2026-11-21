@@ -68,15 +68,15 @@ struct SpotFormView: View {
         }
         .onAppear {
             DispatchQueue.main.async {
+                FieldCaret.shared.arm()
                 focus = typed(focused ?? draft.form.fields.first?.name)
-                DispatchQueue.main.async { NSApp.keyWindow?.placeCaretAtEnd() }
             }
         }
         .onChange(of: focused) { _, name in
             let next = typed(name)
             guard focus != next else { return }
+            if next != nil { FieldCaret.shared.arm() }
             focus = next
-            if next != nil { DispatchQueue.main.async { NSApp.keyWindow?.placeCaretAtEnd() } }
         }
         .onChange(of: focus) { _, name in
             if name != focused, name != nil || typed(focused) != nil { onFocus(name) }
