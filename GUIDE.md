@@ -808,7 +808,7 @@ press-bounce = 0
 | `glass-tint`, `corner-fill`, `window`     | `[dark]`, `[light]` | The tint of the glass, the fill behind a corner button, and a lifted card and a window. They follow `background`. |
 | `confirm`, `on-confirm`                   | `[dark]`, `[light]` | A press that asks again before it deletes, and its text. They follow `bad`.             |
 | `backdrop-tint`                           | `[dark]`, `[light]` | The colour of the backdrop `tint`. It follows `background`.                             |
-| `backdrop-veil`                           | `[dark]`, `[light]` | The colour laid over the backdrop `blur`, which softens what shows through. It follows `background`. |
+| `card-shadow`                             | `[dark]`, `[light]` | The colour of the soft shadow under each glass surface. Its strength is its alpha.       |
 | `fill`, `selected`, `disc`, `chip`, `control`, `track`, `secondary` | `[dark]`, `[light]` | Strengths from 0 to 1 of the `ink`: the field and a card, a chosen row, the disc behind a glyph, a chip, a button, a track and ring, and the second line of a row. |
 | `cell`, `glyph`, `list-row`, `menu-row`   | `[advanced]`        | The side of a grid cell, of a glyph, and the height of a row and a menu row, in points. |
 | `column-gap`, `row-gap`, `padding`, `list-row-gap`, `menu-padding` | `[advanced]` | The gaps and paddings in points. They follow `density`.                     |
@@ -817,6 +817,7 @@ press-bounce = 0
 | `grow`, `shrink`, `move`, `fade-in`, `fade-out`, `press`, `settle` | `[advanced]` | The time of each motion in seconds. They follow `speed`.                     |
 | `press-bounce`, `pressed-scale`, `lifted-scale`, `focused-scale` | `[advanced]` | The bounce of a press, and the scale of a pressed, a lifted and a focused card.   |
 | `backdrop-blur`, `halo-size`, `halo-padding` | `[advanced]`     | The strength of the backdrop's blur, how far its halo reaches past the tiles, from 16 to 90, and how far it holds its full strength, from 0 to 74. |
+| `card-shadow-size`                        | `[advanced]`     | How far the shadow under each glass surface spreads, in points.                        |
 
 - An exact value holds only in the file that sets it. A copy of `Openspot` keeps the exact values in its file, but a
   theme you write from scratch works out its own.

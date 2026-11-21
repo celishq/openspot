@@ -16,7 +16,6 @@ final class SpotPalette: Sendable {
     let confirm: Color
     let onConfirm: Color
     let backdropTint: Color
-    let backdropVeil: Color
     let cardShadow: Color
     let highlight: Color
     let accent: Color
@@ -42,7 +41,6 @@ final class SpotPalette: Sendable {
         confirm = color(\.confirm)
         onConfirm = color(\.onConfirm)
         backdropTint = color(\.backdropTint)
-        backdropVeil = color(\.backdropVeil)
         cardShadow = color(\.cardShadow)
         highlight = color(\.highlight)
         accent = color(\.accent)

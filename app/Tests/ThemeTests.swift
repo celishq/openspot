@@ -61,23 +61,13 @@ final class ThemeTests: XCTestCase {
         XCTAssertEqual(dark.backdropTint, ThemeColor(text: "#282A3699"))
     }
 
-    func testTheVeilOverTheBlurIsAGreyOfTheBackgroundThatAThemeCanSet() {
-        let openspot = Theme(text: "").colours
-        let white = ThemeColor(text: "#FFFFFF")!, black = ThemeColor(text: "#000000")!
-        let set = Theme(text: "[light]\nbackdrop-veil = \"#11223344\"\n").colours.light
-
-        XCTAssertEqual(openspot.light.backdropVeil, white.mixed(with: ThemeColor(text: "#1C1C1C")!, by: 0.4).with(alpha: 0.2))
-        XCTAssertEqual(openspot.dark.backdropVeil, black.with(alpha: 0.25))
-        XCTAssertEqual(set.backdropVeil, ThemeColor(text: "#11223344"))
-    }
-
     func testTheShadowOfACardIsAFaintBlackThatAThemeCanSetAndSize() {
         let openspot = Theme(text: "")
         let set = Theme(text: "[light]\ncard-shadow = \"#11223344\"\n\n[advanced]\ncard-shadow-size = 20\n")
 
-        XCTAssertEqual(openspot.colours.light.cardShadow, ThemeColor(text: "#000000")!.with(alpha: 0.1))
-        XCTAssertEqual(openspot.colours.dark.cardShadow, ThemeColor(text: "#000000")!.with(alpha: 0.35))
-        XCTAssertEqual(openspot.layout.backdrop.shadow, 12)
+        XCTAssertEqual(openspot.colours.light.cardShadow, ThemeColor(text: "#000000")!.with(alpha: 0.04))
+        XCTAssertEqual(openspot.colours.dark.cardShadow, ThemeColor(text: "#000000")!.with(alpha: 0.15))
+        XCTAssertEqual(openspot.layout.backdrop.shadow, 24)
         XCTAssertEqual(set.colours.light.cardShadow, ThemeColor(text: "#11223344"))
         XCTAssertEqual(set.layout.backdrop.shadow, 20)
     }
@@ -142,7 +132,7 @@ final class ThemeTests: XCTestCase {
         XCTAssertEqual([layout.motion.pressBounce, layout.motion.pressedScale, layout.motion.liftedScale, layout.motion.focusedScale], [0.2, 1.04, 1.05, 1.04])
         XCTAssertEqual(layout.backdrop.style, .blur)
         XCTAssertEqual(layout.backdrop.reach, .tiles)
-        XCTAssertEqual([layout.backdrop.blur, layout.backdrop.size, layout.backdrop.padding], [1.75, 30, 0])
+        XCTAssertEqual([layout.backdrop.blur, layout.backdrop.size, layout.backdrop.padding], [1, 30, 0])
     }
 
     func testCornerDensityTypeAndSpeedScaleWhatFollowsThem() {

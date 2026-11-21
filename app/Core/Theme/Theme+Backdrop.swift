@@ -26,10 +26,10 @@ extension Theme {
         init(style: Style, reach: Reach, exact: @escaping (String) -> Double?) {
             self.style = style
             self.reach = reach
-            blur = exact("backdrop-blur") ?? 1.75
+            blur = exact("backdrop-blur") ?? 1
             size = exact("halo-size") ?? 30
             padding = exact("halo-padding") ?? 0
-            shadow = exact("card-shadow-size") ?? 12
+            shadow = exact("card-shadow-size") ?? 24
         }
     }
 }

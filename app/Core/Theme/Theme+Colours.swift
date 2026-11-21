@@ -44,7 +44,6 @@ extension Theme {
         public let confirm: ThemeColor
         public let onConfirm: ThemeColor
         public let backdropTint: ThemeColor
-        public let backdropVeil: ThemeColor
         public let cardShadow: ThemeColor
         public let fill: Double
         public let selected: Double
@@ -55,7 +54,7 @@ extension Theme {
         public let secondary: Double
 
         static let exactKinds: [(String, ThemeKind)] = [
-            "solid", "on-solid", "glyph-on-solid", "glass-tint", "corner-fill", "window", "confirm", "on-confirm", "backdrop-tint", "backdrop-veil", "card-shadow"
+            "solid", "on-solid", "glyph-on-solid", "glass-tint", "corner-fill", "window", "confirm", "on-confirm", "backdrop-tint", "card-shadow"
         ].map { ($0, ThemeKind.colour) } + ["fill", "selected", "disc", "chip", "control", "track", "secondary"].map { ($0, ThemeKind.strength) }
 
         private static let openspot = (
@@ -90,8 +89,7 @@ extension Theme {
             confirm = exact("confirm") ?? bad
             onConfirm = exact("on-confirm") ?? confirm.legible(background, or: ink)
             backdropTint = exact("backdrop-tint") ?? background.with(alpha: isDark ? 0.6 : 0.5)
-            backdropVeil = exact("backdrop-veil") ?? background.mixed(with: ink, by: isDark ? 0 : 0.4).with(alpha: isDark ? 0.25 : 0.2)
-            cardShadow = exact("card-shadow") ?? ThemeColor.hex(HexColor(red: 0, green: 0, blue: 0)).with(alpha: isDark ? 0.35 : 0.1)
+            cardShadow = exact("card-shadow") ?? ThemeColor.hex(HexColor(red: 0, green: 0, blue: 0)).with(alpha: isDark ? 0.15 : 0.04)
             let (ground, mark) = (background.sample, ink.sample)
             let strength = { (key: String) in
                 values.number(section, key) ?? Self.strength(anchor.strengths[key] ?? 0, keeping: (anchor.background, anchor.ink), on: ground, of: mark)

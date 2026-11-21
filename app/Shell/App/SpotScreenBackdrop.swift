@@ -34,9 +34,7 @@ private struct ScreenBackdropView: View {
     var body: some View {
         ZStack {
             switch SpotTokens.backdrop.style {
-            case .blur:
-                SpotBackdropBlur(radius: SpotTokens.backdrop.blur)
-                SpotTheme.backdropVeil
+            case .blur: SpotBackdropBlur(radius: SpotTokens.backdrop.blur)
             case .tint: SpotTheme.backdropTint
             }
         }
