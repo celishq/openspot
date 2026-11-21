@@ -7,19 +7,19 @@ struct SpotBackdropBlur: NSViewRepresentable {
     final class Surface: NSVisualEffectView {
         private static let log = Logger(subsystem: Bundle.main.bundleIdentifier ?? "openspot", category: "glass")
         private static var isReported = false
-        private static let whole = wholeMask()
+        private static let kind = "variableBlur"
         private let filter: NSObject?
         private var radius: CGFloat
-        private var rect: CGRect?
-        private var drawn: (radius: CGFloat, rect: CGRect?, size: CGSize)?
+        private var area: CGRect?
+        private var drawn: (radius: CGFloat, fade: SpotBackdropFade)?
 
-        init(radius: CGFloat, rect: CGRect?) {
+        init(radius: CGFloat, area: CGRect?) {
             self.radius = radius
-            self.rect = rect
+            self.area = area
             let make = NSSelectorFromString("filterWithType:")
             if let type = NSClassFromString("CAFilter") as? NSObject.Type, type.responds(to: make),
-               let filter = type.perform(make, with: "variableBlur")?.takeUnretainedValue() as? NSObject {
-                filter.setValue("variableBlur", forKey: "name")
+               let filter = type.perform(make, with: Self.kind)?.takeUnretainedValue() as? NSObject {
+                filter.setValue(Self.kind, forKey: "name")
                 filter.setValue(true, forKey: "inputNormalizeEdges")
                 self.filter = filter
             } else {
@@ -56,10 +56,10 @@ struct SpotBackdropBlur: NSViewRepresentable {
             nil
         }
 
-        func take(radius next: CGFloat, rect nextRect: CGRect?) {
-            guard next != radius || nextRect != rect else { return }
+        func take(radius next: CGFloat, area nextArea: CGRect?) {
+            guard next != radius || nextArea != area else { return }
             radius = next
-            rect = nextRect
+            area = nextArea
             applyBlur(reports: false)
         }
 
@@ -70,7 +70,7 @@ struct SpotBackdropBlur: NSViewRepresentable {
             let parts = layer?.sublayers?.flatMap { $0.sublayers ?? [] } ?? []
             guard let filter, let backdrop = parts.first(where: { $0.name == "backdrop" }) else {
                 alphaValue = 0
-                if reports { Self.report(filter == nil ? "macOS makes no CAFilter of the type variableBlur" : "the visual effect view has no layer named backdrop") }
+                if reports { Self.report(filter == nil ? "macOS makes no CAFilter of the type \(Self.kind)" : "the visual effect view has no layer named backdrop") }
                 return
             }
             alphaValue = 1
@@ -80,39 +80,14 @@ struct SpotBackdropBlur: NSViewRepresentable {
                 backdrop.setValue(1, forKey: "scale")
                 drawn = nil
             }
-            let size = bounds.size
+            let fade = SpotBackdropFade(fade: .current, area: area, size: bounds.size)
             if drawn?.radius != radius {
-                backdrop.setValue(radius, forKeyPath: "filters.variableBlur.inputRadius")
+                backdrop.setValue(radius, forKeyPath: "filters.\(Self.kind).inputRadius")
             }
-            if drawn?.rect != rect || drawn?.size != size {
-                backdrop.setValue(rect.flatMap { Self.mask(of: $0, in: size) } ?? Self.whole, forKeyPath: "filters.variableBlur.inputMaskImage")
+            if drawn?.fade != fade {
+                backdrop.setValue(fade.image(), forKeyPath: "filters.\(Self.kind).inputMaskImage")
             }
-            drawn = (radius, rect, size)
-        }
-
-        private static func mask(of rect: CGRect, in size: CGSize) -> CGImage? {
-            let scale = SpotTokens.backdropMaskScale
-            guard let context = CGContext(
-                data: nil, width: Int((size.width * scale).rounded(.up)), height: Int((size.height * scale).rounded(.up)),
-                bitsPerComponent: 8, bytesPerRow: 0, space: CGColorSpaceCreateDeviceRGB(), bitmapInfo: CGImageAlphaInfo.premultipliedLast.rawValue
-            ) else { return nil }
-            context.scaleBy(x: scale, y: scale)
-            context.setBlendMode(.copy)
-            for ring in BackdropFade(backdrop: SpotTokens.backdrop).rings(around: rect.insetBy(dx: SpotTokens.halo, dy: SpotTokens.halo)) {
-                let frame = CGRect(x: ring.rect.minX, y: size.height - ring.rect.maxY, width: ring.rect.width, height: ring.rect.height)
-                let corner = min(ring.corner, frame.width / 2, frame.height / 2)
-                context.setFillColor(CGColor(gray: 0, alpha: ring.strength))
-                context.addPath(CGPath(roundedRect: frame, cornerWidth: corner, cornerHeight: corner, transform: nil))
-                context.fillPath()
-            }
-            return context.makeImage()
-        }
-
-        private static func wholeMask() -> CGImage? {
-            let context = CGContext(data: nil, width: 1, height: 1, bitsPerComponent: 8, bytesPerRow: 0, space: CGColorSpaceCreateDeviceRGB(), bitmapInfo: CGImageAlphaInfo.premultipliedLast.rawValue)
-            context?.setFillColor(CGColor(gray: 0, alpha: 1))
-            context?.fill(CGRect(x: 0, y: 0, width: 1, height: 1))
-            return context?.makeImage()
+            drawn = (radius, fade)
         }
 
         private static func report(_ cause: String) {
@@ -123,14 +98,24 @@ struct SpotBackdropBlur: NSViewRepresentable {
     }
 
     let radius: CGFloat
-    var rect: CGRect?
+    let area: CGRect?
+
+    init(radius: CGFloat) {
+        self.radius = radius
+        area = nil
+    }
+
+    init(radius: CGFloat, fadingIn area: CGRect) {
+        self.radius = radius
+        self.area = area
+    }
 
     func sizeThatFits(_ proposal: ProposedViewSize, nsView: Surface, context: Context) -> CGSize? {
         proposal.replacingUnspecifiedDimensions()
     }
 
     func makeNSView(context: Context) -> Surface {
-        let surface = Surface(radius: radius, rect: rect)
+        let surface = Surface(radius: radius, area: area)
         surface.blendingMode = .behindWindow
         surface.state = .active
         surface.appearance = NSAppearance(named: .darkAqua)
@@ -139,6 +124,6 @@ struct SpotBackdropBlur: NSViewRepresentable {
     }
 
     func updateNSView(_ surface: Surface, context: Context) {
-        surface.take(radius: radius, rect: rect)
+        surface.take(radius: radius, area: area)
     }
 }

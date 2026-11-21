@@ -216,7 +216,7 @@ final class ThemeTests: XCTestCase {
             "theme.toml: [look] corner is a number of points from 0 to 100, such as 3.",
             "theme.toml: [look] density is a factor from 0.25 to 4, such as 1.5.",
             "theme.toml: [look] speed is a factor from 0.25 to 4, such as 1.5.",
-            "theme.toml: [advanced] halo-size is a number of points from 16 to 90, such as 60.",
+            "theme.toml: [advanced] halo-size is a number of points from 16 to 90, such as 80.",
             "theme.toml: [advanced] grow is a time from 0 to 2 seconds, such as 0.2.",
             "theme.toml: [advanced] pressed-scale is a scale from 0.5 to 2, such as 1.04."
         ])

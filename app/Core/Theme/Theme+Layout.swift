@@ -16,14 +16,13 @@ extension Theme {
         public let sheetRowsTop: Double
         public let gridTop: Double
         public let partsWidth: Double
-        public let backdropEdges: [BackdropEdge]
 
         static let exactKinds: [(String, ThemeKind)] = [
             "cell", "column-gap", "row-gap", "padding", "glyph", "list-row", "list-row-gap", "menu-row", "menu-padding",
             "window-corner", "media-corner", "mark-corner", "title", "body", "detail", "input"
         ].map { ($0, ThemeKind.points()) } + ["grow", "shrink", "move", "fade-in", "fade-out", "press", "settle"].map { ($0, ThemeKind.seconds) }
             + [("press-bounce", .strength), ("pressed-scale", .scale), ("lifted-scale", .scale), ("focused-scale", .scale)]
-            + [("backdrop-blur", .points()), ("halo-size", .points(Double(SpotTokens.backdropLeastFade)...Double(SpotTokens.halo), example: 60))]
+            + [("backdrop-blur", .points()), ("halo-size", .points(Double(SpotTokens.backdropLeastFade)...Double(SpotTokens.halo), example: 80))]
             + [("halo-padding", .points(0...Double(SpotTokens.halo - SpotTokens.backdropLeastFade), example: 10))]
 
         public init() {
@@ -48,7 +47,6 @@ extension Theme {
             sheetRowsTop = sheetFieldDrop + space.listRow + space.rowGap
             gridTop = halo + space.cell + space.rowGap
             partsWidth = gridWidth - 2 * space.padding
-            backdropEdges = BackdropEdge.edges(of: backdrop)
         }
     }
 
