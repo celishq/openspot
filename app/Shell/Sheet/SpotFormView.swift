@@ -67,11 +67,16 @@ struct SpotFormView: View {
             .modifier(StopRing(isFocused: focused == FormDraft.save, hasBox: true))
         }
         .onAppear {
-            DispatchQueue.main.async { focus = typed(focused ?? draft.form.fields.first?.name) }
+            DispatchQueue.main.async {
+                focus = typed(focused ?? draft.form.fields.first?.name)
+                DispatchQueue.main.async { NSApp.keyWindow?.placeCaretAtEnd() }
+            }
         }
         .onChange(of: focused) { _, name in
             let next = typed(name)
-            if focus != next { focus = next }
+            guard focus != next else { return }
+            focus = next
+            if next != nil { DispatchQueue.main.async { NSApp.keyWindow?.placeCaretAtEnd() } }
         }
         .onChange(of: focus) { _, name in
             if name != focused, name != nil || typed(focused) != nil { onFocus(name) }

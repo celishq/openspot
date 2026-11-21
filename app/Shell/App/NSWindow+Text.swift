@@ -2,6 +2,12 @@ import AppKit
 import OpenspotCore
 
 extension NSWindow {
+    func placeCaretAtEnd() {
+        guard let text = firstResponder as? NSTextView else { return }
+        let end = NSRange(location: (text.string as NSString).length, length: 0)
+        if text.selectedRange() != end { text.setSelectedRange(end) }
+    }
+
     func textKeeps(_ key: ActionKey) -> Bool {
         guard let text = firstResponder as? NSTextView else { return false }
         if text.hasMarkedText() { return true }
