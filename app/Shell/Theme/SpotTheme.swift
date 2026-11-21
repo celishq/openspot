@@ -66,6 +66,7 @@ enum SpotTheme {
     @MainActor static var glassTint: Color { loaded.glassTint }
     @MainActor static var backdropTint: Color { loaded.backdropTint }
     @MainActor static var backdropVeil: Color { loaded.backdropVeil }
+    @MainActor static var cardShadow: Color { loaded.cardShadow }
     @MainActor static var highlight: Color { loaded.highlight }
     @MainActor static var cornerFill: Color { loaded.cornerFill }
     @MainActor static var window: Color { loaded.window }

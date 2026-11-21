@@ -23,7 +23,7 @@ extension Theme {
         ].map { ($0, ThemeKind.points()) } + ["grow", "shrink", "move", "fade-in", "fade-out", "press", "settle"].map { ($0, ThemeKind.seconds) }
             + [("press-bounce", .strength), ("pressed-scale", .scale), ("lifted-scale", .scale), ("focused-scale", .scale)]
             + [("backdrop-blur", .points()), ("halo-size", .points(Double(SpotTokens.backdropLeastFade)...Double(SpotTokens.halo), example: 30))]
-            + [("halo-padding", .points(0...Double(SpotTokens.halo - SpotTokens.backdropLeastFade), example: 10))]
+            + [("halo-padding", .points(0...Double(SpotTokens.halo - SpotTokens.backdropLeastFade), example: 10)), ("card-shadow-size", .points())]
 
         public init() {
             self.init(choices: ThemeValues(), exact: ThemeValues())
