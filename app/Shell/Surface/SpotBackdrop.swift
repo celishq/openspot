@@ -38,10 +38,7 @@ private struct BackdropShape: View, @preconcurrency Animatable {
         return ZStack(alignment: .topLeading) {
             switch style {
             case .blur:
-                ForEach(Array(BackdropEdge.blurs.enumerated()), id: \.offset) { step, edge in
-                    SpotBackdropBlur(radius: SpotTokens.backdrop.blur * CGFloat(step + 1) / CGFloat(BackdropEdge.blurs.count))
-                        .mask { SpotBackdropEdge(edge: edge, rect: rect) }
-                }
+                SpotBackdropBlur(radius: SpotTokens.backdrop.blur, rect: rect)
             case .tint:
                 SpotTheme.backdropTint.mask { BackdropTintMask(rect: rect) }
             }
