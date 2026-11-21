@@ -8,7 +8,6 @@ struct SpotBackdropBlur: NSViewRepresentable {
         private static let log = Logger(subsystem: Bundle.main.bundleIdentifier ?? "openspot", category: "glass")
         private static var isReported = false
         private static let whole = wholeMask()
-        private static let curve = (0...255).map { UInt8((pow(CGFloat($0) / 255, SpotTokens.backdropMaskCurve) * 255).rounded()) }
         private let filter: NSObject?
         private var radius: CGFloat
         private var rect: CGRect?
@@ -93,30 +92,18 @@ struct SpotBackdropBlur: NSViewRepresentable {
 
         private static func mask(of rect: CGRect, in size: CGSize) -> CGImage? {
             let scale = SpotTokens.backdropMaskScale
-            let edges = BackdropEdge.blurs
             guard let context = CGContext(
                 data: nil, width: Int((size.width * scale).rounded(.up)), height: Int((size.height * scale).rounded(.up)),
                 bitsPerComponent: 8, bytesPerRow: 0, space: CGColorSpaceCreateDeviceRGB(), bitmapInfo: CGImageAlphaInfo.premultipliedLast.rawValue
             ) else { return nil }
             context.scaleBy(x: scale, y: scale)
-            context.setBlendMode(.plusLighter)
-            context.setAlpha(1 / CGFloat(edges.count))
-            for edge in edges {
-                let parts = SpotBackdropEdge.parts[edge] ?? []
-                for (part, piece) in zip(parts, edge.pieces(in: rect)) {
-                    guard let part else { continue }
-                    let frame = piece.frame
-                    context.draw(part, in: CGRect(x: frame.minX, y: size.height - frame.maxY, width: frame.width, height: frame.height))
-                }
-            }
-            if let data = context.data {
-                let bytes = data.bindMemory(to: UInt8.self, capacity: context.bytesPerRow * context.height)
-                for row in 0..<context.height {
-                    for column in 0..<context.width {
-                        let alpha = row * context.bytesPerRow + column * 4 + 3
-                        bytes[alpha] = curve[Int(bytes[alpha])]
-                    }
-                }
+            context.setBlendMode(.copy)
+            for ring in BackdropFade(backdrop: SpotTokens.backdrop).rings(around: rect.insetBy(dx: SpotTokens.halo, dy: SpotTokens.halo)) {
+                let frame = CGRect(x: ring.rect.minX, y: size.height - ring.rect.maxY, width: ring.rect.width, height: ring.rect.height)
+                let corner = min(ring.corner, frame.width / 2, frame.height / 2)
+                context.setFillColor(CGColor(gray: 0, alpha: ring.strength))
+                context.addPath(CGPath(roundedRect: frame, cornerWidth: corner, cornerHeight: corner, transform: nil))
+                context.fillPath()
             }
             return context.makeImage()
         }

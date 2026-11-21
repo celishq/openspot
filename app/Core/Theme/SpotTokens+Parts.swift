@@ -80,7 +80,7 @@ extension SpotTokens {
     public static var backdrop: Theme.Backdrop { layout.backdrop }
     public static let backdropMiddle: CGFloat = 2
     public static let backdropMaskScale: CGFloat = 0.25
-    public static let backdropMaskCurve: CGFloat = 1.6
+    public static let backdropFadeSteps = 32
 
     public static let swatchSize: CGFloat = 22
     public static let smallSwatch: CGFloat = 16
