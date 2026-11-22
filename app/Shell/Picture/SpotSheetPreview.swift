@@ -27,7 +27,7 @@ struct SpotSheetPreview: View {
                 Spacer()
                 SpotRoundButton(symbol: "xmark", label: "Close") {}
             }
-            SpotSheetBody(panel: panel, list: list, onSet: onSet, onPress: onPress)
+            SpotSheetBody(panel: panel, list: list, onSet: onSet, onPress: onPress, title: title)
         }
         .padding(SpotTokens.padding)
         .frame(width: frame.width, height: frame.height, alignment: .topLeading)

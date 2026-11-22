@@ -132,9 +132,12 @@ public struct BoxLayout {
             let fixed = Self.points(child.style.width, of: width) ?? (child.style.isSquare ? fixedHeight ?? stretched : nil)
             return Self.clamped(fixed ?? child.measure(nil, nil).width, child.style, of: width)
         }
-        let content = basis.reduce(0, +) + gaps
-        let main = width ?? content
-        let widths = Self.flexed(basis, children, free: main - content).enumerated().map { index, width in
+        let main = width ?? basis.reduce(0, +) + gaps
+        let flexBasis = width == nil ? basis : children.indices.map { index in
+            children[index].style.grows == true ? Self.clamped(0, children[index].style, of: width) : basis[index]
+        }
+        let content = flexBasis.reduce(0, +) + gaps
+        let widths = Self.flexed(flexBasis, children, free: main - content).enumerated().map { index, width in
             Self.clamped(width, children[index].style, of: main)
         }
         let natural = children.indices.map { index in

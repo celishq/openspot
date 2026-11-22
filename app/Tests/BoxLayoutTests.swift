@@ -43,6 +43,19 @@ final class BoxLayoutTests: XCTestCase {
         XCTAssertEqual(placed.frames, [CGRect(x: 0, y: 0, width: 66, height: 10), CGRect(x: 70, y: 0, width: 30, height: 10)])
     }
 
+    func testGrowingSiblingsOfARowTakeEqualWidths() {
+        let placed = place("flex-row gap-2 items-start", [block(20, 10, "grow"), block(50, 10, "grow"), block(10, 10)])
+
+        XCTAssertEqual(placed.frames.map(\.width), [37, 37, 10])
+        XCTAssertEqual(placed.frames.map(\.minX), [0, 45, 90])
+    }
+
+    func testGrowingSiblingsOfARowWithNoWidthKeepTheirOwnWidths() {
+        let placed = place("flex-row items-start", [block(20, 10, "grow"), block(50, 10, "grow")], width: nil)
+
+        XCTAssertEqual(placed.frames.map(\.width), [20, 50])
+    }
+
     func testAFractionOrAStepSetsTheWidthOfAChild() {
         let placed = place("flex-row items-start", [block(10, 10, "w-1/2"), block(10, 10, "w-10")])
 

@@ -202,7 +202,8 @@ and a Forget chip at its end. The list of the items fills the rest of the sheet 
 - In a grid, `col-span-<n>` and `row-span-<n>` make a block cover more cells. In layers, `absolute` with `inset-0`, or
   with an edge such as `top-0`, pins a block to its box.
 - A divider is a box with `class=h-px bg-tile`, a line as tall as a divider.
-- `grow` takes the free space of a row or a column, and an `items` block takes the free height of the sheet.
+- `grow` takes the free space of a row or a column, and an `items` block takes the free height of the sheet. Blocks
+  that grow in one row get equal widths, as `flex-1` gives in CSS.
 - `gap-part` and `gap-group` are the gaps that Openspot's own sheets use. [Classes](#classes) lists every class.
 - A `parent` that names no block, and an unknown class, are faults that `openspot check spots` reports. The block then
   sits in the root, and the class is skipped, so a frame still draws.

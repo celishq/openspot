@@ -628,7 +628,7 @@ shows.
 | ------------------- | ------------------------------------------------------------------------------------------------------ |
 | `spot.theme.color`  | The colours `ink`, `solid`, `onSolid`, `accent`, `good`, `warn` and `bad`, and the strengths `secondary`, `fill`, `selected` and `track`. |
 | `spot.theme.space`  | `padding`, `columnGap`, `rowGap`, `listRow`, `listRowGap`, `glyph`, `cell`, the side of a grid cell, and `gridWidth`. |
-| `spot.theme.radius` | `card`, `media`, and `inner`, the corner of a part that sits `padding` inside the view's place.         |
+| `spot.theme.radius` | `card`, `media`, and `inner`, the corner of a part that sits `padding` inside the card or the sheet. |
 | `spot.theme.font`   | The fonts `title`, `body`, `detail` and `input`.                                                       |
 | `spot.theme.motion` | `press`, the time of a press in seconds, and `pressBounce`, its bounce.                                |
 
