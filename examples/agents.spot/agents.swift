@@ -217,7 +217,7 @@ func change(_ key: String, title: String, current: Command) {
 }
 
 switch arguments.first {
-case "show":
+case "show", "every":
     let (limit, stale) = keptClaudeLimit()
     print(board(claudeLimit: limit), terminator: "")
     if stale {
@@ -225,8 +225,8 @@ case "show":
         readClaudeLimit()
         print(board(claudeLimit: keptClaudeLimit().0), terminator: "")
     }
-case "open":
-    if let row = arguments.dropFirst().first, let pid = row.split(separator: "/").last.flatMap({ Int32($0) }) { focus(pid: pid) }
+case "press":
+    if let row = value("input.item"), let pid = row.split(separator: "/").last.flatMap({ Int32($0) }) { focus(pid: pid) }
 case "new-claude":
     start(claude)
 case "new-codex":

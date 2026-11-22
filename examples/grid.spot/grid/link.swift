@@ -5,11 +5,6 @@ struct Call {
     let id: String
     let arguments: [String]
     let input: [String]
-
-    /// The first value of a key in its message, such as `setting.look` of `setting.look=gold`.
-    func value(_ key: String) -> String? {
-        input.first { $0.hasPrefix("\(key)=") }.map { Link.plain(String($0.dropFirst(key.count + 1))) }
-    }
 }
 
 /// The two ways of a staying spot (protocol: A staying spot): the calls that Openspot writes on stdin, one block each,
