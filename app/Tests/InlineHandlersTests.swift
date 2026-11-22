@@ -176,5 +176,37 @@ final class InlineHandlersTests: SpotRunsCase {
         XCTAssertEqual(error as? SpotError, .timedOut)
         XCTAssertLessThan(log("ticker-log").count, 8)
     }
-}
 
+    func testAHandlerThatAwaitsAPromiseThatNothingSettlesFailsAtTheIdleTimeAndLetsGoOfTheThread() async throws {
+        runs.quit()
+        runs = SpotRuns(environment: ProcessInfo.processInfo.environment, clock: clock.value, stopPause: 0.2, inlineIdle: 0.3)
+        takeCalls()
+        try inline("waiter", toml: "[actions.hang]", "export default {\n  async hang() { await new Promise(() => {}) },\n}")
+        let script = runs.script(of: try spot("waiter"))
+        defer { script.end() }
+        let call = InlineCall(arguments: ["hang"])
+
+        script.send(call)
+        let outcome = await call.outcome(limit: 10)
+
+        guard case .failed(let error) = outcome else { return XCTFail("the call did not end") }
+        XCTAssertEqual(SpotsModel.reason(error), "hang of Waiter waits for a promise that nothing settles, so Openspot ended it.")
+        try await wait("the thread let go") { !script.isRunning }
+    }
+
+    func testAWaitInEnvCountsAgainstTheClockLimitOfACallThatOpenspotTimesAsAWhole() async throws {
+        try script("picker", toml: "[actions.slow]\noutputs.v = 'text'", log: "picker-log", "[ \"$1\" = slow ] && sleep 1 && echo out.v=late")
+        try inline("asker", toml: "[bindings]\npicker = { spot = 'picker' }", "export default {\n  async show(input, env) { const got = await env.picker.slow(); return `text=a\\ntitle=${got.v}\\n` },\n}")
+        let asker = try spot("asker")
+
+        do {
+            let shown = try await runs.answer(of: asker, .show, limit: 0.3)
+            XCTFail("the show outlasted its limit: \(shown)")
+        } catch {
+            XCTAssertEqual(error as? SpotError, .timedOut)
+        }
+        let shown = try await runs.answer(of: asker, .show, limit: 10)
+
+        XCTAssertEqual(TextBlock.blocks(in: shown).first?.value("title"), "late")
+    }
+}

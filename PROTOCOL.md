@@ -818,6 +818,8 @@ The sheet lists Hello. Greet gives `out.words=Hello, you.`.
   next keystroke.
 - A call has 10 seconds of the time its code runs. An `await` counts nothing, and the spot takes other calls while one
   waits, so a handler can wait for the person as long as they take. A loop that never awaits is stopped.
+- A handler that awaits a promise that nothing can settle, with no `env` call under way, fails once its spot has had no
+  call for 30 seconds.
 - `openspot types` writes `openspot.d.ts` beside the file. Put `/** @satisfies {import("./openspot").Handlers} */`
   before `export default`, and an editor checks each handler, input, output, event, binding and command.
 
@@ -1029,6 +1031,8 @@ adds a timer. Esc ends the run with exit 4, so the spot adds nothing.
 - An action that answers with a view shows it over the sheet that shows, as a step of its flow, titled by the `title`
   of its frame's root. The run ends, and the view leaves, at the first frame of the bound spot that holds `out.<name>`
   lines or `error=`. A close or a step back from it exits 4, and in JavaScript resolves to `null`.
+- When the person placed the bound spot in a window, the view shows in that window, and the window closes at the end
+  of the run if the run opened it. A close of the window exits 4.
 - A run that waits for the person or another spot doesn't count against its spot's time limit.
 - A handler that the person didn't press, such as `show`, `schedule`, a timer or an event, can still run a bound action,
   but the action can't show a view there: the run exits 2 with a line that says it needs the person. Such a handler
