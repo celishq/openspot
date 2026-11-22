@@ -11,12 +11,14 @@ struct NodeView: View {
     let node: ViewNode
     let tree: ViewTree
     @Environment(\.spotNodeVariants) private var variants
+    @State private var isHovered = false
 
     var body: some View {
-        let style = node.style.resolved(for: variants)
+        let style = node.style.resolved(for: isHovered ? variants.union([.hover]) : variants)
         if style.isHidden != true {
             content(style)
                 .modifier(NodeLook(style: style))
+                .modifier(NodeHover(isFollowed: node.style.named.contains(.hover), isHovered: $isHovered))
                 .layoutValue(key: NodeSlot.self, value: style)
         }
     }

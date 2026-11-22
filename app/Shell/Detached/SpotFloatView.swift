@@ -81,6 +81,7 @@ struct SpotFloatView: View {
             }
         }
         .padding(sole == nil ? SpotTokens.padding : 0)
+        .environment(\.spotNodeVariants, [fills ? .window : .float])
         .frame(width: fills ? nil : size.width, height: fills ? nil : size.height, alignment: .topLeading)
         .frame(maxWidth: fills ? .infinity : nil, maxHeight: fills ? .infinity : nil, alignment: .topLeading)
         .modifier(FloatSurface(fills: fills, dropWords: dropWords))

@@ -8,9 +8,30 @@ public struct ViewTree: Equatable, Sendable {
     public private(set) var children: [String] = []
     public private(set) var nodes: [String: ViewNode] = [:]
     public private(set) var faults: [String] = []
+    public private(set) var places: Set<Style.Variant> = []
 
     public func node(_ id: String) -> ViewNode? {
         nodes[id]
+    }
+
+    public func draws(on size: SpotSize) -> Bool {
+        isWritten && !places.isDisjoint(with: Style.Variant.card(size))
+    }
+
+    public var drawsOnBar: Bool {
+        isWritten && places.contains(.bar)
+    }
+
+    public func shown(in active: Set<Style.Variant>) -> [String] {
+        guard style.resolved(for: active).isHidden != true else { return [] }
+        var shown: [String] = []
+        var next = Array(children.reversed())
+        while let id = next.popLast() {
+            guard let node = nodes[id], node.style.resolved(for: active).isHidden != true else { continue }
+            shown.append(id)
+            next += node.children.reversed()
+        }
+        return shown
     }
 
     init(blocks: [TextBlock], root: TextBlock?, kinds: [BlockKind], styles: StyleCache = .shared) {
@@ -57,6 +78,8 @@ public struct ViewTree: Equatable, Sendable {
             let style = block.value(ViewNode.classKey).map(styles.style(of:)) ?? Style()
             faults += style.unknown.map { "the part \(id) has an unknown class: \($0)" }
             nodes[id] = ViewNode(id: id, kind: kind, parent: parents[id], block: block, style: style, children: held[id] ?? [], source: BlockKind.of(block, in: kinds)?.source)
+            places.formUnion(style.named)
         }
+        places.formUnion(self.style.named)
     }
 }

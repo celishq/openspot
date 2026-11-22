@@ -17,6 +17,7 @@ public struct Frame: Equatable, Sendable {
     public private(set) var pickForm: CommandAction?
     public private(set) var parts: [SpotPart] = []
     private var every: [SpotPart] = []
+    private var carded: [SpotPart]?
     private(set) var searchField: TextBlock?
     public private(set) var errors: [String] = []
     public private(set) var layout: SheetLayout?
@@ -127,13 +128,16 @@ public struct Frame: Equatable, Sendable {
         self.layout = layout
         let fields = listed.map { $0.fields.flatMap { [$0.key, $0.value] } }
         parts = parts.map { $0.drawn(in: layout).holding(items: fields) }
-        face = CardFace(head: head, parts: every)
-        let placedValues = values.filter { placed.contains($0.block.fields.first?.value ?? "") }
+        face = CardFace(head: head, parts: every, tree: tree.isWritten ? tree : .empty)
+        let cardSizes = SpotSize.all.filter(tree.draws(on:))
+        let onCard = cardSizes.isEmpty ? nil : Set(cardSizes.flatMap { tree.shown(in: Style.Variant.card($0)) })
+        if let onCard { carded = every.filter { onCard.contains($0.id) } }
+        let placedValues = values.filter { (onCard ?? placed).contains($0.block.fields.first?.value ?? "") }
         let sole = placedValues.isEmpty ? values : placedValues
         let held = sole.count == 1 ? sole.first : nil
         value = held?.block
         valueKind = held?.kind
-        let barred = face.drawings[CardFace.bar]?.flatMap { $0 } ?? []
+        let barred = tree.drawsOnBar ? tree.shown(in: [.bar]) : face.drawings[CardFace.bar]?.flatMap { $0 } ?? []
         let shown = barred.lazy.compactMap { id in values.first { $0.block.fields.first?.value == id } }.first
         barValue = shown?.block
         barKind = shown?.kind
@@ -145,7 +149,8 @@ public struct Frame: Equatable, Sendable {
     }
 
     public var control: SpotPart? {
-        guard actions.isEmpty, every.count == 1, let part = every.first else { return nil }
+        let shown = carded ?? every
+        guard actions.isEmpty, shown.count == 1, let part = shown.first else { return nil }
         switch part.control {
         case .toggle, .slider: return part
         default: return nil

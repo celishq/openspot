@@ -189,11 +189,4 @@ final class ViewTreeTests: XCTestCase {
         XCTAssertEqual(tree.node("name")?.tone, .good)
         XCTAssertTrue(FrameCheck(text: text).partFaults.isEmpty)
     }
-
-    func testAStyleInASheetLeavesItsVariantsUnapplied() {
-        let style = Style(classes: "p-3 card:p-0 dark:hidden")
-
-        XCTAssertEqual(style.resolved(for: [.sheet, .dark]).padding[.top], .steps(3))
-        XCTAssertNil(style.resolved(for: [.sheet, .dark]).isHidden)
-    }
 }

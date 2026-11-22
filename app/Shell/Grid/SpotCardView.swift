@@ -42,7 +42,9 @@ struct SpotCardView: View, @MainActor Equatable {
 
     @ViewBuilder
     private var content: some View {
-        if drawsOwnCard, let layout = entry.state.face.layout(for: size) {
+        if drawsOwnCard, entry.state.face.tree.draws(on: size) {
+            CardTreeView(tree: entry.state.face.tree, size: size, isPressed: showsPress, model: model, index: index)
+        } else if drawsOwnCard, let layout = entry.state.face.layout(for: size) {
             SpotCardDrawing(layout: layout, face: entry.state.face, card: size, view: { room in
                 ownView.map { SpotCustomView(source: $0, values: entry.state.values, card: size, room: room, date: entry.spot.viewDate, views: SpotViews.shared) }
             }) { model.setCardPart(entry.id, $0, to: $1) }
@@ -77,7 +79,7 @@ struct SpotCardView: View, @MainActor Equatable {
     }
 
     private var isDrawn: Bool {
-        drawsOwnCard && entry.state.face.layout(for: size) != nil
+        drawsOwnCard && (entry.state.face.layout(for: size) != nil || entry.state.face.tree.draws(on: size))
     }
 
     private var drawsOwnCard: Bool {
