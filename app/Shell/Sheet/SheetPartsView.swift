@@ -424,9 +424,7 @@ struct SheetPartsView: View {
                     .lineLimit(1)
                     .textSelection(.enabled)
             } else {
-                TextField(part.title ?? part.id, text: Binding(get: { text }, set: { onSet(part, $0) }), prompt: Text(""))
-                    .textFieldStyle(.plain)
-                    .labelsHidden()
+                SpotTextLine(label: part.title ?? part.id, text: text) { onSet(part, $0) }
                     .focused($focus, equals: part.id)
             }
             if text.isEmpty, let placeholder {

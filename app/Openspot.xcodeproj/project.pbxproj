@@ -605,6 +605,7 @@
 		A0ED6D40032CEDAE98F121F5 /* TranslationTargetsTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 98DF19CC5B909FFF6AFC9A88 /* TranslationTargetsTests.swift */; };
 		A10E11E89C85E8A609EDA424 /* ThemeCall.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3D6558BC26F2198BE9499995 /* ThemeCall.swift */; };
 		A1949216347BF77E579B61C1 /* GlobalKey.swift in Sources */ = {isa = PBXBuildFile; fileRef = B0E60E2E582ECCBE8512675F /* GlobalKey.swift */; };
+		A1BA791F4E7E04728A7924D9 /* SpotTextLine.swift in Sources */ = {isa = PBXBuildFile; fileRef = B30D770483477EB2DC8DE6EB /* SpotTextLine.swift */; };
 		A24832672696F53390D71C61 /* SpotSearchText.swift in Sources */ = {isa = PBXBuildFile; fileRef = E6574796DA8EE0FC71F50F15 /* SpotSearchText.swift */; };
 		A2A5BABC6F9D2FF1EB478065 /* PanelAskTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4C28970A90660357FF4553C7 /* PanelAskTests.swift */; };
 		A2F389DF7CF4DAC3DD94B63A /* RunChannel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 431EF4EDAEF207B967284C44 /* RunChannel.swift */; };
@@ -1782,6 +1783,7 @@
 		B28CE13F0735729688959D76 /* UnlockPass.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UnlockPass.swift; sourceTree = "<group>"; };
 		B2C4F749FF5E92621742CB71 /* CaptureFile.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CaptureFile.swift; sourceTree = "<group>"; };
 		B2C7D1C5D04D1BC1019B9784 /* PlaygroundSpotTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PlaygroundSpotTests.swift; sourceTree = "<group>"; };
+		B30D770483477EB2DC8DE6EB /* SpotTextLine.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SpotTextLine.swift; sourceTree = "<group>"; };
 		B3135ABD411D311144DC40D1 /* AccountStatus.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AccountStatus.swift; sourceTree = "<group>"; };
 		B3417BD9909ABFF539181855 /* CallMessageTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CallMessageTests.swift; sourceTree = "<group>"; };
 		B3721E68B35514C45AC6CF3A /* InputLink.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = InputLink.swift; sourceTree = "<group>"; };
@@ -2406,6 +2408,7 @@
 				FB8B8A575D1F7D0150E8576C /* SpotSheetWarmth.swift */,
 				A0FFD250D921A4ADA11DBCE3 /* SpotSlider.swift */,
 				1E43AFB265896B01FFE750FF /* SpotSlotView.swift */,
+				B30D770483477EB2DC8DE6EB /* SpotTextLine.swift */,
 				725E312D3C764B1610D51C5A /* SpotTick.swift */,
 				C8734213EF8777CC8BA1F119 /* SpotTileWords.swift */,
 				9FA2E6CC7436778D0F50D325 /* SpotToneDot.swift */,
@@ -4808,6 +4811,7 @@
 				065AFFF20789D54605397CD6 /* SpotSystemEvents.swift in Sources */,
 				E787CC83780AF0DD333E3AFD /* SpotTapWatch.swift in Sources */,
 				9AF487E777C92755522DDD6B /* SpotTextEditor.swift in Sources */,
+				A1BA791F4E7E04728A7924D9 /* SpotTextLine.swift in Sources */,
 				ED77A78009640AC93F592F6D /* SpotTheme+Parts.swift in Sources */,
 				174D1EAE545950CB0578631F /* SpotTheme.swift in Sources */,
 				76275FF4660CF70F4F195246 /* SpotTick.swift in Sources */,

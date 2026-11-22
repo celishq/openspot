@@ -380,9 +380,11 @@ final class SheetPartsTests: XCTestCase {
     func testALineWithNoIconKeepsTheIconColumnOnlyWhereALineHasOne() throws {
         let list = try XCTUnwrap(SheetParts(output: Frame(text: "frame=\nclass=gap-part\n\ntext=all\ntitle=All\nicon=cpu\n\ntext=top\ntitle=launchd\n")))
         let plain = try XCTUnwrap(SheetParts(output: Frame(text: "frame=\nclass=gap-part\n\ntext=top\ntitle=launchd\n")))
+        let pictured = try XCTUnwrap(SheetParts(output: Frame(text: "frame=\nclass=gap-part\n\npicture=art\nicon=/a.heic\n\ntext=top\ntitle=launchd\n")))
 
         XCTAssertEqual(list.parts.map(list.keepsIconColumn), [false, true])
         XCTAssertEqual(plain.parts.map(plain.keepsIconColumn), [false])
+        XCTAssertEqual(pictured.parts.map(pictured.keepsIconColumn), [false, false])
     }
 
     func testPointsWithNoDetailStillDrawANumberSeries() throws {

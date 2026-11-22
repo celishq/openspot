@@ -145,7 +145,7 @@ public struct SheetParts: Equatable, Sendable {
     }
 
     public func keepsIconColumn(_ part: SpotPart) -> Bool {
-        part.icon == nil && !part.fillsHeight && parts.contains { $0.icon != nil }
+        part.icon == nil && !part.fillsHeight && parts.contains { $0.icon != nil && !$0.fillsHeight }
     }
 
     public var selectedPart: SpotPart? {
