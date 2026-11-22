@@ -26,6 +26,7 @@ struct SpotSheetView: View {
 
 private struct SheetContentView: View {
     @Environment(\.spotSurfaceEdge) private var surface
+    @Environment(\.spotIsHeld) private var isHeld
     let model: SpotsModel
     let entry: SpotsModel.Entry
     let cardSize: SpotSize
@@ -87,21 +88,14 @@ private struct SheetContentView: View {
                         SpotSheetBody(
                             panel: content.panel,
                             list: list,
-                            act: content.act,
-                            onSet: { model.setPart($0, to: $1) },
-                            onPress: { model.pressPart($0) },
+                            actions: SheetActions(model: model, id: entry.id, content: content, isHeld: isHeld),
                             recording: content.recording,
                             recordingWords: model.recordingWords,
-                            onRecord: { model.toggleRecording($0) },
                             keys: content.keys,
                             onPick: { model.runItem($0) },
                             onPoint: { model.point(at: .item($0)) },
                             onDragOut: { model.dragOut($0, of: entry.id) },
                             selection: selection,
-                            selectedPart: content.selectedPart,
-                            nudge: content.nudge,
-                            menuOpening: content.menuOpening,
-                            onFocus: { model.focusPart($0) },
                             failure: { [model, id = entry.id] in model.failure(of: $0, in: id) },
                             tips: model,
                             shakes: { [model, id = entry.id] in model.refusals(of: $0, in: id) },

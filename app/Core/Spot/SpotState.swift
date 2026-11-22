@@ -79,6 +79,13 @@ public struct SpotState: Equatable, Sendable {
         return next
     }
 
+    func changedParts(from other: SpotState) -> [String]? {
+        var same = self
+        same.face = other.face
+        guard same == other else { return nil }
+        return face.tree.changedParts(from: other.face.tree)
+    }
+
     public func showing(title: String?, detail: String?) -> SpotState {
         var next = self
         next.title = title ?? self.title

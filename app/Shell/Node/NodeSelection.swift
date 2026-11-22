@@ -4,9 +4,9 @@ import SwiftUI
 struct NodeSelection: View {
     let node: ViewNode
     let tree: ViewTree
-    @Environment(\.spotNodeSelection) private var selection
+    @Environment(\.spotNode) private var context
 
     var body: some View {
-        NodeFace(node: node, tree: tree, isSelected: selection.map { tree.isSelected(node, selection: $0) } ?? false)
+        NodeFace(node: node, tree: tree, isSelected: context.actions.isSelected(node, in: tree))
     }
 }

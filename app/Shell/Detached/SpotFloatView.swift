@@ -50,29 +50,21 @@ struct SpotFloatView: View {
             if !fills { header(entry, run) }
             if let sole, let view = sole.node.source {
                 NodeSpotView(id: sole.node.id, values: sole.node.values, source: view)
-                    .environment(\.spotNodeViewInput, NodeViewInput(items: run.panel?.rows ?? [], answers: run.panel?.answered ?? 0))
-                    .environment(\.spotNodeSend, { _, value in run.set(sole.part, to: value) })
+                    .environment(\.spotNode.actions, FloatActions(model: model, run: run, place: place))
                     .ignoresSafeArea(edges: [.horizontal, .bottom])
             } else {
                 SpotSheetBody(
                     panel: run.panel,
                     list: run.list,
-                    act: { run.act(of: $0) },
-                    onSet: { run.set($0, to: $1) },
-                    onPress: { part in
-                        run.press(part)
-                        if part.closes { model.land(id) }
-                    },
+                    actions: FloatActions(model: model, run: run, place: place),
                     onPick: { model.pick($0, of: entry, in: place) },
                     onDragOut: { model.dragOut($0, of: id) },
-                    selection: { run.selection },
-                    selectedPart: { run.selectedPart?.id },
-                    nudge: { run.nudge }
+                    selection: { run.selection }
                 )
             }
         }
         .padding(sole == nil ? SpotTokens.padding : 0)
-        .environment(\.spotNodeVariants, [fills ? .window : .float])
+        .environment(\.spotNode.variants, [fills ? .window : .float])
         .frame(width: fills ? nil : size.width, height: fills ? nil : size.height, alignment: .topLeading)
         .frame(maxWidth: fills ? .infinity : nil, maxHeight: fills ? .infinity : nil, alignment: .topLeading)
         .modifier(FloatSurface(fills: fills, dropWords: dropWords))

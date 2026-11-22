@@ -149,9 +149,22 @@ public final class SpotRun {
                 withMutation(keyPath: \.selectedPart) { self.parts = newValue }
                 return
             }
+            if let newValue, let parts, let changed = newValue.changedParts(from: parts) {
+                self.parts = newValue
+                changed.forEach { withMutation(keyPath: \.[part: $0]) {} }
+                return
+            }
             withMutation(keyPath: \.panel) { parts = newValue }
             settle()
         }
+    }
+    public subscript(part id: String) -> SpotPart? {
+        access(keyPath: \.[part: id])
+        return parts?.tree.node(id)?.part
+    }
+    public subscript(cardPart id: String) -> SpotPart? {
+        access(keyPath: \.[cardPart: id])
+        return keptState.face.tree.node(id)?.part
     }
     public var selectedPart: SpotPart? {
         access(keyPath: \.panel)
@@ -182,11 +195,23 @@ public final class SpotRun {
     @ObservationIgnored var heardRows: Bool? {
         didSet { settle() }
     }
+    @ObservationIgnored private var keptState: SpotState
     public internal(set) var state: SpotState {
-        didSet {
-            guard state != oldValue else { return }
-            if (state.active == true) != isOn { isOn = state.active == true }
-            if state.subtitle != oldValue.subtitle { settle() }
+        get {
+            access(keyPath: \.state)
+            return keptState
+        }
+        set {
+            let old = keptState
+            guard newValue != old else { return }
+            if let changed = newValue.changedParts(from: old) {
+                keptState = newValue
+                changed.forEach { withMutation(keyPath: \.[cardPart: $0]) {} }
+            } else {
+                withMutation(keyPath: \.state) { keptState = newValue }
+            }
+            if (newValue.active == true) != isOn { isOn = newValue.active == true }
+            if newValue.subtitle != old.subtitle { settle() }
             onReport(.listChange)
         }
     }
@@ -241,7 +266,7 @@ public final class SpotRun {
         self.prepare = prepare
         link = Self.link(for: spot, runs: runs)
         rows = ItemList(recent: recent)
-        state = spot.headerState
+        keptState = spot.headerState
         reading = MetricReading(label: spot.name, headerSymbol: spot.headerSymbol)
         isOn = spot.headerState.active == true
         settle()

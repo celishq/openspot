@@ -7,7 +7,7 @@ struct CardTreeView: View {
     var isPressed = false
     var model: SpotsModel?
     var index = -1
-    var onSlot: (String, String?) -> Void = { _, _ in }
+    var spot: String?
 
     var body: some View {
         let follows = !face.tree.places.isDisjoint(with: [.selected, .focus])
@@ -16,16 +16,12 @@ struct CardTreeView: View {
         NodeTree(tree: face.tree, pictureTimes: [:], outset: outset)
             .environment(\.spotSurfaceEdge, SurfaceEdge(card: size))
             .clipShape(SpotRoundShape(SurfaceEdge(card: size).outset(by: outset)))
-            .environment(\.spotNodeVariants, Style.Variant.card(size).union(isPressed ? [.pressed] : []).union(isSelected ? [.selected, .focus] : []))
-            .environment(\.spotNodeParts, nodeParts)
+            .environment(\.spotNode, context(isSelected: isSelected))
     }
 
-    private var nodeParts: NodeParts {
-        let onSlot = onSlot
-        return NodeParts(part: { node, label, look in
-            if let label { return AnyView(Button { onSlot(node.id, nil) } label: { label }.buttonStyle(.plain)) }
-            guard let part = node.part else { return AnyView(EmptyView()) }
-            return AnyView(NodeCardPart(part: part, look: look, size: node.naturalSize, onSlot: onSlot))
-        })
+    private func context(isSelected: Bool) -> NodeContext {
+        var context = NodeContext(variants: Style.Variant.card(size).union(isPressed ? [.pressed] : []).union(isSelected ? [.selected, .focus] : []))
+        if let model, let spot { context.actions = CardActions(model: model, spot: spot) }
+        return context
     }
 }
