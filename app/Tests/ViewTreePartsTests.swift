@@ -20,9 +20,10 @@ final class ViewTreePartsTests: XCTestCase {
 
     func testTheRowsThatAViewNodeGetsCarryTheirBlocks() throws {
         let text = "frame=\nclass=gap-2\n\nliquid=fill\n\nitems=list\n\ntext=a\nparent=list\ntitle=A\n"
-        let part = try XCTUnwrap(Frame(text: text, kinds: kinds).parts.first { $0.id == "fill" })
+        let output = Frame(text: text, kinds: kinds)
 
-        XCTAssertEqual(part.items, [["text", "a", "parent", "list", "title", "A"]])
+        XCTAssertNotNil(output.tree.node("fill")?.source)
+        XCTAssertEqual(output.rows, [["text", "a", "parent", "list", "title", "A"]])
     }
 
     func testTheCheckOfATreeChecksEachNodeAsAPart() {

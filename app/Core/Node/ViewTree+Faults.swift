@@ -18,7 +18,7 @@ extension ViewTree {
             if node.kind == BlockKind.text.word, frame.height < leafHeight(node, style, width: frame.width) - 0.5 {
                 faults.append("the text \(id) is \(Int(frame.height))pt tall, so its words are cut. Give it more room")
             }
-            guard let part = parts.first(where: { $0.id == id }), let width = words[id], !part.fillsHeight,
+            guard node.source == nil, let part = parts.first(where: { $0.id == id }), let width = words[id], !part.fillsHeight,
                   node.kind != BlockKind.text.word else { continue }
             if width > frame.width + 0.5 { faults.append("the title of the part \(id) may not fit its cell") }
         }

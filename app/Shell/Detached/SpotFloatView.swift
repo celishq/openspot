@@ -45,15 +45,14 @@ struct SpotFloatView: View {
     }
 
     private func sheet(_ entry: SpotsModel.Entry, _ run: SpotRun, size: CGSize) -> some View {
-        let sole = fills ? run.panel.flatMap { $0.parts.count == 1 ? $0.parts.first : nil }.flatMap { $0.isOpen ? $0 : nil } : nil
+        let sole = soleView(run)
         return VStack(alignment: .leading, spacing: SpotTokens.rowGap) {
             if !fills { header(entry, run) }
-            if let part = sole, let view = run.panel?.tree.node(part.id)?.source {
-                GeometryReader { area in
-                    SpotCustomView(source: view, values: part.values, items: part.items, card: .square, room: area.size, answers: run.panel?.answered ?? 0, date: entry.spot.viewDates[view], views: .shared) { run.set(part, to: $0) }
-                        .equatable()
-                }
-                .ignoresSafeArea(edges: [.horizontal, .bottom])
+            if let sole, let view = sole.node.source {
+                NodeSpotView(id: sole.node.id, values: sole.node.values, source: view)
+                    .environment(\.spotNodeViewInput, NodeViewInput(items: run.panel?.rows ?? [], answers: run.panel?.answered ?? 0))
+                    .environment(\.spotNodeSend, { _, value in run.set(sole.part, to: value) })
+                    .ignoresSafeArea(edges: [.horizontal, .bottom])
             } else if let parts = run.panel {
                 SheetPartsView(
                     panel: parts,
@@ -84,6 +83,11 @@ struct SpotFloatView: View {
         .frame(width: fills ? nil : size.width, height: fills ? nil : size.height, alignment: .topLeading)
         .frame(maxWidth: fills ? .infinity : nil, maxHeight: fills ? .infinity : nil, alignment: .topLeading)
         .modifier(FloatSurface(fills: fills, dropWords: dropWords))
+    }
+
+    private func soleView(_ run: SpotRun) -> (part: SpotPart, node: ViewNode)? {
+        guard fills, let panel = run.panel, panel.parts.count == 1, let part = panel.parts.first, let node = panel.tree.node(part.id), node.source != nil else { return nil }
+        return (part, node)
     }
 
     private func header(_ entry: SpotsModel.Entry, _ run: SpotRun) -> some View {

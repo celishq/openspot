@@ -199,7 +199,7 @@ final class ViewTreeTests: XCTestCase {
 
         XCTAssertFalse(output.tree.isWritten)
         XCTAssertEqual(output.search, .local)
-        XCTAssertTrue(panel.tree.isWritten)
+        XCTAssertFalse(panel.tree.isWritten)
         XCTAssertEqual(panel.tree.children, ["a", "items"])
         XCTAssertEqual(panel.tree.node("items")?.kind, BlockKind.items)
         XCTAssertEqual(panel.tree.style.rowGap, Frame(text: "frame=\nclass=gap-part\n").tree.style.rowGap)
@@ -211,7 +211,7 @@ final class ViewTreeTests: XCTestCase {
     func testAFrameWithNoTreeAndNoItemsWritesItsChoicesAsATreeOfTheirOwnHeight() throws {
         let panel = try XCTUnwrap(SheetParts(output: Frame(text: "frame=\ntitle=Look\n\nchoice=look\nvalue=x\n\noption=x\ntitle=X\n\nchoice=size\nvalue=s\n\noption=s\ntitle=S\n")))
 
-        XCTAssertTrue(panel.tree.isWritten)
+        XCTAssertFalse(panel.tree.isWritten)
         XCTAssertEqual(panel.tree.children, ["look", "size"])
         XCTAssertFalse(panel.showsRows)
         XCTAssertEqual(panel.height, 2 * SpotTokens.listRow + SpotTokens.partGap)

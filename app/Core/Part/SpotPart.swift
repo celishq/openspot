@@ -49,7 +49,6 @@ public struct SpotPart: Equatable, Sendable, Identifiable {
 
     public let id: String
     public let kind: String
-    public let isOpen: Bool
     public let title: String?
     public let detail: String?
     public let symbol: String?
@@ -62,16 +61,6 @@ public struct SpotPart: Equatable, Sendable, Identifiable {
     public let closes: Bool
     public private(set) var look: Look?
     public let isTick: Bool
-    public private(set) var values: [String: [String]]
-
-    public private(set) var items: [[String]] = []
-
-    func holding(items: [[String]]) -> SpotPart {
-        guard isOpen, !items.isEmpty else { return self }
-        var part = self
-        part.items = items
-        return part
-    }
 
     public struct NumberPiece: Equatable, Sendable {
         public let text: String
@@ -87,8 +76,6 @@ public struct SpotPart: Equatable, Sendable, Identifiable {
         guard let id = block.value(kind.word) else { return nil }
         self.id = id
         self.kind = kind.name
-        isOpen = kind.isOpen
-        values = kind.isOpen ? Dictionary(grouping: block.fields, by: \.key).mapValues { $0.map(\.value) } : [:]
         title = block.value("title")
         detail = block.value("detail")
         key = kind == .hotkey ? nil : block.value("shortcut").flatMap(ActionKey.init(text:))
@@ -160,8 +147,7 @@ public struct SpotPart: Equatable, Sendable, Identifiable {
     }
 
     public var fillsHeight: Bool {
-        if isOpen { return true }
-        return switch control {
+        switch control {
         case .text, .list, .number, .image: true
         default: false
         }
