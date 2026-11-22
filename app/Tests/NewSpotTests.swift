@@ -67,7 +67,7 @@ final class NewSpotTests: BuiltInCase {
     func testEverySearchEndsWithARowThatMakesASpotOfTheTypedWords() async throws {
         let make = try newSpot()
 
-        let rows = try await make.items(query: " time in kyiv ", timeout: 60).answers
+        let rows = try await make.items(query: " time in kyiv ", timeout: 60).answers(asCard: false)
 
         XCTAssertEqual(try XCTUnwrap(make.answers).isLast, true)
         XCTAssertEqual(rows.map(\.run), ["time in kyiv"])

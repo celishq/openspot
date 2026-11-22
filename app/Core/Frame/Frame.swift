@@ -199,8 +199,8 @@ public struct Frame: Equatable, Sendable {
         return output
     }
 
-    public var answers: [SpotItem] {
-        guard face.answerSize != nil, let value, let run = value.value("value") else { return items }
+    public func answers(asCard: Bool) -> [SpotItem] {
+        guard asCard, let value, let run = value.value("value") else { return items }
         let title = value.value("display") ?? run
         return [SpotItem(title: title, run: run, card: SpotState(output: self, header: SpotState(title: title)), openTitle: openTitle)]
     }

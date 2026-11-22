@@ -90,16 +90,16 @@ final class CardFaceTests: XCTestCase {
         display=1,234.5
         """)
 
-        XCTAssertEqual(answer.answers.map(\.run), ["1234.5"])
-        XCTAssertEqual(answer.answers.first?.title, "1,234.5")
-        XCTAssertEqual(answer.answers.first?.card?.face.answerSize, .large)
-        XCTAssertEqual(answer.answers.first?.card?.face.parts.last?.number?.text, "1,234.5")
+        XCTAssertEqual(answer.answers(asCard: true).map(\.run), ["1234.5"])
+        XCTAssertEqual(answer.answers(asCard: true).first?.title, "1,234.5")
+        XCTAssertEqual(answer.answers(asCard: true).first?.card?.face.answerSize, .large)
+        XCTAssertEqual(answer.answers(asCard: true).first?.card?.face.parts.last?.number?.text, "1,234.5")
     }
 
     func testAnAnswerCardTakesTheWordForEnterFromItsOpenButton() {
         let answer = Frame(text: "frame=\n\nnumber=a\nclass=large:flex\nvalue=14\n\nbutton=open\ntitle=Copy\nscope=spot\n")
 
-        XCTAssertEqual(answer.answers.first?.openTitle, "Copy")
+        XCTAssertEqual(answer.answers(asCard: true).first?.openTitle, "Copy")
     }
 
     func testANumberDrawsItsUnitFaintWhereItShows() {
@@ -117,8 +117,8 @@ final class CardFaceTests: XCTestCase {
         let wide = Frame(text: "frame=\n\nnumber=a\nclass=wide:flex\nvalue=1\n\nitems=list\n\ntext=r\nparent=list\ntitle=R\n")
         let strip = Frame(text: "frame=\n\nnumber=a\nclass=strip:flex\nvalue=1\n")
 
-        XCTAssertEqual(noMain.answers.map(\.run), ["r"])
-        XCTAssertEqual(wide.answers.map(\.run), ["r"])
-        XCTAssertEqual(strip.answers.first?.card?.face.answerSize, .strip)
+        XCTAssertEqual(noMain.answers(asCard: true).map(\.run), ["r"])
+        XCTAssertEqual(wide.answers(asCard: true).map(\.run), ["r"])
+        XCTAssertEqual(strip.answers(asCard: true).first?.card?.face.answerSize, .strip)
     }
 }

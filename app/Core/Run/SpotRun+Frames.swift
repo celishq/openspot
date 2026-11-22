@@ -77,7 +77,7 @@ extension SpotRun {
     }
 
     func takeAnswer(_ lines: Frame, frame: String, to ask: Ask, keeping: String? = nil, answers: Bool = true) async {
-        if case .answer(let query) = ask { return takeAnswers(lines.answers, to: query) }
+        if case .answer(let query) = ask { return takeAnswers(lines.answers(asCard: spot.answers?.isCard == true), to: query) }
         if case .show = ask, !frame.isEmpty, frame == shownFrame, lines.parts.isEmpty, panel == nil, !list.hasFailed { return takeRepeat(lines, answers: answers) }
         let next: ItemList.Rows? = if case .show = ask { await newRows(lines.items, search: Self.search(of: lines, in: spot)) } else { nil }
         lastAnswer = lines

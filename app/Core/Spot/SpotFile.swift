@@ -46,11 +46,13 @@ public struct SpotFile: Equatable, Sendable {
         let mode = isInline ? SpotMode.inline : named
         let isGlobal = try Self.isGlobal(manifest.offers, of: name)
         let order = manifest.answers
-        guard order == nil || order == "last" else { throw SpotError.fault("\(name) has an unknown answers: \(order ?? ""). Use answers = \"last\"") }
-        guard order == nil || parsed?.answers != nil else {
-            throw SpotError.fault("\(name) has answers = \"last\", which needs search.text in its on, such as on = [\"search.text ^[0-9]\"]")
+        guard order == nil || order == "last" || order == "card" else {
+            throw SpotError.fault("\(name) has an unknown answers: \(order ?? ""). Use answers = \"last\" or answers = \"card\"")
         }
-        let answers = order == nil ? parsed?.answers : parsed?.answers?.last()
+        guard order == nil || parsed?.answers != nil else {
+            throw SpotError.fault("\(name) has answers = \"\(order ?? "")\", which needs search.text in its on, such as on = [\"search.text ^[0-9]\"]")
+        }
+        let answers = order == "last" ? parsed?.answers?.last() : order == "card" ? parsed?.answers?.card() : parsed?.answers
         let answersOnly = answers != nil && on == nil
         if let setting = manifest.settings.first(where: { ReservedSetting.isReserved($0.id) }) {
             throw SpotError.fault("\(name) has \(setting.section), a key that Openspot keeps for the person. Give the setting another name.")

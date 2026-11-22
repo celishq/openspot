@@ -54,7 +54,7 @@ extension SpotRun {
     }
 
     func take(answers text: String?, to query: String, of call: OpenCall, _ end: ScriptCall.End, errors: String) {
-        takeAnswers(text.map { Frame(text: $0).answers } ?? [], to: query)
+        takeAnswers(text.map { Frame(text: $0).answers(asCard: spot.answers?.isCard == true) } ?? [], to: query)
         call.hasAnswer = text != nil
         finish(call, end, errors: errors)
     }

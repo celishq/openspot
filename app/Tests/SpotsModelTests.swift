@@ -1558,7 +1558,7 @@ final class SpotsModelTests: XCTestCase {
 
     func testAnAnswerThatDrawsALargeCardTakesTwoFullRowsAndAPressSendsItsValue() async throws {
         let body = #"\#(TestSpot.event); case "$1" in show) printf 'frame=\n\nnumber=answer\nclass=large:flex\ntitle=%s\nvalue=14\n' "$val" ;; open) \#(TestSpot.toast) "Picked $2" ;; esac"#
-        try script("calc", toml: "title = 'Calc'\non = ['search.text ^[0-9]']", body)
+        try script("calc", toml: "title = 'Calc'\non = ['search.text ^[0-9]']\nanswers = 'card'", body)
         model.runs.api = CommandAPI(mac: Mac(), places: model.files, app: ModelApp(model: model), runs: model.runs, rates: .offline)
         try script("notes", toml: "title = 'Notes 2'", "printf 'text=a\\ntitle=A\\n'")
         await model.reload()
@@ -1573,6 +1573,20 @@ final class SpotsModelTests: XCTestCase {
         XCTAssertEqual(model.visible.first?.state.face.answerSize, .large)
         model.runSelected()
         try await wait("the toast of the pick") { host.confirms.contains("Picked 14") }
+    }
+
+    func testAnAnswerIsOneCardOnlyWhenItsManifestAsksForCards() async throws {
+        let body = #"\#(TestSpot.event); printf 'frame=\n\nnumber=answer\nclass=large:flex\ntitle=%s\nvalue=14\n' "$val""#
+        try script("calc", toml: "title = 'Calc'\non = ['search.text ^[0-9]']", body)
+        await model.reload()
+        model.isShown = true
+        model.panelWillShow()
+
+        model.searchText = "2"
+        model.landSearch()
+        try await wait("the answer row") { model.visible.first?.id == "calc\nanswer" }
+
+        XCTAssertNil(model.visible.first?.item?.card)
     }
 
     func testEachKeyMatchesEachAnswersPatternOnce() async throws {

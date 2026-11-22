@@ -488,8 +488,9 @@ The main search, the panel's own search field, lists items from every spot. See
   sheet.
 - `search.text <pattern>` asks the spot at each change of a text that matches, and a newer text stops the older call.
   Its items show first, or under the others with `answers = "last"`. A spot whose only event is `search.text` has no card.
-- A spot can print one card instead of items: a class names `large:` or `strip:`, and a press sends
-  `<spot> open <value>`.
+- `answers = "card"` in the manifest shows one card instead of the items: the card of the frame's
+  [value](#the-card), and a press sends `<spot> open <value>`. The card is large when a class names `large:`, and a
+  strip otherwise. A frame with no value still shows its items.
 
 ## Settings
 
@@ -857,7 +858,7 @@ title = "Refresh"
 | `source`      | The Swift files, or folders of them, that a [Swift spot](#a-swift-spot) is built with.                 |
 | `mode`        | `once`, the default, or `stay`. See [Modes](#modes).                                                   |
 | `uses`        | What the spot uses, such as `network` or `screen`. [Uses](TRUST.md#uses) lists each one.               |
-| `answers`     | `last`: the answers of `search.text` show under the other results, not first.                          |
+| `answers`     | `last`: the answers of `search.text` show under the other results, not first. `card`: they show as one card. |
 
 | Table              | Meaning                                                                                                                                                                                                                                                                                                                                                                                                                                                     |
 | ------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
