@@ -58,9 +58,16 @@ public final class SpotRun {
         var limit: TimeInterval?
         var event: ShowEvent?
         var purpose: Purpose
+        var chain: [String] = []
+        var isPressed = true
 
         var action: SpotAction {
             message.action
+        }
+
+        var isByPerson: Bool {
+            if case .ask = purpose { return false }
+            return isPressed
         }
     }
 

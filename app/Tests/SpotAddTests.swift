@@ -414,6 +414,26 @@ final class SpotAddTests: XCTestCase {
         XCTAssertEqual(try SpotLock(url: root.appendingPathComponent("spots.lock")).entries().map(\.commit), [commit])
     }
 
+    func testAFirstAddOfASpotThatBindsAnotherNeedsYesAndAnUpdateThatAddsABindingNeedsYes() async throws {
+        let repo = try repo()
+        try repo.commit(["coffee.sh": "#!/bin/sh\necho one\n", "spot.toml": "title = 'Coffee'\n[bindings]\npicker = { spot = 'time-picker' }"])
+
+        let first = try await answer(["spot", "add", repo.url.path])
+
+        XCTAssertEqual(first.code, 1)
+        XCTAssertEqual(first.errors, "Coffee\n\nBinds\npicker: time-picker, which is not installed\n\nOpenspot added nothing. Run `openspot spot add \(repo.url.standardizedFileURL.path) --yes` to add it.\n")
+        let confirmed = try await answer(["spot", "add", repo.url.path, "--yes"])
+        XCTAssertEqual(confirmed.code, 0, confirmed.errors)
+        try repo.commit(["coffee.sh": "#!/bin/sh\necho one\n", "spot.toml": "title = 'Coffee'\n[bindings]\npicker = { spot = 'time-picker' }\nmail = { spot = 'mailer' }"])
+
+        let refused = try await answer(["spot", "add", repo.url.path])
+
+        XCTAssertEqual(refused.code, 1)
+        XCTAssertEqual(refused.errors, "This version can do more.\nBinds mail: mailer\nOpenspot kept the one you have. Run `openspot spot add \(repo.url.standardizedFileURL.path) --yes` to update it.\n")
+        let accepted = try await answer(["spot", "add", repo.url.path, "--yes"])
+        XCTAssertEqual(accepted.code, 0, accepted.errors)
+    }
+
     func testAnUpdateThatCanDoMoreWithTheSameUsesNeedsYes() async throws {
         let repo = try repo()
         _ = try await answer(["spot", "add", repo.url.path])

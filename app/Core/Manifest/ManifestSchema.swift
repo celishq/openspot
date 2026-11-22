@@ -29,6 +29,7 @@ public enum ManifestSchema {
         properties[Manifest.Setting.table] = table(["anyOf": [reference("type"), reference("setting")]])
         properties[Manifest.Action.table] = table(reference("action"))
         properties[Manifest.Command.table] = table(reference("command"))
+        properties[Manifest.Binding.table] = table(reference("binding"))
         properties[scripts] = table(reference("script"))
         return ["type": "object", "additionalProperties": false, "properties": properties]
     }
@@ -58,6 +59,7 @@ public enum ManifestSchema {
             "parameter": parameter,
             "action": action,
             "command": object(Manifest.Command.keys, from: [:]),
+            "binding": object([Manifest.Binding.spotKey], from: [Manifest.Binding.spotKey: ["type": "string"]], required: [Manifest.Binding.spotKey]),
             "on": triggers,
             "script": script
         ]

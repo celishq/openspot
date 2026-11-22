@@ -1,3 +1,4 @@
 manifest key stay: the code takes it, and PROTOCOL.md does not name it
 manifest table actions: the code takes it, and PROTOCOL.md does not name it
 root key error: the code takes it, and PROTOCOL.md does not name it
+manifest table bindings: the code takes it, and PROTOCOL.md does not name it

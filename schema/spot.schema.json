@@ -27,6 +27,18 @@
       },
       "type" : "object"
     },
+    "binding" : {
+      "additionalProperties" : false,
+      "properties" : {
+        "spot" : {
+          "type" : "string"
+        }
+      },
+      "required" : [
+        "spot"
+      ],
+      "type" : "object"
+    },
     "command" : {
       "additionalProperties" : false,
       "properties" : {
@@ -151,6 +163,12 @@
         },
         "answers" : {
           "$ref" : "#/$defs/texts"
+        },
+        "bindings" : {
+          "additionalProperties" : {
+            "$ref" : "#/$defs/binding"
+          },
+          "type" : "object"
         },
         "commands" : {
           "additionalProperties" : {
@@ -310,6 +328,12 @@
     },
     "answers" : {
       "$ref" : "#/$defs/texts"
+    },
+    "bindings" : {
+      "additionalProperties" : {
+        "$ref" : "#/$defs/binding"
+      },
+      "type" : "object"
     },
     "commands" : {
       "additionalProperties" : {

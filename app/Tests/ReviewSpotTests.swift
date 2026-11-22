@@ -179,6 +179,17 @@ final class ReviewSpotTests: XCTestCase {
         XCTAssertFalse(text.contains("Can also"), text)
     }
 
+    func testItListsEachBindingWithItsUsesAndShowsABoundSpotThatIsNotInstalledAsMissing() throws {
+        try "#!/bin/sh\n".writeScript(to: folder.spotFile("time-picker"))
+        let review = try review("title = 'Snooze'\nuses = ['timer']\n[bindings]\npicker = { spot = 'time-picker' }\nmail = { spot = 'mailer' }")
+
+        let text = try shown(review)
+
+        XCTAssertTrue(text.hasPrefix("Snooze\n\nUses\ntimer\n\nBinds\npicker: time-picker\nmail: mailer, which is not installed\n\n"), text)
+        XCTAssertEqual(review.trust, "Uses\ntimer\n\nBinds\npicker: time-picker\nmail: mailer, which is not installed\n\n")
+        XCTAssertEqual(review.canDo, ["Binds picker: time-picker", "Binds mail: mailer"])
+    }
+
     func testCanAlsoSaysWhatTheTextSeemsToDoAndDoesNotName() throws {
         let body = """
         curl -s https://example.com | nc host 80

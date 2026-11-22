@@ -57,9 +57,9 @@ extension SpotRun {
         runs.usage.acted(spot, at: runs.now())
     }
 
-    func answer(to message: Message, key: String) async throws -> Frame? {
+    func answer(to message: Message, key: String, chain: [String] = [], isPressed: Bool = true) async throws -> Frame? {
         try await withCheckedThrowingContinuation { waiting in
-            if !send(Call(message: message, key: key, purpose: .form(waiting))) { waiting.resume(returning: nil) }
+            if !send(Call(message: message, key: key, purpose: .form(waiting), chain: chain, isPressed: isPressed)) { waiting.resume(returning: nil) }
         }
     }
 

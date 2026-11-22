@@ -6,7 +6,7 @@ public struct Manifest: Equatable, Sendable {
         "title", "icon", "detail", "keywords", "placeholder", "on", "emits", "offers", "drop", "edits", "starts", "views", "source", "mode",
         "uses", "pages", "answers", "stay"
     ]
-    public static let tables: Set<String> = [Command.table, Setting.table, Action.table]
+    public static let tables: Set<String> = [Command.table, Setting.table, Action.table, Binding.table]
     static let appKeys: Set<String> = ["edits", "starts"]
     static let limit = 65_536
     private static let scriptsTable = "scripts"
@@ -18,6 +18,7 @@ public struct Manifest: Equatable, Sendable {
         var commands: [Command] = []
         var settings: [Setting] = []
         var actions: [Action] = []
+        var bindings: [Binding] = []
         var triggers: Triggers?
 
         mutating func take(_ table: [(String, ConfigDocument.Value?)]) throws {
@@ -53,6 +54,7 @@ public struct Manifest: Equatable, Sendable {
     public let commands: [Command]
     public let settings: [Setting]
     public let actions: [Action]
+    public let bindings: [Binding]
     public let stay: Bool?
     public let triggers: Triggers?
     private let written: [String]
@@ -111,6 +113,7 @@ public struct Manifest: Equatable, Sendable {
         commands = script.commands
         settings = script.settings
         actions = script.actions
+        bindings = script.bindings
         stay = text(Self.stayKey).flatMap(Bool.init)
         triggers = script.triggers
         written = script.written
@@ -163,13 +166,15 @@ public struct Manifest: Equatable, Sendable {
             var script = scripts[name] ?? Script()
             let heading = "[\(section.name)]"
             var table = Script()
-            let isTyped = path == [Setting.table] || path == [Triggers.table] || path.count == 2 && path[0] == Action.table
+            let isTyped = path == [Setting.table] || path == [Triggers.table] || path == [Binding.table] || path.count == 2 && path[0] == Action.table
             if !isTyped { try table.take(section.keys.map { ($0, section[$0]) }) }
             if path == [Setting.table] {
                 script.settings += try section.keys.map { key in
                     guard Setting.isKey(key) else { throw SpotError.fault("\(fileName): \(heading) has a key with a space: \(key).") }
                     return Setting(try Parameter(name: key, value: section[key], keys: Parameter.settingKeys, place: "\(heading) \(key)"))
                 }
+            } else if path == [Binding.table] {
+                script.bindings += try section.keys.map { try Binding(name: $0, value: section[$0], section: heading) }
             } else if path == [Triggers.table] {
                 script.triggers = try Triggers(section: heading, table: section)
             } else if path.count == 2, path[0] == Action.table {
