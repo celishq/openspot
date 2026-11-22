@@ -129,7 +129,7 @@ final class AgendaExampleTests: SampleSpotsCase {
             XCTAssertEqual(output.face.tree.shown(in: Style.Variant.card(.square)), ["head", "next", "counts", "todo", "late"])
             XCTAssertEqual(output.face.parts.first { $0.id == "todo" }?.title, "3 to do")
             XCTAssertEqual(output.face.parts.first { $0.id == "late" }?.title, "1 late")
-            XCTAssertEqual(output.face.parts.first { $0.id == "late" }?.textTone, .bad)
+            XCTAssertEqual(output.face.parts.first { $0.id == "late" }?.tone, .bad)
             XCTAssertEqual(output.face.tree.shown(in: Style.Variant.card(.strip)), ["head", "next"])
             XCTAssertEqual(output.face.tree.shown(in: Style.Variant.card(.wide)), ["head", "next"])
             XCTAssertEqual(output.face.tree.shown(in: Style.Variant.card(.small)), ["at"])

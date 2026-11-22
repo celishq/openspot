@@ -86,7 +86,7 @@ final class NumberReadingTests: XCTestCase {
     func testALookOfRingOrBarIsAnUnknownKeyAndDrawsByThePlace() throws {
         let block = try XCTUnwrap(TextBlock.blocks(in: "number=battery\nvalue=84\nmax=100\nlook=bar\n").first)
 
-        XCTAssertEqual(PartCatalog.faults(in: block), ["the part battery has an unknown key: look"])
+        XCTAssertEqual(BlockKind.faults(in: block), ["the part battery has an unknown key: look"])
         XCTAssertEqual(try part("number=battery\nvalue=84\nmax=100\nlook=bar\n").numberLook(columns: 1, rows: 1), .ring)
     }
 
@@ -94,8 +94,8 @@ final class NumberReadingTests: XCTestCase {
         let text = try XCTUnwrap(TextBlock.blocks(in: "text=t\ntitle=T\nchart=ring\n").first)
         let number = try XCTUnwrap(TextBlock.blocks(in: "number=n\nvalue=1\nchart=pie\n").first)
 
-        XCTAssertEqual(PartCatalog.faults(in: text), ["the part t has an unknown key: chart"])
-        XCTAssertEqual(PartCatalog.faults(in: number), ["the part n has an unknown chart: pie"])
+        XCTAssertEqual(BlockKind.faults(in: text), ["the part t has an unknown key: chart"])
+        XCTAssertEqual(BlockKind.faults(in: number), ["the part n has an unknown chart: pie"])
     }
 
     func testANumberPrintedAsARowShowsItsValueOrItsRingOnTheRight() throws {

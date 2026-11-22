@@ -23,8 +23,7 @@ extension ViewTree {
         let shown = Set(shown(in: variants))
         let root = style.resolved(for: variants)
         let lines = Dictionary(parts.map { ($0.id, $0.flatLines) }) { first, _ in first }
-        let natural = measure(children, style: root, in: variants, shown: shown, lines: lines, words: words, width: width).height
-        let height = height(in: width, parts: parts) ?? max(natural, room)
+        let height = height(in: width, parts: parts) ?? max(measure(children, style: root, in: variants, shown: shown, lines: lines, words: words, width: width).height, room)
         var frames: [String: CGRect] = [:]
         lay(children, style: root, in: variants, shown: shown, lines: lines, words: words, size: CGSize(width: width, height: height), into: &frames)
         return frames
@@ -69,9 +68,9 @@ extension ViewTree {
         let side = { (edge: Style.Edge) in style.padding[edge]?.points(of: 0) ?? 0 }
         let room = width.map { max($0 - side(.left) - side(.right), 0) }
         let content: CGFloat = switch node.kind {
-        case "text": textHeight(node, style, width: room)
-        case "icon": SpotTokens.listIconSize
-        case "picture": SpotTokens.cell
+        case BlockKind.text.word: textHeight(node, style, width: room)
+        case BlockKind.icon.word: SpotTokens.listIconSize
+        case BlockKind.picture.word: SpotTokens.cell
         default: node.source == nil ? Self.rowsHeight(lines) : SpotTokens.cell
         }
         return content + side(.top) + side(.bottom)

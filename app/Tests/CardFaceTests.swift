@@ -28,8 +28,8 @@ final class CardFaceTests: XCTestCase {
     func testACardDrawsOnlyTheNodesThatShowOnItsSize() {
         let face = Frame(text: clock).face
 
-        XCTAssertFalse(face.tree.draws(on: .small))
-        XCTAssertTrue(face.tree.draws(on: .wide))
+        XCTAssertFalse(face.draws(on: .small))
+        XCTAssertTrue(face.draws(on: .wide))
         XCTAssertEqual(face.tree.shown(in: Style.Variant.card(.wide)), ["top", "time", "power"])
         XCTAssertEqual(face.tree.shown(in: Style.Variant.card(.large)), ["top", "time", "power", "date"])
         XCTAssertEqual(face.parts.map(\.id), ["time", "power", "date"])

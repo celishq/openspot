@@ -137,8 +137,8 @@ final class ViewVariantTests: XCTestCase {
     func testTheCardFaceHoldsTheTreeSoACardOfANamedSizeDrawsIt() {
         let face = Frame(text: battery).face
 
-        XCTAssertTrue(face.tree.draws(on: .square))
-        XCTAssertFalse(Frame(text: "frame=\ngrid.wide=a\n\ntext=a\ntitle=A\n").face.tree.draws(on: .wide))
+        XCTAssertTrue(face.draws(on: .square))
+        XCTAssertFalse(Frame(text: "frame=\ngrid.wide=a\n\ntext=a\ntitle=A\n").face.draws(on: .wide))
     }
 
     func testAClassThatNamesTheBarOnAnyBlockDrawsTheMenuBar() {
@@ -152,7 +152,7 @@ final class ViewVariantTests: XCTestCase {
     func testAClassThatNamesACardOnAnyBlockDrawsTheTreeOnTheCard() {
         let output = Frame(text: "number=battery\nvalue=84\nmax=100\n\ntext=a\ntitle=A\nclass=card:hidden\n")
 
-        XCTAssertTrue(output.face.tree.draws(on: .square))
+        XCTAssertTrue(output.face.draws(on: .square))
         XCTAssertEqual(output.value?.value("number"), "battery")
     }
 

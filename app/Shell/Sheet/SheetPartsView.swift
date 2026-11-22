@@ -47,7 +47,7 @@ struct SheetPartsView: View {
     private var tree: some View {
         ScrollView(showsIndicators: false) {
             NodeRoom(height: panel.height) {
-                SheetTreeView(tree: panel.tree, pictureTimes: panel.pictureTimes)
+                NodeTree(tree: panel.tree, pictureTimes: panel.pictureTimes)
                     .environment(\.spotNodeParts, nodeParts)
                     .environment(\.spotNodeSend, send)
                     .environment(\.spotNodeSelection, selectedID)
@@ -88,12 +88,12 @@ struct SheetPartsView: View {
                 .buttonStyle(.plain)
             } else if part.fillsHeight {
                 GeometryReader { room in
-                    drawn(part, PartFrame(node: room.size, part: part))
+                    content(part, PartFrame(node: room.size, part: part))
                 }
                 .frame(minHeight: height, idealHeight: height)
                 .frame(idealWidth: SpotTokens.cell)
             } else {
-                drawn(part, frame)
+                content(part, frame)
                     .frame(maxWidth: frame.horizontal == .fill ? .infinity : nil, minHeight: height, maxHeight: .infinity, alignment: Self.alignment(frame))
             }
         }
@@ -142,13 +142,6 @@ struct SheetPartsView: View {
     }
 
     @ViewBuilder
-    private func drawn(_ part: SpotPart, _ frame: PartFrame) -> some View {
-        if !part.isOpen {
-            content(part, frame)
-        }
-    }
-
-    @ViewBuilder
     private func content(_ part: SpotPart, _ frame: PartFrame) -> some View {
         switch part.control {
         case .text(let text, let placeholder, let isReadOnly):
@@ -166,15 +159,13 @@ struct SheetPartsView: View {
                 .overlay(alignment: .topTrailing) { cornerMark(part, frame) }
         case .number:
             number(part, frame)
-        case .image(let path):
-            image(path)
         case .shortcut(let text):
             shortcut(part, text: text)
         default:
             if part.press == .line {
                 lineButton(part, frame)
             } else {
-                labelled(part, frame).modifier(TileLook(isOn: part.look == .tile))
+                line(part, frame).modifier(TileLook(isOn: part.look == .tile))
             }
         }
     }
@@ -188,39 +179,6 @@ struct SheetPartsView: View {
 
     private func cornerMark(_ part: SpotPart, _ frame: PartFrame) -> some View {
         mark(part).padding(SpotTokens.controlPadding)
-    }
-
-    @ViewBuilder
-    private func labelled(_ part: SpotPart, _ frame: PartFrame) -> some View {
-        if frame.hasDetailUnderTitle, part.control == .none, part.press == .none, let title = part.title, let detail = part.detail {
-            stacked(part, title: title, detail: detail)
-        } else {
-            line(part, frame)
-        }
-    }
-
-    private func stacked(_ part: SpotPart, title: String, detail: String) -> some View {
-        HStack(alignment: .firstTextBaseline, spacing: SpotTokens.partLineGap) {
-            if let symbol = part.symbol {
-                Image(systemName: symbol)
-                    .modifier(SpotSecondaryText())
-                    .frame(width: SpotTokens.partSymbolWidth)
-            }
-            VStack(alignment: .leading, spacing: SpotType.lineGap) {
-                Text(title).font(SpotType.body).foregroundStyle(SpotTheme.ink).lineLimit(1)
-                Group {
-                    if let colour = SpotToneWords.colour(of: part.textTone) {
-                        Text(detail).foregroundStyle(colour)
-                    } else {
-                        Text(detail).modifier(SpotSecondaryText())
-                    }
-                }
-                .font(SpotType.detail)
-                .fixedSize(horizontal: false, vertical: true)
-            }
-            Spacer(minLength: 0)
-        }
-        .modifier(SpotColorBar(color: part.color))
     }
 
     private func line(_ part: SpotPart, _ frame: PartFrame) -> some View {
@@ -238,7 +196,7 @@ struct SheetPartsView: View {
             if let title = part.title {
                 Text(title)
                     .font(SpotType.body)
-                    .foregroundStyle(part.detail == nil ? SpotToneWords.colour(of: part.textTone) ?? SpotTheme.ink : SpotTheme.ink)
+                    .foregroundStyle(SpotTheme.ink)
                     .lineLimit(1)
                     .layoutPriority(1)
             }
@@ -246,7 +204,7 @@ struct SheetPartsView: View {
                 Spacer(minLength: 0)
             }
             if let detail = part.detail {
-                SpotToneWords(text: detail, tone: part.textTone)
+                Text(detail).font(SpotType.detail).modifier(SpotSecondaryText()).lineLimit(1)
                     .layoutPriority(2)
             }
             if case .symbol(let symbol) = part.press {
@@ -294,7 +252,7 @@ struct SheetPartsView: View {
                     .contentShape(Capsule())
             case .bare:
                 HStack {
-                    labelled(part, frame)
+                    line(part, frame)
                     if part.detail == nil, let key = part.key {
                         Text(key.label).font(SpotType.detail).modifier(SpotSecondaryText())
                     }
@@ -303,7 +261,7 @@ struct SheetPartsView: View {
             case .strong:
                 centeredLine(part, isActive: true)
             case .tile:
-                labelled(part, frame)
+                line(part, frame)
                     .modifier(TileLook(isOn: true))
                     .spotHover(in: shape)
                     .contentShape(shape)
@@ -463,12 +421,6 @@ struct SheetPartsView: View {
         return SpotNumberView(part: part, look: look, font: SpotType.number, leastScale: SpotType.leastValueScale, alignment: part.look == .bare ? .trailing : .leading, inset: inset)
             .frame(width: frame.rect.width, height: frame.rect.height)
             .background(SpotTheme.ink.opacity(part.look == .bare ? 0 : SpotTheme.fill), in: shape)
-    }
-
-    private func image(_ path: String) -> some View {
-        SheetPicture(arrived: SpotPictureStore.Key(path: path, changed: panel.pictureTimes[path]))
-            .frame(maxWidth: .infinity, maxHeight: .infinity)
-            .clipShape(shape)
     }
 
     @ViewBuilder

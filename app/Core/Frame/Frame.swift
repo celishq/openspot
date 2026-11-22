@@ -237,7 +237,7 @@ public struct Frame: Equatable, Sendable {
             }
         } else if let action = CommandAction(id: id, block: block) {
             actions.append(action)
-        } else if PartCatalog.actionFaults(in: block).isEmpty {
+        } else if BlockKind.actionFaults(in: block).isEmpty {
             errors.append(block.firstLine)
         }
     }

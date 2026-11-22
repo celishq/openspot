@@ -32,7 +32,7 @@ public struct BlockKind: Sendable, Equatable {
         presses: Bool = false,
         takesTick: Bool = false,
         control: @escaping @Sendable (TextBlock) -> SpotPart.Control = { _ in .none },
-        faults: @escaping @Sendable (TextBlock) -> [String] = PartCatalog.keyFaults,
+        faults: @escaping @Sendable (TextBlock) -> [String] = BlockKind.keyFaults,
         field: (@Sendable (TextBlock, String, String) -> ItemForm.Field)? = nil,
         source: String? = nil
     ) {
@@ -82,14 +82,14 @@ public struct BlockKind: Sendable, Equatable {
         return field(block, name, label)
     }
 
-    static let text = BlockKind(
+    public static let text = BlockKind(
         name: "text",
         holdsValue: true,
         isReading: true,
         takesColor: true
     )
 
-    static let number = BlockKind(
+    public static let number = BlockKind(
         name: "number",
         keys: ["chart"],
         holdsValue: true,
@@ -98,15 +98,15 @@ public struct BlockKind: Sendable, Equatable {
         control: { .number(NumberReading(block: $0)) },
         faults: { block in
             let chart = block.value("chart").flatMap { NumberLook.Chart(rawValue: $0) == nil ? $0 : nil }
-            return PartCatalog.keyFaults(in: block) + (chart.map { ["the part \(block.value("number") ?? "") has an unknown chart: \($0)"] } ?? [])
+            return BlockKind.keyFaults(in: block) + (chart.map { ["the part \(block.value("number") ?? "") has an unknown chart: \($0)"] } ?? [])
         }
     )
 
-    static let picture = BlockKind(name: "picture", control: { Icon(text: $0.value("icon"))?.image.map(SpotPart.Control.image) ?? .none })
+    public static let picture = BlockKind(name: "picture", control: { Icon(text: $0.value("icon"))?.image.map(SpotPart.Control.image) ?? .none })
 
-    static let icon = BlockKind(name: "icon")
+    public static let icon = BlockKind(name: "icon")
 
-    static let toggle = BlockKind(
+    public static let toggle = BlockKind(
         name: "switch",
         holdsValue: true,
         takesTick: true,
@@ -125,9 +125,9 @@ public struct BlockKind: Sendable, Equatable {
         },
         faults: { block in
             let range = range(of: block)
-            guard let level = block.number("value"), level < range.low || level > range.high else { return PartCatalog.keyFaults(in: block) }
+            guard let level = block.number("value"), level < range.low || level > range.high else { return BlockKind.keyFaults(in: block) }
             let fault = "the part \(block.fields.first?.value ?? "") has a level of \(Int(level)), outside \(Int(range.low)) to \(Int(range.high))"
-            return [fault] + PartCatalog.keyFaults(in: block)
+            return [fault] + BlockKind.keyFaults(in: block)
         },
         field: { block, name, label in
             let low = range(of: block).low
@@ -148,7 +148,7 @@ public struct BlockKind: Sendable, Equatable {
         }
     )
 
-    static let field = BlockKind(
+    public static let field = BlockKind(
         name: "field",
         control: { .text($0.value("value") ?? "", placeholder: $0.value("placeholder"), isReadOnly: $0.flag("readonly") ?? false) },
         field: { block, name, label in
@@ -157,7 +157,7 @@ public struct BlockKind: Sendable, Equatable {
         }
     )
 
-    static let choice = BlockKind(
+    public static let choice = BlockKind(
         name: "choice",
         control: { block in
             let colors = block.values("color")
@@ -172,7 +172,7 @@ public struct BlockKind: Sendable, Equatable {
         }
     )
 
-    static let button = BlockKind(name: "button", presses: true, faults: PartCatalog.shortcutFaults)
+    public static let button = BlockKind(name: "button", presses: true)
 
     private static func range(of block: TextBlock) -> (low: Double, high: Double) {
         (block.number("min") ?? 0, block.number("max") ?? 100)

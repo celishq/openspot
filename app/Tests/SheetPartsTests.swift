@@ -138,11 +138,9 @@ final class SheetPartsTests: XCTestCase {
         XCTAssertEqual(output.parts.first?.items, [])
     }
 
-    func testATextsToneColoursItsWordsAndANumberKeepsItsOwn() {
+    func testAnUnknownToneIsAFault() {
         let outputCheck = FrameCheck(text: "frame=\nclass=gap-part\n\ntext=late\ndetail=Late\ntone=bad\n\ntext=now\ntitle=Standup\ntone=on\n\nnumber=disk\nvalue=90\nmax=100\ntone=bad\n")
-        let output = outputCheck.output
 
-        XCTAssertEqual(output.parts.map(\.textTone), [.bad, nil, nil])
         XCTAssertEqual(outputCheck.partFaults, ["the part now has an unknown tone: on"])
     }
 
@@ -191,7 +189,7 @@ final class SheetPartsTests: XCTestCase {
         XCTAssertEqual(parts.dropLast().map(\.control), [.toggle(false), .slider(level: 0, min: 0, max: 100), .text("", placeholder: nil, isReadOnly: false)])
         XCTAssertEqual(parts.last?.number?.points, [])
         for (kind, key) in [("switch", "on"), ("field", "level"), ("field", "text"), ("number", "point")] {
-            XCTAssertEqual(PartCatalog.faults(in: TextBlock(fields: [.init(key: kind, value: "a"), .init(key: key, value: "1")])), ["the part a has an unknown key: \(key)"])
+            XCTAssertEqual(BlockKind.faults(in: TextBlock(fields: [.init(key: kind, value: "a"), .init(key: key, value: "1")])), ["the part a has an unknown key: \(key)"])
         }
     }
 

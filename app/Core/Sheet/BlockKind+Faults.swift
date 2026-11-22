@@ -1,7 +1,7 @@
 import Foundation
 
-public enum PartCatalog {
-    static let keys: Set<String> = [
+extension BlockKind {
+    static let commonKeys: Set<String> = [
         "title", "detail", "icon", "min", "max", "color", "value", "display",
         "placeholder", "readonly", "required", "type", "close", "confirm", "scope", "form",
         "shortcut", "tone", "unit", "recording", "grow", "parent", "class"
@@ -14,7 +14,7 @@ public enum PartCatalog {
 
     static func faults(in block: TextBlock, kind: BlockKind) -> [String] {
         let name = block.fields.first?.value ?? ""
-        let known = keys.union(kind.keys)
+        let known = commonKeys.union(kind.keys)
         var faults = kind.isOpen ? [] : block.fields.dropFirst().map(\.key).filter { !known.contains($0) }.map { "the part \(name) has an unknown key: \($0)" }
         for option in block.children {
             let id = option.value("option") ?? ""
@@ -29,22 +29,19 @@ public enum PartCatalog {
 
     @Sendable static func keyFaults(in block: TextBlock) -> [String] {
         guard let key = block.value("shortcut"), ActionKey(text: key) == nil else { return [] }
-        return ["the part \(block.fields.first?.value ?? "") has an unknown key combination: \(key)"]
+        let name = block.fields.first?.value ?? ""
+        guard block.fields.first?.key == button.word else { return ["the part \(name) has an unknown key combination: \(key)"] }
+        return ["the button \(name) has shortcut=\(key), which a button cannot take. Use cmd or shift with a letter, a digit, return, backspace or a comma, or escape"]
     }
 
     public static func actionFaults(in block: TextBlock) -> [String] {
         let id = block.value("button") ?? ""
-        var faults = (block.value("title") == nil ? ["the button \(id) needs a title"] : []) + shortcutFaults(in: block)
+        var faults = (block.value("title") == nil ? ["the button \(id) needs a title"] : []) + keyFaults(in: block)
         switch block.value("scope") {
         case nil, CommandAction.Scope.item.rawValue, CommandAction.Scope.spot.rawValue: break
         case let scope?: faults.append("the button \(id) has an unknown scope: \(scope). Use item or spot")
         }
         return faults
-    }
-
-    @Sendable static func shortcutFaults(in block: TextBlock) -> [String] {
-        guard let key = block.value("shortcut"), ActionKey(text: key) == nil else { return [] }
-        return ["the button \(block.value("button") ?? "") has shortcut=\(key), which a button cannot take. Use cmd or shift with a letter, a digit, return, backspace or a comma, or escape"]
     }
 
     static func isColor(_ text: String) -> Bool {

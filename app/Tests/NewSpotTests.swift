@@ -295,7 +295,7 @@ final class NewSpotTests: BuiltInCase {
 
     func testTheGuideAndThePartsTakeTheSameKeys() {
         let blocks = guideText.components(separatedBy: "## Blocks").dropFirst().first?.components(separatedBy: "## Layouts").first ?? ""
-        for key in PartCatalog.keys {
+        for key in BlockKind.commonKeys {
             XCTAssertTrue(blocks.contains("`\(key)"), key)
         }
         for line in blocks.split(separator: "\n") where line.hasPrefix("| `") {
@@ -304,7 +304,7 @@ final class NewSpotTests: BuiltInCase {
             guard cells.count > 2, BlockKind.all.contains(where: { $0.word == kind }) else { continue }
             for item in cells[2].components(separatedBy: ", ") {
                 guard let word = item.split(separator: "`", omittingEmptySubsequences: false).dropFirst().first else { continue }
-                XCTAssertTrue(PartCatalog.keys.contains(String(word.split(separator: "=").first ?? word)), "\(kind): \(word)")
+                XCTAssertTrue(BlockKind.commonKeys.contains(String(word.split(separator: "=").first ?? word)), "\(kind): \(word)")
             }
         }
     }
