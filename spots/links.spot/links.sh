@@ -1,4 +1,9 @@
 #!/bin/sh
+
+# A delete waits for the delete before it, so two quick deletes never write over each other. A save keeps no lock, since
+# a stop of its icon fetch must reach this process.
+[ "$1" != delete ] || [ -n "${LINKS_LOCKED-}" ] || LINKS_LOCKED=1 exec lockf -k "$OPENSPOT_DATA/links.lock" "$0" "$@"
+
 data="$OPENSPOT_DATA/links.json"
 icons="$OPENSPOT_DATA/icons"
 . "$OPENSPOT_SH"
@@ -156,6 +161,11 @@ case "$1" in
         end' "$data" --args "$@"
     ;;
   new)
+    # Asks with its own form, filled with what the call gave, until both the name and the link are given.
+    if [ -z "$(value input.title)" ] || [ -z "$(value input.url)" ]; then
+      form "New link" "$(jq -nc --arg title "$(value input.title)" --arg url "$(value input.url)" '{$title, $url}')"
+      exit 0
+    fi
     id=$(uuidgen)
     values=$(checked) || exit 1
     load | jq -c --arg id "$id" --argjson v "$values" '. + [{id: $id, title: $v.title, url: $v.url}]' | store

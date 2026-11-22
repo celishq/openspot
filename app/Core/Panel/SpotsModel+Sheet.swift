@@ -307,7 +307,9 @@ extension SpotsModel {
         openSheet?.landRows()
         guard let action = createAction, let entry = openEntry else { return }
         let query = openItems?.query ?? ""
-        if let typed = Self.typed(action, of: entry.spot), let input = typed.textInput, let form = ItemForm(output: Frame(text: typed.form(with: [input.name: query], title: action.title))) {
+        guard let typed = Self.typed(action, of: entry.spot), let input = typed.textInput else { return }
+        guard typed.lacksInput else { return call(action, of: entry, query) }
+        if let form = ItemForm(output: Frame(text: typed.form(with: [input.name: query], title: action.title))) {
             show(.form(form), of: action, on: (entry, nil), prefill: "")
         }
     }
@@ -374,8 +376,13 @@ extension SpotsModel {
                 case .form, .stopped: if closingPick?.item == item { closingPick = nil }
                 default: break
                 }
-                guard case .form(let form) = answer, isShown else { return }
-                show(.form(form), of: CommandAction(id: Frame.press, title: item.title), on: (entry, item), prefill: "")
+                guard case .form(let form) = answer else { return }
+                let press = CommandAction(id: Frame.press, title: item.title)
+                switch place {
+                case .window: host.notify("\(item.title) asks with a form, which a window does not show yet.")
+                case .float: afterShowing({ host.show() }) { [weak self] in self?.show(.form(form), of: press, on: (entry, item), prefill: "") }
+                case .panel: if isShown { show(.form(form), of: press, on: (entry, item), prefill: "") }
+                }
             }
         } else {
             sheets[entry.id]?.pick(item, closes: closes)

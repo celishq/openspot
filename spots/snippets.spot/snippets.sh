@@ -52,6 +52,11 @@ case "$1" in
   new)
     title=$(value input.title)
     text=$(value input.content; printf x)
+    # Asks with its own form, filled with what the call gave, until both the name and the text are given.
+    if [ -z "$title" ] || [ -z "${text%x}" ]; then
+      form "New snippet" "$(jq -nc --arg title "$title" --arg content "${text%x}" '{$title, $content}')"
+      exit 0
+    fi
     id=$(uuidgen)
     load | jq -c --arg id "$id" --arg title "$title" --arg content "${text%x}" '. + [{id: $id, title: $title, content: $content}]' | store
     openspot select "$id"

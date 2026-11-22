@@ -7,4 +7,4 @@ uses = ["power"]
 "panel.open" = true
 
 [actions.start]
-inputs.minutes = { type = "text", required = true, description = "45" }
+inputs.minutes = { type = "text", description = "45" }

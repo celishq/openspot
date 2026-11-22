@@ -101,7 +101,8 @@ extension Manifest.Action {
     }
 
     public var textInput: Manifest.Parameter? {
-        inputs.first { $0.isRequired && $0.type.kind == .text && !$0.type.isList }
+        let texts = inputs.filter { $0.type.kind == .text && !$0.type.isList }
+        return texts.first { $0.isRequired } ?? texts.first
     }
 
     public var form: String {
