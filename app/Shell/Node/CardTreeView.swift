@@ -13,7 +13,10 @@ struct CardTreeView: View {
     var body: some View {
         let follows = !tree.places.isDisjoint(with: [.selected, .focus])
         let isSelected = follows && model?.selected == index
-        SheetTreeView(tree: tree, pictureTimes: [:], outset: SpotTokens.cardPadding(for: size, isDrawn: true))
+        let outset = SpotTokens.cardPadding(for: size, isDrawn: true)
+        SheetTreeView(tree: tree, pictureTimes: [:], outset: outset)
+            .environment(\.spotSurfaceEdge, SurfaceEdge(card: size))
+            .clipShape(SpotRoundShape(SurfaceEdge(card: size).outset(by: outset)))
             .environment(\.spotNodeVariants, Style.Variant.card(size).union(isPressed ? [.pressed] : []).union(isSelected ? [.selected, .focus] : []))
             .environment(\.spotNodeParts, nodeParts)
     }
