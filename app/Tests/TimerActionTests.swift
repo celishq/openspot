@@ -30,9 +30,9 @@ final class TimerActionTests: PanelCase {
         ((try? String(contentsOf: folder.appendingPathComponent("calls"), encoding: .utf8)) ?? "").split(separator: "\n").map(String.init)
     }
 
-    private func call(_ words: [String]) async throws -> CommandAnswer {
+    private func call(_ words: [String], of id: String = "snooze") async throws -> CommandAnswer {
         let api = try XCTUnwrap(model.runs.api)
-        let caller = SpotCaller(spot: try XCTUnwrap(model.sheets["snooze"]?.spot))
+        let caller = SpotCaller(spot: try XCTUnwrap(model.sheets[id]?.spot))
         let work = try XCTUnwrap(api.work(for: CommandRequest(arguments: words, folder: folder.path, caller: caller), input: { "" }))
         return await work()
     }
@@ -82,5 +82,33 @@ final class TimerActionTests: PanelCase {
         let block = try XCTUnwrap(TextBlock.blocks(in: listed.output).first)
         XCTAssertEqual(block.value("title"), "wake")
         XCTAssertEqual(block.value("input.url"), "https://a.com")
+    }
+
+    func testADueTimerCallsTheActionOfAStayingSpotAndOfAnInlineSpot() async throws {
+        let toml = "uses = ['timer']\n[actions.wake]\ninputs.url = { type = 'url', required = true }\ninputs.size = { type = 'choice', options = ['s', 'm'], default = 'm' }"
+        try script("stay", toml: "stay = true\n\(toml)", """
+        . "$OPENSPOT_SH"
+        main() { printf 'stay %s|%s %s\\n' "$1" "$(value url)" "$(value size)" >> '\(folder.appendingPathComponent("calls").path)'; }
+        openspot_serve main "$@"
+        """)
+        let url = spots.spotFile("inline", extension: "js")
+        try FileManager.default.createDirectory(at: url.deletingLastPathComponent(), withIntermediateDirectories: true)
+        try "export default {\n  wake({ url, size }) { return `text=a\\ntitle=${url} ${size}\\n` },\n}\n".write(to: url, atomically: true, encoding: .utf8)
+        try toml.write(to: url.deletingLastPathComponent().appendingPathComponent(Manifest.fileName), atomically: true, encoding: .utf8)
+        await model.reload()
+        for id in ["stay", "inline"] {
+            let added = try await call(["timer", "add", time(in: 60), "wake", "url=https://a.com"], of: id)
+            XCTAssertEqual(added.code, 0, added.errors)
+        }
+        model.quit()
+        clock.advance(by: 120)
+
+        try relaunch()
+        var answer = ""
+        model.runs.onCall = { record in if record.spot == "inline", record.arguments == ["wake"] { answer = record.frames.joined() } }
+        await model.reload()
+        model.runs.launched()
+
+        try await wait("the calls of the actions") { self.calls.contains("stay wake|https://a.com m") && answer.contains("title=https://a.com m\n") }
     }
 }

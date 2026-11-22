@@ -8,6 +8,8 @@ final class StayMode: ScriptMode {
         var isDropped = false
         var isPictured = false
         var timer: Task<Void, Never>?
+        var deadline: Date?
+        var left: TimeInterval?
 
         init(_ call: OpenCall) {
             self.call = call
@@ -51,6 +53,8 @@ final class StayMode: ScriptMode {
     private var heldScript = false
     private var slowAsks = 0
     private var endingAsks = 0
+    private var isHeld = false
+    private var asksAfterHold = false
 
     init(runs: SpotRuns) {
         self.runs = runs
@@ -85,7 +89,10 @@ final class StayMode: ScriptMode {
 
     func send(_ call: OpenCall) -> Bool {
         if case .ask(let ask) = call.request.purpose, let run, runs.waitsInRun(run.spot.id) {
-            if case .answer(let text) = ask { run.takeAnswers(run.answers, to: text) }
+            if case .answer(let text) = ask {
+                run.takeAnswers(run.answers, to: text)
+                asksAfterHold = true
+            }
             return false
         }
         switch call.request.purpose {
@@ -106,7 +113,7 @@ final class StayMode: ScriptMode {
             call.request.purpose = .act(SpotRun.Act(keeping: act.keeping, showsAfter: false, undo: act.undo, first: act.first))
             if post(call, isTimed: false) { run?.track(call.made) }
         case .form:
-            guard !records.values.contains(where: \.isForm), post(call, isTimed: true) else { return false }
+            guard !records.values.contains(where: \.isForm), post(call, isTimed: call.request.chain.isEmpty) else { return false }
             run?.track(call.made)
         }
         settle()
@@ -202,12 +209,45 @@ final class StayMode: ScriptMode {
         noteReason()
         script.send(run.map { $0.message(of: request, values: $0.fieldValues) } ?? request.message, id: id)
         guard isTimed else { return }
-        let limit = runs.showLimit
+        if isHeld {
+            record.left = runs.showLimit
+        } else {
+            arm(id, record, for: runs.showLimit, on: script)
+        }
+    }
+
+    private func arm(_ id: Int, _ record: Record, for limit: TimeInterval, on script: ScriptProcess) {
+        record.deadline = runs.now().addingTimeInterval(limit)
         record.timer = Task { [weak self, weak script, sleep = runs.clock.sleep] in
             try? await sleep(.seconds(limit), .seconds(limit / 10))
             guard !Task.isCancelled, let script else { return }
             self?.timeOut(id, of: script)
         }
+    }
+
+    func holdLimit() {
+        isHeld = true
+        let now = runs.now()
+        for record in records.values where !record.isDropped {
+            guard let timer = record.timer, let deadline = record.deadline else { continue }
+            timer.cancel()
+            record.timer = nil
+            record.left = max(0, deadline.timeIntervalSince(now))
+        }
+    }
+
+    func releaseLimit() {
+        isHeld = false
+        if let script {
+            for (id, record) in records where !record.isDropped {
+                guard let left = record.left else { continue }
+                record.left = nil
+                arm(id, record, for: left, on: script)
+            }
+        }
+        guard asksAfterHold else { return }
+        asksAfterHold = false
+        run?.askAnswer()
     }
 
     private func noteReason() {
@@ -317,9 +357,16 @@ final class StayMode: ScriptMode {
         defer { if let printing, ends.contains(printing) { self.printing = nil } }
         if let (id, form) = records.first(where: \.value.isForm), !lines.fields.isEmpty || ends.contains(id) {
             let others = Set(ends).subtracting([id]).filter { records[$0]?.ask == nil }.sorted()
-            await answer(id, form, text, lines, in: run)
+            if lines.isMark {
+                await close([id], in: run)
+            } else {
+                await answer(id, form, text, lines, in: run)
+            }
             await close(others, in: run)
             return
+        }
+        if let printing, start == nil, !lines.isMark, let form = records[printing], form.isForm {
+            return await run.take(text, lines, of: form.call)
         }
         if let id = ends.first(where: { records[$0]?.ask != nil }), let record = records[id] {
             slowAsks = 0

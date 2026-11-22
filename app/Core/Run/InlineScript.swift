@@ -18,6 +18,7 @@ final class InlineScript: @unchecked Sendable {
         let call: InlineCall
         let caller: SpotCaller?
         var spent: TimeInterval = 0
+        var asks = 0
     }
 
     private typealias Termination = @convention(c) (OpaquePointer?, UnsafeMutableRawPointer?) -> Bool
@@ -198,9 +199,10 @@ final class InlineScript: @unchecked Sendable {
             var idleEnd = Date().addingTimeInterval(idle)
             while calls.isEmpty, settles.isEmpty, !isEnded {
                 if condition.wait(until: idleEnd) { continue }
-                for (token, held) in waiting where held.call.isStopped || held.call.isDone {
+                for (token, held) in waiting where held.call.isStopped || held.call.isDone || held.asks == 0 {
                     waiting[token] = nil
                     if let caller = held.caller { callers?.release(caller) }
+                    held.call.finish(.failed(SpotError.failed(1, "\(held.call.arguments.first ?? "A handler") of \(spot.name) waits for a promise that nothing settles, so Openspot ended it.")))
                 }
                 if waiting.isEmpty { break }
                 idleEnd = Date().addingTimeInterval(idle)
@@ -429,6 +431,7 @@ final class InlineScript: @unchecked Sendable {
     private func asked(_ arguments: [String], token: Int) -> JSValue? {
         guard let context = JSContext.current() else { return nil }
         guard let held = waiting[token] else { return JSValue(newPromiseRejectedWithReason: "The call of \(spot.name) has ended.", in: context) }
+        waiting[token]?.asks += 1
         let work = work(arguments, input: nil, caller: held.caller, reason: held.call.reason, variables: held.call.variables)
         var resolve: JSValue?
         let promise = JSValue(newPromiseIn: context) { found, _ in resolve = found }
@@ -437,6 +440,7 @@ final class InlineScript: @unchecked Sendable {
             let answer = await work()
             self?.settle(token) { [weak self] in
                 guard let self else { return }
+                waiting[token]?.asks -= 1
                 settled.value?.call(withArguments: [answered(arguments, answer)])
             }
         }

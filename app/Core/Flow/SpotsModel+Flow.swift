@@ -19,6 +19,7 @@ extension SpotsModel {
 
     @discardableResult
     public func present(_ page: FlowSheet, from caller: String? = nil, replace: Bool = false) -> Bool {
+        if caller != nil, page.route == nil, place(ofSheet: page.spot) == .window, !runs.floating.contains(page.spot) { askedWindows.insert(page.spot) }
         guard isShown, openSheetID != nil else {
             let row = isShown ? selectedEntry.flatMap { $0.spot.id == caller ? $0.id : nil } : nil
             return open(FlowSheet(spot: page.spot, route: page.route, title: page.title, source: row))
@@ -66,6 +67,10 @@ extension SpotsModel {
 
     @discardableResult
     public func leave(_ id: String) -> Bool {
+        if askedWindows.contains(id) {
+            land(id)
+            return true
+        }
         guard openSheetID == id, flow.current?.spot == id else { return false }
         close(in: id)
         return true

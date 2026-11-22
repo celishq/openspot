@@ -226,6 +226,7 @@ public final class SpotRuns {
         sheets[id]?.showPlace()
         sheets[id]?.leftPlace()
         updateClock()
+        if pushed.isWaiting(for: id) { settlePushed(of: id) }
     }
 
     public func take(appearance: Style.Variant) {

@@ -109,4 +109,34 @@ final class BoundViewTests: PanelCase {
         try await wait("the end of the run") { self.log("done").count == 1 }
         XCTAssertEqual(log("out"), ["monday"])
     }
+
+    private func runPickInAWindow() async throws -> SpotRun {
+        _ = try model.files.config.change { $0.arrangement.set(isWindow: true, of: "picker") }
+        await model.reload()
+        let picker = try XCTUnwrap(model.sheets["picker"])
+        try XCTUnwrap(model.sheets["asker"]).pressCard()
+        try await wait("the view in the window") { self.host.windows == ["picker"] && picker.list.all.map(\.title) == ["Morning", "Evening"] }
+        return picker
+    }
+
+    func testAPushedViewOfASpotPlacedInAWindowOpensTheWindowAndClosesItWhenAPressInItGivesValues() async throws {
+        let picker = try await runPickInAWindow()
+
+        picker.pick(try XCTUnwrap(picker.list.all.first { $0.run == "evening" }))
+
+        try await wait("the end of the run") { self.log("done").count == 1 }
+        XCTAssertEqual(log("done"), ["0"], log("errors").joined(separator: "\n"))
+        XCTAssertEqual(log("out"), ["evening"])
+        try await wait("the window closed") { !self.model.runs.floating.contains("picker") }
+    }
+
+    func testClosingTheWindowOfAPushedViewCancelsTheRunWithExit4() async throws {
+        _ = try await runPickInAWindow()
+
+        model.land("picker")
+
+        try await wait("the end of the run") { self.log("done").count == 1 }
+        XCTAssertEqual(log("done"), ["4"])
+        XCTAssertEqual(log("out"), [])
+    }
 }

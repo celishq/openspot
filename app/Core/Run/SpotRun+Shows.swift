@@ -79,6 +79,11 @@ extension SpotRun {
     public func answer(_ text: String) {
         guard text != answerQuery else { return }
         answerQuery = text
+        askAnswer()
+    }
+
+    func askAnswer() {
+        let text = answerQuery
         if let older = running(Self.answerKey) { stop(older) }
         guard !text.isEmpty else {
             answeredQuery = ""

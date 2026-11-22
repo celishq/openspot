@@ -14,6 +14,8 @@ protocol ScriptMode: AnyObject {
     func restart()
     func end()
     func leave()
+    func holdLimit()
+    func releaseLimit()
     func scanned(_ stamp: [Int]?)
     static var keepsState: Bool { get }
     static var answersInApp: Bool { get }
@@ -31,6 +33,10 @@ extension ScriptMode {
     func end() {}
 
     func leave() {}
+
+    func holdLimit() {}
+
+    func releaseLimit() {}
 
     func scanned(_ stamp: [Int]?) {}
 

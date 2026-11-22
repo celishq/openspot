@@ -34,6 +34,7 @@ extension SpotsModel {
     }
 
     public func land(_ id: String) {
+        askedWindows.remove(id)
         runs.land(id)
         host.land(id)
     }
