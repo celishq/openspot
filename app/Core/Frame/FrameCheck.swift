@@ -37,7 +37,6 @@ public struct FrameCheck: Equatable, Sendable {
         for id in taken where output.parts.contains(where: { $0.id == id }) {
             faults.append("a part cannot be called \(id)")
         }
-        if !output.tree.isWritten, !output.parts.isEmpty { faults += SheetFaults.of(parts: output.parts) }
         var told = Set<String>()
         for field in root?.fields ?? [] where !RootKey.isKey(field.key, isApp: isApp) && told.insert(field.key).inserted {
             faults.append("the root has an unknown key: \(field.key)")

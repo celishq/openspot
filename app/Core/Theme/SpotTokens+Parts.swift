@@ -10,7 +10,6 @@ extension SpotTokens {
     public static let groupTitleGap: CGFloat = 6
     public static let cardLineReach: CGFloat = 6
     public static var mediaRadius: CGFloat { layout.radius.media }
-    public static let tileIconShare: CGFloat = 0.5
     public static let wordsTileCircleShare: CGFloat = 0.36
     public static let wordsTileIconShare: CGFloat = 0.5
     public static let wordsTileGap: CGFloat = 4
@@ -59,7 +58,6 @@ extension SpotTokens {
     public static let partGap: CGFloat = 6
     public static let partMaxRound: CGFloat = 44
     public static var partFieldRoom: CGFloat { listRow + rowGap }
-    public static let partSeamClearance: CGFloat = 22
     public static let dividerHeight: CGFloat = 1
     public static let partGroupGap: CGFloat = 24
     public static let keycapSide: CGFloat = 52
@@ -90,7 +88,6 @@ extension SpotTokens {
     public static let nodeBorder: CGFloat = 1
     public static let chipPaddingY: CGFloat = 5
     public static let choiceChevronGap: CGFloat = 4
-    public static let choicePaddingX: CGFloat = 10
     public static let colorBarWidth: CGFloat = 4
     public static let colorBarGap: CGFloat = 8
 

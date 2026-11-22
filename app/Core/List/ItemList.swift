@@ -14,7 +14,6 @@ public struct ItemList: Equatable, Sendable {
     public private(set) var sectionStarts: [String: String] = [:]
     public private(set) var selected = 0
     public private(set) var perLine = 1
-    public private(set) var drawing = RepeatDrawing.list
     public private(set) var isWaiting = false
     public private(set) var landedSearches = 0
     private var awaitsLanding = false
@@ -259,12 +258,7 @@ public struct ItemList: Equatable, Sendable {
     }
 
     public mutating func take(drawing: RepeatDrawing) {
-        self.drawing = drawing
-        perLine = drawing.perLine ?? drawing.places.count
-    }
-
-    public var isBento: Bool {
-        drawing.perLine == nil
+        perLine = drawing.columns
     }
 
     public var isOnLastLine: Bool {

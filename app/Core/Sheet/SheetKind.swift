@@ -5,8 +5,8 @@ public enum SheetKind: Equatable, Sendable {
     case rows
     case parts
 
-    public init(parts: [SpotPart], layout: SheetLayout?) {
-        self = parts.isEmpty || layout?.repeated != nil ? .rows : .parts
+    public init(parts: [SpotPart], showsRows: Bool) {
+        self = parts.isEmpty || showsRows ? .rows : .parts
     }
 
     public var showsField: Bool {

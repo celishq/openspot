@@ -79,7 +79,7 @@ struct SpotItemsView: View {
 
     private var scroll: some View {
         Group {
-            if list.isBento { bentoScroll } else if isGrid { grid } else { lineScroll }
+            if isGrid { grid } else { lineScroll }
         }
         .modifier(ItemsFade(bottom: Self.bottomFade))
         .padding(.vertical, -SpotTokens.padding)
@@ -137,70 +137,6 @@ struct SpotItemsView: View {
             }
         }
         .modifier(SpotPointerMove(at: { [list, onPoint] in if let item = $0.flatMap({ list.lineItem(at: $0.y) }) { onPoint(item) } }))
-    }
-
-    private var bentoScroll: some View {
-        let drawing = list.drawing
-        let side = SpotTokens.square(perLine: drawing.columns)
-        let step = side + SpotTokens.listRowGap
-        let lines = drawing.lineCount(rows: list.shown.count)
-        return ScrollViewReader { proxy in
-            ScrollView(showsIndicators: false) {
-                ZStack(alignment: .topLeading) {
-                    ForEach(Array(list.shown.enumerated()), id: \.element.run) { index, item in
-                        let area = drawing.area(of: index)
-                        bentoCell(item, size: Self.size(of: area, step: step))
-                            .id(item.run)
-                            .offset(x: CGFloat(area.x0) * step, y: CGFloat(area.y0) * step)
-                    }
-                }
-                .overlay(alignment: .topLeading) { BentoRing(selection: selected, count: list.shown.count, drawing: drawing, step: step) }
-                .modifier(SpotPointerMove(at: { [list, onPoint] point in
-                    guard let point else { return }
-                    let index = list.shown.indices.first { index in
-                        let area = drawing.area(of: index)
-                        return CGRect(origin: CGPoint(x: CGFloat(area.x0) * step, y: CGFloat(area.y0) * step), size: Self.size(of: area, step: step)).contains(point)
-                    }
-                    if let index { onPoint(list.shown[index]) }
-                }))
-                .frame(width: SpotTokens.partsWidth, height: max(CGFloat(lines) * step - SpotTokens.listRowGap, 0), alignment: .topLeading)
-                .padding(.top, SpotTokens.padding)
-                .padding(.bottom, bottomInset)
-            }
-            .modifier(ItemsFollow(selection: selected, items: list.shown, proxy: proxy, motion: SpotMotion.move))
-            .onChange(of: list.landedSearches) {
-                guard let run = list.shown.first?.run else { return }
-                DispatchQueue.main.async { proxy.scrollTo(run, anchor: .top) }
-            }
-        }
-    }
-
-    fileprivate static func size(of area: SheetArea, step: CGFloat) -> CGSize {
-        CGSize(
-            width: CGFloat(area.x1 - area.x0 + 1) * step - SpotTokens.listRowGap,
-            height: CGFloat(area.y1 - area.y0 + 1) * step - SpotTokens.listRowGap
-        )
-    }
-
-    private func bentoCell(_ item: SpotItem, size: CGSize) -> some View {
-        bentoFace(item, side: min(size.width, size.height))
-            .frame(width: size.width, height: size.height)
-        .background(SpotTheme.ink.opacity(SpotTheme.fill), in: row)
-        .contentShape(row)
-        .onTapGesture { onRun(item) }
-        .modifier(SpotFileDragSource(items: [item], hasFiles: item.file != nil, onDrop: onDragOut))
-        .accessibilityLabel(item.title)
-        .accessibilityAddTraits(.isButton)
-    }
-
-    @ViewBuilder
-    private func bentoFace(_ item: SpotItem, side: CGFloat) -> some View {
-        if item.look == .tile {
-            SpotTileWords(item: item, side: side)
-        } else {
-            SpotItemIcon(item: item, size: side * SpotTokens.tileIconShare)
-                .overlay(alignment: .bottomTrailing) { SpotToneDot(tone: item.tone, side: side * SpotTokens.tileIconShare) }
-        }
     }
 
     private func rowLabel(_ item: SpotItem) -> some View {
@@ -303,26 +239,6 @@ private struct ItemsFade: ViewModifier {
                         .frame(height: bottom)
                 }
             }
-    }
-}
-
-private struct BentoRing: View {
-    @Environment(\.spotSurfaceEdge) private var surface
-    let selection: () -> Int
-    let count: Int
-    let drawing: RepeatDrawing
-    let step: CGFloat
-
-    var body: some View {
-        let index = selection()
-        if index < count {
-            let area = drawing.area(of: index)
-            let size = SpotItemsView.size(of: area, step: step)
-            Color.clear
-                .frame(width: size.width, height: size.height)
-                .modifier(SpotSelectionRing(isSelected: true, shape: SpotRoundShape(surface.inner()), marksMenu: true))
-                .offset(x: CGFloat(area.x0) * step, y: CGFloat(area.y0) * step)
-        }
     }
 }
 

@@ -64,7 +64,7 @@ final class FrameTests: XCTestCase {
         let output = Frame(text: "title=Mine\nclass=gap-part\n\ntoast=Saved\n\ntext=a\ntitle=A\n")
 
         XCTAssertNil(output.root)
-        XCTAssertNil(output.layout)
+        XCTAssertNil(output.perLine)
         XCTAssertEqual(output.items.map(\.run), ["a"])
         XCTAssertEqual(output.errors, ["title=Mine", "toast=Saved"])
     }

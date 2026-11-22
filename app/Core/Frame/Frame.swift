@@ -20,7 +20,6 @@ public struct Frame: Equatable, Sendable {
     private var carded: [SpotPart]?
     private(set) var searchField: TextBlock?
     public private(set) var errors: [String] = []
-    public private(set) var layout: SheetLayout?
     public private(set) var value: TextBlock?
     private(set) var valueKind: BlockKind?
     private var barValue: TextBlock?
@@ -28,6 +27,7 @@ public struct Frame: Equatable, Sendable {
     public private(set) var hasBar = false
     public private(set) var face = CardFace.none
     public private(set) var tree = ViewTree.empty
+    public private(set) var sheet = ViewTree.empty
     public private(set) var drawing = RepeatDrawing.list
     public private(set) var ends: [String] = []
     public private(set) var start: String?
@@ -36,7 +36,8 @@ public struct Frame: Equatable, Sendable {
     public let isMark: Bool
 
     static let open = "open"
-    static let itemsArea = "items"
+    private static let sheetRoot = RootKey.block([.init(key: ViewNode.classKey, value: "gap-part")])
+    private static let itemsBlock = TextBlock(fields: [.init(key: BlockKind.items, value: "items")])
     private static let searchType = "search"
 
     static func grouping(_ blocks: [TextBlock]) -> [TextBlock] {
@@ -84,6 +85,7 @@ public struct Frame: Equatable, Sendable {
         var rows: [TextBlock] = []
         var section: String?
         var values: [(block: TextBlock, kind: BlockKind)] = []
+        var unplaced: [TextBlock] = []
         for (index, block) in blocks.enumerated() {
             let word = block.fields.first?.key
             if [BlockKind.items, BlockKind.box].contains(word) { continue }
@@ -104,6 +106,7 @@ public struct Frame: Equatable, Sendable {
                         if let id, inSheet.contains(id) { parts.append(part) }
                     } else if kind == .choice {
                         parts.append(part)
+                        unplaced.append(block)
                     } else if let item = SpotItem(block: block, kind: kind, section: section) {
                         rows.append(block)
                         if runs.insert(item.run).inserted { items.append(item) }
@@ -120,9 +123,8 @@ public struct Frame: Equatable, Sendable {
                 errors.append(block.firstLine)
             }
         }
-        let repeating = repeated.map { (area: $0, perLine: drawing.perLine ?? drawing.columns) }
-            ?? (!items.isEmpty && !parts.isEmpty ? (area: Self.itemsArea, perLine: 1) : nil)
-        layout = repeating.map { SheetLayout(flat: parts, repeating: $0) }
+        let itemsBlock = blocks.first { $0.fields.first?.key == BlockKind.items } ?? (items.isEmpty ? nil : Self.itemsBlock)
+        sheet = tree.isWritten || parts.isEmpty ? tree : ViewTree(blocks: unplaced + [itemsBlock].compactMap(\.self), root: Self.sheetRoot, kinds: kinds)
         let fields = rows.map { $0.fields.flatMap { [$0.key, $0.value] } }
         parts = parts.map { part in
             part.drawn(spanning: tree.isWritten && tree.node(part.id).map(Self.spansRows) == true).holding(items: fields)
@@ -202,7 +204,7 @@ public struct Frame: Equatable, Sendable {
     }
 
     public var perLine: Int? {
-        layout?.repeated?.perLine
+        sheet.holdsItems ? drawing.columns : nil
     }
 
     public var search: ItemSearch {
