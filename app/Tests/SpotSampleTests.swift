@@ -99,4 +99,13 @@ final class SpotSampleTests: XCTestCase {
 
         XCTAssertEqual(sample?.items.map(\.title), ["Kept"])
     }
+
+    func testASampleReadsTheViewsOfItsSpot() async throws {
+        try "#!/bin/sh\n".writeScript(to: core.appendingPathComponent("cups.spot/cups.sh"), toml: "title = 'Cups'\nviews = ['liquid.swift']")
+        try "frame=\nclass=gap-part\n\nliquid=glass\nclass=h-20\n".write(to: core.appendingPathComponent("cups.spot/sample.frame"), atomically: true, encoding: .utf8)
+
+        let sample = try await output(of: "cups")
+
+        XCTAssertEqual(sample?.tree.node("glass")?.source?.hasSuffix("/cups.spot/liquid.swift"), true)
+    }
 }

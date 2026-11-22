@@ -60,6 +60,7 @@ struct SheetPartsView: View {
                 SheetTreeView(tree: panel.tree, pictureTimes: panel.pictureTimes)
                     .environment(\.spotNodeParts, nodeParts)
                     .environment(\.spotNodeSend, send)
+                    .environment(\.spotNodeSelection, selectedID)
                     .environment(\.spotNodeViewInput, NodeViewInput(items: panel.rows, answers: panel.answered, selection: selectedRun))
             }
             .padding(SpotTokens.padding)

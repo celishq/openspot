@@ -5,36 +5,18 @@ extension EnvironmentValues {
     @Entry var spotNodeVariants: Set<Style.Variant> = [.sheet]
     @Entry var spotPictureTimes: [String: Double] = [:]
     @Entry var spotNodeSend: ((String, String) -> Void)?
+    @Entry var spotNodeSelection: (() -> String?)?
 }
 
 struct NodeView: View {
     let node: ViewNode
     let tree: ViewTree
-    @Environment(\.spotNodeVariants) private var variants
-    @State private var isHovered = false
 
     var body: some View {
-        let style = node.style.resolved(for: isHovered ? variants.union([.hover]) : variants)
-        if style.isHidden != true {
-            content(style)
-                .modifier(NodeLook(style: style))
-                .modifier(NodeHover(isFollowed: node.style.named.contains(.hover), isHovered: $isHovered))
-                .layoutValue(key: NodeSlot.self, value: style)
-        }
-    }
-
-    @ViewBuilder
-    private func content(_ style: Style) -> some View {
-        switch node.kind {
-        case BlockKind.box: NodeBox(children: node.children, style: style, tree: tree)
-        case "text": NodeText(title: node.title ?? node.value, detail: node.detail, tone: node.tone, symbol: node.icon?.symbol)
-        case "icon": NodeIcon(icon: node.icon)
-        case "picture": NodePicture(icon: node.icon)
-        case "button" where !node.children.isEmpty: NodePart(id: node.id, label: AnyView(NodeBox(children: node.children, style: style, tree: tree)))
-        case "button", "field", "switch", "choice", "number": NodePart(id: node.id, label: nil)
-        case BlockKind.items: NodeItems()
-        default:
-            if let source = node.source { NodeSpotView(id: node.id, values: node.values, source: source) }
+        if tree.follows([.selected, .focus], at: node) {
+            NodeSelection(node: node, tree: tree)
+        } else {
+            NodeFace(node: node, tree: tree, isSelected: false)
         }
     }
 }

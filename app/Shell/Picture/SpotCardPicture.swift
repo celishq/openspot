@@ -32,8 +32,8 @@ enum SpotCardPicture {
         exit(0)
     }
 
-    static func run(spot id: String, size: SpotSize, path: String) -> Never {
-        SpotPicture.start()
+    static func run(spot id: String, size: SpotSize, path: String, isLight: Bool) -> Never {
+        SpotPicture.start(isLight: isLight)
         let model = SpotsModel(host: SpotQuietHost.shared, runs: SpotRuns())
         Task { @MainActor in
             await model.reload()

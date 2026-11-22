@@ -440,4 +440,15 @@ final class ReviewSpotTests: XCTestCase {
         XCTAssertEqual(try lock.entries().map(\.paths), [["timer.spot/readme.md", "timer.spot/sample.frame", "timer.spot/spot.toml", "timer.spot/timer.sh"]])
         XCTAssertEqual(try lock.entries().map(\.source), [package.path])
     }
+
+    func testThePreviewReadsTheViewsOfTheSpot() throws {
+        let review = try ReviewSpot(spot: spot([
+            ("cups.spot/cups.sh", "#!/bin/sh\n", true),
+            ("cups.spot/spot.toml", "title = 'Cups'\nviews = ['liquid.swift']", false),
+            ("cups.spot/sample.frame", "frame=\nclass=gap-part\n\nitems=list\n\ntext=a\nparent=list\ntitle=Water\n\nliquid=b\nparent=list\ntitle=Juice\n", false)
+        ]), folder: folder)
+
+        let text = try shown(review)
+        XCTAssertTrue(text.contains("Preview\nWater\nJuice\n\n"), text)
+    }
 }

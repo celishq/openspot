@@ -50,6 +50,7 @@ final class OpenspotApp: NSObject, NSApplicationDelegate {
     private var update: AppUpdate?
     private var spotsWatch: SpotsWatch?
     private var showListener: NSObjectProtocol?
+    private var appearanceWatch: NSKeyValueObservation?
     private var commandSocket: CommandSocket?
     private let mac = SpotMac()
     private var isLaunched = false
@@ -60,6 +61,10 @@ final class OpenspotApp: NSObject, NSApplicationDelegate {
         toast = ToastPanel.make()
         let theme = ThemeFolder.standard(environment: model.files.environment, builtIn: mac.mac.theme).read()
         model.take(theme)
+        appearanceWatch = NSApp.observe(\.effectiveAppearance, options: [.initial, .new]) { [weak self] app, _ in
+            let appearance: Style.Variant = SpotTheme.isDark(app.effectiveAppearance) ? .dark : .light
+            MainActor.assumeIsolated { self?.model.runs.take(appearance: appearance) }
+        }
         if !theme.faults.isEmpty { notify(theme.faults.joined(separator: "\n")) }
         let item = OpenspotItem(
             model: model, toast: toast?.toast, target: self, action: #selector(pressItem),

@@ -33,10 +33,10 @@ enum SpotCommandLine {
         switch call.value {
         case SpotCall.show(let id) as SpotCall:
             SpotShowLink.send(id)
-        case RenderCall.spot(let id, let size?, let path) as RenderCall:
-            SpotCardPicture.run(spot: id, size: size, path: path)
-        case RenderCall.spot(let id, nil, let path) as RenderCall:
-            renderSheet(of: id, to: path)
+        case RenderCall.spot(let id, let size?, let path, let isLight) as RenderCall:
+            SpotCardPicture.run(spot: id, size: size, path: path, isLight: isLight)
+        case RenderCall.spot(let id, nil, let path, let isLight) as RenderCall:
+            renderSheet(of: id, to: path, isLight: isLight)
         case PlaygroundCommand.open(let path) as PlaygroundCommand:
             SpotPlayground.run(path: path)
         case RenderCall.sheet(let path, let view) as RenderCall:
@@ -74,7 +74,7 @@ enum SpotCommandLine {
         String(decoding: FileHandle.standardInput.readDataToEndOfFile(), as: UTF8.self)
     }
 
-    private static func renderSheet(of id: String, to path: String) -> Never {
+    private static func renderSheet(of id: String, to path: String, isLight: Bool) -> Never {
         let model = SpotsModel(host: SpotQuietHost.shared, runs: SpotRuns())
         var loaded = false
         Task {
@@ -96,6 +96,6 @@ enum SpotCommandLine {
             FileHandle.standardError.write(Data("\(reason)\n".utf8))
             exit(1)
         }
-        SpotSheetPicture.run(text: text, path: path, spot: spot)
+        SpotSheetPicture.run(text: text, path: path, spot: spot, isLight: isLight)
     }
 }

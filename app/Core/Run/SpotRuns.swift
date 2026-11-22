@@ -10,6 +10,8 @@ public final class SpotRuns {
     }
     public private(set) var openID: String?
     public private(set) var floating: Set<String> = []
+    @ObservationIgnored public private(set) var appearance = Style.Variant.dark
+    @ObservationIgnored private var windows: Set<String> = []
     public var dragged = FileKinds() {
         didSet {
             guard dragged != oldValue else { return }
@@ -205,15 +207,30 @@ public final class SpotRuns {
         if asks.isWaiting(for: id) { Task { [weak self] in self?.settleAsk(of: id) } }
     }
 
-    public func float(_ id: String) {
+    public func float(_ id: String, isWindow: Bool = false) {
         guard let sheet = sheets[id], floating.insert(id).inserted else { return }
+        if isWindow { windows.insert(id) }
         sheet.floated()
+        sheet.showPlace()
     }
 
     public func land(_ id: String) {
         guard floating.remove(id) != nil else { return }
+        windows.remove(id)
+        sheets[id]?.showPlace()
         sheets[id]?.leftPlace()
         updateClock()
+    }
+
+    public func take(appearance: Style.Variant) {
+        guard appearance != self.appearance else { return }
+        self.appearance = appearance
+        for sheet in sheets.values { sheet.showPlace() }
+    }
+
+    func variants(of id: String) -> Set<Style.Variant> {
+        let place: Style.Variant = !floating.contains(id) ? .sheet : windows.contains(id) ? .window : .float
+        return [place, appearance]
     }
 
     public func closeOpen() {

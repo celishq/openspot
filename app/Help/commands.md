@@ -84,7 +84,7 @@ The commands that try a spot are in [Try your spot](../../GUIDE.md#try-your-spot
 | `openspot check sheet`                             | Reports the faults of a sheet on stdin.                                                         |
 | `openspot render sheet [--view <file>] <file.png>` | Draws the sheet on stdin to a picture, with its view from a Swift file.                         |
 | `openspot render card <size> <file.png>`           | Draws the card of the sheet on stdin at a size, such as `wide`, to a picture.                   |
-| `openspot render spot <id> <file.png>`             | Draws the sheet of an installed spot, or with `--card <size>` its card, to a picture.           |
+| `openspot render spot <id> <file.png>`             | Draws the sheet of an installed spot, or with `--card <size>` its card, to a picture. It draws the dark appearance, or the light one with `--light`. |
 | `openspot render panel <file.png>`                 | Draws the panel with each installed spot on its grid.                                           |
 | `openspot render store <file.png>`                 | Draws the window of the Store with each spot as its card.                                       |
 | `openspot prompt new [words]...`                   | Prints a prompt that asks a coding agent to build a spot that does what the words say.          |

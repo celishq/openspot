@@ -106,4 +106,71 @@ final class SheetTreeInputsTests: PanelCase {
         XCTAssertTrue(model.handleKey(ActionKey(name: "return")))
         try await wait("the press of add") { self.calls(in: calls).contains("add") }
     }
+
+    private let states = """
+    frame=\\nclass=gap-part\\n\\n\
+    field=name\\ntitle=Name\\nclass=focus:bg-accent\\n\\n\
+    field=mail\\ntitle=Mail\\nclass=bg-tile\\n\\n\
+    button=save\\ntitle=Save\\nclose=false\\n\\n\
+    text=words\\nparent=save\\ntitle=Save now\\nclass=selected:font-bold\\n
+    """
+
+    private let rows = """
+    frame=\\nclass=gap-part\\n\\nitems=list\\nclass=focus:bg-tile\\n\\n\
+    text=a\\nparent=list\\ntitle=Apple\\n\\nbutton=add\\ntitle=Add\\nclose=false\\n
+    """
+
+    private func node(_ id: String) throws -> ViewNode {
+        try XCTUnwrap(model.openParts?.tree.node(id))
+    }
+
+    func testOnlyANodeThatNamesTheFocusOrHoldsOneThatDoesIsToldOfAMoveOfTheFocus() async throws {
+        _ = try await open(states)
+        try await wait("the parts") { self.model.openParts != nil }
+        let tree = try XCTUnwrap(model.openParts?.tree)
+        let selection = model.sheetContent(of: try XCTUnwrap(model.card(id: "tree"))).selectedPart
+        let name = try node("name"), mail = try node("mail"), save = try node("save")
+
+        XCTAssertTrue(tree.isSelected(name, selection: selection))
+        XCTAssertFalse(tree.isSelected(mail, selection: selection))
+        nonisolated(unsafe) var told: Set<String> = []
+        for node in [name, mail, save] {
+            withObservationTracking { _ = tree.isSelected(node, selection: selection) } onChange: { told.insert(node.id) }
+        }
+        XCTAssertTrue(model.handleKey(ActionKey(name: "down")))
+        XCTAssertEqual(model.openParts?.selectedPart?.id, "mail")
+
+        XCTAssertEqual(told, ["name", "save"])
+        XCTAssertFalse(tree.isSelected(name, selection: selection))
+        XCTAssertFalse(tree.isSelected(mail, selection: selection))
+        XCTAssertTrue(model.handleKey(ActionKey(name: "down")))
+        XCTAssertTrue(tree.isSelected(save, selection: selection))
+        XCTAssertTrue(tree.follows([.pressed], at: save) == false && tree.follows([.selected], at: save))
+    }
+
+    func testTheItemsHoldTheFocusUntilItLeavesThemForAPartBelow() async throws {
+        _ = try await open(rows)
+        try await wait("the items") { self.titles == ["Apple"] }
+        let tree = try XCTUnwrap(model.openParts?.tree)
+        let selection = model.sheetContent(of: try XCTUnwrap(model.card(id: "tree"))).selectedPart
+
+        XCTAssertTrue(tree.isSelected(try node("list"), selection: selection))
+        for _ in 0..<2 where !model.handleKey(ActionKey(name: "down")) {
+            XCTAssertTrue(model.handleSearchKey(ActionKey(name: "down")))
+        }
+        XCTAssertEqual(model.openParts?.selectedPart?.id, "add")
+        XCTAssertFalse(tree.isSelected(try node("list"), selection: selection))
+    }
+
+    func testTheFocusLinesOfASheetFollowItsPlaceAndTheMacsAppearance() async throws {
+        _ = try await open("frame=\\nclass=gap-part\\n\\nbox=pair\\nclass=light:flex-row float:flex-row\\n\\nbutton=a\\nparent=pair\\ntitle=A\\n\\nbutton=b\\nparent=pair\\ntitle=B\\n")
+        try await wait("the parts") { self.model.openParts != nil }
+
+        XCTAssertEqual(model.openParts?.variants, [.sheet, .dark])
+        model.runs.take(appearance: .light)
+        XCTAssertEqual(model.openParts?.variants, [.sheet, .light])
+        model.runs.take(appearance: .dark)
+        model.float("tree")
+        try await wait("the float") { self.model.sheets["tree"]?.panel?.variants == [.float, .dark] }
+    }
 }

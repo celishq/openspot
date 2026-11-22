@@ -221,7 +221,7 @@ extension SpotRun {
             onReport(.parts)
         } else {
             partsArrival {
-                panel = SheetParts(output: lines)
+                panel = SheetParts(output: lines, variants: runs.variants(of: spot.id))
                 rows()
             }
             partsAnswers += 1
