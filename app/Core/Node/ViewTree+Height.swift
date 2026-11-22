@@ -28,12 +28,11 @@ extension ViewTree {
     }
 
     private func lay(_ ids: [String], style: Style, in variants: Set<Style.Variant>, shown: Set<String>, words: [String: CGFloat], size: CGSize, into frames: inout [String: CGRect]) {
-        let side = { (edge: Style.Edge) in style.padding[edge]?.points(of: 0) ?? 0 }
         let placed = ids.filter(shown.contains).compactMap { nodes[$0] }
         let children = placed.map { node in
             BoxLayout.Child(style: node.style.resolved(for: variants)) { width, _ in measure(node, in: variants, shown: shown, words: words, width: width) }
         }
-        let room = CGSize(width: size.width - side(.left) - side(.right), height: size.height - side(.top) - side(.bottom))
+        let room = CGSize(width: size.width - style.insets.width, height: size.height - style.insets.height)
         let layout = BoxLayout(style: style).place(children, width: room.width, height: room.height)
         for (node, frame) in zip(placed, layout.frames) {
             frames[node.id] = frame
@@ -43,14 +42,12 @@ extension ViewTree {
     }
 
     private func measure(_ ids: [String], style: Style, in variants: Set<Style.Variant>, shown: Set<String>, words: [String: CGFloat], width: CGFloat?) -> CGSize {
-        let side = { (edge: Style.Edge) in style.padding[edge]?.points(of: 0) ?? 0 }
-        let across = side(.left) + side(.right)
-        let down = side(.top) + side(.bottom)
+        let insets = style.insets
         let children = ids.filter(shown.contains).compactMap { nodes[$0] }.map { node in
             BoxLayout.Child(style: node.style.resolved(for: variants)) { width, _ in measure(node, in: variants, shown: shown, words: words, width: width) }
         }
-        let size = BoxLayout(style: style).place(children, width: width.map { $0 - across }, height: nil).size
-        return CGSize(width: size.width + across, height: size.height + down)
+        let size = BoxLayout(style: style).place(children, width: width.map { $0 - insets.width }, height: nil).size
+        return CGSize(width: size.width + insets.width, height: size.height + insets.height)
     }
 
     private func measure(_ node: ViewNode, in variants: Set<Style.Variant>, shown: Set<String>, words: [String: CGFloat], width: CGFloat?) -> CGSize {
@@ -58,15 +55,13 @@ extension ViewTree {
         if node.kind != BlockKind.items, node.kind == BlockKind.box || !node.children.isEmpty {
             return measure(node.children, style: style, in: variants, shown: shown, words: words, width: width)
         }
-        let across = (style.padding[.left]?.points(of: 0) ?? 0) + (style.padding[.right]?.points(of: 0) ?? 0)
-        return CGSize(width: width ?? (words[node.id] ?? 0) + across, height: leafHeight(node, style, width: width))
+        return CGSize(width: width ?? (words[node.id] ?? 0) + style.insets.width, height: leafHeight(node, style, width: width))
     }
 
     func leafHeight(_ node: ViewNode, _ style: Style, width: CGFloat?) -> CGFloat {
-        let side = { (edge: Style.Edge) in style.padding[edge]?.points(of: 0) ?? 0 }
-        let room = width.map { max($0 - side(.left) - side(.right), 0) }
+        let room = width.map { max($0 - style.insets.width, 0) }
         let content = node.kind == BlockKind.text.word ? textHeight(node, style, width: room) : node.naturalSize.height
-        return content + side(.top) + side(.bottom)
+        return content + style.insets.height
     }
 
     private func textHeight(_ node: ViewNode, _ style: Style, width: CGFloat?) -> CGFloat {

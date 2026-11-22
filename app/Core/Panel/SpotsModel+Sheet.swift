@@ -26,7 +26,7 @@ extension SpotsModel {
 
     public var showsSearch: Bool {
         if let form { return form.draft.choices != nil && !isEditing }
-        return !isEditing && openSheet?.partsKind?.takesKeys != false
+        return !isEditing && openSheet?.takesKeys != false
     }
 
     public var fieldTop: SheetTop {

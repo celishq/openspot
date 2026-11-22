@@ -68,6 +68,8 @@ public struct BlockKind: Sendable, Equatable {
 
     static let listWords = [items, option, box]
 
+    public static let controlWords: Set = [button.word, field.word, toggle.word, choice.word, number.word, series.word]
+
     public static var words: Set<String> {
         Set(all.map(\.word) + listWords)
     }

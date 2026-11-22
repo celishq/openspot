@@ -175,7 +175,7 @@ public final class SpotRun {
     public private(set) var shape = Shape(rows: 0, perLine: 1)
     public private(set) var kind = SheetKind.rows
     public private(set) var partsRect: CGRect?
-    public private(set) var partsKind: SheetKind?
+    public private(set) var takesKeys = true
     public private(set) var sheetRect = SpotTokens.sheetRect(rows: 0)
     public private(set) var showsField = true
     public private(set) var top = SheetTop.plain
@@ -321,8 +321,8 @@ public final class SpotRun {
         }
         let rect = panel.map(SpotTokens.panelRect)
         if rect != partsRect { partsRect = rect }
-        let parts = panel?.kind
-        if parts != partsKind { partsKind = parts }
+        let keys = panel?.kind.takesKeys != false
+        if keys != takesKeys { takesKeys = keys }
         let sheet = rect ?? SpotTokens.sheetRect(rows: next.rows, perLine: next.perLine, setsApart: next.setsApart, top: nextTop)
         if sheet != sheetRect { sheetRect = sheet }
     }
