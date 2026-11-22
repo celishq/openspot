@@ -135,7 +135,7 @@ struct SpotCustomView: View, @MainActor Equatable {
     }
 
     private var theme: [String: Any] {
-        SpotLoadedTheme.shared.viewTheme(isDark: scheme == .dark, corner: corner)
+        SpotLoadedTheme.shared.viewTheme(isDark: scheme == .dark, corner: room == nil ? corner : surface.radius)
     }
 
     @ViewBuilder

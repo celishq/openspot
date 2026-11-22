@@ -16,7 +16,7 @@ struct SpotSampleSheet: View {
                 SpotSheetTitle(title: entry.spot.name, subtitle: entry.spot.subtitle)
             }
             if let sample {
-                SpotSheetBody(panel: sample.panel, list: sample.list, onPick: pick(in: sample.list), selection: { selected })
+                SpotSheetBody(panel: sample.panel, list: sample.list, onPick: pick(in: sample.list), selection: { selected }, title: entry.spot.name)
             }
         }
         .padding(SpotTokens.padding)

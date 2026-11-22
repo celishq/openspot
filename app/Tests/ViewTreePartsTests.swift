@@ -82,6 +82,13 @@ final class ViewTreePartsTests: XCTestCase {
         XCTAssertEqual(frame.face.parts.map(\.id), ["a", "b"])
     }
 
+    func testANodeHiddenInTheSheetTakesNoGap() throws {
+        let hidden = try XCTUnwrap(SheetParts(output: Frame(text: "frame=\nclass=gap-8\n\nswitch=a\ntitle=A\n\ntext=b\ntitle=B\nclass=hidden wide:flex\n\nswitch=c\ntitle=C\nclass=sheet:hidden\n\nswitch=d\ntitle=D\n")))
+        let shown = try XCTUnwrap(SheetParts(output: Frame(text: "frame=\nclass=gap-8\n\nswitch=a\ntitle=A\n\nswitch=d\ntitle=D\n")))
+
+        XCTAssertEqual(hidden.placement.height, shown.placement.height)
+    }
+
     func testAChoiceIsAListWhenItsNodeIsTwoRowsTall() {
         let options = "option=x\ntitle=X\n\noption=y\ntitle=Y\n"
         let frame = Frame(text: "frame=\nclass=gap-2\n\nchoice=tall\nclass=h-24\n\n\(options)\nchoice=grown\nclass=grow\n\n\(options)\nchoice=menu\n\n\(options)")
