@@ -60,13 +60,13 @@ public struct SheetParts: Equatable, Sendable {
         parts.first { !$0.items.isEmpty }?.items ?? []
     }
 
-    private static func height(of parts: [SpotPart], in tree: ViewTree, shownIn variants: Set<Style.Variant>, room: CGFloat) -> CGFloat {
-        tree.height(in: SpotTokens.partsWidth, parts: parts, variants: variants).map { min($0, room) } ?? room
+    private static func height(of tree: ViewTree, shownIn variants: Set<Style.Variant>, room: CGFloat) -> CGFloat {
+        tree.height(in: SpotTokens.partsWidth, variants: variants).map { min($0, room) } ?? room
     }
 
     mutating func place(top: SheetTop? = nil) {
         if let top { self.top = top }
-        height = Self.height(of: parts, in: tree, shownIn: variants, room: self.top.partsRoom)
+        height = Self.height(of: tree, shownIn: variants, room: self.top.partsRoom)
         orderFocus()
     }
 

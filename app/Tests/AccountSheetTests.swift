@@ -95,7 +95,7 @@ final class AccountSheetTests: BuiltInCase {
     func testALineIsATileWhoseEdgeMeetsTheButtonsAndWhoseWordsWrapInsideIt() async throws {
         let read = try await frame(["show"])
         let tree = Frame(text: read).tree
-        let frames = tree.frames(in: SpotTokens.partsWidth, room: SpotTokens.partsMaxHeight, parts: [], words: [:])
+        let frames = tree.frames(in: SpotTokens.partsWidth, room: SpotTokens.partsMaxHeight, words: [:])
         let head = try XCTUnwrap(tree.node("head"))
         let style = head.style.resolved(for: [.sheet])
 

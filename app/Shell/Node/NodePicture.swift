@@ -3,6 +3,7 @@ import SwiftUI
 
 struct NodePicture: View {
     let icon: Icon?
+    let size: CGSize
     @Environment(\.spotPictureTimes) private var times
 
     var body: some View {
@@ -16,6 +17,6 @@ struct NodePicture: View {
                 }
             }
         }
-        .frame(idealWidth: SpotTokens.cell, idealHeight: SpotTokens.cell)
+        .frame(idealWidth: size.width, idealHeight: size.height)
     }
 }

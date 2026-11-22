@@ -232,6 +232,18 @@ final class ViewTreeTests: XCTestCase {
         XCTAssertTrue(FrameCheck(text: text).partFaults.isEmpty)
     }
 
+    func testEachLeafHasOneNaturalSize() {
+        let tree = Frame(text: "frame=\nclass=gap-part\n\nicon=wifi\nvalue=wifi\n\npicture=cup\nicon=cups.png\n\nnumber=cpu\nvalue=1\n\nfield=keys\ntype=hotkey\nvalue=cmd+k\n\nitems=list\n").tree
+        let icon = SpotTokens.listIconSize
+        let cell = SpotTokens.cell
+
+        XCTAssertEqual(tree.node("wifi")?.naturalSize, CGSize(width: icon, height: icon))
+        XCTAssertEqual(tree.node("cup")?.naturalSize, CGSize(width: cell, height: cell))
+        XCTAssertEqual(tree.node("cpu")?.naturalSize, CGSize(width: cell, height: SpotTokens.listRow))
+        XCTAssertEqual(tree.node("keys")?.naturalSize, CGSize(width: cell, height: 2 * SpotTokens.listRow + SpotTokens.partGap))
+        XCTAssertEqual(tree.node("list")?.naturalSize, CGSize(width: cell, height: SpotTokens.listRow))
+    }
+
     func testTheClassesOfTheItemsLayOutEachItem() {
         let text = "frame=\nclass=gap-part\n\nitems=list\nclass=grid grid-cols-4 gap-part\n\ntext=a\nparent=list\ntitle=A\nclass=bg-tile\n"
 
@@ -247,8 +259,8 @@ final class ViewTreeTests: XCTestCase {
     }
 
     func testATextsPaddingIsPartOfItsHeight() throws {
-        let plain = try XCTUnwrap(Frame(text: "frame=\n\ntext=a\ntitle=A\n").tree.height(in: SpotTokens.partsWidth, parts: []))
-        let padded = try XCTUnwrap(Frame(text: "frame=\n\ntext=a\ntitle=A\nclass=p-3\n").tree.height(in: SpotTokens.partsWidth, parts: []))
+        let plain = try XCTUnwrap(Frame(text: "frame=\n\ntext=a\ntitle=A\n").tree.height(in: SpotTokens.partsWidth))
+        let padded = try XCTUnwrap(Frame(text: "frame=\n\ntext=a\ntitle=A\nclass=p-3\n").tree.height(in: SpotTokens.partsWidth))
 
         XCTAssertEqual(padded, plain + 2 * 3 * SpotTokens.spaceUnit)
     }
@@ -256,9 +268,9 @@ final class ViewTreeTests: XCTestCase {
     func testATextCountsEachLineItsWordsWrapTo() throws {
         let short = "frame=\n\ntext=a\ntitle=A\ndetail=One line\n"
         let long = "frame=\n\ntext=a\ntitle=A\ndetail=\(Array(repeating: "words", count: 60).joined(separator: " "))\n"
-        let one = try XCTUnwrap(Frame(text: short).tree.height(in: SpotTokens.partsWidth, parts: []))
-        let many = try XCTUnwrap(Frame(text: long).tree.height(in: SpotTokens.partsWidth, parts: []))
-        let cut = try XCTUnwrap(Frame(text: long + "class=truncate\n").tree.height(in: SpotTokens.partsWidth, parts: []))
+        let one = try XCTUnwrap(Frame(text: short).tree.height(in: SpotTokens.partsWidth))
+        let many = try XCTUnwrap(Frame(text: long).tree.height(in: SpotTokens.partsWidth))
+        let cut = try XCTUnwrap(Frame(text: long + "class=truncate\n").tree.height(in: SpotTokens.partsWidth))
         let line = CGFloat(SpotTokens.layout.type.detail) + SpotTokens.textLeading
 
         XCTAssertGreaterThanOrEqual(many, one + 4 * line)
