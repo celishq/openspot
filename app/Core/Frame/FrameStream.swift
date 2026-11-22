@@ -17,10 +17,20 @@ struct FrameStream: Sendable {
             self.drawn = drawing.isEmpty ? drawn : text
             return
         }
-        let merged = TextBlock.patching(TextBlock.blocks(in: base).filter { RootKey.starts($0) || Self.draws($0) }, with: drawing) { block in
+        let kept = Frame.grouping(TextBlock.blocks(in: base).filter { RootKey.starts($0) || Self.draws($0) })
+        let grouped = Frame.grouping(drawing)
+        var merged = TextBlock.patching(kept, with: grouped.filter { !Self.isOption($0) }) { block in
             RootKey.starts(block) ? nil : Self.id(of: block)
         }
-        let whole = merged.map(\.text).joined(separator: "\n")
+        for option in grouped where Self.isOption(option) {
+            let id = option.fields.first?.value
+            if let index = merged.firstIndex(where: { $0.children.contains { $0.fields.first?.value == id } }) {
+                merged[index] = merged[index].replacing(child: option)
+            } else {
+                merged.append(option)
+            }
+        }
+        let whole = merged.map { ([$0] + $0.children).map(\.text).joined(separator: "\n") }.joined(separator: "\n")
         self.text = ([whole] + blocks.filter { !RootKey.starts($0) && !Self.draws($0) }.map(\.text)).joined(separator: "\n")
         self.drawn = whole
     }
@@ -35,6 +45,10 @@ struct FrameStream: Sendable {
     }
 
     private static func id(of block: TextBlock) -> String? {
-        block.fields.first.flatMap { $0.value.isEmpty ? nil : $0.value }
+        block.fields.first.flatMap { $0.value.isEmpty || $0.key == BlockKind.option ? nil : $0.value }
+    }
+
+    private static func isOption(_ block: TextBlock) -> Bool {
+        block.fields.first?.key == BlockKind.option
     }
 }

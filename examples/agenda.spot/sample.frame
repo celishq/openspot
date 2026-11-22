@@ -1,6 +1,7 @@
 frame=
 class=gap-part
 recents=false
+value=next
 
 items=items
 class=card:hidden

@@ -101,7 +101,7 @@ final class SheetFocusTests: XCTestCase {
 
         XCTAssertFalse(sheet.takesArrows)
         XCTAssertNil(sheet.selectedPart)
-        XCTAssertEqual(sheet.focusOrder.map(\.id), ["add"])
+        XCTAssertEqual(sheet.focusOrder.map(\.id), ["top", "add"])
         XCTAssertTrue(sheet.leaveRows())
         XCTAssertEqual(sheet.selectedPart?.id, "add")
         sheet.moveLine(by: -1)
@@ -142,5 +142,33 @@ final class SheetFocusTests: XCTestCase {
         XCTAssertEqual(float.parts.map(\.id), ["a", "b"])
         XCTAssertEqual(float.focusOrder.map(\.id), ["a", "b"])
         XCTAssertEqual(float.height, 2 * SpotTokens.listRow + SpotTokens.partGap)
+    }
+
+
+    func testThePartsAboveTheItemsTakeTheFocusInTheOrderOfTheTree() throws {
+        var sheet = try panel("frame=\nclass=gap-part\n\nswitch=wifi\ntitle=Wi-Fi\nvalue=true\n\nitems=list\n\ntext=a\nparent=list\ntitle=A\n\nfield=note\ntitle=Note\n")
+
+        XCTAssertEqual(sheet.focusOrder.map(\.id), ["wifi", "note"])
+        XCTAssertNil(sheet.selectedPart)
+        XCTAssertTrue(sheet.leaveRows())
+        XCTAssertEqual(sheet.selectedPart?.id, "note")
+        XCTAssertTrue(sheet.moveLine(by: -1))
+        XCTAssertNil(sheet.selectedPart)
+        XCTAssertTrue(sheet.leaveRows(upward: true))
+        XCTAssertEqual(sheet.selectedPart?.id, "wifi")
+        XCTAssertTrue(sheet.moveLine(by: 1))
+        XCTAssertNil(sheet.selectedPart)
+    }
+
+
+    func testASearchFieldInALayoutTakesItsPlaceInTheTreeAndTheSheetHasNoFieldRow() throws {
+        let text = "frame=\nclass=gap-part\n\ntext=intro\ntitle=Saved\n\nfield=find\ntype=search\nclass=bg-tile\n\nitems=list\n\ntext=a\nparent=list\ntitle=A\n"
+        let sheet = try panel(text)
+
+        XCTAssertTrue(sheet.placesSearch)
+        XCTAssertEqual(sheet.top, SheetTop(header: 0, hasField: false))
+        XCTAssertEqual(sheet.tree.children, ["intro", "find", "list"])
+        XCTAssertEqual(sheet.tree.node("find")?.isSearch, true)
+        XCTAssertEqual(Frame(text: text).search, .local)
     }
 }

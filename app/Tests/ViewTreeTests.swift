@@ -284,4 +284,28 @@ final class ViewTreeTests: XCTestCase {
         XCTAssertEqual(check.partFaults, [])
         XCTAssertEqual(check.output.actions, [])
     }
+
+
+    func testALaterFrameChangesABlockOfItsOwnKindAndAnOptionStaysWithItsChoice() {
+        let base = "frame=\nclass=gap-part\n\nicon=wifi\nvalue=wifi\n\nchoice=net\nvalue=wifi\n\noption=wifi\ntitle=Wi-Fi\n\ntext=note\ntitle=Note\n"
+        let patch = "choice=net\nvalue=lan\n\noption=lan\ntitle=Ethernet\n\noption=wifi\ntitle=Wireless\n"
+
+        let output = Frame(text: FrameStream(patch, after: FrameStream(base, after: nil).drawn).text)
+
+        XCTAssertEqual(output.tree.children, ["wifi", "net", "note"])
+        XCTAssertEqual(output.tree.node("wifi")?.kind, "icon")
+        XCTAssertEqual(output.parts.first { $0.id == "net" }?.control, .menu([.init(id: "lan", title: "Ethernet"), .init(id: "wifi", title: "Wireless")], value: "lan"))
+        XCTAssertEqual(output.errors, [])
+        let renamed = Frame(text: FrameStream("option=wifi\ntitle=Air\n", after: FrameStream(base, after: nil).drawn).text)
+        XCTAssertEqual(renamed.parts.first { $0.id == "net" }?.control, .menu([.init(id: "wifi", title: "Air")], value: "wifi"))
+        XCTAssertEqual(renamed.errors, [])
+    }
+
+    func testAButtonGivesItsHoverToTheBlocksInsideIt() throws {
+        let tree = Frame(text: "frame=\n\nbutton=go\n\ntext=label\nparent=go\ntitle=Go\nclass=hover:text-accent\n").tree
+        let button = try XCTUnwrap(tree.node("go"))
+
+        XCTAssertTrue(tree.tracksHover(button))
+        XCTAssertEqual(tree.states(in: [.sheet], pressed: false, hovered: true, selected: false), [.sheet, .hover])
+    }
 }

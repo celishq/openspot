@@ -113,6 +113,7 @@ private struct SheetContentView: View {
         .frame(width: rect.width, height: rect.height, alignment: .topLeading)
         .overlay(alignment: .topLeading) { fileDrag }
         .environment(\.spotViewPlace, SpotViewPlace(model: model, place: .sheet(entry.id)))
+        .environment(\.spotSearchTitle, state.title)
         .environment(\.spotViewDates, entry.spot.viewDates)
     }
 
@@ -126,7 +127,7 @@ private struct SheetContentView: View {
                             .frame(width: max(cardWordsWidth, 0), alignment: .leading)
                             .morph(progress, opacity: { [morph] in morph.sourceLook(at: $0) })
                     }
-                    words(subtitle: list.perLine > 1 ? nil : state.subtitle, selectedName: list.perLine > 1)
+                    words(subtitle: state.subtitle)
                         .frame(width: max(sheetWordsWidth, 0), alignment: .leading)
                         .morph(progress, opacity: sheetWordsOpacity)
                 }
@@ -137,16 +138,14 @@ private struct SheetContentView: View {
             .overlay(alignment: .trailing) { closeButton }
     }
 
-    private func words(title: String? = nil, subtitle: String?, selectedName: Bool = false) -> some View {
+    private func words(title: String? = nil, subtitle: String?) -> some View {
         VStack(alignment: .leading, spacing: SpotType.lineGap) {
             Text(title ?? form?.form.title ?? state.title)
                 .font(SpotType.title)
                 .frame(height: SpotType.titleLine)
                 .modifier(SpotInk())
                 .lineLimit(1)
-            if form == nil, selectedName {
-                SelectedName(list: list, selection: selection, fallback: state.subtitle)
-            } else if form == nil, let subtitle {
+            if form == nil, let subtitle {
                 let lines = title == nil && hasSecondLine ? 2 : 1
                 Text(subtitle)
                     .font(SpotType.detail)
@@ -246,7 +245,7 @@ private struct SheetContentView: View {
 
     private var tallCardShift: CGSize {
         guard !hasCardLook, cardSize.rows > 1 else { return .zero }
-        let hasSubtitle = form == nil && (state.subtitle != nil || (list.perLine > 1 && !list.shown.isEmpty))
+        let hasSubtitle = form == nil && state.subtitle != nil
         let wordsHeight = SpotType.titleLine + (hasSubtitle ? SpotType.lineGap + SpotType.detailLine : 0)
         let row = max(SpotTokens.glyph, wordsHeight)
         let top = SpotTokens.padding + (row - wordsHeight) / 2
@@ -273,22 +272,5 @@ private struct CreateLabel: View {
             .background(SpotTheme.ink.opacity(SpotTheme.fill), in: shape)
             .modifier(SpotSelectionRing(isSelected: true, shape: shape))
             .contentShape(shape)
-    }
-}
-
-private struct SelectedName: View {
-    let list: ItemList
-    let selection: () -> Int
-    let fallback: String?
-
-    var body: some View {
-        let index = selection()
-        if let name = list.shown.indices.contains(index) ? list.shown[index].title : fallback {
-            Text(name)
-                .font(SpotType.detail)
-                .frame(height: SpotType.detailLine)
-                .modifier(SpotSecondaryText())
-                .lineLimit(1)
-        }
     }
 }

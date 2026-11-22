@@ -132,7 +132,7 @@ process_rows() {
   }' | openspot_items number
 }
 
-printf 'frame=\nclass=gap-part\n\nbox=gauges\nclass=grid grid-cols-4 gap-part wide:grow square:grow strip:grow large:grow wide:flex-row wide:justify-between square:grid-cols-2 strip:grid-cols-2 large:grid-cols-2\n\n'
+printf 'frame=\nclass=gap-part\nvalue=cpu\n\nbox=gauges\nclass=grid grid-cols-4 gap-part wide:grow square:grow strip:grow large:grow wide:flex-row wide:justify-between square:grid-cols-2 strip:grid-cols-2 large:grid-cols-2\n\n'
 battery | gauge 'sheet:h-20 wide:aspect-square large:row-span-3 strip:hidden' 'hidden strip:flex'
 printf '\n'
 cpu | gauge 'sheet:h-20 wide:aspect-square large:hidden strip:hidden' 'hidden large:flex strip:flex'

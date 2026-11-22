@@ -22,6 +22,7 @@ public struct Frame: Equatable, Sendable {
     private(set) var searchField: TextBlock?
     public private(set) var errors: [String] = []
     public private(set) var value: TextBlock?
+    private(set) var unnamedValues: [String] = []
     private(set) var valueKind: BlockKind?
     private var barValue: TextBlock?
     private var barKind: BlockKind?
@@ -38,7 +39,7 @@ public struct Frame: Equatable, Sendable {
     static let open = "open"
     private static let sheetRoot = RootKey.block([.init(key: ViewNode.classKey, value: "gap-part")])
     private static let itemsBlock = TextBlock(fields: [.init(key: BlockKind.items, value: "items")])
-    private static let searchType = "search"
+    static let searchType = "search"
     private static let sheetPlaces: [Set<Style.Variant>] = [Style.Variant.sheet, .float, .window].flatMap { place in [[place, .dark], [place, .light]] }
 
     static func grouping(_ blocks: [TextBlock]) -> [TextBlock] {
@@ -70,7 +71,7 @@ public struct Frame: Equatable, Sendable {
     }
 
     init(grouped written: [TextBlock], kinds: [BlockKind]) {
-        let blocks = TextBlock.patching([], with: written) { ViewTree.id(of: $0, in: kinds) }
+        let blocks = TextBlock.patching([], with: written) { ViewTree.patchID(of: $0, in: kinds) }
         let frame = FrameRoot(blocks: blocks, kinds: kinds)
         isPicture = frame.isPicture
         isMark = frame.isMark
@@ -137,11 +138,14 @@ public struct Frame: Equatable, Sendable {
         if let onCard { carded = every.filter { onCard.contains($0.id) } }
         let placedValues = values.filter { (onCard ?? placed).contains($0.block.fields.first?.value ?? "") }
         let sole = placedValues.isEmpty ? values : placedValues
-        let held = sole.count == 1 ? sole.first : nil
+        let namedID = head?.value(RootKey.value.rawValue)
+        let named = namedID.flatMap { id in values.first { $0.block.fields.first?.value == id } }
+        let held = named ?? (sole.count == 1 ? sole.first : nil)
         value = held?.block
         valueKind = held?.kind
+        if namedID == nil, onCard != nil, placedValues.count > 1 { unnamedValues = placedValues.compactMap { $0.block.fields.first?.value } }
         let barred = tree.drawsOnBar ? tree.shown(in: [.bar]) : []
-        let shown = barred.lazy.compactMap { id in values.first { $0.block.fields.first?.value == id } }.first
+        let shown = named.flatMap { barred.contains(namedID ?? "") ? $0 : nil } ?? barred.lazy.compactMap { id in values.first { $0.block.fields.first?.value == id } }.first
         barValue = shown?.block
         barKind = shown?.kind
         hasBar = !barred.isEmpty
@@ -207,6 +211,10 @@ public struct Frame: Equatable, Sendable {
 
     public var valuePart: SpotPart? {
         value.flatMap { block in every.first { $0.id == block.fields.first?.value } }
+    }
+
+    public var placesSearch: Bool {
+        tree.isWritten && searchField != nil
     }
 
     public var perLine: Int? {

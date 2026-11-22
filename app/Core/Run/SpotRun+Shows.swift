@@ -38,6 +38,7 @@ extension SpotRun {
     }
 
     public func search(_ text: String) {
+        if panel?.isSelectionMoved == true { panel?.clearSelection() }
         if list.search == .local { return find(text) }
         guard list.search(text), list.search == .script else { return }
         if let older = running(Self.searchKey) { stop(older) }

@@ -18,6 +18,7 @@ public struct ViewNode: Equatable, Sendable, Identifiable {
     public let icon: Icon?
     public let source: String?
     public let values: [String: [String]]
+    public let isSearch: Bool
     private let lines: Int
 
     public var naturalSize: CGSize {
@@ -48,6 +49,7 @@ public struct ViewNode: Equatable, Sendable, Identifiable {
         icon = Icon(text: block.value(kind == BlockKind.icon.word ? "value" : "icon"))
         source = part?.source
         lines = part == .hotkey ? 2 : 1
+        isSearch = kind == BlockKind.field.word && block.value("type") == Frame.searchType
         values = source == nil ? [:] : Dictionary(grouping: block.fields, by: \.key).mapValues { $0.map(\.value) }
     }
 }

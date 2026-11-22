@@ -19,12 +19,14 @@ public struct SheetParts: Equatable, Sendable {
     public private(set) var generation = 0
     public private(set) var answered = 0
     public private(set) var showsRows: Bool
+    public private(set) var placesSearch: Bool
     public private(set) var tree: ViewTree
     public private(set) var height: CGFloat
     public private(set) var pictureTimes: [String: Double]
     public private(set) var rows: [[String]]
     private var focusOffsets: [Int] = []
     private var focusLineOffsets: [[Int]] = []
+    private var rowsLine = 0
     public private(set) var selected: String?
     public private(set) var top: SheetTop
     public private(set) var variants: Set<Style.Variant>
@@ -35,8 +37,9 @@ public struct SheetParts: Equatable, Sendable {
         parts = Self.parts(of: output.parts, in: output.tree, shownIn: variants)
         self.variants = variants
         showsRows = output.perLine != nil
+        placesSearch = output.placesSearch
         tree = output.tree
-        top = SheetTop(showsRows: showsRows, search: output.search, header: 0)
+        top = SheetTop(showsRows: showsRows && !placesSearch, search: output.search, header: 0)
         height = 0
         pictureTimes = Self.pictureTimes(of: output.parts)
         rows = output.rows
@@ -74,23 +77,23 @@ public struct SheetParts: Equatable, Sendable {
     }
 
     private mutating func orderFocus() {
-        focusLineOffsets = Self.lines(of: tree, parts: parts, in: variants)
+        (focusLineOffsets, rowsLine) = Self.lines(of: tree, parts: parts, in: variants)
         focusOffsets = focusLineOffsets.flatMap { $0 }
     }
 
-    private static func lines(of tree: ViewTree, parts: [SpotPart], in variants: Set<Style.Variant>) -> [[Int]] {
+    private static func lines(of tree: ViewTree, parts: [SpotPart], in variants: Set<Style.Variant>) -> ([[Int]], Int) {
         var lines: [[Int]] = []
         var lineRow: String?
-        var isBelowItems = !tree.holdsItems
+        var rowsLine = 0
         func walk(_ ids: [String], row: String?) {
             for id in ids {
                 guard let node = tree.node(id) else { continue }
                 if node.kind == BlockKind.items {
-                    isBelowItems = true
+                    rowsLine = lines.count
                     lineRow = nil
                     continue
                 }
-                if isBelowItems, let offset = parts.firstIndex(where: { $0.id == id }), parts[offset].isFocusable {
+                if let offset = parts.firstIndex(where: { $0.id == id }), parts[offset].isFocusable {
                     if let row, row == lineRow, !lines.isEmpty {
                         lines[lines.count - 1].append(offset)
                     } else {
@@ -102,7 +105,7 @@ public struct SheetParts: Equatable, Sendable {
             }
         }
         walk(tree.children, row: nil)
-        return lines
+        return (lines, rowsLine)
     }
 
     public var inputs: [TextBlock.Field] {
@@ -166,7 +169,7 @@ public struct SheetParts: Equatable, Sendable {
         guard let current = selectedPart else { return false }
         let all = focusLines
         guard let index = all.firstIndex(where: { $0.contains { $0.id == current.id } }) else { return false }
-        if index + lines < 0, showsRows {
+        if showsRows, (index < rowsLine) != (index + lines < rowsLine) {
             selected = nil
             return true
         }
@@ -178,8 +181,10 @@ public struct SheetParts: Equatable, Sendable {
     }
 
     @discardableResult
-    public mutating func leaveRows() -> Bool {
-        guard showsRows, let line = focusLines.first, let first = line.first else { return false }
+    public mutating func leaveRows(upward: Bool = false) -> Bool {
+        let all = focusLines
+        let target = upward ? rowsLine - 1 : rowsLine
+        guard showsRows, all.indices.contains(target), let first = all[target].first else { return false }
         selected = first.id
         return true
     }
@@ -222,6 +227,7 @@ public struct SheetParts: Equatable, Sendable {
         let kept = every.first { $0.id == id }?.value
         every = output.parts
         showsRows = output.perLine != nil
+        placesSearch = output.placesSearch
         tree = output.tree
         if let id, let kept, let index = every.firstIndex(where: { $0.id == id }) { every[index].set(kept) }
         parts = Self.parts(of: every, in: tree, shownIn: variants)

@@ -31,15 +31,15 @@ final class SheetLayoutTests: XCTestCase {
         XCTAssertEqual(SpotTokens.sheetRect(rows: 3).height, SpotTokens.sheetRowsTop + three + SpotTokens.padding)
     }
 
-    func testASheetWithRowsKeepsRoomForTheFieldOnlyWhenItSearches() throws {
+    func testASheetWithRowsKeepsNoRoomOverItsPartsForAPlacedSearch() throws {
         let numbers = "series=cpu\nclass=h-20\nvalue=1,2\n\nitems=list\n\ntext=a\nparent=list\ntitle=A\n"
         let still = try XCTUnwrap(SheetParts(output: output("frame=\nclass=gap-part\n\n" + numbers)))
         let searched = try XCTUnwrap(SheetParts(output: output("frame=\nclass=gap-part\n\nfield=find\ntype=search\n\n" + numbers)))
 
         XCTAssertFalse(still.top.hasField)
-        XCTAssertTrue(searched.top.hasField)
+        XCTAssertFalse(searched.top.hasField)
         XCTAssertEqual(still.height, SpotTokens.partsMaxHeight)
-        XCTAssertEqual(searched.height, SpotTokens.partsMaxHeight - SpotTokens.partFieldRoom)
+        XCTAssertEqual(searched.height, SpotTokens.partsMaxHeight)
     }
 
     func testABlockThatDoesNotGrowKeepsTheHeightOfItsLines() throws {

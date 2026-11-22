@@ -64,6 +64,7 @@ extension Style {
         case "text-center": textAlignment = .center
         case "text-right": textAlignment = .right
         case "truncate": truncates = true
+        case "sr-only": hidesWords = true
         case "tabular-nums": tabularNumbers = true
         case "text-ink": ink = .ink
         case "text-secondary": ink = .secondary

@@ -88,7 +88,7 @@ card() {
     fi
     if [ -n "$(field meeting "$next")" ] && { [ "$value" = Now ] || [ "$left" -le 10 ]; }; then join=1; fi
   fi
-  printf 'frame=\nclass=gap-part\nrecents=false\n\nitems=items\nclass=card:hidden\n\n'
+  printf 'frame=\nclass=gap-part\nrecents=false\nvalue=next\n\nitems=items\nclass=card:hidden\n\n'
   printf 'box=head\nclass=hidden bar:flex wide:flex strip:flex square:flex large:flex flex-row gap-part grow\n\n'
   color=$(field color "$next")
   printf 'number=next\nparent=head\nclass=grow\nvalue=%s\ntitle=%s\ncolor=%s\n\n' "$value" "$title" "$color"

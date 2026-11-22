@@ -257,6 +257,10 @@ public struct ItemList: Equatable, Sendable {
         self.perLine = max(perLine, 1)
     }
 
+    public var isOnFirstLine: Bool {
+        selected < perLine
+    }
+
     public var isOnLastLine: Bool {
         shown.isEmpty || selected / perLine == (shown.count - 1) / perLine
     }

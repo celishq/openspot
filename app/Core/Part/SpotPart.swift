@@ -125,6 +125,13 @@ public struct SpotPart: Equatable, Sendable, Identifiable {
         }
     }
 
+    public var closesOnSet: Bool {
+        switch control {
+        case .text, .slider: false
+        default: closes
+        }
+    }
+
     public func drawn(as look: Look?) -> SpotPart {
         var part = self
         part.look = look

@@ -1835,4 +1835,28 @@ final class SpotsModelTests: XCTestCase {
         XCTAssertTrue(model.isEditing)
         XCTAssertEqual(model.query, "")
     }
+
+
+    func testASwitchWithCloseTrueClosesThePanelAfterItSends() async throws {
+        let calls = try await openParts("frame=\\nclass=gap-part\\n\\nswitch=vpn\\ntitle=VPN\\nvalue=false\\nclose=true\\n\\nswitch=wifi\\ntitle=Wi-Fi\\nvalue=false\\n")
+
+        model.setPart(try XCTUnwrap(model.openParts?.parts.first { $0.id == "wifi" }), to: "true")
+        try await wait("the first send") { self.calls(in: calls).contains("wifi true") }
+        XCTAssertEqual(host.dismissals, 0)
+        model.setPart(try XCTUnwrap(model.openParts?.parts.first { $0.id == "vpn" }), to: "true")
+
+        try await wait("the second send") { self.calls(in: calls).contains("vpn true") }
+        XCTAssertEqual(host.dismissals, 1)
+    }
+
+    func testUpOnTheFirstRowSelectsThePartAboveTheItems() async throws {
+        _ = try await openParts("frame=\\nclass=gap-part\\n\\nswitch=vpn\\ntitle=VPN\\nvalue=false\\n\\nitems=list\\n\\ntext=a\\nparent=list\\ntitle=A\\n\\ntext=b\\nparent=list\\ntitle=B\\n")
+        try await wait("the rows") { self.model.openItems?.shown.count == 2 }
+
+        XCTAssertTrue(model.handleKey(ActionKey(name: "up")))
+
+        XCTAssertEqual(model.openParts?.selectedPart?.id, "vpn")
+        model.searchText = "b"
+        XCTAssertNil(model.openParts?.selectedPart)
+    }
 }

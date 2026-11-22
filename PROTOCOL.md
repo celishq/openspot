@@ -137,6 +137,8 @@ isn't drawn.
   [Pages](#pages).
 - `class` lays out the blocks of the root, as on a box; see [Layouts](#layouts).
 - It takes `title`, `detail` and `active` for the card, and `recents`.
+- `value=<id>` names the block that is the spot's value on [the card](#the-card), in [the menu bar](#the-menu-bar)
+  and in [the main search](#the-main-search).
 - `progress=<0 to 1>` shows progress, and then `title` and `detail` show only on the running call.
 - `call=<n>` and `end=<n>`, here or in a block of their own, mark each call of a [staying spot](#a-staying-spot), one
   process that answers many calls.
@@ -231,6 +233,8 @@ end. Under it, Office and Café are the items of the list.
 - In a grid, `col-span-<n>` and `row-span-<n>` make a block cover more cells. In layers, `absolute` with `inset-0`, or
   with an edge such as `top-0`, pins a block to its box.
 - A divider is a box with `class=h-px bg-tile`, a line as thin as Openspot's own dividers.
+- The arrows move the keys through each switch, field, choice and button in the order of the tree, above the items
+  and under them.
 - `grow` takes the free space of a row or a column. Blocks that grow in one row get equal widths, as `flex-1` gives in
   CSS. An `items` block, a `multiline` field and a [view](#views) with no height take the free height of their box by
   themselves, and `grow=false` keeps one to its own height.
@@ -256,6 +260,9 @@ The row now shows Office with 82 Mb/s under it, in the same place.
 - A block of the same kind changes only the keys it prints. The other keys stay, and so does its place.
 - A block of another kind replaces the block, with only the keys it prints. It keeps the place and the blocks inside it.
 - A new `parent=<id>` moves the block into that block, and `parent=` with no value moves it to the root.
+- A `button` with a `scope` changes by its id too, like any other block.
+- An `option` belongs to the `choice` that it follows. A `choice` printed again with its options takes the new
+  options, and one printed with none keeps its options.
 - A block with a new id joins the end of its parent.
 - A later block in the same frame changes an earlier one by the same rules. A frame with a `frame=` line replaces all.
 
@@ -301,21 +308,22 @@ The sheet shows the list. A card shows only the battery, a ring around 84%, with
 The card stands for the spot in the panel.
 
 - Its **value** is the one `text`, `number`, `series`, `switch` or slider that shows on the card, or else the one among the
-  items.
+  items. When the card shows more than one, `value=<id>` in the root names it, and `openspot check spots` reports a
+  card that shows more than one with no `value`.
 - `active=true` in the root shows that the spot's thing is on.
 - A card whose frame holds only one switch or slider draws it, and a press changes it. Any other press does what Return
   does; see [The keys of a spot](GUIDE.md#the-keys-of-a-spot).
 
 ### The menu bar
 
-The menu bar shows the first value that shows on `bar:`, small, beside the clock, once a class names `bar:`, such as
-`class=bar:flex` on a `number`.
+The menu bar shows the first value that shows on `bar:`, or the one that `value` in the root names, small, beside the
+clock, once a class names `bar:`, such as `class=bar:flex` on a `number`.
 
 - A `number` with `type=ring` or `type=bar` is a small ring with its value, and any other `number` is its value. A
   `series` is its last 8 bars with its value.
 - A `text` with a `tone` and no `icon` is a dot of its tone and its title. Any other `text` is its title.
-- With no class that names `bar:`, the items are counted by their tone. A `switch` or slider that shows on `bar:` hides
-  it.
+- With no class that names `bar:`, the menu bar shows the spot's icon. A `switch` or slider that shows on `bar:` hides
+  the spot there.
 - A show that prints nothing hides the spot in the menu bar until the next show.
 
 ## Show a number
@@ -439,7 +447,8 @@ The sheet shows Save as its main button, across its width. Rename is a row of th
 - An action sends `<spot> <id> <item id>` while an item is selected, and `<spot> <id>` when none is. `scope=item`, the
   default, shows it only while an item is selected, and `scope=spot` always. An action needs a `title`.
 - Each press closes the panel, on a block, an item, a command or an [offered action](#offered-actions), unless it has
-  `close=false`. `confirm` asks for a second press. Return on an item runs the action `open`, and `button=open` gives it
+  `close=false`. A `switch`, a `choice` or a hotkey `field` closes the panel after it sends its value only with
+  `close=true`, and a text field or a slider doesn't close it, since it sends as you type or drag. `confirm` asks for a second press. Return on an item runs the action `open`, and `button=open` gives it
   a `title`.
 - `shortcut` is a letter, a digit, `return`, `backspace` or `,`, after `cmd+`, `shift+`, both or neither, or `escape`
   alone, which presses the button instead of closing the sheet. In a ⌘K menu of 3 rows or more, only a `shortcut`
@@ -525,9 +534,13 @@ Forget is a row of the ⌘K menu of the selected item, and a search for pointer 
 - A press of a text sends `<spot> open <id>`, of a switch `<spot> <id> true` or `false`, and of a `hotkey` field
   records a key. A press closes the panel, unless the item has `close=false`. An item can hold keys of its own, such as
   `meeting=42`, which come back as `item.<key>=`.
-- A frame has one `items` block. Its classes lay out each item, such as `grid grid-cols-4` for a grid of tiles.
-- In a frame with a layout, only a `field` with `type=search` adds a search field over the items. Openspot searches the
-  items and puts the items pressed most recently first, unless the root has `recents=false`.
+- A frame has one `items` block. Its classes lay out each item, such as `grid grid-cols-4` for a grid of tiles. In a
+  grid, each item shows its icon with its title and detail under it, and `class=sr-only` on an item shows only its
+  icon.
+- An item is one block. A block inside an item, such as a `box` in the `items` block, doesn't show, and
+  `openspot check spots` reports it.
+- In a frame with a layout, only a `field` with `type=search` adds a search field, and it draws where the layout puts
+  it. Openspot searches the items and puts the items pressed most recently first, unless the root has `recents=false`.
 - With `sheet.text` in `on`, each change of the text asks the spot with
   `event=sheet.text` and `search=<text>`, and the spot prints the items that match.
 
@@ -992,7 +1005,7 @@ A tile with round corners holds one row. The name, heavier and in the accent col
 | Alignment | `items-start`, `items-center`, `items-end`, `items-stretch`, `justify-start`, `justify-center`, `justify-end`, `justify-between`, `self-start`, `self-center`, `self-end`, `self-stretch` |
 | Space     | `p-<s>`, `px-<s>`, `py-<s>`, `pt-<s>`, `pr-<s>`, `pb-<s>`, `pl-<s>`, `gap-<s>`, `gap-x-<s>`, `gap-y-<s>`                                                       |
 | Size      | `w-<s>`, `h-<s>`, `size-<s>`, `min-w-<s>`, `max-w-<s>`, `grow`, `shrink-0`, `aspect-square`                                                                    |
-| Words     | `font-title`, `font-detail`, `font-metric`, `font-value`, `font-section`, `font-medium`, `font-semibold`, `font-bold`, `text-left`, `text-center`, `text-right`, `truncate`, `line-clamp-<n>`, `tabular-nums` |
+| Words     | `font-title`, `font-detail`, `font-metric`, `font-value`, `font-section`, `font-medium`, `font-semibold`, `font-bold`, `text-left`, `text-center`, `text-right`, `truncate`, `line-clamp-<n>`, `tabular-nums`, `sr-only` |
 | Colour    | `text-ink`, `text-secondary`, `text-accent`, `text-good`, `text-warn`, `text-bad`, `bg-tile`, `bg-accent`, `bg-good`, `bg-warn`, `bg-bad`, `bg-transparent`, `backdrop-blur`, `opacity-<p>` |
 | Shape     | `rounded-card`, `rounded-inner`, `rounded-full`, `rounded-none`, `border`, `overflow-hidden`                                                                   |
 
@@ -1005,7 +1018,7 @@ A tile with round corners holds one row. The name, heavier and in the accent col
 - `font-section` gives a `text` the look of a title over a group of blocks or items.
 - On a `button`, a `field`, a `switch`, a `choice`, a `number` or a `series`, a class chooses the box that Openspot draws for it:
   `bg-accent` is the one main button, `bg-tile` a tile, `bg-transparent` no box, and `rounded-full` on a button a chip
-  as wide as its words. An item with `bg-tile` shows its title and detail under its icon.
+  as wide as its words.
 - A block smaller than its box takes its place from `self-start`, `self-center` or `self-end`, or from `text-left`,
   `text-center` or `text-right` inside its own area.
 - `backdrop-blur` blurs what lies under the block with the material of the Mac. No class draws glass.
@@ -1034,6 +1047,7 @@ In the sheet, Play is a tile, and it becomes the main button while the pointer i
 
 - Prefixes combine, such as `card:hover:bg-tile`, and the class then applies only when each of them does.
 - A class with more prefixes wins over one with fewer, and a class with a prefix wins over the same class with none.
+- The blocks inside a `button` take its `hover:`, `pressed:`, `selected:` and `focus:`.
 
 ## Events
 
