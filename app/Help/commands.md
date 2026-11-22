@@ -13,8 +13,8 @@ prints the answer to a sum as an item.
 
 ## How a call ends
 
-- A call exits with code 0 when it's done, 1 when it failed, 2 when `openspot` doesn't take its words, and 3 when it
-  needs the app and no app answered. Words that `openspot` doesn't take print the verbs of the noun they name, or the
+- A call exits with code 0 when it's done, 1 when it failed, 2 when `openspot` doesn't take its words, 3 when it
+  needs the app and no app answered, and 4 when the person closed what it showed, as `run` does. Words that `openspot` doesn't take print the verbs of the noun they name, or the
   command they're closest to.
 - `openspot help <noun>`, or `--help` after a noun or a verb, prints only its verbs. `openspot help --json` prints each
   verb with its form, its effect and whether it needs the app.
@@ -30,9 +30,10 @@ prints the answer to a sum as an item.
   `store list`, `setting list` and `theme list`, prints blocks, the format of a frame. `--json` prints JSON.
 - `openspot batch` runs one call for each line of stdin, and prints `---` after each. It stops at the first failure.
 
-## The calls that fail in a show
+## The commands that fail in a read
 
-A show changes nothing and opens nothing, so these calls fail in it:
+A read, such as `show`, `search`, `every` or an event's handler, changes nothing and opens nothing, so these commands
+fail in it:
 
 - calls that wait for the user: `color pick` and `folder pick`;
 - calls that capture the screen: `screen shot`, `screen record start` and `screen record stop`;
@@ -45,8 +46,8 @@ A show changes nothing and opens nothing, so these calls fail in it:
   `spot share`, `spot review`, `grid edit`, `setting change`, `theme open`, `update check`, `calendar show` and
   `reminders show`.
 
-`calendar add --dry-run` and `reminders add --dry-run` change nothing, so they work in a show. `toast` and `select`
-work in a show too.
+`calendar add --dry-run` and `reminders add --dry-run` change nothing, so they work in a read. `toast` and `select`
+work in a read too. `run` works in a read, but the action it runs can't show a view there.
 
 ## Commands
 
@@ -76,7 +77,7 @@ The commands that try a spot are in [Try your spot](../../GUIDE.md#try-your-spot
 | `openspot spot actions [id]`                       | Prints each action of a spot and each command of its uses, with their inputs and outputs as JSON Schema. |
 | `openspot schema`                                  | Prints the JSON Schema of `spot.toml`, which an editor checks the file with.                    |
 | `openspot timer add <time> <action> [<name>=<value>...]` | Calls an action of the spot at the time, with its inputs, checked when you add the timer.   |
-| `openspot spot run <spot> <handler> [<name>=<value>...]` | Calls one handler of a spot with `[actions]` or `[on]` as a call would, with its inputs checked and its bindings live, and prints its frame and values. |
+| `openspot spot run <spot> <handler> [<name>=<value>...]` | Calls one handler of a spot as a call would, with its inputs checked and its bindings live, and prints its frame and values. |
 | `openspot run <binding>.<action> [<name>=<value>...] [--out <name>] [--stdin <name>]` | Runs an action of a spot that your spot binds in its `[bindings]`, with its inputs checked, and waits for its values. It prints the `out.<name>` lines, or one value with `--out`, and `--stdin` reads that input from stdin. An action that answers with a view shows it over the sheet until a press in it gives values. It exits 1 when the action fails, 2 when it does not take the words, 3 when the action gives no values, and 4 when the person closes the view. It runs only in a run of a spot. |
 | `openspot emit <event> [<name>=<value>...]` | Sends one of your spot's `[events]`, with its values checked. Each spot that binds yours and lists `<binding>.<event>` in its `[on]` gets a call of that handler. It runs only in a run of a spot. |
 | `openspot types [id]` | Writes the types of a `.js` spot to `openspot.d.ts`, or of a `.swift` spot to `Openspot.swift`, beside its script, with each handler, input, output, event, binding and command of its uses typed, and prints the file. With no id, it writes them for the spot of the current folder. |

@@ -6,14 +6,18 @@ rules it names by their IDs.
 ```toml
 title = "Today"
 icon = "calendar"
-on = ["panel.open"]
+uses = ["calendar"]
+
+[on]
+"panel.open" = true
 ```
 
 ```text
 #!/bin/sh
+. "$OPENSPOT_SH"
 case "$1" in
   show) openspot calendar events ;;
-  open) openspot calendar show "$2" ;;
+  press) openspot calendar show "$(value item)" ;;
 esac
 ```
 
@@ -99,8 +103,8 @@ A verb never prints an empty list in place of a list that it cannot read.
 
 ## Rules
 
-- `add`, `done` and `show` fail in a show, so that nothing changes or opens by surprise (protocol: The openspot command). The lists and `add --dry-run`
-  work in a show (E9).
+- `add`, `done` and `show` fail in a read, so that nothing changes or opens by surprise (protocol: The openspot command). The lists and `add --dry-run`
+  work in a read (E9).
 - A list is in the order of time: an event by its start, and a reminder by its due time, so that a ticked one keeps its
   place.
 

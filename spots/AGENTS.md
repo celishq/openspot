@@ -21,8 +21,8 @@ These rules hold for the core spots in `spots/` and the spots in `examples/`. A 
 ## The app's own words
 
 The spots of `spots/openspot.spot/` are parts of the app, such as Settings and New spot, and take a few words that no
-other spot gets. In any other spot, `edits`, `starts` and `shown` are unknown keys, `account` is removed from its uses,
-and the variables are absent. `builtin` names these spots to the others.
+other spot gets. In any other spot, `edits`, `starts`, `shown` and the keys of an action below are unknown keys,
+`account` is removed from its uses, and the variables are absent. `builtin` names these spots to the others.
 
 ```toml
 title = "New spot"
@@ -33,18 +33,24 @@ edits = "spots"
 | ----------------------- | ----------- | ---------------------------------------------------------------------------------------------- |
 | `edits`                 | `spot.toml` | `edits = "spots"`: its sheet is also the Edit sheet of each spot.                              |
 | `starts`                | `spot.toml` | `starts = "first-launch"`: its sheet opens in place of the grid when Openspot first starts.    |
+| `offers`                | an action   | `offers = ["actions"]`: the action shows in the ⌘K menu of every card, under the spot's name, and a press calls its handler with the card's id as `item`. Origins after a space, such as `["actions mine, core"]`, fit only the cards of the person's spots (`mine`), of the spots that come with Openspot (`core`), or of the app (`builtin`). An action `<offered id>.<name>`, such as `[actions."icon.draw"]`, shows in its submenu. |
+| `when`                  | an action   | In a JavaScript spot, the name of a function that gets the card's spot id and its origin, and returns whether the offered action shows. The ⌘K menu waits 2 ms for it. |
+| `shortcut`              | an action   | The standard key of an offered action, as a button's `shortcut`.                               |
+| `close`                 | an action   | `close = false` keeps the panel open after the action runs.                                    |
 | `account`               | `uses`      | It may publish with the account key; [The account](../TRUST.md#the-account) says how.          |
 | `shown`                 | the root    | `shown=true` puts the spot's card on the grid, and `shown=false` takes it off.                 |
-| `builtin`               | a filter    | After `actions` in `offers`, and as the origin that `when` gets: a spot of the app.            |
 | `OPENSPOT_CONFIG`       | a variable  | The folder of the config.                                                                      |
 | `OPENSPOT_SPOTS`        | a variable  | The spots folder, when it isn't `spots` in the config folder.                                  |
 | `OPENSPOT_EDIT`         | a variable  | In the Edit sheet: the id of the spot it changes.                                              |
 | `OPENSPOT_EDIT_FILE`    | a variable  | In the Edit sheet: the file of that spot, when the person owns it.                             |
 | `OPENSPOT_EDIT_FAILURE` | a variable  | In the Edit sheet: the last failure of that spot.                                              |
 
+The spots of the app share one folder. `[scripts.<name>]` in its `spot.toml` describes the script `<name>`, with the
+keys and tables of the top level under it, such as `[scripts.snooze.actions.pick]`, and its id is `openspot/<name>`.
+
 ## Checks
 
-`make verify` runs `scripts/check-spots.sh`. It fails on a core spot with a `clock.` event in its `spot.toml`, and on a spot that names
+`make verify` runs `scripts/check-spots.sh`. It fails on a core spot with `every` in its `[on]`, and on a spot that names
 `TMPDIR` or `/tmp` outside `mktemp`. `scripts/breaks/spot-clocks.txt` and `scripts/breaks/spot-state.txt` list
 today's breaks. The comment and motion checks scan only `app/` and `scripts/`.
 
