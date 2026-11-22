@@ -101,6 +101,9 @@ extension SpotsModel {
             }
         } else if action == .open || action == .history {
             presentSheet(of: target.entry.id)
+        } else if let command = CommandAction.command(of: action), let typed = target.entry.spot.typedActions.first(where: { $0.id == command }), typed.lacksInput,
+                  let form = ItemForm(output: Frame(text: typed.form)) {
+            show(.form(form), of: action, on: target, prefill: "")
         } else if let command = CommandAction.command(of: action) {
             if isShown { host.dismiss() }
             sheets[target.entry.id]?.pressKey(command)

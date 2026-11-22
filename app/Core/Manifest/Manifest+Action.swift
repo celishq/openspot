@@ -53,7 +53,7 @@ extension Manifest.Action {
     func inputs(_ given: [TextBlock.Field]) throws -> [TextBlock.Field] {
         var inputs: [TextBlock.Field] = []
         for input in self.inputs {
-            var values = given.filter { $0.key == input.name }.map(\.value)
+            var values = given.filter { $0.key == input.name && !$0.value.isEmpty }.map(\.value)
             if values.isEmpty, let defaultValue = input.defaultValue { values = [defaultValue] }
             if values.isEmpty {
                 if input.isRequired { throw SpotError.fault("\(id) needs \(input.name), which is \(input.type.article).") }
@@ -76,5 +76,35 @@ extension Manifest.Action {
             if !values.isEmpty, let fault = output.fault(in: values) { return "\(id) gave a wrong out.\(output.name): \(fault)" }
         }
         return nil
+    }
+}
+
+extension Manifest.Action {
+    public var lacksInput: Bool {
+        inputs.contains { $0.isRequired && $0.defaultValue == nil }
+    }
+
+    public var form: String {
+        let root = TextBlock(fields: [.init(key: "frame", value: ""), .init(key: "type", value: "form"), .init(key: "title", value: title ?? id)])
+        return ([root] + inputs.flatMap(\.formBlocks)).map(\.text).joined(separator: "\n")
+    }
+}
+
+extension Manifest.Parameter {
+    var formBlocks: [TextBlock] {
+        let label = title ?? name.prefix(1).uppercased() + name.dropFirst()
+        switch type.kind {
+        case .bool:
+            return [TextBlock(fields: [.init(key: "switch", value: name), .init(key: "title", value: label), .init(key: "value", value: defaultValue ?? "false")])]
+        case .choice:
+            let head = TextBlock(fields: [.init(key: "choice", value: name), .init(key: "title", value: label)] + (defaultValue.map { [.init(key: "value", value: $0)] } ?? []))
+            return [head] + options.map { TextBlock(fields: [.init(key: "option", value: $0)]) }
+        default:
+            var fields: [TextBlock.Field] = [.init(key: "field", value: name), .init(key: "title", value: label)]
+            if let defaultValue { fields.append(.init(key: "value", value: defaultValue)) }
+            if isRequired { fields.append(.init(key: "required", value: "true")) }
+            if let detail { fields.append(.init(key: "placeholder", value: detail)) }
+            return [TextBlock(fields: fields)]
+        }
     }
 }
