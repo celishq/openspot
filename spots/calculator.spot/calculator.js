@@ -15,7 +15,7 @@ function fields(text) {
 function card(solved) {
   return openspot.frame([
     { frame: "" },
-    { number: "answer", class: "large:flex", value: solved.text, display: solved.title, unit: solved.unit, title: solved.tone ? `${solved.detail} · rates of ${solved.rates}` : solved.detail },
+    { number: "answer", class: "large:flex", value: solved.item, display: solved.title, unit: solved.unit, title: solved.tone ? `${solved.detail} · rates of ${solved.rates}` : solved.detail },
     { button: "open", title: "Copy", scope: "spot" },
   ])
 }
@@ -30,7 +30,7 @@ function main([id, picked], env, input) {
   if (!text) return ""
   const answer = openspot.call(["calc", "solve", text]).stdout
   const why = noRates[answer.trim()]
-  if (why) return "text=offline\ntitle=No exchange rates\n" + why
+  if (why) return "item=offline\ntitle=No exchange rates\n" + why
   const solved = fields(answer)
-  return solved.text ? card(solved) : answer
+  return solved.item ? card(solved) : answer
 }

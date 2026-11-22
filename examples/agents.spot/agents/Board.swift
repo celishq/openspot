@@ -25,7 +25,7 @@ struct Board {
             var detail = [session.project, session.waits ? "waits for you" : "working"]
             if let context = session.context { detail.append("\(Int((context * 100).rounded()))% context") }
             blocks.append("""
-                text=\(session.agent.rawValue)/\(session.pid)
+                item=\(session.agent.rawValue)/\(session.pid)
                 parent=items
                 title=\(clean(title(session)))
                 detail=\(clean(detail.joined(separator: " · ")))

@@ -16,7 +16,7 @@ final class SheetTreeInputsTests: PanelCase {
 
     private let list = """
     frame=\\nclass=gap-part\\n\\nfield=find\\ntype=search\\n\\nitems=list\\n\\n\
-    text=a\\nparent=list\\ntitle=Apple\\nclose=false\\n\\ntext=b\\nparent=list\\ntitle=Banana\\n\\n\
+    item=a\\nparent=list\\ntitle=Apple\\nclose=false\\n\\nitem=b\\nparent=list\\ntitle=Banana\\n\\n\
     button=forget\\nparent=list\\ntitle=Forget\\nshortcut=cmd+f\\nclose=false\\n\\n\
     button=rename\\nparent=list\\ntitle=Rename\\n\\n\
     button=add\\ntitle=Add\\nclose=false\\n
@@ -117,7 +117,7 @@ final class SheetTreeInputsTests: PanelCase {
 
     private let rows = """
     frame=\\nclass=gap-part\\n\\nitems=list\\nclass=focus:bg-tile\\n\\n\
-    text=a\\nparent=list\\ntitle=Apple\\n\\nbutton=add\\ntitle=Add\\nclose=false\\n
+    item=a\\nparent=list\\ntitle=Apple\\n\\nbutton=add\\ntitle=Add\\nclose=false\\n
     """
 
     private func node(_ id: String) throws -> ViewNode {

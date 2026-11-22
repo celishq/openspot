@@ -85,7 +85,7 @@ function sheet(now, choices) {
   const blocks = [{ frame: "" }, { items: "tiles", class: "grid grid-cols-3" }]
   for (const [id, title, icon, none] of tiles) {
     const moment = moments[id]
-    const tile = { text: id, parent: "tiles", title, detail: moment ? words(moment, now) : none, icon, class: "bg-tile" }
+    const tile = { item: id, parent: "tiles", title, detail: moment ? words(moment, now) : none, icon, class: "bg-tile" }
     if (id === "date") tile.route = "date"
     blocks.push(tile)
   }
@@ -121,7 +121,7 @@ function days(now, choices) {
     const day = at(now, offset, [0, 0])
     const route = `date/${day.getFullYear()}-${two(day.getMonth() + 1)}-${two(day.getDate())}`
     const weekday = day.toLocaleDateString("en-US", { weekday: "long" })
-    blocks.push({ text: route, parent: "days", title: weekday, detail: dayWords(day, now), icon: "calendar", class: "bg-tile", route, "route.title": `${weekday}, ${day.toLocaleDateString("en-US", { month: "long", day: "numeric" })}` })
+    blocks.push({ item: route, parent: "days", title: weekday, detail: dayWords(day, now), icon: "calendar", class: "bg-tile", route, "route.title": `${weekday}, ${day.toLocaleDateString("en-US", { month: "long", day: "numeric" })}` })
   }
   return openspot.frame(blocks)
 }
@@ -133,7 +133,7 @@ function hours(route, now, choices) {
   for (const [title, icon, [hour, minute]] of dayParts(choices)) {
     const moment = new Date(year, month - 1, date, hour, minute)
     if (moment <= now) continue
-    blocks.push({ text: iso(moment), parent: "hours", title, detail: `${hour}:${two(minute)}`, icon, class: "bg-tile" })
+    blocks.push({ item: iso(moment), parent: "hours", title, detail: `${hour}:${two(minute)}`, icon, class: "bg-tile" })
   }
   return openspot.frame(blocks)
 }

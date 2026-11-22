@@ -80,7 +80,7 @@ final class CardFaceTests: XCTestCase {
     }
 
     func testTheOneValueBlockOutsideTheItemsIsTheValueOfTheCard() {
-        let outputCheck = FrameCheck(text: "frame=\nclass=gap-part\n\nswitch=power\nvalue=true\n\nitems=list\n\ntext=bar\nparent=list\ntitle=Bar\n")
+        let outputCheck = FrameCheck(text: "frame=\nclass=gap-part\n\nswitch=power\nvalue=true\n\nitems=list\n\nitem=bar\nparent=list\ntitle=Bar\n")
         let output = outputCheck.output
         XCTAssertEqual(output.value?.value("switch"), "power")
         XCTAssertEqual(outputCheck.partFaults, [])
@@ -88,8 +88,8 @@ final class CardFaceTests: XCTestCase {
 
     func testMainAndAnUnknownPlaceAreFaults() {
         XCTAssertEqual(FrameCheck(text: "frame=\nmain=gone\n\nbutton=go\ntitle=Go\n").partFaults, ["the root has an unknown key: main"])
-        XCTAssertEqual(FrameCheck(text: "frame=\ngrid.wide=a\n\ntext=a\ntitle=A\n").partFaults, ["the root has an unknown key: grid.wide"])
-        XCTAssertEqual(FrameCheck(text: "frame=\ngrid=a\n\ntext=a\ntitle=A\n").partFaults, ["the root has an unknown key: grid"])
+        XCTAssertEqual(FrameCheck(text: "frame=\ngrid.wide=a\n\nitem=a\ntitle=A\n").partFaults, ["the root has an unknown key: grid.wide"])
+        XCTAssertEqual(FrameCheck(text: "frame=\ngrid=a\n\nitem=a\ntitle=A\n").partFaults, ["the root has an unknown key: grid"])
     }
 
     func testAChangeOnTheCardShowsBeforeTheAnswer() {
@@ -131,8 +131,8 @@ final class CardFaceTests: XCTestCase {
     }
 
     func testAnAnswerWithNoMainValueOrNoFullWidthDrawingIsItsRows() {
-        let noMain = Frame(text: "frame=\n\nnumber=a\nclass=strip:flex\nvalue=1\n\nnumber=b\nclass=strip:flex\nvalue=2\n\nitems=list\n\ntext=r\nparent=list\ntitle=R\n")
-        let wide = Frame(text: "frame=\n\nnumber=a\nclass=wide:flex\nvalue=1\n\nitems=list\n\ntext=r\nparent=list\ntitle=R\n")
+        let noMain = Frame(text: "frame=\n\nnumber=a\nclass=strip:flex\nvalue=1\n\nnumber=b\nclass=strip:flex\nvalue=2\n\nitems=list\n\nitem=r\nparent=list\ntitle=R\n")
+        let wide = Frame(text: "frame=\n\nnumber=a\nclass=wide:flex\nvalue=1\n\nitems=list\n\nitem=r\nparent=list\ntitle=R\n")
         let strip = Frame(text: "frame=\n\nnumber=a\nclass=strip:flex\nvalue=1\n")
 
         XCTAssertEqual(noMain.answers(asCard: true).map(\.run), ["r"])

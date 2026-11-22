@@ -106,7 +106,7 @@ stdin with `value` or `openspot_input`, not `cat`: the function of `openspot_ser
 | `openspot_value <key> <text>`                | Prints each value of the key from a text, such as what an `openspot` command printed.           |
 | `openspot_input`                             | Prints the stdin of the call as it came.                                                        |
 | `openspot_kv <key> <value>`                  | Prints one line, with its value escaped.                                                        |
-| `openspot_item <id> <title> [detail] [icon]` | Prints one item, a `text` block.                                                                |
+| `openspot_item <id> <title> [detail] [icon]` | Prints one item, an `item` block.                                                               |
 | `openspot_items [kind]`                      | Prints an item for each tab-separated line of stdin: id, title, detail, icon.                   |
 | `openspot_rows <key>...`                     | Prints a tab-separated line for each block of stdin, with the value of each key, such as what an `openspot` command printed. |
 | `openspot_serve <function> "$@"`             | Runs the function with the arguments of each call, in each [mode](#modes).                      |
@@ -152,7 +152,7 @@ Print one block for each thing the spot shows: words, a number, a switch, an ite
 [Your first spot](GUIDE.md#your-first-spot).
 
 ```ini
-text=home
+item=home
 title=Home
 detail=82 Mb/s
 
@@ -173,7 +173,7 @@ of the list.
   shows several values repeats it.
 - A frame with no [layout](#layouts) gets the one Openspot makes: a list of the blocks, which the user searches. Each
   block is an [item](#items), except a `button`, which is an **action**, a row of the ⌘K menu, and a `choice`, which
-  shows over the list.
+  shows over the list. A row of words there is an `item` block, as in [Items](#items).
 - [Blocks](#blocks) lists each kind, its own keys and the keys that every kind takes.
 
 # Lay out and react
@@ -210,12 +210,12 @@ class=rounded-full
 
 items=networks
 
-text=office
+item=office
 parent=networks
 title=Office
 detail=54 Mb/s
 
-text=cafe
+item=cafe
 parent=networks
 title=Café
 detail=12 Mb/s
@@ -328,7 +328,8 @@ clock, once a class names `bar:`, such as `class=bar:flex` on a `number`.
 
 - A `number` with `type=ring` or `type=bar` is a small ring with its value, and any other `number` is its value. A
   `series` is its last 8 bars with its value.
-- A `text` with a `tone` and no `icon` is a dot of its tone and its title. Any other `text` is its title.
+- A `text` or an `item` with a `tone` and no `icon` is a dot of its tone and its title. Any other `text` or `item` is
+  its title.
 - With no class that names `bar:`, the menu bar shows the spot's icon. A `switch` or slider that shows on `bar:` hides
   the spot there.
 - A show that prints nothing hides the spot in the menu bar until the next show.
@@ -496,7 +497,7 @@ box=nearby
 parent=devices
 title=Nearby
 
-text=mouse
+item=mouse
 parent=nearby
 title=Mouse
 icon=computermouse
@@ -539,9 +540,11 @@ Forget is a row of the ⌘K menu of the selected item, and a search for pointer 
 - The blocks inside the `items` block are the items, and a `button` there is an
   [action](#buttons-and-actions). A `box` inside the `items` block is a group: its `title` heads the items inside it.
   A frame with no layout makes its items as [Show things with blocks](#show-things-with-blocks) says.
+- An `item` block is a row of words: its `title` and `detail`, its icon, and the keys above. It belongs in a list. A
+  `text` in a list, and an `item` outside one, are faults that `openspot check spots` reports. The block still shows.
 - A `number` item shows its value on the right of its title, or a ring of it with `type=ring`, as in
   [Show a number](#show-a-number). A `series` item shows the bars of its points.
-- A press of a text sends `<spot> open <id>`, of a switch `<spot> <id> true` or `false`, and of a `hotkey` field
+- A press of an `item` sends `<spot> open <id>`, of a switch `<spot> <id> true` or `false`, and of a `hotkey` field
   records a key. A press closes the panel, unless the item has `close=false`. An item can hold keys of its own, such as
   `meeting=42`, which come back as `item.<key>=`.
 - A frame has one `items` block. Its classes lay out each item, such as `grid grid-cols-4` for a grid of tiles. In a
@@ -886,7 +889,7 @@ Here are the exact rules, tables and limits, to look up a key, a kind or an even
 The message, each frame and each report of `openspot` are lines of `key=value`.
 
 ```ini
-text=title
+item=wifi
 title=Wi-Fi
 detail=Home · 82 Mb/s
 ---
@@ -965,6 +968,7 @@ Each kind of block, the keys of its own and the call it sends.
 | ----------------- | ---------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------- | ---------------------- |
 | `box`             | The blocks inside it, laid out by its classes, or inside `items` a group of items under its `title`.             |                                                                                   |                        |
 | `text`            | Words.                                                                                                           | `value`                                                                           |                        |
+| `item`            | A row of a list: its title and detail. See [Items](#items).                                                      | `value` and the keys of [Items](#items)                                           | `open <id>`            |
 | `icon`            | The icon of its `value`, by the rules of `icon` below.                                                           | `value`                                                                           |                        |
 | `picture`         | An image that fills its area.                                                                                    | `icon`                                                                            |                        |
 | `number`          | One `value` as text, a ring or a bar, with its `title` as the label. See [Show a number](#show-a-number).         | `value`, `max`, `unit`, `display`, `type`                                         |                        |

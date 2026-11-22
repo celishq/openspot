@@ -55,7 +55,7 @@ final class TreeFaultsTests: XCTestCase {
     }
 
     func testAFrameWhoseOnlyClassIsOneVariantOnOneBlockHasNoLayout() {
-        let frame = Frame(text: "number=cpu\nclass=bar:flex\nvalue=12\nmax=100\n\ntext=note\ntitle=Busy\n")
+        let frame = Frame(text: "number=cpu\nclass=bar:flex\nvalue=12\nmax=100\n\nitem=note\ntitle=Busy\n")
 
         XCTAssertFalse(frame.tree.isWritten)
         XCTAssertEqual(frame.items.map(\.run), ["cpu", "note"])
@@ -64,11 +64,29 @@ final class TreeFaultsTests: XCTestCase {
 
 
     func testABoxInAGroupAndABlockInAnItemAreReported() {
-        let text = "frame=\n\nitems=list\n\nbox=group\nparent=list\ntitle=Group\n\nbox=inner\nparent=group\n\ntext=a\nparent=group\ntitle=A\n\ntext=b\nparent=a\ntitle=B\n"
+        let text = "frame=\n\nitems=list\n\nbox=group\nparent=list\ntitle=Group\n\nbox=inner\nparent=group\n\nitem=a\nparent=group\ntitle=A\n\ntext=b\nparent=a\ntitle=B\n"
 
         XCTAssertEqual(FrameCheck(text: text).partFaults, [
             "the box inner sits inside the group group, so it and the blocks inside it do not show. A group is one level deep",
             "the block b sits inside the item a, so it does not show. An item is one block"
         ])
+    }
+
+    func testATextInsideItemsIsReportedAsAnItem() {
+        let text = "frame=\nclass=gap-part\n\ntext=head\ntitle=Photos\n\nitems=list\n\ntext=beach\nparent=list\ntitle=Beach\n\nitem=sea\nparent=list\ntitle=Sea\nroute=sea\nopen.title=Show\n"
+
+        XCTAssertEqual(FrameCheck(text: text).partFaults, ["the text beach sits in a list, where each row is an item. Print it as item=beach"])
+    }
+
+    func testATextInAFrameWithNoLayoutIsReportedAsAnItem() {
+        XCTAssertEqual(FrameCheck(text: "text=a\ntitle=A\n\nitem=b\ntitle=B\n").partFaults, [
+            "the text a sits in a list, where each row is an item. Print it as item=a"
+        ])
+    }
+
+    func testAnItemOutsideAListIsReportedAsText() {
+        let text = "frame=\nclass=gap-part\n\nitem=head\ntitle=Photos\n\nitems=list\n\nitem=sea\nparent=list\ntitle=Sea\n"
+
+        XCTAssertEqual(FrameCheck(text: text).partFaults, ["the item head sits outside a list, so it is no row. Print it as text=head"])
     }
 }

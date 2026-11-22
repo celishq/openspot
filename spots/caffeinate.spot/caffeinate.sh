@@ -111,9 +111,9 @@ card() {
 # is a new call that starts it again, and not a second press that would stop it, and shows the time it has left.
 duration() {
   if awake && [ "$1" = "$picked" ]; then
-    printf 'text=%s.%s\ntitle=%s\ndetail=%s\n' "$1" "$held" "$2" "$(left)"
+    printf 'item=%s.%s\ntitle=%s\ndetail=%s\n' "$1" "$held" "$2" "$(left)"
   else
-    printf 'text=%s\ntitle=%s\n' "$1" "$2"
+    printf 'item=%s\ntitle=%s\n' "$1" "$2"
   fi
 }
 
@@ -122,10 +122,10 @@ sheet() {
   printf 'frame=\nrecents=false\n\n'
   printf 'button=open\ntitle=Select\n\n'
   printf 'button=start\ntitle=Keep awake for…\nscope=spot\nform=true\nplaceholder=Minutes, such as 45\n\n'
-  awake && printf 'text=off\ntitle=Turn off\n\n'
+  awake && printf 'item=off\ntitle=Turn off\n\n'
   duration 1800 '30 minutes'; echo
   duration 7200 '2 hours'; echo
-  printf 'text=custom\ntitle=Custom…\nform=true\n\n'
+  printf 'item=custom\ntitle=Custom…\nform=true\n\n'
   duration 0 'Until turned off'; echo
   printf 'switch=display\ntitle=Keep the display on\ndetail=Off lets the screen lock\nicon=display\npin=bottom\nvalue=%s\nclose=false\n' "${display:-true}"
   [ "$lidded" = true ] || return 0

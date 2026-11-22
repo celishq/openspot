@@ -39,7 +39,7 @@ close_tab() {
 
 # Prints each snoozed tab as a line: id, time or someday, browser, url, title, split by tabs.
 tabs() {
-  openspot timer list 2>/dev/null | openspot_rows text at title | while IFS="$(printf '\t')" read -r id at value; do
+  openspot timer list 2>/dev/null | openspot_rows item at title | while IFS="$(printf '\t')" read -r id at value; do
     rest=${value#* }
     printf '%s\t%s\t%s\t%s\t%s\n' "$id" "$at" "${value%% *}" "${rest%% *}" "${rest#* }"
   done

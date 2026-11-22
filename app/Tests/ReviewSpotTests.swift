@@ -422,7 +422,7 @@ final class ReviewSpotTests: XCTestCase {
             ("timer.spot/timer.sh", "#!/bin/sh\n", true),
             ("timer.spot/spot.toml", "title = 'Timer'", false),
             ("timer.spot/readme.md", "Counts down from a time you pick.\n", false),
-            ("timer.spot/sample.frame", "text=a\ntitle=5 minutes\n", false)
+            ("timer.spot/sample.frame", "item=a\ntitle=5 minutes\n", false)
         ])
         let store = folder.appendingPathComponent("store")
         try shared.write(to: store)
@@ -436,7 +436,7 @@ final class ReviewSpotTests: XCTestCase {
 
         _ = try await review.add()
         XCTAssertEqual(try String(contentsOf: spots.appendingPathComponent("timer.spot/readme.md"), encoding: .utf8), "Counts down from a time you pick.\n")
-        XCTAssertEqual(try String(contentsOf: spots.appendingPathComponent("timer.spot/sample.frame"), encoding: .utf8), "text=a\ntitle=5 minutes\n")
+        XCTAssertEqual(try String(contentsOf: spots.appendingPathComponent("timer.spot/sample.frame"), encoding: .utf8), "item=a\ntitle=5 minutes\n")
         XCTAssertEqual(try lock.entries().map(\.paths), [["timer.spot/readme.md", "timer.spot/sample.frame", "timer.spot/spot.toml", "timer.spot/timer.sh"]])
         XCTAssertEqual(try lock.entries().map(\.source), [package.path])
     }
@@ -445,7 +445,7 @@ final class ReviewSpotTests: XCTestCase {
         let review = try ReviewSpot(spot: spot([
             ("cups.spot/cups.sh", "#!/bin/sh\n", true),
             ("cups.spot/spot.toml", "title = 'Cups'\nviews = ['liquid.swift']", false),
-            ("cups.spot/sample.frame", "frame=\nclass=gap-part\n\nitems=list\n\ntext=a\nparent=list\ntitle=Water\n\nliquid=b\nparent=list\ntitle=Juice\n", false)
+            ("cups.spot/sample.frame", "frame=\nclass=gap-part\n\nitems=list\n\nitem=a\nparent=list\ntitle=Water\n\nliquid=b\nparent=list\ntitle=Juice\n", false)
         ]), folder: folder)
 
         let text = try shown(review)

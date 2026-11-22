@@ -35,7 +35,7 @@ final class ItemsTests: PanelCase {
 
         items=list
 
-        text=beach
+        item=beach
         parent=list
         title=Beach.jpg
         detail=Photo
@@ -75,7 +75,7 @@ final class ItemsTests: PanelCase {
 
         items=items
 
-        text=a
+        item=a
         parent=items
         title=A
         """)
@@ -107,7 +107,7 @@ final class ItemsTests: PanelCase {
     }
 
     func testASheetOfThreeLinesOfTilesFitsItsLines() async throws {
-        let tiles = (1...9).map { "text=t\($0)\nparent=tiles\ntitle=T\($0)\ndetail=D\nicon=star\nclass=bg-tile\n" }.joined(separator: "\n")
+        let tiles = (1...9).map { "item=t\($0)\nparent=tiles\ntitle=T\($0)\ndetail=D\nicon=star\nclass=bg-tile\n" }.joined(separator: "\n")
         try await open("frame=\nclass=gap-part\n\nitems=tiles\nclass=grid grid-cols-3\n\n\(tiles)")
 
         let sheet = try XCTUnwrap(model.sheets["items"]).sheetRect
@@ -117,29 +117,29 @@ final class ItemsTests: PanelCase {
     }
 
     func testASheetOfItemsHoldsALineForItsSectionTitle() async throws {
-        try await open("items=devices\n\nbox=nearby\nparent=devices\ntitle=Nearby\n\ntext=mouse\nparent=nearby\ntitle=Mouse\n\ntext=keyboard\nparent=nearby\ntitle=Keyboard\n")
+        try await open("items=devices\n\nbox=nearby\nparent=devices\ntitle=Nearby\n\nitem=mouse\nparent=nearby\ntitle=Mouse\n\nitem=keyboard\nparent=nearby\ntitle=Keyboard\n")
 
         let sheet = try XCTUnwrap(model.sheets["items"])
         XCTAssertEqual(sheet.sheetRect, SpotTokens.sheetRect(rows: 3, top: sheet.top))
     }
 
     func testATextItemsNumberIsNoMarkAndANumberItemWithAMaxFills() {
-        let output = Frame(text: "text=mac\ntitle=This Mac\ndetail=84%\nvalue=0.84\n\nnumber=swap\ntitle=Swap\nvalue=84\nmax=100\n")
+        let output = Frame(text: "item=mac\ntitle=This Mac\ndetail=84%\nvalue=0.84\n\nnumber=swap\ntitle=Swap\nvalue=84\nmax=100\n")
 
         XCTAssertNil(output.items.first?.number)
         XCTAssertEqual(output.items.last?.number?.fill, 0.84)
     }
 
     func testARowIsAnUnknownKind() {
-        let output = Frame(text: "row=a\ntitle=A\n\ntext=b\ntitle=B\n")
+        let output = Frame(text: "row=a\ntitle=A\n\nitem=b\ntitle=B\n")
 
         XCTAssertEqual(output.items.map(\.run), ["b"])
         XCTAssertEqual(output.errors, ["row=a"])
     }
 
     func testWithNoTreeTheSheetIsASearchFieldOverEachBlock() {
-        let output = Frame(text: "text=a\ntitle=A\n\nfield=name\ntitle=Name\n")
-        let placed = Frame(text: "frame=\nclass=gap-part\n\ntext=a\ntitle=A\n\nitems=list\n\ntext=b\nparent=list\ntitle=B\n")
+        let output = Frame(text: "item=a\ntitle=A\n\nfield=name\ntitle=Name\n")
+        let placed = Frame(text: "frame=\nclass=gap-part\n\ntext=a\ntitle=A\n\nitems=list\n\nitem=b\nparent=list\ntitle=B\n")
 
         XCTAssertEqual(output.parts, [])
         XCTAssertEqual(output.items.map(\.run), ["a", "name"])
@@ -149,7 +149,7 @@ final class ItemsTests: PanelCase {
     }
 
     func testASearchFieldFiltersInsideOpenspot() {
-        let local = Frame(text: "frame=\nclass=gap-part\n\nfield=find\ntype=search\n\ntext=a\ntitle=A\n\nitems=list\n\ntext=b\nparent=list\ntitle=B\n")
+        let local = Frame(text: "frame=\nclass=gap-part\n\nfield=find\ntype=search\n\ntext=a\ntitle=A\n\nitems=list\n\nitem=b\nparent=list\ntitle=B\n")
 
         XCTAssertEqual(local.search, .local)
         XCTAssertEqual(local.items.map(\.run), ["b"])
@@ -157,14 +157,33 @@ final class ItemsTests: PanelCase {
     }
 
     func testFilterOnASearchFieldIsAnUnknownKey() {
-        let text = "field=find\ntype=search\nfilter=spot\n\ntext=b\ntitle=B\n"
+        let text = "field=find\ntype=search\nfilter=spot\n\nitem=b\ntitle=B\n"
 
         XCTAssertEqual(Frame(text: text).search, .local)
         XCTAssertEqual(FrameCheck(text: text).partFaults, ["the part find has an unknown key: filter"])
     }
 
+    func testAnItemRowTakesItsKeysAndItsPressSendsOpen() async throws {
+        try await open("item=star\ntitle=Star\ndetail=A star\nicon=star\ntone=good\nopen.title=Show\nclose=false\nhides=reveal\n")
+        let entry = try XCTUnwrap(model.openEntry)
+        let star = try item("star")
+
+        XCTAssertEqual(star, SpotItem(title: "Star", subtitle: "A star", run: "star", picture: .symbol("star"), hides: ["reveal"], tone: .good, openTitle: "Show", staysOnPick: true))
+        model.pick(star, of: entry)
+
+        try await wait("the pick") { self.calls.contains("open star") }
+        XCTAssertEqual(host.dismissals, 0)
+    }
+
+    func testAnItemRowTakesARouteAndAForm() {
+        let output = Frame(text: "item=day\ntitle=Monday\nroute=monday\nroute.title=On Monday\n\nitem=custom\ntitle=Custom\nform=true\n")
+
+        XCTAssertEqual(output.items.first?.move, .push(spot: nil, route: "monday", title: "On Monday", replace: false))
+        XCTAssertEqual(output.items.last?.form?.isForm, true)
+    }
+
     func testAnItemIsSearchedAndPickedAsAMessage() async throws {
-        try await open("text=apple\ntitle=Apple\nkind=fruit\n\ntext=milk\ntitle=Milk\n")
+        try await open("item=apple\ntitle=Apple\nkind=fruit\n\nitem=milk\ntitle=Milk\n")
 
         model.searchText = "mil"
         try await wait("the search") { self.model.openItems?.shown.map(\.run) == ["milk"] }
@@ -175,7 +194,7 @@ final class ItemsTests: PanelCase {
     }
 
     func testAPickWithCloseFalseKeepsThePanelOpen() async throws {
-        try await open("text=star\ntitle=Star\nclose=false\n")
+        try await open("item=star\ntitle=Star\nclose=false\n")
         let entry = try XCTUnwrap(model.openEntry)
 
         model.pick(try item("star"), of: entry)
@@ -186,7 +205,7 @@ final class ItemsTests: PanelCase {
     }
 
     func testAnActClosesThePanelAndCloseFalseKeepsItOpen() async throws {
-        try await open("button=star\ntitle=Star\nclose=false\n\nbutton=delete\ntitle=Delete\n\ntext=a\ntitle=A\n")
+        try await open("button=star\ntitle=Star\nclose=false\n\nbutton=delete\ntitle=Delete\n\nitem=a\ntitle=A\n")
         let entry = try XCTUnwrap(model.openEntry)
         let actions = entry.spot.actions
 

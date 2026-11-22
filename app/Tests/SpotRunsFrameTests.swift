@@ -26,7 +26,7 @@ final class SpotRunsFrameTests: SpotRunsCase {
         try script(toml: "", """
         case "$1" in
           show) printf 'frame=\\nclass=gap-part\\n\\nbutton=go\\ntitle=Go\\n\\ntext=a\\ntitle=A\\n' ;;
-          go) printf 'text=x\\ntitle=X\\n---\\n'; sleep 0.3; printf 'text=y\\ntitle=Y\\n' ;;
+          go) printf 'item=x\\ntitle=X\\n---\\n'; sleep 0.3; printf 'item=y\\ntitle=Y\\n' ;;
         esac
         """)
         let sheet = try sheet()
@@ -53,7 +53,7 @@ final class SpotRunsFrameTests: SpotRunsCase {
     }
 
     func testALaterFrameWithNoRootAddsARowWithANewIdToTheList() async throws {
-        try script(toml: "", "printf 'frame=\\n\\ntext=a\\ntitle=A\\n---\\n'\nprintf 'text=b\\ntitle=B\\n'")
+        try script(toml: "", "printf 'frame=\\n\\nitem=a\\ntitle=A\\n---\\n'\nprintf 'item=b\\ntitle=B\\n'")
         let sheet = try sheet()
         runs.panelOpened()
         sheet.open {}
@@ -75,7 +75,7 @@ final class SpotRunsFrameTests: SpotRunsCase {
     func testAFrameOfOnlyARootKeepsThePicture() async throws {
         try script(toml: "", """
         case "$1" in
-          show) printf 'text=a\\ntitle=A\\n' ;;
+          show) printf 'item=a\\ntitle=A\\n' ;;
           open) printf 'frame=\\ntitle=Other\\n---\\n'; \(untilRelease) ;;
         esac
         """)
@@ -94,7 +94,7 @@ final class SpotRunsFrameTests: SpotRunsCase {
     func testProgressInAHeadShowsOnTheRunningCall() async throws {
         try script(toml: "", """
         case "$1" in
-          show) printf 'text=a\\ntitle=A\\n' ;;
+          show) printf 'item=a\\ntitle=A\\n' ;;
           open) printf 'frame=\\nprogress=0.4\\ntitle=Copying\\ndetail=2 of 5\\n---\\n'; \(untilRelease) ;;
         esac
         """)
@@ -114,7 +114,7 @@ final class SpotRunsFrameTests: SpotRunsCase {
     func testAMainGaugeOfARunningCallIsNoLongerItsProgress() async throws {
         try script(toml: "", """
         case "$1" in
-          show) printf 'text=a\\ntitle=A\\n' ;;
+          show) printf 'item=a\\ntitle=A\\n' ;;
           open) printf 'frame=\\nclass=gap-part\\n\\nnumber=g\\nvalue=40\\nmax=100\\n---\\n'; \(untilRelease) ;;
         esac
         """)
@@ -131,7 +131,7 @@ final class SpotRunsFrameTests: SpotRunsCase {
 
     func testAReadThatEndsWithOnlyAHeadShowsNothingAndKeepsItsHead() async throws {
         try script(toml: "", """
-        if [ -f '\(path("second"))' ]; then printf 'frame=\\nrecents=false\\n'; else touch '\(path("second"))'; printf 'text=a\\ntitle=A\\n'; fi
+        if [ -f '\(path("second"))' ]; then printf 'frame=\\nrecents=false\\n'; else touch '\(path("second"))'; printf 'item=a\\ntitle=A\\n'; fi
         """)
         let sheet = try sheet()
         sheet.open {}
@@ -148,7 +148,7 @@ final class SpotRunsFrameTests: SpotRunsCase {
         while IFS= read -r line; do
           case "$line" in
             call=*) call=${line#call=} ;;
-            arg=show) printf 'end=%s\\n\\ntext=a\\ntitle=A\\n---\\n' "$call" ;;
+            arg=show) printf 'end=%s\\n\\nitem=a\\ntitle=A\\n---\\n' "$call" ;;
             arg=open) printf 'end=%s\\n---\\n' "$call"; printf 'frame=\\nclass=gap-part\\n\\ntext=peer\\ntitle=Peer\\n---\\n' ;;
           esac
         done
@@ -201,7 +201,7 @@ final class SpotRunsFrameTests: SpotRunsCase {
         while IFS= read -r line; do
           case "$line" in
             call=*) call=${line#call=} ;;
-            arg=show) printf 'text=a\\ntitle=A\\n---\\n'; printf 'end=%s\\n---\\n' "$call" ;;
+            arg=show) printf 'item=a\\ntitle=A\\n---\\n'; printf 'end=%s\\n---\\n' "$call" ;;
           esac
         done
         """)

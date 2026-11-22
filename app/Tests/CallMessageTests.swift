@@ -26,7 +26,7 @@ final class CallMessageTests: SpotRunsCase {
     func testStdinHoldsTheInputsTheSettingsTheRouteAndThePickedItem() async throws {
         try script(toml: "[settings.city]\n[settings.token]\ntype = 'secret'", """
         case "$1" in
-          show) printf 'frame=\\nclass=gap-part\\n\\nfield=search\\ntitle=Find\\nvalue=\\n\\nfield=title\\nvalue=Groceries\\n\\nitems=list\\n\\ntext=a\\nparent=list\\ntitle=A\\nmeeting=42\\n' ;;
+          show) printf 'frame=\\nclass=gap-part\\n\\nfield=search\\ntitle=Find\\nvalue=\\n\\nfield=title\\nvalue=Groceries\\n\\nitems=list\\n\\nitem=a\\nparent=list\\ntitle=A\\nmeeting=42\\n' ;;
           *) \(keeps) ;;
         esac
         """)
@@ -49,7 +49,7 @@ final class CallMessageTests: SpotRunsCase {
         XCTAssertEqual(text("calls"), """
         open a
         route=photo/12
-        item.text=a
+        item.item=a
         item.title=A
         item.meeting=42
         setting.city=Paris

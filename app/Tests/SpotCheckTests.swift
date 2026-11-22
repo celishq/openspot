@@ -26,7 +26,7 @@ final class SpotCheckTests: XCTestCase {
     }
 
     func testTheTestsOfASpotAreNotCheckedAsASpot() async throws {
-        try "#!/bin/sh\necho text=a\necho title=A\n".writeScript(to: folder.spotFile("notes"), toml: "")
+        try "#!/bin/sh\necho item=a\necho title=A\n".writeScript(to: folder.spotFile("notes"), toml: "")
         try "#!/bin/sh\nexit 1\n".writeScript(to: folder.appendingPathComponent("notes.spot/tests/run.sh"), toml: "mode = 'huge'")
 
         let findings = await SpotCheck(folder: SpotsFolder(url: folder)).findings()
@@ -36,20 +36,20 @@ final class SpotCheckTests: XCTestCase {
 
     func testAValueWithANewLinePrintedByHandIsAFaultThatNamesTheHelper() async throws {
         let file = folder.spotFile("notes")
-        try "#!/bin/sh\nprintf 'text=a\\ntitle=one\\ntwo\\n\\ntext=b\\ntitle=B\\ntitle=C\\n'\n".writeScript(to: file, toml: "")
+        try "#!/bin/sh\nprintf 'item=a\\ntitle=one\\ntwo\\n\\nitem=b\\ntitle=B\\ntitle=C\\n'\n".writeScript(to: file, toml: "")
 
         let findings = await SpotCheck(folder: SpotsFolder(url: folder)).findings()
 
         XCTAssertEqual(findings.map(\.fault), [
-            "the block text=a has a line with no =, as a value with a new line prints. Print each value from data with openspot_kv, openspot_item or esc",
-            "the block text=b has title twice, as a value with a new line prints. Print each value from data with openspot_kv, openspot_item or esc"
+            "the block item=a has a line with no =, as a value with a new line prints. Print each value from data with openspot_kv, openspot_item or esc",
+            "the block item=b has title twice, as a value with a new line prints. Print each value from data with openspot_kv, openspot_item or esc"
         ])
     }
 
     func testACheckRunsTheShowOfASpotWithASheetAndNotOfASpotWithCommandsAndNoEvents() async throws {
         let notes = folder.spotFile("notes")
-        try "#!/bin/sh\nprintf 'text=a\\ntitle=one\\ntwo\\n'\n".writeScript(to: notes, toml: "title = 'Notes'")
-        try "#!/bin/sh\nprintf 'text=a\\ntitle=one\\ntwo\\n'\n".writeScript(to: folder.spotFile("move"), toml: "title = 'Move'\n[commands.left]\ntitle = 'Left'")
+        try "#!/bin/sh\nprintf 'item=a\\ntitle=one\\ntwo\\n'\n".writeScript(to: notes, toml: "title = 'Notes'")
+        try "#!/bin/sh\nprintf 'item=a\\ntitle=one\\ntwo\\n'\n".writeScript(to: folder.spotFile("move"), toml: "title = 'Move'\n[commands.left]\ntitle = 'Left'")
 
         let findings = await SpotCheck(folder: SpotsFolder(url: folder)).findings()
 
@@ -57,7 +57,7 @@ final class SpotCheckTests: XCTestCase {
     }
 
     func testDueIsTakenInEverySpot() async throws {
-        let printsDue = "#!/bin/sh\nprintf 'text=due\\ntitle=Due\\n'\n"
+        let printsDue = "#!/bin/sh\nprintf 'item=due\\ntitle=Due\\n'\n"
         try printsDue.writeScript(to: folder.spotFile("later"), toml: "title = 'Later'\nuses = ['timer']")
         try printsDue.writeScript(to: folder.spotFile("bills"), toml: "title = 'Bills'")
         try "#!/bin/sh\n".writeScript(to: folder.spotFile("tabs"), toml: "title = 'Tabs'\nuses = ['timer']\n[commands.due]\ntitle = 'Due'")
@@ -72,7 +72,7 @@ final class SpotCheckTests: XCTestCase {
     }
 
     func testAnEventThatNoSpotRaisesIsAFaultThatNamesTheFix() async throws {
-        try "#!/bin/sh\nprintf 'text=t\\ntitle=T\\n'\n".writeScript(to: folder.spotFile("song"), toml: "on = ['music.track', 'clipboard.change']")
+        try "#!/bin/sh\nprintf 'item=t\\ntitle=T\\n'\n".writeScript(to: folder.spotFile("song"), toml: "on = ['music.track', 'clipboard.change']")
 
         let alone = await SpotCheck(folder: SpotsFolder(url: folder)).findings()
         try "#!/bin/sh\n".writeScript(to: folder.spotFile("player"), toml: "emits = ['music.track']")
@@ -83,7 +83,7 @@ final class SpotCheckTests: XCTestCase {
     }
 
     func testASpotThatReadsOnTheEventItRaisesIsWarned() async throws {
-        try "#!/bin/sh\nprintf 'text=t\\ntitle=T\\n'\n".writeScript(to: folder.spotFile("song"), toml: "title = 'Song'\non = ['music.track']\nemits = ['music.track']")
+        try "#!/bin/sh\nprintf 'item=t\\ntitle=T\\n'\n".writeScript(to: folder.spotFile("song"), toml: "title = 'Song'\non = ['music.track']\nemits = ['music.track']")
 
         let findings = await SpotCheck(folder: SpotsFolder(url: folder)).findings()
 
@@ -118,7 +118,7 @@ final class SpotCheckTests: XCTestCase {
 
     func testARowWithARouteThatTheSpotDoesNotTakeIsAFaultThatNamesThePagesLine() async throws {
         let file = folder.spotFile("clips")
-        try "#!/bin/sh\nprintf 'text=a\\nroute=text:a\\n\\ntext=c\\nroute=c\\n'\n".writeScript(to: file, toml: "pages = ['text:*']")
+        try "#!/bin/sh\nprintf 'item=a\\nroute=text:a\\n\\nitem=c\\nroute=c\\n'\n".writeScript(to: file, toml: "pages = ['text:*']")
 
         let findings = await SpotCheck(folder: SpotsFolder(url: folder)).findings()
 
@@ -129,7 +129,7 @@ final class SpotCheckTests: XCTestCase {
 
     func testAnEffectInTheRootIsAnUnknownKeyThatACheckReports() async throws {
         let root = "frame=\\ntoast=Saved\\nlink=https://a.b\\nselect=r\\npush=a\\npush.title=A\\npush.spot=b\\npush.replace=true\\npop=true\\n"
-        try "#!/bin/sh\nprintf '\(root)\\ntext=r\\n'\n".writeScript(to: folder.spotFile("old"), toml: "pages = ['*']")
+        try "#!/bin/sh\nprintf '\(root)\\nitem=r\\n'\n".writeScript(to: folder.spotFile("old"), toml: "pages = ['*']")
 
         let findings = await SpotCheck(folder: SpotsFolder(url: folder)).findings()
 
@@ -137,7 +137,7 @@ final class SpotCheckTests: XCTestCase {
     }
 
     func testABlockThatStartsWithAnEffectIsAnItemThatACheckCannotRead() async throws {
-        try "#!/bin/sh\nprintf 'toast=Saved\\n\\npop=true\\n\\ntext=r\\n'\n".writeScript(to: folder.spotFile("old"), toml: "")
+        try "#!/bin/sh\nprintf 'toast=Saved\\n\\npop=true\\n\\nitem=r\\n'\n".writeScript(to: folder.spotFile("old"), toml: "")
 
         let findings = await SpotCheck(folder: SpotsFolder(url: folder)).findings()
 

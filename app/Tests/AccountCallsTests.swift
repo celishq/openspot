@@ -59,7 +59,7 @@ final class AccountCallsTests: XCTestCase {
 
         let facts = try await call(["account", "show"], from: spot(uses: [], isBuiltIn: false))
 
-        XCTAssertEqual(facts.output, "text=account\nsignedIn=true\nnpub=\(key.npub)\nsince=\(try XCTUnwrap(try store.record()?.since))\nbackedUp=false\n")
+        XCTAssertEqual(facts.output, "item=account\nsignedIn=true\nnpub=\(key.npub)\nsince=\(try XCTUnwrap(try store.record()?.since))\nbackedUp=false\n")
     }
 
     func testNoVerbMakesChangesOrRemovesTheKeyNorPrintsOrTakesAWord() async throws {
@@ -169,7 +169,7 @@ final class AccountCallsTests: XCTestCase {
 
         let answer = await work()
 
-        XCTAssertTrue(answer.output.hasPrefix("text=account\nsignedIn=true\n"), answer.output + answer.errors)
+        XCTAssertTrue(answer.output.hasPrefix("item=account\nsignedIn=true\n"), answer.output + answer.errors)
     }
 
     func testEachActOnTheSecretAsksTouchIDFirst() async throws {

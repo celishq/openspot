@@ -7,7 +7,7 @@ function times(count) { return count (count == 1 ? " time" : " times") }
 function name(id) { return title[id] != "" ? title[id] : id }
 function join(list, part, gap) { return list (list == "" ? "" : gap) part }
 
-/^text=/ {
+/^item=/ {
   n++; rec[n] = $0; id = substr($1, 6); ids[n] = id
   for (i = 2; i <= NF; i++) if ($i ~ /^title=/) title[id] = substr($i, 7)
 }
@@ -39,4 +39,4 @@ function state() {
 }
 
 # Whether the loaded spot offers Improve: it fails, answers slowly, or makes a call its header doesn't declare.
-function improves(   s) { s = state(); return s == "bad" || s == "warn" || undeclared[v["text"]] > 0 }
+function improves(   s) { s = state(); return s == "bad" || s == "warn" || undeclared[v["item"]] > 0 }

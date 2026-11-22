@@ -29,7 +29,7 @@ final class StatsTests: XCTestCase {
         let frame = try Stats(days: usage.days(1, at: day), spot: nil).text(.frame)
 
         XCTAssertEqual(frame, """
-        text=cups
+        item=cups
         title=Cups today
         detail=0 ms CPU · 2 bodies of its view · 3.00 ms each
         runs=0
@@ -63,7 +63,7 @@ final class StatsTests: XCTestCase {
 
         let stamp = ISO8601DateFormatter().string(from: day)
         XCTAssertEqual(frame, """
-        text=a
+        item=a
         title=Alpha
         detail=250 ms CPU · 2 runs · 4.7 s each
         runs=2
@@ -101,8 +101,8 @@ final class StatsTests: XCTestCase {
 
         let rows = try Stats(days: usage.days(1, at: day), spot: nil).text(.frame).components(separatedBy: "\n\n").map { $0 + "\n" }
 
-        XCTAssertTrue(rows.contains { $0.hasPrefix("text=a\n") && $0.contains("\nruns.by.b=1\n") }, rows.joined())
-        XCTAssertTrue(rows.contains { $0.hasPrefix("text=b\n") && $0.contains("\nran.a=1\n") }, rows.joined())
+        XCTAssertTrue(rows.contains { $0.hasPrefix("item=a\n") && $0.contains("\nruns.by.b=1\n") }, rows.joined())
+        XCTAssertTrue(rows.contains { $0.hasPrefix("item=b\n") && $0.contains("\nran.a=1\n") }, rows.joined())
         XCTAssertTrue(try Stats(days: usage.days(1, at: day), spot: "b").text(.frame).contains("\nran.a=1\n"))
     }
 
@@ -147,9 +147,9 @@ final class StatsTests: XCTestCase {
 
         let blocks = frame.components(separatedBy: "\n\n").filter { !$0.isEmpty }
         XCTAssertEqual(blocks.count, 2, frame)
-        XCTAssertTrue(blocks[0].hasPrefix("text=a\nversion=v1\nsince=\(ISO8601DateFormatter().string(from: day))\n"), frame)
+        XCTAssertTrue(blocks[0].hasPrefix("item=a\nversion=v1\nsince=\(ISO8601DateFormatter().string(from: day))\n"), frame)
         XCTAssertTrue(blocks[0].contains("\nruns=1\nfailures=1\n"), frame)
-        XCTAssertTrue(blocks[1].hasPrefix("text=a\nversion=v2\nsince=\(ISO8601DateFormatter().string(from: day.addingTimeInterval(60)))\n"), frame)
+        XCTAssertTrue(blocks[1].hasPrefix("item=a\nversion=v2\nsince=\(ISO8601DateFormatter().string(from: day.addingTimeInterval(60)))\n"), frame)
         XCTAssertTrue(blocks[1].contains("\nruns=2\nfailures=0\n"), frame)
         XCTAssertTrue(try Stats(days: usage.days(1, at: day), spot: nil, byVersion: true).text(.json).contains("\"versions\":{\"a\":{\"v1\""))
     }

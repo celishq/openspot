@@ -132,11 +132,11 @@ public struct SpotSettings: Equatable, Sendable {
         blocks += (named + kept).map(fieldRow)
         if showsInMenuBar {
             blocks.append(TextBlock(fields: [
-                .init(key: "text", value: Row.menuBar.id(of: spot)), .init(key: "title", value: "Show in the menu bar"), .init(key: "icon", value: Self.menuBarIcon),
+                .init(key: "item", value: Row.menuBar.id(of: spot)), .init(key: "title", value: "Show in the menu bar"), .init(key: "icon", value: Self.menuBarIcon),
                 .init(key: "hides", value: Self.clear), .init(key: "value", value: String(config.arrangement.menuBar.contains(spot)))
             ]))
             blocks.append(TextBlock(fields: [
-                .init(key: "text", value: Row.window.id(of: spot)), .init(key: "title", value: "Open in a window"), .init(key: "icon", value: Self.windowIcon),
+                .init(key: "item", value: Row.window.id(of: spot)), .init(key: "title", value: "Open in a window"), .init(key: "icon", value: Self.windowIcon),
                 .init(key: "hides", value: Self.clear), .init(key: "value", value: String(isWindow(in: config)))
             ]))
         }
@@ -157,7 +157,7 @@ public struct SpotSettings: Equatable, Sendable {
 
     private func fieldRow(_ field: Manifest.Setting, _ value: String?) -> TextBlock {
         TextBlock(fields: [
-            .init(key: "text", value: Row.setting(field.id).id(of: spot)), .init(key: "title", value: field.title),
+            .init(key: "item", value: Row.setting(field.id).id(of: spot)), .init(key: "title", value: field.title),
             .init(key: "detail", value: value ?? "Not set"), .init(key: "icon", value: Self.valueIcon)
         ] + (value == nil ? [.init(key: "hides", value: Self.clear)] : []))
     }

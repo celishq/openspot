@@ -27,9 +27,9 @@ calendars_form() {
   calendars=$(openspot calendar calendars </dev/null) || { printf '%s\n' "$calendars"; exit 1; }
   lists=$(openspot reminders lists </dev/null) || { printf '%s\n' "$lists"; exit 1; }
   printf 'frame=\ntype=form\ntitle=Calendars\nclass=gap-part\n\nchoice=calendars\ntitle=Calendars\ntype=multiple\n'
-  { printf '%s\n' "$calendars" | sed 's/^text=/text=calendar /'; printf '\n'; printf '%s\n' "$lists" | sed 's/^text=/text=list.bullet /'; } |
+  { printf '%s\n' "$calendars" | sed 's/^item=/item=calendar /'; printf '\n'; printf '%s\n' "$lists" | sed 's/^item=/item=list.bullet /'; } |
     awk -v hidden=" $hidden " 'BEGIN { RS = ""; FS = "\n" }
-      /^text=/ {
+      /^item=/ {
         split(substr($1, 6), head, " ")
         title = ""; account = ""
         for (i = 2; i <= NF; i++) {
@@ -52,7 +52,7 @@ field() { printf '%s\n' "$2" | sed -n "s/^$1=//p" | head -n 1; }
 epoch() { date -j -f '%Y-%m-%dT%H:%M:%S%z' "$(printf '%s' "$1" | sed 's/:\([0-9][0-9]\)$/\1/')" +%s 2>/dev/null; }
 
 # Prints the next event that has a time, or nothing.
-next_event() { printf '%s\n' "$events" | awk 'BEGIN { RS = "" } /\nallday=true/ { next } /^text=/ { print; exit }'; }
+next_event() { printf '%s\n' "$events" | awk 'BEGIN { RS = "" } /\nallday=true/ { next } /^item=/ { print; exit }'; }
 
 # Prints the head and the card: the next event in large type across the top, in the colour of its calendar, with its time
 # alone on the small card. The strip card adds Join while the event's call is on or starts within 10 minutes, the square
@@ -60,7 +60,7 @@ next_event() { printf '%s\n' "$events" | awk 'BEGIN { RS = "" } /\nallday=true/ 
 # reminders, with a tick before its title and its due time at the end.
 card() {
   next=$(next_event)
-  set -- $(printf '%s\n' "$reminders" | awk 'BEGIN { RS = ""; FS = "\n" } /^text=reminder:/ && /\ndone=false/ { open++; if (/\ntone=bad/) late++ } END { print open + 0, late + 0 }')
+  set -- $(printf '%s\n' "$reminders" | awk 'BEGIN { RS = ""; FS = "\n" } /^item=reminder:/ && /\ndone=false/ { open++; if (/\ntone=bad/) late++ } END { print open + 0, late + 0 }')
   open=$1
   late=$2
   join=""
@@ -98,7 +98,7 @@ card() {
   [ "$open" -eq 0 ] || printf 'text=todo\nparent=counts\ntitle=%s to do\n\n' "$open"
   [ "$late" -eq 0 ] || printf 'text=late\nparent=counts\ntitle=%s late\ntone=bad\n\n' "$late"
   printf '%s\n' "$reminders" | awk 'BEGIN { RS = ""; FS = "\n" }
-    /^text=reminder:/ && /\ndone=false/ && shown < 2 {
+    /^item=reminder:/ && /\ndone=false/ && shown < 2 {
       shown++
       id = substr($1, 15)
       title = ""; due = ""; tone = ""
@@ -119,7 +119,7 @@ card() {
 rows() {
   printf '%s\n\n%s\n' "$events" "$reminders" | TEXTS=$(printf '%s\n' "$@") awk '
     BEGIN { RS = ""; FS = "\n"; count = split(tolower(ENVIRON["TEXTS"]), texts, "\n") }
-    /^text=(event|reminder):/ {
+    /^item=(event|reminder):/ {
       title = ""; detail = ""; meeting = 0
       for (i = 1; i <= NF; i++) {
         if ($i ~ /^title=/) title = substr($i, 7)
@@ -133,7 +133,7 @@ rows() {
       print $1
       print "parent=items"
       for (i = 2; i <= NF; i++) print $i
-      if ($1 ~ /^text=reminder:/) print "hides=join"
+      if ($1 ~ /^item=reminder:/) print "hides=join"
       else { print "hides=tick"; if (!meeting) print "hides=join" }
       print ""
     }'
@@ -143,7 +143,7 @@ rows() {
 adding() {
   made=$(openspot "$1" add --dry-run "$2" </dev/null 2>/dev/null) || return 0
   [ "$made" != status=unasked ] || return 0
-  printf 'text=add-%s\nparent=items\ntitle=%s\ndetail=%s · %s\nicon=plus.circle\nhides=join\nhides=tick\n\n' "$3" "$4" "$(field title "$made")" "$(field detail "$made")"
+  printf 'item=add-%s\nparent=items\ntitle=%s\ndetail=%s · %s\nicon=plus.circle\nhides=join\nhides=tick\n\n' "$3" "$4" "$(field title "$made")" "$(field detail "$made")"
 }
 
 # Asks macOS for leave with a call outside a read. When the person said no, Openspot shows the link to the fix.
@@ -163,8 +163,8 @@ case "$1" in
       adding reminders "$typed" reminder 'Add reminder'
       adding calendar "$typed" event 'Add event'
     fi
-    [ "$events" != status=unasked ] || printf 'text=allow-calendar\nparent=items\ntitle=Allow Calendar\ndetail=Show your events here\nicon=calendar\nhides=join\nhides=tick\n\n'
-    [ "$reminders" != status=unasked ] || printf 'text=allow-reminders\nparent=items\ntitle=Allow Reminders\ndetail=Show and tick your reminders here\nicon=checklist\nhides=join\nhides=tick\n\n'
+    [ "$events" != status=unasked ] || printf 'item=allow-calendar\nparent=items\ntitle=Allow Calendar\ndetail=Show your events here\nicon=calendar\nhides=join\nhides=tick\n\n'
+    [ "$reminders" != status=unasked ] || printf 'item=allow-reminders\nparent=items\ntitle=Allow Reminders\ndetail=Show and tick your reminders here\nicon=checklist\nhides=join\nhides=tick\n\n'
     rows "$typed" "$(value search.alt)"
     ;;
   open)

@@ -145,27 +145,27 @@ final class MacCallsTests: XCTestCase {
         let status = try run(["screen", "record", "status"])
 
         XCTAssertEqual(sources.output, """
-        text=display:1
+        item=display:1
         title=Built-in
         detail=Display · 1728×1117
         icon=display
 
-        text=window:42
+        item=window:42
         title=Notes
         detail=Notes
         icon=/Applications/Notes.app
 
-        text=system
+        item=system
         title=Sound of the Mac
         detail=Sound
         icon=speaker.wave.2
 
-        text=mic:m1
+        item=mic:m1
         title=MacBook Microphone
         detail=Microphone
         icon=mic
 
-        text=camera:c1
+        item=camera:c1
         title=FaceTime Camera
         detail=Camera
         icon=camera
@@ -217,7 +217,7 @@ final class MacCallsTests: XCTestCase {
         let languages = try run(["translate", "languages"])
 
         XCTAssertEqual(translated.output, "text=hello\n")
-        XCTAssertEqual(TextBlock.blocks(in: languages.output).compactMap { $0.value("text") }.sorted(), ["en", "uk"])
+        XCTAssertEqual(TextBlock.blocks(in: languages.output).compactMap { $0.value("item") }.sorted(), ["en", "uk"])
         XCTAssertEqual(acts.all, ["translate hola from - to en"])
     }
 
@@ -230,7 +230,7 @@ final class MacCallsTests: XCTestCase {
         XCTAssertEqual(TranslatedText().block.text, "")
         XCTAssertEqual(
             TranslatedText.languages(["uk", "en"], preferred: ["de-DE", "en"], locale: Locale(identifier: "en")),
-            "preferred=de\npreferred=en\n\ntext=en\ntitle=English\n\ntext=uk\ntitle=Ukrainian\n"
+            "preferred=de\npreferred=en\n\nitem=en\ntitle=English\n\nitem=uk\ntitle=Ukrainian\n"
         )
     }
 

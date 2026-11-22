@@ -13,7 +13,7 @@ for repo in 'api-gateway:main:github.com/northwind/api-gateway' 'design-tokens:f
   rest=${repo#*:}
   page=${rest#*:}
   path=/Users/you/Developer/$name
-  printf '\ntext=%s\ntitle=%s\ndetail=%s\nicon=%s\n' "$path" "$name" "${rest%%:*}" "$path"
+  printf '\nitem=%s\ntitle=%s\ndetail=%s\nicon=%s\n' "$path" "$name" "${rest%%:*}" "$path"
   case "$page" in
     github.com/*) printf 'page=https://%s\nhides=page-2\n' "$page" ;;
     gitlab.com/*) printf 'page=https://%s\nhides=page-1\n' "$page" ;;

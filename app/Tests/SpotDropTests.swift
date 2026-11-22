@@ -241,7 +241,7 @@ final class SpotDropTests: XCTestCase {
     private func busySheet() async throws -> SpotRun {
         let sheet = try sheet(toml: "drop = 'mov'", """
         case "$1" in
-          show) printf 'button=work\\ntitle=Work\\nscope=spot\\n\\ntext=a\\ntitle=A\\n' ;;
+          show) printf 'button=work\\ntitle=Work\\nscope=spot\\n\\nitem=a\\ntitle=A\\n' ;;
           work) \(untilRelease); touch '\(path("worked"))' ;;
         esac
         """)
@@ -297,7 +297,7 @@ final class SpotDropTests: XCTestCase {
     func testAWaitingDropRunsAfterTheRunningCallFails() async throws {
         let sheet = try sheet(toml: "drop = 'mov'", """
         case "$1" in
-          show) printf 'button=work\\ntitle=Work\\nscope=spot\\n\\ntext=a\\ntitle=A\\n' ;;
+          show) printf 'button=work\\ntitle=Work\\nscope=spot\\n\\nitem=a\\ntitle=A\\n' ;;
           work) sleep 0.2; echo gone >&2; exit 3 ;;
         esac
         """)
@@ -372,7 +372,7 @@ final class SpotDropTests: XCTestCase {
         while IFS= read -r line; do
           printf '%s\\n' "$line" >> '\(path("blocks"))'
           case "$line" in call=*) call=${line#call=} ;; esac
-          [ -n "$line" ] || printf 'end=%s\\n\\ntext=a\\ntitle=A\\n---\\n' "$call"
+          [ -n "$line" ] || printf 'end=%s\\n\\nitem=a\\ntitle=A\\n---\\n' "$call"
         done
         """)
     }
@@ -512,7 +512,7 @@ final class SpotDropTests: XCTestCase {
     func testAStoppedDropChangesNothingAndItsSilenceIsNoAnswer() async throws {
         let sheet = try sheet(toml: "drop = 'mov'", """
         case "$1" in
-          show) printf 'text=a\\ntitle=A\\n' ;;
+          show) printf 'item=a\\ntitle=A\\n' ;;
           drop) sleep 5; touch '\(path("went-on"))' ;;
         esac
         """)
@@ -530,7 +530,7 @@ final class SpotDropTests: XCTestCase {
     }
 
     func testADropWithNoFrameReadsOnce() async throws {
-        let sheet = try sheet(toml: "drop = 'mov'", "[ \"$1\" = show ] && printf 'text=a\\ntitle=A\\n'\nexit 0")
+        let sheet = try sheet(toml: "drop = 'mov'", "[ \"$1\" = show ] && printf 'item=a\\ntitle=A\\n'\nexit 0")
         let file = file("a.mov")
 
         XCTAssertTrue(sheet.drop([file]))

@@ -60,7 +60,7 @@ extension ViewTree {
 
     func leafHeight(_ node: ViewNode, _ style: Style, width: CGFloat?) -> CGFloat {
         let room = width.map { max($0 - style.insets.width, 0) }
-        let content = node.kind == BlockKind.text.word ? textHeight(node, style, width: room) : node.naturalSize.height
+        let content = BlockKind.wordsKinds.contains(node.kind) ? textHeight(node, style, width: room) : node.naturalSize.height
         return content + style.insets.height
     }
 

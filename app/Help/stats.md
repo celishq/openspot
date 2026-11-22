@@ -7,7 +7,7 @@ it, and `openspot spot stats` prints the counts.
 openspot spot stats --days 7
 ```
 
-It prints an item, a `text=<id>` block, for each spot, the most CPU first, then a `use=<n>` block for each call that
+It prints an item, an `item=<id>` block, for each spot, the most CPU first, then a `use=<n>` block for each call that
 needs a use, the newest first, then a `search=<text>` block for each search that found nothing. `--json` prints the
 days.
 

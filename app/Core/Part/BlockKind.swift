@@ -64,9 +64,11 @@ public struct BlockKind: Sendable, Equatable {
         first.name == second.name
     }
 
-    public static let all = [text, number, series, picture, icon, toggle, slider, hotkey, field, choice, button]
+    public static let all = [text, item, number, series, picture, icon, toggle, slider, hotkey, field, choice, button]
 
     static let listWords = [items, option, box]
+
+    static let wordsKinds: Set = [text.word, item.word]
 
     public static let controlWords: Set = [button.word, field.word, toggle.word, choice.word, number.word, series.word]
 
@@ -86,6 +88,14 @@ public struct BlockKind: Sendable, Equatable {
 
     public static let text = BlockKind(
         name: "text",
+        holdsValue: true,
+        isReading: true,
+        takesColor: true
+    )
+
+    public static let item = BlockKind(
+        name: "item",
+        keys: Set(ItemKey.allCases.map(\.rawValue)),
         holdsValue: true,
         isReading: true,
         takesColor: true

@@ -44,6 +44,14 @@ extension BlockKind {
         return faults
     }
 
+    static func rowFault(of id: String) -> String {
+        "the text \(id) sits in a list, where each row is an item. Print it as item=\(id)"
+    }
+
+    static func placedItemFault(of id: String) -> String {
+        "the item \(id) sits outside a list, so it is no row. Print it as text=\(id)"
+    }
+
     static func isColor(_ text: String) -> Bool {
         text.count == 7 && text.first == "#" && text.dropFirst().allSatisfy(\.isHexDigit)
     }

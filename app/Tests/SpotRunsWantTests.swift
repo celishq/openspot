@@ -21,7 +21,7 @@ final class SpotRunsWantTests: SpotRunsCase {
     }
 
     func testClosingThePanelLeavesASheetOfRowsOpen() async throws {
-        try script(toml: "", "printf 'text=a\\ntitle=A\\n'")
+        try script(toml: "", "printf 'item=a\\ntitle=A\\n'")
         let sheet = try sheet()
         sheet.open {}
         try await wait("the row") { sheet.list.shown.count == 1 }
@@ -34,7 +34,7 @@ final class SpotRunsWantTests: SpotRunsCase {
 
     func testTheMenuBarDrawsTheBarLayoutOfTheFrame() async throws {
         menuBar.insert("pulls")
-        try script("pulls", toml: "title = 'Pull requests'\non = ['clock.120']", "printf 'frame=\\nclass=gap-part\\n\\ntext=m\\nclass=bar:flex\\ntitle=2\\n\\nitems=list\\n\\ntext=a\\nparent=list\\ntitle=A\\n\\ntext=b\\nparent=list\\ntitle=B\\n'")
+        try script("pulls", toml: "title = 'Pull requests'\non = ['clock.120']", "printf 'frame=\\nclass=gap-part\\n\\ntext=m\\nclass=bar:flex\\ntitle=2\\n\\nitems=list\\n\\nitem=a\\nparent=list\\ntitle=A\\n\\nitem=b\\nparent=list\\ntitle=B\\n'")
         let sheet = try sheet("pulls")
 
         try await wait("the mark") { self.runs.menuBarMarks.first?.mark.content == .text("2") }
@@ -87,7 +87,7 @@ final class SpotRunsWantTests: SpotRunsCase {
     }
 
     func testAnOpenSheetOfRowsIsNotReadWithThePanelClosedAndIsReadWhenThePanelOpens() async throws {
-        try script(toml: "on = ['clock.5']", "printf 'text=a\\ntitle=A\\n'")
+        try script(toml: "on = ['clock.5']", "printf 'item=a\\ntitle=A\\n'")
         let sheet = try sheet()
         runs.panelOpened()
         sheet.open {}
@@ -110,7 +110,7 @@ final class SpotRunsWantTests: SpotRunsCase {
     }
 
     func testAStreamOfAnOpenSheetOfRowsStopsWhenThePanelClosesAndStartsWhenItOpens() async throws {
-        try script(toml: "", "printf 'text=a\\ntitle=A\\n---\\n'\nsleep 5\ntouch '\(path("went-on"))'")
+        try script(toml: "", "printf 'item=a\\ntitle=A\\n---\\n'\nsleep 5\ntouch '\(path("went-on"))'")
         let sheet = try sheet()
         runs.panelOpened()
         sheet.open {}
@@ -191,7 +191,7 @@ final class SpotRunsWantTests: SpotRunsCase {
     }
 
     func testSearchTextReachesTheScriptAfterAPause() async throws {
-        try script(toml: "on = ['sheet.open', 'sheet.text']", "\(TestSpot.event)\nprintf 'text=a\\ntitle=%s\\n' \"${val:-none}\"")
+        try script(toml: "on = ['sheet.open', 'sheet.text']", "\(TestSpot.event)\nprintf 'item=a\\ntitle=%s\\n' \"${val:-none}\"")
         let sheet = try sheet()
         sheet.open {}
         try await wait("the first answer") { sheet.list.shown.map(\.title) == ["none"] }
@@ -209,7 +209,7 @@ final class SpotRunsWantTests: SpotRunsCase {
         try script(toml: "on = ['sheet.open', 'sheet.text']", """
         \(TestSpot.event)
         [ "$val" = slow ] && { sleep 5; touch '\(path("went-on"))'; }
-        printf 'text=a\\ntitle=%s\\n' "${val:-none}"
+        printf 'item=a\\ntitle=%s\\n' "${val:-none}"
         """)
         let sheet = try sheet()
         sheet.open {}

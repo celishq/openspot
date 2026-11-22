@@ -309,7 +309,7 @@ final class ShellHelperTests: XCTestCase {
 
     private static let shownCall = """
     main() {
-      printf 'text=t\\ntitle=%s\\n' "$(esc "$#|$1|$2|$(value event)|$(value input.note)|$(openspot_input)$(cat)")"
+      printf 'item=t\\ntitle=%s\\n' "$(esc "$#|$1|$2|$(value event)|$(value input.note)|$(openspot_input)$(cat)")"
     }
     openspot_serve main "$@"
     """
@@ -405,7 +405,7 @@ final class ShellHelperTests: XCTestCase {
         XCTAssertEqual(items.last?.title, "Back\\slash")
         XCTAssertEqual(items.last?.isOn, true)
         XCTAssertEqual(items.last?.keywords, ["c\\d"])
-        XCTAssertEqual(TextBlock.blocks(in: output).first { $0.value("text") == "a" }?.value("tone"), "good")
+        XCTAssertEqual(TextBlock.blocks(in: output).first { $0.value("item") == "a" }?.value("tone"), "good")
     }
 
     func testAStayingScriptIsNotBlockedAndKeepsItsCallsOnStdin() async throws {

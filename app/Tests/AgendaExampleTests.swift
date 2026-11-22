@@ -30,7 +30,7 @@ final class AgendaExampleTests: SampleSpotsCase {
         """.writeScript(to: folder.appendingPathComponent("tools/openspot"))
         let files = [
             "events": """
-            text=event:A/1
+            item=event:A/1
             title=Holiday
             detail=All day · Home
             icon=calendar
@@ -38,7 +38,7 @@ final class AgendaExampleTests: SampleSpotsCase {
             start=\(iso(-3600))
             end=\(iso(80_000))
 
-            text=event:B/2
+            item=event:B/2
             title=Standup
             detail=Soon · Work
             icon=video
@@ -47,7 +47,7 @@ final class AgendaExampleTests: SampleSpotsCase {
             end=\(iso(1650))
             meeting=https://meet.google.com/abc-defg-hij
 
-            text=event:C/3
+            item=event:C/3
             title=Design review
             detail=Later · Work
             icon=calendar
@@ -56,36 +56,36 @@ final class AgendaExampleTests: SampleSpotsCase {
 
             """,
             "reminders": """
-            text=reminder:R1
+            item=reminder:R1
             title=Call mom
             detail=Late · Yesterday 18:00 · Family
             icon=circle
             tone=bad
             done=false
 
-            text=reminder:R2
+            item=reminder:R2
             title=Take pills
             detail=Done · Family
             icon=checkmark.circle.fill
             done=true
 
-            text=reminder:R3
+            item=reminder:R3
             title=Water the plants
             detail=18:00 · Family
             icon=circle
             done=false
 
-            text=reminder:R4
+            item=reminder:R4
             title=Pay rent
             detail=Tomorrow · Family
             icon=circle
             done=false
 
             """,
-            "calendars": "text=A8E2\ntitle=Work\ndetail=iCloud\n\ntext=B1\ntitle=Home\ndetail=On My Mac\n\n",
-            "lists": "text=7D10\ntitle=Family\ndetail=iCloud\n\n",
-            "dry-reminder": "text=reminder:new\ntitle=Call Ana\ndetail=Tomorrow 09:00 · Family\n",
-            "added-reminder": "text=reminder:R9\ntitle=Call Ana\ndetail=Tomorrow 09:00 · Family\n"
+            "calendars": "item=A8E2\ntitle=Work\ndetail=iCloud\n\nitem=B1\ntitle=Home\ndetail=On My Mac\n\n",
+            "lists": "item=7D10\ntitle=Family\ndetail=iCloud\n\n",
+            "dry-reminder": "item=reminder:new\ntitle=Call Ana\ndetail=Tomorrow 09:00 · Family\n",
+            "added-reminder": "item=reminder:R9\ntitle=Call Ana\ndetail=Tomorrow 09:00 · Family\n"
         ]
         for (name, text) in files {
             try text.write(to: folder.appendingPathComponent(name), atomically: true, encoding: .utf8)
@@ -147,7 +147,7 @@ final class AgendaExampleTests: SampleSpotsCase {
         try await withPrivateHome { folder in
             try self.fakeOpenspot(in: folder)
             let far = try await agenda.items(timeout: 30)
-            let near = "text=event:B/2\ntitle=Standup\ndetail=Soon · Work\nicon=video\nstart=\(self.iso(300))\nend=\(self.iso(1200))\nmeeting=https://meet.google.com/abc-defg-hij\n"
+            let near = "item=event:B/2\ntitle=Standup\ndetail=Soon · Work\nicon=video\nstart=\(self.iso(300))\nend=\(self.iso(1200))\nmeeting=https://meet.google.com/abc-defg-hij\n"
             try near.write(to: folder.appendingPathComponent("events"), atomically: true, encoding: .utf8)
 
             let output = try await agenda.items(timeout: 30)
@@ -187,7 +187,7 @@ final class AgendaExampleTests: SampleSpotsCase {
             try self.fakeOpenspot(in: folder)
 
             let reminderOnly = try await agenda.items(query: "call", timeout: 30)
-            try "text=event:new\ntitle=Call Ana\ndetail=Tomorrow 09:00–10:00 · Work\n".write(to: folder.appendingPathComponent("dry-event"), atomically: true, encoding: .utf8)
+            try "item=event:new\ntitle=Call Ana\ndetail=Tomorrow 09:00–10:00 · Work\n".write(to: folder.appendingPathComponent("dry-event"), atomically: true, encoding: .utf8)
             let both = try await agenda.items(query: "call", timeout: 30)
 
             XCTAssertEqual(reminderOnly.items.map(\.run), ["add-reminder", "reminder:R1"])
@@ -267,9 +267,9 @@ final class AgendaExampleTests: SampleSpotsCase {
             let card = try XCTUnwrap(output.face.tree.parts.first { $0.title == "Water the plants" }?.id)
             let done = try XCTUnwrap(output.items.first { $0.title == "Take pills" }?.run)
 
-            try await agenda.perform(.action(CommandAction(id: "tick", title: "Mark as done"), item: SpotItem(title: "Call mom", run: row)), input: "item.text=\(row)\nitem.done=false\n", timeout: 30)
+            try await agenda.perform(.action(CommandAction(id: "tick", title: "Mark as done"), item: SpotItem(title: "Call mom", run: row)), input: "item.item=\(row)\nitem.done=false\n", timeout: 30)
             try await agenda.perform(.set(card, to: "true"), timeout: 30)
-            try await agenda.perform(.action(CommandAction(id: "tick", title: "Mark as done"), item: SpotItem(title: "Take pills", run: done)), input: "item.text=\(done)\nitem.done=true\n", timeout: 30)
+            try await agenda.perform(.action(CommandAction(id: "tick", title: "Mark as done"), item: SpotItem(title: "Take pills", run: done)), input: "item.item=\(done)\nitem.done=true\n", timeout: 30)
 
             let marks = try self.calls(in: folder).filter { $0.contains("reminders done") }
             XCTAssertEqual(try self.calls(in: folder).filter { $0.contains("reminders due") }.count, 1)
@@ -284,7 +284,7 @@ final class AgendaExampleTests: SampleSpotsCase {
 
             try await agenda.perform(.item(SpotItem(title: "Standup", run: "event:B/2")), timeout: 30)
             try await agenda.perform(.item(SpotItem(title: "Call mom", run: "reminder:R1")), timeout: 30)
-            try await agenda.perform(.action(CommandAction(id: "join", title: "Join call"), item: SpotItem(title: "Standup", run: "event:B/2")), input: "item.text=event:B/2\nitem.meeting=https://meet.google.com/abc-defg-hij\n", timeout: 30)
+            try await agenda.perform(.action(CommandAction(id: "join", title: "Join call"), item: SpotItem(title: "Standup", run: "event:B/2")), input: "item.item=event:B/2\nitem.meeting=https://meet.google.com/abc-defg-hij\n", timeout: 30)
 
             let opens = try self.calls(in: folder).filter { $0.contains(" show ") }
             XCTAssertEqual(opens, ["act|calendar show event:B/2|", "act|reminders show reminder:R1|"])

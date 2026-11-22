@@ -47,7 +47,7 @@ final class ThemesSpotTests: BuiltInCase {
     }
 
     private func settingsRows() throws -> [String] {
-        try String(contentsOf: repoSpots.appendingPathComponent("openspot.spot/settings.sh"), encoding: .utf8).split(separator: "\n").map(String.init).filter { $0.contains("text=") }
+        try String(contentsOf: repoSpots.appendingPathComponent("openspot.spot/settings.sh"), encoding: .utf8).split(separator: "\n").map(String.init).filter { $0.contains("item=") }
     }
 
     func testReturnUsesATheme() async throws {

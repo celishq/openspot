@@ -15,7 +15,7 @@ BEGIN {
 END {
   for (r = 1; r <= n; r++) {
     load(r)
-    id = v["text"]
+    id = v["item"]
     if (id ~ /^openspot\//) continue
     graph = ""; via = ""
     for (i = 1; i <= ndays; i++) graph = graph (i == 1 ? "value=" : ",") days[i]
@@ -43,7 +43,7 @@ END {
     if (topcpu == "" || day > topcpu) { topcpu = day; toptitle = v["title"]; topdetail = seconds(day) " CPU a day" }
   }
   for (i = 1; i <= searches; i++) {
-    row(5, 100000 - searchedTimes[i], "text=search:" searched[i] "\nparent=" sections[5, "id"] "\ntitle=" searched[i] "\ndetail=Searched " times(searchedTimes[i]) ", found nothing\nopen.title=Copy prompt\nclose=false\n")
+    row(5, 100000 - searchedTimes[i], "item=search:" searched[i] "\nparent=" sections[5, "id"] "\ntitle=" searched[i] "\ndetail=Searched " times(searchedTimes[i]) ", found nothing\nopen.title=Copy prompt\nclose=false\n")
     listed[5] = 1
   }
   for (order in listed) row(order, -1, "box=" sections[order, "id"] "\nparent=spots\ntitle=" sections[order, "title"] "\n")

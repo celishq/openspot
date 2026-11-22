@@ -38,7 +38,7 @@ An id of the other kind is left alone, so a script can pass one set of hidden id
 ## Items
 
 ```text
-text=event:3F2A…                     text=reminder:9C41…
+item=event:3F2A…                     item=reminder:9C41…
 title=Standup                        title=Call mom
 detail=09:30–09:45 · Work            detail=Late · Yesterday 18:00 · Family
 icon=video                           icon=circle

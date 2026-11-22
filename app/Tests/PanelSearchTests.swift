@@ -31,8 +31,8 @@ final class PanelSearchTests: PanelCase {
 
     func testASpotThatListsWantIsAskedOnceWhenItsRowsFirstShowInEachPanelOpen() async throws {
         let log = folder.appendingPathComponent("wants")
-        try script("tabs", toml: "title = 'Tabs'\non = ['sheet.open', 'spot.want']\noffers = ['search']", "sed -n 's/^event=//p' >> '\(log.path)'\nprintf 'text=current\\ntitle=Snooze Current Tab\\n'")
-        try script("other", toml: "title = 'Other'\noffers = ['search']", "printf 'text=x\\ntitle=Snore\\n'")
+        try script("tabs", toml: "title = 'Tabs'\non = ['sheet.open', 'spot.want']\noffers = ['search']", "sed -n 's/^event=//p' >> '\(log.path)'\nprintf 'item=current\\ntitle=Snooze Current Tab\\n'")
+        try script("other", toml: "title = 'Other'\noffers = ['search']", "printf 'item=x\\ntitle=Snore\\n'")
         await model.reload()
         let wants = { ((try? String(contentsOf: log, encoding: .utf8)) ?? "").split(separator: "\n").filter { $0 == "spot.want" }.count }
         model.isShown = true
@@ -69,7 +69,7 @@ final class PanelSearchTests: PanelCase {
     }
 
     func testAFailedPressOfARowMarksThatRowAndNotTheSpotsCard() async throws {
-        try script("tabs", toml: "title = 'Tabs'\noffers = ['search']", "[ \"$1\" = open ] && { echo 'Ghostty is not a browser' >&2; exit 1; }\nprintf 'text=current\\ntitle=Snooze Current Tab\\nclose=false\\n'")
+        try script("tabs", toml: "title = 'Tabs'\noffers = ['search']", "[ \"$1\" = open ] && { echo 'Ghostty is not a browser' >&2; exit 1; }\nprintf 'item=current\\ntitle=Snooze Current Tab\\nclose=false\\n'")
         await model.reload()
         model.isShown = true
         model.panelWillShow()

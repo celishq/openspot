@@ -18,7 +18,7 @@ final class IconTests: XCTestCase {
     }
 
     func testARowAndAComponentTakeTheirPictureFromIcon() throws {
-        let outputCheck = FrameCheck(text: "frame=\nclass=gap-part\n\npicture=p\nicon=/tmp/a.png\n\nitems=list\n\ntext=a\nparent=list\nicon=/Applications/Safari.app\n\ntext=b\nparent=list\nicon=😀\n")
+        let outputCheck = FrameCheck(text: "frame=\nclass=gap-part\n\npicture=p\nicon=/tmp/a.png\n\nitems=list\n\nitem=a\nparent=list\nicon=/Applications/Safari.app\n\nitem=b\nparent=list\nicon=😀\n")
         let output = outputCheck.output
 
         XCTAssertEqual(output.items.map(\.iconFile), ["/Applications/Safari.app", nil])

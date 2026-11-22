@@ -17,7 +17,7 @@ list() {
   printf '%s\n' "$themes" | awk 'BEGIN { RS = ""; FS = "\n" }
     { delete f
       for (i = 1; i <= NF; i++) { n = index($i, "="); f[substr($i, 1, n - 1)] = substr($i, n + 1) }
-      printf "\ntext=%s\ntitle=%s\nicon=paintpalette\n", f["text"], f["text"]
+      printf "\nitem=%s\ntitle=%s\nicon=paintpalette\n", f["item"], f["item"]
       if (f["builtin"] == "true") printf "detail=Built in\nhides=rename\nhides=delete\nhides=file\n"
       if (f["used"] == "true") printf "value=true\n" }'
 }

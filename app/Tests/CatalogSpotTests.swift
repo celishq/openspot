@@ -62,7 +62,7 @@ final class CatalogSpotTests: BuiltInCase {
     }
 
     func testAnItemIsOnByItsValue() throws {
-        XCTAssertEqual(Frame(text: "text=apps\ntitle=Apps\nvalue=true\n").items.first?.isOn, true)
-        XCTAssertEqual(Frame(text: "text=apps\ntitle=Apps\non=true\n").items.first?.isOn, false)
+        XCTAssertEqual(Frame(text: "item=apps\ntitle=Apps\nvalue=true\n").items.first?.isOn, true)
+        XCTAssertEqual(Frame(text: "item=apps\ntitle=Apps\non=true\n").items.first?.isOn, false)
     }
 }
