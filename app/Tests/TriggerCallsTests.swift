@@ -105,7 +105,26 @@ final class TriggerCallsTests: SpotRunsCase {
 
         sheet.pick(SpotItem(title: "A", run: "a", fields: [.init(key: "url", value: "x")]))
 
-        try await wait("the press") { self.calls == ["press|input.item=a "] }
+        try await wait("the press") { self.calls == ["press|input.item=a input.item.url=x "] }
+    }
+
+    func testAnActionOfAnItemCallsItsIDWithTheItemAndItsOwnKeys() async throws {
+        let sheet = try spot("every = 600")
+        let action = try XCTUnwrap(CommandAction(id: "remove", block: TextBlock(fields: [.init(key: "button", value: "remove"), .init(key: "title", value: "Remove")])))
+
+        sheet.run(action, item: SpotItem(title: "A", run: "a", fields: [.init(key: "url", value: "x")]))
+
+        try await wait("the action") { self.calls == ["remove|input.item=a input.item.url=x "] }
+    }
+
+    func testTheRouteOfThePageIsAnInput() async throws {
+        let sheet = try spot("every = 600", toml: "pages = [\"date\"]")
+        sheet.open {}
+        try await wait("the show") { self.calls == ["show|"] && !self.runs.isShowing }
+
+        sheet.show(FlowSheet(spot: "script", route: "date", title: "Date"))
+
+        try await wait("the show of the page") { self.calls.last == "show|input.route=date " }
     }
 
     func testASendFromAViewCallsTheActionOfItsNodeWithTheValue() async throws {

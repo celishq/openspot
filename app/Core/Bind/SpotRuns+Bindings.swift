@@ -67,7 +67,7 @@ extension SpotRuns {
         let end = await withCheckedContinuation { waiting in
             pushed.wait(for: id, action: action, waiting)
             Task { [weak self] in
-                if await !app.ask(id, from: spot.id, title: nil) { self?.pushed.end(id, .failed("Openspot cannot show \(sheet.spot.name).")) }
+                if await !app.ask(id, from: spot.id, title: frame.root?.value(RootKey.title)) { self?.pushed.end(id, .failed("Openspot cannot show \(sheet.spot.name).")) }
             }
         }
         sheet.release()

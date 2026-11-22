@@ -25,7 +25,7 @@ extension SpotRun {
 
     func pressing(_ message: Message, as name: String) -> Message {
         let arguments = message.action.arguments
-        guard arguments.count > 1, typedAction(of: message.action) != nil else { return message }
+        guard arguments.count > 1, spot.triggers != nil || typedAction(of: message.action) != nil else { return message }
         var message = message
         message.action = .press(arguments[0])
         message.inputs.append(.init(key: name, value: arguments[1]))

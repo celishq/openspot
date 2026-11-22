@@ -35,7 +35,7 @@ public struct FrameCheck: Equatable, Sendable {
                 continue
             }
             if taken.contains(id), id != Frame.open { faults.append("an action cannot be called \(id)") }
-            if id != Frame.open, CommandAction(id: id, block: block) == nil { faults += BlockKind.actionFaults(in: block) }
+            if id != Frame.open, id != Frame.press, CommandAction(id: id, block: block) == nil { faults += BlockKind.actionFaults(in: block) }
         }
         faults += output.tree.faults
         if !output.unnamedValues.isEmpty {

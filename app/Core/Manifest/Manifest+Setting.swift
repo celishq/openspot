@@ -30,7 +30,7 @@ extension Manifest {
             id = parameter.name
             section = "[\(Self.table)] \(parameter.name)"
             title = parameter.title ?? parameter.name.prefix(1).uppercased() + parameter.name.dropFirst()
-            icon = nil
+            icon = parameter.icon
             type = parameter.type.name
             options = parameter.options
             defaultValue = parameter.defaultValue

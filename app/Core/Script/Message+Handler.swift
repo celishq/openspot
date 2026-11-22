@@ -4,6 +4,8 @@ extension Message {
     static let showHandler = "show"
     static let everyHandler = "every"
     static let pressHandler = "press"
+    private static let itemInput = "item"
+    private static let routeInput = "route"
     private static let shows: Set<String> = [SpotEvent.panelOpen, SpotEvent.sheetOpen, SpotEvent.spotWant, ShowEvent.change.rawValue]
 
     func handled() -> Message {
@@ -33,12 +35,20 @@ extension Message {
             message.action = .press(SpotAction.drag(runs: []).arguments[0])
             message.inputs += arguments.dropFirst().map { .init(key: "item", value: $0) }
         default:
-            return self
+            return message.carried()
         }
         message.event = nil
-        message.item = []
         message.search = nil
         message.searchForms = []
+        return message.carried()
+    }
+
+    private func carried() -> Message {
+        var message = self
+        message.inputs += item.map { .init(key: "\(Self.itemInput).\($0.key)", value: $0.value) }
+        message.inputs += route.map { [.init(key: Self.routeInput, value: $0)] } ?? []
+        message.item = []
+        message.route = nil
         return message
     }
 }

@@ -62,6 +62,7 @@ public struct SpotTimer: Codable, Equatable, Sendable {
         var fields = [TextBlock.Field(key: "item", value: id)]
         if let title = value ?? action { fields.append(.init(key: "title", value: title)) }
         fields.append(.init(key: "at", value: at.map(Self.format) ?? Self.someday))
+        fields += (inputs ?? []).map { .init(key: "input.\($0.name)", value: $0.value) }
         return TextBlock(fields: fields).text
     }
 

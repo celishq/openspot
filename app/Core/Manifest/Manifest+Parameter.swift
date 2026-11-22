@@ -3,13 +3,14 @@ import Foundation
 extension Manifest {
     public struct Parameter: Equatable, Sendable {
         static let inputKeys: Set<String> = ["type", "required", "default", "description", "options"]
-        static let settingKeys: Set<String> = ["type", "options", "default", "title", "description"]
+        static let settingKeys: Set<String> = ["type", "options", "default", "title", "description", "icon"]
 
         public let name: String
         public let type: ValueType
         public let isRequired: Bool
         public let defaultValue: String?
         public let title: String?
+        public let icon: String?
         public let detail: String?
         public let options: [String]
 
@@ -65,6 +66,7 @@ extension Manifest {
             self.isRequired = isRequired
             self.defaultValue = defaultValue
             self.title = try text("title")
+            self.icon = try text("icon")
             self.detail = try text("description")
             self.options = options
         }
@@ -75,6 +77,7 @@ extension Manifest {
             self.isRequired = isRequired
             defaultValue = nil
             title = nil
+            icon = nil
             detail = nil
             options = []
         }

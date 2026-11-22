@@ -30,7 +30,7 @@ public struct SpotFile: Equatable, Sendable {
         }
         let icon = Icon(text: manifest.icon).map { Self.placed($0, beside: url) }
         if let triggers = manifest.triggers {
-            let old = [("on", !manifest.on.isEmpty), ("offers", !manifest.offers.isEmpty), ("drop", !manifest.drop.isEmpty), ("answers", manifest.answers != nil), ("placeholder", manifest.placeholder != nil)]
+            let old = [("on", !manifest.on.isEmpty), ("offers", !manifest.offers.isEmpty), ("drop", !manifest.drop.isEmpty), ("placeholder", manifest.placeholder != nil)]
             if let (key, _) = old.first(where: \.1) {
                 throw SpotError.fault("\(name) has both \(key) and [on] in its \(Manifest.fileName). Move \(key) into [on]")
             }
@@ -60,13 +60,13 @@ public struct SpotFile: Equatable, Sendable {
             throw SpotError.fault("\(name) is a .js file, which runs inline, so it takes no mode = \"\(modeName)\"")
         }
         let mode = isInline ? SpotMode.inline : named
-        let isGlobal = try Self.isGlobal(manifest.offers, of: name)
+        let isGlobal = try Self.isGlobal(manifest.offers, of: name) || manifest.triggers?.lists == true
         let order = manifest.answers
         guard order == nil || order == "last" || order == "card" else {
             throw SpotError.fault("\(name) has an unknown answers: \(order ?? ""). Use answers = \"last\" or answers = \"card\"")
         }
         guard order == nil || parsed?.answers != nil else {
-            throw SpotError.fault("\(name) has answers = \"\(order ?? "")\", which needs search.text in its on, such as on = [\"search.text ^[0-9]\"]")
+            throw SpotError.fault("\(name) has answers = \"\(order ?? "")\", which needs search.text in its on, such as on = [\"search.text ^[0-9]\"], or search in its [on], such as search = \"^[0-9]\"")
         }
         let answers = order == "last" ? parsed?.answers?.last() : order == "card" ? parsed?.answers?.card() : parsed?.answers
         let answersOnly = answers != nil && on == nil

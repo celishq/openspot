@@ -37,6 +37,7 @@ public struct Frame: Equatable, Sendable {
     public let isMark: Bool
 
     static let open = "open"
+    static let press = "press"
     private static let sheetRoot = RootKey.block([.init(key: ViewNode.classKey, value: "gap-part")])
     private static let itemsBlock = TextBlock(fields: [.init(key: BlockKind.items, value: "items")])
     static let searchType = "search"
@@ -242,7 +243,7 @@ public struct Frame: Equatable, Sendable {
     }
 
     private mutating func take(action id: String, _ block: TextBlock) {
-        if id == Self.open {
+        if id == Self.open || id == Self.press {
             openTitle = block.value("title")
             pick = block.flag("close") == false ? .stay : .close
             if block.flag("form") == true {

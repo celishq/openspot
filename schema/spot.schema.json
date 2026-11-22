@@ -109,7 +109,10 @@
           "type" : "array"
         },
         "search" : {
-          "type" : "string"
+          "type" : [
+            "boolean",
+            "string"
+          ]
         }
       },
       "type" : "object"

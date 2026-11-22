@@ -65,6 +65,12 @@ final class ManifestTypesTests: XCTestCase {
         XCTAssertEqual(manifest.commands.map(\.id), ["go"])
     }
 
+    func testATypedSettingTakesAnIcon() throws {
+        let manifest = try Manifest(text: "[settings]\nmorning = { type = \"choice\", icon = \"sunrise\", options = [\"8:00\"] }", folder: "/spots/snooze.spot").script("snooze.sh")
+
+        XCTAssertEqual(manifest.settings.first?.icon, "sunrise")
+    }
+
     func testASpotStaysAndOffersEachTitledActionWithItsCommands() throws {
         let spot = try XCTUnwrap(spot(Self.toml).spot)
 

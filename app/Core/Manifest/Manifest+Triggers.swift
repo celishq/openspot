@@ -15,6 +15,7 @@ extension Manifest {
 
         public let commands: [String]
         public let search: AnswerPattern?
+        public let lists: Bool
         public let schedule: [CronLine]
         public let every: Int?
         public let drop: [String]
@@ -26,6 +27,7 @@ extension Manifest {
             let fault = { (key: String, reason: String) in SpotError.fault("\(Manifest.fileName): \(section) \(key) \(reason)") }
             var commands: [String] = []
             var search: AnswerPattern?
+            var lists = false
             var schedule: [CronLine] = []
             var every: Int?
             var drop: [String] = []
@@ -43,7 +45,11 @@ extension Manifest {
                     }
                     commands = words
                 case Self.search:
-                    guard case .string(let text)? = value else { throw fault(name, "takes a regular expression, such as search = \"^[0-9]\".") }
+                    if case .boolean(let isOn)? = value {
+                        lists = isOn
+                        continue
+                    }
+                    guard case .string(let text)? = value else { throw fault(name, "takes true, or a regular expression, such as search = \"^[0-9]\".") }
                     guard let pattern = AnswerPattern(text) else { throw fault(name, "is not a regular expression: \(text).") }
                     search = pattern
                 case Self.schedule:
@@ -82,6 +88,7 @@ extension Manifest {
             }
             self.commands = commands
             self.search = search
+            self.lists = lists
             self.schedule = schedule
             self.every = every
             self.drop = drop

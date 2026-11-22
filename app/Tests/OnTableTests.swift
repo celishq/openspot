@@ -120,6 +120,22 @@ final class OnTableTests: XCTestCase {
         XCTAssertTrue(reason.contains("drop"), reason)
     }
 
+    func testAnswersSitsBesideTheSearchOfOn() throws {
+        let loaded = try load("answers = \"card\"\n\n[on]\nsearch = \"^[0-9]\"")
+
+        let spot = try XCTUnwrap(loaded.spot, loaded.refused.joined())
+        XCTAssertEqual(spot.answers?.text, "^[0-9]")
+        XCTAssertEqual(spot.answers?.isCard, true)
+    }
+
+    func testSearchTrueListsTheItemsOfTheSpotInTheMainSearch() throws {
+        let loaded = try load("[on]\nsearch = true")
+
+        let spot = try XCTUnwrap(loaded.spot, loaded.refused.joined())
+        XCTAssertTrue(spot.isGlobal)
+        XCTAssertNil(spot.answers)
+    }
+
     func testACronLineFindsItsNextTime() throws {
         var calendar = Calendar(identifier: .gregorian)
         calendar.timeZone = try XCTUnwrap(TimeZone(identifier: "UTC"))

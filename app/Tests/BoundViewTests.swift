@@ -62,4 +62,35 @@ final class BoundViewTests: PanelCase {
         XCTAssertEqual(log("done"), ["4"])
         XCTAssertEqual(log("out"), [])
     }
+
+    func testThePushedViewTakesTheTitleOfItsRootAndARouteInItShowsItsPage() async throws {
+        try script("days", toml: "title = 'Days'\npages = ['date']\n[actions.pick]\noutputs.until = 'text'", """
+        route=$(sed -n 's/^route=//p')
+        case "$1:$route" in
+          show:date) printf 'text=monday\\ntitle=Monday\\n' ;;
+          show:*) printf 'text=s\\ntitle=Show\\n' ;;
+          pick:*) printf 'frame=\\ntitle=For the tab\\n\\ntext=morning\\ntitle=Morning\\n\\ntext=pick\\ntitle=Pick Date\\nroute=date\\n' ;;
+          open:*) echo "out.until=$2" ;;
+        esac
+        """)
+        try script("dater", toml: "title = 'Dater'\n[bindings]\ndays = { spot = 'days' }", """
+        case "$1" in
+          show) printf 'text=x\\ntitle=Dater\\n' ;;
+          *) '\(client.path)' run days.pick --out until > '\(path("out"))' 2> '\(path("errors"))'; echo $? >> '\(path("done"))' ;;
+        esac
+        """)
+        await model.reload()
+        try XCTUnwrap(model.sheets["dater"]).pressCard()
+        try await wait("the pushed view") { self.model.transition.phase == .open && self.titles == ["Morning", "Pick Date"] }
+
+        XCTAssertEqual(model.flow.current?.title, "For the tab")
+        model.sheets["days"]?.list.select(run: "pick")
+        model.runSelectedItem()
+
+        try await wait("the page of the route") { self.titles == ["Monday"] }
+        model.sheets["days"]?.list.select(run: "monday")
+        model.runSelectedItem()
+        try await wait("the end of the run") { self.log("done").count == 1 }
+        XCTAssertEqual(log("out"), ["monday"])
+    }
 }

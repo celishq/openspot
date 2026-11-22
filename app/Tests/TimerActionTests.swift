@@ -72,4 +72,15 @@ final class TimerActionTests: PanelCase {
 
         try await wait("the call of the action") { self.calls == ["wake|input.url=https://a.com input.size=m "] }
     }
+
+    func testTheListOfATimerOfAnActionHoldsItsInputs() async throws {
+        let added = try await call(["timer", "add", time(in: 60), "wake", "url=https://a.com"])
+        XCTAssertEqual(added.code, 0, added.errors)
+
+        let listed = try await call(["timer", "list"])
+
+        let block = try XCTUnwrap(TextBlock.blocks(in: listed.output).first)
+        XCTAssertEqual(block.value("title"), "wake")
+        XCTAssertEqual(block.value("input.url"), "https://a.com")
+    }
 }

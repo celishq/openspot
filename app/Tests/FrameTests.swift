@@ -11,6 +11,16 @@ final class FrameTests: XCTestCase {
         XCTAssertEqual(printed.errors, [])
     }
 
+    func testAPressButtonTitlesReturnAsAnOpenButtonDoes() {
+        let text = "button=press\ntitle=Copy\nclose=false\n\nitem=a\ntitle=A\n"
+        let frame = Frame(text: text)
+
+        XCTAssertEqual(frame.openTitle, "Copy")
+        XCTAssertEqual(frame.pick, .stay)
+        XCTAssertTrue(frame.actions.isEmpty)
+        XCTAssertEqual(FrameCheck(text: text).partFaults, [])
+    }
+
     func testSortsBlocksByTheKeyThatSaysWhatTheyAre() {
         let output = Frame(text: """
         frame=
