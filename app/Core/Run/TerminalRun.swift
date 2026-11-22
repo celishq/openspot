@@ -13,6 +13,7 @@ public struct TerminalRun {
     public let spot: Spot
     public let arguments: [String]
     public let input: String?
+    let inputs: [TextBlock.Field]
     let careful: Set<SpotUse>?
     let callers: SpotCallers?
     let environment: [String: String]?
@@ -20,14 +21,15 @@ public struct TerminalRun {
     let usage: StatsLog?
 
     public init(spot: Spot, arguments: [String], input: String?) {
-        self.init(spot: spot, arguments: arguments, input: input, careful: nil, callers: nil, environment: nil, folder: nil)
+        self.init(spot: spot, arguments: arguments, input: input, inputs: [], careful: nil, callers: nil, environment: nil, folder: nil)
     }
 
-    init(spot: Spot, arguments: [String], input: String?, careful: Set<SpotUse>?, callers: SpotCallers?, environment: [String: String]?, folder: URL?, usage: StatsLog? = nil) {
+    init(spot: Spot, arguments: [String], input: String?, inputs: [TextBlock.Field], careful: Set<SpotUse>?, callers: SpotCallers?, environment: [String: String]?, folder: URL?, usage: StatsLog? = nil) {
         self.usage = usage
         self.spot = spot
         self.arguments = arguments
         self.input = input
+        self.inputs = inputs
         self.careful = careful
         self.callers = callers
         self.environment = environment
@@ -39,7 +41,7 @@ public struct TerminalRun {
     }
 
     private func message(isInShow: Bool) -> Message {
-        Message(action, event: isInShow ? .sheet : nil, given: input)
+        Message(action, event: isInShow ? .sheet : nil, inputs: inputs, given: input)
     }
 
     public func start(isolation: isolated (any Actor)? = #isolation, frame: (String) -> Void) async -> End {

@@ -434,6 +434,21 @@ final class SpotAddTests: XCTestCase {
         XCTAssertEqual(accepted.code, 0, accepted.errors)
     }
 
+    func testAnUpdateThatRemovesAnActionOrAddsARequiredInputThatAnotherSpotBindsNamesThatSpotAndNeedsYes() async throws {
+        let picker = try GitRepo(at: root.appendingPathComponent("sources/picker"))
+        try picker.commit(["picker.sh": "#!/bin/sh\n", "spot.toml": "[actions.pick]\ninputs.when = 'text'\n[actions.clear]"])
+        _ = try await answer(["spot", "add", picker.url.path])
+        try "#!/bin/sh\n".writeScript(to: spots.spotFile("snooze"), toml: "[bindings]\npicker = { spot = 'picker' }")
+        try picker.commit(["picker.sh": "#!/bin/sh\n", "spot.toml": "[actions.pick]\ninputs.when = { type = 'text', required = true }\ninputs.zone = { type = 'text', required = true, default = 'UTC' }"])
+
+        let refused = try await answer(["spot", "add", picker.url.path])
+
+        XCTAssertEqual(refused.code, 1)
+        XCTAssertEqual(refused.errors, "This version changes what Snooze calls through picker.\nIt removes the action clear.\nIt adds the required input when to pick.\nOpenspot kept the one you have. Run `openspot spot add \(picker.url.standardizedFileURL.path) --yes` to update it.\n")
+        let accepted = try await answer(["spot", "add", picker.url.path, "--yes"])
+        XCTAssertEqual(accepted.code, 0, accepted.errors)
+    }
+
     func testAnUpdateThatCanDoMoreWithTheSameUsesNeedsYes() async throws {
         let repo = try repo()
         _ = try await answer(["spot", "add", repo.url.path])

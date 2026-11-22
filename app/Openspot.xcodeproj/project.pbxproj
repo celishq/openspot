@@ -432,6 +432,7 @@
 		70E308A8D38988698E9D0A82 /* RecordingRequest.swift in Sources */ = {isa = PBXBuildFile; fileRef = A578AAC06953DF21FDCF52B1 /* RecordingRequest.swift */; };
 		711DEBC2B9CAF4CD9E20E240 /* ManifestSchema.swift in Sources */ = {isa = PBXBuildFile; fileRef = 921F8FDC4ACC08B24033B84B /* ManifestSchema.swift */; };
 		714B57F9A89152C1643BD838 /* SpotAskTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3C0FA043335EAA531295998A /* SpotAskTests.swift */; };
+		71C4018DF6CDC5586CECC5E7 /* BoundChange.swift in Sources */ = {isa = PBXBuildFile; fileRef = F150BD41336698D8F1F67FD2 /* BoundChange.swift */; };
 		71DE4481D4AF681A335EA1C1 /* Mac.swift in Sources */ = {isa = PBXBuildFile; fileRef = FAE3480ACBE742701BA648C5 /* Mac.swift */; };
 		71EEF7BECC5512145EAFB9B3 /* ToastView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8AE7333AFB1BE8B127EE7D7B /* ToastView.swift */; };
 		72A53210B830F23A5BD69E74 /* ScanResult.swift in Sources */ = {isa = PBXBuildFile; fileRef = DA9A2D73F1178DA6CC737545 /* ScanResult.swift */; };
@@ -862,6 +863,7 @@
 		D27D981AA16CC7BC3F22CE9C /* SpotMac.swift in Sources */ = {isa = PBXBuildFile; fileRef = 32A48C2223D322874CB7641E /* SpotMac.swift */; };
 		D27F80757684C2EE9F362617 /* FakeRunningApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = DD8B0BEC3E58E400CAC054E4 /* FakeRunningApp.swift */; };
 		D287B00A507CBE1099D9CD61 /* OpenCall.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5E927A4E8838A5BBD77F9E07 /* OpenCall.swift */; };
+		D2F8C48037284F93B6DEB772 /* BindingEdgesTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = EDD03376B36B8E902F1A2559 /* BindingEdgesTests.swift */; };
 		D31F7363E1B4615D3736464D /* CommandGroup.swift in Sources */ = {isa = PBXBuildFile; fileRef = 05B3AFD676664E3670248265 /* CommandGroup.swift */; };
 		D39C67018B7DA086CD396E2B /* SpotPublish.swift in Sources */ = {isa = PBXBuildFile; fileRef = BDED16F3D196F77C6584ABB1 /* SpotPublish.swift */; };
 		D3BA22518EBB43EB9CAFBD42 /* Playground.swift in Sources */ = {isa = PBXBuildFile; fileRef = A050BF2D9A52342E2FE1616B /* Playground.swift */; };
@@ -2114,6 +2116,7 @@
 		ED1EECEC069C9C84A4342D06 /* KeyText.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KeyText.swift; sourceTree = "<group>"; };
 		ED4D444DDC7AB9F057FE3633 /* SpotsModel+Entry.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "SpotsModel+Entry.swift"; sourceTree = "<group>"; };
 		ED9BDEAA645A7CD91FDAD63B /* ReviewSpotTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReviewSpotTests.swift; sourceTree = "<group>"; };
+		EDD03376B36B8E902F1A2559 /* BindingEdgesTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BindingEdgesTests.swift; sourceTree = "<group>"; };
 		EE91F30B90556FB379832DE5 /* MissedSearch.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MissedSearch.swift; sourceTree = "<group>"; };
 		EEA6367A07B6E3C16A2D890E /* SlashCommandPanelTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SlashCommandPanelTests.swift; sourceTree = "<group>"; };
 		EEAC537C0FEE988EC09B68E8 /* UpdateCall.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UpdateCall.swift; sourceTree = "<group>"; };
@@ -2139,6 +2142,7 @@
 		F0FD2E4AE61ADD248A6B84BA /* SpotPackage+Release.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "SpotPackage+Release.swift"; sourceTree = "<group>"; };
 		F13017B4B327B5B125971901 /* NodeButton.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NodeButton.swift; sourceTree = "<group>"; };
 		F149558E8ADB4907416DAEE7 /* GridPanel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GridPanel.swift; sourceTree = "<group>"; };
+		F150BD41336698D8F1F67FD2 /* BoundChange.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BoundChange.swift; sourceTree = "<group>"; };
 		F180545BC14AC0A2FDEFB77A /* StoreSpotTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StoreSpotTests.swift; sourceTree = "<group>"; };
 		F1BA0E6BD52DC154D25BEBAF /* SnoozeSpotTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SnoozeSpotTests.swift; sourceTree = "<group>"; };
 		F1E3218E6D4C2E9BB6661856 /* ToastPanel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ToastPanel.swift; sourceTree = "<group>"; };
@@ -2265,6 +2269,7 @@
 		03741A518C6BD973A8323E94 /* Install */ = {
 			isa = PBXGroup;
 			children = (
+				F150BD41336698D8F1F67FD2 /* BoundChange.swift */,
 				BC02E9262A1B731AAC242EE7 /* ReviewSpot.swift */,
 				763D469A3D31F653FF993FA0 /* SpotDrop.swift */,
 				9EAB5B3EA92B4A8BD322672C /* SpotLock.swift */,
@@ -2815,6 +2820,7 @@
 				7B7E74011BAC4C7ACD987A3C /* AppWordsTests.swift */,
 				76CF114A9F6DD16386C0B30F /* BackdropFadeTests.swift */,
 				54721534E4A59D8BE9117831 /* BigPasteTests.swift */,
+				EDD03376B36B8E902F1A2559 /* BindingEdgesTests.swift */,
 				A3846375D251A9AE53CD3EFA /* BindingsTests.swift */,
 				0CF2ED0B9F224E28503A8714 /* BoundEventsTests.swift */,
 				9C84DAFD9EB229A611D5DC2B /* BoundViewTests.swift */,
@@ -4312,6 +4318,7 @@
 				C55E9DD8E1D674A683E0E69F /* Bech32.swift in Sources */,
 				8024DC6534E46B3411AD4B63 /* BlockKind+Faults.swift in Sources */,
 				3614025BE8F71C19092A9B6A /* BlockKind.swift in Sources */,
+				71C4018DF6CDC5586CECC5E7 /* BoundChange.swift in Sources */,
 				C331E676AB336BD26C9C5670 /* BoundRun.swift in Sources */,
 				9053273B32FBAD1CDA2C3F8F /* BoxLayout+Grid.swift in Sources */,
 				C3E0801CC134D073D0BC8F66 /* BoxLayout+Pins.swift in Sources */,
@@ -5049,6 +5056,7 @@
 				B34A155F568AA723C2FD1D2D /* AppsSpotTests.swift in Sources */,
 				5B8275AADE0CDAA172303298 /* BackdropFadeTests.swift in Sources */,
 				F35D6B0382CED10EFB06974F /* BigPasteTests.swift in Sources */,
+				D2F8C48037284F93B6DEB772 /* BindingEdgesTests.swift in Sources */,
 				FA78FA45D5F4A167B2A2345B /* BindingsTests.swift in Sources */,
 				F7D5C960349CFD203129C693 /* BoundEventsTests.swift in Sources */,
 				60F611BFEFF4FA64C1D0764D /* BoundViewTests.swift in Sources */,

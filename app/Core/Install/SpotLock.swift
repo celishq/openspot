@@ -102,6 +102,11 @@ public struct SpotLock: Equatable, Sendable {
                 }
                 if let old, !isConfirmed {
                     try Self.refuseGrowth(from: old.uses, old.canDo, to: new, confirm: "openspot spot add \(source.text) --yes")
+                    let names = Set(paths.map { SpotID(path: $0).name })
+                    let changes = BoundChange.lines(of: try SpotsFolder(url: work).scan().scripts.filter { names.contains(SpotID($0.id).name) }, in: folder)
+                    if !changes.isEmpty {
+                        throw SpotError.fault((changes + ["Openspot kept the one you have. Run `openspot spot add \(source.text) --yes` to update it."]).joined(separator: "\n"))
+                    }
                 }
                 facts = new
             }

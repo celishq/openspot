@@ -20,16 +20,28 @@ extension SpotRuns {
         if let out = run.out, !action.outputs.contains(where: { $0.name == out }) {
             return .refused("\(name) has no output \(out). Its outputs are: \(action.outputs.map(\.name).joined(separator: ", ")).")
         }
+        let call = caller.call?.request
+        let chain = (call?.chain ?? []) + [spot.id]
+        let links = (chain + [binding.spot]).joined(separator: " → ")
+        if chain.contains(binding.spot) {
+            return .refused("\(run.name) would run \(binding.spot) again in the chain \(links), so Openspot did not run it.")
+        }
+        if chain.count > Self.chainLimit {
+            return .refused("\(run.name) would make the chain \(links) deeper than \(Self.chainLimit) runs, so Openspot did not run it.")
+        }
         caller.holdLimit()
-        defer { caller.releaseLimit() }
+        runWaits[spot.id, default: 0] += 1
+        defer {
+            caller.releaseLimit()
+            let left = (runWaits[spot.id] ?? 1) - 1
+            runWaits[spot.id] = left > 0 ? left : nil
+        }
         let inputs: [TextBlock.Field]
         do {
             inputs = try action.inputs(await run.given())
         } catch {
             return .refused(Self.reason(error))
         }
-        let call = caller.call?.request
-        let chain = (call?.chain ?? []) + [spot.id]
         let frame: Frame?
         do {
             frame = try await sheet.answer(to: Message(.press(name), inputs: inputs), key: "run:\(UUID().uuidString)", chain: chain, isPressed: call?.isByPerson ?? false)
@@ -39,6 +51,10 @@ extension SpotRuns {
         guard let frame else { return .unanswered("\(run.name) stopped before it answered.") }
         if !frame.outputs.isEmpty { return .values(frame.outputs) }
         if frame.isPicture {
+            guard call?.isByPerson == true else {
+                let handler = call?.action.arguments.first ?? "a handler"
+                return .refused("\(run.name) answers with a view, which needs the person, and \(spot.name) runs \(handler) with no press. Show a toast or open a float instead.")
+            }
             guard let app else { return .failed("\(run.name) answers with a view, and no app shows it.") }
             return await push(frame, of: sheet, for: action, from: spot, app: app)
         }
@@ -57,6 +73,12 @@ extension SpotRuns {
         sheet.release()
         if end != .cancelled { _ = await app.leave(id) }
         return end
+    }
+
+    static let chainLimit = 4
+
+    func waitsInRun(_ id: String) -> Bool {
+        runWaits[id] != nil
     }
 
     func answerPushed(_ lines: Frame, from id: String) {

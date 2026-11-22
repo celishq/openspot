@@ -84,6 +84,10 @@ final class StayMode: ScriptMode {
     }
 
     func send(_ call: OpenCall) -> Bool {
+        if case .ask(let ask) = call.request.purpose, let run, runs.waitsInRun(run.spot.id) {
+            if case .answer(let text) = ask { run.takeAnswers(run.answers, to: text) }
+            return false
+        }
         switch call.request.purpose {
         case .ask(.show):
             guard run?.isWanted == true else { return false }

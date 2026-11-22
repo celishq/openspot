@@ -64,6 +64,7 @@ public struct ReviewSpot: Equatable, Sendable {
             Self.section("Can also", canAlso),
             runs.isEmpty ? "\(quiet)\n\n" : Self.section("Runs by itself", runs),
             Self.section("Replaces, and moves the old file to the Trash", spot.replaced(in: folder)),
+            Self.section("Changes what other spots call", BoundChange.lines(of: scan.scripts, in: folder)),
             Self.section("Will not load", scan.refused.map { "\($0.file): \($0.reason)" }),
             readme.map { "\(SpotReadme.shown($0))\n\n" },
             Self.section("Preview", rows)

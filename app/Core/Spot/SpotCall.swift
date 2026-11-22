@@ -28,7 +28,7 @@ public enum SpotCall: NounCall {
             guard let fit = words.fit, fit.rest.count == 1, let starter = fit.value("--from").map { SpotStarter(rawValue: $0) } ?? .button else { return nil }
             return Self.new(name: fit.rest[0], starter: starter)
         },
-        CommandVerb("run", "<id> [call] [value]...", "Makes one call of a spot as the app does, and prints all that it prints.", rule: CallRule(use: .spots, used: "ran a spot", flags: .startsScripts)) { words in
+        CommandVerb("run", "<id> [call] [value]...", "Makes one call of a spot as the app does, and prints all that it prints. For a spot with [actions] or [on], the call names a handler and each word after it is an input, <name>=<value>, checked as a call checks it, and the spot's bindings work as in a run.", rule: CallRule(use: .spots, used: "ran a spot", flags: .startsScripts)) { words in
             words.rest.first.map { Self.run(id: $0, arguments: Array(words.rest.dropFirst())) }
         },
         CommandVerb("actions", "[id]", "Prints each action of a spot, or of every spot, and each command of its uses, with their inputs and outputs as JSON Schema.") { words in

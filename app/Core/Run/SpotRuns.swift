@@ -63,6 +63,7 @@ public final class SpotRuns {
     @ObservationIgnored var scheduleWatch: Task<Void, Never>?
     @ObservationIgnored var asks = SpotAsks()
     @ObservationIgnored var pushed = PushedRuns()
+    @ObservationIgnored var runWaits: [String: Int] = [:]
     @ObservationIgnored var wanted: Set<String> = []
     @ObservationIgnored var nextShow: Date?
     @ObservationIgnored var answerMatches = AnswerMatches()
