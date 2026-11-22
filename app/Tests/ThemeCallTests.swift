@@ -43,7 +43,7 @@ final class ThemeCallTests: XCTestCase {
         XCTAssertEqual(copied.output, "Made the theme Openspot copy, and switched to it.\n")
         XCTAssertEqual(renamed.output, "Renamed the theme Openspot copy to Dusk.\n")
         XCTAssertEqual(used.output, "Switched to the theme Theme 2.\n")
-        XCTAssertEqual(list.output, "text=Openspot\nbuiltin=true\n\ntext=Dusk\n\ntext=Theme 2\nused=true\n\n")
+        XCTAssertEqual(list.output, "item=Openspot\nbuiltin=true\n\nitem=Dusk\n\nitem=Theme 2\nused=true\n\n")
         XCTAssertEqual(json.output, #"[{"builtin":true,"theme":"Openspot","used":false},{"builtin":false,"theme":"Dusk","used":false},{"builtin":false,"theme":"Theme 2","used":true}]"# + "\n")
         XCTAssertEqual(deleted.output, "Moved the theme Theme 2 to the Trash, and switched to the theme Openspot.\n")
         XCTAssertEqual(try FileManager.default.contentsOfDirectory(atPath: config.appendingPathComponent("Trash").path), ["Theme 2.theme"])
@@ -82,7 +82,7 @@ final class ThemeCallTests: XCTestCase {
         let list = try await answer(api, ["theme", "list"])
         let used = try await answer(api, ["theme", "use", "paper"])
 
-        XCTAssertEqual(list.output, "text=Openspot\nbuiltin=true\n\ntext=Paper\nbuiltin=true\n\ntext=Theme 2\nused=true\n\n")
+        XCTAssertEqual(list.output, "item=Openspot\nbuiltin=true\n\nitem=Paper\nbuiltin=true\n\nitem=Theme 2\nused=true\n\n")
         XCTAssertEqual(used.output, "Switched to the theme Paper.\n")
         let themes = await app.themes
         XCTAssertEqual(themes.last?.colours.dark.accent, ThemeColor(text: "#FF9F0A"))

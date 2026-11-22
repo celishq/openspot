@@ -13,11 +13,11 @@ final class SpotAskTests: PanelCase {
         takeCalls()
         try script("picker", toml: "title = 'Picker'", """
         case "$1" in
-          show) printf 'text=morning\\ntitle=Morning\\n\\ntext=evening\\ntitle=Evening\\n' ;;
+          show) printf 'item=morning\\ntitle=Morning\\n\\nitem=evening\\ntitle=Evening\\n' ;;
           open) '\(client.path)' spot reply "$2" ;;
         esac
         """)
-        try script("asker", toml: "title = 'Asker'\noffers = ['search']", "[ \"$1\" = show ] && printf 'text=x\\ntitle=Snooze This\\n'; exit 0")
+        try script("asker", toml: "title = 'Asker'\noffers = ['search']", "[ \"$1\" = show ] && printf 'item=x\\ntitle=Snooze This\\n'; exit 0")
         await model.reload()
     }
 

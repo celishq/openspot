@@ -157,7 +157,7 @@ case "$1" in
   show)
     if [ -z "$folder" ]; then
       printf 'button=open\ntitle=Choose\n\n'
-      printf 'text=choose\ntitle=Choose the folder of your repos\ndetail=Repos lists each git repo inside it\nicon=folder.badge.plus\n'
+      printf 'item=choose\ntitle=Choose the folder of your repos\ndetail=Repos lists each git repo inside it\nicon=folder.badge.plus\n'
       exit 0
     fi
     repos=""

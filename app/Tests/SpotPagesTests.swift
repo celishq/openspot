@@ -8,7 +8,7 @@ final class SpotPagesTests: SpotRunsCase {
     }
 
     func testEachReadOfAPageNamesItAndTheFirstSheetNamesNone() async throws {
-        try script(toml: "", "page=$(sed -n 's/^route=//p')\necho \"${page:-none}\" >> '\(path("pages"))'\nprintf 'text=a\\ntitle=Page %s\\n' \"${page:-first}\"")
+        try script(toml: "", "page=$(sed -n 's/^route=//p')\necho \"${page:-none}\" >> '\(path("pages"))'\nprintf 'item=a\\ntitle=Page %s\\n' \"${page:-first}\"")
         let sheet = try sheet()
         runs.panelOpened()
         sheet.open(onReady: {})
@@ -22,7 +22,7 @@ final class SpotPagesTests: SpotRunsCase {
     }
 
     func testAPageThatComesBackShowsItsRowsAtOnceAndReadsAgain() async throws {
-        try script(toml: "", "page=$(sed -n 's/^route=//p')\nprintf 'text=a\\ntitle=Page %s\\n' \"${page:-first}\"")
+        try script(toml: "", "page=$(sed -n 's/^route=//p')\nprintf 'item=a\\ntitle=Page %s\\n' \"${page:-first}\"")
         let sheet = try sheet()
         runs.panelOpened()
         sheet.open(onReady: {})
@@ -74,7 +74,7 @@ final class SpotPagesTests: SpotRunsCase {
     func testAnInlineScriptGetsThePage() async throws {
         let url = folder.spotFile("script", extension: "js")
         try FileManager.default.createDirectory(at: url.deletingLastPathComponent(), withIntermediateDirectories: true)
-        try "function main(args, env, input) { return `text=a\\ntitle=Page ${openspot.value('route', input) || 'first'}\\n` }\n".writeInline(to: url, toml: "")
+        try "function main(args, env, input) { return `item=a\\ntitle=Page ${openspot.value('route', input) || 'first'}\\n` }\n".writeInline(to: url, toml: "")
         let sheet = try sheet()
         runs.panelOpened()
         sheet.open(onReady: {})

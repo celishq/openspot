@@ -42,7 +42,7 @@ final class CallInputTests: SpotRunsCase {
     func testAnActionAndAPickOfARowCarryTheKeysOfThatRowOnStdin() async throws {
         try script(toml: "", """
         case "$1" in
-          show) printf 'text=a\\ntitle=A\\nmeeting=https://meet.example/a\\n\\ntext=b\\ntitle=B\\n' ;;
+          show) printf 'item=a\\ntitle=A\\nmeeting=https://meet.example/a\\n\\nitem=b\\ntitle=B\\n' ;;
           *) { echo "$*"; cat; echo; } >> '\(path("input"))' ;;
         esac
         """)
@@ -55,8 +55,8 @@ final class CallInputTests: SpotRunsCase {
         try await wait("the action") { self.text("input").contains("join a") && sheet.calls.isEmpty }
         sheet.pick(row)
 
-        try await wait("the pick") { self.text("input").contains("open a\nitem.text=a") && self.text("input").hasSuffix("\n\n") }
-        XCTAssertEqual(text("input"), "join a\nitem.text=a\nitem.title=A\nitem.meeting=https://meet.example/a\n\nopen a\nitem.text=a\nitem.title=A\nitem.meeting=https://meet.example/a\n\n")
+        try await wait("the pick") { self.text("input").contains("open a\nitem.item=a") && self.text("input").hasSuffix("\n\n") }
+        XCTAssertEqual(text("input"), "join a\nitem.item=a\nitem.title=A\nitem.meeting=https://meet.example/a\n\nopen a\nitem.item=a\nitem.title=A\nitem.meeting=https://meet.example/a\n\n")
     }
 
     func testTheValueOfASecretFieldGoesOnlyOnStdinAndTheHostRecordsItNowhere() async throws {

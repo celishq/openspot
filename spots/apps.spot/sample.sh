@@ -6,7 +6,7 @@ for app in Calculator:quit Calendar:true Maps:quit Music:true Notes:true Photos:
   name=${app%:*}
   path=/System/Applications/$name.app
   [ "$name" = Safari ] && path=/Applications/Safari.app
-  printf 'text=%s\ntitle=%s\nicon=%s\n' "$path" "$name" "$path"
+  printf 'item=%s\ntitle=%s\nicon=%s\n' "$path" "$name" "$path"
   if [ "${app#*:}" = true ]; then printf 'value=true\n'; else printf 'hides=quit\n'; fi
   [ "$name" = Safari ] || printf 'hides=uninstall\n'
   printf '\n'

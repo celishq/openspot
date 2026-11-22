@@ -92,7 +92,7 @@ final class FlowNavigationTests: PanelCase {
     func testTheHintOfAPageSaysThatEscGoesBack() async throws {
         try script("info", toml: "pages = ['a']", """
         page=$(sed -n 's/^route=//p')
-        if [ -n "$page" ]; then printf 'frame=\\nclass=gap-part\\n\\ntext=detail\\ntitle=Detail\\n'; else printf 'frame=\\nclass=gap-part\\n\\ntext=first\\ntitle=First\\n\\nitems=list\\n\\ntext=a\\nparent=list\\ntitle=A\\nroute=a\\n'; fi
+        if [ -n "$page" ]; then printf 'frame=\\nclass=gap-part\\n\\ntext=detail\\ntitle=Detail\\n'; else printf 'frame=\\nclass=gap-part\\n\\ntext=first\\ntitle=First\\n\\nitems=list\\n\\nitem=a\\nparent=list\\ntitle=A\\nroute=a\\n'; fi
         """)
         await model.reload()
         model.isShown = true
@@ -315,7 +315,7 @@ final class FlowNavigationTests: PanelCase {
     }
 
     func testASheetWithNoCardGrowsFromTheFieldAndShrinksBackIntoIt() async throws {
-        try script("hidden", toml: "", "printf 'text=h\\ntitle=Hidden\\n'")
+        try script("hidden", toml: "", "printf 'item=h\\ntitle=Hidden\\n'")
         _ = try model.files.config.change { $0.arrangement.set(isOnGrid: false, of: "hidden") }
         await model.reload()
         model.isShown = true
@@ -359,9 +359,9 @@ final class FlowNavigationTests: PanelCase {
         echo "$1" >> '\(calls.path)'
         page=$(sed -n 's/^route=//p')
         case "$page" in
-          '') printf 'text=a\\ntitle=A\\nroute=photo/1\\nroute.title=Photo\\n' ;;
-          photo/1) printf 'text=b\\ntitle=B\\nroute=photo/2\\nroute.replace=true\\n' ;;
-          *) printf 'text=x\\ntitle=Detail %s\\n' "$page" ;;
+          '') printf 'item=a\\ntitle=A\\nroute=photo/1\\nroute.title=Photo\\n' ;;
+          photo/1) printf 'item=b\\ntitle=B\\nroute=photo/2\\nroute.replace=true\\n' ;;
+          *) printf 'item=x\\ntitle=Detail %s\\n' "$page" ;;
         esac
         """)
         await model.reload()

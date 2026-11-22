@@ -90,7 +90,7 @@ final class PanelKeysTests: PanelCase {
     }
 
     func testASearchThatFindsNoSpotTeachesTheSlash() async throws {
-        try script("list", toml: "title = 'List'", "printf 'text=a\\ntitle=A\\n'")
+        try script("list", toml: "title = 'List'", "printf 'item=a\\ntitle=A\\n'")
         await model.reload()
 
         model.query = "zzz"
@@ -164,7 +164,7 @@ final class PanelKeysTests: PanelCase {
     }
 
     func testInASheetOfRowsTheArrowsMoveByLinesAndReturnPicksTheRow() async throws {
-        try script("fruit", toml: "", "printf 'text=a\\ntitle=Apple\\n\\ntext=b\\ntitle=Banana\\n\\ntext=c\\ntitle=Cherry\\n'")
+        try script("fruit", toml: "", "printf 'item=a\\ntitle=Apple\\n\\nitem=b\\ntitle=Banana\\n\\nitem=c\\ntitle=Cherry\\n'")
         await model.reload()
         model.isShown = true
         model.panelWillShow()
@@ -846,7 +846,7 @@ final class PanelKeysTests: PanelCase {
     }
 
     func testCommandYOpensTheHistoryOfASpotWhoseReturnRunsItsCommand() async throws {
-        try script("dictate", toml: "title = 'Dictate'\non = ['sheet.open']\n[commands.dictate]\ntitle = 'Dictate'", "printf 'text=a\\ntitle=Said\\n'")
+        try script("dictate", toml: "title = 'Dictate'\non = ['sheet.open']\n[commands.dictate]\ntitle = 'Dictate'", "printf 'item=a\\ntitle=Said\\n'")
         await model.reload()
         model.isShown = true
         model.panelWillShow()

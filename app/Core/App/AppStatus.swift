@@ -21,7 +21,7 @@ struct AppStatus: PrintedRecord {
 
     var blocks: [[(String, String?)]] {
         [[
-            ("text", "status"), ("version", version), (CodingKeys.panelKey.rawValue, panelKey), (CodingKeys.fixKey.rawValue, fixKey), ("careful", String(careful)), ("slow", slow.map(String.init)), ("login", login.map(String.init)), ("link", link.map(String.init)),
+            ("item", "status"), ("version", version), (CodingKeys.panelKey.rawValue, panelKey), (CodingKeys.fixKey.rawValue, fixKey), ("careful", String(careful)), ("slow", slow.map(String.init)), ("login", login.map(String.init)), ("link", link.map(String.init)),
             ("update", update), ("calls", calls.map(String.init)), ("firstLaunch", firstLaunch.map(String.init))
         ]]
     }

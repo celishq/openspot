@@ -15,7 +15,7 @@ final class CalendarShowTests: XCTestCase {
     }
 
     private func id(_ text: String) throws -> String {
-        try XCTUnwrap(TextBlock.blocks(in: text).first?.value("text"))
+        try XCTUnwrap(TextBlock.blocks(in: text).first?.value("item"))
     }
 
     func testAnEventOpensOnTheDayOfItsTime() async throws {

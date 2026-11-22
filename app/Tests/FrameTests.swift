@@ -21,12 +21,12 @@ final class FrameTests: XCTestCase {
         shortcut=cmd+return
         close=true
 
-        text=/Applications/Safari.app
+        item=/Applications/Safari.app
         title=Safari
         detail=Browser
         icon=/Applications/Safari.app
 
-        text=off
+        item=off
         title=Off
         icon=power
         """)
@@ -41,14 +41,14 @@ final class FrameTests: XCTestCase {
     }
 
     func testTheFirstKeyOfABlockNamesItsKind() {
-        let output = Frame(text: "frame=\ntitle=Places\n\ndetail=Late\ntext=kyiv\ntitle=Kyiv\n\ntext=lviv\ntitle=Lviv\n")
+        let output = Frame(text: "frame=\ntitle=Places\n\ndetail=Late\nitem=kyiv\ntitle=Kyiv\n\nitem=lviv\ntitle=Lviv\n")
 
         XCTAssertEqual(output.items.map(\.run), ["lviv"])
         XCTAssertEqual(output.errors, ["detail=Late"])
     }
 
     func testABlockOfAnUnknownKindBeforeTheRootIsSkippedAndReported() {
-        let output = Frame(text: "badge=new\ntitle=New\n\nframe=\ntitle=Mine\n\ntext=a\ntitle=A\n")
+        let output = Frame(text: "badge=new\ntitle=New\n\nframe=\ntitle=Mine\n\nitem=a\ntitle=A\n")
         let alone = Frame(text: "badge=new\ntitle=New\n")
 
         XCTAssertEqual(output.root?.value("title"), "Mine")
@@ -61,7 +61,7 @@ final class FrameTests: XCTestCase {
     }
 
     func testABlockThatStartsWithAKeyOfTheRootButNotFrameIsAnUnknownKind() {
-        let output = Frame(text: "title=Mine\nclass=gap-part\n\ntoast=Saved\n\ntext=a\ntitle=A\n")
+        let output = Frame(text: "title=Mine\nclass=gap-part\n\ntoast=Saved\n\nitem=a\ntitle=A\n")
 
         XCTAssertNil(output.root)
         XCTAssertNil(output.perLine)
@@ -70,8 +70,8 @@ final class FrameTests: XCTestCase {
     }
 
     func testTheRootIsTheBlockThatStartsWithFrameAtAnyPlaceAndItsRouteMayBeEmpty() {
-        let first = Frame(text: "frame=\ntitle=Mine\nrecents=false\n\ntext=a\ntitle=A\n")
-        let after = Frame(text: "text=a\ntitle=A\n\nframe=photo/12\nrecents=false\n")
+        let first = Frame(text: "frame=\ntitle=Mine\nrecents=false\n\nitem=a\ntitle=A\n")
+        let after = Frame(text: "item=a\ntitle=A\n\nframe=photo/12\nrecents=false\n")
 
         XCTAssertEqual(first.root?.value("title"), "Mine")
         XCTAssertFalse(first.keepsRecent)
@@ -129,9 +129,9 @@ final class FrameTests: XCTestCase {
     }
 
     func testReportsARowWithNoIdAndABlockThatSaysNothing() {
-        let output = Frame(text: "text=\ndetail=x\n\nnot an item\n\ntext=1\ntitle=Kept\n")
+        let output = Frame(text: "item=\ndetail=x\n\nnot an item\n\nitem=1\ntitle=Kept\n")
 
-        XCTAssertEqual(output.errors, ["text=", "not an item"])
+        XCTAssertEqual(output.errors, ["item=", "not an item"])
         XCTAssertEqual(output.items.map(\.title), ["Kept"])
     }
 
@@ -140,7 +140,7 @@ final class FrameTests: XCTestCase {
     }
 
     func testALaterItemWithTheIdOfAnEarlierOnePatchesIt() {
-        let items = Frame(text: "text=same\ntitle=One\ndetail=First\n\ntext=other\n\ntext=same\ntitle=Two\n").items
+        let items = Frame(text: "item=same\ntitle=One\ndetail=First\n\nitem=other\n\nitem=same\ntitle=Two\n").items
 
         XCTAssertEqual(items.map(\.title), ["Two", "other"])
         XCTAssertEqual(items.first?.subtitle, "First")
@@ -167,12 +167,12 @@ final class FrameTests: XCTestCase {
             try XCTUnwrap(MetricValue(output: Frame(text: text))).kind
         }
 
-        XCTAssertEqual(try kind("text=m\ntitle=3\n"), .value)
-        XCTAssertEqual(try kind("text=m\ntitle=3\nicon=star\ntone=good\n"), .value)
-        XCTAssertEqual(try kind("text=m\ntitle=Up\ntone=good\n"), .status)
+        XCTAssertEqual(try kind("item=m\ntitle=3\n"), .value)
+        XCTAssertEqual(try kind("item=m\ntitle=3\nicon=star\ntone=good\n"), .value)
+        XCTAssertEqual(try kind("item=m\ntitle=Up\ntone=good\n"), .status)
         XCTAssertEqual(try kind("number=m\nvalue=84\nmax=100\nunit=%\ntype=ring\n"), .gauge)
         XCTAssertEqual(try kind("series=m\nvalue=1,2\n"), .trend)
-        XCTAssertEqual(try kind("text=Build\n\ntext=Test\n"), .rows)
+        XCTAssertEqual(try kind("item=Build\n\nitem=Test\n"), .rows)
     }
 
     func testASeriesReadsItsBarsFromItsValue() throws {
@@ -184,10 +184,10 @@ final class FrameTests: XCTestCase {
     }
 
     func testRowsCountThemselvesUnlessATitleIsPrinted() throws {
-        let rows = "text=One\ndetail=2m\ntone=bad\n\ntext=Two\n"
+        let rows = "item=One\ndetail=2m\ntone=bad\n\nitem=Two\n"
 
         let counted = try XCTUnwrap(MetricValue(output: Frame(text: rows)))
-        let titled = try XCTUnwrap(MetricValue(output: Frame(text: "frame=\nclass=gap-part\n\ntext=m\ntitle=Many\n\nitems=list\n\ntext=One\nparent=list\n\ntext=Two\nparent=list\n")))
+        let titled = try XCTUnwrap(MetricValue(output: Frame(text: "frame=\nclass=gap-part\n\ntext=m\ntitle=Many\n\nitems=list\n\nitem=One\nparent=list\n\nitem=Two\nparent=list\n")))
 
         XCTAssertEqual(counted.title, "2")
         XCTAssertEqual(counted.rows, [.init(title: "One", detail: "2m", tone: .bad), .init(title: "Two")])
@@ -205,7 +205,7 @@ final class FrameTests: XCTestCase {
 
     func testAReadingOfRowsCountsZeroWhenThereIsNothingToShow() throws {
         var reading = MetricReading(label: "Agents")
-        reading.take(try XCTUnwrap(MetricValue(output: Frame(text: "text=One\n\ntext=Two\n"))))
+        reading.take(try XCTUnwrap(MetricValue(output: Frame(text: "item=One\n\nitem=Two\n"))))
         reading.take(try XCTUnwrap(MetricValue(output: Frame(text: ""))))
 
         XCTAssertEqual(reading.kind, .rows)
@@ -250,7 +250,7 @@ final class FrameTests: XCTestCase {
     }
 
     func testARowReadsEachKeyword() {
-        let output = Frame(text: "text=😀\ntitle=grinning face\nkeywords=happy, big smile,,\n")
+        let output = Frame(text: "item=😀\ntitle=grinning face\nkeywords=happy, big smile,,\n")
 
         XCTAssertEqual(output.items.first?.keywords, ["happy", "big smile"])
     }
@@ -275,10 +275,10 @@ final class FrameTests: XCTestCase {
     }
 
     func testARowDrawsItsOwnKeys() throws {
-        let output = Frame(text: "text=r\ntitle=R\nas=big\nname=Big\n")
+        let output = Frame(text: "item=r\ntitle=R\nas=big\nname=Big\n")
 
         let row = try XCTUnwrap(output.items.first)
-        XCTAssertEqual(row, SpotItem(title: "R", run: "r", fields: [.init(key: "text", value: "r"), .init(key: "title", value: "R"), .init(key: "as", value: "big"), .init(key: "name", value: "Big")]))
+        XCTAssertEqual(row, SpotItem(title: "R", run: "r", fields: [.init(key: "item", value: "r"), .init(key: "title", value: "R"), .init(key: "as", value: "big"), .init(key: "name", value: "Big")]))
     }
 
     func testANumberWithAMaxFillsAFieldTypeIsItsInputAndAnOldKindIsReported() throws {
@@ -291,7 +291,7 @@ final class FrameTests: XCTestCase {
     }
 
     func testASwitchItemIsAToggleThatShowsWhetherItIsOn() {
-        let items = Frame(text: "switch=on\nvalue=true\n\nswitch=off\nvalue=false\n\ntext=picked\nvalue=true\n\ntext=plain\n").items
+        let items = Frame(text: "switch=on\nvalue=true\n\nswitch=off\nvalue=false\n\nitem=picked\nvalue=true\n\nitem=plain\n").items
 
         XCTAssertEqual(items.map(\.isToggle), [true, true, false, false])
         XCTAssertEqual(items.map(\.isOn), [true, false, true, false])
@@ -299,7 +299,7 @@ final class FrameTests: XCTestCase {
 
 
     func testAnItemInAGridShowsItsWordsUnlessItsClassHidesThem() {
-        let output = Frame(text: "items=list\nclass=grid grid-cols-3\n\ntext=a\nparent=list\ntitle=A\n\ntext=b\nparent=list\ntitle=B\nclass=sr-only\n")
+        let output = Frame(text: "items=list\nclass=grid grid-cols-3\n\nitem=a\nparent=list\ntitle=A\n\nitem=b\nparent=list\ntitle=B\nclass=sr-only\n")
 
         XCTAssertEqual(output.items.map(\.showsWords), [true, false])
     }

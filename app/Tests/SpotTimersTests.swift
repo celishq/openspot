@@ -119,7 +119,7 @@ final class SpotTimersTests: PanelCase {
 
         XCTAssertEqual(list.code, 0, list.errors)
         let blocks = TextBlock.blocks(in: list.output)
-        XCTAssertEqual(blocks.map { $0.value("text") }, [id])
+        XCTAssertEqual(blocks.map { $0.value("item") }, [id])
         XCTAssertEqual(blocks.first?.value("title"), "mine")
         XCTAssertEqual(blocks.first?.value("at"), time(in: 60))
     }
@@ -145,7 +145,7 @@ final class SpotTimersTests: PanelCase {
         try await wait("the timed call") { self.lines("later").contains { $0.hasPrefix("due \(soon)|") } }
         XCTAssertEqual(lines("later").count, 1)
         let listed = TextBlock.blocks(in: try await call(["timer", "list"], as: "later").output)
-        XCTAssertEqual(listed.map { $0.value("text") }, [id])
+        XCTAssertEqual(listed.map { $0.value("item") }, [id])
         XCTAssertEqual(listed.first?.value("at"), "someday")
         let removed = try await call(["timer", "remove", id], as: "later")
         XCTAssertEqual(removed.code, 0)

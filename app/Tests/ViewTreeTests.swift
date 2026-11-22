@@ -166,7 +166,7 @@ final class ViewTreeTests: XCTestCase {
     }
 
     func testThePlaceOfAnItemIsNoParentAndNoFault() {
-        let text = "text=shrink\ntitle=Shrink\nplace=Files\n"
+        let text = "item=shrink\ntitle=Shrink\nplace=Files\n"
         let check = FrameCheck(text: text)
 
         XCTAssertFalse(check.output.tree.isWritten)
@@ -184,7 +184,7 @@ final class ViewTreeTests: XCTestCase {
     }
 
     func testOnlyAnItemsBlockOrAClassOnTheRootMakesALayout() {
-        let loose = FrameCheck(text: "frame=\n\nbox=head\nclass=flex-row\n\ntext=name\nparent=head\ntitle=Home\nclass=grow\n\nnumber=n\nclass=card:flex\nvalue=1\n")
+        let loose = FrameCheck(text: "frame=\n\nbox=head\nclass=flex-row\n\nitem=name\nparent=head\ntitle=Home\nclass=grow\n\nnumber=n\nclass=card:flex\nvalue=1\n")
 
         XCTAssertFalse(loose.output.tree.isWritten)
         XCTAssertEqual(loose.output.items.map(\.run), ["name", "n"])
@@ -193,7 +193,7 @@ final class ViewTreeTests: XCTestCase {
             "the card shows more than one value: name, n. Name the one it stands for with value= in the root"
         ])
         XCTAssertTrue(Frame(text: "frame=\nclass=gap-part\n\ntext=a\n").tree.isWritten)
-        XCTAssertTrue(Frame(text: "items=list\n\ntext=a\nparent=list\n").tree.isWritten)
+        XCTAssertTrue(Frame(text: "items=list\n\nitem=a\nparent=list\n").tree.isWritten)
     }
 
     func testAWrittenTreeDrawsEachNodeInTheSheetAndNoneAsAnItem() throws {
@@ -207,7 +207,7 @@ final class ViewTreeTests: XCTestCase {
     }
 
     func testAFrameWithNoTreeWritesItsChoiceOverItsItemsAsATree() throws {
-        let output = Frame(text: "choice=a\nvalue=x\n\noption=x\ntitle=X\n\ntext=b\ntitle=B\n")
+        let output = Frame(text: "choice=a\nvalue=x\n\noption=x\ntitle=X\n\nitem=b\ntitle=B\n")
         let panel = try XCTUnwrap(SheetParts(output: output))
 
         XCTAssertFalse(output.tree.isWritten)
@@ -265,7 +265,7 @@ final class ViewTreeTests: XCTestCase {
     }
 
     func testABoxInTheItemsTitlesTheItemsInsideItAndTheSectionFontIsOnlyALook() {
-        let text = "frame=\n\nitems=list\n\nbox=recent\nparent=list\ntitle=Recent\n\ntext=a\nparent=recent\ntitle=A\n\ntext=b\nparent=list\ntitle=B\nclass=font-section\n"
+        let text = "frame=\n\nitems=list\n\nbox=recent\nparent=list\ntitle=Recent\n\nitem=a\nparent=recent\ntitle=A\n\nitem=b\nparent=list\ntitle=B\nclass=font-section\n"
         let frame = Frame(text: text)
 
         XCTAssertEqual(frame.items.map(\.run), ["a", "b"])

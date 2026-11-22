@@ -1,2 +1,2 @@
 #!/bin/sh
-printf 'text=cups\ntitle=3\ndetail=Last at 14:20\n'
+printf 'item=cups\ntitle=3\ndetail=Last at 14:20\n'

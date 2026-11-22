@@ -3,7 +3,7 @@
 case "$1" in
   show)
     folder=$(value setting.folder)
-    printf 'text=folder\ntitle=%s\n' "${folder:-Choose a folder in Settings}"
+    printf 'item=folder\ntitle=%s\n' "${folder:-Choose a folder in Settings}"
     ;;
   folder)
     picked=$(openspot folder pick)

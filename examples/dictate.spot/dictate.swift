@@ -56,9 +56,9 @@ func sheet(downloading share: Double? = nil) -> String {
     let place = past.isEmpty ? "parent=items\n" : ""
     if !FileManager.default.fileExists(atPath: model.path) {
         if let download {
-            blocks.append("text=whisper\n\(place)title=Downloading speech model\ndetail=\(percent(download.share))\nicon=arrow.down.circle\nopen.title=Stop\nclose=false\nhides=delete\npin=top")
+            blocks.append("item=whisper\n\(place)title=Downloading speech model\ndetail=\(percent(download.share))\nicon=arrow.down.circle\nopen.title=Stop\nclose=false\nhides=delete\npin=top")
         } else {
-            blocks.append("text=whisper\n\(place)title=Download speech model\ndetail=1.6 GB\nicon=arrow.down.circle\nopen.title=Download\nclose=false\nhides=delete\npin=top")
+            blocks.append("item=whisper\n\(place)title=Download speech model\ndetail=1.6 GB\nicon=arrow.down.circle\nopen.title=Download\nclose=false\nhides=delete\npin=top")
         }
     }
     if past.isEmpty {
@@ -66,7 +66,7 @@ func sheet(downloading share: Double? = nil) -> String {
     } else {
         blocks.append("button=open\ntitle=Copy")
         blocks.append("button=delete\ntitle=Delete\nshortcut=cmd+backspace\nclose=false")
-        blocks += past.map { "text=\($0.0)\ntitle=\(Link.value($0.1))\ndetail=\(age($0.0))" }
+        blocks += past.map { "item=\($0.0)\ntitle=\(Link.value($0.1))\ndetail=\(age($0.0))" }
     }
     return ([root.joined(separator: "\n")] + blocks).joined(separator: "\n\n")
 }

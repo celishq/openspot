@@ -88,7 +88,7 @@ final class SpotRunTests: XCTestCase {
     }
 
     func testAnAnswerThatKeepsTheCardOnTellsNoReaderOfWhetherItIsOn() async throws {
-        let sheet = try make("n=$(cat '\(path("n"))' 2>/dev/null); echo $((n + 1)) > '\(path("n"))'; printf 'frame=\\ndetail=Read %s\\nactive=true\\n\\ntext=a\\ntitle=A\\n' \"$n\"", on: .panel)
+        let sheet = try make("n=$(cat '\(path("n"))' 2>/dev/null); echo $((n + 1)) > '\(path("n"))'; printf 'frame=\\ndetail=Read %s\\nactive=true\\n\\nitem=a\\ntitle=A\\n' \"$n\"", on: .panel)
         sheet.show()
         try await wait("the card on") { sheet.isOn }
         let detail = sheet.state.subtitle
@@ -102,7 +102,7 @@ final class SpotRunTests: XCTestCase {
     }
 
     func testARepeatedFrameTellsNoReader() async throws {
-        let sheet = try make("printf 'frame=\\ndetail=Same\\n\\ntext=a\\ntitle=A\\n'", on: .panel)
+        let sheet = try make("printf 'frame=\\ndetail=Same\\n\\nitem=a\\ntitle=A\\n'", on: .panel)
         nonisolated(unsafe) var frames = 0
         let report = sheet.onReport
         sheet.onReport = {
@@ -131,7 +131,7 @@ final class SpotRunTests: XCTestCase {
     }
 
     func testAFrameOver256KBIsKeptNowhereSoItsRepeatIsParsedAgain() async throws {
-        let sheet = try make("printf 'frame=\\ndetail=Long\\n\\ntext=a\\ntitle=A\\nnote=%s\\n' \"$(head -c 270000 /dev/zero | tr '\\0' n)\"", on: .panel)
+        let sheet = try make("printf 'frame=\\ndetail=Long\\n\\nitem=a\\ntitle=A\\nnote=%s\\n' \"$(head -c 270000 /dev/zero | tr '\\0' n)\"", on: .panel)
         sheet.show()
         try await wait("the first answer") { sheet.list.all.count == 1 && !sheet.isShowing }
         let parses = FrameParses()
@@ -147,7 +147,7 @@ final class SpotRunTests: XCTestCase {
 
     func testAChangedFrameAfterARepeatedOneIsApplied() async throws {
         try "1".write(toFile: path("n"), atomically: true, encoding: .utf8)
-        let sheet = try make("printf 'text=a\ntitle=%s\n' \"$(cat '\(path("n"))')\"", on: .panel)
+        let sheet = try make("printf 'item=a\ntitle=%s\n' \"$(cat '\(path("n"))')\"", on: .panel)
         sheet.show()
         try await wait("the first answer") { sheet.list.all.map(\.title) == ["1"] && !sheet.isShowing }
 
@@ -164,7 +164,7 @@ final class SpotRunTests: XCTestCase {
         SheetHeader.shared = SheetHeader(width: { $0.count > 10 ? .infinity : 0 }, secondLine: 9)
         defer { SheetHeader.shared = kept }
         let url = folder.spotFile("script")
-        try "#!/bin/sh\nprintf 'text=a\\ntitle=A\\n'\n".writeScript(to: url)
+        try "#!/bin/sh\nprintf 'item=a\\ntitle=A\\n'\n".writeScript(to: url)
         let made = SpotRuns()
         runs.append(made)
         let sheet = made.sheet(for: Spot(id: "script", name: "script", url: url, kind: .list, subtitle: "A detail longer than its header", on: ShowEvents(moments: [.sheet])))
@@ -188,7 +188,7 @@ final class SpotRunTests: XCTestCase {
         let url = folder.spotFile("script")
         try """
         #!/bin/sh
-        if [ "$(cat '\(path("n"))')" = 1 ]; then printf 'frame=\\nclass=gap-part\\n\\nfield=find\\ntype=search\\n\\nnumber=a\\nvalue=1\\n\\nitems=list\\n\\ntext=b\\nparent=list\\ntitle=B\\n'
+        if [ "$(cat '\(path("n"))')" = 1 ]; then printf 'frame=\\nclass=gap-part\\n\\nfield=find\\ntype=search\\n\\nnumber=a\\nvalue=1\\n\\nitems=list\\n\\nitem=b\\nparent=list\\ntitle=B\\n'
         else printf 'frame=\\nclass=gap-part\\n\\nnumber=a\\nvalue=2\\n'; fi
         """.writeScript(to: url)
         let made = SpotRuns()
@@ -198,7 +198,7 @@ final class SpotRunTests: XCTestCase {
         try await wait("the parts and rows") { sheet.panel?.showsRows == true && !sheet.isShowing }
         XCTAssertEqual(sheet.top, SheetTop(header: 9, hasField: false))
 
-        sheet.panel = SheetParts(output: Frame(text: "frame=\nclass=gap-part\n\nfield=find\ntype=search\n\nnumber=a\nvalue=2\n\nitems=list\n\ntext=b\nparent=list\ntitle=B\n"))
+        sheet.panel = SheetParts(output: Frame(text: "frame=\nclass=gap-part\n\nfield=find\ntype=search\n\nnumber=a\nvalue=2\n\nitems=list\n\nitem=b\nparent=list\ntitle=B\n"))
 
         XCTAssertEqual(sheet.top, SheetTop(header: 9, hasField: false))
         XCTAssertEqual(sheet.panel?.top, sheet.top)
@@ -287,7 +287,7 @@ final class SpotRunTests: XCTestCase {
     }
 
     func testTheFirstRowsOfASheetArriveWithItsParts() async throws {
-        let sheet = try holding("sleep 0.2\nprintf 'frame=\\nclass=gap-part\\n\\nchoice=tone\\ntitle=Tone\\nvalue=a\\n\\noption=a\\ntitle=A\\n\\nitems=list\\n\\ntext=x\\nparent=list\\ntitle=X\\n\\n'", pause: 0.02)
+        let sheet = try holding("sleep 0.2\nprintf 'frame=\\nclass=gap-part\\n\\nchoice=tone\\ntitle=Tone\\nvalue=a\\n\\noption=a\\ntitle=A\\n\\nitems=list\\n\\nitem=x\\nparent=list\\ntitle=X\\n\\n'", pause: 0.02)
         var rowsBeforeParts: Int?
         runs.last?.partsArrival = { _, bring in
             rowsBeforeParts = sheet.list.shown.count
@@ -313,7 +313,7 @@ final class SpotRunTests: XCTestCase {
     }
 
     func testASheetWithAnAnswerOpensAtOnceThoughItMayWait() async throws {
-        let sheet = try holding("printf 'text=a\\ntitle=A\\n'", pause: 30)
+        let sheet = try holding("printf 'item=a\\ntitle=A\\n'", pause: 30)
         sheet.show()
         try await wait("the row") { sheet.list.shown.count == 1 }
         var isOpened = false
@@ -324,7 +324,7 @@ final class SpotRunTests: XCTestCase {
     }
 
     func testAClosedSheetDoesNotOpenWhenItsAnswerComes() async throws {
-        let sheet = try holding("printf 'text=a\\ntitle=A\\n'", pause: 0.02)
+        let sheet = try holding("printf 'item=a\\ntitle=A\\n'", pause: 0.02)
         var isOpened = false
 
         sheet.open(waits: true) { isOpened = true }
@@ -335,7 +335,7 @@ final class SpotRunTests: XCTestCase {
     }
 
     func testARunThatEndsWithNoOutputEmptiesTheList() async throws {
-        let sheet = try make("[ -f '\(path("second"))' ] && exit 0\ntouch '\(path("second"))'\nprintf 'text=a\\ntitle=A\\n'")
+        let sheet = try make("[ -f '\(path("second"))' ] && exit 0\ntouch '\(path("second"))'\nprintf 'item=a\\ntitle=A\\n'")
 
         sheet.show()
         try await wait("the row") { sheet.list.shown.count == 1 }
@@ -345,9 +345,9 @@ final class SpotRunTests: XCTestCase {
 
     func testAReadThatOthersJoinLeavesTheRows() async throws {
         let sheet = try make("""
-        [ -f '\(path("second"))' ] || { touch '\(path("second"))'; printf 'text=a\\ntitle=A\\n'; exit 0; }
+        [ -f '\(path("second"))' ] || { touch '\(path("second"))'; printf 'item=a\\ntitle=A\\n'; exit 0; }
         sleep 0.2
-        printf 'text=a\\ntitle=A\\n'
+        printf 'item=a\\ntitle=A\\n'
         """)
         sheet.show()
         try await wait("the row") { sheet.list.shown.count == 1 }
@@ -366,7 +366,7 @@ final class SpotRunTests: XCTestCase {
 
     func testClosingOneSheetLeavesTheReadOfAnother() async throws {
         let first = try make(name: "first", "printf 'frame=\\nclass=gap-part\\n\\ntext=a\\ntitle=A\\n---\\n'\nsleep 30")
-        let second = try make(name: "second", "sleep 0.2\nprintf 'text=b\\ntitle=B\\n'")
+        let second = try make(name: "second", "sleep 0.2\nprintf 'item=b\\ntitle=B\\n'")
 
         first.open {}
         try await wait("the first frame") { first.panel != nil }
@@ -493,7 +493,7 @@ final class SpotRunTests: XCTestCase {
     }
 
     func testATextRanksTheRowsAwayFromTheMainThreadAndTellsNoReaderOfTheRowsUntilTheyLand() async throws {
-        let sheet = try make("printf 'text=a\\ntitle=Apple\\n\\ntext=b\\ntitle=Banana\\n'")
+        let sheet = try make("printf 'item=a\\ntitle=Apple\\n\\nitem=b\\ntitle=Banana\\n'")
         sheet.open {}
         try await wait("the rows") { sheet.list.shown.count == 2 }
         let landed = sheet.list.landedSearches
@@ -512,7 +512,7 @@ final class SpotRunTests: XCTestCase {
     }
 
     func testTheNextKeyCancelsTheFindOfTheKeyBefore() async throws {
-        let sheet = try make("printf 'text=a\\ntitle=Apple\\n\\ntext=b\\ntitle=Banana\\n'")
+        let sheet = try make("printf 'item=a\\ntitle=Apple\\n\\nitem=b\\ntitle=Banana\\n'")
         sheet.open {}
         try await wait("the rows") { sheet.list.shown.count == 2 }
         let landed = sheet.list.landedSearches
@@ -531,7 +531,7 @@ final class SpotRunTests: XCTestCase {
     }
 
     func testATextLeavesTheSelectionUntilItsRowsLand() async throws {
-        let sheet = try make("printf 'text=a\\ntitle=Apple\\n\\ntext=b\\ntitle=Banana\\n'")
+        let sheet = try make("printf 'item=a\\ntitle=Apple\\n\\nitem=b\\ntitle=Banana\\n'")
         sheet.open {}
         try await wait("the rows") { sheet.list.shown.count == 2 }
         sheet.list.move(by: 1)
@@ -548,7 +548,7 @@ final class SpotRunTests: XCTestCase {
     }
 
     func testTheRowsFoundForOlderTextNeverLand() async throws {
-        let sheet = try make("printf 'text=a\\ntitle=Apple\\n\\ntext=b\\ntitle=Banana\\n'")
+        let sheet = try make("printf 'item=a\\ntitle=Apple\\n\\nitem=b\\ntitle=Banana\\n'")
         sheet.open {}
         try await wait("the rows") { sheet.list.shown.count == 2 }
         let landed = sheet.list.landedSearches
@@ -565,7 +565,7 @@ final class SpotRunTests: XCTestCase {
     }
 
     func testAScriptThatSearchesGetsReadWithTheText() async throws {
-        let sheet = try make(searches: true, "printf 'text=a\\ntitle=%s:%s\\n' \"$1\" \"$t\"")
+        let sheet = try make(searches: true, "printf 'item=a\\ntitle=%s:%s\\n' \"$1\" \"$t\"")
         sheet.open {}
         try await wait("the first answer") { sheet.list.shown.map(\.title) == ["show:"] }
 
@@ -577,7 +577,7 @@ final class SpotRunTests: XCTestCase {
     func testAReadWithNoTextGivesAScriptThatSearchesANewValue() async throws {
         let sheet = try make(searches: true, """
         echo x >> '\(path("reads"))'
-        printf 'frame=\\nclass=gap-part\\n\\nnumber=next\\nvalue=%s\\ntitle=Next\\n\\nitems=list\\n\\ntext=a\\nparent=list\\ntitle=A\\n' "$(wc -l < '\(path("reads"))' | tr -d ' ')"
+        printf 'frame=\\nclass=gap-part\\n\\nnumber=next\\nvalue=%s\\ntitle=Next\\n\\nitems=list\\n\\nitem=a\\nparent=list\\ntitle=A\\n' "$(wc -l < '\(path("reads"))' | tr -d ' ')"
         """)
         sheet.show(need: .change)
         try await wait("the first value") { !sheet.isShowing && sheet.reading.value?.title == "1" }
@@ -590,7 +590,7 @@ final class SpotRunTests: XCTestCase {
     func testAReadWithTextLeftInTheSearchGivesAScriptThatSearchesANewValueAndTheRowsOfTheText() async throws {
         let sheet = try make(searches: true, """
         echo "read $t" >> '\(path("reads"))'
-        printf 'frame=\\nclass=gap-part\\n\\nnumber=next\\nvalue=%s\\ntitle=Next\\n\\nitems=list\\n\\ntext=a\\nparent=list\\ntitle=A%s\\n' "$(wc -l < '\(path("reads"))' | tr -d ' ')" "$t"
+        printf 'frame=\\nclass=gap-part\\n\\nnumber=next\\nvalue=%s\\ntitle=Next\\n\\nitems=list\\n\\nitem=a\\nparent=list\\ntitle=A%s\\n' "$(wc -l < '\(path("reads"))' | tr -d ' ')" "$t"
         """)
         let reads = { ((try? String(contentsOfFile: self.path("reads"), encoding: .utf8)) ?? "").split(separator: "\n").map(String.init) }
         sheet.open {}
@@ -607,7 +607,7 @@ final class SpotRunTests: XCTestCase {
     }
 
     func testAScriptThatSearchesGetsEachFormOfTheText() async throws {
-        let sheet = try make(searches: true, "printf 'text=a\\ntitle=%s:%s\\n' \"$t\" \"$f\"")
+        let sheet = try make(searches: true, "printf 'item=a\\ntitle=%s:%s\\n' \"$t\" \"$f\"")
         sheet.open {}
         try await wait("the first answer") { sheet.list.shown.map(\.title) == [":"] }
 
@@ -619,7 +619,7 @@ final class SpotRunTests: XCTestCase {
     func testTextTypedBeforeTheFirstAnswerGoesToAScriptThatSearches() async throws {
         let sheet = try make(searches: true, """
         [ -n "$t" ] || sleep 0.2
-        printf 'text=a\\ntitle=%s\\n' "${t:-none}"
+        printf 'item=a\\ntitle=%s\\n' "${t:-none}"
         """)
 
         sheet.open {}
@@ -629,7 +629,7 @@ final class SpotRunTests: XCTestCase {
     }
 
     func testAKeptSearchGoesToAScriptThatSearchesOnOpen() async throws {
-        let sheet = try make(searches: true, "printf 'text=a\\ntitle=%s\\n' \"${t:-none}\"")
+        let sheet = try make(searches: true, "printf 'item=a\\ntitle=%s\\n' \"${t:-none}\"")
         sheet.open {}
         try await wait("the first answer") { sheet.list.shown.map(\.title) == ["none"] }
         sheet.search("rep")
@@ -646,7 +646,7 @@ final class SpotRunTests: XCTestCase {
     func testAPickInAScriptThatSearchesGetsTheTextOnStdinBeforeTheTextIsRead() async throws {
         let sheet = try make(searches: true, """
         case "$1" in
-          show) printf 'text=a\\ntitle=A\\n' ;;
+          show) printf 'item=a\\ntitle=A\\n' ;;
           open) cat > '\(path("stdin"))' ;;
         esac
         """)
@@ -661,7 +661,7 @@ final class SpotRunTests: XCTestCase {
     }
 
     func testAKeptSearchIsAskedAgainOnOpen() async throws {
-        let sheet = try make("printf 'text=n\\ntitle=Notes\\n\\ntext=m\\ntitle=Mail\\n'")
+        let sheet = try make("printf 'item=n\\ntitle=Notes\\n\\nitem=m\\ntitle=Mail\\n'")
         sheet.open {}
         try await wait("the rows") { sheet.list.shown.count == 2 }
         sheet.search("no")
@@ -674,7 +674,7 @@ final class SpotRunTests: XCTestCase {
     }
 
     func testAMoveOfTheSelectionLeavesTheShapeAndTheWaitAlone() async throws {
-        let sheet = try holding("printf 'text=a\\ntitle=A\\n\\ntext=b\\ntitle=B\\n'", pause: 30)
+        let sheet = try holding("printf 'item=a\\ntitle=A\\n\\nitem=b\\ntitle=B\\n'", pause: 30)
         sheet.show()
         try await wait("the rows") { sheet.list.shown.count == 2 }
         XCTAssertEqual(sheet.shape, SpotRun.Shape(rows: 2, perLine: 1))
@@ -692,7 +692,7 @@ final class SpotRunTests: XCTestCase {
     }
 
     func testAMoveOfTheSelectionTellsOnlyTheReadersOfTheSelection() async throws {
-        let sheet = try holding("printf 'text=a\\ntitle=A\\n\\ntext=b\\ntitle=B\\n'", pause: 30)
+        let sheet = try holding("printf 'item=a\\ntitle=A\\n\\nitem=b\\ntitle=B\\n'", pause: 30)
         sheet.show()
         try await wait("the rows") { sheet.list.shown.count == 2 }
         nonisolated(unsafe) var listChanged = false
@@ -708,7 +708,7 @@ final class SpotRunTests: XCTestCase {
     }
 
     func testASearchTellsTheReadersOfTheList() async throws {
-        let sheet = try holding("printf 'text=a\\ntitle=A\\n\\ntext=b\\ntitle=B\\n'", pause: 30)
+        let sheet = try holding("printf 'item=a\\ntitle=A\\n\\nitem=b\\ntitle=B\\n'", pause: 30)
         sheet.show()
         try await wait("the rows") { sheet.list.shown.count == 2 }
         nonisolated(unsafe) var listChanged = false
@@ -720,7 +720,7 @@ final class SpotRunTests: XCTestCase {
     }
 
     func testAMoveOfTheSelectionTellsTheReadersOfTheSelectedRow() async throws {
-        let sheet = try holding("printf 'text=a\\ntitle=A\\n\\ntext=b\\ntitle=B\\n'", pause: 30)
+        let sheet = try holding("printf 'item=a\\ntitle=A\\n\\nitem=b\\ntitle=B\\n'", pause: 30)
         sheet.show()
         try await wait("the rows") { sheet.list.shown.count == 2 }
         nonisolated(unsafe) var changed = false
@@ -733,7 +733,7 @@ final class SpotRunTests: XCTestCase {
     }
 
     func testAnEqualListTellsNoReader() async throws {
-        let sheet = try holding("printf 'text=a\\ntitle=A\\n\\ntext=b\\ntitle=B\\n'", pause: 30)
+        let sheet = try holding("printf 'item=a\\ntitle=A\\n\\nitem=b\\ntitle=B\\n'", pause: 30)
         sheet.show()
         try await wait("the rows") { sheet.list.shown.count == 2 }
         nonisolated(unsafe) var changed = false
@@ -745,7 +745,7 @@ final class SpotRunTests: XCTestCase {
     }
 
     func testAMoveOfTheSelectionAndALoadReportNothing() async throws {
-        let sheet = try holding("printf 'text=a\\ntitle=A\\n\\ntext=b\\ntitle=B\\n'", pause: 30)
+        let sheet = try holding("printf 'item=a\\ntitle=A\\n\\nitem=b\\ntitle=B\\n'", pause: 30)
         sheet.show()
         try await wait("the rows") { sheet.list.shown.count == 2 }
         var changes = 0
@@ -759,7 +759,7 @@ final class SpotRunTests: XCTestCase {
     }
 
     func testTheSameValueAgainTellsNoReaderOfTheReading() async throws {
-        let sheet = try make("printf 'text=heat\\ntitle=41°\\n'")
+        let sheet = try make("printf 'item=heat\\ntitle=41°\\n'")
         sheet.show(need: .change)
         try await wait("the value") { !sheet.isShowing && sheet.reading.value?.title == "41°" }
         nonisolated(unsafe) var changed = false
@@ -772,7 +772,7 @@ final class SpotRunTests: XCTestCase {
     }
 
     func testAnAnswerWithNewRowsReportsOneListChange() async throws {
-        let sheet = try holding("printf 'text=a\\ntitle=A\\n\\ntext=b\\ntitle=B\\n'", pause: 30)
+        let sheet = try holding("printf 'item=a\\ntitle=A\\n\\nitem=b\\ntitle=B\\n'", pause: 30)
         var changes = 0
         sheet.onReport = { if case .listChange = $0 { changes += 1 } }
 
@@ -788,7 +788,7 @@ final class SpotRunTests: XCTestCase {
         SheetHeader.shared = SheetHeader(width: { $0.count > 10 ? .infinity : 0 }, secondLine: 9)
         defer { SheetHeader.shared = kept }
         let url = folder.spotFile("script")
-        try "#!/bin/sh\nprintf 'frame=\\nclass=gap-part\\n\\nitems=list\\nclass=grid grid-cols-3\\n\\nfield=find\\ntype=search\\n\\ntext=a\\nparent=list\\ntitle=A\\n'\n".writeScript(to: url)
+        try "#!/bin/sh\nprintf 'frame=\\nclass=gap-part\\n\\nitems=list\\nclass=grid grid-cols-3\\n\\nfield=find\\ntype=search\\n\\nitem=a\\nparent=list\\ntitle=A\\n'\n".writeScript(to: url)
         let made = SpotRuns()
         runs.append(made)
         let sheet = made.sheet(for: Spot(id: "script", name: "script", url: url, kind: .list, subtitle: "A detail longer than its header", on: ShowEvents(moments: [.sheet])))

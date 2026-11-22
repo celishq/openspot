@@ -30,14 +30,14 @@ gallery() {
   openspot store folders | awk 'BEGIN { RS = ""; FS = "\n" }
     { delete f
       for (i = 1; i <= NF; i++) { n = index($i, "="); f[substr($i, 1, n - 1)] = substr($i, n + 1) }
-      printf "folder=%s\t%s\t%s\t%s\n", f["text"], f["title"], (f["found"] == "true" ? "found" : "missing"), (f["builtin"] == "true" ? "builtin" : "added") }'
+      printf "folder=%s\t%s\t%s\t%s\n", f["item"], f["title"], (f["found"] == "true" ? "found" : "missing"), (f["builtin"] == "true" ? "builtin" : "added") }'
   openspot store list | awk -v want="${1-}" 'BEGIN { RS = ""; FS = "\n" }
     { delete f
       for (i = 1; i <= NF; i++) {
         n = index($i, "="); key = substr($i, 1, n - 1); f[key] = substr($i, n + 1)
-        if (key == "readme" && f["text"] == want) readme = readme "readme=" want "\t" f[key] "\n"
+        if (key == "readme" && f["item"] == want) readme = readme "readme=" want "\t" f[key] "\n"
       }
-      rows = rows "\ntext=" f["text"] "\nparent=spots\ntitle=" f["title"] "\nstep=" (f["step"] == "publish" ? "added" : f["step"]) "\norigin=" f["origin"] "\n"
+      rows = rows "\nitem=" f["item"] "\nparent=spots\ntitle=" f["title"] "\nstep=" (f["step"] == "publish" ? "added" : f["step"]) "\norigin=" f["origin"] "\n"
       if (f["store"] != "") rows = rows "store=" f["store"] "\n"
       if (f["detail"] != "") rows = rows "detail=" f["detail"] "\n"
       rows = rows "size=" f["size"] "\n"

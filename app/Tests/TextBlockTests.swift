@@ -82,12 +82,12 @@ final class TextBlockTests: XCTestCase {
 
         items=list
 
-        text=Fix "tray"
+        item=Fix "tray"
         parent=list
         detail=failing
         tone=bad
 
-        text=Docs
+        item=Docs
         parent=list
         """)
 
@@ -106,10 +106,10 @@ final class TextBlockTests: XCTestCase {
     }
 
     func testAnItemNeedsAnIdAndTakesItAsItsTitleWhenItHasNone() {
-        XCTAssertEqual(Frame(text: "text=").items, [])
-        XCTAssertEqual(Frame(text: "text=😀").items.first?.title, "😀")
+        XCTAssertEqual(Frame(text: "item=").items, [])
+        XCTAssertEqual(Frame(text: "item=😀").items.first?.title, "😀")
         XCTAssertEqual(
-            Frame(text: "text=a\ntitle=A\ndetail=B\nicon=/f\nhides=x\nhides=y").items,
+            Frame(text: "item=a\ntitle=A\ndetail=B\nicon=/f\nhides=x\nhides=y").items,
             [SpotItem(title: "A", subtitle: "B", run: "a", picture: .file("/f"), hides: ["x", "y"])]
         )
     }
@@ -117,7 +117,7 @@ final class TextBlockTests: XCTestCase {
     func testASeriesItemDrawsABarForEachPointUpToItsMaxWithAGapForADash() throws {
         let bars = try XCTUnwrap(Frame(text: "items=list\n\nbox=used\nparent=list\ntitle=Used\n\nseries=a\nparent=used\nvalue=2,-,4").items.first)
         let capped = try XCTUnwrap(Frame(text: "series=a\nvalue=2,4\nmax=8").items.first)
-        let check = try XCTUnwrap(Frame(text: "text=a\nvalue=true").items.first)
+        let check = try XCTUnwrap(Frame(text: "item=a\nvalue=true").items.first)
 
         XCTAssertEqual(bars.number?.scaledPoints, [0.5, nil, 1])
         XCTAssertEqual(bars.number?.text, "4")
@@ -147,7 +147,7 @@ final class TextBlockTests: XCTestCase {
 
     func testAnItemShowsItsPathAsItsSpotThenItsPlace() {
         let spot = Spot(id: "s", name: "System Settings", url: URL(fileURLWithPath: "/settings.sh"))
-        let volume = Frame(text: "text=v\ntitle=Volume\ndetail=Loud\nplace=Sound").items.first
+        let volume = Frame(text: "item=v\ntitle=Volume\ndetail=Loud\nplace=Sound").items.first
 
         XCTAssertEqual(volume?.place, "Sound")
         XCTAssertEqual(volume?.path(in: spot), "System Settings › Sound")

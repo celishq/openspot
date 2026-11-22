@@ -138,6 +138,9 @@ public struct ViewTree: Equatable, Sendable {
             guard let parent = holder(node.parent) else { return false }
             return parent.kind == BlockKind.items || parent.kind == BlockKind.box && holder(parent.parent)?.kind == BlockKind.items
         }.map(\.id))
+        let rows = isWritten ? listed : written == nil ? Set(nodes.keys) : []
+        faults += order.filter { rows.contains($0) && nodes[$0]?.kind == BlockKind.text.word }.map(BlockKind.rowFault(of:))
+        faults += order.filter { !rows.contains($0) && nodes[$0]?.kind == BlockKind.item.word }.map(BlockKind.placedItemFault(of:))
         for (id, node) in nodes where node.isSearch || node.part?.isPressable == true && (!isWritten || listed.contains(id)) {
             nodes[id]?.part = nil
         }

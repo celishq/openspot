@@ -10,17 +10,17 @@ extension ViewTree {
     func sheetFaults(parts: [SpotPart]) -> [String] {
         let accents = parts.filter { part in part.isPressable && nodes[part.id]?.style.resolved(for: [.sheet]).fill == .accent }
         var faults = accents.count > 1 ? ["only one button can use bg-accent"] : []
-        var words = Dictionary(parts.compactMap { part in Self.wordsWidth(of: part, isText: nodes[part.id]?.kind == BlockKind.text.word).map { (part.id, $0) } }) { first, _ in first }
+        var words = Dictionary(parts.compactMap { part in Self.wordsWidth(of: part, isText: BlockKind.wordsKinds.contains(nodes[part.id]?.kind ?? "")).map { (part.id, $0) } }) { first, _ in first }
         for node in nodes.values where node.kind == BlockKind.icon.word { words[node.id] = SpotTokens.listIconSize }
         let frames = frames(in: SpotTokens.partsWidth, room: SpotTokens.partsMaxHeight, words: words)
         for id in shown(in: [.sheet]) {
             guard let node = nodes[id], let frame = frames[id] else { continue }
             let style = node.style.resolved(for: [.sheet])
-            if node.kind == BlockKind.text.word, frame.height < leafHeight(node, style, width: frame.width) - 0.5 {
+            if BlockKind.wordsKinds.contains(node.kind), frame.height < leafHeight(node, style, width: frame.width) - 0.5 {
                 faults.append("the text \(id) is \(Int(frame.height))pt tall, so its words are cut. Give it more room")
             }
             guard node.source == nil, let part = parts.first(where: { $0.id == id }), let width = words[id], !part.fillsHeight,
-                  node.kind != BlockKind.text.word else { continue }
+                  !BlockKind.wordsKinds.contains(node.kind) else { continue }
             if width > frame.width + 0.5 { faults.append("the title of the part \(id) may not fit its cell") }
         }
         return faults

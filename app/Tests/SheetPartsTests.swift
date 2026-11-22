@@ -114,9 +114,9 @@ final class SheetPartsTests: XCTestCase {
     }
 
     func testAViewBlockAlsoGetsEachRowOfItsFrameWithItsKeysInOrder() {
-        let output = Frame(text: "frame=\nclass=gap-part\n\ngallery=gallery\nmode=all\n\nitems=list\n\ntext=a\ntitle=One\ntag=x\ntag=y\nparent=list\n\ntext=b\ndetail=two\\nlines\nparent=list\n\ntext=note\ntitle=Hi\n", kinds: views("gallery"))
+        let output = Frame(text: "frame=\nclass=gap-part\n\ngallery=gallery\nmode=all\n\nitems=list\n\nitem=a\ntitle=One\ntag=x\ntag=y\nparent=list\n\nitem=b\ndetail=two\\nlines\nparent=list\n\ntext=note\ntitle=Hi\n", kinds: views("gallery"))
 
-        XCTAssertEqual(output.rows, [["text", "a", "title", "One", "tag", "x", "tag", "y", "parent", "list"], ["text", "b", "detail", "two\nlines", "parent", "list"]])
+        XCTAssertEqual(output.rows, [["item", "a", "title", "One", "tag", "x", "tag", "y", "parent", "list"], ["item", "b", "detail", "two\nlines", "parent", "list"]])
         XCTAssertEqual(output.tree.node("gallery")?.values, ["gallery": ["gallery"], "mode": ["all"]])
         XCTAssertEqual(output.items.map(\.run), ["a", "b"])
     }
@@ -286,7 +286,7 @@ final class SheetPartsTests: XCTestCase {
 
     func testAButtonThatCannotBeAnActionIsAFaultThatSaysWhy() {
         let key = "the button b has shortcut=ctrl+k, which a button cannot take. Use cmd or shift with a letter, a digit, return, backspace or a comma, or escape"
-        let actionCheck = FrameCheck(text: "frame=\nclass=gap-part\n\ntext=t\n\nitems=list\n\nbutton=b\nparent=list\ntitle=B\nshortcut=ctrl+k\n\nbutton=c\nparent=list\nicon=trash\n\ntext=r\nparent=list\nshortcut=⌃⌥K\n")
+        let actionCheck = FrameCheck(text: "frame=\nclass=gap-part\n\ntext=t\n\nitems=list\n\nbutton=b\nparent=list\ntitle=B\nshortcut=ctrl+k\n\nbutton=c\nparent=list\nicon=trash\n\nitem=r\nparent=list\nshortcut=⌃⌥K\n")
         let action = actionCheck.output
 
         XCTAssertEqual(action.actions, [])
@@ -556,11 +556,11 @@ final class SheetPartsTests: XCTestCase {
 
     items=list
 
-    text=a
+    item=a
     parent=list
     title=Apple
 
-    text=b
+    item=b
     parent=list
     title=Banana
 

@@ -41,7 +41,7 @@ case "$1" in
     openspot setting set --spot "$target" icon "$file"
     ;;
   show)
-    [ -n "$target" ] || { printf 'text=none\ntitle=No spot\ndetail=Choose Change Icon › Draw… in the menu of a card\n'; exit 0; }
+    [ -n "$target" ] || { printf 'item=none\ntitle=No spot\ndetail=Choose Change Icon › Draw… in the menu of a card\n'; exit 0; }
     dots=$(cat "$data/$name.draft" 2>/dev/null || cat "$data/$name.dots" 2>/dev/null)
     [ ${#dots} -eq 81 ] || dots=$empty
     printf 'frame=\ntitle=%s\nclass=gap-part\n\n' "$target"

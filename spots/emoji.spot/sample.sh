@@ -8,5 +8,5 @@ printf 'button=paste\nparent=a\ntitle=Paste\nshortcut=cmd+return\n\n'
 printf 'button=next-tone\nparent=a\ntitle=Next skin tone\nshortcut=cmd+t\nscope=spot\nclose=false\n\n'
 for glyph in '😀:grinning face' '😂:face with tears of joy' '😍:smiling face with heart-eyes' '🥳:partying face' '😎:smiling face with sunglasses' '🤔:thinking face' '😴:sleeping face' \
   '👍:thumbs up' '👋:waving hand' '🙏:folded hands' '🎉:party popper' '❤️:red heart' '🔥:fire' '✨:sparkles'; do
-  printf 'text=%s\nparent=a\nclass=sr-only\ntitle=%s\nicon=%s\n\n' "${glyph%%:*}" "${glyph#*:}" "${glyph%%:*}"
+  printf 'item=%s\nparent=a\nclass=sr-only\ntitle=%s\nicon=%s\n\n' "${glyph%%:*}" "${glyph#*:}" "${glyph%%:*}"
 done

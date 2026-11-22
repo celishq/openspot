@@ -26,7 +26,7 @@ final class SpotTokensTests: XCTestCase {
     }
 
     func testAFloatingListHoldsALineForEachSectionTitle() {
-        let list = ItemList(items: Frame(text: "items=devices\n\nbox=nearby\nparent=devices\ntitle=Nearby\n\ntext=mouse\nparent=nearby\ntitle=Mouse\n\ntext=keyboard\nparent=nearby\ntitle=Keyboard\n").items)
+        let list = ItemList(items: Frame(text: "items=devices\n\nbox=nearby\nparent=devices\ntitle=Nearby\n\nitem=mouse\nparent=nearby\ntitle=Mouse\n\nitem=keyboard\nparent=nearby\ntitle=Keyboard\n").items)
 
         XCTAssertEqual(SpotTokens.floatSize(list: list), SpotTokens.floatSize(rows: 3, perLine: 1))
     }

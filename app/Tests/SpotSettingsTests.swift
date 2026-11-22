@@ -111,7 +111,7 @@ final class SpotSettingsTests: XCTestCase {
     }
 
     func testASpotWithOneCommandAndAReadKeepsItsOwnSheetAndItsSettingsApart() async throws {
-        try "#!/bin/sh\n[ \"$1\" = show ] && printf 'text=own\\ntitle=Own\\n'\nexit 0\n".writeScript(to: folder.spotFile("move"), toml: "title = 'Move'\non = ['sheet.open']\n[commands.left]\ntitle = 'Left side'")
+        try "#!/bin/sh\n[ \"$1\" = show ] && printf 'item=own\\ntitle=Own\\n'\nexit 0\n".writeScript(to: folder.spotFile("move"), toml: "title = 'Move'\non = ['sheet.open']\n[commands.left]\ntitle = 'Left side'")
         let move = try spot("move")
         let runs = SpotRuns()
 
@@ -138,7 +138,7 @@ final class SpotSettingsTests: XCTestCase {
         title = 'Default app'
         icon = 'app.badge'
         """
-        try "#!/bin/sh\nprintf 'text=own\\ntitle=Own\\n'\n".writeScript(to: folder.spotFile("shelf"), toml: toml)
+        try "#!/bin/sh\nprintf 'item=own\\ntitle=Own\\n'\n".writeScript(to: folder.spotFile("shelf"), toml: toml)
         try file.set(setting: "folder", of: "shelf", to: "~/Code")
         try file.set(setting: "theme", of: "shelf", to: "dark")
         try file.set(setting: "theme", of: "other", to: "light")

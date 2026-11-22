@@ -70,8 +70,8 @@ public enum SpotStarter: String, CaseIterable, Sendable {
             . "$OPENSPOT_SH"
             case "$1" in
               show)
-                printf 'text=first\\ntitle=First item\\ndetail=Press Enter to pick it\\nnote=Hello\\n\\n'
-                printf 'text=second\\ntitle=Second item\\ndetail=Press Enter to pick it\\nnote=Hello again\\n'
+                printf 'item=first\\ntitle=First item\\ndetail=Press Enter to pick it\\nnote=Hello\\n\\n'
+                printf 'item=second\\ntitle=Second item\\ndetail=Press Enter to pick it\\nnote=Hello again\\n'
                 ;;
               open)
                 openspot toast "You picked the item that says: $(value item.note)"

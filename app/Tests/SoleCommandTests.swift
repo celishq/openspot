@@ -166,7 +166,7 @@ final class SoleCommandTests: XCTestCase {
     }
 
     func testReturnRunsTheOneCommandOfASpotWithRowsAndCommandYOpensTheRowsAsHistory() async throws {
-        try "#!/bin/sh\ncase \"$1\" in show) printf 'text=one\\ntitle=Hello there\\n\\ntext=two\\ntitle=Second\\n' ;; dictate) \(TestSpot.toast) 'Ran dictate' ;; esac\n"
+        try "#!/bin/sh\ncase \"$1\" in show) printf 'item=one\\ntitle=Hello there\\n\\nitem=two\\ntitle=Second\\n' ;; dictate) \(TestSpot.toast) 'Ran dictate' ;; esac\n"
             .writeScript(to: spots.spotFile("dictate"), toml: "title = 'Dictate'\non = ['sheet.open', 'app.update']\n[commands.dictate]\ntitle = 'Dictate'")
         await model.reload()
         model.isShown = true
@@ -208,7 +208,7 @@ final class SoleCommandTests: XCTestCase {
     }
 
     func testARowThatSaysCloseFalseNamesItsEnterAndKeepsThePanelOpen() async throws {
-        try "#!/bin/sh\ncase \"$1\" in show) printf 'button=open\\ntitle=Copy\\n\\ntext=model\\ntitle=Download\\nopen.title=Download\\nclose=false\\n\\ntext=text\\ntitle=Hello\\n' ;; esac\n"
+        try "#!/bin/sh\ncase \"$1\" in show) printf 'button=open\\ntitle=Copy\\n\\nitem=model\\ntitle=Download\\nopen.title=Download\\nclose=false\\n\\nitem=text\\ntitle=Hello\\n' ;; esac\n"
             .writeScript(to: spots.spotFile("get"), toml: "title = 'Get'")
         await model.reload()
         model.isShown = true
@@ -227,7 +227,7 @@ final class SoleCommandTests: XCTestCase {
     }
 
     func testASheetWithATreeAndNoSearchFieldShowsOnlyItsOwnItemsAsItsHistory() async throws {
-        try "#!/bin/sh\ncase \"$1\" in show) printf 'frame=\\nclass=gap-part\\n\\nitems=list\\n\\ntext=whisper\\nparent=list\\ntitle=Download\\npin=top\\n' ;; esac\n"
+        try "#!/bin/sh\ncase \"$1\" in show) printf 'frame=\\nclass=gap-part\\n\\nitems=list\\n\\nitem=whisper\\nparent=list\\ntitle=Download\\npin=top\\n' ;; esac\n"
             .writeScript(to: spots.spotFile("dictate"), toml: "title = 'Dictate'\non = ['sheet.open']\n[commands.dictate]\ntitle = 'Dictate'")
         await model.reload()
         model.isShown = true

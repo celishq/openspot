@@ -127,7 +127,7 @@ public struct SpotCatalog: Sendable {
 
         var blocks: [[(String, String?)]] {
             [[
-                ("text", id), ("title", name), ("icon", icon), ("detail", detail), ("size", size), ("origin", origin), ("added", String(added)), ("step", step),
+                ("item", id), ("title", name), ("icon", icon), ("detail", detail), ("size", size), ("origin", origin), ("added", String(added)), ("step", step),
                 ("published", published), ("path", path), ("store", store), ("sample", sample ? "true" : nil)
             ] + readme.map { ("readme", $0) }]
         }

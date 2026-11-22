@@ -44,13 +44,13 @@ icon = "cup.and.saucer.fill"
 
 ```sh
 #!/bin/sh
-printf 'text=cups\ntitle=3\ndetail=Last at 14:20\n'
+printf 'item=cups\ntitle=3\ndetail=Last at 14:20\n'
 ```
 
 ![The sheet of Cups today: one line, 3, with Last at 14:20 at its end](docs/images/first-spot.png)
 
-Each group of lines that the spot prints is a **block**: here, one `text` block with the id `cups`. The sheet shows **3**,
-with **Last at 14:20** at the end of the line.
+Each group of lines that the spot prints is a **block**: here, one `item` block, a row with the id `cups`. The sheet
+shows **3**, with **Last at 14:20** at the end of the line.
 
 ## Try your spot
 
@@ -76,7 +76,7 @@ Try each example of this page in the playground before you put it in the spots f
 
 ## Show a list
 
-A list lets the user search and pick. Print one `text` block for each item. When the user picks an item, Openspot runs
+A list lets the user search and pick. Print one `item` block for each item. When the user picks an item, Openspot runs
 your spot with `open` and the id of the item.
 
 ```toml
@@ -123,7 +123,7 @@ pages = ["*"]
 . "$OPENSPOT_SH"
 route=$(value route)
 case "$route" in
-  '') printf 'text=apple\ntitle=Apple\nroute=apple\n\ntext=pear\ntitle=Pear\nroute=pear\n' ;;
+  '') printf 'item=apple\ntitle=Apple\nroute=apple\n\nitem=pear\ntitle=Pear\nroute=pear\n' ;;
   *) openspot_item "$route:color" "Color" "Green" ;;
 esac
 ```
@@ -151,7 +151,7 @@ on = ["panel.open", "clock.300"]
 ```sh
 #!/bin/sh
 free=$(df -h / | awk 'NR==2 {print $4}')
-printf 'frame=\ndetail=%s free\n\ntext=free\ntitle=%s free\n' "$free" "$free"
+printf 'frame=\ndetail=%s free\n\nitem=free\ntitle=%s free\n' "$free" "$free"
 ```
 
 <!-- card: wide -->
@@ -159,14 +159,14 @@ printf 'frame=\ndetail=%s free\n\ntext=free\ntitle=%s free\n' "$free" "$free"
 ![The card of Disk, with the free space under its title](docs/images/show-a-value.png)
 
 The first block, `frame=`, is the **root**: it isn't drawn, and its `detail` becomes the line under the card's title.
-The `text` block is the card's **value**, since it's the only one.
+The `item` block is the card's **value**, since it's the only one.
 
 The user can also put the spot in the menu bar, next to the clock, from its Settings, which `⌘⏎` on its card opens.
 There it shows its icon, until a class of a block names `bar:`, the [variant](PROTOCOL.md#variants) of the menu bar.
-Add it to the `text` block, and the menu bar shows its title:
+Add it to the `item` block, and the menu bar shows its title:
 
 ```ini
-text=free
+item=free
 title=256Gi free
 class=bar:flex
 ```
@@ -313,7 +313,7 @@ title = "Quick note"
 #!/bin/sh
 . "$OPENSPOT_SH"
 case "$1" in
-  show) printf 'text=hint\ntitle=Press ⌘K to add a note\n\nbutton=add\ntitle=Add note\nform=true\nscope=spot\n' ;;
+  show) printf 'item=hint\ntitle=Press ⌘K to add a note\n\nbutton=add\ntitle=Add note\nform=true\nscope=spot\n' ;;
   add)
     note=$(value input.note)
     if [ -z "$note" ]; then
@@ -409,7 +409,7 @@ on = ["sheet.open", "app.front com\\.apple\\.Notes"]
 ```sh
 #!/bin/sh
 . "$OPENSPOT_SH"
-printf 'text=n\ntitle=%s\n' "$(value event)"
+printf 'item=n\ntitle=%s\n' "$(value event)"
 ```
 
 <!-- draw: printf 'event=app.front\n' | sh "$EXAMPLE" -->
@@ -434,9 +434,9 @@ load=$(value event.value)
 case "$load" in
   cpu=*)
     cpu=${load#cpu=}
-    printf 'text=cpu\ntitle=%s%% CPU\n' "${cpu%% *}"
+    printf 'item=cpu\ntitle=%s%% CPU\n' "${cpu%% *}"
     ;;
-  *) printf 'text=cpu\ntitle=Measuring…\n' ;;
+  *) printf 'item=cpu\ntitle=Measuring…\n' ;;
 esac
 ```
 
@@ -466,7 +466,7 @@ title = "Repos"
 case "$1" in
   show)
     folder=$(value setting.folder)
-    printf 'text=folder\ntitle=%s\n' "${folder:-Choose a folder in Settings}"
+    printf 'item=folder\ntitle=%s\n' "${folder:-Choose a folder in Settings}"
     ;;
   folder)
     picked=$(openspot folder pick)
@@ -496,9 +496,9 @@ type = "secret"
 #!/bin/sh
 . "$OPENSPOT_SH"
 if [ -n "$(value setting.token)" ]; then
-  printf 'text=state\ntitle=Signed in\n'
+  printf 'item=state\ntitle=Signed in\n'
 else
-  printf 'text=state\ntitle=Set a token in Settings\n'
+  printf 'item=state\ntitle=Set a token in Settings\n'
 fi
 ```
 
@@ -517,7 +517,7 @@ source = ["cups.swift"]
 
 ```swift
 #!/usr/bin/env swift
-print("text=cups\ntitle=\(cups) cups")
+print("item=cups\ntitle=\(cups) cups")
 ```
 
 ```swift
@@ -546,9 +546,9 @@ views = ["week.swift"]
 ```sh
 #!/bin/sh
 printf 'frame=\nclass=gap-part\n\nweek=chart\nvalue=3\nvalue=1\nvalue=2\nclass=h-16\n\nitems=days\n\n'
-printf 'text=mon\nparent=days\ntitle=Monday\n\n'
-printf 'text=tue\nparent=days\ntitle=Tuesday\n\n'
-printf 'text=wed\nparent=days\ntitle=Wednesday\n'
+printf 'item=mon\nparent=days\ntitle=Monday\n\n'
+printf 'item=tue\nparent=days\ntitle=Tuesday\n\n'
+printf 'item=wed\nparent=days\ntitle=Wednesday\n'
 ```
 
 ```swift

@@ -115,7 +115,7 @@ final class MetricContractTests: XCTestCase {
     }
 
     func testTheCheckFaultsAPartOrAnActionCalledShow() async throws {
-        try script("tools.sh", "#!/bin/sh\nprintf 'button=show\\ntitle=A\\n\\ntext=a\\ntitle=A\\n\\ntext=show\\ntitle=B\\n'\n", toml: "")
+        try script("tools.sh", "#!/bin/sh\nprintf 'button=show\\ntitle=A\\n\\nitem=a\\ntitle=A\\n\\nitem=show\\ntitle=B\\n'\n", toml: "")
 
         let faults = await SpotCheck(folder: SpotsFolder(url: folder)).faults()
 

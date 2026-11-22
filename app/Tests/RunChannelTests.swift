@@ -139,7 +139,7 @@ final class RunChannelTests: SpotRunsCase {
         try script(toml: "mode = 'stay'", """
         while IFS= read -r line; do
           case "$line" in call=*) call=${line#call=} ;; esac
-          [ -n "$line" ] || { \(call("setting set tone stay$call")); printf 'end=%s\\n\\ntext=a\\n---\\n' "$call"; }
+          [ -n "$line" ] || { \(call("setting set tone stay$call")); printf 'end=%s\\n\\nitem=a\\n---\\n' "$call"; }
         done
         """)
         let sheet = try sheet()

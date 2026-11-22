@@ -402,72 +402,72 @@ public enum SheetExamples {
     parent=a
     title=Copy
 
-    text=grin
+    item=grin
     parent=a
     title=Grinning face
     icon=😀
 
-    text=joy
+    item=joy
     parent=a
     title=Tears of joy
     icon=😂
 
-    text=love
+    item=love
     parent=a
     title=Heart eyes
     icon=😍
 
-    text=think
+    item=think
     parent=a
     title=Thinking face
     icon=🤔
 
-    text=party
+    item=party
     parent=a
     title=Party face
     icon=🥳
 
-    text=cool
+    item=cool
     parent=a
     title=Sunglasses
     icon=😎
 
-    text=wave
+    item=wave
     parent=a
     title=Waving hand
     icon=👋
 
-    text=dog
+    item=dog
     parent=a
     title=Dog face
     icon=🐶
 
-    text=fox
+    item=fox
     parent=a
     title=Fox
     icon=🦊
 
-    text=flower
+    item=flower
     parent=a
     title=Cherry blossom
     icon=🌸
 
-    text=fire
+    item=fire
     parent=a
     title=Fire
     icon=🔥
 
-    text=pizza
+    item=pizza
     parent=a
     title=Pizza
     icon=🍕
 
-    text=rocket
+    item=rocket
     parent=a
     title=Rocket
     icon=🚀
 
-    text=heart
+    item=heart
     parent=a
     title=Red heart
     icon=❤️

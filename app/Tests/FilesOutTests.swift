@@ -36,7 +36,7 @@ final class FilesOutTests: XCTestCase {
     }
 
     func testAnItemCarriesTheFileThatItNamesFromTheRoot() {
-        let outputCheck = FrameCheck(text: "text=a\nfile=/Users/me/a.png\n\ntext=b\nfile=b.png\n\ntext=c\n")
+        let outputCheck = FrameCheck(text: "item=a\nfile=/Users/me/a.png\n\nitem=b\nfile=b.png\n\nitem=c\n")
         let output = outputCheck.output
 
         XCTAssertEqual(output.items.map(\.file), ["/Users/me/a.png", nil, nil])
@@ -58,7 +58,7 @@ final class FilesOutTests: XCTestCase {
     func testADragOutTellsTheScriptAndADragOfEveryFileClosesTheFloat() async throws {
         let body = """
         case "$1" in
-          show) printf 'text=a\\nfile=/a.png\\n\\ntext=b\\nfile=/b.png\\n\\ntext=c\\n' ;;
+          show) printf 'item=a\\nfile=/a.png\\n\\nitem=b\\nfile=/b.png\\n\\nitem=c\\n' ;;
           drag) shift; \(TestSpot.toast) "Took $*" ;;
         esac
         """

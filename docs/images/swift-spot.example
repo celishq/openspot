@@ -1,2 +1,2 @@
 #!/usr/bin/env swift
-print("text=cups\ntitle=\(cups) cups")
+print("item=cups\ntitle=\(cups) cups")

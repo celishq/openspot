@@ -32,7 +32,7 @@ final class SpotRunStateTests: XCTestCase {
         try await wait("\(count) sleeps on the clock") { self.clock.sleepCount == count }
     }
 
-    private func opened(searches: Bool = false, frame: String = "text=a\ntitle=A\n") async -> (SpotRun, FakeMode) {
+    private func opened(searches: Bool = false, frame: String = "item=a\ntitle=A\n") async -> (SpotRun, FakeMode) {
         let (sheet, link) = sheet(on: ShowEvents(moments: [.sheet], searchesSheet: searches))
         sheet.open {}
         await link.frame(frame, of: link.sent[0])
@@ -74,7 +74,7 @@ final class SpotRunStateTests: XCTestCase {
         try await wait("the search") { link.sent.count == 2 }
 
         sheet.close()
-        await link.frame("text=b\ntitle=B\n\ntext=c\ntitle=C\n", of: link.sent[1])
+        await link.frame("item=b\ntitle=B\n\nitem=c\ntitle=C\n", of: link.sent[1])
         await link.end(link.sent[1])
 
         XCTAssertTrue(link.sent[1].made.isStopped)
@@ -171,7 +171,7 @@ final class SpotRunStateTests: XCTestCase {
         let (sheet, link) = await opened()
 
         sheet.pick(SpotItem(title: "A", run: "a"))
-        await link.frame("text=b\ntitle=B\n", of: link.sent[1])
+        await link.frame("item=b\ntitle=B\n", of: link.sent[1])
         await link.end(link.sent[1])
 
         XCTAssertEqual(link.arguments(), [["show"], ["open", "a"]])

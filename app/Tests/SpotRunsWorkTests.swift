@@ -306,7 +306,7 @@ final class SpotRunsWorkTests: SpotRunsCase {
     func testARunningActionOrPickShowsOnItsRowOfTheMenu() async throws {
         try script(toml: "", """
         case "$1" in
-          show) printf 'button=go\\ntitle=Go\\nscope=spot\\n\\nbutton=copy\\ntitle=Copy\\n\\ntext=a\\ntitle=A\\n' ;;
+          show) printf 'button=go\\ntitle=Go\\nscope=spot\\n\\nbutton=copy\\ntitle=Copy\\n\\nitem=a\\ntitle=A\\n' ;;
           go) sleep 30 ;;
           open) sleep 30 ;;
         esac
@@ -377,7 +377,7 @@ final class SpotRunsWorkTests: SpotRunsCase {
     func testAPickOrAnActionWithinOneSecondOfItsStartDoesNothing() async throws {
         try script(toml: "", """
         case "$1" in
-          show) printf 'button=go\\ntitle=Go\\nscope=spot\\n\\ntext=a\\ntitle=A\\n' ;;
+          show) printf 'button=go\\ntitle=Go\\nscope=spot\\n\\nitem=a\\ntitle=A\\n' ;;
           go) sleep 0.2; touch '\(path("action"))' ;;
           open) sleep 0.2; touch '\(path("pick"))' ;;
         esac
@@ -558,7 +558,7 @@ final class SpotRunsWorkTests: SpotRunsCase {
     }
 
     func testAReadThatWaitsToRunAgainDoesNotRunAfterAQuit() async throws {
-        try script(toml: "", "printf 'text=a\\ntitle=A\\n---\\n'\nsleep 30")
+        try script(toml: "", "printf 'item=a\\ntitle=A\\n---\\n'\nsleep 30")
         let sheet = try sheet()
         sheet.open {}
         try await wait("the row") { sheet.list.shown.count == 1 }

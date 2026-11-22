@@ -22,13 +22,13 @@ languages() {
 
 # Prints the name of a language.
 name() {
-  [ -s "$known" ] && awk -v code="$1" -F= '$1 == "text" { found = $2 == code } $1 == "title" && found { print $2; exit }' "$known"
+  [ -s "$known" ] && awk -v code="$1" -F= '$1 == "item" { found = $2 == code } $1 == "title" && found { print $2; exit }' "$known"
 }
 
 # Prints the options of a language menu, each as a block.
 options() {
   if [ -s "$known" ]; then
-    awk -F= '$1 == "text" { code = $2 } $1 == "title" { print ""; print "option=" code; print "title=" $2 }' "$known"
+    awk -F= '$1 == "item" { code = $2 } $1 == "title" { print ""; print "option=" code; print "title=" $2 }' "$known"
   else
     printf '\noption=en\ntitle=English\n'
   fi

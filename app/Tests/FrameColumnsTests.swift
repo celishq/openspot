@@ -5,13 +5,13 @@ final class FrameColumnsTests: XCTestCase {
     private let apps = """
     items=apps
 
-    text=/Applications/Safari.app
+    item=/Applications/Safari.app
     parent=apps
     title=Safari
     icon=/Applications/Safari.app
     value=true
 
-    text=/Applications/Notes.app
+    item=/Applications/Notes.app
     parent=apps
     title=Notes
     hides=quit
@@ -27,7 +27,7 @@ final class FrameColumnsTests: XCTestCase {
     }
 
     func testItemsInAGridOfColumnsAreTiles() {
-        let outputCheck = FrameCheck(text: "frame=\nclass=gap-part\n\nchoice=tone\n\noption=none\ntitle=Yellow\n\nitems=a\nclass=grid grid-cols-7\n\ntext=x\nparent=a\ntitle=x\n")
+        let outputCheck = FrameCheck(text: "frame=\nclass=gap-part\n\nchoice=tone\n\noption=none\ntitle=Yellow\n\nitems=a\nclass=grid grid-cols-7\n\nitem=x\nparent=a\ntitle=x\n")
         let output = outputCheck.output
 
         XCTAssertEqual(output.columns, 7)
@@ -36,7 +36,7 @@ final class FrameColumnsTests: XCTestCase {
     }
 
     func testTheItemsShowUnderTheBlocksBeforeThem() throws {
-        let outputCheck = FrameCheck(text: "frame=\nclass=gap-part\n\ntext=note\ntitle=Note\n\nitems=list\n\nbutton=copy\nparent=list\ntitle=Copy\n\ntext=a\nparent=list\ntitle=A\n")
+        let outputCheck = FrameCheck(text: "frame=\nclass=gap-part\n\ntext=note\ntitle=Note\n\nitems=list\n\nbutton=copy\nparent=list\ntitle=Copy\n\nitem=a\nparent=list\ntitle=A\n")
         let output = outputCheck.output
 
         XCTAssertEqual(output.tree.children, ["note", "list"])

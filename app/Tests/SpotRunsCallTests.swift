@@ -22,7 +22,7 @@ final class SpotRunsCallTests: SpotRunsCase {
         runs = SpotRuns(showLimit: 1.5)
         try script(toml: "", """
         case "$1" in
-          show) [ -f '\(path("slow"))' ] && sleep 30; touch '\(path("slow"))'; printf 'frame=\\ntitle=1\\n\\ntext=a\\ntitle=A\\n' ;;
+          show) [ -f '\(path("slow"))' ] && sleep 30; touch '\(path("slow"))'; printf 'frame=\\ntitle=1\\n\\nitem=a\\ntitle=A\\n' ;;
           open) \(untilRelease); touch '\(path("done"))' ;;
         esac
         """)
@@ -106,7 +106,7 @@ final class SpotRunsCallTests: SpotRunsCase {
     func testWhatASheetPrintsDuringItsOpenMotionShowsWhenTheMotionEnds() async throws {
         runs.quit()
         runs = SpotRuns(opening: SheetOpening(motionLength: 30), stopPause: 0.2)
-        try script(toml: "", "printf 'text=a\\ntitle=A\\n'")
+        try script(toml: "", "printf 'item=a\\ntitle=A\\n'")
         let sheet = try sheet()
         runs.panelOpened()
         runs.opening.moving = "script"
@@ -176,7 +176,7 @@ final class SpotRunsCallTests: SpotRunsCase {
     }
 
     func testWhatASheetPrintsShowsAfterTheLengthOfItsOpenMotionThoughItsSpringSettlesLater() async throws {
-        try script(toml: "", "printf 'text=a\\ntitle=A\\n'")
+        try script(toml: "", "printf 'item=a\\ntitle=A\\n'")
         let sheet = try sheet()
         runs.panelOpened()
         runs.opening.moving = "script"
@@ -188,7 +188,7 @@ final class SpotRunsCallTests: SpotRunsCase {
     }
 
     func testTheOpenMotionOfAnotherSheetHoldsNothingOfThisOne() async throws {
-        try script(toml: "", "printf 'text=a\\ntitle=A\\n'")
+        try script(toml: "", "printf 'item=a\\ntitle=A\\n'")
         let sheet = try sheet()
         runs.panelOpened()
         runs.opening.moving = "other"
@@ -199,7 +199,7 @@ final class SpotRunsCallTests: SpotRunsCase {
     }
 
     func testAReadStopsWhenThePanelThatWantedItCloses() async throws {
-        try script(toml: "on = ['panel.open']\noffers = ['search']", "printf 'text=a\\ntitle=A\\n---\\n'\nsleep 5\ntouch '\(path("went-on"))'")
+        try script(toml: "on = ['panel.open']\noffers = ['search']", "printf 'item=a\\ntitle=A\\n---\\n'\nsleep 5\ntouch '\(path("went-on"))'")
         let sheet = try sheet()
         runs.panelOpened()
         try await wait("the first frame") { sheet.list.shown.count == 1 }
@@ -212,7 +212,7 @@ final class SpotRunsCallTests: SpotRunsCase {
     }
 
     func testClosingASheetLeavesAReadThatThePanelWants() async throws {
-        try script(toml: "on = ['panel.open']\noffers = ['search']", "sleep 0.2\nprintf 'text=a\\ntitle=A\\n'")
+        try script(toml: "on = ['panel.open']\noffers = ['search']", "sleep 0.2\nprintf 'item=a\\ntitle=A\\n'")
         let sheet = try sheet()
         runs.panelOpened()
         sheet.open {}
@@ -223,7 +223,7 @@ final class SpotRunsCallTests: SpotRunsCase {
     }
 
     func testAStreamThatNothingWantsStopsAfterItsFirstFrame() async throws {
-        try script(toml: "", "printf 'text=a\\ntitle=A\\n---\\n'\nsleep 5\ntouch '\(path("went-on"))'")
+        try script(toml: "", "printf 'item=a\\ntitle=A\\n---\\n'\nsleep 5\ntouch '\(path("went-on"))'")
         let sheet = try sheet()
 
         sheet.show()
@@ -234,7 +234,7 @@ final class SpotRunsCallTests: SpotRunsCase {
     }
 
     func testAProcessThatEndedIsLetGoWithNoLaterCall() async throws {
-        try script(toml: "", "printf 'text=a\\ntitle=A\\n'")
+        try script(toml: "", "printf 'item=a\\ntitle=A\\n'")
         let sheet = try sheet()
 
         sheet.show()
@@ -247,7 +247,7 @@ final class SpotRunsCallTests: SpotRunsCase {
         try script(toml: "", """
         [ -f '\(path("second"))' ] && { sleep 5; exit 0; }
         touch '\(path("second"))'
-        printf 'text=a\\ntitle=A\\n'
+        printf 'item=a\\ntitle=A\\n'
         """)
         let sheet = try sheet()
         sheet.open {}
@@ -305,7 +305,7 @@ final class SpotRunsCallTests: SpotRunsCase {
     func testAFrameOfAPickWithNoOpenSheetIsTheWholePicture() async throws {
         try script(toml: "on = ['panel.open']", """
         case "$1" in
-          show) printf 'frame=\\nclass=gap-part\\ndetail=Idle\\n\\nitems=list\\n\\ntext=a\\nparent=list\\ntitle=A\\n\\ntext=bar\\ntitle=idle\\n' ;;
+          show) printf 'frame=\\nclass=gap-part\\ndetail=Idle\\n\\nitems=list\\n\\nitem=a\\nparent=list\\ntitle=A\\n\\ntext=bar\\ntitle=idle\\n' ;;
           open) printf 'frame=\\nclass=gap-part\\ntitle=Other\\nactive=true\\n\\ntext=bar\\ntitle=work\\n' ;;
         esac
         """)

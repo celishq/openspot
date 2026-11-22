@@ -52,7 +52,7 @@ public struct Reminders {
         }
         let due = entry.date.map { entry.hasTime ? $0 : clock.calendar.startOfDay(for: $0) }
         let reminder = Reminder(id: "new", title: entry.title, due: due, isAllDay: due != nil && !entry.hasTime, list: list, doneAt: nil)
-        guard !isDry else { return Self.text([TextBlock(fields: [.init(key: "text", value: "reminder:new")] + reminder.row(clock).fields.dropFirst())]) }
+        guard !isDry else { return Self.text([TextBlock(fields: [.init(key: "item", value: "reminder:new")] + reminder.row(clock).fields.dropFirst())]) }
         return Self.text([try store.add(reminder).row(clock)])
     }
 

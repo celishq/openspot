@@ -64,7 +64,7 @@ final class SheetLayoutTests: XCTestCase {
     items=a
     class=grid grid-cols-7
 
-    text=1
+    item=1
     parent=a
     title=one
     icon=😀
@@ -87,12 +87,12 @@ final class SheetLayoutTests: XCTestCase {
     }
 
     func testRowsAloneNeedNoLayout() {
-        let linesCheck = FrameCheck(text: "items=a\nclass=grid grid-cols-7\n\ntext=1\nparent=a\ntitle=one\nicon=😀\n")
+        let linesCheck = FrameCheck(text: "items=a\nclass=grid grid-cols-7\n\nitem=1\nparent=a\ntitle=one\nicon=😀\n")
         let lines = linesCheck.output
 
         XCTAssertEqual(lines.perLine, 7)
         XCTAssertEqual(linesCheck.sheetFaults, [])
-        XCTAssertEqual(output("text=1\ntitle=one\n").perLine, nil)
+        XCTAssertEqual(output("item=1\ntitle=one\n").perLine, nil)
     }
 
     func testAHotkeyFieldTakesTwoLinesOfTheFullWidth() throws {
@@ -114,7 +114,7 @@ final class SheetLayoutTests: XCTestCase {
         XCTAssertEqual(FrameCheck(text: "frame=\nclass=gap-part\n\ntext=a\ntitle=A\n").sheetFaults, [])
         XCTAssertEqual(FrameCheck(text: "frame=\nclass=gap-part\n\ntitle=A\n\ntext=a\ntitle=A\n").sheetFaults, ["cannot read the block that starts: title=A"])
         XCTAssertEqual(FrameCheck(text: "frame=\nclass=gap-part\n").sheetFaults, ["the sheet has no parts"])
-        XCTAssertEqual(FrameCheck(text: "text=home\ntitle=Home\n\nswitch=vpn\ntitle=VPN\nvalue=true\n\nbutton=forget\ntitle=Forget\n").sheetFaults, [])
+        XCTAssertEqual(FrameCheck(text: "item=home\ntitle=Home\n\nswitch=vpn\ntitle=VPN\nvalue=true\n\nbutton=forget\ntitle=Forget\n").sheetFaults, [])
         XCTAssertEqual(FrameCheck(text: "number=battery\ntitle=Battery\nvalue=84\nmax=100\nunit=%\n").sheetFaults, [])
     }
 

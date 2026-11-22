@@ -53,13 +53,13 @@ final class SpotTablesTests: XCTestCase {
     }
 
     func testARowHoldsKeysOfItsOwnWhichACheckDoesNotReport() async throws {
-        let faults = try await findings("#!/bin/sh\nprintf 'text=a\\ntitle=A\\nruns=38\\n\\ntext=b\\ntitle=B\\npush.replace=true\\n'\n", toml: "")
+        let faults = try await findings("#!/bin/sh\nprintf 'item=a\\ntitle=A\\nruns=38\\n\\nitem=b\\ntitle=B\\npush.replace=true\\n'\n", toml: "")
 
         XCTAssertEqual(faults, [])
     }
 
     func testARootKeyThatOpenspotDoesNotKnowIsReportedByACheck() async throws {
-        let faults = try await findings("#!/bin/sh\nprintf 'frame=\\ntitle=T\\ntoost=Saved\\n\\ntext=a\\ntitle=A\\n'\n", toml: "")
+        let faults = try await findings("#!/bin/sh\nprintf 'frame=\\ntitle=T\\ntoost=Saved\\n\\nitem=a\\ntitle=A\\n'\n", toml: "")
 
         XCTAssertEqual(faults, ["the root has an unknown key: toost"])
     }
@@ -109,7 +109,7 @@ final class SpotTablesTests: XCTestCase {
         XCTAssertEqual(output.parts.map(\.kind), ["number", "series", "slider", "hotkey", "field", "switch"])
         XCTAssertEqual(output.parts.last?.isTick, true)
         XCTAssertEqual(output.fields.map(\.kind.name), ["slider", "field", "switch"])
-        XCTAssertEqual(BlockKind.words, ["text", "number", "series", "picture", "icon", "switch", "field", "choice", "option", "button", "items", "box"])
+        XCTAssertEqual(BlockKind.words, ["text", "item", "number", "series", "picture", "icon", "switch", "field", "choice", "option", "button", "items", "box"])
     }
 
     private func unknownKeys(in frame: String) -> [String] {

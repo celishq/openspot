@@ -35,7 +35,7 @@ struct NodeFace: View {
     private func content(_ style: Style) -> some View {
         switch node.kind {
         case BlockKind.box: NodeBox(children: node.children, style: style, tree: tree)
-        case BlockKind.text.word: NodeText(title: node.title ?? node.value, detail: node.detail, tone: node.tone, icon: node.icon)
+        case BlockKind.text.word, BlockKind.item.word: NodeText(title: node.title ?? node.value, detail: node.detail, tone: node.tone, icon: node.icon)
         case BlockKind.icon.word: NodeIcon(icon: node.icon, side: node.naturalSize.width)
         case BlockKind.picture.word: NodePicture(icon: node.icon, size: node.naturalSize)
         case BlockKind.button.word where !node.children.isEmpty: NodeButton(node: node, look: nil, label: AnyView(NodeBox(children: node.children, style: style, tree: tree)))

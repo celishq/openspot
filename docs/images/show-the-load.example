@@ -4,7 +4,7 @@ load=$(value event.value)
 case "$load" in
   cpu=*)
     cpu=${load#cpu=}
-    printf 'text=cpu\ntitle=%s%% CPU\n' "${cpu%% *}"
+    printf 'item=cpu\ntitle=%s%% CPU\n' "${cpu%% *}"
     ;;
-  *) printf 'text=cpu\ntitle=Measuring…\n' ;;
+  *) printf 'item=cpu\ntitle=Measuring…\n' ;;
 esac

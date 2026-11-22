@@ -23,7 +23,7 @@ final class StoreSpotTests: BuiltInCase {
         let text = try await runs.answer(of: store, .show, limit: 60)
         XCTAssertEqual(Frame(text: text, kinds: try store.kinds).parts.map(\.id), ["gallery"])
         return TextBlock.blocks(in: text).compactMap { row in
-            row.value("text").map { [$0, row.value("title") ?? "", row.value("step") ?? "", row.value("origin") ?? "", row.value("detail") ?? "", row.value("size") ?? "", row.value("sample") == "true" ? "sample" : ""] }
+            row.value("item").map { [$0, row.value("title") ?? "", row.value("step") ?? "", row.value("origin") ?? "", row.value("detail") ?? "", row.value("size") ?? "", row.value("sample") == "true" ? "sample" : ""] }
         }
     }
 
@@ -63,7 +63,7 @@ final class StoreSpotTests: BuiltInCase {
         XCTAssertEqual(file.read().stores.map(\.url.path), [friends.path])
         XCTAssertEqual(effects(), ["toast Added the store friends with 1 spot."])
         XCTAssertEqual(try viewValues(text)["folder"]?.last, "\(friends.path)\tfriends\tfound\tadded")
-        XCTAssertEqual(TextBlock.blocks(in: text).first { $0.value("text") == "clock" }?.value("store"), friends.path)
+        XCTAssertEqual(TextBlock.blocks(in: text).first { $0.value("item") == "clock" }?.value("store"), friends.path)
     }
 
     func testAddStoreRefusesAFolderWithNoSpot() async throws {
@@ -89,7 +89,7 @@ final class StoreSpotTests: BuiltInCase {
         let text = try await runs.answer(of: store, .show, limit: 60)
 
         XCTAssertEqual(try viewValues(text)["folder"], ["\(examples.path)\tOpenspot\tfound\tbuiltin", "\(friends.path)\tfriends\tfound\tadded"])
-        XCTAssertEqual(TextBlock.blocks(in: text).first { $0.value("text") == "year" }?.value("store"), examples.path)
+        XCTAssertEqual(TextBlock.blocks(in: text).first { $0.value("item") == "year" }?.value("store"), examples.path)
     }
 
     func testAGoneStoreSaysSoUntilRemoveDropsIt() async throws {
@@ -192,7 +192,7 @@ final class StoreSpotTests: BuiltInCase {
         let asked = try await SpotRuns(environment: TestEnvironment.values).answer(of: store, SpotAction(arguments: ["gallery", "readme:timer"]), limit: 60)
 
         XCTAssertEqual(try viewValues(asked)["readme"], ["timer", "timer\t# Timer", "timer\t", "timer\tCounts down."])
-        XCTAssertEqual(TextBlock.blocks(in: asked).compactMap { $0.value("text") }, ["mine", "shared", "timer"])
+        XCTAssertEqual(TextBlock.blocks(in: asked).compactMap { $0.value("item") }, ["mine", "shared", "timer"])
     }
 
     func testAReadmePictureOrVideoInTheSpotsFolderGetsItsFullPath() async throws {
