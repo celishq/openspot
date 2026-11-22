@@ -6,7 +6,7 @@ struct SpotRoundButton: View {
         case plain, strong, bare
     }
 
-    let symbol: String
+    let icon: Icon
     let label: String
     var act: ScriptCall?
     var size: CGFloat = SpotTokens.glyph
@@ -19,7 +19,7 @@ struct SpotRoundButton: View {
                 if let act {
                     SpotWorkMark(call: act, side: size, stops: true)
                 } else {
-                    Image(systemName: symbol)
+                    NodeIcon(icon: icon, side: size / 2)
                         .font(SpotType.roundSymbol(side: size))
                         .modifier(SpotInk())
                         .frame(width: size, height: size)

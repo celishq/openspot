@@ -159,7 +159,8 @@ final class SheetPartsTests: XCTestCase {
         XCTAssertEqual(parts[2].control, .slider(level: 80, min: 0, max: 100))
         XCTAssertEqual(parts[3].control, .swatches(["#ff0000", "#00ff00"], value: "#00ff00"))
         XCTAssertEqual(parts[4].control, .none)
-        XCTAssertEqual(parts[5].press, .symbol("arrow.clockwise"))
+        XCTAssertEqual(parts[5].press, .line)
+        XCTAssertEqual(parts[5].icon, .symbol("arrow.clockwise"))
         XCTAssertEqual(parts[6].press, .line)
         XCTAssertTrue(parts[6].closes)
     }
@@ -443,6 +444,31 @@ final class SheetPartsTests: XCTestCase {
         XCTAssertEqual(FrameCheck(text: "choice=c\ncolor=#ff0000\n".placed).partFaults, ["the choice c has color lines, which only a choice with type=swatches takes"])
         sheet.take(Frame(text: "frame=\nclass=gap-part\n\nchoice=c\ntype=list\nvalue=a\n\noption=a\ntitle=A\n"), answering: sheet.generation)
         XCTAssertEqual(sheet.parts.first?.control, .list([.init(id: "a", title: "A")], value: "a"))
+    }
+
+    func testAnIconDrawsOnEveryKindAndARoundButtonComesFromItsClass() throws {
+        let parts = try panel("""
+        button=round
+        class=rounded-full
+        icon=star
+
+        button=boxed
+        icon=star
+
+        button=titled
+        class=rounded-full
+        title=Star
+        icon=😀
+
+        text=glyph
+        icon=😀
+
+        switch=file
+        icon=~/Desktop
+        """).parts
+
+        XCTAssertEqual(parts.map(\.press), [.round(.symbol("star")), .line, .line, .none, .none])
+        XCTAssertEqual(parts.map(\.icon), [nil, .symbol("star"), .glyph("😀"), .glyph("😀"), .file("~/Desktop")])
     }
 
     func testTheClassesOfAPartChooseTheLookOfItsBox() throws {

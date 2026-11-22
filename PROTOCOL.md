@@ -898,7 +898,8 @@ Each kind of block, the keys of its own and the call it sends.
   `tone` and `icon`. `tone` is `good`, `warn` or `bad`, and colours the detail, or the title with no detail.
   `color=#RRGGBB` on a text or a number draws a bar of that colour at its edge.
 - `icon` is an image file, such as `cups.png`; an `https://` image, downloaded once; the Finder icon of a path with a
-  `/` or a leading `~`; an SF Symbol, such as `wifi`; or any other text, such as `😀`.
+  `/` or a leading `~`; an SF Symbol, such as `wifi`; or any other text, such as `😀`. It draws the same on every kind
+  and in every place, before the title.
 - A field's `type`: none for one line, `multiline` for several lines, which takes the free height, `slider` from `min`
   to `max`, 0 to 100 by default, which sends a whole number, `search` for the search field of the [items](#items), and
   `hotkey`.
@@ -949,7 +950,7 @@ A tile with round corners holds one row. The name, heavier and in the accent col
 - `font-section` gives a `text` the look of a title over a group of blocks or items.
 - On a `button`, a `field`, a `switch`, a `choice` or a `number`, a class chooses the box that Openspot draws for it:
   `bg-accent` is the one main button, `bg-tile` a tile, `bg-transparent` no box, and `rounded-full` on a button a chip
-  as wide as its words. An item with `bg-tile` shows its title and detail under its icon.
+  as wide as its words, or a round button of its `icon` when it has no `title`. An item with `bg-tile` shows its title and detail under its icon.
 - A block smaller than its box takes its place from `self-start`, `self-center` or `self-end`, or from `text-left`,
   `text-center` or `text-right` inside its own area.
 - `backdrop-blur` blurs what lies under the block with the material of the Mac. No class draws glass.

@@ -35,6 +35,7 @@ public enum SheetExamples {
 
         button=swap
         parent=middle
+        class=rounded-full
         icon=arrow.up.arrow.down
         shortcut=cmd+shift+s
 
@@ -86,7 +87,7 @@ public enum SheetExamples {
 
         button=play
         parent=side
-        class=h-20 bg-accent
+        class=h-20 bg-accent rounded-full
         icon=pause.fill
 
         text=song
@@ -102,12 +103,12 @@ public enum SheetExamples {
 
         button=previous
         parent=controls
-        class=bg-transparent
+        class=bg-transparent rounded-full
         icon=backward.fill
 
         button=following
         parent=controls
-        class=bg-transparent
+        class=bg-transparent rounded-full
         icon=forward.fill
 
         """),
@@ -199,7 +200,7 @@ public enum SheetExamples {
 
         button=ask
         parent=bottom
-        class=bg-accent
+        class=bg-accent rounded-full
         icon=arrow.up
         shortcut=cmd+return
 
@@ -233,7 +234,7 @@ public enum SheetExamples {
 
         button=refresh
         parent=chart
-        class=absolute top-0 right-0
+        class=absolute top-0 right-0 rounded-full
         icon=arrow.clockwise
 
         number=disk
@@ -316,7 +317,7 @@ public enum SheetExamples {
 
         button=save
         parent=corner
-        class=bg-accent
+        class=bg-accent rounded-full
         icon=checkmark
         shortcut=cmd+return
 
@@ -369,7 +370,7 @@ public enum SheetExamples {
 
         button=reset
         parent=levels
-        class=bg-transparent text-right
+        class=bg-transparent text-right rounded-full
         icon=arrow.counterclockwise
 
         box=line

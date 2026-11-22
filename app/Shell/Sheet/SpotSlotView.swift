@@ -44,9 +44,9 @@ struct SpotSlotView: View {
         case .number:
             SpotNumberView(part: part, look: look, font: SpotType.slotNumber(size: numberSize), leastScale: numberSize > SpotType.slotNumberSize ? SpotType.leastBigNumberScale : SpotType.leastNumberScale)
         default:
-            if case .symbol(let symbol) = part.press {
+            if case .round(let icon) = part.press {
                 Button { onSlot(part.id, nil) } label: {
-                    Image(systemName: symbol)
+                    NodeIcon(icon: icon, side: SpotTokens.slotButton / 2)
                         .font(SpotType.body.weight(.semibold))
                         .foregroundStyle(SpotTheme.ink)
                         .frame(width: SpotTokens.slotButton, height: SpotTokens.slotButton)

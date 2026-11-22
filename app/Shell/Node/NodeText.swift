@@ -5,13 +5,13 @@ struct NodeText: View {
     let title: String?
     let detail: String?
     let tone: MetricValue.Tone?
-    let symbol: String?
+    let icon: Icon?
     @Environment(\.multilineTextAlignment) private var alignment
 
     var body: some View {
         HStack(alignment: .firstTextBaseline, spacing: SpotTokens.partLineGap) {
-            if let symbol {
-                Image(systemName: symbol)
+            if let icon {
+                NodeIcon(icon: icon, side: SpotTokens.partSymbolWidth)
                     .modifier(SpotSecondaryText())
             }
             VStack(alignment: lines, spacing: SpotType.lineGap) {

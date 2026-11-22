@@ -25,7 +25,7 @@ struct SpotSheetPreview: View {
                     if !subtitle.isEmpty { Text(subtitle).font(SpotType.detail).modifier(SpotSecondaryText()) }
                 }
                 Spacer()
-                SpotRoundButton(symbol: "xmark", label: "Close") {}
+                SpotRoundButton(icon: .symbol("xmark"), label: "Close") {}
             }
             SpotSheetBody(panel: panel, list: list, onSet: onSet, onPress: onPress, title: title)
         }

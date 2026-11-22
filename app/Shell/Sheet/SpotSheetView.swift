@@ -186,7 +186,7 @@ private struct SheetContentView: View {
 
     @ViewBuilder
     private var closeButton: some View {
-        let button = SpotRoundButton(symbol: "xmark", label: "Close") {
+        let button = SpotRoundButton(icon: .symbol("xmark"), label: "Close") {
             model.closeSheet(moving: true)
         }
         if let closeShift {
