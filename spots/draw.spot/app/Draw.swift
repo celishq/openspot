@@ -68,15 +68,16 @@ final class Draw: NSObject, NSApplicationDelegate {
     func take(_ call: Call?) {
         switch call {
         case .ask(let id, let arguments, let input):
-            let row = arguments.dropFirst().first.map(Sheet.name(in:))
+            let argument = arguments.dropFirst().first ?? input["input.item"]
+            let row = argument.map(Sheet.name(in:))
             let word = Sheet.name(in: arguments.first ?? "")
-            let changes = ["open", "new", "delete"].contains(word) || (word == "rename" && input["input.name"] != nil)
+            let changes = ["press", "new", "delete"].contains(word) || (word == "rename" && input["input.name"] != nil)
             guard !changes || holds() else { return end(id, saying: Draw.busy) }
             switch word {
             case "show": host.send(sheet.frame(head: ["end=\(id)"]))
-            case "open": open(row == "new" ? nil : row, call: id)
+            case "press": open(row == "new" ? nil : row, call: id)
             case "new": open(nil, call: id)
-            case "rename": rename(row, to: input["input.name"], call: id, argument: arguments.dropFirst().first ?? "")
+            case "rename": rename(row, to: input["input.name"], call: id, argument: argument ?? "")
             case "delete": delete(row, call: id)
             case "reveal":
                 reveal()

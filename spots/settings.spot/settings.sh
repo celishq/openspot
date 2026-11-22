@@ -1,5 +1,6 @@
 #!/bin/sh
 export LC_ALL=en_US.UTF-8
+. "$OPENSPOT_SH"
 panes="${SETTINGS_PANES:-/System/Library/ExtensionKit/Extensions}"
 link='x-apple.systempreferences:'
 
@@ -58,7 +59,8 @@ case "$1" in
     fi
     cat "$cache"
     ;;
-  open)
-    open "${2%%#*}"
+  press)
+    item=$(value item)
+    open "${item%%#*}"
     ;;
 esac

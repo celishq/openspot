@@ -134,6 +134,9 @@ placeholder=example.com or ~/Downloads"'
 
 prepare
 
+# A form button gets its item as an argument, and every other press gets it as an input.
+item=${2:-$(value item)}
+
 case "$1" in
   show)
     printf 'button=copy\ntitle=Copy\nshortcut=cmd+return\n\n'
@@ -166,29 +169,29 @@ case "$1" in
     ;;
   edit)
     if [ -z "$(value input.title)$(value input.url)" ]; then
-      form "Edit link" "$(load | jq -c --arg id "$2" '.[] | select(.id == $id)')"
+      form "Edit link" "$(load | jq -c --arg id "$item" '.[] | select(.id == $id)')"
       exit 0
     fi
     values=$(checked) || exit 1
-    load | jq -c --arg id "$2" --argjson v "$values" 'map(if .id == $id then .title = $v.title | .url = $v.url else . end)' | store
+    load | jq -c --arg id "$item" --argjson v "$values" 'map(if .id == $id then .title = $v.title | .url = $v.url else . end)' | store
     fetch_missing "$values" >/dev/null 2>&1 </dev/null
-    openspot select "$2"
+    openspot select "$item"
     ;;
   delete)
-    load | jq -c --arg id "$2" 'map(select(.id != $id))' | store
+    load | jq -c --arg id "$item" 'map(select(.id != $id))' | store
     ;;
   copy)
-    url=$(link "$2") || exit 1
+    url=$(link "$item") || exit 1
     printf '%s' "$url" | openspot clipboard copy
     openspot toast Copied
     ;;
   reveal)
-    url=$(link "$2") || exit 1
+    url=$(link "$item") || exit 1
     check_path "$url"
     open -R "$url"
     ;;
-  open)
-    url=$(link "$2") || exit 1
+  press)
+    url=$(link "$item") || exit 1
     check_path "$url"
     open "$url"
     ;;

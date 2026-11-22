@@ -48,7 +48,7 @@ final class SystemSettingsSpotTests: SampleSpotsCase {
             let rows = try await self.rows()
             let section = try XCTUnwrap(rows.first { $0.title == "Громкость" })
 
-            _ = try await settings.perform(.item(section), timeout: 60)
+            _ = try await settings.perform(.press("press"), input: "input.item=\(section.run)\n", timeout: 60)
 
             let opened = try String(contentsOf: home.appendingPathComponent("opened"), encoding: .utf8)
             XCTAssertEqual(opened, "x-apple.systempreferences:com.apple.Sound-Settings.extension?volume\n")

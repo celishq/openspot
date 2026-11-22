@@ -25,10 +25,10 @@ fi
 . "$OPENSPOT_SH"
 used=
 
-# Prints the memory from the load that Openspot measures every 5 seconds. A read with no load, as when the panel
-# opens, measures the memory now.
+# Prints the memory from the load that Openspot measures every 5 seconds. A show, as when the panel opens, measures
+# the memory now.
 main() {
-  load=$(value event.value)
+  load=$(value value)
   case $load in
     *memory=*) used=${load##*memory=} used=${used%% *} ;;
     *) used=$(measure) ;;

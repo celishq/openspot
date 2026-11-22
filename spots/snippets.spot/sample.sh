@@ -1,5 +1,5 @@
 #!/bin/sh
-printf 'button=open\ntitle=Copy\n\n'
+printf 'button=press\ntitle=Copy\n\n'
 printf 'button=paste\ntitle=Paste\nshortcut=cmd+return\n\n'
 printf 'button=edit\ntitle=Edit\nshortcut=cmd+e\nform=true\nclose=false\n\n'
 printf 'button=delete\ntitle=Delete\nshortcut=cmd+backspace\nconfirm=Press again to delete\nclose=false\n\n'
