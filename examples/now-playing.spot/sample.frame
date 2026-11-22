@@ -18,7 +18,7 @@ number=time
 parent=side
 class=wide:hidden strip:hidden square:hidden
 max=1
-chart=bar
+type=bar
 display=1:42
 value=0.42
 

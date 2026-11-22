@@ -32,7 +32,7 @@ final class SheetLayoutTests: XCTestCase {
     }
 
     func testASheetWithRowsKeepsRoomForTheFieldOnlyWhenItSearches() throws {
-        let numbers = "number=cpu\nclass=h-20\nvalue=1\nvalue=2\n\nitems=list\n\ntext=a\nparent=list\ntitle=A\n"
+        let numbers = "series=cpu\nclass=h-20\nvalue=1,2\n\nitems=list\n\ntext=a\nparent=list\ntitle=A\n"
         let still = try XCTUnwrap(SheetParts(output: output("frame=\nclass=gap-part\n\n" + numbers)))
         let searched = try XCTUnwrap(SheetParts(output: output("frame=\nclass=gap-part\n\nfield=find\ntype=search\n\n" + numbers)))
 

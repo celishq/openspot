@@ -20,16 +20,16 @@ final class MenuBarMarkTests: XCTestCase {
 
     func testEachOtherKindShowsItsOwnMark() {
         XCTAssertEqual(mark(MetricValue(title: "3"))?.content, .text("3"))
-        XCTAssertEqual(mark(MetricValue(title: "50%", number: .of("value=50\nmax=100")))?.content, .ring(fill: 0.5, title: "50%"))
+        XCTAssertEqual(mark(MetricValue(title: "50%", number: .of("value=50\nmax=100\ntype=ring")))?.content, .ring(fill: 0.5, title: "50%"))
         XCTAssertEqual(mark(MetricValue(title: "Up", tone: .good))?.content, .status("Up"))
         XCTAssertEqual(mark(MetricValue(title: "Up", tone: .good))?.tone, .good)
     }
 
     func testATrendKeepsItsNewestBarsScaledFromZero() {
         let points = (1...10).map(Double.init)
-        let lines = points.map { "value=\(Int($0))" }.joined(separator: "\n")
+        let line = "value=" + points.map { String(Int($0)) }.joined(separator: ",")
 
-        XCTAssertEqual(mark(MetricValue(title: "10", number: .of(lines)))?.content, .bars(Array(points.suffix(MenuBarMark.barCount)).map { $0 / 10 }, title: "10"))
+        XCTAssertEqual(mark(MetricValue(title: "10", number: .series(line)))?.content, .bars(Array(points.suffix(MenuBarMark.barCount)).map { $0 / 10 }, title: "10"))
     }
 
     func testNothingShowsBeforeTheFirstValueOrWhenTheMetricHidesIt() {

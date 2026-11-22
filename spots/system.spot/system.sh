@@ -18,16 +18,28 @@ case $1 in
 esac
 load=$(value event.value)
 
-# Prints the number that the script of another spot prints, named $1, without its root and its classes.
+# Prints the number that the script of another spot prints, named $1, without its root, its classes and its type.
 borrowed() {
   name=$1
   shift
-  "$@" | /usr/bin/sed -E -e '1,/^$/d' -e '/^class=/d' -e "s/^number=.*/number=$name/"
+  "$@" | /usr/bin/sed -E -e '1,/^$/d' -e '/^(class|type)=/d' -e "s/^number=.*/number=$name/"
 }
 
-# Prints the number block on stdin inside the gauges, with the classes $1, and no blank line.
+# Prints the number block on stdin inside the gauges twice: as a ring with the classes $1, and as a bar with the
+# classes $2, named with -bar after it. Each place shows one of them.
 gauge() {
-  /usr/bin/awk -v classes="$1" 'NF { print; if (!done) { print "parent=gauges"; print "class=" classes; done = 1 } }'
+  /usr/bin/awk -v ring="$1" -v bar="$2" '
+    NF { lines[++count] = $0 }
+    END {
+      for (i = 1; i <= count; i++) { print lines[i]; if (i == 1) { print "parent=gauges"; print "type=ring"; print "class=" ring } }
+      print ""
+      for (i = 1; i <= count; i++) {
+        line = lines[i]
+        if (i == 1) sub(/$/, "-bar", line)
+        print line
+        if (i == 1) { print "parent=gauges"; print "type=bar"; print "class=" bar }
+      }
+    }'
 }
 
 # Prints the text kept in file $1 of the data folder, or nothing.
@@ -57,8 +69,8 @@ devices() {
   kept devices.number
 }
 
-# Prints the use of all cores, with the trend of the last 30 points. The load that Openspot measures every 5 seconds adds
-# a point, and a read before the first point measures the use now.
+# Prints the use of all cores, the last of the trend of the last 30 points. The load that Openspot measures every 5
+# seconds adds a point, and a read before the first point measures the use now.
 cpu() {
   set -- $(kept trend)
   case $load in
@@ -70,8 +82,8 @@ cpu() {
       ;;
   esac
   [ $# -gt 0 ] || set -- $(ps -A -o %cpu= | LC_ALL=C awk -v cores="$(/usr/sbin/sysctl -n hw.ncpu)" '{ sum += $1 } END { print int(sum / cores) }')
-  printf 'number=cpu\ntitle=CPU\nmax=100\nunit=%%\n'
-  for point; do printf 'value=%s\n' "$point"; done
+  for last; do :; done
+  printf 'number=cpu\ntitle=CPU\nmax=100\nunit=%%\nvalue=%s\n' "$last"
 }
 
 # Prints the memory in use, as a percent, with a tone when little is left. The load gives it, and a read
@@ -102,7 +114,7 @@ device_rows() {
     return "headphones"
   }
   NF {
-    printf "device-%d\t%s%s\t\t%s\tvalue=%d\tmax=100\tunit=%%\topen.title=Bluetooth Settings\tparent=list\t%s\n", NR, $1, ($2 == "" ? "" : ", " tolower($2)), symbol($1, $2), $3, ($3 <= 20 ? "tone=bad" : "")
+    printf "device-%d\t%s%s\t\t%s\tvalue=%d\tmax=100\ttype=ring\tunit=%%\topen.title=Bluetooth Settings\tparent=list\t%s\n", NR, $1, ($2 == "" ? "" : ", " tolower($2)), symbol($1, $2), $3, ($3 <= 20 ? "tone=bad" : "")
   }' | openspot_items number
 }
 
@@ -121,13 +133,13 @@ process_rows() {
 }
 
 printf 'frame=\nclass=gap-part\n\nbox=gauges\nclass=grid grid-cols-4 gap-part wide:grow square:grow strip:grow large:grow wide:flex-row wide:justify-between square:grid-cols-2 strip:grid-cols-2 large:grid-cols-2\n\n'
-battery | gauge 'sheet:h-20 wide:aspect-square large:row-span-3'
+battery | gauge 'sheet:h-20 wide:aspect-square large:row-span-3 strip:hidden' 'hidden strip:flex'
 printf '\n'
-cpu | gauge 'sheet:h-20 wide:aspect-square'
+cpu | gauge 'sheet:h-20 wide:aspect-square large:hidden strip:hidden' 'hidden large:flex strip:flex'
 printf '\n'
-memory | gauge 'sheet:h-20 wide:hidden square:hidden strip:hidden'
+memory | gauge 'sheet:h-20 wide:hidden square:hidden strip:hidden large:hidden' 'hidden large:flex'
 printf '\n'
-devices | gauge 'sheet:h-20 wide:hidden square:hidden strip:hidden'
+devices | gauge 'sheet:h-20 wide:hidden square:hidden strip:hidden large:hidden' 'hidden large:flex'
 printf '\nitems=list\nclass=wide:hidden square:hidden strip:hidden large:hidden\n\n'
 device_rows
 process_rows

@@ -65,7 +65,7 @@ public struct SpotItem: Equatable, Sendable {
         guard let run = block.value(kind.word) else { return nil }
         let hides = block.values(ItemKey.hides)
         let records = kind == .hotkey
-        let number = kind == .number ? NumberReading(block: block) : nil
+        let number = kind == .number || kind == .series ? NumberReading(block: block) : nil
         self.init(
             title: block.value(ItemKey.title) ?? run,
             subtitle: block.value(ItemKey.detail),

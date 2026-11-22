@@ -8,10 +8,11 @@ public struct NumberReading: Equatable, Sendable {
     public let max: Double?
     public let scaledPoints: [Double?]
     public let isSeries: Bool
-    public let chart: NumberLook.Chart?
+    public let look: NumberLook
 
     init(block: TextBlock) {
-        let lines = block.values("value")
+        let isSeries = block.fields.first?.key == BlockKind.series.word
+        let lines = isSeries ? block.seriesPoints : Array(block.values("value").prefix(1))
         let numbers = lines.map { Double($0).flatMap { $0.isFinite ? $0 : nil } }
         let unit = block.value("unit").flatMap { $0.isEmpty ? nil : $0 }
         let shown = block.value("display") ?? lines.last { Double($0)?.isFinite == true } ?? lines.last ?? ""
@@ -19,11 +20,11 @@ public struct NumberReading: Equatable, Sendable {
         let points = numbers.compactMap { $0 }
         let top = max ?? points.max() ?? 0
         self.unit = unit
-        chart = block.value("chart").flatMap(NumberLook.Chart.init(rawValue:))
+        look = isSeries ? .stat : block.value("type").flatMap(NumberLook.init(type:)) ?? .stat
         self.points = points
         self.max = max
         bare = shown
-        isSeries = lines.count > 1
+        self.isSeries = isSeries
         scaledPoints = numbers.map { number in number.map { top > 0 ? Swift.min(Swift.max($0 / top, 0), 1) : 0 } }
         guard let unit, !shown.isEmpty, !shown.contains(unit) else {
             text = shown

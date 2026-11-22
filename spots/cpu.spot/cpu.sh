@@ -1,12 +1,15 @@
 #!/bin/sh
 
-# Prints the use of all cores, the last of the points, with each point as a bar.
+# Prints the use of all cores: one point as a bar, or the points as a series.
 draw() {
   [ $# -gt 0 ] || return 0
-  grow='h-20 '
-  [ $# -eq 1 ] || grow='grow '
-  printf 'frame=\nclass=gap-part\n\nnumber=cpu\nclass=%sbar:flex\ntitle=CPU\nmax=100\nunit=%%\n' "$grow"
-  for point; do printf 'value=%s\n' "$point"; done
+  if [ $# -eq 1 ]; then
+    printf 'frame=\nclass=gap-part\n\nnumber=cpu\nclass=h-20 bar:flex\ntype=bar\ntitle=CPU\nmax=100\nunit=%%\nvalue=%s\n' "$1"
+    return 0
+  fi
+  IFS=,
+  printf 'frame=\nclass=gap-part\n\nseries=cpu\nclass=grow bar:flex\ntitle=CPU\nmax=100\nunit=%%\nvalue=%s\n' "$*"
+  unset IFS
 }
 
 # Prints the use of all cores now.

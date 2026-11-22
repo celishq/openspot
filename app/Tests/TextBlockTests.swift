@@ -114,9 +114,9 @@ final class TextBlockTests: XCTestCase {
         )
     }
 
-    func testANumberItemOfMoreThanOneValueDrawsABarForEachUpToItsMaxWithAGapForADash() throws {
-        let bars = try XCTUnwrap(Frame(text: "items=list\n\ntext=used\nparent=list\nclass=font-section\ntitle=Used\n\nnumber=a\nparent=list\nvalue=2\nvalue=-\nvalue=4").items.first)
-        let capped = try XCTUnwrap(Frame(text: "number=a\nvalue=2\nvalue=4\nmax=8").items.first)
+    func testASeriesItemDrawsABarForEachPointUpToItsMaxWithAGapForADash() throws {
+        let bars = try XCTUnwrap(Frame(text: "items=list\n\ntext=used\nparent=list\nclass=font-section\ntitle=Used\n\nseries=a\nparent=list\nvalue=2,-,4").items.first)
+        let capped = try XCTUnwrap(Frame(text: "series=a\nvalue=2,4\nmax=8").items.first)
         let check = try XCTUnwrap(Frame(text: "text=a\nvalue=true").items.first)
 
         XCTAssertEqual(bars.number?.scaledPoints, [0.5, nil, 1])
@@ -125,7 +125,7 @@ final class TextBlockTests: XCTestCase {
         XCTAssertFalse(bars.isOn)
         XCTAssertEqual(capped.number?.scaledPoints, [0.25, 0.5])
         XCTAssertNil(check.number)
-        XCTAssertEqual(Frame(text: "number=a\nvalue=nan\nvalue=2").items.first?.number?.scaledPoints, [nil, 1])
+        XCTAssertEqual(Frame(text: "series=a\nvalue=nan,2").items.first?.number?.scaledPoints, [nil, 1])
         XCTAssertTrue(check.isOn)
     }
 

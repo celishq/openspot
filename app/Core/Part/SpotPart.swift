@@ -108,14 +108,6 @@ public struct SpotPart: Equatable, Sendable, Identifiable {
         return reading
     }
 
-    public func numberLook(columns: Double, rows: Double) -> NumberLook? {
-        number.map { NumberLook(reading: $0, columns: columns, rows: rows) }
-    }
-
-    public func numberLook(inSheet size: CGSize) -> NumberLook? {
-        numberLook(columns: size.width / SpotTokens.cell, rows: size.height / SpotTokens.cell)
-    }
-
     static func options(of block: TextBlock) -> [Option] {
         block.children.compactMap { child in
             child.value("option").map { Option(id: $0, title: child.value("title") ?? $0, icon: child.value("icon")) }

@@ -23,8 +23,8 @@ SPOT
   spot parts Parts square.grid.2x2 "" <<'SPOT'
 #!/bin/sh
 printf "%s\n" "frame=" "class=gap-part" "" "box=top" "class=grid grid-cols-2 gap-part" "" \
-  "number=n" "parent=top" "title=Cups today" "value=3" "" "number=g" "parent=top" "title=Load" "value=42" "max=100" "unit=%" "" \
-  "number=t" "title=Disk" "detail=Half full" "value=50" "max=100" "unit=%" "tone=warn" "" \
+  "number=n" "parent=top" "title=Cups today" "value=3" "" "number=g" "parent=top" "title=Load" "value=42" "max=100" "type=bar" "unit=%" "" \
+  "number=t" "title=Disk" "detail=Half full" "value=50" "max=100" "type=bar" "unit=%" "tone=warn" "" \
   "switch=s" "class=large:hidden" "title=Focus" "detail=Until 18:00" "value=true" "" "field=f" "class=large:hidden" "type=slider" "title=Volume" "value=40" "" \
   "box=line" "class=h-px bg-tile large:hidden" "" "box=bottom" "class=grid grid-cols-2 gap-part large:hidden" "" \
   "button=b" "parent=bottom" "title=Go" "look=strong" "" "choice=c" "parent=bottom" "title=Mode" "value=x" "" "option=x" "title=One" "" "option=y" "title=Two"
@@ -47,7 +47,7 @@ printf "switch=focus\ntitle=Focus\ndetail=Until 18:00\nvalue=true\n"
 SPOT
   spot load Load cpu panel.open <<'SPOT'
 #!/bin/sh
-printf "frame=\nclass=wide:flex-row wide:gap-part large:grid large:grid-cols-2 large:gap-part\n\nnumber=load\nclass=small:hidden large:col-span-2\ntitle=Load\nvalue=20\nvalue=50\nvalue=35\nvalue=80\nvalue=60\nmax=100\nunit=%%\n\nnumber=ring\ntitle=Disk\nvalue=60\nmax=100\nunit=%%\n\nnumber=cups\nclass=small:hidden wide:hidden\ntitle=Cups\nvalue=3\nunit=cups\ndisplay=3 cups\n"
+printf "frame=\nclass=wide:flex-row wide:gap-part large:grid large:grid-cols-2 large:gap-part\n\nnumber=load\nclass=small:hidden large:col-span-2\ntitle=Load\nvalue=60\nmax=100\ntype=bar\nunit=%%\n\nnumber=ring\ntitle=Disk\nvalue=60\nmax=100\ntype=bar\nunit=%%\n\nnumber=cups\nclass=small:hidden wide:hidden\ntitle=Cups\nvalue=3\nunit=cups\ndisplay=3 cups\n"
 SPOT
   {
     for id in rows asks cups focus; do printf '[[spots]]\nid = "%s"\nsize = "small"\ngrid = true\n\n' "$id"; done

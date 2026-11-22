@@ -22,7 +22,7 @@ extension TextBlock {
         let named = Set(block.fields.map(\.key))
         var written: Set<String> = []
         var next: [Field] = []
-        for field in fields {
+        for field in addingPoints().fields {
             if !named.contains(field.key) {
                 next.append(field)
             } else if written.insert(field.key).inserted {
@@ -30,6 +30,6 @@ extension TextBlock {
             }
         }
         next += block.fields.filter { !written.contains($0.key) }
-        return TextBlock(fields: next, firstLine: block.firstLine, children: block.children.isEmpty ? children : block.children)
+        return TextBlock(fields: next, firstLine: block.firstLine, children: block.children.isEmpty ? children : block.children).addingPoints()
     }
 }

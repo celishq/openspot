@@ -9,7 +9,7 @@ card() {
   printf 'picture=cover\nclass=sheet:size-56 rounded-inner overflow-hidden card:aspect-square small:w-full wide:h-full strip:h-full large:h-full square:size-10 square:self-start\n'; openspot_kv icon "$6"; printf '\n'
   printf 'box=side\nclass=self-stretch gap-part small:hidden card:grow strip:flex-row strip:items-center large:justify-between\n\n'
   printf 'text=song\nparent=side\nclass=text-center sheet:font-title card:text-left strip:grow bar:flex truncate\n'; openspot_kv title "$1"; openspot_kv detail "$2"; printf '\n'
-  printf 'number=time\nparent=side\nclass=wide:hidden strip:hidden square:hidden\nmax=1\nchart=bar\n'; openspot_kv display "$4"; openspot_kv value "$3"; printf '\n'
+  printf 'number=time\nparent=side\nclass=wide:hidden strip:hidden square:hidden\nmax=1\ntype=bar\n'; openspot_kv display "$4"; openspot_kv value "$3"; printf '\n'
   printf 'box=controls\nparent=side\nclass=flex-row justify-center gap-6 card:justify-between strip:gap-part wide:hidden\n\nbutton=prev\nparent=controls\nclass=bg-transparent\nicon=backward.fill\nclose=false\n\n'
   if [ "$5" = playing ]; then printf 'button=play\nparent=controls\nclass=bg-transparent\nicon=pause.fill\nclose=false\n\n'; else printf 'button=play\nparent=controls\nclass=bg-transparent\nicon=play.fill\nclose=false\n\n'; fi
   printf 'button=next\nparent=controls\nclass=bg-transparent\nicon=forward.fill\nclose=false\n'

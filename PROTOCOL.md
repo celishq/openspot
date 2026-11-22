@@ -32,9 +32,9 @@ event ──► call ──► spot ──► frame ──► Openspot draws it 
 
 These rules hold everywhere, and the details follow from them.
 
-- **A spot gives data, and Openspot draws it.** A block says what a thing is, and its place chooses its look, such as a
-  ring or a bar for a [number](#numbers). [Classes](#classes) say where a block sits and how it looks, and every size
-  and colour they name comes from the theme.
+- **A spot gives data, and Openspot draws it.** A block says what a thing is, such as a [number](#show-a-number) or a
+  [series](#show-a-series), and its keys say what it holds. [Classes](#classes) say where a block sits and how it looks,
+  and every size and colour they name comes from the theme.
 - **A frame describes, and a command changes.** Printing a frame never changes the Mac, and a `show` call runs no
   command that changes anything.
 - **The user chooses the places and the keys.** The spot lays out each place it cares about.
@@ -273,14 +273,14 @@ title=Battery
 value=84
 max=100
 unit=%
+type=ring
 class=hidden card:flex card:h-full
 
 items=list
 class=card:hidden
 ```
 
-The sheet shows the list. A card shows only the battery: a ring around 84% on a square card, and a bar under Battery
-84% on a wide one.
+The sheet shows the list. A card shows only the battery, a ring around 84%, with Battery above it on a square card.
 
 | Place                                       | Where                                                              |
 | ------------------------------------------- | ------------------------------------------------------------------ |
@@ -300,7 +300,7 @@ The sheet shows the list. A card shows only the battery: a ring around 84% on a 
 
 The card stands for the spot in the panel.
 
-- Its **value** is the one `text`, `number`, `switch` or slider that shows on the card, or else the one among the
+- Its **value** is the one `text`, `number`, `series`, `switch` or slider that shows on the card, or else the one among the
   items.
 - `active=true` in the root shows that the spot's thing is on.
 - A card whose frame holds only one switch or slider draws it, and a press changes it. Any other press does what Return
@@ -311,36 +311,92 @@ The card stands for the spot in the panel.
 The menu bar shows the first value that shows on `bar:`, small, beside the clock, once a class names `bar:`, such as
 `class=bar:flex` on a `number`.
 
-- A `number` with one value and a `max` is a small ring with its value. A `number` with several values is its last 8
-  bars with its value.
+- A `number` with `type=ring` or `type=bar` is a small ring with its value, and any other `number` is its value. A
+  `series` is its last 8 bars with its value.
 - A `text` with a `tone` and no `icon` is a dot of its tone and its title. Any other `text` is its title.
 - With no class that names `bar:`, the items are counted by their tone. A `switch` or slider that shows on `bar:` hides
   it.
 - A show that prints nothing hides the spot in the menu bar until the next show.
 
-## Numbers
+## Show a number
 
-A number shows a value, such as the battery, or a series, such as the use of the CPU over the last minutes. Print the
-data, and Openspot chooses how to draw it for each place.
+A number shows one value, such as the battery, as text, a ring or a bar.
 
 ```ini
+frame=
+class=grid grid-cols-2 gap-part
+
 number=battery
 title=Battery
 value=84
 max=100
 unit=%
+type=ring
+class=h-32
+
+number=disk
+title=Disk
+value=62
+max=100
+unit=%
+type=bar
+class=h-32
+
+number=cups
+title=Cups today
+value=3
+class=col-span-2 h-20
 ```
 
-In a list, Battery is a row that ends in a ring around 84. On a card, it's a ring in a square area and a bar in a wide
-one, as the example of [Places](#places) shows.
+Battery is a ring around 84%, and Disk a bar filled to 62% under Disk and 62%. Below them, a 3 in big type sits over
+Cups today.
 
-- `value` is the number, and each more `value` line adds a point of a series, oldest first. The last point is the one
-  that shows, and `-` is a point with no value, drawn as a gap. `max` is the value of a full ring or bar, and by default the largest point.
-- `unit` follows the value, as in `84%` or `12 kg`, and `display` shows instead of the value, as in `display=–`.
-- A series is its last value over its bars in an area of two rows or more and two columns or more.
-- Otherwise, with `max`, one value or the last point of a series is a ring in an area as tall as it's wide, and a bar
-  in a wider one. A series with no `max` is a bar of its points, and any other number is big text.
-- `chart=ring` or `chart=bar` sets the drawing whatever the area. Only a number takes `chart`.
+- `value` is the number. `unit` follows it, as in `84%` or `12 kg`, and `display` shows instead of it, as in
+  `display=–`.
+- With no `type`, a number is its value as text. `type=ring` draws a ring and `type=bar` a bar, filled to `value` out
+  of `max`. A ring or a bar with no `max` is a fault that `openspot check spots` reports.
+- A number holds one `value`. Points over time are a [series](#show-a-series).
+
+## Show a series
+
+A series shows points over time, such as the use of the CPU over the last minutes, as its last value over a bar for
+each point.
+
+```ini
+frame=
+class=gap-part
+
+series=cpu
+title=CPU
+value=12,30,18,-,25,40,22
+max=100
+unit=%
+class=h-32
+```
+
+A tile shows CPU and 22% in big type, with a small bar for each point at its lower right and a gap for the `-`.
+
+- `value` holds the points, oldest first, split by commas. `-` is a point with no value, drawn as a gap. A later
+  `value` replaces all the points.
+- `max` is the value of a full bar, and by default the largest point. `unit`, `display` and `title` work as on a
+  number.
+
+### Add points to a series
+
+A [staying spot](#a-staying-spot) adds points to a series without printing them all again: a later block with the
+series' id names them in `add`.
+
+```ini
+series=cpu
+add=31
+```
+
+After the block of the example above, the tile shows 31%, and a bar for 31 joins the others at the right.
+
+- `add` takes one point or more, split by commas, and puts them after the last. A block with both `value` and `add`
+  replaces the points, then adds.
+- `keep` is the most points that a series holds, 60 by default and 600 at most. When an add passes it, the oldest
+  points drop.
 
 ## Show again when something happens
 
@@ -433,6 +489,7 @@ title=Keyboard
 icon=keyboard
 value=62
 max=100
+type=ring
 
 button=forget
 parent=devices
@@ -463,8 +520,8 @@ Forget is a row of the ⌘K menu of the selected item, and a search for pointer 
 - The blocks inside the `items` block are the items, and a `button` there is an
   [action](#buttons-and-actions). A `text` with `class=font-section` titles the items after it. A frame with no layout
   makes its items as [Show things with blocks](#show-things-with-blocks) says.
-- A `number` item shows its value on the right of its title, a ring of it with `max`, or the bars of a series, as in
-  [Numbers](#numbers).
+- A `number` item shows its value on the right of its title, or a ring of it with `type=ring`, as in
+  [Show a number](#show-a-number). A `series` item shows the bars of its points.
 - A press of a text sends `<spot> open <id>`, of a switch `<spot> <id> true` or `false`, and of a `hotkey` field
   records a key. A press closes the panel, unless the item has `close=false`. An item can hold keys of its own, such as
   `meeting=42`, which come back as `item.<key>=`.
@@ -885,7 +942,8 @@ Each kind of block, the keys of its own and the call it sends.
 | `text`            | Words.                                                                                                           | `value`                                                                           |                        |
 | `icon`            | The icon of its `value`, by the rules of `icon` below.                                                           | `value`                                                                           |                        |
 | `picture`         | An image that fills its area.                                                                                    | `icon`                                                                            |                        |
-| `number`          | One `value`, or a series of `value` lines, oldest first, with its `title` as the label. See [Numbers](#numbers). | `value`, `max`, `unit`, `display`                                                 |                        |
+| `number`          | One `value` as text, a ring or a bar, with its `title` as the label. See [Show a number](#show-a-number).         | `value`, `max`, `unit`, `display`, `type`                                         |                        |
+| `series`          | Points over time, a bar for each, under the last value. See [Show a series](#show-a-series), with `add` and `keep`. | `value`, `max`, `unit`, `display`                                                 |                        |
 | `button`          | A button, or an action (see [Buttons and actions](#buttons-and-actions)). The blocks inside it are its look.     | `shortcut`, `confirm`, `close`, `form`, `scope`                                   | `<id>`                 |
 | `field`           | A text field, or another input with a `type`.                                                                    | `value`, `type`, `placeholder`, `required`, `readonly`, `min`, `max`, `recording` | `<id> <value>`         |
 | `switch`          | A switch, or with `type=tick` a round tick before its words, for a thing to do.                                  | `value`: `true` or `false`, `type`                                                | `<id> true` or `false` |
@@ -945,7 +1003,7 @@ A tile with round corners holds one row. The name, heavier and in the accent col
 - `<n>` is a count from 1 to 12, and `<p>` a percent from 0 to 100 in steps of 5.
 - `flex` shows a block that `hidden` hides, such as `hidden card:flex`.
 - `font-section` gives a `text` the look of a title over a group of blocks or items.
-- On a `button`, a `field`, a `switch`, a `choice` or a `number`, a class chooses the box that Openspot draws for it:
+- On a `button`, a `field`, a `switch`, a `choice`, a `number` or a `series`, a class chooses the box that Openspot draws for it:
   `bg-accent` is the one main button, `bg-tile` a tile, `bg-transparent` no box, and `rounded-full` on a button a chip
   as wide as its words. An item with `bg-tile` shows its title and detail under its icon.
 - A block smaller than its box takes its place from `self-start`, `self-center` or `self-end`, or from `text-left`,
