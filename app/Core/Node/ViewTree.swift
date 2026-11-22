@@ -38,6 +38,14 @@ public struct ViewTree: Equatable, Sendable {
         nodes[id]?.part?.set(value)
     }
 
+    func changedParts(from other: ViewTree) -> [String]? {
+        var same = other
+        for (id, node) in nodes { same.nodes[id]?.part = node.part }
+        guard same == self else { return nil }
+        let changed = order.filter { nodes[$0]?.part != other.nodes[$0]?.part }
+        return changed.isEmpty ? nil : changed
+    }
+
     public var drawsOnBar: Bool {
         places.contains(.bar)
     }

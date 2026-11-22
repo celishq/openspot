@@ -9,16 +9,15 @@ struct NodeSpotView: View {
     let id: String
     let values: [String: [String]]
     let source: String
-    @Environment(\.spotNodeSend) private var send
-    @Environment(\.spotNodeViewInput) private var input
-    @Environment(\.spotNodeVariants) private var variants
+    @Environment(\.spotNode) private var context
     @Environment(\.spotViewDates) private var dates
 
     var body: some View {
-        let card = SpotSize.all.first { size in Style.Variant(size: size).map(variants.contains) == true }
+        let card = SpotSize.all.first { size in Style.Variant(size: size).map(context.variants.contains) == true }
+        let actions = context.actions
         GeometryReader { area in
-            SpotSelectionScope(run: SpotViews.shared.readsSelection(source) ? input.selection : { nil }) { run in
-                SpotCustomView(source: source, values: values, items: input.items, card: card ?? .square, room: area.size, answers: input.answers, selection: run, date: dates[source], views: .shared, send: send.map { send in { [id] value in send(id, value) } }, namesCard: card != nil)
+            SpotSelectionScope(run: SpotViews.shared.readsSelection(source) ? { actions.selectedRun() } : { nil }) { run in
+                SpotCustomView(source: source, values: values, items: actions.rows, card: card ?? .square, room: area.size, answers: actions.answers, selection: run, date: dates[source], views: .shared, send: actions.send.map { send in { [id] value in send(id, value) } }, namesCard: card != nil)
                     .equatable()
             }
         }

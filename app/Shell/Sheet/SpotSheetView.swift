@@ -70,23 +70,7 @@ private struct SheetContentView: View {
             VStack(alignment: .leading, spacing: SpotTokens.rowGap) {
                 if let panel = content.panel {
                     if top.hasField { Color.clear.frame(height: SpotTokens.listRow) }
-                    SheetPartsView(
-                        panel: panel,
-                        act: content.act,
-                        onSet: { model.setPart($0, to: $1) },
-                        onPress: { model.pressPart($0) },
-                        recordingPart: content.recording,
-                        onRecord: { model.toggleRecording($0) },
-                        keys: content.keys,
-                        list: list,
-                        onRun: { model.runItem($0) },
-                        onDragOut: { model.dragOut($0, of: entry.id) },
-                        selection: selection,
-                        selectedPart: content.selectedPart,
-                        nudge: content.nudge,
-                        menuOpening: content.menuOpening,
-                        onFocus: { model.focusPart($0) }
-                    )
+                    SheetPartsView(panel: panel, actions: SheetActions(model: model, id: entry.id, content: content))
                 } else if let form {
                     if form.choices != nil { Color.clear.frame(height: SpotTokens.listRow) }
                     SpotFormView(

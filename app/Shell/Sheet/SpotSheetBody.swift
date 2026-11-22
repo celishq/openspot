@@ -17,7 +17,7 @@ struct SpotSheetBody: View {
     var body: some View {
         if let panel {
             if panel.top.hasField { SpotSheetSearchRow(title: title) }
-            SheetPartsView(panel: panel, onSet: onSet, onPress: onPress, list: list, onRun: onPick, selection: selection)
+            SheetPartsView(panel: panel, actions: SampleActions(panel: panel, items: list, onSet: onSet, onPress: onPress, onPick: onPick, picked: selection))
                 .environment(\.spotSearchTitle, title)
         } else {
             SpotItemsView(list: list, onRun: onPick, onPoint: onPick, selection: selection)

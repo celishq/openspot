@@ -2,19 +2,25 @@ import OpenspotCore
 import SwiftUI
 
 struct NodeCardPart: View {
-    let part: SpotPart
+    let node: ViewNode
+    let label: AnyView?
     let look: SpotPart.Look?
-    let size: CGSize
-    let onSlot: (String, String?) -> Void
+    @Environment(\.spotNode) private var context
 
     var body: some View {
-        if part.number != nil {
-            GeometryReader { room in
-                SpotSlotView(part: part, partLook: look, height: room.size.height, look: part.number?.look ?? .stat, onSlot: onSlot)
+        let actions = context.actions
+        let onSlot: (String, String?) -> Void = { actions.slot($0, $1) }
+        if let label {
+            Button { onSlot(node.id, nil) } label: { label }.buttonStyle(.plain)
+        } else if let part = actions.part(of: node) {
+            if part.number != nil {
+                GeometryReader { room in
+                    SpotSlotView(part: part, partLook: look, height: room.size.height, look: part.number?.look ?? .stat, onSlot: onSlot)
+                }
+                .frame(idealWidth: node.naturalSize.width, idealHeight: node.naturalSize.height)
+            } else {
+                SpotSlotView(part: part, partLook: look, onSlot: onSlot)
             }
-            .frame(idealWidth: size.width, idealHeight: size.height)
-        } else {
-            SpotSlotView(part: part, partLook: look, onSlot: onSlot)
         }
     }
 }

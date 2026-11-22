@@ -197,6 +197,14 @@ public struct SheetParts: Equatable, Sendable {
         return same == other
     }
 
+    func changedParts(from other: SheetParts) -> [String]? {
+        var same = self
+        same.tree = other.tree
+        same.generation = other.generation
+        guard same == other else { return nil }
+        return tree.changedParts(from: other.tree)
+    }
+
     public var isSelectionMoved: Bool {
         selected != nil
     }
