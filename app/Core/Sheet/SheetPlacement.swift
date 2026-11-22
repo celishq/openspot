@@ -163,7 +163,7 @@ public struct SheetPlacement: Equatable, Sendable {
         return first
     }
 
-    private static func side(_ align: SpotPart.Align?, default fallback: Side) -> Side {
+    static func side(_ align: SpotPart.Align?, default fallback: Side) -> Side {
         switch align {
         case nil: fallback
         case .left: .start
@@ -174,5 +174,19 @@ public struct SheetPlacement: Equatable, Sendable {
 
     private static func moved(_ rect: CGRect, left: CGFloat = 0, right: CGFloat = 0, top: CGFloat = 0, bottom: CGFloat = 0) -> CGRect {
         CGRect(x: rect.minX + left, y: rect.minY + top, width: rect.width - left - right, height: rect.height - top - bottom)
+    }
+}
+
+extension SheetPlacement.Frame {
+    public init(node size: CGSize, part: SpotPart) {
+        self.init(
+            rect: CGRect(origin: .zero, size: size),
+            isOnTop: false,
+            horizontal: SheetPlacement.side(part.align, default: part.fillsWidth ? .fill : .center),
+            vertical: part.fillsHeight ? .fill : .center,
+            roundSize: min(size.width, size.height, SpotTokens.partMaxRound),
+            clearTop: 0,
+            clearBottom: 0
+        )
     }
 }

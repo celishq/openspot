@@ -474,4 +474,104 @@ final class SheetPartsTests: XCTestCase {
         XCTAssertEqual(FrameCheck(text: "switch=done\nvalue=true\ntype=tick\n".placed).partFaults, [])
     }
 
+
+    private let treeForm = """
+    frame=
+    class=gap-part
+
+    field=name
+    title=Name
+    value=Ada
+
+    box=foot
+    class=flex-row gap-part
+
+    switch=wifi
+    parent=foot
+    title=Wi-Fi
+    value=true
+
+    choice=look
+    parent=foot
+    value=a
+
+    option=a
+    title=A
+
+    button=save
+    parent=foot
+    title=Save
+
+    number=battery
+    value=84
+    max=100
+    """
+
+    private let treeList = """
+    frame=
+    class=gap-part
+
+    field=find
+    type=search
+
+    button=top
+    title=Top
+
+    items=list
+
+    text=a
+    parent=list
+    title=Apple
+
+    text=b
+    parent=list
+    title=Banana
+
+    button=forget
+    parent=list
+    title=Forget
+    shortcut=cmd+f
+
+    button=add
+    title=Add
+    """
+
+    func testAWrittenTreeTakesTheBlocksInsideItsItemsAsTheItemsAndItsButtonsThereAsActions() throws {
+        let output = Frame(text: treeList)
+        let sheet = try XCTUnwrap(SheetParts(output: output))
+
+        XCTAssertEqual(output.items.map(\.run), ["a", "b"])
+        XCTAssertEqual(output.items.map(\.parent), [nil, nil])
+        XCTAssertEqual(output.actions.map(\.id), ["forget"])
+        XCTAssertEqual(output.parts.map(\.id), ["top", "add"])
+        XCTAssertEqual(output.search, .local)
+        XCTAssertTrue(sheet.showsRows)
+        XCTAssertEqual(output.tree.node("list")?.style.grows, true)
+    }
+
+    func testTheFocusOfAWrittenTreeFollowsItsLinesAndARowIsOneLine() throws {
+        var sheet = try XCTUnwrap(SheetParts(output: Frame(text: treeForm)))
+
+        XCTAssertEqual(sheet.focusOrder.map(\.id), ["name", "wifi", "look", "save"])
+        XCTAssertTrue(sheet.takesArrows)
+        XCTAssertEqual(sheet.selectedPart?.id, "name")
+        XCTAssertTrue(sheet.moveLine(by: 1))
+        XCTAssertEqual(sheet.selectedPart?.id, "wifi")
+        sheet.move(by: 2)
+        XCTAssertEqual(sheet.selectedPart?.id, "save")
+        XCTAssertTrue(sheet.moveLine(by: -1))
+        XCTAssertEqual(sheet.selectedPart?.id, "name")
+        XCTAssertFalse(sheet.moveLine(by: -1))
+    }
+
+    func testInAWrittenTreeOnlyThePartsAfterTheItemsTakeTheFocus() throws {
+        var sheet = try XCTUnwrap(SheetParts(output: Frame(text: treeList)))
+
+        XCTAssertNil(sheet.selectedPart)
+        XCTAssertEqual(sheet.focusOrder.map(\.id), ["add"])
+        XCTAssertTrue(sheet.leaveRows())
+        XCTAssertEqual(sheet.selectedPart?.id, "add")
+        XCTAssertTrue(sheet.moveLine(by: -1))
+        XCTAssertNil(sheet.selectedPart)
+    }
 }

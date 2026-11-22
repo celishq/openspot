@@ -721,6 +721,7 @@ Each kind of block, the keys of its own and the call it sends.
 | `section` | A title over the blocks after it, or over the items after it when the layout doesn't place it.                   |                                                                                   |                        |
 | `box`     | A box that holds the blocks whose `parent` names it.                                                             |                                                                                   |                        |
 | `repeat`  | The place of the [items](#items).                                                                                | `grid` lines                                                                      |                        |
+| `items`   | The place of the [items](#items) in a tree: the blocks inside it are the items, and a `button` there an action.  |                                                                                   |                        |
 
 - Every kind also takes `title`, `detail`, `tone` and `icon`. `tone` is `good`, `warn` or `bad`, and colours the
   detail, or the title with no detail. `color=#RRGGBB` on a text or a number draws a bar of that colour at its edge.
@@ -734,7 +735,7 @@ Each kind of block, the keys of its own and the call it sends.
   `type=multiple` lets the user choose several options.
 - `parent=<id>` puts a block inside the block with that id, in the order of its lines, and `class` holds its classes,
   such as `flex-row gap-2`. Once the frame has a `box`, a `class` on its root or a block inside another, the sheet draws
-  its blocks as that tree, and no block is an item; other places don't draw it yet. `openspot check spots` reports an
+  its blocks as that tree, and only a block inside an `items` block is an item; other places don't draw it yet. `openspot check spots` reports an
   unknown class, and then a `parent` that names no block. Until then, `parent` on an item keeps its meaning in
   [Items](#items).
 - `grow=false` keeps a block to its own lines where it would take the free height; see [Layouts](#layouts).

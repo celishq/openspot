@@ -21,6 +21,8 @@ public struct ViewNode: Equatable, Sendable, Identifiable {
         self.kind = kind
         self.parent = parent
         self.block = block
+        var style = style
+        if kind == BlockKind.items, style.grows == nil { style.grows = true }
         self.style = style
         self.children = children
         title = block.value("title")

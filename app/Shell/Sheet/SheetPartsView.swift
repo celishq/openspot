@@ -33,8 +33,7 @@ struct SheetPartsView: View {
         let sheet = panel.placement
         Group {
             if panel.tree.isWritten {
-                SheetTreeView(tree: panel.tree, pictureTimes: panel.pictureTimes)
-                    .frame(width: SpotTokens.partsWidth, height: sheet.height, alignment: .topLeading)
+                tree(sheet)
             } else if sheet.overflows {
                 ScrollView(showsIndicators: false) { canvas(sheet) }
                     .modifier(SpotArrowScroll(nudge: nudge, searches: list.landedSearches))
@@ -47,6 +46,61 @@ struct SheetPartsView: View {
         .modifier(FocusOnSelect(selectedID: selectedID, focus: focusSelectedField))
         .onChange(of: focus) { _, id in
             if !isHeld, let part = panel.parts.first(where: { $0.id == id }) { onFocus(part) }
+        }
+    }
+
+    private func tree(_ sheet: SheetPlacement) -> some View {
+        ScrollView(showsIndicators: false) {
+            NodeRoom(height: sheet.height) {
+                SheetTreeView(tree: panel.tree, pictureTimes: panel.pictureTimes)
+                    .environment(\.spotNodeParts, nodeParts)
+            }
+        }
+        .scrollBounceBehavior(.basedOnSize)
+        .modifier(SpotArrowScroll(nudge: nudge, searches: list.landedSearches))
+        .frame(width: SpotTokens.partsWidth, height: sheet.height, alignment: .topLeading)
+    }
+
+    private var nodeParts: NodeParts {
+        NodeParts(
+            part: { id, label in
+                guard let part = panel.parts.first(where: { $0.id == id }) else { return AnyView(EmptyView()) }
+                return AnyView(nodePart(part, label: label))
+            },
+            items: { room in
+                AnyView(SpotItemsView(list: list, onRun: onRun, selection: selection, onDragOut: onDragOut, room: room))
+            }
+        )
+    }
+
+    @ViewBuilder
+    private func nodePart(_ part: SpotPart, label: AnyView?) -> some View {
+        let lines = CGFloat(part.flatLines)
+        let height = SpotTokens.listRow * lines + SpotTokens.partGap * (lines - 1)
+        let frame = SheetPlacement.Frame(node: CGSize(width: SpotTokens.partsWidth, height: height), part: part)
+        Group {
+            if let label {
+                Button { onPress(part) } label: {
+                    label
+                        .spotHover(in: shape)
+                        .contentShape(shape)
+                }
+                .buttonStyle(.plain)
+            } else if part.fillsHeight {
+                GeometryReader { room in
+                    drawn(part, SheetPlacement.Frame(node: room.size, part: part))
+                }
+                .frame(minHeight: height, idealHeight: height)
+                .frame(idealWidth: SpotTokens.cell)
+            } else {
+                drawn(part, frame)
+                    .frame(maxWidth: frame.horizontal == .fill ? .infinity : nil, minHeight: height, maxHeight: .infinity, alignment: Self.alignment(frame))
+            }
+        }
+        .background {
+            if part.isFocusable {
+                Color.clear.modifier(PartRing(id: part.id, selectedID: selectedID, hasBox: label != nil || hasBox(part, frame), shape: shape))
+            }
         }
     }
 
