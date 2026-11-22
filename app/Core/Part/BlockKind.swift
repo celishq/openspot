@@ -64,7 +64,7 @@ public struct BlockKind: Sendable, Equatable {
         first.name == second.name
     }
 
-    public static let all = [text, number, picture, icon, toggle, slider, hotkey, field, choice, button]
+    public static let all = [text, number, series, picture, icon, toggle, slider, hotkey, field, choice, button]
 
     static let listWords = [items, option, box]
 
@@ -91,14 +91,41 @@ public struct BlockKind: Sendable, Equatable {
 
     public static let number = BlockKind(
         name: "number",
-        keys: ["chart"],
         holdsValue: true,
         isReading: true,
         takesColor: true,
         control: { .number(NumberReading(block: $0)) },
         faults: { block in
-            let chart = block.value("chart").flatMap { NumberLook.Chart(rawValue: $0) == nil ? $0 : nil }
-            return BlockKind.keyFaults(in: block) + (chart.map { ["the part \(block.value("number") ?? "") has an unknown chart: \($0)"] } ?? [])
+            let id = block.value("number") ?? ""
+            var faults = BlockKind.keyFaults(in: block)
+            if block.values("value").count > 1 {
+                faults.append("the number \(id) has more than one value. Print points over time as a series, with value=1,2,3")
+            }
+            if let type = block.value("type") {
+                if NumberLook(type: type) == nil {
+                    faults.append("the part \(id) has an unknown type: \(type). Use ring or bar")
+                } else if block.number("max") == nil {
+                    faults.append("the number \(id) has type=\(type), which needs a max")
+                }
+            }
+            return faults
+        }
+    )
+
+    public static let series = BlockKind(
+        name: "series",
+        keys: ["add", "keep"],
+        holdsValue: true,
+        isReading: true,
+        control: { .number(NumberReading(block: $0)) },
+        faults: { block in
+            let id = block.value("series") ?? ""
+            var faults = BlockKind.keyFaults(in: block)
+            if block.values("value").count > 1 {
+                faults.append("the series \(id) has more than one value line. Print its points on one line, as value=1,2,3")
+            }
+            if let type = block.value("type") { faults.append("the part \(id) has an unknown type: \(type)") }
+            return faults
         }
     )
 

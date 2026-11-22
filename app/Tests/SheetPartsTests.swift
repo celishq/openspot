@@ -164,7 +164,7 @@ final class SheetPartsTests: XCTestCase {
     }
 
     func testEachKindKeepsItsDataInValue() throws {
-        let parts = try panel("switch=wifi\nvalue=true\n\nfield=volume\ntype=slider\nvalue=40\nmax=100\n\nfield=name\nvalue=Ann\n\nnumber=history\nvalue=2\nvalue=4\n").parts
+        let parts = try panel("switch=wifi\nvalue=true\n\nfield=volume\ntype=slider\nvalue=40\nmax=100\n\nfield=name\nvalue=Ann\n\nseries=history\nvalue=2,4\n").parts
 
         XCTAssertEqual(parts.dropLast().map(\.control), [
             .toggle(true), .slider(level: 40, min: 0, max: 100), .text("Ann", placeholder: nil, isReadOnly: false)
@@ -384,7 +384,7 @@ final class SheetPartsTests: XCTestCase {
     }
 
     func testPointsWithNoDetailStillDrawANumberSeries() throws {
-        let part = try XCTUnwrap(try panel("number=history\nvalue=2\nvalue=4\n").parts.first)
+        let part = try XCTUnwrap(try panel("series=history\nvalue=2,4\n").parts.first)
 
         XCTAssertEqual(part.number?.points, [2, 4])
     }

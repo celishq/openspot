@@ -3,7 +3,7 @@ printf 'frame=\nclass=gap-3 items-center card:gap-part small:p-0 wide:flex-row s
 printf 'picture=cover\nclass=sheet:size-56 rounded-inner overflow-hidden card:aspect-square small:w-full wide:h-full strip:h-full large:h-full square:size-10 square:self-start\nicon=music.note\n\n'
 printf 'box=side\nclass=self-stretch gap-part small:hidden card:grow strip:flex-row strip:items-center large:justify-between\n\n'
 printf 'text=song\nparent=side\nclass=text-center sheet:font-title card:text-left strip:grow bar:flex truncate\ntitle=Midnight Drive\ndetail=Neon Coast\n\n'
-printf 'number=time\nparent=side\nclass=wide:hidden strip:hidden square:hidden\nmax=1\nchart=bar\ndisplay=1:42\nvalue=0.42\n\n'
+printf 'number=time\nparent=side\nclass=wide:hidden strip:hidden square:hidden\nmax=1\ntype=bar\ndisplay=1:42\nvalue=0.42\n\n'
 printf 'box=controls\nparent=side\nclass=flex-row justify-center gap-6 card:justify-between strip:gap-part wide:hidden\n\n'
 printf 'button=prev\nparent=controls\nclass=bg-transparent\nicon=backward.fill\nclose=false\n\n'
 printf 'button=play\nparent=controls\nclass=bg-transparent\nicon=pause.fill\nclose=false\n\n'

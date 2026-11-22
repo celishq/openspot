@@ -10,6 +10,7 @@
 		00235104392EF7291E3EFED1 /* AccountWords.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8C51593209225A5BD92A8319 /* AccountWords.swift */; };
 		0085501189CF1C5C6FAEEF32 /* HotKey.swift in Sources */ = {isa = PBXBuildFile; fileRef = 48341C1F654BB89F7DF8B4BE /* HotKey.swift */; };
 		00C72D3EEA7706AACC46640E /* SpotSetting.swift in Sources */ = {isa = PBXBuildFile; fileRef = D65F822AFBA898E8C191089E /* SpotSetting.swift */; };
+		010A3BE70759305190D12DF4 /* TextBlock+Series.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0241961BFAB0332387C87B6B /* TextBlock+Series.swift */; };
 		016180EBB1474A63C01AACF0 /* SpotResizeHandle.swift in Sources */ = {isa = PBXBuildFile; fileRef = E5A927CA5115263C48E2AEC5 /* SpotResizeHandle.swift */; };
 		01B3C3485C5C9445908FF029 /* SpotDigest.swift in Sources */ = {isa = PBXBuildFile; fileRef = 43BFE424E884BF6646A6C04D /* SpotDigest.swift */; };
 		029FD2386526907BDD5817B7 /* main.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6DFBED359F907ABF1C0A0853 /* main.swift */; };
@@ -1095,6 +1096,7 @@
 		01C1EEC4277D8DD01CEEEE19 /* SpotCalendarApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SpotCalendarApp.swift; sourceTree = "<group>"; };
 		01C491EC6E6433FEAFF51972 /* ViewPlaceTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ViewPlaceTests.swift; sourceTree = "<group>"; };
 		01ED13F3AC6E3FCA367E0219 /* UnlockPassTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UnlockPassTests.swift; sourceTree = "<group>"; };
+		0241961BFAB0332387C87B6B /* TextBlock+Series.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "TextBlock+Series.swift"; sourceTree = "<group>"; };
 		0344D30DF4D5FAD7AC93DE4D /* SpotToneWords.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SpotToneWords.swift; sourceTree = "<group>"; };
 		0375DDEA2B88EB2A7DD12FCF /* SpotRuns+Asks.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "SpotRuns+Asks.swift"; sourceTree = "<group>"; };
 		03A7832FE92C200EF4334808 /* GridPanels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GridPanels.swift; sourceTree = "<group>"; };
@@ -3482,6 +3484,7 @@
 				D32F84592CF07CB4815689AF /* SheetFrames.swift */,
 				5FC342CF6D8CA7BC3AEDE25F /* TextBlock.swift */,
 				AA986DBCCEF5FEA3BB0E8C4D /* TextBlock+Patch.swift */,
+				0241961BFAB0332387C87B6B /* TextBlock+Series.swift */,
 				60A389B0B5D357D3DAE7A43E /* WebPictures.swift */,
 			);
 			path = Frame;
@@ -4551,6 +4554,7 @@
 				E742C1590945B818A14B9E8E /* TerminalRun.swift in Sources */,
 				6C42EFED44F4D146662B4CB6 /* TerminalStop.swift in Sources */,
 				7597AD9F7BF371E4464A8C2A /* TextBlock+Patch.swift in Sources */,
+				010A3BE70759305190D12DF4 /* TextBlock+Series.swift in Sources */,
 				E0DC3624AAF337052F533A10 /* TextBlock.swift in Sources */,
 				AE8B08B308F16F9466ABBE2E /* Theme+Backdrop.swift in Sources */,
 				EFBA67FF90E4F395F41BB99C /* Theme+Colours.swift in Sources */,

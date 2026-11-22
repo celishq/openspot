@@ -7,7 +7,7 @@ printf '%s\n' "$report" | awk '
   END {
     if (line == "") line = first
     if (line == "") {
-      printf "frame=\nclass=gap-part\n\nnumber=battery\nclass=h-20 bar:flex\ntitle=Battery\ndisplay=–\ndetail=No battery\nicon=powerplug.fill\nvalue=0\nmax=100\n"
+      printf "frame=\nclass=gap-part\n\nnumber=battery\nclass=h-20 bar:flex\ntype=bar\ntitle=Battery\ndisplay=–\ndetail=No battery\nicon=powerplug.fill\nvalue=0\nmax=100\n"
       exit
     }
     $0 = line
@@ -24,5 +24,5 @@ printf '%s\n' "$report" | awk '
       tone = "good"
     }
     if (percent == 100) detail = "Full"
-    printf "frame=\nclass=gap-part\n\nnumber=battery\nclass=h-20 bar:flex\ntitle=Battery\nvalue=%d\nmax=100\nunit=%%\ndetail=%s\nicon=%s\ntone=%s\n", percent, (detail == "" ? "On battery" : detail), symbol, tone
+    printf "frame=\nclass=gap-part\n\nnumber=battery\nclass=h-20 bar:flex\ntype=bar\ntitle=Battery\nvalue=%d\nmax=100\nunit=%%\ndetail=%s\nicon=%s\ntone=%s\n", percent, (detail == "" ? "On battery" : detail), symbol, tone
   }'

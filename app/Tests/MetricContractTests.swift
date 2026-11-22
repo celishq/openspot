@@ -76,17 +76,17 @@ final class MetricContractTests: XCTestCase {
     }
 
     func testATrendScalesFromZeroToItsHighest() {
-        XCTAssertEqual(NumberReading.of("value=10\nvalue=20\nvalue=40").scaledPoints, [0.25, 0.5, 1])
-        XCTAssertEqual(NumberReading.of("value=7\nvalue=7").scaledPoints, [1, 1])
-        XCTAssertEqual(NumberReading.of("value=0\nvalue=0").scaledPoints, [0, 0])
+        XCTAssertEqual(NumberReading.series("value=10,20,40").scaledPoints, [0.25, 0.5, 1])
+        XCTAssertEqual(NumberReading.series("value=7,7").scaledPoints, [1, 1])
+        XCTAssertEqual(NumberReading.series("value=0,0").scaledPoints, [0, 0])
     }
 
     func testATrendWithATopValueScalesToIt() {
-        XCTAssertEqual(NumberReading.of("value=25\nvalue=50\nmax=100").scaledPoints, [0.25, 0.5])
+        XCTAssertEqual(NumberReading.series("value=25,50\nmax=100").scaledPoints, [0.25, 0.5])
     }
 
     func testAPointAboveTheTopValueStaysFull() {
-        XCTAssertEqual(NumberReading.of("value=50\nvalue=200\nmax=100").scaledPoints, [0.5, 1])
+        XCTAssertEqual(NumberReading.series("value=50,200\nmax=100").scaledPoints, [0.5, 1])
     }
 
     func testTheCheckReportsNoFaultsForAGoodFolder() async throws {

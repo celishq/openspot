@@ -20,11 +20,12 @@ END {
     else if (k ~ /^runs\.by\./) by = join(by, name(substr(k, 9)) " " times(x), " · ")
     else if (k ~ /^ran\./) ran = join(ran, name(substr(k, 5)) " " times(x), " · ")
   }
-  for (i = 1; i <= ndays; i++) graph = graph "value=" (days[i] == "-" ? 0 : days[i]) "\n"
+  for (i = 1; i <= ndays; i++) graph = graph (i == 1 ? "value=" : ",") (days[i] == "-" ? 0 : days[i])
+  if (graph != "") graph = graph "\n"
   d = v["seen"] > 0 ? v["seen"] : 1
   day = v["cpu"] / d
   printf "frame=spot:%s\nclass=gap-part\n\n", want
-  printf "number=acts\nclass=grow\ntitle=Acts, last 14 days\n%s\nbox=stats\nclass=grid grid-cols-2 gap-part\n\n", graph
+  printf "series=acts\nclass=grow\ntitle=Acts, last 14 days\n%s\nbox=stats\nclass=grid grid-cols-2 gap-part\n\n", graph
   printf "number=perday\nparent=stats\nvalue=%.1f\ntitle=acts a day\n\n", (counted ? v["acts"] / counted : 0)
   printf "number=cpu\nparent=stats\nvalue=%.3f\ndisplay=%s\ntitle=CPU a day\n\n", day, seconds(day)
   printf "number=answers\nparent=stats\nvalue=%s\ndisplay=%s\ntitle=Slow answers\n\n", v["p95"] + 0, (v["p95"] == "" ? "–" : seconds(v["p95"]))

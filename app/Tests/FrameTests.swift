@@ -168,13 +168,13 @@ final class FrameTests: XCTestCase {
         XCTAssertEqual(try kind("text=m\ntitle=3\n"), .value)
         XCTAssertEqual(try kind("text=m\ntitle=3\nicon=star\ntone=good\n"), .value)
         XCTAssertEqual(try kind("text=m\ntitle=Up\ntone=good\n"), .status)
-        XCTAssertEqual(try kind("number=m\nvalue=84\nmax=100\nunit=%\n"), .gauge)
-        XCTAssertEqual(try kind("number=m\nvalue=1\nvalue=2\n"), .trend)
+        XCTAssertEqual(try kind("number=m\nvalue=84\nmax=100\nunit=%\ntype=ring\n"), .gauge)
+        XCTAssertEqual(try kind("series=m\nvalue=1,2\n"), .trend)
         XCTAssertEqual(try kind("text=Build\n\ntext=Test\n"), .rows)
     }
 
-    func testANumberReadsItsBarsFromValueLines() throws {
-        let value = try XCTUnwrap(MetricValue(output: Frame(text: "number=m\nmax=10\nvalue=1\nvalue=2\n")))
+    func testASeriesReadsItsBarsFromItsValue() throws {
+        let value = try XCTUnwrap(MetricValue(output: Frame(text: "series=m\nmax=10\nvalue=1,2\n")))
 
         XCTAssertEqual(value.kind, .trend)
         XCTAssertEqual(value.number?.points, [1, 2])

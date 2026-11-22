@@ -164,6 +164,22 @@ final class SpotRunsFrameTests: SpotRunsCase {
         try await wait("the merged picture") { sheet.panel?.parts.map(\.title) == ["A", "B2"] }
     }
 
+    func testAStayingScriptAddsPointsToItsSeriesWithoutPrintingTheList() async throws {
+        try script(toml: "mode = 'stay'", """
+        while IFS= read -r line; do
+          case "$line" in
+            call=*) call=${line#call=}; printf 'call=%s\\n---\\n' "$call" ;;
+            arg=show) printf 'frame=\\nclass=gap-part\\n\\nseries=cpu\\nvalue=1,2,3\\nkeep=4\\n---\\nseries=cpu\\nadd=4\\n---\\nseries=cpu\\nadd=5,6\\n---\\nend=%s\\n---\\n' "$call" ;;
+          esac
+        done
+        """)
+        let sheet = try sheet()
+        runs.panelOpened()
+        sheet.open {}
+
+        try await wait("the points after two adds") { sheet.panel?.parts.first?.number?.points == [3, 4, 5, 6] }
+    }
+
     func testAStayingReadThatEndsWithOnlyAHeadKeepsThePictureThatCameBeforeIt() async throws {
         try script(toml: "mode = 'stay'", """
         while IFS= read -r line; do

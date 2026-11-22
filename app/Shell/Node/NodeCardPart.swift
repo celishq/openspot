@@ -9,7 +9,7 @@ struct NodeCardPart: View {
     var body: some View {
         if part.number != nil {
             GeometryReader { room in
-                SpotSlotView(part: part, height: room.size.height, look: part.numberLook(inSheet: room.size) ?? .stat, onSlot: onSlot)
+                SpotSlotView(part: part, height: room.size.height, look: part.number?.look ?? .stat, onSlot: onSlot)
             }
             .frame(idealWidth: size.width, idealHeight: size.height)
         } else {

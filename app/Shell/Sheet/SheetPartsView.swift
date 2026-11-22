@@ -401,7 +401,7 @@ struct SheetPartsView: View {
     }
 
     private func number(_ part: SpotPart, _ size: CGSize) -> some View {
-        let look = part.numberLook(inSheet: size) ?? .stat
+        let look = part.number?.look ?? .stat
         let inset = part.look == .bare ? 0 : look == .ring ? SpotTokens.partGap : SpotTokens.padding
         return SpotNumberView(part: part, look: look, font: SpotType.number, leastScale: SpotType.leastValueScale, alignment: part.look == .bare ? .trailing : .leading, inset: inset)
             .frame(width: size.width, height: size.height)

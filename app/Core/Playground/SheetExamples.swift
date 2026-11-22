@@ -141,6 +141,7 @@ public enum SheetExamples {
 
         number=status
         class=h-20
+        type=bar
         title=Converting
         detail=1:12 left
         value=62
@@ -217,15 +218,10 @@ public enum SheetExamples {
         box=chart
         class=col-span-2 relative h-32
 
-        number=history
+        series=history
         parent=chart
         class=absolute inset-0
-        value=2
-        value=4
-        value=3
-        value=6
-        value=8
-        value=5
+        value=2,4,3,6,8,5
 
         button=refresh
         parent=chart
