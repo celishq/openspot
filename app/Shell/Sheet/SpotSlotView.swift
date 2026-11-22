@@ -6,6 +6,7 @@ struct SpotSlotView: View {
     var height: CGFloat?
     var look: NumberLook = .stat
     let onSlot: (String, String?) -> Void
+    @Environment(\.spotIsOnSolid) private var isOnSolid
 
     var body: some View {
         switch part.control {
@@ -16,7 +17,8 @@ struct SpotSlotView: View {
                 .toggleStyle(.switch)
                 .controlSize(.mini)
                 .labelsHidden()
-                .tint(SpotTheme.ink)
+                .tint(ink)
+                .background(isOnSolid ? ink.opacity(SpotTheme.track) : .clear, in: Capsule())
             ViewThatFits(in: .horizontal) {
                 if part.title != nil || part.detail != nil {
                     HStack(spacing: SpotTokens.slotSwitchGap) {
@@ -48,9 +50,9 @@ struct SpotSlotView: View {
                 Button { onSlot(part.id, nil) } label: {
                     Image(systemName: symbol)
                         .font(SpotType.body.weight(.semibold))
-                        .foregroundStyle(SpotTheme.ink)
+                        .foregroundStyle(ink)
                         .frame(width: SpotTokens.slotButton, height: SpotTokens.slotButton)
-                        .background(SpotTheme.ink.opacity(part.look == .bare ? 0 : SpotTheme.chip), in: Circle())
+                        .background(ink.opacity(part.look == .bare ? 0 : SpotTheme.chip), in: Circle())
                         .contentShape(Circle())
                 }
                 .buttonStyle(.plain)
@@ -59,10 +61,10 @@ struct SpotSlotView: View {
                 Button { onSlot(part.id, nil) } label: {
                     Text(part.title ?? part.id.capitalized)
                         .font(SpotType.action)
-                        .foregroundStyle(SpotTheme.ink)
+                        .foregroundStyle(ink)
                         .padding(.horizontal, SpotTokens.slotChipPaddingX)
                         .padding(.vertical, SpotTokens.chipPaddingY)
-                        .background(SpotTheme.ink.opacity(SpotTheme.chip), in: Capsule())
+                        .background(ink.opacity(SpotTheme.chip), in: Capsule())
                 }
                 .buttonStyle(.plain)
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
@@ -72,6 +74,10 @@ struct SpotSlotView: View {
         }
     }
 
+    private var ink: Color {
+        SpotTheme.ink(onSolid: isOnSolid)
+    }
+
     private var numberSize: CGFloat {
         part.title == nil ? height.map { $0 * SpotType.slotNumberShare } ?? SpotType.slotNumberSize : SpotType.slotNumberSize
     }
@@ -79,7 +85,7 @@ struct SpotSlotView: View {
     private var words: some View {
         VStack(alignment: .leading, spacing: SpotType.lineGap) {
             if let title = part.title {
-                Text(title).font(SpotType.body).foregroundStyle(SpotTheme.ink).lineLimit(1)
+                Text(title).font(SpotType.body).foregroundStyle(ink).lineLimit(1)
             }
             if let detail = part.detail {
                 Text(detail).font(SpotType.detail).modifier(SpotSecondaryText()).lineLimit(1)
@@ -96,12 +102,13 @@ private struct SpotSlotField: View {
     let isReadOnly: Bool
     let onSubmit: (String) -> Void
     @State private var typed: String?
+    @Environment(\.spotIsOnSolid) private var isOnSolid
 
     var body: some View {
         TextField(placeholder, text: Binding(get: { typed ?? text }, set: { typed = $0 }))
             .textFieldStyle(.plain)
             .font(SpotType.body)
-            .foregroundStyle(SpotTheme.ink)
+            .foregroundStyle(SpotTheme.ink(onSolid: isOnSolid))
             .disabled(isReadOnly)
             .onSubmit {
                 if let typed { onSubmit(typed) }

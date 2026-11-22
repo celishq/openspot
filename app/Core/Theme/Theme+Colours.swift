@@ -63,6 +63,10 @@ extension Theme {
             light: (background: HexColor(text: "#FFFFFF")!, ink: HexColor(text: "#1C1C1C")!,
                     strengths: ["fill": 0.08, "selected": 0.12, "disc": 0.0, "chip": 0.1, "control": 0.09, "track": 0.12])
         )
+        public static func inkKey(onSolid: Bool) -> KeyPath<Theme.Appearance, ThemeColor> {
+            onSolid ? \.onSolid : \.ink
+        }
+
         private static let leastSecondary = 0.7
         private static let textContrast = 4.5
         private static let lightestBackdrop = HexColor(red: 1, green: 1, blue: 1)
