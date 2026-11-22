@@ -24,7 +24,11 @@ public struct ViewNode: Equatable, Sendable, Identifiable {
         self.parent = parent
         self.block = block
         var style = style
-        if kind == BlockKind.items, style.grows == nil { style.grows = true }
+        if style.grows == nil {
+            let isMultiline = kind == BlockKind.field.word && block.value("type") == "multiline"
+            let isFree = source != nil && style.height == nil && !style.isSquare
+            style.grows = block.flag("grow") ?? (kind == BlockKind.items || isMultiline || isFree ? true : nil)
+        }
         self.style = style
         self.children = children
         title = block.value("title")

@@ -166,7 +166,7 @@ final class ViewTreeTests: XCTestCase {
         XCTAssertEqual(panel.tree.children, ["head", "note"])
         XCTAssertEqual(Set(panel.parts.map(\.id)), ["wifi", "name", "forget", "note"])
         XCTAssertTrue(Frame(text: wifi).items.isEmpty)
-        XCTAssertEqual(panel.placement.height, panel.top.partsRoom)
+        XCTAssertLessThan(panel.placement.height, panel.top.partsRoom)
     }
 
     func testAFrameWithNoTreeKeepsItsGridPlacement() throws {
@@ -188,5 +188,19 @@ final class ViewTreeTests: XCTestCase {
         XCTAssertEqual(tree.node("name")?.value, "On")
         XCTAssertEqual(tree.node("name")?.tone, .good)
         XCTAssertTrue(FrameCheck(text: text).partFaults.isEmpty)
+    }
+
+    func testTheClassesOfTheItemsLayOutEachItem() {
+        let text = "frame=\nclass=gap-part\n\nitems=list\nclass=grid grid-cols-4 gap-part\n\ntext=a\nparent=list\ntitle=A\nlook=tile\n"
+
+        XCTAssertEqual(Frame(text: text).drawing, RepeatDrawing(lines: [["a", "b", "c", "d"]]))
+        XCTAssertEqual(Frame(text: "frame=\n\nitems=list\nclass=gap-part\n").drawing, .list)
+    }
+
+    func testATextWithTheSectionFontInTheItemsTitlesTheItemsAfterIt() {
+        let frame = Frame(text: "frame=\n\nitems=list\n\ntext=recent\nparent=list\ntitle=Recent\nclass=font-section\n\ntext=a\nparent=list\ntitle=A\n")
+
+        XCTAssertEqual(frame.items.map(\.run), ["a"])
+        XCTAssertEqual(frame.items.first?.section, "Recent")
     }
 }

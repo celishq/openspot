@@ -21,6 +21,7 @@ public struct SheetParts: Equatable, Sendable {
     public private(set) var tree: ViewTree
     public private(set) var placement: SheetPlacement
     public private(set) var pictureTimes: [String: Double]
+    public private(set) var rows: [[String]]
     private var focusOffsets: [Int] = []
     private var focusLineOffsets: [[Int]] = []
     public private(set) var selected: String?
@@ -34,6 +35,7 @@ public struct SheetParts: Equatable, Sendable {
         top = SheetTop(showsRows: output.layout?.repeated != nil, search: output.search, header: 0)
         placement = Self.placement(of: output.parts, in: output.layout, tree: output.tree, room: top.partsRoom)
         pictureTimes = Self.pictureTimes(of: output.parts)
+        rows = Self.rows(of: output.parts)
         orderFocus()
     }
 
@@ -45,8 +47,13 @@ public struct SheetParts: Equatable, Sendable {
         return times
     }
 
+    private static func rows(of parts: [SpotPart]) -> [[String]] {
+        parts.first { !$0.items.isEmpty }?.items ?? []
+    }
+
     private static func placement(of parts: [SpotPart], in layout: SheetLayout?, tree: ViewTree, room: CGFloat) -> SheetPlacement {
-        tree.isWritten ? SheetPlacement(filling: room) : SheetPlacement(parts: parts, layout: layout ?? SheetLayout(flat: parts), room: room)
+        guard tree.isWritten else { return SheetPlacement(parts: parts, layout: layout ?? SheetLayout(flat: parts), room: room) }
+        return SheetPlacement(filling: tree.height(in: SpotTokens.partsWidth, parts: parts).map { min($0, room) } ?? room)
     }
 
     mutating func place(top: SheetTop? = nil) {
@@ -244,6 +251,7 @@ public struct SheetParts: Equatable, Sendable {
         tree = output.tree
         if let id, let kept, let index = parts.firstIndex(where: { $0.id == id }) { parts[index].set(kept) }
         pictureTimes = Self.pictureTimes(of: parts)
+        rows = Self.rows(of: parts)
         place()
         answered = generation
         return true

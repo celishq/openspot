@@ -89,7 +89,7 @@ public struct SpotCheck: Sendable {
                 _ = try script.state(of: output)
                 if script.on?.seconds != nil, MetricValue(output: output) == nil { throw SpotError.badMetric }
                 findings += output.errors.map { found("cannot read the item \($0)") }
-                findings += Self.brokenBlocks(in: text).map(found)
+                findings += Self.brokenBlocks(in: text, kinds: script.kinds).map(found)
                 findings += check.partFaults.map(found)
                 findings += Self.moveFaults(of: output, in: script).map(found)
             } catch {
@@ -133,18 +133,20 @@ public struct SpotCheck: Sendable {
         (try? PrintForm.json(findings)) ?? "[]\n"
     }
 
-    static func brokenBlocks(in text: String) -> [String] {
+    static func brokenBlocks(in text: String, kinds: [BlockKind] = BlockKind.all) -> [String] {
         let fix = "as a value with a new line prints. Print each value from data with openspot_kv, openspot_item or esc"
         let lists: Set<String> = ["grid", "value", "hides", "color"]
         var faults: [String] = []
         let blocks = text.components(separatedBy: "\n").split { $0.isEmpty || $0 == SheetFrames.mark }
+        let views = Set(kinds.filter { $0.source != nil }.map(\.word))
         for block in blocks {
             let name = block.first ?? ""
+            let isView = views.contains(name.split(separator: "=", maxSplits: 1).first.map(String.init) ?? "")
             if block.contains(where: { !$0.contains("=") }) { faults.append("the block \(name) has a line with no =, \(fix)") }
             var seen: Set<String> = []
             var told: Set<String> = []
             for line in block {
-                guard let key = line.split(separator: "=", maxSplits: 1).first.map(String.init), !lists.contains(key), !RootKey.isDrawing(key) else { continue }
+                guard !isView, let key = line.split(separator: "=", maxSplits: 1).first.map(String.init), !lists.contains(key), !RootKey.isDrawing(key) else { continue }
                 if !seen.insert(key).inserted, told.insert(key).inserted { faults.append("the block \(name) has \(key) twice, \(fix)") }
             }
         }

@@ -67,6 +67,16 @@ final class BoxLayoutTests: XCTestCase {
         ])
     }
 
+    func testAnAbsoluteChildPinsToTheOuterEdgeOfItsBoxPastItsPadding() {
+        let placed = place("relative p-3", [block(50, 20), block(10, 10, "absolute inset-0"), block(8, 8, "absolute bottom-0 right-0")])
+
+        XCTAssertEqual(placed.size, CGSize(width: 100, height: 20))
+        XCTAssertEqual(placed.frames[1], CGRect(x: -12, y: -12, width: 124, height: 44))
+        XCTAssertEqual(placed.frames[2], CGRect(x: 104, y: 24, width: 8, height: 8))
+        let outset = BoxLayout(style: Style(classes: "relative"), outset: 4).place([block(50, 20), block(10, 10, "absolute inset-0")], width: 100, height: nil)
+        XCTAssertEqual(outset.frames[1], CGRect(x: -4, y: -4, width: 108, height: 28))
+    }
+
     func testAGridPlacesItsChildrenInEqualColumnsAndSpans() {
         let placed = place("grid grid-cols-2 gap-2", [block(10, 10, "col-span-2"), block(10, 10), block(10, 14)], width: 108)
 

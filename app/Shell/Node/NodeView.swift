@@ -29,7 +29,7 @@ struct NodeView: View {
         case BlockKind.box: NodeBox(children: node.children, style: style, tree: tree)
         case "text": NodeText(title: node.title ?? node.value, detail: node.detail, tone: node.tone, symbol: node.icon?.symbol)
         case "icon": NodeIcon(icon: node.icon)
-        case "picture": NodePicture(path: node.icon?.image)
+        case "picture": NodePicture(icon: node.icon)
         case "button" where !node.children.isEmpty: NodePart(id: node.id, label: AnyView(NodeBox(children: node.children, style: style, tree: tree)))
         case "button", "field", "switch", "choice", "number": NodePart(id: node.id, label: nil)
         case BlockKind.items: NodeItems()

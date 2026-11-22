@@ -28,7 +28,7 @@ public struct CardFace: Equatable, Sendable {
             guard Self.places.contains(place) else { continue }
             drawings[place, default: []].append(field.value.split(whereSeparator: \.isWhitespace).map(String.init))
         }
-        self.init(drawings: drawings, parts: drawings.isEmpty ? parts.filter { $0.isOpen } : parts, tree: tree)
+        self.init(drawings: drawings, parts: drawings.isEmpty && tree.places.isEmpty ? parts.filter { $0.isOpen } : parts, tree: tree)
     }
 
     public func drawing(for size: SpotSize) -> [[String]]? {
@@ -41,7 +41,9 @@ public struct CardFace: Equatable, Sendable {
     }
 
     public var answerSize: SpotSize? {
-        [SpotSize.large, .strip].first { drawings[$0.name] != nil }
+        [SpotSize.large, .strip].first { size in
+            drawings[size.name] != nil || Style.Variant(size: size).map(tree.places.contains) == true
+        }
     }
 
     public var hasView: Bool {

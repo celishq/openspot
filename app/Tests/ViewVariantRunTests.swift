@@ -5,7 +5,8 @@ import XCTest
 final class ViewVariantRunTests: SpotRunsCase {
     func testAPressOnACardThatShowsOnlyOneSwitchChangesThatSwitch() async throws {
         try script(toml: "on = ['panel.open']", """
-        [ "$1" = show ] && printf 'frame=\\nclass=gap-2\\n\\ntext=label\\ntitle=Lamp\\nclass=card:hidden\\n\\nswitch=power\\nvalue=false\\n'
+        [ "$1" = power ] && echo "$2" > '\(path("power"))'
+        [ "$1" = show ] && printf 'frame=\\nclass=gap-2\\n\\ntext=label\\ntitle=Lamp\\nclass=card:hidden\\n\\nswitch=power\\nvalue=%s\\n' "$(cat '\(path("power"))' 2>/dev/null || echo false)"
         exit 0
         """)
         let sheet = try sheet()
@@ -15,7 +16,7 @@ final class ViewVariantRunTests: SpotRunsCase {
         sheet.pressCard()
 
         try await wait("the call") { self.log().starts(with: ["show", "power true"]) }
-        XCTAssertEqual(sheet.state.on, true)
+        try await wait("the switch shows on after the show it asks again") { self.log().count >= 3 && sheet.state.on == true }
     }
 
     func testTheMenuBarReadsTheValueThatShowsOnTheBar() async throws {

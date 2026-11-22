@@ -18,9 +18,11 @@ public struct BoxLayout {
     }
 
     public let style: Style
+    public let outset: CGFloat
 
-    public init(style: Style) {
+    public init(style: Style, outset: CGFloat = 0) {
         self.style = style
+        self.outset = outset
     }
 
     public func place(_ children: [Child], width: CGFloat?, height: CGFloat?) -> Placement {
@@ -31,9 +33,10 @@ public struct BoxLayout {
             : style.arrangement == .row ? row(flow, width: width, height: height) : column(flow, width: width, height: height)
         var frames = Array(repeating: CGRect.zero, count: children.count)
         for (offset, index) in flowing.enumerated() { frames[index] = placed[offset] }
-        let room = CGSize(width: width ?? size.width, height: height ?? size.height)
+        let side = { (edge: Style.Edge) in (style.padding[edge]?.points(of: 0) ?? 0) + outset }
+        let room = CGSize(width: (width ?? size.width) + side(.left) + side(.right), height: (height ?? size.height) + side(.top) + side(.bottom))
         for index in children.indices where children[index].style.isAbsolute {
-            frames[index] = Self.pinned(children[index], in: room)
+            frames[index] = Self.pinned(children[index], in: room).offsetBy(dx: -side(.left), dy: -side(.top))
         }
         return Placement(size: size, frames: frames)
     }

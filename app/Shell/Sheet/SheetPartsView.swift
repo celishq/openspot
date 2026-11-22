@@ -63,11 +63,14 @@ struct SheetPartsView: View {
                 SheetTreeView(tree: panel.tree, pictureTimes: panel.pictureTimes)
                     .environment(\.spotNodeParts, nodeParts)
                     .environment(\.spotNodeSend, send)
+                    .environment(\.spotNodeViewInput, NodeViewInput(items: panel.rows, answers: panel.answered, selection: selectedRun))
             }
+            .padding(SpotTokens.padding)
         }
         .scrollBounceBehavior(.basedOnSize)
         .modifier(SpotArrowScroll(nudge: nudge, searches: list.landedSearches))
-        .frame(width: SpotTokens.partsWidth, height: sheet.height, alignment: .topLeading)
+        .frame(width: SpotTokens.partsWidth + 2 * SpotTokens.padding, height: sheet.height + 2 * SpotTokens.padding, alignment: .topLeading)
+        .padding(-SpotTokens.padding)
     }
 
     private var nodeParts: NodeParts {

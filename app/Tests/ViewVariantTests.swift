@@ -132,4 +132,30 @@ final class ViewVariantTests: XCTestCase {
         XCTAssertTrue(face.tree.draws(on: .square))
         XCTAssertFalse(Frame(text: "frame=\ngrid.wide=a\n\ntext=a\ntitle=A\n").face.tree.draws(on: .wide))
     }
+
+    func testAClassThatNamesTheBarOnAnyBlockDrawsTheMenuBar() {
+        let output = Frame(text: "number=battery\nvalue=84\nmax=100\nclass=bar:flex\n\ntext=a\ntitle=A\n")
+
+        XCTAssertFalse(output.tree.isWritten)
+        XCTAssertTrue(output.hasBar)
+        XCTAssertEqual(MetricValue(output: output.barred)?.title, "84")
+    }
+
+    func testAClassThatNamesACardOnAnyBlockDrawsTheTreeOnTheCard() {
+        let output = Frame(text: "number=battery\nvalue=84\nmax=100\n\ntext=a\ntitle=A\nclass=card:hidden\n")
+
+        XCTAssertTrue(output.face.tree.draws(on: .square))
+        XCTAssertEqual(output.value?.value("number"), "battery")
+    }
+
+    func testAClassThatNamesALargeOrAStripCardAnswersTheMainSearchWithOneCard() {
+        let large = Frame(text: "frame=\nclass=large:p-2\n\nnumber=sum\nvalue=42\n")
+        let strip = Frame(text: "number=sum\nvalue=42\nclass=strip:flex\n")
+        let sheet = Frame(text: "frame=\nclass=wide:p-2\n\nnumber=sum\nvalue=42\n")
+
+        XCTAssertEqual(large.face.answerSize, .large)
+        XCTAssertEqual(strip.face.answerSize, .strip)
+        XCTAssertNil(sheet.face.answerSize)
+        XCTAssertEqual(large.answers.map(\.run), ["42"])
+    }
 }

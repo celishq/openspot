@@ -19,6 +19,8 @@ extension SpotTokens {
     public static let offScreen = CGPoint(x: -9000, y: -9000)
     public static let scrollFadeLength = 56.0
     public static let scrollFadeDistance = 24.0
+    public static let textLeading: CGFloat = 3
+    public static let textLineGap: CGFloat = 1
 
     public static let toastMargin: CGFloat = 16
     public static let toastMaxSize = CGSize(width: 560, height: 120)

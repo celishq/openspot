@@ -12,6 +12,7 @@ struct SpotCustomView: View, @MainActor Equatable {
     var date: Date?
     let views: SpotViews
     var send: ((String) -> Void)?
+    var namesCard = false
     @Environment(\.spotIsShown) private var isShown
     @Environment(\.spotMoves) private var moves
     @Environment(\.spotCards) private var cards
@@ -22,7 +23,7 @@ struct SpotCustomView: View, @MainActor Equatable {
 
     static func == (lhs: Self, rhs: Self) -> Bool {
         lhs.source == rhs.source && lhs.values == rhs.values && lhs.items == rhs.items && lhs.card == rhs.card && lhs.room == rhs.room && lhs.answers == rhs.answers && lhs.selection == rhs.selection && lhs.date == rhs.date && lhs.views === rhs.views
-            && (lhs.send == nil) == (rhs.send == nil)
+            && lhs.namesCard == rhs.namesCard && (lhs.send == nil) == (rhs.send == nil)
     }
 
     private var size: CGSize {
@@ -108,7 +109,7 @@ struct SpotCustomView: View, @MainActor Equatable {
             "close": close,
             "bodyTime": bodyTime,
             "size": size,
-            "cardName": (room == nil ? card.name : nil) as Any,
+            "cardName": (room == nil || namesCard ? card.name : nil) as Any,
             "answers": answers,
             "inset": SpotTokens.padding,
             "corner": corner,
