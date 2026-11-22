@@ -85,6 +85,7 @@ extension SpotTokens {
     public static let narrowCell: CGFloat = 80
     public static let narrowGap: CGFloat = 2
     public static let partSymbolWidth: CGFloat = 22
+    public static let nodeBorder: CGFloat = 1
     public static let chipPaddingY: CGFloat = 5
     public static let choiceChevronGap: CGFloat = 4
     public static let choicePaddingX: CGFloat = 10

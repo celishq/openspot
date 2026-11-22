@@ -18,6 +18,7 @@ public struct SheetParts: Equatable, Sendable {
     public private(set) var generation = 0
     public private(set) var answered = 0
     public private(set) var layout: SheetLayout?
+    public private(set) var tree: ViewTree
     public private(set) var placement: SheetPlacement
     public private(set) var pictureTimes: [String: Double]
     private var focusOffsets: [Int] = []
@@ -29,8 +30,9 @@ public struct SheetParts: Equatable, Sendable {
         guard !output.parts.isEmpty else { return nil }
         parts = output.parts
         layout = output.layout
+        tree = output.tree
         top = SheetTop(showsRows: output.layout?.repeated != nil, search: output.search, header: 0)
-        placement = Self.placement(of: output.parts, in: output.layout, room: top.partsRoom)
+        placement = Self.placement(of: output.parts, in: output.layout, tree: output.tree, room: top.partsRoom)
         pictureTimes = Self.pictureTimes(of: output.parts)
         orderFocus()
     }
@@ -43,13 +45,13 @@ public struct SheetParts: Equatable, Sendable {
         return times
     }
 
-    private static func placement(of parts: [SpotPart], in layout: SheetLayout?, room: CGFloat) -> SheetPlacement {
-        SheetPlacement(parts: parts, layout: layout ?? SheetLayout(flat: parts), room: room)
+    private static func placement(of parts: [SpotPart], in layout: SheetLayout?, tree: ViewTree, room: CGFloat) -> SheetPlacement {
+        tree.isWritten ? SheetPlacement(filling: room) : SheetPlacement(parts: parts, layout: layout ?? SheetLayout(flat: parts), room: room)
     }
 
     mutating func place(top: SheetTop? = nil) {
         if let top { self.top = top }
-        placement = Self.placement(of: parts, in: layout, room: self.top.partsRoom)
+        placement = Self.placement(of: parts, in: layout, tree: tree, room: self.top.partsRoom)
         orderFocus()
     }
 
@@ -199,6 +201,7 @@ public struct SheetParts: Equatable, Sendable {
         let kept = parts.first { $0.id == id }?.value
         parts = output.parts
         layout = output.layout
+        tree = output.tree
         if let id, let kept, let index = parts.firstIndex(where: { $0.id == id }) { parts[index].set(kept) }
         pictureTimes = Self.pictureTimes(of: parts)
         place()

@@ -77,7 +77,7 @@ public struct Frame: Equatable, Sendable {
         let repeats = blocks.filter { $0.fields.first?.key == BlockKind.repeated }
         let repeated = repeats.first.flatMap { block in block.value(BlockKind.repeated).map { (block, $0) } }
         if let (block, _) = repeated { drawing = RepeatDrawing(block: block) }
-        let placed = Self.placed(by: head)
+        let placed = Self.placed(by: head).union(tree.isWritten ? Set(tree.nodes.keys) : [])
         let inSheet = head.flatMap { SheetLayout(block: $0) }.map { Set($0.areas.keys) }
         var runs = Set<String>()
         var listed: [TextBlock] = []

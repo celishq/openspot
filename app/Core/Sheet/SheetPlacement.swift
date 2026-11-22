@@ -30,6 +30,14 @@ public struct SheetPlacement: Equatable, Sendable {
         height > room
     }
 
+    public init(filling room: CGFloat) {
+        frames = [:]
+        lines = []
+        height = room
+        repeatFrame = nil
+        self.room = room
+    }
+
     public init(parts: [SpotPart], layout: SheetLayout, room: CGFloat = SpotTokens.partsMaxHeight) {
         let rows = layout.rows
         let gap = SpotTokens.partGap

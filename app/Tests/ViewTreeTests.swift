@@ -120,7 +120,45 @@ final class ViewTreeTests: XCTestCase {
         let frame = Frame(text: "frame=\n\nbox=head\nclass=flex-row\n\ntext=name\nparent=head\ntitle=Home\n")
 
         XCTAssertTrue(frame.errors.isEmpty)
-        XCTAssertEqual(frame.items.map(\.run), ["name"])
+        XCTAssertEqual(frame.parts.map(\.id), ["name"])
         XCTAssertTrue(FrameCheck(text: "frame=\n\nbox=head\n\ntext=name\nparent=head\ntitle=Home\n").partFaults.isEmpty)
+    }
+
+    func testAWrittenTreeDrawsEachNodeInTheSheetAndNoneAsAnItem() throws {
+        let panel = try XCTUnwrap(SheetParts(output: Frame(text: wifi)))
+
+        XCTAssertTrue(panel.tree.isWritten)
+        XCTAssertEqual(panel.tree.children, ["head", "note"])
+        XCTAssertEqual(Set(panel.parts.map(\.id)), ["wifi", "name", "forget", "note"])
+        XCTAssertTrue(Frame(text: wifi).items.isEmpty)
+        XCTAssertEqual(panel.placement.height, panel.top.partsRoom)
+    }
+
+    func testAFrameWithNoTreeKeepsItsGridPlacement() throws {
+        let panel = try XCTUnwrap(SheetParts(output: Frame(text: "frame=\ngrid=a\n\ntext=a\ntitle=Alpha\n")))
+
+        XCTAssertFalse(panel.tree.isWritten)
+        XCTAssertEqual(panel.placement.height, SpotTokens.listRow)
+    }
+
+    func testANodeKeepsItsWordsAndItsIcon() {
+        let text = "frame=\nclass=gap-2\n\nicon=wifi\nvalue=wifi\n\nicon=cup\nvalue=cups.png\n\ntext=name\ntitle=Home\ndetail=82 Mb/s\nvalue=On\ntone=good\n"
+        let tree = Frame(text: text).tree
+
+        XCTAssertEqual(tree.node("wifi")?.kind, "icon")
+        XCTAssertEqual(tree.node("wifi")?.icon, .symbol("wifi"))
+        XCTAssertEqual(tree.node("cup")?.icon, .image("cups.png"))
+        XCTAssertEqual(tree.node("name")?.title, "Home")
+        XCTAssertEqual(tree.node("name")?.detail, "82 Mb/s")
+        XCTAssertEqual(tree.node("name")?.value, "On")
+        XCTAssertEqual(tree.node("name")?.tone, .good)
+        XCTAssertTrue(FrameCheck(text: text).partFaults.isEmpty)
+    }
+
+    func testAStyleInASheetLeavesItsVariantsUnapplied() {
+        let style = Style(classes: "p-3 card:p-0 dark:hidden")
+
+        XCTAssertEqual(style.resolved(for: [.sheet, .dark]).padding[.top], .steps(3))
+        XCTAssertNil(style.resolved(for: [.sheet, .dark]).isHidden)
     }
 }

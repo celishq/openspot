@@ -53,7 +53,7 @@ public struct BlockKind: Sendable, Equatable {
         first.name == second.name
     }
 
-    public static let all = [text, number, picture, view, toggle, slider, hotkey, field, choice, button, section]
+    public static let all = [text, number, picture, icon, view, toggle, slider, hotkey, field, choice, button, section]
 
     static let listWords = [repeated, option, box]
 
@@ -92,6 +92,8 @@ public struct BlockKind: Sendable, Equatable {
     )
 
     static let picture = BlockKind(name: "picture", control: { Icon(text: $0.value("icon"))?.image.map(SpotPart.Control.image) ?? .none })
+
+    static let icon = BlockKind(name: "icon")
 
     static let view = BlockKind(name: "view", isOpen: true)
 
