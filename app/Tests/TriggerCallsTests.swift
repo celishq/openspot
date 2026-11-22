@@ -41,6 +41,20 @@ final class TriggerCallsTests: SpotRunsCase {
         try await wait("the show of the open") { self.calls.contains("show|input.event=panel.open ") }
     }
 
+    func testASpotReadsItsOwnSecretWithSettingGet() async throws {
+        takeCalls()
+        try AppPlaces.test(["OPENSPOT_CONFIG": folder.path]).secrets.keep("MARKER-5b1e", key: "token", of: "script")
+        try script(toml: "[settings]\ntoken = { type = 'secret' }\n[on]\n\"sheet.open\" = true", """
+        '\(client)' setting get token > '\(path("read"))'
+        printf 'text=a\\ntitle=A\\n'
+        """)
+        let sheet = try sheet()
+
+        sheet.open {}
+
+        try await wait("the read") { self.log("read") == ["MARKER-5b1e"] }
+    }
+
     func testACommandCallsCommandWithItsNameAndText() async throws {
         let sheet = try spot("command = [\"snooze\"]")
 

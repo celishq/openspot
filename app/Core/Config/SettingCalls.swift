@@ -5,14 +5,15 @@ struct SettingCalls {
     let caller: String?
     let app: (any RunningApp)?
     let secrets: SecretStore
+    var channel: String?
 
     func get(_ key: String, of spot: String) -> CommandAPI.Work {
-        CommandAnswer.work { [places, secrets] in
+        CommandAnswer.work { [places, secrets, channel] in
             let config = places.config.read()
             if let act = GlobalKey.Act(setting: key) {
                 return config.keys.first { $0.spot == spot && $0.act == act }.map { $0.trigger.text + "\n" } ?? ""
             }
-            if try secrets.read()[spot]?[key] != nil { return FieldValues.hidden + "\n" }
+            if let secret = try secrets.read()[spot]?[key] { return (channel == spot ? secret : FieldValues.hidden) + "\n" }
             return config.setting(key, of: spot).map { $0 + "\n" } ?? ""
         }
     }
