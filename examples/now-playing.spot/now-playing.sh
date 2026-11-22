@@ -5,13 +5,13 @@ cover="$OPENSPOT_DATA/cover.jpg"
 # Prints the card: the cover, the song and its artist, how far it played, and the controls. It takes the title, the
 # artist, the share played from 0 to 1, the time played, whether it plays, and the path of the cover.
 card() {
-  printf 'frame=\ngrid.large=cover cover cover song song song\ngrid.large=cover cover cover time time time\ngrid.large=cover cover cover prev play next\ngrid.bar=song\n\n'
-  printf 'picture=cover\n'; openspot_kv icon "$6"; printf '\n'
-  printf 'text=song\n'; openspot_kv title "$1"; openspot_kv detail "$2"; printf '\n'
-  printf 'number=time\nmax=1\nchart=bar\n'; openspot_kv display "$4"; openspot_kv value "$3"; printf '\n'
-  printf 'button=prev\ntitle=Previous\nicon=backward.fill\nlook=bare\nclose=false\n\n'
-  if [ "$5" = playing ]; then printf 'button=play\ntitle=Pause\nicon=pause.fill\nlook=bare\nclose=false\n\n'; else printf 'button=play\ntitle=Play\nicon=play.fill\nlook=bare\nclose=false\n\n'; fi
-  printf 'button=next\ntitle=Next\nicon=forward.fill\nlook=bare\nclose=false\n'
+  printf 'frame=\nclass=gap-part large:flex-row\n\n'
+  printf 'picture=cover\nclass=large:w-1/2 large:aspect-square\n'; openspot_kv icon "$6"; printf '\n'
+  printf 'box=side\nclass=gap-part large:grow\n\ntext=song\nparent=side\nclass=bar:flex\n'; openspot_kv title "$1"; openspot_kv detail "$2"; printf '\n'
+  printf 'number=time\nparent=side\nmax=1\nchart=bar\n'; openspot_kv display "$4"; openspot_kv value "$3"; printf '\n'
+  printf 'box=controls\nparent=side\nclass=gap-part large:flex-row large:justify-between\n\nbutton=prev\nparent=controls\ntitle=Previous\nicon=backward.fill\nlook=bare\nclose=false\n\n'
+  if [ "$5" = playing ]; then printf 'button=play\nparent=controls\ntitle=Pause\nicon=pause.fill\nlook=bare\nclose=false\n\n'; else printf 'button=play\nparent=controls\ntitle=Play\nicon=play.fill\nlook=bare\nclose=false\n\n'; fi
+  printf 'button=next\nparent=controls\ntitle=Next\nicon=forward.fill\nlook=bare\nclose=false\n'
 }
 
 # Asks Music for one value of the current song, only while Music runs, so that a read never opens it.
@@ -23,7 +23,7 @@ case "$1" in
   show)
     state=$(music "player state as text")
     if [ -z "$state" ] || [ "$state" = stopped ]; then
-      printf 'frame=\ngrid.bar=song\n\ntext=song\ntitle=Nothing playing\ndetail=Open Music to play a song\n'
+      printf 'frame=\nclass=gap-part\n\ntext=song\nclass=bar:flex\ntitle=Nothing playing\ndetail=Open Music to play a song\n'
       exit 0
     fi
     name=$(music "name of current track")

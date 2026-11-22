@@ -25,26 +25,33 @@ final class ItemsTests: PanelCase {
         try XCTUnwrap(model.openItems?.shown.first { $0.run == run })
     }
 
-    func testATextThatTheGridDoesNotPlaceIsAnItemAndAButtonOrASectionKeepsItsRole() {
+    func testABlockInsideTheItemsIsAnItemAndAButtonOrASectionTitleKeepsItsRole() {
         let output = Frame(text: """
         frame=
-        grid=head
+        class=gap-part
 
         text=head
         title=Photos
 
+        items=list
+
         text=beach
+        parent=list
         title=Beach.jpg
         detail=Photo
         icon=photo
 
         button=delete
+        parent=list
         title=Delete
 
-        section=later
+        text=later
+        parent=list
+        class=font-section
         title=Later
 
         switch=sync
+        parent=list
         title=Sync
         value=true
         """)
@@ -57,23 +64,24 @@ final class ItemsTests: PanelCase {
         XCTAssertEqual(output.errors, [])
     }
 
-    func testABlockThatOnlyASizePlacesStaysOutOfASheetWithItsOwnGrid() {
+    func testABlockThatOnlyTheBarShowsStaysOutOfTheSheet() {
         let output = Frame(text: """
         frame=
-        grid=items
-        grid.bar=count
+        class=gap-part
 
         number=count
         value=5
         title=Pull requests
+        class=hidden bar:flex
 
-        repeat=items
+        items=items
 
         text=a
+        parent=items
         title=A
         """)
 
-        XCTAssertEqual(output.parts.map(\.id), [])
+        XCTAssertEqual(output.tree.shown(in: [.sheet]), ["items", "a"])
         XCTAssertEqual(output.items.map(\.run), ["a"])
         XCTAssertEqual(output.barred.metric?.value("value"), "5")
     }
@@ -100,14 +108,14 @@ final class ItemsTests: PanelCase {
     }
 
     func testAnItemWithTheTileLookShowsItsWordsInItsCell() {
-        let output = Frame(text: "frame=\ngrid=times\n\nrepeat=times\ngrid=a b c\n\ntext=later\ntitle=Later\ndetail=17:20\nicon=cup.and.saucer.fill\nlook=tile\n\ntext=star\ntitle=Star\nicon=star\n")
+        let output = Frame(text: "frame=\nclass=gap-part\n\nitems=times\nclass=grid grid-cols-3\n\ntext=later\nparent=times\ntitle=Later\ndetail=17:20\nicon=cup.and.saucer.fill\nlook=tile\n\ntext=star\nparent=times\ntitle=Star\nicon=star\n")
 
         XCTAssertEqual(output.items.map(\.look), [.tile, nil])
     }
 
     func testASheetOfThreeLinesOfTilesFitsItsLines() async throws {
-        let tiles = (1...9).map { "text=t\($0)\ntitle=T\($0)\ndetail=D\nicon=star\nlook=tile\n" }.joined(separator: "\n")
-        try await open("frame=\ngrid=tiles\n\nrepeat=tiles\ngrid=a b c\n\n\(tiles)")
+        let tiles = (1...9).map { "text=t\($0)\nparent=tiles\ntitle=T\($0)\ndetail=D\nicon=star\nlook=tile\n" }.joined(separator: "\n")
+        try await open("frame=\nclass=gap-part\n\nitems=tiles\nclass=grid grid-cols-3\n\n\(tiles)")
 
         let sheet = try XCTUnwrap(model.sheets["items"]).sheetRect
         let lines = 3 * SpotTokens.square(perLine: 3) + 2 * SpotTokens.listRowGap
@@ -129,9 +137,9 @@ final class ItemsTests: PanelCase {
         XCTAssertEqual(output.errors, ["row=a"])
     }
 
-    func testWithNoGridTheSheetIsASearchFieldOverEachBlock() {
+    func testWithNoTreeTheSheetIsASearchFieldOverEachBlock() {
         let output = Frame(text: "text=a\ntitle=A\n\nfield=name\ntitle=Name\n")
-        let placed = Frame(text: "frame=\ngrid=a\n\ntext=a\ntitle=A\n\ntext=b\ntitle=B\n")
+        let placed = Frame(text: "frame=\nclass=gap-part\n\ntext=a\ntitle=A\n\nitems=list\n\ntext=b\nparent=list\ntitle=B\n")
 
         XCTAssertEqual(output.parts, [])
         XCTAssertEqual(output.items.map(\.run), ["a", "name"])
@@ -141,11 +149,11 @@ final class ItemsTests: PanelCase {
     }
 
     func testASearchFieldFiltersInsideOpenspot() {
-        let local = Frame(text: "frame=\ngrid=find\ngrid=a\n\nfield=find\ntype=search\n\ntext=a\ntitle=A\n\ntext=b\ntitle=B\n")
+        let local = Frame(text: "frame=\nclass=gap-part\n\nfield=find\ntype=search\n\ntext=a\ntitle=A\n\nitems=list\n\ntext=b\nparent=list\ntitle=B\n")
 
         XCTAssertEqual(local.search, .local)
         XCTAssertEqual(local.items.map(\.run), ["b"])
-        XCTAssertEqual(local.layout?.rows, [["a"], [Frame.itemsArea]])
+        XCTAssertEqual(local.parts.map(\.id), ["a"])
     }
 
     func testFilterOnASearchFieldIsAnUnknownKey() {

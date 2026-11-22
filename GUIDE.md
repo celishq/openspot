@@ -162,11 +162,13 @@ The first block, `frame=`, is the **root**: it isn't drawn, and its `detail` bec
 The `text` block is the card's **value**, since it's the only one.
 
 The user can also put the spot in the menu bar, next to the clock, from its Settings, which `⌘⏎` on its card opens.
-There it shows its icon, until the root lays out the menu bar with a `grid.bar=` line:
+There it shows its icon, until a class of a block names `bar:`, the [variant](PROTOCOL.md#variants) of the menu bar.
+Add it to the `text` block, and the menu bar shows its title:
 
 ```ini
-frame=
-grid.bar=free
+text=free
+title=256Gi free
+class=bar:flex
 ```
 
 A spot with a clock stays off the grid until the user adds it, so that a new spot doesn't fill the panel.
@@ -269,6 +271,33 @@ esac
 Select **Report.pdf** and press ⌘O, and `value item.path` prints the path that the item holds.
 
 Learn more in [Buttons and actions](PROTOCOL.md#buttons-and-actions).
+
+## Lay out a sheet
+
+A layout puts blocks side by side, in a grid or over each other. Put a block inside a `box` with `parent`, and give the
+box classes, the words of Tailwind CSS, such as `flex-row` for a row.
+
+```toml
+title = "Wi-Fi"
+icon = "wifi"
+```
+
+```sh
+#!/bin/sh
+printf 'frame=\nclass=gap-part\n\nbox=head\nclass=flex-row items-center gap-2\n\n'
+printf 'icon=wifi\nparent=head\nvalue=wifi\nclass=text-accent\n\n'
+printf 'text=name\nparent=head\ntitle=Home\ndetail=82 Mb/s\nclass=grow\n\n'
+printf 'button=forget\nparent=head\ntitle=Forget\nlook=chip\n'
+```
+
+The sheet shows one row: the Wi-Fi icon in the accent colour, **Home** with **82 Mb/s** under it, and a **Forget** chip
+at the end. `grow` gives the free width to the words, so the chip sits at the edge. Press **Forget**, and Openspot runs
+`wi-fi.sh forget`.
+
+A class can name a place or a state before it, such as `card:hidden` or `hover:bg-tile`, and then it applies only
+there. One frame draws the sheet and each card that way.
+
+Learn more in [Layouts](PROTOCOL.md#layouts), [Classes](PROTOCOL.md#classes) and [Variants](PROTOCOL.md#variants).
 
 ## Ask for values
 
@@ -504,21 +533,21 @@ Learn more in [A Swift spot](PROTOCOL.md#a-swift-spot).
 
 ## Draw your own view
 
-A view draws what blocks can't. Name a SwiftUI file with `view` in the manifest, and print a `view` block where
-it draws. The view reads the keys of its block, and the rows of the frame.
+A view draws what blocks can't. Name a SwiftUI file in `views` in the manifest, and the file's name becomes a kind of
+block: `week.swift` draws each `week` block. The view reads the keys of its block.
 
 ```toml
 title = "Cups this week"
 icon = "chart.bar"
-view = "week.swift"
+views = ["week.swift"]
 ```
 
 ```sh
 #!/bin/sh
-printf 'frame=\ngrid=week\n\nview=week\n\n'
-printf 'text=mon\ntitle=Monday\ncups=3\n\n'
-printf 'text=tue\ntitle=Tuesday\ncups=1\n\n'
-printf 'text=wed\ntitle=Wednesday\ncups=2\n'
+printf 'frame=\nclass=gap-part\n\nweek=chart\nvalue=3\nvalue=1\nvalue=2\nclass=h-16\n\nitems=days\n\n'
+printf 'text=mon\nparent=days\ntitle=Monday\n\n'
+printf 'text=tue\nparent=days\ntitle=Tuesday\n\n'
+printf 'text=wed\nparent=days\ntitle=Wednesday\n'
 ```
 
 ```swift
@@ -529,10 +558,10 @@ struct SpotView: View {
 
     var body: some View {
         HStack(alignment: .bottom, spacing: 8) {
-            ForEach(spot.items) { row in
+            ForEach(Array(spot.all("value").enumerated()), id: \.offset) { _, cups in
                 RoundedRectangle(cornerRadius: 4)
                     .fill(spot.accent)
-                    .frame(width: 28, height: 16 * CGFloat(Int(row["cups"] ?? "") ?? 0))
+                    .frame(width: 28, height: 16 * CGFloat(Int(cups) ?? 0))
             }
             Spacer()
             Image(systemName: "cup.and.saucer.fill")
@@ -546,9 +575,9 @@ struct SpotView: View {
 
 ![The sheet of Cups this week: three bars, a cup and a Done button over the rows Monday, Tuesday and Wednesday](docs/images/own-view.png)
 
-`spot.items` holds each item with its keys, so the bars need no second copy of the data. In a sheet, Openspot draws the
-items under the view, which the layout places. `spot.isShown` is false while the panel is hidden: stop a motion or a timer then, as the cup stops
-its pulse. `spot.close()` closes the sheet, as Esc does.
+`spot.all("value")` gives each `value` line of the block, one bar for each day. The view is 16 steps tall, by `h-16`, and the
+items fill the sheet under it. `spot.isShown` is false while the panel is hidden: stop a motion or a timer then, as the
+cup stops its pulse. `spot.close()` closes the sheet, as Esc does.
 
 Learn more in [Views](PROTOCOL.md#views).
 
@@ -560,12 +589,12 @@ you [change the look](#change-the-look-of-openspot).
 ```toml
 title = "Steps"
 icon = "figure.walk"
-view = "steps.swift"
+views = ["steps.swift"]
 ```
 
 ```sh
 #!/bin/sh
-printf 'frame=\ngrid=steps\n\nview=steps\nvalue=6200\ngoal=10000\n'
+printf 'frame=\nclass=gap-part\n\nsteps=today\nvalue=6200\ngoal=10000\nclass=h-24\n'
 ```
 
 ```swift

@@ -92,7 +92,7 @@ final class SampleSpotsTests: SampleSpotsCase {
 
             XCTAssertTrue(self.toasts(in: folder).contains("Sent"), "\(self.toasts(in: folder))")
             XCTAssertTrue(self.toasts(in: folder).contains("hello"), "\(self.toasts(in: folder))")
-            XCTAssertTrue(seen.contains { $0.contains("text=last\ntitle=hello\ndetail=From a peer") }, "\(seen)")
+            XCTAssertTrue(seen.contains { $0.contains("text=last\nclass=col-span-3 row-span-2 bar:flex\ntitle=hello\ndetail=From a peer") }, "\(seen)")
         }
     }
 

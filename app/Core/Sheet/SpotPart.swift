@@ -44,7 +44,6 @@ public struct SpotPart: Equatable, Sendable, Identifiable {
     public let kind: String
     public let isOpen: Bool
     public let isPicture: Bool
-    public let isSection: Bool
     public let title: String?
     public let detail: String?
     public let symbol: String?
@@ -89,7 +88,6 @@ public struct SpotPart: Equatable, Sendable, Identifiable {
         isOpen = kind.isOpen
         isPicture = kind == .picture
         values = kind.isOpen ? Dictionary(grouping: block.fields, by: \.key).mapValues { $0.map(\.value) } : [:]
-        isSection = kind == .section
         title = block.value("title")
         detail = block.value("detail")
         key = kind == .hotkey ? nil : block.value("shortcut").flatMap(ActionKey.init(text:))
@@ -150,10 +148,6 @@ public struct SpotPart: Equatable, Sendable, Identifiable {
         case .text(let text, _, _): text
         case .shortcut(let text): text
         }
-    }
-
-    public func drawn(in layout: SheetLayout?) -> SpotPart {
-        drawn(spanning: layout?.areas[id].map { $0.y1 > $0.y0 } ?? false)
     }
 
     func drawn(spanning isTall: Bool) -> SpotPart {

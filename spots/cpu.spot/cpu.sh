@@ -3,7 +3,9 @@
 # Prints the use of all cores, the last of the points, with each point as a bar.
 draw() {
   [ $# -gt 0 ] || return 0
-  printf 'frame=\ngrid=cpu\ngrid=cpu\ngrid.bar=cpu\n\nnumber=cpu\ntitle=CPU\nmax=100\nunit=%%\n'
+  grow='h-20 '
+  [ $# -eq 1 ] || grow='grow '
+  printf 'frame=\nclass=gap-part\n\nnumber=cpu\nclass=%sbar:flex\ntitle=CPU\nmax=100\nunit=%%\n' "$grow"
   for point; do printf 'value=%s\n' "$point"; done
 }
 

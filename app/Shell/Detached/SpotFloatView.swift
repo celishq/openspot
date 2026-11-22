@@ -32,6 +32,7 @@ struct SpotFloatView: View {
         .environment(\.spotIsShown, true)
         .environment(\.spotCards, SpotCardSource(model: model))
         .environment(\.spotViewPlace, SpotViewPlace(model: model, place: .detached(id)))
+        .environment(\.spotViewDates, entry?.spot.viewDates ?? [:])
         .id(SpotLoadedTheme.shared.layout)
     }
 
@@ -47,9 +48,9 @@ struct SpotFloatView: View {
         let sole = fills ? run.panel.flatMap { $0.parts.count == 1 ? $0.parts.first : nil }.flatMap { $0.isOpen ? $0 : nil } : nil
         return VStack(alignment: .leading, spacing: SpotTokens.rowGap) {
             if !fills { header(entry, run) }
-            if let part = sole, let view = entry.spot.view {
+            if let part = sole, let view = run.panel?.tree.node(part.id)?.source {
                 GeometryReader { area in
-                    SpotCustomView(source: view, values: part.values, items: part.items, card: .square, room: area.size, answers: run.panel?.answered ?? 0, date: entry.spot.viewDate, views: .shared) { run.set(part, to: $0) }
+                    SpotCustomView(source: view, values: part.values, items: part.items, card: .square, room: area.size, answers: run.panel?.answered ?? 0, date: entry.spot.viewDates[view], views: .shared) { run.set(part, to: $0) }
                         .equatable()
                 }
                 .ignoresSafeArea(edges: [.horizontal, .bottom])
@@ -67,9 +68,7 @@ struct SpotFloatView: View {
                     onDragOut: { model.dragOut($0, of: id) },
                     selection: { run.selection },
                     selectedPart: { run.selectedPart?.id },
-                    nudge: { run.nudge },
-                    viewSource: entry.spot.view,
-                    viewDate: entry.spot.viewDate
+                    nudge: { run.nudge }
                 )
             } else {
                 SpotItemsView(

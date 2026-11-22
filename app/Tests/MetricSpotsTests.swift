@@ -136,9 +136,9 @@ final class MetricSpotsTests: SpotRunsCase {
         }
 
         for frame in frames {
-            XCTAssertTrue(frame.contains("grid=battery cpu memory devices\ngrid=battery cpu memory devices\n"), frame)
-            XCTAssertTrue(frame.contains("section=top-cpu\ntitle=CPU\n\nnumber=cpu-1\n"), frame)
-            XCTAssertTrue(frame.contains("number=swap\ntitle=Swap\n"), frame)
+            XCTAssertTrue(frame.contains("box=gauges\nclass=grid grid-cols-4 "), frame)
+            XCTAssertTrue(frame.contains("text=top-cpu\nparent=list\nclass=font-section\ntitle=CPU\n\nnumber=cpu-1\n"), frame)
+            XCTAssertTrue(frame.contains("number=swap\nparent=list\ntitle=Swap\n"), frame)
             XCTAssertFalse(frame.contains("text=mac\n"), frame)
         }
         XCTAssertEqual(log("tools.log").filter { $0 == "system_profiler" }, ["system_profiler"])

@@ -28,7 +28,7 @@ final class ClockExampleTests: SampleSpotsCase {
         }
 
         XCTAssertTrue(clock.canShowInMenuBar)
-        XCTAssertEqual(answer, "frame=\ngrid.bar=time\n\ntext=time\ntitle=22:15\ndetail=Tokyo\n")
-        XCTAssertEqual(tick, "frame=\ngrid.bar=time\n\ntext=time\ntitle=22:15\ndetail=Tokyo\n")
+        XCTAssertEqual(answer, "frame=\nclass=gap-part\n\ntext=time\nclass=bar:flex\ntitle=22:15\ndetail=Tokyo\n")
+        XCTAssertEqual(tick, "frame=\nclass=gap-part\n\ntext=time\nclass=bar:flex\ntitle=22:15\ndetail=Tokyo\n")
     }
 }

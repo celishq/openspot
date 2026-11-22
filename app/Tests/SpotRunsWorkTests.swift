@@ -239,7 +239,7 @@ final class SpotRunsWorkTests: SpotRunsCase {
     func testTheSpotShowsItsOldestCall() async throws {
         try script(toml: "", """
         case "$1" in
-          show) printf 'frame=\\ngrid=a b\\n\\nbutton=a\\ntitle=A\\n\\nbutton=b\\ntitle=B\\n' ;;
+          show) printf 'frame=\\nclass=grid grid-cols-2 gap-part\\n\\nbutton=a\\ntitle=A\\n\\nbutton=b\\ntitle=B\\n' ;;
           a) printf 'frame=\\ntitle=A\\n---\\n'; sleep 30 ;;
           b) printf 'frame=\\ntitle=B\\n---\\n'; sleep 30 ;;
         esac
@@ -263,7 +263,7 @@ final class SpotRunsWorkTests: SpotRunsCase {
     func testARunningPartShowsOnThatPartOnly() async throws {
         try script(toml: "", """
         case "$1" in
-          show) printf 'frame=\\ngrid=go other\\n\\nbutton=go\\ntitle=Go\\n\\ntext=other\\ntitle=Other\\n' ;;
+          show) printf 'frame=\\nclass=grid grid-cols-2 gap-part\\n\\nbutton=go\\ntitle=Go\\n\\ntext=other\\ntitle=Other\\n' ;;
           go) sleep 30 ;;
         esac
         """)
@@ -286,8 +286,8 @@ final class SpotRunsWorkTests: SpotRunsCase {
     func testAPartWhoseCallDrewItsOwnFrameShowsThatFrameAndNoWork() async throws {
         try script(toml: "", """
         case "$1" in
-          show) printf 'frame=\\ngrid=go\\n\\nbutton=go\\ntitle=Go\\n' ;;
-          go) printf 'frame=\\ngrid=go\\n\\nbutton=go\\ntitle=Done\\n---\\n'; sleep 30 ;;
+          show) printf 'frame=\\nclass=gap-part\\n\\nbutton=go\\ntitle=Go\\n' ;;
+          go) printf 'frame=\\nclass=gap-part\\n\\nbutton=go\\ntitle=Done\\n---\\n'; sleep 30 ;;
         esac
         """)
         let sheet = try sheet()
@@ -356,7 +356,7 @@ final class SpotRunsWorkTests: SpotRunsCase {
     func testAPressOfAPartWithinOneSecondOfItsStartDoesNothing() async throws {
         try script(toml: "", """
         case "$1" in
-          show) printf 'frame=\\ngrid=go\\n\\nbutton=go\\ntitle=Go\\nclose=false\\n' ;;
+          show) printf 'frame=\\nclass=gap-part\\n\\nbutton=go\\ntitle=Go\\nclose=false\\n' ;;
           go) sleep 0.2; touch '\(path("done"))' ;;
         esac
         """)
@@ -482,7 +482,7 @@ final class SpotRunsWorkTests: SpotRunsCase {
     func testQuittingStopsEachCall() async throws {
         try script(toml: "", """
         trap 'touch "\(path("stopped"))"; exit 0' TERM
-        printf 'frame=\\ngrid=a\\n\\ntext=a\\ntitle=A\\n---\\n'
+        printf 'frame=\\nclass=gap-part\\n\\ntext=a\\ntitle=A\\n---\\n'
         \(String.longLoop)
         """)
         try script("deaf", "echo $$ > '\(path("deaf-pid"))'\ntrap '' TERM\n\(String.longLoop)")

@@ -59,7 +59,7 @@ for example in "$work"/examples/*.example; do
     [ "$kind" = js ] || chmod +x "$spot/$name.$kind"
   fi
   number=0
-  for file in $(sed -n -E 's/^(view|source) = //p' "$manifest" | tr -d '[]",'); do
+  for file in $(sed -n -E 's/^(view|views|source) = //p' "$manifest" | tr -d '[]",'); do
     number=$((number + 1))
     cp "$work/examples/$name.more.$number" "$spot/$file"
   done

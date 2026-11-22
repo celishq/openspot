@@ -46,11 +46,9 @@ frame=$(openspot spot stats --days 14) || exit 1
 
 # Prints the sheet: the chart, then the items that list.awk orders.
 printf '%s\n' "$frame" | awk -f "$here/stats.awk" -f "$here/list.awk" | sort -t "$(printf '\t')" -k1,1n -k2,2n | {
-  printf 'frame=\ngrid=chart\ngrid=chart\ngrid=chart\ngrid=chart\ngrid=spots\ngrid.small=top\nrecents=false\n\n'
-  printf 'view=chart\ngrow=false\n\n'
-  first=1
+  printf 'frame=\nclass=gap-part\nrecents=false\n\n'
+  printf 'chart=chart\nclass=h-44 card:hidden\n\nitems=spots\nclass=card:hidden\n\n'
   while IFS="$(printf '\t')" read -r _ _ block; do
     printf '%s\n' "$block" | tr '\001' '\n'
-    if [ "$first" = 1 ]; then printf 'repeat=spots\n\n'; first=0; fi
   done
 }

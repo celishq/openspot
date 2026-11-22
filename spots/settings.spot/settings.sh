@@ -40,7 +40,7 @@ pane() {
     | ($titles[] | "text=\($pane)#\(esc)\ntitle=\(esc)\ndetail=System Settings\n\($icon)\n"),
       ($terms | to_entries[] | .key as $anchor | (.value.localizableStrings // [])[]
         | select(.title != null and (.title | ascii_downcase) != ($titles[0] | ascii_downcase))
-        | "text=\($pane)?\($anchor)#\(.title | esc)\ntitle=\(.title | esc)\ndetail=System Settings › \($titles[0] | esc)\nparent=\($titles[0] | esc)\n\($icon)\n"
+        | "text=\($pane)?\($anchor)#\(.title | esc)\ntitle=\(.title | esc)\ndetail=System Settings › \($titles[0] | esc)\nplace=\($titles[0] | esc)\n\($icon)\n"
           + ((.index // "") | split(",") | map(gsub("^\\s+|\\s+$"; "")) | map(select(. != "")) | if length > 0 then "keywords=\(join(", ") | esc)\n" else "" end))'
 }
 

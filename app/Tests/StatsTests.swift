@@ -16,7 +16,7 @@ final class StatsTests: XCTestCase {
     }
 
     private var cups: Spot {
-        Spot(id: "cups", name: "Cups today", url: URL(fileURLWithPath: "/spots/cups.spot/cups.sh"), view: view)
+        Spot(id: "cups", name: "Cups today", url: URL(fileURLWithPath: "/spots/cups.spot/cups.sh"), views: ["cups": view])
     }
 
     func testTheBodyTimeOfAViewShowsInTheRowOfItsSpot() throws {

@@ -1,35 +1,46 @@
 frame=
-grid.large=cover cover cover song song song
-grid.large=cover cover cover time time time
-grid.large=cover cover cover prev play next
-grid.bar=song
+class=gap-part large:flex-row
 
 picture=cover
+class=large:w-1/2 large:aspect-square
 icon=music.note
 
+box=side
+class=gap-part large:grow
+
 text=song
+parent=side
+class=bar:flex
 title=Midnight Drive
 detail=Neon Coast
 
 number=time
+parent=side
 max=1
 chart=bar
 display=1:42
 value=0.42
 
+box=controls
+parent=side
+class=gap-part large:flex-row large:justify-between
+
 button=prev
+parent=controls
 title=Previous
 icon=backward.fill
 look=bare
 close=false
 
 button=play
+parent=controls
 title=Pause
 icon=pause.fill
 look=bare
 close=false
 
 button=next
+parent=controls
 title=Next
 icon=forward.fill
 look=bare

@@ -141,14 +141,14 @@ final class ViewTreeTests: XCTestCase {
         ])
     }
 
-    func testTheParentOfAnItemInAFrameWithNoTreeIsNoFault() {
-        let text = "text=shrink\ntitle=Shrink\nparent=Files\n"
+    func testThePlaceOfAnItemIsNoParentAndNoFault() {
+        let text = "text=shrink\ntitle=Shrink\nplace=Files\n"
         let check = FrameCheck(text: text)
 
         XCTAssertFalse(check.output.tree.isWritten)
         XCTAssertEqual(check.output.tree.children, ["shrink"])
         XCTAssertTrue(check.partFaults.isEmpty)
-        XCTAssertEqual(check.output.items.map(\.parent), ["Files"])
+        XCTAssertEqual(check.output.items.map(\.place), ["Files"])
     }
 
     func testABoxIsNeitherAnItemNorAnError() {
@@ -169,11 +169,12 @@ final class ViewTreeTests: XCTestCase {
         XCTAssertLessThan(panel.placement.height, panel.top.partsRoom)
     }
 
-    func testAFrameWithNoTreeKeepsItsGridPlacement() throws {
-        let panel = try XCTUnwrap(SheetParts(output: Frame(text: "frame=\ngrid=a\n\ntext=a\ntitle=Alpha\n")))
+    func testAFrameWithNoTreeStacksItsChoiceOverItsItems() throws {
+        let panel = try XCTUnwrap(SheetParts(output: Frame(text: "choice=a\nvalue=x\n\noption=x\ntitle=X\n\ntext=b\ntitle=B\n")))
 
         XCTAssertFalse(panel.tree.isWritten)
-        XCTAssertEqual(panel.placement.height, SpotTokens.listRow)
+        XCTAssertEqual(panel.layout?.rows, [["a"], ["items"]])
+        XCTAssertTrue(panel.showsRows)
     }
 
     func testANodeKeepsItsWordsAndItsIcon() {
@@ -202,5 +203,12 @@ final class ViewTreeTests: XCTestCase {
 
         XCTAssertEqual(frame.items.map(\.run), ["a"])
         XCTAssertEqual(frame.items.first?.section, "Recent")
+    }
+
+    func testAButtonPlacedInAWrittenTreeIsNoActionSoItNeedsNoTitle() {
+        let check = FrameCheck(text: "frame=\nclass=gap-part\n\nbox=row\nclass=flex-row\n\nbutton=swap\nparent=row\nicon=arrow.up.arrow.down\n")
+
+        XCTAssertEqual(check.partFaults, [])
+        XCTAssertEqual(check.output.actions, [])
     }
 }

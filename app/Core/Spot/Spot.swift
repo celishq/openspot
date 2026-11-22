@@ -51,9 +51,8 @@ public struct Spot: Equatable, Sendable {
         offers: [Manifest.Command] = [],
         offeredActions: [OfferedAction] = [],
         settings: [Manifest.Setting] = [],
-        view: String? = nil,
-        viewDate: Date? = nil,
         views: [String: String] = [:],
+        viewDates: [String: Date] = [:],
         sources: [String] = [],
         emits: [String] = [],
         pages: [String] = [],
@@ -69,7 +68,7 @@ public struct Spot: Equatable, Sendable {
             hasSheet: on != nil || answers == nil && offers.isEmpty && offeredActions.isEmpty,
             isGlobal: isGlobal, isFound: isFound, answers: answers, order: order,
             host: host, growsFromField: growsFromField, mode: mode, drop: drop,
-            dataName: dataName, isOnGrid: isOnGrid, view: view, viewDate: viewDate, views: views, sources: sources, emits: emits, pages: pages, uses: uses,
+            dataName: dataName, isOnGrid: isOnGrid, views: views, viewDates: viewDates, sources: sources, emits: emits, pages: pages, uses: uses,
             offers: offers, offeredActions: offeredActions, settings: settings, keywords: keywords, placeholder: placeholder, sample: sample,
             edits: edits, starts: starts
         ))
@@ -331,7 +330,6 @@ public struct Spot: Equatable, Sendable {
         guard showsState else { return headerState }
         guard output.root != nil || output.errors.isEmpty else { throw SpotError.badState }
         var state = SpotState(output: output, header: headerState)
-        if self.view != nil { state = state.holding(output.view) }
         guard self.isBuiltIn, let isOnGrid = output.root?.flag(RootKey.shown) else { return state }
         return state.onGrid(isOnGrid)
     }

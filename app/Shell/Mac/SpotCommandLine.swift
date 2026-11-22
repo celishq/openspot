@@ -96,6 +96,6 @@ enum SpotCommandLine {
             FileHandle.standardError.write(Data("\(reason)\n".utf8))
             exit(1)
         }
-        SpotSheetPicture.run(text: text, path: path, view: spot.view, spot: spot)
+        SpotSheetPicture.run(text: text, path: path, spot: spot)
     }
 }

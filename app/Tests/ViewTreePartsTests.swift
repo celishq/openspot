@@ -18,11 +18,11 @@ final class ViewTreePartsTests: XCTestCase {
         XCTAssertTrue(SpotCheck.brokenBlocks(in: text, kinds: kinds)[0].hasPrefix("the block text=b has title twice"))
     }
 
-    func testTheRowsThatAViewNodeGetsCarryNoParent() throws {
+    func testTheRowsThatAViewNodeGetsCarryTheirBlocks() throws {
         let text = "frame=\nclass=gap-2\n\nliquid=fill\n\nitems=list\n\ntext=a\nparent=list\ntitle=A\n"
         let part = try XCTUnwrap(Frame(text: text, kinds: kinds).parts.first { $0.id == "fill" })
 
-        XCTAssertEqual(part.items, [["text", "a", "title", "A"]])
+        XCTAssertEqual(part.items, [["text", "a", "parent", "list", "title", "A"]])
     }
 
     func testTheCheckOfATreeChecksEachNodeAsAPart() {
@@ -58,6 +58,12 @@ final class ViewTreePartsTests: XCTestCase {
 
         XCTAssertEqual(short.placement.height, 2 * SpotTokens.listRow + SpotTokens.partGap)
         XCTAssertEqual(listed.placement.height, listed.top.partsRoom)
+    }
+
+    func testAViewPinnedOverItsBoxFillsTheSheet() throws {
+        let panel = try XCTUnwrap(SheetParts(output: Frame(text: "frame=\nclass=relative\n\nliquid=level\nclass=absolute inset-0\nvalue=0.7\n", kinds: kinds)))
+
+        XCTAssertEqual(panel.placement.height, panel.top.partsRoom)
     }
 
     func testAMultilineFieldTakesTheFreeHeightAndGrowWorksOnANode() {

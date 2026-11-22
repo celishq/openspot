@@ -82,7 +82,7 @@ final class SpotRunStateTests: XCTestCase {
     }
 
     func testAnOlderAnswerDoesNotReplaceANewerChange() async throws {
-        let (sheet, link) = await opened(frame: "frame=\ngrid=a\n\nfield=a\ntitle=start\nvalue=x\n")
+        let (sheet, link) = await opened(frame: "frame=\nclass=gap-part\n\nfield=a\ntitle=start\nvalue=x\n")
         let part = try XCTUnwrap(sheet.panel?.parts.first)
         sheet.set(part, to: "old")
         try await sleeps()
@@ -93,9 +93,9 @@ final class SpotRunStateTests: XCTestCase {
         try await sleeps(2)
         clock.advance(by: 0.3)
         try await wait("the newer call") { link.sent.count == 3 }
-        await link.frame("frame=\ngrid=a\n\nfield=a\ntitle=new\nvalue=x\n", of: link.sent[2])
+        await link.frame("frame=\nclass=gap-part\n\nfield=a\ntitle=new\nvalue=x\n", of: link.sent[2])
         await link.end(link.sent[2])
-        await link.frame("frame=\ngrid=a\n\nfield=a\ntitle=old\nvalue=x\n", of: link.sent[1])
+        await link.frame("frame=\nclass=gap-part\n\nfield=a\ntitle=old\nvalue=x\n", of: link.sent[1])
         await link.end(link.sent[1])
 
         XCTAssertEqual(link.arguments().dropFirst().map(\.last), ["old", "new"])
@@ -261,17 +261,17 @@ final class SpotRunStateTests: XCTestCase {
     func testANewReadingTellsTheReaderOfTheMarksAndTheSameReadingDoesNot() async throws {
         let (sheet, link) = inMenuBar(on: ShowEvents(moments: [.every(60)]))
         try await wait("the first read") { link.sent.count == 1 }
-        await link.frame("frame=\ngrid.bar=n\n\nnumber=n\nvalue=3\n", of: link.sent[0])
+        await link.frame("frame=\nclass=gap-part\n\nnumber=n\nclass=bar:flex\nvalue=3\n", of: link.sent[0])
         await link.end(link.sent[0])
         nonisolated(unsafe) var told = 0
         withObservationTracking { _ = self.runs.menuBarMarks } onChange: { told += 1 }
 
         sheet.show(need: .change)
-        await link.frame("frame=\ngrid.bar=n\n\nnumber=n\nvalue=3\n", of: link.sent[1])
+        await link.frame("frame=\nclass=gap-part\n\nnumber=n\nclass=bar:flex\nvalue=3\n", of: link.sent[1])
         await link.end(link.sent[1])
         XCTAssertEqual(told, 0)
         sheet.show(need: .change)
-        await link.frame("frame=\ngrid.bar=n\n\nnumber=n\nvalue=4\n", of: link.sent[2])
+        await link.frame("frame=\nclass=gap-part\n\nnumber=n\nclass=bar:flex\nvalue=4\n", of: link.sent[2])
         await link.end(link.sent[2])
 
         XCTAssertEqual(told, 1)

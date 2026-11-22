@@ -71,7 +71,7 @@ branch() {
 
 # Prints the form that asks for the editor, with this title.
 form() {
-  printf 'frame=\ngrid=editor\n'
+  printf 'frame=\nclass=gap-part\n'
   openspot_kv title "$1"
   printf '\nchoice=editor\ntitle=Default app\n'
   openspot_kv value "$editor"

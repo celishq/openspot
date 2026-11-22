@@ -89,30 +89,31 @@ show() {
     corner=copy
   fi
 
-  printf 'frame=\ngrid=source source . .\ngrid=input input input input\ngrid=input input input swap\ngrid=- - - swap\n'
-  printf 'grid=target target . swap\ngrid=output output output output\ngrid=output output output %s\n' "$corner"
-  printf '\n'
+  printf 'frame=\nclass=gap-part\n\n'
 
   printf 'choice=source\nvalue=%s\n\noption=auto\ntitle=%s\n' "$source" "$auto"
   options
   printf '\n'
 
-  printf 'field=input\ntype=multiline\nplaceholder=Type or paste text\n'
+  printf 'field=input\nclass=grow\ntype=multiline\nplaceholder=Type or paste text\n'
   openspot_kv value "$input"
   printf '\n'
+
+  printf 'box=middle\nclass=flex-row items-center gap-part\n\nbox=line\nparent=middle\nclass=grow h-px bg-tile\n\n'
+  printf 'button=swap\nparent=middle\nicon=arrow.up.arrow.down\nshortcut=cmd+shift+s\nclose=false\n\n'
 
   printf 'choice=target\nvalue=%s\n' "$target"
   options
   printf '\n'
 
-  printf 'field=output\ntype=multiline\nvalue=%s\nplaceholder=Translation\nreadonly=true\n\n' "$output"
-
-  printf 'button=swap\nicon=arrow.up.arrow.down\nshortcut=cmd+shift+s\nclose=false\n\n'
+  printf 'box=result\nclass=relative grow\n\n'
+  printf 'field=output\nparent=result\nclass=absolute inset-0\ntype=multiline\nvalue=%s\nplaceholder=Translation\nreadonly=true\n\n' "$output"
+  printf 'box=corner\nparent=result\nclass=absolute inset-0 justify-end items-end p-2\n\n'
 
   if [ "$corner" = settings ]; then
-    printf 'button=settings\nalign=right\nlook=chip\ntitle=Open Settings\n'
+    printf 'button=settings\nparent=corner\nalign=right\nlook=chip\ntitle=Open Settings\n'
   elif [ "$corner" = copy ]; then
-    printf 'button=copy\nalign=right\nlook=chip\ntitle=Copy\nshortcut=cmd+return\n'
+    printf 'button=copy\nparent=corner\nalign=right\nlook=chip\ntitle=Copy\nshortcut=cmd+return\n'
   fi
 }
 

@@ -1,42 +1,48 @@
 frame=
-grid=items
-grid.bar=count
+class=gap-part
 
 number=count
+class=hidden bar:flex
 value=5
 title=Pull requests
 
-repeat=items
+items=items
 
 button=copy
+parent=items
 title=Copy link
 shortcut=cmd+return
 
 text=https://github.com/example/garden/pull/412
+parent=items
 title=Add a dark theme to the plant list
 detail=Checks passed · garden
 icon=checkmark.circle
 tone=good
 
 text=https://github.com/example/garden/pull/409
+parent=items
 title=Fix the watering reminder on Sundays
 detail=Checks failed · garden
 icon=xmark.circle
 tone=bad
 
 text=https://github.com/example/weather-kit/pull/88
+parent=items
 title=Cache the forecast for ten minutes
 detail=Checks running · weather-kit
 icon=clock
 tone=warn
 
 text=https://github.com/example/weather-kit/pull/86
+parent=items
 title=Show wind in knots
 detail=Checks passed · To review · weather-kit
 icon=checkmark.circle
 tone=good
 
 text=https://github.com/example/notes/pull/231
+parent=items
 title=Update the README
 detail=No checks · To review · notes
 icon=arrow.triangle.pull

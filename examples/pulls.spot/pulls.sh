@@ -36,9 +36,9 @@ case "$1" in
     fi
     list=$(pulls) || exit 1
     count=$(printf '%s' "$list" | jq length)
-    [ "$count" -eq 0 ] || printf 'frame=\ngrid=items\ngrid.bar=count\n\nnumber=count\nvalue=%s\ntitle=Pull requests\n\nrepeat=items\n\n' "$count"
-    printf 'button=copy\ntitle=Copy link\nshortcut=cmd+return\n\n'
-    printf '%s' "$list" | jq -r "$defs"'.[] | "text=\(.url | esc)\ntitle=\(.title | esc)\ndetail=\(about)\nicon=\({good: "checkmark.circle", bad: "xmark.circle", warn: "clock"}[tone // ""] // "arrow.triangle.pull")"
+    [ "$count" -eq 0 ] || printf 'frame=\nclass=gap-part\n\nnumber=count\nclass=hidden bar:flex\nvalue=%s\ntitle=Pull requests\n\nitems=items\n\n' "$count"
+    printf 'button=copy\nparent=items\ntitle=Copy link\nshortcut=cmd+return\n\n'
+    printf '%s' "$list" | jq -r "$defs"'.[] | "text=\(.url | esc)\nparent=items\ntitle=\(.title | esc)\ndetail=\(about)\nicon=\({good: "checkmark.circle", bad: "xmark.circle", warn: "clock"}[tone // ""] // "arrow.triangle.pull")"
       + (tone | if . then "\ntone=\(.)" else "" end) + "\n"'
     ;;
   copy)

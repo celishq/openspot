@@ -1,4 +1,4 @@
 title = "Agents"
 icon = "sparkles"
 on = ["panel.open"]
-view = "card.swift"
+views = ["card.swift"]

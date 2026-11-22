@@ -54,7 +54,7 @@ title = "Icon"
 icon = "paintbrush.pointed"
 detail = "Draw the icon of a spot"
 on = ["sheet.open"]
-view = "icon.swift"
+views = ["board.swift"]
 uses = ["spots"]
 drop = "png,jpg,jpeg,heic,gif,tiff,svg,pdf,icns"
 
@@ -108,7 +108,7 @@ detail = "Get spots"
 keywords = ["store", "get spots"]
 on = ["sheet.open"]
 uses = ["spots", "account"]
-view = "store.swift"
+views = ["store.swift"]
 
 [scripts.themes]
 title = "Themes"
@@ -134,7 +134,7 @@ icon = "hand.wave"
 on = ["sheet.open"]
 uses = ["app"]
 starts = "first-launch"
-view = "welcome.swift"
+views = ["welcome.swift"]
 pages = ["key", "agent"]
 
 [scripts.snooze]

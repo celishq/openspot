@@ -6,8 +6,8 @@ final class SpotRunsFrameTests: SpotRunsCase {
     func testAnActionsFrameWithABlockReplacesTheWholeSheet() async throws {
         try script(toml: "", """
         case "$1" in
-          show) printf 'frame=\\ngrid=go\\ngrid=a\\ngrid=b\\n\\nbutton=go\\ntitle=Go\\n\\ntext=a\\ntitle=A\\n\\ntext=b\\ntitle=B\\n' ;;
-          go) printf 'frame=\\ngrid=only\\n\\ntext=only\\ntitle=Only\\n' ;;
+          show) printf 'frame=\\nclass=gap-part\\n\\nbutton=go\\ntitle=Go\\n\\ntext=a\\ntitle=A\\n\\ntext=b\\ntitle=B\\n' ;;
+          go) printf 'frame=\\nclass=gap-part\\n\\ntext=only\\ntitle=Only\\n' ;;
         esac
         """)
         let sheet = try sheet()
@@ -24,8 +24,8 @@ final class SpotRunsFrameTests: SpotRunsCase {
 
     func testALaterFrameWithNoRootChangesOnlyTheBlocksItPrintsAndANewIdJoins() async throws {
         try script(toml: "", """
-        printf 'frame=\\ngrid=a b\\ngrid=c c\\n\\ntext=a\\ntitle=A\\n\\ntext=b\\ntitle=B\\n---\\n'
-        printf 'text=b\\ntitle=B2\\n\\ntext=c\\ntitle=C\\n'
+        printf 'frame=\\nclass=grid grid-cols-2 gap-part\\n\\ntext=a\\ntitle=A\\n\\ntext=b\\ntitle=B\\n---\\n'
+        printf 'text=b\\ntitle=B2\\n\\ntext=c\\ntitle=C\\nclass=col-span-2\\n'
         """)
         let sheet = try sheet()
         runs.panelOpened()
@@ -33,7 +33,7 @@ final class SpotRunsFrameTests: SpotRunsCase {
 
         try await wait("the merged picture") { sheet.panel?.parts.map(\.id) == ["a", "b", "c"] && sheet.calls.isEmpty }
         XCTAssertEqual(sheet.panel?.parts.map(\.title), ["A", "B2", "C"])
-        XCTAssertEqual(sheet.panel?.layout?.areas.keys.sorted(), ["a", "b", "c"])
+        XCTAssertEqual(sheet.panel?.tree.children, ["a", "b", "c"])
     }
 
     func testALaterFrameWithNoRootAddsARowWithANewIdToTheList() async throws {
@@ -47,7 +47,7 @@ final class SpotRunsFrameTests: SpotRunsCase {
     }
 
     func testALaterFrameWithARootEmptiesWhatItDoesNotPrint() async throws {
-        try script(toml: "", "printf 'frame=\\ngrid=a2\\n\\ntext=a\\ntitle=A\\n\\ntext=a2\\ntitle=A\\n---\\n'\nprintf 'frame=\\ngrid=t\\n\\ntext=t\\ntitle=T\\n'")
+        try script(toml: "", "printf 'frame=\\nclass=gap-part\\n\\nitems=list\\n\\ntext=a\\nparent=list\\ntitle=A\\n\\ntext=a2\\ntitle=A\\n---\\n'\nprintf 'frame=\\nclass=gap-part\\n\\ntext=t\\ntitle=T\\n'")
         let sheet = try sheet()
         runs.panelOpened()
         sheet.open {}
@@ -99,7 +99,7 @@ final class SpotRunsFrameTests: SpotRunsCase {
         try script(toml: "", """
         case "$1" in
           show) printf 'text=a\\ntitle=A\\n' ;;
-          open) printf 'frame=\\ngrid=g\\n\\nnumber=g\\nvalue=40\\nmax=100\\n---\\n'; \(untilRelease) ;;
+          open) printf 'frame=\\nclass=gap-part\\n\\nnumber=g\\nvalue=40\\nmax=100\\n---\\n'; \(untilRelease) ;;
         esac
         """)
         let sheet = try sheet()
@@ -133,7 +133,7 @@ final class SpotRunsFrameTests: SpotRunsCase {
           case "$line" in
             call=*) call=${line#call=} ;;
             arg=show) printf 'end=%s\\n\\ntext=a\\ntitle=A\\n---\\n' "$call" ;;
-            arg=open) printf 'end=%s\\n---\\n' "$call"; printf 'frame=\\ngrid=peer\\n\\ntext=peer\\ntitle=Peer\\n---\\n' ;;
+            arg=open) printf 'end=%s\\n---\\n' "$call"; printf 'frame=\\nclass=gap-part\\n\\ntext=peer\\ntitle=Peer\\n---\\n' ;;
           esac
         done
         """)
@@ -153,7 +153,7 @@ final class SpotRunsFrameTests: SpotRunsCase {
         while IFS= read -r line; do
           case "$line" in
             call=*) call=${line#call=}; printf 'call=%s\\n---\\n' "$call" ;;
-            arg=show) printf 'frame=\\ngrid=a\\ngrid=b\\n\\ntext=a\\ntitle=A\\n\\ntext=b\\ntitle=B\\n---\\ntext=b\\ntitle=B2\\n---\\nend=%s\\n---\\n' "$call" ;;
+            arg=show) printf 'frame=\\nclass=gap-part\\n\\ntext=a\\ntitle=A\\n\\ntext=b\\ntitle=B\\n---\\ntext=b\\ntitle=B2\\n---\\nend=%s\\n---\\n' "$call" ;;
           esac
         done
         """)
@@ -186,9 +186,9 @@ final class SpotRunsFrameTests: SpotRunsCase {
     func testAnOutdatedAnswerChangesNothingAndAReadFollowsItsEnd() async throws {
         try script(toml: "", """
         case "$1" in
-          show) printf 'frame=\\ngrid=a\\ngrid=b\\n\\nswitch=a\\nvalue=%s\\n\\nswitch=b\\nvalue=%s\\n' "$(cat '\(path("a"))' 2>/dev/null || echo false)" "$(cat '\(path("b"))' 2>/dev/null || echo false)" ;;
-          a) \(untilRelease); echo "$2" > '\(path("a"))'; printf 'frame=\\ngrid=a\\ngrid=b\\n\\nswitch=a\\nvalue=%s\\n\\nswitch=b\\nvalue=false\\n' "$2" ;;
-          b) echo "$2" > '\(path("b"))'; printf 'frame=\\ngrid=a\\ngrid=b\\n\\nswitch=a\\nvalue=false\\n\\nswitch=b\\nvalue=%s\\n' "$2" ;;
+          show) printf 'frame=\\nclass=gap-part\\n\\nswitch=a\\nvalue=%s\\n\\nswitch=b\\nvalue=%s\\n' "$(cat '\(path("a"))' 2>/dev/null || echo false)" "$(cat '\(path("b"))' 2>/dev/null || echo false)" ;;
+          a) \(untilRelease); echo "$2" > '\(path("a"))'; printf 'frame=\\nclass=gap-part\\n\\nswitch=a\\nvalue=%s\\n\\nswitch=b\\nvalue=false\\n' "$2" ;;
+          b) echo "$2" > '\(path("b"))'; printf 'frame=\\nclass=gap-part\\n\\nswitch=a\\nvalue=false\\n\\nswitch=b\\nvalue=%s\\n' "$2" ;;
         esac
         """)
         let sheet = try sheet()

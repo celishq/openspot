@@ -26,7 +26,7 @@ remove() {
 # each spot with its id, its name, its step, its origin, its store, its description, its size and whether it has sample
 # data, and the readme of the spot that $1 names, a line after its id, when its sheet asks.
 gallery() {
-  printf 'frame=\ngrid=gallery\n\nview=gallery\n'
+  printf 'frame=\nclass=gap-part\n\nitems=spots\nclass=hidden\n\nstore=gallery\n'
   openspot store folders | awk 'BEGIN { RS = ""; FS = "\n" }
     { delete f
       for (i = 1; i <= NF; i++) { n = index($i, "="); f[substr($i, 1, n - 1)] = substr($i, n + 1) }
@@ -37,7 +37,7 @@ gallery() {
         n = index($i, "="); key = substr($i, 1, n - 1); f[key] = substr($i, n + 1)
         if (key == "readme" && f["text"] == want) readme = readme "readme=" want "\t" f[key] "\n"
       }
-      rows = rows "\ntext=" f["text"] "\ntitle=" f["title"] "\nstep=" (f["step"] == "publish" ? "added" : f["step"]) "\norigin=" f["origin"] "\n"
+      rows = rows "\ntext=" f["text"] "\nparent=spots\ntitle=" f["title"] "\nstep=" (f["step"] == "publish" ? "added" : f["step"]) "\norigin=" f["origin"] "\n"
       if (f["store"] != "") rows = rows "store=" f["store"] "\n"
       if (f["detail"] != "") rows = rows "detail=" f["detail"] "\n"
       rows = rows "size=" f["size"] "\n"

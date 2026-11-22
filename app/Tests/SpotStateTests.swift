@@ -15,17 +15,6 @@ final class SpotStateTests: XCTestCase {
         XCTAssertTrue(try state("shown=false").isOnGrid)
     }
 
-    func testAReadKeepsEachValueOfItsHeadForAViewAndAChangeKeepsThem() throws {
-        let head = try XCTUnwrap(TextBlock.blocks(in: "title=3\npoint=1\npoint=0\npoint=2").first)
-        let read = SpotState(output: Frame(text: head.text), header: header).holding(head)
-        let block = Frame(text: "switch=power\nvalue=true")
-
-        XCTAssertEqual(SpotState(output: Frame(text: head.text), header: header).values, [:])
-        XCTAssertEqual(read.values, ["title": ["3"], "point": ["1", "0", "2"]])
-        XCTAssertEqual(read.taking(block).values, read.values)
-        XCTAssertEqual(read.showing(title: "Busy", detail: nil).values, read.values)
-    }
-
     func testActiveInTheHeadSaysWhetherTheCardIsOnAndWinsOverTheMainSwitch() throws {
         XCTAssertEqual(try state("frame=\ndetail=25m left\nactive=true\n\ntext=off\ntitle=Turn off").on, true)
         XCTAssertEqual(try state("frame=\ndetail=Off\nactive=false").on, false)

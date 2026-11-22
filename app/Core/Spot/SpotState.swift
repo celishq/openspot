@@ -8,7 +8,6 @@ public struct SpotState: Equatable, Sendable {
     public let min: Double?
     public let max: Double?
     public let isOnGrid: Bool
-    public let values: [String: [String]]
     public let control: String?
     public private(set) var face: CardFace
 
@@ -20,7 +19,6 @@ public struct SpotState: Equatable, Sendable {
         min: Double? = nil,
         max: Double? = nil,
         isOnGrid: Bool = true,
-        values: [String: [String]] = [:],
         control: String? = nil,
         face: CardFace = .none
     ) {
@@ -31,7 +29,6 @@ public struct SpotState: Equatable, Sendable {
         self.min = min
         self.max = max
         self.isOnGrid = isOnGrid
-        self.values = values
         self.control = control
         self.face = face
     }
@@ -57,18 +54,13 @@ public struct SpotState: Equatable, Sendable {
         )
     }
 
-    public func holding(_ block: TextBlock?) -> SpotState {
-        let values = Dictionary(grouping: block?.fields ?? [], by: \.key).mapValues { $0.map(\.value) }
-        return SpotState(title: title, subtitle: subtitle, on: on, level: level, min: self.min, max: self.max, isOnGrid: isOnGrid, values: values, control: control, face: face)
-    }
-
     public func taking(_ output: Frame) -> SpotState {
         var on = self.on
         var level = self.level
         let part = output.parts.first { $0.id == control }
         if case .toggle(let value)? = part?.control { on = value }
         if case .slider(let value, _, _)? = (part ?? output.valuePart)?.control { level = value }
-        return SpotState(title: title, subtitle: subtitle, on: on, level: level, min: self.min, max: self.max, isOnGrid: isOnGrid, values: values, control: control, face: face)
+        return SpotState(title: title, subtitle: subtitle, on: on, level: level, min: self.min, max: self.max, isOnGrid: isOnGrid, control: control, face: face)
     }
 
     public func setting(_ value: String, of id: String) -> SpotState {
@@ -78,21 +70,21 @@ public struct SpotState: Equatable, Sendable {
     }
 
     public func switched(on: Bool) -> SpotState {
-        SpotState(title: title, subtitle: subtitle, on: on, level: level, min: self.min, max: self.max, isOnGrid: isOnGrid, values: values, control: control, face: face)
+        SpotState(title: title, subtitle: subtitle, on: on, level: level, min: self.min, max: self.max, isOnGrid: isOnGrid, control: control, face: face)
     }
 
     public func showing(title: String?, detail: String?) -> SpotState {
-        SpotState(title: title ?? self.title, subtitle: detail ?? subtitle, on: on, level: level, min: self.min, max: self.max, isOnGrid: isOnGrid, values: values, control: control, face: face)
+        SpotState(title: title ?? self.title, subtitle: detail ?? subtitle, on: on, level: level, min: self.min, max: self.max, isOnGrid: isOnGrid, control: control, face: face)
     }
 
     func onGrid(_ isOnGrid: Bool) -> SpotState {
-        SpotState(title: title, subtitle: subtitle, on: on, level: level, min: self.min, max: self.max, isOnGrid: isOnGrid, values: values, control: control, face: face)
+        SpotState(title: title, subtitle: subtitle, on: on, level: level, min: self.min, max: self.max, isOnGrid: isOnGrid, control: control, face: face)
     }
 
     public func withLevel(_ value: Double) -> SpotState {
         let low = self.min ?? 0
         let high = self.max ?? 100
         let next = Swift.min(Swift.max(value, low), high)
-        return SpotState(title: title, subtitle: subtitle, on: on, level: next, min: self.min, max: self.max, isOnGrid: isOnGrid, values: values, control: control, face: face)
+        return SpotState(title: title, subtitle: subtitle, on: on, level: next, min: self.min, max: self.max, isOnGrid: isOnGrid, control: control, face: face)
     }
 }

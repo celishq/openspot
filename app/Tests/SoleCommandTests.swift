@@ -226,8 +226,8 @@ final class SoleCommandTests: XCTestCase {
         XCTAssertEqual(host.dismissals, 1)
     }
 
-    func testASheetWithAGridAndNoSearchFieldShowsOnlyItsOwnItemsAsItsHistory() async throws {
-        try "#!/bin/sh\ncase \"$1\" in show) printf 'text=whisper\\ntitle=Download\\npin=top\\n\\nframe=\\ngrid=list\\n' ;; esac\n"
+    func testASheetWithATreeAndNoSearchFieldShowsOnlyItsOwnItemsAsItsHistory() async throws {
+        try "#!/bin/sh\ncase \"$1\" in show) printf 'frame=\\nclass=gap-part\\n\\nitems=list\\n\\ntext=whisper\\nparent=list\\ntitle=Download\\npin=top\\n' ;; esac\n"
             .writeScript(to: spots.spotFile("dictate"), toml: "title = 'Dictate'\non = ['sheet.open']\n[commands.dictate]\ntitle = 'Dictate'")
         await model.reload()
         model.isShown = true

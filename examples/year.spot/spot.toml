@@ -2,4 +2,4 @@ title = "Year"
 icon = "calendar"
 detail = "Each day of this year as a square"
 on = ["panel.open"]
-view = "year.swift"
+views = ["year.swift"]

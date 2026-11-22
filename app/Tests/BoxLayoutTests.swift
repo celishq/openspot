@@ -88,6 +88,22 @@ final class BoxLayoutTests: XCTestCase {
         XCTAssertEqual(placed.size, CGSize(width: 108, height: 32))
     }
 
+    func testAGridOfAGivenHeightSharesItsFreeHeightAmongItsRows() {
+        let placed = place("grid grid-cols-2 gap-2", [block(10, 10, "row-span-2"), block(10, 10), block(10, 10)], width: 108, height: 60)
+
+        XCTAssertEqual(placed.frames, [
+            CGRect(x: 0, y: 0, width: 50, height: 60),
+            CGRect(x: 58, y: 0, width: 50, height: 26),
+            CGRect(x: 58, y: 34, width: 50, height: 26)
+        ])
+    }
+
+    func testASquareInARowOfAGivenHeightTakesItsHeightAsItsWidth() {
+        let placed = place("flex-row", [block(10, 10, "aspect-square")], width: 200, height: 60)
+
+        XCTAssertEqual(placed.frames, [CGRect(x: 0, y: 0, width: 60, height: 60)])
+    }
+
     func testAColumnWithAGrowingChildFillsItsHeight() {
         let placed = place("", [block(10, 10), block(10, 10, "grow")], height: 60)
 

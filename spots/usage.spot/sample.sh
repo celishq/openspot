@@ -1,27 +1,27 @@
 #!/bin/sh
 cat <<'EOF'
 frame=
-grid=chart
-grid=chart
-grid=chart
-grid=chart
-grid=spots
-grid.small=top
+class=gap-part
 recents=false
 
-view=chart
-grow=false
+chart=chart
+class=h-44 card:hidden
+
+items=spots
+class=card:hidden
 
 text=top
+class=hidden card:flex
 title=Shortcuts
 detail=1.4 s CPU a day
 
-repeat=spots
-
-section=used
+text=used
+parent=spots
+class=font-section
 title=Used · last 14 days
 
 number=apps
+parent=spots
 title=Apps
 detail=13.1 a day · 1.2 s CPU
 route=spot:apps
@@ -44,6 +44,7 @@ cpu=1.229
 state=used
 
 number=links
+parent=spots
 title=Links
 detail=4.8 a day · 343 ms CPU
 route=spot:links
@@ -65,10 +66,13 @@ acts=4.82
 cpu=0.343
 state=used
 
-section=failing
+text=failing
+parent=spots
+class=font-section
 title=Failing
 
 number=paste
+parent=spots
 title=Paste screenshot
 detail=4 of 19 failed · stopped with an error
 route=spot:paste
@@ -91,10 +95,13 @@ acts=1.36
 cpu=0.221
 state=bad
 
-section=slow
+text=slow
+parent=spots
+class=font-section
 title=Slow to answer
 
 number=shortcuts
+parent=spots
 title=Shortcuts
 detail=95 in 100 answer within 1.6 s · half within 400 ms
 route=spot:shortcuts
@@ -117,10 +124,13 @@ acts=1.57
 cpu=1.421
 state=warn
 
-section=unused
+text=unused
+parent=spots
+class=font-section
 title=Unused for 14 days
 
 number=devices
+parent=spots
 title=Devices
 detail=1.1 s CPU a day, 857 ms while hidden
 route=spot:devices

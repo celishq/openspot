@@ -10,7 +10,7 @@ printf '%s\n' "$report" | awk '
   END {
     if (line == "") line = first
     if (line == "") {
-      printf "frame=\ngrid=liquid\n\nview=liquid\ntitle=–\ndetail=No battery\nicon=powerplug.fill\nvalue=0\n"
+      printf "frame=\nclass=relative card:relative\n\nliquid=level\nclass=absolute inset-0\ntitle=–\ndetail=No battery\nicon=powerplug.fill\nvalue=0\n"
       exit
     }
     $0 = line
@@ -27,5 +27,5 @@ printf '%s\n' "$report" | awk '
       tone = "good"
     }
     if (percent == 100) detail = "Full"
-    printf "frame=\ngrid=liquid\n\nview=liquid\ntitle=%d%%\ndetail=%s\nicon=%s\nvalue=%s\ntone=%s\n", percent, (detail == "" ? "On battery" : detail), symbol, percent / 100, tone
+    printf "frame=\nclass=relative card:relative\n\nliquid=level\nclass=absolute inset-0\ntitle=%d%%\ndetail=%s\nicon=%s\nvalue=%s\ntone=%s\n", percent, (detail == "" ? "On battery" : detail), symbol, percent / 100, tone
   }'

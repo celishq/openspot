@@ -11,7 +11,7 @@ struct Board {
     var frame: String {
         let ordered = sessions.sorted { ($0.waits ? 0 : 1, -$0.active.timeIntervalSince1970) < ($1.waits ? 0 : 1, -$1.active.timeIntervalSince1970) }
         let latest = { (agent: Agent) in sessions.filter { $0.agent == agent }.map(\.active).max() ?? .distantPast }
-        var card = ["view=card"]
+        var card = ["card=card\nclass=hidden card:flex absolute inset-0"]
         for (index, limit) in limits.sorted(by: { latest($0.agent) > latest($1.agent) }).enumerated() {
             let waits = sessions.contains { $0.agent == limit.agent && $0.waits }
             card.append("limit\(index + 1)=\(limit.agent.logo)|\(limit.used)|\(waits ? "waiting" : "working")")
@@ -19,13 +19,14 @@ struct Board {
         for (index, session) in ordered.prefix(6).enumerated() {
             card.append("task\(index + 1)=\(session.waits ? "waiting" : "working")|\(clean(title(session)))|\(session.agent.logo)|\(clean(session.project))")
         }
-        let count = ordered.isEmpty ? [] : ["number=count\nvalue=\(ordered.count)\ntitle=Sessions"]
-        var blocks = ["frame=\ngrid=items\ngrid.small=card" + (count.isEmpty ? "" : "\ngrid.bar=count"), card.joined(separator: "\n")] + count + ["repeat=items"]
+        let count = ordered.isEmpty ? [] : ["number=count\nclass=hidden bar:flex\nvalue=\(ordered.count)\ntitle=Sessions"]
+        var blocks = ["frame=\nclass=gap-part card:relative", card.joined(separator: "\n")] + count + ["items=items\nclass=card:hidden"]
         for session in ordered {
             var detail = [session.project, session.waits ? "waits for you" : "working"]
             if let context = session.context { detail.append("\(Int((context * 100).rounded()))% context") }
             blocks.append("""
                 text=\(session.agent.rawValue)/\(session.pid)
+                parent=items
                 title=\(clean(title(session)))
                 detail=\(clean(detail.joined(separator: " · ")))
                 icon=\(logos.appendingPathComponent("\(session.agent.logo).png").path)

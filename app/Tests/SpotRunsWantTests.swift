@@ -5,7 +5,7 @@ import XCTest
 @MainActor
 final class SpotRunsWantTests: SpotRunsCase {
     func testClosingThePanelClosesASheetOfPartsAndTheNextOpenReads() async throws {
-        try script(toml: "", "printf 'frame=\\ngrid=a\\n\\nfield=a\\nvalue=one\\n'")
+        try script(toml: "", "printf 'frame=\\nclass=gap-part\\n\\nfield=a\\nvalue=one\\n'")
         let sheet = try sheet()
         sheet.open {}
         try await wait("the part") { sheet.panel != nil }
@@ -34,7 +34,7 @@ final class SpotRunsWantTests: SpotRunsCase {
 
     func testTheMenuBarDrawsTheBarLayoutOfTheFrame() async throws {
         menuBar.insert("pulls")
-        try script("pulls", toml: "title = 'Pull requests'\non = ['clock.120']", "printf 'frame=\\ngrid.bar=m\\n\\ntext=m\\ntitle=2\\n\\ntext=a\\ntitle=A\\n\\ntext=b\\ntitle=B\\n'")
+        try script("pulls", toml: "title = 'Pull requests'\non = ['clock.120']", "printf 'frame=\\nclass=gap-part\\n\\ntext=m\\nclass=bar:flex\\ntitle=2\\n\\nitems=list\\n\\ntext=a\\nparent=list\\ntitle=A\\n\\ntext=b\\nparent=list\\ntitle=B\\n'")
         let sheet = try sheet("pulls")
 
         try await wait("the mark") { self.runs.menuBarMarks.first?.mark.content == .text("2") }
@@ -44,7 +44,7 @@ final class SpotRunsWantTests: SpotRunsCase {
     }
 
     func testASpotShowsInTheMenuBarWhenThePersonPutsItThereWithItsBarLayoutOrElseItsIcon() async throws {
-        try script("cups", toml: "title = 'Cups'\non = ['clock.5']", log: "cups", "printf 'frame=\\ngrid.bar=t\\n\\ntext=t\\ntitle=3\\n'")
+        try script("cups", toml: "title = 'Cups'\non = ['clock.5']", log: "cups", "printf 'frame=\\nclass=gap-part\\n\\ntext=t\\nclass=bar:flex\\ntitle=3\\n'")
         try script("notes", toml: "title = 'Notes'\nicon = 'note.text'\non = ['clock.5']", log: "notes", "printf 'text=t\\ntitle=4\\n'")
         _ = try scanned()
         XCTAssertTrue(runs.menuBarMarks.isEmpty)
@@ -62,7 +62,7 @@ final class SpotRunsWantTests: SpotRunsCase {
         changed.assertForOverFulfill = false
         withObservationTracking { _ = runs.menuBarMarks } onChange: { changed.fulfill() }
         menuBar.insert("agents")
-        try script("agents", toml: "on = ['clock.5']", "printf 'frame=\\ngrid.bar=a\\n\\ntext=a\\n\\ntext=b\\n'")
+        try script("agents", toml: "on = ['clock.5']", "printf 'frame=\\nclass=gap-part\\n\\ntext=a\\nclass=bar:flex\\n\\nitems=list\\n\\ntext=b\\nparent=list\\n'")
 
         _ = try scanned()
 
@@ -236,7 +236,7 @@ final class SpotRunsWantTests: SpotRunsCase {
     }
 
     func testThePlaygroundAsksAFileWithNoReadWhatToShow() async throws {
-        let url = try script(body: "printf 'frame=\\ngrid=a\\n\\ntext=a\\ntitle=%s\\n' \"$#\"")
+        let url = try script(body: "printf 'frame=\\nclass=gap-part\\n\\ntext=a\\ntitle=%s\\n' \"$#\"")
         let sheet = runs.sheet(for: Playground.command(file: url))
 
         sheet.open {}
@@ -246,7 +246,7 @@ final class SpotRunsWantTests: SpotRunsCase {
     }
 
     func testThePlaygroundReadsAFileWithARead() async throws {
-        let url = try script(toml: "on = ['panel.open']", "printf 'frame=\\ngrid=a\\n\\ntext=a\\ntitle=%s\\n' \"$1\"")
+        let url = try script(toml: "on = ['panel.open']", "printf 'frame=\\nclass=gap-part\\n\\ntext=a\\ntitle=%s\\n' \"$1\"")
         let sheet = runs.sheet(for: Playground.command(file: url))
 
         sheet.open {}

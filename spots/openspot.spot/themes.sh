@@ -24,8 +24,8 @@ list() {
 
 # Prints the page of theme $2 with the words $1 in its field, and the words of its button in $3.
 page() {
-  printf 'frame=\ngrid=describe describe describe\ngrid=describe describe describe\ngrid=describe describe describe\ngrid=copy copy copy\n\n'
-  printf 'field=describe\ntype=multiline\nplaceholder=Describe the look you want for %s\n' "$2"
+  printf 'frame=\nclass=gap-group\n\n'
+  printf 'field=describe\nclass=grow\ntype=multiline\nplaceholder=Describe the look you want for %s\n' "$2"
   openspot_kv value "$1"
   printf '\nbutton=copy\ntitle=%s\nlook=strong\nshortcut=cmd+return\nclose=false\n' "${3:-Copy prompt}"
 }
@@ -76,7 +76,7 @@ case "$route" in
         ;;
       rename)
         if [ -z "$(value input.name)" ]; then
-          printf 'frame=\ntitle=Rename %s\ngrid=name\n\nfield=name\ntitle=Name\n' "$2"
+          printf 'frame=\nclass=gap-part\ntitle=Rename %s\n\nfield=name\ntitle=Name\n' "$2"
           openspot_kv value "$2"
           exit 0
         fi

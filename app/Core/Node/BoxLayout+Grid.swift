@@ -31,6 +31,8 @@ extension BoxLayout {
             let short = natural[index] - spanned(cells[index])
             if short > 0 { heights[cells[index].row + cells[index].rows - 1] += short }
         }
+        let free = (given ?? 0) - heights.reduce(0, +) - gapY * CGFloat(max(rows - 1, 0))
+        if free > 0, rows > 0 { heights = heights.map { $0 + free / CGFloat(rows) } }
         var tops: [CGFloat] = []
         var y: CGFloat = 0
         for height in heights {

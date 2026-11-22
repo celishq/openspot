@@ -25,8 +25,8 @@ final class SystemSettingsSpotTests: SampleSpotsCase {
             let section = try XCTUnwrap(rows.first { $0.title == "Громкость" })
             XCTAssertEqual(section.subtitle, "System Settings › Звук")
             XCTAssertEqual(section.keywords, ["громко", "тихо"])
-            XCTAssertEqual(section.parent, "Звук")
-            XCTAssertNil(pane.parent)
+            XCTAssertEqual(section.place, "Звук")
+            XCTAssertNil(pane.place)
             XCTAssertEqual(section.iconFile, pane.iconFile)
         }
     }

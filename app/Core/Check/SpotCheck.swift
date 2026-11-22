@@ -108,7 +108,7 @@ public struct SpotCheck: Sendable {
         }
         for script in scan.scripts {
             guard !Task.isCancelled else { return findings }
-            for view in [script.view].compactMap(\.self) + script.views.values.sorted() {
+            for view in script.views.values.sorted() {
                 do {
                     _ = try await views.library(of: URL(fileURLWithPath: view))
                 } catch {
@@ -135,7 +135,7 @@ public struct SpotCheck: Sendable {
 
     static func brokenBlocks(in text: String, kinds: [BlockKind] = BlockKind.all) -> [String] {
         let fix = "as a value with a new line prints. Print each value from data with openspot_kv, openspot_item or esc"
-        let lists: Set<String> = ["grid", "value", "hides", "color"]
+        let lists: Set<String> = ["value", "hides", "color"]
         var faults: [String] = []
         let blocks = text.components(separatedBy: "\n").split { $0.isEmpty || $0 == SheetFrames.mark }
         let views = Set(kinds.filter { $0.source != nil }.map(\.word))
@@ -146,7 +146,7 @@ public struct SpotCheck: Sendable {
             var seen: Set<String> = []
             var told: Set<String> = []
             for line in block {
-                guard !isView, let key = line.split(separator: "=", maxSplits: 1).first.map(String.init), !lists.contains(key), !RootKey.isDrawing(key) else { continue }
+                guard !isView, let key = line.split(separator: "=", maxSplits: 1).first.map(String.init), !lists.contains(key) else { continue }
                 if !seen.insert(key).inserted, told.insert(key).inserted { faults.append("the block \(name) has \(key) twice, \(fix)") }
             }
         }

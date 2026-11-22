@@ -26,7 +26,7 @@ final class SpotVerbTests: XCTestCase {
         let editor = [
             "#!/bin/sh",
             "case \"$1\" in",
-            "  show) printf 'frame=\\ngrid=describe\\ngrid=copy\\n\\nfield=describe\\ntype=multiline\\n\\nbutton=copy\\ntitle=Copy prompt\\nlook=strong\\nshortcut=cmd+return\\nclose=false\\n'",
+            "  show) printf 'frame=\\nclass=gap-part\\n\\nfield=describe\\ntype=multiline\\n\\nbutton=copy\\ntitle=Copy prompt\\nlook=strong\\nshortcut=cmd+return\\nclose=false\\n'",
             "    [ -z \"${OPENSPOT_EDIT_FILE-}\" ] || printf '\\nbutton=editor\\ntitle=Open in editor\\nscope=spot\\n' ;;",
             "  copy) echo \"$OPENSPOT_EDIT|${OPENSPOT_EDIT_FILE-}|${OPENSPOT_EDIT_FAILURE-}\" >> '\(folder.path)/edits' ;;",
             "  editor) open -t \"$OPENSPOT_EDIT_FILE\" ;;",
@@ -35,8 +35,8 @@ final class SpotVerbTests: XCTestCase {
         let app = core.appendingPathComponent("openspot.spot")
         try editor.joined(separator: "\n").appending("\n").writeScript(to: app.appendingPathComponent("change.sh"), toml: "title = 'Change'\nedits = 'spots'")
         try actions.writeInline(to: app.appendingPathComponent("actions.js"), toml: actionsToml)
-        try icon.writeScript(to: app.appendingPathComponent("icon.sh"), toml: "title = 'Icon'\nicon = 'paintbrush.pointed'\nview = 'icon.swift'\nuses = ['spots']\ndrop = 'png,svg'")
-        try "import SwiftUI\n\nstruct SpotView: View {\n    let spot: SpotInput\n\n    var body: some View {\n        Color.clear\n    }\n}\n".write(to: app.appendingPathComponent("icon.swift"), atomically: true, encoding: .utf8)
+        try icon.writeScript(to: app.appendingPathComponent("icon.sh"), toml: "title = 'Icon'\nicon = 'paintbrush.pointed'\nviews = ['drawer.swift']\nuses = ['spots']\ndrop = 'png,svg'")
+        try "import SwiftUI\n\nstruct SpotView: View {\n    let spot: SpotInput\n\n    var body: some View {\n        Color.clear\n    }\n}\n".write(to: app.appendingPathComponent("drawer.swift"), atomically: true, encoding: .utf8)
         try "#!/bin/sh\necho\n".writeScript(to: core.spotFile("cups"), toml: "title = 'Cups'")
         let files = AppPlaces(
             environment: ["OPENSPOT_SPOTS": spots.path, "OPENSPOT_CONFIG": folder.appendingPathComponent("config").path, "OPENSPOT_CORE": core.path],
@@ -127,7 +127,7 @@ final class SpotVerbTests: XCTestCase {
     private let icon = """
         #!/bin/sh
         case "$1" in
-          show) printf 'frame=\\ntitle=Icon\\ngrid=drawer drawer\\ngrid=clear save\\n\\nview=drawer\\ndots=.\\n\\nbutton=clear\\ntitle=Clear\\nclose=false\\n\\nbutton=save\\ntitle=Save\\nshortcut=return\\nlook=strong\\n' ;;
+          show) printf 'frame=\\ntitle=Icon\\nclass=grid grid-cols-2 gap-part\\n\\ndrawer=drawer\\nclass=col-span-2\\ndots=.\\n\\nbutton=clear\\ntitle=Clear\\nclose=false\\n\\nbutton=save\\ntitle=Save\\nshortcut=return\\nlook=strong\\n' ;;
         esac
 
         """

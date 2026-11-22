@@ -39,43 +39,6 @@ final class NumberReadingTests: XCTestCase {
         XCTAssertTrue(Frame(text: "graph=disk\nvalue=0.5\n".placed).parts.isEmpty)
     }
 
-    func testThePlaceOfANumberOnACardPicksItsLook() throws {
-        let frame = Frame(text: """
-        frame=
-        grid.large=battery battery cpu cpu
-        grid.large=battery battery memory memory
-        grid.large=battery battery cups cups
-
-        number=battery
-        value=84
-        max=100
-
-        number=cpu
-        max=100
-        value=12
-        value=25
-
-        number=memory
-        value=61
-        max=100
-
-        number=cups
-        value=3
-
-        """)
-        let layout = try XCTUnwrap(frame.face.layout(for: .large))
-        func look(_ id: String) throws -> NumberLook? {
-            let index = try XCTUnwrap(layout.names.firstIndex(of: id))
-            let cells = layout.cells(of: layout.slots[index], on: .large)
-            return try XCTUnwrap(frame.face.parts.first { $0.id == id }).numberLook(columns: cells.columns, rows: cells.rows)
-        }
-
-        XCTAssertEqual(try look("battery"), .ring)
-        XCTAssertEqual(try look("cpu"), .bar)
-        XCTAssertEqual(try look("memory"), .bar)
-        XCTAssertEqual(try look("cups"), .stat)
-    }
-
     func testASeriesInATallPlaceIsAStatOverItsBars() throws {
         XCTAssertEqual(try part("number=cpu\nvalue=1\nvalue=2\n").numberLook(columns: 2, rows: 2), .stat)
         XCTAssertEqual(try part("number=cpu\nvalue=1\nvalue=2\n").numberLook(columns: 2, rows: 1), .bar)
@@ -136,7 +99,7 @@ final class NumberReadingTests: XCTestCase {
     }
 
     func testANumberPrintedAsARowShowsItsValueOrItsRingOnTheRight() throws {
-        let frame = Frame(text: "frame=\ngrid=cpu\ngrid=cpu\n\nnumber=cpu\nvalue=10\nmax=100\n\nnumber=cpu-1\ntitle=WindowServer\nvalue=32.7\nunit=%\n\nnumber=device-1\ntitle=AirPods\nvalue=74\nmax=100\nunit=%\n")
+        let frame = Frame(text: "frame=\nclass=gap-part\n\nnumber=cpu\nvalue=10\nmax=100\n\nitems=list\n\nnumber=cpu-1\nparent=list\ntitle=WindowServer\nvalue=32.7\nunit=%\n\nnumber=device-1\nparent=list\ntitle=AirPods\nvalue=74\nmax=100\nunit=%\n")
 
         XCTAssertEqual(frame.items.map(\.run), ["cpu-1", "device-1"])
         XCTAssertEqual(frame.items.first?.number?.text, "32.7%")

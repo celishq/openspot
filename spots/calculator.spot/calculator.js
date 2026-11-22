@@ -14,9 +14,9 @@ function fields(text) {
  * of old rates. A pick copies the plain value. */
 function card(solved) {
   return openspot.frame([
-    { frame: "", "grid.large": "answer" },
-    { number: "answer", value: solved.text, display: solved.title, unit: solved.unit, title: solved.tone ? `${solved.detail} · rates of ${solved.rates}` : solved.detail },
-    { button: "open", title: "Copy" },
+    { frame: "" },
+    { number: "answer", class: "large:flex", value: solved.text, display: solved.title, unit: solved.unit, title: solved.tone ? `${solved.detail} · rates of ${solved.rates}` : solved.detail },
+    { button: "open", title: "Copy", scope: "spot" },
   ])
 }
 

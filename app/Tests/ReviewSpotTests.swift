@@ -48,8 +48,8 @@ final class ReviewSpotTests: XCTestCase {
     func testTheReviewOfASharedInlineCoreSpotShowsItsText() throws {
         let core = try temporaryFolder()
         let sums = core.appendingPathComponent("sums.spot")
-        try "function main(args) { return 'frame=\\ngrid.large=answer\\n\\nnumber=answer\\nvalue=3\\n\\nbutton=open\\ntitle=Copy\\n' }\n".writeInline(to: sums.appendingPathComponent("sums.js"), toml: "title = 'Sums'\nicon = 'equal.square'\ndetail = 'Sums'\non = ['search.text ^[0-9]']\nuses = ['clipboard']")
-        try "#!/bin/sh\nprintf 'frame=\\ngrid.large=answer\\n\\nnumber=answer\\nvalue=3\\ntitle=1 + 2\\n\\nbutton=open\\ntitle=Copy\\n'\n".writeScript(to: sums.appendingPathComponent("sample.sh"))
+        try "function main(args) { return 'frame=\\nclass=gap-part\\n\\nnumber=answer\\nvalue=3\\nclass=large:flex\\n' }\n".writeInline(to: sums.appendingPathComponent("sums.js"), toml: "title = 'Sums'\nicon = 'equal.square'\ndetail = 'Sums'\non = ['search.text ^[0-9]']\nuses = ['clipboard']")
+        try "#!/bin/sh\nprintf 'frame=\\nclass=gap-part\\n\\nnumber=answer\\nvalue=3\\ntitle=1 + 2\\nclass=large:flex\\n'\n".writeScript(to: sums.appendingPathComponent("sample.sh"))
         try "# Sums\n\nAdds numbers.\n".write(to: sums.appendingPathComponent("readme.md"), atomically: true, encoding: .utf8)
         let scan = try SpotsFolder(url: folder, core: core, enabled: ["sums"]).scan()
         let shared = try XCTUnwrap(scan.spots.first { SpotsFolder.coreID(of: $0) == "sums" })

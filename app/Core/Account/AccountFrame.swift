@@ -5,23 +5,75 @@ struct AccountFrame {
         case plain, main, close, picked
     }
 
+    private static let divider = "-"
+
     private var head: [TextBlock.Field] = []
     private var blocks: [TextBlock] = []
+    private var lines: [[String]] = []
+    private var classes: [String: String] = [:]
 
     var text: String {
-        ([RootKey.block(head)] + blocks).map(\.text).joined(separator: "\n")
+        let end = endButtons
+        var shown: [TextBlock] = [RootKey.block([.init(key: "class", value: end == nil ? "gap-part" : "gap-group")] + head)]
+        if end != nil {
+            shown.append(TextBlock(fields: [.init(key: "box", value: "top"), .init(key: "class", value: "gap-part")]))
+            shown.append(TextBlock(fields: [.init(key: "box", value: "end"), .init(key: "class", value: "gap-part")]))
+        }
+        var placed = Set<String>()
+        for (index, line) in lines.enumerated() {
+            let group = end.map { index < $0 ? "top" : "end" }
+            if line == [Self.divider] {
+                shown.append(placing(TextBlock(fields: [.init(key: "box", value: "line-\(index)"), .init(key: "class", value: "h-px bg-tile")]), in: group))
+                continue
+            }
+            let row = line.count > 1 ? "row-\(index)" : nil
+            if let row {
+                shown.append(placing(TextBlock(fields: [.init(key: "box", value: row), .init(key: "class", value: "grid grid-cols-\(line.count) gap-part")]), in: group))
+            }
+            for id in line {
+                guard let block = blocks.first(where: { $0.fields.first?.value == id }) else { continue }
+                placed.insert(id)
+                shown.append(placing(block, in: row ?? group))
+            }
+        }
+        shown += blocks.filter { !placed.contains($0.fields.first?.value ?? "") }
+        return shown.map(\.text).joined(separator: "\n")
+    }
+
+    private var endButtons: Int? {
+        let isButtons = { (line: [String]) in
+            line != [Self.divider] && line.allSatisfy { id in blocks.contains { $0.fields.first?.key == "button" && $0.fields.first?.value == id } }
+        }
+        guard let last = lines.lastIndex(where: { !isButtons($0) }) else { return nil }
+        return last + 1 < lines.count ? last + 1 : nil
+    }
+
+    private func placing(_ block: TextBlock, in parent: String?) -> TextBlock {
+        guard let first = block.fields.first else { return block }
+        var added: [TextBlock.Field] = []
+        if let parent { added.append(.init(key: "parent", value: parent)) }
+        if let style = classes[first.value] { added.append(.init(key: "class", value: style)) }
+        return TextBlock(fields: [first] + added + block.fields.dropFirst())
     }
 
     mutating func head(_ key: String, _ value: String) {
         head.append(.init(key: key, value: value))
     }
 
-    mutating func grid(_ lines: String...) {
-        for line in lines { head("grid", line) }
+    mutating func rows(_ rows: String...) {
+        for row in rows {
+            var ids: [String] = []
+            for id in row.split(separator: " ").map(String.init) where !ids.contains(id) { ids.append(id) }
+            lines.append(ids)
+        }
     }
 
-    mutating func wordGrid() {
-        for first in stride(from: 1, through: AccountPhrase.wordCount, by: 2) { grid("w\(first) w\(first + 1)") }
+    mutating func style(_ id: String, _ style: String) {
+        classes[id] = style
+    }
+
+    mutating func wordRows() {
+        for first in stride(from: 1, through: AccountPhrase.wordCount, by: 2) { rows("w\(first) w\(first + 1)") }
     }
 
     mutating func block(_ values: [String: String], order: [String]) {

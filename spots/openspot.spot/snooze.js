@@ -82,10 +82,10 @@ function words(date, now) {
  * opens the page where the person types a time. */
 function sheet(now, choices) {
   const moments = times(now, choices)
-  const blocks = [{ frame: "", grid: "tiles" }, { repeat: "tiles", grid: "a b c" }]
+  const blocks = [{ frame: "" }, { items: "tiles", class: "grid grid-cols-3" }]
   for (const [id, title, icon, none] of tiles) {
     const moment = moments[id]
-    const tile = { text: id, title, detail: moment ? words(moment, now) : none, icon, look: "tile" }
+    const tile = { text: id, parent: "tiles", title, detail: moment ? words(moment, now) : none, icon, look: "tile" }
     if (id === "date") tile.route = "date"
     blocks.push(tile)
   }
@@ -115,13 +115,13 @@ function dayWords(day, now) {
 /** The Pick Date page: the next twelve days as tiles, each with its weekday and its date. A day is offered
  * while one of its parts is still to come. */
 function days(now, choices) {
-  const blocks = [{ frame: "", grid: "days" }, { repeat: "days", grid: "a b c" }]
+  const blocks = [{ frame: "" }, { items: "days", class: "grid grid-cols-3" }]
   const last = dayParts(choices).map(([, , hour]) => hour).reduce((a, b) => (a[0] * 60 + a[1] > b[0] * 60 + b[1] ? a : b))
   for (let offset = at(now, 0, last) > now ? 0 : 1, count = 0; count < 12; offset++, count++) {
     const day = at(now, offset, [0, 0])
     const route = `date/${day.getFullYear()}-${two(day.getMonth() + 1)}-${two(day.getDate())}`
     const weekday = day.toLocaleDateString("en-US", { weekday: "long" })
-    blocks.push({ text: route, title: weekday, detail: dayWords(day, now), icon: "calendar", look: "tile", route, "route.title": `${weekday}, ${day.toLocaleDateString("en-US", { month: "long", day: "numeric" })}` })
+    blocks.push({ text: route, parent: "days", title: weekday, detail: dayWords(day, now), icon: "calendar", look: "tile", route, "route.title": `${weekday}, ${day.toLocaleDateString("en-US", { month: "long", day: "numeric" })}` })
   }
   return openspot.frame(blocks)
 }
@@ -129,11 +129,11 @@ function days(now, choices) {
 /** The page of one day: its parts still to come, each with the time it stands for. */
 function hours(route, now, choices) {
   const [year, month, date] = route.slice("date/".length).split("-").map(Number)
-  const blocks = [{ frame: "", grid: "hours" }, { repeat: "hours", grid: "a b c" }]
+  const blocks = [{ frame: "" }, { items: "hours", class: "grid grid-cols-3" }]
   for (const [title, icon, [hour, minute]] of dayParts(choices)) {
     const moment = new Date(year, month - 1, date, hour, minute)
     if (moment <= now) continue
-    blocks.push({ text: iso(moment), title, detail: `${hour}:${two(minute)}`, icon, look: "tile" })
+    blocks.push({ text: iso(moment), parent: "hours", title, detail: `${hour}:${two(minute)}`, icon, look: "tile" })
   }
   return openspot.frame(blocks)
 }

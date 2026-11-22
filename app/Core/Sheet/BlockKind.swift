@@ -1,7 +1,6 @@
 import Foundation
 
 public struct BlockKind: Sendable, Equatable {
-    public static let repeated = "repeat"
     public static let option = "option"
     public static let box = "box"
     public static let items = "items"
@@ -65,9 +64,9 @@ public struct BlockKind: Sendable, Equatable {
         first.name == second.name
     }
 
-    public static let all = [text, number, picture, icon, view, toggle, slider, hotkey, field, choice, button, section]
+    public static let all = [text, number, picture, icon, toggle, slider, hotkey, field, choice, button]
 
-    static let listWords = [repeated, items, option, box]
+    static let listWords = [items, option, box]
 
     public static var words: Set<String> {
         Set(all.map(\.word) + listWords)
@@ -106,8 +105,6 @@ public struct BlockKind: Sendable, Equatable {
     static let picture = BlockKind(name: "picture", control: { Icon(text: $0.value("icon"))?.image.map(SpotPart.Control.image) ?? .none })
 
     static let icon = BlockKind(name: "icon")
-
-    static let view = BlockKind(name: "view", isOpen: true)
 
     static let toggle = BlockKind(
         name: "switch",
@@ -176,8 +173,6 @@ public struct BlockKind: Sendable, Equatable {
     )
 
     static let button = BlockKind(name: "button", presses: true, faults: PartCatalog.shortcutFaults)
-
-    static let section = BlockKind(name: "section")
 
     private static func range(of block: TextBlock) -> (low: Double, high: Double) {
         (block.number("min") ?? 0, block.number("max") ?? 100)

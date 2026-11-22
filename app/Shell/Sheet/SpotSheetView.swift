@@ -85,9 +85,7 @@ private struct SheetContentView: View {
                         selectedPart: content.selectedPart,
                         nudge: content.nudge,
                         menuOpening: content.menuOpening,
-                        onFocus: { model.focusPart($0) },
-                        viewSource: entry.spot.view,
-                        viewDate: entry.spot.viewDate
+                        onFocus: { model.focusPart($0) }
                     )
                 } else if let form {
                     if form.choices != nil { Color.clear.frame(height: SpotTokens.listRow) }
@@ -115,6 +113,7 @@ private struct SheetContentView: View {
         .frame(width: rect.width, height: rect.height, alignment: .topLeading)
         .overlay(alignment: .topLeading) { fileDrag }
         .environment(\.spotViewPlace, SpotViewPlace(model: model, place: .sheet(entry.id)))
+        .environment(\.spotViewDates, entry.spot.viewDates)
     }
 
     private var header: some View {

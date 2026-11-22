@@ -14,6 +14,8 @@ final class ClassStyleTests: XCTestCase {
         XCTAssertEqual(grid.columns, 3)
         XCTAssertEqual(grid.columnSpan, 2)
         XCTAssertEqual(grid.rowSpan, 6)
+        XCTAssertEqual(Style(classes: "grid-cols-12").columns, 12)
+        XCTAssertEqual(Style(classes: "col-span-12").columnSpan, 12)
 
         let layer = Style(classes: "absolute inset-0")
         XCTAssertTrue(layer.isAbsolute)
@@ -112,8 +114,8 @@ final class ClassStyleTests: XCTestCase {
     }
 
     func testAnUnknownClassIsSkippedAndKept() {
-        let style = Style(classes: "p-3 w-[120px] p-13 gap-full grid-cols-7 tall:p-2 card:glow bg-[#ff0000] text-purple")
-        XCTAssertEqual(style.unknown, ["w-[120px]", "p-13", "gap-full", "grid-cols-7", "tall:p-2", "card:glow", "bg-[#ff0000]", "text-purple"])
+        let style = Style(classes: "p-3 w-[120px] p-13 gap-full grid-cols-13 tall:p-2 card:glow bg-[#ff0000] text-purple")
+        XCTAssertEqual(style.unknown, ["w-[120px]", "p-13", "gap-full", "grid-cols-13", "tall:p-2", "card:glow", "bg-[#ff0000]", "text-purple"])
         XCTAssertEqual(style.padding[.top], .steps(3))
         XCTAssertTrue(style.variants.isEmpty)
     }

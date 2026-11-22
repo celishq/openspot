@@ -1,5 +1,5 @@
 #!/bin/sh
-printf 'frame=\ngrid=week\n\nview=week\n\n'
-printf 'text=mon\ntitle=Monday\ncups=3\n\n'
-printf 'text=tue\ntitle=Tuesday\ncups=1\n\n'
-printf 'text=wed\ntitle=Wednesday\ncups=2\n'
+printf 'frame=\nclass=gap-part\n\nweek=chart\nvalue=3\nvalue=1\nvalue=2\nclass=h-16\n\nitems=days\n\n'
+printf 'text=mon\nparent=days\ntitle=Monday\n\n'
+printf 'text=tue\nparent=days\ntitle=Tuesday\n\n'
+printf 'text=wed\nparent=days\ntitle=Wednesday\n'

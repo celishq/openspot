@@ -89,6 +89,14 @@ final class ViewVariantTests: XCTestCase {
         XCTAssertEqual(output.metric?.value("value"), "84")
     }
 
+    func testTwoValuesThatShowOnTheCardStandForNone() {
+        let output = Frame(text: "frame=\nclass=card:p-0\n\ntext=a\ntitle=A\n\ntext=b\ntitle=B\n")
+        let one = Frame(text: "frame=\nclass=card:p-0\n\ntext=a\ntitle=A\n\ntext=b\ntitle=B\nclass=card:hidden\n")
+
+        XCTAssertNil(output.value)
+        XCTAssertEqual(one.value?.value("text"), "a")
+    }
+
     func testACardThatShowsOnlyOneSwitchIsThatSwitchAndShowsWhetherItIsOn() {
         let output = Frame(text: """
         frame=

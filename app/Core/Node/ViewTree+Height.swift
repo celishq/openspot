@@ -8,7 +8,8 @@ extension ViewTree {
         let fills = shown.contains { id in
             guard let node = nodes[id] else { return false }
             let holder = node.parent.flatMap { nodes[$0] }?.style.resolved(for: [.sheet]) ?? root
-            return node.kind == BlockKind.items || node.style.resolved(for: [.sheet]).grows == true && (holder.arrangement ?? .column) == .column
+            let style = node.style.resolved(for: [.sheet])
+            return node.kind == BlockKind.items || style.grows == true && ((holder.arrangement ?? .column) == .column || style.isAbsolute)
         }
         guard !fills else { return nil }
         let lines = Dictionary(parts.map { ($0.id, $0.flatLines) }) { first, _ in first }
@@ -35,9 +36,13 @@ extension ViewTree {
         case "text": textHeight(node, style)
         case "icon": SpotTokens.listIconSize
         case "picture": SpotTokens.cell
-        default: node.source == nil ? SpotTokens.listRow * CGFloat(lines[node.id] ?? 1) : SpotTokens.cell
+        default: node.source == nil ? Self.rowsHeight(lines[node.id] ?? 1) : SpotTokens.cell
         }
         return CGSize(width: width ?? 0, height: height)
+    }
+
+    private static func rowsHeight(_ lines: Int) -> CGFloat {
+        SpotTokens.listRow * CGFloat(lines) + SpotTokens.partGap * CGFloat(lines - 1)
     }
 
     private func textHeight(_ node: ViewNode, _ style: Style) -> CGFloat {

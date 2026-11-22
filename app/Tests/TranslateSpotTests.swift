@@ -31,8 +31,8 @@ final class TranslateSpotTests: SampleSpotsCase {
             XCTAssertEqual(output.kind, .list)
             let faults = try await translate.sheetFaults(timeout: 60)
             XCTAssertEqual(faults, [])
-            XCTAssertEqual(output.layout?.rows.first, ["source", "source", ".", "."])
-            XCTAssertEqual(output.parts.map(\.id), ["source", "input", "target", "output", "swap"])
+            XCTAssertEqual(output.tree.children, ["source", "input", "middle", "target", "result"])
+            XCTAssertEqual(output.parts.map(\.id), ["source", "input", "swap", "target", "output"])
             XCTAssertEqual(self.text(of: "source", in: output), "auto")
             XCTAssertEqual(self.text(of: "target", in: output), "en")
         }
@@ -164,7 +164,7 @@ final class TranslateSpotTests: SampleSpotsCase {
 
             XCTAssertEqual(self.text(of: "output", in: output), "could not start. Run it again.")
             XCTAssertEqual(self.text(of: "input", in: output), "hi")
-            XCTAssertEqual(output.parts.last?.id, "swap")
+            XCTAssertEqual(output.parts.last?.id, "output")
         }
     }
 }

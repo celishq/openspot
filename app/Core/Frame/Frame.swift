@@ -26,7 +26,6 @@ public struct Frame: Equatable, Sendable {
     private var barValue: TextBlock?
     private var barKind: BlockKind?
     public private(set) var hasBar = false
-    public private(set) var view: TextBlock?
     public private(set) var face = CardFace.none
     public private(set) var tree = ViewTree.empty
     public private(set) var drawing = RepeatDrawing.list
@@ -55,13 +54,8 @@ public struct Frame: Equatable, Sendable {
         return grouped
     }
 
-    static func placed(by head: TextBlock?, tree: ViewTree) -> Set<String> {
-        placed(by: head).union(tree.isWritten ? Set(tree.nodes.keys).subtracting(tree.listed) : [])
-    }
-
-    static func placed(by head: TextBlock?) -> Set<String> {
-        let drawn = head.flatMap { SheetLayout(block: $0) }
-        return Set(CardFace(head: head, parts: []).drawings.values.flatMap { $0.joined() }).union(drawn?.areas.keys.map { $0 } ?? [])
+    static func placed(in tree: ViewTree) -> Set<String> {
+        tree.isWritten ? Set(tree.nodes.keys).subtracting(tree.listed) : []
     }
 
     public init(text: String, kinds: [BlockKind] = BlockKind.all) {
@@ -79,46 +73,39 @@ public struct Frame: Equatable, Sendable {
         isMark = frame.isMark
         let head = frame.block
         tree = ViewTree(blocks: blocks, root: head, kinds: kinds)
-        let repeats = blocks.filter { [BlockKind.repeated, BlockKind.items].contains($0.fields.first?.key) }
-        let repeated = repeats.first.flatMap { block in block.fields.first.map { (block, $0.value) } }
-        if let (block, id) = repeated {
-            let style = tree.node(id)?.style.resolved(for: [.sheet])
-            drawing = style?.arrangement == .grid ? RepeatDrawing(columns: style?.columns ?? 1) : RepeatDrawing(block: block)
+        let repeated = blocks.first { $0.fields.first?.key == BlockKind.items }?.fields.first?.value
+        if let repeated, let style = tree.node(repeated)?.style.resolved(for: [.sheet]), style.arrangement == .grid {
+            drawing = RepeatDrawing(columns: style.columns ?? 1)
         }
         let listed = tree.listed
-        let placed = Self.placed(by: head, tree: tree)
-        let inTreeSheet = tree.isWritten ? Set(tree.shown(in: [.sheet])) : nil
-        let inSheet = head.flatMap { SheetLayout(block: $0) }.map { Set($0.areas.keys) }
+        let placed = Self.placed(in: tree)
+        let inSheet = Set(tree.shown(in: [.sheet]))
         var runs = Set<String>()
         var rows: [TextBlock] = []
         var section: String?
         var values: [(block: TextBlock, kind: BlockKind)] = []
         for (index, block) in blocks.enumerated() {
             let word = block.fields.first?.key
-            if [BlockKind.repeated, BlockKind.items, BlockKind.box].contains(word) { continue }
+            if [BlockKind.items, BlockKind.box].contains(word) { continue }
             if let kind = BlockKind.of(block, in: kinds) {
                 let id = block.value(kind.word)
                 let isPlaced = id.map(placed.contains) ?? false
-                let row = id.map(listed.contains) == true ? block.dropping(ViewNode.parentKey) : block
                 if kind.presses, let id, !isPlaced {
                     take(action: id, block)
                 } else if Self.isSearch(block) {
                     searchField = block
-                } else if kind == .section, !isPlaced {
-                    section = block.value("title")
                 } else if let id, listed.contains(id), tree.node(id)?.style.resolved(for: [.sheet]).font == .section {
                     section = block.value("title") ?? block.value("value")
                 } else if let part = SpotPart(block: block, kind: kind) {
                     if kind.field != nil { fields.append(Field(block: block, kind: kind)) }
-                    if view == nil, kind.isOpen { view = block }
                     if kind.holdsValue { values.append((block, kind)) }
                     every.append(part)
                     if isPlaced {
-                        if let id, inSheet?.contains(id) ?? true, inTreeSheet?.contains(id) ?? true { parts.append(part) }
+                        if let id, inSheet.contains(id) { parts.append(part) }
                     } else if kind == .choice {
                         parts.append(part)
-                    } else if let item = SpotItem(block: row, kind: kind, section: section) {
-                        rows.append(row)
+                    } else if let item = SpotItem(block: block, kind: kind, section: section) {
+                        rows.append(block)
                         if runs.insert(item.run).inserted { items.append(item) }
                     }
                 } else {
@@ -133,17 +120,14 @@ public struct Frame: Equatable, Sendable {
                 errors.append(block.firstLine)
             }
         }
-        let repeating = repeated.map { (area: $0.1, perLine: drawing.perLine ?? drawing.columns) }
+        let repeating = repeated.map { (area: $0, perLine: drawing.perLine ?? drawing.columns) }
             ?? (!items.isEmpty && !parts.isEmpty ? (area: Self.itemsArea, perLine: 1) : nil)
-        let layout = SheetLayout(block: head, repeating: repeating, repeats: repeats.count, skipping: searchField?.fields.first?.value)
-            ?? repeating.map { SheetLayout(flat: parts, repeating: $0) }
-        self.layout = layout
+        layout = repeating.map { SheetLayout(flat: parts, repeating: $0) }
         let fields = rows.map { $0.fields.flatMap { [$0.key, $0.value] } }
         parts = parts.map { part in
-            let drawn = tree.isWritten ? part.drawn(spanning: tree.node(part.id).map(Self.spansRows) ?? false) : part.drawn(in: layout)
-            return drawn.holding(items: fields)
+            part.drawn(spanning: tree.isWritten && tree.node(part.id).map(Self.spansRows) == true).holding(items: fields)
         }
-        face = CardFace(head: head, parts: every, tree: tree.isWritten || !tree.places.isEmpty ? tree : .empty)
+        face = CardFace(parts: every, tree: tree.isWritten || !tree.places.isEmpty ? tree : .empty)
         let cardSizes = SpotSize.all.filter(tree.draws(on:))
         let onCard = cardSizes.isEmpty ? nil : Set(cardSizes.flatMap { tree.shown(in: Style.Variant.card($0)) })
         if let onCard { carded = every.filter { onCard.contains($0.id) } }
@@ -152,7 +136,7 @@ public struct Frame: Equatable, Sendable {
         let held = sole.count == 1 ? sole.first : nil
         value = held?.block
         valueKind = held?.kind
-        let barred = tree.drawsOnBar ? tree.shown(in: [.bar]) : face.drawings[CardFace.bar]?.flatMap { $0 } ?? []
+        let barred = tree.drawsOnBar ? tree.shown(in: [.bar]) : []
         let shown = barred.lazy.compactMap { id in values.first { $0.block.fields.first?.value == id } }.first
         barValue = shown?.block
         barKind = shown?.kind
@@ -210,7 +194,7 @@ public struct Frame: Equatable, Sendable {
     public var answers: [SpotItem] {
         guard face.answerSize != nil, let value, let run = value.value("value") else { return items }
         let title = value.value("display") ?? run
-        return [SpotItem(title: title, run: run, card: SpotState(output: self, header: SpotState(title: title)).holding(view), openTitle: openTitle)]
+        return [SpotItem(title: title, run: run, card: SpotState(output: self, header: SpotState(title: title)), openTitle: openTitle)]
     }
 
     public var valuePart: SpotPart? {
@@ -222,8 +206,7 @@ public struct Frame: Equatable, Sendable {
     }
 
     public var search: ItemSearch {
-        if tree.isWritten { return searchField != nil ? .local : .off }
-        return searchField != nil || root?.value(RootKey.grid) == nil ? .local : .off
+        !tree.isWritten || searchField != nil ? .local : .off
     }
 
     public var keepsRecent: Bool {

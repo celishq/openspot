@@ -91,7 +91,7 @@ public enum SpotStarter: String, CaseIterable, Sendable {
             . "$OPENSPOT_SH"
             case "$1" in
               show)
-                printf 'frame=\\ngrid=note\\ngrid=save\\n\\n'
+                printf 'frame=\\nclass=gap-part\\n\\n'
                 printf 'field=note\\ntitle=Note\\nplaceholder=Write a note\\n\\n'
                 printf 'button=save\\ntitle=Save\\nshortcut=cmd+return\\nlook=strong\\n'
                 ;;

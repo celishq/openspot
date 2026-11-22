@@ -61,7 +61,7 @@ final class AccountSheetTests: BuiltInCase {
     }
 
     private func block(_ id: String, in frame: String) -> [String: String] {
-        let found = frame.components(separatedBy: "\n\n").first { $0.split(separator: "\n").contains { $0.hasSuffix("=\(id)") && !$0.hasPrefix("grid=") } }
+        let found = frame.components(separatedBy: "\n\n").first { $0.split(separator: "\n").contains { $0.hasSuffix("=\(id)") && !$0.hasPrefix("parent=") } }
         var keys: [String: String] = [:]
         for line in (found ?? "").split(separator: "\n") {
             let parts = line.split(separator: "=", maxSplits: 1).map(String.init)
@@ -81,7 +81,7 @@ final class AccountSheetTests: BuiltInCase {
         XCTAssertTrue(spot.isFound)
         XCTAssertFalse(spot.on?.has(.panel) == true)
         XCTAssertTrue(spot.reachesAccountKey)
-        XCTAssertEqual(spot.view, AccountSheet.card)
+        XCTAssertEqual(spot.views, ["card": AccountSheet.card])
     }
 
     func testWithNoAccountItOffersANewKeyOrYourOwn() async throws {
@@ -100,7 +100,9 @@ final class AccountSheetTests: BuiltInCase {
         XCTAssertEqual(block("handle", in: asked)["value"], "tonypinkevych")
         XCTAssertEqual(block("handle", in: asked)["grow"], "false")
         XCTAssertEqual(block("label", in: asked)["title"], "Handle")
-        XCTAssertTrue(asked.contains("grid=create create\n"), asked)
+        XCTAssertEqual(block("label", in: asked)["class"], "font-section")
+        XCTAssertEqual(block("create", in: asked)["title"], "Create key")
+        XCTAssertEqual(block("create", in: asked)["parent"], "end")
         XCTAssertNil(block("back", in: asked)["title"])
 
         let answer = try await said(["create"], input: "input.handle=tony\n", page: "handle")
@@ -142,7 +144,9 @@ final class AccountSheetTests: BuiltInCase {
 
         XCTAssertEqual(block("card", in: read)["grow"], "false")
         XCTAssertEqual(block("backup", in: read)["title"], "Backup")
-        XCTAssertTrue(read.contains("grid=- -\ngrid=how leave\n"), read)
+        XCTAssertTrue(read.contains("class=h-px bg-tile\n"), read)
+        XCTAssertNotNil(block("how", in: read)["parent"])
+        XCTAssertEqual(block("how", in: read)["parent"], block("leave", in: read)["parent"])
         XCTAssertFalse(read.contains("button=done"), read)
     }
 
@@ -163,8 +167,9 @@ final class AccountSheetTests: BuiltInCase {
         let account = try await frame(["show"])
 
         XCTAssertEqual(block("how", in: read)["title"], "How it works")
-        XCTAssertTrue(read.contains("grid=own how\n"), read)
-        XCTAssertTrue(account.contains("grid=how leave\n"), account)
+        XCTAssertNotNil(block("how", in: read)["parent"])
+        XCTAssertEqual(block("own", in: read)["parent"], block("how", in: read)["parent"])
+        XCTAssertEqual(block("how", in: account)["parent"], block("leave", in: account)["parent"])
         XCTAssertEqual(pushed, [push("how")])
         XCTAssertEqual(block("head", in: how)["title"], "How your key works")
         XCTAssertEqual(done, [.route(.pop(all: false))])
@@ -282,10 +287,10 @@ final class AccountSheetTests: BuiltInCase {
         let empty = try await frame(["show"], page: "restore")
         let typing = try await frame(["phrase", "abandon"], page: "restore")
 
-        XCTAssertTrue(empty.contains("grid=phrase phrase\ngrid=phrase phrase\ngrid=phrase phrase\n"), empty)
+        XCTAssertEqual(block("phrase", in: empty)["class"], "h-32")
         XCTAssertEqual(block("phrase", in: empty)["grow"], "false")
-        XCTAssertTrue(empty.contains("grid=sign_in sign_in\n"), empty)
-        XCTAssertFalse(empty.contains("grid=status"), empty)
+        XCTAssertEqual(block("sign_in", in: empty)["parent"], "end")
+        XCTAssertNil(block("status", in: empty)["title"])
         XCTAssertNil(block("w1", in: typing)["title"])
         XCTAssertEqual(block("status", in: typing)["title"], "1 of 12")
     }

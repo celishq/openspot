@@ -149,8 +149,8 @@ final class SpotsModelTests: XCTestCase {
     }
 
     func testASheetTakesTheLookOfItsCardOnlyWhenItsScriptDrawsTheCard() async throws {
-        try script("agenda", toml: "on = ['panel.open']", "printf 'frame=\\ngrid.small=next\\n\\nnumber=next\\nvalue=09:30\\n\\ntext=e\\ntitle=Standup\\n'")
-        try script("year", toml: "on = ['panel.open']\nview = 'year.swift'", "printf 'view=year\\ntitle=2026\\n\\ntext=e\\ntitle=Standup\\n'")
+        try script("agenda", toml: "on = ['panel.open']", "printf 'frame=\\nclass=gap-part\\n\\nnumber=next\\nvalue=09:30\\nclass=card:flex\\n\\nitems=list\\nclass=card:hidden\\n\\ntext=e\\nparent=list\\ntitle=Standup\\n'")
+        try script("year", toml: "on = ['panel.open']\nviews = ['year.swift']", "printf 'frame=\\nclass=gap-part card:p-0\\n\\nyear=year\\ntitle=2026\\n\\nitems=list\\nclass=card:hidden\\n\\ntext=e\\nparent=list\\ntitle=Standup\\n'")
         try script("list", toml: "on = ['panel.open']", "printf 'text=a\\ntitle=Apple\\n'")
         await model.reload()
         model.panelWillShow()
@@ -609,7 +609,7 @@ final class SpotsModelTests: XCTestCase {
     }
 
     func testAPanelThatHidesCutsASheetOfPartsAndItsRun() async throws {
-        try script("parts", toml: "", "printf 'frame=\\ngrid=a\\n\\ntext=a\\ntitle=A\\n'")
+        try script("parts", toml: "", "printf 'frame=\\nclass=gap-part\\n\\ntext=a\\ntitle=A\\n'")
         await model.reload()
         model.isShown = true
         model.panelWillShow()
@@ -844,7 +844,7 @@ final class SpotsModelTests: XCTestCase {
         try script("agenda", toml: "[settings.pick]", """
         case "$1" in
           pick) printf 'frame=\\ntitle=Pick\n\nchoice=shown\ntitle=Shown\ntype=multiple\nvalue=a\n\noption=a\ntitle=Apple\n\noption=b\ntitle=Banana\n' ;;
-          *) printf 'frame=\\ngrid=next\ngrid=items\ngrid.wide=next\n\nnumber=next\nvalue=09:30\n\nrepeat=items\n\ntext=e\ntitle=Standup\n' ;;
+          *) printf 'frame=\\nclass=gap-part\n\nnumber=next\nvalue=09:30\nclass=wide:flex square:flex strip:flex large:flex\n\nitems=items\nclass=card:hidden\n\ntext=e\nparent=items\ntitle=Standup\n' ;;
         esac
         """)
         await model.reload()
@@ -984,7 +984,7 @@ final class SpotsModelTests: XCTestCase {
 
     func testCommandReturnInAMultilineFieldPressesItsButtonAndCommandKOpensTheActions() async throws {
         let calls = try await openParts(
-            "frame=\ngrid=describe describe\\ngrid=. copy\\n\\nfield=describe\\ntype=multiline\\n\\nbutton=copy\\ntitle=Copy prompt\\nlook=strong\\nshortcut=cmd+return\\nclose=false\\n\\n"
+            "frame=\nclass=gap-part\\n\\nfield=describe\\ntype=multiline\\n\\nbutton=copy\\ntitle=Copy prompt\\nlook=strong\\nshortcut=cmd+return\\nclose=false\\n\\n"
                 + "button=guide\\ntitle=Read the guide\\nscope=spot\\n"
         )
         XCTAssertEqual(model.openParts?.selectedPart?.id, "describe")
@@ -1002,8 +1002,8 @@ final class SpotsModelTests: XCTestCase {
 
     func testReturnOpensAFocusedMenuAndPressesAFocusedButton() async throws {
         let calls = try await openParts(
-            "frame=\ngrid=look look\\ngrid=key key\\ngrid=make play\\n\\nchoice=look\\nvalue=a\\n\\noption=a\\ntitle=A\\n\\noption=b\\ntitle=B\\n\\n"
-                + "field=key\\ntype=hotkey\\nvalue=option+c\\n\\nbutton=make\\ntitle=Make\\n\\nbutton=play\\ntitle=Play\\n\\nbutton=paste\\ntitle=Paste\\n"
+            "frame=\nclass=gap-part\\n\\nchoice=look\\nvalue=a\\n\\noption=a\\ntitle=A\\n\\noption=b\\ntitle=B\\n\\n"
+                + "field=key\\ntype=hotkey\\nvalue=option+c\\n\\nbox=foot\\nclass=flex-row gap-part\\n\\nbutton=make\\nparent=foot\\ntitle=Make\\n\\nbutton=play\\nparent=foot\\ntitle=Play\\n"
         )
 
         XCTAssertTrue(model.handleKey(ActionKey(name: "return")))
@@ -1016,7 +1016,7 @@ final class SpotsModelTests: XCTestCase {
     }
 
     func testAKeyPressedWhileTheShortcutRowOnlyHasTheFocusIsNotRecorded() async throws {
-        let calls = try await openParts("frame=\ngrid=key\\n\\nfield=key\\ntype=hotkey\\nvalue=option+c\\n")
+        let calls = try await openParts("frame=\nclass=gap-part\\n\\nfield=key\\ntype=hotkey\\nvalue=option+c\\n")
 
         XCTAssertEqual(model.openParts?.selectedPart?.id, "key")
         XCTAssertFalse(model.handleKey(ActionKey(name: "c", isCommand: true)))
@@ -1028,7 +1028,7 @@ final class SpotsModelTests: XCTestCase {
     }
 
     func testTheSideArrowsStepAFocusedSliderAndLeaveAFieldItsText() async throws {
-        _ = try await openParts("frame=\ngrid=level\\ngrid=note\\n\\nfield=level\\ntype=slider\\nvalue=50\\n\\nfield=note\\nvalue=Hi\\n")
+        _ = try await openParts("frame=\nclass=gap-part\\n\\nfield=level\\ntype=slider\\nvalue=50\\n\\nfield=note\\nvalue=Hi\\n")
 
         XCTAssertFalse(model.handleKey(ActionKey(name: "right")))
         XCTAssertFalse(model.handleKey(ActionKey(name: "return")))
@@ -1043,7 +1043,7 @@ final class SpotsModelTests: XCTestCase {
 
     func testDownOnTheLastRowReachesTheButtonBelowAndUpComesBack() async throws {
         let calls = try await openParts(
-            "frame=\ngrid=list\\ngrid=add\\n\\nrepeat=list\\n\\nbutton=add\\ntitle=Add\\nclose=false\\n\\ntext=a\\ntitle=A\\n\\ntext=b\\ntitle=B\\n"
+            "frame=\nclass=gap-part\\n\\nitems=list\\n\\nbutton=add\\ntitle=Add\\nclose=false\\n\\ntext=a\\nparent=list\\ntitle=A\\n\\ntext=b\\nparent=list\\ntitle=B\\n"
         )
         try await wait("the rows") { model.openItems?.shown.count == 2 }
 
@@ -1557,7 +1557,7 @@ final class SpotsModelTests: XCTestCase {
     }
 
     func testAnAnswerThatDrawsALargeCardTakesTwoFullRowsAndAPressSendsItsValue() async throws {
-        let body = #"\#(TestSpot.event); case "$1" in show) printf 'frame=\ngrid.large=answer answer answer answer\ngrid.large=answer answer answer answer\n\nnumber=answer\ntitle=%s\nvalue=14\n' "$val" ;; open) \#(TestSpot.toast) "Picked $2" ;; esac"#
+        let body = #"\#(TestSpot.event); case "$1" in show) printf 'frame=\n\nnumber=answer\nclass=large:flex\ntitle=%s\nvalue=14\n' "$val" ;; open) \#(TestSpot.toast) "Picked $2" ;; esac"#
         try script("calc", toml: "title = 'Calc'\non = ['search.text ^[0-9]']", body)
         model.runs.api = CommandAPI(mac: Mac(), places: model.files, app: ModelApp(model: model), runs: model.runs, rates: .offline)
         try script("notes", toml: "title = 'Notes 2'", "printf 'text=a\\ntitle=A\\n'")

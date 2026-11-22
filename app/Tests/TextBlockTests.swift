@@ -72,7 +72,7 @@ final class TextBlockTests: XCTestCase {
     func testAMetricReadsItsKeys() {
         let output = Frame(text: """
         frame=
-        grid=m
+        class=gap-part
 
         text=m
         title=6 open
@@ -80,11 +80,15 @@ final class TextBlockTests: XCTestCase {
         icon=star
         tone=warn
 
+        items=list
+
         text=Fix "tray"
+        parent=list
         detail=failing
         tone=bad
 
         text=Docs
+        parent=list
         """)
 
         XCTAssertEqual(MetricValue(output: output), MetricValue(
@@ -111,7 +115,7 @@ final class TextBlockTests: XCTestCase {
     }
 
     func testANumberItemOfMoreThanOneValueDrawsABarForEachUpToItsMaxWithAGapForADash() throws {
-        let bars = try XCTUnwrap(Frame(text: "section=used\ntitle=Used\n\nnumber=a\nvalue=2\nvalue=-\nvalue=4").items.first)
+        let bars = try XCTUnwrap(Frame(text: "items=list\n\ntext=used\nparent=list\nclass=font-section\ntitle=Used\n\nnumber=a\nparent=list\nvalue=2\nvalue=-\nvalue=4").items.first)
         let capped = try XCTUnwrap(Frame(text: "number=a\nvalue=2\nvalue=4\nmax=8").items.first)
         let check = try XCTUnwrap(Frame(text: "text=a\nvalue=true").items.first)
 
@@ -141,11 +145,11 @@ final class TextBlockTests: XCTestCase {
         XCTAssertEqual(list.lineCount, list.shown.count)
     }
 
-    func testAnItemShowsItsPathAsItsSpotThenItsParent() {
+    func testAnItemShowsItsPathAsItsSpotThenItsPlace() {
         let spot = Spot(id: "s", name: "System Settings", url: URL(fileURLWithPath: "/settings.sh"))
-        let volume = Frame(text: "text=v\ntitle=Volume\ndetail=Loud\nparent=Sound").items.first
+        let volume = Frame(text: "text=v\ntitle=Volume\ndetail=Loud\nplace=Sound").items.first
 
-        XCTAssertEqual(volume?.parent, "Sound")
+        XCTAssertEqual(volume?.place, "Sound")
         XCTAssertEqual(volume?.path(in: spot), "System Settings › Sound")
         XCTAssertEqual(SpotItem(title: "Sound", subtitle: "Loud", run: "s").path(in: spot), "System Settings")
     }

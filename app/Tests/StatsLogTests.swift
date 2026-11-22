@@ -195,8 +195,8 @@ final class StatsLogTests: SpotRunsCase {
     }
 
     func testTheRunsTellTheUsageWhichSpotOwnsEachView() throws {
-        try script(toml: "view = 'cups.swift'", "printf 'view=cups\n'")
-        let view = try XCTUnwrap(try scanned().scripts.first?.view)
+        try script(toml: "views = ['cups.swift']", "printf 'cups=cups\n'")
+        let view = try XCTUnwrap(try scanned().scripts.first?.views["cups"])
 
         runs.usage.drew(view: view, seconds: 0.5)
 

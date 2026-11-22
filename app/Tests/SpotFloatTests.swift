@@ -136,7 +136,7 @@ final class SpotFloatTests: XCTestCase {
     }
 
     func testAFloatOfPartsKeepsItsValuesWhenThePanelClosesAndDropsThemWhenItCloses() async throws {
-        try script("note", toml: "", "printf 'frame=\\ngrid=note\\n\\nfield=note\\nvalue=hi\\n'")
+        try script("note", toml: "", "printf 'frame=\\nclass=gap-part\\n\\nfield=note\\nvalue=hi\\n'")
         await model.reload()
         model.press(try key("note"))
         try await wait("the parts") { model.sheets["note"]?.panel != nil }
@@ -154,7 +154,7 @@ final class SpotFloatTests: XCTestCase {
     }
 
     func testAFloatOfPartsWithNoFieldKeepsItsPartsWhenItCloses() async throws {
-        try script("note", toml: "", "printf 'frame=\\ngrid=hi\\n\\ntext=hi\\ntitle=Hi\\n'")
+        try script("note", toml: "", "printf 'frame=\\nclass=gap-part\\n\\ntext=hi\\ntitle=Hi\\n'")
         await model.reload()
         model.press(try key("note"))
         try await wait("the parts") { model.sheets["note"]?.panel != nil }

@@ -68,7 +68,7 @@ public actor AccountSheet {
         Spot(
             id: Self.id, name: "Account", url: URL(fileURLWithPath: NSTemporaryDirectory()), kind: .list, icon: .symbol("person.crop.circle"),
             subtitle: "Signs what you publish", on: .sheet, host: .account(self), isGlobal: true, dataName: "account",
-            isOnGrid: false, view: Self.card, pages: Page.allCases.map(\.rawValue), uses: [.app, .account, .clipboard]
+            isOnGrid: false, views: ["card": Self.card], pages: Page.allCases.map(\.rawValue), uses: [.app, .account, .clipboard]
         ).builtIn()
     }
 
@@ -204,21 +204,21 @@ public actor AccountSheet {
     }
 
     private func choose(_ frame: inout AccountFrame) {
-        frame.grid("head head", "head head", "new new", "own how")
+        frame.rows("head", "new", "own how")
         frame.line("head", "You need a key to publish", icon: "signature", detail: "Openspot signs your spots with it, so people know an update is from you.")
         frame.button("new", "Create a new key", .main)
         frame.button("own", "Use my own key")
-        frame.howAction()
+        frame.button("how", "How it works")
     }
 
     private func handle(_ frame: inout AccountFrame, typed: String?) {
         let value = typed ?? AccountHandle.suggestion(from: links.userName())
         let problem = typed != nil && AccountHandle(value) == nil ? AccountHandle.rule : nil
-        frame.grid("head head", "head head", "label label", "handle handle")
-        if problem != nil { frame.grid("status status") }
-        frame.grid("create create")
+        frame.rows("head", "label", "handle")
+        if problem != nil { frame.rows("status") }
+        frame.rows("create")
         frame.line("head", "Pick your handle", icon: "at", detail: "It names you on the spots you publish, and in their links.")
-        frame.block(["section": "label", "title": "Handle"], order: ["section", "title"])
+        frame.block(["text": "label", "class": "font-section", "title": "Handle"], order: ["text", "class", "title"])
         frame.block(["field": "handle", "grow": "false", "placeholder": "yourname", "value": value], order: ["field", "grow", "placeholder", "value"])
         if let problem { frame.line("status", problem, icon: "exclamationmark.triangle", tone: "bad") }
         frame.button("create", "Create key", .main)
@@ -226,7 +226,7 @@ public actor AccountSheet {
     }
 
     private func how(_ frame: inout AccountFrame) {
-        frame.grid("head", "head", "people", "icloud", "words", "private", "reset", "done")
+        frame.rows("head", "people", "icloud", "words", "private", "reset", "done")
         frame.line("head", "How your key works", icon: "key", detail: "Openspot signs each spot you publish with your key. There is no email, password or server.")
         frame.line("people", "Shows an update is yours", icon: "checkmark.seal")
         frame.line("icloud", "Kept in iCloud Keychain", icon: "icloud")
@@ -237,9 +237,9 @@ public actor AccountSheet {
     }
 
     private func about(_ frame: inout AccountFrame, _ facts: AccountStatus) {
-        frame.grid("head", "head", "private", "reset")
-        if facts.sync == true { frame.grid("icloud") }
-        frame.grid("reveal")
+        frame.rows("head", "private", "reset")
+        if facts.sync == true { frame.rows("icloud") }
+        frame.rows("reveal")
         frame.line("head", "Your 12 words are your key", icon: "key", detail: "They bring your key back on any Mac.")
         frame.line("private", "Anyone with them is you", icon: "eye.slash")
         frame.line("reset", "Nobody can reset them", icon: "exclamationmark.triangle", tone: "warn")
@@ -249,9 +249,9 @@ public actor AccountSheet {
     }
 
     private func words(_ frame: inout AccountFrame, _ facts: AccountStatus) async {
-        frame.grid("head head")
-        frame.wordGrid()
-        frame.grid("wrote wrote", "later later")
+        frame.rows("head")
+        frame.wordRows()
+        frame.rows("wrote", "later")
         do {
             let words = try await account.words()
             frame.line("head", "Write them down", icon: "pencil", detail: "In this order")
@@ -265,16 +265,17 @@ public actor AccountSheet {
     }
 
     private func account(_ frame: inout AccountFrame, _ facts: AccountStatus) {
-        frame.grid("card card", "card card", "card card", "card card", "backup backup")
-        if facts.sync != nil { frame.grid("sync sync") }
-        frame.grid("about about", "- -", "how leave")
+        frame.rows("card", "backup")
+        frame.style("card", "h-44")
+        if facts.sync != nil { frame.rows("sync") }
+        frame.rows("about", "-", "how leave")
         let npub = facts.npub ?? ""
-        var card = ["view": "card", "grow": "false", "npub": npub, "short": facts.shortNpub ?? ""]
-        var order = ["view", "grow", "npub", "short"]
+        var card = ["card": "card", "grow": "false", "npub": npub, "short": facts.shortNpub ?? ""]
+        var order = ["card", "grow", "npub", "short"]
         if let handle = facts.handle { card["handle"] = handle; order.append("handle") }
         if let since = facts.since.flatMap(Self.month) { card["since"] = since; order.append("since") }
         frame.block(card, order: order)
-        frame.block(["section": "backup", "title": "Backup"], order: ["section", "title"])
+        frame.block(["text": "backup", "class": "font-section", "title": "Backup"], order: ["text", "class", "title"])
         if let sync = facts.sync {
             frame.block(["switch": "sync", "title": "Keep in iCloud Keychain", "icon": "icloud", "look": "tile", "value": String(sync)], order: ["switch", "title", "icon", "look", "value"])
         }
@@ -288,9 +289,9 @@ public actor AccountSheet {
     }
 
     private func leave(_ frame: inout AccountFrame, _ facts: AccountStatus) {
-        frame.grid("head", "head")
-        if facts.backedUp != true { frame.grid("again") }
-        frame.grid("sign_out", "cancel")
+        frame.rows("head")
+        if facts.backedUp != true { frame.rows("again") }
+        frame.rows("sign_out", "cancel")
         let place = facts.sync == true ? "all your Macs" : "this Mac"
         let again = facts.backedUp == true ? " Your 12 words sign you in again." : ""
         frame.line("head", "Sign out of your account?", icon: "rectangle.portrait.and.arrow.right", detail: "It leaves \(place).\(again)")
@@ -317,9 +318,10 @@ public actor AccountSheet {
         } else if let typed {
             status = (typed.counter, nil, nil, nil)
         }
-        frame.grid("phrase phrase", "phrase phrase", "phrase phrase")
-        if status != nil { frame.grid("status status") }
-        frame.grid("sign_in sign_in")
+        frame.rows("phrase")
+        frame.style("phrase", "h-32")
+        if status != nil { frame.rows("status") }
+        frame.rows("sign_in")
         frame.block(["field": "phrase", "type": "multiline", "grow": "false", "placeholder": "Your 12 words, or an nsec", "value": phrase], order: ["field", "type", "grow", "placeholder", "value"])
         if let status { frame.line("status", status.title, icon: status.icon, tone: status.tone, detail: status.detail) }
         frame.button("sign_in", "Sign in", .main)
@@ -329,11 +331,11 @@ public actor AccountSheet {
         let (first, second) = (check.places[0], check.places[1])
         let choices = (try? account.choices(at: [first, second])) ?? [[], []]
         let ids = zip([first, second], choices).map { place, words in words.map { "pick-\(place)-\($0)" } }
-        frame.grid("head head", "first first")
-        if ids[0].count == 4 { frame.grid("\(ids[0][0]) \(ids[0][1])", "\(ids[0][2]) \(ids[0][3])") }
-        frame.grid("second second")
-        if ids[1].count == 4 { frame.grid("\(ids[1][0]) \(ids[1][1])", "\(ids[1][2]) \(ids[1][3])") }
-        frame.grid("again again")
+        frame.rows("head", "first")
+        if ids[0].count == 4 { frame.rows("\(ids[0][0]) \(ids[0][1])", "\(ids[0][2]) \(ids[0][3])") }
+        frame.rows("second")
+        if ids[1].count == 4 { frame.rows("\(ids[1][0]) \(ids[1][1])", "\(ids[1][2]) \(ids[1][3])") }
+        frame.rows("again")
         if let mistake = check.mistake {
             frame.line("head", mistake, icon: "exclamationmark.triangle", tone: "bad")
         } else {

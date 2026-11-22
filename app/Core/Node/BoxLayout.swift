@@ -128,7 +128,8 @@ public struct BoxLayout {
         let gaps = gap * CGFloat(max(children.count - 1, 0))
         let basis = children.map { child in
             let fixedHeight = Self.points(child.style.height, of: height)
-            let fixed = Self.points(child.style.width, of: width) ?? (child.style.isSquare ? fixedHeight : nil)
+            let stretched = alignment(of: child) == .stretch ? height : nil
+            let fixed = Self.points(child.style.width, of: width) ?? (child.style.isSquare ? fixedHeight ?? stretched : nil)
             return Self.clamped(fixed ?? child.measure(nil, nil).width, child.style, of: width)
         }
         let content = basis.reduce(0, +) + gaps

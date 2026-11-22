@@ -51,7 +51,7 @@ final class SpotRunsCallTests: SpotRunsCase {
         try script(toml: "on = ['clock.5']", """
         [ -f '\(path("second"))' ] && exit 1
         touch '\(path("second"))'
-        printf 'frame=\\ngrid.bar=m\\n\\ntext=m\\ntitle=3\\n'
+        printf 'frame=\\nclass=gap-part\\n\\ntext=m\\nclass=bar:flex\\ntitle=3\\n'
         """)
         let sheet = try sheet()
         var failures: [String] = []
@@ -123,7 +123,7 @@ final class SpotRunsCallTests: SpotRunsCase {
     func testASheetOfRowsSaysItsKindWhileItsFirstAnswerWaitsForTheOpenMotion() async throws {
         runs.quit()
         runs = SpotRuns(opening: SheetOpening(motionLength: 30), stopPause: 0.2)
-        try script(toml: "", "printf 'repeat=a\\n\\ntext=a\\ntitle=A\\n'")
+        try script(toml: "", "printf 'frame=\\nclass=gap-part\\n\\nitems=list\\n\\ntext=a\\nparent=list\\ntitle=A\\n'")
         let sheet = try sheet()
         runs.panelOpened()
         runs.opening.moving = "script"
@@ -139,7 +139,7 @@ final class SpotRunsCallTests: SpotRunsCase {
     func testASheetOfPartsWithNoRowsSaysItsKindWhileItsFirstAnswerWaitsForTheOpenMotion() async throws {
         runs.quit()
         runs = SpotRuns(opening: SheetOpening(motionLength: 30), stopPause: 0.2)
-        try script(toml: "", "printf 'frame=\\ngrid=a\\n\\ntext=a\\ntitle=A\\n'")
+        try script(toml: "", "printf 'frame=\\nclass=gap-part\\n\\ntext=a\\ntitle=A\\n'")
         let sheet = try sheet()
         runs.panelOpened()
         runs.opening.moving = "script"
@@ -157,7 +157,7 @@ final class SpotRunsCallTests: SpotRunsCase {
     func testASheetForgetsTheKindOfAHeldAnswerThatItsStoppedReadDrops() async throws {
         runs.quit()
         runs = SpotRuns(opening: SheetOpening(motionLength: 30), stopPause: 0.2)
-        try script(toml: "", "printf 'frame=\\ngrid=a\\n\\ntext=a\\ntitle=A\\n'")
+        try script(toml: "", "printf 'frame=\\nclass=gap-part\\n\\ntext=a\\ntitle=A\\n'")
         let sheet = try sheet()
         runs.panelOpened()
         runs.opening.moving = "script"
@@ -263,10 +263,10 @@ final class SpotRunsCallTests: SpotRunsCase {
 
     private static let worker = """
     case "$1" in
-      show) printf 'frame=\\ntitle=Sheet\\ngrid=go\\ngrid=bar\\n\\nbutton=go\\ntitle=Go\\nclose=false\\n\\ntext=bar\\ntitle=idle\\n' ;;
+      show) printf 'frame=\\ntitle=Sheet\\nclass=gap-part\\n\\nbutton=go\\ntitle=Go\\nclose=false\\n\\ntext=bar\\ntitle=idle\\n' ;;
       go)
         \(TestSpot.toast) Started
-        printf 'frame=\\ngrid=bar\\n\\ntext=bar\\ntitle=half\\n---\\n'
+        printf 'frame=\\nclass=gap-part\\n\\ntext=bar\\ntitle=half\\n---\\n'
         sleep 0.3
         touch '%@'
         \(TestSpot.toast) Done
@@ -296,15 +296,15 @@ final class SpotRunsCallTests: SpotRunsCase {
 
         try await wait("the end of the work") { self.exists("done") && sheet.calls.isEmpty }
         XCTAssertEqual(toasts, ["Started", "Done"])
-        XCTAssertEqual(frames.last, "frame=\ngrid=bar\n\ntext=bar\ntitle=done\n")
+        XCTAssertEqual(frames.last, "frame=\nclass=gap-part\n\ntext=bar\ntitle=done\n")
         XCTAssertEqual(sheet.panel?.parts.map(\.title) ?? ["done"], ["done"])
     }
 
     func testAFrameOfAPickWithNoOpenSheetIsTheWholePicture() async throws {
         try script(toml: "on = ['panel.open']", """
         case "$1" in
-          show) printf 'frame=\\ngrid=bar\\ndetail=Idle\\n\\ntext=a\\ntitle=A\\n\\ntext=bar\\ntitle=idle\\n' ;;
-          open) printf 'frame=\\ngrid=bar\\ntitle=Other\\nactive=true\\n\\ntext=bar\\ntitle=work\\n' ;;
+          show) printf 'frame=\\nclass=gap-part\\ndetail=Idle\\n\\nitems=list\\n\\ntext=a\\nparent=list\\ntitle=A\\n\\ntext=bar\\ntitle=idle\\n' ;;
+          open) printf 'frame=\\nclass=gap-part\\ntitle=Other\\nactive=true\\n\\ntext=bar\\ntitle=work\\n' ;;
         esac
         """)
         let sheet = try sheet()
@@ -323,7 +323,7 @@ final class SpotRunsCallTests: SpotRunsCase {
     func testOpeningASheetWhileACallRunsShowsItsRead() async throws {
         try script(toml: "", """
         case "$1" in
-          show) printf 'frame=\\ngrid=go\\ngrid=note\\ngrid=bar\\n\\nbutton=go\\ntitle=Go\\n\\nfield=note\\nvalue=\\n\\ntext=bar\\ntitle=idle\\n' ;;
+          show) printf 'frame=\\nclass=gap-part\\n\\nbutton=go\\ntitle=Go\\n\\nfield=note\\nvalue=\\n\\ntext=bar\\ntitle=idle\\n' ;;
           go) printf 'frame=\\ntitle=Half\\nprogress=0.5\\n---\\n'; sleep 30 ;;
         esac
         """)
@@ -345,9 +345,9 @@ final class SpotRunsCallTests: SpotRunsCase {
     func testANewValueStopsTheOlderCallOfThatPartAndNoOther() async throws {
         try script(toml: "", """
         case "$1" in
-          show) printf 'frame=\\ngrid=a\\ngrid=b\\ngrid=out\\n\\nswitch=a\\nvalue=false\\n\\nswitch=b\\nvalue=false\\n\\ntext=out\\ntitle=none\\n' ;;
-          a) [ "$2" = true ] && { sleep 30; touch '\(path("old-a"))'; exit 0; }; touch '\(path("new-a"))'; printf 'frame=\\ngrid=a\\ngrid=b\\ngrid=out\\n\\nswitch=a\\nvalue=false\\n\\nswitch=b\\nvalue=true\\n\\ntext=out\\ntitle=new\\n' ;;
-          b) \(untilRelease); touch '\(path("b"))'; printf 'frame=\\ngrid=a\\ngrid=b\\ngrid=out\\n\\nswitch=a\\nvalue=false\\n\\nswitch=b\\nvalue=true\\n\\ntext=out\\ntitle=b\\n' ;;
+          show) printf 'frame=\\nclass=gap-part\\n\\nswitch=a\\nvalue=false\\n\\nswitch=b\\nvalue=false\\n\\ntext=out\\ntitle=none\\n' ;;
+          a) [ "$2" = true ] && { sleep 30; touch '\(path("old-a"))'; exit 0; }; touch '\(path("new-a"))'; printf 'frame=\\nclass=gap-part\\n\\nswitch=a\\nvalue=false\\n\\nswitch=b\\nvalue=true\\n\\ntext=out\\ntitle=new\\n' ;;
+          b) \(untilRelease); touch '\(path("b"))'; printf 'frame=\\nclass=gap-part\\n\\nswitch=a\\nvalue=false\\n\\nswitch=b\\nvalue=true\\n\\ntext=out\\ntitle=b\\n' ;;
         esac
         """)
         let sheet = try sheet()
@@ -372,9 +372,9 @@ final class SpotRunsCallTests: SpotRunsCase {
     func testAnOlderCallOfAnotherPartLeavesAPartThatChangedSince() async throws {
         try script(toml: "", """
         case "$1" in
-          show) printf 'frame=\\ngrid=a\\ngrid=b\\n\\nswitch=a\\nvalue=%s\\n\\nswitch=b\\nvalue=%s\\n' "$(cat '\(path("a"))' 2>/dev/null || echo false)" "$(cat '\(path("b"))' 2>/dev/null || echo false)" ;;
-          a) sleep 0.2; echo "$2" > '\(path("a"))'; printf 'frame=\\ngrid=a\\ngrid=b\\n\\nswitch=a\\nvalue=true\\n\\nswitch=b\\nvalue=false\\n' ;;
-          b) echo "$2" > '\(path("b"))'; printf 'frame=\\ngrid=a\\ngrid=b\\n\\nswitch=a\\nvalue=false\\n\\nswitch=b\\nvalue=true\\n' ;;
+          show) printf 'frame=\\nclass=gap-part\\n\\nswitch=a\\nvalue=%s\\n\\nswitch=b\\nvalue=%s\\n' "$(cat '\(path("a"))' 2>/dev/null || echo false)" "$(cat '\(path("b"))' 2>/dev/null || echo false)" ;;
+          a) sleep 0.2; echo "$2" > '\(path("a"))'; printf 'frame=\\nclass=gap-part\\n\\nswitch=a\\nvalue=true\\n\\nswitch=b\\nvalue=false\\n' ;;
+          b) echo "$2" > '\(path("b"))'; printf 'frame=\\nclass=gap-part\\n\\nswitch=a\\nvalue=false\\n\\nswitch=b\\nvalue=true\\n' ;;
         esac
         """)
         let sheet = try sheet()
@@ -392,7 +392,7 @@ final class SpotRunsCallTests: SpotRunsCase {
     func testASecondPressOfARunningPartStopsItAndChangesNothing() async throws {
         try script(toml: "", """
         case "$1" in
-          show) printf 'frame=\\ngrid=go\\n\\nbutton=go\\ntitle=Go\\n' ;;
+          show) printf 'frame=\\nclass=gap-part\\n\\nbutton=go\\ntitle=Go\\n' ;;
           go) sleep 5; touch '\(path("went-on"))' ;;
         esac
         """)
@@ -453,7 +453,7 @@ final class SpotRunsCallTests: SpotRunsCase {
     func testATwoMegabyteValueOfAPartIsLeftOutOfTheArgumentsAndStdinHoldsIt() async throws {
         try script(toml: "", """
         case "$1" in
-          show) printf 'frame=\\ngrid=input\\n\\nfield=input\\nvalue=\\n' ;;
+          show) printf 'frame=\\nclass=gap-part\\n\\nfield=input\\nvalue=\\n' ;;
           input) printf '%s' "$#" > '\(path("count"))'; cat > '\(path("got"))'; touch '\(path("done"))' ;;
         esac
         """)

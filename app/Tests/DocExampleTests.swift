@@ -35,7 +35,7 @@ final class DocExampleTests: SampleSpotsCase {
                     if fence.language == "swift", !fence.text.hasPrefix("#!") {
                         let spot = fences[..<index].lastIndex { runnable.contains($0.language) && ($0.language != "swift" || $0.text.hasPrefix("#!")) }
                         let named = spot.flatMap { $0 > 0 && fences[$0 - 1].language == "toml" ? try? described(fences[$0 - 1].text, of: fences[$0].language) : nil }
-                        XCTAssertNotNil(named?.view ?? named?.source.first, "\(place) is Swift that no view or source of the spot.toml before the example above it names. Make it a view or a source, or put it in a text fence.")
+                        XCTAssertNotNil(named?.views.first ?? named?.source.first, "\(place) is Swift that no view or source of the spot.toml before the example above it names. Make it a view or a source, or put it in a text fence.")
                         continue
                     }
                     let isSpot = fence.text.hasPrefix("#!") || fence.language == "js"
@@ -65,7 +65,7 @@ final class DocExampleTests: SampleSpotsCase {
                     for (name, source) in zip(named, sources) {
                         try source.text.write(to: file.deletingLastPathComponent().appendingPathComponent(name), atomically: true, encoding: .utf8)
                     }
-                    if let view = manifest.view {
+                    if let view = manifest.views.first {
                         let source = fences[(index + 1)...].first { $0.language == "swift" }
                         XCTAssertNotNil(source, "\(place) names the view \(view), and no Swift example follows it")
                         try source?.text.write(to: file.deletingLastPathComponent().appendingPathComponent(view), atomically: true, encoding: .utf8)

@@ -6,9 +6,9 @@ app=/System/Applications/Shortcuts.app
 
 # Prints an item for each shortcut in a folder, or with "none" for each shortcut in no folder.
 rows() {
-  parent=''
-  [ "$1" = none ] || parent="parent=$1"
-  shortcuts list --folder-name "$1" | LC_ALL=C tr -d '\t' | parent=$parent app=$app awk 'NF { printf "%s\t%s\t\t%s\t%s\n", $0, $0, ENVIRON["app"], ENVIRON["parent"] }' | openspot_items
+  place=''
+  [ "$1" = none ] || place="place=$1"
+  shortcuts list --folder-name "$1" | LC_ALL=C tr -d '\t' | place=$place app=$app awk 'NF { printf "%s\t%s\t\t%s\t%s\n", $0, $0, ENVIRON["app"], ENVIRON["place"] }' | openspot_items
 }
 
 # Prints an item for each shortcut in no folder, then for each shortcut in each folder. It fails when Shortcuts gives no list.

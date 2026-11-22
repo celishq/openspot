@@ -18,7 +18,7 @@ nl='
 
 # Prints the sheet with these words in its field, and the words of its button in $2.
 sheet() {
-  printf 'frame=\ngrid=describe describe describe\ngrid=describe describe describe\ngrid=describe describe describe\ngrid=copy copy copy\n\n'
+  printf 'frame=\nclass=gap-group\n\n'
   printf 'field=describe\ntype=multiline\nplaceholder=%s\n' "$placeholder"
   openspot_kv value "$1"
   printf '\nbutton=copy\ntitle=%s\nlook=strong\nshortcut=cmd+return\nclose=false\n\n' "${2:-Copy prompt}"

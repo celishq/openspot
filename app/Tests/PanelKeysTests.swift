@@ -33,7 +33,7 @@ final class PanelKeysTests: PanelCase {
     private func openInfo() async throws {
         try script("info", toml: "pages = ['a']", """
         page=$(sed -n 's/^route=//p')
-        if [ -n "$page" ]; then printf 'frame=\\ngrid=detail\\n\\ntext=detail\\ntitle=Detail\\n'; else printf 'frame=\\ngrid=first\\n\\ntext=first\\ntitle=First\\n'; fi
+        if [ -n "$page" ]; then printf 'frame=\\nclass=gap-part\\n\\ntext=detail\\ntitle=Detail\\n'; else printf 'frame=\\nclass=gap-part\\n\\ntext=first\\ntitle=First\\n'; fi
         """)
         await model.reload()
         model.isShown = true
@@ -317,7 +317,7 @@ final class PanelKeysTests: PanelCase {
         case "$1" in
           show|key|again)
             key=$(cat "$data/key" 2>/dev/null)
-            printf 'frame=\\ntitle=Choose your key\\ngrid=key\\ngrid=keep\\ngrid=again\\n\\nfield=key\\ntype=hotkey\\nvalue=%s\\n' "$key"
+            printf 'frame=\\ntitle=Choose your key\\nclass=gap-part\\n\\nfield=key\\ntype=hotkey\\nvalue=%s\\n' "$key"
             [ -n "$key" ] || printf 'recording=true\\n'
             printf '\\nbutton=keep\\ntitle=Keep\\nclose=false\\n\\nbutton=again\\ntitle=Try again\\nshortcut=escape\\nclose=false\\n' ;;
         esac
@@ -339,7 +339,7 @@ final class PanelKeysTests: PanelCase {
         [ "$1" = use ] && \(TestSpot.toast) Used
         case "$1" in
           show|key|record)
-            printf 'frame=\\ngrid=key\\ngrid=key\\ngrid=use\\ngrid=record\\n\\nfield=key\\ntype=hotkey\\nvalue=%s\\n' "$(cat "$data/key" 2>/dev/null || printf ctrl+space)"
+            printf 'frame=\\nclass=gap-part\\n\\nfield=key\\ntype=hotkey\\nvalue=%s\\n' "$(cat "$data/key" 2>/dev/null || printf ctrl+space)"
             [ "$1" != record ] || printf 'recording=true\\n'
             printf '\\nbutton=use\\ntitle=Use\\nshortcut=return\\nclose=false\\n\\nbutton=record\\ntitle=Record\\nshortcut=escape\\nclose=false\\n' ;;
         esac

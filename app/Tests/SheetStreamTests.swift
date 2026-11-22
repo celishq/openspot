@@ -114,18 +114,18 @@ final class SheetStreamTests: XCTestCase {
     }
 
     func testAFrameReplacesTheWholeSheet() throws {
-        var panel = try XCTUnwrap(SheetParts(output: Frame(text: "frame=\ngrid=a b\n\ntext=a\ntitle=A\n\ntext=b\ntitle=B\n")))
+        var panel = try XCTUnwrap(SheetParts(output: Frame(text: "frame=\nclass=grid grid-cols-2 gap-part\n\ntext=a\ntitle=A\n\ntext=b\ntitle=B\n")))
 
-        panel.take(Frame(text: "frame=\ngrid.large=c\n\ntext=c\ntitle=C\n"), answering: panel.generation)
+        panel.take(Frame(text: "frame=\nclass=gap-part\n\ntext=c\ntitle=C\nclass=large:flex\n"), answering: panel.generation)
 
         XCTAssertEqual(panel.parts.map(\.id), ["c"])
-        XCTAssertNil(panel.layout)
+        XCTAssertEqual(panel.tree.children, ["c"])
     }
 
     func testAFrameKeepsTheTextThePersonIsTyping() throws {
-        var panel = try XCTUnwrap(SheetParts(output: Frame(text: "frame=\ngrid=a\n\nfield=a\nvalue=typed\n")))
+        var panel = try XCTUnwrap(SheetParts(output: Frame(text: "frame=\nclass=gap-part\n\nfield=a\nvalue=typed\n")))
 
-        panel.take(Frame(text: "frame=\ngrid=a\n\nfield=a\nvalue=old\n"), answering: panel.generation, keeping: "a")
+        panel.take(Frame(text: "frame=\nclass=gap-part\n\nfield=a\nvalue=old\n"), answering: panel.generation, keeping: "a")
 
         XCTAssertEqual(panel.parts.first?.value, "typed")
     }
@@ -186,7 +186,7 @@ final class SheetStreamTests: XCTestCase {
     }
 
     func testAPlainFirstReadOfAStayingScriptGivesItsFirstFrame() async throws {
-        let url = try script("while IFS= read -r line; do case \"$line\" in call=*) call=${line#call=} ;; esac; [ -n \"$line\" ] || printf 'end=%s\\n\\nframe=\\ngrid=a\\n\\ntext=a\\ntitle=A\\n---\\n' \"$call\"; done")
+        let url = try script("while IFS= read -r line; do case \"$line\" in call=*) call=${line#call=} ;; esac; [ -n \"$line\" ] || printf 'end=%s\\n\\nframe=\\nclass=gap-part\\n\\ntext=a\\ntitle=A\\n---\\n' \"$call\"; done")
         let command = Spot(id: "a", name: "A", url: url, kind: .list, mode: .stay)
 
         let output = try await command.items(timeout: 60)

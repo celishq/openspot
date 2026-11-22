@@ -48,7 +48,7 @@ final class ShortcutsSpotTests: SampleSpotsCase {
 
             XCTAssertEqual(lines.errors, [])
             XCTAssertEqual(lines.items.map(\.title), ["Say \\ \"hi\" (now)", "Take a break", "Video to audio"])
-            XCTAssertEqual(lines.items.map(\.parent), [nil, nil, "Media"])
+            XCTAssertEqual(lines.items.map(\.place), [nil, nil, "Media"])
             XCTAssertEqual(Set(lines.items.map(\.iconFile)), ["/System/Applications/Shortcuts.app"])
         }
     }

@@ -168,10 +168,10 @@ final class SpotRunsStayTests: SpotRunsCase {
           case "$line" in
             call=*) call=${line#call=} ;;
             '')
-              printf 'frame=\\ngrid=peer\\n\\ntext=peer\\ntitle=Early\\n---\\n'
+              printf 'frame=\\nclass=gap-part\\n\\ntext=peer\\ntitle=Early\\n---\\n'
               \(untilRelease)
               printf 'end=%s\\n\\ntext=a\\ntitle=A\\n---\\n' "$call"
-              printf 'frame=\\ngrid=peer\\n\\ntext=peer\\ntitle=Late\\n---\\n' ;;
+              printf 'frame=\\nclass=gap-part\\n\\ntext=peer\\ntitle=Late\\n---\\n' ;;
           esac
         done
         """)
@@ -646,7 +646,7 @@ final class SpotRunsStayTests: SpotRunsCase {
 
     func testAStayingMenuBarScriptRunsWithThePanelClosedAndItsFrameReachesTheMenuBar() async throws {
         menuBar.insert("script")
-        try staying(toml: "mode = 'stay'", head: "\\nframe=\\ngrid.bar=n\\n", frame: "text=n\\ntitle=3\\n")
+        try staying(toml: "mode = 'stay'", head: "\\nframe=\\nclass=gap-part\\n", frame: "text=n\\nclass=bar:flex\\ntitle=3\\n")
         _ = try scanned()
 
         try await wait("the mark") { self.runs.menuBarMarks.first?.mark.summary == "Script: 3" }
@@ -658,7 +658,7 @@ final class SpotRunsStayTests: SpotRunsCase {
 
     func testAStayingMenuBarScriptGoesOnWhenItsSheetAndThePanelCloseAndAScanComes() async throws {
         menuBar.insert("script")
-        try staying(toml: "mode = 'stay'", frame: "frame=\\ngrid=n\\n\\ntext=n\\ntitle=3\\n\\ntext=a\\ntitle=A\\n")
+        try staying(toml: "mode = 'stay'", frame: "frame=\\nclass=gap-part\\n\\ntext=n\\ntitle=3\\n\\nitems=list\\n\\ntext=a\\nparent=list\\ntitle=A\\n")
         let sheet = try sheet()
         try await wait("the row") { sheet.list.shown.count == 1 }
         runs.panelOpened()
@@ -683,8 +683,8 @@ final class SpotRunsStayTests: SpotRunsCase {
         while IFS= read -r line; do
           case "$line" in
             call=*) call=${line#call=} ;;
-            arg=show) printf 'end=%s\\n\\nframe=\\ngrid.bar=n\\n\\ntext=n\\ntitle=3\\n---\\n' "$call" ;;
-            arg=open) printf 'frame=\\ngrid.bar=n\\n\\ntext=n\\ntitle=4\\n---\\n' ;;
+            arg=show) printf 'end=%s\\n\\nframe=\\nclass=gap-part\\n\\ntext=n\\nclass=bar:flex\\ntitle=3\\n---\\n' "$call" ;;
+            arg=open) printf 'frame=\\nclass=gap-part\\n\\ntext=n\\nclass=bar:flex\\ntitle=4\\n---\\n' ;;
           esac
         done
         """)
@@ -699,7 +699,7 @@ final class SpotRunsStayTests: SpotRunsCase {
 
     func testASheetOfARunningStayingScriptOpensAtOnceWithItsLastFrame() async throws {
         menuBar.insert("script")
-        try staying(toml: "mode = 'stay'", head: "\\nframe=\\ngrid.bar=n\\ngrid=n\\ngrid=a\\n", frame: "text=n\\ntitle=3\\n\\ntext=a\\ntitle=A\\n")
+        try staying(toml: "mode = 'stay'", head: "\\nframe=\\nclass=gap-part\\n", frame: "text=n\\nclass=bar:flex\\ntitle=3\\n\\ntext=a\\ntitle=A\\n")
         let sheet = try sheet()
         try await wait("the mark") { self.runs.menuBarMarks.first?.mark.summary == "Script: 3" }
         XCTAssertNil(sheet.panel)
@@ -755,7 +755,7 @@ final class SpotRunsStayTests: SpotRunsCase {
 
     func testAStayingScriptWithANumberGetsAReadOnItsTimer() async throws {
         menuBar.insert("script")
-        try staying(toml: "mode = 'stay'\non = ['clock.5']", head: "\\nframe=\\ngrid.bar=n\\n", frame: "text=n\\ntitle=3\\n")
+        try staying(toml: "mode = 'stay'\non = ['clock.5']", head: "\\nframe=\\nclass=gap-part\\n", frame: "text=n\\nclass=bar:flex\\ntitle=3\\n")
         _ = try scanned()
         try await wait("the mark") { self.runs.menuBarMarks.first?.mark.summary == "Script: 3" }
         XCTAssertEqual(blocks(), ["arg=show"])
@@ -802,7 +802,7 @@ final class SpotRunsStayTests: SpotRunsCase {
 
     func testAStayingScriptThatLeavesTheFolderEnds() async throws {
         menuBar.insert("script")
-        let url = try staying(toml: "mode = 'stay'", head: "\\nframe=\\ngrid.bar=n\\n", frame: "text=n\\ntitle=3\\n")
+        let url = try staying(toml: "mode = 'stay'", head: "\\nframe=\\nclass=gap-part\\n", frame: "text=n\\nclass=bar:flex\\ntitle=3\\n")
         _ = try scanned()
         try await wait("the mark") { self.runs.menuBarMarks.first?.mark.summary == "Script: 3" }
 
@@ -873,7 +873,7 @@ final class SpotRunsStayTests: SpotRunsCase {
         XCTAssertEqual(log().count, 3)
 
         menuBar.insert("script")
-        try staying(toml: "mode = 'stay'", head: "\\nframe=\\ngrid.bar=n\\n", frame: "text=n\\ntitle=3\\n")
+        try staying(toml: "mode = 'stay'", head: "\\nframe=\\nclass=gap-part\\n", frame: "text=n\\nclass=bar:flex\\ntitle=3\\n")
         _ = try scanned()
 
         try await wait("the mark") { self.runs.menuBarMarks.first?.mark.summary == "Script: 3" }
@@ -1047,7 +1047,7 @@ final class SpotRunsStayTests: SpotRunsCase {
     }
 
     func testTheFirstPartsOfAStayingScriptArriveThroughTheArrival() async throws {
-        try staying(frame: "frame=\\ngrid=a\\n\\ntext=a\\ntitle=A\\n")
+        try staying(frame: "frame=\\nclass=gap-part\\n\\ntext=a\\ntitle=A\\n")
         let sheet = try sheet()
         var arrivals = 0
         runs.partsArrival = { _, bring in

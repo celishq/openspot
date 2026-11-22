@@ -90,24 +90,19 @@ uninstall_sheet() {
   name=$(basename "$app" .app)
   files=$( { printf '%s\n' "$app"; leftovers "$app"; } )
   names=$(by_name "$app")
-  count=$(printf '%s\n' "$files" | wc -l | tr -d ' ')
-  lines=$count
-  [ "$lines" -gt 7 ] && lines=7
   note=
   [ -z "$names" ] || note=" A folder found only by the app's name waits for your tick."
-  printf 'frame=\ntitle=Delete %s\ndetail=Move the app and its files to the Trash.%s\n' "$name" "$note"
-  i=0
-  while [ "$i" -lt "$lines" ]; do printf 'grid=files files files files\n'; i=$((i + 1)); done
-  printf '\n'
-  printf 'repeat=files\n\n'
-  printf 'button=open\ntitle=Keep or move to Trash\nclose=false\n\n'
-  printf 'button=cancel\ntitle=Cancel\nshortcut=escape\nscope=spot\nclose=false\n\n'
-  printf 'button=remove\ntitle=Move to Trash\nshortcut=cmd+return\nscope=spot\nclose=false\n\n'
+  printf 'frame=\nclass=gap-part\ntitle=Delete %s\ndetail=Move the app and its files to the Trash.%s\n\n' "$name" "$note"
+  printf 'items=files\n\n'
+  printf 'button=open\nparent=files\ntitle=Keep or move to Trash\nclose=false\n\n'
+  printf 'button=cancel\nparent=files\ntitle=Cancel\nshortcut=escape\nscope=spot\nclose=false\n\n'
+  printf 'button=remove\nparent=files\ntitle=Move to Trash\nshortcut=cmd+return\nscope=spot\nclose=false\n\n'
   printf '%s\n' "$files" | while IFS= read -r path; do
     if chosen "$path"; then ticked=true; else ticked=false; fi
     where=$(dirname "$path" | sed "s#^$HOME#~#")
     openspot_item "$path" "$(basename "$path")" "$where" "$path"
     openspot_kv value "$ticked"
+    openspot_kv parent files
   done
 }
 

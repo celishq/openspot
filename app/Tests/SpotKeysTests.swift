@@ -119,17 +119,11 @@ final class SpotKeysTests: XCTestCase {
         XCTAssertNil(spot.icon)
     }
 
-    func testAViewIsASwiftFileBesideTheScript() throws {
-        let spot = try XCTUnwrap(try SpotFile(script: URL(fileURLWithPath: "/spots/home/cups.sh"), manifest: manifest("view = 'cups.swift'"), id: "home/cups").spots.first)
-
-        XCTAssertEqual(spot.view, "/spots/home/cups.swift")
-    }
-
     func testAnEditOfAViewChangesItsSpot() throws {
         let folder = try temporaryFolder()
         let view = folder.appendingPathComponent("cups.swift")
         try "".write(to: view, atomically: true, encoding: .utf8)
-        let manifest = try manifest("view = 'cups.swift'")
+        let manifest = try manifest("views = ['cups.swift']")
         let script = folder.appendingPathComponent("cups.sh")
         let before = try SpotFile(script: script, manifest: manifest, id: "cups").spots.first
 
@@ -137,6 +131,7 @@ final class SpotKeysTests: XCTestCase {
         let after = try SpotFile(script: script, manifest: manifest, id: "cups").spots.first
 
         XCTAssertNotEqual(before, after)
+        XCTAssertEqual(after?.viewDates[view.path], Date(timeIntervalSince1970: 1_000_000))
     }
 
     func testAViewThatTheScanDoesNotWatchHasNoDate() throws {
@@ -148,11 +143,15 @@ final class SpotKeysTests: XCTestCase {
         try "".write(to: real.appendingPathComponent("cups.swift"), atomically: true, encoding: .utf8)
         try FileManager.default.createSymbolicLink(at: linked, withDestinationURL: real)
 
-        let deeper = try SpotFile(script: real.appendingPathComponent("cups.sh"), manifest: manifest("view = 'views/cups.swift'"), id: "cups").spots.first
-        let throughLink = try SpotFile(script: linked.appendingPathComponent("cups.sh"), manifest: manifest("view = 'cups.swift'"), id: "cups").spots.first
+        let deeper = try SpotFile(script: real.appendingPathComponent("cups.sh"), manifest: manifest("views = ['views/cups.swift']"), id: "cups").spots.first
+        let throughLink = try SpotFile(script: linked.appendingPathComponent("cups.sh"), manifest: manifest("views = ['cups.swift']"), id: "cups").spots.first
 
-        XCTAssertNil(deeper?.viewDate)
-        XCTAssertNil(throughLink?.viewDate)
+        XCTAssertEqual(deeper?.viewDates, [:])
+        XCTAssertEqual(throughLink?.viewDates, [:])
+    }
+
+    func testTheOldViewKeyKeepsTheSpotFromLoading() {
+        XCTAssertThrowsError(try spot("view = 'cups.swift'"))
     }
 
     func testAnAnswersPatternIsTheWholeEvent() throws {
@@ -168,14 +167,6 @@ final class SpotKeysTests: XCTestCase {
         let spot = try XCTUnwrap(try SpotFile(script: URL(fileURLWithPath: "/spots/home/cups.sh"), manifest: manifest("icon = 'https://example.com/cups.png'"), id: "home/cups").spots.first)
 
         XCTAssertEqual(spot.icon, .image("https://example.com/cups.png"))
-    }
-
-    func testAViewThatIsNoSwiftFileIsRefused() throws {
-        let manifest = try manifest("title = 'Cups'\nview = 'cups.txt'")
-
-        XCTAssertThrowsError(try SpotFile(script: URL(fileURLWithPath: "/spots/cups.sh"), manifest: manifest, id: "cups")) { error in
-            XCTAssertEqual((error as? SpotError)?.reason, "Cups needs a Swift file for its view, such as view = \"cups.swift\"")
-        }
     }
 
     func testEachFileOfViewsIsAKindNamedByItsStem() throws {

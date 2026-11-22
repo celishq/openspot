@@ -239,7 +239,7 @@ final class SpotRunsInlineTests: SpotRunsCase {
     }
 
     func testMainReadsItsStdinAsItsInput() async throws {
-        try inline(toml: "title = 'Script'", "function main(args, env, input) { return `frame=\\ngrid=saved\\n\\ntext=saved\\ntitle=Saved ${input}` }")
+        try inline(toml: "title = 'Script'", "function main(args, env, input) { return `frame=\\nclass=gap-part\\n\\ntext=saved\\ntitle=Saved ${input}` }")
         let spot = try XCTUnwrap(try scanned().scripts.first)
 
         let text = try await runs.answer(of: spot, SpotAction(arguments: ["save"]), input: "a=1", limit: 60)

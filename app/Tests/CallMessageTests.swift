@@ -26,7 +26,7 @@ final class CallMessageTests: SpotRunsCase {
     func testStdinHoldsTheInputsTheSettingsTheRouteAndThePickedItem() async throws {
         try script(toml: "[settings.city]\n[settings.token]\ntype = 'secret'", """
         case "$1" in
-          show) printf 'frame=\\ngrid=search\\ngrid=title\\n\\nfield=search\\ntitle=Find\\nvalue=\\n\\nfield=title\\nvalue=Groceries\\n\\ntext=a\\ntitle=A\\nmeeting=42\\n' ;;
+          show) printf 'frame=\\nclass=gap-part\\n\\nfield=search\\ntitle=Find\\nvalue=\\n\\nfield=title\\nvalue=Groceries\\n\\nitems=list\\n\\ntext=a\\nparent=list\\ntitle=A\\nmeeting=42\\n' ;;
           *) \(keeps) ;;
         esac
         """)

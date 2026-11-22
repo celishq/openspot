@@ -51,18 +51,18 @@ func sheet(downloading share: Double? = nil) -> String {
     if let share {
         root.append("progress=\(String(format: "%.3f", share))\ntitle=Downloading speech model\ndetail=\(percent(share))")
     }
-    var blocks: [String] = []
+    let past = texts()
+    var blocks = past.isEmpty ? ["items=items"] : []
+    let place = past.isEmpty ? "parent=items\n" : ""
     if !FileManager.default.fileExists(atPath: model.path) {
         if let download {
-            blocks.append("text=whisper\ntitle=Downloading speech model\ndetail=\(percent(download.share))\nicon=arrow.down.circle\nopen.title=Stop\nclose=false\nhides=delete\npin=top")
+            blocks.append("text=whisper\n\(place)title=Downloading speech model\ndetail=\(percent(download.share))\nicon=arrow.down.circle\nopen.title=Stop\nclose=false\nhides=delete\npin=top")
         } else {
-            blocks.append("text=whisper\ntitle=Download speech model\ndetail=1.6 GB\nicon=arrow.down.circle\nopen.title=Download\nclose=false\nhides=delete\npin=top")
+            blocks.append("text=whisper\n\(place)title=Download speech model\ndetail=1.6 GB\nicon=arrow.down.circle\nopen.title=Download\nclose=false\nhides=delete\npin=top")
         }
     }
-    let past = texts()
     if past.isEmpty {
-        root.append("grid=items")
-        blocks.append("repeat=items")
+        root.append("class=gap-part")
     } else {
         blocks.append("button=open\ntitle=Copy")
         blocks.append("button=delete\ntitle=Delete\nshortcut=cmd+backspace\nclose=false")

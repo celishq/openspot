@@ -93,9 +93,10 @@ public struct ReviewSpot: Equatable, Sendable {
     }
 
     private var sheet: String {
-        guard canAdd else { return [RootKey.block([.init(key: "grid", value: "review")]).text, reviewPart.text].joined(separator: "\n") }
+        let root = RootKey.block([.init(key: "class", value: "gap-group")]).text
+        guard canAdd else { return [root, reviewPart.text].joined(separator: "\n") }
         return [
-            RootKey.block([.init(key: "grid", value: "review"), .init(key: "grid", value: Self.installPart)]).text,
+            root,
             reviewPart.text,
             TextBlock(fields: [
                 .init(key: "button", value: Self.installPart),
@@ -109,6 +110,7 @@ public struct ReviewSpot: Equatable, Sendable {
     private var reviewPart: TextBlock {
         TextBlock(fields: [
             .init(key: "field", value: "review"),
+            .init(key: "class", value: "grow"),
             .init(key: "readonly", value: "true"),
             .init(key: "value", value: text)
         ])

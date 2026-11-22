@@ -1,6 +1,10 @@
 import OpenspotCore
 import SwiftUI
 
+extension EnvironmentValues {
+    @Entry var spotViewDates: [String: Date] = [:]
+}
+
 struct NodeSpotView: View {
     let id: String
     let values: [String: [String]]
@@ -8,12 +12,13 @@ struct NodeSpotView: View {
     @Environment(\.spotNodeSend) private var send
     @Environment(\.spotNodeViewInput) private var input
     @Environment(\.spotNodeVariants) private var variants
+    @Environment(\.spotViewDates) private var dates
 
     var body: some View {
         let card = SpotSize.all.first { size in Style.Variant(size: size).map(variants.contains) == true }
         GeometryReader { area in
             SpotSelectionScope(run: SpotViews.shared.readsSelection(source) ? input.selection : { nil }) { run in
-                SpotCustomView(source: source, values: values, items: input.items, card: card ?? .square, room: area.size, answers: input.answers, selection: run, views: .shared, send: send.map { send in { [id] value in send(id, value) } }, namesCard: card != nil)
+                SpotCustomView(source: source, values: values, items: input.items, card: card ?? .square, room: area.size, answers: input.answers, selection: run, date: dates[source], views: .shared, send: send.map { send in { [id] value in send(id, value) } }, namesCard: card != nil)
                     .equatable()
             }
         }

@@ -9,8 +9,6 @@ struct SpotSheetPreview: View {
     var onSet: (SpotPart, String) -> Void = { _, _ in }
     var onPress: (SpotPart) -> Void = { _ in }
     var list = ItemList()
-    var viewSource: String?
-    var views = SpotViews.shared
     var seed = ""
 
     var body: some View {
@@ -29,7 +27,7 @@ struct SpotSheetPreview: View {
                 Spacer()
                 SpotRoundButton(symbol: "xmark", label: "Close") {}
             }
-            SpotSheetBody(panel: panel, list: list, onSet: onSet, onPress: onPress, viewSource: viewSource, views: views)
+            SpotSheetBody(panel: panel, list: list, onSet: onSet, onPress: onPress)
         }
         .padding(SpotTokens.padding)
         .frame(width: frame.width, height: frame.height, alignment: .topLeading)

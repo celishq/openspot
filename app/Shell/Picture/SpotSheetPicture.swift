@@ -23,14 +23,11 @@ enum SpotSheetPicture {
             FileHandle.standardError.write(Data("The sheet has no blocks and no rows.\n".utf8))
             exit(1)
         }
-        let views = SpotViews()
-        let source = source.map { URL(fileURLWithPath: $0).path }
         let list = Self.list(of: output)
         let size = SpotSheetBody.size(of: panel, rows: list.shown.count, perLine: list.perLine, setsApart: list.setsApart)
-        let preview = SpotSheetPreview(panel: panel, title: spot?.name ?? "Sheet", subtitle: spot?.subtitle ?? (spot == nil ? "Preview" : ""), symbol: spot?.symbol ?? "square.dashed", list: list, viewSource: source, views: views, seed: URL(fileURLWithPath: path).lastPathComponent)
+        let preview = SpotSheetPreview(panel: panel, title: spot?.name ?? "Sheet", subtitle: spot?.subtitle ?? (spot == nil ? "Preview" : ""), symbol: spot?.symbol ?? "square.dashed", list: list, seed: URL(fileURLWithPath: path).lastPathComponent)
         let picture = SpotPicture(of: preview.padding(margin), size: CGSize(width: size.width + 2 * margin, height: size.height + 2 * margin), path: path)
         Task { @MainActor in
-            if let source { await views.load(source) }
             for node in output.tree.nodes.values.compactMap(\.source) { await SpotViews.shared.load(node) }
             for picture in WebPictures.named(in: text) { _ = await WebPictures.shared.path(of: picture) }
             picture.save(after: settle)

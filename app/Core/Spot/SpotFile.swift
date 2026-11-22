@@ -64,10 +64,6 @@ public struct SpotFile: Equatable, Sendable {
         if let command = offers.first(where: { $0.title.isEmpty || $0.id == "show" || $0.id.contains(where: \.isWhitespace) }) {
             throw SpotError.fault("\(name) cannot read \(command.section). Give it an ID with no space and a title, such as [commands.left] with title = \"Left side\"")
         }
-        let view = manifest.view
-        if let view, URL(fileURLWithPath: view).pathExtension != SwiftProgram.sourceExtension {
-            throw SpotError.fault("\(name) needs a Swift file for its view, such as view = \"\(url.deletingPathExtension().lastPathComponent).swift\"")
-        }
         if manifest.views.contains(where: { URL(fileURLWithPath: $0).pathExtension != SwiftProgram.sourceExtension }) {
             throw SpotError.fault("\(name) needs a Swift file for each of its views, such as views = [\"liquid.swift\"]")
         }
@@ -109,9 +105,8 @@ public struct SpotFile: Equatable, Sendable {
             offers: offers,
             offeredActions: offeredActions,
             settings: manifest.settings.filter { Manifest.Setting.isKey($0.id) },
-            view: view.map { Self.path($0, beside: url) },
-            viewDate: view.flatMap { Self.viewDate(of: Self.path($0, beside: url), script: url) },
             views: Dictionary(manifest.views.map { (URL(fileURLWithPath: $0).deletingPathExtension().lastPathComponent, Self.path($0, beside: url)) }) { first, _ in first },
+            viewDates: Dictionary(manifest.views.map { Self.path($0, beside: url) }.compactMap { view in Self.viewDate(of: view, script: url).map { (view, $0) } }) { first, _ in first },
             sources: sources,
             emits: manifest.emits,
             pages: manifest.pages,

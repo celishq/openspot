@@ -29,7 +29,7 @@ final class ProtocolContractTests: XCTestCase {
 
         let docTables = manifest.filter { $0[0].hasPrefix("`[") }.flatMap { RepoDoc.code($0[0]) }.map { String($0.dropFirst().prefix { $0 != "." }) }
 
-        let rootKeys = Set(RootKey.allCases.map(\.rawValue) + [RootKey.drawing + "<size>"])
+        let rootKeys = Set(RootKey.allCases.map(\.rawValue))
         let docRootKeys = keys([doc.section("The root").components(separatedBy: "- The root can come")[0]])
             + keys(appWords.filter { $0[1] == "the root" }.map { $0[0] })
 
@@ -41,7 +41,7 @@ final class ProtocolContractTests: XCTestCase {
         let events = Set(SpotEvent.known + [SpotEvent.clockPrefix + "<seconds>"])
         let docEvents = keys(RepoDoc.tableRows(in: doc.section("Events")).map { $0[0] })
 
-        let places = Set(CardFace.places)
+        let places = Set(SpotSize.all.compactMap { Style.Variant(size: $0)?.rawValue } + [Style.Variant.bar.rawValue])
         let docPlaces = keys(RepoDoc.tableRows(in: doc.section("Places")).map { $0[0] })
 
         let uses = Set(SpotUse.allCases.map(\.rawValue))

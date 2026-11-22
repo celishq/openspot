@@ -11,7 +11,7 @@ public struct RepeatDrawing: Equatable, Sendable {
         var order: [String] = []
         var areas: [String: SheetArea] = [:]
         for (y, line) in drawing.enumerated() {
-            for (x, word) in line.enumerated() where word != SheetLayout.empty {
+            for (x, word) in line.enumerated() {
                 let cell = SheetArea(x0: x, x1: x, y0: y, y1: y)
                 if areas[word] == nil { order.append(word) }
                 areas[word] = areas[word]?.joined(cell) ?? cell
@@ -25,11 +25,6 @@ public struct RepeatDrawing: Equatable, Sendable {
 
     public init(columns: Int) {
         self.init(lines: [(0..<max(columns, 1)).map(String.init)])
-    }
-
-    public init(block: TextBlock) {
-        let drawing = block.values("grid").map { $0.split(whereSeparator: \.isWhitespace).map(String.init) }
-        self = drawing.isEmpty ? .list : RepeatDrawing(lines: drawing)
     }
 
     public var perLine: Int? {

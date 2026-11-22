@@ -5,7 +5,7 @@ import Foundation
 extension Spot {
     private func output(_ action: SpotAction, input: String? = nil, timeout: TimeInterval) async throws -> Frame {
         let message = (input ?? "") + TestSettings.text
-        return Frame(text: try await SpotRuns(environment: TestEnvironment.values).answer(of: self, action, input: message.isEmpty ? nil : message, limit: timeout))
+        return Frame(text: try await SpotRuns(environment: TestEnvironment.values).answer(of: self, action, input: message.isEmpty ? nil : message, limit: timeout), kinds: self.kinds)
     }
 
     func state(timeout: TimeInterval) async throws -> SpotState {

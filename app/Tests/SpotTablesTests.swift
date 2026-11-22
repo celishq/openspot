@@ -90,7 +90,7 @@ final class SpotTablesTests: XCTestCase {
             faults: { $0.value("steps") == "0" ? ["the part \($0.fields.first?.value ?? "") needs a step"] : [] },
             field: { block, name, label in ItemForm.Field(name: name, label: label, value: block.value("value")) }
         )
-        let frame = "frame=\ntitle=T\ngrid=m\ngrid=m\n\nmeter=m\ntitle=M\nvalue=3\nsteps=0\ncolour=red\n"
+        let frame = "frame=\ntitle=T\nclass=gap-part\n\nmeter=m\ntitle=M\nvalue=3\nsteps=0\ncolour=red\n"
 
         let check = FrameCheck(text: frame, kinds: BlockKind.all + [meter])
 
@@ -104,12 +104,12 @@ final class SpotTablesTests: XCTestCase {
     }
 
     func testABlockIsReadByTheKindThatItsWordAndItsTypeName() {
-        let output = Frame(text: "frame=\ngrid=one\ngrid=bars\ngrid=level\ngrid=key\ngrid=name\ngrid=done\n\nnumber=one\nvalue=0.5\nmax=1\n\nnumber=bars\nvalue=1\nvalue=2\n\nfield=level\ntype=slider\n\nfield=key\ntype=hotkey\n\nfield=name\n\nswitch=done\ntype=tick\n")
+        let output = Frame(text: "frame=\nclass=gap-part\n\nnumber=one\nvalue=0.5\nmax=1\n\nnumber=bars\nvalue=1\nvalue=2\n\nfield=level\ntype=slider\n\nfield=key\ntype=hotkey\n\nfield=name\n\nswitch=done\ntype=tick\n")
 
         XCTAssertEqual(output.parts.map(\.kind), ["number", "number", "slider", "hotkey", "field", "switch"])
         XCTAssertEqual(output.parts.last?.look, .tick)
         XCTAssertEqual(output.fields.map(\.kind.name), ["slider", "field", "switch"])
-        XCTAssertEqual(BlockKind.words, ["text", "number", "picture", "icon", "view", "switch", "field", "choice", "option", "button", "section", "repeat", "items", "box"])
+        XCTAssertEqual(BlockKind.words, ["text", "number", "picture", "icon", "switch", "field", "choice", "option", "button", "items", "box"])
     }
 
     private func unknownKeys(in frame: String) -> [String] {

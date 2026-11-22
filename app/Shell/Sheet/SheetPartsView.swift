@@ -19,9 +19,6 @@ struct SheetPartsView: View {
     var nudge: () -> SheetParts.Nudge = { SheetParts.Nudge.rest }
     var menuOpening: () -> SheetParts.MenuOpening? = { nil }
     var onFocus: (SpotPart) -> Void = { _ in }
-    var viewSource: String?
-    var viewDate: Date?
-    var views = SpotViews.shared
     @FocusState private var focus: String?
     @Environment(\.spotIsHeld) private var isHeld
 
@@ -118,12 +115,6 @@ struct SheetPartsView: View {
 
     private func canvas(_ sheet: SheetPlacement) -> some View {
         ZStack(alignment: .topLeading) {
-            ForEach(Array(sheet.lines.enumerated()), id: \.offset) { _, line in
-                Rectangle()
-                    .fill(SpotTheme.ink.opacity(SpotTheme.fill))
-                    .frame(width: line.width, height: line.height)
-                    .offset(x: line.minX, y: line.minY)
-            }
             if let area = sheet.repeatFrame {
                 SpotItemsView(list: list, onRun: onRun, selection: selection, onDragOut: onDragOut, room: area.height)
                     .frame(width: area.width, height: area.height)
@@ -196,14 +187,7 @@ struct SheetPartsView: View {
 
     @ViewBuilder
     private func drawn(_ part: SpotPart, _ frame: SheetPlacement.Frame) -> some View {
-        if part.isOpen {
-            if let viewSource {
-                SpotSelectionScope(run: views.readsSelection(viewSource) ? selectedRun : { nil }) { run in
-                    SpotCustomView(source: viewSource, values: part.values, items: part.items, card: .square, room: frame.rect.size, answers: panel.answered, selection: run, date: viewDate, views: views) { onSet(part, $0) }
-                        .equatable()
-                }
-            }
-        } else {
+        if !part.isOpen {
             content(part, frame)
         }
     }
@@ -297,7 +281,7 @@ struct SheetPartsView: View {
             }
             if let title = part.title {
                 Text(title)
-                    .font(part.isSection ? SpotType.title : SpotType.body)
+                    .font(SpotType.body)
                     .foregroundStyle(part.detail == nil ? SpotToneWords.colour(of: part.textTone) ?? SpotTheme.ink : SpotTheme.ink)
                     .lineLimit(1)
                     .layoutPriority(1)

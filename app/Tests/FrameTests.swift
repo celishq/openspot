@@ -61,7 +61,7 @@ final class FrameTests: XCTestCase {
     }
 
     func testABlockThatStartsWithAKeyOfTheRootButNotFrameIsAnUnknownKind() {
-        let output = Frame(text: "title=Mine\ngrid=a\n\ntoast=Saved\n\ntext=a\ntitle=A\n")
+        let output = Frame(text: "title=Mine\nclass=gap-part\n\ntoast=Saved\n\ntext=a\ntitle=A\n")
 
         XCTAssertNil(output.root)
         XCTAssertNil(output.layout)
@@ -182,7 +182,7 @@ final class FrameTests: XCTestCase {
         let rows = "text=One\ndetail=2m\ntone=bad\n\ntext=Two\n"
 
         let counted = try XCTUnwrap(MetricValue(output: Frame(text: rows)))
-        let titled = try XCTUnwrap(MetricValue(output: Frame(text: "frame=\ngrid=m\n\ntext=m\ntitle=Many\n\n" + rows)))
+        let titled = try XCTUnwrap(MetricValue(output: Frame(text: "frame=\nclass=gap-part\n\ntext=m\ntitle=Many\n\nitems=list\n\ntext=One\nparent=list\n\ntext=Two\nparent=list\n")))
 
         XCTAssertEqual(counted.title, "2")
         XCTAssertEqual(counted.rows, [.init(title: "One", detail: "2m", tone: .bad), .init(title: "Two")])
@@ -190,7 +190,7 @@ final class FrameTests: XCTestCase {
     }
 
     func testATintIsAnUnknownKey() {
-        XCTAssertEqual(FrameCheck(text: "frame=\ngrid=m\n\ntext=m\ntitle=1\ntint=green\n").partFaults, ["the part m has an unknown key: tint"])
+        XCTAssertEqual(FrameCheck(text: "frame=\nclass=gap-part\n\ntext=m\ntitle=1\ntint=green\n").partFaults, ["the part m has an unknown key: tint"])
     }
 
     func testPrintingNothingHidesAMetric() {
@@ -247,10 +247,10 @@ final class FrameTests: XCTestCase {
     }
 
     func testCardAndPadLinesDrawNothing() throws {
-        let output = Frame(text: "frame=\ngrid=a a\ncard=a\npad=7 8 9\n\ntext=a\ntitle=A\n")
+        let output = Frame(text: "frame=\nclass=gap-part\ncard=a\npad=7 8 9\n\ntext=a\ntitle=A\n")
 
         XCTAssertEqual(output.parts.map(\.id), ["a"])
-        XCTAssertEqual(output.layout?.rows, [["a", "a"]])
+        XCTAssertEqual(output.tree.children, ["a"])
     }
 
     func testABlockThatNamesAKindOfTheAppItselfIsUnreadable() {
@@ -273,7 +273,7 @@ final class FrameTests: XCTestCase {
     }
 
     func testANumberWithAMaxFillsAFieldTypeIsItsInputAndAnOldKindIsReported() throws {
-        let output = Frame(text: "frame=\ngrid=g\ngrid=s\ngrid=k\ngrid=t\ngrid=w\n\nnumber=g\nvalue=50\nmax=100\n\nfield=s\ntype=slider\nvalue=40\n\nfield=k\ntype=hotkey\nvalue=ctrl+k\n\nswitch=t\ntype=tick\n\nswitch=w\nlook=tick\n\ngauge=old\nvalue=1\n")
+        let output = Frame(text: "frame=\nclass=gap-part\n\nnumber=g\nvalue=50\nmax=100\n\nfield=s\ntype=slider\nvalue=40\n\nfield=k\ntype=hotkey\nvalue=ctrl+k\n\nswitch=t\ntype=tick\n\nswitch=w\nlook=tick\n\ngauge=old\nvalue=1\n")
 
         XCTAssertEqual(try XCTUnwrap(output.parts.first?.number).fill, 0.5)
         XCTAssertEqual(output.parts.dropFirst().map(\.control), [.slider(level: 40, min: 0, max: 100), .shortcut("ctrl+k"), .toggle(false), .toggle(false)])

@@ -6,7 +6,7 @@ extension Style {
         "24", "28", "32", "36", "40", "44", "48", "52", "56", "60", "64", "72", "80", "96"
     ]
     private static let fractions: [String: Double] = ["1/2": 1.0 / 2, "1/3": 1.0 / 3, "2/3": 2.0 / 3, "1/4": 1.0 / 4, "3/4": 3.0 / 4]
-    private static let counts = 1...6
+    private static let counts = 1...12
     private static let opacityStep = 5
 
     public init(classes: String) {

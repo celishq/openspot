@@ -18,7 +18,7 @@ enum SpotStorePicture {
                 exit(1)
             }
             model.openWindow(entry.id)
-            if let view = entry.spot.view { await SpotViews.shared.load(view) }
+            for view in entry.spot.views.values { await SpotViews.shared.load(view) }
             await model.waitForShows()
             draw(model: model, id: entry.id, to: path)
         }

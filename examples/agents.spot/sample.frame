@@ -1,9 +1,8 @@
 frame=
-grid=items
-grid.small=card
-grid.bar=count
+class=gap-part card:relative
 
-view=card
+card=card
+class=hidden card:flex absolute inset-0
 limit1=claude|0.62|working
 limit2=openai|0.28|waiting
 task1=waiting|Fix a flaky test|openai|website
@@ -11,19 +10,24 @@ task2=working|Rewrite the README|claude|openspot
 task3=working|Add a pricing page|claude|website
 
 number=count
+class=hidden bar:flex
 value=3
 title=Sessions
 
-repeat=items
+items=items
+class=card:hidden
 
 text=codex/702
+parent=items
 title=Fix a flaky test
 detail=website · waits for you · 41% context
 
 text=claude/611
+parent=items
 title=Rewrite the README
 detail=openspot · working · 34% context
 
 text=claude/4821
+parent=items
 title=Add a pricing page
 detail=website · working · 12% context
