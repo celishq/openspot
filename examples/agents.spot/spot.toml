@@ -1,12 +1,14 @@
 title = "Agents"
 icon = "sparkles"
 detail = "Claude Code and Codex at work"
-on = ["panel.open", "sheet.open", "clock.5"]
 views = ["card.swift"]
 source = ["agents"]
 
-[settings.claude]
-title = "Claude command"
+[settings]
+claude = { type = "text", title = "Claude command" }
+codex = { type = "text", title = "Codex command" }
 
-[settings.codex]
-title = "Codex command"
+[on]
+"panel.open" = true
+"sheet.open" = true
+every = 5

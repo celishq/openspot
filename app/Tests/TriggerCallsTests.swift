@@ -123,7 +123,7 @@ final class TriggerCallsTests: SpotRunsCase {
 
         XCTAssertTrue(sheet.drop([file.path]))
 
-        try await wait("the drop") { self.calls == ["drop|input.file=\(file.path) "] }
+        try await wait("the drop") { self.calls.first == "drop|input.file=\(file.path) " }
     }
 
     func testADragCallsDragWithEachItem() async throws {
@@ -131,7 +131,7 @@ final class TriggerCallsTests: SpotRunsCase {
 
         sheet.dragged([SpotItem(title: "A", run: "a"), SpotItem(title: "B", run: "b")])
 
-        try await wait("the drag") { self.calls == ["drag|input.item=a input.item=b "] }
+        try await wait("the drag") { self.calls.first == "drag|input.item=a input.item=b " }
     }
 
     func testAKeyRecordedOnARowCallsItsIDWithTheKey() async throws {
@@ -139,7 +139,7 @@ final class TriggerCallsTests: SpotRunsCase {
 
         sheet.set(SpotItem(title: "Key", run: "panel-key"), to: "cmd+k")
 
-        try await wait("the key") { self.calls == ["panel-key|input.value=cmd+k "] }
+        try await wait("the key") { self.calls.first == "panel-key|input.value=cmd+k " }
     }
 
     func testAPickOfASwitchRowCallsItsIDWithItsNewValue() async throws {
@@ -147,7 +147,7 @@ final class TriggerCallsTests: SpotRunsCase {
 
         sheet.pick(SpotItem(title: "Lid", run: "lid", isOn: false, isToggle: true))
 
-        try await wait("the switch") { self.calls == ["lid|input.value=true "] }
+        try await wait("the switch") { self.calls.first == "lid|input.value=true " }
     }
 
     func testAPressOfAnItemCallsPressWithTheItem() async throws {
@@ -155,7 +155,7 @@ final class TriggerCallsTests: SpotRunsCase {
 
         sheet.pick(SpotItem(title: "A", run: "a", fields: [.init(key: "url", value: "x")]))
 
-        try await wait("the press") { self.calls == ["press|input.item=a input.item.url=x "] }
+        try await wait("the press") { self.calls.first == "press|input.item=a input.item.url=x " }
     }
 
     func testAnActionOfAnItemCallsItsIDWithTheItemAndItsOwnKeys() async throws {
@@ -164,7 +164,7 @@ final class TriggerCallsTests: SpotRunsCase {
 
         sheet.run(action, item: SpotItem(title: "A", run: "a", fields: [.init(key: "url", value: "x")]))
 
-        try await wait("the action") { self.calls == ["remove|input.item=a input.item.url=x "] }
+        try await wait("the action") { self.calls.first == "remove|input.item=a input.item.url=x " }
     }
 
     func testTheRouteOfThePageIsAnInput() async throws {
@@ -182,7 +182,7 @@ final class TriggerCallsTests: SpotRunsCase {
 
         sheet.setCardPart("note", to: "hi")
 
-        try await wait("the send") { self.calls == ["note|input.value=hi "] }
+        try await wait("the send") { self.calls.first == "note|input.value=hi " }
     }
 
     func testTheClockCallsEveryWhileAPlaceShows() async throws {

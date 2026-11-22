@@ -1,6 +1,7 @@
 #!/bin/sh
 export LC_ALL=en_US.UTF-8
 export PATH="$PATH:/opt/homebrew/bin:/usr/local/bin"
+. "$OPENSPOT_SH"
 
 # Makes a jq value safe for one line of a text block, and gives the words and the tone of a state of checks.
 defs='def esc: gsub("\\\\"; "\\\\") | gsub("\n"; "\\n");
@@ -28,7 +29,7 @@ pulls() {
 }
 
 case "$1" in
-  show)
+  show | every)
     if ! command -v gh >/dev/null; then
       printf 'link=https://cli.github.com\n'
       echo "Pull requests need the gh tool. Install it, then open this again." >&2
@@ -42,10 +43,10 @@ case "$1" in
       + (tone | if . then "\ntone=\(.)" else "" end) + "\n"'
     ;;
   copy)
-    printf '%s' "$2" | pbcopy
+    printf '%s' "$(value item)" | pbcopy
     openspot toast Copied
     ;;
-  open)
-    open "$2"
+  press)
+    open "$(value item)"
     ;;
 esac

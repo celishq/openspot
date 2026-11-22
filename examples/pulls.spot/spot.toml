@@ -1,5 +1,7 @@
 title = "Pull requests"
 icon = "arrow.triangle.pull"
 detail = "On GitHub"
-on = ["clock.120"]
 uses = ["network", "clipboard"]
+
+[on]
+every = 120

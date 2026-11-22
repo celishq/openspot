@@ -150,18 +150,18 @@ func delete(_ stamp: String) {
 
 func serve() {
     Link.listen { call in
-        let row = call.arguments.dropFirst().first ?? ""
+        let row = call.value("input.item") ?? ""
         switch call.arguments.first {
         case "show":
             answer(call.id, sheet())
         case "dictate":
             dictate(call.id)
-        case "open" where row == "whisper" && download == nil && !FileManager.default.fileExists(atPath: model.path):
+        case "press" where row == "whisper" && download == nil && !FileManager.default.fileExists(atPath: model.path):
             fetch(in: call.id)
-        case "open" where row == "whisper" && download != nil:
+        case "press" where row == "whisper" && download != nil:
             download?.stop()
             answer(call.id)
-        case "open" where row != "whisper":
+        case "press" where row != "whisper":
             copy(row, in: call.id)
         case "delete":
             delete(row)

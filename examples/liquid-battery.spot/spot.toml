@@ -1,5 +1,7 @@
 title = "Liquid battery"
 icon = "battery.100"
 detail = "The battery as a liquid that fills its card from the bottom"
-on = ["panel.open"]
 views = ["liquid.swift"]
+
+[on]
+"panel.open" = true

@@ -8,7 +8,7 @@ final class SampleSpotsTests: SampleSpotsCase {
         try "#!/bin/sh\ncat >/dev/null\n".writeScript(to: tools.appendingPathComponent("pbcopy"))
         try "#!/bin/sh\ncat >/dev/null\n[ \"$1\" = toast ] && echo \"$2\" >> '\(tools.path)/toasts'\nexit 0\n".writeScript(to: tools.appendingPathComponent("openspot"))
         let examples = spots.deletingLastPathComponent().appendingPathComponent("examples")
-        for (script, arguments, input) in [(spots.spotFile("emoji"), ["press"], "input.item=x\n"), (spots.spotFile("files"), ["copy"], "input.item=x\n"), (examples.spotFile("pulls"), ["copy", "x"], "")] {
+        for (script, arguments, input) in [(spots.spotFile("emoji"), ["press"], "input.item=x\n"), (spots.spotFile("files"), ["copy"], "input.item=x\n"), (examples.spotFile("pulls"), ["copy"], "input.item=x\n")] {
             let process = Process()
             let out = Pipe()
             let stdin = Pipe()
@@ -228,9 +228,9 @@ final class SampleSpotsTests: SampleSpotsCase {
             XCTAssertEqual(list.id, metric.id)
 
             let item = try XCTUnwrap(lines.items.first)
-            try await list.perform(.item(item), timeout: 60)
+            try await list.handle(.item(item), timeout: 60)
             XCTAssertEqual(try self.read("opened", in: folder), item.run + "\n")
-            try await list.perform(.action(try await self.action("copy", of: list), item: item), timeout: 60)
+            try await list.perform(.press("copy"), input: Message(.press("copy"), inputs: [.init(key: "item", value: item.run)]).text, timeout: 60)
             XCTAssertEqual(try self.read("clipboard", in: folder), item.run)
         }
     }

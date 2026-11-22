@@ -21,7 +21,7 @@ music() {
 }
 
 case "$1" in
-  show)
+  show | every)
     state=$(music "player state as text")
     if [ -z "$state" ] || [ "$state" = stopped ]; then
       printf 'frame=\nclass=gap-part\n\ntext=song\nclass=bar:flex\ntitle=Nothing playing\ndetail=Open Music to play a song\n'

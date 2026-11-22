@@ -84,7 +84,7 @@ form() {
 
 # Keeps the editor of the form. Asks again when the form gave an app that is gone, and returns 1 then.
 keep_editor() {
-  chosen=$(value input.editor)
+  chosen=$(value editor)
   if [ ! -d "$chosen" ]; then
     form "Openspot cannot find that app. Choose another one."
     return 1
@@ -156,7 +156,7 @@ tab=$(printf '\t')
 case "$1" in
   show)
     if [ -z "$folder" ]; then
-      printf 'button=open\ntitle=Choose\n\n'
+      printf 'button=press\ntitle=Choose\n\n'
       printf 'item=choose\ntitle=Choose the folder of your repos\ndetail=Repos lists each git repo inside it\nicon=folder.badge.plus\n'
       exit 0
     fi
@@ -168,7 +168,7 @@ case "$1" in
 "
     done
     hosts=$(printf '%s' "$repos" | while IFS="$tab" read -r repo url; do [ -z "$url" ] || host "$url"; echo; done | sed '/^$/d' | sort -u)
-    printf 'button=open\n'
+    printf 'button=press\n'
     openspot_kv title "Open in $(name "$editor")"
     printf '\n'
     index=0
@@ -187,7 +187,7 @@ case "$1" in
     printf 'button=reveal\ntitle=Show in Finder\nshortcut=cmd+return\n\n'
     printf 'button=terminal\ntitle=Open in Terminal\nshortcut=cmd+t\n\n'
     printf 'button=copy\ntitle=Copy path\nshortcut=cmd+shift+c\n\n'
-    printf 'button=editor\ntitle=Change default app\nscope=spot\nform=true\n\n'
+    printf 'button=editor\ntitle=Change default app\nscope=spot\n\n'
     printf 'button=folder\ntitle=Change folder\nscope=spot\n\n'
     printf '%s' "$repos" | while IFS="$tab" read -r repo url; do
       openspot_item "$repo" "${repo##*/}" "$(branch "$repo")" "$repo"
@@ -209,22 +209,22 @@ case "$1" in
       openspot_item choose "No git repos in $shown" "Choose another folder" folder.badge.questionmark
     fi
     ;;
-  open)
-    if [ "$2" = choose ]; then
+  press)
+    if [ "$(value item)" = choose ]; then
       pick_folder
       exit 0
     fi
-    open -a "$editor" "$2"
+    open -a "$editor" "$(value item)"
     ;;
   page-*)
     open "$(value item.page)"
     ;;
   in-*)
     app=$(installed | sed -n "${1#in-}p")
-    open -a "$app" "$2"
+    open -a "$app" "$(value item)"
     ;;
   editor)
-    if [ -z "$(value input.editor)" ]; then
+    if [ -z "$(value editor)" ]; then
       form "Choose the default app"
       exit 0
     fi
@@ -234,13 +234,13 @@ case "$1" in
     pick_folder
     ;;
   reveal)
-    open -R "$2"
+    open -R "$(value item)"
     ;;
   terminal)
-    open -a Terminal "$2"
+    open -a Terminal "$(value item)"
     ;;
   copy)
-    printf '%s' "$2" | pbcopy
+    printf '%s' "$(value item)" | pbcopy
     openspot toast Copied
     ;;
 esac

@@ -17,7 +17,7 @@ tick() {
 
 main() {
   case "$1" in
-    show) now ;;
+    show | app.launch) now ;;
   esac
 }
 
