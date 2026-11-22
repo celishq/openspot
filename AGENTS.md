@@ -294,7 +294,7 @@ make eval-compare LABELS="base phase1"  # prints the summaries of two eval runs 
 
 `openspot render` and `openspot check` start the Debug app of their build when it isn't running, and it keeps running
 after the command ends. Before you finish your work, quit each Debug app you started with that build's
-`openspot app quit`.
+`openspot --config <folder> app quit`, given the config folder that the app runs on.
 
 Each check runs from any folder and takes the repo root as its argument. A check whose rule the code does not meet yet keeps
 today's breaks in `scripts/breaks/`. It fails on a new break and on a listed break that is gone, so a fix removes its line. `make perf` is
