@@ -114,6 +114,8 @@ final class SheetLayoutTests: XCTestCase {
         XCTAssertEqual(FrameCheck(text: "frame=\nclass=gap-part\n\ntext=a\ntitle=A\n").sheetFaults, [])
         XCTAssertEqual(FrameCheck(text: "frame=\nclass=gap-part\n\ntitle=A\n\ntext=a\ntitle=A\n").sheetFaults, ["cannot read the block that starts: title=A"])
         XCTAssertEqual(FrameCheck(text: "frame=\nclass=gap-part\n").sheetFaults, ["the sheet has no parts"])
+        XCTAssertEqual(FrameCheck(text: "text=home\ntitle=Home\n\nswitch=vpn\ntitle=VPN\nvalue=true\n\nbutton=forget\ntitle=Forget\n").sheetFaults, [])
+        XCTAssertEqual(FrameCheck(text: "number=battery\ntitle=Battery\nvalue=84\nmax=100\nunit=%\n").sheetFaults, [])
     }
 
     func testTheLevelOfASliderIsAFaultOutsideItsRange() {

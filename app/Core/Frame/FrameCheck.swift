@@ -53,6 +53,6 @@ public struct FrameCheck: Equatable, Sendable {
     }
 
     public var sheetFaults: [String] {
-        (output.parts.isEmpty && output.perLine == nil ? ["the sheet has no parts"] : []) + output.errors.map { "cannot read the block that starts: \($0)" } + partFaults
+        (output.parts.isEmpty && output.perLine == nil && output.items.isEmpty ? ["the sheet has no parts"] : []) + output.errors.map { "cannot read the block that starts: \($0)" } + partFaults
     }
 }

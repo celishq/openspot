@@ -37,6 +37,16 @@ final class TreeFaultsTests: XCTestCase {
         XCTAssertEqual(FrameCheck(text: "frame=\nclass=gap-part\n\n" + switches).partFaults, [])
     }
 
+    func testATextThatTruncatesOrClampsAcceptsItsCut() {
+        let title = "A text with a very long title that runs on"
+        func faults(_ classes: String) -> [String] {
+            FrameCheck(text: "frame=\nclass=flex-row gap-part\n\ntext=a\ntitle=\(title)\nclass=\(classes)\n\ntext=b\ntitle=\(title)\nclass=\(classes)\n").partFaults.filter { $0.contains("may not fit") }
+        }
+
+        XCTAssertEqual(faults("truncate"), [])
+        XCTAssertEqual(faults("line-clamp-2"), [])
+    }
+
     func testATreeThatScrollsIsNeverTooTall() {
         let texts = (1...20).map { "text=t\($0)\ntitle=Line \($0)\n" }.joined(separator: "\n")
         let text = "frame=\nclass=gap-part\n\nfield=note\ntype=multiline\nvalue=Hi\n\n" + texts
