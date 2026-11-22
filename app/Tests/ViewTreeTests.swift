@@ -246,6 +246,26 @@ final class ViewTreeTests: XCTestCase {
         XCTAssertEqual(frame.items.first?.section, "Recent")
     }
 
+    func testATextsPaddingIsPartOfItsHeight() throws {
+        let plain = try XCTUnwrap(Frame(text: "frame=\n\ntext=a\ntitle=A\n").tree.height(in: SpotTokens.partsWidth, parts: []))
+        let padded = try XCTUnwrap(Frame(text: "frame=\n\ntext=a\ntitle=A\nclass=p-3\n").tree.height(in: SpotTokens.partsWidth, parts: []))
+
+        XCTAssertEqual(padded, plain + 2 * 3 * SpotTokens.spaceUnit)
+    }
+
+    func testATextCountsEachLineItsWordsWrapTo() throws {
+        let short = "frame=\n\ntext=a\ntitle=A\ndetail=One line\n"
+        let long = "frame=\n\ntext=a\ntitle=A\ndetail=\(Array(repeating: "words", count: 60).joined(separator: " "))\n"
+        let one = try XCTUnwrap(Frame(text: short).tree.height(in: SpotTokens.partsWidth, parts: []))
+        let many = try XCTUnwrap(Frame(text: long).tree.height(in: SpotTokens.partsWidth, parts: []))
+        let cut = try XCTUnwrap(Frame(text: long + "class=truncate\n").tree.height(in: SpotTokens.partsWidth, parts: []))
+        let line = CGFloat(SpotTokens.layout.type.detail) + SpotTokens.textLeading
+
+        XCTAssertGreaterThanOrEqual(many, one + 4 * line)
+        XCTAssertEqual((many - one).truncatingRemainder(dividingBy: line), 0)
+        XCTAssertEqual(cut, one)
+    }
+
     func testAButtonPlacedInAWrittenTreeIsNoActionSoItNeedsNoTitle() {
         let check = FrameCheck(text: "frame=\nclass=gap-part\n\nbox=row\nclass=flex-row\n\nbutton=swap\nparent=row\nicon=arrow.up.arrow.down\n")
 
