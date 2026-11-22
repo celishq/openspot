@@ -1,7 +1,7 @@
 import OpenspotCore
 import SwiftUI
 
-struct SheetTreeView: View {
+struct NodeTree: View {
     let tree: ViewTree
     let pictureTimes: [String: Double]
     var outset: CGFloat = 0

@@ -15,6 +15,10 @@ public struct CardFace: Equatable, Sendable {
         [SpotSize.large, .strip].first { size in Style.Variant(size: size).map(tree.places.contains) == true }
     }
 
+    public func draws(on size: SpotSize) -> Bool {
+        tree.draws(on: size)
+    }
+
     public mutating func set(_ value: String, of id: String) {
         parts.firstIndex { $0.id == id }.map { parts[$0].set(value) }
     }

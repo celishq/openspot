@@ -47,7 +47,7 @@ struct SheetPartsView: View {
     private var tree: some View {
         ScrollView(showsIndicators: false) {
             NodeRoom(height: panel.height) {
-                SheetTreeView(tree: panel.tree, pictureTimes: panel.pictureTimes)
+                NodeTree(tree: panel.tree, pictureTimes: panel.pictureTimes)
                     .environment(\.spotNodeParts, nodeParts)
                     .environment(\.spotNodeSend, send)
                     .environment(\.spotNodeSelection, selectedID)

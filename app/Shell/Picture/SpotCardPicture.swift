@@ -11,14 +11,14 @@ enum SpotCardPicture {
         SpotPicture.start()
         let output = Frame(text: text)
         let face = output.face
-        guard face.tree.draws(on: size) else {
+        guard face.draws(on: size) else {
             FileHandle.standardError.write(Data("The card has no drawing for the size \(size.name). Give a block a class for it, such as \(size.name):flex.\n".utf8))
             exit(1)
         }
         let card = CGSize(width: SpotTokens.width(columns: size.columns), height: SpotTokens.height(rows: size.rows))
         let shape = SpotRoundShape(radius: SurfaceEdge(card: size).radius)
         let stage = SpotPictureStage(size: card, radius: SurfaceEdge(card: size).radius, seed: URL(fileURLWithPath: path).lastPathComponent) {
-            CardTreeView(tree: face.tree, size: size, parts: face.parts)
+            CardTreeView(face: face, size: size)
                 .padding(SpotTokens.cardPadding(for: size, isDrawn: true))
                 .background(SpotTheme.ink.opacity(SpotTheme.fill), in: shape)
                 .spotGlass(in: shape)

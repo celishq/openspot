@@ -43,8 +43,8 @@ struct SpotCardView: View, @MainActor Equatable {
 
     @ViewBuilder
     private var content: some View {
-        if drawsOwnCard, entry.state.face.tree.draws(on: size) {
-            CardTreeView(tree: entry.state.face.tree, size: size, parts: entry.state.face.parts, isPressed: showsPress, model: model, index: index) { model.setCardPart(entry.id, $0, to: $1) }
+        if drawsOwnCard, entry.state.face.draws(on: size) {
+            CardTreeView(face: entry.state.face, size: size, isPressed: showsPress, model: model, index: index) { model.setCardPart(entry.id, $0, to: $1) }
         } else {
             words
         }
@@ -62,7 +62,7 @@ struct SpotCardView: View, @MainActor Equatable {
     }
 
     private var isDrawn: Bool {
-        drawsOwnCard && entry.state.face.tree.draws(on: size)
+        drawsOwnCard && entry.state.face.draws(on: size)
     }
 
     private var drawsOwnCard: Bool {
