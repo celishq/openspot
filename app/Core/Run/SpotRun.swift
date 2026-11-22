@@ -149,9 +149,22 @@ public final class SpotRun {
                 withMutation(keyPath: \.selectedPart) { self.parts = newValue }
                 return
             }
+            if let newValue, let parts, let changed = newValue.changedParts(from: parts) {
+                self.parts = newValue
+                changed.forEach { withMutation(keyPath: \.[part: $0]) {} }
+                return
+            }
             withMutation(keyPath: \.panel) { parts = newValue }
             settle()
         }
+    }
+    public subscript(part id: String) -> SpotPart? {
+        access(keyPath: \.[part: id])
+        return parts?.tree.node(id)?.part
+    }
+    public subscript(cardPart id: String) -> SpotPart? {
+        access(keyPath: \.[cardPart: id])
+        return keptState.face.tree.node(id)?.part
     }
     public var selectedPart: SpotPart? {
         access(keyPath: \.panel)
@@ -173,20 +186,32 @@ public final class SpotRun {
         !places.isEmpty
     }
     public private(set) var shape = Shape(rows: 0, perLine: 1)
-    public private(set) var kind = SheetKind.rows
+    public private(set) var isWaiting = false
     public private(set) var partsRect: CGRect?
     public private(set) var takesKeys = true
     public private(set) var sheetRect = SpotTokens.sheetRect(rows: 0)
     public private(set) var showsField = true
     public private(set) var top = SheetTop.plain
-    @ObservationIgnored var heardKind: SheetKind? {
+    @ObservationIgnored var heardRows: Bool? {
         didSet { settle() }
     }
+    @ObservationIgnored private var keptState: SpotState
     public internal(set) var state: SpotState {
-        didSet {
-            guard state != oldValue else { return }
-            if (state.active == true) != isOn { isOn = state.active == true }
-            if state.subtitle != oldValue.subtitle { settle() }
+        get {
+            access(keyPath: \.state)
+            return keptState
+        }
+        set {
+            let old = keptState
+            guard newValue != old else { return }
+            if let changed = newValue.changedParts(from: old) {
+                keptState = newValue
+                changed.forEach { withMutation(keyPath: \.[cardPart: $0]) {} }
+            } else {
+                withMutation(keyPath: \.state) { keptState = newValue }
+            }
+            if (newValue.active == true) != isOn { isOn = newValue.active == true }
+            if newValue.subtitle != old.subtitle { settle() }
             onReport(.listChange)
         }
     }
@@ -241,7 +266,7 @@ public final class SpotRun {
         self.prepare = prepare
         link = Self.link(for: spot, runs: runs)
         rows = ItemList(recent: recent)
-        state = spot.headerState
+        keptState = spot.headerState
         reading = MetricReading(label: spot.name, headerSymbol: spot.headerSymbol)
         isOn = spot.headerState.active == true
         settle()
@@ -307,10 +332,10 @@ public final class SpotRun {
     func settle() {
         let next = Shape(rows: rows.lineCount, perLine: rows.perLine, setsApart: rows.setsApart)
         if next != shape { shape = next }
-        let waits = showsSheet && answered == nil && panel == nil && rows.search == .local && rows.isLoading && !rows.holdsItems
-        let nextKind = heardKind ?? (waits ? .waiting : panel?.kind ?? .rows)
-        if nextKind != kind { kind = nextKind }
-        let field = nextKind.showsField && rows.search != .off && panel?.placesSearch != true
+        let waits = heardRows == nil && showsSheet && answered == nil && panel?.holdsParts != true && rows.search == .local && rows.isLoading && !rows.holdsItems
+        if waits != isWaiting { isWaiting = waits }
+        let showsRows = heardRows ?? (!waits && panel?.showsRows != false)
+        let field = showsRows && rows.search != .off && panel?.placesSearch != true
         if field != showsField { showsField = field }
         let header = SheetHeader.shared.extra(for: shownState.subtitle)
         let nextTop = SheetTop(showsRows: panel.map { $0.showsRows && !$0.placesSearch } ?? true, search: rows.search, header: header)
@@ -319,9 +344,9 @@ public final class SpotRun {
             placed.place(top: nextTop)
             panel = placed
         }
-        let rect = panel.map(SpotTokens.panelRect)
+        let rect = panel.flatMap { $0.holdsParts ? SpotTokens.panelRect($0) : nil }
         if rect != partsRect { partsRect = rect }
-        let keys = panel?.kind.takesKeys != false
+        let keys = panel?.showsRows != false
         if keys != takesKeys { takesKeys = keys }
         let sheet = rect ?? SpotTokens.sheetRect(rows: next.rows, perLine: next.perLine, setsApart: next.setsApart, top: nextTop)
         if sheet != sheetRect { sheetRect = sheet }
@@ -329,10 +354,10 @@ public final class SpotRun {
 
     func hear(_ lines: Frame?) {
         guard let lines else {
-            heardKind = nil
+            heardRows = nil
             return
         }
-        guard kind == .waiting else { return }
-        heardKind = SheetKind(parts: lines.parts, showsRows: lines.perLine != nil)
+        guard isWaiting else { return }
+        heardRows = lines.showsRows
     }
 }

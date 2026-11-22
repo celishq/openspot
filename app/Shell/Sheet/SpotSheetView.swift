@@ -26,6 +26,7 @@ struct SpotSheetView: View {
 
 private struct SheetContentView: View {
     @Environment(\.spotSurfaceEdge) private var surface
+    @Environment(\.spotIsHeld) private var isHeld
     let model: SpotsModel
     let entry: SpotsModel.Entry
     let cardSize: SpotSize
@@ -68,26 +69,7 @@ private struct SheetContentView: View {
             header
                 .morph(progress, offset: { [rowCardDrop] in SheetMorph.place(onCard: CGSize(width: 0, height: rowCardDrop), at: $0) })
             VStack(alignment: .leading, spacing: SpotTokens.rowGap) {
-                if let panel = content.panel {
-                    if top.hasField { Color.clear.frame(height: SpotTokens.listRow) }
-                    SheetPartsView(
-                        panel: panel,
-                        act: content.act,
-                        onSet: { model.setPart($0, to: $1) },
-                        onPress: { model.pressPart($0) },
-                        recordingPart: content.recording,
-                        onRecord: { model.toggleRecording($0) },
-                        keys: content.keys,
-                        list: list,
-                        onRun: { model.runItem($0) },
-                        onDragOut: { model.dragOut($0, of: entry.id) },
-                        selection: selection,
-                        selectedPart: content.selectedPart,
-                        nudge: content.nudge,
-                        menuOpening: content.menuOpening,
-                        onFocus: { model.focusPart($0) }
-                    )
-                } else if let form {
+                if let form {
                     if form.choices != nil { Color.clear.frame(height: SpotTokens.listRow) }
                     SpotFormView(
                         draft: form,
@@ -97,13 +79,28 @@ private struct SheetContentView: View {
                     )
                 } else {
                     if top.hasField { Color.clear.frame(height: SpotTokens.listRow) }
-                    if let create = content.create() {
+                    if content.panel?.holdsParts != true, let create = content.create() {
                         Button { model.createFromSearch() } label: {
                             CreateLabel(model: model, title: create.title, shape: row)
                         }
                         .buttonStyle(.plain)
                     } else {
-                        SpotItemsView(list: list, recording: content.isHeld ? nil : content.recording, recordingWords: model.recordingWords, keys: model.keys, onRun: { model.runItem($0) }, onPoint: { model.point(at: .item($0)) }, selection: selection, onDragOut: { model.dragOut($0, of: entry.id) }, failure: { [model, id = entry.id] in model.failure(of: $0, in: id) }, tips: model, shakes: { [model, id = entry.id] in model.refusals(of: $0, in: id) }, room: top.listRoom)
+                        SpotSheetBody(
+                            panel: content.panel,
+                            list: list,
+                            actions: SheetActions(model: model, id: entry.id, content: content, isHeld: isHeld),
+                            recording: content.recording,
+                            recordingWords: model.recordingWords,
+                            keys: content.keys,
+                            onPick: { model.runItem($0) },
+                            onPoint: { model.point(at: .item($0)) },
+                            onDragOut: { model.dragOut($0, of: entry.id) },
+                            selection: selection,
+                            failure: { [model, id = entry.id] in model.failure(of: $0, in: id) },
+                            tips: model,
+                            shakes: { [model, id = entry.id] in model.refusals(of: $0, in: id) },
+                            room: top.listRoom
+                        )
                     }
                 }
             }

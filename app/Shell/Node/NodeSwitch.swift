@@ -2,6 +2,20 @@ import OpenspotCore
 import SwiftUI
 
 struct NodeSwitch: View {
+    let node: ViewNode
+    let look: SpotPart.Look?
+    @Environment(\.spotNode) private var context
+
+    var body: some View {
+        if let part = context.actions.part(of: node) {
+            NodePartFrame(node: node, part: part, look: look) { size in
+                SwitchDrawing(part: part, look: look, size: size, isCard: context.isCard, call: context.call(of: part), keepsIconColumn: context.keepsIconColumn(part)) { context.set(part, to: $0) }
+            }
+        }
+    }
+}
+
+private struct SwitchDrawing: View {
     let part: SpotPart
     let look: SpotPart.Look?
     let size: CGSize

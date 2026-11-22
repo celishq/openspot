@@ -2,6 +2,20 @@ import OpenspotCore
 import SwiftUI
 
 struct NodeNumber: View {
+    let node: ViewNode
+    let look: SpotPart.Look?
+    @Environment(\.spotNode) private var context
+
+    var body: some View {
+        if let part = context.actions.part(of: node) {
+            NodePartFrame(node: node, part: part, look: look) { size in
+                NumberDrawing(part: part, look: look, size: size, isCard: context.isCard)
+            }
+        }
+    }
+}
+
+private struct NumberDrawing: View {
     let part: SpotPart
     let look: SpotPart.Look?
     let size: CGSize

@@ -2,6 +2,21 @@ import OpenspotCore
 import SwiftUI
 
 struct NodeChoice: View {
+    let node: ViewNode
+    let look: SpotPart.Look?
+    @Environment(\.spotNode) private var context
+
+    var body: some View {
+        if let part = context.actions.part(of: node) {
+            let actions = context.actions
+            NodePartFrame(node: node, part: part, look: look) { size in
+                ChoiceDrawing(part: part, look: look, size: size, isCard: context.isCard, call: context.call(of: part), keepsIconColumn: context.keepsIconColumn(part), menuOpening: { actions.menuOpening }) { context.set(part, to: $0) }
+            }
+        }
+    }
+}
+
+private struct ChoiceDrawing: View {
     let part: SpotPart
     let look: SpotPart.Look?
     let size: CGSize

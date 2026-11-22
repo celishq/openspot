@@ -2,6 +2,35 @@ import OpenspotCore
 import SwiftUI
 
 struct NodeButton: View {
+    let node: ViewNode
+    let look: SpotPart.Look?
+    var label: AnyView?
+    @Environment(\.spotNode) private var context
+    @Environment(\.spotSurfaceEdge) private var surface
+
+    var body: some View {
+        if let part = context.actions.part(of: node) {
+            NodePartFrame(node: node, part: part, look: look, hasLabel: label != nil) { size in
+                if let label {
+                    Button { context.press(part) } label: {
+                        if context.isCard {
+                            label
+                        } else {
+                            label
+                                .spotHover(in: SpotRoundShape(surface.inner()))
+                                .contentShape(SpotRoundShape(surface.inner()))
+                        }
+                    }
+                    .buttonStyle(.plain)
+                } else {
+                    ButtonDrawing(part: part, look: look, size: size, isCard: context.isCard, call: context.call(of: part), keepsIconColumn: context.keepsIconColumn(part)) { context.press(part) }
+                }
+            }
+        }
+    }
+}
+
+private struct ButtonDrawing: View {
     let part: SpotPart
     let look: SpotPart.Look?
     let size: CGSize

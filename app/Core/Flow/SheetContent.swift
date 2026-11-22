@@ -8,7 +8,6 @@ public struct SheetContent {
     public let form: FormDraft?
     public let recording: String?
     public let keys: KeyRecording
-    public let isHeld: Bool
     public let takesFiles: Bool
     public let selection: () -> Int
     public let selectedPart: () -> String?
@@ -26,7 +25,6 @@ public struct SheetContent {
         form = nil
         recording = page.recording
         keys = KeyRecording(status: page.keyStatus)
-        isHeld = true
         takesFiles = false
         selection = { page.selection }
         selectedPart = { page.selectedPart }
@@ -48,7 +46,6 @@ public struct SheetContent {
         self.form = form
         self.recording = recording
         self.keys = keys
-        isHeld = false
         takesFiles = list.hasFiles
         self.selection = selection
         self.selectedPart = selectedPart

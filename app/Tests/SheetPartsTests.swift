@@ -156,7 +156,13 @@ final class SheetPartsTests: XCTestCase {
 
     func testAScriptThatPrintsPartsIsAList() {
         XCTAssertEqual(Frame(text: lights.placed).kind, .list)
-        XCTAssertNil(SheetParts(output: Frame(text: "text=a\ntitle=A\n")))
+    }
+
+    func testAListMakesASheetThatHoldsItsItemsAndDrawsNoParts() {
+        let list = SheetParts(output: Frame(text: "text=a\ntitle=A\n"))
+
+        XCTAssertTrue(list.showsRows)
+        XCTAssertFalse(list.holdsParts)
     }
 
     func testWhatABlockPrintsDecidesItsControl() throws {
@@ -295,7 +301,7 @@ final class SheetPartsTests: XCTestCase {
         let actions = SheetParts(output: Frame(text: "frame=\nclass=gap-part\n\n\(rows)text=t\n\nbutton=reveal\nparent=files\nshortcut=cmd+return\n"))
 
         XCTAssertTrue(drawn.drawsKeys)
-        XCTAssertEqual(actions?.drawsKeys, false)
+        XCTAssertFalse(actions.drawsKeys)
     }
 
     func testAnEveryLineIsAnUnknownKindThatASheetSkips() throws {

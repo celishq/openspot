@@ -2,6 +2,21 @@ import OpenspotCore
 import SwiftUI
 
 struct NodeField: View {
+    let node: ViewNode
+    let look: SpotPart.Look?
+    @Environment(\.spotNode) private var context
+
+    var body: some View {
+        if let part = context.actions.part(of: node) {
+            let actions = context.actions
+            NodePartFrame(node: node, part: part, look: look) { size in
+                FieldDrawing(part: part, size: size, isCard: context.isCard, call: context.call(of: part), isRecording: actions.recordingPart == part.id, keys: actions.keys, focus: context.focus, onRecord: { actions.record(part) }) { context.set(part, to: $0) }
+            }
+        }
+    }
+}
+
+private struct FieldDrawing: View {
     let part: SpotPart
     let size: CGSize
     let isCard: Bool
