@@ -108,8 +108,8 @@ extension Manifest.Action {
         form(with: [:])
     }
 
-    public func form(with values: [String: String]) -> String {
-        let root = TextBlock(fields: [.init(key: "frame", value: ""), .init(key: "type", value: "form"), .init(key: "title", value: title ?? id)])
+    public func form(with values: [String: String], title: String? = nil) -> String {
+        let root = TextBlock(fields: [.init(key: "frame", value: ""), .init(key: "type", value: "form"), .init(key: "title", value: title ?? self.title ?? id)])
         return ([root] + inputs.flatMap { $0.formBlocks(value: values[$0.name]) }).map(\.text).joined(separator: "\n")
     }
 }

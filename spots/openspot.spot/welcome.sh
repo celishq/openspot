@@ -93,7 +93,7 @@ case "$1" in
     ;;
   next) openspot route push key --title 'Choose your key' ;;
   key)
-    printf '%s\n' "$2" > "$keyfile"
+    printf '%s\n' "$(value value)" > "$keyfile"
     current
     keys
     ;;

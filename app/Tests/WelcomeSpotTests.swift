@@ -9,7 +9,7 @@ final class WelcomeSpotTests: BuiltInCase {
     }
 
     private func answer(_ arguments: [String]) async throws -> Frame {
-        try await welcome.answer(SpotAction(arguments: arguments), timeout: 60)
+        try await welcome.answer(SpotAction(arguments: [arguments[0]]), input: arguments.count > 1 ? "input.value=\(arguments[1])\n" : nil, timeout: 60)
     }
 
     private func read(page: String? = nil) async throws -> Frame {

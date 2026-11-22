@@ -539,6 +539,53 @@ final class SpotsModelTests: XCTestCase {
         try await wait("the minutes") { (try? String(contentsOfFile: given, encoding: .utf8)) == "45\n" }
     }
 
+    func testAButtonOfAnItemThatAnswersWithAFormAsksForItsValuesAndCallsItsActionWithThemAndTheItem() async throws {
+        let given = folder.appendingPathComponent("given").path
+        try script("list", toml: "[on]\n\"sheet.open\" = true", """
+        input=$(cat)
+        case "$1" in
+          rename)
+            case $input in
+              *input.name=*) printf '%s\\n' "$input" | sed -nE 's/^input[.](item|name)=//p' | tr '\\n' ' ' > '\(given)' ;;
+              *) printf 'frame=\\ntype=form\\ntitle=Rename\\n\\nfield=name\\ntitle=Name\\n' ;;
+            esac
+            ;;
+          *) printf 'button=rename\\ntitle=Rename\\nclose=false\\n\\nitem=a\\ntitle=Apple\\n' ;;
+        esac
+        """)
+        await model.reload()
+        model.isShown = true
+        model.panelWillShow()
+        model.press("list")
+        try await wait("the open list") { model.openSheetID == "list" && model.openItems?.shown.count == 1 }
+        let item = try XCTUnwrap(model.openItems?.shown.first)
+        let rename = try XCTUnwrap(model.openEntry?.spot.actions.first { $0.id == "rename" })
+
+        model.run(rename, on: (try XCTUnwrap(model.openEntry), item))
+
+        try await wait("the form") { model.form?.action.id == "rename" }
+        model.setFormValue("Pear", for: "name")
+        model.submitForm()
+        try await wait("the name and the item") { (try? String(contentsOfFile: given, encoding: .utf8)) == "Pear a " }
+    }
+
+    func testAButtonWhoseActionLacksARequiredInputOpensItsDrawnFormTitledByTheButton() async throws {
+        try script("list", toml: "[on]\n\"sheet.open\" = true\n[actions.start]\ninputs.minutes = { type = 'text', required = true }", """
+        printf 'button=start\\ntitle=Keep awake for…\\nscope=spot\\n\\nitem=a\\ntitle=Apple\\n'
+        """)
+        await model.reload()
+        model.isShown = true
+        model.panelWillShow()
+        model.press("list")
+        try await wait("the open list") { model.openSheetID == "list" && model.openItems?.shown.count == 1 }
+        let start = try XCTUnwrap(model.openEntry?.spot.actions.first { $0.id == "start" })
+
+        model.run(start, on: (try XCTUnwrap(model.openEntry), nil))
+
+        try await wait("the form") { model.form?.action.id == "start" }
+        XCTAssertEqual(model.form?.draft.form.title, "Keep awake for…")
+    }
+
     func testAListDrawsAheadOnlyThePicturesOfTheRowsOnItsFirstScreen() async throws {
         try script("apps", toml: "", "for i in $(seq 1 100); do printf 'item=a%s\\ntitle=App %s\\nicon=/Applications/A%s.app\\n\\n' $i $i $i; done")
         await model.reload()

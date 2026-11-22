@@ -307,13 +307,13 @@ extension SpotsModel {
         openSheet?.landRows()
         guard let action = createAction, let entry = openEntry else { return }
         let query = openItems?.query ?? ""
-        if let typed = Self.typed(action, of: entry.spot), let input = typed.textInput, let form = ItemForm(output: Frame(text: typed.form(with: [input.name: query]))) {
+        if let typed = Self.typed(action, of: entry.spot), let input = typed.textInput, let form = ItemForm(output: Frame(text: typed.form(with: [input.name: query], title: action.title))) {
             return show(.form(form), of: action, on: (entry, nil), prefill: "")
         }
         openForm(action, on: (entry, nil), prefill: query)
     }
 
-    private static func typed(_ action: CommandAction, of spot: Spot) -> Manifest.Action? {
+    static func typed(_ action: CommandAction, of spot: Spot) -> Manifest.Action? {
         let id = CommandAction.command(of: action) ?? action.id
         return spot.typedActions.first { $0.id == id }
     }
@@ -369,7 +369,7 @@ extension SpotsModel {
         }
         let closes = !place.isDetached && entry.spot.triggers != nil && entry.spot.pick == .close && !item.staysOnPick
         if let action {
-            sheets[entry.id]?.run(action, item: item)
+            perform(action, on: (entry, item))
         } else if entry.spot.triggers != nil, let sheet = sheets[entry.id] {
             Task { [weak self] in
                 guard case .form(let form) = await sheet.answer(toPick: item, closes: closes), let self, isShown else { return }

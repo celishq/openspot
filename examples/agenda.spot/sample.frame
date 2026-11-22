@@ -62,7 +62,7 @@ text=due-r2
 parent=row-r2
 detail=Today 17:00
 
-button=open
+button=press
 parent=items
 title=Open
 
@@ -80,7 +80,6 @@ close=false
 button=calendars
 parent=items
 title=Choose calendars
-form=true
 scope=spot
 close=false
 

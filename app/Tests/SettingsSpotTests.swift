@@ -13,7 +13,9 @@ final class SettingsSpotTests: BuiltInCase {
     }
 
     private func call(_ arguments: [String]) async throws {
-        try await settings.perform(SpotAction(arguments: arguments), timeout: 60)
+        let handler = arguments[0] == "open" ? "press" : arguments[0]
+        let input = arguments.dropFirst().map { "input.\(handler == "press" ? "item" : "value")=\($0)\n" }.joined()
+        try await settings.perform(SpotAction(arguments: [handler]), input: input.isEmpty ? nil : input, timeout: 60)
     }
 
     func testItIsASmallListThatTheSearchFindsAndTheSettingsKeyOpens() throws {

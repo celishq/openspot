@@ -133,11 +133,23 @@ extension SpotRun {
     }
 
     public func pick(_ item: SpotItem, closes: Bool = false) {
-        press(Message(.item(item), item: item.fields, search: list.search == .script && !list.query.isEmpty ? list.query : nil), closes: closes)
+        press(picking(item), closes: closes)
     }
 
     public func answer(toPick item: SpotItem, closes: Bool = false) async -> CallAnswer {
+        await answer(toPress: picking(item), closes: closes)
+    }
+
+    private func picking(_ item: SpotItem) -> Message {
         let message = Message(.item(item), item: item.fields, search: list.search == .script && !list.query.isEmpty ? list.query : nil)
+        return item.isToggle ? pressing(message, as: Self.valueInput) : message
+    }
+
+    public func answer(to action: CommandAction, item: SpotItem?) async -> CallAnswer {
+        await answer(toPress: pressing(Message(.action(action, item: item), item: item?.fields ?? []), as: Self.itemInput))
+    }
+
+    private func answer(toPress message: Message, closes: Bool = false) async -> CallAnswer {
         let key = Self.key(call: message.action)
         if let running = running(key) {
             pressAgain(running)
@@ -152,7 +164,7 @@ extension SpotRun {
     }
 
     public func set(_ item: SpotItem, to value: String) {
-        press(Message(.set(item.run, to: value)))
+        press(pressing(Message(.set(item.run, to: value)), as: Self.valueInput))
     }
 
     public func run(_ action: CommandAction, item: SpotItem?, ended: (() -> Void)? = nil) {
@@ -178,9 +190,14 @@ extension SpotRun {
         let call = SpotAction.action(action, item: nil)
         guard let key = freeKey(call, onCard: onCard) else { return .stopped }
         answered = nil
+        let typed = typedAction(of: call)
+        if let typed, typed.textInput != nil, search.text.isEmpty, let form = ItemForm(output: Frame(text: typed.form(with: [:], title: action.title))) {
+            return .form(form)
+        }
         let message = CommandAction.word(of: action).map { word in
             Message(.press(Manifest.Triggers.command), inputs: [.init(key: "name", value: word), .init(key: "text", value: search.text)])
-        } ?? Message(call, search: search.text, searchForms: search.forms)
+        } ?? typed?.textInput.map { Message(call, inputs: [.init(key: $0.name, value: search.text)]) }
+            ?? Message(call, search: search.text, searchForms: search.forms)
         return try await withCheckedThrowingContinuation { waiting in
             let first = FirstFrame(waiting)
             if !send(Call(message: message, key: key, purpose: .act(Act(first: first, started: runs.now())))) { first.end(.stopped) }
@@ -196,11 +213,13 @@ extension SpotRun {
     public func submit(_ action: CommandAction, item: SpotItem?, draft: FormDraft) async throws -> CallAnswer {
         let call = SpotAction.action(action, item: item)
         guard let key = freeKey(call) else { return .stopped }
+        let given = Message(call, inputs: draft.inputs)
+        let message = call.arguments.first == SpotAction.open.arguments.first ? given : pressing(given, as: Self.itemInput)
         guard !script.keepsState else {
-            act(Message(call, inputs: draft.inputs), key: key)
+            act(message, key: key)
             return .done
         }
-        guard let output = try await answer(to: Message(call, inputs: draft.inputs), key: key) else { return .stopped }
+        guard let output = try await answer(to: message, key: key) else { return .stopped }
         if let form = Self.form(in: output) {
             if draft.isMultiple { show(need: .change) }
             return .form(form)

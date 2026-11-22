@@ -53,7 +53,7 @@ final class ThemesSpotTests: BuiltInCase {
     func testReturnUsesATheme() async throws {
         try theme("Night", "")
 
-        let output = try await themes.answer(SpotAction(arguments: ["open", "Night"]), timeout: 60)
+        let output = try await themes.answer(SpotAction(arguments: ["press"]), input: "input.item=Night\n", timeout: 60)
 
         XCTAssertEqual(file.read().theme, "Night")
         XCTAssertEqual(output.items.filter(\.isOn).map(\.run), ["Night"])
@@ -62,10 +62,10 @@ final class ThemesSpotTests: BuiltInCase {
     }
 
     func testDuplicateRenameAndMoveToTrashChangeTheThemes() async throws {
-        try await themes.perform(SpotAction(arguments: ["duplicate", "Openspot"]), timeout: 60)
-        let form = try await themes.answer(SpotAction(arguments: ["rename", "Openspot copy"]), timeout: 60)
-        let renamed = try await themes.answer(SpotAction(arguments: ["rename", "Openspot copy"]), input: "input.name= Dusk \n", timeout: 60)
-        try await themes.perform(SpotAction(arguments: ["delete", "Dusk"]), timeout: 60)
+        try await themes.perform(SpotAction(arguments: ["duplicate"]), input: "input.item=Openspot\n", timeout: 60)
+        let form = try await themes.answer(SpotAction(arguments: ["rename"]), input: "input.item=Openspot copy\n", timeout: 60)
+        let renamed = try await themes.answer(SpotAction(arguments: ["rename"]), input: "input.item=Openspot copy\ninput.name= Dusk \n", timeout: 60)
+        try await themes.perform(SpotAction(arguments: ["delete"]), input: "input.item=Dusk\n", timeout: 60)
 
         XCTAssertEqual(form.fields.map { $0.block.value("field") }, ["name"])
         XCTAssertEqual(renamed.items.filter { $0.subtitle != "Built in" }.map(\.run), ["Dusk"])
@@ -74,7 +74,7 @@ final class ThemesSpotTests: BuiltInCase {
     }
 
     func testCopyPromptPushesAPageWhoseButtonCopiesAPromptThatChangesACopyOfTheBuiltInTheme() async throws {
-        _ = try await themes.answer(SpotAction(arguments: ["prompt", "Openspot"]), timeout: 60)
+        _ = try await themes.answer(SpotAction(arguments: ["prompt"]), input: "input.item=Openspot\n", timeout: 60)
         let page = try await themes.items(page: "prompt:Openspot", timeout: 60)
         try await themes.perform(SpotAction(arguments: ["copy"]), input: "input.describe=Warm and round\n", page: "prompt:Openspot", timeout: 60)
 

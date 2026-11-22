@@ -78,6 +78,24 @@ final class InlineHandlersTests: SpotRunsCase {
         XCTAssertEqual(Frame(text: text).outputs, [.init(key: "sum", value: "item=5"), .init(key: "kinds", value: "function undefined")], text)
     }
 
+    func testTheMainSearchAndAPressCallTheHandlersOfAnInlineSpot() async throws {
+        try inline("finder", toml: "[on]\nsearch = \".\"\n\"sheet.open\" = true", """
+        export default {
+          search({ text }) { return `item=${text}\\ntitle=Found ${text}\\n` },
+          show() { return "item=a\\ntitle=A\\n" },
+          async press({ item }) { await null; throw new Error(`pressed ${item}`) },
+        }
+        """)
+        _ = try scanned()
+        let sheet = try XCTUnwrap(runs.sheets["finder"])
+
+        runs.raise(.query("2+2"))
+        try await wait("the answer") { sheet.answers.map(\.run) == ["2+2"] }
+        sheet.pick(SpotItem(title: "A", run: "a"))
+
+        try await wait("the press") { sheet.failure.map { "\($0)" }?.contains("pressed a") == true }
+    }
+
     func testAThrowInAHandlerFailsTheCallWithItsMessage() async throws {
         try inline("failing", toml: "[actions.go]", "export default { async go() { await null; throw new Error('No sky today') } }")
 
@@ -159,3 +177,4 @@ final class InlineHandlersTests: SpotRunsCase {
         XCTAssertLessThan(log("ticker-log").count, 8)
     }
 }
+

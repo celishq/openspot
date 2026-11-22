@@ -36,6 +36,18 @@ final class TriggerCallsTests: SpotRunsCase {
         try await wait("the command") { self.calls == ["command|input.name=snooze input.text=tomorrow "] }
     }
 
+    func testWordsTypedAfterAButtonFillTheTextInputOfItsActionAndNoWordsAskWithItsForm() async throws {
+        let sheet = try spot("\"sheet.open\" = true", toml: "[actions.start]\ninputs.minutes = { type = 'text', required = true }")
+        let start = CommandAction(id: "start", title: "Keep awake for…", scope: .spot)
+
+        let empty = try await sheet.launch(start, search: SearchQuery(text: "", layouts: []))
+        _ = try await sheet.launch(start, search: SearchQuery(text: "45", layouts: []))
+
+        guard case .form(let form) = empty else { return XCTFail("no form: \(empty)") }
+        XCTAssertEqual(form.fields.map(\.name), ["minutes"])
+        try await wait("the start") { self.calls == ["start|input.minutes=45 "] }
+    }
+
     func testTheMainSearchCallsSearchWithItsText() async throws {
         let sheet = try spot("search = \"^https\"")
 
@@ -120,6 +132,22 @@ final class TriggerCallsTests: SpotRunsCase {
         sheet.dragged([SpotItem(title: "A", run: "a"), SpotItem(title: "B", run: "b")])
 
         try await wait("the drag") { self.calls == ["drag|input.item=a input.item=b "] }
+    }
+
+    func testAKeyRecordedOnARowCallsItsIDWithTheKey() async throws {
+        let sheet = try spot("every = 600")
+
+        sheet.set(SpotItem(title: "Key", run: "panel-key"), to: "cmd+k")
+
+        try await wait("the key") { self.calls == ["panel-key|input.value=cmd+k "] }
+    }
+
+    func testAPickOfASwitchRowCallsItsIDWithItsNewValue() async throws {
+        let sheet = try spot("every = 600")
+
+        sheet.pick(SpotItem(title: "Lid", run: "lid", isOn: false, isToggle: true))
+
+        try await wait("the switch") { self.calls == ["lid|input.value=true "] }
     }
 
     func testAPressOfAnItemCallsPressWithTheItem() async throws {

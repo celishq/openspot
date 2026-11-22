@@ -41,13 +41,13 @@ prompt() {
 }
 
 # A search ends with a row that makes a spot of the typed words, and a pick of it copies their prompt.
-if [ "$(value event)" = search.text ]; then
-  text=$(value event.value | awk '{ sub(/^[ \t]+/, ""); sub(/[ \t]+$/, ""); print }')
+if [ "$1" = search ]; then
+  text=$(value text | awk '{ sub(/^[ \t]+/, ""); sub(/[ \t]+$/, ""); print }')
   [ -z "$text" ] || openspot_item "$text" 'Make a spot' "$text" plus
   exit 0
 fi
-if [ "$1" = open ]; then
-  words=$(openspot prompt new "$2") || exit 1
+if [ "$1" = press ]; then
+  words=$(openspot prompt new "$(value item)") || exit 1
   printf '%s' "$words" | openspot clipboard copy || exit 1
   openspot toast 'Prompt copied. Paste it into your agent.'
   exit 0

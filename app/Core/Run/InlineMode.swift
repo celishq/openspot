@@ -35,7 +35,8 @@ final class InlineMode: ScriptMode {
     func send(_ call: OpenCall) -> Bool {
         guard let run else { return false }
         let request = call.request
-        let inline = InlineCall(arguments: request.action.arguments, input: run.message(of: request, values: run.fieldValues).text, reason: request.event?.rawValue, limit: request.limit, opened: call)
+        let message = run.message(of: request, values: run.fieldValues)
+        let inline = InlineCall(arguments: message.action.arguments, input: message.text, reason: request.event?.rawValue, limit: request.limit, opened: call)
         call.made.halt = { inline.stop() }
         asking.open(call, in: run)
         runs.script(of: run.spot).send(inline)

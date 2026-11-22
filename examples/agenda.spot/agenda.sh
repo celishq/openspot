@@ -143,7 +143,9 @@ rows() {
 adding() {
   made=$(openspot "$1" add --dry-run "$2" </dev/null 2>/dev/null) || return 0
   [ "$made" != status=unasked ] || return 0
-  printf 'item=add-%s\nparent=items\ntitle=%s\ndetail=%s · %s\nicon=plus.circle\nhides=join\nhides=tick\n\n' "$3" "$4" "$(field title "$made")" "$(field detail "$made")"
+  printf 'item=add-%s\nparent=items\ntitle=%s\ndetail=%s · %s\nicon=plus.circle\nhides=join\nhides=tick\n' "$3" "$4" "$(field title "$made")" "$(field detail "$made")"
+  openspot_kv words "$2"
+  echo
 }
 
 # Asks macOS for leave with a call outside a read. When the person said no, Openspot shows the link to the fix.
@@ -152,33 +154,34 @@ allow() {
 }
 
 case "$1" in
-  show)
+  show | sheet.text | every)
     events=$(events) || { printf '%s\n' "$events"; exit 1; }
     reminders=$(reminders) || { printf '%s\n' "$reminders"; exit 1; }
     card
-    printf 'button=open\nparent=items\ntitle=Open\n\nbutton=join\nparent=items\ntitle=Join call\nshortcut=cmd+j\n\n'
-    printf 'button=tick\nparent=items\ntitle=Mark as done\nshortcut=cmd+shift+c\nclose=false\n\nbutton=calendars\nparent=items\ntitle=Choose calendars\nform=true\nscope=spot\nclose=false\n\n'
-    typed=$(value search)
+    printf 'button=press\nparent=items\ntitle=Open\n\nbutton=join\nparent=items\ntitle=Join call\nshortcut=cmd+j\n\n'
+    printf 'button=tick\nparent=items\ntitle=Mark as done\nshortcut=cmd+shift+c\nclose=false\n\nbutton=calendars\nparent=items\ntitle=Choose calendars\nscope=spot\nclose=false\n\n'
+    typed=$(value value)
     if [ -n "$typed" ]; then
       adding reminders "$typed" reminder 'Add reminder'
       adding calendar "$typed" event 'Add event'
     fi
     [ "$events" != status=unasked ] || printf 'item=allow-calendar\nparent=items\ntitle=Allow Calendar\ndetail=Show your events here\nicon=calendar\nhides=join\nhides=tick\n\n'
     [ "$reminders" != status=unasked ] || printf 'item=allow-reminders\nparent=items\ntitle=Allow Reminders\ndetail=Show and tick your reminders here\nicon=checklist\nhides=join\nhides=tick\n\n'
-    rows "$typed" "$(value search.alt)"
+    rows "$typed" "$(value alt)"
     ;;
-  open)
-    case "$2" in
+  press)
+    picked=$(value item)
+    case "$picked" in
       allow-calendar) allow calendar events ;;
       allow-reminders) allow reminders due ;;
       add-reminder | add-event)
         noun=reminders
-        [ "$2" = add-event ] && noun=calendar
-        added=$(openspot "$noun" add "$(value search)" </dev/null) || { printf '%s\n' "$added"; exit 1; }
+        [ "$picked" = add-event ] && noun=calendar
+        added=$(openspot "$noun" add "$(value item.words)" </dev/null) || { printf '%s\n' "$added"; exit 1; }
         openspot toast "Added $(field title "$added")."
         ;;
-      reminder:*) openspot reminders show "$2" </dev/null ;;
-      *) openspot calendar show "$2" </dev/null ;;
+      reminder:*) openspot reminders show "$picked" </dev/null ;;
+      *) openspot calendar show "$picked" </dev/null ;;
     esac
     ;;
   calendars)
@@ -191,7 +194,7 @@ case "$1" in
     state=$(value item.done)
     to=true
     [ "$state" = true ] && to=false
-    openspot reminders done "$2" "$to" </dev/null
+    openspot reminders done "$(value item)" "$to" </dev/null
     ;;
   join-now)
     events=$(events) || exit 1
@@ -205,8 +208,9 @@ case "$1" in
     open "$link"
     ;;
   *)
-    case "$2" in
-      true | false) openspot reminders done "reminder:$1" "$2" </dev/null ;;
+    ticked=$(value value)
+    case "$ticked" in
+      true | false) openspot reminders done "reminder:$1" "$ticked" </dev/null ;;
     esac
     ;;
 esac

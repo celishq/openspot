@@ -1,5 +1,10 @@
 icon = "cup.and.saucer.fill"
 detail = "Keep the Mac awake"
-on = ["panel.open"]
-mode = "stay"
+stay = true
 uses = ["power"]
+
+[on]
+"panel.open" = true
+
+[actions.start]
+inputs.minutes = { type = "text", required = true, description = "45" }

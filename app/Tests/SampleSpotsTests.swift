@@ -376,7 +376,7 @@ final class SampleSpotsTests: SampleSpotsCase {
         try await withPrivateHome { folder in
             let files = try XCTUnwrap(try self.scan.spots.first { $0.name == "Files" })
 
-            try await files.perform(SpotAction(arguments: ["copy", "/a/b é.txt"]), timeout: 60)
+            try await files.perform(SpotAction(arguments: ["copy"]), input: "input.item=/a/b é.txt\n", timeout: 60)
 
             XCTAssertEqual(self.toasts(in: folder), ["Copied"])
             XCTAssertEqual(try self.read("clipboard", in: folder), "/a/b é.txt")

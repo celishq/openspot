@@ -171,12 +171,12 @@ final class CaffeinateSpotTests: XCTestCase {
         let sheet = try sheet()
         try await wait("the custom row") { self.row("custom", in: sheet) != nil }
         let item = try XCTUnwrap(row("custom", in: sheet))
-        let open = try XCTUnwrap(item.form)
 
-        let form = try await sheet.form(open, item: item)
-        var draft = FormDraft(form: try XCTUnwrap(form))
+        guard case .form(let form) = await sheet.answer(toPick: item) else { return XCTFail("Custom… asked with no form") }
+        try await wait("the end of the call that asked") { sheet.calls.isEmpty }
+        var draft = FormDraft(form: form)
         draft.set("45", for: "minutes")
-        _ = try await sheet.submit(open, item: item, draft: draft)
+        _ = try await sheet.submit(CommandAction(id: Frame.open, title: item.title, isForm: true), item: item, draft: draft)
 
         try await wait("caffeinate") { self.running().count == 1 }
         XCTAssertEqual(flags(), ["-di -t 2700"])

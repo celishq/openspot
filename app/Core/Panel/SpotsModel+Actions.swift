@@ -109,13 +109,27 @@ extension SpotsModel {
             sheets[target.entry.id]?.pressKey(command)
         } else if action.isForm {
             openForm(action, on: target)
+        } else if let typed = Self.typed(action, of: target.entry.spot), typed.lacksInput,
+                  let form = ItemForm(output: Frame(text: typed.form(with: [:], title: action.title))) {
+            show(.form(form), of: action, on: target, prefill: "")
         } else if action.after == .stay {
-            sheets[target.entry.id]?.run(action, item: target.item)
+            perform(action, on: target)
         } else if let item = target.item {
             pick(item, of: target.entry, action: action)
         } else {
             if isShown { host.dismiss() }
-            sheets[target.entry.id]?.run(action, item: nil)
+            perform(action, on: target)
+        }
+    }
+
+    func perform(_ action: CommandAction, on target: Target) {
+        guard target.entry.spot.triggers != nil, let sheet = sheets[target.entry.id] else {
+            sheets[target.entry.id]?.run(action, item: target.item)
+            return
+        }
+        Task { [weak self] in
+            guard case .form(let form) = await sheet.answer(to: action, item: target.item), let self, isShown else { return }
+            show(.form(form), of: action, on: target, prefill: "")
         }
     }
 

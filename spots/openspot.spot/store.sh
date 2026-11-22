@@ -1,4 +1,5 @@
 #!/bin/sh
+. "$OPENSPOT_SH"
 
 # Shows a toast of the last line of a text, such as what a failed `openspot` call said.
 toast() {
@@ -50,18 +51,20 @@ case "$1" in
     gallery
     ;;
   gallery)
-    case "$2" in
-      get:*) get "${2#get:}" ;;
+    sent=$(value value)
+    case "$sent" in
+      get:*) get "${sent#get:}" ;;
       add) add || true ;;
-      remove:*) remove "${2#remove:}" ;;
-      locate:*) if add; then remove "${2#locate:}"; fi ;;
-      readme:*) gallery "${2#readme:}"; exit 0 ;;
+      remove:*) remove "${sent#remove:}" ;;
+      locate:*) if add; then remove "${sent#locate:}"; fi ;;
+      readme:*) gallery "${sent#readme:}"; exit 0 ;;
     esac
     gallery
     ;;
-  open)
-    [ -n "$2" ] || exit 0
-    get "$2" || true
+  press)
+    picked=$(value item)
+    [ -n "$picked" ] || exit 0
+    get "$picked" || true
     ;;
   *)
     echo 'Store cannot do that.' >&2

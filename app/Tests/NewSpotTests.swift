@@ -67,7 +67,7 @@ final class NewSpotTests: BuiltInCase {
     func testEverySearchEndsWithARowThatMakesASpotOfTheTypedWords() async throws {
         let make = try newSpot()
 
-        let rows = try await make.items(query: " time in kyiv ", timeout: 60).answers(asCard: false)
+        let rows = try await make.answer(SpotAction(arguments: ["search"]), input: "input.text= time in kyiv \n", timeout: 60).answers(asCard: false)
 
         XCTAssertEqual(try XCTUnwrap(make.answers).isLast, true)
         XCTAssertEqual(rows.map(\.run), ["time in kyiv"])
@@ -76,7 +76,7 @@ final class NewSpotTests: BuiltInCase {
     }
 
     func testAPickOfMakeASpotCopiesThePromptThatBuildsTheTypedWords() async throws {
-        try await newSpot().perform(SpotAction(arguments: ["open", "time in kyiv"]), timeout: 60)
+        try await newSpot().perform(SpotAction(arguments: ["press"]), input: "input.item=time in kyiv\n", timeout: 60)
 
         XCTAssertEqual(effects(), ["toast \(AgentPrompt.copied)"])
         let prompt = try saved("clipboard")
