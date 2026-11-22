@@ -32,7 +32,7 @@ final class CardFaceTests: XCTestCase {
         XCTAssertTrue(face.draws(on: .wide))
         XCTAssertEqual(face.tree.shown(in: Style.Variant.card(.wide)), ["top", "time", "power"])
         XCTAssertEqual(face.tree.shown(in: Style.Variant.card(.large)), ["top", "time", "power", "date"])
-        XCTAssertEqual(face.parts.map(\.id), ["time", "power", "date"])
+        XCTAssertEqual(face.tree.parts.map(\.id), ["time", "power", "date"])
     }
 
     func testTheBarLayoutNamesTheValueThatTheMenuBarShows() {
@@ -86,7 +86,7 @@ final class CardFaceTests: XCTestCase {
     func testAChangeOnTheCardShowsBeforeTheAnswer() {
         let state = SpotState(output: Frame(text: clock), header: SpotState(title: "Clock"))
 
-        XCTAssertEqual(state.setting("true", of: "power").face.parts.first { $0.id == "power" }?.control, .toggle(true))
+        XCTAssertEqual(state.setting("true", of: "power").face.tree.parts.first { $0.id == "power" }?.control, .toggle(true))
     }
 
     func testAnAnswerThatDrawsALargeCardIsOneCardWhosePressSendsItsValue() {
@@ -102,7 +102,7 @@ final class CardFaceTests: XCTestCase {
         XCTAssertEqual(answer.answers(asCard: true).map(\.run), ["1234.5"])
         XCTAssertEqual(answer.answers(asCard: true).first?.title, "1,234.5")
         XCTAssertEqual(answer.answers(asCard: true).first?.card?.face.answerSize, .large)
-        XCTAssertEqual(answer.answers(asCard: true).first?.card?.face.parts.last?.number?.text, "1,234.5")
+        XCTAssertEqual(answer.answers(asCard: true).first?.card?.face.tree.parts.last?.number?.text, "1,234.5")
     }
 
     func testAnAnswerCardTakesTheWordForEnterFromItsOpenButton() {

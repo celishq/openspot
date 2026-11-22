@@ -15,10 +15,9 @@ public struct Frame: Equatable, Sendable {
     public private(set) var openTitle: String?
     public private(set) var pick = ItemPick.close
     public private(set) var pickForm: CommandAction?
-    public private(set) var parts: [SpotPart] = []
     public private(set) var rows: [[String]] = []
-    private var every: [SpotPart] = []
-    private var carded: [SpotPart]?
+    public private(set) var control: SpotPart?
+    public private(set) var valuePart: SpotPart?
     private(set) var searchField: TextBlock?
     public private(set) var errors: [String] = []
     public private(set) var value: TextBlock?
@@ -40,7 +39,7 @@ public struct Frame: Equatable, Sendable {
     private static let sheetRoot = RootKey.block([.init(key: ViewNode.classKey, value: "gap-part")])
     private static let itemsBlock = TextBlock(fields: [.init(key: BlockKind.items, value: "items")])
     static let searchType = "search"
-    private static let sheetPlaces: [Set<Style.Variant>] = [Style.Variant.sheet, .float, .window].flatMap { place in [[place, .dark], [place, .light]] }
+    static let sheetPlaces: [Set<Style.Variant>] = [Style.Variant.sheet, .float, .window].flatMap { place in [[place, .dark], [place, .light]] }
 
     static func grouping(_ blocks: [TextBlock]) -> [TextBlock] {
         var grouped: [TextBlock] = []
@@ -83,7 +82,6 @@ public struct Frame: Equatable, Sendable {
         }
         let listed = tree.listed
         let placed = Self.placed(in: tree)
-        let inSheet = Set(Self.sheetPlaces.flatMap(tree.shown(in:)))
         var runs = Set<String>()
         var listedRows: [TextBlock] = []
         var values: [(block: TextBlock, kind: BlockKind)] = []
@@ -98,16 +96,12 @@ public struct Frame: Equatable, Sendable {
                     take(action: id, block)
                 } else if Self.isSearch(block) {
                     searchField = block
-                } else if let part = SpotPart(block: block, kind: kind) {
+                } else if id != nil {
                     if kind.field != nil { fields.append(Field(block: block, kind: kind)) }
                     if kind.holdsValue { values.append((block, kind)) }
-                    every.append(part)
-                    if isPlaced {
-                        if let id, inSheet.contains(id) { parts.append(part) }
-                    } else if kind == .choice {
-                        parts.append(part)
+                    if !isPlaced, kind == .choice {
                         unplaced.append(block)
-                    } else if let item = SpotItem(block: block, kind: kind, section: id.flatMap { tree.group(of: $0) }) {
+                    } else if !isPlaced, let item = SpotItem(block: block, kind: kind, section: id.flatMap { tree.group(of: $0) }) {
                         listedRows.append(block)
                         if runs.insert(item.run).inserted { items.append(item) }
                     }
@@ -123,13 +117,16 @@ public struct Frame: Equatable, Sendable {
                 errors.append(block.firstLine)
             }
         }
-        if parts.contains(where: { tree.node($0.id)?.source != nil }) {
+        if tree.partIDs(shownIn: Self.sheetPlaces).contains(where: { tree.node($0)?.source != nil }) {
             rows = listedRows.map { $0.fields.flatMap { [$0.key, $0.value] } }
         }
-        face = CardFace(parts: every, tree: tree.isWritten || !tree.places.isEmpty ? tree : .empty)
+        face = CardFace(tree: tree.isWritten || !tree.places.isEmpty ? tree : .empty)
         let cardSizes = SpotSize.all.filter(tree.draws(on:))
         let onCard = cardSizes.isEmpty ? nil : Set(cardSizes.flatMap { tree.shown(in: Style.Variant.card($0)) })
-        if let onCard { carded = every.filter { onCard.contains($0.id) } }
+        if let onCard {
+            let carded = onCard.compactMap { tree.node($0)?.part }
+            control = carded.count == 1 ? carded.first.flatMap(Self.cardControl) : nil
+        }
         let placedValues = values.filter { (onCard ?? placed).contains($0.block.fields.first?.value ?? "") }
         let sole = placedValues.isEmpty ? values : placedValues
         let namedID = head?.value(RootKey.value.rawValue)
@@ -137,13 +134,14 @@ public struct Frame: Equatable, Sendable {
         let held = named ?? (sole.count == 1 ? sole.first : nil)
         value = held?.block
         valueKind = held?.kind
+        valuePart = held?.block.fields.first.flatMap { tree.node($0.value)?.part }
         if namedID == nil, onCard != nil, placedValues.count > 1 { unnamedValues = placedValues.compactMap { $0.block.fields.first?.value } }
         let barred = tree.drawsOnBar ? tree.shown(in: [.bar]) : []
         let shown = named.flatMap { barred.contains(namedID ?? "") ? $0 : nil } ?? barred.lazy.compactMap { id in values.first { $0.block.fields.first?.value == id } }.first
         barValue = shown?.block
         barKind = shown?.kind
         hasBar = !barred.isEmpty
-        if !tree.isWritten, !parts.isEmpty {
+        if !tree.isWritten, !unplaced.isEmpty {
             let itemsBlock = blocks.first { $0.fields.first?.key == BlockKind.items } ?? (items.isEmpty ? nil : Self.itemsBlock)
             tree = tree.unwritten(showing: unplaced + [itemsBlock].compactMap(\.self), root: Self.sheetRoot, kinds: kinds)
         }
@@ -153,11 +151,14 @@ public struct Frame: Equatable, Sendable {
         block.fields.first?.key == BlockKind.field.word && block.value("type") == searchType
     }
 
-    public var control: SpotPart? {
-        guard let carded, carded.count == 1, let part = carded.first else { return nil }
+    public var parts: [SpotPart] {
+        tree.partIDs(shownIn: Self.sheetPlaces).compactMap { tree.node($0)?.part }
+    }
+
+    private static func cardControl(_ part: SpotPart) -> SpotPart? {
         switch part.control {
-        case .toggle, .slider: return part
-        default: return nil
+        case .toggle, .slider: part
+        default: nil
         }
     }
 
@@ -199,10 +200,6 @@ public struct Frame: Equatable, Sendable {
         guard asCard, let value, let run = value.value("value") else { return items }
         let title = value.value("display") ?? run
         return [SpotItem(title: title, run: run, card: SpotState(output: self, header: SpotState(title: title)), openTitle: openTitle)]
-    }
-
-    public var valuePart: SpotPart? {
-        value.flatMap { block in every.first { $0.id == block.fields.first?.value } }
     }
 
     public var placesSearch: Bool {

@@ -37,10 +37,10 @@ struct SheetPartsView: View {
     }
 
     private var send: (String, String) -> Void {
-        let parts = panel.parts
+        let tree = panel.tree
         let onSet = onSet
         return { id, value in
-            if let part = parts.first(where: { $0.id == id }) { onSet(part, value) }
+            if let part = tree.node(id)?.part { onSet(part, value) }
         }
     }
 
@@ -63,9 +63,9 @@ struct SheetPartsView: View {
 
     private var nodeParts: NodeParts {
         NodeParts(
-            part: { id, label, look, size in
-                guard let part = panel.parts.first(where: { $0.id == id }) else { return AnyView(EmptyView()) }
-                return AnyView(nodePart(part.drawn(as: look), label: label, size: size))
+            part: { node, label, look in
+                guard let part = node.part else { return AnyView(EmptyView()) }
+                return AnyView(nodePart(part, look, label: label, size: node.naturalSize))
             },
             items: { room in
                 AnyView(SpotItemsView(list: list, onRun: onRun, selection: selection, onDragOut: onDragOut, room: room))
@@ -74,7 +74,7 @@ struct SheetPartsView: View {
     }
 
     @ViewBuilder
-    private func nodePart(_ part: SpotPart, label: AnyView?, size natural: CGSize) -> some View {
+    private func nodePart(_ part: SpotPart, _ look: SpotPart.Look?, label: AnyView?, size natural: CGSize) -> some View {
         let height = natural.height
         let size = CGSize(width: SpotTokens.partsWidth, height: height)
         Group {
@@ -87,18 +87,18 @@ struct SheetPartsView: View {
                 .buttonStyle(.plain)
             } else if part.fillsHeight {
                 GeometryReader { room in
-                    content(part, room.size)
+                    content(part, look, room.size)
                 }
                 .frame(minHeight: height, idealHeight: height)
                 .frame(idealWidth: natural.width)
             } else {
-                content(part, size)
-                    .frame(maxWidth: part.fillsWidth ? .infinity : nil, minHeight: height, maxHeight: .infinity, alignment: part.fillsWidth ? .leading : .center)
+                content(part, look, size)
+                    .frame(maxWidth: part.fillsWidth(as: look) ? .infinity : nil, minHeight: height, maxHeight: .infinity, alignment: part.fillsWidth(as: look) ? .leading : .center)
             }
         }
         .background {
             if part.isFocusable {
-                Color.clear.modifier(PartRing(id: part.id, selectedID: selectedID, hasBox: label != nil || hasBox(part), shape: shape))
+                Color.clear.modifier(PartRing(id: part.id, selectedID: selectedID, hasBox: label != nil || hasBox(part, look), shape: shape))
             }
         }
     }
@@ -111,10 +111,10 @@ struct SheetPartsView: View {
         selectedPart ?? { [panel] in panel.selectedPart?.id }
     }
 
-    private func hasBox(_ part: SpotPart) -> Bool {
-        if part.isEditable || part.look == .tile { return true }
+    private func hasBox(_ part: SpotPart, _ look: SpotPart.Look?) -> Bool {
+        if part.isEditable || look == .tile { return true }
         guard part.press == .line else { return false }
-        return switch part.look {
+        return switch look {
         case .chip, .bare: false
         default: true
         }
@@ -127,7 +127,7 @@ struct SheetPartsView: View {
     }
 
     @ViewBuilder
-    private func content(_ part: SpotPart, _ size: CGSize) -> some View {
+    private func content(_ part: SpotPart, _ look: SpotPart.Look?, _ size: CGSize) -> some View {
         switch part.control {
         case .text(let text, let placeholder, let isReadOnly) where part.isMultiline:
             textArea(part, size, text: text, placeholder: placeholder, isReadOnly: isReadOnly)
@@ -146,14 +146,14 @@ struct SheetPartsView: View {
             list(part, items: items, value: value)
                 .overlay(alignment: .topTrailing) { cornerMark(part, size) }
         case .number:
-            number(part, size)
+            number(part, look, size)
         case .shortcut(let text):
             shortcut(part, text: text)
         default:
             if part.press == .line {
-                lineButton(part, size)
+                lineButton(part, look, size)
             } else {
-                line(part, size).modifier(TileLook(isOn: part.look == .tile))
+                line(part, look, size).modifier(TileLook(isOn: look == .tile))
             }
         }
     }
@@ -169,7 +169,7 @@ struct SheetPartsView: View {
         mark(part).padding(SpotTokens.controlPadding)
     }
 
-    private func line(_ part: SpotPart, _ size: CGSize) -> some View {
+    private func line(_ part: SpotPart, _ look: SpotPart.Look?, _ size: CGSize) -> some View {
         HStack(spacing: size.width < SpotTokens.narrowCell ? SpotTokens.narrowGap : SpotTokens.partLineGap) {
             if !hasRoundMark(part), act(part) != nil {
                 mark(part)
@@ -201,7 +201,7 @@ struct SheetPartsView: View {
                     label: part.title ?? part.id.capitalized,
                     act: act(part),
                     size: min(size.width, size.height, SpotTokens.partMaxRound),
-                    look: part.look == .strong ? .strong : part.look == .bare ? .bare : .plain
+                    look: look == .strong ? .strong : look == .bare ? .bare : .plain
                 ) { onPress(part) }
             }
             control(part, size)
@@ -233,9 +233,9 @@ struct SheetPartsView: View {
     }
 
     @ViewBuilder
-    private func lineButton(_ part: SpotPart, _ size: CGSize) -> some View {
+    private func lineButton(_ part: SpotPart, _ look: SpotPart.Look?, _ size: CGSize) -> some View {
         Button { onPress(part) } label: {
-            switch part.look {
+            switch look {
             case .chip:
                 pressLabel(part, words: part.title ?? part.id, font: SpotType.action)
                     .padding(.horizontal, SpotTokens.padding)
@@ -246,7 +246,7 @@ struct SheetPartsView: View {
                     .contentShape(Capsule())
             case .bare:
                 HStack {
-                    line(part, size)
+                    line(part, look, size)
                     if part.detail == nil, let key = part.key {
                         Text(key.label).font(SpotType.detail).modifier(SpotSecondaryText())
                     }
@@ -255,7 +255,7 @@ struct SheetPartsView: View {
             case .strong:
                 centeredLine(part, isActive: true)
             case .tile:
-                line(part, size)
+                line(part, look, size)
                     .modifier(TileLook(isOn: true))
                     .spotHover(in: shape)
                     .contentShape(shape)
@@ -409,12 +409,12 @@ struct SheetPartsView: View {
         }
     }
 
-    private func number(_ part: SpotPart, _ size: CGSize) -> some View {
-        let look = part.number?.look ?? .stat
-        let inset = part.look == .bare ? 0 : look == .ring ? SpotTokens.partGap : SpotTokens.padding
-        return SpotNumberView(part: part, look: look, font: SpotType.number, leastScale: SpotType.leastValueScale, alignment: part.look == .bare ? .trailing : .leading, inset: inset)
+    private func number(_ part: SpotPart, _ look: SpotPart.Look?, _ size: CGSize) -> some View {
+        let figure = part.number?.look ?? .stat
+        let inset = look == .bare ? 0 : figure == .ring ? SpotTokens.partGap : SpotTokens.padding
+        return SpotNumberView(part: part, look: figure, font: SpotType.number, leastScale: SpotType.leastValueScale, alignment: look == .bare ? .trailing : .leading, inset: inset)
             .frame(width: size.width, height: size.height)
-            .background(SpotTheme.ink.opacity(part.look == .bare ? 0 : SpotTheme.fill), in: shape)
+            .background(SpotTheme.ink.opacity(look == .bare ? 0 : SpotTheme.fill), in: shape)
     }
 
     private func textLine(_ part: SpotPart, text: String, placeholder: String?, isReadOnly: Bool) -> some View {

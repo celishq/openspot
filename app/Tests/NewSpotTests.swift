@@ -49,7 +49,7 @@ final class NewSpotTests: BuiltInCase {
         XCTAssertEqual(field.control, .text("", placeholder: "Describe what you want to build", isReadOnly: false))
         let copy = try XCTUnwrap(output.parts.last)
         XCTAssertEqual(copy.title, "Copy prompt")
-        XCTAssertEqual(copy.look, .strong)
+        XCTAssertEqual(output.tree.look(of: copy.id), .strong)
         XCTAssertEqual(copy.key, ActionKey(name: "return", isCommand: true))
         XCTAssertEqual(output.actions.map(\.title), ["Clear", "Read the guide", "Open spots folder"])
         XCTAssertEqual(SheetParts(output: output)?.hint(stopping: { _ in false }, actions: true), "⌘⏎ Copy prompt   ⌘K Actions")
@@ -147,7 +147,7 @@ final class NewSpotTests: BuiltInCase {
         XCTAssertTrue(try saved("clipboard").contains("Build an Openspot spot that does this: Show the weather here"))
         for _ in 0..<6000 where sheet.panel?.parts.last?.title != "✓ Copied" { try await Task.sleep(for: .milliseconds(10)) }
         XCTAssertEqual(sheet.panel?.parts.last?.title, "✓ Copied")
-        XCTAssertEqual(sheet.panel?.parts.last?.look, .strong)
+        XCTAssertEqual(sheet.panel?.tree.look(of: "copy"), .strong)
         XCTAssertEqual(sheet.panel?.parts.last?.press, .line)
         XCTAssertEqual(sheet.panel?.parts.first?.value, "Show the weather here")
         for _ in 0..<6000 where sheet.panel?.parts.last?.title != "Copy prompt" { try await Task.sleep(for: .milliseconds(10)) }
@@ -176,7 +176,7 @@ final class NewSpotTests: BuiltInCase {
         XCTAssertEqual(output.fields.map { $0.block.value("type") }, ["multiline"])
         XCTAssertEqual(output.parts.first?.control, .text("", placeholder: "Describe what you want to change", isReadOnly: false))
         XCTAssertEqual(output.parts.last?.title, "Copy prompt")
-        XCTAssertEqual(output.parts.last?.look, .strong)
+        XCTAssertEqual(output.tree.look(of: "copy"), .strong)
         XCTAssertEqual(output.parts.last?.key, ActionKey(name: "return", isCommand: true))
         XCTAssertEqual(output.actions.map(\.title), ["Clear", "Open in editor", "Read the guide"])
 

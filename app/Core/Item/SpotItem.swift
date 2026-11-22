@@ -32,10 +32,9 @@ public struct SpotItem: Equatable, Sendable {
     public let move: FlowMove?
     public let section: String?
     public let number: NumberReading?
-    public let look: SpotPart.Look?
     public let showsWords: Bool
 
-    public init(title: String, subtitle: String? = nil, run: String, picture: Icon? = nil, place: String? = nil, hides: [String]? = nil, keywords: [String] = [], shortcut: String? = nil, records: Bool = false, takesShake: Bool = false, isOn: Bool = false, isToggle: Bool = false, tone: MetricValue.Tone? = nil, file: String? = nil, fields: [TextBlock.Field] = [], card: SpotState? = nil, pin: Pin? = nil, openTitle: String? = nil, staysOnPick: Bool = false, form: CommandAction? = nil, move: FlowMove? = nil, section: String? = nil, number: NumberReading? = nil, look: SpotPart.Look? = nil, showsWords: Bool = true) {
+    public init(title: String, subtitle: String? = nil, run: String, picture: Icon? = nil, place: String? = nil, hides: [String]? = nil, keywords: [String] = [], shortcut: String? = nil, records: Bool = false, takesShake: Bool = false, isOn: Bool = false, isToggle: Bool = false, tone: MetricValue.Tone? = nil, file: String? = nil, fields: [TextBlock.Field] = [], card: SpotState? = nil, pin: Pin? = nil, openTitle: String? = nil, staysOnPick: Bool = false, form: CommandAction? = nil, move: FlowMove? = nil, section: String? = nil, number: NumberReading? = nil, showsWords: Bool = true) {
         self.title = title
         self.subtitle = subtitle
         self.run = run
@@ -59,7 +58,6 @@ public struct SpotItem: Equatable, Sendable {
         self.move = move
         self.section = section
         self.number = number
-        self.look = look
         self.showsWords = showsWords
     }
 
@@ -92,7 +90,6 @@ public struct SpotItem: Equatable, Sendable {
             move: FlowMove(item: block),
             section: section,
             number: number,
-            look: SpotPart.Look(style: style),
             showsWords: !style.hidesWords
         )
     }

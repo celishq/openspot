@@ -3,6 +3,7 @@ import SwiftUI
 
 struct SpotSlotView: View {
     let part: SpotPart
+    var partLook: SpotPart.Look?
     var height: CGFloat?
     var look: NumberLook = .stat
     let onSlot: (String, String?) -> Void
@@ -52,7 +53,7 @@ struct SpotSlotView: View {
                         .font(SpotType.body.weight(.semibold))
                         .foregroundStyle(ink)
                         .frame(width: SpotTokens.slotButton, height: SpotTokens.slotButton)
-                        .background(ink.opacity(part.look == .bare ? 0 : SpotTheme.chip), in: Circle())
+                        .background(ink.opacity(partLook == .bare ? 0 : SpotTheme.chip), in: Circle())
                         .contentShape(Circle())
                 }
                 .buttonStyle(.plain)

@@ -175,7 +175,7 @@ final class MetricSpotsTests: SpotRunsCase {
         _ = try scanned()
         runs.take(grid: ["system"])
         runs.panelOpened()
-        let number = { (id: String) in self.runs.sheets["system"]?.state.face.parts.first { $0.id == id }?.number?.text }
+        let number = { (id: String) in self.runs.sheets["system"]?.state.face.tree.parts.first { $0.id == id }?.number?.text }
 
         try await wait("the numbers") { number("battery") == "84%" && number("devices") == "–" && !self.runs.isShowing }
     }
@@ -187,7 +187,7 @@ final class MetricSpotsTests: SpotRunsCase {
         let scan = try scanned()
         runs.take(grid: ["system"])
         runs.panelOpened()
-        let titles = { Dictionary((self.runs.sheets["system"]?.state.face.parts ?? []).map { ($0.id, $0.number?.text ?? "") }) { first, _ in first } }
+        let titles = { Dictionary((self.runs.sheets["system"]?.state.face.tree.parts ?? []).map { ($0.id, $0.number?.text ?? "") }) { first, _ in first } }
         XCTAssertNil(try XCTUnwrap(scan.spots.first { $0.id == "system" }?.on).seconds)
         try await wait("the first read") { titles()["battery"] == "84%" && titles()["devices"] == "–" && titles()["memory"] != nil && !self.runs.isShowing }
 
