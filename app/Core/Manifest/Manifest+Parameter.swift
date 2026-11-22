@@ -69,6 +69,16 @@ extension Manifest {
             self.options = options
         }
 
+        init(name: String, type: ValueType, isRequired: Bool = true) {
+            self.name = name
+            self.type = type
+            self.isRequired = isRequired
+            defaultValue = nil
+            title = nil
+            detail = nil
+            options = []
+        }
+
         func fault(in values: [String]) -> String? {
             if !type.isList, values.count > 1 { return "\(name) takes one value, and got \(values.count)" }
             guard let wrong = values.first(where: { !type.accepts($0, options: options) }) else { return nil }

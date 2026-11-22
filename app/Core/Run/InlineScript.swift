@@ -27,10 +27,78 @@ final class InlineScript: @unchecked Sendable {
       const read = (one) => one.replace(/\\\\(n|\\\\)/g, (_, kind) => kind === "n" ? "\\n" : "\\\\")
       return String(text || "").split("\\n").filter((line) => line.startsWith(key + "=")).map((line) => read(line.slice(key.length + 1))).join("\\n")
     }
+    openspot.handle = function handle(handlers, name, input, env, done) {
+      const fail = (error) => done(false, error && error.message !== undefined ? String(error.message) : String(error))
+      let result
+      try { result = handlers[name](input, env) } catch (error) { return fail(error) }
+      Promise.resolve(result).then((value) => done(true, openspot.answer(value)), fail)
+    }
+    openspot.answer = function answer(value) {
+      if (value === undefined || value === null) return ""
+      if (typeof value === "string") return value
+      if (Array.isArray(value)) return openspot.frame(value)
+      const out = {}
+      for (const [key, each] of Object.entries(value)) out["out." + key] = each
+      return openspot.frame(out)
+    }
+    openspot.env = function env(call, spec, bindings, settings) {
+      const failure = (argv, answer) => new Error(answer.errors || `openspot ${argv.join(" ")} exited ${answer.code}.`)
+      const run = async (argv) => {
+        const answer = await openspot.ask(call, argv)
+        if (answer.code !== 0) throw failure(argv, answer)
+        return answer
+      }
+      const listed = (value) => (Array.isArray(value) ? value : [value]).filter((one) => one !== undefined && one !== null)
+      const pairs = (values) => Object.entries(values || {}).flatMap(([key, each]) => listed(each).map((one) => `${key}=${one}`))
+      const words = (slots, args) => {
+        const argv = []
+        const positional = slots.filter((slot) => !slot.option)
+        positional.forEach((slot, index) => {
+          const value = args[index]
+          if (value === undefined || value === null) return
+          if (slot.kind === "pairs") argv.push(...pairs(value))
+          else argv.push(...listed(value).map(String))
+        })
+        const options = args[positional.length] || {}
+        for (const slot of slots.filter((slot) => slot.option)) {
+          const value = options[slot.key]
+          if (value === undefined || value === null || value === false) continue
+          if (slot.kind === "flag") argv.push(slot.option)
+          else for (const one of listed(value)) argv.push(slot.option, String(one))
+        }
+        return argv
+      }
+      const env = { settings }
+      for (const [noun, verbs] of Object.entries(spec)) {
+        env[noun] = {}
+        for (const [method, verb] of Object.entries(verbs)) {
+          env[noun][method] = async (...args) => (await run([...verb.words, ...words(verb.slots, args)])).output.replace(/\\n$/, "")
+        }
+      }
+      env.emit = async (event, values) => { await run(["emit", event, ...pairs(values)]) }
+      env.open = async (spot) => { await run(["spot", "open", spot]) }
+      for (const name of bindings) {
+        env[name] = new Proxy({}, {
+          get: (_, action) => typeof action !== "string" || action === "then" ? undefined : async (inputs) => {
+            const argv = ["run", `${name}.${action}`, ...pairs(inputs)]
+            const answer = await openspot.ask(call, argv)
+            if (answer.code === 4) return null
+            if (answer.code !== 0) throw failure(argv, answer)
+            return answer.values
+          },
+        })
+      }
+      return env
+    }
     """
+
+    private static let module = try? NSRegularExpression(pattern: #"(?m)^([ \t]*)export[ \t]+default[ \t]+"#)
 
     private let url: URL
     private let name: String
+    private let spot: Spot
+    private let bound: [String: Spot]
+    private let shapes: [String: CallShape]
     private let dataName: String?
     private let base: [String: String]
     private let api: CommandAPI?
@@ -53,10 +121,13 @@ final class InlineScript: @unchecked Sendable {
     private var variables: [String: String] = [:]
     private var reason: String?
 
-    init(spot: Spot, api: CommandAPI?, callers: SpotCallers? = nil, careful: Set<SpotUse>? = nil, limit: TimeInterval = 10, idle: TimeInterval = 30, base: [String: String] = ProcessInfo.processInfo.environment, spent: @escaping @Sendable (TimeInterval) -> Void = { _ in }) {
+    init(spot: Spot, api: CommandAPI?, callers: SpotCallers? = nil, careful: Set<SpotUse>? = nil, limit: TimeInterval = 10, idle: TimeInterval = 30, bound: [String: Spot] = [:], base: [String: String] = ProcessInfo.processInfo.environment, spent: @escaping @Sendable (TimeInterval) -> Void = { _ in }) {
         self.careful = careful.map(CarefulMode.init)
         url = spot.url
         name = spot.id
+        self.spot = spot
+        self.bound = bound
+        shapes = Dictionary(CallShape.all(of: spot, bound: bound).map { ($0.name, $0) }) { first, _ in first }
         dataName = spot.dataName
         self.base = base
         self.api = api
@@ -161,6 +232,9 @@ final class InlineScript: @unchecked Sendable {
 
     private func run(_ call: InlineCall) throws -> String {
         let context = try loaded()
+        if call.function == nil, let name = call.arguments.first, let handlers = handlers(in: context), Self.isFunction(handlers.objectForKeyedSubscript(name), in: context) {
+            return try handle(call, name: name, handlers: handlers, in: context)
+        }
         let function = context.objectForKeyedSubscript(call.function ?? "main")
         guard let function, let type = context.objectForKeyedSubscript("Function"), function.isInstance(of: type) else { return "" }
         if call.function != nil {
@@ -170,20 +244,79 @@ final class InlineScript: @unchecked Sendable {
             return result?.toBool() == true ? "true" : ""
         }
         let env = [CallWords.spotVariable: name].merging(call.variables) { _, new in new }
-        variables = call.variables
-        reason = call.reason
-        caller?.reason = call.reason
-        caller?.call = call.opened
-        defer {
-            variables = [:]
-            reason = nil
-            caller?.reason = nil
-            caller?.call = nil
-        }
+        enter(call)
+        defer { leave() }
         let result = function.call(withArguments: [call.arguments, env, call.input ?? ""])
         try rethrow()
         guard let result, !result.isUndefined, !result.isNull else { return "" }
         return result.toString() ?? ""
+    }
+
+    private func enter(_ call: InlineCall) {
+        variables = call.variables
+        reason = call.reason
+        caller?.reason = call.reason
+        caller?.call = call.opened
+    }
+
+    private func leave() {
+        variables = [:]
+        reason = nil
+        caller?.reason = nil
+        caller?.call = nil
+    }
+
+    private func handlers(in context: JSContext) -> JSValue? {
+        guard let handlers = context.objectForKeyedSubscript("openspot")?.objectForKeyedSubscript("handlers"), handlers.isObject else { return nil }
+        return handlers
+    }
+
+    private static func isFunction(_ value: JSValue?, in context: JSContext) -> Bool {
+        guard let value, let type = context.objectForKeyedSubscript("Function") else { return false }
+        return value.isInstance(of: type)
+    }
+
+    private func handle(_ call: InlineCall, name: String, handlers: JSValue, in context: JSContext) throws -> String {
+        let fields = TextBlock.blocks(in: call.input ?? "").flatMap(\.fields)
+        let input = Self.values(of: fields, prefix: "input.", types: shapes[name]?.inputs ?? [])
+        let settings = Self.values(of: fields, prefix: "setting.", types: spot.settings.compactMap { setting in setting.valueType.map { Manifest.Parameter(name: setting.id, type: $0) } })
+        let openspot = context.objectForKeyedSubscript("openspot")
+        let env = openspot?.invokeMethod("env", withArguments: [0, UseCommand.spec(for: spot.uses), spot.bindings.map(\.name), settings])
+        var answer: (isDone: Bool, text: String)?
+        let done: @convention(block) (JSValue, JSValue) -> Void = { isDone, text in answer = (isDone.toBool(), text.toString() ?? "") }
+        enter(call)
+        defer { leave() }
+        openspot?.invokeMethod("handle", withArguments: [handlers, name, input, env as Any, JSValue(object: done, in: context) as Any])
+        try rethrow()
+        guard let answer else { return "" }
+        guard answer.isDone else { throw SpotError.failed(1, answer.text) }
+        return answer.text
+    }
+
+    static func values(of fields: [TextBlock.Field], prefix: String, types: [Manifest.Parameter]) -> [String: Any] {
+        var grouped: [String: [String]] = [:]
+        for field in fields where field.key.hasPrefix(prefix) {
+            grouped[String(field.key.dropFirst(prefix.count)), default: []].append(field.value)
+        }
+        var values: [String: Any] = [:]
+        for (name, texts) in grouped {
+            guard let type = types.first(where: { $0.name == name })?.type else {
+                values[name] = texts.count == 1 ? texts[0] : texts
+                continue
+            }
+            let typed = texts.map { text -> Any in
+                switch type.kind {
+                case .number, .duration: Double(text) ?? text
+                case .bool: text == "true"
+                default: text
+                }
+            }
+            values[name] = type.isList ? typed : typed.last
+        }
+        for type in types where type.type.isList && values[type.name] == nil && type.isRequired {
+            values[type.name] = [Any]()
+        }
+        return values
     }
 
     private func loaded() throws -> JSContext {
@@ -201,11 +334,18 @@ final class InlineScript: @unchecked Sendable {
             let answer = self?.ask(arguments, input: text) ?? CommandAnswer(code: 1)
             return ["stdout": answer.output, "code": answer.code]
         }
+        let asked: @convention(block) (JSValue, JSValue) -> [String: Any] = { [weak self] _, argv in
+            let arguments = (argv.toArray() ?? []).map { "\($0)" }
+            guard let self else { return ["code": 1, "output": "", "errors": ""] }
+            return self.answered(arguments, self.ask(arguments, input: nil))
+        }
         let openspot = JSValue(newObjectIn: context)
         openspot?.setObject(ask, forKeyedSubscript: "call" as NSString)
+        openspot?.setObject(asked, forKeyedSubscript: "ask" as NSString)
         context.setObject(openspot, forKeyedSubscript: "openspot" as NSString)
         context.evaluateScript(Self.library)
-        let text = try String(contentsOf: url, encoding: .utf8)
+        var text = try String(contentsOf: url, encoding: .utf8)
+        text = Self.module?.stringByReplacingMatches(in: text, range: NSRange(text.startIndex..., in: text), withTemplate: "$1openspot.handlers = ") ?? text
         context.evaluateScript(text, withSourceURL: url)
         try rethrow()
         self.context = context
@@ -239,6 +379,17 @@ final class InlineScript: @unchecked Sendable {
         let child = ScriptProcess(url: URL(fileURLWithPath: "/usr/bin/env"), arguments: ["openspot"] + arguments, mode: .once(input: input), dataName: dataName, variables: own, careful: careful?.uses, base: base)
         child.channel = caller.flatMap { callers?.channel(for: $0) }
         return answer { await Self.answer(of: child) }
+    }
+
+    private func answered(_ arguments: [String], _ answer: CommandAnswer) -> [String: Any] {
+        var result: [String: Any] = ["code": answer.code, "output": answer.output, "errors": answer.errors.hasSuffix("\n") ? String(answer.errors.dropLast()) : answer.errors]
+        if arguments.first == RunCall.noun.name, arguments.count > 1, answer.code == 0 {
+            let target = arguments[1]
+            let action = bound[Manifest.Triggers.binding(of: target)]?.typedActions.first { $0.id == Manifest.Triggers.event(of: target) }
+            let fields = TextBlock.blocks(in: answer.output).flatMap(\.fields).filter { $0.key.hasPrefix(RootKey.outputPrefix) }
+            result["values"] = Self.values(of: fields, prefix: RootKey.outputPrefix, types: action?.outputs ?? [])
+        }
+        return result
     }
 
     private static var late: CommandAnswer {

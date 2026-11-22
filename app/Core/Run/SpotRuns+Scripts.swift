@@ -17,7 +17,8 @@ extension SpotRuns {
         loaded[spot.id]?.script.end()
         let id = spot.id
         let idle = max(inlineIdle, (spot.on?.seconds ?? 0) * 1.5)
-        let script = InlineScript(spot: spot, api: api, callers: callers, careful: isCareful ? spot.uses : nil, limit: showLimit, idle: idle, base: environment) { [usage] seconds in
+        let bound = Dictionary(spot.bindings.compactMap { binding in sheets[binding.spot].map { (binding.name, $0.spot) } }) { first, _ in first }
+        let script = InlineScript(spot: spot, api: api, callers: callers, careful: isCareful ? spot.uses : nil, limit: showLimit, idle: idle, bound: bound, base: environment) { [usage] seconds in
             usage.add(ProcessTime(cpu: seconds, wakeups: 0), to: id, at: usage.now())
         }
         loaded[id] = (stamp, script)
