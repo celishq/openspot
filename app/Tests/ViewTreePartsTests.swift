@@ -30,7 +30,7 @@ final class ViewTreePartsTests: XCTestCase {
         let faults = FrameCheck(text: text).partFaults
 
         XCTAssertTrue(faults.contains("the part a has an unknown tone: blue"), "\(faults)")
-        XCTAssertTrue(faults.contains("the part go has an unknown look: round"), "\(faults)")
+        XCTAssertTrue(faults.contains("the part go has an unknown key: look"), "\(faults)")
         XCTAssertTrue(faults.contains("a part cannot be called show"), "\(faults)")
         XCTAssertFalse(faults.contains("an item cannot be called show"), "\(faults)")
     }

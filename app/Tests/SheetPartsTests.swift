@@ -454,16 +454,25 @@ final class SheetPartsTests: XCTestCase {
         XCTAssertEqual(sheet.parts.first?.control, .list([.init(id: "a", title: "A")], value: "a"))
     }
 
-    func testALookOnlyDrawsTheBox() {
-        XCTAssertEqual(FrameCheck(text: "text=a\ntitle=A\nlook=large\n".placed).partFaults, ["the part a has an unknown look: large"])
-        XCTAssertEqual(FrameCheck(text: "text=a\ntitle=A\nlook=section\n".placed).partFaults, ["the part a has an unknown look: section"])
-        XCTAssertEqual(FrameCheck(text: "choice=a\nlook=list\n\noption=x\ntitle=X\n".placed).partFaults, ["the part a has an unknown look: list"])
+    func testTheClassesOfAPartChooseTheLookOfItsBox() throws {
+        let looks = try ["bg-accent", "rounded-full", "bg-transparent", "bg-tile", "bg-tile hover:bg-accent", "rounded-inner"].map { classes in
+            try XCTUnwrap(Frame(text: "frame=\nclass=gap-part\n\nbutton=b\ntitle=B\nclass=\(classes)\n").parts.first).look
+        }
+
+        XCTAssertEqual(looks, [.strong, .chip, .bare, .tile, .tile, nil])
+        XCTAssertEqual(SpotPart.Look(style: Style(classes: "bg-tile hover:bg-accent").resolved(for: [.sheet, .hover])), .strong)
+    }
+
+    func testALookOrAnAlignKeyIsAnUnknownKey() {
+        XCTAssertEqual(FrameCheck(text: "frame=\nclass=gap-part\n\nbutton=a\ntitle=A\nlook=strong\nalign=right\n").partFaults, [
+            "the part a has an unknown key: look", "the part a has an unknown key: align"
+        ])
     }
 
     func testASwitchWithATickLookKeepsItsValue() throws {
         let part = try XCTUnwrap(Frame(text: "switch=done\ntitle=Call mom\nvalue=true\ntype=tick\n".placed).parts.first)
 
-        XCTAssertEqual(part.look, .tick)
+        XCTAssertTrue(part.isTick)
         XCTAssertEqual(part.control, .toggle(true))
         XCTAssertEqual(FrameCheck(text: "switch=done\nvalue=true\ntype=tick\n".placed).partFaults, [])
     }

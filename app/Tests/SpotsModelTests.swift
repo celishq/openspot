@@ -984,7 +984,7 @@ final class SpotsModelTests: XCTestCase {
 
     func testCommandReturnInAMultilineFieldPressesItsButtonAndCommandKOpensTheActions() async throws {
         let calls = try await openParts(
-            "frame=\nclass=gap-part\\n\\nfield=describe\\ntype=multiline\\n\\nbutton=copy\\ntitle=Copy prompt\\nlook=strong\\nshortcut=cmd+return\\nclose=false\\n\\n"
+            "frame=\nclass=gap-part\\n\\nfield=describe\\ntype=multiline\\n\\nbutton=copy\\ntitle=Copy prompt\\nclass=bg-accent\\nshortcut=cmd+return\\nclose=false\\n\\n"
                 + "button=guide\\ntitle=Read the guide\\nscope=spot\\n"
         )
         XCTAssertEqual(model.openParts?.selectedPart?.id, "describe")

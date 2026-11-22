@@ -83,10 +83,10 @@ final class NumberReadingTests: XCTestCase {
         XCTAssertEqual(try part("number=battery\nvalue=84\nmax=100\nchart=ring\n").numberLook(columns: 2, rows: 1), .ring)
     }
 
-    func testALookOfRingOrBarIsAnUnknownLookAndDrawsByThePlace() throws {
+    func testALookOfRingOrBarIsAnUnknownKeyAndDrawsByThePlace() throws {
         let block = try XCTUnwrap(TextBlock.blocks(in: "number=battery\nvalue=84\nmax=100\nlook=bar\n").first)
 
-        XCTAssertEqual(PartCatalog.faults(in: block), ["the part battery has an unknown look: bar"])
+        XCTAssertEqual(PartCatalog.faults(in: block), ["the part battery has an unknown key: look"])
         XCTAssertEqual(try part("number=battery\nvalue=84\nmax=100\nlook=bar\n").numberLook(columns: 1, rows: 1), .ring)
     }
 

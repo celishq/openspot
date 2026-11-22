@@ -27,7 +27,7 @@ page() {
   printf 'frame=\nclass=gap-group\n\n'
   printf 'field=describe\nclass=grow\ntype=multiline\nplaceholder=Describe the look you want for %s\n' "$2"
   openspot_kv value "$1"
-  printf '\nbutton=copy\ntitle=%s\nlook=strong\nshortcut=cmd+return\nclose=false\n' "${3:-Copy prompt}"
+  printf '\nbutton=copy\ntitle=%s\nclass=bg-accent\nshortcut=cmd+return\nclose=false\n' "${3:-Copy prompt}"
 }
 
 route=$(value route)

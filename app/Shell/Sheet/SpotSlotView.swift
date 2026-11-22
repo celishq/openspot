@@ -10,7 +10,7 @@ struct SpotSlotView: View {
 
     var body: some View {
         switch part.control {
-        case .toggle(let on) where part.look == .tick:
+        case .toggle(let on) where part.isTick:
             SpotTick(isOn: on, words: words) { onSlot(part.id, $0 ? "true" : "false") }
         case .toggle(let on):
             let toggle = Toggle("", isOn: Binding(get: { on }, set: { onSlot(part.id, $0 ? "true" : "false") }))
@@ -55,7 +55,7 @@ struct SpotSlotView: View {
                         .font(SpotType.body.weight(.semibold))
                         .foregroundStyle(SpotTheme.ink)
                         .frame(width: SpotTokens.slotButton, height: SpotTokens.slotButton)
-                        .background(SpotTheme.ink.opacity(SpotTheme.chip), in: Circle())
+                        .background(SpotTheme.ink.opacity(part.look == .bare ? 0 : SpotTheme.chip), in: Circle())
                         .contentShape(Circle())
                 }
                 .buttonStyle(.plain)

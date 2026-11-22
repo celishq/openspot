@@ -24,9 +24,9 @@ final class TreeFaultsTests: XCTestCase {
     }
 
     func testOnlyOnePartOfATreeCanBeStrong() {
-        let text = "frame=\nclass=flex-row gap-part\n\nbutton=save\ntitle=Save\nlook=strong\n\nbutton=send\ntitle=Send\nlook=strong\n"
+        let text = "frame=\nclass=flex-row gap-part\n\nbutton=save\ntitle=Save\nclass=bg-accent\n\nbutton=send\ntitle=Send\nclass=bg-accent\n"
 
-        XCTAssertEqual(FrameCheck(text: text).partFaults, ["only one part can use look=strong"])
+        XCTAssertEqual(FrameCheck(text: text).partFaults, ["only one button can use bg-accent"])
     }
 
     func testATitleThatMayNotFitItsPlaceInARowIsReported() {

@@ -31,13 +31,11 @@ final class SheetFocusTests: XCTestCase {
     button=make
     parent=foot
     title=Make with AI
-    align=center
 
     button=play
     parent=foot
-    look=strong
+    class=bg-accent
     title=Play
-    align=center
     close=true
     """
 

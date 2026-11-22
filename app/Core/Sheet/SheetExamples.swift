@@ -63,8 +63,7 @@ public enum SheetExamples {
 
         button=copy
         parent=corner
-        align=right
-        look=chip
+        class=rounded-full
         title=Copy
         shortcut=cmd+return
 
@@ -87,8 +86,7 @@ public enum SheetExamples {
 
         button=play
         parent=side
-        class=h-20
-        look=strong
+        class=h-20 bg-accent
         icon=pause.fill
 
         text=song
@@ -104,12 +102,12 @@ public enum SheetExamples {
 
         button=previous
         parent=controls
-        look=bare
+        class=bg-transparent
         icon=backward.fill
 
         button=following
         parent=controls
-        look=bare
+        class=bg-transparent
         icon=forward.fill
 
         """),
@@ -122,7 +120,7 @@ public enum SheetExamples {
         detail=1.2 GB
 
         box=options
-        class=grid grid-cols-2 gap-part
+        class=flex-row justify-between gap-part
 
         choice=quality
         parent=options
@@ -136,7 +134,6 @@ public enum SheetExamples {
 
         choice=format
         parent=options
-        align=right
         value=mp4
 
         option=mp4
@@ -165,8 +162,7 @@ public enum SheetExamples {
 
         button=stop
         parent=corner
-        align=right
-        look=chip
+        class=rounded-full
         title=Stop
 
         """),
@@ -189,7 +185,6 @@ public enum SheetExamples {
 
         choice=model
         parent=bottom
-        align=left
         value=fast
 
         option=fast
@@ -200,7 +195,7 @@ public enum SheetExamples {
 
         button=ask
         parent=bottom
-        look=strong
+        class=bg-accent
         icon=arrow.up
         shortcut=cmd+return
 
@@ -285,12 +280,11 @@ public enum SheetExamples {
 
         button=copy
         parent=corner
-        align=right
-        look=chip
+        class=rounded-full
         title=Copy
 
         button=paste
-        look=strong
+        class=bg-accent
         title=Paste
         shortcut=cmd+return
 
@@ -313,7 +307,7 @@ public enum SheetExamples {
 
         button=save
         parent=corner
-        look=strong
+        class=bg-accent
         icon=checkmark
         shortcut=cmd+return
 
@@ -362,15 +356,14 @@ public enum SheetExamples {
 
         button=reset
         parent=levels
-        align=right
-        look=bare
+        class=bg-transparent text-right
         icon=arrow.counterclockwise
 
         box=line
         class=h-px bg-tile
 
         button=quit
-        look=bare
+        class=bg-transparent
         title=Quit
         shortcut=cmd+q
 

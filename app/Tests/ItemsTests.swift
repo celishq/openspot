@@ -108,13 +108,13 @@ final class ItemsTests: PanelCase {
     }
 
     func testAnItemWithTheTileLookShowsItsWordsInItsCell() {
-        let output = Frame(text: "frame=\nclass=gap-part\n\nitems=times\nclass=grid grid-cols-3\n\ntext=later\nparent=times\ntitle=Later\ndetail=17:20\nicon=cup.and.saucer.fill\nlook=tile\n\ntext=star\nparent=times\ntitle=Star\nicon=star\n")
+        let output = Frame(text: "frame=\nclass=gap-part\n\nitems=times\nclass=grid grid-cols-3\n\ntext=later\nparent=times\ntitle=Later\ndetail=17:20\nicon=cup.and.saucer.fill\nclass=bg-tile\n\ntext=star\nparent=times\ntitle=Star\nicon=star\n")
 
         XCTAssertEqual(output.items.map(\.look), [.tile, nil])
     }
 
     func testASheetOfThreeLinesOfTilesFitsItsLines() async throws {
-        let tiles = (1...9).map { "text=t\($0)\nparent=tiles\ntitle=T\($0)\ndetail=D\nicon=star\nlook=tile\n" }.joined(separator: "\n")
+        let tiles = (1...9).map { "text=t\($0)\nparent=tiles\ntitle=T\($0)\ndetail=D\nicon=star\nclass=bg-tile\n" }.joined(separator: "\n")
         try await open("frame=\nclass=gap-part\n\nitems=tiles\nclass=grid grid-cols-3\n\n\(tiles)")
 
         let sheet = try XCTUnwrap(model.sheets["items"]).sheetRect

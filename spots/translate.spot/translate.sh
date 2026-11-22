@@ -116,9 +116,9 @@ show() {
   printf 'box=corner\nparent=result\nclass=absolute inset-0 justify-end items-end p-2\n\n'
 
   if [ "$corner" = settings ]; then
-    printf 'button=settings\nparent=corner\nalign=right\nlook=chip\ntitle=Open Settings\n'
+    printf 'button=settings\nparent=corner\nclass=rounded-full\ntitle=Open Settings\n'
   elif [ "$corner" = copy ]; then
-    printf 'button=copy\nparent=corner\nalign=right\nlook=chip\ntitle=Copy\nshortcut=cmd+return\n'
+    printf 'button=copy\nparent=corner\nclass=rounded-full\ntitle=Copy\nshortcut=cmd+return\n'
   fi
 }
 

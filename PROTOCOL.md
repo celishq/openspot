@@ -185,7 +185,7 @@ class=grow
 button=forget
 parent=head
 title=Forget
-look=chip
+class=rounded-full
 
 items=networks
 ```
@@ -207,7 +207,7 @@ and a Forget chip at its end. The list of the items fills the rest of the sheet 
 - `gap-part` and `gap-group` are the gaps that Openspot's own sheets use. [Classes](#classes) lists every class.
 - A `parent` that names no block, and an unknown class, are faults that `openspot check spots` reports. The block then
   sits in the root, and the class is skipped, so a frame still draws.
-- The check also reports more than one `look=strong`, a title that may not fit its place, and a `text` that its classes
+- The check also reports more than one button with `bg-accent`, a title that may not fit its place, and a `text` that its classes
   make shorter than its words. It counts the lines a text's words wrap to from an estimate of their width, so a text of wide letters may still be cut.
 
 ### Change a block
@@ -283,7 +283,6 @@ The menu bar shows the first value that shows on `bar:`, small, beside the clock
 - A `text` with a `tone` and no `icon` is a dot of its tone and its title. Any other `text` is its title.
 - With no class that names `bar:`, the items are counted by their tone. A `switch` or slider that shows on `bar:` hides
   it.
-- `look` doesn't apply here.
 
 ## Numbers
 
@@ -803,7 +802,7 @@ Each kind of block, the keys of its own and the call it sends.
 | `icon`            | The icon of its `value`, by the rules of `icon` below.                                                           | `value`                                                                           |                        |
 | `picture`         | An image that fills its area.                                                                                    | `icon`                                                                            |                        |
 | `number`          | One `value`, or a series of `value` lines, oldest first, with its `title` as the label. See [Numbers](#numbers). | `value`, `max`, `unit`, `display`                                                 |                        |
-| `button`          | A button, or an action (see [Buttons and actions](#buttons-and-actions)). The blocks inside it are its look.     | `shortcut`, `confirm`, `close`, `look`, `form`, `scope`                           | `<id>`                 |
+| `button`          | A button, or an action (see [Buttons and actions](#buttons-and-actions)). The blocks inside it are its look.     | `shortcut`, `confirm`, `close`, `form`, `scope`                                   | `<id>`                 |
 | `field`           | A text field, or another input with a `type`.                                                                    | `value`, `type`, `placeholder`, `required`, `readonly`, `min`, `max`, `recording` | `<id> <value>`         |
 | `switch`          | A switch, or with `type=tick` a round tick before its words, for a thing to do.                                  | `value`: `true` or `false`, `type`                                                | `<id> true` or `false` |
 | `choice`          | A menu of the `option` blocks after it, a list when it covers two lines or more, or swatches of `color` lines.   | `color`, `value`, `type`                                                          | `<id> <option id>`     |
@@ -816,9 +815,6 @@ Each kind of block, the keys of its own and the call it sends.
   on a text or a number draws a bar of that colour at its edge.
 - `icon` is an image file, such as `cups.png`; an `https://` image, downloaded once; the Finder icon of a path with a
   `/` or a leading `~`; an SF Symbol, such as `wifi`; or any other text, such as `😀`.
-- `look` is the box of a text, a number or a button: `tile` or `bare`, and on a button also `chip` or `strong`.
-  An item with `look=tile` shows its title and detail under its icon.
-  `align=left`, `right` or `center` places a block that is smaller than its area.
 - A field's `type`: none for one line, `multiline`, `slider` from `min` to `max`, 0 to 100 by default, which sends a whole number, `search` for the
   search field of the [items](#items), and `hotkey`. A choice with
   `type=multiple` lets the user choose several options.
@@ -847,7 +843,7 @@ The words Home take the free width, in a heavier weight and the accent colour, a
 | Space     | `p-<s>`, `px-<s>`, `py-<s>`, `pt-<s>`, `pr-<s>`, `pb-<s>`, `pl-<s>`, `gap-<s>`, `gap-x-<s>`, `gap-y-<s>`                                                       |
 | Size      | `w-<s>`, `h-<s>`, `size-<s>`, `min-w-<s>`, `max-w-<s>`, `grow`, `shrink-0`, `aspect-square`                                                                    |
 | Words     | `font-title`, `font-detail`, `font-metric`, `font-value`, `font-section`, `font-medium`, `font-semibold`, `font-bold`, `text-left`, `text-center`, `text-right`, `truncate`, `line-clamp-<n>`, `tabular-nums` |
-| Colour    | `text-ink`, `text-secondary`, `text-accent`, `text-good`, `text-warn`, `text-bad`, `bg-tile`, `bg-accent`, `bg-good`, `bg-warn`, `bg-bad`, `backdrop-blur`, `opacity-<p>` |
+| Colour    | `text-ink`, `text-secondary`, `text-accent`, `text-good`, `text-warn`, `text-bad`, `bg-tile`, `bg-accent`, `bg-good`, `bg-warn`, `bg-bad`, `bg-transparent`, `backdrop-blur`, `opacity-<p>` |
 | Shape     | `rounded-card`, `rounded-inner`, `rounded-full`, `rounded-none`, `border`, `overflow-hidden`                                                                   |
 
 - `<s>` is a step of Tailwind's scale from `0` to `96`, such as `3` or `0.5`, and each step is 4 points. `part` and
@@ -857,6 +853,11 @@ The words Home take the free width, in a heavier weight and the accent colour, a
 - `<n>` is a count from 1 to 12, and `<p>` a percent from 0 to 100 in steps of 5.
 - `flex` shows a block that `hidden` hides, such as `hidden card:flex`.
 - `font-section` gives a `text` the look of a title over a group of blocks or items.
+- On a `button`, a `field`, a `switch`, a `choice` or a `number`, a class chooses the box that Openspot draws for it:
+  `bg-accent` is the one main button, `bg-tile` a tile, `bg-transparent` no box, and `rounded-full` on a button a chip
+  as wide as its words. An item with `bg-tile` shows its title and detail under its icon.
+- A block smaller than its box takes its place from `self-start`, `self-center` or `self-end`, or from `text-left`,
+  `text-center` or `text-right` inside its own area.
 - `backdrop-blur` blurs what lies under the block with the material of the Mac. No class draws glass.
 - A class that isn't here is skipped, and `openspot check spots` reports it. A free value, such as `w-[120px]`, is
   such a class.
@@ -911,7 +912,7 @@ Each event that Openspot raises, when it raises it, and the value that the show 
 The version at the top is the version of this protocol. A new word raises the minor number, such as `2.1`. A draft
 becomes `final` when real use proves it, and a final version never changes the meaning of a word. A change that breaks
 an old spot raises the major number: `3.0` lays out every place with the tree of [Layouts](#layouts), in place of the
-`grid=` lines, the `repeat`, the `section` and the `view` of `2.0`.
+`grid=` lines, the `repeat`, the `section`, the `view`, the `look` and the `align` of `2.0`.
 
 ## How to extend
 

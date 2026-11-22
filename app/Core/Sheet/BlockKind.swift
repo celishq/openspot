@@ -14,7 +14,7 @@ public struct BlockKind: Sendable, Equatable {
     let isReading: Bool
     let takesColor: Bool
     let presses: Bool
-    let looks: [String: SpotPart.Look]
+    let takesTick: Bool
     let control: @Sendable (TextBlock) -> SpotPart.Control
     let faults: @Sendable (TextBlock) -> [String]
     let field: (@Sendable (TextBlock, String, String) -> ItemForm.Field)?
@@ -30,7 +30,7 @@ public struct BlockKind: Sendable, Equatable {
         isReading: Bool = false,
         takesColor: Bool = false,
         presses: Bool = false,
-        looks: [String: SpotPart.Look] = [:],
+        takesTick: Bool = false,
         control: @escaping @Sendable (TextBlock) -> SpotPart.Control = { _ in .none },
         faults: @escaping @Sendable (TextBlock) -> [String] = PartCatalog.keyFaults,
         field: (@Sendable (TextBlock, String, String) -> ItemForm.Field)? = nil,
@@ -45,7 +45,7 @@ public struct BlockKind: Sendable, Equatable {
         self.isReading = isReading
         self.takesColor = takesColor
         self.presses = presses
-        self.looks = looks
+        self.takesTick = takesTick
         self.control = control
         self.faults = faults
         self.field = field
@@ -109,7 +109,7 @@ public struct BlockKind: Sendable, Equatable {
     static let toggle = BlockKind(
         name: "switch",
         holdsValue: true,
-        looks: ["tick": .tick],
+        takesTick: true,
         control: { .toggle($0.flag("value") ?? false) },
         field: { block, name, label in ItemForm.Field(name: name, label: label, type: .switch, value: block.flag("value") == true ? "true" : "false") }
     )

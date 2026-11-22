@@ -32,12 +32,19 @@ public struct SpotPart: Equatable, Sendable, Identifiable {
         case symbol(String)
     }
 
-    public enum Look: String, Equatable, Sendable {
-        case tile, chip, strong, bare, tick
-    }
+    public enum Look: Equatable, Sendable {
+        case tile, chip, strong, bare
 
-    public enum Align: String, Equatable, Sendable {
-        case left, center, right
+        public init?(style: Style) {
+            switch style.fill {
+            case .accent: self = .strong
+            case .tile: self = .tile
+            case .transparent: self = .bare
+            default:
+                guard style.corner == .full else { return nil }
+                self = .chip
+            }
+        }
     }
 
     public let id: String
@@ -57,8 +64,8 @@ public struct SpotPart: Equatable, Sendable, Identifiable {
     public let key: ActionKey?
     public let asksToRecord: Bool
     public let closes: Bool
-    public let align: Align?
-    public let look: Look?
+    public private(set) var look: Look?
+    public let isTick: Bool
     public private(set) var values: [String: [String]]
 
     public private(set) var items: [[String]] = []
@@ -92,9 +99,8 @@ public struct SpotPart: Equatable, Sendable, Identifiable {
         key = kind == .hotkey ? nil : block.value("shortcut").flatMap(ActionKey.init(text:))
         asksToRecord = kind == .hotkey && block.flag("recording") == true
         closes = block.flag("close") ?? kind.presses
-        align = block.value("align").flatMap(Align.init(rawValue:))
-        let named = block.value("look").flatMap(Look.init(rawValue:))
-        look = block.value("type").flatMap { kind.looks[$0] } ?? (named == .tick ? nil : named)
+        look = Look(style: StyleCache.shared.style(of: block.value(ViewNode.classKey) ?? "").resolved(for: [.sheet]))
+        isTick = kind.takesTick && block.value("type") == "tick"
         let icon = Icon(text: block.value("icon"))
         file = icon?.file
         glyph = icon?.glyph
@@ -146,6 +152,12 @@ public struct SpotPart: Equatable, Sendable, Identifiable {
         case .text(let text, _, _): text
         case .shortcut(let text): text
         }
+    }
+
+    public func drawn(as look: Look?) -> SpotPart {
+        var part = self
+        part.look = look
+        return part
     }
 
     func drawn(spanning isTall: Bool) -> SpotPart {
