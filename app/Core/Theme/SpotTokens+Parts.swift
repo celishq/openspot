@@ -31,9 +31,6 @@ extension SpotTokens {
     public static let metricBigRingLine: CGFloat = 8
     public static let metricRingLine: CGFloat = 4
     public static let metricBarLine: CGFloat = 4
-    public static let metricRowLine: CGFloat = 15
-    public static let metricTitleGap: CGFloat = 4
-    public static let metricControlBars = CGSize(width: 33, height: 16)
     public static let ringInsideGap: CGFloat = 2
     public static let trendBar: CGFloat = 3
     public static let trendGap: CGFloat = 2
@@ -129,9 +126,4 @@ extension SpotTokens {
     public static let publisherPillHeight: CGFloat = 22
     public static let publisherPillCharWidth = 6.3
     public static let publisherPillRoom = 33.0
-
-    public static let rowBarWidth: CGFloat = 3
-    public static let rowBarGap: CGFloat = 2
-    public static let rowBarHeight: CGFloat = 20
-    public static let rowBarFloor: CGFloat = 2
 }

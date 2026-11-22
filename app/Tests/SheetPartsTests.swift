@@ -138,11 +138,9 @@ final class SheetPartsTests: XCTestCase {
         XCTAssertEqual(output.parts.first?.items, [])
     }
 
-    func testATextsToneColoursItsWordsAndANumberKeepsItsOwn() {
+    func testAnUnknownToneIsAFault() {
         let outputCheck = FrameCheck(text: "frame=\nclass=gap-part\n\ntext=late\ndetail=Late\ntone=bad\n\ntext=now\ntitle=Standup\ntone=on\n\nnumber=disk\nvalue=90\nmax=100\ntone=bad\n")
-        let output = outputCheck.output
 
-        XCTAssertEqual(output.parts.map(\.textTone), [.bad, nil, nil])
         XCTAssertEqual(outputCheck.partFaults, ["the part now has an unknown tone: on"])
     }
 

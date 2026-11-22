@@ -11,10 +11,6 @@ public struct PartFrame: Equatable, Sendable {
     public let vertical: Side
     public let roundSize: CGFloat
 
-    public var hasDetailUnderTitle: Bool {
-        rect.height >= SpotTokens.listRow * 2
-    }
-
     public init(node size: CGSize, part: SpotPart) {
         rect = CGRect(origin: .zero, size: size)
         horizontal = Self.side(part.align, default: part.fillsWidth ? .fill : .center)

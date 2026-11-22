@@ -3,7 +3,6 @@ import SwiftUI
 
 struct SpotSlotView: View {
     let part: SpotPart
-    var tone: MetricValue.Tone?
     var height: CGFloat?
     var look: NumberLook = .stat
     let onSlot: (String, String?) -> Void
@@ -44,12 +43,8 @@ struct SpotSlotView: View {
             SpotSlotField(text: text, placeholder: placeholder ?? part.title ?? "", isReadOnly: isReadOnly) { onSlot(part.id, $0) }
         case .number:
             SpotNumberView(part: part, look: look, font: SpotType.slotNumber(size: numberSize), leastScale: numberSize > SpotType.slotNumberSize ? SpotType.leastBigNumberScale : SpotType.leastNumberScale)
-        case .image(let path):
-            picture(icon: .image(path))
         default:
-            if part.isPicture {
-                picture(icon: part.file.map(FileIcon.init(path:)))
-            } else if case .symbol(let symbol) = part.press {
+            if case .symbol(let symbol) = part.press {
                 Button { onSlot(part.id, nil) } label: {
                     Image(systemName: symbol)
                         .font(SpotType.body.weight(.semibold))
@@ -84,23 +79,14 @@ struct SpotSlotView: View {
     private var words: some View {
         VStack(alignment: .leading, spacing: SpotType.lineGap) {
             if let title = part.title {
-                Text(title).font(SpotType.body).foregroundStyle(part.detail == nil ? SpotToneWords.colour(of: part.textTone) ?? SpotTheme.ink : SpotTheme.ink).lineLimit(1)
+                Text(title).font(SpotType.body).foregroundStyle(SpotTheme.ink).lineLimit(1)
             }
             if let detail = part.detail {
-                SpotToneWords(text: detail, tone: part.textTone)
+                Text(detail).font(SpotType.detail).modifier(SpotSecondaryText()).lineLimit(1)
             }
         }
         .modifier(SpotColorBar(color: part.color))
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .leading)
-    }
-
-    private func picture(icon: FileIcon?) -> some View {
-        GeometryReader { room in
-            let side = SpotTokens.pictureSide(in: room.size)
-            SpotItemIcon(icon: icon, glyph: part.glyph, symbol: part.symbol, size: side)
-                .overlay(alignment: .bottomTrailing) { SpotToneDot(tone: tone, side: side) }
-                .frame(width: room.size.width, height: room.size.height)
-        }
     }
 }
 

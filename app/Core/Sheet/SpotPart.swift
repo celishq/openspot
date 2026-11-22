@@ -43,14 +43,10 @@ public struct SpotPart: Equatable, Sendable, Identifiable {
     public let id: String
     public let kind: String
     public let isOpen: Bool
-    public let isPicture: Bool
     public let title: String?
     public let detail: String?
     public let symbol: String?
-    public let file: String?
-    public let glyph: String?
     public let tone: MetricValue.Tone?
-    public let textTone: MetricValue.Tone?
     public let color: String?
     public private(set) var control: Control
     public let press: Press
@@ -85,7 +81,6 @@ public struct SpotPart: Equatable, Sendable, Identifiable {
         self.id = id
         self.kind = kind.name
         isOpen = kind.isOpen
-        isPicture = kind == .picture
         values = kind.isOpen ? Dictionary(grouping: block.fields, by: \.key).mapValues { $0.map(\.value) } : [:]
         title = block.value("title")
         detail = block.value("detail")
@@ -96,10 +91,7 @@ public struct SpotPart: Equatable, Sendable, Identifiable {
         let named = block.value("look").flatMap(Look.init(rawValue:))
         look = block.value("type").flatMap { kind.looks[$0] } ?? (named == .tick ? nil : named)
         let icon = Icon(text: block.value("icon"))
-        file = icon?.file
-        glyph = icon?.glyph
         tone = block.value("tone").flatMap(MetricValue.Tone.init)
-        textTone = kind == .text ? tone : nil
         color = kind.takesColor ? block.value("color").flatMap { PartCatalog.isColor($0) ? $0 : nil } : nil
         symbol = kind.presses ? nil : icon?.symbol
         press = kind.presses ? icon?.symbol.map(Press.symbol) ?? .line : .none
@@ -167,13 +159,6 @@ public struct SpotPart: Equatable, Sendable, Identifiable {
         if look == .chip || look == .bare { return title != nil && control != .none }
         if case .symbol = press, title == nil, control == .none { return false }
         return true
-    }
-
-    public var scrollsItself: Bool {
-        switch control {
-        case .text, .list: true
-        default: false
-        }
     }
 
     public var flatLines: Int {
