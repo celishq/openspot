@@ -19,7 +19,7 @@ enum SpotSheetPicture {
         let kinds = spot?.kinds ?? file.map { BlockKind.kinds(views: [$0.deletingPathExtension().lastPathComponent: $0.path]) } ?? BlockKind.all
         let output = Frame(text: text, kinds: kinds)
         let panel = SheetParts(output: output, variants: [.sheet, isLight ? .light : .dark])
-        guard panel != nil || !output.items.isEmpty else {
+        guard panel.holdsParts || !output.items.isEmpty else {
             FileHandle.standardError.write(Data("The sheet has no blocks and no rows.\n".utf8))
             exit(1)
         }

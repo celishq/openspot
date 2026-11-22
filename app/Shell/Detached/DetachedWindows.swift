@@ -21,7 +21,7 @@ final class DetachedWindows {
         floats[entry.id] = window
         Task { @MainActor [model] in
             let end = ContinuousClock.now + .seconds(model.runs.opening.answerPause)
-            while model.sheets[entry.id]?.kind == .waiting, ContinuousClock.now < end {
+            while model.sheets[entry.id]?.isWaiting == true, ContinuousClock.now < end {
                 try? await Task.sleep(for: .milliseconds(10))
             }
             guard floats[entry.id] === window else { return }

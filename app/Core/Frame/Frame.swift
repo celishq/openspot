@@ -28,6 +28,7 @@ public struct Frame: Equatable, Sendable {
     public private(set) var hasBar = false
     public private(set) var face = CardFace.none
     public private(set) var tree = ViewTree.empty
+    private var partIDs: [String] = []
     public private(set) var columns = 1
     public private(set) var ends: [String] = []
     public private(set) var start: String?
@@ -117,7 +118,8 @@ public struct Frame: Equatable, Sendable {
                 errors.append(block.firstLine)
             }
         }
-        if tree.partIDs(shownIn: Self.sheetPlaces).contains(where: { tree.node($0)?.source != nil }) {
+        partIDs = tree.partIDs(shownIn: Self.sheetPlaces)
+        if partIDs.contains(where: { tree.node($0)?.source != nil }) {
             rows = listedRows.map { $0.fields.flatMap { [$0.key, $0.value] } }
         }
         face = CardFace(tree: tree.isWritten || !tree.places.isEmpty ? tree : .empty)
@@ -152,7 +154,7 @@ public struct Frame: Equatable, Sendable {
     }
 
     public var parts: [SpotPart] {
-        tree.partIDs(shownIn: Self.sheetPlaces).compactMap { tree.node($0)?.part }
+        partIDs.compactMap { tree.node($0)?.part }
     }
 
     private static func cardControl(_ part: SpotPart) -> SpotPart? {
@@ -208,6 +210,10 @@ public struct Frame: Equatable, Sendable {
 
     public var perLine: Int? {
         tree.holdsItems || searchField != nil ? columns : nil
+    }
+
+    public var showsRows: Bool {
+        perLine != nil || parts.isEmpty
     }
 
     public var search: ItemSearch {

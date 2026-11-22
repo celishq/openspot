@@ -52,7 +52,7 @@ final class NewSpotTests: BuiltInCase {
         XCTAssertEqual(output.tree.look(of: copy.id), .strong)
         XCTAssertEqual(copy.key, ActionKey(name: "return", isCommand: true))
         XCTAssertEqual(output.actions.map(\.title), ["Clear", "Read the guide", "Open spots folder"])
-        XCTAssertEqual(SheetParts(output: output)?.hint(stopping: { _ in false }, actions: true), "⌘⏎ Copy prompt   ⌘K Actions")
+        XCTAssertEqual(SheetParts(output: output).hint(stopping: { _ in false }, actions: true), "⌘⏎ Copy prompt   ⌘K Actions")
     }
 
     func testTheFieldKeepsTheWordsThatThePersonTypesAcrossAReadAndACall() async throws {

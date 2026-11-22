@@ -78,7 +78,7 @@ extension SpotRun {
 
     func takeAnswer(_ lines: Frame, frame: String, to ask: Ask, keeping: String? = nil, answers: Bool = true) async {
         if case .answer(let query) = ask { return takeAnswers(lines.answers(asCard: spot.answers?.isCard == true), to: query) }
-        if case .show = ask, !frame.isEmpty, frame == shownFrame, lines.parts.isEmpty, panel == nil, !list.hasFailed { return takeRepeat(lines, answers: answers) }
+        if case .show = ask, !frame.isEmpty, frame == shownFrame, lines.parts.isEmpty, panel?.holdsParts != true, !list.hasFailed { return takeRepeat(lines, answers: answers) }
         let next: ItemList.Rows? = if case .show = ask { await newRows(lines.items, search: Self.search(of: lines, in: spot)) } else { nil }
         lastAnswer = lines
         shownFrame = if case .show = ask, !frame.isEmpty, frame.utf8.count <= Self.shownFrameLimit { frame } else { nil }
@@ -99,7 +99,7 @@ extension SpotRun {
                     if let kept { $0.select(run: kept) }
                 }
             }
-            if showsSheet || panel != nil {
+            if showsSheet || panel?.holdsParts == true {
                 takePanel(lines, generation: generation, keeping: keeping, rows: takeRows)
             } else {
                 takeRows()
@@ -213,8 +213,8 @@ extension SpotRun {
     private func takePanel(_ lines: Frame, generation: Int?, keeping: String?, rows: () -> Void) {
         if lines.parts.isEmpty {
             rows()
-            panel = nil
-        } else if let current = panel?.generation {
+            panel = SheetParts(output: lines, variants: runs.variants(of: spot.id))
+        } else if let current = panel?.generation, panel?.holdsParts == true {
             rows()
             guard panel?.take(lines, answering: generation ?? current, keeping: keeping) == true else { return }
             partsAnswers += 1
