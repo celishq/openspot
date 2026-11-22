@@ -6,11 +6,31 @@ final class InlineScript: @unchecked Sendable {
         var answer = CommandAnswer()
     }
 
+    private final class Held: @unchecked Sendable {
+        let value: JSValue?
+
+        init(_ value: JSValue?) {
+            self.value = value
+        }
+    }
+
+    private struct Waiting {
+        let call: InlineCall
+        let caller: SpotCaller?
+        var spent: TimeInterval = 0
+    }
+
     private typealias Termination = @convention(c) (OpaquePointer?, UnsafeMutableRawPointer?) -> Bool
     private typealias TimeLimit = @convention(c) (OpaquePointer?, Double, Termination?, UnsafeMutableRawPointer?) -> Void
 
     private static let timeLimit: TimeLimit? = dlsym(UnsafeMutableRawPointer(bitPattern: -2), "JSContextGroupSetExecutionTimeLimit")
         .map { unsafeBitCast($0, to: TimeLimit.self) }
+
+    private static let overTime: Termination = { _, script in
+        guard let script else { return true }
+        Unmanaged<InlineScript>.fromOpaque(script).takeUnretainedValue().isOverTime = true
+        return true
+    }
 
     private static let library = """
     openspot.frame = function frame(value) {
@@ -110,6 +130,9 @@ final class InlineScript: @unchecked Sendable {
     private let spent: @Sendable (TimeInterval) -> Void
     private let condition = NSCondition()
     private var calls: [InlineCall] = []
+    private var settles: [() -> Void] = []
+    private var waiting: [Int: Waiting] = [:]
+    private var nextToken = 1
     private var isEnded = false
     private var hasThread = false
     private var isOverTime = false
@@ -176,17 +199,35 @@ final class InlineScript: @unchecked Sendable {
     private func follow() {
         while true {
             condition.lock()
-            let idleEnd = Date().addingTimeInterval(idle)
-            while calls.isEmpty, !isEnded, condition.wait(until: idleEnd) {}
-            if isEnded || calls.isEmpty {
-                let dropped = calls
+            var idleEnd = Date().addingTimeInterval(idle)
+            while calls.isEmpty, settles.isEmpty, !isEnded {
+                if condition.wait(until: idleEnd) { continue }
+                for (token, held) in waiting where held.call.isStopped || held.call.isDone {
+                    waiting[token] = nil
+                    if let caller = held.caller { callers?.release(caller) }
+                }
+                if waiting.isEmpty { break }
+                idleEnd = Date().addingTimeInterval(idle)
+            }
+            if isEnded || calls.isEmpty && settles.isEmpty {
+                let dropped = calls + waiting.values.map(\.call)
+                let held = waiting.values.compactMap(\.caller)
                 let outcome: InlineCall.Outcome = isOverdue ? .failed(SpotError.timedOut) : .dropped
                 calls = []
+                settles = []
+                waiting = [:]
                 context = nil
                 hasThread = false
                 condition.unlock()
+                held.forEach { callers?.release($0) }
                 dropped.forEach { $0.finish(outcome) }
                 return
+            }
+            if !settles.isEmpty {
+                let settle = settles.removeFirst()
+                condition.unlock()
+                autoreleasepool { settle() }
+                continue
             }
             let call = calls.removeFirst()
             condition.unlock()
@@ -199,13 +240,55 @@ final class InlineScript: @unchecked Sendable {
             condition.withLock { running = call }
             autoreleasepool {
                 do {
-                    call.finish(.frame(try run(call)))
+                    if let frame = try run(call) { call.finish(.frame(frame)) }
                 } catch {
                     call.finish(.failed(error))
+                    if context == nil { waiting.keys.forEach { finish($0, .failed(SpotError.timedOut)) } }
                 }
             }
             condition.withLock { running = nil }
             spent(Self.threadTime() - start)
+        }
+    }
+
+    private func arm(_ seconds: TimeInterval) {
+        guard let context else { return }
+        Self.timeLimit?(JSContextGetGroup(context.jsGlobalContextRef), max(seconds, 0.001), Self.overTime, Unmanaged.passUnretained(self).toOpaque())
+    }
+
+    private func slice(_ token: Int, _ work: () -> Void) {
+        guard let held = waiting[token] else { return }
+        arm(limit - held.spent)
+        let start = Self.threadTime()
+        work()
+        let used = Self.threadTime() - start
+        waiting[token]?.spent += used
+        do {
+            try rethrow()
+        } catch SpotError.timedOut {
+            for other in waiting.keys { finish(other, .failed(SpotError.timedOut)) }
+            return
+        } catch {
+            return finish(token, .failed(error))
+        }
+        if let held = waiting[token], held.spent > limit { finish(token, .failed(SpotError.timedOut)) }
+    }
+
+    private func finish(_ token: Int, _ outcome: InlineCall.Outcome) {
+        guard let held = waiting.removeValue(forKey: token) else { return }
+        if let caller = held.caller { callers?.release(caller) }
+        held.call.finish(outcome)
+    }
+
+    private func settle(_ token: Int, _ work: @escaping () -> Void) {
+        condition.withLock {
+            guard !isEnded else { return }
+            settles.append { [self] in
+                let start = Self.threadTime()
+                slice(token, work)
+                spent(Self.threadTime() - start)
+            }
+            condition.signal()
         }
     }
 
@@ -230,11 +313,13 @@ final class InlineScript: @unchecked Sendable {
         return user + Double(info.system_time.seconds) + Double(info.system_time.microseconds) / 1_000_000
     }
 
-    private func run(_ call: InlineCall) throws -> String {
+    private func run(_ call: InlineCall) throws -> String? {
         let context = try loaded()
         if call.function == nil, let name = call.arguments.first, let handlers = handlers(in: context), Self.isFunction(handlers.objectForKeyedSubscript(name), in: context) {
-            return try handle(call, name: name, handlers: handlers, in: context)
+            handle(call, name: name, handlers: handlers, in: context)
+            return nil
         }
+        arm(limit)
         let function = context.objectForKeyedSubscript(call.function ?? "main")
         guard let function, let type = context.objectForKeyedSubscript("Function"), function.isInstance(of: type) else { return "" }
         if call.function != nil {
@@ -276,21 +361,24 @@ final class InlineScript: @unchecked Sendable {
         return value.isInstance(of: type)
     }
 
-    private func handle(_ call: InlineCall, name: String, handlers: JSValue, in context: JSContext) throws -> String {
+    private func handle(_ call: InlineCall, name: String, handlers: JSValue, in context: JSContext) {
         let fields = TextBlock.blocks(in: call.input ?? "").flatMap(\.fields)
         let input = Self.values(of: fields, prefix: "input.", types: shapes[name]?.inputs ?? [])
         let settings = Self.values(of: fields, prefix: "setting.", types: spot.settings.compactMap { setting in setting.valueType.map { Manifest.Parameter(name: setting.id, type: $0) } })
+        let token = nextToken
+        nextToken += 1
+        let caller = callers?.issue(for: spot, reason: call.reason)
+        caller?.call = call.opened
+        waiting[token] = Waiting(call: call, caller: caller)
+        let done: @convention(block) (JSValue, JSValue) -> Void = { [weak self] isDone, text in
+            let text = text.toString() ?? ""
+            self?.finish(token, isDone.toBool() ? .frame(text) : .failed(SpotError.failed(1, text)))
+        }
         let openspot = context.objectForKeyedSubscript("openspot")
-        let env = openspot?.invokeMethod("env", withArguments: [0, UseCommand.spec(for: spot.uses), spot.bindings.map(\.name), settings])
-        var answer: (isDone: Bool, text: String)?
-        let done: @convention(block) (JSValue, JSValue) -> Void = { isDone, text in answer = (isDone.toBool(), text.toString() ?? "") }
-        enter(call)
-        defer { leave() }
-        openspot?.invokeMethod("handle", withArguments: [handlers, name, input, env as Any, JSValue(object: done, in: context) as Any])
-        try rethrow()
-        guard let answer else { return "" }
-        guard answer.isDone else { throw SpotError.failed(1, answer.text) }
-        return answer.text
+        slice(token) {
+            let env = openspot?.invokeMethod("env", withArguments: [token, UseCommand.spec(for: spot.uses), spot.bindings.map(\.name), settings])
+            openspot?.invokeMethod("handle", withArguments: [handlers, name, input, env as Any, JSValue(object: done, in: context) as Any])
+        }
     }
 
     static func values(of fields: [TextBlock.Field], prefix: String, types: [Manifest.Parameter]) -> [String: Any] {
@@ -323,21 +411,16 @@ final class InlineScript: @unchecked Sendable {
         if let context { return context }
         guard let context = JSContext() else { throw SpotError.failed(1, "Openspot cannot start JavaScript.") }
         context.exceptionHandler = { [weak self] _, value in self?.thrown = value }
-        Self.timeLimit?(JSContextGetGroup(context.jsGlobalContextRef), limit, { _, script in
-            guard let script else { return true }
-            Unmanaged<InlineScript>.fromOpaque(script).takeUnretainedValue().isOverTime = true
-            return true
-        }, Unmanaged.passUnretained(self).toOpaque())
+        Self.timeLimit?(JSContextGetGroup(context.jsGlobalContextRef), limit, Self.overTime, Unmanaged.passUnretained(self).toOpaque())
         let ask: @convention(block) (JSValue, JSValue) -> [String: Any] = { [weak self] argv, input in
             let arguments = (argv.toArray() ?? []).map { "\($0)" }
             let text = input.isUndefined || input.isNull ? nil : input.toString()
             let answer = self?.ask(arguments, input: text) ?? CommandAnswer(code: 1)
             return ["stdout": answer.output, "code": answer.code]
         }
-        let asked: @convention(block) (JSValue, JSValue) -> [String: Any] = { [weak self] _, argv in
+        let asked: @convention(block) (JSValue, JSValue) -> JSValue? = { [weak self] token, argv in
             let arguments = (argv.toArray() ?? []).map { "\($0)" }
-            guard let self else { return ["code": 1, "output": "", "errors": ""] }
-            return self.answered(arguments, self.ask(arguments, input: nil))
+            return self?.asked(arguments, token: Int(token.toInt32()))
         }
         let openspot = JSValue(newObjectIn: context)
         openspot?.setObject(ask, forKeyedSubscript: "call" as NSString)
@@ -367,18 +450,39 @@ final class InlineScript: @unchecked Sendable {
 
     private func ask(_ arguments: [String], input: String?) -> CommandAnswer {
         guard !condition.withLock({ isOverdue }) else { return Self.late }
+        return answer(work(arguments, input: input, caller: caller, reason: reason, variables: variables))
+    }
+
+    private func asked(_ arguments: [String], token: Int) -> JSValue? {
+        guard let context = JSContext.current() else { return nil }
+        guard let held = waiting[token] else { return JSValue(newPromiseRejectedWithReason: "The call of \(spot.name) has ended.", in: context) }
+        let work = work(arguments, input: nil, caller: held.caller, reason: held.call.reason, variables: held.call.variables)
+        var resolve: JSValue?
+        let promise = JSValue(newPromiseIn: context) { found, _ in resolve = found }
+        let settled = Held(resolve)
+        Task.detached(priority: .userInitiated) { [weak self] in
+            let answer = await work()
+            self?.settle(token) { [weak self] in
+                guard let self else { return }
+                settled.value?.call(withArguments: [answered(arguments, answer)])
+            }
+        }
+        return promise
+    }
+
+    private func work(_ arguments: [String], input: String?, caller: SpotCaller?, reason: String?, variables: [String: String]) -> CommandAPI.Work {
         let own = [CallWords.spotVariable: name].merging(variables) { _, new in new }
         guard let call = CommandLineCall(arguments: arguments, spot: own[CallWords.spotVariable], reason: reason) else {
-            return CommandAnswer(errors: "openspot needs a call, such as calc solve 2+2.\n", code: 2)
+            return { CommandAnswer(errors: "openspot needs a call, such as calc solve 2+2.\n", code: 2) }
         }
         let request = CommandRequest(arguments: arguments, folder: base["PWD"] ?? FileManager.default.currentDirectoryPath, caller: caller)
         if let api, api.work(for: call, request: request, input: { input ?? "" }) != nil,
            let work = api.work(for: api.admit(call, request: request), request: request, input: { input ?? "" }) {
-            return answer { await work() }
+            return work
         }
         let child = ScriptProcess(url: URL(fileURLWithPath: "/usr/bin/env"), arguments: ["openspot"] + arguments, mode: .once(input: input), dataName: dataName, variables: own, careful: careful?.uses, base: base)
         child.channel = caller.flatMap { callers?.channel(for: $0) }
-        return answer { await Self.answer(of: child) }
+        return { await Self.answer(of: child) }
     }
 
     private func answered(_ arguments: [String], _ answer: CommandAnswer) -> [String: Any] {

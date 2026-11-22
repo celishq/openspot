@@ -89,4 +89,58 @@ final class InlineHandlersTests: SpotRunsCase {
 
         XCTAssertEqual(Frame(text: text).outputs, [.init(key: "said", value: "No time left")], text)
     }
+
+    private func shortLimit() {
+        runs.quit()
+        runs = SpotRuns(environment: ProcessInfo.processInfo.environment, showLimit: 0.2, clock: clock.value, stopPause: 0.2)
+        takeCalls()
+    }
+
+    private func outcome(of id: String, _ handler: String) async throws -> (outcome: InlineCall.Outcome, seconds: TimeInterval) {
+        let script = runs.script(of: try spot(id))
+        defer { script.end() }
+        let call = InlineCall(arguments: [handler])
+        let started = Date()
+        script.send(call)
+        let outcome = await call.outcome()
+        return (outcome, Date().timeIntervalSince(started))
+    }
+
+    func testAHandlerThatRunsPastItsLimitAfterAnAwaitIsStopped() async throws {
+        shortLimit()
+        try inline("spinner", toml: "[actions.spin]", """
+        export default {
+          async spin() { await null; const end = Date.now() + 2000; while (Date.now() < end) {} return "text=a\\n" },
+        }
+        """)
+
+        let (outcome, seconds) = try await outcome(of: "spinner", "spin")
+
+        guard case .failed(let error) = outcome else { return XCTFail("the loop was not stopped") }
+        XCTAssertEqual(error as? SpotError, .timedOut)
+        XCTAssertLessThan(seconds, 1.5)
+    }
+
+    func testTheTimeAHandlerRunsAddsUpAcrossItsAwaits() async throws {
+        shortLimit()
+        try script("ticker", toml: "[actions.tick]", log: "ticker-log", "")
+        try inline("spinner", toml: "[actions.spin]\n[bindings]\nticker = { spot = 'ticker' }", """
+        export default {
+          async spin(input, env) {
+            for (let i = 0; i < 8; i++) {
+              const end = Date.now() + 100
+              while (Date.now() < end) {}
+              await env.ticker.tick()
+            }
+            return "text=a\\n"
+          },
+        }
+        """)
+
+        let (outcome, _) = try await outcome(of: "spinner", "spin")
+
+        guard case .failed(let error) = outcome else { return XCTFail("the handler ran past its limit") }
+        XCTAssertEqual(error as? SpotError, .timedOut)
+        XCTAssertLessThan(log("ticker-log").count, 8)
+    }
 }

@@ -35,6 +35,10 @@ final class InlineCall: @unchecked Sendable {
         lock.withLock { stopped }
     }
 
+    var isDone: Bool {
+        lock.withLock { isFinished }
+    }
+
     func stop() {
         lock.withLock { stopped = true }
     }
