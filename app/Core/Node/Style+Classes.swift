@@ -143,6 +143,7 @@ extension Style {
 
     private static func size(_ value: String) -> Length? {
         if value == "full" { return .full }
+        if value == "px" { return .line }
         if let share = fractions[value] { return .fraction(share) }
         return steps.contains(value) ? Double(value).map(Length.steps) : nil
     }

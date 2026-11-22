@@ -24,6 +24,11 @@ final class ClassStyleTests: XCTestCase {
         XCTAssertEqual(Style(classes: "hidden flex").isHidden, false)
     }
 
+    func testAHairlineIsTheHeightOfADivider() {
+        XCTAssertEqual(Style(classes: "h-px").height, .line)
+        XCTAssertEqual(Style.Length.line.points(of: 100), SpotTokens.dividerHeight)
+    }
+
     func testAlignmentClassesPlaceTheChildrenOnBothAxes() {
         let style = Style(classes: "items-center justify-between self-end")
         XCTAssertEqual(style.items, .center)

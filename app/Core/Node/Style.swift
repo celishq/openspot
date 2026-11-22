@@ -21,6 +21,7 @@ public struct Style: Equatable, Sendable {
         case steps(Double)
         case part
         case group
+        case line
         case full
         case fraction(Double)
 
@@ -29,6 +30,7 @@ public struct Style: Equatable, Sendable {
             case .steps(let count): CGFloat(count) * SpotTokens.spaceUnit
             case .part: SpotTokens.partGap
             case .group: SpotTokens.partGroupGap
+            case .line: SpotTokens.dividerHeight
             case .full: whole
             case .fraction(let share): whole * CGFloat(share)
             }
