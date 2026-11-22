@@ -46,6 +46,15 @@ final class ThemeTests: XCTestCase {
         XCTAssertEqual(theme.layout.type.body, 15)
     }
 
+    func testAVeilBackdropBlursAndTintsWithItsOwnColour() {
+        let theme = Theme(text: "[dark]\nbackdrop-tint = \"#00000040\"\n\n[look]\nbackdrop = \"veil\"\n\n[advanced]\nbackdrop-blur = 10\n")
+
+        XCTAssertEqual(theme.faults, [])
+        XCTAssertEqual(theme.layout.backdrop.style, .veil)
+        XCTAssertEqual(theme.layout.backdrop.blur, 10)
+        XCTAssertEqual(theme.colours.dark.backdropTint, ThemeColor(text: "#00000040"))
+    }
+
     func testTheColoursOfALookFollowFromItsChoices() {
         let dark = Theme(text: dracula).colours.dark
 
@@ -235,7 +244,7 @@ final class ThemeTests: XCTestCase {
             "theme.toml: [dark] background is a colour such as #00000099.",
             "theme.toml: [dark] fill is a strength from 0 to 1, such as 0.2.",
             "theme.toml: [look] glass is clear or regular.",
-            "theme.toml: [look] backdrop is blur or tint.",
+            "theme.toml: [look] backdrop is blur or tint or veil.",
             "theme.toml: [look] reach is tiles or screen.",
             "theme.toml: [look] corner is a number of points from 0 to 100, such as 3.",
             "theme.toml: [look] density is a factor from 0.25 to 4, such as 1.5.",

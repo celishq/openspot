@@ -5,6 +5,7 @@ extension Theme {
         public enum Style: String, CaseIterable, Equatable, Sendable {
             case blur
             case tint
+            case veil
         }
 
         public enum Reach: String, CaseIterable, Equatable, Sendable {
