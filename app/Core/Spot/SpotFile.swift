@@ -68,6 +68,9 @@ public struct SpotFile: Equatable, Sendable {
         if let view, URL(fileURLWithPath: view).pathExtension != SwiftProgram.sourceExtension {
             throw SpotError.fault("\(name) needs a Swift file for its view, such as view = \"\(url.deletingPathExtension().lastPathComponent).swift\"")
         }
+        if manifest.views.contains(where: { URL(fileURLWithPath: $0).pathExtension != SwiftProgram.sourceExtension }) {
+            throw SpotError.fault("\(name) needs a Swift file for each of its views, such as views = [\"liquid.swift\"]")
+        }
         let sources = manifest.source
         if !sources.isEmpty, url.pathExtension != SwiftProgram.sourceExtension {
             throw SpotError.fault("\(name) has source = [\"\(sources[0])\"], which only a Swift spot takes. Remove it, or write the spot in a .swift file")
@@ -108,6 +111,7 @@ public struct SpotFile: Equatable, Sendable {
             settings: manifest.settings.filter { Manifest.Setting.isKey($0.id) },
             view: view.map { Self.path($0, beside: url) },
             viewDate: view.flatMap { Self.viewDate(of: Self.path($0, beside: url), script: url) },
+            views: Dictionary(manifest.views.map { (URL(fileURLWithPath: $0).deletingPathExtension().lastPathComponent, Self.path($0, beside: url)) }) { first, _ in first },
             sources: sources,
             emits: manifest.emits,
             pages: manifest.pages,

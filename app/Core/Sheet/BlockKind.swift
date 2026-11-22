@@ -18,6 +18,7 @@ public struct BlockKind: Sendable, Equatable {
     let control: @Sendable (TextBlock) -> SpotPart.Control
     let faults: @Sendable (TextBlock) -> [String]
     let field: (@Sendable (TextBlock, String, String) -> ItemForm.Field)?
+    let source: String?
 
     init(
         name: String,
@@ -32,7 +33,8 @@ public struct BlockKind: Sendable, Equatable {
         looks: [String: SpotPart.Look] = [:],
         control: @escaping @Sendable (TextBlock) -> SpotPart.Control = { _ in .none },
         faults: @escaping @Sendable (TextBlock) -> [String] = PartCatalog.keyFaults,
-        field: (@Sendable (TextBlock, String, String) -> ItemForm.Field)? = nil
+        field: (@Sendable (TextBlock, String, String) -> ItemForm.Field)? = nil,
+        source: String? = nil
     ) {
         self.name = name
         self.word = word ?? name
@@ -47,6 +49,11 @@ public struct BlockKind: Sendable, Equatable {
         self.control = control
         self.faults = faults
         self.field = field
+        self.source = source
+    }
+
+    init(view word: String, source: String) {
+        self.init(name: word, isOpen: true, faults: { _ in [] }, source: source)
     }
 
     public static func == (first: BlockKind, second: BlockKind) -> Bool {

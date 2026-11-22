@@ -178,6 +178,21 @@ final class SpotKeysTests: XCTestCase {
         }
     }
 
+    func testEachFileOfViewsIsAKindNamedByItsStem() throws {
+        let spot = try XCTUnwrap(try SpotFile(script: URL(fileURLWithPath: "/spots/cups.sh"), manifest: manifest("title = 'Cups'\nviews = ['liquid.swift', 'parts/dial.swift']"), id: "cups").spots.first)
+
+        XCTAssertEqual(spot.views, ["liquid": "/spots/liquid.swift", "dial": "/spots/parts/dial.swift"])
+        XCTAssertEqual(spot.kinds.count, BlockKind.all.count + 2)
+    }
+
+    func testAViewsFileThatIsNoSwiftFileIsRefused() throws {
+        let manifest = try manifest("title = 'Cups'\nviews = ['liquid.txt']")
+
+        XCTAssertThrowsError(try SpotFile(script: URL(fileURLWithPath: "/spots/cups.sh"), manifest: manifest, id: "cups")) { error in
+            XCTAssertEqual((error as? SpotError)?.reason, "Cups needs a Swift file for each of its views, such as views = [\"liquid.swift\"]")
+        }
+    }
+
     func testASpotTomlOverItsLimitIsAFault() throws {
         let keywords = (0..<8000).map { "'word\($0)'" }.joined(separator: ", ")
 

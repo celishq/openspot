@@ -15,7 +15,7 @@ enum SpotSheetPicture {
 
     static func run(text: String, path: String, view source: String? = nil, spot: Spot? = nil) -> Never {
         SpotPicture.start()
-        let output = Frame(text: text)
+        let output = Frame(text: text, kinds: spot?.kinds ?? BlockKind.all)
         let panel = SheetParts(output: output)
         guard panel != nil || !output.items.isEmpty else {
             FileHandle.standardError.write(Data("The sheet has no blocks and no rows.\n".utf8))

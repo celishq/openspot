@@ -22,6 +22,7 @@ public struct SpotFacts: Equatable, Sendable {
     public internal(set) var isOnGrid: Bool
     public let view: String?
     public let viewDate: Date?
+    public let views: [String: String]
     public internal(set) var sources: [String]
     public let emits: [String]
     public let pages: [String]
@@ -37,6 +38,10 @@ public struct SpotFacts: Equatable, Sendable {
     public let edits: SpotEdits?
     public let starts: SpotStart?
     public internal(set) var editedFile: URL?
+
+    public var kinds: [BlockKind] {
+        views.isEmpty ? BlockKind.all : BlockKind.all + views.sorted { $0.key < $1.key }.map { BlockKind(view: $0.key, source: $0.value) }
+    }
 
     public var editsSpots: Bool {
         edits == .spots
