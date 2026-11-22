@@ -18,7 +18,7 @@ public struct FrameCheck: Equatable, Sendable {
         var faults: [String] = []
         for block in blocks {
             if block.fields.first?.key == BlockKind.box {
-                faults += PartCatalog.faults(in: block, kind: BlockKind(name: BlockKind.box))
+                faults += BlockKind.faults(in: block, kind: BlockKind(name: BlockKind.box))
                 continue
             }
             guard let kind = BlockKind.of(block, in: kinds), let id = block.value(kind.word) else { continue }
@@ -31,11 +31,11 @@ public struct FrameCheck: Equatable, Sendable {
                 continue
             }
             guard kind.presses, !placed.contains(id) else {
-                faults += PartCatalog.faults(in: block, kind: kind)
+                faults += BlockKind.faults(in: block, kind: kind)
                 continue
             }
             if taken.contains(id), id != Frame.open { faults.append("an action cannot be called \(id)") }
-            if id != Frame.open, CommandAction(id: id, block: block) == nil { faults += PartCatalog.actionFaults(in: block) }
+            if id != Frame.open, CommandAction(id: id, block: block) == nil { faults += BlockKind.actionFaults(in: block) }
         }
         faults += output.tree.faults
         for id in taken where output.parts.contains(where: { $0.id == id }) {

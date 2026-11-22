@@ -1,13 +1,13 @@
 import Foundation
 
 public struct SpotState: Equatable, Sendable {
-    public let title: String
-    public let subtitle: String?
-    public let on: Bool?
-    public let level: Double?
+    public private(set) var title: String
+    public private(set) var subtitle: String?
+    public private(set) var on: Bool?
+    public private(set) var level: Double?
     public let min: Double?
     public let max: Double?
-    public let isOnGrid: Bool
+    public private(set) var isOnGrid: Bool
     public let control: String?
     public private(set) var face: CardFace
 
@@ -55,12 +55,11 @@ public struct SpotState: Equatable, Sendable {
     }
 
     public func taking(_ output: Frame) -> SpotState {
-        var on = self.on
-        var level = self.level
+        var next = self
         let part = output.parts.first { $0.id == control }
-        if case .toggle(let value)? = part?.control { on = value }
-        if case .slider(let value, _, _)? = (part ?? output.valuePart)?.control { level = value }
-        return SpotState(title: title, subtitle: subtitle, on: on, level: level, min: self.min, max: self.max, isOnGrid: isOnGrid, control: control, face: face)
+        if case .toggle(let value)? = part?.control { next.on = value }
+        if case .slider(let value, _, _)? = (part ?? output.valuePart)?.control { next.level = value }
+        return next
     }
 
     public func setting(_ value: String, of id: String) -> SpotState {
@@ -70,21 +69,27 @@ public struct SpotState: Equatable, Sendable {
     }
 
     public func switched(on: Bool) -> SpotState {
-        SpotState(title: title, subtitle: subtitle, on: on, level: level, min: self.min, max: self.max, isOnGrid: isOnGrid, control: control, face: face)
+        var next = self
+        next.on = on
+        return next
     }
 
     public func showing(title: String?, detail: String?) -> SpotState {
-        SpotState(title: title ?? self.title, subtitle: detail ?? subtitle, on: on, level: level, min: self.min, max: self.max, isOnGrid: isOnGrid, control: control, face: face)
+        var next = self
+        next.title = title ?? self.title
+        next.subtitle = detail ?? subtitle
+        return next
     }
 
     func onGrid(_ isOnGrid: Bool) -> SpotState {
-        SpotState(title: title, subtitle: subtitle, on: on, level: level, min: self.min, max: self.max, isOnGrid: isOnGrid, control: control, face: face)
+        var next = self
+        next.isOnGrid = isOnGrid
+        return next
     }
 
     public func withLevel(_ value: Double) -> SpotState {
-        let low = self.min ?? 0
-        let high = self.max ?? 100
-        let next = Swift.min(Swift.max(value, low), high)
-        return SpotState(title: title, subtitle: subtitle, on: on, level: next, min: self.min, max: self.max, isOnGrid: isOnGrid, control: control, face: face)
+        var next = self
+        next.level = Swift.min(Swift.max(value, self.min ?? 0), self.max ?? 100)
+        return next
     }
 }

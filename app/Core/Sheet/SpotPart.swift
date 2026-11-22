@@ -92,7 +92,7 @@ public struct SpotPart: Equatable, Sendable, Identifiable {
         look = block.value("type").flatMap { kind.looks[$0] } ?? (named == .tick ? nil : named)
         let icon = Icon(text: block.value("icon"))
         tone = block.value("tone").flatMap(MetricValue.Tone.init)
-        color = kind.takesColor ? block.value("color").flatMap { PartCatalog.isColor($0) ? $0 : nil } : nil
+        color = kind.takesColor ? block.value("color").flatMap { BlockKind.isColor($0) ? $0 : nil } : nil
         symbol = kind.presses ? nil : icon?.symbol
         press = kind.presses ? icon?.symbol.map(Press.symbol) ?? .line : .none
         control = kind.control(block)

@@ -94,7 +94,7 @@ public struct SpotItem: Equatable, Sendable {
     }
 
     private static func fields(of block: TextBlock) -> [TextBlock.Field] {
-        guard block.fields.dropFirst().contains(where: { ItemKey(rawValue: $0.key) == nil && !PartCatalog.keys.contains($0.key) && $0.key != Self.type }) else { return [] }
+        guard block.fields.dropFirst().contains(where: { ItemKey(rawValue: $0.key) == nil && !BlockKind.commonKeys.contains($0.key) && $0.key != Self.type }) else { return [] }
         return block.fields.filter { $0.key != ViewNode.parentKey && $0.key != ViewNode.classKey }
     }
 
