@@ -27,7 +27,7 @@ final class ProtocolContractTests: XCTestCase {
             + keys(pages.filter { $0[1] == "the manifest" }.map { $0[0] })
             + keys(appWords.filter { $0[1] == "`spot.toml`" }.map { $0[0] })
 
-        let docTables = manifest.filter { $0[0].hasPrefix("`[") }.flatMap { RepoDoc.code($0[0]) }.map { String($0.dropFirst().prefix { $0 != "." }) }
+        let docTables = manifest.filter { $0[0].hasPrefix("`[") }.flatMap { RepoDoc.code($0[0]) }.map { String($0.dropFirst().prefix { $0 != "." && $0 != "]" }) }
 
         let rootKeys = Set(RootKey.allCases.map(\.rawValue))
         let docRootKeys = keys([doc.section("The root").components(separatedBy: "- The root can come")[0]])

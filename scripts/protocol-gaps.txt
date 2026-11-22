@@ -1,5 +1,18 @@
-manifest key stay: the code takes it, and PROTOCOL.md does not name it
-manifest table actions: the code takes it, and PROTOCOL.md does not name it
-root key error: the code takes it, and PROTOCOL.md does not name it
-manifest table bindings: the code takes it, and PROTOCOL.md does not name it
-manifest table events: the code takes it, and PROTOCOL.md does not name it
+call command: PROTOCOL.md names it, and the code does not take it
+call due: the code takes it, and PROTOCOL.md does not name it
+call every: PROTOCOL.md names it, and the code does not take it
+call open: the code takes it, and PROTOCOL.md does not name it
+call press: PROTOCOL.md names it, and the code does not take it
+call schedule: PROTOCOL.md names it, and the code does not take it
+call search: PROTOCOL.md names it, and the code does not take it
+event clock.<seconds>: the code takes it, and PROTOCOL.md does not name it
+event search.text: the code takes it, and PROTOCOL.md does not name it
+item key form: the code takes it, and PROTOCOL.md does not name it
+manifest key drop: the code takes it, and PROTOCOL.md does not name it
+manifest key emits: the code takes it, and PROTOCOL.md does not name it
+manifest key mode: the code takes it, and PROTOCOL.md does not name it
+manifest key offers: the code takes it, and PROTOCOL.md does not name it
+manifest key on: the code takes it, and PROTOCOL.md does not name it
+manifest key placeholder: the code takes it, and PROTOCOL.md does not name it
+manifest table commands: the code takes it, and PROTOCOL.md does not name it
+manifest table on: PROTOCOL.md names it, and the code does not take it
