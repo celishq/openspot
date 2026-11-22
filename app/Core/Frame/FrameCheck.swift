@@ -17,6 +17,10 @@ public struct FrameCheck: Equatable, Sendable {
         let taken = Self.calls.filter { $0 != "drag" || listed.contains { $0.value(ItemKey.file) != nil } }
         var faults: [String] = []
         for block in blocks {
+            if block.fields.first?.key == BlockKind.box {
+                faults += PartCatalog.faults(in: block, kind: BlockKind(name: BlockKind.box))
+                continue
+            }
             guard let kind = BlockKind.of(block, in: kinds), let id = block.value(kind.word) else { continue }
             if listed.contains(block) {
                 if taken.contains(id) { faults.append("an item cannot be called \(id)") }
@@ -37,7 +41,11 @@ public struct FrameCheck: Equatable, Sendable {
         for id in taken where output.parts.contains(where: { $0.id == id }) {
             faults.append("a part cannot be called \(id)")
         }
-        if !output.tree.isWritten, !output.parts.isEmpty { faults += SheetFaults.of(parts: output.parts) }
+        if output.tree.isWritten {
+            faults += output.tree.sheetFaults(parts: output.parts)
+        } else if !output.parts.isEmpty {
+            faults += SheetFaults.of(parts: output.parts)
+        }
         var told = Set<String>()
         for field in root?.fields ?? [] where !RootKey.isKey(field.key, isApp: isApp) && told.insert(field.key).inserted {
             faults.append("the root has an unknown key: \(field.key)")

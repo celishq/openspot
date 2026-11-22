@@ -41,15 +41,20 @@ public struct ViewTree: Equatable, Sendable {
         faults += style.unknown.map { "the root has an unknown class: \($0)" }
         var order: [String] = []
         var found: [String: TextBlock] = [:]
+        var twice: [TextBlock] = []
         for block in blocks {
             guard let first = block.fields.first, !first.value.isEmpty, first.key != BlockKind.option,
-                  FrameRoot.isKind(first.key, in: kinds), found[first.value] == nil,
+                  FrameRoot.isKind(first.key, in: kinds),
                   first.key != BlockKind.button.word || block.value("scope") == nil else { continue }
+            guard found[first.value] == nil else {
+                twice.append(block)
+                continue
+            }
             found[first.value] = block
             order.append(first.value)
         }
         let named = order.filter { id in found[id]?.value(ViewNode.parentKey).map { $0 != id && found[$0] != nil } ?? false }
-        isWritten = rootClasses != nil || !named.isEmpty || order.contains { found[$0]?.fields.first?.key == BlockKind.box }
+        isWritten = rootClasses != nil || !named.isEmpty || order.contains { found[$0]?.fields.first?.key == BlockKind.box || found[$0]?.value(ViewNode.classKey) != nil }
         var parents: [String: String] = [:]
         for id in order {
             guard let parent = found[id]?.value(ViewNode.parentKey) else { continue }
@@ -83,6 +88,12 @@ public struct ViewTree: Equatable, Sendable {
             places.formUnion(style.named)
         }
         listed = Set(nodes.values.filter { $0.parent.flatMap { nodes[$0] }?.kind == BlockKind.items }.map(\.id))
+        var told: Set<String> = []
+        for block in twice where isWritten {
+            guard let id = block.fields.first?.value, !listed.contains(id),
+                  block.value(ViewNode.parentKey).flatMap({ nodes[$0] })?.kind != BlockKind.items, told.insert(id).inserted else { continue }
+            faults.append("two parts are called \(id)")
+        }
         places.formUnion(self.style.named)
     }
 }
