@@ -733,10 +733,15 @@ Each kind of block, the keys of its own and the call it sends.
   search field of the [items](#items), and `hotkey`. A choice with
   `type=multiple` lets the user choose several options.
 - `parent=<id>` puts a block inside the block with that id, in the order of its lines, and `class` holds its classes,
-  such as `flex-row gap-2`. Once the frame has a `box`, a `class` on its root or a block inside another, the sheet draws
-  its blocks as that tree, and no block is an item; other places don't draw it yet. `openspot check spots` reports an
+  such as `flex-row gap-2`. Once the frame has a `box`, a `class` on its root or a block inside another, the sheet, a
+  float and a window draw its blocks as that tree, and no block is an item. `openspot check spots` reports an
   unknown class, and then a `parent` that names no block. Until then, `parent` on an item keeps its meaning in
   [Items](#items).
+- A prefix applies a class only in a place or a state, such as `card:hidden`: `sheet:`, `card:`, `bar:`, `float:` and
+  `window:` in that place, `small:`, `wide:`, `square:`, `strip:` and `large:` on a card of that size, `hover:`,
+  `pressed:`, `selected:` and `focus:` in that state, and `dark:` and `light:` in that appearance. A card draws the
+  tree when a class names `card:` or its size, and its value is then the one value that shows there. The menu bar
+  shows the first value that shows on `bar:` once a class names it.
 - `grow=false` keeps a block to its own lines where it would take the free height; see [Layouts](#layouts).
 - A `hotkey` field shows keycaps, and records a key at Return or a click on it, or when a new frame gives it
   `recording=true`. Every key goes to it, Esc brings back its key, and a shortcut sends `<id> <key>`. While a sheet

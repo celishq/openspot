@@ -144,7 +144,10 @@ struct SpotSheetLayer: View {
 
     @ViewBuilder
     private func cardLook(_ card: SpotsModel.Entry, size: SpotSize) -> some View {
-        if card.item == nil, let layout = card.state.face.layout(for: size) {
+        if card.item == nil, card.state.face.tree.draws(on: size) {
+            CardTreeView(tree: card.state.face.tree, size: size)
+                .padding(SpotTokens.cardPadding(for: size, isDrawn: true))
+        } else if card.item == nil, let layout = card.state.face.layout(for: size) {
             SpotCardDrawing(layout: layout, face: card.state.face, card: size, view: { room in
                 card.spot.view.map { SpotCustomView(source: $0, values: card.state.values, card: size, room: room, views: SpotViews.shared) }
             }, onSlot: { _, _ in })

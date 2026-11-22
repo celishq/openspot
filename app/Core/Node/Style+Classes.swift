@@ -20,6 +20,7 @@ extension Style {
             if !isKnown { unknown.append(String(word)) }
         }
         variants = variants.filter { $0.value != Style() }
+        named = variants.keys.reduce(into: []) { $0.formUnion($1) }
     }
 
     private mutating func take(_ word: String) -> Bool {

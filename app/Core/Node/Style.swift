@@ -100,6 +100,7 @@ public struct Style: Equatable, Sendable {
     public var hasBorder = false
     public var clips = false
     public var variants: [Set<Variant>: Style] = [:]
+    public var named: Set<Variant> = []
     public var unknown: [String] = []
 
     public init() {}
