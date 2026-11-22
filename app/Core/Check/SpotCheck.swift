@@ -107,6 +107,12 @@ public struct SpotCheck: Sendable {
             findings.append(Finding(spot: script.id, file: script.url.path, fault: fault))
         }
         for script in scan.scripts {
+            for (kind, view) in script.views.sorted(by: { $0.key < $1.key }) where BlockKind.words.contains(kind) {
+                let fault = "the view \(URL(fileURLWithPath: view).lastPathComponent) has the name of the kind \(kind), so a \(kind) block never reaches it. Rename the file"
+                findings.append(Finding(spot: script.id, file: view, fault: fault))
+            }
+        }
+        for script in scan.scripts {
             guard !Task.isCancelled else { return findings }
             for view in script.views.values.sorted() {
                 do {
@@ -146,7 +152,8 @@ public struct SpotCheck: Sendable {
             var seen: Set<String> = []
             var told: Set<String> = []
             for line in block {
-                guard !isView, let key = line.split(separator: "=", maxSplits: 1).first.map(String.init), !lists.contains(key) else { continue }
+                guard let key = line.split(separator: "=", maxSplits: 1).first.map(String.init) else { continue }
+                guard isView ? ViewNode.commonKeys.contains(key) : !lists.contains(key) else { continue }
                 if !seen.insert(key).inserted, told.insert(key).inserted { faults.append("the block \(name) has \(key) twice, \(fix)") }
             }
         }

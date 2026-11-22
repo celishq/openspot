@@ -195,6 +195,8 @@ and a Forget chip at its end. The list of the items fills the rest of the sheet 
 
 - `parent=<id>` puts a block inside the block with that id. A block with no `parent` sits in the root, and blocks that
   share a parent keep the order of their lines, so a block that comes in a later frame joins the end.
+- A frame has a layout once it holds a `box`, a `parent` or a `class`, even one variant on one block, such as
+  `class=bar:flex`. Each block then draws in the sheet, and only the blocks inside the `items` are items.
 - A `box` holds blocks and draws nothing of its own. It lays them out in a column, or in a row with `flex-row`, a grid
   with `grid grid-cols-<n>`, or layers with `relative`. The root is a box too.
 - In a grid, `col-span-<n>` and `row-span-<n>` make a block cover more cells. In layers, `absolute` with `inset-0`, or
@@ -204,6 +206,8 @@ and a Forget chip at its end. The list of the items fills the rest of the sheet 
 - `gap-part` and `gap-group` are the gaps that Openspot's own sheets use. [Classes](#classes) lists every class.
 - A `parent` that names no block, and an unknown class, are faults that `openspot check spots` reports. The block then
   sits in the root, and the class is skipped, so a frame still draws.
+- The check also reports two blocks with one id, more than one `look=strong`, a title that may not fit its place, and a
+  `text` that its classes make shorter than its words. It counts each text as one line, so it can't see words that wrap.
 
 ## Places
 
@@ -523,6 +527,8 @@ With `views = ["liquid.swift"]` in the manifest, `liquid.swift` draws the block 
 - Each file of `views` is a kind, named by its file: `views = ["liquid.swift"]` gives `liquid=<id>`. It takes `parent`
   and `class` like any block, and fills the room its classes give it. A view has no size of its own, so give it one,
   such as `class=h-24`.
+- A key of the view's own can repeat, and `spot.all` reads each value. A key that every kind takes, such as `title` or
+  `class`, can't. A file named like a kind of Openspot, such as `text.swift`, is a fault, since that kind draws the block.
 - The file declares `struct SpotView: View` with `let spot: SpotInput`, with no top-level code and no method
   `update()`.
 

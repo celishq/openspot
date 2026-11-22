@@ -143,4 +143,21 @@ final class SpotCheckTests: XCTestCase {
 
         XCTAssertEqual(findings.map(\.fault), ["cannot read the item toast=Saved", "cannot read the item pop=true"])
     }
+
+    func testAViewNamedLikeAKindOfBlockIsReported() async throws {
+        let file = folder.spotFile("meter")
+        try "#!/bin/sh\n".writeScript(to: file, toml: "views = ['text.swift', 'dial.swift']")
+        for name in ["text.swift", "dial.swift"] {
+            try Data("struct SpotView {}\n".utf8).write(to: file.deletingLastPathComponent().appendingPathComponent(name))
+        }
+        let tools = folder.appendingPathComponent("tools")
+        try "#!/bin/sh\nexit 0\n".writeScript(to: tools.appendingPathComponent("xcode-select"))
+        try "#!/bin/sh\nwhile [ $# -gt 0 ]; do [ \"$1\" = -o ] && printf built > \"$2\"; shift; done\n".writeScript(to: tools.appendingPathComponent("swiftc"))
+        try "#!/bin/sh\nwhile [ $# -gt 0 ]; do [ \"$1\" = -output ] && printf both > \"$2\"; shift; done\n".writeScript(to: tools.appendingPathComponent("lipo"))
+        let views = ViewLibrary(cache: folder.appendingPathComponent("cache"), tools: tools)
+
+        let findings = await SpotCheck(folder: SpotsFolder(url: folder), views: views).findings()
+
+        XCTAssertEqual(findings.map(\.fault), ["the view text.swift has the name of the kind text, so a text block never reaches it. Rename the file"])
+    }
 }

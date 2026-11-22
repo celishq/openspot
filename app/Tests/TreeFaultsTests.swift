@@ -1,0 +1,60 @@
+import XCTest
+@testable import OpenspotCore
+
+final class TreeFaultsTests: XCTestCase {
+    func testABoxWithAnUnknownKeyIsReported() {
+        let text = "frame=\n\nbox=head\nclass=flex-row\nglow=1\n\ntext=name\nparent=head\ntitle=Home\n"
+
+        XCTAssertEqual(FrameCheck(text: text).partFaults, ["the part head has an unknown key: glow"])
+    }
+
+    func testAKeyThatOpenspotReadsTwiceOnAViewIsReportedAndAKeyOfTheViewMayRepeat() {
+        let kinds = BlockKind.kinds(views: ["meter": "/spot/meter.swift"])
+        let text = "frame=\n\nmeter=level\nvalue=1\nvalue=2\nday=1\nday=2\ntitle=A\ntitle=B\n"
+
+        XCTAssertEqual(SpotCheck.brokenBlocks(in: text, kinds: kinds), [
+            "the block meter=level has title twice, as a value with a new line prints. Print each value from data with openspot_kv, openspot_item or esc"
+        ])
+    }
+
+    func testATextShorterThanItsWordsIsReported() {
+        let text = "frame=\nclass=gap-part\n\ntext=name\ntitle=Home\ndetail=82 Mb/s\nclass=h-4\n"
+
+        XCTAssertEqual(FrameCheck(text: text).partFaults, ["the text name is 16pt tall, so its words are cut. Give it more room"])
+    }
+
+    func testOnlyOnePartOfATreeCanBeStrong() {
+        let text = "frame=\nclass=flex-row gap-part\n\nbutton=save\ntitle=Save\nlook=strong\n\nbutton=send\ntitle=Send\nlook=strong\n"
+
+        XCTAssertEqual(FrameCheck(text: text).partFaults, ["only one part can use look=strong"])
+    }
+
+    func testTwoPartsOfATreeWithOneIdAreReported() {
+        let text = "frame=\nclass=gap-part\n\ntext=name\ntitle=Home\n\nswitch=name\ntitle=Wi-Fi\n"
+
+        XCTAssertEqual(FrameCheck(text: text).partFaults, ["two parts are called name"])
+    }
+
+    func testATitleThatMayNotFitItsPlaceInARowIsReported() {
+        let switches = (1...4).map { "switch=s\($0)\ntitle=A switch with a long title \($0)\nvalue=true\n" }.joined(separator: "\n")
+        let text = "frame=\nclass=flex-row gap-part\n\n" + switches
+
+        XCTAssertEqual(FrameCheck(text: text).partFaults, (1...4).map { "the title of the part s\($0) may not fit its cell" })
+        XCTAssertEqual(FrameCheck(text: "frame=\nclass=gap-part\n\n" + switches).partFaults, [])
+    }
+
+    func testATreeThatScrollsIsNeverTooTall() {
+        let texts = (1...20).map { "text=t\($0)\ntitle=Line \($0)\n" }.joined(separator: "\n")
+        let text = "frame=\nclass=gap-part\n\nfield=note\ntype=multiline\nvalue=Hi\n\n" + texts
+
+        XCTAssertEqual(FrameCheck(text: text).partFaults, [])
+    }
+
+    func testAFrameWhoseOnlyClassIsOneVariantOnOneBlockIsAWrittenTree() {
+        let frame = Frame(text: "number=cpu\nclass=bar:flex\nvalue=12\nmax=100\n\ntext=note\ntitle=Busy\n")
+
+        XCTAssertTrue(frame.tree.isWritten)
+        XCTAssertEqual(frame.items, [])
+        XCTAssertEqual(frame.parts.map(\.id), ["cpu", "note"])
+    }
+}

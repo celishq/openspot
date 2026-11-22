@@ -3,6 +3,7 @@ import Foundation
 public struct ViewNode: Equatable, Sendable, Identifiable {
     static let parentKey = "parent"
     static let classKey = "class"
+    static let commonKeys: Set<String> = [parentKey, classKey, "title", "detail", "tone", "icon"]
 
     public let id: String
     public let kind: String

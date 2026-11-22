@@ -144,7 +144,7 @@ final class ViewVariantTests: XCTestCase {
     func testAClassThatNamesTheBarOnAnyBlockDrawsTheMenuBar() {
         let output = Frame(text: "number=battery\nvalue=84\nmax=100\nclass=bar:flex\n\ntext=a\ntitle=A\n")
 
-        XCTAssertFalse(output.tree.isWritten)
+        XCTAssertTrue(output.tree.isWritten)
         XCTAssertTrue(output.hasBar)
         XCTAssertEqual(MetricValue(output: output.barred)?.title, "84")
     }
