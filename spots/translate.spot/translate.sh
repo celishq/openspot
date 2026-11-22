@@ -91,22 +91,27 @@ show() {
 
   printf 'frame=\nclass=gap-part\n\n'
 
-  printf 'choice=source\nvalue=%s\n\noption=auto\ntitle=%s\n' "$source" "$auto"
+  printf 'box=pair\nclass=relative grow gap-part\n\nbox=top\nparent=pair\nclass=grow gap-part\n\n'
+
+  printf 'choice=source\nparent=top\nclass=self-start\nvalue=%s\n\noption=auto\ntitle=%s\n' "$source" "$auto"
   options
   printf '\n'
 
-  printf 'field=input\nclass=grow\ntype=multiline\nplaceholder=Type or paste text\n'
+  printf 'box=text\nparent=top\nclass=relative grow\n\n'
+  printf 'field=input\nparent=text\nclass=absolute inset-0\ntype=multiline\nplaceholder=Type or paste text\n'
   openspot_kv value "$input"
   printf '\n'
 
-  printf 'box=middle\nclass=flex-row items-center gap-part\n\nbox=line\nparent=middle\nclass=grow h-px bg-tile\n\n'
-  printf 'button=swap\nparent=middle\nicon=arrow.up.arrow.down\nshortcut=cmd+shift+s\nclose=false\n\n'
+  printf 'box=seam\nparent=pair\nclass=absolute inset-0 justify-center items-end pr-2\n\n'
+  printf 'button=swap\nparent=seam\nicon=arrow.up.arrow.down\nshortcut=cmd+shift+s\nclose=false\n\n'
 
-  printf 'choice=target\nvalue=%s\n' "$target"
+  printf 'box=bottom\nparent=pair\nclass=grow gap-part\n\n'
+
+  printf 'choice=target\nparent=bottom\nclass=self-start\nvalue=%s\n' "$target"
   options
   printf '\n'
 
-  printf 'box=result\nclass=relative grow\n\n'
+  printf 'box=result\nparent=bottom\nclass=relative grow\n\n'
   printf 'field=output\nparent=result\nclass=absolute inset-0\ntype=multiline\nvalue=%s\nplaceholder=Translation\nreadonly=true\n\n' "$output"
   printf 'box=corner\nparent=result\nclass=absolute inset-0 justify-end items-end p-2\n\n'
 
