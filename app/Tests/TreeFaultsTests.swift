@@ -61,4 +61,13 @@ final class TreeFaultsTests: XCTestCase {
         XCTAssertEqual(frame.items, [])
         XCTAssertEqual(frame.parts.map(\.id), ["cpu", "note"])
     }
+
+
+    func testABlockInABoxInsideTheItemsIsReported() {
+        let text = "frame=\n\nitems=list\n\nbox=group\nparent=list\n\ntext=a\nparent=group\ntitle=A\n\ntext=b\nparent=list\ntitle=B\n"
+
+        XCTAssertEqual(FrameCheck(text: text).partFaults, [
+            "the box group sits inside the items list, so it and the blocks inside it do not show. An item is one block"
+        ])
+    }
 }

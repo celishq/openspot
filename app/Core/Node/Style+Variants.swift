@@ -39,6 +39,7 @@ extension Style {
         next.weight = other.weight ?? weight
         next.textAlignment = other.textAlignment ?? textAlignment
         next.truncates = other.truncates || truncates
+        next.hidesWords = other.hidesWords || hidesWords
         next.lineLimit = other.lineLimit ?? lineLimit
         next.tabularNumbers = other.tabularNumbers || tabularNumbers
         next.ink = other.ink ?? ink

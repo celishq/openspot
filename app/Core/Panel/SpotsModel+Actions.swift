@@ -28,6 +28,7 @@ extension SpotsModel {
     func handleRowsPanelKey(_ key: ActionKey, _ panel: SheetParts) -> Bool {
         if let part = panel.selectedPart { return handleFocusKey(key, part) }
         openSheet?.landRows()
+        if key == ActionKey(name: "up"), openItems?.isOnFirstLine != false { return openSheet?.leaveRows(upward: true) == true }
         guard key == ActionKey(name: "down"), openItems?.isOnLastLine != false else { return false }
         return openSheet?.leaveRows() == true
     }
@@ -71,6 +72,7 @@ extension SpotsModel {
 
     public func setPart(_ part: SpotPart, to value: String) {
         openSheet?.set(part, to: value)
+        if part.closesOnSet, isShown { host.dismiss() }
     }
 
     public func pressPart(_ part: SpotPart) {

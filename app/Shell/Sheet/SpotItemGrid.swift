@@ -135,7 +135,7 @@ private struct SpotGridCell: View, Equatable {
 
     @ViewBuilder
     private var face: some View {
-        if item.look == .tile {
+        if item.showsWords {
             SpotTileWords(item: item, side: side)
         } else {
             SpotItemIcon(item: item, size: SpotTokens.listIconSize)

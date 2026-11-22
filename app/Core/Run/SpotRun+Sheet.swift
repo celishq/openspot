@@ -60,8 +60,8 @@ extension SpotRun {
         panel?.moveLine(by: lines) ?? false
     }
 
-    public func leaveRows() -> Bool {
-        panel?.leaveRows() ?? false
+    public func leaveRows(upward: Bool = false) -> Bool {
+        panel?.leaveRows(upward: upward) ?? false
     }
 
     public func focusPart(_ id: String) {

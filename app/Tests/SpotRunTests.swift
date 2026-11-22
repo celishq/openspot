@@ -185,11 +185,11 @@ final class SpotRunTests: XCTestCase {
         let sheet = made.sheet(for: Spot(id: "script", name: "script", url: url, kind: .list, subtitle: "A detail longer than its header", on: ShowEvents(moments: [.sheet])))
         sheet.open {}
         try await wait("the parts and rows") { sheet.panel?.showsRows == true && !sheet.isShowing }
-        XCTAssertEqual(sheet.top, SheetTop(header: 9, hasField: true))
+        XCTAssertEqual(sheet.top, SheetTop(header: 9, hasField: false))
 
         sheet.panel = SheetParts(output: Frame(text: "frame=\nclass=gap-part\n\nfield=find\ntype=search\n\nnumber=a\nvalue=2\n\nitems=list\n\ntext=b\nparent=list\ntitle=B\n"))
 
-        XCTAssertEqual(sheet.top, SheetTop(header: 9, hasField: true))
+        XCTAssertEqual(sheet.top, SheetTop(header: 9, hasField: false))
         XCTAssertEqual(sheet.panel?.top, sheet.top)
     }
 
@@ -769,5 +769,22 @@ final class SpotRunTests: XCTestCase {
         try await wait("the rows") { sheet.list.shown.count == 2 }
 
         XCTAssertEqual(changes, 1)
+    }
+
+
+    func testAGridKeepsTheDetailOfItsRootInItsHeader() async throws {
+        let kept = SheetHeader.shared
+        SheetHeader.shared = SheetHeader(width: { $0.count > 10 ? .infinity : 0 }, secondLine: 9)
+        defer { SheetHeader.shared = kept }
+        let url = folder.spotFile("script")
+        try "#!/bin/sh\nprintf 'frame=\\nclass=gap-part\\n\\nitems=list\\nclass=grid grid-cols-3\\n\\nfield=find\\ntype=search\\n\\ntext=a\\nparent=list\\ntitle=A\\n'\n".writeScript(to: url)
+        let made = SpotRuns()
+        runs.append(made)
+        let sheet = made.sheet(for: Spot(id: "script", name: "script", url: url, kind: .list, subtitle: "A detail longer than its header", on: ShowEvents(moments: [.sheet])))
+        sheet.open {}
+        try await wait("the row") { sheet.list.all.count == 1 && !sheet.isShowing }
+
+        XCTAssertEqual(sheet.shownState.subtitle, "A detail longer than its header")
+        XCTAssertEqual(sheet.top.header, 9)
     }
 }

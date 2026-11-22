@@ -563,15 +563,4 @@ final class SheetPartsTests: XCTestCase {
         XCTAssertEqual(sheet.selectedPart?.id, "save")
         XCTAssertFalse(sheet.moveLine(by: -1))
     }
-
-    func testInAWrittenTreeOnlyThePartsAfterTheItemsTakeTheFocus() throws {
-        var sheet = try XCTUnwrap(SheetParts(output: Frame(text: treeList)))
-
-        XCTAssertNil(sheet.selectedPart)
-        XCTAssertEqual(sheet.focusOrder.map(\.id), ["add"])
-        XCTAssertTrue(sheet.leaveRows())
-        XCTAssertEqual(sheet.selectedPart?.id, "add")
-        XCTAssertTrue(sheet.moveLine(by: -1))
-        XCTAssertNil(sheet.selectedPart)
-    }
 }

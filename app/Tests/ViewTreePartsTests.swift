@@ -53,13 +53,14 @@ final class ViewTreePartsTests: XCTestCase {
         XCTAssertEqual(Frame(text: "text=a\ntitle=A\n").search, .local)
     }
 
-    func testASearchFieldWithNoItemsShowsTheSearchRow() throws {
+    func testASearchFieldWithNoItemsShowsTheSearchInItsPlace() throws {
         let output = Frame(text: "frame=\nclass=gap-part\n\nfield=find\ntype=search\n\ntext=a\ntitle=A\n")
         let sheet = try XCTUnwrap(SheetParts(output: output))
 
-        XCTAssertTrue(sheet.top.hasField)
+        XCTAssertTrue(sheet.placesSearch)
+        XCTAssertFalse(sheet.top.hasField)
         XCTAssertTrue(sheet.kind.showsField)
-        XCTAssertEqual(sheet.top.partsRoom, SpotTokens.partsMaxHeight - SpotTokens.partFieldRoom)
+        XCTAssertEqual(sheet.top.partsRoom, SpotTokens.partsMaxHeight)
     }
 
     func testATreeSheetIsAsTallAsItsTree() throws {

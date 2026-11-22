@@ -290,4 +290,30 @@ final class FrameTests: XCTestCase {
         XCTAssertEqual(items.map(\.isToggle), [true, true, false, false])
         XCTAssertEqual(items.map(\.isOn), [true, false, true, false])
     }
+
+
+    func testAnItemInAGridShowsItsWordsUnlessItsClassHidesThem() {
+        let output = Frame(text: "items=list\nclass=grid grid-cols-3\n\ntext=a\nparent=list\ntitle=A\n\ntext=b\nparent=list\ntitle=B\nclass=sr-only\n")
+
+        XCTAssertEqual(output.items.map(\.showsWords), [true, false])
+    }
+
+    func testTheRootNamesTheValueWhenTheCardShowsMoreThanOne() {
+        let blocks = "number=cpu\nvalue=12\nclass=card:flex bar:flex\n\nnumber=memory\nvalue=40\nclass=card:flex bar:flex\n"
+        let named = Frame(text: "frame=\nvalue=memory\n\n" + blocks)
+        let check = FrameCheck(text: "frame=\n\n" + blocks)
+
+        XCTAssertEqual(named.value?.value("number"), "memory")
+        XCTAssertEqual(named.barred.value?.value("number"), "memory")
+        XCTAssertNil(check.output.value)
+        XCTAssertEqual(check.output.barred.value?.value("number"), "cpu")
+        XCTAssertEqual(check.partFaults, ["the card shows more than one value: cpu, memory. Name the one it stands for with value= in the root"])
+        XCTAssertEqual(FrameCheck(text: "frame=\nvalue=memory\n\n" + blocks).partFaults, [])
+    }
+
+    func testASecondButtonWithTheIdOfAScopedButtonChangesIt() {
+        let output = Frame(text: "button=rename\ntitle=Rename\nscope=spot\n\nbutton=rename\ntitle=Rename it\n")
+
+        XCTAssertEqual(output.actions.map(\.title), ["Rename it"])
+    }
 }

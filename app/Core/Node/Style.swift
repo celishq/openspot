@@ -92,6 +92,7 @@ public struct Style: Equatable, Sendable {
     public var weight: Weight?
     public var textAlignment: TextAlignment?
     public var truncates = false
+    public var hidesWords = false
     public var lineLimit: Int?
     public var tabularNumbers = false
     public var ink: Ink?

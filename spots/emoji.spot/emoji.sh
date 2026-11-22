@@ -46,15 +46,15 @@ next_tone() {
 
 case "$1" in
   show)
-    printf 'frame=\nclass=gap-part\n\nchoice=tone\ntitle=Skin tone\nvalue=%s\n\n' "$tone"
+    printf 'frame=\nclass=gap-part\n\nfield=search\ntype=search\n\nchoice=tone\ntitle=Skin tone\nvalue=%s\n\n' "$tone"
     printf 'option=none\ntitle=Yellow\n\noption=light\ntitle=Light\n\noption=medium-light\ntitle=Medium light\n\n'
     printf 'option=medium\ntitle=Medium\n\noption=medium-dark\ntitle=Medium dark\n\noption=dark\ntitle=Dark\n\n'
-    printf 'items=a\nclass=grid grid-cols-7\n\nfield=search\ntype=search\n\n'
+    printf 'items=a\nclass=grid grid-cols-7\n\n'
     printf 'button=open\nparent=a\ntitle=Copy\n\n'
     printf 'button=paste\nparent=a\ntitle=Paste\nshortcut=cmd+return\n\n'
     printf 'button=next-tone\nparent=a\ntitle=Next skin tone\nshortcut=cmd+t\nscope=spot\nclose=false\n\n'
-    # Each glyph sits in the items: its block gets parent=a under its first line.
-    glyph_rows | awk 'NF && !open { print; print "parent=a"; open = 1; next } !NF { open = 0 } { print }'
+    # Each glyph sits in the items and shows only its icon: its block gets parent=a and class=sr-only under its first line.
+    glyph_rows | awk 'NF && !open { print; print "parent=a"; print "class=sr-only"; open = 1; next } !NF { open = 0 } { print }'
     ;;
   tone)
     remember "$2"

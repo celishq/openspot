@@ -10,13 +10,13 @@ struct NodeFace: View {
     @GestureState private var isPressed = false
 
     var body: some View {
-        let given = variants.union(isPressed ? [.pressed] : []).union(isSelected ? [.selected, .focus] : [])
-        let style = node.style.resolved(for: isHovered ? given.union([.hover]) : given)
+        let given = tree.states(in: variants, pressed: isPressed, hovered: isHovered, selected: isSelected)
+        let style = node.style.resolved(for: given)
         if style.isHidden != true {
             content(style)
                 .environment(\.spotNodeVariants, node.kind == BlockKind.button.word ? given : variants)
                 .modifier(NodeLook(style: style, drawsFill: !takesLook))
-                .modifier(NodeHover(isFollowed: node.style.named.contains(.hover), isHovered: $isHovered))
+                .modifier(NodeHover(isFollowed: tree.tracksHover(node), isHovered: $isHovered))
                 .modifier(NodePress(isFollowed: !variants.contains(.card) && tree.follows([.pressed], at: node), isPressed: $isPressed))
                 .layoutValue(key: NodeSlot.self, value: style)
         }
@@ -34,6 +34,7 @@ struct NodeFace: View {
         case BlockKind.icon.word: NodeIcon(icon: node.icon, side: node.naturalSize.width)
         case BlockKind.picture.word: NodePicture(icon: node.icon, size: node.naturalSize)
         case BlockKind.button.word where !node.children.isEmpty: NodePart(id: node.id, label: AnyView(NodeBox(children: node.children, style: style, tree: tree)), size: node.naturalSize)
+        case BlockKind.field.word where node.isSearch: NodeSearch()
         case BlockKind.button.word, BlockKind.field.word, BlockKind.toggle.word, BlockKind.choice.word, BlockKind.number.word: NodePart(id: node.id, label: nil, size: node.naturalSize, look: SpotPart.Look(style: style))
         case BlockKind.items: NodeItems(size: node.naturalSize)
         default:

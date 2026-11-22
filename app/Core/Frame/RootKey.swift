@@ -1,5 +1,5 @@
 public enum RootKey: String, CaseIterable, Sendable {
-    case frame, title, detail, active, recents, shown, progress
+    case frame, title, detail, active, recents, shown, progress, value
     case end, call
     case classes = "class"
 

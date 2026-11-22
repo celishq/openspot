@@ -38,6 +38,9 @@ public struct FrameCheck: Equatable, Sendable {
             if id != Frame.open, CommandAction(id: id, block: block) == nil { faults += BlockKind.actionFaults(in: block) }
         }
         faults += output.tree.faults
+        if !output.unnamedValues.isEmpty {
+            faults.append("the card shows more than one value: \(output.unnamedValues.joined(separator: ", ")). Name the one it stands for with value= in the root")
+        }
         for id in taken where output.parts.contains(where: { $0.id == id }) {
             faults.append("a part cannot be called \(id)")
         }

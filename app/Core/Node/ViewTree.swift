@@ -37,9 +37,13 @@ public struct ViewTree: Equatable, Sendable {
     }
 
     static func id(of block: TextBlock, in kinds: [BlockKind]) -> String? {
+        guard block.fields.first?.key != BlockKind.button.word || block.value("scope") == nil else { return nil }
+        return patchID(of: block, in: kinds)
+    }
+
+    static func patchID(of block: TextBlock, in kinds: [BlockKind]) -> String? {
         guard let first = block.fields.first, !first.value.isEmpty, first.key != BlockKind.option,
-              FrameRoot.isKind(first.key, in: kinds),
-              first.key != BlockKind.button.word || block.value("scope") == nil else { return nil }
+              FrameRoot.isKind(first.key, in: kinds) else { return nil }
         return first.value
     }
 
@@ -96,6 +100,14 @@ public struct ViewTree: Equatable, Sendable {
         }
         holdsItems = nodes.values.contains { $0.kind == BlockKind.items }
         listed = Set(nodes.values.filter { $0.parent.flatMap { nodes[$0] }?.kind == BlockKind.items }.map(\.id))
+        for id in order {
+            guard let node = nodes[id], let parent = node.parent, let holder = nodes[parent] else { continue }
+            if listed.contains(id), node.kind == BlockKind.box {
+                faults.append("the box \(id) sits inside the items \(parent), so it and the blocks inside it do not show. An item is one block")
+            } else if listed.contains(parent), holder.kind != BlockKind.box {
+                faults.append("the block \(id) sits inside the item \(parent), so it does not show. An item is one block")
+            }
+        }
         places.formUnion(self.style.named)
     }
 }

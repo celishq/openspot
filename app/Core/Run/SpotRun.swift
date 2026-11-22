@@ -310,10 +310,10 @@ public final class SpotRun {
         let waits = showsSheet && answered == nil && panel == nil && rows.search == .local && rows.isLoading && !rows.holdsItems
         let nextKind = heardKind ?? (waits ? .waiting : panel?.kind ?? .rows)
         if nextKind != kind { kind = nextKind }
-        let field = nextKind.showsField && rows.search != .off
+        let field = nextKind.showsField && rows.search != .off && panel?.placesSearch != true
         if field != showsField { showsField = field }
-        let header = rows.perLine > 1 ? 0 : SheetHeader.shared.extra(for: shownState.subtitle)
-        let nextTop = SheetTop(showsRows: panel?.showsRows ?? true, search: rows.search, header: header)
+        let header = SheetHeader.shared.extra(for: shownState.subtitle)
+        let nextTop = SheetTop(showsRows: panel.map { $0.showsRows && !$0.placesSearch } ?? true, search: rows.search, header: header)
         if nextTop != top { top = nextTop }
         if var placed = panel, placed.top != nextTop {
             placed.place(top: nextTop)

@@ -1,5 +1,5 @@
 #!/bin/sh
-printf 'frame=\nclass=gap-part\nrecents=false\n\nitems=items\nclass=card:hidden\n\n'
+printf 'frame=\nclass=gap-part\nrecents=false\nvalue=next\n\nitems=items\nclass=card:hidden\n\n'
 printf 'box=head\nclass=hidden bar:flex wide:flex strip:flex square:flex large:flex flex-row gap-part grow\n\n'
 printf 'number=next\nparent=head\nclass=grow\nvalue=14:30\ntitle=Design review\ncolor=#1BADF8\n\n'
 printf 'number=at\nclass=hidden small:flex grow\nvalue=14:30\ntitle=Design review\n\n'
