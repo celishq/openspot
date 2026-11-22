@@ -7,6 +7,7 @@ extension SpotRun {
     }
 
     public func show(selecting run: String? = nil, need: ShowNeed = .moment, event: ShowEvent? = nil) {
+        guard !isHeld else { return }
         let event = event ?? (need == .change ? .change : showsSheet ? .sheet : .panel)
         let wantsSheetAnswer = event == .sheet && spot.on?.has(.sheet) == true && shownEvent != .sheet
         if let run { selecting = run }
@@ -152,6 +153,15 @@ extension SpotRun {
         showsAgain = false
         eventAgain = nil
         show(need: need, event: event)
+    }
+
+    func hold(_ frame: Frame) async {
+        isHeld = true
+        await takeAnswer(frame, frame: "", to: .show(generation: nil, reports: false, query: ""))
+    }
+
+    func release() {
+        isHeld = false
     }
 
     func showOnce() {

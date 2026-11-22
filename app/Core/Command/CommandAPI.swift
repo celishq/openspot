@@ -32,6 +32,7 @@ public final class CommandAPI: @unchecked Sendable {
         guard let runs else { return request }
         var request = request
         request.caller = caller ?? runs.callers.caller(of: peer)
+        request.isFromGroup = caller == nil
         return request
     }
 

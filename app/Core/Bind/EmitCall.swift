@@ -22,8 +22,8 @@ enum EmitCall: NounCall {
 
     func work(in context: CallContext) -> CommandAPI.Work? {
         guard case .emit(let name, let given) = self else { return nil }
-        guard let runs = context.runs, let spot = context.caller else {
-            return { CommandAnswer(errors: "`openspot emit` runs only in a run of a spot, since it sends an event of that spot.\n", code: 2) }
+        guard let runs = context.runs, let spot = context.channel else {
+            return { CommandAnswer(errors: "`openspot emit` \(RunCall.channelOnly)\n", code: 2) }
         }
         guard let event = spot.events.first(where: { $0.name == name }) else {
             return { CommandAnswer(errors: "\(spot.name) has no event \(name). Declare it in [events.\(name)] of its spot.toml.\n", code: 2) }

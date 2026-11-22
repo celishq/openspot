@@ -20,6 +20,7 @@ public struct CommandRequest: Equatable, Sendable {
     public let arguments: [String]
     public let folder: String
     public var caller: SpotCaller?
+    public var isFromGroup = false
     public let isPiped: Bool
 
     public init(arguments: [String], folder: String, caller: SpotCaller? = nil, isPiped: Bool = true, id: Int? = nil) {

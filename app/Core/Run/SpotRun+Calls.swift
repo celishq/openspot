@@ -66,6 +66,7 @@ extension SpotRun {
     func take(_ text: String, _ lines: Frame, of call: OpenCall) async {
         if call.answered == nil { call.answered = Date().timeIntervalSince(call.begin) }
         if call.refusal == nil { call.refusal = refusal(of: lines, in: call) }
+        if !lines.outputs.isEmpty || lines.root?.value(RootKey.error) != nil { runs.answerPushed(lines, from: spot.id) }
         call.made.take(lines)
         switch call.request.purpose {
         case .ask(let ask):
@@ -120,6 +121,7 @@ extension SpotRun {
         log(call, end, errors: errors)
         ended(call, end)
         runs.settleAsk(of: spot.id)
+        runs.settlePushed(of: spot.id)
     }
 
     func lose(_ call: OpenCall, _ end: ScriptCall.End, errors: String = "") {

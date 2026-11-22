@@ -233,6 +233,7 @@ public final class SpotRun {
     @ObservationIgnored public internal(set) var calls: [ScriptCall] = []
     @ObservationIgnored public internal(set) var partsAnswers = 0
     @ObservationIgnored var actCalls: [ScriptCall] = []
+    @ObservationIgnored var isHeld = false
     public internal(set) var acts: [ScriptCall] = [] {
         didSet { if acts.first?.detail != oldValue.first?.detail { settle() } }
     }

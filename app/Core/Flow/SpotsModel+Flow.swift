@@ -64,6 +64,13 @@ extension SpotsModel {
         return start < flow.index && popPage(steps: flow.index - start)
     }
 
+    @discardableResult
+    public func leave(_ id: String) -> Bool {
+        guard openSheetID == id, flow.current?.spot == id else { return false }
+        close(in: id)
+        return true
+    }
+
     private func close(in id: String) {
         guard flow.current?.spot == id else { return }
         var start = flow.index

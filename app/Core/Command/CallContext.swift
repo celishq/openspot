@@ -33,6 +33,10 @@ struct CallContext {
         runs?.callers.isCareful == true
     }
 
+    var channel: Spot? {
+        request.isFromGroup ? nil : caller
+    }
+
     var careful: Set<SpotUse>? {
         isCareful ? Set(SpotUse.allCases) : nil
     }

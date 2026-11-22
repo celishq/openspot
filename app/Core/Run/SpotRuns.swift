@@ -62,6 +62,7 @@ public final class SpotRuns {
     @ObservationIgnored var schedule: SpotSchedule
     @ObservationIgnored var scheduleWatch: Task<Void, Never>?
     @ObservationIgnored var asks = SpotAsks()
+    @ObservationIgnored var pushed = PushedRuns()
     @ObservationIgnored var wanted: Set<String> = []
     @ObservationIgnored var nextShow: Date?
     @ObservationIgnored var answerMatches = AnswerMatches()
@@ -210,6 +211,7 @@ public final class SpotRuns {
         if openID == sheet.spot.id { openID = nil }
         let id = sheet.spot.id
         if asks.isWaiting(for: id) { Task { [weak self] in self?.settleAsk(of: id) } }
+        if pushed.isWaiting(for: id) { Task { [weak self] in self?.settlePushed(of: id) } }
     }
 
     public func float(_ id: String, isWindow: Bool = false) {
@@ -265,6 +267,7 @@ public final class SpotRuns {
         scheduleWatch?.cancel()
         scheduleWatch = nil
         asks.endAll()
+        pushed.endAll()
         clipboardWatch?.cancel()
         clipboardWatch = nil
         loadWatch?.cancel()

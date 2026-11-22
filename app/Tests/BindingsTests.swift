@@ -16,7 +16,7 @@ final class BindingsTests: SpotRunsCase {
     private func picker(_ body: String = "") throws {
         try script("picker", toml: "[actions.pick]\ninputs.when = 'text'\noutputs.until = 'text'", log: "picker-log", """
         case "$1" in
-          pick) w=$(sed -n 's/^input.when=//p'); echo "out.until=$w-later" ;;
+          pick) w=$(sed -n 's/^input.when=//p'); printf 'out.until=%s-later\\n' "$w" ;;
         esac
         \(body)
         """)
@@ -81,6 +81,71 @@ final class BindingsTests: SpotRunsCase {
 
         XCTAssertEqual(log("done"), ["2"])
         XCTAssertEqual(log("errors"), ["pick has no input count. Its inputs are: when."])
+        XCTAssertEqual(log("picker-log"), [])
+    }
+
+    func testOutPrintsOneValueAndStdinGivesAnInputWithLines() async throws {
+        try picker()
+        try asker("run picker.pick --stdin when --out until < '\(path("given"))'")
+        try "line one\nline two\n".write(toFile: path("given"), atomically: true, encoding: .utf8)
+
+        try await press()
+
+        XCTAssertEqual(log("done"), ["0"], log("errors").joined(separator: "\n"))
+        XCTAssertEqual(log("out"), ["line one", "line two-later"])
+    }
+
+    func testOutOrStdinOfANameTheActionDoesNotDeclareExits2() async throws {
+        for words in ["run picker.pick when=now --out colour", "run picker.pick --stdin colour"] {
+            try? FileManager.default.removeItem(atPath: path("done"))
+            try picker()
+            try asker(words)
+
+            try await press()
+
+            XCTAssertEqual(log("done"), ["2"], words)
+        }
+        XCTAssertEqual(log("picker-log"), [])
+    }
+
+    func testARunThatWaitsInsideTheCommandOutlastsTheTimeLimitOfItsShow() async throws {
+        runs.quit()
+        runs = SpotRuns(environment: ProcessInfo.processInfo.environment, showLimit: 0.5, clock: clock.value, stopPause: 0.2)
+        takeCalls()
+        try script("picker", toml: "[actions.slow]\noutputs.v = 'text'", log: "picker-log", "[ \"$1\" = slow ] && sleep 1.5 && echo out.v=late")
+        try script("asker", toml: "on = ['panel.open']\n[bindings]\npicker = { spot = 'picker' }", log: "asker-log", """
+        v=$('\(client.path)' run picker.slow --out v 2> '\(path("errors"))'); echo $? >> '\(path("done"))'
+        printf 'text=v\\ntitle=%s\\n' "$v"
+        """)
+        _ = try scanned()
+
+        runs.panelOpened()
+
+        try await wait("the end of the show") { self.log("done").count == 1 }
+        XCTAssertEqual(log("done"), ["0"], log("errors").joined(separator: "\n"))
+        try await wait("the value in the show") { self.runs.sheets["asker"]?.rows.all.first?.title == "late" }
+    }
+
+    func testAProcessWithNoChannelCannotRunOrEmit() async throws {
+        let config = try temporaryFolder()
+        let socket = try XCTUnwrap(CommandSocket(folder: config, api: try XCTUnwrap(runs.api)))
+        defer { socket.close() }
+        try picker()
+        try script("asker", toml: "\(TestSpot.command)\n[bindings]\npicker = { spot = 'picker' }\n[events.asked]\nwhen = 'text'", log: "asker-log", """
+        export OPENSPOT_CONFIG='\(config.path)'
+        '\(client.path)' run picker.pick when=now 11>&- 2>> '\(path("errors"))'; echo $? >> '\(path("done"))'
+        '\(client.path)' emit asked when=now 11>&- 2>> '\(path("errors"))'; echo $? >> '\(path("done"))'
+        """)
+        _ = try scanned()
+
+        try XCTUnwrap(runs.sheets["asker"]).pressCard()
+
+        try await wait("both calls") { self.log("done").count == 2 }
+        XCTAssertEqual(log("done"), ["2", "2"])
+        XCTAssertEqual(log("errors"), [
+            "`openspot run` runs only in a run of a spot, through the channel that Openspot gives it on descriptor 11.",
+            "`openspot emit` runs only in a run of a spot, through the channel that Openspot gives it on descriptor 11."
+        ])
         XCTAssertEqual(log("picker-log"), [])
     }
 }
