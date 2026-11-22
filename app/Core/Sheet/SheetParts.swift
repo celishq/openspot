@@ -26,10 +26,12 @@ public struct SheetParts: Equatable, Sendable {
     private var focusLineOffsets: [[Int]] = []
     public private(set) var selected: String?
     public private(set) var top: SheetTop
+    public private(set) var variants: Set<Style.Variant>
 
-    public init?(output: Frame) {
+    public init?(output: Frame, variants: Set<Style.Variant> = [.sheet, .dark]) {
         guard !output.parts.isEmpty else { return nil }
         parts = output.parts
+        self.variants = variants
         layout = output.layout
         tree = output.tree
         top = SheetTop(showsRows: output.layout?.repeated != nil, search: output.search, header: 0)
@@ -62,9 +64,15 @@ public struct SheetParts: Equatable, Sendable {
         orderFocus()
     }
 
+    mutating func show(in variants: Set<Style.Variant>) {
+        guard variants != self.variants else { return }
+        self.variants = variants
+        orderFocus()
+    }
+
     private mutating func orderFocus() {
         if tree.isWritten {
-            focusLineOffsets = Self.lines(of: tree, parts: parts)
+            focusLineOffsets = Self.lines(of: tree, parts: parts, in: variants)
             focusOffsets = focusLineOffsets.flatMap { $0 }
             return
         }
@@ -89,7 +97,7 @@ public struct SheetParts: Equatable, Sendable {
         focusLineOffsets = lines
     }
 
-    private static func lines(of tree: ViewTree, parts: [SpotPart]) -> [[Int]] {
+    private static func lines(of tree: ViewTree, parts: [SpotPart], in variants: Set<Style.Variant>) -> [[Int]] {
         var lines: [[Int]] = []
         var lineRow: String?
         var isBelowItems = !tree.nodes.values.contains { $0.kind == BlockKind.items }
@@ -109,7 +117,7 @@ public struct SheetParts: Equatable, Sendable {
                         lineRow = row
                     }
                 }
-                walk(node.children, row: node.style.resolved(for: [.sheet]).arrangement == .row ? id : row)
+                walk(node.children, row: node.style.resolved(for: variants).arrangement == .row ? id : row)
             }
         }
         walk(tree.children, row: nil)

@@ -13,12 +13,12 @@ enum SpotSheetPicture {
         return list
     }
 
-    static func run(text: String, path: String, view source: String? = nil, spot: Spot? = nil) -> Never {
-        SpotPicture.start()
+    static func run(text: String, path: String, view source: String? = nil, spot: Spot? = nil, isLight: Bool = false) -> Never {
+        SpotPicture.start(isLight: isLight)
         let file = source.map { URL(fileURLWithPath: $0) }
         let kinds = spot?.kinds ?? file.map { BlockKind.kinds(views: [$0.deletingPathExtension().lastPathComponent: $0.path]) } ?? BlockKind.all
         let output = Frame(text: text, kinds: kinds)
-        let panel = SheetParts(output: output)
+        let panel = SheetParts(output: output, variants: [.sheet, isLight ? .light : .dark])
         guard panel != nil || !output.items.isEmpty else {
             FileHandle.standardError.write(Data("The sheet has no blocks and no rows.\n".utf8))
             exit(1)

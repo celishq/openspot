@@ -6,7 +6,7 @@ extension SpotRun {
         acted()
         settle()
         list.selectFirst()
-        if panel == nil, answered != nil { panel = lastAnswer.flatMap(SheetParts.init(output:)) }
+        if panel == nil, answered != nil { panel = lastAnswer.flatMap { SheetParts(output: $0, variants: runs.variants(of: spot.id)) } }
         let keepsState = script.keepsState
         if answered == nil, keepsState || (waits && list.search == .local) {
             runs.opening.holdMotion(of: spot.id, limited: !keepsState, start: onReady)
@@ -46,6 +46,12 @@ extension SpotRun {
         runs.updateClock()
     }
 
+    func showPlace() {
+        guard var next = panel else { return }
+        next.show(in: runs.variants(of: spot.id))
+        panel = next
+    }
+
     public func movePart(by step: Int) {
         panel?.move(by: step)
     }
@@ -73,7 +79,7 @@ extension SpotRun {
     func floated() {
         settle()
         list.selectFirst()
-        if panel == nil, answered != nil { panel = lastAnswer.flatMap(SheetParts.init(output:)) }
+        if panel == nil, answered != nil { panel = lastAnswer.flatMap { SheetParts(output: $0, variants: runs.variants(of: spot.id)) } }
         show(event: spot.kind.opensSheet ? .sheet : .panel)
         link.settle()
         runs.updateClock()

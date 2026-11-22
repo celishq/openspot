@@ -125,6 +125,8 @@ final class CommandLineCallTests: XCTestCase {
         XCTAssertEqual(CommandLineCall(arguments: ["check", "spots", "--json", "spots"])?.value as? CheckCall, .folder("spots", form: .json))
         XCTAssertEqual(CommandLineCall(arguments: ["render", "spot", "weather", "a.png"])?.value as? RenderCall, .spot(id: "weather", size: nil, path: "a.png"))
         XCTAssertEqual(CommandLineCall(arguments: ["render", "spot", "weather", "--card", "wide", "a.png"])?.value as? RenderCall, .spot(id: "weather", size: .wide, path: "a.png"))
+        XCTAssertEqual(CommandLineCall(arguments: ["render", "spot", "weather", "--light", "a.png"])?.value as? RenderCall, .spot(id: "weather", size: nil, path: "a.png", isLight: true))
+        XCTAssertEqual(CommandLineCall(arguments: ["render", "spot", "weather", "--card", "wide", "--light", "a.png"])?.value as? RenderCall, .spot(id: "weather", size: .wide, path: "a.png", isLight: true))
         XCTAssertEqual(CommandLineCall(arguments: ["render", "spot", "weather", "--card", "huge", "a.png"])?.value as? CallFault, .unknown(["render", "spot", "weather", "--card", "huge", "a.png"]))
     }
 

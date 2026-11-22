@@ -116,4 +116,19 @@ final class SheetFocusTests: XCTestCase {
         XCTAssertFalse(sheet.leaveRows())
         XCTAssertNil(sheet.selectedPart)
     }
+
+    private let placed = "frame=\nclass=gap-part\n\nbox=one\nclass=float:flex-row\n\nbutton=a\nparent=one\ntitle=A\n\nbutton=b\nparent=one\ntitle=B\n\nbox=two\nclass=light:flex-row\n\nbutton=c\nparent=two\ntitle=C\n\nbutton=d\nparent=two\ntitle=D\n"
+
+    func testTheFocusLinesFollowThePlaceAndTheAppearanceTheSheetShowsIn() throws {
+        var sheet = try XCTUnwrap(SheetParts(output: Frame(text: placed), variants: [.sheet, .dark]))
+        XCTAssertEqual(sheet.focusOrder.map(\.id), ["a", "b", "c", "d"])
+        sheet.moveLine(by: 1)
+        XCTAssertEqual(sheet.selectedPart?.id, "b")
+
+        var float = try XCTUnwrap(SheetParts(output: Frame(text: placed), variants: [.float, .light]))
+        float.moveLine(by: 1)
+        XCTAssertEqual(float.selectedPart?.id, "c")
+        float.move(by: 1)
+        XCTAssertEqual(float.selectedPart?.id, "d")
+    }
 }
