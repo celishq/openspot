@@ -5,6 +5,7 @@ struct NodeLook: ViewModifier {
     let style: Style
     var drawsFill = true
     @Environment(\.spotSurfaceEdge) private var surface
+    @Environment(\.spotIsOnSolid) private var isOnSolid
 
     func body(content: Content) -> some View {
         let shape = shape
@@ -25,10 +26,10 @@ struct NodeLook: ViewModifier {
             .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: Alignment(horizontal: horizontal, vertical: .top))
             .background {
                 if style.blursBackdrop { shape.fill(.regularMaterial) }
-                if drawsFill, let fill = style.fill { shape.fill(Self.colour(fill)) }
+                if drawsFill, let fill = style.fill { shape.fill(Self.colour(fill, onSolid: isOnSolid)) }
             }
             .overlay {
-                if style.hasBorder { shape.strokeBorder(SpotTheme.ink.opacity(SpotTheme.track), lineWidth: SpotTokens.nodeBorder) }
+                if style.hasBorder { shape.strokeBorder(SpotTheme.ink(onSolid: isOnSolid).opacity(SpotTheme.track), lineWidth: SpotTokens.nodeBorder) }
             }
             .modifier(NodeClip(shape: shape, clips: style.clips))
             .opacity(style.opacity ?? 1)
@@ -81,9 +82,9 @@ struct NodeLook: ViewModifier {
         }
     }
 
-    @MainActor private static func colour(_ fill: Style.Fill) -> Color {
+    @MainActor private static func colour(_ fill: Style.Fill, onSolid: Bool) -> Color {
         switch fill {
-        case .tile: SpotTheme.ink.opacity(SpotTheme.fill)
+        case .tile: SpotTheme.ink(onSolid: onSolid).opacity(SpotTheme.fill)
         case .accent: SpotTheme.accent
         case .good: SpotTheme.good
         case .warn: SpotTheme.warn

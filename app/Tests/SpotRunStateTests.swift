@@ -445,7 +445,7 @@ final class SpotRunStateTests: XCTestCase {
         async let answer = sheet.form(action, item: nil)
         try await wait("the form call") { link.sent.count == 2 }
 
-        await link.frame("frame=\ntitle=New\n\nfield=a\ntitle=A\n", of: link.sent[1])
+        await link.frame("frame=\ntype=form\ntitle=New\n\nfield=a\ntitle=A\n", of: link.sent[1])
         await link.frame("toast=Ready\n", of: link.sent[1])
         await link.end(link.sent[1])
 

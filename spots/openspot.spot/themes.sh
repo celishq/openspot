@@ -76,7 +76,7 @@ case "$route" in
         ;;
       rename)
         if [ -z "$(value input.name)" ]; then
-          printf 'frame=\nclass=gap-part\ntitle=Rename %s\n\nfield=name\ntitle=Name\n' "$2"
+          printf 'frame=\ntype=form\nclass=gap-part\ntitle=Rename %s\n\nfield=name\ntitle=Name\n' "$2"
           openspot_kv value "$2"
           exit 0
         fi

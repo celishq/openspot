@@ -345,7 +345,7 @@ final class SpotDropTests: XCTestCase {
 
     func testARunningReadDoesNotHoldADrop() async throws {
         let sheet = try sheet(toml: "on = ['panel.open']\ndrop = 'mov'", """
-        [ "$1" = show ] && { printf 'switch=power\\nvalue=false\\n---\\n'; sleep 30; }
+        [ "$1" = show ] && { printf 'switch=power\\nclass=card:flex\\nvalue=false\\n---\\n'; sleep 30; }
         exit 0
         """)
         runs.panelOpened()
@@ -457,7 +457,7 @@ final class SpotDropTests: XCTestCase {
     }
 
     func testAToggleWithDropKeepsItsClick() async throws {
-        let sheet = try sheet(toml: "on = ['panel.open']\ndrop = 'mov'", "[ \"$1\" = show ] && printf 'switch=power\\nvalue=false\\n'\nexit 0")
+        let sheet = try sheet(toml: "on = ['panel.open']\ndrop = 'mov'", "[ \"$1\" = show ] && printf 'switch=power\\nclass=card:flex\\nvalue=false\\n'\nexit 0")
         runs.panelOpened()
         try await wait("the kind") { sheet.spot.kind == .toggle }
 

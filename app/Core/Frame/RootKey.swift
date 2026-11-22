@@ -1,7 +1,9 @@
 public enum RootKey: String, CaseIterable, Sendable {
-    case frame, title, detail, active, recents, shown, progress, value
+    case frame, title, detail, active, recents, shown, progress, value, type
     case end, call
     case classes = "class"
+
+    static let form = "form"
 
     private static let names = Set(allCases.map(\.rawValue))
     static let marks: Set<String> = [end.rawValue, call.rawValue]

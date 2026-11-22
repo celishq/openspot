@@ -176,11 +176,24 @@ final class ViewTreeTests: XCTestCase {
     }
 
     func testABoxIsNeitherAnItemNorAnError() {
-        let frame = Frame(text: "frame=\n\nbox=head\nclass=flex-row\n\ntext=name\nparent=head\ntitle=Home\n")
+        let frame = Frame(text: "frame=\nclass=gap-part\n\nbox=head\nclass=flex-row\n\ntext=name\nparent=head\ntitle=Home\n")
 
         XCTAssertTrue(frame.errors.isEmpty)
         XCTAssertEqual(frame.parts.map(\.id), ["name"])
-        XCTAssertTrue(FrameCheck(text: "frame=\n\nbox=head\n\ntext=name\nparent=head\ntitle=Home\n").partFaults.isEmpty)
+        XCTAssertTrue(FrameCheck(text: "frame=\nclass=gap-part\n\nbox=head\n\ntext=name\nparent=head\ntitle=Home\n").partFaults.isEmpty)
+    }
+
+    func testOnlyAnItemsBlockOrAClassOnTheRootMakesALayout() {
+        let loose = FrameCheck(text: "frame=\n\nbox=head\nclass=flex-row\n\ntext=name\nparent=head\ntitle=Home\nclass=grow\n\nnumber=n\nclass=card:flex\nvalue=1\n")
+
+        XCTAssertFalse(loose.output.tree.isWritten)
+        XCTAssertEqual(loose.output.items.map(\.run), ["name", "n"])
+        XCTAssertEqual(loose.partFaults, [
+            "the part head needs a layout, so give the root a class", "the part name needs a layout, so give the root a class",
+            "the card shows more than one value: name, n. Name the one it stands for with value= in the root"
+        ])
+        XCTAssertTrue(Frame(text: "frame=\nclass=gap-part\n\ntext=a\n").tree.isWritten)
+        XCTAssertTrue(Frame(text: "items=list\n\ntext=a\nparent=list\n").tree.isWritten)
     }
 
     func testAWrittenTreeDrawsEachNodeInTheSheetAndNoneAsAnItem() throws {

@@ -52,13 +52,22 @@ final class CardFaceTests: XCTestCase {
         XCTAssertNil(SpotState(output: Frame(text: "on=true\ndetail=Awake\n"), header: SpotState(title: "Clock")).on)
     }
 
-    func testOnlyASwitchThatIsTheWholeCardSaysWhetherTheCardIsOn() {
+    func testOnlyASwitchThatTheCardPlacesAloneSaysWhetherTheCardIsOn() {
         let state = { (text: String) in SpotState(output: Frame(text: text), header: SpotState(title: "Clock")).on }
-        XCTAssertEqual(state("switch=power\nvalue=true\n"), true)
+        XCTAssertEqual(state("switch=power\nvalue=true\nclass=card:flex\n"), true)
+        XCTAssertNil(state("switch=power\nvalue=true\n"))
         XCTAssertNil(state("switch=power\nvalue=true\n\ntext=a\ntitle=A\n"))
         XCTAssertNil(state("switch=power\nvalue=true\n\ntext=bar\ntitle=Bar\n"))
         XCTAssertNil(state("frame=\nmain=power\n\nswitch=power\nvalue=true\n\ntext=bar\ntitle=Bar\n"))
         XCTAssertNil(SpotState(title: "Clock").taking(Frame(text: "frame=\nmain=power\n\nswitch=power\nvalue=true\n\ntext=bar\ntitle=Bar\n")).on)
+    }
+
+    func testTheCardNeverTakesTheWordsOfTheSwitchItPlaces() {
+        let state = SpotState(output: Frame(text: "switch=power\ntitle=Power\ndetail=On\nvalue=true\nclass=card:flex\n"), header: SpotState(title: "Clock", subtitle: "Here"))
+
+        XCTAssertEqual(state.title, "Clock")
+        XCTAssertEqual(state.subtitle, "Here")
+        XCTAssertEqual(state.control, "power")
     }
 
     func testTheOneValueBlockOutsideTheItemsIsTheValueOfTheCard() {
@@ -90,16 +99,16 @@ final class CardFaceTests: XCTestCase {
         display=1,234.5
         """)
 
-        XCTAssertEqual(answer.answers.map(\.run), ["1234.5"])
-        XCTAssertEqual(answer.answers.first?.title, "1,234.5")
-        XCTAssertEqual(answer.answers.first?.card?.face.answerSize, .large)
-        XCTAssertEqual(answer.answers.first?.card?.face.parts.last?.number?.text, "1,234.5")
+        XCTAssertEqual(answer.answers(asCard: true).map(\.run), ["1234.5"])
+        XCTAssertEqual(answer.answers(asCard: true).first?.title, "1,234.5")
+        XCTAssertEqual(answer.answers(asCard: true).first?.card?.face.answerSize, .large)
+        XCTAssertEqual(answer.answers(asCard: true).first?.card?.face.parts.last?.number?.text, "1,234.5")
     }
 
     func testAnAnswerCardTakesTheWordForEnterFromItsOpenButton() {
         let answer = Frame(text: "frame=\n\nnumber=a\nclass=large:flex\nvalue=14\n\nbutton=open\ntitle=Copy\nscope=spot\n")
 
-        XCTAssertEqual(answer.answers.first?.openTitle, "Copy")
+        XCTAssertEqual(answer.answers(asCard: true).first?.openTitle, "Copy")
     }
 
     func testANumberDrawsItsUnitFaintWhereItShows() {
@@ -117,8 +126,8 @@ final class CardFaceTests: XCTestCase {
         let wide = Frame(text: "frame=\n\nnumber=a\nclass=wide:flex\nvalue=1\n\nitems=list\n\ntext=r\nparent=list\ntitle=R\n")
         let strip = Frame(text: "frame=\n\nnumber=a\nclass=strip:flex\nvalue=1\n")
 
-        XCTAssertEqual(noMain.answers.map(\.run), ["r"])
-        XCTAssertEqual(wide.answers.map(\.run), ["r"])
-        XCTAssertEqual(strip.answers.first?.card?.face.answerSize, .strip)
+        XCTAssertEqual(noMain.answers(asCard: true).map(\.run), ["r"])
+        XCTAssertEqual(wide.answers(asCard: true).map(\.run), ["r"])
+        XCTAssertEqual(strip.answers(asCard: true).first?.card?.face.answerSize, .strip)
     }
 }

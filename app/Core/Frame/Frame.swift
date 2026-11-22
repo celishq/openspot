@@ -154,8 +154,7 @@ public struct Frame: Equatable, Sendable {
     }
 
     public var control: SpotPart? {
-        let shown = carded ?? every
-        guard actions.isEmpty, shown.count == 1, let part = shown.first else { return nil }
+        guard let carded, carded.count == 1, let part = carded.first else { return nil }
         switch part.control {
         case .toggle, .slider: return part
         default: return nil
@@ -172,6 +171,10 @@ public struct Frame: Equatable, Sendable {
 
     public var metric: TextBlock? {
         valueKind?.isReading == true ? value : nil
+    }
+
+    public var isForm: Bool {
+        root?.value(RootKey.type) == RootKey.form
     }
 
     public var progress: Double? {
@@ -192,8 +195,8 @@ public struct Frame: Equatable, Sendable {
         return output
     }
 
-    public var answers: [SpotItem] {
-        guard face.answerSize != nil, let value, let run = value.value("value") else { return items }
+    public func answers(asCard: Bool) -> [SpotItem] {
+        guard asCard, let value, let run = value.value("value") else { return items }
         let title = value.value("display") ?? run
         return [SpotItem(title: title, run: run, card: SpotState(output: self, header: SpotState(title: title)), openTitle: openTitle)]
     }

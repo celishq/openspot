@@ -79,8 +79,16 @@ final class SpotRunTests: XCTestCase {
         sheet.close()
     }
 
+    func testASwitchThatTheCardPlacesFillsNoCardWhileItIsOn() async throws {
+        let sheet = try make("printf 'switch=power\\nclass=card:flex\\nvalue=true\\n'", on: .panel)
+        sheet.show()
+        try await wait("the switch on") { sheet.state.on == true }
+
+        XCTAssertFalse(sheet.isOn)
+    }
+
     func testAnAnswerThatKeepsTheCardOnTellsNoReaderOfWhetherItIsOn() async throws {
-        let sheet = try make("n=$(cat '\(path("n"))' 2>/dev/null); echo $((n + 1)) > '\(path("n"))'; printf 'frame=\\ndetail=Read %s\\n\\nswitch=power\\nvalue=true\\n' \"$n\"", on: .panel)
+        let sheet = try make("n=$(cat '\(path("n"))' 2>/dev/null); echo $((n + 1)) > '\(path("n"))'; printf 'frame=\\ndetail=Read %s\\nactive=true\\n\\ntext=a\\ntitle=A\\n' \"$n\"", on: .panel)
         sheet.show()
         try await wait("the card on") { sheet.isOn }
         let detail = sheet.state.subtitle

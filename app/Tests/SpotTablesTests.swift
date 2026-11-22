@@ -90,7 +90,7 @@ final class SpotTablesTests: XCTestCase {
             faults: { $0.value("steps") == "0" ? ["the part \($0.fields.first?.value ?? "") needs a step"] : [] },
             field: { block, name, label in ItemForm.Field(name: name, label: label, value: block.value("value")) }
         )
-        let frame = "frame=\ntitle=T\nclass=gap-part\n\nmeter=m\ntitle=M\nvalue=3\nsteps=0\ncolour=red\n"
+        let frame = "frame=\ntype=form\ntitle=T\nclass=gap-part\n\nmeter=m\ntitle=M\nvalue=3\nsteps=0\ncolour=red\n"
 
         let check = FrameCheck(text: frame, kinds: BlockKind.all + [meter])
 

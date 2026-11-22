@@ -57,6 +57,7 @@ enum SpotTheme {
     @MainActor static var control: Double { current.control }
 
     @MainActor static var ink: Color { loaded.ink }
+    @MainActor static func ink(onSolid: Bool) -> Color { loaded.ink(onSolid: onSolid) }
     @MainActor static var glassInk: AnyShapeStyle { loaded.glassInk }
     @MainActor static var glassSecondary: AnyShapeStyle { loaded.glassSecondary }
     @MainActor static var solid: Color { loaded.solid }

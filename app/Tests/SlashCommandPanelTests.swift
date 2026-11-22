@@ -19,7 +19,8 @@ final class SlashCommandPanelTests: PanelCase {
         name=$(printf '%s\\n' "$stdin" | sed -n 's/^input\\.name=//p' | head -n 1)
         case "$1" in
           add)
-            if [ "$search" = ask ]; then printf 'frame=\\ntitle=Add a note\\n\\nfield=name\\ntitle=Name\\n'; else \(TestSpot.toast) "Saved $search$name"; fi ;;
+            if [ "$search" = ask ]; then printf 'frame=\\ntype=form\\ntitle=Add a note\\n\\nfield=name\\ntitle=Name\\n'
+            elif [ "$search" = page ]; then printf 'frame=\\ntitle=Add a note\\n\\nfield=name\\ntitle=Name\\n'; else \(TestSpot.toast) "Saved $search$name"; fi ;;
           find) printf 'text=Found %s\\n' "$search" ;;
           *) printf 'text=a\\ntitle=A\\n' ;;
         esac
@@ -187,7 +188,7 @@ final class SlashCommandPanelTests: PanelCase {
         try script("jot", toml: "title = 'Jot'\non = ['panel.open', 'sheet.open']", """
         . "$OPENSPOT_SH"
         case "$1" in
-          new) printf 'frame=\\ntitle=New jot\\n\\nfield=text\\ntitle=Text\\n'; openspot_kv value "$(value search)" ;;
+          new) printf 'frame=\\ntype=form\\ntitle=New jot\\n\\nfield=text\\ntitle=Text\\n'; openspot_kv value "$(value search)" ;;
           *) printf 'text=a\\ntitle=A\\n\\nbutton=new\\ntitle=New jot\\nscope=spot\\nform=true\\nplaceholder=What to jot\\n' ;;
         esac
         """)
@@ -237,6 +238,17 @@ final class SlashCommandPanelTests: PanelCase {
         model.submitForm()
         try await wait("the toast") { self.host.confirms == ["Saved bread"] }
         XCTAssertTrue(sent.contains("name=bread"), sent)
+    }
+
+    func testAFirstFrameWithFieldsAndNoTypeFormOpensTheSheet() async throws {
+        try writeNotes()
+        await open()
+
+        type("/add page")
+        model.runSelected()
+
+        try await wait("the sheet") { self.model.openSheetID == "notes" }
+        XCTAssertNil(model.form)
     }
 
     func testAFirstFrameWithSomethingToShowOpensTheSheet() async throws {

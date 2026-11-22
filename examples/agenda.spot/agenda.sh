@@ -26,7 +26,7 @@ toggle() {
 calendars_form() {
   calendars=$(openspot calendar calendars </dev/null) || { printf '%s\n' "$calendars"; exit 1; }
   lists=$(openspot reminders lists </dev/null) || { printf '%s\n' "$lists"; exit 1; }
-  printf 'frame=\ntitle=Calendars\nclass=gap-part\n\nchoice=calendars\ntitle=Calendars\ntype=multiple\n'
+  printf 'frame=\ntype=form\ntitle=Calendars\nclass=gap-part\n\nchoice=calendars\ntitle=Calendars\ntype=multiple\n'
   { printf '%s\n' "$calendars" | sed 's/^text=/text=calendar /'; printf '\n'; printf '%s\n' "$lists" | sed 's/^text=/text=list.bullet /'; } |
     awk -v hidden=" $hidden " 'BEGIN { RS = ""; FS = "\n" }
       /^text=/ {

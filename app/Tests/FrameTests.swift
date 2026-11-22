@@ -154,8 +154,10 @@ final class FrameTests: XCTestCase {
     func testWhatItPrintsDecidesTheKindOfSpot() {
         XCTAssertEqual(Frame(text: "").kind, .list)
         XCTAssertEqual(Frame(text: "frame=\ntitle=Hi\n").kind, .list)
-        XCTAssertEqual(Frame(text: "switch=power\nvalue=true\n").kind, .toggle)
-        XCTAssertEqual(Frame(text: "field=volume\ntype=slider\nvalue=7\n").kind, .slider)
+        XCTAssertEqual(Frame(text: "switch=power\nvalue=true\n").kind, .list)
+        XCTAssertEqual(Frame(text: "switch=power\nvalue=true\nclass=card:flex\n").kind, .toggle)
+        XCTAssertEqual(Frame(text: "switch=power\nvalue=true\nclass=card:flex\n\nbutton=new\ntitle=New\n").kind, .toggle)
+        XCTAssertEqual(Frame(text: "field=volume\ntype=slider\nvalue=7\nclass=card:flex\n").kind, .slider)
         XCTAssertEqual(Frame(text: "switch=power\nvalue=true\n\ntext=a\ntitle=A\n").kind, .list)
         XCTAssertEqual(Frame(text: "button=new\ntitle=New\n").kind, .list)
     }
@@ -219,6 +221,7 @@ final class FrameTests: XCTestCase {
     func testAFormHasOneBlockForEachField() {
         let form = ItemForm(output: Frame(text: """
         frame=
+        type=form
         title=New
 
         field=text
@@ -238,9 +241,12 @@ final class FrameTests: XCTestCase {
         ]))
     }
 
-    func testAFormNeedsATitleAndALabelForEachField() {
-        XCTAssertNil(ItemForm(output: Frame(text: "field=a\ntitle=A\n")))
-        XCTAssertNil(ItemForm(output: Frame(text: "frame=\ntitle=New\n\nfield=a\n")))
+    func testAFormNeedsTypeFormATitleAndALabelForEachField() {
+        XCTAssertNotNil(ItemForm(output: Frame(text: "frame=\ntype=form\ntitle=New\n\nfield=a\ntitle=A\n")))
+        XCTAssertNil(ItemForm(output: Frame(text: "frame=\ntitle=New\n\nfield=a\ntitle=A\n")))
+        XCTAssertNil(ItemForm(output: Frame(text: "frame=\ntype=form\n\nfield=a\ntitle=A\n")))
+        XCTAssertNil(ItemForm(output: Frame(text: "frame=\ntype=form\ntitle=New\n\nfield=a\n")))
+        XCTAssertEqual(Frame(text: "frame=\ntype=form\ntitle=New\n\nfield=a\ntitle=A\n").errors, [])
     }
 
     func testARowReadsEachKeyword() {

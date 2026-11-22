@@ -135,10 +135,11 @@ isn't drawn.
 
 - `frame=<route>` starts it. The route is the name of the sheet the frame is for, and can be empty; see
   [Pages](#pages).
-- `class` lays out the blocks of the root, as on a box; see [Layouts](#layouts).
+- `class` gives the frame a layout and lays out the blocks of the root, as on a box; see [Layouts](#layouts).
 - It takes `title`, `detail` and `active` for the card, and `recents`.
 - `value=<id>` names the block that is the spot's value on [the card](#the-card), in [the menu bar](#the-menu-bar)
   and in [the main search](#the-main-search).
+- `type=form` makes the frame a form, when it answers a press; see [Buttons and actions](#buttons-and-actions).
 - `progress=<0 to 1>` shows progress, and then `title` and `detail` show only on the running call.
 - `call=<n>` and `end=<n>`, here or in a block of their own, mark each call of a [staying spot](#a-staying-spot), one
   process that answers many calls.
@@ -225,9 +226,12 @@ end. Under it, Office and Café are the items of the list.
 
 - `parent=<id>` puts a block inside the block with that id. A block with no `parent` sits in the root. Blocks that
   share a parent keep the order of their lines.
-- A frame has a layout once it holds a `box`, a `parent` or a `class`, even one variant on one block, such as
-  `class=bar:flex`. Each block then draws where the layout puts it, and only the blocks inside the `items` block are
-  [items](#items). A frame with no layout gets the one that [Show things with blocks](#show-things-with-blocks) says.
+- A frame has a layout when its root has a `class`, such as `class=gap-part`, or when it holds an `items` block. Each
+  block then draws where the layout puts it, and only the blocks inside the `items` block are [items](#items). A frame
+  with no layout gets the one that [Show things with blocks](#show-things-with-blocks) says.
+- A `box`, a `parent` or a class on another block doesn't make a layout. In a frame with no layout,
+  `openspot check spots` reports each `box` and `parent`, and a class there styles its block only where the frame
+  draws a tree, such as on a card.
 - A `box` holds blocks. It lays them out in a column, or in a row with `flex-row`, a grid with `grid grid-cols-<n>`, or
   layers with `relative`. It draws nothing of its own but what its classes give, such as a fill. The root is a box too.
 - In a grid, `col-span-<n>` and `row-span-<n>` make a block cover more cells. In layers, `absolute` with `inset-0`, or
@@ -310,9 +314,12 @@ The card stands for the spot in the panel.
 - Its **value** is the one `text`, `number`, `series`, `switch` or slider that shows on the card, or else the one among the
   items. When the card shows more than one, `value=<id>` in the root names it, and `openspot check spots` reports a
   card that shows more than one with no `value`.
-- `active=true` in the root shows that the spot's thing is on.
-- A card whose frame holds only one switch or slider draws it, and a press changes it. Any other press does what Return
-  does; see [The keys of a spot](GUIDE.md#the-keys-of-a-spot).
+- `active=true` in the root shows that the spot's thing is on. A switch that the card places shows its own value, and
+  doesn't fill the card.
+- The card draws what a `card:` class places, such as `class=card:flex` on a `switch`, and a press on a switch it
+  places flips it. When a switch or a slider is all that the card places, a press anywhere on the card changes it.
+  Any other press does what Return does; see [The keys of a spot](GUIDE.md#the-keys-of-a-spot).
+- The card's title and detail come from the root, or else from the manifest, never from a block that it places.
 
 ### The menu bar
 
@@ -453,9 +460,13 @@ The sheet shows Save as its main button, across its width. Rename is a row of th
 - `shortcut` is a letter, a digit, `return`, `backspace` or `,`, after `cmd+`, `shift+`, both or neither, or `escape`
   alone, which presses the button instead of closing the sheet. In a ⌘K menu of 3 rows or more, only a `shortcut`
   with `cmd` works, since a field searches the rows.
-- `form=true` asks for values first: the call runs once with empty stdin and prints a `title` in its root and a
-  `field`, `choice` or `switch` for each value, then runs again with the values. A form that prints itself again,
-  such as with what's wrong, stays open. In a choice with `type=multiple`, a `value` line marks each chosen option.
+- `form=true` asks for values first: the call runs once with empty stdin and prints a **form**, a frame whose root has
+  `type=form` and a `title`, with a `field`, `choice` or `switch` that has a `title` for each value. Then it runs again
+  with the values. A form that prints itself again, such as with what's wrong, stays open. In a choice with
+  `type=multiple`, a `value` line marks each chosen option.
+- A form whose only field is a `choice` lists its options, which the user searches, and Return sends the selected one.
+- When a search of the sheet finds no item, Return runs the first `scope=spot` button with `form=true`, and the
+  searched words fill the first field of its form, unless the spot gave that field a `value`.
 
 ## The openspot command
 
@@ -554,8 +565,9 @@ The main search, the panel's own search field, lists items from every spot. See
   sheet.
 - `search.text <pattern>` asks the spot at each change of a text that matches, and a newer text stops the older call.
   Its items show first, or under the others with `answers = "last"`. A spot whose only event is `search.text` has no card.
-- A spot can print one card instead of items: a class names `large:` or `strip:`, and a press sends
-  `<spot> open <value>`.
+- `answers = "card"` in the manifest shows one card instead of the items: the card of the frame's
+  [value](#the-card), and a press sends `<spot> open <value>`. The card is large when a class names `large:`, and a
+  strip otherwise. A frame with no value still shows its items.
 
 ## Settings
 
@@ -753,8 +765,9 @@ A slash command runs a command or a spot that has a `placeholder`, with the text
 - The call gets the rest of the line, the words before and after the command, as `search=<text>`, with the arguments
   of a plain press. With no text, a command runs as its hotkey does, and a spot does what Return does on its card. A
   command with `confirm` isn't listed.
-- A first frame with fields is a form, whose values go to the same call. Other blocks open the sheet. A frame with
-  nothing to show, or the end of the call, closes the panel, unless the command has `close = false`.
+- A first frame whose root has `type=form` is a form, whose values go to the same call. Other blocks, fields too, open
+  the sheet. A frame with nothing to show, or the end of the call, closes the panel, unless the command has
+  `close = false`.
 
 ## Offered actions
 
@@ -923,7 +936,7 @@ title = "Refresh"
 | `source`      | The Swift files, or folders of them, that a [Swift spot](#a-swift-spot) is built with.                 |
 | `mode`        | `once`, the default, or `stay`. See [Modes](#modes).                                                   |
 | `uses`        | What the spot uses, such as `network` or `screen`. [Uses](TRUST.md#uses) lists each one.               |
-| `answers`     | `last`: the answers of `search.text` show under the other results, not first.                          |
+| `answers`     | `last`: the answers of `search.text` show under the other results, not first. `card`: they show as one card. |
 
 | Table              | Meaning                                                                                                                                                                                                                                                                                                                                                                                                                                                     |
 | ------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |

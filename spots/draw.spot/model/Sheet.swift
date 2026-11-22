@@ -30,7 +30,7 @@ struct Sheet {
 
     /// The form that asks for the new name of a board.
     static func renameForm(title: String, head: [String]) -> String {
-        (["frame="] + head + ["title=Rename board"]).joined(separator: "\n") + "\n\n" + ["field=name", "title=Name", "value=\(title)", "required=true"].map(line).joined(separator: "\n") + "\n"
+        (["frame=", "type=form"] + head + ["title=Rename board"]).joined(separator: "\n") + "\n\n" + ["field=name", "title=Name", "value=\(title)", "required=true"].map(line).joined(separator: "\n") + "\n"
     }
 
     /// What an argument of a call names, without the number that starts it: `new`, or the place of a board.

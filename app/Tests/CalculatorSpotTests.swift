@@ -30,7 +30,7 @@ final class CalculatorSpotTests: SampleSpotsCase {
         try await withPrivateHome { home in
             try "text=1234.5\ntitle=1,234.5\ndetail=1000 + 234.5\n".write(to: home.appendingPathComponent("calc-answer"), atomically: true, encoding: .utf8)
 
-            let answers = try await self.calculator.items(query: "1000+234.5", timeout: 60).answers
+            let answers = try await self.calculator.items(query: "1000+234.5", timeout: 60).answers(asCard: self.calculator.answers?.isCard == true)
 
             XCTAssertEqual(answers.map(\.run), ["1234.5"])
             XCTAssertEqual(answers.first?.card?.face.answerSize, .large)
@@ -45,7 +45,7 @@ final class CalculatorSpotTests: SampleSpotsCase {
         try await withPrivateHome { home in
             try "text=13.46\ntitle=13,46 €\ndetail=15 USD in EUR\nunit=€\nrates=Nov 10\n".write(to: home.appendingPathComponent("calc-answer"), atomically: true, encoding: .utf8)
 
-            let answers = try await self.calculator.items(query: "15 usd in eur", timeout: 60).answers
+            let answers = try await self.calculator.items(query: "15 usd in eur", timeout: 60).answers(asCard: self.calculator.answers?.isCard == true)
 
             XCTAssertEqual(answers.first?.card?.face.parts.map(\.title), ["15 USD in EUR"])
             XCTAssertEqual(answers.first?.card?.face.parts.last?.numberPieces.map(\.isUnit), [false, true])
@@ -56,7 +56,7 @@ final class CalculatorSpotTests: SampleSpotsCase {
         try await withPrivateHome { home in
             try "text=2026-11-11 07:00\ntitle=Wed 7:00 AM\ndetail=Wed 3:00 PM · Tokyo\nunit=AM\n".write(to: home.appendingPathComponent("calc-answer"), atomically: true, encoding: .utf8)
 
-            let answers = try await self.calculator.items(query: "3pm tokyo in berlin", timeout: 60).answers
+            let answers = try await self.calculator.items(query: "3pm tokyo in berlin", timeout: 60).answers(asCard: self.calculator.answers?.isCard == true)
 
             XCTAssertEqual(answers.first?.card?.face.parts.first?.title, "Wed 3:00 PM · Tokyo")
         }
@@ -66,7 +66,7 @@ final class CalculatorSpotTests: SampleSpotsCase {
         try await withPrivateHome { home in
             try "text=13.46\ntitle=13,46 €\ndetail=15 USD in EUR\nunit=€\nrates=Nov 2, 9 days old\ntone=warn\n".write(to: home.appendingPathComponent("calc-answer"), atomically: true, encoding: .utf8)
 
-            let answers = try await self.calculator.items(query: "15 usd in eur", timeout: 60).answers
+            let answers = try await self.calculator.items(query: "15 usd in eur", timeout: 60).answers(asCard: self.calculator.answers?.isCard == true)
 
             XCTAssertEqual(answers.map(\.run), ["13.46"])
             XCTAssertEqual(answers.first?.card?.face.parts.first?.title, "15 USD in EUR · rates of Nov 2, 9 days old")

@@ -185,7 +185,7 @@ public final class SpotRun {
     public internal(set) var state: SpotState {
         didSet {
             guard state != oldValue else { return }
-            if (state.on == true) != isOn { isOn = state.on == true }
+            if (state.active == true) != isOn { isOn = state.active == true }
             if state.subtitle != oldValue.subtitle { settle() }
             onReport(.listChange)
         }
@@ -243,7 +243,7 @@ public final class SpotRun {
         rows = ItemList(recent: recent)
         state = spot.headerState
         reading = MetricReading(label: spot.name, headerSymbol: spot.headerSymbol)
-        isOn = spot.headerState.on == true
+        isOn = spot.headerState.active == true
         settle()
         link.run = self
     }

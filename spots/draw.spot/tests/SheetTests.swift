@@ -98,7 +98,7 @@ final class DrawSheetTests: XCTestCase {
     }
 
     func testTheRenameFormHoldsTheTitleOfTheBoard() {
-        XCTAssertEqual(Sheet.renameForm(title: "Flows", head: ["end=3"]), "frame=\nend=3\ntitle=Rename board\n\nfield=name\ntitle=Name\nvalue=Flows\nrequired=true\n")
+        XCTAssertEqual(Sheet.renameForm(title: "Flows", head: ["end=3"]), "frame=\ntype=form\nend=3\ntitle=Rename board\n\nfield=name\ntitle=Name\nvalue=Flows\nrequired=true\n")
     }
 
     func testTheSampleIsTheSheetOverSampleBoards() throws {

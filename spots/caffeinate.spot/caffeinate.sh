@@ -222,7 +222,7 @@ serve() {
       [ -n "$minutes" ] || minutes=$(given search)
       case $minutes in
         '')
-          printf 'call=%s\n---\nframe=\ntitle=Keep the Mac awake\n\nfield=minutes\ntitle=Minutes\nplaceholder=45\n---\nend=%s\n---\n' "$call" "$call"
+          printf 'call=%s\n---\nframe=\ntype=form\ntitle=Keep the Mac awake\n\nfield=minutes\ntitle=Minutes\nplaceholder=45\n---\nend=%s\n---\n' "$call" "$call"
           ;;
         *[!0-9]* | 0*)
           openspot toast 'Caffeinate takes minutes as a number, such as 45.'

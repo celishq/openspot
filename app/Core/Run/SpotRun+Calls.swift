@@ -31,7 +31,7 @@ extension SpotRun {
                 takeEffects(frame: text)
             }
         case .act(let act):
-            if act.first?.take(lines) == true, !lines.fields.isEmpty { return }
+            if act.first?.take(lines) == true, lines.isForm { return }
             if lines.isPicture {
                 if await takePicture(lines, frame: text, of: act) {
                     call.showedPicture = true
@@ -41,7 +41,7 @@ extension SpotRun {
                 takeEffects(frame: text)
             }
         case .form:
-            if !lines.fields.isEmpty || call.form.fields.isEmpty { call.form = lines }
+            if lines.isForm || !call.form.isForm { call.form = lines }
         }
     }
 
@@ -54,7 +54,7 @@ extension SpotRun {
     }
 
     func take(answers text: String?, to query: String, of call: OpenCall, _ end: ScriptCall.End, errors: String) {
-        takeAnswers(text.map { Frame(text: $0).answers } ?? [], to: query)
+        takeAnswers(text.map { Frame(text: $0).answers(asCard: spot.answers?.isCard == true) } ?? [], to: query)
         call.hasAnswer = text != nil
         finish(call, end, errors: errors)
     }

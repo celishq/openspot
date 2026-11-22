@@ -398,7 +398,7 @@ final class SpotRunsWorkTests: SpotRunsCase {
     }
 
     func testAPressOfACardWithinOneSecondOfItsStartDoesNothing() async throws {
-        try script(toml: "on = ['panel.open']", "[ \"$1\" = show ] && { printf 'switch=power\\nvalue=false\\n'; exit 0; }\nsleep 0.3\ntouch '\(path("done"))'\nprintf 'switch=power\\nvalue=true\\n'")
+        try script(toml: "on = ['panel.open']", "[ \"$1\" = show ] && { printf 'switch=power\\nclass=card:flex\\nvalue=false\\n'; exit 0; }\nsleep 0.3\ntouch '\(path("done"))'\nprintf 'switch=power\\nclass=card:flex\\nvalue=true\\n'")
         let sheet = try sheet()
         runs.panelOpened()
         try await wait("the kind") { sheet.spot.kind == .toggle }
@@ -416,7 +416,7 @@ final class SpotRunsWorkTests: SpotRunsCase {
         try script(toml: "", """
         case "$1" in
           show) printf 'button=new\\ntitle=New\\nscope=spot\\nform=true\\n\\ntext=a\\ntitle=A\\n' ;;
-          new) \(untilRelease); printf 'frame=\\ntitle=New\\n\\nfield=a\\ntitle=A\\n' ;;
+          new) \(untilRelease); printf 'frame=\\ntype=form\\ntitle=New\\n\\nfield=a\\ntitle=A\\n' ;;
         esac
         """)
         let sheet = try sheet()
@@ -438,7 +438,7 @@ final class SpotRunsWorkTests: SpotRunsCase {
         try script(toml: "", """
         case "$1" in
           show) printf 'button=open\\ntitle=Open\\nform=true\\n\\ntext=a\\ntitle=A\\n' ;;
-          open) case "$(cat)" in *name=x*) ;; *) printf 'frame=\\ntitle=Name\\n\\nfield=name\\ntitle=Name\\n' ;; esac ;;
+          open) case "$(cat)" in *name=x*) ;; *) printf 'frame=\\ntype=form\\ntitle=Name\\n\\nfield=name\\ntitle=Name\\n' ;; esac ;;
         esac
         """)
         let sheet = try sheet()
@@ -464,7 +464,7 @@ final class SpotRunsWorkTests: SpotRunsCase {
         try script(toml: "", """
         case "$1" in
           show) printf 'text=a\\ntitle=A\\n' ;;
-          editor) printf 'frame=\\ntitle=Editor\\n\\nchoice=editor\\ntitle=Editor\\n\\noption=zed\\ntitle=Zed\\n' ;;
+          editor) printf 'frame=\\ntype=form\\ntitle=Editor\\n\\nchoice=editor\\ntitle=Editor\\n\\noption=zed\\ntitle=Zed\\n' ;;
           folder) touch "\(path("folder"))" ;;
         esac
         """)
@@ -542,7 +542,7 @@ final class SpotRunsWorkTests: SpotRunsCase {
     }
 
     func testAQuitStopsAToggleAndItGoesBack() async throws {
-        try script(toml: "on = ['panel.open']", "[ \"$1\" = show ] && printf 'switch=power\\nvalue=false\\n'\n[ \"$1\" = power ] && sleep 30\nexit 0")
+        try script(toml: "on = ['panel.open']", "[ \"$1\" = show ] && printf 'switch=power\\nclass=card:flex\\nvalue=false\\n'\n[ \"$1\" = power ] && sleep 30\nexit 0")
         let sheet = try sheet()
         runs.panelOpened()
         try await wait("the kind") { sheet.spot.kind == .toggle && sheet.calls.isEmpty }

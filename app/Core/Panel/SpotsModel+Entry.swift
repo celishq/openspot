@@ -84,7 +84,7 @@ extension SpotsModel {
         }
 
         @MainActor public var isOn: Bool {
-            run?.isOn ?? (fixedState.on == true)
+            run?.isOn ?? (fixedState.active == true)
         }
 
         @MainActor public var isActive: Bool {
