@@ -61,7 +61,8 @@ icon = "network"
 
 ```sh
 #!/bin/sh
-[ "$1" = open ] && kill "$2"
+. "$OPENSPOT_SH"
+[ "$1" = press ] && kill "$(value item)"
 lsof -nP -iTCP -sTCP:LISTEN | awk 'NR > 1 && !seen[$2]++ {
   sub(/.*:/, ":", $9)
   printf "item=%s\ntitle=%s\ndetail=%s\n\n", $2, $9, $1

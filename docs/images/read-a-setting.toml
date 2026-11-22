@@ -1,3 +1,4 @@
 title = "Repos"
 
-[settings.folder]
+[settings]
+folder = { type = "text", title = "Folder" }

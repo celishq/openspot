@@ -31,7 +31,7 @@ final class SpotEffectTests: PanelCase {
         os='\(client.path)'
         codes='\(path("codes"))'
         in=$(cat)
-        route=$(printf '%s\\n' "$in" | sed -n 's/^route=//p')
+        route=$(printf '%s\\n' "$in" | sed -n 's/^input\\.route=//p')
         case "$1" in
           show) echo "${route:-first}" >> '\(path("routes"))'; \(show) printf '\(buttons)item=a\\ntitle=Page %s\\n\\nitem=b\\ntitle=B\\n\\nitem=c\\ntitle=C\\n' "${route:-first}" ;;
           next) "$os" route push "n${#route}" --title "Next page" ;;
@@ -135,7 +135,7 @@ final class SpotEffectTests: PanelCase {
         try await openList()
         try await openPage()
         try script("mover", toml: "title = 'Mover'", """
-        [ "$1" = open ] || exit 0
+        [ "$1" = press ] || exit 0
         '\(client.path)' route back; echo "go $?" >> '\(path("codes"))'
         '\(client.path)' route push x; echo "go $?" >> '\(path("codes"))'
         """)

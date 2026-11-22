@@ -1,7 +1,8 @@
+import Foundation
+
 extension Manifest {
     public struct Setting: Equatable, Sendable {
         static let table = "settings"
-        static let keys: Set<String> = ["title", "icon", "type", "options"]
         static let secret = "secret"
 
         public let id: String
@@ -12,18 +13,16 @@ extension Manifest {
         public let valueType: ValueType?
         let section: String
         let type: String?
-        let unknownKey: String?
 
-        init(id: String, section: String = "", values: [String: [String]] = [:], written: [String] = []) {
+        init(id: String) {
             self.id = id
-            self.section = section
-            title = values["title"]?.first ?? id.prefix(1).uppercased() + id.dropFirst()
-            icon = values["icon"]?.first
-            type = values["type"]?.first
-            options = values["options"] ?? []
+            section = ""
+            title = id.prefix(1).uppercased() + id.dropFirst()
+            icon = nil
+            type = nil
+            options = []
             defaultValue = nil
             valueType = nil
-            unknownKey = written.first { !Self.keys.contains($0) }
         }
 
         init(_ parameter: Parameter) {
@@ -35,7 +34,6 @@ extension Manifest {
             options = parameter.options
             defaultValue = parameter.defaultValue
             valueType = parameter.type
-            unknownKey = nil
         }
 
         public var isSecret: Bool {

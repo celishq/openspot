@@ -37,56 +37,22 @@ final class SpotEventsTests: SpotRunsCase {
         "\(TestSpot.event)\necho \"$ev ${val:-none}\" >> '\(path("reasons"))'"
     }
 
-    func testEachOnLineIsOneEventWithAFilterOfItsValue() throws {
-        let read = try XCTUnwrap(try ShowEvents(on: ["panel.open", "clock.60", "music.track", "clipboard.change", "app.front com\\.apple\\.Notes", "search.text ^[0-9]", "sheet.text"], of: "Clock"))
-
-        XCTAssertEqual(read.moments, [.panel, .every(60), .event("music.track"), .event("clipboard.change"), .event("app.front"), .sheet])
-        XCTAssertEqual(read.answers?.text, "^[0-9]")
-        XCTAssertTrue(read.searchesSheet)
-        XCTAssertTrue(read.admits("app.front", value: "com.apple.Notes"))
-        XCTAssertFalse(read.admits("app.front", value: "com.apple.Safari"))
-        XCTAssertTrue(read.admits("music.track", value: nil))
-        XCTAssertNil(try ShowEvents(on: [], of: "Clock"))
-    }
-
-    func testALineThatIsNoEventIsAFaultThatNamesIt() {
-        func fault(_ line: String) -> String? {
-            do {
-                _ = try ShowEvents(on: [line], of: "Clock")
-                return nil
-            } catch {
-                return (error as? SpotError)?.reason
-            }
-        }
-
-        XCTAssertEqual(fault("clock.1.5"), "Clock has an unknown clock: clock.1.5. Write a whole number of seconds, such as on = [\"clock.60\"]")
-        XCTAssertEqual(fault("search.text"), "Clock needs a pattern of the texts that it answers, such as on = [\"search.text ^[0-9]\"]")
-        XCTAssertEqual(fault("app.front ("), "Clock has an unknown filter in its on: app.front (. Write a regular expression after the event, such as on = [\"search.text ^[0-9]\"]")
-        for line in ["sheet.open x", "panel.open x", "clock.60 x", "sheet.text ^a", "clipboard.change x", "screen.wake x"] {
-            let event = line.split(separator: " ")[0]
-            XCTAssertEqual(fault(line), "Clock has a filter in its on: \(line), and \(event) takes none. Write \"\(event)\" alone. A filter follows only an event with a value, such as on = ['app.front com\\.apple\\.Notes']")
-        }
-        for word in ["music", "music.", "clipboard", "60"] {
-            XCTAssertEqual(fault(word), "Clock has an unknown event in its on: \(word). Write a word with a dot, such as on = [\"sheet.open\"] or on = [\"music.track\"]")
-        }
-    }
-
     func testAnEventReadsEachWantedSpotThatListsItWithItsNameAndValue() async throws {
-        try script("listens", toml: "on = ['panel.open', 'music.track']", log: "listens", "\(reasons)\nprintf 'text=t\\ntitle=T\\n'")
-        try script("other", toml: "on = ['panel.open', 'other.event']", log: "other", "printf 'text=o\\ntitle=O\\n'")
+        try script("listens", toml: "[on]\n\"panel.open\" = true\n\"power.change\" = true", log: "listens", "\(reasons)\nprintf 'text=t\\ntitle=T\\n'")
+        try script("other", toml: "[on]\n\"panel.open\" = true\n\"disk.mount\" = true", log: "other", "printf 'text=o\\ntitle=O\\n'")
         _ = try scanned()
         runs.panelOpened()
         try await wait("the panel reads") { self.log("listens") == ["show"] && self.log("other") == ["show"] && !self.runs.isShowing }
 
-        runs.raise(.named("music.track", value: "Song"))
+        runs.raise(.named(SpotEvent.powerChange, value: "Song"))
 
-        try await wait("the event read") { self.log("reasons") == ["panel.open none", "music.track Song"] && !self.runs.isShowing }
+        try await wait("the event read") { self.log("reasons") == ["panel.open none", "power.change Song"] && !self.runs.isShowing }
         XCTAssertEqual(log("other"), ["show"])
     }
 
     func testAnEventWithNoValueGivesNone() async throws {
         menuBar.insert("script")
-        try script(toml: "on = ['clipboard.change']", "\(reasons)\nprintf 'text=t\\ntitle=T\\n'")
+        try script(toml: "[on]\n\"clipboard.change\" = true", "\(reasons)\nprintf 'text=t\\ntitle=T\\n'")
         _ = try scanned()
 
         try await wait("the first read") { self.log("reasons") == ["spot.want none"] && !self.runs.isShowing }
@@ -98,31 +64,31 @@ final class SpotEventsTests: SpotRunsCase {
 
     func testAnEventReadsASpotOnlyWhileSomethingWantsIt() async throws {
         menuBar.insert("wanted")
-        try script("wanted", toml: "on = ['music.track']", log: "wanted", "printf 'text=t\\ntitle=T\\n'")
-        try script("unwanted", toml: "on = ['music.track']", log: "unwanted", "printf 'text=u\\ntitle=U\\n'")
+        try script("wanted", toml: "[on]\n\"power.change\" = true", log: "wanted", "printf 'text=t\\ntitle=T\\n'")
+        try script("unwanted", toml: "[on]\n\"power.change\" = true", log: "unwanted", "printf 'text=u\\ntitle=U\\n'")
         _ = try scanned()
 
         try await wait("the first read of the wanted spot") { self.log("wanted") == ["show"] && !self.runs.isShowing }
 
-        runs.raise(.named("music.track", value: "Song"))
+        runs.raise(.named(SpotEvent.powerChange, value: "Song"))
 
-        try await wait("the event read of the wanted spot") { self.log("wanted") == ["show", "show"] && !self.runs.isShowing }
+        try await wait("the event read of the wanted spot") { self.log("wanted") == ["show", "power.change"] && !self.runs.isShowing }
         try await allEnded()
         XCTAssertEqual(log("unwanted"), [])
     }
 
     func testAnEventForEachSpotReadsAnUnwantedSpotThatListsIt() async throws {
-        try script("unwanted", toml: "on = ['app.update']", log: "unwanted", "printf 'text=u\\ntitle=U\\n'")
+        try script("unwanted", toml: "[on]\n\"app.update\" = true", log: "unwanted", "printf 'text=u\\ntitle=U\\n'")
         _ = try scanned()
 
         runs.raise(.named("app.update", value: "2.0", showsEachSpot: true))
 
-        try await wait("the read of the unwanted spot") { self.log("unwanted") == ["show"] }
+        try await wait("the read of the unwanted spot") { self.log("unwanted") == ["app.update"] }
     }
 
     func testTheLaunchReadsEachSpotThatListsItWantedOrNot() async throws {
-        try script("news", toml: "on = ['app.launch']", log: "news", "\(reasons)\nprintf 'frame=\\ntitle=N\\n'")
-        try script("other", toml: "on = ['app.update']", log: "other", "printf 'frame=\\ntitle=O\\n'")
+        try script("news", toml: "[on]\n\"app.launch\" = true", log: "news", "\(reasons)\nprintf 'frame=\\ntitle=N\\n'")
+        try script("other", toml: "[on]\n\"app.update\" = true", log: "other", "printf 'frame=\\ntitle=O\\n'")
         _ = try scanned()
 
         runs.launched()
@@ -132,10 +98,10 @@ final class SpotEventsTests: SpotRunsCase {
     }
 
     func testASpotThatOffersRowsWithNoReadingEventReadsAsTheSpotsLoadAndNotAtAPanelOpen() async throws {
-        try script("offer", toml: "offers = ['search']", log: "offer", "\(reasons)\nprintf 'item=a\\ntitle=A\\n'")
+        try script("offer", toml: "[on]\nsearch = true", log: "offer", "\(reasons)\nprintf 'item=a\\ntitle=A\\n'")
         _ = try scanned()
         try await wait("the rows of the first load") { self.runs.sheets["offer"]?.list.all.map(\.title) == ["A"] }
-        try script("offer", toml: "offers = ['search']", log: "offer", "\(reasons)\nprintf 'item=b\\ntitle=B\\n'")
+        try script("offer", toml: "[on]\nsearch = true", log: "offer", "\(reasons)\nprintf 'item=b\\ntitle=B\\n'")
 
         runs.panelOpened()
         runs.panelClosed()
@@ -148,7 +114,7 @@ final class SpotEventsTests: SpotRunsCase {
     }
 
     func testAPanelThatHidesLetsALaunchReadFinish() async throws {
-        try script("news", toml: "on = ['app.launch']", log: "news", "sleep 0.3\necho done >> '\(path("done"))'\nprintf 'frame=\\ntitle=N\\n'")
+        try script("news", toml: "[on]\n\"app.launch\" = true", log: "news", "sleep 0.3\necho done >> '\(path("done"))'\nprintf 'frame=\\ntitle=N\\n'")
         _ = try scanned()
 
         runs.launched()
@@ -159,7 +125,7 @@ final class SpotEventsTests: SpotRunsCase {
     }
 
     func testAFailedReadOfAnEventForEachSpotIsTold() async throws {
-        try script("unwanted", toml: "on = ['app.update']", log: "unwanted", "echo 'No news.' >&2\nexit 1")
+        try script("unwanted", toml: "[on]\n\"app.update\" = true", log: "unwanted", "echo 'No news.' >&2\nexit 1")
         let (_, told) = try toldSheet()
 
         runs.raise(.named("app.update", value: "2.0", showsEachSpot: true))
@@ -168,12 +134,12 @@ final class SpotEventsTests: SpotRunsCase {
     }
 
     func testASpotThatWaitsForEventsReadsOnceAsItBecomesWanted() async throws {
-        try script(toml: "on = ['screen.wake']", "\(reasons)\nprintf 'text=t\\ntitle=T\\n'")
+        try script(toml: "[on]\n\"screen.wake\" = true", "\(reasons)\nprintf 'text=t\\ntitle=T\\n'")
         _ = try scanned()
-        try script("other", toml: "on = ['clock.600']", log: "other", "printf 'text=o\\ntitle=O\\n'")
+        try script("other", toml: "[on]\nevery = 600", log: "other", "printf 'text=o\\ntitle=O\\n'")
         menuBar.insert("other")
         _ = try scanned()
-        try await wait("the read of the other spot") { self.log("other") == ["show"] && !self.runs.isShowing }
+        try await wait("the read of the other spot") { self.log("other") == ["every"] && !self.runs.isShowing }
         try await allEnded()
         XCTAssertEqual(log("reasons"), [])
 
@@ -188,32 +154,32 @@ final class SpotEventsTests: SpotRunsCase {
 
     func testAnEventDuringAReadReadsAgainWithTheNewestEvent() async throws {
         menuBar.insert("script")
-        try script(toml: "on = ['music.track']", "\(reasons)\n[ -z \"$val\" ] || \(untilRelease)\nprintf 'text=t\\ntitle=T\\n'")
+        try script(toml: "[on]\n\"power.change\" = true", "\(reasons)\n[ -z \"$val\" ] || \(untilRelease)\nprintf 'text=t\\ntitle=T\\n'")
         _ = try scanned()
         try await wait("the first read") { self.log("reasons") == ["spot.want none"] && !self.runs.isShowing }
 
-        runs.raise(.named("music.track", value: "A"))
+        runs.raise(.named(SpotEvent.powerChange, value: "A"))
         try await wait("the read of A") { self.log("reasons").count == 2 }
-        runs.raise(.named("music.track", value: "B"))
-        runs.raise(.named("music.track", value: "C"))
+        runs.raise(.named(SpotEvent.powerChange, value: "B"))
+        runs.raise(.named(SpotEvent.powerChange, value: "C"))
         openGate()
 
-        try await wait("the read of C") { self.log("reasons") == ["spot.want none", "music.track A", "music.track C"] && !self.runs.isShowing }
+        try await wait("the read of C") { self.log("reasons") == ["spot.want none", "power.change A", "power.change C"] && !self.runs.isShowing }
     }
 
     func testAStayingScriptGetsTheValueOfItsEvent() {
-        XCTAssertEqual(Message(.show, event: ShowEvent(event: "music.track", value: "Song")).block(id: 3), "call=3\narg=show\nevent=music.track\nevent.value=Song\n\n")
-        XCTAssertEqual(Message(.show, event: .panel).block(id: 3), "call=3\narg=show\nevent=panel.open\n\n")
+        XCTAssertEqual(Message(.show, event: ShowEvent(event: SpotEvent.powerChange, value: "ac")).handled().block(id: 3), "call=3\narg=power.change\ninput.value=ac\n\n")
+        XCTAssertEqual(Message(.show, event: .panel).handled().block(id: 3), "call=3\narg=show\ninput.event=panel.open\n\n")
     }
 
     func testASpotThatListsAnEventCanShowInTheMenuBar() throws {
-        try script(toml: "on = ['app.front']", "printf 'text=t\\ntitle=T\\n'")
+        try script(toml: "[on]\n\"app.front\" = true", "printf 'text=t\\ntitle=T\\n'")
         XCTAssertTrue(try sheet().spot.canShowInMenuBar)
     }
 
     func testTheMacRaisesTheFrontAppAndTheScreenWake() async throws {
         menuBar.insert("script")
-        try script(toml: "on = ['app.front', 'screen.wake']", "\(reasons)\nprintf 'text=t\\ntitle=T\\n'")
+        try script(toml: "[on]\n\"app.front\" = true\n\"screen.wake\" = true", "\(reasons)\nprintf 'text=t\\ntitle=T\\n'")
         _ = try scanned()
         runs.listen(to: mac)
 
@@ -228,19 +194,19 @@ final class SpotEventsTests: SpotRunsCase {
 
     func testTheMacRaisesTheWakeOfTheMac() async throws {
         menuBar.insert("script")
-        try script(toml: "on = ['clock.600']", "\(reasons)\nprintf 'text=t\\ntitle=T\\n'")
+        try script(toml: "[on]\nevery = 600", "\(reasons)\nprintf 'text=t\\ntitle=T\\n'")
         _ = try scanned()
         runs.listen(to: mac)
-        try await wait("the first read") { self.log("reasons") == ["clock.600 none"] && !self.runs.isShowing }
+        try await wait("the first read") { self.log("reasons") == ["every none"] && !self.runs.isShowing }
 
         mac.heard?(.wake)
 
-        try await wait("the wake read") { self.log("reasons") == ["clock.600 none", "clock.600 none"] }
+        try await wait("the wake read") { self.log("reasons") == ["every none", "every none"] }
     }
 
     func testAChangeOfTheClipboardRaisesClipboard() async throws {
         menuBar.insert("script")
-        try script(toml: "on = ['clipboard.change']", "\(reasons)\nprintf 'text=t\\ntitle=T\\n'")
+        try script(toml: "[on]\n\"clipboard.change\" = true", "\(reasons)\nprintf 'text=t\\ntitle=T\\n'")
         _ = try scanned()
         runs.listen(to: mac)
         try await wait("a look at the clipboard") { self.mac.looks > 1 }
@@ -252,13 +218,13 @@ final class SpotEventsTests: SpotRunsCase {
     }
 
     func testTheClipboardIsWatchedOnlyWhileSomethingWantsASpotThatListsIt() async throws {
-        try script("other", toml: "on = ['panel.open']", log: "other", "printf 'text=o\\ntitle=O\\n'")
+        try script("other", toml: "[on]\n\"panel.open\" = true", log: "other", "printf 'text=o\\ntitle=O\\n'")
         _ = try scanned()
         runs.listen(to: mac)
         XCTAssertFalse(runs.watchesClipboard)
         XCTAssertEqual(mac.looks, 0)
 
-        try script(toml: "on = ['clipboard.change']", "printf 'text=t\\ntitle=T\\n'")
+        try script(toml: "[on]\n\"clipboard.change\" = true", "printf 'text=t\\ntitle=T\\n'")
         _ = try scanned()
         XCTAssertFalse(runs.watchesClipboard)
 
@@ -272,7 +238,7 @@ final class SpotEventsTests: SpotRunsCase {
     }
 
     func testTheOpenPanelWantsASpotThatListsThePanelAndTheClipboard() async throws {
-        try script(toml: "on = ['panel.open', 'clipboard.change']", "printf 'text=t\\ntitle=T\\n'")
+        try script(toml: "[on]\n\"panel.open\" = true\n\"clipboard.change\" = true", "printf 'text=t\\ntitle=T\\n'")
         _ = try scanned()
         runs.listen(to: mac)
         XCTAssertFalse(runs.watchesClipboard)
@@ -286,7 +252,7 @@ final class SpotEventsTests: SpotRunsCase {
 
     func testWithThePanelClosedTheClipboardIsLookedAtAfterTwiceItsPause() async throws {
         menuBar.insert("script")
-        try script(toml: "on = ['clipboard.change']", "printf 'text=t\\ntitle=T\\n'")
+        try script(toml: "[on]\n\"clipboard.change\" = true", "printf 'text=t\\ntitle=T\\n'")
         _ = try scanned()
         let start = Date()
 
@@ -299,7 +265,7 @@ final class SpotEventsTests: SpotRunsCase {
     func testOpeningThePanelLooksAtTheClipboardAtOnce() async throws {
         runs = SpotRuns(clock: clock.value, stopPause: 0.2, clipboardPause: .seconds(4))
         menuBar.insert("script")
-        try script(toml: "on = ['clipboard.change']", "\(reasons)\nprintf 'text=t\\ntitle=T\\n'")
+        try script(toml: "[on]\n\"clipboard.change\" = true", "\(reasons)\nprintf 'text=t\\ntitle=T\\n'")
         _ = try scanned()
         runs.listen(to: mac)
         try await wait("the first read") { self.log("reasons") == ["spot.want none"] && !self.runs.isShowing }
@@ -312,7 +278,7 @@ final class SpotEventsTests: SpotRunsCase {
 
     func testNothingWatchesTheClipboardAfterAQuit() throws {
         menuBar.insert("script")
-        try script(toml: "on = ['clipboard.change']", "printf 'text=t\\ntitle=T\\n'")
+        try script(toml: "[on]\n\"clipboard.change\" = true", "printf 'text=t\\ntitle=T\\n'")
         _ = try scanned()
         runs.listen(to: mac)
 
@@ -324,7 +290,7 @@ final class SpotEventsTests: SpotRunsCase {
 
     func testAQuitEndsTheWatchOfTheClipboard() async throws {
         menuBar.insert("script")
-        try script(toml: "on = ['clipboard.change']", "printf 'text=t\\ntitle=T\\n'")
+        try script(toml: "[on]\n\"clipboard.change\" = true", "printf 'text=t\\ntitle=T\\n'")
         _ = try scanned()
         runs.listen(to: mac)
         let watch = try XCTUnwrap(runs.clipboardWatch)
@@ -338,8 +304,8 @@ final class SpotEventsTests: SpotRunsCase {
     func testOneSampleOfTheLoadServesEachWantedReaderAndNoneIsTakenWithNoReader() async throws {
         let fake = FakeClock()
         runs = SpotRuns(clock: fake.value, stopPause: 0.2)
-        try script("one", toml: "on = ['system.load']", log: "one", "\(TestSpot.event)\necho \"$ev ${val:-none}\" >> '\(path("one-reasons"))'\nprintf 'text=t\\ntitle=T\\n'")
-        try script("two", toml: "on = ['system.load cpu=[0-9]+']", log: "two", "\(TestSpot.event)\necho \"$ev ${val:-none}\" >> '\(path("two-reasons"))'\nprintf 'text=t\\ntitle=T\\n'")
+        try script("one", toml: "[on]\n\"system.load\" = true", log: "one", "\(TestSpot.event)\necho \"$ev ${val:-none}\" >> '\(path("one-reasons"))'\nprintf 'text=t\\ntitle=T\\n'")
+        try script("two", toml: "[on]\n\"system.load\" = 'cpu=[0-9]+'", log: "two", "\(TestSpot.event)\necho \"$ev ${val:-none}\" >> '\(path("two-reasons"))'\nprintf 'text=t\\ntitle=T\\n'")
         _ = try scanned()
         runs.listen(to: mac)
         fake.advance(by: 60)
@@ -370,7 +336,7 @@ final class SpotEventsTests: SpotRunsCase {
     func testAReaderThatComesBackWithin10SecondsGetsTheLoadAtOnceAndOneLaterWaitsForTwoSamples() async throws {
         let fake = FakeClock()
         runs = SpotRuns(clock: fake.value, stopPause: 0.2)
-        try script("one", toml: "on = ['system.load']", log: "one", "\(TestSpot.event)\necho \"$ev ${val:-none}\" >> '\(path("reasons"))'\nprintf 'text=t\\ntitle=T\\n'")
+        try script("one", toml: "[on]\n\"system.load\" = true", log: "one", "\(TestSpot.event)\necho \"$ev ${val:-none}\" >> '\(path("reasons"))'\nprintf 'text=t\\ntitle=T\\n'")
         runs.listen(to: mac)
         menuBar = ["one"]
         _ = try scanned()
@@ -394,36 +360,5 @@ final class SpotEventsTests: SpotRunsCase {
         try await allEnded()
 
         XCTAssertEqual(log("reasons").filter { $0.hasPrefix("system.load") }, ["system.load cpu=20 memory=40"])
-    }
-
-    func testTheEventsOfTheMacThatCarryAValueTakeAFilter() throws {
-        for line in ["power.change battery", "disk.mount ^/Volumes/", "device.connect Keyboard", "system.load cpu=9[0-9]"] {
-            XCTAssertNotNil(try ShowEvents(on: [line], of: "Probe"))
-        }
-    }
-
-    func testAnEventFromAShellReadsTheSpotThatListsIt() async throws {
-        menuBar.insert("script")
-        try script(toml: "on = ['music.track']", "\(reasons)\nprintf 'text=t\\ntitle=%s\\n' \"$val\"")
-        let sheet = try sheet()
-        let config = FileManager.default.temporaryDirectory.appendingPathComponent("oe-\(UUID().uuidString.prefix(8))", isDirectory: true)
-        defer { try? FileManager.default.removeItem(at: config) }
-        let client = folder.appendingPathComponent("A.app/Contents/Helpers/openspot")
-        try FileManager.default.createDirectory(at: client.deletingLastPathComponent(), withIntermediateDirectories: true)
-        try FileManager.default.copyItem(at: Bundle(for: Self.self).bundleURL.deletingLastPathComponent().appendingPathComponent("openspot"), to: client)
-        let runs = runs!
-        let socket = try XCTUnwrap(CommandSocket(folder: config, api: CommandAPI(mac: Mac(), places: .test(["OPENSPOT_CONFIG": config.path]), raise: { event in await MainActor.run { runs.raise(event) } }, rates: .offline)))
-        defer { socket.close() }
-        let shell = Process()
-        shell.executableURL = URL(fileURLWithPath: "/bin/sh")
-        shell.arguments = ["-c", "\"$0\" event emit music.track 'Blue in Green'", client.path]
-        shell.environment = ["OPENSPOT_CONFIG": config.path, "PATH": "/usr/bin:/bin"]
-
-        try shell.run()
-
-        try await wait("the end of the shell") { !shell.isRunning }
-        XCTAssertEqual(shell.terminationStatus, 0)
-        try await wait("the read of the event") { self.log("reasons") == ["spot.want none", "music.track Blue in Green"] }
-        try await wait("the frame of the event") { sheet.reading.value?.title == "Blue in Green" }
     }
 }

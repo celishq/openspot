@@ -54,45 +54,6 @@
       ],
       "type" : "object"
     },
-    "command" : {
-      "additionalProperties" : false,
-      "properties" : {
-        "close" : {
-          "$ref" : "#/$defs/texts"
-        },
-        "confirm" : {
-          "$ref" : "#/$defs/texts"
-        },
-        "form" : {
-          "$ref" : "#/$defs/texts"
-        },
-        "hotkey" : {
-          "$ref" : "#/$defs/texts"
-        },
-        "icon" : {
-          "$ref" : "#/$defs/texts"
-        },
-        "offers" : {
-          "$ref" : "#/$defs/texts"
-        },
-        "placeholder" : {
-          "$ref" : "#/$defs/texts"
-        },
-        "scope" : {
-          "$ref" : "#/$defs/texts"
-        },
-        "shortcut" : {
-          "$ref" : "#/$defs/texts"
-        },
-        "title" : {
-          "$ref" : "#/$defs/texts"
-        },
-        "when" : {
-          "$ref" : "#/$defs/texts"
-        }
-      },
-      "type" : "object"
-    },
     "on" : {
       "additionalProperties" : {
         "type" : [
@@ -188,22 +149,10 @@
           },
           "type" : "object"
         },
-        "commands" : {
-          "additionalProperties" : {
-            "$ref" : "#/$defs/command"
-          },
-          "type" : "object"
-        },
         "detail" : {
           "$ref" : "#/$defs/texts"
         },
-        "drop" : {
-          "$ref" : "#/$defs/texts"
-        },
         "edits" : {
-          "$ref" : "#/$defs/texts"
-        },
-        "emits" : {
           "$ref" : "#/$defs/texts"
         },
         "events" : {
@@ -221,26 +170,10 @@
         "keywords" : {
           "$ref" : "#/$defs/texts"
         },
-        "mode" : {
-          "$ref" : "#/$defs/texts"
-        },
-        "offers" : {
-          "$ref" : "#/$defs/texts"
-        },
         "on" : {
-          "anyOf" : [
-            {
-              "$ref" : "#/$defs/texts"
-            },
-            {
-              "$ref" : "#/$defs/on"
-            }
-          ]
+          "$ref" : "#/$defs/on"
         },
         "pages" : {
-          "$ref" : "#/$defs/texts"
-        },
-        "placeholder" : {
           "$ref" : "#/$defs/texts"
         },
         "settings" : {
@@ -362,22 +295,10 @@
       },
       "type" : "object"
     },
-    "commands" : {
-      "additionalProperties" : {
-        "$ref" : "#/$defs/command"
-      },
-      "type" : "object"
-    },
     "detail" : {
       "$ref" : "#/$defs/texts"
     },
-    "drop" : {
-      "$ref" : "#/$defs/texts"
-    },
     "edits" : {
-      "$ref" : "#/$defs/texts"
-    },
-    "emits" : {
       "$ref" : "#/$defs/texts"
     },
     "events" : {
@@ -395,26 +316,10 @@
     "keywords" : {
       "$ref" : "#/$defs/texts"
     },
-    "mode" : {
-      "$ref" : "#/$defs/texts"
-    },
-    "offers" : {
-      "$ref" : "#/$defs/texts"
-    },
     "on" : {
-      "anyOf" : [
-        {
-          "$ref" : "#/$defs/texts"
-        },
-        {
-          "$ref" : "#/$defs/on"
-        }
-      ]
+      "$ref" : "#/$defs/on"
     },
     "pages" : {
-      "$ref" : "#/$defs/texts"
-    },
-    "placeholder" : {
       "$ref" : "#/$defs/texts"
     },
     "scripts" : {

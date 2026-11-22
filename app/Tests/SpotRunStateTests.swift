@@ -16,7 +16,7 @@ final class SpotRunStateTests: XCTestCase {
             links[spot.id] = link
             return link
         }
-        runs.onCall = { [unowned self] record, _ in records.append(record) }
+        runs.onCall = { [unowned self] record in records.append(record) }
     }
 
     override func tearDown() async throws {
@@ -98,7 +98,7 @@ final class SpotRunStateTests: XCTestCase {
         await link.frame("frame=\nclass=gap-part\n\nfield=a\ntitle=old\nvalue=x\n", of: link.sent[1])
         await link.end(link.sent[1])
 
-        XCTAssertEqual(link.arguments().dropFirst().map(\.last), ["old", "new"])
+        XCTAssertEqual(link.sent.dropFirst().map { call in call.request.message.inputs.last { $0.key == "value" }?.value }, ["old", "new"])
         XCTAssertEqual(sheet.panel?.parts.first?.title, "new")
         XCTAssertEqual(sheet.panel?.parts.first?.value, "new")
     }
@@ -164,7 +164,7 @@ final class SpotRunStateTests: XCTestCase {
         await link.frame("toast=Done\n", of: link.sent[1])
         await link.end(link.sent[1])
 
-        XCTAssertEqual(link.arguments(), [["show"], ["open", "a"], ["show"]])
+        XCTAssertEqual(link.arguments(), [["show"], ["press", "a"], ["show"]])
     }
 
     func testNoReadFollowsWorkThatDrewAPicture() async throws {
@@ -174,7 +174,7 @@ final class SpotRunStateTests: XCTestCase {
         await link.frame("item=b\ntitle=B\n", of: link.sent[1])
         await link.end(link.sent[1])
 
-        XCTAssertEqual(link.arguments(), [["show"], ["open", "a"]])
+        XCTAssertEqual(link.arguments(), [["show"], ["press", "a"]])
         XCTAssertEqual(sheet.list.shown.map(\.run), ["b"])
     }
 
@@ -339,7 +339,7 @@ final class SpotRunStateTests: XCTestCase {
     }
 
     func testQuickPressesOfAKeyWaitUpToTheirLimit() async throws {
-        let (sheet, link) = sheet(kind: .launch, on: nil, offers: Manifest(text: TestSpot.command, folder: "").commands)
+        let (sheet, link) = sheet(kind: .launch, on: nil, offers: Manifest(text: TestSpot.command, folder: "").actions.compactMap(\.command))
 
         for _ in 0..<10 { sheet.pressKey("go") }
         var ended = 0
@@ -352,7 +352,7 @@ final class SpotRunStateTests: XCTestCase {
     }
 
     func testAStayingSpotHoldsNoMoreKeyPressesThanTheLimit() async throws {
-        let (sheet, link) = sheet(kind: .launch, on: nil, mode: .stay, offers: Manifest(text: TestSpot.command, folder: "").commands)
+        let (sheet, link) = sheet(kind: .launch, on: nil, mode: .stay, offers: Manifest(text: TestSpot.command, folder: "").actions.compactMap(\.command))
         var toasts: [String] = []
         sheet.onReport = { if case .toast(let text) = $0 { toasts.append(text) } }
 
@@ -474,7 +474,7 @@ final class SpotRunStateTests: XCTestCase {
         await link.frame("toast=Done\n", of: link.sent[1])
         await link.end(link.sent[1], .failed(SpotError.failed(2, "No")))
 
-        XCTAssertEqual(records.map(\.arguments), [["show"], ["open", "a"]])
+        XCTAssertEqual(records.map(\.arguments), [["show"], ["press"]])
         XCTAssertEqual(records.last?.frames, ["toast=Done\n"])
         XCTAssertEqual(records.last?.end, .exited(2))
         XCTAssertEqual(runs.usage.counts["script"]?.runs, 2)

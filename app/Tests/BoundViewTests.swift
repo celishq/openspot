@@ -15,7 +15,7 @@ final class BoundViewTests: PanelCase {
         case "$1" in
           show) printf 'text=s\\ntitle=Show\\n' ;;
           pick) printf 'frame=\\n\\ntext=morning\\ntitle=Morning\\n\\ntext=evening\\ntitle=Evening\\n' ;;
-          open) echo "out.until=$2" ;;
+          press) echo "out.until=$(sed -n 's/^input.item=//p')" ;;
         esac
         """)
         try script("asker", toml: "title = 'Asker'\n[bindings]\npicker = { spot = 'picker' }", """
@@ -65,12 +65,13 @@ final class BoundViewTests: PanelCase {
 
     func testThePushedViewTakesTheTitleOfItsRootAndARouteInItShowsItsPage() async throws {
         try script("days", toml: "title = 'Days'\npages = ['date']\n[actions.pick]\noutputs.until = 'text'", """
-        route=$(sed -n 's/^route=//p')
+        in=$(cat)
+        route=$(printf '%s\\n' "$in" | sed -n 's/^input.route=//p')
         case "$1:$route" in
           show:date) printf 'text=monday\\ntitle=Monday\\n' ;;
           show:*) printf 'text=s\\ntitle=Show\\n' ;;
           pick:*) printf 'frame=\\ntitle=For the tab\\n\\ntext=morning\\ntitle=Morning\\n\\ntext=pick\\ntitle=Pick Date\\nroute=date\\n' ;;
-          open:*) echo "out.until=$2" ;;
+          press:*) echo "out.until=$(printf '%s\\n' "$in" | sed -n 's/^input.item=//p')" ;;
         esac
         """)
         try script("dater", toml: "title = 'Dater'\n[bindings]\ndays = { spot = 'days' }", """

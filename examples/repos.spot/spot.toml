@@ -5,5 +5,3 @@ uses = ["clipboard"]
 [settings]
 folder = { type = "text" }
 editor = { type = "text", title = "Default app" }
-
-[on]

@@ -4,5 +4,3 @@ detail = "Sketch on a board"
 stay = true
 uses = ["files"]
 source = ["model", "app"]
-
-[on]

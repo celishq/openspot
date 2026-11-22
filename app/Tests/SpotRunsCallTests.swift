@@ -5,7 +5,7 @@ import XCTest
 final class SpotRunsCallTests: SpotRunsCase {
     func testAReadAtThePanelThatTakesTooLongMarksItsCardAndTellsNoOne() async throws {
         runs = SpotRuns(showLimit: 0.3)
-        try script(toml: "on = ['panel.open']", "sleep 30")
+        try script(toml: "[on]\n\"panel.open\" = true", "sleep 30")
         let sheet = try sheet()
         var failures: [String] = []
         sheet.onReport = { if case .failure(let text) = $0 { failures.append(text) } }
@@ -23,7 +23,7 @@ final class SpotRunsCallTests: SpotRunsCase {
         try script(toml: "", """
         case "$1" in
           show) [ -f '\(path("slow"))' ] && sleep 30; touch '\(path("slow"))'; printf 'frame=\\ntitle=1\\n\\nitem=a\\ntitle=A\\n' ;;
-          open) \(untilRelease); touch '\(path("done"))' ;;
+          press) \(untilRelease); touch '\(path("done"))' ;;
         esac
         """)
         let sheet = try sheet()
@@ -32,7 +32,7 @@ final class SpotRunsCallTests: SpotRunsCase {
         sheet.show()
         try await wait("the row") { sheet.list.shown.count == 1 }
         sheet.pick(try XCTUnwrap(sheet.list.selectedItem))
-        try await wait("the work") { self.log().contains("open a") }
+        try await wait("the work") { self.log().contains("press") }
 
         sheet.show(need: .change)
         try await wait("the time limit") { !failures.isEmpty }
@@ -48,7 +48,7 @@ final class SpotRunsCallTests: SpotRunsCase {
 
     func testAFailedTimerReadKeepsTheValueAndDimsWithNoToast() async throws {
         menuBar.insert("script")
-        try script(toml: "on = ['clock.5']", """
+        try script(toml: "[on]\nevery = 5", """
         [ -f '\(path("second"))' ] && exit 1
         touch '\(path("second"))'
         printf 'frame=\\nclass=gap-part\\n\\ntext=m\\nclass=bar:flex\\ntitle=3\\n'
@@ -71,7 +71,7 @@ final class SpotRunsCallTests: SpotRunsCase {
 
     func testASpotWithNoValueShowsItsIconInTheMenuBar() throws {
         menuBar.insert("pen")
-        _ = try script("pen", toml: "title = 'Pen'\nicon = 'pencil.tip'\n[commands.draw]\ntitle = 'Draw on screen'")
+        _ = try script("pen", toml: "title = 'Pen'\nicon = 'pencil.tip'\n[actions.draw]\ntitle = 'Draw on screen'")
         let pen = try sheet("pen")
 
         XCTAssertTrue(pen.spot.canShowInMenuBar)
@@ -199,7 +199,7 @@ final class SpotRunsCallTests: SpotRunsCase {
     }
 
     func testAReadStopsWhenThePanelThatWantedItCloses() async throws {
-        try script(toml: "on = ['panel.open']\noffers = ['search']", "printf 'item=a\\ntitle=A\\n---\\n'\nsleep 5\ntouch '\(path("went-on"))'")
+        try script(toml: "[on]\n\"panel.open\" = true\nsearch = true", "printf 'item=a\\ntitle=A\\n---\\n'\nsleep 5\ntouch '\(path("went-on"))'")
         let sheet = try sheet()
         runs.panelOpened()
         try await wait("the first frame") { sheet.list.shown.count == 1 }
@@ -212,7 +212,7 @@ final class SpotRunsCallTests: SpotRunsCase {
     }
 
     func testClosingASheetLeavesAReadThatThePanelWants() async throws {
-        try script(toml: "on = ['panel.open']\noffers = ['search']", "sleep 0.2\nprintf 'item=a\\ntitle=A\\n'")
+        try script(toml: "[on]\n\"panel.open\" = true\nsearch = true", "sleep 0.2\nprintf 'item=a\\ntitle=A\\n'")
         let sheet = try sheet()
         runs.panelOpened()
         sheet.open {}
@@ -303,10 +303,10 @@ final class SpotRunsCallTests: SpotRunsCase {
     }
 
     func testAFrameOfAPickWithNoOpenSheetIsTheWholePicture() async throws {
-        try script(toml: "on = ['panel.open']", """
+        try script(toml: "[on]\n\"panel.open\" = true", """
         case "$1" in
           show) printf 'frame=\\nclass=gap-part\\ndetail=Idle\\n\\nitems=list\\n\\nitem=a\\nparent=list\\ntitle=A\\n\\ntext=bar\\ntitle=idle\\n' ;;
-          open) printf 'frame=\\nclass=gap-part\\ntitle=Other\\nactive=true\\n\\ntext=bar\\ntitle=work\\n' ;;
+          press) printf 'frame=\\nclass=gap-part\\ntitle=Other\\nactive=true\\n\\ntext=bar\\ntitle=work\\n' ;;
         esac
         """)
         let sheet = try sheet()
@@ -346,9 +346,10 @@ final class SpotRunsCallTests: SpotRunsCase {
 
     func testANewValueStopsTheOlderCallOfThatPartAndNoOther() async throws {
         try script(toml: "", """
+        v=$(sed -n 's/^input\\.value=//p')
         case "$1" in
           show) printf 'frame=\\nclass=gap-part\\n\\nswitch=a\\nvalue=false\\n\\nswitch=b\\nvalue=false\\n\\ntext=out\\ntitle=none\\n' ;;
-          a) [ "$2" = true ] && { sleep 30; touch '\(path("old-a"))'; exit 0; }; touch '\(path("new-a"))'; printf 'frame=\\nclass=gap-part\\n\\nswitch=a\\nvalue=false\\n\\nswitch=b\\nvalue=true\\n\\ntext=out\\ntitle=new\\n' ;;
+          a) [ "$v" = true ] && { sleep 30; touch '\(path("old-a"))'; exit 0; }; touch '\(path("new-a"))'; printf 'frame=\\nclass=gap-part\\n\\nswitch=a\\nvalue=false\\n\\nswitch=b\\nvalue=true\\n\\ntext=out\\ntitle=new\\n' ;;
           b) \(untilRelease); touch '\(path("b"))'; printf 'frame=\\nclass=gap-part\\n\\nswitch=a\\nvalue=false\\n\\nswitch=b\\nvalue=true\\n\\ntext=out\\ntitle=b\\n' ;;
         esac
         """)
@@ -359,7 +360,7 @@ final class SpotRunsCallTests: SpotRunsCase {
 
         sheet.set(parts[1], to: "true")
         sheet.set(parts[0], to: "true")
-        try await wait("the first call of a") { self.log().contains("a true") }
+        try await wait("the first call of a") { self.log().contains("a") }
         sheet.set(parts[0], to: "false")
 
         try await wait("the new call of a") { sheet.panel?.parts[2].title == "new" }
@@ -373,10 +374,11 @@ final class SpotRunsCallTests: SpotRunsCase {
 
     func testAnOlderCallOfAnotherPartLeavesAPartThatChangedSince() async throws {
         try script(toml: "", """
+        v=$(sed -n 's/^input\\.value=//p')
         case "$1" in
           show) printf 'frame=\\nclass=gap-part\\n\\nswitch=a\\nvalue=%s\\n\\nswitch=b\\nvalue=%s\\n' "$(cat '\(path("a"))' 2>/dev/null || echo false)" "$(cat '\(path("b"))' 2>/dev/null || echo false)" ;;
-          a) sleep 0.2; echo "$2" > '\(path("a"))'; printf 'frame=\\nclass=gap-part\\n\\nswitch=a\\nvalue=true\\n\\nswitch=b\\nvalue=false\\n' ;;
-          b) echo "$2" > '\(path("b"))'; printf 'frame=\\nclass=gap-part\\n\\nswitch=a\\nvalue=false\\n\\nswitch=b\\nvalue=true\\n' ;;
+          a) sleep 0.2; echo "$v" > '\(path("a"))'; printf 'frame=\\nclass=gap-part\\n\\nswitch=a\\nvalue=true\\n\\nswitch=b\\nvalue=false\\n' ;;
+          b) echo "$v" > '\(path("b"))'; printf 'frame=\\nclass=gap-part\\n\\nswitch=a\\nvalue=false\\n\\nswitch=b\\nvalue=true\\n' ;;
         esac
         """)
         let sheet = try sheet()
@@ -437,7 +439,7 @@ final class SpotRunsCallTests: SpotRunsCase {
     }
 
     func testAStoppedToggleGoesBack() async throws {
-        try script(toml: "on = ['panel.open']", "[ \"$1\" = show ] && { printf 'switch=power\\nclass=card:flex\\nvalue=false\\n'; exit 0; }\nsleep 5")
+        try script(toml: "[on]\n\"panel.open\" = true", "[ \"$1\" = show ] && { printf 'switch=power\\nclass=card:flex\\nvalue=false\\n'; exit 0; }\nsleep 5")
         let sheet = try sheet()
         runs.panelOpened()
         try await wait("the kind") { sheet.spot.kind == .toggle }

@@ -206,10 +206,6 @@ extension SpotsModel {
     func pressMenu() {
         let isRunning = menu?.selectedRow.map { act(of: $0) != nil } ?? false
         guard let row = menu?.press(isRunning: isRunning), let target = menuTarget else { return }
-        if !isRunning, let action = row.action, action.isForm {
-            openForm(action, on: target)
-            return
-        }
         if let action = row.action, let owner = row.owner {
             return run(action, offeredBy: owner, on: target)
         }

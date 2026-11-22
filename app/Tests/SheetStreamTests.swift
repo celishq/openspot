@@ -177,7 +177,7 @@ final class SheetStreamTests: XCTestCase {
     }
 
     func testAScriptThatStaysIsAList() throws {
-        let url = try script("", toml: "mode = 'stay'\non = ['panel.open']")
+        let url = try script("", toml: "stay = true\n[on]\n'panel.open' = true")
         let command = try XCTUnwrap(try SpotFile(file: url, id: "script")).spots.first
 
         XCTAssertEqual(command?.mode, .stay)

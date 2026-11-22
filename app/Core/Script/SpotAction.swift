@@ -3,7 +3,7 @@ import Foundation
 public struct SpotAction: Equatable, Sendable {
     public let arguments: [String]
 
-    public static let open = SpotAction(arguments: ["open"])
+    public static let open = SpotAction(arguments: ["press"])
     public static let show = SpotAction(arguments: ["show"])
 
     public init(arguments: [String]) {
@@ -15,7 +15,7 @@ public struct SpotAction: Equatable, Sendable {
     }
 
     public static func item(_ item: SpotItem) -> SpotAction {
-        item.isToggle ? SpotAction(arguments: [item.run, item.isOn ? "false" : "true"]) : SpotAction(arguments: ["open", item.run])
+        item.isToggle ? SpotAction(arguments: [item.run, item.isOn ? "false" : "true"]) : SpotAction(arguments: ["press", item.run])
     }
 
     public static func action(_ action: CommandAction, item: SpotItem?) -> SpotAction {

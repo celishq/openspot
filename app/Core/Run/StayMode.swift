@@ -67,7 +67,7 @@ final class StayMode: ScriptMode {
         let (script, frames, caller) = runs.stay(spot, limit: limit)
         caller.reason = ShowEvent.panel.rawValue
         defer { script.end() }
-        script.send(Message(.show, event: .panel, given: input), id: 1)
+        script.send(Message(.show, event: .panel, given: input).handled(), id: 1)
         for try await frame in frames {
             let head = FrameRoot(text: frame)
             if !head.isMark || head.end == "1" { return frame }

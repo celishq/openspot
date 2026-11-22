@@ -22,7 +22,7 @@ It shows what a spot can do when you add or update it, and shows each use after 
 
 | Use         | The calls that need it                                                                                                                                          |
 | ----------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `app`       | `app quit`, each call of `theme` but `theme list`, `update check`, `update install`, and `setting set` of `menubar`, `open`, `float`, `key.<command>` or of the spot `openspot` |
+| `app`       | `app quit`, each call of `theme` but `theme list`, `update check`, `update install`, and `setting set` of `menubar`, `open`, `float`, `key.<action>` or of the spot `openspot` |
 | `spots`     | `spot add`, `spot remove`, `spot settings`, `spot edit`, `spot prompt`, `spot share`, `spot delete`, `spot new`, `spot run`, `spot log`, `setting list`, `setting set` of `enabled`, and `setting get`, `set` or `change` of another spot |
 | `screen`    | `screen sources`, `screen shot`, `screen record`, `window frame`, `window move` and `color pick`                                                                |
 | `clipboard` | `clipboard copy`, `clipboard paste` and `clipboard read`                                                                                                        |
@@ -37,18 +37,22 @@ It shows what a spot can do when you add or update it, and shows each use after 
   `openspot check spots` can't report it, because only a run shows it. `openspot spot stats` lists each such call.
 - Openspot knows which spot makes each call of `openspot` by the link it gives each process of the spot on file
   descriptor 11, not from the variables of the process. Each process that the spot starts inherits it, so leave fd 11
-  open. An app that the spot opens doesn't get it, and the link ends with the spot's process. A process of the spot that
-  closed fd 11 is still known by the process group that Openspot started it in. A call that runs in a process of its
-  own, such as one that the running app hands back, runs with the rights of the spot's process and nothing more.
+  open, and start a command from Swift with `posix_spawn`, since Foundation's `Process` closes it. An app that the spot
+  opens doesn't get it, and the link ends with the spot's process. A process of the spot that closed fd 11 is still
+  known by the process group that Openspot started it in, but only the link lets it run another spot with
+  `openspot run` or tell other spots with `openspot emit`. A call that runs in a process of its own, such as one that
+  the running app hands back, runs with the rights of the spot's process and nothing more.
 - Only your own processes can reach the API.
-- No spot and no Terminal reads a secret setting: `setting get` and `setting list` print `•••` for it, to its own spot
-  too, and `setting set` of it fails. Only Openspot's own form changes it. Openspot keeps a secret in the Keychain, under
-  the spot's id and the setting's key, never in the config, and removes it with the spot.
+- No other spot and no Terminal reads a secret setting: `setting get` and `setting list` print `•••` for it, and
+  `setting set` of it fails. Only its own spot reads it, with `setting get`, and only Openspot's own form changes it.
+  Openspot keeps a secret in the Keychain, under the spot's id and the setting's key, never in the config, and removes
+  it with the spot.
 
 ## The review before an add
 
-Before an add, the review shows the title, the `uses`, and a line **Can also** with what the code seems to do but
-doesn't name: the network, `rm`, `screencapture`, `pbcopy` or `pbpaste`. It warns, and never blocks the add.
+Before an add, the review shows the title, the `uses`, each spot that it binds under **Binds**, and a line **Can also**
+with what the code seems to do but doesn't name: the network, `rm`, `screencapture`, `pbcopy` or `pbpaste`. It warns,
+and never blocks the add. A bound spot that isn't installed shows as not installed.
 
 - The review names each file that Openspot can't show as text, such as the built program of a Swift spot or a built
   view, and says that it can do all that you can. For a built file, it says that the source beside it may not match.
@@ -58,7 +62,9 @@ doesn't name: the network, `rm`, `screencapture`, `pbcopy` or `pbpaste`. It warn
   has no Command Line Tools, where the review has said that the program may not match its source. On a Mac with the
   tools, a spot that you added runs only what Openspot built there from the source you can read. A share never passes a
   carried program on: it builds a new one from the sources it ships.
-- An update with no new use applies quietly. An update with a new use waits for `--yes`.
+- An update with no new use and no new binding applies quietly. An update with a new use or a new binding waits for
+  `--yes`. So does an update that removes an action that another installed spot binds, or makes an input of one
+  required with no default, and the review names each such spot.
 
 ## Careful mode
 

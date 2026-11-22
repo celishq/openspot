@@ -3,19 +3,17 @@ import Foundation
 public struct Manifest: Equatable, Sendable {
     public static let fileName = "spot.toml"
     public static let keys: Set<String> = [
-        "title", "icon", "detail", "keywords", "placeholder", "on", "emits", "offers", "drop", "edits", "starts", "views", "source", "mode",
-        "uses", "pages", "answers", "stay"
+        "title", "icon", "detail", "keywords", "edits", "starts", "views", "source", "uses", "pages", "answers", "stay"
     ]
-    public static let tables: Set<String> = [Command.table, Setting.table, Action.table, Binding.table, Event.table]
+    public static let tables: Set<String> = [Setting.table, Action.table, Binding.table, Event.table, Triggers.table]
     static let appKeys: Set<String> = ["edits", "starts"]
     static let limit = 65_536
-    private static let scriptsTable = "scripts"
+    static let scriptsTable = "scripts"
     private static let stayKey = "stay"
 
     private struct Script {
         var values: [String: [String]] = [:]
         var written: [String] = []
-        var commands: [Command] = []
         var settings: [Setting] = []
         var actions: [Action] = []
         var bindings: [Binding] = []
@@ -39,20 +37,13 @@ public struct Manifest: Equatable, Sendable {
     public let icon: String?
     public let detail: String?
     public let keywords: [String]
-    public let placeholder: String?
-    public let on: [String]
-    public let emits: [String]
-    public let offers: [String]
-    public let drop: [String]
     public let edits: String?
     public let starts: String?
     public let views: [String]
     public let source: [String]
-    public let mode: String?
     public let uses: [String]
     public let pages: [String]
     public let answers: String?
-    public let commands: [Command]
     public let settings: [Setting]
     public let actions: [Action]
     public let bindings: [Binding]
@@ -60,6 +51,7 @@ public struct Manifest: Equatable, Sendable {
     public let stay: Bool?
     public let triggers: Triggers?
     private let written: [String]
+    let hasScripts: Bool
     private let scripts: [String: Manifest]
     private let main: String?
     private let fault: String?
@@ -99,20 +91,13 @@ public struct Manifest: Equatable, Sendable {
         icon = text("icon")
         detail = text("detail")
         keywords = list("keywords").flatMap { $0.split(separator: ",").map { $0.trimmingCharacters(in: .whitespaces) } }.filter { !$0.isEmpty }
-        placeholder = text("placeholder")
-        on = list("on")
-        emits = list("emits").flatMap(Self.words)
-        offers = list("offers")
-        drop = text("drop")?.split(separator: ",").map { $0.trimmingCharacters(in: .whitespaces) } ?? []
         edits = text("edits")
         starts = text("starts")
         views = list("views")
         source = list("source")
-        mode = text("mode")
         uses = list("uses").flatMap(Self.words)
         pages = list("pages")
         answers = text("answers")
-        commands = script.commands
         settings = script.settings
         actions = script.actions
         bindings = script.bindings
@@ -120,6 +105,7 @@ public struct Manifest: Equatable, Sendable {
         stay = text(Self.stayKey).flatMap(Bool.init)
         triggers = script.triggers
         written = script.written
+        hasScripts = !scripts.isEmpty
         self.scripts = scripts
         self.main = main
         self.fault = fault
@@ -187,10 +173,6 @@ public struct Manifest: Equatable, Sendable {
             } else if path.isEmpty {
                 script.values.merge(table.values) { $0 + $1 }
                 script.written += table.written
-            } else if path.count == 2, path[0] == Command.table {
-                script.commands.append(Command(id: path[1], section: heading, values: table.values, written: table.written))
-            } else if path.count == 2, path[0] == Setting.table {
-                script.settings.append(Setting(id: path[1], section: heading, values: table.values, written: table.written))
             } else {
                 script.written.append(path[0])
             }

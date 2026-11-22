@@ -76,7 +76,7 @@ final class SpotRunsFrameTests: SpotRunsCase {
         try script(toml: "", """
         case "$1" in
           show) printf 'item=a\\ntitle=A\\n' ;;
-          open) printf 'frame=\\ntitle=Other\\n---\\n'; \(untilRelease) ;;
+          press) printf 'frame=\\ntitle=Other\\n---\\n'; \(untilRelease) ;;
         esac
         """)
         let sheet = try sheet()
@@ -95,7 +95,7 @@ final class SpotRunsFrameTests: SpotRunsCase {
         try script(toml: "", """
         case "$1" in
           show) printf 'item=a\\ntitle=A\\n' ;;
-          open) printf 'frame=\\nprogress=0.4\\ntitle=Copying\\ndetail=2 of 5\\n---\\n'; \(untilRelease) ;;
+          press) printf 'frame=\\nprogress=0.4\\ntitle=Copying\\ndetail=2 of 5\\n---\\n'; \(untilRelease) ;;
         esac
         """)
         let sheet = try sheet()
@@ -115,7 +115,7 @@ final class SpotRunsFrameTests: SpotRunsCase {
         try script(toml: "", """
         case "$1" in
           show) printf 'item=a\\ntitle=A\\n' ;;
-          open) printf 'frame=\\nclass=gap-part\\n\\nnumber=g\\nvalue=40\\nmax=100\\n---\\n'; \(untilRelease) ;;
+          press) printf 'frame=\\nclass=gap-part\\n\\nnumber=g\\nvalue=40\\nmax=100\\n---\\n'; \(untilRelease) ;;
         esac
         """)
         let sheet = try sheet()
@@ -144,12 +144,12 @@ final class SpotRunsFrameTests: SpotRunsCase {
     }
 
     func testAFrameOfAStayingScriptWithARootReplacesAll() async throws {
-        try script(toml: "mode = 'stay'", """
+        try script(toml: "stay = true", """
         while IFS= read -r line; do
           case "$line" in
             call=*) call=${line#call=} ;;
             arg=show) printf 'end=%s\\n\\nitem=a\\ntitle=A\\n---\\n' "$call" ;;
-            arg=open) printf 'end=%s\\n---\\n' "$call"; printf 'frame=\\nclass=gap-part\\n\\ntext=peer\\ntitle=Peer\\n---\\n' ;;
+            arg=press) printf 'end=%s\\n---\\n' "$call"; printf 'frame=\\nclass=gap-part\\n\\ntext=peer\\ntitle=Peer\\n---\\n' ;;
           esac
         done
         """)
@@ -165,7 +165,7 @@ final class SpotRunsFrameTests: SpotRunsCase {
     }
 
     func testALaterFrameOfAStayingScriptWithNoRootMergesIntoTheFrameOfItsCall() async throws {
-        try script(toml: "mode = 'stay'", """
+        try script(toml: "stay = true", """
         while IFS= read -r line; do
           case "$line" in
             call=*) call=${line#call=}; printf 'call=%s\\n---\\n' "$call" ;;
@@ -181,7 +181,7 @@ final class SpotRunsFrameTests: SpotRunsCase {
     }
 
     func testAStayingScriptAddsPointsToItsSeriesWithoutPrintingTheList() async throws {
-        try script(toml: "mode = 'stay'", """
+        try script(toml: "stay = true", """
         while IFS= read -r line; do
           case "$line" in
             call=*) call=${line#call=}; printf 'call=%s\\n---\\n' "$call" ;;
@@ -197,7 +197,7 @@ final class SpotRunsFrameTests: SpotRunsCase {
     }
 
     func testAStayingReadThatEndsWithOnlyAHeadKeepsThePictureThatCameBeforeIt() async throws {
-        try script(toml: "mode = 'stay'", """
+        try script(toml: "stay = true", """
         while IFS= read -r line; do
           case "$line" in
             call=*) call=${line#call=} ;;
@@ -217,10 +217,11 @@ final class SpotRunsFrameTests: SpotRunsCase {
 
     func testAnOutdatedAnswerChangesNothingAndAReadFollowsItsEnd() async throws {
         try script(toml: "", """
+        v=$(sed -n 's/^input\\.value=//p')
         case "$1" in
           show) printf 'frame=\\nclass=gap-part\\n\\nswitch=a\\nvalue=%s\\n\\nswitch=b\\nvalue=%s\\n' "$(cat '\(path("a"))' 2>/dev/null || echo false)" "$(cat '\(path("b"))' 2>/dev/null || echo false)" ;;
-          a) \(untilRelease); echo "$2" > '\(path("a"))'; printf 'frame=\\nclass=gap-part\\n\\nswitch=a\\nvalue=%s\\n\\nswitch=b\\nvalue=false\\n' "$2" ;;
-          b) echo "$2" > '\(path("b"))'; printf 'frame=\\nclass=gap-part\\n\\nswitch=a\\nvalue=false\\n\\nswitch=b\\nvalue=%s\\n' "$2" ;;
+          a) \(untilRelease); echo "$v" > '\(path("a"))'; printf 'frame=\\nclass=gap-part\\n\\nswitch=a\\nvalue=%s\\n\\nswitch=b\\nvalue=false\\n' "$v" ;;
+          b) echo "$v" > '\(path("b"))'; printf 'frame=\\nclass=gap-part\\n\\nswitch=a\\nvalue=false\\n\\nswitch=b\\nvalue=%s\\n' "$v" ;;
         esac
         """)
         let sheet = try sheet()
@@ -229,9 +230,9 @@ final class SpotRunsFrameTests: SpotRunsCase {
         let parts = try XCTUnwrap(sheet.panel?.parts)
 
         sheet.set(parts[0], to: "true")
-        try await wait("the call of a") { self.log().contains("a true") }
+        try await wait("the call of a") { self.log().contains("a") }
         sheet.set(parts[1], to: "true")
-        try await wait("the answer of b") { self.log().contains("b true") && sheet.calls.count == 1 }
+        try await wait("the answer of b") { self.log().contains("b") && sheet.calls.count == 1 }
         openGate()
 
         try await wait("the read after a") { self.log().last == "show" && sheet.calls.isEmpty }

@@ -404,16 +404,17 @@ final class SwiftProgramTests: XCTestCase {
     }
 
     func testDeletingASpotAlsoTakesItsProgram() throws {
-        try script("home/hello.swift", "#!/bin/sh\n", toml: "")
-        try script("home/hello.\(String(repeating: "0", count: 64)).program", "#!/bin/sh\n")
-        try script("home/other.sh", "#!/bin/sh\n", toml: "")
+        try script("hello/hello.swift", "#!/bin/sh\n", toml: "")
+        try script("hello/hello.\(String(repeating: "0", count: 64)).program", "#!/bin/sh\n")
+        try script("other/other.sh", "#!/bin/sh\n", toml: "")
         let place = SpotsFolder(url: folder)
-        let command = try XCTUnwrap(try place.scan().spots.first { $0.id == "home/hello" })
+        let command = try XCTUnwrap(try place.scan().spots.first { $0.id == "hello" })
         var discarded: [String] = []
 
         try place.remove(command) { discarded.append($0.lastPathComponent) }
 
-        XCTAssertEqual(discarded, ["hello.swift", "hello.\(String(repeating: "0", count: 64)).program"])
+        XCTAssertEqual(discarded, ["hello.spot"])
+        XCTAssertTrue(FileManager.default.fileExists(atPath: folder.appendingPathComponent("other.spot/other.sh").path))
     }
 
     func testTheReviewSaysThatASourceMayNotMatchItsProgram() throws {
@@ -470,7 +471,7 @@ final class SwiftProgramTests: XCTestCase {
     }
 
     private func stayingSpot() throws -> Spot {
-        try script("slow.swift", "#!/usr/bin/env swift\nprint(mark())\n", toml: "title = 'Slow'\nmode = 'stay'\nsource = ['more']")
+        try script("slow.swift", "#!/usr/bin/env swift\nprint(mark())\n", toml: "title = 'Slow'\nstay = true\nsource = ['more']")
         let more = folder.appendingPathComponent("slow.spot/more")
         try FileManager.default.createDirectory(at: more, withIntermediateDirectories: true)
         try Data("func mark() -> String { \"!\" }\n".utf8).write(to: more.appendingPathComponent("Mark.swift"))

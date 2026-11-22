@@ -14,14 +14,18 @@ public struct Playground: Equatable, Sendable {
 
     public static func command(file: URL) -> Spot {
         let manifest = (try? Manifest(beside: file).script(file)) ?? Manifest(text: nil, folder: "")
-        return Spot(
+        let on = manifest.triggers?.showEvents
+        var spot = Spot(
             id: file.lastPathComponent,
             name: file.lastPathComponent,
             url: file,
             kind: .list,
-            on: (try? ShowEvents(on: manifest.on, of: file.lastPathComponent)) ?? nil,
-            mode: manifest.mode.flatMap(SpotMode.init(rawValue:)).map { $0.stays ? .stay : .once } ?? .once
+            on: on?.moments.isEmpty == false ? on : nil,
+            mode: manifest.stay == true ? .stay : .once
         )
+        spot.triggers = manifest.triggers ?? Manifest.Triggers()
+        spot.typedActions = manifest.actions
+        return spot
     }
 
     public mutating func take(text: String) {

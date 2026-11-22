@@ -299,7 +299,7 @@ extension SpotsModel {
 
     public var createAction: CommandAction? {
         guard let list = openItems, !list.query.isEmpty, list.shown.isEmpty, list.search == .local, let spot = openEntry?.spot else { return nil }
-        return spot.actions.first { $0.scope == .spot && ($0.isForm || Self.typed($0, of: spot)?.textInput != nil) }
+        return spot.actions.first { $0.scope == .spot && Self.typed($0, of: spot)?.textInput != nil }
             ?? spot.offers.map(CommandAction.command).first { Self.typed($0, of: spot)?.textInput != nil }
     }
 
@@ -308,9 +308,8 @@ extension SpotsModel {
         guard let action = createAction, let entry = openEntry else { return }
         let query = openItems?.query ?? ""
         if let typed = Self.typed(action, of: entry.spot), let input = typed.textInput, let form = ItemForm(output: Frame(text: typed.form(with: [input.name: query], title: action.title))) {
-            return show(.form(form), of: action, on: (entry, nil), prefill: "")
+            show(.form(form), of: action, on: (entry, nil), prefill: "")
         }
-        openForm(action, on: (entry, nil), prefill: query)
     }
 
     static func typed(_ action: CommandAction, of spot: Spot) -> Manifest.Action? {
@@ -346,16 +345,12 @@ extension SpotsModel {
             return
         }
         if place.isDetached {
-            if action == nil, (entry.spot.pickForm ?? item.form) != nil || item.records { return press(entry.id) }
+            if action == nil, item.records { return press(entry.id) }
             remember(item, of: entry)
             sheets[entry.id]?.list.select(run: item.run)
         } else {
             if action == nil, item.records {
                 toggleRecording(id: item.run)
-                return
-            }
-            if action == nil, let form = entry.spot.pickForm ?? item.form {
-                openForm(form, on: (entry, item))
                 return
             }
             if action != nil || (entry.spot.pick == .close && !item.staysOnPick && entry.spot.triggers == nil) {
@@ -371,9 +366,10 @@ extension SpotsModel {
         if let action {
             perform(action, on: (entry, item))
         } else if entry.spot.triggers != nil, let sheet = sheets[entry.id] {
+            if closes { closingPick = (item, entry) }
             Task { [weak self] in
                 guard case .form(let form) = await sheet.answer(toPick: item, closes: closes), let self, isShown else { return }
-                show(.form(form), of: CommandAction(id: Frame.open, title: item.title, isForm: true), on: (entry, item), prefill: "")
+                show(.form(form), of: CommandAction(id: Frame.press, title: item.title), on: (entry, item), prefill: "")
             }
         } else {
             sheets[entry.id]?.pick(item, closes: closes)

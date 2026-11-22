@@ -31,13 +31,6 @@ struct CommandIndex {
                 items[id] = item
                 spots[id] = card.spot
             }
-            if card.spot.offers.isEmpty, card.spot.placeholder != nil {
-                let item = SpotItem(title: card.state.title, run: "")
-                let id = SpotsModel.Entry(spot: card.spot, item: item).id
-                rows.append(SpotItem(title: card.state.title, run: id, keywords: [card.id]))
-                items[id] = item
-                spots[id] = card.spot
-            }
         }
         list.replace(rows)
     }
@@ -45,7 +38,7 @@ struct CommandIndex {
     func entries(matching query: SearchQuery, text: String, limit: Int) -> [SpotsModel.Entry] {
         query.matching(in: [list], limit: limit).compactMap { match in
             guard let spot = spots[match.item.run], let item = items[match.item.run] else { return nil }
-            let detail = text.isEmpty ? buttons[match.item.run]?.placeholder ?? spot.placeholder : "With \"\(text)\""
+            let detail = text.isEmpty ? buttons[match.item.run]?.placeholder : "With \"\(text)\""
             return SpotsModel.Entry(spot: spot, item: item, detail: detail)
         }
     }

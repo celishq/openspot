@@ -3,7 +3,7 @@ import Foundation
 extension BlockKind {
     static let commonKeys: Set<String> = [
         "title", "detail", "icon", "min", "max", "color", "value", "display",
-        "placeholder", "readonly", "required", "type", "close", "confirm", "scope", "form",
+        "placeholder", "readonly", "required", "type", "close", "confirm", "scope",
         "shortcut", "tone", "unit", "recording", "grow", "parent", "class"
     ]
     private static let optionKeys: Set<String> = ["option", "title", "icon"]

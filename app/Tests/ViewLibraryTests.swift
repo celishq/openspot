@@ -305,9 +305,9 @@ final class ViewLibraryTests: XCTestCase {
     private var sharedCups: SpotPackage {
         get throws {
             try SpotPackage(files: [
-                .init(path: "home.spot/cups.sh", isExecutable: true, contents: Data("#!/bin/sh\n".utf8)),
-                .init(path: "home.spot/cups.swift", isExecutable: false, contents: Data(view.utf8)),
-                .init(path: "home.spot/spot.toml", isExecutable: false, contents: Data("[scripts.cups]\nviews = ['cups.swift']\n".utf8))
+                .init(path: "cups.spot/cups.sh", isExecutable: true, contents: Data("#!/bin/sh\n".utf8)),
+                .init(path: "cups.spot/cups.swift", isExecutable: false, contents: Data(view.utf8)),
+                .init(path: "cups.spot/spot.toml", isExecutable: false, contents: Data("views = ['cups.swift']\n".utf8))
             ])
         }
     }
@@ -319,21 +319,21 @@ final class ViewLibraryTests: XCTestCase {
         let compiled = try await spot.compiled(views: try tools())
 
         XCTAssertFalse(compiled.needsCompile)
-        XCTAssertEqual(compiled.files.map(\.path), ["home.spot/cups.sh", "home.spot/cups.swift", "home.spot/spot.toml", "home.spot/\(built)"])
+        XCTAssertEqual(compiled.files.map(\.path), ["cups.spot/cups.sh", "cups.spot/cups.swift", "cups.spot/spot.toml", "cups.spot/\(built)"])
         XCTAssertEqual(compiled.files.last?.contents, Data("both".utf8))
         XCTAssertEqual(compiled.files.last?.isExecutable, false)
     }
 
     func testTheReviewSaysThatAViewLibraryIsCodeThatMayNotMatchItsSource() throws {
         var files = try sharedCups.files
-        files.append(.init(path: "home.spot/\(built)", isExecutable: false, contents: Data([0xCF, 0xFA, 0xED, 0xFE, 0x00])))
+        files.append(.init(path: "cups.spot/\(built)", isExecutable: false, contents: Data([0xCF, 0xFA, 0xED, 0xFE, 0x00])))
 
         let review = try ReviewSpot(spot: try SpotPackage(files: files), folder: folder)
 
         XCTAssertEqual(review.subtitle, "Holds a program that you cannot read")
         let part = try XCTUnwrap(Frame(text: try review.answer(["show"])).parts.first { $0.id == "review" })
         guard case .text(let text, _, _) = part.control else { throw SpotError.badForm }
-        XCTAssertTrue(text.hasPrefix("\(review.name)\n\nProgram that Openspot cannot show\nhome.spot/\(built)\nIt can do all that you can. Add it only if you trust the sender.\nThe source beside it may not match the program.\n\n"), text)
+        XCTAssertTrue(text.hasPrefix("\(review.name)\n\nProgram that Openspot cannot show\ncups.spot/\(built)\nIt can do all that you can. Add it only if you trust the sender.\nThe source beside it may not match the program.\n\n"), text)
     }
 
     func testRemovingASpotAlsoTakesItsViewAndItsLibrary() throws {
@@ -341,7 +341,6 @@ final class ViewLibraryTests: XCTestCase {
         let cups = spots.appendingPathComponent("cups.spot")
         try FileManager.default.createDirectory(at: cups, withIntermediateDirectories: true)
         try "#!/bin/sh\n".writeScript(to: cups.appendingPathComponent("cups.sh"), toml: "views = ['cups.swift']")
-        try "#!/bin/sh\n".writeScript(to: cups.appendingPathComponent("other.sh"), toml: "")
         try Data(view.utf8).write(to: cups.appendingPathComponent("cups.swift"))
         try Data("built".utf8).write(to: cups.appendingPathComponent(built))
         let place = SpotsFolder(url: spots)
@@ -350,7 +349,7 @@ final class ViewLibraryTests: XCTestCase {
 
         try place.remove(spot) { discarded.append($0.lastPathComponent) }
 
-        XCTAssertEqual(discarded, ["cups.sh", "cups.swift", built])
+        XCTAssertEqual(discarded, ["cups.spot"])
     }
 
     func testAShareLeavesOutALibraryThatDoesNotMatchItsSource() throws {

@@ -14,7 +14,6 @@ public struct Frame: Equatable, Sendable {
     public private(set) var actions: [CommandAction] = []
     public private(set) var openTitle: String?
     public private(set) var pick = ItemPick.close
-    public private(set) var pickForm: CommandAction?
     public private(set) var rows: [[String]] = []
     public private(set) var control: SpotPart?
     public private(set) var valuePart: SpotPart?
@@ -36,7 +35,6 @@ public struct Frame: Equatable, Sendable {
     public let isPicture: Bool
     public let isMark: Bool
 
-    static let open = "open"
     static let press = "press"
     private static let sheetRoot = RootKey.block([.init(key: ViewNode.classKey, value: "gap-part")])
     private static let itemsBlock = TextBlock(fields: [.init(key: BlockKind.items, value: "items")])
@@ -243,12 +241,9 @@ public struct Frame: Equatable, Sendable {
     }
 
     private mutating func take(action id: String, _ block: TextBlock) {
-        if id == Self.open || id == Self.press {
+        if id == Self.press {
             openTitle = block.value("title")
             pick = block.flag("close") == false ? .stay : .close
-            if block.flag("form") == true {
-                pickForm = CommandAction(id: id, title: openTitle ?? "Open", after: pick == .close ? .close : .stay, isForm: true)
-            }
         } else if let action = CommandAction(id: id, block: block) {
             actions.append(action)
         } else if BlockKind.actionFaults(in: block).isEmpty {

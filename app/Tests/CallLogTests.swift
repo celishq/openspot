@@ -19,7 +19,8 @@ final class CallLogTests: SpotRunsCase {
         try await wait("the record") { self.log.text(of: "script").contains("exit 3") }
 
         let text = log.text(of: "script")
-        XCTAssertTrue(text.contains("send home"))
+        XCTAssertTrue(text.contains("send"))
+        XCTAssertTrue(text.contains("input.item=home"))
         XCTAssertTrue(text.contains("title=Half"))
         XCTAssertTrue(text.contains("title=Done"))
         XCTAssertTrue(text.contains("The server did not answer."))
@@ -53,7 +54,7 @@ final class CallLogTests: SpotRunsCase {
     }
 
     func testATimedReadThatEndsWellLeavesNoRecordAndAPanelReadDoes() async throws {
-        try script(toml: "on = ['panel.open']", "\(TestSpot.event)\necho \"title=$ev\"")
+        try script(toml: "[on]\n'panel.open' = true", "\(TestSpot.event)\necho \"title=$ev\"")
         let sheet = try sheet()
 
         sheet.show(event: .clock(60))
@@ -62,11 +63,11 @@ final class CallLogTests: SpotRunsCase {
         sheet.show(event: .panel)
         try await wait("the record of the panel read") { self.log.text(of: "script").contains("title=panel.open") }
 
-        XCTAssertFalse(log.text(of: "script").contains("title=clock.60"))
+        XCTAssertFalse(log.text(of: "script").contains("title=every"))
     }
 
     func testATimedReadThatFailsLeavesARecord() async throws {
-        try script(toml: "on = ['panel.open']", "echo 'The sensor is gone.' >&2; exit 2")
+        try script(toml: "[on]\n'panel.open' = true", "echo 'The sensor is gone.' >&2; exit 2")
         let sheet = try sheet()
 
         sheet.show(event: .clock(60))

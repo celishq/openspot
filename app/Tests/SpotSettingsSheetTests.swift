@@ -109,7 +109,7 @@ final class SpotSettingsSheetTests: XCTestCase {
     }
 
     func testReturnOnAFieldRunsTheActionOfItsNameAndTheMenuBarRowTurnsItsPlaceOnAndOff() async throws {
-        try script("cups", toml: "title = 'Cups'\non = ['sheet.open', 'clock.60']\n[settings.size]")
+        try script("cups", toml: "title = 'Cups'\n[settings]\nsize = { type = 'text' }\n[on]\n\"sheet.open\" = true\nevery = 60")
         try await show(selecting: "cups", search: "cups")
         XCTAssertTrue(model.openSelectedSettings())
         try await wait("the rows") { model.openItems?.shown.map(\.run) == ["key:cups:open", "key:cups:float", "setting:cups:size", "menubar:cups", "window:cups"] }

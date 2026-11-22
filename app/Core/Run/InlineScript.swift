@@ -143,8 +143,6 @@ final class InlineScript: @unchecked Sendable {
     private var deadline = DispatchTime.now()
     private var context: JSContext?
     private var thrown: JSValue?
-    private var variables: [String: String] = [:]
-    private var reason: String?
 
     init(spot: Spot, api: CommandAPI?, callers: SpotCallers? = nil, careful: Set<SpotUse>? = nil, limit: TimeInterval = 10, idle: TimeInterval = 30, bound: [String: Spot] = [:], base: [String: String] = ProcessInfo.processInfo.environment, spent: @escaping @Sendable (TimeInterval) -> Void = { _ in }) {
         self.careful = careful.map(CarefulMode.init)
@@ -321,36 +319,13 @@ final class InlineScript: @unchecked Sendable {
             handle(call, name: name, handlers: handlers, in: context)
             return nil
         }
+        guard let name = call.function else { return "" }
         arm(limit)
-        let function = context.objectForKeyedSubscript(call.function ?? "main")
-        guard let function, let type = context.objectForKeyedSubscript("Function"), function.isInstance(of: type) else { return "" }
-        if call.function != nil {
-            let result = function.call(withArguments: call.arguments)
-            try rethrow()
-            if let result, result.isString { return result.toString() ?? "" }
-            return result?.toBool() == true ? "true" : ""
-        }
-        let env = [CallWords.spotVariable: name].merging(call.variables) { _, new in new }
-        enter(call)
-        defer { leave() }
-        let result = function.call(withArguments: [call.arguments, env, call.input ?? ""])
+        guard let function = context.objectForKeyedSubscript(name), Self.isFunction(function, in: context) else { return "" }
+        let result = function.call(withArguments: call.arguments)
         try rethrow()
-        guard let result, !result.isUndefined, !result.isNull else { return "" }
-        return result.toString() ?? ""
-    }
-
-    private func enter(_ call: InlineCall) {
-        variables = call.variables
-        reason = call.reason
-        caller?.reason = call.reason
-        caller?.call = call.opened
-    }
-
-    private func leave() {
-        variables = [:]
-        reason = nil
-        caller?.reason = nil
-        caller?.call = nil
+        if let result, result.isString { return result.toString() ?? "" }
+        return result?.toBool() == true ? "true" : ""
     }
 
     private func handlers(in context: JSContext) -> JSValue? {
@@ -452,7 +427,7 @@ final class InlineScript: @unchecked Sendable {
 
     private func ask(_ arguments: [String], input: String?) -> CommandAnswer {
         guard !condition.withLock({ isOverdue }) else { return Self.late }
-        return answer(work(arguments, input: input, caller: caller, reason: reason, variables: variables))
+        return answer(work(arguments, input: input, caller: caller, reason: nil, variables: [:]))
     }
 
     private func asked(_ arguments: [String], token: Int) -> JSValue? {

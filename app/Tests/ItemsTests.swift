@@ -12,7 +12,7 @@ final class ItemsTests: PanelCase {
     }
 
     private func open(_ frame: String, toml: String = "") async throws {
-        let body = "#!/bin/sh\ncase \"$1\" in\nshow) sed -n 's/^search=/search /p' >> '\(log.path)'\ncat <<'EOF'\n\(frame)\nEOF\n;;\n*) echo \"$*\" >> '\(log.path)' ;;\nesac\n"
+        let body = "#!/bin/sh\ncase \"$1\" in\nshow) cat <<'EOF'\n\(frame)\nEOF\n;;\n*) v=$(sed -n -e 's/^input\\.item=//p' -e 's/^input\\.value=//p' | head -n 1); echo \"$1${v:+ $v}\" >> '\(log.path)' ;;\nesac\n"
         try body.writeScript(to: spots.spotFile("items"), toml: toml)
         await model.reload()
         model.isShown = true
@@ -163,7 +163,7 @@ final class ItemsTests: PanelCase {
         XCTAssertEqual(FrameCheck(text: text).partFaults, ["the part find has an unknown key: filter"])
     }
 
-    func testAnItemRowTakesItsKeysAndItsPressSendsOpen() async throws {
+    func testAnItemRowTakesItsKeysAndItsPressSendsPress() async throws {
         try await open("item=star\ntitle=Star\ndetail=A star\nicon=star\ntone=good\nopen.title=Show\nclose=false\nhides=reveal\n")
         let entry = try XCTUnwrap(model.openEntry)
         let star = try item("star")
@@ -171,15 +171,14 @@ final class ItemsTests: PanelCase {
         XCTAssertEqual(star, SpotItem(title: "Star", subtitle: "A star", run: "star", picture: .symbol("star"), hides: ["reveal"], tone: .good, openTitle: "Show", staysOnPick: true))
         model.pick(star, of: entry)
 
-        try await wait("the pick") { self.calls.contains("open star") }
+        try await wait("the pick") { self.calls.contains("press star") }
         XCTAssertEqual(host.dismissals, 0)
     }
 
-    func testAnItemRowTakesARouteAndAForm() {
-        let output = Frame(text: "item=day\ntitle=Monday\nroute=monday\nroute.title=On Monday\n\nitem=custom\ntitle=Custom\nform=true\n")
+    func testAnItemRowTakesARoute() {
+        let output = Frame(text: "item=day\ntitle=Monday\nroute=monday\nroute.title=On Monday\n")
 
         XCTAssertEqual(output.items.first?.move, .push(spot: nil, route: "monday", title: "On Monday", replace: false))
-        XCTAssertEqual(output.items.last?.form?.isForm, true)
     }
 
     func testAnItemIsSearchedAndPickedAsAMessage() async throws {
@@ -189,8 +188,8 @@ final class ItemsTests: PanelCase {
         try await wait("the search") { self.model.openItems?.shown.map(\.run) == ["milk"] }
         model.runSelectedItem()
 
-        try await wait("the pick") { self.calls.contains("open milk") }
-        XCTAssertEqual(host.dismissals, 1)
+        try await wait("the pick") { self.calls.contains("press milk") }
+        try await wait("the close") { self.host.dismissals == 1 }
     }
 
     func testAPickWithCloseFalseKeepsThePanelOpen() async throws {
@@ -199,7 +198,7 @@ final class ItemsTests: PanelCase {
 
         model.pick(try item("star"), of: entry)
 
-        try await wait("the pick") { self.calls.contains("open star") }
+        try await wait("the pick") { self.calls.contains("press star") }
         XCTAssertEqual(host.dismissals, 0)
         XCTAssertEqual(model.openSheetID, "items")
     }

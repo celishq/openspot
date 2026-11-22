@@ -6,12 +6,12 @@ enum TimerCall: NounCall {
     case list
 
     static let noun = CommandNoun("timer", group: .build, verbs: [
-        CommandVerb("add", "<time> [action] [input...]", "Calls the action at the time, an ISO 8601 time such as 2026-11-20T08:00:00+01:00, with each input as <name>=<value>, even when the panel is closed, or keeps a timer that never comes due for `someday`. A spot with no [actions] gives one value, and gets `due <id>`. Prints the timer's id.", rule: CallRule(use: .timer, used: "added a timer", flags: .needsApp)) { words in
+        CommandVerb("add", "<time> <action> [input...]", "Calls the action at the time, an ISO 8601 time such as 2026-11-20T08:00:00+01:00, with each input as <name>=<value>, even when the panel is closed, or keeps a timer that never comes due for `someday`. Prints the timer's id.", rule: CallRule(use: .timer, used: "added a timer", flags: .needsApp)) { words in
             guard let time = words.rest.first else { return nil }
             return Self.add(at: time, words: Array(words.rest.dropFirst()))
         },
         CommandVerb("remove", "<id>", "Removes a timer of the spot.", rule: CallRule(use: .timer, used: "removed a timer", flags: .needsApp)) { $0.one.map(Self.remove) },
-        CommandVerb("list", "", "Prints each timer of the spot as an item: its id, its value as the title, and its time in `at`.", rule: CallRule(use: .timer, used: "listed its timers")) { $0.none ? Self.list : nil }
+        CommandVerb("list", "", "Prints each timer of the spot as an item: its id, its action as the title, its time in `at`, and each input as `input.<name>`.", rule: CallRule(use: .timer, used: "listed its timers")) { $0.none ? Self.list : nil }
     ])
 
     func work(in context: CallContext) -> CommandAPI.Work? {

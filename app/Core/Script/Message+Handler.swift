@@ -19,6 +19,10 @@ extension Message {
             if Self.shows.contains(name) {
                 message.action = .press(Self.showHandler)
                 if let event { message.inputs.append(.init(key: Self.eventInput, value: event.rawValue)) }
+            } else if name.hasPrefix(SpotEvent.clockPrefix), let search, !search.isEmpty {
+                message.action = .press(SpotEvent.sheetText)
+                message.inputs.append(.init(key: "value", value: search))
+                message.inputs += searchForms.map { .init(key: Self.altInput, value: $0) }
             } else if name.hasPrefix(SpotEvent.clockPrefix) {
                 message.action = .press(Self.everyHandler)
             } else if name == SpotEvent.searchText {
@@ -30,7 +34,7 @@ extension Message {
                 if let value = event?.value { message.inputs.append(.init(key: "value", value: value)) }
                 if name == SpotEvent.sheetText { message.inputs += searchForms.map { .init(key: Self.altInput, value: $0) } }
             }
-        case SpotAction.open.arguments.first:
+        case Self.pressHandler:
             message.action = .press(Self.pressHandler)
             if arguments.count > 1 { message.inputs.append(.init(key: Self.itemInput, value: arguments[1])) }
         case SpotAction.drop(paths: []).arguments.first:

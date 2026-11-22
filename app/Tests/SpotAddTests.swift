@@ -83,13 +83,14 @@ final class SpotAddTests: XCTestCase {
     func testASpotThatIsThereAlreadyIsAFaultAndStays() async throws {
         let repo = try repo()
         try FileManager.default.createDirectory(at: spots.appendingPathComponent("coffee.spot"), withIntermediateDirectories: true)
-        try "#!/bin/sh\necho mine\n".writeScript(to: spots.appendingPathComponent("coffee.spot/mine.sh"), toml: "")
+        try "#!/bin/sh\necho mine\n".writeScript(to: spots.appendingPathComponent("coffee.spot/coffee.sh"), toml: "title = 'Mine'")
 
         let answer = try await answer(["spot", "add", repo.url.path])
 
         XCTAssertEqual(answer.code, 1)
         XCTAssertEqual(answer.errors, "The spots folder has coffee already. Run `openspot spot remove coffee` first, or move it away.\n")
-        XCTAssertEqual(try ids(), ["coffee/mine"])
+        XCTAssertEqual(try ids(), ["coffee"])
+        XCTAssertEqual(try String(contentsOf: spots.appendingPathComponent("coffee.spot/coffee.sh"), encoding: .utf8), "#!/bin/sh\necho mine\n")
     }
 
     func testASourceThatGitCannotCloneIsAFaultAndLeavesNothing() async throws {
@@ -262,7 +263,7 @@ final class SpotAddTests: XCTestCase {
 
     func testAFirstAddPrintsTheReviewAndNeedsYesWhenItHasAUse() async throws {
         let repo = try repo()
-        try repo.commit(["coffee.sh": "#!/bin/sh\ncurl -s https://example.com\n", "spot.toml": "title = 'Coffee'\nuses = ['network']\non = ['clock.60']"])
+        try repo.commit(["coffee.sh": "#!/bin/sh\ncurl -s https://example.com\n", "spot.toml": "title = 'Coffee'\nuses = ['network']\n\n[on]\nevery = 60"])
 
         let first = try await answer(["spot", "add", repo.url.path])
 
@@ -453,7 +454,7 @@ final class SpotAddTests: XCTestCase {
         let repo = try repo()
         _ = try await answer(["spot", "add", repo.url.path])
         let before = try files(in: spots)
-        try repo.commit(["coffee.sh": "#!/bin/sh\nrm -f /tmp/x\n", "spot.toml": "title = 'Coffee'\non = ['clock.60']"])
+        try repo.commit(["coffee.sh": "#!/bin/sh\nrm -f /tmp/x\n", "spot.toml": "title = 'Coffee'\n\n[on]\nevery = 60"])
 
         let refused = try await answer(["spot", "add", repo.url.path])
 

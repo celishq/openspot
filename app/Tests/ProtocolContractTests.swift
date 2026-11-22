@@ -27,7 +27,7 @@ final class ProtocolContractTests: XCTestCase {
             + keys(pages.filter { $0[1] == "the manifest" }.map { $0[0] })
             + keys(appWords.filter { $0[1] == "`spot.toml`" }.map { $0[0] })
 
-        let docTables = manifest.filter { $0[0].hasPrefix("`[") }.flatMap { RepoDoc.code($0[0]) }.map { String($0.dropFirst().prefix { $0 != "." }) }
+        let docTables = manifest.filter { $0[0].hasPrefix("`[") }.flatMap { RepoDoc.code($0[0]) }.map { String($0.dropFirst().prefix { $0 != "." && $0 != "]" }) }
 
         let rootKeys = Set(RootKey.allCases.map(\.rawValue))
         let docRootKeys = keys([doc.section("The root").components(separatedBy: "- The root can come")[0]])
@@ -38,7 +38,7 @@ final class ProtocolContractTests: XCTestCase {
         let itemRows = RepoDoc.tableRows(in: doc.section("Items"))
         let docItemKeys = keys(itemRows.map { $0[0] }) + keys(pages.filter { $0[1].contains("an item") }.map { $0[0] })
 
-        let events = Set(SpotEvent.known + [SpotEvent.clockPrefix + "<seconds>"])
+        let events = Set(SpotEvent.known)
         let docEvents = keys(RepoDoc.tableRows(in: doc.section("Events")).map { $0[0] })
 
         let places = Set(SpotSize.all.compactMap { Style.Variant(size: $0)?.rawValue } + [Style.Variant.bar.rawValue])

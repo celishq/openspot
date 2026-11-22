@@ -86,7 +86,7 @@ final class CarefulModeTests: SpotRunsCase {
 
     func testOnAStayingSpotIsCarefulToo() async throws {
         runs.isCareful = true
-        try script(toml: "mode = 'stay'", """
+        try script(toml: "stay = true", """
         echo a > '\(outside.path)/written' 2>/dev/null && r=files || r=kept
         while IFS= read -r line; do
           case "$line" in call=*) call=${line#call=} ;; esac
@@ -100,7 +100,7 @@ final class CarefulModeTests: SpotRunsCase {
     }
 
     func testAStayingSpotStartsAgainInTheNewModeWhenTheModeChanges() async throws {
-        try script(toml: "mode = 'stay'", """
+        try script(toml: "stay = true", """
         echo a > '\(outside.path)/written-$$' 2>/dev/null && r=files || r=kept
         while IFS= read -r line; do
           case "$line" in call=*) call=${line#call=} ;; esac
@@ -131,7 +131,7 @@ final class CarefulModeTests: SpotRunsCase {
         runs = runs(environment: ProcessInfo.processInfo.environment.merging(["PATH": "\(bin.path):\(path)"]) { _, new in new })
         let script = folder.spotFile("script", extension: "js")
         try FileManager.default.createDirectory(at: script.deletingLastPathComponent(), withIntermediateDirectories: true)
-        try "function main() { return `text=t\\ntitle=${openspot.call([\"color\", \"pick\"]).stdout.trim()}\\n` }\n"
+        try "export default { async show() { return `text=t\\ntitle=${openspot.call([\"color\", \"pick\"]).stdout.trim()}\\n` } }\n"
             .writeInline(to: script, toml: "")
         let sheet = try sheet()
         let before = try await result(of: sheet)

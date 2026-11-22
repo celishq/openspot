@@ -59,7 +59,7 @@ final class FilesOutTests: XCTestCase {
         let body = """
         case "$1" in
           show) printf 'item=a\\nfile=/a.png\\n\\nitem=b\\nfile=/b.png\\n\\nitem=c\\n' ;;
-          drag) shift; \(TestSpot.toast) "Took $*" ;;
+          drag) items=$(sed -n 's/^input.item=//p' | tr '\\n' ' '); \(TestSpot.toast) "Took ${items% }" ;;
         esac
         """
         try "#!/bin/sh\n\(body)\n".writeScript(to: spots.spotFile("shelf"), toml: "")

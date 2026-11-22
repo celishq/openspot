@@ -13,7 +13,7 @@ final class SpotActionTests: XCTestCase {
     }
 
     func testTheCommandOfAManifestSendsItsOwnID() throws {
-        let offer = try XCTUnwrap(Manifest(text: "[commands.add]\ntitle = 'Add'", folder: "/spots").commands.first)
+        let offer = try XCTUnwrap(Manifest(text: "[actions.add]\ntitle = 'Add'", folder: "/spots").actions.first?.command)
         XCTAssertEqual(SpotAction.action(CommandAction.command(offer), item: nil).arguments, ["add"])
     }
 
@@ -21,20 +21,20 @@ final class SpotActionTests: XCTestCase {
         XCTAssertEqual(SpotAction.level(69.6, of: "volume").arguments, ["volume", "70"])
     }
 
-    func testAClickOnACardWithAReadKeySendsOpenWithNoRow() {
+    func testAClickOnACardWithAReadKeyCallsPressWithNoItem() {
         let url = URL(fileURLWithPath: "/x")
 
-        XCTAssertEqual(Spot(id: "a", name: "A", url: url, on: .panel).click.arguments, ["open"])
+        XCTAssertEqual(Message(Spot(id: "a", name: "A", url: url, on: .panel).click).handled().block(id: 1), "call=1\narg=press\n\n")
     }
 
-    func testAClickOnAFileWithNoReadSendsOpenWithNoRow() {
+    func testAClickOnAFileWithNoReadCallsPressWithNoItem() {
         let url = URL(fileURLWithPath: "/x")
 
-        XCTAssertEqual(Spot(id: "a", name: "A", url: url).click.arguments, ["open"])
+        XCTAssertEqual(Message(Spot(id: "a", name: "A", url: url).click).handled().block(id: 1), "call=1\narg=press\n\n")
     }
 
-    func testAListItemSendsItsRunValue() {
-        XCTAssertEqual(SpotAction.item(SpotItem(title: "1 hour", run: "3600")).arguments, ["open", "3600"])
+    func testAListItemCallsPressWithItsRunAsTheItem() {
+        XCTAssertEqual(Message(.item(SpotItem(title: "1 hour", run: "3600"))).handled().block(id: 1), "call=1\narg=press\ninput.item=3600\n\n")
     }
 
     func testAReadHasNoArgumentsAndItsTextGoesOnStdinWithEachForm() {

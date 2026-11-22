@@ -63,15 +63,15 @@ final class TerminalRunTests: XCTestCase {
         XCTAssertTrue(end.errors.hasSuffix("a the end\n"))
     }
 
-    func testARunWithNoCallShowsASpotWithASheetAndOpensOneWithCommandsAndNoEvents() async throws {
+    func testARunWithNoCallShowsASpotWithASheetAndPressesOneWithActionsAndNoEvents() async throws {
         let reads = try spot("reads", "\(TestSpot.event)\necho \"$1 $ev\"")
-        let opens = try spot("opens", toml: "[commands.left]\ntitle = 'Left'", "echo \"$1\"")
+        let opens = try spot("opens", toml: "[actions.left]\ntitle = 'Left'", "echo \"$1\"")
         var said: [String] = []
 
         _ = await TerminalRun(spot: reads, arguments: [], input: nil).start { said.append($0) }
         _ = await TerminalRun(spot: opens, arguments: [], input: nil).start { said.append($0) }
 
-        XCTAssertEqual(said, ["show sheet.open\n", "open\n"])
+        XCTAssertEqual(said, ["show sheet.open\n", "press\n"])
     }
 
     func testARunWithNoCallOfASpotWithNoSheetCallsPressWithNoItem() async throws {
@@ -84,7 +84,7 @@ final class TerminalRunTests: XCTestCase {
     }
 
     func testARunOfAStayingScriptEndsWithTheFrameThatEndsItsCall() async throws {
-        let spot = try spot("relay", toml: "mode = 'stay'", """
+        let spot = try spot("relay", toml: "stay = true", """
         . "$OPENSPOT_SH"
         main() { printf 'text=peer\\ntitle=%s\\n' "$1"; }
         openspot_serve main "$@"

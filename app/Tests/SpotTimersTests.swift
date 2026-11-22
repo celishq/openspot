@@ -26,9 +26,9 @@ final class SpotTimersTests: PanelCase {
     }
 
     private func writeSpot(_ name: String) throws {
-        try script(name, toml: "title = '\(name)'\nuses = ['timer']\n[commands.go]\ntitle = 'Go'", """
+        try script(name, toml: "title = '\(name)'\nuses = ['timer']\n\n[actions.go]\ntitle = 'Go'\n\n[actions.wake]\ninputs.value = 'text'", """
         in=$(cat)
-        [ "$1" = due ] && printf '%s %s|%s\\n' "$1" "$2" "$(printf '%s' "$in" | tr '\\n' ' ')" >> '\(log(name).path)'
+        [ "$1" = wake ] && printf '%s %s|%s\\n' "$1" "$(printf '%s\\n' "$in" | sed -n 's/^input\\.value=//p')" "$(printf '%s' "$in" | tr '\\n' ' ')" >> '\(log(name).path)'
         exit 0
         """)
     }
@@ -54,26 +54,24 @@ final class SpotTimersTests: PanelCase {
     }
 
     private func add(in seconds: TimeInterval, _ value: String, as spot: String = "later") async throws -> String {
-        let answer = try await call(["timer", "add", time(in: seconds), value], as: spot)
+        let answer = try await call(["timer", "add", time(in: seconds), "wake", "value=\(value)"], as: spot)
         XCTAssertEqual(answer.code, 0, answer.errors)
         return answer.output.trimmingCharacters(in: .whitespacesAndNewlines)
     }
 
     func testADueTimerCallsItsSpotWhileThePanelIsHidden() async throws {
-        let id = try await add(in: 60, "https://example.com")
+        _ = try await add(in: 60, "https://example.com")
 
         clock.advance(by: 60)
 
         try await wait("the due call") { self.lines("later").count == 1 }
         let line = try XCTUnwrap(lines("later").first)
-        XCTAssertTrue(line.hasPrefix("due \(id)|"), line)
-        XCTAssertTrue(line.contains("event=timer.due"), line)
-        XCTAssertTrue(line.contains("event.value=https://example.com"), line)
-        XCTAssertTrue(line.contains("timer.late=0"), line)
+        XCTAssertTrue(line.hasPrefix("wake https://example.com|"), line)
+        XCTAssertFalse(line.contains("late"), line)
     }
 
-    func testATimerOutlivesARelaunchAndTellsHowLateItIs() async throws {
-        let id = try await add(in: 60, "tab")
+    func testATimerOutlivesARelaunch() async throws {
+        _ = try await add(in: 60, "tab")
         model.quit()
         clock.advance(by: 3600)
 
@@ -83,32 +81,31 @@ final class SpotTimersTests: PanelCase {
 
         try await wait("the late call") { self.lines("later").count == 1 }
         let line = try XCTUnwrap(lines("later").first)
-        XCTAssertTrue(line.hasPrefix("due \(id)|"), line)
-        XCTAssertTrue(line.contains("timer.late=3540"), line)
+        XCTAssertTrue(line.hasPrefix("wake tab|"), line)
     }
 
     func testARemovedTimerNeverFires() async throws {
         let gone = try await add(in: 30, "gone")
-        let kept = try await add(in: 60, "kept")
+        _ = try await add(in: 60, "kept")
         let removed = try await call(["timer", "remove", gone], as: "later")
         XCTAssertEqual(removed.code, 0, removed.errors)
 
         clock.advance(by: 60)
 
-        try await wait("the kept call") { self.lines("later").contains { $0.hasPrefix("due \(kept)|") } }
+        try await wait("the kept call") { self.lines("later").contains { $0.hasPrefix("wake kept|") } }
         XCTAssertEqual(lines("later").count, 1)
     }
 
     func testATimerFiresOnce() async throws {
-        let first = try await add(in: 10, "first")
+        _ = try await add(in: 10, "first")
         clock.advance(by: 10)
         try await wait("the first call") { self.lines("later").count == 1 }
-        let second = try await add(in: 10, "second")
+        _ = try await add(in: 10, "second")
 
         clock.advance(by: 10)
 
         try await wait("the second call") { self.lines("later").count == 2 }
-        XCTAssertEqual(lines("later").map { String($0.prefix { $0 != "|" }) }, ["due \(first)", "due \(second)"])
+        XCTAssertEqual(lines("later").map { String($0.prefix { $0 != "|" }) }, ["wake first", "wake second"])
     }
 
     func testListShowsOnlyTheCallersTimers() async throws {
@@ -120,7 +117,8 @@ final class SpotTimersTests: PanelCase {
         XCTAssertEqual(list.code, 0, list.errors)
         let blocks = TextBlock.blocks(in: list.output)
         XCTAssertEqual(blocks.map { $0.value("item") }, [id])
-        XCTAssertEqual(blocks.first?.value("title"), "mine")
+        XCTAssertEqual(blocks.first?.value("title"), "wake")
+        XCTAssertEqual(blocks.first?.value("input.value"), "mine")
         XCTAssertEqual(blocks.first?.value("at"), time(in: 60))
     }
 
@@ -135,14 +133,14 @@ final class SpotTimersTests: PanelCase {
     }
 
     func testASomedayTimerIsListedAndNeverComesDue() async throws {
-        let answer = try await call(["timer", "add", "someday", "later"], as: "later")
+        let answer = try await call(["timer", "add", "someday", "wake", "value=later"], as: "later")
         XCTAssertEqual(answer.code, 0, answer.errors)
         let id = answer.output.trimmingCharacters(in: .whitespacesAndNewlines)
-        let soon = try await add(in: 60, "soon")
+        _ = try await add(in: 60, "soon")
 
         clock.advance(by: 3600 * 24 * 365)
 
-        try await wait("the timed call") { self.lines("later").contains { $0.hasPrefix("due \(soon)|") } }
+        try await wait("the timed call") { self.lines("later").contains { $0.hasPrefix("wake soon|") } }
         XCTAssertEqual(lines("later").count, 1)
         let listed = TextBlock.blocks(in: try await call(["timer", "list"], as: "later").output)
         XCTAssertEqual(listed.map { $0.value("item") }, [id])

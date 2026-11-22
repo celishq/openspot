@@ -25,7 +25,7 @@ final class FlowMoveTests: PanelCase {
     private func writeFlow() throws {
         try script("flow", toml: "title = 'Flow'\npages = ['n*', 'swapped']", """
         os='\(client.path)'
-        page=$(sed -n 's/^route=//p')
+        page=$(sed -n 's/^input\\.route=//p')
         case "$1" in
           show) printf 'button=done\\ntitle=Done\\nscope=spot\\n\\nbutton=top\\ntitle=Top\\nscope=spot\\n\\nbutton=next\\ntitle=Next\\nscope=spot\\n\\nbutton=swap\\ntitle=Swap\\nscope=spot\\n\\nbutton=leave\\ntitle=Leave\\nscope=spot\\n\\nitem=x\\ntitle=Page %s\\n' "${page:-first}" ;;
           done) "$os" route back ;;

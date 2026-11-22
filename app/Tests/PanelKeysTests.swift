@@ -16,7 +16,7 @@ final class PanelKeysTests: PanelCase {
     private func showGrid() async throws {
         try script("alpha", toml: "title = 'Alpha'", "true")
         try script("beta", toml: "title = 'Beta'", "true")
-        try script("weather", toml: "title = 'Weather'\non = ['sheet.open']\n[commands.hot]\ntitle = 'Hot'\n[commands.cold]\ntitle = 'Cold'", ":")
+        try script("weather", toml: "title = 'Weather'\n[actions.hot]\ntitle = 'Hot'\n[actions.cold]\ntitle = 'Cold'\n[on]\n\"sheet.open\" = true", ":")
         _ = try model.files.config.change {
             $0.arrangement.arrange(["alpha", "beta", "weather"])
             $0.arrangement.set(isOnGrid: true, of: "weather")
@@ -32,7 +32,7 @@ final class PanelKeysTests: PanelCase {
 
     private func openInfo() async throws {
         try script("info", toml: "pages = ['a']", """
-        page=$(sed -n 's/^route=//p')
+        page=$(sed -n 's/^input\\.route=//p')
         if [ -n "$page" ]; then printf 'frame=\\nclass=gap-part\\n\\ntext=detail\\ntitle=Detail\\n'; else printf 'frame=\\nclass=gap-part\\n\\ntext=first\\ntitle=First\\n'; fi
         """)
         await model.reload()
@@ -309,9 +309,10 @@ final class PanelKeysTests: PanelCase {
         if let key { try key.write(to: pickData.appendingPathComponent("key"), atomically: true, encoding: .utf8) }
         try script("pick", toml: "title = 'Pick'", """
         data='\(pickData.path)'
-        [ "$1" = show ] || echo "$*" >> "$data/calls"
+        v=$(sed -n 's/^input\\.value=//p')
+        [ "$1" = show ] || echo "$1${v:+ $v}" >> "$data/calls"
         case "$1" in
-          key) printf %s "$2" > "$data/key" ;;
+          key) printf %s "$v" > "$data/key" ;;
           again) rm -f "$data/key" ;;
         esac
         case "$1" in
@@ -333,9 +334,10 @@ final class PanelKeysTests: PanelCase {
         try FileManager.default.createDirectory(at: pickData, withIntermediateDirectories: true)
         try script("choice", toml: "title = 'Choice'", """
         data='\(pickData.path)'
-        [ "$1" = show ] || echo "$*" >> "$data/calls"
+        v=$(sed -n 's/^input\\.value=//p')
+        [ "$1" = show ] || echo "$1${v:+ $v}" >> "$data/calls"
         while [ -f "$data/hold-$1" ]; do sleep 0.01; done
-        [ "$1" = key ] && printf %s "$2" > "$data/key"
+        [ "$1" = key ] && printf %s "$v" > "$data/key"
         [ "$1" = use ] && \(TestSpot.toast) Used
         case "$1" in
           show|key|record)
@@ -846,7 +848,7 @@ final class PanelKeysTests: PanelCase {
     }
 
     func testCommandYOpensTheHistoryOfASpotWhoseReturnRunsItsCommand() async throws {
-        try script("dictate", toml: "title = 'Dictate'\non = ['sheet.open']\n[commands.dictate]\ntitle = 'Dictate'", "printf 'item=a\\ntitle=Said\\n'")
+        try script("dictate", toml: "title = 'Dictate'\n[actions.dictate]\ntitle = 'Dictate'\n[on]\n\"sheet.open\" = true", "printf 'item=a\\ntitle=Said\\n'")
         await model.reload()
         model.isShown = true
         model.panelWillShow()

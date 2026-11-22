@@ -113,7 +113,7 @@ final class BindingsTests: SpotRunsCase {
         runs = SpotRuns(environment: ProcessInfo.processInfo.environment, showLimit: 0.5, clock: clock.value, stopPause: 0.2)
         takeCalls()
         try script("picker", toml: "[actions.slow]\noutputs.v = 'text'", log: "picker-log", "[ \"$1\" = slow ] && sleep 1.5 && echo out.v=late")
-        try script("asker", toml: "on = ['panel.open']\n[bindings]\npicker = { spot = 'picker' }", log: "asker-log", """
+        try script("asker", toml: "[bindings]\npicker = { spot = 'picker' }\n[on]\n'panel.open' = true", log: "asker-log", """
         v=$('\(client.path)' run picker.slow --out v 2> '\(path("errors"))'); echo $? >> '\(path("done"))'
         printf 'text=v\\ntitle=%s\\n' "$v"
         """)

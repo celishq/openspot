@@ -21,8 +21,9 @@ extension Spot {
 
     func items(query: String = "", input: String? = nil, page: String? = nil, timeout: TimeInterval) async throws -> Frame {
         let event = query.isEmpty ? nil : ShowEvent.text(query, inSheet: self.answers == nil)
-        let message = Message(.show, event: event, route: page, search: query.isEmpty ? nil : query, given: input).text
-        return try await output(.show, input: message?.isEmpty == true ? nil : message, timeout: timeout)
+        let message = Message(.show, event: event, route: page, search: query.isEmpty ? nil : query, given: input).handled()
+        let text = message.text
+        return try await output(message.action, input: text?.isEmpty == true ? nil : text, timeout: timeout)
     }
 
     func answer(_ action: SpotAction, input: String? = nil, timeout: TimeInterval) async throws -> Frame {
@@ -55,7 +56,7 @@ extension Spot {
     }
 
     func perform(_ action: SpotAction, input: String? = nil, page: String? = nil, timeout: TimeInterval) async throws {
-        let route = page.map { "route=\($0)\n" } ?? ""
+        let route = page.map { "input.route=\($0)\n" } ?? ""
         _ = try await output(action, input: route + (input ?? ""), timeout: timeout)
     }
 

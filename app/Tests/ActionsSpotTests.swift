@@ -50,8 +50,8 @@ final class ActionsSpotTests: BuiltInCase {
 
     func testAWhenFunctionThatReturnsAnyTextSaysYes() async throws {
         let js = try temporaryFolder().appendingPathComponent("hooks.js")
-        try "function named(id) { return id === \"a\" ? \"yes\" : \"\"; }\n".writeInline(to: js, toml: "title = 'Hooks'\n[commands.go]\ntitle = 'Go'\nwhen = 'named'\noffers = ['actions']")
-        let hooks = try XCTUnwrap(try SpotFile(file: js, id: "hooks")?.spots.first)
+        try "function named(id) { return id === \"a\" ? \"yes\" : \"\"; }\n".writeInline(to: js, toml: "title = 'Hooks'\n[actions.go]\ntitle = 'Go'\nwhen = 'named'\noffers = ['actions']")
+        let hooks = try XCTUnwrap(try SpotFile(file: js, id: "hooks", isApp: true)?.spots.first)
 
         let a = await hooks.hook("named", card: "a", origin: "mine")
         let b = await hooks.hook("named", card: "b", origin: "mine")

@@ -23,9 +23,13 @@ extension SpotRun {
         return spot.typedActions.first { $0.id == id }
     }
 
+    var takesHandlers: Bool {
+        spot.host == nil && !spot.holdsSettings
+    }
+
     func pressing(_ message: Message, as name: String) -> Message {
         let arguments = message.action.arguments
-        guard arguments.count > 1, spot.triggers != nil || typedAction(of: message.action) != nil else { return message }
+        guard arguments.count > 1, takesHandlers else { return message }
         var message = message
         message.action = .press(arguments[0])
         message.inputs.append(.init(key: name, value: arguments[1]))
@@ -123,7 +127,6 @@ extension SpotRun {
         }
         log(call, end, errors: errors)
         ended(call, end)
-        runs.settleAsk(of: spot.id)
         runs.settlePushed(of: spot.id)
     }
 
@@ -148,7 +151,9 @@ extension SpotRun {
         guard !script.answersInApp else { return }
         let request = call.request
         let values = fieldValues
-        runs.record(spot, request.action, input: values.hiding(request.message.text), frames: call.frames.map(values.hiding), errors: values.hiding(errors), end: end, event: request.event, started: call.made.started, begin: call.begin)
+        var sent = message(of: request, values: values)
+        sent.settings = []
+        runs.record(spot, sent.action, input: values.hiding(sent.text), frames: call.frames.map(values.hiding), errors: values.hiding(errors), end: end, event: request.event, started: call.made.started, begin: call.begin)
     }
 
     private func answer(_ waiting: CheckedContinuation<Frame?, Error>, of call: OpenCall, _ end: ScriptCall.End) {
@@ -211,6 +216,6 @@ extension SpotRun {
     }
 
     static func item(of action: SpotAction) -> String? {
-        action.arguments.first == Frame.open && action.arguments.count > 1 ? action.arguments[1] : nil
+        action.arguments.first == Frame.press && action.arguments.count > 1 ? action.arguments[1] : nil
     }
 }

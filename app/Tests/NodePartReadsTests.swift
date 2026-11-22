@@ -33,7 +33,7 @@ final class NodePartReadsTests: PanelCase {
     }
 
     func testAFlipOnACardTellsOnlyTheReaderOfItsSwitch() async throws {
-        try script("clock", toml: "on = ['panel.open']", "printf 'frame=\\nclass=gap-part\\n\\nswitch=power\\nclass=card:flex\\nvalue=false\\n\\nswitch=light\\nclass=card:flex\\nvalue=false\\n'")
+        try script("clock", toml: "[on]\n\"panel.open\" = true", "printf 'frame=\\nclass=gap-part\\n\\nswitch=power\\nclass=card:flex\\nvalue=false\\n\\nswitch=light\\nclass=card:flex\\nvalue=false\\n'")
         await model.reload()
         model.panelWillShow()
         try await wait("the card") { self.model.sheets["clock"]?[cardPart: "power"] != nil }

@@ -40,7 +40,7 @@ public struct SpotSettings: Equatable, Sendable {
 
     private static let clear = removeID
     public static let removeID = "clear"
-    private static let open = "open"
+    private static let open = Frame.press
     static let secretWord = "Set, and hidden"
     static let menuBarIcon = "menubar.rectangle"
     static let windowIcon = "macwindow"

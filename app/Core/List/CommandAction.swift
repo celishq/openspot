@@ -16,7 +16,7 @@ public struct CommandAction: Equatable, Sendable {
     private static let commandPrefix = "openspot.command."
 
     public static func command(_ offer: Manifest.Command) -> CommandAction {
-        CommandAction(id: commandPrefix + offer.id, title: offer.title, scope: .spot, after: offer.closes ? .close : .stay, confirm: offer.confirm, placeholder: offer.placeholder)
+        CommandAction(id: commandPrefix + offer.id, title: offer.title, scope: .spot, after: offer.closes ? .close : .stay, confirm: offer.confirm)
     }
 
     public static func command(of action: CommandAction) -> String? {
@@ -38,7 +38,6 @@ public struct CommandAction: Equatable, Sendable {
     public let key: ActionKey?
     public let scope: Scope
     public let after: After
-    public let isForm: Bool
     public let confirm: String?
     public let placeholder: String?
 
@@ -48,7 +47,6 @@ public struct CommandAction: Equatable, Sendable {
         key: ActionKey? = nil,
         scope: Scope = .item,
         after: After = .stay,
-        isForm: Bool = false,
         confirm: String? = nil,
         placeholder: String? = nil
     ) {
@@ -57,7 +55,6 @@ public struct CommandAction: Equatable, Sendable {
         self.key = key
         self.scope = scope
         self.after = after
-        self.isForm = isForm
         self.confirm = confirm
         self.placeholder = placeholder
     }
@@ -76,7 +73,6 @@ public struct CommandAction: Equatable, Sendable {
             key: key,
             scope: scope,
             after: block.flag("close") == false ? .stay : .close,
-            isForm: block.flag("form") ?? false,
             confirm: block.value("confirm"),
             placeholder: block.value("placeholder")
         )

@@ -9,7 +9,7 @@ final class GlobalKeyTests: XCTestCase {
     }
 
     func testAHeaderListsEachCommandAsABlockAfterABlankCommentLine() throws {
-        let spot = try command(toml: "title = 'Move'\n[commands.full]\ntitle = 'Full screen'\n[commands.meet]\ntitle = 'Join: 09:30'\nicon = 'https://example.com/meet.png'")
+        let spot = try command(toml: "title = 'Move'\n[actions.full]\ntitle = 'Full screen'\n[actions.meet]\ntitle = 'Join: 09:30'\nicon = 'https://example.com/meet.png'")
 
         XCTAssertEqual(spot.name, "Move")
         XCTAssertEqual(spot.offers.map(\.id), ["full", "meet"])
@@ -18,15 +18,15 @@ final class GlobalKeyTests: XCTestCase {
     }
 
     func testABadCommandRefusesTheSpotAndNamesTheFault() {
-        for block in ["[commands.full]", "[commands.show]\ntitle = 'Show'", "[commands.'full now']\ntitle = 'Full'"] {
+        for (block, fault) in [("[actions.show]\ntitle = 'Show'", "takes the name of a handler"), ("[actions.'full now']\ntitle = 'Full'", "needs an ID with no space")] {
             XCTAssertThrowsError(try command(toml: block), block) { error in
-                XCTAssertTrue((error as? SpotError)?.reason.contains("cannot read [commands.") == true, block)
+                XCTAssertTrue((error as? SpotError)?.reason.contains(fault) == true, "\(block): \(error)")
             }
         }
     }
 
     func testASettingIsABlockWithATitleOrItsKey() throws {
-        let spot = try command(toml: "title = 'Repos'\n[settings.folder]\n[settings.editor]\ntitle = 'Default app'\nicon = 'app.badge'")
+        let spot = try command(toml: "title = 'Repos'\n[settings]\nfolder = { type = 'text' }\neditor = { type = 'text', title = 'Default app', icon = 'app.badge' }")
 
         XCTAssertEqual(spot.settings.map(\.id), ["folder", "editor"])
         XCTAssertEqual(spot.settings.map(\.title), ["Folder", "Default app"])
@@ -35,7 +35,7 @@ final class GlobalKeyTests: XCTestCase {
 
     func testOnlyACommandThatAScriptListsTakesItsKey() throws {
         let folder = try temporaryFolder()
-        try "#!/bin/sh\n".writeScript(to: folder.spotFile("move"), toml: "[commands.full]\ntitle = 'Full screen'")
+        try "#!/bin/sh\n".writeScript(to: folder.spotFile("move"), toml: "[actions.full]\ntitle = 'Full screen'")
         let shortcut = try XCTUnwrap(Shortcut(text: "ctrl+up"))
         let listed = GlobalKey(spot: "move", command: "full", shortcut: shortcut)
         let unlisted = GlobalKey(spot: "move", command: "rm", shortcut: shortcut)
@@ -118,7 +118,7 @@ final class GlobalKeyTests: XCTestCase {
         let folder = try temporaryFolder()
         try "#!/bin/sh\n".writeScript(to: folder.spotFile("shelf"), toml: "")
         try "#!/bin/sh\n".writeScript(to: folder.spotFile("notes"))
-        try "#!/bin/sh\necho text=cups\n".writeScript(to: folder.spotFile("cups"), toml: "on = ['clock.60']")
+        try "#!/bin/sh\necho text=cups\n".writeScript(to: folder.spotFile("cups"), toml: "[on]\nevery = 60")
         try "#!/bin/sh\n".writeScript(to: folder.spotFile("sheet"), toml: "")
         let shortcut = try XCTUnwrap(Shortcut(text: "ctrl+up"))
         let shelf = GlobalKey(spot: "shelf", act: .float, trigger: .key(shortcut))

@@ -25,10 +25,9 @@ public enum ManifestSchema {
         var properties: [String: Any] = [:]
         for key in Manifest.keys { properties[key] = reference("texts") }
         properties["stay"] = ["type": "boolean"]
-        properties[Manifest.Triggers.table] = ["anyOf": [reference("texts"), reference("on")]]
+        properties[Manifest.Triggers.table] = reference("on")
         properties[Manifest.Setting.table] = table(["anyOf": [reference("type"), reference("setting")]])
         properties[Manifest.Action.table] = table(reference("action"))
-        properties[Manifest.Command.table] = table(reference("command"))
         properties[Manifest.Binding.table] = table(reference("binding"))
         properties[Manifest.Event.table] = table(table(reference("parameter")))
         properties[scripts] = table(reference("script"))
@@ -47,7 +46,7 @@ public enum ManifestSchema {
             "options": ["type": "array", "items": ["type": "string"]], "title": ["type": "string"], "icon": ["type": "string"], "confirm": ["type": "string"],
             "offers": ["type": "array", "items": ["type": "string"]], "shortcut": ["type": "string"], "close": ["type": "boolean"], "when": ["type": "string"]
         ]
-        let settingKeys = Manifest.Parameter.settingKeys.union(Manifest.Setting.keys)
+        let settingKeys = Manifest.Parameter.settingKeys
         let parameter: [String: Any] = ["anyOf": [reference("type"), object(Manifest.Parameter.inputKeys, from: fields, required: ["type"])]]
         var action = object(Manifest.Action.keys.union(Manifest.Action.appKeys), from: fields)
         var actionProperties = action["properties"] as? [String: Any] ?? [:]
@@ -60,7 +59,6 @@ public enum ManifestSchema {
             "setting": object(settingKeys, from: fields),
             "parameter": parameter,
             "action": action,
-            "command": object(Manifest.Command.keys, from: [:]),
             "binding": object([Manifest.Binding.spotKey], from: [Manifest.Binding.spotKey: ["type": "string"]], required: [Manifest.Binding.spotKey]),
             "on": triggers,
             "script": script

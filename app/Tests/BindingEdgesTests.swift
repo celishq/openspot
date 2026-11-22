@@ -65,7 +65,7 @@ final class BindingEdgesTests: SpotRunsCase {
 
     func testAChainDeeperThanFourRunsExits2() async throws {
         for index in 1...6 {
-            try script("s\(index)", toml: "\(index == 1 ? "[commands.start]\ntitle = 'Start'" : "")\n[bindings]\nnext = { spot = 's\(index + 1)' }\n[actions.go]", log: "s\(index)-log", """
+            try script("s\(index)", toml: "\(index == 1 ? "[actions.start]\ntitle = 'Start'" : "")\n[bindings]\nnext = { spot = 's\(index + 1)' }\n[actions.go]", log: "s\(index)-log", """
             '\(client.path)' run next.go 2>> '\(path("errors"))'; echo "s\(index) $?" >> '\(path("codes"))'
             """)
         }

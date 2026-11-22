@@ -49,9 +49,9 @@ public enum SpotStarter: String, CaseIterable, Sendable {
         switch self {
         case .button:
             manifest.set("detail", to: .string("Press to run it"))
-            manifest.sections.append(ConfigDocument.Table("commands.run", [("title", .string(title))]))
+            manifest.sections.append(ConfigDocument.Table("actions.run", [("title", .string(title))]))
         case .list, .form: break
-        case .number: manifest.set("on", to: .strings(["panel.open"]))
+        case .number: manifest.sections.append(ConfigDocument.Table("on", [("\"panel.open\"", .boolean(true))]))
         }
         return manifest
     }
@@ -73,7 +73,7 @@ public enum SpotStarter: String, CaseIterable, Sendable {
                 printf 'item=first\\ntitle=First item\\ndetail=Press Enter to pick it\\nnote=Hello\\n\\n'
                 printf 'item=second\\ntitle=Second item\\ndetail=Press Enter to pick it\\nnote=Hello again\\n'
                 ;;
-              open)
+              press)
                 openspot toast "You picked the item that says: $(value item.note)"
                 ;;
             esac

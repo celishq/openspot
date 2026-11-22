@@ -61,7 +61,6 @@ public final class SpotRuns {
     @ObservationIgnored var timerWatch: Task<Void, Never>?
     @ObservationIgnored var schedule: SpotSchedule
     @ObservationIgnored var scheduleWatch: Task<Void, Never>?
-    @ObservationIgnored var asks = SpotAsks()
     @ObservationIgnored var pushed = PushedRuns()
     @ObservationIgnored var runWaits: [String: Int] = [:]
     @ObservationIgnored var wanted: Set<String> = []
@@ -83,7 +82,7 @@ public final class SpotRuns {
     @ObservationIgnored var standIn: ((Spot) -> ScriptMode)?
     @ObservationIgnored public var api: CommandAPI?
     @ObservationIgnored private let log: CallLog?
-    @ObservationIgnored public var onCall: ((CallLog.Record, ShowEvent?) -> Void)?
+    @ObservationIgnored public var onCall: ((CallLog.Record) -> Void)?
     @ObservationIgnored var frameWaits = 0
     @ObservationIgnored var answerWaits: [(DispatchTime) -> Void]?
     @ObservationIgnored private let swift: SwiftProgram
@@ -211,7 +210,6 @@ public final class SpotRuns {
     func didClose(_ sheet: SpotRun) {
         if openID == sheet.spot.id { openID = nil }
         let id = sheet.spot.id
-        if asks.isWaiting(for: id) { Task { [weak self] in self?.settleAsk(of: id) } }
         if pushed.isWaiting(for: id) { Task { [weak self] in self?.settlePushed(of: id) } }
     }
 
@@ -267,7 +265,6 @@ public final class SpotRuns {
         timerWatch = nil
         scheduleWatch?.cancel()
         scheduleWatch = nil
-        asks.endAll()
         pushed.endAll()
         clipboardWatch?.cancel()
         clipboardWatch = nil
@@ -367,7 +364,7 @@ public final class SpotRuns {
             started: started,
             seconds: Date().timeIntervalSince(begin)
         )
-        onCall?(record, event)
+        onCall?(record)
         guard let log, !Self.isQuiet(event, end) else { return }
         log.write(record)
     }

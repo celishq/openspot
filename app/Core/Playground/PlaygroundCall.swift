@@ -3,15 +3,14 @@ import Foundation
 public struct PlaygroundCall: Equatable, Sendable {
     public let lines: [String]
 
-    public init(record: CallLog.Record, event: ShowEvent?) {
+    public init(record: CallLog.Record) {
         let words = record.arguments.map { $0.contains(where: \.isWhitespace) || $0.isEmpty ? "'\($0)'" : $0 }.joined(separator: " ")
-        let why = event.map { " · " + Message(.show, event: $0).keys.map { "\($0.key)=\($0.value)" }.joined(separator: " ") } ?? ""
         let ending = switch record.end {
         case .exited(let code): "exit \(code)"
         case .stopped: "stopped"
         case .failed(let reason): reason
         }
-        lines = ["$ \(words)\(why)"]
+        lines = ["$ \(words)"]
             + Self.lines(of: record.input ?? "", mark: "<")
             + record.frames.map { Self.lines(of: $0, mark: ">") }.joined(separator: ["> ---"])
             + Self.lines(of: record.errors, mark: "!")

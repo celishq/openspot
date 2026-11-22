@@ -44,7 +44,7 @@ final class PanelBackdropTests: PanelCase {
     }
 
     func testTheBackdropUnderTheMenuReachesTheEndOfTheMenu() async throws {
-        try script("weather", toml: "title = 'Weather'\non = ['sheet.open']\n[commands.hot]\ntitle = 'Hot'\n[commands.cold]\ntitle = 'Cold'", ":")
+        try script("weather", toml: "title = 'Weather'\n[actions.hot]\ntitle = 'Hot'\n[actions.cold]\ntitle = 'Cold'\n[on]\n\"sheet.open\" = true", ":")
         _ = try model.files.config.change { $0.arrangement.set(isOnGrid: true, of: "weather") }
         await model.reload()
         model.isShown = true

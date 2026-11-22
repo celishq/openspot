@@ -19,7 +19,7 @@ final class StatsLogTests: SpotRunsCase {
     }
 
     func testAStayingScriptCountsItsCPUTimeWhileItRuns() async throws {
-        try script(toml: "mode = 'stay'", """
+        try script(toml: "stay = true", """
         \(Self.busyLoop)
         touch '\(path("busy"))'
         while IFS= read -r line; do
@@ -42,7 +42,7 @@ final class StatsLogTests: SpotRunsCase {
     func testAStayingProcessPutsItsCPUTimeOnTheDayItWasSpent() async throws {
         runs.quit()
         runs = SpotRuns(clock: clock.value, stopPause: 0.2, stats: folder.appendingPathComponent("stats"))
-        try script(toml: "mode = 'stay'", """
+        try script(toml: "stay = true", """
         \(Self.busyLoop)
         touch '\(path("busy"))'
         \(untilRelease)

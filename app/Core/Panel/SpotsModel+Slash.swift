@@ -31,7 +31,7 @@ extension SpotsModel {
 
     public var slashPlaceholder: String? {
         guard let slash, slash.text.isEmpty, let shown = selectedEntry else { return nil }
-        return commands.button(of: shown).map { $0.placeholder } ?? shown.spot.placeholder
+        return commands.button(of: shown)?.placeholder
     }
 
     var slashHint: String? {

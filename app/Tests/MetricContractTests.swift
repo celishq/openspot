@@ -20,7 +20,7 @@ final class MetricContractTests: XCTestCase {
     }
 
     private func power(_ body: String = "printf 'number=power\\nvalue=84\\nmax=100\\nunit=%%\\ntone=good\\n'") throws {
-        try script("power.sh", "#!/bin/sh\n\(body)\n", toml: "on = ['clock.5']")
+        try script("power.sh", "#!/bin/sh\n\(body)\n", toml: "[on]\nevery = 5")
     }
 
     private var scan: ScanResult {
@@ -50,9 +50,9 @@ final class MetricContractTests: XCTestCase {
 
     func testEachSpotCanShowInTheMenuBar() throws {
         try script("one.sh", "#!/bin/sh\n")
-        try script("two.sh", "#!/bin/sh\n", toml: "on = ['panel.open']")
-        try script("three.sh", "#!/bin/sh\n", toml: "mode = 'stay'")
-        try script("four.sh", "#!/bin/sh\n", toml: "on = ['clock.5']")
+        try script("two.sh", "#!/bin/sh\n", toml: "[on]\n'panel.open' = true")
+        try script("three.sh", "#!/bin/sh\n", toml: "stay = true")
+        try script("four.sh", "#!/bin/sh\n", toml: "[on]\nevery = 5")
 
         XCTAssertEqual(try scan.refused, [])
         XCTAssertEqual(try scan.scripts.filter(\.canShowInMenuBar).map(\.id), ["four", "one", "three", "two"])
@@ -99,11 +99,11 @@ final class MetricContractTests: XCTestCase {
 
     func testTheCheckReportsARefusedHeaderAndABadMetric() async throws {
         try power("echo nonsense")
-        try script("broken.sh", "#!/bin/sh\n", toml: "mode = 'huge'")
+        try script("broken.sh", "#!/bin/sh\n", toml: "stay = 'huge'")
 
         let faults = await SpotCheck(folder: SpotsFolder(url: folder)).faults()
 
-        XCTAssertEqual(faults, ["broken: Broken has an unknown mode: huge. Use once or stay", "power: It sent a metric Openspot cannot read."])
+        XCTAssertEqual(faults, ["broken: Broken cannot load: spot.toml: stay takes true or false, such as stay = true.", "power: It sent a metric Openspot cannot read."])
     }
 
     func testTheCheckReportsAListThatFails() async throws {

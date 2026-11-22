@@ -92,9 +92,10 @@ extension SpotsModel {
 
     public func run(_ action: CommandAction, on target: Target, in place: SheetPlace = .panel) {
         if place.isDetached {
-            if action.isForm || action.confirm != nil, place == .window {
+            let asks = Self.typed(action, of: target.entry.spot)?.lacksInput == true || action.confirm != nil
+            if asks, place == .window {
                 host.notify("\(action.title) asks with a form or a second press, which a window does not show yet.")
-            } else if action.isForm || action.confirm != nil {
+            } else if asks {
                 press(target.entry.id)
             } else {
                 sheets[target.entry.id]?.run(action, item: target.item)
@@ -107,8 +108,6 @@ extension SpotsModel {
         } else if let command = CommandAction.command(of: action) {
             if isShown { host.dismiss() }
             sheets[target.entry.id]?.pressKey(command)
-        } else if action.isForm {
-            openForm(action, on: target)
         } else if let typed = Self.typed(action, of: target.entry.spot), typed.lacksInput,
                   let form = ItemForm(output: Frame(text: typed.form(with: [:], title: action.title))) {
             show(.form(form), of: action, on: target, prefill: "")
@@ -130,15 +129,6 @@ extension SpotsModel {
         Task { [weak self] in
             guard case .form(let form) = await sheet.answer(to: action, item: target.item), let self, isShown else { return }
             show(.form(form), of: action, on: target, prefill: "")
-        }
-    }
-
-    public func openForm(_ action: CommandAction, on target: Target, prefill: String = "") {
-        guard place(ofSheet: target.entry.id) == .panel else {
-            return host.notify("\(action.title) asks with a form, which a window does not show yet.")
-        }
-        ask(action, on: target, prefill: prefill) { [sheets] in
-            try await sheets[target.entry.id]?.form(action, item: target.item).map(CallAnswer.form)
         }
     }
 

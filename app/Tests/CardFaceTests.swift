@@ -114,8 +114,8 @@ final class CardFaceTests: XCTestCase {
         XCTAssertEqual(answer.answers(asCard: true).first?.card?.face.tree.parts.last?.number?.text, "1,234.5")
     }
 
-    func testAnAnswerCardTakesTheWordForEnterFromItsOpenButton() {
-        let answer = Frame(text: "frame=\n\nnumber=a\nclass=large:flex\nvalue=14\n\nbutton=open\ntitle=Copy\nscope=spot\n")
+    func testAnAnswerCardTakesTheWordForEnterFromItsPressButton() {
+        let answer = Frame(text: "frame=\n\nnumber=a\nclass=large:flex\nvalue=14\n\nbutton=press\ntitle=Copy\nscope=spot\n")
 
         XCTAssertEqual(answer.answers(asCard: true).first?.openTitle, "Copy")
     }

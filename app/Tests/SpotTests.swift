@@ -67,7 +67,7 @@ final class SpotTests: XCTestCase {
 
     func testOpeningGivesTheKindAndTheActionsThatItPrints() async throws {
         let command = try writeCommand(kind: .launch, on: .panel, """
-        printf 'frame=\\nactive=true\\n\\nbutton=open\\ntitle=Select\\n\\nbutton=copy\\ntitle=Copy\\n\\ntext=a\\ntitle=A\\n'
+        printf 'frame=\\nactive=true\\n\\nbutton=press\\ntitle=Select\\n\\nbutton=copy\\ntitle=Copy\\n\\ntext=a\\ntitle=A\\n'
         """)
 
         let opened = try await command.opened(timeout: 60)
@@ -90,12 +90,12 @@ final class SpotTests: XCTestCase {
 
     func testPassesTheSearchToAList() async throws {
         let command = try writeCommand(kind: .list, """
-        printf 'item=%s\\ntitle=%s\\n' "$1" "$(sed -n 's/^search=//p')"
+        printf 'item=%s\\ntitle=%s\\n' "$1" "$(sed -n 's/^input\\.value=//p')"
         """)
 
         let lines = try await command.items(query: "rep", timeout: 60)
 
-        XCTAssertEqual(lines.items, [SpotItem(title: "rep", run: "show")])
+        XCTAssertEqual(lines.items, [SpotItem(title: "rep", run: "sheet.text")])
     }
 
     func testAFormIsTheCallOfItsActionWithEmptyStdin() async throws {
@@ -103,7 +103,7 @@ final class SpotTests: XCTestCase {
         [ "$1" = new ] && [ -z "$(cat)" ] && printf 'frame=\\ntype=form\\ntitle=New\\n\\nfield=title\\ntitle=Name\\n'
         """)
 
-        let form = try await command.form(CommandAction(id: "new", title: "New", isForm: true), item: nil, timeout: 60)
+        let form = try await command.form(CommandAction(id: "new", title: "New"), item: nil, timeout: 60)
 
         XCTAssertEqual(form, ItemForm(title: "New", fields: [.init(name: "title", label: "Name")]))
     }
@@ -113,32 +113,32 @@ final class SpotTests: XCTestCase {
         [ "$1 $2" = "edit one" ] && printf 'frame=\\ntype=form\\ntitle=Edit\\n\\nfield=title\\ntitle=Name\\n'
         """)
 
-        let form = try await command.form(CommandAction(id: "edit", title: "Edit", isForm: true), item: SpotItem(title: "One", run: "one"), timeout: 60)
+        let form = try await command.form(CommandAction(id: "edit", title: "Edit"), item: SpotItem(title: "One", run: "one"), timeout: 60)
 
         XCTAssertEqual(form.title, "Edit")
     }
 
-    func testAClickOnAFileWithNoReadSendsOpen() async throws {
+    func testAClickOnAFileWithNoReadSendsPress() async throws {
         let command = try writeCommand(kind: .launch, "echo \"$1\" > '\(marker.path)'")
 
         try await command.perform(command.click, timeout: 60)
 
-        XCTAssertEqual(try String(contentsOf: marker, encoding: .utf8), "open\n")
+        XCTAssertEqual(try String(contentsOf: marker, encoding: .utf8), "press\n")
     }
 
-    func testAClickOnACardWithAReadSendsOpen() async throws {
+    func testAClickOnACardWithAReadSendsPress() async throws {
         let command = try writeCommand(kind: .launch, on: .panel, "echo \"$1\" > '\(marker.path)'")
 
         try await command.perform(command.click, timeout: 60)
 
-        XCTAssertEqual(try String(contentsOf: marker, encoding: .utf8), "open\n")
+        XCTAssertEqual(try String(contentsOf: marker, encoding: .utf8), "press\n")
     }
 
     func testAFormThatCannotBeReadFails() async throws {
         let command = try writeCommand(kind: .list, "echo nonsense")
 
         do {
-            _ = try await command.form(CommandAction(id: "new", title: "New", isForm: true), item: nil, timeout: 60)
+            _ = try await command.form(CommandAction(id: "new", title: "New"), item: nil, timeout: 60)
             XCTFail("expected a failure")
         } catch SpotError.badForm {
         }
@@ -150,7 +150,7 @@ final class SpotTests: XCTestCase {
         """)
         let form = ItemForm(title: "New", fields: [.init(name: "title", label: "Name", value: "One")])
 
-        try await command.submit(CommandAction(id: "new", title: "New", isForm: true), item: nil, draft: FormDraft(form: form), timeout: 60)
+        try await command.submit(CommandAction(id: "new", title: "New"), item: nil, draft: FormDraft(form: form), timeout: 60)
 
         XCTAssertEqual(try String(contentsOf: marker, encoding: .utf8), "input.title=One\n")
     }

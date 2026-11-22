@@ -66,7 +66,7 @@ final class DrawSpotTests: XCTestCase {
         started.append(runs)
         runs.api = CommandAPI(mac: Mac(), places: .test(["OPENSPOT_CONFIG": home.appendingPathComponent(".config/openspot").path]), app: FakeRunningApp(), runs: runs, rates: .offline)
         let count = records.count
-        runs.onCall = { [unowned self] record, _ in records.append(record) }
+        runs.onCall = { [unowned self] record in records.append(record) }
         let sheet = runs.sheet(for: spot)
         sheet.onReport = { [unowned self] report in
             if case .toast(let text) = report { toasts.append(text) }
@@ -99,7 +99,8 @@ final class DrawSpotTests: XCTestCase {
     }
 
     private func ended(_ arguments: [String]) -> Bool {
-        records.contains { $0.arguments == arguments }
+        let item = arguments.dropFirst().first.map { "input.item=\($0)" }
+        return records.contains { record in record.arguments == [arguments[0]] && item.map { (record.input ?? "").contains($0) } ?? true }
     }
 
     func testTheSheetListsANewBoardThenEachBoardNewestFirst() async throws {
@@ -123,8 +124,8 @@ final class DrawSpotTests: XCTestCase {
         let sheet = try await opened(spot)
         let item = try row("a", in: sheet)
         let rename = try XCTUnwrap(sheet.spot.actions.first { $0.id == "rename" })
-        let form = try await sheet.form(rename, item: item)
-        var draft = FormDraft(form: try XCTUnwrap(form))
+        guard case .form(let form) = await sheet.answer(to: rename, item: item) else { return XCTFail("Rename asked with no form") }
+        var draft = FormDraft(form: form)
         XCTAssertEqual(draft.form.fields.map(\.value), ["Untitled board"])
         draft.set("Launch flow", for: "name")
 
@@ -171,7 +172,7 @@ final class DrawSpotTests: XCTestCase {
 
         try await wait("the toast") { !self.toasts.isEmpty }
         XCTAssertEqual(toasts, ["This board is gone."])
-        try await wait("the end of the call") { self.ended(["open", "0:gone"]) }
+        try await wait("the end of the call") { self.ended(["press", "0:gone"]) }
         XCTAssertTrue(sheet.calls.isEmpty)
     }
 
@@ -184,7 +185,7 @@ final class DrawSpotTests: XCTestCase {
 
         sheet.pick(try row("plan", in: sheet))
 
-        try await wait("the end of the call") { self.ended(["open", "0:plan"]) }
+        try await wait("the end of the call") { self.ended(["press", "0:plan"]) }
         XCTAssertEqual(toasts, ["Draw cannot read this board. Its file stays as it is."])
         XCTAssertTrue(sheet.calls.isEmpty)
         runs.quit()
@@ -212,13 +213,13 @@ final class DrawSpotTests: XCTestCase {
         runs.panelOpened()
         sheet.open {}
         sheet.pick(try row("plan", in: sheet))
-        try await wait("the end of the second open") { self.ended(["open", "1:plan"]) }
+        try await wait("the end of the second open") { self.ended(["press", "1:plan"]) }
         XCTAssertEqual(sheet.calls.map(\.id), [held.id])
         XCTAssertEqual(processes(of: program), first)
         XCTAssertTrue(sheet.acts.isEmpty)
 
         sheet.pick(SpotItem(title: "New board", run: "1:new"))
-        try await wait("the end of the new board's call") { self.ended(["open", "1:new"]) }
+        try await wait("the end of the new board's call") { self.ended(["press", "1:new"]) }
         XCTAssertEqual(sheet.calls.map(\.id), [held.id])
         XCTAssertEqual(try FileManager.default.contentsOfDirectory(atPath: boards.path).filter { $0.hasSuffix(".json") }.count, 3)
 
@@ -273,8 +274,8 @@ final class DrawSpotTests: XCTestCase {
         XCTAssertEqual(processes(of: program).count, 2)
         let item = try row("flows", in: second)
         let rename = try XCTUnwrap(second.spot.actions.first { $0.id == "rename" })
-        let form = try await second.form(rename, item: item)
-        var draft = FormDraft(form: try XCTUnwrap(form))
+        guard case .form(let form) = await second.answer(to: rename, item: item) else { return XCTFail("Rename asked with no form") }
+        var draft = FormDraft(form: form)
         draft.set("Other", for: "name")
 
         _ = try await second.submit(rename, item: item, draft: draft)
@@ -287,7 +288,7 @@ final class DrawSpotTests: XCTestCase {
         XCTAssertEqual(Set(toasts), ["Another Draw has these boards open, so nothing changed. Close it, then try again."])
         XCTAssertEqual(try title(of: file), "Flows")
         XCTAssertEqual(try shownFiles(), ["flows.json"])
-        try await wait("the end of the second open") { self.ended(["open", "0:new"]) }
+        try await wait("the end of the second open") { self.ended(["press", "0:new"]) }
         XCTAssertTrue(second.calls.isEmpty)
     }
 
@@ -304,7 +305,7 @@ final class DrawSpotTests: XCTestCase {
 
         sheet.pick(try row("flows", in: sheet))
         let held = try XCTUnwrap(link.sent.last)
-        XCTAssertEqual(held.request.action.arguments, ["open", "0:flows"])
+        XCTAssertEqual(held.request.action.arguments, ["press", "0:flows"])
         await link.frame("call=2\n\nitem=1:new\ntitle=New board\n\nitem=1:flows\ntitle=Flows\n", of: held)
         sheet.close()
         runs.panelClosed()
@@ -315,7 +316,7 @@ final class DrawSpotTests: XCTestCase {
         XCTAssertEqual(sheet.calls.map(\.id), [held.made.id])
 
         sheet.pick(try row("flows", in: sheet))
-        XCTAssertEqual(link.sent.last?.request.action.arguments, ["open", "1:flows"])
+        XCTAssertEqual(link.sent.last?.request.action.arguments, ["press", "1:flows"])
         XCTAssertFalse(held.made.isStopped)
         await link.end(try XCTUnwrap(link.sent.last))
         for read in link.sent.dropFirst() where read.request.action == .show { await link.end(read) }

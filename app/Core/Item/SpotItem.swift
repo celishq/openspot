@@ -28,13 +28,12 @@ public struct SpotItem: Equatable, Sendable {
     }
     public let openTitle: String?
     public let staysOnPick: Bool
-    public let form: CommandAction?
     public let move: FlowMove?
     public let section: String?
     public let number: NumberReading?
     public let showsWords: Bool
 
-    public init(title: String, subtitle: String? = nil, run: String, picture: Icon? = nil, place: String? = nil, hides: [String]? = nil, keywords: [String] = [], shortcut: String? = nil, records: Bool = false, takesShake: Bool = false, isOn: Bool = false, isToggle: Bool = false, tone: MetricValue.Tone? = nil, file: String? = nil, fields: [TextBlock.Field] = [], card: SpotState? = nil, pin: Pin? = nil, openTitle: String? = nil, staysOnPick: Bool = false, form: CommandAction? = nil, move: FlowMove? = nil, section: String? = nil, number: NumberReading? = nil, showsWords: Bool = true) {
+    public init(title: String, subtitle: String? = nil, run: String, picture: Icon? = nil, place: String? = nil, hides: [String]? = nil, keywords: [String] = [], shortcut: String? = nil, records: Bool = false, takesShake: Bool = false, isOn: Bool = false, isToggle: Bool = false, tone: MetricValue.Tone? = nil, file: String? = nil, fields: [TextBlock.Field] = [], card: SpotState? = nil, pin: Pin? = nil, openTitle: String? = nil, staysOnPick: Bool = false, move: FlowMove? = nil, section: String? = nil, number: NumberReading? = nil, showsWords: Bool = true) {
         self.title = title
         self.subtitle = subtitle
         self.run = run
@@ -54,7 +53,6 @@ public struct SpotItem: Equatable, Sendable {
         self.pin = pin
         self.openTitle = openTitle
         self.staysOnPick = staysOnPick
-        self.form = form
         self.move = move
         self.section = section
         self.number = number
@@ -86,7 +84,6 @@ public struct SpotItem: Equatable, Sendable {
             pin: block.value(ItemKey.pin).flatMap(Pin.init(rawValue:)),
             openTitle: block.value(ItemKey.openTitle),
             staysOnPick: block.flag(ItemKey.close) == false,
-            form: block.flag(ItemKey.form) == true ? CommandAction(id: Frame.open, title: block.value(ItemKey.openTitle) ?? block.value(ItemKey.title) ?? run, after: block.flag(ItemKey.close) == false ? .stay : .close, isForm: true) : nil,
             move: FlowMove(item: block),
             section: section,
             number: number,

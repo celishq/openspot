@@ -143,7 +143,7 @@ final class CommandAPITests: XCTestCase {
 
     func testASecretIsNeverPrintedAndOnlyOpenspotsFormChangesIt() async throws {
         let spots = folder.appendingPathComponent("spots", isDirectory: true)
-        try TestSpot(toml: "title = 'Weather'\n[settings.token]\ntype = 'secret'\n[settings.key]\ntype = 'secret'", body: "echo").write(to: spots.spotFile("weather"))
+        try TestSpot(toml: "title = 'Weather'\n[settings]\ntoken = 'secret'\nkey = 'secret'", body: "echo").write(to: spots.spotFile("weather"))
         let places = environment.merging(["OPENSPOT_SPOTS": spots.path]) { _, new in new }
         let spot = places.merging(["OPENSPOT_ID": "weather"]) { _, new in new }
         try AppPlaces.test(places).secrets.keep("MARKER-7f3c", key: "token", of: "weather")
@@ -201,25 +201,6 @@ final class CommandAPITests: XCTestCase {
         XCTAssertEqual(calendar.made, 2)
     }
 
-    func testAnEventReachesTheRunningApp() async throws {
-        let raised = LockedEvents()
-        let call = try XCTUnwrap(CommandLineCall(arguments: ["event", "emit", "music.track", "Song"], environment: [:]))
-        let work = try XCTUnwrap(CommandAPI(mac: host, places: .test(), raise: { await raised.add($0) }, rates: .offline).work(for: call, request: .test(), input: { "" }))
-
-        let answer = await work()
-
-        XCTAssertEqual(answer, CommandAnswer())
-        let events = await raised.events
-        XCTAssertEqual(events, [.named("music.track", value: "Song")])
-    }
-
-    func testAnEventWithNoAppToReachFails() async throws {
-        let answer = try await answer(["event", "emit", "music.track"])
-
-        XCTAssertEqual(answer.errors, "Openspot is not running, so no spot hears `music.track`. Open Openspot, then run this again.\n")
-        XCTAssertEqual(answer.code, 1)
-    }
-
     @MainActor
     func testStatsComeFromTheLiveCountsOfTheRunningApp() async throws {
         let runs = SpotRuns()
@@ -256,13 +237,5 @@ final class CommandAPITests: XCTestCase {
             XCTAssertNil(CommandAPI(mac: host, places: .test(), app: FakeRunningApp(), rates: .offline).work(for: call, request: .test(), input: { "" }, isSandboxed: true), arguments.joined(separator: " "))
             XCTAssertNotNil(CommandAPI(mac: host, places: .test(), app: FakeRunningApp(), rates: .offline).work(for: call, request: .test(), input: { "" }), arguments.joined(separator: " "))
         }
-    }
-}
-
-private actor LockedEvents {
-    private(set) var events: [SpotEvent] = []
-
-    func add(_ event: SpotEvent) {
-        events.append(event)
     }
 }

@@ -17,7 +17,6 @@ public struct Spot: Equatable, Sendable {
     @usableFromInline private(set) var header: Header
     public private(set) var kind: SpotKind
     public private(set) var pick: ItemPick
-    public private(set) var pickForm: CommandAction?
     public private(set) var keepsRecent = true
     public private(set) var openTitle: String?
     public private(set) var actions: [CommandAction]
@@ -54,11 +53,9 @@ public struct Spot: Equatable, Sendable {
         views: [String: String] = [:],
         viewDates: [String: Date] = [:],
         sources: [String] = [],
-        emits: [String] = [],
         pages: [String] = [],
         uses: Set<SpotUse> = [],
         keywords: [String] = [],
-        placeholder: String? = nil,
         sample: URL? = nil,
         edits: SpotEdits? = nil,
         starts: SpotStart? = nil
@@ -68,8 +65,8 @@ public struct Spot: Equatable, Sendable {
             hasSheet: on != nil || answers == nil && offers.isEmpty && offeredActions.isEmpty,
             isGlobal: isGlobal, isFound: isFound, answers: answers, order: order,
             host: host, growsFromField: growsFromField, mode: mode, drop: drop,
-            dataName: dataName, isOnGrid: isOnGrid, views: views, viewDates: viewDates, sources: sources, emits: emits, pages: pages, uses: uses,
-            offers: offers, offeredActions: offeredActions, settings: settings, keywords: keywords, placeholder: placeholder, sample: sample,
+            dataName: dataName, isOnGrid: isOnGrid, views: views, viewDates: viewDates, sources: sources, pages: pages, uses: uses,
+            offers: offers, offeredActions: offeredActions, settings: settings, keywords: keywords, sample: sample,
             edits: edits, starts: starts
         ))
         self.kind = kind
@@ -94,7 +91,7 @@ public struct Spot: Equatable, Sendable {
 
     public static func == (left: Spot, right: Spot) -> Bool {
         (left.header === right.header || left.header.facts == right.header.facts) && left.kind == right.kind && left.pick == right.pick
-            && left.pickForm == right.pickForm && left.keepsRecent == right.keepsRecent && left.openTitle == right.openTitle
+            && left.keepsRecent == right.keepsRecent && left.openTitle == right.openTitle
             && left.actions == right.actions && left.settingsSheet == right.settingsSheet
             && left.opensToKeys == right.opensToKeys && left.chosenIcon == right.chosenIcon
     }
@@ -320,7 +317,6 @@ public struct Spot: Equatable, Sendable {
         command.actions = output.actions
         command.openTitle = output.openTitle
         command.pick = output.pick
-        command.pickForm = output.pickForm
         command.keepsRecent = output.keepsRecent
         if showsState { command.kind = output.kind }
         return command

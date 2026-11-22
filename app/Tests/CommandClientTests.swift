@@ -267,7 +267,7 @@ final class CommandClientTests: XCTestCase {
     }
 
     func testALiveCallFailsAndSaysSoWhenTheAppDoesNotStartInTime() async throws {
-        let run = try start(["event", "emit", "music.track"], variables: ["OPENSPOT_START_WAIT": "0.3"])
+        let run = try start(["spot", "open", "x"], variables: ["OPENSPOT_START_WAIT": "0.3"])
 
         try await wait("the end of the call") { !run.process.isRunning }
 
@@ -301,7 +301,7 @@ final class CommandClientTests: XCTestCase {
     }
 
     func testOnlyACallThatNeedsTheStateOfTheAppIsLive() {
-        for live in [["app", "status"], ["spot", "open", "x"], ["setting", "change", "k"], ["event", "emit", "a.b"], ["update", "check"], ["batch"]] {
+        for live in [["app", "status"], ["spot", "open", "x"], ["setting", "change", "k"], ["update", "check"], ["batch"]] {
             XCTAssertTrue(CommandKind.needsApp(live), live.joined(separator: " "))
         }
         for files in [["spot", "list"], ["setting", "get", "k"], ["calc", "solve", "1"], ["setting", "set", "--spot", "openspot", "login", "true"], ["app", "quit"], ["spot", "stats"], ["guide"], ["screen", "shot"], []] {

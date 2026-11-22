@@ -35,9 +35,9 @@ final class SpotTablesTests: XCTestCase {
         XCTAssertNil(fault(of: "title = 'Coffee'\npages = ['day:*']\n# Set CITY=Paris to change it"))
     }
 
-    func testAKeyThatACommandOrASettingDoesNotTakeIsAFault() {
-        XCTAssertEqual(fault(of: "title = 'T'\n[commands.go]\ntitle = 'Go'\ncolour = 'red'"), "T has an unknown key in [commands.go]: colour")
-        XCTAssertEqual(fault(of: "title = 'T'\n[settings.look]\ntitel = 'Look'"), "T has an unknown key in [settings.look]: titel")
+    func testAKeyThatAnActionOrASettingDoesNotTakeIsAFault() {
+        XCTAssertEqual(fault(of: "title = 'T'\n[actions.go]\ntitle = 'Go'\ncolour = 'red'"), "Probe cannot load: spot.toml: [actions.go] has an unknown key: colour. Use title, icon, confirm, inputs.<name> or outputs.<name>.")
+        XCTAssertEqual(fault(of: "title = 'T'\n[settings]\nlook = { type = 'text', titel = 'Look' }"), "Probe cannot load: spot.toml: [settings] look has an unknown key: titel. Use default, description, icon, options, title, type.")
     }
 
     func testASpotTomlThatCannotBeReadIsAFaultThatNamesItsLine() {
@@ -46,10 +46,10 @@ final class SpotTablesTests: XCTestCase {
 
     func testASettingThatAsksForAHotkeyIsAFault() {
         XCTAssertEqual(
-            fault(of: "title = 'T'\n[settings.key]\ntype = 'hotkey'\ntitle = 'Shortcut'"),
-            "T has an unknown type in [settings.key]: `hotkey`. Use `type = \"secret\"`, or no type."
+            fault(of: "title = 'T'\n[settings]\nkey = { type = 'hotkey', title = 'Shortcut' }"),
+            "Probe cannot load: spot.toml: [settings] key has an unknown type: hotkey. Use text, number, bool, date, duration, url, file, secret, choice, or a list such as [text]."
         )
-        XCTAssertNil(fault(of: "title = 'T'\n[settings.token]\ntype = 'secret'"))
+        XCTAssertNil(fault(of: "title = 'T'\n[settings]\ntoken = { type = 'secret' }"))
     }
 
     func testARowHoldsKeysOfItsOwnWhichACheckDoesNotReport() async throws {
@@ -65,7 +65,7 @@ final class SpotTablesTests: XCTestCase {
     }
 
     func testShownIsAnUnknownRootKeyOutsideTheSpotsOfTheApp() async throws {
-        let faults = try await findings("#!/bin/sh\nprintf 'frame=\\ntitle=T\\nshown=false\\n'\n", toml: "on = ['clock.600']")
+        let faults = try await findings("#!/bin/sh\nprintf 'frame=\\ntitle=T\\nshown=false\\n'\n", toml: "[on]\nevery = 600")
 
         XCTAssertEqual(faults, ["the root has an unknown key: shown"])
         XCTAssertEqual(FrameCheck(text: "frame=\ntitle=T\nshown=false\n", isApp: true).partFaults, [])

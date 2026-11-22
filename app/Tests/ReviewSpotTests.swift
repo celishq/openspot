@@ -35,20 +35,20 @@ final class ReviewSpotTests: XCTestCase {
 
     func testItShowsAllOfTheTextOfEachFile() throws {
         let review = try ReviewSpot(
-            spot: spot([("home.spot/a.sh", "#!/bin/sh\necho one\\two\n", true), ("home.spot/spot.toml", "[scripts.a]", false), ("home.spot/lib.sh", "lib code\n", false)]),
+            spot: spot([("home.spot/home.sh", "#!/bin/sh\necho one\\two\n", true), ("home.spot/spot.toml", "title = 'Home'", false), ("home.spot/lib.sh", "lib code\n", false)]),
             folder: folder
         )
 
         let text = try shown(review)
 
-        XCTAssertTrue(text.contains("home.spot/a.sh\n#!/bin/sh\necho one\\two\n"), text)
+        XCTAssertTrue(text.contains("home.spot/home.sh\n#!/bin/sh\necho one\\two\n"), text)
         XCTAssertTrue(text.contains("home.spot/lib.sh\nlib code\n"), text)
     }
 
     func testTheReviewOfASharedInlineCoreSpotShowsItsText() throws {
         let core = try temporaryFolder()
         let sums = core.appendingPathComponent("sums.spot")
-        try "function main(args) { return 'frame=\\nclass=gap-part\\n\\nnumber=answer\\nvalue=3\\nclass=large:flex\\n' }\n".writeInline(to: sums.appendingPathComponent("sums.js"), toml: "title = 'Sums'\nicon = 'equal.square'\ndetail = 'Sums'\non = ['search.text ^[0-9]']\nuses = ['clipboard']")
+        try "export default { async search() { return 'frame=\\nclass=gap-part\\n\\nnumber=answer\\nvalue=3\\nclass=large:flex\\n' } }\n".writeInline(to: sums.appendingPathComponent("sums.js"), toml: "title = 'Sums'\nicon = 'equal.square'\ndetail = 'Sums'\nuses = ['clipboard']\n\n[on]\nsearch = '^[0-9]'")
         try "#!/bin/sh\nprintf 'frame=\\nclass=gap-part\\n\\nnumber=answer\\nvalue=3\\ntitle=1 + 2\\nclass=large:flex\\n'\n".writeScript(to: sums.appendingPathComponent("sample.sh"))
         try "# Sums\n\nAdds numbers.\n".write(to: sums.appendingPathComponent("readme.md"), atomically: true, encoding: .utf8)
         let scan = try SpotsFolder(url: folder, core: core, enabled: ["sums"]).scan()
@@ -57,22 +57,22 @@ final class ReviewSpotTests: XCTestCase {
         let text = try shown(ReviewSpot(spot: SpotPackage(sharing: shared, from: scan), folder: folder, canAdd: false))
 
         XCTAssertTrue(text.contains("sums.js\n"), text)
-        XCTAssertTrue(text.contains("function main("), text)
+        XCTAssertTrue(text.contains("export default {"), text)
     }
 
     func testAnInlineSpotShowsItsTextAndRunsOnlyWhenItIsUsed() throws {
-        let review = try ReviewSpot(spot: spot([("sum.spot/sum.js", "function main() { return '' }\n", false), ("sum.spot/spot.toml", "title = 'Sum'\non = ['panel.open']", false)]), folder: folder)
+        let review = try ReviewSpot(spot: spot([("sum.spot/sum.js", "export default { async show() { return '' } }\n", false), ("sum.spot/spot.toml", "title = 'Sum'\n\n[on]\n\"panel.open\" = true", false)]), folder: folder)
 
         let text = try shown(review)
 
-        XCTAssertTrue(text.contains("sum.js\nfunction main()"), text)
+        XCTAssertTrue(text.contains("sum.js\nexport default {"), text)
         XCTAssertEqual(review.name, "Sum")
     }
 
     func testAFileThatIsNotTextIsNamedWithItsSize() throws {
         let files = [
-            SpotPackage.File(path: "home.spot/a.sh", isExecutable: true, contents: Data("#!/bin/sh\n".utf8)),
-            SpotPackage.File(path: "home.spot/spot.toml", isExecutable: false, contents: Data("[scripts.a]\n".utf8)),
+            SpotPackage.File(path: "home.spot/home.sh", isExecutable: true, contents: Data("#!/bin/sh\n".utf8)),
+            SpotPackage.File(path: "home.spot/spot.toml", isExecutable: false, contents: Data("title = 'Home'\n".utf8)),
             SpotPackage.File(path: "home.spot/icon.png", isExecutable: false, contents: Data([0xFF, 0x00, 0xFE]))
         ]
 
@@ -165,7 +165,7 @@ final class ReviewSpotTests: XCTestCase {
     }
 
     func testItSaysWhatRunsByItself() throws {
-        let review = try review("title = 'Weather'\non = ['panel.open', 'clock.30']")
+        let review = try review("title = 'Weather'\n\n[on]\n\"panel.open\" = true\nevery = 30")
 
         XCTAssertEqual(review.subtitle, "Runs by itself")
         let text = try shown(review)
@@ -236,7 +236,7 @@ final class ReviewSpotTests: XCTestCase {
     }
 
     func testCanAlsoReadsTheCallsOfAnInlineSpot() throws {
-        let review = try ReviewSpot(spot: spot([("bye.spot/bye.js", "function main() { openspot.call([\"app\", \"quit\"]) }\n", false), ("bye.spot/spot.toml", "title = 'Bye'", false)]), folder: folder)
+        let review = try ReviewSpot(spot: spot([("bye.spot/bye.js", "export default { async press() { openspot.call([\"app\", \"quit\"]) } }\n", false), ("bye.spot/spot.toml", "title = 'Bye'", false)]), folder: folder)
 
         XCTAssertTrue(try shown(review).contains("Can also\nCall openspot app quit without app in the uses of its spot.toml\n"))
     }
@@ -251,9 +251,9 @@ final class ReviewSpotTests: XCTestCase {
 
     func testAReviewReadsTheUsesOfEachInstalledFileOfTheSpot() throws {
         try FileManager.default.createDirectory(at: folder.appendingPathComponent("home"), withIntermediateDirectories: true)
-        try "#!/bin/sh\n".writeScript(to: folder.appendingPathComponent("home.spot/main.sh"), toml: "uses = ['network']")
+        try "#!/bin/sh\n".writeScript(to: folder.appendingPathComponent("home.spot/home.sh"), toml: "uses = ['network']")
         try "#!/bin/sh\necho one\n".writeScript(to: folder.appendingPathComponent("home.spot/helper.sh"))
-        let review = try ReviewSpot(spot: spot([("home.spot/main.sh", "#!/bin/sh\n", true), ("home.spot/helper.sh", "#!/bin/sh\necho two\n", true), ("home.spot/spot.toml", "[scripts.main]\nuses = ['network']\n[scripts.helper]", false)]), folder: folder)
+        let review = try ReviewSpot(spot: spot([("home.spot/home.sh", "#!/bin/sh\n", true), ("home.spot/helper.sh", "#!/bin/sh\necho two\n", true), ("home.spot/spot.toml", "uses = ['network']", false)]), folder: folder)
 
         XCTAssertFalse(try shown(review).contains("This version adds"))
     }
@@ -267,14 +267,14 @@ final class ReviewSpotTests: XCTestCase {
     }
 
     func testAStayingScriptSaysSo() throws {
-        let review = try review("title = 'Weather'\nmode = 'stay'")
+        let review = try review("title = 'Weather'\nstay = true")
 
         let text = try shown(review)
         XCTAssertTrue(text.contains("Weather: keeps running while it is in use"), text)
     }
 
     func testAScriptThatAlwaysStaysSaysSo() throws {
-        let review = try review("title = 'Relay'\non = ['app.launch']\nmode = 'stay'")
+        let review = try review("title = 'Relay'\nstay = true\n\n[on]\n\"app.launch\" = true")
 
         let text = try shown(review)
         XCTAssertTrue(text.contains("Relay: keeps running while Openspot runs"), text)
@@ -311,7 +311,7 @@ final class ReviewSpotTests: XCTestCase {
         )
 
         let text = try shown(review)
-        XCTAssertTrue(text.contains("Will not load\nbad: Bad has an unknown mode: never."), text)
+        XCTAssertTrue(text.contains("Will not load\nbad: Bad has an unknown key in its spot.toml: mode"), text)
     }
 
     func testAClashWithAFolderIsRefusedBeforeTheReviewShows() throws {
@@ -328,7 +328,7 @@ final class ReviewSpotTests: XCTestCase {
 
     func testNoScriptRunsForAReviewOrForAdd() async throws {
         let mark = folder.appendingPathComponent("ran")
-        let review = try filed("on = ['panel.open']", body: "touch \"\(mark.path)\"\n")
+        let review = try filed("[on]\n\"panel.open\" = true", body: "touch \"\(mark.path)\"\n")
         _ = try review.answer(["show"])
 
         _ = try await review.add()

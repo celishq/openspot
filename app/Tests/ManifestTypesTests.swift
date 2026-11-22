@@ -30,7 +30,7 @@ final class ManifestTypesTests: XCTestCase {
     [actions.wake]
     inputs.url = "url"
 
-    [commands.go]
+    [actions.go]
     title = "Go"
     """
 
@@ -41,11 +41,11 @@ final class ManifestTypesTests: XCTestCase {
         return (scan.spots.first, scan.refused.map(\.reason))
     }
 
-    func testActionsAndSettingsReadEachTypeBesideTheOldCommands() throws {
+    func testActionsAndSettingsReadEachType() throws {
         let manifest = try Manifest(text: Self.toml, folder: "/spots/snooze.spot").script("snooze.sh")
 
         let snooze = try XCTUnwrap(manifest.actions.first)
-        XCTAssertEqual(manifest.actions.map(\.id), ["snooze", "wake"])
+        XCTAssertEqual(manifest.actions.map(\.id), ["snooze", "wake", "go"])
         XCTAssertEqual(snooze.title, "Snooze Tab")
         XCTAssertEqual(snooze.icon, "moon")
         XCTAssertEqual(snooze.confirm, "Snooze again")
@@ -62,7 +62,6 @@ final class ManifestTypesTests: XCTestCase {
         XCTAssertEqual(manifest.settings.first?.options, ["Safari", "Chrome"])
         XCTAssertEqual(manifest.settings.first?.defaultValue, "Safari")
         XCTAssertEqual(manifest.settings.map(\.isSecret), [false, true, false])
-        XCTAssertEqual(manifest.commands.map(\.id), ["go"])
     }
 
     func testATypedSettingTakesAnIcon() throws {
@@ -75,9 +74,9 @@ final class ManifestTypesTests: XCTestCase {
         let spot = try XCTUnwrap(spot(Self.toml).spot)
 
         XCTAssertEqual(spot.mode, .stay)
-        XCTAssertEqual(spot.typedActions.map(\.id), ["snooze", "wake"])
-        XCTAssertEqual(spot.offers.map(\.id), ["go", "snooze"])
-        XCTAssertEqual(spot.offers.last?.title, "Snooze Tab")
+        XCTAssertEqual(spot.typedActions.map(\.id), ["snooze", "wake", "go"])
+        XCTAssertEqual(spot.offers.map(\.id), ["snooze", "go"])
+        XCTAssertEqual(spot.offers.first?.title, "Snooze Tab")
     }
 
     func testAWrongTypeFailsTheLoadWithALineThatNamesTheKey() throws {
@@ -114,9 +113,17 @@ final class ManifestTypesTests: XCTestCase {
         }
     }
 
-    func testStayAndModeTogetherAndAnActionNamedAsACommandFailTheLoad() throws {
-        XCTAssertTrue(try spot("stay = true\nmode = \"stay\"").refused.first?.contains("stay") == true)
-        XCTAssertTrue(try spot("[commands.go]\ntitle = \"Go\"\n\n[actions.go]\ntitle = \"Go\"").refused.first?.contains("go") == true)
+    func testEachKeyOfTheOldFormFailsAsAnUnknownKey() throws {
+        let cases = [
+            "mode = \"stay\"": "mode", "on = [\"panel.open\"]": "on", "offers = [\"search\"]": "offers", "placeholder = \"Text\"": "placeholder",
+            "drop = \"png\"": "drop", "emits = [\"music.track\"]": "emits", "[commands.go]\ntitle = \"Go\"": "commands",
+            "[settings.city]\ntitle = \"City\"": "settings", "[scripts.other]\ntitle = \"Other\"": "scripts"
+        ]
+        for (toml, key) in cases {
+            let refused = try spot(toml).refused
+
+            XCTAssertEqual(refused, ["Snooze has an unknown key in its spot.toml: \(key)"], toml)
+        }
     }
 
     func testStayFalseRunsAProcessPerCall() throws {

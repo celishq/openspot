@@ -23,7 +23,6 @@ public struct SpotFacts: Equatable, Sendable {
     public let views: [String: String]
     public let viewDates: [String: Date]
     public internal(set) var sources: [String]
-    public let emits: [String]
     public let pages: [String]
     public internal(set) var uses: Set<SpotUse>
     public let offers: [Manifest.Command]
@@ -37,7 +36,6 @@ public struct SpotFacts: Equatable, Sendable {
     public internal(set) var holdsSettings = false
     public internal(set) var isBuiltIn = false
     public let keywords: [String]
-    public let placeholder: String?
     public let sample: URL?
     public let edits: SpotEdits?
     public let starts: SpotStart?

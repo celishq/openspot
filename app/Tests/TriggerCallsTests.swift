@@ -234,18 +234,4 @@ final class TriggerCallsTests: SpotRunsCase {
 
         try await wait("the next tick") { self.calls == ["every|", "every|"] }
     }
-
-    func testASpotWithTheOldOnKeepsTheOldShow() async throws {
-        menuBar.insert("script")
-        try script(toml: "on = ['power.change']", """
-        printf '%s|%s\\n' "$*" "$(grep -E '^event' | tr '\\n' ' ')" >> '\(path("calls"))'
-        printf 'text=a\\ntitle=A\\n'
-        """)
-        _ = try sheet()
-        try await wait("the first show") { self.calls.count == 1 && !self.runs.isShowing }
-
-        runs.raise(.named(SpotEvent.powerChange, value: "ac"))
-
-        try await wait("the event") { self.calls.last == "show|event=power.change event.value=ac " }
-    }
 }

@@ -44,12 +44,13 @@ final class SpotFloatTests: XCTestCase {
     }
 
     private func floatList() async throws {
-        try script("list", toml: "", """
+        try script("list", toml: "[actions.rename]\ninputs.name = { type = 'text', required = true }", """
         \(TestSpot.event)
+        item=$(printf '%s\\n' "$in" | sed -n 's/^input\\.item=//p')
         case "$1" in
-          show) printf 'item=a\\ntitle=%s\\n\\nitem=b\\ntitle=Banana\\n\\nbutton=trash\\ntitle=Trash\\nshortcut=cmd+backspace\\n\\nbutton=rename\\ntitle=Rename\\nform=true\\n' "$ev" ;;
-          open) \(TestSpot.toast) "Opened $2" ;;
-          trash) \(TestSpot.toast) "Trashed $2" ;;
+          show) printf 'item=a\\ntitle=%s\\n\\nitem=b\\ntitle=Banana\\n\\nbutton=trash\\ntitle=Trash\\nshortcut=cmd+backspace\\n\\nbutton=rename\\ntitle=Rename\\n' "$ev" ;;
+          press) \(TestSpot.toast) "Opened $item" ;;
+          trash) \(TestSpot.toast) "Trashed $item" ;;
         esac
         """)
         await model.reload()
@@ -166,10 +167,10 @@ final class SpotFloatTests: XCTestCase {
     }
 
     func testADropOnAFloatGoesToItsScriptAndLeavesThePanel() async throws {
-        try script("shelf", toml: "drop = '*'", """
+        try script("shelf", toml: "[on]\ndrop = ['*']", """
         case "$1" in
           show) printf 'item=a\\n' ;;
-          drop) shift; \(TestSpot.toast) "Kept $*" ;;
+          drop) \(TestSpot.toast) "Kept $(sed -n 's/^input\\.file=//p' | tr '\\n' ' ' | sed 's/ $//')" ;;
         esac
         """)
         await model.reload()
@@ -198,8 +199,8 @@ final class SpotFloatTests: XCTestCase {
         let given = folder.appendingPathComponent("given").path
         try script("keys", toml: "title = 'Keys'", """
         case "$1" in
-          show) printf 'button=open\\ntitle=Change\\nclose=false\\n\\nfield=panel-key\\ntype=hotkey\\ntitle=Open\\nvalue=ctrl+space\\n\\nfield=float:shelf\\ntype=hotkey\\ntitle=Float\\nshake=true\\n' ;;
-          *) printf '%s %s' "$1" "$2" > '\(given)' ;;
+          show) printf 'button=press\\ntitle=Change\\nclose=false\\n\\nfield=panel-key\\ntype=hotkey\\ntitle=Open\\nvalue=ctrl+space\\n\\nfield=float:shelf\\ntype=hotkey\\ntitle=Float\\nshake=true\\n' ;;
+          *) printf '%s %s' "$1" "$(sed -n 's/^input\\.value=//p')" > '\(given)' ;;
         esac
         """)
         try FileManager.default.createDirectory(at: folder.appendingPathComponent("config"), withIntermediateDirectories: true)
@@ -235,7 +236,7 @@ final class SpotFloatTests: XCTestCase {
     }
 
     private func windowSpot() async throws {
-        try script("store", toml: "", "printf 'item=a\\ntitle=Apple\\n'")
+        try script("store", toml: "[actions.rename]\ninputs.name = { type = 'text', required = true }", "printf 'item=a\\ntitle=Apple\\n'")
         _ = try model.files.config.change { $0.arrangement.set(isWindow: true, of: "store") }
         await model.reload()
     }
@@ -269,7 +270,7 @@ final class SpotFloatTests: XCTestCase {
         model.press("store")
         try await wait("the window") { host.windows == ["store"] }
         let entry = try XCTUnwrap(model.cards.first { $0.id == "store" })
-        let rename = CommandAction(id: "rename", title: "Rename", isForm: true)
+        let rename = CommandAction(id: "rename", title: "Rename")
 
         model.run(rename, on: (entry, model.sheets["store"]?.list.shown.first), in: .window)
 

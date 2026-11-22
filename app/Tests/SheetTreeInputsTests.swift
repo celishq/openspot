@@ -24,7 +24,7 @@ final class SheetTreeInputsTests: PanelCase {
 
     private func open(_ sheet: String) async throws -> URL {
         let calls = folder.appendingPathComponent("calls")
-        try script("tree", toml: "", "if [ \"$1\" = show ]; then printf '\(sheet)'; else echo \"$@\" >> '\(calls.path)'; fi")
+        try script("tree", toml: "", "if [ \"$1\" = show ]; then printf '\(sheet)'; else v=$(sed -n -e 's/^input\\.item=//p' -e 's/^input\\.value=//p' | head -n 1); echo \"$1${v:+ $v}\" >> '\(calls.path)'; fi")
         await model.reload()
         model.isShown = true
         model.panelWillShow()
@@ -94,7 +94,7 @@ final class SheetTreeInputsTests: PanelCase {
         model.landSearch()
         try await wait("the search") { self.titles == ["Apple"] }
         model.runSelectedItem()
-        try await wait("the press of the item") { self.calls(in: calls).contains("open a") }
+        try await wait("the press of the item") { self.calls(in: calls).contains("press a") }
         model.searchText = ""
         model.landSearch()
         try await wait("all items") { self.titles == ["Apple", "Banana"] }

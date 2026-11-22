@@ -32,8 +32,8 @@ public struct OfferedAction: Equatable, Sendable {
             let line = command.offers.first
             guard line != nil || parent != nil else { continue }
             let key = command.shortcut.map { ActionKey(text: $0) }
-            guard !command.title.isEmpty, key != .some(nil), CommandAction.Scope(rawValue: command.scope ?? CommandAction.Scope.item.rawValue) != nil else {
-                throw SpotError.fault("\(name) cannot read \(command.section). Give it an ID with no space and a title, such as [commands.change] with title = \"Change Icon\"")
+            guard !command.title.isEmpty, key != .some(nil) else {
+                throw SpotError.fault("\(name) cannot read \(command.section). Give it an ID with no space and a title, such as [actions.change] with title = \"Change Icon\"")
             }
             if let parent, line != nil {
                 throw SpotError.fault("\(name) offers \(command.section), which shows in the submenu of \(parent.action.id) and takes its place. Remove its offers")
@@ -41,7 +41,7 @@ public struct OfferedAction: Equatable, Sendable {
             var hooks: [ActionHook: String] = [:]
             for hook in ActionHook.allCases { hooks[hook] = try function(hook, of: command, name: name, isInline: isInline) }
             let menuAction = CommandAction(
-                id: command.id, title: command.title, key: key ?? nil, scope: .spot, after: command.closes ? .close : .stay, isForm: command.form ?? false,
+                id: command.id, title: command.title, key: key ?? nil, scope: .spot, after: command.closes ? .close : .stay,
                 confirm: command.confirm
             )
             let origins = try parent?.origins ?? Self.origins(String((line ?? place).dropFirst(place.count)), of: name)

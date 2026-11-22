@@ -19,12 +19,12 @@ final class CallMessageTests: SpotRunsCase {
         try await wait("the show") { self.text("calls").hasSuffix("\n\n") && !sheet.isShowing }
         sheet.answer("milk")
 
-        try await wait("the answer") { self.text("calls").contains("event=search.text") && sheet.calls.isEmpty }
-        XCTAssertEqual(text("calls"), "show\nevent=spot.change\n\nshow\nevent=search.text\nevent.value=milk\nsearch=milk\n\n")
+        try await wait("the answer") { self.text("calls").contains("search\n") && sheet.calls.isEmpty }
+        XCTAssertEqual(text("calls"), "show\ninput.event=spot.change\n\nsearch\ninput.text=milk\n\n")
     }
 
     func testStdinHoldsTheInputsTheSettingsTheRouteAndThePickedItem() async throws {
-        try script(toml: "[settings.city]\n[settings.token]\ntype = 'secret'", """
+        try script(toml: "[settings]\ncity = 'text'\ntoken = 'secret'", """
         case "$1" in
           show) printf 'frame=\\nclass=gap-part\\n\\nfield=search\\ntitle=Find\\nvalue=\\n\\nfield=title\\nvalue=Groceries\\n\\nitems=list\\n\\nitem=a\\nparent=list\\ntitle=A\\nmeeting=42\\n' ;;
           *) \(keeps) ;;
@@ -45,29 +45,29 @@ final class CallMessageTests: SpotRunsCase {
         try await wait("the pick") { self.text("calls").hasSuffix("\n\n") && sheet.calls.isEmpty }
         sheet.set(try XCTUnwrap(sheet.panel?.parts.first { $0.id == "search" }), to: "milk")
 
-        try await wait("the field") { self.text("calls").contains("search milk") && sheet.calls.isEmpty }
+        try await wait("the field") { self.text("calls").contains("input.value=milk") && sheet.calls.isEmpty }
         XCTAssertEqual(text("calls"), """
-        open a
-        route=photo/12
-        item.item=a
-        item.title=A
-        item.meeting=42
+        press
+        input.item=a
+        input.item.item=a
+        input.item.title=A
+        input.item.meeting=42
+        input.route=photo/12
         setting.city=Paris
-        setting.token=k1
 
-        search milk
-        route=photo/12
+        search
         input.search=milk
         input.title=Groceries
+        input.value=milk
+        input.route=photo/12
         setting.city=Paris
-        setting.token=k1
 
 
         """)
     }
 
     func testAStayingSpotGetsTheSameBlockAfterItsCall() async throws {
-        try script(toml: "mode = 'stay'\n[settings.city]", """
+        try script(toml: "stay = true\n[settings]\ncity = 'text'", """
         while IFS= read -r line; do
           printf '%s\\n' "$line" >> '\(path("stdin"))'
           case $line in
@@ -83,6 +83,6 @@ final class CallMessageTests: SpotRunsCase {
         sheet.open {}
 
         try await wait("the call") { self.text("stdin").hasSuffix("\n\n") }
-        XCTAssertEqual(text("stdin"), "call=1\narg=show\nevent=sheet.open\nsetting.city=Paris\n\n")
+        XCTAssertEqual(text("stdin"), "call=1\narg=show\ninput.event=sheet.open\nsetting.city=Paris\n\n")
     }
 }

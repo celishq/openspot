@@ -342,11 +342,12 @@ final class SheetPartsTests: XCTestCase {
         }
     }
 
-    func testAPartOrAnActionWithADefaultIdIsAFaultButAnOpenActionChangesThePick() {
-        for id in ["open", "drop"] {
+    func testAPartOrAnActionNamedForAHandlerIsAFaultButAPressActionChangesThePick() {
+        for id in ["press", "drop", "search", "every"] {
             XCTAssertEqual(FrameCheck(text: "text=\(id)\ntitle=A\n".placed).partFaults, ["a part cannot be called \(id)"])
         }
         XCTAssertEqual(FrameCheck(text: "button=drop\ntitle=A\n".placed).partFaults, ["an action cannot be called drop"])
+        XCTAssertEqual(FrameCheck(text: "button=press\ntitle=Show\n".placed).partFaults, [])
         XCTAssertEqual(FrameCheck(text: "button=open\ntitle=Show\n".placed).partFaults, [])
     }
 

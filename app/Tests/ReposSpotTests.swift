@@ -106,7 +106,6 @@ final class ReposSpotTests: SampleSpotsCase {
             _ = try await kept(in: folder) { try await repos.submit(change, item: nil, draft: draft, timeout: 60) }
             let then = repos.taking(try await kept(in: folder) { try await repos.items(timeout: 60) })
 
-            XCTAssertNil(first.pickForm)
             XCTAssertEqual(first.openTitle, "Open in Cursor")
             XCTAssertEqual(opened, "-a \(cursor.path) \(item.run)\n")
             XCTAssertFalse(first.actions.contains { $0.title.hasPrefix("Use ") })

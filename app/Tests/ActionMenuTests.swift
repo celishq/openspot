@@ -4,7 +4,7 @@ import XCTest
 final class ActionMenuTests: XCTestCase {
     private let paste = CommandAction(id: "paste", title: "Paste", key: ActionKey(text: "cmd+return"))
     private let delete = CommandAction(id: "delete", title: "Delete", confirm: "Delete this?")
-    private let new = CommandAction(id: "new", title: "New", scope: .spot, isForm: true)
+    private let new = CommandAction(id: "new", title: "New", scope: .spot)
     private let item = SpotItem(title: "One", run: "1")
     private let share = CommandAction(id: "share", title: "Share", key: ActionKey(text: "cmd+shift+c"), scope: .spot, after: .close)
     private let delete2 = CommandAction(id: "delete", title: "Delete", key: ActionKey(text: "cmd+backspace"), scope: .spot)

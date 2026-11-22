@@ -13,7 +13,7 @@ days.
 
 - Openspot keeps one file for each day, for 90 days. Today's numbers are live.
 - An act is something the user did with a spot: they opened its sheet, picked a row, pressed, set or toggled
-  something, or ran one of its actions. A show is never an act, and acts on one spot within 2 seconds count as one.
+  something, or ran one of its actions. A read, such as a show, is never an act, and acts on one spot within 2 seconds count as one.
 - `--days N` adds up the last N days. `--spot <id>` shows one spot.
 - `--by version` prints a row for each version of a spot, the oldest first, so you can compare a spot before and after
   a change. A version is a short hash that changes each time a file of the spot is written, replaced or touched. The

@@ -9,7 +9,7 @@ extension Manifest {
         static let every = "every"
         static let drop = "drop"
         static let keys = [command, search, schedule, every, drop]
-        static let events = SpotEvent.known.filter { $0 != SpotEvent.searchText }
+        static let events = SpotEvent.known
         static let named: Set<String> = ["show", "press", "drag"]
         private static let spaces = Set(SpotEvent.known.compactMap { $0.split(separator: ".").first.map(String.init) } + ["clock", "timer"])
 
@@ -22,6 +22,18 @@ extension Manifest {
         public let events: [String]
         public let filters: [String: AnswerPattern]
         public let bindings: [String]
+
+        init() {
+            commands = []
+            search = nil
+            lists = false
+            schedule = []
+            every = nil
+            drop = []
+            events = []
+            filters = [:]
+            bindings = []
+        }
 
         init(section: String, table: ConfigDocument.Table) throws {
             let fault = { (key: String, reason: String) in SpotError.fault("\(Manifest.fileName): \(section) \(key) \(reason)") }

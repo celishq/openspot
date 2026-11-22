@@ -52,7 +52,7 @@ final class SpotFaultTests: XCTestCase {
     }
 
     private func openFault() async throws -> SheetParts {
-        try script("weather", toml: "mode = 'huge'", "echo")
+        try script("weather", toml: "answers = 'huge'", "echo")
         await model.reload()
         model.isShown = true
         model.press("weather")
@@ -61,7 +61,7 @@ final class SpotFaultTests: XCTestCase {
     }
 
     func testAFileThatDoesNotLoadKeepsAWideCardThatSaysHowToFixIt() async throws {
-        try script("weather", toml: "mode = 'huge'", "echo")
+        try script("weather", toml: "answers = 'huge'", "echo")
 
         await model.reload()
 
@@ -74,7 +74,7 @@ final class SpotFaultTests: XCTestCase {
     }
 
     func testAFaultCardStaysWideWhenThePersonChoseTheSmallSize() async throws {
-        try script("weather", toml: "mode = 'huge'", "echo")
+        try script("weather", toml: "answers = 'huge'", "echo")
         await model.reload()
 
         model.prefer(.small, for: "weather")
@@ -87,7 +87,7 @@ final class SpotFaultTests: XCTestCase {
 
         let text = sheet.parts.compactMap { if case .text(let value, _, _) = $0.control { value } else { nil } }.joined()
         XCTAssertTrue(text.contains(spots.spotFile("weather").path))
-        XCTAssertTrue(text.contains("Weather has an unknown mode: huge. Use once or stay"))
+        XCTAssertTrue(text.contains("Weather has an unknown answers: huge. Use answers = \"last\" or answers = \"card\""))
         XCTAssertEqual(Set(sheet.parts.map(\.id)).intersection(["fix", "edit"]), ["fix", "edit"])
     }
 
@@ -101,7 +101,7 @@ final class SpotFaultTests: XCTestCase {
 
         let prompt = try XCTUnwrap(saved("clipboard"))
         XCTAssertTrue(prompt.contains(spots.spotFile("weather").path))
-        XCTAssertTrue(prompt.contains("Weather has an unknown mode: huge. Use once or stay"))
+        XCTAssertTrue(prompt.contains("Weather has an unknown answers: huge. Use answers = \"last\" or answers = \"card\""))
         XCTAssertTrue(prompt.contains("check"))
     }
 
@@ -115,10 +115,10 @@ final class SpotFaultTests: XCTestCase {
     }
 
     func testAFileThatLoadsAgainTakesBackItsCard() async throws {
-        try script("weather", toml: "mode = 'huge'", "echo")
+        try script("weather", toml: "answers = 'huge'", "echo")
         await model.reload()
 
-        try script("weather", toml: "mode = 'once'", "echo")
+        try script("weather", toml: "", "echo")
         await model.spotsChanged()
 
         XCTAssertEqual(entry("weather")?.state.title, "Weather")
@@ -150,13 +150,13 @@ final class SpotFaultTests: XCTestCase {
     }
 
     func testAChangedScriptReadsAgainWhileTheOpenPanelShowsIt() async throws {
-        try script("cups", toml: "on = ['panel.open']", "printf 'frame=\\ntitle=One cup\\n'")
+        try script("cups", toml: "[on]\n\"panel.open\" = true", "printf 'frame=\\ntitle=One cup\\n'")
         await model.reload()
         model.isShown = true
         model.panelWillShow()
         try await wait("the first read") { entry("cups")?.state.title == "One cup" }
 
-        try script("cups", toml: "on = ['panel.open']", "printf 'frame=\\ntitle=Two cups\\n'")
+        try script("cups", toml: "[on]\n\"panel.open\" = true", "printf 'frame=\\ntitle=Two cups\\n'")
         await model.spotsChanged()
 
         try await wait("the read of the changed script") { entry("cups")?.state.title == "Two cups" }

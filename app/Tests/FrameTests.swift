@@ -96,7 +96,6 @@ final class FrameTests: XCTestCase {
         title=New
         shortcut=cmd+n
         scope=spot
-        form=true
 
         button=delete
         title=Delete
@@ -104,7 +103,7 @@ final class FrameTests: XCTestCase {
         """)
 
         XCTAssertEqual(output.actions, [
-            CommandAction(id: "new", title: "New", key: ActionKey(text: "cmd+n"), scope: .spot, after: .close, isForm: true),
+            CommandAction(id: "new", title: "New", key: ActionKey(text: "cmd+n"), scope: .spot, after: .close),
             CommandAction(id: "delete", title: "Delete", after: .close, confirm: "Delete this?")
         ])
     }
@@ -117,25 +116,13 @@ final class FrameTests: XCTestCase {
         XCTAssertEqual(unknown.errors, [])
     }
 
-    func testTheOpenActionSetsTheWordForEnterAndThePick() {
-        let copy = Frame(text: "button=open\ntitle=Copy\nclose=false\n")
+    func testThePressActionSetsTheWordForEnterAndThePick() {
+        let copy = Frame(text: "button=press\ntitle=Copy\nclose=false\n")
 
         XCTAssertEqual(copy.actions, [])
         XCTAssertEqual(copy.openTitle, "Copy")
         XCTAssertEqual(copy.pick, .stay)
         XCTAssertEqual(Frame(text: "").pick, .close)
-    }
-
-    func testAFormOnTheOpenActionAsksBeforeEachPick() {
-        XCTAssertEqual(
-            Frame(text: "button=open\ntitle=Open in Zed\nform=true\n").pickForm,
-            CommandAction(id: "open", title: "Open in Zed", after: .close, isForm: true)
-        )
-        XCTAssertEqual(
-            Frame(text: "button=open\nform=true\nclose=false\n").pickForm,
-            CommandAction(id: "open", title: "Open", after: .stay, isForm: true)
-        )
-        XCTAssertNil(Frame(text: "button=open\ntitle=Copy\n").pickForm)
     }
 
     func testReportsARowWithNoIdAndABlockThatSaysNothing() {

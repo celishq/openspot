@@ -60,7 +60,7 @@ extension Manifest {
         var command: Command? {
             guard let title else { return nil }
             let values = ["title": [title], "icon": icon.map { [$0] } ?? [], "confirm": confirm.map { [$0] } ?? []].merging(appValues) { kept, _ in kept }
-            return Command(id: id, section: section, values: values, written: [])
+            return Command(id: id, section: section, values: values)
         }
     }
 }

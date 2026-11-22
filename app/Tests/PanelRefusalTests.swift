@@ -14,9 +14,9 @@ final class PanelRefusalTests: PanelCase {
         let started = folder.appendingPathComponent("started").path
         let go = folder.appendingPathComponent("go").path
         try script("tabs", toml: "title = 'Tabs'", """
-        [ "$1" = open ] || { printf 'text=current\\ntitle=Snooze Current Tab\\nclose=false\\n'; exit 0; }
+        [ "$1" = press ] || { printf 'text=current\\ntitle=Snooze Current Tab\\nclose=false\\n'; exit 0; }
         touch '\(started)'
-        [ "$2" = slow ] && while [ ! -f '\(go)' ]; do sleep 0.01; done
+        [ "$(sed -n 's/^input\\.item=//p')" = slow ] && while [ ! -f '\(go)' ]; do sleep 0.01; done
         echo 'Ghostty is not a browser' >&2
         exit 1
         """)

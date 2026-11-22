@@ -2,7 +2,6 @@ import Foundation
 
 public struct SpotFile: Equatable, Sendable {
     public static let inlineExtension = "js"
-    private static let search = "search"
 
     public let id: String
     public let spots: [Spot]
@@ -16,6 +15,9 @@ public struct SpotFile: Equatable, Sendable {
         if SwiftProgram.isProgram(url) { return nil }
         let manifest = manifest ?? Manifest(beside: url)
         guard Self.runs(url, manifest: manifest) else { return nil }
+        if manifest.hasScripts, !isApp {
+            throw SpotError.fault("\(manifest.title ?? Self.name(of: url)) has an unknown key in its \(Manifest.fileName): \(Manifest.scriptsTable)")
+        }
         try self.init(script: url, manifest: manifest.script(url), id: id, isApp: isApp)
     }
 
@@ -24,17 +26,12 @@ public struct SpotFile: Equatable, Sendable {
         if let key = manifest.unknownKey(isApp: isApp) {
             throw SpotError.fault("\(name) has an unknown key in its \(Manifest.fileName): \(key)")
         }
-        let tables = manifest.commands.map { ($0.section, $0.unknownKey) } + manifest.settings.map { ($0.section, $0.unknownKey) }
-            + manifest.actions.map { ($0.section, isApp ? nil : $0.appKey) }
-        if let (section, key) = tables.first(where: { $0.1 != nil }) {
-            throw SpotError.fault("\(name) has an unknown key in \(section): \(key ?? "")")
+        if let action = manifest.actions.first(where: { !isApp && $0.appKey != nil }) {
+            throw SpotError.fault("\(name) has an unknown key in \(action.section): \(action.appKey ?? "")")
         }
         let icon = Icon(text: manifest.icon).map { Self.placed($0, beside: url) }
-        if let triggers = manifest.triggers {
-            let old = [("on", !manifest.on.isEmpty), ("offers", !manifest.offers.isEmpty), ("drop", !manifest.drop.isEmpty), ("placeholder", manifest.placeholder != nil)]
-            if let (key, _) = old.first(where: \.1) {
-                throw SpotError.fault("\(name) has both \(key) and [on] in its \(Manifest.fileName). Move \(key) into [on]")
-            }
+        let triggers = manifest.triggers
+        if let triggers {
             if let key = triggers.bindings.first(where: { key in !manifest.bindings.contains { $0.name == Manifest.Triggers.binding(of: key) } }) {
                 let binding = Manifest.Triggers.binding(of: key)
                 throw SpotError.fault("\(name) has [on] \(key), which names no binding \(binding). Add it to [bindings], such as \(binding) = { spot = \"<id>\" }")
@@ -43,49 +40,34 @@ public struct SpotFile: Equatable, Sendable {
                 throw SpotError.fault("\(name) has \(action.section), which takes the name of a handler that its [on] calls. Give the action another ID")
             }
         }
-        let parsed = try manifest.triggers.map(\.showEvents) ?? ShowEvents(on: manifest.on, of: name)
-        var on = parsed?.moments.isEmpty == false ? parsed : nil
-        if let word = manifest.emits.first(where: { !SpotEvent.isName($0) }) {
-            throw SpotError.fault("\(name) has an unknown event in its emits: \(word). Write a word with a dot, such as emits = [\"music.track\"]")
+        if let action = manifest.actions.first(where: { Manifest.Triggers.named.contains($0.id) }) {
+            throw SpotError.fault("\(name) has \(action.section), which takes the name of a handler that its [on] calls. Give the action another ID")
         }
+        let parsed = triggers?.showEvents
+        var on = parsed?.moments.isEmpty == false ? parsed : nil
         let uses = try SpotUse.set(manifest.uses, of: name)
         let isInline = url.pathExtension == Self.inlineExtension && !FileManager.default.isExecutableFile(atPath: url.path)
-        if manifest.stay != nil, manifest.mode != nil {
-            throw SpotError.fault("\(name) has both stay and mode in its \(Manifest.fileName). Keep stay = true, and remove mode")
+        if isInline, manifest.stay == true {
+            throw SpotError.fault("\(name) is a .js file, which runs inline, so it takes no stay = true")
         }
-        let modeName = manifest.mode ?? (manifest.stay == true ? SpotMode.stay : SpotMode.once).rawValue
-        guard let named = SpotMode(rawValue: modeName), named != .inline else {
-            throw SpotError.fault("\(name) has an unknown mode: \(modeName). Use once or stay")
-        }
-        if isInline, named != .once {
-            throw SpotError.fault("\(name) is a .js file, which runs inline, so it takes no mode = \"\(modeName)\"")
-        }
-        let mode = isInline ? SpotMode.inline : named
-        let isGlobal = try Self.isGlobal(manifest.offers, of: name) || manifest.triggers?.lists == true
+        let mode = isInline ? SpotMode.inline : manifest.stay == true ? SpotMode.stay : SpotMode.once
+        let isGlobal = triggers?.lists == true
         let order = manifest.answers
         guard order == nil || order == "last" || order == "card" else {
             throw SpotError.fault("\(name) has an unknown answers: \(order ?? ""). Use answers = \"last\" or answers = \"card\"")
         }
         guard order == nil || parsed?.answers != nil else {
-            throw SpotError.fault("\(name) has answers = \"\(order ?? "")\", which needs search.text in its on, such as on = [\"search.text ^[0-9]\"], or search in its [on], such as search = \"^[0-9]\"")
+            throw SpotError.fault("\(name) has answers = \"\(order ?? "")\", which needs search in its [on], such as search = \"^[0-9]\"")
         }
         let answers = order == "last" ? parsed?.answers?.last() : order == "card" ? parsed?.answers?.card() : parsed?.answers
         let answersOnly = answers != nil && on == nil
         if let setting = manifest.settings.first(where: { ReservedSetting.isReserved($0.id) }) {
             throw SpotError.fault("\(name) has \(setting.section), a key that Openspot keeps for the person. Give the setting another name.")
         }
-        if let setting = manifest.settings.first(where: { $0.valueType == nil && $0.type.map { $0 != Manifest.Setting.secret } == true }) {
-            throw SpotError.fault("\(name) has an unknown type in \(setting.section): `\(setting.type ?? "")`. Use `type = \"secret\"`, or no type.")
-        }
-        let offeredActions = try OfferedAction.read(manifest.commands + manifest.actions.compactMap(\.command), owner: id, of: name, isInline: mode == .inline)
+        let commands = manifest.actions.compactMap(\.command)
+        let offeredActions = try OfferedAction.read(commands, owner: id, of: name, isInline: mode == .inline)
         let offeredIDs = Set(offeredActions.map(\.action.id))
-        if let action = manifest.actions.first(where: { action in manifest.commands.contains { $0.id == action.id } }) {
-            throw SpotError.fault("\(name) has both [commands.\(action.id)] and \(action.section). Give the action another ID")
-        }
-        let offers = (manifest.commands + manifest.actions.compactMap(\.command)).filter { !offeredIDs.contains($0.id) }
-        if let command = offers.first(where: { $0.title.isEmpty || $0.id == "show" || $0.id.contains(where: \.isWhitespace) }) {
-            throw SpotError.fault("\(name) cannot read \(command.section). Give it an ID with no space and a title, such as [commands.left] with title = \"Left side\"")
-        }
+        let offers = commands.filter { !offeredIDs.contains($0.id) }
         if manifest.views.contains(where: { URL(fileURLWithPath: $0).pathExtension != SwiftProgram.sourceExtension }) {
             throw SpotError.fault("\(name) needs a Swift file for each of its views, such as views = [\"liquid.swift\"]")
         }
@@ -120,30 +102,28 @@ public struct SpotFile: Equatable, Sendable {
             isFound: isFound,
             answers: answers,
             mode: mode,
-            drop: manifest.triggers?.drop ?? manifest.drop,
+            drop: triggers?.drop ?? [],
             isGlobal: isGlobal,
             dataName: SpotID(id).name,
             isOnGrid: isFound && offers.isEmpty && on?.seconds == nil,
             offers: offers,
             offeredActions: offeredActions,
-            settings: manifest.settings.filter { Manifest.Setting.isKey($0.id) },
+            settings: manifest.settings,
             views: Dictionary(manifest.views.map { (URL(fileURLWithPath: $0).deletingPathExtension().lastPathComponent, Self.path($0, beside: url)) }) { first, _ in first },
             viewDates: Dictionary(manifest.views.map { Self.path($0, beside: url) }.compactMap { view in Self.viewDate(of: view, script: url).map { (view, $0) } }) { first, _ in first },
             sources: sources,
-            emits: manifest.emits,
             pages: manifest.pages,
             uses: uses,
             keywords: manifest.keywords,
-            placeholder: manifest.placeholder,
             sample: Self.sample(beside: url),
             edits: edits,
             starts: starts
         )
         command.typedActions = manifest.actions
-        command.triggers = manifest.triggers
+        command.triggers = triggers ?? Manifest.Triggers()
         command.bindings = manifest.bindings
         command.events = manifest.events
-        command.commandWords = manifest.triggers?.commands ?? []
+        command.commandWords = triggers?.commands ?? []
         self.init(id: id, spots: [command])
     }
 
@@ -151,16 +131,6 @@ public struct SpotFile: Equatable, Sendable {
         if SpotSample.isScript(url) || !manifest.describes(url.lastPathComponent) { return false }
         if FileManager.default.isExecutableFile(atPath: url.path) { return true }
         return url.pathExtension == inlineExtension && manifest.isWritten
-    }
-
-    private static func isGlobal(_ offers: [String], of name: String) throws -> Bool {
-        for word in offers.map({ $0.trimmingCharacters(in: .whitespaces) }) where word != search {
-            if word == OfferedAction.place {
-                throw SpotError.fault("\(name) offers actions at its top level. Write offers = [\"actions\"] on a command, such as in [commands.change]")
-            }
-            throw SpotError.fault("\(name) offers an unknown place: \(word). Use offers = [\"search\"]")
-        }
-        return !offers.isEmpty
     }
 
     private static func sample(beside url: URL) -> URL? {

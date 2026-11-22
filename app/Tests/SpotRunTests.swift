@@ -20,8 +20,8 @@ final class SpotRunTests: XCTestCase {
 
     private func make(name: String = "script", searches: Bool = false, _ body: String, mode: SpotMode = .once, on: ShowEvents? = nil) throws -> SpotRun {
         let url = folder.spotFile(name)
-        let typed = searches ? "[ \"$1\" = show ] && in=$(cat); t=$(printf '%s\\n' \"$in\" | sed -n 's/^search=//p'); f=$(printf '%s\\n' \"$in\" | sed -n 's/^search\\.alt=//p' | head -1)\n" : ""
-        try "#!/bin/sh\n\(typed)\(body)\n".writeScript(to: url, toml: mode.stays ? "mode = 'stay'" : "")
+        let typed = searches ? "[ \"$1\" = sheet.text ] && in=$(cat); t=$(printf '%s\\n' \"$in\" | sed -n 's/^input\\.value=//p'); f=$(printf '%s\\n' \"$in\" | sed -n 's/^input\\.alt=//p' | head -1)\n" : ""
+        try "#!/bin/sh\n\(typed)\(body)\n".writeScript(to: url, toml: mode.stays ? "stay = true" : "")
         let made = SpotRuns()
         runs.append(made)
         return made.sheet(for: Spot(id: name, name: name, url: url, kind: .list, on: on ?? (mode.stays ? nil : ShowEvents(moments: [.sheet], searchesSheet: searches)), mode: mode))
@@ -571,7 +571,7 @@ final class SpotRunTests: XCTestCase {
 
         sheet.search("rep")
 
-        try await wait("the answer to the text") { sheet.list.shown.map(\.title) == ["show:rep"] }
+        try await wait("the answer to the text") { sheet.list.shown.map(\.title) == ["sheet.text:rep"] }
     }
 
     func testAReadWithNoTextGivesAScriptThatSearchesANewValue() async throws {
@@ -641,23 +641,6 @@ final class SpotRunTests: XCTestCase {
 
         XCTAssertEqual(sheet.list.query, "rep")
         XCTAssertEqual(sheet.list.shown.map(\.title), ["rep"])
-    }
-
-    func testAPickInAScriptThatSearchesGetsTheTextOnStdinBeforeTheTextIsRead() async throws {
-        let sheet = try make(searches: true, """
-        case "$1" in
-          show) printf 'item=a\\ntitle=A\\n' ;;
-          open) cat > '\(path("stdin"))' ;;
-        esac
-        """)
-        sheet.open {}
-        try await wait("the row") { sheet.list.shown.count == 1 }
-
-        sheet.search("weather in Tokyo")
-        sheet.pick(SpotItem(title: "A", run: "a"))
-
-        try await wait("the pick") { (try? String(contentsOfFile: path("stdin"), encoding: .utf8))?.hasSuffix("\n") == true }
-        XCTAssertEqual(try String(contentsOfFile: path("stdin"), encoding: .utf8), "search=weather in Tokyo\n")
     }
 
     func testAKeptSearchIsAskedAgainOnOpen() async throws {

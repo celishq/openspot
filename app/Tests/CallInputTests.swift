@@ -5,6 +5,10 @@ import XCTest
 final class CallInputTests: SpotRunsCase {
     private let marker = "MARKER-7f3c"
 
+    private var client: String {
+        Bundle(for: FakeHost.self).bundleURL.deletingLastPathComponent().appendingPathComponent("openspot").path
+    }
+
     private func text(_ name: String) -> String {
         (try? String(contentsOfFile: path(name), encoding: .utf8)) ?? ""
     }
@@ -23,8 +27,8 @@ final class CallInputTests: SpotRunsCase {
     }
 
     func testACallCarriesTheValuesOfTheFieldsOfItsOwnHeaderAndOfNoOtherSpot() async throws {
-        try script(toml: "[settings.folder]\n[settings.api-key]", "grep '^setting\\.' | sort > '\(path("env"))'")
-        try script("other", toml: "[settings.folder]", log: "other", "")
+        try script(toml: "[settings]\nfolder = 'text'\napi-key = 'text'", "grep '^setting\\.' | sort > '\(path("env"))'")
+        try script("other", toml: "[settings]\nfolder = 'text'", log: "other", "")
         let sheet = try sheet()
         runs.take(settings: [
             SpotSetting(spot: "script", key: "folder", value: "/tmp/repos"),
@@ -52,14 +56,14 @@ final class CallInputTests: SpotRunsCase {
         let row = try XCTUnwrap(sheet.list.all.first)
 
         sheet.run(CommandAction(id: "join", title: "Join"), item: row)
-        try await wait("the action") { self.text("input").contains("join a") && sheet.calls.isEmpty }
+        try await wait("the action") { self.text("input").contains("join\ninput.item=a") && sheet.calls.isEmpty }
         sheet.pick(row)
 
-        try await wait("the pick") { self.text("input").contains("open a\nitem.item=a") && self.text("input").hasSuffix("\n\n") }
-        XCTAssertEqual(text("input"), "join a\nitem.item=a\nitem.title=A\nitem.meeting=https://meet.example/a\n\nopen a\nitem.item=a\nitem.title=A\nitem.meeting=https://meet.example/a\n\n")
+        try await wait("the pick") { self.text("input").contains("press\ninput.item=a") && self.text("input").hasSuffix("\n\n") }
+        XCTAssertEqual(text("input"), "join\ninput.item=a\ninput.item.item=a\ninput.item.title=A\ninput.item.meeting=https://meet.example/a\n\npress\ninput.item=a\ninput.item.item=a\ninput.item.title=A\ninput.item.meeting=https://meet.example/a\n\n")
     }
 
-    func testTheValueOfASecretFieldGoesOnlyOnStdinAndTheHostRecordsItNowhere() async throws {
+    func testASpotReadsItsSecretWithSettingGetAndTheHostRecordsItNowhere() async throws {
         let logs = folder.appendingPathComponent("logs")
         let stats = folder.appendingPathComponent("stats")
         runs = SpotRuns(environment: ProcessInfo.processInfo.environment, clock: clock.value, stopPause: 0.2, log: CallLog(folder: logs), stats: stats)
@@ -71,11 +75,11 @@ final class CallInputTests: SpotRunsCase {
             default: break
             }
         }
-        try script(toml: "[settings.token]\ntype = 'secret'", """
+        try script(toml: "[settings]\ntoken = 'secret'", """
         env > '\(path("env"))'
         echo "$*" > '\(path("arguments"))'
-        in=$(cat)
-        token=$(printf '%s\\n' "$in" | sed -n 's/^setting.token=//p')
+        cat > '\(path("stdin"))'
+        token=$('\(client)' setting get token)
         printf '%s' "$token" > '\(path("seen"))'
         \(TestSpot.toast) "Got $token"
         printf 'text=a\\ntitle=%s\\n---\\n' "$token"
@@ -94,6 +98,7 @@ final class CallInputTests: SpotRunsCase {
         XCTAssertEqual(text("seen"), marker)
         XCTAssertFalse(text("env").contains(marker))
         XCTAssertFalse(text("arguments").contains(marker))
+        XCTAssertFalse(text("stdin").contains(marker))
         XCTAssertFalse(told.joined().contains(marker))
         XCTAssertEqual(sheet.failure, "Cannot reach the server with •••")
         XCTAssertTrue(everything(in: logs).contains("Cannot reach the server with •••"))
@@ -102,10 +107,11 @@ final class CallInputTests: SpotRunsCase {
         XCTAssertFalse(everything(in: stats).contains(marker))
     }
 
-    func testAFormCallThatFailsHidesTheSecretInItsFailure() async throws {
+    func testAnActionThatFailsHidesTheSecretInItsFailure() async throws {
         runs.onReport = { _, _ in }
-        try script(toml: "[settings.token]\ntype = 'secret'", """
-        token=$(sed -n 's/^setting.token=//p')
+        takeCalls()
+        try script(toml: "[settings]\ntoken = 'secret'", """
+        token=$('\(client)' setting get token)
         case "$1" in
           login) echo "Cannot reach the server with $token" >&2; exit 1 ;;
         esac
@@ -113,16 +119,13 @@ final class CallInputTests: SpotRunsCase {
         let sheet = try sheet()
         try secrets(["token": marker])
 
-        do {
-            _ = try await sheet.form(CommandAction(id: "login", title: "Log in"), item: nil)
-            XCTFail("The form call should fail.")
-        } catch {
-            XCTAssertEqual(SpotsModel.reason(error), "Cannot reach the server with •••")
-        }
+        sheet.run(CommandAction(id: "login", title: "Log in", scope: .spot), item: nil)
+
+        try await wait("the failure") { sheet.failure == "Cannot reach the server with •••" }
     }
 
     func testAPlainFieldNeverGetsTheSecretThatAnOlderHeaderKeptUnderItsKey() async throws {
-        try script(toml: "[settings.token]", "env > '\(path("env"))'\ncat > '\(path("input"))'")
+        try script(toml: "[settings]\ntoken = 'text'", "env > '\(path("env"))'\ncat > '\(path("input"))'")
         let sheet = try sheet()
         try secrets(["token": marker])
 
@@ -141,7 +144,7 @@ final class CallInputTests: SpotRunsCase {
     }
 
     private func field(_ key: String, secret: Bool) throws -> Manifest.Setting {
-        try XCTUnwrap(Manifest(text: "[settings.\(key)]\n" + (secret ? "type = 'secret'" : ""), folder: "/spots").settings.first)
+        try XCTUnwrap(Manifest(text: "[settings]\n\(key) = '\(secret ? "secret" : "text")'", folder: "/spots").settings.first)
     }
 
     func testTheSettingsSheetShowsThatASecretIsSetAndNotItsValue() throws {

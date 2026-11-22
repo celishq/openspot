@@ -14,7 +14,7 @@ final class InlineWaitsTests: PanelCase {
         case "$1" in
           show) printf 'text=s\\ntitle=Show\\n' ;;
           pick) printf 'frame=\\n\\ntext=morning\\ntitle=Morning\\n\\ntext=evening\\ntitle=Evening\\n' ;;
-          open) echo "out.until=$2" ;;
+          press) echo "out.until=$(sed -n 's/^input.item=//p')" ;;
         esac
         """)
         try script("logger", toml: "title = 'Logger'\n[actions.write]\ninputs.line = 'text'", """
@@ -25,7 +25,7 @@ final class InlineWaitsTests: PanelCase {
         try """
         export default {
           async show() { return "text=x\\ntitle=Asker\\n" },
-          async open(input, env) {
+          async press(input, env) {
             const picked = await env.picker.pick()
             await env.logger.write({ line: picked ? picked.until : "none" })
           },

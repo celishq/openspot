@@ -44,7 +44,7 @@ extension SpotRun {
         message.event = call.event
         message.route = route
         message.settings = values.settings
-        return spot.triggers == nil ? message : message.handled()
+        return takesHandlers ? message.handled() : message
     }
 
     var fieldValues: FieldValues {

@@ -265,7 +265,7 @@ final class SpotsModelDragTests: XCTestCase {
     }
 
     func testTheShelfLeavesOutASpotThatOnlyAnswersTheSearch() async throws {
-        try "#!/bin/sh\n".writeScript(to: spots.appendingPathComponent("rows.spot/rows.sh"), toml: "on = ['search.text ^x']")
+        try "#!/bin/sh\n".writeScript(to: spots.appendingPathComponent("rows.spot/rows.sh"), toml: "[on]\nsearch = '^x'")
         await model.reload()
 
         XCTAssertFalse(order.contains("rows"))

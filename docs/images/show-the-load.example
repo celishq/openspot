@@ -1,6 +1,6 @@
 #!/bin/sh
 . "$OPENSPOT_SH"
-load=$(value event.value)
+load=$(value value)
 case "$load" in
   cpu=*)
     cpu=${load#cpu=}

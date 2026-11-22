@@ -176,7 +176,7 @@ final class CaffeinateSpotTests: XCTestCase {
         try await wait("the end of the call that asked") { sheet.calls.isEmpty }
         var draft = FormDraft(form: form)
         draft.set("45", for: "minutes")
-        _ = try await sheet.submit(CommandAction(id: Frame.open, title: item.title, isForm: true), item: item, draft: draft)
+        _ = try await sheet.submit(CommandAction(id: Frame.press, title: item.title), item: item, draft: draft)
 
         try await wait("caffeinate") { self.running().count == 1 }
         XCTAssertEqual(flags(), ["-di -t 2700"])
@@ -277,7 +277,7 @@ final class CaffeinateSpotTests: XCTestCase {
 
         try await wait("the time left on the card") { sheet.shownState.subtitle == "30m left" }
         XCTAssertEqual(running().count, 1)
-        XCTAssertEqual(sheet.calls.map(\.action.arguments), [["open", "1800"]])
+        XCTAssertEqual(sheet.calls.map(\.action.arguments), [["press", "1800"]])
         XCTAssertEqual(sheet.list.all.first?.run, "off")
     }
 
@@ -333,7 +333,7 @@ final class CaffeinateSpotTests: XCTestCase {
         try await pick("7200", in: sheet)
 
         try await wait("one new caffeinate") { self.awake().count == 2 && self.running().count == 1 }
-        try await wait("the one call") { sheet.calls.map(\.action.arguments) == [["open", "7200"]] }
+        try await wait("the one call") { sheet.calls.map(\.action.arguments) == [["press", "7200"]] }
         XCTAssertEqual(running(), [awake()[1]])
     }
 
