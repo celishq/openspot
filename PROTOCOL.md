@@ -481,19 +481,18 @@ Items are the list that the user searches and presses. See [Show a list](GUIDE.m
 ```ini
 items=devices
 
-text=nearby
+box=nearby
 parent=devices
 title=Nearby
-class=font-section
 
 text=mouse
-parent=devices
+parent=nearby
 title=Mouse
 icon=computermouse
 keywords=pointer
 
 number=keyboard
-parent=devices
+parent=nearby
 title=Keyboard
 icon=keyboard
 value=62
@@ -527,8 +526,8 @@ Forget is a row of the ⌘K menu of the selected item, and a search for pointer 
 | `form`       | `true` asks for values with a form before the press runs, as a `form=true` button does.         |
 
 - The blocks inside the `items` block are the items, and a `button` there is an
-  [action](#buttons-and-actions). A `text` with `class=font-section` titles the items after it. A frame with no layout
-  makes its items as [Show things with blocks](#show-things-with-blocks) says.
+  [action](#buttons-and-actions). A `box` inside the `items` block is a group: its `title` heads the items inside it.
+  A frame with no layout makes its items as [Show things with blocks](#show-things-with-blocks) says.
 - A `number` item shows its value on the right of its title, or a ring of it with `type=ring`, as in
   [Show a number](#show-a-number). A `series` item shows the bars of its points.
 - A press of a text sends `<spot> open <id>`, of a switch `<spot> <id> true` or `false`, and of a `hotkey` field
@@ -951,7 +950,7 @@ Each kind of block, the keys of its own and the call it sends.
 
 | Kind              | Shows                                                                                                            | Its own keys                                                                      | Sends                  |
 | ----------------- | ---------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------- | ---------------------- |
-| `box`             | The blocks inside it, laid out by its classes. See [Layouts](#layouts).                                          |                                                                                   |                        |
+| `box`             | The blocks inside it, laid out by its classes, or inside `items` a group of items under its `title`.             |                                                                                   |                        |
 | `text`            | Words.                                                                                                           | `value`                                                                           |                        |
 | `icon`            | The icon of its `value`, by the rules of `icon` below.                                                           | `value`                                                                           |                        |
 | `picture`         | An image that fills its area.                                                                                    | `icon`                                                                            |                        |
@@ -960,7 +959,7 @@ Each kind of block, the keys of its own and the call it sends.
 | `button`          | A button, or an action (see [Buttons and actions](#buttons-and-actions)). The blocks inside it are its look.     | `shortcut`, `confirm`, `close`, `form`, `scope`                                   | `<id>`                 |
 | `field`           | A text field, or another input with a `type`.                                                                    | `value`, `type`, `placeholder`, `required`, `readonly`, `min`, `max`, `recording` | `<id> <value>`         |
 | `switch`          | A switch, or with `type=tick` a round tick before its words, for a thing to do.                                  | `value`: `true` or `false`, `type`                                                | `<id> true` or `false` |
-| `choice`          | A menu of the `option` blocks after it, a list when it covers two lines or more, or swatches of `color` lines.   | `color`, `value`, `type`                                                          | `<id> <option id>`     |
+| `choice`          | A menu of the `option` blocks after it, or another form with a `type`.                                           | `color`, `value`, `type`                                                          | `<id> <option id>`     |
 | `option`          | One option of the `choice` right before it.                                                                      | `title`, `icon`                                                                   |                        |
 | `items`           | The [items](#items): the blocks inside it are the items, and a `button` there is an action.                      |                                                                                   |                        |
 | A view of a spot  | What its SwiftUI file draws, named by the file (see [Views](#views)).                                            | any key the view reads                                                            | `<id> <value>`         |
@@ -969,10 +968,13 @@ Each kind of block, the keys of its own and the call it sends.
   `tone` and `icon`. `tone` is `good`, `warn` or `bad`, and colours the detail, or the title with no detail.
   `color=#RRGGBB` on a text or a number draws a bar of that colour at its edge.
 - `icon` is an image file, such as `cups.png`; an `https://` image, downloaded once; the Finder icon of a path with a
-  `/` or a leading `~`; an SF Symbol, such as `wifi`; or any other text, such as `😀`.
-- A field's `type`: none for one line, `multiline`, `slider` from `min` to `max`, 0 to 100 by default, which sends a
-  whole number, `search` for the search field of the [items](#items), and `hotkey`. A choice with `type=multiple` lets
-  the user choose several options.
+  `/` or a leading `~`; an SF Symbol, such as `wifi`; or any other text, such as `😀`. It draws the same on every kind
+  and in every place, before the title.
+- A field's `type`: none for one line, `multiline` for several lines, which takes the free height, `slider` from `min`
+  to `max`, 0 to 100 by default, which sends a whole number, `search` for the search field of the [items](#items), and
+  `hotkey`.
+- A choice's `type`: none for a menu, `list` for a list of its options, `swatches` for a swatch of each of its `color`
+  lines, which sends the colour, and `multiple`, in a form, for several options.
 - A `hotkey` field shows keycaps, and records a key at Return or a click on it, or when a new frame gives it
   `recording=true`. Every key goes to it, Esc brings back its key, and a shortcut sends `<id> <key>`. While a sheet
   with one shows, Openspot's own keys are off.
@@ -1015,10 +1017,10 @@ A tile with round corners holds one row. The name, heavier and in the accent col
   and `px`, the height of a divider.
 - `<n>` is a count from 1 to 12, and `<p>` a percent from 0 to 100 in steps of 5.
 - `flex` shows a block that `hidden` hides, such as `hidden card:flex`.
-- `font-section` gives a `text` the look of a title over a group of blocks or items.
+- `font-section` gives a `text` the look of a title over a group of blocks.
 - On a `button`, a `field`, a `switch`, a `choice`, a `number` or a `series`, a class chooses the box that Openspot draws for it:
   `bg-accent` is the one main button, `bg-tile` a tile, `bg-transparent` no box, and `rounded-full` on a button a chip
-  as wide as its words.
+  as wide as its words, or a round button of its `icon` when it has no `title`.
 - A block smaller than its box takes its place from `self-start`, `self-center` or `self-end`, or from `text-left`,
   `text-center` or `text-right` inside its own area.
 - `backdrop-blur` blurs what lies under the block with the material of the Mac. No class draws glass.

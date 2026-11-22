@@ -86,7 +86,6 @@ public struct Frame: Equatable, Sendable {
         let inSheet = Set(Self.sheetPlaces.flatMap(tree.shown(in:)))
         var runs = Set<String>()
         var listedRows: [TextBlock] = []
-        var section: String?
         var values: [(block: TextBlock, kind: BlockKind)] = []
         var unplaced: [TextBlock] = []
         for (index, block) in blocks.enumerated() {
@@ -99,8 +98,6 @@ public struct Frame: Equatable, Sendable {
                     take(action: id, block)
                 } else if Self.isSearch(block) {
                     searchField = block
-                } else if let id, listed.contains(id), tree.node(id)?.style.resolved(for: [.sheet]).font == .section {
-                    section = block.value("title") ?? block.value("value")
                 } else if let part = SpotPart(block: block, kind: kind) {
                     if kind.field != nil { fields.append(Field(block: block, kind: kind)) }
                     if kind.holdsValue { values.append((block, kind)) }
@@ -110,7 +107,7 @@ public struct Frame: Equatable, Sendable {
                     } else if kind == .choice {
                         parts.append(part)
                         unplaced.append(block)
-                    } else if let item = SpotItem(block: block, kind: kind, section: section) {
+                    } else if let item = SpotItem(block: block, kind: kind, section: id.flatMap { tree.group(of: $0) }) {
                         listedRows.append(block)
                         if runs.insert(item.run).inserted { items.append(item) }
                     }
@@ -125,9 +122,6 @@ public struct Frame: Equatable, Sendable {
             } else {
                 errors.append(block.firstLine)
             }
-        }
-        parts = parts.map { part in
-            part.drawn(spanning: tree.isWritten && tree.node(part.id).map(Self.spansRows) == true)
         }
         if parts.contains(where: { tree.node($0.id)?.source != nil }) {
             rows = listedRows.map { $0.fields.flatMap { [$0.key, $0.value] } }
@@ -153,11 +147,6 @@ public struct Frame: Equatable, Sendable {
             let itemsBlock = blocks.first { $0.fields.first?.key == BlockKind.items } ?? (items.isEmpty ? nil : Self.itemsBlock)
             tree = tree.unwritten(showing: unplaced + [itemsBlock].compactMap(\.self), root: Self.sheetRoot, kinds: kinds)
         }
-    }
-
-    private static func spansRows(_ node: ViewNode) -> Bool {
-        let style = node.style.resolved(for: [.sheet])
-        return style.grows == true || (style.height.map { $0.points(of: 0) } ?? 0) >= 2 * SpotTokens.listRow + SpotTokens.partGap
     }
 
     private static func isSearch(_ block: TextBlock) -> Bool {

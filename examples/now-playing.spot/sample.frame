@@ -28,18 +28,18 @@ class=flex-row justify-center gap-6 card:justify-between strip:gap-part wide:hid
 
 button=prev
 parent=controls
-class=bg-transparent
+class=bg-transparent rounded-full
 icon=backward.fill
 close=false
 
 button=play
 parent=controls
-class=bg-transparent
+class=bg-transparent rounded-full
 icon=pause.fill
 close=false
 
 button=next
 parent=controls
-class=bg-transparent
+class=bg-transparent rounded-full
 icon=forward.fill
 close=false

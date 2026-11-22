@@ -22,6 +22,7 @@ final class SheetPartsTests: XCTestCase {
     icon=sun.max
 
     choice=color
+    type=swatches
     color=#ff0000
     color=#00ff00
     value=#00ff00
@@ -158,7 +159,8 @@ final class SheetPartsTests: XCTestCase {
         XCTAssertEqual(parts[2].control, .slider(level: 80, min: 0, max: 100))
         XCTAssertEqual(parts[3].control, .swatches(["#ff0000", "#00ff00"], value: "#00ff00"))
         XCTAssertEqual(parts[4].control, .none)
-        XCTAssertEqual(parts[5].press, .symbol("arrow.clockwise"))
+        XCTAssertEqual(parts[5].press, .line)
+        XCTAssertEqual(parts[5].icon, .symbol("arrow.clockwise"))
         XCTAssertEqual(parts[6].press, .line)
         XCTAssertTrue(parts[6].closes)
     }
@@ -303,7 +305,7 @@ final class SheetPartsTests: XCTestCase {
         XCTAssertEqual(FrameCheck(text: lights.placed).partFaults, [])
         XCTAssertEqual(FrameCheck(text: "text=a\ncolour=red\n".placed).partFaults, ["the part a has an unknown key: colour"])
         XCTAssertEqual(FrameCheck(text: "choice=a\noption=en:English\n".placed).partFaults, ["the part a has an unknown key: option"])
-        XCTAssertEqual(FrameCheck(text: "choice=a\ncolor=red\n".placed).partFaults, ["the part a needs a color as #rrggbb: red"])
+        XCTAssertEqual(FrameCheck(text: "choice=a\ntype=swatches\ncolor=red\n".placed).partFaults, ["the part a needs a color as #rrggbb: red"])
         XCTAssertEqual(FrameCheck(text: "text=a\nshortcut=nope+a\n".placed).partFaults, ["the part a has an unknown key combination: nope+a"])
         XCTAssertEqual(FrameCheck(text: "text=a\ntitle=A\ndetail=9%\ntone=bad\n".placed).partFaults, [])
         XCTAssertEqual(FrameCheck(text: "text=a\ntitle=A\ndetail=9%\ntone=red\n".placed).partFaults, ["the part a has an unknown tone: red"])
@@ -378,9 +380,11 @@ final class SheetPartsTests: XCTestCase {
     func testALineWithNoIconKeepsTheIconColumnOnlyWhereALineHasOne() throws {
         let list = try XCTUnwrap(SheetParts(output: Frame(text: "frame=\nclass=gap-part\n\ntext=all\ntitle=All\nicon=cpu\n\ntext=top\ntitle=launchd\n")))
         let plain = try XCTUnwrap(SheetParts(output: Frame(text: "frame=\nclass=gap-part\n\ntext=top\ntitle=launchd\n")))
+        let pictured = try XCTUnwrap(SheetParts(output: Frame(text: "frame=\nclass=gap-part\n\npicture=art\nicon=/a.heic\n\ntext=top\ntitle=launchd\n")))
 
         XCTAssertEqual(list.parts.map(list.keepsIconColumn), [false, true])
         XCTAssertEqual(plain.parts.map(plain.keepsIconColumn), [false])
+        XCTAssertEqual(pictured.parts.map(pictured.keepsIconColumn), [false, false])
     }
 
     func testPointsWithNoDetailStillDrawANumberSeries() throws {
@@ -429,16 +433,44 @@ final class SheetPartsTests: XCTestCase {
         XCTAssertEqual(MetricValue(output: Frame(text: "number=cpu\nvalue=42%\ntitle=CPU\n".placed)), MetricValue(title: "42%", detail: "CPU", number: .of("value=42%")))
     }
 
-    func testAChoiceDrawnOverTwoLinesIsAListAndOverOneLineAMenu() throws {
-        let choice = "choice=c\nvalue=a\n\noption=a\ntitle=A\n\noption=b\ntitle=B\n"
-        let tall = try XCTUnwrap(Frame(text: "frame=\nclass=gap-part\n\nchoice=c\nclass=h-24\nvalue=a\n\noption=a\ntitle=A\n\noption=b\ntitle=B\n").parts.first)
-        let short = try XCTUnwrap(Frame(text: "frame=\nclass=gap-part\n\n" + choice).parts.first)
-        var sheet = try XCTUnwrap(SheetParts(output: Frame(text: "frame=\nclass=gap-part\n\nchoice=c\nclass=h-24\nvalue=a\n\noption=a\ntitle=A\n\noption=b\ntitle=B\n")))
+    func testTheTypeOfAChoicePicksItsFormAndColorLinesAloneDoNot() throws {
+        let options = "option=a\ntitle=A\n\noption=b\ntitle=B\n"
+        let list = try XCTUnwrap(Frame(text: "frame=\nclass=gap-part\n\nchoice=c\ntype=list\nvalue=a\n\n" + options).parts.first)
+        let colored = try XCTUnwrap(Frame(text: "frame=\nclass=gap-part\n\nchoice=c\ncolor=#ff0000\nvalue=a\n\n" + options).parts.first)
+        let swatches = try XCTUnwrap(Frame(text: "frame=\nclass=gap-part\n\nchoice=c\ntype=swatches\ncolor=#ff0000\ncolor=#00ff00\nvalue=#ff0000\n").parts.first)
+        var sheet = try XCTUnwrap(SheetParts(output: Frame(text: "frame=\nclass=gap-part\n\nchoice=c\ntype=list\nvalue=a\n\n" + options)))
 
-        XCTAssertEqual(tall.control, .list([.init(id: "a", title: "A"), .init(id: "b", title: "B")], value: "a"))
-        XCTAssertEqual(short.control, .menu([.init(id: "a", title: "A"), .init(id: "b", title: "B")], value: "a"))
-        sheet.take(Frame(text: "frame=\nclass=gap-part\n\nchoice=c\nclass=h-24\nvalue=a\n\noption=a\ntitle=A\n"), answering: sheet.generation)
+        XCTAssertEqual(list.control, .list([.init(id: "a", title: "A"), .init(id: "b", title: "B")], value: "a"))
+        XCTAssertEqual(colored.control, .menu([.init(id: "a", title: "A"), .init(id: "b", title: "B")], value: "a"))
+        XCTAssertEqual(swatches.control, .swatches(["#ff0000", "#00ff00"], value: "#ff0000"))
+        XCTAssertEqual(FrameCheck(text: "choice=c\ncolor=#ff0000\n".placed).partFaults, ["the choice c has color lines, which only a choice with type=swatches takes"])
+        sheet.take(Frame(text: "frame=\nclass=gap-part\n\nchoice=c\ntype=list\nvalue=a\n\noption=a\ntitle=A\n"), answering: sheet.generation)
         XCTAssertEqual(sheet.parts.first?.control, .list([.init(id: "a", title: "A")], value: "a"))
+    }
+
+    func testAnIconDrawsOnEveryKindAndARoundButtonComesFromItsClass() throws {
+        let parts = try panel("""
+        button=round
+        class=rounded-full
+        icon=star
+
+        button=boxed
+        icon=star
+
+        button=titled
+        class=rounded-full
+        title=Star
+        icon=😀
+
+        text=glyph
+        icon=😀
+
+        switch=file
+        icon=~/Desktop
+        """).parts
+
+        XCTAssertEqual(parts.map(\.press), [.round(.symbol("star")), .line, .line, .none, .none])
+        XCTAssertEqual(parts.map(\.icon), [nil, .symbol("star"), .glyph("😀"), .glyph("😀"), .file("~/Desktop")])
     }
 
     func testTheClassesOfAPartChooseTheLookOfItsBox() throws {

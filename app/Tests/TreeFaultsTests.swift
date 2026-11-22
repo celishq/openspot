@@ -63,11 +63,12 @@ final class TreeFaultsTests: XCTestCase {
     }
 
 
-    func testABlockInABoxInsideTheItemsIsReported() {
-        let text = "frame=\n\nitems=list\n\nbox=group\nparent=list\n\ntext=a\nparent=group\ntitle=A\n\ntext=b\nparent=list\ntitle=B\n"
+    func testABoxInAGroupAndABlockInAnItemAreReported() {
+        let text = "frame=\n\nitems=list\n\nbox=group\nparent=list\ntitle=Group\n\nbox=inner\nparent=group\n\ntext=a\nparent=group\ntitle=A\n\ntext=b\nparent=a\ntitle=B\n"
 
         XCTAssertEqual(FrameCheck(text: text).partFaults, [
-            "the box group sits inside the items list, so it and the blocks inside it do not show. An item is one block"
+            "the box inner sits inside the group group, so it and the blocks inside it do not show. A group is one level deep",
+            "the block b sits inside the item a, so it does not show. An item is one block"
         ])
     }
 }

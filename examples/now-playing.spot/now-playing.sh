@@ -10,9 +10,9 @@ card() {
   printf 'box=side\nclass=self-stretch gap-part small:hidden card:grow strip:flex-row strip:items-center large:justify-between\n\n'
   printf 'text=song\nparent=side\nclass=text-center sheet:font-title card:text-left strip:grow bar:flex truncate\n'; openspot_kv title "$1"; openspot_kv detail "$2"; printf '\n'
   printf 'number=time\nparent=side\nclass=wide:hidden strip:hidden square:hidden\nmax=1\ntype=bar\n'; openspot_kv display "$4"; openspot_kv value "$3"; printf '\n'
-  printf 'box=controls\nparent=side\nclass=flex-row justify-center gap-6 card:justify-between strip:gap-part wide:hidden\n\nbutton=prev\nparent=controls\nclass=bg-transparent\nicon=backward.fill\nclose=false\n\n'
-  if [ "$5" = playing ]; then printf 'button=play\nparent=controls\nclass=bg-transparent\nicon=pause.fill\nclose=false\n\n'; else printf 'button=play\nparent=controls\nclass=bg-transparent\nicon=play.fill\nclose=false\n\n'; fi
-  printf 'button=next\nparent=controls\nclass=bg-transparent\nicon=forward.fill\nclose=false\n'
+  printf 'box=controls\nparent=side\nclass=flex-row justify-center gap-6 card:justify-between strip:gap-part wide:hidden\n\nbutton=prev\nparent=controls\nclass=bg-transparent rounded-full\nicon=backward.fill\nclose=false\n\n'
+  if [ "$5" = playing ]; then printf 'button=play\nparent=controls\nclass=bg-transparent rounded-full\nicon=pause.fill\nclose=false\n\n'; else printf 'button=play\nparent=controls\nclass=bg-transparent rounded-full\nicon=play.fill\nclose=false\n\n'; fi
+  printf 'button=next\nparent=controls\nclass=bg-transparent rounded-full\nicon=forward.fill\nclose=false\n'
 }
 
 # Asks Music for one value of the current song, only while Music runs, so that a read never opens it.

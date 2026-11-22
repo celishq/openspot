@@ -86,6 +86,13 @@ final class ViewTreePartsTests: XCTestCase {
         XCTAssertEqual(tree.node("a")?.style.grows, true)
     }
 
+    func testAFieldWithNoTypeIsOneLineAndAMultilineFieldHoldsSeveral() throws {
+        let parts = Frame(text: "frame=\nclass=gap-2\n\nfield=name\nvalue=Ann\n\nfield=note\ntype=multiline\nvalue=a\\nb\n").parts
+
+        XCTAssertEqual(parts.map(\.isMultiline), [false, true])
+        XCTAssertEqual(parts.map(\.fillsHeight), [false, true])
+    }
+
     func testANodeHiddenInTheSheetIsNoPartOfTheSheet() {
         let frame = Frame(text: "frame=\nclass=gap-2\n\nswitch=a\ntitle=A\nclass=hidden card:flex\n\nswitch=b\ntitle=B\n")
 
@@ -100,13 +107,13 @@ final class ViewTreePartsTests: XCTestCase {
         XCTAssertEqual(hidden.height, shown.height)
     }
 
-    func testAChoiceIsAListWhenItsNodeIsTwoRowsTall() {
+    func testAChoiceIsAListOnlyByItsTypeAndAMenuWithoutOne() {
         let options = "option=x\ntitle=X\n\noption=y\ntitle=Y\n"
-        let frame = Frame(text: "frame=\nclass=gap-2\n\nchoice=tall\nclass=h-24\n\n\(options)\nchoice=grown\nclass=grow\n\n\(options)\nchoice=menu\n\n\(options)")
+        let frame = Frame(text: "frame=\nclass=gap-2\n\nchoice=tall\nclass=h-24\n\n\(options)\nchoice=grown\nclass=grow\n\n\(options)\nchoice=list\ntype=list\n\n\(options)")
         let control = { (id: String) in frame.parts.first { $0.id == id }?.control }
 
-        XCTAssertEqual(control("tall"), .list([.init(id: "x", title: "X"), .init(id: "y", title: "Y")], value: nil))
-        XCTAssertEqual(control("grown"), .list([.init(id: "x", title: "X"), .init(id: "y", title: "Y")], value: nil))
-        XCTAssertEqual(control("menu"), .menu([.init(id: "x", title: "X"), .init(id: "y", title: "Y")], value: nil))
+        XCTAssertEqual(control("tall"), .menu([.init(id: "x", title: "X"), .init(id: "y", title: "Y")], value: nil))
+        XCTAssertEqual(control("grown"), .menu([.init(id: "x", title: "X"), .init(id: "y", title: "Y")], value: nil))
+        XCTAssertEqual(control("list"), .list([.init(id: "x", title: "X"), .init(id: "y", title: "Y")], value: nil))
     }
 }

@@ -29,7 +29,7 @@ public struct SpotPart: Equatable, Sendable, Identifiable {
     public enum Press: Equatable, Sendable {
         case none
         case line
-        case symbol(String)
+        case round(Icon)
     }
 
     public enum Look: Equatable, Sendable {
@@ -51,7 +51,7 @@ public struct SpotPart: Equatable, Sendable, Identifiable {
     public let kind: String
     public let title: String?
     public let detail: String?
-    public let symbol: String?
+    public let icon: Icon?
     public let tone: MetricValue.Tone?
     public let color: String?
     public private(set) var control: Control
@@ -61,6 +61,7 @@ public struct SpotPart: Equatable, Sendable, Identifiable {
     public let closes: Bool
     public private(set) var look: Look?
     public let isTick: Bool
+    public let isMultiline: Bool
 
     public struct NumberPiece: Equatable, Sendable {
         public let text: String
@@ -81,13 +82,16 @@ public struct SpotPart: Equatable, Sendable, Identifiable {
         key = kind == .hotkey ? nil : block.value("shortcut").flatMap(ActionKey.init(text:))
         asksToRecord = kind == .hotkey && block.flag("recording") == true
         closes = block.flag("close") ?? kind.presses
-        look = Look(style: StyleCache.shared.style(of: block.value(ViewNode.classKey) ?? "").resolved(for: [.sheet]))
+        let style = StyleCache.shared.style(of: block.value(ViewNode.classKey) ?? "").resolved(for: [.sheet])
+        look = Look(style: style)
         isTick = kind.takesTick && block.value("type") == "tick"
+        isMultiline = kind == .field && block.value("type") == ViewNode.multiline
         let icon = Icon(text: block.value("icon"))
         tone = block.value("tone").flatMap(MetricValue.Tone.init)
         color = kind.takesColor ? block.value("color").flatMap { BlockKind.isColor($0) ? $0 : nil } : nil
-        symbol = kind.presses ? nil : icon?.symbol
-        press = kind.presses ? icon?.symbol.map(Press.symbol) ?? .line : .none
+        let round = kind.presses && title == nil && style.corner == .full ? icon : nil
+        self.icon = round == nil ? icon : nil
+        press = kind.presses ? round.map(Press.round) ?? .line : .none
         control = kind.control(block)
     }
 
@@ -138,23 +142,17 @@ public struct SpotPart: Equatable, Sendable, Identifiable {
         return part
     }
 
-    func drawn(spanning isTall: Bool) -> SpotPart {
-        guard case .menu(let options, let value) = control, isTall else { return self }
-        var part = self
-        part.control = .list(options, value: value)
-        return part
-    }
-
     public var fillsHeight: Bool {
         switch control {
-        case .text, .list, .number, .image: true
+        case .text: isMultiline
+        case .list, .number, .image: true
         default: false
         }
     }
 
     public var fillsWidth: Bool {
         if look == .chip || look == .bare { return title != nil && control != .none }
-        if case .symbol = press, title == nil, control == .none { return false }
+        if case .round = press { return false }
         return true
     }
 

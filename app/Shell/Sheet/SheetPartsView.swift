@@ -129,9 +129,12 @@ struct SheetPartsView: View {
     @ViewBuilder
     private func content(_ part: SpotPart, _ size: CGSize) -> some View {
         switch part.control {
-        case .text(let text, let placeholder, let isReadOnly):
+        case .text(let text, let placeholder, let isReadOnly) where part.isMultiline:
             textArea(part, size, text: text, placeholder: placeholder, isReadOnly: isReadOnly)
                 .overlay(alignment: .topTrailing) { cornerMark(part, size) }
+        case .text(let text, let placeholder, let isReadOnly):
+            textLine(part, text: text, placeholder: placeholder, isReadOnly: isReadOnly)
+                .overlay(alignment: .trailing) { cornerMark(part, size) }
         case .slider(let level, let low, let high):
             slider(part, level: level, low: low, high: high)
         case .swatches(let colors, let value) where colors.count > 1:
@@ -170,8 +173,8 @@ struct SheetPartsView: View {
         HStack(spacing: size.width < SpotTokens.narrowCell ? SpotTokens.narrowGap : SpotTokens.partLineGap) {
             if !hasRoundMark(part), act(part) != nil {
                 mark(part)
-            } else if let symbol = part.symbol {
-                Image(systemName: symbol)
+            } else if let icon = part.icon {
+                NodeIcon(icon: icon, side: SpotTokens.partSymbolWidth)
                     .modifier(SpotSecondaryText())
                     .frame(width: SpotTokens.partSymbolWidth)
             }
@@ -192,9 +195,9 @@ struct SheetPartsView: View {
                 Text(detail).font(SpotType.detail).modifier(SpotSecondaryText()).lineLimit(1)
                     .layoutPriority(2)
             }
-            if case .symbol(let symbol) = part.press {
+            if case .round(let icon) = part.press {
                 SpotRoundButton(
-                    symbol: symbol,
+                    icon: icon,
                     label: part.title ?? part.id.capitalized,
                     act: act(part),
                     size: min(size.width, size.height, SpotTokens.partMaxRound),
@@ -207,7 +210,7 @@ struct SheetPartsView: View {
     }
 
     private func hasRoundMark(_ part: SpotPart) -> Bool {
-        if case .symbol = part.press { return true }
+        if case .round = part.press { return true }
         return false
     }
 
@@ -218,6 +221,12 @@ struct SheetPartsView: View {
                 SpotWorkMark(call: call, side: SpotTokens.workMark)
                 Text("Stop").font(font).lineLimit(1)
             }
+        } else if let icon = part.icon {
+            HStack(spacing: SpotTokens.placeGap / 2) {
+                NodeIcon(icon: icon, side: SpotTokens.partSymbolWidth)
+                if let title = part.title { Text(title).lineLimit(1) }
+            }
+            .font(font)
         } else {
             Text(words).font(font).lineLimit(1)
         }
@@ -348,8 +357,8 @@ struct SheetPartsView: View {
             }
             if act(part) != nil {
                 mark(part)
-            } else if let symbol = part.symbol {
-                Image(systemName: symbol)
+            } else if let icon = part.icon {
+                NodeIcon(icon: icon, side: SpotTokens.partSymbolWidth)
                     .foregroundStyle(SpotTheme.ink)
             }
             SpotSlider(level: level, range: low...max(high, low + 1)) { onSet(part, String(Int($0.rounded()))) }
@@ -406,6 +415,29 @@ struct SheetPartsView: View {
         return SpotNumberView(part: part, look: look, font: SpotType.number, leastScale: SpotType.leastValueScale, alignment: part.look == .bare ? .trailing : .leading, inset: inset)
             .frame(width: size.width, height: size.height)
             .background(SpotTheme.ink.opacity(part.look == .bare ? 0 : SpotTheme.fill), in: shape)
+    }
+
+    private func textLine(_ part: SpotPart, text: String, placeholder: String?, isReadOnly: Bool) -> some View {
+        ZStack(alignment: .leading) {
+            if isReadOnly {
+                Text(text)
+                    .lineLimit(1)
+                    .textSelection(.enabled)
+            } else {
+                SpotTextLine(label: part.title ?? part.id, text: text) { onSet(part, $0) }
+                    .focused($focus, equals: part.id)
+            }
+            if text.isEmpty, let placeholder {
+                Text(placeholder)
+                    .foregroundStyle(SpotTheme.ink.opacity(SpotTheme.secondary))
+                    .allowsHitTesting(false)
+            }
+        }
+        .padding(.horizontal, SpotTokens.padding)
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .leading)
+        .font(SpotType.body)
+        .foregroundStyle(SpotTheme.ink)
+        .background(SpotTheme.ink.opacity(SpotTheme.fill), in: shape)
     }
 
     @ViewBuilder

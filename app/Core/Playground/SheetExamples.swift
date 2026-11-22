@@ -35,6 +35,7 @@ public enum SheetExamples {
 
         button=swap
         parent=middle
+        class=rounded-full
         icon=arrow.up.arrow.down
         shortcut=cmd+shift+s
 
@@ -86,7 +87,7 @@ public enum SheetExamples {
 
         button=play
         parent=side
-        class=h-20 bg-accent
+        class=h-20 bg-accent rounded-full
         icon=pause.fill
 
         text=song
@@ -102,12 +103,12 @@ public enum SheetExamples {
 
         button=previous
         parent=controls
-        class=bg-transparent
+        class=bg-transparent rounded-full
         icon=backward.fill
 
         button=following
         parent=controls
-        class=bg-transparent
+        class=bg-transparent rounded-full
         icon=forward.fill
 
         """),
@@ -154,6 +155,7 @@ public enum SheetExamples {
         field=log
         parent=output
         class=absolute inset-0
+        type=multiline
         value=frame= 4120 fps= 96\\nframe= 4216 fps= 97
         readonly=true
 
@@ -173,11 +175,14 @@ public enum SheetExamples {
 
         field=messages
         class=grow
+        type=multiline
         value=Why do the checks fail?\\n\\nThe build step cannot find the module.
         readonly=true
 
         field=question
         class=h-20
+        type=multiline
+        grow=false
         value=
         placeholder=Ask
 
@@ -196,7 +201,7 @@ public enum SheetExamples {
 
         button=ask
         parent=bottom
-        class=bg-accent
+        class=bg-accent rounded-full
         icon=arrow.up
         shortcut=cmd+return
 
@@ -225,7 +230,7 @@ public enum SheetExamples {
 
         button=refresh
         parent=chart
-        class=absolute top-0 right-0
+        class=absolute top-0 right-0 rounded-full
         icon=arrow.clockwise
 
         number=disk
@@ -249,6 +254,7 @@ public enum SheetExamples {
         choice=items
         parent=top
         class=h-32
+        type=list
         value=address
 
         option=address
@@ -267,6 +273,8 @@ public enum SheetExamples {
         field=preview
         parent=side
         class=absolute inset-0
+        type=multiline
+        grow=false
         value=Rosenthaler Str. 40\\n10178 Berlin
         readonly=true
 
@@ -295,6 +303,8 @@ public enum SheetExamples {
         field=note
         parent=page
         class=absolute inset-0
+        type=multiline
+        grow=false
         value=Buy milk\\nCall the bank
 
         box=corner
@@ -303,7 +313,7 @@ public enum SheetExamples {
 
         button=save
         parent=corner
-        class=bg-accent
+        class=bg-accent rounded-full
         icon=checkmark
         shortcut=cmd+return
 
@@ -326,6 +336,7 @@ public enum SheetExamples {
         value=40
 
         choice=colors
+        type=swatches
         color=#e8c07d
         color=#e8edf7
         color=#d4524a
@@ -338,21 +349,24 @@ public enum SheetExamples {
         choice=low
         parent=levels
         title=Low
+        type=swatches
         color=#5fe0d2
 
         choice=mid
         parent=levels
         title=Mid
+        type=swatches
         color=#5a64e6
 
         choice=high
         parent=levels
         title=High
+        type=swatches
         color=#d632d8
 
         button=reset
         parent=levels
-        class=bg-transparent text-right
+        class=bg-transparent text-right rounded-full
         icon=arrow.counterclockwise
 
         box=line

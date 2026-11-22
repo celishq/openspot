@@ -251,11 +251,14 @@ final class ViewTreeTests: XCTestCase {
         XCTAssertEqual(Frame(text: "frame=\n\nitems=list\nclass=gap-part\n").columns, 1)
     }
 
-    func testATextWithTheSectionFontInTheItemsTitlesTheItemsAfterIt() {
-        let frame = Frame(text: "frame=\n\nitems=list\n\ntext=recent\nparent=list\ntitle=Recent\nclass=font-section\n\ntext=a\nparent=list\ntitle=A\n")
+    func testABoxInTheItemsTitlesTheItemsInsideItAndTheSectionFontIsOnlyALook() {
+        let text = "frame=\n\nitems=list\n\nbox=recent\nparent=list\ntitle=Recent\n\ntext=a\nparent=recent\ntitle=A\n\ntext=b\nparent=list\ntitle=B\nclass=font-section\n"
+        let frame = Frame(text: text)
 
-        XCTAssertEqual(frame.items.map(\.run), ["a"])
-        XCTAssertEqual(frame.items.first?.section, "Recent")
+        XCTAssertEqual(frame.items.map(\.run), ["a", "b"])
+        XCTAssertEqual(frame.items.map(\.section), ["Recent", nil])
+        XCTAssertEqual(frame.parts, [])
+        XCTAssertEqual(FrameCheck(text: text).partFaults, [])
     }
 
     func testATextsPaddingIsPartOfItsHeight() throws {

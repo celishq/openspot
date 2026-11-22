@@ -37,6 +37,7 @@ public struct FaultSpot: Equatable, Sendable {
             RootKey.block([.init(key: "class", value: "gap-group")]),
             TextBlock(fields: [
                 .init(key: "field", value: "fault"),
+                .init(key: "type", value: "multiline"),
                 .init(key: "class", value: "grow"),
                 .init(key: "readonly", value: "true"),
                 .init(key: "value", value: ([file.path] + faults).joined(separator: "\n\n"))

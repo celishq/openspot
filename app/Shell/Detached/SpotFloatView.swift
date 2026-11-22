@@ -96,7 +96,7 @@ struct SpotFloatView: View {
                 .modifier(SpotFileDragSource(items: run.list.shown, hasFiles: run.list.hasFiles, onDrop: { model.dragOut($0, of: id) }))
             SpotSheetTitle(title: entry.shownState.title, subtitle: entry.shownState.subtitle)
             Spacer(minLength: 0)
-            SpotRoundButton(symbol: "xmark", label: "Close") { model.land(id) }
+            SpotRoundButton(icon: .symbol("xmark"), label: "Close") { model.land(id) }
         }
     }
 

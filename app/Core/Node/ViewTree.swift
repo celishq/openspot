@@ -20,6 +20,11 @@ public struct ViewTree: Equatable, Sendable {
         !places.isDisjoint(with: Style.Variant.card(size))
     }
 
+    func group(of id: String) -> String? {
+        guard let box = nodes[id]?.parent.flatMap({ nodes[$0] }), box.kind == BlockKind.box, listed.contains(box.id) else { return nil }
+        return box.title
+    }
+
     public var drawsOnBar: Bool {
         places.contains(.bar)
     }
@@ -99,12 +104,17 @@ public struct ViewTree: Equatable, Sendable {
             places.formUnion(style.named)
         }
         holdsItems = nodes.values.contains { $0.kind == BlockKind.items }
-        listed = Set(nodes.values.filter { $0.parent.flatMap { nodes[$0] }?.kind == BlockKind.items }.map(\.id))
+        let tree = nodes
+        let holder = { (id: String?) in id.flatMap { tree[$0] } }
+        listed = Set(nodes.values.filter { node in
+            guard let parent = holder(node.parent) else { return false }
+            return parent.kind == BlockKind.items || parent.kind == BlockKind.box && holder(parent.parent)?.kind == BlockKind.items
+        }.map(\.id))
         for id in order {
-            guard let node = nodes[id], let parent = node.parent, let holder = nodes[parent] else { continue }
-            if listed.contains(id), node.kind == BlockKind.box {
-                faults.append("the box \(id) sits inside the items \(parent), so it and the blocks inside it do not show. An item is one block")
-            } else if listed.contains(parent), holder.kind != BlockKind.box {
+            guard let node = nodes[id], let parent = node.parent, let container = nodes[parent] else { continue }
+            if node.kind == BlockKind.box, container.kind == BlockKind.box, listed.contains(id) {
+                faults.append("the box \(id) sits inside the group \(parent), so it and the blocks inside it do not show. A group is one level deep")
+            } else if listed.contains(parent), container.kind != BlockKind.box {
                 faults.append("the block \(id) sits inside the item \(parent), so it does not show. An item is one block")
             }
         }

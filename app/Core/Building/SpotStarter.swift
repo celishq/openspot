@@ -92,7 +92,7 @@ public enum SpotStarter: String, CaseIterable, Sendable {
             case "$1" in
               show)
                 printf 'frame=\\nclass=gap-part\\n\\n'
-                printf 'field=note\\ntitle=Note\\nplaceholder=Write a note\\n\\n'
+                printf 'field=note\\ntype=multiline\\ntitle=Note\\nplaceholder=Write a note\\n\\n'
                 printf 'button=save\\ntitle=Save\\nshortcut=cmd+return\\nclass=bg-accent\\n'
                 ;;
               save)
