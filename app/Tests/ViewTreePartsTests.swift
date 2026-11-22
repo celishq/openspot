@@ -86,7 +86,7 @@ final class ViewTreePartsTests: XCTestCase {
         let hidden = try XCTUnwrap(SheetParts(output: Frame(text: "frame=\nclass=gap-8\n\nswitch=a\ntitle=A\n\ntext=b\ntitle=B\nclass=hidden wide:flex\n\nswitch=c\ntitle=C\nclass=sheet:hidden\n\nswitch=d\ntitle=D\n")))
         let shown = try XCTUnwrap(SheetParts(output: Frame(text: "frame=\nclass=gap-8\n\nswitch=a\ntitle=A\n\nswitch=d\ntitle=D\n")))
 
-        XCTAssertEqual(hidden.placement.height, shown.placement.height)
+        XCTAssertEqual(hidden.height, shown.height)
     }
 
     func testAChoiceIsAListWhenItsNodeIsTwoRowsTall() {
