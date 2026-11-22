@@ -110,6 +110,7 @@ public struct ReviewSpot: Equatable, Sendable {
     private var reviewPart: TextBlock {
         TextBlock(fields: [
             .init(key: "field", value: "review"),
+            .init(key: "type", value: "multiline"),
             .init(key: "class", value: "grow"),
             .init(key: "readonly", value: "true"),
             .init(key: "value", value: text)

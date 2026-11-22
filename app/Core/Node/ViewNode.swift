@@ -3,6 +3,7 @@ import Foundation
 public struct ViewNode: Equatable, Sendable, Identifiable {
     static let parentKey = "parent"
     static let classKey = "class"
+    static let multiline = "multiline"
     static let commonKeys: Set<String> = [parentKey, classKey, "title", "detail", "tone", "icon"]
 
     public let id: String
@@ -35,7 +36,7 @@ public struct ViewNode: Equatable, Sendable, Identifiable {
         self.block = block
         var style = style
         if style.grows == nil {
-            let isMultiline = kind == BlockKind.field.word && block.value("type") == "multiline"
+            let isMultiline = kind == BlockKind.field.word && block.value("type") == Self.multiline
             let isFree = part?.source != nil && style.height == nil && !style.isSquare
             style.grows = block.flag("grow") ?? (kind == BlockKind.items || isMultiline || isFree ? true : nil)
         }

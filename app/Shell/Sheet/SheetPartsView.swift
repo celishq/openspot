@@ -129,9 +129,12 @@ struct SheetPartsView: View {
     @ViewBuilder
     private func content(_ part: SpotPart, _ size: CGSize) -> some View {
         switch part.control {
-        case .text(let text, let placeholder, let isReadOnly):
+        case .text(let text, let placeholder, let isReadOnly) where part.isMultiline:
             textArea(part, size, text: text, placeholder: placeholder, isReadOnly: isReadOnly)
                 .overlay(alignment: .topTrailing) { cornerMark(part, size) }
+        case .text(let text, let placeholder, let isReadOnly):
+            textLine(part, text: text, placeholder: placeholder, isReadOnly: isReadOnly)
+                .overlay(alignment: .trailing) { cornerMark(part, size) }
         case .slider(let level, let low, let high):
             slider(part, level: level, low: low, high: high)
         case .swatches(let colors, let value) where colors.count > 1:
@@ -406,6 +409,31 @@ struct SheetPartsView: View {
         return SpotNumberView(part: part, look: look, font: SpotType.number, leastScale: SpotType.leastValueScale, alignment: part.look == .bare ? .trailing : .leading, inset: inset)
             .frame(width: size.width, height: size.height)
             .background(SpotTheme.ink.opacity(part.look == .bare ? 0 : SpotTheme.fill), in: shape)
+    }
+
+    private func textLine(_ part: SpotPart, text: String, placeholder: String?, isReadOnly: Bool) -> some View {
+        ZStack(alignment: .leading) {
+            if isReadOnly {
+                Text(text)
+                    .lineLimit(1)
+                    .textSelection(.enabled)
+            } else {
+                TextField(part.title ?? part.id, text: Binding(get: { text }, set: { onSet(part, $0) }), prompt: Text(""))
+                    .textFieldStyle(.plain)
+                    .labelsHidden()
+                    .focused($focus, equals: part.id)
+            }
+            if text.isEmpty, let placeholder {
+                Text(placeholder)
+                    .foregroundStyle(SpotTheme.ink.opacity(SpotTheme.secondary))
+                    .allowsHitTesting(false)
+            }
+        }
+        .padding(.horizontal, SpotTokens.padding)
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .leading)
+        .font(SpotType.body)
+        .foregroundStyle(SpotTheme.ink)
+        .background(SpotTheme.ink.opacity(SpotTheme.fill), in: shape)
     }
 
     @ViewBuilder

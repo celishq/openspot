@@ -153,6 +153,7 @@ public enum SheetExamples {
         field=log
         parent=output
         class=absolute inset-0
+        type=multiline
         value=frame= 4120 fps= 96\\nframe= 4216 fps= 97
         readonly=true
 
@@ -172,11 +173,14 @@ public enum SheetExamples {
 
         field=messages
         class=grow
+        type=multiline
         value=Why do the checks fail?\\n\\nThe build step cannot find the module.
         readonly=true
 
         field=question
         class=h-20
+        type=multiline
+        grow=false
         value=
         placeholder=Ask
 
@@ -272,6 +276,8 @@ public enum SheetExamples {
         field=preview
         parent=side
         class=absolute inset-0
+        type=multiline
+        grow=false
         value=Rosenthaler Str. 40\\n10178 Berlin
         readonly=true
 
@@ -300,6 +306,8 @@ public enum SheetExamples {
         field=note
         parent=page
         class=absolute inset-0
+        type=multiline
+        grow=false
         value=Buy milk\\nCall the bank
 
         box=corner

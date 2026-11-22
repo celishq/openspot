@@ -85,6 +85,13 @@ final class ViewTreePartsTests: XCTestCase {
         XCTAssertEqual(tree.node("a")?.style.grows, true)
     }
 
+    func testAFieldWithNoTypeIsOneLineAndAMultilineFieldHoldsSeveral() throws {
+        let parts = Frame(text: "frame=\nclass=gap-2\n\nfield=name\nvalue=Ann\n\nfield=note\ntype=multiline\nvalue=a\\nb\n").parts
+
+        XCTAssertEqual(parts.map(\.isMultiline), [false, true])
+        XCTAssertEqual(parts.map(\.fillsHeight), [false, true])
+    }
+
     func testANodeHiddenInTheSheetIsNoPartOfTheSheet() {
         let frame = Frame(text: "frame=\nclass=gap-2\n\nswitch=a\ntitle=A\nclass=hidden card:flex\n\nswitch=b\ntitle=B\n")
 

@@ -899,8 +899,9 @@ Each kind of block, the keys of its own and the call it sends.
   `color=#RRGGBB` on a text or a number draws a bar of that colour at its edge.
 - `icon` is an image file, such as `cups.png`; an `https://` image, downloaded once; the Finder icon of a path with a
   `/` or a leading `~`; an SF Symbol, such as `wifi`; or any other text, such as `😀`.
-- A field's `type`: none for one line, `multiline`, `slider` from `min` to `max`, 0 to 100 by default, which sends a
-  whole number, `search` for the search field of the [items](#items), and `hotkey`.
+- A field's `type`: none for one line, `multiline` for several lines, which takes the free height, `slider` from `min`
+  to `max`, 0 to 100 by default, which sends a whole number, `search` for the search field of the [items](#items), and
+  `hotkey`.
 - A choice's `type`: none for a menu, `list` for a list of its options, `swatches` for a swatch of each of its `color`
   lines, which sends the colour, and `multiple`, in a form, for several options.
 - A `hotkey` field shows keycaps, and records a key at Return or a click on it, or when a new frame gives it

@@ -61,6 +61,7 @@ public struct SpotPart: Equatable, Sendable, Identifiable {
     public let closes: Bool
     public private(set) var look: Look?
     public let isTick: Bool
+    public let isMultiline: Bool
 
     public struct NumberPiece: Equatable, Sendable {
         public let text: String
@@ -83,6 +84,7 @@ public struct SpotPart: Equatable, Sendable, Identifiable {
         closes = block.flag("close") ?? kind.presses
         look = Look(style: StyleCache.shared.style(of: block.value(ViewNode.classKey) ?? "").resolved(for: [.sheet]))
         isTick = kind.takesTick && block.value("type") == "tick"
+        isMultiline = kind == .field && block.value("type") == ViewNode.multiline
         let icon = Icon(text: block.value("icon"))
         tone = block.value("tone").flatMap(MetricValue.Tone.init)
         color = kind.takesColor ? block.value("color").flatMap { BlockKind.isColor($0) ? $0 : nil } : nil
@@ -141,7 +143,8 @@ public struct SpotPart: Equatable, Sendable, Identifiable {
 
     public var fillsHeight: Bool {
         switch control {
-        case .text, .list, .number, .image: true
+        case .text: isMultiline
+        case .list, .number, .image: true
         default: false
         }
     }
