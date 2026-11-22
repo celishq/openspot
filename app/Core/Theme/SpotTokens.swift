@@ -61,4 +61,5 @@ public enum SpotTokens {
     public static var windowRadius: CGFloat { layout.radius.window }
     public static let windowHeight: CGFloat = 760
     public static let pictureShare: CGFloat = 0.6
+    public static let spaceUnit: CGFloat = 4
 }

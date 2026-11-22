@@ -1,6 +1,7 @@
 public enum RootKey: String, CaseIterable, Sendable {
     case frame, grid, title, detail, active, recents, shown, progress
     case end, call
+    case classes = "class"
 
     public static let drawing = "grid."
     private static let names = Set(allCases.map(\.rawValue))

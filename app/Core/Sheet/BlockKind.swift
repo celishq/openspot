@@ -3,6 +3,7 @@ import Foundation
 public struct BlockKind: Sendable, Equatable {
     public static let repeated = "repeat"
     public static let option = "option"
+    public static let box = "box"
 
     public let name: String
     public let word: String
@@ -54,7 +55,7 @@ public struct BlockKind: Sendable, Equatable {
 
     public static let all = [text, number, picture, view, toggle, slider, hotkey, field, choice, button, section]
 
-    static let listWords = [repeated, option]
+    static let listWords = [repeated, option, box]
 
     public static var words: Set<String> {
         Set(all.map(\.word) + listWords)

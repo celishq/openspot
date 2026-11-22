@@ -34,6 +34,7 @@ public struct FrameCheck: Equatable, Sendable {
             if id != Frame.open, CommandAction(id: id, block: block) == nil { faults += PartCatalog.actionFaults(in: block) }
         }
         faults += Self.rootFaults(root, of: output)
+        faults += output.tree.faults
         for id in taken where output.parts.contains(where: { $0.id == id }) {
             faults.append("a part cannot be called \(id)")
         }

@@ -27,6 +27,7 @@ public struct Frame: Equatable, Sendable {
     public private(set) var hasBar = false
     public private(set) var view: TextBlock?
     public private(set) var face = CardFace.none
+    public private(set) var tree = ViewTree.empty
     public private(set) var drawing = RepeatDrawing.list
     public private(set) var ends: [String] = []
     public private(set) var start: String?
@@ -72,6 +73,7 @@ public struct Frame: Equatable, Sendable {
         isPicture = frame.isPicture
         isMark = frame.isMark
         let head = frame.block
+        tree = ViewTree(blocks: blocks, root: head, kinds: kinds)
         let repeats = blocks.filter { $0.fields.first?.key == BlockKind.repeated }
         let repeated = repeats.first.flatMap { block in block.value(BlockKind.repeated).map { (block, $0) } }
         if let (block, _) = repeated { drawing = RepeatDrawing(block: block) }
@@ -83,7 +85,7 @@ public struct Frame: Equatable, Sendable {
         var values: [(block: TextBlock, kind: BlockKind)] = []
         for (index, block) in blocks.enumerated() {
             let word = block.fields.first?.key
-            if word == BlockKind.repeated { continue }
+            if word == BlockKind.repeated || word == BlockKind.box { continue }
             if let kind = BlockKind.of(block, in: kinds) {
                 let id = block.value(kind.word)
                 let isPlaced = id.map(placed.contains) ?? false

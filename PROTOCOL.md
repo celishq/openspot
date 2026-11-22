@@ -136,6 +136,7 @@ drawn.
 - `frame=<route>` starts it. The route is the name of the sheet the frame is for, and can be empty; see
   [Pages](#pages).
 - It takes `grid=` and `grid.<size>=` lines, `title`, `detail` and `active` for the card, and `recents`.
+- `class` holds the classes of the blocks inside the root, as on a [block](#blocks).
 - `progress=<0 to 1>` shows progress, and then `title` and `detail` show only on the running call.
 - `call=<n>` and `end=<n>`, here or in a block of their own, mark each call of a [staying spot](#a-staying-spot), one
   process that answers many calls.
@@ -717,6 +718,7 @@ Each kind of block, the keys of its own and the call it sends.
 | `option`  | One option of the `choice` right before it.                                                                      | `title`, `icon`                                                                   |                        |
 | `button`  | A button, or an action (see [Buttons and actions](#buttons-and-actions)).                                        | `shortcut`, `confirm`, `close`, `look`, `form`, `scope`                           | `<id>`                 |
 | `section` | A title over the blocks after it, or over the items after it when the layout doesn't place it.                   |                                                                                   |                        |
+| `box`     | A box that holds the blocks whose `parent` names it.                                                             |                                                                                   |                        |
 | `repeat`  | The place of the [items](#items).                                                                                | `grid` lines                                                                      |                        |
 
 - Every kind also takes `title`, `detail`, `tone` and `icon`. `tone` is `good`, `warn` or `bad`, and colours the
@@ -729,6 +731,10 @@ Each kind of block, the keys of its own and the call it sends.
 - A field's `type`: none for one line, `multiline`, `slider` from `min` to `max`, 0 to 100 by default, which sends a whole number, `search` for the
   search field of the [items](#items), and `hotkey`. A choice with
   `type=multiple` lets the user choose several options.
+- `parent=<id>` puts a block inside the block with that id, in the order of its lines, and `class` holds its classes,
+  such as `flex-row gap-2`. Nothing draws them yet. `openspot check spots` reports an unknown class, and a `parent` that
+  names no block once the frame has a `box`, a `class` on its root or a block inside another. Until then, `parent` on
+  an item keeps its meaning in [Items](#items).
 - `grow=false` keeps a block to its own lines where it would take the free height; see [Layouts](#layouts).
 - A `hotkey` field shows keycaps, and records a key at Return or a click on it, or when a new frame gives it
   `recording=true`. Every key goes to it, Esc brings back its key, and a shortcut sends `<id> <key>`. While a sheet
