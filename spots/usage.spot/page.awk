@@ -1,8 +1,8 @@
 # Prints the page of the spot want: its acts of each day, what it costs, how fast it answers, how it failed, its uses, the
 # change since its last version, and the spots it starts and is started by. An unused spot offers Move to Trash first.
 function buttons(improve, unused) {
-  if (unused) printf "button=delete\ntitle=Move to Trash\nshortcut=return\nconfirm=Press again to move it to the Trash\nscope=spot\nclose=false\n\nbutton=open\ntitle=Open\nscope=spot\nclose=false\n\n"
-  else printf "button=open\ntitle=Open\nshortcut=return\nscope=spot\nclose=false\n\n"
+  if (unused) printf "button=delete\ntitle=Move to Trash\nshortcut=return\nconfirm=Press again to move it to the Trash\nscope=spot\nclose=false\n\nbutton=open-spot\ntitle=Open\nscope=spot\nclose=false\n\n"
+  else printf "button=open-spot\ntitle=Open\nshortcut=return\nscope=spot\nclose=false\n\n"
   if (improve) printf "button=improve\ntitle=Improve\nshortcut=cmd+return\nscope=spot\nclose=false\n\n"
   printf "button=settings\ntitle=Settings\nscope=spot\nclose=false\n"
   if (!unused) printf "\nbutton=delete\ntitle=Move to Trash\nconfirm=Press again to move it to the Trash\nscope=spot\nclose=false\n"

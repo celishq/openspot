@@ -74,6 +74,15 @@ final class TerminalRunTests: XCTestCase {
         XCTAssertEqual(said, ["show sheet.open\n", "open\n"])
     }
 
+    func testARunWithNoCallOfASpotWithNoSheetCallsPressWithNoItem() async throws {
+        let opens = try spot("opens", toml: "[actions.left]\ntitle = 'Left'", "echo \"$1 $(cat)\"")
+        var said: [String] = []
+
+        _ = await TerminalRun(spot: opens, arguments: [], input: nil).start { said.append($0) }
+
+        XCTAssertEqual(said, ["press \n"])
+    }
+
     func testARunOfAStayingScriptEndsWithTheFrameThatEndsItsCall() async throws {
         let spot = try spot("relay", toml: "mode = 'stay'", """
         . "$OPENSPOT_SH"

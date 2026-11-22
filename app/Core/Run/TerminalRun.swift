@@ -41,7 +41,8 @@ public struct TerminalRun {
     }
 
     private func message(isInShow: Bool) -> Message {
-        Message(action, event: isInShow ? .sheet : nil, inputs: inputs, given: input)
+        let message = Message(action, event: isInShow ? .sheet : nil, inputs: inputs, given: input)
+        return spot.triggers == nil && spot.typedActions.isEmpty ? message : message.handled()
     }
 
     public func start(isolation: isolated (any Actor)? = #isolation, frame: (String) -> Void) async -> End {

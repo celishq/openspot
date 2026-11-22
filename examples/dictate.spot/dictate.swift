@@ -64,7 +64,7 @@ func sheet(downloading share: Double? = nil) -> String {
     if past.isEmpty {
         root.append("class=gap-part")
     } else {
-        blocks.append("button=open\ntitle=Copy")
+        blocks.append("button=press\ntitle=Copy")
         blocks.append("button=delete\ntitle=Delete\nshortcut=cmd+backspace\nclose=false")
         blocks += past.map { "item=\($0.0)\ntitle=\(Link.value($0.1))\ndetail=\(age($0.0))" }
     }

@@ -30,9 +30,9 @@ extension Message {
                 if let value = event?.value { message.inputs.append(.init(key: "value", value: value)) }
                 if name == SpotEvent.sheetText { message.inputs += searchForms.map { .init(key: Self.altInput, value: $0) } }
             }
-        case SpotAction.open.arguments.first where arguments.count > 1:
+        case SpotAction.open.arguments.first:
             message.action = .press(Self.pressHandler)
-            message.inputs.append(.init(key: "item", value: arguments[1]))
+            if arguments.count > 1 { message.inputs.append(.init(key: Self.itemInput, value: arguments[1])) }
         case SpotAction.drop(paths: []).arguments.first:
             message.action = .press(Manifest.Triggers.drop)
             message.inputs += arguments.dropFirst().map { .init(key: "file", value: $0) }

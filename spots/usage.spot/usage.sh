@@ -18,7 +18,7 @@ case "$route" in
   spot:*)
     id=${route#spot:}
     case "$1" in
-      open) exec openspot spot open "$id" ;;
+      open-spot) exec openspot spot open "$id" ;;
       settings) exec openspot spot settings "$id" ;;
       improve) exec openspot spot edit "$id" ;;
       delete) openspot spot delete "$id" && openspot route back; exit ;;
