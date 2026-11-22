@@ -161,8 +161,7 @@ public struct Frame: Equatable, Sendable {
     }
 
     public var control: SpotPart? {
-        let shown = carded ?? every
-        guard actions.isEmpty, shown.count == 1, let part = shown.first else { return nil }
+        guard let carded, carded.count == 1, let part = carded.first else { return nil }
         switch part.control {
         case .toggle, .slider: return part
         default: return nil

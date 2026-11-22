@@ -38,20 +38,22 @@ final class SpotTests: XCTestCase {
 
     func testReadsTheStateACommandPrintsForRead() async throws {
         let command = try writeCommand(kind: .toggle, on: .panel, """
-        [ "$1" = show ] && [ -z "$2" ] && printf 'switch=focus\\ntitle=Focus\\ndetail=On\\nvalue=true\\n'
+        [ "$1" = show ] && [ -z "$2" ] && printf 'switch=focus\\ntitle=Focus\\ndetail=On\\nvalue=true\\nclass=card:flex\\n'
         """)
 
         let state = try await command.state(timeout: 60)
 
-        XCTAssertEqual(state, SpotState(title: "Focus", subtitle: "On", on: true, control: "focus"))
+        XCTAssertEqual([state.title, state.subtitle, state.control], ["Command", nil, "focus"])
+        XCTAssertEqual(state.on, true)
     }
 
     func testAStateKeepsWhatItLeavesOutFromTheHeader() async throws {
-        let command = try writeCommand(kind: .toggle, subtitle: "Header", on: .panel, "printf 'switch=power\\nvalue=true\\n'")
+        let command = try writeCommand(kind: .toggle, subtitle: "Header", on: .panel, "printf 'switch=power\\nvalue=true\\nclass=card:flex\\n'")
 
         let state = try await command.state(timeout: 60)
 
-        XCTAssertEqual(state, SpotState(title: "Command", subtitle: "Header", on: true, control: "power"))
+        XCTAssertEqual([state.title, state.subtitle, state.control], ["Command", "Header", "power"])
+        XCTAssertEqual(state.on, true)
     }
 
     func testASpotWithNoReadShowsItsHeaderAndDoesNotRun() async throws {

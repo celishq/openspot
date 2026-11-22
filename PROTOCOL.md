@@ -307,8 +307,10 @@ The card stands for the spot in the panel.
 - Its **value** is the one `text`, `number`, `switch` or slider that shows on the card, or else the one among the
   items.
 - `active=true` in the root shows that the spot's thing is on.
-- A card whose frame holds only one switch or slider draws it, and a press changes it. Any other press does what Return
-  does; see [The keys of a spot](GUIDE.md#the-keys-of-a-spot).
+- The card draws what a `card:` class places, such as `class=card:flex` on a `switch`, and a press on a switch it
+  places flips it. When a switch or a slider is all that the card places, a press anywhere on the card changes it.
+  Any other press does what Return does; see [The keys of a spot](GUIDE.md#the-keys-of-a-spot).
+- The card's title and detail come from the root, or else from the manifest, never from a block that it places.
 
 ### The menu bar
 

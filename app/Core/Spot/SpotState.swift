@@ -42,8 +42,8 @@ public struct SpotState: Equatable, Sendable {
         var level: (Double, Double, Double)?
         if case .slider(let value, let low, let high)? = output.valuePart?.control { level = (value, low, high) }
         self.init(
-            title: block?.value("title") ?? control?.title ?? header.title,
-            subtitle: block?.value("detail") ?? control?.detail ?? header.subtitle,
+            title: block?.value("title") ?? header.title,
+            subtitle: block?.value("detail") ?? header.subtitle,
             on: on,
             level: level?.0,
             min: level?.1,

@@ -515,7 +515,7 @@ final class SpotRunsReadTests: SpotRunsCase {
     }
 
     func testASpotShowsItsHeaderUntilItsAnswerArrives() async throws {
-        try script(toml: "on = ['panel.open']\ndetail = 'Header'", "sleep 0.2\nprintf 'switch=power\\ndetail=Answer\\nvalue=true\\n'")
+        try script(toml: "on = ['panel.open']\ndetail = 'Header'", "sleep 0.2\nprintf 'frame=\\ndetail=Answer\\n\\nswitch=power\\nclass=card:flex\\nvalue=true\\n'")
         let sheet = try sheet()
 
         runs.panelOpened()
@@ -527,7 +527,7 @@ final class SpotRunsReadTests: SpotRunsCase {
     }
 
     func testAKindThatARunTaughtStaysAfterANewScan() async throws {
-        try script(toml: "on = ['panel.open']", "printf 'switch=power\\nvalue=true\\n'")
+        try script(toml: "on = ['panel.open']", "printf 'switch=power\\nclass=card:flex\\nvalue=true\\n'")
         let sheet = try sheet()
         runs.panelOpened()
         try await wait("the kind") { sheet.spot.kind == .toggle }
@@ -552,7 +552,7 @@ final class SpotRunsReadTests: SpotRunsCase {
     }
 
     func testACallWithNoFrameReadsOnce() async throws {
-        try script(toml: "on = ['panel.open']", "[ \"$1\" = show ] && printf 'switch=power\\nvalue=false\\n'\nexit 0")
+        try script(toml: "on = ['panel.open']", "[ \"$1\" = show ] && printf 'switch=power\\nclass=card:flex\\nvalue=false\\n'\nexit 0")
         let sheet = try sheet()
         runs.panelOpened()
         try await wait("the kind") { sheet.spot.kind == .toggle }
@@ -580,7 +580,7 @@ final class SpotRunsReadTests: SpotRunsCase {
     }
 
     func testACallThatShowsItsStateIsNotReadAgain() async throws {
-        try script(toml: "on = ['panel.open']", "[ \"$1\" = show ] && printf 'switch=power\\nvalue=false\\n'\n[ \"$1\" = power ] && printf 'switch=power\\nvalue=true\\n'\nexit 0")
+        try script(toml: "on = ['panel.open']", "[ \"$1\" = show ] && printf 'switch=power\\nclass=card:flex\\nvalue=false\\n'\n[ \"$1\" = power ] && printf 'switch=power\\nclass=card:flex\\nvalue=true\\n'\nexit 0")
         let sheet = try sheet()
         runs.panelOpened()
         try await wait("the kind") { sheet.spot.kind == .toggle }

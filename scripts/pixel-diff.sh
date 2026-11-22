@@ -43,7 +43,7 @@ printf "number=cups\ntitle=Cups today\nvalue=3\n"
 SPOT
   spot focus Focus moon.fill panel.open <<'SPOT'
 #!/bin/sh
-printf "switch=focus\ntitle=Focus\ndetail=Until 18:00\nvalue=true\n"
+printf "switch=focus\ntitle=Focus\ndetail=Until 18:00\nvalue=true\nclass=card:flex\n"
 SPOT
   spot load Load cpu panel.open <<'SPOT'
 #!/bin/sh
