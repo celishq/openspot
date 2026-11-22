@@ -135,7 +135,7 @@ isn't drawn.
 
 - `frame=<route>` starts it. The route is the name of the sheet the frame is for, and can be empty; see
   [Pages](#pages).
-- `class` lays out the blocks of the root, as on a box; see [Layouts](#layouts).
+- `class` gives the frame a layout and lays out the blocks of the root, as on a box; see [Layouts](#layouts).
 - It takes `title`, `detail` and `active` for the card, and `recents`.
 - `progress=<0 to 1>` shows progress, and then `title` and `detail` show only on the running call.
 - `call=<n>` and `end=<n>`, here or in a block of their own, mark each call of a [staying spot](#a-staying-spot), one
@@ -223,9 +223,12 @@ end. Under it, Office and Café are the items of the list.
 
 - `parent=<id>` puts a block inside the block with that id. A block with no `parent` sits in the root. Blocks that
   share a parent keep the order of their lines.
-- A frame has a layout once it holds a `box`, a `parent` or a `class`, even one variant on one block, such as
-  `class=bar:flex`. Each block then draws where the layout puts it, and only the blocks inside the `items` block are
-  [items](#items). A frame with no layout gets the one that [Show things with blocks](#show-things-with-blocks) says.
+- A frame has a layout when its root has a `class`, such as `class=gap-part`, or when it holds an `items` block. Each
+  block then draws where the layout puts it, and only the blocks inside the `items` block are [items](#items). A frame
+  with no layout gets the one that [Show things with blocks](#show-things-with-blocks) says.
+- A `box`, a `parent` or a class on another block doesn't make a layout. In a frame with no layout,
+  `openspot check spots` reports each `box` and `parent`, and a class there styles its block only where the frame
+  draws a tree, such as on a card.
 - A `box` holds blocks. It lays them out in a column, or in a row with `flex-row`, a grid with `grid grid-cols-<n>`, or
   layers with `relative`. It draws nothing of its own but what its classes give, such as a fill. The root is a box too.
 - In a grid, `col-span-<n>` and `row-span-<n>` make a block cover more cells. In layers, `absolute` with `inset-0`, or

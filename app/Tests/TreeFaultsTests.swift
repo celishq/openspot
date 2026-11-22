@@ -3,7 +3,7 @@ import XCTest
 
 final class TreeFaultsTests: XCTestCase {
     func testABoxWithAnUnknownKeyIsReported() {
-        let text = "frame=\n\nbox=head\nclass=flex-row\nglow=1\n\ntext=name\nparent=head\ntitle=Home\n"
+        let text = "frame=\nclass=gap-part\n\nbox=head\nclass=flex-row\nglow=1\n\ntext=name\nparent=head\ntitle=Home\n"
 
         XCTAssertEqual(FrameCheck(text: text).partFaults, ["the part head has an unknown key: glow"])
     }
@@ -54,11 +54,11 @@ final class TreeFaultsTests: XCTestCase {
         XCTAssertEqual(FrameCheck(text: text).partFaults, [])
     }
 
-    func testAFrameWhoseOnlyClassIsOneVariantOnOneBlockIsAWrittenTree() {
+    func testAFrameWhoseOnlyClassIsOneVariantOnOneBlockHasNoLayout() {
         let frame = Frame(text: "number=cpu\nclass=bar:flex\nvalue=12\nmax=100\n\ntext=note\ntitle=Busy\n")
 
-        XCTAssertTrue(frame.tree.isWritten)
-        XCTAssertEqual(frame.items, [])
-        XCTAssertEqual(frame.parts.map(\.id), ["cpu", "note"])
+        XCTAssertFalse(frame.tree.isWritten)
+        XCTAssertEqual(frame.items.map(\.run), ["cpu", "note"])
+        XCTAssertEqual(frame.parts, [])
     }
 }

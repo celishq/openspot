@@ -61,7 +61,10 @@ public struct ViewTree: Equatable, Sendable {
             order.append(id)
         }
         let named = order.filter { id in found[id]?.value(ViewNode.parentKey).map { $0 != id && found[$0] != nil } ?? false }
-        isWritten = written ?? (rootClasses != nil || !named.isEmpty || order.contains { found[$0]?.fields.first?.key == BlockKind.box || found[$0]?.value(ViewNode.classKey) != nil })
+        isWritten = written ?? (rootClasses != nil || order.contains { found[$0]?.fields.first?.key == BlockKind.items })
+        if written == nil, !isWritten {
+            faults += order.filter { found[$0]?.fields.first?.key == BlockKind.box || named.contains($0) }.map { "the part \($0) needs a layout, so give the root a class" }
+        }
         var parents: [String: String] = [:]
         for id in order {
             guard let parent = found[id]?.value(ViewNode.parentKey) else { continue }
