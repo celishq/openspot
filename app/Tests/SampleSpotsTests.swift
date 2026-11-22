@@ -43,6 +43,13 @@ final class SampleSpotsTests: SampleSpotsCase {
         XCTAssertLessThanOrEqual(rows ?? 0, 6)
     }
 
+    func testNoExampleTakesTheIdOfACoreSpot() throws {
+        let root = URL(fileURLWithPath: #filePath).deletingLastPathComponent().deletingLastPathComponent().deletingLastPathComponent()
+        let names = { (folder: String) in Set(try FileManager.default.contentsOfDirectory(atPath: root.appendingPathComponent(folder).path).filter { $0.hasSuffix(".spot") }) }
+
+        XCTAssertEqual(try names("spots").intersection(names("examples")), [])
+    }
+
     func testTheCheckFindsNoFaultInTheSpotsAndTheExamples() async throws {
         let root = URL(fileURLWithPath: #filePath)
             .deletingLastPathComponent().deletingLastPathComponent().deletingLastPathComponent()
