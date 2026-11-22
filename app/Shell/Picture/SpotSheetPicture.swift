@@ -15,7 +15,9 @@ enum SpotSheetPicture {
 
     static func run(text: String, path: String, view source: String? = nil, spot: Spot? = nil) -> Never {
         SpotPicture.start()
-        let output = Frame(text: text, kinds: spot?.kinds ?? BlockKind.all)
+        let file = source.map { URL(fileURLWithPath: $0) }
+        let kinds = spot?.kinds ?? file.map { BlockKind.kinds(views: [$0.deletingPathExtension().lastPathComponent: $0.path]) } ?? BlockKind.all
+        let output = Frame(text: text, kinds: kinds)
         let panel = SheetParts(output: output)
         guard panel != nil || !output.items.isEmpty else {
             FileHandle.standardError.write(Data("The sheet has no blocks and no rows.\n".utf8))
@@ -29,6 +31,7 @@ enum SpotSheetPicture {
         let picture = SpotPicture(of: preview.padding(margin), size: CGSize(width: size.width + 2 * margin, height: size.height + 2 * margin), path: path)
         Task { @MainActor in
             if let source { await views.load(source) }
+            for node in output.tree.nodes.values.compactMap(\.source) { await SpotViews.shared.load(node) }
             for picture in WebPictures.named(in: text) { _ = await WebPictures.shared.path(of: picture) }
             picture.save(after: settle)
         }

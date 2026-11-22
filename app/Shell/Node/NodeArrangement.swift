@@ -3,6 +3,7 @@ import SwiftUI
 
 struct NodeArrangement: Layout {
     let style: Style
+    var outset: CGFloat = 0
 
     func sizeThatFits(proposal: ProposedViewSize, subviews: Subviews, cache: inout ()) -> CGSize {
         placement(proposal, subviews).size
@@ -21,7 +22,7 @@ struct NodeArrangement: Layout {
                 subview.sizeThatFits(ProposedViewSize(width: width, height: height))
             }
         }
-        return BoxLayout(style: style).place(children, width: Self.finite(proposal.width), height: Self.finite(proposal.height))
+        return BoxLayout(style: style, outset: outset).place(children, width: Self.finite(proposal.width), height: Self.finite(proposal.height))
     }
 
     private static func finite(_ length: CGFloat?) -> CGFloat? {

@@ -57,6 +57,10 @@ public struct BlockKind: Sendable, Equatable {
         self.init(name: word, isOpen: true, faults: { _ in [] }, source: source)
     }
 
+    public static func kinds(views: [String: String]) -> [BlockKind] {
+        views.isEmpty ? all : all + views.sorted { $0.key < $1.key }.map { BlockKind(view: $0.key, source: $0.value) }
+    }
+
     public static func == (first: BlockKind, second: BlockKind) -> Bool {
         first.name == second.name
     }

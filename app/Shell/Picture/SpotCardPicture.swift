@@ -21,7 +21,7 @@ enum SpotCardPicture {
         let stage = SpotPictureStage(size: card, radius: SurfaceEdge(card: size).radius, seed: URL(fileURLWithPath: path).lastPathComponent) {
             Group {
                 if face.tree.draws(on: size) {
-                    CardTreeView(tree: face.tree, size: size)
+                    CardTreeView(tree: face.tree, size: size, parts: face.parts)
                 } else if let layout {
                     SpotCardDrawing(layout: layout, face: face, card: size) { _, _ in }
                 }

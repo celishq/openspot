@@ -4,14 +4,27 @@ import SwiftUI
 struct CardTreeView: View {
     let tree: ViewTree
     let size: SpotSize
+    let parts: [SpotPart]
     var isPressed = false
     var model: SpotsModel?
     var index = -1
+    var onSlot: (String, String?) -> Void = { _, _ in }
 
     var body: some View {
         let follows = !tree.places.isDisjoint(with: [.selected, .focus])
         let isSelected = follows && model?.selected == index
-        SheetTreeView(tree: tree, pictureTimes: [:])
+        SheetTreeView(tree: tree, pictureTimes: [:], outset: SpotTokens.cardPadding(for: size, isDrawn: true))
             .environment(\.spotNodeVariants, Style.Variant.card(size).union(isPressed ? [.pressed] : []).union(isSelected ? [.selected, .focus] : []))
+            .environment(\.spotNodeParts, nodeParts)
+    }
+
+    private var nodeParts: NodeParts {
+        let parts = parts
+        let onSlot = onSlot
+        return NodeParts(part: { id, label in
+            if let label { return AnyView(Button { onSlot(id, nil) } label: { label }.buttonStyle(.plain)) }
+            guard let part = parts.first(where: { $0.id == id }) else { return AnyView(EmptyView()) }
+            return AnyView(NodeCardPart(part: part, onSlot: onSlot))
+        })
     }
 }
