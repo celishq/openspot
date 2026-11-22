@@ -257,10 +257,6 @@ public struct ItemList: Equatable, Sendable {
         self.perLine = max(perLine, 1)
     }
 
-    public mutating func take(drawing: RepeatDrawing) {
-        perLine = drawing.columns
-    }
-
     public var isOnLastLine: Bool {
         shown.isEmpty || selected / perLine == (shown.count - 1) / perLine
     }

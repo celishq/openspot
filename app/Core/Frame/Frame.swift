@@ -39,6 +39,7 @@ public struct Frame: Equatable, Sendable {
     private static let sheetRoot = RootKey.block([.init(key: ViewNode.classKey, value: "gap-part")])
     private static let itemsBlock = TextBlock(fields: [.init(key: BlockKind.items, value: "items")])
     private static let searchType = "search"
+    private static let sheetPlaces: [Set<Style.Variant>] = [Style.Variant.sheet, .float, .window].flatMap { place in [[place, .dark], [place, .light]] }
 
     static func grouping(_ blocks: [TextBlock]) -> [TextBlock] {
         var grouped: [TextBlock] = []
@@ -80,7 +81,7 @@ public struct Frame: Equatable, Sendable {
         }
         let listed = tree.listed
         let placed = Self.placed(in: tree)
-        let inSheet = Set(tree.shown(in: [.sheet]))
+        let inSheet = Set(Self.sheetPlaces.flatMap(tree.shown(in:)))
         var runs = Set<String>()
         var rows: [TextBlock] = []
         var section: String?
@@ -204,7 +205,7 @@ public struct Frame: Equatable, Sendable {
     }
 
     public var perLine: Int? {
-        sheet.holdsItems ? drawing.columns : nil
+        sheet.holdsItems || searchField != nil ? drawing.columns : nil
     }
 
     public var search: ItemSearch {

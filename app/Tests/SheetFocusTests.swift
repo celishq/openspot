@@ -131,4 +131,18 @@ final class SheetFocusTests: XCTestCase {
         float.move(by: 1)
         XCTAssertEqual(float.selectedPart?.id, "d")
     }
+
+    func testANodeThatShowsOnlyInAFloatIsAPartOfTheFloatAlone() throws {
+        let text = "frame=\nclass=gap-part\n\nbutton=a\ntitle=A\n\nbutton=b\ntitle=B\nclass=hidden float:flex\n\nbutton=c\ntitle=C\nclass=hidden card:flex\n"
+        let sheet = try XCTUnwrap(SheetParts(output: Frame(text: text), variants: [.sheet, .dark]))
+        var float = sheet
+        float.show(in: [.float, .dark])
+
+        XCTAssertEqual(sheet.parts.map(\.id), ["a"])
+        XCTAssertEqual(sheet.focusOrder.map(\.id), ["a"])
+        XCTAssertEqual(sheet.height, SpotTokens.listRow)
+        XCTAssertEqual(float.parts.map(\.id), ["a", "b"])
+        XCTAssertEqual(float.focusOrder.map(\.id), ["a", "b"])
+        XCTAssertEqual(float.height, 2 * SpotTokens.listRow + SpotTokens.partGap)
+    }
 }

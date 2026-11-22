@@ -15,6 +15,7 @@ public struct SheetParts: Equatable, Sendable {
     }
 
     public private(set) var parts: [SpotPart]
+    private var every: [SpotPart]
     public private(set) var generation = 0
     public private(set) var answered = 0
     public private(set) var showsRows: Bool
@@ -30,15 +31,21 @@ public struct SheetParts: Equatable, Sendable {
 
     public init?(output: Frame, variants: Set<Style.Variant> = [.sheet, .dark]) {
         guard !output.parts.isEmpty else { return nil }
-        parts = output.parts
+        every = output.parts
+        parts = Self.parts(of: output.parts, in: output.sheet, shownIn: variants)
         self.variants = variants
         showsRows = output.perLine != nil
         tree = output.sheet
         top = SheetTop(showsRows: showsRows, search: output.search, header: 0)
-        height = Self.height(of: output.parts, in: output.sheet, room: top.partsRoom)
+        height = 0
         pictureTimes = Self.pictureTimes(of: output.parts)
         rows = Self.rows(of: output.parts)
-        orderFocus()
+        place()
+    }
+
+    private static func parts(of every: [SpotPart], in tree: ViewTree, shownIn variants: Set<Style.Variant>) -> [SpotPart] {
+        let shown = Set(tree.shown(in: variants))
+        return every.filter { shown.contains($0.id) }
     }
 
     private static func pictureTimes(of parts: [SpotPart]) -> [String: Double] {
@@ -53,20 +60,21 @@ public struct SheetParts: Equatable, Sendable {
         parts.first { !$0.items.isEmpty }?.items ?? []
     }
 
-    private static func height(of parts: [SpotPart], in tree: ViewTree, room: CGFloat) -> CGFloat {
-        tree.height(in: SpotTokens.partsWidth, parts: parts).map { min($0, room) } ?? room
+    private static func height(of parts: [SpotPart], in tree: ViewTree, shownIn variants: Set<Style.Variant>, room: CGFloat) -> CGFloat {
+        tree.height(in: SpotTokens.partsWidth, parts: parts, variants: variants).map { min($0, room) } ?? room
     }
 
     mutating func place(top: SheetTop? = nil) {
         if let top { self.top = top }
-        height = Self.height(of: parts, in: tree, room: self.top.partsRoom)
+        height = Self.height(of: parts, in: tree, shownIn: variants, room: self.top.partsRoom)
         orderFocus()
     }
 
     mutating func show(in variants: Set<Style.Variant>) {
         guard variants != self.variants else { return }
         self.variants = variants
-        orderFocus()
+        parts = Self.parts(of: every, in: tree, shownIn: variants)
+        place()
     }
 
     private mutating func orderFocus() {
@@ -102,7 +110,7 @@ public struct SheetParts: Equatable, Sendable {
     }
 
     public var inputs: [TextBlock.Field] {
-        parts.compactMap { part in part.value.map { .init(key: part.id, value: $0) } }
+        every.compactMap { part in part.value.map { .init(key: part.id, value: $0) } }
     }
 
     public var hint: String {
@@ -202,6 +210,7 @@ public struct SheetParts: Equatable, Sendable {
     @discardableResult
     public mutating func set(_ value: String, of id: String) -> Int {
         parts.firstIndex { $0.id == id }.map { parts[$0].set(value) }
+        every.firstIndex { $0.id == id }.map { every[$0].set(value) }
         return advance()
     }
 
@@ -214,13 +223,14 @@ public struct SheetParts: Equatable, Sendable {
     @discardableResult
     public mutating func take(_ output: Frame, answering generation: Int, keeping id: String? = nil) -> Bool {
         guard generation == self.generation, !output.parts.isEmpty else { return false }
-        let kept = parts.first { $0.id == id }?.value
-        parts = output.parts
+        let kept = every.first { $0.id == id }?.value
+        every = output.parts
         showsRows = output.perLine != nil
         tree = output.sheet
-        if let id, let kept, let index = parts.firstIndex(where: { $0.id == id }) { parts[index].set(kept) }
-        pictureTimes = Self.pictureTimes(of: parts)
-        rows = Self.rows(of: parts)
+        if let id, let kept, let index = every.firstIndex(where: { $0.id == id }) { every[index].set(kept) }
+        parts = Self.parts(of: every, in: tree, shownIn: variants)
+        pictureTimes = Self.pictureTimes(of: every)
+        rows = Self.rows(of: every)
         place()
         answered = generation
         return true

@@ -9,7 +9,7 @@ enum SpotSheetPicture {
 
     static func list(of output: Frame) -> ItemList {
         var list = ItemList(items: output.items)
-        list.take(drawing: output.drawing)
+        list.take(perLine: output.drawing.columns)
         return list
     }
 
