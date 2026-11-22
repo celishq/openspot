@@ -93,6 +93,30 @@ final class ViewTreeTests: XCTestCase {
         XCTAssertEqual(tree.children, ["head", "note"])
     }
 
+    func testALaterBlockWithTheIdAndKindOfANodePatchesItsKeysAndKeepsItsPlace() throws {
+        for tree in [patched("text=name\ntitle=Office\n", after: wifi), Frame(text: wifi + "\n\ntext=name\ntitle=Office\n").tree] {
+            let name = try XCTUnwrap(tree.node("name"))
+            XCTAssertEqual(name.title, "Office")
+            XCTAssertEqual(name.detail, "82 Mb/s")
+            XCTAssertEqual(name.style.grows, true)
+            XCTAssertEqual(name.parent, "head")
+            XCTAssertEqual(tree.node("head")?.children, ["wifi", "name", "forget"])
+            XCTAssertTrue(tree.faults.isEmpty)
+        }
+    }
+
+    func testALaterBlockWithTheIdOfANodeAndAnotherKindReplacesItInItsPlace() throws {
+        for tree in [patched("switch=name\ntitle=Wi-Fi\n", after: wifi), Frame(text: wifi + "\n\nswitch=name\ntitle=Wi-Fi\n").tree] {
+            let name = try XCTUnwrap(tree.node("name"))
+            XCTAssertEqual(name.kind, "switch")
+            XCTAssertEqual(name.title, "Wi-Fi")
+            XCTAssertNil(name.detail)
+            XCTAssertNil(name.style.grows)
+            XCTAssertEqual(tree.node("head")?.children, ["wifi", "name", "forget"])
+            XCTAssertTrue(tree.faults.isEmpty)
+        }
+    }
+
     func testANewIdJoinsTheEndOfItsParent() {
         let tree = patched("text=speed\nparent=head\ntitle=Fast\n", after: wifi)
 
@@ -100,7 +124,7 @@ final class ViewTreeTests: XCTestCase {
     }
 
     func testANewParentMovesTheNode() {
-        let out = patched("button=forget\ntitle=Forget\n", after: wifi)
+        let out = patched("button=forget\nparent=\n", after: wifi)
         XCTAssertEqual(out.node("head")?.children, ["wifi", "name"])
         XCTAssertEqual(out.children, ["head", "forget", "note"])
 

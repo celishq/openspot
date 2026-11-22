@@ -29,12 +29,6 @@ final class TreeFaultsTests: XCTestCase {
         XCTAssertEqual(FrameCheck(text: text).partFaults, ["only one part can use look=strong"])
     }
 
-    func testTwoPartsOfATreeWithOneIdAreReported() {
-        let text = "frame=\nclass=gap-part\n\ntext=name\ntitle=Home\n\nswitch=name\ntitle=Wi-Fi\n"
-
-        XCTAssertEqual(FrameCheck(text: text).partFaults, ["two parts are called name"])
-    }
-
     func testATitleThatMayNotFitItsPlaceInARowIsReported() {
         let switches = (1...4).map { "switch=s\($0)\ntitle=A switch with a long title \($0)\nvalue=true\n" }.joined(separator: "\n")
         let text = "frame=\nclass=flex-row gap-part\n\n" + switches

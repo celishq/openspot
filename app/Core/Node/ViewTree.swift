@@ -36,23 +36,23 @@ public struct ViewTree: Equatable, Sendable {
         return shown
     }
 
+    static func id(of block: TextBlock, in kinds: [BlockKind]) -> String? {
+        guard let first = block.fields.first, !first.value.isEmpty, first.key != BlockKind.option,
+              FrameRoot.isKind(first.key, in: kinds),
+              first.key != BlockKind.button.word || block.value("scope") == nil else { return nil }
+        return first.value
+    }
+
     init(blocks: [TextBlock], root: TextBlock?, kinds: [BlockKind], styles: StyleCache = .shared) {
         let rootClasses = root?.value(ViewNode.classKey)
         style = rootClasses.map(styles.style(of:)) ?? Style()
         faults += style.unknown.map { "the root has an unknown class: \($0)" }
         var order: [String] = []
         var found: [String: TextBlock] = [:]
-        var twice: [TextBlock] = []
         for block in blocks {
-            guard let first = block.fields.first, !first.value.isEmpty, first.key != BlockKind.option,
-                  FrameRoot.isKind(first.key, in: kinds),
-                  first.key != BlockKind.button.word || block.value("scope") == nil else { continue }
-            guard found[first.value] == nil else {
-                twice.append(block)
-                continue
-            }
-            found[first.value] = block
-            order.append(first.value)
+            guard let id = Self.id(of: block, in: kinds), found[id] == nil else { continue }
+            found[id] = block
+            order.append(id)
         }
         let named = order.filter { id in found[id]?.value(ViewNode.parentKey).map { $0 != id && found[$0] != nil } ?? false }
         isWritten = rootClasses != nil || !named.isEmpty || order.contains { found[$0]?.fields.first?.key == BlockKind.box || found[$0]?.value(ViewNode.classKey) != nil }
@@ -90,12 +90,6 @@ public struct ViewTree: Equatable, Sendable {
         }
         holdsItems = nodes.values.contains { $0.kind == BlockKind.items }
         listed = Set(nodes.values.filter { $0.parent.flatMap { nodes[$0] }?.kind == BlockKind.items }.map(\.id))
-        var told: Set<String> = []
-        for block in twice where isWritten {
-            guard let id = block.fields.first?.value, !listed.contains(id),
-                  block.value(ViewNode.parentKey).flatMap({ nodes[$0] })?.kind != BlockKind.items, told.insert(id).inserted else { continue }
-            faults.append("two parts are called \(id)")
-        }
         places.formUnion(self.style.named)
     }
 }

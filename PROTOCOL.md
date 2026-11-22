@@ -119,8 +119,8 @@ or change one block while the rest stays.
 
 - Openspot draws each frame as soon as it arrives. [The format](#the-format) says where a frame ends.
 - The first frame of a call replaces what shows, and so does a later frame with a `frame=` line. A later frame with no
-  `frame=` line changes only the blocks it prints: a block whose id already shows replaces that block and keeps the
-  blocks inside it, a new id joins the end of its parent, and a new `parent` moves it.
+  `frame=` line changes only the blocks it prints, as [Change a block](#change-a-block) says, and a new id joins the end
+  of its parent.
 - If a show prints nothing, the spot shows nothing. If another call prints nothing, Openspot asks the spot again.
   Openspot ignores what an out-of-date call prints.
 - Print a value that comes from data with `openspot_kv`, `openspot_item`, `esc` or `openspot.frame`, so that it can't
@@ -207,8 +207,25 @@ and a Forget chip at its end. The list of the items fills the rest of the sheet 
 - `gap-part` and `gap-group` are the gaps that Openspot's own sheets use. [Classes](#classes) lists every class.
 - A `parent` that names no block, and an unknown class, are faults that `openspot check spots` reports. The block then
   sits in the root, and the class is skipped, so a frame still draws.
-- The check also reports two blocks with one id, more than one `look=strong`, a title that may not fit its place, and a
-  `text` that its classes make shorter than its words. It counts each text as one line, so it can't see words that wrap.
+- The check also reports more than one `look=strong`, a title that may not fit its place, and a `text` that its classes
+  make shorter than its words. It counts each text as one line, so it can't see words that wrap.
+
+### Change a block
+
+A block with the id of a block that shows changes that block, so a spot can change its view while the rest stays. After
+the frame above, a [staying spot](#a-staying-spot) can print this frame at any time:
+
+```ini
+text=name
+title=Office
+```
+
+The row now shows Office with 82 Mb/s under it, in the same place.
+
+- A block of the same kind changes only the keys it prints. The other keys stay, and so does its place.
+- A block of another kind replaces the block, with only the keys it prints. It keeps the place and the blocks inside it.
+- A new `parent=<id>` moves the block into that block, and `parent=` with no value moves it to the root.
+- A later block in the same frame changes an earlier one by the same rules. A frame with a `frame=` line replaces all.
 
 ## Places
 
