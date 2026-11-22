@@ -206,7 +206,7 @@ func start(_ command: Command) {
 /// Asks for a command in a form, or keeps the one the form gave.
 func change(_ key: String, title: String, current: Command) {
     guard let given = value("input.\(key)")?.trimmingCharacters(in: .whitespaces), !given.isEmpty else {
-        print("frame=\nclass=gap-part\ntitle=\(title)\n\nfield=\(key)\ntitle=Command\nvalue=\(current.text)\nplaceholder=\(key)")
+        print("frame=\ntype=form\nclass=gap-part\ntitle=\(title)\n\nfield=\(key)\ntitle=Command\nvalue=\(current.text)\nplaceholder=\(key)")
         return
     }
     guard openspot(["setting", "set", key, given]) else {

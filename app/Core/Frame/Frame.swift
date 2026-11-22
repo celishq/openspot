@@ -181,6 +181,10 @@ public struct Frame: Equatable, Sendable {
         valueKind?.isReading == true ? value : nil
     }
 
+    public var isForm: Bool {
+        root?.value(RootKey.type) == RootKey.form
+    }
+
     public var progress: Double? {
         root?.number(RootKey.progress).map { min(max($0, 0), 1) }
     }

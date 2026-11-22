@@ -12,7 +12,7 @@ final class SpotRunsStayTests: SpotRunsCase {
         ?*) filled=1 ;;
         '')
           if [ "$name" = new ] && [ -z "$filled" ]; then
-            printf 'frame=\\ntitle=New\\nend=%%s\\n\\nfield=a\\ntitle=A\\n---\\n' "$call"
+            printf 'frame=\\ntype=form\\ntitle=New\\nend=%%s\\n\\nfield=a\\ntitle=A\\n---\\n' "$call"
           else
             printf 'end=%%s\\n\\nbutton=new\\ntitle=New\\nscope=spot\\nform=true\\n\\ntext=a\\ntitle=A\\n---\\n' "$call"
           fi
@@ -291,7 +291,7 @@ final class SpotRunsStayTests: SpotRunsCase {
             try script("once", toml: "", """
             case "$1" in
               show) printf 'button=add\\ntitle=Add\\nform=true\\nscope=spot\\n\\ntext=a\\ntitle=A\\n' ;;
-              add) case "$(cat)" in *name=*) printf 'frame=\\ntitle=Saved\\n' ;; *) printf 'frame=\\ntitle=Name\\n\\nfield=name\\ntitle=Name\\n' ;; esac ;;
+              add) case "$(cat)" in *name=*) printf 'frame=\\ntitle=Saved\\n' ;; *) printf 'frame=\\ntype=form\\ntitle=Name\\n\\nfield=name\\ntitle=Name\\n' ;; esac ;;
             esac
             """)
             let stay = try sheet("stay")
@@ -324,7 +324,7 @@ final class SpotRunsStayTests: SpotRunsCase {
           printf '%s\\n' "$line" >> '\(path("asked"))'
           case "$line" in
             call=*) call=${line#call=} ;;
-            arg=new) \(untilRelease); printf 'frame=\\ntitle=New\\n\\nfield=a\\ntitle=A\\n---\\n' ;;
+            arg=new) \(untilRelease); printf 'frame=\\ntype=form\\ntitle=New\\n\\nfield=a\\ntitle=A\\n---\\n' ;;
             arg=show) printf 'end=%s\\n\\nbutton=new\\ntitle=New\\nscope=spot\\nform=true\\n---\\n' "$call" ;;
           esac
         done

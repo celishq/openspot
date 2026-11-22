@@ -98,7 +98,7 @@ final class SpotTests: XCTestCase {
 
     func testAFormIsTheCallOfItsActionWithEmptyStdin() async throws {
         let command = try writeCommand(kind: .list, """
-        [ "$1" = new ] && [ -z "$(cat)" ] && printf 'frame=\\ntitle=New\\n\\nfield=title\\ntitle=Name\\n'
+        [ "$1" = new ] && [ -z "$(cat)" ] && printf 'frame=\\ntype=form\\ntitle=New\\n\\nfield=title\\ntitle=Name\\n'
         """)
 
         let form = try await command.form(CommandAction(id: "new", title: "New", isForm: true), item: nil, timeout: 60)
@@ -108,7 +108,7 @@ final class SpotTests: XCTestCase {
 
     func testAFormOfARowGetsTheRunOfThatRow() async throws {
         let command = try writeCommand(kind: .list, """
-        [ "$1 $2" = "edit one" ] && printf 'frame=\\ntitle=Edit\\n\\nfield=title\\ntitle=Name\\n'
+        [ "$1 $2" = "edit one" ] && printf 'frame=\\ntype=form\\ntitle=Edit\\n\\nfield=title\\ntitle=Name\\n'
         """)
 
         let form = try await command.form(CommandAction(id: "edit", title: "Edit", isForm: true), item: SpotItem(title: "One", run: "one"), timeout: 60)

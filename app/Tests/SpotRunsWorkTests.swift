@@ -416,7 +416,7 @@ final class SpotRunsWorkTests: SpotRunsCase {
         try script(toml: "", """
         case "$1" in
           show) printf 'button=new\\ntitle=New\\nscope=spot\\nform=true\\n\\ntext=a\\ntitle=A\\n' ;;
-          new) \(untilRelease); printf 'frame=\\ntitle=New\\n\\nfield=a\\ntitle=A\\n' ;;
+          new) \(untilRelease); printf 'frame=\\ntype=form\\ntitle=New\\n\\nfield=a\\ntitle=A\\n' ;;
         esac
         """)
         let sheet = try sheet()
@@ -438,7 +438,7 @@ final class SpotRunsWorkTests: SpotRunsCase {
         try script(toml: "", """
         case "$1" in
           show) printf 'button=open\\ntitle=Open\\nform=true\\n\\ntext=a\\ntitle=A\\n' ;;
-          open) case "$(cat)" in *name=x*) ;; *) printf 'frame=\\ntitle=Name\\n\\nfield=name\\ntitle=Name\\n' ;; esac ;;
+          open) case "$(cat)" in *name=x*) ;; *) printf 'frame=\\ntype=form\\ntitle=Name\\n\\nfield=name\\ntitle=Name\\n' ;; esac ;;
         esac
         """)
         let sheet = try sheet()
@@ -464,7 +464,7 @@ final class SpotRunsWorkTests: SpotRunsCase {
         try script(toml: "", """
         case "$1" in
           show) printf 'text=a\\ntitle=A\\n' ;;
-          editor) printf 'frame=\\ntitle=Editor\\n\\nchoice=editor\\ntitle=Editor\\n\\noption=zed\\ntitle=Zed\\n' ;;
+          editor) printf 'frame=\\ntype=form\\ntitle=Editor\\n\\nchoice=editor\\ntitle=Editor\\n\\noption=zed\\ntitle=Zed\\n' ;;
           folder) touch "\(path("folder"))" ;;
         esac
         """)

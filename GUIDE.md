@@ -317,7 +317,7 @@ case "$1" in
   add)
     note=$(value input.note)
     if [ -z "$note" ]; then
-      printf 'frame=\ntitle=New note\n\nfield=note\ntitle=Note\n'
+      printf 'frame=\ntype=form\ntitle=New note\n\nfield=note\ntitle=Note\n'
     else
       printf '%s\n' "$note" >> "$OPENSPOT_DATA/notes"
       openspot toast Saved
@@ -327,7 +327,7 @@ esac
 ```
 
 Choose **Add note**, and a form with one field opens. Type a note and press Return. The spot saves it, and a toast says
-**Saved**. `value input.note` reads the field from stdin.
+**Saved**. `type=form` in the root makes the frame a form, and `value input.note` reads the field from stdin.
 
 Learn more in [Buttons and actions](PROTOCOL.md#buttons-and-actions) and [The openspot command](PROTOCOL.md#the-openspot-command).
 
@@ -353,7 +353,7 @@ case "$1" in
     note=$(value input.note)
     [ -n "$note" ] || note=$(value search)
     if [ -z "$note" ]; then
-      printf 'frame=\ntitle=New note\n\nfield=note\ntitle=Note\n'
+      printf 'frame=\ntype=form\ntitle=New note\n\nfield=note\ntitle=Note\n'
     else
       printf '%s\n' "$note" >> "$OPENSPOT_DATA/notes"
       openspot toast Saved

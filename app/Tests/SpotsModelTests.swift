@@ -437,7 +437,7 @@ final class SpotsModelTests: XCTestCase {
     func testReturnRightAfterAKeyThatFindsNothingOpensTheFormThatCreates() async throws {
         try script("list", toml: "", """
         case "$1" in
-          new) printf 'frame=\\ntitle=New\\n\\nfield=a\\ntitle=A\\n' ;;
+          new) printf 'frame=\\ntype=form\\ntitle=New\\n\\nfield=a\\ntitle=A\\n' ;;
           *) printf 'button=new\\ntitle=New\\nscope=spot\\nform=true\\n\\ntext=a\\ntitle=Apple\\n' ;;
         esac
         """)
@@ -462,7 +462,7 @@ final class SpotsModelTests: XCTestCase {
             input=$(cat)
             case $input in
               *input.minutes=*) printf '%s\\n' "$input" | sed -n 's/^input.minutes=//p' > '\(given)' ;;
-              *) printf 'frame=\\ntitle=Minutes\\n\\nfield=minutes\\ntitle=Minutes\\n' ;;
+              *) printf 'frame=\\ntype=form\\ntitle=Minutes\\n\\nfield=minutes\\ntitle=Minutes\\n' ;;
             esac
             ;;
           *) printf 'text=a\\ntitle=Apple\\n\\ntext=custom\\ntitle=Custom…\\nform=true\\n' ;;
@@ -642,11 +642,11 @@ final class SpotsModelTests: XCTestCase {
         case "$1" in
           new)
             input=$(cat)
-            if [ -z "$input" ]; then printf 'frame=\\ntitle=New\\n\\nfield=a\\ntitle=A\\n'; exit 0; fi
+            if [ -z "$input" ]; then printf 'frame=\\ntype=form\\ntitle=New\\n\\nfield=a\\ntitle=A\\n'; exit 0; fi
             touch '\(folder.appendingPathComponent("saving").path)'
             n=0; while [ ! -f '\(gate)' ] && [ $n -lt 1500 ]; do sleep 0.02; n=$((n + 1)); done
             printf 'b\\n' ;;
-          edit) printf 'frame=\\ntitle=Edit\\n\\nfield=e\\ntitle=E\\n' ;;
+          edit) printf 'frame=\\ntype=form\\ntitle=Edit\\n\\nfield=e\\ntitle=E\\n' ;;
           *)
             echo read >> '\(reads)'
             printf 'button=new\\ntitle=New\\nscope=spot\\nform=true\\n\\nbutton=edit\\ntitle=Edit\\nscope=spot\\nform=true\\n\\ntext=a\\ntitle=Apple\\n' ;;
@@ -744,7 +744,7 @@ final class SpotsModelTests: XCTestCase {
           pick)
             input=$(cat)
             [ -z "$input" ] || printf '%s\n' "$input" >> '\(sent)'
-            printf 'frame=\\ntitle=Pick\n\nchoice=shown\ntitle=Shown\ntype=multiple\nvalue=a\n\noption=a\ntitle=Apple\n\noption=b\ntitle=Banana\n\noption=c\ntitle=Cherry\n' ;;
+            printf 'frame=\\ntype=form\\ntitle=Pick\n\nchoice=shown\ntitle=Shown\ntype=multiple\nvalue=a\n\noption=a\ntitle=Apple\n\noption=b\ntitle=Banana\n\noption=c\ntitle=Cherry\n' ;;
           *)
             echo read >> '\(reads)'
             printf 'button=pick\ntitle=Pick\nscope=spot\nform=true\n\ntext=a\ntitle=Apple\n' ;;
@@ -784,7 +784,7 @@ final class SpotsModelTests: XCTestCase {
           pick)
             input=$(cat)
             [ -z "$input" ] || printf '%s\n' "$input" >> '\(sent)'
-            printf 'frame=\\ntitle=Pick\n\nchoice=shown\ntitle=Shown\ntype=multiple\nvalue=a\n\noption=a\ntitle=Apple\n\noption=b\ntitle=Banana\n\noption=c\ntitle=Blueberry\n' ;;
+            printf 'frame=\\ntype=form\\ntitle=Pick\n\nchoice=shown\ntitle=Shown\ntype=multiple\nvalue=a\n\noption=a\ntitle=Apple\n\noption=b\ntitle=Banana\n\noption=c\ntitle=Blueberry\n' ;;
           *) printf 'button=pick\ntitle=Pick\nscope=spot\nform=true\n\ntext=a\ntitle=Apple\n' ;;
         esac
         """)
@@ -820,7 +820,7 @@ final class SpotsModelTests: XCTestCase {
     func testTheFormOfASettingMovesWithTheArrowsAndSearchesItsRows() async throws {
         try script("list", toml: "[settings.pick]", """
         case "$1" in
-          pick) printf 'frame=\\ntitle=Pick\n\nchoice=shown\ntitle=Shown\ntype=multiple\nvalue=a\n\noption=a\ntitle=Apple\n\noption=b\ntitle=Banana\n\noption=c\ntitle=Cherry\n' ;;
+          pick) printf 'frame=\\ntype=form\\ntitle=Pick\n\nchoice=shown\ntitle=Shown\ntype=multiple\nvalue=a\n\noption=a\ntitle=Apple\n\noption=b\ntitle=Banana\n\noption=c\ntitle=Cherry\n' ;;
           *) printf 'text=a\ntitle=Apple\n' ;;
         esac
         """)
@@ -843,7 +843,7 @@ final class SpotsModelTests: XCTestCase {
     func testAFormTakesThePlaceOfThePartsOfTheSheetItOpensOn() async throws {
         try script("agenda", toml: "[settings.pick]", """
         case "$1" in
-          pick) printf 'frame=\\ntitle=Pick\n\nchoice=shown\ntitle=Shown\ntype=multiple\nvalue=a\n\noption=a\ntitle=Apple\n\noption=b\ntitle=Banana\n' ;;
+          pick) printf 'frame=\\ntype=form\\ntitle=Pick\n\nchoice=shown\ntitle=Shown\ntype=multiple\nvalue=a\n\noption=a\ntitle=Apple\n\noption=b\ntitle=Banana\n' ;;
           *) printf 'frame=\\nclass=gap-part\n\nnumber=next\nvalue=09:30\nclass=wide:flex square:flex strip:flex large:flex\n\nitems=items\nclass=card:hidden\n\ntext=e\nparent=items\ntitle=Standup\n' ;;
         esac
         """)
@@ -867,7 +867,7 @@ final class SpotsModelTests: XCTestCase {
         case "$1" in
           new)
             n=0; while [ ! -f '\(gate)' ] && [ $n -lt 1500 ]; do sleep 0.02; n=$((n + 1)); done
-            printf 'frame=\\ntitle=New\\n\\nfield=a\\ntitle=A\\n' ;;
+            printf 'frame=\\ntype=form\\ntitle=New\\n\\nfield=a\\ntitle=A\\n' ;;
           *) printf 'button=new\\ntitle=New\\nscope=spot\\nform=true\\n\\ntext=a\\ntitle=Apple\\n' ;;
         esac
         """)
@@ -1131,7 +1131,7 @@ final class SpotsModelTests: XCTestCase {
     func testAKeyInAFormOfOneChoiceTellsNoReaderOfTheFormsPlaceAndKind() async throws {
         try script("list", toml: "", """
         case "$1" in
-          pick) printf 'frame=\\ntitle=Pick\n\nchoice=shown\ntitle=Shown\ntype=multiple\nvalue=a\n\noption=a\ntitle=Apple\n\noption=b\ntitle=Banana\n' ;;
+          pick) printf 'frame=\\ntype=form\\ntitle=Pick\n\nchoice=shown\ntitle=Shown\ntype=multiple\nvalue=a\n\noption=a\ntitle=Apple\n\noption=b\ntitle=Banana\n' ;;
           *) printf 'button=pick\ntitle=Pick\nscope=spot\nform=true\n\ntext=a\ntitle=Apple\n' ;;
         esac
         """)
@@ -1204,7 +1204,7 @@ final class SpotsModelTests: XCTestCase {
     func testAKeyInAFormTellsNeitherThePanelNorTheField() async throws {
         try script("list", toml: "", """
         case "$1" in
-          pick) printf 'frame=\\ntitle=Pick\n\nchoice=shown\ntitle=Shown\nvalue=a\n\noption=a\ntitle=Apple\n\noption=b\ntitle=Banana\n' ;;
+          pick) printf 'frame=\\ntype=form\\ntitle=Pick\n\nchoice=shown\ntitle=Shown\nvalue=a\n\noption=a\ntitle=Apple\n\noption=b\ntitle=Banana\n' ;;
           *) printf 'button=pick\ntitle=Pick\nscope=spot\nform=true\n\ntext=a\ntitle=Apple\n' ;;
         esac
         """)

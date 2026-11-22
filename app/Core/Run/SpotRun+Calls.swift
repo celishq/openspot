@@ -31,7 +31,7 @@ extension SpotRun {
                 takeEffects(frame: text)
             }
         case .act(let act):
-            if act.first?.take(lines) == true, !lines.fields.isEmpty { return }
+            if act.first?.take(lines) == true, lines.isForm { return }
             if lines.isPicture {
                 if await takePicture(lines, frame: text, of: act) {
                     call.showedPicture = true
@@ -41,7 +41,7 @@ extension SpotRun {
                 takeEffects(frame: text)
             }
         case .form:
-            if !lines.fields.isEmpty || call.form.fields.isEmpty { call.form = lines }
+            if lines.isForm || !call.form.isForm { call.form = lines }
         }
     }
 

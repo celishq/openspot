@@ -32,7 +32,7 @@ SPOT
   spot asks Asks plus.circle "" <<'SPOT'
 #!/bin/sh
 if [ "$1" = add ]; then
-  printf "%s\n" "frame=" "title=Add a thing" "" "field=name" "title=Name" "placeholder=A name" "" "field=note" "title=Note" "type=multiline" "" "switch=on" "title=Keep it" "value=true"
+  printf "%s\n" "frame=" "type=form" "title=Add a thing" "" "field=name" "title=Name" "placeholder=A name" "" "field=note" "title=Note" "type=multiline" "" "switch=on" "title=Keep it" "value=true"
   exit 0
 fi
 printf "button=add\ntitle=Add\nform=true\nscope=spot\n\ntext=a\ntitle=One\n\ntext=b\ntitle=Two\n"

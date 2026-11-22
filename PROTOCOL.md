@@ -137,6 +137,7 @@ isn't drawn.
   [Pages](#pages).
 - `class` gives the frame a layout and lays out the blocks of the root, as on a box; see [Layouts](#layouts).
 - It takes `title`, `detail` and `active` for the card, and `recents`.
+- `type=form` makes the frame a form, when it answers a press; see [Buttons and actions](#buttons-and-actions).
 - `progress=<0 to 1>` shows progress, and then `title` and `detail` show only on the running call.
 - `call=<n>` and `end=<n>`, here or in a block of their own, mark each call of a [staying spot](#a-staying-spot), one
   process that answers many calls.
@@ -391,9 +392,13 @@ The sheet shows Save as its main button, across its width. Rename is a row of th
 - `shortcut` is a letter, a digit, `return`, `backspace` or `,`, after `cmd+`, `shift+`, both or neither, or `escape`
   alone, which presses the button instead of closing the sheet. In a ⌘K menu of 3 rows or more, only a `shortcut`
   with `cmd` works, since a field searches the rows.
-- `form=true` asks for values first: the call runs once with empty stdin and prints a `title` in its root and a
-  `field`, `choice` or `switch` for each value, then runs again with the values. A form that prints itself again,
-  such as with what's wrong, stays open. In a choice with `type=multiple`, a `value` line marks each chosen option.
+- `form=true` asks for values first: the call runs once with empty stdin and prints a **form**, a frame whose root has
+  `type=form` and a `title`, with a `field`, `choice` or `switch` that has a `title` for each value. Then it runs again
+  with the values. A form that prints itself again, such as with what's wrong, stays open. In a choice with
+  `type=multiple`, a `value` line marks each chosen option.
+- A form whose only field is a `choice` lists its options, which the user searches, and Return sends the selected one.
+- When a search of the sheet finds no item, Return runs the first `scope=spot` button with `form=true`, and the
+  searched words fill the first field of its form, unless the spot gave that field a `value`.
 
 ## The openspot command
 
@@ -688,8 +693,9 @@ A slash command runs a command or a spot that has a `placeholder`, with the text
 - The call gets the rest of the line, the words before and after the command, as `search=<text>`, with the arguments
   of a plain press. With no text, a command runs as its hotkey does, and a spot does what Return does on its card. A
   command with `confirm` isn't listed.
-- A first frame with fields is a form, whose values go to the same call. Other blocks open the sheet. A frame with
-  nothing to show, or the end of the call, closes the panel, unless the command has `close = false`.
+- A first frame whose root has `type=form` is a form, whose values go to the same call. Other blocks, fields too, open
+  the sheet. A frame with nothing to show, or the end of the call, closes the panel, unless the command has
+  `close = false`.
 
 ## Offered actions
 
