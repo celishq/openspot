@@ -10,8 +10,8 @@ struct SpotSheetBody: View {
     var selection: (() -> Int)?
     var title = ""
 
-    static func size(of panel: SheetParts?, rows: Int, perLine: Int, setsApart: Bool = false) -> CGSize {
-        panel.map { SpotTokens.panelRect($0).size } ?? SpotTokens.floatSize(rows: rows, perLine: perLine, setsApart: setsApart)
+    static func size(of panel: SheetParts?, list: ItemList) -> CGSize {
+        panel.map { SpotTokens.panelRect($0).size } ?? SpotTokens.floatSize(list: list)
     }
 
     var body: some View {

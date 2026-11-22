@@ -416,6 +416,11 @@ Items are the list that the user searches and presses. See [Show a list](GUIDE.m
 ```ini
 items=devices
 
+text=nearby
+parent=devices
+title=Nearby
+class=font-section
+
 text=mouse
 parent=devices
 title=Mouse
@@ -434,8 +439,8 @@ parent=devices
 title=Forget
 ```
 
-The sheet lists Mouse and Keyboard, each with its icon, and Keyboard ends in a ring around 62. Forget is a row of the
-⌘K menu of the selected item, and a search for pointer finds Mouse.
+The sheet lists Mouse and Keyboard under the title Nearby, each with its icon, and Keyboard ends in a ring around 62.
+Forget is a row of the ⌘K menu of the selected item, and a search for pointer finds Mouse.
 
 | Key          | Meaning                                                                                         |
 | ------------ | ----------------------------------------------------------------------------------------------- |

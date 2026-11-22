@@ -123,6 +123,13 @@ final class ItemsTests: PanelCase {
         XCTAssertGreaterThanOrEqual(sheet.height, lines)
     }
 
+    func testASheetOfItemsHoldsALineForItsSectionTitle() async throws {
+        try await open("items=devices\n\ntext=nearby\nparent=devices\nclass=font-section\ntitle=Nearby\n\ntext=mouse\nparent=devices\ntitle=Mouse\n\ntext=keyboard\nparent=devices\ntitle=Keyboard\n")
+
+        let sheet = try XCTUnwrap(model.sheets["items"])
+        XCTAssertEqual(sheet.sheetRect, SpotTokens.sheetRect(rows: 3, top: sheet.top))
+    }
+
     func testATextItemsNumberIsNoMarkAndANumberItemWithAMaxFills() {
         let output = Frame(text: "text=mac\ntitle=This Mac\ndetail=84%\nvalue=0.84\n\nnumber=swap\ntitle=Swap\nvalue=84\nmax=100\n")
 
