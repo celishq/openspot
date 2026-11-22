@@ -1,5 +1,6 @@
 #!/bin/sh
 export LC_ALL=en_US.UTF-8
+. "$OPENSPOT_SH"
 saved="$OPENSPOT_DATA/tone"
 tones="none light medium-light medium medium-dark dark"
 tone=$(cat "$saved" 2>/dev/null)
@@ -50,25 +51,25 @@ case "$1" in
     printf 'option=none\ntitle=Yellow\n\noption=light\ntitle=Light\n\noption=medium-light\ntitle=Medium light\n\n'
     printf 'option=medium\ntitle=Medium\n\noption=medium-dark\ntitle=Medium dark\n\noption=dark\ntitle=Dark\n\n'
     printf 'items=a\nclass=grid grid-cols-7\n\n'
-    printf 'button=open\nparent=a\ntitle=Copy\n\n'
+    printf 'button=press\nparent=a\ntitle=Copy\n\n'
     printf 'button=paste\nparent=a\ntitle=Paste\nshortcut=cmd+return\n\n'
     printf 'button=next-tone\nparent=a\ntitle=Next skin tone\nshortcut=cmd+t\nscope=spot\nclose=false\n\n'
     # Each glyph sits in the items and shows only its icon: its block gets parent=a and class=sr-only under its first line.
     glyph_rows | awk 'NF && !open { print; print "parent=a"; print "class=sr-only"; open = 1; next } !NF { open = 0 } { print }'
     ;;
   tone)
-    remember "$2"
+    remember "$(value value)"
     ;;
   next-tone)
     remember "$(next_tone)"
     ;;
-  open)
-    printf '%s' "$2" | openspot clipboard copy
+  press)
+    printf '%s' "$(value item)" | openspot clipboard copy
     openspot toast Copied
     ;;
   paste)
     previous=$(openspot clipboard read; printf x)
-    printf '%s' "$2" | openspot clipboard copy
+    printf '%s' "$(value item)" | openspot clipboard copy
     openspot clipboard paste || exit 1
     sleep 0.3
     if [ "$previous" != x ]; then

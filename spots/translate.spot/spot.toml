@@ -1,4 +1,6 @@
 icon = "translate"
 detail = "Between languages"
-placeholder = "Text to translate"
 uses = ["clipboard"]
+
+[on]
+command = ["translate"]

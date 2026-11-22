@@ -12,7 +12,7 @@ struct Sheet {
     /// The frame of the sheet, with these lines in its root.
     func frame(head: [String] = []) -> String {
         var blocks = [(["frame=", "recents=false"] + head).joined(separator: "\n")]
-        blocks.append("button=open\ntitle=Open")
+        blocks.append("button=press\ntitle=Open")
         blocks.append("button=\(turn):new\ntitle=New board\nshortcut=cmd+n\nscope=spot")
         blocks.append("button=rename\ntitle=Rename\nshortcut=cmd+r\nform=true\nclose=false")
         blocks.append("button=delete\ntitle=Delete\nshortcut=cmd+backspace\nconfirm=Press again to move it to the Trash\nclose=false")

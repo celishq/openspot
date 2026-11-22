@@ -58,14 +58,14 @@ final class DrawProcessTests: XCTestCase {
     func testASecondDrawChangesNoBoardWhileTheFirstHoldsThem() throws {
         let file = try board("flows")
         let first = try draw("first")
-        first.take(.ask(id: 1, arguments: ["open", "0:flows"], input: [:]))
+        first.take(.ask(id: 1, arguments: ["press"], input: ["input.item": "0:flows"]))
         XCTAssertNotNil(first.desk?.studio)
         let second = try draw("second")
 
-        second.take(.ask(id: 1, arguments: ["open", "0:flows"], input: [:]))
+        second.take(.ask(id: 1, arguments: ["press"], input: ["input.item": "0:flows"]))
         second.take(.ask(id: 2, arguments: ["0:new"], input: [:]))
-        second.take(.ask(id: 3, arguments: ["open", "0:new"], input: [:]))
-        second.take(.ask(id: 4, arguments: ["delete", "0:flows"], input: [:]))
+        second.take(.ask(id: 3, arguments: ["press"], input: ["input.item": "0:new"]))
+        second.take(.ask(id: 4, arguments: ["delete"], input: ["input.item": "0:flows"]))
 
         XCTAssertNil(second.desk)
         XCTAssertEqual(files, ["flows.json"])
@@ -77,7 +77,7 @@ final class DrawProcessTests: XCTestCase {
     func testARenameFromASecondDrawIsRefusedWithAToastAndTheBoardKeepsItsTitle() throws {
         let file = try board("flows")
         let first = try draw("first")
-        first.take(.ask(id: 1, arguments: ["open", "0:flows"], input: [:]))
+        first.take(.ask(id: 1, arguments: ["press"], input: ["input.item": "0:flows"]))
         let second = try draw("second")
 
         second.take(.ask(id: 1, arguments: ["rename", "0:flows"], input: ["input.name": "Other"]))
@@ -93,7 +93,7 @@ final class DrawProcessTests: XCTestCase {
     func testASecondDrawStillListsTheBoardsAndAsksForANewName() throws {
         _ = try board("flows")
         let first = try draw("first")
-        first.take(.ask(id: 1, arguments: ["open", "0:flows"], input: [:]))
+        first.take(.ask(id: 1, arguments: ["press"], input: ["input.item": "0:flows"]))
         let second = try draw("second")
 
         second.take(.ask(id: 1, arguments: ["show"], input: [:]))
@@ -108,7 +108,7 @@ final class DrawProcessTests: XCTestCase {
     func testTheBoardsAreFreeWhenTheDrawThatHeldThemEnds() throws {
         let file = try board("flows")
         let first = try draw("first")
-        first.take(.ask(id: 1, arguments: ["open", "0:flows"], input: [:]))
+        first.take(.ask(id: 1, arguments: ["press"], input: ["input.item": "0:flows"]))
         let second = try draw("second")
         second.take(.ask(id: 1, arguments: ["rename", "0:flows"], input: ["input.name": "Other"]))
 
@@ -144,7 +144,7 @@ final class DrawProcessTests: XCTestCase {
         let ended = expectation(description: "Draw ends")
         let draw = try draw("first") { ended.fulfill() }
         draw.ready()
-        draw.take(.ask(id: 1, arguments: ["open", "0:flows"], input: [:]))
+        draw.take(.ask(id: 1, arguments: ["press"], input: ["input.item": "0:flows"]))
         draw.desk?.studio?.change { $0.add(self.box()) }
         XCTAssertEqual(try Board.load(from: file).figures.count, 0)
 

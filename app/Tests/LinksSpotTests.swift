@@ -254,10 +254,10 @@ final class LinksSpotTests: SampleSpotsCase {
             XCTAssertEqual(item.subtitle, "github.com")
             XCTAssertEqual(item.hides, ["reveal"])
 
-            try await links.perform(.item(item), timeout: 60)
+            try await links.perform(.press("press"), input: "input.item=\(item.run)\n", timeout: 60)
             XCTAssertEqual(try self.read("opened", in: folder), "https://github.com/a/b\n")
 
-            try await links.perform(.action(try await self.action("copy", of: links), item: item), timeout: 60)
+            try await links.perform(.press("copy"), input: "input.item=\(item.run)\n", timeout: 60)
             XCTAssertEqual(try self.read("clipboard", in: folder), "https://github.com/a/b")
             XCTAssertFalse(FileManager.default.fileExists(atPath: folder.appendingPathComponent("direct").path))
         }
@@ -296,7 +296,7 @@ final class LinksSpotTests: SampleSpotsCase {
         try await withPrivateHome { _ in
             let delete = try await self.action("delete", of: links)
             for item in try await links.items(timeout: 60).items {
-                try await links.perform(.action(delete, item: item), timeout: 60)
+                try await links.perform(.press(delete.id), input: "input.item=\(item.run)\n", timeout: 60)
             }
 
             let items = try await links.items(timeout: 60).items
@@ -319,7 +319,7 @@ final class LinksSpotTests: SampleSpotsCase {
             let all = try await links.items(timeout: 60).items
             let item = try XCTUnwrap(all.first { $0.run == run })
 
-            try await links.perform(.item(item), timeout: 60)
+            try await links.perform(.press("press"), input: "input.item=\(item.run)\n", timeout: 60)
 
             XCTAssertEqual(item.iconFile, place.path)
             XCTAssertEqual(try self.read("opened", in: folder), place.path + "\n")
@@ -331,7 +331,8 @@ final class LinksSpotTests: SampleSpotsCase {
         try await withPrivateHome { folder in
             let downloads = try await links.items(timeout: 60).items.first { $0.title == "Downloads" }
             do {
-                try await links.perform(.item(try XCTUnwrap(downloads)), timeout: 60)
+                let item = try XCTUnwrap(downloads)
+                try await links.perform(.press("press"), input: "input.item=\(item.run)\n", timeout: 60)
                 XCTFail("expected a failure")
             } catch let error as SpotError {
                 XCTAssertEqual(error.reason, "Openspot cannot find \(folder.path)/Downloads.")
@@ -343,9 +344,10 @@ final class LinksSpotTests: SampleSpotsCase {
         let links = try XCTUnwrap(try scan.spots.first { $0.name == "Links" })
         try await withPrivateHome { folder in
             try FileManager.default.createDirectory(at: folder.appendingPathComponent("Downloads"), withIntermediateDirectories: true)
-            let downloads = try await links.items(timeout: 60).items.first { $0.title == "Downloads" }
+            let items = try await links.items(timeout: 60).items
+            let downloads = try XCTUnwrap(items.first { $0.title == "Downloads" })
 
-            try await links.perform(.action(try await self.action("reveal", of: links), item: downloads), timeout: 60)
+            try await links.perform(.press("reveal"), input: "input.item=\(downloads.run)\n", timeout: 60)
 
             XCTAssertEqual(try self.read("opened", in: folder), "-R\n")
         }

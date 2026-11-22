@@ -37,9 +37,12 @@ value=\($v.content | esc)
 required=true"'
 }
 
+# A form button gets its item as an argument, and every other press gets it as an input.
+item=${2:-$(value item)}
+
 case "$1" in
   show)
-    printf 'button=open\ntitle=Copy\n\n'
+    printf 'button=press\ntitle=Copy\n\n'
     printf 'button=paste\ntitle=Paste\nshortcut=cmd+return\n\n'
     printf 'button=edit\ntitle=Edit\nshortcut=cmd+e\nform=true\nclose=false\n\n'
     printf 'button=delete\ntitle=Delete\nshortcut=cmd+backspace\nconfirm=Press again to delete\nclose=false\n\n'
@@ -62,17 +65,17 @@ case "$1" in
     title=$(value input.title)
     text=$(value input.content; printf x)
     if [ -z "$title${text%x}" ]; then
-      form "Edit snippet" "$(load | jq -c --arg id "$2" '.[] | select(.id == $id)')"
+      form "Edit snippet" "$(load | jq -c --arg id "$item" '.[] | select(.id == $id)')"
       exit 0
     fi
-    load | jq -c --arg id "$2" --arg title "$title" --arg content "${text%x}" 'map(if .id == $id then .title = $title | .content = $content else . end)' | store
-    openspot select "$2"
+    load | jq -c --arg id "$item" --arg title "$title" --arg content "${text%x}" 'map(if .id == $id then .title = $title | .content = $content else . end)' | store
+    openspot select "$item"
     ;;
   delete)
-    load | jq -c --arg id "$2" 'map(select(.id != $id))' | store
+    load | jq -c --arg id "$item" 'map(select(.id != $id))' | store
     ;;
   paste)
-    text=$(content "$2" && printf x) || exit 1
+    text=$(content "$item" && printf x) || exit 1
     previous=$(openspot clipboard read; printf x)
     printf '%s' "${text%x}" | openspot clipboard copy
     openspot clipboard paste || exit 1
@@ -81,8 +84,8 @@ case "$1" in
       printf '%s' "${previous%x}" | openspot clipboard copy
     fi
     ;;
-  open)
-    text=$(content "$2" && printf x) || exit 1
+  press)
+    text=$(content "$item" && printf x) || exit 1
     printf '%s' "${text%x}" | openspot clipboard copy
     openspot toast Copied
     ;;

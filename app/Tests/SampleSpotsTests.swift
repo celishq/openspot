@@ -8,15 +8,18 @@ final class SampleSpotsTests: SampleSpotsCase {
         try "#!/bin/sh\ncat >/dev/null\n".writeScript(to: tools.appendingPathComponent("pbcopy"))
         try "#!/bin/sh\ncat >/dev/null\n[ \"$1\" = toast ] && echo \"$2\" >> '\(tools.path)/toasts'\nexit 0\n".writeScript(to: tools.appendingPathComponent("openspot"))
         let examples = spots.deletingLastPathComponent().appendingPathComponent("examples")
-        for (script, call) in [(spots.spotFile("emoji"), "open"), (spots.spotFile("files"), "copy"), (examples.spotFile("pulls"), "copy")] {
+        for (script, arguments, input) in [(spots.spotFile("emoji"), ["press"], "input.item=x\n"), (spots.spotFile("files"), ["copy", "x"], ""), (examples.spotFile("pulls"), ["copy", "x"], "")] {
             let process = Process()
             let out = Pipe()
+            let stdin = Pipe()
             process.executableURL = script
-            process.arguments = [call, "x"]
+            process.arguments = arguments
             process.environment = ["PATH": "\(tools.path):/usr/bin:/bin", "OPENSPOT_DATA": tools.path, "HOME": tools.path, "OPENSPOT_SH": spots.deletingLastPathComponent().appendingPathComponent("app/Shell/openspot.sh").path]
-            process.standardInput = FileHandle.nullDevice
+            process.standardInput = stdin
             process.standardOutput = out
             try process.run()
+            stdin.fileHandleForWriting.write(Data(input.utf8))
+            try stdin.fileHandleForWriting.close()
             process.waitUntilExit()
             let text = String(data: out.fileHandleForReading.readDataToEndOfFile(), encoding: .utf8) ?? ""
             XCTAssertEqual(text, "", script.lastPathComponent)
@@ -275,7 +278,7 @@ final class SampleSpotsTests: SampleSpotsCase {
         try await withPrivateHome { folder in
             let emoji = try self.fakeEmoji(in: folder)
 
-            _ = try await SpotRuns(environment: TestEnvironment.values).answer(of: emoji, .set("tone", to: "dark"), input: nil, limit: 30)
+            _ = try await SpotRuns(environment: TestEnvironment.values).answer(of: emoji, .press("tone"), input: "input.value=dark\n", limit: 30)
             let output = try await emoji.items(timeout: 60)
 
             XCTAssertEqual(self.text(of: "tone", in: output), "dark")
@@ -355,7 +358,7 @@ final class SampleSpotsTests: SampleSpotsCase {
             let next = try await emoji.items(timeout: 60)
             XCTAssertEqual(self.text(of: "tone", in: next), "light")
 
-            _ = try await SpotRuns(environment: TestEnvironment.values).answer(of: emoji, .set("tone", to: "dark"), input: nil, limit: 30)
+            _ = try await SpotRuns(environment: TestEnvironment.values).answer(of: emoji, .press("tone"), input: "input.value=dark\n", limit: 30)
             _ = try await SpotRuns(environment: TestEnvironment.values).answer(of: emoji, .action(tone, item: row), input: nil, limit: 30)
             let wrapped = try await emoji.items(timeout: 60)
             XCTAssertEqual(self.text(of: "tone", in: wrapped), "none")
@@ -366,7 +369,7 @@ final class SampleSpotsTests: SampleSpotsCase {
         try await withPrivateHome { folder in
             let emoji = try self.fakeEmoji(in: folder)
 
-            _ = try await SpotRuns(environment: TestEnvironment.values).answer(of: emoji, .item(SpotItem(title: "thumbs up", run: "👍")), input: nil, limit: 30)
+            _ = try await SpotRuns(environment: TestEnvironment.values).answer(of: emoji, .press("press"), input: "input.item=👍\n", limit: 30)
 
             XCTAssertEqual(try String(contentsOf: folder.appendingPathComponent("clipboard"), encoding: .utf8), "👍")
         }
@@ -389,7 +392,7 @@ final class SampleSpotsTests: SampleSpotsCase {
             let emoji = try self.fakeEmoji(in: folder)
             try "before".write(to: folder.appendingPathComponent("clipboard"), atomically: true, encoding: .utf8)
 
-            _ = try await SpotRuns(environment: TestEnvironment.values).answer(of: emoji, SpotAction(arguments: ["paste", "👍"]), input: nil, limit: 30)
+            _ = try await SpotRuns(environment: TestEnvironment.values).answer(of: emoji, .press("paste"), input: "input.item=👍\n", limit: 30)
 
             XCTAssertEqual(try self.read("pasted", in: folder), "👍")
             XCTAssertEqual(try self.read("clipboard", in: folder), "before")

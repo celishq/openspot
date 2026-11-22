@@ -30,16 +30,17 @@ esac
 
 # A dot pushes the page of its spot. A search that found nothing copies a prompt to build a spot for it.
 case "$1" in
-  open)
-    case "$2" in
+  press)
+    item=$(value item)
+    case "$item" in
       search:*)
-        openspot prompt new "A spot for what I search in Openspot as \"${2#search:}\", which finds nothing yet" | openspot clipboard copy || exit 1
+        openspot prompt new "A spot for what I search in Openspot as \"${item#search:}\", which finds nothing yet" | openspot clipboard copy || exit 1
         openspot toast 'Prompt copied. Paste it into your agent.'
         exit
         ;;
     esac
     ;;
-  chart) openspot route push "spot:$2" --title "$(openspot spot stats --days 14 --spot "$2" | sed -n 's/^title=//p' | head -n 1)"; exit ;;
+  chart) id=$(value value); openspot route push "spot:$id" --title "$(openspot spot stats --days 14 --spot "$id" | sed -n 's/^title=//p' | head -n 1)"; exit ;;
 esac
 
 frame=$(openspot spot stats --days 14) || exit 1

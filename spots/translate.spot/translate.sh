@@ -124,13 +124,13 @@ show() {
 
 input=$(value input.input; printf x)
 input=${input%x}
-typed=$(value search)
+typed=$(value text)
 [ -z "$typed" ] || input=$typed
 source=$(value input.source)
 target=$(value input.target)
 [ -n "$source" ] || source=$(field source "$(cat "$saved" 2>/dev/null)")
 [ -n "$target" ] || target=$(field target "$(cat "$saved" 2>/dev/null)")
-if [ ! -s "$known" ] && { [ "$1" = show ] || [ -z "$1" ]; }; then
+if [ ! -s "$known" ] && { [ "$1" = show ] || [ "$1" = command ] || [ -z "$1" ]; }; then
   (source=${source:-auto}; target=${target:-en}; output=; status=; detected=; show)
   printf -- '---\n'
 fi

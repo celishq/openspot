@@ -58,7 +58,7 @@ final class TranslateSpotTests: SampleSpotsCase {
     func testTranslateTakesTheTextOfASlashCommandAsItsInput() async throws {
         try await withPrivateHome { folder in
             let translate = try self.fakeTranslate(in: folder)
-            let output = try await Self.answer(of: translate, ["show"], input: "input.source=ru\ninput.target=en\nsearch=hi\n")
+            let output = try await Self.answer(of: translate, ["command"], input: "input.source=ru\ninput.target=en\ninput.name=translate\ninput.text=hi\n")
 
             XCTAssertEqual(self.text(of: "input", in: output), "hi")
         }
@@ -67,7 +67,7 @@ final class TranslateSpotTests: SampleSpotsCase {
     func testTheTextOfASlashCommandReplacesTheTextInTheField() async throws {
         try await withPrivateHome { folder in
             let translate = try self.fakeTranslate(in: folder)
-            let output = try await Self.answer(of: translate, ["show"], input: "input.source=ru\ninput.target=en\ninput.input=old\nsearch=new\n")
+            let output = try await Self.answer(of: translate, ["command"], input: "input.source=ru\ninput.target=en\ninput.input=old\ninput.name=translate\ninput.text=new\n")
 
             XCTAssertEqual(self.text(of: "input", in: output), "new")
         }
