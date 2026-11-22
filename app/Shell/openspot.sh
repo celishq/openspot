@@ -2,7 +2,7 @@
 # `openspot_item`, `openspot_items`, `openspot_serve`, `openspot_keep` and `openspot_paste`.
 # Loading starts `cat` once, and each function starts `sed`, `tr` or `awk` only above 1 KB, where a shell loop is too slow.
 
-# Whether the spot.toml beside the script says `mode = "stay"` for it, read with no process: its top level for the script
+# Whether the spot.toml beside the script says `stay = true` or `mode = "stay"` for it, read with no process: its top level for the script
 # named after its folder, and its `[scripts.<name>]` table for another script.
 _openspot_stays=
 _openspot_name=${0##*/}
@@ -27,6 +27,11 @@ while IFS= read -r _openspot_line; do
       _openspot_line=${_openspot_line#mode}
       _openspot_line=${_openspot_line#"${_openspot_line%%[!= ]*}"}
       case $_openspot_in$_openspot_line in 1\"stay\"* | 1\'stay\'*) _openspot_stays=1 ;; esac
+      ;;
+    stay=* | stay\ *)
+      _openspot_line=${_openspot_line#stay}
+      _openspot_line=${_openspot_line#"${_openspot_line%%[!= ]*}"}
+      case $_openspot_in$_openspot_line in 1true*) _openspot_stays=1 ;; esac
       ;;
   esac
 done < "$_openspot_folder/spot.toml" 2>/dev/null

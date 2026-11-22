@@ -25,7 +25,7 @@ final class ConfigDocumentTests: XCTestCase {
     func testReadsATableOfStrings() throws {
         let document = try ConfigDocument(text: "[[widgets]]\nplaces = { a = \"one\", b = \"two\" } # both\n")
 
-        XCTAssertEqual(document.tables(named: "widgets").first?["places"], .table(["a": "one", "b": "two"]))
+        XCTAssertEqual(document.tables(named: "widgets").first?["places"], .table(["a": .string("one"), "b": .string("two")]))
     }
 
     func testRefusesATableWithARepeatedKey() {
@@ -66,5 +66,16 @@ final class ConfigDocumentTests: XCTestCase {
         XCTAssertThrowsError(try ConfigDocument(text: "[dark]\n[light]\n[dark]\n")) { error in
             XCTAssertEqual(error as? SpotError, .fault("line 3: [dark] is set twice"))
         }
+    }
+
+    func testReadsATableOfTextsBooleansNumbersAndListsAndWritesItBack() throws {
+        let text = "[actions.snooze]\ninputs.url = { default = 2, options = [\"a\", 'b'], required = true, type = \"url\", weight = 0.5 }\n"
+
+        let document = try ConfigDocument(text: text)
+
+        XCTAssertEqual(document.sections.first?["inputs.url"], .table([
+            "type": .string("url"), "required": .boolean(true), "default": .integer(2), "options": .strings(["a", "b"]), "weight": .number(0.5)
+        ]))
+        XCTAssertEqual(document.text, text.replacingOccurrences(of: "'b'", with: "\"b\""))
     }
 }

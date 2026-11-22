@@ -8,6 +8,8 @@ extension Manifest {
         public let title: String
         public let icon: String?
         public let options: [String]
+        public let defaultValue: String?
+        public let valueType: ValueType?
         let section: String
         let type: String?
         let unknownKey: String?
@@ -19,7 +21,21 @@ extension Manifest {
             icon = values["icon"]?.first
             type = values["type"]?.first
             options = values["options"] ?? []
+            defaultValue = nil
+            valueType = nil
             unknownKey = written.first { !Self.keys.contains($0) }
+        }
+
+        init(_ parameter: Parameter) {
+            id = parameter.name
+            section = "[\(Self.table)] \(parameter.name)"
+            title = parameter.title ?? parameter.name.prefix(1).uppercased() + parameter.name.dropFirst()
+            icon = nil
+            type = parameter.type.name
+            options = parameter.options
+            defaultValue = parameter.defaultValue
+            valueType = parameter.type
+            unknownKey = nil
         }
 
         public var isSecret: Bool {

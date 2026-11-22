@@ -7,7 +7,7 @@ public struct ConfigDocument: Equatable, Sendable {
         case number(Double)
         case boolean(Bool)
         case strings([String])
-        case table([String: String])
+        case table([String: Value])
 
         var text: String {
             switch self {
@@ -16,7 +16,7 @@ public struct ConfigDocument: Equatable, Sendable {
             case .number(let number): String(number)
             case .boolean(let isOn): String(isOn)
             case .strings(let items): "[\(items.map(Self.quoted).joined(separator: ", "))]"
-            case .table(let pairs): "{ \(pairs.sorted { $0.key < $1.key }.map { "\($0.key) = \(Self.quoted($0.value))" }.joined(separator: ", ")) }"
+            case .table(let pairs): "{ \(pairs.sorted { $0.key < $1.key }.map { "\($0.key) = \($0.value.text)" }.joined(separator: ", ")) }"
             }
         }
 
@@ -139,20 +139,24 @@ public struct ConfigDocument: Equatable, Sendable {
             return isEnd(rest) ? .string(result) : nil
         case "[":
             rest.removeFirst()
-            return strings(rest)
+            guard let items = strings(&rest) else { return nil }
+            return isEnd(rest) ? .strings(items) : nil
         case "{":
             rest.removeFirst()
             return table(rest)
         default:
             break
         }
-        let bare = String(rest.prefix { $0 != "#" }).trimmingCharacters(in: .whitespaces)
-        switch bare {
+        return bare(String(rest.prefix { $0 != "#" }).trimmingCharacters(in: .whitespaces))
+    }
+
+    private static func bare(_ text: String) -> Value? {
+        switch text {
         case "true": return .boolean(true)
         case "false": return .boolean(false)
         default:
-            if let integer = Int(bare) { return .integer(integer) }
-            guard bare.contains("."), bare.allSatisfy({ "0123456789.-".contains($0) }), let number = Double(bare) else { return nil }
+            if let integer = Int(text) { return .integer(integer) }
+            guard text.contains("."), text.allSatisfy({ "0123456789.-".contains($0) }), let number = Double(text) else { return nil }
             return .number(number)
         }
     }
@@ -162,9 +166,8 @@ public struct ConfigDocument: Equatable, Sendable {
         return tail.isEmpty || tail.unicodeScalars.first == "#"
     }
 
-    private static func strings(_ text: Substring.UnicodeScalarView) -> Value? {
+    private static func strings(_ rest: inout Substring.UnicodeScalarView) -> [String]? {
         var result: [String] = []
-        var rest = text
         while let scalar = rest.popFirst() {
             switch scalar {
             case " ", "\t", ",":
@@ -176,7 +179,7 @@ public struct ConfigDocument: Equatable, Sendable {
                 guard let item = literal(&rest) else { return nil }
                 result.append(item)
             case "]":
-                return isEnd(rest) ? .strings(result) : nil
+                return result
             default:
                 return nil
             }
@@ -185,7 +188,7 @@ public struct ConfigDocument: Equatable, Sendable {
     }
 
     private static func table(_ text: Substring.UnicodeScalarView) -> Value? {
-        var result: [String: String] = [:]
+        var result: [String: Value] = [:]
         var rest = text
         var key = ""
         while let scalar = rest.popFirst() {
@@ -193,9 +196,9 @@ public struct ConfigDocument: Equatable, Sendable {
             case " ", "\t", ",":
                 continue
             case "=":
-                rest = rest.drop { $0 == " " }
-                guard rest.popFirst() == "\"", !key.isEmpty, let item = quoted(&rest), result[key] == nil else { return nil }
-                result[key] = item
+                let name = key.trimmingCharacters(in: .whitespaces)
+                guard !name.isEmpty, result[name] == nil, let item = item(&rest) else { return nil }
+                result[name] = item
                 key = ""
             case "}":
                 return key.isEmpty && isEnd(rest) ? .table(result) : nil
@@ -204,6 +207,22 @@ public struct ConfigDocument: Equatable, Sendable {
             }
         }
         return nil
+    }
+
+    private static func item(_ rest: inout Substring.UnicodeScalarView) -> Value? {
+        rest = rest.drop { $0 == " " || $0 == "\t" }
+        switch rest.popFirst() {
+        case "\"": return quoted(&rest).map(Value.string)
+        case "'": return literal(&rest).map(Value.string)
+        case "[": return strings(&rest).map(Value.strings)
+        case let first?:
+            var word = String(first)
+            while let next = rest.first, next != ",", next != "}", next != " ", next != "\t" {
+                word.unicodeScalars.append(rest.removeFirst())
+            }
+            return bare(word)
+        case nil: return nil
+        }
     }
 
     private static func literal(_ rest: inout Substring.UnicodeScalarView) -> String? {

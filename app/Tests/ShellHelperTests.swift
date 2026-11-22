@@ -104,6 +104,17 @@ final class ShellHelperTests: XCTestCase {
         }
     }
 
+    func testServeKeepsOneProcessForEachCallWhenTheSpotTomlSaysStayTrue() async throws {
+        let stays = try script("main() { printf '%s|%s;' \"$$\" \"$(value a)\"; }\nopenspot_serve main", toml: "title = 'Stays'\nstay = true")
+
+        for shell in ["/bin/sh", "/bin/dash"] {
+            let stayed = try await output(of: stays, shell: shell, input: "call=1\na=1\n\ncall=2\na=2\n\n")
+
+            XCTAssertTrue(stayed.contains("call=1\n") && stayed.contains("call=2\n"), stayed)
+            XCTAssertTrue(stayed.contains("|1;") && stayed.contains("|2;"), stayed)
+        }
+    }
+
     private static let large = "a=" + String(repeating: "x", count: 200_000)
 
     func testACallWithLargeStdinEndsWhateverItsFunctionReads() async throws {

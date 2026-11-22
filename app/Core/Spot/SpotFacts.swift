@@ -28,6 +28,7 @@ public struct SpotFacts: Equatable, Sendable {
     public internal(set) var uses: Set<SpotUse>
     public let offers: [Manifest.Command]
     public internal(set) var offeredActions: [OfferedAction]
+    public internal(set) var typedActions: [Manifest.Action] = []
     public let settings: [Manifest.Setting]
     public internal(set) var holdsSettings = false
     public internal(set) var isBuiltIn = false

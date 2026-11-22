@@ -4,22 +4,27 @@ public struct Manifest: Equatable, Sendable {
     public static let fileName = "spot.toml"
     public static let keys: Set<String> = [
         "title", "icon", "detail", "keywords", "placeholder", "on", "emits", "offers", "drop", "edits", "starts", "views", "source", "mode",
-        "uses", "pages", "answers"
+        "uses", "pages", "answers", "stay"
     ]
-    public static let tables: Set<String> = [Command.table, Setting.table]
+    public static let tables: Set<String> = [Command.table, Setting.table, Action.table]
     static let appKeys: Set<String> = ["edits", "starts"]
     static let limit = 65_536
     private static let scriptsTable = "scripts"
+    private static let stayKey = "stay"
 
     private struct Script {
         var values: [String: [String]] = [:]
         var written: [String] = []
         var commands: [Command] = []
         var settings: [Setting] = []
+        var actions: [Action] = []
 
         mutating func take(_ table: [(String, ConfigDocument.Value?)]) throws {
             for (name, value) in table {
                 let key = Manifest.path(name).joined(separator: ".")
+                if key == Manifest.stayKey, case .boolean = value {} else if key == Manifest.stayKey {
+                    throw SpotError.fault("\(Manifest.fileName): stay takes true or false, such as stay = true.")
+                }
                 written.append(key)
                 values[key, default: []] += try Manifest.texts(key, value).filter { !$0.isEmpty }
             }
@@ -46,6 +51,8 @@ public struct Manifest: Equatable, Sendable {
     public let answers: String?
     public let commands: [Command]
     public let settings: [Setting]
+    public let actions: [Action]
+    public let stay: Bool?
     private let written: [String]
     private let scripts: [String: Manifest]
     private let main: String?
@@ -101,6 +108,8 @@ public struct Manifest: Equatable, Sendable {
         answers = text("answers")
         commands = script.commands
         settings = script.settings
+        actions = script.actions
+        stay = text(Self.stayKey).flatMap(Bool.init)
         written = script.written
         self.scripts = scripts
         self.main = main
@@ -148,11 +157,19 @@ public struct Manifest: Equatable, Sendable {
                 name = path[1]
                 path.removeFirst(2)
             }
-            var table = Script()
-            try table.take(section.keys.map { ($0, section[$0]) })
             var script = scripts[name] ?? Script()
             let heading = "[\(section.name)]"
-            if path.isEmpty {
+            var table = Script()
+            let isTyped = path == [Setting.table] || path.count == 2 && path[0] == Action.table
+            if !isTyped { try table.take(section.keys.map { ($0, section[$0]) }) }
+            if path == [Setting.table] {
+                script.settings += try section.keys.map { key in
+                    guard Setting.isKey(key) else { throw SpotError.fault("\(fileName): \(heading) has a key with a space: \(key).") }
+                    return Setting(try Parameter(name: key, value: section[key], keys: Parameter.settingKeys, place: "\(heading) \(key)"))
+                }
+            } else if path.count == 2, path[0] == Action.table {
+                script.actions.append(try Action(id: path[1], section: heading, table: section))
+            } else if path.isEmpty {
                 script.values.merge(table.values) { $0 + $1 }
                 script.written += table.written
             } else if path.count == 2, path[0] == Command.table {
@@ -182,7 +199,7 @@ public struct Manifest: Equatable, Sendable {
         text.split(separator: ",", omittingEmptySubsequences: false).map { $0.trimmingCharacters(in: .whitespaces) }
     }
 
-    private static func path(_ name: String) -> [String] {
+    static func path(_ name: String) -> [String] {
         var parts = [""]
         var quote: Character?
         for character in name {

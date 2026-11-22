@@ -36,7 +36,10 @@ public struct SpotFile: Equatable, Sendable {
         }
         let uses = try SpotUse.set(manifest.uses, of: name)
         let isInline = url.pathExtension == Self.inlineExtension && !FileManager.default.isExecutableFile(atPath: url.path)
-        let modeName = manifest.mode ?? SpotMode.once.rawValue
+        if manifest.stay != nil, manifest.mode != nil {
+            throw SpotError.fault("\(name) has both stay and mode in its \(Manifest.fileName). Keep stay = true, and remove mode")
+        }
+        let modeName = manifest.mode ?? (manifest.stay == true ? SpotMode.stay : SpotMode.once).rawValue
         guard let named = SpotMode(rawValue: modeName), named != .inline else {
             throw SpotError.fault("\(name) has an unknown mode: \(modeName). Use once or stay")
         }
@@ -57,12 +60,15 @@ public struct SpotFile: Equatable, Sendable {
         if let setting = manifest.settings.first(where: { ReservedSetting.isReserved($0.id) }) {
             throw SpotError.fault("\(name) has \(setting.section), a key that Openspot keeps for the person. Give the setting another name.")
         }
-        if let setting = manifest.settings.first(where: { $0.type.map { $0 != Manifest.Setting.secret } == true }) {
+        if let setting = manifest.settings.first(where: { $0.valueType == nil && $0.type.map { $0 != Manifest.Setting.secret } == true }) {
             throw SpotError.fault("\(name) has an unknown type in \(setting.section): `\(setting.type ?? "")`. Use `type = \"secret\"`, or no type.")
         }
         let offeredActions = try OfferedAction.read(manifest.commands, owner: id, of: name, isInline: mode == .inline)
         let offeredIDs = Set(offeredActions.map(\.action.id))
-        let offers = manifest.commands.filter { !offeredIDs.contains($0.id) }
+        if let action = manifest.actions.first(where: { action in manifest.commands.contains { $0.id == action.id } }) {
+            throw SpotError.fault("\(name) has both [commands.\(action.id)] and \(action.section). Give the action another ID")
+        }
+        let offers = manifest.commands.filter { !offeredIDs.contains($0.id) } + manifest.actions.compactMap(\.command)
         if let command = offers.first(where: { $0.title.isEmpty || $0.id == "show" || $0.id.contains(where: \.isWhitespace) }) {
             throw SpotError.fault("\(name) cannot read \(command.section). Give it an ID with no space and a title, such as [commands.left] with title = \"Left side\"")
         }
@@ -89,7 +95,7 @@ public struct SpotFile: Equatable, Sendable {
             on = on?.adding(.sheet) ?? .sheet
         }
         let isFound = !answersOnly && (offeredActions.isEmpty || isGlobal)
-        let command = Spot(
+        var command = Spot(
             id: id,
             name: name,
             url: url,
@@ -119,6 +125,7 @@ public struct SpotFile: Equatable, Sendable {
             edits: edits,
             starts: starts
         )
+        command.typedActions = manifest.actions
         self.init(id: id, spots: [command])
     }
 
