@@ -1,3 +1,2 @@
 #!/bin/sh
-. "$OPENSPOT_SH"
-printf 'item=n\ntitle=%s\n' "$(value event)"
+printf 'item=n\ntitle=%s\n' "$1"

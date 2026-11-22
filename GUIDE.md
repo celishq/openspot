@@ -11,20 +11,20 @@ Press the Openspot hotkey, and the **panel** opens. It has a search field, and a
 a spot. Press a card, and its **sheet** opens: a bigger view of that spot, with its text, its controls and its list.
 
 A spot is a folder in the spots folder, such as `cups.spot`, with a script and a `spot.toml` that describes it. Openspot
-runs the script when something happens, the spot prints what to show, and Openspot draws it. When the user presses
-something, Openspot runs the spot again with the id of what was pressed. The [protocol](PROTOCOL.md) gives every rule of that loop.
+runs the script when something happens, with the name of what happened, such as `show` or `press`. The spot prints what
+to show, and Openspot draws it. The [protocol](PROTOCOL.md) gives every rule of that loop.
 
 ## Your first spot
 
 The smallest spot is a folder, such as `morning.spot`, with two files. `spot.toml` is the spot's **manifest**: it gives
-the spot a name, an icon and a command. `morning.sh` is the script, named after the folder. Press the spot's card, and
-Openspot runs the script with the command's id, `morning`.
+the spot a name, an icon and an **action**, a thing the spot can do. `morning.sh` is the script, named after the folder.
+Press the spot's card, and Openspot runs the script with the action's id, `morning`.
 
 ```toml
 title = "Morning"
 icon = "sun.max"
 
-[commands.morning]
+[actions.morning]
 title = "Open Calendar"
 ```
 
@@ -34,7 +34,7 @@ title = "Open Calendar"
 open -a Calendar
 ```
 
-To show something, print it. Openspot asks the spot what to show each time its sheet opens, and here the spot prints a
+To show something, print it. Openspot runs the spot with `show` each time its sheet opens, and here the spot prints a
 title and a detail.
 
 ```toml
@@ -64,9 +64,13 @@ Try each example of this page in the playground before you put it in the spots f
 - **New spot.** `openspot spot new <name> --from <kind>` writes a working spot folder, its `spot.toml` and its script,
   that you can change. The kinds are
   `button`, `list`, `number` and `form`.
-- **One call.** `openspot spot run <id> [call] [value]...` runs one call the way Openspot does, and prints everything the
-  spot prints. With no call, it asks the spot what to show. While Openspot is open, the script gets the variables of
-  the app, not those of your shell.
+- **One call.** `openspot spot run <id> [handler] [<name>=<value>]...` runs one handler the way Openspot does, with its
+  inputs checked and its bindings live, and prints everything the spot prints. With no handler, it runs `show`. While
+  Openspot is open, the script gets the variables of the app, not those of your shell.
+- **Actions.** `openspot spot actions <id>` prints each action of the spot, and each command of its uses, with their
+  inputs and outputs as JSON Schema.
+- **Types.** `openspot schema` prints the JSON Schema of `spot.toml`, which an editor checks the file with.
+  `openspot types` writes the types of a JavaScript or Swift spot beside it, so an editor checks its handlers.
 - **Image.** `openspot render sheet [--view <file>] <file.png>` draws the sheet that stdin holds.
   `openspot render card <size> <file.png>` draws its card, and `openspot render spot <id> <file.png>` draws an
   installed spot.
@@ -77,7 +81,7 @@ Try each example of this page in the playground before you put it in the spots f
 ## Show a list
 
 A list lets the user search and pick. Print one `item` block for each item. When the user picks an item, Openspot runs
-your spot with `open` and the id of the item.
+your spot with `press`, and the id of the item as the input `item`.
 
 ```toml
 title = "Apps"
@@ -89,21 +93,22 @@ icon = "square.grid.2x2"
 . "$OPENSPOT_SH"
 case "$1" in
   show) printf 'Mail\tMail\tYour inbox\tenvelope\nNotes\tNotes\tYour notes\tnote.text\n' | openspot_items ;;
-  open) open -a "$2" ;;
+  press) open -a "$(value item)" ;;
 esac
 ```
 
 ![The sheet of Apps: two rows, Mail and Notes](docs/images/show-a-list.png)
 
 The sheet shows two items, **Mail** and **Notes**. Type in the sheet's search field, and Openspot filters the items for
-you. Pick **Notes**, and Openspot runs `apps.sh open Notes`.
+you. Pick **Notes**, and Openspot runs `apps.sh press` with `input.item=Notes` on stdin.
 
-The first argument tells your spot what to do. `show` asks what to show. Any other word is something the user did. The
-shell helper, `$OPENSPOT_SH`, prints items for you and escapes each value.
+The first argument names the **handler**, what your spot should do. `show` asks what to show. Any other name is
+something the user did, and its values come on stdin as `input.<name>=`. The shell helper, `$OPENSPOT_SH`, reads them
+with `value <name>`, prints items for you and escapes each value.
 
 When your spot has an act that adds to the list, such as Snooze Current Tab or New snippet, make it the first item and
 add `pin=top`, so it stays on top while the user types. An act on the selected item, such as Remove, stays a button;
-see [Add buttons](#add-buttons).
+see [Add actions](#add-actions).
 
 Learn more in [Items](PROTOCOL.md#items) and [The calls](PROTOCOL.md#the-calls).
 
@@ -131,21 +136,25 @@ esac
 Pick **Apple**, and its page opens in place of the list, with one item, **Color**. Press `⌘[` to go back to the list,
 and `⌘]` to go forward to the page again. Esc takes the page off, so `⌘]` has nothing to go to. `⌘Esc` goes back to the grid.
 
-A pick of such an item opens the page at once, with no call to the spot. Each call of a page gets its id as `route=` on
-stdin, so a press on the page knows which page it came from. A press can move the flow too: run `openspot route back`
+A pick of such an item opens the page at once, with no call to the spot. Each call of a page gets its id as the input
+`route`, so a press on the page knows which page it came from. A press can move the flow too: run `openspot route back`
 after it saves, and the list shows again.
 
 Learn more in [Pages](PROTOCOL.md#pages).
 
 ## Show a value on a card
 
-A card can show one live value, such as free disk space. `panel.open` in `on` asks your spot each time the panel opens,
-and `clock.300` asks it again every 5 minutes while the card shows.
+A card can show one live value, such as free disk space. `"panel.open" = true` in the `[on]` table calls `show` each
+time the panel opens, and `every = 300` calls `every` every 5 minutes while the card shows. This spot prints the same
+for both.
 
 ```toml
 title = "Disk"
 icon = "internaldrive"
-on = ["panel.open", "clock.300"]
+
+[on]
+"panel.open" = true
+every = 300
 ```
 
 ```sh
@@ -171,29 +180,30 @@ title=256Gi free
 class=bar:flex
 ```
 
-A spot with a clock stays off the grid until the user adds it, so that a new spot doesn't fill the panel.
+A spot with `every` stays off the grid until the user adds it, so that a new spot doesn't fill the panel.
 
 The user also chooses the other places of a spot; see [What the user chooses](#what-the-user-chooses).
 
 Learn more in [The card](PROTOCOL.md#the-card), [Places](PROTOCOL.md#places) and [Events](PROTOCOL.md#events).
 
-## Add buttons
+## Add actions
 
-A button runs a command. Give each button an id. When the user presses it, Openspot runs your spot with that id.
+An action is a thing your spot can do. Name each one in the manifest with an `[actions.<id>]` table. When the user runs
+it, Openspot runs your spot with its id.
 
-Commands in the manifest turn the spot into a set of commands, with no card. Each one is a `[commands.<id>]` table. The user finds each command in the main
-search, and gives it a hotkey in its Settings.
+An action with a `title` is one the user runs: they find it in the main search and the ⌘K menu, and give it a hotkey in
+the spot's Settings. A spot of such actions and no event has no sheet, and Return runs its action.
 
 ```toml
 title = "Windows"
 icon = "macwindow"
 uses = ["screen"]
 
-[commands.full]
+[actions.full]
 title = "Full screen"
 icon = "rectangle.inset.filled"
 
-[commands.left]
+[actions.left]
 title = "Left side"
 icon = "rectangle.lefthalf.inset.filled"
 ```
@@ -206,14 +216,14 @@ case "$1" in
 esac
 ```
 
-Add `confirm` to a command that can't be undone. The first press shows its words, and the second runs
-the command. Its hotkey asks the same way.
+Add `confirm` to an action that can't be undone. The first press shows its words, and the second runs
+the action. Its hotkey asks the same way.
 
 ```toml
 title = "Notes"
 icon = "note.text"
 
-[commands.clear]
+[actions.clear]
 title = "Clear my notes"
 confirm = "Press again to clear your notes"
 ```
@@ -225,8 +235,10 @@ case "$1" in
 esac
 ```
 
-A button that the spot prints acts on its items. If no layout places it, it shows in the ⌘K menu of the sheet, and its
-shortcut works while an item is selected. A press closes the panel; `close=false` keeps it open.
+A button that the spot prints runs the action that its id names, on the selected item. If no layout places it, it
+shows in the ⌘K menu of the sheet, and its shortcut works while an item is selected. The action gets the item's id as
+the input `item`. It needs no `[actions.<id>]` table, unless you want to type its inputs. A press that answers with no
+view closes the panel; `close=false` keeps it open.
 
 ```toml
 title = "Notes list"
@@ -240,16 +252,16 @@ case "$1" in
     openspot_item today Today
     printf '\nbutton=trash\ntitle=Move to Trash\nshortcut=cmd+backspace\nconfirm=Press again to delete\n'
     ;;
-  trash) rm -f "$OPENSPOT_DATA/$2" ;;
+  trash) rm -f "$OPENSPOT_DATA/$(value item)" ;;
 esac
 ```
 
 ![The sheet of Notes list: one row, Today](docs/images/add-buttons.png)
 
-Select **Today** and press ⌘⌫ twice, and Openspot runs `notes-list.sh trash today`.
+Select **Today** and press ⌘⌫ twice, and Openspot runs `notes-list.sh trash` with `input.item=today`.
 
-An item can hold keys of its own, such as `path=`. An action on that item gets each of its keys on stdin, as `item.path=`,
-so the spot doesn't look the item up again.
+An item can hold keys of its own, such as `path=`. An action on that item gets each of its keys as an input, such as
+`item.path`, so the spot doesn't look the item up again.
 
 ```toml
 title = "Downloads"
@@ -270,7 +282,7 @@ esac
 
 Select **Report.pdf** and press ⌘O, and `value item.path` prints the path that the item holds.
 
-Learn more in [Buttons and actions](PROTOCOL.md#buttons-and-actions).
+Learn more in [Actions](PROTOCOL.md#actions) and [Buttons and actions](PROTOCOL.md#buttons-and-actions).
 
 ## Lay out a sheet
 
@@ -292,8 +304,7 @@ printf 'button=forget\nparent=head\ntitle=Forget\nclass=rounded-full\n'
 
 The sheet shows one row: the Wi-Fi icon in the accent colour, **Home** with **82 Mb/s** under it, and a **Forget** chip
 at the end. `rounded-full` makes the button a chip as wide as its words, and `grow` gives the free width to the words, so
-the chip sits at the edge. Press **Forget**, and Openspot runs
-`wi-fi.sh forget`.
+the chip sits at the edge. Press **Forget**, and Openspot runs `wi-fi.sh forget`.
 
 A class can name a place or a state before it, such as `card:hidden` or `hover:bg-tile`, and then it applies only
 there. One frame draws the sheet and each card that way.
@@ -302,135 +313,142 @@ Learn more in [Layouts](PROTOCOL.md#layouts), [Classes](PROTOCOL.md#classes) and
 
 ## Ask for values
 
-A button with `form=true` asks the user for values before it runs. Openspot runs it once with empty stdin to get the
-form, then again with the values the user typed.
+An action can take values, its **inputs**, each with a type. Mark one `required`, and Openspot asks the user for it with
+a form before the action runs.
 
 ```toml
 title = "Quick note"
+
+[actions.add]
+title = "Add note"
+inputs.note = { type = "text", required = true, description = "What to note" }
 ```
 
 ```sh
 #!/bin/sh
 . "$OPENSPOT_SH"
 case "$1" in
-  show) printf 'item=hint\ntitle=Press ⌘K to add a note\n\nbutton=add\ntitle=Add note\nform=true\nscope=spot\n' ;;
   add)
-    note=$(value input.note)
-    if [ -z "$note" ]; then
-      printf 'frame=\ntype=form\ntitle=New note\n\nfield=note\ntitle=Note\n'
-    else
-      printf '%s\n' "$note" >> "$OPENSPOT_DATA/notes"
-      openspot toast Saved
-    fi
+    printf '%s\n' "$(value note)" >> "$OPENSPOT_DATA/notes"
+    openspot toast Saved
     ;;
 esac
 ```
 
-Choose **Add note**, and a form with one field opens. Type a note and press Return. The spot saves it, and a toast says
-**Saved**. `type=form` in the root makes the frame a form, and `value input.note` reads the field from stdin.
+Press Return on **Quick note**, and a form with one field, **Note**, opens, with **What to note** as its hint. Type a
+note and press Return. Openspot runs `quick-note.sh add` with `input.note=` the note, the spot saves it, and a toast
+says **Saved**. The spot never sees an empty note, since Openspot checks each input before the call.
 
-Learn more in [Buttons and actions](PROTOCOL.md#buttons-and-actions) and [The openspot command](PROTOCOL.md#the-openspot-command).
+An input that isn't required can have a `default`, which the call gets when the user gives none. To refuse a value,
+print `error=` and the reason, and the form stays open with it.
+
+Learn more in [Ask for values](PROTOCOL.md#ask-for-values) and [Types](PROTOCOL.md#types).
 
 ## Run a command with text
 
-A slash command runs a spot with text that the user types after its name, in one Return. Read the text with
-`value search`, and print a form when you need more.
+A slash command runs a spot with text that the user types after its word, in one Return. Name the words in `command`
+of `[on]`, and read the text with `value text`.
 
 ```toml
 title = "Notes"
 icon = "note.text"
 
-[commands.add]
-title = "Add note"
-placeholder = "What to note"
+[on]
+command = ["note"]
 ```
 
 ```sh
 #!/bin/sh
 . "$OPENSPOT_SH"
 case "$1" in
-  add)
-    note=$(value input.note)
-    [ -n "$note" ] || note=$(value search)
-    if [ -z "$note" ]; then
-      printf 'frame=\ntype=form\ntitle=New note\n\nfield=note\ntitle=Note\n'
-    else
-      printf '%s\n' "$note" >> "$OPENSPOT_DATA/notes"
-      openspot toast Saved
-    fi
+  command)
+    printf '%s\n' "$(value text)" >> "$OPENSPOT_DATA/notes"
+    openspot toast Saved
     ;;
 esac
 ```
 
-Type `/notes`, and the grey hint **What to note** shows after it. Type `buy milk` after it. The row **Add note** is highlighted, and the footer says **⏎ Add note "buy milk"**. Press Return, and Openspot runs
-`notes add` with `search=buy milk` on stdin. The spot saves the note, and the panel closes. When the spot prints a form
-instead, the form opens, and its values go to the same call.
+Type `/note buy milk`. The row **/note** is highlighted. Press Return, and Openspot runs `notes.sh command` with
+`input.name=note` and `input.text=buy milk` on stdin. The spot saves the note, and the panel closes. When the spot
+prints a frame instead, such as a form, it opens.
+
+The user can rename the word or remove it; see [The places of a spot](#the-places-of-a-spot). The spot still gets its
+own word as `name`.
 
 Learn more in [Slash commands](PROTOCOL.md#slash-commands).
 
 ## Answer the main search
 
-A spot can answer what the user types in the main search, like a calculator. Add `search.text` with a pattern to `on`. When
-the text matches, Openspot asks your spot right away and shows its answer first.
+A spot can answer what the user types in the main search, like a calculator. Add `search` with a pattern to `[on]`.
+When the text matches, Openspot runs the spot's `search` handler right away and shows its answer first.
 
 ```toml
 title = "Calculator"
 icon = "equal.square"
-on = ["search.text ^[0-9(]"]
-uses = ["clipboard"]
+
+[on]
+search = "^[0-9(]"
 ```
 
 ```js
-function main(args, env, input) {
-  if (args[0] === "show")
-    return openspot.call(["calc", "solve", openspot.value("event.value", input)]).stdout;
-  return "";
+export default {
+  async search({ text }, env) {
+    return env.calc.solve(text)
+  },
 }
 ```
 
 <!-- draw: openspot calc solve 2+2 -->
 ![The answer to 2+2: one row, 4](docs/images/answer-the-search.png)
 
-Type `2+2`, and the answer shows at the top of the main search. `event.value` holds the typed text. A `.js` file runs
-inside Openspot, so it answers in the same keystroke.
+Type `2+2`, and the answer shows at the top of the main search. A `.js` file runs inside Openspot, so it answers in the
+same keystroke. It exports one `async` function for each handler, which gets the inputs, here `text`, and `env`, which
+runs each `openspot` command, such as `env.calc.solve`. What it returns is the frame.
 
-Learn more in [Places](PROTOCOL.md#places) and [Modes](PROTOCOL.md#modes).
+`search = true` lists the spot's own items in the main search instead, as its `show` prints them.
+
+Learn more in [The main search](PROTOCOL.md#the-main-search) and [A JavaScript spot](PROTOCOL.md#a-javascript-spot).
 
 ## Respond to the Mac
 
-Events let a spot update when something happens on the Mac, such as another app coming to the front. A filter after the
-event narrows it down.
+Events let a spot update when something happens on the Mac, such as another app coming to the front. Name each one in
+`[on]`. A pattern in place of `true` narrows it down.
 
 ```toml
 title = "Notes"
-on = ["sheet.open", "app.front com\\.apple\\.Notes"]
+
+[on]
+"sheet.open" = true
+"app.front" = "com\\.apple\\.Notes"
 ```
 
 ```sh
 #!/bin/sh
-. "$OPENSPOT_SH"
-printf 'item=n\ntitle=%s\n' "$(value event)"
+printf 'item=n\ntitle=%s\n' "$1"
 ```
 
-<!-- draw: printf 'event=app.front\n' | sh "$EXAMPLE" -->
+<!-- draw: sh "$EXAMPLE" app.front -->
 ![The sheet of Notes after Notes came to the front: one line, app.front](docs/images/respond-to-the-mac.png)
 
-Bring Notes to the front while the sheet shows, and Openspot asks the spot again. `value event` says why:
-`sheet.open` or `app.front`.
+Bring Notes to the front while the sheet shows, and Openspot runs the spot's `app.front` handler. The first argument
+says why: `show` or `app.front`. An event's handler is a read, so its frame shows as the sheet, as a show's does.
 
-Some events bring a value. `system.load` comes every 5 seconds while the sheet shows, with the load of the Mac in
-`event.value`, so the spot starts no tool to measure it.
+Some events bring a value. `system.load` comes every 5 seconds while the sheet shows, with the load of the Mac as the
+input `value`, so the spot starts no tool to measure it.
 
 ```toml
 title = "Load"
 icon = "gauge.with.needle"
-on = ["sheet.open", "system.load"]
+
+[on]
+"sheet.open" = true
+"system.load" = true
 ```
 
 ```sh
 #!/bin/sh
 . "$OPENSPOT_SH"
-load=$(value event.value)
+load=$(value value)
 case "$load" in
   cpu=*)
     cpu=${load#cpu=}
@@ -440,7 +458,7 @@ case "$load" in
 esac
 ```
 
-<!-- draw: printf 'event=system.load\nevent.value=cpu=12 memory=61\n' | sh "$EXAMPLE" -->
+<!-- draw: printf 'input.value=cpu=12 memory=61\n' | sh "$EXAMPLE" system.load -->
 ![The sheet of Load: one line, 12% CPU](docs/images/show-the-load.png)
 
 The sheet opens with **Measuring…**, and shows the first value within 5 seconds.
@@ -449,15 +467,56 @@ way.
 
 Learn more in [Events](PROTOCOL.md#events).
 
+## Use another spot
+
+A spot can hand a step to another spot and wait for what it gives back, such as a time the user picks. Name the other
+spot in `[bindings]`, and run its action. Here Snooze, a spot of Openspot, picks the time of a reminder.
+
+```toml
+title = "Remind me"
+icon = "bell"
+uses = ["timer"]
+
+[bindings]
+picker = { spot = "openspot/snooze" }
+
+[actions.remind]
+inputs.words = { type = "text", required = true }
+```
+
+```js
+export default {
+  async show(input, env) {
+    return [{ button: "later", title: "Remind me later", scope: "spot" }]
+  },
+  async later(input, env) {
+    const picked = await env.picker.pick({ title: "Remind me later" })
+    if (picked) await env.timer.add(picked.until, "remind", { words: "Look at this again" })
+  },
+  async remind({ words }, env) {
+    await env.toast(words)
+  },
+}
+```
+
+Choose **Remind me later** in the ⌘K menu, and the tiles of Snooze show over the sheet. Pick **Tomorrow**, and
+`env.picker.pick` gives its time as `until`, and the spot adds a timer that runs `remind` then. Press Esc instead, and
+it gives `null`. The `await` costs no time of the spot's limit, however long the user takes. A shell script runs the
+same action with `openspot run picker.pick --out until`.
+
+Learn more in [Use another spot](PROTOCOL.md#use-another-spot) and [Act at a time](PROTOCOL.md#act-at-a-time).
+
 ## Let the user choose a setting
 
-A setting keeps a choice of the user, such as a folder. Name it in the manifest with a `[settings.<key>]` table,
-and the spot's Settings list it. The user opens them with `⌘⏎` on the spot's card, or with **Settings** in its ⌘K menu.
+A setting keeps a choice of the user, such as a folder. Name it in the `[settings]` table of the manifest, with its
+type, and the spot's Settings list it. The user opens them with `⌘⏎` on the spot's card, or with **Settings** in its ⌘K
+menu.
 
 ```toml
 title = "Repos"
 
-[settings.folder]
+[settings]
+folder = { type = "text", title = "Folder" }
 ```
 
 ```sh
@@ -479,23 +538,23 @@ esac
 ![The sheet of Repos: one line, /Users/me/Code](docs/images/read-a-setting.png)
 
 In the Settings of Repos, choose **Folder**, and Openspot runs `repos.sh folder`. The spot asks for a folder and keeps it.
-Each later call gets it on stdin as `setting.folder=`, so the spot reads its setting with no `openspot` call.
+Each later call gets it on stdin as `setting.folder=`, so the spot reads its setting with no `openspot` call. A setting
+of type `choice` or `bool` needs no handler: Openspot shows its options and keeps the one the user picks.
 
-A setting with `type = "secret"` keeps a value that no other program should see, such as the token of a service. Openspot
-asks for it in a form of its own, keeps it in the Keychain, and gives it to each call on stdin, as
-`setting.token`, as any other setting. A secret has 8 characters or more.
+A setting of type `secret` keeps a value that no other program should see, such as the token of a service. Openspot
+asks for it in a form of its own and keeps it in the Keychain. It never comes on stdin, so the spot reads it with
+`openspot setting get`. A secret has 8 characters or more.
 
 ```toml
 title = "Weather"
 
-[settings.token]
-type = "secret"
+[settings]
+token = { type = "secret", title = "Token" }
 ```
 
 ```sh
 #!/bin/sh
-. "$OPENSPOT_SH"
-if [ -n "$(value setting.token)" ]; then
+if [ -n "$(openspot setting get token)" ]; then
   printf 'item=state\ntitle=Signed in\n'
 else
   printf 'item=state\ntitle=Set a token in Settings\n'
@@ -529,6 +588,45 @@ let cups = 3
 The first file is the spot, and its code runs first. `cups.swift` sits next to it. The
 first call waits for the build, which needs the Command Line Tools. A spot that you share carries its built program, so
 the Mac that gets it needs no tools.
+
+The handler's name is `CommandLine.arguments[1]`, and its values come on stdin, as in a script. For typed handlers, run
+`openspot types` in the spot folder. It writes `Openspot.swift`, with a `Handlers` protocol, a type for the inputs and
+outputs of each handler, and an `Env` that runs each `openspot` command. List it in `source`:
+
+```toml
+title = "Stretch"
+icon = "figure.walk"
+uses = ["timer"]
+source = ["Openspot.swift"]
+
+[actions.later]
+title = "Remind me in an hour"
+
+[actions.remind]
+```
+
+```text
+#!/usr/bin/env swift
+import Foundation
+
+struct Stretch: Handlers {
+    func later(_ input: LaterInput, _ env: Env) async throws -> Answer<NoOutputs> {
+        _ = try await env.timer.add(Date().addingTimeInterval(3600).ISO8601Format(), "remind")
+        return .none
+    }
+
+    func remind(_ input: RemindInput, _ env: Env) async throws -> Answer<NoOutputs> {
+        _ = try await env.toast(["Time to stretch."])
+        return .none
+    }
+}
+
+await Openspot.serve(Stretch())
+```
+
+Run **Remind me in an hour**, and the spot adds a timer that runs `remind` an hour later. `Openspot.serve` reads the
+call, runs the handler of its name, and prints its answer. Each command of `env` starts `openspot` with `posix_spawn`,
+which keeps the link that tells Openspot which spot calls, as Foundation's `Process` does not.
 
 Learn more in [A Swift spot](PROTOCOL.md#a-swift-spot).
 
@@ -644,22 +742,23 @@ Every spot answers the same keys, so a user learns them once. Openspot gives eac
 
 | Key          | What it does                                                                                              |
 | ------------ | --------------------------------------------------------------------------------------------------------- |
-| Return       | The main act of the spot: it runs the spot's one command, or opens its sheet.                             |
+| Return       | The main act of the spot: it runs the spot's one action with a title, or opens its sheet.                 |
 | `⌘` Return   | Opens the spot's Settings: its keys, each setting and its places.                                         |
-| `⌘Y`         | Opens the items of a spot whose Return runs its command, as its **History**.                              |
+| `⌘Y`         | Opens the items of a spot whose Return runs its action, as its **History**.                               |
 | `⌘K`         | Opens the menu of all acts, when it holds more than the footer shows.                                     |
 
-- A spot with one command in its manifest, such as Dictate, runs that command on Return, even before it has a hotkey.
+- A spot with one action with a title in its manifest, such as Dictate, runs that action on Return, even before it has
+  a hotkey.
   Its items are its History, on `⌘Y` and in its ⌘K menu. Any other spot opens its sheet on Return.
 - A press of its card, its open hotkey, a click of it in the menu bar and its slash command with no text do what Return
   does. The click in the menu bar opens the sheet under the menu bar item. A press with `⌘` opens its Settings.
 - The ⌘K menu of a card starts with the acts that Openspot adds, always in this order: first what the user does with
   the spot, the main act on Return, History and Share; then what changes it, Settings, Edit and Change Icon; then Turn
-  off or a red Delete. The acts that spots offer to every card follow, under the name of their spot. A spot adds no act
-  to its own card. Its sheet carries what it does.
+  off or a red Delete. The acts that Openspot's own spots offer to every card follow, under the name of their spot. A
+  spot adds no act to its own card. Its sheet carries what it does.
 - A card's `⌘` keys work while a search is typed, except the ones that edit the words, such as `⌘⌫`.
 - Edit copies a prompt that sends an agent to the spot's file. A user changes a spot there, not in its Settings.
-- A card shows an arrow when Return opens its sheet, and none when Return runs its command. The footer names the
+- A card shows an arrow when Return opens its sheet, and none when Return runs its action. The footer names the
   spot's own keys first and `⌘K Actions` last.
 
 ### The Settings of a spot
@@ -667,16 +766,16 @@ Every spot answers the same keys, so a user learns them once. Openspot gives eac
 Each spot has its own Settings, a sheet that grows from its card, apart from the spot's own sheet.
 
 - They list each thing the user can change about the spot, in this order: first its keys, **Open**, the hotkey of
-  each command in its manifest, and **Float**; then what the spot itself does, each setting, set or not, and each value
+  each action with a title, and **Float**; then what the spot itself does, each setting, set or not, and each value
   it keeps that no setting names, such as a look; and last its places, **Show in the menu bar** and **Open in a
   window**, which every spot has.
-- Each key row records a key on Return, and `⌘⌫` removes it. Return on a setting runs the call with the same id, which
-  can answer with a form, and `⌘⌫` removes its value.
+- Each key row records a key on Return, and `⌘⌫` removes it. Return on a setting that Openspot can't keep by itself, a
+  `text`, runs the handler with the same name, which can answer with a form, and `⌘⌫` removes its value.
 - A choice that stays, such as a look or a folder, is a setting, not a part of the spot's own sheet.
 - The Settings spot of Openspot holds only the settings of the app: its keys, Careful mode, Slow motion, Open at login
   and the `openspot` command. The Themes spot changes its look.
 - Openspot keeps these keys for the user, and a setting can't use them: of any spot, `icon`, the picture that Change
-  Icon keeps; `enabled` and `menubar`, `true` or `false`; and `open`, `float` and `key.<command>`, a hotkey such as
+  Icon keeps; `enabled` and `menubar`, `true` or `false`; and `open`, `float` and `key.<action>`, a hotkey such as
   `ctrl+option+k`, `shake`, or one modifier alone, such as `option`, which a tap of that key presses. The key of
   `open` does what a press of the spot's card does, from any app. Of the spot `openspot`, which is the app: `login`,
   `link`, `careful` and `slow`, `true` or `false`, and `panel-key` and `fix-key`. `slow` runs each motion of the panel
@@ -692,14 +791,17 @@ Spots. The manifest names no place, and a spot can't claim a hotkey or a place.
 - A window opens the sheet in a normal window, from the card, the main search or `openspot spot open`. The user
   moves, resizes and closes it, and Openspot shows in the Dock while it's open. Esc closes it too, and a view that
   fills it should still give a way out, such as a Done button.
-- A spot with a `clock` event or a command starts off the grid, so that a new spot doesn't fill the panel.
-- `search = false` in the spot's record of `~/.config/openspot/config.toml` keeps it out of the main search and out of
-  the list of slash commands:
+- A spot with `every` or an action with a title starts off the grid, so that a new spot doesn't fill the panel. A spot
+  of your spots folder with a `schedule` acts by itself, so it starts off until you turn it on.
+- In the spot's record of `~/.config/openspot/config.toml`, `search = false` keeps it out of the main search and out of
+  the list of slash commands, and `commands` renames each word of its `command`, or removes it with `""`. Here `/note`
+  becomes `/n`:
 
 ```toml
 [[spots]]
 id = "notes"
 search = false
+commands = { note = "n" }
 ```
 
 ## Write a message

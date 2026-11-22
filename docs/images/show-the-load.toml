@@ -1,3 +1,6 @@
 title = "Load"
 icon = "gauge.with.needle"
-on = ["sheet.open", "system.load"]
+
+[on]
+"sheet.open" = true
+"system.load" = true
