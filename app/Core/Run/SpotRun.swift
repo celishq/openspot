@@ -173,13 +173,13 @@ public final class SpotRun {
         !places.isEmpty
     }
     public private(set) var shape = Shape(rows: 0, perLine: 1)
-    public private(set) var kind = SheetKind.rows
+    public private(set) var isWaiting = false
     public private(set) var partsRect: CGRect?
     public private(set) var takesKeys = true
     public private(set) var sheetRect = SpotTokens.sheetRect(rows: 0)
     public private(set) var showsField = true
     public private(set) var top = SheetTop.plain
-    @ObservationIgnored var heardKind: SheetKind? {
+    @ObservationIgnored var heardRows: Bool? {
         didSet { settle() }
     }
     public internal(set) var state: SpotState {
@@ -307,10 +307,10 @@ public final class SpotRun {
     func settle() {
         let next = Shape(rows: rows.lineCount, perLine: rows.perLine, setsApart: rows.setsApart)
         if next != shape { shape = next }
-        let waits = showsSheet && answered == nil && panel == nil && rows.search == .local && rows.isLoading && !rows.holdsItems
-        let nextKind = heardKind ?? (waits ? .waiting : panel?.kind ?? .rows)
-        if nextKind != kind { kind = nextKind }
-        let field = nextKind.showsField && rows.search != .off && panel?.placesSearch != true
+        let waits = heardRows == nil && showsSheet && answered == nil && panel?.holdsParts != true && rows.search == .local && rows.isLoading && !rows.holdsItems
+        if waits != isWaiting { isWaiting = waits }
+        let showsRows = heardRows ?? (!waits && panel?.showsRows != false)
+        let field = showsRows && rows.search != .off && panel?.placesSearch != true
         if field != showsField { showsField = field }
         let header = SheetHeader.shared.extra(for: shownState.subtitle)
         let nextTop = SheetTop(showsRows: panel.map { $0.showsRows && !$0.placesSearch } ?? true, search: rows.search, header: header)
@@ -319,9 +319,9 @@ public final class SpotRun {
             placed.place(top: nextTop)
             panel = placed
         }
-        let rect = panel.map(SpotTokens.panelRect)
+        let rect = panel.flatMap { $0.holdsParts ? SpotTokens.panelRect($0) : nil }
         if rect != partsRect { partsRect = rect }
-        let keys = panel?.kind.takesKeys != false
+        let keys = panel?.showsRows != false
         if keys != takesKeys { takesKeys = keys }
         let sheet = rect ?? SpotTokens.sheetRect(rows: next.rows, perLine: next.perLine, setsApart: next.setsApart, top: nextTop)
         if sheet != sheetRect { sheetRect = sheet }
@@ -329,10 +329,10 @@ public final class SpotRun {
 
     func hear(_ lines: Frame?) {
         guard let lines else {
-            heardKind = nil
+            heardRows = nil
             return
         }
-        guard kind == .waiting else { return }
-        heardKind = SheetKind(parts: lines.parts, showsRows: lines.perLine != nil)
+        guard isWaiting else { return }
+        heardRows = lines.showsRows
     }
 }

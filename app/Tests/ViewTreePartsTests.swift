@@ -59,7 +59,7 @@ final class ViewTreePartsTests: XCTestCase {
 
         XCTAssertTrue(sheet.placesSearch)
         XCTAssertFalse(sheet.top.hasField)
-        XCTAssertTrue(sheet.kind.showsField)
+        XCTAssertTrue(sheet.showsRows)
         XCTAssertEqual(sheet.top.partsRoom, SpotTokens.partsMaxHeight)
     }
 

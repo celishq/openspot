@@ -152,7 +152,7 @@ final class ReviewSpotTests: XCTestCase {
         XCTAssertEqual(add.key, ActionKey(name: "return", isCommand: true))
         XCTAssertEqual(add.title, "Add")
         XCTAssertTrue(add.closes)
-        XCTAssertEqual(SheetParts(output: try sheet(review("")))?.hint, "⌘⏎ Add   Esc Close")
+        XCTAssertEqual(SheetParts(output: try sheet(review(""))).hint, "⌘⏎ Add   Esc Close")
     }
 
     func testAPlainScriptRunsOnlyWhenItIsUsed() throws {

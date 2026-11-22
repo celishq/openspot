@@ -42,8 +42,8 @@ extension SpotsModel {
     }
 
     public func shownParts(of id: String?) -> SheetParts? {
-        guard let id, form?.entry.id != id else { return nil }
-        return sheets[id]?.panel
+        guard let id, form?.entry.id != id, let panel = sheets[id]?.panel, panel.holdsParts else { return nil }
+        return panel
     }
 
     public var openSheet: SpotRun? {

@@ -53,28 +53,21 @@ struct SpotFloatView: View {
                     .environment(\.spotNodeViewInput, NodeViewInput(items: run.panel?.rows ?? [], answers: run.panel?.answered ?? 0))
                     .environment(\.spotNodeSend, { _, value in run.set(sole.part, to: value) })
                     .ignoresSafeArea(edges: [.horizontal, .bottom])
-            } else if let parts = run.panel {
-                SheetPartsView(
-                    panel: parts,
+            } else {
+                SpotSheetBody(
+                    panel: run.panel,
+                    list: run.list,
                     act: { run.act(of: $0) },
                     onSet: { run.set($0, to: $1) },
                     onPress: { part in
                         run.press(part)
                         if part.closes { model.land(id) }
                     },
-                    list: run.list,
-                    onRun: { model.pick($0, of: entry, in: place) },
+                    onPick: { model.pick($0, of: entry, in: place) },
                     onDragOut: { model.dragOut($0, of: id) },
                     selection: { run.selection },
                     selectedPart: { run.selectedPart?.id },
                     nudge: { run.nudge }
-                )
-            } else {
-                SpotItemsView(
-                    list: run.list,
-                    onRun: { model.pick($0, of: entry, in: place) },
-                    selection: { run.selection },
-                    onDragOut: { model.dragOut($0, of: id) }
                 )
             }
         }

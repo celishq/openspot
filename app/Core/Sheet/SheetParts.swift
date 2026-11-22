@@ -18,6 +18,7 @@ public struct SheetParts: Equatable, Sendable {
     public private(set) var generation = 0
     public private(set) var answered = 0
     public private(set) var showsRows: Bool
+    public private(set) var holdsParts: Bool
     public private(set) var placesSearch: Bool
     public private(set) var tree: ViewTree
     public private(set) var height: CGFloat
@@ -29,12 +30,12 @@ public struct SheetParts: Equatable, Sendable {
     public private(set) var top: SheetTop
     public private(set) var variants: Set<Style.Variant>
 
-    public init?(output: Frame, variants: Set<Style.Variant> = [.sheet, .dark]) {
+    public init(output: Frame, variants: Set<Style.Variant> = [.sheet, .dark]) {
         let every = output.parts
-        guard !every.isEmpty else { return nil }
-        shown = output.tree.partIDs(shownIn: [variants])
+        holdsParts = !every.isEmpty
+        shown = holdsParts ? output.tree.partIDs(shownIn: [variants]) : []
         self.variants = variants
-        showsRows = output.perLine != nil
+        showsRows = output.showsRows
         placesSearch = output.placesSearch
         tree = output.tree
         top = SheetTop(showsRows: showsRows && !placesSearch, search: output.search, header: 0)
@@ -66,7 +67,7 @@ public struct SheetParts: Equatable, Sendable {
 
     mutating func place(top: SheetTop? = nil) {
         if let top { self.top = top }
-        height = Self.height(of: tree, shownIn: variants, room: self.top.partsRoom)
+        height = holdsParts ? Self.height(of: tree, shownIn: variants, room: self.top.partsRoom) : 0
         orderFocus()
     }
 
@@ -125,10 +126,6 @@ public struct SheetParts: Equatable, Sendable {
 
     public var drawsKeys: Bool {
         showsRows && parts.contains { $0.key != nil }
-    }
-
-    public var kind: SheetKind {
-        SheetKind(parts: parts, showsRows: showsRows)
     }
 
     public var takesArrows: Bool {
@@ -222,7 +219,7 @@ public struct SheetParts: Equatable, Sendable {
         let every = output.parts
         guard generation == self.generation, !every.isEmpty else { return false }
         let kept = id.flatMap(part)?.value
-        showsRows = output.perLine != nil
+        showsRows = output.showsRows
         placesSearch = output.placesSearch
         tree = output.tree
         if let id, let kept { tree.set(kept, of: id) }
