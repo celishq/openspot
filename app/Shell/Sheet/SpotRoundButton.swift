@@ -3,7 +3,7 @@ import SwiftUI
 
 struct SpotRoundButton: View {
     enum Look {
-        case plain, floating, strong, bare
+        case plain, strong, bare
     }
 
     let symbol: String
@@ -26,7 +26,6 @@ struct SpotRoundButton: View {
                 }
             }
                 .spotFill(isActive: act != nil || look == .strong, otherwise: fill, in: Circle())
-                .background { if look == .floating { SpotFloatGlass(shape: Circle()) } }
                 .contentShape(Circle())
         }
         .buttonStyle(.plain)
@@ -35,7 +34,7 @@ struct SpotRoundButton: View {
 
     private var fill: Color {
         switch look {
-        case .plain, .floating: SpotTheme.ink.opacity(SpotTheme.control)
+        case .plain: SpotTheme.ink.opacity(SpotTheme.control)
         case .strong, .bare: .clear
         }
     }

@@ -56,14 +56,14 @@ final class ViewTreePartsTests: XCTestCase {
         let short = try XCTUnwrap(SheetParts(output: Frame(text: "frame=\nclass=gap-part\n\nswitch=a\ntitle=A\n\nswitch=b\ntitle=B\n")))
         let listed = try XCTUnwrap(SheetParts(output: Frame(text: "frame=\nclass=gap-part\n\nswitch=a\ntitle=A\n\nitems=list\n\ntext=b\nparent=list\ntitle=B\n")))
 
-        XCTAssertEqual(short.placement.height, 2 * SpotTokens.listRow + SpotTokens.partGap)
-        XCTAssertEqual(listed.placement.height, listed.top.partsRoom)
+        XCTAssertEqual(short.height, 2 * SpotTokens.listRow + SpotTokens.partGap)
+        XCTAssertEqual(listed.height, listed.top.partsRoom)
     }
 
     func testAViewPinnedOverItsBoxFillsTheSheet() throws {
         let panel = try XCTUnwrap(SheetParts(output: Frame(text: "frame=\nclass=relative\n\nliquid=level\nclass=absolute inset-0\nvalue=0.7\n", kinds: kinds)))
 
-        XCTAssertEqual(panel.placement.height, panel.top.partsRoom)
+        XCTAssertEqual(panel.height, panel.top.partsRoom)
     }
 
     func testAMultilineFieldTakesTheFreeHeightAndGrowWorksOnANode() {

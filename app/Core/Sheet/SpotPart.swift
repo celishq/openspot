@@ -57,7 +57,6 @@ public struct SpotPart: Equatable, Sendable, Identifiable {
     public let key: ActionKey?
     public let asksToRecord: Bool
     public let closes: Bool
-    let grows: Bool
     public let align: Align?
     public let look: Look?
     public private(set) var values: [String: [String]]
@@ -93,7 +92,6 @@ public struct SpotPart: Equatable, Sendable, Identifiable {
         key = kind == .hotkey ? nil : block.value("shortcut").flatMap(ActionKey.init(text:))
         asksToRecord = kind == .hotkey && block.flag("recording") == true
         closes = block.flag("close") ?? kind.presses
-        grows = block.flag("grow") ?? (kind != .field || block.value("type") == "multiline")
         align = block.value("align").flatMap(Align.init(rawValue:))
         let named = block.value("look").flatMap(Look.init(rawValue:))
         look = block.value("type").flatMap { kind.looks[$0] } ?? (named == .tick ? nil : named)
@@ -181,16 +179,6 @@ public struct SpotPart: Equatable, Sendable, Identifiable {
     public var flatLines: Int {
         if case .shortcut = control { return 2 }
         return 1
-    }
-
-    var growsRow: Bool {
-        guard grows else { return false }
-        if isOpen { return true }
-        return switch control {
-        case .text, .list, .image: true
-        case .number(let reading): reading.isSeries
-        default: false
-        }
     }
 
     public var isPressable: Bool {

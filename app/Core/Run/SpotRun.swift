@@ -305,9 +305,7 @@ public final class SpotRun {
     }
 
     func settle() {
-        let next = rows.isBento
-            ? Shape(rows: rows.drawing.lineCount(rows: rows.shown.count) * rows.drawing.columns, perLine: rows.drawing.columns)
-            : Shape(rows: rows.lineCount, perLine: rows.perLine, setsApart: rows.setsApart)
+        let next = Shape(rows: rows.lineCount, perLine: rows.perLine, setsApart: rows.setsApart)
         if next != shape { shape = next }
         let waits = showsSheet && answered == nil && panel == nil && rows.search == .local && rows.isLoading && !rows.holdsItems
         let nextKind = heardKind ?? (waits ? .waiting : panel?.kind ?? .rows)
@@ -335,6 +333,6 @@ public final class SpotRun {
             return
         }
         guard kind == .waiting else { return }
-        heardKind = SheetKind(parts: lines.parts, layout: lines.layout)
+        heardKind = SheetKind(parts: lines.parts, showsRows: lines.perLine != nil)
     }
 }

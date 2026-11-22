@@ -6,9 +6,8 @@ final class SheetLayoutTests: XCTestCase {
         Frame(text: text)
     }
 
-    private func placement(_ text: String) throws -> SheetPlacement {
-        let panel = try XCTUnwrap(SheetParts(output: output(text)))
-        return panel.placement
+    private func placement(_ text: String) throws -> SheetParts {
+        try XCTUnwrap(SheetParts(output: output(text)))
     }
 
     func testOnlyAMultilineFieldTakesTheFreeHeight() {
@@ -39,8 +38,8 @@ final class SheetLayoutTests: XCTestCase {
 
         XCTAssertFalse(still.top.hasField)
         XCTAssertTrue(searched.top.hasField)
-        XCTAssertEqual(still.placement.height, SpotTokens.partsMaxHeight)
-        XCTAssertEqual(searched.placement.height, SpotTokens.partsMaxHeight - SpotTokens.partFieldRoom)
+        XCTAssertEqual(still.height, SpotTokens.partsMaxHeight)
+        XCTAssertEqual(searched.height, SpotTokens.partsMaxHeight - SpotTokens.partFieldRoom)
     }
 
     func testABlockThatDoesNotGrowKeepsTheHeightOfItsLines() throws {
@@ -75,7 +74,6 @@ final class SheetLayoutTests: XCTestCase {
         let sheet = try placement(picker)
 
         XCTAssertEqual(sheet.height, SpotTokens.partsMaxHeight)
-        XCTAssertFalse(sheet.overflows)
     }
 
     func testRowsAndPartsShareOneSheet() throws {

@@ -166,15 +166,32 @@ final class ViewTreeTests: XCTestCase {
         XCTAssertEqual(panel.tree.children, ["head", "note"])
         XCTAssertEqual(Set(panel.parts.map(\.id)), ["wifi", "name", "forget", "note"])
         XCTAssertTrue(Frame(text: wifi).items.isEmpty)
-        XCTAssertLessThan(panel.placement.height, panel.top.partsRoom)
+        XCTAssertLessThan(panel.height, panel.top.partsRoom)
     }
 
-    func testAFrameWithNoTreeStacksItsChoiceOverItsItems() throws {
-        let panel = try XCTUnwrap(SheetParts(output: Frame(text: "choice=a\nvalue=x\n\noption=x\ntitle=X\n\ntext=b\ntitle=B\n")))
+    func testAFrameWithNoTreeWritesItsChoiceOverItsItemsAsATree() throws {
+        let output = Frame(text: "choice=a\nvalue=x\n\noption=x\ntitle=X\n\ntext=b\ntitle=B\n")
+        let panel = try XCTUnwrap(SheetParts(output: output))
 
-        XCTAssertFalse(panel.tree.isWritten)
-        XCTAssertEqual(panel.layout?.rows, [["a"], ["items"]])
+        XCTAssertFalse(output.tree.isWritten)
+        XCTAssertEqual(output.search, .local)
+        XCTAssertTrue(panel.tree.isWritten)
+        XCTAssertEqual(panel.tree.children, ["a", "items"])
+        XCTAssertEqual(panel.tree.node("items")?.kind, BlockKind.items)
+        XCTAssertEqual(panel.tree.style.rowGap, Frame(text: "frame=\nclass=gap-part\n").tree.style.rowGap)
+        XCTAssertEqual(output.items.map(\.title), ["B"])
         XCTAssertTrue(panel.showsRows)
+        XCTAssertEqual(panel.height, panel.top.partsRoom)
+    }
+
+    func testAFrameWithNoTreeAndNoItemsWritesItsChoicesAsATreeOfTheirOwnHeight() throws {
+        let panel = try XCTUnwrap(SheetParts(output: Frame(text: "frame=\ntitle=Look\n\nchoice=look\nvalue=x\n\noption=x\ntitle=X\n\nchoice=size\nvalue=s\n\noption=s\ntitle=S\n")))
+
+        XCTAssertTrue(panel.tree.isWritten)
+        XCTAssertEqual(panel.tree.children, ["look", "size"])
+        XCTAssertFalse(panel.showsRows)
+        XCTAssertEqual(panel.height, 2 * SpotTokens.listRow + SpotTokens.partGap)
+        XCTAssertEqual(panel.focusOrder.map(\.id), ["look", "size"])
     }
 
     func testANodeKeepsItsWordsAndItsIcon() {
@@ -194,7 +211,7 @@ final class ViewTreeTests: XCTestCase {
     func testTheClassesOfTheItemsLayOutEachItem() {
         let text = "frame=\nclass=gap-part\n\nitems=list\nclass=grid grid-cols-4 gap-part\n\ntext=a\nparent=list\ntitle=A\nlook=tile\n"
 
-        XCTAssertEqual(Frame(text: text).drawing, RepeatDrawing(lines: [["a", "b", "c", "d"]]))
+        XCTAssertEqual(Frame(text: text).drawing, RepeatDrawing(columns: 4))
         XCTAssertEqual(Frame(text: "frame=\n\nitems=list\nclass=gap-part\n").drawing, .list)
     }
 

@@ -47,7 +47,7 @@ public struct Playground: Equatable, Sendable {
         self.text = text
         let check = FrameCheck(text: text)
         guard !check.output.parts.isEmpty else { return }
-        faults = check.output.layout == nil ? check.partFaults : check.sheetFaults
+        faults = check.output.perLine == nil ? check.partFaults : check.sheetFaults
     }
 
     public mutating func record(_ line: String) {

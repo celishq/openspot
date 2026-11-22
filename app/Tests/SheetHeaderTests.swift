@@ -26,7 +26,7 @@ final class SheetHeaderTests: XCTestCase {
 
         panel.place(top: SheetTop(header: line, hasField: false))
 
-        XCTAssertEqual(panel.placement.height, SpotTokens.partsMaxHeight - line)
+        XCTAssertEqual(panel.height, SpotTokens.partsMaxHeight - line)
         XCTAssertEqual(SpotTokens.panelRect(panel).height, flat)
         XCTAssertEqual(SpotTokens.sheetRect(rows: 1, top: SheetTop(header: line, hasField: true)).height - SpotTokens.sheetRect(rows: 1).height, line)
     }

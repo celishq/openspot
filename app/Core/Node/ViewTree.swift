@@ -10,6 +10,7 @@ public struct ViewTree: Equatable, Sendable {
     public private(set) var faults: [String] = []
     public private(set) var places: Set<Style.Variant> = []
     public private(set) var listed: Set<String> = []
+    public private(set) var holdsItems = false
 
     public func node(_ id: String) -> ViewNode? {
         nodes[id]
@@ -87,6 +88,7 @@ public struct ViewTree: Equatable, Sendable {
             nodes[id] = ViewNode(id: id, kind: kind, parent: parents[id], block: block, style: style, children: held[id] ?? [], source: BlockKind.of(block, in: kinds)?.source)
             places.formUnion(style.named)
         }
+        holdsItems = nodes.values.contains { $0.kind == BlockKind.items }
         listed = Set(nodes.values.filter { $0.parent.flatMap { nodes[$0] }?.kind == BlockKind.items }.map(\.id))
         var told: Set<String> = []
         for block in twice where isWritten {

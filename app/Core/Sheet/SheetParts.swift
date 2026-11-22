@@ -17,9 +17,9 @@ public struct SheetParts: Equatable, Sendable {
     public private(set) var parts: [SpotPart]
     public private(set) var generation = 0
     public private(set) var answered = 0
-    public private(set) var layout: SheetLayout?
+    public private(set) var showsRows: Bool
     public private(set) var tree: ViewTree
-    public private(set) var placement: SheetPlacement
+    public private(set) var height: CGFloat
     public private(set) var pictureTimes: [String: Double]
     public private(set) var rows: [[String]]
     private var focusOffsets: [Int] = []
@@ -32,10 +32,10 @@ public struct SheetParts: Equatable, Sendable {
         guard !output.parts.isEmpty else { return nil }
         parts = output.parts
         self.variants = variants
-        layout = output.layout
-        tree = output.tree
-        top = SheetTop(showsRows: output.layout?.repeated != nil, search: output.search, header: 0)
-        placement = Self.placement(of: output.parts, in: output.layout, tree: output.tree, room: top.partsRoom)
+        showsRows = output.perLine != nil
+        tree = output.sheet
+        top = SheetTop(showsRows: showsRows, search: output.search, header: 0)
+        height = Self.height(of: output.parts, in: output.sheet, room: top.partsRoom)
         pictureTimes = Self.pictureTimes(of: output.parts)
         rows = Self.rows(of: output.parts)
         orderFocus()
@@ -53,14 +53,13 @@ public struct SheetParts: Equatable, Sendable {
         parts.first { !$0.items.isEmpty }?.items ?? []
     }
 
-    private static func placement(of parts: [SpotPart], in layout: SheetLayout?, tree: ViewTree, room: CGFloat) -> SheetPlacement {
-        guard tree.isWritten else { return SheetPlacement(parts: parts, layout: layout ?? SheetLayout(flat: parts), room: room) }
-        return SheetPlacement(filling: tree.height(in: SpotTokens.partsWidth, parts: parts).map { min($0, room) } ?? room)
+    private static func height(of parts: [SpotPart], in tree: ViewTree, room: CGFloat) -> CGFloat {
+        tree.height(in: SpotTokens.partsWidth, parts: parts).map { min($0, room) } ?? room
     }
 
     mutating func place(top: SheetTop? = nil) {
         if let top { self.top = top }
-        placement = Self.placement(of: parts, in: layout, tree: tree, room: self.top.partsRoom)
+        height = Self.height(of: parts, in: tree, room: self.top.partsRoom)
         orderFocus()
     }
 
@@ -71,36 +70,14 @@ public struct SheetParts: Equatable, Sendable {
     }
 
     private mutating func orderFocus() {
-        if tree.isWritten {
-            focusLineOffsets = Self.lines(of: tree, parts: parts, in: variants)
-            focusOffsets = focusLineOffsets.flatMap { $0 }
-            return
-        }
-        let top = placement.repeatFrame?.maxY ?? -.infinity
-        let placed: [(offset: Int, rect: CGRect)] = parts.indices.compactMap { offset in
-            let part = parts[offset]
-            guard part.isFocusable, let rect = placement.frames[part.id]?.rect, rect.minY >= top else { return nil }
-            return (offset, rect)
-        }
-        let sorted = placed.sorted { $0.rect.minY == $1.rect.minY ? $0.rect.minX < $1.rect.minX : $0.rect.minY < $1.rect.minY }
-        focusOffsets = sorted.map(\.offset)
-        var lines: [[Int]] = []
-        var lineTop: CGFloat?
-        for (offset, rect) in sorted {
-            if rect.minY == lineTop, !lines.isEmpty {
-                lines[lines.count - 1].append(offset)
-            } else {
-                lines.append([offset])
-                lineTop = rect.minY
-            }
-        }
-        focusLineOffsets = lines
+        focusLineOffsets = Self.lines(of: tree, parts: parts, in: variants)
+        focusOffsets = focusLineOffsets.flatMap { $0 }
     }
 
     private static func lines(of tree: ViewTree, parts: [SpotPart], in variants: Set<Style.Variant>) -> [[Int]] {
         var lines: [[Int]] = []
         var lineRow: String?
-        var isBelowItems = !tree.nodes.values.contains { $0.kind == BlockKind.items }
+        var isBelowItems = !tree.holdsItems
         func walk(_ ids: [String], row: String?) {
             for id in ids {
                 guard let node = tree.node(id) else { continue }
@@ -140,15 +117,11 @@ public struct SheetParts: Equatable, Sendable {
     }
 
     public var drawsKeys: Bool {
-        parts.contains { part in part.key != nil && layout?.areas[part.id] != nil }
-    }
-
-    public var showsRows: Bool {
-        layout?.repeated != nil
+        showsRows && parts.contains { $0.key != nil }
     }
 
     public var kind: SheetKind {
-        SheetKind(parts: parts, layout: layout)
+        SheetKind(parts: parts, showsRows: showsRows)
     }
 
     public var takesArrows: Bool {
@@ -195,20 +168,9 @@ public struct SheetParts: Equatable, Sendable {
         }
         let target = min(max(index + lines, 0), all.count - 1)
         guard target != index else { return false }
-        let next: SpotPart?
-        if let from = placement.frames[current.id]?.rect {
-            next = all[target].min { distance($0, from) < distance($1, from) }
-        } else {
-            let column = all[index].firstIndex { $0.id == current.id } ?? 0
-            next = all[target][min(column, all[target].count - 1)]
-        }
-        guard let next else { return false }
-        selected = next.id
+        let column = all[index].firstIndex { $0.id == current.id } ?? 0
+        selected = all[target][min(column, all[target].count - 1)].id
         return true
-    }
-
-    private func distance(_ part: SpotPart, _ rect: CGRect) -> CGFloat {
-        abs((placement.frames[part.id]?.rect.midX ?? 0) - rect.midX)
     }
 
     @discardableResult
@@ -254,8 +216,8 @@ public struct SheetParts: Equatable, Sendable {
         guard generation == self.generation, !output.parts.isEmpty else { return false }
         let kept = parts.first { $0.id == id }?.value
         parts = output.parts
-        layout = output.layout
-        tree = output.tree
+        showsRows = output.perLine != nil
+        tree = output.sheet
         if let id, let kept, let index = parts.firstIndex(where: { $0.id == id }) { parts[index].set(kept) }
         pictureTimes = Self.pictureTimes(of: parts)
         rows = Self.rows(of: parts)

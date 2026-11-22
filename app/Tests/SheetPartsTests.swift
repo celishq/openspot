@@ -148,13 +148,13 @@ final class SheetPartsTests: XCTestCase {
 
     func testASetValueKeepsThePlacementOfTheParts() throws {
         var panel = try panel(lights)
-        let placement = panel.placement
+        let height = panel.height
 
         panel.set("true", of: "left")
         panel.set("20", of: "brightness")
         panel.set("#ff0000", of: "color")
 
-        XCTAssertEqual(panel.placement, placement)
+        XCTAssertEqual(panel.height, height)
     }
 
     func testAScriptThatPrintsPartsIsAList() {

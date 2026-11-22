@@ -43,8 +43,6 @@ public struct FrameCheck: Equatable, Sendable {
         }
         if output.tree.isWritten {
             faults += output.tree.sheetFaults(parts: output.parts)
-        } else if !output.parts.isEmpty {
-            faults += SheetFaults.of(parts: output.parts)
         }
         var told = Set<String>()
         for field in root?.fields ?? [] where !RootKey.isKey(field.key, isApp: isApp) && told.insert(field.key).inserted {
