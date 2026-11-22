@@ -97,6 +97,11 @@ extension SpotRun {
     }
 
     func due(_ timer: SpotTimer, late: Int) {
+        if let action = timer.action {
+            let message = Message(.press(action), inputs: (timer.inputs ?? []).map { .init(key: $0.name, value: $0.value) })
+            send(Call(message: message, key: "\(SpotTimer.call).\(timer.id)", purpose: .act(Act(showsAfter: false))))
+            return
+        }
         let message = Message(SpotAction(arguments: [SpotTimer.call, timer.id]), late: max(0, late))
         send(Call(message: message, key: "\(SpotTimer.call).\(timer.id)", event: ShowEvent(event: SpotTimer.event, value: timer.value), purpose: .act(Act(showsAfter: false))))
     }

@@ -43,7 +43,7 @@ final class ManifestSchemaTests: XCTestCase {
         let stats = try XCTUnwrap(CommandNoun.all.first { $0.name == "spot" }?.verbs.first { $0.words == ["stats"] })
 
         XCTAssertEqual(timer.inputs["required"] as? [String], ["time"])
-        XCTAssertEqual(Set((timer.inputs["properties"] as? [String: Any])?.keys ?? [:].keys), ["time", "value"])
+        XCTAssertEqual(Set((timer.inputs["properties"] as? [String: Any])?.keys ?? [:].keys), ["time", "action", "input"])
         let options = try XCTUnwrap(stats.inputs["properties"] as? [String: [String: Any]])
         XCTAssertEqual(options["days"]?["type"] as? String, "string")
         XCTAssertEqual(options["json"]?["type"] as? String, "boolean")
