@@ -26,9 +26,9 @@ public struct BackdropFade: Equatable, Sendable {
         let fade = max(size - padding, SpotTokens.backdropLeastFade)
         let steps = SpotTokens.backdropFadeSteps
         return (0...steps).map { step in
-            let strength = CGFloat(step) / CGFloat(steps)
-            let outset = size - strength * fade
-            return Ring(rect: content.insetBy(dx: -outset, dy: -outset), corner: corner + outset, strength: strength)
+            let place = CGFloat(step) / CGFloat(steps)
+            let outset = size - place * fade
+            return Ring(rect: content.insetBy(dx: -outset, dy: -outset), corner: corner + outset, strength: place * place * place)
         }
     }
 }

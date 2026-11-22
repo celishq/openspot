@@ -28,7 +28,7 @@ extension Theme {
             self.style = style
             self.reach = reach
             blur = exact("backdrop-blur") ?? 1
-            size = exact("halo-size") ?? 30
+            size = exact("halo-size") ?? min(max(Double(SpotTokens.backdropHaloPerBlur) * blur, 30), Double(SpotTokens.halo))
             padding = exact("halo-padding") ?? 0
             shadow = exact("card-shadow-size") ?? 24
         }

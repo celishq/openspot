@@ -55,6 +55,15 @@ final class ThemeTests: XCTestCase {
         XCTAssertEqual(theme.colours.dark.backdropTint, ThemeColor(text: "#00000040"))
     }
 
+    func testTheHaloOfABigBlurReachesThreeTimesItsRadiusWithinThePanel() {
+        func size(_ text: String) -> Double { Theme(text: text).layout.backdrop.size }
+
+        XCTAssertEqual(size("[advanced]\nbackdrop-blur = 20\n"), 60)
+        XCTAssertEqual(size("[advanced]\nbackdrop-blur = 40\n"), Double(SpotTokens.halo))
+        XCTAssertEqual(size("[advanced]\nbackdrop-blur = 2\n"), 30)
+        XCTAssertEqual(size("[advanced]\nbackdrop-blur = 20\nhalo-size = 40\n"), 40)
+    }
+
     func testTheColoursOfALookFollowFromItsChoices() {
         let dark = Theme(text: dracula).colours.dark
 

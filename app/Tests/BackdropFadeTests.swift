@@ -13,12 +13,16 @@ final class BackdropFadeTests: XCTestCase {
         XCTAssertEqual(rings.last?.strength, 1)
     }
 
-    func testTheStrengthGrowsEvenlyAcrossTheHalo() {
+    func testTheRingsSpreadEvenlyAcrossTheHalo() {
         let rings = BackdropFade(size: 80, padding: 0, corner: 20).rings(in: area)
-        let strengths = zip(rings, rings.dropFirst()).map { $1.strength - $0.strength }
         let widths = zip(rings, rings.dropFirst()).map { $1.rect.minX - $0.rect.minX }
-        for step in strengths { XCTAssertEqual(step, strengths[0], accuracy: 0.0001) }
         for width in widths { XCTAssertEqual(width, widths[0], accuracy: 0.0001) }
+    }
+
+    func testTheStrengthGrowsAsTheCubeOfTheWayIntoTheHalo() {
+        let rings = BackdropFade(size: 80, padding: 0, corner: 20).rings(in: area)
+        XCTAssertEqual(rings[rings.count / 2].strength, 0.125, accuracy: 0.0001)
+        XCTAssertEqual(rings[rings.count / 4].strength, 0.015625, accuracy: 0.0001)
     }
 
     func testThePaddingHoldsFullStrengthPastTheContent() {
