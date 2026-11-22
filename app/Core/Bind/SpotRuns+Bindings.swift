@@ -33,7 +33,16 @@ extension SpotRuns {
         return action.outputs.isEmpty ? .values([]) : .unanswered("\(binding.name).\(name) answered with no values.")
     }
 
-    static func reason(_ error: Error) -> String {
+    func emit(_ event: String, values: [TextBlock.Field], from spot: Spot) {
+        for sheet in sheets.values {
+            for binding in sheet.spot.bindings where binding.spot == spot.id {
+                let handler = "\(binding.name).\(event)"
+                if sheet.spot.triggers?.bindings.contains(handler) == true { sheet.hear(handler, values: values) }
+            }
+        }
+    }
+
+    nonisolated static func reason(_ error: Error) -> String {
         (error as? SpotError)?.reason ?? error.localizedDescription
     }
 }

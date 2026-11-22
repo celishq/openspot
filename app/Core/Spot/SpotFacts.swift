@@ -31,6 +31,7 @@ public struct SpotFacts: Equatable, Sendable {
     public internal(set) var typedActions: [Manifest.Action] = []
     public internal(set) var triggers: Manifest.Triggers?
     public internal(set) var bindings: [Manifest.Binding] = []
+    public internal(set) var events: [Manifest.Event] = []
     public internal(set) var commandWords: [String] = []
     public let settings: [Manifest.Setting]
     public internal(set) var holdsSettings = false

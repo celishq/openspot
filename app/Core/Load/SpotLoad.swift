@@ -60,6 +60,7 @@ public struct SpotLoad: Sendable {
         for entry in entries where entry.origin == .app {
             entry.add(to: &result)
         }
+        result.checkBoundEvents()
         return result
     }
 

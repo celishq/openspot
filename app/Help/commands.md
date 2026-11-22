@@ -77,6 +77,7 @@ The commands that try a spot are in [Try your spot](../../GUIDE.md#try-your-spot
 | `openspot schema`                                  | Prints the JSON Schema of `spot.toml`, which an editor checks the file with.                    |
 | `openspot timer add <time> <action> [<name>=<value>...]` | Calls an action of the spot at the time, with its inputs, checked when you add the timer.   |
 | `openspot run <binding>.<action> [<name>=<value>...]` | Runs an action of a spot that your spot binds in its `[bindings]`, with its inputs checked, and prints its `out.<name>` lines. It runs only in a run of a spot. |
+| `openspot emit <event> [<name>=<value>...]` | Sends one of your spot's `[events]`, with its values checked. Each spot that binds yours and lists `<binding>.<event>` in its `[on]` gets a call of that handler. It runs only in a run of a spot. |
 | `openspot grid edit`                               | Opens the panel in Edit Spots, to arrange the grid.                                             |
 | `openspot store list [--json]`                     | Prints each spot of the store and its step: `get`, `publish`, or `added` once you have it.      |
 | `openspot store get <id>`                          | Gets a spot of the store: turns it on, or adds its package to your spots folder.                |

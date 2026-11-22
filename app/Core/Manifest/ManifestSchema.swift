@@ -30,6 +30,7 @@ public enum ManifestSchema {
         properties[Manifest.Action.table] = table(reference("action"))
         properties[Manifest.Command.table] = table(reference("command"))
         properties[Manifest.Binding.table] = table(reference("binding"))
+        properties[Manifest.Event.table] = table(table(reference("parameter")))
         properties[scripts] = table(reference("script"))
         return ["type": "object", "additionalProperties": false, "properties": properties]
     }

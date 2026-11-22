@@ -113,6 +113,14 @@ extension Manifest {
             return ShowEvents(moments: moments, answers: search, searchesSheet: events.contains(SpotEvent.sheetText), filters: filters)
         }
 
+        static func binding(of key: String) -> String {
+            String(key.prefix { $0 != "." })
+        }
+
+        static func event(of key: String) -> String {
+            String(key.drop { $0 != "." }.dropFirst())
+        }
+
         private static func isWord(_ word: String) -> Bool {
             guard word.first?.isLetter == true else { return false }
             return word.allSatisfy { $0.isLetter || $0.isNumber || "-_".contains($0) }

@@ -188,6 +188,15 @@
         "emits" : {
           "$ref" : "#/$defs/texts"
         },
+        "events" : {
+          "additionalProperties" : {
+            "additionalProperties" : {
+              "$ref" : "#/$defs/parameter"
+            },
+            "type" : "object"
+          },
+          "type" : "object"
+        },
         "icon" : {
           "$ref" : "#/$defs/texts"
         },
@@ -352,6 +361,15 @@
     },
     "emits" : {
       "$ref" : "#/$defs/texts"
+    },
+    "events" : {
+      "additionalProperties" : {
+        "additionalProperties" : {
+          "$ref" : "#/$defs/parameter"
+        },
+        "type" : "object"
+      },
+      "type" : "object"
     },
     "icon" : {
       "$ref" : "#/$defs/texts"

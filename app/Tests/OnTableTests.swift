@@ -24,6 +24,9 @@ final class OnTableTests: XCTestCase {
         every = 60
         drop = ["png", "folder"]
         "picker.picked" = true
+
+        [bindings]
+        picker = { spot = "time-picker" }
         """)
 
         let spot = try XCTUnwrap(loaded.spot, loaded.refused.joined())
@@ -77,6 +80,32 @@ final class OnTableTests: XCTestCase {
 
             XCTAssertTrue(reason.contains(key), "\(line): \(reason)")
         }
+    }
+
+    func testAnEventOfABindingThatTheSpotDoesNotDeclareFailsTheLoad() throws {
+        let reason = try refusal("[on]\n\"picker.picked\" = true")
+
+        XCTAssertEqual(reason, "Snooze has [on] picker.picked, which names no binding picker. Add it to [bindings], such as picker = { spot = \"<id>\" }")
+    }
+
+    func testAnEventThatAnInstalledBoundSpotDoesNotDeclareFailsTheLoadOfItsListener() throws {
+        let spots = try temporaryFolder()
+        try "#!/bin/sh\n".writeScript(to: spots.appendingPathComponent("picker.spot/picker.sh"), toml: "[events.picked]\nuntil = \"date\"")
+        try "#!/bin/sh\n".writeScript(to: spots.appendingPathComponent("snooze.spot/snooze.sh"), toml: "[bindings]\npicker = { spot = \"picker\" }\n[on]\n\"picker.chosen\" = true")
+        try "#!/bin/sh\n".writeScript(to: spots.appendingPathComponent("later.spot/later.sh"), toml: "[bindings]\npicker = { spot = \"picker\" }\n[on]\n\"picker.picked\" = true")
+
+        let scan = try SpotsFolder(url: spots).scan()
+
+        XCTAssertEqual(Set(scan.spots.map(\.id)), ["picker", "later"])
+        XCTAssertEqual(scan.refused.map(\.reason), ["Snooze has [on] picker.chosen, but picker declares no event chosen. Name one of its [events]: picked"])
+    }
+
+    func testAnEventIsDeclaredWithTypedValuesAndAWrongTypeFailsTheLoad() throws {
+        let spot = try XCTUnwrap(try load("[events.snoozed]\nurl = \"url\"\nuntil = { type = \"date\", required = true }").spot)
+
+        XCTAssertEqual(spot.events.map(\.name), ["snoozed"])
+        XCTAssertEqual(spot.events.first?.values.map(\.name), ["url", "until"])
+        XCTAssertTrue(try refusal("[events.snoozed]\nurl = \"link\"").contains("[events.snoozed] url"))
     }
 
     func testAnActionThatTakesTheNameOfAHandlerFailsTheLoad() throws {

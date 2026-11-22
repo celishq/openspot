@@ -26,6 +26,28 @@ public struct ScanResult: Equatable, Sendable {
         files.flatMap(\.spots)
     }
 
+    mutating func checkBoundEvents() {
+        let declared = Dictionary(scripts.map { ($0.id, $0.events.map(\.name)) }) { first, _ in first }
+        files = files.compactMap { file in
+            let spots = file.spots.filter { spot in
+                guard let fault = Self.unheard(by: spot, declared: declared) else { return true }
+                refused.append(Refusal(file: file.id, reason: fault))
+                return false
+            }
+            return spots.isEmpty ? nil : SpotFile(id: file.id, spots: spots)
+        }
+    }
+
+    private static func unheard(by spot: Spot, declared: [String: [String]]) -> String? {
+        for key in spot.triggers?.bindings ?? [] {
+            let name = Manifest.Triggers.binding(of: key)
+            let event = Manifest.Triggers.event(of: key)
+            guard let bound = spot.bindings.first(where: { $0.name == name })?.spot, let events = declared[bound], !events.contains(event) else { continue }
+            return "\(spot.name) has [on] \(key), but \(bound) declares no event \(event). " + (events.isEmpty ? "It declares no [events]." : "Name one of its [events]: \(events.joined(separator: ", "))")
+        }
+        return nil
+    }
+
     public func offered(_ keys: [GlobalKey]) -> [GlobalKey] {
         keys.filter { key in
             switch key.act {

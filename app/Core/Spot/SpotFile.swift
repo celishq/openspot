@@ -34,6 +34,10 @@ public struct SpotFile: Equatable, Sendable {
             if let (key, _) = old.first(where: \.1) {
                 throw SpotError.fault("\(name) has both \(key) and [on] in its \(Manifest.fileName). Move \(key) into [on]")
             }
+            if let key = triggers.bindings.first(where: { key in !manifest.bindings.contains { $0.name == Manifest.Triggers.binding(of: key) } }) {
+                let binding = Manifest.Triggers.binding(of: key)
+                throw SpotError.fault("\(name) has [on] \(key), which names no binding \(binding). Add it to [bindings], such as \(binding) = { spot = \"<id>\" }")
+            }
             if let action = manifest.actions.first(where: { triggers.handlers.contains($0.id) }) {
                 throw SpotError.fault("\(name) has \(action.section), which takes the name of a handler that its [on] calls. Give the action another ID")
             }
@@ -137,6 +141,7 @@ public struct SpotFile: Equatable, Sendable {
         command.typedActions = manifest.actions
         command.triggers = manifest.triggers
         command.bindings = manifest.bindings
+        command.events = manifest.events
         command.commandWords = manifest.triggers?.commands ?? []
         self.init(id: id, spots: [command])
     }
