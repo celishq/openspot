@@ -14,7 +14,7 @@ struct Sheet {
         var blocks = [(["frame=", "recents=false"] + head).joined(separator: "\n")]
         blocks.append("button=press\ntitle=Open")
         blocks.append("button=\(turn):new\ntitle=New board\nshortcut=cmd+n\nscope=spot")
-        blocks.append("button=rename\ntitle=Rename\nshortcut=cmd+r\nform=true\nclose=false")
+        blocks.append("button=rename\ntitle=Rename\nshortcut=cmd+r\nclose=false")
         blocks.append("button=delete\ntitle=Delete\nshortcut=cmd+backspace\nconfirm=Press again to move it to the Trash\nclose=false")
         blocks.append("button=reveal\ntitle=Show boards in Finder\nshortcut=cmd+o\nscope=spot")
         blocks.append("item=\(turn):new\ntitle=New board\ndetail=A blank board\nicon=plus.square.dashed\nhides=rename\nhides=delete")

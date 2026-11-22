@@ -191,8 +191,10 @@ extension SpotRun {
         guard let key = freeKey(call, onCard: onCard) else { return .stopped }
         answered = nil
         let typed = typedAction(of: call)
-        if let typed, typed.textInput != nil, search.text.isEmpty, let form = ItemForm(output: Frame(text: typed.form(with: [:], title: action.title))) {
-            return .form(form)
+        if let typed, let input = typed.textInput {
+            let values = search.text.isEmpty ? [:] : [input.name: search.text]
+            let lacks = typed.inputs.contains { $0.isRequired && $0.defaultValue == nil && values[$0.name] == nil }
+            if lacks, let form = ItemForm(output: Frame(text: typed.form(with: values, title: action.title))) { return .form(form) }
         }
         let message = CommandAction.word(of: action).map { word in
             Message(.press(Manifest.Triggers.command), inputs: [.init(key: "name", value: word), .init(key: "text", value: search.text)])

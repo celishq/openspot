@@ -233,10 +233,7 @@ final class LinksSpotTests: SampleSpotsCase {
             let new = try await self.action("new", of: links)
             XCTAssertEqual(new.placeholder, "Link to add")
 
-            let output = try await Self.answer(of: links, ["new"], input: "search=example.com\n")
-            let form = try XCTUnwrap(ItemForm(output: output))
-
-            XCTAssertEqual(FormDraft(form: form).values["url"], "example.com")
+            XCTAssertEqual(links.typedActions.first { $0.id == "new" }?.textInput?.name, "url")
         }
     }
 

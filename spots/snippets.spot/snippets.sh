@@ -37,26 +37,21 @@ value=\($v.content | esc)
 required=true"'
 }
 
-# A form button gets its item as an argument, and every other press gets it as an input.
-item=${2:-$(value item)}
+item=$(value item)
 
 case "$1" in
   show)
     printf 'button=press\ntitle=Copy\n\n'
     printf 'button=paste\ntitle=Paste\nshortcut=cmd+return\n\n'
-    printf 'button=edit\ntitle=Edit\nshortcut=cmd+e\nform=true\nclose=false\n\n'
+    printf 'button=edit\ntitle=Edit\nshortcut=cmd+e\nclose=false\n\n'
     printf 'button=delete\ntitle=Delete\nshortcut=cmd+backspace\nconfirm=Press again to delete\nclose=false\n\n'
-    printf 'button=new\ntitle=New snippet\nshortcut=cmd+n\nscope=spot\nform=true\nclose=false\nplaceholder=Text to keep\n\n'
+    printf 'button=new\ntitle=New snippet\nshortcut=cmd+n\nscope=spot\nclose=false\nplaceholder=Text to keep\n\n'
     [ -s "$data" ] || exit 0
     jq -r "$esc"'.[] | "item=\(.id | esc)\ntitle=\(.title | esc)\ndetail=\(.content | gsub("\\s+"; " ") | .[0:200] | esc)\n"' "$data"
     ;;
   new)
     title=$(value input.title)
     text=$(value input.content; printf x)
-    if [ -z "$title${text%x}" ]; then
-      form "New snippet" "$(jq -nc --arg content "$(value search)" '{title: "", content: $content}')"
-      exit 0
-    fi
     id=$(uuidgen)
     load | jq -c --arg id "$id" --arg title "$title" --arg content "${text%x}" '. + [{id: $id, title: $title, content: $content}]' | store
     openspot select "$id"

@@ -33,13 +33,25 @@ extension Spot {
         FrameCheck(text: try await SpotRuns(environment: TestEnvironment.values).answer(of: self, .show, limit: timeout)).sheetFaults
     }
 
+    private func message(_ action: CommandAction, item: SpotItem?, inputs: [TextBlock.Field] = []) -> Message {
+        let call = SpotAction.action(action, item: item)
+        guard self.triggers != nil || !self.typedActions.isEmpty, call.arguments.count > 1 else { return Message(call, inputs: inputs) }
+        return Message(.press(call.arguments[0]), inputs: [.init(key: "item", value: call.arguments[1])] + inputs)
+    }
+
     func form(_ action: CommandAction, item: SpotItem?, timeout: TimeInterval) async throws -> ItemForm {
-        guard let form = ItemForm(output: try await output(.action(action, item: item), timeout: timeout)) else { throw SpotError.badForm }
+        if let typed = self.typedActions.first(where: { $0.id == action.id }), typed.lacksInput {
+            guard let form = ItemForm(output: Frame(text: typed.form(with: [:], title: action.title))) else { throw SpotError.badForm }
+            return form
+        }
+        let message = message(action, item: item)
+        guard let form = ItemForm(output: try await output(message.action, input: message.text, timeout: timeout)) else { throw SpotError.badForm }
         return form
     }
 
     func submit(_ action: CommandAction, item: SpotItem?, draft: FormDraft, timeout: TimeInterval) async throws {
-        _ = try await output(.action(action, item: item), input: Message(.action(action, item: item), inputs: draft.inputs).text, timeout: timeout)
+        let message = message(action, item: item, inputs: draft.inputs)
+        _ = try await output(message.action, input: message.text, timeout: timeout)
     }
 
     func perform(_ action: SpotAction, input: String? = nil, page: String? = nil, timeout: TimeInterval) async throws {

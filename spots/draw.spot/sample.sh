@@ -3,7 +3,7 @@
 printf 'frame=\nrecents=false\n\n'
 printf 'button=press\ntitle=Open\n\n'
 printf 'button=0:new\ntitle=New board\nshortcut=cmd+n\nscope=spot\n\n'
-printf 'button=rename\ntitle=Rename\nshortcut=cmd+r\nform=true\nclose=false\n\n'
+printf 'button=rename\ntitle=Rename\nshortcut=cmd+r\nclose=false\n\n'
 printf 'button=delete\ntitle=Delete\nshortcut=cmd+backspace\nconfirm=Press again to move it to the Trash\nclose=false\n\n'
 printf 'button=reveal\ntitle=Show boards in Finder\nshortcut=cmd+o\nscope=spot\n\n'
 printf 'item=0:new\ntitle=New board\ndetail=A blank board\nicon=plus.square.dashed\nhides=rename\nhides=delete\n\n'

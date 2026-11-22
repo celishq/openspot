@@ -134,16 +134,15 @@ placeholder=example.com or ~/Downloads"'
 
 prepare
 
-# A form button gets its item as an argument, and every other press gets it as an input.
-item=${2:-$(value item)}
+item=$(value item)
 
 case "$1" in
   show)
     printf 'button=copy\ntitle=Copy\nshortcut=cmd+return\n\n'
     printf 'button=reveal\ntitle=Show in Finder\nshortcut=cmd+r\n\n'
-    printf 'button=edit\ntitle=Edit\nshortcut=cmd+e\nform=true\nclose=false\n\n'
+    printf 'button=edit\ntitle=Edit\nshortcut=cmd+e\nclose=false\n\n'
     printf 'button=delete\ntitle=Delete\nshortcut=cmd+backspace\nconfirm=Press again to delete\nclose=false\n\n'
-    printf 'button=new\ntitle=New link\nshortcut=cmd+n\nscope=spot\nform=true\nclose=false\nplaceholder=Link to add\n\n'
+    printf 'button=new\ntitle=New link\nshortcut=cmd+n\nscope=spot\nclose=false\nplaceholder=Link to add\n\n'
     [ -s "$data" ] || exit 0
     set --
     for icon in "$icons"/*.png; do [ -e "$icon" ] && set -- "$@" "${icon##*/}"; done
@@ -157,10 +156,6 @@ case "$1" in
         end' "$data" --args "$@"
     ;;
   new)
-    if [ -z "$(value input.title)$(value input.url)" ]; then
-      form "New link" "$(jq -nc --arg url "$(value search)" '{title: "", url: $url}')"
-      exit 0
-    fi
     id=$(uuidgen)
     values=$(checked) || exit 1
     load | jq -c --arg id "$id" --argjson v "$values" '. + [{id: $id, title: $v.title, url: $v.url}]' | store

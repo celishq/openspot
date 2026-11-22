@@ -2,6 +2,10 @@ icon = "text.quote"
 detail = "Copy text"
 uses = ["clipboard"]
 
+[actions.new]
+inputs.content = { type = "text", required = true, description = "Text to keep" }
+inputs.title = { type = "text", required = true }
+
 [on]
 "panel.open" = true
 search = true

@@ -1,9 +1,9 @@
 #!/bin/sh
 printf 'button=press\ntitle=Copy\n\n'
 printf 'button=paste\ntitle=Paste\nshortcut=cmd+return\n\n'
-printf 'button=edit\ntitle=Edit\nshortcut=cmd+e\nform=true\nclose=false\n\n'
+printf 'button=edit\ntitle=Edit\nshortcut=cmd+e\nclose=false\n\n'
 printf 'button=delete\ntitle=Delete\nshortcut=cmd+backspace\nconfirm=Press again to delete\nclose=false\n\n'
-printf 'button=new\ntitle=New snippet\nshortcut=cmd+n\nscope=spot\nform=true\nclose=false\n\n'
+printf 'button=new\ntitle=New snippet\nshortcut=cmd+n\nscope=spot\nclose=false\n\n'
 printf 'item=1\ntitle=Address\ndetail=1 Main Street, Springfield 12345\n\n'
 printf 'item=2\ntitle=Thanks\ndetail=Thanks for your note. I will get back to you by the end of the week.\n\n'
 printf 'item=3\ntitle=Meeting link\ndetail=https://meet.example.com/team-sync\n\n'

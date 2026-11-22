@@ -75,6 +75,19 @@ final class TriggerCallsTests: SpotRunsCase {
         try await wait("the start") { self.calls == ["start|input.minutes=45 "] }
     }
 
+    func testWordsTypedAfterAButtonFillItsFirstTextInputAndAskForTheOtherRequiredInputs() async throws {
+        let sheet = try spot("\"sheet.open\" = true", toml: "[actions.new]\ninputs.url = { type = 'text', required = true }\ninputs.title = { type = 'text', required = true }")
+        let new = CommandAction(id: "new", title: "New link", scope: .spot)
+
+        let answer = try await sheet.launch(new, search: SearchQuery(text: "example.com", layouts: []))
+
+        guard case .form(let form) = answer else { return XCTFail("no form: \(answer)") }
+        XCTAssertEqual(form.title, "New link")
+        XCTAssertEqual(form.fields.map(\.name), ["url", "title"])
+        XCTAssertEqual(FormDraft(form: form).values["url"], "example.com")
+        XCTAssertEqual(calls, [])
+    }
+
     func testTheMainSearchCallsSearchWithItsText() async throws {
         let sheet = try spot("search = \"^https\"")
 

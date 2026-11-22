@@ -26,10 +26,7 @@ final class SnippetsSpotTests: SampleSpotsCase {
             let new = try await self.action("new", of: snippets)
             XCTAssertEqual(new.placeholder, "Text to keep")
 
-            let output = try await Self.answer(of: snippets, ["new"], input: "search=hello there\n")
-            let form = try XCTUnwrap(ItemForm(output: output))
-
-            XCTAssertEqual(FormDraft(form: form).values["content"], "hello there")
+            XCTAssertEqual(snippets.typedActions.first { $0.id == "new" }?.textInput?.name, "content")
         }
     }
 
