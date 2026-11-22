@@ -90,7 +90,7 @@ struct SheetPartsView: View {
                     content(part, room.size)
                 }
                 .frame(minHeight: height, idealHeight: height)
-                .frame(idealWidth: size.width)
+                .frame(idealWidth: natural.width)
             } else {
                 content(part, size)
                     .frame(maxWidth: part.fillsWidth ? .infinity : nil, minHeight: height, maxHeight: .infinity, alignment: part.fillsWidth ? .leading : .center)
