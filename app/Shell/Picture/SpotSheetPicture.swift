@@ -24,7 +24,7 @@ enum SpotSheetPicture {
             exit(1)
         }
         let list = Self.list(of: output)
-        let size = SpotSheetBody.size(of: panel, rows: list.shown.count, perLine: list.perLine, setsApart: list.setsApart)
+        let size = SpotSheetBody.size(of: panel, list: list)
         let preview = SpotSheetPreview(panel: panel, title: spot?.name ?? "Sheet", subtitle: spot?.subtitle ?? (spot == nil ? "Preview" : ""), symbol: spot?.symbol ?? "square.dashed", list: list, seed: URL(fileURLWithPath: path).lastPathComponent)
         let picture = SpotPicture(of: preview.padding(margin), size: CGSize(width: size.width + 2 * margin, height: size.height + 2 * margin), path: path)
         Task { @MainActor in

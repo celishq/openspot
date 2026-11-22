@@ -86,6 +86,10 @@ extension SpotTokens {
     }
 
 
+    public static func floatSize(list: ItemList) -> CGSize {
+        floatSize(rows: list.lineCount, perLine: list.perLine, setsApart: list.setsApart)
+    }
+
     public static func panelRect(_ panel: SheetParts) -> CGRect {
         let field = panel.top.hasField ? SpotTokens.partFieldRoom : 0
         let height = panel.top.fieldY + field + panel.height + padding
