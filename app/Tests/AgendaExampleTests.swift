@@ -2,10 +2,12 @@ import XCTest
 @testable import OpenspotCore
 
 final class AgendaExampleTests: SampleSpotsCase {
+    private let now = Date()
+
     private func iso(_ seconds: TimeInterval) -> String {
         let format = ISO8601DateFormatter()
         format.timeZone = .current
-        return format.string(from: Date().addingTimeInterval(seconds))
+        return format.string(from: now.addingTimeInterval(seconds))
     }
 
     private func fakeOpenspot(in folder: URL) throws {
@@ -124,7 +126,7 @@ final class AgendaExampleTests: SampleSpotsCase {
             XCTAssertEqual(output.face.tree.parts.filter { $0.id.hasPrefix("due-") }.map(\.detail), ["Late", "18:00"])
             let time = DateFormatter()
             time.dateFormat = "HH:mm"
-            XCTAssertEqual(output.face.tree.parts.first { $0.id == "at" }?.number?.text, time.string(from: Date().addingTimeInterval(750)))
+            XCTAssertEqual(output.face.tree.parts.first { $0.id == "at" }?.number?.text, time.string(from: now.addingTimeInterval(750)))
             XCTAssertEqual(output.face.tree.shown(in: Style.Variant.card(.large)), ["head", "next", "row-R1", "R1", "due-R1", "row-R3", "R3", "due-R3"])
             XCTAssertEqual(output.face.tree.shown(in: Style.Variant.card(.square)), ["head", "next", "counts", "todo", "late"])
             XCTAssertEqual(output.face.tree.parts.first { $0.id == "todo" }?.title, "3 to do")

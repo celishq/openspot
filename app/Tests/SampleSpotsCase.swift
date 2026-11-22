@@ -90,6 +90,7 @@ class SampleSpotsCase: XCTestCase {
           'folder pick') cat '\(folder.path)/picked' 2>/dev/null ;;
           'toast '*) shift; printf '%s\\n' "$*" >> '\(folder.path)/toasts' ;;
           'select '*) printf '%s\\n' "$2" >> '\(folder.path)/selected' ;;
+          'spot open') printf '%s\\n' "$3" >> '\(folder.path)/opened-spots' ;;
         esac
         """
     }

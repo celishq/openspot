@@ -23,7 +23,7 @@ final class SpotRunsCallTests: SpotRunsCase {
         try script(toml: "", """
         case "$1" in
           show) [ -f '\(path("slow"))' ] && sleep 30; touch '\(path("slow"))'; printf 'frame=\\ntitle=1\\n\\nitem=a\\ntitle=A\\n' ;;
-          press) \(untilRelease); touch '\(path("done"))' ;;
+          press) sed -n 's/^input\\.item=//p' > '\(path("item"))'; \(untilRelease); touch '\(path("done"))' ;;
         esac
         """)
         let sheet = try sheet()
@@ -32,7 +32,7 @@ final class SpotRunsCallTests: SpotRunsCase {
         sheet.show()
         try await wait("the row") { sheet.list.shown.count == 1 }
         sheet.pick(try XCTUnwrap(sheet.list.selectedItem))
-        try await wait("the work") { self.log().contains("press") }
+        try await wait("the work on the item") { self.log().contains("press") && (try? String(contentsOfFile: self.path("item"), encoding: .utf8)) == "a\n" }
 
         sheet.show(need: .change)
         try await wait("the time limit") { !failures.isEmpty }
@@ -349,7 +349,7 @@ final class SpotRunsCallTests: SpotRunsCase {
         v=$(sed -n 's/^input\\.value=//p')
         case "$1" in
           show) printf 'frame=\\nclass=gap-part\\n\\nswitch=a\\nvalue=false\\n\\nswitch=b\\nvalue=false\\n\\ntext=out\\ntitle=none\\n' ;;
-          a) [ "$v" = true ] && { sleep 30; touch '\(path("old-a"))'; exit 0; }; touch '\(path("new-a"))'; printf 'frame=\\nclass=gap-part\\n\\nswitch=a\\nvalue=false\\n\\nswitch=b\\nvalue=true\\n\\ntext=out\\ntitle=new\\n' ;;
+          a) [ "$v" = true ] && { touch '\(path("a-true"))'; sleep 30; touch '\(path("old-a"))'; exit 0; }; touch '\(path("new-a"))'; printf 'frame=\\nclass=gap-part\\n\\nswitch=a\\nvalue=false\\n\\nswitch=b\\nvalue=true\\n\\ntext=out\\ntitle=new\\n' ;;
           b) \(untilRelease); touch '\(path("b"))'; printf 'frame=\\nclass=gap-part\\n\\nswitch=a\\nvalue=false\\n\\nswitch=b\\nvalue=true\\n\\ntext=out\\ntitle=b\\n' ;;
         esac
         """)
@@ -360,7 +360,7 @@ final class SpotRunsCallTests: SpotRunsCase {
 
         sheet.set(parts[1], to: "true")
         sheet.set(parts[0], to: "true")
-        try await wait("the first call of a") { self.log().contains("a") }
+        try await wait("the first call of a with true") { self.exists("a-true") }
         sheet.set(parts[0], to: "false")
 
         try await wait("the new call of a") { sheet.panel?.parts[2].title == "new" }

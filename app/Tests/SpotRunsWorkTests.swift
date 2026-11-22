@@ -434,6 +434,32 @@ final class SpotRunsWorkTests: SpotRunsCase {
         XCTAssertEqual(form?.fields.map(\.name), ["a"])
     }
 
+    func testAPressOfAnItemAsksWithAFormAndASubmitCanAnswerWithTheFormAgain() async throws {
+        try script(toml: "", """
+        case "$1" in
+          show) printf 'text=a\\ntitle=A\\n' ;;
+          press) case "$(cat)" in *input.name=x*) ;; *) printf 'frame=\\ntype=form\\ntitle=Name\\n\\nfield=name\\ntitle=Name\\n' ;; esac ;;
+        esac
+        """)
+        let sheet = try sheet()
+        sheet.open {}
+        try await wait("the read") { sheet.calls.isEmpty }
+        let item = SpotItem(title: "A", run: "a")
+        let press = CommandAction(id: Frame.press, title: item.title)
+
+        guard case .form(let form) = await sheet.answer(toPick: item) else { return XCTFail("the press asked with no form") }
+        try await wait("the end of the press") { sheet.calls.isEmpty }
+        var draft = FormDraft(form: form)
+        draft.set("y", for: "name")
+        let again = try await sheet.submit(press, item: item, draft: draft)
+        draft.set("x", for: "name")
+        let done = try await sheet.submit(press, item: item, draft: draft)
+
+        XCTAssertEqual(form.fields.map(\.name), ["name"])
+        XCTAssertEqual(again, .form(form))
+        XCTAssertEqual(done, .done)
+    }
+
     func testAChangeAnswersWithTheFormOfItsScriptOrIsDone() async throws {
         try script(toml: "", """
         case "$1" in
@@ -516,13 +542,13 @@ final class SpotRunsWorkTests: SpotRunsCase {
     }
 
     func testAQuitStopsAToggleAndItGoesBack() async throws {
-        try script(toml: "[on]\n\"panel.open\" = true", "[ \"$1\" = show ] && printf 'switch=power\\nclass=card:flex\\nvalue=false\\n'\n[ \"$1\" = power ] && sleep 30\nexit 0")
+        try script(toml: "[on]\n\"panel.open\" = true", "[ \"$1\" = show ] && printf 'switch=power\\nclass=card:flex\\nvalue=false\\n'\n[ \"$1\" = power ] && sed -n 's/^input\\.value=//p' > '\(path("value"))'\n[ \"$1\" = power ] && sleep 30\nexit 0")
         let sheet = try sheet()
         runs.panelOpened()
         try await wait("the kind") { sheet.spot.kind == .toggle && sheet.calls.isEmpty }
         sheet.pressCard()
         XCTAssertEqual(sheet.state.on, true)
-        try await wait("the call") { self.log() == ["show", "power"] }
+        try await wait("the call with its value") { self.log() == ["show", "power"] && (try? String(contentsOfFile: self.path("value"), encoding: .utf8)) == "true\n" }
 
         runs.quit()
         try await pause()

@@ -33,6 +33,20 @@ final class InlineHandlersTests: SpotRunsCase {
         XCTAssertEqual(Frame(text: text).outputs, [.init(key: "sum", value: "6"), .init(key: "kind", value: "number 1")], text)
     }
 
+    func testAHandlerGetsAnEscapedInputAsItsText() async throws {
+        try inline("notes", toml: "[actions.save]\ninputs.note = 'text'", """
+        export default {
+          async save({ note }) {
+            return openspot.frame([{ item: "t", title: note }])
+          },
+        }
+        """)
+
+        let text = try await runs.answer(of: try spot("notes"), SpotAction(arguments: ["save"]), input: "input.note=a\\\\b\n", limit: 60)
+
+        XCTAssertEqual(Frame(text: text).items.first?.title, "a\\b", text)
+    }
+
     func testHandlersRunABoundActionEmitAnEventAndHearItInAnotherSpot() async throws {
         try script("picker", toml: "[actions.pick]\noutputs.until = 'date'", log: "picker-log", """
         case "$1" in pick) echo out.until=2026-11-23 ;; esac

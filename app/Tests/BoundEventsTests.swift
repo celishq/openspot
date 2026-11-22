@@ -27,8 +27,11 @@ final class BoundEventsTests: SpotRunsCase {
 
     private func press() async throws {
         _ = try scanned()
-        try XCTUnwrap(runs.sheets["picker"]).pressCard()
+        let sheet = try XCTUnwrap(runs.sheets["picker"])
+        sheet.pressCard()
         try await wait("the end of the emit") { self.log("done").count == 1 }
+        try await allEnded()
+        try await wait("the end of the call in the sheet") { sheet.calls.isEmpty }
     }
 
     func testAnEmitCallsTheHandlerOfEachSpotThatBindsTheEmitterAndListensToTheEvent() async throws {

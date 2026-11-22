@@ -33,12 +33,12 @@ final class SlashCommandPanelTests: PanelCase {
         model.landSearch()
     }
 
-    private func open() async {
+    private func open() async throws {
         await model.reload()
         model.isShown = true
         model.panelWillShow()
         if model.entry("notes") != nil {
-            try? await wait("the buttons of notes") { self.model.entry("notes")?.spot.actions.isEmpty == false }
+            try await wait("the buttons of notes") { self.model.entry("notes")?.spot.actions.isEmpty == false }
         }
     }
 
@@ -49,7 +49,7 @@ final class SlashCommandPanelTests: PanelCase {
     func testASlashWordListsTheMatchingCommandsWithTheFirstHighlighted() async throws {
         try writeNotes()
         try script("trash", toml: "title = 'Trash'", "\(TestSpot.toast) Emptied")
-        await open()
+        try await open()
 
         type("/note buy milk")
 
@@ -66,7 +66,7 @@ final class SlashCommandPanelTests: PanelCase {
         try script("trash", toml: "title = 'Trash'", "\(TestSpot.toast) Emptied")
         _ = try model.files.config.change { $0.arrangement.arrange(["notes"]) }
         try String(contentsOf: model.files.config.url, encoding: .utf8).appending("search = false\n").write(to: model.files.config.url, atomically: true, encoding: .utf8)
-        await open()
+        try await open()
 
         type("notes")
         XCTAssertFalse(model.visible.contains { $0.spot.id == "notes" })
@@ -78,7 +78,7 @@ final class SlashCommandPanelTests: PanelCase {
 
     func testTheHintOfTheHighlightedCommandShowsUntilTextFollows() async throws {
         try writeNotes()
-        await open()
+        try await open()
 
         type("/add")
         XCTAssertEqual(model.slashPlaceholder, "What to add")
@@ -94,7 +94,7 @@ final class SlashCommandPanelTests: PanelCase {
 
     func testEachRowSaysWhatReturnDoesWithTheText() async throws {
         try writeNotes()
-        await open()
+        try await open()
 
         type("/note")
         XCTAssertEqual(model.visible.map(\.state.subtitle), ["What to add", "What to find"])
@@ -109,7 +109,7 @@ final class SlashCommandPanelTests: PanelCase {
         main() { case "$1 $(value name)" in 'command ping') \(TestSpot.toast) "Ping $(value text)" ;; esac; }
         openspot_serve main "$@"
         """)
-        await open()
+        try await open()
 
         type("/ping hi")
         model.selected = try XCTUnwrap(model.visible.firstIndex { $0.state.title == "ping" })
@@ -121,7 +121,7 @@ final class SlashCommandPanelTests: PanelCase {
 
     func testAClickOnACommandRunsItWithTheText() async throws {
         try writeNotes()
-        await open()
+        try await open()
 
         type("/add buy milk")
         model.tap(try XCTUnwrap(model.visible.first).id)
@@ -131,7 +131,7 @@ final class SlashCommandPanelTests: PanelCase {
 
     func testWithNoTextReturnRunsTheCommandOfItsRow() async throws {
         try script("solo", toml: "title = 'Solo'\n[on]\ncommand = ['solo']", "\(TestSpot.toast) Ran")
-        await open()
+        try await open()
 
         type("/solo")
         XCTAssertEqual(model.hint, "⏎ solo")
@@ -142,7 +142,7 @@ final class SlashCommandPanelTests: PanelCase {
 
     func testTheLeadKeepsTheSpacesTypedBeforeTheCommand() async throws {
         try writeNotes()
-        await open()
+        try await open()
 
         type("  /add x")
 
@@ -154,7 +154,7 @@ final class SlashCommandPanelTests: PanelCase {
         try script("windows", toml: "title = 'Windows'\n[actions.full]\ntitle = 'Full screen'", "\(TestSpot.toast) Full")
         try script("trash", toml: "title = 'Trash'", "\(TestSpot.toast) Emptied")
         try script("say", toml: "title = 'Say'\n[on]\ncommand = ['say']", "\(TestSpot.toast) Said")
-        await open()
+        try await open()
 
         type("/")
 
@@ -169,7 +169,7 @@ final class SlashCommandPanelTests: PanelCase {
         printf '%s\\n%s\\n' "$*" "$stdin" >> '\(input.path)'
         \(TestSpot.toast) Said
         """)
-        await open()
+        try await open()
 
         type("/say hi")
         model.runSelected()
@@ -180,7 +180,7 @@ final class SlashCommandPanelTests: PanelCase {
 
     func testASlashAfterTheTextListsEveryCommandAndReturnSendsTheText() async throws {
         try writeNotes()
-        await open()
+        try await open()
 
         type("buy milk /")
         XCTAssertEqual(model.visible.map(\.state.title), ["Add note", "Find note"])
@@ -197,7 +197,7 @@ final class SlashCommandPanelTests: PanelCase {
           *) printf 'text=a\\ntitle=A\\n\\nbutton=new\\ntitle=New jot\\nscope=spot\\nplaceholder=What to jot\\n' ;;
         esac
         """)
-        await open()
+        try await open()
         try await wait("the button of the read") { self.model.entry("jot")?.spot.actions.isEmpty == false }
 
         type("/jot milk")
@@ -205,11 +205,13 @@ final class SlashCommandPanelTests: PanelCase {
         model.runSelected()
 
         try await wait("the form") { self.model.form?.draft.values["text"] == "milk" }
+        XCTAssertEqual(model.form?.draft.form.fields.map(\.name), ["text", "title"])
+        XCTAssertEqual(host.confirms, [])
     }
 
     func testAWordThatNamesNoCommandStaysText() async throws {
         try writeNotes()
-        await open()
+        try await open()
 
         type("/Users")
 
@@ -219,7 +221,7 @@ final class SlashCommandPanelTests: PanelCase {
 
     func testReturnRunsTheCommandWithTheTextOnStdinAndClosesThePanel() async throws {
         try writeNotes()
-        await open()
+        try await open()
 
         type("buy milk /add")
         model.runSelected()
@@ -232,7 +234,7 @@ final class SlashCommandPanelTests: PanelCase {
 
     func testAFirstFrameWithFieldsOpensTheFormAndItsValuesGoToTheSameCall() async throws {
         try writeNotes()
-        await open()
+        try await open()
 
         type("/add ask")
         model.runSelected()
@@ -247,7 +249,7 @@ final class SlashCommandPanelTests: PanelCase {
 
     func testAFirstFrameWithFieldsAndNoTypeFormOpensTheSheet() async throws {
         try writeNotes()
-        await open()
+        try await open()
 
         type("/add page")
         model.runSelected()
@@ -258,7 +260,7 @@ final class SlashCommandPanelTests: PanelCase {
 
     func testAFirstFrameWithSomethingToShowOpensTheSheet() async throws {
         try writeNotes()
-        await open()
+        try await open()
 
         type("/find milk")
         model.runSelected()
@@ -275,7 +277,7 @@ final class SlashCommandPanelTests: PanelCase {
         printf '%s\\n%s\\n' "$*" "$stdin" >> '\(input.path)'
         printf 'field=input\\n'
         """)
-        await open()
+        try await open()
 
         type("/translate hello world")
         model.runSelected()
