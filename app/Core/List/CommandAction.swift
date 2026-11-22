@@ -25,8 +25,8 @@ public struct CommandAction: Equatable, Sendable {
 
     private static let wordPrefix = "openspot.word."
 
-    public static func word(_ word: String) -> CommandAction {
-        CommandAction(id: wordPrefix + word, title: word, scope: .spot, after: .close)
+    public static func word(_ name: String, shown word: String? = nil) -> CommandAction {
+        CommandAction(id: wordPrefix + name, title: word ?? name, scope: .spot, after: .close)
     }
 
     public static func word(of action: CommandAction) -> String? {

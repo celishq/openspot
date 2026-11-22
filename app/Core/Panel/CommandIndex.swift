@@ -22,8 +22,8 @@ struct CommandIndex {
                 items[id] = item
                 spots[id] = card.spot
             }
-            for word in card.spot.host == nil ? card.spot.commandWords : [] {
-                let action = CommandAction.word(word)
+            for (name, word) in card.spot.host == nil ? card.commandWords : [] {
+                let action = CommandAction.word(name, shown: word)
                 let item = SpotItem(title: action.title, run: action.id)
                 let id = SpotsModel.Entry(spot: card.spot, item: item).id
                 rows.append(SpotItem(title: action.title, subtitle: card.state.title, run: id, keywords: [word, card.id]))

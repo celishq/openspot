@@ -12,6 +12,7 @@ public struct SpotArrangement: Equatable, Sendable {
         public var isWindow: Bool?
         public var key: ActionKey?
         public var panel: GridPanel?
+        public var commands: [String: String]?
 
         public init(id: String, size: SpotSize? = nil, isOnGrid: Bool? = nil, isEnabled: Bool? = nil, isGlobal: Bool? = nil, isInMenuBar: Bool? = nil, key: ActionKey? = nil) {
             self.id = id
@@ -65,6 +66,10 @@ public struct SpotArrangement: Equatable, Sendable {
 
     public func isGlobal(of id: String) -> Bool? {
         choice(of: id)?.isGlobal
+    }
+
+    public func commands(of id: String) -> [String: String]? {
+        choice(of: id)?.commands
     }
 
     public func isWindow(of id: String) -> Bool? {
@@ -135,7 +140,8 @@ public struct SpotArrangement: Equatable, Sendable {
                 ("tray", choice.isInMenuBar.map { .boolean($0) }),
                 ("window", choice.isWindow.map { .boolean($0) }),
                 ("key", (choice.key?.text).map { .string($0) }),
-                ("side", (choice.panel?.rawValue).map { .string($0) })
+                ("side", (choice.panel?.rawValue).map { .string($0) }),
+                ("commands", choice.commands.map { .table($0.mapValues { .string($0) }) })
             ])
         }
     }
