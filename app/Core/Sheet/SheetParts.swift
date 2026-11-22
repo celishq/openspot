@@ -56,6 +56,11 @@ public struct SheetParts: Equatable, Sendable {
     }
 
     private mutating func orderFocus() {
+        if tree.isWritten {
+            focusLineOffsets = Self.lines(of: tree, parts: parts)
+            focusOffsets = focusLineOffsets.flatMap { $0 }
+            return
+        }
         let top = placement.repeatFrame?.maxY ?? -.infinity
         let placed: [(offset: Int, rect: CGRect)] = parts.indices.compactMap { offset in
             let part = parts[offset]
@@ -75,6 +80,33 @@ public struct SheetParts: Equatable, Sendable {
             }
         }
         focusLineOffsets = lines
+    }
+
+    private static func lines(of tree: ViewTree, parts: [SpotPart]) -> [[Int]] {
+        var lines: [[Int]] = []
+        var lineRow: String?
+        var isBelowItems = !tree.nodes.values.contains { $0.kind == BlockKind.items }
+        func walk(_ ids: [String], row: String?) {
+            for id in ids {
+                guard let node = tree.node(id) else { continue }
+                if node.kind == BlockKind.items {
+                    isBelowItems = true
+                    lineRow = nil
+                    continue
+                }
+                if isBelowItems, let offset = parts.firstIndex(where: { $0.id == id }), parts[offset].isFocusable {
+                    if let row, row == lineRow, !lines.isEmpty {
+                        lines[lines.count - 1].append(offset)
+                    } else {
+                        lines.append([offset])
+                        lineRow = row
+                    }
+                }
+                walk(node.children, row: node.style.resolved(for: [.sheet]).arrangement == .row ? id : row)
+            }
+        }
+        walk(tree.children, row: nil)
+        return lines
     }
 
     public var inputs: [TextBlock.Field] {
@@ -140,7 +172,7 @@ public struct SheetParts: Equatable, Sendable {
 
     @discardableResult
     public mutating func moveLine(by lines: Int) -> Bool {
-        guard let current = selectedPart, let from = placement.frames[current.id]?.rect else { return false }
+        guard let current = selectedPart else { return false }
         let all = focusLines
         guard let index = all.firstIndex(where: { $0.contains { $0.id == current.id } }) else { return false }
         if index + lines < 0, showsRows {
@@ -148,7 +180,15 @@ public struct SheetParts: Equatable, Sendable {
             return true
         }
         let target = min(max(index + lines, 0), all.count - 1)
-        guard target != index, let next = all[target].min(by: { distance($0, from) < distance($1, from) }) else { return false }
+        guard target != index else { return false }
+        let next: SpotPart?
+        if let from = placement.frames[current.id]?.rect {
+            next = all[target].min { distance($0, from) < distance($1, from) }
+        } else {
+            let column = all[index].firstIndex { $0.id == current.id } ?? 0
+            next = all[target][min(column, all[target].count - 1)]
+        }
+        guard let next else { return false }
         selected = next.id
         return true
     }

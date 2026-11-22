@@ -109,7 +109,7 @@ final class SpotTablesTests: XCTestCase {
         XCTAssertEqual(output.parts.map(\.kind), ["number", "number", "slider", "hotkey", "field", "switch"])
         XCTAssertEqual(output.parts.last?.look, .tick)
         XCTAssertEqual(output.fields.map(\.kind.name), ["slider", "field", "switch"])
-        XCTAssertEqual(BlockKind.words, ["text", "number", "picture", "icon", "view", "switch", "field", "choice", "option", "button", "section", "repeat", "box"])
+        XCTAssertEqual(BlockKind.words, ["text", "number", "picture", "icon", "view", "switch", "field", "choice", "option", "button", "section", "repeat", "items", "box"])
     }
 
     private func unknownKeys(in frame: String) -> [String] {

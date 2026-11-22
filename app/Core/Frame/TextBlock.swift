@@ -27,6 +27,10 @@ public struct TextBlock: Equatable, Sendable {
         self.children = children
     }
 
+    func dropping(_ key: String) -> TextBlock {
+        TextBlock(fields: fields.filter { $0.key != key }, firstLine: firstLine, children: children)
+    }
+
     func adding(child: TextBlock) -> TextBlock {
         TextBlock(fields: fields, firstLine: firstLine, children: children + [child])
     }
