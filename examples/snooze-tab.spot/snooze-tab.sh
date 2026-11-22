@@ -1,8 +1,8 @@
 #!/bin/sh
-# Snooze closes the front tab of the frontmost browser once the person picks a time on the snooze sheet, and due opens
-# it again in that browser. The sheet starts with Snooze Current Tab, pinned, then lists each snoozed tab: Return opens
+# Snooze closes the front tab of the frontmost browser once the person picks a time on the snooze sheet, and the
+# timer's reopen opens it again in that browser. The sheet starts with Snooze Current Tab, pinned, then lists each snoozed tab: Return opens
 # it now, Copy Link copies its url, and Remove forgets it. Open All opens every one now. The rows also show in the main search.
-# A timer keeps "<browser id> <url> <title>"; a tab snoozed for Someday is a timer with no time.
+# A timer calls reopen with the browser id, the url and the title; a tab snoozed for Someday is a timer with no time.
 . "$OPENSPOT_SH"
 
 # The words AppleScript uses for a browser's front tab and for its title, split by a tab, by bundle id: Safari's, or
@@ -39,10 +39,7 @@ close_tab() {
 
 # Prints each snoozed tab as a line: id, time or someday, browser, url, title, split by tabs.
 tabs() {
-  openspot timer list 2>/dev/null | openspot_rows item at title | while IFS="$(printf '\t')" read -r id at value; do
-    rest=${value#* }
-    printf '%s\t%s\t%s\t%s\t%s\n' "$id" "$at" "${value%% *}" "${rest%% *}" "${rest#* }"
-  done
+  openspot timer list 2>/dev/null | openspot_rows item at input.browser input.url input.title
 }
 
 forget() {
@@ -64,8 +61,9 @@ icon() {
   esac
 }
 
-# Snoozes the front tab of the frontmost browser until the time the person picks, and closes it. A title read earlier
-# for the same browser names the picker; the tab itself is read after the pick, so the timer keeps the tab it closes.
+# Snoozes the front tab of the frontmost browser until the time the person picks on the bound picker, and closes it. A
+# title read earlier for the same browser names the picker; the tab itself is read after the pick, so the timer keeps
+# the tab it closes.
 snooze() {
   browser=$(front_id)
   if [ -z "$(tab_words "$browser")" ]; then
@@ -73,15 +71,19 @@ snooze() {
     exit 1
   fi
   if [ "$1" = "$browser" ] && [ -n "$2" ]; then
-    at=$(openspot spot ask openspot/snooze --title "$2") || exit 0
+    at=$(openspot run picker.pick title="$2" --out until) || exit 0
   else
-    at=$(openspot spot ask openspot/snooze) || exit 0
+    at=$(openspot run picker.pick --out until) || exit 0
   fi
   tab=$(read_tab "$browser")
   url=$(printf '%s\n' "$tab" | sed -n 1p)
   title=$(printf '%s\n' "$tab" | sed -n 2p)
   [ -n "$url" ] || { echo "$(front_name) shows no tab." >&2; exit 1; }
-  openspot timer add "$at" "$browser $url $title" >/dev/null || exit 1
+  if [ -n "$title" ]; then
+    openspot timer add "$at" reopen browser="$browser" url="$url" title="$title" >/dev/null || exit 1
+  else
+    openspot timer add "$at" reopen browser="$browser" url="$url" >/dev/null || exit 1
+  fi
   close_tab "$browser"
   openspot toast "Snoozed the tab."
 }
@@ -94,27 +96,29 @@ case "$1" in
     title=$(printf '%s\n' "$tab" | sed -n 2p)
     printf 'button=remove\ntitle=Remove\nshortcut=cmd+backspace\n\nbutton=copy\ntitle=Copy Link\n'
     openspot_item current "Snooze Current Tab" "${title:-${url:-The front tab of your browser}}" moon.zzz
-    printf 'pin=top\nhides=remove\nhides=copy\nclose=false\n'
+    printf 'pin=top\nhides=remove\nhides=copy\n'
     openspot_kv browser "$browser"
     [ -z "$title" ] || openspot_kv page "$title"
     tabs | while IFS="$(printf '\t')" read -r id at browser url title; do
       openspot_item "$id" "${title:-$url}" "$(when "$at")" "$(icon "$url")"
     done
     ;;
-  open)
-    if [ "$2" = current ]; then
+  press)
+    item=$(value item)
+    if [ "$item" = current ]; then
       snooze "$(value item.browser)" "$(value item.page)"
       exit
     fi
-    tabs | awk -F '\t' -v id="$2" '$1 == id { print $3 "\t" $4 }' | while IFS="$(printf '\t')" read -r browser url; do
-      forget "$2" && open -b "$browser" "$url"
+    tabs | awk -F '\t' -v id="$item" '$1 == id { print $3 "\t" $4 }' | while IFS="$(printf '\t')" read -r browser url; do
+      forget "$item" && open -b "$browser" "$url"
     done
     ;;
   remove)
-    [ -n "$2" ] && [ "$2" != current ] && forget "$2"
+    item=$(value item)
+    [ -n "$item" ] && [ "$item" != current ] && forget "$item"
     ;;
   copy)
-    url=$(tabs | awk -F '\t' -v id="$2" '$1 == id { print $4 }')
+    url=$(tabs | awk -F '\t' -v id="$(value item)" '$1 == id { print $4 }')
     [ -n "$url" ] && printf '%s' "$url" | openspot clipboard copy && openspot toast "Copied the link."
     ;;
   wake)
@@ -125,9 +129,7 @@ case "$1" in
   snooze)
     snooze "" ""
     ;;
-  due)
-    value=$(value event.value)
-    rest=${value#* }
-    open -b "${value%% *}" "${rest%% *}"
+  reopen)
+    open -b "$(value browser)" "$(value url)"
     ;;
 esac

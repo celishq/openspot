@@ -83,7 +83,7 @@ func look(_ call: Call) {
 Link.listen { call in
     Link.start(call.id)
     switch call.arguments.first {
-    case "play", "open": play(shelf.chosen(call.value("setting.look")), call: call.id)
+    case "play": play(shelf.chosen(call.value("setting.look")), call: call.id)
     case "look": look(call)
     default: Link.end(call.id)
     }

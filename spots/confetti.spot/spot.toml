@@ -1,11 +1,11 @@
 title = "Confetti"
 icon = "party.popper"
 detail = "Celebrate on each screen"
-mode = "stay"
+stay = true
 source = ["confetti"]
 
-[commands.play]
+[actions.play]
 title = "Play"
 
-[settings.look]
-title = "Look"
+[settings]
+look = { type = "text", title = "Look" }

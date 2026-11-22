@@ -18,8 +18,8 @@ function clock(text, fallback) {
 }
 
 /** The choices of the person, from the settings of the call. */
-function choices(input) {
-  const value = (key) => openspot.value(`setting.${key}`, input).trim()
+function choices(settings) {
+  const value = (key) => String(settings[key] ?? "").trim()
   return {
     morning: clock(value("morning"), [8, 0]),
     evening: clock(value("evening"), [19, 0]),
@@ -78,11 +78,11 @@ function words(date, now) {
   return date.toLocaleDateString("en-US", { month: "short", day: "numeric" })
 }
 
-/** The sheet: a grid of tiles, three in a row, each with its icon, its title and the time it stands for. Pick Date
- * opens the page where the person types a time. */
-function sheet(now, choices) {
+/** The sheet: a grid of tiles, three in a row, each with its icon, its title and the time it stands for, under a title
+ * when one is given. Pick Date opens the page where the person types a time. */
+function sheet(now, choices, title) {
   const moments = times(now, choices)
-  const blocks = [{ frame: "" }, { items: "tiles", class: "grid grid-cols-3" }]
+  const blocks = [title ? { frame: "", title } : { frame: "" }, { items: "tiles", class: "grid grid-cols-3" }]
   for (const [id, title, icon, none] of tiles) {
     const moment = moments[id]
     const tile = { item: id, parent: "tiles", title, detail: moment ? words(moment, now) : none, icon, class: "bg-tile" }
@@ -138,17 +138,21 @@ function hours(route, now, choices) {
   return openspot.frame(blocks)
 }
 
-/** A press of a tile, or of a part of a picked day, replies with its moment or `someday`. */
-function main([id, value], env, input) {
-  const now = new Date()
-  if (id === "show") {
-    const route = openspot.value("route", input).trim()
-    if (route === "date") return days(now, choices(input))
-    if (route.startsWith("date/")) return hours(route, now, choices(input))
-    return sheet(now, choices(input))
-  }
-  if (id !== "open" || !value || value.startsWith("date")) return ""
-  const moment = value.includes("T") ? value : value === "someday" ? "someday" : iso(times(now, choices(input))[value])
-  openspot.call(["spot", "reply", moment])
-  return ""
+/** Shows the sheet or a page of Pick Date; pick shows the sheet under the title of what is snoozed; a press of a tile,
+ * or of a part of a picked day, gives its moment or `someday` as `until`. */
+export default {
+  async show({ route = "" }, env) {
+    const now = new Date()
+    if (route === "date") return days(now, choices(env.settings))
+    if (route.startsWith("date/")) return hours(route, now, choices(env.settings))
+    return sheet(now, choices(env.settings))
+  },
+  async pick({ title }, env) {
+    return sheet(new Date(), choices(env.settings), title)
+  },
+  async press({ item }, env) {
+    if (!item || item.startsWith("date")) return
+    const until = item.includes("T") ? item : item === "someday" ? "someday" : iso(times(new Date(), choices(env.settings))[item])
+    return { until }
+  },
 }

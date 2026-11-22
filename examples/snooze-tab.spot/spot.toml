@@ -1,13 +1,24 @@
 title = "Snooze Tab"
 icon = "moon.zzz"
 detail = "Bring this tab back later"
-on = ["sheet.open", "spot.want"]
-offers = ["search"]
 uses = ["timer", "clipboard"]
 
-[commands.snooze]
+[actions.snooze]
 title = "Snooze Tab"
 
-[commands.wake]
+[actions.wake]
 title = "Open All"
 icon = "arrow.uturn.backward"
+
+[actions.reopen]
+inputs.browser = { type = "text", required = true, description = "The bundle id of the browser" }
+inputs.url = { type = "url", required = true, description = "The page to open" }
+inputs.title = { type = "text", description = "The title of the page" }
+
+[bindings]
+picker = { spot = "openspot/snooze" }
+
+[on]
+"sheet.open" = true
+"spot.want" = true
+search = true

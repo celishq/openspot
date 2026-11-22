@@ -38,11 +38,11 @@ if [ -f "$kept" ]; then
 fi
 
 # Prints the use of all cores, from the load that Openspot measures every 5 seconds, and the trend of the last 30 points.
-# A read with no load, as when the panel opens, measures the use now after the trend, and keeps no point.
+# A show, as when the panel opens, measures the use now after the trend, and keeps no point.
 main() {
-  load=$(value event.value)
+  load=$(value value)
   case "$1:$load" in
-    show:cpu=*)
+    system.load:cpu=*)
       now=${load#cpu=}
       now=${now%% *}
       set -- $points "$now"
