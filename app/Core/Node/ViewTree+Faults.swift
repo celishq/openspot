@@ -8,7 +8,8 @@ extension ViewTree {
     private static let smallSwatchWidth: CGFloat = 18
 
     func sheetFaults(parts: [SpotPart]) -> [String] {
-        var faults = parts.filter { $0.press != .none && $0.look == .strong }.count > 1 ? ["only one button can use bg-accent"] : []
+        let accents = parts.filter { part in part.isPressable && nodes[part.id]?.style.resolved(for: [.sheet]).fill == .accent }
+        var faults = accents.count > 1 ? ["only one button can use bg-accent"] : []
         var words = Dictionary(parts.compactMap { part in Self.wordsWidth(of: part, isText: nodes[part.id]?.kind == BlockKind.text.word).map { (part.id, $0) } }) { first, _ in first }
         for node in nodes.values where node.kind == BlockKind.icon.word { words[node.id] = SpotTokens.listIconSize }
         let frames = frames(in: SpotTokens.partsWidth, room: SpotTokens.partsMaxHeight, words: words)

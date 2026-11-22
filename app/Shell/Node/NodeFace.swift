@@ -33,9 +33,9 @@ struct NodeFace: View {
         case BlockKind.text.word: NodeText(title: node.title ?? node.value, detail: node.detail, tone: node.tone, icon: node.icon)
         case BlockKind.icon.word: NodeIcon(icon: node.icon, side: node.naturalSize.width)
         case BlockKind.picture.word: NodePicture(icon: node.icon, size: node.naturalSize)
-        case BlockKind.button.word where !node.children.isEmpty: NodePart(id: node.id, label: AnyView(NodeBox(children: node.children, style: style, tree: tree)), size: node.naturalSize)
+        case BlockKind.button.word where !node.children.isEmpty: NodePart(node: node, label: AnyView(NodeBox(children: node.children, style: style, tree: tree)))
         case BlockKind.field.word where node.isSearch: NodeSearch()
-        case let kind where BlockKind.controlWords.contains(kind): NodePart(id: node.id, label: nil, size: node.naturalSize, look: SpotPart.Look(style: style))
+        case let kind where BlockKind.controlWords.contains(kind): NodePart(node: node, label: nil, look: SpotPart.Look(style: style))
         case BlockKind.items: NodeItems(size: node.naturalSize)
         default:
             if let source = node.source { NodeSpotView(id: node.id, values: node.values, source: source) }

@@ -59,7 +59,6 @@ public struct SpotPart: Equatable, Sendable, Identifiable {
     public let key: ActionKey?
     public let asksToRecord: Bool
     public let closes: Bool
-    public private(set) var look: Look?
     public let isTick: Bool
     public let isMultiline: Bool
 
@@ -70,10 +69,10 @@ public struct SpotPart: Equatable, Sendable, Identifiable {
 
     public init?(block: TextBlock, kinds: [BlockKind] = BlockKind.all) {
         guard let kind = BlockKind.of(block, in: kinds) else { return nil }
-        self.init(block: block, kind: kind)
+        self.init(block: block, kind: kind, style: StyleCache.shared.style(of: block.value(ViewNode.classKey) ?? ""))
     }
 
-    init?(block: TextBlock, kind: BlockKind) {
+    init?(block: TextBlock, kind: BlockKind, style: Style) {
         guard let id = block.value(kind.word) else { return nil }
         self.id = id
         self.kind = kind.name
@@ -82,8 +81,7 @@ public struct SpotPart: Equatable, Sendable, Identifiable {
         key = kind == .hotkey ? nil : block.value("shortcut").flatMap(ActionKey.init(text:))
         asksToRecord = kind == .hotkey && block.flag("recording") == true
         closes = block.flag("close") ?? kind.presses
-        let style = StyleCache.shared.style(of: block.value(ViewNode.classKey) ?? "").resolved(for: [.sheet])
-        look = Look(style: style)
+        let style = style.resolved(for: [.sheet])
         isTick = kind.takesTick && block.value("type") == "tick"
         isMultiline = kind == .field && block.value("type") == ViewNode.multiline
         let icon = Icon(text: block.value("icon"))
@@ -136,12 +134,6 @@ public struct SpotPart: Equatable, Sendable, Identifiable {
         }
     }
 
-    public func drawn(as look: Look?) -> SpotPart {
-        var part = self
-        part.look = look
-        return part
-    }
-
     public var fillsHeight: Bool {
         switch control {
         case .text: isMultiline
@@ -150,7 +142,7 @@ public struct SpotPart: Equatable, Sendable, Identifiable {
         }
     }
 
-    public var fillsWidth: Bool {
+    public func fillsWidth(as look: Look?) -> Bool {
         if look == .chip || look == .bare { return title != nil && control != .none }
         if case .round = press { return false }
         return true

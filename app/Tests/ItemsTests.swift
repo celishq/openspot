@@ -106,12 +106,6 @@ final class ItemsTests: PanelCase {
         XCTAssertEqual(output.parts.first?.control, .menu([.init(id: "colorful", title: "Colorful"), .init(id: "plain", title: "Plain")], value: "colorful"))
     }
 
-    func testAnItemWithTheTileLookShowsItsWordsInItsCell() {
-        let output = Frame(text: "frame=\nclass=gap-part\n\nitems=times\nclass=grid grid-cols-3\n\ntext=later\nparent=times\ntitle=Later\ndetail=17:20\nicon=cup.and.saucer.fill\nclass=bg-tile\n\ntext=star\nparent=times\ntitle=Star\nicon=star\n")
-
-        XCTAssertEqual(output.items.map(\.look), [.tile, nil])
-    }
-
     func testASheetOfThreeLinesOfTilesFitsItsLines() async throws {
         let tiles = (1...9).map { "text=t\($0)\nparent=tiles\ntitle=T\($0)\ndetail=D\nicon=star\nclass=bg-tile\n" }.joined(separator: "\n")
         try await open("frame=\nclass=gap-part\n\nitems=tiles\nclass=grid grid-cols-3\n\n\(tiles)")

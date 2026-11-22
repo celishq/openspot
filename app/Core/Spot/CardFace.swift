@@ -1,13 +1,11 @@
 import Foundation
 
 public struct CardFace: Equatable, Sendable {
-    public private(set) var parts: [SpotPart]
     public private(set) var tree = ViewTree.empty
 
-    public static let none = CardFace(parts: [])
+    public static let none = CardFace()
 
-    public init(parts: [SpotPart], tree: ViewTree = .empty) {
-        self.parts = tree.places.isEmpty ? [] : parts
+    public init(tree: ViewTree = .empty) {
         self.tree = tree
     }
 
@@ -20,6 +18,6 @@ public struct CardFace: Equatable, Sendable {
     }
 
     public mutating func set(_ value: String, of id: String) {
-        parts.firstIndex { $0.id == id }.map { parts[$0].set(value) }
+        tree.set(value, of: id)
     }
 }

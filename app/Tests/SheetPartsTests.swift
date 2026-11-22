@@ -145,6 +145,15 @@ final class SheetPartsTests: XCTestCase {
         XCTAssertEqual(panel.height, height)
     }
 
+    func testASetValueReachesThePartThatTheTreeDraws() throws {
+        var panel = try panel(lights)
+
+        panel.set("true", of: "left")
+
+        XCTAssertEqual(panel.tree.node("left")?.part?.control, .toggle(true))
+        XCTAssertEqual(panel.inputs.first { $0.key == "left" }?.value, "true")
+    }
+
     func testAScriptThatPrintsPartsIsAList() {
         XCTAssertEqual(Frame(text: lights.placed).kind, .list)
         XCTAssertNil(SheetParts(output: Frame(text: "text=a\ntitle=A\n")))
@@ -474,8 +483,8 @@ final class SheetPartsTests: XCTestCase {
     }
 
     func testTheClassesOfAPartChooseTheLookOfItsBox() throws {
-        let looks = try ["bg-accent", "rounded-full", "bg-transparent", "bg-tile", "bg-tile hover:bg-accent", "rounded-inner"].map { classes in
-            try XCTUnwrap(Frame(text: "frame=\nclass=gap-part\n\nbutton=b\ntitle=B\nclass=\(classes)\n").parts.first).look
+        let looks = ["bg-accent", "rounded-full", "bg-transparent", "bg-tile", "bg-tile hover:bg-accent", "rounded-inner"].map { classes in
+            Frame(text: "frame=\nclass=gap-part\n\nbutton=b\ntitle=B\nclass=\(classes)\n").tree.look(of: "b")
         }
 
         XCTAssertEqual(looks, [.strong, .chip, .bare, .tile, .tile, nil])

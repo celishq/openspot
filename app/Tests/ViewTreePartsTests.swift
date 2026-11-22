@@ -97,7 +97,7 @@ final class ViewTreePartsTests: XCTestCase {
         let frame = Frame(text: "frame=\nclass=gap-2\n\nswitch=a\ntitle=A\nclass=hidden card:flex\n\nswitch=b\ntitle=B\n")
 
         XCTAssertEqual(frame.parts.map(\.id), ["b"])
-        XCTAssertEqual(frame.face.parts.map(\.id), ["a", "b"])
+        XCTAssertEqual(frame.face.tree.parts.map(\.id), ["a", "b"])
     }
 
     func testANodeHiddenInTheSheetTakesNoGap() throws {

@@ -11,6 +11,7 @@ public struct ViewTree: Equatable, Sendable {
     public private(set) var places: Set<Style.Variant> = []
     public private(set) var listed: Set<String> = []
     public private(set) var holdsItems = false
+    private(set) var order: [String] = []
 
     public func node(_ id: String) -> ViewNode? {
         nodes[id]
@@ -22,7 +23,19 @@ public struct ViewTree: Equatable, Sendable {
 
     func group(of id: String) -> String? {
         guard let box = nodes[id]?.parent.flatMap({ nodes[$0] }), box.kind == BlockKind.box, listed.contains(box.id) else { return nil }
-        return box.title
+        return box.block.value("title")
+    }
+
+    public func partIDs(shownIn places: [Set<Style.Variant>]) -> [String] {
+        let shown = Set(places.flatMap(shown(in:)))
+        return order.filter { id in
+            guard shown.contains(id), let node = nodes[id], node.part != nil else { return false }
+            return node.kind == BlockKind.choice.word || isWritten && !listed.contains(id)
+        }
+    }
+
+    mutating func set(_ value: String, of id: String) {
+        nodes[id]?.part?.set(value)
     }
 
     public var drawsOnBar: Bool {
@@ -62,7 +75,6 @@ public struct ViewTree: Equatable, Sendable {
         let rootClasses = root?.value(ViewNode.classKey)
         style = rootClasses.map(styles.style(of:)) ?? Style()
         faults += style.unknown.map { "the root has an unknown class: \($0)" }
-        var order: [String] = []
         var found: [String: TextBlock] = [:]
         for block in blocks {
             guard let id = Self.id(of: block, in: kinds), found[id] == nil else { continue }
@@ -103,7 +115,7 @@ public struct ViewTree: Equatable, Sendable {
             guard let block = found[id], let kind = block.fields.first?.key else { continue }
             let style = block.value(ViewNode.classKey).map(styles.style(of:)) ?? Style()
             faults += style.unknown.map { "the part \(id) has an unknown class: \($0)" }
-            nodes[id] = ViewNode(id: id, kind: kind, parent: parents[id], block: block, style: style, children: held[id] ?? [], part: BlockKind.of(block, in: kinds))
+            nodes[id] = ViewNode(id: id, kind: kind, parent: parents[id], block: block, style: style, children: held[id] ?? [], blockKind: BlockKind.of(block, in: kinds))
             places.formUnion(style.named)
         }
         holdsItems = nodes.values.contains { $0.kind == BlockKind.items }
@@ -113,6 +125,9 @@ public struct ViewTree: Equatable, Sendable {
             guard let parent = holder(node.parent) else { return false }
             return parent.kind == BlockKind.items || parent.kind == BlockKind.box && holder(parent.parent)?.kind == BlockKind.items
         }.map(\.id))
+        for (id, node) in nodes where node.isSearch || node.part?.isPressable == true && (!isWritten || listed.contains(id)) {
+            nodes[id]?.part = nil
+        }
         for id in order {
             guard let node = nodes[id], let parent = node.parent, let container = nodes[parent] else { continue }
             if node.kind == BlockKind.box, container.kind == BlockKind.box, listed.contains(id) {
