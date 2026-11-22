@@ -77,7 +77,7 @@ extension SpotsModel {
 
     public func pressPart(_ part: SpotPart) {
         openSheet?.press(part)
-        if part.closes, isShown { host.dismiss() }
+        if part.closes, isShown, openSheet?.spot.triggers == nil { host.dismiss() }
     }
 
     @discardableResult

@@ -23,6 +23,16 @@ public struct CommandAction: Equatable, Sendable {
         action.id.hasPrefix(commandPrefix) ? String(action.id.dropFirst(commandPrefix.count)) : nil
     }
 
+    private static let wordPrefix = "openspot.word."
+
+    public static func word(_ word: String) -> CommandAction {
+        CommandAction(id: wordPrefix + word, title: word, scope: .spot, after: .close)
+    }
+
+    public static func word(of action: CommandAction) -> String? {
+        action.id.hasPrefix(wordPrefix) ? String(action.id.dropFirst(wordPrefix.count)) : nil
+    }
+
     public let id: String
     public let title: String
     public let key: ActionKey?

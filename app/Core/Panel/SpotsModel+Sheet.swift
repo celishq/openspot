@@ -348,7 +348,7 @@ extension SpotsModel {
                 openForm(form, on: (entry, item))
                 return
             }
-            if action != nil || (entry.spot.pick == .close && !item.staysOnPick) {
+            if action != nil || (entry.spot.pick == .close && !item.staysOnPick && entry.spot.triggers == nil) {
                 closingPick = (item, entry)
                 if isShown {
                     host.dismiss()
@@ -360,7 +360,7 @@ extension SpotsModel {
         if let action {
             sheets[entry.id]?.run(action, item: item)
         } else {
-            sheets[entry.id]?.pick(item)
+            sheets[entry.id]?.pick(item, closes: !place.isDetached && entry.spot.triggers != nil && entry.spot.pick == .close && !item.staysOnPick)
         }
     }
 }

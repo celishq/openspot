@@ -15,6 +15,7 @@ public final class SpotRun {
         case closed
         case move(FlowMove)
         case refused(String?)
+        case done
     }
 
     public enum ShowNeed: Sendable {
@@ -42,6 +43,7 @@ public final class SpotRun {
         var ended: (() -> Void)?
         var first: FirstFrame?
         var started: Date?
+        var closes = false
     }
 
     enum Purpose {

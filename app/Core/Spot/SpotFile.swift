@@ -136,6 +136,7 @@ public struct SpotFile: Equatable, Sendable {
         )
         command.typedActions = manifest.actions
         command.triggers = manifest.triggers
+        command.commandWords = manifest.triggers?.commands ?? []
         self.init(id: id, spots: [command])
     }
 

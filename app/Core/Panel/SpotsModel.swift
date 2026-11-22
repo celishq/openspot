@@ -575,6 +575,8 @@ public final class SpotsModel {
             self.move(move, in: id)
         case .refused(let item):
             shakes[Self.shakeKey(of: item, in: id), default: 0] += 1
+        case .done:
+            if isShown { host.dismiss() }
         }
     }
 

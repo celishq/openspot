@@ -8,7 +8,7 @@ extension SpotRun {
         if let older = running(key) { stop(older) }
         let keeping = part.isEditable ? part.id : nil
         let action = SpotAction.set(part.id, to: value)
-        let send: () -> Void = { [weak self] in self?.change(action, key: key, generation: generation, keeping: keeping, closes: false) }
+        let send: () -> Void = { [weak self] in self?.change(action, key: key, generation: generation, keeping: keeping, closes: false, waits: false) }
         switch part.control {
         case .text: after(Self.textPause, key: key, send)
         case .slider: after(Self.sliderPause, key: key, send)
@@ -23,7 +23,7 @@ extension SpotRun {
         if let running = running(key) { return pressAgain(running) }
         guard let generation = panel?.advance() else { return }
         editing = nil
-        change(.press(part.id), key: key, generation: generation, keeping: nil, closes: part.closes)
+        change(.press(part.id), key: key, generation: generation, keeping: nil, closes: part.closes, waits: spot.triggers != nil)
     }
 
     public var isCardRunning: Bool {
@@ -118,8 +118,8 @@ extension SpotRun {
         }
     }
 
-    public func pick(_ item: SpotItem) {
-        press(Message(.item(item), item: item.fields, search: list.search == .script && !list.query.isEmpty ? list.query : nil))
+    public func pick(_ item: SpotItem, closes: Bool = false) {
+        press(Message(.item(item), item: item.fields, search: list.search == .script && !list.query.isEmpty ? list.query : nil), closes: closes)
     }
 
     public func set(_ item: SpotItem, to value: String) {
@@ -149,9 +149,12 @@ extension SpotRun {
         let call = SpotAction.action(action, item: nil)
         guard let key = freeKey(call, onCard: onCard) else { return .stopped }
         answered = nil
+        let message = CommandAction.word(of: action).map { word in
+            Message(.press(Manifest.Triggers.command), inputs: [.init(key: "name", value: word), .init(key: "text", value: search.text)])
+        } ?? Message(call, search: search.text, searchForms: search.forms)
         return try await withCheckedThrowingContinuation { waiting in
             let first = FirstFrame(waiting)
-            if !send(Call(message: Message(call, search: search.text, searchForms: search.forms), key: key, purpose: .act(Act(first: first, started: runs.now())))) { first.end(.stopped) }
+            if !send(Call(message: message, key: key, purpose: .act(Act(first: first, started: runs.now())))) { first.end(.stopped) }
         }
     }
 
@@ -238,15 +241,15 @@ extension SpotRun {
         }
     }
 
-    private func change(_ action: SpotAction, key: String, generation: Int, keeping: String?, closes: Bool) {
+    private func change(_ action: SpotAction, key: String, generation: Int, keeping: String?, closes: Bool, waits: Bool) {
         guard let inputs = panel?.inputs else { return }
-        act(pressing(Message(action, inputs: inputs), as: Self.valueInput), key: key, as: Act(generation: generation, keeping: keeping, showsAfter: !closes))
+        act(pressing(Message(action, inputs: inputs), as: Self.valueInput), key: key, as: Act(generation: generation, keeping: keeping, showsAfter: !closes, closes: closes && waits))
     }
 
-    private func press(_ message: Message, ended: (() -> Void)? = nil) {
+    private func press(_ message: Message, ended: (() -> Void)? = nil, closes: Bool = false) {
         let key = Self.key(call: message.action)
         if let running = running(key) { return pressAgain(running) }
-        act(message, key: key, as: Act(ended: ended))
+        act(message, key: key, as: Act(ended: ended, closes: closes))
     }
 
     private func act(_ message: Message, key: String, as act: Act = Act()) {
