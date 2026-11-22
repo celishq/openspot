@@ -38,21 +38,16 @@ struct NodeFace: View {
         case BlockKind.text.word: NodeText(title: node.title ?? node.value, detail: node.detail, tone: node.tone, icon: node.icon)
         case BlockKind.icon.word: NodeIcon(icon: node.icon, side: node.naturalSize.width)
         case BlockKind.picture.word: NodePicture(icon: node.icon, size: node.naturalSize)
-        case BlockKind.button.word where !node.children.isEmpty: control(label: AnyView(NodeBox(children: node.children, style: style, tree: tree)), look: nil)
+        case BlockKind.button.word where !node.children.isEmpty: NodeButton(node: node, look: nil, label: AnyView(NodeBox(children: node.children, style: style, tree: tree)))
         case BlockKind.field.word where node.isSearch: NodeSearch()
-        case let kind where BlockKind.controlWords.contains(kind): control(label: nil, look: SpotPart.Look(style: style))
+        case BlockKind.toggle.word: NodeSwitch(node: node, look: SpotPart.Look(style: style))
+        case BlockKind.choice.word: NodeChoice(node: node, look: SpotPart.Look(style: style))
+        case BlockKind.field.word: NodeField(node: node, look: SpotPart.Look(style: style))
+        case BlockKind.button.word: NodeButton(node: node, look: SpotPart.Look(style: style))
+        case BlockKind.number.word, BlockKind.series.word: NodeNumber(node: node, look: SpotPart.Look(style: style))
         case BlockKind.items: NodeItems(size: node.naturalSize)
         default:
             if let source = node.source { NodeSpotView(id: node.id, values: node.values, source: source) }
-        }
-    }
-
-    @ViewBuilder
-    private func control(label: AnyView?, look: SpotPart.Look?) -> some View {
-        if isOnCard {
-            NodeCardPart(node: node, label: label, look: look)
-        } else {
-            SheetPartView(node: node, label: label, look: look)
         }
     }
 }
