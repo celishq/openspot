@@ -84,7 +84,7 @@ public struct SpotCheck: Sendable {
             func found(_ fault: String) -> Finding { Finding(spot: script.id, file: script.url.path, fault: fault) }
             do {
                 let text = try await runs.answer(of: script, .show, limit: timeout)
-                let check = FrameCheck(text: text, isApp: script.isBuiltIn)
+                let check = FrameCheck(text: text, kinds: script.kinds, isApp: script.isBuiltIn)
                 let output = check.output
                 _ = try script.state(of: output)
                 if script.on?.seconds != nil, MetricValue(output: output) == nil { throw SpotError.badMetric }
@@ -108,11 +108,12 @@ public struct SpotCheck: Sendable {
         }
         for script in scan.scripts {
             guard !Task.isCancelled else { return findings }
-            guard let view = script.view else { continue }
-            do {
-                _ = try await views.library(of: URL(fileURLWithPath: view))
-            } catch {
-                findings.append(Finding(spot: script.id, file: view, fault: Self.reason(error)))
+            for view in [script.view].compactMap(\.self) + script.views.values.sorted() {
+                do {
+                    _ = try await views.library(of: URL(fileURLWithPath: view))
+                } catch {
+                    findings.append(Finding(spot: script.id, file: view, fault: Self.reason(error)))
+                }
             }
         }
         return findings

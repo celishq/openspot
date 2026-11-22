@@ -50,6 +50,41 @@ final class ViewTreeTests: XCTestCase {
         XCTAssertTrue(tree.faults.isEmpty)
     }
 
+    private let battery = """
+    frame=
+    class=relative
+
+    liquid=level
+    class=absolute inset-0
+    value=0.72
+    tone=good
+
+    text=words
+    title=72%
+    """
+
+    func testAViewOfTheSpotIsAKindOfNodeThatHoldsItsKeysAndItsSource() throws {
+        let kinds = BlockKind.all + [BlockKind(view: "liquid", source: "/spots/liquid.swift")]
+        let tree = Frame(text: battery, kinds: kinds).tree
+        let level = try XCTUnwrap(tree.node("level"))
+
+        XCTAssertEqual(tree.children, ["level", "words"])
+        XCTAssertEqual(level.kind, "liquid")
+        XCTAssertEqual(level.source, "/spots/liquid.swift")
+        XCTAssertEqual(level.values["value"], ["0.72"])
+        XCTAssertEqual(level.values["tone"], ["good"])
+        XCTAssertTrue(level.style.isAbsolute)
+        XCTAssertNil(tree.node("words")?.source)
+    }
+
+    func testAKindThatNoManifestNamesIsSkippedAndReported() {
+        let check = FrameCheck(text: battery)
+
+        XCTAssertNil(check.output.tree.node("level"))
+        XCTAssertEqual(check.output.tree.children, ["words"])
+        XCTAssertTrue(check.sheetFaults.contains("cannot read the block that starts: liquid=level"))
+    }
+
     func testAPatchByIdReplacesTheNodeAndKeepsItsChildren() {
         let tree = patched("box=head\nclass=flex-col\n", after: wifi)
 

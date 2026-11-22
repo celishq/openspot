@@ -56,7 +56,7 @@ public struct ViewTree: Equatable, Sendable {
             guard let block = found[id], let kind = block.fields.first?.key else { continue }
             let style = block.value(ViewNode.classKey).map(styles.style(of:)) ?? Style()
             faults += style.unknown.map { "the part \(id) has an unknown class: \($0)" }
-            nodes[id] = ViewNode(id: id, kind: kind, parent: parents[id], block: block, style: style, children: held[id] ?? [])
+            nodes[id] = ViewNode(id: id, kind: kind, parent: parents[id], block: block, style: style, children: held[id] ?? [], source: BlockKind.of(block, in: kinds)?.source)
         }
     }
 }

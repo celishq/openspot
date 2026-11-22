@@ -64,8 +64,8 @@ public struct Frame: Equatable, Sendable {
         self.init(grouped: Self.grouping(TextBlock.blocks(in: text)), kinds: kinds)
     }
 
-    @concurrent static func reading(_ text: String) async -> Frame {
-        Frame(text: text)
+    @concurrent static func reading(_ text: String, kinds: [BlockKind] = BlockKind.all) async -> Frame {
+        Frame(text: text, kinds: kinds)
     }
 
     init(grouped blocks: [TextBlock], kinds: [BlockKind]) {

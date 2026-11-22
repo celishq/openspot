@@ -459,6 +459,9 @@ Openspot draws a view where the layout puts its `view` block. Use it for a chart
 
 - The file declares `struct SpotView: View` with `let spot: SpotInput`, with no top-level code and no method
   `update()`. A `view=<id>` block draws it in its place.
+- Each file of `views` in the manifest is a kind of node, named by its file: `views = ["liquid.swift"]` gives
+  `liquid=<id>`. It takes `parent` and `class` like any node, such as `class=absolute inset-0` behind a `text`, and
+  `spot["key"]` reads the keys of its own block.
 
 | Member                                          | Gives                                                                                                       |
 | ----------------------------------------------- | ----------------------------------------------------------------------------------------------------------- |
@@ -678,6 +681,7 @@ title = "Refresh"
 | `offers`      | `search`: its items show in the [main search](#the-main-search).                                       |
 | `drop`        | The files its card takes: extensions such as `mov,mkv`, `folder`, or `*`. See [Files out](#files-out). |
 | `view`        | A SwiftUI file in the spot folder, such as `"cups.swift"`. See [Views](#views).                        |
+| `views`       | SwiftUI files that are kinds of node, such as `["liquid.swift"]` for `liquid=<id>`. See [Views](#views). |
 | `source`      | The Swift files, or folders of them, that a [Swift spot](#a-swift-spot) is built with.                 |
 | `mode`        | `once`, the default, or `stay`. See [Modes](#modes).                                                   |
 | `uses`        | What the spot uses, such as `network` or `screen`. [Uses](TRUST.md#uses) lists each one.               |

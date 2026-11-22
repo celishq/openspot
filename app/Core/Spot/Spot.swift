@@ -53,6 +53,7 @@ public struct Spot: Equatable, Sendable {
         settings: [Manifest.Setting] = [],
         view: String? = nil,
         viewDate: Date? = nil,
+        views: [String: String] = [:],
         sources: [String] = [],
         emits: [String] = [],
         pages: [String] = [],
@@ -68,7 +69,7 @@ public struct Spot: Equatable, Sendable {
             hasSheet: on != nil || answers == nil && offers.isEmpty && offeredActions.isEmpty,
             isGlobal: isGlobal, isFound: isFound, answers: answers, order: order,
             host: host, growsFromField: growsFromField, mode: mode, drop: drop,
-            dataName: dataName, isOnGrid: isOnGrid, view: view, viewDate: viewDate, sources: sources, emits: emits, pages: pages, uses: uses,
+            dataName: dataName, isOnGrid: isOnGrid, view: view, viewDate: viewDate, views: views, sources: sources, emits: emits, pages: pages, uses: uses,
             offers: offers, offeredActions: offeredActions, settings: settings, keywords: keywords, placeholder: placeholder, sample: sample,
             edits: edits, starts: starts
         ))

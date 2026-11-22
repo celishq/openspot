@@ -89,7 +89,7 @@ final class InlineMode: ScriptMode {
         Task { [weak run, runs, asking] in
             var end = first
             if let run, let text {
-                let lines = await runs.intake(text, of: run.spot.id)
+                let lines = await runs.intake(text, of: run.spot)
                 if made.isStopped { end = .stopped } else { await run.take(text, lines, of: call) }
             }
             await asking.close(call, end, errors: errors, in: run)

@@ -4,6 +4,7 @@ import SwiftUI
 extension EnvironmentValues {
     @Entry var spotNodeVariants: Set<Style.Variant> = [.sheet]
     @Entry var spotPictureTimes: [String: Double] = [:]
+    @Entry var spotNodeSend: ((String, String) -> Void)?
 }
 
 struct NodeView: View {
@@ -27,7 +28,8 @@ struct NodeView: View {
         case "text": NodeText(title: node.title ?? node.value, detail: node.detail, tone: node.tone, symbol: node.icon?.symbol)
         case "icon": NodeIcon(icon: node.icon)
         case "picture": NodePicture(path: node.icon?.image)
-        default: EmptyView()
+        default:
+            if let source = node.source { NodeSpotView(id: node.id, values: node.values, source: source) }
         }
     }
 }

@@ -132,6 +132,7 @@
 		22DBDD7FF8A9B148293AC52A /* String+Script.swift in Sources */ = {isa = PBXBuildFile; fileRef = CA416C39A61925BF1FA7029B /* String+Script.swift */; };
 		22F2F14518754249968C66CF /* LanguageCodes.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9C462005019A07CDCB802C03 /* LanguageCodes.swift */; };
 		23300936ECF3113984E0CE27 /* Shortcut.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1FF8429FAA2864404333DEF0 /* Shortcut.swift */; };
+		235D96AF95A6BC0BBEF91566 /* NodeSpotView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A4BD00E6BB00635A54ABACA1 /* NodeSpotView.swift */; };
 		239402DAD7FB2FCEE7FFD51B /* FaultSpot.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1AFAF66BCC33ED18172019A7 /* FaultSpot.swift */; };
 		23E6DA2D73DA86379FD5EC1F /* SpotFaded.swift in Sources */ = {isa = PBXBuildFile; fileRef = CB687CF43BB5A419F79C6ADA /* SpotFaded.swift */; };
 		23F7582A8781D272EC8AC942 /* InlineMode.swift in Sources */ = {isa = PBXBuildFile; fileRef = 76E8B03B0EA37F5FC39E2A79 /* InlineMode.swift */; };
@@ -1699,6 +1700,7 @@
 		A403F80489A189FFC6569D8C /* NSEvent+Key.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "NSEvent+Key.swift"; sourceTree = "<group>"; };
 		A433A3698F798A424E8D27F5 /* KeyCode.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KeyCode.swift; sourceTree = "<group>"; };
 		A4A9335ED3170AEC3B728749 /* CalendarStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CalendarStore.swift; sourceTree = "<group>"; };
+		A4BD00E6BB00635A54ABACA1 /* NodeSpotView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NodeSpotView.swift; sourceTree = "<group>"; };
 		A4C4B6D534512FDE9597D758 /* SpotWorkMark.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SpotWorkMark.swift; sourceTree = "<group>"; };
 		A4ECB49D270874528114D620 /* SpotMenuDim.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SpotMenuDim.swift; sourceTree = "<group>"; };
 		A4FF1CDA08F2F90750760F1A /* MainSearch.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MainSearch.swift; sourceTree = "<group>"; };
@@ -3386,6 +3388,7 @@
 				21C778F5CE80AD4C32647F56 /* NodeLook.swift */,
 				85A0A16BA078B1046DF4CEE8 /* NodePicture.swift */,
 				2AD253D0CAB2958530BC9CFA /* NodeSlot.swift */,
+				A4BD00E6BB00635A54ABACA1 /* NodeSpotView.swift */,
 				72032FDB15EEE32B5E98CAB7 /* NodeText.swift */,
 				8A2F7AEF3FCB7F951AE07837 /* NodeView.swift */,
 				8CD2FDF4EDF4677F8E2D6106 /* SheetTreeView.swift */,
@@ -4575,6 +4578,7 @@
 				AA7FD8F4717C6F8C2AD8039A /* NodeLook.swift in Sources */,
 				51B12263578578280331FE32 /* NodePicture.swift in Sources */,
 				E9C8F2B8DD06F5CD5672509F /* NodeSlot.swift in Sources */,
+				235D96AF95A6BC0BBEF91566 /* NodeSpotView.swift in Sources */,
 				3726BAF60348B629395E5FF0 /* NodeText.swift in Sources */,
 				808591FB1802AAE5C01D4DF1 /* NodeView.swift in Sources */,
 				AB371E421B7AD912D259B7AB /* OpenspotApp+Host.swift in Sources */,

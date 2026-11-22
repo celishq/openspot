@@ -15,8 +15,10 @@ public struct ViewNode: Equatable, Sendable, Identifiable {
     public let value: String?
     public let tone: MetricValue.Tone?
     public let icon: Icon?
+    public let source: String?
+    public let values: [String: [String]]
 
-    init(id: String, kind: String, parent: String?, block: TextBlock, style: Style, children: [String]) {
+    init(id: String, kind: String, parent: String?, block: TextBlock, style: Style, children: [String], source: String? = nil) {
         self.id = id
         self.kind = kind
         self.parent = parent
@@ -28,5 +30,7 @@ public struct ViewNode: Equatable, Sendable, Identifiable {
         value = block.value("value")
         tone = block.value("tone").flatMap(MetricValue.Tone.init)
         icon = Icon(text: block.value(kind == BlockKind.icon.word ? "value" : "icon"))
+        self.source = source
+        values = source == nil ? [:] : Dictionary(grouping: block.fields, by: \.key).mapValues { $0.map(\.value) }
     }
 }

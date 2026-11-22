@@ -272,7 +272,7 @@ final class StayMode: ScriptMode {
                 let next = await FrameStream.next(frame, after: drawn?.call == call ? drawn?.text : nil)
                 drawn = call.map { ($0, next.drawn) }
                 let text = next.text
-                let lines = await runs.intake(text, of: run?.spot.id)
+                let lines = await runs.intake(text, of: run?.spot)
                 guard self.script === script, let run else { continue }
                 await take(text, lines, in: run)
             }

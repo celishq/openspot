@@ -948,6 +948,25 @@ final class SpotsModelTests: XCTestCase {
         XCTAssertEqual(model.visible.map(\.id), ["other"])
     }
 
+    func testAViewOfTheSpotDrawsAsANodeThatReadsItsKeysAndSendsAsItsPart() async throws {
+        let calls = folder.appendingPathComponent("calls")
+        let sheet = "frame=\\nclass=relative\\n\\nliquid=level\\nclass=absolute inset-0\\nvalue=0.72\\n\\ntext=words\\ntitle=72%%\\n"
+        try script("parts", toml: "views = ['liquid.swift']", "if [ \"$1\" = show ]; then printf '\(sheet)'; else echo \"$@\" >> '\(calls.path)'; fi")
+        await model.reload()
+        model.isShown = true
+        model.panelWillShow()
+        model.pushFirst("parts", moving: true)
+        try await wait("the open sheet") { model.openSheetID == "parts" && model.openParts?.tree.node("level") != nil }
+
+        let level = try XCTUnwrap(model.openParts?.tree.node("level"))
+        XCTAssertEqual(level.source.map { URL(fileURLWithPath: $0).pathComponents.suffix(2) }, ["parts.spot", "liquid.swift"])
+        XCTAssertEqual(level.values["value"], ["0.72"])
+        XCTAssertEqual(model.openParts?.tree.children, ["level", "words"])
+
+        model.setPart(try XCTUnwrap(model.openParts?.parts.first { $0.id == "level" }), to: "pour")
+        try await wait("the send") { self.calls(in: calls).contains("level pour") }
+    }
+
     private func openParts(_ sheet: String) async throws -> URL {
         let calls = folder.appendingPathComponent("calls")
         try script("parts", toml: "", "if [ \"$1\" = show ]; then printf '\(sheet)'; else echo \"$@\" >> '\(calls.path)'; fi")

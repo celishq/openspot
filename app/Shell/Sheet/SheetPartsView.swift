@@ -34,6 +34,7 @@ struct SheetPartsView: View {
         Group {
             if panel.tree.isWritten {
                 SheetTreeView(tree: panel.tree, pictureTimes: panel.pictureTimes)
+                    .environment(\.spotNodeSend, send)
                     .frame(width: SpotTokens.partsWidth, height: sheet.height, alignment: .topLeading)
             } else if sheet.overflows {
                 ScrollView(showsIndicators: false) { canvas(sheet) }
@@ -47,6 +48,14 @@ struct SheetPartsView: View {
         .modifier(FocusOnSelect(selectedID: selectedID, focus: focusSelectedField))
         .onChange(of: focus) { _, id in
             if !isHeld, let part = panel.parts.first(where: { $0.id == id }) { onFocus(part) }
+        }
+    }
+
+    private var send: (String, String) -> Void {
+        let parts = panel.parts
+        let onSet = onSet
+        return { id, value in
+            if let part = parts.first(where: { $0.id == id }) { onSet(part, value) }
         }
     }
 
