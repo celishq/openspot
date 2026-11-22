@@ -22,6 +22,22 @@ final class SpotRunsFrameTests: SpotRunsCase {
         XCTAssertEqual(log(), ["show", "go"])
     }
 
+    func testEachFrameOfAnActThatTurnsTheSheetToRowsShows() async throws {
+        try script(toml: "", """
+        case "$1" in
+          show) printf 'frame=\\nclass=gap-part\\n\\nbutton=go\\ntitle=Go\\n\\ntext=a\\ntitle=A\\n' ;;
+          go) printf 'text=x\\ntitle=X\\n---\\n'; sleep 0.3; printf 'text=y\\ntitle=Y\\n' ;;
+        esac
+        """)
+        let sheet = try sheet()
+        sheet.open {}
+        try await wait("the parts") { sheet.panel?.parts.count == 2 }
+
+        sheet.press(try XCTUnwrap(sheet.panel?.parts.first))
+
+        try await wait("the second rows") { sheet.list.all.map(\.title) == ["X", "Y"] }
+    }
+
     func testALaterFrameWithNoRootChangesOnlyTheBlocksItPrintsAndANewIdJoins() async throws {
         try script(toml: "", """
         printf 'frame=\\nclass=grid grid-cols-2 gap-part\\n\\ntext=a\\ntitle=A\\n\\ntext=b\\ntitle=B\\n---\\n'

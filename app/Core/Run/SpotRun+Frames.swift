@@ -145,7 +145,7 @@ extension SpotRun {
 
     @discardableResult
     func takePicture(_ lines: Frame, frame: String, of act: Act?) async -> Bool {
-        if let generation = act?.generation, let current = panel?.generation, generation != current {
+        if let generation = act?.generation, let current = partsGeneration, generation != current {
             takeEffects(frame: frame)
             return false
         }
