@@ -106,4 +106,9 @@ public struct Style: Equatable, Sendable {
     public var unknown: [String] = []
 
     public init() {}
+
+    var insets: CGSize {
+        let side = { (edge: Edge) in padding[edge]?.points(of: 0) ?? 0 }
+        return CGSize(width: side(.left) + side(.right), height: side(.top) + side(.bottom))
+    }
 }

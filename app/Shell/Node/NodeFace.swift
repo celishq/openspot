@@ -23,7 +23,7 @@ struct NodeFace: View {
     }
 
     private var takesLook: Bool {
-        ["button", "field", "switch", "choice", "number"].contains(node.kind) && (node.kind != "button" || node.children.isEmpty)
+        BlockKind.controlWords.contains(node.kind) && (node.kind != BlockKind.button.word || node.children.isEmpty)
     }
 
     @ViewBuilder
@@ -34,7 +34,7 @@ struct NodeFace: View {
         case BlockKind.icon.word: NodeIcon(icon: node.icon, side: node.naturalSize.width)
         case BlockKind.picture.word: NodePicture(icon: node.icon, size: node.naturalSize)
         case BlockKind.button.word where !node.children.isEmpty: NodePart(id: node.id, label: AnyView(NodeBox(children: node.children, style: style, tree: tree)), size: node.naturalSize)
-        case BlockKind.button.word, BlockKind.field.word, BlockKind.toggle.word, BlockKind.choice.word, BlockKind.number.word: NodePart(id: node.id, label: nil, size: node.naturalSize, look: SpotPart.Look(style: style))
+        case let kind where BlockKind.controlWords.contains(kind): NodePart(id: node.id, label: nil, size: node.naturalSize, look: SpotPart.Look(style: style))
         case BlockKind.items: NodeItems(size: node.naturalSize)
         default:
             if let source = node.source { NodeSpotView(id: node.id, values: node.values, source: source) }
