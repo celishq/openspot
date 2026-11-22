@@ -89,6 +89,9 @@ extension SpotTokens {
     public static let colorBarGap: CGFloat = 8
 
     public static let slotSwitchGap: CGFloat = 8
+    public static let solidSwitchWidth: CGFloat = 36
+    public static let solidSwitchHeight: CGFloat = 16
+    public static let solidSwitchInset: CGFloat = 2
     public static let slotButton: CGFloat = 28
     public static let slotChipPaddingX: CGFloat = 12
 

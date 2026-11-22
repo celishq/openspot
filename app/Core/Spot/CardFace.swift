@@ -20,4 +20,8 @@ public struct CardFace: Equatable, Sendable {
     public mutating func set(_ value: String, of id: String) {
         tree.set(value, of: id)
     }
+
+    mutating func lead(_ id: String, with icon: Icon) {
+        tree.lead(id, with: icon)
+    }
 }

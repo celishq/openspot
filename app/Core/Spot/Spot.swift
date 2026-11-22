@@ -329,7 +329,7 @@ public struct Spot: Equatable, Sendable {
     public func state(of output: Frame) throws -> SpotState {
         guard showsState else { return headerState }
         guard output.root != nil || output.errors.isEmpty else { throw SpotError.badState }
-        var state = SpotState(output: output, header: headerState)
+        var state = SpotState(output: output, header: headerState).leading(with: icon ?? .symbol(symbol))
         guard self.isBuiltIn, let isOnGrid = output.root?.flag(RootKey.shown) else { return state }
         return state.onGrid(isOnGrid)
     }

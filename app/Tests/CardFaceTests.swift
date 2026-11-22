@@ -70,6 +70,15 @@ final class CardFaceTests: XCTestCase {
         XCTAssertEqual(state.control, "power")
     }
 
+    func testTheOneControlRowThatACardPlacesStartsWithTheIconOfTheSpot() throws {
+        let spot = Spot(id: "focus", name: "Focus", url: URL(fileURLWithPath: "/none/focus.sh"), icon: .symbol("moon.fill"), on: .panel)
+        let icon = { (text: String, id: String) in try spot.state(of: Frame(text: text)).face.tree.node(id)?.part?.icon }
+
+        XCTAssertEqual(try icon("frame=\nactive=true\n\nswitch=focus\ntitle=Focus\nvalue=true\nclass=hidden strip:flex large:flex\n", "focus"), .symbol("moon.fill"))
+        XCTAssertEqual(try icon("switch=focus\ntitle=Focus\nicon=bell\nvalue=true\nclass=card:flex\n", "focus"), .symbol("bell"))
+        XCTAssertNil(try icon("switch=focus\ntitle=Focus\nvalue=true\nclass=card:flex\n\ntext=a\ntitle=A\nclass=card:flex\n", "focus"))
+    }
+
     func testTheOneValueBlockOutsideTheItemsIsTheValueOfTheCard() {
         let outputCheck = FrameCheck(text: "frame=\nclass=gap-part\n\nswitch=power\nvalue=true\n\nitems=list\n\ntext=bar\nparent=list\ntitle=Bar\n")
         let output = outputCheck.output

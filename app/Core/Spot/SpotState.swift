@@ -72,6 +72,12 @@ public struct SpotState: Equatable, Sendable {
         return next
     }
 
+    func leading(with icon: Icon) -> SpotState {
+        var next = self
+        if let control { next.face.lead(control, with: icon) }
+        return next
+    }
+
     public func switched(on: Bool) -> SpotState {
         var next = self
         next.on = on
