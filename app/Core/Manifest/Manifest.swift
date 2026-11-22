@@ -18,6 +18,7 @@ public struct Manifest: Equatable, Sendable {
         var commands: [Command] = []
         var settings: [Setting] = []
         var actions: [Action] = []
+        var triggers: Triggers?
 
         mutating func take(_ table: [(String, ConfigDocument.Value?)]) throws {
             for (name, value) in table {
@@ -53,6 +54,7 @@ public struct Manifest: Equatable, Sendable {
     public let settings: [Setting]
     public let actions: [Action]
     public let stay: Bool?
+    public let triggers: Triggers?
     private let written: [String]
     private let scripts: [String: Manifest]
     private let main: String?
@@ -110,6 +112,7 @@ public struct Manifest: Equatable, Sendable {
         settings = script.settings
         actions = script.actions
         stay = text(Self.stayKey).flatMap(Bool.init)
+        triggers = script.triggers
         written = script.written
         self.scripts = scripts
         self.main = main
@@ -160,13 +163,15 @@ public struct Manifest: Equatable, Sendable {
             var script = scripts[name] ?? Script()
             let heading = "[\(section.name)]"
             var table = Script()
-            let isTyped = path == [Setting.table] || path.count == 2 && path[0] == Action.table
+            let isTyped = path == [Setting.table] || path == [Triggers.table] || path.count == 2 && path[0] == Action.table
             if !isTyped { try table.take(section.keys.map { ($0, section[$0]) }) }
             if path == [Setting.table] {
                 script.settings += try section.keys.map { key in
                     guard Setting.isKey(key) else { throw SpotError.fault("\(fileName): \(heading) has a key with a space: \(key).") }
                     return Setting(try Parameter(name: key, value: section[key], keys: Parameter.settingKeys, place: "\(heading) \(key)"))
                 }
+            } else if path == [Triggers.table] {
+                script.triggers = try Triggers(section: heading, table: section)
             } else if path.count == 2, path[0] == Action.table {
                 script.actions.append(try Action(id: path[1], section: heading, table: section))
             } else if path.isEmpty {

@@ -29,7 +29,16 @@ public struct SpotFile: Equatable, Sendable {
             throw SpotError.fault("\(name) has an unknown key in \(section): \(key ?? "")")
         }
         let icon = Icon(text: manifest.icon).map { Self.placed($0, beside: url) }
-        let parsed = try ShowEvents(on: manifest.on, of: name)
+        if let triggers = manifest.triggers {
+            let old = [("on", !manifest.on.isEmpty), ("offers", !manifest.offers.isEmpty), ("drop", !manifest.drop.isEmpty), ("answers", manifest.answers != nil), ("placeholder", manifest.placeholder != nil)]
+            if let (key, _) = old.first(where: \.1) {
+                throw SpotError.fault("\(name) has both \(key) and [on] in its \(Manifest.fileName). Move \(key) into [on]")
+            }
+            if let action = manifest.actions.first(where: { triggers.handlers.contains($0.id) }) {
+                throw SpotError.fault("\(name) has \(action.section), which takes the name of a handler that its [on] calls. Give the action another ID")
+            }
+        }
+        let parsed = try manifest.triggers.map(\.showEvents) ?? ShowEvents(on: manifest.on, of: name)
         var on = parsed?.moments.isEmpty == false ? parsed : nil
         if let word = manifest.emits.first(where: { !SpotEvent.isName($0) }) {
             throw SpotError.fault("\(name) has an unknown event in its emits: \(word). Write a word with a dot, such as emits = [\"music.track\"]")
@@ -106,7 +115,7 @@ public struct SpotFile: Equatable, Sendable {
             isFound: isFound,
             answers: answers,
             mode: mode,
-            drop: manifest.drop,
+            drop: manifest.triggers?.drop ?? manifest.drop,
             isGlobal: isGlobal,
             dataName: SpotID(id).name,
             isOnGrid: isFound && offers.isEmpty && on?.seconds == nil,
@@ -126,6 +135,7 @@ public struct SpotFile: Equatable, Sendable {
             starts: starts
         )
         command.typedActions = manifest.actions
+        command.triggers = manifest.triggers
         self.init(id: id, spots: [command])
     }
 

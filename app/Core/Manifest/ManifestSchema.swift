@@ -25,6 +25,7 @@ public enum ManifestSchema {
         var properties: [String: Any] = [:]
         for key in Manifest.keys { properties[key] = reference("texts") }
         properties["stay"] = ["type": "boolean"]
+        properties[Manifest.Triggers.table] = ["anyOf": [reference("texts"), reference("on")]]
         properties[Manifest.Setting.table] = table(["anyOf": [reference("type"), reference("setting")]])
         properties[Manifest.Action.table] = table(reference("action"))
         properties[Manifest.Command.table] = table(reference("command"))
@@ -57,8 +58,18 @@ public enum ManifestSchema {
             "parameter": parameter,
             "action": action,
             "command": object(Manifest.Command.keys, from: [:]),
+            "on": triggers,
             "script": script
         ]
+    }
+
+    private static var triggers: [String: Any] {
+        let words: [String: Any] = ["type": "array", "items": ["type": "string"]]
+        let properties: [String: Any] = [
+            Manifest.Triggers.command: words, Manifest.Triggers.search: ["type": "string"], Manifest.Triggers.schedule: words,
+            Manifest.Triggers.every: ["type": "integer", "minimum": 1], Manifest.Triggers.drop: words
+        ]
+        return ["type": "object", "properties": properties, "additionalProperties": ["type": ["boolean", "string"]]]
     }
 
     static func actions(of spot: Spot) -> [String: Any] {

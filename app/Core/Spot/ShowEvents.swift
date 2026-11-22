@@ -16,11 +16,11 @@ public struct ShowEvents: Equatable, Sendable {
     public let searchesSheet: Bool
     private let filters: [String: AnswerPattern]
 
-    public init(moments: [Moment], answers: AnswerPattern? = nil, searchesSheet: Bool = false) {
+    public init(moments: [Moment], answers: AnswerPattern? = nil, searchesSheet: Bool = false, filters: [String: AnswerPattern] = [:]) {
         self.moments = moments
         self.answers = answers
         self.searchesSheet = searchesSheet
-        filters = [:]
+        self.filters = filters
     }
 
     public init?(on lines: [String], of name: String) throws {
