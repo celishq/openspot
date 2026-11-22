@@ -77,7 +77,10 @@ public struct Frame: Equatable, Sendable {
         tree = ViewTree(blocks: blocks, root: head, kinds: kinds)
         let repeats = blocks.filter { [BlockKind.repeated, BlockKind.items].contains($0.fields.first?.key) }
         let repeated = repeats.first.flatMap { block in block.fields.first.map { (block, $0.value) } }
-        if let (block, _) = repeated { drawing = RepeatDrawing(block: block) }
+        if let (block, id) = repeated {
+            let style = tree.node(id)?.style.resolved(for: [.sheet])
+            drawing = style?.arrangement == .grid ? RepeatDrawing(columns: style?.columns ?? 1) : RepeatDrawing(block: block)
+        }
         let listed = Set(tree.nodes.values.filter { $0.parent.flatMap(tree.node)?.kind == BlockKind.items }.map(\.id))
         let placed = Self.placed(by: head).union(tree.isWritten ? Set(tree.nodes.keys).subtracting(listed) : [])
         let inSheet = head.flatMap { SheetLayout(block: $0) }.map { Set($0.areas.keys) }
@@ -97,6 +100,8 @@ public struct Frame: Equatable, Sendable {
                     searchField = block
                 } else if kind == .section, !isPlaced {
                     section = block.value("title")
+                } else if let id, listed.contains(id), tree.node(id)?.style.resolved(for: [.sheet]).font == .section {
+                    section = block.value("title") ?? block.value("value")
                 } else if let part = SpotPart(block: block, kind: kind) {
                     if kind.field != nil { fields.append(Field(block: block, kind: kind)) }
                     if view == nil, kind.isOpen { view = block }
@@ -129,7 +134,7 @@ public struct Frame: Equatable, Sendable {
         self.layout = layout
         let fields = rows.map { $0.fields.flatMap { [$0.key, $0.value] } }
         parts = parts.map { $0.drawn(in: layout).holding(items: fields) }
-        face = CardFace(head: head, parts: every, tree: tree.isWritten ? tree : .empty)
+        face = CardFace(head: head, parts: every, tree: tree.isWritten || !tree.places.isEmpty ? tree : .empty)
         let cardSizes = SpotSize.all.filter(tree.draws(on:))
         let onCard = cardSizes.isEmpty ? nil : Set(cardSizes.flatMap { tree.shown(in: Style.Variant.card($0)) })
         if let onCard { carded = every.filter { onCard.contains($0.id) } }

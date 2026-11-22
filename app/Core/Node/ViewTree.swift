@@ -15,11 +15,11 @@ public struct ViewTree: Equatable, Sendable {
     }
 
     public func draws(on size: SpotSize) -> Bool {
-        isWritten && !places.isDisjoint(with: Style.Variant.card(size))
+        !places.isDisjoint(with: Style.Variant.card(size))
     }
 
     public var drawsOnBar: Bool {
-        isWritten && places.contains(.bar)
+        places.contains(.bar)
     }
 
     public func shown(in active: Set<Style.Variant>) -> [String] {

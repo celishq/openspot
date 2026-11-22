@@ -41,7 +41,9 @@ public struct CardFace: Equatable, Sendable {
     }
 
     public var answerSize: SpotSize? {
-        [SpotSize.large, .strip].first { drawings[$0.name] != nil }
+        [SpotSize.large, .strip].first { size in
+            drawings[size.name] != nil || Style.Variant(size: size).map(tree.places.contains) == true
+        }
     }
 
     public var hasView: Bool {

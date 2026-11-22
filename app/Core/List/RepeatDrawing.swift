@@ -23,6 +23,10 @@ public struct RepeatDrawing: Equatable, Sendable {
         lines = max(drawing.count, 1)
     }
 
+    public init(columns: Int) {
+        self.init(lines: [(0..<max(columns, 1)).map(String.init)])
+    }
+
     public init(block: TextBlock) {
         let drawing = block.values("grid").map { $0.split(whereSeparator: \.isWhitespace).map(String.init) }
         self = drawing.isEmpty ? .list : RepeatDrawing(lines: drawing)
