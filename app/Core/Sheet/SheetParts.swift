@@ -46,7 +46,8 @@ public struct SheetParts: Equatable, Sendable {
     }
 
     private static func placement(of parts: [SpotPart], in layout: SheetLayout?, tree: ViewTree, room: CGFloat) -> SheetPlacement {
-        tree.isWritten ? SheetPlacement(filling: room) : SheetPlacement(parts: parts, layout: layout ?? SheetLayout(flat: parts), room: room)
+        guard tree.isWritten else { return SheetPlacement(parts: parts, layout: layout ?? SheetLayout(flat: parts), room: room) }
+        return SheetPlacement(filling: tree.height(in: SpotTokens.partsWidth, parts: parts).map { min($0, room) } ?? room)
     }
 
     mutating func place(top: SheetTop? = nil) {

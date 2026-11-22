@@ -9,7 +9,7 @@ public struct FrameCheck: Equatable, Sendable {
         let blocks = Frame.grouping(TextBlock.blocks(in: text))
         let output = Frame(grouped: blocks, kinds: kinds)
         let root = FrameRoot(blocks: blocks, kinds: kinds).block
-        let placed = Frame.placed(by: root)
+        let placed = Frame.placed(by: root, tree: output.tree)
         let listed = blocks.filter { block in
             guard let kind = BlockKind.of(block, in: kinds), let id = block.value(kind.word) else { return false }
             return !placed.contains(id) && !kind.presses && kind != .section && block != output.searchField

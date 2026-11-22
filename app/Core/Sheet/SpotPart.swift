@@ -153,7 +153,11 @@ public struct SpotPart: Equatable, Sendable, Identifiable {
     }
 
     public func drawn(in layout: SheetLayout?) -> SpotPart {
-        guard case .menu(let options, let value) = control, let area = layout?.areas[id], area.y1 > area.y0 else { return self }
+        drawn(spanning: layout?.areas[id].map { $0.y1 > $0.y0 } ?? false)
+    }
+
+    func drawn(spanning isTall: Bool) -> SpotPart {
+        guard case .menu(let options, let value) = control, isTall else { return self }
         var part = self
         part.control = .list(options, value: value)
         return part

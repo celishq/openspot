@@ -166,7 +166,7 @@ final class ViewTreeTests: XCTestCase {
         XCTAssertEqual(panel.tree.children, ["head", "note"])
         XCTAssertEqual(Set(panel.parts.map(\.id)), ["wifi", "name", "forget", "note"])
         XCTAssertTrue(Frame(text: wifi).items.isEmpty)
-        XCTAssertEqual(panel.placement.height, panel.top.partsRoom)
+        XCTAssertLessThan(panel.placement.height, panel.top.partsRoom)
     }
 
     func testAFrameWithNoTreeKeepsItsGridPlacement() throws {
