@@ -72,8 +72,16 @@ esc() {
 }
 
 # Prints the real text of each value of a key from stdin, such as `value setting.city`, `value input.title` or `value event`,
-# one per line: `\n` as a new line and `\\` as a backslash. It prints nothing when stdin has no such value.
-value() (
+# one per line: `\n` as a new line and `\\` as a backslash. A name that stdin lacks reads the input of that name, so
+# `value url` reads `input.url`. It prints nothing when stdin has neither.
+value() {
+  case $_openspot_nl$_openspot_stdin in
+    *"$_openspot_nl${1-}="*) _openspot_value "${1-}" ;;
+    *) _openspot_value "input.${1-}" ;;
+  esac
+}
+
+_openspot_value() (
   if [ "${#_openspot_stdin}" -gt 1024 ]; then
     printf %s "$_openspot_stdin" |
       _OPENSPOT_ID=${1-} LC_ALL=C /usr/bin/awk 'index($0, ENVIRON["_OPENSPOT_ID"] "=") == 1 { if (seen++) printf "%s", "\\n"; printf "%s", substr($0, length(ENVIRON["_OPENSPOT_ID"]) + 2) }' |

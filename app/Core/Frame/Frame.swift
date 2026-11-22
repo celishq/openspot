@@ -176,6 +176,12 @@ public struct Frame: Equatable, Sendable {
         valueKind?.isReading == true ? value : nil
     }
 
+    public var outputs: [TextBlock.Field] {
+        (root?.fields ?? []).compactMap { field in
+            field.key.hasPrefix(RootKey.outputPrefix) ? .init(key: String(field.key.dropFirst(RootKey.outputPrefix.count)), value: field.value) : nil
+        }
+    }
+
     public var isForm: Bool {
         root?.value(RootKey.type) == RootKey.form
     }

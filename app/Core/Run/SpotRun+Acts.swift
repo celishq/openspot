@@ -64,7 +64,7 @@ extension SpotRun {
     public func setCardPart(_ id: String, to value: String?) {
         guard let value else { return act(Message(.press(id)), key: Self.key(part: id)) }
         state = state.setting(value, of: id)
-        act(Message(.set(id, to: value)), key: Self.key(part: id))
+        act(pressing(Message(.set(id, to: value)), as: Self.valueInput), key: Self.key(part: id))
     }
 
     @discardableResult
@@ -127,7 +127,7 @@ extension SpotRun {
     }
 
     public func run(_ action: CommandAction, item: SpotItem?, ended: (() -> Void)? = nil) {
-        press(Message(.action(action, item: item), item: item?.fields ?? []), ended: ended)
+        press(pressing(Message(.action(action, item: item), item: item?.fields ?? []), as: Self.itemInput), ended: ended)
     }
 
     public func form(_ action: CommandAction, item: SpotItem?) async throws -> ItemForm? {
@@ -209,6 +209,9 @@ extension SpotRun {
         if runs.now().timeIntervalSince(call.started) >= Self.pressPause { stop(call) }
     }
 
+    private static let valueInput = "value"
+    private static let itemInput = "item"
+
     private static func key(part id: String) -> String {
         "part:\(id)"
     }
@@ -237,7 +240,7 @@ extension SpotRun {
 
     private func change(_ action: SpotAction, key: String, generation: Int, keeping: String?, closes: Bool) {
         guard let inputs = panel?.inputs else { return }
-        act(Message(action, inputs: inputs), key: key, as: Act(generation: generation, keeping: keeping, showsAfter: !closes))
+        act(pressing(Message(action, inputs: inputs), as: Self.valueInput), key: key, as: Act(generation: generation, keeping: keeping, showsAfter: !closes))
     }
 
     private func press(_ message: Message, ended: (() -> Void)? = nil) {
@@ -251,5 +254,13 @@ extension SpotRun {
         var act = act
         act.started = runs.now()
         send(Call(message: message, key: key, purpose: .act(act)))
+    }
+}
+
+extension SpotRun {
+    public func call(_ action: String, inputs: [TextBlock.Field] = []) async throws -> [TextBlock.Field] {
+        let message = Message(.press(action), inputs: inputs)
+        guard let output = try await answer(to: message, key: "call:\(action)") else { return [] }
+        return output.outputs
     }
 }

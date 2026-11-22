@@ -104,6 +104,16 @@ final class ShellHelperTests: XCTestCase {
         }
     }
 
+    func testValueReadsTheInputOfANameThatStdinLacks() async throws {
+        for shell in ["/bin/sh", "/bin/dash"] {
+            let url = try script("printf '%s|%s|%s' \"$(value url)\" \"$(value item)\" \"$(value none)\"", shell: shell)
+
+            let output = try await ScriptProcess.output(url: url, input: "input.url=https://a.example\nitem=own\ninput.item=input\n", limit: 60)
+
+            XCTAssertEqual(output, "https://a.example|own|", shell)
+        }
+    }
+
     func testServeKeepsOneProcessForEachCallWhenTheSpotTomlSaysStayTrue() async throws {
         let stays = try script("main() { printf '%s|%s;' \"$$\" \"$(value a)\"; }\nopenspot_serve main", toml: "title = 'Stays'\nstay = true")
 

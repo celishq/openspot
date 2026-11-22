@@ -14,6 +14,7 @@ final class OpenCall {
     var pushed: Frame?
     var selected: String?
     var form = Frame.empty
+    var refusal: SpotError?
 
     init(_ request: SpotRun.Call, started: Date) {
         self.request = request

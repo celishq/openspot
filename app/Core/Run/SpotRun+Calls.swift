@@ -3,8 +3,53 @@ import Foundation
 extension SpotRun {
     @discardableResult
     func send(_ call: Call) -> Bool {
-        if case .ask = call.purpose {} else { acted() }
+        var call = call
+        if case .ask = call.purpose {} else {
+            if let action = typedAction(of: call.action) {
+                do {
+                    call.message.inputs = try action.inputs(call.message.inputs)
+                } catch {
+                    refuse(call, error)
+                    return true
+                }
+            }
+            acted()
+        }
         return link.send(OpenCall(call, started: runs.now()))
+    }
+
+    func typedAction(of action: SpotAction) -> Manifest.Action? {
+        guard let id = action.arguments.first else { return nil }
+        return spot.typedActions.first { $0.id == id }
+    }
+
+    func pressing(_ message: Message, as name: String) -> Message {
+        let arguments = message.action.arguments
+        guard arguments.count > 1, typedAction(of: message.action) != nil else { return message }
+        var message = message
+        message.action = .press(arguments[0])
+        message.inputs.append(.init(key: name, value: arguments[1]))
+        return message
+    }
+
+    private func refuse(_ call: Call, _ error: Error) {
+        switch call.purpose {
+        case .form(let waiting):
+            waiting.resume(throwing: error)
+        case .act(let act):
+            act.first?.end(.stopped)
+            fail(error)
+            act.ended?()
+        case .ask:
+            break
+        }
+    }
+
+    private func refusal(of lines: Frame, in call: OpenCall) -> SpotError? {
+        if let message = lines.root?.value(RootKey.error) { return .failed(1, message) }
+        let outputs = lines.outputs
+        guard !outputs.isEmpty, let action = typedAction(of: call.request.action), let fault = action.fault(in: outputs) else { return nil }
+        return .fault(fault)
     }
 
     func acted() {
@@ -20,6 +65,7 @@ extension SpotRun {
 
     func take(_ text: String, _ lines: Frame, of call: OpenCall) async {
         if call.answered == nil { call.answered = Date().timeIntervalSince(call.begin) }
+        if call.refusal == nil { call.refusal = refusal(of: lines, in: call) }
         call.made.take(lines)
         switch call.request.purpose {
         case .ask(let ask):
@@ -66,6 +112,8 @@ extension SpotRun {
     }
 
     func finish(_ call: OpenCall, _ end: ScriptCall.End, errors: String = "") {
+        var end = end
+        if case .ended = end, let refusal = call.refusal { end = .failed(refusal) }
         if OwnedSheet.owner(of: spot.id) == nil {
             runs.usage.called(spot, call.outcome(end), at: runs.now())
         }

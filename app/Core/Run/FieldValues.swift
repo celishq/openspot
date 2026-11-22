@@ -11,10 +11,11 @@ struct FieldValues: Equatable, Sendable {
         var lines: [TextBlock.Field] = []
         var secrets: [String] = []
         for field in spot.settings {
-            let value = field.isSecret ? kept[field.id] : plain[field.id]
+            let value = field.isSecret ? kept[field.id] : plain[field.id].flatMap { $0.isEmpty ? nil : $0 } ?? field.defaultValue
             guard let value, !value.isEmpty else { continue }
-            lines.append(.init(key: field.id, value: value))
             if field.isSecret { secrets.append(value) }
+            if field.isSecret, field.valueType != nil { continue }
+            lines.append(.init(key: field.id, value: value))
         }
         self.settings = lines
         self.secrets = secrets

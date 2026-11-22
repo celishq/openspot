@@ -48,3 +48,33 @@ extension Manifest {
         }
     }
 }
+
+extension Manifest.Action {
+    func inputs(_ given: [TextBlock.Field]) throws -> [TextBlock.Field] {
+        var inputs: [TextBlock.Field] = []
+        for input in self.inputs {
+            var values = given.filter { $0.key == input.name }.map(\.value)
+            if values.isEmpty, let defaultValue = input.defaultValue { values = [defaultValue] }
+            if values.isEmpty {
+                if input.isRequired { throw SpotError.fault("\(id) needs \(input.name), which is \(input.type.article).") }
+                continue
+            }
+            if let fault = input.fault(in: values) { throw SpotError.fault("\(id) cannot run: \(fault).") }
+            inputs += values.map { .init(key: input.name, value: $0) }
+        }
+        let names = Set(self.inputs.map(\.name))
+        return inputs + given.filter { !names.contains($0.key) }
+    }
+
+    func fault(in outputs: [TextBlock.Field]) -> String? {
+        if let unknown = outputs.first(where: { output in !self.outputs.contains { $0.name == output.key } }) {
+            return "\(id) gave out.\(unknown.key), which its outputs do not hold"
+        }
+        for output in self.outputs {
+            let values = outputs.filter { $0.key == output.name }.map(\.value)
+            if values.isEmpty, output.isRequired { return "\(id) gave no out.\(output.name)" }
+            if !values.isEmpty, let fault = output.fault(in: values) { return "\(id) gave a wrong out.\(output.name): \(fault)" }
+        }
+        return nil
+    }
+}
