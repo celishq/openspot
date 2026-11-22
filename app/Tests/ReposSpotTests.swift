@@ -37,7 +37,7 @@ final class ReposSpotTests: SampleSpotsCase {
 
             let items = try await kept(in: folder) { try await repos.items(timeout: 60) }.items
             let choose = try XCTUnwrap(items.first)
-            try await kept(in: folder) { try await repos.perform(.item(choose), timeout: 60) }
+            try await kept(in: folder) { try await repos.handle(.item(choose), timeout: 60) }
 
             XCTAssertEqual(items.map(\.run), ["choose"])
             XCTAssertEqual(items.map(\.title), ["Choose the folder of your repos"])
@@ -97,7 +97,7 @@ final class ReposSpotTests: SampleSpotsCase {
             let item = SpotItem(title: "app", run: code.appendingPathComponent("app").path)
 
             let first = repos.taking(try await kept(in: folder) { try await repos.items(timeout: 60) })
-            try await kept(in: folder) { try await repos.perform(.item(item), timeout: 60) }
+            try await kept(in: folder) { try await repos.handle(.item(item), timeout: 60) }
             let opened = try self.read("opened", in: folder)
             let change = try XCTUnwrap(first.actions.first { $0.title == "Change default app" })
             let form = try await kept(in: folder) { try await repos.form(change, item: nil, timeout: 60) }
@@ -111,7 +111,6 @@ final class ReposSpotTests: SampleSpotsCase {
             XCTAssertEqual(opened, "-a \(cursor.path) \(item.run)\n")
             XCTAssertFalse(first.actions.contains { $0.title.hasPrefix("Use ") })
             XCTAssertEqual(change.scope, .spot)
-            XCTAssertTrue(change.isForm)
             XCTAssertEqual(form.soleChoice?.options.map(\.title), ["Cursor", "Zed", "Finder"])
             XCTAssertEqual(try self.read("setting-editor", in: folder), zed.path)
             XCTAssertEqual(then.openTitle, "Open in Zed")

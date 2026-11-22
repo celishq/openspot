@@ -8,15 +8,18 @@ final class SampleSpotsTests: SampleSpotsCase {
         try "#!/bin/sh\ncat >/dev/null\n".writeScript(to: tools.appendingPathComponent("pbcopy"))
         try "#!/bin/sh\ncat >/dev/null\n[ \"$1\" = toast ] && echo \"$2\" >> '\(tools.path)/toasts'\nexit 0\n".writeScript(to: tools.appendingPathComponent("openspot"))
         let examples = spots.deletingLastPathComponent().appendingPathComponent("examples")
-        for (script, call) in [(spots.spotFile("emoji"), "open"), (spots.spotFile("files"), "copy"), (examples.spotFile("pulls"), "copy")] {
+        for (script, arguments, input) in [(spots.spotFile("emoji"), ["open", "x"], ""), (spots.spotFile("files"), ["copy", "x"], ""), (examples.spotFile("pulls"), ["copy"], "input.item=x\n")] {
             let process = Process()
             let out = Pipe()
+            let stdin = Pipe()
             process.executableURL = script
-            process.arguments = [call, "x"]
+            process.arguments = arguments
             process.environment = ["PATH": "\(tools.path):/usr/bin:/bin", "OPENSPOT_DATA": tools.path, "HOME": tools.path, "OPENSPOT_SH": spots.deletingLastPathComponent().appendingPathComponent("app/Shell/openspot.sh").path]
-            process.standardInput = FileHandle.nullDevice
+            process.standardInput = stdin
             process.standardOutput = out
             try process.run()
+            stdin.fileHandleForWriting.write(Data(input.utf8))
+            try stdin.fileHandleForWriting.close()
             process.waitUntilExit()
             let text = String(data: out.fileHandleForReading.readDataToEndOfFile(), encoding: .utf8) ?? ""
             XCTAssertEqual(text, "", script.lastPathComponent)
@@ -225,9 +228,9 @@ final class SampleSpotsTests: SampleSpotsCase {
             XCTAssertEqual(list.id, metric.id)
 
             let item = try XCTUnwrap(lines.items.first)
-            try await list.perform(.item(item), timeout: 60)
+            try await list.handle(.item(item), timeout: 60)
             XCTAssertEqual(try self.read("opened", in: folder), item.run + "\n")
-            try await list.perform(.action(try await self.action("copy", of: list), item: item), timeout: 60)
+            try await list.perform(.press("copy"), input: Message(.press("copy"), inputs: [.init(key: "item", value: item.run)]).text, timeout: 60)
             XCTAssertEqual(try self.read("clipboard", in: folder), item.run)
         }
     }
