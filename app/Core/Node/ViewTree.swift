@@ -38,6 +38,11 @@ public struct ViewTree: Equatable, Sendable {
         nodes[id]?.part?.set(value)
     }
 
+    mutating func lead(_ id: String, with icon: Icon) {
+        guard nodes[id]?.part?.icon == nil else { return }
+        nodes[id]?.part?.icon = icon
+    }
+
     func changedParts(from other: ViewTree) -> [String]? {
         var same = other
         for (id, node) in nodes { same.nodes[id]?.part = node.part }

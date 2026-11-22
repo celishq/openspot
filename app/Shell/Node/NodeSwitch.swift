@@ -50,17 +50,13 @@ private struct SwitchDrawing: View {
         if part.isTick {
             SpotTick(isOn: isOn, words: NodeWords(part: part), onPress: set)
         } else {
-            let ink = SpotTheme.ink(onSolid: isOnSolid)
-            let toggle = Toggle("", isOn: Binding(get: { isOn }, set: set))
-                .toggleStyle(.switch)
-                .controlSize(.mini)
-                .labelsHidden()
-                .tint(ink)
-                .background(isOnSolid ? ink.opacity(SpotTheme.track) : .clear, in: Capsule())
             ViewThatFits(in: .horizontal) {
                 if part.title != nil || part.detail != nil {
                     HStack(spacing: SpotTokens.slotSwitchGap) {
-                        NodeWords(part: part).fixedSize()
+                        HStack(spacing: SpotTokens.wordsGap) {
+                            if let icon = part.icon { glyph(icon) }
+                            NodeWords(part: part).fixedSize()
+                        }
                         Spacer(minLength: 0)
                         toggle
                     }
@@ -68,6 +64,27 @@ private struct SwitchDrawing: View {
                 toggle
             }
         }
+    }
+
+    @ViewBuilder
+    private var toggle: some View {
+        let toggle = Toggle("", isOn: Binding(get: { isOn }, set: set)).labelsHidden()
+        if isOnSolid {
+            toggle.toggleStyle(SpotSolidSwitch())
+        } else {
+            toggle
+                .toggleStyle(.switch)
+                .controlSize(.mini)
+                .tint(SpotTheme.ink)
+        }
+    }
+
+    private func glyph(_ icon: Icon) -> some View {
+        NodeIcon(icon: icon, side: SpotTokens.glyph)
+            .font(SpotType.glyph)
+            .foregroundStyle(isOnSolid ? AnyShapeStyle(SpotTheme.glyphOnSolid) : AnyShapeStyle(SpotTheme.glassInk))
+            .frame(width: SpotTokens.glyph, height: SpotTokens.glyph)
+            .background(SpotTheme.ink.opacity(isOnSolid ? 0 : SpotTheme.disc), in: Circle())
     }
 
     private var isOn: Bool {

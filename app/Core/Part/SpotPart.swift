@@ -51,7 +51,7 @@ public struct SpotPart: Equatable, Sendable, Identifiable {
     public let kind: String
     public let title: String?
     public let detail: String?
-    public let icon: Icon?
+    public internal(set) var icon: Icon?
     public let tone: MetricValue.Tone?
     public let color: String?
     public private(set) var control: Control
