@@ -2,6 +2,8 @@ import CoreGraphics
 import Foundation
 
 extension ViewTree {
+    private static let letterShare: CGFloat = 0.5
+
     public func height(in width: CGFloat, parts: [SpotPart], variants: Set<Style.Variant> = [.sheet]) -> CGFloat? {
         let shown = Set(shown(in: variants))
         let root = style.resolved(for: variants)
@@ -59,20 +61,27 @@ extension ViewTree {
         if node.kind != BlockKind.items, node.kind == BlockKind.box || !node.children.isEmpty {
             return measure(node.children, style: style, in: variants, shown: shown, lines: lines, words: words, width: width)
         }
-        let height: CGFloat = switch node.kind {
-        case "text": textHeight(node, style)
+        let across = (style.padding[.left]?.points(of: 0) ?? 0) + (style.padding[.right]?.points(of: 0) ?? 0)
+        return CGSize(width: width ?? (words[node.id] ?? 0) + across, height: leafHeight(node, style, lines: lines[node.id] ?? 1, width: width))
+    }
+
+    func leafHeight(_ node: ViewNode, _ style: Style, lines: Int, width: CGFloat?) -> CGFloat {
+        let side = { (edge: Style.Edge) in style.padding[edge]?.points(of: 0) ?? 0 }
+        let room = width.map { max($0 - side(.left) - side(.right), 0) }
+        let content: CGFloat = switch node.kind {
+        case "text": textHeight(node, style, width: room)
         case "icon": SpotTokens.listIconSize
         case "picture": SpotTokens.cell
-        default: node.source == nil ? Self.rowsHeight(lines[node.id] ?? 1) : SpotTokens.cell
+        default: node.source == nil ? Self.rowsHeight(lines) : SpotTokens.cell
         }
-        return CGSize(width: width ?? words[node.id] ?? 0, height: height)
+        return content + side(.top) + side(.bottom)
     }
 
     private static func rowsHeight(_ lines: Int) -> CGFloat {
         SpotTokens.listRow * CGFloat(lines) + SpotTokens.partGap * CGFloat(lines - 1)
     }
 
-    func textHeight(_ node: ViewNode, _ style: Style) -> CGFloat {
+    private func textHeight(_ node: ViewNode, _ style: Style, width: CGFloat?) -> CGFloat {
         let type = SpotTokens.layout.type
         let face: Double? = switch style.font {
         case .title, .section: type.title
@@ -81,8 +90,36 @@ extension ViewTree {
         case nil: type.body
         }
         guard let face else { return SpotTokens.listRow }
-        let title = CGFloat(face) + SpotTokens.textLeading
-        guard node.detail != nil else { return title }
-        return title + SpotTokens.textLineGap + CGFloat(type.detail) + SpotTokens.textLeading
+        let room = width.map { node.icon?.symbol == nil ? $0 : $0 - SpotTokens.listIconSize - SpotTokens.partLineGap }
+        let limit = style.truncates ? 1 : style.lineLimit
+        let titleLines = (node.title ?? node.value).map { Self.lines(of: $0, face: face, room: room, limit: limit) } ?? 1
+        let title = CGFloat(titleLines) * (CGFloat(face) + SpotTokens.textLeading)
+        guard let detail = node.detail else { return title }
+        let detailLines = Self.lines(of: detail, face: type.detail, room: room, limit: limit)
+        return title + SpotTokens.textLineGap + CGFloat(detailLines) * (CGFloat(type.detail) + SpotTokens.textLeading)
+    }
+
+    private static func lines(of text: String, face: Double, room: CGFloat?, limit: Int?) -> Int {
+        guard let room, room > 0 else { return 1 }
+        let letter = CGFloat(face) * letterShare
+        var count = 0
+        for paragraph in text.split(separator: "\n", omittingEmptySubsequences: false) {
+            var used: CGFloat = 0
+            count += 1
+            for word in paragraph.split(separator: " ") {
+                let width = CGFloat(word.count) * letter
+                if used > 0, used + letter + width > room {
+                    count += 1
+                    used = 0
+                }
+                if used == 0, width > room {
+                    count += Int((width / room).rounded(.up)) - 1
+                    used = width.truncatingRemainder(dividingBy: room)
+                } else {
+                    used += (used > 0 ? letter : 0) + width
+                }
+            }
+        }
+        return min(max(count, 1), limit ?? .max)
     }
 }

@@ -81,7 +81,7 @@ struct AccountFrame {
     }
 
     mutating func line(_ id: String, _ title: String, icon: String? = nil, tone: String? = nil, detail: String? = nil) {
-        var fields: [TextBlock.Field] = [.init(key: "text", value: id), .init(key: "look", value: "tile"), .init(key: "title", value: title)]
+        var fields: [TextBlock.Field] = [.init(key: "text", value: id), .init(key: "class", value: "bg-tile rounded-inner p-3"), .init(key: "title", value: title)]
         if let icon { fields.append(.init(key: "icon", value: icon)) }
         if let tone { fields.append(.init(key: "tone", value: tone)) }
         if let detail { fields.append(.init(key: "detail", value: detail)) }

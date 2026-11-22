@@ -15,7 +15,7 @@ extension ViewTree {
         for id in shown(in: [.sheet]) {
             guard let node = nodes[id], let frame = frames[id] else { continue }
             let style = node.style.resolved(for: [.sheet])
-            if node.kind == BlockKind.text.word, frame.height < textHeight(node, style) - 0.5 {
+            if node.kind == BlockKind.text.word, frame.height < leafHeight(node, style, lines: 1, width: frame.width) - 0.5 {
                 faults.append("the text \(id) is \(Int(frame.height))pt tall, so its words are cut. Give it more room")
             }
             guard let part = parts.first(where: { $0.id == id }), let width = words[id], !part.fillsHeight,

@@ -92,6 +92,21 @@ final class AccountSheetTests: BuiltInCase {
         XCTAssertEqual(block("own", in: read)["title"], "Use my own key")
     }
 
+    func testALineIsATileWhoseEdgeMeetsTheButtonsAndWhoseWordsWrapInsideIt() async throws {
+        let read = try await frame(["show"])
+        let tree = Frame(text: read).tree
+        let frames = tree.frames(in: SpotTokens.partsWidth, room: SpotTokens.partsMaxHeight, parts: [], words: [:])
+        let head = try XCTUnwrap(tree.node("head"))
+        let style = head.style.resolved(for: [.sheet])
+
+        XCTAssertEqual(style.fill, .tile)
+        XCTAssertEqual(frames["head"]?.minX, frames["row-2"]?.minX)
+        let type = SpotTokens.layout.type
+        let detailLine = CGFloat(type.detail) + SpotTokens.textLeading
+        let twoLines = CGFloat(type.body) + SpotTokens.textLeading + SpotTokens.textLineGap + 2 * detailLine
+        XCTAssertEqual(frames["head"]?.height, twoLines + 2 * 3 * SpotTokens.spaceUnit)
+    }
+
     func testANewKeyAsksForAHandleUnderItsTitleThenOpensTheAccount() async throws {
         let pushed = try await effects(["new"])
         XCTAssertEqual(pushed, [push("handle")])
