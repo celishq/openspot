@@ -35,6 +35,8 @@ final class TranslateSpotTests: SampleSpotsCase {
             XCTAssertEqual(output.tree.node("pair")?.children, ["top", "seam", "bottom"])
             XCTAssertEqual(output.tree.node("seam")?.style.isAbsolute, true)
             XCTAssertEqual(output.tree.node("swap")?.parent, "seam")
+            XCTAssertEqual(output.tree.node("swap")?.style.blursBackdrop, true)
+            XCTAssertEqual(output.tree.node("swap")?.style.corner, .full)
             XCTAssertEqual(output.parts.map(\.id), ["source", "input", "swap", "target", "output"])
             XCTAssertEqual(self.text(of: "source", in: output), "auto")
             XCTAssertEqual(self.text(of: "target", in: output), "en")

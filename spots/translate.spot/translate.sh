@@ -103,7 +103,7 @@ show() {
   printf '\n'
 
   printf 'box=seam\nparent=pair\nclass=absolute inset-0 justify-center items-end pr-2\n\n'
-  printf 'button=swap\nparent=seam\nicon=arrow.up.arrow.down\nshortcut=cmd+shift+s\nclose=false\n\n'
+  printf 'button=swap\nparent=seam\nclass=backdrop-blur rounded-full\nicon=arrow.up.arrow.down\nshortcut=cmd+shift+s\nclose=false\n\n'
 
   printf 'box=bottom\nparent=pair\nclass=grow gap-part\n\n'
 

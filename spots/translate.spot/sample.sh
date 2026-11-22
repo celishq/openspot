@@ -6,7 +6,7 @@ printf "choice=source\nparent=top\nclass=self-start\nvalue=auto\n\noption=auto\n
 printf 'box=text\nparent=top\nclass=relative grow\n\n'
 printf 'field=input\nparent=text\nclass=absolute inset-0\ntype=multiline\nplaceholder=Type or paste text\nvalue=Good morning! Shall we meet for lunch at noon?\n\n'
 printf 'box=seam\nparent=pair\nclass=absolute inset-0 justify-center items-end pr-2\n\n'
-printf 'button=swap\nparent=seam\nicon=arrow.up.arrow.down\nshortcut=cmd+shift+s\nclose=false\n\n'
+printf 'button=swap\nparent=seam\nclass=backdrop-blur rounded-full\nicon=arrow.up.arrow.down\nshortcut=cmd+shift+s\nclose=false\n\n'
 printf 'box=bottom\nparent=pair\nclass=grow gap-part\n\n'
 printf "choice=target\nparent=bottom\nclass=self-start\nvalue=fr\n$languages\n"
 printf 'box=result\nparent=bottom\nclass=relative grow\n\n'
