@@ -4,6 +4,7 @@ public struct SpotState: Equatable, Sendable {
     public private(set) var title: String
     public private(set) var subtitle: String?
     public private(set) var on: Bool?
+    public private(set) var active: Bool?
     public private(set) var level: Double?
     public let min: Double?
     public let max: Double?
@@ -15,6 +16,7 @@ public struct SpotState: Equatable, Sendable {
         title: String,
         subtitle: String? = nil,
         on: Bool? = nil,
+        active: Bool? = nil,
         level: Double? = nil,
         min: Double? = nil,
         max: Double? = nil,
@@ -25,6 +27,7 @@ public struct SpotState: Equatable, Sendable {
         self.title = title
         self.subtitle = subtitle
         self.on = on
+        self.active = active
         self.level = level
         self.min = min
         self.max = max
@@ -45,6 +48,7 @@ public struct SpotState: Equatable, Sendable {
             title: block?.value("title") ?? header.title,
             subtitle: block?.value("detail") ?? header.subtitle,
             on: on,
+            active: block?.flag("active"),
             level: level?.0,
             min: level?.1,
             max: level?.2,
@@ -71,6 +75,7 @@ public struct SpotState: Equatable, Sendable {
     public func switched(on: Bool) -> SpotState {
         var next = self
         next.on = on
+        if let control { next.face.set(on ? "true" : "false", of: control) }
         return next
     }
 
