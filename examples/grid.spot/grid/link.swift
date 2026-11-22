@@ -5,6 +5,11 @@ struct Call {
     let id: String
     let arguments: [String]
     let input: [String]
+
+    /// The first value of an input in its message, such as `panel.open` of `input.event=panel.open`.
+    func input(_ name: String) -> String? {
+        input.first { $0.hasPrefix("input.\(name)=") }.map { Link.plain(String($0.dropFirst(name.count + 7))) }
+    }
 }
 
 /// The two ways of a staying spot (protocol: A staying spot): the calls that Openspot writes on stdin, one block each,

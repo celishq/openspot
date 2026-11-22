@@ -35,7 +35,7 @@ head_of_list() {
   else
     printf '\n'
   fi
-  printf 'button=open\ntitle=Run\n\n'
+  printf 'button=press\ntitle=Run\n\n'
   printf 'button=clipboard\ntitle=Run with clipboard\nshortcut=cmd+return\n\n'
   printf 'button=edit\ntitle=Open in Shortcuts\nshortcut=cmd+e\n\n'
 }
@@ -90,8 +90,8 @@ case "$1" in
     printf '%s\n' "$fresh"
     printf '%s\n' "$fresh" >"$kept.$$" && mv "$kept.$$" "$kept"
     ;;
-  open)
-    name=$2
+  press)
+    name=$(value item)
     set --
     if [ -s "$input" ]; then
       taken=$(mktemp)
@@ -103,14 +103,13 @@ case "$1" in
   clipboard)
     text="$(mktemp -d)/clipboard.txt"
     openspot clipboard read >"$text"
-    run "$2" "$text"
+    run "$(value item)" "$text"
     ;;
   edit)
-    shortcuts view "$2"
+    shortcuts view "$(value item)"
     ;;
   drop)
-    shift
-    printf '%s\n' "$@" >"$input.$$" && mv "$input.$$" "$input"
+    { value file; echo; } >"$input.$$" && mv "$input.$$" "$input"
     ;;
   cancel)
     rm -f "$input"

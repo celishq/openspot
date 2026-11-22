@@ -81,7 +81,7 @@ Link.listen { call in
     Link.start(call.id)
     switch call.arguments.first {
     case "show":
-        grid.warm()
+        if call.input("event") == "panel.open" { grid.warm() }
         Link.end(call.id)
     case "place":
         guard shown == nil else { return Link.end(call.id) }

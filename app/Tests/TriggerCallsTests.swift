@@ -10,7 +10,7 @@ final class TriggerCallsTests: SpotRunsCase {
     private func spot(_ on: String, toml: String = "", view: String = "show|every|search|power.change") throws -> SpotRun {
         try script(toml: "\(toml)\n[on]\n\(on)", """
         in=$(cat)
-        printf '%s|%s\\n' "$*" "$(printf '%s\\n' "$in" | grep -E '^(input\\.|event|item\\.|search)' | tr '\\n' ' ')" >> '\(path("calls"))'
+        printf '%s|%s\\n' "$*" "$(printf '%s\\n' "$in" | grep -E '^(input\\.|event|item\\.|search)' | grep -v '^input\\.event=' | tr '\\n' ' ')" >> '\(path("calls"))'
         case "$1" in \(view)) printf 'text=a\\ntitle=A\\n' ;; esac
         """)
         return try sheet()
@@ -26,6 +26,19 @@ final class TriggerCallsTests: SpotRunsCase {
         sheet.open {}
 
         try await wait("the show") { self.calls == ["show|"] }
+    }
+
+    func testAShowGetsTheEventThatAskedForItAsAnInput() async throws {
+        menuBar.insert("script")
+        try script(toml: "[on]\n\"panel.open\" = true", """
+        printf '%s|%s\\n' "$*" "$(grep '^input\\.event=' | tr '\\n' ' ')" >> '\(path("calls"))'
+        printf 'text=a\\ntitle=A\\n'
+        """)
+        _ = try sheet()
+
+        runs.panelOpened()
+
+        try await wait("the show of the open") { self.calls.contains("show|input.event=panel.open ") }
     }
 
     func testACommandCallsCommandWithItsNameAndText() async throws {

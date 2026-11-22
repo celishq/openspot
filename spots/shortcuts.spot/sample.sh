@@ -1,5 +1,5 @@
 #!/bin/sh
-printf 'button=open\ntitle=Run\n\n'
+printf 'button=press\ntitle=Run\n\n'
 printf 'button=clipboard\ntitle=Run with clipboard\nshortcut=cmd+return\n\n'
 printf 'button=edit\ntitle=Open in Shortcuts\nshortcut=cmd+e\n\n'
 for name in 'Make GIF' 'Start focus' 'Text last image' 'Add to reading list' 'Shorten link' 'Convert to PDF' 'Resize images'; do

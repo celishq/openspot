@@ -7,6 +7,7 @@ extension Message {
     private static let itemInput = "item"
     private static let routeInput = "route"
     private static let altInput = "alt"
+    private static let eventInput = "event"
     private static let shows: Set<String> = [SpotEvent.panelOpen, SpotEvent.sheetOpen, SpotEvent.spotWant, ShowEvent.change.rawValue]
 
     func handled() -> Message {
@@ -17,6 +18,7 @@ extension Message {
             let name = event?.rawValue ?? Self.showHandler
             if Self.shows.contains(name) {
                 message.action = .press(Self.showHandler)
+                if let event { message.inputs.append(.init(key: Self.eventInput, value: event.rawValue)) }
             } else if name.hasPrefix(SpotEvent.clockPrefix) {
                 message.action = .press(Self.everyHandler)
             } else if name == SpotEvent.searchText {
