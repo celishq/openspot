@@ -60,8 +60,12 @@ public struct SpotLoad: Sendable {
         for entry in entries where entry.origin == .app {
             entry.add(to: &result)
         }
-        result.checkBoundEvents()
+        result.checkBoundEvents(also: entries.flatMap { $0.spots ?? [] })
         return result
+    }
+
+    var ownIDs: Set<String> {
+        Set(entries.filter { $0.origin == .own }.map(\.id))
     }
 
     public var coreChoices: [Spot] {

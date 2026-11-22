@@ -4,6 +4,9 @@ icon = "ellipsis.circle"
 detail = "Share, set, edit, change the icon of, delete or turn off a spot"
 uses = ["spots"]
 
+[scripts.actions.bindings]
+icon = { spot = "openspot/icon" }
+
 [scripts.actions.actions.share]
 title = "Share"
 shortcut = "cmd+shift+c"

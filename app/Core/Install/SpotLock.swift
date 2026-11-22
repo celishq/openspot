@@ -91,7 +91,7 @@ public struct SpotLock: Equatable, Sendable {
                     let confirm = "Openspot added nothing. Run `openspot spot add \(source.text) --yes` to add it."
                     let review: ReviewSpot
                     do {
-                        review = try ReviewSpot(spot: SpotPackage(paths: paths, in: work), folder: folder)
+                        review = try ReviewSpot(spot: SpotPackage(paths: paths, in: work), folder: folder, core: SpotsFolder.core(environment: environment))
                     } catch {
                         throw SpotError.fault("Openspot cannot review it: \((error as? SpotError)?.reason ?? error.localizedDescription)\n\(confirm)")
                     }

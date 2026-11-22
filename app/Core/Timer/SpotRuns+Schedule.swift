@@ -31,7 +31,7 @@ extension SpotRuns {
                 }
             }
         }
-        if schedule.keep(only: kept) { isChanged = true }
+        if sheets.values.contains(where: { !$0.spot.isBuiltIn && $0.spot.host == nil }), schedule.keep(only: kept) { isChanged = true }
         if isChanged { schedule.write() }
         guard let next else { return }
         let wait = Duration.seconds(max(0, next.timeIntervalSince(time)))

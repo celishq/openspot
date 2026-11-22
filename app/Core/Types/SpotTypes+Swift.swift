@@ -241,9 +241,14 @@ extension SpotTypes {
         var parameters: [String] = []
         var body = ["        var words = [\(command.words.map(quoted).joined(separator: ", "))]"]
         var isOptional = false
-        for slot in command.slots where slot.isPositional {
-            isOptional = isOptional || !slot.isRequired
+        for slot in command.slots {
             let name = "`\(key(slot.key))`"
+            guard slot.isPositional else {
+                let option = quoted(slot.option ?? "")
+                body.append(slot.kind == .flag ? "        if \(name) { words.append(\(option)) }" : "        if let value = \(name) { words += [\(option), value] }")
+                continue
+            }
+            isOptional = isOptional || !slot.isRequired
             switch slot.kind {
             case .pairs:
                 parameters.append("_ \(name): [String: String] = [:]")
@@ -262,15 +267,7 @@ extension SpotTypes {
             }
         }
         for slot in command.slots where !slot.isPositional {
-            let name = "`\(key(slot.key))`"
-            let option = quoted(slot.option ?? "")
-            if slot.kind == .flag {
-                parameters.append("\(name): Bool = false")
-                body.append("        if \(name) { words.append(\(option)) }")
-            } else {
-                parameters.append("\(name): String? = nil")
-                body.append("        if let value = \(name) { words += [\(option), value] }")
-            }
+            parameters.append("`\(key(slot.key))`: \(slot.kind == .flag ? "Bool = false" : "String? = nil")")
         }
         body.append("        return try Openspot.command(words)")
         let name = command.method.isEmpty ? "callAsFunction" : "`\(command.method)`"

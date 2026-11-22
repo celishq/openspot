@@ -52,7 +52,7 @@ It shows what a spot can do when you add or update it, and shows each use after 
 
 Before an add, the review shows the title, the `uses`, each spot that it binds under **Binds**, and a line **Can also**
 with what the code seems to do but doesn't name: the network, `rm`, `screencapture`, `pbcopy` or `pbpaste`. It warns,
-and never blocks the add. A bound spot that isn't installed shows as not installed.
+and never blocks the add. A bound spot that isn't installed and doesn't come with Openspot shows as not installed.
 
 - The review names each file that Openspot can't show as text, such as the built program of a Swift spot or a built
   view, and says that it can do all that you can. For a built file, it says that the source beside it may not match.

@@ -66,6 +66,32 @@ final class ScheduleTests: SpotRunsCase {
         XCTAssertEqual(log("script.calls"), ["schedule|input.cron=\(Self.line) input.late=\(Int(3600 - due)) "])
     }
 
+    func testAReloadThatBrieflyLoadsNoSpotsKeepsTheRecordOfAMissedTime() async throws {
+        try write("script")
+        _ = try load(enabled: ["script"])
+        let due = firstDue
+        runs.quit()
+
+        time += 3600
+        runs = scheduled()
+        runs.take(ScanResult(files: [], refused: []))
+        _ = try load(enabled: ["script"])
+
+        try await self.wait("the late run") { self.log("script.calls").count == 1 && self.ended("script") }
+        XCTAssertEqual(log("script.calls"), ["schedule|input.cron=\(Self.line) input.late=\(Int(3600 - due)) "])
+    }
+
+    func testASpotTurnedOffBesideAnotherDropsItsRecord() async throws {
+        try write("one")
+        try write("two")
+        _ = try load(enabled: ["one", "two"])
+
+        _ = try load(enabled: ["two"])
+
+        let kept = try JSONSerialization.jsonObject(with: Data(contentsOf: file)) as? [String: Any]
+        XCTAssertEqual(kept.map { Array($0.keys) }, ["two \(Self.line)"])
+    }
+
     func testASpotWithAScheduleStartsOffAndRunsNothing() async throws {
         try write("off")
         try write("on")
