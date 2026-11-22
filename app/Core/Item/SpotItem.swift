@@ -89,7 +89,7 @@ public struct SpotItem: Equatable, Sendable {
             move: FlowMove(item: block),
             section: section,
             number: number,
-            look: block.value("look").flatMap(SpotPart.Look.init(rawValue:))
+            look: SpotPart.Look(style: StyleCache.shared.style(of: block.value(ViewNode.classKey) ?? "").resolved(for: [.sheet]))
         )
     }
 

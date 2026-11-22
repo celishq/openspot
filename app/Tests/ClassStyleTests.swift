@@ -91,6 +91,7 @@ final class ClassStyleTests: XCTestCase {
         XCTAssertEqual(colour.fill, .tile)
         XCTAssertTrue(colour.blursBackdrop)
         XCTAssertEqual(colour.opacity, 0.45)
+        XCTAssertEqual(Style(classes: "bg-transparent").fill, .transparent)
 
         let shape = Style(classes: "rounded-inner border overflow-hidden")
         XCTAssertEqual(shape.corner, .inner)

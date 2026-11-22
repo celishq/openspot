@@ -15,11 +15,15 @@ struct NodeFace: View {
         if style.isHidden != true {
             content(style)
                 .environment(\.spotNodeVariants, node.kind == "button" ? given : variants)
-                .modifier(NodeLook(style: style))
+                .modifier(NodeLook(style: style, drawsFill: !takesLook))
                 .modifier(NodeHover(isFollowed: node.style.named.contains(.hover), isHovered: $isHovered))
                 .modifier(NodePress(isFollowed: !variants.contains(.card) && tree.follows([.pressed], at: node), isPressed: $isPressed))
                 .layoutValue(key: NodeSlot.self, value: style)
         }
+    }
+
+    private var takesLook: Bool {
+        ["button", "field", "switch", "choice", "number"].contains(node.kind) && (node.kind != "button" || node.children.isEmpty)
     }
 
     @ViewBuilder
@@ -30,7 +34,7 @@ struct NodeFace: View {
         case "icon": NodeIcon(icon: node.icon)
         case "picture": NodePicture(icon: node.icon)
         case "button" where !node.children.isEmpty: NodePart(id: node.id, label: AnyView(NodeBox(children: node.children, style: style, tree: tree)))
-        case "button", "field", "switch", "choice", "number": NodePart(id: node.id, label: nil)
+        case "button", "field", "switch", "choice", "number": NodePart(id: node.id, label: nil, look: SpotPart.Look(style: style))
         case BlockKind.items: NodeItems()
         default:
             if let source = node.source { NodeSpotView(id: node.id, values: node.values, source: source) }

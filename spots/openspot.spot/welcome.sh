@@ -59,7 +59,7 @@ welcome() {
   printf 'frame=\nclass=gap-part\n'
   heading h-44 'Everything is a disposable spot' 'Make a script or an app for anything. Keep it, throw it away, or share it in one click.'
   printf 'icon=%s/even-this-onboarding.svg\n' "$here"
-  printf '\nbutton=next\ntitle=Continue\nlook=strong\nshortcut=return\nclose=false\n'
+  printf '\nbutton=next\ntitle=Continue\nclass=bg-accent\nshortcut=return\nclose=false\n'
 }
 
 # Prints the key page: the chosen key, or the key that opens Openspot, then Use this key and Record another key. With an argument, the field records at once.
@@ -70,7 +70,7 @@ keys() {
   printf '\nfield=key\nclass=h-32\ntype=hotkey\n'
   openspot_kv value "${shown:-$now}"
   [ -z "${1-}" ] || printf 'recording=true\n'
-  printf '\nbutton=use\ntitle=Use this key\nlook=strong\nshortcut=return\nclose=false\n'
+  printf '\nbutton=use\ntitle=Use this key\nclass=bg-accent\nshortcut=return\nclose=false\n'
   printf '\nbutton=record\ntitle=Record another key\nshortcut=escape\nclose=false\n'
 }
 
@@ -80,7 +80,7 @@ agent() {
   heading h-72 'Make it yours' 'Easily, with any of your favourite agents' "$here/note-and-pls.svg"
   card 'Create your own spot' 'Open New spot and describe it.' plus "$here/note-1.svg"
   card 'Change it with your agent' 'Select it and press ⌘E.' pencil "$here/note-2.svg"
-  printf '\nbutton=done\ntitle=Start using Openspot\nlook=strong\nshortcut=return\nclose=false\n'
+  printf '\nbutton=done\ntitle=Start using Openspot\nclass=bg-accent\nshortcut=return\nclose=false\n'
 }
 
 case "$1" in

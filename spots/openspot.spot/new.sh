@@ -21,7 +21,7 @@ sheet() {
   printf 'frame=\nclass=gap-group\n\n'
   printf 'field=describe\ntype=multiline\nplaceholder=%s\n' "$placeholder"
   openspot_kv value "$1"
-  printf '\nbutton=copy\ntitle=%s\nlook=strong\nshortcut=cmd+return\nclose=false\n\n' "${2:-Copy prompt}"
+  printf '\nbutton=copy\ntitle=%s\nclass=bg-accent\nshortcut=cmd+return\nclose=false\n\n' "${2:-Copy prompt}"
   printf 'button=clear\ntitle=Clear\nscope=spot\nclose=false\n\n'
   [ -z "${OPENSPOT_EDIT_FILE-}" ] || printf 'button=editor\ntitle=Open in editor\nscope=spot\n\n'
   printf 'button=guide\ntitle=Read the guide\nscope=spot\n'

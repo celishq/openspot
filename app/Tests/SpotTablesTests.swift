@@ -107,7 +107,7 @@ final class SpotTablesTests: XCTestCase {
         let output = Frame(text: "frame=\nclass=gap-part\n\nnumber=one\nvalue=0.5\nmax=1\n\nnumber=bars\nvalue=1\nvalue=2\n\nfield=level\ntype=slider\n\nfield=key\ntype=hotkey\n\nfield=name\n\nswitch=done\ntype=tick\n")
 
         XCTAssertEqual(output.parts.map(\.kind), ["number", "number", "slider", "hotkey", "field", "switch"])
-        XCTAssertEqual(output.parts.last?.look, .tick)
+        XCTAssertEqual(output.parts.last?.isTick, true)
         XCTAssertEqual(output.fields.map(\.kind.name), ["slider", "field", "switch"])
         XCTAssertEqual(BlockKind.words, ["text", "number", "picture", "icon", "switch", "field", "choice", "option", "button", "items", "box"])
     }

@@ -54,7 +54,7 @@ public struct Style: Equatable, Sendable {
     }
 
     public enum Fill: Equatable, Sendable {
-        case tile, accent, good, warn, bad
+        case tile, accent, good, warn, bad, transparent
     }
 
     public enum Corner: Equatable, Sendable {

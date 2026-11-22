@@ -63,9 +63,9 @@ struct SheetPartsView: View {
 
     private var nodeParts: NodeParts {
         NodeParts(
-            part: { id, label in
+            part: { id, label, look in
                 guard let part = panel.parts.first(where: { $0.id == id }) else { return AnyView(EmptyView()) }
-                return AnyView(nodePart(part, label: label))
+                return AnyView(nodePart(part.drawn(as: look), label: label))
             },
             items: { room in
                 AnyView(SpotItemsView(list: list, onRun: onRun, selection: selection, onDragOut: onDragOut, room: room))
@@ -330,7 +330,7 @@ struct SheetPartsView: View {
     @ViewBuilder
     private func control(_ part: SpotPart, _ frame: PartFrame) -> some View {
         switch part.control {
-        case .toggle(let on) where part.look == .tick:
+        case .toggle(let on) where part.isTick:
             SpotTick(isOn: on, words: EmptyView()) { onSet(part, $0 ? "true" : "false") }
                 .fixedSize()
         case .toggle(let on):

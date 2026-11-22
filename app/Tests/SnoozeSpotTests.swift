@@ -42,7 +42,7 @@ final class SnoozeSpotTests: XCTestCase {
     }
 
     func testADayOffersOnlyItsTimesToCome() throws {
-        let titles = try frame("hours('date/2026-11-20', new Date(2026, 10, 20, 16, 0), \(defaults))").compactMap { $0.value("look") == nil ? nil : $0.value("title") }
+        let titles = try frame("hours('date/2026-11-20', new Date(2026, 10, 20, 16, 0), \(defaults))").compactMap { $0.value("class") == nil ? nil : $0.value("title") }
 
         XCTAssertEqual(titles, ["Evening", "Night"])
     }

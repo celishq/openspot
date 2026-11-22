@@ -287,11 +287,12 @@ icon = "wifi"
 printf 'frame=\nclass=gap-part\n\nbox=head\nclass=flex-row items-center gap-2\n\n'
 printf 'icon=wifi\nparent=head\nvalue=wifi\nclass=text-accent\n\n'
 printf 'text=name\nparent=head\ntitle=Home\ndetail=82 Mb/s\nclass=grow\n\n'
-printf 'button=forget\nparent=head\ntitle=Forget\nlook=chip\n'
+printf 'button=forget\nparent=head\ntitle=Forget\nclass=rounded-full\n'
 ```
 
 The sheet shows one row: the Wi-Fi icon in the accent colour, **Home** with **82 Mb/s** under it, and a **Forget** chip
-at the end. `grow` gives the free width to the words, so the chip sits at the edge. Press **Forget**, and Openspot runs
+at the end. `rounded-full` makes the button a chip as wide as its words, and `grow` gives the free width to the words, so
+the chip sits at the edge. Press **Forget**, and Openspot runs
 `wi-fi.sh forget`.
 
 A class can name a place or a state before it, such as `card:hidden` or `hover:bg-tile`, and then it applies only

@@ -277,11 +277,11 @@ public actor AccountSheet {
         frame.block(card, order: order)
         frame.block(["text": "backup", "class": "font-section", "title": "Backup"], order: ["text", "class", "title"])
         if let sync = facts.sync {
-            frame.block(["switch": "sync", "title": "Keep in iCloud Keychain", "icon": "icloud", "look": "tile", "value": String(sync)], order: ["switch", "title", "icon", "look", "value"])
+            frame.block(["switch": "sync", "title": "Keep in iCloud Keychain", "icon": "icloud", "class": "bg-tile", "value": String(sync)], order: ["switch", "title", "icon", "class", "value"])
         }
         let saved: (detail: String, tone: String?) = facts.backedUp == true ? ("Saved", "good") : facts.sync == true ? ("In iCloud Keychain", nil) : ("Not saved yet", "warn")
-        var words = ["button": "about", "title": "Recovery words", "detail": saved.detail, "icon": "key", "look": "tile"]
-        var keys = ["button", "title", "detail", "icon", "look"]
+        var words = ["button": "about", "title": "Recovery words", "detail": saved.detail, "icon": "key", "class": "bg-tile"]
+        var keys = ["button", "title", "detail", "icon", "class"]
         if let tone = saved.tone { words["tone"] = tone; keys.append("tone") }
         frame.block(words, order: keys)
         frame.button("how", "How it works")

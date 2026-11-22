@@ -48,7 +48,7 @@ case "$1" in
     printf 'board=drawer\nclass=grow\ndots=%s\n\n' "$dots"
     printf 'box=buttons\nclass=flex-row gap-part\n\n'
     printf 'button=clear\nparent=buttons\nclass=w-1/2\ntitle=Clear\nclose=false\n\n'
-    printf 'button=save\nparent=buttons\nclass=w-1/2\ntitle=Save\nshortcut=return\nlook=strong\n'
+    printf 'button=save\nparent=buttons\nclass=w-1/2 bg-accent\ntitle=Save\nshortcut=return\n'
     ;;
   drawer)
     [ -n "$target" ] && [ ${#2} -eq 81 ] || exit 0

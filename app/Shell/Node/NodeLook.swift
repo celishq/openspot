@@ -3,6 +3,7 @@ import SwiftUI
 
 struct NodeLook: ViewModifier {
     let style: Style
+    var drawsFill = true
     @Environment(\.spotSurfaceEdge) private var surface
 
     func body(content: Content) -> some View {
@@ -24,7 +25,7 @@ struct NodeLook: ViewModifier {
             .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: Alignment(horizontal: horizontal, vertical: .top))
             .background {
                 if style.blursBackdrop { shape.fill(.regularMaterial) }
-                if let fill = style.fill { shape.fill(Self.colour(fill)) }
+                if drawsFill, let fill = style.fill { shape.fill(Self.colour(fill)) }
             }
             .overlay {
                 if style.hasBorder { shape.strokeBorder(SpotTheme.ink.opacity(SpotTheme.track), lineWidth: SpotTokens.nodeBorder) }
@@ -87,6 +88,7 @@ struct NodeLook: ViewModifier {
         case .good: SpotTheme.good
         case .warn: SpotTheme.warn
         case .bad: SpotTheme.bad
+        case .transparent: .clear
         }
     }
 }

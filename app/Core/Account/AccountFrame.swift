@@ -96,9 +96,9 @@ struct AccountFrame {
         var fields: [TextBlock.Field] = [.init(key: "button", value: id), .init(key: "title", value: title)]
         switch look {
         case .plain: fields.append(.init(key: "close", value: "false"))
-        case .main: fields += [.init(key: "shortcut", value: "cmd+return"), .init(key: "look", value: "strong"), .init(key: "close", value: "false")]
+        case .main: fields += [.init(key: "shortcut", value: "cmd+return"), .init(key: "class", value: "bg-accent"), .init(key: "close", value: "false")]
         case .close: break
-        case .picked: fields += [.init(key: "look", value: "strong"), .init(key: "close", value: "false")]
+        case .picked: fields += [.init(key: "class", value: "bg-accent"), .init(key: "close", value: "false")]
         }
         blocks.append(TextBlock(fields: fields))
     }

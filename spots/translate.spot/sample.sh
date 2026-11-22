@@ -12,4 +12,4 @@ printf "choice=target\nparent=bottom\nclass=self-start\nvalue=fr\n$languages\n"
 printf 'box=result\nparent=bottom\nclass=relative grow\n\n'
 printf 'field=output\nparent=result\nclass=absolute inset-0\ntype=multiline\nvalue=Bonjour ! On se retrouve pour déjeuner à midi ?\nplaceholder=Translation\nreadonly=true\n\n'
 printf 'box=corner\nparent=result\nclass=absolute inset-0 justify-end items-end p-2\n\n'
-printf 'button=copy\nparent=corner\nalign=right\nlook=chip\ntitle=Copy\nshortcut=cmd+return\n'
+printf 'button=copy\nparent=corner\nclass=rounded-full\ntitle=Copy\nshortcut=cmd+return\n'

@@ -53,7 +53,7 @@ public struct FaultSpot: Equatable, Sendable {
                 .init(key: "parent", value: "buttons"),
                 .init(key: "title", value: "Copy prompt for AI"),
                 .init(key: "shortcut", value: "cmd+return"),
-                .init(key: "look", value: "strong")
+                .init(key: "class", value: "bg-accent")
             ])
         ].map(\.text).joined(separator: "\n")
     }

@@ -116,7 +116,7 @@ final class AgendaExampleTests: SampleSpotsCase {
             XCTAssertEqual(next.number?.text, "in 12 min")
             XCTAssertEqual(next.title, "Standup")
             XCTAssertEqual(next.color, "#1BADF8")
-            let ticks = output.face.parts.filter { $0.look == .tick }
+            let ticks = output.face.parts.filter(\.isTick)
             XCTAssertEqual(ticks.map(\.id), ["R1", "R3"])
             XCTAssertEqual(ticks.map(\.control), [.toggle(false), .toggle(false)])
             XCTAssertEqual(ticks.map(\.title), ["Call mom", "Water the plants"])

@@ -23,7 +23,7 @@ final class ViewTreeTests: XCTestCase {
     button=forget
     parent=head
     title=Forget
-    look=chip
+    class=rounded-full
 
     text=note
     title=Saved
@@ -233,7 +233,7 @@ final class ViewTreeTests: XCTestCase {
     }
 
     func testTheClassesOfTheItemsLayOutEachItem() {
-        let text = "frame=\nclass=gap-part\n\nitems=list\nclass=grid grid-cols-4 gap-part\n\ntext=a\nparent=list\ntitle=A\nlook=tile\n"
+        let text = "frame=\nclass=gap-part\n\nitems=list\nclass=grid grid-cols-4 gap-part\n\ntext=a\nparent=list\ntitle=A\nclass=bg-tile\n"
 
         XCTAssertEqual(Frame(text: text).drawing, RepeatDrawing(columns: 4))
         XCTAssertEqual(Frame(text: "frame=\n\nitems=list\nclass=gap-part\n").drawing, .list)

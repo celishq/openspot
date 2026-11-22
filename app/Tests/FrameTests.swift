@@ -280,7 +280,7 @@ final class FrameTests: XCTestCase {
 
         XCTAssertEqual(try XCTUnwrap(output.parts.first?.number).fill, 0.5)
         XCTAssertEqual(output.parts.dropFirst().map(\.control), [.slider(level: 40, min: 0, max: 100), .shortcut("ctrl+k"), .toggle(false), .toggle(false)])
-        XCTAssertEqual(output.parts.map(\.look), [nil, nil, nil, .tick, nil])
+        XCTAssertEqual(output.parts.map(\.isTick), [false, false, false, true, false])
         XCTAssertEqual(output.errors, ["gauge=old"])
     }
 

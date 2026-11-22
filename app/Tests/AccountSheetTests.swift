@@ -275,7 +275,7 @@ final class AccountSheetTests: BuiltInCase {
         XCTAssertEqual(choices.count, 8)
         let places = Array(Set(choices.map(\.place))).sorted()
         let first = try await frame(["pick-\(places[0])-\(words[places[0] - 1])"], page: "check")
-        XCTAssertEqual(block("pick-\(places[0])-\(words[places[0] - 1])", in: first)["look"], "strong")
+        XCTAssertEqual(block("pick-\(places[0])-\(words[places[0] - 1])", in: first)["class"], "bg-accent")
         let done = try await said(["pick-\(places[1])-\(words[places[1] - 1])"], page: "check")
 
         XCTAssertTrue(try store.record()?.isBackedUp == true)

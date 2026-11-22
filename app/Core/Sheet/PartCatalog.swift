@@ -3,7 +3,7 @@ import Foundation
 public enum PartCatalog {
     static let keys: Set<String> = [
         "title", "detail", "icon", "min", "max", "color", "value", "display",
-        "placeholder", "readonly", "required", "type", "close", "confirm", "scope", "form", "align", "look",
+        "placeholder", "readonly", "required", "type", "close", "confirm", "scope", "form",
         "shortcut", "tone", "unit", "recording", "grow", "parent", "class"
     ]
     private static let optionKeys: Set<String> = ["option", "title", "icon"]
@@ -21,12 +21,6 @@ public enum PartCatalog {
             faults += option.fields.map(\.key).filter { !optionKeys.contains($0) }.map { "the option \(id) of \(name) has an unknown key: \($0)" }
         }
         faults += block.values("color").filter { !isColor($0) }.map { "the part \(name) needs a color as #rrggbb: \($0)" }
-        if let look = block.value("look"), SpotPart.Look(rawValue: look) == nil {
-            faults.append("the part \(name) has an unknown look: \(look)")
-        }
-        if let align = block.value("align"), SpotPart.Align(rawValue: align) == nil {
-            faults.append("the part \(name) has an unknown align: \(align)")
-        }
         if let tone = block.value("tone"), MetricValue.Tone(rawValue: tone) == nil {
             faults.append("the part \(name) has an unknown tone: \(tone)")
         }

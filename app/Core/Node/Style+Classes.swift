@@ -76,6 +76,7 @@ extension Style {
         case "bg-good": fill = .good
         case "bg-warn": fill = .warn
         case "bg-bad": fill = .bad
+        case "bg-transparent": fill = .transparent
         case "backdrop-blur": blursBackdrop = true
         case "rounded-card": corner = .card
         case "rounded-inner": corner = .inner
