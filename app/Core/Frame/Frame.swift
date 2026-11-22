@@ -28,7 +28,7 @@ public struct Frame: Equatable, Sendable {
     public private(set) var face = CardFace.none
     public private(set) var tree = ViewTree.empty
     public private(set) var sheet = ViewTree.empty
-    public private(set) var drawing = RepeatDrawing.list
+    public private(set) var columns = 1
     public private(set) var ends: [String] = []
     public private(set) var start: String?
     public private(set) var select: String?
@@ -78,7 +78,7 @@ public struct Frame: Equatable, Sendable {
         tree = ViewTree(blocks: blocks, root: head, kinds: kinds)
         let repeated = blocks.first { $0.fields.first?.key == BlockKind.items }?.fields.first?.value
         if let repeated, let style = tree.node(repeated)?.style.resolved(for: [.sheet]), style.arrangement == .grid {
-            drawing = RepeatDrawing(columns: style.columns ?? 1)
+            columns = style.columns ?? 1
         }
         let listed = tree.listed
         let placed = Self.placed(in: tree)
@@ -206,7 +206,7 @@ public struct Frame: Equatable, Sendable {
     }
 
     public var perLine: Int? {
-        sheet.holdsItems || searchField != nil ? drawing.columns : nil
+        sheet.holdsItems || searchField != nil ? columns : nil
     }
 
     public var search: ItemSearch {

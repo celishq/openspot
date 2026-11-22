@@ -23,10 +23,10 @@ struct CardTreeView: View {
     private var nodeParts: NodeParts {
         let parts = face.parts
         let onSlot = onSlot
-        return NodeParts(part: { id, label, look in
+        return NodeParts(part: { id, label, look, size in
             if let label { return AnyView(Button { onSlot(id, nil) } label: { label }.buttonStyle(.plain)) }
             guard let part = parts.first(where: { $0.id == id }) else { return AnyView(EmptyView()) }
-            return AnyView(NodeCardPart(part: part.drawn(as: look), onSlot: onSlot))
+            return AnyView(NodeCardPart(part: part.drawn(as: look), size: size, onSlot: onSlot))
         })
     }
 }

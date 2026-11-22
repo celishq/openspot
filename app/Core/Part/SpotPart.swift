@@ -173,11 +173,6 @@ public struct SpotPart: Equatable, Sendable, Identifiable {
         return true
     }
 
-    public var flatLines: Int {
-        if case .shortcut = control { return 2 }
-        return 1
-    }
-
     public var isPressable: Bool {
         press != .none
     }

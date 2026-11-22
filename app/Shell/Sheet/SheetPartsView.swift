@@ -63,9 +63,9 @@ struct SheetPartsView: View {
 
     private var nodeParts: NodeParts {
         NodeParts(
-            part: { id, label, look in
+            part: { id, label, look, size in
                 guard let part = panel.parts.first(where: { $0.id == id }) else { return AnyView(EmptyView()) }
-                return AnyView(nodePart(part.drawn(as: look), label: label))
+                return AnyView(nodePart(part.drawn(as: look), label: label, size: size))
             },
             items: { room in
                 AnyView(SpotItemsView(list: list, onRun: onRun, selection: selection, onDragOut: onDragOut, room: room))
@@ -74,9 +74,8 @@ struct SheetPartsView: View {
     }
 
     @ViewBuilder
-    private func nodePart(_ part: SpotPart, label: AnyView?) -> some View {
-        let lines = CGFloat(part.flatLines)
-        let height = SpotTokens.listRow * lines + SpotTokens.partGap * (lines - 1)
+    private func nodePart(_ part: SpotPart, label: AnyView?, size: CGSize) -> some View {
+        let height = size.height
         let frame = PartFrame(node: CGSize(width: SpotTokens.partsWidth, height: height), part: part)
         Group {
             if let label {
@@ -91,7 +90,7 @@ struct SheetPartsView: View {
                     content(part, PartFrame(node: room.size, part: part))
                 }
                 .frame(minHeight: height, idealHeight: height)
-                .frame(idealWidth: SpotTokens.cell)
+                .frame(idealWidth: size.width)
             } else {
                 content(part, frame)
                     .frame(maxWidth: frame.horizontal == .fill ? .infinity : nil, minHeight: height, maxHeight: .infinity, alignment: Self.alignment(frame))

@@ -94,7 +94,7 @@ extension SpotRun {
             let takeRows = {
                 self.changeList {
                     $0.take(search: search)
-                    $0.take(perLine: lines.drawing.columns)
+                    $0.take(perLine: lines.columns)
                     if let next { $0.replace(next) }
                     if let kept { $0.select(run: kept) }
                 }
@@ -112,7 +112,7 @@ extension SpotRun {
             guard query == list.query else { return }
             changeList {
                 $0.take(search: Self.search(of: lines, in: spot))
-                $0.take(perLine: lines.drawing.columns)
+                $0.take(perLine: lines.columns)
                 $0.answer(lines.items, to: query)
             }
         }
