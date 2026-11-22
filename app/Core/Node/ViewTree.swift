@@ -43,7 +43,13 @@ public struct ViewTree: Equatable, Sendable {
         return first.value
     }
 
-    init(blocks: [TextBlock], root: TextBlock?, kinds: [BlockKind], styles: StyleCache = .shared) {
+    func unwritten(showing blocks: [TextBlock], root: TextBlock, kinds: [BlockKind]) -> ViewTree {
+        var shown = ViewTree(blocks: blocks, root: root, kinds: kinds, isWritten: false)
+        shown.faults = faults
+        return shown
+    }
+
+    init(blocks: [TextBlock], root: TextBlock?, kinds: [BlockKind], styles: StyleCache = .shared, isWritten written: Bool? = nil) {
         let rootClasses = root?.value(ViewNode.classKey)
         style = rootClasses.map(styles.style(of:)) ?? Style()
         faults += style.unknown.map { "the root has an unknown class: \($0)" }
@@ -55,7 +61,7 @@ public struct ViewTree: Equatable, Sendable {
             order.append(id)
         }
         let named = order.filter { id in found[id]?.value(ViewNode.parentKey).map { $0 != id && found[$0] != nil } ?? false }
-        isWritten = rootClasses != nil || !named.isEmpty || order.contains { found[$0]?.fields.first?.key == BlockKind.box || found[$0]?.value(ViewNode.classKey) != nil }
+        isWritten = written ?? (rootClasses != nil || !named.isEmpty || order.contains { found[$0]?.fields.first?.key == BlockKind.box || found[$0]?.value(ViewNode.classKey) != nil })
         var parents: [String: String] = [:]
         for id in order {
             guard let parent = found[id]?.value(ViewNode.parentKey) else { continue }

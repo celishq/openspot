@@ -107,35 +107,24 @@ final class SheetPartsTests: XCTestCase {
     func testAViewBlockKeepsItsOwnKeysForItsViewAndOtherPartsKeepNone() {
         let output = Frame(text: "frame=\ntitle=Card\nclass=gap-part\n\nsteps=steps\nstep=words\nword=flip\nword=column\n\ntext=note\ntitle=Hi\n", kinds: views("steps"))
 
-        XCTAssertEqual(output.parts.first { $0.id == "steps" }?.values["word"], ["flip", "column"])
-        XCTAssertEqual(output.parts.first { $0.id == "steps" }?.values["step"], ["words"])
-        XCTAssertEqual(output.parts.first { $0.id == "note" }?.values, [:])
+        XCTAssertEqual(output.tree.node("steps")?.values["word"], ["flip", "column"])
+        XCTAssertEqual(output.tree.node("steps")?.values["step"], ["words"])
+        XCTAssertEqual(output.tree.node("note")?.values, [:])
     }
 
     func testAViewBlockAlsoGetsEachRowOfItsFrameWithItsKeysInOrder() {
         let output = Frame(text: "frame=\nclass=gap-part\n\ngallery=gallery\nmode=all\n\nitems=list\n\ntext=a\ntitle=One\ntag=x\ntag=y\nparent=list\n\ntext=b\ndetail=two\\nlines\nparent=list\n\ntext=note\ntitle=Hi\n", kinds: views("gallery"))
 
-        let gallery = output.parts.first { $0.id == "gallery" }
-        XCTAssertEqual(gallery?.items, [["text", "a", "title", "One", "tag", "x", "tag", "y", "parent", "list"], ["text", "b", "detail", "two\nlines", "parent", "list"]])
-        XCTAssertEqual(gallery?.values, ["gallery": ["gallery"], "mode": ["all"]])
-        XCTAssertEqual(output.parts.first { $0.id == "note" }?.items, [])
+        XCTAssertEqual(output.rows, [["text", "a", "title", "One", "tag", "x", "tag", "y", "parent", "list"], ["text", "b", "detail", "two\nlines", "parent", "list"]])
+        XCTAssertEqual(output.tree.node("gallery")?.values, ["gallery": ["gallery"], "mode": ["all"]])
         XCTAssertEqual(output.items.map(\.run), ["a", "b"])
-    }
-
-    func testTheRowsOfAFrameAreBuiltOnceForAllItsViewBlocks() {
-        let output = Frame(text: "frame=\nclass=gap-part\n\none=one\n\ntwo=two\n\nitems=list\n\ntext=a\ntitle=One\nparent=list\n\ntext=b\nparent=list\n", kinds: views("one", "two"))
-
-        let places = output.parts.map { $0.items.withUnsafeBufferPointer { $0.baseAddress } }
-
-        XCTAssertEqual(output.parts.map(\.items.count), [2, 2])
-        XCTAssertEqual(places[0], places[1])
     }
 
     func testAViewBlockOfAFrameWithNoRowGetsNoRows() {
         let output = Frame(text: "frame=\nclass=gap-part\n\ngallery=gallery\nmode=all\n", kinds: views("gallery"))
 
-        XCTAssertEqual(output.parts.first?.values, ["gallery": ["gallery"], "mode": ["all"]])
-        XCTAssertEqual(output.parts.first?.items, [])
+        XCTAssertEqual(output.tree.node("gallery")?.values, ["gallery": ["gallery"], "mode": ["all"]])
+        XCTAssertEqual(output.rows, [])
     }
 
     func testAnUnknownToneIsAFault() {

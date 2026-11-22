@@ -43,6 +43,11 @@ final class StoreSpotTests: BuiltInCase {
         try fake("openspot", "if [ \"$1 $2\" = 'folder pick' ]; then echo '\(folder.path)'; exit 0; fi\nexec '\(real.path)' \"$@\"")
     }
 
+    private func viewValues(_ text: String) throws -> [String: [String]] {
+        let frame = Frame(text: text, kinds: try store.kinds)
+        return frame.parts.first.flatMap { frame.tree.node($0.id) }?.values ?? [:]
+    }
+
     private func friends() throws -> URL {
         let friends = root.appendingPathComponent("friends")
         try "#!/bin/sh\n".writeScript(to: friends.appendingPathComponent("clock.spot/clock.sh"), toml: "title = 'Clock'")
@@ -57,7 +62,7 @@ final class StoreSpotTests: BuiltInCase {
 
         XCTAssertEqual(file.read().stores.map(\.url.path), [friends.path])
         XCTAssertEqual(effects(), ["toast Added the store friends with 1 spot."])
-        XCTAssertEqual(Frame(text: text, kinds: try store.kinds).parts.first?.values["folder"]?.last, "\(friends.path)\tfriends\tfound\tadded")
+        XCTAssertEqual(try viewValues(text)["folder"]?.last, "\(friends.path)\tfriends\tfound\tadded")
         XCTAssertEqual(TextBlock.blocks(in: text).first { $0.value("text") == "clock" }?.value("store"), friends.path)
     }
 
@@ -78,12 +83,12 @@ final class StoreSpotTests: BuiltInCase {
         _ = try file.change { $0.add(store: Store(url: friends)) }
         try FileManager.default.removeItem(at: examples)
         let before = try await runs.answer(of: store, .show, limit: 60)
-        XCTAssertEqual(Frame(text: before, kinds: try store.kinds).parts.first?.values["folder"], ["\(friends.path)\tfriends\tfound\tadded"])
+        XCTAssertEqual(try viewValues(before)["folder"], ["\(friends.path)\tfriends\tfound\tadded"])
 
         try "#!/bin/sh\n".writeScript(to: examples.appendingPathComponent("year.spot/year.sh"), toml: "title = 'Year'")
         let text = try await runs.answer(of: store, .show, limit: 60)
 
-        XCTAssertEqual(Frame(text: text, kinds: try store.kinds).parts.first?.values["folder"], ["\(examples.path)\tOpenspot\tfound\tbuiltin", "\(friends.path)\tfriends\tfound\tadded"])
+        XCTAssertEqual(try viewValues(text)["folder"], ["\(examples.path)\tOpenspot\tfound\tbuiltin", "\(friends.path)\tfriends\tfound\tadded"])
         XCTAssertEqual(TextBlock.blocks(in: text).first { $0.value("text") == "year" }?.value("store"), examples.path)
     }
 
@@ -92,7 +97,7 @@ final class StoreSpotTests: BuiltInCase {
         _ = try file.change { $0.add(store: Store(url: gone)) }
 
         let text = try await runs.answer(of: store, .show, limit: 60)
-        XCTAssertEqual(Frame(text: text, kinds: try store.kinds).parts.first?.values["folder"]?.last, "\(gone.path)\tgone\tmissing\tadded")
+        XCTAssertEqual(try viewValues(text)["folder"]?.last, "\(gone.path)\tgone\tmissing\tadded")
 
         try await call(["gallery", "remove:\(gone.path)"])
         XCTAssertEqual(file.read().stores, [])
@@ -182,11 +187,11 @@ final class StoreSpotTests: BuiltInCase {
 
         for action in [SpotAction.show, SpotAction(arguments: ["gallery", "get:timer"]), SpotAction(arguments: ["gallery", "publish:timer"])] {
             let text = try await SpotRuns(environment: TestEnvironment.values).answer(of: store, action, limit: 60)
-            XCTAssertNil(Frame(text: text, kinds: try store.kinds).parts.first?.values["readme"], "\(action.arguments)")
+            XCTAssertNil(try viewValues(text)["readme"], "\(action.arguments)")
         }
         let asked = try await SpotRuns(environment: TestEnvironment.values).answer(of: store, SpotAction(arguments: ["gallery", "readme:timer"]), limit: 60)
 
-        XCTAssertEqual(Frame(text: asked, kinds: try store.kinds).parts.first?.values["readme"], ["timer", "timer\t# Timer", "timer\t", "timer\tCounts down."])
+        XCTAssertEqual(try viewValues(asked)["readme"], ["timer", "timer\t# Timer", "timer\t", "timer\tCounts down."])
         XCTAssertEqual(TextBlock.blocks(in: asked).compactMap { $0.value("text") }, ["mine", "shared", "timer"])
     }
 
@@ -196,7 +201,7 @@ final class StoreSpotTests: BuiltInCase {
 
         let text = try await SpotRuns(environment: TestEnvironment.values).answer(of: store, SpotAction(arguments: ["gallery", "readme:timer"]), limit: 60)
 
-        let lines = (Frame(text: text, kinds: try store.kinds).parts.first?.values["readme"] ?? []).filter { $0.hasPrefix("timer\t") }
+        let lines = (try viewValues(text)["readme"] ?? []).filter { $0.hasPrefix("timer\t") }
         XCTAssertEqual(lines, ["timer\t![The sheet](\(folder.path)/shot.png)", "timer\t![](/tmp/a.mov)", "timer\t![Web](https://example.com/a.jpg)"])
     }
 }

@@ -22,7 +22,7 @@ final class RepeatDrawingTests: XCTestCase {
 
         XCTAssertEqual(output.drawing, .list)
         XCTAssertEqual(output.perLine, 1)
-        XCTAssertEqual(output.sheet.node("apps")?.kind, BlockKind.items)
+        XCTAssertEqual(output.tree.node("apps")?.kind, BlockKind.items)
         XCTAssertEqual(output.items.map(\.title), ["Safari", "Notes"])
     }
 
@@ -39,7 +39,7 @@ final class RepeatDrawingTests: XCTestCase {
         let outputCheck = FrameCheck(text: "frame=\nclass=gap-part\n\ntext=note\ntitle=Note\n\nitems=list\n\nbutton=copy\nparent=list\ntitle=Copy\n\ntext=a\nparent=list\ntitle=A\n")
         let output = outputCheck.output
 
-        XCTAssertEqual(output.sheet.children, ["note", "list"])
+        XCTAssertEqual(output.tree.children, ["note", "list"])
         XCTAssertEqual(output.actions.map(\.id), ["copy"])
         XCTAssertTrue(try XCTUnwrap(SheetParts(output: output)).showsRows)
         XCTAssertEqual(outputCheck.sheetFaults, [])

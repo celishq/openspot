@@ -32,14 +32,14 @@ public struct SheetParts: Equatable, Sendable {
     public init?(output: Frame, variants: Set<Style.Variant> = [.sheet, .dark]) {
         guard !output.parts.isEmpty else { return nil }
         every = output.parts
-        parts = Self.parts(of: output.parts, in: output.sheet, shownIn: variants)
+        parts = Self.parts(of: output.parts, in: output.tree, shownIn: variants)
         self.variants = variants
         showsRows = output.perLine != nil
-        tree = output.sheet
+        tree = output.tree
         top = SheetTop(showsRows: showsRows, search: output.search, header: 0)
         height = 0
         pictureTimes = Self.pictureTimes(of: output.parts)
-        rows = Self.rows(of: output.parts)
+        rows = output.rows
         place()
     }
 
@@ -54,10 +54,6 @@ public struct SheetParts: Equatable, Sendable {
             if case .image(let path) = part.control { times[path] = PictureFile(path: path).changed }
         }
         return times
-    }
-
-    private static func rows(of parts: [SpotPart]) -> [[String]] {
-        parts.first { !$0.items.isEmpty }?.items ?? []
     }
 
     private static func height(of parts: [SpotPart], in tree: ViewTree, shownIn variants: Set<Style.Variant>, room: CGFloat) -> CGFloat {
@@ -226,11 +222,11 @@ public struct SheetParts: Equatable, Sendable {
         let kept = every.first { $0.id == id }?.value
         every = output.parts
         showsRows = output.perLine != nil
-        tree = output.sheet
+        tree = output.tree
         if let id, let kept, let index = every.firstIndex(where: { $0.id == id }) { every[index].set(kept) }
         parts = Self.parts(of: every, in: tree, shownIn: variants)
         pictureTimes = Self.pictureTimes(of: every)
-        rows = Self.rows(of: every)
+        rows = output.rows
         place()
         answered = generation
         return true
