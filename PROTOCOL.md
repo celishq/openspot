@@ -889,7 +889,7 @@ Each kind of block, the keys of its own and the call it sends.
 | `button`          | A button, or an action (see [Buttons and actions](#buttons-and-actions)). The blocks inside it are its look.     | `shortcut`, `confirm`, `close`, `form`, `scope`                                   | `<id>`                 |
 | `field`           | A text field, or another input with a `type`.                                                                    | `value`, `type`, `placeholder`, `required`, `readonly`, `min`, `max`, `recording` | `<id> <value>`         |
 | `switch`          | A switch, or with `type=tick` a round tick before its words, for a thing to do.                                  | `value`: `true` or `false`, `type`                                                | `<id> true` or `false` |
-| `choice`          | A menu of the `option` blocks after it, a list when it covers two lines or more, or swatches of `color` lines.   | `color`, `value`, `type`                                                          | `<id> <option id>`     |
+| `choice`          | A menu of the `option` blocks after it, or another form with a `type`.                                           | `color`, `value`, `type`                                                          | `<id> <option id>`     |
 | `option`          | One option of the `choice` right before it.                                                                      | `title`, `icon`                                                                   |                        |
 | `items`           | The [items](#items): the blocks inside it are the items, and a `button` there is an action.                      |                                                                                   |                        |
 | A view of a spot  | What its SwiftUI file draws, named by the file (see [Views](#views)).                                            | any key the view reads                                                            | `<id> <value>`         |
@@ -900,8 +900,9 @@ Each kind of block, the keys of its own and the call it sends.
 - `icon` is an image file, such as `cups.png`; an `https://` image, downloaded once; the Finder icon of a path with a
   `/` or a leading `~`; an SF Symbol, such as `wifi`; or any other text, such as `😀`.
 - A field's `type`: none for one line, `multiline`, `slider` from `min` to `max`, 0 to 100 by default, which sends a
-  whole number, `search` for the search field of the [items](#items), and `hotkey`. A choice with `type=multiple` lets
-  the user choose several options.
+  whole number, `search` for the search field of the [items](#items), and `hotkey`.
+- A choice's `type`: none for a menu, `list` for a list of its options, `swatches` for a swatch of each of its `color`
+  lines, which sends the colour, and `multiple`, in a form, for several options.
 - A `hotkey` field shows keycaps, and records a key at Return or a click on it, or when a new frame gives it
   `recording=true`. Every key goes to it, Esc brings back its key, and a shortcut sends `<id> <key>`. While a sheet
   with one shows, Openspot's own keys are off.

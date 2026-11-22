@@ -125,9 +125,6 @@ public struct Frame: Equatable, Sendable {
                 errors.append(block.firstLine)
             }
         }
-        parts = parts.map { part in
-            part.drawn(spanning: tree.isWritten && tree.node(part.id).map(Self.spansRows) == true)
-        }
         if parts.contains(where: { tree.node($0.id)?.source != nil }) {
             rows = listedRows.map { $0.fields.flatMap { [$0.key, $0.value] } }
         }
@@ -149,11 +146,6 @@ public struct Frame: Equatable, Sendable {
             let itemsBlock = blocks.first { $0.fields.first?.key == BlockKind.items } ?? (items.isEmpty ? nil : Self.itemsBlock)
             tree = tree.unwritten(showing: unplaced + [itemsBlock].compactMap(\.self), root: Self.sheetRoot, kinds: kinds)
         }
-    }
-
-    private static func spansRows(_ node: ViewNode) -> Bool {
-        let style = node.style.resolved(for: [.sheet])
-        return style.grows == true || (style.height.map { $0.points(of: 0) } ?? 0) >= 2 * SpotTokens.listRow + SpotTokens.partGap
     }
 
     private static func isSearch(_ block: TextBlock) -> Bool {

@@ -160,8 +160,15 @@ public struct BlockKind: Sendable, Equatable {
     public static let choice = BlockKind(
         name: "choice",
         control: { block in
-            let colors = block.values("color")
-            return colors.isEmpty ? .menu(SpotPart.options(of: block), value: block.value("value")) : .swatches(colors, value: block.value("value"))
+            switch block.value("type") {
+            case "swatches": .swatches(block.values("color"), value: block.value("value"))
+            case "list": .list(SpotPart.options(of: block), value: block.value("value"))
+            default: .menu(SpotPart.options(of: block), value: block.value("value"))
+            }
+        },
+        faults: { block in
+            guard block.value("type") != "swatches", !block.values("color").isEmpty else { return BlockKind.keyFaults(in: block) }
+            return ["the choice \(block.value("choice") ?? "") has color lines, which only a choice with type=swatches takes"] + BlockKind.keyFaults(in: block)
         },
         field: { block, name, label in
             let options = SpotPart.options(of: block)

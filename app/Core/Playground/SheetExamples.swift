@@ -253,6 +253,7 @@ public enum SheetExamples {
         choice=items
         parent=top
         class=h-32
+        type=list
         value=address
 
         option=address
@@ -330,6 +331,7 @@ public enum SheetExamples {
         value=40
 
         choice=colors
+        type=swatches
         color=#e8c07d
         color=#e8edf7
         color=#d4524a
@@ -342,16 +344,19 @@ public enum SheetExamples {
         choice=low
         parent=levels
         title=Low
+        type=swatches
         color=#5fe0d2
 
         choice=mid
         parent=levels
         title=Mid
+        type=swatches
         color=#5a64e6
 
         choice=high
         parent=levels
         title=High
+        type=swatches
         color=#d632d8
 
         button=reset

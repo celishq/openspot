@@ -139,13 +139,6 @@ public struct SpotPart: Equatable, Sendable, Identifiable {
         return part
     }
 
-    func drawn(spanning isTall: Bool) -> SpotPart {
-        guard case .menu(let options, let value) = control, isTall else { return self }
-        var part = self
-        part.control = .list(options, value: value)
-        return part
-    }
-
     public var fillsHeight: Bool {
         switch control {
         case .text, .list, .number, .image: true
