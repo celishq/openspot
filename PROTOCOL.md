@@ -208,7 +208,7 @@ and a Forget chip at its end. The list of the items fills the rest of the sheet 
 - A `parent` that names no block, and an unknown class, are faults that `openspot check spots` reports. The block then
   sits in the root, and the class is skipped, so a frame still draws.
 - The check also reports more than one `look=strong`, a title that may not fit its place, and a `text` that its classes
-  make shorter than its words. It counts each text as one line, so it can't see words that wrap.
+  make shorter than its words. It counts the lines a text's words wrap to from an estimate of their width, so a text of wide letters may still be cut.
 
 ### Change a block
 
