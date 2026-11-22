@@ -85,7 +85,6 @@ public struct Frame: Equatable, Sendable {
         let inSheet = Set(Self.sheetPlaces.flatMap(tree.shown(in:)))
         var runs = Set<String>()
         var listedRows: [TextBlock] = []
-        var section: String?
         var values: [(block: TextBlock, kind: BlockKind)] = []
         var unplaced: [TextBlock] = []
         for (index, block) in blocks.enumerated() {
@@ -98,8 +97,6 @@ public struct Frame: Equatable, Sendable {
                     take(action: id, block)
                 } else if Self.isSearch(block) {
                     searchField = block
-                } else if let id, listed.contains(id), tree.node(id)?.style.resolved(for: [.sheet]).font == .section {
-                    section = block.value("title") ?? block.value("value")
                 } else if let part = SpotPart(block: block, kind: kind) {
                     if kind.field != nil { fields.append(Field(block: block, kind: kind)) }
                     if kind.holdsValue { values.append((block, kind)) }
@@ -109,7 +106,7 @@ public struct Frame: Equatable, Sendable {
                     } else if kind == .choice {
                         parts.append(part)
                         unplaced.append(block)
-                    } else if let item = SpotItem(block: block, kind: kind, section: section) {
+                    } else if let item = SpotItem(block: block, kind: kind, section: id.flatMap { tree.group(of: $0) }) {
                         listedRows.append(block)
                         if runs.insert(item.run).inserted { items.append(item) }
                     }

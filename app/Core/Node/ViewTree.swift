@@ -20,6 +20,11 @@ public struct ViewTree: Equatable, Sendable {
         !places.isDisjoint(with: Style.Variant.card(size))
     }
 
+    func group(of id: String) -> String? {
+        guard let box = nodes[id]?.parent.flatMap({ nodes[$0] }), box.kind == BlockKind.box, listed.contains(box.id) else { return nil }
+        return box.title
+    }
+
     public var drawsOnBar: Bool {
         places.contains(.bar)
     }
@@ -95,7 +100,12 @@ public struct ViewTree: Equatable, Sendable {
             places.formUnion(style.named)
         }
         holdsItems = nodes.values.contains { $0.kind == BlockKind.items }
-        listed = Set(nodes.values.filter { $0.parent.flatMap { nodes[$0] }?.kind == BlockKind.items }.map(\.id))
+        let tree = nodes
+        let holder = { (id: String?) in id.flatMap { tree[$0] } }
+        listed = Set(nodes.values.filter { node in
+            guard let parent = holder(node.parent) else { return false }
+            return parent.kind == BlockKind.items || parent.kind == BlockKind.box && holder(parent.parent)?.kind == BlockKind.items
+        }.map(\.id))
         places.formUnion(self.style.named)
     }
 }

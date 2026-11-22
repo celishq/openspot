@@ -115,7 +115,7 @@ final class TextBlockTests: XCTestCase {
     }
 
     func testANumberItemOfMoreThanOneValueDrawsABarForEachUpToItsMaxWithAGapForADash() throws {
-        let bars = try XCTUnwrap(Frame(text: "items=list\n\ntext=used\nparent=list\nclass=font-section\ntitle=Used\n\nnumber=a\nparent=list\nvalue=2\nvalue=-\nvalue=4").items.first)
+        let bars = try XCTUnwrap(Frame(text: "items=list\n\nbox=used\nparent=list\ntitle=Used\n\nnumber=a\nparent=used\nvalue=2\nvalue=-\nvalue=4").items.first)
         let capped = try XCTUnwrap(Frame(text: "number=a\nvalue=2\nvalue=4\nmax=8").items.first)
         let check = try XCTUnwrap(Frame(text: "text=a\nvalue=true").items.first)
 

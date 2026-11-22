@@ -37,14 +37,14 @@ END {
       detail = (v["acts"] == 0 && via != "" ? via : sprintf("%.1f a day", acts)) " · " seconds(day) " CPU"
     }
     tone = s == "bad" ? "tone=bad\n" : s == "warn" ? "tone=warn\n" : ""
-    row(order, 100000 - acts * 100, "number=" id "\nparent=spots\ntitle=" v["title"] "\ndetail=" detail "\nroute=spot:" id "\n" tone graph sprintf("acts=%.2f\ncpu=%.3f\nstate=%s\n", acts, day, s))
+    row(order, 100000 - acts * 100, "number=" id "\nparent=" sections[order, "id"] "\ntitle=" v["title"] "\ndetail=" detail "\nroute=spot:" id "\n" tone graph sprintf("acts=%.2f\ncpu=%.3f\nstate=%s\n", acts, day, s))
     listed[order] = 1
     if (topcpu == "" || day > topcpu) { topcpu = day; toptitle = v["title"]; topdetail = seconds(day) " CPU a day" }
   }
   for (i = 1; i <= searches; i++) {
-    row(5, 100000 - searchedTimes[i], "text=search:" searched[i] "\nparent=spots\ntitle=" searched[i] "\ndetail=Searched " times(searchedTimes[i]) ", found nothing\nopen.title=Copy prompt\nclose=false\n")
+    row(5, 100000 - searchedTimes[i], "text=search:" searched[i] "\nparent=" sections[5, "id"] "\ntitle=" searched[i] "\ndetail=Searched " times(searchedTimes[i]) ", found nothing\nopen.title=Copy prompt\nclose=false\n")
     listed[5] = 1
   }
-  for (order in listed) row(order, -1, "text=" sections[order, "id"] "\nparent=spots\nclass=font-section\ntitle=" sections[order, "title"] "\n")
+  for (order in listed) row(order, -1, "box=" sections[order, "id"] "\nparent=spots\ntitle=" sections[order, "title"] "\n")
   row(0, 0, "text=top\nclass=hidden card:flex\ntitle=" (toptitle == "" ? "No spot ran yet" : toptitle) "\ndetail=" topdetail "\n")
 }

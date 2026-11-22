@@ -416,19 +416,18 @@ Items are the list that the user searches and presses. See [Show a list](GUIDE.m
 ```ini
 items=devices
 
-text=nearby
+box=nearby
 parent=devices
 title=Nearby
-class=font-section
 
 text=mouse
-parent=devices
+parent=nearby
 title=Mouse
 icon=computermouse
 keywords=pointer
 
 number=keyboard
-parent=devices
+parent=nearby
 title=Keyboard
 icon=keyboard
 value=62
@@ -461,8 +460,8 @@ Forget is a row of the ⌘K menu of the selected item, and a search for pointer 
 | `form`       | `true` asks for values with a form before the press runs, as a `form=true` button does.         |
 
 - The blocks inside the `items` block are the items, and a `button` there is an
-  [action](#buttons-and-actions). A `text` with `class=font-section` titles the items after it. A frame with no layout
-  makes its items as [Show things with blocks](#show-things-with-blocks) says.
+  [action](#buttons-and-actions). A `box` inside the `items` block is a group: its `title` heads the items inside it.
+  A frame with no layout makes its items as [Show things with blocks](#show-things-with-blocks) says.
 - A `number` item shows its value on the right of its title, a ring of it with `max`, or the bars of a series, as in
   [Numbers](#numbers).
 - A press of a text sends `<spot> open <id>`, of a switch `<spot> <id> true` or `false`, and of a `hotkey` field
@@ -881,7 +880,7 @@ Each kind of block, the keys of its own and the call it sends.
 
 | Kind              | Shows                                                                                                            | Its own keys                                                                      | Sends                  |
 | ----------------- | ---------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------- | ---------------------- |
-| `box`             | The blocks inside it, laid out by its classes. See [Layouts](#layouts).                                          |                                                                                   |                        |
+| `box`             | The blocks inside it, laid out by its classes, or inside `items` a group of items under its `title`.             |                                                                                   |                        |
 | `text`            | Words.                                                                                                           | `value`                                                                           |                        |
 | `icon`            | The icon of its `value`, by the rules of `icon` below.                                                           | `value`                                                                           |                        |
 | `picture`         | An image that fills its area.                                                                                    | `icon`                                                                            |                        |
@@ -947,7 +946,7 @@ A tile with round corners holds one row. The name, heavier and in the accent col
   and `px`, the height of a divider.
 - `<n>` is a count from 1 to 12, and `<p>` a percent from 0 to 100 in steps of 5.
 - `flex` shows a block that `hidden` hides, such as `hidden card:flex`.
-- `font-section` gives a `text` the look of a title over a group of blocks or items.
+- `font-section` gives a `text` the look of a title over a group of blocks.
 - On a `button`, a `field`, a `switch`, a `choice` or a `number`, a class chooses the box that Openspot draws for it:
   `bg-accent` is the one main button, `bg-tile` a tile, `bg-transparent` no box, and `rounded-full` on a button a chip
   as wide as its words, or a round button of its `icon` when it has no `title`. An item with `bg-tile` shows its title and detail under its icon.

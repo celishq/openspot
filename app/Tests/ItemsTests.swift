@@ -45,13 +45,12 @@ final class ItemsTests: PanelCase {
         parent=list
         title=Delete
 
-        text=later
+        box=later
         parent=list
-        class=font-section
         title=Later
 
         switch=sync
-        parent=list
+        parent=later
         title=Sync
         value=true
         """)
@@ -124,7 +123,7 @@ final class ItemsTests: PanelCase {
     }
 
     func testASheetOfItemsHoldsALineForItsSectionTitle() async throws {
-        try await open("items=devices\n\ntext=nearby\nparent=devices\nclass=font-section\ntitle=Nearby\n\ntext=mouse\nparent=devices\ntitle=Mouse\n\ntext=keyboard\nparent=devices\ntitle=Keyboard\n")
+        try await open("items=devices\n\nbox=nearby\nparent=devices\ntitle=Nearby\n\ntext=mouse\nparent=nearby\ntitle=Mouse\n\ntext=keyboard\nparent=nearby\ntitle=Keyboard\n")
 
         let sheet = try XCTUnwrap(model.sheets["items"])
         XCTAssertEqual(sheet.sheetRect, SpotTokens.sheetRect(rows: 3, top: sheet.top))
