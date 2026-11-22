@@ -33,7 +33,8 @@ event ──► call ──► spot ──► frame ──► Openspot draws it 
 These rules hold everywhere, and the details follow from them.
 
 - **A spot gives data, and Openspot draws it.** A block says what a thing is, and its place chooses its look, such as a
-  ring or a bar for a [number](#numbers). Classes say where a block sits, and every size and colour comes from the theme.
+  ring or a bar for a [number](#numbers). [Classes](#classes) say where a block sits and how it looks, and every size
+  and colour they name comes from the theme.
 - **A frame describes, and a command changes.** Printing a frame never changes the Mac, and a `show` call runs no
   command that changes anything.
 - **The user chooses the places and the keys.** The spot lays out each place it cares about.
@@ -42,7 +43,7 @@ These rules hold everywhere, and the details follow from them.
 - **Each meaning has one form.** Every call is `<id> [item] [value]`, and a key such as `title` means the same on every
   block.
 - **Text first.** A spot is any program that prints lines of `key=value`. A [view](#views) is only for a look that
-  blocks can't give.
+  blocks and classes can't give.
 
 # Print blocks
 
@@ -119,8 +120,7 @@ or change one block while the rest stays.
 
 - Openspot draws each frame as soon as it arrives. [The format](#the-format) says where a frame ends.
 - The first frame of a call replaces what shows, and so does a later frame with a `frame=` line. A later frame with no
-  `frame=` line changes only the blocks it prints, as [Change a block](#change-a-block) says, and a new id joins the end
-  of its parent.
+  `frame=` line changes only the blocks it prints, as [Change a block](#change-a-block) says.
 - If a show prints nothing, the spot shows nothing. If another call prints nothing, Openspot asks the spot again.
   Openspot ignores what an out-of-date call prints.
 - Print a value that comes from data with `openspot_kv`, `openspot_item`, `esc` or `openspot.frame`, so that it can't
@@ -148,11 +148,29 @@ isn't drawn.
 Print one block for each thing the spot shows: words, a number, a switch, an item of a list. See
 [Your first spot](GUIDE.md#your-first-spot).
 
+```ini
+text=home
+title=Home
+detail=82 Mb/s
+
+switch=vpn
+title=VPN
+value=true
+
+button=forget
+title=Forget
+```
+
+The sheet lists two rows: Home with 82 Mb/s under it, and VPN with its switch on. Forget is a row of the ⌘K menu, not
+of the list.
+
 - The first key of a block is its kind, and its value is the block's id. Anything with its own title or icon is a block.
-- The id names the block in the layout, the call it sends and what moves when it changes, and is unique in a
-  frame. Each kind keeps its data in `value`, and a kind that shows several values repeats it.
-- With no layout, the sheet is a search field over the items: a `text` or a `switch` is a row of the list, and a
-  `button` is an **action**, a row of the ⌘K menu. [Layouts](#layouts) places them.
+- The id names the block in the layout, the call it sends and what moves when it changes. A second block with the same
+  id changes the first, as [Change a block](#change-a-block) says. Each kind keeps its data in `value`, and a kind that
+  shows several values repeats it.
+- A frame with no [layout](#layouts) gets the one Openspot makes: a list of the blocks, which the user searches. Each
+  block is an [item](#items), except a `button`, which is an **action**, a row of the ⌘K menu, and a `choice`, which
+  shows over the list.
 - [Blocks](#blocks) lists each kind, its own keys and the keys that every kind takes.
 
 # Lay out and react
@@ -188,32 +206,45 @@ title=Forget
 class=rounded-full
 
 items=networks
+
+text=office
+parent=networks
+title=Office
+detail=54 Mb/s
+
+text=cafe
+parent=networks
+title=Café
+detail=12 Mb/s
 ```
 
-The sheet shows one row: the Wi-Fi icon in the accent colour, Home with 82 Mb/s under it, which takes the free width,
-and a Forget chip at its end. The list of the items fills the rest of the sheet under it.
+The sheet shows one row: the Wi-Fi icon in the accent colour, Home with 82 Mb/s under it, and a Forget chip at its
+end. Under it, Office and Café are the items of the list.
 
-- `parent=<id>` puts a block inside the block with that id. A block with no `parent` sits in the root, and blocks that
-  share a parent keep the order of their lines, so a block that comes in a later frame joins the end.
+- `parent=<id>` puts a block inside the block with that id. A block with no `parent` sits in the root. Blocks that
+  share a parent keep the order of their lines.
 - A frame has a layout once it holds a `box`, a `parent` or a `class`, even one variant on one block, such as
-  `class=bar:flex`. Each block then draws in the sheet, and only the blocks inside the `items` are items.
-- A `box` holds blocks and draws nothing of its own. It lays them out in a column, or in a row with `flex-row`, a grid
-  with `grid grid-cols-<n>`, or layers with `relative`. The root is a box too.
+  `class=bar:flex`. Each block then draws where the layout puts it, and only the blocks inside the `items` block are
+  [items](#items). A frame with no layout gets the one that [Show things with blocks](#show-things-with-blocks) says.
+- A `box` holds blocks. It lays them out in a column, or in a row with `flex-row`, a grid with `grid grid-cols-<n>`, or
+  layers with `relative`. It draws nothing of its own but what its classes give, such as a fill. The root is a box too.
 - In a grid, `col-span-<n>` and `row-span-<n>` make a block cover more cells. In layers, `absolute` with `inset-0`, or
   with an edge such as `top-0`, pins a block to its box.
-- A divider is a box with `class=h-px bg-tile`, a line as tall as a divider.
-- `grow` takes the free space of a row or a column, and an `items` block takes the free height of the sheet. Blocks
-  that grow in one row get equal widths, as `flex-1` gives in CSS.
+- A divider is a box with `class=h-px bg-tile`, a line as thin as Openspot's own dividers.
+- `grow` takes the free space of a row or a column. Blocks that grow in one row get equal widths, as `flex-1` gives in
+  CSS. An `items` block, a `multiline` field and a [view](#views) with no height take the free height of their box by
+  themselves, and `grow=false` keeps one to its own height.
 - `gap-part` and `gap-group` are the gaps that Openspot's own sheets use. [Classes](#classes) lists every class.
 - A `parent` that names no block, and an unknown class, are faults that `openspot check spots` reports. The block then
   sits in the root, and the class is skipped, so a frame still draws.
-- The check also reports more than one button with `bg-accent`, a title that may not fit its place, and a `text` that its classes
-  make shorter than its words. It counts the lines a text's words wrap to from an estimate of their width, so a text of wide letters may still be cut.
+- The check also reports more than one button with `bg-accent`, a title that may not fit its place, and a `text` that
+  its classes make shorter than its words. It guesses the width of the words, so a text of wide letters may still be
+  cut.
 
 ### Change a block
 
-A block with the id of a block that shows changes that block, so a spot can change its view while the rest stays. After
-the frame above, a [staying spot](#a-staying-spot) can print this frame at any time:
+A block with the id of a block that shows changes that block, so a spot can change one thing while the rest stays.
+After the frame above, the same call can print this frame, with no `frame=` line:
 
 ```ini
 text=name
@@ -225,6 +256,7 @@ The row now shows Office with 82 Mb/s under it, in the same place.
 - A block of the same kind changes only the keys it prints. The other keys stay, and so does its place.
 - A block of another kind replaces the block, with only the keys it prints. It keeps the place and the blocks inside it.
 - A new `parent=<id>` moves the block into that block, and `parent=` with no value moves it to the root.
+- A block with a new id joins the end of its parent.
 - A later block in the same frame changes an earlier one by the same rules. A frame with a `frame=` line replaces all.
 
 ## Places
@@ -237,15 +269,18 @@ frame=
 class=p-3 card:p-0
 
 number=battery
+title=Battery
 value=84
 max=100
-class=hidden card:flex
+unit=%
+class=hidden card:flex card:h-full
 
 items=list
 class=card:hidden
 ```
 
-The sheet shows the list. A card shows only the battery, as a ring on a square card and as a bar on a wide one.
+The sheet shows the list. A card shows only the battery: a ring around 84% on a square card, and a bar under Battery
+84% on a wide one.
 
 | Place                                       | Where                                                              |
 | ------------------------------------------- | ------------------------------------------------------------------ |
@@ -255,13 +290,11 @@ The sheet shows the list. A card shows only the battery, as a ring on a square c
 - A card shows the spot in the panel, which Openspot's hotkey opens, and the spot's sheet fills the panel when the user
   opens the spot. A spot can also show in a float, a small window at the pointer, and in a window, a normal window that
   holds its sheet.
-- Each place is a variant: `sheet:`, `float:` and `window:`, `card:` on a card of any size, a size such as `wide:` on a
-  card of that size, and `bar:`. [Variants](#variants) lists them, with the states, such as `hover:`.
+- Each place has a variant of its name, such as `card:` on a card of any size and `wide:` on a wide card.
+  [Variants](#variants) lists them.
 - The user chooses the places, and the spot only lays out the ones it cares about. A card draws the tree once a class
-  names `card:` or its size, and a size draws only its own variants. A card with none shows the icon, title and detail,
-  and the menu bar the icon.
-- The menu bar shows a `text` or a `number` by its own rule, in [The menu bar](#the-menu-bar), and a show that prints
-  nothing hides it until the next show.
+  names `card:` or the card's size. A card with no such class shows the spot's icon, title and detail, and
+  [the menu bar](#the-menu-bar) has its own rule.
 
 ### The card
 
@@ -283,6 +316,7 @@ The menu bar shows the first value that shows on `bar:`, small, beside the clock
 - A `text` with a `tone` and no `icon` is a dot of its tone and its title. Any other `text` is its title.
 - With no class that names `bar:`, the items are counted by their tone. A `switch` or slider that shows on `bar:` hides
   it.
+- A show that prints nothing hides the spot in the menu bar until the next show.
 
 ## Numbers
 
@@ -291,10 +325,14 @@ data, and Openspot chooses how to draw it for each place.
 
 ```ini
 number=battery
+title=Battery
 value=84
 max=100
 unit=%
 ```
+
+In a list, Battery is a row that ends in a ring around 84. On a card, it's a ring in a square area and a bar in a wide
+one, as the example of [Places](#places) shows.
 
 - `value` is the number, and each more `value` line adds a point of a series, oldest first. The last point is the one
   that shows, and `-` is a point with no value, drawn as a gap. `max` is the value of a full ring or bar, and by default the largest point.
@@ -324,9 +362,24 @@ Events, such as the panel opening or the battery changing, make Openspot ask a s
 
 ## Buttons and actions
 
-A button is a verb, such as Forget, that the sheet draws where the layout places it. See
+A button is a verb, such as Forget, that the user presses in the sheet or in its ⌘K menu. See
 [Add buttons](GUIDE.md#add-buttons) and [Ask for values](GUIDE.md#ask-for-values).
 
+```ini
+button=save
+title=Save
+class=bg-accent
+
+button=rename
+title=Rename
+scope=spot
+shortcut=cmd+r
+```
+
+The sheet shows Save as its main button, across its width. Rename is a row of the ⌘K menu, and ⌘R presses it.
+
+- A button is an action, a row of the ⌘K menu, when it has a `scope`, sits inside the `items` block, or is in a
+  frame with no layout. Any other button draws where the layout places it, and a press sends `<spot> <id>`.
 - An action sends `<spot> <id> <item id>` while an item is selected, and `<spot> <id>` when none is. `scope=item`, the
   default, shows it only while an item is selected, and `scope=spot` always. An action needs a `title`.
 - Each press closes the panel, on a block, an item, a command or an [offered action](#offered-actions), unless it has
@@ -360,6 +413,30 @@ terminal. [The openspot commands](app/Help/commands.md), which `openspot guide c
 
 Items are the list that the user searches and presses. See [Show a list](GUIDE.md#show-a-list).
 
+```ini
+items=devices
+
+text=mouse
+parent=devices
+title=Mouse
+icon=computermouse
+keywords=pointer
+
+number=keyboard
+parent=devices
+title=Keyboard
+icon=keyboard
+value=62
+max=100
+
+button=forget
+parent=devices
+title=Forget
+```
+
+The sheet lists Mouse and Keyboard, each with its icon, and Keyboard ends in a ring around 62. Forget is a row of the
+⌘K menu of the selected item, and a search for pointer finds Mouse.
+
 | Key          | Meaning                                                                                         |
 | ------------ | ----------------------------------------------------------------------------------------------- |
 | `title`      | The first line. By default, the id.                                                             |
@@ -378,9 +455,9 @@ Items are the list that the user searches and presses. See [Show a list](GUIDE.m
 | `shake`      | `true` on a `hotkey` field: a shake or a tap of one modifier can be its key.                    |
 | `form`       | `true` asks for values with a form before the press runs, as a `form=true` button does.         |
 
-- The blocks inside the `items` block are the items, and a `button` there is an action. A `text` with
-  `class=font-section` titles the items after it. With no layout, each block is an item, unless it's a `button`, which
-  is an action, or a `choice`, which the sheet draws.
+- The blocks inside the `items` block are the items, and a `button` there is an
+  [action](#buttons-and-actions). A `text` with `class=font-section` titles the items after it. A frame with no layout
+  makes its items as [Show things with blocks](#show-things-with-blocks) says.
 - A `number` item shows its value on the right of its title, a ring of it with `max`, or the bars of a series, as in
   [Numbers](#numbers).
 - A press of a text sends `<spot> open <id>`, of a switch `<spot> <id> true` or `false`, and of a `hotkey` field
@@ -527,7 +604,7 @@ such as a chart, a liquid or a game; [Draw your own view](GUIDE.md#draw-your-own
 
 ```ini
 box=level
-class=relative
+class=relative h-24
 
 liquid=fill
 parent=level
@@ -537,15 +614,17 @@ class=absolute inset-0
 text=label
 parent=level
 title=84%
+class=self-center font-metric
 ```
 
-With `views = ["liquid.swift"]` in the manifest, `liquid.swift` draws the block `fill` behind the words 84%.
+With `views = ["liquid.swift"]` in the manifest, `liquid.swift` draws the block `fill` over the whole box, and the
+words 84% show over it, at the top, in the middle.
 
 - Each file of `views` is a kind, named by its file: `views = ["liquid.swift"]` gives `liquid=<id>`. It takes `parent`
-  and `class` like any block, and fills the room its classes give it. A view has no size of its own, so give it one,
-  such as `class=h-24`.
-- A key of the view's own can repeat, and `spot.all` reads each value. A key that every kind takes, such as `title` or
-  `class`, can't. A file named like a kind of Openspot, such as `text.swift`, is a fault, since that kind draws the block.
+  and `class` like any block, and fills the room its classes give it. With no height, it takes the free height, as
+  [Layouts](#layouts) says.
+- A key of the block can repeat, and `spot.all` reads each value. A file named like a kind of Openspot, such as
+  `text.swift`, is a fault, since that kind draws the block.
 - The file declares `struct SpotView: View` with `let spot: SpotInput`, with no top-level code and no method
   `update()`.
 
@@ -797,7 +876,7 @@ Each kind of block, the keys of its own and the call it sends.
 
 | Kind              | Shows                                                                                                            | Its own keys                                                                      | Sends                  |
 | ----------------- | ---------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------- | ---------------------- |
-| `box`             | Nothing of its own: it lays out the blocks inside it. See [Layouts](#layouts).                                   |                                                                                   |                        |
+| `box`             | The blocks inside it, laid out by its classes. See [Layouts](#layouts).                                          |                                                                                   |                        |
 | `text`            | Words.                                                                                                           | `value`                                                                           |                        |
 | `icon`            | The icon of its `value`, by the rules of `icon` below.                                                           | `value`                                                                           |                        |
 | `picture`         | An image that fills its area.                                                                                    | `icon`                                                                            |                        |
@@ -810,16 +889,14 @@ Each kind of block, the keys of its own and the call it sends.
 | `items`           | The [items](#items): the blocks inside it are the items, and a `button` there is an action.                      |                                                                                   |                        |
 | A view of a spot  | What its SwiftUI file draws, named by the file (see [Views](#views)).                                            | any key the view reads                                                            | `<id> <value>`         |
 
-- Every kind also takes `parent` and `class`, which place it in the [layout](#layouts), and `title`, `detail`, `tone`
-  and `icon`. `tone` is `good`, `warn` or `bad`, and colours the detail, or the title with no detail. `color=#RRGGBB`
-  on a text or a number draws a bar of that colour at its edge.
+- Every kind also takes `parent`, `class` and `grow`, which place it in the [layout](#layouts), and `title`, `detail`,
+  `tone` and `icon`. `tone` is `good`, `warn` or `bad`, and colours the detail, or the title with no detail.
+  `color=#RRGGBB` on a text or a number draws a bar of that colour at its edge.
 - `icon` is an image file, such as `cups.png`; an `https://` image, downloaded once; the Finder icon of a path with a
   `/` or a leading `~`; an SF Symbol, such as `wifi`; or any other text, such as `😀`.
-- A field's `type`: none for one line, `multiline`, `slider` from `min` to `max`, 0 to 100 by default, which sends a whole number, `search` for the
-  search field of the [items](#items), and `hotkey`. A choice with
-  `type=multiple` lets the user choose several options.
-- `grow=false` keeps a list, a series, a picture or a `multiline` field to its own lines where it would take the free
-  height.
+- A field's `type`: none for one line, `multiline`, `slider` from `min` to `max`, 0 to 100 by default, which sends a
+  whole number, `search` for the search field of the [items](#items), and `hotkey`. A choice with `type=multiple` lets
+  the user choose several options.
 - A `hotkey` field shows keycaps, and records a key at Return or a click on it, or when a new frame gives it
   `recording=true`. Every key goes to it, Esc brings back its key, and a shortcut sends `<id> <key>`. While a sheet
   with one shows, Openspot's own keys are off.
@@ -829,12 +906,22 @@ Each kind of block, the keys of its own and the call it sends.
 A class styles a block, and its name is the one Tailwind CSS gives it. Every size and colour comes from the theme.
 
 ```ini
+box=row
+class=flex-row items-center gap-2 p-3 bg-tile rounded-inner
+
 text=name
-title=Home
+parent=row
+title=Home Network of the Whole Family
 class=grow font-semibold text-accent truncate
+
+text=speed
+parent=row
+title=82 Mb/s
+class=text-secondary tabular-nums
 ```
 
-The words Home take the free width, in a heavier weight and the accent colour, and end in … when they don't fit.
+A tile with round corners holds one row. The name, heavier and in the accent colour, takes the free width and ends in
+… where it doesn't fit, and 82 Mb/s sits at the end in the second colour of words.
 
 | Group     | Classes                                                                                                                                                       |
 | --------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -873,7 +960,7 @@ title=Play
 class=bg-tile hover:bg-accent card:hidden
 ```
 
-The button fills with the accent colour while the pointer is over it, and doesn't show on a card.
+In the sheet, Play is a tile, and it becomes the main button while the pointer is over it. A card doesn't show it.
 
 | Prefix                                           | Applies                                                                                  |
 | ------------------------------------------------ | ---------------------------------------------------------------------------------------- |
