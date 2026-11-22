@@ -28,7 +28,8 @@ public struct Playground: Equatable, Sendable {
         self.text = text
         let check = FrameCheck(text: text)
         faults = text.isEmpty ? [] : check.sheetFaults
-        if let panel = SheetParts(output: check.output) { self.panel = panel }
+        let panel = SheetParts(output: check.output)
+        if panel.holdsParts { self.panel = panel }
     }
 
     @discardableResult

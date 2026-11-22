@@ -128,9 +128,9 @@ final class SpotRunsCallTests: SpotRunsCase {
         runs.panelOpened()
         runs.opening.moving = "script"
         sheet.open {}
-        XCTAssertEqual(sheet.kind, .waiting)
+        XCTAssertTrue(sheet.isWaiting)
 
-        try await wait("the kind") { sheet.kind == .rows }
+        try await wait("the kind") { !sheet.isWaiting }
         XCTAssertNil(sheet.panel)
         XCTAssertEqual(sheet.list.shown.count, 0)
         runs.opening.moving = nil
@@ -148,10 +148,11 @@ final class SpotRunsCallTests: SpotRunsCase {
         try await pause(0.2)
 
         XCTAssertNil(sheet.panel)
-        XCTAssertEqual(sheet.kind, .parts)
+        XCTAssertFalse(sheet.isWaiting)
+        XCTAssertFalse(sheet.showsField)
         runs.opening.moving = nil
         try await wait("the parts") { sheet.panel != nil }
-        XCTAssertEqual(sheet.kind, .parts)
+        XCTAssertFalse(sheet.showsField)
     }
 
     func testASheetForgetsTheKindOfAHeldAnswerThatItsStoppedReadDrops() async throws {
@@ -162,7 +163,7 @@ final class SpotRunsCallTests: SpotRunsCase {
         runs.panelOpened()
         runs.opening.moving = "script"
         sheet.open {}
-        try await wait("the kind") { sheet.kind == .parts }
+        try await wait("the kind") { !sheet.isWaiting && !sheet.showsField }
 
         runs.panelClosed()
         runs.opening.moving = nil
@@ -170,7 +171,8 @@ final class SpotRunsCallTests: SpotRunsCase {
         try await pause(0.2)
 
         XCTAssertNil(sheet.panel)
-        XCTAssertEqual(sheet.kind, .rows)
+        XCTAssertFalse(sheet.isWaiting)
+        XCTAssertTrue(sheet.showsField)
     }
 
     func testWhatASheetPrintsShowsAfterTheLengthOfItsOpenMotionThoughItsSpringSettlesLater() async throws {

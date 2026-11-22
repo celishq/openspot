@@ -173,6 +173,9 @@ final class SpotRunTests: XCTestCase {
 
         XCTAssertEqual(sheet.shownState.subtitle, "A detail longer than its header")
         XCTAssertTrue(sheet.showsField)
+        XCTAssertTrue(sheet.takesKeys)
+        XCTAssertEqual(sheet.panel?.holdsParts, false)
+        XCTAssertNil(sheet.partsRect)
         XCTAssertEqual(sheet.top, SheetTop(header: 9, hasField: true))
         XCTAssertEqual(sheet.sheetRect.height, SpotTokens.sheetRect(rows: 1).height + 9)
     }
@@ -304,9 +307,9 @@ final class SpotRunTests: XCTestCase {
 
         sheet.open(waits: true) {}
 
-        XCTAssertEqual(sheet.kind, .waiting)
+        XCTAssertTrue(sheet.isWaiting)
         try await wait("the parts") { sheet.panel != nil }
-        XCTAssertNotEqual(sheet.kind, .waiting)
+        XCTAssertFalse(sheet.isWaiting)
     }
 
     func testASheetWithAnAnswerOpensAtOnceThoughItMayWait() async throws {
@@ -678,7 +681,7 @@ final class SpotRunTests: XCTestCase {
         nonisolated(unsafe) var changed = false
         withObservationTracking {
             _ = sheet.shape
-            _ = sheet.kind
+            _ = sheet.isWaiting
         } onChange: {
             changed = true
         }

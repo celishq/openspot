@@ -52,14 +52,14 @@ struct SpotFloatView: View {
                 NodeSpotView(id: sole.node.id, values: sole.node.values, source: view)
                     .environment(\.spotNode.actions, FloatActions(model: model, run: run, place: place))
                     .ignoresSafeArea(edges: [.horizontal, .bottom])
-            } else if let parts = run.panel {
-                SheetPartsView(panel: parts, actions: FloatActions(model: model, run: run, place: place))
             } else {
-                SpotItemsView(
+                SpotSheetBody(
+                    panel: run.panel,
                     list: run.list,
-                    onRun: { model.pick($0, of: entry, in: place) },
-                    selection: { run.selection },
-                    onDragOut: { model.dragOut($0, of: id) }
+                    actions: FloatActions(model: model, run: run, place: place),
+                    onPick: { model.pick($0, of: entry, in: place) },
+                    onDragOut: { model.dragOut($0, of: id) },
+                    selection: { run.selection }
                 )
             }
         }

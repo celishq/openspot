@@ -77,7 +77,7 @@ extension SpotTokens {
 
     public static func floatSize(rows: Int, perLine: Int, parts: SheetParts? = nil, setsApart: Bool = false) -> CGSize {
         let content: CGFloat
-        if let parts {
+        if let parts, parts.holdsParts {
             content = parts.height
         } else {
             content = listHeight(rows: rows, perLine: perLine, setsApart: setsApart)

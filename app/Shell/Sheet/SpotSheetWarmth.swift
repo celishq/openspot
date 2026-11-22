@@ -11,9 +11,7 @@ enum SpotSheetWarmth {
         let sheets = [SheetExamples.all[0], SheetExamples.tiles].map { Frame(text: $0.text) }
         let view = VStack(alignment: .leading, spacing: 0) {
             ForEach(Array(sheets.enumerated()), id: \.offset) { _, output in
-                if let panel = SheetParts(output: output) {
-                    SpotSheetPreview(panel: panel, list: SpotSheetPicture.list(of: output))
-                }
+                SpotSheetPreview(panel: SheetParts(output: output), list: SpotSheetPicture.list(of: output))
             }
             SpotItemsView(list: ItemList(items: rows), onRun: { _ in })
                 .frame(width: SpotTokens.panelWidth, height: CGFloat(rows.count) * SpotTokens.listRow)

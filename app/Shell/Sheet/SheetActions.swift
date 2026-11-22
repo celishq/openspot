@@ -5,17 +5,18 @@ struct SheetActions: NodeActions, @MainActor Equatable {
     let model: SpotsModel
     let id: String
     let content: SheetContent
+    let isHeld: Bool
 
     static func == (one: SheetActions, other: SheetActions) -> Bool {
-        one.model === other.model && one.id == other.id && !one.content.isHeld && !other.content.isHeld
+        one.model === other.model && one.id == other.id && !one.isHeld && !other.isHeld
     }
 
     private var panel: SheetParts? {
-        content.isHeld ? content.panel : model.sheets[id]?.panel
+        isHeld ? content.panel : model.sheets[id]?.panel
     }
 
     func part(of node: ViewNode) -> SpotPart? {
-        content.isHeld ? node.part : model.sheets[id]?[part: node.id] ?? node.part
+        isHeld ? node.part : model.sheets[id]?[part: node.id] ?? node.part
     }
 
     func set(_ part: SpotPart, to value: String) {
@@ -57,11 +58,11 @@ struct SheetActions: NodeActions, @MainActor Equatable {
     }
 
     var recordingPart: String? {
-        content.isHeld ? content.recording : model.recording
+        isHeld ? content.recording : model.recording
     }
 
     var keys: KeyRecording? {
-        content.isHeld ? content.keys : model.keys
+        isHeld ? content.keys : model.keys
     }
 
     var nudge: SheetParts.Nudge {
@@ -73,7 +74,7 @@ struct SheetActions: NodeActions, @MainActor Equatable {
     }
 
     var list: ItemList? {
-        content.isHeld ? content.list : model.sheets[id]?.list ?? ItemList()
+        isHeld ? content.list : model.sheets[id]?.list ?? ItemList()
     }
 
     var selection: (() -> Int)? {

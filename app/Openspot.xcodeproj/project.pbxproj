@@ -614,7 +614,6 @@
 		A24832672696F53390D71C61 /* SpotSearchText.swift in Sources */ = {isa = PBXBuildFile; fileRef = E6574796DA8EE0FC71F50F15 /* SpotSearchText.swift */; };
 		A2A5BABC6F9D2FF1EB478065 /* PanelAskTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4C28970A90660357FF4553C7 /* PanelAskTests.swift */; };
 		A2F389DF7CF4DAC3DD94B63A /* RunChannel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 431EF4EDAEF207B967284C44 /* RunChannel.swift */; };
-		A31C5EB7E7D34D7B1EFECE6E /* SheetKind.swift in Sources */ = {isa = PBXBuildFile; fileRef = 25CCBE9091BC33B006AF7D15 /* SheetKind.swift */; };
 		A3C681BDC95F170555B2F6FD /* CaptureFileTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = E50E6719EBEC724AB88E711A /* CaptureFileTests.swift */; };
 		A467160A615A07904E0F6AAF /* SpotSurfaceShape.swift in Sources */ = {isa = PBXBuildFile; fileRef = BE349937DD8063F00D305FDA /* SpotSurfaceShape.swift */; };
 		A495011C02FA0C31EF2E4B0E /* RunClock.swift in Sources */ = {isa = PBXBuildFile; fileRef = 55179210AEE82C8FCFF4BEAE /* RunClock.swift */; };
@@ -1220,7 +1219,6 @@
 		256D772AA4EA8AD4E777C7EC /* MetricSpotsTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MetricSpotsTests.swift; sourceTree = "<group>"; };
 		259F05606A45352D1D8B5700 /* OpenspotClient */ = {isa = PBXFileReference; includeInIndex = 0; path = OpenspotClient; sourceTree = BUILT_PRODUCTS_DIR; };
 		25A0E74FA35CDC8DC5A78829 /* SpotSettingsSheetTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SpotSettingsSheetTests.swift; sourceTree = "<group>"; };
-		25CCBE9091BC33B006AF7D15 /* SheetKind.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SheetKind.swift; sourceTree = "<group>"; };
 		2621499D9B901193E9DD8BF5 /* Theme+Layout.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Theme+Layout.swift"; sourceTree = "<group>"; };
 		26873FF3438F703F6D50E357 /* SheetPage.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SheetPage.swift; sourceTree = "<group>"; };
 		26F10F9EEBA011739F695FDE /* KeyWidth.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KeyWidth.swift; sourceTree = "<group>"; };
@@ -2545,7 +2543,6 @@
 				68BC8E4649F41F1C880CD707 /* PictureFrames.swift */,
 				B64BB648C6984AED8D1192F3 /* ScrollWindow.swift */,
 				EC0E700894711BC5C2EF2334 /* SheetHeader.swift */,
-				25CCBE9091BC33B006AF7D15 /* SheetKind.swift */,
 				B85FFD8E808ABCBA2E1F9EBA /* SheetParts.swift */,
 				AE2F87FA556CEFAAB2C454FA /* SheetTop.swift */,
 			);
@@ -4434,7 +4431,6 @@
 				39BCC63E415E2EED4C63E9E8 /* SheetExamples.swift in Sources */,
 				C973622035D0DD13615B2902 /* SheetFrames.swift in Sources */,
 				372B11CDE7B1B67D44414FB6 /* SheetHeader.swift in Sources */,
-				A31C5EB7E7D34D7B1EFECE6E /* SheetKind.swift in Sources */,
 				6F00326A63A7C9D5BD303197 /* SheetMorph.swift in Sources */,
 				E51015E3E363570D7D996941 /* SheetMotion.swift in Sources */,
 				E72125BBDBE4B099E2978EAD /* SheetOpening.swift in Sources */,
