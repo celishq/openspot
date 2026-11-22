@@ -4,7 +4,7 @@ need spots examples
 clocks=$(mktemp)
 state=$(mktemp)
 trap 'rm -f "$clocks" "$state"' EXIT
-grep -rlE '^[[:space:]]*on[[:space:]]*=.*"clock\.' --include=spot.toml spots >"$clocks"
+find spots -name spot.toml -exec awk '/^[[:space:]]*\[/ { on = $0 ~ /^[[:space:]]*\[on\][[:space:]]*$/ } on && /^[[:space:]]*every[[:space:]]*=/ { print FILENAME; exit }' {} \; >"$clocks"
 grep -rnE 'TMPDIR|/tmp([^A-Za-z0-9_]|$)|temporaryDirectory|NSTemporaryDirectory' spots examples | grep -v 'mktemp' | cut -d: -f1 >"$state"
 compare spot-clocks "$clocks" "A shipped spot polls with a clock; see spots/AGENTS.md:"
 polls=$?
