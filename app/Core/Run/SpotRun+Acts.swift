@@ -141,8 +141,8 @@ extension SpotRun {
         return item.isToggle ? pressing(message, as: Self.valueInput) : message
     }
 
-    public func answer(to action: CommandAction, item: SpotItem?) async -> CallAnswer {
-        await answer(toPress: pressing(Message(.action(action, item: item), item: item?.fields ?? []), as: Self.itemInput))
+    public func answer(to action: CommandAction, item: SpotItem?, closes: Bool = false) async -> CallAnswer {
+        await answer(toPress: pressing(Message(.action(action, item: item), item: item?.fields ?? []), as: Self.itemInput), closes: closes)
     }
 
     private func answer(toPress message: Message, closes: Bool = false) async -> CallAnswer {

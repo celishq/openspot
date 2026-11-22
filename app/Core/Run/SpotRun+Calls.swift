@@ -148,7 +148,7 @@ extension SpotRun {
     }
 
     private func log(_ call: OpenCall, _ end: ScriptCall.End, errors: String) {
-        guard !script.answersInApp else { return }
+        guard !script.answersInApp, runs.recordsCalls else { return }
         let request = call.request
         let values = fieldValues
         var sent = message(of: request, values: values)

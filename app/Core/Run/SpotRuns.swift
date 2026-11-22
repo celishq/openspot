@@ -352,6 +352,10 @@ public final class SpotRuns {
         if let log { log.add(frame, to: &frames) } else if onCall != nil { frames.append(frame) }
     }
 
+    var recordsCalls: Bool {
+        log != nil || onCall != nil
+    }
+
     func record(_ spot: Spot, _ action: SpotAction, input: String?, frames: [String], errors: String, end: ScriptCall.End, event: ShowEvent?, started: Date, begin: Date) {
         guard !spot.reachesAccountKey else { return }
         let record = CallLog.Record(

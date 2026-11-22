@@ -549,6 +549,26 @@ final class SpotsModelTests: XCTestCase {
         try await wait("the name and the item") { (try? String(contentsOfFile: given, encoding: .utf8)) == "Pear a " }
     }
 
+    func testAButtonThatClosesButAnswersWithAFormKeepsThePanelAndAsks() async throws {
+        try script("list", toml: "[on]\n\"sheet.open\" = true", """
+        case "$1" in
+          editor) printf 'frame=\\ntype=form\\ntitle=Editor\\n\\nfield=name\\ntitle=Name\\n' ;;
+          *) printf 'button=editor\\ntitle=Change editor\\nscope=spot\\n\\nitem=a\\ntitle=Apple\\n' ;;
+        esac
+        """)
+        await model.reload()
+        model.isShown = true
+        model.panelWillShow()
+        model.press("list")
+        try await wait("the open list") { model.openSheetID == "list" && model.openItems?.shown.count == 1 }
+        let editor = try XCTUnwrap(model.openEntry?.spot.actions.first { $0.id == "editor" })
+
+        model.run(editor, on: (try XCTUnwrap(model.openEntry), nil))
+
+        try await wait("the form") { model.form?.action.id == "editor" }
+        XCTAssertEqual(host.dismissals, 0)
+    }
+
     func testAButtonWhoseActionLacksARequiredInputOpensItsDrawnFormTitledByTheButton() async throws {
         try script("list", toml: "[actions.start]\ninputs.minutes = { type = 'text', required = true }\n[on]\n\"sheet.open\" = true", """
         printf 'button=start\\ntitle=Keep awake for…\\nscope=spot\\n\\nitem=a\\ntitle=Apple\\n'

@@ -368,7 +368,13 @@ extension SpotsModel {
         } else if entry.spot.triggers != nil, let sheet = sheets[entry.id] {
             if closes { closingPick = (item, entry) }
             Task { [weak self] in
-                guard case .form(let form) = await sheet.answer(toPick: item, closes: closes), let self, isShown else { return }
+                let answer = await sheet.answer(toPick: item, closes: closes)
+                guard let self else { return }
+                switch answer {
+                case .form, .stopped: if closingPick?.item == item { closingPick = nil }
+                default: break
+                }
+                guard case .form(let form) = answer, isShown else { return }
                 show(.form(form), of: CommandAction(id: Frame.press, title: item.title), on: (entry, item), prefill: "")
             }
         } else {

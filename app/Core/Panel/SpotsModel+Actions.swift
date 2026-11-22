@@ -97,6 +97,11 @@ extension SpotsModel {
                 host.notify("\(action.title) asks with a form or a second press, which a window does not show yet.")
             } else if asks {
                 press(target.entry.id)
+            } else if target.entry.spot.triggers != nil, let sheet = sheets[target.entry.id] {
+                Task { [weak self] in
+                    guard case .form = await sheet.answer(to: action, item: target.item), let self else { return }
+                    if place == .window { host.notify("\(action.title) asks with a form, which a window does not show yet.") } else { press(target.entry.id) }
+                }
             } else {
                 sheets[target.entry.id]?.run(action, item: target.item)
             }
@@ -113,6 +118,8 @@ extension SpotsModel {
             show(.form(form), of: action, on: target, prefill: "")
         } else if action.after == .stay {
             perform(action, on: target)
+        } else if target.entry.spot.triggers != nil {
+            perform(action, on: target, closes: true)
         } else if let item = target.item {
             pick(item, of: target.entry, action: action)
         } else {
@@ -121,13 +128,13 @@ extension SpotsModel {
         }
     }
 
-    func perform(_ action: CommandAction, on target: Target) {
+    func perform(_ action: CommandAction, on target: Target, closes: Bool = false) {
         guard target.entry.spot.triggers != nil, let sheet = sheets[target.entry.id] else {
             sheets[target.entry.id]?.run(action, item: target.item)
             return
         }
         Task { [weak self] in
-            guard case .form(let form) = await sheet.answer(to: action, item: target.item), let self, isShown else { return }
+            guard case .form(let form) = await sheet.answer(to: action, item: target.item, closes: closes), let self, isShown else { return }
             show(.form(form), of: action, on: target, prefill: "")
         }
     }
