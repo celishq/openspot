@@ -45,6 +45,28 @@ final class TriggerCallsTests: SpotRunsCase {
         try await wait("the answer") { sheet.answers.map(\.run) == ["a"] }
     }
 
+    func testASearchGetsEachFormOfItsTextAsAlt() async throws {
+        _ = try spot("search = \".\"")
+
+        runs.raise(.query("ыфа"))
+
+        try await wait("the search") { self.calls.count == 1 }
+        XCTAssertTrue(calls[0].hasPrefix("search|input.text=ыфа "), calls[0])
+        XCTAssertTrue(calls[0].contains("input.alt=yfa "), calls[0])
+    }
+
+    func testATextTypedInTheSheetGetsEachFormOfItAsAlt() async throws {
+        let sheet = try spot("\"sheet.text\" = true", view: "show|sheet.text")
+        sheet.open {}
+        try await wait("the show") { self.calls == ["show|"] }
+
+        sheet.search("ыфа")
+
+        try await wait("the text") { self.calls.count == 2 }
+        XCTAssertTrue(calls[1].hasPrefix("sheet.text|input.value=ыфа "), calls[1])
+        XCTAssertTrue(calls[1].contains("input.alt=yfa "), calls[1])
+    }
+
     func testASystemEventCallsTheHandlerOfItsNameWithItsValue() async throws {
         menuBar.insert("script")
         _ = try spot("\"power.change\" = true")

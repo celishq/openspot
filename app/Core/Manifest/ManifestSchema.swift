@@ -44,11 +44,12 @@ public enum ManifestSchema {
         let value: [String: Any] = ["type": ["string", "number", "boolean"]]
         let fields: [String: [String: Any]] = [
             "type": reference("type"), "required": ["type": "boolean"], "default": value, "description": ["type": "string"],
-            "options": ["type": "array", "items": ["type": "string"]], "title": ["type": "string"], "icon": ["type": "string"], "confirm": ["type": "string"]
+            "options": ["type": "array", "items": ["type": "string"]], "title": ["type": "string"], "icon": ["type": "string"], "confirm": ["type": "string"],
+            "offers": ["type": "array", "items": ["type": "string"]], "shortcut": ["type": "string"], "close": ["type": "boolean"], "when": ["type": "string"]
         ]
         let settingKeys = Manifest.Parameter.settingKeys.union(Manifest.Setting.keys)
         let parameter: [String: Any] = ["anyOf": [reference("type"), object(Manifest.Parameter.inputKeys, from: fields, required: ["type"])]]
-        var action = object(Manifest.Action.keys, from: fields)
+        var action = object(Manifest.Action.keys.union(Manifest.Action.appKeys), from: fields)
         var actionProperties = action["properties"] as? [String: Any] ?? [:]
         actionProperties[Manifest.Action.inputs] = table(reference("parameter"))
         actionProperties[Manifest.Action.outputs] = table(reference("parameter"))

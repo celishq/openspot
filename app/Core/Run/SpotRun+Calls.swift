@@ -78,7 +78,10 @@ extension SpotRun {
                 takeEffects(frame: text)
             }
         case .act(let act):
-            if act.first?.take(lines) == true, lines.isForm { return }
+            if act.first?.take(lines) == true, lines.isForm {
+                call.showedPicture = true
+                return
+            }
             if lines.isPicture {
                 if await takePicture(lines, frame: text, of: act) {
                     call.showedPicture = true

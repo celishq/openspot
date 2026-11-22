@@ -484,6 +484,61 @@ final class SpotsModelTests: XCTestCase {
         try await wait("the minutes") { (try? String(contentsOfFile: given, encoding: .utf8)) == "45\n" }
     }
 
+    func testReturnOnASearchThatFindsNothingOpensTheFormOfTheActionThatTakesTextWithTheWordsInIt() async throws {
+        let given = folder.appendingPathComponent("given").path
+        try script("list", toml: "[on]\n\"sheet.open\" = true\n[actions.start]\ninputs.minutes = { type = 'text', required = true }", """
+        case "$1" in
+          start) sed -n 's/^input.minutes=//p' > '\(given)' ;;
+          *) printf 'button=start\\ntitle=Keep awake for…\\nscope=spot\\nclose=false\\n\\nitem=a\\ntitle=Apple\\n' ;;
+        esac
+        """)
+        await model.reload()
+        model.isShown = true
+        model.panelWillShow()
+        model.press("list")
+        try await wait("the open list") { model.openSheetID == "list" && model.openItems?.shown.count == 1 }
+
+        model.searchText = "45"
+        model.landSearch()
+        try await wait("the row that makes the action") { model.createAction?.title == "Keep awake for…" }
+        model.runSelectedItem()
+
+        try await wait("the form") { model.form?.action.id == "start" }
+        XCTAssertEqual(model.form?.draft.values["minutes"], "45")
+        model.submitForm()
+        try await wait("the minutes") { (try? String(contentsOfFile: given, encoding: .utf8)) == "45\n" }
+    }
+
+    func testAPressOfAnItemThatAnswersWithAFormAsksForItsValuesAndPressesTheItemWithThem() async throws {
+        let given = folder.appendingPathComponent("given").path
+        try script("list", toml: "[on]\n\"sheet.open\" = true", """
+        input=$(cat)
+        case "$1" in
+          press)
+            case $input in
+              *input.minutes=*) printf '%s\\n' "$input" | sed -n 's/^input.minutes=//p' > '\(given)' ;;
+              *) printf 'frame=\\ntype=form\\ntitle=Minutes\\n\\nfield=minutes\\ntitle=Minutes\\n' ;;
+            esac
+            ;;
+          *) printf 'item=a\\ntitle=Apple\\n\\nitem=custom\\ntitle=Custom…\\n' ;;
+        esac
+        """)
+        await model.reload()
+        model.isShown = true
+        model.panelWillShow()
+        model.press("list")
+        try await wait("the open list") { model.openSheetID == "list" && model.openItems?.shown.count == 2 }
+        let item = try XCTUnwrap(model.openItems?.shown.first { $0.run == "custom" })
+
+        model.runItem(item)
+
+        try await wait("the form") { model.form != nil }
+        XCTAssertTrue(model.isShown)
+        model.setFormValue("45", for: "minutes")
+        model.submitForm()
+        try await wait("the minutes") { (try? String(contentsOfFile: given, encoding: .utf8)) == "45\n" }
+    }
+
     func testAListDrawsAheadOnlyThePicturesOfTheRowsOnItsFirstScreen() async throws {
         try script("apps", toml: "", "for i in $(seq 1 100); do printf 'item=a%s\\ntitle=App %s\\nicon=/Applications/A%s.app\\n\\n' $i $i $i; done")
         await model.reload()

@@ -63,6 +63,21 @@ final class InlineHandlersTests: SpotRunsCase {
         try await wait("the event handler of the listener") { self.log("heard") == ["https://example.com/a 2026-11-23"] }
     }
 
+    func testEnvHoldsEachCommandThatNeedsNoUseAndNoCommandOfAnUndeclaredUse() async throws {
+        try inline("summer", toml: "[actions.sum]\noutputs.sum = 'text'\noutputs.kinds = 'text'", """
+        export default {
+          async sum(input, env) {
+            const solved = await env.calc.solve("2+3")
+            return { sum: solved.split("\\n")[0], kinds: `${typeof env.toast} ${typeof env.clipboard}` }
+          },
+        }
+        """)
+
+        let text = try await runs.answer(of: try spot("summer"), SpotAction(arguments: ["sum"]), limit: 60)
+
+        XCTAssertEqual(Frame(text: text).outputs, [.init(key: "sum", value: "item=5"), .init(key: "kinds", value: "function undefined")], text)
+    }
+
     func testAThrowInAHandlerFailsTheCallWithItsMessage() async throws {
         try inline("failing", toml: "[actions.go]", "export default { async go() { await null; throw new Error('No sky today') } }")
 

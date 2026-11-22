@@ -136,6 +136,21 @@ extension SpotRun {
         press(Message(.item(item), item: item.fields, search: list.search == .script && !list.query.isEmpty ? list.query : nil), closes: closes)
     }
 
+    public func answer(toPick item: SpotItem, closes: Bool = false) async -> CallAnswer {
+        let message = Message(.item(item), item: item.fields, search: list.search == .script && !list.query.isEmpty ? list.query : nil)
+        let key = Self.key(call: message.action)
+        if let running = running(key) {
+            pressAgain(running)
+            return .stopped
+        }
+        answered = nil
+        let answer = try? await withCheckedThrowingContinuation { waiting in
+            let first = FirstFrame(waiting)
+            if !send(Call(message: message, key: key, purpose: .act(Act(first: first, started: runs.now(), closes: closes)))) { first.end(.stopped) }
+        }
+        return answer ?? .stopped
+    }
+
     public func set(_ item: SpotItem, to value: String) {
         press(Message(.set(item.run, to: value)))
     }

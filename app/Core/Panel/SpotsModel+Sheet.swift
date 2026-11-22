@@ -298,14 +298,24 @@ extension SpotsModel {
     }
 
     public var createAction: CommandAction? {
-        guard let list = openItems, !list.query.isEmpty, list.shown.isEmpty, list.search == .local else { return nil }
-        return openEntry?.spot.actions.first { $0.scope == .spot && $0.isForm }
+        guard let list = openItems, !list.query.isEmpty, list.shown.isEmpty, list.search == .local, let spot = openEntry?.spot else { return nil }
+        return spot.actions.first { $0.scope == .spot && ($0.isForm || Self.typed($0, of: spot)?.textInput != nil) }
+            ?? spot.offers.map(CommandAction.command).first { Self.typed($0, of: spot)?.textInput != nil }
     }
 
     public func createFromSearch() {
         openSheet?.landRows()
         guard let action = createAction, let entry = openEntry else { return }
-        openForm(action, on: (entry, nil), prefill: openItems?.query ?? "")
+        let query = openItems?.query ?? ""
+        if let typed = Self.typed(action, of: entry.spot), let input = typed.textInput, let form = ItemForm(output: Frame(text: typed.form(with: [input.name: query]))) {
+            return show(.form(form), of: action, on: (entry, nil), prefill: "")
+        }
+        openForm(action, on: (entry, nil), prefill: query)
+    }
+
+    private static func typed(_ action: CommandAction, of spot: Spot) -> Manifest.Action? {
+        let id = CommandAction.command(of: action) ?? action.id
+        return spot.typedActions.first { $0.id == id }
     }
 
     public func runItem(_ item: SpotItem) {
@@ -357,10 +367,16 @@ extension SpotsModel {
                 }
             }
         }
+        let closes = !place.isDetached && entry.spot.triggers != nil && entry.spot.pick == .close && !item.staysOnPick
         if let action {
             sheets[entry.id]?.run(action, item: item)
+        } else if entry.spot.triggers != nil, let sheet = sheets[entry.id] {
+            Task { [weak self] in
+                guard case .form(let form) = await sheet.answer(toPick: item, closes: closes), let self, isShown else { return }
+                show(.form(form), of: CommandAction(id: Frame.open, title: item.title, isForm: true), on: (entry, item), prefill: "")
+            }
         } else {
-            sheets[entry.id]?.pick(item, closes: !place.isDetached && entry.spot.triggers != nil && entry.spot.pick == .close && !item.staysOnPick)
+            sheets[entry.id]?.pick(item, closes: closes)
         }
     }
 }

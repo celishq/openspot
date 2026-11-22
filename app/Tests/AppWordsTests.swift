@@ -32,6 +32,42 @@ final class AppWordsTests: XCTestCase {
         XCTAssertEqual(scan.refused.map(\.reason), ["Mine has an unknown key in its spot.toml: starts"])
     }
 
+    func testOnlyAnActionOfASpotOfTheAppIsOfferedToEveryCardWithItsKeyAndItsClose() throws {
+        let folder = try temporaryFolder()
+        let action = "[actions.share]\ntitle = 'Share'\nshortcut = 'cmd+shift+c'\nclose = false\noffers = ['actions mine, core']\n[actions.\"share.link\"]\ntitle = 'Copy Link'\n[actions.go]\ntitle = 'Go'"
+        try write(folder.appendingPathComponent("core/openspot.spot/acts.sh"), toml: "title = 'Acts'\n\(action)")
+        try write(folder.appendingPathComponent("mine/acts.spot/acts.sh"), toml: "title = 'Mine'\n\(action)")
+
+        let scan = try SpotsFolder(url: folder.appendingPathComponent("mine"), core: folder.appendingPathComponent("core")).scan()
+        let acts = try XCTUnwrap(scan.spots.first)
+
+        XCTAssertEqual(scan.spots.map(\.id), ["openspot/acts"])
+        XCTAssertEqual(acts.offeredActions.map(\.action.title), ["Share", "Copy Link"])
+        XCTAssertEqual(acts.offeredActions.map { $0.action.key?.label ?? "" }, ["⇧⌘C", ""])
+        XCTAssertEqual(acts.offeredActions.map(\.action.after), [.stay, .close])
+        XCTAssertEqual(acts.offeredActions.map(\.origins), [[.mine, .core], [.mine, .core]])
+        XCTAssertEqual(acts.offers.map(\.id), ["go"])
+        XCTAssertEqual(scan.refused.map(\.reason), ["Mine has an unknown key in [actions.share]: shortcut"])
+    }
+
+    func testAnOfferedActionOfASpotOfTheAppCallsItsHandlerWithTheCard() async throws {
+        let folder = try temporaryFolder()
+        let heard = folder.appendingPathComponent("heard")
+        try write(
+            folder.appendingPathComponent("core/openspot.spot/acts.sh"), toml: "title = 'Acts'\n[actions.share]\ntitle = 'Share'\noffers = ['actions']",
+            body: "printf '%s %s\\n' \"$1\" \"$(sed -n 's/^input.item=//p')\" >> '\(heard.path)'"
+        )
+        let scan = try SpotsFolder(url: folder.appendingPathComponent("mine"), core: folder.appendingPathComponent("core")).scan()
+        let runs = SpotRuns(environment: TestEnvironment.values)
+        runs.take(scan, menuBar: [], stamps: [:])
+        defer { runs.quit() }
+        let acts = try XCTUnwrap(runs.sheets["openspot/acts"])
+
+        acts.run(try XCTUnwrap(acts.spot.offeredActions.first).action, item: SpotItem(title: "Weather", run: "weather"))
+
+        try await wait("the call of share") { (try? String(contentsOf: heard, encoding: .utf8)) == "share weather\n" }
+    }
+
     func testOnlyASpotOfTheAppGetsTheVariablesOfTheApp() async throws {
         let folder = try temporaryFolder()
         let body = "printf 'text=v\\ntitle=%s\\n' \"" + variables.map { "${\($0)-none}" }.joined(separator: "|") + "\""

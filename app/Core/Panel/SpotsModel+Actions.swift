@@ -145,7 +145,7 @@ extension SpotsModel {
         }
     }
 
-    private func show(_ answer: CallAnswer, of action: CommandAction, on target: Target, prefill: String) {
+    func show(_ answer: CallAnswer, of action: CommandAction, on target: Target, prefill: String) {
         let id = target.entry.id
         switch answer {
         case .form(let form):

@@ -4,6 +4,7 @@ extension Manifest {
     public struct Action: Equatable, Sendable {
         static let table = "actions"
         static let keys: Set<String> = ["title", "icon", "confirm"]
+        static let appKeys: Set<String> = ["offers", "shortcut", "close", ActionHook.when.rawValue]
         static let inputs = "inputs"
         static let outputs = "outputs"
 
@@ -14,6 +15,8 @@ extension Manifest {
         public let inputs: [Parameter]
         public let outputs: [Parameter]
         let section: String
+        let appValues: [String: [String]]
+        let appKey: String?
 
         init(id: String, section: String, table: ConfigDocument.Table) throws {
             let fault = { (reason: String) in SpotError.fault("\(Manifest.fileName): \(section) \(reason)") }
@@ -21,11 +24,21 @@ extension Manifest {
             var texts: [String: String] = [:]
             var inputs: [Parameter] = []
             var outputs: [Parameter] = []
+            var appValues: [String: [String]] = [:]
+            var appKey: String?
             for key in table.keys {
                 let path = Manifest.path(key)
                 if path.count == 2, path[0] == Self.inputs || path[0] == Self.outputs, Setting.isKey(path[1]) {
                     let parameter = try Parameter(name: path[1], value: table[key], keys: Parameter.inputKeys, place: "\(section) \(key)")
                     if path[0] == Self.inputs { inputs.append(parameter) } else { outputs.append(parameter) }
+                } else if Self.appKeys.contains(key) {
+                    switch table[key] {
+                    case .string(let text): appValues[key] = [text]
+                    case .boolean(let isOn): appValues[key] = [String(isOn)]
+                    case .strings(let texts): appValues[key] = texts
+                    default: throw fault("takes a text in \(key).")
+                    }
+                    appKey = appKey ?? key
                 } else if Self.keys.contains(key) {
                     guard case .string(let text)? = table[key] else { throw fault("takes a text in \(key).") }
                     texts[key] = text
@@ -40,11 +53,14 @@ extension Manifest {
             confirm = texts["confirm"]
             self.inputs = inputs
             self.outputs = outputs
+            self.appValues = appValues
+            self.appKey = appKey
         }
 
         var command: Command? {
             guard let title else { return nil }
-            return Command(id: id, section: section, values: ["title": [title], "icon": icon.map { [$0] } ?? [], "confirm": confirm.map { [$0] } ?? []], written: [])
+            let values = ["title": [title], "icon": icon.map { [$0] } ?? [], "confirm": confirm.map { [$0] } ?? []].merging(appValues) { kept, _ in kept }
+            return Command(id: id, section: section, values: values, written: [])
         }
     }
 }
@@ -84,14 +100,23 @@ extension Manifest.Action {
         inputs.contains { $0.isRequired && $0.defaultValue == nil }
     }
 
+    public var textInput: Manifest.Parameter? {
+        inputs.first { $0.isRequired && $0.type.kind == .text && !$0.type.isList }
+    }
+
     public var form: String {
+        form(with: [:])
+    }
+
+    public func form(with values: [String: String]) -> String {
         let root = TextBlock(fields: [.init(key: "frame", value: ""), .init(key: "type", value: "form"), .init(key: "title", value: title ?? id)])
-        return ([root] + inputs.flatMap(\.formBlocks)).map(\.text).joined(separator: "\n")
+        return ([root] + inputs.flatMap { $0.formBlocks(value: values[$0.name]) }).map(\.text).joined(separator: "\n")
     }
 }
 
 extension Manifest.Parameter {
-    var formBlocks: [TextBlock] {
+    func formBlocks(value: String?) -> [TextBlock] {
+        let defaultValue = value ?? defaultValue
         let label = title ?? name.prefix(1).uppercased() + name.dropFirst()
         switch type.kind {
         case .bool:

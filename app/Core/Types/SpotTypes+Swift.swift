@@ -273,7 +273,8 @@ extension SpotTypes {
             }
         }
         body.append("        return try Openspot.command(words)")
-        return (["    func `\(command.method)`(\(parameters.joined(separator: ", "))) async throws -> String {"] + body + ["    }", ""]).joined(separator: "\n")
+        let name = command.method.isEmpty ? "callAsFunction" : "`\(command.method)`"
+        return (["    func \(name)(\(parameters.joined(separator: ", "))) async throws -> String {"] + body + ["    }", ""]).joined(separator: "\n")
     }
 
     private static func binding(_ binding: Manifest.Binding, of other: Spot?) -> String {

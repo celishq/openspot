@@ -25,6 +25,7 @@ public struct SpotFile: Equatable, Sendable {
             throw SpotError.fault("\(name) has an unknown key in its \(Manifest.fileName): \(key)")
         }
         let tables = manifest.commands.map { ($0.section, $0.unknownKey) } + manifest.settings.map { ($0.section, $0.unknownKey) }
+            + manifest.actions.map { ($0.section, isApp ? nil : $0.appKey) }
         if let (section, key) = tables.first(where: { $0.1 != nil }) {
             throw SpotError.fault("\(name) has an unknown key in \(section): \(key ?? "")")
         }
@@ -76,12 +77,12 @@ public struct SpotFile: Equatable, Sendable {
         if let setting = manifest.settings.first(where: { $0.valueType == nil && $0.type.map { $0 != Manifest.Setting.secret } == true }) {
             throw SpotError.fault("\(name) has an unknown type in \(setting.section): `\(setting.type ?? "")`. Use `type = \"secret\"`, or no type.")
         }
-        let offeredActions = try OfferedAction.read(manifest.commands, owner: id, of: name, isInline: mode == .inline)
+        let offeredActions = try OfferedAction.read(manifest.commands + manifest.actions.compactMap(\.command), owner: id, of: name, isInline: mode == .inline)
         let offeredIDs = Set(offeredActions.map(\.action.id))
         if let action = manifest.actions.first(where: { action in manifest.commands.contains { $0.id == action.id } }) {
             throw SpotError.fault("\(name) has both [commands.\(action.id)] and \(action.section). Give the action another ID")
         }
-        let offers = manifest.commands.filter { !offeredIDs.contains($0.id) } + manifest.actions.compactMap(\.command)
+        let offers = (manifest.commands + manifest.actions.compactMap(\.command)).filter { !offeredIDs.contains($0.id) }
         if let command = offers.first(where: { $0.title.isEmpty || $0.id == "show" || $0.id.contains(where: \.isWhitespace) }) {
             throw SpotError.fault("\(name) cannot read \(command.section). Give it an ID with no space and a title, such as [commands.left] with title = \"Left side\"")
         }

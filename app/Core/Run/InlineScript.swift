@@ -90,9 +90,10 @@ final class InlineScript: @unchecked Sendable {
       }
       const env = { settings }
       for (const [noun, verbs] of Object.entries(spec)) {
-        env[noun] = {}
+        const command = (verb) => async (...args) => (await run([...verb.words, ...words(verb.slots, args)])).output.replace(/\\n$/, "")
+        env[noun] = verbs[""] ? command(verbs[""]) : {}
         for (const [method, verb] of Object.entries(verbs)) {
-          env[noun][method] = async (...args) => (await run([...verb.words, ...words(verb.slots, args)])).output.replace(/\\n$/, "")
+          if (method !== "") env[noun][method] = command(verb)
         }
       }
       env.emit = async (event, values) => { await run(["emit", event, ...pairs(values)]) }
@@ -119,6 +120,7 @@ final class InlineScript: @unchecked Sendable {
     private let spot: Spot
     private let bound: [String: Spot]
     private let shapes: [String: CallShape]
+    private lazy var commands = UseCommand.spec(for: spot.uses)
     private let dataName: String?
     private let base: [String: String]
     private let api: CommandAPI?
@@ -376,7 +378,7 @@ final class InlineScript: @unchecked Sendable {
         }
         let openspot = context.objectForKeyedSubscript("openspot")
         slice(token) {
-            let env = openspot?.invokeMethod("env", withArguments: [token, UseCommand.spec(for: spot.uses), spot.bindings.map(\.name), settings])
+            let env = openspot?.invokeMethod("env", withArguments: [token, commands, spot.bindings.map(\.name), settings])
             openspot?.invokeMethod("handle", withArguments: [handlers, name, input, env as Any, JSValue(object: done, in: context) as Any])
         }
     }

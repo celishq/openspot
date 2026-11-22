@@ -6,6 +6,7 @@ extension Message {
     static let pressHandler = "press"
     private static let itemInput = "item"
     private static let routeInput = "route"
+    private static let altInput = "alt"
     private static let shows: Set<String> = [SpotEvent.panelOpen, SpotEvent.sheetOpen, SpotEvent.spotWant, ShowEvent.change.rawValue]
 
     func handled() -> Message {
@@ -21,9 +22,11 @@ extension Message {
             } else if name == SpotEvent.searchText {
                 message.action = .press(Manifest.Triggers.search)
                 message.inputs.append(.init(key: "text", value: event?.value ?? ""))
+                message.inputs += searchForms.map { .init(key: Self.altInput, value: $0) }
             } else {
                 message.action = .press(name)
                 if let value = event?.value { message.inputs.append(.init(key: "value", value: value)) }
+                if name == SpotEvent.sheetText { message.inputs += searchForms.map { .init(key: Self.altInput, value: $0) } }
             }
         case SpotAction.open.arguments.first where arguments.count > 1:
             message.action = .press(Self.pressHandler)

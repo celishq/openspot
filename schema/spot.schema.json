@@ -3,6 +3,9 @@
     "action" : {
       "additionalProperties" : false,
       "properties" : {
+        "close" : {
+          "type" : "boolean"
+        },
         "confirm" : {
           "type" : "string"
         },
@@ -15,13 +18,25 @@
           },
           "type" : "object"
         },
+        "offers" : {
+          "items" : {
+            "type" : "string"
+          },
+          "type" : "array"
+        },
         "outputs" : {
           "additionalProperties" : {
             "$ref" : "#/$defs/parameter"
           },
           "type" : "object"
         },
+        "shortcut" : {
+          "type" : "string"
+        },
         "title" : {
+          "type" : "string"
+        },
+        "when" : {
           "type" : "string"
         }
       },

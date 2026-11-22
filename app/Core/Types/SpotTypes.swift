@@ -61,7 +61,7 @@ struct SpotTypes: Sendable {
         for (noun, verbs) in Dictionary(grouping: commands, by: \.noun).sorted(by: { $0.key < $1.key }) {
             lines.append("  \(Self.quoted(noun)): {")
             for verb in verbs {
-                lines.append("    \(Self.quoted(verb.method))(\(Self.parameters(of: verb.slots))): Promise<string>")
+                lines.append("    \(verb.method.isEmpty ? "" : Self.quoted(verb.method))(\(Self.parameters(of: verb.slots))): Promise<string>")
             }
             lines.append("  }")
         }

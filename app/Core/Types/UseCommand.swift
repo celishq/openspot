@@ -6,10 +6,15 @@ struct UseCommand: Sendable {
     let words: [String]
     let slots: [CommandSlot]
 
+    private static let envNouns: Set<String> = [RunCall.noun.name, EmitCall.noun.name]
+
     static func all(for uses: Set<SpotUse>) -> [UseCommand] {
-        CommandNoun.all.flatMap { noun in
-            noun.shown.filter { $0.rule.use.map(uses.contains) == true }.map { verb in
-                UseCommand(noun: noun.name, method: CommandSlot.identifier(verb.words), words: [noun.name] + verb.words, slots: CommandSlot.slots(of: verb.form))
+        CommandNoun.all.filter { !envNouns.contains($0.name) }.flatMap { noun in
+            noun.shown.filter { $0.rule.onlyPerson == nil && $0.rule.use.map(uses.contains) != false }.map { verb in
+                UseCommand(
+                    noun: noun.name, method: verb.words.isEmpty ? "" : CommandSlot.identifier(verb.words), words: [noun.name] + verb.words,
+                    slots: CommandSlot.slots(of: verb.form)
+                )
             }
         }
     }
