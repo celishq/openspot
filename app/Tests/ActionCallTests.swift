@@ -14,6 +14,7 @@ final class ActionCallTests: SpotRunsCase {
     outputs.code = { type = "number", required = true }
 
     [actions.take]
+    outputs.took = "text"
     inputs.code = { type = "number", required = true }
     inputs.size = { type = "choice", options = ["s", "m"], default = "m" }
 
@@ -23,66 +24,109 @@ final class ActionCallTests: SpotRunsCase {
     [actions.broken]
     """
 
+    private enum Mode: CaseIterable {
+        case once, stay, inline
+    }
+
     private func text(_ name: String) -> String {
         (try? String(contentsOfFile: path(name), encoding: .utf8)) ?? ""
     }
 
-    private func spot(_ body: String = "") throws -> SpotRun {
-        try script(toml: Self.toml, """
-        . "$OPENSPOT_SH"
-        openspot_input > '\(path("stdin"))'
-        case "$1" in
-          make) echo "out.code=42" ;;
-          take) printf '%s %s' "$(value code)" "$(value size)" > '\(path("took"))' ;;
-          wrong) echo "out.code=many" ;;
-          broken) printf 'error=The disk is full\\n' ;;
-          \(body)
-        esac
-        """)
-        return try sheet()
+    private func spot(_ mode: Mode = .once) throws -> SpotRun {
+        switch mode {
+        case .once, .stay:
+            try script("\(mode)", toml: (mode == .stay ? "stay = true\n" : "") + Self.toml, """
+            . "$OPENSPOT_SH"
+            main() {
+              echo "$1" >> '\(path("called-\(mode)"))'
+              openspot_input > '\(path("stdin"))'
+              case "$1" in
+                make) echo "out.code=42" ;;
+                take) printf 'out.took=%s %s\\n' "$(value code)" "$(value size)" ;;
+                wrong) echo "out.code=many" ;;
+                broken) printf 'error=The disk is full\\n' ;;
+              esac
+            }
+            openspot_serve main "$@"
+            """)
+        case .inline:
+            let url = folder.spotFile("\(mode)", extension: "js")
+            try FileManager.default.createDirectory(at: url.deletingLastPathComponent(), withIntermediateDirectories: true)
+            try """
+            export default {
+              make() { return { code: 42 } },
+              take({ code, size }) { return { took: `${code} ${size}` } },
+              wrong() { return { code: "many" } },
+              broken() { return "error=The disk is full\\n" },
+            }
+            """.write(to: url, atomically: true, encoding: .utf8)
+            try Self.toml.write(to: url.deletingLastPathComponent().appendingPathComponent(Manifest.fileName), atomically: true, encoding: .utf8)
+        }
+        return try sheet("\(mode)")
     }
 
-    func testAnActionTakesAnInputReadFromTheRealOutputOfAnother() async throws {
-        let sheet = try spot()
+    func testAnActionTakesAnInputReadFromTheRealOutputOfAnotherInEachMode() async throws {
+        for mode in Mode.allCases {
+            let sheet = try spot(mode)
 
-        let made = try await sheet.call("make")
-        _ = try await sheet.call("take", inputs: made)
+            let made = try await sheet.call("make")
+            let took = try await sheet.call("take", inputs: made)
 
-        XCTAssertEqual(made, [TextBlock.Field(key: "code", value: "42")])
-        XCTAssertEqual(text("took"), "42 m")
-        XCTAssertTrue(text("stdin").contains("input.code=42\ninput.size=m\n"), text("stdin"))
+            XCTAssertEqual(made, [TextBlock.Field(key: "code", value: "42")], "\(mode)")
+            XCTAssertEqual(took, [TextBlock.Field(key: "took", value: "42 m")], "\(mode)")
+            if mode == .once { XCTAssertTrue(text("stdin").contains("input.code=42\ninput.size=m\n"), text("stdin")) }
+        }
     }
 
-    func testAnInputOfTheWrongTypeOrAMissingRequiredOneFailsBeforeTheCall() async throws {
-        let sheet = try spot()
+    func testAnInputOfTheWrongTypeOrAMissingRequiredOneFailsBeforeTheCallInEachMode() async throws {
+        for mode in Mode.allCases {
+            let sheet = try spot(mode)
 
-        for inputs in [[TextBlock.Field(key: "code", value: "many")], [], [.init(key: "code", value: "1"), .init(key: "size", value: "xl")]] {
-            do {
-                _ = try await sheet.call("take", inputs: inputs)
-                XCTFail("\(inputs) should fail")
-            } catch {
-                XCTAssertTrue(SpotsModel.reason(error).contains(inputs.last?.key ?? "code"), SpotsModel.reason(error))
+            for inputs in [[TextBlock.Field(key: "code", value: "many")], [], [.init(key: "code", value: "1"), .init(key: "size", value: "xl")]] {
+                do {
+                    let took = try await sheet.call("take", inputs: inputs)
+                    XCTFail("\(mode) \(inputs) should fail, and gave \(took)")
+                } catch {
+                    XCTAssertTrue(SpotsModel.reason(error).contains(inputs.last?.key ?? "code"), "\(mode) \(SpotsModel.reason(error))")
+                }
+            }
+            XCTAssertFalse(log("called-\(mode)").contains("take"), "\(mode)")
+        }
+    }
+
+    func testAnOutputOfTheWrongTypeAndAnErrorInTheRootFailTheCallInEachMode() async throws {
+        for mode in Mode.allCases {
+            let sheet = try spot(mode)
+
+            for (action, reason) in [("wrong", "code"), ("broken", "The disk is full")] {
+                do {
+                    let given = try await sheet.call(action)
+                    XCTFail("\(mode) \(action) should fail, and gave \(given)")
+                } catch {
+                    XCTAssertTrue(SpotsModel.reason(error).contains(reason), "\(mode) \(SpotsModel.reason(error))")
+                }
             }
         }
-        XCTAssertFalse(log().contains { $0.hasPrefix("take") })
     }
 
-    func testAnOutputOfTheWrongTypeAndAnErrorInTheRootFailTheCall() async throws {
-        let sheet = try spot()
+    func testAGlobalKeyOnAnActionWithAMissingInputFailsWithALineThatNamesItInEachMode() async throws {
+        for mode in Mode.allCases {
+            let sheet = try spot(mode)
+            var failures: [String] = []
+            sheet.onReport = { if case .failure(let text) = $0 { failures.append(text) } }
 
-        for (action, reason) in [("wrong", "code"), ("broken", "The disk is full")] {
-            do {
-                _ = try await sheet.call(action)
-                XCTFail("\(action) should fail")
-            } catch {
-                XCTAssertTrue(SpotsModel.reason(error).contains(reason), SpotsModel.reason(error))
-            }
+            sheet.pressKey("take")
+
+            try await wait("the failure of \(mode)") { !failures.isEmpty }
+            XCTAssertEqual(failures.count, 1, "\(mode)")
+            XCTAssertTrue(failures.first?.hasSuffix("take needs code, which is a number.") == true, "\(mode) \(failures)")
+            XCTAssertFalse(log("called-\(mode)").contains("take"), "\(mode)")
         }
     }
 
     func testEachCallGetsThePlainSettingsAndNeverASecret() async throws {
         let store = SecretStore(file: folder.appendingPathComponent("secrets.json"))
-        try store.keep(marker, key: "token", of: "script")
+        try store.keep(marker, key: "token", of: "once")
         runs.secrets = store
         let sheet = try spot()
 

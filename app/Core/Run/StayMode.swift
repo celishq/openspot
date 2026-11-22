@@ -317,9 +317,16 @@ final class StayMode: ScriptMode {
         defer { if let printing, ends.contains(printing) { self.printing = nil } }
         if let (id, form) = records.first(where: \.value.isForm), !lines.fields.isEmpty || ends.contains(id) {
             let others = Set(ends).subtracting([id]).filter { records[$0]?.ask == nil }.sorted()
-            await answer(id, form, text, lines, in: run)
+            if lines.isMark {
+                await close([id], in: run)
+            } else {
+                await answer(id, form, text, lines, in: run)
+            }
             await close(others, in: run)
             return
+        }
+        if let printing, start == nil, !lines.isMark, let form = records[printing], form.isForm {
+            return await run.take(text, lines, of: form.call)
         }
         if let id = ends.first(where: { records[$0]?.ask != nil }), let record = records[id] {
             slowAsks = 0
