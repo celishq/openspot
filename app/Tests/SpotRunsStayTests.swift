@@ -190,6 +190,29 @@ final class SpotRunsStayTests: SpotRunsCase {
         XCTAssertEqual(sheet.list.shown.map(\.run), [])
     }
 
+    func testALaterFrameOfAStayingScriptPatchesANodeOfItsOpenSheet() async throws {
+        try script(toml: "mode = 'stay'", """
+        while IFS= read -r line; do
+          case "$line" in
+            call=*) call=${line#call=} ;;
+            '')
+              printf 'end=%s\\n\\nframe=\\nclass=gap-part\\n\\ntext=name\\ntitle=Home\\ndetail=Saved\\n\\nbutton=forget\\ntitle=Forget\\n---\\n' "$call"
+              ( \(untilRelease); printf 'text=name\\ntitle=Office\\n---\\n' ) & ;;
+          esac
+        done
+        """)
+        let sheet = try sheet()
+        runs.panelOpened()
+        sheet.open {}
+        try await wait("the first frame") { sheet.panel?.parts.first?.title == "Home" }
+
+        openGate()
+
+        try await wait("the patch") { sheet.panel?.parts.first?.title == "Office" }
+        XCTAssertEqual(sheet.panel?.parts.first?.detail, "Saved")
+        XCTAssertEqual(sheet.panel?.parts.map(\.id), ["name", "forget"])
+    }
+
     func testAPickReachesTheRunningStayingScript() async throws {
         try staying()
         let sheet = try sheet()

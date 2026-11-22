@@ -43,7 +43,7 @@ final class StayMode: ScriptMode {
     private var askReason: String?
     private var lastPicture: Frame?
     private var printing: Int?
-    private var drawn: (call: Int, text: String?)?
+    private var drawn: (call: Int?, text: String?)?
     private var count = 0
     private var failures: [Date] = []
     private var stamp: [Int]?
@@ -168,6 +168,7 @@ final class StayMode: ScriptMode {
         let (script, frames, caller) = runs.stay(run.spot, limit: runs.showLimit)
         self.script = script
         self.caller = caller
+        drawn = nil
         slowAsks = 0
         let event = event ?? startEvent
         let show = SpotRun.Call(message: Message(.show), key: SpotRun.showKey, event: event, purpose: .ask(.show(generation: nil, reports: true)))
@@ -264,13 +265,22 @@ final class StayMode: ScriptMode {
         for record in lost where !record.isDropped { run?.lose(record.call, end, errors: errors) }
     }
 
+    private var searches: Set<String> {
+        Set(records.compactMap { id, record in
+            switch record.ask {
+            case .search?, .answer?: String(id)
+            default: nil
+            }
+        })
+    }
+
     private func follow(_ script: ScriptProcess, _ frames: AsyncThrowingStream<String, Error>) async {
         var failure: Error?
         do {
             for try await frame in frames {
                 let call = printing
-                let next = await FrameStream.next(frame, after: drawn?.call == call ? drawn?.text : nil)
-                drawn = call.map { ($0, next.drawn) }
+                let next = await FrameStream.next(frame, after: drawn?.call == call ? drawn?.text : nil, apart: searches)
+                drawn = (call, next.drawn)
                 let text = next.text
                 let lines = await runs.intake(text, of: run?.spot)
                 guard self.script === script, let run else { continue }

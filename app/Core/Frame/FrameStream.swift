@@ -4,29 +4,29 @@ struct FrameStream: Sendable {
     let text: String
     let drawn: String?
 
-    init(_ text: String, after drawn: String?) {
+    init(_ text: String, after drawn: String?, apart: Set<String> = []) {
         let blocks = TextBlock.blocks(in: text)
+        guard !blocks.contains(where: { $0.value(RootKey.end).map(apart.contains) == true }) else {
+            self.text = text
+            self.drawn = drawn
+            return
+        }
         let drawing = blocks.filter(Self.draws)
         guard !drawing.isEmpty, let base = drawn, !blocks.contains(where: RootKey.starts) else {
             self.text = text
             self.drawn = drawing.isEmpty ? drawn : text
             return
         }
-        var merged = TextBlock.blocks(in: base).filter { RootKey.starts($0) || Self.draws($0) }
-        for block in drawing {
-            if let id = Self.id(of: block), let index = merged.firstIndex(where: { !RootKey.starts($0) && Self.id(of: $0) == id }) {
-                merged[index] = block
-            } else {
-                merged.append(block)
-            }
+        let merged = TextBlock.patching(TextBlock.blocks(in: base).filter { RootKey.starts($0) || Self.draws($0) }, with: drawing) { block in
+            RootKey.starts(block) ? nil : Self.id(of: block)
         }
         let whole = merged.map(\.text).joined(separator: "\n")
         self.text = ([whole] + blocks.filter { !RootKey.starts($0) && !Self.draws($0) }.map(\.text)).joined(separator: "\n")
         self.drawn = whole
     }
 
-    @concurrent static func next(_ text: String, after drawn: String?) async -> FrameStream {
-        FrameStream(text, after: drawn)
+    @concurrent static func next(_ text: String, after drawn: String?, apart: Set<String> = []) async -> FrameStream {
+        FrameStream(text, after: drawn, apart: apart)
     }
 
     private static func draws(_ block: TextBlock) -> Bool {

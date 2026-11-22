@@ -139,8 +139,11 @@ final class FrameTests: XCTestCase {
         XCTAssertEqual(Frame(text: "frame=\ntitle=One\n\nframe=\ntitle=Two\n").errors, ["frame="])
     }
 
-    func testKeepsTheFirstItemOfEachRunValue() {
-        XCTAssertEqual(Frame(text: "text=same\ntitle=One\n\ntext=same\ntitle=Two\n").items.map(\.title), ["One"])
+    func testALaterItemWithTheIdOfAnEarlierOnePatchesIt() {
+        let items = Frame(text: "text=same\ntitle=One\ndetail=First\n\ntext=other\n\ntext=same\ntitle=Two\n").items
+
+        XCTAssertEqual(items.map(\.title), ["Two", "other"])
+        XCTAssertEqual(items.first?.subtitle, "First")
     }
 
     func testNoOutputIsNothing() {

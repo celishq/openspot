@@ -69,7 +69,8 @@ public struct Frame: Equatable, Sendable {
         Frame(text: text, kinds: kinds)
     }
 
-    init(grouped blocks: [TextBlock], kinds: [BlockKind]) {
+    init(grouped written: [TextBlock], kinds: [BlockKind]) {
+        let blocks = TextBlock.patching([], with: written) { ViewTree.id(of: $0, in: kinds) }
         let frame = FrameRoot(blocks: blocks, kinds: kinds)
         isPicture = frame.isPicture
         isMark = frame.isMark
