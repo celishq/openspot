@@ -101,6 +101,11 @@ extension SpotRun {
         send(Call(message: message, key: "\(SpotTimer.call).\(timer.id)", event: ShowEvent(event: SpotTimer.event, value: timer.value), purpose: .act(Act(showsAfter: false))))
     }
 
+    func scheduled(_ line: CronLine, late: Int) {
+        let inputs: [TextBlock.Field] = [.init(key: "cron", value: line.text), .init(key: "late", value: String(max(0, late)))]
+        send(Call(message: Message(.press(Manifest.Triggers.schedule), inputs: inputs), key: "\(Manifest.Triggers.schedule).\(line.text)", purpose: .act(Act(showsAfter: false))))
+    }
+
     func startWaitingKey() {
         while !waitingKeys.isEmpty, script.keepsState || running(Self.globalKey) == nil {
             act(Message(.press(waitingKeys.removeFirst())), key: Self.globalKey)

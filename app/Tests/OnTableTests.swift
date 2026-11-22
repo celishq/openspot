@@ -5,7 +5,7 @@ final class OnTableTests: XCTestCase {
     private func load(_ toml: String) throws -> (spot: Spot?, refused: [String]) {
         let spots = try temporaryFolder()
         try "#!/bin/sh\necho\n".writeScript(to: spots.appendingPathComponent("snooze.spot/snooze.sh"), toml: toml)
-        let scan = try SpotsFolder(url: spots).scan()
+        let scan = try SpotsFolder(url: spots, enabled: ["snooze"]).scan()
         return (scan.spots.first, scan.refused.map(\.reason))
     }
 

@@ -16,6 +16,10 @@ public struct SpotLoad: Sendable {
         let refusal: String?
         let added: Date?
 
+        var isScheduled: Bool {
+            spots?.contains { $0.triggers?.schedule.isEmpty == false } == true
+        }
+
         func add(to result: inout ScanResult) {
             if let refusal { result.refused.append(ScanResult.Refusal(file: id, reason: refusal)) }
             guard let spots else { return }
@@ -47,7 +51,7 @@ public struct SpotLoad: Sendable {
         if let failure { throw SpotError.fault(failure) }
         var result = ScanResult(files: hosted.isEmpty ? [] : [SpotFile(id: "openspot", spots: hosted)], refused: loose)
         let ownIDs = Set(entries.filter { $0.origin == .own }.map(\.id))
-        for entry in entries where entry.origin == .own && !disabled.contains(entry.id) {
+        for entry in entries where entry.origin == .own && !disabled.contains(entry.id) && (enabled.contains(entry.id) || !entry.isScheduled) {
             entry.add(to: &result)
         }
         for entry in entries where entry.origin == .core && !ownIDs.contains(entry.id) && enabled.contains(entry.id) {

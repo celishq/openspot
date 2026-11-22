@@ -145,6 +145,7 @@ extension SpotRuns {
         sheets.values.forEach { $0.settleScript() }
         updateClock()
         scheduleTimers()
+        runSchedule()
     }
 
     private func show(_ name: String, _ value: String?, showsEachSpot: Bool) {

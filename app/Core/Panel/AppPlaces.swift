@@ -75,6 +75,10 @@ public struct AppPlaces: Sendable {
         configFolder.appendingPathComponent("timers.json")
     }
 
+    public var schedule: URL {
+        configFolder.appendingPathComponent("schedule.json")
+    }
+
     public var stats: URL {
         configFolder.appendingPathComponent("stats", isDirectory: true)
     }

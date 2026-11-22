@@ -59,6 +59,8 @@ public final class SpotRuns {
     @ObservationIgnored var ticks: Task<Void, Never>?
     @ObservationIgnored var timers: SpotTimers
     @ObservationIgnored var timerWatch: Task<Void, Never>?
+    @ObservationIgnored var schedule: SpotSchedule
+    @ObservationIgnored var scheduleWatch: Task<Void, Never>?
     @ObservationIgnored var asks = SpotAsks()
     @ObservationIgnored var wanted: Set<String> = []
     @ObservationIgnored var nextShow: Date?
@@ -108,6 +110,7 @@ public final class SpotRuns {
         log: CallLog? = nil,
         stats: URL? = nil,
         timers: URL? = nil,
+        schedule: URL? = nil,
         swift: SwiftProgram = SwiftProgram(),
         callers: SpotCallers = SpotCallers()
     ) {
@@ -117,6 +120,7 @@ public final class SpotRuns {
         self.swift = swift
         usage = StatsLog(folder: stats, at: clock.now(), now: clock.now)
         self.timers = SpotTimers(file: timers)
+        self.schedule = SpotSchedule(file: schedule)
         self.inlineIdle = inlineIdle
         self.frameWait = frameWait
         self.showLimit = showLimit
@@ -158,6 +162,7 @@ public final class SpotRuns {
         usage.take(views: scripts)
         usage.take(versions: stamps.mapValues(SpotLoad.version(of:)))
         updateClock()
+        runSchedule()
         showOfferedItems()
     }
 
@@ -257,6 +262,8 @@ public final class SpotRuns {
         ticks = nil
         timerWatch?.cancel()
         timerWatch = nil
+        scheduleWatch?.cancel()
+        scheduleWatch = nil
         asks.endAll()
         clipboardWatch?.cancel()
         clipboardWatch = nil
