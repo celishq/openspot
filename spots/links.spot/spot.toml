@@ -3,8 +3,8 @@ detail = "Open a link"
 uses = ["network", "clipboard"]
 
 [actions.new]
-inputs.url = { type = "text", required = true, description = "example.com or ~/Downloads" }
-inputs.title = { type = "text", required = true }
+inputs.url = { type = "text", description = "example.com or ~/Downloads" }
+inputs.title = "text"
 
 [on]
 "panel.open" = true

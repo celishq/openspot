@@ -449,13 +449,14 @@ final class SpotDropTests: XCTestCase {
     }
 
     func testAToggleWithDropKeepsItsClick() async throws {
-        let sheet = try sheet(toml: "[on]\n\"panel.open\" = true\ndrop = [\"mov\"]", "[ \"$1\" = show ] && printf 'switch=power\\nclass=card:flex\\nvalue=false\\n'\nexit 0")
+        let sheet = try sheet(toml: "[on]\n\"panel.open\" = true\ndrop = [\"mov\"]", "[ \"$1\" = show ] && printf 'switch=power\\nclass=card:flex\\nvalue=false\\n'\n[ \"$1\" = power ] && printf '%s\\n' \"$in\" | sed -n 's/^input\\.value=//p' > '\(path("value"))'\nexit 0")
         runs.panelOpened()
         try await wait("the kind") { sheet.spot.kind == .toggle }
 
         sheet.pressCard()
 
         try await wait("the call") { self.log().contains("power") }
+        try await wait("the value of the call") { (try? String(contentsOfFile: self.path("value"), encoding: .utf8)) == "true\n" }
     }
 
     func testADropHasNoTimeLimitAndGoesOnWithThePanelClosed() async throws {

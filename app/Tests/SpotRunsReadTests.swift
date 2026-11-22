@@ -552,7 +552,7 @@ final class SpotRunsReadTests: SpotRunsCase {
     }
 
     func testACallWithNoFrameReadsOnce() async throws {
-        try script(toml: "[on]\n\"panel.open\" = true", "[ \"$1\" = show ] && printf 'switch=power\\nclass=card:flex\\nvalue=false\\n'\nexit 0")
+        try script(toml: "[on]\n\"panel.open\" = true", "[ \"$1\" = show ] && printf 'switch=power\\nclass=card:flex\\nvalue=false\\n'\n[ \"$1\" = power ] && sed -n 's/^input\\.value=//p' > '\(path("value"))'\nexit 0")
         let sheet = try sheet()
         runs.panelOpened()
         try await wait("the kind") { sheet.spot.kind == .toggle }
@@ -560,13 +560,14 @@ final class SpotRunsReadTests: SpotRunsCase {
         sheet.pressCard()
 
         try await wait("the read after the call") { self.log() == ["show", "power", "show"] }
+        XCTAssertEqual(try String(contentsOfFile: path("value"), encoding: .utf8), "true\n")
         try await pause(0.1)
         XCTAssertEqual(self.log().count, 3)
     }
 
     func testACallWithOnlyAToastReadsOnce() async throws {
         takeCalls()
-        try script(toml: "", "[ \"$1\" = show ] && printf 'item=a\\ntitle=A\\n'\n[ \"$1\" = press ] && \(TestSpot.toast) Done\nexit 0")
+        try script(toml: "", "[ \"$1\" = show ] && printf 'item=a\\ntitle=A\\n'\n[ \"$1\" = press ] && sed -n 's/^input\\.item=//p' > '\(path("item"))'\n[ \"$1\" = press ] && \(TestSpot.toast) Done\nexit 0")
         let sheet = try sheet()
         var toasts: [String] = []
         sheet.onReport = { if case .toast(let text) = $0 { toasts.append(text) } }
@@ -577,16 +578,17 @@ final class SpotRunsReadTests: SpotRunsCase {
 
         try await wait("the read after the call") { self.log() == ["show", "press", "show"] }
         XCTAssertEqual(toasts, ["Done"])
+        XCTAssertEqual(try String(contentsOfFile: path("item"), encoding: .utf8), "a\n")
     }
 
     func testACallThatShowsItsStateIsNotReadAgain() async throws {
-        try script(toml: "[on]\n\"panel.open\" = true", "[ \"$1\" = show ] && printf 'switch=power\\nclass=card:flex\\nvalue=false\\n'\n[ \"$1\" = power ] && printf 'switch=power\\nclass=card:flex\\nvalue=true\\n'\nexit 0")
+        try script(toml: "[on]\n\"panel.open\" = true", "[ \"$1\" = show ] && printf 'switch=power\\nclass=card:flex\\nvalue=false\\n'\n[ \"$1\" = power ] && sed -n 's/^input\\.value=//p' > '\(path("value"))'\n[ \"$1\" = power ] && printf 'switch=power\\nclass=card:flex\\nvalue=true\\n'\nexit 0")
         let sheet = try sheet()
         runs.panelOpened()
         try await wait("the kind") { sheet.spot.kind == .toggle }
 
         sheet.pressCard()
-        try await wait("the call") { self.log() == ["show", "power"] }
+        try await wait("the call with its value") { self.log() == ["show", "power"] && (try? String(contentsOfFile: self.path("value"), encoding: .utf8)) == "true\n" }
         try await pause(0.15)
 
         XCTAssertEqual(log(), ["show", "power"])

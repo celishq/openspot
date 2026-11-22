@@ -108,6 +108,24 @@ final class SpotSettingsSheetTests: XCTestCase {
         XCTAssertEqual(calls, [])
     }
 
+    func testTheLookRowOfConfettiShowsTheKeptLookAndAsksForEachLook() async throws {
+        let repo = URL(fileURLWithPath: #filePath).deletingLastPathComponent().deletingLastPathComponent().deletingLastPathComponent()
+        try FileManager.default.copyItem(at: repo.appendingPathComponent("spots/confetti.spot"), to: spots.appendingPathComponent("confetti.spot"))
+        try model.files.config.set(setting: "look", of: "confetti", to: "Gold")
+        try await show(selecting: "confetti", search: "confetti")
+
+        XCTAssertTrue(model.openSelectedSettings())
+        try await wait("the look row") { model.openItems?.shown.contains { $0.run == "setting:confetti:look" } == true }
+        let row = try XCTUnwrap(model.openItems?.shown.first { $0.run == "setting:confetti:look" })
+        XCTAssertEqual(row.title, "Look")
+        XCTAssertEqual(row.subtitle, "Gold")
+        model.runItem(row)
+
+        try await wait("the looks", seconds: 600) { model.form?.draft.form.soleChoice != nil }
+        XCTAssertEqual(model.form?.draft.form.soleChoice?.options.map(\.id), ["colorful", "gold", "metallic"])
+        XCTAssertEqual(model.form?.draft.form.soleChoice?.value, "gold")
+    }
+
     func testReturnOnAFieldRunsTheActionOfItsNameAndTheMenuBarRowTurnsItsPlaceOnAndOff() async throws {
         try script("cups", toml: "title = 'Cups'\n[settings]\nsize = { type = 'text' }\n[on]\n\"sheet.open\" = true\nevery = 60")
         try await show(selecting: "cups", search: "cups")

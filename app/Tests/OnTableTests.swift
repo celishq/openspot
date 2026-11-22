@@ -59,6 +59,11 @@ final class OnTableTests: XCTestCase {
 
         XCTAssertEqual(spot.on?.admits(SpotEvent.powerChange, value: "ac"), true)
         XCTAssertEqual(spot.on?.admits(SpotEvent.powerChange, value: "battery"), false)
+        for event in ["system.load", "disk.mount", "device.connect"] {
+            let other = try XCTUnwrap(try load("[on]\n\"\(event)\" = \"^a$\"").spot, event)
+            XCTAssertEqual(other.on?.admits(event, value: "a"), true, event)
+            XCTAssertEqual(other.on?.admits(event, value: "b"), false, event)
+        }
     }
 
     func testEachWrongTriggerFailsTheLoadWithALineThatNamesItsKey() throws {
@@ -72,6 +77,10 @@ final class OnTableTests: XCTestCase {
             ("command = [\"/snooze\"]", "command"),
             ("drop = \"png\"", "drop"),
             ("\"clipboard.change\" = \"^http\"", "clipboard.change"),
+            ("\"panel.open\" = \"^x\"", "panel.open"),
+            ("\"sheet.open\" = \"^x\"", "sheet.open"),
+            ("\"screen.wake\" = \"^x\"", "screen.wake"),
+            ("every = 1.5", "every"),
             ("\"picker.picked\" = 1", "picker.picked"),
             ("later = true", "later")
         ]

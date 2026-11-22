@@ -202,9 +202,11 @@ extension SpotRun {
     }
 
     public func submit(_ action: CommandAction, item: SpotItem?, draft: FormDraft) async throws -> CallAnswer {
-        let call = SpotAction.action(action, item: item)
+        let word = CommandAction.word(of: action)
+        let call = word == nil ? SpotAction.action(action, item: item) : .press(Manifest.Triggers.command)
         guard let key = freeKey(call) else { return .stopped }
-        let message = pressing(Message(call, inputs: draft.inputs), as: Self.itemInput)
+        let named = word.map { [TextBlock.Field(key: "name", value: $0)] } ?? []
+        let message = pressing(Message(call, inputs: named + draft.inputs), as: Self.itemInput)
         guard !script.keepsState else {
             act(message, key: key)
             return .done

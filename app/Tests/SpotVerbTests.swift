@@ -35,7 +35,7 @@ final class SpotVerbTests: XCTestCase {
         let app = core.appendingPathComponent("openspot.spot")
         try editor.joined(separator: "\n").appending("\n").writeScript(to: app.appendingPathComponent("change.sh"), toml: "title = 'Change'\nedits = 'spots'")
         try actions.writeInline(to: app.appendingPathComponent("actions.js"), toml: actionsToml)
-        try icon.writeScript(to: app.appendingPathComponent("icon.sh"), toml: "title = 'Icon'\nicon = 'paintbrush.pointed'\nviews = ['drawer.swift']\nuses = ['spots']\n\n[on]\ndrop = [\"png\", \"svg\"]")
+        try icon.writeScript(to: app.appendingPathComponent("icon.sh"), toml: "title = 'Icon'\nicon = 'paintbrush.pointed'\nviews = ['drawer.swift']\nuses = ['spots']\n\n[actions.draw]\ninputs.spot = { type = 'text', required = true }\n\n[on]\ndrop = [\"png\", \"svg\"]")
         try "import SwiftUI\n\nstruct SpotView: View {\n    let spot: SpotInput\n\n    var body: some View {\n        Color.clear\n    }\n}\n".write(to: app.appendingPathComponent("drawer.swift"), atomically: true, encoding: .utf8)
         try "#!/bin/sh\necho\n".writeScript(to: core.spotFile("cups"), toml: "title = 'Cups'")
         let files = AppPlaces(
@@ -66,8 +66,8 @@ final class SpotVerbTests: XCTestCase {
           share: (id) => ["spot", "share", id],
           delete: (id) => ["spot", "delete", id],
           off: (id) => ["setting", "set", "--spot", id, "enabled", "false"],
-          "icon.draw": (id) => ["spot", "run", "openspot/icon", "draw", id],
-          "icon.file": (id) => ["spot", "run", "openspot/icon", "file", id],
+          "icon.draw": (id) => ["spot", "run", "openspot/icon", "draw", `spot=${id}`],
+          "icon.file": (id) => ["spot", "run", "openspot/icon", "file", `spot=${id}`],
         };
 
         export default Object.fromEntries(Object.keys(calls).map((act) => [act, async ({ item }) => { openspot.call(calls[act](item)) }]));
@@ -120,13 +120,16 @@ final class SpotVerbTests: XCTestCase {
         offers = ['actions core']
         """
 
-    private let icon = """
+    private var icon: String {
+        """
         #!/bin/sh
         case "$1" in
+          draw) sed -n 's/^input\\.spot=//p' > '\(folder.path)/drawn' ;;
           show) printf 'frame=\\ntitle=Icon\\nclass=grid grid-cols-2 gap-part\\n\\ndrawer=drawer\\nclass=col-span-2\\ndots=.\\n\\nbutton=clear\\ntitle=Clear\\nclose=false\\n\\nbutton=save\\ntitle=Save\\nshortcut=return\\nlook=strong\\n' ;;
         esac
 
         """
+    }
 
     private var spots: URL {
         folder.appendingPathComponent("spots", isDirectory: true)
@@ -295,6 +298,20 @@ final class SpotVerbTests: XCTestCase {
 
         try Data().write(to: URL(fileURLWithPath: gate))
         try await wait("the close at the end of the run") { model.menu == nil }
+    }
+
+    func testDrawInTheMenuRunsTheDrawOfTheIconSpotWithTheSpotOfTheCard() async throws {
+        try script("weather", toml: "title = 'Weather'")
+        _ = try await select("weather")
+        XCTAssertTrue(model.handleKey(ActionKey(name: "k", isCommand: true)))
+        let menu = try XCTUnwrap(model.menu)
+        model.menu?.select(try XCTUnwrap(menu.shown.first { $0.title == "Change Icon" }?.action))
+        XCTAssertTrue(model.handleKey(ActionKey(name: "right")))
+        XCTAssertEqual(model.menu?.selectedRow?.title, "Draw…")
+
+        XCTAssertTrue(model.handleKey(ActionKey(name: "return")))
+
+        try await wait("the draw") { saved("drawn") == "weather\n" }
     }
 
     func testTheSheetOfTheIconSpotOpensThoughItHasNoCard() async throws {

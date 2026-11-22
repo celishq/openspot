@@ -516,15 +516,17 @@ from the types. See [Ask for values](GUIDE.md#ask-for-values).
   value and its `description` as its placeholder. An empty field counts as no value, so its default applies.
 - A global key shows no panel, so the call it makes fails with a line that names the input.
 - A handler can also print its own form, a frame whose root has `type=form` and a `title`, with a `field`, `choice` or
-  `switch` for each value. Its values go to the same action, or to `press` again for a form that answered a press of an
-  item. A form whose handler answers with `error=<message>` stays
+  `switch` for each value. Its values go to the same action, to `press` again for a form that answered a press of an
+  item, or to `command` with the same `name` for a form that answered a command word. A form whose handler answers with `error=<message>` stays
   open and shows the message. In a choice with `type=multiple`, a `value` line marks each chosen option.
 - A form whose only field is a `choice` lists its options, which the person searches, and Return sends the selected one.
-- The words typed after a button in the main field fill the first required `text` input of its action. When another
-  required input is still empty, Openspot asks with the drawn form, that input filled.
-- When a search of the sheet finds no item, Return offers the first `scope=spot` button whose action has a required
-  input of type `text`, or else the first action with a `title` and such an input. Return opens its drawn form with the
-  searched words in that input, and a second Return runs it.
+- The words typed after a button in the main field fill the first required `text` input of its action, or its first
+  `text` input when none is required. When another required input is still empty, Openspot asks with the drawn form,
+  that input filled.
+- When a search of the sheet finds no item, Return offers the first `scope=spot` button whose action has a `text`
+  input, or else the first action with a `title` and such an input. When the action has a required input, Return opens
+  its drawn form with the searched words in that input, and a second Return runs it. When it has none, Return calls it
+  with the words, so a handler that prints its own form asks with it.
 
 ## Buttons and actions
 

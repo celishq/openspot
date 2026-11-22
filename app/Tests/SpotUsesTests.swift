@@ -29,7 +29,7 @@ final class SpotUsesTests: SpotRunsCase {
     }
 
     private func lister(toml: String = "") throws {
-        try script(toml: toml, "OPENSPOT_CONFIG='\(config.path)' '\(client.path)' setting list > /dev/null && echo done >> '\(path("done"))'")
+        try script(toml: toml, "[ \"$1\" = show ] && exit 0\nOPENSPOT_CONFIG='\(config.path)' '\(client.path)' setting list > /dev/null && echo done >> '\(path("done"))'")
     }
 
     private func press() async throws {
@@ -82,7 +82,7 @@ final class SpotUsesTests: SpotRunsCase {
     }
 
     private func caller(toml: String = "", _ words: String) throws {
-        try script(toml: "\(toml)\n\(TestSpot.command)", "OPENSPOT_CONFIG='\(config.path)' '\(client.path)' \(words) > /dev/null 2> '\(path("errors"))'; echo $? >> '\(path("done"))'")
+        try script(toml: "\(toml)\n\(TestSpot.command)", "[ \"$1\" = show ] && exit 0\nOPENSPOT_CONFIG='\(config.path)' '\(client.path)' \(words) > /dev/null 2> '\(path("errors"))'; echo $? >> '\(path("done"))'")
     }
 
     private func pressed() async throws -> (code: String, errors: String) {

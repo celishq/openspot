@@ -300,6 +300,18 @@ final class CaffeinateSpotTests: XCTestCase {
         try await wait("the toast") { self.lines("toasts").last == "Caffeinate is on for 45 minutes" }
     }
 
+    func testKeepAwakeForWithNoMinutesAsksWithTheFormOfTheSpot() async throws {
+        let sheet = try sheet()
+        let start = try await start(in: sheet)
+
+        let answer = try await sheet.launch(start, search: SearchQuery(text: "", layouts: []))
+
+        guard case .form(let form) = answer else { return XCTFail("no form: \(answer)") }
+        XCTAssertEqual(form.title, "Keep the Mac awake")
+        XCTAssertEqual(form.fields.map(\.label), ["Minutes"])
+        XCTAssertTrue(running().isEmpty)
+    }
+
     func testTextThatIsNoNumberShowsAnErrorAndTheDurations() async throws {
         let sheet = try sheet()
         let start = try await start(in: sheet)

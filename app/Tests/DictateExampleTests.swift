@@ -99,6 +99,7 @@ final class DictateExampleTests: SampleSpotsCase {
         let first = Array(frames.prefix { FrameRoot(text: $0).end != "1" })
         XCTAssertEqual(rows(first).map(\.run), ["2000", "1000"])
         XCTAssertEqual(rows(first).map(\.title), ["Second, with a back\\slash", "First words"])
+        XCTAssertEqual(first.map { Frame(text: $0) }.last { !$0.items.isEmpty }?.openTitle, "Copy")
         XCTAssertEqual(rows(frames).map(\.run), ["1000"])
         XCTAssertEqual(toasts(in: folder), ["Copied"])
         XCTAssertEqual(try read("clipboard", in: folder), "First words")

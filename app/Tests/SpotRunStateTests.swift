@@ -475,6 +475,7 @@ final class SpotRunStateTests: XCTestCase {
         await link.end(link.sent[1], .failed(SpotError.failed(2, "No")))
 
         XCTAssertEqual(records.map(\.arguments), [["show"], ["press"]])
+        XCTAssertTrue(records.last?.input?.contains("input.item=a\n") == true, records.last?.input ?? "")
         XCTAssertEqual(records.last?.frames, ["toast=Done\n"])
         XCTAssertEqual(records.last?.end, .exited(2))
         XCTAssertEqual(runs.usage.counts["script"]?.runs, 2)

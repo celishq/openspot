@@ -63,6 +63,28 @@ final class TriggerCallsTests: SpotRunsCase {
         try await wait("the command") { self.calls == ["command|input.name=snooze input.text=tomorrow "] }
     }
 
+    func testAFormThatACommandAnswersWithSendsItsValuesToCommandWithTheWord() async throws {
+        try script(toml: "[on]\ncommand = [\"snooze\"]", """
+        in=$(cat)
+        printf '%s|%s\\n' "$*" "$(printf '%s\\n' "$in" | grep '^input\\.' | tr '\\n' ' ')" >> '\(path("calls"))'
+        case "$in" in
+          *input.until=*) ;;
+          *) printf 'frame=\\ntype=form\\ntitle=Snooze\\n\\nfield=until\\ntitle=Until\\n' ;;
+        esac
+        """)
+        let sheet = try sheet()
+        let word = CommandAction.word("snooze")
+
+        let answer = try await sheet.launch(word, search: SearchQuery(text: ""))
+        guard case .form(let form) = answer else { return XCTFail("no form: \(answer)") }
+        var draft = FormDraft(form: form)
+        draft.set("tomorrow", for: "until")
+        _ = try await sheet.submit(word, item: nil, draft: draft)
+
+        try await wait("the submit") { self.calls.count == 2 }
+        XCTAssertEqual(calls, ["command|input.name=snooze input.text= ", "command|input.name=snooze input.until=tomorrow "])
+    }
+
     func testWordsTypedAfterAButtonFillTheTextInputOfItsActionAndNoWordsAskWithItsForm() async throws {
         let sheet = try spot("\"sheet.open\" = true", toml: "[actions.start]\ninputs.minutes = { type = 'text', required = true }")
         let start = CommandAction(id: "start", title: "Keep awake for…", scope: .spot)

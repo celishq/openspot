@@ -144,6 +144,7 @@ final class PlacesTests: PanelCase {
         model.panelWillShow()
 
         try await wait("the read of the card") { self.log("shown").count == 1 && !self.model.runs.isShowing }
+        XCTAssertEqual(log("shown"), ["every"])
         XCTAssertEqual(log("hidden"), [])
     }
 }

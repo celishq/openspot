@@ -234,6 +234,15 @@ final class LinksSpotTests: SampleSpotsCase {
             XCTAssertEqual(new.placeholder, "Link to add")
 
             XCTAssertEqual(links.typedActions.first { $0.id == "new" }?.textInput?.name, "url")
+            XCTAssertFalse(try XCTUnwrap(links.typedActions.first { $0.id == "new" }).lacksInput)
+
+            for input in ["", "input.url=example.com\n"] {
+                let output = try await Self.answer(of: links, ["new"], input: input)
+                let form = try XCTUnwrap(ItemForm(output: output), input)
+                XCTAssertEqual(form.title, "New link")
+                XCTAssertEqual(form.fields.map(\.label), ["Name", "Link"])
+                XCTAssertEqual(FormDraft(form: form).values["url"] ?? "", input.isEmpty ? "" : "example.com")
+            }
         }
     }
 
@@ -285,6 +294,35 @@ final class LinksSpotTests: SampleSpotsCase {
             XCTAssertEqual(items.first?.subtitle, "~/Downloads")
             XCTAssertEqual(items.first?.iconFile, folder.path + "/Downloads")
             XCTAssertNil(items.first?.hides)
+        }
+    }
+
+    func testTwoQuickDeletesBothLand() async throws {
+        let links = try XCTUnwrap(try scan.spots.first { $0.name == "Links" })
+        try await withPrivateHome { folder in
+            let delete = try await self.action("delete", of: links)
+            let items = try await links.items(timeout: 60).items
+            try """
+            #!/bin/sh
+            case "$*" in
+              *'.id != $id'*)
+                input=$(cat)
+                touch '\(folder.path)/deleting.'$$
+                n=0
+                while [ "$(ls '\(folder.path)' | grep -c '^deleting\\.')" -lt 2 ] && [ $n -lt 50 ]; do sleep 0.02; n=$((n + 1)); done
+                printf '%s' "$input" | /usr/bin/jq "$@"
+                ;;
+              *) exec /usr/bin/jq "$@" ;;
+            esac
+
+            """.writeScript(to: folder.appendingPathComponent("tools/jq"))
+
+            async let first: Void = links.perform(.press(delete.id), input: "input.item=\(items[0].run)\n", timeout: 60)
+            async let second: Void = links.perform(.press(delete.id), input: "input.item=\(items[1].run)\n", timeout: 60)
+            _ = try await (first, second)
+
+            let left = try await links.items(timeout: 60).items
+            XCTAssertEqual(left.map(\.title), [])
         }
     }
 

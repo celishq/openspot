@@ -19,7 +19,7 @@ final class CallLogTests: SpotRunsCase {
         try await wait("the record") { self.log.text(of: "script").contains("exit 3") }
 
         let text = log.text(of: "script")
-        XCTAssertTrue(text.contains("send"))
+        XCTAssertTrue(text.contains(" · send · "), text)
         XCTAssertTrue(text.contains("input.item=home"))
         XCTAssertTrue(text.contains("title=Half"))
         XCTAssertTrue(text.contains("title=Done"))

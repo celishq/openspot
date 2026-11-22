@@ -136,6 +136,23 @@ final class SpotFloatTests: XCTestCase {
         try await wait("the sheet in the panel") { model.openSheetID == "list" }
     }
 
+    func testAPickInAFloatThatAnswersWithAFormOpensTheSpotInThePanelWithTheForm() async throws {
+        try script("list", toml: "", """
+        case "$1" in
+          press) printf 'frame=\\ntype=form\\ntitle=Minutes\\n\\nfield=minutes\\ntitle=Minutes\\n' ;;
+          *) printf 'item=custom\\ntitle=Custom…\\n' ;;
+        esac
+        """)
+        await model.reload()
+        model.press(try key("list"))
+        try await wait("the floating list") { model.sheets["list"]?.list.shown.count == 1 }
+
+        XCTAssertTrue(model.handleFloatKey(ActionKey(name: "return"), in: "list"))
+
+        try await wait("the form in the panel") { model.form?.draft.form.title == "Minutes" && model.openSheetID == "list" }
+        XCTAssertEqual(host.shows, 1)
+    }
+
     func testAFloatOfPartsKeepsItsValuesWhenThePanelClosesAndDropsThemWhenItCloses() async throws {
         try script("note", toml: "", "printf 'frame=\\nclass=gap-part\\n\\nfield=note\\nvalue=hi\\n'")
         await model.reload()
@@ -275,6 +292,25 @@ final class SpotFloatTests: XCTestCase {
         model.run(rename, on: (entry, model.sheets["store"]?.list.shown.first), in: .window)
 
         XCTAssertEqual(host.notes, ["Rename asks with a form or a second press, which a window does not show yet."])
+        XCTAssertEqual(host.shows, 0)
+    }
+
+    func testAPickInAWindowThatAnswersWithAFormSaysItDoesNotShowYetAndOpensNoPanel() async throws {
+        try script("store", toml: "", """
+        case "$1" in
+          press) printf 'frame=\\ntype=form\\ntitle=Minutes\\n\\nfield=minutes\\ntitle=Minutes\\n' ;;
+          *) printf 'item=custom\\ntitle=Custom…\\n' ;;
+        esac
+        """)
+        _ = try model.files.config.change { $0.arrangement.set(isWindow: true, of: "store") }
+        await model.reload()
+        model.press("store")
+        try await wait("the window") { host.windows == ["store"] && model.sheets["store"]?.list.shown.count == 1 }
+        let entry = try XCTUnwrap(model.cards.first { $0.id == "store" })
+
+        model.pick(try XCTUnwrap(model.sheets["store"]?.list.shown.first), of: entry, in: .window)
+
+        try await wait("the note") { host.notes == ["Custom… asks with a form, which a window does not show yet."] }
         XCTAssertEqual(host.shows, 0)
     }
 

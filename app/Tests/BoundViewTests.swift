@@ -53,6 +53,21 @@ final class BoundViewTests: PanelCase {
         try await wait("the pushed view gone") { self.model.openSheetID != "picker" }
     }
 
+    func testARunFromAnOpenSheetIsAStepOfItsFlowAndBackEndsItWithExit4() async throws {
+        model.isShown = true
+        model.panelWillShow()
+        model.press("asker")
+        try await wait("the asker") { self.model.transition.phase == .open && self.model.openSheetID == "asker" }
+
+        try await runPick()
+
+        XCTAssertEqual(model.flow.pages.map(\.spot), ["asker", "picker"])
+        XCTAssertTrue(model.handleKey(escape))
+        try await wait("the end of the run") { self.log("done").count == 1 }
+        XCTAssertEqual(log("done"), ["4"])
+        try await wait("the asker again") { self.model.flow.current?.spot == "asker" }
+    }
+
     func testClosingThePushedViewCancelsTheRunWithExit4() async throws {
         try await runPick()
 

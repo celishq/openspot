@@ -489,6 +489,39 @@ final class SpotsModelTests: XCTestCase {
         try await wait("the minutes") { (try? String(contentsOfFile: given, encoding: .utf8)) == "45\n" }
     }
 
+    func testReturnOnASearchThatFindsNothingCallsAnActionWhoseTextIsOptionalWithTheWordsAndOpensTheFormItAnswers() async throws {
+        let given = folder.appendingPathComponent("given").path
+        try script("list", toml: "[actions.new]\ninputs.url = 'text'\ninputs.title = 'text'\n[on]\n\"sheet.open\" = true", """
+        input=$(cat)
+        case "$1" in
+          new)
+            case $input in
+              *input.title=*) printf '%s\\n' "$input" > '\(given)' ;;
+              *) printf 'frame=\\ntype=form\\ntitle=New link\\n\\nfield=title\\ntitle=Name\\n\\nfield=url\\ntitle=Link\\nvalue=%s\\n' "$(printf '%s\\n' "$input" | sed -n 's/^input.url=//p')" ;;
+            esac
+            ;;
+          *) printf 'button=new\\ntitle=New link\\nscope=spot\\nclose=false\\n\\nitem=a\\ntitle=Apple\\n' ;;
+        esac
+        """)
+        await model.reload()
+        model.isShown = true
+        model.panelWillShow()
+        model.press("list")
+        try await wait("the open list") { model.openSheetID == "list" && model.openItems?.shown.count == 1 }
+
+        model.searchText = "example.com"
+        model.landSearch()
+        try await wait("the row that makes the action") { model.createAction?.title == "New link" }
+        model.runSelectedItem()
+
+        try await wait("the form of the spot") { model.form?.draft.form.title == "New link" }
+        XCTAssertEqual(model.form?.draft.form.fields.map(\.label), ["Name", "Link"])
+        XCTAssertEqual(model.form?.draft.values["url"], "example.com")
+        model.setFormValue("Example", for: "title")
+        model.submitForm()
+        try await wait("the new link") { ((try? String(contentsOfFile: given, encoding: .utf8)) ?? "").contains("input.title=Example") }
+    }
+
     func testAPressOfAnItemThatAnswersWithAFormAsksForItsValuesAndPressesTheItemWithThem() async throws {
         let given = folder.appendingPathComponent("given").path
         try script("list", toml: "[on]\n\"sheet.open\" = true", """
@@ -1881,8 +1914,8 @@ final class SpotsModelTests: XCTestCase {
         XCTAssertTrue(model.open("list"))
 
         try await wait("the open list") { model.openSheetID == "list" }
+        try await wait("the grow of the sheet") { host.motions.contains(.sheet(isOpen: true)) }
         XCTAssertEqual(host.shows, 1)
-        XCTAssertTrue(host.motions.contains(.sheet(isOpen: true)), "\(host.motions)")
     }
 
     func testAKeyOfAScriptThatIsGoneShowsNothing() async throws {
