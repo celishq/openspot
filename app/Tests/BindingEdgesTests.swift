@@ -79,7 +79,7 @@ final class BindingEdgesTests: SpotRunsCase {
         XCTAssertEqual(log("s6-log"), [])
     }
 
-    func testAStayingSpotThatWaitsInARunTakesNoOtherCallAndKeepsItsLastAnswer() async throws {
+    func testAStayingSpotThatWaitsInARunKeepsItsLastAnswerAndAnswersTheNewTextOnceTheWaitEnds() async throws {
         shortLimit()
         try script("picker", toml: "[actions.slow]\noutputs.v = 'text'", log: "picker-log", "[ \"$1\" = slow ] && { \(untilRelease); echo out.v=1; }")
         try script("asker", toml: "stay = true\n[on]\nsearch = '.'\n[actions.go]\n[bindings]\npicker = { spot = 'picker' }", log: "asker-log", """
@@ -109,7 +109,58 @@ final class BindingEdgesTests: SpotRunsCase {
         openGate()
         try await wait("the end of the run") { self.log("done").count == 1 }
         XCTAssertEqual(log("done"), ["0"], log("errors").joined(separator: "\n"))
-        XCTAssertFalse(log("blocks").contains("input.text=y"))
+        try await wait("the answer to the text typed during the wait") { self.log("blocks").contains("input.text=y") && !sheet.isAnswering }
+    }
+
+    func testARunToAStayingSpotOutlastsTheTimeLimitOfAShow() async throws {
+        shortLimit()
+        try script("picker", toml: "stay = true\n[actions.slow]\noutputs.v = 'text'", log: "picker-log", """
+        while IFS= read -r line; do
+          case "$line" in call=*) call=${line#call=} ;; arg=*) arg=${line#arg=} ;; esac
+          [ -n "$line" ] && continue
+          case "$arg" in
+            slow) sleep 1.5; printf 'end=%s\\n\\nout.v=late\\n---\\n' "$call" ;;
+            *) printf 'end=%s\\n\\ntext=s\\ntitle=S\\n---\\n' "$call" ;;
+          esac
+        done
+        """)
+        try script("asker", toml: "\(TestSpot.command)\n[bindings]\npicker = { spot = 'picker' }", log: "asker-log", """
+        '\(client.path)' run picker.slow --out v > '\(path("out"))' 2> '\(path("errors"))'; echo $? >> '\(path("done"))'
+        """)
+        _ = try scanned()
+
+        try XCTUnwrap(runs.sheets["asker"]).pressCard()
+
+        try await wait("the end of the run") { self.log("done").count == 1 }
+        XCTAssertEqual(log("done"), ["0"], log("errors").joined(separator: "\n"))
+        XCTAssertEqual(log("out"), ["late"])
+    }
+
+    func testASearchOfAStayingSpotAndOfAnInlineSpotThatWaitsInARunOutlastsTheTimeLimit() async throws {
+        shortLimit()
+        try script("picker", toml: "[actions.slow]\noutputs.v = 'text'", log: "picker-log", "[ \"$1\" = slow ] && sleep 1.5 && echo out.v=late")
+        try script("stayer", toml: "stay = true\n[on]\nsearch = '.'\n[bindings]\npicker = { spot = 'picker' }", log: "stayer-log", """
+        while IFS= read -r line; do
+          case "$line" in call=*) call=${line#call=} ;; arg=*) arg=${line#arg=} ;; esac
+          [ -n "$line" ] && continue
+          case "$arg" in
+            search) v=$('\(client.path)' run picker.slow --out v 2>> '\(path("errors"))'); printf 'end=%s\\n\\ntext=a\\ntitle=%s\\n---\\n' "$call" "$v" ;;
+            *) printf 'end=%s\\n\\ntext=s\\ntitle=S\\n---\\n' "$call" ;;
+          esac
+        done
+        """)
+        let url = folder.spotFile("inliner", extension: "js")
+        try FileManager.default.createDirectory(at: url.deletingLastPathComponent(), withIntermediateDirectories: true)
+        try "export default {\n  async search(input, env) { const got = await env.picker.slow(); return `text=a\\ntitle=${got.v}\\n` },\n}\n".write(to: url, atomically: true, encoding: .utf8)
+        try "[on]\nsearch = '.'\n[bindings]\npicker = { spot = 'picker' }".write(to: url.deletingLastPathComponent().appendingPathComponent(Manifest.fileName), atomically: true, encoding: .utf8)
+        _ = try scanned()
+        let sheets = try ["stayer", "inliner"].map { try XCTUnwrap(runs.sheets[$0]) }
+        runs.panelOpened()
+
+        sheets.forEach { $0.answer("x") }
+
+        try await wait("the answers after the runs") { sheets.allSatisfy { $0.answers.map(\.title) == ["late"] } }
+        XCTAssertEqual(log("errors"), [])
     }
 
     func testSpotRunCallsOneHandlerWithItsInputsAndItsBindingsLive() async throws {

@@ -31,10 +31,12 @@ extension SpotRuns {
         }
         caller.holdLimit()
         runWaits[spot.id, default: 0] += 1
+        if runWaits[spot.id] == 1 { sheets[spot.id]?.link.holdLimit() }
         defer {
             caller.releaseLimit()
             let left = (runWaits[spot.id] ?? 1) - 1
             runWaits[spot.id] = left > 0 ? left : nil
+            if left <= 0 { sheets[spot.id]?.link.releaseLimit() }
         }
         let inputs: [TextBlock.Field]
         do {
@@ -86,7 +88,7 @@ extension SpotRuns {
     }
 
     func settlePushed(of id: String) {
-        guard pushed.isWaiting(for: id), let sheet = sheets[id], !sheet.isOpen, sheet.calls.allSatisfy(\.isStopped) else { return }
+        guard pushed.isWaiting(for: id), let sheet = sheets[id], !sheet.showsSheet, sheet.calls.allSatisfy(\.isStopped) else { return }
         pushed.end(id, .cancelled)
     }
 
