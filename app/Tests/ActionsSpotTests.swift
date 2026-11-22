@@ -33,15 +33,20 @@ final class ActionsSpotTests: BuiltInCase {
         let icon = try spot("icon")
         let ask = { (card: String) in await actions.hook("hasIcon", card: card, origin: "mine") }
         try FileManager.default.createSymbolicLink(at: core.appendingPathComponent("openspot.spot"), withDestinationURL: repoSpots.appendingPathComponent("openspot.spot"))
+        runs.api = CommandAPI(mac: Mac(), places: .test(TestEnvironment.values), app: app, runs: runs, rates: .offline)
+        runs.take(try SpotsFolder(url: root.appendingPathComponent("none"), core: repoSpots).scan())
+        defer { runs.quit() }
+        let acts = try XCTUnwrap(runs.sheets["openspot/actions"])
+        let weather = [TextBlock.Field(key: "item", value: "weather")]
 
         let before = await ask("weather")
-        try await actions.perform(SpotAction(arguments: ["icon.draw"]), input: "input.item=weather\n", timeout: 60)
+        _ = try await acts.call("icon.draw", inputs: weather)
         try await icon.perform(SpotAction(arguments: ["drawer"]), input: "input.value=0" + String(repeating: ".", count: 80) + "\n", timeout: 60)
         try await icon.perform(SpotAction(arguments: ["save"]), timeout: 60)
         let drawn = await ask("weather")
-        try await actions.perform(SpotAction(arguments: ["icon.reset"]), input: "input.item=weather\n", timeout: 60)
+        _ = try await acts.call("icon.reset", inputs: weather)
         let after = await ask("weather")
-        try await actions.perform(SpotAction(arguments: ["icon.file"]), input: "input.item=weather\n", timeout: 60)
+        _ = try await acts.call("icon.file", inputs: weather)
 
         let opened = await app.opened
         XCTAssertEqual([before, drawn, after], [false, true, false])

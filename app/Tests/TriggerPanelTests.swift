@@ -87,6 +87,47 @@ final class TriggerPanelTests: PanelCase {
         XCTAssertEqual(host.dismissals, 0)
     }
 
+    func testAButtonOfAListThatReturnsNothingClosesThePanelOnceItsCallEnds() async throws {
+        let calls = folder.appendingPathComponent("calls")
+        try script("list", toml: "[on]\n\"sheet.open\" = true", """
+        case "$1" in
+          go) echo go >> '\(calls.path)' ;;
+          *) printf 'button=go\\ntitle=Go\\nscope=spot\\n\\nitem=a\\ntitle=Apple\\n' ;;
+        esac
+        """)
+        await model.reload()
+        model.isShown = true
+        model.panelWillShow()
+        model.press("list")
+        try await wait("the open list") { self.model.openSheetID == "list" && self.model.openItems?.shown.count == 1 }
+        let go = try XCTUnwrap(model.openEntry?.spot.actions.first { $0.id == "go" })
+
+        model.run(go, on: (try XCTUnwrap(model.openEntry), nil))
+
+        try await wait("the close") { self.host.dismissals == 1 }
+        XCTAssertEqual(try String(contentsOf: calls, encoding: .utf8), "go\n")
+    }
+
+    func testAButtonOfAFrameThatReturnsNothingClosesThePanelOnceItsCallEnds() async throws {
+        let calls = folder.appendingPathComponent("calls")
+        try script("frame", toml: "[on]\n\"sheet.open\" = true", """
+        case "$1" in
+          go) echo go >> '\(calls.path)' ;;
+          *) printf 'frame=\\nclass=gap-part\\n\\ntext=words\\ntitle=Hello\\n\\nbutton=go\\ntitle=Go\\n' ;;
+        esac
+        """)
+        await model.reload()
+        model.isShown = true
+        model.panelWillShow()
+        model.pushFirst("frame", moving: true)
+        try await wait("the button") { self.model.openParts?.parts.contains { $0.id == "go" } == true }
+
+        model.pressPart(try XCTUnwrap(model.openParts?.parts.first { $0.id == "go" }))
+
+        try await wait("the close") { self.host.dismissals == 1 }
+        XCTAssertEqual(try String(contentsOf: calls, encoding: .utf8), "go\n")
+    }
+
     private func pressEnded(_ count: Int) async throws {
         let file = folder.appendingPathComponent("calls")
         try await wait("the end of the press") {

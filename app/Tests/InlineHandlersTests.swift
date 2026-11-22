@@ -77,6 +77,39 @@ final class InlineHandlersTests: SpotRunsCase {
         try await wait("the event handler of the listener") { self.log("heard") == ["https://example.com/a 2026-11-23"] }
     }
 
+    func testEnvWritesAnOptionWhereTheUsageOfItsCommandNamesIt() async throws {
+        try inline("setter", toml: "uses = ['spots']\n[actions.go]\noutputs.said = 'text'", """
+        export default {
+          async go(input, env) {
+            await env.setting.set("tone", "loud", { spot: "other" })
+            return { said: await env.setting.get("tone", { spot: "other" }) }
+          },
+        }
+        """)
+
+        let text = try await runs.answer(of: try spot("setter"), SpotAction(arguments: ["go"]), limit: 60)
+
+        XCTAssertEqual(Frame(text: text).outputs, [.init(key: "said", value: "loud")], text)
+    }
+
+    func testACommandThatFailsOutsideTheAppRejectsWithWhatItPrintedOnStderr() async throws {
+        let tools = folder.appendingPathComponent("tools")
+        try "#!/bin/sh\necho 'Openspot is not running.' >&2\nexit 2\n".writeScript(to: tools.appendingPathComponent("openspot"))
+        try inline("toaster", toml: "[actions.go]\noutputs.said = 'text'", """
+        export default {
+          async go(input, env) {
+            try { await env.toast("Hi") } catch (error) { return { said: error.message } }
+          },
+        }
+        """)
+        let bare = SpotRuns(environment: TestEnvironment.values.merging(["PATH": "\(tools.path):/usr/bin:/bin"]) { _, new in new })
+        defer { bare.quit() }
+
+        let text = try await bare.answer(of: try spot("toaster"), SpotAction(arguments: ["go"]), limit: 60)
+
+        XCTAssertEqual(Frame(text: text).outputs, [.init(key: "said", value: "Openspot is not running.")], text)
+    }
+
     func testEnvHoldsEachCommandThatNeedsNoUseAndNoCommandOfAnUndeclaredUse() async throws {
         try inline("summer", toml: "[actions.sum]\noutputs.sum = 'text'\noutputs.kinds = 'text'", """
         export default {

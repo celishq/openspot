@@ -225,6 +225,36 @@ final class SpotVerbTests: XCTestCase {
         XCTAssertTrue(saved("edits")?.hasPrefix("ping|\(spots.spotFile("ping").path)|") == true)
     }
 
+    func testTurnOffInTheMenuOfACardRunsTheHandlerOfTheRealActionsAndTurnsTheSpotOff() async throws {
+        let real = URL(fileURLWithPath: #filePath).deletingLastPathComponent().deletingLastPathComponent().deletingLastPathComponent().appendingPathComponent("spots/openspot.spot/actions.js")
+        try String(contentsOf: real, encoding: .utf8).writeInline(to: core.appendingPathComponent("openspot.spot/actions.js"), toml: actionsToml)
+        try model.files.config.turn("cups", on: true)
+        _ = try await select("cups")
+
+        XCTAssertTrue(model.handleKey(ActionKey(name: "k", isCommand: true)))
+        model.pressMenu(row: try XCTUnwrap(model.menu?.rows.firstIndex { $0.title == "Turn off" }))
+
+        try await wait("the spot turned off") { model.files.config.read().arrangement.disabled.contains("cups") }
+    }
+
+    func testAnInlineHandlerOfTheAppRunsIconThroughABinding() async throws {
+        try FileManager.default.copyItem(at: Bundle(for: Self.self).bundleURL.deletingLastPathComponent().appendingPathComponent("openspot"), to: folder.appendingPathComponent("tools/openspot"))
+        let app = core.appendingPathComponent("openspot.spot")
+        let real = URL(fileURLWithPath: #filePath).deletingLastPathComponent().deletingLastPathComponent().deletingLastPathComponent().appendingPathComponent("spots/openspot.spot/icon.sh")
+        try String(contentsOf: real, encoding: .utf8).writeScript(
+            to: app.appendingPathComponent("icon.sh"), toml: "title = 'Icon'\nuses = ['spots']\n[on]\n\"sheet.open\" = true\n[actions.draw]\ninputs.spot = { type = 'text', required = true }"
+        )
+        let actions = URL(fileURLWithPath: #filePath).deletingLastPathComponent().deletingLastPathComponent().deletingLastPathComponent().appendingPathComponent("spots/openspot.spot/actions.js")
+        try String(contentsOf: actions, encoding: .utf8).writeInline(to: app.appendingPathComponent("actions.js"), toml: actionsToml + "\n[bindings]\nicon = { spot = 'openspot/icon' }")
+        try model.files.config.turn("cups", on: true)
+        let target = try await select("cups")
+        let draw = try XCTUnwrap(model.runs.sheets["openspot/actions"]?.spot.offeredActions.first { $0.action.id == "icon.draw" }?.action)
+
+        model.run(draw, offeredBy: "openspot/actions", on: target)
+
+        try await wait("the sheet of the icon") { model.openSheetID == "openspot/icon" }
+    }
+
     func testACoreSpotHasEditWithNoFileToOpenAndASpotOfTheAppHasNone() async throws {
         try model.files.config.turn("cups", on: true)
         _ = try await select("cups")

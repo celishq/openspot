@@ -15,17 +15,16 @@ export default {
   async delete({ item }, env) {
     await env.spot.delete(item);
   },
-  async off({ item }) {
-    const call = ["setting", "set", "--spot", item, "enabled", "false"];
-    if (openspot.call(call).code !== 0) throw new Error(`openspot ${call.join(" ")} failed.`);
+  async off({ item }, env) {
+    await env.setting.set("enabled", "false", { spot: item });
   },
   async "icon.draw"({ item }, env) {
-    await env.spot.run("openspot/icon", "draw", [`spot=${item}`]);
+    await env.icon.draw({ spot: item });
   },
   async "icon.file"({ item }, env) {
-    await env.spot.run("openspot/icon", "file", [`spot=${item}`]);
+    await env.icon.file({ spot: item });
   },
   async "icon.reset"({ item }, env) {
-    await env.spot.run("openspot/icon", "reset", [`spot=${item}`]);
+    await env.icon.reset({ spot: item });
   },
 };

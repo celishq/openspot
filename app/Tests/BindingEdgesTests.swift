@@ -133,6 +133,23 @@ final class BindingEdgesTests: SpotRunsCase {
         XCTAssertEqual(wrong.errors, "go has no input count. Its inputs are: when.\n")
     }
 
+    func testSpotRunSendsTheSettingsOfTheSpotAsACallFromThePanelDoes() async throws {
+        try script("noter", toml: "[settings]\ntone = { type = 'text', default = 'soft' }\nsize = 'number'\n[actions.go]", log: "noter-log", """
+        grep '^setting\\.' >> '\(path("settings"))' || true
+        """)
+        _ = try scanned()
+        let places = AppPlaces.test(["OPENSPOT_CONFIG": folder.path, "OPENSPOT_SPOTS": folder.path])
+        _ = try places.config.change { $0.set(setting: "size", of: "noter", to: "3") }
+        let api = CommandAPI(mac: Mac(), places: places, app: FakeRunningApp(), runs: runs, rates: .offline)
+        runs.api = api
+
+        let work = try XCTUnwrap(api.work(for: CommandRequest(arguments: ["spot", "run", "noter", "go"], folder: folder.path), input: { "" }))
+        let answer = await work()
+
+        XCTAssertEqual(answer.code, 0, answer.errors)
+        XCTAssertEqual(log("settings"), ["setting.tone=soft", "setting.size=3"])
+    }
+
     func testASwiftSpotRunsABoundSpotThroughPosixSpawn() async throws {
         try picker()
         let source = folder.appendingPathComponent("asker.swift")

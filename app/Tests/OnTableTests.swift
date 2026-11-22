@@ -109,6 +109,18 @@ final class OnTableTests: XCTestCase {
         XCTAssertEqual(scan.refused.map(\.reason), ["Snooze has [on] picker.chosen, but picker declares no event chosen. Name one of its [events]: picked"])
     }
 
+    func testAnEventThatACoreSpotThatIsOffDoesNotDeclareFailsTheLoadOfItsListener() throws {
+        let spots = try temporaryFolder()
+        let core = try temporaryFolder()
+        try "#!/bin/sh\n".writeScript(to: core.appendingPathComponent("picker.spot/picker.sh"), toml: "[events.picked]\nuntil = \"date\"")
+        try "#!/bin/sh\n".writeScript(to: spots.appendingPathComponent("snooze.spot/snooze.sh"), toml: "[bindings]\npicker = { spot = \"picker\" }\n[on]\n\"picker.chosen\" = true")
+
+        let scan = try SpotsFolder(url: spots, core: core).scan()
+
+        XCTAssertEqual(scan.spots.map(\.id), [])
+        XCTAssertEqual(scan.refused.map(\.reason), ["Snooze has [on] picker.chosen, but picker declares no event chosen. Name one of its [events]: picked"])
+    }
+
     func testAnEventIsDeclaredWithTypedValuesAndAWrongTypeFailsTheLoad() throws {
         let spot = try XCTUnwrap(try load("[events.snoozed]\nurl = \"url\"\nuntil = { type = \"date\", required = true }").spot)
 

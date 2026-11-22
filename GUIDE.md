@@ -792,7 +792,7 @@ Spots. The manifest names no place, and a spot can't claim a hotkey or a place.
   moves, resizes and closes it, and Openspot shows in the Dock while it's open. Esc closes it too, and a view that
   fills it should still give a way out, such as a Done button.
 - A spot with `every` or an action with a title starts off the grid, so that a new spot doesn't fill the panel. A spot
-  of your spots folder with a `schedule` acts by itself, so it starts off until you turn it on.
+  of your spots folder with a `schedule` acts by itself, so it starts off until you press **Get** on it in the Store.
 - In the spot's record of `~/.config/openspot/config.toml`, `search = false` keeps it out of the main search and out of
   the list of slash commands, and `commands` renames each word of its `command`, or removes it with `""`. Here `/note`
   becomes `/n`:

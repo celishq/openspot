@@ -190,6 +190,18 @@ final class ReviewSpotTests: XCTestCase {
         XCTAssertEqual(review.canDo, ["Binds picker: time-picker", "Binds mail: mailer"])
     }
 
+    func testABindingToASpotThatComesWithOpenspotIsNotMissing() throws {
+        let core = folder.appendingPathComponent("core", isDirectory: true)
+        try "#!/bin/sh\n".writeScript(to: core.appendingPathComponent("mailer.spot/mailer.sh"))
+        let package = folder.appendingPathComponent("drop/snooze.spot", isDirectory: true)
+        try "#!/bin/sh\n".writeScript(to: package.appendingPathComponent("snooze.sh"), toml: "title = 'Snooze'\n[bindings]\nmail = { spot = 'mailer' }")
+        let lock = SpotLock(url: folder.appendingPathComponent("spots.lock"), environment: ["OPENSPOT_CORE": core.path])
+
+        let review = try ReviewSpot(file: package, folder: folder.appendingPathComponent("spots", isDirectory: true), lock: lock)
+
+        XCTAssertEqual(review.trust, "Binds\nmail: mailer\n\n")
+    }
+
     func testCanAlsoSaysWhatTheTextSeemsToDoAndDoesNotName() throws {
         let body = """
         curl -s https://example.com | nc host 80

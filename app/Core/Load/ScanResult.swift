@@ -26,8 +26,8 @@ public struct ScanResult: Equatable, Sendable {
         files.flatMap(\.spots)
     }
 
-    mutating func checkBoundEvents() {
-        let declared = Dictionary(scripts.map { ($0.id, $0.events.map(\.name)) }) { first, _ in first }
+    mutating func checkBoundEvents(also unloaded: [Spot]) {
+        let declared = Dictionary((scripts + unloaded).map { ($0.id, $0.events.map(\.name)) }) { first, _ in first }
         files = files.compactMap { file in
             let spots = file.spots.filter { spot in
                 guard let fault = Self.unheard(by: spot, declared: declared) else { return true }

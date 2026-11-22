@@ -72,19 +72,15 @@ final class InlineScript: @unchecked Sendable {
       const pairs = (values) => Object.entries(values || {}).flatMap(([key, each]) => listed(each).map((one) => `${key}=${one}`))
       const words = (slots, args) => {
         const argv = []
-        const positional = slots.filter((slot) => !slot.option)
-        positional.forEach((slot, index) => {
-          const value = args[index]
-          if (value === undefined || value === null) return
-          if (slot.kind === "pairs") argv.push(...pairs(value))
-          else argv.push(...listed(value).map(String))
-        })
-        const options = args[positional.length] || {}
-        for (const slot of slots.filter((slot) => slot.option)) {
-          const value = options[slot.key]
-          if (value === undefined || value === null || value === false) continue
+        const options = args[slots.filter((slot) => !slot.option).length] || {}
+        let index = 0
+        for (const slot of slots) {
+          const value = slot.option ? options[slot.key] : args[index++]
+          if (value === undefined || value === null || (slot.option && value === false)) continue
           if (slot.kind === "flag") argv.push(slot.option)
-          else for (const one of listed(value)) argv.push(slot.option, String(one))
+          else if (slot.option) for (const one of listed(value)) argv.push(slot.option, String(one))
+          else if (slot.kind === "pairs") argv.push(...pairs(value))
+          else argv.push(...listed(value).map(String))
         }
         return argv
       }
@@ -498,7 +494,7 @@ final class InlineScript: @unchecked Sendable {
             for try await frame in child.start() { frames.append(frame) }
             return CommandAnswer(output: frames.joined(separator: SheetFrames.mark + "\n"), code: 0)
         } catch SpotError.failed(let code, _), SpotError.failedWithFix(let code, _, _) {
-            return CommandAnswer(output: (frames + (child.failedFrame.map { [$0] } ?? [])).joined(separator: SheetFrames.mark + "\n"), code: code)
+            return CommandAnswer(output: (frames + (child.failedFrame.map { [$0] } ?? [])).joined(separator: SheetFrames.mark + "\n"), errors: child.errors, code: code)
         } catch let error as SpotError {
             return CommandAnswer(errors: error.reason + "\n", code: 1)
         } catch {

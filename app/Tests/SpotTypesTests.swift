@@ -83,6 +83,54 @@ final class SpotTypesTests: SpotRunsCase {
         XCTAssertTrue(failed.contains("'uri'"), failed)
     }
 
+    func testTheTypesOfTheCommandsOfEveryUseCompile() async throws {
+        let uses = SpotUse.allCases.filter { $0 != .account }.map { "\"\($0.rawValue)\"" }.joined(separator: ", ")
+        let toml = "uses = [\(uses)]\n[actions.go]\ninputs.when = 'text'\n"
+        try write(toml, to: folder.appendingPathComponent("every.spot/spot.toml"))
+        let script = folder.appendingPathComponent("every.spot/every.js")
+        try write("""
+        export default /** @satisfies {import("./openspot").Handlers} */ ({
+          async go(input, env) {
+            await env.window.move(["0", "0", "1/2", 1])
+            await env.theme.rename("dark", "night")
+            await env.reminders.done("x", "false")
+          },
+        })
+        """, to: script)
+        try write("source = ['Openspot.swift']\n" + toml, to: folder.appendingPathComponent("swift.spot/spot.toml"))
+        let every = """
+        struct Every: Handlers {
+            func go(_ input: GoInput, _ env: Env) async throws -> Answer<NoOutputs> {
+                _ = try await env.window.move(["0", "0", "1/2", "1"])
+                _ = try await env.theme.rename("dark", "night")
+                _ = try await env.reminders.done("x", "false")
+                return .none
+            }
+        }
+
+        await Openspot.serve(Every())
+
+        """
+        try every.writeScript(to: folder.appendingPathComponent("swift.spot/swift.swift"))
+        let main = folder.appendingPathComponent("build/main.swift")
+        try write(every, to: main)
+
+        let typed = try await types("every", in: folder)
+        let swiftTyped = try await types("swift", in: folder)
+
+        XCTAssertEqual(typed.code, 0, typed.errors)
+        XCTAssertEqual(swiftTyped.code, 0, swiftTyped.errors)
+        if let tsc {
+            let checked = try await check(script, with: tsc)
+            XCTAssertTrue(checked.hasSuffix("exit=0\n"), checked)
+        }
+        let swiftc = URL(fileURLWithPath: "/usr/bin/swiftc")
+        guard FileManager.default.isExecutableFile(atPath: swiftc.path) else { throw XCTSkip("swiftc is not installed on this Mac.") }
+        let sources = [main.path, folder.appendingPathComponent("swift.spot/Openspot.swift").path]
+        let built = try await ScriptProcess.output(url: URL(fileURLWithPath: "/bin/sh"), arguments: ["-c", "\"$0\" -typecheck \"$1\" \"$2\" 2>&1; echo \"exit=$?\"", swiftc.path] + sources, limit: 300, base: TestEnvironment.values)
+        XCTAssertTrue(built.hasSuffix("exit=0\n"), built)
+    }
+
     func testASwiftSpotBuiltAgainstItsTypesAddsATimer() async throws {
         let client = folder.appendingPathComponent("A.app/Contents/Helpers/openspot")
         try FileManager.default.createDirectory(at: client.deletingLastPathComponent(), withIntermediateDirectories: true)

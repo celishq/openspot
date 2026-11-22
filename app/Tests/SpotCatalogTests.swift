@@ -110,6 +110,16 @@ final class SpotCatalogTests: XCTestCase {
         XCTAssertTrue(config.read().arrangement.enabled.contains(id))
     }
 
+    func testYourOwnSpotWithAScheduleStartsOffAndAGetTurnsItOn() async throws {
+        try "#!/bin/sh\n".writeScript(to: spots.appendingPathComponent("daily.spot/daily.sh"), toml: "title = 'Daily'\n[on]\nschedule = ['0 9 * * *']")
+        XCTAssertEqual(list().items.first { $0.id == "daily" }?.step, "get")
+
+        _ = try await list().get("daily", config: config, lock: AppPlaces.test().lock)
+
+        XCTAssertTrue(config.read().arrangement.enabled.contains("daily"))
+        XCTAssertEqual(list().items.first { $0.id == "daily" }?.isAdded, true)
+    }
+
     func testGetOfAnIDThatTheStoreLacksSaysHowToSeeEachOne() async {
         do {
             _ = try await list().get("gone", config: config, lock: AppPlaces.test().lock)

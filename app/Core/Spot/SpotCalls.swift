@@ -123,7 +123,13 @@ struct SpotCalls {
             }
             let text = await input?()
             let usage = caller == nil || spot.reachesAccountKey ? nil : runs?.usage
-            let run = TerminalRun(spot: spot, arguments: handler.arguments, input: text, inputs: handler.inputs, careful: careful == nil ? nil : spot.uses, callers: runs?.callers, environment: places.environment, folder: folder, usage: usage)
+            var chosen: [String: [String: String]] = [:]
+            for setting in places.config.read().settings where setting.spot == spot.id { chosen[spot.id, default: [:]][setting.key] = setting.value }
+            let settings = FieldValues(of: spot, in: chosen, secrets: places.secrets.values(of: spot.id)).settings
+            let run = TerminalRun(
+                spot: spot, arguments: handler.arguments, input: text, inputs: handler.inputs, settings: settings, careful: careful == nil ? nil : spot.uses,
+                callers: runs?.callers, environment: places.environment, folder: folder, usage: usage
+            )
             let begin = Date()
             var first = true
             let end = await run.start { frame in

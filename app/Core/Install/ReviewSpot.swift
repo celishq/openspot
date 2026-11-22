@@ -18,7 +18,7 @@ public struct ReviewSpot: Equatable, Sendable {
     private var source: URL?
     private var lock: SpotLock?
 
-    public init(spot: SpotPackage, folder: URL, canAdd: Bool = true) throws {
+    public init(spot: SpotPackage, folder: URL, core: URL? = nil, canAdd: Bool = true) throws {
         if let clash = spot.clash(in: folder) { throw SpotError.fault(clash) }
         let logs = try spot.roots.map { try spot.releaseLog(in: $0) }
         let scan = try Self.scan(of: spot)
@@ -42,7 +42,7 @@ public struct ReviewSpot: Equatable, Sendable {
         let installed = Set(present.flatMap { (try? SpotUse.set(Manifest(beside: folder.appendingPathComponent($0)).script($0).uses, of: $0)) ?? [] })
         let grown = spot.replaced(in: folder).isEmpty ? [] : uses.filter { !installed.contains($0) }
         let canAlso = Self.canAlso(spot, uses: Set(uses), id: primary.id)
-        let bindings = Self.bindings(in: scan, folder: folder)
+        let bindings = Self.bindings(in: scan, folder: folder, core: core)
         let readme = spot.readme
         let rows = spot.sampleText.map { Frame(text: $0, kinds: primary.kinds).items.map(\.title) } ?? []
         canDo = canAlso.map { "Can also: \($0)" } + runs.map { "Runs by itself: \($0)" } + bindings.map { "Binds \($0.binding.line)" }
@@ -72,7 +72,7 @@ public struct ReviewSpot: Equatable, Sendable {
     }
 
     public init(file: URL, folder: URL, lock: SpotLock) throws {
-        try self.init(spot: SpotPackage(contentsOf: file), folder: folder)
+        try self.init(spot: SpotPackage(contentsOf: file), folder: folder, core: SpotsFolder.core(environment: lock.environment))
         source = file
         self.lock = lock
     }
@@ -148,12 +148,12 @@ public struct ReviewSpot: Equatable, Sendable {
         }
     }
 
-    private static func bindings(in scan: ScanResult, folder: URL) -> [(binding: Manifest.Binding, shown: String)] {
+    private static func bindings(in scan: ScanResult, folder: URL, core: URL?) -> [(binding: Manifest.Binding, shown: String)] {
         let own = Set(scan.scripts.map(\.id))
         var seen: [Manifest.Binding] = []
         for binding in scan.scripts.flatMap(\.bindings) where !seen.contains(binding) { seen.append(binding) }
         return seen.map { binding in
-            let isThere = own.contains(binding.spot) || SpotID(binding.spot).file(in: folder) != nil
+            let isThere = own.contains(binding.spot) || ([folder] + (core.map { [$0] } ?? [])).contains { SpotID(binding.spot).file(in: $0) != nil }
             return (binding, isThere ? binding.line : "\(binding.line), which is not installed")
         }
     }

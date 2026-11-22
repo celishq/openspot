@@ -54,7 +54,7 @@ public struct SpotCatalog: Sendable {
     }
 
     public func items(publications reads: Bool) -> [Item] {
-        let own = (try? SpotsFolder(url: folder.url).scan()) ?? ScanResult(files: [], refused: [])
+        let own = (try? folder.scanOwn()) ?? ScanResult(files: [], refused: [])
         let ownIDs = Set(own.files.map(\.id))
         let publications = reads ? Self.publications(of: own, in: published) : [:]
         let enabled = arrangement.enabled.union(folder.enabled)
@@ -63,7 +63,8 @@ public struct SpotCatalog: Sendable {
             item(spot, id: SpotsFolder.coreID(of: spot), isAdded: enabled.contains(SpotsFolder.coreID(of: spot)), isCore: true)
         }
         let mine = own.files.compactMap { file in
-            file.spots.first.map { item($0, id: file.id, isAdded: !disabled.contains(file.id), publication: publications[$0.id]) }
+            let startsOff = file.spots.contains { $0.triggers?.schedule.isEmpty == false }
+            return file.spots.first.map { item($0, id: file.id, isAdded: !disabled.contains(file.id) && (!startsOff || enabled.contains(file.id)), publication: publications[$0.id]) }
         }
         let stored = stores.flatMap { store in
             ((try? SpotsFolder(url: store.url).scan())?.files ?? []).filter { !ownIDs.contains($0.id) }.compactMap { file in
