@@ -235,8 +235,8 @@ final class ViewTreeTests: XCTestCase {
     func testTheClassesOfTheItemsLayOutEachItem() {
         let text = "frame=\nclass=gap-part\n\nitems=list\nclass=grid grid-cols-4 gap-part\n\ntext=a\nparent=list\ntitle=A\nclass=bg-tile\n"
 
-        XCTAssertEqual(Frame(text: text).drawing, RepeatDrawing(columns: 4))
-        XCTAssertEqual(Frame(text: "frame=\n\nitems=list\nclass=gap-part\n").drawing, .list)
+        XCTAssertEqual(Frame(text: text).columns, 4)
+        XCTAssertEqual(Frame(text: "frame=\n\nitems=list\nclass=gap-part\n").columns, 1)
     }
 
     func testATextWithTheSectionFontInTheItemsTitlesTheItemsAfterIt() {
