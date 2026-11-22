@@ -2,13 +2,13 @@
 here=$(dirname "$0")
 . "$OPENSPOT_SH"
 data=$OPENSPOT_DATA
-event=$(value event)
+event=$1
 
 # A row of a device opens the Bluetooth settings, and a row of a process or the swap opens Activity Monitor.
 case $1 in
-  show) ;;
-  open)
-    case $2 in
+  show | system.load | power.change | device.connect) ;;
+  press)
+    case $(value item) in
       device-*) open "x-apple.systempreferences:com.apple.BluetoothSettings" ;;
       *) open -a "Activity Monitor" ;;
     esac
@@ -16,7 +16,7 @@ case $1 in
     ;;
   *) exit 0 ;;
 esac
-load=$(value event.value)
+load=$(value value)
 
 # Prints the number that the script of another spot prints, named $1, without its root, its classes and its type.
 borrowed() {
@@ -56,11 +56,11 @@ battery() {
 }
 
 # Prints the device with the lowest battery, and keeps the level of each device for its rows. A device that connects
-# reads them again, and so does a panel open after 5 minutes, since the Bluetooth report takes a second.
+# reads them again, and so does a show after 5 minutes, since the Bluetooth report takes a second.
 devices() {
   again=
   if [ "$event" = device.connect ] || [ ! -f "$data/devices.number" ]; then again=1
-  elif [ "$event" = panel.open ] && [ $(($(/bin/date +%s) - $(/usr/bin/stat -f %m "$data/devices.number"))) -ge 300 ]; then again=1
+  elif [ "$event" = show ] && [ $(($(/bin/date +%s) - $(/usr/bin/stat -f %m "$data/devices.number"))) -ge 300 ]; then again=1
   fi
   if [ -n "$again" ]; then
     "$here/../devices.spot/devices.sh" levels | openspot_keep "$data/devices.levels"

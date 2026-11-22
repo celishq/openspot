@@ -35,7 +35,7 @@ esac
 # slowly and the Bluetooth report takes a second: until then it shows the frame it kept, whose first line is its time.
 kept="$OPENSPOT_DATA/frame"
 now=$(/bin/date +%s)
-if [ "$(value event)" != device.connect ] && [ -f "$kept" ]; then
+if [ "$1" != device.connect ] && [ -f "$kept" ]; then
   { IFS= read -r made && [ $((now - made)) -lt 300 ] && /bin/cat; } < "$kept" && exit 0
 fi
 frame=$(levels | draw)

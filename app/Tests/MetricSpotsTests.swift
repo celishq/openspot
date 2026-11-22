@@ -115,7 +115,7 @@ final class MetricSpotsTests: SpotRunsCase {
         let script = folder.appendingPathComponent("devices.spot/devices.sh")
         var kept = ""
 
-        for try await frame in ScriptProcess(url: script, arguments: ["show"], mode: .once(input: "event=spot.want\n"), limit: 60, dataName: "devices", base: runs.environment).start() { kept += frame }
+        for try await frame in ScriptProcess(url: script, arguments: ["show"], mode: .once(input: ""), limit: 60, dataName: "devices", base: runs.environment).start() { kept += frame }
         XCTAssertEqual(log("tools.log"), ["system_profiler"])
         XCTAssertTrue(kept.contains("display=–"), kept)
 
@@ -129,9 +129,9 @@ final class MetricSpotsTests: SpotRunsCase {
         let script = folder.appendingPathComponent("system.spot/system.sh")
         var frames: [String] = []
 
-        for event in ["sheet.open", "system.load"] {
+        for (handler, input) in [("show", ""), ("system.load", "input.value=cpu=12 memory=40\n")] {
             var frame = ""
-            for try await text in ScriptProcess(url: script, arguments: ["show"], mode: .once(input: "event=\(event)\n"), limit: 60, dataName: "system", base: runs.environment).start() { frame += text }
+            for try await text in ScriptProcess(url: script, arguments: [handler], mode: .once(input: input), limit: 60, dataName: "system", base: runs.environment).start() { frame += text }
             frames.append(frame)
         }
 
@@ -148,17 +148,17 @@ final class MetricSpotsTests: SpotRunsCase {
         try copy("system")
         try "#!/bin/sh\nprintf '%s\\n' \"$*\" >> '\(path("open.log"))'\n".writeScript(to: folder.appendingPathComponent("tools/open"))
         let script = folder.appendingPathComponent("system.spot/system.sh")
-        func run(_ arguments: [String]) async throws -> String {
+        func run(_ handler: String, input: String = "") async throws -> String {
             var text = ""
-            for try await frame in ScriptProcess(url: script, arguments: arguments, mode: .once(input: "event=sheet.open\n"), limit: 60, dataName: "system", base: runs.environment).start() { text += frame }
+            for try await frame in ScriptProcess(url: script, arguments: [handler], mode: .once(input: input), limit: 60, dataName: "system", base: runs.environment).start() { text += frame }
             return text
         }
 
-        let frame = try await run(["show"])
+        let frame = try await run("show")
         let rows = Frame(text: frame).items
         let process = try XCTUnwrap(rows.first { $0.run == "cpu-1" })
-        _ = try await run(["open", process.run])
-        _ = try await run(["open", "device-1"])
+        _ = try await run("press", input: "input.item=\(process.run)\n")
+        _ = try await run("press", input: "input.item=device-1\n")
 
         XCTAssertNotNil(process.number, frame)
         XCTAssertEqual(process.openTitle, "Activity Monitor")
