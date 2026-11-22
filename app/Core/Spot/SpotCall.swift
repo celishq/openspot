@@ -4,6 +4,7 @@ public enum SpotCall: NounCall {
     case new(name: String, starter: SpotStarter)
     case run(id: String, arguments: [String])
     case log(String)
+    case actions(String?)
     case stats(days: Int, spot: String?, format: Stats.Form, byVersion: Bool = false)
     case show(String)
     case list(core: Bool, form: PrintForm)
@@ -29,6 +30,9 @@ public enum SpotCall: NounCall {
         },
         CommandVerb("run", "<id> [call] [value]...", "Makes one call of a spot as the app does, and prints all that it prints.", rule: CallRule(use: .spots, used: "ran a spot", flags: .startsScripts)) { words in
             words.rest.first.map { Self.run(id: $0, arguments: Array(words.rest.dropFirst())) }
+        },
+        CommandVerb("actions", "[id]", "Prints each action of a spot, or of every spot, and each command of its uses, with their inputs and outputs as JSON Schema.") { words in
+            words.fit.flatMap { $0.rest.count <= 1 ? Self.actions($0.rest.first) : nil }
         },
         CommandVerb("log", "<id>", "Prints the last calls that the app made to a spot.", rule: CallRule(use: .spots, used: "read the calls of a spot")) { $0.one.map(Self.log) },
         CommandVerb(
@@ -96,6 +100,7 @@ public enum SpotCall: NounCall {
         case .new(let name, let starter): spots.new(name, from: starter)
         case .run(let id, let arguments): spots.run(id, arguments, input: context.request.isPiped ? context.input : nil, careful: context.careful, output: context.output)
         case .log(let id): spots.log(id)
+        case .actions(let id): spots.actions(id)
         case .stats(let days, let spot, let format, let byVersion): spots.stats(days: days, spot: spot, format: format, byVersion: byVersion)
         case .show(let id): spots.show(id)
         case .list(let core, let form): spots.list(core: core, form: form)

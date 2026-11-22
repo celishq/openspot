@@ -1,0 +1,350 @@
+{
+  "$defs" : {
+    "action" : {
+      "additionalProperties" : false,
+      "properties" : {
+        "confirm" : {
+          "type" : "string"
+        },
+        "icon" : {
+          "type" : "string"
+        },
+        "inputs" : {
+          "additionalProperties" : {
+            "$ref" : "#/$defs/parameter"
+          },
+          "type" : "object"
+        },
+        "outputs" : {
+          "additionalProperties" : {
+            "$ref" : "#/$defs/parameter"
+          },
+          "type" : "object"
+        },
+        "title" : {
+          "type" : "string"
+        }
+      },
+      "type" : "object"
+    },
+    "command" : {
+      "additionalProperties" : false,
+      "properties" : {
+        "close" : {
+          "$ref" : "#/$defs/texts"
+        },
+        "confirm" : {
+          "$ref" : "#/$defs/texts"
+        },
+        "form" : {
+          "$ref" : "#/$defs/texts"
+        },
+        "hotkey" : {
+          "$ref" : "#/$defs/texts"
+        },
+        "icon" : {
+          "$ref" : "#/$defs/texts"
+        },
+        "offers" : {
+          "$ref" : "#/$defs/texts"
+        },
+        "placeholder" : {
+          "$ref" : "#/$defs/texts"
+        },
+        "scope" : {
+          "$ref" : "#/$defs/texts"
+        },
+        "shortcut" : {
+          "$ref" : "#/$defs/texts"
+        },
+        "title" : {
+          "$ref" : "#/$defs/texts"
+        },
+        "when" : {
+          "$ref" : "#/$defs/texts"
+        }
+      },
+      "type" : "object"
+    },
+    "parameter" : {
+      "anyOf" : [
+        {
+          "$ref" : "#/$defs/type"
+        },
+        {
+          "additionalProperties" : false,
+          "properties" : {
+            "default" : {
+              "type" : [
+                "string",
+                "number",
+                "boolean"
+              ]
+            },
+            "description" : {
+              "type" : "string"
+            },
+            "options" : {
+              "items" : {
+                "type" : "string"
+              },
+              "type" : "array"
+            },
+            "required" : {
+              "type" : "boolean"
+            },
+            "type" : {
+              "$ref" : "#/$defs/type"
+            }
+          },
+          "required" : [
+            "type"
+          ],
+          "type" : "object"
+        }
+      ]
+    },
+    "script" : {
+      "additionalProperties" : false,
+      "properties" : {
+        "actions" : {
+          "additionalProperties" : {
+            "$ref" : "#/$defs/action"
+          },
+          "type" : "object"
+        },
+        "answers" : {
+          "$ref" : "#/$defs/texts"
+        },
+        "commands" : {
+          "additionalProperties" : {
+            "$ref" : "#/$defs/command"
+          },
+          "type" : "object"
+        },
+        "detail" : {
+          "$ref" : "#/$defs/texts"
+        },
+        "drop" : {
+          "$ref" : "#/$defs/texts"
+        },
+        "edits" : {
+          "$ref" : "#/$defs/texts"
+        },
+        "emits" : {
+          "$ref" : "#/$defs/texts"
+        },
+        "icon" : {
+          "$ref" : "#/$defs/texts"
+        },
+        "keywords" : {
+          "$ref" : "#/$defs/texts"
+        },
+        "mode" : {
+          "$ref" : "#/$defs/texts"
+        },
+        "offers" : {
+          "$ref" : "#/$defs/texts"
+        },
+        "on" : {
+          "$ref" : "#/$defs/texts"
+        },
+        "pages" : {
+          "$ref" : "#/$defs/texts"
+        },
+        "placeholder" : {
+          "$ref" : "#/$defs/texts"
+        },
+        "settings" : {
+          "additionalProperties" : {
+            "anyOf" : [
+              {
+                "$ref" : "#/$defs/type"
+              },
+              {
+                "$ref" : "#/$defs/setting"
+              }
+            ]
+          },
+          "type" : "object"
+        },
+        "source" : {
+          "$ref" : "#/$defs/texts"
+        },
+        "starts" : {
+          "$ref" : "#/$defs/texts"
+        },
+        "stay" : {
+          "type" : "boolean"
+        },
+        "title" : {
+          "$ref" : "#/$defs/texts"
+        },
+        "uses" : {
+          "$ref" : "#/$defs/texts"
+        },
+        "views" : {
+          "$ref" : "#/$defs/texts"
+        }
+      },
+      "type" : "object"
+    },
+    "setting" : {
+      "additionalProperties" : false,
+      "properties" : {
+        "default" : {
+          "type" : [
+            "string",
+            "number",
+            "boolean"
+          ]
+        },
+        "description" : {
+          "type" : "string"
+        },
+        "icon" : {
+          "type" : "string"
+        },
+        "options" : {
+          "items" : {
+            "type" : "string"
+          },
+          "type" : "array"
+        },
+        "title" : {
+          "type" : "string"
+        },
+        "type" : {
+          "$ref" : "#/$defs/type"
+        }
+      },
+      "type" : "object"
+    },
+    "texts" : {
+      "anyOf" : [
+        {
+          "type" : "string"
+        },
+        {
+          "items" : {
+            "type" : "string"
+          },
+          "type" : "array"
+        }
+      ]
+    },
+    "type" : {
+      "enum" : [
+        "text",
+        "[text]",
+        "number",
+        "[number]",
+        "bool",
+        "[bool]",
+        "date",
+        "[date]",
+        "duration",
+        "[duration]",
+        "url",
+        "[url]",
+        "file",
+        "[file]",
+        "secret",
+        "[secret]",
+        "choice",
+        "[choice]"
+      ]
+    }
+  },
+  "$schema" : "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties" : false,
+  "properties" : {
+    "actions" : {
+      "additionalProperties" : {
+        "$ref" : "#/$defs/action"
+      },
+      "type" : "object"
+    },
+    "answers" : {
+      "$ref" : "#/$defs/texts"
+    },
+    "commands" : {
+      "additionalProperties" : {
+        "$ref" : "#/$defs/command"
+      },
+      "type" : "object"
+    },
+    "detail" : {
+      "$ref" : "#/$defs/texts"
+    },
+    "drop" : {
+      "$ref" : "#/$defs/texts"
+    },
+    "edits" : {
+      "$ref" : "#/$defs/texts"
+    },
+    "emits" : {
+      "$ref" : "#/$defs/texts"
+    },
+    "icon" : {
+      "$ref" : "#/$defs/texts"
+    },
+    "keywords" : {
+      "$ref" : "#/$defs/texts"
+    },
+    "mode" : {
+      "$ref" : "#/$defs/texts"
+    },
+    "offers" : {
+      "$ref" : "#/$defs/texts"
+    },
+    "on" : {
+      "$ref" : "#/$defs/texts"
+    },
+    "pages" : {
+      "$ref" : "#/$defs/texts"
+    },
+    "placeholder" : {
+      "$ref" : "#/$defs/texts"
+    },
+    "scripts" : {
+      "additionalProperties" : {
+        "$ref" : "#/$defs/script"
+      },
+      "type" : "object"
+    },
+    "settings" : {
+      "additionalProperties" : {
+        "anyOf" : [
+          {
+            "$ref" : "#/$defs/type"
+          },
+          {
+            "$ref" : "#/$defs/setting"
+          }
+        ]
+      },
+      "type" : "object"
+    },
+    "source" : {
+      "$ref" : "#/$defs/texts"
+    },
+    "starts" : {
+      "$ref" : "#/$defs/texts"
+    },
+    "stay" : {
+      "type" : "boolean"
+    },
+    "title" : {
+      "$ref" : "#/$defs/texts"
+    },
+    "uses" : {
+      "$ref" : "#/$defs/texts"
+    },
+    "views" : {
+      "$ref" : "#/$defs/texts"
+    }
+  },
+  "title" : "spot.toml",
+  "type" : "object"
+}

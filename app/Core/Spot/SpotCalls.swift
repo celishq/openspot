@@ -170,6 +170,16 @@ struct SpotCalls {
         }
     }
 
+    func actions(_ id: String?) -> CommandAPI.Work {
+        CommandAnswer.work { [places] in
+            let spots = try places.readSpots().scan().scripts.filter { id == nil || $0.id == id }
+            if let id, spots.isEmpty {
+                throw SpotError.failed(1, "Openspot has no spot \(id). Run `openspot check spots` to see each file that does not load.")
+            }
+            return ManifestSchema.json(spots.map(ManifestSchema.actions(of:)))
+        }
+    }
+
     func log(_ id: String) -> CommandAPI.Work {
         CommandAnswer.work { [places] in
             let text = places.log.text(of: id)
