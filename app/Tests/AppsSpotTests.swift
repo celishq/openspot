@@ -47,7 +47,7 @@ final class AppsSpotTests: SampleSpotsCase {
             XCTAssertTrue(zed.isOn)
             XCTAssertNil(zed.hides)
             XCTAssertEqual(notes.hides, ["quit", "uninstall"])
-            XCTAssertEqual(apps.taking(lines).actions(for: zed).map(\.id), ["reveal", "quit", "uninstall"])
+            XCTAssertEqual(apps.taking(lines).frameActions(for: zed).map(\.id), ["reveal", "quit", "uninstall"])
         }
     }
 

@@ -46,7 +46,7 @@ public struct ActionMenu: Equatable, Sendable {
         if showsOpen, let title = item?.openTitle ?? keyTitle ?? spot.openTitle(hasItem: item != nil) {
             rows.append(Row(title: title, keyLabel: "⏎", action: nil))
         }
-        rows += spot.actions(for: item).map { Row(title: $0.title, keyLabel: $0.key?.label ?? "", action: $0) }
+        rows += spot.frameActions(for: item).map { Row(title: $0.title, keyLabel: $0.key?.label ?? "", action: $0) }
         rows += extras.map { Row(title: $0.title, keyLabel: $0.key?.label ?? "", action: $0, isQuiet: true) }
         let sorted = offered.enumerated().sorted {
             ($0.element.group == nil ? 0 : 1, $0.element.group ?? "", $0.offset) < ($1.element.group == nil ? 0 : 1, $1.element.group ?? "", $1.offset)

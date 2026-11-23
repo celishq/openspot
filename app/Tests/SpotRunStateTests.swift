@@ -23,8 +23,8 @@ final class SpotRunStateTests: XCTestCase {
         runs.quit()
     }
 
-    private func sheet(kind: SpotKind = .list, triggers: Manifest.Triggers = .sheet, mode: SpotMode = .once, offers: [Manifest.Action] = []) -> (SpotRun, FakeMode) {
-        let sheet = runs.sheet(for: Spot(id: "script", name: "Script", url: URL(fileURLWithPath: "/script.spot/script.sh"), kind: kind, triggers: triggers, mode: mode, offers: offers))
+    private func sheet(kind: SpotKind = .list, triggers: Manifest.Triggers = .sheet, mode: SpotMode = .once, commands: [Manifest.Action] = []) -> (SpotRun, FakeMode) {
+        let sheet = runs.sheet(for: Spot(id: "script", name: "Script", url: URL(fileURLWithPath: "/script.spot/script.sh"), kind: kind, triggers: triggers, mode: mode, commands: commands))
         return (sheet, links["script"]!)
     }
 
@@ -339,7 +339,7 @@ final class SpotRunStateTests: XCTestCase {
     }
 
     func testQuickPressesOfAKeyWaitUpToTheirLimit() async throws {
-        let (sheet, link) = sheet(kind: .launch, triggers: Manifest.Triggers(), offers: Manifest(text: TestSpot.command, folder: "").actions.filter { $0.title != nil })
+        let (sheet, link) = sheet(kind: .launch, triggers: Manifest.Triggers(), commands: Manifest(text: TestSpot.command, folder: "").actions.filter { $0.title != nil })
 
         for _ in 0..<10 { sheet.pressKey("go") }
         var ended = 0
@@ -352,7 +352,7 @@ final class SpotRunStateTests: XCTestCase {
     }
 
     func testAStayingSpotHoldsNoMoreKeyPressesThanTheLimit() async throws {
-        let (sheet, link) = sheet(kind: .launch, triggers: Manifest.Triggers(), mode: .stay, offers: Manifest(text: TestSpot.command, folder: "").actions.filter { $0.title != nil })
+        let (sheet, link) = sheet(kind: .launch, triggers: Manifest.Triggers(), mode: .stay, commands: Manifest(text: TestSpot.command, folder: "").actions.filter { $0.title != nil })
         var toasts: [String] = []
         sheet.onReport = { if case .toast(let text) = $0 { toasts.append(text) } }
 

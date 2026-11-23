@@ -299,24 +299,17 @@ extension SpotsModel {
 
     public var createAction: CommandAction? {
         guard let list = openItems, !list.query.isEmpty, list.shown.isEmpty, list.search == .local, let spot = openEntry?.spot else { return nil }
-        return spot.actions.first { $0.scope == .spot && Self.typed($0, of: spot)?.textInput != nil }
-            ?? spot.offers.map(CommandAction.command).first { Self.typed($0, of: spot)?.textInput != nil }
+        return spot.frameActions.first { $0.scope == .spot && (try? spot.action($0.callName))?.textInput != nil }
+            ?? spot.commands.map(CommandAction.command).first { (try? spot.action($0.callName))?.textInput != nil }
     }
 
     public func createFromSearch() {
         openSheet?.landRows()
         guard let action = createAction, let entry = openEntry else { return }
         let query = openItems?.query ?? ""
-        guard let typed = Self.typed(action, of: entry.spot), let input = typed.textInput else { return }
+        guard let typed = try? entry.spot.action(action.callName), let input = typed.textInput else { return }
         guard typed.lacksInput else { return call(action, of: entry, query) }
-        if let form = ItemForm(output: Frame(text: typed.form(with: [input.name: query], title: action.title))) {
-            show(.form(form), of: action, on: (entry, nil), prefill: "")
-        }
-    }
-
-    static func typed(_ action: CommandAction, of spot: Spot) -> Manifest.Action? {
-        let id = CommandAction.command(of: action) ?? action.id
-        return spot.typedActions.first { $0.id == id }
+        show(.form(typed.itemForm(values: [input.name: query], title: action.title)), of: action, on: (entry, nil), prefill: "")
     }
 
     public func runItem(_ item: SpotItem) {

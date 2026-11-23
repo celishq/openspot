@@ -12,9 +12,7 @@ public struct SpotTimer: Codable, Equatable, Sendable {
 
         init(_ words: [String], of spot: Spot) throws {
             guard let name = words.first else { throw SpotError.fault("`openspot timer add` needs the action to call after the time, such as `wake`.") }
-            guard let action = spot.typedActions.first(where: { $0.id == name }) else {
-                throw SpotError.fault("\(spot.name) has no action \(name). Name one of its [actions]: \(spot.typedActions.map(\.id).joined(separator: ", ")).")
-            }
+            let action = try spot.action(name)
             let given = try Manifest.InputCheck.fields(of: Array(words.dropFirst()), as: .input)
             _ = try action.check.checked(given)
             self.action = name

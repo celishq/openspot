@@ -29,7 +29,7 @@ final class ActionFormTests: PanelCase {
         model.isShown = true
         model.panelWillShow()
         let entry = try XCTUnwrap(model.entry("snooze"))
-        let offer = try XCTUnwrap(entry.spot.offers.first { $0.id == "snooze" })
+        let offer = try XCTUnwrap(entry.spot.commands.first { $0.id == "snooze" })
 
         model.run(CommandAction.command(offer), on: (entry, nil))
 

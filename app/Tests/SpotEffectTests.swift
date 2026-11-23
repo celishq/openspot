@@ -52,12 +52,12 @@ final class SpotEffectTests: PanelCase {
         model.isShown = true
         model.panelWillShow()
         model.press("flow")
-        try await wait("the flow") { self.model.transition.phase == .open && self.titles.first == "Page first" && self.model.sheets["flow"]?.spot.actions.count == 8 }
+        try await wait("the flow") { self.model.transition.phase == .open && self.titles.first == "Page first" && self.model.sheets["flow"]?.spot.frameActions.count == 8 }
     }
 
     private func press(_ id: String, in spot: String = "flow") throws {
         let sheet = try XCTUnwrap(model.sheets[spot])
-        sheet.run(try XCTUnwrap(sheet.spot.actions.first { $0.id == id }), item: nil)
+        sheet.run(try XCTUnwrap(sheet.spot.frameActions.first { $0.id == id }), item: nil)
     }
 
     private func pressed(_ id: String) async throws -> String? {

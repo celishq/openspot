@@ -22,7 +22,7 @@ public struct Playground: Equatable, Sendable {
             triggers: manifest.triggers,
             mode: manifest.stay == true ? .stay : .once
         )
-        spot.typedActions = manifest.actions
+        spot.actions = manifest.actions
         return spot
     }
 

@@ -92,7 +92,7 @@ extension SpotsModel {
 
     public func run(_ action: CommandAction, on target: Target, in place: SheetPlace = .panel) {
         if place.isDetached {
-            let asks = Self.typed(action, of: target.entry.spot)?.lacksInput == true || action.confirm != nil
+            let asks = (try? target.entry.spot.action(action.callName))?.lacksInput == true || action.confirm != nil
             if asks, place == .window {
                 host.notify("\(action.title) asks with a form or a second press, which a window does not show yet.")
             } else if asks {
@@ -107,15 +107,11 @@ extension SpotsModel {
             }
         } else if action == .open || action == .history {
             presentSheet(of: target.entry.id)
-        } else if let command = CommandAction.command(of: action), let typed = target.entry.spot.typedActions.first(where: { $0.id == command }), typed.lacksInput,
-                  let form = ItemForm(output: Frame(text: typed.form)) {
-            show(.form(form), of: action, on: target, prefill: "")
-        } else if let command = CommandAction.command(of: action) {
+        } else if let typed = try? target.entry.spot.action(action.callName), typed.lacksInput {
+            show(.form(typed.itemForm(title: action.title)), of: action, on: target, prefill: "")
+        } else if case .command(let command) = action.kind {
             if isShown { host.dismiss() }
             sheets[target.entry.id]?.pressKey(command)
-        } else if let typed = Self.typed(action, of: target.entry.spot), typed.lacksInput,
-                  let form = ItemForm(output: Frame(text: typed.form(with: [:], title: action.title))) {
-            show(.form(form), of: action, on: target, prefill: "")
         } else if action.after == .stay {
             perform(action, on: target)
         } else if target.entry.spot.takesHandlers {

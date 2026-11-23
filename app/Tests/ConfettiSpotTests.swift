@@ -42,7 +42,7 @@ final class ConfettiSpotTests: SampleSpotsCase {
 
         XCTAssertEqual(spot.mode, .stay)
         XCTAssertFalse(spot.triggers.shows)
-        XCTAssertEqual(spot.offers.map(\.id), ["play"])
+        XCTAssertEqual(spot.commands.map(\.id), ["play"])
         XCTAssertEqual(spot.settings.map(\.id), ["look"])
         XCTAssertEqual(spot.sources, ["confetti"])
         XCTAssertEqual(spot.soleCommand, "play")

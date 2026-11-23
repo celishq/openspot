@@ -8,7 +8,7 @@ extension SpotsModel {
     func launch(_ shown: Entry, with text: String) {
         guard let entry = entry(shown.spot.id) else { return }
         let button = commands.button(of: shown)
-        if let button, CommandAction.word(of: button) != nil { return call(button, of: entry, text) }
+        if let button, case .word = button.kind { return call(button, of: entry, text) }
         if text.isEmpty {
             if let button { return run(button, on: (entry, nil)) }
             return run(seen: entry)

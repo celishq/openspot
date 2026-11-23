@@ -42,7 +42,7 @@ public struct ScanResult: Equatable, Sendable {
         keys.filter { key in
             switch key.act {
             case .open, .float: scripts.contains { $0.id == key.spot }
-            case .command(let command): scripts.contains { $0.id == key.spot && $0.offers.contains { $0.id == command } }
+            case .command(let command): scripts.contains { $0.id == key.spot && $0.commands.contains { $0.id == command } }
             }
         }
     }

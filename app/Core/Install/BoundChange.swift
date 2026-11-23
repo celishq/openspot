@@ -10,9 +10,9 @@ enum BoundChange {
                 other.bindings.first { $0.spot == spot.id && other.id != spot.id }.map { (other.name, $0.name) }
             }
             guard !callers.isEmpty else { continue }
-            var changes = old.typedActions.filter { action in !spot.typedActions.contains { $0.id == action.id } }.map { "It removes the action \($0.id)." }
-            for action in spot.typedActions {
-                guard let before = old.typedActions.first(where: { $0.id == action.id }) else { continue }
+            var changes = old.actions.filter { action in !spot.actions.contains { $0.id == action.id } }.map { "It removes the action \($0.id)." }
+            for action in spot.actions {
+                guard let before = try? old.action(action.id) else { continue }
                 for input in action.inputs where input.isRequired && input.defaultValue == nil {
                     let was = before.inputs.first { $0.name == input.name }
                     if was?.isRequired != true || was?.defaultValue != nil { changes.append("It adds the required input \(input.name) to \(action.id).") }

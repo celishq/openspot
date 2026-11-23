@@ -238,8 +238,8 @@ final class SpotDropTests: XCTestCase {
         esac
         """)
         sheet.open {}
-        try await wait("the action") { sheet.spot.actions.count == 1 && sheet.calls.isEmpty }
-        sheet.run(try XCTUnwrap(sheet.spot.actions.first), item: nil)
+        try await wait("the action") { sheet.spot.frameActions.count == 1 && sheet.calls.isEmpty }
+        sheet.run(try XCTUnwrap(sheet.spot.frameActions.first), item: nil)
         try await wait("the call") { self.log() == ["show", "work"] }
         return sheet
     }
@@ -296,8 +296,8 @@ final class SpotDropTests: XCTestCase {
         var failures: [String] = []
         sheet.onReport = { if case .failure(let text) = $0 { failures.append(text) } }
         sheet.open {}
-        try await wait("the action") { sheet.spot.actions.count == 1 && sheet.calls.isEmpty }
-        sheet.run(try XCTUnwrap(sheet.spot.actions.first), item: nil)
+        try await wait("the action") { sheet.spot.frameActions.count == 1 && sheet.calls.isEmpty }
+        sheet.run(try XCTUnwrap(sheet.spot.frameActions.first), item: nil)
         let file = file("a.mov")
 
         XCTAssertTrue(sheet.drop([file]))

@@ -71,7 +71,7 @@ struct SpotTypes: Sendable {
                 continue
             }
             lines.append("  \(Self.quoted(binding.name)): {")
-            for action in other.typedActions {
+            for action in other.actions {
                 let optional = action.inputs.contains { $0.isRequired && $0.defaultValue == nil } ? "" : "?"
                 let inputs = Self.object(action.inputs) { $0.isRequired && $0.defaultValue == nil }
                 lines.append("    \(Self.quoted(action.id))(inputs\(optional): \(inputs)): Promise<\(Self.object(action.outputs, present: \.isRequired)) | null>")

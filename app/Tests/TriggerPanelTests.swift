@@ -100,7 +100,7 @@ final class TriggerPanelTests: PanelCase {
         model.panelWillShow()
         model.press("list")
         try await wait("the open list") { self.model.openSheetID == "list" && self.model.openItems?.shown.count == 1 }
-        let go = try XCTUnwrap(model.openEntry?.spot.actions.first { $0.id == "go" })
+        let go = try XCTUnwrap(model.openEntry?.spot.frameActions.first { $0.id == "go" })
 
         model.run(go, on: (try XCTUnwrap(model.openEntry), nil))
 

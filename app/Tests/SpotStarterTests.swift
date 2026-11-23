@@ -68,7 +68,7 @@ final class SpotStarterTests: XCTestCase {
 
         XCTAssertEqual(spot.mainAct, .command("run"))
         XCTAssertFalse(spot.hasSheet)
-        XCTAssertEqual(spot.offers.map(\.title), ["Weather today"])
+        XCTAssertEqual(spot.commands.map(\.title), ["Weather today"])
     }
 
     func testANameThatAnotherSpotHasIsRefused() throws {

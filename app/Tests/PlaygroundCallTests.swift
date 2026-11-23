@@ -56,7 +56,7 @@ final class PlaygroundCallTests: SpotRunsCase {
         runs.panelOpened()
         sheet.open {}
         try await wait("the read") { calls.count == 1 }
-        let action = try XCTUnwrap(sheet.spot.actions.first)
+        let action = try XCTUnwrap(sheet.spot.frameActions.first)
 
         sheet.run(action, item: nil)
         try await wait("the running call") { sheet.calls.count == 1 }

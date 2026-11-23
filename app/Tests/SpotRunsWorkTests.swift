@@ -385,7 +385,7 @@ final class SpotRunsWorkTests: SpotRunsCase {
         let sheet = try sheet()
         sheet.open {}
         try await wait("the row") { sheet.list.shown.count == 1 }
-        let action = try XCTUnwrap(sheet.spot.actions.first)
+        let action = try XCTUnwrap(sheet.spot.frameActions.first)
         let item = try XCTUnwrap(sheet.list.selectedItem)
 
         sheet.run(action, item: nil)
@@ -421,8 +421,8 @@ final class SpotRunsWorkTests: SpotRunsCase {
         """)
         let sheet = try sheet()
         sheet.open {}
-        try await wait("the action") { sheet.spot.actions.count == 1 }
-        let action = try XCTUnwrap(sheet.spot.actions.first)
+        try await wait("the action") { sheet.spot.frameActions.count == 1 }
+        let action = try XCTUnwrap(sheet.spot.frameActions.first)
 
         async let first = sheet.form(action, item: nil)
         try await wait("the call") { sheet.calls.contains(where: \.isAct) }

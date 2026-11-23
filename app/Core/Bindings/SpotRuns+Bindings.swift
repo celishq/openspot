@@ -9,11 +9,9 @@ extension SpotRuns {
             return .failed("\(spot.name) binds \(binding.name) to the spot \(binding.spot), which is not installed. Install \(binding.spot), or remove \(binding.name) from the [bindings] of its spot.toml.")
         }
         let bound = sheet.spot
-        guard let action = bound.typedActions.first(where: { $0.id == name }) else {
-            let names = bound.typedActions.map(\.id)
-            return .refused("\(bound.name) has no action \(name). " + (names.isEmpty ? "It declares no [actions]." : "Name one of its [actions]: \(names.joined(separator: ", "))."))
-        }
+        let action: Manifest.Action
         do {
+            action = try bound.action(name)
             try action.check.refuse(unknown: run.inputs.map(\.key) + (run.stdin.map { [$0.name] } ?? []))
         } catch {
             return .refused(Self.reason(error))
