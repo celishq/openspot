@@ -53,7 +53,7 @@ public struct MetricValue: Equatable, Sendable {
             self.init(title: rows.isEmpty ? "–" : String(rows.count), rows: rows.isEmpty ? nil : rows, isHidden: rows.isEmpty)
             return
         }
-        let number = output.valueKind == .number ? NumberReading(block: block) : nil
+        let number = output.valueKind == .number || output.valueKind == .series ? NumberReading(block: block) : nil
         let shown = number?.text ?? block.value("title")
         guard let title = shown.flatMap({ $0.isEmpty ? nil : $0 }) ?? (rows.isEmpty ? nil : String(rows.count)) else { return nil }
         self.init(
@@ -68,7 +68,7 @@ public struct MetricValue: Equatable, Sendable {
 
     public var kind: MetricKind {
         if rows != nil { return .rows }
-        if number?.fill != nil { return .gauge }
+        if number?.look != .stat, number?.fill != nil { return .gauge }
         if number?.isSeries == true { return .trend }
         return tone != nil && symbol == nil ? .status : .value
     }

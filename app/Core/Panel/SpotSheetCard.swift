@@ -18,7 +18,7 @@ public struct SpotSheetCard {
         guard let index, let placement = model.placements.first(where: { $0.index == index }) else { return nil }
         let entry = visible[index]
         let face = entry.state.face
-        let isDrawn = entry.item == nil && (face.layout(for: placement.size) != nil || face.hasView && entry.spot.view != nil)
+        let isDrawn = entry.item == nil && face.draws(on: placement.size)
         return SpotSheetCard(id: entry.id, placement: placement, kind: entry.kind, look: isDrawn ? entry : nil, state: entry.id == sheetID ? nil : entry.shownState, left: model.panels.leftExtent)
     }
 

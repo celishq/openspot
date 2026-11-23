@@ -240,6 +240,7 @@ public final class SpotsModel {
     public private(set) var formIsMultiple = false
     public private(set) var formHint = HintWords("")
     @ObservationIgnored var pendingAsk: UUID?
+    @ObservationIgnored var askedWindows: Set<String> = []
     public var isEditing = false {
         didSet { takeMode() }
     }
@@ -293,7 +294,8 @@ public final class SpotsModel {
             prepare: { [unowned host] in await host.prepare($0, glyphs: $1) },
             log: files.log,
             stats: files.stats,
-            timers: files.timers
+            timers: files.timers,
+            schedule: files.schedule
         )
         self.runs.secrets = files.secrets
         self.runs.onReport = { [weak self] id, report in self?.take(report, of: id) }
@@ -405,7 +407,7 @@ public final class SpotsModel {
         let stamps = fileStamps
         await reload()
         guard isShown else { return }
-        for entry in entries where entry.spot.on?.has(.panel) == true && fileStamps[entry.id] != stamps[entry.id] {
+        for entry in entries where entry.spot.triggers.showsOnPanel && fileStamps[entry.id] != stamps[entry.id] {
             sheets[entry.id]?.show(need: .change)
         }
     }
@@ -528,7 +530,7 @@ public final class SpotsModel {
     }
 
     public func updateIsReady(_ version: String) {
-        runs.raise(.named(SpotEvent.appUpdate, value: version, showsEachSpot: true))
+        runs.raise(.named(EventName.appUpdate, value: version, showsEachSpot: true))
     }
 
     public func allows(_ reason: String) async -> Bool {
@@ -575,6 +577,8 @@ public final class SpotsModel {
             self.move(move, in: id)
         case .refused(let item):
             shakes[Self.shakeKey(of: item, in: id), default: 0] += 1
+        case .done:
+            if isShown { host.dismiss() }
         }
     }
 

@@ -120,8 +120,8 @@ public struct SpotPackage: Equatable, Sendable {
 
     private var unbuiltViews: [(file: File, path: String)] {
         let roles = SpotFiles(package: self)
-        return roles.scripts.compactMap { script in
-            guard let source = roles.view(of: script), let file = files.first(where: { $0.path == source }) else { return nil }
+        return roles.scripts.flatMap(roles.views(of:)).compactMap { source in
+            guard let file = files.first(where: { $0.path == source }) else { return nil }
             let path = ViewLibrary.path(beside: source, text: file.contents)
             return files.contains(where: { $0.path == path }) ? nil : (file, path)
         }

@@ -95,9 +95,9 @@ final class SpotCatalogTests: XCTestCase {
     func testTheFramePrintsASpotBlockForEach() throws {
         let frame = try list().text(.frame)
 
-        XCTAssertTrue(frame.contains("text=timer\ntitle=Timer\n"), frame)
+        XCTAssertTrue(frame.contains("item=timer\ntitle=Timer\n"), frame)
         XCTAssertTrue(frame.contains("origin=core\nadded=false\n"), frame)
-        XCTAssertTrue(frame.contains("text=shared\n"), frame)
+        XCTAssertTrue(frame.contains("item=shared\n"), frame)
         XCTAssertTrue(frame.contains("step=get\n"), frame)
     }
 
@@ -108,6 +108,16 @@ final class SpotCatalogTests: XCTestCase {
 
         XCTAssertEqual(item.spot.name, "Timer")
         XCTAssertTrue(config.read().arrangement.enabled.contains(id))
+    }
+
+    func testYourOwnSpotWithAScheduleStartsOffAndAGetTurnsItOn() async throws {
+        try "#!/bin/sh\n".writeScript(to: spots.appendingPathComponent("daily.spot/daily.sh"), toml: "title = 'Daily'\n[on]\nschedule = ['0 9 * * *']")
+        XCTAssertEqual(list().items.first { $0.id == "daily" }?.step, "get")
+
+        _ = try await list().get("daily", config: config, lock: AppPlaces.test().lock)
+
+        XCTAssertTrue(config.read().arrangement.enabled.contains("daily"))
+        XCTAssertEqual(list().items.first { $0.id == "daily" }?.isAdded, true)
     }
 
     func testGetOfAnIDThatTheStoreLacksSaysHowToSeeEachOne() async {

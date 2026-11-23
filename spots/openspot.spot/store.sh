@@ -1,4 +1,5 @@
 #!/bin/sh
+. "$OPENSPOT_SH"
 
 # Shows a toast of the last line of a text, such as what a failed `openspot` call said.
 toast() {
@@ -26,18 +27,18 @@ remove() {
 # each spot with its id, its name, its step, its origin, its store, its description, its size and whether it has sample
 # data, and the readme of the spot that $1 names, a line after its id, when its sheet asks.
 gallery() {
-  printf 'frame=\ngrid=gallery\n\nview=gallery\n'
+  printf 'frame=\nclass=gap-part\n\nitems=spots\nclass=hidden\n\nstore=gallery\n'
   openspot store folders | awk 'BEGIN { RS = ""; FS = "\n" }
     { delete f
       for (i = 1; i <= NF; i++) { n = index($i, "="); f[substr($i, 1, n - 1)] = substr($i, n + 1) }
-      printf "folder=%s\t%s\t%s\t%s\n", f["text"], f["title"], (f["found"] == "true" ? "found" : "missing"), (f["builtin"] == "true" ? "builtin" : "added") }'
+      printf "folder=%s\t%s\t%s\t%s\n", f["item"], f["title"], (f["found"] == "true" ? "found" : "missing"), (f["builtin"] == "true" ? "builtin" : "added") }'
   openspot store list | awk -v want="${1-}" 'BEGIN { RS = ""; FS = "\n" }
     { delete f
       for (i = 1; i <= NF; i++) {
         n = index($i, "="); key = substr($i, 1, n - 1); f[key] = substr($i, n + 1)
-        if (key == "readme" && f["text"] == want) readme = readme "readme=" want "\t" f[key] "\n"
+        if (key == "readme" && f["item"] == want) readme = readme "readme=" want "\t" f[key] "\n"
       }
-      rows = rows "\ntext=" f["text"] "\ntitle=" f["title"] "\nstep=" (f["step"] == "publish" ? "added" : f["step"]) "\norigin=" f["origin"] "\n"
+      rows = rows "\nitem=" f["item"] "\nparent=spots\ntitle=" f["title"] "\nstep=" (f["step"] == "publish" ? "added" : f["step"]) "\norigin=" f["origin"] "\n"
       if (f["store"] != "") rows = rows "store=" f["store"] "\n"
       if (f["detail"] != "") rows = rows "detail=" f["detail"] "\n"
       rows = rows "size=" f["size"] "\n"
@@ -50,18 +51,20 @@ case "$1" in
     gallery
     ;;
   gallery)
-    case "$2" in
-      get:*) get "${2#get:}" ;;
+    sent=$(value value)
+    case "$sent" in
+      get:*) get "${sent#get:}" ;;
       add) add || true ;;
-      remove:*) remove "${2#remove:}" ;;
-      locate:*) if add; then remove "${2#locate:}"; fi ;;
-      readme:*) gallery "${2#readme:}"; exit 0 ;;
+      remove:*) remove "${sent#remove:}" ;;
+      locate:*) if add; then remove "${sent#locate:}"; fi ;;
+      readme:*) gallery "${sent#readme:}"; exit 0 ;;
     esac
     gallery
     ;;
-  open)
-    [ -n "$2" ] || exit 0
-    get "$2" || true
+  press)
+    picked=$(value item)
+    [ -n "$picked" ] || exit 0
+    get "$picked" || true
     ;;
   *)
     echo 'Store cannot do that.' >&2

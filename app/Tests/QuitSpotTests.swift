@@ -5,7 +5,7 @@ final class QuitSpotTests: BuiltInCase {
     func testACardPressQuitsTheApp() async throws {
         let spot = try spot("quit")
 
-        _ = try await spot.perform(.press("quit"), timeout: 60)
+        _ = try await spot.perform("quit", timeout: 60)
 
         let quits = await app.quits
         XCTAssertEqual(quits, 1)

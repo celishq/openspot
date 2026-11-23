@@ -18,8 +18,8 @@ function clock(text, fallback) {
 }
 
 /** The choices of the person, from the settings of the call. */
-function choices(input) {
-  const value = (key) => openspot.value(`setting.${key}`, input).trim()
+function choices(settings) {
+  const value = (key) => String(settings[key] ?? "").trim()
   return {
     morning: clock(value("morning"), [8, 0]),
     evening: clock(value("evening"), [19, 0]),
@@ -78,18 +78,18 @@ function words(date, now) {
   return date.toLocaleDateString("en-US", { month: "short", day: "numeric" })
 }
 
-/** The sheet: a grid of tiles, three in a row, each with its icon, its title and the time it stands for. Pick Date
- * opens the page where the person types a time. */
-function sheet(now, choices) {
+/** The sheet: a grid of tiles, three in a row, each with its icon, its title and the time it stands for, under a title
+ * when one is given. Pick Date opens the page where the person types a time. */
+function sheet(now, choices, title) {
   const moments = times(now, choices)
-  const blocks = [{ frame: "", grid: "tiles" }, { repeat: "tiles", grid: "a b c" }]
+  const blocks = [title ? { frame: "", title } : { frame: "" }, { items: "tiles", class: "grid grid-cols-3" }]
   for (const [id, title, icon, none] of tiles) {
     const moment = moments[id]
-    const tile = { text: id, title, detail: moment ? words(moment, now) : none, icon, look: "tile" }
+    const tile = { item: id, parent: "tiles", title, detail: moment ? words(moment, now) : none, icon, class: "bg-tile" }
     if (id === "date") tile.route = "date"
     blocks.push(tile)
   }
-  return openspot.frame(blocks)
+  return blocks
 }
 
 /** The parts of the day that a picked day offers: title, icon, and its hour and minute, from the person's choices for
@@ -115,40 +115,44 @@ function dayWords(day, now) {
 /** The Pick Date page: the next twelve days as tiles, each with its weekday and its date. A day is offered
  * while one of its parts is still to come. */
 function days(now, choices) {
-  const blocks = [{ frame: "", grid: "days" }, { repeat: "days", grid: "a b c" }]
+  const blocks = [{ frame: "" }, { items: "days", class: "grid grid-cols-3" }]
   const last = dayParts(choices).map(([, , hour]) => hour).reduce((a, b) => (a[0] * 60 + a[1] > b[0] * 60 + b[1] ? a : b))
   for (let offset = at(now, 0, last) > now ? 0 : 1, count = 0; count < 12; offset++, count++) {
     const day = at(now, offset, [0, 0])
     const route = `date/${day.getFullYear()}-${two(day.getMonth() + 1)}-${two(day.getDate())}`
     const weekday = day.toLocaleDateString("en-US", { weekday: "long" })
-    blocks.push({ text: route, title: weekday, detail: dayWords(day, now), icon: "calendar", look: "tile", route, "route.title": `${weekday}, ${day.toLocaleDateString("en-US", { month: "long", day: "numeric" })}` })
+    blocks.push({ item: route, parent: "days", title: weekday, detail: dayWords(day, now), icon: "calendar", class: "bg-tile", route, "route.title": `${weekday}, ${day.toLocaleDateString("en-US", { month: "long", day: "numeric" })}` })
   }
-  return openspot.frame(blocks)
+  return blocks
 }
 
 /** The page of one day: its parts still to come, each with the time it stands for. */
 function hours(route, now, choices) {
   const [year, month, date] = route.slice("date/".length).split("-").map(Number)
-  const blocks = [{ frame: "", grid: "hours" }, { repeat: "hours", grid: "a b c" }]
+  const blocks = [{ frame: "" }, { items: "hours", class: "grid grid-cols-3" }]
   for (const [title, icon, [hour, minute]] of dayParts(choices)) {
     const moment = new Date(year, month - 1, date, hour, minute)
     if (moment <= now) continue
-    blocks.push({ text: iso(moment), title, detail: `${hour}:${two(minute)}`, icon, look: "tile" })
+    blocks.push({ item: iso(moment), parent: "hours", title, detail: `${hour}:${two(minute)}`, icon, class: "bg-tile" })
   }
-  return openspot.frame(blocks)
+  return blocks
 }
 
-/** A press of a tile, or of a part of a picked day, replies with its moment or `someday`. */
-function main([id, value], env, input) {
-  const now = new Date()
-  if (id === "show") {
-    const route = openspot.value("route", input).trim()
-    if (route === "date") return days(now, choices(input))
-    if (route.startsWith("date/")) return hours(route, now, choices(input))
-    return sheet(now, choices(input))
-  }
-  if (id !== "open" || !value || value.startsWith("date")) return ""
-  const moment = value.includes("T") ? value : value === "someday" ? "someday" : iso(times(now, choices(input))[value])
-  openspot.call(["spot", "reply", moment])
-  return ""
+/** Shows the sheet or a page of Pick Date; pick shows the sheet under the title of what is snoozed; a press of a tile,
+ * or of a part of a picked day, gives its moment or `someday` as `until`. */
+export default {
+  async show({ route = "" }, env) {
+    const now = new Date()
+    if (route === "date") return days(now, choices(env.settings))
+    if (route.startsWith("date/")) return hours(route, now, choices(env.settings))
+    return sheet(now, choices(env.settings))
+  },
+  async pick({ title }, env) {
+    return sheet(new Date(), choices(env.settings), title)
+  },
+  async press({ item }, env) {
+    if (!item || item.startsWith("date")) return
+    const until = item.includes("T") ? item : item === "someday" ? "someday" : iso(times(new Date(), choices(env.settings))[item])
+    return { until }
+  },
 }

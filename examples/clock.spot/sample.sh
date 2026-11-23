@@ -1,2 +1,2 @@
 #!/bin/sh
-printf 'frame=\ngrid.bar=time\n\ntext=time\ntitle=21:45\ndetail=Tokyo'
+printf 'frame=\nclass=gap-part\n\ntext=time\nclass=bar:flex\ntitle=21:45\ndetail=Tokyo'

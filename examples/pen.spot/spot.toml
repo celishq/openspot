@@ -2,9 +2,9 @@ title = "Pen"
 icon = "pencil.tip"
 detail = "Draw on screen"
 keywords = ["draw", "annotate", "marker", "arrow", "pencil", "малювати", "олівець"]
-mode = "stay"
+stay = true
 source = ["pen"]
 
-[commands.draw]
+[actions.draw]
 title = "Draw on screen"
 icon = "pencil.tip.crop.circle"

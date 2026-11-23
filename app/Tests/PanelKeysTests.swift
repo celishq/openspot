@@ -16,7 +16,7 @@ final class PanelKeysTests: PanelCase {
     private func showGrid() async throws {
         try script("alpha", toml: "title = 'Alpha'", "true")
         try script("beta", toml: "title = 'Beta'", "true")
-        try script("weather", toml: "title = 'Weather'\non = ['sheet.open']\n[commands.hot]\ntitle = 'Hot'\n[commands.cold]\ntitle = 'Cold'", ":")
+        try script("weather", toml: "title = 'Weather'\n[actions.hot]\ntitle = 'Hot'\n[actions.cold]\ntitle = 'Cold'\n[on]\n\"sheet.open\" = true", ":")
         _ = try model.files.config.change {
             $0.arrangement.arrange(["alpha", "beta", "weather"])
             $0.arrangement.set(isOnGrid: true, of: "weather")
@@ -32,8 +32,8 @@ final class PanelKeysTests: PanelCase {
 
     private func openInfo() async throws {
         try script("info", toml: "pages = ['a']", """
-        page=$(sed -n 's/^route=//p')
-        if [ -n "$page" ]; then printf 'frame=\\ngrid=detail\\n\\ntext=detail\\ntitle=Detail\\n'; else printf 'frame=\\ngrid=first\\n\\ntext=first\\ntitle=First\\n'; fi
+        page=$(sed -n 's/^input\\.route=//p')
+        if [ -n "$page" ]; then printf 'frame=\\nclass=gap-part\\n\\ntext=detail\\ntitle=Detail\\n'; else printf 'frame=\\nclass=gap-part\\n\\ntext=first\\ntitle=First\\n'; fi
         """)
         await model.reload()
         model.isShown = true
@@ -90,7 +90,7 @@ final class PanelKeysTests: PanelCase {
     }
 
     func testASearchThatFindsNoSpotTeachesTheSlash() async throws {
-        try script("list", toml: "title = 'List'", "printf 'text=a\\ntitle=A\\n'")
+        try script("list", toml: "title = 'List'", "printf 'item=a\\ntitle=A\\n'")
         await model.reload()
 
         model.query = "zzz"
@@ -164,7 +164,7 @@ final class PanelKeysTests: PanelCase {
     }
 
     func testInASheetOfRowsTheArrowsMoveByLinesAndReturnPicksTheRow() async throws {
-        try script("fruit", toml: "", "printf 'text=a\\ntitle=Apple\\n\\ntext=b\\ntitle=Banana\\n\\ntext=c\\ntitle=Cherry\\n'")
+        try script("fruit", toml: "", "printf 'item=a\\ntitle=Apple\\n\\nitem=b\\ntitle=Banana\\n\\nitem=c\\ntitle=Cherry\\n'")
         await model.reload()
         model.isShown = true
         model.panelWillShow()
@@ -309,15 +309,16 @@ final class PanelKeysTests: PanelCase {
         if let key { try key.write(to: pickData.appendingPathComponent("key"), atomically: true, encoding: .utf8) }
         try script("pick", toml: "title = 'Pick'", """
         data='\(pickData.path)'
-        [ "$1" = show ] || echo "$*" >> "$data/calls"
+        v=$(sed -n 's/^input\\.value=//p')
+        [ "$1" = show ] || echo "$1${v:+ $v}" >> "$data/calls"
         case "$1" in
-          key) printf %s "$2" > "$data/key" ;;
+          key) printf %s "$v" > "$data/key" ;;
           again) rm -f "$data/key" ;;
         esac
         case "$1" in
           show|key|again)
             key=$(cat "$data/key" 2>/dev/null)
-            printf 'frame=\\ntitle=Choose your key\\ngrid=key\\ngrid=keep\\ngrid=again\\n\\nfield=key\\ntype=hotkey\\nvalue=%s\\n' "$key"
+            printf 'frame=\\ntitle=Choose your key\\nclass=gap-part\\n\\nfield=key\\ntype=hotkey\\nvalue=%s\\n' "$key"
             [ -n "$key" ] || printf 'recording=true\\n'
             printf '\\nbutton=keep\\ntitle=Keep\\nclose=false\\n\\nbutton=again\\ntitle=Try again\\nshortcut=escape\\nclose=false\\n' ;;
         esac
@@ -333,13 +334,14 @@ final class PanelKeysTests: PanelCase {
         try FileManager.default.createDirectory(at: pickData, withIntermediateDirectories: true)
         try script("choice", toml: "title = 'Choice'", """
         data='\(pickData.path)'
-        [ "$1" = show ] || echo "$*" >> "$data/calls"
+        v=$(sed -n 's/^input\\.value=//p')
+        [ "$1" = show ] || echo "$1${v:+ $v}" >> "$data/calls"
         while [ -f "$data/hold-$1" ]; do sleep 0.01; done
-        [ "$1" = key ] && printf %s "$2" > "$data/key"
+        [ "$1" = key ] && printf %s "$v" > "$data/key"
         [ "$1" = use ] && \(TestSpot.toast) Used
         case "$1" in
           show|key|record)
-            printf 'frame=\\ngrid=key\\ngrid=key\\ngrid=use\\ngrid=record\\n\\nfield=key\\ntype=hotkey\\nvalue=%s\\n' "$(cat "$data/key" 2>/dev/null || printf ctrl+space)"
+            printf 'frame=\\nclass=gap-part\\n\\nfield=key\\ntype=hotkey\\nvalue=%s\\n' "$(cat "$data/key" 2>/dev/null || printf ctrl+space)"
             [ "$1" != record ] || printf 'recording=true\\n'
             printf '\\nbutton=use\\ntitle=Use\\nshortcut=return\\nclose=false\\n\\nbutton=record\\ntitle=Record\\nshortcut=escape\\nclose=false\\n' ;;
         esac
@@ -846,7 +848,7 @@ final class PanelKeysTests: PanelCase {
     }
 
     func testCommandYOpensTheHistoryOfASpotWhoseReturnRunsItsCommand() async throws {
-        try script("dictate", toml: "title = 'Dictate'\non = ['sheet.open']\n[commands.dictate]\ntitle = 'Dictate'", "printf 'text=a\\ntitle=Said\\n'")
+        try script("dictate", toml: "title = 'Dictate'\n[actions.dictate]\ntitle = 'Dictate'\n[on]\n\"sheet.open\" = true", "printf 'item=a\\ntitle=Said\\n'")
         await model.reload()
         model.isShown = true
         model.panelWillShow()

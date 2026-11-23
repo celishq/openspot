@@ -31,9 +31,9 @@ final class SpotEffectTests: PanelCase {
         os='\(client.path)'
         codes='\(path("codes"))'
         in=$(cat)
-        route=$(printf '%s\\n' "$in" | sed -n 's/^route=//p')
+        route=$(printf '%s\\n' "$in" | sed -n 's/^input\\.route=//p')
         case "$1" in
-          show) echo "${route:-first}" >> '\(path("routes"))'; \(show) printf '\(buttons)text=a\\ntitle=Page %s\\n\\ntext=b\\ntitle=B\\n\\ntext=c\\ntitle=C\\n' "${route:-first}" ;;
+          show) echo "${route:-first}" >> '\(path("routes"))'; \(show) printf '\(buttons)item=a\\ntitle=Page %s\\n\\nitem=b\\ntitle=B\\n\\nitem=c\\ntitle=C\\n' "${route:-first}" ;;
           next) "$os" route push "n${#route}" --title "Next page" ;;
           root) "$os" route back --root ;;
           back) "$os" route back ;;
@@ -52,12 +52,12 @@ final class SpotEffectTests: PanelCase {
         model.isShown = true
         model.panelWillShow()
         model.press("flow")
-        try await wait("the flow") { self.model.transition.phase == .open && self.titles.first == "Page first" && self.model.sheets["flow"]?.spot.actions.count == 8 }
+        try await wait("the flow") { self.model.transition.phase == .open && self.titles.first == "Page first" && self.model.sheets["flow"]?.spot.frameActions.count == 8 }
     }
 
     private func press(_ id: String, in spot: String = "flow") throws {
         let sheet = try XCTUnwrap(model.sheets[spot])
-        sheet.run(try XCTUnwrap(sheet.spot.actions.first { $0.id == id }), item: nil)
+        sheet.run(try XCTUnwrap(sheet.spot.frameActions.first { $0.id == id }), item: nil)
     }
 
     private func pressed(_ id: String) async throws -> String? {
@@ -135,7 +135,7 @@ final class SpotEffectTests: PanelCase {
         try await openList()
         try await openPage()
         try script("mover", toml: "title = 'Mover'", """
-        [ "$1" = open ] || exit 0
+        [ "$1" = press ] || exit 0
         '\(client.path)' route back; echo "go $?" >> '\(path("codes"))'
         '\(client.path)' route push x; echo "go $?" >> '\(path("codes"))'
         """)
@@ -175,7 +175,7 @@ final class SpotEffectTests: PanelCase {
         let sheet = try XCTUnwrap(model.sheets["flow"])
         try press("late")
         try await wait("the call to wait") { self.log("codes").contains("up") }
-        let call = try XCTUnwrap(sheet.calls.first { $0.action.arguments.first == "late" })
+        let call = try XCTUnwrap(sheet.calls.first { $0.handler == "late" })
 
         sheet.stop(call)
 

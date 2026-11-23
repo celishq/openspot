@@ -57,7 +57,7 @@ public struct ItemForm: Equatable, Sendable {
     }
 
     public init?(output: Frame) {
-        guard let title = output.root?.value(RootKey.title) else { return nil }
+        guard output.isForm, let title = output.root?.value(RootKey.title) else { return nil }
         let fields = output.fields.compactMap { $0.kind.formField(of: $0.block) }
         guard fields.count == output.fields.count else { return nil }
         self.init(title: title, fields: fields)

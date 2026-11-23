@@ -1,22 +1,29 @@
-const calls = {
-  settings: (id) => ["spot", "settings", id],
-  edit: (id) => ["spot", "edit", id],
-  share: (id) => ["spot", "share", id],
-  delete: (id) => ["spot", "delete", id],
-  off: (id) => ["setting", "set", "--spot", id, "enabled", "false"],
-  "icon.draw": (id) => ["spot", "run", "openspot/icon", "draw", id],
-  "icon.file": (id) => ["spot", "run", "openspot/icon", "file", id],
-  "icon.reset": (id) => ["spot", "run", "openspot/icon", "reset", id],
+export default {
+  async hasIcon({ item }, env) {
+    return (await env.setting.get("icon", { spot: item })).trim() !== "";
+  },
+  async share({ item }, env) {
+    await env.spot.share(item);
+  },
+  async settings({ item }, env) {
+    await env.spot.settings(item);
+  },
+  async edit({ item }, env) {
+    await env.spot.edit(item);
+  },
+  async delete({ item }, env) {
+    await env.spot.delete(item);
+  },
+  async off({ item }, env) {
+    await env.setting.set("enabled", "false", { spot: item });
+  },
+  async "icon.draw"({ item }, env) {
+    await env.icon.draw({ spot: item });
+  },
+  async "icon.file"({ item }, env) {
+    await env.icon.file({ spot: item });
+  },
+  async "icon.reset"({ item }, env) {
+    await env.icon.reset({ spot: item });
+  },
 };
-
-function main(args) {
-  const [act, id] = args;
-  if (!calls[act]) return "";
-  const call = calls[act](id);
-  if (openspot.call(call).code !== 0) throw new Error(`openspot ${call.join(" ")} failed.`);
-  return "";
-}
-
-function hasIcon(id) {
-  return openspot.call(["setting", "get", "--spot", id, "icon"]).stdout.trim() !== "";
-}

@@ -12,6 +12,7 @@ extension SpotsModel {
         private let fixedState: SpotState
         private let gridChoice: Bool?
         private let searchChoice: Bool?
+        private let wordChoices: [String: String]
         public let panel: GridPanel
 
         public init(spot: Spot, run: SpotRun?, choice: SpotArrangement = SpotArrangement(), defaults: SpotArrangement = SpotArrangement()) {
@@ -20,6 +21,7 @@ extension SpotsModel {
             defaultSize = defaults.size(of: spot.id)
             gridChoice = choice.isOnGrid(of: spot.id) ?? defaults.isOnGrid(of: spot.id)
             searchChoice = choice.isFound(of: spot.id) ?? defaults.isFound(of: spot.id)
+            wordChoices = choice.commands(of: spot.id) ?? defaults.commands(of: spot.id) ?? [:]
             panel = choice.panel(of: spot.id) ?? .center
             item = nil
             isAnswer = false
@@ -34,12 +36,20 @@ extension SpotsModel {
             defaultSize = nil
             gridChoice = nil
             searchChoice = nil
+            wordChoices = [:]
             panel = .center
             self.item = item
             self.isAnswer = isAnswer
             run = nil
             fixedSpot = spot
             fixedState = item.card ?? SpotState(title: item.title, subtitle: detail ?? (isAnswer ? item.subtitle ?? spot.name : item.path(in: spot)))
+        }
+
+        @MainActor public var commandWords: [(name: String, word: String)] {
+            spot.triggers.commands.compactMap { name in
+                let word = wordChoices[name] ?? name
+                return word.isEmpty ? nil : (name, word)
+            }
         }
 
         @MainActor public var spot: Spot {
@@ -84,7 +94,7 @@ extension SpotsModel {
         }
 
         @MainActor public var isOn: Bool {
-            run?.isOn ?? (fixedState.on == true)
+            run?.isOn ?? (fixedState.active == true)
         }
 
         @MainActor public var isActive: Bool {

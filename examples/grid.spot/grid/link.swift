@@ -6,13 +6,13 @@ struct Call {
     let arguments: [String]
     let input: [String]
 
-    /// The first value of a key in its message, such as `setting.look` of `setting.look=gold`.
-    func value(_ key: String) -> String? {
-        input.first { $0.hasPrefix("\(key)=") }.map { Link.plain(String($0.dropFirst(key.count + 1))) }
+    /// The first value of an input in its message, such as `panel.open` of `input.event=panel.open`.
+    func input(_ name: String) -> String? {
+        input.first { $0.hasPrefix("input.\(name)=") }.map { Link.plain(String($0.dropFirst(name.count + 7))) }
     }
 }
 
-/// The two ways of a staying spot (protocol: A staying spot): the calls that Openspot writes on stdin, one block each,
+/// The two ways of a staying spot (protocol: Without the helper): the calls that Openspot writes on stdin, one block each,
 /// and the frames that the spot prints back, each in one write.
 enum Link {
     /// Reads stdin on a thread of its own, and hands each call and each stop to the main queue, then the end of stdin.

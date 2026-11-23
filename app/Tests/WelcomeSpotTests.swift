@@ -9,7 +9,7 @@ final class WelcomeSpotTests: BuiltInCase {
     }
 
     private func answer(_ arguments: [String]) async throws -> Frame {
-        try await welcome.answer(SpotAction(arguments: arguments), timeout: 60)
+        try await welcome.answer(arguments[0], input: arguments.count > 1 ? "input.value=\(arguments[1])\n" : nil, timeout: 60)
     }
 
     private func read(page: String? = nil) async throws -> Frame {
@@ -20,14 +20,18 @@ final class WelcomeSpotTests: BuiltInCase {
         try XCTUnwrap(output.parts.first { $0.id == id })
     }
 
+    private func head(in output: Frame) throws -> ViewNode {
+        try XCTUnwrap(output.tree.node("head"))
+    }
+
     private func name(_ path: String?) -> String? {
         path.map { URL(fileURLWithPath: $0).lastPathComponent }
     }
 
     private func assertHead(_ output: Frame, _ title: String, _ detail: String, file: StaticString = #filePath, line: UInt = #line) throws {
-        let head = try part("head", in: output)
-        XCTAssertEqual(head.kind, "view", file: file, line: line)
-        XCTAssertFalse(head.growsRow, file: file, line: line)
+        let head = try head(in: output)
+        XCTAssertEqual(head.kind.name, "welcome", file: file, line: line)
+        XCTAssertEqual(head.block.value("grow"), "false", file: file, line: line)
         XCTAssertEqual(head.values["title"], [title], file: file, line: line)
         XCTAssertEqual(head.values["detail"], [detail], file: file, line: line)
     }
@@ -41,15 +45,15 @@ final class WelcomeSpotTests: BuiltInCase {
         XCTAssertNil(spot.subtitle)
         XCTAssertEqual(spot.symbol, "hand.wave")
         XCTAssertEqual(spot.pages, ["key", "agent"])
-        XCTAssertEqual(spot.view.map { URL(fileURLWithPath: $0).lastPathComponent }, "welcome.swift")
+        XCTAssertEqual(spot.views["welcome"].map { URL(fileURLWithPath: $0).lastPathComponent }, "welcome.swift")
     }
 
     func testTheFirstSheetSaysEverythingIsASpotUnderItsDrawingAndContinues() async throws {
         let output = try await read()
 
         try assertHead(output, "Everything is a disposable spot", "Make a script or an app for anything. Keep it, throw it away, or share it in one click.")
-        XCTAssertEqual(name(try part("head", in: output).values["icon"]?.last), "even-this-onboarding.svg")
-        XCTAssertEqual(output.parts.map(\.id).sorted(), ["head", "next"])
+        XCTAssertEqual(name(try head(in: output).values["icon"]?.last), "even-this-onboarding.svg")
+        XCTAssertEqual(output.tree.children, ["head", "next"])
         let next = try part("next", in: output)
         XCTAssertEqual(next.title, "Continue")
         XCTAssertEqual(next.key, ActionKey(name: "return"))
@@ -76,7 +80,7 @@ final class WelcomeSpotTests: BuiltInCase {
         let record = try part("record", in: output)
         XCTAssertEqual(record.title, "Record another key")
         XCTAssertEqual(record.key, ActionKey(name: "escape"))
-        XCTAssertEqual(output.parts.map(\.id).sorted(), ["head", "key", "record", "use"])
+        XCTAssertEqual(output.tree.children, ["head", "key", "use", "record"])
         XCTAssertFalse(try part("key", in: output).asksToRecord)
     }
 
@@ -139,9 +143,9 @@ final class WelcomeSpotTests: BuiltInCase {
         _ = try await answer(["done"])
 
         try assertHead(output, "Make it yours", "Easily, with any of your favourite agents")
-        let head = try part("head", in: output)
+        let head = try head(in: output)
         XCTAssertEqual(name(head.values["note"]?.last), "note-and-pls.svg")
-        XCTAssertEqual(output.parts.map(\.id).sorted(), ["done", "head"])
+        XCTAssertEqual(output.tree.children, ["head", "done"])
         XCTAssertEqual(head.values["card.title"], ["Create your own spot", "Change it with your agent"])
         XCTAssertEqual(head.values["card.detail"], ["Open New spot and describe it.", "Select it and press ⌘E."])
         XCTAssertEqual(head.values["card.icon"], ["plus", "pencil"])
@@ -158,7 +162,7 @@ final class WelcomeSpotTests: BuiltInCase {
         for page in [nil, "key", "agent"] {
             let output = try await read(page: page)
 
-            let head = try part("head", in: output)
+            let head = try head(in: output)
             let paths = ["icon", "note", "card.note"].flatMap { head.values[$0] ?? [] }
             for path in paths {
                 XCTAssertTrue(FileManager.default.fileExists(atPath: path), path)
@@ -171,7 +175,7 @@ final class WelcomeSpotTests: BuiltInCase {
             let output = try await read(page: page)
 
             XCTAssertEqual(output.actions, [], "\(page ?? "first")")
-            XCTAssertEqual(output.layout?.areas.keys.sorted(), output.parts.map(\.id).sorted(), "\(page ?? "first")")
+            XCTAssertEqual(output.tree.children.sorted(), output.parts.map(\.id).sorted(), "\(page ?? "first")")
         }
     }
 }

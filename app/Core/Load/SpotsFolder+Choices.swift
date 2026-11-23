@@ -2,7 +2,12 @@ import Foundation
 
 extension SpotsFolder {
     public func scanOwnIDs() -> Set<String> {
-        Set(((try? SpotsFolder(url: url).scan())?.files ?? []).map(\.id))
+        Set(((try? scanOwn())?.files ?? []).map(\.id))
+    }
+
+    public func scanOwn() throws -> ScanResult {
+        let load = KeptScan.shared.load(SpotsFolder(url: url))
+        return try load.result(enabled: load.ownIDs, disabled: [])
     }
 
     @discardableResult

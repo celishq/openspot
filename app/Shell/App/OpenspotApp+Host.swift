@@ -128,7 +128,7 @@ extension OpenspotApp: SpotsHost {
     }
 
     func agentPrompt(for folder: URL) -> AgentPrompt {
-        AgentPrompt(folder: folder, guide: Bundle.main.url(forResource: "GUIDE", withExtension: "md") ?? folder, app: AgentPrompt.command(of: Bundle.main.executablePath ?? ""))
+        AgentPrompt(folder: folder, guide: Bundle.main.url(forResource: "DOCS", withExtension: "md") ?? folder, app: AgentPrompt.command(of: Bundle.main.executablePath ?? ""))
     }
 
     func nextFrame(_ body: @escaping @MainActor () -> Void) {

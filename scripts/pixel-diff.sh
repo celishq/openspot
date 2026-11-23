@@ -18,22 +18,24 @@ fixtures() {
   cp -R spots/openspot.spot "$work/state/core/"
   spot rows Rows list.bullet "" <<'SPOT'
 #!/bin/sh
-printf "text=a\ntitle=Alpha\ndetail=The first row\nicon=star\n\ntext=b\ntitle=Beta\ndetail=The second row\nicon=heart\nvalue=true\n\ntext=c\ntitle=Gamma\nicon=bolt\ntone=good\nshortcut=⌃⌥K\n\ntext=d\ntitle=Delta\nicon=leaf\n"
+printf "item=a\ntitle=Alpha\ndetail=The first row\nicon=star\n\nitem=b\ntitle=Beta\ndetail=The second row\nicon=heart\nvalue=true\n\nitem=c\ntitle=Gamma\nicon=bolt\ntone=good\nshortcut=⌃⌥K\n\nitem=d\ntitle=Delta\nicon=leaf\n"
 SPOT
   spot parts Parts square.grid.2x2 "" <<'SPOT'
 #!/bin/sh
-printf "%s\n" "frame=" "grid=n n g g" "grid=t t t t" "grid=s s s s" "grid=f f f f" "grid=- - - -" "grid=b b c c" "grid.large=n n g g" "grid.large=t t t t" "" \
-  "number=n" "title=Cups today" "value=3" "" "number=g" "title=Load" "value=42" "max=100" "unit=%" "" "number=t" "title=Disk" "detail=Half full" "value=50" "max=100" "unit=%" "tone=warn" "" \
-  "switch=s" "title=Focus" "detail=Until 18:00" "value=true" "" "field=f" "type=slider" "title=Volume" "value=40" "" \
-  "button=b" "title=Go" "look=strong" "" "choice=c" "title=Mode" "value=x" "" "option=x" "title=One" "" "option=y" "title=Two"
+printf "%s\n" "frame=" "class=gap-part" "" "box=top" "class=grid grid-cols-2 gap-part" "" \
+  "number=n" "parent=top" "title=Cups today" "value=3" "" "number=g" "parent=top" "title=Load" "value=42" "max=100" "type=bar" "unit=%" "" \
+  "number=t" "title=Disk" "detail=Half full" "value=50" "max=100" "type=bar" "unit=%" "tone=warn" "" \
+  "switch=s" "class=large:hidden" "title=Focus" "detail=Until 18:00" "value=true" "" "field=f" "class=large:hidden" "type=slider" "title=Volume" "value=40" "" \
+  "box=line" "class=h-px bg-tile large:hidden" "" "box=bottom" "class=grid grid-cols-2 gap-part large:hidden" "" \
+  "button=b" "parent=bottom" "title=Go" "look=strong" "" "choice=c" "parent=bottom" "title=Mode" "value=x" "" "option=x" "title=One" "" "option=y" "title=Two"
 SPOT
   spot asks Asks plus.circle "" <<'SPOT'
 #!/bin/sh
 if [ "$1" = add ]; then
-  printf "%s\n" "frame=" "title=Add a thing" "" "field=name" "title=Name" "placeholder=A name" "" "field=note" "title=Note" "type=multiline" "" "switch=on" "title=Keep it" "value=true"
+  printf "%s\n" "frame=" "type=form" "title=Add a thing" "" "field=name" "title=Name" "placeholder=A name" "" "field=note" "title=Note" "type=multiline" "" "switch=on" "title=Keep it" "value=true"
   exit 0
 fi
-printf "button=add\ntitle=Add\nform=true\nscope=spot\n\ntext=a\ntitle=One\n\ntext=b\ntitle=Two\n"
+printf "button=add\ntitle=Add\nform=true\nscope=spot\n\nitem=a\ntitle=One\n\nitem=b\ntitle=Two\n"
 SPOT
   spot cups Coffee cup.and.saucer.fill panel.open <<'SPOT'
 #!/bin/sh
@@ -41,11 +43,11 @@ printf "number=cups\ntitle=Cups today\nvalue=3\n"
 SPOT
   spot focus Focus moon.fill panel.open <<'SPOT'
 #!/bin/sh
-printf "switch=focus\ntitle=Focus\ndetail=Until 18:00\nvalue=true\n"
+printf "frame=\ndetail=Until 18:00\nactive=true\n\nswitch=focus\ntitle=Focus\ndetail=Until 18:00\nvalue=true\nclass=hidden strip:flex large:flex\n"
 SPOT
   spot load Load cpu panel.open <<'SPOT'
 #!/bin/sh
-printf "frame=\ngrid.small=ring\ngrid.wide=load ring\ngrid.large=load load\ngrid.large=ring cups\n\nnumber=load\ntitle=Load\nvalue=20\nvalue=50\nvalue=35\nvalue=80\nvalue=60\nmax=100\nunit=%%\n\nnumber=ring\ntitle=Disk\nvalue=60\nmax=100\nunit=%%\n\nnumber=cups\ntitle=Cups\nvalue=3\nunit=cups\ndisplay=3 cups\n"
+printf "frame=\nclass=wide:flex-row wide:gap-part large:grid large:grid-cols-2 large:gap-part\n\nnumber=load\nclass=small:hidden large:col-span-2\ntitle=Load\nvalue=60\nmax=100\ntype=bar\nunit=%%\n\nnumber=ring\ntitle=Disk\nvalue=60\nmax=100\ntype=bar\nunit=%%\n\nnumber=cups\nclass=small:hidden wide:hidden\ntitle=Cups\nvalue=3\nunit=cups\ndisplay=3 cups\n"
 SPOT
   {
     for id in rows asks cups focus; do printf '[[spots]]\nid = "%s"\nsize = "small"\ngrid = true\n\n' "$id"; done

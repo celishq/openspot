@@ -123,8 +123,8 @@ final class RunChannelTests: SpotRunsCase {
     }
 
     func testEachRunIsKnownAsItsOwnSpot() async throws {
-        try script("one", toml: "on = ['panel.open']", "\(call("setting set tone one")); echo 0 >> '\(path("done"))'")
-        try script("two", toml: "on = ['panel.open']", "\(call("setting set tone two")); echo 0 >> '\(path("done"))'")
+        try script("one", toml: "[on]\n'panel.open' = true", "\(call("setting set tone one")); echo 0 >> '\(path("done"))'")
+        try script("two", toml: "[on]\n'panel.open' = true", "\(call("setting set tone two")); echo 0 >> '\(path("done"))'")
         _ = try scanned()
 
         runs.panelOpened()
@@ -136,10 +136,10 @@ final class RunChannelTests: SpotRunsCase {
     }
 
     func testAStayingSpotIsKnownInEachCall() async throws {
-        try script(toml: "mode = 'stay'", """
+        try script(toml: "stay = true", """
         while IFS= read -r line; do
           case "$line" in call=*) call=${line#call=} ;; esac
-          [ -n "$line" ] || { \(call("setting set tone stay$call")); printf 'end=%s\\n\\ntext=a\\n---\\n' "$call"; }
+          [ -n "$line" ] || { \(call("setting set tone stay$call")); printf 'end=%s\\n\\nitem=a\\n---\\n' "$call"; }
         done
         """)
         let sheet = try sheet()
@@ -154,7 +154,7 @@ final class RunChannelTests: SpotRunsCase {
     func testAnInlineCallIsKnownAsItsSpot() async throws {
         let script = folder.spotFile("script", extension: "js")
         try FileManager.default.createDirectory(at: script.deletingLastPathComponent(), withIntermediateDirectories: true)
-        try "function main(args, env) { openspot.call(['setting', 'set', 'tone', 'inline']); return 'text=t\\ntitle=done\\n' }\n"
+        try "export default { async show(input, env) { openspot.call(['setting', 'set', 'tone', 'inline']); return 'text=t\\ntitle=done\\n' } }\n"
             .writeInline(to: script, toml: "")
         let sheet = try sheet()
         runs.panelOpened()
@@ -180,7 +180,7 @@ final class RunChannelTests: SpotRunsCase {
         try script("writer", toml: "uses = ['files']", "echo a > '\(outside.path)/'\"$1\"")
         let script = folder.spotFile("script", extension: "js")
         try FileManager.default.createDirectory(at: script.deletingLastPathComponent(), withIntermediateDirectories: true)
-        try "function main(args, env) { openspot.call(['spot', 'run', 'writer', 'inline']); return 'text=t\\ntitle=done\\n' }\n"
+        try "export default { async show(input, env) { openspot.call(['spot', 'run', 'writer', 'inline']); return 'text=t\\ntitle=done\\n' } }\n"
             .writeInline(to: script, toml: "uses = ['spots']")
         let sheet = try sheet()
         runs.panelOpened()

@@ -50,7 +50,7 @@ final class SoleCommandTests: XCTestCase {
     }
 
     func testReturnRunsTheOneCommandAtOnceAndItsSettingsRecordItsKey() async throws {
-        try script("dictate", toml: "title = 'Dictate'\n[commands.dictate]\ntitle = 'Dictate'")
+        try script("dictate", toml: "title = 'Dictate'\n[actions.dictate]\ntitle = 'Dictate'")
         await model.reload()
         model.isShown = true
         model.panelWillShow()
@@ -84,7 +84,7 @@ final class SoleCommandTests: XCTestCase {
     }
 
     func testACommandWithConfirmAndNoKeyAsksForASecondReturn() async throws {
-        try script("wipe", toml: "title = 'Wipe'\n[commands.wipe]\ntitle = 'Wipe'\nconfirm = 'Press again to wipe'")
+        try script("wipe", toml: "title = 'Wipe'\n[actions.wipe]\ntitle = 'Wipe'\nconfirm = 'Press again to wipe'")
         await model.reload()
         model.isShown = true
         model.panelWillShow()
@@ -101,7 +101,7 @@ final class SoleCommandTests: XCTestCase {
     }
 
     func testACommandWithConfirmAsksForASecondPressOfItsCard() async throws {
-        try script("wipe", toml: "title = 'Wipe'\n[commands.wipe]\ntitle = 'Wipe'\nconfirm = 'Press again to wipe'")
+        try script("wipe", toml: "title = 'Wipe'\n[actions.wipe]\ntitle = 'Wipe'\nconfirm = 'Press again to wipe'")
         _ = try model.files.config.change { $0.assign(.tap(.option), to: "wipe", act: .command("wipe")) }
         await model.reload()
         model.isShown = true
@@ -120,8 +120,8 @@ final class SoleCommandTests: XCTestCase {
     }
 
     func testAGlobalKeyOfACommandWithConfirmShowsItsCardAskingAndReturnRunsIt() async throws {
-        try script("wipe", toml: "title = 'Wipe'\n[commands.wipe]\ntitle = 'Wipe'\nconfirm = 'Press again to wipe'")
-        try script("other", toml: "title = 'Other'\n[commands.other]\ntitle = 'Other'")
+        try script("wipe", toml: "title = 'Wipe'\n[actions.wipe]\ntitle = 'Wipe'\nconfirm = 'Press again to wipe'")
+        try script("other", toml: "title = 'Other'\n[actions.other]\ntitle = 'Other'")
         _ = try model.files.config.change { $0.assign(.tap(.option), to: "wipe", act: .command("wipe")) }
         await model.reload()
         let key = try XCTUnwrap(model.assignedKeys.first { $0.spot == "wipe" })
@@ -138,7 +138,7 @@ final class SoleCommandTests: XCTestCase {
     }
 
     func testACommandWithConfirmAsksForASecondPressInTheMenu() async throws {
-        try script("wipe", toml: "title = 'Wipe'\non = ['sheet.open']\n[commands.wipe]\ntitle = 'Wipe'\nconfirm = 'Press again to wipe'\n[commands.keep]\ntitle = 'Keep'")
+        try script("wipe", toml: "title = 'Wipe'\n[actions.wipe]\ntitle = 'Wipe'\nconfirm = 'Press again to wipe'\n[actions.keep]\ntitle = 'Keep'\n[on]\n\"sheet.open\" = true")
         await model.reload()
         model.isShown = true
         model.panelWillShow()
@@ -153,7 +153,7 @@ final class SoleCommandTests: XCTestCase {
     }
 
     func testReturnOnASpotWithTwoCommandsOnlyOpensTheirKeys() async throws {
-        try script("windows", toml: "title = 'Windows'\n[commands.left]\ntitle = 'Left'\n[commands.right]\ntitle = 'Right'")
+        try script("windows", toml: "title = 'Windows'\n[actions.left]\ntitle = 'Left'\n[actions.right]\ntitle = 'Right'")
         await model.reload()
         model.isShown = true
         model.panelWillShow()
@@ -166,8 +166,8 @@ final class SoleCommandTests: XCTestCase {
     }
 
     func testReturnRunsTheOneCommandOfASpotWithRowsAndCommandYOpensTheRowsAsHistory() async throws {
-        try "#!/bin/sh\ncase \"$1\" in show) printf 'text=one\\ntitle=Hello there\\n\\ntext=two\\ntitle=Second\\n' ;; dictate) \(TestSpot.toast) 'Ran dictate' ;; esac\n"
-            .writeScript(to: spots.spotFile("dictate"), toml: "title = 'Dictate'\non = ['sheet.open', 'app.update']\n[commands.dictate]\ntitle = 'Dictate'")
+        try "#!/bin/sh\ncase \"$1\" in show) printf 'item=one\\ntitle=Hello there\\n\\nitem=two\\ntitle=Second\\n' ;; dictate) \(TestSpot.toast) 'Ran dictate' ;; esac\n"
+            .writeScript(to: spots.spotFile("dictate"), toml: "title = 'Dictate'\n[actions.dictate]\ntitle = 'Dictate'\n[on]\n\"sheet.open\" = true\n\"app.update\" = true")
         await model.reload()
         model.isShown = true
         model.panelWillShow()
@@ -208,7 +208,7 @@ final class SoleCommandTests: XCTestCase {
     }
 
     func testARowThatSaysCloseFalseNamesItsEnterAndKeepsThePanelOpen() async throws {
-        try "#!/bin/sh\ncase \"$1\" in show) printf 'button=open\\ntitle=Copy\\n\\ntext=model\\ntitle=Download\\nopen.title=Download\\nclose=false\\n\\ntext=text\\ntitle=Hello\\n' ;; esac\n"
+        try "#!/bin/sh\ncase \"$1\" in show) printf 'button=press\\ntitle=Copy\\n\\nitem=model\\ntitle=Download\\nopen.title=Download\\nclose=false\\n\\nitem=text\\ntitle=Hello\\n' ;; esac\n"
             .writeScript(to: spots.spotFile("get"), toml: "title = 'Get'")
         await model.reload()
         model.isShown = true
@@ -223,12 +223,12 @@ final class SoleCommandTests: XCTestCase {
         model.moveItemLine(by: 1)
         XCTAssertEqual(model.hint.components(separatedBy: "   ").first, "⏎ Copy")
         model.runSelectedItem()
-        XCTAssertEqual(host.dismissals, 1)
+        try await wait("the close") { self.host.dismissals == 1 }
     }
 
-    func testASheetWithAGridAndNoSearchFieldShowsOnlyItsOwnItemsAsItsHistory() async throws {
-        try "#!/bin/sh\ncase \"$1\" in show) printf 'text=whisper\\ntitle=Download\\npin=top\\n\\nframe=\\ngrid=list\\n' ;; esac\n"
-            .writeScript(to: spots.spotFile("dictate"), toml: "title = 'Dictate'\non = ['sheet.open']\n[commands.dictate]\ntitle = 'Dictate'")
+    func testASheetWithATreeAndNoSearchFieldShowsOnlyItsOwnItemsAsItsHistory() async throws {
+        try "#!/bin/sh\ncase \"$1\" in show) printf 'frame=\\nclass=gap-part\\n\\nitems=list\\n\\nitem=whisper\\nparent=list\\ntitle=Download\\npin=top\\n' ;; esac\n"
+            .writeScript(to: spots.spotFile("dictate"), toml: "title = 'Dictate'\n[actions.dictate]\ntitle = 'Dictate'\n[on]\n\"sheet.open\" = true")
         await model.reload()
         model.isShown = true
         model.panelWillShow()
@@ -242,7 +242,7 @@ final class SoleCommandTests: XCTestCase {
     }
 
     func testAnOpenKeyOfASpotWithOneCommandRunsTheCommandAtOnce() async throws {
-        try script("dictate", toml: "title = 'Dictate'\n[commands.dictate]\ntitle = 'Dictate'")
+        try script("dictate", toml: "title = 'Dictate'\n[actions.dictate]\ntitle = 'Dictate'")
         await model.reload()
         let open = GlobalKey(spot: "dictate", act: .open, trigger: .key(try XCTUnwrap(Shortcut(text: "ctrl+option+d"))))
 
@@ -270,7 +270,7 @@ final class SoleCommandTests: XCTestCase {
     }
 
     func testAnOpenKeyOfACommandWithConfirmShowsItsCardAskingAndReturnRunsIt() async throws {
-        try script("wipe", toml: "title = 'Wipe'\n[commands.wipe]\ntitle = 'Wipe'\nconfirm = 'Press again to wipe'")
+        try script("wipe", toml: "title = 'Wipe'\n[actions.wipe]\ntitle = 'Wipe'\nconfirm = 'Press again to wipe'")
         _ = try model.files.config.change { $0.assign(.tap(.option), to: "wipe", act: .command("wipe")) }
         await model.reload()
 

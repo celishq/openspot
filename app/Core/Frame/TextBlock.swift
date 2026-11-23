@@ -31,6 +31,11 @@ public struct TextBlock: Equatable, Sendable {
         TextBlock(fields: fields, firstLine: firstLine, children: children + [child])
     }
 
+    func replacing(child: TextBlock) -> TextBlock {
+        let id = child.fields.first?.value
+        return TextBlock(fields: fields, firstLine: firstLine, children: children.map { $0.fields.first?.value == id ? $0.patched(by: child) : $0 })
+    }
+
     public static func blocks(in output: String) -> [TextBlock] {
         var blocks: [TextBlock] = []
         var fields: [Field] = []

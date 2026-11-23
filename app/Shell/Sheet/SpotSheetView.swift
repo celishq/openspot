@@ -26,6 +26,7 @@ struct SpotSheetView: View {
 
 private struct SheetContentView: View {
     @Environment(\.spotSurfaceEdge) private var surface
+    @Environment(\.spotIsHeld) private var isHeld
     let model: SpotsModel
     let entry: SpotsModel.Entry
     let cardSize: SpotSize
@@ -68,28 +69,7 @@ private struct SheetContentView: View {
             header
                 .morph(progress, offset: { [rowCardDrop] in SheetMorph.place(onCard: CGSize(width: 0, height: rowCardDrop), at: $0) })
             VStack(alignment: .leading, spacing: SpotTokens.rowGap) {
-                if let panel = content.panel {
-                    if top.hasField { Color.clear.frame(height: SpotTokens.listRow) }
-                    SheetPartsView(
-                        panel: panel,
-                        act: content.act,
-                        onSet: { model.setPart($0, to: $1) },
-                        onPress: { model.pressPart($0) },
-                        recordingPart: content.recording,
-                        onRecord: { model.toggleRecording($0) },
-                        keys: content.keys,
-                        list: list,
-                        onRun: { model.runItem($0) },
-                        onDragOut: { model.dragOut($0, of: entry.id) },
-                        selection: selection,
-                        selectedPart: content.selectedPart,
-                        nudge: content.nudge,
-                        menuOpening: content.menuOpening,
-                        onFocus: { model.focusPart($0) },
-                        viewSource: entry.spot.view,
-                        viewDate: entry.spot.viewDate
-                    )
-                } else if let form {
+                if let form {
                     if form.choices != nil { Color.clear.frame(height: SpotTokens.listRow) }
                     SpotFormView(
                         draft: form,
@@ -99,13 +79,28 @@ private struct SheetContentView: View {
                     )
                 } else {
                     if top.hasField { Color.clear.frame(height: SpotTokens.listRow) }
-                    if let create = content.create() {
+                    if content.panel?.holdsParts != true, let create = content.create() {
                         Button { model.createFromSearch() } label: {
                             CreateLabel(model: model, title: create.title, shape: row)
                         }
                         .buttonStyle(.plain)
                     } else {
-                        SpotItemsView(list: list, recording: content.isHeld ? nil : content.recording, recordingWords: model.recordingWords, keys: model.keys, onRun: { model.runItem($0) }, onPoint: { model.point(at: .item($0)) }, selection: selection, onDragOut: { model.dragOut($0, of: entry.id) }, failure: { [model, id = entry.id] in model.failure(of: $0, in: id) }, tips: model, shakes: { [model, id = entry.id] in model.refusals(of: $0, in: id) }, room: top.listRoom)
+                        SpotSheetBody(
+                            panel: content.panel,
+                            list: list,
+                            host: SheetHost(model: model, id: entry.id, content: content, isHeld: isHeld),
+                            recording: content.recording,
+                            recordingWords: model.recordingWords,
+                            keys: content.keys,
+                            onPick: { model.runItem($0) },
+                            onPoint: { model.point(at: .item($0)) },
+                            onDragOut: { model.dragOut($0, of: entry.id) },
+                            selection: selection,
+                            failure: { [model, id = entry.id] in model.failure(of: $0, in: id) },
+                            tips: model,
+                            shakes: { [model, id = entry.id] in model.refusals(of: $0, in: id) },
+                            room: top.listRoom
+                        )
                     }
                 }
             }
@@ -115,6 +110,8 @@ private struct SheetContentView: View {
         .frame(width: rect.width, height: rect.height, alignment: .topLeading)
         .overlay(alignment: .topLeading) { fileDrag }
         .environment(\.spotViewPlace, SpotViewPlace(model: model, place: .sheet(entry.id)))
+        .environment(\.spotSearchTitle, state.title)
+        .environment(\.spotViewDates, entry.spot.viewDates)
     }
 
     private var header: some View {
@@ -127,7 +124,7 @@ private struct SheetContentView: View {
                             .frame(width: max(cardWordsWidth, 0), alignment: .leading)
                             .morph(progress, opacity: { [morph] in morph.sourceLook(at: $0) })
                     }
-                    words(subtitle: list.perLine > 1 ? nil : state.subtitle, selectedName: list.perLine > 1)
+                    words(subtitle: state.subtitle)
                         .frame(width: max(sheetWordsWidth, 0), alignment: .leading)
                         .morph(progress, opacity: sheetWordsOpacity)
                 }
@@ -138,16 +135,14 @@ private struct SheetContentView: View {
             .overlay(alignment: .trailing) { closeButton }
     }
 
-    private func words(title: String? = nil, subtitle: String?, selectedName: Bool = false) -> some View {
+    private func words(title: String? = nil, subtitle: String?) -> some View {
         VStack(alignment: .leading, spacing: SpotType.lineGap) {
             Text(title ?? form?.form.title ?? state.title)
                 .font(SpotType.title)
                 .frame(height: SpotType.titleLine)
                 .modifier(SpotInk())
                 .lineLimit(1)
-            if form == nil, selectedName {
-                SelectedName(list: list, selection: selection, fallback: state.subtitle)
-            } else if form == nil, let subtitle {
+            if form == nil, let subtitle {
                 let lines = title == nil && hasSecondLine ? 2 : 1
                 Text(subtitle)
                     .font(SpotType.detail)
@@ -187,7 +182,7 @@ private struct SheetContentView: View {
 
     @ViewBuilder
     private var closeButton: some View {
-        let button = SpotRoundButton(symbol: "xmark", label: "Close") {
+        let button = SpotRoundButton(icon: .symbol("xmark"), label: "Close") {
             model.closeSheet(moving: true)
         }
         if let closeShift {
@@ -247,7 +242,7 @@ private struct SheetContentView: View {
 
     private var tallCardShift: CGSize {
         guard !hasCardLook, cardSize.rows > 1 else { return .zero }
-        let hasSubtitle = form == nil && (state.subtitle != nil || (list.perLine > 1 && !list.shown.isEmpty))
+        let hasSubtitle = form == nil && state.subtitle != nil
         let wordsHeight = SpotType.titleLine + (hasSubtitle ? SpotType.lineGap + SpotType.detailLine : 0)
         let row = max(SpotTokens.glyph, wordsHeight)
         let top = SpotTokens.padding + (row - wordsHeight) / 2
@@ -274,22 +269,5 @@ private struct CreateLabel: View {
             .background(SpotTheme.ink.opacity(SpotTheme.fill), in: shape)
             .modifier(SpotSelectionRing(isSelected: true, shape: shape))
             .contentShape(shape)
-    }
-}
-
-private struct SelectedName: View {
-    let list: ItemList
-    let selection: () -> Int
-    let fallback: String?
-
-    var body: some View {
-        let index = selection()
-        if let name = list.shown.indices.contains(index) ? list.shown[index].title : fallback {
-            Text(name)
-                .font(SpotType.detail)
-                .frame(height: SpotType.detailLine)
-                .modifier(SpotSecondaryText())
-                .lineLimit(1)
-        }
     }
 }

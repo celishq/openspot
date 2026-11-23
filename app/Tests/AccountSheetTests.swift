@@ -42,14 +42,18 @@ final class AccountSheetTests: BuiltInCase {
     }
 
     private func frame(_ arguments: [String], input: String? = nil, reason: String = "sheet.open", page: String? = nil) async throws -> String {
-        let message = (arguments == ["show"] ? "event=\(reason)\n" : "") + (page.map { "route=\($0)\n" } ?? "") + (input ?? "")
-        return try await runs.answer(of: account, SpotAction(arguments: arguments), input: message, limit: 60)
+        let message = (arguments == ["show"] ? "input.event=\(reason)\n" : "") + Self.inputs(arguments, page: page) + (input ?? "")
+        return try await runs.answer(of: account, arguments[0], input: message, limit: 60)
     }
 
     private func said(_ arguments: [String], input: String? = nil, page: String? = nil) async throws -> HostAnswer {
         _ = try account
-        let message = (page.map { "route=\($0)\n" } ?? "") + (input ?? "")
-        return try await XCTUnwrap(sheet).answer(arguments, input: message)
+        let message = Self.inputs(arguments, page: page) + (input ?? "")
+        return try await XCTUnwrap(sheet).answer(Array(arguments.prefix(1)), input: message)
+    }
+
+    private static func inputs(_ arguments: [String], page: String?) -> String {
+        (arguments.dropFirst().first.map { "input.value=\($0)\n" } ?? "") + (page.map { "input.route=\($0)\n" } ?? "")
     }
 
     private func effects(_ arguments: [String], input: String? = nil, page: String? = nil) async throws -> [SpotEffect] {
@@ -61,7 +65,7 @@ final class AccountSheetTests: BuiltInCase {
     }
 
     private func block(_ id: String, in frame: String) -> [String: String] {
-        let found = frame.components(separatedBy: "\n\n").first { $0.split(separator: "\n").contains { $0.hasSuffix("=\(id)") && !$0.hasPrefix("grid=") } }
+        let found = frame.components(separatedBy: "\n\n").first { $0.split(separator: "\n").contains { $0.hasSuffix("=\(id)") && !$0.hasPrefix("parent=") } }
         var keys: [String: String] = [:]
         for line in (found ?? "").split(separator: "\n") {
             let parts = line.split(separator: "=", maxSplits: 1).map(String.init)
@@ -79,9 +83,9 @@ final class AccountSheetTests: BuiltInCase {
 
         XCTAssertEqual(spot.name, "Account")
         XCTAssertTrue(spot.isFound)
-        XCTAssertFalse(spot.on?.has(.panel) == true)
+        XCTAssertFalse(spot.triggers.showsOnPanel)
         XCTAssertTrue(spot.reachesAccountKey)
-        XCTAssertEqual(spot.view, AccountSheet.card)
+        XCTAssertEqual(spot.views, ["card": AccountSheet.card])
     }
 
     func testWithNoAccountItOffersANewKeyOrYourOwn() async throws {
@@ -92,6 +96,21 @@ final class AccountSheetTests: BuiltInCase {
         XCTAssertEqual(block("own", in: read)["title"], "Use my own key")
     }
 
+    func testALineIsATileWhoseEdgeMeetsTheButtonsAndWhoseWordsWrapInsideIt() async throws {
+        let read = try await frame(["show"])
+        let tree = Frame(text: read).tree
+        let frames = tree.frames(in: SpotTokens.partsWidth, room: SpotTokens.partsMaxHeight, words: [:])
+        let head = try XCTUnwrap(tree.node("head"))
+        let style = head.style.resolved(for: [.sheet])
+
+        XCTAssertEqual(style.fill, .tile)
+        XCTAssertEqual(frames["head"]?.minX, frames["row-2"]?.minX)
+        let type = SpotTokens.layout.type
+        let detailLine = CGFloat(type.detail) + SpotTokens.textLeading
+        let twoLines = CGFloat(type.body) + SpotTokens.textLeading + SpotTokens.textLineGap + 2 * detailLine
+        XCTAssertEqual(frames["head"]?.height, twoLines + 2 * 3 * SpotTokens.spaceUnit)
+    }
+
     func testANewKeyAsksForAHandleUnderItsTitleThenOpensTheAccount() async throws {
         let pushed = try await effects(["new"])
         XCTAssertEqual(pushed, [push("handle")])
@@ -100,7 +119,9 @@ final class AccountSheetTests: BuiltInCase {
         XCTAssertEqual(block("handle", in: asked)["value"], "tonypinkevych")
         XCTAssertEqual(block("handle", in: asked)["grow"], "false")
         XCTAssertEqual(block("label", in: asked)["title"], "Handle")
-        XCTAssertTrue(asked.contains("grid=create create\n"), asked)
+        XCTAssertEqual(block("label", in: asked)["class"], "font-section")
+        XCTAssertEqual(block("create", in: asked)["title"], "Create key")
+        XCTAssertEqual(block("create", in: asked)["parent"], "end")
         XCTAssertNil(block("back", in: asked)["title"])
 
         let answer = try await said(["create"], input: "input.handle=tony\n", page: "handle")
@@ -142,7 +163,9 @@ final class AccountSheetTests: BuiltInCase {
 
         XCTAssertEqual(block("card", in: read)["grow"], "false")
         XCTAssertEqual(block("backup", in: read)["title"], "Backup")
-        XCTAssertTrue(read.contains("grid=- -\ngrid=how leave\n"), read)
+        XCTAssertTrue(read.contains("class=h-px bg-tile\n"), read)
+        XCTAssertNotNil(block("how", in: read)["parent"])
+        XCTAssertEqual(block("how", in: read)["parent"], block("leave", in: read)["parent"])
         XCTAssertFalse(read.contains("button=done"), read)
     }
 
@@ -163,8 +186,9 @@ final class AccountSheetTests: BuiltInCase {
         let account = try await frame(["show"])
 
         XCTAssertEqual(block("how", in: read)["title"], "How it works")
-        XCTAssertTrue(read.contains("grid=own how\n"), read)
-        XCTAssertTrue(account.contains("grid=how leave\n"), account)
+        XCTAssertNotNil(block("how", in: read)["parent"])
+        XCTAssertEqual(block("own", in: read)["parent"], block("how", in: read)["parent"])
+        XCTAssertEqual(block("how", in: account)["parent"], block("leave", in: account)["parent"])
         XCTAssertEqual(pushed, [push("how")])
         XCTAssertEqual(block("head", in: how)["title"], "How your key works")
         XCTAssertEqual(done, [.route(.pop(all: false))])
@@ -255,7 +279,7 @@ final class AccountSheetTests: BuiltInCase {
         XCTAssertEqual(choices.count, 8)
         let places = Array(Set(choices.map(\.place))).sorted()
         let first = try await frame(["pick-\(places[0])-\(words[places[0] - 1])"], page: "check")
-        XCTAssertEqual(block("pick-\(places[0])-\(words[places[0] - 1])", in: first)["look"], "strong")
+        XCTAssertEqual(block("pick-\(places[0])-\(words[places[0] - 1])", in: first)["class"], "bg-accent")
         let done = try await said(["pick-\(places[1])-\(words[places[1] - 1])"], page: "check")
 
         XCTAssertTrue(try store.record()?.isBackedUp == true)
@@ -282,10 +306,10 @@ final class AccountSheetTests: BuiltInCase {
         let empty = try await frame(["show"], page: "restore")
         let typing = try await frame(["phrase", "abandon"], page: "restore")
 
-        XCTAssertTrue(empty.contains("grid=phrase phrase\ngrid=phrase phrase\ngrid=phrase phrase\n"), empty)
+        XCTAssertEqual(block("phrase", in: empty)["class"], "h-32")
         XCTAssertEqual(block("phrase", in: empty)["grow"], "false")
-        XCTAssertTrue(empty.contains("grid=sign_in sign_in\n"), empty)
-        XCTAssertFalse(empty.contains("grid=status"), empty)
+        XCTAssertEqual(block("sign_in", in: empty)["parent"], "end")
+        XCTAssertNil(block("status", in: empty)["title"])
         XCTAssertNil(block("w1", in: typing)["title"])
         XCTAssertEqual(block("status", in: typing)["title"], "1 of 12")
     }

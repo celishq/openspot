@@ -72,7 +72,7 @@ final class TextBlockTests: XCTestCase {
     func testAMetricReadsItsKeys() {
         let output = Frame(text: """
         frame=
-        grid=m
+        class=gap-part
 
         text=m
         title=6 open
@@ -80,11 +80,15 @@ final class TextBlockTests: XCTestCase {
         icon=star
         tone=warn
 
-        text=Fix "tray"
+        items=list
+
+        item=Fix "tray"
+        parent=list
         detail=failing
         tone=bad
 
-        text=Docs
+        item=Docs
+        parent=list
         """)
 
         XCTAssertEqual(MetricValue(output: output), MetricValue(
@@ -102,18 +106,18 @@ final class TextBlockTests: XCTestCase {
     }
 
     func testAnItemNeedsAnIdAndTakesItAsItsTitleWhenItHasNone() {
-        XCTAssertEqual(Frame(text: "text=").items, [])
-        XCTAssertEqual(Frame(text: "text=😀").items.first?.title, "😀")
+        XCTAssertEqual(Frame(text: "item=").items, [])
+        XCTAssertEqual(Frame(text: "item=😀").items.first?.title, "😀")
         XCTAssertEqual(
-            Frame(text: "text=a\ntitle=A\ndetail=B\nicon=/f\nhides=x\nhides=y").items,
+            Frame(text: "item=a\ntitle=A\ndetail=B\nicon=/f\nhides=x\nhides=y").items,
             [SpotItem(title: "A", subtitle: "B", run: "a", picture: .file("/f"), hides: ["x", "y"])]
         )
     }
 
-    func testANumberItemOfMoreThanOneValueDrawsABarForEachUpToItsMaxWithAGapForADash() throws {
-        let bars = try XCTUnwrap(Frame(text: "section=used\ntitle=Used\n\nnumber=a\nvalue=2\nvalue=-\nvalue=4").items.first)
-        let capped = try XCTUnwrap(Frame(text: "number=a\nvalue=2\nvalue=4\nmax=8").items.first)
-        let check = try XCTUnwrap(Frame(text: "text=a\nvalue=true").items.first)
+    func testASeriesItemDrawsABarForEachPointUpToItsMaxWithAGapForADash() throws {
+        let bars = try XCTUnwrap(Frame(text: "items=list\n\nbox=used\nparent=list\ntitle=Used\n\nseries=a\nparent=used\nvalue=2,-,4").items.first)
+        let capped = try XCTUnwrap(Frame(text: "series=a\nvalue=2,4\nmax=8").items.first)
+        let check = try XCTUnwrap(Frame(text: "item=a\nvalue=true").items.first)
 
         XCTAssertEqual(bars.number?.scaledPoints, [0.5, nil, 1])
         XCTAssertEqual(bars.number?.text, "4")
@@ -121,7 +125,7 @@ final class TextBlockTests: XCTestCase {
         XCTAssertFalse(bars.isOn)
         XCTAssertEqual(capped.number?.scaledPoints, [0.25, 0.5])
         XCTAssertNil(check.number)
-        XCTAssertEqual(Frame(text: "number=a\nvalue=nan\nvalue=2").items.first?.number?.scaledPoints, [nil, 1])
+        XCTAssertEqual(Frame(text: "series=a\nvalue=nan,2").items.first?.number?.scaledPoints, [nil, 1])
         XCTAssertTrue(check.isOn)
     }
 
@@ -141,11 +145,11 @@ final class TextBlockTests: XCTestCase {
         XCTAssertEqual(list.lineCount, list.shown.count)
     }
 
-    func testAnItemShowsItsPathAsItsSpotThenItsParent() {
+    func testAnItemShowsItsPathAsItsSpotThenItsPlace() {
         let spot = Spot(id: "s", name: "System Settings", url: URL(fileURLWithPath: "/settings.sh"))
-        let volume = Frame(text: "text=v\ntitle=Volume\ndetail=Loud\nparent=Sound").items.first
+        let volume = Frame(text: "item=v\ntitle=Volume\ndetail=Loud\nplace=Sound").items.first
 
-        XCTAssertEqual(volume?.parent, "Sound")
+        XCTAssertEqual(volume?.place, "Sound")
         XCTAssertEqual(volume?.path(in: spot), "System Settings › Sound")
         XCTAssertEqual(SpotItem(title: "Sound", subtitle: "Loud", run: "s").path(in: spot), "System Settings")
     }

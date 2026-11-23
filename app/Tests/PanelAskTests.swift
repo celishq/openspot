@@ -11,7 +11,7 @@ final class PanelAskTests: PanelCase {
     }
 
     func testASettingFormDoesNotOpenInAHiddenPanel() async throws {
-        try script("editor", toml: "title = 'Editor'\n[settings.editor]", """
+        try script("editor", toml: "title = 'Editor'\n[settings]\neditor = { type = 'text' }", """
         touch '\(called.path)'
         [ "$1" = editor ] && printf 'frame=\\ntitle=Editor\\n\\nfield=editor\\ntitle=Editor\\n'
         """)
@@ -25,7 +25,7 @@ final class PanelAskTests: PanelCase {
     }
 
     func testASettingWithOptionsIsAChoiceThatOpenspotKeepsWithNoCall() async throws {
-        try script("snooze", toml: "title = 'Snooze'\n[settings.morning]\noptions = ['7:00', '8:00', '9:00']", "touch '\(called.path)'")
+        try script("snooze", toml: "title = 'Snooze'\n[settings]\nmorning = { type = 'choice', options = ['7:00', '8:00', '9:00'] }", "[ \"$1\" = show ] || touch '\(called.path)'")
         await model.reload()
         model.isShown = true
         model.panelWillShow()
@@ -54,7 +54,9 @@ final class PanelAskTests: PanelCase {
         model.panelWillShow()
         let entry = try XCTUnwrap(model.entry("notes"))
 
-        model.openForm(CommandAction(id: "add", title: "Add", scope: .spot, isForm: true), on: (entry, nil))
+        model.ask(CommandAction(id: "add", title: "Add", scope: .spot), on: (entry, nil)) { [sheets = model.sheets] in
+            try await sheets["notes"]?.change(CommandAction(id: "add", title: "Add", scope: .spot))
+        }
         try await wait("the call") { FileManager.default.fileExists(atPath: self.called.path) }
         model.closeSheet(moving: false)
         FileManager.default.createFile(atPath: go.path, contents: nil)

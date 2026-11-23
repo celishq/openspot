@@ -10,7 +10,7 @@ struct CallContext {
     let account: Account?
     let secrets: SecretStore
     let trash: @Sendable (URL) throws -> URL
-    let raise: (@Sendable (SpotEvent) async -> Void)?
+    let raise: (@Sendable (AppSignal) async -> Void)?
     let caller: Spot?
     let spot: String?
     let isInShow: Bool
@@ -33,12 +33,16 @@ struct CallContext {
         runs?.callers.isCareful == true
     }
 
+    var channel: Spot? {
+        request.isFromGroup ? nil : caller
+    }
+
     var careful: Set<SpotUse>? {
         isCareful ? Set(SpotUse.allCases) : nil
     }
 
-    var fence: (caller: Spot, mode: CarefulMode)? {
+    var fence: (caller: Spot, sandbox: Sandbox)? {
         guard isCareful, let caller, !caller.uses.contains(.files) else { return nil }
-        return (caller, CarefulMode(uses: caller.uses))
+        return (caller, Sandbox(uses: caller.uses))
     }
 }

@@ -34,22 +34,27 @@ public struct FaultSpot: Equatable, Sendable {
 
     private var sheet: String {
         [
-            RootKey.block([.init(key: "grid", value: "fault fault"), .init(key: "grid", value: "\(Self.editPart) \(Self.fixPart)")]),
+            RootKey.block([.init(key: "class", value: "gap-group")]),
             TextBlock(fields: [
                 .init(key: "field", value: "fault"),
+                .init(key: "type", value: "multiline"),
+                .init(key: "class", value: "grow"),
                 .init(key: "readonly", value: "true"),
                 .init(key: "value", value: ([file.path] + faults).joined(separator: "\n\n"))
             ]),
+            TextBlock(fields: [.init(key: "box", value: "buttons"), .init(key: "class", value: "grid grid-cols-2 gap-part")]),
             TextBlock(fields: [
                 .init(key: "button", value: Self.editPart),
+                .init(key: "parent", value: "buttons"),
                 .init(key: "title", value: "Edit"),
                 .init(key: "shortcut", value: "cmd+e")
             ]),
             TextBlock(fields: [
                 .init(key: "button", value: Self.fixPart),
+                .init(key: "parent", value: "buttons"),
                 .init(key: "title", value: "Copy prompt for AI"),
                 .init(key: "shortcut", value: "cmd+return"),
-                .init(key: "look", value: "strong")
+                .init(key: "class", value: "bg-accent")
             ])
         ].map(\.text).joined(separator: "\n")
     }

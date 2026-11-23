@@ -8,7 +8,7 @@ final class SnoozeSpotTests: XCTestCase {
     private func times(at now: String, choices: String? = nil) throws -> [String: String] {
         let file = URL(fileURLWithPath: #filePath).deletingLastPathComponent().deletingLastPathComponent().deletingLastPathComponent().appendingPathComponent("spots/openspot.spot/snooze.js")
         let context = try XCTUnwrap(JSContext())
-        context.evaluateScript(try String(contentsOf: file, encoding: .utf8))
+        context.evaluateScript(try String(contentsOf: file, encoding: .utf8).replacingOccurrences(of: "export default", with: "var handlers ="))
         let script = """
         (() => {
           const moments = times(new Date(\(now)), \(choices ?? defaults))
@@ -25,9 +25,9 @@ final class SnoozeSpotTests: XCTestCase {
     private func frame(_ call: String) throws -> [TextBlock] {
         let file = URL(fileURLWithPath: #filePath).deletingLastPathComponent().deletingLastPathComponent().deletingLastPathComponent().appendingPathComponent("spots/openspot.spot/snooze.js")
         let context = try XCTUnwrap(JSContext())
-        context.evaluateScript("var openspot = { frame: (blocks) => blocks.map((b) => Object.entries(b).map(([k, v]) => `${k}=${v}`).join('\\n')).join('\\n\\n') + '\\n' }")
-        context.evaluateScript(try String(contentsOf: file, encoding: .utf8))
-        let text = try XCTUnwrap(context.evaluateScript(call)?.toString())
+        context.evaluateScript("var written = (blocks) => blocks.map((b) => Object.entries(b).map(([k, v]) => `${k}=${v}`).join('\\n')).join('\\n\\n') + '\\n'")
+        context.evaluateScript(try String(contentsOf: file, encoding: .utf8).replacingOccurrences(of: "export default", with: "var handlers ="))
+        let text = try XCTUnwrap(context.evaluateScript("written(\(call))")?.toString())
         XCTAssertNil(context.exception)
         return TextBlock.blocks(in: text)
     }
@@ -42,9 +42,27 @@ final class SnoozeSpotTests: XCTestCase {
     }
 
     func testADayOffersOnlyItsTimesToCome() throws {
-        let titles = try frame("hours('date/2026-11-20', new Date(2026, 10, 20, 16, 0), \(defaults))").compactMap { $0.value("look") == nil ? nil : $0.value("title") }
+        let titles = try frame("hours('date/2026-11-20', new Date(2026, 10, 20, 16, 0), \(defaults))").compactMap { $0.value("class") == nil ? nil : $0.value("title") }
 
         XCTAssertEqual(titles, ["Evening", "Night"])
+    }
+
+    func testAPressOfATileGivesItsMomentAsUntilAndPickTitlesTheSheet() throws {
+        let file = URL(fileURLWithPath: #filePath).deletingLastPathComponent().deletingLastPathComponent().deletingLastPathComponent().appendingPathComponent("spots/openspot.spot/snooze.js")
+        let context = try XCTUnwrap(JSContext())
+        context.evaluateScript("var written = (blocks) => blocks.map((b) => Object.entries(b).map(([k, v]) => `${k}=${v}`).join('\\n')).join('\\n\\n') + '\\n'")
+        context.evaluateScript(try String(contentsOf: file, encoding: .utf8).replacingOccurrences(of: "export default", with: "var handlers ="))
+        context.evaluateScript("""
+        var out = {}
+        handlers.press({ item: "someday" }, { settings: {} }).then((v) => { out.someday = v.until })
+        handlers.press({ item: "2026-11-20T08:00:00+01:00" }, { settings: {} }).then((v) => { out.part = v.until })
+        handlers.press({ item: "date" }, { settings: {} }).then((v) => { out.date = v === undefined })
+        handlers.pick({ title: "A tab" }, { settings: {} }).then((v) => { out.pick = written(v).split("\\n\\n")[0] })
+        """)
+
+        XCTAssertNil(context.exception)
+        let out = try XCTUnwrap(context.evaluateScript("JSON.stringify(out)")?.toString())
+        XCTAssertEqual(out, #"{"someday":"someday","part":"2026-11-20T08:00:00+01:00","date":true,"pick":"frame=\ntitle=A tab"}"#)
     }
 
     func testReturnOnSnoozeTabOpensItsListAndItsKeysSnoozeOrOpenAll() throws {
@@ -52,7 +70,7 @@ final class SnoozeSpotTests: XCTestCase {
         let spot = try XCTUnwrap(try SpotsFolder(url: examples).scan().spots.first { $0.id == "snooze-tab" })
 
         XCTAssertEqual(spot.mainAct, .sheet)
-        XCTAssertEqual(spot.offers.map(\.id), ["snooze", "wake"])
+        XCTAssertEqual(spot.commands.map(\.id), ["snooze", "wake"])
     }
 
     func testEachTileOfAWednesdayAfternoon() throws {

@@ -7,9 +7,9 @@ final class CommandHelpTests: XCTestCase {
 
     override func setUpWithError() throws {
         folder = try temporaryFolder()
-        try "# Openspot guide\n\n## Show a list\n\nPrint rows.\n\n```sh\n# title=List\n## not a topic\n```\n\n### Rows\n\nOne per item.\n\n## Add buttons\n\nPrint buttons.\n"
-            .write(to: folder.appendingPathComponent("GUIDE.md"), atomically: true, encoding: .utf8)
-        api = CommandAPI(mac: Mac(guide: folder.appendingPathComponent("GUIDE.md")), places: .test(["OPENSPOT_CONFIG": folder.path]), rates: .offline)
+        try "# Show a list\n\nPrint rows.\n\n```sh\n# title=List\n## not a topic\n```\n\n## Rows\n\nOne per item.\n\n# Add buttons\n\nPrint buttons.\n"
+            .write(to: folder.appendingPathComponent("DOCS.md"), atomically: true, encoding: .utf8)
+        api = CommandAPI(mac: Mac(guide: folder.appendingPathComponent("DOCS.md")), places: .test(["OPENSPOT_CONFIG": folder.path]), rates: .offline)
     }
 
     private func answer(_ arguments: [String]) async throws -> CommandAnswer {
@@ -117,7 +117,7 @@ final class CommandHelpTests: XCTestCase {
         let missing = try await answer(["guide", "show-list"])
 
         XCTAssertEqual(topics.output, "show-a-list    Show a list\nadd-buttons    Add buttons\n")
-        XCTAssertEqual(topic.output, "## Show a list\n\nPrint rows.\n\n```sh\n# title=List\n## not a topic\n```\n\n### Rows\n\nOne per item.\n")
+        XCTAssertEqual(topic.output, "# Show a list\n\nPrint rows.\n\n```sh\n# title=List\n## not a topic\n```\n\n## Rows\n\nOne per item.\n")
         XCTAssertEqual(missing.errors, "The guide has no topic show-list. Did you mean `openspot guide show-a-list`? Run `openspot guide --topics` to see each topic.\n")
         XCTAssertEqual(missing.code, 2)
     }
@@ -126,7 +126,7 @@ final class CommandHelpTests: XCTestCase {
         let one = try await answer(["guide", "buttons"])
         let many = try await answer(["guide", "print"])
 
-        XCTAssertEqual(one.output, "## Add buttons\n\nPrint buttons.\n")
+        XCTAssertEqual(one.output, "# Add buttons\n\nPrint buttons.\n")
         XCTAssertEqual(many.output, "show-a-list    Show a list\nadd-buttons    Add buttons\n")
         XCTAssertEqual(many.code, 0)
     }

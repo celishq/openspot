@@ -73,12 +73,12 @@ extension SpotRun {
     }
 
     static func search(of lines: Frame, in spot: Spot) -> ItemSearch {
-        spot.on?.searchesSheet == true ? .script : lines.search
+        spot.triggers.searchesSheet ? .script : lines.search
     }
 
     func takeAnswer(_ lines: Frame, frame: String, to ask: Ask, keeping: String? = nil, answers: Bool = true) async {
-        if case .answer(let query) = ask { return takeAnswers(lines.answers, to: query) }
-        if case .show = ask, !frame.isEmpty, frame == shownFrame, lines.parts.isEmpty, panel == nil, !list.hasFailed { return takeRepeat(lines, answers: answers) }
+        if case .answer(let query) = ask { return takeAnswers(lines.answers(asCard: spot.triggers.search?.isCard == true), to: query) }
+        if case .show = ask, !frame.isEmpty, frame == shownFrame, lines.parts.isEmpty, panel?.holdsParts != true, !list.hasFailed { return takeRepeat(lines, answers: answers) }
         let next: ItemList.Rows? = if case .show = ask { await newRows(lines.items, search: Self.search(of: lines, in: spot)) } else { nil }
         lastAnswer = lines
         shownFrame = if case .show = ask, !frame.isEmpty, frame.utf8.count <= Self.shownFrameLimit { frame } else { nil }
@@ -94,12 +94,12 @@ extension SpotRun {
             let takeRows = {
                 self.changeList {
                     $0.take(search: search)
-                    $0.take(drawing: lines.drawing)
+                    $0.take(perLine: lines.columns)
                     if let next { $0.replace(next) }
                     if let kept { $0.select(run: kept) }
                 }
             }
-            if showsSheet || panel != nil {
+            if showsSheet || panel?.holdsParts == true {
                 takePanel(lines, generation: generation, keeping: keeping, rows: takeRows)
             } else {
                 takeRows()
@@ -112,7 +112,7 @@ extension SpotRun {
             guard query == list.query else { return }
             changeList {
                 $0.take(search: Self.search(of: lines, in: spot))
-                $0.take(drawing: lines.drawing)
+                $0.take(perLine: lines.columns)
                 $0.answer(lines.items, to: query)
             }
         }
@@ -145,7 +145,7 @@ extension SpotRun {
 
     @discardableResult
     func takePicture(_ lines: Frame, frame: String, of act: Act?) async -> Bool {
-        if let generation = act?.generation, let current = panel?.generation, generation != current {
+        if let generation = act?.generation, let current = partsGeneration, generation != current {
             takeEffects(frame: frame)
             return false
         }
@@ -213,15 +213,15 @@ extension SpotRun {
     private func takePanel(_ lines: Frame, generation: Int?, keeping: String?, rows: () -> Void) {
         if lines.parts.isEmpty {
             rows()
-            panel = nil
-        } else if let current = panel?.generation {
+            panel = SheetParts(output: lines, variants: runs.variants(of: spot.id))
+        } else if let current = panel?.generation, panel?.holdsParts == true {
             rows()
             guard panel?.take(lines, answering: generation ?? current, keeping: keeping) == true else { return }
             partsAnswers += 1
             onReport(.parts)
         } else {
             partsArrival {
-                panel = SheetParts(output: lines)
+                panel = SheetParts(output: lines, variants: runs.variants(of: spot.id))
                 rows()
             }
             partsAnswers += 1

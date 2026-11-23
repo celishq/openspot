@@ -8,6 +8,8 @@ final class StayMode: ScriptMode {
         var isDropped = false
         var isPictured = false
         var timer: Task<Void, Never>?
+        var deadline: Date?
+        var left: TimeInterval?
 
         init(_ call: OpenCall) {
             self.call = call
@@ -43,7 +45,7 @@ final class StayMode: ScriptMode {
     private var askReason: String?
     private var lastPicture: Frame?
     private var printing: Int?
-    private var drawn: (call: Int, text: String?)?
+    private var drawn: (call: Int?, text: String?)?
     private var count = 0
     private var failures: [Date] = []
     private var stamp: [Int]?
@@ -51,6 +53,8 @@ final class StayMode: ScriptMode {
     private var heldScript = false
     private var slowAsks = 0
     private var endingAsks = 0
+    private var isHeld = false
+    private var asksAfterHold = false
 
     init(runs: SpotRuns) {
         self.runs = runs
@@ -62,12 +66,14 @@ final class StayMode: ScriptMode {
         true
     }
 
-    static func answer(of spot: Spot, _ action: SpotAction, input: String?, limit: TimeInterval?, variables: [String: String], in runs: SpotRuns) async throws -> String {
-        guard action == .show else { return try await collect(of: spot, action, input: input, limit: limit, variables: variables, in: runs) }
+    static func answer(of spot: Spot, _ handler: String, input: String?, limit: TimeInterval?, variables: [String: String], in runs: SpotRuns) async throws -> String {
+        guard handler == ScriptEntry.show.name else { return try await collect(of: spot, handler, input: input, limit: limit, variables: variables, in: runs) }
         let (script, frames, caller) = runs.stay(spot, limit: limit)
-        caller.reason = ShowEvent.panel.rawValue
+        caller.reason = ShowEvent.panel.name
         defer { script.end() }
-        script.send(Message(.show, event: .panel, given: input), id: 1)
+        var show = ShowEvent.panel.message()
+        show.given = input
+        script.send(show, id: 1)
         for try await frame in frames {
             let head = FrameRoot(text: frame)
             if !head.isMark || head.end == "1" { return frame }
@@ -84,6 +90,13 @@ final class StayMode: ScriptMode {
     }
 
     func send(_ call: OpenCall) -> Bool {
+        if case .ask(let ask) = call.request.purpose, let run, runs.waitsInRun(run.spot.id) {
+            if case .answer(let text) = ask {
+                run.takeAnswers(run.answers, to: text)
+                asksAfterHold = true
+            }
+            return false
+        }
         switch call.request.purpose {
         case .ask(.show):
             guard run?.isWanted == true else { return false }
@@ -102,7 +115,7 @@ final class StayMode: ScriptMode {
             call.request.purpose = .act(SpotRun.Act(keeping: act.keeping, showsAfter: false, undo: act.undo, first: act.first))
             if post(call, isTimed: false) { run?.track(call.made) }
         case .form:
-            guard !records.values.contains(where: \.isForm), post(call, isTimed: true) else { return false }
+            guard !records.values.contains(where: \.isForm), post(call, isTimed: call.request.chain.isEmpty) else { return false }
             run?.track(call.made)
         }
         settle()
@@ -168,9 +181,10 @@ final class StayMode: ScriptMode {
         let (script, frames, caller) = runs.stay(run.spot, limit: runs.showLimit)
         self.script = script
         self.caller = caller
+        drawn = nil
         slowAsks = 0
         let event = event ?? startEvent
-        let show = SpotRun.Call(message: Message(.show), key: SpotRun.showKey, event: event, purpose: .ask(.show(generation: nil, reports: true)))
+        let show = SpotRun.Call(message: event.message(), key: SpotRun.showKey, event: event, purpose: .ask(.show(generation: nil, reports: true)))
         open(OpenCall(show, started: runs.now()), on: script, isTimed: false)
         Task { await follow(script, frames) }
     }
@@ -191,18 +205,51 @@ final class StayMode: ScriptMode {
         let record = Record(call)
         let request = call.request
         records[id] = record
-        call.made.halt = { [weak script] in script?.send(text: SpotAction.stopEvent(id: id)) }
-        if case .ask = request.purpose { askReason = request.event?.rawValue }
+        call.made.halt = { [weak script] in script?.send(text: Message.stopEvent(id: id)) }
+        if case .ask = request.purpose { askReason = request.event?.name }
         caller?.call = call
         noteReason()
         script.send(run.map { $0.message(of: request, values: $0.fieldValues) } ?? request.message, id: id)
         guard isTimed else { return }
-        let limit = runs.showLimit
+        if isHeld {
+            record.left = runs.showLimit
+        } else {
+            arm(id, record, for: runs.showLimit, on: script)
+        }
+    }
+
+    private func arm(_ id: Int, _ record: Record, for limit: TimeInterval, on script: ScriptProcess) {
+        record.deadline = runs.now().addingTimeInterval(limit)
         record.timer = Task { [weak self, weak script, sleep = runs.clock.sleep] in
             try? await sleep(.seconds(limit), .seconds(limit / 10))
             guard !Task.isCancelled, let script else { return }
             self?.timeOut(id, of: script)
         }
+    }
+
+    func holdLimit() {
+        isHeld = true
+        let now = runs.now()
+        for record in records.values where !record.isDropped {
+            guard let timer = record.timer, let deadline = record.deadline else { continue }
+            timer.cancel()
+            record.timer = nil
+            record.left = max(0, deadline.timeIntervalSince(now))
+        }
+    }
+
+    func releaseLimit() {
+        isHeld = false
+        if let script {
+            for (id, record) in records where !record.isDropped {
+                guard let left = record.left else { continue }
+                record.left = nil
+                arm(id, record, for: left, on: script)
+            }
+        }
+        guard asksAfterHold else { return }
+        asksAfterHold = false
+        run?.askAnswer()
     }
 
     private func noteReason() {
@@ -264,15 +311,24 @@ final class StayMode: ScriptMode {
         for record in lost where !record.isDropped { run?.lose(record.call, end, errors: errors) }
     }
 
+    private var searches: Set<String> {
+        Set(records.compactMap { id, record in
+            switch record.ask {
+            case .search?, .answer?: String(id)
+            default: nil
+            }
+        })
+    }
+
     private func follow(_ script: ScriptProcess, _ frames: AsyncThrowingStream<String, Error>) async {
         var failure: Error?
         do {
             for try await frame in frames {
                 let call = printing
-                let next = await FrameStream.next(frame, after: drawn?.call == call ? drawn?.text : nil)
-                drawn = call.map { ($0, next.drawn) }
+                let next = await FrameStream.next(frame, after: drawn?.call == call ? drawn?.text : nil, apart: searches)
+                drawn = (call, next.drawn)
                 let text = next.text
-                let lines = await runs.intake(text, of: run?.spot.id)
+                let lines = await runs.intake(text, of: run?.spot)
                 guard self.script === script, let run else { continue }
                 await take(text, lines, in: run)
             }
@@ -303,9 +359,16 @@ final class StayMode: ScriptMode {
         defer { if let printing, ends.contains(printing) { self.printing = nil } }
         if let (id, form) = records.first(where: \.value.isForm), !lines.fields.isEmpty || ends.contains(id) {
             let others = Set(ends).subtracting([id]).filter { records[$0]?.ask == nil }.sorted()
-            await answer(id, form, text, lines, in: run)
+            if lines.isMark {
+                await close([id], in: run)
+            } else {
+                await answer(id, form, text, lines, in: run)
+            }
             await close(others, in: run)
             return
+        }
+        if let printing, start == nil, !lines.isMark, let form = records[printing], form.isForm {
+            return await run.take(text, lines, of: form.call)
         }
         if let id = ends.first(where: { records[$0]?.ask != nil }), let record = records[id] {
             slowAsks = 0

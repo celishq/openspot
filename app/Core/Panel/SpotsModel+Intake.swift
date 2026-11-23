@@ -146,7 +146,7 @@ extension SpotsModel {
             let place = SpotsFolder(url: folder.url, core: folder.core, enabled: folder.enabled.union([id]), disabled: folder.disabled)
             let scan = try place.scan()
             guard let command = scan.spots.first(where: { place.isCore($0) && SpotsFolder.coreID(of: $0) == id }) else { return nil }
-            return try ReviewSpot(spot: SpotPackage(sharing: command, from: scan), folder: folder.url, canAdd: false)
+            return try ReviewSpot(spot: SpotPackage(sharing: command, from: scan), folder: folder.url, core: folder.core, canAdd: false)
         }
     }
 

@@ -1,8 +1,8 @@
 #!/bin/sh
 . "$OPENSPOT_SH"
 case "$1" in
-  show)
-    texts=$(value search; value search.alt)
+  show | sheet.text)
+    texts=$(value value; value alt)
     printf 'button=reveal\ntitle=Show in Finder\nshortcut=cmd+return\n\n'
     printf 'button=copy\ntitle=Copy path\nshortcut=cmd+shift+c\n\n'
     predicate=''
@@ -28,13 +28,13 @@ EOF
       | openspot_items
     ;;
   reveal)
-    open -R "$2"
+    open -R "$(value item)"
     ;;
   copy)
-    printf '%s' "$2" | openspot clipboard copy
+    value item | openspot clipboard copy
     openspot toast Copied
     ;;
-  open)
-    open "$2"
+  press)
+    open "$(value item)"
     ;;
 esac

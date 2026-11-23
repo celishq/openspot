@@ -14,25 +14,43 @@ public struct SheetParts: Equatable, Sendable {
         public let serial: Int
     }
 
-    public private(set) var parts: [SpotPart]
+    private var shown: [String]
     public private(set) var generation = 0
     public private(set) var answered = 0
-    public private(set) var layout: SheetLayout?
-    public private(set) var placement: SheetPlacement
+    public private(set) var showsRows: Bool
+    public private(set) var holdsParts: Bool
+    public private(set) var placesSearch: Bool
+    public private(set) var tree: ViewTree
+    public private(set) var height: CGFloat
     public private(set) var pictureTimes: [String: Double]
-    private var focusOffsets: [Int] = []
-    private var focusLineOffsets: [[Int]] = []
+    public private(set) var rows: [[String]]
+    private var focusLines: [[String]] = []
+    private var rowsLine = 0
     public private(set) var selected: String?
     public private(set) var top: SheetTop
+    public private(set) var variants: Set<Style.Variant>
 
-    public init?(output: Frame) {
-        guard !output.parts.isEmpty else { return nil }
-        parts = output.parts
-        layout = output.layout
-        top = SheetTop(showsRows: output.layout?.repeated != nil, search: output.search, header: 0)
-        placement = Self.placement(of: output.parts, in: output.layout, room: top.partsRoom)
-        pictureTimes = Self.pictureTimes(of: output.parts)
-        orderFocus()
+    public init(output: Frame, variants: Set<Style.Variant> = [.sheet, .dark]) {
+        let every = output.parts
+        holdsParts = !every.isEmpty
+        shown = holdsParts ? output.tree.partIDs(shownIn: [variants]) : []
+        self.variants = variants
+        showsRows = output.showsRows
+        placesSearch = output.placesSearch
+        tree = output.tree
+        top = SheetTop(showsRows: showsRows && !placesSearch, search: output.search, header: 0)
+        height = 0
+        pictureTimes = Self.pictureTimes(of: every)
+        rows = output.rows
+        place()
+    }
+
+    public var parts: [SpotPart] {
+        shown.compactMap(part)
+    }
+
+    private func part(_ id: String) -> SpotPart? {
+        tree.node(id)?.part
     }
 
     private static func pictureTimes(of parts: [SpotPart]) -> [String: Double] {
@@ -43,40 +61,56 @@ public struct SheetParts: Equatable, Sendable {
         return times
     }
 
-    private static func placement(of parts: [SpotPart], in layout: SheetLayout?, room: CGFloat) -> SheetPlacement {
-        SheetPlacement(parts: parts, layout: layout ?? SheetLayout(flat: parts), room: room)
+    private static func height(of tree: ViewTree, shownIn variants: Set<Style.Variant>, room: CGFloat) -> CGFloat {
+        tree.height(in: SpotTokens.partsWidth, variants: variants).map { min($0, room) } ?? room
     }
 
     mutating func place(top: SheetTop? = nil) {
         if let top { self.top = top }
-        placement = Self.placement(of: parts, in: layout, room: self.top.partsRoom)
+        height = holdsParts ? Self.height(of: tree, shownIn: variants, room: self.top.partsRoom) : 0
         orderFocus()
     }
 
+    mutating func show(in variants: Set<Style.Variant>) {
+        guard variants != self.variants else { return }
+        self.variants = variants
+        shown = tree.partIDs(shownIn: [variants])
+        place()
+    }
+
     private mutating func orderFocus() {
-        let top = placement.repeatFrame?.maxY ?? -.infinity
-        let placed: [(offset: Int, rect: CGRect)] = parts.indices.compactMap { offset in
-            let part = parts[offset]
-            guard part.isFocusable, let rect = placement.frames[part.id]?.rect, rect.minY >= top else { return nil }
-            return (offset, rect)
-        }
-        let sorted = placed.sorted { $0.rect.minY == $1.rect.minY ? $0.rect.minX < $1.rect.minX : $0.rect.minY < $1.rect.minY }
-        focusOffsets = sorted.map(\.offset)
-        var lines: [[Int]] = []
-        var lineTop: CGFloat?
-        for (offset, rect) in sorted {
-            if rect.minY == lineTop, !lines.isEmpty {
-                lines[lines.count - 1].append(offset)
-            } else {
-                lines.append([offset])
-                lineTop = rect.minY
+        (focusLines, rowsLine) = Self.lines(of: tree, shown: Set(shown), in: variants)
+    }
+
+    private static func lines(of tree: ViewTree, shown: Set<String>, in variants: Set<Style.Variant>) -> ([[String]], Int) {
+        var lines: [[String]] = []
+        var lineRow: String?
+        var rowsLine = 0
+        func walk(_ ids: [String], row: String?) {
+            for id in ids {
+                guard let node = tree.node(id) else { continue }
+                if node.kind == .items {
+                    rowsLine = lines.count
+                    lineRow = nil
+                    continue
+                }
+                if shown.contains(id), node.part?.isFocusable == true {
+                    if let row, row == lineRow, !lines.isEmpty {
+                        lines[lines.count - 1].append(id)
+                    } else {
+                        lines.append([id])
+                        lineRow = row
+                    }
+                }
+                walk(node.children, row: node.style.resolved(for: variants).arrangement == .row ? id : row)
             }
         }
-        focusLineOffsets = lines
+        walk(tree.children, row: nil)
+        return (lines, rowsLine)
     }
 
     public var inputs: [TextBlock.Field] {
-        parts.compactMap { part in part.value.map { .init(key: part.id, value: $0) } }
+        tree.partIDs(shownIn: Frame.sheetPlaces).compactMap { id in part(id)?.value.map { .init(key: id, value: $0) } }
     }
 
     public var hint: String {
@@ -91,79 +125,66 @@ public struct SheetParts: Equatable, Sendable {
     }
 
     public var drawsKeys: Bool {
-        parts.contains { part in part.key != nil && layout?.areas[part.id] != nil }
-    }
-
-    public var showsRows: Bool {
-        layout?.repeated != nil
-    }
-
-    public var kind: SheetKind {
-        SheetKind(parts: parts, layout: layout)
+        showsRows && parts.contains { $0.key != nil }
     }
 
     public var takesArrows: Bool {
-        !showsRows && !focusOffsets.isEmpty
+        !showsRows && !focusLines.isEmpty
     }
 
     public var scrollsByArrows: Bool {
-        !showsRows && focusOffsets.isEmpty
+        !showsRows && focusLines.isEmpty
     }
 
     public var focusOrder: [SpotPart] {
-        focusOffsets.map { parts[$0] }
-    }
-
-    private var focusLines: [[SpotPart]] {
-        focusLineOffsets.map { $0.map { parts[$0] } }
+        focusLines.joined().compactMap(part)
     }
 
     public func keepsIconColumn(_ part: SpotPart) -> Bool {
-        layout?.isDrawn != true && !part.isSection && part.symbol == nil && !part.fillsHeight
-            && parts.contains { !$0.isSection && $0.symbol != nil }
+        part.icon == nil && !part.fillsHeight && parts.contains { $0.icon != nil && !$0.fillsHeight }
     }
 
     public var selectedPart: SpotPart? {
-        if let selected, let offset = focusOffsets.first(where: { parts[$0].id == selected }) { return parts[offset] }
+        let order = focusLines.joined()
+        if let selected, order.contains(selected) { return part(selected) }
         guard takesArrows else { return nil }
-        return (focusOffsets.first { parts[$0].isEditable } ?? focusOffsets.first).map { parts[$0] }
+        return (order.first { part($0)?.isEditable == true } ?? order.first).flatMap(part)
     }
 
     public mutating func move(by step: Int) {
-        guard let current = selectedPart, let line = focusLines.first(where: { $0.contains { $0.id == current.id } }),
-              let index = line.firstIndex(where: { $0.id == current.id })
+        guard let current = selectedPart, let line = focusLines.first(where: { $0.contains(current.id) }),
+              let index = line.firstIndex(of: current.id)
         else { return }
-        selected = line[min(max(index + step, 0), line.count - 1)].id
+        selected = line[min(max(index + step, 0), line.count - 1)]
     }
 
     @discardableResult
     public mutating func moveLine(by lines: Int) -> Bool {
-        guard let current = selectedPart, let from = placement.frames[current.id]?.rect else { return false }
+        guard let current = selectedPart else { return false }
         let all = focusLines
-        guard let index = all.firstIndex(where: { $0.contains { $0.id == current.id } }) else { return false }
-        if index + lines < 0, showsRows {
+        guard let index = all.firstIndex(where: { $0.contains(current.id) }) else { return false }
+        if showsRows, (index < rowsLine) != (index + lines < rowsLine) {
             selected = nil
             return true
         }
         let target = min(max(index + lines, 0), all.count - 1)
-        guard target != index, let next = all[target].min(by: { distance($0, from) < distance($1, from) }) else { return false }
-        selected = next.id
+        guard target != index else { return false }
+        let column = all[index].firstIndex(of: current.id) ?? 0
+        selected = all[target][min(column, all[target].count - 1)]
         return true
     }
 
-    private func distance(_ part: SpotPart, _ rect: CGRect) -> CGFloat {
-        abs((placement.frames[part.id]?.rect.midX ?? 0) - rect.midX)
-    }
-
     @discardableResult
-    public mutating func leaveRows() -> Bool {
-        guard showsRows, let line = focusLines.first, let first = line.first else { return false }
-        selected = first.id
+    public mutating func leaveRows(upward: Bool = false) -> Bool {
+        let all = focusLines
+        let target = upward ? rowsLine - 1 : rowsLine
+        guard showsRows, all.indices.contains(target), let first = all[target].first else { return false }
+        selected = first
         return true
     }
 
     public mutating func focus(_ id: String) {
-        guard focusOffsets.contains(where: { parts[$0].id == id }) else { return }
+        guard focusLines.contains(where: { $0.contains(id) }) else { return }
         selected = id
     }
 
@@ -171,6 +192,14 @@ public struct SheetParts: Equatable, Sendable {
         var same = self
         same.selected = other.selected
         return same == other
+    }
+
+    func changedParts(from other: SheetParts) -> [String]? {
+        var same = self
+        same.tree = other.tree
+        same.generation = other.generation
+        guard same == other else { return nil }
+        return tree.changedParts(from: other.tree)
     }
 
     public var isSelectionMoved: Bool {
@@ -183,7 +212,7 @@ public struct SheetParts: Equatable, Sendable {
 
     @discardableResult
     public mutating func set(_ value: String, of id: String) -> Int {
-        parts.firstIndex { $0.id == id }.map { parts[$0].set(value) }
+        tree.set(value, of: id)
         return advance()
     }
 
@@ -195,12 +224,16 @@ public struct SheetParts: Equatable, Sendable {
 
     @discardableResult
     public mutating func take(_ output: Frame, answering generation: Int, keeping id: String? = nil) -> Bool {
-        guard generation == self.generation, !output.parts.isEmpty else { return false }
-        let kept = parts.first { $0.id == id }?.value
-        parts = output.parts
-        layout = output.layout
-        if let id, let kept, let index = parts.firstIndex(where: { $0.id == id }) { parts[index].set(kept) }
-        pictureTimes = Self.pictureTimes(of: parts)
+        let every = output.parts
+        guard generation == self.generation, !every.isEmpty else { return false }
+        let kept = id.flatMap(part)?.value
+        showsRows = output.showsRows
+        placesSearch = output.placesSearch
+        tree = output.tree
+        if let id, let kept { tree.set(kept, of: id) }
+        shown = tree.partIDs(shownIn: [variants])
+        pictureTimes = Self.pictureTimes(of: every)
+        rows = output.rows
         place()
         answered = generation
         return true

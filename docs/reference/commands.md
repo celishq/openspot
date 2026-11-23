@@ -1,0 +1,61 @@
+# The openspot command
+
+Your spot asks Openspot for anything with `openspot <noun> <verb>`, and it works the same in a terminal. These are
+the commands a spot uses most; [the openspot commands](../../app/Help/commands.md) lists every one, and
+`openspot help <noun>` prints the verbs of one noun.
+
+## How a command ends
+
+| Exit code | Means                                                                       |
+| --------- | --------------------------------------------------------------------------- |
+| `0`       | It's done.                                                                  |
+| `1`       | It failed. The message is on stderr.                                        |
+| `2`       | `openspot` doesn't take its words, such as an unknown verb or a wrong input. |
+| `3`       | It needs Openspot, and Openspot didn't answer.                              |
+| `4`       | People closed what it showed, such as the view of `openspot run`.          |
+
+A command that changes the Mac, waits for people or opens a window fails in a word that only shows, such as `show`;
+see [the commands that fail in a read](../../app/Help/commands.md#the-commands-that-fail-in-a-read).
+
+## Build and try a spot
+
+| Command                                             | Does                                                                     |
+| --------------------------------------------------- | ------------------------------------------------------------------------ |
+| `openspot spot new <name> --from <kind>`            | Writes a spot that works, from `button`, `list`, `number` or `form`.     |
+| `openspot spot run <id> [word] [<name>=<value>...]` | Runs one word of a spot as Openspot does, and prints what it printed.    |
+| `openspot spot log <id>`                            | Prints the last runs of a spot, with their stdin, stdout, stderr and exit code. |
+| `openspot check spots [--json] [folder]`            | Loads and runs each spot of a folder once, and prints a `fault` block for each mistake. |
+| `openspot playground open [file]`                   | Shows a spot in a panel of its own, and runs it again each time you save. |
+| `openspot spot actions [id]`                        | Prints each action of a spot and each command of its uses, with their inputs and outputs. |
+| `openspot schema`                                   | Prints the JSON Schema of `spot.toml`.                                   |
+| `openspot types [id]`                               | Writes `openspot.d.ts` beside a `.js` spot, or `Openspot.swift` beside a `.swift` spot. |
+
+## While your spot runs
+
+| Command                                             | Does                                                                     |
+| --------------------------------------------------- | ------------------------------------------------------------------------ |
+| `openspot toast <words>...`                         | Shows a short message, even when the panel is closed. It works in `show`. |
+| `openspot select <item>`                            | Selects a row of your sheet once your next frame shows.                  |
+| `openspot route push <route> [--title <words>] [--replace]` | Shows a page of your spot over the sheet.                        |
+| `openspot route back [--root]`                      | Goes back one page, or to the first.                                     |
+| `openspot route close`                              | Takes each sheet of your spot off.                                       |
+| `openspot setting get <key>`                        | Prints a setting, such as a `secret`, which never comes on stdin.        |
+| `openspot setting set <key> [value]`                | Keeps a setting, or removes it with no value.                            |
+| `openspot folder pick`                              | Prints the folder people pick, or nothing after Cancel.                  |
+| `openspot timer add <time> <action> [<name>=<value>...]` | Runs an action of your spot at an ISO 8601 time, or `someday`, and prints the timer's id. It needs `timer` in `uses`. |
+| `openspot timer list`                               | Prints an item for each timer of your spot.                              |
+| `openspot timer remove <id>`                        | Removes a timer.                                                         |
+| `openspot run <binding>.<action> [<name>=<value>...] [--out <name>] [--stdin <name>]` | Runs an action of a spot you bind, and prints its values. |
+| `openspot emit <event> [<name>=<value>...]`         | Sends one of your spot's events to each spot that listens.               |
+| `openspot spot open <id>`                           | Opens the panel on a spot.                                               |
+
+Each list a command prints is blocks, as your script prints them, or JSON with `--json` where the command takes it.
+
+## Write a message
+
+A toast or a failure line tells people what happened and what to do next. Say what still worked, and the step that
+fixes the rest, in one or two calm sentences. Put each key in backticks.
+
+- Instead of `Oops! Something went wrong.`, write `Openspot cannot find a screenshot.`
+- Instead of `Error 1: osascript failed.`, write ``Copied, but Openspot cannot paste. Press `⌘V`, or allow Openspot in
+  Accessibility.``

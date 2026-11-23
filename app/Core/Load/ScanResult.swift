@@ -26,11 +26,23 @@ public struct ScanResult: Equatable, Sendable {
         files.flatMap(\.spots)
     }
 
+    mutating func checkBoundEvents(also unloaded: [Spot]) {
+        let declared = Dictionary((scripts + unloaded).map { ($0.id, $0.events.map(\.name)) }) { first, _ in first }
+        files = files.compactMap { file in
+            let spots = file.spots.filter { spot in
+                guard let fault = spot.triggers.unheard(by: spot.name, through: spot.bindings, declared: declared) else { return true }
+                refused.append(Refusal(file: file.id, reason: fault))
+                return false
+            }
+            return spots.isEmpty ? nil : SpotFile(id: file.id, spots: spots)
+        }
+    }
+
     public func offered(_ keys: [GlobalKey]) -> [GlobalKey] {
         keys.filter { key in
             switch key.act {
             case .open, .float: scripts.contains { $0.id == key.spot }
-            case .command(let command): scripts.contains { $0.id == key.spot && $0.offers.contains { $0.id == command } }
+            case .command(let command): scripts.contains { $0.id == key.spot && $0.commands.contains { $0.id == command } }
             }
         }
     }

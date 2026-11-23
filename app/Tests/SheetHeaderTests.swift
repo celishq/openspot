@@ -20,13 +20,13 @@ final class SheetHeaderTests: XCTestCase {
     }
 
     func testTheSecondLineGrowsTheSheetAndTakesItsRoomFromTheParts() throws {
-        let text = "frame=\ngrid=cpu\ngrid=cpu\n\nnumber=cpu\nvalue=1\nvalue=2\n\ntext=a\ntitle=A\n"
+        let text = "frame=\nclass=gap-part\n\nseries=cpu\nvalue=1,2\n\nitems=list\n\ntext=a\nparent=list\ntitle=A\n"
         var panel = try XCTUnwrap(SheetParts(output: Frame(text: text)))
         let flat = SpotTokens.panelRect(panel).height
 
         panel.place(top: SheetTop(header: line, hasField: false))
 
-        XCTAssertEqual(panel.placement.height, SpotTokens.partsMaxHeight - line)
+        XCTAssertEqual(panel.height, SpotTokens.partsMaxHeight - line)
         XCTAssertEqual(SpotTokens.panelRect(panel).height, flat)
         XCTAssertEqual(SpotTokens.sheetRect(rows: 1, top: SheetTop(header: line, hasField: true)).height - SpotTokens.sheetRect(rows: 1).height, line)
     }

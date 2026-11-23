@@ -1,5 +1,6 @@
 #!/bin/sh
 export LC_ALL=en_US.UTF-8
+. "$OPENSPOT_SH"
 panes="${SETTINGS_PANES:-/System/Library/ExtensionKit/Extensions}"
 link='x-apple.systempreferences:'
 
@@ -37,10 +38,10 @@ pane() {
     | select($titles | length > 0)
     | (if ($info | has("CFBundleIcons") or has("CFBundleIconName")) then "icon=\($app)" else "icon=gearshape" end) as $icon
     | ($link + $info.CFBundleIdentifier) as $pane
-    | ($titles[] | "text=\($pane)#\(esc)\ntitle=\(esc)\ndetail=System Settings\n\($icon)\n"),
+    | ($titles[] | "item=\($pane)#\(esc)\ntitle=\(esc)\ndetail=System Settings\n\($icon)\n"),
       ($terms | to_entries[] | .key as $anchor | (.value.localizableStrings // [])[]
         | select(.title != null and (.title | ascii_downcase) != ($titles[0] | ascii_downcase))
-        | "text=\($pane)?\($anchor)#\(.title | esc)\ntitle=\(.title | esc)\ndetail=System Settings › \($titles[0] | esc)\nparent=\($titles[0] | esc)\n\($icon)\n"
+        | "item=\($pane)?\($anchor)#\(.title | esc)\ntitle=\(.title | esc)\ndetail=System Settings › \($titles[0] | esc)\nplace=\($titles[0] | esc)\n\($icon)\n"
           + ((.index // "") | split(",") | map(gsub("^\\s+|\\s+$"; "")) | map(select(. != "")) | if length > 0 then "keywords=\(join(", ") | esc)\n" else "" end))'
 }
 
@@ -58,7 +59,8 @@ case "$1" in
     fi
     cat "$cache"
     ;;
-  open)
-    open "${2%%#*}"
+  press)
+    item=$(value item)
+    open "${item%%#*}"
     ;;
 esac

@@ -26,7 +26,7 @@ extension SpotsModel {
 
     public var showsSearch: Bool {
         if let form { return form.draft.choices != nil && !isEditing }
-        return !isEditing && openSheet?.partsKind?.takesKeys != false
+        return !isEditing && openSheet?.takesKeys != false
     }
 
     public var fieldTop: SheetTop {
@@ -42,8 +42,8 @@ extension SpotsModel {
     }
 
     public func shownParts(of id: String?) -> SheetParts? {
-        guard let id, form?.entry.id != id else { return nil }
-        return sheets[id]?.panel
+        guard let id, form?.entry.id != id, let panel = sheets[id]?.panel, panel.holdsParts else { return nil }
+        return panel
     }
 
     public var openSheet: SpotRun? {
@@ -157,7 +157,7 @@ extension SpotsModel {
         if !shakes.isEmpty { shakes = [:] }
         noteMiss()
         finishPick()
-        for entry in entries where entry.spot.answers != nil { sheets[entry.id]?.answer("") }
+        for entry in entries where entry.spot.triggers.search != nil { sheets[entry.id]?.answer("") }
         runs.panelClosed()
         if isFirstLaunch, !isWarming { isFirstLaunch = false }
         endReview()
@@ -298,14 +298,18 @@ extension SpotsModel {
     }
 
     public var createAction: CommandAction? {
-        guard let list = openItems, !list.query.isEmpty, list.shown.isEmpty, list.search == .local else { return nil }
-        return openEntry?.spot.actions.first { $0.scope == .spot && $0.isForm }
+        guard let list = openItems, !list.query.isEmpty, list.shown.isEmpty, list.search == .local, let spot = openEntry?.spot else { return nil }
+        return spot.frameActions.first { $0.scope == .spot && (try? spot.action($0.callName))?.textInput != nil }
+            ?? spot.commands.map(CommandAction.command).first { (try? spot.action($0.callName))?.textInput != nil }
     }
 
     public func createFromSearch() {
         openSheet?.landRows()
         guard let action = createAction, let entry = openEntry else { return }
-        openForm(action, on: (entry, nil), prefill: openItems?.query ?? "")
+        let query = openItems?.query ?? ""
+        guard let typed = try? entry.spot.action(action.callName), let input = typed.textInput else { return }
+        guard typed.lacksInput else { return call(action, of: entry, query) }
+        show(.form(typed.itemForm(values: [input.name: query], title: action.title)), of: action, on: (entry, nil), prefill: "")
     }
 
     public func runItem(_ item: SpotItem) {
@@ -336,7 +340,7 @@ extension SpotsModel {
             return
         }
         if place.isDetached {
-            if action == nil, (entry.spot.pickForm ?? item.form) != nil || item.records { return press(entry.id) }
+            if action == nil, item.records { return press(entry.id) }
             remember(item, of: entry)
             sheets[entry.id]?.list.select(run: item.run)
         } else {
@@ -344,11 +348,7 @@ extension SpotsModel {
                 toggleRecording(id: item.run)
                 return
             }
-            if action == nil, let form = entry.spot.pickForm ?? item.form {
-                openForm(form, on: (entry, item))
-                return
-            }
-            if action != nil || (entry.spot.pick == .close && !item.staysOnPick) {
+            if action != nil || (entry.spot.pick == .close && !item.staysOnPick && !entry.spot.takesHandlers) {
                 closingPick = (item, entry)
                 if isShown {
                     host.dismiss()
@@ -357,10 +357,28 @@ extension SpotsModel {
                 }
             }
         }
+        let closes = !place.isDetached && entry.spot.takesHandlers && entry.spot.pick == .close && !item.staysOnPick
         if let action {
-            sheets[entry.id]?.run(action, item: item)
+            perform(action, on: (entry, item))
+        } else if entry.spot.takesHandlers, let sheet = sheets[entry.id] {
+            if closes { closingPick = (item, entry) }
+            Task { [weak self] in
+                let answer = await sheet.answer(toPick: item, closes: closes)
+                guard let self else { return }
+                switch answer {
+                case .form, .stopped: if closingPick?.item == item { closingPick = nil }
+                default: break
+                }
+                guard case .form(let form) = answer else { return }
+                let press = CommandAction(id: ScriptEntry.press.name, title: item.title)
+                switch place {
+                case .window: host.notify("\(item.title) asks with a form, which a window does not show yet.")
+                case .float: afterShowing({ host.show() }) { [weak self] in self?.show(.form(form), of: press, on: (entry, item), prefill: "") }
+                case .panel: if isShown { show(.form(form), of: press, on: (entry, item), prefill: "") }
+                }
+            }
         } else {
-            sheets[entry.id]?.pick(item)
+            sheets[entry.id]?.pick(item, closes: closes)
         }
     }
 }

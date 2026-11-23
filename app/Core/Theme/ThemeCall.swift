@@ -34,7 +34,7 @@ enum ThemeCall: NounCall, Equatable {
         let builtin, used: Bool
 
         var blocks: [[(String, String?)]] {
-            [[("text", theme), ("builtin", builtin ? "true" : nil), ("used", used ? "true" : nil)]]
+            [[("item", theme), ("builtin", builtin ? "true" : nil), ("used", used ? "true" : nil)]]
         }
     }
 

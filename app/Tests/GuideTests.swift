@@ -7,8 +7,8 @@ final class GuideTests: XCTestCase {
 
     override func setUpWithError() throws {
         let folder = try temporaryFolder()
-        let file = folder.appendingPathComponent("GUIDE.md")
-        try "# Openspot guide\n\n## Show a list\n\nPrint rows.\n".write(to: file, atomically: true, encoding: .utf8)
+        let file = folder.appendingPathComponent("DOCS.md")
+        try "# Show a list\n\nPrint rows.\n".write(to: file, atomically: true, encoding: .utf8)
         api = CommandAPI(mac: Mac(guide: file, pages: pages), places: .test(["OPENSPOT_CONFIG": folder.path]), rates: .offline)
     }
 

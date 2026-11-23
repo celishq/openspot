@@ -115,9 +115,21 @@ struct SpotCalls {
                 return CommandAnswer(errors: "Openspot has no spot \(id) in \(spots.url.path). Run `openspot check spots` to see each file that does not load.\n", code: 1)
             }
             if let careful { spot.uses.formIntersection(careful) }
+            let handler: (name: String?, inputs: [TextBlock.Field])
+            do {
+                handler = try Self.handler(arguments, of: spot)
+            } catch {
+                return CommandAnswer(errors: SpotRuns.reason(error) + "\n", code: 2)
+            }
             let text = await input?()
             let usage = caller == nil || spot.reachesAccountKey ? nil : runs?.usage
-            let run = TerminalRun(spot: spot, arguments: arguments, input: text, careful: careful == nil ? nil : spot.uses, callers: runs?.callers, environment: places.environment, folder: folder, usage: usage)
+            var chosen: [String: [String: String]] = [:]
+            for setting in places.config.read().settings where setting.spot == spot.id { chosen[spot.id, default: [:]][setting.key] = setting.value }
+            let settings = FieldValues(of: spot, in: chosen, secrets: places.secrets.values(of: spot.id)).settings
+            let run = TerminalRun(
+                spot: spot, handler: handler.name, input: text, inputs: handler.inputs, settings: settings, careful: careful == nil ? nil : spot.uses,
+                callers: runs?.callers, environment: places.environment, folder: folder, usage: usage
+            )
             let begin = Date()
             var first = true
             let end = await run.start { frame in
@@ -134,6 +146,13 @@ struct SpotCalls {
             }
             return CommandAnswer(errors: end.errors, code: end.code)
         }
+    }
+
+    private static func handler(_ arguments: [String], of spot: Spot) throws -> (name: String?, inputs: [TextBlock.Field]) {
+        guard let name = arguments.first else { return (nil, []) }
+        let given = try Manifest.InputCheck.fields(of: Array(arguments.dropFirst()), as: .input)
+        guard let action = try? spot.action(name) else { return (name, given) }
+        return (name, try action.check.checked(given))
     }
 
     func push(_ id: String, route: String?, title: String?, replace: Bool) -> CommandAPI.Work {
@@ -167,6 +186,16 @@ struct SpotCalls {
             let file = try starter.write(name: name, in: places.spots.url)
             await app?.spotsChanged()
             return "Wrote \(file.path). Its ID is \(file.deletingPathExtension().lastPathComponent).\n"
+        }
+    }
+
+    func actions(_ id: String?) -> CommandAPI.Work {
+        CommandAnswer.work { [places] in
+            let spots = try places.readSpots().scan().scripts.filter { id == nil || $0.id == id }
+            if let id, spots.isEmpty {
+                throw SpotError.failed(1, "Openspot has no spot \(id). Run `openspot check spots` to see each file that does not load.")
+            }
+            return ManifestSchema.json(spots.map(CallShape.listing(of:)))
         }
     }
 

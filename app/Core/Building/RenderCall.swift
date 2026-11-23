@@ -3,7 +3,7 @@ import Foundation
 public enum RenderCall: NounCall {
     case sheet(String, view: String?)
     case card(SpotSize, String)
-    case spot(id: String, size: SpotSize?, path: String)
+    case spot(id: String, size: SpotSize?, path: String, isLight: Bool = false)
     case panel(String)
     case store(String)
 
@@ -18,11 +18,11 @@ public enum RenderCall: NounCall {
             guard words.rest.count == 2, let size = SpotSize(name: words.rest[0]) else { return nil }
             return Self.card(size, words.rest[1])
         },
-        CommandVerb("spot", "<id> [--card <size>] <file.png>", "Draws the sheet of an installed spot, or its card at a size.", rule: rule) { words in
+        CommandVerb("spot", "<id> [--card <size>] [--light] <file.png>", "Draws the sheet of an installed spot, or its card at a size, dark or light.", rule: rule) { words in
             guard let fit = words.fit, fit.rest.count == 2 else { return nil }
             let size = fit.value("--card").map { SpotSize(name: $0) }
             guard size != .some(nil) else { return nil }
-            return Self.spot(id: fit.rest[0], size: size ?? nil, path: fit.rest[1])
+            return Self.spot(id: fit.rest[0], size: size ?? nil, path: fit.rest[1], isLight: fit.has("--light"))
         },
         CommandVerb("panel", "<file.png>", "Draws the panel with each installed spot on its grid.", rule: rule) { $0.one.map(Self.panel) },
         CommandVerb("store", "<file.png>", "Draws the window of the Store with each spot as its card.", rule: rule) { $0.one.map(Self.store) }

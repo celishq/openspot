@@ -461,10 +461,13 @@ public struct ViewLibrary: Sendable {
         let scripts = (FileManager.default.enumerator(at: folder, includingPropertiesForKeys: nil)?.allObjects as? [URL] ?? [])
             .filter { FileManager.default.isExecutableFile(atPath: $0.path) && !$0.hasDirectoryPath }
             .sorted { $0.path < $1.path }
-        for script in scripts {
-            guard let name = (try? Manifest(beside: script).script(script))?.view, !name.hasPrefix("/") else { continue }
+        let names = scripts.flatMap { script in
+            ((try? Manifest(beside: script).script(script))?.views ?? []).filter { !$0.hasPrefix("/") }.map { (script, $0) }
+        }
+        var seen = Set<URL>()
+        for (script, name) in names {
             let source = script.deletingLastPathComponent().appendingPathComponent(name)
-            guard let data = try? Data(contentsOf: source) else { continue }
+            guard seen.insert(source.standardizedFileURL).inserted, let data = try? Data(contentsOf: source) else { continue }
             let library = URL(fileURLWithPath: Self.path(beside: source.path, text: data))
             try await build(source: data, named: name, kinds: SwiftBuild.kinds).write(to: library)
             let folder = source.deletingLastPathComponent()

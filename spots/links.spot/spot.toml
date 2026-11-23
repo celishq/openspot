@@ -1,5 +1,11 @@
 icon = "link"
 detail = "Open a link"
-on = ["panel.open"]
 uses = ["network", "clipboard"]
-offers = ["search"]
+
+[actions.new]
+inputs.url = { type = "text", description = "example.com or ~/Downloads" }
+inputs.title = "text"
+
+[on]
+"panel.open" = true
+search = true

@@ -12,7 +12,7 @@ struct Call {
     }
 }
 
-/// The two ways of a staying spot (protocol: A staying spot): the calls that Openspot writes on stdin, one block each,
+/// The two ways of a staying spot (protocol: Without the helper): the calls that Openspot writes on stdin, one block each,
 /// and the frames that the spot prints back, each in one write.
 enum Link {
     /// Reads stdin on a thread of its own, and hands each call and each stop to the main queue, then the end of stdin.

@@ -15,6 +15,7 @@ struct ModelApp: RunningApp {
     func apply(_ theme: Theme) async {}
     func open(_ id: String) async -> Bool { await model.open(id) }
     func ask(_ id: String, from caller: String?, title: String?) async -> Bool { await model.present(FlowSheet(spot: id, title: title), from: caller) }
+    func leave(_ id: String) async -> Bool { await model.leave(id) }
     func push(_ id: String, route: String?, title: String?, replace: Bool) async -> Bool { false }
     func pop(_ id: String, all: Bool) async -> Bool { await all ? model.pop(in: id, all: true) : model.pop(in: id) }
     func review(_ id: String) async -> Bool { false }

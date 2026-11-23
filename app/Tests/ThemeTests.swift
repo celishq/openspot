@@ -110,6 +110,14 @@ final class ThemeTests: XCTestCase {
         XCTAssertEqual([Theme(text: frosted).layout.backdrop.blur, Theme(text: clear).layout.backdrop.blur], [2, 6])
     }
 
+    func testAPartOnASolidFillTakesTheOnSolidInk() {
+        let look = Theme(text: "").colours.dark
+
+        XCTAssertEqual(look[keyPath: Theme.Appearance.inkKey(onSolid: true)], look.onSolid)
+        XCTAssertEqual(look[keyPath: Theme.Appearance.inkKey(onSolid: false)], look.ink)
+        XCTAssertNotEqual(look.onSolid, look.ink)
+    }
+
     func testAnOnColourIsTheBackgroundOrTheInkWhicheverReadsBetter() {
         let light = Theme(text: "[light]\nbackground = \"#EFF1F5\"\nink = \"#4C4F69\"\nhighlight = \"#EA76CB\"\n").colours.light
 

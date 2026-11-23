@@ -7,7 +7,7 @@ struct StatsFrame {
         let stamp = ISO8601DateFormatter()
         let rows = stats.rows.map { row in
             let (id, count) = (row.id, row.count)
-            var fields: [TextBlock.Field] = [.init(key: "text", value: id)]
+            var fields: [TextBlock.Field] = [.init(key: "item", value: id)]
             if let version = row.version { fields.append(.init(key: "version", value: version)) }
             if let since = row.since { fields.append(.init(key: "since", value: stamp.string(from: since))) }
             fields += [

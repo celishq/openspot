@@ -13,24 +13,26 @@ function fields(text) {
 /** The card of an answer: the big answer with its unit faint, over the sum as it was read, faint. The sum names the day
  * of old rates. A pick copies the plain value. */
 function card(solved) {
-  return openspot.frame([
-    { frame: "", "grid.large": "answer" },
-    { number: "answer", value: solved.text, display: solved.title, unit: solved.unit, title: solved.tone ? `${solved.detail} · rates of ${solved.rates}` : solved.detail },
-    { button: "open", title: "Copy" },
-  ])
+  return [
+    { frame: "" },
+    { number: "answer", class: "large:flex", value: solved.item, display: solved.title, unit: solved.unit, title: solved.tone ? `${solved.detail} · rates of ${solved.rates}` : solved.detail },
+    { button: "press", title: "Copy", scope: "spot" },
+  ]
 }
 
-/** The card of the answer of a sum, a conversion or a date for a read. A pick copies the plain value. */
-function main([id, picked], env, input) {
-  if (id === "open") {
-    if (picked !== "offline" && openspot.call(["clipboard", "copy"], picked).code === 0) openspot.call(["toast", `Copied ${picked}`])
-    return ""
-  }
-  const text = openspot.value("event.value", input)
-  if (!text) return ""
-  const answer = openspot.call(["calc", "solve", text]).stdout
-  const why = noRates[answer.trim()]
-  if (why) return "text=offline\ntitle=No exchange rates\n" + why
-  const solved = fields(answer)
-  return solved.text ? card(solved) : answer
+export default {
+  /** The card of the answer of a sum, a conversion or a date for a read. It solves with `openspot.call`, which answers
+   * at once, so the row shows in the turn of the key, where `env.calc.solve` would answer after it. */
+  search({ text }) {
+    if (!text) return ""
+    const answer = openspot.call(["calc", "solve", text]).stdout
+    const why = noRates[answer.trim()]
+    if (why) return "item=offline\ntitle=No exchange rates\n" + why
+    const solved = fields(answer)
+    return solved.item ? card(solved) : answer
+  },
+  /** A pick copies the plain value. */
+  async press({ item }, env) {
+    if (item !== "offline" && openspot.call(["clipboard", "copy"], item).code === 0) await env.toast(`Copied ${item}`)
+  },
 }

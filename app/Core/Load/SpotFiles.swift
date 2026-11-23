@@ -4,7 +4,7 @@ public struct SpotFiles: Sendable {
     struct File: Sendable {
         let path: String
         let isScript: Bool
-        let view: String?
+        let views: [String]
     }
 
     private let files: [File]
@@ -19,7 +19,7 @@ public struct SpotFiles: Sendable {
         self.init(names.map { name in
             let url = folder.appendingPathComponent(name)
             let isScript = SpotsFolder.isScript(url, manifest: manifest)
-            return File(path: url.path, isScript: isScript, view: isScript ? (try? manifest.script(name))?.view : nil)
+            return File(path: url.path, isScript: isScript, views: isScript ? (try? manifest.script(name))?.views ?? [] : [])
         })
     }
 
@@ -30,8 +30,8 @@ public struct SpotFiles: Sendable {
         }) { first, _ in first }
         self.init(package.files.map { file in
             let folder = (file.path as NSString).deletingLastPathComponent
-            let view = file.isExecutable ? (try? (manifests[folder] ?? Manifest(text: nil, folder: folder)).script(file.path))?.view : nil
-            return File(path: file.path, isScript: file.isExecutable, view: view)
+            let views = file.isExecutable ? (try? (manifests[folder] ?? Manifest(text: nil, folder: folder)).script(file.path))?.views ?? [] : []
+            return File(path: file.path, isScript: file.isExecutable, views: views)
         })
     }
 
@@ -43,10 +43,9 @@ public struct SpotFiles: Sendable {
         files.map(\.path).filter { SwiftProgram.isProgram($0, of: script) }
     }
 
-    func view(of script: String) -> String? {
-        guard let name = files.first(where: { $0.path == script })?.view, !name.hasPrefix("/") else { return nil }
+    func views(of script: String) -> [String] {
         let folder = (script as NSString).deletingLastPathComponent
-        return has(folder.isEmpty ? name : "\(folder)/\(name)")
+        return (files.first { $0.path == script }?.views ?? []).filter { !$0.hasPrefix("/") }.compactMap { has(folder.isEmpty ? $0 : "\(folder)/\($0)") }
     }
 
     func libraries(of source: String) -> [String] {
@@ -54,8 +53,7 @@ public struct SpotFiles: Sendable {
     }
 
     func own(of script: String) -> [String] {
-        let view = view(of: script)
-        return [script] + programs(of: script) + (view.map { [$0] + libraries(of: $0) } ?? [])
+        [script] + programs(of: script) + views(of: script).flatMap { [$0] + libraries(of: $0) }
     }
 
     func isBuilt(_ path: String) -> Bool {

@@ -17,7 +17,7 @@
   it from a pinned CLDR version, and the build copies it into the app.
 - `app/Themes/` holds the built-in themes, each in `<name>.theme/theme.toml`. Openspot, in `openspot.theme`, sets every choice,
   and each other built-in theme sets only the choices it changes. The build copies them into the app.
-  [Change the look of Openspot](GUIDE.md#change-the-look-of-openspot) lists its keys and says how a person changes it.
+  [Change the look of Openspot](MANUAL.md#change-the-look-of-openspot) lists its keys and says how a person changes it.
 - `app/Help/` holds the guide of each `openspot` noun that has one, which `openspot help <noun>` prints. The build copies it
   into the app.
 - `spots/` holds the source of the core spots, each a `<name>.spot` folder. The build copies it into the app, and they run
@@ -40,31 +40,13 @@
 - One primary type per file. The filename matches it. A file of extensions is named `Type+Topic.swift`.
   `scripts/check-files.sh` fails on a file that breaks this.
 - Nouns own their data. Verbs are methods on the noun that owns the data.
-- A toast or a failure line follows [Write a message](GUIDE.md#write-a-message).
+- A toast or a failure line follows [Write a message](docs/reference/commands.md#write-a-message).
 
 ## Docs
 
-Write a doc that people read, such as `GUIDE.md` and `PROTOCOL.md`, the way Apple writes its developer docs.
+`PROTOCOL.md` is the map of a spot's contract: `docs/first-spot.md` builds the first spot, a page in `docs/show`, `docs/act`, `docs/remember`, `docs/react`, `docs/connect` and `docs/further` for each goal, and `docs/reference` every key, block, class and command. `MANUAL.md` is the person's page, `app/Help/` the reference of the `openspot` commands, `TRUST.md` what Openspot shows the person about a spot, and `spots/AGENTS.md` the words of the app's own spots. No doc describes the app's code.
 
-- Open each page or section with one sentence that says what the thing is for and when to use it.
-- Show it next, with an example and what it gives on screen. The rules come after the example.
-- Order a guide by the tasks of its reader, such as "Show a number on a card", not by how the code parses it.
-- Bring in a new word where the reader first needs it, with its meaning in the same sentence.
-- Keep the main idea and the edge cases apart. Put limits, errors and rare cases in a short note or in the reference.
-- Write natural English: "you" for the reader, short sentences, common words. Contractions are fine.
-- Use one word for each meaning on the page.
-- `make verify` fails when a doc links to a file or a heading that does not exist, names a repo path or a `make` target
-  that does not exist, or when code cites a protocol heading that does not exist (`DocReferenceTests`).
-- It fails when PROTOCOL.md and Core disagree on a key, a block kind, a call word, an event, a place, a use, a shell
-  helper or an `openspot` command (`ProtocolContractTests`). `scripts/protocol-gaps.txt` lists today's gaps, and it
-  fails on a gap the list lacks and on a listed gap that is gone.
-- It fails when an `sh`, `js` or `swift` example of GUIDE.md, PROTOCOL.md or `app/Help/` does not run (`DocExampleTests`).
-  An example that needs a network, an account or a tool that not every Mac has goes in a `text` fence.
-- The docs are `AGENTS.md`, `spots/AGENTS.md`, `GUIDE.md`, `PROTOCOL.md`, `TRUST.md`, `CONTRIBUTING.md`, `README.md`
-  and `app/Help/`. `PROTOCOL.md` holds only the contract of a spot. What the user chooses is in `GUIDE.md`, the words of
-  the app's own spots in `spots/AGENTS.md`, what Openspot shows the user about a spot in `TRUST.md`, and the reference of
-  the `openspot` commands in `app/Help/`. The code is the truth for how the app works, so no doc describes the app's
-  code. Before you add a sentence, look for one that says it already, and link to it, since no check finds a repeat.
+`make verify` checks facts, not style: a link or a cited heading that doesn't exist (`DocReferenceTests`), an `sh`, `js` or `swift` example that doesn't run (`DocExampleTests`; put one that needs a network or a rare tool in a `text` fence), a picture of a page older than its example (`GuideImageTests`), and an `openspot` command that a doc names but the command doesn't take (`DocCommandTests`).
 
 ## Comments
 
@@ -74,13 +56,13 @@ Write a doc that people read, such as `GUIDE.md` and `PROTOCOL.md`, the way Appl
 
 ## UX
 
-Each spot follows [The keys of a spot](GUIDE.md#the-keys-of-a-spot): Return does its main act, `⌘` Return opens its
-Settings, `⌘Y` its History, `⌘K` the menu of all acts. Openspot makes these for every spot, so a rule changes in one place.
+Each spot follows [Use the keys of a spot](MANUAL.md#use-the-keys-of-a-spot): Return does its main action, `⌘` Return opens
+its Settings, `⌘Y` its History, `⌘K` the menu of all actions. Openspot makes these for every spot, so a rule changes in one place.
 
 - Settings follow the level they change. openspot's Settings hold only the app's rows. Each spot's own Settings hold its
   keys first, Open, each command and Float, then its fields, its menu bar and its window, with the same Not set and `⌘⌫` Remove on
   every key row.
-- A card's ⌘K menu holds the standard acts in one order, which `spots/openspot.spot/actions.js` offers to every card.
+- A card's ⌘K menu holds the standard actions in one order, which `spots/openspot.spot/actions.js` offers to every card.
   A key that a footer already shows does not need a ⌘K menu of its own.
 - Making and changing a spot both go through one form: describe it, then Copy prompt (`⌘⏎`), which flashes `✓ Copied`
   on the same black button. The prompt tells the agent to finish alone, with no question.
@@ -284,13 +266,17 @@ make film SPOT=caffeinate  # films the open and close of a sheet 10x slower (SLO
 make shots                 # saves pictures of the actions menu in the running panel into .temp/shots; ACTION=search TEXT=/translate shoots a typed search
 sh scripts/pixel-diff.sh shoot before  # saves pictures of fixed screens, dark and light, into .temp/pixels/before
 sh scripts/pixel-diff.sh compare before after  # counts the pixels that differ in each picture, and marks them in .temp/pixels/marks
-make docs-images           # shows each GUIDE.md example on screen, focused, and takes its image; GuideImageTests fail when one is out of date
+make docs-images           # shows each example of the docs that has a picture on screen, focused, and takes its image; GuideImageTests fail when one is out of date
 make eval-agent LABEL=base # gives each task of scripts/agent-eval/ to claude -p (Sonnet) N=3 times, grades what it did and how it used
                            # the command, into .temp/agent-eval/base; TASKS=calc picks tasks; it costs money
 make eval-compare LABELS="base phase1"  # prints the summaries of two eval runs one after the other
 ```
 
 `make verify` runs `xcodegen generate` before it builds, so the project file matches the folders on disk.
+
+`openspot render` and `openspot check` start the Debug app of their build when it isn't running, and it keeps running
+after the command ends. It runs on `.temp/openspot/` of the tree it was built from, whatever `--config` the command
+took. Before you finish your work, quit each Debug app you started with that build's `openspot app quit`, with no `--config`.
 
 Each check runs from any folder and takes the repo root as its argument. A check whose rule the code does not meet yet keeps
 today's breaks in `scripts/breaks/`. It fails on a new break and on a listed break that is gone, so a fix removes its line. `make perf` is

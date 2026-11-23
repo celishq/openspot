@@ -10,7 +10,7 @@ struct SpotRowNumber: View {
     }
 
     var body: some View {
-        if let fill = number.fill {
+        if number.look == .ring, let fill = number.fill {
             ZStack {
                 SpotRing(fill: fill, line: SpotTokens.lineRingLine, colour: colour)
                 Text(number.bare)

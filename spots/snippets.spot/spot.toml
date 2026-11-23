@@ -1,5 +1,11 @@
 icon = "text.quote"
 detail = "Copy text"
-on = ["panel.open"]
 uses = ["clipboard"]
-offers = ["search"]
+
+[actions.new]
+inputs.content = { type = "text", description = "Text to keep" }
+inputs.title = "text"
+
+[on]
+"panel.open" = true
+search = true

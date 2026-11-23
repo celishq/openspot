@@ -90,24 +90,19 @@ uninstall_sheet() {
   name=$(basename "$app" .app)
   files=$( { printf '%s\n' "$app"; leftovers "$app"; } )
   names=$(by_name "$app")
-  count=$(printf '%s\n' "$files" | wc -l | tr -d ' ')
-  lines=$count
-  [ "$lines" -gt 7 ] && lines=7
   note=
   [ -z "$names" ] || note=" A folder found only by the app's name waits for your tick."
-  printf 'frame=\ntitle=Delete %s\ndetail=Move the app and its files to the Trash.%s\n' "$name" "$note"
-  i=0
-  while [ "$i" -lt "$lines" ]; do printf 'grid=files files files files\n'; i=$((i + 1)); done
-  printf '\n'
-  printf 'repeat=files\n\n'
-  printf 'button=open\ntitle=Keep or move to Trash\nclose=false\n\n'
-  printf 'button=cancel\ntitle=Cancel\nshortcut=escape\nscope=spot\nclose=false\n\n'
-  printf 'button=remove\ntitle=Move to Trash\nshortcut=cmd+return\nscope=spot\nclose=false\n\n'
+  printf 'frame=\nclass=gap-part\ntitle=Delete %s\ndetail=Move the app and its files to the Trash.%s\n\n' "$name" "$note"
+  printf 'items=files\n\n'
+  printf 'button=press\nparent=files\ntitle=Keep or move to Trash\nclose=false\n\n'
+  printf 'button=cancel\nparent=files\ntitle=Cancel\nshortcut=escape\nscope=spot\nclose=false\n\n'
+  printf 'button=remove\nparent=files\ntitle=Move to Trash\nshortcut=cmd+return\nscope=spot\nclose=false\n\n'
   printf '%s\n' "$files" | while IFS= read -r path; do
     if chosen "$path"; then ticked=true; else ticked=false; fi
     where=$(dirname "$path" | sed "s#^$HOME#~#")
     openspot_item "$path" "$(basename "$path")" "$where" "$path"
     openspot_kv value "$ticked"
+    openspot_kv parent files
   done
 }
 
@@ -128,28 +123,31 @@ case "$1" in
     fi
     ;;
   reveal)
-    open -R "$2"
+    open -R "$(value item)"
     ;;
-  open)
+  press)
+    item=$(value item)
     if [ -s "$pending" ]; then
-      if grep -Fxq "$2" "$kept" 2>/dev/null; then grep -Fxv "$2" "$kept" > "$kept.$$"; else { cat "$kept" 2>/dev/null; printf '%s\n' "$2"; } > "$kept.$$"; fi
+      if grep -Fxq "$item" "$kept" 2>/dev/null; then grep -Fxv "$item" "$kept" > "$kept.$$"; else { cat "$kept" 2>/dev/null; printf '%s\n' "$item"; } > "$kept.$$"; fi
       mv "$kept.$$" "$kept"
     else
-      open "$2"
+      open "$item"
     fi
     ;;
   quit)
-    if ! quit_app "$2"; then
-      echo "Openspot cannot quit $(basename "$2" .app). Allow Openspot to control it in Privacy & Security, then try again." >&2
+    item=$(value item)
+    if ! quit_app "$item"; then
+      echo "Openspot cannot quit $(basename "$item" .app). Allow Openspot to control it in Privacy & Security, then try again." >&2
       echo "link=x-apple.systempreferences:com.apple.preference.security?Privacy_Automation"
       exit 1
     fi
     ;;
   uninstall)
-    case "$2" in
-      /System/*) echo "$(basename "$2" .app) is part of macOS, so it cannot be deleted." >&2; exit 1 ;;
+    item=$(value item)
+    case "$item" in
+      /System/*) echo "$(basename "$item" .app) is part of macOS, so it cannot be deleted." >&2; exit 1 ;;
     esac
-    printf '%s' "$2" > "$pending.$$" && mv "$pending.$$" "$pending"
+    printf '%s' "$item" > "$pending.$$" && mv "$pending.$$" "$pending"
     rm -f "$kept"
     ;;
   cancel)

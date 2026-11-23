@@ -90,6 +90,7 @@ class SampleSpotsCase: XCTestCase {
           'folder pick') cat '\(folder.path)/picked' 2>/dev/null ;;
           'toast '*) shift; printf '%s\\n' "$*" >> '\(folder.path)/toasts' ;;
           'select '*) printf '%s\\n' "$2" >> '\(folder.path)/selected' ;;
+          'spot open') printf '%s\\n' "$3" >> '\(folder.path)/opened-spots' ;;
         esac
         """
     }
@@ -146,8 +147,8 @@ class SampleSpotsCase: XCTestCase {
     }
 
     @MainActor
-    static func answer(of spot: Spot, _ arguments: [String], input: String) async throws -> Frame {
-        Frame(text: try await SpotRuns(environment: TestEnvironment.values).answer(of: spot, SpotAction(arguments: arguments), input: input, limit: 30))
+    static func answer(of spot: Spot, _ handler: String, input: String) async throws -> Frame {
+        Frame(text: try await SpotRuns(environment: TestEnvironment.values).answer(of: spot, handler, input: input, limit: 30))
     }
 
     func action(_ id: String, of spot: Spot) async throws -> CommandAction {
@@ -167,7 +168,7 @@ class SampleSpotsCase: XCTestCase {
         let script = "#!/bin/sh\n[ \"$1 $2\" = 'color pick' ] && { printf '%s' '\(answer)'; exit 0; }\n\(Self.fakeOpenspot(in: folder))\n"
         try script.writeScript(to: folder.appendingPathComponent("tools/openspot"))
         let picker = try XCTUnwrap(try scan.spots.first { $0.name == "Color picker" })
-        return try await picker.perform(picker.click, timeout: 60)
+        return try await picker.perform(ScriptEntry.press.name, timeout: 60)
     }
 
     func fakeTranslate(in folder: URL, status: String? = nil) throws -> Spot {
@@ -184,7 +185,7 @@ class SampleSpotsCase: XCTestCase {
           exit 0
         fi
         if [ "$2" = languages ]; then
-          printf 'preferred=en\\npreferred=ru\\n\\ntext=en\\ntitle=English\\n\\ntext=ru\\ntitle=Russian\\n'
+          printf 'preferred=en\\npreferred=ru\\n\\nitem=en\\ntitle=English\\n\\nitem=ru\\ntitle=Russian\\n'
           exit 0
         fi
         from=$4
@@ -203,12 +204,12 @@ class SampleSpotsCase: XCTestCase {
     }
 
     @MainActor
-    static func drive(_ spot: Spot, _ actions: [SpotAction]) async throws -> Frame {
+    static func drive(_ spot: Spot, _ steps: [(handler: String, value: String?)]) async throws -> Frame {
         var last = try await spot.items(timeout: 60)
         var panel = try XCTUnwrap(SheetParts(output: last))
-        for action in actions {
-            if action.arguments.count == 2 { panel.set(action.arguments[1], of: action.arguments[0]) }
-            last = Frame(text: try await SpotRuns(environment: TestEnvironment.values).answer(of: spot, action, input: Message(action, inputs: panel.inputs).text, limit: 30))
+        for step in steps {
+            if let value = step.value { panel.set(value, of: step.handler) }
+            last = Frame(text: try await SpotRuns(environment: TestEnvironment.values).answer(of: spot, step.handler, input: Message(step.handler, inputs: panel.inputs).text, limit: 30))
             panel.take(last, answering: panel.generation)
         }
         return last
@@ -219,8 +220,8 @@ class SampleSpotsCase: XCTestCase {
         #!/bin/sh
         case "$1" in
           clipboard) \(Self.fakeOpenspot(in: folder)) ;;
-          emoji) printf 'text=👍\\ntitle=thumbs up, %s\\nicon=👍\\n\\n' "$4" ;;
-          symbols) printf 'text=→\\ntitle=rightwards arrow\\ndetail=Rightwards Arrows\\nicon=→\\n' ;;
+          emoji) printf 'item=👍\\ntitle=thumbs up, %s\\nicon=👍\\n\\n' "$4" ;;
+          symbols) printf 'item=→\\ntitle=rightwards arrow\\ndetail=Rightwards Arrows\\nicon=→\\n' ;;
         esac
 
         """

@@ -56,6 +56,10 @@ final class SpotPalette: Sendable {
         glassVariant = colours.glass
     }
 
+    func ink(onSolid: Bool) -> Color {
+        Theme.Appearance.inkKey(onSolid: onSolid) == \.onSolid ? self.onSolid : ink
+    }
+
     func color(_ part: KeyPath<Theme.Appearance, ThemeColor>) -> Color {
         Self.color(part, dark: dark, light: light)
     }

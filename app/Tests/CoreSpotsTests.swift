@@ -128,7 +128,7 @@ final class CoreSpotsTests: XCTestCase {
     }
 
     func testTheChoicesLeaveOutSpotsWithAClock() throws {
-        try write("cpu.sh", in: core, toml: "on = ['clock.5']")
+        try write("cpu.sh", in: core, toml: "[on]\nevery = 5")
         try write("apps.sh", in: core)
 
         XCTAssertEqual(SpotsFolder(url: folder, core: core).coreChoices().map(\.name), ["Apps"])

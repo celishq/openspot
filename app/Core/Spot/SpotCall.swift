@@ -4,6 +4,7 @@ public enum SpotCall: NounCall {
     case new(name: String, starter: SpotStarter)
     case run(id: String, arguments: [String])
     case log(String)
+    case actions(String?)
     case stats(days: Int, spot: String?, format: Stats.Form, byVersion: Bool = false)
     case show(String)
     case list(core: Bool, form: PrintForm)
@@ -15,8 +16,6 @@ public enum SpotCall: NounCall {
     case choose(String)
     case act(CardAct, String)
     case review(String)
-    case ask(String, title: String?)
-    case reply(String)
 
     private static let folder = "changes your spots folder"
     private static let panel = "opens the panel"
@@ -27,8 +26,11 @@ public enum SpotCall: NounCall {
             guard let fit = words.fit, fit.rest.count == 1, let starter = fit.value("--from").map { SpotStarter(rawValue: $0) } ?? .button else { return nil }
             return Self.new(name: fit.rest[0], starter: starter)
         },
-        CommandVerb("run", "<id> [call] [value]...", "Makes one call of a spot as the app does, and prints all that it prints.", rule: CallRule(use: .spots, used: "ran a spot", flags: .startsScripts)) { words in
+        CommandVerb("run", "<id> [call] [value]...", "Makes one call of a spot as the app does, and prints all that it prints. For a spot with [actions] or [on], the call names a handler and each word after it is an input, <name>=<value>, checked as a call checks it, and the spot's bindings work as in a run.", rule: CallRule(use: .spots, used: "ran a spot", flags: .startsScripts)) { words in
             words.rest.first.map { Self.run(id: $0, arguments: Array(words.rest.dropFirst())) }
+        },
+        CommandVerb("actions", "[id]", "Prints each action of a spot, or of every spot, and each command of its uses, with their inputs and outputs as JSON Schema.") { words in
+            words.fit.flatMap { $0.rest.count <= 1 ? Self.actions($0.rest.first) : nil }
         },
         CommandVerb("log", "<id>", "Prints the last calls that the app made to a spot.", rule: CallRule(use: .spots, used: "read the calls of a spot")) { $0.one.map(Self.log) },
         CommandVerb(
@@ -37,7 +39,7 @@ public enum SpotCall: NounCall {
         ) { $0.fit.flatMap(stats) },
         CommandVerb(
             "list", "[--core] [--json]",
-            "Prints an item, a text=<id> block, for each spot that the app loads, with a button=<id> or field=<id> block for each of its own. --core prints each spot that comes with the app, and whether it is on. --json prints them as JSON, with their keys."
+            "Prints an item, an item=<id> block, for each spot that the app loads, with a button=<id> or field=<id> block for each of its own. --core prints each spot that comes with the app, and whether it is on. --json prints them as JSON, with their keys."
         ) { words in
             words.fit.flatMap { $0.rest.isEmpty ? Self.list(core: $0.has("--core"), form: $0.form) : nil }
         },
@@ -65,11 +67,6 @@ public enum SpotCall: NounCall {
         act(.prompt, "Copies a prompt to change a spot, as the row of a card's menu does.", rule: CallRule(use: .spots, used: "copied a prompt to change a spot", inShow: .changes(window))),
         act(.share, "Shares a spot, as the row of a card's menu does.", rule: CallRule(use: .spots, used: "shared a spot", inShow: .changes(window))),
         act(.delete, "Deletes a spot, as the row of a card's menu does.", rule: CallRule(use: .spots, used: "deleted a spot", inShow: .changes(folder))),
-        CommandVerb("ask", "<id> [--title <words>]", "Shows a spot and waits, with the words as the title of its sheet. Prints what the spot gives with `spot reply`, or exits 1 when its sheet closes with no reply.", rule: CallRule(inShow: .waits, flags: .needsApp)) { words in
-            guard let fit = words.fit, fit.rest.count == 1 else { return nil }
-            return Self.ask(fit.rest[0], title: fit.value("--title"))
-        },
-        CommandVerb("reply", "<value>", "Gives the value to the `spot ask` that opened this spot.", rule: CallRule(flags: .needsApp)) { $0.one.map(Self.reply) },
         CommandVerb("review", "<id>", "Shows the whole text of a spot that comes with the app, and what of it runs by itself.", rule: CallRule(inShow: .changes(panel), flags: .needsApp)) { $0.one.map(Self.review) }
     ])
 
@@ -96,6 +93,7 @@ public enum SpotCall: NounCall {
         case .new(let name, let starter): spots.new(name, from: starter)
         case .run(let id, let arguments): spots.run(id, arguments, input: context.request.isPiped ? context.input : nil, careful: context.careful, output: context.output)
         case .log(let id): spots.log(id)
+        case .actions(let id): spots.actions(id)
         case .stats(let days, let spot, let format, let byVersion): spots.stats(days: days, spot: spot, format: format, byVersion: byVersion)
         case .show(let id): spots.show(id)
         case .list(let core, let form): spots.list(core: core, form: form)
@@ -108,8 +106,6 @@ public enum SpotCall: NounCall {
         case .choose(let id): spots.choose(for: id)
         case .act(let act, let id): spots.act(act, id)
         case .review(let id): spots.review(id)
-        case .ask(let id, let title): spots.ask(id, title: title)
-        case .reply(let value): spots.reply(value)
         }
     }
 }

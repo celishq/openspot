@@ -4,16 +4,11 @@ import XCTest
 final class SheetPartsTests: XCTestCase {
     private let lights = """
     frame=
-    grid=lights
-    grid=left
-    grid=brightness
-    grid=color
-    grid=battery
-    grid=reload
-    grid=quit
+    class=gap-part
 
-    section=lights
+    text=lights
     title=Lights
+    class=font-section
 
     switch=left
     title=Left
@@ -27,6 +22,7 @@ final class SheetPartsTests: XCTestCase {
     icon=sun.max
 
     choice=color
+    type=swatches
     color=#ff0000
     color=#00ff00
     value=#00ff00
@@ -89,13 +85,13 @@ final class SheetPartsTests: XCTestCase {
         XCTAssertEqual(PictureFile.reads, reads)
     }
 
-    func testAButtonThatOnlyACardDrawingPlacesIsAPartOfTheCardAndNoAction() {
-        let outputCheck = FrameCheck(text: "frame=\ngrid.strip=next next next join-now\n\nnumber=next\nvalue=09:30\n\nbutton=join-now\ntitle=Join\n\nbutton=tick\ntitle=Mark as done\n".placed)
+    func testAButtonThatOnlyTheCardShowsIsAPartOfTheCardAndNoAction() {
+        let outputCheck = FrameCheck(text: "frame=\nclass=gap-part strip:flex-row\n\nnumber=next\nvalue=09:30\n\nbutton=join-now\ntitle=Join\nclass=hidden strip:flex\n\nitems=list\n\nbutton=tick\nparent=list\ntitle=Mark as done\n")
         let output = outputCheck.output
 
-        XCTAssertEqual(output.face.parts.map(\.id), ["next", "join-now"])
+        XCTAssertEqual(output.face.shown(in: Style.Variant.card(.strip)), ["next", "join-now", "list", "tick"])
+        XCTAssertEqual(output.face.shown(in: [.sheet]), ["next", "list", "tick"])
         XCTAssertEqual(output.actions.map(\.id), ["tick"])
-        XCTAssertEqual(output.face.drawing(for: .strip), [["next", "next", "next", "join-now"]])
         XCTAssertEqual(outputCheck.partFaults, [])
     }
 
@@ -105,80 +101,87 @@ final class SheetPartsTests: XCTestCase {
         XCTAssertEqual(output.parts.map(\.color), ["#1BADF8", "#ff9500", nil, nil])
     }
 
-    func testAViewBlockKeepsItsOwnKeysForItsViewAndOtherPartsKeepNone() {
-        let output = Frame(text: "frame=\ntitle=Card\ngrid=steps\ngrid=note\n\nview=steps\nstep=words\nword=flip\nword=column\n\ntext=note\ntitle=Hi\n")
+    private func views(_ names: String...) -> [BlockKind] {
+        BlockKind.all + names.map { BlockKind(view: $0, source: "/spots/\($0).swift") }
+    }
 
-        XCTAssertEqual(output.parts.first { $0.id == "steps" }?.values["word"], ["flip", "column"])
-        XCTAssertEqual(output.parts.first { $0.id == "steps" }?.values["step"], ["words"])
-        XCTAssertEqual(output.parts.first { $0.id == "note" }?.values, [:])
+    func testAViewBlockKeepsItsOwnKeysForItsViewAndOtherPartsKeepNone() {
+        let output = Frame(text: "frame=\ntitle=Card\nclass=gap-part\n\nsteps=steps\nstep=words\nword=flip\nword=column\n\ntext=note\ntitle=Hi\n", kinds: views("steps"))
+
+        XCTAssertEqual(output.tree.node("steps")?.values["word"], ["flip", "column"])
+        XCTAssertEqual(output.tree.node("steps")?.values["step"], ["words"])
+        XCTAssertEqual(output.tree.node("note")?.values, [:])
     }
 
     func testAViewBlockAlsoGetsEachRowOfItsFrameWithItsKeysInOrder() {
-        let output = Frame(text: "frame=\ngrid=gallery\ngrid=note\n\nview=gallery\nmode=all\n\ntext=a\ntitle=One\ntag=x\ntag=y\n\ntext=b\ndetail=two\\nlines\n\ntext=note\ntitle=Hi\n")
+        let output = Frame(text: "frame=\nclass=gap-part\n\ngallery=gallery\nmode=all\n\nitems=list\n\nitem=a\ntitle=One\ntag=x\ntag=y\nparent=list\n\nitem=b\ndetail=two\\nlines\nparent=list\n\ntext=note\ntitle=Hi\n", kinds: views("gallery"))
 
-        let gallery = output.parts.first { $0.id == "gallery" }
-        XCTAssertEqual(gallery?.items, [["text", "a", "title", "One", "tag", "x", "tag", "y"], ["text", "b", "detail", "two\nlines"]])
-        XCTAssertEqual(gallery?.values, ["view": ["gallery"], "mode": ["all"]])
-        XCTAssertEqual(output.parts.first { $0.id == "note" }?.items, [])
+        XCTAssertEqual(output.rows, [["item", "a", "title", "One", "tag", "x", "tag", "y", "parent", "list"], ["item", "b", "detail", "two\nlines", "parent", "list"]])
+        XCTAssertEqual(output.tree.node("gallery")?.values, ["gallery": ["gallery"], "mode": ["all"]])
         XCTAssertEqual(output.items.map(\.run), ["a", "b"])
     }
 
-    func testTheRowsOfAFrameAreBuiltOnceForAllItsViewBlocks() {
-        let output = Frame(text: "frame=\ngrid=one\ngrid=two\n\nview=one\n\nview=two\n\ntext=a\ntitle=One\n\ntext=b\n")
-
-        let places = output.parts.map { $0.items.withUnsafeBufferPointer { $0.baseAddress } }
-
-        XCTAssertEqual(output.parts.map(\.items.count), [2, 2])
-        XCTAssertEqual(places[0], places[1])
-    }
-
     func testAViewBlockOfAFrameWithNoRowGetsNoRows() {
-        let output = Frame(text: "frame=\ngrid=gallery\n\nview=gallery\nmode=all\n")
+        let output = Frame(text: "frame=\nclass=gap-part\n\ngallery=gallery\nmode=all\n", kinds: views("gallery"))
 
-        XCTAssertEqual(output.parts.first?.values, ["view": ["gallery"], "mode": ["all"]])
-        XCTAssertEqual(output.parts.first?.items, [])
+        XCTAssertEqual(output.tree.node("gallery")?.values, ["gallery": ["gallery"], "mode": ["all"]])
+        XCTAssertEqual(output.rows, [])
     }
 
-    func testATextsToneColoursItsWordsAndANumberKeepsItsOwn() {
-        let outputCheck = FrameCheck(text: "frame=\ngrid=late\ngrid=now\ngrid=disk\ngrid=disk\n\ntext=late\ndetail=Late\ntone=bad\n\ntext=now\ntitle=Standup\ntone=on\n\nnumber=disk\nvalue=90\nmax=100\ntone=bad\n")
-        let output = outputCheck.output
+    func testAnUnknownToneIsAFault() {
+        let outputCheck = FrameCheck(text: "frame=\nclass=gap-part\n\ntext=late\ndetail=Late\ntone=bad\n\ntext=now\ntitle=Standup\ntone=on\n\nnumber=disk\nvalue=90\nmax=100\ntone=bad\n")
 
-        XCTAssertEqual(output.parts.map(\.textTone), [.bad, nil, nil])
         XCTAssertEqual(outputCheck.partFaults, ["the part now has an unknown tone: on"])
     }
 
     func testASetValueKeepsThePlacementOfTheParts() throws {
         var panel = try panel(lights)
-        let placement = panel.placement
+        let height = panel.height
 
         panel.set("true", of: "left")
         panel.set("20", of: "brightness")
         panel.set("#ff0000", of: "color")
 
-        XCTAssertEqual(panel.placement, placement)
+        XCTAssertEqual(panel.height, height)
+    }
+
+    func testASetValueReachesThePartThatTheTreeDraws() throws {
+        var panel = try panel(lights)
+
+        panel.set("true", of: "left")
+
+        XCTAssertEqual(panel.tree.node("left")?.part?.control, .toggle(true))
+        XCTAssertEqual(panel.inputs.first { $0.key == "left" }?.value, "true")
     }
 
     func testAScriptThatPrintsPartsIsAList() {
         XCTAssertEqual(Frame(text: lights.placed).kind, .list)
-        XCTAssertNil(SheetParts(output: Frame(text: "text=a\ntitle=A\n")))
+    }
+
+    func testAListMakesASheetThatHoldsItsItemsAndDrawsNoParts() {
+        let list = SheetParts(output: Frame(text: "text=a\ntitle=A\n"))
+
+        XCTAssertTrue(list.showsRows)
+        XCTAssertFalse(list.holdsParts)
     }
 
     func testWhatABlockPrintsDecidesItsControl() throws {
         let parts = try panel(lights).parts
 
         XCTAssertEqual(parts.map(\.id), ["lights", "left", "brightness", "color", "battery", "reload", "quit"])
-        XCTAssertTrue(parts[0].isSection)
+        XCTAssertEqual(try panel(lights).tree.node("lights")?.style.font, .section)
         XCTAssertEqual(parts[1].control, .toggle(false))
         XCTAssertEqual(parts[2].control, .slider(level: 80, min: 0, max: 100))
         XCTAssertEqual(parts[3].control, .swatches(["#ff0000", "#00ff00"], value: "#00ff00"))
         XCTAssertEqual(parts[4].control, .none)
-        XCTAssertEqual(parts[5].press, .symbol("arrow.clockwise"))
+        XCTAssertEqual(parts[5].press, .line)
+        XCTAssertEqual(parts[5].icon, .symbol("arrow.clockwise"))
         XCTAssertEqual(parts[6].press, .line)
         XCTAssertTrue(parts[6].closes)
     }
 
     func testEachKindKeepsItsDataInValue() throws {
-        let parts = try panel("switch=wifi\nvalue=true\n\nfield=volume\ntype=slider\nvalue=40\nmax=100\n\nfield=name\nvalue=Ann\n\nnumber=history\nvalue=2\nvalue=4\n").parts
+        let parts = try panel("switch=wifi\nvalue=true\n\nfield=volume\ntype=slider\nvalue=40\nmax=100\n\nfield=name\nvalue=Ann\n\nseries=history\nvalue=2,4\n").parts
 
         XCTAssertEqual(parts.dropLast().map(\.control), [
             .toggle(true), .slider(level: 40, min: 0, max: 100), .text("Ann", placeholder: nil, isReadOnly: false)
@@ -192,7 +195,7 @@ final class SheetPartsTests: XCTestCase {
         XCTAssertEqual(parts.dropLast().map(\.control), [.toggle(false), .slider(level: 0, min: 0, max: 100), .text("", placeholder: nil, isReadOnly: false)])
         XCTAssertEqual(parts.last?.number?.points, [])
         for (kind, key) in [("switch", "on"), ("field", "level"), ("field", "text"), ("number", "point")] {
-            XCTAssertEqual(PartCatalog.faults(in: TextBlock(fields: [.init(key: kind, value: "a"), .init(key: key, value: "1")])), ["the part a has an unknown key: \(key)"])
+            XCTAssertEqual(BlockKind.faults(in: TextBlock(fields: [.init(key: kind, value: "a"), .init(key: key, value: "1")])), ["the part a has an unknown key: \(key)"])
         }
     }
 
@@ -230,7 +233,7 @@ final class SheetPartsTests: XCTestCase {
         panel.set("true", of: "left")
         panel.set("20", of: "brightness")
 
-        let block = try XCTUnwrap(TextBlock.blocks(in: Message(.show, inputs: panel.inputs).text ?? "").first)
+        let block = try XCTUnwrap(TextBlock.blocks(in: Message(ScriptEntry.show.name, inputs: panel.inputs).text ?? "").first)
 
         XCTAssertNil(block.value("input.lights"))
         XCTAssertEqual(block.value("input.left"), "true")
@@ -270,11 +273,11 @@ final class SheetPartsTests: XCTestCase {
 
     func testTheHintListsTheKeysOfItsParts() throws {
         XCTAssertEqual(try panel(lights).hint, "⌘Q Quit   Esc Close")
-        XCTAssertEqual(try panel("frame=\ngrid=swap\n\nbutton=swap\nicon=arrow.up.arrow.down\nshortcut=cmd+shift+s\n").hint, "⇧⌘S Swap   Esc Close")
+        XCTAssertEqual(try panel("frame=\nclass=gap-part\n\nbutton=swap\nicon=arrow.up.arrow.down\nshortcut=cmd+shift+s\n").hint, "⇧⌘S Swap   Esc Close")
     }
 
     func testAButtonCanTakeEscapeAndThenTheHintHasNoCloseOfItsOwn() throws {
-        let sheet = try panel("frame=\ngrid=cancel remove\n\nbutton=cancel\ntitle=Cancel\nshortcut=escape\n\nbutton=remove\ntitle=Move to Trash\nshortcut=cmd+return\n")
+        let sheet = try panel("frame=\nclass=grid grid-cols-2 gap-part\n\nbutton=cancel\ntitle=Cancel\nshortcut=escape\n\nbutton=remove\ntitle=Move to Trash\nshortcut=cmd+return\n")
 
         XCTAssertEqual(sheet.parts.first?.key, ActionKey(name: "escape"))
         XCTAssertEqual(sheet.hint, "Esc Cancel   ⌘⏎ Move to Trash")
@@ -283,22 +286,22 @@ final class SheetPartsTests: XCTestCase {
 
     func testAButtonThatCannotBeAnActionIsAFaultThatSaysWhy() {
         let key = "the button b has shortcut=ctrl+k, which a button cannot take. Use cmd or shift with a letter, a digit, return, backspace or a comma, or escape"
-        let actionCheck = FrameCheck(text: "frame=\ngrid=t\n\ntext=t\n\nbutton=b\ntitle=B\nshortcut=ctrl+k\n\nbutton=c\nicon=trash\n\ntext=r\nshortcut=⌃⌥K\n")
+        let actionCheck = FrameCheck(text: "frame=\nclass=gap-part\n\ntext=t\n\nitems=list\n\nbutton=b\nparent=list\ntitle=B\nshortcut=ctrl+k\n\nbutton=c\nparent=list\nicon=trash\n\nitem=r\nparent=list\nshortcut=⌃⌥K\n")
         let action = actionCheck.output
 
         XCTAssertEqual(action.actions, [])
         XCTAssertEqual(action.errors, [])
         XCTAssertEqual(actionCheck.sheetFaults, [key, "the button c needs a title"])
-        XCTAssertEqual(FrameCheck(text: "frame=\ngrid=b\n\nbutton=b\ntitle=B\nshortcut=ctrl+k\n".placed).partFaults, [key])
+        XCTAssertEqual(FrameCheck(text: "frame=\nclass=gap-part\n\nbutton=b\ntitle=B\nshortcut=ctrl+k\n").partFaults, [key])
     }
 
     func testASheetOfRowsDrawsKeysOnlyWhenItsDrawingPlacesAButtonWithAKey() throws {
-        let rows = "repeat=files\n\ntext=a\ntitle=A\n\n"
-        let drawn = try XCTUnwrap(SheetParts(output: Frame(text: "frame=\ngrid=files\ngrid=cancel\n\n\(rows)button=cancel\nshortcut=escape\n".placed)))
-        let actions = SheetParts(output: Frame(text: "frame=\ngrid=files\ngrid=t\n\n\(rows)text=t\n\nbutton=reveal\nshortcut=cmd+return\n".placed))
+        let rows = "items=files\n\ntext=a\nparent=files\ntitle=A\n\n"
+        let drawn = try XCTUnwrap(SheetParts(output: Frame(text: "frame=\nclass=gap-part\n\n\(rows)button=cancel\nshortcut=escape\n")))
+        let actions = SheetParts(output: Frame(text: "frame=\nclass=gap-part\n\n\(rows)text=t\n\nbutton=reveal\nparent=files\nshortcut=cmd+return\n"))
 
         XCTAssertTrue(drawn.drawsKeys)
-        XCTAssertEqual(actions?.drawsKeys, false)
+        XCTAssertFalse(actions.drawsKeys)
     }
 
     func testAnEveryLineIsAnUnknownKindThatASheetSkips() throws {
@@ -307,7 +310,7 @@ final class SheetPartsTests: XCTestCase {
     }
 
     func testTheHintSaysThatAPressStopsARunningPart() throws {
-        let sheet = try panel("frame=\ngrid=quit swap\n\nbutton=quit\ntitle=Quit\nshortcut=cmd+q\n\nbutton=swap\ntitle=Swap\nshortcut=cmd+s\n")
+        let sheet = try panel("frame=\nclass=grid grid-cols-2 gap-part\n\nbutton=quit\ntitle=Quit\nshortcut=cmd+q\n\nbutton=swap\ntitle=Swap\nshortcut=cmd+s\n")
 
         XCTAssertEqual(sheet.hint(stopping: { $0.id == "quit" }), "⌘Q Stop   ⌘S Swap   Esc Close")
         XCTAssertEqual(sheet.hint(stopping: { _ in false }), sheet.hint)
@@ -317,15 +320,10 @@ final class SheetPartsTests: XCTestCase {
         XCTAssertEqual(FrameCheck(text: lights.placed).partFaults, [])
         XCTAssertEqual(FrameCheck(text: "text=a\ncolour=red\n".placed).partFaults, ["the part a has an unknown key: colour"])
         XCTAssertEqual(FrameCheck(text: "choice=a\noption=en:English\n".placed).partFaults, ["the part a has an unknown key: option"])
-        XCTAssertEqual(FrameCheck(text: "choice=a\ncolor=red\n".placed).partFaults, ["the part a needs a color as #rrggbb: red"])
+        XCTAssertEqual(FrameCheck(text: "choice=a\ntype=swatches\ncolor=red\n".placed).partFaults, ["the part a needs a color as #rrggbb: red"])
         XCTAssertEqual(FrameCheck(text: "text=a\nshortcut=nope+a\n".placed).partFaults, ["the part a has an unknown key combination: nope+a"])
         XCTAssertEqual(FrameCheck(text: "text=a\ntitle=A\ndetail=9%\ntone=bad\n".placed).partFaults, [])
         XCTAssertEqual(FrameCheck(text: "text=a\ntitle=A\ndetail=9%\ntone=red\n".placed).partFaults, ["the part a has an unknown tone: red"])
-    }
-
-    func testTheCallsOfAPanel() {
-        XCTAssertEqual(SpotAction.set("left", to: "true").arguments, ["left", "true"])
-        XCTAssertEqual(SpotAction.press("quit").arguments, ["quit"])
     }
 
     func testAPartOrAnActionCalledShowIsAFault() {
@@ -339,11 +337,12 @@ final class SheetPartsTests: XCTestCase {
         }
     }
 
-    func testAPartOrAnActionWithADefaultIdIsAFaultButAnOpenActionChangesThePick() {
-        for id in ["open", "drop"] {
+    func testAPartOrAnActionNamedForAHandlerIsAFaultButAPressActionChangesThePick() {
+        for id in ["press", "drop", "search", "every"] {
             XCTAssertEqual(FrameCheck(text: "text=\(id)\ntitle=A\n".placed).partFaults, ["a part cannot be called \(id)"])
         }
         XCTAssertEqual(FrameCheck(text: "button=drop\ntitle=A\n".placed).partFaults, ["an action cannot be called drop"])
+        XCTAssertEqual(FrameCheck(text: "button=press\ntitle=Show\n".placed).partFaults, [])
         XCTAssertEqual(FrameCheck(text: "button=open\ntitle=Show\n".placed).partFaults, [])
     }
 
@@ -355,10 +354,7 @@ final class SheetPartsTests: XCTestCase {
     func testArrowsSelectThePartsThatReturnCanUse() throws {
         var sheet = try panel("""
         frame=
-        grid=key
-        grid=note
-        grid=wifi
-        grid=reload
+        class=gap-part
 
         field=key
         type=hotkey
@@ -392,18 +388,18 @@ final class SheetPartsTests: XCTestCase {
         XCTAssertEqual(sheet.selectedPart?.id, "key")
     }
 
-    func testALineWithNoIconKeepsTheIconColumnOnlyInAListWhereALineHasOne() throws {
-        let list = try XCTUnwrap(SheetParts(output: Frame(text: "frame=\ngrid.large=cpu all top\n\nsection=cpu\ntitle=CPU\n\ntext=all\ntitle=All\nicon=cpu\n\ntext=top\ntitle=launchd\n")))
-        let plain = try XCTUnwrap(SheetParts(output: Frame(text: "frame=\ngrid.large=top\n\ntext=top\ntitle=launchd\n")))
-        let drawn = try panel("frame=\ngrid=all top\n\ntext=all\ntitle=All\nicon=cpu\n\ntext=top\ntitle=launchd\n")
+    func testALineWithNoIconKeepsTheIconColumnOnlyWhereALineHasOne() throws {
+        let list = try XCTUnwrap(SheetParts(output: Frame(text: "frame=\nclass=gap-part\n\ntext=all\ntitle=All\nicon=cpu\n\ntext=top\ntitle=launchd\n")))
+        let plain = try XCTUnwrap(SheetParts(output: Frame(text: "frame=\nclass=gap-part\n\ntext=top\ntitle=launchd\n")))
+        let pictured = try XCTUnwrap(SheetParts(output: Frame(text: "frame=\nclass=gap-part\n\npicture=art\nicon=/a.heic\n\ntext=top\ntitle=launchd\n")))
 
-        XCTAssertEqual(list.parts.map(list.keepsIconColumn), [false, false, true])
+        XCTAssertEqual(list.parts.map(list.keepsIconColumn), [false, true])
         XCTAssertEqual(plain.parts.map(plain.keepsIconColumn), [false])
-        XCTAssertEqual(drawn.parts.map(drawn.keepsIconColumn), [false, false])
+        XCTAssertEqual(pictured.parts.map(pictured.keepsIconColumn), [false, false])
     }
 
     func testPointsWithNoDetailStillDrawANumberSeries() throws {
-        let part = try XCTUnwrap(try panel("number=history\nvalue=2\nvalue=4\n").parts.first)
+        let part = try XCTUnwrap(try panel("series=history\nvalue=2,4\n").parts.first)
 
         XCTAssertEqual(part.number?.points, [2, 4])
     }
@@ -441,37 +437,173 @@ final class SheetPartsTests: XCTestCase {
     }
 
     func testANumberShowsItsValueLargeWithItsTitleAsTheLabel() throws {
-        let part = try XCTUnwrap(Frame(text: "frame=\ngrid=cpu cpu\ngrid=cpu cpu\n\nnumber=cpu\nvalue=42%\ntitle=CPU\n".placed).parts.first)
+        let part = try XCTUnwrap(Frame(text: "frame=\nclass=gap-part\n\nnumber=cpu\nvalue=42%\ntitle=CPU\n").parts.first)
 
         XCTAssertEqual(part.number?.text, "42%")
         XCTAssertEqual(part.title, "CPU")
         XCTAssertEqual(MetricValue(output: Frame(text: "number=cpu\nvalue=42%\ntitle=CPU\n".placed)), MetricValue(title: "42%", detail: "CPU", number: .of("value=42%")))
     }
 
-    func testAChoiceDrawnOverTwoLinesIsAListAndOverOneLineAMenu() throws {
-        let choice = "choice=c\nvalue=a\n\noption=a\ntitle=A\n\noption=b\ntitle=B\n"
-        let tall = try XCTUnwrap(Frame(text: "frame=\ngrid=c\ngrid=c\n\n" + choice).parts.first)
-        let short = try XCTUnwrap(Frame(text: "frame=\ngrid=c\n\n" + choice).parts.first)
-        var sheet = try XCTUnwrap(SheetParts(output: Frame(text: "frame=\ngrid=c\ngrid=c\n\n" + choice)))
+    func testTheTypeOfAChoicePicksItsFormAndColorLinesAloneDoNot() throws {
+        let options = "option=a\ntitle=A\n\noption=b\ntitle=B\n"
+        let list = try XCTUnwrap(Frame(text: "frame=\nclass=gap-part\n\nchoice=c\ntype=list\nvalue=a\n\n" + options).parts.first)
+        let colored = try XCTUnwrap(Frame(text: "frame=\nclass=gap-part\n\nchoice=c\ncolor=#ff0000\nvalue=a\n\n" + options).parts.first)
+        let swatches = try XCTUnwrap(Frame(text: "frame=\nclass=gap-part\n\nchoice=c\ntype=swatches\ncolor=#ff0000\ncolor=#00ff00\nvalue=#ff0000\n").parts.first)
+        var sheet = try XCTUnwrap(SheetParts(output: Frame(text: "frame=\nclass=gap-part\n\nchoice=c\ntype=list\nvalue=a\n\n" + options)))
 
-        XCTAssertEqual(tall.control, .list([.init(id: "a", title: "A"), .init(id: "b", title: "B")], value: "a"))
-        XCTAssertEqual(short.control, .menu([.init(id: "a", title: "A"), .init(id: "b", title: "B")], value: "a"))
-        sheet.take(Frame(text: "frame=\ngrid=c\ngrid=c\n\nchoice=c\nvalue=a\n\noption=a\ntitle=A\n".placed), answering: sheet.generation)
+        XCTAssertEqual(list.control, .list([.init(id: "a", title: "A"), .init(id: "b", title: "B")], value: "a"))
+        XCTAssertEqual(colored.control, .menu([.init(id: "a", title: "A"), .init(id: "b", title: "B")], value: "a"))
+        XCTAssertEqual(swatches.control, .swatches(["#ff0000", "#00ff00"], value: "#ff0000"))
+        XCTAssertEqual(FrameCheck(text: "choice=c\ncolor=#ff0000\n".placed).partFaults, ["the choice c has color lines, which only a choice with type=swatches takes"])
+        sheet.take(Frame(text: "frame=\nclass=gap-part\n\nchoice=c\ntype=list\nvalue=a\n\noption=a\ntitle=A\n"), answering: sheet.generation)
         XCTAssertEqual(sheet.parts.first?.control, .list([.init(id: "a", title: "A")], value: "a"))
     }
 
-    func testALookOnlyDrawsTheBox() {
-        XCTAssertEqual(FrameCheck(text: "text=a\ntitle=A\nlook=large\n".placed).partFaults, ["the part a has an unknown look: large"])
-        XCTAssertEqual(FrameCheck(text: "text=a\ntitle=A\nlook=section\n".placed).partFaults, ["the part a has an unknown look: section"])
-        XCTAssertEqual(FrameCheck(text: "choice=a\nlook=list\n\noption=x\ntitle=X\n".placed).partFaults, ["the part a has an unknown look: list"])
+    func testAnIconDrawsOnEveryKindAndARoundButtonComesFromItsClass() throws {
+        let parts = try panel("""
+        button=round
+        class=rounded-full
+        icon=star
+
+        button=boxed
+        icon=star
+
+        button=titled
+        class=rounded-full
+        title=Star
+        icon=😀
+
+        text=glyph
+        icon=😀
+
+        switch=file
+        icon=~/Desktop
+        """).parts
+
+        XCTAssertEqual(parts.map(\.press), [.round(.symbol("star")), .line, .line, .none, .none])
+        XCTAssertEqual(parts.map(\.icon), [nil, .symbol("star"), .glyph("😀"), .glyph("😀"), .file("~/Desktop")])
+    }
+
+    func testTheClassesOfAPartChooseTheLookOfItsBox() throws {
+        let looks = ["bg-accent", "rounded-full", "bg-transparent", "bg-tile", "bg-tile hover:bg-accent", "rounded-inner"].map { classes in
+            Frame(text: "frame=\nclass=gap-part\n\nbutton=b\ntitle=B\nclass=\(classes)\n").tree.look(of: "b")
+        }
+
+        XCTAssertEqual(looks, [.strong, .chip, .bare, .tile, .tile, nil])
+        XCTAssertEqual(SpotPart.Look(style: Style(classes: "bg-tile hover:bg-accent").resolved(for: [.sheet, .hover])), .strong)
+    }
+
+    func testALookOrAnAlignKeyIsAnUnknownKey() {
+        XCTAssertEqual(FrameCheck(text: "frame=\nclass=gap-part\n\nbutton=a\ntitle=A\nlook=strong\nalign=right\n").partFaults, [
+            "the part a has an unknown key: look", "the part a has an unknown key: align"
+        ])
     }
 
     func testASwitchWithATickLookKeepsItsValue() throws {
         let part = try XCTUnwrap(Frame(text: "switch=done\ntitle=Call mom\nvalue=true\ntype=tick\n".placed).parts.first)
 
-        XCTAssertEqual(part.look, .tick)
+        XCTAssertTrue(part.isTick)
         XCTAssertEqual(part.control, .toggle(true))
         XCTAssertEqual(FrameCheck(text: "switch=done\nvalue=true\ntype=tick\n".placed).partFaults, [])
     }
 
+
+    private let treeForm = """
+    frame=
+    class=gap-part
+
+    field=name
+    title=Name
+    value=Ada
+
+    box=foot
+    class=flex-row gap-part
+
+    switch=wifi
+    parent=foot
+    title=Wi-Fi
+    value=true
+
+    choice=look
+    parent=foot
+    value=a
+
+    option=a
+    title=A
+
+    button=save
+    parent=foot
+    title=Save
+
+    number=battery
+    value=84
+    max=100
+    """
+
+    private let treeList = """
+    frame=
+    class=gap-part
+
+    field=find
+    type=search
+
+    button=top
+    title=Top
+
+    items=list
+
+    item=a
+    parent=list
+    title=Apple
+
+    item=b
+    parent=list
+    title=Banana
+
+    button=forget
+    parent=list
+    title=Forget
+    shortcut=cmd+f
+
+    button=add
+    title=Add
+    """
+
+    func testAWrittenTreeTakesTheBlocksInsideItsItemsAsTheItemsAndItsButtonsThereAsActions() throws {
+        let output = Frame(text: treeList)
+        let sheet = try XCTUnwrap(SheetParts(output: output))
+
+        XCTAssertEqual(output.items.map(\.run), ["a", "b"])
+        XCTAssertEqual(output.items.map(\.place), [nil, nil])
+        XCTAssertEqual(output.actions.map(\.id), ["forget"])
+        XCTAssertEqual(output.parts.map(\.id), ["top", "add"])
+        XCTAssertEqual(output.search, .local)
+        XCTAssertTrue(sheet.showsRows)
+        XCTAssertEqual(output.tree.node("list")?.style.grows, true)
+    }
+
+    func testTheFocusOfAWrittenTreeFollowsItsLinesAndARowIsOneLine() throws {
+        var sheet = try XCTUnwrap(SheetParts(output: Frame(text: treeForm)))
+
+        XCTAssertEqual(sheet.focusOrder.map(\.id), ["name", "wifi", "look", "save"])
+        XCTAssertTrue(sheet.takesArrows)
+        XCTAssertEqual(sheet.selectedPart?.id, "name")
+        XCTAssertTrue(sheet.moveLine(by: 1))
+        XCTAssertEqual(sheet.selectedPart?.id, "wifi")
+        sheet.move(by: 2)
+        XCTAssertEqual(sheet.selectedPart?.id, "save")
+        XCTAssertTrue(sheet.moveLine(by: -1))
+        XCTAssertEqual(sheet.selectedPart?.id, "name")
+        XCTAssertFalse(sheet.moveLine(by: -1))
+    }
+
+    func testAFocusLineFollowsTheRowThatTheSheetResolves() throws {
+        let text = "frame=\nclass=gap-part\n\nbox=foot\nclass=sheet:flex-row card:flex-col\n\nswitch=wifi\nparent=foot\nvalue=true\n\nbutton=save\nparent=foot\ntitle=Save\n"
+        var sheet = try XCTUnwrap(SheetParts(output: Frame(text: text)))
+
+        XCTAssertEqual(sheet.selectedPart?.id, "wifi")
+        sheet.move(by: 1)
+        XCTAssertEqual(sheet.selectedPart?.id, "save")
+        XCTAssertFalse(sheet.moveLine(by: -1))
+    }
 }

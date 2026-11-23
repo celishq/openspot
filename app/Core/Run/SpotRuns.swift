@@ -10,6 +10,8 @@ public final class SpotRuns {
     }
     public private(set) var openID: String?
     public private(set) var floating: Set<String> = []
+    @ObservationIgnored public private(set) var appearance = Style.Variant.dark
+    @ObservationIgnored private var windows: Set<String> = []
     public var dragged = FileKinds() {
         didSet {
             guard dragged != oldValue else { return }
@@ -54,12 +56,14 @@ public final class SpotRuns {
     @ObservationIgnored public private(set) var acts: [(id: String, call: ScriptCall)] = []
     public private(set) var runningSummary: String?
     public private(set) var actSpot: String?
-    @ObservationIgnored var ticks: Task<Void, Never>?
+    @ObservationIgnored let clockWatch: DueWatch
     @ObservationIgnored var timers: SpotTimers
-    @ObservationIgnored var timerWatch: Task<Void, Never>?
-    @ObservationIgnored var asks = SpotAsks()
+    @ObservationIgnored let timerWatch: DueWatch
+    @ObservationIgnored var schedule: SpotSchedule
+    @ObservationIgnored let scheduleWatch: DueWatch
+    @ObservationIgnored var pushed = PushedRuns()
+    @ObservationIgnored var runWaits: [String: Int] = [:]
     @ObservationIgnored var wanted: Set<String> = []
-    @ObservationIgnored var nextShow: Date?
     @ObservationIgnored var answerMatches = AnswerMatches()
     @ObservationIgnored private var lastSearch: SearchQuery?
     @ObservationIgnored private(set) var searchBuilds = 0
@@ -77,7 +81,7 @@ public final class SpotRuns {
     @ObservationIgnored var standIn: ((Spot) -> ScriptMode)?
     @ObservationIgnored public var api: CommandAPI?
     @ObservationIgnored private let log: CallLog?
-    @ObservationIgnored public var onCall: ((CallLog.Record, ShowEvent?) -> Void)?
+    @ObservationIgnored public var onCall: ((CallLog.Record) -> Void)?
     @ObservationIgnored var frameWaits = 0
     @ObservationIgnored var answerWaits: [(DispatchTime) -> Void]?
     @ObservationIgnored private let swift: SwiftProgram
@@ -106,6 +110,7 @@ public final class SpotRuns {
         log: CallLog? = nil,
         stats: URL? = nil,
         timers: URL? = nil,
+        schedule: URL? = nil,
         swift: SwiftProgram = SwiftProgram(),
         callers: SpotCallers = SpotCallers()
     ) {
@@ -115,12 +120,16 @@ public final class SpotRuns {
         self.swift = swift
         usage = StatsLog(folder: stats, at: clock.now(), now: clock.now)
         self.timers = SpotTimers(file: timers)
+        self.schedule = SpotSchedule(file: schedule)
         self.inlineIdle = inlineIdle
         self.frameWait = frameWait
         self.showLimit = showLimit
         self.opening = opening
         self.clock = clock
         now = clock.now
+        clockWatch = DueWatch(clock: clock)
+        timerWatch = DueWatch(clock: clock, leeway: .seconds(1))
+        scheduleWatch = DueWatch(clock: clock, leeway: .seconds(1))
         self.stopPause = stopPause
         self.clipboardPause = clipboardPause
         self.loadPause = loadPause
@@ -156,6 +165,7 @@ public final class SpotRuns {
         usage.take(views: scripts)
         usage.take(versions: stamps.mapValues(SpotLoad.version(of:)))
         updateClock()
+        runSchedule()
         showOfferedItems()
     }
 
@@ -202,18 +212,34 @@ public final class SpotRuns {
     func didClose(_ sheet: SpotRun) {
         if openID == sheet.spot.id { openID = nil }
         let id = sheet.spot.id
-        if asks.isWaiting(for: id) { Task { [weak self] in self?.settleAsk(of: id) } }
+        if pushed.isWaiting(for: id) { Task { [weak self] in self?.settlePushed(of: id) } }
     }
 
-    public func float(_ id: String) {
+    public func float(_ id: String, isWindow: Bool = false) {
         guard let sheet = sheets[id], floating.insert(id).inserted else { return }
+        if isWindow { windows.insert(id) }
         sheet.floated()
+        sheet.showPlace()
     }
 
     public func land(_ id: String) {
         guard floating.remove(id) != nil else { return }
+        windows.remove(id)
+        sheets[id]?.showPlace()
         sheets[id]?.leftPlace()
         updateClock()
+        if pushed.isWaiting(for: id) { settlePushed(of: id) }
+    }
+
+    public func take(appearance: Style.Variant) {
+        guard appearance != self.appearance else { return }
+        self.appearance = appearance
+        for sheet in sheets.values { sheet.showPlace() }
+    }
+
+    func variants(of id: String) -> Set<Style.Variant> {
+        let place: Style.Variant = !floating.contains(id) ? .sheet : windows.contains(id) ? .window : .float
+        return [place, appearance]
     }
 
     public func closeOpen() {
@@ -236,11 +262,10 @@ public final class SpotRuns {
 
     public func quit() {
         hasQuit = true
-        ticks?.cancel()
-        ticks = nil
-        timerWatch?.cancel()
-        timerWatch = nil
-        asks.endAll()
+        clockWatch.stop()
+        timerWatch.stop()
+        scheduleWatch.stop()
+        pushed.endAll()
         clipboardWatch?.cancel()
         clipboardWatch = nil
         loadWatch?.cancel()
@@ -284,8 +309,8 @@ public final class SpotRuns {
         dragTakers.contains(id)
     }
 
-    public func answer(of spot: Spot, _ action: SpotAction, input: String? = nil, limit: TimeInterval? = nil, variables: [String: String] = [:]) async throws -> String {
-        try await mode(of: spot).answer(of: spot, action, input: input, limit: limit, variables: variables, in: self)
+    public func answer(of spot: Spot, _ handler: String, input: String? = nil, limit: TimeInterval? = nil, variables: [String: String] = [:]) async throws -> String {
+        try await mode(of: spot).answer(of: spot, handler, input: input, limit: limit, variables: variables, in: self)
     }
 
     func isOnGrid(_ id: String) -> Bool {
@@ -295,7 +320,7 @@ public final class SpotRuns {
     func wants(_ spot: Spot) -> Bool {
         if isInMenuBar(spot) || spot.mode == .stay && spot.showsAtLaunch { return true }
         guard isPanelOpen else { return false }
-        return spot.mode.stays && spot.answers != nil || spot.on?.has(.panel) == true || grid.contains(spot.id)
+        return spot.mode.stays && spot.triggers.search != nil || spot.triggers.showsOnPanel || grid.contains(spot.id)
     }
 
     public func take(grid next: Set<String>) {
@@ -306,9 +331,10 @@ public final class SpotRuns {
         updateClock()
     }
 
-    func intake(_ frame: String, of id: String?) async -> Frame {
+    func intake(_ frame: String, of spot: Spot?) async -> Frame {
+        let id = spot?.id
         let shown = id.flatMap { sheets[$0] }.flatMap { $0.shownFrame == frame ? $0.lastAnswer : nil }
-        let lines = if let shown { shown } else { await Frame.reading(frame) }
+        let lines = if let shown { shown } else { await Frame.reading(frame, kinds: spot?.kinds ?? BlockKind.all) }
         guard let id, opening.moving == id else { return lines }
         sheets[id]?.hear(lines)
         await opening.waitForMotion(of: id)
@@ -326,11 +352,15 @@ public final class SpotRuns {
         if let log { log.add(frame, to: &frames) } else if onCall != nil { frames.append(frame) }
     }
 
-    func record(_ spot: Spot, _ action: SpotAction, input: String?, frames: [String], errors: String, end: ScriptCall.End, event: ShowEvent?, started: Date, begin: Date) {
+    var recordsCalls: Bool {
+        log != nil || onCall != nil
+    }
+
+    func record(_ spot: Spot, _ handler: String, input: String?, frames: [String], errors: String, end: ScriptCall.End, event: ShowEvent?, started: Date, begin: Date) {
         guard !spot.reachesAccountKey else { return }
         let record = CallLog.Record(
             spot: spot.id,
-            arguments: action.arguments,
+            arguments: [handler],
             input: input,
             frames: frames,
             errors: errors,
@@ -338,7 +368,7 @@ public final class SpotRuns {
             started: started,
             seconds: Date().timeIntervalSince(begin)
         )
-        onCall?(record, event)
+        onCall?(record)
         guard let log, !Self.isQuiet(event, end) else { return }
         log.write(record)
     }

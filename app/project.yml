@@ -31,6 +31,8 @@ targets:
     platform: macOS
     sources:
       - path: Core
+        excludes:
+          - "**/*.js"
       - path: Shared
     dependencies:
       - package: secp256k1
@@ -44,6 +46,8 @@ targets:
     platform: macOS
     sources:
       - path: Shell
+      - path: Core/Run/InlineScript.js
+        buildPhase: resources
       - path: Power/PowerService.swift
       - path: Power/PowerDaemon.swift
     dependencies:
@@ -119,10 +123,10 @@ targets:
           cp "$BUILT_PRODUCTS_DIR/openspot-power" "$TARGET_BUILD_DIR/$EXECUTABLE_FOLDER_PATH/openspot-power"
           rm -f "$daemons"/*.power.plist
           sed "s/openspot\.celis\.ai/$PRODUCT_BUNDLE_IDENTIFIER/g" "$SRCROOT/Power/openspot.celis.ai.power.plist" > "$daemons/$PRODUCT_BUNDLE_IDENTIFIER.power.plist"
-      - name: Join the guide, and copy the guides of the nouns
+      - name: Join the docs, and copy the guides of the nouns
         basedOnDependencyAnalysis: false
         script: |
-          sh "$SRCROOT/../scripts/guide.sh" "$TARGET_BUILD_DIR/$UNLOCALIZED_RESOURCES_FOLDER_PATH/GUIDE.md"
+          sh "$SRCROOT/../scripts/guide.sh" "$TARGET_BUILD_DIR/$UNLOCALIZED_RESOURCES_FOLDER_PATH/DOCS.md"
           rm -rf "$TARGET_BUILD_DIR/$UNLOCALIZED_RESOURCES_FOLDER_PATH/Help"
           cp -R "$SRCROOT/Help" "$TARGET_BUILD_DIR/$UNLOCALIZED_RESOURCES_FOLDER_PATH/Help"
           rm -rf "$TARGET_BUILD_DIR/$UNLOCALIZED_RESOURCES_FOLDER_PATH/Themes"
@@ -247,6 +251,8 @@ targets:
     platform: macOS
     sources:
       - path: Tests
+      - path: Core/Run/InlineScript.js
+        buildPhase: resources
     dependencies:
       - target: OpenspotCore
       - package: secp256k1

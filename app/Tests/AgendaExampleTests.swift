@@ -2,10 +2,12 @@ import XCTest
 @testable import OpenspotCore
 
 final class AgendaExampleTests: SampleSpotsCase {
+    private let now = Date()
+
     private func iso(_ seconds: TimeInterval) -> String {
         let format = ISO8601DateFormatter()
         format.timeZone = .current
-        return format.string(from: Date().addingTimeInterval(seconds))
+        return format.string(from: now.addingTimeInterval(seconds))
     }
 
     private func fakeOpenspot(in folder: URL) throws {
@@ -30,7 +32,7 @@ final class AgendaExampleTests: SampleSpotsCase {
         """.writeScript(to: folder.appendingPathComponent("tools/openspot"))
         let files = [
             "events": """
-            text=event:A/1
+            item=event:A/1
             title=Holiday
             detail=All day · Home
             icon=calendar
@@ -38,7 +40,7 @@ final class AgendaExampleTests: SampleSpotsCase {
             start=\(iso(-3600))
             end=\(iso(80_000))
 
-            text=event:B/2
+            item=event:B/2
             title=Standup
             detail=Soon · Work
             icon=video
@@ -47,7 +49,7 @@ final class AgendaExampleTests: SampleSpotsCase {
             end=\(iso(1650))
             meeting=https://meet.google.com/abc-defg-hij
 
-            text=event:C/3
+            item=event:C/3
             title=Design review
             detail=Later · Work
             icon=calendar
@@ -56,36 +58,36 @@ final class AgendaExampleTests: SampleSpotsCase {
 
             """,
             "reminders": """
-            text=reminder:R1
+            item=reminder:R1
             title=Call mom
             detail=Late · Yesterday 18:00 · Family
             icon=circle
             tone=bad
             done=false
 
-            text=reminder:R2
+            item=reminder:R2
             title=Take pills
             detail=Done · Family
             icon=checkmark.circle.fill
             done=true
 
-            text=reminder:R3
+            item=reminder:R3
             title=Water the plants
             detail=18:00 · Family
             icon=circle
             done=false
 
-            text=reminder:R4
+            item=reminder:R4
             title=Pay rent
             detail=Tomorrow · Family
             icon=circle
             done=false
 
             """,
-            "calendars": "text=A8E2\ntitle=Work\ndetail=iCloud\n\ntext=B1\ntitle=Home\ndetail=On My Mac\n\n",
-            "lists": "text=7D10\ntitle=Family\ndetail=iCloud\n\n",
-            "dry-reminder": "text=reminder:new\ntitle=Call Ana\ndetail=Tomorrow 09:00 · Family\n",
-            "added-reminder": "text=reminder:R9\ntitle=Call Ana\ndetail=Tomorrow 09:00 · Family\n"
+            "calendars": "item=A8E2\ntitle=Work\ndetail=iCloud\n\nitem=B1\ntitle=Home\ndetail=On My Mac\n\n",
+            "lists": "item=7D10\ntitle=Family\ndetail=iCloud\n\n",
+            "dry-reminder": "item=reminder:new\ntitle=Call Ana\ndetail=Tomorrow 09:00 · Family\n",
+            "added-reminder": "item=reminder:R9\ntitle=Call Ana\ndetail=Tomorrow 09:00 · Family\n"
         ]
         for (name, text) in files {
             try text.write(to: folder.appendingPathComponent(name), atomically: true, encoding: .utf8)
@@ -116,7 +118,7 @@ final class AgendaExampleTests: SampleSpotsCase {
             XCTAssertEqual(next.number?.text, "in 12 min")
             XCTAssertEqual(next.title, "Standup")
             XCTAssertEqual(next.color, "#1BADF8")
-            let ticks = output.face.parts.filter { $0.look == .tick }
+            let ticks = output.face.parts.filter(\.isTick)
             XCTAssertEqual(ticks.map(\.id), ["R1", "R3"])
             XCTAssertEqual(ticks.map(\.control), [.toggle(false), .toggle(false)])
             XCTAssertEqual(ticks.map(\.title), ["Call mom", "Water the plants"])
@@ -124,15 +126,15 @@ final class AgendaExampleTests: SampleSpotsCase {
             XCTAssertEqual(output.face.parts.filter { $0.id.hasPrefix("due-") }.map(\.detail), ["Late", "18:00"])
             let time = DateFormatter()
             time.dateFormat = "HH:mm"
-            XCTAssertEqual(output.face.parts.first { $0.id == "at" }?.number?.text, time.string(from: Date().addingTimeInterval(750)))
-            XCTAssertEqual(output.face.drawing(for: .large), [["next", "next", "next", "next"], ["next", "next", "next", "next"], ["R1", "R1", "R1", "due-R1"], ["R3", "R3", "R3", "due-R3"]])
-            XCTAssertEqual(output.face.drawing(for: .square), [["next", "next"], ["next", "next"], ["todo", "late"]])
+            XCTAssertEqual(output.face.parts.first { $0.id == "at" }?.number?.text, time.string(from: now.addingTimeInterval(750)))
+            XCTAssertEqual(output.face.shown(in: Style.Variant.card(.large)), ["head", "next", "row-R1", "R1", "due-R1", "row-R3", "R3", "due-R3"])
+            XCTAssertEqual(output.face.shown(in: Style.Variant.card(.square)), ["head", "next", "counts", "todo", "late"])
             XCTAssertEqual(output.face.parts.first { $0.id == "todo" }?.title, "3 to do")
             XCTAssertEqual(output.face.parts.first { $0.id == "late" }?.title, "1 late")
-            XCTAssertEqual(output.face.parts.first { $0.id == "late" }?.textTone, .bad)
-            XCTAssertEqual(output.face.drawing(for: .strip), [["next"]])
-            XCTAssertEqual(output.face.drawing(for: .wide), [["next"]])
-            XCTAssertEqual(output.face.drawing(for: .small), [["at"]])
+            XCTAssertEqual(output.face.parts.first { $0.id == "late" }?.tone, .bad)
+            XCTAssertEqual(output.face.shown(in: Style.Variant.card(.strip)), ["head", "next"])
+            XCTAssertEqual(output.face.shown(in: Style.Variant.card(.wide)), ["head", "next"])
+            XCTAssertEqual(output.face.shown(in: Style.Variant.card(.small)), ["at"])
             XCTAssertEqual(output.errors, [])
             let calls = try self.calls(in: folder)
             XCTAssertEqual(calls.map { $0.split(separator: "|", omittingEmptySubsequences: false)[1] }, [
@@ -147,14 +149,14 @@ final class AgendaExampleTests: SampleSpotsCase {
         try await withPrivateHome { folder in
             try self.fakeOpenspot(in: folder)
             let far = try await agenda.items(timeout: 30)
-            let near = "text=event:B/2\ntitle=Standup\ndetail=Soon · Work\nicon=video\nstart=\(self.iso(300))\nend=\(self.iso(1200))\nmeeting=https://meet.google.com/abc-defg-hij\n"
+            let near = "item=event:B/2\ntitle=Standup\ndetail=Soon · Work\nicon=video\nstart=\(self.iso(300))\nend=\(self.iso(1200))\nmeeting=https://meet.google.com/abc-defg-hij\n"
             try near.write(to: folder.appendingPathComponent("events"), atomically: true, encoding: .utf8)
 
             let output = try await agenda.items(timeout: 30)
-            try await agenda.perform(.press("join-now"), timeout: 30)
+            try await agenda.perform("join-now", timeout: 30)
 
-            XCTAssertEqual(far.face.drawing(for: .strip), [["next"]])
-            XCTAssertEqual(output.face.drawing(for: .strip), [["next", "next", "next", "join-now"]])
+            XCTAssertEqual(far.face.shown(in: Style.Variant.card(.strip)), ["head", "next"])
+            XCTAssertEqual(output.face.shown(in: Style.Variant.card(.strip)), ["head", "next", "join-now"])
             XCTAssertEqual(output.face.parts.first { $0.id == "join-now" }?.title, "Join")
             XCTAssertFalse(output.actions.contains { $0.id == "join-now" })
             XCTAssertEqual(try self.read("opened", in: folder), "https://meet.google.com/abc-defg-hij\n")
@@ -186,9 +188,9 @@ final class AgendaExampleTests: SampleSpotsCase {
         try await withPrivateHome { folder in
             try self.fakeOpenspot(in: folder)
 
-            let reminderOnly = try await agenda.items(query: "call", timeout: 30)
-            try "text=event:new\ntitle=Call Ana\ndetail=Tomorrow 09:00–10:00 · Work\n".write(to: folder.appendingPathComponent("dry-event"), atomically: true, encoding: .utf8)
-            let both = try await agenda.items(query: "call", timeout: 30)
+            let reminderOnly = try await agenda.answer("sheet.text", input: "input.value=call\n", timeout: 30)
+            try "item=event:new\ntitle=Call Ana\ndetail=Tomorrow 09:00–10:00 · Work\n".write(to: folder.appendingPathComponent("dry-event"), atomically: true, encoding: .utf8)
+            let both = try await agenda.answer("sheet.text", input: "input.value=call\n", timeout: 30)
 
             XCTAssertEqual(reminderOnly.items.map(\.run), ["add-reminder", "reminder:R1"])
             XCTAssertEqual(reminderOnly.items.first?.title, "Add reminder")
@@ -204,8 +206,8 @@ final class AgendaExampleTests: SampleSpotsCase {
         try await withPrivateHome { folder in
             try self.fakeOpenspot(in: folder)
 
-            let work = try await SpotRuns(environment: TestEnvironment.values).answer(of: agenda, .show, input: "search=WORK\n", limit: 30)
-            let family = try await SpotRuns(environment: TestEnvironment.values).answer(of: agenda, .show, input: "search=ауфьшдн\nsearch.alt=family\n", limit: 30)
+            let work = try await SpotRuns(environment: TestEnvironment.values).answer(of: agenda, "sheet.text", input: "input.value=WORK\n", limit: 30)
+            let family = try await SpotRuns(environment: TestEnvironment.values).answer(of: agenda, "sheet.text", input: "input.value=ауфьшдн\ninput.alt=family\n", limit: 30)
 
             XCTAssertEqual(Frame(text: work).items.map(\.run), ["add-reminder", "event:B/2", "event:C/3"])
             XCTAssertEqual(Frame(text: family).items.map(\.run), ["add-reminder", "reminder:R1", "reminder:R2", "reminder:R3", "reminder:R4"])
@@ -217,7 +219,7 @@ final class AgendaExampleTests: SampleSpotsCase {
         try await withPrivateHome { folder in
             try self.fakeOpenspot(in: folder)
 
-            let output = try await SpotRuns(environment: TestEnvironment.values).answer(of: agenda, .show, input: "search=qqq\nsearch.alt=mom call\nsearch.alt=standup\n", limit: 30)
+            let output = try await SpotRuns(environment: TestEnvironment.values).answer(of: agenda, "sheet.text", input: "input.value=qqq\ninput.alt=mom call\ninput.alt=standup\n", limit: 30)
 
             XCTAssertEqual(Frame(text: output).items.map(\.run).filter { $0.contains(":") }, ["event:B/2"])
         }
@@ -251,7 +253,7 @@ final class AgendaExampleTests: SampleSpotsCase {
         try await withPrivateHome { folder in
             try self.fakeOpenspot(in: folder)
 
-            try await agenda.perform(.item(SpotItem(title: "Add reminder", run: "add-reminder")), input: "search=Call Ana tomorrow 9am\n", timeout: 30)
+            try await agenda.perform("press", input: "input.item=add-reminder\ninput.item.words=Call Ana tomorrow 9am\n", timeout: 30)
 
             XCTAssertTrue(try self.calls(in: folder).contains("act|reminders add Call Ana tomorrow 9am|"))
             XCTAssertTrue(try self.calls(in: folder).contains("act|toast Added Call Ana.|"))
@@ -267,9 +269,9 @@ final class AgendaExampleTests: SampleSpotsCase {
             let card = try XCTUnwrap(output.face.parts.first { $0.title == "Water the plants" }?.id)
             let done = try XCTUnwrap(output.items.first { $0.title == "Take pills" }?.run)
 
-            try await agenda.perform(.action(CommandAction(id: "tick", title: "Mark as done"), item: SpotItem(title: "Call mom", run: row)), input: "item.text=\(row)\nitem.done=false\n", timeout: 30)
-            try await agenda.perform(.set(card, to: "true"), timeout: 30)
-            try await agenda.perform(.action(CommandAction(id: "tick", title: "Mark as done"), item: SpotItem(title: "Take pills", run: done)), input: "item.text=\(done)\nitem.done=true\n", timeout: 30)
+            try await agenda.perform("tick", input: "input.item=\(row)\ninput.item.done=false\n", timeout: 30)
+            try await agenda.perform(card, input: "input.value=true\n", timeout: 30)
+            try await agenda.perform("tick", input: "input.item=\(done)\ninput.item.done=true\n", timeout: 30)
 
             let marks = try self.calls(in: folder).filter { $0.contains("reminders done") }
             XCTAssertEqual(try self.calls(in: folder).filter { $0.contains("reminders due") }.count, 1)
@@ -282,9 +284,9 @@ final class AgendaExampleTests: SampleSpotsCase {
         try await withPrivateHome { folder in
             try self.fakeOpenspot(in: folder)
 
-            try await agenda.perform(.item(SpotItem(title: "Standup", run: "event:B/2")), timeout: 30)
-            try await agenda.perform(.item(SpotItem(title: "Call mom", run: "reminder:R1")), timeout: 30)
-            try await agenda.perform(.action(CommandAction(id: "join", title: "Join call"), item: SpotItem(title: "Standup", run: "event:B/2")), input: "item.text=event:B/2\nitem.meeting=https://meet.google.com/abc-defg-hij\n", timeout: 30)
+            try await agenda.perform("press", input: "input.item=event:B/2\n", timeout: 30)
+            try await agenda.perform("press", input: "input.item=reminder:R1\n", timeout: 30)
+            try await agenda.perform("join", input: "input.item=event:B/2\ninput.item.meeting=https://meet.google.com/abc-defg-hij\n", timeout: 30)
 
             let opens = try self.calls(in: folder).filter { $0.contains(" show ") }
             XCTAssertEqual(opens, ["act|calendar show event:B/2|", "act|reminders show reminder:R1|"])
@@ -302,7 +304,7 @@ final class AgendaExampleTests: SampleSpotsCase {
             }
 
             let output = try await agenda.items(timeout: 30)
-            try await agenda.perform(.item(SpotItem(title: "Allow Calendar", run: "allow-calendar")), timeout: 30)
+            try await agenda.perform("press", input: "input.item=allow-calendar\n", timeout: 30)
 
             XCTAssertEqual(output.items.map(\.run), ["allow-calendar", "allow-reminders"])
             XCTAssertEqual(output.face.parts.first { $0.id == "next" }?.number?.text, "Allow")
@@ -327,7 +329,7 @@ final class AgendaExampleTests: SampleSpotsCase {
         try await withPrivateHome { folder in
             try self.fakeOpenspot(in: folder)
             try "B1".write(to: folder.appendingPathComponent("setting-calendars"), atomically: true, encoding: .utf8)
-            let calendars = SpotAction.action(CommandAction(id: "calendars", title: "Choose calendars"), item: nil)
+            let calendars = "calendars"
 
             let kept = { (try? self.read("setting-calendars", in: folder)).map { "setting.calendars=\($0)\n" } ?? "" }
             let first = try await SpotRuns(environment: TestEnvironment.values).answer(of: agenda, calendars, input: kept(), limit: 30)
@@ -355,7 +357,7 @@ final class AgendaExampleTests: SampleSpotsCase {
         try await withPrivateHome { folder in
             try self.fakeOpenspot(in: folder)
             try "B1 7D10".write(to: folder.appendingPathComponent("setting-calendars"), atomically: true, encoding: .utf8)
-            let calendars = SpotAction.action(CommandAction(id: "calendars", title: "Choose calendars"), item: nil)
+            let calendars = "calendars"
             let first = try await SpotRuns(environment: TestEnvironment.values).answer(of: agenda, calendars, input: "setting.calendars=B1 7D10\n", limit: 30)
             let form = try XCTUnwrap(ItemForm(output: Frame(text: first)))
             let all = try XCTUnwrap(FormDraft(form: form).selectingAll())

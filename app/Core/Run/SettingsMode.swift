@@ -8,7 +8,7 @@ final class SettingsMode: OnceMode {
 
     override class func frames(of spot: Spot, _ message: Message, limit: TimeInterval?, reason: String?, variables: [String: String], call: OpenCall?, in runs: SpotRuns) -> Frames {
         let settings = spot.settingsSheet
-        let (stream, halt) = runs.answered { try settings?.answer(message.action.arguments) ?? "" }
+        let (stream, halt) = runs.answered { try settings?.answer([message.handler], input: message.text) ?? "" }
         return (stream, halt, nil)
     }
 }

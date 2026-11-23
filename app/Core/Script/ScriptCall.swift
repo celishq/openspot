@@ -11,7 +11,7 @@ public final class ScriptCall: Identifiable {
     }
 
     public let id = UUID()
-    public let action: SpotAction
+    public let handler: String
     public let started: Date
     public private(set) var status: TextBlock?
     public private(set) var isStopped = false
@@ -19,17 +19,16 @@ public final class ScriptCall: Identifiable {
     @ObservationIgnored var halt: () -> Void = {}
     @ObservationIgnored private(set) var heard = 0
 
-    init(action: SpotAction, key: String, started: Date) {
-        self.action = action
+    public let isAct: Bool
+
+    init(handler: String, isAct: Bool, key: String, started: Date) {
+        self.handler = handler
+        self.isAct = isAct
         self.key = key
         self.started = started
     }
 
     nonisolated deinit {}
-
-    public var isAct: Bool {
-        action.arguments.first != SpotAction.show.arguments.first
-    }
 
     public var fill: Double? {
         status?.number("progress").map { min(max($0, 0), 1) }

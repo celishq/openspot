@@ -111,21 +111,21 @@ card() {
 # is a new call that starts it again, and not a second press that would stop it, and shows the time it has left.
 duration() {
   if awake && [ "$1" = "$picked" ]; then
-    printf 'text=%s.%s\ntitle=%s\ndetail=%s\n' "$1" "$held" "$2" "$(left)"
+    printf 'item=%s.%s\ntitle=%s\ndetail=%s\n' "$1" "$held" "$2" "$(left)"
   else
-    printf 'text=%s\ntitle=%s\n' "$1" "$2"
+    printf 'item=%s\ntitle=%s\n' "$1" "$2"
   fi
 }
 
 # Prints the items of the sheet, with Turn off first while the Mac is kept awake.
 sheet() {
   printf 'frame=\nrecents=false\n\n'
-  printf 'button=open\ntitle=Select\n\n'
-  printf 'button=start\ntitle=Keep awake for…\nscope=spot\nform=true\nplaceholder=Minutes, such as 45\n\n'
-  awake && printf 'text=off\ntitle=Turn off\n\n'
+  printf 'button=press\ntitle=Select\n\n'
+  printf 'button=start\ntitle=Keep awake for…\nscope=spot\nplaceholder=Minutes, such as 45\n\n'
+  awake && printf 'item=off\ntitle=Turn off\n\n'
   duration 1800 '30 minutes'; echo
   duration 7200 '2 hours'; echo
-  printf 'text=custom\ntitle=Custom…\nform=true\n\n'
+  printf 'item=custom\ntitle=Custom…\n\n'
   duration 0 'Until turned off'; echo
   printf 'switch=display\ntitle=Keep the display on\ndetail=Off lets the screen lock\nicon=display\npin=bottom\nvalue=%s\nclose=false\n' "${display:-true}"
   [ "$lidded" = true ] || return 0
@@ -211,18 +211,18 @@ toast() {
 serve() {
   lid_on
   display_on
-  case "$1 $2" in
-    'open off')
+  item=$(given input.item)
+  case "$1 $item" in
+    'press off')
       release
       openspot toast 'Caffeinate is off'
       printf '%scall=%s\n---\n%s\n---\nend=%s\n---\n' "$ended" "$call" "$(sheet)" "$call"
       ;;
-    start* | 'open custom')
+    start* | 'press custom')
       minutes=$(given input.minutes)
-      [ -n "$minutes" ] || minutes=$(given search)
       case $minutes in
         '')
-          printf 'call=%s\n---\nframe=\ntitle=Keep the Mac awake\n\nfield=minutes\ntitle=Minutes\nplaceholder=45\n---\nend=%s\n---\n' "$call" "$call"
+          printf 'call=%s\n---\nframe=\ntype=form\ntitle=Keep the Mac awake\n\nfield=minutes\ntitle=Minutes\nplaceholder=45\n---\nend=%s\n---\n' "$call" "$call"
           ;;
         *[!0-9]* | 0*)
           openspot toast 'Caffeinate takes minutes as a number, such as 45.'
@@ -238,16 +238,16 @@ serve() {
       if awake; then
         seconds=$(remaining)
         release
-        "$1"_keep "$2"
+        "$1"_keep "$(given input.value)"
         begin "$call" "$picked" "$seconds"
       else
-        "$1"_keep "$2"
+        "$1"_keep "$(given input.value)"
         printf 'call=%s\n---\n%s\n---\nend=%s\n---\n' "$call" "$(sheet)" "$call"
       fi
       ;;
-    open\ [0-9]*)
+    press\ [0-9]*)
       release
-      begin "$call" "${2%%.*}"
+      begin "$call" "${item%%.*}"
       ;;
     *)
       now=

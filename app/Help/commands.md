@@ -13,8 +13,8 @@ prints the answer to a sum as an item.
 
 ## How a call ends
 
-- A call exits with code 0 when it's done, 1 when it failed, 2 when `openspot` doesn't take its words, and 3 when it
-  needs the app and no app answered. Words that `openspot` doesn't take print the verbs of the noun they name, or the
+- A call exits with code 0 when it's done, 1 when it failed, 2 when `openspot` doesn't take its words, 3 when it
+  needs the app and no app answered, and 4 when the person closed what it showed, as `run` does. Words that `openspot` doesn't take print the verbs of the noun they name, or the
   command they're closest to.
 - `openspot help <noun>`, or `--help` after a noun or a verb, prints only its verbs. `openspot help --json` prints each
   verb with its form, its effect and whether it needs the app.
@@ -30,31 +30,32 @@ prints the answer to a sum as an item.
   `store list`, `setting list` and `theme list`, prints blocks, the format of a frame. `--json` prints JSON.
 - `openspot batch` runs one call for each line of stdin, and prints `---` after each. It stops at the first failure.
 
-## The calls that fail in a show
+## The commands that fail in a read
 
-A show changes nothing and opens nothing, so these calls fail in it:
+A read, such as `show`, `search`, `every` or an event's handler, changes nothing and opens nothing, so these commands
+fail in it:
 
-- calls that wait for the user: `color pick` and `folder pick`;
+- calls that wait for the person: `color pick` and `folder pick`;
 - calls that capture the screen: `screen shot`, `screen record start` and `screen record stop`;
-- calls that change the Mac or the user's data: `window move`, `clipboard copy`, `clipboard paste`,
+- calls that change the Mac or the person's data: `window move`, `clipboard copy`, `clipboard paste`,
   `power lid-closed`, `calendar add`, `reminders add`, `reminders done`, `spot add`, `spot remove` and `spot delete`;
 - calls that change Openspot or its places: `app quit`, each call of `theme` but `theme list` and `theme open`,
-  `update install`, and `setting set` of a key that Openspot keeps for the user;
+  `update install`, and `setting set` of a key that Openspot keeps for the person;
 - calls that move the flow of sheets: `route push`, `route back` and `route close`;
 - calls that open a window or the panel: `spot open`, `spot choose`, `spot settings`, `spot edit`, `spot prompt`,
   `spot share`, `spot review`, `grid edit`, `setting change`, `theme open`, `update check`, `calendar show` and
   `reminders show`.
 
-`calendar add --dry-run` and `reminders add --dry-run` change nothing, so they work in a show. `toast` and `select`
-work in a show too.
+`calendar add --dry-run` and `reminders add --dry-run` change nothing, so they work in a read. `toast` and `select`
+work in a read too. `run` works in a read, but the action it runs can't show a view there.
 
 ## Commands
 
-The commands that try a spot are in [Try your spot](../../GUIDE.md#try-your-spot). The others:
+[Try it from the terminal](../../docs/first-spot.md#try-it-from-the-terminal) shows how the commands that try a spot work together.
 
 | Command                                            | Does                                                                                            |
 | -------------------------------------------------- | ----------------------------------------------------------------------------------------------- |
-| `openspot guide [topic \| --topics]`               | Prints the guide, then the protocol. A topic prints one section or a page such as this one, and `--topics` lists them. |
+| `openspot guide [topic \| --topics]` | Prints the docs, from the map to the reference, then Use Openspot, or with a topic one page, such as this one. |
 | `openspot version`                                 | Prints the version of Openspot, as `openspot --version` does.                                   |
 | `openspot toast <words>...`                        | Shows a short message, even when the panel is closed.                                           |
 | `openspot select <item>`                           | Selects an item of the spot's sheet once the spot's next frame shows.                           |
@@ -70,25 +71,35 @@ The commands that try a spot are in [Try your spot](../../GUIDE.md#try-your-spot
 | `openspot spot prompt <id>`                        | Copies a prompt that asks a coding agent to change a spot.                                      |
 | `openspot spot share <id>`                         | Shares a spot, as Share in its ⌘K menu does.                                                    |
 | `openspot spot delete <id>`                        | Moves a spot to the Trash, and `⌘Z` in the panel puts it back.                                  |
-| `openspot spot add <git url, folder or .spot>`     | Adds a spot, and records it in `spots.lock`. An update that needs a new use also needs `--yes`. |
+| `openspot spot add <git url, folder or .spot>` | Adds a spot and records it in `spots.lock`, and an update that needs a new use also needs `--yes`. |
 | `openspot spot remove <id>`                        | Moves a spot that `spot add` added to the Trash.                                                |
 | `openspot spot stats`                              | Prints what each spot cost and used. `openspot guide stats` explains it.                        |
+| `openspot spot actions [id]`                       | Prints each action of a spot and each command of its uses, with their inputs and outputs as JSON Schema. |
+| `openspot schema`                                  | Prints the JSON Schema of `spot.toml`, which an editor checks the file with.                    |
+| `openspot timer add <time> <action> [<name>=<value>...]` | Calls an action of the spot at the time; see [Run once, at a time](../../docs/react/on-a-schedule.md#run-once-at-a-time). |
+| `openspot spot run <spot> <handler> [<name>=<value>...]` | Calls one handler of a spot as a call would, with its inputs checked and its bindings live, and prints its frame and values. |
+| `openspot run <binding>.<action> [<name>=<value>...] [--out <name>] [--stdin <name>]` | Runs an action of a spot that your spot binds, and waits for its values; see [Use another spot](../../docs/connect/other-spots.md). |
+| `openspot emit <event> [<name>=<value>...]` | Sends one of your spot's `[events]` to each spot that binds it; see [Tell other spots what happened](../../docs/connect/other-spots.md#tell-other-spots-what-happened). |
+| `openspot types [id]` | Writes the types of a `.js` spot to `openspot.d.ts`, or of a `.swift` spot to `Openspot.swift`, beside its script, for the spot of the current folder when there is no id, and prints the file. |
 | `openspot grid edit`                               | Opens the panel in Edit Spots, to arrange the grid.                                             |
 | `openspot store list [--json]`                     | Prints each spot of the store and its step: `get`, `publish`, or `added` once you have it.      |
 | `openspot store get <id>`                          | Gets a spot of the store: turns it on, or adds its package to your spots folder.                |
-| `openspot store add <folder>`                      | Adds a folder that holds spot folders as a store, so the Store lists its spots. The folder's name is the store's name. |
-| `openspot store remove <folder>`                   | Removes a store that `store add` added. The spots you got from it stay.                         |
+| `openspot store add <folder>` | Adds a folder of spot folders as a store, named like the folder, so that the Store lists its spots. |
+| `openspot store remove <folder>` | Removes a store that `store add` added, and keeps the spots you got from it. |
 | `openspot store folders [--json]`                  | Prints the built-in store Openspot, which holds the examples, then each store that `store add` added, with its name and whether its folder is found. |
-| `openspot store publish <id>`                      | Publishes a spot of your spots folder to the store. It needs a `readme.md` beside its script. Only the Store spot can run it, so you publish from the Store spot. |
+| `openspot store publish <id>` | Publishes a spot of your spots folder, with a `readme.md` beside its script, from the Store spot alone. |
 | `openspot playground open [file]`                  | Opens the Playground on a spot that you type or on a file.                                      |
+| `openspot spot new <name> --from <kind>`           | Writes a spot folder that works, from the kind `button`, `list`, `number` or `form`.             |
+| `openspot spot log <id>`                           | Prints the last calls of a spot, with their stdin, stdout, stderr and exit code.                |
+| `openspot check spots [--json] <folder>`           | Loads and runs each spot of the folder once, and prints a `fault` block for each error.         |
 | `openspot check sheet`                             | Reports the faults of a sheet on stdin.                                                         |
 | `openspot render sheet [--view <file>] <file.png>` | Draws the sheet on stdin to a picture, with its view from a Swift file.                         |
 | `openspot render card <size> <file.png>`           | Draws the card of the sheet on stdin at a size, such as `wide`, to a picture.                   |
-| `openspot render spot <id> <file.png>`             | Draws the sheet of an installed spot, or with `--card <size>` its card, to a picture.           |
+| `openspot render spot <id> <file.png>` | Draws the sheet of an installed spot, or with `--card <size>` its card, in the dark appearance, or the light one with `--light`. |
 | `openspot render panel <file.png>`                 | Draws the panel with each installed spot on its grid.                                           |
 | `openspot render store <file.png>`                 | Draws the window of the Store with each spot as its card.                                       |
 | `openspot prompt new [words]...`                   | Prints a prompt that asks a coding agent to build a spot that does what the words say.          |
-| `openspot prompt change <id> [words]...`           | Prints a prompt that asks a coding agent to change a spot as the words say, with what the stats counted of it over 14 days. With no words, its goal follows those counts. |
+| `openspot prompt change <id> [words]...` | Prints a prompt that asks a coding agent to change a spot as the words say, with what the stats counted of it over 14 days, or with no words a goal that follows those counts. |
 | `openspot prompt theme <name> [words]...`          | Prints a prompt that asks a coding agent to change a theme as the words say.                    |
 | `openspot emoji list [--tone name]`                | Prints each emoji as an item, with its name in the language of the Mac.                         |
 | `openspot symbols list`                            | Prints each symbol of the Character Viewer as an item.                                          |

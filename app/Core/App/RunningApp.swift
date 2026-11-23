@@ -10,6 +10,7 @@ public protocol RunningApp: Sendable {
     func apply(_ theme: Theme) async
     func open(_ id: String) async -> Bool
     func ask(_ id: String, from caller: String?, title: String?) async -> Bool
+    func leave(_ id: String) async -> Bool
     func push(_ id: String, route: String?, title: String?, replace: Bool) async -> Bool
     func pop(_ id: String, all: Bool) async -> Bool
     func review(_ id: String) async -> Bool
@@ -27,6 +28,10 @@ public protocol RunningApp: Sendable {
 extension RunningApp {
     public func ask(_ id: String, from caller: String?, title: String?) async -> Bool {
         await open(id)
+    }
+
+    public func leave(_ id: String) async -> Bool {
+        await pop(id, all: false)
     }
 
     public func slowMotion(_ isOn: Bool?) async -> Bool? {

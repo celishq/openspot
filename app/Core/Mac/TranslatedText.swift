@@ -33,7 +33,7 @@ public struct TranslatedText: Equatable, Sendable {
         let named = codes.map { (code: $0, name: locale.localizedString(forIdentifier: $0) ?? $0) }
             .sorted { $0.name.localizedCompare($1.name) == .orderedAscending }
         let summary = TextBlock(fields: TranslationTargets(preferred: preferred, source: "").codes.map { .init(key: "preferred", value: $0) })
-        let blocks = named.map { TextBlock(fields: [.init(key: "text", value: $0.code), .init(key: "title", value: $0.name)]) }
+        let blocks = named.map { TextBlock(fields: [.init(key: "item", value: $0.code), .init(key: "title", value: $0.name)]) }
         return ([summary] + blocks).map(\.text).joined(separator: "\n")
     }
 }

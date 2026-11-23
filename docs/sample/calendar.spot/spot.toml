@@ -1,4 +1,6 @@
 title = "Calendar"
 icon = "calendar"
-on = ["panel.open"]
-view = "calendar.swift"
+views = ["calendar.swift"]
+
+[on]
+"panel.open" = true

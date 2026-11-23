@@ -44,12 +44,13 @@ final class SpotFloatTests: XCTestCase {
     }
 
     private func floatList() async throws {
-        try script("list", toml: "", """
+        try script("list", toml: "[actions.rename]\ninputs.name = { type = 'text', required = true }", """
         \(TestSpot.event)
+        item=$(printf '%s\\n' "$in" | sed -n 's/^input\\.item=//p')
         case "$1" in
-          show) printf 'text=a\\ntitle=%s\\n\\ntext=b\\ntitle=Banana\\n\\nbutton=trash\\ntitle=Trash\\nshortcut=cmd+backspace\\n\\nbutton=rename\\ntitle=Rename\\nform=true\\n' "$ev" ;;
-          open) \(TestSpot.toast) "Opened $2" ;;
-          trash) \(TestSpot.toast) "Trashed $2" ;;
+          show) printf 'item=a\\ntitle=%s\\n\\nitem=b\\ntitle=Banana\\n\\nbutton=trash\\ntitle=Trash\\nshortcut=cmd+backspace\\n\\nbutton=rename\\ntitle=Rename\\n' "$ev" ;;
+          press) \(TestSpot.toast) "Opened $item" ;;
+          trash) \(TestSpot.toast) "Trashed $item" ;;
         esac
         """)
         await model.reload()
@@ -68,7 +69,7 @@ final class SpotFloatTests: XCTestCase {
     }
 
     func testAFloatThatOpensDuringADragFollowsItAndOneWithNoDragDoesNot() async throws {
-        try script("list", toml: "", "printf 'text=a\\ntitle=A\\n'")
+        try script("list", toml: "", "printf 'item=a\\ntitle=A\\n'")
         await model.reload()
 
         host.isMouseDown = true
@@ -126,7 +127,7 @@ final class SpotFloatTests: XCTestCase {
 
     func testAnActionThatAsksWithAFormOpensTheSpotInThePanel() async throws {
         try await floatList()
-        let rename = try XCTUnwrap(model.sheets["list"]?.spot.actions.first { $0.id == "rename" })
+        let rename = try XCTUnwrap(model.sheets["list"]?.spot.frameActions.first { $0.id == "rename" })
         let entry = try XCTUnwrap(model.cards.first { $0.id == "list" })
 
         model.run(rename, on: (entry, model.sheets["list"]?.list.selectedItem), in: .float)
@@ -135,8 +136,25 @@ final class SpotFloatTests: XCTestCase {
         try await wait("the sheet in the panel") { model.openSheetID == "list" }
     }
 
+    func testAPickInAFloatThatAnswersWithAFormOpensTheSpotInThePanelWithTheForm() async throws {
+        try script("list", toml: "", """
+        case "$1" in
+          press) printf 'frame=\\ntype=form\\ntitle=Minutes\\n\\nfield=minutes\\ntitle=Minutes\\n' ;;
+          *) printf 'item=custom\\ntitle=Custom…\\n' ;;
+        esac
+        """)
+        await model.reload()
+        model.press(try key("list"))
+        try await wait("the floating list") { model.sheets["list"]?.list.shown.count == 1 }
+
+        XCTAssertTrue(model.handleFloatKey(ActionKey(name: "return"), in: "list"))
+
+        try await wait("the form in the panel") { model.form?.draft.form.title == "Minutes" && model.openSheetID == "list" }
+        XCTAssertEqual(host.shows, 1)
+    }
+
     func testAFloatOfPartsKeepsItsValuesWhenThePanelClosesAndDropsThemWhenItCloses() async throws {
-        try script("note", toml: "", "printf 'frame=\\ngrid=note\\n\\nfield=note\\nvalue=hi\\n'")
+        try script("note", toml: "", "printf 'frame=\\nclass=gap-part\\n\\nfield=note\\nvalue=hi\\n'")
         await model.reload()
         model.press(try key("note"))
         try await wait("the parts") { model.sheets["note"]?.panel != nil }
@@ -154,7 +172,7 @@ final class SpotFloatTests: XCTestCase {
     }
 
     func testAFloatOfPartsWithNoFieldKeepsItsPartsWhenItCloses() async throws {
-        try script("note", toml: "", "printf 'frame=\\ngrid=hi\\n\\ntext=hi\\ntitle=Hi\\n'")
+        try script("note", toml: "", "printf 'frame=\\nclass=gap-part\\n\\ntext=hi\\ntitle=Hi\\n'")
         await model.reload()
         model.press(try key("note"))
         try await wait("the parts") { model.sheets["note"]?.panel != nil }
@@ -166,10 +184,10 @@ final class SpotFloatTests: XCTestCase {
     }
 
     func testADropOnAFloatGoesToItsScriptAndLeavesThePanel() async throws {
-        try script("shelf", toml: "drop = '*'", """
+        try script("shelf", toml: "[on]\ndrop = ['*']", """
         case "$1" in
-          show) printf 'text=a\\n' ;;
-          drop) shift; \(TestSpot.toast) "Kept $*" ;;
+          show) printf 'item=a\\n' ;;
+          drop) \(TestSpot.toast) "Kept $(sed -n 's/^input\\.file=//p' | tr '\\n' ' ' | sed 's/ $//')" ;;
         esac
         """)
         await model.reload()
@@ -198,8 +216,8 @@ final class SpotFloatTests: XCTestCase {
         let given = folder.appendingPathComponent("given").path
         try script("keys", toml: "title = 'Keys'", """
         case "$1" in
-          show) printf 'button=open\\ntitle=Change\\nclose=false\\n\\nfield=panel-key\\ntype=hotkey\\ntitle=Open\\nvalue=ctrl+space\\n\\nfield=float:shelf\\ntype=hotkey\\ntitle=Float\\nshake=true\\n' ;;
-          *) printf '%s %s' "$1" "$2" > '\(given)' ;;
+          show) printf 'button=press\\ntitle=Change\\nclose=false\\n\\nfield=panel-key\\ntype=hotkey\\ntitle=Open\\nvalue=ctrl+space\\n\\nfield=float:shelf\\ntype=hotkey\\ntitle=Float\\nshake=true\\n' ;;
+          *) printf '%s %s' "$1" "$(sed -n 's/^input\\.value=//p')" > '\(given)' ;;
         esac
         """)
         try FileManager.default.createDirectory(at: folder.appendingPathComponent("config"), withIntermediateDirectories: true)
@@ -224,7 +242,7 @@ final class SpotFloatTests: XCTestCase {
     }
 
     func testAFloatOfASpotWithNoEventAsksItWhatToShow() async throws {
-        try script("go", toml: "title = 'Go'", "printf 'text=a\\ntitle=Went\\n'")
+        try script("go", toml: "title = 'Go'", "printf 'item=a\\ntitle=Went\\n'")
         await model.reload()
 
         model.press(try key("go"))
@@ -235,7 +253,7 @@ final class SpotFloatTests: XCTestCase {
     }
 
     private func windowSpot() async throws {
-        try script("store", toml: "", "printf 'text=a\\ntitle=Apple\\n'")
+        try script("store", toml: "[actions.rename]\ninputs.name = { type = 'text', required = true }", "printf 'item=a\\ntitle=Apple\\n'")
         _ = try model.files.config.change { $0.arrangement.set(isWindow: true, of: "store") }
         await model.reload()
     }
@@ -269,7 +287,7 @@ final class SpotFloatTests: XCTestCase {
         model.press("store")
         try await wait("the window") { host.windows == ["store"] }
         let entry = try XCTUnwrap(model.cards.first { $0.id == "store" })
-        let rename = CommandAction(id: "rename", title: "Rename", isForm: true)
+        let rename = CommandAction(id: "rename", title: "Rename")
 
         model.run(rename, on: (entry, model.sheets["store"]?.list.shown.first), in: .window)
 
@@ -277,9 +295,28 @@ final class SpotFloatTests: XCTestCase {
         XCTAssertEqual(host.shows, 0)
     }
 
+    func testAPickInAWindowThatAnswersWithAFormSaysItDoesNotShowYetAndOpensNoPanel() async throws {
+        try script("store", toml: "", """
+        case "$1" in
+          press) printf 'frame=\\ntype=form\\ntitle=Minutes\\n\\nfield=minutes\\ntitle=Minutes\\n' ;;
+          *) printf 'item=custom\\ntitle=Custom…\\n' ;;
+        esac
+        """)
+        _ = try model.files.config.change { $0.arrangement.set(isWindow: true, of: "store") }
+        await model.reload()
+        model.press("store")
+        try await wait("the window") { host.windows == ["store"] && model.sheets["store"]?.list.shown.count == 1 }
+        let entry = try XCTUnwrap(model.cards.first { $0.id == "store" })
+
+        model.pick(try XCTUnwrap(model.sheets["store"]?.list.shown.first), of: entry, in: .window)
+
+        try await wait("the note") { host.notes == ["Custom… asks with a form, which a window does not show yet."] }
+        XCTAssertEqual(host.shows, 0)
+    }
+
     func testAWindowReadsAgainWhenTheSpotsChange() async throws {
         let log = folder.appendingPathComponent("reads")
-        try script("store", toml: "", "echo read >> '\(log.path)'\nprintf 'text=a\\ntitle=Apple\\n'")
+        try script("store", toml: "", "echo read >> '\(log.path)'\nprintf 'item=a\\ntitle=Apple\\n'")
         _ = try model.files.config.change { $0.arrangement.set(isWindow: true, of: "store") }
         await model.reload()
         model.press("store")

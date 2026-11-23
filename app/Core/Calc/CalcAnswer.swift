@@ -44,7 +44,7 @@ public struct CalcAnswer: Equatable, Sendable {
     }
 
     public var text: String {
-        let fields: [TextBlock.Field] = [.init(key: "text", value: value), .init(key: "title", value: title), .init(key: "detail", value: detail)]
+        let fields: [TextBlock.Field] = [.init(key: "item", value: value), .init(key: "title", value: title), .init(key: "detail", value: detail)]
         let more = [("unit", unit), ("rates", rates), ("tone", ratesAreOld ? "warn" : nil)].compactMap { key, value in value.map { TextBlock.Field(key: key, value: $0) } }
         return TextBlock(fields: fields + more).text
     }

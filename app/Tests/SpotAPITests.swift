@@ -49,8 +49,8 @@ final class SpotAPITests: XCTestCase {
     }
 
     func testTheListHoldsEachScriptWithItsCommandsSettingsAndKeys() async throws {
-        try "#!/bin/sh\n".writeScript(to: spots.spotFile("move"), toml: "title = 'Move'\nicon = 'macwindow'\non = ['sheet.open']\n[commands.left]\ntitle = 'Left side'\n[settings.folder]")
-        try "#!/bin/sh\n".writeScript(to: spots.spotFile("cups"), toml: "title = 'Cups'\non = ['clock.60']")
+        try "#!/bin/sh\n".writeScript(to: spots.spotFile("move"), toml: "title = 'Move'\nicon = 'macwindow'\n[actions.left]\ntitle = 'Left side'\n[settings]\nfolder = 'text'\n[on]\n'sheet.open' = true")
+        try "#!/bin/sh\n".writeScript(to: spots.spotFile("cups"), toml: "title = 'Cups'\n[on]\nevery = 60")
         try file.write(keys: [
             GlobalKey(spot: "move", act: .command("left"), trigger: .key(try XCTUnwrap(Shortcut(text: "ctrl+option+left")))),
             GlobalKey(spot: "move", act: .float, trigger: .shake)
@@ -75,7 +75,7 @@ final class SpotAPITests: XCTestCase {
         try "#!/bin/sh\n".writeScript(to: core.appendingPathComponent("zebra.spot/zebra.sh"), toml: "detail = 'Open app'\nicon = 'star'")
         try "#!/bin/sh\n".writeScript(to: core.appendingPathComponent("apps.spot/apps.sh"))
         try "#!/bin/sh\n".writeScript(to: core.appendingPathComponent("files.spot/files.sh"))
-        try "#!/bin/sh\n".writeScript(to: core.appendingPathComponent("cpu.spot/cpu.sh"), toml: "on = ['clock.5']")
+        try "#!/bin/sh\n".writeScript(to: core.appendingPathComponent("cpu.spot/cpu.sh"), toml: "[on]\nevery = 5")
         try "#!/bin/sh\n".writeScript(to: spots.spotFile("files"))
         try file.turn("zebra", on: true)
 

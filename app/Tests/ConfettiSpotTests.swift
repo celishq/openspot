@@ -41,8 +41,8 @@ final class ConfettiSpotTests: SampleSpotsCase {
         let spot = try confetti
 
         XCTAssertEqual(spot.mode, .stay)
-        XCTAssertNil(spot.on)
-        XCTAssertEqual(spot.offers.map(\.id), ["play"])
+        XCTAssertFalse(spot.triggers.shows)
+        XCTAssertEqual(spot.commands.map(\.id), ["play"])
         XCTAssertEqual(spot.settings.map(\.id), ["look"])
         XCTAssertEqual(spot.sources, ["confetti"])
         XCTAssertEqual(spot.soleCommand, "play")

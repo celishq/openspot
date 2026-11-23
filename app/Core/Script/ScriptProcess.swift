@@ -17,7 +17,7 @@ public final class ScriptProcess: @unchecked Sendable {
     private let mode: Mode
     private let limit: TimeInterval?
     private let dataName: String?
-    private let careful: CarefulMode?
+    private let sandbox: Sandbox?
     private let variables: [String: String]
     private let withheld: Set<String>
     private let base: [String: String]?
@@ -35,6 +35,10 @@ public final class ScriptProcess: @unchecked Sendable {
     private var building: Bool
     private var ended = false
     private var lateKill: Int?
+    private var limitEnd: Date?
+    private var limitHolds = 0
+    private var heldSince: Date?
+    private var limitTurn = 0
     private var stops = 0
     private var id: pid_t = 0
     private var waitStatus: Int32?
@@ -54,7 +58,7 @@ public final class ScriptProcess: @unchecked Sendable {
         building = build != nil
         self.base = base
         self.folder = folder
-        self.careful = careful.map(CarefulMode.init)
+        self.sandbox = careful.map(Sandbox.init)
         errorText = ErrorTail(limit: errorLimit)
         self.dataName = dataName
         self.variables = variables
@@ -140,7 +144,7 @@ public final class ScriptProcess: @unchecked Sendable {
             hasInput = given != nil
         }
         let environment = Self.environment(base: base ?? ProcessInfo.processInfo.environment, app: Bundle.main.executablePath ?? "", dataName: dataName).merging(variables) { _, new in new }.filter { !withheld.contains($0.key) }
-        let fence = careful?.words(in: environment) ?? []
+        let fence = sandbox?.words(in: environment) ?? []
         let errors = errorOutput
         signal(SIGPIPE, SIG_IGN)
         guard !isStopped else {
@@ -167,12 +171,40 @@ public final class ScriptProcess: @unchecked Sendable {
         if wasStopped { stopGroup() }
         if let text { writeAndClose(text) }
         if let limit {
-            DispatchQueue.global().asyncAfter(deadline: .now() + limit) { [weak self] in
-                guard let self, !lock.withLock({ hasFrame }) else { return }
-                stop(because: SpotError.timedOut)
-            }
+            lock.withLock { limitEnd = Date().addingTimeInterval(limit) }
+            armLimit()
         }
         follow(output: output, errors: errors)
+    }
+
+    private func armLimit() {
+        let (turn, end) = lock.withLock { (limitTurn, limitEnd) }
+        guard let end else { return }
+        DispatchQueue.global().asyncAfter(deadline: .now() + max(0, end.timeIntervalSinceNow)) { [weak self] in
+            guard let self, lock.withLock({ !hasFrame && limitHolds == 0 && limitTurn == turn }) else { return }
+            stop(because: SpotError.timedOut)
+        }
+    }
+
+    func holdLimit() {
+        lock.withLock {
+            limitHolds += 1
+            guard limitHolds == 1 else { return }
+            heldSince = Date()
+            limitTurn += 1
+        }
+    }
+
+    func releaseLimit() {
+        let isFree = lock.withLock {
+            limitHolds = max(0, limitHolds - 1)
+            guard limitHolds == 0, let since = heldSince else { return false }
+            heldSince = nil
+            limitTurn += 1
+            limitEnd = limitEnd?.addingTimeInterval(Date().timeIntervalSince(since))
+            return true
+        }
+        if isFree { armLimit() }
     }
 
     public func send(_ message: Message, id: Int) {

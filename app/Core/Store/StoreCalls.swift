@@ -14,7 +14,7 @@ struct StoreCalls {
         let found, builtin: Bool
 
         var blocks: [[(String, String?)]] {
-            [[("text", store), ("title", name), ("found", String(found)), ("builtin", builtin ? "true" : nil)]]
+            [[("item", store), ("title", name), ("found", String(found)), ("builtin", builtin ? "true" : nil)]]
         }
     }
 

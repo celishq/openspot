@@ -14,8 +14,8 @@ final class ShelfExampleTests: SampleSpotsCase {
             let files = ["a.txt", "b\\c.txt"].map { folder.appendingPathComponent($0).path }
             try files.forEach { try Data().write(to: URL(fileURLWithPath: $0)) }
 
-            _ = try await shelf.perform(.drop(paths: files), timeout: 60)
-            _ = try await shelf.perform(.drop(paths: [files[0]]), timeout: 60)
+            try await shelf.handle(ScriptEntry.drop.name, files, timeout: 60)
+            try await shelf.handle(ScriptEntry.drop.name, [files[0]], timeout: 60)
             let kept = try await shelf.items(timeout: 60).items
 
             XCTAssertEqual(kept.map(\.title), ["a.txt", "b\\c.txt"])
@@ -23,7 +23,7 @@ final class ShelfExampleTests: SampleSpotsCase {
             XCTAssertEqual(kept.map(\.subtitle), ["~", "~"])
             XCTAssertEqual(try self.read("selected", in: folder), "\(files[0])\n\(files[0])\n")
 
-            _ = try await shelf.perform(.drag(runs: [files[0]]), timeout: 60)
+            try await shelf.handle(ScriptEntry.drag.name, [files[0]], timeout: 60)
 
             let left = try await shelf.items(timeout: 60).items
             XCTAssertEqual(left.map(\.run), [files[1]])
@@ -40,9 +40,9 @@ final class ShelfExampleTests: SampleSpotsCase {
         try await withPrivateHome { folder in
             let file = folder.appendingPathComponent("a.txt").path
             try Data().write(to: URL(fileURLWithPath: file))
-            _ = try await shelf.perform(.drop(paths: [file]), timeout: 60)
+            try await shelf.handle(ScriptEntry.drop.name, [file], timeout: 60)
 
-            _ = try await shelf.perform(SpotAction(arguments: ["clear"]), timeout: 60)
+            _ = try await shelf.perform("clear", timeout: 60)
 
             let items = try await shelf.items(timeout: 60).items
             XCTAssertEqual(items, [])

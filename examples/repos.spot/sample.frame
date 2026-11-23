@@ -1,4 +1,4 @@
-button=open
+button=press
 title=Open in Visual Studio Code
 
 button=in-2
@@ -25,48 +25,47 @@ shortcut=cmd+shift+c
 button=editor
 title=Change default app
 scope=spot
-form=true
 
 button=folder
 title=Change folder
 scope=spot
 
-text=/Users/you/Developer/api-gateway
+item=/Users/you/Developer/api-gateway
 title=api-gateway
 detail=main
 icon=/Users/you/Developer/api-gateway
 page=https://github.com/northwind/api-gateway
 hides=page-2
 
-text=/Users/you/Developer/design-tokens
+item=/Users/you/Developer/design-tokens
 title=design-tokens
 detail=feature/dark-mode
 icon=/Users/you/Developer/design-tokens
 page=https://github.com/northwind/design-tokens
 hides=page-2
 
-text=/Users/you/Developer/dotfiles
+item=/Users/you/Developer/dotfiles
 title=dotfiles
 detail=main
 icon=/Users/you/Developer/dotfiles
 hides=page-1
 hides=page-2
 
-text=/Users/you/Developer/invoice-cli
+item=/Users/you/Developer/invoice-cli
 title=invoice-cli
 detail=fix/rounding
 icon=/Users/you/Developer/invoice-cli
 page=https://gitlab.com/maple/invoice-cli
 hides=page-1
 
-text=/Users/you/Developer/mobile-app
+item=/Users/you/Developer/mobile-app
 title=mobile-app
 detail=release/2.4
 icon=/Users/you/Developer/mobile-app
 page=https://github.com/northwind/mobile-app
 hides=page-2
 
-text=/Users/you/Developer/notes-site
+item=/Users/you/Developer/notes-site
 title=notes-site
 detail=main
 icon=/Users/you/Developer/notes-site

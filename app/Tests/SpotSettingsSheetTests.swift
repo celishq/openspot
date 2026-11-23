@@ -43,7 +43,7 @@ final class SpotSettingsSheetTests: XCTestCase {
     }
 
     private func script(_ name: String, toml: String) throws {
-        try "#!/bin/sh\necho \"$*\" >> '\(log.path)'\n[ \"$1\" = show ] && printf 'text=own\\ntitle=Own\\n'\nexit 0\n".writeScript(to: spots.spotFile(name), toml: toml)
+        try "#!/bin/sh\necho \"$*\" >> '\(log.path)'\n[ \"$1\" = show ] && printf 'item=own\\ntitle=Own\\n'\nexit 0\n".writeScript(to: spots.spotFile(name), toml: toml)
     }
 
     private func show(selecting id: String, search: String = "") async throws {
@@ -108,8 +108,26 @@ final class SpotSettingsSheetTests: XCTestCase {
         XCTAssertEqual(calls, [])
     }
 
+    func testTheLookRowOfConfettiShowsTheKeptLookAndAsksForEachLook() async throws {
+        let repo = URL(fileURLWithPath: #filePath).deletingLastPathComponent().deletingLastPathComponent().deletingLastPathComponent()
+        try FileManager.default.copyItem(at: repo.appendingPathComponent("spots/confetti.spot"), to: spots.appendingPathComponent("confetti.spot"))
+        try model.files.config.set(setting: "look", of: "confetti", to: "Gold")
+        try await show(selecting: "confetti", search: "confetti")
+
+        XCTAssertTrue(model.openSelectedSettings())
+        try await wait("the look row") { model.openItems?.shown.contains { $0.run == "setting:confetti:look" } == true }
+        let row = try XCTUnwrap(model.openItems?.shown.first { $0.run == "setting:confetti:look" })
+        XCTAssertEqual(row.title, "Look")
+        XCTAssertEqual(row.subtitle, "Gold")
+        model.runItem(row)
+
+        try await wait("the looks", seconds: 600) { model.form?.draft.form.soleChoice != nil }
+        XCTAssertEqual(model.form?.draft.form.soleChoice?.options.map(\.id), ["colorful", "gold", "metallic"])
+        XCTAssertEqual(model.form?.draft.form.soleChoice?.value, "gold")
+    }
+
     func testReturnOnAFieldRunsTheActionOfItsNameAndTheMenuBarRowTurnsItsPlaceOnAndOff() async throws {
-        try script("cups", toml: "title = 'Cups'\non = ['sheet.open', 'clock.60']\n[settings.size]")
+        try script("cups", toml: "title = 'Cups'\n[settings]\nsize = { type = 'text' }\n[on]\n\"sheet.open\" = true\nevery = 60")
         try await show(selecting: "cups", search: "cups")
         XCTAssertTrue(model.openSelectedSettings())
         try await wait("the rows") { model.openItems?.shown.map(\.run) == ["key:cups:open", "key:cups:float", "setting:cups:size", "menubar:cups", "window:cups"] }
