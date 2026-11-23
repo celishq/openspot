@@ -98,7 +98,7 @@ its Settings, `⌘Y` its History, `⌘K` the menu of all actions. Openspot makes
   content view the edge of its surface (`NSWindow.take`). `make verify` runs `scripts/check-shapes.sh`, which fails on a
   `RoundedRectangle` in `Shell/` outside `Shell/Surface/SpotRoundShape.swift`.
 - The soft backdrop of the panel is one fade around the content, `BackdropFade` in Core: none at the outer edge of the
-  halo, full at the content. It shows as the system's variable blur (`SpotBackdropBlur`) or as a tint
+  halo, full at the content, and the blur full under it by `halo-inset`, so text fades out at the edge of the tiles. It shows as the system's variable blur (`SpotBackdropBlur`) or as a tint
   (`SpotBackdropTint`), both masked by the same small picture of the fade (`SpotBackdropFade`), drawn again only when
   the backdrop's shape changes. The backdrop hides by opacity alone.
 - A picture drawn off screen cannot hold system glass. It goes through `SpotPicture`, which turns the glass off, and the

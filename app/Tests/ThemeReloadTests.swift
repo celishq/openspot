@@ -105,7 +105,7 @@ final class ThemeReloadTests: PanelCase {
         model.take(round)
 
         XCTAssertEqual(host.layOuts.map(\.radius.card), [30])
-        XCTAssertEqual(BackdropFade.current.corner, 30)
+        XCTAssertEqual(BackdropFade.current(blur: nil).corner, 30)
     }
 
     func testABackdropSizeAndPaddingMoveTheFadeOfTheBackdrop() async throws {
@@ -117,7 +117,7 @@ final class ThemeReloadTests: PanelCase {
 
         XCTAssertEqual(host.layOuts.map(\.backdrop.size), [84])
         XCTAssertEqual(SpotTokens.backdrop, wide.layout.backdrop)
-        XCTAssertEqual([BackdropFade.current.size, BackdropFade.current.padding], [84, 20])
+        XCTAssertEqual([BackdropFade.current(blur: nil).size, BackdropFade.current(blur: nil).padding], [84, 20])
     }
 
     func testAChangedBackgroundReachesEachColourThatFollowsIt() async throws {

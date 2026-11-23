@@ -95,7 +95,7 @@ openspot theme reload
 | `highlight`           | `[dark]`, `[light]` | the `ink`                | The colour of the search field, the keys and a filled card. |
 | `good`, `warn`, `bad` | `[dark]`, `[light]` | `green`, `orange`, `red` | The colours of a value that is fine, needs a look, or failed. |
 | `glass`               | `[look]`            | `regular`                | `clear` shows what is behind the panel, and `regular` frosts it. |
-| `backdrop`            | `[look]`            | `blur`                   | `blur` blurs what is behind the panel, and `tint` lays the `background` over it. |
+| `backdrop`            | `[look]`            | `blur`                   | `blur` blurs what is behind the panel, `tint` lays the `background` over it, and `veil` does both. |
 | `reach`               | `[look]`            | `tiles`                  | `tiles` lays the backdrop around the tiles, and `screen` covers the screen. |
 | `corner`              | `[look]`            | `26`                     | The corner of a card in points, which every other corner follows. |
 | `density`             | `[look]`            | `1`                      | A factor on every gap and padding: `0.5` is tight, `1.5` is roomy. |
@@ -149,7 +149,7 @@ press-bounce = 0
 | `solid`, `on-solid`, `glyph-on-solid`                               | `[dark]`, `[light]` | A filled card, its text and its glyph.                 |
 | `glass-tint`, `corner-fill`, `window`                               | `[dark]`, `[light]` | The tint of the glass, the fill behind a corner button, and a window. |
 | `confirm`, `on-confirm`                                             | `[dark]`, `[light]` | A press that asks again before it deletes, and its text. |
-| `backdrop-tint`, `card-shadow`                                      | `[dark]`, `[light]` | The colour of the backdrop's tint, and of the shadow under the glass. |
+| `backdrop-tint`, `card-shadow`                                      | `[dark]`, `[light]` | The colour of the backdrop's `tint` and `veil`, and of the shadow under the glass. |
 | `fill`, `selected`, `disc`, `chip`, `control`, `track`, `secondary` | `[dark]`, `[light]` | Strengths of the `ink` from 0 to 1, such as the fill of a card. |
 | `cell`, `glyph`, `list-row`, `menu-row`                             | `[advanced]`        | The sizes of a grid cell, a glyph, a row and a menu row, in points. |
 | `column-gap`, `row-gap`, `padding`, `list-row-gap`, `menu-padding`  | `[advanced]`        | The gaps and paddings in points.                       |
@@ -158,5 +158,6 @@ press-bounce = 0
 | `grow`, `shrink`, `move`, `fade-in`, `fade-out`, `press`, `settle`  | `[advanced]`        | The time of each motion in seconds.                    |
 | `press-bounce`, `pressed-scale`, `lifted-scale`, `focused-scale`    | `[advanced]`        | The bounce of a press, and the scale of a card in each state. |
 | `backdrop-blur`, `halo-size`, `halo-padding`, `card-shadow-size`    | `[advanced]`        | The blur of the backdrop, how far its halo and the shadow reach. |
+| `backdrop-ease`, `halo-roundness`, `halo-inset`                     | `[advanced]`        | How slowly the blur starts across the halo, how fast its corner rounds, and how far under the tiles it reaches full strength. |
 
 A value that follows another follows the exact one too: an exact `solid` gives `on-solid` a colour that reads on it.

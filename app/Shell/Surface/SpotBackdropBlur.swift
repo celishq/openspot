@@ -80,7 +80,7 @@ struct SpotBackdropBlur: NSViewRepresentable {
                 backdrop.setValue(1, forKey: "scale")
                 drawn = nil
             }
-            let fade = SpotBackdropFade(fade: .current, area: area, size: bounds.size)
+            let fade = SpotBackdropFade(fade: .current(blur: radius), area: area, size: bounds.size)
             if drawn?.radius != radius {
                 backdrop.setValue(radius, forKeyPath: "filters.\(Self.kind).inputRadius")
             }

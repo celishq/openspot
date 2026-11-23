@@ -36,6 +36,9 @@ private struct ScreenBackdropView: View {
             switch SpotTokens.backdrop.style {
             case .blur: SpotBackdropBlur(radius: SpotTokens.backdrop.blur)
             case .tint: SpotTheme.backdropTint
+            case .veil:
+                SpotBackdropBlur(radius: SpotTokens.backdrop.blur)
+                SpotTheme.backdropTint
             }
         }
         .modifier(SpotShownFade(isShown: model.isShown))

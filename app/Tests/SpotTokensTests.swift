@@ -2,6 +2,11 @@ import XCTest
 @testable import OpenspotCore
 
 final class SpotTokensTests: XCTestCase {
+    func testTheToastsWindowHoldsTheWholeShadowOfItsGlass() {
+        XCTAssertGreaterThanOrEqual(SpotTokens.toastRoom, 2 * CGFloat(SpotTokens.backdrop.shadow))
+        XCTAssertGreaterThanOrEqual(SpotTokens.toastRoom, SpotTokens.toastMargin)
+    }
+
     func testAPictureInARoomOneLineHighIsARowIcon() {
         XCTAssertEqual(SpotTokens.pictureSide(in: CGSize(width: 80, height: 26)), SpotTokens.listIconSize)
         XCTAssertEqual(SpotTokens.pictureSide(in: CGSize(width: 80, height: SpotTokens.listRow)), SpotTokens.listIconSize)
