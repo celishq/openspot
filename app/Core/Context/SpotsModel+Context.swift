@@ -59,9 +59,11 @@ extension SpotsModel {
 
     func showContext() -> [Entry] {
         guard let chip = context.selectedChip, let source = entry(chip.source) else { return [] }
-        let words = chip.words
-        let preview = Entry(spot: source.spot, item: SpotItem(title: words.title, run: Self.previewRun, picture: Icon(text: chip.symbol)), detail: words.detail)
-        guard let value = chip.value else { return [preview] }
+        guard let value = chip.value else {
+            return [Entry(spot: source.spot, item: SpotItem(title: chip.words.title, run: Self.previewRun, picture: Icon(text: chip.symbol)), detail: "")]
+        }
+        let shown = ContextPreview(value)
+        let preview = Entry(spot: source.spot, item: SpotItem(title: shown.text, run: Self.previewRun, picture: shown.picture), detail: shown.caption)
         let rows = cards.filter { $0.item == nil && $0.spot.takes(value) }.map { card in
             SpotItem(title: card.spot.name, subtitle: card.spot.subtitle, run: card.id, keywords: card.spot.keywords)
         }
@@ -80,7 +82,7 @@ extension SpotsModel {
         return [preview] + taken
     }
 
-    func isPreview(_ entry: Entry) -> Bool {
+    public func isPreview(_ entry: Entry) -> Bool {
         entry.item?.run == Self.previewRun
     }
 
