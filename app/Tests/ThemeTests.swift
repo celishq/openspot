@@ -169,8 +169,8 @@ final class ThemeTests: XCTestCase {
         XCTAssertEqual([layout.motion.pressBounce, layout.motion.pressedScale, layout.motion.liftedScale, layout.motion.focusedScale], [0.2, 1.04, 1.05, 1.04])
         XCTAssertEqual(layout.backdrop.style, .blur)
         XCTAssertEqual(layout.backdrop.reach, .tiles)
-        XCTAssertEqual([layout.backdrop.blur, layout.backdrop.size, layout.backdrop.padding], [16, 90, 0])
-        XCTAssertEqual([layout.backdrop.ease, layout.backdrop.roundness], [1, 2])
+        XCTAssertEqual([layout.backdrop.blur, layout.backdrop.size, layout.backdrop.padding], [8, 90, 0])
+        XCTAssertEqual([layout.backdrop.ease, layout.backdrop.roundness], [2, 2])
     }
 
     func testCornerDensityTypeAndSpeedScaleWhatFollowsThem() {

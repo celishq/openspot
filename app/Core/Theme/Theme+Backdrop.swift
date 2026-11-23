@@ -29,11 +29,11 @@ extension Theme {
         init(style: Style, reach: Reach, exact: @escaping (String) -> Double?) {
             self.style = style
             self.reach = reach
-            blur = exact("backdrop-blur") ?? 16
+            blur = exact("backdrop-blur") ?? 8
             size = exact("halo-size") ?? Double(SpotTokens.halo)
             padding = exact("halo-padding") ?? 0
             shadow = exact("card-shadow-size") ?? 24
-            ease = exact("backdrop-ease") ?? 1
+            ease = exact("backdrop-ease") ?? 2
             roundness = exact("halo-roundness") ?? 2
         }
     }
