@@ -74,29 +74,6 @@ public enum ManifestSchema {
         return ["type": "object", "properties": properties, "additionalProperties": ["type": ["boolean", "string"]]]
     }
 
-    static func actions(of spot: Spot) -> [String: Any] {
-        let actions = spot.actions.map { action -> [String: Any] in
-            var entry: [String: Any] = ["name": action.id, "inputs": object(of: action.inputs), "outputs": object(of: action.outputs)]
-            if let title = action.title { entry["title"] = title }
-            return entry
-        }
-        let commands = UseCommand.all(for: spot.uses).filter { $0.use != nil }.map { command -> [String: Any] in
-            ["name": command.words.joined(separator: " "), "description": command.about, "inputs": CommandSlot.schema(of: command.slots)]
-        }
-        return ["spot": spot.id, "actions": actions, "commands": commands]
-    }
-
-    static func object(of parameters: [Manifest.Parameter]) -> [String: Any] {
-        var properties: [String: Any] = [:]
-        for parameter in parameters {
-            var base = parameter.type.schema(options: parameter.options)
-            if let detail = parameter.detail { base["description"] = detail }
-            if let defaultValue = parameter.defaultValue { base["default"] = defaultValue }
-            properties[parameter.name] = parameter.type.isList ? ["type": "array", "items": base] : base
-        }
-        return ["type": "object", "properties": properties, "required": parameters.filter(\.isRequired).map(\.name)]
-    }
-
     private static func object(_ keys: Set<String>, from fields: [String: [String: Any]], required: [String] = []) -> [String: Any] {
         var properties: [String: Any] = [:]
         for key in keys { properties[key] = fields[key] ?? reference("texts") }

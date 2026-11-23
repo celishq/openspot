@@ -712,6 +712,7 @@
 		B185FD085D33DB4C4B2C60F9 /* SpotFrontWindow.swift in Sources */ = {isa = PBXBuildFile; fileRef = 60BD0F97D8985EE1892F95BC /* SpotFrontWindow.swift */; };
 		B18F0FFBEE62E97E0F16639C /* ThemeLayoutTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 14F4E91BEC85D21561121411 /* ThemeLayoutTests.swift */; };
 		B1E731070CAFED3719EC84B9 /* SpotCardPicture.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0745D0A7BFD828B792C1C501 /* SpotCardPicture.swift */; };
+		B21999D1C8A0B0C10D934C79 /* CallShape+Listing.swift in Sources */ = {isa = PBXBuildFile; fileRef = FABFE06D640BECC0BBE878A5 /* CallShape+Listing.swift */; };
 		B2679863717123E1E150236A /* SpotSheetPicture.swift in Sources */ = {isa = PBXBuildFile; fileRef = F88DACD8904B76FD2D7206B0 /* SpotSheetPicture.swift */; };
 		B2E1E46E0A993233621D4677 /* GridCardsMove.swift in Sources */ = {isa = PBXBuildFile; fileRef = 581C34A7DABBFB473CB43EE6 /* GridCardsMove.swift */; };
 		B2E3C86E6FCF335C8CFD98EE /* CommandLineCallTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 144AE8063E284949FC39AC18 /* CommandLineCallTests.swift */; };
@@ -2197,6 +2198,7 @@
 		FAA9E0A4346C85D66B0FD836 /* MacWindows.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MacWindows.swift; sourceTree = "<group>"; };
 		FAAE69645E7905F26B111E35 /* CardTilt.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CardTilt.swift; sourceTree = "<group>"; };
 		FABB501FC911592C38310E2F /* SymbolCatalog.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SymbolCatalog.swift; sourceTree = "<group>"; };
+		FABFE06D640BECC0BBE878A5 /* CallShape+Listing.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "CallShape+Listing.swift"; sourceTree = "<group>"; };
 		FAC5C02179CF49D32F1A6370 /* AppCache.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppCache.swift; sourceTree = "<group>"; };
 		FAE3480ACBE742701BA648C5 /* Mac.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Mac.swift; sourceTree = "<group>"; };
 		FAF6F317537D19DA6AC4D5D3 /* SpotRun+Acts.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "SpotRun+Acts.swift"; sourceTree = "<group>"; };
@@ -3701,6 +3703,7 @@
 			isa = PBXGroup;
 			children = (
 				D1E47B1E2D89AAEB55879324 /* CallShape.swift */,
+				FABFE06D640BECC0BBE878A5 /* CallShape+Listing.swift */,
 				EFB76DB818EE1B3BF0A85DD6 /* CommandSlot.swift */,
 				10587EC067AD609A2988210E /* SpotTypes.swift */,
 				B1BF4C4E6B20F4A38C5117FA /* SpotTypes+Swift.swift */,
@@ -4418,6 +4421,7 @@
 				9F4ACEC00AE7D055EB3FBA4B /* CallLog.swift in Sources */,
 				FD1058E3D11BEF564A6E18FD /* CallOutcome.swift in Sources */,
 				C849E5A68BE1AC1F565B905C /* CallRule.swift in Sources */,
+				B21999D1C8A0B0C10D934C79 /* CallShape+Listing.swift in Sources */,
 				7EDF5E49E7D5F8843E181141 /* CallShape.swift in Sources */,
 				CE99600DF2D88652B486766D /* CallWords.swift in Sources */,
 				4A7BBA4F5598B4F3ECD028C7 /* Capability.swift in Sources */,
