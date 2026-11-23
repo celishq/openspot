@@ -9,7 +9,7 @@ extension SpotsModel {
         let feeds = !isWarming && entries.contains { entry in ContextValue.Kind.allCases.contains(where: entry.spot.triggers.drop.takes) }
         let loading = feeds ? entries.filter { $0.spot.isSource && $0.spot.triggers.opensOverAnApp && $0.spot.runsOnOpen(over: front?.bundleID, feedsContext: feeds) } : []
         var next = context
-        next.open(over: front, loading: loading.map { ContextChip(source: $0.id, app: front?.bundleID, look: Self.look(of: $0.spot)) })
+        next.open(over: front, loading: loading.map { ($0.id, Self.look(of: $0.spot)) })
         if next != context { context = next }
         if wasOn { updateVisible() }
         runs.panelOpened(showsToEnd: isWarming, over: front?.bundleID, feedsContext: feeds)
@@ -17,7 +17,7 @@ extension SpotsModel {
 
     func takeContext(_ value: ContextValue, of id: String) {
         var next = context
-        if cards.contains(where: { $0.spot.takes(value) }) { next.fill(id, with: value, look: entry(id).map { Self.look(of: $0.spot) } ?? ContextChip.Look()) } else { next.remove(id) }
+        if cards.contains(where: { $0.spot.takes(value) }) { next.fill(id, with: value, look: entry(id).map { Self.look(of: $0.spot) }) } else { next.remove(id) }
         settle(next, motion: .fade)
     }
 
@@ -45,7 +45,7 @@ extension SpotsModel {
     }
 
     private static func look(of spot: Spot) -> ContextChip.Look {
-        ContextChip.Look(symbol: spot.symbol, file: spot.fileIcon)
+        spot.fileIcon.map(ContextChip.Look.file) ?? .symbol(spot.symbol)
     }
 
     private func settle(_ next: ContextChips, motion: PanelMotion) {

@@ -1,38 +1,35 @@
 import Foundation
 
 public struct ContextChip: Equatable, Sendable {
-    public struct Look: Equatable, Sendable {
-        public let symbol: String
-        public let file: FileIcon?
+    public enum Look: Equatable, Sendable {
+        case file(FileIcon)
+        case symbol(String)
+    }
 
-        public init(symbol: String = "", file: FileIcon? = nil) {
-            self.symbol = symbol
-            self.file = file
-        }
+    public enum State: Equatable, Sendable {
+        case loading
+        case ready(ContextValue)
     }
 
     public let source: String
     public let app: String?
-    public let value: ContextValue?
     public let look: Look
+    public let state: State
 
-    public init(source: String, app: String?, value: ContextValue? = nil, look: Look = Look()) {
+    public init(source: String, app: String?, look: Look, state: State = .loading) {
         self.source = source
         self.app = app
-        self.value = value
         self.look = look
+        self.state = state
     }
 
-    public static func == (lhs: ContextChip, rhs: ContextChip) -> Bool {
-        lhs.source == rhs.source && lhs.app == rhs.app && lhs.value == rhs.value
+    public var value: ContextValue? {
+        guard case .ready(let value) = state else { return nil }
+        return value
     }
 
     public var isLoading: Bool {
-        value == nil
-    }
-
-    func filled(with value: ContextValue, look: Look) -> ContextChip {
-        ContextChip(source: source, app: value.app ?? app, value: value, look: look)
+        state == .loading
     }
 
     func rank(over front: String?) -> Int {
@@ -60,7 +57,11 @@ extension ContextChip {
     }
 
     public var symbol: String {
-        switch value?.kind {
+        Self.symbol(of: value?.kind)
+    }
+
+    static func symbol(of kind: ContextValue.Kind?) -> String {
+        switch kind {
         case .url: "link"
         case .text: "text.quote"
         case .file: "doc"

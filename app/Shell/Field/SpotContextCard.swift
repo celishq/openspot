@@ -2,13 +2,7 @@ import OpenspotCore
 import SwiftUI
 
 struct SpotContextCard: View, Equatable {
-    enum Icon: Equatable {
-        case file(FileIcon)
-        case symbol(String)
-    }
-
     let chip: ContextChip
-    let icon: Icon
     let isOn: Bool
 
     var body: some View {
@@ -25,7 +19,7 @@ struct SpotContextCard: View, Equatable {
 
     @ViewBuilder
     private var picture: some View {
-        switch icon {
+        switch chip.look {
         case .file(let file):
             SpotItemIcon(icon: file, glyph: nil, symbol: nil, size: SpotTokens.contextIcon)
         case .symbol(let symbol):

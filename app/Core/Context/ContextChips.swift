@@ -23,22 +23,18 @@ public struct ContextChips: Equatable, Sendable {
         selected != nil
     }
 
-    public func appPath(of chip: ContextChip) -> String? {
-        chip.app != nil && chip.app == front?.bundleID ? front?.path : nil
-    }
-
-    mutating func open(over front: FrontApp?, loading: [ContextChip]) {
+    mutating func open(over front: FrontApp?, loading: [(source: String, look: ContextChip.Look)]) {
         self.front = front
         selected = nil
         order = loading.map(\.source)
-        chips = loading
+        chips = loading.map { ContextChip(source: $0.source, app: front?.bundleID, look: look(of: front?.bundleID, kind: nil, else: $0.look)) }
         settle()
     }
 
-    mutating func fill(_ source: String, with value: ContextValue, look: ContextChip.Look = ContextChip.Look()) {
-        let chip = chips.first { $0.source == source } ?? ContextChip(source: source, app: nil)
+    mutating func fill(_ source: String, with value: ContextValue, look own: ContextChip.Look?) {
+        let app = value.app ?? chips.first { $0.source == source }?.app
         chips.removeAll { $0.source == source }
-        chips.append(chip.filled(with: value, look: look))
+        chips.append(ContextChip(source: source, app: app, look: look(of: app, kind: value.kind, else: own), state: .ready(value)))
         if !order.contains(source) { order.append(source) }
         settle()
     }
@@ -64,6 +60,12 @@ public struct ContextChips: Equatable, Sendable {
 
     mutating func leave() {
         selected = nil
+    }
+
+    private func look(of app: String?, kind: ContextValue.Kind?, else own: ContextChip.Look?) -> ContextChip.Look {
+        if app != nil, app == front?.bundleID, let path = front?.path { return .file(FileIcon(path: path)) }
+        guard let own, own != .symbol("") else { return .symbol(ContextChip.symbol(of: kind)) }
+        return own
     }
 
     private mutating func settle() {

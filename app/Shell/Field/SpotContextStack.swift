@@ -11,7 +11,6 @@ struct SpotContextStack: View {
             ForEach(Array(stack.enumerated()), id: \.element.source) { place, chip in
                 SpotContextCard(
                     chip: chip,
-                    icon: Self.icon(of: chip, in: context),
                     isOn: context.isOn && place == 0
                 )
                 .scaleEffect(1 - CGFloat(place) * SpotTokens.contextShrink, anchor: .trailing)
@@ -27,11 +26,5 @@ struct SpotContextStack: View {
         .accessibilityElement(children: .ignore)
         .accessibilityLabel(context.selectedChip?.words.title ?? "Context")
         .accessibilityAddTraits(.isButton)
-    }
-
-    private static func icon(of chip: ContextChip, in context: ContextChips) -> SpotContextCard.Icon {
-        if let path = context.appPath(of: chip) { return .file(FileIcon(path: path)) }
-        if let file = chip.look.file { return .file(file) }
-        return .symbol(chip.look.symbol.isEmpty ? chip.symbol : chip.look.symbol)
     }
 }
