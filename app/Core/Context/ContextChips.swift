@@ -3,9 +3,15 @@ import Foundation
 public struct ContextChips: Equatable, Sendable {
     static let limit = 3
 
-    public private(set) var chips: [ContextChip] = []
-    public private(set) var selected: String?
+    public private(set) var chips: [ContextChip] = [] {
+        didSet { restack() }
+    }
+    public private(set) var selected: String? {
+        didSet { restack() }
+    }
+    public private(set) var stack: [ContextChip] = []
     private var front: String?
+    private var frontPath: String?
     private var order: [String] = []
 
     public init() {}
@@ -18,8 +24,13 @@ public struct ContextChips: Equatable, Sendable {
         selected != nil
     }
 
-    mutating func open(over front: String?, loading sources: [String]) {
+    public func appPath(of chip: ContextChip) -> String? {
+        chip.app != nil && chip.app == front ? frontPath : nil
+    }
+
+    mutating func open(over front: String?, at path: String? = nil, loading sources: [String]) {
         self.front = front
+        frontPath = path
         selected = nil
         order = sources
         chips = sources.map { ContextChip(source: $0, app: front) }
@@ -61,5 +72,13 @@ public struct ContextChips: Equatable, Sendable {
         let place = Dictionary(order.enumerated().map { ($0.element, $0.offset) }, uniquingKeysWith: { first, _ in first })
         chips = Array(chips.sorted { ($0.rank(over: front), place[$0.source] ?? 0) < ($1.rank(over: front), place[$1.source] ?? 0) }.prefix(Self.limit))
         if let selected, !chips.contains(where: { $0.source == selected }) { self.selected = chips.first?.source }
+    }
+
+    private mutating func restack() {
+        guard let index = chips.firstIndex(where: { $0.source == selected }) else {
+            stack = chips
+            return
+        }
+        stack = Array(chips[index...] + chips[..<index])
     }
 }

@@ -21,6 +21,7 @@ final class FakeHost: SpotsHost {
     var openings: [String?] = []
     var app = "/Apps/Openspot"
     var frontApp: String?
+    var frontAppPath: String?
     var prepared: [SpotItem] = []
     var glyphLists: [[String]] = []
     var cardGlyphs: [[String]] = []

@@ -28,6 +28,20 @@ extension SpotTokens {
     public static let toastPaddingY: CGFloat = 10
     public static let toastKeySpace: CGFloat = 2
 
+    public static let contextCard: CGFloat = 30
+    public static let contextCardRadius: CGFloat = 8
+    public static let contextIcon: CGFloat = 22
+    public static let contextStep: CGFloat = 7
+    public static let contextShrink: CGFloat = 0.12
+    public static let contextBadge: CGFloat = 13
+    public static let contextBadgeRadius: CGFloat = 4
+    public static let contextBadgeReach: CGFloat = 3
+    public static let contextGap: CGFloat = 8
+
+    public static func contextStack(count: Int) -> CGFloat {
+        count == 0 ? 0 : contextCard + CGFloat(count - 1) * contextStep
+    }
+
     public static let metricBigRingLine: CGFloat = 8
     public static let metricRingLine: CGFloat = 4
     public static let metricBarLine: CGFloat = 4

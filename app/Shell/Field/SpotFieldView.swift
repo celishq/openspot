@@ -44,12 +44,16 @@ struct SpotFieldView: View {
                 SpotFieldPrompt.glyph
                     .offset(x: glyphLeft, y: top)
                 searchText
-                    .frame(width: Self.fieldTextWidth, height: SpotTokens.cell, alignment: .leading)
+                    .frame(width: textWidth, height: SpotTokens.cell, alignment: .leading)
                     .offset(x: fieldTextLeft, y: top)
                 SpotSlashMark(model: model)
-                    .frame(width: Self.fieldTextWidth, height: SpotTokens.cell, alignment: .leading)
+                    .frame(width: textWidth, height: SpotTokens.cell, alignment: .leading)
                     .offset(x: fieldTextLeft, y: top)
                     .allowsHitTesting(false)
+                if !isInSheet {
+                    SpotContextStack(model: model)
+                        .offset(x: Self.contextLeft(count: contextCount), y: top + (SpotTokens.cell - SpotTokens.contextCard) / 2)
+                }
             }
             .morph(progress, opacity: crossing)
             .modifier(SpotFaded())
@@ -109,6 +113,19 @@ struct SpotFieldView: View {
     static var sheetTextLeft: CGFloat { SpotTokens.halo + 2 * SpotTokens.padding + SpotTokens.listIconSize + SpotTokens.fieldTextGap }
     static var sheetRadius: CGFloat { SurfaceEdge.sheet.inner().radius }
     static var fieldTextWidth: CGFloat { SpotTokens.gridWidth - 4 * SpotTokens.padding - SpotTokens.listIconSize - SpotTokens.fieldTextGap }
+
+    private var contextCount: Int {
+        model.context.chips.count
+    }
+
+    private var textWidth: CGFloat {
+        guard !isInSheet, contextCount > 0 else { return Self.fieldTextWidth }
+        return Self.contextLeft(count: contextCount) - SpotTokens.contextGap - fieldTextLeft
+    }
+
+    static func contextLeft(count: Int) -> CGFloat {
+        rect.maxX - SpotTokens.padding - SpotTokens.contextStack(count: count)
+    }
 
     private var fieldTextLeft: CGFloat {
         isInSheet ? Self.sheetTextLeft : SpotTokens.halo + SpotTokens.padding + SpotTokens.glyph + SpotTokens.fieldTextGap

@@ -39,6 +39,7 @@ final class ContextStateTests: ContextCase {
         XCTAssertEqual(model.context.selected, "selection")
         XCTAssertTrue(model.handleKey(tab))
         XCTAssertEqual(model.context.selected, "tab")
+        XCTAssertEqual(model.context.stack.map(\.source), ["tab", "selection"])
         XCTAssertTrue(model.handleKey(tab))
         XCTAssertEqual(model.context.selected, "selection")
         XCTAssertTrue(model.handleKey(backTab))

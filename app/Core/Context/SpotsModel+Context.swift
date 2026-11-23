@@ -6,7 +6,7 @@ extension SpotsModel {
         let feeds = !isWarming && entries.contains { entry in ContextValue.Kind.allCases.contains(where: entry.spot.takes) }
         let loading = feeds ? entries.filter { $0.spot.uses.contains(.context) && $0.spot.triggers.opensOverAnApp && $0.spot.triggers.opens(over: front) }.map(\.id) : []
         var next = context
-        next.open(over: front, loading: loading)
+        next.open(over: front, at: isWarming ? nil : host.frontAppPath, loading: loading)
         if next != context { context = next }
         runs.panelOpened(showsToEnd: isWarming, over: front, feedsContext: feeds)
     }
@@ -14,31 +14,35 @@ extension SpotsModel {
     func takeContext(_ value: ContextValue, of id: String) {
         var next = context
         if cards.contains(where: { $0.spot.takes(value) }) { next.fill(id, with: value) } else { next.remove(id) }
-        change(next)
+        settle(next, motion: .fade)
     }
 
     func endContext(of id: String) {
         var next = context
         next.end(id)
-        change(next)
+        settle(next, motion: .fade)
     }
 
     func turnContext(by step: Int) {
         var next = context
         next.turn(by: step)
-        change(next)
+        settle(next, motion: .edit)
     }
 
     func leaveContext() {
         var next = context
         next.leave()
-        change(next)
+        settle(next, motion: .edit)
     }
 
-    private func change(_ next: ContextChips) {
+    public func pressContext() {
+        _ = takeTab(back: false)
+    }
+
+    private func settle(_ next: ContextChips, motion: PanelMotion) {
         guard next != context else { return }
         let wasOn = context.isOn
-        context = next
+        change(isShown ? motion : nil, { context = next })
         guard wasOn || next.isOn else { return }
         selected = 0
         updateVisible()

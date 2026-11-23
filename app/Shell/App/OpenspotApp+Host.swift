@@ -96,6 +96,14 @@ extension OpenspotApp: SpotsHost {
         SpotGridDrop.paths(on: .general)
     }
 
+    var frontApp: String? {
+        previous.app?.bundleIdentifier
+    }
+
+    var frontAppPath: String? {
+        previous.app?.bundleURL?.path
+    }
+
     func takeFocus() {
         panel?.makeKey()
     }
