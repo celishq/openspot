@@ -895,6 +895,7 @@
 		D61DEB641FDCF73BC11E55AF /* InlineScript.js in Resources */ = {isa = PBXBuildFile; fileRef = DEA38C251A8C6154D8E4C7E8 /* InlineScript.js */; };
 		D63927E0EB3B1127B75AC71B /* SpotTip.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8C583937797F12E95E9EFD57 /* SpotTip.swift */; };
 		D695A74AABC1CE7AA3B4A20D /* SpotsModel+Backdrop.swift in Sources */ = {isa = PBXBuildFile; fileRef = 81D49C11A2C4C461BF3E367A /* SpotsModel+Backdrop.swift */; };
+		D6C61CA42C9F480F359A9497 /* DateCall.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6CDC506D3F69D8EE35B1CE80 /* DateCall.swift */; };
 		D6EC78D7F648E3DBB2CB6E37 /* MotionTokensTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A8AA79552F8EF1E73EF00C95 /* MotionTokensTests.swift */; };
 		D72B44C78BC3A2C7E0CF5907 /* FocusRing.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5487B8C890915F778D06851B /* FocusRing.swift */; };
 		D74C46E43644BB4CCB6C1B39 /* SpotCardSource.swift in Sources */ = {isa = PBXBuildFile; fileRef = D52D1A0896DBE5AB1A160A7E /* SpotCardSource.swift */; };
@@ -951,6 +952,7 @@
 		E2BD8FE0DD3020E2783E86A2 /* SpotRuns+Events.swift in Sources */ = {isa = PBXBuildFile; fileRef = 12C01D3BF334D440FF9BEBB1 /* SpotRuns+Events.swift */; };
 		E2F101E4832B3009846B922C /* CallMessageTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B3417BD9909ABFF539181855 /* CallMessageTests.swift */; };
 		E2F3FAA9A498125AF0B72906 /* CommandNoun.swift in Sources */ = {isa = PBXBuildFile; fileRef = A63461A07AEB314D138E0BCD /* CommandNoun.swift */; };
+		E32C5D44449E33875F673EF7 /* DateReadTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = BB4D8E1EAF5CFF83266EA9F5 /* DateReadTests.swift */; };
 		E34E07F19D2607FF824F6CB2 /* SpotFieldPrompt.swift in Sources */ = {isa = PBXBuildFile; fileRef = 441D60D3142BDD50E886B27D /* SpotFieldPrompt.swift */; };
 		E38BC40E13C3D0E46209D5AB /* DocCommandTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 464CFE2907DC69FAA29ACCEB /* DocCommandTests.swift */; };
 		E4A97EE544ED615135A380DD /* ActionCallTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9EFDB03BD1A1F45215D7295C /* ActionCallTests.swift */; };
@@ -1572,6 +1574,7 @@
 		6C873E93C8E507D9E8B38EA9 /* ThemeReloadTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ThemeReloadTests.swift; sourceTree = "<group>"; };
 		6CB75ADB73E5F9963AEBAC8E /* AccountKey.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AccountKey.swift; sourceTree = "<group>"; };
 		6CBC02F36A192E1059CC70DD /* SpotSheetSearchRow.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SpotSheetSearchRow.swift; sourceTree = "<group>"; };
+		6CDC506D3F69D8EE35B1CE80 /* DateCall.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DateCall.swift; sourceTree = "<group>"; };
 		6D089A3DBAB802A889238523 /* SpotType+Header.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "SpotType+Header.swift"; sourceTree = "<group>"; };
 		6D0AE349E0ABD0FA373E4359 /* FakeClock.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FakeClock.swift; sourceTree = "<group>"; };
 		6D25B5842713EDDC3CA7BEAD /* SnoozeTabPanelTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SnoozeTabPanelTests.swift; sourceTree = "<group>"; };
@@ -1919,6 +1922,7 @@
 		BAE51D8BEAC1F240D8E3A2BE /* TestClient.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TestClient.swift; sourceTree = "<group>"; };
 		BB1B6EACD42FEEF9CE73B8B8 /* FakeCalendar.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FakeCalendar.swift; sourceTree = "<group>"; };
 		BB3BF554F43314B713EEC4F0 /* ScriptProcess.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScriptProcess.swift; sourceTree = "<group>"; };
+		BB4D8E1EAF5CFF83266EA9F5 /* DateReadTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DateReadTests.swift; sourceTree = "<group>"; };
 		BB7A6E8C535C73A5D42E2DA9 /* ViewLibrary.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ViewLibrary.swift; sourceTree = "<group>"; };
 		BB8C689BFCE12ED8D161A185 /* SpotRing.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SpotRing.swift; sourceTree = "<group>"; };
 		BBB1FA3441559C417EF0FD24 /* SpotResize.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SpotResize.swift; sourceTree = "<group>"; };
@@ -2574,6 +2578,7 @@
 				74022333AF25C8D9FB545E75 /* ClipboardCall.swift */,
 				0593FF6BEE540B9D2F8DC85E /* ClipboardCalls.swift */,
 				C453BCE620D31DE869C4446B /* ColorCall.swift */,
+				6CDC506D3F69D8EE35B1CE80 /* DateCall.swift */,
 				F0D761DB9A1CD3CA9B19C764 /* EmojiCall.swift */,
 				A5AAA360A49768EF47CBDE0D /* EmojiCatalog.swift */,
 				63D340B71E776E4297A0E0D8 /* FolderCall.swift */,
@@ -2872,6 +2877,7 @@
 				A2BA1B7D1D31019C552CF0CA /* ConfigFile+Test.swift */,
 				F6FD2BEB19EFA48253618461 /* ConfigFileTests.swift */,
 				BA6B0D4E912ED2F8DDF8428A /* CoreSpotsTests.swift */,
+				BB4D8E1EAF5CFF83266EA9F5 /* DateReadTests.swift */,
 				BDFAF7E845B4F79DE6964673 /* DictateExampleTests.swift */,
 				464CFE2907DC69FAA29ACCEB /* DocCommandTests.swift */,
 				B87806A2C3C0BDB3048132D4 /* DocExampleTests.swift */,
@@ -4449,6 +4455,7 @@
 				2D767FD965D15EAF5F644AF0 /* ConfigFile.swift in Sources */,
 				2013FD34AC638BD66D70376B /* CronLine.swift in Sources */,
 				B411F76143C319069B53F956 /* Data+Hex.swift in Sources */,
+				D6C61CA42C9F480F359A9497 /* DateCall.swift in Sources */,
 				C8D3DA9792D69A1394851ED1 /* DueWatch.swift in Sources */,
 				AECC7029FB486BB9F127BB55 /* EmitCall.swift in Sources */,
 				DBFE2DADC9DDDBE960986293 /* EmojiCall.swift in Sources */,
@@ -5166,6 +5173,7 @@
 				D9ACC1D06EA9743AB216D3F1 /* ConfigFile+Test.swift in Sources */,
 				7BC0C70985AB0064E9D7068D /* ConfigFileTests.swift in Sources */,
 				6B08DAE4383D074596964CA5 /* CoreSpotsTests.swift in Sources */,
+				E32C5D44449E33875F673EF7 /* DateReadTests.swift in Sources */,
 				73D7C1638B9E6765A5D14E10 /* DictateExampleTests.swift in Sources */,
 				E38BC40E13C3D0E46209D5AB /* DocCommandTests.swift in Sources */,
 				479BB72BAB2B93899BC7C35E /* DocExampleTests.swift in Sources */,

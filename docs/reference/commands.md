@@ -51,6 +51,7 @@ see [the commands that fail in a read](../../app/Help/commands.md#the-commands-t
 | `openspot cache age <name>`                         | Prints the seconds since your spot kept `<name>`, or nothing.            |
 | `openspot cache set <name>`                         | Keeps stdin as `<name>`, and asks your spot again for the panel's search. |
 | `openspot spot open <id>`                           | Opens the panel on a spot.                                               |
+| `openspot date read <words>...`                     | Prints the date the words name, such as `25 dec`, as `item` and `time`, or nothing when they are more than a date. |
 
 Each list a command prints is blocks, as your script prints them, or JSON with `--json` where the command takes it.
 

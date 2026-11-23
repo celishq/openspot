@@ -100,6 +100,7 @@ work in a read too. `run` works in a read, but the action it runs can't show a v
 | `openspot prompt new [words]...`                   | Prints a prompt that asks a coding agent to build a spot that does what the words say.          |
 | `openspot prompt change <id> [words]...` | Prints a prompt that asks a coding agent to change a spot as the words say, with what the stats counted of it over 14 days, or with no words a goal that follows those counts. |
 | `openspot prompt theme <name> [words]...`          | Prints a prompt that asks a coding agent to change a theme as the words say.                    |
+| `openspot date read <words>...`                    | Prints the date the words name, such as `tomorrow 3pm`, as `item=yyyy-MM-dd HH:mm` in the zone of the Mac, or with no time `item=yyyy-MM-dd`, and `time=true` or `false`. It prints nothing when the words are more than a date. |
 | `openspot emoji list [--tone name]`                | Prints each emoji as an item, with its name in the language of the Mac.                         |
 | `openspot symbols list`                            | Prints each symbol of the Character Viewer as an item.                                          |
 | `openspot translate text [--from code] [--to code]` | Translates the text on stdin. `openspot translate languages` prints the languages it knows.     |
