@@ -819,6 +819,7 @@ press-bounce = 0
 | `backdrop-blur`, `halo-size`, `halo-padding` | `[advanced]`     | The strength of the backdrop's blur in points, 8 by default, how far its halo reaches past the tiles, from 16 to 90, 90 by default, and how far it holds its full strength, from 0 to 74. |
 | `card-shadow-size`                        | `[advanced]`     | How far the shadow under each glass surface spreads, in points.                        |
 | `backdrop-ease`, `halo-roundness`         | `[advanced]`     | How slowly the blur starts across the halo, 2 by default, where 1 doubles the blur at an even pace and more keeps it small until near the tiles, and how fast the halo's corner rounds as it reaches out, 2 by default. |
+| `halo-inset`                              | `[advanced]`     | How far under the tiles the blur reaches its full strength, in points, 40 by default, so the text behind fades out at their edge. |
 
 - An exact value holds only in the file that sets it. A copy of `Openspot` keeps the exact values in its file, but a
   theme you write from scratch works out its own.

@@ -24,7 +24,7 @@ extension Theme {
             + [("press-bounce", .strength), ("pressed-scale", .scale), ("lifted-scale", .scale), ("focused-scale", .scale)]
             + [("backdrop-blur", .points()), ("halo-size", .points(Double(SpotTokens.backdropLeastFade)...Double(SpotTokens.halo), example: 30))]
             + [("halo-padding", .points(0...Double(SpotTokens.halo - SpotTokens.backdropLeastFade), example: 10)), ("card-shadow-size", .points())]
-            + [("backdrop-ease", .factor), ("halo-roundness", .factor)]
+            + [("backdrop-ease", .factor), ("halo-roundness", .factor), ("halo-inset", .points(0...Double(SpotTokens.halo), example: 20))]
 
         public init() {
             self.init(choices: ThemeValues(), exact: ThemeValues())

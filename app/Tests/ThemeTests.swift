@@ -56,10 +56,10 @@ final class ThemeTests: XCTestCase {
     }
 
     func testAThemeTunesHowTheBlurEasesInAndHowRoundItsHaloIs() {
-        let theme = Theme(text: "[advanced]\nbackdrop-ease = 3\nhalo-roundness = 1\n")
+        let theme = Theme(text: "[advanced]\nbackdrop-ease = 3\nhalo-roundness = 1\nhalo-inset = 12\n")
 
         XCTAssertEqual(theme.faults, [])
-        XCTAssertEqual([theme.layout.backdrop.ease, theme.layout.backdrop.roundness], [3, 1])
+        XCTAssertEqual([theme.layout.backdrop.ease, theme.layout.backdrop.roundness, theme.layout.backdrop.inset], [3, 1, 12])
     }
 
     func testTheHaloReachesTheEdgeOfThePanelUnlessAThemeSetsIt() {
@@ -170,7 +170,7 @@ final class ThemeTests: XCTestCase {
         XCTAssertEqual(layout.backdrop.style, .blur)
         XCTAssertEqual(layout.backdrop.reach, .tiles)
         XCTAssertEqual([layout.backdrop.blur, layout.backdrop.size, layout.backdrop.padding], [8, 90, 0])
-        XCTAssertEqual([layout.backdrop.ease, layout.backdrop.roundness], [2, 2])
+        XCTAssertEqual([layout.backdrop.ease, layout.backdrop.roundness, layout.backdrop.inset], [2, 2, 40])
     }
 
     func testCornerDensityTypeAndSpeedScaleWhatFollowsThem() {

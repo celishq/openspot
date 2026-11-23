@@ -21,6 +21,7 @@ extension Theme {
         public let shadow: Double
         public let ease: Double
         public let roundness: Double
+        public let inset: Double
 
         public init() {
             self.init(style: .blur, reach: .tiles) { _ in nil }
@@ -35,6 +36,7 @@ extension Theme {
             shadow = exact("card-shadow-size") ?? 24
             ease = exact("backdrop-ease") ?? 2
             roundness = exact("halo-roundness") ?? 2
+            inset = exact("halo-inset") ?? 40
         }
     }
 }

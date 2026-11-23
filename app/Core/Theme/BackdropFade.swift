@@ -13,27 +13,29 @@ public struct BackdropFade: Equatable, Sendable {
     public let blur: CGFloat?
     public let ease: CGFloat
     public let roundness: CGFloat
+    public let inset: CGFloat
 
-    public init(size: CGFloat, padding: CGFloat, corner: CGFloat, blur: CGFloat?, ease: CGFloat, roundness: CGFloat) {
+    public init(size: CGFloat, padding: CGFloat, corner: CGFloat, blur: CGFloat?, ease: CGFloat, roundness: CGFloat, inset: CGFloat) {
         self.size = size
         self.padding = padding
         self.corner = corner
         self.blur = blur
         self.ease = ease
         self.roundness = roundness
+        self.inset = inset
     }
 
     public static func current(blur: CGFloat?) -> BackdropFade {
         let backdrop = SpotTokens.backdrop
         return BackdropFade(
             size: CGFloat(backdrop.size), padding: CGFloat(backdrop.padding), corner: SpotTokens.cardRadius, blur: blur,
-            ease: CGFloat(backdrop.ease), roundness: CGFloat(backdrop.roundness)
+            ease: CGFloat(backdrop.ease), roundness: CGFloat(backdrop.roundness), inset: CGFloat(backdrop.inset)
         )
     }
 
     public func rings(in area: CGRect) -> [Ring] {
         let content = area.insetBy(dx: SpotTokens.halo, dy: SpotTokens.halo)
-        let under = blur == nil ? 0 : SpotTokens.backdropUnderTiles
+        let under = blur == nil ? 0 : inset
         let fade = max(size - padding, SpotTokens.backdropLeastFade) + under
         let steps = SpotTokens.backdropFadeSteps
         return (0...steps).map { step in
