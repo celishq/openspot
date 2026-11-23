@@ -6,7 +6,8 @@
 ## The folder
 
 A spot is a folder in `~/.config/openspot/spots`, such as `ports.spot`. Its id is the folder's name without `.spot`,
-and it holds 25 MB at most.
+and it holds 64 MB at most. A spot you share holds 25 MB at most; see
+[Share your spot](../further/share.md).
 
 | File             | Is                                                                                  |
 | ---------------- | ----------------------------------------------------------------------------------- |

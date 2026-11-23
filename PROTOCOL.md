@@ -42,6 +42,7 @@ Start with **[Your first spot](docs/first-spot.md)**: one folder, two files, fiv
 - [Write it in JavaScript](docs/further/javascript.md)
 - [Write it in Swift](docs/further/swift.md)
 - [Draw your own view](docs/further/views.md)
+- [Share your spot](docs/further/share.md)
 
 ## Reference
 
