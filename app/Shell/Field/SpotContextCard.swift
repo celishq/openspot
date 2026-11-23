@@ -9,15 +9,20 @@ struct SpotContextCard: View, Equatable {
     var body: some View {
         let shape = SpotRoundShape(radius: SpotTokens.contextCardRadius)
         ZStack {
-            shape.fill(SpotTheme.highlight.opacity(SpotTheme.chip))
             picture
                 .id(chip.look)
                 .transition(.opacity)
                 .opacity(chip.isLoading ? SpotTheme.contextLoadingIcon : 1)
         }
         .frame(width: SpotTokens.contextCard, height: SpotTokens.contextCard)
-        .overlay(shape.strokeBorder(SpotTheme.ink.opacity(SpotTheme.track), lineWidth: SpotTokens.contextBorder))
-        .modifier(SpotSelectionRing(isSelected: isOn, shape: shape))
+        .clipShape(shape)
+        .background {
+            shape.fill(SpotTheme.contextFace)
+                .shadow(color: SpotTheme.contextFarShadow, radius: SpotTokens.contextFarShadowRadius, y: SpotTokens.contextFarShadowDrop)
+                .shadow(color: SpotTheme.contextNearShadow, radius: SpotTokens.contextNearShadowRadius, y: SpotTokens.contextNearShadowDrop)
+        }
+        .overlay(shape.strokeBorder(SpotTheme.contextRim, lineWidth: SpotTokens.contextBorder))
+        .modifier(SpotSelectionRing(isSelected: isOn, shape: shape, width: SpotTokens.thinRing))
         .overlay(alignment: .bottomTrailing) { badge }
     }
 
@@ -25,9 +30,9 @@ struct SpotContextCard: View, Equatable {
     private var picture: some View {
         switch chip.look {
         case .file(let file):
-            SpotItemIcon(icon: file, glyph: nil, symbol: nil, size: SpotTokens.contextIcon)
+            SpotItemIcon(icon: file, glyph: nil, symbol: nil, size: SpotTokens.contextCard / IconBody.share)
         case .symbol(let symbol):
-            SpotItemIcon(icon: nil, glyph: nil, symbol: symbol, size: SpotTokens.contextIcon)
+            SpotItemIcon(icon: nil, glyph: nil, symbol: symbol, size: SpotTokens.contextSymbol)
         }
     }
 
@@ -35,11 +40,15 @@ struct SpotContextCard: View, Equatable {
     private var badge: some View {
         if showsBadge, let kind = chip.value?.kind {
             Image(systemName: ContextPreview.symbol(of: kind))
-                .font(SpotType.mark)
-                .foregroundStyle(SpotTheme.ink.opacity(SpotTheme.secondary))
+                .font(SpotType.contextBadge)
+                .foregroundStyle(SpotTheme.contextBadgeInk)
                 .frame(width: SpotTokens.contextBadge, height: SpotTokens.contextBadge)
-                .background(SpotTheme.cornerFill, in: Circle())
-                .overlay(Circle().strokeBorder(SpotTheme.ink.opacity(SpotTheme.track), lineWidth: SpotTokens.contextBorder))
+                .background {
+                    Circle()
+                        .fill(SpotTheme.contextBadgeFace)
+                        .shadow(color: SpotTheme.contextBadgeShadow, radius: SpotTokens.contextBadgeShadowRadius, y: SpotTokens.contextBadgeShadowDrop)
+                }
+                .overlay(Circle().strokeBorder(SpotTheme.contextBadgeRim, lineWidth: SpotTokens.contextBadgeBorder))
                 .offset(x: SpotTokens.contextBadgeReach, y: SpotTokens.contextBadgeReach)
                 .transition(.opacity)
         }

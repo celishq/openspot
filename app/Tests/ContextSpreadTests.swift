@@ -25,6 +25,7 @@ final class ContextSpreadTests: ContextCase {
         XCTAssertTrue(model.handleKey(tab))
 
         XCTAssertTrue(spread.isSpread)
+        XCTAssertTrue(model.isContextSpread)
         XCTAssertEqual(spread.selected, model.context.selected)
         XCTAssertEqual(spread.places.map(\.chip.source), model.context.chips.map(\.source))
         XCTAssertEqual(spread.places.map(\.slot), [0, 1])
@@ -41,6 +42,7 @@ final class ContextSpreadTests: ContextCase {
 
         XCTAssertEqual(spread.places.first?.chip.source, model.context.selected)
         XCTAssertEqual(spread.places.map(\.depth), [0, 1])
+        XCTAssertFalse(model.isContextSpread)
         XCTAssertTrue(model.context.isOn)
     }
 

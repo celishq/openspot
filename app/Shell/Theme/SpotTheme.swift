@@ -50,6 +50,14 @@ enum SpotTheme {
     static let unfocusedCardStrength = 0.35
     static let contextCardFade = 0.3
     static let contextLoadingIcon = 0.35
+    static let contextRim = color(dark: .white.withAlphaComponent(0.14), light: .black.withAlphaComponent(0.14))
+    static let contextFace = color(dark: NSColor(white: 0.19, alpha: 1), light: NSColor(white: 0.985, alpha: 1))
+    static let contextNearShadow = color(dark: .black.withAlphaComponent(0.5), light: .black.withAlphaComponent(0.22))
+    static let contextFarShadow = color(dark: .black.withAlphaComponent(0.3), light: .black.withAlphaComponent(0.1))
+    static let contextBadgeFace = Color.white
+    static let contextBadgeInk = ThemeColor(text: "#1C1C1E")!.color
+    static let contextBadgeRim = ThemeColor(text: "#00000033")!.color
+    static let contextBadgeShadow = ThemeColor(text: "#0000004D")!.color
     @MainActor static var fill: Double { current.fill }
     static let edgeStrengths = [1, 0.7, 0.45]
     @MainActor static var disc: Double { current.disc }

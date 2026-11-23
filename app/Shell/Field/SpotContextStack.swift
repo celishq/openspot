@@ -11,7 +11,7 @@ struct SpotContextStack: View {
             ForEach(spread.places, id: \.chip.source) { place in
                 SpotContextCard(
                     chip: place.chip,
-                    isOn: place.chip.source == spread.selected && place.depth == 0,
+                    isOn: spread.isSpread && place.chip.source == spread.selected && place.depth == 0,
                     showsBadge: place.depth == 0
                 )
                 .equatable()
@@ -42,7 +42,7 @@ struct SpotContextStack: View {
     }
 
     private static func opacity(of place: ContextSpread.Place, in spread: ContextSpread) -> Double {
-        guard spread.isSpread else { return max(1 - Double(place.depth) * SpotTheme.contextCardFade, 0) }
+        guard spread.isSpread else { return 1 }
         return place.depth == 0 ? 1 : place.depth == 1 ? 1 - SpotTheme.contextCardFade : 0
     }
 }

@@ -71,7 +71,12 @@ public final class SpotsModel {
     @ObservationIgnored var content = GridContent.cards
     public internal(set) var context = ContextChips()
     @ObservationIgnored var isContextOpen = false
-    public internal(set) var contextSpread = ContextSpread()
+    public internal(set) var contextSpread = ContextSpread() {
+        didSet {
+            if isContextSpread != contextSpread.isSpread { isContextSpread = contextSpread.isSpread }
+        }
+    }
+    public private(set) var isContextSpread = false
     public internal(set) var contextPreview: ContextPreview?
     public internal(set) var fieldHoldsValue = false
     @ObservationIgnored var contextFold = ContextFold()

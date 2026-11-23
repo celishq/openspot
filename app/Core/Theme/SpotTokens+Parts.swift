@@ -28,15 +28,23 @@ extension SpotTokens {
     public static let toastPaddingY: CGFloat = 10
     public static let toastKeySpace: CGFloat = 2
 
-    public static let contextCard: CGFloat = 36
-    public static let contextCardRadius: CGFloat = 10
-    public static let contextIcon: CGFloat = 28
+    public static let contextCard: CGFloat = 28
+    public static var contextCardRadius: CGFloat { contextCard * 0.24 }
+    public static var contextSymbol: CGFloat { contextCard * 0.6 }
     public static let contextBorder: CGFloat = 1
-    public static let contextStep: CGFloat = 6
+    public static let contextBadgeBorder: CGFloat = 0.5
+    public static var contextStep: CGFloat { contextCard * 0.25 }
     public static let contextShrink: CGFloat = 0.1
-    public static let contextSpreadGap: CGFloat = 6
-    public static let contextBadge: CGFloat = 15
-    public static let contextBadgeReach: CGFloat = 4
+    public static var contextSpreadGap: CGFloat { contextCard * 0.42 }
+    public static var contextBadge: CGFloat { contextCard / 2 }
+    public static var contextBadgeGlyph: CGFloat { contextBadge * 0.58 }
+    public static var contextBadgeReach: CGFloat { contextCard / 6 }
+    public static let contextNearShadowRadius: CGFloat = 1.5
+    public static let contextNearShadowDrop: CGFloat = 1
+    public static let contextFarShadowRadius: CGFloat = 5
+    public static let contextFarShadowDrop: CGFloat = 4
+    public static let contextBadgeShadowRadius: CGFloat = 1
+    public static let contextBadgeShadowDrop: CGFloat = 1
     public static let contextGap: CGFloat = 8
     public static let previewLines = 2
     public static let previewCaptionGap: CGFloat = 4
