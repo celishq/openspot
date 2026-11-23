@@ -22,7 +22,6 @@ final class CommandWordsTests: PanelCase {
 
     private func type(_ query: String) {
         model.query = query
-        model.landSearch()
     }
 
     func testTheCommandWordsOfTheSpotAreItsDefaults() async throws {

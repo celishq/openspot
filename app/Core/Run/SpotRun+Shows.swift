@@ -47,18 +47,10 @@ extension SpotRun {
     }
 
     private func find(_ text: String) {
-        guard list.beginFinding(text) else { return }
-        let asked = rows
-        finding?.cancel()
-        finding = Task { [weak self] in
-            guard let found = await Self.found(asked), !Task.isCancelled else { return }
-            self?.list.take(found)
-        }
-    }
-
-    @concurrent
-    private nonisolated static func found(_ list: ItemList) async -> ItemList.Found? {
-        Task.isCancelled ? nil : list.found()
+        var next = list
+        guard next.beginFinding(text) else { return }
+        next.take(next.found())
+        list = next
     }
 
     func ask() {

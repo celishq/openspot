@@ -95,7 +95,6 @@ final class PlacesTests: PanelCase {
         model.isShown = true
         model.panelWillShow()
         model.query = "/wipe"
-        model.landSearch()
         model.selected = 0
         model.runSelected()
 

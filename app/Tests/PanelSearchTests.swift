@@ -15,18 +15,14 @@ final class PanelSearchTests: PanelCase {
         model.visible.map(\.id)
     }
 
-    func testAKeyRanksTheSpotsAwayFromTheMainThreadAndShowsThemWhenTheyLand() async throws {
+    func testAKeyRanksTheSpotsOnceAndShowsThemBeforeTheSetterReturns() async throws {
         try await showGrid()
-        let grid = shown
         let ranks = SearchRanks()
 
         SearchRanks.$meter.withValue(ranks) { model.query = "al" }
 
-        XCTAssertEqual(shown, grid)
-        XCTAssertEqual(ranks.count, 0)
-        try await wait("the found spots") { self.shown == ["alpha"] }
+        XCTAssertEqual(shown, ["alpha"])
         XCTAssertEqual(ranks.count, 1)
-        XCTAssertEqual(ranks.countOnMain, 0)
     }
 
     func testASpotThatListsWantIsAskedOnceWhenItsRowsFirstShowInEachPanelOpen() async throws {
@@ -106,36 +102,6 @@ final class PanelSearchTests: PanelCase {
         XCTAssertEqual(shown, ["alpha"])
     }
 
-    func testTheNextKeyCancelsTheSearchOfTheKeyBefore() async throws {
-        try await showGrid()
-        let ranks = SearchRanks()
-
-        SearchRanks.$meter.withValue(ranks) {
-            model.query = "b"
-            model.query = "al"
-        }
-
-        try await wait("the found spots") { self.shown == ["alpha"] }
-        try await wait("the end of the first search") { ranks.dropped == 1 }
-        XCTAssertEqual(ranks.count, 1)
-    }
-
-    func testAResultForAnOlderTextNeverLandsOverANewerOne() async throws {
-        try await showGrid()
-        let hold = DispatchSemaphore(value: 0)
-        let ranks = SearchRanks(gate: { number in if number == 1 { hold.wait() } })
-
-        SearchRanks.$meter.withValue(ranks) { model.query = "b" }
-        try await wait("the first search in flight") { ranks.count == 1 }
-        SearchRanks.$meter.withValue(ranks) { model.query = "al" }
-        try await wait("the newer spots") { self.shown == ["alpha"] }
-        hold.signal()
-
-        try await wait("the end of the first search") { ranks.dropped == 1 }
-        XCTAssertEqual(shown, ["alpha"])
-        XCTAssertEqual(ranks.count, 2)
-    }
-
     func testReturnRightAfterAKeyActsOnTheSpotsOfTheNewText() async throws {
         try await showGrid()
         let ranks = SearchRanks()
@@ -147,7 +113,6 @@ final class PanelSearchTests: PanelCase {
 
         XCTAssertEqual(shown, ["beta"])
         try await wait("the sheet of beta") { self.model.openSheetID == "beta" }
-        try await wait("the end of the search in flight") { ranks.dropped == 1 }
         XCTAssertEqual(ranks.count, 1)
     }
 
@@ -160,28 +125,13 @@ final class PanelSearchTests: PanelCase {
         XCTAssertEqual(shown, ["beta"])
     }
 
-    func testAClickRunsTheCardThatThePersonSawWhileANewerTextIsStillSearched() async throws {
-        try await showGrid()
-
-        model.query = "bet"
-        model.tap("alpha")
-
-        try await wait("the sheet of the card") { self.model.openSheetID == "alpha" }
-    }
-
-    func testClearingTheTextShowsTheGridAtOnceAndDropsTheSearchInFlight() async throws {
+    func testClearingTheTextShowsTheGridAtOnce() async throws {
         try await showGrid()
         let grid = shown
-        let ranks = SearchRanks()
 
-        SearchRanks.$meter.withValue(ranks) {
-            model.query = "al"
-            model.query = ""
-        }
+        model.query = "al"
+        model.query = ""
 
         XCTAssertEqual(shown, grid)
-        try await wait("the end of the search in flight") { ranks.dropped == 1 }
-        XCTAssertEqual(shown, grid)
-        XCTAssertEqual(ranks.count, 0)
     }
 }

@@ -47,7 +47,6 @@ final class PlaygroundPlaceTests: XCTestCase {
 
         panel.show(.card, id: id)
         panel.model.searchText = "21"
-        panel.model.landSearch()
 
         try await wait("the answer") { self.panel.model.visible.contains { $0.item?.title == "Twice 21" } }
     }

@@ -56,7 +56,6 @@ final class SoleCommandTests: XCTestCase {
         model.panelWillShow()
 
         model.query = "dictate"
-        model.landSearch()
         model.selected = try XCTUnwrap(model.visible.firstIndex { $0.id == "dictate" })
         XCTAssertEqual(model.hint, "⏎ Dictate   ⌘⏎ Settings   ⌘K Actions")
         model.run(try entry("dictate"))
@@ -69,7 +68,6 @@ final class SoleCommandTests: XCTestCase {
         model.isShown = true
         model.panelWillShow()
         model.query = "dictate"
-        model.landSearch()
         model.selected = try XCTUnwrap(model.visible.firstIndex { $0.id == "dictate" })
         XCTAssertTrue(model.openSelectedSettings())
         try await wait("the key row") { model.openItems?.shown.contains { $0.run == "key:dictate:key.dictate" } == true }
@@ -89,7 +87,6 @@ final class SoleCommandTests: XCTestCase {
         model.isShown = true
         model.panelWillShow()
         model.query = "wipe"
-        model.landSearch()
         model.selected = try XCTUnwrap(model.visible.firstIndex { $0.id == "wipe" })
 
         model.run(try entry("wipe"))
@@ -107,7 +104,6 @@ final class SoleCommandTests: XCTestCase {
         model.isShown = true
         model.panelWillShow()
         model.query = "wipe"
-        model.landSearch()
         model.selected = try XCTUnwrap(model.visible.firstIndex { $0.id == "wipe" })
 
         model.run(try entry("wipe"))
@@ -143,7 +139,6 @@ final class SoleCommandTests: XCTestCase {
         model.isShown = true
         model.panelWillShow()
         model.query = "wipe"
-        model.landSearch()
         model.selected = try XCTUnwrap(model.visible.firstIndex { $0.id == "wipe" })
 
         XCTAssertTrue(model.handleKey(ActionKey(name: "k", isCommand: true)))
@@ -172,7 +167,6 @@ final class SoleCommandTests: XCTestCase {
         model.isShown = true
         model.panelWillShow()
         model.query = "dictate"
-        model.landSearch()
         model.selected = try XCTUnwrap(model.visible.firstIndex { $0.id == "dictate" })
 
         XCTAssertEqual(try entry("dictate").spot.soleCommand, "dictate")
