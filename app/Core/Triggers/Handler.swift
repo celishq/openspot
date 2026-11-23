@@ -5,7 +5,7 @@ public struct Handler: Equatable, Sendable {
     private static let alt = Manifest.Parameter(name: "alt", type: ValueType(.text, isList: true), isRequired: false)
     private static let value = Manifest.Parameter(name: "value", type: text, isRequired: false)
 
-    static let show = Handler(name: "show", inputs: [.init(name: "event", type: ValueType(.choice), isRequired: false, options: ShowEvent.options)])
+    public static let show = Handler(name: "show", inputs: [.init(name: "event", type: ValueType(.choice), isRequired: false, options: ShowEvent.options)])
     static let press = Handler(name: "press", inputs: [.init(name: "item", type: text)])
     static let command = Handler(name: "command", inputs: [.init(name: "name", type: text), .init(name: "text", type: text)])
     static let search = Handler(name: "search", inputs: [.init(name: "text", type: text), alt])
@@ -25,6 +25,6 @@ public struct Handler: Equatable, Sendable {
 
     func message(_ values: [String]..., after given: [TextBlock.Field] = [], then carried: [TextBlock.Field] = []) -> Message {
         let own = zip(inputs, values).flatMap { input, values in values.map { TextBlock.Field(key: input.name, value: $0) } }
-        return Message(.press(name), inputs: given + own + carried)
+        return Message(name, inputs: given + own + carried)
     }
 }

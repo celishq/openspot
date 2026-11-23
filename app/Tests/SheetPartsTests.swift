@@ -233,7 +233,7 @@ final class SheetPartsTests: XCTestCase {
         panel.set("true", of: "left")
         panel.set("20", of: "brightness")
 
-        let block = try XCTUnwrap(TextBlock.blocks(in: Message(.show, inputs: panel.inputs).text ?? "").first)
+        let block = try XCTUnwrap(TextBlock.blocks(in: Message(Handler.show.name, inputs: panel.inputs).text ?? "").first)
 
         XCTAssertNil(block.value("input.lights"))
         XCTAssertEqual(block.value("input.left"), "true")
@@ -324,11 +324,6 @@ final class SheetPartsTests: XCTestCase {
         XCTAssertEqual(FrameCheck(text: "text=a\nshortcut=nope+a\n".placed).partFaults, ["the part a has an unknown key combination: nope+a"])
         XCTAssertEqual(FrameCheck(text: "text=a\ntitle=A\ndetail=9%\ntone=bad\n".placed).partFaults, [])
         XCTAssertEqual(FrameCheck(text: "text=a\ntitle=A\ndetail=9%\ntone=red\n".placed).partFaults, ["the part a has an unknown tone: red"])
-    }
-
-    func testTheCallsOfAPanel() {
-        XCTAssertEqual(SpotWords.set("left", to: "true").arguments, ["left", "true"])
-        XCTAssertEqual(SpotWords.press("quit").arguments, ["quit"])
     }
 
     func testAPartOrAnActionCalledShowIsAFault() {

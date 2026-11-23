@@ -184,6 +184,28 @@ final class BindingEdgesTests: SpotRunsCase {
         XCTAssertEqual(wrong.errors, "go has no input count. Its inputs are: when.\n")
     }
 
+    func testSpotRunChecksTheInputsOfADeclaredActionByTheirTypesAndPassesAnUndeclaredHandlerAsGiven() async throws {
+        try script("counter", toml: "[actions.add]\ninputs.count = { type = 'number', required = true }", log: "counter-log", """
+        printf 'said=%s %s\\n' "$1" "$(cat | tr '\\n' ' ')"
+        """)
+        _ = try scanned()
+        let api = CommandAPI(mac: Mac(), places: .test(["OPENSPOT_CONFIG": folder.path, "OPENSPOT_SPOTS": folder.path]), app: FakeRunningApp(), runs: runs, rates: .offline)
+        let answer = { (words: [String]) in
+            try await XCTUnwrap(api.work(for: CommandRequest(arguments: ["spot", "run", "counter"] + words, folder: self.folder.path), input: { "" }))()
+        }
+
+        let wrong = try await answer(["add", "count=many"])
+        let missing = try await answer(["add"])
+        let other = try await answer(["tally", "count=many"])
+
+        XCTAssertEqual(wrong.code, 2)
+        XCTAssertEqual(wrong.errors, "add cannot run: count takes a number, and got many.\n")
+        XCTAssertEqual(missing.code, 2)
+        XCTAssertEqual(missing.errors, "add needs count, which is a number.\n")
+        XCTAssertEqual(other.code, 0, other.errors)
+        XCTAssertEqual(other.output, "said=tally input.count=many \n")
+    }
+
     func testSpotRunSendsTheSettingsOfTheSpotAsACallFromThePanelDoes() async throws {
         try script("noter", toml: "[settings]\ntone = { type = 'text', default = 'soft' }\nsize = 'number'\n[actions.go]", log: "noter-log", """
         grep '^setting\\.' >> '\(path("settings"))' || true

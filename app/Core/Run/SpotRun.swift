@@ -61,8 +61,8 @@ public final class SpotRun {
         var chain: [String] = []
         var isPressed = true
 
-        var words: SpotWords {
-            message.words
+        var handler: String {
+            message.handler
         }
 
         var isByPerson: Bool {

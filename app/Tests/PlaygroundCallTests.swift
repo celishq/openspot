@@ -27,7 +27,7 @@ final class PlaygroundCallTests: SpotRunsCase {
 
         for uses in [Set<SpotUse>([.account]), []] {
             let spot = Spot(id: "account", name: "Account", url: url, dataName: "account", uses: uses).builtIn()
-            runs.record(spot, SpotWords(arguments: ["show"]), input: nil, frames: ["word=secret\n"], errors: "", end: .ended, event: nil, started: Date(), begin: Date())
+            runs.record(spot, "show", input: nil, frames: ["word=secret\n"], errors: "", end: .ended, event: nil, started: Date(), begin: Date())
         }
 
         XCTAssertEqual(calls.map(\.lines.first), ["$ show"])

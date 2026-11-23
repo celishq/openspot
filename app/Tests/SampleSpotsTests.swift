@@ -84,7 +84,7 @@ final class SampleSpotsTests: SampleSpotsCase {
             defer { relay.end() }
             var frames = relay.start().makeAsyncIterator()
 
-            relay.send(Message(.show), id: 1)
+            relay.send(Message(Handler.show.name), id: 1)
             var sheet = try await self.next(&frames, of: relay)
             while FrameRoot(text: sheet ?? "").isMark { sheet = try await self.next(&frames, of: relay) }
             XCTAssertTrue(sheet?.contains("title=No message yet") == true, sheet ?? "")
@@ -92,7 +92,7 @@ final class SampleSpotsTests: SampleSpotsCase {
             var call = 2
             var seen: [String] = []
             while !seen.contains(where: { $0.contains("title=hello") }), call < 40 {
-                relay.send(Message(SpotWords(arguments: ["send"]), inputs: [.init(key: "peer", value: "127.0.0.1:\(port)"), .init(key: "message", value: "hello")]), id: call)
+                relay.send(Message("send", inputs: [.init(key: "peer", value: "127.0.0.1:\(port)"), .init(key: "message", value: "hello")]), id: call)
                 while let frame = try await self.next(&frames, of: relay) {
                     seen.append(frame)
                     if Frame(text: frame).ends == [String(call)] { break }
@@ -228,9 +228,9 @@ final class SampleSpotsTests: SampleSpotsCase {
             XCTAssertEqual(list.id, metric.id)
 
             let item = try XCTUnwrap(lines.items.first)
-            try await list.handle(.item(item), timeout: 60)
+            try await list.handle(item, timeout: 60)
             XCTAssertEqual(try self.read("opened", in: folder), item.run + "\n")
-            try await list.perform(.press("copy"), input: Message(.press("copy"), inputs: [.init(key: "item", value: item.run)]).text, timeout: 60)
+            try await list.perform("copy", input: Message("copy", inputs: [.init(key: "item", value: item.run)]).text, timeout: 60)
             XCTAssertEqual(try self.read("clipboard", in: folder), item.run)
         }
     }
@@ -278,7 +278,7 @@ final class SampleSpotsTests: SampleSpotsCase {
         try await withPrivateHome { folder in
             let emoji = try self.fakeEmoji(in: folder)
 
-            _ = try await SpotRuns(environment: TestEnvironment.values).answer(of: emoji, .press("tone"), input: "input.value=dark\n", limit: 30)
+            _ = try await SpotRuns(environment: TestEnvironment.values).answer(of: emoji, "tone", input: "input.value=dark\n", limit: 30)
             let output = try await emoji.items(timeout: 60)
 
             XCTAssertEqual(self.text(of: "tone", in: output), "dark")
@@ -354,12 +354,12 @@ final class SampleSpotsTests: SampleSpotsCase {
             let row = SpotItem(title: "thumbs up", run: "👍")
             XCTAssertEqual(tone.key, ActionKey(name: "t", isCommand: true))
 
-            _ = try await SpotRuns(environment: TestEnvironment.values).answer(of: emoji, .action(tone, item: row), input: nil, limit: 30)
+            _ = try await SpotRuns(environment: TestEnvironment.values).answer(of: emoji, tone.id, input: "input.item=\(row.run)\n", limit: 30)
             let next = try await emoji.items(timeout: 60)
             XCTAssertEqual(self.text(of: "tone", in: next), "light")
 
-            _ = try await SpotRuns(environment: TestEnvironment.values).answer(of: emoji, .press("tone"), input: "input.value=dark\n", limit: 30)
-            _ = try await SpotRuns(environment: TestEnvironment.values).answer(of: emoji, .action(tone, item: row), input: nil, limit: 30)
+            _ = try await SpotRuns(environment: TestEnvironment.values).answer(of: emoji, "tone", input: "input.value=dark\n", limit: 30)
+            _ = try await SpotRuns(environment: TestEnvironment.values).answer(of: emoji, tone.id, input: "input.item=\(row.run)\n", limit: 30)
             let wrapped = try await emoji.items(timeout: 60)
             XCTAssertEqual(self.text(of: "tone", in: wrapped), "none")
         }
@@ -369,7 +369,7 @@ final class SampleSpotsTests: SampleSpotsCase {
         try await withPrivateHome { folder in
             let emoji = try self.fakeEmoji(in: folder)
 
-            _ = try await SpotRuns(environment: TestEnvironment.values).answer(of: emoji, .press("press"), input: "input.item=👍\n", limit: 30)
+            _ = try await SpotRuns(environment: TestEnvironment.values).answer(of: emoji, "press", input: "input.item=👍\n", limit: 30)
 
             XCTAssertEqual(try String(contentsOf: folder.appendingPathComponent("clipboard"), encoding: .utf8), "👍")
         }
@@ -379,7 +379,7 @@ final class SampleSpotsTests: SampleSpotsCase {
         try await withPrivateHome { folder in
             let files = try XCTUnwrap(try self.scan.spots.first { $0.name == "Files" })
 
-            try await files.perform(SpotWords(arguments: ["copy"]), input: "input.item=/a/b é.txt\n", timeout: 60)
+            try await files.perform("copy", input: "input.item=/a/b é.txt\n", timeout: 60)
 
             XCTAssertEqual(self.toasts(in: folder), ["Copied"])
             XCTAssertEqual(try self.read("clipboard", in: folder), "/a/b é.txt")
@@ -392,7 +392,7 @@ final class SampleSpotsTests: SampleSpotsCase {
             let emoji = try self.fakeEmoji(in: folder)
             try "before".write(to: folder.appendingPathComponent("clipboard"), atomically: true, encoding: .utf8)
 
-            _ = try await SpotRuns(environment: TestEnvironment.values).answer(of: emoji, .press("paste"), input: "input.item=👍\n", limit: 30)
+            _ = try await SpotRuns(environment: TestEnvironment.values).answer(of: emoji, "paste", input: "input.item=👍\n", limit: 30)
 
             XCTAssertEqual(try self.read("pasted", in: folder), "👍")
             XCTAssertEqual(try self.read("clipboard", in: folder), "before")
@@ -405,7 +405,7 @@ final class SampleSpotsTests: SampleSpotsCase {
             let url = folder.appendingPathComponent("frames.sh")
             try "#!/bin/sh\nprintf 'text=a\\n---\\n'\nprintf 'text=b\\n'\n".writeScript(to: url)
 
-            let text = try await SpotRuns(environment: TestEnvironment.values).answer(of: Spot(id: "frames", name: "Frames", url: url), .show, limit: 60)
+            let text = try await SpotRuns(environment: TestEnvironment.values).answer(of: Spot(id: "frames", name: "Frames", url: url), Handler.show.name, limit: 60)
 
             XCTAssertEqual(text, "text=a\n")
         }

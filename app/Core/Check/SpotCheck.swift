@@ -72,7 +72,7 @@ public struct SpotCheck: Sendable {
             if let careful { script.uses.formIntersection(careful) }
             func found(_ fault: String) -> Finding { Finding(spot: script.id, file: script.url.path, fault: fault) }
             do {
-                let text = try await runs.answer(of: script, .show, limit: timeout)
+                let text = try await runs.answer(of: script, Handler.show.name, limit: timeout)
                 let check = FrameCheck(text: text, kinds: script.kinds, isApp: script.isBuiltIn)
                 let output = check.output
                 _ = try script.state(of: output)

@@ -175,7 +175,7 @@ final class SpotEffectTests: PanelCase {
         let sheet = try XCTUnwrap(model.sheets["flow"])
         try press("late")
         try await wait("the call to wait") { self.log("codes").contains("up") }
-        let call = try XCTUnwrap(sheet.calls.first { $0.words.arguments.first == "late" })
+        let call = try XCTUnwrap(sheet.calls.first { $0.handler == "late" })
 
         sheet.stop(call)
 

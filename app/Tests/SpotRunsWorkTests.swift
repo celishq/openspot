@@ -445,7 +445,7 @@ final class SpotRunsWorkTests: SpotRunsCase {
         sheet.open {}
         try await wait("the read") { sheet.calls.isEmpty }
         let item = SpotItem(title: "A", run: "a")
-        let press = CommandAction(id: Frame.press, title: item.title)
+        let press = CommandAction(id: Handler.press.name, title: item.title)
 
         guard case .form(let form) = await sheet.answer(toPick: item) else { return XCTFail("the press asked with no form") }
         try await wait("the end of the press") { sheet.calls.isEmpty }

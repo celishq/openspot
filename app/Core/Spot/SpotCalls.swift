@@ -115,7 +115,7 @@ struct SpotCalls {
                 return CommandAnswer(errors: "Openspot has no spot \(id) in \(spots.url.path). Run `openspot check spots` to see each file that does not load.\n", code: 1)
             }
             if let careful { spot.uses.formIntersection(careful) }
-            let handler: (arguments: [String], inputs: [TextBlock.Field])
+            let handler: (name: String?, inputs: [TextBlock.Field])
             do {
                 handler = try Self.handler(arguments, of: spot)
             } catch {
@@ -127,7 +127,7 @@ struct SpotCalls {
             for setting in places.config.read().settings where setting.spot == spot.id { chosen[spot.id, default: [:]][setting.key] = setting.value }
             let settings = FieldValues(of: spot, in: chosen, secrets: places.secrets.values(of: spot.id)).settings
             let run = TerminalRun(
-                spot: spot, arguments: handler.arguments, input: text, inputs: handler.inputs, settings: settings, careful: careful == nil ? nil : spot.uses,
+                spot: spot, handler: handler.name, input: text, inputs: handler.inputs, settings: settings, careful: careful == nil ? nil : spot.uses,
                 callers: runs?.callers, environment: places.environment, folder: folder, usage: usage
             )
             let begin = Date()
@@ -148,11 +148,11 @@ struct SpotCalls {
         }
     }
 
-    private static func handler(_ arguments: [String], of spot: Spot) throws -> (arguments: [String], inputs: [TextBlock.Field]) {
-        guard let name = arguments.first else { return (arguments, []) }
+    private static func handler(_ arguments: [String], of spot: Spot) throws -> (name: String?, inputs: [TextBlock.Field]) {
+        guard let name = arguments.first else { return (nil, []) }
         let given = try Manifest.InputCheck.fields(of: Array(arguments.dropFirst()), as: .input)
-        guard let action = try? spot.action(name) else { return ([name], given) }
-        return ([name], try action.check.checked(given))
+        guard let action = try? spot.action(name) else { return (name, given) }
+        return (name, try action.check.checked(given))
     }
 
     func push(_ id: String, route: String?, title: String?, replace: Bool) -> CommandAPI.Work {
