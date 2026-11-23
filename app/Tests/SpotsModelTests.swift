@@ -1542,6 +1542,48 @@ final class SpotsModelTests: XCTestCase {
         XCTAssertEqual(host.motions.last, .fade)
     }
 
+    func testThePressThatStartsEditingWritesTheHintInItsOwnUpdate() async throws {
+        try script("notes", toml: "title = 'Notes'", "true")
+        await model.reload()
+        model.isShown = true
+        model.followHint()
+        let grid = model.gridHint
+
+        model.beginEditing()
+
+        XCTAssertNotEqual(model.gridHint, grid)
+        XCTAssertEqual(model.gridHint, HintWords(model.hint))
+        XCTAssertEqual(host.motions.last, .fade)
+    }
+
+    func testThePressThatClosesASheetWritesTheHintOfTheGridInItsOwnUpdate() async throws {
+        try await openList()
+        model.followHint()
+        let sheet = model.sheetHint
+        XCTAssertEqual(sheet, HintWords(model.hint))
+
+        XCTAssertTrue(model.stepBack())
+
+        XCTAssertNil(model.openSheetID)
+        XCTAssertNotEqual(model.gridHint, sheet)
+        XCTAssertEqual(model.gridHint, HintWords(model.hint))
+    }
+
+    func testAPressThatLeavesTheHintTheSameTellsNoReaderOfIt() async throws {
+        try script("notes", toml: "title = 'Notes'", "true")
+        try script("mail", toml: "title = 'Mail'", "true")
+        await model.reload()
+        model.isShown = true
+        model.followHint()
+        nonisolated(unsafe) var told = false
+        withObservationTracking { _ = (model.gridHint, model.sheetHint) } onChange: { told = true }
+
+        model.selected = 1
+        _ = model.handleKey(ActionKey(name: "right"))
+
+        XCTAssertFalse(told)
+    }
+
     func testTheSameTextOfTheSearchFindsNothingAgain() async throws {
         try script("notes", toml: "title = 'Notes'", "true")
         await model.reload()

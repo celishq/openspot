@@ -17,6 +17,7 @@ extension SpotsModel {
     }
 
     private func take(_ key: ActionKey, in rows: [KeyRow]) -> Bool {
+        defer { refreshHint() }
         for row in rows where row.takes(key) {
             if let handled = row.act(key) { return handled }
         }
@@ -340,21 +341,23 @@ extension SpotsModel {
     }
 
     private func takeHint() {
-        hintTakes += 1
-        let words = HintWords(withObservationTracking { hint } onChange: { [weak self] in
+        place(HintWords(withObservationTracking { hint } onChange: { [weak self] in
             Task { @MainActor in self?.takeHint() }
-        })
-        let motion: PanelMotion? = isEditing || hintIsForEdit || fieldDrop != nil ? .fade : nil
-        hintIsForEdit = isEditing
-        if openSheetID == nil, spotDrop == nil {
-            if words != gridHint { change(motion, { gridHint = words }) }
-        } else {
-            takeSheetHint(words, motion: motion)
-        }
+        }))
     }
 
-    func takeSheetHint(_ words: HintWords, motion: PanelMotion? = nil) {
-        if words != sheetHint { change(motion, { sheetHint = words }) }
+    func refreshHint() {
+        guard followsHint else { return }
+        place(HintWords(hint))
+    }
+
+    private func place(_ words: HintWords) {
+        hintTakes += 1
+        let onSheet = openSheetID != nil || spotDrop != nil
+        guard words != (onSheet ? sheetHint : gridHint) else { return }
+        let motion: PanelMotion? = isEditing || hintIsForEdit || fieldDrop != nil ? .fade : nil
+        hintIsForEdit = isEditing
+        change(motion, { if onSheet { sheetHint = words } else { gridHint = words } })
     }
 
     var selectedGlyphTitle: String? {

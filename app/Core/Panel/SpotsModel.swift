@@ -59,7 +59,9 @@ public final class SpotsModel {
             spanBackdrop()
         }
     }
-    public internal(set) var visible: [Entry] = []
+    public internal(set) var visible: [Entry] = [] {
+        didSet { refreshHint() }
+    }
     @ObservationIgnored var laidOutSizes: [SpotSize] = []
     @ObservationIgnored private var cardGlyphs: [String] = []
     @ObservationIgnored var laidOutGrid = SpotGrid()
@@ -103,6 +105,7 @@ public final class SpotsModel {
         didSet {
             if confirming != nil, selected != oldValue { confirming = nil }
             takeShade()
+            refreshHint()
         }
     }
     public internal(set) var confirming: GlobalKey?
@@ -126,7 +129,7 @@ public final class SpotsModel {
                 openSheetID = shown
                 recordAskedField()
                 takeMode()
-                if shown != nil, followsHint { takeSheetHint(HintWords(hint)) }
+                refreshHint()
             }
             let opening = transition.phase == .opening ? transition.id : nil
             if opening != (oldValue.phase == .opening ? oldValue.id : nil) { runs.opening.moving = opening }
@@ -160,6 +163,7 @@ public final class SpotsModel {
         didSet {
             keys.clear()
             takeMode()
+            refreshHint()
         }
     }
     public let keys = KeyRecording()
@@ -196,6 +200,7 @@ public final class SpotsModel {
             if isOpen != isMenuOpen {
                 isMenuOpen = isOpen
                 takeMode()
+                refreshHint()
             }
             let isGrown = menuSession?.isGrown == true
             if isGrown != isMenuGrown { isMenuGrown = isGrown }
@@ -241,7 +246,10 @@ public final class SpotsModel {
     @ObservationIgnored var pendingAsk: UUID?
     @ObservationIgnored var askedWindows: Set<String> = []
     public var isEditing = false {
-        didSet { takeMode() }
+        didSet {
+            takeMode()
+            refreshHint()
+        }
     }
     public var tip: SpotTip?
     public internal(set) var pointedCard: String?
