@@ -11,6 +11,7 @@ extension SpotsModel {
         var next = context
         next.open(over: front, at: isWarming ? nil : host.frontAppPath, loading: loading.map { ContextChip(source: $0.id, app: front, look: Self.look(of: $0.spot)) })
         if next != context { context = next }
+        resetContextSpread()
         if wasOn { updateVisible() }
         runs.panelOpened(showsToEnd: isWarming, over: front, feedsContext: feeds)
     }
@@ -28,12 +29,14 @@ extension SpotsModel {
     }
 
     func turnContext(by step: Int) {
+        spreadContext()
         var next = context
         next.turn(by: step)
         settle(next, motion: .edit)
     }
 
     func leaveContext() {
+        endSpread()
         var next = context
         next.leave()
         settle(next, motion: .edit)
@@ -52,6 +55,7 @@ extension SpotsModel {
         guard next != context else { return }
         let before = (isOn: context.isOn, chip: context.selectedChip)
         change(isShown ? motion : nil, { context = next })
+        placeContext(motion)
         guard before.isOn != next.isOn || before.chip != next.selectedChip else { return }
         selected = 0
         updateVisible()
@@ -59,9 +63,11 @@ extension SpotsModel {
 
     func showContext() -> [Entry] {
         guard let chip = context.selectedChip, let source = entry(chip.source) else { return [] }
-        let words = chip.words
-        let preview = Entry(spot: source.spot, item: SpotItem(title: words.title, run: Self.previewRun, picture: Icon(text: chip.symbol)), detail: words.detail)
-        guard let value = chip.value else { return [preview] }
+        guard let value = chip.value else {
+            return [Entry(spot: source.spot, item: SpotItem(title: chip.words.title, run: Self.previewRun, picture: Icon(text: chip.symbol)), detail: "")]
+        }
+        let shown = ContextPreview(value)
+        let preview = Entry(spot: source.spot, item: SpotItem(title: shown.text, run: Self.previewRun, picture: shown.picture), detail: shown.caption)
         let rows = cards.filter { $0.item == nil && $0.spot.takes(value) }.map { card in
             SpotItem(title: card.spot.name, subtitle: card.spot.subtitle, run: card.id, keywords: card.spot.keywords)
         }
@@ -80,7 +86,7 @@ extension SpotsModel {
         return [preview] + taken
     }
 
-    func isPreview(_ entry: Entry) -> Bool {
+    public func isPreview(_ entry: Entry) -> Bool {
         entry.item?.run == Self.previewRun
     }
 
