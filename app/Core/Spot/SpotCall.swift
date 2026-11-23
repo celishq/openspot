@@ -39,7 +39,7 @@ public enum SpotCall: NounCall {
         ) { $0.fit.flatMap(stats) },
         CommandVerb(
             "list", "[--core] [--json]",
-            "Prints an item, an item=<id> block, for each spot that the app loads, with a button=<id> or field=<id> block for each of its own. --core prints each spot that comes with the app, and whether it is on. --json prints them as JSON, with their keys."
+            "Prints an item, an item=<id> block, for each spot that the app loads, with a button=<id> or field=<id> block for each of its own. --core prints each spot that comes with the app, whether it is on, and its uses. --json prints them as JSON, with their keys."
         ) { words in
             words.fit.flatMap { $0.rest.isEmpty ? Self.list(core: $0.has("--core"), form: $0.form) : nil }
         },
