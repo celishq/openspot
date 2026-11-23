@@ -1,5 +1,5 @@
 export default {
-  async search({ text }, env) {
-    return env.calc.solve(text)
+  search({ text }) {
+    return openspot.call(["calc", "solve", text]).stdout
   },
 }

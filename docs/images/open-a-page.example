@@ -1,0 +1,7 @@
+#!/bin/sh
+. "$OPENSPOT_SH"
+route=$(value route)
+case "$route" in
+  '') printf 'item=apple\ntitle=Apple\nroute=apple\n\nitem=pear\ntitle=Pear\nroute=pear\n' ;;
+  *) openspot_item "$route:color" "Color" "Green" ;;
+esac

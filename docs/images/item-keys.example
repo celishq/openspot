@@ -1,0 +1,10 @@
+#!/bin/sh
+. "$OPENSPOT_SH"
+case "$1" in
+  show)
+    openspot_item report Report.pdf
+    openspot_kv path "$HOME/Downloads/Report.pdf"
+    printf '\nbutton=reveal\ntitle=Show in Finder\nshortcut=cmd+o\n'
+    ;;
+  reveal) open -R "$(value item.path)" ;;
+esac

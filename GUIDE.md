@@ -34,6 +34,7 @@ esac
 ```
 
 <!-- draw: lsof() { printf 'COMMAND PID USER FD TYPE DEVICE SIZE NODE NAME\nnode 4120 me 21u IPv4 0x1 0t0 TCP *:3000 (LISTEN)\npostgres 812 me 7u IPv4 0x2 0t0 TCP 127.0.0.1:5432 (LISTEN)\npython3 5051 me 3u IPv6 0x3 0t0 TCP *:8080 (LISTEN)\n'; }; . "$EXAMPLE" -->
+![The sheet of Ports: a row for each process that listens, such as :3000 with node under it](docs/images/first-spot.png)
 The sheet of Ports lists a row for each process that listens, with its port as the title and its name under it, such
 as :3000 with node.
 
@@ -178,6 +179,7 @@ printf 'icon=wifi\nparent=head\nvalue=wifi\nclass=text-accent\n\n'
 printf 'text=name\nparent=head\ntitle=Home\ndetail=82 Mb/s\nclass=grow\n\n'
 printf 'button=forget\nparent=head\ntitle=Forget\nclass=rounded-full\n'
 ```
+![The sheet: one row, the Wi-Fi icon, Home with 82 Mb/s under it, and a Forget chip](docs/images/lay-out-a-sheet.png)
 
 The sheet shows one row: the Wi-Fi icon in the accent colour, Home with 82 Mb/s under it, and a Forget chip at its end.
 
@@ -210,6 +212,7 @@ case "$route" in
   *) openspot_item "$route:color" "Color" "Green" ;;
 esac
 ```
+![The sheet of Fruit: two rows, Apple and Pear](docs/images/open-a-page.png)
 
 The sheet of Fruit lists two rows, Apple and Pear.
 
@@ -348,6 +351,7 @@ case "$1" in
   reveal) open -R "$(value item.path)" ;;
 esac
 ```
+![The sheet of Downloads: one row, Report.pdf](docs/images/item-keys.png)
 
 The sheet of Downloads shows one row, Report.pdf.
 
@@ -450,6 +454,7 @@ export default {
 ```
 
 <!-- draw: openspot calc solve 2+2 -->
+![The answer of Calculator: one row, 4, with 2 + 2 under it](docs/images/answer-the-search.png)
 The answer to `2+2` is one row, 4, with 2 + 2 under it.
 
 1. Type `2+2` in the panel. The row 4 shows at the top of the main search in the same keystroke.
@@ -676,6 +681,7 @@ else
   printf 'item=state\ntitle=Set a token in Settings\n'
 fi
 ```
+![The sheet of Weather: one row, Set a token in Settings](docs/images/keep-a-secret.png)
 
 The sheet of Weather shows one row, Set a token in Settings.
 
@@ -718,6 +724,7 @@ openspot_serve main "$@"
 ```
 
 <!-- draw: printf 'input.value=cpu=12 memory=61\n' | sh "$EXAMPLE" system.load -->
+![The sheet of CPU trend: a tile with CPU over 12% and one small bar](docs/images/keep-a-process.png)
 After one reading, the sheet of CPU trend shows a tile with CPU over 12% in big type, and one small bar at its lower right.
 
 1. Open the sheet of CPU trend. Every 5 seconds, Openspot calls `system.load`, and the tile gains a bar.
@@ -753,6 +760,7 @@ export default {
   },
 }
 ```
+![The sheet of Clocks: three rows with the time in Paris, New York and Tokyo](docs/images/javascript-spot.png)
 
 The sheet of Clocks shows three rows, the time in Paris, New York and Tokyo, each with its city under it.
 
@@ -904,6 +912,7 @@ struct SpotView: View {
     }
 }
 ```
+![The sheet of Steps: a tile with 6200 steps over Keep going](docs/images/follow-the-theme.png)
 
 The sheet of Steps shows a tile with 6200 steps over Keep going, in the second colour of the words.
 

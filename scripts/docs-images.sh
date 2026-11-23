@@ -36,7 +36,7 @@ stub() {
     *) title=$1 value="42" ;;
   esac
   mkdir -p "$work/spots/$1.spot"
-  printf 'title = "%s"\non = ["clock.60"]\n' "$title" > "$work/spots/$1.spot/spot.toml"
+  printf 'title = "%s"\n\n[on]\nevery = 60\n' "$title" > "$work/spots/$1.spot/spot.toml"
   printf '#!/bin/sh\nprintf '"'"'item=v\\ntitle=%s\\n'"'"'\n' "$value" > "$work/spots/$1.spot/$1.sh"
   chmod +x "$work/spots/$1.spot/$1.sh"
 }

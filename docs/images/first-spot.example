@@ -1,2 +1,11 @@
 #!/bin/sh
-printf 'item=cups\ntitle=3\ndetail=Last at 14:20\n'
+. "$OPENSPOT_SH"
+case "$1" in
+  show)
+    lsof -nP -iTCP -sTCP:LISTEN | awk 'NR > 1 && !seen[$2]++ {
+      sub(/.*:/, ":", $9)
+      print $2 "\t" $9 "\t" $1
+    }' | openspot_items
+    ;;
+  press) kill "$(value item)" ;;
+esac

@@ -1,0 +1,3 @@
+title = "Steps"
+icon = "figure.walk"
+views = ["steps.swift"]

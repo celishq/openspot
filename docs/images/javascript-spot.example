@@ -1,0 +1,9 @@
+export default {
+  async show(input, env) {
+    return ["Europe/Paris", "America/New_York", "Asia/Tokyo"].map((zone) => ({
+      item: zone,
+      title: new Date().toLocaleTimeString("en-GB", { timeZone: zone, hour: "2-digit", minute: "2-digit" }),
+      detail: zone.split("/")[1].replace("_", " "),
+    }))
+  },
+}

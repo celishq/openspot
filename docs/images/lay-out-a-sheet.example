@@ -1,0 +1,5 @@
+#!/bin/sh
+printf 'frame=\nclass=gap-part\n\nbox=head\nclass=flex-row items-center gap-2\n\n'
+printf 'icon=wifi\nparent=head\nvalue=wifi\nclass=text-accent\n\n'
+printf 'text=name\nparent=head\ntitle=Home\ndetail=82 Mb/s\nclass=grow\n\n'
+printf 'button=forget\nparent=head\ntitle=Forget\nclass=rounded-full\n'
