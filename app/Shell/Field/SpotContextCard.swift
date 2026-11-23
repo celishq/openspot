@@ -47,23 +47,24 @@ struct SpotContextCard: View, Equatable {
     private var badge: some View {
         if showsBadge, let kind = chip.value?.kind {
             let leaf = SpotLeafShape(radius: SpotTokens.contextIconRadius)
-            Image(systemName: Self.symbol(of: kind))
+            glyph(of: kind)
                 .font(SpotType.contextBadge)
-                .foregroundStyle(SpotTheme.contextBadgeInk)
+                .modifier(SpotSecondaryText())
                 .offset(x: SpotTokens.contextBadgeNudge, y: SpotTokens.contextBadgeNudge)
                 .frame(width: SpotTokens.contextBadge, height: SpotTokens.contextBadge)
                 .background(leaf.fill(SpotTheme.contextFace))
-                .overlay(alignment: .topLeading) { SpotLeafSeam(radius: SpotTokens.contextIconRadius).stroke(SpotTheme.contextRim, lineWidth: SpotTokens.contextBorder * 2) }
+                .overlay(alignment: .topLeading) { SpotLeafSeam(radius: SpotTokens.contextIconRadius).stroke(SpotTheme.contextRim, lineWidth: SpotTokens.contextBorder) }
                 .padding(SpotTokens.contextInset)
                 .transition(.opacity)
         }
     }
 
-    private static func symbol(of kind: ContextValue.Kind) -> String {
+    @ViewBuilder
+    private func glyph(of kind: ContextValue.Kind) -> some View {
         switch kind {
-        case .url: "link"
-        case .text: "character"
-        case .file: "doc.fill"
+        case .url: Image(systemName: "globe")
+        case .text: Text(verbatim: "T")
+        case .file: Image(systemName: "doc.fill")
         }
     }
 }

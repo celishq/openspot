@@ -20,7 +20,8 @@ struct SpotFieldValue: View {
                 }
             }
             .padding(.horizontal, SpotTokens.padding + SpotTokens.glyphInset)
-            .padding(.vertical, SpotTokens.contextValuePadding)
+            .padding(.top, SpotTokens.contextValuePadding)
+            .padding(.bottom, SpotTokens.contextValueFoot)
             .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
         }
         .frame(width: SpotFieldView.rect.width, height: max(model.fieldValueRoom, SpotTokens.contextValueRoom(lines: 0)), alignment: .top)

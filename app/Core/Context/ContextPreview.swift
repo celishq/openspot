@@ -35,7 +35,7 @@ public struct ContextPreview: Hashable, Sendable {
 
     public static func symbol(of kind: ContextValue.Kind) -> String {
         switch kind {
-        case .url: "link"
+        case .url: "globe"
         case .text: "textformat"
         case .file: "doc"
         }

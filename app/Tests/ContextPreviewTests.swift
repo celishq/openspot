@@ -7,7 +7,7 @@ final class ContextPreviewTests: XCTestCase {
 
         XCTAssertEqual(preview.text, "SwiftUI")
         XCTAssertEqual(preview.caption, "developer.apple.com")
-        XCTAssertEqual(preview.symbol, "link")
+        XCTAssertEqual(preview.symbol, "globe")
     }
 
     func testATextShowsItsWordsOnOneRunOfLines() {

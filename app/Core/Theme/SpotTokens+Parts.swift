@@ -34,7 +34,7 @@ extension SpotTokens {
     public static var contextIcon: CGFloat { contextCard - 2 * contextInset }
     public static var contextIconRadius: CGFloat { contextIcon * 0.224 }
     public static var contextSymbol: CGFloat { contextIcon * 0.5 }
-    public static let contextBorder: CGFloat = 0.5
+    public static let contextBorder: CGFloat = 1
     public static var contextStep: CGFloat { contextCard * 0.25 }
     public static let contextShrink: CGFloat = 0.1
     public static var contextSpreadGap: CGFloat { contextCard * 0.42 }
@@ -53,6 +53,7 @@ extension SpotTokens {
     public static let previewCaptionGap: CGFloat = 4
 
     public static let contextValuePadding: CGFloat = 9
+    public static let contextValueFoot: CGFloat = 13
     public static let contextValueLineGap: CGFloat = 1
     static let lineShare: CGFloat = 1.25
     static let glyphWidthShare: CGFloat = 0.55
@@ -68,7 +69,7 @@ extension SpotTokens {
     public static func contextValueRoom(lines: Int) -> CGFloat {
         let caption = CGFloat(layout.type.detail) * lineShare
         let body = lines == 0 ? 0 : contextValueLineGap + CGFloat(lines) * CGFloat(layout.type.body) * lineShare
-        return (2 * contextValuePadding + caption + body).rounded(.up)
+        return (contextValuePadding + contextValueFoot + caption + body).rounded(.up)
     }
 
     public static func contextStack(count: Int) -> CGFloat {
