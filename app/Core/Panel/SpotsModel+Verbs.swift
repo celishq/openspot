@@ -47,8 +47,10 @@ extension SpotsModel {
 
     func copyPrompt(changing entry: Entry) {
         let prompt = host.agentPrompt(for: folder.url)
-        let text = prompt.changing(file(of: entry), failure: entry.failure)
+        let file = file(of: entry)
         Task {
+            let evidence = await SpotEvidence.read(of: entry.id, runs: runs, stats: files.stats, app: prompt.app)
+            let text = prompt.changing(file, failure: entry.failure, evidence: evidence)
             do {
                 host.confirm(try await prompt.copy(text, base: runs.environment))
             } catch {
@@ -60,8 +62,7 @@ extension SpotsModel {
     func remove(_ entry: Entry) {
         closeSheet(moving: isShown)
         let command = entry.spot.fault.map { Spot(id: entry.id, name: $0.name, url: $0.file) } ?? entry.spot
-        let count = entry.kind == .widget ? entries.filter { $0.spot.url == entry.spot.url }.count : 1
-        let words = count > 1 ? "\(count) widgets" : command.name
+        let words = command.name
         let id = entry.id
         let folder = folder
         let ids = Set(entries.filter { $0.spot.url == entry.spot.url }.map(\.spot.id) + [entry.id])
@@ -78,7 +79,7 @@ extension SpotsModel {
             if let failure {
                 host.notify("\(command.name) was not removed. \(failure)")
             } else {
-                host.confirm("Moved \(words) to the Trash. Press `⌘Z` to put \(count > 1 ? "them" : "it") back.")
+                host.confirm("Moved \(words) to the Trash. Press `⌘Z` to put it back.")
             }
         }
     }

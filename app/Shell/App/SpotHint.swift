@@ -33,7 +33,7 @@ struct SpotHint: View {
                 Text(key)
                     .padding(.horizontal, SpotTokens.hintKeyPadding)
                     .frame(height: SpotTokens.hintKeyHeight)
-                    .background(SpotTheme.ink.opacity(SpotTheme.track), in: Capsule())
+                    .background(SpotTheme.highlight.opacity(SpotTheme.track), in: Capsule())
                     .modifier(SpotSelectionRing(isSelected: key == activeKey, shape: Capsule(), width: SpotTokens.thinRing))
             }
             if !group.words.isEmpty {

@@ -37,7 +37,7 @@ final class DoomExampleTests: SampleSpotsCase {
         size=$(cat '\(folder.path)/size' 2>/dev/null)
         if [ -n "$size" ]; then
           head -c $((size / 2)) /dev/zero > "$out"
-          sleep 1
+          n=0; while [ ! -f '\(folder.path)/release' ] && [ $n -lt 1500 ]; do sleep 0.02; n=$((n + 1)); done
           head -c $((size - size / 2)) /dev/zero >> "$out"
         else
           echo 'not the real file' > "$out"
@@ -109,14 +109,14 @@ final class DoomExampleTests: SampleSpotsCase {
     }
 
     @MainActor
-    private static func pictures(spots: URL, changes: [@Sendable () throws -> Void]) async throws -> [(picture: String?, sheet: [[String]]?)] {
+    private static func pictures(spots: URL, changes: [@Sendable () throws -> Void]) async throws -> [(picture: String?, sheet: [String]?)] {
         var time = Date(timeIntervalSince1970: 1000)
         let runs = SpotRuns(environment: TestEnvironment.values, clock: RunClock { time }, stopPause: 0.2)
         defer { runs.quit() }
         runs.take(try SpotsFolder(url: spots).scan())
         let sheet = try XCTUnwrap(runs.sheets["doom"])
         let log = FrameLog(sheet)
-        var pictures: [(picture: String?, sheet: [[String]]?)] = []
+        var pictures: [(picture: String?, sheet: [String]?)] = []
         for change in [{}] + changes {
             try change()
             time += 10
@@ -126,8 +126,8 @@ final class DoomExampleTests: SampleSpotsCase {
                 try await Task.sleep(for: .milliseconds(10))
             }
             runs.panelClosed()
-            let drawing = SpotOutput(text: log.last ?? "").layout?.rows
-            pictures.append((sheet.state.face.hasView ? sheet.state.values["picture"]?.last : nil, drawing))
+            let tree = sheet.state.face
+            pictures.append((tree.node("screen")?.values["picture"]?.last, tree.isWritten ? tree.children : nil))
         }
         return pictures
     }
@@ -278,7 +278,9 @@ final class DoomExampleTests: SampleSpotsCase {
             try self.fakeClang(in: folder)
             try "3090826".write(to: folder.appendingPathComponent("size"), atomically: true, encoding: .utf8)
 
-            let run = await self.press(doom)
+            let run = await self.press(doom) { frame in
+                if frame.contains("progress=0.50") { self.release(in: folder) }
+            }
 
             XCTAssertTrue(run.frames.contains { $0.contains("title=Downloading the Doom engine\nprogress=0.50\ndetail=50%") }, "\(run.frames)")
             XCTAssertTrue(run.frames.contains { $0.contains("title=Downloading the Doom engine\nprogress=1.00\ndetail=100%") }, "\(run.frames)")
@@ -324,7 +326,7 @@ final class DoomExampleTests: SampleSpotsCase {
             ])
 
             XCTAssertEqual(pictures.map(\.picture), [nil, first.path, second.path])
-            XCTAssertEqual(pictures.map(\.sheet), [nil, [["screen"], ["play"]], [["screen"], ["play"]]])
+            XCTAssertEqual(pictures.map(\.sheet), [nil, ["screen", "play"], ["screen", "play"]])
             XCTAssertFalse(self.exists("fetched", in: folder))
             XCTAssertFalse(self.exists("compiled", in: folder))
             XCTAssertFalse(self.exists("played", in: folder))

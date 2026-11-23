@@ -1,0 +1,12 @@
+title = "Agenda"
+icon = "calendar"
+detail = "Today and tomorrow, with your reminders"
+uses = ["calendar"]
+
+[on]
+"panel.open" = true
+"sheet.text" = true
+every = 60
+
+[settings]
+calendars = { type = "text", icon = "calendar" }

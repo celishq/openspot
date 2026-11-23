@@ -19,21 +19,21 @@ final class ActionMenuFrameTests: XCTestCase {
 
         let menu = place(item)
 
-        XCTAssertEqual(menu.minX, item.maxX + ActionMenuFrame.gap)
+        XCTAssertEqual(menu.minX, item.maxX + SpotTokens.placeGap)
         XCTAssertEqual(menu.minY, item.minY)
     }
 
     func testTheMenuOfACardOnTheRightOpensToItsLeft() {
         let item = card(column: 2)
 
-        XCTAssertEqual(place(item).maxX, item.minX - ActionMenuFrame.gap)
+        XCTAssertEqual(place(item).maxX, item.minX - SpotTokens.placeGap)
     }
 
     func testTheMenuOfAWideCardOpensUnderItOnItsSide() {
         let left = card(column: 0, columns: 2)
         let right = card(column: 2, columns: 2)
 
-        XCTAssertEqual(place(left).minY, left.maxY + ActionMenuFrame.gap)
+        XCTAssertEqual(place(left).minY, left.maxY + SpotTokens.placeGap)
         XCTAssertEqual(place(left).minX, left.minX)
         XCTAssertEqual(place(right).maxX, right.maxX)
     }
@@ -43,7 +43,7 @@ final class ActionMenuFrameTests: XCTestCase {
 
         let menu = place(row)
 
-        XCTAssertEqual(menu.maxY, row.minY - ActionMenuFrame.gap)
+        XCTAssertEqual(menu.maxY, row.minY - SpotTokens.placeGap)
         XCTAssertEqual(menu.minX, row.minX)
     }
 
@@ -110,13 +110,13 @@ final class ActionMenuFrameTests: XCTestCase {
 
         let menu = ActionMenuFrame(item: item, height: 116, bounds: ActionMenuFrame.bounds(under: SpotTokens.gridTop)).rect
 
-        XCTAssertEqual(menu.minY, item.maxY + ActionMenuFrame.gap)
+        XCTAssertEqual(menu.minY, item.maxY + SpotTokens.placeGap)
         XCTAssertLessThanOrEqual(menu.maxY, SpotTokens.panelHeight - SpotTokens.halo - SpotTokens.hintBlock)
     }
 
     func testTheRowUnderAPointSkipsTheFieldOnTheStillEdge() throws {
         let actions = ["One", "Two", "Three"].enumerated().map { CommandAction(id: "a\($0.offset)", title: $0.element) }
-        let spot = Spot(id: "a", name: "A", url: URL(fileURLWithPath: "/bin/true"), kind: .list, openTitle: "Open", actions: actions)
+        let spot = Spot(id: "a", name: "A", url: URL(fileURLWithPath: "/bin/true"), kind: .list, openTitle: "Open", frameActions: actions)
         let menu = try XCTUnwrap(ActionMenu(spot: spot, item: SpotItem(title: "One", run: "1")))
         let top = ActionMenuFrame(item: card(column: 0), menu: menu, bounds: bounds)
         let bottom = ActionMenuFrame(item: card(column: 0, row: 6), menu: menu, bounds: bounds)

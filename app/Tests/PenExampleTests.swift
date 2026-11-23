@@ -32,9 +32,9 @@ final class PenExampleTests: SampleSpotsCase {
         let pen = try example("Pen")
 
         XCTAssertEqual(pen.mode, .stay)
-        XCTAssertNil(pen.read)
+        XCTAssertFalse(pen.triggers.shows)
         XCTAssertEqual(pen.sources, ["pen"])
-        XCTAssertEqual(pen.offers.map(\.id), ["draw"])
+        XCTAssertEqual(pen.commands.map(\.id), ["draw"])
         XCTAssertEqual(pen.soleCommand, "draw")
     }
 
@@ -49,7 +49,7 @@ final class PenExampleTests: SampleSpotsCase {
         script.send(text: "call=2\narg=draw\n\n")
         try await wait("the end of both presses") { frames.ends == ["1", "2"] }
         XCTAssertEqual(notes(in: folder), "show\nclose\n")
-        script.send(text: "call=3\narg=open\n\n")
+        script.send(text: "call=3\narg=draw\n\n")
         try await wait("a new overlay") { self.notes(in: folder) == "show\nclose\nshow\n" }
 
         XCTAssertEqual(frames.ends, ["1", "2"])

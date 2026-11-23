@@ -20,10 +20,11 @@ final class AgentNoteTests: XCTestCase {
         try AgentNote(command: "/Apps/Openspot.app/Contents/Helpers/openspot").write(in: folder)
 
         let note = try XCTUnwrap(saved("AGENTS.md"))
-        for word in ["openspot guide", "openspot spot new", "openspot spot run", "openspot spot log", "openspot check --json", "openspot spot show", "/Apps/Openspot.app/Contents/Helpers/openspot"] {
+        for word in ["spot.toml", "openspot guide", "openspot spot new", "openspot spot run", "openspot spot log", "openspot check spots --json", "openspot spot open", "/Apps/Openspot.app/Contents/Helpers/openspot"] {
             XCTAssertTrue(note.contains(word), word)
         }
         XCTAssertEqual(saved("CLAUDE.md"), "@AGENTS.md\n")
+        XCTAssertFalse(note.contains("header"))
     }
 
     func testANoteOfTheAppFollowsTheCommandAndANoteOfThePersonStays() throws {

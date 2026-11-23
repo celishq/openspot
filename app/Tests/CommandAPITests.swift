@@ -43,11 +43,11 @@ final class CommandAPITests: XCTestCase {
     }
 
     func testABatchPrintsTheOutputOfEachCallWithAMarkAfterIt() async throws {
-        let answer = try await answer(["batch"], input: "calc solve 2+2\n\nsetting list --frame\n")
+        let answer = try await answer(["batch"], input: "calc solve 2+2\n\nsetting list\n")
 
         XCTAssertEqual(answer.code, 0)
         XCTAssertEqual(answer.output.components(separatedBy: "---\n").count, 3)
-        XCTAssertTrue(answer.output.hasPrefix("row=4\n"), answer.output)
+        XCTAssertTrue(answer.output.hasPrefix("item=4\n"), answer.output)
     }
 
     func testAStoppedBatchRunsNoMoreLines() async throws {
@@ -66,11 +66,11 @@ final class CommandAPITests: XCTestCase {
 
         XCTAssertEqual(answer.code, 2)
         XCTAssertEqual(answer.errors, "openspot batch cannot run `color pick`, because it does not print data. Run it on its own.\n")
-        XCTAssertFalse(answer.output.contains("row=6"))
+        XCTAssertFalse(answer.output.contains("item=6"))
     }
 
     func testABatchRunsNoCallThatReadsStdin() async throws {
-        for line in ["clipboard copy", "translate --to en"] {
+        for line in ["clipboard copy", "translate text --to en"] {
             let answer = try await answer(["batch"], input: line + "\n")
 
             XCTAssertEqual(answer.errors, "openspot batch cannot run `\(line)`, because it does not print data. Run it on its own.\n")
@@ -143,7 +143,7 @@ final class CommandAPITests: XCTestCase {
 
     func testASecretIsNeverPrintedAndOnlyOpenspotsFormChangesIt() async throws {
         let spots = folder.appendingPathComponent("spots", isDirectory: true)
-        try TestSpot(header: "title=Weather\n\nfield=token\ntype=secret\n\nfield=key\ntype=secret", body: "echo").write(to: spots.spotFile("weather"))
+        try TestSpot(toml: "title = 'Weather'\n[settings]\ntoken = 'secret'\nkey = 'secret'", body: "echo").write(to: spots.spotFile("weather"))
         let places = environment.merging(["OPENSPOT_SPOTS": spots.path]) { _, new in new }
         let spot = places.merging(["OPENSPOT_ID": "weather"]) { _, new in new }
         try AppPlaces.test(places).secrets.keep("MARKER-7f3c", key: "token", of: "weather")
@@ -164,7 +164,7 @@ final class CommandAPITests: XCTestCase {
     }
 
     func testASheetOnStdinIsChecked() async throws {
-        let answer = try await answer(["check", "--sheet"], input: "title=Hi\n")
+        let answer = try await answer(["check", "sheet"], input: "frame=\ntitle=Hi\n")
 
         XCTAssertEqual(answer.output, "the sheet has no parts\n1 faults.\n")
         XCTAssertEqual(answer.code, 1)
@@ -201,40 +201,21 @@ final class CommandAPITests: XCTestCase {
         XCTAssertEqual(calendar.made, 2)
     }
 
-    func testAnEventReachesTheRunningApp() async throws {
-        let raised = LockedEvents()
-        let call = try XCTUnwrap(CommandLineCall(arguments: ["event", "emit", "music.track", "Song"], environment: [:]))
-        let work = try XCTUnwrap(CommandAPI(mac: host, places: .test(), raise: { await raised.add($0) }, rates: .offline).work(for: call, request: .test(), input: { "" }))
-
-        let answer = await work()
-
-        XCTAssertEqual(answer, CommandAnswer())
-        let events = await raised.events
-        XCTAssertEqual(events, [.named("music.track", value: "Song")])
-    }
-
-    func testAnEventWithNoAppToReachFails() async throws {
-        let answer = try await answer(["event", "emit", "music.track"])
-
-        XCTAssertEqual(answer.errors, "Openspot is not running, so no spot hears `music.track`. Open Openspot, then run this again.\n")
-        XCTAssertEqual(answer.code, 1)
-    }
-
     @MainActor
     func testStatsComeFromTheLiveCountsOfTheRunningApp() async throws {
         let runs = SpotRuns()
-        runs.usage.called(Spot(id: "a", name: "Alpha", url: folder), seconds: 1, isFailure: false, at: Date())
-        let call = try XCTUnwrap(CommandLineCall(arguments: ["spot", "stats", "--frame"], environment: environment))
+        runs.usage.called(Spot(id: "a", name: "Alpha", url: folder), CallOutcome(seconds: 1), at: Date())
+        let call = try XCTUnwrap(CommandLineCall(arguments: ["spot", "stats"], environment: environment))
         let work = try XCTUnwrap(CommandAPI(mac: host, places: .test(environment), runs: runs, rates: .offline).work(for: call, request: .test(), input: { "" }))
 
         let answer = await work()
 
-        XCTAssertTrue(answer.output.hasPrefix("row=a\ntitle=Alpha\n"), answer.output)
+        XCTAssertTrue(answer.output.hasPrefix("item=a\ntitle=Alpha\n"), answer.output)
     }
 
     func testStatsWithNoAppToReachReadTheFiles() async throws {
-        let usage = SpotUsage(folder: folder.appendingPathComponent("stats"), pause: 60)
-        usage.called(Spot(id: "a", name: "Alpha", url: folder), seconds: 1, isFailure: false, at: Date())
+        let usage = StatsLog(folder: folder.appendingPathComponent("stats"), pause: 60)
+        usage.called(Spot(id: "a", name: "Alpha", url: folder), CallOutcome(seconds: 1), at: Date())
         usage.flush()
 
         let answer = try await answer(["spot", "stats"])
@@ -244,25 +225,17 @@ final class CommandAPITests: XCTestCase {
     }
 
     func testACallThatTheShellDoesOrThatNeedsTheAppHasNoWorkInCoreWithNoApp() throws {
-        for arguments in [["render", "a.png"], ["helper", "calc"], ["spot", "show", "notes"], ["playground"]] {
+        for arguments in [["render", "sheet", "a.png"], ["helper", "calc"], ["spot", "open", "notes", "--select"], ["playground", "open"]] {
             let call = try XCTUnwrap(CommandLineCall(arguments: arguments, environment: [:]))
             XCTAssertNil(CommandAPI(mac: host, places: .test(), rates: .offline).work(for: call, request: .test(), input: { "" }), arguments.joined(separator: " "))
         }
     }
 
     func testACallThatStartsScriptsForASandboxedCallerRunsAloneInItsSandbox() throws {
-        for arguments in [["check"], ["check", "--json"], ["spot", "run", "notes"], ["playground"]] {
+        for arguments in [["check", "spots"], ["check", "spots", "--json"], ["spot", "run", "notes"], ["playground", "open"]] {
             let call = try XCTUnwrap(CommandLineCall(arguments: arguments, environment: [:]))
             XCTAssertNil(CommandAPI(mac: host, places: .test(), app: FakeRunningApp(), rates: .offline).work(for: call, request: .test(), input: { "" }, isSandboxed: true), arguments.joined(separator: " "))
             XCTAssertNotNil(CommandAPI(mac: host, places: .test(), app: FakeRunningApp(), rates: .offline).work(for: call, request: .test(), input: { "" }), arguments.joined(separator: " "))
         }
-    }
-}
-
-private actor LockedEvents {
-    private(set) var events: [SpotEvent] = []
-
-    func add(_ event: SpotEvent) {
-        events.append(event)
     }
 }

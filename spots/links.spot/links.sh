@@ -1,10 +1,9 @@
 #!/bin/sh
-# icon=link
-# detail=Open a link
-# on=panel.open
-# uses=network,clipboard
-# offers=card
-# offers=search
+
+# A delete waits for the delete before it, so two quick deletes never write over each other. A save keeps no lock, since
+# a stop of its icon fetch must reach this process.
+[ "$1" != delete ] || [ -n "${LINKS_LOCKED-}" ] || LINKS_LOCKED=1 exec lockf -k "$OPENSPOT_DATA/links.lock" "$0" "$@"
+
 data="$OPENSPOT_DATA/links.json"
 icons="$OPENSPOT_DATA/icons"
 . "$OPENSPOT_SH"
@@ -54,7 +53,7 @@ check_path() {
 
 # Prints the form values as one JSON object, with a full link. A path stays as it is.
 checked() {
-  jq -nc --arg title "$(value title)" --arg url "$(value url)" '{$title, $url} | .url |= (gsub("^\\s+|\\s+$"; "") | if test("^[/~]") or test("^[a-zA-Z][a-zA-Z0-9+.-]*:") then . else "https://" + . end)
+  jq -nc --arg title "$(value input.title)" --arg url "$(value input.url)" '{$title, $url} | .url |= (gsub("^\\s+|\\s+$"; "") | if test("^[/~]") or test("^[a-zA-Z][a-zA-Z0-9+.-]*:") then . else "https://" + . end)
     | if (.url | test("^[/~]") | not) and (.url | test("\\s")) then error("bad") else . end' 2>/dev/null || {
     echo "Enter a link with no spaces, or a path." >&2
     exit 1
@@ -124,7 +123,7 @@ fetch_missing() {
 
 # Prints the form with this title and these values.
 form() {
-  jq -nr --arg title "$1" --argjson v "$2" "$esc"'"title=\($title)
+  jq -nr --arg title "$1" --argjson v "$2" "$esc"'"frame=\ntype=form\ntitle=\($title)
 
 field=title
 title=Name
@@ -140,61 +139,64 @@ placeholder=example.com or ~/Downloads"'
 
 prepare
 
+item=$(value item)
+
 case "$1" in
-  read)
-    printf 'button=copy\ntitle=Copy\nshortcut=cmd+return\nclose=true\n\n'
-    printf 'button=reveal\ntitle=Show in Finder\nshortcut=cmd+r\nclose=true\n\n'
-    printf 'button=edit\ntitle=Edit\nshortcut=cmd+e\nform=true\n\n'
-    printf 'button=delete\ntitle=Delete\nshortcut=cmd+backspace\nconfirm=Press again to delete\n\n'
-    printf 'button=new\ntitle=New link\nshortcut=cmd+n\nscope=spot\nform=true\nplaceholder=Link to add\n\n'
+  show)
+    printf 'button=copy\ntitle=Copy\nshortcut=cmd+return\n\n'
+    printf 'button=reveal\ntitle=Show in Finder\nshortcut=cmd+r\n\n'
+    printf 'button=edit\ntitle=Edit\nshortcut=cmd+e\nclose=false\n\n'
+    printf 'button=delete\ntitle=Delete\nshortcut=cmd+backspace\nconfirm=Press again to delete\nclose=false\n\n'
+    printf 'button=new\ntitle=New link\nshortcut=cmd+n\nscope=spot\nclose=false\nplaceholder=Link to add\n\n'
     [ -s "$data" ] || exit 0
     set --
     for icon in "$icons"/*.png; do [ -e "$icon" ] && set -- "$@" "${icon##*/}"; done
     jq -r --arg icons "$icons" --arg home "$HOME" "$esc"'$ARGS.positional as $found | .[]
       | if (.url | test("^[/~]")) then
-          "row=\(.id | esc)\ntitle=\(.title | esc)\ndetail=\(.url | esc)\nicon=\(.url | if startswith("~") then $home + .[1:] else . end | esc)\n"
+          "item=\(.id | esc)\ntitle=\(.title | esc)\ndetail=\(.url | esc)\nicon=\(.url | if startswith("~") then $home + .[1:] else . end | esc)\n"
         else
           (.url | sub("^[a-zA-Z][a-zA-Z0-9+.-]*:(//)?"; "") | sub("[/?#].*$"; "")) as $host
-          | "row=\(.id | esc)\ntitle=\(.title | esc)\ndetail=\($host | esc)\nhides=reveal\n"
+          | "item=\(.id | esc)\ntitle=\(.title | esc)\ndetail=\($host | esc)\nhides=reveal\n"
           + (if ($found | index($host + ".png")) then "icon=\("\($icons)/\($host).png" | esc)\n" else "icon=link\n" end)
         end' "$data" --args "$@"
     ;;
   new)
-    if [ -z "$(value title)$(value url)" ]; then
-      form "New link" "$(jq -nc --arg url "$(value search)" '{title: "", url: $url}')"
+    # Asks with its own form, filled with what the call gave, until both the name and the link are given.
+    if [ -z "$(value input.title)" ] || [ -z "$(value input.url)" ]; then
+      form "New link" "$(jq -nc --arg title "$(value input.title)" --arg url "$(value input.url)" '{$title, $url}')"
       exit 0
     fi
     id=$(uuidgen)
     values=$(checked) || exit 1
     load | jq -c --arg id "$id" --argjson v "$values" '. + [{id: $id, title: $v.title, url: $v.url}]' | store
     fetch_missing "$values" >/dev/null 2>&1 </dev/null
-    printf 'select=%s\n' "$id"
+    openspot select "$id"
     ;;
   edit)
-    if [ -z "$(value title)$(value url)" ]; then
-      form "Edit link" "$(load | jq -c --arg id "$2" '.[] | select(.id == $id)')"
+    if [ -z "$(value input.title)$(value input.url)" ]; then
+      form "Edit link" "$(load | jq -c --arg id "$item" '.[] | select(.id == $id)')"
       exit 0
     fi
     values=$(checked) || exit 1
-    load | jq -c --arg id "$2" --argjson v "$values" 'map(if .id == $id then .title = $v.title | .url = $v.url else . end)' | store
+    load | jq -c --arg id "$item" --argjson v "$values" 'map(if .id == $id then .title = $v.title | .url = $v.url else . end)' | store
     fetch_missing "$values" >/dev/null 2>&1 </dev/null
-    printf 'select=%s\n' "$2"
+    openspot select "$item"
     ;;
   delete)
-    load | jq -c --arg id "$2" 'map(select(.id != $id))' | store
+    load | jq -c --arg id "$item" 'map(select(.id != $id))' | store
     ;;
   copy)
-    url=$(link "$2") || exit 1
+    url=$(link "$item") || exit 1
     printf '%s' "$url" | openspot clipboard copy
-    echo "toast=Copied"
+    openspot toast Copied
     ;;
   reveal)
-    url=$(link "$2") || exit 1
+    url=$(link "$item") || exit 1
     check_path "$url"
     open -R "$url"
     ;;
-  open)
-    url=$(link "$2") || exit 1
+  press)
+    url=$(link "$item") || exit 1
     check_path "$url"
     open "$url"
     ;;

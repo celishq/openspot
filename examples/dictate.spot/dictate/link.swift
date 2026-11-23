@@ -1,19 +1,18 @@
 import Foundation
 
-/// One call of Openspot: its number, its arguments, its variables and the lines of its stdin.
+/// One call of Openspot: its number, its arguments and the lines of its message.
 struct Call {
     let id: String
     let arguments: [String]
-    let variables: [String: String]
-    let input: String
+    let input: [String]
 
-    /// The first value of a key in its stdin, such as `look` of `look=gold`.
+    /// The first value of a key in its message, such as `setting.look` of `setting.look=gold`.
     func value(_ key: String) -> String? {
-        input.split(separator: "\n").first { $0.hasPrefix("\(key)=") }.map { String($0.dropFirst(key.count + 1)) }
+        input.first { $0.hasPrefix("\(key)=") }.map { Link.plain(String($0.dropFirst(key.count + 1))) }
     }
 }
 
-/// The two ways of a staying spot (protocol: A staying spot): the calls that Openspot writes on stdin, one block each,
+/// The two ways of a staying spot (protocol: Without the helper): the calls that Openspot writes on stdin, one block each,
 /// and the frames that the spot prints back, each in one write.
 enum Link {
     /// Reads stdin on a thread of its own, and hands each call and each stop to the main queue, then the end of stdin.
@@ -22,27 +21,24 @@ enum Link {
             var id: String?
             var stopped: String?
             var arguments: [String] = []
-            var variables: [String: String] = [:]
-            var input = ""
+            var input: [String] = []
             while let line = readLine() {
                 if line.isEmpty {
                     if let id {
-                        let next = Call(id: id, arguments: arguments, variables: variables, input: input)
+                        let next = Call(id: id, arguments: arguments, input: input)
                         DispatchQueue.main.async { call(next) }
                     } else if let stopped {
                         DispatchQueue.main.async { stop(stopped) }
                     }
-                    (id, stopped, arguments, variables, input) = (nil, nil, [], [:], "")
+                    (id, stopped, arguments, input) = (nil, nil, [], [])
                 } else if line.hasPrefix("call=") {
                     id = String(line.dropFirst(5))
                 } else if line.hasPrefix("stop=") {
                     stopped = String(line.dropFirst(5))
                 } else if line.hasPrefix("arg=") {
                     arguments.append(plain(String(line.dropFirst(4))))
-                } else if line.hasPrefix("env."), let equals = line.firstIndex(of: "=") {
-                    variables[String(line[line.index(line.startIndex, offsetBy: 4)..<equals])] = plain(String(line[line.index(after: equals)...]))
-                } else if line.hasPrefix("input=") {
-                    input = plain(String(line.dropFirst(6)))
+                } else if id != nil {
+                    input.append(line)
                 }
             }
             DispatchQueue.main.async(execute: end)

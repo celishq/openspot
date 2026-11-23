@@ -37,6 +37,15 @@ extension OpenspotApp: SpotsHost {
         keys.apply(config)
     }
 
+    func paint(_ colours: Theme.Colours) {
+        SpotLoadedTheme.shared.paint(colours)
+    }
+
+    func layOut(_ layout: Theme.Layout) {
+        SpotLoadedTheme.shared.lay(layout)
+        panel?.layOut()
+    }
+
     func setEntryKey(on isOn: Bool) {
         keys.setEntry(on: isOn)
     }
@@ -88,8 +97,7 @@ extension OpenspotApp: SpotsHost {
     }
 
     func takeFocus() {
-        NSApp.activate(ignoringOtherApps: true)
-        panel?.makeKeyAndOrderFront(nil)
+        panel?.makeKey()
     }
 
     func allows(_ reason: String) async -> Bool {
@@ -116,17 +124,29 @@ extension OpenspotApp: SpotsHost {
     }
 
     func prepareCards(glyphs: [String]) {
-        SpotItemIcon.prepare(glyphs: glyphs, size: SpotTokens.glyphSize)
+        SpotItemIcon.prepare(glyphs: glyphs, size: SpotTokens.glyph)
     }
 
     func agentPrompt(for folder: URL) -> AgentPrompt {
-        AgentPrompt(folder: folder, guide: Bundle.main.url(forResource: "GUIDE", withExtension: "md") ?? folder, app: AgentPrompt.command(of: Bundle.main.executablePath ?? ""))
+        AgentPrompt(folder: folder, guide: Bundle.main.url(forResource: "DOCS", withExtension: "md") ?? folder, app: AgentPrompt.command(of: Bundle.main.executablePath ?? ""))
+    }
+
+    func nextFrame(_ body: @escaping @MainActor () -> Void) {
+        frame.run(in: panel?.contentView, body)
     }
 
     func change(_ motion: PanelMotion?, _ body: () -> Void, completion: @escaping @MainActor () -> Void) {
         var transaction = Transaction(animation: motion.map(SpotMotion.animation))
         transaction.disablesAnimations = motion == nil
         transaction.addAnimationCompletion(criteria: .logicallyComplete) { MainActor.assumeIsolated { completion() } }
+        withTransaction(transaction, body)
+    }
+
+    func change(_ motion: PanelMotion?, _ body: () -> Void, completion: @escaping @MainActor () -> Void, removal: @escaping @MainActor () -> Void) {
+        var transaction = Transaction(animation: motion.map(SpotMotion.animation))
+        transaction.disablesAnimations = motion == nil
+        transaction.addAnimationCompletion(criteria: .logicallyComplete) { MainActor.assumeIsolated { completion() } }
+        transaction.addAnimationCompletion(criteria: .removed) { MainActor.assumeIsolated { removal() } }
         withTransaction(transaction, body)
     }
 }

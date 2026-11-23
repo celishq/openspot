@@ -27,19 +27,17 @@ final class AccountMarkerTests: BuiltInCase {
             caller("openspot/store", uses: [.app, .account], isBuiltIn: true)
         ]
         let verbs = [
-            ["account"], ["account", "--frame"], ["account", "words"], ["account", "choices", "1", "2"], ["account", "choices", "3", "4"],
+            ["account", "show"], ["account", "show", "--json"], ["account", "words"], ["account", "choices", "1", "2"], ["account", "choices", "3", "4"],
             ["account", "checked"], ["account", "phrase"], ["account", "sign-in"], ["account", "new"], ["account", "new", "tony"],
             ["account", "sign-out"], ["account", "sync", "off"], ["account", "key"], ["account", "show"], ["help", "account"]
         ]
         var said: [String] = []
         for caller in callers {
-            for isBound in [true, false] {
-                for arguments in verbs {
-                    let request = CommandRequest(arguments: arguments, folder: root.path, token: caller.map { runs.tokens.issue(for: $0) }, isBound: isBound)
-                    guard let call = api.call(of: request), let work = api.work(for: api.admit(call, request: request), request: request, input: { "" }) else { continue }
-                    let answer = await work()
-                    said.append("\(arguments) from \(caller?.id ?? "Terminal") gave \(answer.output)\(answer.errors)")
-                }
+            for arguments in verbs {
+                let request = CommandRequest(arguments: arguments, folder: root.path, caller: caller.map { runs.callers.issue(for: $0) })
+                guard let call = api.call(of: request), let work = api.work(for: api.admit(call, request: request), request: request, input: { "" }) else { continue }
+                let answer = await work()
+                said.append("\(arguments) from \(caller?.id ?? "Terminal") gave \(answer.output)\(answer.errors)")
             }
         }
         return said
@@ -53,7 +51,7 @@ final class AccountMarkerTests: BuiltInCase {
         let command = tools.appendingPathComponent("openspot")
         var said: [String] = []
         for id in ids {
-            for call in [[], ["read"], ["show"], ["again"], ["about"]] {
+            for call in [[], ["show"], ["reveal"], ["again"], ["about"]] {
                 do {
                     said.append("spot run \(id) \(call) gave " + (try await ScriptProcess.output(url: command, arguments: ["spot", "run", id] + call, input: "", limit: 60, base: TestEnvironment.values)))
                 } catch {
@@ -96,12 +94,12 @@ final class AccountMarkerTests: BuiltInCase {
         var lines: [String] = []
         var failures: [String] = []
         let frame = { (arguments: [String], input: String?, page: String?) async -> String in
-            var variables = arguments == ["read"] ? ["OPENSPOT_REASON": "sheet.open"] : [:]
-            if let page { variables["OPENSPOT_PAGE"] = page }
+            let value = arguments.dropFirst().first.map { "input.value=\($0)\n" } ?? ""
+            let message = (arguments == ["show"] ? "input.event=sheet.open\n" : "") + value + (page.map { "input.route=\($0)\n" } ?? "") + (input ?? "")
             do {
-                let text = try await self.runs.answer(of: sheet.spot, SpotAction(arguments: arguments), input: input, limit: 60, variables: variables)
-                lines += text.split(separator: "\n").filter { line in ["toast=", "push=", "pop="].contains { line.hasPrefix($0) } }.map(String.init)
-                return text
+                let answer = try await sheet.answer(Array(arguments.prefix(1)), input: message)
+                lines.append("\(answer.effects)")
+                return answer.frame
             } catch {
                 failures.append((error as? SpotError)?.reason ?? "\(error)")
                 return ""
@@ -116,22 +114,23 @@ final class AccountMarkerTests: BuiltInCase {
 
         let check = { (words: [String], wrongFirst: Bool) async throws in
             _ = await frame(["about"], nil, nil)
-            let shown = await frame(["show"], nil, nil)
+            let shown = await frame(["reveal"], nil, "about")
             XCTAssertTrue(shown.contains("title=\(words[0])"), shown)
-            let asked = await frame(["wrote"], nil, nil)
+            _ = await frame(["wrote"], nil, "about")
+            let asked = await frame(["show"], nil, "check")
             let places = Array(Set(picks(asked).map(\.place))).sorted()
             XCTAssertEqual(places.count, 2, asked)
             if wrongFirst {
                 let wrong = try XCTUnwrap(picks(asked).first { $0.place == places[0] && $0.word != words[places[0] - 1] })
-                _ = await frame(["pick-\(wrong.place)-\(wrong.word)"], nil, nil)
-                _ = await frame(["pick-\(places[1])-\(words[places[1] - 1])"], nil, nil)
+                _ = await frame(["pick-\(wrong.place)-\(wrong.word)"], nil, "check")
+                _ = await frame(["pick-\(places[1])-\(words[places[1] - 1])"], nil, "check")
                 return
             }
-            for place in places { _ = await frame(["pick-\(place)-\(words[place - 1])"], nil, nil) }
+            for place in places { _ = await frame(["pick-\(place)-\(words[place - 1])"], nil, "check") }
         }
 
         _ = await frame(["new"], nil, nil)
-        _ = await frame(["create"], "handle=tony\n", nil)
+        _ = await frame(["create"], "input.handle=tony\n", "handle")
         XCTAssertEqual(try store.record()?.handle, "tony")
         let made = try XCTUnwrap(try store.key()?.words)
         try await check(made, true)
@@ -139,21 +138,21 @@ final class AccountMarkerTests: BuiltInCase {
         try await check(made, false)
         XCTAssertTrue(try store.record()?.isBackedUp == true)
         _ = await frame(["leave"], nil, nil)
-        _ = await frame(["sign_out"], nil, nil)
+        _ = await frame(["sign_out"], nil, "leave")
         XCTAssertNil(try store.key())
         _ = await frame(["own"], nil, nil)
-        _ = await frame(["phrase", "abandon abandon"], nil, nil)
-        _ = await frame(["sign_in"], "phrase=\(phrase)\n", nil)
+        _ = await frame(["phrase", "abandon abandon"], nil, "restore")
+        _ = await frame(["sign_in"], "input.phrase=\(phrase)\n", "restore")
         let words = try XCTUnwrap(try store.key()?.words)
         XCTAssertEqual(words.joined(separator: " "), phrase)
         try keepTheKey()
-        _ = await frame(["read"], nil, nil)
+        _ = await frame(["show"], nil, nil)
         try await check(words, true)
         try await check(words, false)
         XCTAssertTrue(try store.record()?.isBackedUp == true)
         await app.set(allows: false)
-        _ = await frame(["show"], nil, nil)
-        _ = await frame(["sign_out"], nil, nil)
+        _ = await frame(["reveal"], nil, "about")
+        _ = await frame(["sign_out"], nil, "leave")
         await app.set(allows: true)
         _ = await frame(["new"], nil, "publish:evil")
 

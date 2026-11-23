@@ -1,0 +1,52 @@
+import Foundation
+
+struct SettingCalls {
+    let places: AppPlaces
+    let caller: String?
+    let app: (any RunningApp)?
+    let secrets: SecretStore
+    var channel: String?
+
+    func get(_ key: String, of spot: String) -> CommandAPI.Work {
+        CommandAnswer.work { [places, secrets, channel] in
+            let config = places.config.read()
+            if let act = GlobalKey.Act(setting: key) {
+                return config.keys.first { $0.spot == spot && $0.act == act }.map { $0.trigger.text + "\n" } ?? ""
+            }
+            if let secret = try secrets.read()[spot]?[key] { return (channel == spot ? secret : FieldValues.hidden) + "\n" }
+            return config.setting(key, of: spot).map { $0 + "\n" } ?? ""
+        }
+    }
+
+    func set(_ key: String, of spot: String, to value: String?) -> CommandAPI.Work {
+        CommandAnswer.work { [places, caller, app, secrets] in
+            if try secrets.read()[spot]?[key] != nil || Self.isSecret(key, of: spot, in: places) {
+                throw SpotError.failed(1, "Openspot keeps `\(key)` of \(spot) as a secret, so only its own form changes it. Open the Settings of \(spot), and press Return on its row.")
+            }
+            let config = try places.config.change { $0.set(setting: key, of: spot, to: value) }
+            await app?.configChanged(key == ReservedSetting.icon ? .spots([spot]) : .value(spot: spot, caller: caller), to: config)
+            return ""
+        }
+    }
+
+    func list(_ form: PrintForm) -> CommandAPI.Work {
+        CommandAnswer.work { [places, secrets] in
+            let config = places.config.read()
+            let list = SpotList(folder: places.folder(config), config: config)
+            return try list.values(form, secrets: secrets.read())
+        }
+    }
+
+    private static func isSecret(_ key: String, of spot: String, in places: AppPlaces) -> Bool {
+        let script = try? places.readSpots().scan().scripts.first { $0.id == spot }
+        return script?.settings.contains { $0.id == key && $0.isSecret } == true
+    }
+
+    func change(_ key: String, of spot: String) -> CommandAPI.Work {
+        guard let app else { return CommandAnswer.notRunning("setting change \(key)") }
+        return CommandAnswer.work {
+            guard await app.changeSetting(key, of: spot) else { throw SpotError.failed(1, "Openspot cannot find \(spot). Turn it on in Spots, then try again.") }
+            return ""
+        }
+    }
+}

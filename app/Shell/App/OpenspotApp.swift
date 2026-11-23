@@ -6,23 +6,34 @@ import os
 @MainActor
 final class OpenspotApp: NSObject, NSApplicationDelegate {
     static func main() {
+        #if OPENSPOT_TOOLS
+        let launch = LaunchSettings(arguments: Array(CommandLine.arguments.dropFirst()), valued: LaunchSettings.valued.merging(SpotMotionProbe.valued) { $1 }, switches: LaunchSettings.switches.merging(SpotMotionProbe.switches) { $1 })
+        #else
+        let launch = LaunchSettings(arguments: Array(CommandLine.arguments.dropFirst()))
+        #endif
+        launch.apply(keepsCallData: true)
         let environment = ProcessInfo.processInfo.environment
-        if let call = CommandLineCall(arguments: Array(CommandLine.arguments.dropFirst()), spot: environment[CallWords.spotVariable], reason: environment[CallWords.reasonVariable]) {
-            SpotCommandLine.run(call)
+        if let call = CommandLineCall(arguments: launch.words, spot: environment[CallWords.spotVariable]) {
+            SpotCommandLine.run(call, words: launch.words)
         }
+        launch.apply(keepsCallData: false)
         let app = NSApplication.shared
+        #if OPENSPOT_TOOLS
+        SpotMotionProbe.takeAppearance()
+        #endif
         let delegate = OpenspotApp()
         app.delegate = delegate
         app.setActivationPolicy(.accessory)
         app.run()
     }
 
-    private static let dragSourceFocusDelay = 0.2
+    private static let dragSourceFocusDelay: TimeInterval = 0.2
     static var unlocks = UnlockPass()
 
     private(set) var item: OpenspotItem?
     private(set) lazy var model = SpotsModel(host: self)
     private(set) var panel: SpotsPanel?
+    let frame = NextFrame()
     private(set) var toast: ToastPanel?
     private(set) var previous = PreviousApp<NSRunningApplication>()
     private(set) lazy var keys = GlobalKeys(
@@ -40,6 +51,7 @@ final class OpenspotApp: NSObject, NSApplicationDelegate {
     private var update: AppUpdate?
     private var spotsWatch: SpotsWatch?
     private var showListener: NSObjectProtocol?
+    private var appearanceWatch: NSKeyValueObservation?
     private var commandSocket: CommandSocket?
     private let mac = SpotMac()
     private var isLaunched = false
@@ -48,12 +60,29 @@ final class OpenspotApp: NSObject, NSApplicationDelegate {
 
     func applicationDidFinishLaunching(_ notification: Notification) {
         toast = ToastPanel.make()
+        let theme = ThemeFolder.standard(environment: model.files.environment, builtIn: mac.mac.theme).read()
+        model.take(theme)
+        appearanceWatch = NSApp.observe(\.effectiveAppearance, options: [.initial, .new]) { [weak self] app, _ in
+            let appearance: Style.Variant = SpotTheme.isDark(app.effectiveAppearance) ? .dark : .light
+            MainActor.assumeIsolated { self?.model.runs.take(appearance: appearance) }
+        }
+        if !theme.faults.isEmpty { notify(theme.faults.joined(separator: "\n")) }
         let item = OpenspotItem(
-            model: model, toast: toast?.toast, target: self, action: #selector(togglePanel),
+            model: model, toast: toast?.toast, target: self, action: #selector(pressItem),
             onDragEnter: { [weak self] in self?.showPanelForDrag() }, onDrop: { [weak self] in self?.model.review($0) }
         )
         self.item = item
         toast?.item = item
+        toast?.front = { [weak self] in
+            guard let self else { return nil }
+            let app = NSWorkspace.shared.frontmostApplication
+            return ScreenPlace.toastWindow(
+                panel: model.isWarming ? nil : panel?.frame,
+                isPanelShown: model.isShown,
+                isAppInFront: app == .current,
+                front: { SpotFrontWindow.frame(of: app) }
+            )
+        }
         EditMenu.install()
         SpotKeyLayouts.start()
         panel = SpotsPanel.make(model: model)
@@ -125,6 +154,10 @@ final class OpenspotApp: NSObject, NSApplicationDelegate {
         model.quit()
     }
 
+    @objc private func pressItem() {
+        if !model.openAct() { togglePanel() }
+    }
+
     @objc func togglePanel() {
         guard isLaunched else {
             showsAtLaunch.toggle()
@@ -145,7 +178,6 @@ final class OpenspotApp: NSObject, NSApplicationDelegate {
         guard let panel else { return }
         let front = recordFront()
         panel.place(over: front)
-        NSApp.activate(ignoringOtherApps: true)
         panel.show()
     }
 
@@ -165,7 +197,6 @@ final class OpenspotApp: NSObject, NSApplicationDelegate {
         showPanel()
         DispatchQueue.main.asyncAfter(deadline: .now() + Self.dragSourceFocusDelay) { [weak self] in
             guard self?.model.holdsFocus == true else { return }
-            NSApp.activate(ignoringOtherApps: true)
             self?.panel?.makeKeyAndOrderFront(nil)
             self?.model.isSettlingDrop = false
         }

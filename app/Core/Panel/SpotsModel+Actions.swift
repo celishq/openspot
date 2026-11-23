@@ -1,5 +1,4 @@
 import Foundation
-import Observation
 
 extension SpotsModel {
     var target: Target? {
@@ -28,7 +27,7 @@ extension SpotsModel {
 
     func handleRowsPanelKey(_ key: ActionKey, _ panel: SheetParts) -> Bool {
         if let part = panel.selectedPart { return handleFocusKey(key, part) }
-        openSheet?.landRows()
+        if key == ActionKey(name: "up"), openItems?.isOnFirstLine != false { return openSheet?.leaveRows(upward: true) == true }
         guard key == ActionKey(name: "down"), openItems?.isOnLastLine != false else { return false }
         return openSheet?.leaveRows() == true
     }
@@ -47,7 +46,7 @@ extension SpotsModel {
             } else {
                 openSheet?.movePart(by: step)
             }
-        case ActionKey(name: "return"):
+        case ActionKey(name: "return"), ActionKey(name: " "):
             guard !part.isEditable else { return false }
             useSelected(part)
         default:
@@ -72,198 +71,12 @@ extension SpotsModel {
 
     public func setPart(_ part: SpotPart, to value: String) {
         openSheet?.set(part, to: value)
+        if part.closesOnSet, isShown { host.dismiss() }
     }
 
     public func pressPart(_ part: SpotPart) {
         openSheet?.press(part)
-        if part.closes, isShown { host.dismiss() }
-    }
-
-    public func toggleRecording(_ part: SpotPart) {
-        toggleRecording(id: part.id)
-    }
-
-    public func toggleRecording(id: String) {
-        if recording == id {
-            stopRecording()
-        } else {
-            recording = id
-            host.setEntryKey(on: false)
-        }
-    }
-
-    public func stopRecording() {
-        guard recording != nil else { return }
-        recording = nil
-        host.setEntryKey(on: true)
-    }
-
-    public func record(code: UInt32, modifiers: Shortcut.Modifiers) {
-        guard let shortcut = Shortcut(code: code, modifiers: modifiers) else {
-            host.notify("Hold cmd, ctrl or option with a letter, a digit, an arrow, space, return or tab.")
-            return
-        }
-        if takesShake, shortcut.isAppKey {
-            host.notify("`\(shortcut.label)` belongs to the apps on the Mac. Hold `⌥` or `⌃` with a key, or tap one key such as `⌥`.")
-            return
-        }
-        let part = openParts?.parts.first { $0.id == recording }
-        let item = openItems?.shown.first { $0.run == recording }
-        stopRecording()
-        if let part { setPart(part, to: shortcut.text) }
-        if let item, let entry = openEntry { give(shortcut.text, to: item, of: entry) }
-    }
-
-    private func give(_ key: String, to item: SpotItem, of entry: Entry) {
-        sheets[entry.id]?.set(item, to: key)
-        guard !entry.spot.holdsSettings, !item.staysOnPick else { return }
-        closingPick = (item, entry)
-        if isShown {
-            host.dismiss()
-        } else {
-            finishPick()
-        }
-    }
-
-    public var takesShake: Bool {
-        guard let recording else { return false }
-        return openItems?.shown.first { $0.run == recording }?.takesShake ?? false
-    }
-
-    public var recordingWords: String {
-        takesShake ? "Press keys or shake" : "Press keys"
-    }
-
-    public func recordShake() {
-        recordTrigger(.shake)
-    }
-
-    public func recordTap(_ modifier: Shortcut.Modifiers) {
-        recordTrigger(.tap(modifier))
-    }
-
-    private func recordTrigger(_ trigger: Trigger) {
-        guard takesShake, let recording, let entry = openEntry, let item = openItems?.shown.first(where: { $0.run == recording }) else { return }
-        stopRecording()
-        give(trigger.text, to: item, of: entry)
-    }
-
-    public func dragMenu(to point: CGPoint) {
-        if let row = menuRow(at: point) { self.point(at: .menuRow(row)) }
-    }
-
-    public func releaseMenu(at point: CGPoint) {
-        if let row = menuRow(at: point) { pressMenu(row: row) }
-    }
-
-    private func menuRow(at point: CGPoint) -> Int? {
-        guard let menu, let frame = menuFrame else { return nil }
-        return frame.row(at: point, of: menu)
-    }
-
-    public var menu: ActionMenu? {
-        get { menuSession?.phase == .closing ? nil : menuSession?.menu }
-        set {
-            guard let newValue, menu != nil else { return }
-            menuSession?.menu = newValue
-            placeSubmenu()
-        }
-    }
-
-    func placeSubmenu() {
-        var row: CGRect?
-        if let menu, let submenu = menu.submenu, let frame = menuFrame, menuSession?.phase != .closing {
-            row = frame.rowRect(submenu.parent, of: menu)
-        }
-        guard row != menuSession?.submenuRow else { return }
-        menuSession?.submenuRow = row
-        if let row, let menu, let frame = menuFrame {
-            host.showSubmenu(beside: row, of: frame.rect(of: menu))
-        } else {
-            host.hideSubmenu()
-        }
-    }
-
-    public func pointSubmenu(row: Int) {
-        menu?.pointSubmenu(at: row)
-    }
-
-    public func pressSubmenu(row: Int) {
-        menu?.pointSubmenu(at: row)
-        pressMenu()
-    }
-
-    public var menuTarget: Target? {
-        menu == nil ? nil : menuSession?.target
-    }
-
-    public func placeMenu(_ frame: ActionMenuFrame) {
-        guard menu != nil, frame != menuFrame else { return }
-        menuFrame = frame
-        if menuSession?.phase != .opening { fitMenuContent() }
-        placeSubmenu()
-    }
-
-    public func menuItemAtRest(_ item: CGRect) -> CGRect {
-        guard focus(ofCard: selected) == .focused, let size = placements.first(where: { $0.index == selected })?.size else { return item }
-        let width = SpotTokens.width(columns: size.columns) * MotionTokens.focusedScale
-        let height = SpotTokens.height(rows: size.rows) * MotionTokens.focusedScale
-        return CGRect(x: item.midX - width / 2, y: item.midY - height / 2, width: width, height: height)
-    }
-
-    private func fitMenuContent() {
-        let height = menuFrame.map { $0.rect.maxY + SpotTokens.halo + SpotTokens.hintBlock } ?? 0
-        if height != menuContentHeight { menuContentHeight = height }
-    }
-
-    public func searchMenu(_ text: String) {
-        menu?.search(text)
-    }
-
-    public func openMenu(at point: CGPoint) {
-        let origin = gridOrigin
-        guard openSheetID == nil, !isEditing, let id = card(at: CGPoint(x: point.x - origin.x, y: point.y - origin.y)), let index = visible.firstIndex(where: { $0.id == id }) else { return }
-        selected = index
-        if let target { openMenu(on: target) }
-    }
-
-    func openMenu(on target: Target) {
-        var answers = HookAnswers()
-        menuSession = actionMenu(on: target, answers: &answers, asks: true).map { ActionMenuSession(menu: $0, target: target, answers: answers) }
-        DispatchQueue.main.async { [weak self] in
-            guard let self, menuSession?.phase == .opening else { return }
-            change(.sheet(isOpen: true), {
-                self.menuSession?.phase = .open
-                self.fitMenuContent()
-            }, completion: { [weak self] in
-                if self?.menuSession?.phase == .open { self?.menuSession?.phase = .settled }
-            })
-        }
-    }
-
-    func actionMenu(on target: Target) -> ActionMenu? {
-        var none = HookAnswers()
-        return actionMenu(on: target, answers: &none, asks: false)
-    }
-
-    private func actionMenu(on target: Target, answers: inout HookAnswers, asks: Bool) -> ActionMenu? {
-        let isOpenList = openSheetID == target.entry.id
-        return ActionMenu(
-            spot: target.entry.spot,
-            item: target.item,
-            showsOpen: !isOpenList || target.item != nil,
-            extras: extras(on: target),
-            offered: offered(on: target, answers: &answers, asks: asks)
-        )
-    }
-
-    func extras(on target: Target) -> [CommandAction] {
-        guard openSheetID == nil, target.item == nil else { return [] }
-        let spot = target.entry.spot
-        let opens: [CommandAction] = spot.pressRuns && target.entry.kind.opensSheet ? [.open] : []
-        let history: [CommandAction] = spot.keepsHistory ? [.history] : []
-        let commands = spot.opensToKeys || spot.soleCommand != nil ? [] : spot.offers.map(CommandAction.command)
-        return opens + history + commands
+        if part.closes, isShown, openSheet?.spot.takesHandlers != true { host.dismiss() }
     }
 
     @discardableResult
@@ -276,164 +89,48 @@ extension SpotsModel {
         return true
     }
 
-    func offered(on target: Target, answers: inout HookAnswers, asks: Bool) -> [OfferedAction] {
-        guard openSheetID == nil, target.item == nil, let origin = origin(of: target.entry.spot) else { return [] }
-        let word = OfferedAction.originWords.first { $0.value == origin }?.key ?? ""
-        var shown: [OfferedAction] = []
-        let deadline = DispatchTime.now() + runs.frameWait
-        for spot in sheets.values.lazy.map(\.spot).filter({ !$0.offeredActions.isEmpty }).sorted(by: { $0.id < $1.id }) {
-            var hidden: [String] = []
-            for offer in spot.offeredActions {
-                let id = offer.action.id
-                func ask(_ hook: ActionHook) -> String? {
-                    answer(hook, of: offer, by: spot, on: target, origin: word, until: deadline, answers: &answers, asks: asks)
-                }
-                let shows = offer.fits(origin) && !hidden.contains { id.hasPrefix($0 + ".") } && (offer.hooks[.when] == nil || ask(.when)?.isEmpty == false)
-                if shows { shown.append(ask(.hotkey).map(offer.labeled) ?? offer) } else { hidden.append(id) }
-            }
-        }
-        return shown
-    }
-
-    private func answer(
-        _ hook: ActionHook, of offer: OfferedAction, by spot: Spot, on target: Target, origin: String, until deadline: DispatchTime, answers: inout HookAnswers, asks: Bool
-    ) -> String? {
-        guard let function = offer.hooks[hook] else { return nil }
-        if let text = answers.text(hook, of: offer, in: spot.id) { return text }
-        guard asks else { return nil }
-        let card = target.entry.id
-        let now = runs.answer(function, of: spot, card: card, origin: origin, until: deadline) { [weak self] text in
-            guard !text.isEmpty, let self, let session = menuSession, session.phase != .closing, session.target.entry.id == card, session.menu.parent == nil,
-                  session.answers.text(hook, of: offer, in: spot.id) == nil else { return }
-            var answers = session.answers
-            answers.keep(text, for: hook, of: offer, in: spot.id)
-            remake(session, answers: &answers)
-        }
-        if let now { answers.keep(now, for: hook, of: offer, in: spot.id) }
-        return now
-    }
-
-    private func remake(_ session: ActionMenuSession, answers: inout HookAnswers) {
-        guard var menu = actionMenu(on: session.target, answers: &answers, asks: false) else { return }
-        menu.search(session.menu.query)
-        if let action = session.menu.selectedRow?.action { menu.select(action) }
-        menuSession?.answers = answers
-        menuSession?.menu = menu
-    }
-
-    func origin(of spot: Spot) -> SpotOrigin? {
-        if spot.fault != nil { return .mine }
-        guard spot.host == nil else { return nil }
-        if spot.isBuiltIn { return .builtIn }
-        return folder.isCore(spot) ? .core : .mine
-    }
-
-    public func run(_ action: CommandAction, offeredBy owner: String, on target: Target) {
-        if action.after == .close, isShown { host.dismiss() }
-        sheets[owner]?.run(action, item: SpotItem(title: target.entry.state.title, run: target.entry.id))
-    }
-
-    public func followHint() {
-        guard !followsHint else { return }
-        followsHint = true
-        takeHint()
-    }
-
-    private func takeHint() {
-        hintTakes += 1
-        let words = HintWords(withObservationTracking { hint } onChange: { [weak self] in
-            Task { @MainActor in self?.takeHint() }
-        })
-        let motion: PanelMotion? = isEditing || hintIsForEdit || fieldDrop != nil ? .fade : nil
-        hintIsForEdit = isEditing
-        if openSheetID == nil, spotDrop == nil {
-            if words != gridHint { change(motion, { gridHint = words }) }
-        } else {
-            takeSheetHint(words, motion: motion)
-        }
-    }
-
-    func takeSheetHint(_ words: HintWords, motion: PanelMotion? = nil) {
-        if words != sheetHint { change(motion, { sheetHint = words }) }
-    }
-
-    var selectedGlyphTitle: String? {
-        guard openSheetID == nil, let entry = selectedEntry, entry.kind != .widget,
-              placements.first(where: { $0.index == selected })?.size == .small
-        else { return nil }
-        return entry.state.title
-    }
-
-    public func closeMenu() {
-        guard menu != nil else { return }
-        if menuSession?.submenuRow != nil {
-            menuSession?.submenuRow = nil
-            host.hideSubmenu()
-        }
-        change(.sheet(isOpen: false), { menuSession?.phase = .closing }, completion: { [weak self] in
-            if self?.menuSession?.phase == .closing { self?.menuSession = nil }
-        })
-    }
-
-    public func pressMenu(row: Int) {
-        guard let menu, menu.shown.indices.contains(row) else { return }
-        guard menu.shown[row].children.isEmpty else { return point(at: .menuRow(row)) }
-        _ = self.menu?.back()
-        self.menu?.move(by: row - menu.selected)
-        pressMenu()
-    }
-
-    func pressMenu() {
-        let isRunning = menu?.selectedRow.map { work(of: $0) != nil } ?? false
-        guard let row = menu?.press(isRunning: isRunning), let target = menuTarget else { return }
-        if !isRunning, let action = row.action, action.isForm {
-            openForm(action, on: target)
-            return
-        }
-        closeMenu()
-        if let action = row.action, let owner = row.owner {
-            run(action, offeredBy: owner, on: target)
-        } else if let action = row.action {
-            run(action, on: target)
-        } else if let item = target.item {
-            pick(item, of: target.entry)
-        } else {
-            run(target.entry)
-        }
-    }
-
     public func run(_ action: CommandAction, on target: Target, in place: SheetPlace = .panel) {
         if place.isDetached {
-            if action.isForm || action.confirm != nil, place == .window {
+            let asks = (try? target.entry.spot.action(action.callName))?.lacksInput == true || action.confirm != nil
+            if asks, place == .window {
                 host.notify("\(action.title) asks with a form or a second press, which a window does not show yet.")
-            } else if action.isForm || action.confirm != nil {
+            } else if asks {
                 press(target.entry.id)
+            } else if target.entry.spot.takesHandlers, let sheet = sheets[target.entry.id] {
+                Task { [weak self] in
+                    guard case .form = await sheet.answer(to: action, item: target.item), let self else { return }
+                    if place == .window { host.notify("\(action.title) asks with a form, which a window does not show yet.") } else { press(target.entry.id) }
+                }
             } else {
                 sheets[target.entry.id]?.run(action, item: target.item)
             }
         } else if action == .open || action == .history {
-            presentSheet(of: target.entry.id, moving: true)
-        } else if let command = CommandAction.command(of: action) {
+            presentSheet(of: target.entry.id)
+        } else if let typed = try? target.entry.spot.action(action.callName), typed.lacksInput {
+            show(.form(typed.itemForm(title: action.title)), of: action, on: target, prefill: "")
+        } else if case .command(let command) = action.kind {
             if isShown { host.dismiss() }
             sheets[target.entry.id]?.pressKey(command)
-        } else if action.isForm {
-            openForm(action, on: target)
         } else if action.after == .stay {
-            sheets[target.entry.id]?.run(action, item: target.item)
+            perform(action, on: target)
+        } else if target.entry.spot.takesHandlers {
+            perform(action, on: target, closes: true)
         } else if let item = target.item {
             pick(item, of: target.entry, action: action)
         } else {
             if isShown { host.dismiss() }
-            sheets[target.entry.id]?.run(action, item: nil)
+            perform(action, on: target)
         }
     }
 
-    public func openForm(_ action: CommandAction, on target: Target, prefill: String = "") {
-        guard place(ofSheet: target.entry.id) == .panel else {
-            return host.notify("\(action.title) asks with a form, which a window does not show yet.")
+    func perform(_ action: CommandAction, on target: Target, closes: Bool = false) {
+        guard target.entry.spot.takesHandlers, let sheet = sheets[target.entry.id] else {
+            sheets[target.entry.id]?.run(action, item: target.item)
+            return
         }
-        ask(action, on: target, prefill: prefill) { [sheets] in
-            try await sheets[target.entry.id]?.form(action, item: target.item).map(CallAnswer.form)
+        Task { [weak self] in
+            guard case .form(let form) = await sheet.answer(to: action, item: target.item, closes: closes), let self, isShown else { return }
+            show(.form(form), of: action, on: target, prefill: "")
         }
     }
 
@@ -454,7 +151,7 @@ extension SpotsModel {
         }
     }
 
-    private func show(_ answer: CallAnswer, of action: CommandAction, on target: Target, prefill: String) {
+    func show(_ answer: CallAnswer, of action: CommandAction, on target: Target, prefill: String) {
         let id = target.entry.id
         switch answer {
         case .form(let form):
@@ -476,7 +173,15 @@ extension SpotsModel {
         if let field = entry.spot.settings.first(where: { $0.id == key && $0.isSecret }) {
             pushFirst(id, moving: true)
             let form = ItemForm(title: field.title, fields: [ItemForm.Field(name: key, label: field.title, type: .secret)])
-            let action = CommandAction(id: Self.secretPrefix + key, title: "Change \(field.title)", scope: .spot, after: .stay)
+            let action = CommandAction.secret(key, title: field.title)
+            self.form = FormSession(draft: FormDraft(form: form), entry: entry, action: action, item: nil, openedSheet: true)
+            return true
+        }
+        if let field = entry.spot.settings.first(where: { $0.id == key && !$0.options.isEmpty }) {
+            pushFirst(id, moving: true)
+            let options = field.options.map { SpotPart.Option(id: $0, title: $0) }
+            let form = ItemForm(title: field.title, fields: [ItemForm.Field(name: key, label: field.title, type: .choice, value: runs.settings[id]?[key], options: options)])
+            let action = CommandAction.option(key, title: field.title)
             self.form = FormSession(draft: FormDraft(form: form), entry: entry, action: action, item: nil, openedSheet: true)
             return true
         }
@@ -512,10 +217,19 @@ extension SpotsModel {
         send(form, form.draft)
     }
 
-    private static let secretPrefix = "openspot.secret."
+    private func keepOption(_ key: String, _ form: FormSession, _ draft: FormDraft) {
+        let spot = form.entry.id
+        do {
+            let next = try files.config.change { $0.set(setting: key, of: spot, to: draft.values[key]) }
+            self.form = nil
+            closeSheet(moving: true)
+            configChanged(.value(spot: spot, caller: nil), to: next)
+        } catch {
+            host.notify("\(form.action.title) failed. \(Self.reason(error))")
+        }
+    }
 
-    private func keepSecret(_ form: FormSession, _ draft: FormDraft) {
-        let key = String(form.action.id.dropFirst(Self.secretPrefix.count))
+    private func keepSecret(_ key: String, _ form: FormSession, _ draft: FormDraft) {
         let spot = form.entry.id
         let value = draft.values[key] ?? ""
         if !value.isEmpty, value.count < SecretStore.shortest {
@@ -544,7 +258,8 @@ extension SpotsModel {
     }
 
     func send(_ form: FormSession, _ draft: FormDraft) {
-        if form.action.id.hasPrefix(Self.secretPrefix) { return keepSecret(form, draft) }
+        if case .secret(let key) = form.action.kind { return keepSecret(key, form, draft) }
+        if case .option(let key) = form.action.kind { return keepOption(key, form, draft) }
         Task {
             do {
                 switch try await sheets[form.entry.id]?.submit(form.action, item: form.item, draft: draft) {

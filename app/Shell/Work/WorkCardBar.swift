@@ -5,8 +5,6 @@ struct WorkCardBar: View {
     let fill: WorkFill
     let width: CGFloat
 
-    private static let height: CGFloat = 4
-
     var body: some View {
         TimelineView(.periodic(from: .now, by: MotionTokens.workTick)) { context in
             let value = fill.value(at: context.date)
@@ -19,7 +17,7 @@ struct WorkCardBar: View {
                         .animation(SpotMotion.creep, value: value)
                 }
                 .clipShape(Capsule())
-                .frame(width: width, height: Self.height)
+                .frame(width: width, height: SpotTokens.workBarHeight)
         }
     }
 }

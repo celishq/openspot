@@ -9,13 +9,13 @@ final class SearchQueryTests: XCTestCase {
     func testASearchSkipsQuicklyTheRowsThatLackItsLetters() {
         let rows = (0..<6000).map { SpotItem(title: "Setting \($0)", subtitle: "System Settings › Pane \($0 % 50)", run: "\($0)", keywords: ["volume", "display", "sound", "power", "network"]) }
         let list = ItemList(items: rows)
-        let started = Date()
+        let started = clock_gettime_nsec_np(CLOCK_THREAD_CPUTIME_ID)
 
         for text in ["zebra", "quiz", "jazz", "fizz", "buzz", "kiwi", "fjord", "zx", "jinx", "quay"] {
             XCTAssertEqual(SearchQuery(text: text, layouts: []).matching(in: [list]).count, 0)
         }
 
-        XCTAssertLessThan(Date().timeIntervalSince(started), 0.5)
+        XCTAssertLessThan(Double(clock_gettime_nsec_np(CLOCK_THREAD_CPUTIME_ID) - started) / 1_000_000_000, 0.5)
     }
 
     private func titles(_ text: String, in titles: [String], recent: [String] = []) -> [String] {
@@ -45,6 +45,14 @@ final class SearchQueryTests: XCTestCase {
 
     func testAMatchMayCrossWords() {
         XCTAssertEqual(titles("studio co", in: ["Visual Studio Code", "Xcode"]), ["Visual Studio Code"])
+    }
+
+    func testWordsTypedWithoutSpacesFindTheTitle() {
+        XCTAssertEqual(titles("appstore", in: ["Notes", "App Store"]), ["App Store"])
+    }
+
+    func testAWordStartBeatsWordsTypedWithoutSpaces() {
+        XCTAssertEqual(titles("fontbook", in: ["Font Book", "Pro Fontbook"]), ["Pro Fontbook", "Font Book"])
     }
 
     func testInitialsMatchEachWord() {

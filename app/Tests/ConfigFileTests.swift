@@ -67,7 +67,7 @@ final class ConfigFileTests: XCTestCase {
         let config = Config(text: "panel-key = \"k\"\n")
 
         XCTAssertNil(config.panelKey)
-        XCTAssertEqual(config.faults, ["config.toml: panel-key cannot use k. Hold cmd, ctrl or option with a letter, a digit, an arrow, space, return or tab."])
+        XCTAssertEqual(config.faults, ["config.toml: panel-key cannot use k. Hold cmd, ctrl or option with a letter, a digit, a sign, an arrow, space, return or tab."])
     }
 
     func testAKeyThatIsNotTextIsAFault() {
@@ -76,10 +76,10 @@ final class ConfigFileTests: XCTestCase {
     }
 
     func testAnUnknownKeyIsAFaultAndTheOthersStillLoad() {
-        let config = Config(text: "theme = \"dark\"\npanel-key = \"cmd+k\"\n")
+        let config = Config(text: "look = \"dark\"\npanel-key = \"cmd+k\"\n")
 
         XCTAssertEqual(config.panelKey, Shortcut(text: "cmd+k"))
-        XCTAssertEqual(config.faults, ["config.toml: theme is not a setting."])
+        XCTAssertEqual(config.faults, ["config.toml: look is not a setting."])
     }
 
     func testAFileThatCannotBeReadGivesNoKeyAndItsLine() {
@@ -186,6 +186,16 @@ final class ConfigFileTests: XCTestCase {
         XCTAssertEqual(file.read().faults, ["config.toml: themes is not a setting."])
     }
 
+    func testASectionSurvivesASaveAndIsNotASetting() throws {
+        try write("[look]\nink = \"#FFFFFF\"\n")
+
+        try file.turn("x", on: true)
+
+        let text = try String(contentsOf: file.url, encoding: .utf8)
+        XCTAssertTrue(text.contains("[look]\nink = \"#FFFFFF\"\n"), text)
+        XCTAssertEqual(file.read().faults, ["config.toml: look is not a setting."])
+    }
+
     func testAKeyWithAQuoteInItsSpotAndCommandSurvivesASave() throws {
         let key = GlobalKey(spot: "a\"b", command: "c\\d\"", shortcut: try XCTUnwrap(Shortcut(text: "ctrl+left")))
 
@@ -261,7 +271,8 @@ final class ConfigFileTests: XCTestCase {
         XCTAssertEqual(Config(text: "[[settings]]\nspot = \"a\"\nkey = \"k\"\nvalue = \"v\"\n").sections(differingFrom: config), [.settings])
         XCTAssertEqual(Config(text: "careful = true\n").sections(differingFrom: config), [.careful])
         XCTAssertEqual(Config(text: "left_panel = true\n").sections(differingFrom: config), [.panels])
-        XCTAssertEqual(Config(text: "theme = \"dark\"\n").sections(differingFrom: config), [.rest])
+        XCTAssertEqual(Config(text: "look = \"dark\"\n").sections(differingFrom: config), [.rest])
+        XCTAssertEqual(Config(text: "theme = \"Dusk\"\n").sections(differingFrom: config), [])
         XCTAssertEqual(Config(text: "[[keys]]\nspot = \"a\"\n").sections(differingFrom: config), [.rest])
         XCTAssertEqual(Config(text: "[[themes]]\nname = \"dark\"\n").sections(differingFrom: Config(text: "[[themes]]\nname = \"light\"\n")), [.rest])
         XCTAssertEqual(config.sections(differingFrom: config), [])

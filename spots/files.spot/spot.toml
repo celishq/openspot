@@ -1,0 +1,7 @@
+icon = "doc.text.magnifyingglass"
+detail = "Find a file"
+uses = ["clipboard"]
+
+[on]
+"sheet.open" = true
+"sheet.text" = true

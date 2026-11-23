@@ -6,39 +6,55 @@ final class InlineScript: @unchecked Sendable {
         var answer = CommandAnswer()
     }
 
+    private final class Held: @unchecked Sendable {
+        let value: JSValue?
+
+        init(_ value: JSValue?) {
+            self.value = value
+        }
+    }
+
+    private struct Waiting {
+        let call: InlineCall
+        let caller: SpotCaller?
+        var spent: TimeInterval = 0
+        var asks = 0
+    }
+
     private typealias Termination = @convention(c) (OpaquePointer?, UnsafeMutableRawPointer?) -> Bool
     private typealias TimeLimit = @convention(c) (OpaquePointer?, Double, Termination?, UnsafeMutableRawPointer?) -> Void
 
     private static let timeLimit: TimeLimit? = dlsym(UnsafeMutableRawPointer(bitPattern: -2), "JSContextGroupSetExecutionTimeLimit")
         .map { unsafeBitCast($0, to: TimeLimit.self) }
 
-    private static let frame = """
-    openspot.frame = function frame(value) {
-      if (Array.isArray(value)) return value.map(frame).join("\\n")
-      const write = (one) => String(one).replace(/\\\\/g, "\\\\\\\\").replace(/\\n/g, "\\\\n")
-      let text = ""
-      for (const [key, each] of Object.entries(value || {})) {
-        if (each === undefined || each === null) continue
-        for (const one of Array.isArray(each) ? each : [each]) text += `${key}=${write(one)}\\n`
-      }
-      return text
+    private static let overTime: Termination = { _, script in
+        guard let script else { return true }
+        Unmanaged<InlineScript>.fromOpaque(script).takeUnretainedValue().isOverTime = true
+        return true
     }
-    """
+
+    private static let module = try? NSRegularExpression(pattern: #"(?m)^([ \t]*)export[ \t]+default[ \t]+"#)
 
     private let url: URL
     private let name: String
+    private let spot: Spot
+    private let bound: [String: Spot]
+    private let shapes: [String: CallShape]
+    private lazy var commands = UseCommand.spec(for: spot.uses)
     private let dataName: String?
     private let base: [String: String]
-    private let environment: [String: String]
     private let api: CommandAPI?
-    private let tokens: CallerTokens?
-    private let token: String?
-    private let careful: CarefulMode?
+    private let callers: SpotCallers?
+    private let caller: SpotCaller?
+    private let sandbox: Sandbox?
     private let limit: TimeInterval
     private let idle: TimeInterval
     private let spent: @Sendable (TimeInterval) -> Void
     private let condition = NSCondition()
     private var calls: [InlineCall] = []
+    private var settles: [() -> Void] = []
+    private var waiting: [Int: Waiting] = [:]
+    private var nextToken = 1
     private var isEnded = false
     private var hasThread = false
     private var isOverTime = false
@@ -47,27 +63,26 @@ final class InlineScript: @unchecked Sendable {
     private var deadline = DispatchTime.now()
     private var context: JSContext?
     private var thrown: JSValue?
-    private var variables: [String: String] = [:]
 
-    init(spot: Spot, api: CommandAPI?, tokens: CallerTokens? = nil, careful: Set<SpotUse>? = nil, limit: TimeInterval = 10, idle: TimeInterval = 30, base: [String: String] = ProcessInfo.processInfo.environment, spent: @escaping @Sendable (TimeInterval) -> Void = { _ in }) {
-        self.careful = careful.map(CarefulMode.init)
+    init(spot: Spot, api: CommandAPI?, callers: SpotCallers? = nil, careful: Set<SpotUse>? = nil, limit: TimeInterval = 10, idle: TimeInterval = 30, bound: [String: Spot] = [:], base: [String: String] = ProcessInfo.processInfo.environment, spent: @escaping @Sendable (TimeInterval) -> Void = { _ in }) {
+        self.sandbox = careful.map(Sandbox.init)
         url = spot.url
         name = spot.id
+        self.spot = spot
+        self.bound = bound
+        shapes = Dictionary(CallShape.all(of: spot, bound: bound).map { ($0.name, $0) }) { first, _ in first }
         dataName = spot.dataName
         self.base = base
         self.api = api
         self.limit = limit
         self.idle = idle
         self.spent = spent
-        self.tokens = tokens
-        token = tokens?.issue(for: spot)
-        environment = ScriptProcess.environment(base: base, app: Bundle.main.executablePath ?? "", dataName: spot.dataName)
-            .merging(["OPENSPOT_ID": spot.id]) { _, new in new }
-            .merging(token.map { [CallerTokens.variable: $0] } ?? [:]) { _, new in new }
+        self.callers = callers
+        caller = callers?.issue(for: spot)
     }
 
     deinit {
-        if let token { tokens?.release(token) }
+        if let caller { callers?.release(caller) }
     }
 
     var isRunning: Bool {
@@ -104,17 +119,36 @@ final class InlineScript: @unchecked Sendable {
     private func follow() {
         while true {
             condition.lock()
-            let idleEnd = Date().addingTimeInterval(idle)
-            while calls.isEmpty, !isEnded, condition.wait(until: idleEnd) {}
-            if isEnded || calls.isEmpty {
-                let dropped = calls
+            var idleEnd = Date().addingTimeInterval(idle)
+            while calls.isEmpty, settles.isEmpty, !isEnded {
+                if condition.wait(until: idleEnd) { continue }
+                for (token, held) in waiting where held.call.isStopped || held.call.isDone || held.asks == 0 {
+                    waiting[token] = nil
+                    if let caller = held.caller { callers?.release(caller) }
+                    held.call.finish(.failed(SpotError.failed(1, "\(held.call.arguments.first ?? "A handler") of \(spot.name) waits for a promise that nothing settles, so Openspot ended it.")))
+                }
+                if waiting.isEmpty { break }
+                idleEnd = Date().addingTimeInterval(idle)
+            }
+            if isEnded || calls.isEmpty && settles.isEmpty {
+                let dropped = calls + waiting.values.map(\.call)
+                let held = waiting.values.compactMap(\.caller)
                 let outcome: InlineCall.Outcome = isOverdue ? .failed(SpotError.timedOut) : .dropped
                 calls = []
+                settles = []
+                waiting = [:]
                 context = nil
                 hasThread = false
                 condition.unlock()
+                held.forEach { callers?.release($0) }
                 dropped.forEach { $0.finish(outcome) }
                 return
+            }
+            if !settles.isEmpty {
+                let settle = settles.removeFirst()
+                condition.unlock()
+                autoreleasepool { settle() }
+                continue
             }
             let call = calls.removeFirst()
             condition.unlock()
@@ -127,13 +161,55 @@ final class InlineScript: @unchecked Sendable {
             condition.withLock { running = call }
             autoreleasepool {
                 do {
-                    call.finish(.frame(try run(call)))
+                    if let frame = try run(call) { call.finish(.frame(frame)) }
                 } catch {
                     call.finish(.failed(error))
+                    if context == nil { waiting.keys.forEach { finish($0, .failed(SpotError.timedOut)) } }
                 }
             }
             condition.withLock { running = nil }
             spent(Self.threadTime() - start)
+        }
+    }
+
+    private func arm(_ seconds: TimeInterval) {
+        guard let context else { return }
+        Self.timeLimit?(JSContextGetGroup(context.jsGlobalContextRef), max(seconds, 0.001), Self.overTime, Unmanaged.passUnretained(self).toOpaque())
+    }
+
+    private func slice(_ token: Int, _ work: () -> Void) {
+        guard let held = waiting[token] else { return }
+        arm(limit - held.spent)
+        let start = Self.threadTime()
+        work()
+        let used = Self.threadTime() - start
+        waiting[token]?.spent += used
+        do {
+            try rethrow()
+        } catch SpotError.timedOut {
+            for other in waiting.keys { finish(other, .failed(SpotError.timedOut)) }
+            return
+        } catch {
+            return finish(token, .failed(error))
+        }
+        if let held = waiting[token], held.spent > limit { finish(token, .failed(SpotError.timedOut)) }
+    }
+
+    private func finish(_ token: Int, _ outcome: InlineCall.Outcome) {
+        guard let held = waiting.removeValue(forKey: token) else { return }
+        if let caller = held.caller { callers?.release(caller) }
+        held.call.finish(outcome)
+    }
+
+    private func settle(_ token: Int, _ work: @escaping () -> Void) {
+        condition.withLock {
+            guard !isEnded else { return }
+            settles.append { [self] in
+                let start = Self.threadTime()
+                slice(token, work)
+                spent(Self.threadTime() - start)
+            }
+            condition.signal()
         }
     }
 
@@ -158,49 +234,87 @@ final class InlineScript: @unchecked Sendable {
         return user + Double(info.system_time.seconds) + Double(info.system_time.microseconds) / 1_000_000
     }
 
-    private func run(_ call: InlineCall) throws -> String {
+    private func run(_ call: InlineCall) throws -> String? {
         let context = try loaded()
-        let function = context.objectForKeyedSubscript(call.function ?? "main")
-        guard let function, let type = context.objectForKeyedSubscript("Function"), function.isInstance(of: type) else { return "" }
-        if call.function != nil {
-            let result = function.call(withArguments: call.arguments)
-            try rethrow()
-            if let result, result.isString { return result.toString() ?? "" }
-            return result?.toBool() == true ? "true" : ""
+        guard let name = call.arguments.first, let handlers = handlers(in: context), Self.isFunction(handlers.objectForKeyedSubscript(name), in: context) else { return "" }
+        handle(call, name: name, handlers: handlers, in: context)
+        return nil
+    }
+
+    private func handlers(in context: JSContext) -> JSValue? {
+        guard let handlers = context.objectForKeyedSubscript("openspot")?.objectForKeyedSubscript("handlers"), handlers.isObject else { return nil }
+        return handlers
+    }
+
+    private static func isFunction(_ value: JSValue?, in context: JSContext) -> Bool {
+        guard let value, let type = context.objectForKeyedSubscript("Function") else { return false }
+        return value.isInstance(of: type)
+    }
+
+    private func handle(_ call: InlineCall, name: String, handlers: JSValue, in context: JSContext) {
+        let fields = TextBlock.blocks(in: call.input ?? "").flatMap(\.fields)
+        let input = Self.values(of: fields, prefix: "input.", types: shapes[name]?.inputs ?? [])
+        let settings = Self.values(of: fields, prefix: "setting.", types: spot.settings.map(\.parameter))
+        let token = nextToken
+        nextToken += 1
+        let caller = callers?.issue(for: spot, reason: call.reason)
+        caller?.call = call.opened
+        waiting[token] = Waiting(call: call, caller: caller)
+        let done: @convention(block) (JSValue, JSValue) -> Void = { [weak self] isDone, text in
+            let text = text.toString() ?? ""
+            self?.finish(token, isDone.toBool() ? .frame(text) : .failed(SpotError.failed(1, text)))
         }
-        let env = environment.filter { ["OPENSPOT_ID", CallerTokens.variable].contains($0.key) }.merging(call.variables) { _, new in new }
-        variables = call.variables
-        if let token { tokens?.setReason(call.variables[ReadReason.variable], of: token) }
-        defer {
-            variables = [:]
-            if let token { tokens?.setReason(nil, of: token) }
+        let openspot = context.objectForKeyedSubscript("openspot")
+        slice(token) {
+            let env = openspot?.invokeMethod("env", withArguments: [token, commands, spot.bindings.map(\.name), settings])
+            openspot?.invokeMethod("handle", withArguments: [handlers, name, input, env as Any, JSValue(object: done, in: context) as Any])
         }
-        let result = function.call(withArguments: [call.arguments, env, call.input ?? ""])
-        try rethrow()
-        guard let result, !result.isUndefined, !result.isNull else { return "" }
-        return result.toString() ?? ""
+    }
+
+    static func values(of fields: [TextBlock.Field], prefix: String, types: [Manifest.Parameter]) -> [String: Any] {
+        var grouped: [String: [String]] = [:]
+        for field in fields where field.key.hasPrefix(prefix) {
+            grouped[String(field.key.dropFirst(prefix.count)), default: []].append(field.value)
+        }
+        var values: [String: Any] = [:]
+        for (name, texts) in grouped {
+            guard let type = types.first(where: { $0.name == name })?.type else {
+                values[name] = texts.count == 1 ? texts[0] : texts
+                continue
+            }
+            let typed = texts.map(type.script)
+            values[name] = type.isList ? typed : typed.last
+        }
+        for type in types where type.type.isList && values[type.name] == nil && type.isRequired {
+            values[type.name] = [Any]()
+        }
+        return values
     }
 
     private func loaded() throws -> JSContext {
         if let context { return context }
         guard let context = JSContext() else { throw SpotError.failed(1, "Openspot cannot start JavaScript.") }
         context.exceptionHandler = { [weak self] _, value in self?.thrown = value }
-        Self.timeLimit?(JSContextGetGroup(context.jsGlobalContextRef), limit, { _, script in
-            guard let script else { return true }
-            Unmanaged<InlineScript>.fromOpaque(script).takeUnretainedValue().isOverTime = true
-            return true
-        }, Unmanaged.passUnretained(self).toOpaque())
+        Self.timeLimit?(JSContextGetGroup(context.jsGlobalContextRef), limit, Self.overTime, Unmanaged.passUnretained(self).toOpaque())
         let ask: @convention(block) (JSValue, JSValue) -> [String: Any] = { [weak self] argv, input in
             let arguments = (argv.toArray() ?? []).map { "\($0)" }
             let text = input.isUndefined || input.isNull ? nil : input.toString()
             let answer = self?.ask(arguments, input: text) ?? CommandAnswer(code: 1)
             return ["stdout": answer.output, "code": answer.code]
         }
+        let asked: @convention(block) (JSValue, JSValue) -> JSValue? = { [weak self] token, argv in
+            let arguments = (argv.toArray() ?? []).map { "\($0)" }
+            return self?.asked(arguments, token: Int(token.toInt32()))
+        }
         let openspot = JSValue(newObjectIn: context)
         openspot?.setObject(ask, forKeyedSubscript: "call" as NSString)
+        openspot?.setObject(asked, forKeyedSubscript: "ask" as NSString)
         context.setObject(openspot, forKeyedSubscript: "openspot" as NSString)
-        context.evaluateScript(Self.frame)
-        let text = try String(contentsOf: url, encoding: .utf8)
+        guard let library = Bundle(for: InlineScript.self).url(forResource: "InlineScript", withExtension: "js"),
+              let shared = try? String(contentsOf: library, encoding: .utf8) else { throw SpotError.failed(1, "Openspot cannot find its JavaScript library.") }
+        context.evaluateScript(shared, withSourceURL: library)
+        var text = try String(contentsOf: url, encoding: .utf8)
+        text = Self.module?.stringByReplacingMatches(in: text, range: NSRange(text.startIndex..., in: text), withTemplate: "$1openspot.handlers = ") ?? text
         context.evaluateScript(text, withSourceURL: url)
         try rethrow()
         self.context = context
@@ -222,17 +336,51 @@ final class InlineScript: @unchecked Sendable {
 
     private func ask(_ arguments: [String], input: String?) -> CommandAnswer {
         guard !condition.withLock({ isOverdue }) else { return Self.late }
-        let environment = environment.merging(variables) { _, new in new }
-        guard let call = CommandLineCall(arguments: arguments, spot: environment[CallWords.spotVariable], reason: environment[CallWords.reasonVariable]) else {
-            return CommandAnswer(errors: "openspot needs a call, such as calc solve 2+2.\n", code: 2)
+        return answer(work(arguments, input: input, caller: caller, reason: nil, variables: [:]))
+    }
+
+    private func asked(_ arguments: [String], token: Int) -> JSValue? {
+        guard let context = JSContext.current() else { return nil }
+        guard let held = waiting[token] else { return JSValue(newPromiseRejectedWithReason: "The call of \(spot.name) has ended.", in: context) }
+        waiting[token]?.asks += 1
+        let work = work(arguments, input: nil, caller: held.caller, reason: held.call.reason, variables: held.call.variables)
+        var resolve: JSValue?
+        let promise = JSValue(newPromiseIn: context) { found, _ in resolve = found }
+        let settled = Held(resolve)
+        Task.detached(priority: .userInitiated) { [weak self] in
+            let answer = await work()
+            self?.settle(token) { [weak self] in
+                guard let self else { return }
+                waiting[token]?.asks -= 1
+                settled.value?.call(withArguments: [answered(arguments, answer)])
+            }
         }
-        let request = CommandRequest(arguments: arguments, folder: environment["PWD"] ?? FileManager.default.currentDirectoryPath, token: token, isBound: true)
+        return promise
+    }
+
+    private func work(_ arguments: [String], input: String?, caller: SpotCaller?, reason: String?, variables: [String: String]) -> CommandAPI.Work {
+        let own = [CallWords.spotVariable: name].merging(variables) { _, new in new }
+        guard let call = CommandLineCall(arguments: arguments, spot: own[CallWords.spotVariable], reason: reason) else {
+            return { CommandAnswer(errors: "openspot needs a call, such as calc solve 2+2.\n", code: 2) }
+        }
+        let request = CommandRequest(arguments: arguments, folder: base["PWD"] ?? FileManager.default.currentDirectoryPath, caller: caller)
         if let api, api.work(for: call, request: request, input: { input ?? "" }) != nil,
            let work = api.work(for: api.admit(call, request: request), request: request, input: { input ?? "" }) {
-            return answer { await work() }
+            return work
         }
-        let child = ScriptProcess(url: URL(fileURLWithPath: "/usr/bin/env"), arguments: ["openspot"] + arguments, mode: .once(input: input), dataName: dataName, variables: self.environment.filter { ["OPENSPOT_ID", CallerTokens.variable].contains($0.key) }.merging(variables) { _, new in new }, careful: careful?.uses, base: base)
-        return answer { await Self.answer(of: child) }
+        let child = ScriptProcess(url: URL(fileURLWithPath: "/usr/bin/env"), arguments: ["openspot"] + arguments, mode: .once(input: input), dataName: dataName, variables: own, careful: sandbox?.uses, base: base)
+        child.channel = caller.flatMap { callers?.channel(for: $0) }
+        return { await Self.answer(of: child) }
+    }
+
+    private func answered(_ arguments: [String], _ answer: CommandAnswer) -> [String: Any] {
+        var result: [String: Any] = ["code": answer.code, "output": answer.output, "errors": answer.errors.hasSuffix("\n") ? String(answer.errors.dropLast()) : answer.errors]
+        if arguments.first == RunCall.noun.name, arguments.count > 1, answer.code == 0 {
+            let action = RunCall.target(arguments[1]).flatMap { target in try? bound[target.binding]?.action(target.action) }
+            let fields = TextBlock.blocks(in: answer.output).flatMap(\.fields).filter { $0.key.hasPrefix(RootKey.outputPrefix) }
+            result["values"] = Self.values(of: fields, prefix: RootKey.outputPrefix, types: action?.outputs ?? [])
+        }
+        return result
     }
 
     private static var late: CommandAnswer {
@@ -260,7 +408,7 @@ final class InlineScript: @unchecked Sendable {
             for try await frame in child.start() { frames.append(frame) }
             return CommandAnswer(output: frames.joined(separator: SheetFrames.mark + "\n"), code: 0)
         } catch SpotError.failed(let code, _), SpotError.failedWithFix(let code, _, _) {
-            return CommandAnswer(output: (frames + (child.failedFrame.map { [$0] } ?? [])).joined(separator: SheetFrames.mark + "\n"), code: code)
+            return CommandAnswer(output: (frames + (child.failedFrame.map { [$0] } ?? [])).joined(separator: SheetFrames.mark + "\n"), errors: child.errors, code: code)
         } catch let error as SpotError {
             return CommandAnswer(errors: error.reason + "\n", code: 1)
         } catch {

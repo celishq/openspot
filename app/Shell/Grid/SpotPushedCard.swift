@@ -19,7 +19,7 @@ struct SpotPushedCard: ViewModifier, @preconcurrency Animatable {
 
     func body(content: Content) -> some View {
         let moved = CGSize(width: offset.width - base.width, height: offset.height - base.height)
-        let faded = push.flatMap { $0.fade(of: placement, movedBy: moved) } ?? share
+        let faded = push.flatMap { $0.fade(of: placement, movedBy: moved) } ?? push?.fade(of: placement, share: share) ?? share
         return content
             .scaleEffect(1 - (1 - MotionTokens.pushedScale) * faded, anchor: anchor)
             .opacity(1 - (1 - MotionTokens.hiddenOpacity) * faded)

@@ -17,8 +17,6 @@ struct SpotCardView: View, @MainActor Equatable {
             && lhs.model === rhs.model
     }
 
-    private static let lineReach: CGFloat = 6
-
     private func shape(of mark: CardMark) -> SpotRoundShape {
         SpotRoundShape(SurfaceEdge(card: size, mark: mark))
     }
@@ -27,41 +25,34 @@ struct SpotCardView: View, @MainActor Equatable {
         ZStack(alignment: .topLeading) { content }
             .environment(\.spotIsOnSolid, isFilled)
             .environment(\.spotViewPlace, SpotViewPlace(model: model))
-            .padding(drawnView != nil && !isDrawn ? 0 : SpotTokens.cardPadding(for: size, isWidget: entry.kind == .widget || isDrawn))
+            .environment(\.spotViewDates, entry.spot.viewDates)
+            .padding(SpotTokens.cardPadding(for: size, isDrawn: isDrawn))
             .frame(width: SpotTokens.width(columns: size.columns), height: SpotTokens.height(rows: size.rows), alignment: .topLeading)
             .background(shape(of: .dropFill).fill(SpotTheme.accent).opacity(dropFill))
             .modifier(CardPress(shape: shape(of: .press), isFilled: isFilled, showsPress: showsPress))
-            .modifier(SpotPointerMove { model.point(at: .card(entry.id)) })
             .overlay(Color.clear.modifier(CardRing(model: model, index: index, shape: shape(of: .ring))).allowsHitTesting(false))
-            .overlay(alignment: .topTrailing) { FailureMark(entry: entry, size: size) }
+            .overlay(alignment: .topTrailing) { FailureMark(model: model, entry: entry, size: size) }
             .modifier(SpotGlass(shape: shape(of: .glass), isSolid: isFilled))
             .contentShape(shape(of: .hit))
             .onTapGesture { if let onTap { onTap() } else { model.tap(entry.id, opening: NSEvent.modifierFlags.contains(.command)) } }
             .animation(SpotMotion.fade(isShown: isFilled), value: isFilled)
             .scaleEffect(showsPress ? MotionTokens.pressedScale : 1)
             .animation(SpotMotion.press, value: showsPress)
+            .modifier(SpotShake(count: { [model, entry] in model.refusals(of: entry.item?.run, in: entry.spot.id) }))
     }
 
     @ViewBuilder
     private var content: some View {
-        if drawsOwnCard, let layout = entry.state.face.layout(for: size) {
-            SpotCardDrawing(layout: layout, face: entry.state.face, card: size, view: { room in
-                ownView.map { SpotCustomView(source: $0, values: entry.state.values, card: size, room: room, date: entry.spot.viewDate, views: SpotViews.shared) }
-            }) { model.setCardPart(entry.id, $0, to: $1) }
-        } else if let view = drawnView {
-            SpotCustomView(source: view, values: entry.state.values, card: size, date: entry.spot.viewDate, views: SpotViews.shared)
+        if drawsOwnCard, entry.state.face.draws(on: size) {
+            CardTreeView(face: entry.state.face, size: size, isPressed: showsPress, model: model, index: index, spot: entry.id)
         } else {
-            words.background {
-                if let ownView { SpotCustomView(source: ownView, values: entry.state.values, card: size, date: entry.spot.viewDate, views: SpotViews.shared) }
-            }
+            words
         }
     }
 
     @ViewBuilder
     private var words: some View {
-        if let layout = entry.spot.layout {
-            SpotWidgetView(layout: layout, places: entry.spot.places, reading: reading, card: size)
-        } else if size == .small {
+        if size == .small {
             glyph.frame(maxWidth: .infinity, maxHeight: .infinity)
         } else if size.rows > 1 {
             tile
@@ -70,30 +61,12 @@ struct SpotCardView: View, @MainActor Equatable {
         }
     }
 
-    private var reading: (String) -> MetricReading? {
-        entry.kind == .widget ? { [model] in model.reading(of: $0) } : { _ in nil }
-    }
-
-    private var ownView: String? {
-        drawsOwnCard && entry.state.face.hasView ? entry.spot.view : nil
-    }
-
-    private var drawnView: String? {
-        guard let ownView else { return nil }
-        if case .building = SpotViews.shared.phase(of: ownView) { return nil }
-        return ownView
-    }
-
     private var isDrawn: Bool {
-        drawsOwnCard && entry.state.face.layout(for: size) != nil
+        drawsOwnCard && entry.state.face.draws(on: size)
     }
 
     private var drawsOwnCard: Bool {
         entry.item == nil || entry.item?.card != nil
-    }
-
-    private var isBuildingView: Bool {
-        ownView != nil && drawnView == nil
     }
 
     private var showsPress: Bool {
@@ -101,7 +74,7 @@ struct SpotCardView: View, @MainActor Equatable {
     }
 
     static func showsPress(of entry: SpotsModel.Entry) -> Bool {
-        entry.kind != .slider && (entry.kind != .widget || entry.spot.opens != nil)
+        entry.kind != .slider
     }
 
     private var dropFill: Double {
@@ -117,13 +90,13 @@ struct SpotCardView: View, @MainActor Equatable {
     }
 
     private var row: some View {
-        HStack(spacing: SpotTokens.padding - 5) {
+        HStack(spacing: SpotTokens.wordsGap) {
             glyph
             text
                 .frame(maxWidth: .infinity, alignment: .leading)
             accessory
         }
-        .padding(.trailing, -Self.lineReach)
+        .padding(.trailing, -SpotTokens.cardLineReach)
         .frame(maxHeight: .infinity)
     }
 
@@ -158,8 +131,6 @@ struct SpotCardView: View, @MainActor Equatable {
             title
             if entry.kind == .slider {
                 slider
-            } else if isBuildingView {
-                detail("Building its view")
             } else if let subtitle = entry.shownState.subtitle {
                 detail(subtitle)
             }
@@ -171,7 +142,7 @@ struct SpotCardView: View, @MainActor Equatable {
         switch entry.kind {
         case .list where entry.spot.opensOnReturn:
             SpotCardArrow()
-        case .list, .launch, .toggle, .slider, .widget:
+        case .list, .launch, .toggle, .slider:
             EmptyView()
         }
     }
@@ -184,7 +155,7 @@ struct SpotCardView: View, @MainActor Equatable {
             in: low...high
         )
         .controlSize(.small)
-        .tint(SpotTheme.ink)
+        .tint(SpotTheme.highlight)
         .sliderThumbVisibility(.hidden)
     }
 
@@ -195,9 +166,9 @@ struct SpotCardView: View, @MainActor Equatable {
     @ViewBuilder
     private var glyph: some View {
         if let item = entry.item, item.icon != nil {
-            SpotItemIcon(item: item, size: SpotTokens.glyphSize)
+            SpotItemIcon(item: item, size: SpotTokens.glyph)
         } else if entry.showsHeaderPicture {
-            SpotItemIcon(icon: entry.spot.fileIcon, glyph: entry.spot.glyph, symbol: nil, size: SpotTokens.glyphSize)
+            SpotItemIcon(icon: entry.spot.fileIcon, glyph: entry.spot.glyph, symbol: nil, size: SpotTokens.glyph)
         } else {
             symbolGlyph
         }
@@ -207,7 +178,7 @@ struct SpotCardView: View, @MainActor Equatable {
         Image(systemName: entry.symbol)
             .font(SpotType.glyph)
             .foregroundStyle(isFilled ? AnyShapeStyle(SpotTheme.glyphOnSolid) : AnyShapeStyle(SpotTheme.glassInk))
-            .frame(width: SpotTokens.glyphSize, height: SpotTokens.glyphSize)
+            .frame(width: SpotTokens.glyph, height: SpotTokens.glyph)
             .background(glyphDisc, in: Circle())
     }
 }
@@ -229,17 +200,18 @@ private struct CardPress: ViewModifier {
 
     func body(content: Content) -> some View {
         content
-            .overlay(shape.fill((isFilled ? SpotTheme.onSolid : SpotTheme.ink).opacity(showsPress ? 0.12 : 0)).allowsHitTesting(false))
+            .overlay(shape.fill((isFilled ? SpotTheme.onSolid : SpotTheme.ink).opacity(showsPress ? SpotTheme.pressFill : 0)).allowsHitTesting(false))
             .contentShape(shape)
     }
 }
 
 private struct FailureMark: View {
+    let model: SpotsModel
     let entry: SpotsModel.Entry
     let size: SpotSize
 
     var body: some View {
-        if entry.failure != nil {
+        if let failure = model.failure(of: entry) {
             let inset = SurfaceEdge(card: size).rim - SpotTokens.cornerMark / 2
             let cap = SpotRoundShape(radius: SpotTokens.cornerMarkRadius)
             Image(systemName: "exclamationmark.triangle.fill")
@@ -250,7 +222,7 @@ private struct FailureMark: View {
                 .overlay(cap.strokeBorder(SpotTheme.ink.opacity(SpotTheme.track)))
                 .offset(x: -inset, y: inset)
                 .accessibilityLabel("Last run failed")
-                .allowsHitTesting(false)
+                .modifier(SpotFailureTip(model: model, id: entry.id, text: failure))
         }
     }
 }

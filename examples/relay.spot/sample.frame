@@ -1,23 +1,29 @@
-grid=last last last
-grid=last last last
-grid=peer peer peer
-grid=- - -
-grid=message message message
-grid=message message message
-grid=. . send
+frame=
+class=grid grid-cols-3 gap-part
 
 text=last
+class=col-span-3 row-span-2 bar:flex
 title=Build 412 passed in 3m 08s
 detail=From a peer
 
 field=peer
+class=col-span-3
 title=To
 value=127.0.0.1:47801
 
+box=line
+class=col-span-3 h-px bg-tile
+
 field=message
+class=col-span-3 row-span-2 h-60
 type=multiline
 placeholder=Hello
+
+box=blank-1
+
+box=blank-2
 
 button=send
 title=Send
 shortcut=cmd+return
+close=false

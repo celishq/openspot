@@ -8,6 +8,7 @@ extension SpotsModel {
     func launch(_ shown: Entry, with text: String) {
         guard let entry = entry(shown.spot.id) else { return }
         let button = commands.button(of: shown)
+        if let button, case .word = button.kind { return call(button, of: entry, text) }
         if text.isEmpty {
             if let button { return run(button, on: (entry, nil)) }
             return run(seen: entry)
@@ -16,8 +17,6 @@ extension SpotsModel {
             return call(button, of: entry, text)
         }
         switch entry.spot.mainAct {
-        case .run:
-            call(CommandAction(id: SpotAction.open.arguments[0], title: entry.state.title, scope: .spot, after: .close), of: entry, text, onCard: true)
         case .sheet:
             pushFirst(entry.id, moving: true)
             sheets[entry.id]?.type(text)
@@ -32,7 +31,7 @@ extension SpotsModel {
 
     public var slashPlaceholder: String? {
         guard let slash, slash.text.isEmpty, let shown = selectedEntry else { return nil }
-        return commands.button(of: shown).map { $0.placeholder } ?? shown.spot.placeholder
+        return commands.button(of: shown)?.placeholder
     }
 
     var slashHint: String? {
@@ -43,9 +42,9 @@ extension SpotsModel {
         return slash.text.isEmpty ? "⏎ \(title)" : "⏎ \(title) \"\(slash.text)\""
     }
 
-    private func call(_ action: CommandAction, of entry: Entry, _ text: String, onCard: Bool = false) {
+    func call(_ action: CommandAction, of entry: Entry, _ text: String, onCard: Bool = false) {
         ask(action, on: (entry, nil)) { [sheets] in
-            try await sheets[entry.id]?.launch(action, input: SearchQuery(text: text).input, onCard: onCard)
+            try await sheets[entry.id]?.launch(action, search: SearchQuery(text: text), onCard: onCard)
         }
     }
 }

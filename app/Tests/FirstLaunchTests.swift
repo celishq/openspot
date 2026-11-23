@@ -65,7 +65,7 @@ final class FirstLaunchTests: XCTestCase {
         XCTAssertTrue(starting.contains("settings"))
         let scan = try SpotsFolder(url: spots, core: place.core, enabled: Set(starting)).scan()
         XCTAssertEqual(scan.refused, [])
-        XCTAssertFalse(scan.scripts.contains { $0.read?.seconds != nil })
+        XCTAssertFalse(scan.scripts.contains { $0.triggers.every != nil })
     }
 
     func testWithNoCoreFolderNoSpotsStartOn() {
@@ -75,5 +75,48 @@ final class FirstLaunchTests: XCTestCase {
     func testTheKeyToastNamesTheKeyInUse() throws {
         XCTAssertEqual(Shortcut.standard.openHint, "Press `⌃Space` to open Openspot")
         XCTAssertEqual(try XCTUnwrap(Shortcut(text: "option+k")).openHint, "Press `⌥K` to open Openspot")
+    }
+
+    @MainActor
+    private func firstLaunch(toml: String?) async throws -> (SpotsModel, FakeHost) {
+        let core = root.appendingPathComponent("core", isDirectory: true)
+        try FileManager.default.createDirectory(at: spots, withIntermediateDirectories: true)
+        try FileManager.default.createDirectory(at: core.appendingPathComponent("openspot.spot"), withIntermediateDirectories: true)
+        if let toml { try TestSpot(toml: toml, body: "printf 'text=a\\ntitle=A\\n'").write(to: core.spotFile("openspot/hello")) }
+        let suite = "openspot-first-\(UUID().uuidString)"
+        let defaults = try XCTUnwrap(UserDefaults(suiteName: suite))
+        let host = FakeHost()
+        let files = AppPlaces(
+            environment: ["OPENSPOT_SPOTS": spots.path, "OPENSPOT_CONFIG": root.appendingPathComponent("config").path, "OPENSPOT_CORE": core.path],
+            home: root,
+            defaults: defaults
+        )
+        let model = SpotsModel(host: host, files: files, runs: SpotRuns(stopPause: 0.2))
+        host.model = model
+        addTeardownBlock { @MainActor in
+            model.quit()
+            defaults.removePersistentDomain(forName: suite)
+        }
+        return (model, host)
+    }
+
+    @MainActor
+    func testTheFirstLaunchOpensTheSpotThatStartsIt() async throws {
+        let (model, host) = try await firstLaunch(toml: "title = 'Hello'\nstarts = 'first-launch'")
+
+        await model.beginFirstLaunch()
+
+        try await wait("the first sheet") { model.openSheetID == "openspot/hello" }
+        XCTAssertEqual(host.presents, 1)
+    }
+
+    @MainActor
+    func testWithNoSpotThatStartsItTheFirstLaunchShowsTheGrid() async throws {
+        let (model, host) = try await firstLaunch(toml: "title = 'Hello'")
+
+        await model.beginFirstLaunch()
+
+        XCTAssertEqual(host.presents, 1)
+        XCTAssertNil(model.openSheetID)
     }
 }

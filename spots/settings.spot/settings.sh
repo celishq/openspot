@@ -1,11 +1,6 @@
 #!/bin/sh
-# title=System Settings
-# icon=gearshape
-# detail=Open a setting
-# on=panel.open
-# offers=card
-# offers=search
 export LC_ALL=en_US.UTF-8
+. "$OPENSPOT_SH"
 panes="${SETTINGS_PANES:-/System/Library/ExtensionKit/Extensions}"
 link='x-apple.systempreferences:'
 
@@ -14,7 +9,7 @@ language() {
   defaults read -g AppleLanguages 2>/dev/null | sed -n '2{s/[ ",]//g;s/-/_/g;p;}'
 }
 
-# Prints the rows of one pane and of its sections, in the first language that the pane has.
+# Prints the items of one pane and of its sections, in the first language that the pane has.
 pane() {
   info="$1/Contents/Info.plist"
   [ "$(plutil -extract EXAppExtensionAttributes.EXExtensionPointIdentifier raw "$info" 2>/dev/null)" = com.apple.Settings.extension.ui ] || return 0
@@ -43,18 +38,18 @@ pane() {
     | select($titles | length > 0)
     | (if ($info | has("CFBundleIcons") or has("CFBundleIconName")) then "icon=\($app)" else "icon=gearshape" end) as $icon
     | ($link + $info.CFBundleIdentifier) as $pane
-    | ($titles[] | "row=\($pane)#\(esc)\ntitle=\(esc)\ndetail=System Settings\n\($icon)\n"),
+    | ($titles[] | "item=\($pane)#\(esc)\ntitle=\(esc)\ndetail=System Settings\n\($icon)\n"),
       ($terms | to_entries[] | .key as $anchor | (.value.localizableStrings // [])[]
         | select(.title != null and (.title | ascii_downcase) != ($titles[0] | ascii_downcase))
-        | "row=\($pane)?\($anchor)#\(.title | esc)\ntitle=\(.title | esc)\ndetail=System Settings › \($titles[0] | esc)\nparent=\($titles[0] | esc)\n\($icon)\n"
+        | "item=\($pane)?\($anchor)#\(.title | esc)\ntitle=\(.title | esc)\ndetail=System Settings › \($titles[0] | esc)\nplace=\($titles[0] | esc)\n\($icon)\n"
           + ((.index // "") | split(",") | map(gsub("^\\s+|\\s+$"; "")) | map(select(. != "")) | if length > 0 then "keywords=\(join(", ") | esc)\n" else "" end))'
 }
 
 case "$1" in
-  read)
+  show)
     full=$(language)
     base=${full%%_*}
-    cache="$OPENSPOT_DATA/rows3-$(sw_vers -buildVersion 2>/dev/null)-$full"
+    cache="$OPENSPOT_DATA/rows4-$(sw_vers -buildVersion 2>/dev/null)-$full"
     if [ ! -s "$cache" ]; then
       mkdir -p "$OPENSPOT_DATA"
       rm -f "$OPENSPOT_DATA"/rows*
@@ -64,7 +59,8 @@ case "$1" in
     fi
     cat "$cache"
     ;;
-  open)
-    open "${2%%#*}"
+  press)
+    item=$(value item)
+    open "${item%%#*}"
     ;;
 esac

@@ -65,6 +65,28 @@ final class SpotArrangementTests: XCTestCase {
         XCTAssertEqual(config.arrangement.isGlobal(of: "files"), false)
     }
 
+    func testASpotKeptOutOfSearchIsReadAndKeptThroughAWrite() throws {
+        let file = ConfigFile(url: try temporaryFolder().appendingPathComponent("config.toml"))
+        try "[[spots]]\nid = \"icon\"\nsearch = false\n".write(to: file.url, atomically: true, encoding: .utf8)
+
+        var arrangement = file.read().arrangement
+        XCTAssertEqual(file.read().faults, [])
+        XCTAssertEqual(arrangement.isFound(of: "icon"), false)
+        XCTAssertNil(arrangement.isFound(of: "apps"))
+        arrangement.set(size: .large, of: "icon")
+        try file.write(arrangement)
+
+        XCTAssertEqual(file.read().arrangement.isFound(of: "icon"), false)
+    }
+
+    func testTheDefaultsKeepTheIconAndTheWelcomeOutOfSearch() throws {
+        let defaults = Config(text: try String(contentsOf: URL(fileURLWithPath: #filePath).deletingLastPathComponent().deletingLastPathComponent().appendingPathComponent("defaults.toml"), encoding: .utf8))
+
+        XCTAssertEqual(defaults.arrangement.isFound(of: "openspot/icon"), false)
+        XCTAssertEqual(defaults.arrangement.isFound(of: "openspot/welcome"), false)
+        XCTAssertNil(defaults.arrangement.isFound(of: "openspot/quit"))
+    }
+
     func testAnOldLetterIsNoFaultAndAWriteDropsIt() throws {
         let folder = try temporaryFolder()
         let file = ConfigFile(url: folder.appendingPathComponent("config.toml"))
@@ -162,13 +184,6 @@ final class SpotArrangementTests: XCTestCase {
     func testAMoveStepFindsNoPlaceAtTheEndOfTheGrid() {
         XCTAssertNil(SpotGrid().nextPlace(of: 1, in: [.wide, .wide], step: 1))
         XCTAssertNil(SpotGrid().nextPlace(of: 0, in: [.wide, .wide], step: -1))
-    }
-
-    func testASpotOffersTheSizesItCanTake() {
-        let url = URL(fileURLWithPath: "/bin/true")
-
-        XCTAssertEqual(Spot(id: "a", name: "A", url: url).sizes.count, 5)
-        XCTAssertEqual(Spot(id: "w", name: "W", url: url, kind: .widget).sizes, [])
     }
 
     func testAKeyOfThePanelOpensTheSpotOfThePersonsChoiceOrElseOfTheDefaults() throws {

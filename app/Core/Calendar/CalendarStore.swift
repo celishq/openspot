@@ -6,10 +6,10 @@ public protocol CalendarStore {
 }
 
 extension CalendarStore {
-    func isAllowed(isRead: Bool, refusal: String, pane: URL) async throws -> Bool {
+    func isAllowed(isInShow: Bool, refusal: String, pane: URL) async throws -> Bool {
         var access = access()
         if access == .unasked {
-            guard !isRead else { return false }
+            guard !isInShow else { return false }
             access = await ask()
         }
         guard access == .allowed else { throw SpotError.failedWithFix(1, refusal, pane) }

@@ -1,0 +1,6 @@
+title = "Disk"
+icon = "internaldrive"
+
+[on]
+"panel.open" = true
+every = 300

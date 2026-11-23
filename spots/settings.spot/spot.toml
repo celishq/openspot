@@ -1,0 +1,7 @@
+title = "System Settings"
+icon = "gearshape"
+detail = "Open a setting"
+
+[on]
+"panel.open" = true
+search = true

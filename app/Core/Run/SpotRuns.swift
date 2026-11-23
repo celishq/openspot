@@ -5,9 +5,13 @@ import Observation
 @Observable
 public final class SpotRuns {
     public private(set) var sheets: [String: SpotRun] = [:]
-    public internal(set) var isPanelOpen = false
+    public internal(set) var isPanelOpen = false {
+        didSet { if isPanelOpen != oldValue { usage.panel(shown: isPanelOpen) } }
+    }
     public private(set) var openID: String?
     public private(set) var floating: Set<String> = []
+    @ObservationIgnored public private(set) var appearance = Style.Variant.dark
+    @ObservationIgnored private var windows: Set<String> = []
     public var dragged = FileKinds() {
         didSet {
             guard dragged != oldValue else { return }
@@ -19,18 +23,18 @@ public final class SpotRuns {
     @ObservationIgnored public var onReport: (String, SpotRun.Report) -> Void = { _, _ in }
     @ObservationIgnored public var partsArrival: (String, () -> Void) -> Void = { _, bring in bring() }
     @ObservationIgnored public let opening: SheetOpening
-    public let readLimit: TimeInterval
+    public let showLimit: TimeInterval
     let inlineIdle: TimeInterval
     let frameWait: DispatchTimeInterval
-    public nonisolated let usage: SpotUsage
+    public nonisolated let usage: StatsLog
     @ObservationIgnored public var isCareful = false {
         didSet {
-            tokens.isCareful = isCareful
+            callers.isCareful = isCareful
             guard isCareful != oldValue else { return }
             sheets.values.forEach { $0.restartScript() }
         }
     }
-    public nonisolated let tokens: CallerTokens
+    public nonisolated let callers: SpotCallers
     @ObservationIgnored let clock: RunClock
     @ObservationIgnored let now: () -> Date
     @ObservationIgnored let stopPause: TimeInterval
@@ -46,14 +50,22 @@ public final class SpotRuns {
     @ObservationIgnored private let prepare: ([SpotItem], [String]) async -> Void
     @ObservationIgnored private var order: [String] = []
 
-    @ObservationIgnored private(set) var placed: Set<String> = []
+    @ObservationIgnored private var grid: Set<String> = []
     @ObservationIgnored private var menuBar: Set<String> = []
     public private(set) var menuBarMarks: [(id: String, mark: MenuBarMark)] = []
-    public private(set) var work: [(id: String, call: ScriptCall)] = []
+    public private(set) var acts: [(id: String, call: ScriptCall)] = []
+    public private(set) var runningSummary: String?
+    public private(set) var actSpot: String?
+    @ObservationIgnored let clockWatch: DueWatch
+    @ObservationIgnored var timers: SpotTimers
+    @ObservationIgnored let timerWatch: DueWatch
+    @ObservationIgnored var schedule: SpotSchedule
+    @ObservationIgnored let scheduleWatch: DueWatch
+    @ObservationIgnored var pushed = PushedRuns()
+    @ObservationIgnored var runWaits: [String: Int] = [:]
+    @ObservationIgnored var wanted: Set<String> = []
     private var finished: WorkCard?
     @ObservationIgnored private var finishing: Task<Void, Never>?
-    @ObservationIgnored var ticks: Task<Void, Never>?
-    @ObservationIgnored var nextRead: Date?
     @ObservationIgnored var answerMatches = AnswerMatches()
     @ObservationIgnored private var lastSearch: SearchQuery?
     @ObservationIgnored private(set) var searchBuilds = 0
@@ -68,10 +80,10 @@ public final class SpotRuns {
     @ObservationIgnored private(set) var processes: [ScriptProcess] = []
     @ObservationIgnored var loaded: [String: (stamp: [Int]?, script: InlineScript)] = [:]
     @ObservationIgnored private(set) var stamps: [String: [Int]] = [:]
-    @ObservationIgnored var standIn: ((Spot) -> ScriptLink)?
+    @ObservationIgnored var standIn: ((Spot) -> ScriptMode)?
     @ObservationIgnored public var api: CommandAPI?
     @ObservationIgnored private let log: CallLog?
-    @ObservationIgnored public var onCall: ((CallLog.Record, ReadReason?) -> Void)?
+    @ObservationIgnored public var onCall: ((CallLog.Record) -> Void)?
     @ObservationIgnored var frameWaits = 0
     @ObservationIgnored var answerWaits: [(DispatchTime) -> Void]?
     @ObservationIgnored private let swift: SwiftProgram
@@ -87,7 +99,7 @@ public final class SpotRuns {
 
     public init(
         environment: [String: String] = ProcessInfo.processInfo.environment,
-        readLimit: TimeInterval = 10,
+        showLimit: TimeInterval = 10,
         opening: SheetOpening = SheetOpening(),
         clock: RunClock = RunClock(),
         stopPause: TimeInterval = 2,
@@ -99,20 +111,27 @@ public final class SpotRuns {
         frameWait: DispatchTimeInterval = .milliseconds(2),
         log: CallLog? = nil,
         stats: URL? = nil,
+        timers: URL? = nil,
+        schedule: URL? = nil,
         swift: SwiftProgram = SwiftProgram(),
-        tokens: CallerTokens = CallerTokens()
+        callers: SpotCallers = SpotCallers()
     ) {
         self.environment = environment
-        self.tokens = tokens
+        self.callers = callers
         self.log = log
         self.swift = swift
-        usage = SpotUsage(folder: stats, at: clock.now(), now: clock.now)
+        usage = StatsLog(folder: stats, at: clock.now(), now: clock.now)
+        self.timers = SpotTimers(file: timers)
+        self.schedule = SpotSchedule(file: schedule)
         self.inlineIdle = inlineIdle
         self.frameWait = frameWait
-        self.readLimit = readLimit
+        self.showLimit = showLimit
         self.opening = opening
         self.clock = clock
         now = clock.now
+        clockWatch = DueWatch(clock: clock)
+        timerWatch = DueWatch(clock: clock, leeway: .seconds(1))
+        scheduleWatch = DueWatch(clock: clock, leeway: .seconds(1))
         self.stopPause = stopPause
         self.clipboardPause = clipboardPause
         self.loadPause = loadPause
@@ -126,7 +145,6 @@ public final class SpotRuns {
         let scripts = scan.scripts
         self.stamps = stamps
         for (id, kept) in loaded where kept.stamp != stamps[id] { dropScript(of: id) }
-        placed = Set(scan.spots.flatMap(\.places))
         self.menuBar = menuBar
         order = scripts.map(\.id)
         let owners = Dictionary(scan.spots.map { ($0.id, $0) }, uniquingKeysWith: { first, _ in first })
@@ -140,15 +158,17 @@ public final class SpotRuns {
             if sheet.isOpen { onReport(id, .closed) }
             if floating.remove(id) != nil { onReport(id, .landed) }
             sheet.close()
-            sheet.stopReads()
+            sheet.stopShows()
         }
         scripts.forEach { sheet(for: $0).scanned(stamps[$0.id]) }
         showMarks()
-        showWork()
+        showActs()
         swift.prune(keeping: scripts.map(\.url), with: Dictionary(scripts.map { ($0.url, $0.sources) }) { first, _ in first })
         usage.take(views: scripts)
+        usage.take(versions: stamps.mapValues(SpotLoad.version(of:)))
         updateClock()
-        readOfferedRows()
+        runSchedule()
+        showOfferedItems()
     }
 
     public func sheet(for spot: Spot) -> SpotRun {
@@ -176,10 +196,6 @@ public final class SpotRuns {
         editor != nil
     }
 
-    public var keysSheet: String? {
-        sheets.values.lazy.map(\.spot).first { $0.edits == .keys && $0.isBuiltIn }?.id
-    }
-
     private var editor: Spot? {
         sheets.values.lazy.map(\.spot).first { $0.editsSpots && $0.isBuiltIn }
     }
@@ -197,25 +213,47 @@ public final class SpotRuns {
 
     func didClose(_ sheet: SpotRun) {
         if openID == sheet.spot.id { openID = nil }
+        let id = sheet.spot.id
+        if pushed.isWaiting(for: id) { Task { [weak self] in self?.settlePushed(of: id) } }
     }
 
-    public func float(_ id: String) {
+    public func float(_ id: String, isWindow: Bool = false) {
         guard let sheet = sheets[id], floating.insert(id).inserted else { return }
+        if isWindow { windows.insert(id) }
         sheet.floated()
+        sheet.showPlace()
     }
 
     public func land(_ id: String) {
         guard floating.remove(id) != nil else { return }
+        windows.remove(id)
+        sheets[id]?.showPlace()
         sheets[id]?.leftPlace()
         updateClock()
+        if pushed.isWaiting(for: id) { settlePushed(of: id) }
+    }
+
+    public func take(appearance: Style.Variant) {
+        guard appearance != self.appearance else { return }
+        self.appearance = appearance
+        for sheet in sheets.values { sheet.showPlace() }
+    }
+
+    func variants(of id: String) -> Set<Style.Variant> {
+        let place: Style.Variant = !floating.contains(id) ? .sheet : windows.contains(id) ? .window : .float
+        return [place, appearance]
     }
 
     public func closeOpen() {
         openID.flatMap { sheets[$0] }?.close()
     }
 
-    public var isReading: Bool {
-        sheets.values.contains(where: \.isReading)
+    public var firstLaunchSheet: String? {
+        sheets.values.lazy.map(\.spot).first { $0.starts == .firstLaunch && $0.isBuiltIn }?.id
+    }
+
+    public var isShowing: Bool {
+        sheets.values.contains(where: \.isShowing)
     }
 
     public func panelClosed() {
@@ -227,8 +265,10 @@ public final class SpotRuns {
     public func quit() {
         hasQuit = true
         finishing?.cancel()
-        ticks?.cancel()
-        ticks = nil
+        clockWatch.stop()
+        timerWatch.stop()
+        scheduleWatch.stop()
+        pushed.endAll()
         clipboardWatch?.cancel()
         clipboardWatch = nil
         loadWatch?.cancel()
@@ -247,7 +287,7 @@ public final class SpotRuns {
         if let id, !menuBar.contains(id) { return }
         let marks: [(id: String, mark: MenuBarMark)] = order.compactMap { id in
             guard let sheet = sheets[id], isInMenuBar(sheet.spot) else { return nil }
-            guard sheet.spot.showsValueInMenuBar else { return (id, MenuBarMark(icon: sheet.spot.symbol, name: sheet.spot.name)) }
+            guard sheet.reading.hasBar else { return (id, MenuBarMark(icon: sheet.spot.symbol, name: sheet.spot.name)) }
             return MenuBarMark(reading: sheet.reading).map { (id, $0) }
         }
         guard !marks.elementsEqual(menuBarMarks, by: { $0.id == $1.id && $0.mark == $1.mark }) else { return }
@@ -258,31 +298,35 @@ public final class SpotRuns {
         menuBar.contains(spot.id) && spot.canShowInMenuBar
     }
 
-    func showWork() {
-        let next = order.flatMap { id in (sheets[id]?.work ?? []).map { (id: id, call: $0) } }.sorted { $0.call.started < $1.call.started }
-        guard !next.elementsEqual(work, by: { $0.id == $1.id && $0.call === $1.call }) else { return }
-        let leaving = shownWork
-        work = next
+    func showActs() {
+        let next = order.flatMap { id in (sheets[id]?.acts ?? []).map { (id: id, call: $0) } }.sorted { $0.call.started < $1.call.started }
+        guard !next.elementsEqual(acts, by: { $0.id == $1.id && $0.call === $1.call }) else { return }
+        let leaving = shownAct
+        acts = next
         if let leaving, !leaving.call.isStopped, !next.contains(where: { $0.call === leaving.call }) {
             finish(WorkCard(spot: leaving.id, words: words(of: leaving), fill: .full))
         }
+        let name = next.first.map { sheets[$0.id]?.spot.name ?? $0.id }
+        let summary = name.map { next.count > 1 ? "\(next.count) running. \($0) is the oldest" : "\($0) is running" }
+        if summary != runningSummary { runningSummary = summary }
+        if next.first?.id != actSpot { actSpot = next.first?.id }
     }
 
     public var workCard: WorkCard? {
         if let finished, !shows(finished.spot) { return finished }
-        return shownWork.map { WorkCard(spot: $0.id, words: words(of: $0), fill: $0.call.progress) }
+        return shownAct.map { WorkCard(spot: $0.id, words: words(of: $0), fill: $0.call.progress) }
     }
 
-    private var shownWork: (id: String, call: ScriptCall)? {
-        work.first { !shows($0.id) && !$0.call.isBackground }
+    private var shownAct: (id: String, call: ScriptCall)? {
+        acts.first { !shows($0.id) && !$0.call.isBackground }
     }
 
-    public var backgroundWork: [(id: String, call: ScriptCall)] {
-        work.filter { $0.call.isBackground }
+    public var backgroundActs: [(id: String, call: ScriptCall)] {
+        acts.filter { $0.call.isBackground }
     }
 
-    private func words(of work: (id: String, call: ScriptCall)) -> String {
-        work.call.title ?? "Setting up \(sheets[work.id]?.spot.name ?? work.id)"
+    private func words(of act: (id: String, call: ScriptCall)) -> String {
+        act.call.title ?? "Setting up \(sheets[act.id]?.spot.name ?? act.id)"
     }
 
     private func finish(_ card: WorkCard) {
@@ -308,40 +352,32 @@ public final class SpotRuns {
         dragTakers.contains(id)
     }
 
-    public func answer(of spot: Spot, _ action: SpotAction, input: String? = nil, limit: TimeInterval? = nil, variables: [String: String] = [:]) async throws -> String {
-        if ScriptKind(of: spot) == .stay, action == .read {
-            let (script, frames, token) = stay(spot, limit: limit)
-            tokens.setReason(ReadReason.panel.rawValue, of: token)
-            defer { script.end() }
-            script.send(.read, variables: ReadReason.panel.variables.merging(variables) { _, new in new }, id: 1)
-            for try await frame in frames {
-                let head = FrameHead(text: frame)
-                if !head.isMark || head.end == "1" { return frame }
-            }
-            return ""
-        }
-        let (stream, halt, _) = frames(of: spot, action, input: input, limit: limit, variables: variables)
-        defer { if sheets[spot.id] == nil { dropScript(of: spot.id) } }
-        if action == .read {
-            defer { halt() }
-            for try await frame in stream { return frame }
-            return ""
-        }
-        var text = ""
-        for try await frame in stream { text += frame }
-        return text
+    public func answer(of spot: Spot, _ handler: String, input: String? = nil, limit: TimeInterval? = nil, variables: [String: String] = [:]) async throws -> String {
+        try await mode(of: spot).answer(of: spot, handler, input: input, limit: limit, variables: variables, in: self)
+    }
+
+    func isOnGrid(_ id: String) -> Bool {
+        grid.contains(id)
     }
 
     func wants(_ spot: Spot) -> Bool {
-        if isInMenuBar(spot) || spot.mode == .always { return true }
-        if isPanelOpen, spot.mode.stays, spot.answers != nil { return true }
-        guard let read = spot.read else { return false }
-        return isPanelOpen && (read.has(.panel) || placed.contains(spot.id))
+        if isInMenuBar(spot) || spot.mode == .stay && spot.showsAtLaunch { return true }
+        guard isPanelOpen else { return false }
+        return spot.mode.stays && spot.triggers.search != nil || spot.triggers.showsOnPanel || grid.contains(spot.id)
     }
 
-    func intake(_ frame: String, of id: String?) async -> SpotOutput {
+    public func take(grid next: Set<String>) {
+        guard next != grid else { return }
+        grid = next
+        guard isPanelOpen else { return }
+        sheets.values.forEach { $0.settleScript() }
+        updateClock()
+    }
+
+    func intake(_ frame: String, of spot: Spot?) async -> Frame {
+        let id = spot?.id
         let shown = id.flatMap { sheets[$0] }.flatMap { $0.shownFrame == frame ? $0.lastAnswer : nil }
-        let lines = if let shown { shown } else { await SpotOutput.reading(frame) }
+        let lines = if let shown { shown } else { await Frame.reading(frame, kinds: spot?.kinds ?? BlockKind.all) }
         guard let id, opening.moving == id else { return lines }
         sheets[id]?.hear(lines)
         await opening.waitForMotion(of: id)
@@ -349,8 +385,8 @@ public final class SpotRuns {
         return lines
     }
 
-    private static func isQuiet(_ reason: ReadReason?, _ end: ScriptCall.End) -> Bool {
-        guard reason?.isFrequent == true else { return false }
+    private static func isQuiet(_ event: ShowEvent?, _ end: ScriptCall.End) -> Bool {
+        guard event?.isFrequent == true else { return false }
         if case .failed = end { return false }
         return true
     }
@@ -359,11 +395,15 @@ public final class SpotRuns {
         if let log { log.add(frame, to: &frames) } else if onCall != nil { frames.append(frame) }
     }
 
-    func record(_ spot: Spot, _ action: SpotAction, input: String?, frames: [String], errors: String, end: ScriptCall.End, reason: ReadReason?, started: Date, begin: Date) {
+    var recordsCalls: Bool {
+        log != nil || onCall != nil
+    }
+
+    func record(_ spot: Spot, _ handler: String, input: String?, frames: [String], errors: String, end: ScriptCall.End, event: ShowEvent?, started: Date, begin: Date) {
         guard !spot.reachesAccountKey else { return }
         let record = CallLog.Record(
             spot: spot.id,
-            arguments: action.arguments,
+            arguments: [handler],
             input: input,
             frames: frames,
             errors: errors,
@@ -371,53 +411,33 @@ public final class SpotRuns {
             started: started,
             seconds: Date().timeIntervalSince(begin)
         )
-        onCall?(record, reason)
-        guard let log, !Self.isQuiet(reason, end) else { return }
+        onCall?(record)
+        guard let log, !Self.isQuiet(event, end) else { return }
         log.write(record)
     }
 
-    func stay(_ spot: Spot, limit: TimeInterval?) -> (ScriptProcess, AsyncThrowingStream<String, Error>, String) {
-        let token = tokens.issue(for: spot)
-        let script = ScriptProcess(url: swift.runnable(for: spot), name: spot.url.path, mode: .stays, limit: limit, stopPause: stopPause, dataName: spot.dataName, variables: ["OPENSPOT_ID": spot.id, CallerTokens.variable: token], careful: isCareful ? spot.uses : nil, base: environment, build: swift.build(of: spot))
-        track(script, of: spot.id, token: token)
+    func stay(_ spot: Spot, limit: TimeInterval?) -> (ScriptProcess, AsyncThrowingStream<String, Error>, SpotCaller) {
+        let caller = callers.issue(for: spot)
+        let script = ScriptProcess(spot: spot, program: swift.runnable(for: spot), swift: swift, sending: nil, limit: limit, stopPause: stopPause, careful: isCareful ? spot.uses : nil, base: environment)
+        track(script, of: spot.id, caller: caller)
         let frames = script.start()
         keep(script)
-        return (script, frames, token)
+        return (script, frames, caller)
     }
 
-    func frames(of spot: Spot, _ action: SpotAction, input: String?, limit: TimeInterval?, variables given: [String: String] = [:]) -> (stream: AsyncThrowingStream<String, Error>, halt: () -> Void, process: ScriptProcess?) {
-        let variables = given.merging(editing(spot)) { given, _ in given }
-        switch ScriptKind(of: spot) {
-        case .settings(let settings):
-            let (stream, halt) = answered { try settings.answer(action.arguments) }
-            return (stream, halt, nil)
-        case .host(let sheet):
-            let (stream, halt) = answered { [environment] in try await sheet.answer(action.arguments, input: input, variables: variables, base: environment) }
-            return (stream, halt, nil)
-        case .inline:
-            let call = InlineCall(arguments: action.arguments, variables: variables, input: input, limit: limit)
-            script(of: spot).send(call)
-            let (stream, halt) = answered {
-                switch await call.outcome(limit: limit) {
-                case .frame(let text): return text
-                case .failed(let error): throw error
-                case .dropped: return ""
-                }
-            }
-            return (stream, {
-                call.stop()
-                halt()
-            }, nil)
-        case .stay, .once:
-            let sent = action.sent(input: input)
-            let token = tokens.issue(for: spot, reason: variables[ReadReason.variable], keepsFix: true)
-            let process = ScriptProcess(url: swift.runnable(for: spot), name: spot.url.path, arguments: sent.arguments, mode: .once(input: sent.input), limit: limit, stopPause: stopPause, dataName: spot.dataName, variables: variables.merging(["OPENSPOT_ID": spot.id]) { given, _ in given }.merging([CallerTokens.variable: token]) { _, own in own }, careful: isCareful ? spot.uses : nil, base: environment, build: swift.build(of: spot))
-            track(process, of: spot.id, token: token)
-            process.fix = { [tokens] in tokens.fix(of: token) }
-            let stream = process.start()
-            keep(process)
-            return (stream, { process.stop() }, process)
-        }
+    func process(of spot: Spot, _ message: Message, limit: TimeInterval?, reason: String?, variables given: [String: String], call: OpenCall?) -> ScriptMode.Frames {
+        let caller = callers.issue(for: spot, reason: reason, keepsFix: true)
+        caller.call = call
+        let process = ScriptProcess(spot: spot, program: swift.runnable(for: spot), swift: swift, sending: message, limit: limit, stopPause: stopPause, variables: variables(of: spot, given: given), careful: isCareful ? spot.uses : nil, base: environment)
+        track(process, of: spot.id, caller: caller)
+        process.fix = { caller.takeFix() }
+        let stream = process.start()
+        keep(process)
+        return (stream, { process.stop() }, process)
+    }
+
+    func variables(of spot: Spot, given: [String: String]) -> [String: String] {
+        given.merging(editing(spot)) { given, _ in given }.filter { spot.isBuiltIn || !ScriptProcess.appVariables.contains($0.key) }
     }
 
     private func editing(_ spot: Spot) -> [String: String] {
@@ -428,7 +448,7 @@ public final class SpotRuns {
         return variables
     }
 
-    private func answered(by work: @escaping @Sendable () async throws -> String) -> (stream: AsyncThrowingStream<String, Error>, halt: () -> Void) {
+    func answered(by work: @escaping @Sendable () async throws -> String) -> (stream: AsyncThrowingStream<String, Error>, halt: () -> Void) {
         let (stream, continuation) = AsyncThrowingStream.makeStream(of: String.self)
         let task = Task {
             do {
@@ -445,15 +465,14 @@ public final class SpotRuns {
         })
     }
 
-    func used(_ call: SpotUseCall, by caller: CallerTokens.Caller) {
+    func used(_ call: SpotUseCall, by caller: Spot) {
         guard usage.used(call, by: caller, at: now()) else { return }
-        onReport(caller.id, .toast("\(caller.name) \(call.words) without `uses=\(call.use.rawValue)` in its header. Add it to stop this note."))
+        onReport(caller.id, .toast("\(caller.name) \(call.words) without `\(call.use.rawValue)` in the `uses` of its spot.toml. Add it to stop this note."))
     }
 
-    private func track(_ process: ScriptProcess, of spot: String, token: String) {
+    private func track(_ process: ScriptProcess, of spot: String, caller: SpotCaller) {
         usage.track(process, of: spot)
-        process.onStart { [tokens] group in tokens.enter(group, token: token) }
-        process.onExit { [tokens] _ in tokens.release(token) }
+        callers.attach(process, to: caller)
     }
 
     private func keep(_ process: ScriptProcess) {

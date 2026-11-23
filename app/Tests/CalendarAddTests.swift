@@ -19,12 +19,12 @@ final class CalendarAddTests: XCTestCase {
         FakeReminderStore(defaultList: family)
     }
 
-    private func events(_ store: FakeEventStore, isRead: Bool = false) -> Events {
-        Events(store: store, isRead: isRead)
+    private func events(_ store: FakeEventStore, isInShow: Bool = false) -> Events {
+        Events(store: store, isInShow: isInShow)
     }
 
-    private func reminders(_ store: FakeReminderStore, isRead: Bool = false) -> Reminders {
-        Reminders(store: store, isRead: isRead)
+    private func reminders(_ store: FakeReminderStore, isInShow: Bool = false) -> Reminders {
+        Reminders(store: store, isInShow: isInShow)
     }
 
     private func row(_ text: String) throws -> TextBlock {
@@ -47,7 +47,7 @@ final class CalendarAddTests: XCTestCase {
         XCTAssertEqual(store.added.first?.start, tomorrow(10))
         XCTAssertEqual(store.added.first?.end, tomorrow(11))
         XCTAssertEqual(store.added.first?.isAllDay, false)
-        XCTAssertEqual(row.value("row"), "event:saved-1/\(Int(tomorrow(10).timeIntervalSince1970))")
+        XCTAssertEqual(row.value("item"), "event:saved-1/\(Int(tomorrow(10).timeIntervalSince1970))")
         XCTAssertEqual(row.value("start"), iso(tomorrow(10)))
         XCTAssertEqual(row.value("calendar"), "A8E2")
     }
@@ -91,7 +91,7 @@ final class CalendarAddTests: XCTestCase {
         XCTAssertEqual(store.added.map(\.title), ["Call mom", "Buy milk", "Pay rent"])
         XCTAssertEqual(store.added.map(\.due), [tomorrow(9), nil, tomorrow(0)])
         XCTAssertEqual(store.added.map(\.isAllDay), [false, false, true])
-        XCTAssertEqual(timed.value("row"), "reminder:saved-1")
+        XCTAssertEqual(timed.value("item"), "reminder:saved-1")
         XCTAssertEqual(timed.value("due"), iso(tomorrow(9)))
         XCTAssertEqual(undated.value("detail"), "No date · Family")
     }
@@ -100,13 +100,13 @@ final class CalendarAddTests: XCTestCase {
         let eventStore = eventStore()
         let reminderStore = reminderStore()
 
-        let event = try row(try await events(eventStore, isRead: true).add("Standup tomorrow 10am", isDry: true))
-        let reminder = try row(try await reminders(reminderStore, isRead: true).add("Call mom tomorrow 9am", isDry: true))
+        let event = try row(try await events(eventStore, isInShow: true).add("Standup tomorrow 10am", isDry: true))
+        let reminder = try row(try await reminders(reminderStore, isInShow: true).add("Call mom tomorrow 9am", isDry: true))
 
-        XCTAssertEqual(event.value("row"), "event:new")
+        XCTAssertEqual(event.value("item"), "event:new")
         XCTAssertEqual(event.value("title"), "Standup")
         XCTAssertEqual(event.value("calendar"), "A8E2")
-        XCTAssertEqual(reminder.value("row"), "reminder:new")
+        XCTAssertEqual(reminder.value("item"), "reminder:new")
         XCTAssertEqual(reminder.value("list"), "7D10")
         XCTAssertEqual(eventStore.added, [])
         XCTAssertEqual(reminderStore.added, [])

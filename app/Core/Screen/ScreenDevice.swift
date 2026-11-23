@@ -41,6 +41,6 @@ public struct ScreenDevice: Equatable, Sendable {
     }
 
     private static func row(_ id: String, _ title: String, _ detail: String, icon: String) -> TextBlock {
-        TextBlock(fields: [.init(key: "row", value: id), .init(key: "title", value: title), .init(key: "detail", value: detail), .init(key: "icon", value: icon)])
+        TextBlock(fields: [.init(key: "item", value: id), .init(key: "title", value: title), .init(key: "detail", value: detail), .init(key: "icon", value: icon)])
     }
 }

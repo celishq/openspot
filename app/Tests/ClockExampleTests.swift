@@ -16,19 +16,19 @@ final class ClockExampleTests: SampleSpotsCase {
         defer { process.end() }
         var frames = process.start().makeAsyncIterator()
 
-        process.send(.read, id: 1)
+        process.send(Message(ScriptEntry.show.name), id: 1)
         var answer: String?
         var tick: String?
         var hasEnded = false
         while answer == nil || tick == nil, let frame = try await frames.next() {
-            let output = SpotOutput(text: frame)
+            let output = Frame(text: frame)
             if output.ends == ["1"] { hasEnded = true }
             guard output.isPicture else { continue }
             if hasEnded { tick = frame } else { answer = frame }
         }
 
         XCTAssertTrue(clock.canShowInMenuBar)
-        XCTAssertEqual(answer, "text=time\ntitle=22:15\ndetail=Tokyo\n")
-        XCTAssertEqual(tick, "text=time\ntitle=22:15\ndetail=Tokyo\n")
+        XCTAssertEqual(answer, "frame=\nclass=gap-part\n\ntext=time\nclass=bar:flex\ntitle=22:15\ndetail=Tokyo\n")
+        XCTAssertEqual(tick, "frame=\nclass=gap-part\n\ntext=time\nclass=bar:flex\ntitle=22:15\ndetail=Tokyo\n")
     }
 }

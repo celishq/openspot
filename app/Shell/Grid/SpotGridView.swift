@@ -70,13 +70,14 @@ struct SpotGridView: View {
                 .modifier(SpotMenuDim(model: model, index: placement.index))
                 .modifier(SpotCardPlace(motion: card.motion, lift: card.isLifted ? model.lift : nil))
                 .zIndex(card.isHeld ? 1 : 0)
-                .opacity(entry.id == openID ? 0.001 : 1)
-                .animation(nil) { $0.opacity(model.carry?.entry.id == entry.id ? 0.001 : 1) }
+                .opacity(entry.id == openID ? MotionTokens.hiddenOpacity : 1)
+                .animation(nil) { $0.opacity(model.carry?.entry.id == entry.id ? MotionTokens.hiddenOpacity : 1) }
                 .allowsHitTesting(entry.id != openID)
             }
         }
         .frame(width: SpotTokens.width(columns: model.panels.columns), height: height, alignment: .topLeading)
         .contentShape(Rectangle())
+        .modifier(SpotPointerMove(at: { model.point(at: .grid($0)) }))
         .onDrop(of: [.fileURL], delegate: SpotGridDrop(model: model, target: $dropTarget))
     }
 
@@ -94,8 +95,8 @@ struct SpotGridView: View {
     }
 
     private func anchor(of placement: SpotPlacement) -> UnitPoint {
-        guard let push else { return .center }
-        let away = placement.direction(awayFrom: push.open)
+        guard let open = push?.open else { return .center }
+        let away = placement.direction(awayFrom: open)
         return away.columns < 0 ? .trailing : away.columns > 0 ? .leading : away.rows < 0 ? .bottom : away.rows > 0 ? .top : .center
     }
 
@@ -118,7 +119,7 @@ struct SpotGridView: View {
         let placement = placements.first { $0.index == (drag?.place ?? model.selected) }
         return SpotSurfaceShape(rect: placement?.rect ?? .zero, radius: SurfaceEdge(card: placement?.size ?? .small).radius)
             .fill(SpotTheme.ink.opacity(SpotTheme.fill))
-            .opacity(drag == nil ? 0.001 : 1)
+            .opacity(drag == nil ? MotionTokens.hiddenOpacity : 1)
             .allowsHitTesting(false)
     }
 
@@ -143,7 +144,7 @@ private struct SidePanelWells: View, Equatable {
             ForEach([GridPanel.left, .right].filter { panels[$0] }, id: \.self) { panel in
                 shape
                     .fill(SpotTheme.ink.opacity(SpotTheme.track))
-                    .frame(width: SpotTokens.gridWidth, height: max(height, SpotTokens.rowHeight))
+                    .frame(width: SpotTokens.gridWidth, height: max(height, SpotTokens.cell))
                     .offset(x: CGFloat(panels.firstColumn(of: panel)) * (SpotTokens.cell + SpotTokens.columnGap))
             }
         }
@@ -156,7 +157,7 @@ private struct GroupTitle: View {
     let count: Int
 
     var body: some View {
-        HStack(spacing: 6) {
+        HStack(spacing: SpotTokens.groupTitleGap) {
             Text(name)
                 .font(SpotType.title)
                 .foregroundStyle(SpotTheme.ink)

@@ -8,13 +8,11 @@ extension SpotsModel {
     }
 
     public func handleKey(_ key: ActionKey) -> Bool {
-        landSearch()
         return take(key, in: keyRows(of: mode))
     }
 
     public func handleSearchKey(_ key: ActionKey) -> Bool {
         guard mode == .sheet || mode == .grid, showsSearch, openParts?.selectedPart == nil else { return false }
-        landSearch()
         return take(key, in: searchRows)
     }
 
@@ -47,14 +45,15 @@ extension SpotsModel {
         let escape = KeyRow.hint(of: [escapeRow])
         if let parts = openParts, !parts.showsRows || parts.drawsKeys {
             let hasActions = target.flatMap(actionMenu(on:)) != nil
-            return parts.hint(escape: escapeWords, stopping: { work(of: $0) != nil }, actions: hasActions)
+            return parts.hint(escape: escapeWords, stopping: { act(of: $0) != nil }, actions: hasActions)
         }
         if let confirm = confirmRow.hint { return [confirm, settingsRow.hint, "⌘K Actions"].compactMap { $0 }.joined(separator: "   ") }
         if let slashHint { return slashHint }
         if let soleHint { return soleHint }
+        if openSheetID == nil, slash == nil, !query.isEmpty, visible.isEmpty { return "\(SearchPrompt.slashHint)   \(escape)" }
         let keys = target.flatMap { target in
             actionMenu(on: target)?.hint(
-                stopping: { sheets[target.entry.id]?.work(of: $0, item: target.item) != nil },
+                stopping: { sheets[target.entry.id]?.act(of: $0, item: target.item) != nil },
                 second: [settingsRow.hint].compactMap { $0 }
             )
         } ?? escape
@@ -63,7 +62,9 @@ extension SpotsModel {
 
     private var recordingRows: [KeyRow] {
         let cancel = KeyRow("escape", command: nil, shift: nil, words: "Cancel") { [self] _ in
+            let field = recordsField ? recording : nil
             stopRecording()
+            if let field { focusAfterRecording(field) }
             return true
         }
         return [cancel]
@@ -188,7 +189,7 @@ extension SpotsModel {
 
     private var escapeRow: KeyRow {
         KeyRow("escape", words: escapeWords) { [self] _ in
-            if let target, let action = target.entry.spot.actions(for: target.item).first(where: { $0.key == ActionKey(name: "escape") }) {
+            if let target, let action = target.entry.spot.frameActions(for: target.item).first(where: { $0.key == ActionKey(name: "escape") }) {
                 run(action, on: target)
             } else if !stepBack() {
                 host.dismiss()
@@ -206,10 +207,6 @@ extension SpotsModel {
 
     private var spotRows: [KeyRow] {
         var rows: [KeyRow] = [
-            .any { [self] _ in
-                openSheet?.landRows()
-                return nil
-            },
             .any { [self] key in openSheetID == nil ? nil : handleFlowKey(key) },
             KeyRow("z", command: true) { [self] _ in
                 openSheetID == nil && searchText.isEmpty && undoRemoval() ? true : nil
@@ -288,7 +285,7 @@ extension SpotsModel {
     private func runAction(with key: ActionKey, on target: Target) -> Bool? {
         let typesKey = !searchText.isEmpty && Self.editsText(key)
         var none = HookAnswers()
-        if !typesKey, !target.entry.spot.actions(for: target.item).contains(where: { $0.key == key }),
+        if !typesKey, !target.entry.spot.frameActions(for: target.item).contains(where: { $0.key == key }),
            let offer = offered(on: target, answers: &none, asks: false).first(where: { $0.action.key == key }) {
             if offer.action.confirm != nil {
                 openMenu(on: target)
@@ -300,7 +297,7 @@ extension SpotsModel {
             return true
         }
         let quiet = typesKey ? [] : extras(on: target)
-        guard let action = (target.entry.spot.actions(for: target.item) + quiet).first(where: { $0.key == key }) else { return nil }
+        guard let action = (target.entry.spot.frameActions(for: target.item) + quiet).first(where: { $0.key == key }) else { return nil }
         if action.confirm != nil {
             openMenu(on: target)
             menu?.select(action)
@@ -334,5 +331,36 @@ extension SpotsModel {
             moveSelection(dx: step, dy: 0)
         }
         return true
+    }
+
+    public func followHint() {
+        guard !followsHint else { return }
+        followsHint = true
+        takeHint()
+    }
+
+    private func takeHint() {
+        hintTakes += 1
+        let words = HintWords(withObservationTracking { hint } onChange: { [weak self] in
+            Task { @MainActor in self?.takeHint() }
+        })
+        let motion: PanelMotion? = isEditing || hintIsForEdit || fieldDrop != nil ? .fade : nil
+        hintIsForEdit = isEditing
+        if openSheetID == nil, spotDrop == nil {
+            if words != gridHint { change(motion, { gridHint = words }) }
+        } else {
+            takeSheetHint(words, motion: motion)
+        }
+    }
+
+    func takeSheetHint(_ words: HintWords, motion: PanelMotion? = nil) {
+        if words != sheetHint { change(motion, { sheetHint = words }) }
+    }
+
+    var selectedGlyphTitle: String? {
+        guard openSheetID == nil, let entry = selectedEntry,
+              placements.first(where: { $0.index == selected })?.size == .small
+        else { return nil }
+        return entry.state.title
     }
 }

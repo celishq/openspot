@@ -13,8 +13,9 @@ final class CommandSocketTests: XCTestCase {
         func installUpdate() async -> Bool { true }
         func allows(_ reason: String) async -> Bool { false }
         func quit() async {}
+        func apply(_ theme: Theme) async {}
         func open(_ id: String) async -> Bool { true }
-        func push(_ id: String, page: String?, title: String?, replace: Bool) async -> Bool { true }
+        func push(_ id: String, route: String?, title: String?, replace: Bool) async -> Bool { true }
         func pop(_ id: String, all: Bool) async -> Bool { true }
         func review(_ id: String) async -> Bool { true }
         func act(_ act: CardAct, on id: String) async -> Bool { true }
@@ -101,14 +102,14 @@ final class CommandSocketTests: XCTestCase {
     }
 
     func testACallThatRunsAloneGetsAnError() throws {
-        let answer = try ask(["render", "x.png"])
+        let answer = try ask(["render", "sheet", "x.png"])
 
         XCTAssertNil(answer.reply["result"])
         XCTAssertEqual((answer.reply["error"] as? [String: Any])?["code"] as? Int, -32000)
     }
 
     func testStdinComesInChunksOnlyWhenTheCallPullsIt() throws {
-        let answer = try ask(["check", "--sheet"], input: ["title=", "Hi\n"])
+        let answer = try ask(["check", "sheet"], input: ["frame=\ntitle=", "Hi\n"])
 
         XCTAssertEqual(answer.stdout, "the sheet has no parts\n1 faults.\n")
         XCTAssertEqual(answer.code, 1)

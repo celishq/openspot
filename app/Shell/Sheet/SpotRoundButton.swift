@@ -3,41 +3,38 @@ import SwiftUI
 
 struct SpotRoundButton: View {
     enum Look {
-        case plain, floating, strong, bare
+        case plain, strong, bare
     }
 
-    private static let symbolRatio: CGFloat = 0.32
-
-    let symbol: String
+    let icon: Icon
     let label: String
-    var work: ScriptCall?
-    var size: CGFloat = SpotTokens.glyphSize
+    var act: ScriptCall?
+    var size: CGFloat = SpotTokens.glyph
     var look = Look.plain
     let action: () -> Void
 
     var body: some View {
         Button(action: action) {
             Group {
-                if let work {
-                    SpotWorkMark(call: work, side: size, stops: true)
+                if let act {
+                    SpotWorkMark(call: act, side: size, stops: true)
                 } else {
-                    Image(systemName: symbol)
-                        .font(.system(size: max(size * Self.symbolRatio, 10), weight: .semibold))
+                    NodeIcon(icon: icon, side: size / 2)
+                        .font(SpotType.roundSymbol(side: size))
                         .modifier(SpotInk())
                         .frame(width: size, height: size)
                 }
             }
-                .spotFill(isActive: work != nil || look == .strong, otherwise: fill, in: Circle())
-                .background { if look == .floating { SpotFloatGlass(shape: Circle()) } }
+                .spotFill(isActive: act != nil || look == .strong, otherwise: fill, in: Circle())
                 .contentShape(Circle())
         }
         .buttonStyle(.plain)
-        .accessibilityLabel(work == nil ? label : "Stop")
+        .accessibilityLabel(act == nil ? label : "Stop")
     }
 
     private var fill: Color {
         switch look {
-        case .plain, .floating: SpotTheme.ink.opacity(SpotTheme.control)
+        case .plain: SpotTheme.ink.opacity(SpotTheme.control)
         case .strong, .bare: .clear
         }
     }

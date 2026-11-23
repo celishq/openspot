@@ -37,7 +37,7 @@ public struct SpotPlacement: Equatable, Sendable {
     public var rect: CGRect {
         CGRect(
             x: CGFloat(column) * (SpotTokens.cell + SpotTokens.columnGap),
-            y: CGFloat(row) * (SpotTokens.rowHeight + SpotTokens.rowGap) + top,
+            y: CGFloat(row) * (SpotTokens.cell + SpotTokens.rowGap) + top,
             width: SpotTokens.width(columns: size.columns),
             height: SpotTokens.height(rows: size.rows)
         )

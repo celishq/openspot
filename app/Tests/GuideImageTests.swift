@@ -5,39 +5,62 @@ import XCTest
 final class GuideImageTests: XCTestCase {
     private let repo = URL(fileURLWithPath: #filePath).deletingLastPathComponent().deletingLastPathComponent().deletingLastPathComponent()
 
-    private func images() throws -> [(name: String, example: String)] {
-        let guide = try String(contentsOf: repo.appendingPathComponent("GUIDE.md"), encoding: .utf8)
-        var found: [(String, String)] = []
-        var last = ""
-        var example: String?
-        for line in guide.components(separatedBy: "\n") {
-            if line == "```sh" || line == "```js" || line == "```swift" { example = ""; continue }
-            if let text = example {
-                if line != "```" {
-                    example = text + line + "\n"
+    private func images() throws -> [(name: String, manifest: String, example: String)] {
+        var found: [(String, String, String)] = []
+        for page in try RepoDoc.pages() {
+            var last = (manifest: "", example: "")
+            var manifest = ""
+            var pending: String?
+            var fence: (language: String, text: String)?
+            for line in page.text.components(separatedBy: "\n") {
+                if fence == nil, ["```toml", "```sh", "```js", "```swift"].contains(line) { fence = (String(line.dropFirst(3)), ""); continue }
+                if let open = fence {
+                    if line != "```" {
+                        fence?.text = open.text + line + "\n"
+                        continue
+                    }
+                    if open.language == "toml" {
+                        manifest = open.text
+                    } else {
+                        if open.text.hasPrefix("#!") || open.language == "js" {
+                            last = (manifest, open.text)
+                            if let name = pending {
+                                found.append((name, last.manifest, last.example))
+                                last = ("", "")
+                                pending = nil
+                            }
+                        }
+                        manifest = ""
+                    }
+                    fence = nil
                     continue
                 }
-                if text.hasPrefix("#!") || text.hasPrefix("//") { last = text }
-                example = nil
-                continue
-            }
-            if line.hasPrefix("!["), let start = line.range(of: "](docs/images/"), line.hasSuffix(".png)") {
-                found.append((String(line[start.upperBound...].dropLast(5)), last))
-                last = ""
+                if line.hasPrefix("!["), let start = line.range(of: "images/", options: .backwards), line.hasSuffix(".png)") {
+                    let name = String(line[start.upperBound...].dropLast(5))
+                    if last.example.isEmpty {
+                        pending = name
+                    } else {
+                        found.append((name, last.manifest, last.example))
+                        last = ("", "")
+                    }
+                }
             }
         }
         return found
     }
 
-    func testEachImageOfTheGuideIsDrawnFromItsExampleAsItIsNow() throws {
+    func testEachImageOfTheDocsIsDrawnFromItsExampleAsItIsNow() throws {
         let images = try images()
-        XCTAssertGreaterThan(images.count, 3)
-        for (name, example) in images {
+        XCTAssertGreaterThan(images.count, 2)
+        for (name, manifest, example) in images {
             let folder = repo.appendingPathComponent("docs/images")
             XCTAssertTrue(FileManager.default.fileExists(atPath: folder.appendingPathComponent("\(name).png").path), name)
             let drawn = try? String(contentsOf: folder.appendingPathComponent("\(name).example"), encoding: .utf8)
+            let described = try? String(contentsOf: folder.appendingPathComponent("\(name).toml"), encoding: .utf8)
             XCTAssertFalse(example.isEmpty, "\(name) has no example of a spot right above it")
+            XCTAssertFalse(manifest.isEmpty, "\(name) has no spot.toml right before its example")
             XCTAssertEqual(drawn, example, "\(name).png shows an older example. Run make docs-images.")
+            XCTAssertEqual(described, manifest, "\(name).png shows an older spot.toml. Run make docs-images.")
         }
     }
 

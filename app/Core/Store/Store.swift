@@ -23,8 +23,8 @@ public struct Store: Hashable, Sendable {
         return url.map { Store(builtIn: $0) }
     }
 
-    public static func all(environment: [String: String], config: Config) -> [Store] {
-        [builtIn(environment: environment)].compactMap { $0 } + config.stores
+    public static func all(builtIn: Store?, config: Config) -> [Store] {
+        [builtIn].compactMap { $0 } + config.stores
     }
 
     var table: ConfigDocument.Table {

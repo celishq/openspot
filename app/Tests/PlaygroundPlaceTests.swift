@@ -21,17 +21,19 @@ final class PlaygroundPlaceTests: XCTestCase {
         try await super.tearDown()
     }
 
-    private let answering = "#!/bin/sh\n# title=Twice\n# on=sheet.open\n# on=clock.60\n# on=search.text ^[0-9]\nprintf 'text=t\\ntitle=%s\\n' \"$OPENSPOT_REASON\"\n[ -n \"$OPENSPOT_VALUE\" ] && printf '\\nrow=%s\\ntitle=Twice %s\\n' \"$OPENSPOT_VALUE\" \"$OPENSPOT_VALUE\"\n"
+    private let manifest = "title = \"Twice\"\n\n[on]\n\"sheet.open\" = true\nevery = 60\nsearch = \"^[0-9]\"\n"
+    private let answering = "#!/bin/sh\n. \"$OPENSPOT_SH\"\nvalue=$(value text)\nprintf 'item=t\\ntitle=%s\\n' \"$1\"\n[ -n \"$value\" ] && printf '\\nitem=%s\\ntitle=Twice %s\\n' \"$value\" \"$value\"\n"
 
     func testATypedSpotLiesOnTheGridOfItsOwnPanel() async throws {
-        let id = try await panel.place(file: nil, text: answering)
+        let id = try await panel.place(file: nil, text: answering, manifest: manifest)
 
         XCTAssertEqual(id, "playground")
         XCTAssertEqual(panel.model.visible.map(\.id), ["playground"])
+        XCTAssertEqual(panel.model.visible.map(\.spot.name), ["Twice"])
     }
 
     func testTheSheetOpensAndTheCardClosesIt() async throws {
-        let id = try await panel.place(file: nil, text: answering)
+        let id = try await panel.place(file: nil, text: answering, manifest: manifest)
 
         panel.show(.sheet, id: id)
         try await wait("the open sheet") { self.panel.model.openSheetID == id }
@@ -41,32 +43,33 @@ final class PlaygroundPlaceTests: XCTestCase {
     }
 
     func testTheMainSearchShowsTheRowsThatTheSpotAnswers() async throws {
-        let id = try await panel.place(file: nil, text: answering)
+        let id = try await panel.place(file: nil, text: answering, manifest: manifest)
 
         panel.show(.card, id: id)
         panel.model.searchText = "21"
-        panel.model.landSearch()
 
         try await wait("the answer") { self.panel.model.visible.contains { $0.item?.title == "Twice 21" } }
     }
 
     func testANamedFileRunsFromACopyWithTheIdOfItsSpotsFolder() async throws {
         let spots = folder.appendingPathComponent("real-spots", isDirectory: true)
-        let file = spots.spotFile("home/coffee")
-        try "#!/bin/sh\n# title=Coffee\n".writeScript(to: file)
+        let file = spots.spotFile("coffee")
+        try "#!/bin/sh\n".writeScript(to: file)
+        try "title = \"Coffee\"\n".write(to: file.deletingLastPathComponent().appendingPathComponent("spot.toml"), atomically: true, encoding: .utf8)
 
-        let id = try await panel.place(file: file, text: "#!/bin/sh\n# title=Coffee\n", spots: spots)
+        let id = try await panel.place(file: file, text: "#!/bin/sh\n", manifest: manifest, spots: spots)
 
-        XCTAssertEqual(id, "home/coffee")
-        XCTAssertEqual(panel.model.visible.map(\.id), ["home/coffee"])
+        XCTAssertEqual(id, "coffee")
+        XCTAssertEqual(panel.model.visible.map(\.id), ["coffee"])
+        XCTAssertEqual(panel.model.visible.map(\.spot.name), ["Coffee"])
     }
 
     func testEachPlaceNamesTheLineThatTheSpotLacks() throws {
         let bare = Spot(id: "bare", name: "Bare", url: folder)
-        let card = Spot(id: "card", name: "Card", url: folder, read: SpotRead(moments: [.panel]))
+        let card = Spot(id: "card", name: "Card", url: folder, triggers: .panel)
 
         XCTAssertNil(PlaygroundPlace.sheet.lack(of: bare))
-        XCTAssertEqual(PlaygroundPlace.card.lack(of: bare), "The panel reads a card with on=panel.open or on=clock.<seconds>.")
+        XCTAssertEqual(PlaygroundPlace.card.lack(of: bare), "The panel reads a card with \"panel.open\" or every in its [on].")
         XCTAssertNil(PlaygroundPlace.card.lack(of: card))
     }
 }

@@ -12,14 +12,15 @@ final class CallLogTests: SpotRunsCase {
     }
 
     func testACallLeavesItsArgumentsItsInputItsFramesItsErrorsAndItsExit() async throws {
-        try script(body: "cat > /dev/null; printf 'title=Half\\n---\\ntitle=Done\\n'; echo 'The server did not answer.' >&2; exit 3")
+        try script(body: "cat > /dev/null; printf 'frame=\\ntitle=Half\\n---\\ntitle=Done\\n'; echo 'The server did not answer.' >&2; exit 3")
         let sheet = try sheet()
 
         sheet.run(CommandAction(id: "send", title: "Send"), item: SpotItem(title: "Home", run: "home"))
         try await wait("the record") { self.log.text(of: "script").contains("exit 3") }
 
         let text = log.text(of: "script")
-        XCTAssertTrue(text.contains("send home"))
+        XCTAssertTrue(text.contains(" · send · "), text)
+        XCTAssertTrue(text.contains("input.item=home"))
         XCTAssertTrue(text.contains("title=Half"))
         XCTAssertTrue(text.contains("title=Done"))
         XCTAssertTrue(text.contains("The server did not answer."))
@@ -53,23 +54,23 @@ final class CallLogTests: SpotRunsCase {
     }
 
     func testATimedReadThatEndsWellLeavesNoRecordAndAPanelReadDoes() async throws {
-        try script(header: "on=panel.open", "echo \"title=$OPENSPOT_REASON\"")
+        try script(toml: "[on]\n'panel.open' = true", "\(TestSpot.event)\necho \"title=$ev\"")
         let sheet = try sheet()
 
-        sheet.read(reason: .clock(60))
+        sheet.show(event: .clock)
         try await wait("the end of the timed read") { self.log().count == 1 && sheet.calls.isEmpty }
         time += 10
-        sheet.read(reason: .panel)
+        sheet.show(event: .panel)
         try await wait("the record of the panel read") { self.log.text(of: "script").contains("title=panel.open") }
 
-        XCTAssertFalse(log.text(of: "script").contains("title=clock.60"))
+        XCTAssertFalse(log.text(of: "script").contains("title=every"))
     }
 
     func testATimedReadThatFailsLeavesARecord() async throws {
-        try script(header: "on=panel.open", "echo 'The sensor is gone.' >&2; exit 2")
+        try script(toml: "[on]\n'panel.open' = true", "echo 'The sensor is gone.' >&2; exit 2")
         let sheet = try sheet()
 
-        sheet.read(reason: .clock(60))
+        sheet.show(event: .clock)
 
         try await wait("the record") { self.log.text(of: "script").contains("The sensor is gone.") }
     }
@@ -94,7 +95,7 @@ final class CallLogTests: SpotRunsCase {
         for number in 0..<100 {
             small.add("frame \(number) " + String(repeating: "x", count: 90), to: &frames)
         }
-        small.write(CallLog.Record(spot: "many", arguments: ["read"], input: nil, frames: frames, errors: "", end: .exited(0), started: time, seconds: 0.1))
+        small.write(CallLog.Record(spot: "many", arguments: ["show"], input: nil, frames: frames, errors: "", end: .exited(0), started: time, seconds: 0.1))
 
         let text = small.text(of: "many")
 
@@ -106,7 +107,7 @@ final class CallLogTests: SpotRunsCase {
     func testARecordMarksTheCutWhenItDropsAnOlderFrame() {
         let small = CallLog(folder: folder.appendingPathComponent("small"), limit: 2_000)
 
-        small.write(CallLog.Record(spot: "cut", arguments: ["read"], input: nil, frames: [String(repeating: "a", count: 10), String(repeating: "b", count: 500)], errors: "", end: .exited(0), started: time, seconds: 0.1))
+        small.write(CallLog.Record(spot: "cut", arguments: ["show"], input: nil, frames: [String(repeating: "a", count: 10), String(repeating: "b", count: 500)], errors: "", end: .exited(0), started: time, seconds: 0.1))
 
         XCTAssertTrue(small.text(of: "cut").contains("stdout:\n…" + String(repeating: "b", count: 500)))
     }

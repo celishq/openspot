@@ -3,8 +3,6 @@ import OpenspotCore
 
 @MainActor
 final class SpotFileDrag: NSObject, NSDraggingSource {
-    private static let iconSide: CGFloat = 32
-    private static let fan: CGFloat = 6
     private static var current: SpotFileDrag?
 
     private let onDrop: () -> Void
@@ -23,8 +21,8 @@ final class SpotFileDrag: NSObject, NSDraggingSource {
         let items = existing.enumerated().map { index, path in
             let item = NSDraggingItem(pasteboardWriter: URL(fileURLWithPath: path) as NSURL)
             let icon = NSWorkspace.shared.icon(forFile: path)
-            let shift = CGFloat(min(index, 3)) * fan
-            item.setDraggingFrame(NSRect(x: point.x - iconSide / 2 + shift, y: point.y - iconSide / 2 - shift, width: iconSide, height: iconSide), contents: icon)
+            let shift = CGFloat(min(index, 3)) * SpotTokens.dragFan
+            item.setDraggingFrame(NSRect(x: point.x - SpotTokens.dragIconSide / 2 + shift, y: point.y - SpotTokens.dragIconSide / 2 - shift, width: SpotTokens.dragIconSide, height: SpotTokens.dragIconSide), contents: icon)
             return item
         }
         let drag = SpotFileDrag(onDrop: onDrop, onEnd: onEnd)

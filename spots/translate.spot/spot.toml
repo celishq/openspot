@@ -1,0 +1,6 @@
+icon = "translate"
+detail = "Between languages"
+uses = ["clipboard"]
+
+[on]
+command = ["translate"]

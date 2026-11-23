@@ -17,8 +17,9 @@ public final class ScriptProcess: @unchecked Sendable {
     private let mode: Mode
     private let limit: TimeInterval?
     private let dataName: String?
-    private let careful: CarefulMode?
+    private let sandbox: Sandbox?
     private let variables: [String: String]
+    private let withheld: Set<String>
     private let base: [String: String]?
     private let folder: URL?
     private let stopPause: TimeInterval
@@ -34,6 +35,10 @@ public final class ScriptProcess: @unchecked Sendable {
     private var building: Bool
     private var ended = false
     private var lateKill: Int?
+    private var limitEnd: Date?
+    private var limitHolds = 0
+    private var heldSince: Date?
+    private var limitTurn = 0
     private var stops = 0
     private var id: pid_t = 0
     private var waitStatus: Int32?
@@ -45,17 +50,19 @@ public final class ScriptProcess: @unchecked Sendable {
     private var unended: String?
     private var reader = SheetFrames()
     var fix: @Sendable () -> URL? = { nil }
+    var channel: RunChannel?
 
-    public init(url: URL, name: String? = nil, arguments: [String] = [], mode: Mode = .once(input: nil), limit: TimeInterval? = nil, stopPause: TimeInterval = 2, dataName: String? = nil, variables: [String: String] = [:], errorLimit: Int? = 64 * 1024, careful: Set<SpotUse>? = nil, base: [String: String]? = nil, folder: URL? = nil, build: (@Sendable () async throws -> URL)? = nil) {
+    public init(url: URL, name: String? = nil, arguments: [String] = [], mode: Mode = .once(input: nil), limit: TimeInterval? = nil, stopPause: TimeInterval = 2, dataName: String? = nil, variables: [String: String] = [:], withheld: Set<String> = [], errorLimit: Int? = 64 * 1024, careful: Set<SpotUse>? = nil, base: [String: String]? = nil, folder: URL? = nil, build: (@Sendable () async throws -> URL)? = nil) {
         self.name = name
         self.build = build
         building = build != nil
         self.base = base
         self.folder = folder
-        self.careful = careful.map(CarefulMode.init)
+        self.sandbox = careful.map(Sandbox.init)
         errorText = ErrorTail(limit: errorLimit)
         self.dataName = dataName
         self.variables = variables
+        self.withheld = withheld
         self.url = url
         self.arguments = arguments
         self.mode = mode
@@ -70,7 +77,7 @@ public final class ScriptProcess: @unchecked Sendable {
         let contents = URL(fileURLWithPath: app).deletingLastPathComponent().deletingLastPathComponent()
         let helpers = contents.appendingPathComponent("Helpers").path
         let config = SpotsFolder.config(environment: base, home: home(of: base))
-        let data = dataFolder(base: base, dataName: dataName)
+        let data = dataFolder(config: config, dataName: dataName)
         try? FileManager.default.createDirectory(at: data, withIntermediateDirectories: true)
         var paths = [helpers] + (base["PATH"] ?? "").split(separator: ":").map(String.init)
         paths += commonPaths.filter { !paths.contains($0) }
@@ -81,7 +88,11 @@ public final class ScriptProcess: @unchecked Sendable {
     }
 
     static func dataFolder(base: [String: String], dataName: String?) -> URL {
-        var data = SpotsFolder.config(environment: base, home: home(of: base)).appendingPathComponent("data", isDirectory: true)
+        dataFolder(config: SpotsFolder.config(environment: base, home: home(of: base)), dataName: dataName)
+    }
+
+    private static func dataFolder(config: URL, dataName: String?) -> URL {
+        var data = config.appendingPathComponent("data", isDirectory: true)
         if let dataName { data.appendPathComponent(URL(fileURLWithPath: dataName).lastPathComponent, isDirectory: true) }
         return data
     }
@@ -132,8 +143,8 @@ public final class ScriptProcess: @unchecked Sendable {
             text = given
             hasInput = given != nil
         }
-        let environment = Self.environment(base: base ?? ProcessInfo.processInfo.environment, app: Bundle.main.executablePath ?? "", dataName: dataName).merging(variables) { _, new in new }
-        let fence = careful?.words(in: environment) ?? []
+        let environment = Self.environment(base: base ?? ProcessInfo.processInfo.environment, app: Bundle.main.executablePath ?? "", dataName: dataName).merging(variables) { _, new in new }.filter { !withheld.contains($0.key) }
+        let fence = sandbox?.words(in: environment) ?? []
         let errors = errorOutput
         signal(SIGPIPE, SIG_IGN)
         guard !isStopped else {
@@ -160,16 +171,44 @@ public final class ScriptProcess: @unchecked Sendable {
         if wasStopped { stopGroup() }
         if let text { writeAndClose(text) }
         if let limit {
-            DispatchQueue.global().asyncAfter(deadline: .now() + limit) { [weak self] in
-                guard let self, !lock.withLock({ hasFrame }) else { return }
-                stop(because: SpotError.timedOut)
-            }
+            lock.withLock { limitEnd = Date().addingTimeInterval(limit) }
+            armLimit()
         }
         follow(output: output, errors: errors)
     }
 
-    public func send(_ action: SpotAction, input: String? = nil, variables: [String: String] = [:], id: Int) {
-        send(text: action.block(input: input, variables: variables, id: id))
+    private func armLimit() {
+        let (turn, end) = lock.withLock { (limitTurn, limitEnd) }
+        guard let end else { return }
+        DispatchQueue.global().asyncAfter(deadline: .now() + max(0, end.timeIntervalSinceNow)) { [weak self] in
+            guard let self, lock.withLock({ !hasFrame && limitHolds == 0 && limitTurn == turn }) else { return }
+            stop(because: SpotError.timedOut)
+        }
+    }
+
+    func holdLimit() {
+        lock.withLock {
+            limitHolds += 1
+            guard limitHolds == 1 else { return }
+            heldSince = Date()
+            limitTurn += 1
+        }
+    }
+
+    func releaseLimit() {
+        let isFree = lock.withLock {
+            limitHolds = max(0, limitHolds - 1)
+            guard limitHolds == 0, let since = heldSince else { return false }
+            heldSince = nil
+            limitTurn += 1
+            limitEnd = limitEnd?.addingTimeInterval(Date().timeIntervalSince(since))
+            return true
+        }
+        if isFree { armLimit() }
+    }
+
+    public func send(_ message: Message, id: Int) {
+        send(text: message.block(id: id))
     }
 
     public func send(text: String) {
@@ -338,7 +377,7 @@ public final class ScriptProcess: @unchecked Sendable {
             let line = lastErrors.text
             let last = reader.finish()
             lock.withLock { unended = last }
-            let fix = last.flatMap { FrameHead(text: $0).link }.flatMap(URL.init(string:)) ?? given
+            let fix = last.flatMap { FrameRoot(text: $0).link }.flatMap(URL.init(string:)) ?? given
             finish(throwing: fix.map { SpotError.failedWithFix(exitCode, line, $0) } ?? SpotError.failed(exitCode, line))
             return
         }
@@ -393,6 +432,13 @@ public final class ScriptProcess: @unchecked Sendable {
         }
         posix_spawn_file_actions_adddup2(&actions, output.fileDescriptor, STDOUT_FILENO)
         posix_spawn_file_actions_adddup2(&actions, errors.fileDescriptor, STDERR_FILENO)
+        if let child = channel?.childEnd {
+            if child == ChannelDescriptor.number {
+                posix_spawn_file_actions_addinherit_np(&actions, child)
+            } else {
+                posix_spawn_file_actions_adddup2(&actions, child, ChannelDescriptor.number)
+            }
+        }
         if let folder { posix_spawn_file_actions_addchdir(&actions, folder.path) }
         var attributes: posix_spawnattr_t?
         posix_spawnattr_init(&attributes)

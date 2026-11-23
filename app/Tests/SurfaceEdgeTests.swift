@@ -12,7 +12,7 @@ final class SurfaceEdgeTests: XCTestCase {
             let isCapsule = size == .small || size == .wide
 
             XCTAssertEqual(edge.isCircular(in: bounds(of: size)), isCapsule, size.name)
-            XCTAssertEqual(edge.corner(in: bounds(of: size)), isCapsule ? SpotTokens.rowHeight / 2 : SpotTokens.radius, size.name)
+            XCTAssertEqual(edge.corner(in: bounds(of: size)), isCapsule ? SpotTokens.cell / 2 : SpotTokens.cardRadius, size.name)
             XCTAssertEqual(edge.place(in: bounds(of: size)), bounds(of: size), size.name)
         }
     }
@@ -27,6 +27,19 @@ final class SurfaceEdgeTests: XCTestCase {
             XCTAssertEqual(ring.isCircular(in: bounds(of: size)), card.isCircular(in: bounds(of: size)), size.name)
             XCTAssertEqual(ring.place(in: bounds(of: size)), bounds(of: size).insetBy(dx: half, dy: half), size.name)
             XCTAssertEqual(ring.corner(in: bounds(of: size)), card.corner(in: bounds(of: size)) - half, size.name)
+        }
+    }
+
+    func testACardEdgeDrawnFromItsPaddedContentIsTheCardItselfForEachSize() {
+        for size in SpotSize.all {
+            let padding = SpotTokens.cardPadding(for: size, isDrawn: true)
+            let card = SurfaceEdge(card: size)
+            let content = bounds(of: size).insetBy(dx: padding, dy: padding)
+            let edge = card.outset(by: padding)
+
+            XCTAssertEqual(edge.place(in: content), bounds(of: size), size.name)
+            XCTAssertEqual(edge.corner(in: content), card.corner(in: bounds(of: size)), size.name)
+            XCTAssertEqual(edge.isCircular(in: content), card.isCircular(in: bounds(of: size)), size.name)
         }
     }
 
@@ -63,9 +76,9 @@ final class SurfaceEdgeTests: XCTestCase {
     }
 
     func testAPartInsideASurfaceHasTheCornerOfTheSurfaceLessThePadding() {
-        XCTAssertEqual(SurfaceEdge.sheet.inner().radius, SpotTokens.radius - SpotTokens.padding)
+        XCTAssertEqual(SurfaceEdge.sheet.inner().radius, SpotTokens.cardRadius - SpotTokens.padding)
         XCTAssertEqual(SurfaceEdge.window.inner().radius, SurfaceEdge.window.radius - SpotTokens.padding)
         XCTAssertEqual(SurfaceEdge(radius: 8).inner().radius, 0)
-        XCTAssertEqual(SurfaceEdge.sheet.inner(by: 4).radius, SpotTokens.radius - 4)
+        XCTAssertEqual(SurfaceEdge.sheet.inner(by: 4).radius, SpotTokens.cardRadius - 4)
     }
 }

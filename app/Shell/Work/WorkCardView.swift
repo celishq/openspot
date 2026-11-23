@@ -5,9 +5,6 @@ struct WorkCardView: View {
     let model: SpotsModel
     let stage: WorkCardStage
 
-    static let side: CGFloat = 200
-    private static let inset: CGFloat = 20
-    private static let glyphSide: CGFloat = 72
     private static let wordLines = 2
 
     var body: some View {
@@ -15,21 +12,21 @@ struct WorkCardView: View {
             VStack(spacing: SpotTokens.padding) {
                 Group {
                     if let entry = model.entry(card.spot) {
-                        SpotGlyph(entry: entry, side: Self.glyphSide, font: SpotType.workGlyph)
+                        SpotGlyph(entry: entry, side: SpotTokens.workCardGlyph, font: SpotType.workGlyph)
                     }
                 }
-                .frame(height: Self.glyphSide)
+                .frame(height: SpotTokens.workCardGlyph)
                 Text(card.words)
                     .font(SpotType.strong)
                     .foregroundStyle(SpotTheme.ink)
                     .multilineTextAlignment(.center)
                     .lineLimit(Self.wordLines)
                     .frame(maxWidth: .infinity, minHeight: CGFloat(Self.wordLines) * SpotType.titleLine, alignment: .top)
-                WorkCardBar(fill: card.fill, width: Self.side - 2 * Self.inset)
+                WorkCardBar(fill: card.fill, width: SpotTokens.workCardSide - 2 * SpotTokens.workCardInset)
             }
-            .padding(Self.inset)
-            .frame(width: Self.side, height: Self.side)
-            .modifier(SpotGlass(shape: SpotRoundShape(radius: SpotTokens.radius)))
+            .padding(SpotTokens.workCardInset)
+            .frame(width: SpotTokens.workCardSide, height: SpotTokens.workCardSide)
+            .modifier(SpotGlass(shape: SpotRoundShape(radius: SpotTokens.cardRadius)))
             .accessibilityElement(children: .combine)
             .environment(\.spotIsShown, stage.isShown)
             .frame(maxWidth: .infinity, maxHeight: .infinity)

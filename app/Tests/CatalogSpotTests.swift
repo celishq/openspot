@@ -4,9 +4,9 @@ import XCTest
 final class CatalogSpotTests: BuiltInCase {
     override func setUp() async throws {
         try await super.setUp()
-        try "#!/bin/sh\n# detail=Open app\n# icon=star\n".writeScript(to: core.appendingPathComponent("zebra.spot/zebra.sh"))
+        try "#!/bin/sh\n".writeScript(to: core.appendingPathComponent("zebra.spot/zebra.sh"), toml: "detail = 'Open app'\nicon = 'star'")
         try "#!/bin/sh\n".writeScript(to: core.appendingPathComponent("apps.spot/apps.sh"))
-        try "#!/bin/sh\n# on=clock.5\n".writeScript(to: core.appendingPathComponent("cpu.spot/cpu.sh"))
+        try "#!/bin/sh\n".writeScript(to: core.appendingPathComponent("cpu.spot/cpu.sh"), toml: "[on]\nevery = 5")
     }
 
     private var catalog: Spot {
@@ -15,32 +15,23 @@ final class CatalogSpotTests: BuiltInCase {
         }
     }
 
-    func testItIsASmallCardOnTheGridWithItsLetterThatAKeywordFinds() throws {
+    func testItIsAWideCardOnTheDefaultGridThatAKeywordFinds() throws {
         let spot = try catalog
         let defaults = Config(text: try String(contentsOf: repoSpots.deletingLastPathComponent().appendingPathComponent("app/defaults.toml"), encoding: .utf8))
 
         XCTAssertEqual(spot.name, "Spots")
         XCTAssertEqual(spot.subtitle, "Edit Spots")
-        XCTAssertNil(spot.read)
-        XCTAssertEqual(defaults.arrangement.size(of: spot.id), .small)
-        XCTAssertTrue(spot.isOnGrid)
+        XCTAssertFalse(spot.triggers.shows)
+        XCTAssertEqual(defaults.arrangement.size(of: spot.id), .wide)
+        XCTAssertEqual(defaults.arrangement.isOnGrid(of: spot.id), true)
         XCTAssertEqual(spot.keywords, ["edit spots"])
     }
 
     func testAPressOpensEditSpotsInTheApp() async throws {
-        _ = try await catalog.perform(SpotAction(arguments: ["open"]), timeout: 60)
+        _ = try await catalog.perform("edit", timeout: 60)
 
         let opened = await app.opened
         XCTAssertEqual(opened, ["grid"])
-    }
-
-    func testTurningOnACoreWidgetLoadsItInAScan() throws {
-        try "#!/bin/sh\n# title=Overview\n# grid.square=cpu\n".writeScript(to: core.appendingPathComponent("overview.spot/overview.sh"))
-
-        try file.turn("overview", on: true)
-
-        let scan = try SpotsFolder(url: spots, core: core, enabled: file.read().arrangement.enabled).scan()
-        XCTAssertEqual(scan.spots.filter(\.headerState.isOnGrid).map(\.name), ["Overview"])
     }
 
     func testTheSpotsSpotShowsWithAnEmptyFolder() throws {
@@ -64,17 +55,14 @@ final class CatalogSpotTests: BuiltInCase {
         let shared = try SpotPackage(sharing: XCTUnwrap(scan.spots.first { $0.id == "apps" }), from: scan)
 
         let review = try ReviewSpot(spot: shared, folder: spots, canAdd: false)
-        let sheet = try review.answer(["read"])
+        let sheet = try review.answer(["show"])
 
         XCTAssertFalse(sheet.contains("text=install"))
         XCTAssertTrue(sheet.contains("apps.sh"))
     }
 
-    func testARowIsOnByItsValue() throws {
-        let on = try XCTUnwrap(TextBlock.blocks(in: "row=apps\ntitle=Apps\nvalue=true\n").first)
-        let old = try XCTUnwrap(TextBlock.blocks(in: "row=apps\ntitle=Apps\non=true\n").first)
-
-        XCTAssertEqual(SpotItem(block: on)?.isOn, true)
-        XCTAssertEqual(SpotItem(block: old)?.isOn, false)
+    func testAnItemIsOnByItsValue() throws {
+        XCTAssertEqual(Frame(text: "item=apps\ntitle=Apps\nvalue=true\n").items.first?.isOn, true)
+        XCTAssertEqual(Frame(text: "item=apps\ntitle=Apps\non=true\n").items.first?.isOn, false)
     }
 }

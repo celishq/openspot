@@ -9,11 +9,15 @@ struct ModelApp: RunningApp {
     func spotsChanged() async { await model.spotsChanged() }
     func status() async -> (update: String?, calls: Int, isFirstLaunch: Bool) { (nil, 0, false) }
     func checkUpdate() async -> Bool { false }
+    func slowMotion(_ isOn: Bool?) async -> Bool? { await model.slowMotion(isOn) }
     func installUpdate() async -> Bool { false }
     func quit() async {}
-    func open(_ id: String) async -> Bool { false }
-    func push(_ id: String, page: String?, title: String?, replace: Bool) async -> Bool { false }
-    func pop(_ id: String, all: Bool) async -> Bool { false }
+    func apply(_ theme: Theme) async {}
+    func open(_ id: String) async -> Bool { await model.open(id) }
+    func ask(_ id: String, from caller: String?, title: String?) async -> Bool { await model.present(FlowSheet(spot: id, title: title), from: caller) }
+    func leave(_ id: String) async -> Bool { await model.leave(id) }
+    func push(_ id: String, route: String?, title: String?, replace: Bool) async -> Bool { false }
+    func pop(_ id: String, all: Bool) async -> Bool { await all ? model.pop(in: id, all: true) : model.pop(in: id) }
     func review(_ id: String) async -> Bool { false }
     func choose(for id: String) async -> Bool { false }
     func editGrid() async {}

@@ -11,9 +11,9 @@ public struct ItemList: Equatable, Sendable {
     private var topCount = 0
     private var bottomCount = 0
     public private(set) var hasFiles = false
+    public private(set) var sectionStarts: [String: String] = [:]
     public private(set) var selected = 0
     public private(set) var perLine = 1
-    public private(set) var drawing = RepeatDrawing.list
     public private(set) var isWaiting = false
     public private(set) var landedSearches = 0
     private var awaitsLanding = false
@@ -48,6 +48,14 @@ public struct ItemList: Equatable, Sendable {
 
     public func findsSameRows(as other: ItemList) -> Bool {
         all == other.all && recent == other.recent && search == other.search
+    }
+
+    public var lineCount: Int {
+        shown.count + sectionStarts.count
+    }
+
+    public func run(at index: Int) -> String? {
+        shown.indices.contains(index) ? shown[index].run : nil
     }
 
     public var selectedItem: SpotItem? {
@@ -217,6 +225,24 @@ public struct ItemList: Equatable, Sendable {
         shown[topCount..<(shown.count - bottomCount)]
     }
 
+    public func lineItem(at y: CGFloat) -> SpotItem? {
+        let step = SpotTokens.listRow + SpotTokens.listRowGap
+        guard y >= 0, y.truncatingRemainder(dividingBy: step) < SpotTokens.listRow else { return nil }
+        let line = Int(y / step)
+        let rows = scrolling
+        if sectionStarts.isEmpty { return line < rows.count ? rows[rows.startIndex + line] : nil }
+        var at = 0
+        for item in rows {
+            if sectionStarts[item.run] != nil {
+                if at == line { return nil }
+                at += 1
+            }
+            if at == line { return item }
+            at += 1
+        }
+        return nil
+    }
+
     public mutating func moveToEdge(last: Bool) {
         landFinding()
         selected = last ? max(shown.count - 1, 0) : 0
@@ -231,13 +257,8 @@ public struct ItemList: Equatable, Sendable {
         self.perLine = max(perLine, 1)
     }
 
-    public mutating func take(drawing: RepeatDrawing) {
-        self.drawing = drawing
-        perLine = drawing.perLine ?? drawing.places.count
-    }
-
-    public var isBento: Bool {
-        drawing.perLine == nil
+    public var isOnFirstLine: Bool {
+        selected < perLine
     }
 
     public var isOnLastLine: Bool {
@@ -304,12 +325,23 @@ public struct ItemList: Equatable, Sendable {
         return Shown(items: rows, hasFiles: holdsFiles && rows.contains { $0.file != nil })
     }
 
+    private static func sectionStarts(of items: [SpotItem]) -> [String: String] {
+        var starts: [String: String] = [:]
+        var last: String?
+        for item in items where item.section != last {
+            last = item.section
+            if let section = item.section { starts[item.run] = section }
+        }
+        return starts
+    }
+
     private mutating func show<Offsets: Collection<Int>>(_ found: Offsets) {
         show(rows(of: found))
     }
 
     private mutating func show(_ rows: Shown) {
         shown = rows.items
+        sectionStarts = query.isEmpty ? Self.sectionStarts(of: rows.items) : [:]
         topCount = pinnedAbove.count
         bottomCount = pinnedBelow.count
         hasFiles = rows.hasFiles

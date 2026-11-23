@@ -31,7 +31,7 @@ final class AccountCallsTests: XCTestCase {
     }
 
     private func call(_ arguments: [String], from spot: Spot? = nil, input: String = "") async throws -> CommandAnswer {
-        let request = CommandRequest(arguments: arguments, folder: folder.path, token: spot.map { runs.tokens.issue(for: $0) }, isBound: true)
+        let request = CommandRequest(arguments: arguments, folder: folder.path, caller: spot.map { runs.callers.issue(for: $0) })
         let parsed = api.admit(try XCTUnwrap(api.call(of: request)), request: request)
         let work = try XCTUnwrap(api.work(for: parsed, request: request, input: { input }))
         return await work()
@@ -57,9 +57,9 @@ final class AccountCallsTests: XCTestCase {
     func testAnyoneReadsThePublicFacts() async throws {
         let key = try store.keyMadeOnce()
 
-        let facts = try await call(["account", "--frame"], from: spot(uses: [], isBuiltIn: false))
+        let facts = try await call(["account", "show"], from: spot(uses: [], isBuiltIn: false))
 
-        XCTAssertEqual(facts.output, "signedIn=true\nnpub=\(key.npub)\nsince=\(try XCTUnwrap(try store.record()?.since))\nbackedUp=false\n")
+        XCTAssertEqual(facts.output, "item=account\nsignedIn=true\nnpub=\(key.npub)\nsince=\(try XCTUnwrap(try store.record()?.since))\nbackedUp=false\n")
     }
 
     func testNoVerbMakesChangesOrRemovesTheKeyNorPrintsOrTakesAWord() async throws {
@@ -94,7 +94,7 @@ final class AccountCallsTests: XCTestCase {
         XCTAssertThrowsError(try secret.make(handle: "Tony P"))
         try secret.make(handle: "tony")
 
-        let facts = try await call(["account", "--frame"], from: spot(uses: [], isBuiltIn: false))
+        let facts = try await call(["account", "show"], from: spot(uses: [], isBuiltIn: false))
 
         XCTAssertTrue(facts.output.contains("\nhandle=tony\n"), facts.output)
         XCTAssertNotNil(facts.output.range(of: "\nsince=\\d{4}-\\d{2}-\\d{2}\n", options: .regularExpression), facts.output)
@@ -134,12 +134,12 @@ final class AccountCallsTests: XCTestCase {
 
     func testTheFactsRunAloneAnswerThatTheAppIsNotRunning() async throws {
         let alone = CommandAPI(mac: Mac(), places: .test(["OPENSPOT_CONFIG": folder.path]), rates: .offline)
-        let request = CommandRequest(arguments: ["account"], folder: folder.path)
+        let request = CommandRequest(arguments: ["account", "show"], folder: folder.path)
 
         let work = try XCTUnwrap(alone.work(for: try XCTUnwrap(alone.call(of: request)), request: request, input: { "" }))
         let answer = await work()
 
-        XCTAssertEqual(answer.code, 1)
+        XCTAssertEqual(answer.code, 3)
         XCTAssertTrue(answer.errors.contains("needs the Openspot app, and no app answers"), answer.errors)
     }
 
@@ -162,14 +162,14 @@ final class AccountCallsTests: XCTestCase {
         let other = folder.appendingPathComponent("other", isDirectory: true)
         let line = try JSONSerialization.data(withJSONObject: [
             "jsonrpc": "2.0", "id": 1, "method": "ask",
-            "params": ["argv": ["account", "--frame"], "cwd": other.path, "env": ["OPENSPOT_CONFIG": other.path]]
+            "params": ["argv": ["account", "show"], "cwd": other.path, "env": ["OPENSPOT_CONFIG": other.path]]
         ])
         let request = try XCTUnwrap(CommandRequest(line: line))
         let work = try XCTUnwrap(api.work(for: api.admit(try XCTUnwrap(api.call(of: request)), request: request), request: request, input: { "" }))
 
         let answer = await work()
 
-        XCTAssertTrue(answer.output.hasPrefix("signedIn=true\n"), answer.output + answer.errors)
+        XCTAssertTrue(answer.output.hasPrefix("item=account\nsignedIn=true\n"), answer.output + answer.errors)
     }
 
     func testEachActOnTheSecretAsksTouchIDFirst() async throws {

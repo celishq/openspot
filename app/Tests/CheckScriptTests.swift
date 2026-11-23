@@ -32,15 +32,15 @@ final class CheckScriptTests: XCTestCase {
         ("glass", "app/Shell/Field/SpotFieldView.swift", "let dims = model.grid" + "Shade.isOn\n"),
         ("glass", "app/Shell/Surface/SpotFocusLook.swift", "content.environment(\\.spot" + "Fade, 0.35)\n"),
         ("shapes", "app/Shell/Panel.swift", "let edge = Rounded" + "Rectangle(cornerRadius: 8, style: .continuous)\n"),
-        ("shapes", "app/Shell/Grid/Card.swift", "content.overlay(Rounded" + "Rectangle(cornerRadius: SpotTokens.radius).strokeBorder(.red))\n"),
+        ("shapes", "app/Shell/Grid/Card.swift", "content.overlay(Rounded" + "Rectangle(cornerRadius: SpotTokens.cardRadius).strokeBorder(.red))\n"),
         ("tools", "app/Shell/Panel.swift", "let output = environment[\"OPENSPOT_" + "PROBE\"]\n"),
         ("tools", "app/Shell/Panel.swift", "#if OPENSPOT_TOOLS\n#if DEBUG\n#endif\n#endif\nlet probe = SpotMotion" + "Probe()\n"),
         ("tools", "app/Core/Panel.swift", "let probe = SpotMotion" + "Probe()\n"),
         ("tools", "scripts/release.sh", "xcodebuild -configuration Release SWIFT_ACTIVE_COMPILATION_CONDITIONS=OPENSPOT_" + "TOOLS build\n"),
         ("tools", "app/project.yml", "targets:\n  A:\n    configs:\n      Release:\n        SWIFT_ACTIVE_COMPILATION_CONDITIONS: OPENSPOT_" + "TOOLS\n"),
         ("processes", "app/Client/main.swift", "_ = posix_spawn(&started, path, nil, nil, words, environ)\n"),
-        ("spots", "spots/weather.spot/weather.sh", "#!/bin/sh\n# title=Weather\n# on=clock.5\necho\n"),
-        ("spots", "examples/weather.spot/weather.sh", "#!/bin/sh\n# title=Weather\necho 1 > \"${TMPDIR:-/tmp}/weather\"\n")
+        ("spots", "spots/weather.spot/spot.toml", "title = \"Weather\"\n\n[on]\nevery = 5\n"),
+        ("spots", "examples/weather.spot/weather.sh", "#!/bin/sh\necho 1 > \"${TMPDIR:-/tmp}/weather\"\n")
     ]
 
     private var scripts: URL {
@@ -49,7 +49,7 @@ final class CheckScriptTests: XCTestCase {
 
     private func cleanTree() throws -> URL {
         let root = try temporaryFolder()
-        for folder in ["app/Core", "app/Shell", "app/Client", "app/Tests", "scripts/breaks", "spots", "examples"] {
+        for folder in ["app/Core", "app/Shell", "app/Client", "app/Shared", "app/Tests", "scripts/breaks", "spots", "examples"] {
             try FileManager.default.createDirectory(at: root.appendingPathComponent(folder), withIntermediateDirectories: true)
         }
         for list in Self.lists {

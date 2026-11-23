@@ -1,20 +1,23 @@
 import Foundation
 
 struct TestSpot {
-    let header: String
+    static let toast = "'\(Bundle(for: FakeHost.self).bundleURL.deletingLastPathComponent().appendingPathComponent("openspot").path)' toast"
+    static let command = "[actions.go]\ntitle = 'Go'"
+    static let event = #"in=$(cat); ev=$(printf '%s\n' "$in" | sed -n 's/^input\.event=//p'); [ "$1" = show ] || ev=$1; val=$(printf '%s\n' "$in" | sed -n 's/^input\.value=//p')"#
+
+    let toml: String
     let body: String
 
-    init(header: String = "", body: String = "") {
-        self.header = header
+    init(toml: String = "", body: String = "") {
+        self.toml = toml
         self.body = body
     }
 
     var text: String {
-        let lines = header.isEmpty ? [] : header.split(separator: "\n", omittingEmptySubsequences: false).map { $0.isEmpty ? "#" : "# \($0)" }
-        return "#!/bin/sh\n\(lines.joined(separator: "\n"))\n\(body)\n"
+        "#!/bin/sh\n\(body)\n"
     }
 
     func write(to url: URL) throws {
-        try text.writeScript(to: url)
+        try text.writeScript(to: url, toml: toml)
     }
 }

@@ -1,12 +1,6 @@
 #!/bin/sh
-# title=Updates
-# icon=arrow.triangle.2.circlepath
-# on=app.launch
-# on=app.update
-# uses=app
-# offers=card
 warned="$OPENSPOT_DATA/updates-warned"
-status=$(openspot app status --frame) || exit 1
+status=$(openspot app status) || exit 1
 version= ready= calls=0
 while IFS='=' read -r key value; do
   case $key in
@@ -29,23 +23,23 @@ warned() {
 }
 
 case "$1" in
-  read)
+  show | app.launch | app.update)
     if [ -z "$ready" ]; then
       rm -f "$warned"
-      printf 'title=Updates\ndetail=%s\nshown=false\n' "$version"
+      printf 'frame=\ntitle=Updates\ndetail=%s\nshown=false\n' "$version"
     elif warned; then
-      printf 'title=Restart\ndetail=Stops %s\nshown=true\n' "$(calls "$calls")"
+      printf 'frame=\ntitle=Restart\ndetail=Stops %s\nshown=true\n' "$(calls "$calls")"
     else
-      printf 'title=Restart\ndetail=Update %s\nshown=true\n' "$ready"
+      printf 'frame=\ntitle=Restart\ndetail=Update %s\nshown=true\n' "$ready"
     fi
     ;;
-  open)
+  update)
     if [ -z "$ready" ]; then
       exec openspot update check
     elif [ "$calls" -eq 0 ] || warned; then
       exec openspot update install
     fi
     printf '%s' "$calls" > "$warned.$$" && mv "$warned.$$" "$warned"
-    printf 'toast=Restarting stops %s. Press again to restart.\n' "$(calls "$calls")"
+    openspot toast "Restarting stops $(calls "$calls"). Press again to restart."
     ;;
 esac

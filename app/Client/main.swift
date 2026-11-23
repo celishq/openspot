@@ -5,22 +5,21 @@ nonisolated(unsafe) var connection: Int32 = -1
 
 func runAlone(_ app: AppBundle) -> Never {
     let program = app.program
-    var argv: [UnsafeMutablePointer<CChar>?] = ([program] + CommandLine.arguments.dropFirst()).map { strdup($0) }
+    var argv: [UnsafeMutablePointer<CChar>?] = ([program] + handed + arguments).map { strdup($0) }
     argv.append(nil)
     execv(program, argv)
     fail("openspot cannot start \(program): \(String(cString: strerror(errno))).")
 }
 
-func fail(_ line: String) -> Never {
+func fail(_ line: String, code: Int32 = 1) -> Never {
     let bytes = Array((line + "\n").utf8)
     _ = write(STDERR_FILENO, bytes, bytes.count)
-    exit(1)
+    exit(code)
 }
 
-func startInBackground(_ app: AppBundle, config: String) {
+func startInBackground(_ app: AppBundle) {
     let bundle = String(app.contents[..<(app.contents.lastIndex(of: "/") ?? app.contents.endIndex)])
-    var arguments = access(app.contents + "/Info.plist", F_OK) == 0 ? ["/usr/bin/open", "-g", "-j", bundle] : [app.program]
-    if arguments.count > 1, getenv("OPENSPOT_CONFIG") != nil { arguments += ["--env", "OPENSPOT_CONFIG=" + config] }
+    let arguments = app.isApp ? ["/usr/bin/open", "-g", "-j", bundle] + (handed.isEmpty ? [] : ["--args"] + handed) : [app.program] + handed
     var actions: posix_spawn_file_actions_t?
     posix_spawn_file_actions_init(&actions)
     defer { posix_spawn_file_actions_destroy(&actions) }
@@ -38,7 +37,7 @@ func startInBackground(_ app: AppBundle, config: String) {
 }
 
 func reachStarted(_ app: AppBundle, config: String) -> Int32 {
-    startInBackground(app, config: config)
+    startInBackground(app)
     var waited = 0.0
     while waited < startWaitSeconds {
         let reached = reach(config)
@@ -47,21 +46,35 @@ func reachStarted(_ app: AppBundle, config: String) -> Int32 {
         waited += 0.05
     }
     let seconds = startWaitSeconds == startWaitSeconds.rounded() ? String(Int(startWaitSeconds)) : String(startWaitSeconds)
-    fail("Openspot did not start within \(seconds) seconds, so this call did not run. Open Openspot, then run it again.")
+    fail("Openspot did not start within \(seconds) seconds, so this call did not run. Open Openspot, then run it again.", code: 3)
+}
+
+func reachRun() -> Int32 {
+    guard ChannelDescriptor.isChannel(ChannelDescriptor.number) else { return -1 }
+    SocketOption.quiet(ChannelDescriptor.number)
+    var pair: [Int32] = [-1, -1]
+    guard socketpair(AF_UNIX, SOCK_STREAM, 0, &pair) == 0 else { return -1 }
+    defer { close(pair[1]) }
+    var ready = pollfd(fd: pair[0], events: Int16(POLLIN), revents: 0)
+    var mark: UInt8 = 0
+    guard ChannelDescriptor.send(pair[1], over: ChannelDescriptor.number),
+          poll(&ready, 1, Int32(startWaitSeconds * 1000)) == 1, read(pair[0], &mark, 1) == 1, mark == ChannelDescriptor.ready else {
+        close(pair[0])
+        return -1
+    }
+    _ = fcntl(pair[0], F_SETFD, FD_CLOEXEC)
+    SocketOption.quiet(pair[0])
+    return pair[0]
 }
 
 func reach(_ config: String) -> Int32 {
     guard let real = realpath(config, nil) else { return -1 }
-    let path = Array(SocketPath.of(config: String(cString: real)).utf8)
+    let path = SocketPath.of(config: String(cString: real))
     free(real)
-    var address = sockaddr_un()
-    address.sun_family = sa_family_t(AF_UNIX)
-    guard path.count < MemoryLayout.size(ofValue: address.sun_path) else { return -1 }
-    withUnsafeMutableBytes(of: &address.sun_path) { $0.copyBytes(from: path) }
+    guard let address = SocketPath.address(of: path) else { return -1 }
     let descriptor = socket(AF_UNIX, SOCK_STREAM, 0)
     guard descriptor >= 0 else { return -1 }
-    var on: Int32 = 1
-    setsockopt(descriptor, SOL_SOCKET, SO_NOSIGPIPE, &on, socklen_t(MemoryLayout<Int32>.size))
+    SocketOption.quiet(descriptor)
     let result = withUnsafePointer(to: address) {
         $0.withMemoryRebound(to: sockaddr.self, capacity: 1) { connect(descriptor, $0, socklen_t(MemoryLayout<sockaddr_un>.size)) }
     }
@@ -73,13 +86,12 @@ func reach(_ config: String) -> Int32 {
 }
 
 func request() -> [UInt8] {
-    let argv = CommandLine.arguments.dropFirst().map(JSON.quoted).joined(separator: ",")
+    let argv = arguments.map(JSON.quoted).joined(separator: ",")
     var folder = [CChar](repeating: 0, count: Int(PATH_MAX))
     let cwd = getcwd(&folder, folder.count) == nil ? "" : String(decoding: folder.prefix { $0 != 0 }.map(UInt8.init(bitPattern:)), as: UTF8.self)
-    let token = getenv("OPENSPOT_TOKEN").map { "\"token\":" + JSON.quoted(String(cString: $0)) + "," } ?? ""
     var info = stat()
     let isPiped = fstat(STDIN_FILENO, &info) == 0 && (info.st_mode & S_IFMT == S_IFIFO || info.st_mode & S_IFMT == S_IFREG)
-    let line = "{\"jsonrpc\":\"2.0\",\"id\":1,\"method\":\"ask\",\"params\":{\"argv\":[\(argv)],\"cwd\":\(JSON.quoted(cwd)),\(token)\"piped\":\(isPiped)}}\n"
+    let line = "{\"jsonrpc\":\"2.0\",\"id\":1,\"method\":\"ask\",\"params\":{\"argv\":[\(argv)],\"cwd\":\(JSON.quoted(cwd)),\"piped\":\(isPiped)}}\n"
     return Array(line.utf8)
 }
 
@@ -96,25 +108,19 @@ func deliver(_ line: [UInt8], on socket: Int32) -> Bool {
     return true
 }
 
-func put(_ bytes: [UInt8], to descriptor: Int32) {
-    var offset = 0
-    while offset < bytes.count {
-        let count = bytes.withUnsafeBytes { write(descriptor, $0.baseAddress! + offset, bytes.count - offset) }
-        if count > 0 {
-            offset += count
-        } else if errno != EINTR {
-            return
-        }
-    }
-}
-
 guard let app = AppBundle() else { fail("openspot cannot find the path of its own program.") }
-let arguments = Array(CommandLine.arguments.dropFirst())
+let given = Array(CommandLine.arguments.dropFirst())
+let named = given.count > 1 && given[0] == "--config" ? given[1] : nil
+let words = named == nil ? given : Array(given.dropFirst(2))
+let arguments = words.isEmpty ? ["help"] : words
+let config = named ?? app.configFolder()
+let handed = named != nil || !app.isApp ? config.map { ["--config", $0] } ?? [] : []
 if CommandKind.isPure(arguments) { runAlone(app) }
 let isLive = CommandKind.needsApp(arguments)
-connection = app.configFolder.map(reach) ?? -1
+if named == nil { connection = reachRun() }
+if connection < 0 { connection = config.map(reach) ?? -1 }
 if connection < 0 {
-    guard isLive, let config = app.configFolder else { runAlone(app) }
+    guard isLive, let config else { runAlone(app) }
     connection = reachStarted(app, config: config)
 }
 signal(SIGINT) { _ in
@@ -122,7 +128,7 @@ signal(SIGINT) { _ in
     _exit(130)
 }
 guard deliver(request(), on: connection) else {
-    guard !isLive else { fail("Openspot stopped before it took the call. Run the call again.") }
+    guard !isLive else { fail("Openspot stopped before it took the call. Run the call again.", code: 3) }
     runAlone(app)
 }
 var input = InputLink(socket: connection)
@@ -135,17 +141,17 @@ while true {
     guard watched[0].revents != 0 else { continue }
     let count = read(connection, &buffer, buffer.count)
     if count < 0, errno == EINTR { continue }
-    guard count > 0 else { fail("Openspot stopped before it answered. Run the call again.") }
+    guard count > 0 else { fail("Openspot stopped before it answered. Run the call again.", code: 3) }
     pending += buffer[..<count]
     while let end = pending.firstIndex(of: UInt8(ascii: "\n")) {
         let line = JSON(Array(pending[..<end]))
         pending.removeFirst(end + 1)
-        guard let line else { fail("Openspot stopped before it answered. Run the call again.") }
+        guard let line else { fail("Openspot stopped before it answered. Run the call again.", code: 3) }
         if case .text(let method)? = line["method"] {
             let text: [UInt8] = if case .text(let text)? = line["params"]?["text"] { text } else { [] }
             switch String(decoding: method, as: UTF8.self) {
-            case "stdout": put(text, to: STDOUT_FILENO)
-            case "stderr": put(text, to: STDERR_FILENO)
+            case "stdout": _ = deliver(text, on: STDOUT_FILENO)
+            case "stderr": _ = deliver(text, on: STDERR_FILENO)
             case "stdin": input.want()
             default: break
             }

@@ -1,0 +1,6 @@
+icon = "/System/Applications/Apps.app"
+detail = "Open app"
+
+[on]
+"panel.open" = true
+search = true

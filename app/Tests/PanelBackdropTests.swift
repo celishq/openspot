@@ -8,16 +8,16 @@ final class PanelBackdropTests: PanelCase {
     func testTheBackdropOfAnEmptyGridHoldsTheFieldAndTheHint() async throws {
         await model.reload()
 
-        XCTAssertEqual(model.backdrop, CGRect(x: 0, y: 0, width: SpotTokens.panelWidth, height: edges + SpotTokens.rowHeight))
+        XCTAssertEqual(model.backdrop, CGRect(x: 0, y: 0, width: SpotTokens.panelWidth, height: edges + SpotTokens.cell))
     }
 
     func testTheBackdropOfTheGridEndsUnderItsLastCard() async throws {
-        try script("list", header: "title=List\non=sheet.open", "printf 'row=a\\ntitle=A\\n'")
+        try script("list", toml: "title = 'List'", "printf 'item=a\\ntitle=A\\n'")
         await model.reload()
 
         let cards = SpotGrid.height(of: model.placements)
         XCTAssertGreaterThan(cards, 0)
-        XCTAssertEqual(model.backdrop, CGRect(x: 0, y: 0, width: SpotTokens.panelWidth, height: edges + SpotTokens.rowHeight + SpotTokens.rowGap + cards))
+        XCTAssertEqual(model.backdrop, CGRect(x: 0, y: 0, width: SpotTokens.panelWidth, height: edges + SpotTokens.cell + SpotTokens.rowGap + cards))
     }
 
     func testTheBackdropOfAnOpenSheetHasTheHeightOfTheSheetAndGoesBackToTheGridWhenItCloses() async throws {
@@ -44,7 +44,8 @@ final class PanelBackdropTests: PanelCase {
     }
 
     func testTheBackdropUnderTheMenuReachesTheEndOfTheMenu() async throws {
-        try script("weather", header: "title=Weather\non=sheet.open\npress=open", ":")
+        try script("weather", toml: "title = 'Weather'\n[actions.hot]\ntitle = 'Hot'\n[actions.cold]\ntitle = 'Cold'\n[on]\n\"sheet.open\" = true", ":")
+        _ = try model.files.config.change { $0.arrangement.set(isOnGrid: true, of: "weather") }
         await model.reload()
         model.isShown = true
         model.selected = try XCTUnwrap(model.visible.firstIndex { $0.id == "weather" })
@@ -63,7 +64,7 @@ final class PanelBackdropTests: PanelCase {
     }
 
     func testATypedKeyThatLeavesTheBackdropAsItIsTellsNoReaderOfIt() async throws {
-        try script("list", header: "title=List\non=sheet.open", "printf 'row=a\\ntitle=A\\n'")
+        try script("list", toml: "title = 'List'", "printf 'item=a\\ntitle=A\\n'")
         await model.reload()
         model.query = "l"
         let rect = model.backdrop
@@ -77,7 +78,7 @@ final class PanelBackdropTests: PanelCase {
     }
 
     func testTheBackdropSpansTheSidePanelsAndASearchNarrowsItToTheMainPanel() async throws {
-        try script("list", header: "title=List\non=sheet.open", "printf 'row=a\\ntitle=A\\n'")
+        try script("list", toml: "title = 'List'", "printf 'item=a\\ntitle=A\\n'")
         await model.reload()
         model.panels = GridPanels(hasLeft: true, hasRight: true)
         let side = SpotTokens.gridWidth + SpotTokens.columnGap

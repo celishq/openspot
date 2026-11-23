@@ -29,7 +29,7 @@ final class ExampleSampleTests: XCTestCase {
         for spot in sampled {
             let script = try XCTUnwrap(spot.sample).path.replacingOccurrences(of: examples.deletingLastPathComponent().path + "/", with: "")
             let kept = SpotSample.text(beside: spot.url)
-            let printed = try await runs.answer(of: try XCTUnwrap(spot.sampled), .read, limit: 10)
+            let printed = try await runs.answer(of: try XCTUnwrap(spot.sampled), ScriptEntry.show.name, limit: 10)
             XCTAssertFalse(printed.contains(examples.path), "\(script) names a file of the repo, which a copy of the spot does not have.")
             XCTAssertEqual(try? String(contentsOf: kept, encoding: .utf8), printed, "Run `sh \(script) > \(script.replacingOccurrences(of: SpotSample.scriptName, with: SpotSample.textName))`.")
         }

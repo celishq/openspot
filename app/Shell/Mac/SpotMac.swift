@@ -15,10 +15,12 @@ final class SpotMac: MacEvents {
             screen: SpotScreen(),
             translation: SpotTranslation(),
             events: self,
+            power: SpotPower(),
             login: { AppLogin.item },
             link: { AppCommandLink.item },
             pickColor: { await SpotColorPick.pick() },
-            pickFolder: { await SpotFolderPick.pick() }
+            pickFolder: { await SpotFolderPick.pick() },
+            openText: { SpotTextEditor.open($0) }
         )
     }
 
@@ -30,7 +32,7 @@ final class SpotMac: MacEvents {
         SpotSystemEvents.measureLoad()
     }
 
-    func listen(_ heard: @escaping @MainActor (SpotEvent) -> Void) {
+    func listen(_ heard: @escaping @MainActor (AppSignal) -> Void) {
         system.listen(heard)
         let center = NSWorkspace.shared.notificationCenter
         observers.forEach(center.removeObserver)
@@ -42,13 +44,13 @@ final class SpotMac: MacEvents {
                 MainActor.assumeIsolated { heard(.sleep) }
             },
             center.addObserver(forName: NSWorkspace.screensDidWakeNotification, object: nil, queue: .main) { _ in
-                MainActor.assumeIsolated { heard(.named(SpotEvent.screenWake, value: nil)) }
+                MainActor.assumeIsolated { heard(.named(EventName.screenWake, value: nil)) }
             },
             center.addObserver(forName: NSWorkspace.didActivateApplicationNotification, object: nil, queue: .main) { note in
                 guard let app = note.userInfo?[NSWorkspace.applicationUserInfoKey] as? NSRunningApplication,
                       app.processIdentifier != ProcessInfo.processInfo.processIdentifier else { return }
                 let value = app.bundleIdentifier ?? app.localizedName
-                MainActor.assumeIsolated { heard(.named(SpotEvent.frontApp, value: value)) }
+                MainActor.assumeIsolated { heard(.named(EventName.frontApp, value: value)) }
             }
         ]
     }

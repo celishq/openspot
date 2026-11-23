@@ -4,7 +4,7 @@ import XCTest
 final class ActionMenuTests: XCTestCase {
     private let paste = CommandAction(id: "paste", title: "Paste", key: ActionKey(text: "cmd+return"))
     private let delete = CommandAction(id: "delete", title: "Delete", confirm: "Delete this?")
-    private let new = CommandAction(id: "new", title: "New", scope: .spot, isForm: true)
+    private let new = CommandAction(id: "new", title: "New", scope: .spot)
     private let item = SpotItem(title: "One", run: "1")
     private let share = CommandAction(id: "share", title: "Share", key: ActionKey(text: "cmd+shift+c"), scope: .spot, after: .close)
     private let delete2 = CommandAction(id: "delete", title: "Delete", key: ActionKey(text: "cmd+backspace"), scope: .spot)
@@ -14,14 +14,14 @@ final class ActionMenuTests: XCTestCase {
     }
 
     private func command(kind: SpotKind = .list, openTitle: String? = "Copy") -> Spot {
-        Spot(id: "a/A", name: "A", url: URL(fileURLWithPath: "/bin/true"), kind: kind, openTitle: openTitle, actions: [paste, delete, new])
+        Spot(id: "a/A", name: "A", url: URL(fileURLWithPath: "/bin/true"), kind: kind, openTitle: openTitle, frameActions: [paste, delete, new])
     }
 
     private func long() throws -> ActionMenu {
         let actions = ["Open in Zed", "Open in Cursor", "Use Zed by default", "Use Cursor by default", "Show in Finder"].enumerated().map {
             CommandAction(id: "a\($0.offset)", title: $0.element)
         } + [CommandAction(id: "copy", title: "Copy path", key: ActionKey(text: "cmd+shift+c"))]
-        return try XCTUnwrap(ActionMenu(spot: Spot(id: "a", name: "A", url: URL(fileURLWithPath: "/bin/true"), kind: .list, openTitle: "Open", actions: actions), item: item))
+        return try XCTUnwrap(ActionMenu(spot: Spot(id: "a", name: "A", url: URL(fileURLWithPath: "/bin/true"), kind: .list, openTitle: "Open", frameActions: actions), item: item))
     }
 
     func testALongMenuOpensOnItsFirstRow() throws {
@@ -59,7 +59,7 @@ final class ActionMenuTests: XCTestCase {
     func testAMenuOfThreeRowsSearchesAndAMenuOfTwoDoesNot() throws {
         let three = try XCTUnwrap(ActionMenu(spot: command(), item: item))
         let two = try XCTUnwrap(ActionMenu(
-            spot: Spot(id: "b", name: "B", url: URL(fileURLWithPath: "/bin/true"), kind: .list, openTitle: "Copy", actions: [paste, delete]),
+            spot: Spot(id: "b", name: "B", url: URL(fileURLWithPath: "/bin/true"), kind: .list, openTitle: "Copy", frameActions: [paste, delete]),
             item: item,
             showsOpen: false
         ))
@@ -142,7 +142,7 @@ final class ActionMenuTests: XCTestCase {
     func testTheHintAlsoNamesAnActionThatHoldsEscape() throws {
         let cancel = CommandAction(id: "cancel", title: "Cancel", key: ActionKey(text: "escape"), scope: .spot)
         let trash = CommandAction(id: "remove", title: "Move to Trash", key: ActionKey(text: "cmd+return"), scope: .spot)
-        let sheet = Spot(id: "apps", name: "Apps", url: URL(fileURLWithPath: "/bin/true"), kind: .list, actions: [cancel, trash])
+        let sheet = Spot(id: "apps", name: "Apps", url: URL(fileURLWithPath: "/bin/true"), kind: .list, frameActions: [cancel, trash])
 
         XCTAssertEqual(ActionMenu(spot: sheet, item: item)?.hint, "⏎ Open   ⌘⏎ Move to Trash   Esc Cancel")
     }
@@ -169,14 +169,14 @@ final class ActionMenuTests: XCTestCase {
     }
 
     func testTheHintNamesTheFirstKeysAndTheMenu() throws {
-        let keyed = Spot(id: "a/A", name: "A", url: URL(fileURLWithPath: "/bin/true"), kind: .list, openTitle: "Copy", actions: [paste, delete, new])
+        let keyed = Spot(id: "a/A", name: "A", url: URL(fileURLWithPath: "/bin/true"), kind: .list, openTitle: "Copy", frameActions: [paste, delete, new])
 
         XCTAssertEqual(ActionMenu(spot: keyed, item: item)?.hint, "⏎ Copy   ⌘⏎ Paste   ⌘K Actions")
         XCTAssertEqual(ActionMenu(spot: keyed, item: nil, showsOpen: false)?.hint, "⌘K Actions")
     }
 
     func testEachKindOfSpotSaysWhatEnterDoes() {
-        XCTAssertEqual(command(kind: .launch).openTitle(hasItem: false), "Run")
+        XCTAssertEqual(command(kind: .launch).openTitle(hasItem: false), "Open")
         XCTAssertEqual(command(kind: .toggle).openTitle(hasItem: false), "Toggle")
         XCTAssertEqual(command(kind: .list).openTitle(hasItem: false), "Open")
         XCTAssertNil(command(kind: .slider).openTitle(hasItem: false))
@@ -212,23 +212,23 @@ final class ActionMenuTests: XCTestCase {
     }
 
     func testARunningRowSaysThatItsPressStopsTheCall() throws {
-        let keyed = Spot(id: "a", name: "A", url: URL(fileURLWithPath: "/bin/true"), kind: .launch, actions: [
+        let keyed = Spot(id: "a", name: "A", url: URL(fileURLWithPath: "/bin/true"), kind: .launch, frameActions: [
             CommandAction(id: "copy", title: "Copy", key: ActionKey(text: "cmd+c"), scope: .spot)
         ])
         let menu = try XCTUnwrap(ActionMenu(spot: keyed, item: nil))
         let primary = menu.rows[0]
         let copy = menu.rows[1]
 
-        XCTAssertEqual(menu.title(of: primary), "Run")
+        XCTAssertEqual(menu.title(of: primary), "Open")
         XCTAssertEqual(menu.title(of: primary, isRunning: true), "Stop")
         XCTAssertEqual(menu.title(of: copy, isRunning: true), "Stop Copy")
         XCTAssertEqual(menu.hint(stopping: { $0.action == nil }), "⏎ Stop   ⌘C Copy")
-        XCTAssertEqual(menu.hint(stopping: { $0.action != nil }), "⏎ Run   ⌘C Stop Copy")
+        XCTAssertEqual(menu.hint(stopping: { $0.action != nil }), "⏎ Open   ⌘C Stop Copy")
         XCTAssertEqual(menu.hint(stopping: { _ in false }), menu.hint)
     }
 
     func testAPressOfARunningRowStopsWithNoQuestion() throws {
-        let asking = Spot(id: "a", name: "A", url: URL(fileURLWithPath: "/bin/true"), kind: .launch, actions: [
+        let asking = Spot(id: "a", name: "A", url: URL(fileURLWithPath: "/bin/true"), kind: .launch, frameActions: [
             CommandAction(id: "wipe", title: "Wipe", scope: .spot, confirm: "Wipe all?")
         ])
         var menu = try XCTUnwrap(ActionMenu(spot: asking, item: nil, showsOpen: false))

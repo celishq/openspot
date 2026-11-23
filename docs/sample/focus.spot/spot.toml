@@ -1,0 +1,5 @@
+title = "Focus"
+icon = "moon.fill"
+
+[on]
+"panel.open" = true

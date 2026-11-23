@@ -54,7 +54,7 @@ public struct SpotCatalog: Sendable {
     }
 
     public func items(publications reads: Bool) -> [Item] {
-        let own = (try? SpotsFolder(url: folder.url).scan()) ?? ScanResult(files: [], refused: [])
+        let own = (try? folder.scanOwn()) ?? ScanResult(files: [], refused: [])
         let ownIDs = Set(own.files.map(\.id))
         let publications = reads ? Self.publications(of: own, in: published) : [:]
         let enabled = arrangement.enabled.union(folder.enabled)
@@ -63,7 +63,8 @@ public struct SpotCatalog: Sendable {
             item(spot, id: SpotsFolder.coreID(of: spot), isAdded: enabled.contains(SpotsFolder.coreID(of: spot)), isCore: true)
         }
         let mine = own.files.compactMap { file in
-            file.spots.first.map { item($0, id: file.id, isAdded: !disabled.contains(file.id), publication: publications[$0.id]) }
+            let startsOff = file.spots.contains { !$0.triggers.schedule.isEmpty }
+            return file.spots.first.map { item($0, id: file.id, isAdded: !disabled.contains(file.id) && (!startsOff || enabled.contains(file.id)), publication: publications[$0.id]) }
         }
         let stored = stores.flatMap { store in
             ((try? SpotsFolder(url: store.url).scan())?.files ?? []).filter { !ownIDs.contains($0.id) }.compactMap { file in
@@ -85,17 +86,17 @@ public struct SpotCatalog: Sendable {
         )
     }
 
-    public func add(_ item: Item, environment: [String: String]) async throws {
+    public func add(_ item: Item, lock: SpotLock) async throws {
         guard let package = item.package else { return }
-        _ = try await SpotLock.standard(environment: environment).add(SpotSource(text: package.path, place: package), to: folder.url, isConfirmed: false)
+        _ = try await lock.add(SpotSource(text: package.path, place: package), to: folder.url, isConfirmed: false)
     }
 
-    public func get(_ id: String, config: ConfigFile, environment: [String: String]) async throws -> Item {
+    public func get(_ id: String, config: ConfigFile, lock: SpotLock) async throws -> Item {
         guard let item = item(id) else {
             throw SpotError.failed(1, "`\(id)` is not a spot of the store. Run `openspot store list` to see each one.")
         }
         guard !item.isAdded else { return item }
-        if item.store != nil { try await add(item, environment: environment) } else {
+        if item.store != nil { try await add(item, lock: lock) } else {
             try config.change { $0.arrangement.set(isEnabled: true, of: item.id) }
         }
         return item
@@ -112,7 +113,7 @@ public struct SpotCatalog: Sendable {
 
     static func publication(of spot: SpotPackage, in store: URL) -> SpotPublication? {
         guard let root = spot.roots.first, let stored = try? SpotPackage(contentsOf: store.appendingPathComponent(root)) else { return nil }
-        return stored.manifest(of: root).written == spot.manifest(of: root).written ? .current : .changed
+        return stored.digest(of: root).written == spot.digest(of: root).written ? .current : .changed
     }
 
     func text(_ form: PrintForm) throws -> String {
@@ -127,7 +128,7 @@ public struct SpotCatalog: Sendable {
 
         var blocks: [[(String, String?)]] {
             [[
-                ("spot", id), ("name", name), ("icon", icon), ("detail", detail), ("size", size), ("origin", origin), ("added", String(added)), ("step", step),
+                ("item", id), ("title", name), ("icon", icon), ("detail", detail), ("size", size), ("origin", origin), ("added", String(added)), ("step", step),
                 ("published", published), ("path", path), ("store", store), ("sample", sample ? "true" : nil)
             ] + readme.map { ("readme", $0) }]
         }

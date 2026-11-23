@@ -3,7 +3,7 @@ import SwiftUI
 
 struct SpotShine<Content: View>: View {
     let content: Content
-    @State private var band: CGFloat = -0.5
+    @State private var band = MotionTokens.shineStart
 
     init(@ViewBuilder content: () -> Content) {
         self.content = content()
@@ -14,15 +14,15 @@ struct SpotShine<Content: View>: View {
             .mask {
                 LinearGradient(
                     stops: [
-                        .init(color: .black.opacity(SpotTheme.shineDim), location: 0),
-                        .init(color: .black, location: 0.5),
-                        .init(color: .black.opacity(SpotTheme.shineDim), location: 1),
+                        .init(color: SpotTheme.maskInk.opacity(SpotTheme.shineDim), location: 0),
+                        .init(color: SpotTheme.maskInk, location: MotionTokens.shineHalf),
+                        .init(color: SpotTheme.maskInk.opacity(SpotTheme.shineDim), location: 1),
                     ],
-                    startPoint: UnitPoint(x: band - 0.5, y: 0.5),
-                    endPoint: UnitPoint(x: band + 0.5, y: 0.5)
+                    startPoint: UnitPoint(x: band - MotionTokens.shineHalf, y: MotionTokens.shineHalf),
+                    endPoint: UnitPoint(x: band + MotionTokens.shineHalf, y: MotionTokens.shineHalf)
                 )
             }
-            .task { withAnimation(SpotMotion.shine) { band = 1.5 } }
+            .task { withAnimation(SpotMotion.shine) { band = MotionTokens.shineEnd } }
     }
 }
 

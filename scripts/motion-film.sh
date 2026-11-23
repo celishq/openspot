@@ -13,10 +13,10 @@ codesign --force --deep -s - "$app" 2>/dev/null
 swiftc -O -o "$out/window-film" scripts/window-film.swift 2>"$out/film-build.log"
 slow="${SLOW:-10}"
 pause=$(echo "$slow * 0.4" | bc)
-OPENSPOT_CONFIG="$PWD/.temp/openspot" OPENSPOT_PROBE="$PWD/$out/probe.txt" OPENSPOT_SEEN=1 OPENSPOT_SPOT="${SPOT:-caffeinate}" \
-  OPENSPOT_CYCLES=1 OPENSPOT_PAUSE="$pause" OPENSPOT_MOTION_SLOW="$slow" "$app/Contents/MacOS/Openspot" >/dev/null 2>&1 &
+"$app/Contents/MacOS/Openspot" --config "$PWD/.temp/openspot" --probe "$PWD/$out/probe.txt" --seen --probe-spot "${SPOT:-caffeinate}" \
+  --probe-cycles 1 --probe-pause "$pause" --motion-slow "$slow" >/dev/null 2>&1 &
 pid=$!
-"$out/window-film" "$PWD/$out/frames" "$(echo "2.5 + $pause * 2" | bc)" "$pid"
+"$out/window-film" "$PWD/$out/frames" "${LENGTH:-$(echo "2.5 + $pause * 2" | bc)}" "$pid"
 wait "$pid" || true
 command -v ffmpeg >/dev/null || exit 0
 frames=$(ls "$out/frames" | sort)

@@ -33,6 +33,7 @@ public final class SpotsModel {
     private func takeCards() {
         let next = entries.filter { $0.id != fieldSheet }
         if next != cards { cards = next }
+        runs.take(grid: Set(entries.lazy.filter(\.isOnGrid).map(\.id)))
     }
     @ObservationIgnored var storeCards: [String: (entry: Entry, item: SpotCatalog.Item)]?
     @ObservationIgnored private var entryPlaces: [String: Int] = [:]
@@ -51,6 +52,7 @@ public final class SpotsModel {
     public var query = "" {
         didSet {
             guard query != oldValue else { return }
+            if query.trimmingCharacters(in: .whitespaces).isEmpty { noteMiss() }
             selected = 0
             askAnswers()
             updateVisible()
@@ -68,21 +70,19 @@ public final class SpotsModel {
     @ObservationIgnored var keyFrames: [String: String] = [:]
     @ObservationIgnored var spotListBuilds = 0
     @ObservationIgnored var visibleUpdates = 0
+    @ObservationIgnored var missedSearch = MissedSearch()
     var answerMatches: AnswerMatches {
         runs.answerMatches
     }
     @ObservationIgnored var mainSearch = MainSearch()
-    @ObservationIgnored var finding: Finding?
     @ObservationIgnored var foundSpots: [Entry] = []
     public internal(set) var placements: [SpotPlacement] = [] {
-        didSet {
-            let height = SpotTokens.contentHeight(gridHeight: SpotGrid.height(of: placements))
-            if height != gridHeight { gridHeight = height }
-            let bands = SpotGroupBands(placements)
-            if bands != groupBands { groupBands = bands }
-            takeShade()
-        }
+        didSet { takePlacements() }
     }
+    @ObservationIgnored var isPanelHidden = true
+    @ObservationIgnored var heldLayout: Theme.Layout?
+    @ObservationIgnored var laidOut = Theme.Layout()
+    @ObservationIgnored var takenTheme = Theme()
     public internal(set) var groupBands: SpotGroupBands?
     public internal(set) var panels = GridPanels() {
         didSet { spanBackdrop() }
@@ -91,6 +91,14 @@ public final class SpotsModel {
     public internal(set) var backdropSheet: SpotRun?
     @ObservationIgnored var panelLeaving: GridPanel?
     public private(set) var gridHeight = SpotTokens.contentHeight(gridHeight: 0)
+
+    func takePlacements() {
+        let height = SpotTokens.contentHeight(gridHeight: SpotGrid.height(of: placements))
+        if height != gridHeight { gridHeight = height }
+        let bands = SpotGroupBands(placements)
+        if bands != groupBands { groupBands = bands }
+        takeShade()
+    }
     public var selected = 0 {
         didSet {
             if confirming != nil, selected != oldValue { confirming = nil }
@@ -101,11 +109,13 @@ public final class SpotsModel {
     public private(set) var openSheetID: String?
     public internal(set) var flow = Flow() {
         didSet {
-            for gone in Set(oldValue.pages).subtracting(flow.pages) { sheets[gone.spot]?.forget(page: gone.page) }
+            for gone in Set(oldValue.pages).subtracting(flow.pages) { sheets[gone.spot]?.forget(route: gone.route) }
         }
     }
     public internal(set) var flowEdges = FlowEdges()
+    public internal(set) var closingPage: SheetPage?
     @ObservationIgnored var edgeStep = 0
+    @ObservationIgnored var landedStep = -1
     @ObservationIgnored var waitingPush = false
     public internal(set) var transition = SheetTransition() {
         didSet {
@@ -114,6 +124,7 @@ public final class SpotsModel {
             let shown = transition.shown
             if shown != openSheetID {
                 openSheetID = shown
+                recordAskedField()
                 takeMode()
                 if shown != nil, followsHint { takeSheetHint(HintWords(hint)) }
             }
@@ -146,9 +157,38 @@ public final class SpotsModel {
 
     public var entryKey = Shortcut.standard
     public var recording: String? {
-        didSet { takeMode() }
+        didSet {
+            keys.clear()
+            takeMode()
+        }
+    }
+    public let keys = KeyRecording()
+    @ObservationIgnored var entryKeyIsOff = false
+    @ObservationIgnored var askedAnswer: String?
+
+    public func hold(_ modifiers: Shortcut.Modifiers) {
+        guard recording != nil, let code = keys.hold(modifiers) else { return }
+        record(code: code, modifiers: modifiers)
+    }
+
+    public func releaseKey() {
+        keys.release()
+    }
+
+    public func appCameToFront(_ name: String) {
+        guard recordsField else { return }
+        keys.appCameToFront(name)
+    }
+
+    public func inputSourceChanged() {
+        guard recordsField else { return }
+        keys.inputSourceChanged()
     }
     public internal(set) var mode = PanelMode.grid
+
+    public var cardsMove: Bool {
+        isShown && mode == .grid
+    }
     @ObservationIgnored private var problems: [String] = []
     public internal(set) var menuSession: ActionMenuSession? {
         didSet {
@@ -157,6 +197,8 @@ public final class SpotsModel {
                 isMenuOpen = isOpen
                 takeMode()
             }
+            let isGrown = menuSession?.isGrown == true
+            if isGrown != isMenuGrown { isMenuGrown = isGrown }
             takeShade()
             guard menuSession == nil else { return }
             if menuFrame != nil { menuFrame = nil }
@@ -164,6 +206,7 @@ public final class SpotsModel {
         }
     }
     public private(set) var isMenuOpen = false
+    public private(set) var isMenuGrown = false
     public private(set) var gridShade = GridShade()
 
     private func takeShade() {
@@ -196,10 +239,13 @@ public final class SpotsModel {
     public private(set) var formIsMultiple = false
     public private(set) var formHint = HintWords("")
     @ObservationIgnored var pendingAsk: UUID?
+    @ObservationIgnored var askedWindows: Set<String> = []
     public var isEditing = false {
         didSet { takeMode() }
     }
     public var tip: SpotTip?
+    public internal(set) var pointedCard: String?
+    var shakes: [String: Int] = [:]
     public internal(set) var drag: SpotDrag?
     public let lift = SpotLift()
     public internal(set) var landing: String?
@@ -246,7 +292,9 @@ public final class SpotsModel {
             recent: { files.recent(of: $0) },
             prepare: { [unowned host] in await host.prepare($0, glyphs: $1) },
             log: files.log,
-            stats: files.stats
+            stats: files.stats,
+            timers: files.timers,
+            schedule: files.schedule
         )
         self.runs.secrets = files.secrets
         self.runs.onReport = { [weak self] id, report in self?.take(report, of: id) }
@@ -279,12 +327,8 @@ public final class SpotsModel {
         runs.sheets
     }
 
-    public func reading(of id: String) -> MetricReading? {
-        runs.sheets[id]?.reading
-    }
-
-    public var workCount: Int {
-        runs.work.count
+    public var actCount: Int {
+        runs.acts.count
     }
 
     public func beginFirstLaunch() async {
@@ -295,6 +339,7 @@ public final class SpotsModel {
             host.notify("Openspot could not save the spots. \(Self.reason(error))")
         }
         await reload()
+        if let first = runs.firstLaunchSheet { push(FlowSheet(spot: first)) }
         host.present()
     }
 
@@ -310,7 +355,6 @@ public final class SpotsModel {
             self.load = load
             let id = selectedEntry?.id
             reload(patching: nil, to: kept == start ? next : kept)
-            landSearch()
             if let position = visible.firstIndex(where: { $0.id == id }) { selected = position }
         }
         loading = task
@@ -334,7 +378,7 @@ public final class SpotsModel {
         var scan = (try? load.result(enabled: folder.enabled, disabled: folder.disabled, hosted: hosted)) ?? ScanResult(files: [SpotFile(id: "openspot", spots: hosted)], refused: [])
         let faults = load.faultSpots(of: scan, prompt: host.agentPrompt(for: folder.url))
         if !faults.isEmpty { scan.files.append(SpotFile(id: FaultSpot.fileID, spots: faults)) }
-        scan.addSettings(in: files.config, secrets: files.secrets, read: config)
+        scan.addSettings(in: files.config, secrets: files.secrets, read: config, defaults: defaultArrangement)
         let carded = Set(faults.map(\.id))
         let problems = scan.refused.filter { !carded.contains($0.file) }.map { "\($0.file) was not loaded: \($0.reason)" }
         runs.isCareful = config.isCareful
@@ -361,8 +405,8 @@ public final class SpotsModel {
         let stamps = fileStamps
         await reload()
         guard isShown else { return }
-        for entry in entries where entry.spot.read?.has(.panel) == true && fileStamps[entry.id] != stamps[entry.id] {
-            sheets[entry.id]?.read(need: .change)
+        for entry in entries where entry.spot.triggers.showsOnPanel && fileStamps[entry.id] != stamps[entry.id] {
+            sheets[entry.id]?.show(need: .change)
         }
     }
 
@@ -379,7 +423,6 @@ public final class SpotsModel {
         if openSheetID != nil { closeSheet(moving: false) }
         host.show()
         query = visible.contains { $0.id == id } || cards.filter(\.isOnGrid).contains { $0.id == id } ? "" : entry.state.title
-        landSearch()
         selected = visible.firstIndex { $0.id == id } ?? 0
         return true
     }
@@ -389,7 +432,6 @@ public final class SpotsModel {
         if case .spots(let ids) = change {
             let id = selectedEntry?.id
             reload(patching: Set(ids), to: next)
-            landSearch()
             if let position = visible.firstIndex(where: { $0.id == id }) { selected = position }
             return
         }
@@ -405,10 +447,10 @@ public final class SpotsModel {
             }
         }
         if case .value(let spot, let caller) = change {
-            if caller != spot, let sheet = sheets[spot], sheet.isWanted { sheet.read(need: .change) }
-            if let settings = sheets[SpotSettings.sheetID(of: spot)], settings.isOpen { settings.read(need: .change) }
+            if caller != spot, let sheet = sheets[spot], sheet.isWanted { sheet.show(need: .change) }
+            if let settings = sheets[SpotSettings.sheetID(of: spot)], settings.isOpen { settings.show(need: .change) }
         }
-        runs.readOfferedRows()
+        runs.showOfferedItems()
     }
 
     func write(_ section: Config.Section, _ work: (inout Config) throws -> Void) throws {
@@ -455,11 +497,15 @@ public final class SpotsModel {
     }
 
     public func panelWillShow() {
+        isPanelHidden = false
         finishPick()
         selected = 0
-        runs.panelOpened()
+        runs.panelOpened(showsToEnd: isWarming)
         askAnswers()
-        DispatchQueue.main.async { [weak self] in self?.isShown = true }
+        host.nextFrame { [weak self] in
+            self?.isShown = true
+            self?.recordAskedField()
+        }
     }
 
     public func panelWillHide() {
@@ -469,17 +515,18 @@ public final class SpotsModel {
         closeMenu()
         endEditing(moving: false)
         isShown = false
+        takeEntryKey()
     }
 
-    public func waitForReads() async {
+    public func waitForShows() async {
         let end = ContinuousClock.now + Self.loadLimit
-        while runs.isReading, ContinuousClock.now < end {
+        while runs.isShowing, ContinuousClock.now < end {
             try? await Task.sleep(for: Self.loadPause)
         }
     }
 
     public func updateIsReady(_ version: String) {
-        runs.raise(.named(SpotEvent.appUpdate, value: version, readsEachSpot: true))
+        runs.raise(.named(EventName.appUpdate, value: version, showsEachSpot: true))
     }
 
     public func allows(_ reason: String) async -> Bool {
@@ -507,8 +554,11 @@ public final class SpotsModel {
         case .listChange:
             markFound(id)
             if mayMove(id) { updateVisible() }
+        case .parts:
+            if id == openSheetID { recordAskedField() }
         case .frame(let frame):
             markFound(id)
+            if id == openSheetID { takeKeyField() }
             if let spot = sheets[id]?.spot, spot.holdsSettings, let owner = spot.settingsSheet?.spot, keyFrames.updateValue(frame, forKey: id) != frame {
                 settingsChanged(of: owner)
             }
@@ -519,10 +569,12 @@ public final class SpotsModel {
                 showSheet(nil, moving: false)
                 endFlow()
             }
-        case .chooseFiles:
-            _ = chooseFiles(for: id)
         case .move(let move):
             self.move(move, in: id)
+        case .refused(let item):
+            shakes[Self.shakeKey(of: item, in: id), default: 0] += 1
+        case .done:
+            if isShown { host.dismiss() }
         }
     }
 

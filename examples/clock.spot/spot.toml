@@ -1,0 +1,6 @@
+title = "World clock"
+icon = "globe"
+stay = true
+
+[on]
+"app.launch" = true

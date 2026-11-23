@@ -1,0 +1,7 @@
+title = "Now playing"
+icon = "music.note"
+detail = "The song in Music, with its controls"
+
+[on]
+"panel.open" = true
+every = 5

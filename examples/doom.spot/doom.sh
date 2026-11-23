@@ -1,11 +1,4 @@
 #!/bin/sh
-# title=Doom
-# icon=gamecontroller
-# detail=Play the first episode of Doom
-# on=panel.open
-# view=screen.swift
-# uses=network
-# offers=card
 . "$OPENSPOT_SH"
 engine_commit=e257a09527062bfb986b6e5e0780839b6cbd5b71
 engine_sha=26f8f60daa6c6e4d3c01e5eac9fb700d592dede803d13ac848154ff356b2a2e7
@@ -25,9 +18,9 @@ layer=$(cd "$(dirname "$0")" && pwd)/doomgeneric_mac.m
 card() {
   newest=$(ls -t "$data"/screens/*.png 2>/dev/null | head -n 1)
   [ -n "$newest" ] || return 1
-  printf 'grid=screen\ngrid=play\n\nview=screen\n'
+  printf 'frame=\nclass=gap-part card:relative\n\nscreen=screen\nclass=grow card:absolute card:inset-0\n'
   openspot_kv picture "$newest"
-  printf '\nbutton=play\ntitle=Play\nshortcut=return\n'
+  printf '\nbutton=play\nclass=card:hidden\ntitle=Play\nshortcut=return\n'
 }
 
 fail() {
@@ -39,7 +32,7 @@ progress() {
   share=$(awk -v part="$2" -v all="$3" 'BEGIN { v = all > 0 ? part / all : 0; if (v > 1) v = 1; printf "%.2f %d", v, v * 100 + 0.5 }')
   [ "$1 $share" = "$shown" ] && return
   shown="$1 $share"
-  printf 'title=%s\nprogress=%s\ndetail=%s%%\n---\n' "$1" "${share% *}" "${share#* }"
+  printf 'frame=\ntitle=%s\nprogress=%s\ndetail=%s%%\n---\n' "$1" "${share% *}" "${share#* }"
 }
 
 watch() {
@@ -101,14 +94,14 @@ get_game() {
 }
 
 play() {
-  printf 'title=Playing\ndetail=Press to quit\n---\n'
+  printf 'frame=\ntitle=Playing\ndetail=Press to quit\n---\n'
   rm -rf "$temp"
   trap - EXIT TERM
   "$engine" -iwad "$game" > doom.log
 }
 
 case "$1" in
-  read) card; exit 0 ;;
+  show) card; exit 0 ;;
   open | play) ;;
   *) exit 0 ;;
 esac

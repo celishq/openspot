@@ -3,7 +3,7 @@ import XCTest
 
 final class FlowTests: XCTestCase {
     private let settings = FlowSheet(spot: "settings")
-    private let caffeinate = FlowSheet(spot: "settings", page: "spot:caffeinate")
+    private let caffeinate = FlowSheet(spot: "settings", route: "spot:caffeinate")
     private let notes = FlowSheet(spot: "notes")
 
     func testAPushPutsThePageAtTheCentreAndBackAndForwardMoveAlongTheHistory() {

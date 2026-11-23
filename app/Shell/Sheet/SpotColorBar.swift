@@ -1,17 +1,15 @@
+import OpenspotCore
 import SwiftUI
 
 struct SpotColorBar: ViewModifier {
-    private static let width: CGFloat = 4
-    private static let gap: CGFloat = 8
-
     let color: String?
 
     func body(content: Content) -> some View {
         if let color {
-            HStack(spacing: Self.gap) {
-                RoundedRectangle(cornerRadius: Self.width / 2, style: .continuous)
+            HStack(spacing: SpotTokens.colorBarGap) {
+                RoundedRectangle(cornerRadius: SpotTokens.colorBarWidth / 2, style: .continuous)
                     .fill(Self.color(color))
-                    .frame(width: Self.width)
+                    .frame(width: SpotTokens.colorBarWidth)
                 content
             }
         } else {

@@ -24,6 +24,7 @@ final class FakeHost: SpotsHost {
     var glyphLists: [[String]] = []
     var cardGlyphs: [[String]] = []
     var heldEnds: [@MainActor () -> Void]?
+    var heldRemovals: [@MainActor () -> Void]?
     weak var model: SpotsModel?
 
     nonisolated deinit {}
@@ -77,9 +78,26 @@ final class FakeHost: SpotsHost {
         confirms.append(text)
     }
 
-    func applyConfig(_ config: Config) {}
+    func applyConfig(_ config: Config) {
+        if let key = config.panelKey { model?.entryKey = key }
+    }
 
-    func setEntryKey(on isOn: Bool) {}
+    var paints: [Theme.Colours] = []
+    var layOuts: [Theme.Layout] = []
+
+    func paint(_ look: Theme.Colours) {
+        paints.append(look)
+    }
+
+    func layOut(_ layout: Theme.Layout) {
+        layOuts.append(layout)
+    }
+
+    var entryKeyIsOn = true
+
+    func setEntryKey(on isOn: Bool) {
+        entryKeyIsOn = isOn
+    }
 
     var held: [[GlobalKey]] = []
 
@@ -127,15 +145,26 @@ final class FakeHost: SpotsHost {
     }
 
     func agentPrompt(for folder: URL) -> AgentPrompt {
-        AgentPrompt(folder: folder, guide: folder.appendingPathComponent("GUIDE.md"), app: app)
+        AgentPrompt(folder: folder, guide: folder.appendingPathComponent("DOCS.md"), app: app)
     }
+
+    private(set) var isChanging = false
 
     func change(_ motion: PanelMotion?, _ body: () -> Void, completion: @escaping @MainActor () -> Void) {
         motions.append(motion)
+        isChanging = true
         body()
+        isChanging = false
         if let edges = model?.flowEdges, edges != edgeChanges.last?.edges { edgeChanges.append((motion, edges, model?.openItems?.shown.map(\.title) ?? [])) }
         if let phase = model?.transition.phase { phases.append(phase) }
         openings.append(model?.runs.opening.moving)
         if heldEnds != nil { heldEnds?.append(completion) } else { completion() }
+    }
+
+    func change(_ motion: PanelMotion?, _ body: () -> Void, completion: @escaping @MainActor () -> Void, removal: @escaping @MainActor () -> Void) {
+        change(motion, body) { [weak self] in
+            completion()
+            if self?.heldRemovals != nil { self?.heldRemovals?.append(removal) } else { removal() }
+        }
     }
 }

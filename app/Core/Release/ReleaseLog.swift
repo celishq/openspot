@@ -46,11 +46,11 @@ public struct ReleaseLog: Equatable, Sendable {
         releases.map { $0.line + "\n" }.joined()
     }
 
-    public func names(_ manifest: SpotManifest, built: Bool = true) -> Bool {
-        guard let named = try? last?.manifest() else { return false }
-        guard !built else { return named == manifest }
-        let paths = Set(manifest.files.map(\.path))
-        return SpotManifest(Array(named.files).filter { paths.contains($0.path) || !SpotManifest.isBuilt($0.path) }) == manifest
+    public func names(_ digest: SpotDigest, built: Bool = true) -> Bool {
+        guard let named = try? last?.digest() else { return false }
+        guard !built else { return named == digest }
+        let paths = Set(digest.files.map(\.path))
+        return SpotDigest(Array(named.files).filter { paths.contains($0.path) || !SpotDigest.isBuilt($0.path) }) == digest
     }
 
     public func signing(_ files: [SpotPackage.File], readme: String, by key: AccountKey, at date: Date = Date()) throws -> ReleaseLog {

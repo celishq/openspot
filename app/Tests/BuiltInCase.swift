@@ -9,6 +9,7 @@ class BuiltInCase: XCTestCase {
         var link: CommandLink?
         var elevated: [String] = []
         var copied: [String] = []
+        var opened: [URL] = []
     }
 
     var root: URL!
@@ -29,7 +30,7 @@ class BuiltInCase: XCTestCase {
     }
 
     var guide: URL {
-        root.appendingPathComponent("GUIDE.md")
+        root.appendingPathComponent("DOCS.md")
     }
 
     func fake(_ name: String, _ body: String) throws {
@@ -42,6 +43,14 @@ class BuiltInCase: XCTestCase {
         try FileManager.default.moveItem(at: tools.appendingPathComponent("openspot"), to: real)
         try fake("openspot", "echo \"openspot $*\" >> '\(log.path)'\nexec '\(real.path)' \"$@\"")
         try fake("jq", "echo jq >> '\(log.path)'\nexec /usr/bin/jq \"$@\"")
+        return { ((try? String(contentsOf: log, encoding: .utf8)) ?? "").split(separator: "\n").map(String.init) }
+    }
+
+    func recordEffects() throws -> () -> [String] {
+        let log = root.appendingPathComponent("effects")
+        let app = tools.appendingPathComponent("openspot-app")
+        try FileManager.default.moveItem(at: tools.appendingPathComponent("openspot"), to: app)
+        try fake("openspot", "case \"$1\" in toast | select | route) echo \"$*\" >> '\(log.path)'; exit 0 ;; esac\nexec '\(app.path)' \"$@\"")
         return { ((try? String(contentsOf: log, encoding: .utf8)) ?? "").split(separator: "\n").map(String.init) }
     }
 
@@ -87,7 +96,7 @@ class BuiltInCase: XCTestCase {
         }
         let built = Bundle(for: Self.self).bundleURL.deletingLastPathComponent().appendingPathComponent("openspot")
         try FileManager.default.copyItem(at: built, to: tools.appendingPathComponent("openspot"))
-        socket = CommandSocket(folder: root, api: CommandAPI(mac: Mac(calendar: FakeCalendar(), reminders: FakeReminders(), login: { [mac] in mac.login }, link: { [mac] in mac.link }, guide: guide), places: .test(TestEnvironment.values), app: app, runs: runs, rates: .offline))
+        socket = CommandSocket(folder: root, api: CommandAPI(mac: Mac(calendar: FakeCalendar(), reminders: FakeReminders(), login: { [mac] in mac.login }, link: { [mac] in mac.link }, guide: guide, theme: repoSpots.deletingLastPathComponent().appendingPathComponent("app/Themes/openspot.theme/theme.toml"), openText: { [mac] in mac.opened.append($0) }), places: .test(TestEnvironment.values), app: app, runs: runs, rates: .offline))
     }
 
     override func tearDown() async throws {
@@ -100,8 +109,7 @@ class BuiltInCase: XCTestCase {
         return try XCTUnwrap(try place.scan().scripts.first { $0.id == "openspot/\(name)" })
     }
 
-    func script(_ name: String, _ header: String) throws {
-        let lines = header.split(separator: "\n", omittingEmptySubsequences: false).map { "# \($0)\n" }.joined()
-        try "#!/bin/sh\n\(lines)".writeScript(to: spots.appendingPathComponent(name))
+    func script(_ name: String, _ toml: String) throws {
+        try "#!/bin/sh\n".writeScript(to: spots.spotFile((name as NSString).deletingPathExtension), toml: toml)
     }
 }

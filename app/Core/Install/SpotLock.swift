@@ -91,7 +91,7 @@ public struct SpotLock: Equatable, Sendable {
                     let confirm = "Openspot added nothing. Run `openspot spot add \(source.text) --yes` to add it."
                     let review: ReviewSpot
                     do {
-                        review = try ReviewSpot(spot: SpotPackage(paths: paths, in: work), folder: folder)
+                        review = try ReviewSpot(spot: SpotPackage(paths: paths, in: work), folder: folder, core: SpotsFolder.core(environment: environment))
                     } catch {
                         throw SpotError.fault("Openspot cannot review it: \((error as? SpotError)?.reason ?? error.localizedDescription)\n\(confirm)")
                     }
@@ -102,6 +102,11 @@ public struct SpotLock: Equatable, Sendable {
                 }
                 if let old, !isConfirmed {
                     try Self.refuseGrowth(from: old.uses, old.canDo, to: new, confirm: "openspot spot add \(source.text) --yes")
+                    let names = Set(paths.map { SpotID(path: $0).name })
+                    let changes = BoundChange.lines(of: try SpotsFolder(url: work).scan().scripts.filter { names.contains(SpotID($0.id).name) }, in: folder)
+                    if !changes.isEmpty {
+                        throw SpotError.fault((changes + ["Openspot kept the one you have. Run `openspot spot add \(source.text) --yes` to update it."]).joined(separator: "\n"))
+                    }
                 }
                 facts = new
             }
@@ -173,8 +178,8 @@ public struct SpotLock: Equatable, Sendable {
             canDo = ["Cannot review it: \((error as? SpotError)?.reason ?? error.localizedDescription)"]
         }
         let release = try spot.flatMap { spot in try spot.roots.first.flatMap { try spot.releaseLog(in: $0)?.last } }
-        let manifest = try spot.map { SpotManifest($0.files) } ?? SpotManifest(walking: paths, in: folder)
-        return Facts(hash: manifest.hash, uses: uses, canDo: canDo, release: release)
+        let digest = try spot.map { SpotDigest($0.files) } ?? SpotDigest(walking: paths, in: folder)
+        return Facts(hash: digest.hash, uses: uses, canDo: canDo, release: release)
     }
 
     public func remove(_ id: String, from folder: URL, discard: (URL) throws -> Void = { try FileManager.default.trashItem(at: $0, resultingItemURL: nil) }) throws -> Entry {

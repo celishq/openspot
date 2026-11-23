@@ -3,13 +3,12 @@ import XCTest
 
 final class SheetFocusTests: XCTestCase {
     private func panel(_ text: String) throws -> SheetParts {
-        try XCTUnwrap(SheetParts(output: SpotOutput(text: text)))
+        try XCTUnwrap(SheetParts(output: Frame(text: text)))
     }
 
     private let confetti = """
-    grid=look look look look
-    grid=key key key key
-    grid=make make play play
+    frame=
+    class=gap-part
 
     choice=look
     title=Look
@@ -26,22 +25,21 @@ final class SheetFocusTests: XCTestCase {
     title=Shortcut
     value=option+c
 
+    box=foot
+    class=flex-row gap-part
+
     button=make
+    parent=foot
     title=Make with AI
-    align=center
 
     button=play
-    look=strong
+    parent=foot
+    class=bg-accent
     title=Play
-    align=center
     close=true
-
-    button=paste
-    title=Paste a look
-    shortcut=cmd+shift+v
     """
 
-    func testTheArrowsReachEachDrawnPartInTheOrderItIsDrawnAndNoAction() throws {
+    func testTheArrowsReachEachPartInTheOrderItIsDrawn() throws {
         var sheet = try panel(confetti)
 
         XCTAssertEqual(sheet.focusOrder.map(\.id), ["look", "key", "make", "play"])
@@ -62,7 +60,7 @@ final class SheetFocusTests: XCTestCase {
     }
 
     func testAMoveToAnotherLineTakesThePartClosestAcross() throws {
-        var sheet = try panel("grid=a b\ngrid=c d\n\nbutton=a\ntitle=A\n\nbutton=b\ntitle=B\n\nbutton=c\ntitle=C\n\nbutton=d\ntitle=D\n")
+        var sheet = try panel("frame=\nclass=gap-part\n\nbox=top\nclass=flex-row gap-part\n\nbutton=a\nparent=top\ntitle=A\n\nbutton=b\nparent=top\ntitle=B\n\nbox=bottom\nclass=flex-row gap-part\n\nbutton=c\nparent=bottom\ntitle=C\n\nbutton=d\nparent=bottom\ntitle=D\n")
 
         sheet.move(by: 1)
         sheet.moveLine(by: 1)
@@ -73,7 +71,7 @@ final class SheetFocusTests: XCTestCase {
     }
 
     func testAFieldTakesTheFocusFirstAndTheArrowsLeaveIt() throws {
-        var sheet = try panel("grid=reload\ngrid=note\ngrid=level\n\nbutton=reload\ntitle=Reload\n\nfield=note\nvalue=Hello\n\nfield=level\ntype=slider\nvalue=50\n")
+        var sheet = try panel("frame=\nclass=gap-part\n\nbutton=reload\ntitle=Reload\n\nfield=note\nvalue=Hello\n\nfield=level\ntype=slider\nvalue=50\n")
 
         XCTAssertTrue(sheet.takesArrows)
         XCTAssertEqual(sheet.selectedPart?.id, "note")
@@ -84,13 +82,13 @@ final class SheetFocusTests: XCTestCase {
     }
 
     func testAPartWithNothingToUseTakesNoFocus() throws {
-        let sheet = try panel("text=mac\ntitle=This Mac\n\nfield=log\nvalue=Done\nreadonly=true\n\nswitch=wifi\nvalue=true\n")
+        let sheet = try panel("frame=\nclass=gap-part\n\ntext=mac\ntitle=This Mac\n\nfield=log\nvalue=Done\nreadonly=true\n\nswitch=wifi\nvalue=true\n")
 
         XCTAssertEqual(sheet.focusOrder.map(\.id), ["wifi"])
     }
 
     func testAClickIntoAFieldGivesItTheFocus() throws {
-        var sheet = try panel("grid=reload note\n\nbutton=reload\ntitle=Reload\n\nfield=note\nvalue=Hello\n")
+        var sheet = try panel("frame=\nclass=flex-row gap-part\n\nbutton=reload\ntitle=Reload\n\nfield=note\nvalue=Hello\n")
 
         sheet.focus("reload")
         XCTAssertEqual(sheet.selectedPart?.id, "reload")
@@ -99,11 +97,11 @@ final class SheetFocusTests: XCTestCase {
     }
 
     func testTheRowsKeepTheArrowsUntilTheFocusLeavesThemForThePartsBelow() throws {
-        var sheet = try panel("grid=top\ngrid=list\ngrid=add\n\nbutton=top\ntitle=Top\n\nrepeat=list\n\nbutton=add\ntitle=Add\n\nrow=a\ntitle=A\n")
+        var sheet = try panel("frame=\nclass=gap-part\n\nbutton=top\ntitle=Top\n\nitems=list\n\nbutton=add\ntitle=Add\n\ntext=a\nparent=list\ntitle=A\n")
 
         XCTAssertFalse(sheet.takesArrows)
         XCTAssertNil(sheet.selectedPart)
-        XCTAssertEqual(sheet.focusOrder.map(\.id), ["add"])
+        XCTAssertEqual(sheet.focusOrder.map(\.id), ["top", "add"])
         XCTAssertTrue(sheet.leaveRows())
         XCTAssertEqual(sheet.selectedPart?.id, "add")
         sheet.moveLine(by: -1)
@@ -111,9 +109,66 @@ final class SheetFocusTests: XCTestCase {
     }
 
     func testRowsWithNoPartBelowKeepTheFocus() throws {
-        var sheet = try panel("grid=top\ngrid=list\n\nbutton=top\ntitle=Top\n\nrepeat=list\n\nrow=a\ntitle=A\n")
+        var sheet = try panel("frame=\nclass=gap-part\n\nbutton=top\ntitle=Top\n\nitems=list\n\ntext=a\nparent=list\ntitle=A\n")
 
         XCTAssertFalse(sheet.leaveRows())
         XCTAssertNil(sheet.selectedPart)
+    }
+
+    private let placed = "frame=\nclass=gap-part\n\nbox=one\nclass=float:flex-row\n\nbutton=a\nparent=one\ntitle=A\n\nbutton=b\nparent=one\ntitle=B\n\nbox=two\nclass=light:flex-row\n\nbutton=c\nparent=two\ntitle=C\n\nbutton=d\nparent=two\ntitle=D\n"
+
+    func testTheFocusLinesFollowThePlaceAndTheAppearanceTheSheetShowsIn() throws {
+        var sheet = try XCTUnwrap(SheetParts(output: Frame(text: placed), variants: [.sheet, .dark]))
+        XCTAssertEqual(sheet.focusOrder.map(\.id), ["a", "b", "c", "d"])
+        sheet.moveLine(by: 1)
+        XCTAssertEqual(sheet.selectedPart?.id, "b")
+
+        var float = try XCTUnwrap(SheetParts(output: Frame(text: placed), variants: [.float, .light]))
+        float.moveLine(by: 1)
+        XCTAssertEqual(float.selectedPart?.id, "c")
+        float.move(by: 1)
+        XCTAssertEqual(float.selectedPart?.id, "d")
+    }
+
+    func testANodeThatShowsOnlyInAFloatIsAPartOfTheFloatAlone() throws {
+        let text = "frame=\nclass=gap-part\n\nbutton=a\ntitle=A\n\nbutton=b\ntitle=B\nclass=hidden float:flex\n\nbutton=c\ntitle=C\nclass=hidden card:flex\n"
+        let sheet = try XCTUnwrap(SheetParts(output: Frame(text: text), variants: [.sheet, .dark]))
+        var float = sheet
+        float.show(in: [.float, .dark])
+
+        XCTAssertEqual(sheet.parts.map(\.id), ["a"])
+        XCTAssertEqual(sheet.focusOrder.map(\.id), ["a"])
+        XCTAssertEqual(sheet.height, SpotTokens.listRow)
+        XCTAssertEqual(float.parts.map(\.id), ["a", "b"])
+        XCTAssertEqual(float.focusOrder.map(\.id), ["a", "b"])
+        XCTAssertEqual(float.height, 2 * SpotTokens.listRow + SpotTokens.partGap)
+    }
+
+
+    func testThePartsAboveTheItemsTakeTheFocusInTheOrderOfTheTree() throws {
+        var sheet = try panel("frame=\nclass=gap-part\n\nswitch=wifi\ntitle=Wi-Fi\nvalue=true\n\nitems=list\n\ntext=a\nparent=list\ntitle=A\n\nfield=note\ntitle=Note\n")
+
+        XCTAssertEqual(sheet.focusOrder.map(\.id), ["wifi", "note"])
+        XCTAssertNil(sheet.selectedPart)
+        XCTAssertTrue(sheet.leaveRows())
+        XCTAssertEqual(sheet.selectedPart?.id, "note")
+        XCTAssertTrue(sheet.moveLine(by: -1))
+        XCTAssertNil(sheet.selectedPart)
+        XCTAssertTrue(sheet.leaveRows(upward: true))
+        XCTAssertEqual(sheet.selectedPart?.id, "wifi")
+        XCTAssertTrue(sheet.moveLine(by: 1))
+        XCTAssertNil(sheet.selectedPart)
+    }
+
+
+    func testASearchFieldInALayoutTakesItsPlaceInTheTreeAndTheSheetHasNoFieldRow() throws {
+        let text = "frame=\nclass=gap-part\n\ntext=intro\ntitle=Saved\n\nfield=find\ntype=search\nclass=bg-tile\n\nitems=list\n\ntext=a\nparent=list\ntitle=A\n"
+        let sheet = try panel(text)
+
+        XCTAssertTrue(sheet.placesSearch)
+        XCTAssertEqual(sheet.top, SheetTop(header: 0, hasField: false))
+        XCTAssertEqual(sheet.tree.children, ["intro", "find", "list"])
+        XCTAssertEqual(sheet.tree.node("find")?.isSearch, true)
+        XCTAssertEqual(Frame(text: text).search, .local)
     }
 }

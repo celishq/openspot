@@ -1,3 +1,7 @@
+frame=
+class=gap-part
+
 text=time
+class=bar:flex
 title=21:45
 detail=Tokyo

@@ -1,0 +1,9 @@
+icon = "/System/Applications/Shortcuts.app"
+detail = "Run a shortcut"
+uses = ["clipboard"]
+
+[on]
+"panel.open" = true
+"sheet.open" = true
+search = true
+drop = ["*"]

@@ -31,7 +31,7 @@ final class GridExampleTests: SampleSpotsCase {
     }
 
     private func grid(in folder: URL, pick: String = "", openspot: String = "echo \"$*\" >> '%@/calls'") async throws -> (ScriptProcess, SpotFrames) {
-        try "#!/bin/sh\n\(openspot.replacingOccurrences(of: "%@", with: folder.path))\n".writeScript(to: folder.appendingPathComponent("tools/openspot"))
+        try "#!/bin/sh\n[ \"$1\" = toast ] && { shift; echo \"$*\" >> '\(folder.path)/toasts'; exit 0; }\n\(openspot.replacingOccurrences(of: "%@", with: folder.path))\n".writeScript(to: folder.appendingPathComponent("tools/openspot"))
         try "#!/bin/sh\necho \"$*\" >> '\(folder.path)/opened'\n".writeScript(to: folder.appendingPathComponent("tools/open"))
         let program = try await swiftSpot("grid", in: folder, standIns: standIn(folder))
         let script = staying(program, as: "grid", home: folder, variables: ["GRID_PICK": pick])
@@ -46,9 +46,11 @@ final class GridExampleTests: SampleSpotsCase {
         let grid = try example("Grid")
 
         XCTAssertEqual(grid.mode, .stay)
-        XCTAssertEqual(grid.read, .panel)
+        XCTAssertEqual(grid.triggers.events, [EventName.panelOpen])
+        XCTAssertNil(grid.triggers.search)
+        XCTAssertFalse(grid.triggers.searchesSheet)
+        XCTAssertEqual(grid.triggers.filters, [:])
         XCTAssertEqual(grid.sources, ["grid"])
-        XCTAssertEqual(grid.offeredPlaces, [.card])
     }
 
     func testTheGridGivesTheBlockBetweenTwoCornersAsPartsOfTheScreen() async throws {
@@ -104,12 +106,12 @@ final class GridExampleTests: SampleSpotsCase {
         let (script, frames) = try await grid(in: folder, pick: "0 0 2 5")
         defer { script.stop() }
 
-        script.send(text: "call=1\narg=open\n\n")
+        script.send(text: "call=1\narg=place\n\n")
         try await wait("the end of the press") { frames.ends == ["1"] }
 
         XCTAssertEqual(calls(in: folder), "window move 0 0 3/6 1\n")
         XCTAssertEqual(notes(in: folder), "show\nland\n")
-        XCTAssertEqual(frames.toasts, [])
+        XCTAssertEqual(toasts(in: folder), [])
     }
 
     func testAMoveWithoutAccessibilityOpensItsSettingsAndShowsNoFailure() async throws {
@@ -118,11 +120,11 @@ final class GridExampleTests: SampleSpotsCase {
         let (script, frames) = try await grid(in: folder, pick: "0 0 2 5", openspot: refused)
         defer { script.stop() }
 
-        script.send(text: "call=1\narg=open\n\n")
+        script.send(text: "call=1\narg=place\n\n")
         try await wait("the end of the press") { frames.ends == ["1"] }
 
         XCTAssertEqual(try read("opened", in: folder), "\(Self.link)\n")
-        XCTAssertEqual(frames.toasts, [])
+        XCTAssertEqual(toasts(in: folder), [])
     }
 
     func testAMoveThatFailsForAnotherReasonSaysWhy() async throws {
@@ -130,10 +132,10 @@ final class GridExampleTests: SampleSpotsCase {
         let (script, frames) = try await grid(in: folder, pick: "0 0 2 5", openspot: "echo 'Openspot cannot find a window to move.' >&2\nexit 1")
         defer { script.stop() }
 
-        script.send(text: "call=1\narg=open\n\n")
+        script.send(text: "call=1\narg=place\n\n")
         try await wait("the end of the press") { frames.ends == ["1"] }
 
-        XCTAssertEqual(frames.toasts, ["Openspot cannot find a window to move."])
+        XCTAssertEqual(toasts(in: folder), ["Openspot cannot find a window to move."])
         XCTAssertFalse(FileManager.default.fileExists(atPath: folder.appendingPathComponent("opened").path))
     }
 
@@ -142,7 +144,7 @@ final class GridExampleTests: SampleSpotsCase {
         let (script, frames) = try await grid(in: folder, pick: "cancel")
         defer { script.stop() }
 
-        script.send(text: "call=1\narg=open\n\n")
+        script.send(text: "call=1\narg=place\n\n")
         try await wait("the end of the press") { frames.ends == ["1"] }
 
         XCTAssertEqual(calls(in: folder), "")
@@ -154,7 +156,7 @@ final class GridExampleTests: SampleSpotsCase {
         let (script, frames) = try await grid(in: folder)
         defer { script.stop() }
 
-        script.send(text: "call=1\narg=open\n\ncall=2\narg=open\n\n")
+        script.send(text: "call=1\narg=place\n\ncall=2\narg=place\n\n")
         try await wait("the end of the second press") { frames.ends == ["2"] }
         XCTAssertEqual(notes(in: folder), "show\n")
         script.send(text: "stop=1\n\n")
@@ -164,15 +166,15 @@ final class GridExampleTests: SampleSpotsCase {
         XCTAssertEqual(calls(in: folder), "")
     }
 
-    func testOnlyAReadOfAnEventWarmsTheGrid() async throws {
+    func testOnlyAShowOfAnOpenOfThePanelWarmsTheGrid() async throws {
         let folder = try temporaryFolder()
         let (script, frames) = try await grid(in: folder)
         defer { script.stop() }
 
-        script.send(text: "call=1\narg=read\n\n")
+        script.send(text: "call=1\narg=show\n\n")
         try await wait("the end of the plain read") { frames.ends == ["1"] }
         XCTAssertEqual(notes(in: folder), "")
-        script.send(text: "call=2\narg=read\nenv.OPENSPOT_REASON=panel.open\n\n")
+        script.send(text: "call=2\narg=show\ninput.event=panel.open\n\n")
         try await wait("the end of the read") { frames.ends == ["1", "2"] }
 
         XCTAssertEqual(notes(in: folder), "warm\n")
@@ -183,7 +185,7 @@ final class GridExampleTests: SampleSpotsCase {
         let (script, frames) = try await grid(in: folder)
         defer { script.stop() }
 
-        script.send(text: "call=1\narg=open\n\n")
+        script.send(text: "call=1\narg=place\n\n")
         try await wait("the grid") { self.notes(in: folder) == "show\n" }
         script.end()
 

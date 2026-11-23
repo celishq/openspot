@@ -1,22 +1,9 @@
 #!/usr/bin/env swift
-// title=Dictate
-// icon=mic
-// detail=Convert speech to text
-// mode=stay
-// on=sheet.open
-// offers=card
-// offers=menubar
-// uses=clipboard,network
-// source=dictate
-//
-// button=dictate
-// title=Dictate
-// icon=mic
 
 // Openspot builds this file with the Swift files of `dictate/`, and keeps one process while the sheet shows, while the
 // menu bar shows Dictate, or while a dictation or the download of the speech model runs. Each of those two is one call
 // that stays open until it ends. A second press of the Dictate key finishes a dictation, and a second press of the card
-// or of the download row stops it. The texts, the model and the place of the pill stay in the data folder.
+// or of the download item stops it. The texts, the model and the place of the pill stay in the data folder.
 //
 // The speech model loads with the first dictation and stays loaded only while the process runs. Put Dictate in the menu
 // bar to keep it loaded, so that each dictation starts at once.
@@ -57,28 +44,34 @@ func percent(_ share: Double) -> String {
     "\(Int(share * 100))% of 1.6 GB"
 }
 
-/// The rows of the sheet: the download of the model while it is missing, then the past texts.
-func sheet() -> String {
-    var blocks: [String] = []
-    if !FileManager.default.fileExists(atPath: model.path) {
-        if let download {
-            blocks.append("row=whisper\ntitle=Downloading speech model\ndetail=\(percent(download.share))\nicon=arrow.down.circle\nopen=Stop\nclose=false\nhides=delete\npin=top")
-        } else {
-            blocks.append("row=whisper\ntitle=Download speech model\ndetail=1.6 GB\nicon=arrow.down.circle\nopen=Download\nclose=false\nhides=delete\npin=top")
-        }
+/// The whole sheet: its root, with the share of a download when it names one, the download of the model while it is
+/// missing, then the past texts.
+func sheet(downloading share: Double? = nil) -> String {
+    var root = ["frame="]
+    if let share {
+        root.append("progress=\(String(format: "%.3f", share))\ntitle=Downloading speech model\ndetail=\(percent(share))")
     }
     let past = texts()
-    if past.isEmpty {
-        blocks.append("search=off")
-    } else {
-        blocks.append("button=open\ntitle=Copy")
-        blocks.append("button=delete\ntitle=Delete\nshortcut=cmd+backspace")
-        blocks += past.map { "row=\($0.0)\ntitle=\(Link.value($0.1))\ndetail=\(age($0.0))" }
+    var blocks = past.isEmpty ? ["items=items"] : []
+    let place = past.isEmpty ? "parent=items\n" : ""
+    if !FileManager.default.fileExists(atPath: model.path) {
+        if let download {
+            blocks.append("item=whisper\n\(place)title=Downloading speech model\ndetail=\(percent(download.share))\nicon=arrow.down.circle\nopen.title=Stop\nclose=false\nhides=delete\npin=top")
+        } else {
+            blocks.append("item=whisper\n\(place)title=Download speech model\ndetail=1.6 GB\nicon=arrow.down.circle\nopen.title=Download\nclose=false\nhides=delete\npin=top")
+        }
     }
-    return blocks.joined(separator: "\n\n")
+    if past.isEmpty {
+        root.append("class=gap-part")
+    } else {
+        blocks.append("button=press\ntitle=Copy")
+        blocks.append("button=delete\ntitle=Delete\nshortcut=cmd+backspace\nclose=false")
+        blocks += past.map { "item=\($0.0)\ntitle=\(Link.value($0.1))\ndetail=\(age($0.0))" }
+    }
+    return ([root.joined(separator: "\n")] + blocks).joined(separator: "\n\n")
 }
 
-/// Ends the held call and shows the rows that it changed.
+/// Ends the held call and shows the items that it changed.
 func release() {
     guard let id = held else { return }
     held = nil
@@ -86,30 +79,34 @@ func release() {
     Link.frame(sheet())
 }
 
-/// Shows the share of the download on the card while its call runs. Its frames hold only a head, so that the card shows
-/// the call as running.
+/// Shows the share of the download on the card while its call runs, in a whole sheet whose root holds the share, so that
+/// the card shows the call as running.
 func show(_ share: Double, in id: String) {
     Link.start(id)
-    Link.frame("progress=\(String(format: "%.3f", share))\ntitle=Downloading speech model\ndetail=\(percent(share))")
+    Link.frame(sheet(downloading: share))
 }
 
-/// Downloads the model in a call that stays open until the model lands. The rows come before the call's own output.
-func fetch(in id: String, toast: String? = nil) {
+/// Shows a toast with `openspot toast`, then calls `done`.
+func toast(_ text: String, then done: @escaping () -> Void = {}) {
+    Tool.run(["openspot", "toast", text]) { _, _, _ in done() }
+}
+
+/// Downloads the model in a call that stays open until the model lands. The items come before the call's own output.
+func fetch(in id: String, saying words: String? = nil) {
     held = id
     download = Download(to: model, progress: { share in show(share, in: id) }) { end in
         download = nil
         Link.start(id)
         switch end {
-        case .landed: Link.frame("toast=Dictate is ready. Press your Dictate key to speak.")
-        case .failed: Link.frame("toast=Openspot cannot download the speech model. Press Download again to go on from where it stopped.")
-        case .wrongSize: Link.frame("toast=The speech model came in the wrong size, so Dictate removed it. Press Download to fetch it again.")
-        case .stopped: break
+        case .landed: toast("Dictate is ready. Press your Dictate key to speak.", then: release)
+        case .failed: toast("Openspot cannot download the speech model. Press Download again to go on from where it stopped.", then: release)
+        case .wrongSize: toast("The speech model came in the wrong size, so Dictate removed it. Press Download to fetch it again.", then: release)
+        case .stopped: release()
         }
-        release()
     }
     Link.frame(sheet())
     show(download?.share ?? 0, in: id)
-    if let toast { Link.frame("toast=\(toast)") }
+    if let words { toast(words) }
 }
 
 /// A press of the Dictate key, or Return on the card: starts a dictation in this call, or finishes the one that runs.
@@ -119,11 +116,11 @@ func dictate(_ id: String) {
         return answer(id)
     }
     guard Tool.path(of: "whisper-server") != nil else {
-        return answer(id, "toast=Openspot cannot find the speech engine. Install it with `brew install whisper-cpp`.")
+        return toast("Openspot cannot find the speech engine. Install it with `brew install whisper-cpp`.") { answer(id) }
     }
     guard FileManager.default.fileExists(atPath: model.path) else {
-        guard let download else { return fetch(in: id, toast: "Dictate is downloading its speech model of 1.6 GB.") }
-        return answer(id, "toast=Dictate is downloading its speech model: \(Int(download.share * 100))%.")
+        guard let download else { return fetch(in: id, saying: "Dictate is downloading its speech model of 1.6 GB.") }
+        return toast("Dictate is downloading its speech model: \(Int(download.share * 100))%.") { answer(id) }
     }
     if dictation == nil { dictation = Dictation(whisper: whisper, folder: data, ended: release) }
     held = id
@@ -142,7 +139,7 @@ func answer(_ id: String, _ frame: String? = nil) {
 func copy(_ stamp: String, in id: String) {
     guard let text = texts().first(where: { $0.0 == stamp })?.1 else { return answer(id) }
     Tool.run(["openspot", "clipboard", "copy"], input: text) { code, _, fault in
-        answer(id, "toast=\(code == 0 ? "Copied" : Link.value(fault.trimmingCharacters(in: .whitespacesAndNewlines)))")
+        toast(code == 0 ? "Copied" : fault.trimmingCharacters(in: .whitespacesAndNewlines)) { answer(id) }
     }
 }
 
@@ -153,18 +150,18 @@ func delete(_ stamp: String) {
 
 func serve() {
     Link.listen { call in
-        let row = call.arguments.dropFirst().first ?? ""
+        let row = call.value("input.item") ?? ""
         switch call.arguments.first {
-        case "read":
+        case "show":
             answer(call.id, sheet())
         case "dictate":
             dictate(call.id)
-        case "open" where row == "whisper" && download == nil && !FileManager.default.fileExists(atPath: model.path):
+        case "press" where row == "whisper" && download == nil && !FileManager.default.fileExists(atPath: model.path):
             fetch(in: call.id)
-        case "open" where row == "whisper" && download != nil:
+        case "press" where row == "whisper" && download != nil:
             download?.stop()
             answer(call.id)
-        case "open" where row != "whisper":
+        case "press" where row != "whisper":
             copy(row, in: call.id)
         case "delete":
             delete(row)

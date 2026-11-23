@@ -15,11 +15,10 @@ final class SpotsFolderTests: XCTestCase {
     }
 
     @discardableResult
-    private func write(_ path: String, header: String = "", body: String = "", loose: Bool = false) throws -> URL {
+    private func write(_ path: String, toml: String = "", body: String = "", loose: Bool = false) throws -> URL {
         let url = folder.appendingPathComponent(loose || path.split(separator: "/").contains { $0.hasSuffix(".spot") } ? path : path.inSpotFolder)
         try FileManager.default.createDirectory(at: url.deletingLastPathComponent(), withIntermediateDirectories: true)
-        let lines = header.split(separator: "\n").map { "# \($0)\n" }.joined()
-        try "#!/bin/sh\n\(lines)\(body)\n".writeScript(to: url)
+        try "#!/bin/sh\n\(body)\n".writeScript(to: url, toml: toml)
         try FileManager.default.setAttributes([.creationDate: Date(timeIntervalSince1970: 0)], ofItemAtPath: url.path)
         return url
     }
@@ -33,8 +32,8 @@ final class SpotsFolderTests: XCTestCase {
     }
 
     func testTheStampStaysWhileNothingThatAScanReadsChanges() throws {
-        try write("a.sh", header: "title=A")
-        try write("home/b.sh", header: "title=B")
+        try write("a.sh", toml: "title = 'A'")
+        try write("home/b.sh", toml: "title = 'B'")
         let spots = SpotsFolder(url: folder)
 
         XCTAssertEqual(KeptScan().load(spots).stamp, KeptScan().load(spots).stamp)
@@ -42,20 +41,20 @@ final class SpotsFolderTests: XCTestCase {
 
     func testTheStampChangesWithEachChangeOfAFileAndNotWithAChoice() throws {
         let outside = FileManager.default.temporaryDirectory.appendingPathComponent("openspot-linked-\(UUID().uuidString).sh")
-        try "#!/bin/sh\n# title=L\n".writeScript(to: outside)
+        try "#!/bin/sh\n".writeScript(to: outside, toml: "title = 'L'")
         defer { try? FileManager.default.removeItem(at: outside) }
-        let a = try write("a.sh", header: "title=A")
-        try write("home/b.sh", header: "title=B")
+        let a = try write("a.sh", toml: "title = 'A'")
+        try write("home/b.sh", toml: "title = 'B'")
         try FileManager.default.createSymbolicLink(at: folder.appendingPathComponent("linked.sh"), withDestinationURL: outside)
         let spots = SpotsFolder(url: folder)
         let kept = KeptScan()
         let changes: [(String, () throws -> Void)] = [
-            ("an edit of the same size", { try "#!/bin/sh\n# title=Z\n\n".write(to: a, atomically: false, encoding: .utf8) }),
+            ("an edit of the same size", { try "#!/bin/sh\necho z\n\n".write(to: a, atomically: false, encoding: .utf8) }),
             ("a mode", { try FileManager.default.setAttributes([.posixPermissions: 0o644], ofItemAtPath: a.path) }),
-            ("a new file in a subfolder", { try self.write("home/c.sh", header: "title=C") }),
+            ("a new file in a subfolder", { try self.write("home/c.sh", toml: "title = 'C'") }),
             ("a rename", { try FileManager.default.moveItem(at: a, to: self.folder.appendingPathComponent("a.spot/d.sh")) }),
             ("a removed file", { try FileManager.default.removeItem(at: self.folder.appendingPathComponent("home.spot/b.sh")) }),
-            ("an edit of a linked file", { try "#!/bin/sh\n# title=M\n".write(to: outside, atomically: false, encoding: .utf8) })
+            ("an edit of a linked file", { try "#!/bin/sh\necho m\n".write(to: outside, atomically: false, encoding: .utf8) })
         ]
 
         for (change, make) in changes {
@@ -67,34 +66,34 @@ final class SpotsFolderTests: XCTestCase {
     }
 
     func testAScanSeesANewFile() throws {
-        try write("a.sh", header: "title=A")
+        try write("a.sh", toml: "title = 'A'")
         XCTAssertEqual(try scan.spots.map(\.name), ["A"])
 
-        try write("home/b.sh", header: "title=B")
+        try write("b.sh", toml: "title = 'B'")
 
-        XCTAssertEqual(try scan.spots.map(\.name), ["A", "B"])
+        XCTAssertEqual(try scan.spots.map(\.name).sorted(), ["A", "B"])
     }
 
     func testAFolderReadAsCoreAndThenAsOwnKeepsItsSpots() throws {
-        try write("a.sh", header: "title=A")
+        try write("a.sh", toml: "title = 'A'")
         _ = try SpotsFolder(url: folder.appendingPathComponent("own"), core: folder).scan()
 
         XCTAssertEqual(try scan.spots.map(\.name), ["A"])
     }
 
     func testCoreChoicesSeeANewCoreFile() throws {
-        try write("a.spot/a.sh", header: "title=A")
+        try write("a.spot/a.sh", toml: "title = 'A'")
         let spots = SpotsFolder(url: folder.appendingPathComponent("own"), core: folder)
 
         XCTAssertEqual(spots.coreChoices().map(\.name), ["A"])
-        try write("b.spot/b.sh", header: "title=B")
+        try write("b.spot/b.sh", toml: "title = 'B'")
 
         XCTAssertEqual(spots.coreChoices().map(\.name), ["A", "B"])
     }
 
     func testALoadParsesOnlyTheFolderThatChanged() throws {
-        try write("a.sh", header: "title=A")
-        let b = try write("b.sh", header: "title=B")
+        try write("a.sh", toml: "title = 'A'")
+        let b = try write("b.sh", toml: "title = 'B'")
         let kept = KeptScan()
         let work = ScanWork()
 
@@ -103,7 +102,7 @@ final class SpotsFolderTests: XCTestCase {
             XCTAssertEqual(work.parses, 2)
             _ = kept.load(SpotsFolder(url: folder))
             XCTAssertEqual(work.parses, 2)
-            try "#!/bin/sh\n# title=C\n".write(to: b, atomically: false, encoding: .utf8)
+            try "#!/bin/sh\necho c\n".write(to: b, atomically: false, encoding: .utf8)
             _ = kept.load(SpotsFolder(url: folder))
             XCTAssertEqual(work.parses, 3)
         }
@@ -132,9 +131,9 @@ final class SpotsFolderTests: XCTestCase {
 
     func testAScriptNamedAfterItsSpotFolderHasTheFolderNameAsItsID() throws {
         try write("weather.spot/weather.sh")
-        try write("home.spot/coffee.sh")
+        try write("home.spot/home.sh")
 
-        XCTAssertEqual(try scan.spots.map(\.id).sorted(), ["home/coffee", "weather"])
+        XCTAssertEqual(try scan.spots.map(\.id).sorted(), ["home", "weather"])
     }
 
     func testAFolderInsideASpotFolderIsNoSpot() throws {
@@ -162,24 +161,15 @@ final class SpotsFolderTests: XCTestCase {
         XCTAssertEqual(try opened.scan().spots.map(\.id), ["weather"])
 
         let names = try FileManager.default.contentsOfDirectory(atPath: folder.appendingPathComponent("weather.spot").path).sorted()
-        XCTAssertEqual(names, ["readme.md", "weather.sh"])
+        XCTAssertEqual(names, ["readme.md", "spot.toml", "weather.sh"])
         XCTAssertEqual(try FileManager.default.contentsOfDirectory(atPath: folder.path).sorted(), ["notes.txt", "weather.spot"])
     }
 
     func testOpeningTheFolderWrapsAPlainFolderByItsName() throws {
-        try write("home/coffee.sh", loose: true)
+        try write("home/home.sh", loose: true)
 
-        XCTAssertEqual(try opened.scan().spots.map(\.id), ["home/coffee"])
-        XCTAssertTrue(FileManager.default.fileExists(atPath: folder.appendingPathComponent("home.spot/coffee.sh").path))
-    }
-
-    func testAScriptTakesItsViewIntoItsSpotFolder() throws {
-        try write("cups.sh", header: "view=glass.swift", loose: true)
-        try "import SwiftUI\n".write(to: folder.appendingPathComponent("glass.swift"), atomically: true, encoding: .utf8)
-
-        _ = try opened.scan()
-
-        XCTAssertTrue(FileManager.default.fileExists(atPath: folder.appendingPathComponent("cups.spot/glass.swift").path))
+        XCTAssertEqual(try opened.scan().spots.map(\.id), ["home"])
+        XCTAssertTrue(FileManager.default.fileExists(atPath: folder.appendingPathComponent("home.spot/home.sh").path))
     }
 
     func testAWrapNeverReplacesAFileAndTheScanNamesTheClash() throws {
@@ -211,23 +201,23 @@ final class SpotsFolderTests: XCTestCase {
     }
 
     func testRemoveTakesOnlyTheFileOfTheSpot() throws {
-        try write("home/one.sh")
-        try write("home/two.sh")
+        try write("one.sh")
+        try write("two.sh")
         var discarded: [String] = []
-        let command = try XCTUnwrap(try scan.spots.first { $0.id == "home/one" })
+        let command = try XCTUnwrap(try scan.spots.first { $0.id == "one" })
 
         try SpotsFolder(url: folder).remove(command) { url in
             discarded.append(url.lastPathComponent)
             try FileManager.default.removeItem(at: url)
         }
 
-        XCTAssertEqual(discarded, ["one.sh"])
-        XCTAssertEqual(try scan.spots.map(\.id), ["home/two"])
+        XCTAssertEqual(discarded, ["one.spot"])
+        XCTAssertEqual(try scan.spots.map(\.id), ["two"])
     }
 
     func testASpotOfTheAppIsAlwaysOnAndCannotBeRemoved() throws {
         let core = folder.appendingPathComponent("core")
-        _ = try write("core/openspot.spot/spots.sh", header: "title=Spots")
+        _ = try write("core/openspot.spot/spots.sh", toml: "title = 'Spots'")
         _ = try write("core/apps.spot/apps.sh")
         let place = SpotsFolder(url: folder.appendingPathComponent("mine"), core: core)
 
@@ -241,9 +231,9 @@ final class SpotsFolderTests: XCTestCase {
     }
 
     func testAFolderOfThePersonWithTheNameOfTheAppsSpotsIsRefused() throws {
-        _ = try write("core/openspot.spot/spots.sh", header: "title=Spots")
-        _ = try write("mine/openspot.spot/spots.sh", header: "title=Mine")
-        _ = try write("mine/Openspot.spot/store.sh", header: "title=Store\nuses=account")
+        _ = try write("core/openspot.spot/spots.sh", toml: "title = 'Spots'")
+        _ = try write("mine/openspot.spot/spots.sh", toml: "title = 'Mine'")
+        _ = try write("mine/Openspot.spot/store.sh", toml: "title = 'Store'\nuses = ['account']")
 
         let scan = try SpotsFolder(url: folder.appendingPathComponent("mine"), core: folder.appendingPathComponent("core")).scan()
 
@@ -254,7 +244,7 @@ final class SpotsFolderTests: XCTestCase {
     }
 
     func testAnExecutableIsASpotWithItsHeader() throws {
-        try write("one.sh", header: "title=First\nicon=moon\ndetail=Off")
+        try write("one.sh", toml: "title = 'First'\nicon = 'moon'\ndetail = 'Off'")
 
         XCTAssertEqual(try scan.refused, [])
         let one = try XCTUnwrap(try scan.spots.first)
@@ -267,9 +257,9 @@ final class SpotsFolderTests: XCTestCase {
     }
 
     func testAHeaderNamesAPictureAsARowDoesAndAPathStartsAtItsFolder() throws {
-        try write("cup.sh", header: "icon=icons/cup.png")
-        try write("safari.sh", header: "icon=/Applications/Safari.app")
-        try write("tea.sh", header: "icon=🍵")
+        try write("cup.sh", toml: "icon = 'icons/cup.png'")
+        try write("safari.sh", toml: "icon = '/Applications/Safari.app'")
+        try write("tea.sh", toml: "icon = '🍵'")
 
         let commands = try scan.spots
         let cup = try XCTUnwrap(commands.first { $0.id == "cup" })
@@ -282,29 +272,28 @@ final class SpotsFolderTests: XCTestCase {
         XCTAssertEqual(tea.glyph, "🍵")
     }
 
-    func testAScriptWithNoHeaderIsAWideLaunchSpotNamedAfterItsFile() throws {
+    func testAScriptWithNoHeaderIsAWideSpotNamedAfterItsFile() throws {
         try write("say-hello_now.sh")
 
         let command = try XCTUnwrap(try scan.spots.first)
 
         XCTAssertEqual(command.name, "Say hello now")
-        XCTAssertEqual(command.kind, .launch)
+        XCTAssertEqual(command.kind, .list)
         XCTAssertEqual(command.size, .wide)
         XCTAssertEqual(command.symbol, "app")
-        XCTAssertNil(command.read)
-        XCTAssertFalse(command.readsState)
+        XCTAssertFalse(command.triggers.shows)
+        XCTAssertFalse(command.showsState)
         XCTAssertEqual(command.pick, .close)
-        XCTAssertFalse(command.isGlobal)
+        XCTAssertFalse(command.triggers.lists)
         XCTAssertEqual(command.mode, .once)
-        XCTAssertEqual(command.click.arguments, ["open"])
     }
 
-    func testEachExecutableInAFolderIsASpot() throws {
-        try write("tools/two.sh")
-        try write("tools/one.sh")
+    func testOnlyTheScriptNamedAfterItsFolderIsASpot() throws {
+        try write("tools/tools.sh")
+        try "#!/bin/sh\n".writeScript(to: folder.appendingPathComponent("tools.spot/two.sh"))
         try "shared code".write(to: folder.appendingPathComponent("tools.spot/shared.sh"), atomically: true, encoding: .utf8)
 
-        XCTAssertEqual(try scan.spots.map(\.id), ["tools/one", "tools/two"])
+        XCTAssertEqual(try scan.spots.map(\.id), ["tools"])
     }
 
     func testSkipsAnEmptyFolderAndAFileThatIsNotExecutable() throws {
@@ -316,92 +305,91 @@ final class SpotsFolderTests: XCTestCase {
     }
 
     func testReadSaysWhatKindOfSpotItIsBeforeAnyRun() throws {
-        try write("a.sh", header: "on=sheet.open")
-        try write("b.sh", header: "on=panel.open")
-        try write("c.sh", header: "on=panel.open\noffers=search")
+        try write("a.sh", toml: "")
+        try write("b.sh", toml: "[on]\n\"panel.open\" = true")
+        try write("c.sh", toml: "[on]\n\"panel.open\" = true\nsearch = true")
 
         let commands = try scan.spots
 
-        XCTAssertEqual(commands.map(\.kind), [.list, .launch, .list])
-        XCTAssertEqual(commands.map(\.readsState), [false, true, false])
-        XCTAssertTrue(commands[2].isGlobal)
+        XCTAssertEqual(commands.map(\.kind), [.list, .list, .list])
+        XCTAssertEqual(commands.map(\.showsState), [false, true, false])
+        XCTAssertTrue(commands[2].triggers.lists)
     }
 
     func testReadIsAListOfPlacesBesideItsSeconds() throws {
-        try write("a.sh", header: "on=panel.open\non=sheet.open\non=clock.30\noffers=card\noffers=menubar")
+        try write("a.sh", toml: "[on]\n\"panel.open\" = true\n\"sheet.open\" = true\nevery = 30")
 
-        let read = try XCTUnwrap(try scan.spots.first?.read)
+        let read = try XCTUnwrap(try scan.spots.first?.triggers)
 
-        XCTAssertEqual(read.moments, [.panel, .sheet, .every(30)])
-        XCTAssertEqual(read.seconds, 30)
+        XCTAssertEqual(read.events, [EventName.panelOpen, EventName.sheetOpen])
+        XCTAssertEqual(read.every, 30)
     }
 
-    func testModeIsOnceStayOrAlways() throws {
-        try write("a.sh", header: "mode=stay\noffers=card\noffers=menubar")
-        try write("b.sh", header: "mode=always\noffers=card\noffers=menubar")
-        try write("c.sh", header: "mode=once")
-        try write("d.sh", header: "mode=sometimes")
+    func testStayTrueKeepsOneProcessAndAnyOtherSpotRunsOncePerCall() throws {
+        try write("a.sh", toml: "stay = true")
+        try write("c.sh", toml: "stay = false")
 
         let scan = try scan
-        XCTAssertEqual(scan.spots.map(\.mode), [.stay, .always, .once])
-        XCTAssertEqual(scan.refused, [ScanResult.Refusal(file: "d", reason: "D has an unknown mode: sometimes. Use once, stay or always")])
+        XCTAssertEqual(scan.spots.map(\.mode), [.stay, .once])
+        XCTAssertEqual(scan.refused, [])
     }
 
-    func testAJavaScriptFileWithAHeaderRunsInlineAndAnotherIsLeft() throws {
-        for (name, text) in [("sum", "// title=Sum\nfunction main() { return '' }\n"), ("plain", "function shared() { return '' }\n"), ("stays", "// mode=stay\nfunction main() { return '' }\n")] {
+    func testAJavaScriptFileThatItsSpotTomlDescribesRunsInlineAndAnotherIsLeft() throws {
+        for (name, toml) in [("sum", "title = 'Sum'"), ("plain", nil), ("stays", "stay = true")] {
             let file = folder.spotFile(name, extension: "js")
             try FileManager.default.createDirectory(at: file.deletingLastPathComponent(), withIntermediateDirectories: true)
-            try text.write(to: file, atomically: true, encoding: .utf8)
+            try "export default { async show() { return '' } }\n".write(to: file, atomically: true, encoding: .utf8)
+            try toml?.write(to: file.deletingLastPathComponent().appendingPathComponent(Manifest.fileName), atomically: true, encoding: .utf8)
         }
 
         let scan = try scan
         XCTAssertEqual(scan.spots.map(\.id), ["sum"])
         XCTAssertEqual(scan.spots.map(\.mode), [.inline])
         XCTAssertEqual(scan.refused, [
-            ScanResult.Refusal(file: "stays", reason: "Stays is a .js file, which runs inline, so it takes no mode=stay"),
+            ScanResult.Refusal(file: "stays", reason: "Stays is a .js file, which runs inline, so it takes no stay = true"),
         ])
     }
 
     func testAnExecutableJavaScriptFileRunsAsAProcess() throws {
-        try "#!/usr/bin/env node\n// title=Node\n// mode=stay\nconsole.log('hi')\n".writeScript(to: folder.spotFile("node", extension: "js"))
+        try "#!/usr/bin/env node\nconsole.log('hi')\n".writeScript(to: folder.spotFile("node", extension: "js"), toml: "title = 'Node'\nstay = true")
 
         XCTAssertEqual(try scan.spots.map(\.mode), [.stay])
     }
 
     func testAHeaderKeepsTheFilesItsCardTakes() throws {
-        try write("a.sh", header: "drop=mov, mkv,folder")
+        try write("a.sh", toml: "[on]\ndrop = [\"mov\", \"mkv\", \"folder\"]")
         try write("b.sh")
 
-        XCTAssertEqual(try scan.spots.map(\.drop), [["mov", "mkv", "folder"], []])
+        XCTAssertEqual(try scan.spots.map(\.triggers.drop), [["mov", "mkv", "folder"], []])
     }
 
     func testANumberInAListOfMomentsStartsTheSpotOffTheGrid() throws {
-        try write("a.sh", header: "on=panel.open\non=clock.30\noffers=card\noffers=menubar")
+        try write("a.sh", toml: "[on]\n\"panel.open\" = true\nevery = 30")
 
         let scan = try scan
 
         XCTAssertEqual(scan.spots.map(\.id), ["a"])
         XCTAssertEqual(scan.spots.map(\.headerState.isOnGrid), [false])
-        XCTAssertEqual(scan.metrics.map(\.read?.seconds), [30])
+        XCTAssertEqual(scan.metrics.map(\.triggers.every), [30])
     }
 
     func testASpotThatOffersSearchAndCardHasACard() throws {
-        try write("a.sh", header: "on=panel.open\noffers=card\noffers=search")
+        try write("a.sh", toml: "[on]\n\"panel.open\" = true\nsearch = true")
 
         XCTAssertEqual(try scan.spots.map(\.headerState.isOnGrid), [true])
     }
 
     func testTheMainSearchNeedsAMomentOutsideTheSheet() throws {
-        try write("a.sh", header: "on=panel.open\noffers=search")
-        try write("c.sh", header: "on=clock.30\noffers=search")
+        try write("a.sh", toml: "[on]\n\"panel.open\" = true\nsearch = true")
+        try write("c.sh", toml: "[on]\nevery = 30\nsearch = true")
 
         XCTAssertEqual(try scan.refused, [])
-        XCTAssertEqual(try scan.spots.map(\.isGlobal), [true, true])
+        XCTAssertEqual(try scan.spots.map(\.triggers.lists), [true, true])
         XCTAssertEqual(try scan.spots.map(\.kind), [.list, .list])
     }
 
     func testANumberAsTheReadIsAMetricWhoseCardStartsOffTheGrid() throws {
-        try write("cups.sh", header: "title=Cups\nicon=cup.and.saucer\non=clock.30\noffers=card\noffers=menubar")
+        try write("cups.sh", toml: "title = 'Cups'\nicon = 'cup.and.saucer'\n\n[on]\nevery = 30")
 
         let scan = try scan
         let metric = try XCTUnwrap(scan.metrics.first)
@@ -411,18 +399,18 @@ final class SpotsFolderTests: XCTestCase {
         XCTAssertEqual(metric.id, "cups")
         XCTAssertEqual(metric.name, "Cups")
         XCTAssertEqual(metric.symbol, "cup.and.saucer")
-        XCTAssertEqual(metric.read?.seconds, 30)
+        XCTAssertEqual(metric.triggers.every, 30)
     }
 
     func testAMetricIsAlsoAList() throws {
-        try write("pulls.sh", header: "on=clock.120\noffers=card\noffers=menubar")
+        try write("pulls.sh", toml: "[on]\nevery = 120")
 
         let scan = try scan
 
         XCTAssertEqual(scan.metrics.map(\.id), ["pulls"])
         XCTAssertEqual(scan.spots.map(\.id), ["pulls"])
         XCTAssertEqual(scan.spots.first?.kind, .list)
-        XCTAssertEqual(scan.spots.first?.readsState, false)
+        XCTAssertEqual(scan.spots.first?.showsState, false)
     }
 
     func testTheNewestFileComesFirstAndTheFolderSetsTheRest() throws {
@@ -434,51 +422,37 @@ final class SpotsFolderTests: XCTestCase {
         XCTAssertEqual(try scan.spots.map(\.id), ["c", "b", "d", "a"])
     }
 
-    func testAScriptThatAWidgetOpensHasNoCardOnTheGrid() throws {
-        try write("details.sh", header: "on=panel.open")
-        try write("other.sh", header: "on=panel.open")
-        try write("cpu.sh", header: "on=clock.60\noffers=card\noffers=menubar")
-        try "#!/bin/sh\n# title=Box\n# grid.square=cpu\n# to=details\n".writeScript(to: folder.spotFile("box"))
-
-        let commands = try scan.spots
-
-        XCTAssertEqual(commands.first { $0.id == "details" }?.isOnGrid, false)
-        XCTAssertEqual(commands.first { $0.id == "other" }?.isOnGrid, true)
-    }
-
     func testRefusesAHeaderWithAFault() throws {
-        try write("b.sh", header: "mode=huge")
-        try write("f.sh", header: "offers=search")
+        try write("b.sh", toml: "answers = 'huge'")
 
         XCTAssertEqual(try scan.files, [])
         XCTAssertEqual(try scan.refused, [
-            ScanResult.Refusal(file: "b", reason: "B has an unknown mode: huge. Use once, stay or always"),
-            ScanResult.Refusal(file: "f", reason: "F needs on=panel.open, on=sheet.open or a clock, such as on=clock.60, to join the main search")
+            ScanResult.Refusal(file: "b", reason: "B has an unknown answers: huge. Use answers = \"last\" or answers = \"card\"")
         ])
     }
 
     func testRefusesAnAnswersPatternThatIsNoneAndTakesOneThatStays() throws {
-        try write("m.sh", header: "on=search.text [0-9")
-        try write("n.sh", header: "on=search.text ^[0-9]\nmode=stay\noffers=card\noffers=menubar")
-        try write("o.sh", header: "on=search.text ^[0-9]\nmode=always\noffers=card\noffers=menubar")
+        try write("m.sh", toml: "[on]\nsearch = '[0-9'")
+        try write("n.sh", toml: "stay = true\n\n[on]\nsearch = '^[0-9]'")
+        try write("o.sh", toml: "stay = true\n\n[on]\nsearch = '^[0-9]'\n\"app.launch\" = true")
 
         XCTAssertEqual(try scan.spots.map(\.id), ["n", "o"])
         XCTAssertEqual(try scan.refused, [
-            ScanResult.Refusal(file: "m", reason: "M has an unknown filter in on=search.text [0-9. Write a regular expression after the event, such as on=search.text ^[0-9]"),
+            ScanResult.Refusal(file: "m", reason: "M cannot load: spot.toml: [on] search is not a regular expression: [0-9."),
         ])
     }
 
     func testASpotThatOnlyAnswersTheSearchHasNoCardAndIsNotFound() throws {
-        try write("calc.sh", header: "on=search.text ^[0-9]")
-        try write("dict.sh", header: "on=sheet.open\non=search.text ^define ")
+        try write("calc.sh", toml: "[on]\nsearch = '^[0-9]'")
+        try write("dict.sh", toml: "[on]\n\"sheet.open\" = true\nsearch = '^define '")
 
         let commands = try scan.spots
         let calc = commands.first { $0.id == "calc" }
         let dict = commands.first { $0.id == "dict" }
 
-        XCTAssertEqual(calc?.answers?.text, "^[0-9]")
-        XCTAssertEqual(calc?.answers?.matches("2+2"), true)
-        XCTAssertEqual(calc?.answers?.matches("safari"), false)
+        XCTAssertEqual(calc?.triggers.search?.text, "^[0-9]")
+        XCTAssertEqual(calc?.triggers.search?.matches("2+2"), true)
+        XCTAssertEqual(calc?.triggers.search?.matches("safari"), false)
         XCTAssertEqual(calc?.isOnGrid, false)
         XCTAssertEqual(calc?.isFound, false)
         XCTAssertEqual(dict?.isOnGrid, true)
@@ -487,7 +461,7 @@ final class SpotsFolderTests: XCTestCase {
 
     func testAScanDoesNotRunAScript() throws {
         let marker = folder.appendingPathComponent("marker")
-        try write("one.sh", header: "on=panel.open", body: "touch '\(marker.path)'")
+        try write("one.sh", toml: "[on]\n\"panel.open\" = true", body: "touch '\(marker.path)'")
         try write("two.sh", body: "touch '\(marker.path)'")
 
         _ = try scan
@@ -515,7 +489,7 @@ final class SpotsFolderTests: XCTestCase {
 
 
     func testALoadOverItsLimitKeepsEachFolderItReads() throws {
-        for name in ["a", "b", "c"] { try write("\(name).sh", header: "title=\(name)") }
+        for name in ["a", "b", "c"] { try write("\(name).sh", toml: "title = '\(name)'") }
         let kept = KeptScan(limit: 2)
         let work = ScanWork()
 

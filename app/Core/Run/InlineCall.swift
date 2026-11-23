@@ -10,8 +10,9 @@ final class InlineCall: @unchecked Sendable {
     let arguments: [String]
     let variables: [String: String]
     let input: String?
-    let function: String?
+    let reason: String?
     let limit: TimeInterval?
+    let opened: OpenCall?
     private let lock = NSLock()
     private let arrival = DispatchSemaphore(value: 0)
     private var outcome: Outcome?
@@ -19,16 +20,21 @@ final class InlineCall: @unchecked Sendable {
     private var stopped = false
     private var isFinished = false
 
-    init(arguments: [String], variables: [String: String] = [:], input: String? = nil, function: String? = nil, limit: TimeInterval? = nil) {
+    init(arguments: [String], variables: [String: String] = [:], input: String? = nil, reason: String? = nil, limit: TimeInterval? = nil, opened: OpenCall? = nil) {
         self.limit = limit
+        self.opened = opened
         self.arguments = arguments
         self.variables = variables
         self.input = input
-        self.function = function
+        self.reason = reason
     }
 
     var isStopped: Bool {
         lock.withLock { stopped }
+    }
+
+    var isDone: Bool {
+        lock.withLock { isFinished }
     }
 
     func stop() {

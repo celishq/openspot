@@ -4,17 +4,19 @@ public struct ConfigDocument: Equatable, Sendable {
     public enum Value: Equatable, Sendable {
         case string(String)
         case integer(Int)
+        case number(Double)
         case boolean(Bool)
         case strings([String])
-        case table([String: String])
+        case table([String: Value])
 
         var text: String {
             switch self {
             case .string(let text): Self.quoted(text)
             case .integer(let number): String(number)
+            case .number(let number): String(number)
             case .boolean(let isOn): String(isOn)
             case .strings(let items): "[\(items.map(Self.quoted).joined(separator: ", "))]"
-            case .table(let pairs): "{ \(pairs.sorted { $0.key < $1.key }.map { "\($0.key) = \(Self.quoted($0.value))" }.joined(separator: ", ")) }"
+            case .table(let pairs): "{ \(pairs.sorted { $0.key < $1.key }.map { "\($0.key) = \($0.value.text)" }.joined(separator: ", ")) }"
             }
         }
 
@@ -45,38 +47,55 @@ public struct ConfigDocument: Equatable, Sendable {
             }
         }
 
-        var text: String {
-            (["[[\(name)]]"] + keys.map { "\($0) = \(values[$0]!.text)" }).joined(separator: "\n")
+        func text(opening: String) -> String {
+            ([opening] + keys.map { "\($0) = \(values[$0]!.text)" }).joined(separator: "\n")
         }
     }
 
     public private(set) var head: [String] = []
     public private(set) var values: [String: Value] = [:]
+    public private(set) var keys: [String] = []
+    public internal(set) var sections: [Table] = []
     public var tables: [Table] = []
 
     public init() {}
 
     public init(text: String) throws {
+        var isInSection = false
         for (index, scalars) in text.unicodeScalars.split(separator: "\n", omittingEmptySubsequences: false).enumerated() {
             let raw = String(scalars)
             let line = raw.trimmingCharacters(in: .whitespaces)
             let fault = { (reason: String) in SpotError.fault("line \(index + 1): \(reason)") }
-            if line.hasPrefix("[") {
-                guard line.hasPrefix("[["), let end = line.range(of: "]]") else {
-                    throw fault("only arrays of tables are allowed, as in [[commands]]")
-                }
+            if line.hasPrefix("[[") {
+                guard let end = line.range(of: "]]") else { throw fault("expected a table such as [[commands]]") }
                 tables.append(Table(String(line[line.index(line.startIndex, offsetBy: 2)..<end.lowerBound])))
+                isInSection = false
                 continue
             }
-            if tables.isEmpty { head.append(raw) }
+            if line.hasPrefix("[") {
+                guard let end = line.firstIndex(of: "]"), Self.isEnd(line[line.index(after: end)...].unicodeScalars) else {
+                    throw fault("expected a section such as [dark]")
+                }
+                let name = String(line[line.index(after: line.startIndex)..<end]).trimmingCharacters(in: .whitespaces)
+                guard !name.isEmpty else { throw fault("expected a section such as [dark]") }
+                guard !sections.contains(where: { $0.name == name }) else { throw fault("[\(name)] is set twice") }
+                sections.append(Table(name))
+                isInSection = true
+                continue
+            }
+            if tables.isEmpty, sections.isEmpty { head.append(raw) }
             if line.isEmpty || line.hasPrefix("#") { continue }
             guard let equals = line.unicodeScalars.firstIndex(of: "=") else { throw fault("expected a key and a value") }
             let key = String(line.unicodeScalars[..<equals]).trimmingCharacters(in: .whitespaces)
             guard !key.isEmpty, !key.contains(" ") else { throw fault("expected a key and a value") }
             guard let value = Self.value(line.unicodeScalars[line.unicodeScalars.index(after: equals)...]) else { throw fault("\(key) has a value that cannot be read") }
-            if tables.isEmpty {
+            if isInSection {
+                guard sections[sections.count - 1][key] == nil else { throw fault("\(key) is set twice") }
+                sections[sections.count - 1][key] = value
+            } else if tables.isEmpty {
                 guard values[key] == nil else { throw fault("\(key) is set twice") }
                 values[key] = value
+                keys.append(key)
             } else {
                 guard tables[tables.count - 1][key] == nil else { throw fault("\(key) is set twice") }
                 tables[tables.count - 1][key] = value
@@ -96,11 +115,13 @@ public struct ConfigDocument: Equatable, Sendable {
         } else {
             head.append(line)
         }
+        if values[key] == nil { keys.append(key) }
         values[key] = value
     }
 
     public var text: String {
-        let parts = (head.isEmpty ? [] : [head.joined(separator: "\n")]) + tables.map(\.text)
+        let parts = (head.isEmpty ? [] : [head.joined(separator: "\n")]) + sections.map { $0.text(opening: "[\($0.name)]") }
+            + tables.map { $0.text(opening: "[[\($0.name)]]") }
         return parts.isEmpty ? "" : parts.joined(separator: "\n\n") + "\n"
     }
 
@@ -112,20 +133,31 @@ public struct ConfigDocument: Equatable, Sendable {
             rest.removeFirst()
             guard let result = quoted(&rest) else { return nil }
             return isEnd(rest) ? .string(result) : nil
+        case "'":
+            rest.removeFirst()
+            guard let result = literal(&rest) else { return nil }
+            return isEnd(rest) ? .string(result) : nil
         case "[":
             rest.removeFirst()
-            return strings(rest)
+            guard let items = strings(&rest) else { return nil }
+            return isEnd(rest) ? .strings(items) : nil
         case "{":
             rest.removeFirst()
             return table(rest)
         default:
             break
         }
-        let bare = String(rest.prefix { $0 != "#" }).trimmingCharacters(in: .whitespaces)
-        switch bare {
+        return bare(String(rest.prefix { $0 != "#" }).trimmingCharacters(in: .whitespaces))
+    }
+
+    private static func bare(_ text: String) -> Value? {
+        switch text {
         case "true": return .boolean(true)
         case "false": return .boolean(false)
-        default: return Int(bare).map(Value.integer)
+        default:
+            if let integer = Int(text) { return .integer(integer) }
+            guard text.contains("."), text.allSatisfy({ "0123456789.-".contains($0) }), let number = Double(text) else { return nil }
+            return .number(number)
         }
     }
 
@@ -134,9 +166,8 @@ public struct ConfigDocument: Equatable, Sendable {
         return tail.isEmpty || tail.unicodeScalars.first == "#"
     }
 
-    private static func strings(_ text: Substring.UnicodeScalarView) -> Value? {
+    private static func strings(_ rest: inout Substring.UnicodeScalarView) -> [String]? {
         var result: [String] = []
-        var rest = text
         while let scalar = rest.popFirst() {
             switch scalar {
             case " ", "\t", ",":
@@ -144,8 +175,11 @@ public struct ConfigDocument: Equatable, Sendable {
             case "\"":
                 guard let item = quoted(&rest) else { return nil }
                 result.append(item)
+            case "'":
+                guard let item = literal(&rest) else { return nil }
+                result.append(item)
             case "]":
-                return isEnd(rest) ? .strings(result) : nil
+                return result
             default:
                 return nil
             }
@@ -154,7 +188,7 @@ public struct ConfigDocument: Equatable, Sendable {
     }
 
     private static func table(_ text: Substring.UnicodeScalarView) -> Value? {
-        var result: [String: String] = [:]
+        var result: [String: Value] = [:]
         var rest = text
         var key = ""
         while let scalar = rest.popFirst() {
@@ -162,9 +196,9 @@ public struct ConfigDocument: Equatable, Sendable {
             case " ", "\t", ",":
                 continue
             case "=":
-                rest = rest.drop { $0 == " " }
-                guard rest.popFirst() == "\"", !key.isEmpty, let item = quoted(&rest), result[key] == nil else { return nil }
-                result[key] = item
+                let name = key.trimmingCharacters(in: .whitespaces)
+                guard !name.isEmpty, result[name] == nil, let item = item(&rest) else { return nil }
+                result[name] = item
                 key = ""
             case "}":
                 return key.isEmpty && isEnd(rest) ? .table(result) : nil
@@ -173,6 +207,28 @@ public struct ConfigDocument: Equatable, Sendable {
             }
         }
         return nil
+    }
+
+    private static func item(_ rest: inout Substring.UnicodeScalarView) -> Value? {
+        rest = rest.drop { $0 == " " || $0 == "\t" }
+        switch rest.popFirst() {
+        case "\"": return quoted(&rest).map(Value.string)
+        case "'": return literal(&rest).map(Value.string)
+        case "[": return strings(&rest).map(Value.strings)
+        case let first?:
+            var word = String(first)
+            while let next = rest.first, next != ",", next != "}", next != " ", next != "\t" {
+                word.unicodeScalars.append(rest.removeFirst())
+            }
+            return bare(word)
+        case nil: return nil
+        }
+    }
+
+    private static func literal(_ rest: inout Substring.UnicodeScalarView) -> String? {
+        guard let end = rest.firstIndex(of: "'") else { return nil }
+        defer { rest = rest[rest.index(after: end)...] }
+        return String(rest[..<end])
     }
 
     private static func quoted(_ rest: inout Substring.UnicodeScalarView) -> String? {

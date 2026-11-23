@@ -1,8 +1,4 @@
 #!/bin/sh
-# detail=Its charge, and the time left
-# on=power.change
-# offers=card
-# offers=menubar
 # `show <report>` draws a report of `pmset -g batt` that is given, such as the one of sample.sh.
 if [ "$1" = show ] && [ -n "${2-}" ]; then report=$2; else report=$(pmset -g batt); fi
 printf '%s\n' "$report" | awk '
@@ -11,7 +7,7 @@ printf '%s\n' "$report" | awk '
   END {
     if (line == "") line = first
     if (line == "") {
-      printf "graph=battery\ntitle=–\ndetail=No battery\nicon=powerplug.fill\nvalue=0\n"
+      printf "frame=\nclass=gap-part\n\nnumber=battery\nclass=h-20 bar:flex\ntype=bar\ntitle=Battery\ndisplay=–\ndetail=No battery\nicon=powerplug.fill\nvalue=0\nmax=100\n"
       exit
     }
     $0 = line
@@ -28,5 +24,5 @@ printf '%s\n' "$report" | awk '
       tone = "good"
     }
     if (percent == 100) detail = "Full"
-    printf "graph=battery\ntitle=%d%%\ndetail=%s\nicon=%s\nvalue=%s\ntone=%s\n", percent, (detail == "" ? "On battery" : detail), symbol, percent / 100, tone
+    printf "frame=\nclass=gap-part\n\nnumber=battery\nclass=h-20 bar:flex\ntype=bar\ntitle=Battery\nvalue=%d\nmax=100\nunit=%%\ndetail=%s\nicon=%s\ntone=%s\n", percent, (detail == "" ? "On battery" : detail), symbol, tone
   }'

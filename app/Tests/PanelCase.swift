@@ -9,6 +9,10 @@ class PanelCase: XCTestCase {
     var host: FakeHost!
     var model: SpotsModel!
 
+    var stopPause: TimeInterval {
+        0.2
+    }
+
     override func setUp() async throws {
         folder = FileManager.default.temporaryDirectory.appendingPathComponent("openspot-panel-case-\(UUID().uuidString)")
         try FileManager.default.createDirectory(at: spots, withIntermediateDirectories: true)
@@ -21,7 +25,7 @@ class PanelCase: XCTestCase {
             home: folder,
             defaults: defaults
         )
-        model = SpotsModel(host: host, files: files, runs: SpotRuns(stopPause: 0.2, prepare: { await host.prepare($0, glyphs: $1) }))
+        model = SpotsModel(host: host, files: files, runs: SpotRuns(stopPause: stopPause, prepare: { await host.prepare($0, glyphs: $1) }))
         host.model = model
     }
 
@@ -29,6 +33,10 @@ class PanelCase: XCTestCase {
         model.quit()
         defaults.removePersistentDomain(forName: suite)
         try? FileManager.default.removeItem(at: folder)
+    }
+
+    func takeCalls() {
+        model.runs.api = CommandAPI(mac: Mac(), places: model.files, app: ModelApp(model: model), runs: model.runs, rates: .offline)
     }
 
     var spots: URL {
@@ -40,8 +48,8 @@ class PanelCase: XCTestCase {
     let escape = ActionKey(name: "escape")
     let toGrid = ActionKey(name: "escape", isCommand: true)
 
-    func script(_ name: String, header: String, _ body: String) throws {
-        try TestSpot(header: header, body: "\(body)").write(to: spots.spotFile(name))
+    func script(_ name: String, toml: String, _ body: String) throws {
+        try TestSpot(toml: toml, body: "\(body)").write(to: spots.spotFile(name))
     }
 
     var titles: [String] {
@@ -49,10 +57,11 @@ class PanelCase: XCTestCase {
     }
 
     func openList() async throws {
-        try script("list", header: "title=List\non=sheet.open\npages=*", """
-        if [ -n "$OPENSPOT_PAGE" ]; then printf 'row=x\\ntitle=Detail %s\\n' "$OPENSPOT_PAGE"; else printf 'row=a\\ntitle=A\\npush=true\\n'; fi
+        try script("list", toml: "title = 'List'\npages = ['*']", """
+        page=$(sed -n 's/^input\\.route=//p')
+        if [ -n "$page" ]; then printf 'item=x\\ntitle=Detail %s\\n' "$page"; else printf 'item=a\\ntitle=A\\nroute=a\\n'; fi
         """)
-        try script("other", header: "on=sheet.open", "printf 'row=o\\ntitle=Other\\n'")
+        try script("other", toml: "", "printf 'item=o\\ntitle=Other\\n'")
         await model.reload()
         model.isShown = true
         model.panelWillShow()

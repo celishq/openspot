@@ -6,21 +6,25 @@ final class SampleSpotsTests: SampleSpotsCase {
         let spots = URL(fileURLWithPath: #filePath).deletingLastPathComponent().deletingLastPathComponent().deletingLastPathComponent().appendingPathComponent("spots")
         let tools = try temporaryFolder()
         try "#!/bin/sh\ncat >/dev/null\n".writeScript(to: tools.appendingPathComponent("pbcopy"))
-        try "#!/bin/sh\ncat >/dev/null\n".writeScript(to: tools.appendingPathComponent("openspot"))
+        try "#!/bin/sh\ncat >/dev/null\n[ \"$1\" = toast ] && echo \"$2\" >> '\(tools.path)/toasts'\nexit 0\n".writeScript(to: tools.appendingPathComponent("openspot"))
         let examples = spots.deletingLastPathComponent().appendingPathComponent("examples")
-        for (script, call) in [(spots.spotFile("emoji"), "open"), (spots.spotFile("files"), "copy"), (examples.spotFile("pulls"), "copy")] {
+        for (script, arguments, input) in [(spots.spotFile("emoji"), ["press"], "input.item=x\n"), (spots.spotFile("files"), ["copy"], "input.item=x\n"), (examples.spotFile("pulls"), ["copy"], "input.item=x\n")] {
             let process = Process()
             let out = Pipe()
+            let stdin = Pipe()
             process.executableURL = script
-            process.arguments = [call, "x"]
+            process.arguments = arguments
             process.environment = ["PATH": "\(tools.path):/usr/bin:/bin", "OPENSPOT_DATA": tools.path, "HOME": tools.path, "OPENSPOT_SH": spots.deletingLastPathComponent().appendingPathComponent("app/Shell/openspot.sh").path]
-            process.standardInput = FileHandle.nullDevice
+            process.standardInput = stdin
             process.standardOutput = out
             try process.run()
+            stdin.fileHandleForWriting.write(Data(input.utf8))
+            try stdin.fileHandleForWriting.close()
             process.waitUntilExit()
             let text = String(data: out.fileHandleForReading.readDataToEndOfFile(), encoding: .utf8) ?? ""
-            XCTAssertEqual(text, "toast=Copied\n", script.lastPathComponent)
+            XCTAssertEqual(text, "", script.lastPathComponent)
         }
+        XCTAssertEqual(try read("toasts", in: tools), "Copied\nCopied\nCopied\n")
     }
 
     func testASampleIsTheReadOfItsSpotOverSampleData() throws {
@@ -31,16 +35,9 @@ final class SampleSpotsTests: SampleSpotsCase {
         }
     }
 
-    func testNoMetricShowsTwiceInTheGrid() throws {
-        let places = try scan.spots.flatMap(\.places)
-
-        XCTAssertEqual(places.count, Set(places).count)
-    }
-
     func testTheSpotsOfANewMacFitThePanelWithNoScrolling() throws {
         let spots = URL(fileURLWithPath: #filePath).deletingLastPathComponent().deletingLastPathComponent().deletingLastPathComponent().appendingPathComponent("spots")
         let starting = Set(SpotsFolder(url: spots.appendingPathComponent("none"), core: spots).startingSpots())
-        XCTAssertGreaterThan(starting.count, 5)
         let core = try SpotsFolder(url: spots.appendingPathComponent("none"), core: spots, enabled: starting).scan()
         let defaults = Config(text: try String(contentsOf: spots.deletingLastPathComponent().appendingPathComponent("app/defaults.toml"), encoding: .utf8)).arrangement
         let placements = SpotGrid().place(core.spots.filter { (defaults.isOnGrid(of: $0.id) ?? $0.isOnGrid) && !$0.isBuiltIn }.map { defaults.size(of: $0.id) ?? $0.size })
@@ -49,14 +46,11 @@ final class SampleSpotsTests: SampleSpotsCase {
         XCTAssertLessThanOrEqual(rows ?? 0, 6)
     }
 
-    func testEveryShippedSpotTurnedOnNeedsEightRows() throws {
-        let spots = URL(fileURLWithPath: #filePath).deletingLastPathComponent().deletingLastPathComponent().deletingLastPathComponent().appendingPathComponent("spots")
-        let all = Set(try FileManager.default.contentsOfDirectory(atPath: spots.path).map { ($0 as NSString).deletingPathExtension })
-        let core = try SpotsFolder(url: spots.appendingPathComponent("none"), core: spots, enabled: all).scan()
-        let defaults = Config(text: try String(contentsOf: spots.deletingLastPathComponent().appendingPathComponent("app/defaults.toml"), encoding: .utf8)).arrangement
-        let placements = SpotGrid().place(core.spots.filter { (defaults.isOnGrid(of: $0.id) ?? $0.isOnGrid) && !$0.isBuiltIn }.map { defaults.size(of: $0.id) ?? $0.size })
+    func testNoExampleTakesTheIdOfACoreSpot() throws {
+        let root = URL(fileURLWithPath: #filePath).deletingLastPathComponent().deletingLastPathComponent().deletingLastPathComponent()
+        let names = { (folder: String) in Set(try FileManager.default.contentsOfDirectory(atPath: root.appendingPathComponent(folder).path).filter { $0.hasSuffix(".spot") }) }
 
-        XCTAssertEqual(placements.map { $0.row + $0.size.rows }.max(), 8)
+        XCTAssertEqual(try names("spots").intersection(names("examples")), [])
     }
 
     func testTheCheckFindsNoFaultInTheSpotsAndTheExamples() async throws {
@@ -70,9 +64,13 @@ final class SampleSpotsTests: SampleSpotsCase {
                 "spots": SpotsFolder(url: folder.appendingPathComponent("none"), core: root.appendingPathComponent("spots"), enabled: shipped),
                 "examples": SpotsFolder(url: root.appendingPathComponent("examples"))
             ]
-            for (name, place) in places {
-                let faults = await SpotCheck(folder: place, timeout: 60, views: views, environment: TestEnvironment.values).faults()
-
+            let found = await withTaskGroup(of: (String, [String]).self) { group in
+                for (name, place) in places {
+                    group.addTask { (name, await SpotCheck(folder: place, timeout: 60, views: views, environment: TestEnvironment.values).faults()) }
+                }
+                return await group.reduce(into: [:]) { $0[$1.0] = $1.1 }
+            }
+            for (name, faults) in found {
                 XCTAssertEqual(faults, [], name)
             }
         }
@@ -81,29 +79,31 @@ final class SampleSpotsTests: SampleSpotsCase {
     func testRelaySendsALineOverItsSocketAndShowsTheLineThatComesBack() async throws {
         let root = URL(fileURLWithPath: #filePath).deletingLastPathComponent().deletingLastPathComponent().deletingLastPathComponent()
         let port = try freePort()
-        let relay = ScriptProcess(url: root.appendingPathComponent("examples/relay.spot/relay.sh"), mode: .stays, limit: 60, stopPause: 0.2, variables: ["RELAY_PORT": String(port)], base: TestEnvironment.values)
-        defer { relay.end() }
-        var frames = relay.start().makeAsyncIterator()
+        try await withPrivateHome { folder in
+            let relay = ScriptProcess(url: root.appendingPathComponent("examples/relay.spot/relay.sh"), mode: .stays, limit: 60, stopPause: 0.2, variables: ["RELAY_PORT": String(port)], base: TestEnvironment.values)
+            defer { relay.end() }
+            var frames = relay.start().makeAsyncIterator()
 
-        relay.send(.read, id: 1)
-        var sheet = try await next(&frames, of: relay)
-        while FrameHead(text: sheet ?? "").isMark { sheet = try await next(&frames, of: relay) }
-        XCTAssertTrue(sheet?.contains("title=No message yet") == true, sheet ?? "")
+            relay.send(Message(ScriptEntry.show.name), id: 1)
+            var sheet = try await self.next(&frames, of: relay)
+            while FrameRoot(text: sheet ?? "").isMark { sheet = try await self.next(&frames, of: relay) }
+            XCTAssertTrue(sheet?.contains("title=No message yet") == true, sheet ?? "")
 
-        var call = 2
-        var seen: [String] = []
-        while !seen.contains(where: { $0.contains("title=hello") }), call < 40 {
-            relay.send(SpotAction(arguments: ["send"]), input: "peer=127.0.0.1:\(port)\nmessage=hello\n", id: call)
-            while let frame = try await next(&frames, of: relay) {
-                seen.append(frame)
-                if SpotOutput(text: frame).ends == [String(call)] { break }
+            var call = 2
+            var seen: [String] = []
+            while !seen.contains(where: { $0.contains("title=hello") }), call < 40 {
+                relay.send(Message("send", inputs: [.init(key: "peer", value: "127.0.0.1:\(port)"), .init(key: "message", value: "hello")]), id: call)
+                while let frame = try await self.next(&frames, of: relay) {
+                    seen.append(frame)
+                    if Frame(text: frame).ends == [String(call)] { break }
+                }
+                call += 1
             }
-            if seen.contains(where: { $0.hasPrefix("toast=Sent") }) { seen.append(try await next(&frames, of: relay) ?? "") }
-            call += 1
-        }
 
-        XCTAssertTrue(seen.contains("toast=Sent\n\n"), "\(seen)")
-        XCTAssertTrue(seen.contains { $0.contains("text=last\ntitle=hello\ndetail=From a peer") }, "\(seen)")
+            XCTAssertTrue(self.toasts(in: folder).contains("Sent"), "\(self.toasts(in: folder))")
+            XCTAssertTrue(self.toasts(in: folder).contains("hello"), "\(self.toasts(in: folder))")
+            XCTAssertTrue(seen.contains { $0.contains("text=last\nclass=col-span-3 row-span-2 bar:flex\ntitle=hello\ndetail=From a peer") }, "\(seen)")
+        }
     }
 
     private func freePort() throws -> Int {
@@ -139,7 +139,7 @@ final class SampleSpotsTests: SampleSpotsCase {
     }
 
     func testEveryCommandCanBeRun() throws {
-        for command in try scan.spots where command.kind != .widget && command.host == nil && command.mode != .inline {
+        for command in try scan.spots where command.host == nil && command.mode != .inline {
             XCTAssertTrue(FileManager.default.isExecutableFile(atPath: command.url.path), command.name)
         }
     }
@@ -158,7 +158,7 @@ final class SampleSpotsTests: SampleSpotsCase {
             XCTAssertEqual(lines.items.map(\.title), ["Back\\slash", "Finder", "Notes", "Zed"])
             XCTAssertEqual(lines.items.map(\.run), ["/Applications/Back\\slash.app", "/System/Library/CoreServices/Finder.app", "/System/Applications/Notes.app", "/Applications/Zed.app"])
             XCTAssertEqual(lines.items.map(\.iconFile), lines.items.map(\.run))
-            XCTAssertTrue(apps.isGlobal)
+            XCTAssertTrue(apps.triggers.lists)
         }
     }
 
@@ -206,7 +206,7 @@ final class SampleSpotsTests: SampleSpotsCase {
 
         let lines = try await files.items(query: "a", timeout: 60)
 
-        XCTAssertEqual(files.read?.searchesSheet, true)
+        XCTAssertEqual(files.triggers.searchesSheet, true)
         XCTAssertEqual(lines.items, [])
     }
 
@@ -228,9 +228,9 @@ final class SampleSpotsTests: SampleSpotsCase {
             XCTAssertEqual(list.id, metric.id)
 
             let item = try XCTUnwrap(lines.items.first)
-            try await list.perform(.item(item), timeout: 60)
+            try await list.handle(item, timeout: 60)
             XCTAssertEqual(try self.read("opened", in: folder), item.run + "\n")
-            try await list.perform(.action(try await self.action("copy", of: list), item: item), timeout: 60)
+            try await list.perform("copy", input: Message("copy", inputs: [.init(key: "item", value: item.run)]).text, timeout: 60)
             XCTAssertEqual(try self.read("clipboard", in: folder), item.run)
         }
     }
@@ -246,22 +246,16 @@ final class SampleSpotsTests: SampleSpotsCase {
         }
     }
 
-    func testAgentsPullRequestsAndTheClockCanShowInTheMenuBar() throws {
-        let scripts = try exampleScan.scripts.filter { ["agents", "clock", "pulls"].contains($0.id) }
-
-        XCTAssertEqual(scripts.map(\.canShowInMenuBar), [true, true, true])
-    }
-
     func testTheColorPickerCopiesAPickAndNothingOnACancel() async throws {
         try await withPrivateHome { folder in
-            let picked = try await self.pickColor(answer: "#0080FF", in: folder)
-            XCTAssertEqual(picked, "Copied #0080FF")
+            try await self.pickColor(answer: "#0080FF", in: folder)
+            XCTAssertEqual(self.toasts(in: folder), ["Copied #0080FF"])
             XCTAssertEqual(try self.read("clipboard", in: folder), "#0080FF")
             XCTAssertFalse(FileManager.default.fileExists(atPath: folder.appendingPathComponent("direct").path))
 
             try FileManager.default.removeItem(at: folder.appendingPathComponent("clipboard"))
-            let cancelled = try await self.pickColor(answer: "", in: folder)
-            XCTAssertNil(cancelled)
+            try await self.pickColor(answer: "", in: folder)
+            XCTAssertEqual(self.toasts(in: folder), ["Copied #0080FF"])
             XCTAssertFalse(FileManager.default.fileExists(atPath: folder.appendingPathComponent("clipboard").path))
         }
     }
@@ -284,7 +278,7 @@ final class SampleSpotsTests: SampleSpotsCase {
         try await withPrivateHome { folder in
             let emoji = try self.fakeEmoji(in: folder)
 
-            _ = try await SpotRuns(environment: TestEnvironment.values).answer(of: emoji, .set("tone", to: "dark"), input: nil, limit: 30)
+            _ = try await SpotRuns(environment: TestEnvironment.values).answer(of: emoji, "tone", input: "input.value=dark\n", limit: 30)
             let output = try await emoji.items(timeout: 60)
 
             XCTAssertEqual(self.text(of: "tone", in: output), "dark")
@@ -360,12 +354,12 @@ final class SampleSpotsTests: SampleSpotsCase {
             let row = SpotItem(title: "thumbs up", run: "👍")
             XCTAssertEqual(tone.key, ActionKey(name: "t", isCommand: true))
 
-            _ = try await SpotRuns(environment: TestEnvironment.values).answer(of: emoji, .action(tone, item: row), input: nil, limit: 30)
+            _ = try await SpotRuns(environment: TestEnvironment.values).answer(of: emoji, tone.id, input: "input.item=\(row.run)\n", limit: 30)
             let next = try await emoji.items(timeout: 60)
             XCTAssertEqual(self.text(of: "tone", in: next), "light")
 
-            _ = try await SpotRuns(environment: TestEnvironment.values).answer(of: emoji, .set("tone", to: "dark"), input: nil, limit: 30)
-            _ = try await SpotRuns(environment: TestEnvironment.values).answer(of: emoji, .action(tone, item: row), input: nil, limit: 30)
+            _ = try await SpotRuns(environment: TestEnvironment.values).answer(of: emoji, "tone", input: "input.value=dark\n", limit: 30)
+            _ = try await SpotRuns(environment: TestEnvironment.values).answer(of: emoji, tone.id, input: "input.item=\(row.run)\n", limit: 30)
             let wrapped = try await emoji.items(timeout: 60)
             XCTAssertEqual(self.text(of: "tone", in: wrapped), "none")
         }
@@ -375,7 +369,7 @@ final class SampleSpotsTests: SampleSpotsCase {
         try await withPrivateHome { folder in
             let emoji = try self.fakeEmoji(in: folder)
 
-            _ = try await SpotRuns(environment: TestEnvironment.values).answer(of: emoji, .item(SpotItem(title: "thumbs up", run: "👍")), input: nil, limit: 30)
+            _ = try await SpotRuns(environment: TestEnvironment.values).answer(of: emoji, "press", input: "input.item=👍\n", limit: 30)
 
             XCTAssertEqual(try String(contentsOf: folder.appendingPathComponent("clipboard"), encoding: .utf8), "👍")
         }
@@ -385,9 +379,9 @@ final class SampleSpotsTests: SampleSpotsCase {
         try await withPrivateHome { folder in
             let files = try XCTUnwrap(try self.scan.spots.first { $0.name == "Files" })
 
-            let toast = try await files.perform(SpotAction(arguments: ["copy", "/a/b é.txt"]), timeout: 60)
+            try await files.perform("copy", input: "input.item=/a/b é.txt\n", timeout: 60)
 
-            XCTAssertEqual(toast, "Copied")
+            XCTAssertEqual(self.toasts(in: folder), ["Copied"])
             XCTAssertEqual(try self.read("clipboard", in: folder), "/a/b é.txt")
             XCTAssertFalse(FileManager.default.fileExists(atPath: folder.appendingPathComponent("direct").path))
         }
@@ -398,7 +392,7 @@ final class SampleSpotsTests: SampleSpotsCase {
             let emoji = try self.fakeEmoji(in: folder)
             try "before".write(to: folder.appendingPathComponent("clipboard"), atomically: true, encoding: .utf8)
 
-            _ = try await SpotRuns(environment: TestEnvironment.values).answer(of: emoji, SpotAction(arguments: ["paste", "👍"]), input: nil, limit: 30)
+            _ = try await SpotRuns(environment: TestEnvironment.values).answer(of: emoji, "paste", input: "input.item=👍\n", limit: 30)
 
             XCTAssertEqual(try self.read("pasted", in: folder), "👍")
             XCTAssertEqual(try self.read("clipboard", in: folder), "before")
@@ -411,7 +405,7 @@ final class SampleSpotsTests: SampleSpotsCase {
             let url = folder.appendingPathComponent("frames.sh")
             try "#!/bin/sh\nprintf 'text=a\\n---\\n'\nprintf 'text=b\\n'\n".writeScript(to: url)
 
-            let text = try await SpotRuns(environment: TestEnvironment.values).answer(of: Spot(id: "frames", name: "Frames", url: url), .read, limit: 60)
+            let text = try await SpotRuns(environment: TestEnvironment.values).answer(of: Spot(id: "frames", name: "Frames", url: url), ScriptEntry.show.name, limit: 60)
 
             XCTAssertEqual(text, "text=a\n")
         }

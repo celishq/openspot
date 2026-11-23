@@ -9,17 +9,17 @@ enum SpotCardPicture {
 
     static func run(text: String, size: SpotSize, path: String) -> Never {
         SpotPicture.start()
-        let output = SpotOutput(text: text)
+        let output = Frame(text: text)
         let face = output.face
-        guard let layout = face.layout(for: size) else {
-            FileHandle.standardError.write(Data("The card has no drawing for the size \(size.name). Print grid.\(size.name)= lines.\n".utf8))
+        guard face.draws(on: size) else {
+            FileHandle.standardError.write(Data("The card has no drawing for the size \(size.name). Give a block a class for it, such as \(size.name):flex.\n".utf8))
             exit(1)
         }
         let card = CGSize(width: SpotTokens.width(columns: size.columns), height: SpotTokens.height(rows: size.rows))
         let shape = SpotRoundShape(radius: SurfaceEdge(card: size).radius)
         let stage = SpotPictureStage(size: card, radius: SurfaceEdge(card: size).radius, seed: URL(fileURLWithPath: path).lastPathComponent) {
-            SpotCardDrawing(layout: layout, face: face, card: size) { _, _ in }
-                .padding(SpotTokens.cardPadding(for: size, isWidget: true))
+            CardTreeView(face: face, size: size)
+                .padding(SpotTokens.cardPadding(for: size, isDrawn: true))
                 .background(SpotTheme.ink.opacity(SpotTheme.fill), in: shape)
                 .spotGlass(in: shape)
         }
@@ -32,13 +32,13 @@ enum SpotCardPicture {
         exit(0)
     }
 
-    static func run(spot id: String, size: SpotSize, path: String) -> Never {
-        SpotPicture.start()
+    static func run(spot id: String, size: SpotSize, path: String, isLight: Bool) -> Never {
+        SpotPicture.start(isLight: isLight)
         let model = SpotsModel(host: SpotQuietHost.shared, runs: SpotRuns())
         Task { @MainActor in
             await model.reload()
             guard let entry = model.entries.first(where: { $0.id == id }) else {
-                FileHandle.standardError.write(Data("Openspot has no card for \(id). Run `openspot check` to see each file that does not load.\n".utf8))
+                FileHandle.standardError.write(Data("Openspot has no card for \(id). Run `openspot check spots` to see each file that does not load.\n".utf8))
                 exit(1)
             }
             let draw = {
@@ -50,14 +50,7 @@ enum SpotCardPicture {
                 }
                 SpotPicture(of: stage, size: CGSize(width: card.width + 2 * margin, height: card.height + 2 * margin), path: path).save(after: settle)
             }
-            if entry.kind == .widget {
-                model.panelWillShow()
-                Task { @MainActor in
-                    try? await Task.sleep(for: .milliseconds(300))
-                    await model.waitForReads()
-                    draw()
-                }
-            } else if let sheet = model.sheets[id], entry.spot.readsState {
+            if let sheet = model.sheets[id], entry.spot.showsState {
                 sheet.afterAnswer(draw)
             } else {
                 draw()

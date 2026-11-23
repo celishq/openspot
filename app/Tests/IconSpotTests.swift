@@ -9,12 +9,16 @@ final class IconSpotTests: BuiltInCase {
     }
 
     private func call(_ arguments: [String]) async throws {
-        try await icon.perform(SpotAction(arguments: arguments), timeout: 60)
+        let names = ["draw": "spot", "file": "spot", "reset": "spot", "drawer": "value", "drop": "file"]
+        let input = arguments.dropFirst().map { "input.\(names[arguments[0]] ?? "value")=\($0)\n" }.joined()
+        try await icon.perform(arguments[0], input: input.isEmpty ? nil : input, timeout: 60)
     }
 
     private func view() async throws -> TextBlock {
         let output = try await icon.items(timeout: 60)
-        return try XCTUnwrap(output.view)
+        let board = try XCTUnwrap(output.tree.node("drawer"))
+        XCTAssertEqual(board.kind.name, "board")
+        return board.block
     }
 
     private var saved: String? {
@@ -27,8 +31,6 @@ final class IconSpotTests: BuiltInCase {
         let icon = try icon
 
         XCTAssertEqual(icon.offeredActions, [])
-        XCTAssertFalse(icon.offersFloat)
-        XCTAssertFalse(icon.offersCard)
         XCTAssertTrue(icon.takesDrops)
     }
 
@@ -39,7 +41,7 @@ final class IconSpotTests: BuiltInCase {
         let output = try await icon.items(timeout: 60)
         let view = try await self.view()
         XCTAssertEqual(opened, ["open openspot/icon"])
-        XCTAssertEqual(output.summary?.value("title"), "weather")
+        XCTAssertEqual(output.root?.value("title"), "weather")
         XCTAssertEqual(view.value("dots"), empty)
         XCTAssertEqual(output.parts.filter { $0.kind == "button" }.map(\.id), ["clear", "save"])
     }

@@ -1,0 +1,6 @@
+title = "Agents"
+icon = "sparkles"
+views = ["card.swift"]
+
+[on]
+"panel.open" = true

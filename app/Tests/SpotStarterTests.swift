@@ -28,15 +28,47 @@ final class SpotStarterTests: XCTestCase {
         }
     }
 
+    func testEachStarterDescribesItsSpotInSpotTomlAndItsScriptHoldsNoHeader() throws {
+        for starter in SpotStarter.allCases {
+            let place = folder.appendingPathComponent(starter.rawValue)
+
+            let file = try starter.write(name: "Say \"hi\"", in: place)
+
+            let manifest = try ConfigDocument(text: String(contentsOf: file.deletingLastPathComponent().appendingPathComponent("spot.toml"), encoding: .utf8))
+            let script = try String(contentsOf: file, encoding: .utf8).components(separatedBy: "\n")
+            XCTAssertEqual(manifest.values["title"], .string("Say \"hi\""), "\(starter)")
+            XCTAssertEqual(manifest.values["icon"], .string(starter.symbol), "\(starter)")
+            XCTAssertEqual(script.first, "#!/bin/sh", "\(starter)")
+            XCTAssertFalse(script.dropFirst().contains { $0.hasPrefix("#") }, "\(starter)")
+        }
+    }
+
     func testAPickOfTheListStarterReadsAKeyOfItsRow() async throws {
         _ = try SpotStarter.list.write(name: "Weather", in: folder)
+        let tools = try temporaryFolder()
+        let said = tools.appendingPathComponent("said")
+        try "#!/bin/sh\nprintf '%s\\n' \"$*\" > '\(said.path)'\n".writeScript(to: tools.appendingPathComponent("openspot"))
         let spot = try XCTUnwrap(SpotsFolder(url: folder).scan().spots.first)
-        let rows = try await spot.answer(.read, timeout: 10).items
+        let rows = try await spot.answer(ScriptEntry.show.name, timeout: 10).items
 
-        let picked = try await spot.answer(SpotAction(arguments: ["open", "second"]), input: rows.last?.fields, timeout: 10)
+        _ = try await TestEnvironment.with(["PATH": "\(tools.path):/usr/bin:/bin"]) {
+            let row = try XCTUnwrap(rows.last)
+            let message = ScriptEntry.press.message([row.run], then: row.carried)
+            return try await spot.answer(message.handler, input: message.text, timeout: 10)
+        }
 
         XCTAssertEqual(rows.map(\.run), ["first", "second"])
-        XCTAssertEqual(picked.toast, "You picked the row that says: Hello again")
+        XCTAssertEqual(try String(contentsOf: said, encoding: .utf8), "toast You picked the item that says: Hello again\n")
+    }
+
+    func testTheButtonStarterIsOneCommandThatReturnRuns() throws {
+        _ = try SpotStarter.button.write(name: "Weather today", in: folder)
+
+        let spot = try XCTUnwrap(SpotsFolder(url: folder).scan().spots.first)
+
+        XCTAssertEqual(spot.mainAct, .command("run"))
+        XCTAssertFalse(spot.hasSheet)
+        XCTAssertEqual(spot.commands.map(\.title), ["Weather today"])
     }
 
     func testANameThatAnotherSpotHasIsRefused() throws {

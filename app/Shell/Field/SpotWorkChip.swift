@@ -5,15 +5,13 @@ struct SpotWorkChip: View {
     let model: SpotsModel
     let isShown: Bool
 
-    private static let side: CGFloat = 30
-    private static let gap: CGFloat = 3
 
     var body: some View {
         ZStack {
-            let all = model.backgroundWork
+            let all = model.backgroundActs
             if let work = all.first {
                 SpotShine {
-                    HStack(spacing: Self.gap) {
+                    HStack(spacing: SpotTokens.workChipGap) {
                         Image(systemName: "sparkles")
                         if all.count > 1 { Text("\(all.count)") }
                     }
@@ -21,7 +19,7 @@ struct SpotWorkChip: View {
                 }
                 .foregroundStyle(SpotTheme.ink)
                 .padding(.horizontal, all.count > 1 ? SpotTokens.padding / 2 : 0)
-                .frame(minWidth: Self.side, minHeight: Self.side)
+                .frame(minWidth: SpotTokens.workChipSide, minHeight: SpotTokens.workChipSide)
                 .background(SpotTheme.ink.opacity(SpotTheme.control), in: Capsule())
                 .contentShape(Capsule())
                 .onTapGesture { model.open(work.id) }
@@ -33,7 +31,7 @@ struct SpotWorkChip: View {
             }
         }
         .padding(.trailing, SpotTokens.halo + SpotTokens.padding)
-        .padding(.top, SpotTokens.halo + (SpotTokens.rowHeight - Self.side) / 2)
+        .padding(.top, SpotTokens.halo + (SpotTokens.gridTop - SpotTokens.halo - SpotTokens.rowGap - SpotTokens.workChipSide) / 2)
         .frame(width: SpotTokens.panelWidth, height: SpotTokens.panelHeight, alignment: .topTrailing)
         .modifier(SpotShownFade(isShown: model.isShown))
     }

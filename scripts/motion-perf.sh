@@ -11,9 +11,10 @@ DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer xcodebuild -project app
 app="$out/build/Build/Products/Release/Openspot.app"
 codesign --force --deep -s - "$app" 2>/dev/null
 caffeinate -d -u -w $$ &
+config="$PWD/.temp/openspot"
 for run in $(seq "${1:-3}"); do
-  OPENSPOT_CONFIG="$PWD/.temp/openspot" OPENSPOT_PROBE="$PWD/$out/runs/$run.txt" OPENSPOT_SPOT="$SPOT" OPENSPOT_ACTION="$ACTION" \
-    OPENSPOT_CYCLES="${CYCLES:-20}" OPENSPOT_PAUSE="${PAUSE:-0.15}" OPENSPOT_TEXT="$TEXT" "$app/Contents/MacOS/Openspot" >/dev/null 2>&1
+  "$app/Contents/MacOS/Openspot" --config "$config" --probe-row "$ROW" --probe "$PWD/$out/runs/$run.txt" --probe-spot "$SPOT" --probe-action "$ACTION" \
+    --probe-cycles "${CYCLES:-20}" --probe-pause "${PAUSE:-0.15}" --probe-text "$TEXT" >/dev/null 2>&1
   head -1 "$out/runs/$run.txt"
 done
 median=$(for run in "$out"/runs/*.txt; do head -1 "$run" | sed -E 's/.*dropped ([0-9]+).*/\1/'; done | sort -n | awk '{ v[NR] = $1 } END { print v[int((NR + 1) / 2)] }')

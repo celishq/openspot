@@ -11,7 +11,7 @@ public struct FlowEdges: Equatable, Sendable {
 
     enum Step: Equatable, Sendable {
         case rest
-        case standing(Stand, start: FlowEdge.Place)
+        case standing(Stand, start: FlowEdge.Place, onMark: Bool)
         case moving(Stand?)
     }
 
@@ -22,7 +22,7 @@ public struct FlowEdges: Equatable, Sendable {
     private var stand: Stand? {
         switch step {
         case .rest: nil
-        case .standing(let stand, _): stand
+        case .standing(let stand, _, _): stand
         case .moving(let stand): stand
         }
     }
@@ -53,8 +53,13 @@ public struct FlowEdges: Equatable, Sendable {
     }
 
     public var sheetStart: FlowEdge.Place? {
-        if case .standing(_, let start) = step { return start }
+        if case .standing(_, let start, _) = step { return start }
         return nil
+    }
+
+    public var sheetStartsOnMark: Bool {
+        if case .standing(_, _, let onMark) = step { return onMark }
+        return false
     }
 
     public init() {}
@@ -88,10 +93,11 @@ public struct FlowEdges: Equatable, Sendable {
         guard let shown, !next.edges.contains(where: { $0.sheet == shown }) else { return next }
         let left = flow.pages.firstIndex(of: shown)
         let coming: FlowEdge.Side = left.map { $0 > flow.index ? .behind : .ahead } ?? .behind
+        let onMark = next.edges.contains { $0.sheet == flow.current && $0.place == .bar(coming, 0) }
         next.edges.removeAll { $0.sheet == flow.current }
         next.edges.append(FlowEdge(sheet: shown, title: title(shown), place: .stand(rect)))
         let leaving: FlowEdge.Place = left == nil ? .line(.ahead) : .bar(coming == .ahead ? .behind : .ahead, 0)
-        next.step = .standing(Stand(from: rect, coming: coming, leaving: leaving, sheet: shown, page: page), start: .bar(coming, 0))
+        next.step = .standing(Stand(from: rect, coming: coming, leaving: leaving, sheet: shown, page: page), start: .bar(coming, 0), onMark: onMark)
         return next
     }
 

@@ -43,7 +43,8 @@ struct SpotSurface: View {
 
     private func strength(of mark: FlowEdge) -> Double {
         guard !mark.isFading else { return MotionTokens.hiddenOpacity }
-        guard case .bar(_, let index) = mark.place else { return glass }
-        return SpotTheme.edgeStrengths[min(index, SpotTheme.edgeStrengths.count - 1)]
+        guard case .bar(_, let index) = mark.place else { return 1 }
+        let strengths = SpotTheme.edgeStrengths
+        return strengths[min(index, strengths.count - 1)]
     }
 }

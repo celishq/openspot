@@ -12,7 +12,7 @@ final class WorkCardTests: SpotRunsCase {
     }
 
     func testTheCardShowsTheTitleAndFillOfItsCallOnlyAfterItsPause() async throws {
-        try script(body: "printf 'progress=0.5\\ntitle=Getting ready\\n---\\n'\nsleep 30")
+        try script(body: "printf 'frame=\\nprogress=0.5\\ntitle=Getting ready\\n---\\n'\nsleep 30")
         let sheet = try sheet()
 
         sheet.pressCard()
@@ -58,7 +58,7 @@ final class WorkCardTests: SpotRunsCase {
     }
 
     func testTheCardFillsWhenItsCallDrawsAPictureAndThenLeaves() async throws {
-        try script(body: "printf 'title=Getting ready\\n---\\n'\n\(until("draw"))\nprintf 'row=a\\ntitle=A\\n---\\n'\nsleep 30")
+        try script(body: "printf 'frame=\\ntitle=Getting ready\\n---\\n'\n\(until("draw"))\nprintf 'frame=\\n\\nitem=a\\ntitle=A\\n---\\n'\nsleep 30")
         let sheet = try sheet()
         sheet.pressCard()
         try await wait("the frame") { sheet.calls.first?.status != nil }
@@ -80,7 +80,7 @@ final class WorkCardTests: SpotRunsCase {
         sheet.open {}
         sheet.pressCard()
         time += 1
-        try await wait("the shown work") { !sheet.work.isEmpty }
+        try await wait("the shown work") { !sheet.acts.isEmpty }
         XCTAssertNil(runs.workCard)
 
         sheet.close()
@@ -103,7 +103,7 @@ final class WorkCardTests: SpotRunsCase {
         try await wait("the card of z") { self.runs.workCard?.spot == "z" }
 
         time += 1
-        try await wait("both shown") { self.runs.work.count == 2 }
+        try await wait("both shown") { self.runs.acts.count == 2 }
         XCTAssertEqual(runs.workCard?.spot, "z")
 
         z.stop(try XCTUnwrap(z.calls.first))
@@ -120,5 +120,16 @@ final class WorkCardTests: SpotRunsCase {
         sheet.stop(try XCTUnwrap(sheet.calls.first))
 
         XCTAssertNil(runs.workCard)
+    }
+
+    func testABackgroundCallShowsNoCardAndJoinsTheBackgroundActs() async throws {
+        try script(body: "printf 'frame=\\nbackground=true\\ntitle=Building\\n---\\n'\nsleep 30")
+        let sheet = try sheet()
+        sheet.pressCard()
+        try await wait("the frame") { sheet.calls.first?.status != nil }
+        time += 1
+        try await wait("the background act") { self.runs.backgroundActs.first?.call.title == "Building" }
+        XCTAssertNil(runs.workCard)
+        XCTAssertEqual(sheet.shownState, sheet.state)
     }
 }

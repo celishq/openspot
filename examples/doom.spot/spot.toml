@@ -1,0 +1,8 @@
+title = "Doom"
+icon = "gamecontroller"
+detail = "Play the first episode of Doom"
+views = ["screen.swift"]
+uses = ["network"]
+
+[on]
+"panel.open" = true

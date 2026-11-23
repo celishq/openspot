@@ -18,8 +18,8 @@ final class RemindersTests: XCTestCase {
         Reminder(id: id, title: title, due: due, isAllDay: allDay, list: family, doneAt: doneAt)
     }
 
-    private func reminders(_ store: FakeReminderStore, isRead: Bool = true) -> Reminders {
-        Reminders(store: store, now: at(9, 40), clock: clock, locale: Locale(identifier: "en_GB"), isRead: isRead)
+    private func reminders(_ store: FakeReminderStore, isInShow: Bool = true) -> Reminders {
+        Reminders(store: store, now: at(9, 40), clock: clock, locale: Locale(identifier: "en_GB"), isInShow: isInShow)
     }
 
     private func rows(_ text: String) -> [TextBlock] {
@@ -43,7 +43,7 @@ final class RemindersTests: XCTestCase {
         XCTAssertEqual(rows.map { $0.value("tone") }, ["bad", nil, nil, nil])
         XCTAssertEqual(rows.map { $0.value("done") }, ["false", "false", "true", "false"])
         XCTAssertEqual(rows.map { $0.value("icon") }, ["circle", "circle", "checkmark.circle.fill", "circle"])
-        XCTAssertEqual(rows[0].value("row"), "reminder:late")
+        XCTAssertEqual(rows[0].value("item"), "reminder:late")
         XCTAssertEqual(rows[0].value("due"), "2026-11-09T18:00:00+01:00")
         XCTAssertEqual(rows[1].value("allday"), "true")
         XCTAssertEqual(rows[0].value("list"), "7D10")
@@ -76,10 +76,10 @@ final class RemindersTests: XCTestCase {
     func testDoneTicksAndOpensAgainTheReminderWhoseIdTheListPrinted() async throws {
         let store = FakeReminderStore(reminders: [reminder("late", "Call mom", due: at(18, day: 9))])
         let text = try await reminders(store).due(days: 1, hiding: [])
-        let id = try XCTUnwrap(rows(text).first?.value("row"))
+        let id = try XCTUnwrap(rows(text).first?.value("item"))
 
-        let ticked = try await reminders(store, isRead: false).done(id, true)
-        let opened = try await reminders(store, isRead: false).done(id, false)
+        let ticked = try await reminders(store, isInShow: false).done(id, true)
+        let opened = try await reminders(store, isInShow: false).done(id, false)
 
         XCTAssertEqual(ticked, "")
         XCTAssertEqual(opened, "")
@@ -91,7 +91,7 @@ final class RemindersTests: XCTestCase {
 
         for id in ["reminder:gone", "event:late/1700000000", "late"] {
             do {
-                _ = try await reminders(store, isRead: false).done(id, true)
+                _ = try await reminders(store, isInShow: false).done(id, true)
                 XCTFail("\(id) was ticked")
             } catch SpotError.failed(1, let message) {
                 XCTAssertEqual(message, "Openspot cannot find \(id). Read the list again, and use the id of one of its rows.")
@@ -108,7 +108,7 @@ final class RemindersTests: XCTestCase {
 
         let refused = FakeReminderStore(reminders: [], access: .unasked, answer: .denied)
         do {
-            _ = try await reminders(refused, isRead: false).due(days: 1, hiding: [])
+            _ = try await reminders(refused, isInShow: false).due(days: 1, hiding: [])
             XCTFail("a refusal printed a list")
         } catch SpotError.failedWithFix(1, let message, let link) {
             XCTAssertEqual(refused.asks, 1)
@@ -122,7 +122,7 @@ final class RemindersTests: XCTestCase {
 
         let rows = rows(try await reminders(store).lists())
 
-        XCTAssertEqual(rows.map { $0.value("row") }, ["7D10"])
+        XCTAssertEqual(rows.map { $0.value("item") }, ["7D10"])
         XCTAssertEqual(rows.first?.value("detail"), "iCloud")
     }
 }

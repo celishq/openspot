@@ -1,5 +1,13 @@
 #!/bin/sh
-# title=Cups today
-# icon=cup.and.saucer.fill
-# on=sheet.open
-printf 'text=cups\ntitle=3\ndetail=Last at 14:20\n'
+case "$1" in
+  show)
+    lsof -nP -iTCP -sTCP:LISTEN | tail -n +2 | sort -u -k2,2 |
+      while read -r name pid _ _ _ _ _ _ address _; do
+        printf 'item=%s\ntitle=:%s\ndetail=%s\n\n' "$pid" "${address##*:}" "$name"
+      done
+    ;;
+  press)
+    pid=$(sed -n 's/^input.item=//p')
+    kill "$pid"
+    ;;
+esac

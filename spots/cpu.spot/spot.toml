@@ -1,0 +1,6 @@
+title = "CPU"
+detail = "The use of all cores"
+stay = true
+
+[on]
+"system.load" = true

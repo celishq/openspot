@@ -16,7 +16,6 @@ struct SpotPlaygroundStage: View {
             }
             .frame(maxWidth: .infinity)
             .padding(SpotTokens.padding)
-            .background(SpotTheme.window)
             ScrollView([.vertical, .horizontal]) {
                 SpotsView(model: model.panel.model)
                     .frame(width: SpotTokens.panelWidth, height: SpotTokens.panelHeight)
@@ -24,7 +23,6 @@ struct SpotPlaygroundStage: View {
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
             }
             .defaultScrollAnchor(.center)
-            .spotGlass(in: Rectangle())
         }
     }
 }

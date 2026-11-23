@@ -20,6 +20,7 @@ final class ReservedSettingTests: XCTestCase {
         XCTAssertEqual(call("setting", "set", "--spot", "openspot", "login", "true")?.value as? SettingCall, .login(true))
         XCTAssertEqual(call("setting", "set", "--spot", "openspot", "link", "false")?.value as? SettingCall, .link(false))
         XCTAssertEqual(call("setting", "set", "--spot", "openspot", "careful", "true")?.value as? SettingCall, .careful(true))
+        XCTAssertEqual(call("setting", "set", "--spot", "openspot", "slow", "true")?.value as? SettingCall, .slow(true))
         XCTAssertEqual(call("setting", "set", "--spot", "openspot", "panel-key", "ctrl+space")?.value as? SettingCall, .appKey(name: "panel-key", key: "ctrl+space"))
         XCTAssertEqual(call("setting", "set", "--spot", "openspot", "fix-key", "ctrl+f")?.value as? SettingCall, .appKey(name: "fix-key", key: "ctrl+f"))
         XCTAssertEqual(call("setting", "set", "--spot", "openspot", "login", "yes")?.value as? CallFault, .refused("`login` takes `true` or `false`, such as `openspot setting set --spot openspot login true`."))
@@ -38,11 +39,11 @@ final class ReservedSettingTests: XCTestCase {
 
     func testAFieldOfAHeaderCannotTakeAReservedKey() throws {
         let url = FileManager.default.temporaryDirectory.appendingPathComponent("reserved-\(UUID().uuidString).sh")
-        try "#!/bin/sh\n# title=Notes\n#\n# field=menubar\n".writeScript(to: url)
+        try "#!/bin/sh\n".writeScript(to: url, toml: "title = 'Notes'\n\n[settings]\nmenubar = { type = 'text' }")
         defer { try? FileManager.default.removeItem(at: url) }
 
         XCTAssertThrowsError(try SpotFile(file: url, id: "notes")) { error in
-            XCTAssertEqual((error as? SpotError)?.reason, "Notes has field=menubar, a key that Openspot keeps for the person. Give the field another name.")
+            XCTAssertEqual((error as? SpotError)?.reason, "Notes has [settings] menubar, a key that Openspot keeps for the person. Give the setting another name.")
         }
     }
 }

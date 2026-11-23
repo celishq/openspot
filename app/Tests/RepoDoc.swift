@@ -17,10 +17,18 @@ struct RepoDoc {
     }
 
     static func all() throws -> [RepoDoc] {
-        try ["", "app/", "app/Help/", "spots/"].flatMap { folder in
-            try FileManager.default.contentsOfDirectory(atPath: repo.appendingPathComponent(folder).path)
-                .filter { $0.hasSuffix(".md") }.sorted().map { try RepoDoc(folder + $0) }
+        let help = try FileManager.default.contentsOfDirectory(atPath: repo.appendingPathComponent("app/Help").path)
+            .filter { $0.hasSuffix(".md") }.sorted().map { "app/Help/" + $0 }
+        return try (["AGENTS.md", "CLAUDE.md", "CONTRIBUTING.md", "PROTOCOL.md", "README.md", "TRUST.md", "MANUAL.md", "spots/AGENTS.md"] + help)
+            .map(RepoDoc.init) + pages()
+    }
+
+    static func pages() throws -> [RepoDoc] {
+        var paths: [String] = []
+        for path in matches(#"\]\((docs/[^)#]+\.md)\)"#, in: try RepoDoc("PROTOCOL.md").text).map({ $0[1] }) where !paths.contains(path) {
+            paths.append(path)
         }
+        return try paths.map(RepoDoc.init)
     }
 
     var folder: URL {
@@ -65,13 +73,6 @@ struct RepoDoc {
         Set(headings.map(Self.anchor))
     }
 
-    func section(_ heading: String) -> String {
-        let lines = prose.components(separatedBy: "\n")
-        guard let start = lines.firstIndex(where: { $0.hasPrefix("#") && String($0.drop { $0 == "#" }.dropFirst()) == heading }) else { return "" }
-        let rest = lines[(start + 1)...].prefix { line in !(line.hasPrefix("#") && line.contains("# ")) }
-        return rest.joined(separator: "\n")
-    }
-
     static func anchor(of heading: String) -> String {
         heading.lowercased().filter { $0.isLetter || $0.isNumber || $0 == " " || $0 == "-" || $0 == "_" }.replacingOccurrences(of: " ", with: "-")
     }
@@ -81,15 +82,6 @@ struct RepoDoc {
         let whole = text as NSString
         return expression.matches(in: text, range: NSRange(location: 0, length: whole.length)).map { match in
             (0..<match.numberOfRanges).map { match.range(at: $0).location == NSNotFound ? "" : whole.substring(with: match.range(at: $0)) }
-        }
-    }
-
-    static func tableRows(in text: String) -> [[String]] {
-        let lines = text.components(separatedBy: "\n")
-        return lines.indices.filter { index in
-            lines[index].hasPrefix("|") && !lines[index].hasPrefix("| -") && index + 1 < lines.count && !lines[index + 1].hasPrefix("| -")
-        }.map { index in
-            lines[index].split(separator: "|", omittingEmptySubsequences: false).dropFirst().dropLast().map { $0.trimmingCharacters(in: .whitespaces) }
         }
     }
 

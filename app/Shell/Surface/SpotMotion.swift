@@ -5,23 +5,40 @@ extension EnvironmentValues {
     @Entry var spotIsShown = true
     @Entry var spotPanels = GridPanels()
     @Entry var spotFade = 1.0
+    #if OPENSPOT_TOOLS
+    @Entry var spotDrawsGlass = SpotMotionProbe.drawsGlass
+    #else
     @Entry var spotDrawsGlass = true
+    #endif
     @Entry var spotIsHeld = false
-    @Entry var spotIsStill = false
+    @Entry var spotMoves = true
 }
 
 enum SpotMotion {
     static func grow(isOpen: Bool) -> Animation {
-        isOpen ? .spring(duration: MotionTokens.grow, bounce: 0) : .timingCurve(0.2, 0.1, 0.2, 1, duration: MotionTokens.shrink)
+        isOpen ? .spring(duration: MotionTokens.grow, bounce: 0) : .timingCurve(MotionTokens.shrinkCurve.x1, MotionTokens.shrinkCurve.y1, MotionTokens.shrinkCurve.x2, MotionTokens.shrinkCurve.y2, duration: MotionTokens.shrink)
     }
 
-    static let move = Animation.spring(duration: MotionTokens.move, bounce: 0)
+    static var move: Animation { .spring(duration: MotionTokens.move, bounce: 0) }
 
     static func fade(isShown: Bool) -> Animation {
         .easeOut(duration: isShown ? MotionTokens.fadeIn : MotionTokens.fadeOut)
     }
 
-    static let press = Animation.spring(duration: MotionTokens.press, bounce: MotionTokens.pressBounce)
+    static var shake: some Keyframes<CGFloat> {
+        let reach = MotionTokens.shakeReach
+        let step = MotionTokens.shake / 5
+        return KeyframeTrack {
+            CubicKeyframe(reach, duration: step)
+            CubicKeyframe(-reach * 0.8, duration: step)
+            CubicKeyframe(reach * 0.5, duration: step)
+            CubicKeyframe(-reach * 0.25, duration: step)
+            CubicKeyframe(0, duration: step)
+        }
+    }
+
+    static var press: Animation { .spring(duration: MotionTokens.press, bounce: MotionTokens.pressBounce) }
+    static var pop: Animation { .spring(duration: MotionTokens.pop, bounce: MotionTokens.popBounce) }
 
     static let creep = Animation.linear(duration: MotionTokens.workTick)
 

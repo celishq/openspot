@@ -3,8 +3,7 @@ import OpenspotCore
 import SwiftUI
 
 final class WorkCardPanel: NSPanel {
-    private static let margin: CGFloat = 20
-    private static let size = NSSize(width: WorkCardView.side + 2 * margin, height: WorkCardView.side + 2 * margin)
+    private static let size = NSSize(width: SpotTokens.workCardSide + 2 * SpotTokens.workCardMargin, height: SpotTokens.workCardSide + 2 * SpotTokens.workCardMargin)
 
     private let stage = WorkCardStage()
     private var model: SpotsModel?

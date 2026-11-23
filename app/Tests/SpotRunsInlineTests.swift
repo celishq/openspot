@@ -3,19 +3,21 @@ import XCTest
 
 @MainActor
 final class SpotRunsInlineTests: SpotRunsCase {
-    private func inline(_ name: String = "script", header: String, _ body: String) throws {
-        let lines = header.split(separator: "\n").map { "// \($0)\n" }.joined()
+    private func inline(_ name: String = "script", toml: String, _ body: String) throws {
         let url = folder.spotFile(name, extension: "js")
         try FileManager.default.createDirectory(at: url.deletingLastPathComponent(), withIntermediateDirectories: true)
-        try "\(lines)\(body)\n".write(to: url, atomically: true, encoding: .utf8)
+        try "\(body)\n".write(to: url, atomically: true, encoding: .utf8)
+        try toml.write(to: url.deletingLastPathComponent().appendingPathComponent(Manifest.fileName), atomically: true, encoding: .utf8)
     }
 
     private func answering() throws {
-        try inline(header: "on=search.text ^[0-9]", """
-        function main([id, row], env) {
-          const text = id === "open" ? row : env.OPENSPOT_VALUE
-          if (text === "12") { const end = Date.now() + 300; while (Date.now() < end) {} }
-          return `row=${text}\\ntitle=Is ${text}\\ndetail=${env.OPENSPOT_REASON}\\n`
+        try inline(toml: "[on]\nsearch = '^[0-9]'", """
+        export default {
+          search({ text }) {
+            if (text === "12") { const end = Date.now() + 300; while (Date.now() < end) {} }
+            return `item=${text}\\ntitle=Is ${text}\\ndetail=search\\n`
+          },
+          press({ item }) { return `item=${item}\\ntitle=Is ${item}\\ndetail=press\\n` },
         }
         """)
     }
@@ -29,20 +31,36 @@ final class SpotRunsInlineTests: SpotRunsCase {
         sheet.answer("7")
 
         XCTAssertEqual(sheet.answers.map(\.run), ["7"])
-        XCTAssertEqual(sheet.answers.first?.subtitle, "search.text")
+        XCTAssertEqual(sheet.answers.first?.subtitle, "search")
         XCTAssertFalse(sheet.isAnswering)
     }
 
     private func slowAnswering(_ names: [String]) throws -> [SpotRun] {
         let body = """
-        function main([id], env) {
-          if (env.OPENSPOT_VALUE === "12") { const end = Date.now() + 300; while (Date.now() < end) {} }
-          return `row=${env.OPENSPOT_VALUE}\\ntitle=Is ${env.OPENSPOT_VALUE}\\n`
+        export default {
+          search({ text }) {
+            if (text === "12") { const end = Date.now() + 300; while (Date.now() < end) {} }
+            return `item=${text}\\ntitle=Is ${text}\\n`
+          },
         }
         """
-        for name in names { try inline(name, header: "on=search.text ^[0-9]", body) }
+        for name in names { try inline(name, toml: "[on]\nsearch = '^[0-9]'", body) }
         _ = try scanned()
         return names.compactMap { runs.sheets[$0] }
+    }
+
+    func testAnInlineSpotGetsTheEventAndTheSettingsInItsInput() async throws {
+        try inline(toml: "[settings]\ncity = { type = 'text' }", """
+        export default {
+          show({ event }, env) { return `item=a\\ntitle=${event} ${env.settings.city}\\n` },
+        }
+        """)
+        let sheet = try sheet()
+        runs.take(settings: [SpotSetting(spot: "script", key: "city", value: "Paris")])
+
+        sheet.show(need: .change)
+
+        try await wait("the show") { sheet.list.all.first?.title == "spot.change Paris" }
     }
 
     func testThreeSlowInlineSpotsShareOneWaitForTheirAnswers() async throws {
@@ -97,11 +115,12 @@ final class SpotRunsInlineTests: SpotRunsCase {
 
     func testOpenspotCallAsksTheAPIInTheApp() async throws {
         runs.api = CommandAPI(mac: Mac(), places: .test(), runs: runs, rates: .offline)
-        try inline(header: "on=search.text ^[0-9]", """
-        function main([id, row], env) {
-          const text = id === "open" ? row : env.OPENSPOT_VALUE
-          const answer = openspot.call(["calc", "solve", text])
-          return answer.stdout.replace(/detail=.*/, `detail=${answer.code}`)
+        try inline(toml: "[on]\nsearch = '^[0-9]'", """
+        export default {
+          search({ text }) {
+            const answer = openspot.call(["calc", "solve", text])
+            return answer.stdout.replace(/detail=.*/, `detail=${answer.code}`)
+          },
         }
         """)
         let sheet = try sheet()
@@ -113,24 +132,22 @@ final class SpotRunsInlineTests: SpotRunsCase {
     }
 
     func testAPickRunsItsOpenFunctionWithTheRow() async throws {
-        try inline(header: "on=search.text ^[0-9]", """
-        function main([id, row], env) {
-          const text = id === "open" ? row : env.OPENSPOT_VALUE
-          if (id === "open") return `toast=Picked ${text}\\n`
-          return `row=${text}\\ntitle=${text}\\n`
+        try inline(toml: "[on]\nsearch = '^[0-9]'", """
+        export default {
+          search({ text }) { return `item=${text}\\ntitle=${text}\\n` },
+          press({ item }) { return `item=picked\\ntitle=Picked ${item}\\n` },
         }
         """)
         let sheet = try sheet()
-        var toasts: [String] = []
-        sheet.onReport = { if case .toast(let text) = $0 { toasts.append(text) } }
+        let frames = FrameLog(sheet)
 
         sheet.pick(SpotItem(title: "5", run: "5"))
 
-        try await wait("the toast") { toasts == ["Picked 5"] }
+        try await wait("the frame of the pick") { frames.last == "item=picked\ntitle=Picked 5\n" }
     }
 
     func testAThrownErrorIsTheFailureOfTheCall() async throws {
-        try inline(header: "on=sheet.open", "function main() { throw new Error('No sky today') }")
+        try inline(toml: "", "export default { show() { throw new Error('No sky today') } }")
         let (sheet, told) = try toldSheet()
 
         sheet.open {}
@@ -152,12 +169,12 @@ final class SpotRunsInlineTests: SpotRunsCase {
     }
 
     func testACallAfterAnEditOfTheFileRunsTheNewCodeOnceTheScanSeesIt() async throws {
-        try inline(header: "on=search.text ^[0-9]", "function main() { return 'row=a\\ntitle=Old' }")
+        try inline(toml: "[on]\nsearch = '^[0-9]'", "export default { search() { return 'item=a\\ntitle=Old' } }")
         let sheet = try sheet()
         sheet.answer("1")
         try await wait("the old answer") { sheet.answers.map(\.title) == ["Old"] }
 
-        try inline(header: "on=search.text ^[0-9]", "function main() { return 'row=a\\ntitle=New' }")
+        try inline(toml: "[on]\nsearch = '^[0-9]'", "export default { search() { return 'item=a\\ntitle=New' } }")
         try FileManager.default.setAttributes([.modificationDate: Date().addingTimeInterval(60)], ofItemAtPath: path("script.spot/script.js"))
         _ = try scanned()
         sheet.answer("2")
@@ -166,19 +183,19 @@ final class SpotRunsInlineTests: SpotRunsCase {
     }
 
     private func counting() throws {
-        try inline(header: "on=sheet.open", "let n = 0\nfunction main() { n += 1; return `text=n\\ntitle=${n}\\n` }\nfunction asked() { n += 1; return true }")
+        try inline(toml: "", "let n = 0\nexport default { show() { n += 1; return `item=n\\ntitle=${n}\\n` }, asked() { n += 1; return true } }")
     }
 
     func testAHookAndACallOfOneSpotShareOneLoadedScript() async throws {
         try counting()
         let sheet = try sheet()
-        sheet.read(need: .change)
+        sheet.show(need: .change)
         try await wait("the first call") { sheet.reading.value?.title == "1" }
 
         let said = await withCheckedContinuation { waiting in
             if let now = runs.answer("asked", of: sheet.spot, card: "", origin: "", later: { waiting.resume(returning: !$0.isEmpty) }) { waiting.resume(returning: !now.isEmpty) }
         }
-        sheet.read(need: .change)
+        sheet.show(need: .change)
 
         XCTAssertTrue(said)
         try await wait("the count of the one script") { sheet.reading.value?.title == "3" }
@@ -187,70 +204,51 @@ final class SpotRunsInlineTests: SpotRunsCase {
     func testACallReadsNoDateOfTheFileAndTheScriptLoadsAgainWhenTheScanSeesAChange() async throws {
         try counting()
         let sheet = try sheet()
-        sheet.read(need: .change)
+        sheet.show(need: .change)
         try await wait("the first call") { sheet.reading.value?.title == "1" }
         try FileManager.default.setAttributes([.modificationDate: Date().addingTimeInterval(60)], ofItemAtPath: path("script.spot/script.js"))
 
-        sheet.read(need: .change)
+        sheet.show(need: .change)
         try await wait("the second call of the same script") { sheet.reading.value?.title == "2" }
         _ = try scanned()
-        sheet.read(need: .change)
+        sheet.show(need: .change)
 
         try await wait("the first call of the script that loaded again") { sheet.reading.value?.title == "1" }
     }
 
-    func testMainGetsTheArgumentsTheVariablesAndTheStdinOfACall() async throws {
-        try inline(header: "title=Script", "function main(args, env, input) { return `text=t\\ntitle=${args.length}|${args[0]}|${args[1]}|${env.OPENSPOT_REASON}|${env.OPENSPOT_ID}|${input}` }")
-        let script = InlineScript(spot: try XCTUnwrap(try scanned().scripts.first), api: nil)
-        defer { script.end() }
-        let call = InlineCall(arguments: ["read", "a b"], variables: ["OPENSPOT_REASON": "panel"], input: "note=x\\ny")
-
-        script.send(call)
-
-        guard case .frame(let text) = await call.outcome(limit: 60) else { return XCTFail("the call gave no frame") }
-        XCTAssertEqual(TextBlock.blocks(in: text).first?.value("title"), "2|read|a b|panel|script|note=x\ny")
-    }
-
-    func testFrameWritesAValueWithANewLineAndAKeyLineAsOneValue() async throws {
-        try inline(header: "title=Script", "function main() { return openspot.frame([{ row: 'a', title: 'one\\n\\nrow=x\\ntitle=x', hides: ['x', 'y'], none: null }, { row: 'b', value: true }]) }")
+    func testAnAnswerOfBlocksWritesAValueWithANewLineAndAKeyLineAsOneValue() async throws {
+        try inline(toml: "title = 'Script'", "export default { show() { return [{ item: 'a', title: 'one\\n\\ntext=x\\ntitle=x', hides: ['x', 'y'], none: null }, { item: 'b', value: true }] } }")
         let spot = try XCTUnwrap(try scanned().scripts.first)
 
-        let text = try await runs.answer(of: spot, SpotAction(arguments: ["read"]), limit: 60)
+        let text = try await runs.answer(of: spot, "show", limit: 60)
 
-        let items = SpotOutput(text: text).items
+        let items = Frame(text: text).items
         XCTAssertEqual(items.map(\.run), ["a", "b"], text)
-        XCTAssertEqual(items.first?.title, "one\n\nrow=x\ntitle=x")
+        XCTAssertEqual(items.first?.title, "one\n\ntext=x\ntitle=x")
         XCTAssertEqual(items.first?.hides, ["x", "y"])
         XCTAssertEqual(items.last?.isOn, true)
     }
 
-    func testMainReadsItsStdinAsItsInput() async throws {
-        try inline(header: "title=Script", "function main(args, env, input) { return `toast=Saved ${input}` }")
-        let spot = try XCTUnwrap(try scanned().scripts.first)
-
-        let text = try await runs.answer(of: spot, SpotAction(arguments: ["save"]), input: "a=1", limit: 60)
-
-        XCTAssertEqual(SpotOutput(text: text).toast, "Saved a=1")
-    }
-
     private func runs(limit: TimeInterval = 10, idle: TimeInterval = 30, frameWait: DispatchTimeInterval = .milliseconds(2), log: CallLog? = nil) {
         runs.quit()
-        runs = SpotRuns(readLimit: limit, clock: clock.value, stopPause: 0.2, inlineIdle: idle, frameWait: frameWait, log: log)
+        runs = SpotRuns(showLimit: limit, clock: clock.value, stopPause: 0.2, inlineIdle: idle, frameWait: frameWait, log: log)
     }
 
     func testAnEndlessLoopFailsAsTooSlowAndTheSpotAnswersItsNextCall() async throws {
         runs(limit: 0.5)
-        try inline(header: "on=sheet.open", """
-        function main(args, env) {
-          if (env.OPENSPOT_REASON === "sheet.open") while (true) {}
-          return "row=a\\ntitle=A\\n"
+        try inline(toml: "", """
+        export default {
+          show({ event }) {
+            if (event === "sheet.open") while (true) {}
+            return "item=a\\ntitle=A\\n"
+          },
         }
         """)
         let (sheet, told) = try toldSheet()
         sheet.open {}
         try await wait("the failure") { told().contains { $0.contains("took too long, so Openspot stopped it.") } }
 
-        sheet.read(need: .change)
+        sheet.show(need: .change)
 
         try await wait("the next answer") { sheet.list.shown.map(\.run) == ["a"] }
     }
@@ -262,11 +260,11 @@ final class SpotRunsInlineTests: SpotRunsCase {
         var environment = ProcessInfo.processInfo.environment
         environment["PATH"] = "\(bin.path):\(environment["PATH"] ?? "/usr/bin:/bin")"
         runs.quit()
-        runs = SpotRuns(environment: environment, readLimit: 0.5, clock: clock.value, stopPause: 0.2)
+        runs = SpotRuns(environment: environment, showLimit: 0.5, clock: clock.value, stopPause: 0.2)
     }
 
     private func callingSpot() throws -> Spot {
-        try inline(header: "on=sheet.open", "function main() { return openspot.call([\"calc\", \"solve\", \"1\"]).stdout }")
+        try inline(toml: "", "const solve = () => openspot.call([\"calc\", \"solve\", \"1\"]).stdout\nexport default { save: solve, show: solve }")
         return try XCTUnwrap(try scanned().scripts.first)
     }
 
@@ -286,8 +284,8 @@ final class SpotRunsInlineTests: SpotRunsCase {
         try fakeOpenspot("exec sleep 30")
         let script = runs.script(of: try callingSpot())
         defer { script.end() }
-        let first = InlineCall(arguments: ["read"], limit: 0.5)
-        let second = InlineCall(arguments: ["read"], limit: 0.5)
+        let first = InlineCall(arguments: ["show"], limit: 0.5)
+        let second = InlineCall(arguments: ["show"], limit: 0.5)
 
         script.send(first)
         script.send(second)
@@ -298,10 +296,12 @@ final class SpotRunsInlineTests: SpotRunsCase {
 
     func testACallThatHangsInOpenspotCallEndsAtItsLimitAndTheNextCallGetsANewScript() async throws {
         try fakeOpenspot("echo $$ > '\(path("child"))'\nexec sleep 30")
-        try inline(header: "on=sheet.open", """
-        function main(args, env) {
-          if (env.OPENSPOT_REASON === "sheet.open") openspot.call(["calc", "solve", "1"])
-          return "row=a\\ntitle=A\\n"
+        try inline(toml: "", """
+        export default {
+          show({ event }) {
+            if (event === "sheet.open") openspot.call(["calc", "solve", "1"])
+            return "item=a\\ntitle=A\\n"
+          },
         }
         """)
         let (sheet, told) = try toldSheet()
@@ -310,7 +310,7 @@ final class SpotRunsInlineTests: SpotRunsCase {
         let child = try await pid("child")
         try await wait("the end of the hung child") { kill(child, 0) != 0 }
 
-        sheet.read(need: .change)
+        sheet.show(need: .change)
 
         try await wait("the next answer") { sheet.list.shown.map(\.run) == ["a"] }
     }
@@ -333,14 +333,14 @@ final class SpotRunsInlineTests: SpotRunsCase {
 
     func testATimedScriptKeepsItsContextPastItsIdleTimeUntilItsNextRead() async throws {
         runs(idle: 0.1)
-        try inline(header: "on=clock.60\noffers=card\noffers=menubar", "function main() { return 'text=n\\ntitle=3\\n' }")
-        try inline("other", header: "on=sheet.open", "function main() { return 'text=n\\ntitle=4\\n' }")
+        try inline(toml: "[on]\nevery = 60", "export default { show() { return 'item=n\\ntitle=3\\n' } }")
+        try inline("other", toml: "", "export default { show() { return 'item=n\\ntitle=4\\n' } }")
         let sheet = try sheet()
         let other = try XCTUnwrap(runs.sheets["other"])
         let isLoaded = { (id: String) in self.runs.loaded[id]?.script.isRunning == true }
 
-        sheet.read(need: .change)
-        other.read(need: .change)
+        sheet.show(need: .change)
+        other.show(need: .change)
         try await wait("the values") { sheet.reading.value?.title == "3" && other.reading.value?.title == "4" }
         try await wait("the idle end of the spot with no clock") { !isLoaded("other") }
 
@@ -350,7 +350,7 @@ final class SpotRunsInlineTests: SpotRunsCase {
     func testEachCallGoesInTheCallLogWithItsArgumentsStdinAndFailure() async throws {
         let log = CallLog(folder: folder.appendingPathComponent("logs"))
         runs(log: log)
-        try inline(header: "on=sheet.open", "function main(args) { if (args[0] === 'save') throw new Error('No sky today'); return 'row=a\\n' }")
+        try inline(toml: "", "export default { save() { throw new Error('No sky today') }, show() { return 'item=a\\n' } }")
         let (sheet, told) = try toldSheet()
         sheet.open {}
         try await wait("the rows") { sheet.list.shown.count == 1 }
@@ -359,25 +359,25 @@ final class SpotRunsInlineTests: SpotRunsCase {
 
         try await wait("the failure") { !told().isEmpty }
         try await wait("the record") { log.text(of: "script").contains("No sky today") }
-        XCTAssertTrue(log.text(of: "script").contains(" · read · exit 0"), log.text(of: "script"))
+        XCTAssertTrue(log.text(of: "script").contains(" · show · exit 0"), log.text(of: "script"))
         XCTAssertTrue(log.text(of: "script").contains(" · save · "), log.text(of: "script"))
     }
 
     func testTheCPUTimeOfItsThreadCountsInItsUsage() async throws {
-        try inline(header: "on=sheet.open", "function main() { let x = 0; for (let i = 0; i < 1e7; i++) { x = (x * 31 + i) % 1000003 } return 'row=a\\n' }")
+        try inline(toml: "", "export default { show() { let x = 0; for (let i = 0; i < 1e7; i++) { x = (x * 31 + i) % 1000003 } return 'item=a\\n' } }")
         let sheet = try sheet()
         sheet.open {}
 
         try await wait("the rows") { sheet.list.shown.count == 1 }
-        XCTAssertGreaterThan(runs.usage.counts["script"]?.cpu ?? 0, 0.1)
+        XCTAssertGreaterThan(runs.usage.counts["script"]?.cost.cpu ?? 0, 0.1)
     }
 
     func testARunWithALimitStopsWaitingForAFunctionThatRunsTooLong() async throws {
-        try inline(header: "on=sheet.open", "function main() { const end = Date.now() + 2000; while (Date.now() < end) {} }")
+        try inline(toml: "", "export default { show() { const end = Date.now() + 2000; while (Date.now() < end) {} } }")
         let spot = try XCTUnwrap(try scanned().scripts.first)
 
         do {
-            _ = try await runs.answer(of: spot, .read, limit: 0.2)
+            _ = try await runs.answer(of: spot, ScriptEntry.show.name, limit: 0.2)
             XCTFail("the run returned")
         } catch {
             XCTAssertEqual(error as? SpotError, .timedOut)

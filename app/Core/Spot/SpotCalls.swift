@@ -1,14 +1,16 @@
 import Foundation
 
 struct SpotCalls {
-    let environment: [String: String]
+    let places: AppPlaces
     let folder: URL
     let app: (any RunningApp)?
     let runs: SpotRuns?
     let secrets: SecretStore
+    let caller: Spot?
 
     init(_ context: CallContext) {
-        environment = context.environment
+        caller = context.caller
+        places = context.places
         folder = context.folder
         app = context.app
         runs = context.runs
@@ -16,33 +18,33 @@ struct SpotCalls {
     }
 
     func list(core: Bool, form: PrintForm) -> CommandAPI.Work {
-        CommandAnswer.work { [environment] in
-            let list = SpotList(folder: SpotsFolder.standard(environment: environment), config: ConfigFile.standard(environment: environment).read())
+        CommandAnswer.work { [places] in
+            let config = places.config.read()
+            let list = SpotList(folder: places.folder(config), config: config)
             return try core ? list.core(form) : list.loaded(form)
         }
     }
 
     func turn(_ ids: [String], on isOn: Bool) -> CommandAPI.Work {
-        CommandAnswer.work { [environment, app] in
-            let config = try SpotsFolder.standard(environment: environment).turn(ids, on: isOn, in: ConfigFile.standard(environment: environment))
+        CommandAnswer.work { [places, app] in
+            let config = try places.readSpots().turn(ids, on: isOn, in: places.config)
             await app?.configChanged(.spots(ids), to: config)
             return ""
         }
     }
 
     func add(_ source: String, isConfirmed: Bool) -> CommandAPI.Work {
-        CommandAnswer.work { [environment, folder, app] in
-            let spots = SpotsFolder.standard(environment: environment, enabled: [], disabled: [])
-            let answer = try await SpotLock.standard(environment: environment).add(SpotSource(text: source, place: folder), to: spots.url, isConfirmed: isConfirmed)
+        CommandAnswer.work { [places, folder, app] in
+            let answer = try await places.lock.add(SpotSource(text: source, place: folder), to: places.spots.url, isConfirmed: isConfirmed)
             await app?.spotsChanged()
             return answer
         }
     }
 
     func restore(isConfirmed: Bool) -> CommandAPI.Work {
-        { [environment, app] in
+        { [places, app] in
             do {
-                let answer = try await SpotLock.standard(environment: environment).restore(to: SpotsFolder.standard(environment: environment, enabled: [], disabled: []).url, isConfirmed: isConfirmed)
+                let answer = try await places.lock.restore(to: places.spots.url, isConfirmed: isConfirmed)
                 await app?.spotsChanged()
                 return answer
             } catch {
@@ -52,9 +54,8 @@ struct SpotCalls {
     }
 
     func remove(_ id: String) -> CommandAPI.Work {
-        CommandAnswer.work { [environment, app, secrets] in
-            let folder = SpotsFolder.standard(environment: environment, enabled: [], disabled: [])
-            let removed = try SpotLock.standard(environment: environment).remove(id, from: folder.url).name
+        CommandAnswer.work { [places, app, secrets] in
+            let removed = try places.lock.remove(id, from: places.spots.url).name
             _ = try secrets.remove { SpotID($0).isSameFolder(as: SpotID(removed)) }
             await app?.spotsChanged()
             return "Removed \(removed).\n"
@@ -72,7 +73,7 @@ struct SpotCalls {
     func choose(for id: String) -> CommandAPI.Work {
         guard let app else { return CommandAnswer.notRunning("spot choose \(id)") }
         return CommandAnswer.work {
-            guard await app.choose(for: id) else { throw SpotError.failed(1, "Openspot has no spot `\(id)` that takes files. Add drop= to its header.") }
+            guard await app.choose(for: id) else { throw SpotError.failed(1, "Openspot has no spot `\(id)` that takes files. Add drop to its spot.toml.") }
             return ""
         }
     }
@@ -96,14 +97,14 @@ struct SpotCalls {
     func show(_ id: String) -> CommandAPI.Work? {
         guard let app else { return nil }
         return CommandAnswer.work {
-            guard await app.reveal(id) else { throw SpotError.failed(1, "Openspot has no spot \(id). Run `openspot check` to see each file that does not load.") }
+            guard await app.reveal(id) else { throw SpotError.failed(1, "Openspot has no spot \(id). Run `openspot check spots` to see each file that does not load.") }
             return "Openspot shows \(id).\n"
         }
     }
 
     func run(_ id: String, _ arguments: [String], input: (@Sendable () async -> String)?, careful: Set<SpotUse>?, output: CommandOutput) -> CommandAPI.Work {
-        { [environment, folder, runs] in
-            let spots = SpotsFolder.standard(environment: environment)
+        { [places, folder, runs, caller] in
+            let spots = places.readSpots()
             let found: Spot?
             do {
                 found = try spots.scan().scripts.first { $0.id == id }
@@ -111,24 +112,53 @@ struct SpotCalls {
                 return CommandAnswer(errors: "\((error as? SpotError)?.reason ?? error.localizedDescription)\n", code: 1)
             }
             guard var spot = found else {
-                return CommandAnswer(errors: "Openspot has no spot \(id) in \(spots.url.path). Run `openspot check` to see each file that does not load.\n", code: 1)
+                return CommandAnswer(errors: "Openspot has no spot \(id) in \(spots.url.path). Run `openspot check spots` to see each file that does not load.\n", code: 1)
             }
             if let careful { spot.uses.formIntersection(careful) }
+            let handler: (name: String?, inputs: [TextBlock.Field])
+            do {
+                handler = try Self.handler(arguments, of: spot)
+            } catch {
+                return CommandAnswer(errors: SpotRuns.reason(error) + "\n", code: 2)
+            }
             let text = await input?()
-            let run = TerminalRun(spot: spot, arguments: arguments, input: text, careful: careful == nil ? nil : spot.uses, tokens: runs?.tokens, environment: environment, folder: folder)
+            let usage = caller == nil || spot.reachesAccountKey ? nil : runs?.usage
+            var chosen: [String: [String: String]] = [:]
+            for setting in places.config.read().settings where setting.spot == spot.id { chosen[spot.id, default: [:]][setting.key] = setting.value }
+            let settings = FieldValues(of: spot, in: chosen, secrets: places.secrets.values(of: spot.id)).settings
+            let run = TerminalRun(
+                spot: spot, handler: handler.name, input: text, inputs: handler.inputs, settings: settings, careful: careful == nil ? nil : spot.uses,
+                callers: runs?.callers, environment: places.environment, folder: folder, usage: usage
+            )
+            let begin = Date()
             var first = true
             let end = await run.start { frame in
                 output.print((first ? "" : "---\n") + frame)
                 first = false
             }
+            if let usage, let caller {
+                let failure: StatsLog.Failure? = switch end.code {
+                case 0: nil
+                case 124: .timeout
+                default: .exit
+                }
+                usage.ran(spot, by: caller.id, CallOutcome(seconds: Date().timeIntervalSince(begin), failure: failure), at: usage.now())
+            }
             return CommandAnswer(errors: end.errors, code: end.code)
         }
     }
 
-    func push(_ id: String, page: String?, title: String?, replace: Bool) -> CommandAPI.Work {
+    private static func handler(_ arguments: [String], of spot: Spot) throws -> (name: String?, inputs: [TextBlock.Field]) {
+        guard let name = arguments.first else { return (nil, []) }
+        let given = try Manifest.InputCheck.fields(of: Array(arguments.dropFirst()), as: .input)
+        guard let action = try? spot.action(name) else { return (name, given) }
+        return (name, try action.check.checked(given))
+    }
+
+    func push(_ id: String, route: String?, title: String?, replace: Bool) -> CommandAPI.Work {
         guard let app else { return CommandAnswer.notRunning("spot push \(id)") }
         return CommandAnswer.work {
-            guard await app.push(id, page: page, title: title, replace: replace) else {
+            guard await app.push(id, route: route, title: title, replace: replace) else {
                 throw SpotError.failed(1, "Openspot has no spot `\(id)`. Run `openspot spot list` to see each one.")
             }
             return ""
@@ -152,30 +182,34 @@ struct SpotCalls {
     }
 
     func new(_ name: String, from starter: SpotStarter) -> CommandAPI.Work {
-        CommandAnswer.work { [environment, app] in
-            let file = try starter.write(name: name, in: SpotsFolder.standard(environment: environment).url)
+        CommandAnswer.work { [places, app] in
+            let file = try starter.write(name: name, in: places.spots.url)
             await app?.spotsChanged()
             return "Wrote \(file.path). Its ID is \(file.deletingPathExtension().lastPathComponent).\n"
         }
     }
 
+    func actions(_ id: String?) -> CommandAPI.Work {
+        CommandAnswer.work { [places] in
+            let spots = try places.readSpots().scan().scripts.filter { id == nil || $0.id == id }
+            if let id, spots.isEmpty {
+                throw SpotError.failed(1, "Openspot has no spot \(id). Run `openspot check spots` to see each file that does not load.")
+            }
+            return ManifestSchema.json(spots.map(CallShape.listing(of:)))
+        }
+    }
+
     func log(_ id: String) -> CommandAPI.Work {
-        CommandAnswer.work { [environment] in
-            let text = AppPlaces(environment: environment, home: FileManager.default.homeDirectoryForCurrentUser, defaults: .standard).log.text(of: id)
+        CommandAnswer.work { [places] in
+            let text = places.log.text(of: id)
             return text.isEmpty ? "Openspot has made no call to \(id) yet. Use it in the panel, then run this again.\n" : text
         }
     }
 
-    func stats(days: Int, spot: String?, format: StatsReport.Format) -> CommandAPI.Work {
-        CommandAnswer.work { [environment, runs] in
-            let counts: [SpotUsage.Day]
-            if let runs {
-                let now = await MainActor.run { runs.now() }
-                counts = runs.usage.days(days, at: now)
-            } else {
-                counts = SpotUsage.days(days, at: Date(), in: AppPlaces(environment: environment, home: FileManager.default.homeDirectoryForCurrentUser, defaults: .standard).stats)
-            }
-            return try StatsReport(days: counts, spot: spot).text(format)
+    func stats(days: Int, spot: String?, format: Stats.Form, byVersion: Bool) -> CommandAPI.Work {
+        CommandAnswer.work { [places, runs] in
+            let counts = await StatsLog.days(days, runs: runs, stats: places.stats)
+            return try Stats(days: counts, spot: spot, byVersion: byVersion).text(format)
         }
     }
 }

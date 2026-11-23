@@ -16,6 +16,8 @@ final class SpotPlaygroundHost: SpotsHost {
     func confirm(_ text: String) { onNote(text) }
     func work(_ text: String) { onNote(text) }
     func applyConfig(_ config: Config) {}
+    func paint(_ colours: Theme.Colours) {}
+    func layOut(_ layout: Theme.Layout) {}
     func setEntryKey(on isOn: Bool) {}
     func hold(_ keys: [GlobalKey]) {}
     func chooseFiles(for spot: Spot, then take: @escaping ([String]) -> Void) {}
@@ -34,7 +36,7 @@ final class SpotPlaygroundHost: SpotsHost {
     func prepareCards(glyphs: [String]) {}
 
     func agentPrompt(for folder: URL) -> AgentPrompt {
-        AgentPrompt(folder: folder, guide: Bundle.main.url(forResource: "GUIDE", withExtension: "md") ?? folder, app: AgentPrompt.command(of: Bundle.main.executablePath ?? ""))
+        AgentPrompt(folder: folder, guide: Bundle.main.url(forResource: "DOCS", withExtension: "md") ?? folder, app: AgentPrompt.command(of: Bundle.main.executablePath ?? ""))
     }
 
     func change(_ motion: PanelMotion?, _ body: () -> Void, completion: @escaping @MainActor () -> Void) {

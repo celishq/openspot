@@ -11,6 +11,8 @@ public protocol SpotsHost: AnyObject {
     func confirm(_ text: String)
     func work(_ text: String)
     func applyConfig(_ config: Config)
+    func paint(_ colours: Theme.Colours)
+    func layOut(_ layout: Theme.Layout)
     func setEntryKey(on isOn: Bool)
     func hold(_ keys: [GlobalKey])
     func chooseFiles(for spot: Spot, then take: @escaping ([String]) -> Void)
@@ -29,10 +31,23 @@ public protocol SpotsHost: AnyObject {
     func prepareCards(glyphs: [String])
     func agentPrompt(for folder: URL) -> AgentPrompt
     func change(_ motion: PanelMotion?, _ body: () -> Void, completion: @escaping @MainActor () -> Void)
+    func change(_ motion: PanelMotion?, _ body: () -> Void, completion: @escaping @MainActor () -> Void, removal: @escaping @MainActor () -> Void)
+    func nextFrame(_ body: @escaping @MainActor () -> Void)
     func allows(_ reason: String) async -> Bool
 }
 
 extension SpotsHost {
+    public func change(_ motion: PanelMotion?, _ body: () -> Void, completion: @escaping @MainActor () -> Void, removal: @escaping @MainActor () -> Void) {
+        change(motion, body) {
+            completion()
+            removal()
+        }
+    }
+
+    public func nextFrame(_ body: @escaping @MainActor () -> Void) {
+        DispatchQueue.main.async(execute: body)
+    }
+
     public func allows(_ reason: String) async -> Bool {
         true
     }

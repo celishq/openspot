@@ -35,6 +35,7 @@ final class AgentPromptTests: XCTestCase {
         XCTAssertTrue(AgentPrompt.finishAlone.contains("Don't ask me"))
         XCTAssertTrue(AgentPrompt.finishAlone.contains("ready"))
         XCTAssertFalse(prompt.contains("questions"))
+        XCTAssertTrue(prompt.contains("weather.spot/spot.toml"))
         XCTAssertTrue(prompt.contains("\"openspot\" guide"))
         XCTAssertTrue(prompt.contains(folder.path))
     }
@@ -46,7 +47,7 @@ final class AgentPromptTests: XCTestCase {
         XCTAssertTrue(prompt.contains("one at a time"))
         XCTAssertTrue(prompt.contains(folder.path))
         XCTAssertTrue(prompt.contains("\"openspot\" guide"))
-        XCTAssertTrue(prompt.contains("\"openspot\" spot show <id>"))
+        XCTAssertTrue(prompt.contains("\"openspot\" spot open <id> --select"))
         XCTAssertFalse(prompt.contains("does this:"))
     }
 

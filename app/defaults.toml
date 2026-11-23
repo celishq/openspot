@@ -1,4 +1,19 @@
 [[spots]]
+id = "openspot/new"
+size = "strip"
+key = "cmd+n"
+
+[[spots]]
+id = "openspot/spots"
+size = "wide"
+grid = true
+
+[[spots]]
+id = "openspot/store"
+size = "wide"
+window = true
+
+[[spots]]
 id = "apps"
 
 [[spots]]
@@ -8,6 +23,7 @@ size = "small"
 [[spots]]
 id = "color-picker"
 size = "small"
+grid = true
 
 [[spots]]
 id = "confetti"
@@ -29,9 +45,10 @@ id = "links"
 [[spots]]
 id = "paste-screenshot"
 size = "small"
+grid = true
 
 [[spots]]
-id = "running"
+id = "usage"
 size = "small"
 
 [[spots]]
@@ -44,26 +61,13 @@ id = "snippets"
 size = "small"
 
 [[spots]]
-id = "translate"
-size = "small"
-
-[[spots]]
-id = "openspot/spots"
-size = "small"
-
-[[spots]]
-id = "openspot/store"
-size = "small"
-
-[[spots]]
 id = "openspot/settings"
 size = "small"
 key = "cmd+,"
 
 [[spots]]
-id = "openspot/new"
+id = "translate"
 size = "small"
-key = "cmd+n"
 
 [[spots]]
 id = "openspot/quit"
@@ -76,3 +80,26 @@ grid = false
 [[spots]]
 id = "openspot/playground"
 grid = false
+
+[[spots]]
+id = "openspot/themes"
+grid = false
+
+[[spots]]
+id = "openspot/icon"
+grid = false
+search = false
+
+[[spots]]
+id = "openspot/welcome"
+grid = false
+search = false
+
+[[spots]]
+id = "openspot/snooze"
+grid = false
+search = false
+
+[[spots]]
+id = "system"
+size = "large"

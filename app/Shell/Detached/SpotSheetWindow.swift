@@ -8,9 +8,9 @@ final class SpotSheetWindow: NSWindow, NSWindowDelegate {
     private var isPresent = false
 
     override func sendEvent(_ event: NSEvent) {
-        if event.type == .keyDown, let model, let key = event.actionKey, !key.isCommand, !textKeeps(key) {
+        if event.type == .keyDown, let key = event.actionKey, !key.isCommand, !textKeeps(key) {
             if key.name == "escape", !(firstResponder is NSText) { return performClose(nil) }
-            if key.name != "escape", model.handleFloatKey(key, in: id) { return }
+            if key.name != "escape", let model, model.handleFloatKey(key, in: id) { return }
         }
         super.sendEvent(event)
     }
@@ -33,30 +33,34 @@ final class SpotSheetWindow: NSWindow, NSWindowDelegate {
     }
 
     static func make(model: SpotsModel, entry: SpotsModel.Entry) -> SpotSheetWindow {
+        let window = make(title: entry.spot.name, name: "spot-window-\(entry.id)", content: SpotFloatView(model: model, id: entry.id, fills: true) { _ in })
+        window.model = model
+        window.id = entry.id
+        return window
+    }
+
+    static func make(title: String, name: String, size: CGSize = SpotTokens.windowSize, content: some View) -> SpotSheetWindow {
         let window = SpotSheetWindow(
-            contentRect: NSRect(origin: .zero, size: SpotTokens.windowSize),
+            contentRect: NSRect(origin: .zero, size: size),
             styleMask: [.titled, .closable, .miniaturizable, .resizable, .fullSizeContentView],
             backing: .buffered,
             defer: false
         )
-        window.model = model
-        window.id = entry.id
-        window.title = entry.spot.name
+        window.title = title
         window.titleVisibility = .hidden
         window.titlebarAppearsTransparent = true
         window.isOpaque = false
         window.backgroundColor = .clear
         window.hasShadow = true
         window.isMovableByWindowBackground = true
-        for button in [NSWindow.ButtonType.closeButton, .miniaturizeButton, .zoomButton] { window.standardWindowButton(button)?.isHidden = true }
         window.isReleasedWhenClosed = false
         window.minSize = SpotTokens.windowMinSize
         window.delegate = window
-        window.setFrameAutosaveName("spot-window-\(entry.id)")
-        let host = NSHostingController(rootView: SpotFloatView(model: model, id: entry.id, fills: true) { _ in })
+        window.setFrameAutosaveName(name)
+        let host = NSHostingController(rootView: content)
         host.sizingOptions = []
         window.contentViewController = host
-        window.setContentSize(SpotTokens.windowSize)
+        window.setContentSize(size)
         if window.frame.origin == .zero { window.center() }
         return window
     }

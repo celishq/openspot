@@ -1,0 +1,11 @@
+icon = "text.quote"
+detail = "Copy text"
+uses = ["clipboard"]
+
+[actions.new]
+inputs.content = { type = "text", description = "Text to keep" }
+inputs.title = "text"
+
+[on]
+"panel.open" = true
+search = true

@@ -77,7 +77,7 @@ final class ViewLibraryTests: XCTestCase {
             @State private var word = "state"
 
             var body: some View {
-                let rows = spot.rows.map { "\\($0.id):\\($0["title"] ?? "-"):\\($0.all("tag").joined(separator: "+"))" }
+                let rows = spot.items.map { "\\($0.id):\\($0["title"] ?? "-"):\\($0.all("tag").joined(separator: "+"))" }
                 let _ = spot.send("\\(word) \\(spot.isShown) \\(rows.joined(separator: ","))")
                 let _ = spot.isShown ? () : spot.close()
                 Text(word)
@@ -88,7 +88,7 @@ final class ViewLibraryTests: XCTestCase {
         let rows = [["row", "a", "title", "One", "tag", "x", "tag", "y"], ["row", "b"]]
         var closed = 0
         var times: [Duration] = []
-        let card: [String: Any] = ["isShown": false, "rows": rows, "close": { closed += 1 }, "bodyTime": { (time: Duration) in times.append(time) }]
+        let card: [String: Any] = ["isShown": false, "items": rows, "close": { closed += 1 }, "bodyTime": { (time: Duration) in times.append(time) }]
 
         let sent = try await drawn(text, values: ["view": ["words"], "row": ["mine"]], card: card)
 
@@ -99,10 +99,76 @@ final class ViewLibraryTests: XCTestCase {
     }
 
     @MainActor
+    func testAViewReadsTheIdOfTheSelectedRow() async throws {
+        let picked = try await drawn(view.replacingOccurrences(of: "Text(", with: "let _ = spot.send(spot.selection ?? \"-\")\n        Text("), values: [:], card: ["selection": "b"])
+        let none = try await drawn(view.replacingOccurrences(of: "Text(", with: "let _ = spot.send(spot.selection ?? \"-\")\n        Text("), values: [:], card: [:])
+
+        XCTAssertEqual(picked, ["b"])
+        XCTAssertEqual(none, ["-"])
+    }
+
+    @MainActor
+    func testAViewReadsTheNameOfItsCardSizeAndNoneOutsideACard() async throws {
+        let reads = view.replacingOccurrences(of: "Text(", with: "let _ = spot.send(spot.card.map { \"\\($0)\" } ?? \"-\")\n        Text(")
+        let wide = try await drawn(reads, values: [:], card: ["cardName": "wide"])
+        let sheet = try await drawn(reads, values: [:], card: [:])
+
+        XCTAssertEqual(wide, ["wide"])
+        XCTAssertEqual(sheet, ["-"])
+    }
+
+    @MainActor
+    func testAViewDrawsANumberWithItsDetailAtEachCardSize() async throws {
+        let text = """
+        import SwiftUI
+
+        struct SpotView: View {
+            let spot: SpotInput
+
+            var body: some View {
+                let _ = spot.send(spot.card.map { "\\($0)" } ?? "-")
+                SpotMetric(spot, value: "44", detail: "days left", mark: "bolt.fill", onFill: true)
+            }
+        }
+
+        """
+        var sent: [String] = []
+        for name in ["small", "wide", "square", "strip", "large"] {
+            sent += try await drawn(text, values: [:], card: ["cardName": name])
+        }
+        sent += try await drawn(text, values: [:], card: [:])
+
+        XCTAssertEqual(sent, ["small", "wide", "square", "strip", "large", "-"])
+    }
+
+    @MainActor
     func testAViewWithNoHostWordsShowsAndHasNoRows() async throws {
-        let sent = try await drawn(view.replacingOccurrences(of: "Text(", with: "let _ = spot.send(\"\\(spot.rows.count) \\(spot.isShown) \\(spot[\"row\"] ?? \"-\")\")\n        Text("), values: ["title": ["Hi"], "row": ["mine"]], card: [:])
+        let sent = try await drawn(view.replacingOccurrences(of: "Text(", with: "let _ = spot.send(\"\\(spot.items.count) \\(spot.isShown) \\(spot[\"row\"] ?? \"-\")\")\n        Text("), values: ["title": ["Hi"], "row": ["mine"]], card: [:])
 
         XCTAssertEqual(sent, ["0 true mine"])
+    }
+
+    @MainActor
+    func testAViewReadsTheThemeByRole() async throws {
+        let text = """
+        import SwiftUI
+
+        struct SpotView: View {
+            let spot: SpotInput
+
+            var body: some View {
+                let theme = spot.theme
+                let _ = spot.send("\\(theme.space.padding) \\(theme.space.gridWidth) \\(theme.radius.inner) \\(theme.motion.press) \\(theme.color.fill) \\(theme.color.secondary)")
+                Text("theme").font(theme.font.body).foregroundStyle(theme.color.good)
+            }
+        }
+
+        """
+        let theme: [String: Any] = ["padding": CGFloat(20), "gridWidth": CGFloat(310), "inner": CGFloat(10), "press": CGFloat(0.3), "fill": CGFloat(0.25), "secondary": CGFloat(0.7)]
+
+        let sent = try await drawn(text, values: [:], card: ["theme": theme])
+
+        XCTAssertEqual(sent, ["20.0 310.0 10.0 0.3 0.25 0.7"])
     }
 
     @MainActor
@@ -134,17 +200,18 @@ final class ViewLibraryTests: XCTestCase {
         let spots = folder.appendingPathComponent("spots")
         let own = spots.appendingPathComponent("openspot.spot")
         try FileManager.default.createDirectory(at: own, withIntermediateDirectories: true)
-        try "#!/bin/sh\n# title=Icon\n# view=icon.swift\n".writeScript(to: own.appendingPathComponent("icon.sh"))
+        try "#!/bin/sh\n".writeScript(to: own.appendingPathComponent("icon.sh"), toml: "title = 'Icon'\nviews = ['icon.swift', 'dial.swift']")
         try Data(view.utf8).write(to: own.appendingPathComponent("icon.swift"))
-        try "#!/bin/sh\n# title=Quit\n".writeScript(to: own.appendingPathComponent("quit.sh"))
+        try Data(view.utf8).write(to: own.appendingPathComponent("dial.swift"))
+        try "#!/bin/sh\n".writeScript(to: own.appendingPathComponent("quit.sh"), toml: "title = 'Quit'")
         try Data(view.utf8).write(to: own.appendingPathComponent("loose.swift"))
 
         let built = try await views.buildViews(under: spots)
 
-        let name = (ViewLibrary.path(beside: "icon.swift", text: Data(view.utf8)) as NSString).lastPathComponent
-        XCTAssertEqual(built.map(\.lastPathComponent), [name])
-        XCTAssertEqual(try Data(contentsOf: own.appendingPathComponent(name)), Data("both".utf8))
-        XCTAssertEqual(builds, 2)
+        let names = ["icon.swift", "dial.swift"].map { (ViewLibrary.path(beside: $0, text: Data(view.utf8)) as NSString).lastPathComponent }
+        XCTAssertEqual(built.map(\.lastPathComponent), names)
+        XCTAssertEqual(try Data(contentsOf: own.appendingPathComponent(names[0])), Data("both".utf8))
+        XCTAssertEqual(builds, 4)
         XCTAssertFalse(FileManager.default.fileExists(atPath: own.appendingPathComponent("loose.view").path))
     }
 
@@ -222,8 +289,8 @@ final class ViewLibraryTests: XCTestCase {
         for name in ["lost", "bad"] {
             try FileManager.default.createDirectory(at: spots.appendingPathComponent(name + ".spot"), withIntermediateDirectories: true)
         }
-        try "#!/bin/sh\n# view=lost.swift\n".writeScript(to: spots.appendingPathComponent("lost.spot/lost.sh"))
-        try "#!/bin/sh\n# view=bad.swift\n".writeScript(to: spots.appendingPathComponent("bad.spot/bad.sh"))
+        try "#!/bin/sh\n".writeScript(to: spots.appendingPathComponent("lost.spot/lost.sh"), toml: "views = ['lost.swift']")
+        try "#!/bin/sh\n".writeScript(to: spots.appendingPathComponent("bad.spot/bad.sh"), toml: "views = ['bad.swift']")
         try Data("struct".utf8).write(to: spots.appendingPathComponent("bad.spot/bad.swift"))
         let views = try tools(compiler: "echo 'bad.swift:1:7: error: expected identifier' >&2; exit 1")
 
@@ -238,8 +305,9 @@ final class ViewLibraryTests: XCTestCase {
     private var sharedCups: SpotPackage {
         get throws {
             try SpotPackage(files: [
-                .init(path: "home.spot/cups.sh", isExecutable: true, contents: Data("#!/bin/sh\n# view=cups.swift\n".utf8)),
-                .init(path: "home.spot/cups.swift", isExecutable: false, contents: Data(view.utf8))
+                .init(path: "cups.spot/cups.sh", isExecutable: true, contents: Data("#!/bin/sh\n".utf8)),
+                .init(path: "cups.spot/cups.swift", isExecutable: false, contents: Data(view.utf8)),
+                .init(path: "cups.spot/spot.toml", isExecutable: false, contents: Data("views = ['cups.swift']\n".utf8))
             ])
         }
     }
@@ -251,29 +319,28 @@ final class ViewLibraryTests: XCTestCase {
         let compiled = try await spot.compiled(views: try tools())
 
         XCTAssertFalse(compiled.needsCompile)
-        XCTAssertEqual(compiled.files.map(\.path), ["home.spot/cups.sh", "home.spot/cups.swift", "home.spot/\(built)"])
+        XCTAssertEqual(compiled.files.map(\.path), ["cups.spot/cups.sh", "cups.spot/cups.swift", "cups.spot/spot.toml", "cups.spot/\(built)"])
         XCTAssertEqual(compiled.files.last?.contents, Data("both".utf8))
         XCTAssertEqual(compiled.files.last?.isExecutable, false)
     }
 
     func testTheReviewSaysThatAViewLibraryIsCodeThatMayNotMatchItsSource() throws {
         var files = try sharedCups.files
-        files.append(.init(path: "home.spot/\(built)", isExecutable: false, contents: Data([0xCF, 0xFA, 0xED, 0xFE, 0x00])))
+        files.append(.init(path: "cups.spot/\(built)", isExecutable: false, contents: Data([0xCF, 0xFA, 0xED, 0xFE, 0x00])))
 
         let review = try ReviewSpot(spot: try SpotPackage(files: files), folder: folder)
 
         XCTAssertEqual(review.subtitle, "Holds a program that you cannot read")
-        let part = try XCTUnwrap(SpotOutput(text: try review.answer(["read"])).parts.first { $0.id == "review" })
+        let part = try XCTUnwrap(Frame(text: try review.answer(["show"])).parts.first { $0.id == "review" })
         guard case .text(let text, _, _) = part.control else { throw SpotError.badForm }
-        XCTAssertTrue(text.hasPrefix("\(review.name)\n\nProgram that Openspot cannot show\nhome.spot/\(built)\nIt can do all that you can. Add it only if you trust the sender.\nThe source beside it may not match the program.\n\n"), text)
+        XCTAssertTrue(text.hasPrefix("\(review.name)\n\nProgram that Openspot cannot show\ncups.spot/\(built)\nIt can do all that you can. Add it only if you trust the sender.\nThe source beside it may not match the program.\n\n"), text)
     }
 
     func testRemovingASpotAlsoTakesItsViewAndItsLibrary() throws {
         let spots = folder.appendingPathComponent("spots")
         let cups = spots.appendingPathComponent("cups.spot")
         try FileManager.default.createDirectory(at: cups, withIntermediateDirectories: true)
-        try "#!/bin/sh\n# view=cups.swift\n".writeScript(to: cups.appendingPathComponent("cups.sh"))
-        try "#!/bin/sh\n".writeScript(to: cups.appendingPathComponent("other.sh"))
+        try "#!/bin/sh\n".writeScript(to: cups.appendingPathComponent("cups.sh"), toml: "views = ['cups.swift']")
         try Data(view.utf8).write(to: cups.appendingPathComponent("cups.swift"))
         try Data("built".utf8).write(to: cups.appendingPathComponent(built))
         let place = SpotsFolder(url: spots)
@@ -282,14 +349,14 @@ final class ViewLibraryTests: XCTestCase {
 
         try place.remove(spot) { discarded.append($0.lastPathComponent) }
 
-        XCTAssertEqual(discarded, ["cups.sh", "cups.swift", built])
+        XCTAssertEqual(discarded, ["cups.spot"])
     }
 
     func testAShareLeavesOutALibraryThatDoesNotMatchItsSource() throws {
         let spots = folder.appendingPathComponent("spots")
         let cups = spots.appendingPathComponent("cups.spot")
         try FileManager.default.createDirectory(at: cups, withIntermediateDirectories: true)
-        try "#!/bin/sh\n# view=cups.swift\n".writeScript(to: cups.appendingPathComponent("cups.sh"))
+        try "#!/bin/sh\n".writeScript(to: cups.appendingPathComponent("cups.sh"), toml: "views = ['cups.swift']")
         try Data(view.utf8).write(to: cups.appendingPathComponent("cups.swift"))
         let stale = (ViewLibrary.path(beside: "cups.swift", text: Data("struct Old {}".utf8)) as NSString).lastPathComponent
         for name in [built, stale] { try Data("built".utf8).write(to: cups.appendingPathComponent(name)) }
@@ -298,20 +365,20 @@ final class ViewLibraryTests: XCTestCase {
 
         let shared = try SpotPackage(sharing: spot, from: scan)
 
-        XCTAssertEqual(shared.files.map(\.path), ["cups.spot/\(built)", "cups.spot/cups.sh", "cups.spot/cups.swift"])
+        XCTAssertEqual(shared.files.map(\.path), ["cups.spot/\(built)", "cups.spot/cups.sh", "cups.spot/cups.swift", "cups.spot/spot.toml"])
     }
 
     func testABuildBesideTheSourceRemovesItsOldLibrary() async throws {
         let spots = folder.appendingPathComponent("spots")
         let own = spots.appendingPathComponent("cups.spot")
         try FileManager.default.createDirectory(at: own, withIntermediateDirectories: true)
-        try "#!/bin/sh\n# view=cups.swift\n".writeScript(to: own.appendingPathComponent("cups.sh"))
+        try "#!/bin/sh\n".writeScript(to: own.appendingPathComponent("cups.sh"), toml: "views = ['cups.swift']")
         try Data(view.utf8).write(to: own.appendingPathComponent("cups.swift"))
         let stale = (ViewLibrary.path(beside: "cups.swift", text: Data("struct Old {}".utf8)) as NSString).lastPathComponent
         try Data("old".utf8).write(to: own.appendingPathComponent(stale))
 
         _ = try await tools().buildViews(under: spots)
 
-        XCTAssertEqual(try FileManager.default.contentsOfDirectory(atPath: own.path).sorted(), [built, "cups.sh", "cups.swift"].sorted())
+        XCTAssertEqual(try FileManager.default.contentsOfDirectory(atPath: own.path).sorted(), [built, "cups.sh", "cups.swift", "spot.toml"].sorted())
     }
 }

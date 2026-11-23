@@ -4,9 +4,11 @@ import XCTest
 final class DrawProcessTests: XCTestCase {
     private var data: URL!
     private var boards: URL!
+    private var words: URL!
 
     override func setUp() async throws {
         data = try emptyFolder()
+        words = try emptyFolder()
         boards = data.appendingPathComponent("boards")
         try FileManager.default.createDirectory(at: boards, withIntermediateDirectories: true)
     }
@@ -14,6 +16,7 @@ final class DrawProcessTests: XCTestCase {
     override func tearDown() async throws {
         Saves.shared.wait()
         try? FileManager.default.removeItem(at: data)
+        try? FileManager.default.removeItem(at: words)
     }
 
     private func box() -> Figure {
@@ -26,17 +29,26 @@ final class DrawProcessTests: XCTestCase {
         return file
     }
 
-    /// A Draw with no window, which prints its frames into a file of this name.
+    /// A Draw with no window, which prints its frames into a file of this name, and the words of each call of
+    /// `openspot` into another.
     private func draw(_ name: String, ends: @escaping () -> Void = {}) throws -> Draw {
         let file = data.appendingPathComponent("\(name).out")
+        let said = words.appendingPathComponent("\(name).said")
         FileManager.default.createFile(atPath: file.path, contents: nil)
-        let draw = Draw(boards: boards, home: data, host: Host(output: try FileHandle(forWritingTo: file)), ends: ends)
+        FileManager.default.createFile(atPath: said.path, contents: nil)
+        let log = try FileHandle(forWritingTo: said)
+        let host = Host(output: try FileHandle(forWritingTo: file)) { log.write(Data(($0.joined(separator: " ") + "\n").utf8)) }
+        let draw = Draw(boards: boards, home: data, host: host, ends: ends)
         draw.take(.ask(id: 0, arguments: ["windowless"], input: [:]))
         return draw
     }
 
     private func frames(of name: String) throws -> [String] {
         try String(contentsOf: data.appendingPathComponent("\(name).out"), encoding: .utf8).components(separatedBy: "---\n").filter { !$0.isEmpty }
+    }
+
+    private func said(by name: String) throws -> [String] {
+        try String(contentsOf: words.appendingPathComponent("\(name).said"), encoding: .utf8).split(separator: "\n").map(String.init)
     }
 
     private var files: [String] {
@@ -46,33 +58,34 @@ final class DrawProcessTests: XCTestCase {
     func testASecondDrawChangesNoBoardWhileTheFirstHoldsThem() throws {
         let file = try board("flows")
         let first = try draw("first")
-        first.take(.ask(id: 1, arguments: ["open", "0:flows"], input: [:]))
+        first.take(.ask(id: 1, arguments: ["press"], input: ["input.item": "0:flows"]))
         XCTAssertNotNil(first.desk?.studio)
         let second = try draw("second")
 
-        second.take(.ask(id: 1, arguments: ["open", "0:flows"], input: [:]))
+        second.take(.ask(id: 1, arguments: ["press"], input: ["input.item": "0:flows"]))
         second.take(.ask(id: 2, arguments: ["0:new"], input: [:]))
-        second.take(.ask(id: 3, arguments: ["open", "0:new"], input: [:]))
-        second.take(.ask(id: 4, arguments: ["delete", "0:flows"], input: [:]))
+        second.take(.ask(id: 3, arguments: ["press"], input: ["input.item": "0:new"]))
+        second.take(.ask(id: 4, arguments: ["delete"], input: ["input.item": "0:flows"]))
 
         XCTAssertNil(second.desk)
         XCTAssertEqual(files, ["flows.json"])
         XCTAssertEqual(try Board.title(at: file), "Flows")
-        let refused = (1...4).map { "end=\($0)\ntoast=\(Draw.busy)\n" }
-        XCTAssertEqual(Array(try frames(of: "second").dropFirst()), refused)
+        XCTAssertEqual(Array(try frames(of: "second").dropFirst()), (1...4).map { "end=\($0)\n" })
+        XCTAssertEqual(try said(by: "second"), Array(repeating: "toast \(Draw.busy)", count: 4))
     }
 
     func testARenameFromASecondDrawIsRefusedWithAToastAndTheBoardKeepsItsTitle() throws {
         let file = try board("flows")
         let first = try draw("first")
-        first.take(.ask(id: 1, arguments: ["open", "0:flows"], input: [:]))
+        first.take(.ask(id: 1, arguments: ["press"], input: ["input.item": "0:flows"]))
         let second = try draw("second")
 
-        second.take(.ask(id: 1, arguments: ["rename", "0:flows"], input: ["name": "Other"]))
+        second.take(.ask(id: 1, arguments: ["rename", "0:flows"], input: ["input.name": "Other"]))
         first.desk?.studio?.change { $0.add(self.box()) }
         first.desk?.finish()
 
-        XCTAssertEqual(try frames(of: "second").last, "end=1\ntoast=\(Draw.busy)\n")
+        XCTAssertEqual(try frames(of: "second").last, "end=1\n")
+        XCTAssertEqual(try said(by: "second"), ["toast \(Draw.busy)"])
         XCTAssertEqual(try Board.load(from: file).title, "Flows")
         XCTAssertEqual(try Board.load(from: file).figures.count, 1)
     }
@@ -80,27 +93,27 @@ final class DrawProcessTests: XCTestCase {
     func testASecondDrawStillListsTheBoardsAndAsksForANewName() throws {
         _ = try board("flows")
         let first = try draw("first")
-        first.take(.ask(id: 1, arguments: ["open", "0:flows"], input: [:]))
+        first.take(.ask(id: 1, arguments: ["press"], input: ["input.item": "0:flows"]))
         let second = try draw("second")
 
-        second.take(.ask(id: 1, arguments: ["read"], input: [:]))
+        second.take(.ask(id: 1, arguments: ["show"], input: [:]))
         second.take(.ask(id: 2, arguments: ["rename", "0:flows"], input: [:]))
 
         let frames = try frames(of: "second")
-        XCTAssertTrue(frames[1].hasPrefix("recents=false\nend=1\n"))
-        XCTAssertTrue(frames[1].contains("row=0:flows\ntitle=Flows\n"))
-        XCTAssertTrue(frames[2].hasPrefix("end=2\ntitle=Rename board\n"))
+        XCTAssertTrue(frames[1].hasPrefix("frame=\nrecents=false\nend=1\n"))
+        XCTAssertTrue(frames[1].contains("item=0:flows\ntitle=Flows\n"))
+        XCTAssertTrue(frames[2].hasPrefix("frame=\ntype=form\nend=2\ntitle=Rename board\n"))
     }
 
     func testTheBoardsAreFreeWhenTheDrawThatHeldThemEnds() throws {
         let file = try board("flows")
         let first = try draw("first")
-        first.take(.ask(id: 1, arguments: ["open", "0:flows"], input: [:]))
+        first.take(.ask(id: 1, arguments: ["press"], input: ["input.item": "0:flows"]))
         let second = try draw("second")
-        second.take(.ask(id: 1, arguments: ["rename", "0:flows"], input: ["name": "Other"]))
+        second.take(.ask(id: 1, arguments: ["rename", "0:flows"], input: ["input.name": "Other"]))
 
         first.take(nil)
-        second.take(.ask(id: 2, arguments: ["rename", "0:flows"], input: ["name": "Other"]))
+        second.take(.ask(id: 2, arguments: ["rename", "0:flows"], input: ["input.name": "Other"]))
 
         XCTAssertEqual(try Board.title(at: file), "Other")
     }
@@ -108,10 +121,10 @@ final class DrawProcessTests: XCTestCase {
     func testADrawThatOnlyListedTheBoardsHoldsNone() throws {
         let file = try board("flows")
         let first = try draw("first")
-        first.take(.ask(id: 1, arguments: ["read"], input: [:]))
+        first.take(.ask(id: 1, arguments: ["show"], input: [:]))
         let second = try draw("second")
 
-        second.take(.ask(id: 1, arguments: ["rename", "0:flows"], input: ["name": "Other"]))
+        second.take(.ask(id: 1, arguments: ["rename", "0:flows"], input: ["input.name": "Other"]))
 
         XCTAssertEqual(try Board.title(at: file), "Other")
     }
@@ -131,7 +144,7 @@ final class DrawProcessTests: XCTestCase {
         let ended = expectation(description: "Draw ends")
         let draw = try draw("first") { ended.fulfill() }
         draw.ready()
-        draw.take(.ask(id: 1, arguments: ["open", "0:flows"], input: [:]))
+        draw.take(.ask(id: 1, arguments: ["press"], input: ["input.item": "0:flows"]))
         draw.desk?.studio?.change { $0.add(self.box()) }
         XCTAssertEqual(try Board.load(from: file).figures.count, 0)
 

@@ -1,0 +1,11 @@
+title = "Confetti"
+icon = "party.popper"
+detail = "Celebrate on each screen"
+stay = true
+source = ["confetti"]
+
+[actions.play]
+title = "Play"
+
+[settings]
+look = { type = "text", title = "Look" }

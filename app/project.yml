@@ -31,8 +31,9 @@ targets:
     platform: macOS
     sources:
       - path: Core
-      - path: Client/CommandKind.swift
-      - path: Client/SocketPath.swift
+        excludes:
+          - "**/*.js"
+      - path: Shared
     dependencies:
       - package: secp256k1
         product: P256K
@@ -45,6 +46,10 @@ targets:
     platform: macOS
     sources:
       - path: Shell
+      - path: Core/Run/InlineScript.js
+        buildPhase: resources
+      - path: Power/PowerService.swift
+      - path: Power/PowerDaemon.swift
     dependencies:
       - target: OpenspotCore
       - package: secp256k1
@@ -56,11 +61,14 @@ targets:
       - target: OpenspotViews
         link: false
         embed: false
+      - target: OpenspotPower
+        link: false
+        embed: false
     info:
       path: Shell/Info.plist
       properties:
-        CFBundleName: $(OPENSPOT_APP_NAME)
-        CFBundleDisplayName: $(OPENSPOT_APP_NAME)
+        CFBundleName: Openspot
+        CFBundleDisplayName: Openspot
         CFBundleShortVersionString: $(MARKETING_VERSION)
         CFBundleVersion: $(CURRENT_PROJECT_VERSION)
         LSMinimumSystemVersion: "26.0"
@@ -106,12 +114,23 @@ targets:
           mkdir -p "$TARGET_BUILD_DIR/$CONTENTS_FOLDER_PATH/Helpers"
           rm -f "$TARGET_BUILD_DIR/$CONTENTS_FOLDER_PATH/Helpers/openspot"
           cp "$BUILT_PRODUCTS_DIR/openspot" "$TARGET_BUILD_DIR/$CONTENTS_FOLDER_PATH/Helpers/openspot"
-      - name: Join the guide, and copy the guides of the nouns
+      - name: Copy the power helper and its launch daemon
         basedOnDependencyAnalysis: false
         script: |
-          sh "$SRCROOT/../scripts/guide.sh" "$TARGET_BUILD_DIR/$UNLOCALIZED_RESOURCES_FOLDER_PATH/GUIDE.md"
+          daemons="$TARGET_BUILD_DIR/$CONTENTS_FOLDER_PATH/Library/LaunchDaemons"
+          mkdir -p "$daemons"
+          rm -f "$TARGET_BUILD_DIR/$EXECUTABLE_FOLDER_PATH/openspot-power"
+          cp "$BUILT_PRODUCTS_DIR/openspot-power" "$TARGET_BUILD_DIR/$EXECUTABLE_FOLDER_PATH/openspot-power"
+          rm -f "$daemons"/*.power.plist
+          sed "s/openspot\.celis\.ai/$PRODUCT_BUNDLE_IDENTIFIER/g" "$SRCROOT/Power/openspot.celis.ai.power.plist" > "$daemons/$PRODUCT_BUNDLE_IDENTIFIER.power.plist"
+      - name: Join the docs, and copy the guides of the nouns
+        basedOnDependencyAnalysis: false
+        script: |
+          sh "$SRCROOT/../scripts/guide.sh" "$TARGET_BUILD_DIR/$UNLOCALIZED_RESOURCES_FOLDER_PATH/DOCS.md"
           rm -rf "$TARGET_BUILD_DIR/$UNLOCALIZED_RESOURCES_FOLDER_PATH/Help"
           cp -R "$SRCROOT/Help" "$TARGET_BUILD_DIR/$UNLOCALIZED_RESOURCES_FOLDER_PATH/Help"
+          rm -rf "$TARGET_BUILD_DIR/$UNLOCALIZED_RESOURCES_FOLDER_PATH/Themes"
+          cp -R "$SRCROOT/Themes" "$TARGET_BUILD_DIR/$UNLOCALIZED_RESOURCES_FOLDER_PATH/Themes"
       - name: Copy the core spots and their defaults
         basedOnDependencyAnalysis: false
         script: |
@@ -162,14 +181,12 @@ targets:
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: openspot.celis.ai
-        OPENSPOT_APP_NAME: Openspot
         DEVELOPMENT_TEAM: ""
         INFOPLIST_OUTPUT_FORMAT: XML
         ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
       configs:
         Debug:
           PRODUCT_BUNDLE_IDENTIFIER: openspot.celis.ai.dev
-          OPENSPOT_APP_NAME: Openspot Dev
           ASSETCATALOG_COMPILER_APPICON_NAME: AppIconNightly
           SWIFT_ACTIVE_COMPILATION_CONDITIONS: $(inherited) OPENSPOT_TOOLS
           ENABLE_HARDENED_RUNTIME: NO
@@ -179,12 +196,30 @@ targets:
     platform: macOS
     sources:
       - path: Client
+      - path: Shared
     settings:
       base:
         PRODUCT_NAME: openspot
         PRODUCT_BUNDLE_IDENTIFIER: dev.openspot.client
         SKIP_INSTALL: YES
         LD_OBJC_RUNTIME_ARGS: ""
+  OpenspotPower:
+    type: tool
+    platform: macOS
+    sources:
+      - path: Power
+        excludes:
+          - "*.plist"
+    settings:
+      base:
+        PRODUCT_NAME: openspot-power
+        PRODUCT_BUNDLE_IDENTIFIER: openspot.celis.ai.power
+        GENERATE_INFOPLIST_FILE: YES
+        CREATE_INFOPLIST_SECTION_IN_BINARY: YES
+        SKIP_INSTALL: YES
+      configs:
+        Debug:
+          PRODUCT_BUNDLE_IDENTIFIER: openspot.celis.ai.dev.power
   OpenspotViews:
     type: tool
     platform: macOS
@@ -216,6 +251,8 @@ targets:
     platform: macOS
     sources:
       - path: Tests
+      - path: Core/Run/InlineScript.js
+        buildPhase: resources
     dependencies:
       - target: OpenspotCore
       - package: secp256k1

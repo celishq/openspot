@@ -1,0 +1,11 @@
+title = "Grid"
+icon = "square.grid.3x3"
+detail = "Drag over a grid to place the front window"
+stay = true
+source = ["grid"]
+
+[actions.place]
+title = "Place window"
+
+[on]
+"panel.open" = true

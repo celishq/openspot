@@ -4,7 +4,7 @@ import SwiftUI
 struct SpotGlyph: View {
     let entry: SpotsModel.Entry
     var showsDisc = true
-    var side = SpotTokens.glyphSize
+    var side = SpotTokens.glyph
     var font = SpotType.glyph
     @Environment(\.spotIsOnSolid) private var isOnSolid
 

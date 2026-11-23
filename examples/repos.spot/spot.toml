@@ -1,0 +1,7 @@
+icon = "arrow.triangle.branch"
+detail = "Open a git repo"
+uses = ["clipboard"]
+
+[settings]
+folder = { type = "text" }
+editor = { type = "text", title = "Default app" }

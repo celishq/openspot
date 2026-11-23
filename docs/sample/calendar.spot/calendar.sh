@@ -1,6 +1,2 @@
 #!/bin/sh
-# title=Calendar
-# icon=calendar
-# on=panel.open
-# view=calendar.swift
-printf 'view=day\nday=WED\ndate=12\n'
+printf 'frame=\nclass=relative card:relative\n\ncalendar=day\nclass=absolute inset-0\nday=WED\ndate=12\n'

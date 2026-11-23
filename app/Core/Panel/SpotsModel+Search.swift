@@ -8,8 +8,7 @@ extension SpotsModel {
     }
 
     var shelfCards: [Entry] {
-        let parts = Set(cards.flatMap { $0.spot.places + ($0.spot.opens.map { [$0] } ?? []) })
-        return cards.filter { !$0.isOnGrid && $0.item == nil && $0.spot.offersCard && $0.spot.fault == nil && !parts.contains($0.id) }
+        cards.filter { !$0.isOnGrid && $0.item == nil && $0.spot.isFound && $0.spot.fault == nil }
     }
 
     var grid: SpotGrid {
@@ -43,17 +42,8 @@ extension SpotsModel {
         }
     }
 
-    struct Finding {
-        let ask: SearchAsk
-        let answers: [Entry]
-        let sources: [Spot]
-        let job: Task<Void, Never>
-    }
-
     public func updateVisible() {
         visibleUpdates += 1
-        finding?.job.cancel()
-        finding = nil
         let text = query.trimmingCharacters(in: .whitespaces)
         guard !text.isEmpty else {
             if slash != nil { slash = nil }
@@ -63,7 +53,7 @@ extension SpotsModel {
         if spotListIsStale {
             spotListIsStale = false
             spotListBuilds += 1
-            spotList.replace(cards.filter(\.spot.isFound).map(Self.foundItem))
+            spotList.replace(cards.filter(\.isFound).map(Self.foundItem))
             commands = CommandIndex(cards)
         }
         let command = isEditing ? nil : SlashCommand(query)
@@ -76,50 +66,34 @@ extension SpotsModel {
             return show(rows)
         }
         var ids = Set<String>()
-        let answers = entries.filter { $0.spot.answers.map { runs.answerMatches.matches($0, text) } == true }
+        let answers = entries.filter { $0.spot.triggers.search.map { runs.answerMatches.matches($0, text) } == true }
             .flatMap { entry in (sheets[entry.id]?.answers ?? []).map { Entry(spot: entry.spot, item: $0, isAnswer: true) } }
             .filter { ids.insert($0.id).inserted }
             .prefix(Self.searchLimit)
-        let sources = entries.filter { $0.spot.isGlobal && arrangement.isGlobal(of: $0.id) != false }
+        let sources = entries.filter { $0.spot.triggers.lists && arrangement.isGlobal(of: $0.id) != false }
         let ask = SearchAsk(
             query: runs.search(of: text),
             lists: [spotList] + sources.map { sheets[$0.id]?.list ?? ItemList() },
             search: mainSearch,
             limit: Self.searchLimit - answers.count
         )
-        let job = Task { [weak self] in
-            let found = await Self.found(ask)
-            guard let found, !Task.isCancelled, let self, let finding = self.finding else {
-                SearchRanks.meter?.drop()
-                return
-            }
-            self.finding = nil
-            land(found, of: finding)
-        }
-        finding = Finding(ask: ask, answers: Array(answers), sources: sources.map(\.spot), job: job)
-        if !answers.isEmpty || visible.contains(where: \.isAnswer) { show(answers + foundSpots.filter { !ids.contains($0.id) }) }
+        land(ask.found(), answers: Array(answers), sources: sources.map(\.spot))
     }
 
-    @concurrent
-    private nonisolated static func found(_ ask: SearchAsk) async -> (matches: [(list: Int, item: SpotItem)], search: MainSearch)? {
-        Task.isCancelled ? nil : ask.found()
+    private static func placed(_ answers: [Entry], around found: [Entry]) -> [Entry] {
+        answers.filter { $0.spot.triggers.search?.isLast != true } + found + answers.filter { $0.spot.triggers.search?.isLast == true }
     }
 
-    public func landSearch() {
-        guard let finding else { return }
-        finding.job.cancel()
-        self.finding = nil
-        land(finding.ask.found(), of: finding)
-    }
-
-    private func land(_ found: (matches: [(list: Int, item: SpotItem)], search: MainSearch), of finding: Finding) {
+    private func land(_ found: (matches: [(list: Int, item: SpotItem)], search: MainSearch), answers: [Entry], sources: [Spot]) {
         mainSearch = found.search
-        let ids = Set(finding.answers.map(\.id))
+        let ids = Set(answers.map(\.id))
         let spots = Dictionary(cards.map { ($0.id, $0) }, uniquingKeysWith: { first, _ in first })
         foundSpots = found.matches.compactMap { match in
-            match.list == 0 ? spots[match.item.run] : Entry(spot: finding.sources[match.list - 1], item: match.item)
+            match.list == 0 ? spots[match.item.run] : Entry(spot: sources[match.list - 1], item: match.item)
         }
-        show(finding.answers + foundSpots.filter { !ids.contains($0.id) })
+        show(Self.placed(answers, around: foundSpots.filter { !ids.contains($0.id) }))
+        Set(foundSpots.compactMap { $0.item == nil ? nil : $0.spot.id }).forEach(runs.want)
+        if !isEditing { missedSearch.landed(query, found: visible.contains { $0.spot.triggers.search?.isLast != true }) }
     }
 
     private func show(_ next: [Entry]) {
@@ -143,7 +117,12 @@ extension SpotsModel {
             }
             return entry.isOnGrid == (placements[index].group == .shelf)
         }
-        return entry.spot.isFound || entry.spot.isGlobal || entry.spot.answers != nil
+        return entry.isFound || entry.spot.triggers.lists || entry.spot.triggers.search != nil
+    }
+
+    func noteMiss() {
+        guard let search = missedSearch.take() else { return }
+        runs.usage.missed(search, at: runs.now())
     }
 
     func askAnswers() {
@@ -156,7 +135,7 @@ extension SpotsModel {
 
     func markFound(_ id: String) {
         guard !spotListIsStale else { return }
-        let card = card(id: id).flatMap { $0.spot.isFound ? Self.foundItem($0) : nil }
+        let card = card(id: id).flatMap { $0.isFound ? Self.foundItem($0) : nil }
         if spotList.all.first(where: { $0.run == id }) != card { spotListIsStale = true }
     }
 

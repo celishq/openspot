@@ -4,20 +4,23 @@ import SwiftUI
 struct SpotHintLine: View {
     let model: SpotsModel
     let surfaceIsOut: Bool
-    let gridHeight: CGFloat
-    let sheetHeight: CGFloat
-    let sheetRect: CGRect
-    let menuHeight: CGFloat
+    let motion: SheetMotion
 
     var body: some View {
         ZStack(alignment: .top) {
-            hint(model.gridHint, isShown: !surfaceIsOut, height: gridHeight)
-            hint(sheetWords, isShown: surfaceIsOut, height: max(sheetHeight + model.flowEdges.heldHeight(of: sheetRect), menuHeight))
+            hint(model.gridHint, isShown: !surfaceIsOut)
+            hint(sheetWords, isShown: surfaceIsOut)
         }
+        .modifier(FootOffset(foot: foot, motion: motion, inset: SpotTokens.halo + SpotTokens.hintPillHeight))
         .onAppear { model.followHint() }
     }
 
-    private func hint(_ words: HintWords, isShown: Bool, height: CGFloat) -> some View {
+    private var foot: PanelFoot {
+        let foot = model.panelFoot
+        return surfaceIsOut && motion.progress == 0 ? PanelFoot(closed: foot.open, open: foot.open) : foot
+    }
+
+    private func hint(_ words: HintWords, isShown: Bool) -> some View {
         ZStack {
             ForEach([words], id: \.self) { words in
                 SpotHint(words: words, activeKey: model.isMenuOpen ? ActionMenu.key : nil, onPress: model.pressHint)
@@ -26,7 +29,6 @@ struct SpotHintLine: View {
         }
         .frame(width: SpotTokens.panelWidth)
         .allowsHitTesting(isShown)
-        .offset(y: height - SpotTokens.halo - SpotTokens.hintPillHeight)
         .morph(isShown ? 1 : 0, opacity: { SheetMorph.sheetLook(at: $0) })
     }
 

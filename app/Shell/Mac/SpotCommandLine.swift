@@ -5,13 +5,13 @@ import OpenspotCore
 enum SpotCommandLine {
     private static let postedKeysPause: Duration = .milliseconds(100)
 
-    static func run(_ call: CommandLineCall) -> Never {
+    static func run(_ call: CommandLineCall, words: [String]) -> Never {
         enterBundle()
         let output = CommandOutput { text, isError in (isError ? FileHandle.standardError : FileHandle.standardOutput).write(Data(text.utf8)) }
         if call.rule.flags.contains(.startsScripts), !(call.value is PlaygroundCommand) { TerminalStop.watch() }
         var info = stat()
         let isPiped = fstat(0, &info) == 0 && (info.st_mode & S_IFMT == S_IFIFO || info.st_mode & S_IFMT == S_IFREG)
-        let request = CommandRequest(arguments: Array(CommandLine.arguments.dropFirst()), folder: FileManager.default.currentDirectoryPath, isPiped: isPiped)
+        let request = CommandRequest(arguments: words, folder: FileManager.default.currentDirectoryPath, isPiped: isPiped)
         if let work = CommandAPI(mac: SpotMac().mac, places: .standard, rates: .standard).work(for: call, request: request, input: { standardInput }, output: output) {
             Task {
                 let answer = await work()
@@ -26,13 +26,17 @@ enum SpotCommandLine {
             }
             dispatchMain()
         }
+        if call.value is RenderCall || call.value is PlaygroundCommand {
+            let theme = ThemeFolder.standard(environment: ProcessInfo.processInfo.environment, builtIn: SpotMac().mac.theme).read()
+            SpotLoadedTheme.shared.take(theme)
+        }
         switch call.value {
         case SpotCall.show(let id) as SpotCall:
             SpotShowLink.send(id)
-        case RenderCall.spot(let id, let size?, let path) as RenderCall:
-            SpotCardPicture.run(spot: id, size: size, path: path)
-        case RenderCall.spot(let id, nil, let path) as RenderCall:
-            renderSheet(of: id, to: path)
+        case RenderCall.spot(let id, let size?, let path, let isLight) as RenderCall:
+            SpotCardPicture.run(spot: id, size: size, path: path, isLight: isLight)
+        case RenderCall.spot(let id, nil, let path, let isLight) as RenderCall:
+            renderSheet(of: id, to: path, isLight: isLight)
         case PlaygroundCommand.open(let path) as PlaygroundCommand:
             SpotPlayground.run(path: path)
         case RenderCall.sheet(let path, let view) as RenderCall:
@@ -51,7 +55,7 @@ enum SpotCommandLine {
             let glyphs = standardInput.split(separator: "\n").map(String.init)
             exit(SpotGlyphBook.write(GlyphBook(glyphs: glyphs, side: side, fontSize: fontSize), to: path) ? 0 : 1)
         default:
-            FileHandle.standardError.write(Data("openspot cannot do this: \(CommandLine.arguments.dropFirst().joined(separator: " "))\n\n\(CommandLineCall.usage)".utf8))
+            FileHandle.standardError.write(Data("openspot cannot do this: \(words.joined(separator: " "))\n\n\(CommandLineCall.usage)".utf8))
             exit(2)
         }
     }
@@ -70,7 +74,7 @@ enum SpotCommandLine {
         String(decoding: FileHandle.standardInput.readDataToEndOfFile(), as: UTF8.self)
     }
 
-    private static func renderSheet(of id: String, to path: String) -> Never {
+    private static func renderSheet(of id: String, to path: String, isLight: Bool) -> Never {
         let model = SpotsModel(host: SpotQuietHost.shared, runs: SpotRuns())
         var loaded = false
         Task {
@@ -79,12 +83,12 @@ enum SpotCommandLine {
         }
         while !loaded { RunLoop.main.run(mode: .default, before: .distantFuture) }
         guard let spot = model.entries.first(where: { $0.id == id })?.spot else {
-            FileHandle.standardError.write(Data("Openspot has no spot \(id). Run `openspot check` to see each file that does not load.\n".utf8))
+            FileHandle.standardError.write(Data("Openspot has no spot \(id). Run `openspot check spots` to see each file that does not load.\n".utf8))
             exit(1)
         }
         var answer: Result<String, Error>?
         Task {
-            do { answer = .success(try await SpotRuns().answer(of: spot, .read, limit: 10)) } catch { answer = .failure(error) }
+            do { answer = .success(try await SpotRuns().answer(of: spot, ScriptEntry.show.name, limit: 10)) } catch { answer = .failure(error) }
         }
         while answer == nil { RunLoop.main.run(mode: .default, before: .distantFuture) }
         guard case .success(let text)? = answer, !text.isEmpty else {
@@ -92,6 +96,6 @@ enum SpotCommandLine {
             FileHandle.standardError.write(Data("\(reason)\n".utf8))
             exit(1)
         }
-        SpotSheetPicture.run(text: text, path: path, view: spot.view, spot: spot)
+        SpotSheetPicture.run(text: text, path: path, spot: spot, isLight: isLight)
     }
 }

@@ -1,0 +1,10 @@
+title = "Record"
+icon = "record.circle"
+detail = "Record the screen, again to stop"
+uses = ["screen", "clipboard"]
+
+[actions.record]
+title = "Record"
+
+[settings]
+inputs = { type = "text", title = "Sound and camera", icon = "mic" }

@@ -27,7 +27,7 @@ final class SpotAddTests: XCTestCase {
 
     private func repo(_ name: String = "coffee") throws -> GitRepo {
         let repo = try GitRepo(at: root.appendingPathComponent("sources/\(name)"))
-        try repo.commit(["coffee.sh": "#!/bin/sh\n# title=Coffee\necho one\n", "README.md": "Coffee\n"])
+        try repo.commit(["coffee.sh": "#!/bin/sh\necho one\n", "spot.toml": "title = 'Coffee'", "README.md": "Coffee\n"])
         return repo
     }
 
@@ -83,13 +83,14 @@ final class SpotAddTests: XCTestCase {
     func testASpotThatIsThereAlreadyIsAFaultAndStays() async throws {
         let repo = try repo()
         try FileManager.default.createDirectory(at: spots.appendingPathComponent("coffee.spot"), withIntermediateDirectories: true)
-        try "#!/bin/sh\necho mine\n".writeScript(to: spots.appendingPathComponent("coffee.spot/mine.sh"))
+        try "#!/bin/sh\necho mine\n".writeScript(to: spots.appendingPathComponent("coffee.spot/coffee.sh"), toml: "title = 'Mine'")
 
         let answer = try await answer(["spot", "add", repo.url.path])
 
         XCTAssertEqual(answer.code, 1)
         XCTAssertEqual(answer.errors, "The spots folder has coffee already. Run `openspot spot remove coffee` first, or move it away.\n")
-        XCTAssertEqual(try ids(), ["coffee/mine"])
+        XCTAssertEqual(try ids(), ["coffee"])
+        XCTAssertEqual(try String(contentsOf: spots.appendingPathComponent("coffee.spot/coffee.sh"), encoding: .utf8), "#!/bin/sh\necho mine\n")
     }
 
     func testASourceThatGitCannotCloneIsAFaultAndLeavesNothing() async throws {
@@ -202,10 +203,10 @@ final class SpotAddTests: XCTestCase {
     }
 
     func testAddAndRemoveCannotRunInARead() throws {
-        let read = environment.merging(["OPENSPOT_REASON": "sheet"]) { _, new in new }
+        let read = environment
 
-        XCTAssertEqual(CommandLineCall(arguments: ["spot", "add", "x"], environment: read)?.value as? CallFault, .refused("`openspot spot add` changes your spots folder, so it cannot run in a read. Run it from a pick or an action."))
-        XCTAssertEqual(CommandLineCall(arguments: ["spot", "remove", "x"], environment: read)?.value as? CallFault, .refused("`openspot spot remove` changes your spots folder, so it cannot run in a read. Run it from a pick or an action."))
+        XCTAssertEqual(CommandLineCall(arguments: ["spot", "add", "x"], environment: read, reason: "sheet")?.value as? CallFault, .refused("`openspot spot add` changes your spots folder, so it cannot run in a show. Run it from a pick or an action."))
+        XCTAssertEqual(CommandLineCall(arguments: ["spot", "remove", "x"], environment: read, reason: "sheet")?.value as? CallFault, .refused("`openspot spot remove` changes your spots folder, so it cannot run in a show. Run it from a pick or an action."))
     }
 
     private func files(in folder: URL) throws -> [String: Data] {
@@ -262,7 +263,7 @@ final class SpotAddTests: XCTestCase {
 
     func testAFirstAddPrintsTheReviewAndNeedsYesWhenItHasAUse() async throws {
         let repo = try repo()
-        try repo.commit(["coffee.sh": "#!/bin/sh\n# title=Coffee\n# uses=network\n# on=clock.60\ncurl -s https://example.com\n"])
+        try repo.commit(["coffee.sh": "#!/bin/sh\ncurl -s https://example.com\n", "spot.toml": "title = 'Coffee'\nuses = ['network']\n\n[on]\nevery = 60"])
 
         let first = try await answer(["spot", "add", repo.url.path])
 
@@ -359,7 +360,7 @@ final class SpotAddTests: XCTestCase {
         let sources = try (0..<12).map { index in
             let folder = root.appendingPathComponent("sources/s\(index)")
             try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
-            try "#!/bin/sh\n".writeScript(to: folder.appendingPathComponent("a.sh"))
+            try "#!/bin/sh\n".writeScript(to: folder.appendingPathComponent("s\(index).sh"))
             return folder
         }
         let lock = SpotLock(url: root.appendingPathComponent("spots.lock"))
@@ -375,7 +376,7 @@ final class SpotAddTests: XCTestCase {
 
     func testTheLockKeepsAHashOfTheFilesAndTheUses() async throws {
         let repo = try repo()
-        try repo.commit(["coffee.sh": "#!/bin/sh\n# title=Coffee\n# uses=network,app\necho one\n"])
+        try repo.commit(["coffee.sh": "#!/bin/sh\necho one\n", "spot.toml": "title = 'Coffee'\nuses = ['network', 'app']"])
 
         _ = try await answer(["spot", "add", repo.url.path, "--yes"])
 
@@ -387,13 +388,13 @@ final class SpotAddTests: XCTestCase {
     func testAnUpdateThatAddsNoUseAppliesQuietly() async throws {
         let repo = try repo()
         _ = try await answer(["spot", "add", repo.url.path])
-        let commit = try repo.commit(["coffee.sh": "#!/bin/sh\n# title=Coffee\necho two\n"])
+        let commit = try repo.commit(["coffee.sh": "#!/bin/sh\necho two\n", "spot.toml": "title = 'Coffee'"])
 
         let answer = try await answer(["spot", "add", repo.url.path])
 
         XCTAssertEqual(answer.code, 0, answer.errors)
         XCTAssertEqual(answer.output, "Updated coffee to \(commit.prefix(7)).\n")
-        XCTAssertEqual(try String(contentsOf: spots.appendingPathComponent("coffee.spot/coffee.sh"), encoding: .utf8), "#!/bin/sh\n# title=Coffee\necho two\n")
+        XCTAssertEqual(try String(contentsOf: spots.appendingPathComponent("coffee.spot/coffee.sh"), encoding: .utf8), "#!/bin/sh\necho two\n")
         XCTAssertEqual(try SpotLock(url: root.appendingPathComponent("spots.lock")).entries().map(\.commit), [commit])
     }
 
@@ -401,7 +402,7 @@ final class SpotAddTests: XCTestCase {
         let repo = try repo()
         _ = try await answer(["spot", "add", repo.url.path])
         let before = try files(in: spots)
-        let commit = try repo.commit(["coffee.sh": "#!/bin/sh\n# title=Coffee\n# uses=network\ncurl example.com\n"])
+        let commit = try repo.commit(["coffee.sh": "#!/bin/sh\ncurl example.com\n", "spot.toml": "title = 'Coffee'\nuses = ['network']"])
 
         let refused = try await answer(["spot", "add", repo.url.path])
 
@@ -414,11 +415,46 @@ final class SpotAddTests: XCTestCase {
         XCTAssertEqual(try SpotLock(url: root.appendingPathComponent("spots.lock")).entries().map(\.commit), [commit])
     }
 
+    func testAFirstAddOfASpotThatBindsAnotherNeedsYesAndAnUpdateThatAddsABindingNeedsYes() async throws {
+        let repo = try repo()
+        try repo.commit(["coffee.sh": "#!/bin/sh\necho one\n", "spot.toml": "title = 'Coffee'\n[bindings]\npicker = { spot = 'time-picker' }"])
+
+        let first = try await answer(["spot", "add", repo.url.path])
+
+        XCTAssertEqual(first.code, 1)
+        XCTAssertEqual(first.errors, "Coffee\n\nBinds\npicker: time-picker, which is not installed\n\nOpenspot added nothing. Run `openspot spot add \(repo.url.standardizedFileURL.path) --yes` to add it.\n")
+        let confirmed = try await answer(["spot", "add", repo.url.path, "--yes"])
+        XCTAssertEqual(confirmed.code, 0, confirmed.errors)
+        try repo.commit(["coffee.sh": "#!/bin/sh\necho one\n", "spot.toml": "title = 'Coffee'\n[bindings]\npicker = { spot = 'time-picker' }\nmail = { spot = 'mailer' }"])
+
+        let refused = try await answer(["spot", "add", repo.url.path])
+
+        XCTAssertEqual(refused.code, 1)
+        XCTAssertEqual(refused.errors, "This version can do more.\nBinds mail: mailer\nOpenspot kept the one you have. Run `openspot spot add \(repo.url.standardizedFileURL.path) --yes` to update it.\n")
+        let accepted = try await answer(["spot", "add", repo.url.path, "--yes"])
+        XCTAssertEqual(accepted.code, 0, accepted.errors)
+    }
+
+    func testAnUpdateThatRemovesAnActionOrAddsARequiredInputThatAnotherSpotBindsNamesThatSpotAndNeedsYes() async throws {
+        let picker = try GitRepo(at: root.appendingPathComponent("sources/picker"))
+        try picker.commit(["picker.sh": "#!/bin/sh\n", "spot.toml": "[actions.pick]\ninputs.when = 'text'\n[actions.clear]"])
+        _ = try await answer(["spot", "add", picker.url.path])
+        try "#!/bin/sh\n".writeScript(to: spots.spotFile("snooze"), toml: "[bindings]\npicker = { spot = 'picker' }")
+        try picker.commit(["picker.sh": "#!/bin/sh\n", "spot.toml": "[actions.pick]\ninputs.when = { type = 'text', required = true }\ninputs.zone = { type = 'text', required = true, default = 'UTC' }"])
+
+        let refused = try await answer(["spot", "add", picker.url.path])
+
+        XCTAssertEqual(refused.code, 1)
+        XCTAssertEqual(refused.errors, "This version changes what Snooze calls through picker.\nIt removes the action clear.\nIt adds the required input when to pick.\nOpenspot kept the one you have. Run `openspot spot add \(picker.url.standardizedFileURL.path) --yes` to update it.\n")
+        let accepted = try await answer(["spot", "add", picker.url.path, "--yes"])
+        XCTAssertEqual(accepted.code, 0, accepted.errors)
+    }
+
     func testAnUpdateThatCanDoMoreWithTheSameUsesNeedsYes() async throws {
         let repo = try repo()
         _ = try await answer(["spot", "add", repo.url.path])
         let before = try files(in: spots)
-        try repo.commit(["coffee.sh": "#!/bin/sh\n# title=Coffee\n# on=clock.60\nrm -f /tmp/x\n"])
+        try repo.commit(["coffee.sh": "#!/bin/sh\nrm -f /tmp/x\n", "spot.toml": "title = 'Coffee'\n\n[on]\nevery = 60"])
 
         let refused = try await answer(["spot", "add", repo.url.path])
 
@@ -469,7 +505,7 @@ final class SpotAddTests: XCTestCase {
         try FileManager.default.createDirectory(at: tea, withIntermediateDirectories: true)
         try "#!/bin/sh\n".writeScript(to: tea.appendingPathComponent("tea.sh"))
         _ = try await answer(["spot", "add", tea.path])
-        try "#!/bin/sh\n# uses=screen\n".writeScript(to: tea.appendingPathComponent("tea.sh"))
+        try "#!/bin/sh\n".writeScript(to: tea.appendingPathComponent("tea.sh"), toml: "uses = ['screen']")
         try FileManager.default.removeItem(at: spots)
 
         let refused = try await answer(["spot", "add"])

@@ -2,6 +2,8 @@ import AppKit
 import OpenspotCore
 
 struct SpotRunningApp: RunningApp {
+    private static let answerPause: TimeInterval = 0.2
+
     let model: SpotsModel
     let update: AppUpdate?
 
@@ -14,7 +16,11 @@ struct SpotRunningApp: RunningApp {
     }
 
     func status() async -> (update: String?, calls: Int, isFirstLaunch: Bool) {
-        await MainActor.run { (update?.readyVersion, model.workCount, model.isFirstLaunch) }
+        await MainActor.run { (update?.readyVersion, model.actCount, model.isFirstLaunch) }
+    }
+
+    func slowMotion(_ isOn: Bool?) async -> Bool? {
+        await MainActor.run { model.slowMotion(isOn) }
     }
 
     func checkUpdate() async -> Bool {
@@ -30,15 +36,31 @@ struct SpotRunningApp: RunningApp {
     }
 
     func quit() async {
-        await MainActor.run { NSApp.terminate(nil) }
+        await MainActor.run {
+            DispatchQueue.main.asyncAfter(deadline: .now() + Self.answerPause) { NSApp.terminate(nil) }
+        }
+    }
+
+    func apply(_ theme: Theme) async {
+        await MainActor.run {
+            model.take(theme)
+        }
     }
 
     func open(_ id: String) async -> Bool {
         await model.open(id)
     }
 
-    func push(_ id: String, page: String?, title: String?, replace: Bool) async -> Bool {
-        await model.push(FlowSheet(spot: id, page: page, title: title), replace: replace)
+    func ask(_ id: String, from caller: String?, title: String?) async -> Bool {
+        await model.present(FlowSheet(spot: id, title: title), from: caller)
+    }
+
+    func leave(_ id: String) async -> Bool {
+        await model.leave(id)
+    }
+
+    func push(_ id: String, route: String?, title: String?, replace: Bool) async -> Bool {
+        await model.present(FlowSheet(spot: id, route: route, title: title), replace: replace)
     }
 
     func pop(_ id: String, all: Bool) async -> Bool {

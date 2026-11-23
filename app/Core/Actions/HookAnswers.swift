@@ -5,15 +5,15 @@ public struct HookAnswers: Equatable, Sendable {
 
     public init() {}
 
-    func text(_ hook: ActionHook, of offer: OfferedAction, in spot: String) -> String? {
-        texts[Self.key(hook, offer, spot)]
+    func text(of offer: OfferedAction, in spot: String) -> String? {
+        texts[Self.key(offer, spot)]
     }
 
-    mutating func keep(_ text: String, for hook: ActionHook, of offer: OfferedAction, in spot: String) {
-        texts[Self.key(hook, offer, spot)] = text
+    mutating func keep(_ text: String, of offer: OfferedAction, in spot: String) {
+        texts[Self.key(offer, spot)] = text
     }
 
-    private static func key(_ hook: ActionHook, _ offer: OfferedAction, _ spot: String) -> String {
-        "\(spot) \(offer.action.id) \(hook.rawValue)"
+    private static func key(_ offer: OfferedAction, _ spot: String) -> String {
+        "\(spot) \(offer.action.id)"
     }
 }

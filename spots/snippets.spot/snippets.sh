@@ -1,10 +1,4 @@
 #!/bin/sh
-# icon=text.quote
-# detail=Copy text
-# on=panel.open
-# uses=clipboard
-# offers=card
-# offers=search
 export LC_ALL=en_US.UTF-8
 data="$OPENSPOT_DATA/snippets.json"
 . "$OPENSPOT_SH"
@@ -29,7 +23,7 @@ content() {
 
 # Prints the form with this title and these values.
 form() {
-  jq -nr --arg title "$1" --argjson v "$2" "$esc"'"title=\($title)
+  jq -nr --arg title "$1" --argjson v "$2" "$esc"'"frame=\ntype=form\ntitle=\($title)
 
 field=title
 title=Name
@@ -43,42 +37,45 @@ value=\($v.content | esc)
 required=true"'
 }
 
+item=$(value item)
+
 case "$1" in
-  read)
-    printf 'button=open\ntitle=Copy\n\n'
-    printf 'button=paste\ntitle=Paste\nshortcut=cmd+return\nclose=true\n\n'
-    printf 'button=edit\ntitle=Edit\nshortcut=cmd+e\nform=true\n\n'
-    printf 'button=delete\ntitle=Delete\nshortcut=cmd+backspace\nconfirm=Press again to delete\n\n'
-    printf 'button=new\ntitle=New snippet\nshortcut=cmd+n\nscope=spot\nform=true\nplaceholder=Text to keep\n\n'
+  show)
+    printf 'button=press\ntitle=Copy\n\n'
+    printf 'button=paste\ntitle=Paste\nshortcut=cmd+return\n\n'
+    printf 'button=edit\ntitle=Edit\nshortcut=cmd+e\nclose=false\n\n'
+    printf 'button=delete\ntitle=Delete\nshortcut=cmd+backspace\nconfirm=Press again to delete\nclose=false\n\n'
+    printf 'button=new\ntitle=New snippet\nshortcut=cmd+n\nscope=spot\nclose=false\nplaceholder=Text to keep\n\n'
     [ -s "$data" ] || exit 0
-    jq -r "$esc"'.[] | "row=\(.id | esc)\ntitle=\(.title | esc)\ndetail=\(.content | gsub("\\s+"; " ") | .[0:200] | esc)\n"' "$data"
+    jq -r "$esc"'.[] | "item=\(.id | esc)\ntitle=\(.title | esc)\ndetail=\(.content | gsub("\\s+"; " ") | .[0:200] | esc)\n"' "$data"
     ;;
   new)
-    title=$(value title)
-    text=$(value content; printf x)
-    if [ -z "$title${text%x}" ]; then
-      form "New snippet" "$(jq -nc --arg content "$(value search)" '{title: "", content: $content}')"
+    title=$(value input.title)
+    text=$(value input.content; printf x)
+    # Asks with its own form, filled with what the call gave, until both the name and the text are given.
+    if [ -z "$title" ] || [ -z "${text%x}" ]; then
+      form "New snippet" "$(jq -nc --arg title "$title" --arg content "${text%x}" '{$title, $content}')"
       exit 0
     fi
     id=$(uuidgen)
     load | jq -c --arg id "$id" --arg title "$title" --arg content "${text%x}" '. + [{id: $id, title: $title, content: $content}]' | store
-    printf 'select=%s\n' "$id"
+    openspot select "$id"
     ;;
   edit)
-    title=$(value title)
-    text=$(value content; printf x)
+    title=$(value input.title)
+    text=$(value input.content; printf x)
     if [ -z "$title${text%x}" ]; then
-      form "Edit snippet" "$(load | jq -c --arg id "$2" '.[] | select(.id == $id)')"
+      form "Edit snippet" "$(load | jq -c --arg id "$item" '.[] | select(.id == $id)')"
       exit 0
     fi
-    load | jq -c --arg id "$2" --arg title "$title" --arg content "${text%x}" 'map(if .id == $id then .title = $title | .content = $content else . end)' | store
-    printf 'select=%s\n' "$2"
+    load | jq -c --arg id "$item" --arg title "$title" --arg content "${text%x}" 'map(if .id == $id then .title = $title | .content = $content else . end)' | store
+    openspot select "$item"
     ;;
   delete)
-    load | jq -c --arg id "$2" 'map(select(.id != $id))' | store
+    load | jq -c --arg id "$item" 'map(select(.id != $id))' | store
     ;;
   paste)
-    text=$(content "$2" && printf x) || exit 1
+    text=$(content "$item" && printf x) || exit 1
     previous=$(openspot clipboard read; printf x)
     printf '%s' "${text%x}" | openspot clipboard copy
     openspot clipboard paste || exit 1
@@ -87,9 +84,9 @@ case "$1" in
       printf '%s' "${previous%x}" | openspot clipboard copy
     fi
     ;;
-  open)
-    text=$(content "$2" && printf x) || exit 1
+  press)
+    text=$(content "$item" && printf x) || exit 1
     printf '%s' "${text%x}" | openspot clipboard copy
-    echo "toast=Copied"
+    openspot toast Copied
     ;;
 esac

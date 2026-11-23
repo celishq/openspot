@@ -1,4 +1,6 @@
-.PHONY: verify test perf film shots eval-agent docs-images spots dev-state examples release release-build
+.PHONY: verify test perf film shots eval-agent eval-compare docs-images spots dev-state first-launch examples release release-build
+
+TEST_LIMITS := -test-timeouts-enabled YES -default-test-execution-time-allowance 120 -maximum-test-execution-time-allowance 300
 
 verify:
 	sh scripts/check-core.sh
@@ -12,14 +14,16 @@ verify:
 	sh scripts/check-processes.sh
 	sh scripts/check-glass.sh
 	sh scripts/check-shapes.sh
+	sh scripts/check-windows.sh
+	sh scripts/check-tokens.sh
 	sh scripts/check-tools.sh
 	sh scripts/spot-tests.sh
 	cd app && xcodegen generate >/dev/null
-	cd app && DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer xcodebuild -project Openspot.xcodeproj -scheme Openspot -destination 'platform=macOS' test
+	cd app && DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer xcodebuild -project Openspot.xcodeproj -scheme Openspot -destination 'platform=macOS' $(TEST_LIMITS) test
 
 test:
 	cd app && xcodegen generate >/dev/null
-	cd app && DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer xcodebuild -project Openspot.xcodeproj -scheme Openspot -destination 'platform=macOS' -only-testing:OpenspotTests/$(T) test
+	cd app && DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer xcodebuild -project Openspot.xcodeproj -scheme Openspot -destination 'platform=macOS' $(TEST_LIMITS) -only-testing:OpenspotTests/$(T) test
 
 perf:
 	sh scripts/motion-perf.sh $(N)
@@ -31,7 +35,10 @@ shots:
 	sh scripts/menu-shots.sh
 
 eval-agent:
-	sh scripts/agent-eval.sh $(N)
+	sh scripts/agent-eval.sh $(or $(LABEL),base) $(or $(N),3) $(TASKS)
+
+eval-compare:
+	python3 -I scripts/agent-eval/summary.py $(foreach l,$(LABELS),.temp/agent-eval/$(l)/runs.tsv)
 
 docs-images:
 	cd app && xcodegen generate >/dev/null
@@ -48,6 +55,10 @@ dev-state:
 	mkdir -p .temp/openspot/spots
 	[ -n "$(EMPTY)" ] || cp -R spots/. .temp/openspot/spots/
 	rm -rf .temp/openspot/spots/openspot.spot
+
+first-launch:
+	pkill -f '/Debug/Openspot.app/Contents/MacOS/Openspot' || true
+	$(MAKE) dev-state EMPTY=1
 
 examples:
 	mkdir -p .temp/openspot/spots

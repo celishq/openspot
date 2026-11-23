@@ -1,0 +1,196 @@
+[scripts.actions]
+title = "Card actions"
+icon = "ellipsis.circle"
+detail = "Share, set, edit, change the icon of, delete or turn off a spot"
+uses = ["spots"]
+
+[scripts.actions.bindings]
+icon = { spot = "openspot/icon" }
+
+[scripts.actions.actions.share]
+title = "Share"
+shortcut = "cmd+shift+c"
+offers = ["actions mine, core"]
+
+[scripts.actions.actions.settings]
+title = "Settings"
+shortcut = "cmd+return"
+close = false
+offers = ["actions"]
+
+[scripts.actions.actions.edit]
+title = "Edit"
+shortcut = "cmd+e"
+close = false
+offers = ["actions mine, core"]
+
+[scripts.actions.actions.icon]
+title = "Change Icon"
+offers = ["actions"]
+
+[scripts.actions.actions."icon.draw"]
+title = "Draw…"
+close = false
+
+[scripts.actions.actions."icon.file"]
+title = "Choose File…"
+close = false
+
+[scripts.actions.actions."icon.reset"]
+title = "Reset Icon"
+close = false
+when = "hasIcon"
+
+[scripts.actions.actions.delete]
+title = "Delete"
+shortcut = "cmd+backspace"
+close = false
+offers = ["actions mine"]
+
+[scripts.actions.actions.off]
+title = "Turn off"
+shortcut = "cmd+backspace"
+offers = ["actions core"]
+
+[scripts.icon]
+title = "Icon"
+icon = "paintbrush.pointed"
+detail = "Draw the icon of a spot"
+views = ["board.swift"]
+uses = ["spots"]
+
+[scripts.icon.on]
+"sheet.open" = true
+drop = ["png", "jpg", "jpeg", "heic", "gif", "tiff", "svg", "pdf", "icns"]
+
+[scripts.icon.actions.draw]
+inputs.spot = { type = "text", required = true, description = "The spot whose icon to draw" }
+
+[scripts.icon.actions.file]
+inputs.spot = { type = "text", required = true, description = "The spot whose icon to choose" }
+
+[scripts.icon.actions.reset]
+inputs.spot = { type = "text", required = true, description = "The spot whose icon to take back" }
+
+[scripts.new]
+title = "New spot"
+icon = "plus"
+detail = "Make your own"
+answers = "last"
+uses = ["clipboard"]
+edits = "spots"
+pages = ["build/*", "history"]
+
+[scripts.new.on]
+"sheet.open" = true
+search = "\\S"
+"new.step" = true
+
+[scripts.new.bindings]
+new = { spot = "openspot/new" }
+
+[scripts.new.events.step]
+build = { type = "text", required = true, description = "The build that moved" }
+
+[scripts.new.settings]
+agent = { type = "text", title = "Agent", icon = "sparkles", description = "Where Make sends the prompt" }
+
+[scripts.playground]
+title = "Playground"
+icon = "hammer"
+detail = "Try a spot and see each call"
+keywords = ["sandbox"]
+
+[scripts.playground.actions.playground]
+title = "Open Playground"
+
+[scripts.quit]
+title = "Quit"
+icon = "power"
+detail = "Openspot"
+uses = ["app"]
+
+[scripts.quit.actions.quit]
+title = "Quit"
+
+[scripts.settings]
+title = "Settings"
+icon = "gearshape"
+detail = "Choose your key"
+uses = ["app"]
+
+[scripts.settings.on]
+search = true
+
+[scripts.spots]
+title = "Spots"
+icon = "puzzlepiece.extension"
+detail = "Edit Spots"
+keywords = ["edit spots"]
+
+[scripts.spots.actions.edit]
+title = "Edit Spots"
+
+[scripts.store]
+title = "Store"
+icon = "bag"
+detail = "Get spots"
+keywords = ["store", "get spots"]
+uses = ["spots", "account"]
+views = ["store.swift"]
+
+[scripts.store.on]
+"sheet.open" = true
+
+[scripts.themes]
+title = "Themes"
+icon = "paintpalette"
+detail = "Change the look"
+keywords = ["theme", "look"]
+uses = ["app", "clipboard"]
+pages = ["prompt:*"]
+
+[scripts.themes.on]
+"sheet.open" = true
+
+[scripts.updates]
+title = "Updates"
+icon = "arrow.triangle.2.circlepath"
+uses = ["app"]
+
+[scripts.updates.on]
+"app.launch" = true
+"app.update" = true
+
+[scripts.updates.actions.update]
+title = "Update"
+
+[scripts.welcome]
+title = "Welcome spot"
+icon = "hand.wave"
+uses = ["app"]
+starts = "first-launch"
+views = ["welcome.swift"]
+pages = ["key", "agent"]
+
+[scripts.welcome.on]
+"sheet.open" = true
+
+[scripts.snooze]
+title = "Snooze"
+icon = "moon.zzz"
+detail = "Pick a time for later"
+pages = ["date", "date/*"]
+
+[scripts.snooze.on]
+"sheet.open" = true
+
+[scripts.snooze.actions.pick]
+inputs.title = { type = "text", description = "What the time is for, as the title of the sheet" }
+outputs.until = { type = "text", required = true, description = "An ISO 8601 time with its offset, or someday" }
+
+[scripts.snooze.settings]
+morning = { type = "choice", title = "Morning", icon = "sunrise", options = ["6:00", "7:00", "8:00", "9:00", "10:00"] }
+evening = { type = "choice", title = "Evening", icon = "moon.stars", options = ["17:00", "18:00", "19:00", "20:00", "21:00"] }
+later = { type = "choice", title = "Later", icon = "cup.and.saucer", options = ["1 hour", "2 hours", "3 hours", "4 hours", "6 hours"] }
+weekend = { type = "choice", title = "Weekend", icon = "sofa", options = ["Saturday", "Sunday"] }

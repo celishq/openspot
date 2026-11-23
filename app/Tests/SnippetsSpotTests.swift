@@ -26,10 +26,17 @@ final class SnippetsSpotTests: SampleSpotsCase {
             let new = try await self.action("new", of: snippets)
             XCTAssertEqual(new.placeholder, "Text to keep")
 
-            let output = try await Self.answer(of: snippets, ["new"], input: "search=hello there\n")
-            let form = try XCTUnwrap(ItemForm(output: output))
+            XCTAssertEqual((try? snippets.action("new"))?.textInput?.name, "content")
+            XCTAssertFalse(try snippets.action("new").lacksInput)
 
-            XCTAssertEqual(FormDraft(form: form).values["content"], "hello there")
+            for input in ["", "input.content=hello there\n"] {
+                let output = try await Self.answer(of: snippets, "new", input: input)
+                let form = try XCTUnwrap(ItemForm(output: output), input)
+                XCTAssertEqual(form.title, "New snippet")
+                XCTAssertEqual(form.fields.map(\.label), ["Name", "Text"])
+                XCTAssertEqual(form.fields.map(\.type), [.text, .multiline])
+                XCTAssertEqual(FormDraft(form: form).values["content"] ?? "", input.isEmpty ? "" : "hello there")
+            }
         }
     }
 
@@ -62,7 +69,8 @@ final class SnippetsSpotTests: SampleSpotsCase {
             var draft = FormDraft(form: form)
             draft.set("Hello", for: "title")
             draft.set(text, for: "content")
-            let run = try await snippets.submit(new, item: nil, draft: draft, timeout: 60)
+            _ = try await snippets.submit(new, item: nil, draft: draft, timeout: 60)
+            let run = try self.read("selected", in: folder).trimmingCharacters(in: .newlines)
 
             let lines = try await snippets.items(timeout: 60)
             XCTAssertEqual(lines.errors, [])
@@ -71,7 +79,7 @@ final class SnippetsSpotTests: SampleSpotsCase {
             XCTAssertEqual(item.title, "Hello")
             XCTAssertEqual(item.subtitle, "Say \"héllo\" \\ now then $HOME ")
 
-            try await snippets.perform(.item(item), timeout: 60)
+            try await snippets.perform("press", input: "input.item=\(item.run)\n", timeout: 60)
             XCTAssertEqual(try self.read("clipboard", in: folder), text)
 
             let edit = try await action("edit", of: snippets)
@@ -84,12 +92,12 @@ final class SnippetsSpotTests: SampleSpotsCase {
             XCTAssertEqual(edited.map(\.title), ["Changed"])
 
             try "before".write(to: folder.appendingPathComponent("clipboard"), atomically: true, encoding: .utf8)
-            try await snippets.perform(.action(try await self.action("paste", of: snippets), item: item), timeout: 60)
+            try await snippets.perform("paste", input: "input.item=\(item.run)\n", timeout: 60)
             XCTAssertEqual(try self.read("pasted", in: folder), text)
             XCTAssertEqual(try self.read("clipboard", in: folder), "before")
             XCTAssertFalse(FileManager.default.fileExists(atPath: folder.appendingPathComponent("direct").path))
 
-            try await snippets.perform(.action(try await self.action("delete", of: snippets), item: item), timeout: 60)
+            try await snippets.perform("delete", input: "input.item=\(item.run)\n", timeout: 60)
             let gone = try await snippets.items(timeout: 60).items
             XCTAssertEqual(gone, [])
         }
@@ -99,7 +107,7 @@ final class SnippetsSpotTests: SampleSpotsCase {
         let snippets = try XCTUnwrap(try scan.spots.first { $0.name == "Snippets" })
         try await withPrivateHome { _ in
             do {
-                try await snippets.perform(.item(SpotItem(title: "Gone", run: "gone")), timeout: 60)
+                try await snippets.perform("press", input: "input.item=gone\n", timeout: 60)
                 XCTFail("expected a failure")
             } catch let error as SpotError {
                 XCTAssertEqual(error.reason, "This snippet is gone.")

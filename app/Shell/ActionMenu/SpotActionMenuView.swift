@@ -6,13 +6,13 @@ struct SpotActionMenuView: View, @MainActor Equatable {
     let menu: ActionMenu
     let frame: ActionMenuFrame
     var isSettled = true
-    var work: (ActionMenu.Row) -> ScriptCall? = { _ in nil }
+    var act: (ActionMenu.Row) -> ScriptCall? = { _ in nil }
     let onPress: (Int) -> Void
     var onPoint: (Int) -> Void = { _ in }
     var onSearch: @MainActor @Sendable (String) -> Void = { _ in }
     let selection: () -> Int
 
-    static let radius = SurfaceEdge.sheet.inner(by: SpotTokens.padding - SpotTokens.menuPadding).radius
+    static var radius: CGFloat { SurfaceEdge.sheet.inner(by: SpotTokens.padding - SpotTokens.menuPadding).radius }
 
     private var shape: SpotRoundShape {
         SpotRoundShape(surface.inner())
@@ -32,7 +32,7 @@ struct SpotActionMenuView: View, @MainActor Equatable {
                     .font(SpotType.detail)
                     .lineLimit(1)
                     .modifier(SpotSecondaryText())
-                    .padding(.horizontal, SpotTokens.padding - SpotTokens.menuPadding + 4)
+                    .padding(.horizontal, SpotTokens.menuTextInset)
                     .frame(width: line.width, height: line.height, alignment: .bottomLeading)
                     .offset(x: line.minX - rect.minX, y: line.minY - rect.minY)
             }
@@ -47,7 +47,7 @@ struct SpotActionMenuView: View, @MainActor Equatable {
     }
 
     private func button(_ row: ActionMenu.Row, at index: Int) -> some View {
-        let call = work(row)
+        let call = act(row)
         let isConfirming = call == nil && menu.confirming != nil && row.action?.id == menu.confirming
         return Button {
             onPress(index)
@@ -65,8 +65,8 @@ struct SpotActionMenuView: View, @MainActor Equatable {
                         .modifier(SpotSecondaryText())
                 }
             }
-            .padding(.horizontal, SpotTokens.padding - SpotTokens.menuPadding + 4)
-            .frame(height: SpotTokens.menuRowHeight)
+            .padding(.horizontal, SpotTokens.menuTextInset)
+            .frame(height: SpotTokens.menuRow)
             .spotFill(isActive: call != nil, otherwise: isConfirming ? SpotTheme.confirm : .clear, in: shape)
             .modifier(SpotLiveSelectionRing(isSelected: { [selection] in index == selection() && !isConfirming }, shape: shape))
             .contentShape(shape)

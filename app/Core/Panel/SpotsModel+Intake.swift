@@ -69,11 +69,11 @@ extension SpotsModel {
         guard acceptsDrop(paths, on: id, in: place), sheets[id]?.drop(paths, files: runs.dragged) == true else { return false }
         guard place == .panel else { return true }
         endDrag()
-        guard entry(id)?.kind == .list else {
+        guard entry(id)?.spot.opensOnReturn == true else {
             if isShown { host.dismiss() }
             return true
         }
-        presentSheet(of: id, moving: isShown) {
+        presentSheet(of: id) {
             isSettlingDrop = true
             host.present()
         }
@@ -104,7 +104,7 @@ extension SpotsModel {
         closeSheet(moving: isShown)
         endReview()
         let folder = folder.url
-        let lock = SpotLock.standard(environment: files.environment, home: files.home)
+        let lock = files.lock
         let wasShown = isShown
         reviewRead?.cancel()
         reviewRead = Task { [weak self] in
@@ -146,7 +146,7 @@ extension SpotsModel {
             let place = SpotsFolder(url: folder.url, core: folder.core, enabled: folder.enabled.union([id]), disabled: folder.disabled)
             let scan = try place.scan()
             guard let command = scan.spots.first(where: { place.isCore($0) && SpotsFolder.coreID(of: $0) == id }) else { return nil }
-            return try ReviewSpot(spot: SpotPackage(sharing: command, from: scan), folder: folder.url, canAdd: false)
+            return try ReviewSpot(spot: SpotPackage(sharing: command, from: scan), folder: folder.url, core: folder.core, canAdd: false)
         }
     }
 

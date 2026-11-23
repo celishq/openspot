@@ -18,6 +18,7 @@ public struct Config: Equatable, Sendable {
     public private(set) var settings: [SpotSetting] = []
     public private(set) var stores: [Store] = []
     public private(set) var isCareful = false
+    public private(set) var theme: String?
     public private(set) var panels = GridPanels()
     public private(set) var isReadable = true
     private var kept = ConfigDocument()
@@ -42,8 +43,8 @@ public struct Config: Equatable, Sendable {
         kept = document
         kept.tables = []
         let known = ["spots", "keys", "settings", "stores"]
-        let names = Array(document.values.keys) + Set(document.tables.map(\.name))
-        for key in names.sorted() where !(["panel-key", "fix-key", "careful"] + known + GridPanel.allCases.compactMap(\.configKey)).contains(key) {
+        let names = Array(document.values.keys) + Set(document.tables.map(\.name)) + document.sections.map(\.name)
+        for key in names.sorted() where !(["panel-key", "fix-key", "careful", "theme"] + known + GridPanel.allCases.compactMap(\.configKey)).contains(key) {
             faults.append("config.toml: \(key) is not a setting.")
         }
         arrangement = SpotArrangement(choices: document.tables(named: "spots").compactMap { choice(of: $0) })
@@ -57,6 +58,11 @@ public struct Config: Equatable, Sendable {
         case .boolean(let isOn)?: isCareful = isOn
         case nil: break
         default: faults.append("config.toml: careful is true or false.")
+        }
+        switch document.values["theme"] {
+        case .string(let name)?: theme = name
+        case nil: break
+        default: faults.append("config.toml: theme is the name of a theme, such as \"Openspot\".")
         }
         for panel in GridPanel.allCases {
             guard let key = panel.configKey else { continue }
@@ -88,6 +94,7 @@ public struct Config: Equatable, Sendable {
         same.arrangement = arrangement
         same.settings = settings
         same.isCareful = isCareful
+        same.theme = theme
         same.panels = panels
         same.kept = kept
         same.kept.tables = other.kept.tables
@@ -107,6 +114,11 @@ public struct Config: Equatable, Sendable {
     public mutating func set(isCareful: Bool) {
         self.isCareful = isCareful
         kept.set("careful", to: .boolean(isCareful))
+    }
+
+    public mutating func set(theme: String) {
+        self.theme = theme
+        kept.set("theme", to: .string(theme))
     }
 
     public mutating func show(_ panel: GridPanel, _ isShown: Bool) {
@@ -173,7 +185,7 @@ public struct Config: Equatable, Sendable {
         guard let value else { return standard }
         if case .string(let text) = value, let shortcut = Shortcut(text: text) { return shortcut }
         let word = if case .string(let text) = value { text } else { "this value" }
-        faults.append("config.toml: \(name) cannot use \(word). Hold cmd, ctrl or option with a letter, a digit, an arrow, space, return or tab.")
+        faults.append("config.toml: \(name) cannot use \(word). Hold cmd, ctrl or option with a letter, a digit, a sign, an arrow, space, return or tab.")
         return nil
     }
 
@@ -202,9 +214,11 @@ public struct Config: Equatable, Sendable {
             if choice.size == nil { faults.append("config.toml: \(id) cannot use the size \(name).") }
         }
         if case .boolean(let isOnGrid)? = table["grid"] { choice.isOnGrid = isOnGrid }
+        if case .boolean(let isFound)? = table["search"] { choice.isFound = isFound }
         if case .boolean(let isEnabled)? = table["enabled"] { choice.isEnabled = isEnabled }
         if case .boolean(let isGlobal)? = table["global"] { choice.isGlobal = isGlobal }
         if case .boolean(let isInMenuBar)? = table["tray"] { choice.isInMenuBar = isInMenuBar }
+        if case .boolean(let isWindow)? = table["window"] { choice.isWindow = isWindow }
         if case .string(let text)? = table["key"] {
             choice.key = ActionKey(text: text)
             if choice.key == nil { faults.append("config.toml: \(id) cannot use the key \(text).") }
@@ -213,7 +227,21 @@ public struct Config: Equatable, Sendable {
             choice.panel = GridPanel(rawValue: name).flatMap { $0 == .center ? nil : $0 }
             if choice.panel == nil { faults.append("config.toml: \(id) cannot use the side \(name).") }
         }
-        for key in table.keys.sorted() where !["id", "size", "grid", "enabled", "global", "tray", "letter", "key", "side"].contains(key) {
+        switch table["commands"] {
+        case .table(let pairs)?:
+            var words: [String: String] = [:]
+            for (name, value) in pairs {
+                guard case .string(let word) = value else {
+                    faults.append("config.toml: \(id) commands takes a word for each command, such as commands = { snooze = \"sz\" }, or \"\" to remove it.")
+                    continue
+                }
+                words[name] = word
+            }
+            choice.commands = words
+        case nil: break
+        default: faults.append("config.toml: \(id) commands takes a word for each command, such as commands = { snooze = \"sz\" }, or \"\" to remove it.")
+        }
+        for key in table.keys.sorted() where !["id", "size", "grid", "search", "enabled", "global", "tray", "window", "letter", "key", "side", "commands"].contains(key) {
             faults.append("config.toml: \(key) is not a setting of a spot.")
         }
         return choice

@@ -33,7 +33,7 @@ final class SymbolCatalogTests: XCTestCase {
 
     private func rows(languages: [String] = ["en"]) throws -> [SpotItem] {
         let keywords = GlyphKeywords(folder: folder.appendingPathComponent("Keywords"), languages: languages)
-        return SpotOutput(text: try SymbolCatalog(resources: folder, languages: languages, keywords: keywords).rows()).items
+        return Frame(text: try SymbolCatalog(resources: folder, languages: languages, keywords: keywords).rows()).items
     }
 
     func testRowsFollowTheOrderOfTheCharacterViewer() throws {
@@ -101,7 +101,7 @@ final class SymbolCatalogTests: XCTestCase {
 
     func testTheSymbolsOfThisMac() throws {
         guard FileManager.default.fileExists(atPath: SymbolCatalog.standardResources.path) else { throw XCTSkip("No symbol files.") }
-        let rows = SpotOutput(text: try SymbolCatalog(languages: ["en"]).rows()).items
+        let rows = Frame(text: try SymbolCatalog(languages: ["en"]).rows()).items
 
         XCTAssertGreaterThan(rows.count, 500)
         XCTAssertTrue(rows.contains { $0.run == "€" && $0.title == "euro sign" && $0.subtitle == "Currency Symbols" })

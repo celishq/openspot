@@ -1,0 +1,5 @@
+title = "Coffee"
+icon = "cup.and.saucer.fill"
+
+[on]
+"panel.open" = true

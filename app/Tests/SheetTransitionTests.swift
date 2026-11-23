@@ -15,6 +15,20 @@ final class SheetTransitionTests: XCTestCase {
         XCTAssertEqual(transition.phase, .open)
     }
 
+    func testASheetMovesOnlyWhileItGrowsOrShrinks() {
+        var transition = SheetTransition()
+        transition.show("a", moves: true)
+        XCTAssertFalse(transition.isMoving)
+        transition.start()
+        XCTAssertTrue(transition.isMoving)
+        transition.finish(transition.motion)
+        XCTAssertFalse(transition.isMoving)
+        transition.hide(moves: true)
+        XCTAssertTrue(transition.isMoving)
+        transition.finish(transition.motion)
+        XCTAssertFalse(transition.isMoving)
+    }
+
     func testAStillOpenAndCloseHappenAtOnce() {
         var transition = SheetTransition()
         transition.show("a", moves: false)

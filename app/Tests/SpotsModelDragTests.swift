@@ -139,7 +139,7 @@ final class SpotsModelDragTests: XCTestCase {
     }
 
     func testALiftedCardMovesWithTheGridWhenItScrollsAndLandsWhereThePointerIs() async {
-        let row = SpotTokens.rowHeight + SpotTokens.rowGap
+        let row = SpotTokens.cell + SpotTokens.rowGap
         let translation = move("a", to: leftHalf(of: "a"))
         model.dragSpot("a", by: translation)
 
@@ -155,7 +155,7 @@ final class SpotsModelDragTests: XCTestCase {
     func testAResizedCardFollowsTheGridWhenItScrolls() {
         model.resizeSpot("c", by: .zero)
 
-        model.gridScrolled(to: SpotTokens.rowHeight + SpotTokens.rowGap)
+        model.gridScrolled(to: SpotTokens.cell + SpotTokens.rowGap)
 
         XCTAssertEqual(model.placements[2].size, .square)
     }
@@ -264,8 +264,8 @@ final class SpotsModelDragTests: XCTestCase {
         XCTAssertEqual(model.groupBands?.shelf, 1)
     }
 
-    func testTheShelfLeavesOutASpotWithNoCardOfItsOwn() async throws {
-        try "#!/bin/sh\n# on=panel.open\n# offers=search\n".writeScript(to: spots.appendingPathComponent("rows.spot/rows.sh"))
+    func testTheShelfLeavesOutASpotThatOnlyAnswersTheSearch() async throws {
+        try "#!/bin/sh\n".writeScript(to: spots.appendingPathComponent("rows.spot/rows.sh"), toml: "[on]\nsearch = '^x'")
         await model.reload()
 
         XCTAssertFalse(order.contains("rows"))
@@ -278,7 +278,7 @@ final class SpotsModelDragTests: XCTestCase {
     }
 
     func testACardDraggedUnderTheGridGoesToSearchOnly() async {
-        let below = CGPoint(x: SpotTokens.cell / 2, y: SpotGrid.height(of: model.placements) + SpotTokens.rowHeight)
+        let below = CGPoint(x: SpotTokens.cell / 2, y: SpotGrid.height(of: model.placements) + SpotTokens.cell)
         let translation = move("b", to: below)
 
         model.dragSpot("b", by: translation)
@@ -348,7 +348,7 @@ final class SpotsModelDragTests: XCTestCase {
         XCTAssertEqual(order, ["a", "b", "d", "c"])
 
         let start = model.drag.map { $0.rect(at: $0.home) } ?? .zero
-        model.dragSpot("d", by: dragMove(to: CGPoint(x: SpotTokens.gridWidth + SpotTokens.rowHeight, y: start.midY)))
+        model.dragSpot("d", by: dragMove(to: CGPoint(x: SpotTokens.gridWidth + SpotTokens.cell, y: start.midY)))
 
         XCTAssertEqual(order, ["a", "b", "c", "d"])
     }
@@ -383,7 +383,7 @@ final class SpotsModelDragTests: XCTestCase {
     }
 
     private var down: CGSize {
-        CGSize(width: 0, height: SpotTokens.rowHeight + SpotTokens.rowGap)
+        CGSize(width: 0, height: SpotTokens.cell + SpotTokens.rowGap)
     }
 
     private var savedSize: SpotSize? {
@@ -591,10 +591,29 @@ final class SpotsModelDragTests: XCTestCase {
         XCTAssertEqual(host.notes, [])
         XCTAssertFalse(FileManager.default.fileExists(atPath: store.appendingPathComponent("a.spot").path))
 
-        _ = try await model.runs.answer(of: model.account.spot, SpotAction(arguments: ["new"]), limit: 60)
-        _ = try await model.runs.answer(of: model.account.spot, SpotAction(arguments: ["create"]), input: "handle=tony\n", limit: 60)
+        _ = try await model.runs.answer(of: model.account.spot, "new", limit: 60)
+        _ = try await model.runs.answer(of: model.account.spot, "create", input: "input.handle=tony\n", limit: 60)
 
         XCTAssertTrue(FileManager.default.fileExists(atPath: store.appendingPathComponent("a.spot").path))
+    }
+
+    func testAPublishThatAccountFinishesGoesBackToTheSheetBehindAccount() async throws {
+        try FileManager.default.createDirectory(at: core.appendingPathComponent("openspot.spot"), withIntermediateDirectories: true)
+        try "#!/bin/sh\nprintf 'text=x\\ntitle=X\\n'\n".writeScript(to: spots.appendingPathComponent("b.spot/b.sh"), toml: "")
+        await model.reload()
+        try "Does a.".write(to: spots.appendingPathComponent("a.spot/readme.md"), atomically: true, encoding: .utf8)
+        model.endEditing(moving: false)
+        model.isShown = true
+        model.panelWillShow()
+        XCTAssertTrue(model.open("b"))
+        try await wait("the sheet of b") { self.model.openSheetID == "b" }
+
+        _ = await model.publish("a")
+        try await wait("the account") { self.model.openSheetID == AccountSheet.id }
+        _ = try await model.runs.answer(of: model.account.spot, "create", input: "route=handle\ninput.handle=tony\n", limit: 60)
+
+        XCTAssertTrue(FileManager.default.fileExists(atPath: store.appendingPathComponent("a.spot").path))
+        try await wait("the sheet behind") { self.model.flow.current == FlowSheet(spot: "b") }
     }
 
     func testAPushOfAPublishPageFromACallerPublishesNothing() async throws {
@@ -602,12 +621,12 @@ final class SpotsModelDragTests: XCTestCase {
         await model.reload()
         try "Does a.".write(to: spots.appendingPathComponent("a.spot/readme.md"), atomically: true, encoding: .utf8)
 
-        model.push(FlowSheet(spot: AccountSheet.id, page: "publish:a"))
-        _ = try await model.runs.answer(of: model.account.spot, SpotAction(arguments: ["new"]), limit: 60, variables: ["OPENSPOT_PAGE": "publish:a"])
-        _ = try await model.runs.answer(of: model.account.spot, SpotAction(arguments: ["create"]), input: "handle=tony\n", limit: 60, variables: ["OPENSPOT_PAGE": "publish:a"])
+        model.push(FlowSheet(spot: AccountSheet.id, route: "publish:a"))
+        _ = try await model.runs.answer(of: model.account.spot, "new", input: "route=publish:a\n", limit: 60)
+        _ = try await model.runs.answer(of: model.account.spot, "create", input: "route=publish:a\ninput.handle=tony\n", limit: 60)
 
         XCTAssertNotNil(try model.files.account.key())
-        XCTAssertNotEqual(model.flow.current?.page, "publish:a")
+        XCTAssertNotEqual(model.flow.current?.route, "publish:a")
         XCTAssertFalse(FileManager.default.fileExists(atPath: store.appendingPathComponent("a.spot").path))
         XCTAssertEqual(host.asked, [])
     }
@@ -619,8 +638,8 @@ final class SpotsModelDragTests: XCTestCase {
         _ = await model.publish("a")
 
         model.open(AccountSheet.id)
-        _ = try await model.runs.answer(of: model.account.spot, SpotAction(arguments: ["new"]), limit: 60)
-        _ = try await model.runs.answer(of: model.account.spot, SpotAction(arguments: ["create"]), input: "handle=tony\n", limit: 60)
+        _ = try await model.runs.answer(of: model.account.spot, "new", limit: 60)
+        _ = try await model.runs.answer(of: model.account.spot, "create", input: "input.handle=tony\n", limit: 60)
 
         XCTAssertFalse(FileManager.default.fileExists(atPath: store.appendingPathComponent("a.spot").path))
     }
@@ -675,9 +694,9 @@ final class SpotsModelDragTests: XCTestCase {
     }
 
     func testTheStoreFindsTheCardOfASpotThatIsOffByItsStoreID() async throws {
-        try "#!/bin/sh\n# detail=Counts down\n".writeScript(to: core.appendingPathComponent("timer.spot/timer.sh"))
+        try "#!/bin/sh\n".writeScript(to: core.appendingPathComponent("timer.spot/timer.sh"), toml: "detail = 'Counts down'")
         let friends = folder.appendingPathComponent("friends", isDirectory: true)
-        try "#!/bin/sh\n# title=Shared\n".writeScript(to: friends.appendingPathComponent("shared.spot/shared.sh"))
+        try "#!/bin/sh\n".writeScript(to: friends.appendingPathComponent("shared.spot/shared.sh"), toml: "title = 'Shared'")
         _ = try ConfigFile(url: folder.appendingPathComponent("config/config.toml")).change { $0.add(store: Store(url: friends)) }
         await model.reload()
 

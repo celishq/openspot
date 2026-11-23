@@ -12,7 +12,7 @@ extension SpotsModel {
 
     private func confirmWords(of key: GlobalKey) -> String? {
         guard case .command(let command) = key.act else { return nil }
-        return sheets[key.spot]?.spot.offers.first { $0.id == command }?.confirm
+        return sheets[key.spot]?.spot.commands.first { $0.id == command }?.confirm
     }
 
     var waitingWords: String? {
@@ -29,7 +29,7 @@ extension SpotsModel {
     }
 
     private func run(_ key: GlobalKey) {
-        if key.act == .open { return entry(key.spot).map { $0.soleCommand == nil ? press($0.id) : run($0) } ?? () }
+        if key.act == .open { return entry(key.spot).map(open(byKey:)) ?? () }
         guard case .command(let command) = key.act else { return float(key.spot) }
         guard let sheet = sheets[key.spot] else { return }
         sheet.pressKey(command)
@@ -39,6 +39,12 @@ extension SpotsModel {
             try? await Task.sleep(for: flashPause)
             if !Task.isCancelled { self?.flashSymbol = nil }
         }
+    }
+
+    private func open(byKey entry: Entry) {
+        guard entry.soleCommand == nil else { return run(entry) }
+        if entry.kind.opensSheet { endFlow() }
+        press(entry.id)
     }
 
     public func menuBarSymbol(during toast: ToastKind?) -> String? {
@@ -65,7 +71,7 @@ extension SpotsModel {
     }
 
     public func focus(ofCard index: Int) -> CardFocus {
-        isMenuOpen && openSheetID == nil && index == selected ? .focused : .none
+        isMenuGrown && openSheetID == nil && index == selected ? .focused : .none
     }
 
     public func tap(_ id: String, opening: Bool = false) {
@@ -86,7 +92,6 @@ extension SpotsModel {
 
     public func runSelected() {
         guard !isEditing else { return }
-        landSearch()
         if openSheetID != nil {
             runSelectedItem()
             return
@@ -113,11 +118,11 @@ extension SpotsModel {
             sheet.afterAnswer { [weak self] in self?.press(id) }
             return
         }
-        guard entry.kind.opensSheet, !entry.spot.pressRuns else {
+        guard entry.kind.opensSheet else {
             run(entry)
             return
         }
-        presentSheet(of: id, moving: isShown) { host.show() }
+        presentSheet(of: id) { host.show() }
     }
 
 
@@ -129,6 +134,7 @@ extension SpotsModel {
 
 
     public func run(_ entry: Entry) {
+        missedSearch.drop()
         if let item = entry.item, let list = self.entry(entry.spot.id) {
             if item.records, openSheetID != list.id {
                 pushFirst(list.id, moving: true)
@@ -143,17 +149,12 @@ extension SpotsModel {
         switch entry.spot.mainAct {
         case .toggle:
             sheets[entry.id]?.pressCard()
-        case .run(let closes):
-            if closes, isShown, sheets[entry.id]?.isCardRunning != true { host.dismiss() }
-            sheets[entry.id]?.pressCard()
         case .command where openSheetID == entry.id, .sheet where openSheetID == entry.id:
             closeSheet(moving: true)
         case .command(let command):
             runSole(command, of: entry)
         case .sheet:
             pushFirst(entry.id, moving: true)
-        case .open(let opens):
-            press(opens)
         case .none:
             break
         }
@@ -178,61 +179,60 @@ extension SpotsModel {
 
     var soleHint: String? {
         guard openSheetID == nil, let entry = selectedEntry, entry.item == nil, case .command(let command) = entry.spot.mainAct else { return nil }
-        guard assignedKeys.contains(where: { $0.spot == entry.id && $0.act == .command(command) }) else {
-            return "⏎ Set key   ⌘⏎ Settings   ⌘K Actions"
-        }
-        return "⏎ \(entry.spot.offers.first?.title ?? command)   ⌘⏎ Settings   ⌘K Actions"
+        return "⏎ \(entry.spot.commands.first?.title ?? command)   ⌘⏎ Settings   ⌘K Actions"
     }
 
     private func runSole(_ command: String, of entry: Entry) {
-        if let key = assignedKeys.first(where: { $0.spot == entry.id && $0.act == .command(command) }) {
-            if confirmWords(of: key) != nil {
-                guard isShown else { return press(key) }
-                if confirming != key || !runConfirmed() { confirming = key }
-                return
-            }
-            if isShown { host.dismiss() }
-            run(key)
-        } else {
-            openKeys(of: entry.id, recording: GlobalKey.Act.command(command).setting)
+        let key = assignedKeys.first { $0.spot == entry.id && $0.act == .command(command) }
+            ?? GlobalKey(spot: entry.id, act: .command(command), trigger: .shake)
+        if confirmWords(of: key) != nil {
+            guard isShown else { return press(key) }
+            if confirming != key || !runConfirmed() { confirming = key }
+            return
         }
+        if isShown { host.dismiss() }
+        run(key)
     }
 
     public var menuBarMarks: [(id: String, mark: MenuBarMark)] {
         runs.menuBarMarks
     }
 
+    public var runningSummary: String? {
+        runs.runningSummary
+    }
+
     public var workCard: WorkCard? {
         runs.workCard
     }
 
-    public var backgroundWork: [(id: String, call: ScriptCall)] {
-        runs.backgroundWork
+    public var backgroundActs: [(id: String, call: ScriptCall)] {
+        runs.backgroundActs
     }
 
-    public func work(of part: SpotPart) -> ScriptCall? {
-        openSheet?.work(of: part)
+    public func openAct() -> Bool {
+        guard let id = runs.actSpot else { return false }
+        let spot = { self.visible.firstIndex { $0.id == id } }
+        if isShown, openSheetID == nil, spot() == selected {
+            host.dismiss()
+            return true
+        }
+        closeSheet(moving: isShown)
+        host.show()
+        if let spot = spot() { selected = spot }
+        return true
     }
 
-    public func work(of row: ActionMenu.Row) -> ScriptCall? {
-        menuTarget.flatMap { sheets[$0.entry.id]?.work(of: row, item: $0.item) }
+    public func act(of part: SpotPart) -> ScriptCall? {
+        openSheet?.act(of: part)
+    }
+
+    public func act(of row: ActionMenu.Row) -> ScriptCall? {
+        menuTarget.flatMap { sheets[$0.entry.id]?.act(of: row, item: $0.item) }
     }
 
     public func openFromMenuBar(_ id: String) {
-        if let entry = entries.first(where: { $0.id == id && $0.item == nil }), !entry.spot.showsValueInMenuBar, !entry.spot.opensOnReturn {
-            let recordsFirst = entry.spot.soleCommand.map { command in !assignedKeys.contains { $0.spot == id && $0.act == .command(command) } } ?? false
-            if recordsFirst { host.show() }
-            return run(entry)
-        }
-        let opens = entries.first { $0.id == id && $0.kind.opensSheet }?.id
-        if isShown, opens == nil || openSheetID == opens {
-            host.dismiss()
-        } else if let opens {
-            press(opens)
-        } else {
-            closeSheet(moving: isShown)
-            host.show()
-            selected = visible.firstIndex { $0.spot.places.contains(id) } ?? 0
-        }
+        if isShown { host.dismiss() }
+        float(id)
     }
 }

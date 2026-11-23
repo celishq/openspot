@@ -1,4 +1,5 @@
 import Foundation
+@testable import OpenspotCore
 
 extension String {
     static let longLoop = "i=0; while [ $i -lt 300 ]; do sleep 0.1; i=$((i + 1)); done"
@@ -27,6 +28,42 @@ extension String {
             }
             try Self.addFile(to: shared)
         }
+    }
+
+    func writeScript(to url: URL, toml: String) throws {
+        try writeScript(to: url)
+        try Self.describe(url, toml: toml, isNeeded: false)
+    }
+
+    func writeInline(to url: URL, toml: String) throws {
+        try FileManager.default.createDirectory(at: url.deletingLastPathComponent(), withIntermediateDirectories: true)
+        try write(to: url, atomically: true, encoding: .utf8)
+        try Self.describe(url, toml: toml, isNeeded: true)
+    }
+
+    private static func describe(_ url: URL, toml: String, isNeeded: Bool) throws {
+        let folder = url.deletingLastPathComponent()
+        let file = folder.appendingPathComponent(Manifest.fileName)
+        let name = url.deletingPathExtension().lastPathComponent
+        let isMain = folder.pathExtension != SpotPackage.fileExtension || folder.deletingPathExtension().lastPathComponent == name
+        let old = (try? String(contentsOf: file, encoding: .utf8)) ?? ""
+        guard isNeeded || !(isMain && toml.isEmpty && old.isEmpty) else { return }
+        var tables: [(owner: String, lines: [String])] = [("", [])]
+        var owner = ""
+        for line in old.split(separator: "\n").map(String.init) {
+            if line.hasPrefix("[") { owner = Self.owner(of: line) }
+            if let index = tables.firstIndex(where: { $0.owner == owner }) { tables[index].lines.append(line) } else { tables.append((owner, [line])) }
+        }
+        let lines = toml.split(separator: "\n").map(String.init)
+        let own = isMain ? lines : ["[scripts.\(name)]"] + lines.map { $0.hasPrefix("[") ? "[scripts.\(name)." + $0.dropFirst() : $0 }
+        owner = isMain ? "" : name
+        if let index = tables.firstIndex(where: { $0.owner == owner }) { tables[index].lines = own } else { tables.append((owner, own)) }
+        try tables.flatMap(\.lines).map { $0 + "\n" }.joined().write(to: file, atomically: false, encoding: .utf8)
+    }
+
+    private static func owner(of table: String) -> String {
+        guard table.hasPrefix("[scripts.") else { return "" }
+        return String(table.dropFirst("[scripts.".count).prefix { $0 != "." && $0 != "]" })
     }
 
     private static let pool: URL = {

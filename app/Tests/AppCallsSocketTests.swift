@@ -31,20 +31,19 @@ final class AppCallsSocketTests: XCTestCase {
         SocketConnection(path: folder.appendingPathComponent(CommandSocket.name).path)
     }
 
-    private func request(_ argv: [String], token: String? = nil, cwd: URL? = nil, piped: Bool = false) -> [String: Any] {
-        let params: [String: Any] = ["argv": argv, "cwd": (cwd ?? folder).path, "piped": piped]
-        return ["jsonrpc": "2.0", "id": 1, "method": "ask", "params": params.merging(token.map { ["token": $0] } ?? [:]) { _, new in new }]
+    private func request(_ argv: [String], cwd: URL? = nil, piped: Bool = false) -> [String: Any] {
+        ["jsonrpc": "2.0", "id": 1, "method": "ask", "params": ["argv": argv, "cwd": (cwd ?? folder).path, "piped": piped] as [String: Any]]
     }
 
-    private func ask(_ argv: [String], token: String? = nil, cwd: URL? = nil, input: [String]? = nil) throws -> SocketConnection.Exchange {
-        let connection = connect()
+    private func ask(_ argv: [String], channel: RunChannel? = nil, cwd: URL? = nil, input: [String]? = nil) throws -> SocketConnection.Exchange {
+        let connection = channel.map(SocketConnection.init(channel:)) ?? connect()
         defer { connection.close() }
-        try connection.send(request(argv, token: token, cwd: cwd, piped: input != nil))
+        try connection.send(request(argv, cwd: cwd, piped: input != nil))
         return try connection.exchange(input: input ?? [])
     }
 
-    private func spot(_ name: String, header: String = "", _ body: String) throws {
-        try TestSpot(header: header, body: "\(body)").write(to: spots.spotFile(name))
+    private func spot(_ name: String, toml: String = "", _ body: String) throws {
+        try TestSpot(toml: toml, body: "\(body)").write(to: spots.spotFile(name))
     }
 
     private func exists(_ file: URL) -> Bool {
@@ -52,7 +51,7 @@ final class AppCallsSocketTests: XCTestCase {
     }
 
     func testASpotRunGetsTheFolderAndTheStdinOfItsCallerAndTheVariablesOfTheApp() throws {
-        try spot("echo", "printf 'folder=%s\\ntone=%s\\n---\\n' \"$PWD\" \"$TONE\"; cat")
+        try spot("echo", toml: TestSpot.command, "printf 'folder=%s\\ntone=%s\\n---\\n' \"$PWD\" \"$TONE\"; cat")
         listen()
 
         let answer = try ask(["spot", "run", "echo"], cwd: outside, input: ["note=", "hi\n"])
@@ -63,7 +62,7 @@ final class AppCallsSocketTests: XCTestCase {
 
     func testASpotRunSendsEachFrameAsItComes() throws {
         let go = folder.appendingPathComponent("go")
-        try spot("slow", "printf 'title=one\\n---\\n'; i=0; while [ ! -f '\(go.path)' ] && [ $i -lt 1000 ]; do sleep 0.01; i=$((i+1)); done; printf 'title=two\\n'")
+        try spot("slow", "printf 'frame=\\ntitle=one\\n---\\n'; i=0; while [ ! -f '\(go.path)' ] && [ $i -lt 1000 ]; do sleep 0.01; i=$((i+1)); done; printf 'frame=\\ntitle=two\\n'")
         listen()
         let connection = connect()
         defer { connection.close() }
@@ -73,8 +72,8 @@ final class AppCallsSocketTests: XCTestCase {
         FileManager.default.createFile(atPath: go.path, contents: nil)
         let rest = try connection.exchange()
 
-        XCTAssertEqual((first["params"] as? [String: Any])?["text"] as? String, "title=one\n")
-        XCTAssertEqual(rest.stdout, "---\ntitle=two\n")
+        XCTAssertEqual((first["params"] as? [String: Any])?["text"] as? String, "frame=\ntitle=one\n")
+        XCTAssertEqual(rest.stdout, "---\nframe=\ntitle=two\n")
         XCTAssertEqual(rest.code, 0)
     }
 
@@ -95,16 +94,17 @@ final class AppCallsSocketTests: XCTestCase {
     }
 
     func testCarefulModeRunsAPersonsSpotRunInItsUsesAndLeavesASpotsRunToItsOwnSandbox() async throws {
-        try spot("writer", header: "uses=files", "echo a > '\(outside.path)/'\"$1\" && echo wrote")
-        try spot("reader", header: "uses=spots", "echo")
+        try spot("writer", toml: "uses = ['files']", "echo a > '\(outside.path)/'\"$1\" && echo wrote")
+        try spot("reader", toml: "uses = ['spots']", "echo")
         let runs = await SpotRuns()
         await MainActor.run { runs.isCareful = true }
         listen(runs: runs)
         let reader = try XCTUnwrap(SpotsFolder(url: spots).scan().scripts.first { $0.id == "reader" })
-        let token = runs.tokens.issue(for: reader)
+        let channel = try XCTUnwrap(runs.callers.channel(for: runs.callers.issue(for: reader)))
+        defer { channel.close() }
 
         let person = try ask(["spot", "run", "writer", "person"])
-        let spot = try ask(["spot", "run", "writer", "spot"], token: token)
+        let spot = try ask(["spot", "run", "writer", "spot"], channel: channel)
 
         XCTAssertEqual(person.stdout, "wrote\n", person.stderr)
         XCTAssertTrue(exists(outside.appendingPathComponent("person")))
@@ -114,14 +114,14 @@ final class AppCallsSocketTests: XCTestCase {
 
     func testACheckInTheAppReadsARelativeFolderOfItsCallerAndRunsEachReadInCarefulMode() async throws {
         let leak = outside.appendingPathComponent("leak")
-        try spot("leaky", header: "on=sheet.open", "echo a > '\(leak.path)'; printf 'title=Leaky\\n'")
+        try spot("leaky", toml: "", "echo a > '\(leak.path)'; printf 'frame=\\ntitle=Leaky\\n'")
         let runs = await SpotRuns()
         await MainActor.run { runs.isCareful = true }
         listen(runs: runs)
 
-        let answer = try ask(["check", "spots"], cwd: config)
+        let answer = try ask(["check", "spots", "spots"], cwd: config)
 
-        XCTAssertEqual(answer.stdout, "No faults in \(spots.path).\n")
+        XCTAssertEqual(answer.stdout, "")
         XCTAssertEqual(answer.code, 0)
         XCTAssertFalse(exists(leak))
     }
@@ -129,30 +129,32 @@ final class AppCallsSocketTests: XCTestCase {
     func testTheReadsOfACheckInCarefulModeAreKnownAsTheirSpots() async throws {
         let token = folder.appendingPathComponent("token")
         let go = folder.appendingPathComponent("go")
-        try spot("reader", header: "on=sheet.open", "echo \"$OPENSPOT_TOKEN\" > '\(token.path)'; i=0; while [ ! -f '\(go.path)' ] && [ $i -lt 1000 ]; do sleep 0.01; i=$((i+1)); done; printf 'title=Reader\\n'")
+        let client = Bundle(for: Self.self).bundleURL.deletingLastPathComponent().appendingPathComponent("openspot")
+        try spot("reader", toml: "", "'\(client.path)' setting get tone > '\(token.path)'; i=0; while [ ! -f '\(go.path)' ] && [ $i -lt 1000 ]; do sleep 0.01; i=$((i+1)); done; printf 'frame=\\ntitle=Reader\\n'")
         let runs = await SpotRuns()
         await MainActor.run { runs.isCareful = true }
         listen(runs: runs)
+        XCTAssertEqual(try ask(["setting", "set", "--spot", "reader", "tone", "mine"]).code, 0)
         let connection = connect()
         defer { connection.close() }
-        try connection.send(request(["check"]))
+        try connection.send(request(["check", "spots"]))
         try await wait("the read") { !((try? String(contentsOf: token, encoding: .utf8)) ?? "").isEmpty }
 
-        let caller = runs.tokens.caller(of: try String(contentsOf: token, encoding: .utf8).trimmingCharacters(in: .whitespacesAndNewlines))
+        let told = try String(contentsOf: token, encoding: .utf8)
         FileManager.default.createFile(atPath: go.path, contents: nil)
 
-        XCTAssertEqual(caller?.id, "reader")
+        XCTAssertEqual(told, "mine\n")
         XCTAssertEqual(try connection.exchange().code, 0)
     }
 
     func testACheckAsJSONInTheAppNamesEachFault() async throws {
-        try spot("weather", header: "mode=huge", "echo")
+        try spot("weather", toml: "stay = 'huge'", "echo")
         listen()
 
-        let answer = try ask(["check", "--json"])
+        let answer = try ask(["check", "spots", "--json"])
 
         let json = try JSONSerialization.jsonObject(with: Data(answer.stdout.utf8)) as? [[String: String]]
-        XCTAssertEqual(json?.map { $0["fault"] }, ["Weather has an unknown mode: huge. Use once, stay or always"])
+        XCTAssertEqual(json?.map { $0["fault"] }, ["Weather cannot load: spot.toml: stay takes true or false, such as stay = true."])
         XCTAssertEqual(answer.code, 1)
     }
 
@@ -160,11 +162,11 @@ final class AppCallsSocketTests: XCTestCase {
         let app = FakeRunningApp()
         listen(app: app)
 
-        let shown = try ask(["spot", "show", "notes"])
-        let gone = try ask(["spot", "show", "gone"])
+        let shown = try ask(["spot", "open", "notes", "--select"])
+        let gone = try ask(["spot", "open", "gone", "--select"])
 
         XCTAssertEqual(shown.stdout, "Openspot shows notes.\n")
-        XCTAssertEqual(gone.stderr, "Openspot has no spot gone. Run `openspot check` to see each file that does not load.\n")
+        XCTAssertEqual(gone.stderr, "Openspot has no spot gone. Run `openspot check spots` to see each file that does not load.\n")
         XCTAssertEqual(gone.code, 1)
         let opened = await app.opened
         XCTAssertEqual(opened, ["reveal notes", "reveal gone"])
@@ -174,7 +176,7 @@ final class AppCallsSocketTests: XCTestCase {
         let app = FakeRunningApp()
         listen(app: app)
 
-        let answer = try ask(["playground", "sheet.txt"], cwd: outside)
+        let answer = try ask(["playground", "open", "sheet.txt"], cwd: outside)
 
         XCTAssertEqual(answer.code, 0)
         let opened = await app.opened
