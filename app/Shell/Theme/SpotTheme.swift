@@ -53,7 +53,6 @@ enum SpotTheme {
     static let contextRim = color(dark: .white.withAlphaComponent(0.14), light: .black.withAlphaComponent(0.14))
     static let contextFace = color(dark: NSColor(white: 0.19, alpha: 1), light: NSColor(white: 0.985, alpha: 1))
     static let contextNearShadow = color(dark: .black.withAlphaComponent(0.5), light: .black.withAlphaComponent(0.22))
-    static let contextFarShadow = color(dark: .black.withAlphaComponent(0.3), light: .black.withAlphaComponent(0.1))
     static let contextBadgeFace = Color.white
     static let contextBadgeInk = ThemeColor(text: "#1C1C1E")!.color
     static let contextBadgeRim = ThemeColor(text: "#00000033")!.color

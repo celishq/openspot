@@ -3,11 +3,9 @@ import SwiftUI
 
 struct SpotContextCard: View, Equatable {
     let chip: ContextChip
-    let isOn: Bool
     let showsBadge: Bool
 
     var body: some View {
-        let shape = SpotRoundShape(radius: SpotTokens.contextCardRadius)
         ZStack {
             picture
                 .id(chip.look)
@@ -15,14 +13,6 @@ struct SpotContextCard: View, Equatable {
                 .opacity(chip.isLoading ? SpotTheme.contextLoadingIcon : 1)
         }
         .frame(width: SpotTokens.contextCard, height: SpotTokens.contextCard)
-        .clipShape(shape)
-        .background {
-            shape.fill(SpotTheme.contextFace)
-                .shadow(color: SpotTheme.contextFarShadow, radius: SpotTokens.contextFarShadowRadius, y: SpotTokens.contextFarShadowDrop)
-                .shadow(color: SpotTheme.contextNearShadow, radius: SpotTokens.contextNearShadowRadius, y: SpotTokens.contextNearShadowDrop)
-        }
-        .overlay(shape.strokeBorder(SpotTheme.contextRim, lineWidth: SpotTokens.contextBorder))
-        .modifier(SpotSelectionRing(isSelected: isOn, shape: shape, width: SpotTokens.thinRing))
         .overlay(alignment: .bottomTrailing) { badge }
     }
 
@@ -31,8 +21,16 @@ struct SpotContextCard: View, Equatable {
         switch chip.look {
         case .file(let file):
             SpotItemIcon(icon: file, glyph: nil, symbol: nil, size: SpotTokens.contextCard / IconBody.share)
+                .frame(width: SpotTokens.contextCard, height: SpotTokens.contextCard)
         case .symbol(let symbol):
+            let shape = SpotRoundShape(radius: SpotTokens.contextCardRadius)
             SpotItemIcon(icon: nil, glyph: nil, symbol: symbol, size: SpotTokens.contextSymbol)
+                .frame(width: SpotTokens.contextCard, height: SpotTokens.contextCard)
+                .background {
+                    shape.fill(SpotTheme.contextFace)
+                        .shadow(color: SpotTheme.contextNearShadow, radius: SpotTokens.contextNearShadowRadius, y: SpotTokens.contextNearShadowDrop)
+                }
+                .overlay(shape.strokeBorder(SpotTheme.contextRim, lineWidth: SpotTokens.contextBorder))
         }
     }
 
