@@ -90,9 +90,7 @@ extension SpotRun {
     }
 
     func take(answers text: String?, to query: String, of call: OpenCall, _ end: ScriptCall.End, errors: String) {
-        if text != nil || answeredQuery != query || !Self.isStop(end) {
-            takeAnswers(text.map { Frame(text: $0).answers(asCard: spot.triggers.search?.isCard == true) } ?? [], to: query)
-        }
+        takeAnswers(text.map { Frame(text: $0).answers(asCard: spot.triggers.search?.isCard == true) } ?? [], to: query, isStopped: Self.isStop(end))
         call.hasAnswer = text != nil
         finish(call, end, errors: errors)
     }
@@ -122,8 +120,8 @@ extension SpotRun {
     func lose(_ call: OpenCall, _ end: ScriptCall.End, errors: String = "") {
         log(call, end, errors: errors)
         switch call.request.purpose {
-        case .ask(.answer(let query)) where answeredQuery != query:
-            takeAnswers([], to: query)
+        case .ask(.answer(let query)):
+            takeAnswers([], to: query, isStopped: true)
         case .ask:
             break
         case .act(let act):

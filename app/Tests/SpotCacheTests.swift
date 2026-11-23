@@ -98,6 +98,24 @@ final class SpotCacheTests: SpotRunsCase {
         XCTAssertLessThanOrEqual(Int(sheet.answers.first?.title ?? "") ?? 99, 2)
     }
 
+    func testASetShowsTheOpenSheetAgain() async throws {
+        let sheet = try inline(toml: "[on]\n\"sheet.open\" = true", """
+        export default {
+          show(_, env) {
+            const word = env.cache.get("word")
+            return `item=word\\ntitle=${word ? word.value : "none"}\\n`
+          },
+        }
+        """)
+        runs.panelOpened()
+        sheet.open {}
+        try await wait("the first sheet") { sheet.list.all.first?.title == "none" }
+
+        try SpotEnv(spot: sheet.spot, cache: cache, runs: runs).keep("new", as: "word")
+
+        try await wait("the sheet after the set") { sheet.list.all.first?.title == "new" }
+    }
+
     func testACacheKeeps16MegabytesAtMostForEachSpot() throws {
         try cache.keep(String(repeating: "a", count: SpotCache.byteLimit - 10), as: "big", of: "one")
 

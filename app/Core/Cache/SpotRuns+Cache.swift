@@ -10,7 +10,8 @@ extension SpotRuns {
     }
 
     func cacheChanged(_ id: String) {
-        guard let sheet = sheets[id], !sheet.answerQuery.isEmpty else { return }
-        sheet.askAnswer()
+        guard let sheet = sheets[id] else { return }
+        if !sheet.answerQuery.isEmpty { sheet.askAnswer() }
+        if sheet.isOpen { sheet.show(need: .change) }
     }
 }
