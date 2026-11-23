@@ -10,6 +10,7 @@ public struct SpotFacts: Equatable, Sendable {
     public let subtitle: String?
     public let hasSheet: Bool
     public let isFound: Bool
+    public let isSource: Bool
     public internal(set) var order: Int
     public let host: HostSheet?
     public let growsFromField: Bool

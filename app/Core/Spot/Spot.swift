@@ -54,12 +54,13 @@ public struct Spot: Equatable, Sendable {
         edits: SpotEdits? = nil,
         starts: SpotStart? = nil
     ) {
+        let isSource = uses.contains(.context)
         header = Header(SpotFacts(
             id: id, name: name, url: url, size: size, headerIcon: icon, baseSymbol: symbol, subtitle: subtitle,
             hasSheet: triggers.shows || triggers.search == nil && commands.isEmpty && offeredActions.isEmpty,
-            isFound: isFound, order: order,
+            isFound: isFound && !isSource, isSource: isSource, order: order,
             host: host, growsFromField: growsFromField, mode: mode,
-            dataName: dataName, isOnGrid: isOnGrid, views: views, viewDates: viewDates, sources: sources, pages: pages, uses: uses,
+            dataName: dataName, isOnGrid: isOnGrid && !isSource, views: views, viewDates: viewDates, sources: sources, pages: pages, uses: uses,
             commands: commands, offeredActions: offeredActions, triggers: triggers, settings: settings, keywords: keywords, sample: sample,
             edits: edits, starts: starts
         ))
@@ -289,6 +290,10 @@ public struct Spot: Equatable, Sendable {
 
     public var takesDrops: Bool {
         self.triggers.drop.takes(.file)
+    }
+
+    public func runsOnOpen(over front: String?, feedsContext: Bool) -> Bool {
+        self.triggers.opens(over: front) && (!self.isSource || feedsContext)
     }
 
     public func takes(_ value: ContextValue) -> Bool {
