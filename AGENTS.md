@@ -44,27 +44,75 @@
 
 ## Docs
 
-Write a doc that people read, such as `GUIDE.md` and `PROTOCOL.md`, the way Apple writes its developer docs.
+The docs are `AGENTS.md`, `spots/AGENTS.md`, `GUIDE.md`, `PROTOCOL.md`, `TRUST.md`, `CONTRIBUTING.md`, `README.md` and
+`app/Help/`. Write the ones people read the way Apple writes its developer docs. `scripts/check-docs.sh` fails on a break
+of a rule that names it.
 
-- Open each page or section with one sentence that says what the thing is for and when to use it.
-- Show it next, with an example and what it gives on screen. The rules come after the example.
-- Order a guide by the tasks of its reader, such as "Show a number on a card", not by how the code parses it.
-- Bring in a new word where the reader first needs it, with its meaning in the same sentence.
-- Keep the main idea and the edge cases apart. Put limits, errors and rare cases in a short note or in the reference.
-- Write natural English: "you" for the reader, short sentences, common words. Contractions are fine.
-- Use one word for each meaning on the page.
+### Pages
+
+- A page has one reader and one kind: a guide of tasks or a reference of facts, never both. `GUIDE.md` guides the author
+  of a spot, and holds what the person who uses the app chooses. `PROTOCOL.md` is the reference of a spot's contract,
+  `app/Help/` the reference of the `openspot` commands, `TRUST.md` what Openspot shows the person about a spot, and
+  `spots/AGENTS.md` the words of the app's own spots.
+- A thing is said on the page whose kind it is. Before you add a sentence, look for one that says it already, since no
+  check finds a repeat.
+- No doc describes the app's code, since the code is the truth of how the app works.
+- A page opens with what its reader has at its end, in three sentences or fewer, with no list of its sections.
+
+### Guides
+
+- A guide's heading is a verb phrase for its reader's goal, such as "Show a value on a card", and the guide follows those
+  goals, not the way the code parses a spot. The check fails on a heading that starts with an article, "Your" or a
+  question word.
+- A section opens with one sentence: what you get, and when you need it.
+- The example comes next, before any rule: the smallest spot that does the task. A variation gets a heading of its own.
+  The first example of a guide does a small real job, not a toy.
+- The sentence after an example says what you see. Write it from a render of the example, `openspot render spot` of a
+  Debug build with its own `--config`, off screen, never from the rules. Its image from `make docs-images` sits beside it.
+- A step is a pair: what you do, then what you notice, as in "Press `⌘⌫` twice, and Openspot runs `trash`."
+- A guide defines a word in the sentence where it first needs it, as "a frame is …". No doc holds a glossary.
+- A guide gives the one fact its reader needs now, and links to the rest. It leaves out the why and how the app works.
+- A section of `GUIDE.md` ends with one line, "Learn more in …", of links to the reference entries it used, and no step
+  holds a link to the reference. The check fails on a section with no such line.
+
+### Examples
+
+- The line before each file of a spot in `GUIDE.md` names the file, such as `ports.spot/ports.sh`. The check fails on a
+  file with no name before it.
+- What a call gets or a command prints shows as a literal block, never told in prose.
+- An `sh`, `js` or `swift` example of `GUIDE.md`, `PROTOCOL.md` or `app/Help/` runs (`DocExampleTests`). An example that
+  needs a network, an account or a tool that not every Mac has goes in a `text` fence.
+
+### Reference
+
+- A reference follows the parts a spot meets: its folder, `spot.toml`, the call and its stdin, the frame, then the
+  commands. Never order it by difficulty.
+- Each key, block kind, event, class and command has one entry, found by its literal name as a heading or as the first
+  cell of a row. A guide links to it, and never holds its only rule.
+- An entry gives the name, its type, its default and whether it's required, then one sentence that says what the thing
+  is, never what one of its values does, then its notes.
+- A table cell holds one sentence. More goes in a note under the table that starts with the name. The check fails on a
+  cell of two sentences in a guide, `PROTOCOL.md` or `app/Help/`.
+- A reference states the contract and nothing else. A must is written as "must" or "never", and advice goes in a guide.
+- The main rule comes first. Limits, errors and rare cases come last in an entry, or in a note.
+- A list item states one rule.
+- `PROTOCOL.md` holds only today's rules, with no history and no reasons. Its version entry gives the number and what a
+  change of the number means.
+
+### Words
+
+- Write natural English: "you" for the reader, short sentences, common words and contractions, not a controlled
+  language.
+- Use one word for each meaning across all the docs: "the person" for whoever uses the app, "action" for a thing that a
+  spot or Openspot does, and "sheet" for what fills the panel.
+
+### Checks
+
 - `make verify` fails when a doc links to a file or a heading that does not exist, names a repo path or a `make` target
   that does not exist, or when code cites a protocol heading that does not exist (`DocReferenceTests`).
 - It fails when PROTOCOL.md and Core disagree on a key, a block kind, a call word, an event, a place, a use, a shell
   helper or an `openspot` command (`ProtocolContractTests`). `scripts/protocol-gaps.txt` lists today's gaps, and it
   fails on a gap the list lacks and on a listed gap that is gone.
-- It fails when an `sh`, `js` or `swift` example of GUIDE.md, PROTOCOL.md or `app/Help/` does not run (`DocExampleTests`).
-  An example that needs a network, an account or a tool that not every Mac has goes in a `text` fence.
-- The docs are `AGENTS.md`, `spots/AGENTS.md`, `GUIDE.md`, `PROTOCOL.md`, `TRUST.md`, `CONTRIBUTING.md`, `README.md`
-  and `app/Help/`. `PROTOCOL.md` holds only the contract of a spot. What the user chooses is in `GUIDE.md`, the words of
-  the app's own spots in `spots/AGENTS.md`, what Openspot shows the user about a spot in `TRUST.md`, and the reference of
-  the `openspot` commands in `app/Help/`. The code is the truth for how the app works, so no doc describes the app's
-  code. Before you add a sentence, look for one that says it already, and link to it, since no check finds a repeat.
 
 ## Comments
 
