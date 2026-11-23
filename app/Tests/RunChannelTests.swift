@@ -16,7 +16,7 @@ final class RunChannelTests: SpotRunsCase {
         client = folder.appendingPathComponent("A.app/Contents/Helpers/openspot")
         try FileManager.default.createDirectory(at: client.deletingLastPathComponent(), withIntermediateDirectories: true)
         try FileManager.default.copyItem(at: Bundle(for: Self.self).bundleURL.deletingLastPathComponent().appendingPathComponent("openspot"), to: client)
-        runs.api = CommandAPI(mac: Mac(), places: .test(["OPENSPOT_CONFIG": config.path]), app: FakeRunningApp(), runs: runs, rates: .offline)
+        runs.api = CommandAPI(mac: Mac(), places: .test(["OPENSPOT_CONFIG": config.path]), app: FakeRunningApp(), runs: runs)
     }
 
     override func tearDown() async throws {
@@ -52,12 +52,12 @@ final class RunChannelTests: SpotRunsCase {
     }
 
     func testTwoCallsAtOnceInOneRunEachGetTheirOwnAnswer() async throws {
-        try script(toml: TestSpot.command, "\(call("calc solve 1+1")) > '\(path("one"))' & \(call("calc solve 20+22")) > '\(path("two"))'; wait; echo 0 >> '\(path("done"))'")
+        try script(toml: TestSpot.command, "printf '2\\n' | \(call("cache set one")) 2>> '\(path("errors"))'; printf '42\\n' | \(call("cache set two")) 2>> '\(path("errors"))'; \(call("cache get one")) > '\(path("one"))' & \(call("cache get two")) > '\(path("two"))'; wait; echo 0 >> '\(path("done"))'")
 
         try await press()
 
-        XCTAssertTrue(log("one").contains("title=2"), log("one").joined(separator: "\n"))
-        XCTAssertTrue(log("two").contains("title=42"), log("two").joined(separator: "\n"))
+        XCTAssertEqual(log("one"), ["2"], log("errors").joined(separator: "\n"))
+        XCTAssertEqual(log("two"), ["42"])
     }
 
     func testEachShellPassesTheChannelOnToItsChildren() async throws {
@@ -173,7 +173,7 @@ final class RunChannelTests: SpotRunsCase {
         defer { try? FileManager.default.removeItem(at: outside) }
         let products = Bundle(for: Self.self).bundleURL.deletingLastPathComponent().path
         runs = runs(environment: ["PATH": "\(products):/usr/bin:/bin", "HOME": home, "OPENSPOT_CONFIG": config.path])
-        runs.api = CommandAPI(mac: Mac(), places: .test(["OPENSPOT_CONFIG": config.path]), app: FakeRunningApp(), runs: runs, rates: .offline)
+        runs.api = CommandAPI(mac: Mac(), places: .test(["OPENSPOT_CONFIG": config.path]), app: FakeRunningApp(), runs: runs)
         let socket = try XCTUnwrap(CommandSocket(folder: config, api: try XCTUnwrap(runs.api)))
         defer { socket.close() }
         runs.isCareful = true

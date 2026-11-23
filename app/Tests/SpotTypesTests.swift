@@ -5,7 +5,7 @@ import XCTest
 final class SpotTypesTests: SpotRunsCase {
     private func types(_ id: String, in spots: URL) async throws -> CommandAnswer {
         let places = AppPlaces.test(["OPENSPOT_CONFIG": folder.appendingPathComponent("config").path, "OPENSPOT_SPOTS": spots.path])
-        let api = CommandAPI(mac: Mac(), places: places, runs: nil, rates: .offline)
+        let api = CommandAPI(mac: Mac(), places: places, runs: nil)
         let work = try XCTUnwrap(api.work(for: CommandRequest(arguments: ["types", id], folder: spots.path), input: { "" }))
         return await work()
     }

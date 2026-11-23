@@ -15,10 +15,3 @@ extension CommandRequest {
         CommandRequest(arguments: arguments, folder: environment["PWD"] ?? FileManager.default.temporaryDirectory.path)
     }
 }
-
-extension CalcRateCache {
-    static var offline: CalcRateCache {
-        let file = FileManager.default.temporaryDirectory.appendingPathComponent("openspot-test-\(UUID().uuidString)", isDirectory: true).appendingPathComponent("rates.json")
-        return CalcRateCache(file: file, now: { Date() }) { throw URLError(.notConnectedToInternet) }
-    }
-}

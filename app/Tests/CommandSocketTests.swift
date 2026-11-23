@@ -51,7 +51,7 @@ final class CommandSocketTests: XCTestCase {
 
     override func setUpWithError() throws {
         folder = FileManager.default.temporaryDirectory.appendingPathComponent("os-\(UUID().uuidString.prefix(8))", isDirectory: true)
-        socket = CommandSocket(folder: folder, api: CommandAPI(mac: Mac(), places: .test(["OPENSPOT_CONFIG": folder.path, "OPENSPOT_SPOTS": folder.appendingPathComponent("spots").path]), rates: .offline))
+        socket = CommandSocket(folder: folder, api: CommandAPI(mac: Mac(), places: .test(["OPENSPOT_CONFIG": folder.path, "OPENSPOT_SPOTS": folder.appendingPathComponent("spots").path])))
     }
 
     override func tearDownWithError() throws {
@@ -85,11 +85,15 @@ final class CommandSocketTests: XCTestCase {
         XCTAssertEqual(mode & 0o777, 0o600)
     }
 
-    func testACalcSumStreamsItsOutputThenItsCode() throws {
-        let answer = try ask(["calc", "solve", "2+2"])
+    private var version: String {
+        (Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String ?? "unknown") + "\n"
+    }
+
+    func testACallStreamsItsOutputThenItsCode() throws {
+        let answer = try ask(["version"])
 
         XCTAssertEqual(answer.reply["id"] as? Int, 7)
-        XCTAssertEqual(TextBlock.blocks(in: answer.stdout).first?.value("title"), "4")
+        XCTAssertEqual(answer.stdout, version)
         XCTAssertEqual(answer.stderr, "")
         XCTAssertEqual(answer.code, 0)
     }
@@ -117,24 +121,24 @@ final class CommandSocketTests: XCTestCase {
 
     func testASlowCallSendsItsFirstChunkBeforeItsEnd() async throws {
         socket?.close()
-        socket = CommandSocket(folder: folder, api: CommandAPI(mac: Mac(), places: .test(["OPENSPOT_CONFIG": folder.path]), app: SlowApp(folder: folder), rates: .offline))
+        socket = CommandSocket(folder: folder, api: CommandAPI(mac: Mac(), places: .test(["OPENSPOT_CONFIG": folder.path]), app: SlowApp(folder: folder)))
         let connection = connect()
         defer { connection.close() }
         try connection.send(request(["batch"]))
         XCTAssertEqual(try connection.next()?["method"] as? String, "stdin")
-        try connection.send(["jsonrpc": "2.0", "method": "stdin", "params": ["text": "calc solve 2+2\nsetting change --spot repos folder\n"]])
+        try connection.send(["jsonrpc": "2.0", "method": "stdin", "params": ["text": "version\nsetting change --spot repos folder\n"]])
         try connection.send(["jsonrpc": "2.0", "method": "stdin", "params": ["end": true]])
 
         let first = try XCTUnwrap(try connection.next())
 
         XCTAssertEqual(first["method"] as? String, "stdout")
-        XCTAssertEqual(TextBlock.blocks(in: (first["params"] as? [String: Any])?["text"] as? String ?? "").first?.value("title"), "4")
+        XCTAssertEqual(((first["params"] as? [String: Any])?["text"] as? String)?.hasPrefix(version), true)
         XCTAssertFalse(exists("ended"))
     }
 
     func testAClosedConnectionStopsItsCallAndTheCallChangesNothing() async throws {
         socket?.close()
-        socket = CommandSocket(folder: folder, api: CommandAPI(mac: Mac(), places: .test(["OPENSPOT_CONFIG": folder.path]), app: SlowApp(folder: folder), rates: .offline))
+        socket = CommandSocket(folder: folder, api: CommandAPI(mac: Mac(), places: .test(["OPENSPOT_CONFIG": folder.path]), app: SlowApp(folder: folder)))
         let connection = connect()
         try connection.send(request(["setting", "change", "--spot", "repos", "folder"]))
         try await wait("the start of the work") { exists("started") }
@@ -182,7 +186,7 @@ final class CommandSocketTests: XCTestCase {
 
     private func listen(_ limits: CommandConnection.Limits = CommandConnection.Limits(), mac: Mac = Mac(), peer: @escaping @Sendable (Int32) -> pid_t? = CommandSocket.peer(of:)) {
         socket?.close()
-        socket = CommandSocket(folder: folder, api: CommandAPI(mac: mac, places: .test(["OPENSPOT_CONFIG": folder.path]), rates: .offline), limits: limits, peer: peer)
+        socket = CommandSocket(folder: folder, api: CommandAPI(mac: mac, places: .test(["OPENSPOT_CONFIG": folder.path])), limits: limits, peer: peer)
     }
 
     private func isClosed(_ connection: SocketConnection) -> Bool {
@@ -223,7 +227,7 @@ final class CommandSocketTests: XCTestCase {
             }
         }
 
-        let answer = try ask(["calc", "solve", "2+2"])
+        let answer = try ask(["version"])
 
         XCTAssertEqual(answer.code, 0)
     }
@@ -285,7 +289,7 @@ final class CommandSocketTests: XCTestCase {
 
     func testAReaderThatIsSlowButTakesBytesGetsTheWholeAnswer() async throws {
         listen(CommandConnection.Limits(reader: 1))
-        clock = CommandSocket(folder: folder.appendingPathComponent("clock"), api: CommandAPI(mac: Mac(), places: .test(), rates: .offline), limits: CommandConnection.Limits(caller: 0.01))
+        clock = CommandSocket(folder: folder.appendingPathComponent("clock"), api: CommandAPI(mac: Mac(), places: .test()), limits: CommandConnection.Limits(caller: 0.01))
         let slow = connect()
         let stopped = connect()
         defer {
@@ -317,7 +321,7 @@ final class CommandSocketTests: XCTestCase {
 
         for _ in 0..<20 {
             let connection = connect()
-            try connection.send(request(["calc", "solve", "2+2"]))
+            try connection.send(request(["version"]))
             connection.close()
         }
 

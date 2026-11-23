@@ -400,7 +400,7 @@ final class InlineScript: @unchecked Sendable {
     private func work(_ arguments: [String], input: String?, caller: SpotCaller?, reason: String?, variables: [String: String]) -> CommandAPI.Work {
         let own = [CallWords.spotVariable: name].merging(variables) { _, new in new }
         guard let call = CommandLineCall(arguments: arguments, spot: own[CallWords.spotVariable], reason: reason) else {
-            return { CommandAnswer(errors: "openspot needs a call, such as calc solve 2+2.\n", code: 2) }
+            return { CommandAnswer(errors: "openspot needs a call, such as version.\n", code: 2) }
         }
         let request = CommandRequest(arguments: arguments, folder: base["PWD"] ?? FileManager.default.currentDirectoryPath, caller: caller)
         if let api, api.work(for: call, request: request, input: { input ?? "" }) != nil,

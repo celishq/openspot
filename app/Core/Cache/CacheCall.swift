@@ -8,13 +8,14 @@ enum CacheCall: NounCall {
     static let noun = CommandNoun("cache", group: .build, verbs: [
         CommandVerb(
             "get", "<name>",
-            "Prints the value the calling spot keeps as <name>, or nothing. When it is missing, or older than the age of cache.<name> in the spot's [on], Openspot runs that handler in the background. It runs only in a run of a spot."
+            "Prints the value the calling spot keeps as <name>, or nothing. When it is missing, or older than the age of cache.<name> in the spot's [on], Openspot runs that handler in the background. It runs only in a run of a spot.",
+            rule: CallRule(flags: .needsApp)
         ) { $0.one.map(Self.get) },
-        CommandVerb("age", "<name>", "Prints the seconds since the calling spot kept <name>, or nothing.") { $0.one.map(Self.age) },
+        CommandVerb("age", "<name>", "Prints the seconds since the calling spot kept <name>, or nothing.", rule: CallRule(flags: .needsApp)) { $0.one.map(Self.age) },
         CommandVerb(
             "set", "<name>",
             "Keeps the text on stdin as <name> of the calling spot, and asks the spot again for the text in the panel's search. A spot keeps 16 MB at most.",
-            rule: CallRule(flags: .readsInput)
+            rule: CallRule(flags: [.needsApp, .readsInput])
         ) { $0.one.map(Self.set) },
     ])
 

@@ -96,7 +96,7 @@ final class OpenspotApp: NSObject, NSApplicationDelegate {
         self.update = update
         let api = CommandAPI(mac: mac.mac, places: model.files, raise: { [model] event in
             await MainActor.run { model.runs.raise(event) }
-        }, app: SpotRunningApp(model: model, update: update), runs: model.runs, rates: .standard)
+        }, app: SpotRunningApp(model: model, update: update), runs: model.runs)
         model.runs.api = api
         model.files.cache.listenForMemoryPressure()
         Task { await launch(update: update, api: api) }
@@ -104,6 +104,8 @@ final class OpenspotApp: NSObject, NSApplicationDelegate {
 
     private func launch(update: AppUpdate?, api: CommandAPI) async {
         await model.reload()
+        let oldRates = model.files.home.appendingPathComponent("Library/Caches/openspot/calc-rates.json")
+        Task.detached(priority: .utility) { try? FileManager.default.removeItem(at: oldRates) }
         let config = ConfigFile.standard().url.deletingLastPathComponent()
         commandSocket = CommandSocket(folder: config, api: api)
         if commandSocket == nil {

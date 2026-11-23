@@ -6,7 +6,7 @@ final class SpotFetchTests: SpotRunsCase {
     override func setUp() async throws {
         try await super.setUp()
         runs.web = Web(session: FakeWeb.session, wait: 30)
-        runs.api = CommandAPI(mac: Mac(), places: .test(["OPENSPOT_CONFIG": folder.appendingPathComponent("config").path]), runs: runs, rates: .offline)
+        runs.api = CommandAPI(mac: Mac(), places: .test(["OPENSPOT_CONFIG": folder.appendingPathComponent("config").path]), runs: runs)
     }
 
     private func fetching(uses: String = "uses = ['network']\n", _ fetch: String) throws -> SpotRun {

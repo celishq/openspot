@@ -52,7 +52,7 @@ class SpotRunsCase: XCTestCase {
     }
 
     func takeCalls() {
-        runs.api = CommandAPI(mac: Mac(), places: .test(["OPENSPOT_CONFIG": folder.path]), app: FakeRunningApp(), runs: runs, rates: .offline)
+        runs.api = CommandAPI(mac: Mac(), places: .test(["OPENSPOT_CONFIG": folder.path]), app: FakeRunningApp(), runs: runs)
     }
 
     func scanned() throws -> ScanResult {

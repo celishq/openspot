@@ -36,7 +36,7 @@ class PanelCase: XCTestCase {
     }
 
     func takeCalls() {
-        model.runs.api = CommandAPI(mac: Mac(), places: model.files, app: ModelApp(model: model), runs: model.runs, rates: .offline)
+        model.runs.api = CommandAPI(mac: Mac(), places: model.files, app: ModelApp(model: model), runs: model.runs)
     }
 
     var spots: URL {

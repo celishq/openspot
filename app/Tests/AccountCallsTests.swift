@@ -14,7 +14,7 @@ final class AccountCallsTests: XCTestCase {
         try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
         runs = SpotRuns()
         app = FakeRunningApp()
-        api = CommandAPI(mac: Mac(), places: .test(["OPENSPOT_CONFIG": folder.path]), app: app, runs: runs, rates: .offline)
+        api = CommandAPI(mac: Mac(), places: .test(["OPENSPOT_CONFIG": folder.path]), app: app, runs: runs)
     }
 
     override func tearDown() async throws {
@@ -133,7 +133,7 @@ final class AccountCallsTests: XCTestCase {
     }
 
     func testTheFactsRunAloneAnswerThatTheAppIsNotRunning() async throws {
-        let alone = CommandAPI(mac: Mac(), places: .test(["OPENSPOT_CONFIG": folder.path]), rates: .offline)
+        let alone = CommandAPI(mac: Mac(), places: .test(["OPENSPOT_CONFIG": folder.path]))
         let request = CommandRequest(arguments: ["account", "show"], folder: folder.path)
 
         let work = try XCTUnwrap(alone.work(for: try XCTUnwrap(alone.call(of: request)), request: request, input: { "" }))

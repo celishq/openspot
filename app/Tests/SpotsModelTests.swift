@@ -1624,7 +1624,7 @@ final class SpotsModelTests: XCTestCase {
     private func showAnswers(slow: String = "none") async throws {
         let body = #"in=$(cat); t=$(printf '%s\n' "$in" | sed -n 's/^input\.text=//p'); it=$(printf '%s\n' "$in" | sed -n 's/^input\.item=//p'); case "$t" in \#(slow)) sleep 0.5 ;; esac; case "$1" in search) [ -n "$t" ] && printf 'item=%s\ntitle=Is %s\ndetail=Read %s\n' "$t" "$t" "$t" ;; press) \#(TestSpot.toast) "Picked $it" ;; esac"#
         try script("calc", toml: "title = 'Calc'\n[on]\nsearch = '^[0-9]'", body)
-        model.runs.api = CommandAPI(mac: Mac(), places: model.files, app: ModelApp(model: model), runs: model.runs, rates: .offline)
+        model.runs.api = CommandAPI(mac: Mac(), places: model.files, app: ModelApp(model: model), runs: model.runs)
         try script("notes", toml: "title = 'Notes 2'", "printf 'item=a\\ntitle=A\\n'")
         await model.reload()
         model.isShown = true
@@ -1673,7 +1673,7 @@ final class SpotsModelTests: XCTestCase {
     func testAnAnswerThatDrawsALargeCardTakesTwoFullRowsAndAPressSendsItsValue() async throws {
         let body = #"in=$(cat); t=$(printf '%s\n' "$in" | sed -n 's/^input\.text=//p'); it=$(printf '%s\n' "$in" | sed -n 's/^input\.item=//p'); case "$1" in search) printf 'frame=\n\nnumber=answer\nclass=large:flex\ntitle=%s\nvalue=14\n' "$t" ;; press) \#(TestSpot.toast) "Picked $it" ;; esac"#
         try script("calc", toml: "title = 'Calc'\nanswers = 'card'\n[on]\nsearch = '^[0-9]'", body)
-        model.runs.api = CommandAPI(mac: Mac(), places: model.files, app: ModelApp(model: model), runs: model.runs, rates: .offline)
+        model.runs.api = CommandAPI(mac: Mac(), places: model.files, app: ModelApp(model: model), runs: model.runs)
         try script("notes", toml: "title = 'Notes 2'", "printf 'item=a\\ntitle=A\\n'")
         await model.reload()
         model.isShown = true
@@ -1740,7 +1740,7 @@ final class SpotsModelTests: XCTestCase {
         let calls = folder.appendingPathComponent("calls").path
         let body = #"in=$(cat); t=$(printf '%s\n' "$in" | sed -n 's/^input\.text=//p'); [ "$1" = search ] && [ -n "$t" ] && echo x >> '\#(calls)' && printf 'item=%s\ntitle=Call %s\n' "$t" "$(wc -l < '\#(calls)' | tr -d ' ')""#
         try script("calc", toml: "title = 'Calc'\n[on]\nsearch = '^[0-9]'", body)
-        model.runs.api = CommandAPI(mac: Mac(), places: model.files, app: ModelApp(model: model), runs: model.runs, rates: .offline)
+        model.runs.api = CommandAPI(mac: Mac(), places: model.files, app: ModelApp(model: model), runs: model.runs)
         await model.reload()
         model.isShown = true
         model.panelWillShow()
@@ -1767,7 +1767,7 @@ final class SpotsModelTests: XCTestCase {
     }
 
     func testReturnOnAKeptRowOfASlowInlineSpotWaitsForTheNewestAnswer() async throws {
-        model.runs.api = CommandAPI(mac: Mac(), places: model.files, app: ModelApp(model: model), runs: model.runs, rates: .offline)
+        model.runs.api = CommandAPI(mac: Mac(), places: model.files, app: ModelApp(model: model), runs: model.runs)
         try FileManager.default.createDirectory(at: spots.appendingPathComponent("calc.spot"), withIntermediateDirectories: true)
         try """
         export default {

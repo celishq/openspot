@@ -5,11 +5,11 @@ terminal can run, and how each one ends. `openspot help` lists every verb, group
 
 ```sh
 openspot help clipboard
-openspot calc solve 2+2
+openspot emoji list
 ```
 
 The first call prints the verbs of one noun, then its guide when it has one, such as `screen` or `calendar`. The second
-prints the answer to a sum as an item.
+prints each emoji as an item.
 
 ## How a call ends
 
@@ -25,7 +25,6 @@ prints the answer to a sum as an item.
 - A capability that can't answer prints `status=<word>`. `openspot translate text` prints `status=unknown` when it
   cannot tell the language of the text, `status=missing` when macOS has not downloaded a language,
   `status=unsupported` when it knows no way between the two, and `status=failed` for any other fault.
-  `openspot calc solve` prints `status=offline` or `status=unavailable` for a currency with no rates.
 - Each call that lists or reports, such as `app status`, `power readings`, `account show`, `spot list`, `spot stats`,
   `store list`, `setting list` and `theme list`, prints blocks, the format of a frame. `--json` prints JSON.
 - `openspot batch` runs one call for each line of stdin, and prints `---` after each. It stops at the first failure.

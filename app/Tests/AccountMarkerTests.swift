@@ -19,7 +19,7 @@ final class AccountMarkerTests: BuiltInCase {
     }
 
     private func verbsSaid() async -> [String] {
-        let api = CommandAPI(mac: Mac(), places: .test(TestEnvironment.values), app: app, runs: runs, rates: .offline)
+        let api = CommandAPI(mac: Mac(), places: .test(TestEnvironment.values), app: app, runs: runs)
         let callers: [Spot?] = [
             nil,
             caller("mine", uses: [.account], isBuiltIn: false),

@@ -12,7 +12,7 @@ final class SpotCacheTests: SpotRunsCase {
     override func setUp() async throws {
         try await super.setUp()
         places = .test(["OPENSPOT_CONFIG": folder.appendingPathComponent("config").path])
-        runs.api = CommandAPI(mac: Mac(), places: places, runs: runs, rates: .offline)
+        runs.api = CommandAPI(mac: Mac(), places: places, runs: runs)
     }
 
     private func inline(toml: String, _ body: String) throws -> SpotRun {

@@ -52,15 +52,6 @@ final class CommandLineCallTests: XCTestCase {
         XCTAssertEqual(CommandLineCall(arguments: ["emoji", "list", "--tone"])?.value as? CallFault, .unknown(["emoji", "list", "--tone"]))
     }
 
-    func testCalcSolvesTheWordsAfterItsVerbAlsoInARead() {
-        XCTAssertEqual(CommandLineCall(arguments: ["calc", "solve", "2*(3+4)"])?.value as? CalcCall, .solve("2*(3+4)"))
-        XCTAssertEqual(CommandLineCall(arguments: ["calc", "solve", "5", "km", "in", "mi"])?.value as? CalcCall, .solve("5 km in mi"))
-        XCTAssertEqual(CommandLineCall(arguments: ["calc", "solve", "1+1"], environment: [:], reason: "search")?.value as? CalcCall, .solve("1+1"))
-        XCTAssertEqual(CommandLineCall(arguments: ["calc", "solve"])?.value as? CallFault, .unknown(["calc", "solve"]))
-        XCTAssertEqual(CommandLineCall(arguments: ["calc", "2+2"])?.value as? CallFault, .unknown(["calc", "2+2"]))
-        XCTAssertTrue(CommandLineCall.usage.contains("openspot calc solve <words>..."))
-    }
-
     func testSymbolsTakeNoOptions() {
         XCTAssertEqual(CommandLineCall(arguments: ["symbols", "list"])?.value as? SymbolsCall, .rows)
         XCTAssertEqual(CommandLineCall(arguments: ["symbols", "--tone", "dark"])?.value as? CallFault, .unknown(["symbols", "--tone", "dark"]))

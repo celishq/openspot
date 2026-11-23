@@ -9,7 +9,7 @@ final class CommandHelpTests: XCTestCase {
         folder = try temporaryFolder()
         try "# Show a list\n\nPrint rows.\n\n```sh\n# title=List\n## not a topic\n```\n\n## Rows\n\nOne per item.\n\n# Add buttons\n\nPrint buttons.\n"
             .write(to: folder.appendingPathComponent("DOCS.md"), atomically: true, encoding: .utf8)
-        api = CommandAPI(mac: Mac(guide: folder.appendingPathComponent("DOCS.md")), places: .test(["OPENSPOT_CONFIG": folder.path]), rates: .offline)
+        api = CommandAPI(mac: Mac(guide: folder.appendingPathComponent("DOCS.md")), places: .test(["OPENSPOT_CONFIG": folder.path]))
     }
 
     private func answer(_ arguments: [String]) async throws -> CommandAnswer {
