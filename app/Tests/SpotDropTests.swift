@@ -219,6 +219,51 @@ final class SpotDropTests: XCTestCase {
         XCTAssertEqual(log(), ["drop " + paths.joined(separator: " ")])
     }
 
+    func testUrlAndTextAreKindsOfValueNotExtensions() {
+        let card = command(drop: ["url", "text"])
+
+        XCTAssertTrue(card.takes(ContextValue(url: "https://example.com")))
+        XCTAssertTrue(card.takes(ContextValue(text: "hola")))
+        XCTAssertFalse(card.accepts([file("a.url"), file("b.text")]))
+        XCTAssertFalse(card.takesDrops)
+    }
+
+    func testAStarTakesFilesButNoUrlAndNoText() {
+        let card = command(drop: ["*"])
+
+        XCTAssertFalse(card.takes(ContextValue(url: "https://example.com")))
+        XCTAssertFalse(card.takes(ContextValue(text: "hola")))
+        XCTAssertTrue(card.takes(ContextValue(files: FileKinds.Disk().read([file("a.mov")]))))
+    }
+
+    func testFilesAreTakenByTheirExtensionsAsADragIs() {
+        let card = command(drop: ["mov"])
+
+        XCTAssertTrue(card.takes(ContextValue(files: FileKinds.Disk().read([file("a.mov")]))))
+        XCTAssertFalse(card.takes(ContextValue(files: FileKinds.Disk().read([file("a.txt")]))))
+        XCTAssertFalse(card.takes(ContextValue(url: "https://example.com")))
+    }
+
+    func testAUrlRunsTheDropWithTheUrlOnStdin() async throws {
+        let sheet = try sheet(toml: "\(TestSpot.command)\n\n[on]\ndrop = [\"url\"]", """
+        printf '%s\\n' "$in" | grep '^input\\.' > '\(path("arguments"))'
+        """)
+
+        XCTAssertTrue(sheet.drop(ContextValue(url: "https://example.com/a b")))
+
+        try await wait("the call") { sheet.calls.isEmpty && self.log().count == 1 }
+        let lines = try String(contentsOfFile: path("arguments"), encoding: .utf8).split(separator: "\n").map(String.init)
+        XCTAssertEqual(lines, ["input.url=https://example.com/a b"])
+        XCTAssertEqual(log(), ["drop"])
+    }
+
+    func testTextThatTheCardDoesNotTakeRunsNothing() async throws {
+        let sheet = try sheet(toml: "\(TestSpot.command)\n\n[on]\ndrop = [\"url\"]")
+
+        XCTAssertFalse(sheet.drop(ContextValue(text: "hola")))
+        XCTAssertTrue(sheet.calls.isEmpty)
+    }
+
     func testADropThatTheCardDoesNotTakeRunsNothing() async throws {
         let sheet = try sheet(toml: "[on]\ndrop = [\"mov\"]")
 

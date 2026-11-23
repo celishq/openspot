@@ -42,6 +42,7 @@
 		0A34A543E6706E28E589A8A3 /* ThemesSpotTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A00714417444C03CF2BC23F9 /* ThemesSpotTests.swift */; };
 		0A4917F2E3DD459EAEC076BC /* TimerCall.swift in Sources */ = {isa = PBXBuildFile; fileRef = 099667C2B8B798A4F8BA74D3 /* TimerCall.swift */; };
 		0A6EFFFFA0671A493FF6B9EB /* SpotsModel+Keys.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2DED55DD87CA8DFA1429F5E7 /* SpotsModel+Keys.swift */; };
+		0A829F43E3A5D33DA9CD8F77 /* ContextValue.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9468521F1D71980ED9871648 /* ContextValue.swift */; };
 		0A8E2048318FEB0B036B9FCE /* ScreenPlace+Mac.swift in Sources */ = {isa = PBXBuildFile; fileRef = CCE66F66030A2669E2B8E269 /* ScreenPlace+Mac.swift */; };
 		0AB3AEE92F3EE6CB12B2680D /* MacPower.swift in Sources */ = {isa = PBXBuildFile; fileRef = 486CBAD271C8BE0DBFE7DE4D /* MacPower.swift */; };
 		0ADF42882D864E2AD3BB1165 /* MenuBarCalls.swift in Sources */ = {isa = PBXBuildFile; fileRef = BD3FFEA6EB0A7BA1DB890786 /* MenuBarCalls.swift */; };
@@ -1751,6 +1752,7 @@
 		944E30DC365277055D4AAE56 /* SpotCardPlace.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SpotCardPlace.swift; sourceTree = "<group>"; };
 		945DC5FEE72948CB57E46716 /* AppSignal.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppSignal.swift; sourceTree = "<group>"; };
 		946708600A684F9A5DC68137 /* SettingCalls.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingCalls.swift; sourceTree = "<group>"; };
+		9468521F1D71980ED9871648 /* ContextValue.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContextValue.swift; sourceTree = "<group>"; };
 		94B0E4567AE631D558192FF8 /* openspot.sh */ = {isa = PBXFileReference; lastKnownFileType = text.script.sh; path = openspot.sh; sourceTree = "<group>"; };
 		94CA697E68DC79BE324E0A63 /* SampleSpotsCase+SwiftSpot.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "SampleSpotsCase+SwiftSpot.swift"; sourceTree = "<group>"; };
 		959B3A8D1390DA4B2F9426D0 /* RunningApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RunningApp.swift; sourceTree = "<group>"; };
@@ -2305,6 +2307,14 @@
 				D48E9518A3947984825DE87E /* SpotSource.swift */,
 			);
 			path = Install;
+			sourceTree = "<group>";
+		};
+		0D322A2C67C8BBA010C1307F /* Context */ = {
+			isa = PBXGroup;
+			children = (
+				9468521F1D71980ED9871648 /* ContextValue.swift */,
+			);
+			path = Context;
 			sourceTree = "<group>";
 		};
 		160F9B441B468E3A9DB0FD50 /* Picture */ = {
@@ -3896,6 +3906,7 @@
 				3D2470F4328BA07F29053F86 /* Clock */,
 				2A34368581EC1847A78EF890 /* Command */,
 				84E4124D3C1CB595D27C96A2 /* Config */,
+				0D322A2C67C8BBA010C1307F /* Context */,
 				9689F9690210664601A9CB1E /* Detached */,
 				FD400B52166F982D1C736B83 /* EditSpots */,
 				CAE9B1612C7252964C5ED9F9 /* Events */,
@@ -4466,6 +4477,7 @@
 				DD7AD0AC76ABFBA937676F87 /* ConfigDisk.swift in Sources */,
 				09B4F2287330BA04BC226D23 /* ConfigDocument.swift in Sources */,
 				2D767FD965D15EAF5F644AF0 /* ConfigFile.swift in Sources */,
+				0A829F43E3A5D33DA9CD8F77 /* ContextValue.swift in Sources */,
 				2013FD34AC638BD66D70376B /* CronLine.swift in Sources */,
 				B411F76143C319069B53F956 /* Data+Hex.swift in Sources */,
 				C8D3DA9792D69A1394851ED1 /* DueWatch.swift in Sources */,

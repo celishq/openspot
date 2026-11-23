@@ -283,7 +283,7 @@ public struct Spot: Equatable, Sendable {
     }
 
     public var takesFiles: Bool {
-        dropWords.contains { !$0.isEmpty && $0 != Self.folderWord }
+        dropWords.contains { !$0.isEmpty && $0 != Self.folderWord && !ContextValue.Kind.words.contains($0) }
     }
 
     public var takesFolders: Bool {
@@ -307,7 +307,15 @@ public struct Spot: Equatable, Sendable {
         if kind == .folder { return takesFolders }
         let fileExtension = URL(fileURLWithPath: path).pathExtension.lowercased()
         if dropWords.contains(Self.anyWord) { return true }
-        return !fileExtension.isEmpty && fileExtension != Self.folderWord && dropWords.contains(fileExtension)
+        return !fileExtension.isEmpty && fileExtension != Self.folderWord && !ContextValue.Kind.words.contains(fileExtension) && dropWords.contains(fileExtension)
+    }
+
+    public func takes(_ value: ContextValue) -> Bool {
+        value.kind == .file ? accepts(value.files) : takes(value.kind)
+    }
+
+    public func takes(_ kind: ContextValue.Kind) -> Bool {
+        kind == .file ? takesDrops : dropWords.contains(kind.rawValue)
     }
 
     private var dropWords: [String] {
