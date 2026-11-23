@@ -25,16 +25,20 @@ final class BackdropFadeTests: XCTestCase {
         XCTAssertEqual(rings[rings.count / 4].strength, 0.25, accuracy: 0.0001)
     }
 
-    func testABlurTakesTheDetailOfTextAwayAlongAnEaseInAcrossTheHalo() {
-        let rings = BackdropFade(size: 80, padding: 0, corner: 20, blur: 30, ease: 2, roundness: 2).rings(in: area)
-        let radius = { (ring: BackdropFade.Ring) in pow(ring.strength, SpotTokens.backdropBlurResponse) * 30 }
-        let lost = { (ring: BackdropFade.Ring) in 1 - 1 / (1 + pow(radius(ring) / SpotTokens.backdropHalfDetailBlur, SpotTokens.backdropDetailFalloff)) }
+    func testABlurGrowsByAnEvenRatioFromNothingToItsFullRadius() {
+        let rings = BackdropFade(size: 80, padding: 0, corner: 20, blur: 16, ease: 1, roundness: 2).rings(in: area)
+        let radii = rings.map { pow($0.strength, SpotTokens.backdropBlurResponse) * 16 + SpotTokens.backdropLeastBlur }
+        let ratios = zip(radii, radii.dropFirst()).map { $1 / $0 }
         XCTAssertEqual(rings.first?.strength, 0)
-        XCTAssertEqual(rings.last?.strength, 1)
-        XCTAssertEqual(lost(rings[rings.count / 2]), 0.25, accuracy: 0.001)
-        XCTAssertEqual(lost(rings[rings.count / 4]), 0.0625, accuracy: 0.001)
-        let even = BackdropFade(size: 80, padding: 0, corner: 20, blur: 30, ease: 1, roundness: 2).rings(in: area)
-        XCTAssertEqual(lost(even[even.count / 2]), 0.5, accuracy: 0.001)
+        XCTAssertEqual(rings.last?.strength ?? 0, 1, accuracy: 0.0001)
+        for ratio in ratios { XCTAssertEqual(ratio, ratios[0], accuracy: 0.0001) }
+    }
+
+    func testALargerEaseKeepsTheBlurSmallFurtherIntoTheHalo() {
+        let even = BackdropFade(size: 80, padding: 0, corner: 20, blur: 16, ease: 1, roundness: 2).rings(in: area)
+        let eased = BackdropFade(size: 80, padding: 0, corner: 20, blur: 16, ease: 2, roundness: 2).rings(in: area)
+        XCTAssertLessThan(eased[even.count / 2].strength, even[even.count / 2].strength / 2)
+        XCTAssertEqual(eased.last?.strength ?? 0, 1, accuracy: 0.0001)
     }
 
     func testThePaddingHoldsFullStrengthPastTheContent() {

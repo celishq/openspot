@@ -44,9 +44,8 @@ public struct BackdropFade: Equatable, Sendable {
 
     private func strength(at place: CGFloat) -> CGFloat {
         guard let blur, blur > 0 else { return place }
-        let lost = pow(place, ease)
-        guard lost < 1 else { return 1 }
-        let radius = SpotTokens.backdropHalfDetailBlur * pow(lost / (1 - lost), 1 / SpotTokens.backdropDetailFalloff)
+        let least = SpotTokens.backdropLeastBlur
+        let radius = least * (pow((blur + least) / least, pow(place, ease)) - 1)
         return min(pow(radius / blur, 1 / SpotTokens.backdropBlurResponse), 1)
     }
 }

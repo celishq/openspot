@@ -62,14 +62,13 @@ final class ThemeTests: XCTestCase {
         XCTAssertEqual([theme.layout.backdrop.ease, theme.layout.backdrop.roundness], [3, 1])
     }
 
-    func testTheHaloOfABigBlurReachesThreeTimesItsRadiusWithinThePanel() {
+    func testTheHaloReachesTheEdgeOfThePanelUnlessAThemeSetsIt() {
         func size(_ text: String) -> Double { Theme(text: text).layout.backdrop.size }
 
-        XCTAssertEqual(size("[advanced]\nbackdrop-blur = 20\n"), 60)
-        XCTAssertEqual(size("[advanced]\nbackdrop-blur = 40\n"), Double(SpotTokens.halo))
-        XCTAssertEqual(size("[advanced]\nbackdrop-blur = 2\n"), 30)
+        XCTAssertEqual(size("[advanced]\nbackdrop-blur = 4\n"), Double(SpotTokens.halo))
         XCTAssertEqual(size("[advanced]\nbackdrop-blur = 20\nhalo-size = 40\n"), 40)
     }
+
 
     func testTheColoursOfALookFollowFromItsChoices() {
         let dark = Theme(text: dracula).colours.dark
@@ -170,8 +169,8 @@ final class ThemeTests: XCTestCase {
         XCTAssertEqual([layout.motion.pressBounce, layout.motion.pressedScale, layout.motion.liftedScale, layout.motion.focusedScale], [0.2, 1.04, 1.05, 1.04])
         XCTAssertEqual(layout.backdrop.style, .blur)
         XCTAssertEqual(layout.backdrop.reach, .tiles)
-        XCTAssertEqual([layout.backdrop.blur, layout.backdrop.size, layout.backdrop.padding], [30, 90, 0])
-        XCTAssertEqual([layout.backdrop.ease, layout.backdrop.roundness], [2, 2])
+        XCTAssertEqual([layout.backdrop.blur, layout.backdrop.size, layout.backdrop.padding], [16, 90, 0])
+        XCTAssertEqual([layout.backdrop.ease, layout.backdrop.roundness], [1, 2])
     }
 
     func testCornerDensityTypeAndSpeedScaleWhatFollowsThem() {

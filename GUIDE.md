@@ -816,9 +816,9 @@ press-bounce = 0
 | `title`, `body`, `detail`, `input`        | `[advanced]`        | The sizes of the text in points. They follow `type`.                                    |
 | `grow`, `shrink`, `move`, `fade-in`, `fade-out`, `press`, `settle` | `[advanced]` | The time of each motion in seconds. They follow `speed`.                     |
 | `press-bounce`, `pressed-scale`, `lifted-scale`, `focused-scale` | `[advanced]` | The bounce of a press, and the scale of a pressed, a lifted and a focused card.   |
-| `backdrop-blur`, `halo-size`, `halo-padding` | `[advanced]`     | The strength of the backdrop's blur in points, 30 by default, how far its halo reaches past the tiles, from 16 to 90, three times the blur by default, and how far it holds its full strength, from 0 to 74. |
+| `backdrop-blur`, `halo-size`, `halo-padding` | `[advanced]`     | The strength of the backdrop's blur in points, 16 by default, how far its halo reaches past the tiles, from 16 to 90, 90 by default, and how far it holds its full strength, from 0 to 74. |
 | `card-shadow-size`                        | `[advanced]`     | How far the shadow under each glass surface spreads, in points.                        |
-| `backdrop-ease`, `halo-roundness`         | `[advanced]`     | How slowly the blur starts across the halo, 1 for even and 2 by default, and how fast the halo's corner rounds as it reaches out, 2 by default. |
+| `backdrop-ease`, `halo-roundness`         | `[advanced]`     | How slowly the blur starts across the halo, 1 by default, where the blur doubles at an even pace, and how fast the halo's corner rounds as it reaches out, 2 by default. |
 
 - An exact value holds only in the file that sets it. A copy of `Openspot` keeps the exact values in its file, but a
   theme you write from scratch works out its own.

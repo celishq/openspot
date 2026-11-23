@@ -77,9 +77,7 @@ extension SpotTokens {
     public static var backdrop: Theme.Backdrop { layout.backdrop }
     public static let backdropMaskScale: CGFloat = 0.5
     public static let backdropFadeSteps = 64
-    public static let backdropHaloPerBlur: CGFloat = 3
-    public static let backdropHalfDetailBlur: CGFloat = 0.45
-    public static let backdropDetailFalloff: CGFloat = 1.5
+    public static let backdropLeastBlur: CGFloat = 0.25
     public static let backdropBlurResponse: CGFloat = 1.2
     public static let cardShadowReach: CGFloat = 3
 
