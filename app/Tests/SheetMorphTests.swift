@@ -64,6 +64,23 @@ final class SheetMorphTests: XCTestCase {
         XCTAssertEqual(morph.growth(of: button, at: 1), 1)
     }
 
+    func testTheFieldsGlassShowsWhileAnyEdgeLiesOutsideTheShapeAndIsGoneOnceTheShapeHoldsItByAMargin() {
+        let margin = SheetMorph.clearance
+        let field = CGRect(x: 90, y: 90, width: 289, height: 52)
+        let row = CGRect(x: 90 + margin, y: 150, width: 289 - 2 * margin, height: 40)
+        XCTAssertEqual(morph.fieldGlass(of: field, at: 0), 1)
+        XCTAssertEqual(morph.fieldGlass(of: field, at: 1), 1)
+        XCTAssertEqual(morph.fieldGlass(of: row, at: 1), 0)
+        XCTAssertEqual(morph.fieldGlass(of: row.insetBy(dx: -margin / 2, dy: 0), at: 1), 0.5, accuracy: 0.001)
+    }
+
+    func testTheFieldsGlassIsGoneThroughASheetThatGrowsFromTheField() {
+        let fromField = SheetMorph(card: CGRect(x: 90, y: 90, width: 289, height: 52), sheet: CGRect(x: 90, y: 90, width: 289, height: 430), source: .field)
+        for step in 0...10 {
+            XCTAssertEqual(fromField.fieldGlass(of: CGRect(x: 90, y: 90, width: 289, height: 52), at: Double(step) / 10), 0)
+        }
+    }
+
     func testWordsThatCrossTheHeaderAreGoneWhileTheyLieAcrossIt() {
         let header = CGRect(x: 57, y: 13, width: 180, height: 36)
         let words = { (progress: Double) in CGRect(x: 120, y: 113 + 61 * CGFloat(progress), width: 150, height: 18) }

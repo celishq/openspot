@@ -56,6 +56,13 @@ public struct SheetMorph: Equatable, Sendable {
         return 1 - headerLook(at: progress) * (1 - Self.ease(Double(gap / Self.clearance)))
     }
 
+    public func fieldGlass(of field: CGRect, at progress: Double) -> Double {
+        guard source == .card else { return 0 }
+        let room = CGRect(origin: origin(at: progress), size: size(at: progress))
+        let depth = min(field.minX - room.minX, field.minY - room.minY, room.maxX - field.maxX, room.maxY - field.maxY)
+        return 1 - Self.ease(Double(depth / Self.clearance))
+    }
+
     public static func place(onCard: CGSize, at progress: Double) -> CGSize {
         let left = CGFloat(1 - progress)
         return CGSize(width: onCard.width * left, height: onCard.height * left)

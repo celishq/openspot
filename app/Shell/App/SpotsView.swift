@@ -50,6 +50,7 @@ struct SpotsView: View {
             .modifier(PanelSpan(panels: model.panels))
             SpotHintLine(model: model, surfaceIsOut: surfaceIsOut, motion: motion)
                 .modifier(SpotShownFade(isShown: model.isShown))
+            field(card: card, motion: motion, isGlass: true)
             if sheetOpen, sheetID != nil {
                 SpotFlowEdges(model: model, rect: sheetRect)
             }
@@ -66,16 +67,7 @@ struct SpotsView: View {
                     showsField: showsSearchField && fieldIsInSheet
                 )
             }
-            SpotFieldView(
-                model: model,
-                isOpen: sheetOpen,
-                isInSheet: fieldIsInSheet,
-                isInstall: isInstall,
-                showsField: showsSearchField,
-                surfaceIsOut: surfaceIsOut,
-                sheet: fieldSheet(on: card, motion: motion)
-            )
-            .modifier(FlowFieldHide(model: model, isInSheet: fieldIsInSheet))
+            field(card: card, motion: motion, isGlass: false)
             if model.isMenuOpen {
                 Color.clear
                     .contentShape(Rectangle())
@@ -97,6 +89,20 @@ struct SpotsView: View {
         .onChange(of: model.isShown) { _, isShown in
             if !isShown { dropTarget = nil }
         }
+    }
+
+    private func field(card: SpotSheetCard?, motion: SheetMotion, isGlass: Bool) -> some View {
+        SpotFieldView(
+            model: model,
+            isOpen: sheetOpen,
+            isInSheet: fieldIsInSheet,
+            isInstall: isInstall,
+            showsField: showsSearchField,
+            surfaceIsOut: surfaceIsOut,
+            sheet: fieldSheet(on: card, motion: motion),
+            isGlass: isGlass
+        )
+        .modifier(FlowFieldHide(model: model, isInSheet: fieldIsInSheet))
     }
 
     private func fieldSheet(on card: SpotSheetCard?, motion: SheetMotion) -> (morph: SheetMorph, cardRadius: CGFloat)? {

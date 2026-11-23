@@ -11,32 +11,47 @@ struct SpotFieldView: View {
     let showsField: Bool
     let surfaceIsOut: Bool
     var sheet: (morph: SheetMorph, cardRadius: CGFloat)?
+    var isGlass = false
     @FocusState private var isFocused: Bool
 
     var body: some View {
         ZStack(alignment: .topLeading) {
-            searchField
-                .morph(showsField ? 1 : 0, opacity: { SheetMorph.sheetLook(at: $0) })
-                .allowsHitTesting(showsField && !model.isEditing)
-            promptLayer
-                .modifier(SpotFaded())
-                .opacity(model.isEditing ? MotionTokens.hiddenOpacity : 1)
-            editHeader
-                .modifier(SpotFaded())
-                .opacity(model.isEditing ? 1 : MotionTokens.hiddenOpacity)
-                .allowsHitTesting(model.isEditing)
+            if isGlass {
+                glass
+                    .modifier(FieldPlace(isShown: model.isShown))
+                    .morph(showsField ? 1 : 0, opacity: { SheetMorph.sheetLook(at: $0) })
+            } else {
+                searchField
+                    .morph(showsField ? 1 : 0, opacity: { SheetMorph.sheetLook(at: $0) })
+                    .allowsHitTesting(showsField && !model.isEditing)
+                promptLayer
+                    .modifier(SpotFaded())
+                    .opacity(model.isEditing ? MotionTokens.hiddenOpacity : 1)
+                editHeader
+                    .modifier(SpotFaded())
+                    .opacity(model.isEditing ? 1 : MotionTokens.hiddenOpacity)
+                    .allowsHitTesting(model.isEditing)
+            }
         }
         .modifier(FieldDim(isDim: model.dimsField))
         .modifier(SpotMenuDim(model: model, index: nil))
-        .background(SpotFieldFocus(model: model, isFocused: $isFocused))
+        .background { if !isGlass { SpotFieldFocus(model: model, isFocused: $isFocused) } }
+    }
+
+    private var place: CGRect {
+        isInSheet ? Self.sheetRow(top: model.fieldTop) : Self.rect
+    }
+
+    private var glass: some View {
+        SpotSurface(rect: place, radius: fieldRadius, glass: isInstall ? 0 : 1)
+            .morph(progress, opacity: glassLook)
     }
 
     private var searchField: some View {
-        let place = isInSheet ? Self.sheetRow(top: model.fieldTop) : Self.rect
+        let place = place
         let top = isInSheet ? Self.sheetTop(top: model.fieldTop) : SpotTokens.halo
         let glyphLeft = isInSheet ? Self.sheetGlyphLeft : SpotTokens.halo + SpotTokens.padding
         return ZStack(alignment: .topLeading) {
-            SpotSurface(rect: place, radius: fieldRadius, glass: isInstall ? 0 : 1, cut: sheetShape)
             SpotSurfaceShape(rect: place, radius: fieldRadius)
                 .fill(SpotTheme.highlight.opacity(isInSheet ? SpotTheme.fill : 0))
                 .mask { insideSheet }
@@ -67,10 +82,7 @@ struct SpotFieldView: View {
         }
         .font(SpotType.input)
         .foregroundStyle(SpotTheme.glassInk)
-        .frame(width: SpotTokens.panelWidth, height: SpotTokens.panelHeight, alignment: .topLeading)
-        .animation(SpotMotion.fade(isShown: model.isShown)) {
-            $0.scaleEffect(model.isShown ? 1 : MotionTokens.hiddenScale, anchor: UnitPoint(x: UnitPoint.center.x, y: Self.rect.midY / SpotTokens.panelHeight))
-        }
+        .modifier(FieldPlace(isShown: model.isShown))
     }
 
     private var editHeader: some View {
@@ -173,6 +185,22 @@ struct SpotFieldView: View {
         sheet.map { isOpen ? SpotSurfaceShape(rect: $0.morph.sheet, radius: SpotTokens.cardRadius) : SpotSurfaceShape(rect: $0.morph.card, radius: $0.cardRadius) }
     }
 
+    private var glassLook: (Double) -> Double {
+        guard let morph = sheet?.morph else { return { _ in 1 } }
+        let rest = Self.rect
+        let row = Self.sheetRow(top: model.fieldTop)
+        return { progress in
+            let t = CGFloat(progress)
+            let field = CGRect(
+                x: rest.minX + (row.minX - rest.minX) * t,
+                y: rest.minY + (row.minY - rest.minY) * t,
+                width: rest.width + (row.width - rest.width) * t,
+                height: rest.height + (row.height - rest.height) * t
+            )
+            return morph.fieldGlass(of: field, at: progress)
+        }
+    }
+
     @ViewBuilder
     private var insideSheet: some View {
         if let sheetShape {
@@ -186,6 +214,18 @@ struct SpotFieldView: View {
         isInSheet ? Self.sheetRadius : SurfaceEdge(card: .strip).radius
     }
 
+}
+
+private struct FieldPlace: ViewModifier {
+    let isShown: Bool
+
+    func body(content: Content) -> some View {
+        content
+            .frame(width: SpotTokens.panelWidth, height: SpotTokens.panelHeight, alignment: .topLeading)
+            .animation(SpotMotion.fade(isShown: isShown)) {
+                $0.scaleEffect(isShown ? 1 : MotionTokens.hiddenScale, anchor: UnitPoint(x: UnitPoint.center.x, y: SpotFieldView.rect.midY / SpotTokens.panelHeight))
+            }
+    }
 }
 
 private struct FieldDim: ViewModifier {
