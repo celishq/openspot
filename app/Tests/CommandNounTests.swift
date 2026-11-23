@@ -31,7 +31,7 @@ final class CommandNounTests: XCTestCase {
         folder = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString, isDirectory: true)
         try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
         runs = SpotRuns()
-        api = CommandAPI(mac: Mac(), places: .test(["OPENSPOT_CONFIG": folder.path]), app: FakeRunningApp(), runs: runs, rates: .offline, nouns: nouns)
+        api = CommandAPI(mac: Mac(), places: .test(["OPENSPOT_CONFIG": folder.path]), app: FakeRunningApp(), runs: runs, nouns: nouns)
     }
 
     override func tearDown() async throws {
@@ -73,7 +73,7 @@ final class CommandNounTests: XCTestCase {
     func testARunThatOpenspotRefusesCountsNothing() async throws {
         let core = folder.appendingPathComponent("core", isDirectory: true)
         try "#!/bin/sh\necho 'title=hi'\n".writeScript(to: core.appendingPathComponent("openspot.spot/keyed.sh"), toml: "title = 'Keyed'\nuses = ['account']")
-        api = CommandAPI(mac: Mac(), places: .test(["OPENSPOT_CONFIG": folder.path, "OPENSPOT_CORE": core.path]), app: FakeRunningApp(), runs: runs, rates: .offline, nouns: nouns)
+        api = CommandAPI(mac: Mac(), places: .test(["OPENSPOT_CONFIG": folder.path, "OPENSPOT_CORE": core.path]), app: FakeRunningApp(), runs: runs, nouns: nouns)
         let caller = Spot(id: "board", name: "Board", url: folder.appendingPathComponent("board.sh"), dataName: "board", uses: [.spots])
 
         let answer = try await ask(["spot", "run", "openspot/keyed"], from: caller)

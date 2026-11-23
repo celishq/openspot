@@ -1,8 +1,8 @@
 #!/bin/sh
 set -u
 cd "$(dirname "$0")/.."
-urls=${*:-$(grep -oE 'https://[^"]+/usd\.json' app/Core/Calc/CalcRates.swift)}
-[ -n "$urls" ] || { echo "FAIL no address found in app/Core/Calc/CalcRates.swift"; exit 1; }
+urls=${*:-$(grep -oE 'https://[^"]+/usd\.json' spots/calculator.spot/calculator.js)}
+[ -n "$urls" ] || { echo "FAIL no address found in spots/calculator.spot/calculator.js"; exit 1; }
 ecb=$(curl -fsS --max-time 20 https://www.ecb.europa.eu/stats/eurofxref/eurofxref-daily.xml 2>/dev/null |
   sed -n "s/.*currency='USD' rate='\([0-9.]*\)'.*/\1/p")
 status=0

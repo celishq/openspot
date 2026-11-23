@@ -97,7 +97,8 @@ extension SpotRun {
         if isAnswering { answerWaiters.append(work) } else { work() }
     }
 
-    func takeAnswers(_ rows: [SpotItem], to query: String? = nil) {
+    func takeAnswers(_ rows: [SpotItem], to query: String? = nil, isStopped: Bool = false) {
+        if isStopped, rows.isEmpty, query == answeredQuery { return }
         if let query {
             guard query == answerQuery else { return }
             answeredQuery = query

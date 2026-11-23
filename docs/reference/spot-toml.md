@@ -50,7 +50,7 @@ is missing still runs, and people see a message about it once a day. In Careful 
 | `calendar`  | Read and add events and reminders.                                                   |
 | `power`     | Keep the Mac awake with its lid closed.                                              |
 | `timer`     | Add, list and remove its timers.                                                     |
-| `network`   | Reach the network in Careful mode. No command needs it.                              |
+| `network`   | Reach the network in Careful mode, such as with `env.fetch`.                          |
 | `files`     | Write outside its data folder in Careful mode. No command needs it.                  |
 
 A program of the Mac, such as `open <url>`, isn't an `openspot` command, so it needs no use. [Uses](../../TRUST.md#uses)
@@ -138,6 +138,7 @@ When Openspot runs your spot by itself.
 | `command`             | [text]          | `command`                         | When people type `/<word>` in the panel's search.        |
 | `search`              | `true` or regex | `show`, or `search`               | `true` adds your items to the panel's search. A regex runs `search` for each text that matches. |
 | `drop`                | [text]          | `drop`                            | When people drop a file of a kind on your card, such as `png`, `folder` or `*`. |
+| `"cache.<name>"`      | an age          | `cache.<name>`                    | When a read of the cache `<name>` finds it missing or older than the age, such as `"1d"`; see [Keep a copy that goes old](../remember/cache.md). |
 
 A regex on an event, such as `"power.change" = "^battery$"`, runs your spot only when the event's value matches.
 

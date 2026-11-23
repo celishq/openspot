@@ -18,7 +18,6 @@ struct CallContext {
     let output: CommandOutput
     let calendar: CalendarCalls
     let reminders: RemindersCalls
-    let rates: CalcRateCache
     let nouns: [CommandNoun]
 
     var usage: String {

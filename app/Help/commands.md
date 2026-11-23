@@ -5,11 +5,11 @@ terminal can run, and how each one ends. `openspot help` lists every verb, group
 
 ```sh
 openspot help clipboard
-openspot calc solve 2+2
+openspot emoji list
 ```
 
 The first call prints the verbs of one noun, then its guide when it has one, such as `screen` or `calendar`. The second
-prints the answer to a sum as an item.
+prints each emoji as an item.
 
 ## How a call ends
 
@@ -25,7 +25,6 @@ prints the answer to a sum as an item.
 - A capability that can't answer prints `status=<word>`. `openspot translate text` prints `status=unknown` when it
   cannot tell the language of the text, `status=missing` when macOS has not downloaded a language,
   `status=unsupported` when it knows no way between the two, and `status=failed` for any other fault.
-  `openspot calc solve` prints `status=offline` or `status=unavailable` for a currency with no rates.
 - Each call that lists or reports, such as `app status`, `power readings`, `account show`, `spot list`, `spot stats`,
   `store list`, `setting list` and `theme list`, prints blocks, the format of a frame. `--json` prints JSON.
 - `openspot batch` runs one call for each line of stdin, and prints `---` after each. It stops at the first failure.
@@ -101,6 +100,7 @@ work in a read too. `run` works in a read, but the action it runs can't show a v
 | `openspot prompt new [words]...`                   | Prints a prompt that asks a coding agent to build a spot that does what the words say.          |
 | `openspot prompt change <id> [words]...` | Prints a prompt that asks a coding agent to change a spot as the words say, with what the stats counted of it over 14 days, or with no words a goal that follows those counts. |
 | `openspot prompt theme <name> [words]...`          | Prints a prompt that asks a coding agent to change a theme as the words say.                    |
+| `openspot date read <words>...`                    | Prints the date the words name, such as `tomorrow 3pm`, as `item=yyyy-MM-dd HH:mm` in the zone of the Mac, or with no time `item=yyyy-MM-dd`, and `time=true` or `false`. It prints nothing when the words are more than a date. |
 | `openspot emoji list [--tone name]`                | Prints each emoji as an item, with its name in the language of the Mac.                         |
 | `openspot symbols list`                            | Prints each symbol of the Character Viewer as an item.                                          |
 | `openspot translate text [--from code] [--to code]` | Translates the text on stdin. `openspot translate languages` prints the languages it knows.     |

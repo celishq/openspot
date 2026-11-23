@@ -14,7 +14,7 @@ final class SpotUsesTests: SpotRunsCase {
         client = folder.appendingPathComponent("A.app/Contents/Helpers/openspot")
         try FileManager.default.createDirectory(at: client.deletingLastPathComponent(), withIntermediateDirectories: true)
         try FileManager.default.copyItem(at: Bundle(for: Self.self).bundleURL.deletingLastPathComponent().appendingPathComponent("openspot"), to: client)
-        let api = CommandAPI(mac: Mac(), places: .test(["OPENSPOT_CONFIG": config.path]), app: FakeRunningApp(), runs: runs, rates: .offline)
+        let api = CommandAPI(mac: Mac(), places: .test(["OPENSPOT_CONFIG": config.path]), app: FakeRunningApp(), runs: runs)
         runs.api = api
         socket = try XCTUnwrap(CommandSocket(folder: config, api: api))
         runs.onReport = { [unowned self] _, report in
@@ -205,7 +205,7 @@ final class SpotUsesTests: SpotRunsCase {
             (["setting", "get", "k"], nil), (["setting", "set", "k", "v"], nil), (["screen", "sources"], "screen"),
             (["window", "move", "0 0 1 1"], "screen"), (["clipboard", "copy"], "clipboard"), (["clipboard", "paste"], "clipboard"),
             (["clipboard", "read"], "clipboard"),
-            (["calendar", "events"], "calendar"), (["reminders", "lists"], "calendar"), (["calc", "solve", "2+2"], nil),
+            (["calendar", "events"], "calendar"), (["reminders", "lists"], "calendar"), (["version"], nil),
             (["power", "lid-closed"], "power"), (["power", "readings"], nil),
             (["spot", "stats"], nil), (["spot", "list"], nil), (["event", "emit", "a.b"], nil)
         ]

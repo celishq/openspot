@@ -14,7 +14,7 @@ final class ManifestSchemaTests: XCTestCase {
 
     private func answer(_ arguments: [String]) async throws -> CommandAnswer {
         let call = try XCTUnwrap(CommandLineCall(arguments: arguments, environment: environment))
-        let work = try XCTUnwrap(CommandAPI(mac: Mac(), places: .test(environment), app: FakeRunningApp(), rates: .offline).work(for: call, request: .test(arguments, in: environment), input: { "" }))
+        let work = try XCTUnwrap(CommandAPI(mac: Mac(), places: .test(environment), app: FakeRunningApp()).work(for: call, request: .test(arguments, in: environment), input: { "" }))
         return await work()
     }
 

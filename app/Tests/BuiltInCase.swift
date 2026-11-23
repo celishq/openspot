@@ -96,7 +96,7 @@ class BuiltInCase: XCTestCase {
         }
         let built = Bundle(for: Self.self).bundleURL.deletingLastPathComponent().appendingPathComponent("openspot")
         try FileManager.default.copyItem(at: built, to: tools.appendingPathComponent("openspot"))
-        socket = CommandSocket(folder: root, api: CommandAPI(mac: Mac(calendar: FakeCalendar(), reminders: FakeReminders(), login: { [mac] in mac.login }, link: { [mac] in mac.link }, guide: guide, theme: repoSpots.deletingLastPathComponent().appendingPathComponent("app/Themes/openspot.theme/theme.toml"), openText: { [mac] in mac.opened.append($0) }), places: .test(TestEnvironment.values), app: app, runs: runs, rates: .offline))
+        socket = CommandSocket(folder: root, api: CommandAPI(mac: Mac(calendar: FakeCalendar(), reminders: FakeReminders(), login: { [mac] in mac.login }, link: { [mac] in mac.link }, guide: guide, theme: repoSpots.deletingLastPathComponent().appendingPathComponent("app/Themes/openspot.theme/theme.toml"), openText: { [mac] in mac.opened.append($0) }), places: .test(TestEnvironment.values), app: app, runs: runs))
     }
 
     override func tearDown() async throws {
