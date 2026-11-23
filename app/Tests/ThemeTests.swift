@@ -96,9 +96,9 @@ final class ThemeTests: XCTestCase {
         XCTAssertEqual(set.layout.backdrop.shadow, 20)
     }
 
-    func testOpenspotLiquidIsOpenspotWithClearTintedGlass() throws {
+    func testOpenspotLiquidIsOpenspotWithClearTintedGlassOverAStrongerBlur() throws {
         let liquid = builtInURL.deletingLastPathComponent().deletingLastPathComponent().appendingPathComponent("Openspot Liquid.theme/theme.toml")
-        let lines = { (text: String) in text.split(separator: "\n").filter { !$0.hasPrefix("glass") } }
+        let lines = { (text: String) in text.split(separator: "\n").filter { !$0.hasPrefix("glass") && !$0.hasPrefix("backdrop-blur") && $0 != "[advanced]" } }
         let frosted = try String(contentsOf: builtInURL, encoding: .utf8)
         let clear = try String(contentsOf: liquid, encoding: .utf8)
 
@@ -107,6 +107,7 @@ final class ThemeTests: XCTestCase {
         XCTAssertEqual(Theme(text: frosted).colours.light.glassTint.sample.alpha, 0)
         XCTAssertEqual(Theme(text: clear).colours.glass, .clear)
         XCTAssertEqual(Theme(text: clear).colours.light.glassTint, ThemeColor(text: "#C4C4C473"))
+        XCTAssertEqual([Theme(text: frosted).layout.backdrop.blur, Theme(text: clear).layout.backdrop.blur], [3, 8])
     }
 
     func testAnOnColourIsTheBackgroundOrTheInkWhicheverReadsBetter() {
@@ -169,7 +170,7 @@ final class ThemeTests: XCTestCase {
         XCTAssertEqual([layout.motion.pressBounce, layout.motion.pressedScale, layout.motion.liftedScale, layout.motion.focusedScale], [0.2, 1.04, 1.05, 1.04])
         XCTAssertEqual(layout.backdrop.style, .blur)
         XCTAssertEqual(layout.backdrop.reach, .tiles)
-        XCTAssertEqual([layout.backdrop.blur, layout.backdrop.size, layout.backdrop.padding], [8, 90, 0])
+        XCTAssertEqual([layout.backdrop.blur, layout.backdrop.size, layout.backdrop.padding], [3, 90, 0])
         XCTAssertEqual([layout.backdrop.ease, layout.backdrop.roundness, layout.backdrop.inset], [2, 2, 40])
     }
 
