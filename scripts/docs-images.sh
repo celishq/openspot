@@ -6,28 +6,37 @@ work=$PWD/.temp/docs-images
 echo "This shows each picture in the middle of the main screen and takes the keyboard focus for about a second per picture. A key typed then is lost."
 rm -rf "$work"
 mkdir -p "$work/spots" "$work/config" "$work/core" "$work/examples" docs/images
+pages=$(grep -o '](docs/[^)#]*\.md)' PROTOCOL.md | sed -e 's/^](//' -e 's/)$//' | awk '!seen[$0]++')
 awk -v out="$work/examples" '
-  /^```(toml|sh|js|swift)$/ { inside = 1; text = ""; kind = substr($0, 4); next }
-  inside && /^```$/ {
-    inside = 0
-    if (kind == "toml") { toml = text; next }
-    if (kind != "js" && text !~ /^#!/) { more[++extras] = text; toml = ""; next }
-    last = text; lastkind = kind; lasttoml = toml; toml = ""; draw = ""; card = ""; extras = 0; next
-  }
-  inside { text = text $0 "\n"; next }
-  /^<!-- draw: .* -->$/ { draw = $0; sub(/^<!-- draw: /, "", draw); sub(/ -->$/, "", draw); next }
-  /^<!-- card: [a-z]+ -->$/ { card = $3; next }
-  /^!\[[^]]*\]\(docs\/images\/[^)]*\.png\)$/ {
-    name = $0; sub(/.*docs\/images\//, "", name); sub(/\.png\)$/, "", name)
+  function emit(name, draw, card) {
     printf "%s", last > (out "/" name ".example"); close(out "/" name ".example")
     printf "%s", lasttoml > (out "/" name ".toml"); close(out "/" name ".toml")
     printf "%s", lastkind > (out "/" name ".kind"); close(out "/" name ".kind")
     printf "%s", draw > (out "/" name ".draw"); close(out "/" name ".draw")
     printf "%s", card > (out "/" name ".card"); close(out "/" name ".card")
     for (i = 1; i <= extras; i++) { printf "%s", more[i] > (out "/" name ".more." i); close(out "/" name ".more." i) }
-    last = ""; lasttoml = ""; draw = ""; card = ""; extras = 0
+    last = ""; lasttoml = ""; extras = 0
   }
-' GUIDE.md
+  FNR == 1 { last = ""; lasttoml = ""; toml = ""; draw = ""; card = ""; extras = 0; pending = "" }
+  /^```(toml|sh|js|swift)$/ { inside = 1; text = ""; kind = substr($0, 4); next }
+  inside && /^```$/ {
+    inside = 0
+    if (kind == "toml") { toml = text; next }
+    if (kind != "js" && text !~ /^#!/) { more[++extras] = text; toml = ""; next }
+    last = text; lastkind = kind; lasttoml = toml; toml = ""; draw = ""; card = ""; extras = 0
+    if (pending != "") { emit(pending, pendingdraw, pendingcard); pending = "" }
+    next
+  }
+  inside { text = text $0 "\n"; next }
+  /^<!-- draw: .* -->$/ { draw = $0; sub(/^<!-- draw: /, "", draw); sub(/ -->$/, "", draw); next }
+  /^<!-- card: [a-z]+ -->$/ { card = $3; next }
+  /^!\[[^]]*\]\([.\/]*images\/[^)]*\.png\)$/ {
+    name = $0; sub(/.*images\//, "", name); sub(/\.png\)$/, "", name)
+    if (last == "") { pending = name; pendingdraw = draw; pendingcard = card }
+    else emit(name, draw, card)
+    draw = ""; card = ""
+  }
+' $pages
 stub() {
   case "$1" in
     battery) title=Battery value="84%%" ;;

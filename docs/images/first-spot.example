@@ -1,11 +1,13 @@
 #!/bin/sh
-. "$OPENSPOT_SH"
 case "$1" in
   show)
-    lsof -nP -iTCP -sTCP:LISTEN | awk 'NR > 1 && !seen[$2]++ {
-      sub(/.*:/, ":", $9)
-      print $2 "\t" $9 "\t" $1
-    }' | openspot_items
+    lsof -nP -iTCP -sTCP:LISTEN | tail -n +2 | sort -u -k2,2 |
+      while read -r name pid _ _ _ _ _ _ address _; do
+        printf 'item=%s\ntitle=:%s\ndetail=%s\n\n' "$pid" "${address##*:}" "$name"
+      done
     ;;
-  press) kill "$(value item)" ;;
+  press)
+    pid=$(sed -n 's/^input.item=//p')
+    kill "$pid"
+    ;;
 esac

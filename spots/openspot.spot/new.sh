@@ -92,7 +92,7 @@ case "$1" in
     open -t "$OPENSPOT_EDIT_FILE"
     ;;
   guide)
-    openspot guide > "$OPENSPOT_DATA/GUIDE.md" && open "$OPENSPOT_DATA/GUIDE.md"
+    openspot guide > "$OPENSPOT_DATA/DOCS.md" && open "$OPENSPOT_DATA/DOCS.md"
     ;;
   folder)
     mkdir -p "$folder" && open "$folder"

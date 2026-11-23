@@ -165,7 +165,7 @@ _openspot_decode() {
   done
 }
 
-# Reads the next call block of a staying script from stdin, and fails at the end of stdin (protocol: Modes). It sets `_openspot_call`,
+# Reads the next call block of a staying script from stdin, and fails at the end of stdin (protocol: Without the helper). It sets `_openspot_call`,
 # `_openspot_args` with one written argument on each line, and `_openspot_stdin` with the other lines of the block, the stdin
 # of the call. A stop block gives no call.
 _openspot_next() {
@@ -185,7 +185,7 @@ _openspot_next() {
   return 1
 }
 
-# Runs a function with the three parts of each call: its arguments, its variables and its stdin (protocol: Modes). A script that runs
+# Runs a function with the three parts of each call: its arguments, its variables and its stdin (protocol: Without the helper). A script that runs
 # once runs it once, with the arguments after its name, and returns its code. A staying script runs it for each call block
 # on stdin, one at a time, and prints `call=<n>` before its output and `end=<n>` after it. The function gets an empty
 # stdin: the stdin of the call stays in memory, for `value` and `openspot_input`, so it touches no file and no pipe.
@@ -213,7 +213,7 @@ openspot_serve() {
   done
 }
 
-# Prints one line of a block with its value written for you, so that a new line or a backslash in the value stays in it (protocol: The calls).
+# Prints one line of a block with its value written for you, so that a new line or a backslash in the value stays in it (protocol: Lines).
 openspot_kv() {
   printf '%s=' "$1"
   esc "${2-}"
@@ -221,7 +221,7 @@ openspot_kv() {
 }
 
 # Prints one item, an `item` block, after a blank line: its id and title, and its detail and icon when they are given, each
-# written for you (protocol: The calls). More lines of the item can follow with `openspot_kv`.
+# written for you (protocol: Lines). More lines of the item can follow with `openspot_kv`.
 openspot_item() {
   printf '\n'
   openspot_kv item "$1"
@@ -251,7 +251,7 @@ openspot_rows() {
 
 # Prints an item for each line of stdin, an `item` block or one of the kind given, such as `switch`. A line holds its id, title, detail
 # and icon split by tabs, and after them any more `key=value` fields of the block. Each backslash is written for you, and an
-# empty field prints no line (protocol: The calls).
+# empty field prints no line (protocol: Lines).
 openspot_items() {
   LC_ALL=C /usr/bin/sed 's/\\/\\\\/g' | LC_ALL=C /usr/bin/awk -F '\t' -v kind="${1:-item}" '
     NF {

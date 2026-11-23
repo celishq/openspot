@@ -257,7 +257,7 @@ final class NewSpotTests: BuiltInCase {
         let spot = try newSpot()
 
         try await spot.perform("guide", timeout: 60)
-        XCTAssertTrue(try saved("opened").contains("GUIDE.md"))
+        XCTAssertTrue(try saved("opened").contains("DOCS.md"))
 
         try await spot.perform("folder", timeout: 60)
         XCTAssertTrue(try saved("opened").contains(spots.path))
@@ -278,9 +278,10 @@ final class NewSpotTests: BuiltInCase {
         })
         let links = guideText.components(separatedBy: "](#").dropFirst().map { String($0.prefix { $0 != ")" }) }
 
-        XCTAssertTrue(guideText.hasPrefix("# Openspot guide"))
-        XCTAssertTrue(guideText.contains("\n# Openspot protocol\n"))
-        XCTAssertFalse(guideText.contains("GUIDE.md#") || guideText.contains("PROTOCOL.md#"))
+        XCTAssertTrue(guideText.hasPrefix("# How Openspot works"))
+        XCTAssertTrue(guideText.contains("\n# Your first spot\n"))
+        XCTAssertTrue(guideText.contains("\n# The openspot command\n"))
+        XCTAssertFalse(guideText.contains("PROTOCOL.md") || guideText.contains("](docs/"))
         XCTAssertGreaterThan(links.count, 20)
         for link in links {
             XCTAssertTrue(headings.contains(link), link)
@@ -294,17 +295,17 @@ final class NewSpotTests: BuiltInCase {
     }
 
     func testTheGuideAndThePartsTakeTheSameKeys() {
-        let blocks = guideText.components(separatedBy: "## Blocks").dropFirst().first?.components(separatedBy: "\n# Layouts").first ?? ""
+        let blocks = guideText.components(separatedBy: "## Kinds of block").dropFirst().first?.components(separatedBy: "\n## Items").first ?? ""
         for key in BlockKind.commonKeys {
             XCTAssertTrue(blocks.contains("`\(key)"), key)
         }
         for line in blocks.split(separator: "\n") where line.hasPrefix("| `") {
             let cells = line.split(separator: "|").map { $0.trimmingCharacters(in: .whitespaces) }
             let kind = cells[0].trimmingCharacters(in: CharacterSet(charactersIn: "`"))
-            guard cells.count > 2, BlockKind.all.contains(where: { $0.word == kind }) else { continue }
-            for item in cells[2].components(separatedBy: ", ") {
+            guard cells.count > 2, let known = BlockKind.all.first(where: { $0.word == kind }) else { continue }
+            for item in cells[2].components(separatedBy: "; ") {
                 guard let word = item.split(separator: "`", omittingEmptySubsequences: false).dropFirst().first else { continue }
-                XCTAssertTrue(BlockKind.commonKeys.contains(String(word.split(separator: "=").first ?? word)), "\(kind): \(word)")
+                XCTAssertTrue(BlockKind.commonKeys.union(known.keys).contains(String(word.split(separator: "=").first ?? word)), "\(kind): \(word)")
             }
         }
     }

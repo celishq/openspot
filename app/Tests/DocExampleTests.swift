@@ -5,7 +5,7 @@ final class DocExampleTests: SampleSpotsCase {
     private let runnable: Set<String> = ["sh", "js", "swift"]
 
     private func docs() throws -> [RepoDoc] {
-        try RepoDoc.all().filter { ["GUIDE.md", "PROTOCOL.md", "USING.md"].contains($0.path) || $0.path.hasPrefix("app/Help/") || $0.path.hasPrefix("docs/protocol/") }
+        try RepoDoc.all().filter { ["PROTOCOL.md", "USING.md"].contains($0.path) || $0.path.hasPrefix("app/Help/") || $0.path.hasPrefix("docs/") }
     }
 
     private func syntaxFault(of file: URL) throws -> String? {
@@ -74,7 +74,7 @@ final class DocExampleTests: SampleSpotsCase {
                     let faults = await SpotCheck(folder: SpotsFolder(url: folder), views: ViewLibrary(cache: home.appendingPathComponent("views")), programs: SwiftProgram(cache: home.appendingPathComponent("programs")), environment: TestEnvironment.values).faults()
                     XCTAssertEqual(faults, [], place)
 
-                    guard let spot = try SpotsFolder(url: folder).scan().spots.first(where: { $0.id == "example" }) else {
+                    guard let spot = try SpotsFolder(url: folder, enabled: ["example"]).scan().spots.first(where: { $0.id == "example" }) else {
                         XCTFail("\(place) does not load")
                         continue
                     }

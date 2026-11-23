@@ -3968,7 +3968,7 @@
 				9377494807D855EA77601A31 /* Frameworks */,
 				9086F9D8FC997F4EEA3460DC /* Copy the openspot command */,
 				0F08555BC4F4539D8F830FE4 /* Copy the power helper and its launch daemon */,
-				9CAD7057076132D3CE954977 /* Join the guide, and copy the guides of the nouns */,
+				6144067ABA4293EBA92F2C53 /* Join the docs, and copy the guides of the nouns */,
 				483CB758F22DD0EEA8575ACE /* Copy the core spots and their defaults */,
 				D7A266F99E3D08C32CBFE197 /* Build the views of the core spots and the examples */,
 				A5068AFF8D453D11CC2A8674 /* Copy the emoji keywords */,
@@ -4252,6 +4252,25 @@
 			shellPath = /bin/sh;
 			shellScript = "core=\"$TARGET_BUILD_DIR/$UNLOCALIZED_RESOURCES_FOLDER_PATH/spots\"\nrm -rf \"$core\"\nmkdir -p \"$(dirname \"$core\")\"\ncp -RL \"$SRCROOT/../spots\" \"$core\"\nrm -rf \"$core\"/*.spot/tests\nexamples=\"$TARGET_BUILD_DIR/$UNLOCALIZED_RESOURCES_FOLDER_PATH/examples\"\nrm -rf \"$examples\"\ncp -RL \"$SRCROOT/../examples\" \"$examples\"\nrm -rf \"$examples\"/*.spot/tests\ncp \"$SRCROOT/defaults.toml\" \"$TARGET_BUILD_DIR/$UNLOCALIZED_RESOURCES_FOLDER_PATH/defaults.toml\"\n";
 		};
+		6144067ABA4293EBA92F2C53 /* Join the docs, and copy the guides of the nouns */ = {
+			isa = PBXShellScriptBuildPhase;
+			alwaysOutOfDate = 1;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputFileListPaths = (
+			);
+			inputPaths = (
+			);
+			name = "Join the docs, and copy the guides of the nouns";
+			outputFileListPaths = (
+			);
+			outputPaths = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "sh \"$SRCROOT/../scripts/guide.sh\" \"$TARGET_BUILD_DIR/$UNLOCALIZED_RESOURCES_FOLDER_PATH/DOCS.md\"\nrm -rf \"$TARGET_BUILD_DIR/$UNLOCALIZED_RESOURCES_FOLDER_PATH/Help\"\ncp -R \"$SRCROOT/Help\" \"$TARGET_BUILD_DIR/$UNLOCALIZED_RESOURCES_FOLDER_PATH/Help\"\nrm -rf \"$TARGET_BUILD_DIR/$UNLOCALIZED_RESOURCES_FOLDER_PATH/Themes\"\ncp -R \"$SRCROOT/Themes\" \"$TARGET_BUILD_DIR/$UNLOCALIZED_RESOURCES_FOLDER_PATH/Themes\"\n";
+		};
 		9086F9D8FC997F4EEA3460DC /* Copy the openspot command */ = {
 			isa = PBXShellScriptBuildPhase;
 			alwaysOutOfDate = 1;
@@ -4270,25 +4289,6 @@
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/sh;
 			shellScript = "mkdir -p \"$TARGET_BUILD_DIR/$CONTENTS_FOLDER_PATH/Helpers\"\nrm -f \"$TARGET_BUILD_DIR/$CONTENTS_FOLDER_PATH/Helpers/openspot\"\ncp \"$BUILT_PRODUCTS_DIR/openspot\" \"$TARGET_BUILD_DIR/$CONTENTS_FOLDER_PATH/Helpers/openspot\"\n";
-		};
-		9CAD7057076132D3CE954977 /* Join the guide, and copy the guides of the nouns */ = {
-			isa = PBXShellScriptBuildPhase;
-			alwaysOutOfDate = 1;
-			buildActionMask = 2147483647;
-			files = (
-			);
-			inputFileListPaths = (
-			);
-			inputPaths = (
-			);
-			name = "Join the guide, and copy the guides of the nouns";
-			outputFileListPaths = (
-			);
-			outputPaths = (
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-			shellPath = /bin/sh;
-			shellScript = "sh \"$SRCROOT/../scripts/guide.sh\" \"$TARGET_BUILD_DIR/$UNLOCALIZED_RESOURCES_FOLDER_PATH/GUIDE.md\"\nrm -rf \"$TARGET_BUILD_DIR/$UNLOCALIZED_RESOURCES_FOLDER_PATH/Help\"\ncp -R \"$SRCROOT/Help\" \"$TARGET_BUILD_DIR/$UNLOCALIZED_RESOURCES_FOLDER_PATH/Help\"\nrm -rf \"$TARGET_BUILD_DIR/$UNLOCALIZED_RESOURCES_FOLDER_PATH/Themes\"\ncp -R \"$SRCROOT/Themes\" \"$TARGET_BUILD_DIR/$UNLOCALIZED_RESOURCES_FOLDER_PATH/Themes\"\n";
 		};
 		A5068AFF8D453D11CC2A8674 /* Copy the emoji keywords */ = {
 			isa = PBXShellScriptBuildPhase;

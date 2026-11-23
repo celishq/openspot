@@ -4,7 +4,7 @@
   <p><strong>The macOS launcher that your coding agent extends.</strong></p>
   <p>
     <a href="https://github.com/celishq/openspot/releases/latest">Download</a> ·
-    <a href="GUIDE.md">Documentation</a> ·
+    <a href="PROTOCOL.md">Documentation</a> ·
     <a href="CONTRIBUTING.md">Contributing</a> ·
     <a href="#roadmap-and-status">Roadmap</a>
   </p>
@@ -71,9 +71,9 @@ lsof -nP -iTCP -sTCP:LISTEN | awk 'NR > 1 && !seen[$2]++ {
 
 <p align="center"><img src="docs/images/ports.png" width="385" alt="The sheet of Ports: four rows, :3000 node, :5432 postgres, :8080 python3 and :6379 redis-server"></p>
 
-That's most of the model. The [guide](GUIDE.md) goes through the rest (lists, buttons, cards, your own SwiftUI views)
-one task at a time, the [protocol](PROTOCOL.md) has every rule, and [Use Openspot](USING.md) shows the keys, the
-places and the themes that you choose.
+That's most of the model. [How Openspot works](PROTOCOL.md) maps the rest (lists, buttons, cards, your own SwiftUI
+views) one goal at a time, with a reference of every rule, and [Use Openspot](USING.md) shows the keys, the places and
+the themes that you choose.
 
 ## Security
 

@@ -40,13 +40,13 @@
 - One primary type per file. The filename matches it. A file of extensions is named `Type+Topic.swift`.
   `scripts/check-files.sh` fails on a file that breaks this.
 - Nouns own their data. Verbs are methods on the noun that owns the data.
-- A toast or a failure line follows [Write a message](docs/protocol/09-commands.md#write-a-message).
+- A toast or a failure line follows [Write a message](docs/reference/commands.md#write-a-message).
 
 ## Docs
 
-`PROTOCOL.md` is the contract of a spot, `GUIDE.md` builds spots one goal at a time, `USING.md` is the person's page, `app/Help/` the reference of the `openspot` commands, `TRUST.md` what Openspot shows the person about a spot, and `spots/AGENTS.md` the words of the app's own spots. No doc describes the app's code.
+`PROTOCOL.md` is the map of a spot's contract: `docs/first-spot.md` builds the first spot, a page in `docs/show`, `docs/act`, `docs/remember`, `docs/react`, `docs/connect` and `docs/further` for each goal, and `docs/reference` every key, block, class and command. `USING.md` is the person's page, `app/Help/` the reference of the `openspot` commands, `TRUST.md` what Openspot shows the person about a spot, and `spots/AGENTS.md` the words of the app's own spots. No doc describes the app's code.
 
-`make verify` checks facts, not style: a link or a cited heading that doesn't exist (`DocReferenceTests`), an `sh`, `js` or `swift` example that doesn't run (`DocExampleTests`; put one that needs a network or a rare tool in a `text` fence), a picture of the guide older than its example (`GuideImageTests`), and an `openspot` command that a doc names but the command doesn't take (`DocCommandTests`).
+`make verify` checks facts, not style: a link or a cited heading that doesn't exist (`DocReferenceTests`), an `sh`, `js` or `swift` example that doesn't run (`DocExampleTests`; put one that needs a network or a rare tool in a `text` fence), a picture of a page older than its example (`GuideImageTests`), and an `openspot` command that a doc names but the command doesn't take (`DocCommandTests`).
 
 ## Comments
 
@@ -266,7 +266,7 @@ make film SPOT=caffeinate  # films the open and close of a sheet 10x slower (SLO
 make shots                 # saves pictures of the actions menu in the running panel into .temp/shots; ACTION=search TEXT=/translate shoots a typed search
 sh scripts/pixel-diff.sh shoot before  # saves pictures of fixed screens, dark and light, into .temp/pixels/before
 sh scripts/pixel-diff.sh compare before after  # counts the pixels that differ in each picture, and marks them in .temp/pixels/marks
-make docs-images           # shows each GUIDE.md example on screen, focused, and takes its image; GuideImageTests fail when one is out of date
+make docs-images           # shows each example of the docs that has a picture on screen, focused, and takes its image; GuideImageTests fail when one is out of date
 make eval-agent LABEL=base # gives each task of scripts/agent-eval/ to claude -p (Sonnet) N=3 times, grades what it did and how it used
                            # the command, into .temp/agent-eval/base; TASKS=calc picks tasks; it costs money
 make eval-compare LABELS="base phase1"  # prints the summaries of two eval runs one after the other

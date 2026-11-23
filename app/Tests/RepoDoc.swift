@@ -19,13 +19,16 @@ struct RepoDoc {
     static func all() throws -> [RepoDoc] {
         let help = try FileManager.default.contentsOfDirectory(atPath: repo.appendingPathComponent("app/Help").path)
             .filter { $0.hasSuffix(".md") }.sorted().map { "app/Help/" + $0 }
-        return try (["AGENTS.md", "CLAUDE.md", "CONTRIBUTING.md", "GUIDE.md", "PROTOCOL.md", "README.md", "TRUST.md", "USING.md", "spots/AGENTS.md"] + help)
-            .map(RepoDoc.init) + protocolPages()
+        return try (["AGENTS.md", "CLAUDE.md", "CONTRIBUTING.md", "PROTOCOL.md", "README.md", "TRUST.md", "USING.md", "spots/AGENTS.md"] + help)
+            .map(RepoDoc.init) + pages()
     }
 
-    static func protocolPages() throws -> [RepoDoc] {
-        try FileManager.default.contentsOfDirectory(atPath: repo.appendingPathComponent("docs/protocol").path)
-            .filter { $0.hasSuffix(".md") }.sorted().map { try RepoDoc("docs/protocol/" + $0) }
+    static func pages() throws -> [RepoDoc] {
+        var paths: [String] = []
+        for path in matches(#"\]\((docs/[^)#]+\.md)\)"#, in: try RepoDoc("PROTOCOL.md").text).map({ $0[1] }) where !paths.contains(path) {
+            paths.append(path)
+        }
+        return try paths.map(RepoDoc.init)
     }
 
     var folder: URL {

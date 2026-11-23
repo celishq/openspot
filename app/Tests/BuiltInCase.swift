@@ -30,7 +30,7 @@ class BuiltInCase: XCTestCase {
     }
 
     var guide: URL {
-        root.appendingPathComponent("GUIDE.md")
+        root.appendingPathComponent("DOCS.md")
     }
 
     func fake(_ name: String, _ body: String) throws {

@@ -4,7 +4,7 @@ Fixes and new spots are welcome. For a large change, open an issue first.
 
 ## Add a spot
 
-Add one spot folder, with its `spot.toml` and its scripts, to [`spots`](spots). The [guide](GUIDE.md) shows how, and the [protocol](PROTOCOL.md) gives every rule.
+Add one spot folder, with its `spot.toml` and its scripts, to [`spots`](spots). [How Openspot works](PROTOCOL.md) shows how, one goal at a time, and its reference gives every rule.
 
 ## Change the app
 
@@ -37,12 +37,12 @@ Add a word to the [protocol](PROTOCOL.md) so that an old spot never sees a word 
 | A thing to draw      | A kind `<kind>=`, which an older Openspot skips and reports.              |
 | A detail of a kind   | A key, or a `type` value.                                                 |
 | A power of the Mac   | A noun, `openspot <noun> <verb>`, with its events and its `uses` word.    |
-| A complex look       | Nothing, since a spot draws it with a [view](docs/protocol/13-views.md).          |
+| A complex look       | Nothing, since a spot draws it with a [view](docs/further/views.md).             |
 
 ## Follow the rules
 
 - [`AGENTS.md`](AGENTS.md) has the repo conventions.
-- [`GUIDE.md`](GUIDE.md) teaches how to write a spot, [`USING.md`](USING.md) how to use Openspot, and
-  [`PROTOCOL.md`](PROTOCOL.md) is the spot contract. If your change differs from them, change them first.
+- [`PROTOCOL.md`](PROTOCOL.md) and the pages it maps teach how to write a spot and hold the spot contract, and
+  [`USING.md`](USING.md) says how to use Openspot. If your change differs from them, change them first.
 
 By contributing, you agree that your work is under the [MIT License](LICENSE).

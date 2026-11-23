@@ -22,7 +22,7 @@ final class DocReferenceTests: XCTestCase {
     }
 
     func testEachProtocolCitationNamesAHeadingOfTheProtocol() throws {
-        let headings = Set(try ([RepoDoc("PROTOCOL.md")] + RepoDoc.protocolPages()).flatMap(\.headings))
+        let headings = Set(try ([RepoDoc("PROTOCOL.md")] + RepoDoc.pages()).flatMap(\.headings))
         let kinds: Set<String> = ["swift", "sh", "js", "md", "py", "toml", "yml"]
         let skipped: Set<String> = [".git", ".temp", ".claude", "plans", "Openspot.xcodeproj", "build"]
         let walk = try XCTUnwrap(FileManager.default.enumerator(at: repo, includingPropertiesForKeys: nil))

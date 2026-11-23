@@ -145,7 +145,7 @@ final class FakeHost: SpotsHost {
     }
 
     func agentPrompt(for folder: URL) -> AgentPrompt {
-        AgentPrompt(folder: folder, guide: folder.appendingPathComponent("GUIDE.md"), app: app)
+        AgentPrompt(folder: folder, guide: folder.appendingPathComponent("DOCS.md"), app: app)
     }
 
     private(set) var isChanging = false
