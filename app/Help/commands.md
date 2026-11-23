@@ -55,7 +55,7 @@ work in a read too. `run` works in a read, but the action it runs can't show a v
 
 | Command                                            | Does                                                                                            |
 | -------------------------------------------------- | ----------------------------------------------------------------------------------------------- |
-| `openspot guide [topic \| --topics]` | Prints the docs, from the map to the reference, then Use Openspot, or with a topic one section or a page such as this one. |
+| `openspot guide [topic \| --topics]` | Prints the docs, from the map to the reference, then Use Openspot, or with a topic one page, such as this one. |
 | `openspot version`                                 | Prints the version of Openspot, as `openspot --version` does.                                   |
 | `openspot toast <words>...`                        | Shows a short message, even when the panel is closed.                                           |
 | `openspot select <item>`                           | Selects an item of the spot's sheet once the spot's next frame shows.                           |

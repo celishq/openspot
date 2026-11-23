@@ -288,6 +288,16 @@ final class NewSpotTests: BuiltInCase {
         }
     }
 
+    func testEachTopicOfTheGuideIsAPageOfTheMapOnce() throws {
+        let docs = try [RepoDoc("PROTOCOL.md")] + RepoDoc.pages() + [RepoDoc("USING.md")]
+        let topics = Guide(text: guideText, pages: [:]).topics
+
+        XCTAssertEqual(topics.map(\.title), try docs.map { try XCTUnwrap($0.headings.first) })
+        XCTAssertEqual(Set(topics.map(\.slug)).count, topics.count)
+        XCTAssertEqual(topics.first { $0.title == "Your first spot" }?.text.hasPrefix("# Your first spot\n"), true)
+        XCTAssertEqual(topics.first { $0.title == "Your first spot" }?.text.contains("\n## How it works\n"), true)
+    }
+
     func testTheGuideTeachesNoOldKeyOrCall() {
         for old in ["read=open", "read=click", "live=true", "search=live", "form <action>", "search <text>", "set <id>", "press <id>", "press <word>", "openspot catalog", "while next", "openspot.input", "function read("] {
             XCTAssertFalse(guideText.contains(old), old)
