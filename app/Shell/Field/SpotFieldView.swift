@@ -32,7 +32,7 @@ struct SpotFieldView: View {
     }
 
     private var searchField: some View {
-        let place = isInSheet ? Self.sheetRow(top: model.fieldTop) : model.fieldHoldsValue ? Self.heldRect : Self.rect
+        let place = isInSheet ? Self.sheetRow(top: model.fieldTop) : model.fieldValueRoom > 0 ? Self.heldRect(room: model.fieldValueRoom) : Self.rect
         let top = isInSheet ? Self.sheetTop(top: model.fieldTop) : SpotTokens.halo
         let glyphLeft = isInSheet ? Self.sheetGlyphLeft : SpotTokens.halo + SpotTokens.padding
         return ZStack(alignment: .topLeading) {
@@ -102,8 +102,8 @@ struct SpotFieldView: View {
         .frame(width: SpotTokens.panelWidth, height: SpotTokens.panelHeight, alignment: .topLeading)
     }
 
-    static var heldRect: CGRect {
-        CGRect(x: rect.minX, y: rect.minY, width: rect.width, height: rect.height + SpotTokens.contextValueRoom)
+    static func heldRect(room: CGFloat) -> CGRect {
+        CGRect(x: rect.minX, y: rect.minY, width: rect.width, height: rect.height + room)
     }
 
     static func sheetRow(top: SheetTop) -> CGRect {

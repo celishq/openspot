@@ -52,7 +52,24 @@ extension SpotTokens {
     public static let previewLines = 2
     public static let previewCaptionGap: CGFloat = 4
 
-    public static var contextValueRoom: CGFloat { cell + rowGap }
+    public static let contextValuePadding: CGFloat = 9
+    public static let contextValueLineGap: CGFloat = 1
+    static let lineShare: CGFloat = 1.25
+    static let glyphWidthShare: CGFloat = 0.55
+
+    public static var contextValueWidth: CGFloat { gridWidth - 2 * (padding + glyphInset) }
+
+    public static func contextValueLines(of text: String) -> Int {
+        guard !text.isEmpty else { return 0 }
+        let width = CGFloat(text.count) * CGFloat(layout.type.body) * glyphWidthShare
+        return min(previewLines, max(1, Int((width / contextValueWidth).rounded(.up))))
+    }
+
+    public static func contextValueRoom(lines: Int) -> CGFloat {
+        let caption = CGFloat(layout.type.detail) * lineShare
+        let body = lines == 0 ? 0 : contextValueLineGap + CGFloat(lines) * CGFloat(layout.type.body) * lineShare
+        return (2 * contextValuePadding + caption + body).rounded(.up)
+    }
 
     public static func contextStack(count: Int) -> CGFloat {
         count == 0 ? 0 : contextCard + CGFloat(count - 1) * contextStep

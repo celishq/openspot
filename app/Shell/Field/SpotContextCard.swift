@@ -19,7 +19,7 @@ struct SpotContextCard: View, Equatable {
                 .shadow(color: SpotTheme.contextFarShadow, radius: SpotTokens.contextFarShadowRadius, y: SpotTokens.contextFarShadowDrop)
                 .shadow(color: SpotTheme.contextNearShadow, radius: SpotTokens.contextNearShadowRadius, y: SpotTokens.contextNearShadowDrop)
         }
-        .overlay(shape.strokeBorder(SpotTheme.contextRim, lineWidth: SpotTokens.contextBorder))
+        .overlay(SpotRoundShape(radius: SpotTokens.contextCardRadius + SpotTokens.contextBorder).strokeBorder(SpotTheme.contextRim, lineWidth: SpotTokens.contextBorder).padding(-SpotTokens.contextBorder))
         .overlay(alignment: .bottomTrailing) { badge }
     }
 
@@ -45,7 +45,7 @@ struct SpotContextCard: View, Equatable {
                 .offset(x: SpotTokens.contextBadgeNudge, y: SpotTokens.contextBadgeNudge)
                 .frame(width: SpotTokens.contextBadge, height: SpotTokens.contextBadge)
                 .background(leaf.fill(SpotTheme.contextFace))
-                .overlay(leaf.stroke(SpotTheme.contextRim, lineWidth: SpotTokens.contextBorder))
+                .overlay(alignment: .topLeading) { SpotLeafSeam(radius: SpotTokens.contextIconRadius).stroke(SpotTheme.contextRim, lineWidth: SpotTokens.contextBorder * 2) }
                 .padding(SpotTokens.contextInset)
                 .transition(.opacity)
         }

@@ -91,7 +91,9 @@ final class ContextStateTests: ContextCase {
 
         model.moveSelection(dx: 0, dy: -1)
 
-        XCTAssertEqual(model.placements.map(\.row), [1])
+        XCTAssertEqual(model.fieldValueLines, 1)
+        XCTAssertEqual(model.placements.map(\.rect.minY), [model.fieldValueRoom])
+        XCTAssertLessThan(model.fieldValueRoom, SpotTokens.cell + SpotTokens.rowGap)
         XCTAssertEqual(model.selected, 0)
     }
 

@@ -20,13 +20,14 @@ struct SpotFieldValue: View {
                 }
             }
             .padding(.horizontal, SpotTokens.padding + SpotTokens.glyphInset)
-            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .leading)
+            .padding(.vertical, SpotTokens.contextValuePadding)
+            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
         }
-        .frame(width: SpotFieldView.rect.width, height: SpotTokens.contextValueRoom)
+        .frame(width: SpotFieldView.rect.width, height: max(model.fieldValueRoom, SpotTokens.contextValueRoom(lines: 0)), alignment: .top)
     }
 
     private func words(of preview: ContextPreview) -> some View {
-        VStack(alignment: .leading, spacing: SpotType.lineGap) {
+        VStack(alignment: .leading, spacing: SpotTokens.contextValueLineGap) {
             HStack(spacing: SpotTokens.previewCaptionGap) {
                 Image(systemName: preview.symbol)
                 Text(preview.caption)
@@ -38,7 +39,7 @@ struct SpotFieldValue: View {
                 Text(preview.text)
                     .font(SpotType.body)
                     .modifier(SpotInk())
-                    .lineLimit(SpotTokens.previewLines)
+                    .lineLimit(max(model.fieldValueLines, 1))
                     .fixedSize(horizontal: false, vertical: true)
             }
         }

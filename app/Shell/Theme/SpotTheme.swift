@@ -51,7 +51,7 @@ enum SpotTheme {
     static let contextCardFade = 0.3
     static let contextLoadingIcon = 0.35
     static let contextFace = color(dark: NSColor(white: 0.23, alpha: 1), light: .white)
-    static let contextRim = color(dark: .white.withAlphaComponent(0.14), light: .black.withAlphaComponent(0.12))
+    static let contextRim = color(dark: .white.withAlphaComponent(0.2), light: .black.withAlphaComponent(0.2))
     static let contextNearShadow = color(dark: .black.withAlphaComponent(0.35), light: .black.withAlphaComponent(0.10))
     static let contextFarShadow = color(dark: .black.withAlphaComponent(0.35), light: .black.withAlphaComponent(0.10))
     static let contextBadgeInk = color(dark: NSColor(white: 0.95, alpha: 1), light: NSColor(white: 0.11, alpha: 1))

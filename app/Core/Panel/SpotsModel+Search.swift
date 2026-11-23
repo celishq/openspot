@@ -146,12 +146,12 @@ extension SpotsModel {
         let sizes = query.isEmpty ? visible.map { $0.id == resize?.id ? resize?.size ?? $0.size : $0.size } : visible.map { $0.role == .answer ? $0.size : SpotSize.strip }
         let index = visible.firstIndex { $0.id == resize?.id }
         let grid = index.map(self.grid.keeping) ?? self.grid
-        let top = contextPreview == nil ? 0 : 1
+        let top = fieldValueRoom
         if sizes != laidOutSizes || grid != laidOutGrid || top != laidOutTop {
             laidOutSizes = sizes
             laidOutGrid = grid
             laidOutTop = top
-            placements = grid.place(sizes).map { $0.moved(rows: top) }
+            placements = grid.place(sizes).map { $0.dropped(by: top) }
         }
         if transition.phase == .closing, !hasPlace(transition.id) { cutSheet(to: nil) }
     }

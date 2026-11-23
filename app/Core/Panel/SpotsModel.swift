@@ -63,7 +63,7 @@ public final class SpotsModel {
     @ObservationIgnored var laidOutSizes: [SpotSize] = []
     @ObservationIgnored private var cardGlyphs: [String] = []
     @ObservationIgnored var laidOutGrid = SpotGrid()
-    @ObservationIgnored var laidOutTop = 0
+    @ObservationIgnored var laidOutTop: CGFloat = 0
     @ObservationIgnored var spotList = ItemList()
     @ObservationIgnored var spotListIsStale = true
     @ObservationIgnored var commands = CommandIndex()
@@ -78,7 +78,8 @@ public final class SpotsModel {
     }
     public private(set) var isContextSpread = false
     public internal(set) var contextPreview: ContextPreview?
-    public internal(set) var fieldHoldsValue = false
+    public internal(set) var fieldValueRoom: CGFloat = 0
+    public internal(set) var fieldValueLines = 0
     @ObservationIgnored var holdMotion: PanelMotion? = .edit
     @ObservationIgnored var contextFold = ContextFold()
     @ObservationIgnored var keyFrames: [String: String] = [:]
@@ -108,7 +109,7 @@ public final class SpotsModel {
     public private(set) var gridHeight = SpotTokens.contentHeight(gridHeight: 0)
 
     func takePlacements() {
-        let height = SpotTokens.contentHeight(gridHeight: max(SpotGrid.height(of: placements), CGFloat(laidOutTop) * SpotTokens.cell))
+        let height = SpotTokens.contentHeight(gridHeight: max(SpotGrid.height(of: placements), laidOutTop))
         if height != gridHeight { gridHeight = height }
         let bands = SpotGroupBands(placements)
         if bands != groupBands { groupBands = bands }
