@@ -1,22 +1,38 @@
 import Foundation
 
 public struct ContextChip: Equatable, Sendable {
+    public struct Look: Equatable, Sendable {
+        public let symbol: String
+        public let file: FileIcon?
+
+        public init(symbol: String = "", file: FileIcon? = nil) {
+            self.symbol = symbol
+            self.file = file
+        }
+    }
+
     public let source: String
     public let app: String?
     public let value: ContextValue?
+    public let look: Look
 
-    public init(source: String, app: String?, value: ContextValue? = nil) {
+    public init(source: String, app: String?, value: ContextValue? = nil, look: Look = Look()) {
         self.source = source
         self.app = app
         self.value = value
+        self.look = look
+    }
+
+    public static func == (lhs: ContextChip, rhs: ContextChip) -> Bool {
+        lhs.source == rhs.source && lhs.app == rhs.app && lhs.value == rhs.value
     }
 
     public var isLoading: Bool {
         value == nil
     }
 
-    func filled(with value: ContextValue) -> ContextChip {
-        ContextChip(source: source, app: value.app ?? app, value: value)
+    func filled(with value: ContextValue, look: Look) -> ContextChip {
+        ContextChip(source: source, app: value.app ?? app, value: value, look: look)
     }
 
     func rank(over front: String?) -> Int {

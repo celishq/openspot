@@ -160,7 +160,16 @@ case "$1" in
           + (if ($found | index($host + ".png")) then "icon=\("\($icons)/\($host).png" | esc)\n" else "icon=link\n" end)
         end' "$data" --args "$@"
     ;;
-  new|drop)
+  drop)
+    # Keeps the link that was handed to it, named by its title, or by the link when it has none.
+    values=$(checked) || exit 1
+    values=$(printf '%s' "$values" | jq -c 'if .title == "" then .title = .url else . end')
+    id=$(uuidgen)
+    load | jq -c --arg id "$id" --argjson v "$values" '. + [{id: $id, title: $v.title, url: $v.url}]' | store
+    fetch_missing "$values" >/dev/null 2>&1 </dev/null
+    openspot select "$id"
+    ;;
+  new)
     # Asks with its own form, filled with what the call gave, until both the name and the link are given.
     if [ -z "$(value input.title)" ] || [ -z "$(value input.url)" ]; then
       form "New link" "$(jq -nc --arg title "$(value input.title)" --arg url "$(value input.url)" '{$title, $url}')"

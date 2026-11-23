@@ -122,4 +122,18 @@ final class ContextSourceTests: ContextCase {
         XCTAssertEqual(log("done"), ["2"])
         XCTAssertEqual(log("errors"), ["`openspot context add` takes one kind of value: file= once for each file, url= or text=."])
     }
+
+    func testAPanelOpenRegexKeepsAnOrdinarySpotToItsApp() async throws {
+        try script("finder", toml: "title = 'Finder'\n\n[on]\n\"panel.open\" = '^com\\.apple\\.finder$'", """
+        case "$1" in
+          show) echo show >> '\(path("finder-log"))'; printf 'text=x\\ntitle=Finder\\n' ;;
+        esac
+        """)
+        try witness()
+
+        await open()
+        try await wait("the spots of the open") { self.log("witness-log").count == 1 }
+
+        XCTAssertEqual(log("finder-log"), [])
+    }
 }

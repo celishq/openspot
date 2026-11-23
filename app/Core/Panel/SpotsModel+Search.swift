@@ -54,7 +54,7 @@ extension SpotsModel {
         finding?.job.cancel()
         finding = nil
         let text = query.trimmingCharacters(in: .whitespaces)
-        if context.isOn, !text.hasPrefix("/") {
+        if context.isOn, !isEditing, !text.hasPrefix("/") {
             if slash != nil { slash = nil }
             foundSpots = []
             show(showContext())

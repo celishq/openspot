@@ -1,7 +1,7 @@
 import Foundation
 
 public struct ContextChips: Equatable, Sendable {
-    static let limit = 3
+    public static let limit = 3
 
     public private(set) var chips: [ContextChip] = [] {
         didSet { restack() }
@@ -28,19 +28,19 @@ public struct ContextChips: Equatable, Sendable {
         chip.app != nil && chip.app == front ? frontPath : nil
     }
 
-    mutating func open(over front: String?, at path: String? = nil, loading sources: [String]) {
+    mutating func open(over front: String?, at path: String? = nil, loading: [ContextChip]) {
         self.front = front
         frontPath = path
         selected = nil
-        order = sources
-        chips = sources.map { ContextChip(source: $0, app: front) }
+        order = loading.map(\.source)
+        chips = loading
         settle()
     }
 
-    mutating func fill(_ source: String, with value: ContextValue) {
+    mutating func fill(_ source: String, with value: ContextValue, look: ContextChip.Look = ContextChip.Look()) {
         let chip = chips.first { $0.source == source } ?? ContextChip(source: source, app: nil)
         chips.removeAll { $0.source == source }
-        chips.append(chip.filled(with: value))
+        chips.append(chip.filled(with: value, look: look))
         if !order.contains(source) { order.append(source) }
         settle()
     }

@@ -68,6 +68,7 @@ public final class SpotsModel {
     @ObservationIgnored var commands = CommandIndex()
     public internal(set) var slash: SlashCommand?
     public internal(set) var context = ContextChips()
+    @ObservationIgnored var isContextOpen = false
     @ObservationIgnored var keyFrames: [String: String] = [:]
     @ObservationIgnored var spotListBuilds = 0
     @ObservationIgnored var visibleUpdates = 0

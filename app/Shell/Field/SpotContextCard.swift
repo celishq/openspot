@@ -17,10 +17,6 @@ struct SpotContextCard: View, Equatable {
             shape.fill(SpotTheme.highlight.opacity(SpotTheme.chip))
             picture
                 .opacity(chip.isLoading ? SpotTheme.contextLoadingIcon : 1)
-            if chip.isLoading {
-                ProgressView()
-                    .controlSize(.small)
-            }
         }
         .frame(width: SpotTokens.contextCard, height: SpotTokens.contextCard)
         .modifier(SpotSelectionRing(isSelected: isOn, shape: shape))

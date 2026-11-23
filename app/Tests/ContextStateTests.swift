@@ -123,4 +123,71 @@ final class ContextStateTests: ContextCase {
         try await wait("the rows of the value") { self.shown == ["A", "keep"] }
         XCTAssertEqual(model.selected, 1)
     }
+
+    func testASlashRunsItsCommandWhileAChipIsSelected() async throws {
+        try script("translate", toml: "title = 'Translate'\n\n[on]\ncommand = ['translate']\ndrop = ['url']", """
+        case "$1" in
+          command) echo command >> '\(path("translate-log"))' ;;
+          drop) echo drop >> '\(path("translate-log"))' ;;
+          *) printf 'text=x\\ntitle=Translate\\n' ;;
+        esac
+        """)
+        try await openWithTab()
+        XCTAssertTrue(model.handleKey(tab))
+
+        model.query = "/translate hola"
+        model.landSearch()
+        model.runSelected()
+
+        try await wait("the command") { self.log("translate-log") == ["command"] }
+    }
+
+    func testAReopenShowsTheGridAndNoRowsOfTheLastContext() async throws {
+        try await openWithTab()
+        let grid = shown
+        XCTAssertTrue(model.handleKey(tab))
+
+        model.panelWillHide()
+        model.panelDidHide()
+        model.panelWillShow()
+
+        XCTAssertFalse(model.context.isOn)
+        XCTAssertEqual(shown.filter { $0 != "A" }, grid)
+        XCTAssertFalse(shown.contains("A"))
+    }
+
+    func testAnotherSourceThatAnswersKeepsTheSelectedRow() async throws {
+        try taker("keep", takes: "'url'")
+        try taker("save", takes: "'url'")
+        try source(adds: "url=https://example.com/a title=A")
+        try source("copy", app: nil, waits: true, adds: "text=hola")
+        try taker("reader", takes: "'text'")
+        await open()
+        try await wait("the tab") { self.model.context.chips.first?.value != nil }
+        XCTAssertTrue(model.handleKey(tab))
+        model.moveSelection(dx: 0, dy: 1)
+        XCTAssertEqual(model.selected, 2)
+
+        FileManager.default.createFile(atPath: path("release"), contents: Data())
+        try await wait("the copy") { self.model.context.chips.count == 2 }
+
+        XCTAssertEqual(model.selected, 2)
+        XCTAssertEqual(model.context.selected, "tab")
+    }
+
+    func testEditSpotsShowsTheCardsWhileAChipIsSelected() async throws {
+        try await openWithTab()
+        XCTAssertTrue(model.handleKey(tab))
+
+        model.beginEditing()
+
+        XCTAssertFalse(shown.contains("A"))
+    }
+
+    func testTheActionsMenuHasNoTargetOnAContextRow() async throws {
+        try await openWithTab()
+        XCTAssertTrue(model.handleKey(tab))
+
+        XCTAssertNil(model.target)
+    }
 }

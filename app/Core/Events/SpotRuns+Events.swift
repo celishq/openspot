@@ -129,9 +129,9 @@ extension SpotRuns {
     }
 
     private func showPanel(toEnd: Bool = false, over front: String? = nil, feedsContext: Bool = false) {
-        for sheet in sheets.values where sheet.spot.triggers.showsOnPanel {
+        for sheet in sheets.values where sheet.spot.triggers.opens(over: front) || !sheet.spot.triggers.opensOverAnApp && sheet.spot.triggers.showsOnPanel {
             if sheet.spot.uses.contains(.context) {
-                if feedsContext, sheet.spot.triggers.opens(over: front) { sheet.show(need: .change, event: .panel) }
+                if feedsContext { sheet.show(need: .change, event: .panel) }
             } else if toEnd {
                 sheet.showToEnd(event: .panel)
             } else {

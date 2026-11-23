@@ -2,18 +2,22 @@ import Foundation
 
 extension SpotsModel {
     func openContext() {
+        guard !isContextOpen else { return runs.panelOpened() }
+        isContextOpen = !isWarming
+        let wasOn = context.isOn
         let front = isWarming ? nil : host.frontApp
         let feeds = !isWarming && entries.contains { entry in ContextValue.Kind.allCases.contains(where: entry.spot.takes) }
-        let loading = feeds ? entries.filter { $0.spot.uses.contains(.context) && $0.spot.triggers.opensOverAnApp && $0.spot.triggers.opens(over: front) }.map(\.id) : []
+        let loading = feeds ? entries.filter { $0.spot.uses.contains(.context) && $0.spot.triggers.opensOverAnApp && $0.spot.triggers.opens(over: front) } : []
         var next = context
-        next.open(over: front, at: isWarming ? nil : host.frontAppPath, loading: loading)
+        next.open(over: front, at: isWarming ? nil : host.frontAppPath, loading: loading.map { ContextChip(source: $0.id, app: front, look: Self.look(of: $0.spot)) })
         if next != context { context = next }
+        if wasOn { updateVisible() }
         runs.panelOpened(showsToEnd: isWarming, over: front, feedsContext: feeds)
     }
 
     func takeContext(_ value: ContextValue, of id: String) {
         var next = context
-        if cards.contains(where: { $0.spot.takes(value) }) { next.fill(id, with: value) } else { next.remove(id) }
+        if cards.contains(where: { $0.spot.takes(value) }) { next.fill(id, with: value, look: entry(id).map { Self.look(of: $0.spot) } ?? ContextChip.Look()) } else { next.remove(id) }
         settle(next, motion: .fade)
     }
 
@@ -36,14 +40,19 @@ extension SpotsModel {
     }
 
     public func pressContext() {
-        _ = takeTab(back: false)
+        guard openSheetID == nil, !isEditing, !context.chips.isEmpty else { return }
+        turnContext(by: 1)
+    }
+
+    private static func look(of spot: Spot) -> ContextChip.Look {
+        ContextChip.Look(symbol: spot.symbol, file: spot.fileIcon)
     }
 
     private func settle(_ next: ContextChips, motion: PanelMotion) {
         guard next != context else { return }
-        let wasOn = context.isOn
+        let before = (isOn: context.isOn, chip: context.selectedChip)
         change(isShown ? motion : nil, { context = next })
-        guard wasOn || next.isOn else { return }
+        guard before.isOn != next.isOn || before.chip != next.selectedChip else { return }
         selected = 0
         updateVisible()
     }
@@ -75,8 +84,13 @@ extension SpotsModel {
         entry.item?.run == Self.previewRun
     }
 
+    func isContextRow(_ entry: Entry) -> Bool {
+        entry.item?.run == Self.contextRun || isPreview(entry)
+    }
+
     func give(to entry: Entry) -> Bool {
-        guard context.isOn, !isPreview(entry) else { return context.isOn }
+        guard context.isOn, slash == nil else { return false }
+        guard !isPreview(entry) else { return true }
         guard let value = context.selectedChip?.value else { return true }
         leaveContext()
         guard sheets[entry.spot.id]?.drop(value) == true else { return true }

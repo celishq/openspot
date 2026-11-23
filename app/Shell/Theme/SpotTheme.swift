@@ -49,7 +49,7 @@ enum SpotTheme {
     static let liftShadowStrength = 0.25
     static let unfocusedCardStrength = 0.35
     static let contextCardFade = 0.3
-    static let contextLoadingIcon = 0.4
+    static let contextLoadingIcon = 0.35
     @MainActor static var fill: Double { current.fill }
     static let edgeStrengths = [1, 0.7, 0.45]
     @MainActor static var disc: Double { current.disc }

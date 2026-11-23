@@ -15,7 +15,7 @@ extension SpotsModel {
             let index = point.flatMap { point in placements.first { $0.rect.contains(point) }?.index }
             let id = index.map { visible[$0].id }
             if pointedCard != id { pointedCard = id }
-            guard let index, !menuOwnsPointer, !isEditing else { return }
+            guard let index, !menuOwnsPointer, !isEditing, !isPreview(visible[index]) else { return }
             selected = index
         case .item(let item):
             guard !menuOwnsPointer else { return }
