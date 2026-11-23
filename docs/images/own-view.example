@@ -1,5 +1,0 @@
-#!/bin/sh
-printf 'frame=\nclass=gap-part\n\nweek=chart\nvalue=3\nvalue=1\nvalue=2\nclass=h-16\n\nitems=days\n\n'
-printf 'item=mon\nparent=days\ntitle=Monday\n\n'
-printf 'item=tue\nparent=days\ntitle=Tuesday\n\n'
-printf 'item=wed\nparent=days\ntitle=Wednesday\n'

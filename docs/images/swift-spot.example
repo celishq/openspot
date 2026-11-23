@@ -1,2 +1,0 @@
-#!/usr/bin/env swift
-print("item=cups\ntitle=\(cups) cups")

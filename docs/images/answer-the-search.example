@@ -1,5 +1,0 @@
-export default {
-  search({ text }) {
-    return openspot.call(["calc", "solve", text]).stdout
-  },
-}

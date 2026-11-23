@@ -1,5 +1,0 @@
-title = "Calculator"
-icon = "equal.square"
-
-[on]
-search = "^[0-9(]"

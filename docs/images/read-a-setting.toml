@@ -1,4 +1,0 @@
-title = "Repos"
-
-[settings]
-folder = { type = "text", title = "Folder" }

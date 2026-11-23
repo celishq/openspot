@@ -1,7 +1,0 @@
-title = "CPU trend"
-icon = "cpu"
-stay = true
-
-[on]
-"sheet.open" = true
-"system.load" = true

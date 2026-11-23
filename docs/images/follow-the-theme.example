@@ -1,2 +1,0 @@
-#!/bin/sh
-printf 'frame=\nclass=gap-part\n\nsteps=today\nvalue=6200\ngoal=10000\nclass=h-24\n'
