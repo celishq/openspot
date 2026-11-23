@@ -1,7 +1,7 @@
 import Foundation
 
 public struct ContextChip: Equatable, Sendable {
-    public enum Look: Equatable, Sendable {
+    public enum Look: Hashable, Sendable {
         case file(FileIcon)
         case symbol(String)
     }

@@ -4,15 +4,19 @@ import SwiftUI
 struct SpotContextCard: View, Equatable {
     let chip: ContextChip
     let isOn: Bool
+    let showsBadge: Bool
 
     var body: some View {
         let shape = SpotRoundShape(radius: SpotTokens.contextCardRadius)
         ZStack {
             shape.fill(SpotTheme.highlight.opacity(SpotTheme.chip))
             picture
+                .id(chip.look)
+                .transition(.opacity)
                 .opacity(chip.isLoading ? SpotTheme.contextLoadingIcon : 1)
         }
         .frame(width: SpotTokens.contextCard, height: SpotTokens.contextCard)
+        .overlay(shape.strokeBorder(SpotTheme.ink.opacity(SpotTheme.track), lineWidth: SpotTokens.contextBorder))
         .modifier(SpotSelectionRing(isSelected: isOn, shape: shape))
         .overlay(alignment: .bottomTrailing) { badge }
     }
@@ -29,19 +33,15 @@ struct SpotContextCard: View, Equatable {
 
     @ViewBuilder
     private var badge: some View {
-        if let kind = chip.value?.kind {
-            Group {
-                if kind == .text {
-                    Text("T")
-                } else {
-                    Image(systemName: kind == .url ? "link" : "doc.fill")
-                }
-            }
-            .font(SpotType.mark)
-            .foregroundStyle(SpotTheme.onSolid)
-            .frame(width: SpotTokens.contextBadge, height: SpotTokens.contextBadge)
-            .background(SpotTheme.solid, in: SpotRoundShape(radius: SpotTokens.contextBadgeRadius))
-            .offset(x: SpotTokens.contextBadgeReach, y: SpotTokens.contextBadgeReach)
+        if showsBadge, let kind = chip.value?.kind {
+            Image(systemName: ContextPreview.symbol(of: kind))
+                .font(SpotType.mark)
+                .foregroundStyle(SpotTheme.ink.opacity(SpotTheme.secondary))
+                .frame(width: SpotTokens.contextBadge, height: SpotTokens.contextBadge)
+                .background(SpotTheme.cornerFill, in: Circle())
+                .overlay(Circle().strokeBorder(SpotTheme.ink.opacity(SpotTheme.track), lineWidth: SpotTokens.contextBorder))
+                .offset(x: SpotTokens.contextBadgeReach, y: SpotTokens.contextBadgeReach)
+                .transition(.opacity)
         }
     }
 }

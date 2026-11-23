@@ -69,6 +69,8 @@ public final class SpotsModel {
     public internal(set) var slash: SlashCommand?
     public internal(set) var context = ContextChips()
     @ObservationIgnored var isContextOpen = false
+    public internal(set) var contextSpread = ContextSpread()
+    @ObservationIgnored var contextFold = ContextFold()
     @ObservationIgnored var keyFrames: [String: String] = [:]
     @ObservationIgnored var spotListBuilds = 0
     @ObservationIgnored var visibleUpdates = 0
@@ -515,6 +517,7 @@ public final class SpotsModel {
     }
 
     public func panelWillHide() {
+        resetContextSpread()
         pendingAsk = nil
         if confirming != nil { confirming = nil }
         stopRecording()
