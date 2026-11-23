@@ -18,7 +18,7 @@ public enum EventName {
     public static let searchText = "search.text"
     public static let sheetText = "sheet.text"
     public static let declarable = [sheetOpen, panelOpen, sheetText, spotWant, clipboard, frontApp, appUpdate, appLaunch, screenWake, systemLoad, powerChange, diskMount, deviceConnect]
-    public static let valueless = [sheetOpen, panelOpen, sheetText, spotWant, clipboard, screenWake, appLaunch]
+    public static let valueless = [sheetOpen, sheetText, spotWant, clipboard, screenWake, appLaunch]
 
     public static func isName(_ word: String) -> Bool {
         let parts = word.split(separator: ".", omittingEmptySubsequences: false)

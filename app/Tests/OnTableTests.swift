@@ -71,7 +71,7 @@ final class OnTableTests: XCTestCase {
             ("command = [\"/snooze\"]", "command"),
             ("drop = \"png\"", "drop"),
             ("\"clipboard.change\" = \"^http\"", "clipboard.change"),
-            ("\"panel.open\" = \"^x\"", "panel.open"),
+            ("\"panel.open\" = \"([\"", "panel.open"),
             ("\"sheet.open\" = \"^x\"", "sheet.open"),
             ("\"screen.wake\" = \"^x\"", "screen.wake"),
             ("every = 1.5", "every"),

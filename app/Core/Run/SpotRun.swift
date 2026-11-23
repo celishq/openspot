@@ -16,6 +16,8 @@ public final class SpotRun {
         case move(FlowMove)
         case refused(String?)
         case done
+        case context(ContextValue)
+        case shown
     }
 
     public enum ShowNeed: Sendable {

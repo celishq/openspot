@@ -194,6 +194,7 @@ extension SpotRun {
         }
         callEnded(call.made)
         if case .act(let act) = purpose { act.ended?() }
+        if case .ask(.show) = purpose { onReport(.shown) }
         showAgainIfAsked()
     }
 

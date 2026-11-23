@@ -24,6 +24,8 @@ extension SpotRuns {
         case .route(let move):
             guard let open else { return false }
             onReport(open.spot.id, .move(move))
+        case .context:
+            return false
         }
         return true
     }

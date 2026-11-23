@@ -67,6 +67,7 @@ public final class SpotsModel {
     @ObservationIgnored var spotListIsStale = true
     @ObservationIgnored var commands = CommandIndex()
     public internal(set) var slash: SlashCommand?
+    public internal(set) var context = ContextChips()
     @ObservationIgnored var keyFrames: [String: String] = [:]
     @ObservationIgnored var spotListBuilds = 0
     @ObservationIgnored var visibleUpdates = 0
@@ -504,7 +505,7 @@ public final class SpotsModel {
         isPanelHidden = false
         finishPick()
         selected = 0
-        runs.panelOpened(showsToEnd: isWarming)
+        openContext()
         askAnswers()
         host.nextFrame { [weak self] in
             self?.isShown = true
@@ -579,6 +580,10 @@ public final class SpotsModel {
             shakes[Self.shakeKey(of: item, in: id), default: 0] += 1
         case .done:
             if isShown { host.dismiss() }
+        case .context(let value):
+            takeContext(value, of: id)
+        case .shown:
+            endContext(of: id)
         }
     }
 

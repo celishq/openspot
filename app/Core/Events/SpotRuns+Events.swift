@@ -12,9 +12,9 @@ extension SpotRuns {
         }
     }
 
-    public func panelOpened(showsToEnd: Bool = false) {
+    public func panelOpened(showsToEnd: Bool = false, over front: String? = nil, feedsContext: Bool = false) {
         guard !hasQuit else { return }
-        openPanel(showsToEnd: showsToEnd)
+        openPanel(showsToEnd: showsToEnd, over: front, feedsContext: feedsContext)
     }
 
     public func launched() {
@@ -114,7 +114,7 @@ extension SpotRuns {
         sheet.show(need: .change, event: .event(EventName.spotWant, value: nil))
     }
 
-    private func openPanel(showsToEnd: Bool = false) {
+    private func openPanel(showsToEnd: Bool = false, over front: String? = nil, feedsContext: Bool = false) {
         let wasOpen = isPanelOpen
         isPanelOpen = true
         if !wasOpen { wanted = [] }
@@ -125,12 +125,18 @@ extension SpotRuns {
             watchClipboard(looksNow: true)
         }
         updateClock()
-        showPanel(toEnd: showsToEnd)
+        showPanel(toEnd: showsToEnd, over: front, feedsContext: feedsContext)
     }
 
-    private func showPanel(toEnd: Bool = false) {
+    private func showPanel(toEnd: Bool = false, over front: String? = nil, feedsContext: Bool = false) {
         for sheet in sheets.values where sheet.spot.triggers.showsOnPanel {
-            if toEnd { sheet.showToEnd(event: .panel) } else { sheet.show(need: .moment, event: .panel) }
+            if sheet.spot.uses.contains(.context) {
+                if feedsContext, sheet.spot.triggers.opens(over: front) { sheet.show(need: .change, event: .panel) }
+            } else if toEnd {
+                sheet.showToEnd(event: .panel)
+            } else {
+                sheet.show(need: .moment, event: .panel)
+            }
         }
         sheets.keys.filter(isOnGrid).forEach(want)
         sheets.values.forEach { $0.settleScript() }

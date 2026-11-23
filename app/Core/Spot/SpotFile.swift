@@ -71,7 +71,7 @@ public struct SpotFile: Equatable, Sendable {
         guard manifest.starts == nil || starts != nil else {
             throw SpotError.fault("\(name) has an unknown starts: \(manifest.starts ?? ""). Use starts = \"first-launch\".")
         }
-        let isFound = !triggers.answersOnly && (offeredActions.isEmpty || triggers.lists)
+        let isFound = !triggers.answersOnly && (offeredActions.isEmpty || triggers.lists) && !uses.contains(.context)
         var command = Spot(
             id: id,
             name: name,
