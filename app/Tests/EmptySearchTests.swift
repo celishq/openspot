@@ -9,7 +9,6 @@ final class EmptySearchTests: PanelCase {
 
     private func search(_ text: String) {
         model.query = text
-        model.landSearch()
     }
 
     func testASearchThatFoundNothingCountsByItsFoldedTextWhenItIsClearedOrThePanelHides() async throws {

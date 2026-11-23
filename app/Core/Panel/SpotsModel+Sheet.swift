@@ -289,7 +289,6 @@ extension SpotsModel {
     }
 
     public func runSelectedItem() {
-        openSheet?.landRows()
         guard let item = openItems?.selectedItem else {
             createFromSearch()
             return
@@ -304,7 +303,6 @@ extension SpotsModel {
     }
 
     public func createFromSearch() {
-        openSheet?.landRows()
         guard let action = createAction, let entry = openEntry else { return }
         let query = openItems?.query ?? ""
         guard let typed = try? entry.spot.action(action.callName), let input = typed.textInput else { return }

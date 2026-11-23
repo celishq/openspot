@@ -492,7 +492,7 @@ final class SpotRunTests: XCTestCase {
         sheet.close()
     }
 
-    func testATextRanksTheRowsAwayFromTheMainThreadAndTellsNoReaderOfTheRowsUntilTheyLand() async throws {
+    func testATextShowsItsRowsBeforeTheSearchReturns() async throws {
         let sheet = try make("printf 'item=a\\ntitle=Apple\\n\\nitem=b\\ntitle=Banana\\n'")
         sheet.open {}
         try await wait("the rows") { sheet.list.shown.count == 2 }
@@ -503,65 +503,22 @@ final class SpotRunTests: XCTestCase {
 
         SearchRanks.$meter.withValue(ranks) { sheet.search("ban") }
 
-        XCTAssertFalse(told)
+        XCTAssertTrue(told)
         XCTAssertEqual(sheet.list.query, "ban")
-        try await wait("the found rows") { sheet.list.shown.map(\.run) == ["b"] }
+        XCTAssertEqual(sheet.list.shown.map(\.run), ["b"])
         XCTAssertEqual(sheet.list.landedSearches, landed + 1)
         XCTAssertEqual(ranks.count, 1)
-        XCTAssertEqual(ranks.countOnMain, 0)
     }
 
-    func testTheNextKeyCancelsTheFindOfTheKeyBefore() async throws {
-        let sheet = try make("printf 'item=a\\ntitle=Apple\\n\\nitem=b\\ntitle=Banana\\n'")
-        sheet.open {}
-        try await wait("the rows") { sheet.list.shown.count == 2 }
-        let landed = sheet.list.landedSearches
-        let ranks = SearchRanks()
-
-        SearchRanks.$meter.withValue(ranks) {
-            sheet.search("b")
-            sheet.search("ba")
-            sheet.search("ban")
-        }
-
-        try await wait("the found rows") { sheet.list.landedSearches == landed + 1 }
-        XCTAssertEqual(sheet.list.shown.map(\.run), ["b"])
-        XCTAssertEqual(sheet.list.query, "ban")
-        XCTAssertEqual(ranks.count, 1)
-    }
-
-    func testATextLeavesTheSelectionUntilItsRowsLand() async throws {
+    func testATextSelectsTheFirstOfItsRows() async throws {
         let sheet = try make("printf 'item=a\\ntitle=Apple\\n\\nitem=b\\ntitle=Banana\\n'")
         sheet.open {}
         try await wait("the rows") { sheet.list.shown.count == 2 }
         sheet.list.move(by: 1)
-        let landed = sheet.list.landedSearches
-        nonisolated(unsafe) var told = false
-        withObservationTracking { _ = sheet.selection } onChange: { told = true }
 
         sheet.search("a")
 
-        XCTAssertFalse(told)
-        XCTAssertEqual(sheet.selection, 1)
-        try await wait("the found rows") { sheet.list.landedSearches > landed }
         XCTAssertEqual(sheet.selection, 0)
-    }
-
-    func testTheRowsFoundForOlderTextNeverLand() async throws {
-        let sheet = try make("printf 'item=a\\ntitle=Apple\\n\\nitem=b\\ntitle=Banana\\n'")
-        sheet.open {}
-        try await wait("the rows") { sheet.list.shown.count == 2 }
-        let landed = sheet.list.landedSearches
-
-        sheet.search("a")
-        sheet.search("ap")
-        try await wait("the rows of the newest text") { sheet.list.landedSearches > landed }
-        XCTAssertEqual(sheet.list.shown.map(\.run), ["a"])
-        sheet.search("app")
-        try await wait("the rows of the last text") { sheet.list.landedSearches > landed + 1 }
-
-        XCTAssertEqual(sheet.list.shown.map(\.run), ["a"])
-        XCTAssertEqual(sheet.list.landedSearches, landed + 2)
     }
 
     func testAScriptThatSearchesGetsReadWithTheText() async throws {

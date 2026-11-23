@@ -92,7 +92,6 @@ extension SpotsModel {
 
     public func runSelected() {
         guard !isEditing else { return }
-        landSearch()
         if openSheetID != nil {
             runSelectedItem()
             return

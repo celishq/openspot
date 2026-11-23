@@ -91,12 +91,10 @@ final class SheetTreeInputsTests: PanelCase {
         try await wait("the action on the item") { self.calls(in: calls).contains("forget a") }
 
         model.searchText = "app"
-        model.landSearch()
         try await wait("the search") { self.titles == ["Apple"] }
         model.runSelectedItem()
         try await wait("the press of the item") { self.calls(in: calls).contains("press a") }
         model.searchText = ""
-        model.landSearch()
         try await wait("all items") { self.titles == ["Apple", "Banana"] }
 
         for _ in 0..<2 where !model.handleKey(ActionKey(name: "down")) {

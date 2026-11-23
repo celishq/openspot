@@ -30,7 +30,6 @@ final class SlashCommandPanelTests: PanelCase {
 
     private func type(_ query: String) {
         model.query = query
-        model.landSearch()
     }
 
     private func open() async throws {
