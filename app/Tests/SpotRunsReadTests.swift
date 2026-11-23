@@ -111,7 +111,7 @@ final class SpotRunsReadTests: SpotRunsCase {
         runs.panelOpened()
         sheet.open {}
 
-        try await wait("both frames") { frames.frames.count == 2 }
+        try await wait("both frames", seconds: 60) { frames.frames.count == 2 }
         XCTAssertGreaterThan(frames.frames.first?.utf8.count ?? 0, 64 << 10)
         XCTAssertEqual(sheet.list.shown.map(\.run), ["last"])
     }

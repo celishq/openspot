@@ -51,6 +51,7 @@ extension SpotsModel {
         }
         if let confirm = confirmRow.hint { return [confirm, settingsRow.hint, "⌘K Actions"].compactMap { $0 }.joined(separator: "   ") }
         if let slashHint { return slashHint }
+        if context.isOn, let contextHint { return contextHint }
         if let soleHint { return soleHint }
         if openSheetID == nil, slash == nil, finding == nil, !query.isEmpty, visible.isEmpty { return "\(SearchPrompt.slashHint)   \(escape)" }
         let keys = target.flatMap { target in
@@ -59,7 +60,8 @@ extension SpotsModel {
                 second: [settingsRow.hint].compactMap { $0 }
             )
         } ?? escape
-        return selectedGlyphTitle.map { "\($0)  \(keys)" } ?? keys
+        let shown = selectedGlyphTitle.map { "\($0)  \(keys)" } ?? keys
+        return contextHint.map { "\($0)   \(shown)" } ?? shown
     }
 
     private var recordingRows: [KeyRow] {
@@ -257,6 +259,12 @@ extension SpotsModel {
             rows.append(partKey)
         }
         rows += [
+            KeyRow("tab", shift: nil) { [self] key in takeTab(back: key.isShift) },
+            KeyRow("escape") { [self] _ in
+                guard context.isOn, openSheetID == nil else { return nil }
+                leaveContext()
+                return true
+            },
             escapeRow,
             KeyRow("k", command: true) { [self] _ in
                 guard let target else { return nil }

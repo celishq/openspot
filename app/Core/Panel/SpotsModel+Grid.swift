@@ -52,7 +52,7 @@ extension SpotsModel {
     }
 
     public func moveSelection(dx: Int, dy: Int) {
-        if let next = SpotGrid().neighbour(of: selected, in: placements, dx: dx, dy: dy) {
+        if let next = SpotGrid().neighbour(of: selected, in: placements, dx: dx, dy: dy), !visible.indices.contains(next) || !isPreview(visible[next]) {
             selected = next
         }
     }
@@ -75,10 +75,11 @@ extension SpotsModel {
     }
 
     public func tap(_ id: String, opening: Bool = false) {
-        guard !menuOwnsPointer, let position = visible.firstIndex(where: { $0.id == id }) else { return }
+        guard !menuOwnsPointer, let position = visible.firstIndex(where: { $0.id == id }), !isPreview(visible[position]) else { return }
         selected = position
         if opening, openSelectedSettings() { return }
         guard !isEditing else { return }
+        if openSheetID == nil, give(to: visible[position]) { return }
         if openSheetID == nil, let slash { launch(visible[position], with: slash.text) } else if openSheetID == nil { run(seen: visible[position]) } else { runSelectedItem() }
     }
 
@@ -98,6 +99,7 @@ extension SpotsModel {
             return
         }
         guard let entry = selectedEntry else { return }
+        if give(to: entry) { return }
         if let slash { return launch(entry, with: slash.text) }
         run(seen: entry)
     }

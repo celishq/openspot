@@ -46,4 +46,10 @@ struct CommandIndex {
     func button(of entry: SpotsModel.Entry) -> CommandAction? {
         buttons[entry.id]
     }
+
+    func word(of entry: SpotsModel.Entry) -> String? {
+        buttons[entry.id].map { action in
+            if case .word = action.kind { action.title } else { action.callName }
+        }
+    }
 }

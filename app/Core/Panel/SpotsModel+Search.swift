@@ -54,6 +54,13 @@ extension SpotsModel {
         finding?.job.cancel()
         finding = nil
         let text = query.trimmingCharacters(in: .whitespaces)
+        if context.isOn, !text.hasPrefix("/") {
+            if slash != nil { slash = nil }
+            foundSpots = []
+            show(showContext())
+            if selected == 0, visible.count > 1 { selected = 1 }
+            return
+        }
         guard !text.isEmpty else {
             if slash != nil { slash = nil }
             foundSpots = []
