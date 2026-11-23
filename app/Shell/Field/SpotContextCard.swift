@@ -26,12 +26,20 @@ struct SpotContextCard: View, Equatable {
     @ViewBuilder
     private var picture: some View {
         switch chip.look {
+        case .file(.file(let path)):
+            SpotNativeIcon(path: path, size: SpotTokens.contextIcon / IconBody.share)
+                .frame(width: SpotTokens.contextCard, height: SpotTokens.contextCard)
+                .clipShape(SpotRoundShape(radius: SpotTokens.contextCardRadius))
         case .file(let file):
             SpotItemIcon(icon: file, glyph: nil, symbol: nil, size: SpotTokens.contextIcon / IconBody.share)
                 .frame(width: SpotTokens.contextIcon, height: SpotTokens.contextIcon)
                 .clipShape(SpotRoundShape(radius: SpotTokens.contextIconRadius))
         case .symbol(let symbol):
-            SpotItemIcon(icon: nil, glyph: nil, symbol: symbol, size: SpotTokens.contextSymbol)
+            Image(systemName: symbol)
+                .font(SpotType.contextTile)
+                .foregroundStyle(SpotTheme.contextTileInk)
+                .frame(width: SpotTokens.contextIcon, height: SpotTokens.contextIcon)
+                .background(SpotRoundShape(radius: SpotTokens.contextIconRadius).fill(LinearGradient(colors: [SpotTheme.contextTileTop, SpotTheme.contextTileBottom], startPoint: .top, endPoint: .bottom)))
         }
     }
 

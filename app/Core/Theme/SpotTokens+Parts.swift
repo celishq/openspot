@@ -33,13 +33,13 @@ extension SpotTokens {
     public static let contextInset: CGFloat = 1.5
     public static var contextIcon: CGFloat { contextCard - 2 * contextInset }
     public static var contextIconRadius: CGFloat { contextIcon * 0.224 }
-    public static var contextSymbol: CGFloat { contextCard * 0.6 }
+    public static var contextSymbol: CGFloat { contextIcon * 0.5 }
     public static let contextBorder: CGFloat = 0.5
     public static var contextStep: CGFloat { contextCard * 0.25 }
     public static let contextShrink: CGFloat = 0.1
     public static var contextSpreadGap: CGFloat { contextCard * 0.42 }
     public static var contextBadge: CGFloat { (contextCard * contextCard / 6).squareRoot() }
-    public static var contextBadgeGlyph: CGFloat { contextBadge * 0.85 }
+    public static var contextBadgeGlyph: CGFloat { contextBadge * 0.72 }
     public static let contextBadgeNudge: CGFloat = 0.5
     public static let contextNearShadowRadius: CGFloat = 2.5
     public static let contextNearShadowDrop: CGFloat = 2

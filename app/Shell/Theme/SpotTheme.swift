@@ -54,7 +54,10 @@ enum SpotTheme {
     static let contextRim = color(dark: .white.withAlphaComponent(0.2), light: .black.withAlphaComponent(0.2))
     static let contextNearShadow = color(dark: .black.withAlphaComponent(0.35), light: .black.withAlphaComponent(0.10))
     static let contextFarShadow = color(dark: .black.withAlphaComponent(0.35), light: .black.withAlphaComponent(0.10))
-    static let contextBadgeInk = color(dark: NSColor(white: 0.95, alpha: 1), light: NSColor(white: 0.11, alpha: 1))
+    static let contextBadgeInk = color(dark: NSColor(white: 0.78, alpha: 1), light: NSColor(white: 0.42, alpha: 1))
+    static let contextTileTop = ThemeColor(text: "#8FB4FF")!.color
+    static let contextTileBottom = ThemeColor(text: "#4F7CE6")!.color
+    static let contextTileInk = Color.white
     @MainActor static var fill: Double { current.fill }
     static let edgeStrengths = [1, 0.7, 0.45]
     @MainActor static var disc: Double { current.disc }
