@@ -107,6 +107,7 @@ extension SpotsModel {
             placements = grid.place(sizes)
         }
         if transition.phase == .closing, !hasPlace(transition.id) { cutSheet(to: nil) }
+        refreshHint()
     }
 
     func mayMove(_ id: String) -> Bool {

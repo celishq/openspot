@@ -59,9 +59,7 @@ public final class SpotsModel {
             spanBackdrop()
         }
     }
-    public internal(set) var visible: [Entry] = [] {
-        didSet { refreshHint() }
-    }
+    public internal(set) var visible: [Entry] = []
     @ObservationIgnored var laidOutSizes: [SpotSize] = []
     @ObservationIgnored private var cardGlyphs: [String] = []
     @ObservationIgnored var laidOutGrid = SpotGrid()

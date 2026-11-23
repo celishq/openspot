@@ -1584,6 +1584,19 @@ final class SpotsModelTests: XCTestCase {
         XCTAssertFalse(told)
     }
 
+    func testASearchThatFindsNothingNeverLetsAnUpdateSeeThePlacementsOfCardsTheListNoLongerHolds() async throws {
+        try script("notes", toml: "title = 'Notes'", "true")
+        try script("mail", toml: "title = 'Mail'", "true")
+        try script("maps", toml: "title = 'Maps'", "true")
+        await model.reload()
+        model.isShown = true
+        model.followHint()
+
+        model.query = "zzz"
+
+        XCTAssertEqual(host.disagreements, 0)
+    }
+
     func testTheSameTextOfTheSearchFindsNothingAgain() async throws {
         try script("notes", toml: "title = 'Notes'", "true")
         await model.reload()

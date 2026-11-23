@@ -149,12 +149,14 @@ final class FakeHost: SpotsHost {
     }
 
     private(set) var isChanging = false
+    private(set) var disagreements = 0
 
     func change(_ motion: PanelMotion?, _ body: () -> Void, completion: @escaping @MainActor () -> Void) {
         motions.append(motion)
         isChanging = true
         body()
         isChanging = false
+        if let model, model.placements.contains(where: { !model.visible.indices.contains($0.index) }) { disagreements += 1 }
         if let edges = model?.flowEdges, edges != edgeChanges.last?.edges { edgeChanges.append((motion, edges, model?.openItems?.shown.map(\.title) ?? [])) }
         if let phase = model?.transition.phase { phases.append(phase) }
         openings.append(model?.runs.opening.moving)
