@@ -15,6 +15,8 @@ public struct CommandAction: Equatable, Sendable {
         case word(String)
         case history
         case open
+        case secret(String)
+        case option(String)
     }
 
     public static let history = CommandAction(kind: .history, title: "History", key: ActionKey(text: "cmd+y"), scope: .spot, after: .stay)
@@ -27,6 +29,14 @@ public struct CommandAction: Equatable, Sendable {
 
     public static func word(_ name: String, shown word: String? = nil) -> CommandAction {
         CommandAction(kind: .word(name), title: word ?? name, scope: .spot, after: .close)
+    }
+
+    static func secret(_ key: String, title: String) -> CommandAction {
+        CommandAction(kind: .secret(key), title: "Change \(title)", scope: .spot, after: .stay)
+    }
+
+    static func option(_ key: String, title: String) -> CommandAction {
+        CommandAction(kind: .option(key), title: "Change \(title)", scope: .spot, after: .stay)
     }
 
     public let kind: Kind
@@ -74,6 +84,8 @@ public struct CommandAction: Equatable, Sendable {
         case .word(let name): "openspot.word." + name
         case .history: "openspot.history"
         case .open: "openspot.open"
+        case .secret(let key): "openspot.secret." + key
+        case .option(let key): "openspot.option." + key
         }
     }
 
