@@ -18,7 +18,7 @@ final class OpenCall {
 
     init(_ request: SpotRun.Call, started: Date) {
         self.request = request
-        made = ScriptCall(action: request.action, key: request.key, started: started)
+        made = ScriptCall(words: request.words, key: request.key, started: started)
     }
 
     func outcome(_ end: ScriptCall.End) -> CallOutcome {

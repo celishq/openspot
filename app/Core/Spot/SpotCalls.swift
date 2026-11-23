@@ -149,7 +149,7 @@ struct SpotCalls {
     }
 
     private static func handler(_ arguments: [String], of spot: Spot) throws -> (arguments: [String], inputs: [TextBlock.Field]) {
-        guard spot.triggers != nil || !spot.typedActions.isEmpty, let name = arguments.first else { return (arguments, []) }
+        guard let name = arguments.first else { return (arguments, []) }
         let given = try Manifest.InputCheck.fields(of: Array(arguments.dropFirst()), as: .input)
         guard let action = spot.typedActions.first(where: { $0.id == name }) else { return ([name], given) }
         return ([name], try action.check.checked(given))

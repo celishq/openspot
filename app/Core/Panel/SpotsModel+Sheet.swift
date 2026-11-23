@@ -157,7 +157,7 @@ extension SpotsModel {
         if !shakes.isEmpty { shakes = [:] }
         noteMiss()
         finishPick()
-        for entry in entries where entry.spot.answers != nil { sheets[entry.id]?.answer("") }
+        for entry in entries where entry.spot.triggers.search != nil { sheets[entry.id]?.answer("") }
         runs.panelClosed()
         if isFirstLaunch, !isWarming { isFirstLaunch = false }
         endReview()
@@ -355,7 +355,7 @@ extension SpotsModel {
                 toggleRecording(id: item.run)
                 return
             }
-            if action != nil || (entry.spot.pick == .close && !item.staysOnPick && entry.spot.triggers == nil) {
+            if action != nil || (entry.spot.pick == .close && !item.staysOnPick && !entry.spot.takesHandlers) {
                 closingPick = (item, entry)
                 if isShown {
                     host.dismiss()
@@ -364,10 +364,10 @@ extension SpotsModel {
                 }
             }
         }
-        let closes = !place.isDetached && entry.spot.triggers != nil && entry.spot.pick == .close && !item.staysOnPick
+        let closes = !place.isDetached && entry.spot.takesHandlers && entry.spot.pick == .close && !item.staysOnPick
         if let action {
             perform(action, on: (entry, item))
-        } else if entry.spot.triggers != nil, let sheet = sheets[entry.id] {
+        } else if entry.spot.takesHandlers, let sheet = sheets[entry.id] {
             if closes { closingPick = (item, entry) }
             Task { [weak self] in
                 let answer = await sheet.answer(toPick: item, closes: closes)

@@ -11,7 +11,7 @@ final class IconSpotTests: BuiltInCase {
     private func call(_ arguments: [String]) async throws {
         let names = ["draw": "spot", "file": "spot", "reset": "spot", "drawer": "value", "drop": "file"]
         let input = arguments.dropFirst().map { "input.\(names[arguments[0]] ?? "value")=\($0)\n" }.joined()
-        try await icon.perform(SpotAction(arguments: [arguments[0]]), input: input.isEmpty ? nil : input, timeout: 60)
+        try await icon.perform(SpotWords(arguments: [arguments[0]]), input: input.isEmpty ? nil : input, timeout: 60)
     }
 
     private func view() async throws -> TextBlock {

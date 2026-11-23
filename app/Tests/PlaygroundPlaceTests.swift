@@ -67,7 +67,7 @@ final class PlaygroundPlaceTests: XCTestCase {
 
     func testEachPlaceNamesTheLineThatTheSpotLacks() throws {
         let bare = Spot(id: "bare", name: "Bare", url: folder)
-        let card = Spot(id: "card", name: "Card", url: folder, on: ShowEvents(moments: [.panel]))
+        let card = Spot(id: "card", name: "Card", url: folder, triggers: .panel)
 
         XCTAssertNil(PlaygroundPlace.sheet.lack(of: bare))
         XCTAssertEqual(PlaygroundPlace.card.lack(of: bare), "The panel reads a card with \"panel.open\" or every in its [on].")

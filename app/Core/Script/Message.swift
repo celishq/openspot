@@ -3,7 +3,7 @@ import Foundation
 public struct Message: Equatable, Sendable {
     static let argumentLimit = 65_536
 
-    public var action: SpotAction
+    public var words: SpotWords
     public var event: ShowEvent?
     public var route: String?
     public var item: [TextBlock.Field]
@@ -13,8 +13,8 @@ public struct Message: Equatable, Sendable {
     public var given: String?
     public var settings: [TextBlock.Field]
 
-    public init(_ action: SpotAction, event: ShowEvent? = nil, route: String? = nil, item: [TextBlock.Field] = [], inputs: [TextBlock.Field] = [], search: String? = nil, searchForms: [String] = [], given: String? = nil, settings: [TextBlock.Field] = []) {
-        self.action = action
+    public init(_ words: SpotWords, event: ShowEvent? = nil, route: String? = nil, item: [TextBlock.Field] = [], inputs: [TextBlock.Field] = [], search: String? = nil, searchForms: [String] = [], given: String? = nil, settings: [TextBlock.Field] = []) {
+        self.words = words
         self.event = event
         self.route = route
         self.item = item
@@ -46,13 +46,13 @@ public struct Message: Equatable, Sendable {
     }
 
     public func block(id: Int) -> String {
-        let call = [TextBlock.Field(key: "call", value: String(id))] + action.arguments.map { TextBlock.Field(key: "arg", value: $0) }
+        let call = [TextBlock.Field(key: "call", value: String(id))] + words.arguments.map { TextBlock.Field(key: "arg", value: $0) }
         let fields = text.map { TextBlock.blocks(in: $0).flatMap(\.fields) } ?? []
         return TextBlock(fields: call + fields).text + "\n"
     }
 
     var sent: (arguments: [String], input: String?) {
-        let arguments = action.arguments
+        let arguments = words.arguments
         let input = text
         let long = arguments.dropFirst().filter { $0.utf8.count > Self.argumentLimit }
         guard !long.isEmpty else { return (arguments, input) }

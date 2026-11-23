@@ -78,11 +78,11 @@ final class DocExampleTests: SampleSpotsCase {
                         XCTFail("\(place) does not load")
                         continue
                     }
-                    if spot.on == nil {
+                    if !spot.triggers.shows {
                         let calls = spot.offers.map(\.id) + spot.offeredActions.map(\.action.id)
                         for call in calls.isEmpty ? ["open"] : calls {
                             do {
-                                try await spot.perform(SpotAction(arguments: [call]), timeout: 60)
+                                try await spot.perform(SpotWords(arguments: [call]), timeout: 60)
                             } catch {
                                 XCTFail("\(place) fails its call \(call): \(error)")
                             }

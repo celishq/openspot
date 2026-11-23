@@ -11,7 +11,8 @@ extension SpotRuns {
         let time = now()
         var due: Date?
         for sheet in sheets.values {
-            guard let on = sheet.spot.on else { continue }
+            let on = sheet.spot.triggers
+            guard on.shows else { continue }
             let isWanted = sheet.isWanted
             if on.waitsForEvents {
                 if !isWanted {

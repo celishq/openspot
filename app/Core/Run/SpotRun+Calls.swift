@@ -5,7 +5,7 @@ extension SpotRun {
     func send(_ call: Call) -> Bool {
         var call = call
         if case .ask = call.purpose {} else {
-            if let action = typedAction(of: call.action) {
+            if let action = typedAction(of: call.words) {
                 do {
                     call.message.inputs = try action.check.checked(call.message.inputs, keepingUndeclared: true)
                 } catch {
@@ -18,20 +18,16 @@ extension SpotRun {
         return link.send(OpenCall(call, started: runs.now()))
     }
 
-    func typedAction(of action: SpotAction) -> Manifest.Action? {
-        guard let id = action.arguments.first else { return nil }
+    func typedAction(of words: SpotWords) -> Manifest.Action? {
+        guard let id = words.arguments.first else { return nil }
         return spot.typedActions.first { $0.id == id }
     }
 
-    var takesHandlers: Bool {
-        spot.host == nil && !spot.holdsSettings
-    }
-
     func pressing(_ message: Message, as name: String) -> Message {
-        let arguments = message.action.arguments
-        guard arguments.count > 1, takesHandlers else { return message }
+        let arguments = message.words.arguments
+        guard arguments.count > 1, spot.takesHandlers else { return message }
         var message = message
-        message.action = .press(arguments[0])
+        message.words = .press(arguments[0])
         message.inputs.append(.init(key: name, value: arguments[1]))
         return message
     }
@@ -52,7 +48,7 @@ extension SpotRun {
     private func refusal(of lines: Frame, in call: OpenCall) -> SpotError? {
         if let message = lines.root?.value(RootKey.error) { return .failed(1, message) }
         let outputs = lines.outputs
-        guard !outputs.isEmpty, let action = typedAction(of: call.request.action), let fault = action.fault(in: outputs) else { return nil }
+        guard !outputs.isEmpty, let action = typedAction(of: call.request.words), let fault = action.fault(in: outputs) else { return nil }
         return .fault(fault)
     }
 
@@ -108,7 +104,7 @@ extension SpotRun {
     }
 
     func take(answers text: String?, to query: String, of call: OpenCall, _ end: ScriptCall.End, errors: String) {
-        takeAnswers(text.map { Frame(text: $0).answers(asCard: spot.answers?.isCard == true) } ?? [], to: query)
+        takeAnswers(text.map { Frame(text: $0).answers(asCard: spot.triggers.search?.isCard == true) } ?? [], to: query)
         call.hasAnswer = text != nil
         finish(call, end, errors: errors)
     }
@@ -153,7 +149,7 @@ extension SpotRun {
         let values = fieldValues
         var sent = message(of: request, values: values)
         sent.settings = []
-        runs.record(spot, sent.action, input: values.hiding(sent.text), frames: call.frames.map(values.hiding), errors: values.hiding(errors), end: end, event: request.event, started: call.made.started, begin: call.begin)
+        runs.record(spot, sent.words, input: values.hiding(sent.text), frames: call.frames.map(values.hiding), errors: values.hiding(errors), end: end, event: request.event, started: call.made.started, begin: call.begin)
     }
 
     private func answer(_ waiting: CheckedContinuation<Frame?, Error>, of call: OpenCall, _ end: ScriptCall.End) {
@@ -174,7 +170,7 @@ extension SpotRun {
             if case .stopped = end { act.first?.end(.stopped) } else { act.first?.end(.done) }
         }
         let isAnswer = if case .ask(let ask) = purpose { ask.isAnswer } else { false }
-        if case .ended = end, failure != nil, !isAnswer, failedItem == nil || Self.item(of: call.request.action) == failedItem {
+        if case .ended = end, failure != nil, !isAnswer, failedItem == nil || Self.item(of: call.request.words) == failedItem {
             failure = nil
             failedItem = nil
         }
@@ -203,7 +199,7 @@ extension SpotRun {
         case (.act(let act), .failed(let error)):
             answered = nil
             if let undo = act.undo { state = undo }
-            let item = Self.item(of: call.request.action)
+            let item = Self.item(of: call.request.words)
             fail(error, item: item)
             if runs.isPanelOpen, let started = act.started, runs.now().timeIntervalSince(started) < MotionTokens.refusalWindow { onReport(.refused(item)) }
             if act.showsAfter { showOnce() }
@@ -215,7 +211,7 @@ extension SpotRun {
         showAgainIfAsked()
     }
 
-    static func item(of action: SpotAction) -> String? {
-        action.arguments.first == Frame.press && action.arguments.count > 1 ? action.arguments[1] : nil
+    static func item(of words: SpotWords) -> String? {
+        words.arguments.first == Frame.press && words.arguments.count > 1 ? words.arguments[1] : nil
     }
 }

@@ -18,13 +18,13 @@ final class SpotRunTests: XCTestCase {
         try? FileManager.default.removeItem(at: folder)
     }
 
-    private func make(name: String = "script", searches: Bool = false, _ body: String, mode: SpotMode = .once, on: ShowEvents? = nil) throws -> SpotRun {
+    private func make(name: String = "script", searches: Bool = false, _ body: String, mode: SpotMode = .once, triggers: Manifest.Triggers? = nil) throws -> SpotRun {
         let url = folder.spotFile(name)
         let typed = searches ? "[ \"$1\" = sheet.text ] && in=$(cat); t=$(printf '%s\\n' \"$in\" | sed -n 's/^input\\.value=//p'); f=$(printf '%s\\n' \"$in\" | sed -n 's/^input\\.alt=//p' | head -1)\n" : ""
         try "#!/bin/sh\n\(typed)\(body)\n".writeScript(to: url, toml: mode.stays ? "stay = true" : "")
         let made = SpotRuns()
         runs.append(made)
-        return made.sheet(for: Spot(id: name, name: name, url: url, kind: .list, on: on ?? (mode.stays ? nil : ShowEvents(moments: [.sheet], searchesSheet: searches)), mode: mode))
+        return made.sheet(for: Spot(id: name, name: name, url: url, kind: .list, triggers: triggers ?? (mode.stays ? Manifest.Triggers() : Manifest.Triggers(events: [searches ? SpotEvent.sheetText : SpotEvent.sheetOpen])), mode: mode))
     }
 
     private func path(_ name: String) -> String {
@@ -40,7 +40,7 @@ final class SpotRunTests: XCTestCase {
         try "#!/bin/sh\n\(body)\n".writeScript(to: url)
         let made = SpotRuns(opening: SheetOpening(answerPause: pause))
         runs.append(made)
-        return made.sheet(for: Spot(id: "held", name: "held", url: url, kind: .list, on: .sheet))
+        return made.sheet(for: Spot(id: "held", name: "held", url: url, kind: .list, triggers: .sheet))
     }
 
     func testASheetThatWaitsOpensWithItsFirstAnswer() async throws {
@@ -80,7 +80,7 @@ final class SpotRunTests: XCTestCase {
     }
 
     func testASwitchThatTheCardPlacesFillsNoCardWhileItIsOn() async throws {
-        let sheet = try make("printf 'switch=power\\nclass=card:flex\\nvalue=true\\n'", on: .panel)
+        let sheet = try make("printf 'switch=power\\nclass=card:flex\\nvalue=true\\n'", triggers: .panel)
         sheet.show()
         try await wait("the switch on") { sheet.state.on == true }
 
@@ -88,7 +88,7 @@ final class SpotRunTests: XCTestCase {
     }
 
     func testAnAnswerThatKeepsTheCardOnTellsNoReaderOfWhetherItIsOn() async throws {
-        let sheet = try make("n=$(cat '\(path("n"))' 2>/dev/null); echo $((n + 1)) > '\(path("n"))'; printf 'frame=\\ndetail=Read %s\\nactive=true\\n\\nitem=a\\ntitle=A\\n' \"$n\"", on: .panel)
+        let sheet = try make("n=$(cat '\(path("n"))' 2>/dev/null); echo $((n + 1)) > '\(path("n"))'; printf 'frame=\\ndetail=Read %s\\nactive=true\\n\\nitem=a\\ntitle=A\\n' \"$n\"", triggers: .panel)
         sheet.show()
         try await wait("the card on") { sheet.isOn }
         let detail = sheet.state.subtitle
@@ -102,7 +102,7 @@ final class SpotRunTests: XCTestCase {
     }
 
     func testARepeatedFrameTellsNoReader() async throws {
-        let sheet = try make("printf 'frame=\\ndetail=Same\\n\\nitem=a\\ntitle=A\\n'", on: .panel)
+        let sheet = try make("printf 'frame=\\ndetail=Same\\n\\nitem=a\\ntitle=A\\n'", triggers: .panel)
         nonisolated(unsafe) var frames = 0
         let report = sheet.onReport
         sheet.onReport = {
@@ -131,7 +131,7 @@ final class SpotRunTests: XCTestCase {
     }
 
     func testAFrameOver256KBIsKeptNowhereSoItsRepeatIsParsedAgain() async throws {
-        let sheet = try make("printf 'frame=\\ndetail=Long\\n\\nitem=a\\ntitle=A\\nnote=%s\\n' \"$(head -c 270000 /dev/zero | tr '\\0' n)\"", on: .panel)
+        let sheet = try make("printf 'frame=\\ndetail=Long\\n\\nitem=a\\ntitle=A\\nnote=%s\\n' \"$(head -c 270000 /dev/zero | tr '\\0' n)\"", triggers: .panel)
         sheet.show()
         try await wait("the first answer") { sheet.list.all.count == 1 && !sheet.isShowing }
         let parses = FrameParses()
@@ -147,7 +147,7 @@ final class SpotRunTests: XCTestCase {
 
     func testAChangedFrameAfterARepeatedOneIsApplied() async throws {
         try "1".write(toFile: path("n"), atomically: true, encoding: .utf8)
-        let sheet = try make("printf 'item=a\ntitle=%s\n' \"$(cat '\(path("n"))')\"", on: .panel)
+        let sheet = try make("printf 'item=a\ntitle=%s\n' \"$(cat '\(path("n"))')\"", triggers: .panel)
         sheet.show()
         try await wait("the first answer") { sheet.list.all.map(\.title) == ["1"] && !sheet.isShowing }
 
@@ -167,7 +167,7 @@ final class SpotRunTests: XCTestCase {
         try "#!/bin/sh\nprintf 'item=a\\ntitle=A\\n'\n".writeScript(to: url)
         let made = SpotRuns()
         runs.append(made)
-        let sheet = made.sheet(for: Spot(id: "script", name: "script", url: url, kind: .list, subtitle: "A detail longer than its header", on: ShowEvents(moments: [.sheet])))
+        let sheet = made.sheet(for: Spot(id: "script", name: "script", url: url, kind: .list, subtitle: "A detail longer than its header", triggers: .sheet))
         sheet.open {}
         try await wait("the row") { sheet.list.all.count == 1 && !sheet.isShowing }
 
@@ -193,7 +193,7 @@ final class SpotRunTests: XCTestCase {
         """.writeScript(to: url)
         let made = SpotRuns()
         runs.append(made)
-        let sheet = made.sheet(for: Spot(id: "script", name: "script", url: url, kind: .list, subtitle: "A detail longer than its header", on: ShowEvents(moments: [.sheet])))
+        let sheet = made.sheet(for: Spot(id: "script", name: "script", url: url, kind: .list, subtitle: "A detail longer than its header", triggers: .sheet))
         sheet.open {}
         try await wait("the parts and rows") { sheet.panel?.showsRows == true && !sheet.isShowing }
         XCTAssertEqual(sheet.top, SheetTop(header: 9, hasField: false))
@@ -429,7 +429,7 @@ final class SpotRunTests: XCTestCase {
     }
 
     func testAStayingScriptDoesNotStartBeforeItsSheetOpens() async throws {
-        let sheet = try make("touch '\(path("started"))'", mode: .stay, on: .panel)
+        let sheet = try make("touch '\(path("started"))'", mode: .stay, triggers: .panel)
 
         sheet.show()
         try await Task.sleep(for: .milliseconds(150))
@@ -774,7 +774,7 @@ final class SpotRunTests: XCTestCase {
         try "#!/bin/sh\nprintf 'frame=\\nclass=gap-part\\n\\nitems=list\\nclass=grid grid-cols-3\\n\\nfield=find\\ntype=search\\n\\nitem=a\\nparent=list\\ntitle=A\\n'\n".writeScript(to: url)
         let made = SpotRuns()
         runs.append(made)
-        let sheet = made.sheet(for: Spot(id: "script", name: "script", url: url, kind: .list, subtitle: "A detail longer than its header", on: ShowEvents(moments: [.sheet])))
+        let sheet = made.sheet(for: Spot(id: "script", name: "script", url: url, kind: .list, subtitle: "A detail longer than its header", triggers: .sheet))
         sheet.open {}
         try await wait("the row") { sheet.list.all.count == 1 && !sheet.isShowing }
 

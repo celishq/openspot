@@ -309,8 +309,8 @@ public final class SpotRuns {
         dragTakers.contains(id)
     }
 
-    public func answer(of spot: Spot, _ action: SpotAction, input: String? = nil, limit: TimeInterval? = nil, variables: [String: String] = [:]) async throws -> String {
-        try await mode(of: spot).answer(of: spot, action, input: input, limit: limit, variables: variables, in: self)
+    public func answer(of spot: Spot, _ words: SpotWords, input: String? = nil, limit: TimeInterval? = nil, variables: [String: String] = [:]) async throws -> String {
+        try await mode(of: spot).answer(of: spot, words, input: input, limit: limit, variables: variables, in: self)
     }
 
     func isOnGrid(_ id: String) -> Bool {
@@ -320,7 +320,7 @@ public final class SpotRuns {
     func wants(_ spot: Spot) -> Bool {
         if isInMenuBar(spot) || spot.mode == .stay && spot.showsAtLaunch { return true }
         guard isPanelOpen else { return false }
-        return spot.mode.stays && spot.answers != nil || spot.on?.has(.panel) == true || grid.contains(spot.id)
+        return spot.mode.stays && spot.triggers.search != nil || spot.triggers.has(.panel) || grid.contains(spot.id)
     }
 
     public func take(grid next: Set<String>) {
@@ -356,11 +356,11 @@ public final class SpotRuns {
         log != nil || onCall != nil
     }
 
-    func record(_ spot: Spot, _ action: SpotAction, input: String?, frames: [String], errors: String, end: ScriptCall.End, event: ShowEvent?, started: Date, begin: Date) {
+    func record(_ spot: Spot, _ words: SpotWords, input: String?, frames: [String], errors: String, end: ScriptCall.End, event: ShowEvent?, started: Date, begin: Date) {
         guard !spot.reachesAccountKey else { return }
         let record = CallLog.Record(
             spot: spot.id,
-            arguments: action.arguments,
+            arguments: words.arguments,
             input: input,
             frames: frames,
             errors: errors,

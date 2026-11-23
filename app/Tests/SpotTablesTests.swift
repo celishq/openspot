@@ -72,7 +72,7 @@ final class SpotTablesTests: XCTestCase {
     }
 
     func testOnlyShownInTheHeadOfASpotOfTheAppMovesItsCardOnOrOffTheGrid() throws {
-        let spot = Spot(id: "u", name: "U", url: URL(fileURLWithPath: "/none/u.sh"), on: .panel)
+        let spot = Spot(id: "u", name: "U", url: URL(fileURLWithPath: "/none/u.sh"), triggers: .panel)
 
         XCTAssertFalse(try spot.builtIn().state(of: Frame(text: "frame=\ntitle=U\nshown=false\n")).isOnGrid)
         XCTAssertTrue(try spot.builtIn().state(of: Frame(text: "frame=\ntitle=U\nshown=true\n")).isOnGrid)

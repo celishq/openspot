@@ -77,7 +77,7 @@ extension SpotsModel {
 
     public func pressPart(_ part: SpotPart) {
         openSheet?.press(part)
-        if part.closes, isShown, openSheet?.spot.triggers == nil { host.dismiss() }
+        if part.closes, isShown, openSheet?.spot.takesHandlers != true { host.dismiss() }
     }
 
     @discardableResult
@@ -97,7 +97,7 @@ extension SpotsModel {
                 host.notify("\(action.title) asks with a form or a second press, which a window does not show yet.")
             } else if asks {
                 press(target.entry.id)
-            } else if target.entry.spot.triggers != nil, let sheet = sheets[target.entry.id] {
+            } else if target.entry.spot.takesHandlers, let sheet = sheets[target.entry.id] {
                 Task { [weak self] in
                     guard case .form = await sheet.answer(to: action, item: target.item), let self else { return }
                     if place == .window { host.notify("\(action.title) asks with a form, which a window does not show yet.") } else { press(target.entry.id) }
@@ -118,7 +118,7 @@ extension SpotsModel {
             show(.form(form), of: action, on: target, prefill: "")
         } else if action.after == .stay {
             perform(action, on: target)
-        } else if target.entry.spot.triggers != nil {
+        } else if target.entry.spot.takesHandlers {
             perform(action, on: target, closes: true)
         } else if let item = target.item {
             pick(item, of: target.entry, action: action)
@@ -129,7 +129,7 @@ extension SpotsModel {
     }
 
     func perform(_ action: CommandAction, on target: Target, closes: Bool = false) {
-        guard target.entry.spot.triggers != nil, let sheet = sheets[target.entry.id] else {
+        guard target.entry.spot.takesHandlers, let sheet = sheets[target.entry.id] else {
             sheets[target.entry.id]?.run(action, item: target.item)
             return
         }

@@ -15,7 +15,7 @@ final class SettingsSpotTests: BuiltInCase {
     private func call(_ arguments: [String]) async throws {
         let handler = arguments[0] == "open" ? "press" : arguments[0]
         let input = arguments.dropFirst().map { "input.\(handler == "press" ? "item" : "value")=\($0)\n" }.joined()
-        try await settings.perform(SpotAction(arguments: [handler]), input: input.isEmpty ? nil : input, timeout: 60)
+        try await settings.perform(SpotWords(arguments: [handler]), input: input.isEmpty ? nil : input, timeout: 60)
     }
 
     func testItIsASmallListThatTheSearchFindsAndTheSettingsKeyOpens() throws {
@@ -26,11 +26,11 @@ final class SettingsSpotTests: BuiltInCase {
         XCTAssertEqual(spot.subtitle, "Choose your key")
         XCTAssertEqual(defaults.arrangement.size(of: spot.id), .small)
         XCTAssertEqual(spot.kind, .list)
-        XCTAssertTrue(spot.isGlobal)
+        XCTAssertTrue(spot.triggers.lists)
         XCTAssertTrue(spot.isFound)
-        XCTAssertFalse(spot.on?.has(.panel) == true)
+        XCTAssertFalse(spot.triggers.has(.panel))
         XCTAssertTrue(spot.showsOfferedItems)
-        XCTAssertTrue(spot.on?.has(.sheet) == true)
+        XCTAssertTrue(spot.triggers.has(.sheet))
         XCTAssertEqual(SpotArrangement().spot(openedBy: ActionKey(name: ",", isCommand: true), over: defaults.arrangement), spot.id)
     }
 

@@ -75,11 +75,11 @@ extension SpotsModel {
             return show(rows)
         }
         var ids = Set<String>()
-        let answers = entries.filter { $0.spot.answers.map { runs.answerMatches.matches($0, text) } == true }
+        let answers = entries.filter { $0.spot.triggers.search.map { runs.answerMatches.matches($0, text) } == true }
             .flatMap { entry in (sheets[entry.id]?.answers ?? []).map { Entry(spot: entry.spot, item: $0, isAnswer: true) } }
             .filter { ids.insert($0.id).inserted }
             .prefix(Self.searchLimit)
-        let sources = entries.filter { $0.spot.isGlobal && arrangement.isGlobal(of: $0.id) != false }
+        let sources = entries.filter { $0.spot.triggers.lists && arrangement.isGlobal(of: $0.id) != false }
         let ask = SearchAsk(
             query: runs.search(of: text),
             lists: [spotList] + sources.map { sheets[$0.id]?.list ?? ItemList() },
@@ -100,7 +100,7 @@ extension SpotsModel {
     }
 
     private static func placed(_ answers: [Entry], around found: [Entry]) -> [Entry] {
-        answers.filter { $0.spot.answers?.isLast != true } + found + answers.filter { $0.spot.answers?.isLast == true }
+        answers.filter { $0.spot.triggers.search?.isLast != true } + found + answers.filter { $0.spot.triggers.search?.isLast == true }
     }
 
     @concurrent
@@ -124,7 +124,7 @@ extension SpotsModel {
         }
         show(Self.placed(finding.answers, around: foundSpots.filter { !ids.contains($0.id) }))
         Set(foundSpots.compactMap { $0.item == nil ? nil : $0.spot.id }).forEach(runs.want)
-        if !isEditing { missedSearch.landed(query, found: visible.contains { $0.spot.answers?.isLast != true }) }
+        if !isEditing { missedSearch.landed(query, found: visible.contains { $0.spot.triggers.search?.isLast != true }) }
     }
 
     private func show(_ next: [Entry]) {
@@ -148,7 +148,7 @@ extension SpotsModel {
             }
             return entry.isOnGrid == (placements[index].group == .shelf)
         }
-        return entry.isFound || entry.spot.isGlobal || entry.spot.answers != nil
+        return entry.isFound || entry.spot.triggers.lists || entry.spot.triggers.search != nil
     }
 
     func noteMiss() {

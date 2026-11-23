@@ -30,12 +30,12 @@ final class OnTableTests: XCTestCase {
         """)
 
         let spot = try XCTUnwrap(loaded.spot, loaded.refused.joined())
-        let triggers = try XCTUnwrap(spot.triggers)
+        let triggers = spot.triggers
         XCTAssertEqual(triggers.commands, ["snooze", "later"])
-        XCTAssertEqual(spot.answers?.text, "^https?://")
+        XCTAssertEqual(spot.triggers.search?.text, "^https?://")
         XCTAssertEqual(triggers.schedule.map(\.text), ["0 9 * * 1-5", "*/15 * * * *"])
-        XCTAssertEqual(spot.on?.seconds, 60)
-        XCTAssertEqual(spot.drop, ["png", "folder"])
+        XCTAssertEqual(spot.triggers.seconds, 60)
+        XCTAssertEqual(spot.triggers.drop, ["png", "folder"])
         XCTAssertEqual(triggers.bindings.map(\.key), ["picker.picked"])
     }
 
@@ -44,25 +44,25 @@ final class OnTableTests: XCTestCase {
             let loaded = try load("[on]\n\"\(event)\" = true")
 
             let spot = try XCTUnwrap(loaded.spot, "\(event): \(loaded.refused.joined())")
-            XCTAssertEqual(spot.triggers?.events, [event])
-            let moment: ShowEvents.Moment = switch event {
+            XCTAssertEqual(spot.triggers.events, [event])
+            let moment: Manifest.Triggers.Moment = switch event {
             case SpotEvent.sheetOpen, SpotEvent.sheetText: .sheet
             case SpotEvent.panelOpen: .panel
             default: .event(event)
             }
-            XCTAssertEqual(spot.on?.has(moment), true, event)
+            XCTAssertEqual(spot.triggers.has(moment), true, event)
         }
     }
 
     func testAnEventWithAValueTakesARegularExpressionOfIt() throws {
         let spot = try XCTUnwrap(try load("[on]\n\"power.change\" = \"^ac$\"").spot)
 
-        XCTAssertEqual(spot.on?.admits(SpotEvent.powerChange, value: "ac"), true)
-        XCTAssertEqual(spot.on?.admits(SpotEvent.powerChange, value: "battery"), false)
+        XCTAssertEqual(spot.triggers.admits(SpotEvent.powerChange, value: "ac"), true)
+        XCTAssertEqual(spot.triggers.admits(SpotEvent.powerChange, value: "battery"), false)
         for event in ["system.load", "disk.mount", "device.connect"] {
             let other = try XCTUnwrap(try load("[on]\n\"\(event)\" = \"^a$\"").spot, event)
-            XCTAssertEqual(other.on?.admits(event, value: "a"), true, event)
-            XCTAssertEqual(other.on?.admits(event, value: "b"), false, event)
+            XCTAssertEqual(other.triggers.admits(event, value: "a"), true, event)
+            XCTAssertEqual(other.triggers.admits(event, value: "b"), false, event)
         }
     }
 
@@ -145,16 +145,16 @@ final class OnTableTests: XCTestCase {
         let loaded = try load("answers = \"card\"\n\n[on]\nsearch = \"^[0-9]\"")
 
         let spot = try XCTUnwrap(loaded.spot, loaded.refused.joined())
-        XCTAssertEqual(spot.answers?.text, "^[0-9]")
-        XCTAssertEqual(spot.answers?.isCard, true)
+        XCTAssertEqual(spot.triggers.search?.text, "^[0-9]")
+        XCTAssertEqual(spot.triggers.search?.isCard, true)
     }
 
     func testSearchTrueListsTheItemsOfTheSpotInTheMainSearch() throws {
         let loaded = try load("[on]\nsearch = true")
 
         let spot = try XCTUnwrap(loaded.spot, loaded.refused.joined())
-        XCTAssertTrue(spot.isGlobal)
-        XCTAssertNil(spot.answers)
+        XCTAssertTrue(spot.triggers.lists)
+        XCTAssertNil(spot.triggers.search)
     }
 
     func testACronLineFindsItsNextTime() throws {

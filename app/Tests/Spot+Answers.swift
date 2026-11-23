@@ -3,7 +3,7 @@ import Foundation
 
 @MainActor
 extension Spot {
-    private func output(_ action: SpotAction, input: String? = nil, timeout: TimeInterval) async throws -> Frame {
+    private func output(_ action: SpotWords, input: String? = nil, timeout: TimeInterval) async throws -> Frame {
         let message = (input ?? "") + TestSettings.text
         return Frame(text: try await SpotRuns(environment: TestEnvironment.values).answer(of: self, action, input: message.isEmpty ? nil : message, limit: timeout), kinds: self.kinds)
     }
@@ -20,13 +20,13 @@ extension Spot {
     }
 
     func items(query: String = "", input: String? = nil, page: String? = nil, timeout: TimeInterval) async throws -> Frame {
-        let event = query.isEmpty ? nil : ShowEvent.text(query, inSheet: self.answers == nil)
+        let event = query.isEmpty ? nil : ShowEvent.text(query, inSheet: self.triggers.search == nil)
         let message = Message(.show, event: event, route: page, search: query.isEmpty ? nil : query, given: input).handled()
         let text = message.text
-        return try await output(message.action, input: text?.isEmpty == true ? nil : text, timeout: timeout)
+        return try await output(message.words, input: text?.isEmpty == true ? nil : text, timeout: timeout)
     }
 
-    func answer(_ action: SpotAction, input: String? = nil, timeout: TimeInterval) async throws -> Frame {
+    func answer(_ action: SpotWords, input: String? = nil, timeout: TimeInterval) async throws -> Frame {
         try await output(action, input: input, timeout: timeout)
     }
 
@@ -35,8 +35,8 @@ extension Spot {
     }
 
     private func message(_ action: CommandAction, item: SpotItem?, inputs: [TextBlock.Field] = []) -> Message {
-        let call = SpotAction.action(action, item: item)
-        guard self.triggers != nil || !self.typedActions.isEmpty, call.arguments.count > 1 else { return Message(call, inputs: inputs) }
+        let call = SpotWords.action(action, item: item)
+        guard self.takesHandlers, call.arguments.count > 1 else { return Message(call, inputs: inputs) }
         return Message(.press(call.arguments[0]), inputs: [.init(key: "item", value: call.arguments[1])] + inputs)
     }
 
@@ -46,16 +46,16 @@ extension Spot {
             return form
         }
         let message = message(action, item: item)
-        guard let form = ItemForm(output: try await output(message.action, input: message.text, timeout: timeout)) else { throw SpotError.badForm }
+        guard let form = ItemForm(output: try await output(message.words, input: message.text, timeout: timeout)) else { throw SpotError.badForm }
         return form
     }
 
     func submit(_ action: CommandAction, item: SpotItem?, draft: FormDraft, timeout: TimeInterval) async throws {
         let message = message(action, item: item, inputs: draft.inputs)
-        _ = try await output(message.action, input: message.text, timeout: timeout)
+        _ = try await output(message.words, input: message.text, timeout: timeout)
     }
 
-    func perform(_ action: SpotAction, input: String? = nil, page: String? = nil, timeout: TimeInterval) async throws {
+    func perform(_ action: SpotWords, input: String? = nil, page: String? = nil, timeout: TimeInterval) async throws {
         let route = page.map { "input.route=\($0)\n" } ?? ""
         _ = try await output(action, input: route + (input ?? ""), timeout: timeout)
     }
@@ -90,6 +90,6 @@ extension Spot {
 
 extension ScanResult {
     var metrics: [Spot] {
-        scripts.filter { $0.on?.seconds != nil }
+        scripts.filter { $0.triggers.seconds != nil }
     }
 }

@@ -407,7 +407,7 @@ public final class SpotsModel {
         let stamps = fileStamps
         await reload()
         guard isShown else { return }
-        for entry in entries where entry.spot.on?.has(.panel) == true && fileStamps[entry.id] != stamps[entry.id] {
+        for entry in entries where entry.spot.triggers.has(.panel) && fileStamps[entry.id] != stamps[entry.id] {
             sheets[entry.id]?.show(need: .change)
         }
     }

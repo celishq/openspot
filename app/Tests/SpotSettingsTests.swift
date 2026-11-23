@@ -106,7 +106,7 @@ final class SpotSettingsTests: XCTestCase {
         let set = try await rows(of: move, in: runs)
         XCTAssertEqual(set.first { $0.run == "key:move:key.left" }?.shortcut, "ctrl+k")
 
-        _ = try await runs.answer(of: move, SpotAction(arguments: ["clear", "key:move:key.left"]), limit: 60)
+        _ = try await runs.answer(of: move, SpotWords(arguments: ["clear", "key:move:key.left"]), limit: 60)
         XCTAssertEqual(file.read().keys, [])
     }
 
@@ -173,7 +173,7 @@ final class SpotSettingsTests: XCTestCase {
         XCTAssertEqual(after.first { $0.run == "menubar:shelf" }?.isOn, true)
 
         for run in ["menubar:shelf", "setting:shelf:folder"] {
-            _ = try await runs.answer(of: settings, SpotAction(arguments: ["clear", run]), limit: 1)
+            _ = try await runs.answer(of: settings, SpotWords(arguments: ["clear", run]), limit: 1)
         }
         XCTAssertEqual(file.read().arrangement.menuBar, [])
         XCTAssertNil(file.read().setting("folder", of: "shelf"))
@@ -187,7 +187,7 @@ final class SpotSettingsTests: XCTestCase {
 
         for arguments in [["gone"], ["float:shelf", "k"], ["key:shelf:key.gone", "ctrl+k"], ["press", "own"]] {
             do {
-                _ = try await runs.answer(of: settings, SpotAction(arguments: arguments), limit: 1)
+                _ = try await runs.answer(of: settings, SpotWords(arguments: arguments), limit: 1)
                 XCTFail("took \(arguments)")
             } catch {}
         }

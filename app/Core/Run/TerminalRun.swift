@@ -38,19 +38,19 @@ public struct TerminalRun {
         self.folder = folder
     }
 
-    var action: SpotAction {
-        SpotAction(arguments: arguments.isEmpty ? (spot.hasSheet ? SpotAction.show : SpotAction.open).arguments : arguments)
+    var words: SpotWords {
+        SpotWords(arguments: arguments.isEmpty ? (spot.hasSheet ? SpotWords.show : SpotWords.open).arguments : arguments)
     }
 
     private func message(isInShow: Bool) -> Message {
-        Message(action, event: isInShow ? .sheet : nil, inputs: inputs, given: input, settings: settings).handled()
+        Message(words, event: isInShow ? .sheet : nil, inputs: inputs, given: input, settings: settings).handled()
     }
 
     public func start(isolation: isolated (any Actor)? = #isolation, frame: (String) -> Void) async -> End {
         if spot.reachesAccountKey {
             return End(code: 1, errors: "\(spot.name) reaches your account key, so it runs only in the Openspot panel. Open it there.\n")
         }
-        let isInShow = action == .show
+        let isInShow = words == .show
         if spot.mode == .inline { return await inline(isInShow: isInShow, frame: frame) }
         let swift = SwiftProgram()
         let program = swift.runnable(for: spot, builds: false)
@@ -92,7 +92,7 @@ public struct TerminalRun {
     private func inline(isolation: isolated (any Actor)? = #isolation, isInShow: Bool, frame: (String) -> Void) async -> End {
         let script = InlineScript(spot: spot, api: nil, callers: callers, careful: careful, limit: Self.showLimit, base: environment ?? ProcessInfo.processInfo.environment)
         defer { script.end() }
-        let call = InlineCall(arguments: action.arguments, variables: ["OPENSPOT_ID": spot.id], input: message(isInShow: isInShow).text, reason: isInShow ? ShowEvent.sheet.rawValue : nil, limit: isInShow ? Self.showLimit : nil)
+        let call = InlineCall(arguments: words.arguments, variables: ["OPENSPOT_ID": spot.id], input: message(isInShow: isInShow).text, reason: isInShow ? ShowEvent.sheet.rawValue : nil, limit: isInShow ? Self.showLimit : nil)
         script.send(call)
         let outcome = await withTaskCancellationHandler {
             await call.outcome(limit: isInShow ? Self.showLimit : nil)

@@ -26,10 +26,10 @@ final class SpotTests: XCTestCase {
         try? FileManager.default.removeItem(at: folder)
     }
 
-    private func writeCommand(kind: SpotKind, subtitle: String? = nil, on: ShowEvents? = nil, _ body: String) throws -> Spot {
+    private func writeCommand(kind: SpotKind, subtitle: String? = nil, triggers: Manifest.Triggers = Manifest.Triggers(), _ body: String) throws -> Spot {
         let url = folder.appendingPathComponent("command.sh")
         try "#!/bin/sh\n\(body)\n".writeScript(to: url)
-        return Spot(id: "test/Command", name: "Command", url: url, kind: kind, subtitle: subtitle, on: on)
+        return Spot(id: "test/Command", name: "Command", url: url, kind: kind, subtitle: subtitle, triggers: triggers)
     }
 
     private var marker: URL {
@@ -37,7 +37,7 @@ final class SpotTests: XCTestCase {
     }
 
     func testReadsTheStateACommandPrintsForRead() async throws {
-        let command = try writeCommand(kind: .toggle, on: .panel, """
+        let command = try writeCommand(kind: .toggle, triggers: .panel, """
         [ "$1" = show ] && [ -z "$2" ] && printf 'switch=focus\\ntitle=Focus\\ndetail=On\\nvalue=true\\nclass=card:flex\\n'
         """)
 
@@ -48,7 +48,7 @@ final class SpotTests: XCTestCase {
     }
 
     func testAStateKeepsWhatItLeavesOutFromTheHeader() async throws {
-        let command = try writeCommand(kind: .toggle, subtitle: "Header", on: .panel, "printf 'switch=power\\nvalue=true\\nclass=card:flex\\n'")
+        let command = try writeCommand(kind: .toggle, subtitle: "Header", triggers: .panel, "printf 'switch=power\\nvalue=true\\nclass=card:flex\\n'")
 
         let state = try await command.state(timeout: 60)
 
@@ -66,7 +66,7 @@ final class SpotTests: XCTestCase {
     }
 
     func testOpeningGivesTheKindAndTheActionsThatItPrints() async throws {
-        let command = try writeCommand(kind: .launch, on: .panel, """
+        let command = try writeCommand(kind: .launch, triggers: .panel, """
         printf 'frame=\\nactive=true\\n\\nbutton=press\\ntitle=Select\\n\\nbutton=copy\\ntitle=Copy\\n\\ntext=a\\ntitle=A\\n'
         """)
 
@@ -110,7 +110,7 @@ final class SpotTests: XCTestCase {
 
     func testAFormOfARowGetsTheRunOfThatRow() async throws {
         let command = try writeCommand(kind: .list, """
-        [ "$1 $2" = "edit one" ] && printf 'frame=\\ntype=form\\ntitle=Edit\\n\\nfield=title\\ntitle=Name\\n'
+        [ "$1" = edit ] && grep -qx 'input.item=one' && printf 'frame=\\ntype=form\\ntitle=Edit\\n\\nfield=title\\ntitle=Name\\n'
         """)
 
         let form = try await command.form(CommandAction(id: "edit", title: "Edit"), item: SpotItem(title: "One", run: "one"), timeout: 60)
@@ -127,7 +127,7 @@ final class SpotTests: XCTestCase {
     }
 
     func testAClickOnACardWithAReadSendsPress() async throws {
-        let command = try writeCommand(kind: .launch, on: .panel, "echo \"$1\" > '\(marker.path)'")
+        let command = try writeCommand(kind: .launch, triggers: .panel, "echo \"$1\" > '\(marker.path)'")
 
         try await command.perform(command.click, timeout: 60)
 
@@ -156,7 +156,7 @@ final class SpotTests: XCTestCase {
     }
 
     func testOutputThatIsNotAStateFails() async throws {
-        let command = try writeCommand(kind: .toggle, on: .panel, "echo nonsense")
+        let command = try writeCommand(kind: .toggle, triggers: .panel, "echo nonsense")
 
         do {
             _ = try await command.state(timeout: 60)

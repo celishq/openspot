@@ -78,7 +78,7 @@ final class ScreenExamplesTests: SampleSpotsCase {
 
     func testAPickTurnsAnInputOnOrOffAndReplacesTheOtherOfItsKind() async throws {
         let record = try example("Record")
-        let inputs = SpotAction.action(CommandAction(id: "inputs", title: "Sound and camera"), item: nil)
+        let inputs = SpotWords.action(CommandAction(id: "inputs", title: "Sound and camera"), item: nil)
         try await withPrivateHome { folder in
             try self.fakeScreen(in: folder)
             let pick = { (input: String, kept: String) in
@@ -130,7 +130,7 @@ final class ScreenExamplesTests: SampleSpotsCase {
         let shot = try example("Shot")
 
         XCTAssertEqual(shot.mode, .stay)
-        XCTAssertNil(shot.on)
+        XCTAssertFalse(shot.triggers.shows)
         XCTAssertEqual(shot.sources, ["shot"])
         XCTAssertEqual(shot.uses, [.screen, .clipboard])
     }

@@ -59,7 +59,8 @@ final class MetricSpotsTests: SpotRunsCase {
         let scan = try scanned()
 
         for id in metrics {
-            let read = try XCTUnwrap(scan.spots.first { $0.id == id }?.on, id)
+            let read = try XCTUnwrap(scan.spots.first { $0.id == id }?.triggers, id)
+            XCTAssertTrue(read.shows, id)
             XCTAssertNil(read.seconds, id)
         }
     }
@@ -188,7 +189,9 @@ final class MetricSpotsTests: SpotRunsCase {
         runs.take(grid: ["system"])
         runs.panelOpened()
         let titles = { Dictionary((self.runs.sheets["system"]?.state.face.tree.parts ?? []).map { ($0.id, $0.number?.text ?? "") }) { first, _ in first } }
-        XCTAssertNil(try XCTUnwrap(scan.spots.first { $0.id == "system" }?.on).seconds)
+        let triggers = try XCTUnwrap(scan.spots.first { $0.id == "system" }?.triggers)
+        XCTAssertTrue(triggers.shows)
+        XCTAssertNil(triggers.seconds)
         try await wait("the first read") { titles()["battery"] == "84%" && titles()["devices"] == "–" && titles()["memory"] != nil && !self.runs.isShowing }
 
         mac.sample = LoadSample(busy: 30, total: 200, memory: 55)

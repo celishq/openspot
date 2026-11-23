@@ -281,10 +281,10 @@ final class SpotsFolderTests: XCTestCase {
         XCTAssertEqual(command.kind, .list)
         XCTAssertEqual(command.size, .wide)
         XCTAssertEqual(command.symbol, "app")
-        XCTAssertNil(command.on)
+        XCTAssertFalse(command.triggers.shows)
         XCTAssertFalse(command.showsState)
         XCTAssertEqual(command.pick, .close)
-        XCTAssertFalse(command.isGlobal)
+        XCTAssertFalse(command.triggers.lists)
         XCTAssertEqual(command.mode, .once)
         XCTAssertEqual(command.click.arguments, ["press"])
     }
@@ -314,13 +314,13 @@ final class SpotsFolderTests: XCTestCase {
 
         XCTAssertEqual(commands.map(\.kind), [.list, .list, .list])
         XCTAssertEqual(commands.map(\.showsState), [false, true, false])
-        XCTAssertTrue(commands[2].isGlobal)
+        XCTAssertTrue(commands[2].triggers.lists)
     }
 
     func testReadIsAListOfPlacesBesideItsSeconds() throws {
         try write("a.sh", toml: "[on]\n\"panel.open\" = true\n\"sheet.open\" = true\nevery = 30")
 
-        let read = try XCTUnwrap(try scan.spots.first?.on)
+        let read = try XCTUnwrap(try scan.spots.first?.triggers)
 
         XCTAssertEqual(read.moments, [.panel, .sheet, .every(30)])
         XCTAssertEqual(read.seconds, 30)
@@ -361,7 +361,7 @@ final class SpotsFolderTests: XCTestCase {
         try write("a.sh", toml: "[on]\ndrop = [\"mov\", \"mkv\", \"folder\"]")
         try write("b.sh")
 
-        XCTAssertEqual(try scan.spots.map(\.drop), [["mov", "mkv", "folder"], []])
+        XCTAssertEqual(try scan.spots.map(\.triggers.drop), [["mov", "mkv", "folder"], []])
     }
 
     func testANumberInAListOfMomentsStartsTheSpotOffTheGrid() throws {
@@ -371,7 +371,7 @@ final class SpotsFolderTests: XCTestCase {
 
         XCTAssertEqual(scan.spots.map(\.id), ["a"])
         XCTAssertEqual(scan.spots.map(\.headerState.isOnGrid), [false])
-        XCTAssertEqual(scan.metrics.map(\.on?.seconds), [30])
+        XCTAssertEqual(scan.metrics.map(\.triggers.seconds), [30])
     }
 
     func testASpotThatOffersSearchAndCardHasACard() throws {
@@ -385,7 +385,7 @@ final class SpotsFolderTests: XCTestCase {
         try write("c.sh", toml: "[on]\nevery = 30\nsearch = true")
 
         XCTAssertEqual(try scan.refused, [])
-        XCTAssertEqual(try scan.spots.map(\.isGlobal), [true, true])
+        XCTAssertEqual(try scan.spots.map(\.triggers.lists), [true, true])
         XCTAssertEqual(try scan.spots.map(\.kind), [.list, .list])
     }
 
@@ -400,7 +400,7 @@ final class SpotsFolderTests: XCTestCase {
         XCTAssertEqual(metric.id, "cups")
         XCTAssertEqual(metric.name, "Cups")
         XCTAssertEqual(metric.symbol, "cup.and.saucer")
-        XCTAssertEqual(metric.on?.seconds, 30)
+        XCTAssertEqual(metric.triggers.seconds, 30)
     }
 
     func testAMetricIsAlsoAList() throws {
@@ -451,9 +451,9 @@ final class SpotsFolderTests: XCTestCase {
         let calc = commands.first { $0.id == "calc" }
         let dict = commands.first { $0.id == "dict" }
 
-        XCTAssertEqual(calc?.answers?.text, "^[0-9]")
-        XCTAssertEqual(calc?.answers?.matches("2+2"), true)
-        XCTAssertEqual(calc?.answers?.matches("safari"), false)
+        XCTAssertEqual(calc?.triggers.search?.text, "^[0-9]")
+        XCTAssertEqual(calc?.triggers.search?.matches("2+2"), true)
+        XCTAssertEqual(calc?.triggers.search?.matches("safari"), false)
         XCTAssertEqual(calc?.isOnGrid, false)
         XCTAssertEqual(calc?.isFound, false)
         XCTAssertEqual(dict?.isOnGrid, true)

@@ -6,8 +6,8 @@ final class LinksSpotTests: SampleSpotsCase {
         let links = try XCTUnwrap(try scan.spots.first { $0.name == "Links" })
         let apps = try XCTUnwrap(try scan.spots.first { $0.name == "Apps" })
 
-        XCTAssertTrue(links.isGlobal)
-        XCTAssertTrue(apps.isGlobal)
+        XCTAssertTrue(links.triggers.lists)
+        XCTAssertTrue(apps.triggers.lists)
     }
 
     func testAFixableFailureLinksItsFix() throws {
@@ -109,7 +109,7 @@ final class LinksSpotTests: SampleSpotsCase {
 
             try await self.savedLink("https://icons.test/page", in: links)
 
-            XCTAssertFalse(links.on?.has(.event(SpotEvent.appLaunch)) == true)
+            XCTAssertFalse(links.triggers.has(.event(SpotEvent.appLaunch)))
             XCTAssertTrue(FileManager.default.fileExists(atPath: icons.appendingPathComponent("icons.test.png").path))
         }
     }

@@ -235,7 +235,7 @@ final class SpotRunsWantTests: SpotRunsCase {
         let scan = try SpotsFolder(url: folder).scan()
 
         XCTAssertEqual(scan.refused, [])
-        XCTAssertEqual(scan.spots.map(\.isGlobal), [true, true])
+        XCTAssertEqual(scan.spots.map(\.triggers.lists), [true, true])
         XCTAssertEqual(scan.spots.map(\.headerState.isOnGrid), [false, false])
     }
 

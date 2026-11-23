@@ -30,7 +30,7 @@ public struct ScanResult: Equatable, Sendable {
         let declared = Dictionary((scripts + unloaded).map { ($0.id, $0.events.map(\.name)) }) { first, _ in first }
         files = files.compactMap { file in
             let spots = file.spots.filter { spot in
-                guard let fault = spot.triggers?.unheard(by: spot.name, through: spot.bindings, declared: declared) else { return true }
+                guard let fault = spot.triggers.unheard(by: spot.name, through: spot.bindings, declared: declared) else { return true }
                 refused.append(Refusal(file: file.id, reason: fault))
                 return false
             }

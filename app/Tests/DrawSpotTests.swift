@@ -115,7 +115,7 @@ final class DrawSpotTests: XCTestCase {
         XCTAssertEqual(rows.map(\.run), ["0:new", "0:Work/plan", "0:flows", "0:old"])
         XCTAssertEqual(rows.map(\.subtitle), ["A blank board", "Work · Edited 1 min ago", "Edited 2 min ago", "Edited 2 h ago"])
         XCTAssertTrue(spot.hasSheet)
-        XCTAssertNotEqual(spot.on?.searchesSheet, true)
+        XCTAssertNotEqual(spot.triggers.searchesSheet, true)
     }
 
     func testARenameKeepsTheFiguresAndChangesTheTitle() async throws {
@@ -305,7 +305,7 @@ final class DrawSpotTests: XCTestCase {
 
         sheet.pick(try row("flows", in: sheet))
         let held = try XCTUnwrap(link.sent.last)
-        XCTAssertEqual(held.request.action.arguments, ["press", "0:flows"])
+        XCTAssertEqual(held.request.words.arguments, ["press", "0:flows"])
         await link.frame("call=2\n\nitem=1:new\ntitle=New board\n\nitem=1:flows\ntitle=Flows\n", of: held)
         sheet.close()
         runs.panelClosed()
@@ -316,17 +316,17 @@ final class DrawSpotTests: XCTestCase {
         XCTAssertEqual(sheet.calls.map(\.id), [held.made.id])
 
         sheet.pick(try row("flows", in: sheet))
-        XCTAssertEqual(link.sent.last?.request.action.arguments, ["press", "1:flows"])
+        XCTAssertEqual(link.sent.last?.request.words.arguments, ["press", "1:flows"])
         XCTAssertFalse(held.made.isStopped)
         await link.end(try XCTUnwrap(link.sent.last))
-        for read in link.sent.dropFirst() where read.request.action == .show { await link.end(read) }
+        for read in link.sent.dropFirst() where read.request.words == .show { await link.end(read) }
         XCTAssertEqual(sheet.calls.map(\.id), [held.made.id])
         XCTAssertTrue(sheet.isWanted)
         XCTAssertTrue(sheet.acts.isEmpty)
         XCTAssertNil(runs.runningSummary)
 
         await link.end(held)
-        for read in link.sent.dropFirst() where read.request.action == .show && sheet.calls.contains(where: { $0 === read.made }) { await link.end(read) }
+        for read in link.sent.dropFirst() where read.request.words == .show && sheet.calls.contains(where: { $0 === read.made }) { await link.end(read) }
         XCTAssertFalse(sheet.isWanted)
     }
 }

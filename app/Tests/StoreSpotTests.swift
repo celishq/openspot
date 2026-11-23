@@ -28,11 +28,11 @@ final class StoreSpotTests: BuiltInCase {
     }
 
     private func call(_ arguments: [String]) async throws {
-        try await store.perform(SpotAction(arguments: [arguments[0]]), input: Self.input(arguments), timeout: 60)
+        try await store.perform(SpotWords(arguments: [arguments[0]]), input: Self.input(arguments), timeout: 60)
     }
 
     private func answer(_ arguments: [String]) async throws -> String {
-        try await runs.answer(of: store, SpotAction(arguments: [arguments[0]]), input: Self.input(arguments), limit: 60)
+        try await runs.answer(of: store, SpotWords(arguments: [arguments[0]]), input: Self.input(arguments), limit: 60)
     }
 
     private static func input(_ arguments: [String]) -> String? {
@@ -159,7 +159,7 @@ final class StoreSpotTests: BuiltInCase {
     }
 
     func testAFailedGetSaysWhyInAToast() async throws {
-        _ = try await runs.answer(of: store, SpotAction(arguments: ["gallery"]), input: "input.value=get:nothing\n", limit: 60)
+        _ = try await runs.answer(of: store, SpotWords(arguments: ["gallery"]), input: "input.value=get:nothing\n", limit: 60)
 
         XCTAssertEqual(effects().map { $0.hasPrefix("toast ") }, [true])
     }
@@ -167,7 +167,7 @@ final class StoreSpotTests: BuiltInCase {
     func testPublishDoesNothingUntilTheStoreOpensIt() async throws {
         _ = try AccountStore.standard(environment: ["OPENSPOT_CONFIG": root.path], home: root, devState: nil).keyMadeOnce()
 
-        _ = try await runs.answer(of: store, SpotAction(arguments: ["gallery"]), input: "input.value=publish:mine\n", limit: 60)
+        _ = try await runs.answer(of: store, SpotWords(arguments: ["gallery"]), input: "input.value=publish:mine\n", limit: 60)
 
         XCTAssertEqual(effects(), [])
         let opened = await app.opened
@@ -189,11 +189,11 @@ final class StoreSpotTests: BuiltInCase {
         try "# Timer\n\nCounts down.\n".write(to: core.appendingPathComponent("timer.spot/readme.md"), atomically: true, encoding: .utf8)
         try "# Mine\n".write(to: spots.appendingPathComponent("mine.spot/readme.md"), atomically: true, encoding: .utf8)
 
-        for (action, input) in [(SpotAction.show, ""), (SpotAction(arguments: ["gallery"]), "input.value=get:timer\n"), (SpotAction(arguments: ["gallery"]), "input.value=publish:timer\n")] {
+        for (action, input) in [(SpotWords.show, ""), (SpotWords(arguments: ["gallery"]), "input.value=get:timer\n"), (SpotWords(arguments: ["gallery"]), "input.value=publish:timer\n")] {
             let text = try await SpotRuns(environment: TestEnvironment.values).answer(of: store, action, input: input, limit: 60)
             XCTAssertNil(try viewValues(text)["readme"], input)
         }
-        let asked = try await SpotRuns(environment: TestEnvironment.values).answer(of: store, SpotAction(arguments: ["gallery"]), input: "input.value=readme:timer\n", limit: 60)
+        let asked = try await SpotRuns(environment: TestEnvironment.values).answer(of: store, SpotWords(arguments: ["gallery"]), input: "input.value=readme:timer\n", limit: 60)
 
         XCTAssertEqual(try viewValues(asked)["readme"], ["timer", "timer\t# Timer", "timer\t", "timer\tCounts down."])
         XCTAssertEqual(TextBlock.blocks(in: asked).compactMap { $0.value("item") }, ["mine", "shared", "timer"])
@@ -203,7 +203,7 @@ final class StoreSpotTests: BuiltInCase {
         let folder = core.appendingPathComponent("timer.spot")
         try "![The sheet](shot.png)\n![](/tmp/a.mov)\n![Web](https://example.com/a.jpg)\n".write(to: folder.appendingPathComponent("readme.md"), atomically: true, encoding: .utf8)
 
-        let text = try await SpotRuns(environment: TestEnvironment.values).answer(of: store, SpotAction(arguments: ["gallery"]), input: "input.value=readme:timer\n", limit: 60)
+        let text = try await SpotRuns(environment: TestEnvironment.values).answer(of: store, SpotWords(arguments: ["gallery"]), input: "input.value=readme:timer\n", limit: 60)
 
         let lines = (try viewValues(text)["readme"] ?? []).filter { $0.hasPrefix("timer\t") }
         XCTAssertEqual(lines, ["timer\t![The sheet](\(folder.path)/shot.png)", "timer\t![](/tmp/a.mov)", "timer\t![Web](https://example.com/a.jpg)"])

@@ -61,8 +61,8 @@ public final class SpotRun {
         var chain: [String] = []
         var isPressed = true
 
-        var action: SpotAction {
-            message.action
+        var words: SpotWords {
+            message.words
         }
 
         var isByPerson: Bool {
@@ -260,7 +260,7 @@ public final class SpotRun {
     @ObservationIgnored var pauses: [String: Task<Void, Never>] = [:]
     @ObservationIgnored var editing: String?
     @ObservationIgnored var typed: String?
-    @ObservationIgnored var waitingFiles: [SpotAction] = []
+    @ObservationIgnored var waitingFiles: [SpotWords] = []
     @ObservationIgnored var waitingKeys: [String] = []
     @ObservationIgnored var clockShown: Date?
     public internal(set) var page: FlowSheet
@@ -296,7 +296,7 @@ public final class SpotRun {
 
     public func update(_ new: Spot) {
         let header = spot.headerState
-        if new.answers != spot.answers { answer("") }
+        if new.triggers.search != spot.triggers.search { answer("") }
         let next = runs.mode(of: new)
         if next.keepsState != script.keepsState || (next == InlineMode.self) != (script == InlineMode.self) {
             let old = link

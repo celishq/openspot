@@ -66,8 +66,8 @@ final class StayMode: ScriptMode {
         true
     }
 
-    static func answer(of spot: Spot, _ action: SpotAction, input: String?, limit: TimeInterval?, variables: [String: String], in runs: SpotRuns) async throws -> String {
-        guard action == .show else { return try await collect(of: spot, action, input: input, limit: limit, variables: variables, in: runs) }
+    static func answer(of spot: Spot, _ words: SpotWords, input: String?, limit: TimeInterval?, variables: [String: String], in runs: SpotRuns) async throws -> String {
+        guard words == .show else { return try await collect(of: spot, words, input: input, limit: limit, variables: variables, in: runs) }
         let (script, frames, caller) = runs.stay(spot, limit: limit)
         caller.reason = ShowEvent.panel.rawValue
         defer { script.end() }
@@ -203,7 +203,7 @@ final class StayMode: ScriptMode {
         let record = Record(call)
         let request = call.request
         records[id] = record
-        call.made.halt = { [weak script] in script?.send(text: SpotAction.stopEvent(id: id)) }
+        call.made.halt = { [weak script] in script?.send(text: SpotWords.stopEvent(id: id)) }
         if case .ask = request.purpose { askReason = request.event?.rawValue }
         caller?.call = call
         noteReason()

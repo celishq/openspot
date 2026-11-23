@@ -14,8 +14,11 @@ extension Manifest {
         public let confirm: String?
         public let inputs: [Parameter]
         public let outputs: [Parameter]
+        public let offers: [String]
+        let shortcut: String?
+        let close: Bool?
+        let hooks: [ActionHook: String]
         let section: String
-        let appValues: [String: [String]]
         let appKey: String?
 
         init(id: String, section: String, table: ConfigDocument.Table) throws {
@@ -53,14 +56,15 @@ extension Manifest {
             confirm = texts["confirm"]
             self.inputs = inputs
             self.outputs = outputs
-            self.appValues = appValues
+            offers = appValues["offers"] ?? []
+            shortcut = appValues["shortcut"]?.first
+            close = appValues["close"]?.first.flatMap(Bool.init)
+            hooks = ActionHook.allCases.reduce(into: [:]) { hooks, hook in hooks[hook] = appValues[hook.rawValue]?.first }
             self.appKey = appKey
         }
 
-        var command: Command? {
-            guard let title else { return nil }
-            let values = ["title": [title], "icon": icon.map { [$0] } ?? [], "confirm": confirm.map { [$0] } ?? []].merging(appValues) { kept, _ in kept }
-            return Command(id: id, section: section, values: values)
+        public var closes: Bool {
+            close != false
         }
     }
 }

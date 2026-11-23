@@ -23,8 +23,8 @@ final class SpotRunStateTests: XCTestCase {
         runs.quit()
     }
 
-    private func sheet(kind: SpotKind = .list, on: ShowEvents? = .sheet, mode: SpotMode = .once, offers: [Manifest.Command] = []) -> (SpotRun, FakeMode) {
-        let sheet = runs.sheet(for: Spot(id: "script", name: "Script", url: URL(fileURLWithPath: "/script.spot/script.sh"), kind: kind, on: on, mode: mode, offers: offers))
+    private func sheet(kind: SpotKind = .list, triggers: Manifest.Triggers = .sheet, mode: SpotMode = .once, offers: [Manifest.Action] = []) -> (SpotRun, FakeMode) {
+        let sheet = runs.sheet(for: Spot(id: "script", name: "Script", url: URL(fileURLWithPath: "/script.spot/script.sh"), kind: kind, triggers: triggers, mode: mode, offers: offers))
         return (sheet, links["script"]!)
     }
 
@@ -33,7 +33,7 @@ final class SpotRunStateTests: XCTestCase {
     }
 
     private func opened(searches: Bool = false, frame: String = "item=a\ntitle=A\n") async -> (SpotRun, FakeMode) {
-        let (sheet, link) = sheet(on: ShowEvents(moments: [.sheet], searchesSheet: searches))
+        let (sheet, link) = sheet(triggers: Manifest.Triggers(events: [searches ? SpotEvent.sheetText : SpotEvent.sheetOpen]))
         sheet.open {}
         await link.frame(frame, of: link.sent[0])
         await link.end(link.sent[0])
@@ -128,7 +128,7 @@ final class SpotRunStateTests: XCTestCase {
     }
 
     func testAToggleThatFailsIsUndone() async throws {
-        let (sheet, link) = sheet(kind: .toggle, on: nil)
+        let (sheet, link) = sheet(kind: .toggle, triggers: Manifest.Triggers())
         var failures: [String] = []
         sheet.onReport = { if case .failure(let text) = $0 { failures.append(text) } }
 
@@ -142,7 +142,7 @@ final class SpotRunStateTests: XCTestCase {
     }
 
     func testAToggleStoppedByASecondPressIsUndone() async throws {
-        let (sheet, link) = sheet(kind: .toggle, on: nil)
+        let (sheet, link) = sheet(kind: .toggle, triggers: Manifest.Triggers())
         sheet.pressCard()
         clock.advance(by: 0.5)
         sheet.pressCard()
@@ -179,7 +179,7 @@ final class SpotRunStateTests: XCTestCase {
     }
 
     func testWorkShowsOnceTheClockHasRunOneSecond() async throws {
-        let (sheet, link) = sheet(kind: .launch, on: nil)
+        let (sheet, link) = sheet(kind: .launch, triggers: Manifest.Triggers())
 
         sheet.pressCard()
         try await sleeps()
@@ -191,14 +191,14 @@ final class SpotRunStateTests: XCTestCase {
         XCTAssertEqual(sheet.acts.map(\.id), [link.sent[0].made.id])
     }
 
-    private func inMenuBar(on: ShowEvents? = nil) -> (SpotRun, FakeMode) {
-        let spot = Spot(id: "script", name: "Script", url: URL(fileURLWithPath: "/script.spot/script.sh"), on: on)
+    private func inMenuBar(triggers: Manifest.Triggers = Manifest.Triggers()) -> (SpotRun, FakeMode) {
+        let spot = Spot(id: "script", name: "Script", url: URL(fileURLWithPath: "/script.spot/script.sh"), triggers: triggers)
         runs.take(ScanResult(files: [SpotFile(id: "script", spots: [spot])], refused: []), menuBar: ["script"])
         return (runs.sheets["script"]!, links["script"]!)
     }
 
     private func readInMenuBar() async -> (SpotRun, FakeMode, Int) {
-        let (sheet, link) = inMenuBar(on: ShowEvents(moments: [.panel, .sheet, .event("clipboard.change")]))
+        let (sheet, link) = inMenuBar(triggers: Manifest.Triggers(events: [SpotEvent.panelOpen, SpotEvent.sheetOpen, "clipboard.change"]))
         for call in link.sent { await link.end(call) }
         sheet.show(need: .change, event: .panel)
         return (sheet, link, link.sent.count - 1)
@@ -259,7 +259,7 @@ final class SpotRunStateTests: XCTestCase {
     }
 
     func testANewReadingTellsTheReaderOfTheMarksAndTheSameReadingDoesNot() async throws {
-        let (sheet, link) = inMenuBar(on: ShowEvents(moments: [.every(60)]))
+        let (sheet, link) = inMenuBar(triggers: Manifest.Triggers(every: 60))
         try await wait("the first read") { link.sent.count == 1 }
         await link.frame("frame=\nclass=gap-part\n\nnumber=n\nclass=bar:flex\nvalue=3\n", of: link.sent[0])
         await link.end(link.sent[0])
@@ -302,7 +302,7 @@ final class SpotRunStateTests: XCTestCase {
             links[spot.id] = link
             return link
         }
-        let (_, link) = inMenuBar(on: ShowEvents(moments: [.every(60)]))
+        let (_, link) = inMenuBar(triggers: Manifest.Triggers(every: 60))
         await link.end(link.sent[0])
         let before = looks
 
@@ -312,7 +312,7 @@ final class SpotRunStateTests: XCTestCase {
     }
 
     func testTheClockSleepsUntilTheNextReadIsDue() async throws {
-        let (_, link) = inMenuBar(on: ShowEvents(moments: [.every(60)]))
+        let (_, link) = inMenuBar(triggers: Manifest.Triggers(every: 60))
         await link.end(link.sent[0])
         try await wait("the schedule") { self.clock.isSleeping(for: 60) }
 
@@ -326,7 +326,7 @@ final class SpotRunStateTests: XCTestCase {
     }
 
     func testASpotThatComesBackReadsAtOnce() async throws {
-        let spot = Spot(id: "script", name: "Script", url: URL(fileURLWithPath: "/script.spot/script.sh"), on: ShowEvents(moments: [.every(60)]))
+        let spot = Spot(id: "script", name: "Script", url: URL(fileURLWithPath: "/script.spot/script.sh"), triggers: Manifest.Triggers(every: 60))
         let scan = ScanResult(files: [SpotFile(id: "script", spots: [spot])], refused: [])
         runs.take(scan, menuBar: ["script"])
         await links["script"]!.end(links["script"]!.sent[0])
@@ -339,7 +339,7 @@ final class SpotRunStateTests: XCTestCase {
     }
 
     func testQuickPressesOfAKeyWaitUpToTheirLimit() async throws {
-        let (sheet, link) = sheet(kind: .launch, on: nil, offers: Manifest(text: TestSpot.command, folder: "").actions.compactMap(\.command))
+        let (sheet, link) = sheet(kind: .launch, triggers: Manifest.Triggers(), offers: Manifest(text: TestSpot.command, folder: "").actions.filter { $0.title != nil })
 
         for _ in 0..<10 { sheet.pressKey("go") }
         var ended = 0
@@ -352,7 +352,7 @@ final class SpotRunStateTests: XCTestCase {
     }
 
     func testAStayingSpotHoldsNoMoreKeyPressesThanTheLimit() async throws {
-        let (sheet, link) = sheet(kind: .launch, on: nil, mode: .stay, offers: Manifest(text: TestSpot.command, folder: "").actions.compactMap(\.command))
+        let (sheet, link) = sheet(kind: .launch, triggers: Manifest.Triggers(), mode: .stay, offers: Manifest(text: TestSpot.command, folder: "").actions.filter { $0.title != nil })
         var toasts: [String] = []
         sheet.onReport = { if case .toast(let text) = $0 { toasts.append(text) } }
 
@@ -368,7 +368,7 @@ final class SpotRunStateTests: XCTestCase {
     }
 
     func testASecondPressStopsAStayingCallThatSaysNothingAfterTheStopPause() async throws {
-        let (sheet, link) = sheet(kind: .launch, on: nil, mode: .stay)
+        let (sheet, link) = sheet(kind: .launch, triggers: Manifest.Triggers(), mode: .stay)
         sheet.pressCard()
         clock.advance(by: 2)
 
@@ -382,7 +382,7 @@ final class SpotRunStateTests: XCTestCase {
     }
 
     func testAStayingCallThatPrintsAFrameAfterTheStopKeepsRunning() async throws {
-        let (sheet, link) = sheet(kind: .launch, on: nil, mode: .stay)
+        let (sheet, link) = sheet(kind: .launch, triggers: Manifest.Triggers(), mode: .stay)
         sheet.pressCard()
         clock.advance(by: 2)
 
@@ -397,7 +397,7 @@ final class SpotRunStateTests: XCTestCase {
     }
 
     func testAThirdPressStartsTheStopPauseAgain() async throws {
-        let (sheet, _) = sheet(kind: .launch, on: nil, mode: .stay)
+        let (sheet, _) = sheet(kind: .launch, triggers: Manifest.Triggers(), mode: .stay)
         sheet.pressCard()
         clock.advance(by: 2)
         sheet.pressCard()
@@ -430,7 +430,7 @@ final class SpotRunStateTests: XCTestCase {
             links[spot.id] = link
             return link
         }
-        let (sheet, _) = sheet(kind: .launch, on: nil)
+        let (sheet, _) = sheet(kind: .launch, triggers: Manifest.Triggers())
 
         sheet.pressCard()
         try await sleeps()

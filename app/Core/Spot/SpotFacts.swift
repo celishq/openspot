@@ -8,16 +8,12 @@ public struct SpotFacts: Equatable, Sendable {
     public let headerIcon: Icon?
     let baseSymbol: String
     public let subtitle: String?
-    public let on: ShowEvents?
     public let hasSheet: Bool
-    public let isGlobal: Bool
     public let isFound: Bool
-    public let answers: AnswerPattern?
     public internal(set) var order: Int
     public let host: HostSheet?
     public let growsFromField: Bool
     public internal(set) var mode: SpotMode
-    public let drop: [String]
     public let dataName: String?
     public internal(set) var isOnGrid: Bool
     public let views: [String: String]
@@ -25,13 +21,12 @@ public struct SpotFacts: Equatable, Sendable {
     public internal(set) var sources: [String]
     public let pages: [String]
     public internal(set) var uses: Set<SpotUse>
-    public let offers: [Manifest.Command]
+    public let offers: [Manifest.Action]
     public internal(set) var offeredActions: [OfferedAction]
     public internal(set) var typedActions: [Manifest.Action] = []
-    public internal(set) var triggers: Manifest.Triggers?
+    public internal(set) var triggers: Manifest.Triggers
     public internal(set) var bindings: [Manifest.Binding] = []
     public internal(set) var events: [Manifest.Event] = []
-    public internal(set) var commandWords: [String] = []
     public let settings: [Manifest.Setting]
     public internal(set) var holdsSettings = false
     public internal(set) var isBuiltIn = false

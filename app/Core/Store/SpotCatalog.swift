@@ -63,7 +63,7 @@ public struct SpotCatalog: Sendable {
             item(spot, id: SpotsFolder.coreID(of: spot), isAdded: enabled.contains(SpotsFolder.coreID(of: spot)), isCore: true)
         }
         let mine = own.files.compactMap { file in
-            let startsOff = file.spots.contains { $0.triggers?.schedule.isEmpty == false }
+            let startsOff = file.spots.contains { !$0.triggers.schedule.isEmpty }
             return file.spots.first.map { item($0, id: file.id, isAdded: !disabled.contains(file.id) && (!startsOff || enabled.contains(file.id)), publication: publications[$0.id]) }
         }
         let stored = stores.flatMap { store in

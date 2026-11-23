@@ -46,7 +46,7 @@ extension SpotsModel {
         }
 
         @MainActor public var commandWords: [(name: String, word: String)] {
-            spot.commandWords.compactMap { name in
+            spot.triggers.commands.compactMap { name in
                 let word = wordChoices[name] ?? name
                 return word.isEmpty ? nil : (name, word)
             }

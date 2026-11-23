@@ -84,7 +84,7 @@ public struct ReviewSpot: Equatable, Sendable {
     }
 
     public var spot: Spot {
-        Spot(id: Self.id, name: name, url: folder, kind: .list, symbol: symbol, subtitle: subtitle, on: .sheet, order: .max, host: .review(self), growsFromField: true)
+        Spot(id: Self.id, name: name, url: folder, kind: .list, symbol: symbol, subtitle: subtitle, triggers: .sheet, order: .max, host: .review(self), growsFromField: true)
     }
 
     public func answer(_ arguments: [String]) throws -> String {
@@ -136,7 +136,7 @@ public struct ReviewSpot: Equatable, Sendable {
             case .stay: [script.showsAtLaunch ? "keeps running while Openspot runs" : "keeps running while it is in use"]
             case .once, .inline: []
             }
-            for moment in script.on?.moments ?? [] {
+            for moment in script.triggers.moments {
                 switch moment {
                 case .panel: moments.append("when the panel opens")
                 case .every(let seconds): moments.append("every \(Int(seconds)) seconds")

@@ -39,6 +39,6 @@ final class FakeMode: ScriptMode {
     }
 
     func arguments() -> [[String]] {
-        sent.map(\.request.action.arguments)
+        sent.map(\.request.words.arguments)
     }
 }

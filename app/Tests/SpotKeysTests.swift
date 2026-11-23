@@ -24,8 +24,8 @@ final class SpotKeysTests: XCTestCase {
         let plain = try spot("")
         let clock = try spot("[on]\nevery = 60")
 
-        XCTAssertEqual([search.isGlobal, search.isFound, search.headerState.isOnGrid], [true, true, true])
-        XCTAssertEqual([plain.isGlobal, plain.isFound, plain.headerState.isOnGrid], [false, true, true])
+        XCTAssertEqual([search.triggers.lists, search.isFound, search.headerState.isOnGrid], [true, true, true])
+        XCTAssertEqual([plain.triggers.lists, plain.isFound, plain.headerState.isOnGrid], [false, true, true])
         XCTAssertEqual([clock.isFound, clock.headerState.isOnGrid], [true, false])
     }
 
@@ -98,7 +98,7 @@ final class SpotKeysTests: XCTestCase {
         for toml in ["[on]\nsearch = true", "[on]\n\"clipboard.change\" = true\nsearch = true"] {
             let spot = try spot(toml)
 
-            XCTAssertEqual(spot.on?.has(.sheet), true, toml)
+            XCTAssertEqual(spot.triggers.has(.sheet), true, toml)
             XCTAssertTrue(spot.showsOfferedItems, toml)
         }
     }
@@ -156,8 +156,8 @@ final class SpotKeysTests: XCTestCase {
 
         let spot = try XCTUnwrap(try SpotFile(script: URL(fileURLWithPath: "/spots/calc.sh"), manifest: manifest, id: "calc").spots.first)
 
-        XCTAssertEqual(spot.answers?.text, #"^\s*([0-9,.]|(?i:today|now)\b)"#)
-        XCTAssertEqual(["1,5", "Today", "notes"].map { spot.answers?.matches($0) }, [true, true, false])
+        XCTAssertEqual(spot.triggers.search?.text, #"^\s*([0-9,.]|(?i:today|now)\b)"#)
+        XCTAssertEqual(["1,5", "Today", "notes"].map { spot.triggers.search?.matches($0) }, [true, true, false])
     }
 
     func testAPictureOnTheWebKeepsItsURL() throws {
@@ -190,7 +190,7 @@ final class SpotKeysTests: XCTestCase {
     }
 
     func testAFrameCopiesNoHeader() throws {
-        let spot = Spot(id: "a", name: "A", url: URL(fileURLWithPath: "/spots/a.sh"), on: .sheet, keywords: ["one", "two"])
+        let spot = Spot(id: "a", name: "A", url: URL(fileURLWithPath: "/spots/a.sh"), triggers: .sheet, keywords: ["one", "two"])
 
         let framed = spot.taking(Frame(text: "frame=\ntitle=Open\ntext=x\ntitle=X\n"))
 

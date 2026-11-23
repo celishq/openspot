@@ -30,30 +30,25 @@ public struct SpotFile: Equatable, Sendable {
             throw SpotError.fault("\(name) has an unknown key in \(action.section): \(action.appKey ?? "")")
         }
         let icon = Icon(text: manifest.icon).map { Self.placed($0, beside: url) }
-        let triggers = manifest.triggers
-        try (triggers ?? Manifest.Triggers()).check(manifest, name: name)
-        let parsed = triggers?.showEvents
-        var on = parsed?.moments.isEmpty == false ? parsed : nil
+        try manifest.triggers.check(manifest, name: name)
         let uses = try SpotUse.set(manifest.uses, of: name)
         let isInline = url.pathExtension == Self.inlineExtension && !FileManager.default.isExecutableFile(atPath: url.path)
         if isInline, manifest.stay == true {
             throw SpotError.fault("\(name) is a .js file, which runs inline, so it takes no stay = true")
         }
         let mode = isInline ? SpotMode.inline : manifest.stay == true ? SpotMode.stay : SpotMode.once
-        let isGlobal = triggers?.lists == true
         let order = manifest.answers
         guard order == nil || order == "last" || order == "card" else {
             throw SpotError.fault("\(name) has an unknown answers: \(order ?? ""). Use answers = \"last\" or answers = \"card\"")
         }
-        guard order == nil || parsed?.answers != nil else {
+        guard order == nil || manifest.triggers.search != nil else {
             throw SpotError.fault("\(name) has answers = \"\(order ?? "")\", which needs search in its [on], such as search = \"^[0-9]\"")
         }
-        let answers = order == "last" ? parsed?.answers?.last() : order == "card" ? parsed?.answers?.card() : parsed?.answers
-        let answersOnly = answers != nil && on == nil
+        let triggers = manifest.triggers.answering(order)
         if let setting = manifest.settings.first(where: { ReservedSetting.isReserved($0.id) }) {
             throw SpotError.fault("\(name) has \(setting.section), a key that Openspot keeps for the person. Give the setting another name.")
         }
-        let commands = manifest.actions.compactMap(\.command)
+        let commands = manifest.actions.filter { $0.title != nil }
         let offeredActions = try OfferedAction.read(commands, owner: id, of: name, isInline: mode == .inline)
         let offeredIDs = Set(offeredActions.map(\.action.id))
         let offers = commands.filter { !offeredIDs.contains($0.id) }
@@ -76,10 +71,7 @@ public struct SpotFile: Equatable, Sendable {
         guard manifest.starts == nil || starts != nil else {
             throw SpotError.fault("\(name) has an unknown starts: \(manifest.starts ?? ""). Use starts = \"first-launch\".")
         }
-        if isGlobal, on?.has(.panel) != true, on?.has(.sheet) != true, on?.seconds == nil {
-            on = on?.adding(.sheet) ?? .sheet
-        }
-        let isFound = !answersOnly && (offeredActions.isEmpty || isGlobal)
+        let isFound = !triggers.answersOnly && (offeredActions.isEmpty || triggers.lists)
         var command = Spot(
             id: id,
             name: name,
@@ -87,14 +79,11 @@ public struct SpotFile: Equatable, Sendable {
             kind: .list,
             icon: icon,
             subtitle: manifest.detail,
-            on: on,
+            triggers: triggers,
             isFound: isFound,
-            answers: answers,
             mode: mode,
-            drop: triggers?.drop ?? [],
-            isGlobal: isGlobal,
             dataName: SpotID(id).name,
-            isOnGrid: isFound && offers.isEmpty && on?.seconds == nil,
+            isOnGrid: isFound && offers.isEmpty && triggers.seconds == nil,
             offers: offers,
             offeredActions: offeredActions,
             settings: manifest.settings,
@@ -109,10 +98,8 @@ public struct SpotFile: Equatable, Sendable {
             starts: starts
         )
         command.typedActions = manifest.actions
-        command.triggers = triggers ?? Manifest.Triggers()
         command.bindings = manifest.bindings
         command.events = manifest.events
-        command.commandWords = triggers?.commands ?? []
         self.init(id: id, spots: [command])
     }
 

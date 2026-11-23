@@ -18,7 +18,7 @@ public struct Manifest: Equatable, Sendable {
         var actions: [Action] = []
         var bindings: [Binding] = []
         var events: [Event] = []
-        var triggers: Triggers?
+        var triggers = Triggers()
 
         mutating func take(_ table: [(String, ConfigDocument.Value?)]) throws {
             for (name, value) in table {
@@ -49,7 +49,7 @@ public struct Manifest: Equatable, Sendable {
     public let bindings: [Binding]
     public let events: [Event]
     public let stay: Bool?
-    public let triggers: Triggers?
+    public let triggers: Triggers
     private let written: [String]
     let hasScripts: Bool
     private let scripts: [String: Manifest]

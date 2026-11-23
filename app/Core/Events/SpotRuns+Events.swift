@@ -46,7 +46,7 @@ extension SpotRuns {
     }
 
     func watchLoad() {
-        let isWanted = sheets.values.contains { $0.isWanted && $0.spot.on?.has(.event(SpotEvent.systemLoad)) == true }
+        let isWanted = sheets.values.contains { $0.isWanted && $0.spot.triggers.has(.event(SpotEvent.systemLoad)) }
         guard let source, isWanted, !hasQuit else {
             loadWatch?.cancel()
             loadWatch = nil
@@ -83,7 +83,7 @@ extension SpotRuns {
     }
 
     func watchClipboard(looksNow: Bool = false) {
-        let isWanted = sheets.values.contains { $0.isWanted && $0.spot.on?.has(.event(SpotEvent.clipboard)) == true }
+        let isWanted = sheets.values.contains { $0.isWanted && $0.spot.triggers.has(.event(SpotEvent.clipboard)) }
         guard let source, isWanted, !hasQuit else {
             clipboardWatch?.cancel()
             clipboardWatch = nil
@@ -110,7 +110,7 @@ extension SpotRuns {
     }
 
     func want(_ id: String) {
-        guard let sheet = sheets[id], sheet.spot.on?.has(.event(SpotEvent.spotWant)) == true, wanted.insert(id).inserted else { return }
+        guard let sheet = sheets[id], sheet.spot.triggers.has(.event(SpotEvent.spotWant)), wanted.insert(id).inserted else { return }
         sheet.show(need: .change, event: ShowEvent(event: SpotEvent.spotWant, value: nil))
     }
 
@@ -129,7 +129,7 @@ extension SpotRuns {
     }
 
     private func showPanel(toEnd: Bool = false) {
-        for sheet in sheets.values where sheet.spot.on?.has(.panel) == true {
+        for sheet in sheets.values where sheet.spot.triggers.has(.panel) {
             if toEnd { sheet.showToEnd(event: .panel) } else { sheet.show(need: .moment, event: .panel) }
         }
         sheets.keys.filter(isOnGrid).forEach(want)
@@ -138,9 +138,9 @@ extension SpotRuns {
 
     private func wake() {
         let time = now()
-        for sheet in sheets.values where sheet.isWanted && sheet.spot.on?.seconds != nil {
+        for sheet in sheets.values where sheet.isWanted && sheet.spot.triggers.seconds != nil {
             sheet.clockShown = time
-            sheet.show(need: .clock, event: .clock(sheet.spot.on?.seconds))
+            sheet.show(need: .clock, event: .clock(sheet.spot.triggers.seconds))
         }
         sheets.values.forEach { $0.settleScript() }
         updateClock()
@@ -149,7 +149,7 @@ extension SpotRuns {
     }
 
     private func show(_ name: String, _ value: String?, showsEachSpot: Bool) {
-        for sheet in sheets.values where (showsEachSpot || sheet.isWanted) && sheet.spot.on?.admits(name, value: value) == true {
+        for sheet in sheets.values where (showsEachSpot || sheet.isWanted) && sheet.spot.triggers.admits(name, value: value) {
             sheet.show(need: showsEachSpot ? .change : .clock, event: ShowEvent(event: name, value: value))
         }
     }
@@ -158,7 +158,7 @@ extension SpotRuns {
         let text = query.trimmingCharacters(in: .whitespaces)
         answerWaits = []
         for sheet in sheets.values {
-            guard let pattern = sheet.spot.answers else { continue }
+            guard let pattern = sheet.spot.triggers.search else { continue }
             sheet.answer(!text.isEmpty && answerMatches.matches(pattern, text) ? text : "")
         }
         let waits = answerWaits ?? []

@@ -55,7 +55,7 @@ extension SpotRuns {
         if !frame.outputs.isEmpty { return .values(frame.outputs) }
         if frame.isPicture {
             guard call?.isByPerson == true else {
-                let handler = call?.action.arguments.first ?? "a handler"
+                let handler = call?.words.arguments.first ?? "a handler"
                 return .refused("\(run.name) answers with a view, which needs the person, and \(spot.name) runs \(handler) with no press. Show a toast or open a float instead.")
             }
             guard let app else { return .failed("\(run.name) answers with a view, and no app shows it.") }
@@ -97,7 +97,7 @@ extension SpotRuns {
         for sheet in sheets.values {
             for binding in sheet.spot.bindings where binding.spot == spot.id {
                 let heard = Manifest.BoundEvent(binding: binding.name, event: event)
-                if sheet.spot.triggers?.bindings.contains(heard) == true { sheet.trigger(heard.key, inputs: values, key: "\(Manifest.Triggers.table).\(heard.key)") }
+                if sheet.spot.triggers.bindings.contains(heard) { sheet.trigger(heard.key, inputs: values, key: "\(Manifest.Triggers.table).\(heard.key)") }
             }
         }
     }

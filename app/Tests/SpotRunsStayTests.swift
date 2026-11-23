@@ -80,7 +80,7 @@ final class SpotRunsStayTests: SpotRunsCase {
         time += 60
         try await pause()
 
-        XCTAssertEqual(sheet.calls.map(\.action.arguments), [["press", "hold"]])
+        XCTAssertEqual(sheet.calls.map(\.words.arguments), [["press", "hold"]])
         XCTAssertFalse(exists("ended"))
         XCTAssertEqual(kill(child, 0), 0)
     }

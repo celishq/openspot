@@ -327,8 +327,8 @@ final class SheetPartsTests: XCTestCase {
     }
 
     func testTheCallsOfAPanel() {
-        XCTAssertEqual(SpotAction.set("left", to: "true").arguments, ["left", "true"])
-        XCTAssertEqual(SpotAction.press("quit").arguments, ["quit"])
+        XCTAssertEqual(SpotWords.set("left", to: "true").arguments, ["left", "true"])
+        XCTAssertEqual(SpotWords.press("quit").arguments, ["quit"])
     }
 
     func testAPartOrAnActionCalledShowIsAFault() {

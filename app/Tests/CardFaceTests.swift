@@ -71,7 +71,7 @@ final class CardFaceTests: XCTestCase {
     }
 
     func testTheOneControlRowThatACardPlacesStartsWithTheIconOfTheSpot() throws {
-        let spot = Spot(id: "focus", name: "Focus", url: URL(fileURLWithPath: "/none/focus.sh"), icon: .symbol("moon.fill"), on: .panel)
+        let spot = Spot(id: "focus", name: "Focus", url: URL(fileURLWithPath: "/none/focus.sh"), icon: .symbol("moon.fill"), triggers: .panel)
         let icon = { (text: String, id: String) in try spot.state(of: Frame(text: text)).face.tree.node(id)?.part?.icon }
 
         XCTAssertEqual(try icon("frame=\nactive=true\n\nswitch=focus\ntitle=Focus\nvalue=true\nclass=hidden strip:flex large:flex\n", "focus"), .symbol("moon.fill"))

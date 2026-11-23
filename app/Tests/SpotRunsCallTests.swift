@@ -291,7 +291,7 @@ final class SpotRunsCallTests: SpotRunsCase {
         try await wait("the first frame") { sheet.panel?.parts.map(\.title) == ["half"] }
         let call = try XCTUnwrap(sheet.calls.first)
         XCTAssertTrue(call.isAct)
-        XCTAssertEqual(call.action.arguments, ["go"])
+        XCTAssertEqual(call.words.arguments, ["go"])
         sheet.close()
         runs.panelClosed()
         XCTAssertEqual(sheet.calls.count, 1)

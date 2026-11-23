@@ -11,7 +11,7 @@ extension SpotRuns {
         var kept = Set<String>()
         for sheet in sheets.values {
             let id = sheet.spot.id
-            for line in sheet.spot.triggers?.schedule ?? [] {
+            for line in sheet.spot.triggers.schedule {
                 kept.insert(SpotSchedule.key(line, of: id))
                 guard let last = schedule.last(line, of: id) else {
                     schedule.ran(line, of: id, at: time)

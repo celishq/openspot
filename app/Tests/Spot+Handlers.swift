@@ -3,11 +3,11 @@ import Foundation
 
 @MainActor
 extension Spot {
-    func handle(_ action: SpotAction, timeout: TimeInterval) async throws {
+    func handle(_ action: SpotWords, timeout: TimeInterval) async throws {
         var message = Message(action).handled()
-        if message.action == action, action.arguments.count > 1 {
+        if message.words == action, action.arguments.count > 1 {
             message = Message(.press(action.arguments[0]), inputs: [.init(key: "item", value: action.arguments[1])])
         }
-        try await perform(message.action, input: message.text, timeout: timeout)
+        try await perform(message.words, input: message.text, timeout: timeout)
     }
 }

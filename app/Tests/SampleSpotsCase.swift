@@ -148,7 +148,7 @@ class SampleSpotsCase: XCTestCase {
 
     @MainActor
     static func answer(of spot: Spot, _ arguments: [String], input: String) async throws -> Frame {
-        Frame(text: try await SpotRuns(environment: TestEnvironment.values).answer(of: spot, SpotAction(arguments: arguments), input: input, limit: 30))
+        Frame(text: try await SpotRuns(environment: TestEnvironment.values).answer(of: spot, SpotWords(arguments: arguments), input: input, limit: 30))
     }
 
     func action(_ id: String, of spot: Spot) async throws -> CommandAction {
@@ -204,7 +204,7 @@ class SampleSpotsCase: XCTestCase {
     }
 
     @MainActor
-    static func drive(_ spot: Spot, _ actions: [SpotAction]) async throws -> Frame {
+    static func drive(_ spot: Spot, _ actions: [SpotWords]) async throws -> Frame {
         var last = try await spot.items(timeout: 60)
         var panel = try XCTUnwrap(SheetParts(output: last))
         for action in actions {

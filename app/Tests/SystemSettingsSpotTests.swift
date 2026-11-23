@@ -5,11 +5,11 @@ final class SystemSettingsSpotTests: SampleSpotsCase {
     func testSystemSettingsJoinsTheMainSearch() throws {
         let settings = try XCTUnwrap(try scan.spots.first { $0.name == "System Settings" })
 
-        XCTAssertTrue(settings.isGlobal)
+        XCTAssertTrue(settings.triggers.lists)
     }
 
     func testSystemSettingsReadsWhenThePanelOpens() throws {
-        let read = try XCTUnwrap(try scan.spots.first { $0.name == "System Settings" }?.on)
+        let read = try XCTUnwrap(try scan.spots.first { $0.name == "System Settings" }?.triggers)
 
         XCTAssertTrue(read.has(.panel))
     }

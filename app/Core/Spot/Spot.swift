@@ -33,21 +33,18 @@ public struct Spot: Equatable, Sendable {
         symbol: String = "app",
         icon: Icon? = nil,
         subtitle: String? = nil,
-        on: ShowEvents? = nil,
+        triggers: Manifest.Triggers = Manifest.Triggers(),
         pick: ItemPick = .close,
         isFound: Bool = true,
-        answers: AnswerPattern? = nil,
         order: Int = 0,
         openTitle: String? = nil,
         actions: [CommandAction] = [],
         host: HostSheet? = nil,
         growsFromField: Bool = false,
         mode: SpotMode = .once,
-        drop: [String] = [],
-        isGlobal: Bool = false,
         dataName: String? = nil,
         isOnGrid: Bool = true,
-        offers: [Manifest.Command] = [],
+        offers: [Manifest.Action] = [],
         offeredActions: [OfferedAction] = [],
         settings: [Manifest.Setting] = [],
         views: [String: String] = [:],
@@ -61,12 +58,12 @@ public struct Spot: Equatable, Sendable {
         starts: SpotStart? = nil
     ) {
         header = Header(SpotFacts(
-            id: id, name: name, url: url, size: size, headerIcon: icon, baseSymbol: symbol, subtitle: subtitle, on: on,
-            hasSheet: on != nil || answers == nil && offers.isEmpty && offeredActions.isEmpty,
-            isGlobal: isGlobal, isFound: isFound, answers: answers, order: order,
-            host: host, growsFromField: growsFromField, mode: mode, drop: drop,
+            id: id, name: name, url: url, size: size, headerIcon: icon, baseSymbol: symbol, subtitle: subtitle,
+            hasSheet: triggers.shows || triggers.search == nil && offers.isEmpty && offeredActions.isEmpty,
+            isFound: isFound, order: order,
+            host: host, growsFromField: growsFromField, mode: mode,
             dataName: dataName, isOnGrid: isOnGrid, views: views, viewDates: viewDates, sources: sources, pages: pages, uses: uses,
-            offers: offers, offeredActions: offeredActions, settings: settings, keywords: keywords, sample: sample,
+            offers: offers, offeredActions: offeredActions, triggers: triggers, settings: settings, keywords: keywords, sample: sample,
             edits: edits, starts: starts
         ))
         self.kind = kind
@@ -124,10 +121,6 @@ public struct Spot: Equatable, Sendable {
         image.map(FileIcon.image) ?? file.map(FileIcon.init(path:))
     }
 
-    public var on: ShowEvents? {
-        header.facts.on
-    }
-
     public var reachesAccountKey: Bool {
         SpotUse.reachesAccountKey(self.uses, isBuiltIn: self.isBuiltIn)
     }
@@ -163,7 +156,7 @@ public struct Spot: Equatable, Sendable {
 
     private var settingKeys: [SpotSettings.Key] {
         let icon = self.image ?? self.file ?? self.glyph ?? self.symbol
-        let commands = self.offers.map { SpotSettings.Key(act: .command($0.id), title: $0.title, icon: $0.icon ?? icon) }
+        let commands = self.offers.map { SpotSettings.Key(act: .command($0.id), title: $0.title ?? "", icon: $0.icon ?? icon) }
         return [SpotSettings.Key(act: .open, title: "Open", icon: icon)] + commands + [SpotSettings.Key(act: .float, title: "Float", icon: icon)]
     }
 
@@ -195,7 +188,7 @@ public struct Spot: Equatable, Sendable {
             size: self.size,
             symbol: header.facts.baseSymbol,
             icon: self.icon,
-            on: .sheet,
+            triggers: .sheet,
             isFound: false,
             isOnGrid: false
         )
@@ -214,7 +207,7 @@ public struct Spot: Equatable, Sendable {
             size: owner.size,
             symbol: owner.header.facts.baseSymbol,
             icon: owner.icon,
-            on: self.on,
+            triggers: self.triggers.showing,
             isFound: false,
             mode: self.mode,
             dataName: self.dataName,
@@ -260,23 +253,27 @@ public struct Spot: Equatable, Sendable {
     }
 
     public var showsState: Bool {
-        (self.on?.has(.panel) == true || self.on?.has(.event(SpotEvent.appLaunch)) == true) && !self.isGlobal && !self.mode.stays
+        (self.triggers.has(.panel) || self.triggers.has(.event(SpotEvent.appLaunch))) && !self.triggers.lists && !self.mode.stays
     }
 
     public var showsAtLaunch: Bool {
-        self.on?.has(.event(SpotEvent.appLaunch)) == true
+        self.triggers.has(.event(SpotEvent.appLaunch))
     }
 
     public var showsOfferedItems: Bool {
-        guard let on = self.on else { return false }
-        return self.isGlobal && !on.has(.panel) && on.seconds == nil
+        let triggers = self.triggers
+        return triggers.shows && triggers.lists && !triggers.has(.panel) && triggers.seconds == nil
+    }
+
+    public var takesHandlers: Bool {
+        self.host == nil && !self.holdsSettings
     }
 
     public var canShowInMenuBar: Bool {
         self.host == nil
     }
 
-    public var click: SpotAction {
+    public var click: SpotWords {
         .open
     }
 
@@ -309,7 +306,7 @@ public struct Spot: Equatable, Sendable {
     }
 
     private var dropWords: [String] {
-        self.drop.map { $0.lowercased() }
+        self.triggers.drop.map { $0.lowercased() }
     }
 
     public func taking(_ output: Frame) -> Spot {

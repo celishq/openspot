@@ -11,7 +11,7 @@ final class AppSpotInputTests: BuiltInCase {
 
         for script in scripts {
             for arguments in [["show"], [text], ["show", text]] {
-                _ = try? await runs.answer(of: script, SpotAction(arguments: arguments), input: "route=\(text)\nevent.value=\(text)\ninput.id=\(text)\ninput.value=\(text)\n", limit: 30)
+                _ = try? await runs.answer(of: script, SpotWords(arguments: arguments), input: "route=\(text)\nevent.value=\(text)\ninput.id=\(text)\ninput.value=\(text)\n", limit: 30)
             }
         }
 

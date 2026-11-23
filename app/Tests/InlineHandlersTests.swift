@@ -28,7 +28,7 @@ final class InlineHandlersTests: SpotRunsCase {
         }
         """)
 
-        let text = try await runs.answer(of: try spot("counter"), SpotAction(arguments: ["add"]), input: "input.n=4\ninput.tags=a\nsetting.step=2\n", limit: 60)
+        let text = try await runs.answer(of: try spot("counter"), SpotWords(arguments: ["add"]), input: "input.n=4\ninput.tags=a\nsetting.step=2\n", limit: 60)
 
         XCTAssertEqual(Frame(text: text).outputs, [.init(key: "sum", value: "6"), .init(key: "kind", value: "number 1")], text)
     }
@@ -42,7 +42,7 @@ final class InlineHandlersTests: SpotRunsCase {
         }
         """)
 
-        let text = try await runs.answer(of: try spot("notes"), SpotAction(arguments: ["save"]), input: "input.note=a\\\\b\n", limit: 60)
+        let text = try await runs.answer(of: try spot("notes"), SpotWords(arguments: ["save"]), input: "input.note=a\\\\b\n", limit: 60)
 
         XCTAssertEqual(Frame(text: text).items.first?.title, "a\\b", text)
     }
@@ -71,7 +71,7 @@ final class InlineHandlersTests: SpotRunsCase {
         }
         """)
 
-        let text = try await runs.answer(of: try spot("snoozer"), SpotAction(arguments: ["snooze"]), input: "input.url=https://example.com/a\n", limit: 60)
+        let text = try await runs.answer(of: try spot("snoozer"), SpotWords(arguments: ["snooze"]), input: "input.url=https://example.com/a\n", limit: 60)
 
         XCTAssertEqual(Frame(text: text).outputs, [.init(key: "until", value: "2026-11-23")], text)
         try await wait("the event handler of the listener") { self.log("heard") == ["https://example.com/a 2026-11-23"] }
@@ -87,7 +87,7 @@ final class InlineHandlersTests: SpotRunsCase {
         }
         """)
 
-        let text = try await runs.answer(of: try spot("setter"), SpotAction(arguments: ["go"]), limit: 60)
+        let text = try await runs.answer(of: try spot("setter"), SpotWords(arguments: ["go"]), limit: 60)
 
         XCTAssertEqual(Frame(text: text).outputs, [.init(key: "said", value: "loud")], text)
     }
@@ -105,7 +105,7 @@ final class InlineHandlersTests: SpotRunsCase {
         let bare = SpotRuns(environment: TestEnvironment.values.merging(["PATH": "\(tools.path):/usr/bin:/bin"]) { _, new in new })
         defer { bare.quit() }
 
-        let text = try await bare.answer(of: try spot("toaster"), SpotAction(arguments: ["go"]), limit: 60)
+        let text = try await bare.answer(of: try spot("toaster"), SpotWords(arguments: ["go"]), limit: 60)
 
         XCTAssertEqual(Frame(text: text).outputs, [.init(key: "said", value: "Openspot is not running.")], text)
     }
@@ -120,7 +120,7 @@ final class InlineHandlersTests: SpotRunsCase {
         }
         """)
 
-        let text = try await runs.answer(of: try spot("summer"), SpotAction(arguments: ["sum"]), limit: 60)
+        let text = try await runs.answer(of: try spot("summer"), SpotWords(arguments: ["sum"]), limit: 60)
 
         XCTAssertEqual(Frame(text: text).outputs, [.init(key: "sum", value: "item=5"), .init(key: "kinds", value: "function undefined")], text)
     }
@@ -147,7 +147,7 @@ final class InlineHandlersTests: SpotRunsCase {
         try inline("failing", toml: "[actions.go]", "export default { async go() { await null; throw new Error('No sky today') } }")
 
         do {
-            _ = try await runs.answer(of: try spot("failing"), SpotAction(arguments: ["go"]), limit: 60)
+            _ = try await runs.answer(of: try spot("failing"), SpotWords(arguments: ["go"]), limit: 60)
             XCTFail("the call did not fail")
         } catch {
             XCTAssertEqual(SpotRuns.reason(error), "No sky today")
@@ -165,7 +165,7 @@ final class InlineHandlersTests: SpotRunsCase {
         }
         """)
 
-        let text = try await runs.answer(of: try spot("asker"), SpotAction(arguments: ["ask"]), limit: 60)
+        let text = try await runs.answer(of: try spot("asker"), SpotWords(arguments: ["ask"]), limit: 60)
 
         XCTAssertEqual(Frame(text: text).outputs, [.init(key: "said", value: "No time left")], text)
     }

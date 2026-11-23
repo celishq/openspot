@@ -22,17 +22,42 @@ extension Manifest {
         public let events: [String]
         public let filters: [String: AnswerPattern]
         public let bindings: [BoundEvent]
+        public let moments: [Moment]
 
-        init() {
-            commands = []
-            search = nil
-            lists = false
-            schedule = []
-            every = nil
-            drop = []
-            events = []
-            filters = [:]
-            bindings = []
+        public enum Moment: Equatable, Sendable {
+            case panel
+            case sheet
+            case every(TimeInterval)
+            case event(String)
+        }
+
+        public static let panel = Triggers(events: [SpotEvent.panelOpen])
+        public static let sheet = Triggers(events: [SpotEvent.sheetOpen])
+
+        public init(
+            events: [String] = [], every: Int? = nil, search: AnswerPattern? = nil, lists: Bool = false, drop: [String] = [], commands: [String] = [],
+            schedule: [CronLine] = [], filters: [String: AnswerPattern] = [:], bindings: [BoundEvent] = []
+        ) {
+            self.commands = commands
+            self.search = search
+            self.lists = lists
+            self.schedule = schedule
+            self.every = every
+            self.drop = drop
+            self.events = events
+            self.filters = filters
+            self.bindings = bindings
+            var moments: [Moment] = []
+            for event in events {
+                switch event {
+                case SpotEvent.sheetOpen, SpotEvent.sheetText: if !moments.contains(.sheet) { moments.append(.sheet) }
+                case SpotEvent.panelOpen: moments.append(.panel)
+                default: moments.append(.event(event))
+                }
+            }
+            if let every { moments.append(.every(TimeInterval(every))) }
+            if lists, !moments.contains(.panel), !moments.contains(.sheet), every == nil { moments.append(.sheet) }
+            self.moments = moments
         }
 
         init(section: String, table: ConfigDocument.Table) throws {
@@ -98,15 +123,7 @@ extension Manifest {
                     throw SpotError.fault("\(Manifest.fileName): \(section) has an unknown event: \(name). Use \(known), or <binding>.<event>.")
                 }
             }
-            self.commands = commands
-            self.search = search
-            self.lists = lists
-            self.schedule = schedule
-            self.every = every
-            self.drop = drop
-            self.events = events
-            self.filters = filters
-            self.bindings = bindings
+            self.init(events: events, every: every, search: search, lists: lists, drop: drop, commands: commands, schedule: schedule, filters: filters, bindings: bindings)
         }
 
         var handlers: Set<String> {
@@ -119,17 +136,44 @@ extension Manifest {
             return names
         }
 
-        var showEvents: ShowEvents {
-            var moments: [ShowEvents.Moment] = []
-            for event in events {
-                switch event {
-                case SpotEvent.sheetOpen, SpotEvent.sheetText: if !moments.contains(.sheet) { moments.append(.sheet) }
-                case SpotEvent.panelOpen: moments.append(.panel)
-                default: moments.append(.event(event))
-                }
-            }
-            if let every { moments.append(.every(TimeInterval(every))) }
-            return ShowEvents(moments: moments, answers: search, searchesSheet: events.contains(SpotEvent.sheetText), filters: filters)
+        public var shows: Bool {
+            !moments.isEmpty
+        }
+
+        public func has(_ moment: Moment) -> Bool {
+            moments.contains(moment)
+        }
+
+        public var seconds: TimeInterval? {
+            for case .every(let seconds) in moments { return seconds }
+            return nil
+        }
+
+        public var searchesSheet: Bool {
+            events.contains(SpotEvent.sheetText)
+        }
+
+        public var waitsForEvents: Bool {
+            moments.contains { if case .event = $0 { true } else { false } } && moments.allSatisfy { if case .event = $0 { true } else { false } }
+        }
+
+        public func admits(_ name: String, value: String?) -> Bool {
+            guard has(.event(name)) else { return false }
+            guard let filter = filters[name] else { return true }
+            return filter.matches(value ?? "")
+        }
+
+        var answersOnly: Bool {
+            search != nil && events.isEmpty && every == nil
+        }
+
+        func answering(_ order: String?) -> Triggers {
+            let ordered = order == "last" ? search?.last() : order == "card" ? search?.card() : search
+            return Triggers(events: events, every: every, search: ordered, lists: lists, drop: drop, commands: commands, schedule: schedule, filters: filters, bindings: bindings)
+        }
+
+        var showing: Triggers {
+            Triggers(events: events, every: every, filters: filters)
         }
 
         func check(_ manifest: Manifest, name: String) throws {

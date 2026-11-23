@@ -17,7 +17,7 @@ public struct SpotLoad: Sendable {
         let added: Date?
 
         var isScheduled: Bool {
-            spots?.contains { $0.triggers?.schedule.isEmpty == false } == true
+            spots?.contains { !$0.triggers.schedule.isEmpty } == true
         }
 
         func add(to result: inout ScanResult) {
@@ -70,7 +70,7 @@ public struct SpotLoad: Sendable {
 
     public var coreChoices: [Spot] {
         let files = entries.filter { $0.origin == .core }.compactMap { entry in entry.spots.map { SpotFile(id: entry.id, spots: $0) } }
-        return ScanResult(files: files, refused: []).spots.filter { $0.on?.seconds == nil }
+        return ScanResult(files: files, refused: []).spots.filter { $0.triggers.seconds == nil }
     }
 
     static func version(of stamp: [Int]) -> String {
@@ -97,7 +97,7 @@ public struct SpotLoad: Sendable {
                 kind: .list,
                 symbol: "exclamationmark.triangle",
                 subtitle: name,
-                on: .sheet,
+                triggers: .sheet,
                 host: .fault(FaultSpot(file: entry.file, name: name, faults: faults[id]?.map(\.reason) ?? [], prompt: prompt))
             )
             return entry.added.map(spot.added(at:)) ?? spot

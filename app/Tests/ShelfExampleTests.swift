@@ -42,7 +42,7 @@ final class ShelfExampleTests: SampleSpotsCase {
             try Data().write(to: URL(fileURLWithPath: file))
             try await shelf.handle(.drop(paths: [file]), timeout: 60)
 
-            _ = try await shelf.perform(SpotAction(arguments: ["clear"]), timeout: 60)
+            _ = try await shelf.perform(SpotWords(arguments: ["clear"]), timeout: 60)
 
             let items = try await shelf.items(timeout: 60).items
             XCTAssertEqual(items, [])

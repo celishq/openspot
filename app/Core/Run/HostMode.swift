@@ -10,7 +10,7 @@ final class HostMode: OnceMode {
         let (sheet, id, base) = (spot.host, spot.id, runs.environment)
         let (stream, halt) = runs.answered { [weak runs] in
             guard let sheet else { return "" }
-            let answer = try await sheet.answer(message.action.arguments, input: message.text, base: base)
+            let answer = try await sheet.answer(message.words.arguments, input: message.text, base: base)
             for effect in answer.effects { await runs?.take(effect, of: id, call: call) }
             return answer.frame
         }

@@ -11,7 +11,7 @@ public final class ScriptCall: Identifiable {
     }
 
     public let id = UUID()
-    public let action: SpotAction
+    public let words: SpotWords
     public let started: Date
     public private(set) var status: TextBlock?
     public private(set) var isStopped = false
@@ -19,8 +19,8 @@ public final class ScriptCall: Identifiable {
     @ObservationIgnored var halt: () -> Void = {}
     @ObservationIgnored private(set) var heard = 0
 
-    init(action: SpotAction, key: String, started: Date) {
-        self.action = action
+    init(words: SpotWords, key: String, started: Date) {
+        self.words = words
         self.key = key
         self.started = started
     }
@@ -28,7 +28,7 @@ public final class ScriptCall: Identifiable {
     nonisolated deinit {}
 
     public var isAct: Bool {
-        action.arguments.first != SpotAction.show.arguments.first
+        words.arguments.first != SpotWords.show.arguments.first
     }
 
     public var fill: Double? {

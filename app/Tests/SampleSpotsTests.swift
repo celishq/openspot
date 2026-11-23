@@ -92,7 +92,7 @@ final class SampleSpotsTests: SampleSpotsCase {
             var call = 2
             var seen: [String] = []
             while !seen.contains(where: { $0.contains("title=hello") }), call < 40 {
-                relay.send(Message(SpotAction(arguments: ["send"]), inputs: [.init(key: "peer", value: "127.0.0.1:\(port)"), .init(key: "message", value: "hello")]), id: call)
+                relay.send(Message(SpotWords(arguments: ["send"]), inputs: [.init(key: "peer", value: "127.0.0.1:\(port)"), .init(key: "message", value: "hello")]), id: call)
                 while let frame = try await self.next(&frames, of: relay) {
                     seen.append(frame)
                     if Frame(text: frame).ends == [String(call)] { break }
@@ -158,7 +158,7 @@ final class SampleSpotsTests: SampleSpotsCase {
             XCTAssertEqual(lines.items.map(\.title), ["Back\\slash", "Finder", "Notes", "Zed"])
             XCTAssertEqual(lines.items.map(\.run), ["/Applications/Back\\slash.app", "/System/Library/CoreServices/Finder.app", "/System/Applications/Notes.app", "/Applications/Zed.app"])
             XCTAssertEqual(lines.items.map(\.iconFile), lines.items.map(\.run))
-            XCTAssertTrue(apps.isGlobal)
+            XCTAssertTrue(apps.triggers.lists)
         }
     }
 
@@ -206,7 +206,7 @@ final class SampleSpotsTests: SampleSpotsCase {
 
         let lines = try await files.items(query: "a", timeout: 60)
 
-        XCTAssertEqual(files.on?.searchesSheet, true)
+        XCTAssertEqual(files.triggers.searchesSheet, true)
         XCTAssertEqual(lines.items, [])
     }
 
@@ -379,7 +379,7 @@ final class SampleSpotsTests: SampleSpotsCase {
         try await withPrivateHome { folder in
             let files = try XCTUnwrap(try self.scan.spots.first { $0.name == "Files" })
 
-            try await files.perform(SpotAction(arguments: ["copy"]), input: "input.item=/a/b é.txt\n", timeout: 60)
+            try await files.perform(SpotWords(arguments: ["copy"]), input: "input.item=/a/b é.txt\n", timeout: 60)
 
             XCTAssertEqual(self.toasts(in: folder), ["Copied"])
             XCTAssertEqual(try self.read("clipboard", in: folder), "/a/b é.txt")

@@ -220,7 +220,7 @@ final class SpotRunsInlineTests: SpotRunsCase {
         try inline(toml: "title = 'Script'", "export default { show() { return openspot.frame([{ item: 'a', title: 'one\\n\\ntext=x\\ntitle=x', hides: ['x', 'y'], none: null }, { item: 'b', value: true }]) } }")
         let spot = try XCTUnwrap(try scanned().scripts.first)
 
-        let text = try await runs.answer(of: spot, SpotAction(arguments: ["show"]), limit: 60)
+        let text = try await runs.answer(of: spot, SpotWords(arguments: ["show"]), limit: 60)
 
         let items = Frame(text: text).items
         XCTAssertEqual(items.map(\.run), ["a", "b"], text)

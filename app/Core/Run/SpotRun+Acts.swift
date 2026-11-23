@@ -7,8 +7,8 @@ extension SpotRun {
         let key = Self.key(part: part.id)
         if let older = running(key) { stop(older) }
         let keeping = part.isEditable ? part.id : nil
-        let action = SpotAction.set(part.id, to: value)
-        let send: () -> Void = { [weak self] in self?.change(action, key: key, generation: generation, keeping: keeping, closes: false, waits: false) }
+        let words = SpotWords.set(part.id, to: value)
+        let send: () -> Void = { [weak self] in self?.change(words, key: key, generation: generation, keeping: keeping, closes: false, waits: false) }
         switch part.control {
         case .text: after(Self.textPause, key: key, send)
         case .slider: after(Self.sliderPause, key: key, send)
@@ -23,7 +23,7 @@ extension SpotRun {
         if let running = running(key) { return pressAgain(running) }
         guard let generation = panel?.advance() else { return }
         editing = nil
-        change(.press(part.id), key: key, generation: generation, keeping: nil, closes: part.closes, waits: spot.triggers != nil)
+        change(.press(part.id), key: key, generation: generation, keeping: nil, closes: part.closes, waits: spot.takesHandlers)
     }
 
     public var isCardRunning: Bool {
@@ -56,9 +56,9 @@ extension SpotRun {
         if let running = running(Self.cardKey) { return pressAgain(running) }
         guard spot.kind == .toggle else { return act(Message(spot.click), key: Self.cardKey) }
         let before = state
-        let action = SpotAction.toggle(state)
+        let words = SpotWords.toggle(state)
         state = state.switched(on: !(state.on ?? false))
-        act(pressing(Message(action), as: Self.valueInput), key: Self.cardKey, as: Act(undo: before))
+        act(pressing(Message(words), as: Self.valueInput), key: Self.cardKey, as: Act(undo: before))
     }
 
     public func setCardPart(_ id: String, to value: String?) {
@@ -157,7 +157,7 @@ extension SpotRun {
     }
 
     public func change(_ action: CommandAction) async throws -> CallAnswer {
-        let call = SpotAction.action(action, item: nil)
+        let call = SpotWords.action(action, item: nil)
         guard let key = freeKey(call), let output = try await answer(to: Message(call), key: key) else { return .stopped }
         if let form = Self.form(in: output) { return .form(form) }
         show(need: .change)
@@ -165,7 +165,7 @@ extension SpotRun {
     }
 
     public func launch(_ action: CommandAction, search: SearchQuery, onCard: Bool = false) async throws -> CallAnswer {
-        let call = SpotAction.action(action, item: nil)
+        let call = SpotWords.action(action, item: nil)
         guard let key = freeKey(call, onCard: onCard) else { return .stopped }
         answered = nil
         let typed = typedAction(of: call)
@@ -192,7 +192,7 @@ extension SpotRun {
 
     public func submit(_ action: CommandAction, item: SpotItem?, draft: FormDraft) async throws -> CallAnswer {
         let word = CommandAction.word(of: action)
-        let call = word == nil ? SpotAction.action(action, item: item) : .press(Manifest.Triggers.command)
+        let call = word == nil ? SpotWords.action(action, item: item) : .press(Manifest.Triggers.command)
         guard let key = freeKey(call) else { return .stopped }
         let named = word.map { [TextBlock.Field(key: "name", value: $0)] } ?? []
         let message = pressing(Message(call, inputs: named + draft.inputs), as: Self.itemInput)
@@ -209,7 +209,7 @@ extension SpotRun {
         return .done
     }
 
-    private func freeKey(_ call: SpotAction, onCard: Bool = false) -> String? {
+    private func freeKey(_ call: SpotWords, onCard: Bool = false) -> String? {
         let key = onCard ? Self.cardKey : Self.key(call: call)
         guard let running = running(key) else { return key }
         stopPressed(running)
@@ -248,8 +248,8 @@ extension SpotRun {
         "part:\(id)"
     }
 
-    private static func key(call action: SpotAction) -> String {
-        "call:\(action.arguments.joined(separator: "\n"))"
+    private static func key(call words: SpotWords) -> String {
+        "call:\(words.arguments.joined(separator: "\n"))"
     }
 
     private func shown(_ key: String) -> ScriptCall? {
@@ -270,14 +270,14 @@ extension SpotRun {
         }
     }
 
-    private func change(_ action: SpotAction, key: String, generation: Int, keeping: String?, closes: Bool, waits: Bool) {
+    private func change(_ words: SpotWords, key: String, generation: Int, keeping: String?, closes: Bool, waits: Bool) {
         guard let inputs = panel?.inputs else { return }
-        act(pressing(Message(action, inputs: inputs), as: Self.valueInput), key: key, as: Act(generation: generation, keeping: keeping, showsAfter: !closes, closes: closes && waits))
+        act(pressing(Message(words, inputs: inputs), as: Self.valueInput), key: key, as: Act(generation: generation, keeping: keeping, showsAfter: !closes, closes: closes && waits))
     }
 
     private static func key(of message: Message) -> String {
         let item = message.inputs.first { $0.key == itemInput }.map { [$0.value] } ?? []
-        return key(call: SpotAction(arguments: message.action.arguments + item))
+        return key(call: SpotWords(arguments: message.words.arguments + item))
     }
 
     private func press(_ message: Message, ended: (() -> Void)? = nil, closes: Bool = false) {

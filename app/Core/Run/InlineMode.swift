@@ -17,7 +17,7 @@ final class InlineMode: ScriptMode {
     }
 
     static func frames(of spot: Spot, _ message: Message, limit: TimeInterval?, reason: String?, variables: [String: String], call: OpenCall?, in runs: SpotRuns) -> Frames {
-        let inline = InlineCall(arguments: message.action.arguments, variables: runs.variables(of: spot, given: variables), input: message.text, reason: reason, limit: limit)
+        let inline = InlineCall(arguments: message.words.arguments, variables: runs.variables(of: spot, given: variables), input: message.text, reason: reason, limit: limit)
         runs.script(of: spot).send(inline)
         let (stream, halt) = runs.answered {
             switch await inline.outcome(limit: limit) {
@@ -36,7 +36,7 @@ final class InlineMode: ScriptMode {
         guard let run else { return false }
         let request = call.request
         let message = run.message(of: request, values: run.fieldValues)
-        let inline = InlineCall(arguments: message.action.arguments, input: message.text, reason: request.event?.rawValue, limit: request.limit, opened: call)
+        let inline = InlineCall(arguments: message.words.arguments, input: message.text, reason: request.event?.rawValue, limit: request.limit, opened: call)
         call.made.halt = { inline.stop() }
         asking.open(call, in: run)
         runs.script(of: run.spot).send(inline)

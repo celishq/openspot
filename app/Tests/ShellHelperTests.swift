@@ -340,7 +340,7 @@ final class ShellHelperTests: XCTestCase {
     }
 
     func testOneMainRunsUnchangedOnceAndStaying() async throws {
-        let action = SpotAction(arguments: ["show", "a b"])
+        let action = SpotWords(arguments: ["show", "a b"])
         let input = "event=panel\ninput.note=x\\ny\n"
         let once = try script(Self.shownCall)
         let stays = try script(Self.shownCall, toml: "stay = true")
@@ -374,7 +374,7 @@ final class ShellHelperTests: XCTestCase {
         var frames = live.start().makeAsyncIterator()
 
         live.send(Message(.show, event: ShowEvent(event: "music.track", value: "Song"), inputs: [.init(key: "a", value: "held")]), id: 1)
-        live.send(text: SpotAction.stopEvent(id: 1))
+        live.send(text: SpotWords.stopEvent(id: 1))
         live.send(Message(.press("go")), id: 2)
         live.end()
         var printed: [String] = []
@@ -389,7 +389,7 @@ final class ShellHelperTests: XCTestCase {
         let live = ScriptProcess(url: url, mode: .stays, limit: 60)
         var frames = live.start().makeAsyncIterator()
 
-        live.send(Message(SpotAction(arguments: ["", "x"])), id: 1)
+        live.send(Message(SpotWords(arguments: ["", "x"])), id: 1)
         live.end()
         var printed: [String] = []
         while let frame = try await frames.next() { printed.append(frame) }
