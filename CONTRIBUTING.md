@@ -43,6 +43,6 @@ Add a word to the [protocol](PROTOCOL.md) so that an old spot never sees a word 
 
 - [`AGENTS.md`](AGENTS.md) has the repo conventions.
 - [`PROTOCOL.md`](PROTOCOL.md) and the pages it maps teach how to write a spot and hold the spot contract, and
-  [`USING.md`](USING.md) says how to use Openspot. If your change differs from them, change them first.
+  [`MANUAL.md`](MANUAL.md) says how to use Openspot. If your change differs from them, change them first.
 
 By contributing, you agree that your work is under the [MIT License](LICENSE).

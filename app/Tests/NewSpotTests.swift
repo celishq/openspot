@@ -289,7 +289,7 @@ final class NewSpotTests: BuiltInCase {
     }
 
     func testEachTopicOfTheGuideIsAPageOfTheMapOnce() throws {
-        let docs = try [RepoDoc("PROTOCOL.md")] + RepoDoc.pages() + [RepoDoc("USING.md")]
+        let docs = try [RepoDoc("PROTOCOL.md")] + RepoDoc.pages() + [RepoDoc("MANUAL.md")]
         let topics = Guide(text: guideText, pages: [:]).topics
 
         XCTAssertEqual(topics.map(\.title), try docs.map { try XCTUnwrap($0.headings.first) })

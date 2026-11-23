@@ -17,7 +17,7 @@ and it holds 64 MB at most. A spot you share holds 25 MB at most; see
 | `sample.sh`      | A script that prints what your spot shows, with made-up data.                       |
 | `releases.jsonl` | The signed releases, which Openspot writes when you share; see [Signed releases](../../TRUST.md#signed-releases). |
 
-People choose where your spot shows, as [Choose where a spot shows](../../USING.md#choose-where-a-spot-shows) says.
+People choose where your spot shows, as [Choose where a spot shows](../../MANUAL.md#choose-where-a-spot-shows) says.
 
 ## Keys
 

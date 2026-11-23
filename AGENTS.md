@@ -17,7 +17,7 @@
   it from a pinned CLDR version, and the build copies it into the app.
 - `app/Themes/` holds the built-in themes, each in `<name>.theme/theme.toml`. Openspot, in `openspot.theme`, sets every choice,
   and each other built-in theme sets only the choices it changes. The build copies them into the app.
-  [Change the look of Openspot](USING.md#change-the-look-of-openspot) lists its keys and says how a person changes it.
+  [Change the look of Openspot](MANUAL.md#change-the-look-of-openspot) lists its keys and says how a person changes it.
 - `app/Help/` holds the guide of each `openspot` noun that has one, which `openspot help <noun>` prints. The build copies it
   into the app.
 - `spots/` holds the source of the core spots, each a `<name>.spot` folder. The build copies it into the app, and they run
@@ -44,7 +44,7 @@
 
 ## Docs
 
-`PROTOCOL.md` is the map of a spot's contract: `docs/first-spot.md` builds the first spot, a page in `docs/show`, `docs/act`, `docs/remember`, `docs/react`, `docs/connect` and `docs/further` for each goal, and `docs/reference` every key, block, class and command. `USING.md` is the person's page, `app/Help/` the reference of the `openspot` commands, `TRUST.md` what Openspot shows the person about a spot, and `spots/AGENTS.md` the words of the app's own spots. No doc describes the app's code.
+`PROTOCOL.md` is the map of a spot's contract: `docs/first-spot.md` builds the first spot, a page in `docs/show`, `docs/act`, `docs/remember`, `docs/react`, `docs/connect` and `docs/further` for each goal, and `docs/reference` every key, block, class and command. `MANUAL.md` is the person's page, `app/Help/` the reference of the `openspot` commands, `TRUST.md` what Openspot shows the person about a spot, and `spots/AGENTS.md` the words of the app's own spots. No doc describes the app's code.
 
 `make verify` checks facts, not style: a link or a cited heading that doesn't exist (`DocReferenceTests`), an `sh`, `js` or `swift` example that doesn't run (`DocExampleTests`; put one that needs a network or a rare tool in a `text` fence), a picture of a page older than its example (`GuideImageTests`), and an `openspot` command that a doc names but the command doesn't take (`DocCommandTests`).
 
@@ -56,7 +56,7 @@
 
 ## UX
 
-Each spot follows [Use the keys of a spot](USING.md#use-the-keys-of-a-spot): Return does its main action, `⌘` Return opens
+Each spot follows [Use the keys of a spot](MANUAL.md#use-the-keys-of-a-spot): Return does its main action, `⌘` Return opens
 its Settings, `⌘Y` its History, `⌘K` the menu of all actions. Openspot makes these for every spot, so a rule changes in one place.
 
 - Settings follow the level they change. openspot's Settings hold only the app's rows. Each spot's own Settings hold its

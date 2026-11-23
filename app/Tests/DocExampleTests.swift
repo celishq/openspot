@@ -5,7 +5,7 @@ final class DocExampleTests: SampleSpotsCase {
     private let runnable: Set<String> = ["sh", "js", "swift"]
 
     private func docs() throws -> [RepoDoc] {
-        try RepoDoc.all().filter { ["PROTOCOL.md", "USING.md"].contains($0.path) || $0.path.hasPrefix("app/Help/") || $0.path.hasPrefix("docs/") }
+        try RepoDoc.all().filter { ["PROTOCOL.md", "MANUAL.md"].contains($0.path) || $0.path.hasPrefix("app/Help/") || $0.path.hasPrefix("docs/") }
     }
 
     private func syntaxFault(of file: URL) throws -> String? {

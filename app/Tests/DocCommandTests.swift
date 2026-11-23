@@ -6,7 +6,7 @@ final class DocCommandTests: XCTestCase {
         let usage = CommandLineCall.usage.components(separatedBy: "\n").filter { $0.hasPrefix("openspot ") }.map { line in
             line.split(separator: " ").prefix { !$0.hasPrefix("<") && !$0.hasPrefix("[") && !$0.hasPrefix("-") }.map(String.init)
         }
-        for doc in try ["PROTOCOL.md", "USING.md"].map(RepoDoc.init) + RepoDoc.all().filter({ $0.path.hasPrefix("app/Help/") || $0.path.hasPrefix("docs/") }) {
+        for doc in try ["PROTOCOL.md", "MANUAL.md"].map(RepoDoc.init) + RepoDoc.all().filter({ $0.path.hasPrefix("app/Help/") || $0.path.hasPrefix("docs/") }) {
             let named = RepoDoc.matches("`(openspot [^`]*)`", in: doc.prose).map { $0[1] }
                 + doc.fences.filter { $0.language == "sh" }.flatMap { RepoDoc.matches(#"(?m)^(openspot [^"&|\n]*)"#, in: $0.text).map { $0[1] } }
             for command in named {
