@@ -32,7 +32,7 @@ case "$1" in
 esac
 ```
 
-Turn on Browser Tab in Edit Spots. Open the panel over Safari, press Tab, and pick Page Title. It copies the title of
+Turn on Browser Tab in the Context spot. Open the panel over Safari, press Tab, and pick Page Title. It copies the title of
 the tab.
 
 ## How it takes it
@@ -77,7 +77,7 @@ esac
 - A source that names an app in `panel.open` shows its chip at once, with a spinner, and fills it when it answers.
   Another source's chip shows only when it answers.
 - A chip shows only when a spot that is on takes its kind. A source runs only when some spot takes some kind.
-- A source stays off the grid and out of the search. People turn it on in Edit Spots.
+- A source stays off the grid and out of the search. People turn it on in the Context spot.
 
 ## Next
 
