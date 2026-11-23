@@ -11,6 +11,7 @@ verify:
 	sh scripts/check-files.sh
 	sh scripts/check-getters.sh
 	sh scripts/check-spots.sh
+	sh scripts/check-docs.sh
 	sh scripts/check-processes.sh
 	sh scripts/check-glass.sh
 	sh scripts/check-shapes.sh

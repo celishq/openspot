@@ -13,8 +13,8 @@ These rules hold for the core spots in `spots/` and the spots in `examples/`. A 
   says so.
 - A spot's view moves only while `spot.isShown` is true, with SwiftUI's own motion or a moving piece that Openspot
   gives it, such as `spot.media`. [Drawing](../AGENTS.md#drawing) says what each frame may cost.
-- The act that adds to a spot's list is its first item, pinned to the top, as [Show a list](../GUIDE.md#show-a-list)
-  says.
+- The action that adds to a spot's list is its first item, pinned to the top, with
+  [`pin=top`](../PROTOCOL.md#items).
 - A spot's own app, such as the board of Draw, keeps its own motion. The curves of `app/Shell/Surface/SpotMotion.swift`
   are for the panel.
 

@@ -22,7 +22,7 @@ openspot clipboard copy "$file" && openspot toast "Copied the picture."
 | `openspot screen sources`                                                              | Prints each display, window, microphone and camera as an item.      |
 | `openspot screen shot [source] [--cursor] [file]`                                      | Takes a picture, and prints its path.                                  |
 | `openspot screen record start [source] [input]... [--cursor] [--events <file>] [file]` | Starts a recording, and prints nothing.                                |
-| `openspot screen record stop`                                                          | Ends the recording, and prints the path of each file, the video first. After a recording that ended by itself, it prints its files and why it ended. |
+| `openspot screen record stop` | Ends the recording, and prints the path of each file, the video first, and why a recording that ended by itself ended. |
 | `openspot screen record status`                                                        | Prints one block: `state=recording` with its files and `seconds`, `state=ended` with the files of a recording that ended by itself until you stop it, or `state=idle`. |
 
 ## Sources
@@ -51,7 +51,7 @@ A recording takes inputs after its source (S4).
 | Input                    | Records                                                                          |
 | ------------------------ | -------------------------------------------------------------------------------- |
 | `mic`, `mic:<id>`        | A microphone, into the sound of the video. `mic` is the one that macOS uses now. |
-| `system`                 | The sound of the Mac, into the sound of the video. Openspot's own sound is left out. |
+| `system` | The sound of the Mac, into the sound of the video, less Openspot's own sound. |
 | `camera`, `camera:<id>`  | A camera, into its own file beside the video, such as `Talk.camera.mov`.         |
 
 The camera has its own file, so an editor can place it, size it or leave it out.
