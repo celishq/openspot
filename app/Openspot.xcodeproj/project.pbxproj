@@ -341,6 +341,7 @@
 		53A93A27384542370516127E /* TranslateCall.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2A572133905D71EF2C829538 /* TranslateCall.swift */; };
 		53CD370871787E23171348F9 /* FakeHost.swift in Sources */ = {isa = PBXBuildFile; fileRef = 32B19E3A49E044B5901CD990 /* FakeHost.swift */; };
 		53FE3A3B1936D2B2B6F903D0 /* SlashCommandTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = CE9FCFDC40CFE3EBFDEC7F47 /* SlashCommandTests.swift */; };
+		5423F896DB1D78EA90495494 /* EditSheetTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = C3E6963A27D2DFC859EEFF71 /* EditSheetTests.swift */; };
 		5429A293313FCB8C702E14CD /* SpotFiles.swift in Sources */ = {isa = PBXBuildFile; fileRef = 64E5692730EDCCA9103713E6 /* SpotFiles.swift */; };
 		5433A344D0A4FE2B30CE92D3 /* SpotRun+Shows.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0843DF3B9791E3F590A483E2 /* SpotRun+Shows.swift */; };
 		549DB7DA5F3CFA012C677BA4 /* main.swift in Sources */ = {isa = PBXBuildFile; fileRef = 906DB6D154A3163E39180C24 /* main.swift */; };
@@ -1956,6 +1957,7 @@
 		C36B3E477AAAF5EDB054FBD2 /* CalendarList.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CalendarList.swift; sourceTree = "<group>"; };
 		C3C751B70058362610989AA1 /* NewSpotTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NewSpotTests.swift; sourceTree = "<group>"; };
 		C3D9E8E965E4B7CAE7D64562 /* PowerCalls.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PowerCalls.swift; sourceTree = "<group>"; };
+		C3E6963A27D2DFC859EEFF71 /* EditSheetTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EditSheetTests.swift; sourceTree = "<group>"; };
 		C42FBE58EF799F5E305EB033 /* SpotsModel+Store.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "SpotsModel+Store.swift"; sourceTree = "<group>"; };
 		C453BCE620D31DE869C4446B /* ColorCall.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ColorCall.swift; sourceTree = "<group>"; };
 		C453D9DE6C5DFD45F7AA29FA /* PromptCalls.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PromptCalls.swift; sourceTree = "<group>"; };
@@ -2885,6 +2887,7 @@
 				D547D70E1FC5653436771A8B /* DocSampleTests.swift */,
 				DEA51B4D1510652701D2C7AD /* DoomExampleTests.swift */,
 				F03D9C8DC9AE3DE9867DD1EA /* DrawSpotTests.swift */,
+				C3E6963A27D2DFC859EEFF71 /* EditSheetTests.swift */,
 				4CF096BD2E9025B33FF465C8 /* EmojiCatalogTests.swift */,
 				B604254C90EF7E19ECF6085B /* EmptySearchTests.swift */,
 				ADC7DF8C7DF85DDD6D84B1C3 /* EventsTests.swift */,
@@ -5160,6 +5163,7 @@
 				51909D7EEF64359BFF502C8C /* DocSampleTests.swift in Sources */,
 				C69DB272404DB383002E5EB0 /* DoomExampleTests.swift in Sources */,
 				C0DED129145F66C3DCA54FA0 /* DrawSpotTests.swift in Sources */,
+				5423F896DB1D78EA90495494 /* EditSheetTests.swift in Sources */,
 				C624547B076FE8A68F13BF37 /* EmojiCatalogTests.swift in Sources */,
 				CCCD368C4C2FDC15FD2E8FA0 /* EmptySearchTests.swift in Sources */,
 				F384F66572FD85069B65637A /* EventsTests.swift in Sources */,
