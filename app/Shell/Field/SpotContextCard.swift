@@ -10,6 +10,7 @@ struct SpotContextCard: View, Equatable {
     let chip: ContextChip
     let icon: Icon
     let isOn: Bool
+    let showsBadge: Bool
 
     var body: some View {
         let shape = SpotRoundShape(radius: SpotTokens.contextCardRadius)
@@ -38,7 +39,7 @@ struct SpotContextCard: View, Equatable {
 
     @ViewBuilder
     private var badge: some View {
-        if let kind = chip.value?.kind {
+        if showsBadge, let kind = chip.value?.kind {
             Image(systemName: ContextPreview.symbol(of: kind))
                 .font(SpotType.mark)
                 .foregroundStyle(SpotTheme.ink.opacity(SpotTheme.secondary))

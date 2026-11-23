@@ -11,6 +11,7 @@ extension SpotsModel {
         var next = context
         next.open(over: front, at: isWarming ? nil : host.frontAppPath, loading: loading.map { ContextChip(source: $0.id, app: front, look: Self.look(of: $0.spot)) })
         if next != context { context = next }
+        resetContextSpread()
         if wasOn { updateVisible() }
         runs.panelOpened(showsToEnd: isWarming, over: front, feedsContext: feeds)
     }
@@ -28,12 +29,14 @@ extension SpotsModel {
     }
 
     func turnContext(by step: Int) {
+        spreadContext()
         var next = context
         next.turn(by: step)
         settle(next, motion: .edit)
     }
 
     func leaveContext() {
+        endSpread()
         var next = context
         next.leave()
         settle(next, motion: .edit)
@@ -52,6 +55,7 @@ extension SpotsModel {
         guard next != context else { return }
         let before = (isOn: context.isOn, chip: context.selectedChip)
         change(isShown ? motion : nil, { context = next })
+        placeContext(motion)
         guard before.isOn != next.isOn || before.chip != next.selectedChip else { return }
         selected = 0
         updateVisible()
