@@ -17,6 +17,7 @@ public struct Mac: Sendable {
     public var pages: URL?
     public var theme: URL?
     public var openText: (@MainActor @Sendable (URL) async -> Void)?
+    public var locale: @Sendable () -> Locale
 
     public init(
         calendar: (any MacCalendar)? = nil,
@@ -34,8 +35,10 @@ public struct Mac: Sendable {
         guide: URL? = Bundle.main.url(forResource: "DOCS", withExtension: "md"),
         pages: URL? = Bundle.main.url(forResource: "Help", withExtension: nil),
         theme: URL? = ThemeFolder.builtInURL,
-        openText: (@MainActor @Sendable (URL) async -> Void)? = nil
+        openText: (@MainActor @Sendable (URL) async -> Void)? = nil,
+        locale: @escaping @Sendable () -> Locale = { .autoupdatingCurrent }
     ) {
+        self.locale = locale
         self.calendar = calendar
         self.reminders = reminders
         self.clipboard = clipboard

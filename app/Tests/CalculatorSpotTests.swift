@@ -41,17 +41,14 @@ final class CalculatorSpotTests: SampleSpotsCase {
         }
     }
 
-    func testASumAsksNoRates() async throws {
-        try await withPrivateHome { home in
-            _ = try await self.calculator.search("2*(3+4)", timeout: 60)
-
-            XCTAssertFalse(FileManager.default.fileExists(atPath: home.appendingPathComponent("cache-asked").path))
-        }
+    private func keep(_ value: String, as name: String, in home: URL) throws {
+        let spot = try calculator
+        try SpotCache.standard(environment: ["HOME": home.path]).keep(value, as: name, of: spot.dataName ?? spot.id)
     }
 
     func testACurrencyReadsTheKeptRatesAndShowsItsSymbolFaint() async throws {
         try await withPrivateHome { home in
-            try self.rates.write(to: home.appendingPathComponent("cache-rates"), atomically: true, encoding: .utf8)
+            try self.keep(self.rates, as: "rates", in: home)
 
             let answers = try await self.calculator.search("15 usd in eur", timeout: 60).answers(asCard: self.calculator.triggers.search?.isCard == true)
 
@@ -79,7 +76,7 @@ final class CalculatorSpotTests: SampleSpotsCase {
 
     func testAFailureOfTheRatesShowsARowThatSaysHowToGetThem() async throws {
         try await withPrivateHome { home in
-            try "offline".write(to: home.appendingPathComponent("cache-rates-failure"), atomically: true, encoding: .utf8)
+            try self.keep("offline", as: "rates-failure", in: home)
 
             let rows = try await self.calculator.search("15 usd in eur", timeout: 60).items
 
@@ -90,7 +87,7 @@ final class CalculatorSpotTests: SampleSpotsCase {
 
     func testADeadSourceShowsARowThatSaysWhatStillWorks() async throws {
         try await withPrivateHome { home in
-            try "unavailable".write(to: home.appendingPathComponent("cache-rates-failure"), atomically: true, encoding: .utf8)
+            try self.keep("unavailable", as: "rates-failure", in: home)
 
             let rows = try await self.calculator.search("15 usd in eur", timeout: 60).items
 
@@ -113,16 +110,16 @@ final class CalculatorSpotTests: SampleSpotsCase {
     }
 
     @MainActor
-    private func panel(in folder: URL, defaults: UserDefaults, web: Web? = nil) async throws -> SpotsModel {
+    private func panel(in folder: URL, defaults: UserDefaults, fetch: Fetch? = nil) async throws -> SpotsModel {
         let spots = folder.appendingPathComponent("spots", isDirectory: true)
         try FileManager.default.createDirectory(at: spots, withIntermediateDirectories: true)
         let source = try calculator.url.deletingLastPathComponent()
         try FileManager.default.copyItem(at: source, to: spots.appendingPathComponent(source.lastPathComponent))
         let host = FakeHost()
         let files = AppPlaces(environment: ["OPENSPOT_SPOTS": spots.path, "OPENSPOT_CONFIG": folder.appendingPathComponent("config").path], home: folder, defaults: defaults)
-        let model = SpotsModel(host: host, files: files, runs: SpotRuns(environment: TestEnvironment.values, stopPause: 0.2))
+        let model = SpotsModel(host: host, files: files, runs: SpotRuns(environment: TestEnvironment.values, stopPause: 0.2, cache: SpotCache(folder: folder.appendingPathComponent("cache"))))
         host.model = model
-        if let web { model.runs.web = web }
+        if let fetch { model.runs.fetch = fetch }
         model.runs.api = CommandAPI(mac: Mac(), places: files, runs: model.runs)
         await model.reload()
         model.isShown = true
@@ -163,11 +160,10 @@ final class CalculatorSpotTests: SampleSpotsCase {
         let suite = "openspot-calc-\(UUID().uuidString)"
         let defaults = try XCTUnwrap(UserDefaults(suiteName: suite))
         defer { defaults.removePersistentDomain(forName: suite) }
-        let model = try await panel(in: folder, defaults: defaults, web: Web(configuration: FakeWeb.configuration, wait: 30))
+        let model = try await panel(in: folder, defaults: defaults, fetch: Fetch(configuration: FakeWeb.configuration, wait: 30))
         defer { model.quit() }
 
         model.searchText = "15 usd in eur"
-        model.landSearch()
 
         try await wait("the answer from the fetched rates") { model.visible.first?.id == "calculator\n13.46" }
         XCTAssertEqual(FakeWeb.asked.withLock { $0.filter { $0.url?.absoluteString == source }.count }, 1)

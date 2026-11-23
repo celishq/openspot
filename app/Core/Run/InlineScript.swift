@@ -50,9 +50,7 @@ final class InlineScript: @unchecked Sendable {
     private let limit: TimeInterval
     private let idle: TimeInterval
     private let spent: @Sendable (TimeInterval) -> Void
-    private let web: Web
-    private var session: URLSession?
-    private let fetched: @Sendable () -> Void
+    private let env: SpotEnv
     private let condition = NSCondition()
     private var calls: [InlineCall] = []
     private var settles: [() -> Void] = []
@@ -67,7 +65,7 @@ final class InlineScript: @unchecked Sendable {
     private var context: JSContext?
     private var thrown: JSValue?
 
-    init(spot: Spot, api: CommandAPI?, callers: SpotCallers? = nil, careful: Set<SpotUse>? = nil, limit: TimeInterval = 10, idle: TimeInterval = 30, bound: [String: Spot] = [:], base: [String: String] = ProcessInfo.processInfo.environment, web: Web = Web(), fetched: @escaping @Sendable () -> Void = {}, spent: @escaping @Sendable (TimeInterval) -> Void = { _ in }) {
+    init(spot: Spot, api: CommandAPI?, callers: SpotCallers? = nil, careful: Set<SpotUse>? = nil, limit: TimeInterval = 10, idle: TimeInterval = 30, bound: [String: Spot] = [:], base: [String: String] = ProcessInfo.processInfo.environment, env: SpotEnv? = nil, spent: @escaping @Sendable (TimeInterval) -> Void = { _ in }) {
         self.sandbox = careful.map(Sandbox.init)
         url = spot.url
         name = spot.id
@@ -80,14 +78,12 @@ final class InlineScript: @unchecked Sendable {
         self.limit = limit
         self.idle = idle
         self.spent = spent
-        self.web = web
-        self.fetched = fetched
+        self.env = env ?? SpotEnv(spot: spot, cache: .standard(environment: base), isCareful: careful != nil)
         self.callers = callers
         caller = callers?.issue(for: spot)
     }
 
     deinit {
-        session?.finishTasksAndInvalidate()
         if let caller { callers?.release(caller) }
     }
 
@@ -273,15 +269,9 @@ final class InlineScript: @unchecked Sendable {
         }
         let openspot = context.objectForKeyedSubscript("openspot")
         slice(token) {
-            let env = openspot?.invokeMethod("env", withArguments: [token, commands, spot.bindings.map(\.name), settings, Self.mac])
+            let env = openspot?.invokeMethod("env", withArguments: [token, commands, spot.bindings.map(\.name), settings, env.mac])
             openspot?.invokeMethod("handle", withArguments: [handlers, name, input, env as Any, JSValue(object: done, in: context) as Any])
         }
-    }
-
-    private static var mac: [String: String] {
-        let locale = Locale.autoupdatingCurrent
-        let tag = (locale.identifier.split(separator: "@").first.map(String.init) ?? "en-US").replacingOccurrences(of: "_", with: "-")
-        return ["locale": tag, "currency": locale.currency?.identifier ?? "USD"]
     }
 
     static func values(of fields: [TextBlock.Field], prefix: String, types: [Manifest.Parameter]) -> [String: Any] {
@@ -324,8 +314,25 @@ final class InlineScript: @unchecked Sendable {
             let sent = body.isNull || body.isUndefined ? nil : body.toString()
             return self?.fetch(token: Int(token.toInt32()), url: url.toString() ?? "", method: method.toString() ?? "GET", headers: fields, body: sent)
         }
+        let read: @convention(block) (JSValue) -> Any? = { [weak self] name in
+            guard let kept = self?.env.read(name.toString() ?? "") else { return NSNull() }
+            return ["value": kept.value, "age": kept.age]
+        }
+        let keep: @convention(block) (JSValue, JSValue) -> String? = { [weak self] name, value in
+            guard let self else { return nil }
+            do throws(SpotCache.Failure) {
+                try env.keep(value.toString() ?? "", as: name.toString() ?? "")
+                return nil
+            } catch .badName(let name) {
+                return "A cache name takes letters, digits, -, _ and ., such as rates: \(name)."
+            } catch {
+                return "\(spot.name) keeps 16 MB at most in its cache. Keep less, or set a smaller value."
+            }
+        }
         let openspot = JSValue(newObjectIn: context)
         openspot?.setObject(fetch, forKeyedSubscript: "fetch" as NSString)
+        openspot?.setObject(read, forKeyedSubscript: "read" as NSString)
+        openspot?.setObject(keep, forKeyedSubscript: "keep" as NSString)
         openspot?.setObject(ask, forKeyedSubscript: "call" as NSString)
         openspot?.setObject(asked, forKeyedSubscript: "ask" as NSString)
         context.setObject(openspot, forKeyedSubscript: "openspot" as NSString)
@@ -364,17 +371,9 @@ final class InlineScript: @unchecked Sendable {
         var resolve: JSValue?
         let promise = JSValue(newPromiseIn: context) { found, _ in resolve = found }
         let settled = Held(resolve)
-        if sandbox != nil, !spot.uses.contains(.network) {
-            let refused = WebAnswer.failed(.refused, "Careful mode stopped \(spot.name), because it reached the network without `network` in the `uses` of its spot.toml. Add it, or turn Careful mode off.")
-            settled.value?.call(withArguments: [refused.script])
-            return promise
-        }
-        fetched()
-        let session = session ?? web.session()
-        self.session = session
         waiting[token]?.asks += 1
-        Task.detached(priority: .userInitiated) { [weak self, web, session] in
-            let answer = await web.fetch(url, method: method, headers: headers, body: body, in: session)
+        Task.detached(priority: .userInitiated) { [weak self, env] in
+            let answer = await env.fetch(url, method: method, headers: headers, body: body)
             self?.settle(token) { [weak self] in
                 self?.waiting[token]?.asks -= 1
                 settled.value?.call(withArguments: [answer.script])

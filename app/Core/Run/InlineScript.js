@@ -58,18 +58,12 @@ openspot.env = function env(call, spec, bindings, settings, mac) {
       if (method !== "") env[noun][method] = command(verb)
     }
   }
-  const now = (argv, input) => {
-    const answer = openspot.call(argv, input)
-    if (answer.code !== 0) throw new Error(`openspot ${argv.join(" ")} exited ${answer.code}.`)
-    return answer.stdout
-  }
   env.cache = {
-    get: (name) => {
-      const value = now(["cache", "get", name])
-      const age = now(["cache", "age", name])
-      return age === "" ? null : { value, age: Number(age) }
+    get: (name) => openspot.read(String(name)),
+    set: (name, value) => {
+      const failure = openspot.keep(String(name), String(value))
+      if (failure) throw new Error(failure)
     },
-    set: (name, value) => { now(["cache", "set", name], String(value)) },
   }
   env.fetch = async (url, init = {}) => {
     const answer = await openspot.fetch(call, String(url), String(init.method || "GET"), init.headers || {}, init.body === undefined || init.body === null ? null : String(init.body))

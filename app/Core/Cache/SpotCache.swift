@@ -24,17 +24,10 @@ public final class SpotCache: Sendable {
         self.folder = folder
     }
 
-    private static let shared = Mutex<[URL: SpotCache]>([:])
-
-    public static func standard(environment: [String: String], home: URL) -> SpotCache {
+    public static func standard(environment: [String: String]) -> SpotCache {
+        let home = environment["HOME"].map { URL(fileURLWithPath: $0) } ?? FileManager.default.homeDirectoryForCurrentUser
         let own = SpotsFolder.ownConfig(environment: environment)
-        let folder = own?.appendingPathComponent("cache") ?? home.appendingPathComponent("Library/Caches/openspot/spots")
-        return shared.withLock { caches in
-            if let cache = caches[folder] { return cache }
-            let cache = SpotCache(folder: folder)
-            caches[folder] = cache
-            return cache
-        }
+        return SpotCache(folder: own?.appendingPathComponent("cache") ?? home.appendingPathComponent("Library/Caches/openspot/spots"))
     }
 
     public static func isName(_ name: String) -> Bool {

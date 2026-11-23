@@ -3,16 +3,13 @@ import XCTest
 
 @MainActor
 final class SpotCacheTests: SpotRunsCase {
-    private var places: AppPlaces!
-
     private var cache: SpotCache {
-        places.cache
+        runs.cache
     }
 
     override func setUp() async throws {
         try await super.setUp()
-        places = .test(["OPENSPOT_CONFIG": folder.appendingPathComponent("config").path])
-        runs.api = CommandAPI(mac: Mac(), places: places, runs: runs)
+        runs.api = CommandAPI(mac: Mac(), places: .test(["OPENSPOT_CONFIG": folder.appendingPathComponent("config").path]), runs: runs)
     }
 
     private func inline(toml: String, _ body: String) throws -> SpotRun {

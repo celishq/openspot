@@ -98,7 +98,7 @@ final class OpenspotApp: NSObject, NSApplicationDelegate {
             await MainActor.run { model.runs.raise(event) }
         }, app: SpotRunningApp(model: model, update: update), runs: model.runs)
         model.runs.api = api
-        model.files.cache.listenForMemoryPressure()
+        model.runs.cache.listenForMemoryPressure()
         Task { await launch(update: update, api: api) }
     }
 

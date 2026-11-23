@@ -3,7 +3,7 @@ import Foundation
 public final class CommandAPI: @unchecked Sendable {
     public typealias Work = @Sendable () async -> CommandAnswer
 
-    private let mac: Mac
+    let mac: Mac
     private let raise: (@Sendable (AppSignal) async -> Void)?
     private let app: (any RunningApp)?
     private let places: AppPlaces

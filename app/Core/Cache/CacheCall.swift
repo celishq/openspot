@@ -23,35 +23,22 @@ enum CacheCall: NounCall {
         guard let spot = context.caller, let runs = context.runs else {
             return { CommandAnswer(errors: "`openspot cache` runs only in a run of a spot.\n", code: 2) }
         }
-        let cache = context.places.cache
-        let owner = spot.dataName ?? spot.id
+        let env = SpotEnv(spot: spot, cache: runs.cache, runs: runs)
         switch self {
         case .get(let name):
             guard SpotCache.isName(name) else { return Self.badName(name) }
-            let fills = spot.triggers.fills[name]
-            return {
-                let entry = cache.read(name, of: owner)
-                if let fills, entry.map({ Date().timeIntervalSince($0.saved) >= fills }) ?? true {
-                    Task { @MainActor in runs.fill(name, of: spot.id) }
-                }
-                return CommandAnswer(output: entry?.value ?? "")
-            }
+            return { CommandAnswer(output: env.read(name)?.value ?? "") }
         case .age(let name):
             guard SpotCache.isName(name) else { return Self.badName(name) }
-            return {
-                let entry = cache.read(name, of: owner)
-                return CommandAnswer(output: entry.map { "\(Int(Date().timeIntervalSince($0.saved).rounded(.down)))\n" } ?? "")
-            }
+            return { CommandAnswer(output: env.read(name).map { "\($0.age)\n" } ?? "") }
         case .set(let name):
             guard SpotCache.isName(name) else { return Self.badName(name) }
             return {
-                let isChanged: Bool
                 do {
-                    isChanged = try cache.keep(await context.input(), as: name, of: owner, at: Date())
+                    try env.keep(await context.input(), as: name)
                 } catch {
                     return CommandAnswer(errors: "\(spot.name) keeps 16 MB at most in its cache. Keep less, or set a smaller value.\n", code: 2)
                 }
-                if isChanged { Task { @MainActor in runs.cacheChanged(spot.id) } }
                 return CommandAnswer()
             }
         }

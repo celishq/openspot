@@ -37,7 +37,8 @@ public final class SpotRuns {
     public nonisolated let callers: SpotCallers
     @ObservationIgnored let clock: RunClock
     @ObservationIgnored let now: () -> Date
-    @ObservationIgnored public var web = Web()
+    @ObservationIgnored public var fetch = Fetch()
+    public nonisolated let cache: SpotCache
     @ObservationIgnored let stopPause: TimeInterval
     @ObservationIgnored let clipboardPause: Duration
     @ObservationIgnored var source: (any MacEvents)?
@@ -113,9 +114,11 @@ public final class SpotRuns {
         timers: URL? = nil,
         schedule: URL? = nil,
         swift: SwiftProgram = SwiftProgram(),
-        callers: SpotCallers = SpotCallers()
+        callers: SpotCallers = SpotCallers(),
+        cache: SpotCache? = nil
     ) {
         self.environment = environment
+        self.cache = cache ?? .standard(environment: environment)
         self.callers = callers
         self.log = log
         self.swift = swift

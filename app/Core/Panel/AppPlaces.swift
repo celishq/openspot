@@ -15,7 +15,6 @@ public struct AppPlaces: Sendable {
     public let store: URL
     public let examples: Store?
     public let lock: SpotLock
-    public let cache: SpotCache
     let configFolder: URL
 
     public init(
@@ -43,7 +42,6 @@ public struct AppPlaces: Sendable {
         store = SpotCatalog.url(environment: environment, home: home)
         examples = Store.builtIn(environment: environment)
         lock = .standard(environment: environment, home: home)
-        cache = .standard(environment: environment, home: home)
     }
 
     public static func systemTrash(_ url: URL) throws -> URL {

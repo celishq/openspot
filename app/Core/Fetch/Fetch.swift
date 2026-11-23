@@ -1,6 +1,6 @@
 import Foundation
 
-public struct Web: Sendable {
+public struct Fetch: Sendable {
     public static let byteLimit = 2 << 20
     private static let chunk = 64 << 10
     public static let use = SpotUseCall(name: "fetch", rule: CallRule(use: .network, used: "reached the network"))
@@ -17,7 +17,7 @@ public struct Web: Sendable {
         URLSession(configuration: configuration)
     }
 
-    public func fetch(_ url: String, method: String, headers: [String: String], body: String?, in session: URLSession) async -> WebAnswer {
+    public func answer(_ url: String, method: String, headers: [String: String], body: String?, in session: URLSession) async -> FetchAnswer {
         guard let address = URL(string: url), ["http", "https"].contains(address.scheme?.lowercased() ?? "") else {
             return .failed(.unavailable, "Openspot fetches only an http or https address: \(url).")
         }
@@ -26,7 +26,7 @@ public struct Web: Sendable {
         for (name, value) in headers { request.setValue(value, forHTTPHeaderField: name) }
         request.httpBody = body.map { Data($0.utf8) }
         let sent = request
-        return await withTaskGroup(of: WebAnswer.self) { group in
+        return await withTaskGroup(of: FetchAnswer.self) { group in
             group.addTask { await read(sent, in: session) }
             group.addTask {
                 try? await Task.sleep(for: .seconds(wait))
@@ -38,7 +38,7 @@ public struct Web: Sendable {
         }
     }
 
-    private func read(_ request: URLRequest, in session: URLSession) async -> WebAnswer {
+    private func read(_ request: URLRequest, in session: URLSession) async -> FetchAnswer {
         let host = request.url?.host() ?? ""
         do {
             let (bytes, response) = try await session.bytes(for: request)
@@ -69,7 +69,7 @@ public struct Web: Sendable {
         }
     }
 
-    private static func overLimit(_ host: String) -> WebAnswer {
+    private static func overLimit(_ host: String) -> FetchAnswer {
         .failed(.limit, "The answer of \(host) is over \(byteLimit >> 20) MB, the most a fetch takes.")
     }
 }

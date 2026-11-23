@@ -1,6 +1,6 @@
 import Foundation
 
-public enum WebAnswer: Equatable, Sendable {
+public enum FetchAnswer: Equatable, Sendable {
     public enum Cause: String, Sendable {
         case offline, timeout, limit, refused, unavailable
     }
