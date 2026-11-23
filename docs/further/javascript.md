@@ -76,6 +76,7 @@ A function that throws fails with its message, as a script that prints `error=` 
 | `env.fetch(url, options)`          | The web, as a browser's `fetch`; see [Fetch from the web](../connect/the-web.md). |
 | `env.cache.get(name)`, `env.cache.set(name, value)` | Your spot's cache, at once and with no `await`; see [Keep a copy that goes old](../remember/cache.md). |
 | `env.open(id)`                    | `openspot spot open`: opens the panel on a spot.                             |
+| `env.locale`, `env.currency`      | The language and region of the Mac, such as `en-US`, and the code of its currency, such as `USD`. |
 | `env.settings`                    | Your spot's settings, by name.                                                |
 
 A verb of two words is in camelCase, such as `env.screen.recordStop()` for `openspot screen record stop`.

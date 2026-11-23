@@ -27,7 +27,7 @@ openspot.answer = function answer(value) {
   for (const [key, each] of Object.entries(value)) out["out." + key] = each
   return frame(out)
 }
-openspot.env = function env(call, spec, bindings, settings) {
+openspot.env = function env(call, spec, bindings, settings, mac) {
   const failure = (argv, answer) => new Error(answer.errors || `openspot ${argv.join(" ")} exited ${answer.code}.`)
   const run = async (argv) => {
     const answer = await openspot.ask(call, argv)
@@ -50,7 +50,7 @@ openspot.env = function env(call, spec, bindings, settings) {
     }
     return argv
   }
-  const env = { settings }
+  const env = { settings, locale: mac.locale, currency: mac.currency }
   for (const [noun, verbs] of Object.entries(spec)) {
     const command = (verb) => async (...args) => (await run([...verb.words, ...words(verb.slots, args)])).output.replace(/\n$/, "")
     env[noun] = verbs[""] ? command(verbs[""]) : {}

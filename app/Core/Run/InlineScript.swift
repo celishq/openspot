@@ -270,9 +270,15 @@ final class InlineScript: @unchecked Sendable {
         }
         let openspot = context.objectForKeyedSubscript("openspot")
         slice(token) {
-            let env = openspot?.invokeMethod("env", withArguments: [token, commands, spot.bindings.map(\.name), settings])
+            let env = openspot?.invokeMethod("env", withArguments: [token, commands, spot.bindings.map(\.name), settings, Self.mac])
             openspot?.invokeMethod("handle", withArguments: [handlers, name, input, env as Any, JSValue(object: done, in: context) as Any])
         }
+    }
+
+    private static var mac: [String: String] {
+        let locale = Locale.autoupdatingCurrent
+        let tag = (locale.identifier.split(separator: "@").first.map(String.init) ?? "en-US").replacingOccurrences(of: "_", with: "-")
+        return ["locale": tag, "currency": locale.currency?.identifier ?? "USD"]
     }
 
     static func values(of fields: [TextBlock.Field], prefix: String, types: [Manifest.Parameter]) -> [String: Any] {

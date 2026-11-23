@@ -57,7 +57,7 @@ struct SpotTypes: Sendable {
         for event in spot.events {
             lines.append("  \(Self.quoted(event.name)): \(Self.object(event.values, present: Self.isPresent))")
         }
-        lines += ["}", "", "export interface Env {", "  settings: Settings", "  emit<E extends keyof Events>(event: E, values: Events[E]): Promise<void>", "  open(spot: string): Promise<void>", "  cache: { get(name: string): { value: string, age: number } | null, set(name: string, value: string): void }", "  fetch(url: string, options?: { method?: string, headers?: Record<string, string>, body?: string }): Promise<{ ok: boolean, status: number, url: string, headers: { get(name: string): string | null }, text(): Promise<string>, json(): Promise<any> }>"]
+        lines += ["}", "", "export interface Env {", "  settings: Settings", "  locale: string", "  currency: string", "  emit<E extends keyof Events>(event: E, values: Events[E]): Promise<void>", "  open(spot: string): Promise<void>", "  cache: { get(name: string): { value: string, age: number } | null, set(name: string, value: string): void }", "  fetch(url: string, options?: { method?: string, headers?: Record<string, string>, body?: string }): Promise<{ ok: boolean, status: number, url: string, headers: { get(name: string): string | null }, text(): Promise<string>, json(): Promise<any> }>"]
         for (noun, verbs) in Dictionary(grouping: commands, by: \.noun).sorted(by: { $0.key < $1.key }) {
             lines.append("  \(Self.quoted(noun)): {")
             for verb in verbs {
