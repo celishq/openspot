@@ -89,7 +89,7 @@ public struct SheetParts: Equatable, Sendable {
         func walk(_ ids: [String], row: String?) {
             for id in ids {
                 guard let node = tree.node(id) else { continue }
-                if node.kind == BlockKind.items {
+                if node.kind == .items {
                     rowsLine = lines.count
                     lineRow = nil
                     continue

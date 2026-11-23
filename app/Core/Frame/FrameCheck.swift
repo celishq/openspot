@@ -17,8 +17,8 @@ public struct FrameCheck: Equatable, Sendable {
         let taken = Self.calls.filter { $0 != "drag" || listed.contains { $0.value(ItemKey.file) != nil } }
         var faults: [String] = []
         for block in blocks {
-            if block.fields.first?.key == BlockKind.box {
-                faults += BlockKind.faults(in: block, kind: BlockKind(name: BlockKind.box))
+            if block.fields.first?.key == BlockKind.box.word {
+                faults += BlockKind.faults(in: block, kind: .box)
                 continue
             }
             guard let kind = BlockKind.of(block, in: kinds), let id = block.value(kind.word) else { continue }

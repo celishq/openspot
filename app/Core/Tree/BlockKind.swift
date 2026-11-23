@@ -1,10 +1,6 @@
 import Foundation
 
 public struct BlockKind: Sendable, Equatable {
-    public static let option = "option"
-    public static let box = "box"
-    public static let items = "items"
-
     public let name: String
     public let word: String
     let picks: @Sendable (TextBlock) -> Bool
@@ -66,14 +62,14 @@ public struct BlockKind: Sendable, Equatable {
 
     public static let all = [text, item, number, series, picture, icon, toggle, slider, hotkey, field, choice, button]
 
-    static let listWords = [items, option, box]
+    static let lists = [items, option, box]
 
-    static let wordsKinds: Set = [text.word, item.word]
+    static let wordsKinds = [text, item]
 
-    public static let controlWords: Set = [button.word, field.word, toggle.word, choice.word, number.word, series.word]
+    public static let controls = [button, field, slider, hotkey, toggle, choice, number, series]
 
     public static var words: Set<String> {
-        Set(all.map(\.word) + listWords)
+        Set((all + lists).map(\.word))
     }
 
     static func of(_ block: TextBlock, in kinds: [BlockKind]) -> BlockKind? {
@@ -153,7 +149,7 @@ public struct BlockKind: Sendable, Equatable {
         field: { block, name, label in ItemForm.Field(name: name, label: label, type: .switch, value: block.flag("value") == true ? "true" : "false") }
     )
 
-    static let slider = BlockKind(
+    public static let slider = BlockKind(
         name: "slider",
         word: "field",
         picks: { $0.value("type") == "slider" },
@@ -176,7 +172,7 @@ public struct BlockKind: Sendable, Equatable {
         }
     )
 
-    static let hotkey = BlockKind(
+    public static let hotkey = BlockKind(
         name: "hotkey",
         word: "field",
         picks: { $0.value("type") == "hotkey" },
@@ -219,6 +215,12 @@ public struct BlockKind: Sendable, Equatable {
     )
 
     public static let button = BlockKind(name: "button", presses: true)
+
+    public static let items = BlockKind(name: "items")
+
+    public static let option = BlockKind(name: "option")
+
+    public static let box = BlockKind(name: "box")
 
     private static func range(of block: TextBlock) -> (low: Double, high: Double) {
         (block.number("min") ?? 0, block.number("max") ?? 100)

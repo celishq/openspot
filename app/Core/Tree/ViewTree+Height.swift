@@ -11,7 +11,7 @@ extension ViewTree {
             guard let node = nodes[id] else { return false }
             let holder = node.parent.flatMap { nodes[$0] }?.style.resolved(for: variants) ?? root
             let style = node.style.resolved(for: variants)
-            return node.kind == BlockKind.items || style.grows == true && ((holder.arrangement ?? .column) == .column || style.isAbsolute)
+            return node.kind == .items || style.grows == true && ((holder.arrangement ?? .column) == .column || style.isAbsolute)
         }
         guard !fills else { return nil }
         return measure(children, style: root, in: variants, shown: shown, words: [:], width: width).height
@@ -36,7 +36,7 @@ extension ViewTree {
         let layout = BoxLayout(style: style).place(children, width: room.width, height: room.height)
         for (node, frame) in zip(placed, layout.frames) {
             frames[node.id] = frame
-            guard node.kind != BlockKind.items, node.kind == BlockKind.box || !node.children.isEmpty else { continue }
+            guard node.kind != .items, node.kind == .box || !node.children.isEmpty else { continue }
             lay(node.children, style: node.style.resolved(for: variants), in: variants, shown: shown, words: words, size: frame.size, into: &frames)
         }
     }
@@ -52,7 +52,7 @@ extension ViewTree {
 
     private func measure(_ node: ViewNode, in variants: Set<Style.Variant>, shown: Set<String>, words: [String: CGFloat], width: CGFloat?) -> CGSize {
         let style = node.style.resolved(for: variants)
-        if node.kind != BlockKind.items, node.kind == BlockKind.box || !node.children.isEmpty {
+        if node.kind != .items, node.kind == .box || !node.children.isEmpty {
             return measure(node.children, style: style, in: variants, shown: shown, words: words, width: width)
         }
         return CGSize(width: width ?? (words[node.id] ?? 0) + style.insets.width, height: leafHeight(node, style, width: width))

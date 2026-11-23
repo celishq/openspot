@@ -30,7 +30,7 @@ final class WelcomeSpotTests: BuiltInCase {
 
     private func assertHead(_ output: Frame, _ title: String, _ detail: String, file: StaticString = #filePath, line: UInt = #line) throws {
         let head = try head(in: output)
-        XCTAssertEqual(head.kind, "welcome", file: file, line: line)
+        XCTAssertEqual(head.kind.name, "welcome", file: file, line: line)
         XCTAssertEqual(head.block.value("grow"), "false", file: file, line: line)
         XCTAssertEqual(head.values["title"], [title], file: file, line: line)
         XCTAssertEqual(head.values["detail"], [detail], file: file, line: line)

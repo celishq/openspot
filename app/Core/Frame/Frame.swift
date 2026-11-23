@@ -36,7 +36,7 @@ public struct Frame: Equatable, Sendable {
     public let isMark: Bool
 
     private static let sheetRoot = RootKey.block([.init(key: ViewNode.classKey, value: "gap-part")])
-    private static let itemsBlock = TextBlock(fields: [.init(key: BlockKind.items, value: "items")])
+    private static let itemsBlock = TextBlock(fields: [.init(key: BlockKind.items.word, value: "items")])
     static let searchType = "search"
     static let sheetPlaces: [Set<Style.Variant>] = [Style.Variant.sheet, .float, .window].flatMap { place in [[place, .dark], [place, .light]] }
 
@@ -45,7 +45,7 @@ public struct Frame: Equatable, Sendable {
         var choice: Int?
         for block in blocks {
             let kind = block.fields.first?.key
-            if kind == BlockKind.option, let index = choice {
+            if kind == BlockKind.option.word, let index = choice {
                 grouped[index] = grouped[index].adding(child: block)
             } else {
                 choice = kind == BlockKind.choice.word ? grouped.count : nil
@@ -75,7 +75,7 @@ public struct Frame: Equatable, Sendable {
         isMark = frame.isMark
         let head = frame.block
         tree = ViewTree(blocks: blocks, root: head, kinds: kinds)
-        let repeated = blocks.first { $0.fields.first?.key == BlockKind.items }?.fields.first?.value
+        let repeated = blocks.first { $0.fields.first?.key == BlockKind.items.word }?.fields.first?.value
         if let repeated, let style = tree.node(repeated)?.style.resolved(for: [.sheet]), style.arrangement == .grid {
             columns = style.columns ?? 1
         }
@@ -87,7 +87,7 @@ public struct Frame: Equatable, Sendable {
         var unplaced: [TextBlock] = []
         for (index, block) in blocks.enumerated() {
             let word = block.fields.first?.key
-            if [BlockKind.items, BlockKind.box].contains(word) { continue }
+            if [BlockKind.items.word, BlockKind.box.word].contains(word) { continue }
             if let kind = BlockKind.of(block, in: kinds) {
                 let id = block.value(kind.word)
                 let isPlaced = id.map(placed.contains) ?? false
@@ -142,7 +142,7 @@ public struct Frame: Equatable, Sendable {
         barKind = shown?.kind
         hasBar = !barred.isEmpty
         if !tree.isWritten, !unplaced.isEmpty {
-            let itemsBlock = blocks.first { $0.fields.first?.key == BlockKind.items } ?? (items.isEmpty ? nil : Self.itemsBlock)
+            let itemsBlock = blocks.first { $0.fields.first?.key == BlockKind.items.word } ?? (items.isEmpty ? nil : Self.itemsBlock)
             tree = tree.unwritten(showing: unplaced + [itemsBlock].compactMap(\.self), root: Self.sheetRoot, kinds: kinds)
         }
     }
