@@ -900,6 +900,7 @@
 		D6941DD74277E9AFBBA2CE8B /* CalcRateFailure.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9447205042159420F5563CF7 /* CalcRateFailure.swift */; };
 		D695A74AABC1CE7AA3B4A20D /* SpotsModel+Backdrop.swift in Sources */ = {isa = PBXBuildFile; fileRef = 81D49C11A2C4C461BF3E367A /* SpotsModel+Backdrop.swift */; };
 		D6EC78D7F648E3DBB2CB6E37 /* MotionTokensTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A8AA79552F8EF1E73EF00C95 /* MotionTokensTests.swift */; };
+		D72B44C78BC3A2C7E0CF5907 /* FocusRing.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5487B8C890915F778D06851B /* FocusRing.swift */; };
 		D74C46E43644BB4CCB6C1B39 /* SpotCardSource.swift in Sources */ = {isa = PBXBuildFile; fileRef = D52D1A0896DBE5AB1A160A7E /* SpotCardSource.swift */; };
 		D76F7916D5206BF1C167FCA1 /* openspot.sh in Resources */ = {isa = PBXBuildFile; fileRef = 94B0E4567AE631D558192FF8 /* openspot.sh */; };
 		D780233D72D94732060B07C1 /* SpotPackage+Release.swift in Sources */ = {isa = PBXBuildFile; fileRef = F0FD2E4AE61ADD248A6B84BA /* SpotPackage+Release.swift */; };
@@ -1065,6 +1066,7 @@
 		FC682E1AF5091566BE06CA9E /* P256K in Frameworks */ = {isa = PBXBuildFile; productRef = 176130F2F64BE01111A0C0B6 /* P256K */; };
 		FC6A1E6F88A65E66D9EBDD13 /* ViewVariantRunTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1DA1D2E0CC08A8727DA4186A /* ViewVariantRunTests.swift */; };
 		FC9167F9E45F64550D5C5C38 /* NumberReading.swift in Sources */ = {isa = PBXBuildFile; fileRef = D33B870754A4AAEE3540D5E9 /* NumberReading.swift */; };
+		FCCB900141A41DE4F63DC19E /* FocusRingTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7FFFA8A104BBE3A6BB8748DB /* FocusRingTests.swift */; };
 		FCDF7828A2901BB7E6555788 /* PointerShakeTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 17F7A0C925D690B8DF7148EB /* PointerShakeTests.swift */; };
 		FD08977E69A796C65C49EA02 /* GlobalKeys.swift in Sources */ = {isa = PBXBuildFile; fileRef = F2DA0E776E8D9411FBA47CCB /* GlobalKeys.swift */; };
 		FD1058E3D11BEF564A6E18FD /* CallOutcome.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2EBCB63F00EF616CD63884A9 /* CallOutcome.swift */; };
@@ -1483,6 +1485,7 @@
 		543D5468269D31A816BBADA7 /* SpotsWindowPlace.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SpotsWindowPlace.swift; sourceTree = "<group>"; };
 		54721534E4A59D8BE9117831 /* BigPasteTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BigPasteTests.swift; sourceTree = "<group>"; };
 		5486A364CFD0B7D7CB647AE1 /* PowerSampleTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PowerSampleTests.swift; sourceTree = "<group>"; };
+		5487B8C890915F778D06851B /* FocusRing.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FocusRing.swift; sourceTree = "<group>"; };
 		54B84BC38867109681FA8513 /* SpotsModel+Motion.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "SpotsModel+Motion.swift"; sourceTree = "<group>"; };
 		55179210AEE82C8FCFF4BEAE /* RunClock.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RunClock.swift; sourceTree = "<group>"; };
 		55281667DA5D266778D3B00C /* SpotPlacement.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SpotPlacement.swift; sourceTree = "<group>"; };
@@ -1650,6 +1653,7 @@
 		7F9785E4714FF370CF654799 /* ExampleSampleTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ExampleSampleTests.swift; sourceTree = "<group>"; };
 		7FBA5882CA947E9AF6565AF0 /* SpotHover.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SpotHover.swift; sourceTree = "<group>"; };
 		7FD1F7503ABAE08771E08B27 /* SymbolCatalogTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SymbolCatalogTests.swift; sourceTree = "<group>"; };
+		7FFFA8A104BBE3A6BB8748DB /* FocusRingTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FocusRingTests.swift; sourceTree = "<group>"; };
 		8003AA14F1389FC6CD1E322F /* SpotSystemEvents.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SpotSystemEvents.swift; sourceTree = "<group>"; };
 		808794ED0B6B75DB34BE08F3 /* PlaygroundCallTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PlaygroundCallTests.swift; sourceTree = "<group>"; };
 		80D063F29976A3A35734DE15 /* SpotEventsTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SpotEventsTests.swift; sourceTree = "<group>"; };
@@ -2921,6 +2925,7 @@
 				9DB6300B9A82BFD47A55DB88 /* FlowSwipeTests.swift */,
 				A05F43973DA49A7969FCCBF2 /* FlowTests.swift */,
 				E7B886397C19798D6A36AB5E /* FocusLossTests.swift */,
+				7FFFA8A104BBE3A6BB8748DB /* FocusRingTests.swift */,
 				81708547DDCAC262759EB258 /* FormDraftTests.swift */,
 				BDA0177746C3CC86EFE5BEDC /* FrameColumnsTests.swift */,
 				5D30787DEDD3331EB862D5A7 /* FrameLog.swift */,
@@ -3666,6 +3671,7 @@
 				376275AB3EFB50CAEFFC6BDB /* BoxLayout.swift */,
 				28C2AEB01DA943B7F8FEB27E /* BoxLayout+Grid.swift */,
 				1797EEA72C24C943F18F16DD /* BoxLayout+Pins.swift */,
+				5487B8C890915F778D06851B /* FocusRing.swift */,
 				55E790130B641BEE6E10C80B /* NumberLook.swift */,
 				D33B870754A4AAEE3540D5E9 /* NumberReading.swift */,
 				2B54E50FA1BB55148DF15D93 /* SpotPart.swift */,
@@ -4483,6 +4489,7 @@
 				6CC936B1B7E9BA238CEDD21E /* FlowSheet.swift in Sources */,
 				A683744B45EC1457FA2F9270 /* FlowSwipe.swift in Sources */,
 				9699AABB10DD82336C7AD4BA /* FocusLoss.swift in Sources */,
+				D72B44C78BC3A2C7E0CF5907 /* FocusRing.swift in Sources */,
 				517CCF4BA1DB4F34EFEA4E0B /* FoldedItem.swift in Sources */,
 				577D71A519F841B9DF675F17 /* FoldedText.swift in Sources */,
 				24903B4BCD64E40B002DEF93 /* FolderCall.swift in Sources */,
@@ -5206,6 +5213,7 @@
 				27219EC1C530144C108E9674 /* FlowSwipeTests.swift in Sources */,
 				74CB234ED8EED3D6450C2B54 /* FlowTests.swift in Sources */,
 				337A23F259AA3FAFF7693FAE /* FocusLossTests.swift in Sources */,
+				FCCB900141A41DE4F63DC19E /* FocusRingTests.swift in Sources */,
 				0D925E836160D970705BB7A4 /* FormDraftTests.swift in Sources */,
 				5856C94C2679D133E1366B0B /* FrameColumnsTests.swift in Sources */,
 				8666CC1C03D2B785A6F53EC8 /* FrameLog.swift in Sources */,
