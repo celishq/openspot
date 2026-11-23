@@ -24,7 +24,7 @@ struct SpotTypes: Sendable {
     }
 
     var settings: [Manifest.Parameter] {
-        spot.settings.compactMap { setting in setting.valueType.map { Manifest.Parameter(name: setting.id, type: $0, isRequired: setting.defaultValue != nil) } }
+        spot.settings.map(\.parameter)
     }
 
     static func key(_ name: String) -> String {
@@ -43,7 +43,7 @@ struct SpotTypes: Sendable {
 
     var declarations: String {
         var lines = ["export type Value = string | number | boolean | (string | number | boolean)[]", ""]
-        lines.append("export interface Settings \(Self.object(settings, present: \.isRequired))")
+        lines.append("export interface Settings \(Self.object(settings, present: Self.isPresent))")
         lines.append("")
         lines.append("export interface Inputs {")
         for shape in shapes {
@@ -108,18 +108,7 @@ struct SpotTypes: Sendable {
 
     private static func object(_ parameters: [Manifest.Parameter], present: (Manifest.Parameter) -> Bool) -> String {
         guard !parameters.isEmpty else { return "{}" }
-        return "{ " + parameters.map { "\(quoted($0.name))\(present($0) ? "" : "?"): \(script($0))" }.joined(separator: "; ") + " }"
-    }
-
-    private static func script(_ parameter: Manifest.Parameter) -> String {
-        let one = switch parameter.type.kind {
-        case .number, .duration: "number"
-        case .bool: "boolean"
-        case .choice: parameter.options.map(quoted).joined(separator: " | ")
-        default: "string"
-        }
-        guard parameter.type.isList else { return one }
-        return parameter.type.kind == .choice ? "(\(one))[]" : "\(one)[]"
+        return "{ " + parameters.map { "\(quoted($0.name))\(present($0) ? "" : "?"): \($0.type.script(options: $0.options))" }.joined(separator: "; ") + " }"
     }
 
     static func quoted(_ text: String) -> String {

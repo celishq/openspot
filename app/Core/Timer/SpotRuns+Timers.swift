@@ -26,21 +26,15 @@ extension SpotRuns {
     }
 
     func scheduleTimers() {
-        timerWatch?.cancel()
-        timerWatch = nil
+        timerWatch.stop()
         guard !hasQuit else { return }
         let time = now()
         let due = timers.takeDue(at: time)
         if !due.isEmpty { timers.write() }
         for timer in due {
-            sheets[timer.spot]?.due(timer)
+            guard let action = timer.action else { continue }
+            sheets[timer.spot]?.trigger(action, inputs: (timer.inputs ?? []).map { .init(key: $0.name, value: $0.value) }, key: "\(SpotTimer.call).\(timer.id)")
         }
-        guard let next = timers.next else { return }
-        let wait = Duration.seconds(max(0, next.timeIntervalSince(time)))
-        timerWatch = Task { [weak self, sleep = clock.sleep] in
-            try? await sleep(wait, min(wait / 10, .seconds(1)))
-            guard !Task.isCancelled, let self else { return }
-            scheduleTimers()
-        }
+        timerWatch.wait(until: timers.next, from: time) { [weak self] in self?.scheduleTimers() }
     }
 }

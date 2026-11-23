@@ -96,19 +96,8 @@ extension SpotRun {
         startWaitingKey()
     }
 
-    func due(_ timer: SpotTimer) {
-        guard let action = timer.action else { return }
-        let message = Message(.press(action), inputs: (timer.inputs ?? []).map { .init(key: $0.name, value: $0.value) })
-        send(Call(message: message, key: "\(SpotTimer.call).\(timer.id)", purpose: .act(Act(showsAfter: false)), isPressed: false))
-    }
-
-    func hear(_ handler: String, values: [TextBlock.Field]) {
-        send(Call(message: Message(.press(handler), inputs: values), key: "\(Manifest.Triggers.table).\(handler)", purpose: .act(Act(showsAfter: false)), isPressed: false))
-    }
-
-    func scheduled(_ line: CronLine, late: Int) {
-        let inputs: [TextBlock.Field] = [.init(key: "cron", value: line.text), .init(key: "late", value: String(max(0, late)))]
-        send(Call(message: Message(.press(Manifest.Triggers.schedule), inputs: inputs), key: "\(Manifest.Triggers.schedule).\(line.text)", purpose: .act(Act(showsAfter: false)), isPressed: false))
+    func trigger(_ handler: String, inputs: [TextBlock.Field], key: String) {
+        send(Call(message: Message(.press(handler), inputs: inputs), key: key, purpose: .act(Act(showsAfter: false)), isPressed: false))
     }
 
     func startWaitingKey() {

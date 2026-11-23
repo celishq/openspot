@@ -61,8 +61,8 @@ final class BoundEventsTests: SpotRunsCase {
 
             XCTAssertEqual(log("done"), ["2"], words)
             XCTAssertEqual(log("errors"), [line], words)
+            try await wait("the end of each call of the listener") { self.runs.sheets["snooze"]?.calls.isEmpty == true }
+            XCTAssertEqual(log("heard"), [], words)
         }
-        try await pause(0.3)
-        XCTAssertEqual(log("heard"), [])
     }
 }

@@ -80,10 +80,8 @@ public enum ManifestSchema {
             if let title = action.title { entry["title"] = title }
             return entry
         }
-        let commands = CommandNoun.all.flatMap { noun in
-            noun.shown.filter { $0.rule.use.map(spot.uses.contains) == true }.map { verb -> [String: Any] in
-                ["name": ([noun.name] + verb.words).joined(separator: " "), "description": verb.about, "inputs": verb.inputs]
-            }
+        let commands = UseCommand.all(for: spot.uses).filter { $0.use != nil }.map { command -> [String: Any] in
+            ["name": command.words.joined(separator: " "), "description": command.about, "inputs": CommandSlot.schema(of: command.slots)]
         }
         return ["spot": spot.id, "actions": actions, "commands": commands]
     }
@@ -91,16 +89,7 @@ public enum ManifestSchema {
     static func object(of parameters: [Manifest.Parameter]) -> [String: Any] {
         var properties: [String: Any] = [:]
         for parameter in parameters {
-            var base: [String: Any] = switch parameter.type.kind {
-            case .text, .secret: ["type": "string"]
-            case .number: ["type": "number"]
-            case .bool: ["type": "boolean"]
-            case .date: ["type": "string", "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}"]
-            case .duration: ["type": "number", "minimum": 0]
-            case .url: ["type": "string", "format": "uri"]
-            case .file: ["type": "string", "pattern": "^/"]
-            case .choice: ["enum": parameter.options]
-            }
+            var base = parameter.type.schema(options: parameter.options)
             if let detail = parameter.detail { base["description"] = detail }
             if let defaultValue = parameter.defaultValue { base["default"] = defaultValue }
             properties[parameter.name] = parameter.type.isList ? ["type": "array", "items": base] : base

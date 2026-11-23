@@ -17,7 +17,7 @@ enum RunCall: NounCall {
 
     private static func parse(_ words: [String]) -> (any NounCall)? {
         var target: String?
-        var inputs: [TextBlock.Field] = []
+        var pairs: [String] = []
         var out: String?
         var stdin: String?
         var index = 0
@@ -31,17 +31,25 @@ enum RunCall: NounCall {
             } else if target == nil {
                 target = word
             } else {
-                guard let equals = word.firstIndex(of: "="), equals != word.startIndex else {
-                    return CallFault.refused("\(word) is not an input. Write <name>=<value>, such as url=https://example.com.")
-                }
-                inputs.append(.init(key: String(word[..<equals]), value: String(word[word.index(after: equals)...])))
+                pairs.append(word)
             }
         }
         guard let target else { return nil }
-        guard let dot = target.firstIndex(of: "."), dot != target.startIndex, target.index(after: dot) != target.endIndex else {
+        let inputs: [TextBlock.Field]
+        do {
+            inputs = try Manifest.InputCheck.fields(of: pairs, as: .input)
+        } catch {
+            return CallFault.refused(SpotRuns.reason(error))
+        }
+        guard let named = Self.target(target) else {
             return CallFault.refused("`\(target)` names no action of a binding. Write <binding>.<action>, such as picker.pick.")
         }
-        return Self.run(binding: String(target[..<dot]), action: String(target[target.index(after: dot)...]), inputs: inputs, out: out, stdin: stdin)
+        return Self.run(binding: named.binding, action: named.action, inputs: inputs, out: out, stdin: stdin)
+    }
+
+    static func target(_ text: String) -> (binding: String, action: String)? {
+        guard let dot = text.firstIndex(of: "."), dot != text.startIndex, text.index(after: dot) != text.endIndex else { return nil }
+        return (String(text[..<dot]), String(text[text.index(after: dot)...]))
     }
 
     func work(in context: CallContext) -> CommandAPI.Work? {

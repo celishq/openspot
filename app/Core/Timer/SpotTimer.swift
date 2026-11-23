@@ -15,18 +15,8 @@ public struct SpotTimer: Codable, Equatable, Sendable {
             guard let action = spot.typedActions.first(where: { $0.id == name }) else {
                 throw SpotError.fault("\(spot.name) has no action \(name). Name one of its [actions]: \(spot.typedActions.map(\.id).joined(separator: ", ")).")
             }
-            var given: [TextBlock.Field] = []
-            for word in words.dropFirst() {
-                guard let equals = word.firstIndex(of: "="), equals != word.startIndex else {
-                    throw SpotError.fault("\(word) is not an input. Write <name>=<value>, such as url=https://example.com.")
-                }
-                let key = String(word[..<equals])
-                guard action.inputs.contains(where: { $0.name == key }) else {
-                    throw SpotError.fault("\(name) has no input \(key). Its inputs are: \(action.inputs.map(\.name).joined(separator: ", ")).")
-                }
-                given.append(.init(key: key, value: String(word[word.index(after: equals)...])))
-            }
-            _ = try action.inputs(given)
+            let given = try Manifest.InputCheck.fields(of: Array(words.dropFirst()), as: .input)
+            _ = try action.check.checked(given)
             self.action = name
             inputs = given.map { Input(name: $0.key, value: $0.value) }
         }

@@ -31,18 +31,7 @@ public struct SpotFile: Equatable, Sendable {
         }
         let icon = Icon(text: manifest.icon).map { Self.placed($0, beside: url) }
         let triggers = manifest.triggers
-        if let triggers {
-            if let key = triggers.bindings.first(where: { key in !manifest.bindings.contains { $0.name == Manifest.Triggers.binding(of: key) } }) {
-                let binding = Manifest.Triggers.binding(of: key)
-                throw SpotError.fault("\(name) has [on] \(key), which names no binding \(binding). Add it to [bindings], such as \(binding) = { spot = \"<id>\" }")
-            }
-            if let action = manifest.actions.first(where: { triggers.handlers.contains($0.id) }) {
-                throw SpotError.fault("\(name) has \(action.section), which takes the name of a handler that its [on] calls. Give the action another ID")
-            }
-        }
-        if let action = manifest.actions.first(where: { Manifest.Triggers.named.contains($0.id) }) {
-            throw SpotError.fault("\(name) has \(action.section), which takes the name of a handler that its [on] calls. Give the action another ID")
-        }
+        try (triggers ?? Manifest.Triggers()).check(manifest, name: name)
         let parsed = triggers?.showEvents
         var on = parsed?.moments.isEmpty == false ? parsed : nil
         let uses = try SpotUse.set(manifest.uses, of: name)

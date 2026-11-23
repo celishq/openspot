@@ -7,7 +7,7 @@ extension SpotRun {
         if case .ask = call.purpose {} else {
             if let action = typedAction(of: call.action) {
                 do {
-                    call.message.inputs = try action.inputs(call.message.inputs)
+                    call.message.inputs = try action.check.checked(call.message.inputs, keepingUndeclared: true)
                 } catch {
                     refuse(call, error)
                     return true

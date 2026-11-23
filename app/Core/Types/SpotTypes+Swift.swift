@@ -157,7 +157,7 @@ extension SpotTypes {
 
     var swift: String {
         var lines = ["import Darwin\n", Self.runtime]
-        lines.append(Self.record("Settings", settings, present: \.isRequired, outputs: false))
+        lines.append(Self.record("Settings", settings, present: Self.isPresent, outputs: false))
         for shape in shapes {
             if shape.isLoose {
                 lines.append("struct \(Self.typeName(shape.name))Input {\n    let values: [String: [String]]\n\n    init(_ fields: [String: [String]]) {\n        values = fields\n    }\n}\n")
@@ -225,7 +225,7 @@ extension SpotTypes {
         var cases: [String] = []
         var words: [String] = []
         for event in spot.events {
-            let labels = event.values.map { "`\(Self.key($0.name))`: \(Self.swiftType($0, present: Self.isPresent($0)))\(Self.isPresent($0) ? "" : " = nil")" }
+            let labels = event.values.map { "`\(Self.key($0.name))`: \($0.type.swift(present: Self.isPresent($0)))\(Self.isPresent($0) ? "" : " = nil")" }
             cases.append("    case `\(Self.key(event.name))`\(labels.isEmpty ? "" : "(\(labels.joined(separator: ", ")))")")
             let names = event.values.indices.map { "v\($0)" }
             let bindings = names.isEmpty ? "" : "(" + names.map { "let \($0)" }.joined(separator: ", ") + ")"
@@ -292,7 +292,7 @@ extension SpotTypes {
             let values = "\(typeName(binding.name))\(typeName(action.id))Values"
             let parameters = action.inputs.map { input in
                 let given = input.isRequired && input.defaultValue == nil
-                return "`\(key(input.name))`: \(swiftType(input, present: given))\(given ? "" : input.type.isList ? " = []" : " = nil")"
+                return "`\(key(input.name))`: \(input.type.swift(present: given))\(given ? "" : input.type.isList ? " = []" : " = nil")"
             }
             var body = ["        var words = [\"run\", \(quoted("\(binding.name).\(action.id)"))]"]
             for input in action.inputs {
@@ -311,7 +311,7 @@ extension SpotTypes {
         var lines = ["struct \(name)\(outputs ? ": Outputs" : "") {"]
         for parameter in parameters {
             let isPresent = present(parameter)
-            let type = swiftType(parameter, present: isPresent)
+            let type = parameter.type.swift(present: isPresent)
             lines.append(outputs ? "    var `\(key(parameter.name))`: \(type)\(isPresent ? "" : parameter.type.isList ? " = []" : " = nil")" : "    let `\(key(parameter.name))`: \(type)")
         }
         if outputs {
@@ -323,38 +323,11 @@ extension SpotTypes {
         } else {
             lines.append("\n    init(_ fields: [String: [String]]) {")
             for parameter in parameters {
-                lines.append("        `\(key(parameter.name))` = \(read(parameter, present: present(parameter)))")
+                lines.append("        `\(key(parameter.name))` = \(parameter.type.swiftRead("fields[\(quoted(parameter.name))]", present: present(parameter)))")
             }
             lines.append("    }")
         }
         return (lines + ["}", ""]).joined(separator: "\n")
-    }
-
-    private static func swiftType(_ parameter: Manifest.Parameter, present: Bool) -> String {
-        let one = switch parameter.type.kind {
-        case .number, .duration: "Double"
-        case .bool: "Bool"
-        default: "String"
-        }
-        if parameter.type.isList { return "[\(one)]" }
-        return present ? one : one + "?"
-    }
-
-    private static func read(_ parameter: Manifest.Parameter, present: Bool) -> String {
-        let field = "fields[\(quoted(parameter.name))]"
-        let convert = switch parameter.type.kind {
-        case .number, .duration: ".compactMap { Double($0) }"
-        case .bool: ".map { $0 == \"true\" }"
-        default: ""
-        }
-        if parameter.type.isList { return "(\(field) ?? [])\(convert)" }
-        let fallback = switch parameter.type.kind {
-        case .number, .duration: "0"
-        case .bool: "false"
-        default: "\"\""
-        }
-        let one = "(\(field) ?? [])\(convert).last"
-        return present ? "\(one) ?? \(fallback)" : one
     }
 
     private static func texts(_ name: String, _ parameter: Manifest.Parameter, present: Bool) -> String {

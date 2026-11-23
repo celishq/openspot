@@ -56,15 +56,14 @@ public final class SpotRuns {
     @ObservationIgnored public private(set) var acts: [(id: String, call: ScriptCall)] = []
     public private(set) var runningSummary: String?
     public private(set) var actSpot: String?
-    @ObservationIgnored var ticks: Task<Void, Never>?
+    @ObservationIgnored let clockWatch: DueWatch
     @ObservationIgnored var timers: SpotTimers
-    @ObservationIgnored var timerWatch: Task<Void, Never>?
+    @ObservationIgnored let timerWatch: DueWatch
     @ObservationIgnored var schedule: SpotSchedule
-    @ObservationIgnored var scheduleWatch: Task<Void, Never>?
+    @ObservationIgnored let scheduleWatch: DueWatch
     @ObservationIgnored var pushed = PushedRuns()
     @ObservationIgnored var runWaits: [String: Int] = [:]
     @ObservationIgnored var wanted: Set<String> = []
-    @ObservationIgnored var nextShow: Date?
     @ObservationIgnored var answerMatches = AnswerMatches()
     @ObservationIgnored private var lastSearch: SearchQuery?
     @ObservationIgnored private(set) var searchBuilds = 0
@@ -128,6 +127,9 @@ public final class SpotRuns {
         self.opening = opening
         self.clock = clock
         now = clock.now
+        clockWatch = DueWatch(clock: clock)
+        timerWatch = DueWatch(clock: clock, leeway: .seconds(1))
+        scheduleWatch = DueWatch(clock: clock, leeway: .seconds(1))
         self.stopPause = stopPause
         self.clipboardPause = clipboardPause
         self.loadPause = loadPause
@@ -260,12 +262,9 @@ public final class SpotRuns {
 
     public func quit() {
         hasQuit = true
-        ticks?.cancel()
-        ticks = nil
-        timerWatch?.cancel()
-        timerWatch = nil
-        scheduleWatch?.cancel()
-        scheduleWatch = nil
+        clockWatch.stop()
+        timerWatch.stop()
+        scheduleWatch.stop()
         pushed.endAll()
         clipboardWatch?.cancel()
         clipboardWatch = nil

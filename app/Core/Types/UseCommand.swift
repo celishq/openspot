@@ -5,6 +5,8 @@ struct UseCommand: Sendable {
     let method: String
     let words: [String]
     let slots: [CommandSlot]
+    let about: String
+    let use: SpotUse?
 
     private static let envNouns: Set<String> = [RunCall.noun.name, EmitCall.noun.name]
 
@@ -13,7 +15,7 @@ struct UseCommand: Sendable {
             noun.shown.filter { $0.rule.onlyPerson == nil && $0.rule.use.map(uses.contains) != false }.map { verb in
                 UseCommand(
                     noun: noun.name, method: verb.words.isEmpty ? "" : CommandSlot.identifier(verb.words), words: [noun.name] + verb.words,
-                    slots: CommandSlot.slots(of: verb.form)
+                    slots: verb.slots, about: verb.about, use: verb.rule.use
                 )
             }
         }

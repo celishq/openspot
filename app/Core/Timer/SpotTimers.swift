@@ -5,21 +5,18 @@ public struct SpotTimers: Equatable, Sendable {
     static let valueLimit = 4096
 
     public private(set) var list: [SpotTimer] = []
-    let file: URL?
+    let file: KeptFile<[SpotTimer]>
 
     init(file: URL?) {
-        self.file = file
+        self.file = KeptFile(url: file)
     }
 
     mutating func read() {
-        guard let file, let data = try? Data(contentsOf: file) else { return }
-        list = (try? Self.decoder.decode([SpotTimer].self, from: data)) ?? []
+        if let read = file.read(or: []) { list = read }
     }
 
     func write() {
-        guard let file else { return }
-        try? FileManager.default.createDirectory(at: file.deletingLastPathComponent(), withIntermediateDirectories: true)
-        try? Self.encoder.encode(list).write(to: file, options: .atomic)
+        file.write(list)
     }
 
     var next: Date? {
@@ -49,18 +46,5 @@ public struct SpotTimers: Equatable, Sendable {
         let due = list.filter { $0.at.map { $0 <= time } == true }
         if !due.isEmpty { list.removeAll { $0.at.map { $0 <= time } == true } }
         return due.sorted { ($0.at ?? .distantFuture) < ($1.at ?? .distantFuture) }
-    }
-
-    private static var encoder: JSONEncoder {
-        let encoder = JSONEncoder()
-        encoder.dateEncodingStrategy = .iso8601
-        encoder.outputFormatting = [.prettyPrinted, .sortedKeys]
-        return encoder
-    }
-
-    private static var decoder: JSONDecoder {
-        let decoder = JSONDecoder()
-        decoder.dateDecodingStrategy = .iso8601
-        return decoder
     }
 }

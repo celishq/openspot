@@ -1,24 +1,21 @@
 import Foundation
 
 public struct SpotSchedule: Equatable, Sendable {
-    let file: URL?
+    let file: KeptFile<[String: Date]>
     private(set) var isRead = false
     private var last: [String: Date] = [:]
 
     init(file: URL?) {
-        self.file = file
+        self.file = KeptFile(url: file)
     }
 
     mutating func read() {
         isRead = true
-        guard let file, let data = try? Data(contentsOf: file) else { return }
-        last = (try? Self.decoder.decode([String: Date].self, from: data)) ?? [:]
+        if let read = file.read(or: [:]) { last = read }
     }
 
     func write() {
-        guard let file else { return }
-        try? FileManager.default.createDirectory(at: file.deletingLastPathComponent(), withIntermediateDirectories: true)
-        try? Self.encoder.encode(last).write(to: file, options: .atomic)
+        file.write(last)
     }
 
     func last(_ line: CronLine, of spot: String) -> Date? {
@@ -37,18 +34,5 @@ public struct SpotSchedule: Equatable, Sendable {
 
     static func key(_ line: CronLine, of spot: String) -> String {
         "\(spot) \(line.text)"
-    }
-
-    private static var encoder: JSONEncoder {
-        let encoder = JSONEncoder()
-        encoder.dateEncodingStrategy = .iso8601
-        encoder.outputFormatting = [.prettyPrinted, .sortedKeys]
-        return encoder
-    }
-
-    private static var decoder: JSONDecoder {
-        let decoder = JSONDecoder()
-        decoder.dateDecodingStrategy = .iso8601
-        return decoder
     }
 }

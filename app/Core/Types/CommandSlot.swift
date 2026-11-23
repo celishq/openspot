@@ -9,6 +9,7 @@ struct CommandSlot: Equatable, Sendable {
     let kind: Kind
     let isRequired: Bool
     let option: String?
+    var isRepeated = false
 
     var key: String {
         Self.identifier(name.split(separator: "-").map(String.init))
@@ -44,27 +45,35 @@ struct CommandSlot: Equatable, Sendable {
         for match in groups?.matches(in: named, range: NSRange(named.startIndex..., in: named)) ?? [] {
             let text = { (index: Int) in Range(match.range(at: index), in: named).map { String(named[$0]) } }
             if let word = text(3) {
-                slots.append(positional(word, repeats: word.hasSuffix("..."), isRequired: true))
+                slots.append(positional(word, repeats: word.hasSuffix("..."), isRepeated: word.hasSuffix("..."), isRequired: true))
                 continue
             }
             let inside = text(1) ?? ""
+            let repeats = text(2) != nil
             let choices = inside.split(separator: "|").map { $0.split(separator: " ").map(String.init) }
-            if let first = choices.first?.first, first.hasPrefix("--") {
-                for choice in choices {
-                    guard let option = choice.first, option.hasPrefix("--") else { continue }
-                    slots.append(CommandSlot(name: String(option.dropFirst(2)), kind: choice.count > 1 ? .option : .flag, isRequired: false, option: option))
-                }
-                continue
+            for choice in choices {
+                guard let option = choice.first, option.hasPrefix("--") else { continue }
+                slots.append(CommandSlot(name: String(option.dropFirst(2)), kind: choice.count > 1 ? .option : .flag, isRequired: false, option: option, isRepeated: repeats))
             }
-            let word = choices.count > 1 ? "value" : inside.split(separator: " ").first.map(String.init) ?? "value"
-            slots.append(positional(word, repeats: text(2) != nil || inside.hasSuffix("..."), isRequired: false))
+            let words = choices.filter { $0.first?.hasPrefix("--") == false }
+            guard let first = words.first?.first else { continue }
+            slots.append(positional(words.count > 1 ? "value" : first, repeats: repeats || inside.hasSuffix("..."), isRepeated: repeats, isRequired: false))
         }
         return slots
     }
 
-    private static func positional(_ word: String, repeats: Bool, isRequired: Bool) -> CommandSlot {
+    static func schema(of slots: [CommandSlot]) -> [String: Any] {
+        var properties: [String: Any] = [:]
+        for slot in slots {
+            let one: [String: Any] = ["type": slot.kind == .flag ? "boolean" : "string"]
+            properties[slot.name] = slot.isRepeated || slot.kind == .words || slot.kind == .pairs ? ["type": "array", "items": one] : one
+        }
+        return ["type": "object", "properties": properties, "required": slots.filter(\.isRequired).map(\.name)]
+    }
+
+    private static func positional(_ word: String, repeats: Bool, isRepeated: Bool, isRequired: Bool) -> CommandSlot {
         let name = word.replacingOccurrences(of: "...", with: "").trimmingCharacters(in: CharacterSet(charactersIn: "<>"))
         let isPairs = repeats && (name == "input" || name.contains("="))
-        return CommandSlot(name: isPairs ? "input" : name, kind: isPairs ? .pairs : repeats ? .words : .word, isRequired: isRequired, option: nil)
+        return CommandSlot(name: isPairs ? "input" : name, kind: isPairs ? .pairs : repeats ? .words : .word, isRequired: isRequired, option: nil, isRepeated: isRepeated)
     }
 }

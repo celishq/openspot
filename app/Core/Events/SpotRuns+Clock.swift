@@ -35,18 +35,7 @@ extension SpotRuns {
     }
 
     private func schedule(_ due: Date?) {
-        guard due != nextShow || ticks == nil && due != nil else { return }
-        ticks?.cancel()
-        ticks = nil
-        nextShow = due
-        guard let due, !hasQuit else { return }
-        let wait = Duration.seconds(max(0, due.timeIntervalSince(now())))
-        ticks = Task { [weak self, sleep = clock.sleep] in
-            try? await sleep(wait, wait / 10)
-            guard !Task.isCancelled, let self else { return }
-            ticks = nil
-            nextShow = nil
-            updateClock()
-        }
+        guard due != clockWatch.due || !clockWatch.isWaiting && due != nil else { return }
+        clockWatch.wait(until: hasQuit ? nil : due, from: now()) { [weak self] in self?.updateClock() }
     }
 }

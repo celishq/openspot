@@ -13,9 +13,10 @@ extension SpotRuns {
             let names = bound.typedActions.map(\.id)
             return .refused("\(bound.name) has no action \(name). " + (names.isEmpty ? "It declares no [actions]." : "Name one of its [actions]: \(names.joined(separator: ", "))."))
         }
-        let declared = action.inputs.map(\.name)
-        if let unknown = (run.inputs.map(\.key) + (run.stdin.map { [$0.name] } ?? [])).first(where: { !declared.contains($0) }) {
-            return .refused("\(name) has no input \(unknown). Its inputs are: \(declared.joined(separator: ", ")).")
+        do {
+            try action.check.refuse(unknown: run.inputs.map(\.key) + (run.stdin.map { [$0.name] } ?? []))
+        } catch {
+            return .refused(Self.reason(error))
         }
         if let out = run.out, !action.outputs.contains(where: { $0.name == out }) {
             return .refused("\(name) has no output \(out). Its outputs are: \(action.outputs.map(\.name).joined(separator: ", ")).")
@@ -40,7 +41,7 @@ extension SpotRuns {
         }
         let inputs: [TextBlock.Field]
         do {
-            inputs = try action.inputs(await run.given())
+            inputs = try action.check.checked(await run.given())
         } catch {
             return .refused(Self.reason(error))
         }
@@ -95,8 +96,8 @@ extension SpotRuns {
     func emit(_ event: String, values: [TextBlock.Field], from spot: Spot) {
         for sheet in sheets.values {
             for binding in sheet.spot.bindings where binding.spot == spot.id {
-                let handler = "\(binding.name).\(event)"
-                if sheet.spot.triggers?.bindings.contains(handler) == true { sheet.hear(handler, values: values) }
+                let heard = Manifest.BoundEvent(binding: binding.name, event: event)
+                if sheet.spot.triggers?.bindings.contains(heard) == true { sheet.trigger(heard.key, inputs: values, key: "\(Manifest.Triggers.table).\(heard.key)") }
             }
         }
     }

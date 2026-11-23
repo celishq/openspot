@@ -150,18 +150,9 @@ struct SpotCalls {
 
     private static func handler(_ arguments: [String], of spot: Spot) throws -> (arguments: [String], inputs: [TextBlock.Field]) {
         guard spot.triggers != nil || !spot.typedActions.isEmpty, let name = arguments.first else { return (arguments, []) }
-        var given: [TextBlock.Field] = []
-        for word in arguments.dropFirst() {
-            guard let equals = word.firstIndex(of: "="), equals != word.startIndex else {
-                throw SpotError.fault("\(word) is not an input. Write <name>=<value>, such as url=https://example.com.")
-            }
-            given.append(.init(key: String(word[..<equals]), value: String(word[word.index(after: equals)...])))
-        }
+        let given = try Manifest.InputCheck.fields(of: Array(arguments.dropFirst()), as: .input)
         guard let action = spot.typedActions.first(where: { $0.id == name }) else { return ([name], given) }
-        if let unknown = given.first(where: { field in !action.inputs.contains { $0.name == field.key } }) {
-            throw SpotError.fault("\(name) has no input \(unknown.key). Its inputs are: \(action.inputs.map(\.name).joined(separator: ", ")).")
-        }
-        return ([name], try action.inputs(given))
+        return ([name], try action.check.checked(given))
     }
 
     func push(_ id: String, route: String?, title: String?, replace: Bool) -> CommandAPI.Work {

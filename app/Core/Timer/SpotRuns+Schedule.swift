@@ -2,8 +2,7 @@ import Foundation
 
 extension SpotRuns {
     func runSchedule() {
-        scheduleWatch?.cancel()
-        scheduleWatch = nil
+        scheduleWatch.stop()
         guard !hasQuit else { return }
         if !schedule.isRead { schedule.read() }
         let time = now()
@@ -24,7 +23,8 @@ extension SpotRuns {
                 if due <= time {
                     schedule.ran(line, of: id, at: time)
                     isChanged = true
-                    sheet.scheduled(line, late: Int(time.timeIntervalSince(due)))
+                    let inputs: [TextBlock.Field] = [.init(key: "cron", value: line.text), .init(key: "late", value: String(max(0, Int(time.timeIntervalSince(due)))))]
+                    sheet.trigger(Manifest.Triggers.schedule, inputs: inputs, key: "\(Manifest.Triggers.schedule).\(line.text)")
                     next = Self.earlier(next, line.next(after: time))
                 } else {
                     next = Self.earlier(next, due)
@@ -33,13 +33,7 @@ extension SpotRuns {
         }
         if sheets.values.contains(where: { !$0.spot.isBuiltIn && $0.spot.host == nil }), schedule.keep(only: kept) { isChanged = true }
         if isChanged { schedule.write() }
-        guard let next else { return }
-        let wait = Duration.seconds(max(0, next.timeIntervalSince(time)))
-        scheduleWatch = Task { [weak self, sleep = clock.sleep] in
-            try? await sleep(wait, min(wait / 10, .seconds(1)))
-            guard !Task.isCancelled, let self else { return }
-            runSchedule()
-        }
+        scheduleWatch.wait(until: next, from: time) { [weak self] in self?.runSchedule() }
     }
 
     private static func earlier(_ one: Date?, _ two: Date?) -> Date? {

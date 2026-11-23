@@ -25,7 +25,7 @@ final class PanelAskTests: PanelCase {
     }
 
     func testASettingWithOptionsIsAChoiceThatOpenspotKeepsWithNoCall() async throws {
-        try script("snooze", toml: "title = 'Snooze'\n[settings]\nmorning = { type = 'choice', options = ['7:00', '8:00', '9:00'] }", "touch '\(called.path)'")
+        try script("snooze", toml: "title = 'Snooze'\n[settings]\nmorning = { type = 'choice', options = ['7:00', '8:00', '9:00'] }", "[ \"$1\" = show ] || touch '\(called.path)'")
         await model.reload()
         model.isShown = true
         model.panelWillShow()

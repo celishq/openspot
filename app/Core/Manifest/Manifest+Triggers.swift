@@ -21,7 +21,7 @@ extension Manifest {
         public let drop: [String]
         public let events: [String]
         public let filters: [String: AnswerPattern]
-        public let bindings: [String]
+        public let bindings: [BoundEvent]
 
         init() {
             commands = []
@@ -45,7 +45,7 @@ extension Manifest {
             var drop: [String] = []
             var events: [String] = []
             var filters: [String: AnswerPattern] = [:]
-            var bindings: [String] = []
+            var bindings: [BoundEvent] = []
             for key in table.keys {
                 let name = Manifest.path(key).joined(separator: ".")
                 let value = table[key]
@@ -92,7 +92,7 @@ extension Manifest {
                     }
                 case let event where SpotEvent.isName(event) && !Self.spaces.contains(String(event.prefix { $0 != "." })):
                     guard value == .boolean(true) else { throw fault(name, "takes true.") }
-                    bindings.append(event)
+                    bindings.append(BoundEvent(key: event))
                 default:
                     let known = (Self.keys + Self.events).joined(separator: ", ")
                     throw SpotError.fault("\(Manifest.fileName): \(section) has an unknown event: \(name). Use \(known), or <binding>.<event>.")
@@ -132,12 +132,21 @@ extension Manifest {
             return ShowEvents(moments: moments, answers: search, searchesSheet: events.contains(SpotEvent.sheetText), filters: filters)
         }
 
-        static func binding(of key: String) -> String {
-            String(key.prefix { $0 != "." })
+        func check(_ manifest: Manifest, name: String) throws {
+            if let bound = bindings.first(where: { bound in !manifest.bindings.contains { $0.name == bound.binding } }) {
+                throw SpotError.fault("\(name) has [on] \(bound.key), which names no binding \(bound.binding). Add it to [bindings], such as \(bound.binding) = { spot = \"<id>\" }")
+            }
+            if let action = manifest.actions.first(where: { handlers.contains($0.id) }) {
+                throw SpotError.fault("\(name) has \(action.section), which takes the name of a handler that its [on] calls. Give the action another ID")
+            }
         }
 
-        static func event(of key: String) -> String {
-            String(key.drop { $0 != "." }.dropFirst())
+        func unheard(by name: String, through spots: [Binding], declared: [String: [String]]) -> String? {
+            for bound in bindings {
+                guard let spot = spots.first(where: { $0.name == bound.binding })?.spot, let events = declared[spot], !events.contains(bound.event) else { continue }
+                return "\(name) has [on] \(bound.key), but \(spot) declares no event \(bound.event). " + (events.isEmpty ? "It declares no [events]." : "Name one of its [events]: \(events.joined(separator: ", "))")
+            }
+            return nil
         }
 
         private static func isWord(_ word: String) -> Bool {

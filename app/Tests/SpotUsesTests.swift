@@ -61,7 +61,7 @@ final class SpotUsesTests: SpotRunsCase {
         _ = try scanned()
 
         try await press()
-        try await pause()
+        try await wait("the use counted") { self.runs.usage.counts["script"]?.calls.isEmpty == false }
 
         XCTAssertEqual(toasts, [])
     }

@@ -3,41 +3,43 @@ import Foundation
 extension Manifest {
     public struct Setting: Equatable, Sendable {
         static let table = "settings"
-        static let secret = "secret"
 
-        public let id: String
-        public let title: String
-        public let icon: String?
-        public let options: [String]
-        public let defaultValue: String?
-        public let valueType: ValueType?
-        let section: String
-        let type: String?
-
-        init(id: String) {
-            self.id = id
-            section = ""
-            title = id.prefix(1).uppercased() + id.dropFirst()
-            icon = nil
-            type = nil
-            options = []
-            defaultValue = nil
-            valueType = nil
-        }
+        public let parameter: Parameter
 
         init(_ parameter: Parameter) {
-            id = parameter.name
-            section = "[\(Self.table)] \(parameter.name)"
-            title = parameter.title ?? parameter.name.prefix(1).uppercased() + parameter.name.dropFirst()
-            icon = parameter.icon
-            type = parameter.type.name
-            options = parameter.options
-            defaultValue = parameter.defaultValue
-            valueType = parameter.type
+            self.parameter = parameter
+        }
+
+        init(id: String) {
+            parameter = Parameter(name: id, type: ValueType(.text), isRequired: false)
+        }
+
+        public var id: String {
+            parameter.name
+        }
+
+        public var title: String {
+            parameter.title ?? id.prefix(1).uppercased() + id.dropFirst()
+        }
+
+        public var icon: String? {
+            parameter.icon
+        }
+
+        public var options: [String] {
+            parameter.options
+        }
+
+        public var defaultValue: String? {
+            parameter.defaultValue
         }
 
         public var isSecret: Bool {
-            type == Self.secret
+            parameter.type == ValueType(.secret)
+        }
+
+        var section: String {
+            "[\(Self.table)] \(id)"
         }
 
         static func isKey(_ id: String) -> Bool {

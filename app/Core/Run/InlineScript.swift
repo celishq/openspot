@@ -339,7 +339,7 @@ final class InlineScript: @unchecked Sendable {
     private func handle(_ call: InlineCall, name: String, handlers: JSValue, in context: JSContext) {
         let fields = TextBlock.blocks(in: call.input ?? "").flatMap(\.fields)
         let input = Self.values(of: fields, prefix: "input.", types: shapes[name]?.inputs ?? [])
-        let settings = Self.values(of: fields, prefix: "setting.", types: spot.settings.compactMap { setting in setting.valueType.map { Manifest.Parameter(name: setting.id, type: $0) } })
+        let settings = Self.values(of: fields, prefix: "setting.", types: spot.settings.map(\.parameter))
         let token = nextToken
         nextToken += 1
         let caller = callers?.issue(for: spot, reason: call.reason)
@@ -367,13 +367,7 @@ final class InlineScript: @unchecked Sendable {
                 values[name] = texts.count == 1 ? texts[0] : texts
                 continue
             }
-            let typed = texts.map { text -> Any in
-                switch type.kind {
-                case .number, .duration: Double(text) ?? text
-                case .bool: text == "true"
-                default: text
-                }
-            }
+            let typed = texts.map(type.script)
             values[name] = type.isList ? typed : typed.last
         }
         for type in types where type.type.isList && values[type.name] == nil && type.isRequired {
@@ -465,8 +459,7 @@ final class InlineScript: @unchecked Sendable {
     private func answered(_ arguments: [String], _ answer: CommandAnswer) -> [String: Any] {
         var result: [String: Any] = ["code": answer.code, "output": answer.output, "errors": answer.errors.hasSuffix("\n") ? String(answer.errors.dropLast()) : answer.errors]
         if arguments.first == RunCall.noun.name, arguments.count > 1, answer.code == 0 {
-            let target = arguments[1]
-            let action = bound[Manifest.Triggers.binding(of: target)]?.typedActions.first { $0.id == Manifest.Triggers.event(of: target) }
+            let action = RunCall.target(arguments[1]).flatMap { target in bound[target.binding]?.typedActions.first { $0.id == target.action } }
             let fields = TextBlock.blocks(in: answer.output).flatMap(\.fields).filter { $0.key.hasPrefix(RootKey.outputPrefix) }
             result["values"] = Self.values(of: fields, prefix: RootKey.outputPrefix, types: action?.outputs ?? [])
         }

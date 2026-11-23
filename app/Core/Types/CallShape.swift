@@ -30,9 +30,9 @@ struct CallShape: Equatable, Sendable {
             }
             shapes.append(CallShape(name: name, inputs: inputs))
         }
-        for key in spot.triggers?.bindings ?? [] {
-            let event = bound[Manifest.Triggers.binding(of: key)]?.events.first { $0.name == Manifest.Triggers.event(of: key) }
-            shapes.append(CallShape(name: key, inputs: event?.values ?? [], isLoose: event == nil))
+        for heard in spot.triggers?.bindings ?? [] {
+            let event = bound[heard.binding]?.events.first { $0.name == heard.event }
+            shapes.append(CallShape(name: heard.key, inputs: event?.values ?? [], isLoose: event == nil))
         }
         return shapes
     }

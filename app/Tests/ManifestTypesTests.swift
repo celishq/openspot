@@ -64,6 +64,21 @@ final class ManifestTypesTests: XCTestCase {
         XCTAssertEqual(manifest.settings.map(\.isSecret), [false, true, false])
     }
 
+    func testAnActionRefusesAnInputItDoesNotDeclareAsAnEventRefusesAValue() throws {
+        let manifest = try Manifest(text: "[actions.take]\ninputs.code = 'number'\n\n[events.picked]\nnote = 'text'", folder: "/spots/picker.spot").script("picker.sh")
+        let given = [TextBlock.Field(key: "colour", value: "red")]
+
+        let reasons = [try XCTUnwrap(manifest.actions.first).check, try XCTUnwrap(manifest.events.first).check].map { check in
+            do {
+                return "passed with \(try check.checked(given))"
+            } catch {
+                return SpotRuns.reason(error)
+            }
+        }
+
+        XCTAssertEqual(reasons, ["take has no input colour. Its inputs are: code.", "picked has no value colour. Its values are: note."])
+    }
+
     func testATypedSettingTakesAnIcon() throws {
         let manifest = try Manifest(text: "[settings]\nmorning = { type = \"choice\", icon = \"sunrise\", options = [\"8:00\"] }", folder: "/spots/snooze.spot").script("snooze.sh")
 

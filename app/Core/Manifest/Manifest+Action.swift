@@ -66,20 +66,8 @@ extension Manifest {
 }
 
 extension Manifest.Action {
-    func inputs(_ given: [TextBlock.Field]) throws -> [TextBlock.Field] {
-        var inputs: [TextBlock.Field] = []
-        for input in self.inputs {
-            var values = given.filter { $0.key == input.name && !$0.value.isEmpty }.map(\.value)
-            if values.isEmpty, let defaultValue = input.defaultValue { values = [defaultValue] }
-            if values.isEmpty {
-                if input.isRequired { throw SpotError.fault("\(id) needs \(input.name), which is \(input.type.article).") }
-                continue
-            }
-            if let fault = input.fault(in: values) { throw SpotError.fault("\(id) cannot run: \(fault).") }
-            inputs += values.map { .init(key: input.name, value: $0) }
-        }
-        let names = Set(self.inputs.map(\.name))
-        return inputs + given.filter { !names.contains($0.key) }
+    var check: Manifest.InputCheck {
+        Manifest.InputCheck(owner: id, kind: .input, parameters: inputs)
     }
 
     func fault(in outputs: [TextBlock.Field]) -> String? {

@@ -18,22 +18,8 @@ extension Manifest {
             }
         }
 
-        func values(_ given: [TextBlock.Field]) throws -> [TextBlock.Field] {
-            if let unknown = given.first(where: { field in !values.contains { $0.name == field.key } }) {
-                throw SpotError.fault("\(name) has no value \(unknown.key). Its values are: \(values.map(\.name).joined(separator: ", ")).")
-            }
-            var checked: [TextBlock.Field] = []
-            for value in values {
-                var texts = given.filter { $0.key == value.name && !$0.value.isEmpty }.map(\.value)
-                if texts.isEmpty, let defaultValue = value.defaultValue { texts = [defaultValue] }
-                if texts.isEmpty {
-                    if value.isRequired { throw SpotError.fault("\(name) needs \(value.name), which is \(value.type.article).") }
-                    continue
-                }
-                if let fault = value.fault(in: texts) { throw SpotError.fault("\(name) cannot be sent: \(fault).") }
-                checked += texts.map { .init(key: value.name, value: $0) }
-            }
-            return checked
+        var check: InputCheck {
+            InputCheck(owner: name, kind: .value, parameters: values)
         }
     }
 }

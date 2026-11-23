@@ -231,12 +231,13 @@ final class ItemsTests: PanelCase {
         let entry = try XCTUnwrap(model.openEntry)
         let actions = entry.spot.actions
 
+        let sheet = try XCTUnwrap(model.runs.sheets["items"])
         model.run(try XCTUnwrap(actions.first { $0.id == "star" }), on: (entry, try item("a")))
-        try await wait("the star") { self.calls.contains("star a") }
+        try await wait("the end of the star") { self.calls.contains("star a") && sheet.calls.isEmpty }
         XCTAssertEqual(host.dismissals, 0)
         model.run(try XCTUnwrap(actions.first { $0.id == "delete" }), on: (entry, try item("a")))
 
-        try await wait("the delete") { self.calls.contains("delete a") }
+        try await wait("the close after the delete") { self.calls.contains("delete a") && self.host.dismissals > 0 }
         XCTAssertEqual(host.dismissals, 1)
     }
 

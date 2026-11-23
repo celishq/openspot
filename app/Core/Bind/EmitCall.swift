@@ -9,14 +9,11 @@ enum EmitCall: NounCall {
             "Sends one of the [events] of the calling spot, with its values checked. Each spot that binds it and lists <binding>.<event> in its [on] gets a call of that handler. It runs only in a run of a spot."
         ) { words in
             guard let event = words.rest.first else { return nil }
-            var values: [TextBlock.Field] = []
-            for word in words.rest.dropFirst() {
-                guard let equals = word.firstIndex(of: "="), equals != word.startIndex else {
-                    return CallFault.refused("\(word) is not a value. Write <name>=<value>, such as url=https://example.com.")
-                }
-                values.append(.init(key: String(word[..<equals]), value: String(word[word.index(after: equals)...])))
+            do {
+                return Self.emit(event: event, values: try Manifest.InputCheck.fields(of: Array(words.rest.dropFirst()), as: .value))
+            } catch {
+                return CallFault.refused(SpotRuns.reason(error))
             }
-            return Self.emit(event: event, values: values)
         }
     ])
 
@@ -30,7 +27,7 @@ enum EmitCall: NounCall {
         }
         let values: [TextBlock.Field]
         do {
-            values = try event.values(given)
+            values = try event.check.checked(given)
         } catch {
             return { CommandAnswer(errors: SpotRuns.reason(error) + "\n", code: 2) }
         }

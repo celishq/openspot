@@ -13,8 +13,10 @@ struct FieldValues: Equatable, Sendable {
         for field in spot.settings {
             let value = field.isSecret ? kept[field.id] : plain[field.id].flatMap { $0.isEmpty ? nil : $0 } ?? field.defaultValue
             guard let value, !value.isEmpty else { continue }
-            if field.isSecret { secrets.append(value) }
-            if field.isSecret, field.valueType != nil { continue }
+            if field.isSecret {
+                secrets.append(value)
+                continue
+            }
             lines.append(.init(key: field.id, value: value))
         }
         self.settings = lines

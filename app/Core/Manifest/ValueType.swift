@@ -52,6 +52,64 @@ public struct ValueType: Equatable, Sendable {
         }
     }
 
+    func schema(options: [String]) -> [String: Any] {
+        switch kind {
+        case .text, .secret: ["type": "string"]
+        case .number: ["type": "number"]
+        case .bool: ["type": "boolean"]
+        case .date: ["type": "string", "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}"]
+        case .duration: ["type": "number", "minimum": 0]
+        case .url: ["type": "string", "format": "uri"]
+        case .file: ["type": "string", "pattern": "^/"]
+        case .choice: ["enum": options]
+        }
+    }
+
+    func script(options: [String]) -> String {
+        let one = switch kind {
+        case .number, .duration: "number"
+        case .bool: "boolean"
+        case .choice: options.map(SpotTypes.quoted).joined(separator: " | ")
+        default: "string"
+        }
+        guard isList else { return one }
+        return kind == .choice ? "(\(one))[]" : "\(one)[]"
+    }
+
+    func swift(present: Bool) -> String {
+        let one = switch kind {
+        case .number, .duration: "Double"
+        case .bool: "Bool"
+        default: "String"
+        }
+        if isList { return "[\(one)]" }
+        return present ? one : one + "?"
+    }
+
+    func swiftRead(_ field: String, present: Bool) -> String {
+        let convert = switch kind {
+        case .number, .duration: ".compactMap { Double($0) }"
+        case .bool: ".map { $0 == \"true\" }"
+        default: ""
+        }
+        if isList { return "(\(field) ?? [])\(convert)" }
+        let fallback = switch kind {
+        case .number, .duration: "0"
+        case .bool: "false"
+        default: "\"\""
+        }
+        let one = "(\(field) ?? [])\(convert).last"
+        return present ? "\(one) ?? \(fallback)" : one
+    }
+
+    func script(_ text: String) -> Any {
+        switch kind {
+        case .number, .duration: Double(text) ?? text
+        case .bool: text == "true"
+        default: text
+        }
+    }
+
     private static func date(_ text: String) -> Date? {
         let formatter = ISO8601DateFormatter()
         if let date = formatter.date(from: text) { return date }

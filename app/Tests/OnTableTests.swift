@@ -36,7 +36,7 @@ final class OnTableTests: XCTestCase {
         XCTAssertEqual(triggers.schedule.map(\.text), ["0 9 * * 1-5", "*/15 * * * *"])
         XCTAssertEqual(spot.on?.seconds, 60)
         XCTAssertEqual(spot.drop, ["png", "folder"])
-        XCTAssertEqual(triggers.bindings, ["picker.picked"])
+        XCTAssertEqual(triggers.bindings.map(\.key), ["picker.picked"])
     }
 
     func testEachEventOfTheEventsTableIsAKeyOfItsOwn() throws {

@@ -118,10 +118,13 @@ final class CallInputTests: SpotRunsCase {
         """)
         let sheet = try sheet()
         try secrets(["token": marker])
+        var failures: [String] = []
+        sheet.onReport = { if case .failure(let text) = $0 { failures.append(text) } }
 
         sheet.run(CommandAction(id: "login", title: "Log in", scope: .spot), item: nil)
 
-        try await wait("the failure") { sheet.failure == "Cannot reach the server with •••" }
+        try await wait("the failure") { !failures.isEmpty }
+        XCTAssertEqual(failures, ["Cannot reach the server with •••"])
     }
 
     func testAPlainFieldNeverGetsTheSecretThatAnOlderHeaderKeptUnderItsKey() async throws {
