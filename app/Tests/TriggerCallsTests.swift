@@ -146,7 +146,7 @@ final class TriggerCallsTests: SpotRunsCase {
         _ = try spot("\"power.change\" = true")
         try await wait("the first show") { self.calls == ["show|"] && !self.runs.isShowing }
 
-        runs.raise(.named(SpotEvent.powerChange, value: "ac"))
+        runs.raise(.named(EventName.powerChange, value: "ac"))
 
         try await wait("the event") { self.calls == ["show|", "power.change|input.value=ac "] }
     }
@@ -156,7 +156,7 @@ final class TriggerCallsTests: SpotRunsCase {
         _ = try spot("\"clipboard.change\" = true", view: "show|clipboard.change")
         try await wait("the first show") { self.calls == ["show|"] && !self.runs.isShowing }
 
-        runs.raise(.named(SpotEvent.clipboard, value: nil))
+        runs.raise(.named(EventName.clipboard, value: nil))
 
         try await wait("the event") { self.calls == ["show|", "clipboard.change|"] }
     }
@@ -173,7 +173,7 @@ final class TriggerCallsTests: SpotRunsCase {
         _ = try sheet()
         try await wait("the first show") { !self.runs.isShowing && self.log() == ["show"] }
 
-        runs.raise(.named(SpotEvent.powerChange, value: "ac"))
+        runs.raise(.named(EventName.powerChange, value: "ac"))
 
         try await wait("the refusal") { self.log("errors").contains { $0.contains("cannot run in a show") } }
     }

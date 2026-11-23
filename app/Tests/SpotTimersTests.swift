@@ -149,6 +149,16 @@ final class SpotTimersTests: PanelCase {
         XCTAssertEqual(removed.code, 0)
     }
 
+    func testATimerFileWithATimerOfNoActionIsSkippedAsAWhole() async throws {
+        try FileManager.default.createDirectory(at: timersFile.deletingLastPathComponent(), withIntermediateDirectories: true)
+        let at = time(in: 60)
+        try "[{\"id\": \"a\", \"spot\": \"later\", \"at\": \"\(at)\", \"action\": \"wake\", \"inputs\": []}, {\"id\": \"b\", \"spot\": \"later\", \"at\": \"\(at)\"}]".write(to: timersFile, atomically: true, encoding: .utf8)
+
+        model.runs.launched()
+
+        XCTAssertEqual(model.runs.timers(of: "later"), [])
+    }
+
     func testThePersonCannotAddATimer() async throws {
         let answer = try await call(["timer", "add", time(in: 60)], as: nil)
 

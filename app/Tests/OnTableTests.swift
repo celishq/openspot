@@ -34,31 +34,25 @@ final class OnTableTests: XCTestCase {
         XCTAssertEqual(triggers.commands, ["snooze", "later"])
         XCTAssertEqual(spot.triggers.search?.text, "^https?://")
         XCTAssertEqual(triggers.schedule.map(\.text), ["0 9 * * 1-5", "*/15 * * * *"])
-        XCTAssertEqual(spot.triggers.seconds, 60)
+        XCTAssertEqual(spot.triggers.every, 60)
         XCTAssertEqual(spot.triggers.drop, ["png", "folder"])
         XCTAssertEqual(triggers.bindings.map(\.key), ["picker.picked"])
     }
 
     func testEachEventOfTheEventsTableIsAKeyOfItsOwn() throws {
-        for event in SpotEvent.known where event != SpotEvent.searchText {
+        for event in EventName.declarable {
             let loaded = try load("[on]\n\"\(event)\" = true")
 
             let spot = try XCTUnwrap(loaded.spot, "\(event): \(loaded.refused.joined())")
             XCTAssertEqual(spot.triggers.events, [event])
-            let moment: Manifest.Triggers.Moment = switch event {
-            case SpotEvent.sheetOpen, SpotEvent.sheetText: .sheet
-            case SpotEvent.panelOpen: .panel
-            default: .event(event)
-            }
-            XCTAssertEqual(spot.triggers.has(moment), true, event)
         }
     }
 
     func testAnEventWithAValueTakesARegularExpressionOfIt() throws {
         let spot = try XCTUnwrap(try load("[on]\n\"power.change\" = \"^ac$\"").spot)
 
-        XCTAssertEqual(spot.triggers.admits(SpotEvent.powerChange, value: "ac"), true)
-        XCTAssertEqual(spot.triggers.admits(SpotEvent.powerChange, value: "battery"), false)
+        XCTAssertEqual(spot.triggers.admits(EventName.powerChange, value: "ac"), true)
+        XCTAssertEqual(spot.triggers.admits(EventName.powerChange, value: "battery"), false)
         for event in ["system.load", "disk.mount", "device.connect"] {
             let other = try XCTUnwrap(try load("[on]\n\"\(event)\" = \"^a$\"").spot, event)
             XCTAssertEqual(other.triggers.admits(event, value: "a"), true, event)

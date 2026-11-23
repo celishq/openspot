@@ -320,7 +320,7 @@ public final class SpotRuns {
     func wants(_ spot: Spot) -> Bool {
         if isInMenuBar(spot) || spot.mode == .stay && spot.showsAtLaunch { return true }
         guard isPanelOpen else { return false }
-        return spot.mode.stays && spot.triggers.search != nil || spot.triggers.has(.panel) || grid.contains(spot.id)
+        return spot.mode.stays && spot.triggers.search != nil || spot.triggers.showsOnPanel || grid.contains(spot.id)
     }
 
     public func take(grid next: Set<String>) {

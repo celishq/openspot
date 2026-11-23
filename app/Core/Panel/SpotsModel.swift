@@ -407,7 +407,7 @@ public final class SpotsModel {
         let stamps = fileStamps
         await reload()
         guard isShown else { return }
-        for entry in entries where entry.spot.triggers.has(.panel) && fileStamps[entry.id] != stamps[entry.id] {
+        for entry in entries where entry.spot.triggers.showsOnPanel && fileStamps[entry.id] != stamps[entry.id] {
             sheets[entry.id]?.show(need: .change)
         }
     }
@@ -530,7 +530,7 @@ public final class SpotsModel {
     }
 
     public func updateIsReady(_ version: String) {
-        runs.raise(.named(SpotEvent.appUpdate, value: version, showsEachSpot: true))
+        runs.raise(.named(EventName.appUpdate, value: version, showsEachSpot: true))
     }
 
     public func allows(_ reason: String) async -> Bool {

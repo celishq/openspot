@@ -33,7 +33,7 @@ final class SpotRunStateTests: XCTestCase {
     }
 
     private func opened(searches: Bool = false, frame: String = "item=a\ntitle=A\n") async -> (SpotRun, FakeMode) {
-        let (sheet, link) = sheet(triggers: Manifest.Triggers(events: [searches ? SpotEvent.sheetText : SpotEvent.sheetOpen]))
+        let (sheet, link) = sheet(triggers: Manifest.Triggers(events: [searches ? EventName.sheetText : EventName.sheetOpen]))
         sheet.open {}
         await link.frame(frame, of: link.sent[0])
         await link.end(link.sent[0])
@@ -198,7 +198,7 @@ final class SpotRunStateTests: XCTestCase {
     }
 
     private func readInMenuBar() async -> (SpotRun, FakeMode, Int) {
-        let (sheet, link) = inMenuBar(triggers: Manifest.Triggers(events: [SpotEvent.panelOpen, SpotEvent.sheetOpen, "clipboard.change"]))
+        let (sheet, link) = inMenuBar(triggers: Manifest.Triggers(events: [EventName.panelOpen, EventName.sheetOpen, "clipboard.change"]))
         for call in link.sent { await link.end(call) }
         sheet.show(need: .change, event: .panel)
         return (sheet, link, link.sent.count - 1)

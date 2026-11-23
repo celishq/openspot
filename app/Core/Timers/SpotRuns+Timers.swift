@@ -32,8 +32,7 @@ extension SpotRuns {
         let due = timers.takeDue(at: time)
         if !due.isEmpty { timers.write() }
         for timer in due {
-            guard let action = timer.action else { continue }
-            sheets[timer.spot]?.trigger(Message(.press(action), inputs: (timer.inputs ?? []).map { .init(key: $0.name, value: $0.value) }), key: "\(SpotTimer.call).\(timer.id)")
+            sheets[timer.spot]?.trigger(Message(.press(timer.action), inputs: timer.inputs.map { .init(key: $0.name, value: $0.value) }), key: "\(SpotTimer.call).\(timer.id)")
         }
         timerWatch.wait(until: timers.next, from: time) { [weak self] in self?.scheduleTimers() }
     }

@@ -11,7 +11,7 @@ final class SystemSettingsSpotTests: SampleSpotsCase {
     func testSystemSettingsReadsWhenThePanelOpens() throws {
         let read = try XCTUnwrap(try scan.spots.first { $0.name == "System Settings" }?.triggers)
 
-        XCTAssertTrue(read.has(.panel))
+        XCTAssertTrue(read.showsOnPanel)
     }
 
     func testAPaneAndItsSectionsAreRowsInTheLanguageOfTheMac() async throws {

@@ -9,9 +9,9 @@ extension Manifest {
         static let every = Handler.every.name
         static let drop = Handler.drop.name
         static let keys = [command, search, schedule, every, drop]
-        static let events = SpotEvent.known
+        static let events = EventName.declarable
         private static let named = [Handler.show, .press, .drag]
-        private static let spaces = Set(SpotEvent.known.compactMap { $0.split(separator: ".").first.map(String.init) } + ["clock", "timer"])
+        private static let spaces = Set(EventName.declarable.compactMap { $0.split(separator: ".").first.map(String.init) } + ["clock", "timer"])
 
         public let commands: [String]
         public let search: AnswerPattern?
@@ -22,17 +22,9 @@ extension Manifest {
         public let events: [String]
         public let filters: [String: AnswerPattern]
         public let bindings: [BoundEvent]
-        public let moments: [Moment]
 
-        public enum Moment: Equatable, Sendable {
-            case panel
-            case sheet
-            case every(TimeInterval)
-            case event(String)
-        }
-
-        public static let panel = Triggers(events: [SpotEvent.panelOpen])
-        public static let sheet = Triggers(events: [SpotEvent.sheetOpen])
+        public static let panel = Triggers(events: [EventName.panelOpen])
+        public static let sheet = Triggers(events: [EventName.sheetOpen])
 
         public init(
             events: [String] = [], every: Int? = nil, search: AnswerPattern? = nil, lists: Bool = false, drop: [String] = [], commands: [String] = [],
@@ -47,17 +39,6 @@ extension Manifest {
             self.events = events
             self.filters = filters
             self.bindings = bindings
-            var moments: [Moment] = []
-            for event in events {
-                switch event {
-                case SpotEvent.sheetOpen, SpotEvent.sheetText: if !moments.contains(.sheet) { moments.append(.sheet) }
-                case SpotEvent.panelOpen: moments.append(.panel)
-                default: moments.append(.event(event))
-                }
-            }
-            if let every { moments.append(.every(TimeInterval(every))) }
-            if lists, !moments.contains(.panel), !moments.contains(.sheet), every == nil { moments.append(.sheet) }
-            self.moments = moments
         }
 
         init(section: String, table: ConfigDocument.Table) throws {
@@ -108,14 +89,14 @@ extension Manifest {
                     case .boolean(let isOn)?:
                         if isOn { events.append(event) }
                     case .string(let text)?:
-                        guard !SpotEvent.valueless.contains(event) else { throw fault(name, "has no value to match, so it takes only true.") }
+                        guard !EventName.valueless.contains(event) else { throw fault(name, "has no value to match, so it takes only true.") }
                         guard let pattern = AnswerPattern(text) else { throw fault(name, "is not a regular expression: \(text).") }
                         events.append(event)
                         filters[event] = pattern
                     default:
                         throw fault(name, "takes true, or a regular expression of its value.")
                     }
-                case let event where SpotEvent.isName(event) && !Self.spaces.contains(String(event.prefix { $0 != "." })):
+                case let event where EventName.isName(event) && !Self.spaces.contains(String(event.prefix { $0 != "." })):
                     guard value == .boolean(true) else { throw fault(name, "takes true.") }
                     bindings.append(BoundEvent(key: event))
                 default:
@@ -127,7 +108,7 @@ extension Manifest {
         }
 
         var handlers: [Handler] {
-            var handlers = Self.named + events.filter { !ShowEvent.moments.contains($0) }.map(Handler.event)
+            var handlers = Self.named + events.filter { !ShowEvent.options.contains($0) }.map(Handler.event)
             if !commands.isEmpty { handlers.append(.command) }
             if search != nil { handlers.append(.search) }
             if !schedule.isEmpty { handlers.append(.schedule) }
@@ -136,29 +117,30 @@ extension Manifest {
             return handlers
         }
 
+        private static let opens = [EventName.panelOpen, EventName.sheetOpen, EventName.sheetText]
+
         public var shows: Bool {
-            !moments.isEmpty
+            !events.isEmpty || every != nil || lists
         }
 
-        public func has(_ moment: Moment) -> Bool {
-            moments.contains(moment)
+        public var showsOnPanel: Bool {
+            events.contains(EventName.panelOpen)
         }
 
-        public var seconds: TimeInterval? {
-            for case .every(let seconds) in moments { return seconds }
-            return nil
+        public var opensSheet: Bool {
+            events.contains(EventName.sheetOpen) || searchesSheet
         }
 
         public var searchesSheet: Bool {
-            events.contains(SpotEvent.sheetText)
+            events.contains(EventName.sheetText)
         }
 
         public var waitsForEvents: Bool {
-            moments.contains { if case .event = $0 { true } else { false } } && moments.allSatisfy { if case .event = $0 { true } else { false } }
+            !events.isEmpty && every == nil && !lists && !events.contains(where: Self.opens.contains)
         }
 
         public func admits(_ name: String, value: String?) -> Bool {
-            guard has(.event(name)) else { return false }
+            guard events.contains(name), !Self.opens.contains(name) else { return false }
             guard let filter = filters[name] else { return true }
             return filter.matches(value ?? "")
         }

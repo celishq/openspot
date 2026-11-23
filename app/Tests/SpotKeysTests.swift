@@ -98,8 +98,17 @@ final class SpotKeysTests: XCTestCase {
         for toml in ["[on]\nsearch = true", "[on]\n\"clipboard.change\" = true\nsearch = true"] {
             let spot = try spot(toml)
 
-            XCTAssertEqual(spot.triggers.has(.sheet), true, toml)
+            XCTAssertEqual(spot.showsInSheet, true, toml)
             XCTAssertTrue(spot.showsOfferedItems, toml)
+        }
+    }
+
+    func testASearchThatListsShowsItsListInASheetOnlyWithNoPanelOpenAndNoEvery() throws {
+        for toml in ["[on]\nsearch = true\n\"panel.open\" = true", "[on]\nsearch = true\nevery = 60"] {
+            let spot = try spot(toml)
+
+            XCTAssertFalse(spot.showsOfferedItems, toml)
+            XCTAssertFalse(spot.showsInSheet, toml)
         }
     }
 

@@ -253,16 +253,19 @@ public struct Spot: Equatable, Sendable {
     }
 
     public var showsState: Bool {
-        (self.triggers.has(.panel) || self.triggers.has(.event(SpotEvent.appLaunch))) && !self.triggers.lists && !self.mode.stays
+        (self.triggers.showsOnPanel || self.showsAtLaunch) && !self.triggers.lists && !self.mode.stays
     }
 
     public var showsAtLaunch: Bool {
-        self.triggers.has(.event(SpotEvent.appLaunch))
+        self.triggers.events.contains(EventName.appLaunch)
     }
 
     public var showsOfferedItems: Bool {
-        let triggers = self.triggers
-        return triggers.shows && triggers.lists && !triggers.has(.panel) && triggers.seconds == nil
+        self.triggers.lists && !self.triggers.showsOnPanel && self.triggers.every == nil
+    }
+
+    public var showsInSheet: Bool {
+        self.triggers.opensSheet || self.showsOfferedItems
     }
 
     public var takesHandlers: Bool {

@@ -67,7 +67,7 @@ public actor AccountSheet {
     public nonisolated var spot: Spot {
         Spot(
             id: Self.id, name: "Account", url: URL(fileURLWithPath: NSTemporaryDirectory()), kind: .list, icon: .symbol("person.crop.circle"),
-            subtitle: "Signs what you publish", triggers: Manifest.Triggers(events: [SpotEvent.sheetOpen], lists: true), host: .account(self), dataName: "account",
+            subtitle: "Signs what you publish", triggers: Manifest.Triggers(events: [EventName.sheetOpen], lists: true), host: .account(self), dataName: "account",
             isOnGrid: false, views: ["card": Self.card], pages: Page.allCases.map(\.rawValue), uses: [.app, .account, .clipboard]
         ).builtIn()
     }

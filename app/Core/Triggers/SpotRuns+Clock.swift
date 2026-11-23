@@ -23,7 +23,7 @@ extension SpotRuns {
                 }
                 continue
             }
-            guard isWanted, let seconds = on.seconds else { continue }
+            guard isWanted, let seconds = on.every.map(TimeInterval.init) else { continue }
             if let last = sheet.clockShown, time.timeIntervalSince(last) < seconds {
                 due = min(due ?? .distantFuture, last.addingTimeInterval(seconds))
             } else {

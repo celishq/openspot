@@ -138,8 +138,8 @@ final class WireTests: SpotRunsCase {
         let sheet = try spot("\"panel.open\" = true\n\"power.change\" = true\n\"clipboard.change\" = true\n\"app.launch\" = true\n\"spot.want\" = true")
 
         let panel = try await sent("show", by: sheet) { runs.panelOpened() }
-        let power = try await sent("power.change", by: sheet) { runs.raise(.named(SpotEvent.powerChange, value: "ac")) }
-        let clipboard = try await sent("clipboard.change", by: sheet) { runs.raise(.named(SpotEvent.clipboard, value: nil)) }
+        let power = try await sent("power.change", by: sheet) { runs.raise(.named(EventName.powerChange, value: "ac")) }
+        let clipboard = try await sent("clipboard.change", by: sheet) { runs.raise(.named(EventName.clipboard, value: nil)) }
         let launch = try await sent("app.launch", by: sheet) { runs.launched() }
         let want = try await sent("show", by: sheet) { runs.want("script") }
 

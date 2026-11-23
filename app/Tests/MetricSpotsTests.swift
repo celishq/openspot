@@ -6,7 +6,7 @@ final class MetricSpotsTests: SpotRunsCase {
     private final class FakeMac: MacEvents, @unchecked Sendable {
         var sample = LoadSample(busy: 0, total: 0, memory: 0)
 
-        func listen(_ heard: @escaping @MainActor (SpotEvent) -> Void) {}
+        func listen(_ heard: @escaping @MainActor (AppSignal) -> Void) {}
 
         var clipboardCount: Int {
             0
@@ -61,7 +61,7 @@ final class MetricSpotsTests: SpotRunsCase {
         for id in metrics {
             let read = try XCTUnwrap(scan.spots.first { $0.id == id }?.triggers, id)
             XCTAssertTrue(read.shows, id)
-            XCTAssertNil(read.seconds, id)
+            XCTAssertNil(read.every, id)
         }
     }
 
@@ -103,7 +103,7 @@ final class MetricSpotsTests: SpotRunsCase {
         fake.advance(by: 60)
         XCTAssertEqual(log("tools.log"), ["pmset"])
 
-        runs.raise(.named(SpotEvent.powerChange, value: "ac"))
+        runs.raise(.named(EventName.powerChange, value: "ac"))
 
         try await wait("the read of the change") { self.log("tools.log") == ["pmset", "pmset"] && !self.runs.isShowing }
     }
@@ -120,7 +120,7 @@ final class MetricSpotsTests: SpotRunsCase {
         XCTAssertEqual(log("tools.log"), ["system_profiler"])
         XCTAssertTrue(kept.contains("display=–"), kept)
 
-        runs.raise(.named(SpotEvent.deviceConnect, value: "Keyboard"))
+        runs.raise(.named(EventName.deviceConnect, value: "Keyboard"))
 
         try await wait("the read of the device") { self.log("tools.log") == ["system_profiler", "system_profiler"] && !self.runs.isShowing }
     }
@@ -191,16 +191,16 @@ final class MetricSpotsTests: SpotRunsCase {
         let titles = { Dictionary((self.runs.sheets["system"]?.state.face.tree.parts ?? []).map { ($0.id, $0.number?.text ?? "") }) { first, _ in first } }
         let triggers = try XCTUnwrap(scan.spots.first { $0.id == "system" }?.triggers)
         XCTAssertTrue(triggers.shows)
-        XCTAssertNil(triggers.seconds)
+        XCTAssertNil(triggers.every)
         try await wait("the first read") { titles()["battery"] == "84%" && titles()["devices"] == "–" && titles()["memory"] != nil && !self.runs.isShowing }
 
         mac.sample = LoadSample(busy: 30, total: 200, memory: 55)
         try await wait("the sleep of the load") { self.fake.isSleeping(for: 5) }
         fake.advance(by: 5)
         try await wait("the load") { titles()["memory"] == "55%" && titles()["cpu"] == "20%" && !self.runs.isShowing }
-        runs.raise(.named(SpotEvent.powerChange, value: "ac"))
+        runs.raise(.named(EventName.powerChange, value: "ac"))
         try await wait("the read of the power") { self.log("tools.log").filter { $0 == "pmset" }.count == 2 && !self.runs.isShowing }
-        runs.raise(.named(SpotEvent.deviceConnect, value: "Keyboard"))
+        runs.raise(.named(EventName.deviceConnect, value: "Keyboard"))
         try await wait("the read of the device") { self.log("tools.log").filter { $0 == "system_profiler" }.count == 2 && !self.runs.isShowing }
     }
 }

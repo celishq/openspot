@@ -28,7 +28,7 @@ public struct SpotTimers: Equatable, Sendable {
     }
 
     mutating func add(_ timer: SpotTimer) -> String? {
-        if (timer.inputs ?? []).reduce(0, { $0 + $1.name.utf8.count + $1.value.utf8.count }) > Self.valueLimit {
+        if timer.inputs.reduce(0, { $0 + $1.name.utf8.count + $1.value.utf8.count }) > Self.valueLimit {
             return "A timer's value holds at most 4 KB."
         }
         if of(timer.spot).count >= Self.limit { return "A spot holds at most \(Self.limit) timers. Remove one with `openspot timer remove <id>`, then add again." }

@@ -80,6 +80,6 @@ extension Spot {
 
 extension ScanResult {
     var metrics: [Spot] {
-        scripts.filter { $0.triggers.seconds != nil }
+        scripts.filter { $0.triggers.every != nil }
     }
 }
