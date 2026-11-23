@@ -11,9 +11,6 @@ public struct Spot: Equatable, Sendable {
         }
     }
 
-    private static let folderWord = "folder"
-    private static let anyWord = "*"
-
     @usableFromInline private(set) var header: Header
     public private(set) var kind: SpotKind
     public private(set) var pick: ItemPick
@@ -283,39 +280,20 @@ public struct Spot: Equatable, Sendable {
     }
 
     public var takesFiles: Bool {
-        dropWords.contains { !$0.isEmpty && $0 != Self.folderWord && !ContextValue.Kind.words.contains($0) }
+        self.triggers.drop.files
     }
 
     public var takesFolders: Bool {
-        dropWords.contains(Self.folderWord) || dropWords.contains(Self.anyWord)
+        self.triggers.drop.takesFolders
     }
 
     public var takesDrops: Bool {
-        takesFiles || takesFolders
-    }
-
-    private func accepts(_ files: FileKinds) -> Bool {
-        !files.paths.isEmpty && files.paths.allSatisfy { accepts(path: $0, kind: files.kind(of: $0)) }
-    }
-
-    private func accepts(path: String, kind: FileKinds.Kind?) -> Bool {
-        guard let kind else { return false }
-        if kind == .folder { return takesFolders }
-        let fileExtension = URL(fileURLWithPath: path).pathExtension.lowercased()
-        if dropWords.contains(Self.anyWord) { return true }
-        return !fileExtension.isEmpty && fileExtension != Self.folderWord && !ContextValue.Kind.words.contains(fileExtension) && dropWords.contains(fileExtension)
+        self.triggers.drop.takes(.file)
     }
 
     public func takes(_ value: ContextValue) -> Bool {
-        value.kind == .file ? accepts(value.files) : takes(value.kind)
-    }
-
-    public func takes(_ kind: ContextValue.Kind) -> Bool {
-        kind == .file ? takesDrops : dropWords.contains(kind.rawValue)
-    }
-
-    private var dropWords: [String] {
-        self.triggers.drop.map { $0.lowercased() }
+        guard value.kind == .file else { return self.triggers.drop.takes(value.kind) }
+        return !value.files.paths.isEmpty && value.files.paths.allSatisfy { self.triggers.drop.takes(path: $0, kind: value.files.kind(of: $0)) }
     }
 
     public func taking(_ output: Frame) -> Spot {

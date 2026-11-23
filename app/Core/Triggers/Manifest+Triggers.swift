@@ -18,7 +18,7 @@ extension Manifest {
         public let lists: Bool
         public let schedule: [CronLine]
         public let every: Int?
-        public let drop: [String]
+        public let drop: DropKinds
         public let events: [String]
         public let filters: [String: AnswerPattern]
         public let bindings: [BoundEvent]
@@ -27,7 +27,7 @@ extension Manifest {
         public static let sheet = Triggers(events: [EventName.sheetOpen])
 
         public init(
-            events: [String] = [], every: Int? = nil, search: AnswerPattern? = nil, lists: Bool = false, drop: [String] = [], commands: [String] = [],
+            events: [String] = [], every: Int? = nil, search: AnswerPattern? = nil, lists: Bool = false, drop: DropKinds = DropKinds(), commands: [String] = [],
             schedule: [CronLine] = [], filters: [String: AnswerPattern] = [:], bindings: [BoundEvent] = []
         ) {
             self.commands = commands
@@ -48,7 +48,7 @@ extension Manifest {
             var lists = false
             var schedule: [CronLine] = []
             var every: Int?
-            var drop: [String] = []
+            var drop = DropKinds()
             var events: [String] = []
             var filters: [String: AnswerPattern] = [:]
             var bindings: [BoundEvent] = []
@@ -83,7 +83,7 @@ extension Manifest {
                     every = seconds
                 case Self.drop:
                     guard case .strings(let kinds)? = value else { throw fault(name, "takes a list of file types, such as drop = [\"png\", \"folder\"].") }
-                    drop = kinds
+                    drop = DropKinds(kinds)
                 case let event where Self.events.contains(event):
                     switch value {
                     case .boolean(let isOn)?:
@@ -113,7 +113,7 @@ extension Manifest {
             if search != nil { handlers.append(.search) }
             if !schedule.isEmpty { handlers.append(.schedule) }
             if every != nil { handlers.append(.every) }
-            if !drop.isEmpty { handlers.append(.drop) }
+            if drop.isDeclared { handlers.append(.drop) }
             return handlers
         }
 

@@ -5,8 +5,6 @@ public struct ContextValue: Equatable, Sendable {
         case file
         case url
         case text
-
-        static let words = Set([Kind.url.rawValue, Kind.text.rawValue])
     }
 
     public let kind: Kind

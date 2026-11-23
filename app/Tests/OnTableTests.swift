@@ -35,7 +35,7 @@ final class OnTableTests: XCTestCase {
         XCTAssertEqual(spot.triggers.search?.text, "^https?://")
         XCTAssertEqual(triggers.schedule.map(\.text), ["0 9 * * 1-5", "*/15 * * * *"])
         XCTAssertEqual(spot.triggers.every, 60)
-        XCTAssertEqual(spot.triggers.drop, ["png", "folder"])
+        XCTAssertEqual(spot.triggers.drop, DropKinds(["png", "folder"]))
         XCTAssertEqual(triggers.bindings.map(\.key), ["picker.picked"])
     }
 

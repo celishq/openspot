@@ -65,7 +65,7 @@ final class SpotDropTests: XCTestCase {
     }
 
     private func command(drop: [String]) -> Spot {
-        Spot(id: "a", name: "A", url: folder, triggers: Manifest.Triggers(drop: drop))
+        Spot(id: "a", name: "A", url: folder, triggers: Manifest.Triggers(drop: DropKinds(drop)))
     }
 
     func testACardTakesOnlyFilesWhoseExtensionItsDropLists() {

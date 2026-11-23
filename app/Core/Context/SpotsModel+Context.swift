@@ -6,7 +6,7 @@ extension SpotsModel {
         isContextOpen = !isWarming
         let wasOn = context.isOn
         let front = isWarming ? nil : host.frontApp
-        let feeds = !isWarming && entries.contains { entry in ContextValue.Kind.allCases.contains(where: entry.spot.takes) }
+        let feeds = !isWarming && entries.contains { entry in ContextValue.Kind.allCases.contains(where: entry.spot.triggers.drop.takes) }
         let loading = feeds ? entries.filter { $0.spot.uses.contains(.context) && $0.spot.triggers.opensOverAnApp && $0.spot.triggers.opens(over: front) } : []
         var next = context
         next.open(over: front, at: isWarming ? nil : host.frontAppPath, loading: loading.map { ContextChip(source: $0.id, app: front, look: Self.look(of: $0.spot)) })
