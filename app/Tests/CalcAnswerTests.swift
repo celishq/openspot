@@ -110,6 +110,14 @@ final class CalcAnswerTests: XCTestCase {
         XCTAssertEqual(answer("1000 jpy in usd", in: ukrainian, rates: rates())?.unit, "$")
     }
 
+    func testACurrencyTakesTheSymbolThatTheCalculatorReadsAndElseTheSymbolOfTheMac() {
+        let symbols = ["USD": "$", "EUR": "€", "GBP": "£", "JPY": "¥", "UAH": "₴", "INR": "₹", "KRW": "₩", "TRY": "₺", "ILS": "₪", "PLN": "zł", "BTC": "₿"]
+        for (code, symbol) in symbols { XCTAssertEqual(CalcCurrency.symbol(of: code, written: code), symbol, code) }
+        XCTAssertEqual(CalcCurrency.symbol(of: "CAD", written: "CA$"), "CA$")
+        XCTAssertEqual(CalcCurrency.symbol(of: "THB", written: "THB"), "THB")
+        XCTAssertEqual(CalcCurrency.symbol(of: "SEK", written: "SEK"), "SEK")
+    }
+
     func testAnAmountInACurrencyAloneConvertsToTheCurrencyOfTheMac() {
         XCTAssertEqual(answer("15 eur", in: ukrainian, rates: rates())?.value, "760.23")
         XCTAssertEqual(spaced(answer("$15", in: ukrainian, rates: rates())?.title), "682,16 ₴")
