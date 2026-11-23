@@ -43,7 +43,8 @@ extension SpotTokens {
     public static let contextNearShadowDrop: CGFloat = 1
     public static let contextBadgeShadowRadius: CGFloat = 1
     public static let contextBadgeShadowDrop: CGFloat = 1
-    public static let contextRingGap: CGFloat = 2
+    public static let contextRingGap: CGFloat = 1.5
+    public static let contextEdge: CGFloat = 1.5
     public static let contextValueRise: CGFloat = 8
     public static let contextPointerWidth: CGFloat = 14
     public static let contextPointerHeight: CGFloat = 7

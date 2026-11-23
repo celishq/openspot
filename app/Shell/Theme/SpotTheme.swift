@@ -87,6 +87,7 @@ enum SpotTheme {
     static let capFace = color(dark: .white.withAlphaComponent(0.08), light: .white.withAlphaComponent(0.6))
     static let capRim = color(dark: .white.withAlphaComponent(0.14), light: .black.withAlphaComponent(0.1))
     static let capEdge = color(dark: .black.withAlphaComponent(0.35), light: .black.withAlphaComponent(0.14))
+    static let contextEdge = color(dark: NSColor(white: 0.16, alpha: 1), light: NSColor(white: 0.98, alpha: 1))
     static let contextDivider = color(dark: .white.withAlphaComponent(0.08), light: .black.withAlphaComponent(0.07))
     static let well = color(dark: .black.withAlphaComponent(0.22), light: .black.withAlphaComponent(0.05))
 

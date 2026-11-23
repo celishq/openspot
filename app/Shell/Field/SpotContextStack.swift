@@ -22,6 +22,7 @@ struct SpotContextStack: View {
             }
         }
         .frame(width: SpotTokens.contextStack(count: ContextChips.limit), height: SpotTokens.contextCard, alignment: .trailing)
+        .compositingGroup()
         .contentShape(Rectangle())
         .onTapGesture { model.pressContext() }
         .accessibilityElement(children: .ignore)
@@ -57,9 +58,9 @@ private struct SpotContextRing: View {
     let isOn: Bool
 
     var body: some View {
-        SpotRoundShape(radius: SpotTokens.contextCardRadius + SpotTokens.contextRingGap)
+        SpotRoundShape(radius: SpotTokens.contextCardRadius + SpotTokens.contextEdge + SpotTokens.contextRingGap)
             .strokeBorder(SpotTheme.accent, lineWidth: SpotTokens.thinRing)
-            .padding(-SpotTokens.contextRingGap)
+            .padding(-SpotTokens.contextEdge - SpotTokens.contextRingGap)
             .opacity(isOn ? 1 : MotionTokens.hiddenOpacity)
             .transaction { $0.animation = nil }
             .allowsHitTesting(false)

@@ -13,6 +13,11 @@ struct SpotContextCard: View, Equatable {
                 .opacity(chip.isLoading ? SpotTheme.contextLoadingIcon : 1)
         }
         .frame(width: SpotTokens.contextCard, height: SpotTokens.contextCard)
+        .background {
+            SpotRoundShape(radius: SpotTokens.contextCardRadius + SpotTokens.contextEdge)
+                .fill(SpotTheme.contextEdge)
+                .padding(-SpotTokens.contextEdge)
+        }
         .overlay(alignment: .bottomTrailing) { badge }
     }
 
