@@ -119,7 +119,6 @@ const steps = {
   mo: "month", month: "month", months: "month", y: "year", yr: "year", year: "year", years: "year",
   h: "hour", hr: "hour", hour: "hour", hours: "hour", min: "minute", mins: "minute", minute: "minute", minutes: "minute",
 }
-const months = ["jan", "feb", "mar", "apr", "may", "jun", "jul", "aug", "sep", "oct", "nov", "dec"]
 const weekdays = ["sun", "mon", "tue", "wed", "thu", "fri", "sat"]
 const relative = ["today", "tomorrow", "yesterday", "now", "next", "last", "in", "ago"]
 
@@ -544,90 +543,30 @@ function moved(wall, step, count) {
   return next
 }
 
-/** The date a text names, such as today, 25 dec, 2026-12-25 or next friday, and whether it names a time. */
+/** The date a text names, such as now, in 3 days, 25 dec, 2026-12-25 or next friday, and whether it names a time. A
+ * length from now is moved here; any other date the Mac reads with `openspot date read`, in the zone of its clock, and
+ * only when the whole text is the date. */
 function dateOf(text, context) {
-  const zone = context.timeZone
-  const now = fields(context.now, zone)
-  const today = { ...now, hour: 0, minute: 0 }
-  const at = (wall, hasTime) => ({ wall, hasTime, date: moment(wall, zone) })
   const value = text.trim()
-  const time = String.raw`(?:(\d{1,2}):(\d{2})\s*(am|pm)?|(\d{1,2})\s*(am|pm)|(noon)|(midnight))`
-  const clock = (match, from) => {
-    if (match[from] !== undefined) return twelve(Number(match[from]), Number(match[from + 1]), match[from + 2])
-    if (match[from + 3] !== undefined) return twelve(Number(match[from + 3]), 0, match[from + 4])
-    if (match[from + 5] !== undefined) return { hour: 12, minute: 0 }
-    if (match[from + 6] !== undefined) return { hour: 0, minute: 0 }
-    return null
-  }
-  const twelve = (hour, minute, half) => {
-    if (half === "pm" && hour < 12) hour += 12
-    if (half === "am" && hour === 12) hour = 0
-    return hour < 24 && minute < 60 ? { hour, minute } : undefined
-  }
-  const withTime = (day, match, from) => {
-    if (!day) return null
-    const found = clock(match, from)
-    if (found === undefined) return null
-    return found ? at({ ...day, ...found }, true) : at(day, false)
-  }
-  const valid = (year, month, day) => month >= 1 && month <= 12 && day >= 1 && day <= new Date(Date.UTC(year, month, 0)).getUTCDate()
-  const ahead = (month, day) => {
-    let year = now.year
-    if (!valid(year, month, day)) return null
-    if (daysBetween(today, { year, month, day }) < 0) year += 1
-    return valid(year, month, day) ? { year, month, day, hour: 0, minute: 0 } : null
-  }
-  const named = (year, month, day) => year === undefined ? ahead(month, day) : valid(Number(year), month, day) ? { year: Number(year), month, day, hour: 0, minute: 0 } : null
-  const monthOf = (word) => months.indexOf(word.slice(0, 3)) + 1
-  const monthWords = "(jan(?:uary)?|feb(?:ruary)?|mar(?:ch)?|apr(?:il)?|may|jun(?:e)?|jul(?:y)?|aug(?:ust)?|sep(?:t(?:ember)?)?|oct(?:ober)?|nov(?:ember)?|dec(?:ember)?)"
-  const dayWords = "(sun(?:day)?|mon(?:day)?|tue(?:s(?:day)?)?|wed(?:nesday)?|thu(?:r(?:s(?:day)?)?)?|fri(?:day)?|sat(?:urday)?)"
-  const tail = String.raw`(?:,?\s+(?:at\s+)?${time})?`
+  if (value === "now") return { date: context.now, hasTime: true }
+  const today = { ...fields(context.now, context.timeZone), hour: 0, minute: 0 }
   let match
-  if (value === "now") return at(now, true)
-  if (value === "today") return at(today, false)
-  if (value === "tomorrow") return at(moved(today, "day", 1), false)
-  if (value === "yesterday") return at(moved(today, "day", -1), false)
-  if ((match = new RegExp(String.raw`^(today|tomorrow|yesterday)\s+(?:at\s+)?${time}$`).exec(value))) {
-    return withTime(moved(today, "day", { today: 0, tomorrow: 1, yesterday: -1 }[match[1]]), match, 2)
-  }
-  if ((match = new RegExp(String.raw`^(\d{4})-(\d{1,2})-(\d{1,2})(?:[\st]+${time})?$`).exec(value))) {
-    return withTime(named(match[1], Number(match[2]), Number(match[3])), match, 4)
-  }
-  if ((match = new RegExp(String.raw`^(\d{1,2})\.(\d{1,2})\.(\d{4}|\d{2})${tail}$`).exec(value))) {
-    const year = match[3].length === 2 ? `20${match[3]}` : match[3]
-    return withTime(named(year, Number(match[2]), Number(match[1])), match, 4)
-  }
-  if ((match = new RegExp(String.raw`^(\d{1,2})(?:st|nd|rd|th)?\s+${monthWords}\.?(?:,?\s+(\d{4}))?${tail}$`).exec(value))) {
-    return withTime(named(match[3], monthOf(match[2]), Number(match[1])), match, 4)
-  }
-  if ((match = new RegExp(String.raw`^${monthWords}\.?\s+(\d{1,2})(?:st|nd|rd|th)?(?:,?\s+(\d{4}))?${tail}$`).exec(value))) {
-    return withTime(named(match[3], monthOf(match[1]), Number(match[2])), match, 4)
-  }
-  if ((match = new RegExp(String.raw`^(?:(next|last|this)\s+)?${dayWords}$`).exec(value))) {
-    const target = weekdays.indexOf(match[2].slice(0, 3))
-    if (match[1] === "last") {
-      const back = (now.weekday - target + 7) % 7 || 7
-      return at(moved(today, "day", -back), false)
-    }
-    const forward = (target - now.weekday + 7) % 7 || 7
-    const monday = (weekday) => (weekday + 6) % 7
-    const later = match[1] === "next" && monday(now.weekday) + forward <= 6 ? forward + 7 : forward
-    return at(moved(today, "day", later), false)
-  }
   if ((match = /^(next|last)\s+(week|month|year)$/.exec(value))) {
-    return at(moved(today, match[2], match[1] === "next" ? 1 : -1), false)
+    return { date: moment(moved(today, match[2], match[1] === "next" ? 1 : -1), context.timeZone), hasTime: false }
   }
   if ((match = /^in\s+(\d+)\s*([a-z]+)$/.exec(value)) || (match = /^(\d+)\s*([a-z]+)\s+ago$/.exec(value))) {
     const step = steps[match[2]]
     if (!step) return null
     const count = Number(match[1]) * (value.endsWith("ago") ? -1 : 1)
     if (step === "hour" || step === "minute") return { date: new Date(context.now.getTime() + count * (step === "hour" ? 3600000 : 60000)), hasTime: true }
-    return at(moved(today, step, count), false)
+    return { date: moment(moved(today, step, count), context.timeZone), hasTime: false }
   }
-  if ((match = new RegExp(String.raw`^${time}$`).exec(value))) {
-    return withTime(today, match, 1)
-  }
-  return null
+  const block = openspot.call(["date", "read", value]).stdout
+  const item = /^item=(\d{4})-(\d{2})-(\d{2})(?: (\d{2}):(\d{2}))?$/m.exec(block)
+  if (!item) return null
+  const hasTime = item[4] !== undefined
+  const wall = { year: Number(item[1]), month: Number(item[2]), day: Number(item[3]), hour: hasTime ? Number(item[4]) : 0, minute: hasTime ? Number(item[5]) : 0 }
+  return { date: moment(wall, context.timeZone), hasTime }
 }
 
 /** The formats of dates for a locale and the zone of the clock. */

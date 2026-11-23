@@ -36,6 +36,14 @@ final class Calculator {
         context = JSContext()
         var failure: String?
         context.exceptionHandler = { _, value in failure = value?.toString() }
+        let call: @convention(block) (JSValue) -> [String: Any] = { argv in
+            let words = (argv.toArray() ?? []).map { "\($0)" }
+            guard words.count == 3, words[0] == "date", words[1] == "read" else { return ["stdout": "", "code": 2] }
+            return ["stdout": DateRead.block(of: words[2], now: Date(timeIntervalSince1970: Self.now / 1000), zone: TimeZone(identifier: "Europe/Berlin")!), "code": 0]
+        }
+        let openspot = JSValue(newObjectIn: context)
+        openspot?.setObject(call, forKeyedSubscript: "call" as NSString)
+        context.setObject(openspot, forKeyedSubscript: "openspot" as NSString)
         let text = try String(contentsOf: Self.folder.appendingPathComponent("calculator.js"), encoding: .utf8)
             .replacingOccurrences(of: "export default", with: "globalThis.handlers =")
         context.evaluateScript(text)
