@@ -10,8 +10,7 @@ public struct ContextChips: Equatable, Sendable {
         didSet { restack() }
     }
     public private(set) var stack: [ContextChip] = []
-    private var front: String?
-    private var frontPath: String?
+    private var front: FrontApp?
     private var order: [String] = []
 
     public init() {}
@@ -25,12 +24,11 @@ public struct ContextChips: Equatable, Sendable {
     }
 
     public func appPath(of chip: ContextChip) -> String? {
-        chip.app != nil && chip.app == front ? frontPath : nil
+        chip.app != nil && chip.app == front?.bundleID ? front?.path : nil
     }
 
-    mutating func open(over front: String?, at path: String? = nil, loading: [ContextChip]) {
+    mutating func open(over front: FrontApp?, loading: [ContextChip]) {
         self.front = front
-        frontPath = path
         selected = nil
         order = loading.map(\.source)
         chips = loading
@@ -70,7 +68,7 @@ public struct ContextChips: Equatable, Sendable {
 
     private mutating func settle() {
         let place = Dictionary(order.enumerated().map { ($0.element, $0.offset) }, uniquingKeysWith: { first, _ in first })
-        chips = Array(chips.sorted { ($0.rank(over: front), place[$0.source] ?? 0) < ($1.rank(over: front), place[$1.source] ?? 0) }.prefix(Self.limit))
+        chips = Array(chips.sorted { ($0.rank(over: front?.bundleID), place[$0.source] ?? 0) < ($1.rank(over: front?.bundleID), place[$1.source] ?? 0) }.prefix(Self.limit))
         if let selected, !chips.contains(where: { $0.source == selected }) { self.selected = chips.first?.source }
     }
 

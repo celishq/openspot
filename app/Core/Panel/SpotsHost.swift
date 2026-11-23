@@ -26,8 +26,7 @@ public protocol SpotsHost: AnyObject {
     var draggedPaths: [String] { get }
     var isMouseDown: Bool { get }
     var pastedPaths: [String] { get }
-    var frontApp: String? { get }
-    var frontAppPath: String? { get }
+    var frontApp: FrontApp? { get }
     func copy(_ file: URL)
     func prepare(_ items: [SpotItem], glyphs: [String]) async
     func prepareCards(glyphs: [String])
@@ -46,11 +45,7 @@ extension SpotsHost {
         }
     }
 
-    public var frontApp: String? {
-        nil
-    }
-
-    public var frontAppPath: String? {
+    public var frontApp: FrontApp? {
         nil
     }
 

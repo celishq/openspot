@@ -11,7 +11,7 @@ class ContextCase: PanelCase {
         try FileManager.default.createDirectory(at: client.deletingLastPathComponent(), withIntermediateDirectories: true)
         try FileManager.default.copyItem(at: Bundle(for: Self.self).bundleURL.deletingLastPathComponent().appendingPathComponent("openspot"), to: client)
         takeCalls()
-        host.frontApp = "com.apple.Safari"
+        host.frontApp = FrontApp(bundleID: "com.apple.Safari")
     }
 
     func path(_ name: String) -> String {

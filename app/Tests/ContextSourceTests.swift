@@ -21,7 +21,7 @@ final class ContextSourceTests: ContextCase {
         try taker(takes: "'url'")
         try source(adds: "url=https://example.com/a")
         try witness()
-        host.frontApp = "com.apple.finder"
+        host.frontApp = FrontApp(bundleID: "com.apple.finder")
 
         await open()
         try await wait("the spots of the open") { self.log("witness-log").count == 1 }
@@ -103,7 +103,7 @@ final class ContextSourceTests: ContextCase {
         FileManager.default.createFile(atPath: movie, contents: Data())
         try taker(takes: "'mov'")
         try source("finder", app: "^com\\.apple\\.finder$", adds: "file='\(movie)' file='\(path("gone.mov"))'")
-        host.frontApp = "com.apple.finder"
+        host.frontApp = FrontApp(bundleID: "com.apple.finder")
 
         await open()
 

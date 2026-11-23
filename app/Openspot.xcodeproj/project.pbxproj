@@ -375,6 +375,7 @@
 		5BD56F7EE549E7ECB4512DB2 /* PowerSampleTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5486A364CFD0B7D7CB647AE1 /* PowerSampleTests.swift */; };
 		5BF45DB5D75089AF76B4094A /* SpotCutShape.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9A90A3A1F628FE765B583EDA /* SpotCutShape.swift */; };
 		5C07C408DE38F74F22E5DF78 /* SpotCarriedCard.swift in Sources */ = {isa = PBXBuildFile; fileRef = 19C4913213CC1385F421AA7B /* SpotCarriedCard.swift */; };
+		5C5D2E8197350727DEB01828 /* FrontApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5ED68888F6F5E7F49260DDE7 /* FrontApp.swift */; };
 		5C5F4CBA6842EEF646DBEF8D /* OnceMode.swift in Sources */ = {isa = PBXBuildFile; fileRef = EEE01CE6E4C832F70EE5A5B0 /* OnceMode.swift */; };
 		5CABE651F716929AE88EBC6E /* TranslatedText.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2FFF20040049DC0CAC192D46 /* TranslatedText.swift */; };
 		5D3211CD74922CFB71119F05 /* WebPicturesTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9D88281ECA8907B0A5F708B0 /* WebPicturesTests.swift */; };
@@ -1538,6 +1539,7 @@
 		5DC651707DE92731CA6FCBC2 /* AppBundle.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppBundle.swift; sourceTree = "<group>"; };
 		5E439F5217C138B2FFF0BB70 /* SpotPlaygroundStage.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SpotPlaygroundStage.swift; sourceTree = "<group>"; };
 		5E927A4E8838A5BBD77F9E07 /* OpenCall.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OpenCall.swift; sourceTree = "<group>"; };
+		5ED68888F6F5E7F49260DDE7 /* FrontApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FrontApp.swift; sourceTree = "<group>"; };
 		5F0F199285F66143AF841BB9 /* SpotTokensTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SpotTokensTests.swift; sourceTree = "<group>"; };
 		5F137243F0C532167F81B5DE /* CommandSocketTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CommandSocketTests.swift; sourceTree = "<group>"; };
 		5FC342CF6D8CA7BC3AEDE25F /* TextBlock.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TextBlock.swift; sourceTree = "<group>"; };
@@ -2340,6 +2342,7 @@
 				2CCDC77FDBDA1BFAD1D1D91D /* ContextChip.swift */,
 				E458E74513EE143BEC7FA41D /* ContextChips.swift */,
 				9468521F1D71980ED9871648 /* ContextValue.swift */,
+				5ED68888F6F5E7F49260DDE7 /* FrontApp.swift */,
 				8F73743B896D277DC2C5A601 /* SpotsModel+Context.swift */,
 			);
 			path = Context;
@@ -4551,6 +4554,7 @@
 				10C2CF82287D310CD7E0326E /* FrameParses.swift in Sources */,
 				996A874744A89FF387A7A4DB /* FrameRoot.swift in Sources */,
 				A877071006F12E57B5BC1E2B /* FrameStream.swift in Sources */,
+				5C5D2E8197350727DEB01828 /* FrontApp.swift in Sources */,
 				A1949216347BF77E579B61C1 /* GlobalKey.swift in Sources */,
 				ABA037544FC7ADECC5DC15FC /* GlyphBook.swift in Sources */,
 				A9651902740496FFCED303F1 /* GlyphKeywords.swift in Sources */,
