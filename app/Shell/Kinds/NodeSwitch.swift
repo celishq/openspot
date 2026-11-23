@@ -7,7 +7,7 @@ struct NodeSwitch: View {
     @Environment(\.spotNode) private var context
 
     var body: some View {
-        if let part = context.actions.part(of: node) {
+        if let part = context.host.part(of: node) {
             NodePartFrame(node: node, part: part, look: look) { size in
                 SwitchDrawing(part: part, look: look, size: size, isCard: context.isCard, call: context.call(of: part), keepsIconColumn: context.keepsIconColumn(part)) { context.set(part, to: $0) }
             }

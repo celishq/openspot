@@ -37,7 +37,7 @@ struct NodePartFrame<Content: View>: View {
         }
         .background {
             if part.isFocusable {
-                Color.clear.modifier(PartRing(id: part.id, actions: context.actions, hasBox: hasLabel || hasBox, shape: SpotRoundShape(surface.inner())))
+                Color.clear.modifier(PartRing(id: part.id, host: context.host, hasBox: hasLabel || hasBox, shape: SpotRoundShape(surface.inner())))
             }
         }
     }
@@ -55,12 +55,12 @@ struct NodePartFrame<Content: View>: View {
 private struct PartRing: ViewModifier {
     @Environment(\.spotSurfaceEdge) private var surface
     let id: String
-    let actions: any NodeActions
+    let host: any NodeHost
     let hasBox: Bool
     let shape: SpotRoundShape
 
     func body(content: Content) -> some View {
-        let isSelected = actions.selectedPart == id
+        let isSelected = host.selectedPart == id
         if hasBox {
             let gap = SpotTokens.focusGap
             let ring = SpotRoundShape(surface.inner(by: SpotTokens.padding - gap))

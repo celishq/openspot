@@ -21,7 +21,7 @@ struct CardTreeView: View {
 
     private func context(isSelected: Bool) -> NodeContext {
         var context = NodeContext(variants: Style.Variant.card(size).union(isPressed ? [.pressed] : []).union(isSelected ? [.selected, .focus] : []))
-        if let model, let spot { context.actions = CardActions(model: model, spot: spot) }
+        if let model, let spot { context.host = CardHost(model: model, spot: spot) }
         return context
     }
 }

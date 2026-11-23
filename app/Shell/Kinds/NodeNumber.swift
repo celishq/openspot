@@ -7,7 +7,7 @@ struct NodeNumber: View {
     @Environment(\.spotNode) private var context
 
     var body: some View {
-        if let part = context.actions.part(of: node) {
+        if let part = context.host.part(of: node) {
             NodePartFrame(node: node, part: part, look: look) { size in
                 NumberDrawing(part: part, look: look, size: size, isCard: context.isCard)
             }

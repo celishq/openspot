@@ -6,7 +6,7 @@ struct SpotSheetBody: View {
     @Environment(\.spotIsHeld) private var isHeld
     let panel: SheetParts?
     let list: ItemList
-    var actions: (any NodeActions)?
+    var host: (any NodeHost)?
     var search: String?
     var onSet: (SpotPart, String) -> Void = { _, _ in }
     var onPress: (SpotPart) -> Void = { _ in }
@@ -29,7 +29,7 @@ struct SpotSheetBody: View {
     var body: some View {
         if let panel, panel.holdsParts {
             if let search, panel.top.hasField { SpotSheetSearchRow(title: search) }
-            SheetPartsView(panel: panel, actions: actions ?? SampleActions(panel: panel, items: list, onSet: onSet, onPress: onPress, onPick: onPick, picked: selection))
+            SheetPartsView(panel: panel, host: host ?? SampleHost(panel: panel, items: list, onSet: onSet, onPress: onPress, onPick: onPick, picked: selection))
                 .environment(\.spotSearchTitle, search ?? searchTitle)
         } else {
             SpotItemsView(list: list, recording: isHeld ? nil : recording, recordingWords: recordingWords, keys: keys, onRun: onPick, onPoint: onPoint, selection: selection, onDragOut: onDragOut, failure: failure, tips: tips, shakes: shakes, room: room)

@@ -89,7 +89,7 @@ final class NewSpotTests: BuiltInCase {
         try await spot.perform("copy", input: "input.describe=Show the weather\n", timeout: 60)
 
         XCTAssertEqual(effects(), ["toast \(AgentPrompt.copied)"])
-        let reopened = try await spot.answer(Handler.show.name, timeout: 60)
+        let reopened = try await spot.answer(ScriptEntry.show.name, timeout: 60)
         XCTAssertEqual(reopened.parts.first?.value ?? "", "")
     }
 
@@ -97,12 +97,12 @@ final class NewSpotTests: BuiltInCase {
         let spot = try newSpot()
         _ = try await spot.answer("describe", input: "input.describe=A list of my repos\n", timeout: 60)
 
-        let reopened = try await spot.answer(Handler.show.name, timeout: 60)
+        let reopened = try await spot.answer(ScriptEntry.show.name, timeout: 60)
         XCTAssertEqual(reopened.parts.first?.value, "A list of my repos")
 
         let cleared = try await spot.answer("clear", input: "input.describe=A list of my repos\n", timeout: 60)
         XCTAssertEqual(cleared.parts.first?.value ?? "", "")
-        let again = try await spot.answer(Handler.show.name, timeout: 60)
+        let again = try await spot.answer(ScriptEntry.show.name, timeout: 60)
         XCTAssertEqual(again.parts.first?.value ?? "", "")
         XCTAssertEqual(again.actions.map(\.title), ["Clear", "Read the guide", "Open spots folder"])
     }
@@ -169,7 +169,7 @@ final class NewSpotTests: BuiltInCase {
         try "#!/bin/sh\necho\n".writeScript(to: spots.spotFile("weather"), toml: "title = 'Weather'")
         let sheet = try editSheet(of: "weather")
 
-        let output = Frame(text: try await edit(sheet, Handler.show.name))
+        let output = Frame(text: try await edit(sheet, ScriptEntry.show.name))
 
         XCTAssertEqual(sheet.name, "Edit Weather")
         XCTAssertEqual(output.parts.map(\.id), ["describe", "copy"])
@@ -215,11 +215,11 @@ final class NewSpotTests: BuiltInCase {
         _ = try await edit(weather, "describe", input: "input.describe=Add a refresh button\n")
         _ = try await edit(notes, "describe", input: "input.describe=Sort by date\n")
 
-        let words = { (sheet: Spot) in Frame(text: try await self.edit(sheet, Handler.show.name)).parts.first?.value ?? "" }
+        let words = { (sheet: Spot) in Frame(text: try await self.edit(sheet, ScriptEntry.show.name)).parts.first?.value ?? "" }
         let kept = (try await words(weather), try await words(notes))
         XCTAssertEqual(kept.0, "Add a refresh button")
         XCTAssertEqual(kept.1, "Sort by date")
-        let new = try await newSpot().answer(Handler.show.name, timeout: 60)
+        let new = try await newSpot().answer(ScriptEntry.show.name, timeout: 60)
         XCTAssertEqual(new.parts.first?.value ?? "", "")
         _ = try await edit(weather, "copy", input: "input.describe=Add a refresh button\n")
         let after = (try await words(weather), try await words(notes))
@@ -233,7 +233,7 @@ final class NewSpotTests: BuiltInCase {
         let sheet = try editSheet(of: "cups")
         let copy = spots.appendingPathComponent("cups.spot", isDirectory: true)
 
-        let read = Frame(text: try await edit(sheet, Handler.show.name))
+        let read = Frame(text: try await edit(sheet, ScriptEntry.show.name))
         XCTAssertFalse(read.actions.contains { $0.title == "Open in editor" })
         _ = try await edit(sheet, "copy", input: "input.describe=Count in litres\n")
         let prompt = try saved("clipboard")

@@ -67,7 +67,7 @@ final class StayMode: ScriptMode {
     }
 
     static func answer(of spot: Spot, _ handler: String, input: String?, limit: TimeInterval?, variables: [String: String], in runs: SpotRuns) async throws -> String {
-        guard handler == Handler.show.name else { return try await collect(of: spot, handler, input: input, limit: limit, variables: variables, in: runs) }
+        guard handler == ScriptEntry.show.name else { return try await collect(of: spot, handler, input: input, limit: limit, variables: variables, in: runs) }
         let (script, frames, caller) = runs.stay(spot, limit: limit)
         caller.reason = ShowEvent.panel.name
         defer { script.end() }

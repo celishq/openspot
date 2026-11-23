@@ -1,6 +1,6 @@
 import Foundation
 
-struct CarefulMode: Equatable, Sendable {
+struct Sandbox: Equatable, Sendable {
     private static let program = "/usr/bin/sandbox-exec"
 
     let uses: Set<SpotUse>

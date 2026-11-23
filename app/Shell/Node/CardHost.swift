@@ -1,11 +1,11 @@
 import OpenspotCore
 import SwiftUI
 
-struct CardActions: NodeActions, @MainActor Equatable {
+struct CardHost: NodeHost, @MainActor Equatable {
     let model: SpotsModel
     let spot: String
 
-    static func == (one: CardActions, other: CardActions) -> Bool {
+    static func == (one: CardHost, other: CardHost) -> Bool {
         one.model === other.model && one.spot == other.spot
     }
 

@@ -131,10 +131,10 @@ final class SheetStreamTests: XCTestCase {
     }
 
     func testACallOfAStayingScriptIsOneBlock() {
-        XCTAssertEqual(Message(Handler.show.name).block(id: 1), "call=1\narg=show\n\n")
+        XCTAssertEqual(Message(ScriptEntry.show.name).block(id: 1), "call=1\narg=show\n\n")
         XCTAssertEqual(ShowEvent.clock.message().block(id: 5), "call=5\narg=every\n\n")
         XCTAssertEqual(Message("swap").block(id: 2), "call=2\narg=swap\n\n")
-        XCTAssertEqual(Handler.drop.message(["/a b.mov", "-rf.mov"]).block(id: 4), "call=4\narg=drop\ninput.file=/a b.mov\ninput.file=-rf.mov\n\n")
+        XCTAssertEqual(ScriptEntry.drop.message(["/a b.mov", "-rf.mov"]).block(id: 4), "call=4\narg=drop\ninput.file=/a b.mov\ninput.file=-rf.mov\n\n")
     }
 
     func testTheBlockHoldsEachLineOfTheStdinOfTheCall() {
@@ -156,7 +156,7 @@ final class SheetStreamTests: XCTestCase {
         let live = ScriptProcess(url: url, mode: .stays, limit: 60)
         var frames = live.start().makeAsyncIterator()
 
-        live.send(Message(Handler.show.name), id: 1)
+        live.send(Message(ScriptEntry.show.name), id: 1)
         let first = try await frames.next()
         live.send(Message("a"), id: 2)
         let second = try await frames.next()

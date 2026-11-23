@@ -29,7 +29,7 @@ final class SpotSettingsTests: XCTestCase {
     }
 
     private func rows(of spot: Spot, in runs: SpotRuns) async throws -> [SpotItem] {
-        Frame(text: try await runs.answer(of: spot, Handler.show.name, limit: 1)).items
+        Frame(text: try await runs.answer(of: spot, ScriptEntry.show.name, limit: 1)).items
     }
 
     func testAScriptWithCommandsAndNoReadOpensToItsSettingsWhichHoldItsKeys() async throws {
@@ -164,7 +164,7 @@ final class SpotSettingsTests: XCTestCase {
         XCTAssertEqual(before.map(\.symbol), ["tray.full", "tray.full", "tray.full", "tray.full", "slider.horizontal.3", "slider.horizontal.3", "slider.horizontal.3", "menubar.rectangle", "macwindow"])
         XCTAssertEqual(before.map(\.records), [true, true, true, true, false, false, false, false, false])
         XCTAssertEqual(before.map { $0.hides ?? [] }, [["clear"], ["clear"], ["clear"], ["clear"], [], ["clear"], [], ["clear"], ["clear"]])
-        let own = try await runs.answer(of: shelf, Handler.show.name, limit: 60)
+        let own = try await runs.answer(of: shelf, ScriptEntry.show.name, limit: 60)
         XCTAssertEqual(Frame(text: own).items.map(\.run), ["own"])
 
         _ = try await runs.answer(of: settings, "press", input: "input.item=menubar:shelf\n", limit: 1)

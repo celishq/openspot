@@ -7,10 +7,10 @@ struct NodeChoice: View {
     @Environment(\.spotNode) private var context
 
     var body: some View {
-        if let part = context.actions.part(of: node) {
-            let actions = context.actions
+        if let part = context.host.part(of: node) {
+            let host = context.host
             NodePartFrame(node: node, part: part, look: look) { size in
-                ChoiceDrawing(part: part, look: look, size: size, isCard: context.isCard, call: context.call(of: part), keepsIconColumn: context.keepsIconColumn(part), menuOpening: { actions.menuOpening }) { context.set(part, to: $0) }
+                ChoiceDrawing(part: part, look: look, size: size, isCard: context.isCard, call: context.call(of: part), keepsIconColumn: context.keepsIconColumn(part), menuOpening: { host.menuOpening }) { context.set(part, to: $0) }
             }
         }
     }

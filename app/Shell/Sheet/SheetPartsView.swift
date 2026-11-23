@@ -3,7 +3,7 @@ import SwiftUI
 
 struct SheetPartsView: View {
     let panel: SheetParts
-    let actions: any NodeActions
+    let host: any NodeHost
     @FocusState private var focus: String?
     @Environment(\.spotIsHeld) private var isHeld
 
@@ -13,7 +13,7 @@ struct SheetPartsView: View {
         .modifier(FocusOnShow(focus: focusSelectedField))
         .modifier(FocusOnSelect(selectedID: selectedID, focus: focusSelectedField))
         .onChange(of: focus) { _, id in
-            if !isHeld, let part = panel.parts.first(where: { $0.id == id }) { actions.focus(part) }
+            if !isHeld, let part = panel.parts.first(where: { $0.id == id }) { host.focus(part) }
         }
     }
 
@@ -21,20 +21,20 @@ struct SheetPartsView: View {
         ScrollView(showsIndicators: false) {
             NodeRoom(height: panel.height) {
                 NodeTree(tree: panel.tree, pictureTimes: panel.pictureTimes)
-                    .environment(\.spotNode.actions, actions)
+                    .environment(\.spotNode.host, host)
                     .environment(\.spotNode.panel, panel)
                     .environment(\.spotNode.focus, $focus)
             }
             .padding(SpotTokens.padding)
         }
         .scrollBounceBehavior(.basedOnSize)
-        .modifier(SpotArrowScroll(nudge: { [actions] in actions.nudge }, searches: actions.list?.landedSearches ?? 0))
+        .modifier(SpotArrowScroll(nudge: { [host] in host.nudge }, searches: host.list?.landedSearches ?? 0))
         .frame(width: SpotTokens.partsWidth + 2 * SpotTokens.padding, height: panel.height + 2 * SpotTokens.padding, alignment: .topLeading)
         .padding(-SpotTokens.padding)
     }
 
     private var selectedID: () -> String? {
-        { [actions] in actions.selectedPart }
+        { [host] in host.selectedPart }
     }
 
     private func focusSelectedField() {

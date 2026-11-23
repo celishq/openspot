@@ -23,11 +23,11 @@ final class MessageBlockTests: XCTestCase {
     }
 
     func testAPressWithNoItemSendsOnlyItsHandler() {
-        XCTAssertEqual(Message(Handler.press.name).block(id: 1), "call=1\narg=press\n\n")
+        XCTAssertEqual(Message(ScriptEntry.press.name).block(id: 1), "call=1\narg=press\n\n")
     }
 
     func testAListItemCallsPressWithItsRunAsTheItem() {
-        XCTAssertEqual(Handler.press.message(["3600"]).block(id: 1), "call=1\narg=press\ninput.item=3600\n\n")
+        XCTAssertEqual(ScriptEntry.press.message(["3600"]).block(id: 1), "call=1\narg=press\ninput.item=3600\n\n")
     }
 
     func testASearchHasNoArgumentsAndItsTextGoesOnStdinWithEachForm() {

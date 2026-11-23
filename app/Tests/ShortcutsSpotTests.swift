@@ -187,7 +187,7 @@ final class ShortcutsSpotTests: SampleSpotsCase {
             try Self.fakeShortcuts(in: folder)
             let files = ["a.mov", "b c.mov"].map { folder.appendingPathComponent($0).path }
 
-            try await shortcuts.handle(Handler.drop.name, files, timeout: 60)
+            try await shortcuts.handle(ScriptEntry.drop.name, files, timeout: 60)
             let sheet = try await shortcuts.items(timeout: 60)
             let row = try XCTUnwrap(sheet.items.first { $0.title == "Video to audio" })
             try await shortcuts.handle(row, timeout: 60)
@@ -210,10 +210,10 @@ final class ShortcutsSpotTests: SampleSpotsCase {
             try Self.fakeShortcuts(in: folder)
             let file = folder.appendingPathComponent("a.mov").path
 
-            try await shortcuts.handle(Handler.drop.name, [file], timeout: 60)
+            try await shortcuts.handle(ScriptEntry.drop.name, [file], timeout: 60)
             let dropped = try await shortcuts.items(timeout: 60)
             let reopened = try await shortcuts.items(input: "input.event=panel.open\n", timeout: 60)
-            try await shortcuts.handle(Handler.drop.name, [file], timeout: 60)
+            try await shortcuts.handle(ScriptEntry.drop.name, [file], timeout: 60)
             try await shortcuts.handle("cancel", timeout: 60)
             let cancelled = try await shortcuts.items(timeout: 60)
 

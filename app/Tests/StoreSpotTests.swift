@@ -20,7 +20,7 @@ final class StoreSpotTests: BuiltInCase {
     }
 
     private func items() async throws -> [[String]] {
-        let text = try await runs.answer(of: store, Handler.show.name, limit: 60)
+        let text = try await runs.answer(of: store, ScriptEntry.show.name, limit: 60)
         XCTAssertEqual(Frame(text: text, kinds: try store.kinds).parts.map(\.id), ["gallery"])
         return TextBlock.blocks(in: text).compactMap { row in
             row.value("item").map { [$0, row.value("title") ?? "", row.value("step") ?? "", row.value("origin") ?? "", row.value("detail") ?? "", row.value("size") ?? "", row.value("sample") == "true" ? "sample" : ""] }
@@ -86,11 +86,11 @@ final class StoreSpotTests: BuiltInCase {
         let friends = try friends()
         _ = try file.change { $0.add(store: Store(url: friends)) }
         try FileManager.default.removeItem(at: examples)
-        let before = try await runs.answer(of: store, Handler.show.name, limit: 60)
+        let before = try await runs.answer(of: store, ScriptEntry.show.name, limit: 60)
         XCTAssertEqual(try viewValues(before)["folder"], ["\(friends.path)\tfriends\tfound\tadded"])
 
         try "#!/bin/sh\n".writeScript(to: examples.appendingPathComponent("year.spot/year.sh"), toml: "title = 'Year'")
-        let text = try await runs.answer(of: store, Handler.show.name, limit: 60)
+        let text = try await runs.answer(of: store, ScriptEntry.show.name, limit: 60)
 
         XCTAssertEqual(try viewValues(text)["folder"], ["\(examples.path)\tOpenspot\tfound\tbuiltin", "\(friends.path)\tfriends\tfound\tadded"])
         XCTAssertEqual(TextBlock.blocks(in: text).first { $0.value("item") == "year" }?.value("store"), examples.path)
@@ -100,7 +100,7 @@ final class StoreSpotTests: BuiltInCase {
         let gone = root.appendingPathComponent("gone")
         _ = try file.change { $0.add(store: Store(url: gone)) }
 
-        let text = try await runs.answer(of: store, Handler.show.name, limit: 60)
+        let text = try await runs.answer(of: store, ScriptEntry.show.name, limit: 60)
         XCTAssertEqual(try viewValues(text)["folder"]?.last, "\(gone.path)\tgone\tmissing\tadded")
 
         try await call(["gallery", "remove:\(gone.path)"])
@@ -189,7 +189,7 @@ final class StoreSpotTests: BuiltInCase {
         try "# Timer\n\nCounts down.\n".write(to: core.appendingPathComponent("timer.spot/readme.md"), atomically: true, encoding: .utf8)
         try "# Mine\n".write(to: spots.appendingPathComponent("mine.spot/readme.md"), atomically: true, encoding: .utf8)
 
-        for (action, input) in [(Handler.show.name, ""), ("gallery", "input.value=get:timer\n"), ("gallery", "input.value=publish:timer\n")] {
+        for (action, input) in [(ScriptEntry.show.name, ""), ("gallery", "input.value=get:timer\n"), ("gallery", "input.value=publish:timer\n")] {
             let text = try await SpotRuns(environment: TestEnvironment.values).answer(of: store, action, input: input, limit: 60)
             XCTAssertNil(try viewValues(text)["readme"], input)
         }

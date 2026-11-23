@@ -240,7 +240,7 @@ public struct Frame: Equatable, Sendable {
     }
 
     private mutating func take(action id: String, _ block: TextBlock) {
-        if id == Handler.press.name {
+        if id == ScriptEntry.press.name {
             openTitle = block.value("title")
             pick = block.flag("close") == false ? .stay : .close
         } else if let action = CommandAction(id: id, block: block) {

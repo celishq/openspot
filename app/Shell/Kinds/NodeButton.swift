@@ -9,7 +9,7 @@ struct NodeButton: View {
     @Environment(\.spotSurfaceEdge) private var surface
 
     var body: some View {
-        if let part = context.actions.part(of: node) {
+        if let part = context.host.part(of: node) {
             NodePartFrame(node: node, part: part, look: look, hasLabel: label != nil) { size in
                 if let label {
                     Button { context.press(part) } label: {

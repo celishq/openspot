@@ -2,7 +2,7 @@ import XCTest
 @testable import OpenspotCore
 
 @MainActor
-final class CarefulModeTests: SpotRunsCase {
+final class SandboxTests: SpotRunsCase {
     private var outside: URL!
     private var listener: Int32 = -1
     private var port: UInt16 = 0
@@ -117,7 +117,7 @@ final class CarefulModeTests: SpotRunsCase {
     }
 
     func testOnTheSandboxDeniesAppleEvents() {
-        let words = CarefulMode(uses: Set(SpotUse.allCases)).words(data: "/d", temp: "/t", home: "/h")
+        let words = Sandbox(uses: Set(SpotUse.allCases)).words(data: "/d", temp: "/t", home: "/h")
 
         XCTAssertTrue(words.contains { $0.contains("(deny appleevent-send)") })
     }

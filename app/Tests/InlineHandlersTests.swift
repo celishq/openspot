@@ -247,12 +247,12 @@ final class InlineHandlersTests: SpotRunsCase {
         let asker = try spot("asker")
 
         do {
-            let shown = try await runs.answer(of: asker, Handler.show.name, limit: 0.3)
+            let shown = try await runs.answer(of: asker, ScriptEntry.show.name, limit: 0.3)
             XCTFail("the show outlasted its limit: \(shown)")
         } catch {
             XCTAssertEqual(error as? SpotError, .timedOut)
         }
-        let shown = try await runs.answer(of: asker, Handler.show.name, limit: 10)
+        let shown = try await runs.answer(of: asker, ScriptEntry.show.name, limit: 10)
 
         XCTAssertEqual(TextBlock.blocks(in: shown).first?.value("title"), "late")
     }

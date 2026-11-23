@@ -198,6 +198,6 @@ extension SpotRun {
     }
 
     static func item(of message: Message) -> String? {
-        message.handler == Handler.press.name ? message.inputs.first { $0.key == itemInput }?.value : nil
+        message.handler == ScriptEntry.press.name ? message.inputs.first { $0.key == itemInput }?.value : nil
     }
 }

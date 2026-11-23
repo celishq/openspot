@@ -1,12 +1,12 @@
 import OpenspotCore
 import SwiftUI
 
-struct FloatActions: NodeActions, @MainActor Equatable {
+struct FloatHost: NodeHost, @MainActor Equatable {
     let model: SpotsModel
     let run: SpotRun
     let place: SheetPlace
 
-    static func == (one: FloatActions, other: FloatActions) -> Bool {
+    static func == (one: FloatHost, other: FloatHost) -> Bool {
         one.model === other.model && one.run === other.run && one.place == other.place
     }
 

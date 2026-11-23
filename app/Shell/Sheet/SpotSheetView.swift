@@ -88,7 +88,7 @@ private struct SheetContentView: View {
                         SpotSheetBody(
                             panel: content.panel,
                             list: list,
-                            actions: SheetActions(model: model, id: entry.id, content: content, isHeld: isHeld),
+                            host: SheetHost(model: model, id: entry.id, content: content, isHeld: isHeld),
                             recording: content.recording,
                             recordingWords: model.recordingWords,
                             keys: content.keys,

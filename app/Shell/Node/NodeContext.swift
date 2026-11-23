@@ -7,16 +7,16 @@ extension EnvironmentValues {
 
 struct NodeContext: @MainActor Equatable {
     var variants: Set<Style.Variant> = [.sheet]
-    var actions: any NodeActions = NoActions()
+    var host: any NodeHost = NoHost()
     var panel: SheetParts?
     var focus: FocusState<String?>.Binding?
 
     @MainActor static func == (one: NodeContext, other: NodeContext) -> Bool {
-        one.variants == other.variants && one.panel == other.panel && one.actions.isSame(as: other.actions)
+        one.variants == other.variants && one.panel == other.panel && one.host.isSame(as: other.host)
     }
 }
 
-private struct NoActions: NodeActions, @MainActor Equatable {
+private struct NoHost: NodeHost, @MainActor Equatable {
     func isSelected(_ node: ViewNode, in tree: ViewTree) -> Bool {
         false
     }
