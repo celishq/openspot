@@ -28,10 +28,10 @@ public struct SpotTimer: Codable, Equatable, Sendable {
     public let id: String
     public let spot: String
     public let at: Date?
-    public var action: String?
-    public var inputs: [Input]?
+    public let action: String
+    public let inputs: [Input]
 
-    init(id: String, spot: String, at: Date?, action: String? = nil, inputs: [Input]? = nil) {
+    init(id: String, spot: String, at: Date?, action: String, inputs: [Input]) {
         self.id = id
         self.spot = spot
         self.at = at
@@ -41,9 +41,9 @@ public struct SpotTimer: Codable, Equatable, Sendable {
 
     var block: String {
         var fields = [TextBlock.Field(key: "item", value: id)]
-        if let title = action { fields.append(.init(key: "title", value: title)) }
+        fields.append(.init(key: "title", value: action))
         fields.append(.init(key: "at", value: at.map(Self.format) ?? Self.someday))
-        fields += (inputs ?? []).map { .init(key: "input.\($0.name)", value: $0.value) }
+        fields += inputs.map { .init(key: "input.\($0.name)", value: $0.value) }
         return TextBlock(fields: fields).text
     }
 

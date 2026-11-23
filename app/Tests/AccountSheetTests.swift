@@ -83,7 +83,7 @@ final class AccountSheetTests: BuiltInCase {
 
         XCTAssertEqual(spot.name, "Account")
         XCTAssertTrue(spot.isFound)
-        XCTAssertFalse(spot.triggers.has(.panel))
+        XCTAssertFalse(spot.triggers.showsOnPanel)
         XCTAssertTrue(spot.reachesAccountKey)
         XCTAssertEqual(spot.views, ["card": AccountSheet.card])
     }

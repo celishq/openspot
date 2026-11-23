@@ -9,16 +9,16 @@ public enum ShowEvent: Equatable, Sendable {
     case typed(String, inSheet: Bool)
     case event(String, value: String?)
 
-    static let moments = [ShowEvent.panel, .sheet, .want, .change].map(\.name)
+    static let options = [ShowEvent.panel, .sheet, .want, .change].map(\.name)
 
     var name: String {
         switch self {
-        case .panel: SpotEvent.panelOpen
-        case .sheet: SpotEvent.sheetOpen
-        case .want: SpotEvent.spotWant
-        case .change: "spot.change"
+        case .panel: EventName.panelOpen
+        case .sheet: EventName.sheetOpen
+        case .want: EventName.spotWant
+        case .change: EventName.spotChange
         case .clock: "clock"
-        case .typed(_, let inSheet): inSheet ? SpotEvent.sheetText : SpotEvent.searchText
+        case .typed(_, let inSheet): inSheet ? EventName.sheetText : EventName.searchText
         case .event(let name, _): name
         }
     }
@@ -41,7 +41,7 @@ public enum ShowEvent: Equatable, Sendable {
             return Handler.sheetText.message([search.text], search.forms, after: given)
         case .typed(let text, let inSheet):
             return (inSheet ? Handler.sheetText : Handler.search).message([text], search?.forms ?? [], after: given)
-        case .event(let name, let value) where !Self.moments.contains(name):
+        case .event(let name, let value) where !Self.options.contains(name):
             return Handler.event(name).message(value.map { [$0] } ?? [], after: given)
         default:
             return Handler.show.message([name], after: given)

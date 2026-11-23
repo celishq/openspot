@@ -24,7 +24,7 @@ final class SpotRunTests: XCTestCase {
         try "#!/bin/sh\n\(typed)\(body)\n".writeScript(to: url, toml: mode.stays ? "stay = true" : "")
         let made = SpotRuns()
         runs.append(made)
-        return made.sheet(for: Spot(id: name, name: name, url: url, kind: .list, triggers: triggers ?? (mode.stays ? Manifest.Triggers() : Manifest.Triggers(events: [searches ? SpotEvent.sheetText : SpotEvent.sheetOpen])), mode: mode))
+        return made.sheet(for: Spot(id: name, name: name, url: url, kind: .list, triggers: triggers ?? (mode.stays ? Manifest.Triggers() : Manifest.Triggers(events: [searches ? EventName.sheetText : EventName.sheetOpen])), mode: mode))
     }
 
     private func path(_ name: String) -> String {

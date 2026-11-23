@@ -43,7 +43,7 @@ final class ProtocolContractTests: XCTestCase {
             + missing("root key", code: Set(RootKey.allCases.map(\.rawValue)), named: named)
             + missing("block kind", code: BlockKind.words, named: named)
             + missing("item key", code: Set(ItemKey.allCases.map(\.rawValue)), named: named)
-            + missing("event", code: Set(SpotEvent.known), named: named)
+            + missing("event", code: Set(EventName.declarable), named: named)
             + missing("place", code: places, named: named)
             + missing("call", code: Set(FrameCheck.calls), named: calls)
             + missing("shell helper", code: functions, named: docFunctions)

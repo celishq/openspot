@@ -4,11 +4,11 @@ import XCTest
 @MainActor
 final class SpotEventsTests: SpotRunsCase {
     private final class FakeMac: MacEvents, @unchecked Sendable {
-        var heard: (@MainActor (SpotEvent) -> Void)?
+        var heard: (@MainActor (AppSignal) -> Void)?
         var count = 0
         private(set) var looks = 0
 
-        func listen(_ heard: @escaping @MainActor (SpotEvent) -> Void) {
+        func listen(_ heard: @escaping @MainActor (AppSignal) -> Void) {
             self.heard = heard
         }
 
@@ -44,7 +44,7 @@ final class SpotEventsTests: SpotRunsCase {
         runs.panelOpened()
         try await wait("the panel reads") { self.log("listens") == ["show"] && self.log("other") == ["show"] && !self.runs.isShowing }
 
-        runs.raise(.named(SpotEvent.powerChange, value: "Song"))
+        runs.raise(.named(EventName.powerChange, value: "Song"))
 
         try await wait("the event read") { self.log("reasons") == ["panel.open none", "power.change Song"] && !self.runs.isShowing }
         XCTAssertEqual(log("other"), ["show"])
@@ -70,7 +70,7 @@ final class SpotEventsTests: SpotRunsCase {
 
         try await wait("the first read of the wanted spot") { self.log("wanted") == ["show"] && !self.runs.isShowing }
 
-        runs.raise(.named(SpotEvent.powerChange, value: "Song"))
+        runs.raise(.named(EventName.powerChange, value: "Song"))
 
         try await wait("the event read of the wanted spot") { self.log("wanted") == ["show", "power.change"] && !self.runs.isShowing }
         try await allEnded()
@@ -158,17 +158,17 @@ final class SpotEventsTests: SpotRunsCase {
         _ = try scanned()
         try await wait("the first read") { self.log("reasons") == ["spot.want none"] && !self.runs.isShowing }
 
-        runs.raise(.named(SpotEvent.powerChange, value: "A"))
+        runs.raise(.named(EventName.powerChange, value: "A"))
         try await wait("the read of A") { self.log("reasons").count == 2 }
-        runs.raise(.named(SpotEvent.powerChange, value: "B"))
-        runs.raise(.named(SpotEvent.powerChange, value: "C"))
+        runs.raise(.named(EventName.powerChange, value: "B"))
+        runs.raise(.named(EventName.powerChange, value: "C"))
         openGate()
 
         try await wait("the read of C") { self.log("reasons") == ["spot.want none", "power.change A", "power.change C"] && !self.runs.isShowing }
     }
 
     func testAStayingScriptGetsTheValueOfItsEvent() {
-        XCTAssertEqual(ShowEvent.event(SpotEvent.powerChange, value: "ac").message().block(id: 3), "call=3\narg=power.change\ninput.value=ac\n\n")
+        XCTAssertEqual(ShowEvent.event(EventName.powerChange, value: "ac").message().block(id: 3), "call=3\narg=power.change\ninput.value=ac\n\n")
         XCTAssertEqual(ShowEvent.panel.message().block(id: 3), "call=3\narg=show\ninput.event=panel.open\n\n")
     }
 
@@ -185,9 +185,9 @@ final class SpotEventsTests: SpotRunsCase {
 
         try await wait("the first read") { self.log("reasons") == ["spot.want none"] && !self.runs.isShowing }
 
-        mac.heard?(.named(SpotEvent.frontApp, value: "com.apple.Safari"))
+        mac.heard?(.named(EventName.frontApp, value: "com.apple.Safari"))
         try await wait("the front app read") { self.log("reasons") == ["spot.want none", "app.front com.apple.Safari"] && !self.runs.isShowing }
-        mac.heard?(.named(SpotEvent.screenWake, value: nil))
+        mac.heard?(.named(EventName.screenWake, value: nil))
 
         try await wait("the screen wake read") { self.log("reasons") == ["spot.want none", "app.front com.apple.Safari", "screen.wake none"] }
     }

@@ -76,7 +76,7 @@ public struct SpotCheck: Sendable {
                 let check = FrameCheck(text: text, kinds: script.kinds, isApp: script.isBuiltIn)
                 let output = check.output
                 _ = try script.state(of: output)
-                if script.triggers.seconds != nil, MetricValue(output: output) == nil { throw SpotError.badMetric }
+                if script.triggers.every != nil, MetricValue(output: output) == nil { throw SpotError.badMetric }
                 findings += output.errors.map { found("cannot read the item \($0)") }
                 findings += Self.brokenBlocks(in: text, kinds: script.kinds).map(found)
                 findings += check.partFaults.map(found)

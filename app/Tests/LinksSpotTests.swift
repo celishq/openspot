@@ -109,7 +109,7 @@ final class LinksSpotTests: SampleSpotsCase {
 
             try await self.savedLink("https://icons.test/page", in: links)
 
-            XCTAssertFalse(links.triggers.has(.event(SpotEvent.appLaunch)))
+            XCTAssertFalse(links.triggers.events.contains(EventName.appLaunch))
             XCTAssertTrue(FileManager.default.fileExists(atPath: icons.appendingPathComponent("icons.test.png").path))
         }
     }

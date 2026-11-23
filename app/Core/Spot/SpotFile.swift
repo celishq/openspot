@@ -83,7 +83,7 @@ public struct SpotFile: Equatable, Sendable {
             isFound: isFound,
             mode: mode,
             dataName: SpotID(id).name,
-            isOnGrid: isFound && offers.isEmpty && triggers.seconds == nil,
+            isOnGrid: isFound && offers.isEmpty && triggers.every == nil,
             offers: offers,
             offeredActions: offeredActions,
             settings: manifest.settings,

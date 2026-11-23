@@ -70,7 +70,7 @@ public struct SpotLoad: Sendable {
 
     public var coreChoices: [Spot] {
         let files = entries.filter { $0.origin == .core }.compactMap { entry in entry.spots.map { SpotFile(id: entry.id, spots: $0) } }
-        return ScanResult(files: files, refused: []).spots.filter { $0.triggers.seconds == nil }
+        return ScanResult(files: files, refused: []).spots.filter { $0.triggers.every == nil }
     }
 
     static func version(of stamp: [Int]) -> String {
