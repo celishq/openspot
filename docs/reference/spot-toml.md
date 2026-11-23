@@ -50,6 +50,7 @@ is missing still runs, and people see a message about it once a day. In Careful 
 | `calendar`  | Read and add events and reminders.                                                   |
 | `power`     | Keep the Mac awake with its lid closed.                                              |
 | `timer`     | Add, list and remove its timers.                                                     |
+| `context`   | Put a value in the panel's field when the panel opens; see [Act on what people work on](../connect/context.md). |
 | `network`   | Reach the network in Careful mode. No command needs it.                              |
 | `files`     | Write outside its data folder in Careful mode. No command needs it.                  |
 
@@ -137,7 +138,7 @@ When Openspot runs your spot by itself.
 | `schedule`            | [text]          | `schedule`                        | At each cron line, such as `"0 9 * * 1-5"`, shown or not. |
 | `command`             | [text]          | `command`                         | When people type `/<word>` in the panel's search.        |
 | `search`              | `true` or regex | `show`, or `search`               | `true` adds your items to the panel's search. A regex runs `search` for each text that matches. |
-| `drop`                | [text]          | `drop`                            | When people drop a file of a kind on your card, such as `png`, `folder` or `*`. |
+| `drop`                | [text]          | `drop`                            | When people drop a file of a kind on your card, such as `png`, `folder` or `*`, or hand it a `url` or a `text` with Tab. |
 
 A regex on an event, such as `"power.change" = "^battery$"`, runs your spot only when the event's value matches.
 
@@ -145,7 +146,7 @@ A regex on an event, such as `"power.change" = "^battery$"`, runs your spot only
 
 | Event              | Runs    | Its `value`                      | Comes                                                     |
 | ------------------ | ------- | -------------------------------- | --------------------------------------------------------- |
-| `panel.open`       | `show`  | none                             | Each time the panel opens, and once when Openspot starts. |
+| `panel.open`       | `show`  | the bundle ID of the front app   | Each time the panel opens, and once when Openspot starts. |
 | `sheet.open`       | `show`  | none                             | Each time your spot's sheet opens.                        |
 | `spot.want`        | `show`  | none                             | When a card or the search first shows your spot in an open of the panel. |
 | `sheet.text`       | itself  | the text                         | At each change of the text in your sheet's search field.  |

@@ -39,6 +39,23 @@ Put any spot on the grid, in the menu bar, in a float or in a window, from its S
 - A window opens the sheet in a normal window, which you move, resize and close.
 - A spot with `every` or an action with a title starts off the grid, so a new spot doesn't fill the panel.
 
+## Hand what you work on to a spot
+
+Turn on Finder Selection, Browser Tab, Selected Text or Fresh Copy in Edit Spots. When you open the panel, what each one
+reads, such as the files you selected in Finder, shows as a small stack of cards on the right of the field. Nothing else
+changes until you press Tab.
+
+| Key        | Does                                                                                  |
+| ---------- | ------------------------------------------------------------------------------------- |
+| Tab        | Shows the front card's preview and each spot that takes it, then turns to the next card. |
+| `⇧` Tab    | Turns to the card before.                                                             |
+| Return     | Hands the card to the selected spot, such as a link to Links.                         |
+| Esc        | Brings back the grid. A second Esc closes the panel.                                  |
+
+- Typing filters the spots that take the card. Backspace edits only the text.
+- When the text starts with `/`, Tab completes the slash command instead.
+- A card shows only when a spot that is on takes it. Fresh Copy shows what you copied in the last 2 minutes.
+
 ## Rename a slash command
 
 Rename or remove a slash command, or keep a spot out of the search, in `~/.config/openspot/config.toml`. Here `/note`

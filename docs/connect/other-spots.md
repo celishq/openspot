@@ -123,5 +123,6 @@ Type `finish` in the panel, and press Return on Finish Focus. A message says Nic
 
 ## Next
 
+- [Act on what people work on](context.md)
 - [Use the Mac: clipboard, screen, timers](the-mac.md)
 - [spot.toml](../reference/spot-toml.md)
