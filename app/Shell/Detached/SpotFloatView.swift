@@ -50,13 +50,13 @@ struct SpotFloatView: View {
             if !fills { header(entry, run) }
             if let sole, let view = sole.node.source {
                 NodeSpotView(id: sole.node.id, values: sole.node.values, source: view)
-                    .environment(\.spotNode.actions, FloatActions(model: model, run: run, place: place))
+                    .environment(\.spotNode.host, FloatHost(model: model, run: run, place: place))
                     .ignoresSafeArea(edges: [.horizontal, .bottom])
             } else {
                 SpotSheetBody(
                     panel: run.panel,
                     list: run.list,
-                    actions: FloatActions(model: model, run: run, place: place),
+                    host: FloatHost(model: model, run: run, place: place),
                     onPick: { model.pick($0, of: entry, in: place) },
                     onDragOut: { model.dragOut($0, of: id) },
                     selection: { run.selection }

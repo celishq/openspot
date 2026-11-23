@@ -10,17 +10,17 @@ extension Spot {
 
     func state(timeout: TimeInterval) async throws -> SpotState {
         guard showsState else { return headerState }
-        return try state(of: try await output(Handler.show.name, timeout: timeout))
+        return try state(of: try await output(ScriptEntry.show.name, timeout: timeout))
     }
 
     func opened(timeout: TimeInterval) async throws -> (spot: Spot, state: SpotState) {
         guard showsState else { return (self, headerState) }
-        let output = try await output(Handler.show.name, timeout: timeout)
+        let output = try await output(ScriptEntry.show.name, timeout: timeout)
         return (taking(output), try state(of: output))
     }
 
     func items(query: String = "", input: String? = nil, page: String? = nil, timeout: TimeInterval) async throws -> Frame {
-        var message = query.isEmpty ? Message(Handler.show.name) : ShowEvent.typed(query, inSheet: self.triggers.search == nil).message()
+        var message = query.isEmpty ? Message(ScriptEntry.show.name) : ShowEvent.typed(query, inSheet: self.triggers.search == nil).message()
         if let page { message.inputs.append(.init(key: "route", value: page)) }
         message.given = input
         let text = message.text
@@ -32,7 +32,7 @@ extension Spot {
     }
 
     func sheetFaults(timeout: TimeInterval) async throws -> [String] {
-        FrameCheck(text: try await SpotRuns(environment: TestEnvironment.values).answer(of: self, Handler.show.name, limit: timeout)).sheetFaults
+        FrameCheck(text: try await SpotRuns(environment: TestEnvironment.values).answer(of: self, ScriptEntry.show.name, limit: timeout)).sheetFaults
     }
 
     private func message(_ action: CommandAction, item: SpotItem?, inputs: [TextBlock.Field] = []) -> Message {
@@ -70,7 +70,7 @@ extension Spot {
     }
 
     func read(timeout: TimeInterval) async throws -> MetricValue {
-        guard let value = MetricValue(output: try await output(Handler.show.name, timeout: timeout)) else { throw SpotError.badMetric }
+        guard let value = MetricValue(output: try await output(ScriptEntry.show.name, timeout: timeout)) else { throw SpotError.badMetric }
         return value
     }
 }

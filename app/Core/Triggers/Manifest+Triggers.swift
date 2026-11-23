@@ -3,14 +3,14 @@ import Foundation
 extension Manifest {
     public struct Triggers: Equatable, Sendable {
         static let table = "on"
-        static let command = Handler.command.name
-        static let search = Handler.search.name
-        static let schedule = Handler.schedule.name
-        static let every = Handler.every.name
-        static let drop = Handler.drop.name
+        static let command = ScriptEntry.command.name
+        static let search = ScriptEntry.search.name
+        static let schedule = ScriptEntry.schedule.name
+        static let every = ScriptEntry.every.name
+        static let drop = ScriptEntry.drop.name
         static let keys = [command, search, schedule, every, drop]
         static let events = EventName.declarable
-        private static let named = [Handler.show, .press, .drag]
+        private static let named = [ScriptEntry.show, .press, .drag]
         private static let spaces = Set(EventName.declarable.compactMap { $0.split(separator: ".").first.map(String.init) } + ["clock", "timer"])
 
         public let commands: [String]
@@ -107,8 +107,8 @@ extension Manifest {
             self.init(events: events, every: every, search: search, lists: lists, drop: drop, commands: commands, schedule: schedule, filters: filters, bindings: bindings)
         }
 
-        var handlers: [Handler] {
-            var handlers = Self.named + events.filter { !ShowEvent.options.contains($0) }.map(Handler.event)
+        var handlers: [ScriptEntry] {
+            var handlers = Self.named + events.filter { !ShowEvent.options.contains($0) }.map(ScriptEntry.event)
             if !commands.isEmpty { handlers.append(.command) }
             if search != nil { handlers.append(.search) }
             if !schedule.isEmpty { handlers.append(.schedule) }

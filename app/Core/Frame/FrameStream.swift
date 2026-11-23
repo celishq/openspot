@@ -45,10 +45,10 @@ struct FrameStream: Sendable {
     }
 
     private static func id(of block: TextBlock) -> String? {
-        block.fields.first.flatMap { $0.value.isEmpty || $0.key == BlockKind.option ? nil : $0.value }
+        block.fields.first.flatMap { $0.value.isEmpty || $0.key == BlockKind.option.word ? nil : $0.value }
     }
 
     private static func isOption(_ block: TextBlock) -> Bool {
-        block.fields.first?.key == BlockKind.option
+        block.fields.first?.key == BlockKind.option.word
     }
 }

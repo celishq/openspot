@@ -24,7 +24,7 @@ extension SpotRuns {
                     schedule.ran(line, of: id, at: time)
                     isChanged = true
                     let late = String(max(0, Int(time.timeIntervalSince(due))))
-                    sheet.trigger(Handler.schedule.message([line.text], [late]), key: "\(Handler.schedule.name).\(line.text)")
+                    sheet.trigger(ScriptEntry.schedule.message([line.text], [late]), key: "\(ScriptEntry.schedule.name).\(line.text)")
                     next = Self.earlier(next, line.next(after: time))
                 } else {
                     next = Self.earlier(next, due)

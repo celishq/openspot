@@ -15,7 +15,7 @@ struct NodeFace: View {
         let style = node.style.resolved(for: given)
         if style.isHidden != true {
             content(style)
-                .environment(\.spotNode.variants, node.kind == BlockKind.button.word ? given : variants)
+                .environment(\.spotNode.variants, node.kind == .button ? given : variants)
                 .modifier(NodeLook(style: style, drawsFill: !takesLook))
                 .modifier(NodeHover(isFollowed: tree.tracksHover(node), isHovered: $isHovered))
                 .modifier(NodePress(isFollowed: !isOnCard && tree.follows([.pressed], at: node), isPressed: $isPressed))
@@ -28,24 +28,24 @@ struct NodeFace: View {
     }
 
     private var takesLook: Bool {
-        BlockKind.controlWords.contains(node.kind) && (node.kind != BlockKind.button.word || node.children.isEmpty)
+        BlockKind.controls.contains(node.kind) && (node.kind != .button || node.children.isEmpty)
     }
 
     @ViewBuilder
     private func content(_ style: Style) -> some View {
         switch node.kind {
-        case BlockKind.box: NodeBox(children: node.children, style: style, tree: tree)
-        case BlockKind.text.word, BlockKind.item.word: NodeText(title: node.title ?? node.value, detail: node.detail, tone: node.tone, icon: node.icon)
-        case BlockKind.icon.word: NodeIcon(icon: node.icon, side: node.naturalSize.width)
-        case BlockKind.picture.word: NodePicture(icon: node.icon, size: node.naturalSize)
-        case BlockKind.button.word where !node.children.isEmpty: NodeButton(node: node, look: nil, label: AnyView(NodeBox(children: node.children, style: style, tree: tree)))
-        case BlockKind.field.word where node.isSearch: NodeSearch()
-        case BlockKind.toggle.word: NodeSwitch(node: node, look: SpotPart.Look(style: style))
-        case BlockKind.choice.word: NodeChoice(node: node, look: SpotPart.Look(style: style))
-        case BlockKind.field.word: NodeField(node: node, look: SpotPart.Look(style: style))
-        case BlockKind.button.word: NodeButton(node: node, look: SpotPart.Look(style: style))
-        case BlockKind.number.word, BlockKind.series.word: NodeNumber(node: node, look: SpotPart.Look(style: style))
-        case BlockKind.items: NodeItems(size: node.naturalSize)
+        case .box: NodeBox(children: node.children, style: style, tree: tree)
+        case .text, .item: NodeText(title: node.title ?? node.value, detail: node.detail, tone: node.tone, icon: node.icon)
+        case .icon: NodeIcon(icon: node.icon, side: node.naturalSize.width)
+        case .picture: NodePicture(icon: node.icon, size: node.naturalSize)
+        case .button where !node.children.isEmpty: NodeButton(node: node, look: nil, label: AnyView(NodeBox(children: node.children, style: style, tree: tree)))
+        case .field where node.isSearch: NodeSearch()
+        case .toggle: NodeSwitch(node: node, look: SpotPart.Look(style: style))
+        case .choice: NodeChoice(node: node, look: SpotPart.Look(style: style))
+        case .field, .slider, .hotkey: NodeField(node: node, look: SpotPart.Look(style: style))
+        case .button: NodeButton(node: node, look: SpotPart.Look(style: style))
+        case .number, .series: NodeNumber(node: node, look: SpotPart.Look(style: style))
+        case .items: NodeItems(size: node.naturalSize)
         default:
             if let source = node.source { NodeSpotView(id: node.id, values: node.values, source: source) }
         }

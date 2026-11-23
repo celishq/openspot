@@ -59,7 +59,7 @@ extension ScriptMode {
     static func collect(of spot: Spot, _ handler: String, input: String?, limit: TimeInterval?, variables: [String: String], in runs: SpotRuns) async throws -> String {
         let (stream, halt, _) = frames(of: spot, Message(handler, given: input), limit: limit, reason: nil, variables: variables, call: nil, in: runs)
         defer { if runs.sheets[spot.id] == nil { runs.dropScript(of: spot.id) } }
-        if handler == Handler.show.name {
+        if handler == ScriptEntry.show.name {
             defer { halt() }
             for try await frame in stream { return frame }
             return ""

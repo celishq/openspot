@@ -7,10 +7,10 @@ struct NodeField: View {
     @Environment(\.spotNode) private var context
 
     var body: some View {
-        if let part = context.actions.part(of: node) {
-            let actions = context.actions
+        if let part = context.host.part(of: node) {
+            let host = context.host
             NodePartFrame(node: node, part: part, look: look) { size in
-                FieldDrawing(part: part, size: size, isCard: context.isCard, call: context.call(of: part), isRecording: actions.recordingPart == part.id, keys: actions.keys, focus: context.focus, onRecord: { actions.record(part) }) { context.set(part, to: $0) }
+                FieldDrawing(part: part, size: size, isCard: context.isCard, call: context.call(of: part), isRecording: host.recordingPart == part.id, keys: host.keys, focus: context.focus, onRecord: { host.record(part) }) { context.set(part, to: $0) }
             }
         }
     }

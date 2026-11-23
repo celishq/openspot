@@ -121,7 +121,7 @@ final class SpotTests: XCTestCase {
     func testAClickOnAFileWithNoReadSendsPress() async throws {
         let command = try writeCommand(kind: .launch, "echo \"$1\" > '\(marker.path)'")
 
-        try await command.perform(Handler.press.name, timeout: 60)
+        try await command.perform(ScriptEntry.press.name, timeout: 60)
 
         XCTAssertEqual(try String(contentsOf: marker, encoding: .utf8), "press\n")
     }
@@ -129,7 +129,7 @@ final class SpotTests: XCTestCase {
     func testAClickOnACardWithAReadSendsPress() async throws {
         let command = try writeCommand(kind: .launch, triggers: .panel, "echo \"$1\" > '\(marker.path)'")
 
-        try await command.perform(Handler.press.name, timeout: 60)
+        try await command.perform(ScriptEntry.press.name, timeout: 60)
 
         XCTAssertEqual(try String(contentsOf: marker, encoding: .utf8), "press\n")
     }
@@ -177,7 +177,7 @@ final class SpotTests: XCTestCase {
         let command = try writeCommand(kind: .launch, "echo first >&2\necho 'No screenshot found.' >&2\nexit 3")
 
         do {
-            try await command.perform(Handler.press.name, timeout: 60)
+            try await command.perform(ScriptEntry.press.name, timeout: 60)
             XCTFail("expected a failure")
         } catch let error as SpotError {
             XCTAssertEqual(error, .failed(3, "No screenshot found."))

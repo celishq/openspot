@@ -1,13 +1,13 @@
 import OpenspotCore
 import SwiftUI
 
-struct SheetActions: NodeActions, @MainActor Equatable {
+struct SheetHost: NodeHost, @MainActor Equatable {
     let model: SpotsModel
     let id: String
     let content: SheetContent
     let isHeld: Bool
 
-    static func == (one: SheetActions, other: SheetActions) -> Bool {
+    static func == (one: SheetHost, other: SheetHost) -> Bool {
         one.model === other.model && one.id == other.id && !one.isHeld && !other.isHeld
     }
 

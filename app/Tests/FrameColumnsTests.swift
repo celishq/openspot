@@ -22,7 +22,7 @@ final class FrameColumnsTests: XCTestCase {
 
         XCTAssertEqual(output.columns, 1)
         XCTAssertEqual(output.perLine, 1)
-        XCTAssertEqual(output.tree.node("apps")?.kind, BlockKind.items)
+        XCTAssertEqual(output.tree.node("apps")?.kind, .items)
         XCTAssertEqual(output.items.map(\.title), ["Safari", "Notes"])
     }
 

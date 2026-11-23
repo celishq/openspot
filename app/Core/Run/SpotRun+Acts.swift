@@ -53,7 +53,7 @@ extension SpotRun {
 
     public func pressCard() {
         if let running = running(Self.cardKey) { return pressAgain(running) }
-        guard spot.kind == .toggle else { return act(Message(Handler.press.name), key: Self.cardKey) }
+        guard spot.kind == .toggle else { return act(Message(ScriptEntry.press.name), key: Self.cardKey) }
         let before = state
         let message = Self.toggling(state)
         state = state.switched(on: !(state.on ?? false))
@@ -69,14 +69,14 @@ extension SpotRun {
     @discardableResult
     public func drop(_ paths: [String], files: FileKinds? = nil) -> Bool {
         guard files.map(spot.accepts) ?? spot.accepts(paths) else { return false }
-        waitingFiles.append(Handler.drop.message(paths))
+        waitingFiles.append(ScriptEntry.drop.message(paths))
         startWaitingFiles()
         return true
     }
 
     public func dragged(_ items: [SpotItem]) {
         guard !items.isEmpty else { return }
-        waitingFiles.append(Handler.drag.message(items.map(\.run)))
+        waitingFiles.append(ScriptEntry.drag.message(items.map(\.run)))
         startWaitingFiles()
     }
 
@@ -125,7 +125,7 @@ extension SpotRun {
     }
 
     private func picking(_ item: SpotItem) -> Message {
-        guard item.isToggle else { return Handler.press.message([item.run], then: item.carried) }
+        guard item.isToggle else { return ScriptEntry.press.message([item.run], then: item.carried) }
         var message = Self.setting(item.run, to: item.isOn ? "false" : "true")
         message.inputs += item.carried
         return message
@@ -181,7 +181,7 @@ extension SpotRun {
             if lacks { return .form(typed.itemForm(values: values, title: action.title)) }
         }
         let word: String? = if case .word(let name) = action.kind { name } else { nil }
-        let message = word.map { Handler.command.message([$0], [search.text]) }
+        let message = word.map { ScriptEntry.command.message([$0], [search.text]) }
             ?? typed?.textInput.map { Message(call, inputs: [.init(key: $0.name, value: search.text)]) }
             ?? Message(call)
         return try await withCheckedThrowingContinuation { waiting in
@@ -198,9 +198,9 @@ extension SpotRun {
 
     public func submit(_ action: CommandAction, item: SpotItem?, draft: FormDraft) async throws -> CallAnswer {
         let word: String? = if case .word(let name) = action.kind { name } else { nil }
-        let call = word == nil ? action.callName : Handler.command.name
+        let call = word == nil ? action.callName : ScriptEntry.command.name
         guard let key = freeKey(call, item: word == nil ? item?.run : nil) else { return .stopped }
-        let message = word.map { Handler.command.message([$0], then: draft.inputs) }
+        let message = word.map { ScriptEntry.command.message([$0], then: draft.inputs) }
             ?? Message(action.callName, inputs: draft.inputs + (item.map { [TextBlock.Field(key: Self.itemInput, value: $0.run)] } ?? []))
         guard !script.keepsState else {
             act(message, key: key)

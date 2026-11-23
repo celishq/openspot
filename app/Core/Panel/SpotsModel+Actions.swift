@@ -174,7 +174,7 @@ extension SpotsModel {
         if let field = entry.spot.settings.first(where: { $0.id == key && $0.isSecret }) {
             pushFirst(id, moving: true)
             let form = ItemForm(title: field.title, fields: [ItemForm.Field(name: key, label: field.title, type: .secret)])
-            let action = CommandAction(id: Self.secretPrefix + key, title: "Change \(field.title)", scope: .spot, after: .stay)
+            let action = CommandAction.secret(key, title: field.title)
             self.form = FormSession(draft: FormDraft(form: form), entry: entry, action: action, item: nil, openedSheet: true)
             return true
         }
@@ -182,7 +182,7 @@ extension SpotsModel {
             pushFirst(id, moving: true)
             let options = field.options.map { SpotPart.Option(id: $0, title: $0) }
             let form = ItemForm(title: field.title, fields: [ItemForm.Field(name: key, label: field.title, type: .choice, value: runs.settings[id]?[key], options: options)])
-            let action = CommandAction(id: Self.optionPrefix + key, title: "Change \(field.title)", scope: .spot, after: .stay)
+            let action = CommandAction.option(key, title: field.title)
             self.form = FormSession(draft: FormDraft(form: form), entry: entry, action: action, item: nil, openedSheet: true)
             return true
         }
@@ -218,11 +218,7 @@ extension SpotsModel {
         send(form, form.draft)
     }
 
-    private static let secretPrefix = "openspot.secret."
-    private static let optionPrefix = "openspot.option."
-
-    private func keepOption(_ form: FormSession, _ draft: FormDraft) {
-        let key = String(form.action.id.dropFirst(Self.optionPrefix.count))
+    private func keepOption(_ key: String, _ form: FormSession, _ draft: FormDraft) {
         let spot = form.entry.id
         do {
             let next = try files.config.change { $0.set(setting: key, of: spot, to: draft.values[key]) }
@@ -234,8 +230,7 @@ extension SpotsModel {
         }
     }
 
-    private func keepSecret(_ form: FormSession, _ draft: FormDraft) {
-        let key = String(form.action.id.dropFirst(Self.secretPrefix.count))
+    private func keepSecret(_ key: String, _ form: FormSession, _ draft: FormDraft) {
         let spot = form.entry.id
         let value = draft.values[key] ?? ""
         if !value.isEmpty, value.count < SecretStore.shortest {
@@ -264,8 +259,8 @@ extension SpotsModel {
     }
 
     func send(_ form: FormSession, _ draft: FormDraft) {
-        if form.action.id.hasPrefix(Self.secretPrefix) { return keepSecret(form, draft) }
-        if form.action.id.hasPrefix(Self.optionPrefix) { return keepOption(form, draft) }
+        if case .secret(let key) = form.action.kind { return keepSecret(key, form, draft) }
+        if case .option(let key) = form.action.kind { return keepOption(key, form, draft) }
         Task {
             do {
                 switch try await sheets[form.entry.id]?.submit(form.action, item: form.item, draft: draft) {

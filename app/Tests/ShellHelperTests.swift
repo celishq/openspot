@@ -340,7 +340,7 @@ final class ShellHelperTests: XCTestCase {
     }
 
     func testOneMainRunsUnchangedOnceAndStaying() async throws {
-        let handler = Handler.show.name
+        let handler = ScriptEntry.show.name
         let input = "event=panel\ninput.note=x\\ny\n"
         let once = try script(Self.shownCall)
         let stays = try script(Self.shownCall, toml: "stay = true")
@@ -373,7 +373,7 @@ final class ShellHelperTests: XCTestCase {
         let live = ScriptProcess(url: url, mode: .stays, limit: 60)
         var frames = live.start().makeAsyncIterator()
 
-        live.send(Message(Handler.show.name, inputs: [.init(key: "a", value: "held")], given: "event=music.track\nevent.value=Song\n"), id: 1)
+        live.send(Message(ScriptEntry.show.name, inputs: [.init(key: "a", value: "held")], given: "event=music.track\nevent.value=Song\n"), id: 1)
         live.send(text: Message.stopEvent(id: 1))
         live.send(Message("go"), id: 2)
         live.end()

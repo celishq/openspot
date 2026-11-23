@@ -10,7 +10,7 @@ public struct SpotState: Equatable, Sendable {
     public let max: Double?
     public private(set) var isOnGrid: Bool
     public let control: String?
-    public private(set) var face: CardFace
+    public private(set) var face: ViewTree
 
     public init(
         title: String,
@@ -22,7 +22,7 @@ public struct SpotState: Equatable, Sendable {
         max: Double? = nil,
         isOnGrid: Bool = true,
         control: String? = nil,
-        face: CardFace = .none
+        face: ViewTree = .empty
     ) {
         self.title = title
         self.subtitle = subtitle
@@ -89,7 +89,7 @@ public struct SpotState: Equatable, Sendable {
         var same = self
         same.face = other.face
         guard same == other else { return nil }
-        return face.tree.changedParts(from: other.face.tree)
+        return face.changedParts(from: other.face)
     }
 
     public func showing(title: String?, detail: String?) -> SpotState {

@@ -7,11 +7,11 @@ struct CalcExpression: Sendable {
 
     init?(text: String, locale: Locale) {
         guard let tokens = CalcToken.tokens(in: text, locale: locale), !tokens.isEmpty else { return nil }
-        var reader = Reader(tokens: tokens, locale: locale)
-        guard let term = reader.additive(), reader.isAtEnd, term.value.isFinite else { return nil }
+        var cursor = Cursor(tokens: tokens, locale: locale)
+        guard let term = cursor.additive(), cursor.isAtEnd, term.value.isFinite else { return nil }
         value = term.isPercent ? term.value / 100 : term.value
         detail = term.text
-        isPlain = reader.operations == 0
+        isPlain = cursor.operations == 0
         guard value.isFinite else { return nil }
     }
 
@@ -36,7 +36,7 @@ struct CalcExpression: Sendable {
 
     private static let constants: [String: (value: Double, text: String)] = ["pi": (.pi, "π"), "π": (.pi, "π"), "e": (M_E, "e")]
 
-    private struct Reader {
+    private struct Cursor {
         let tokens: [CalcToken]
         let locale: Locale
         var index = 0

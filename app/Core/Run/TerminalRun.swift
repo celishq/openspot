@@ -39,7 +39,7 @@ public struct TerminalRun {
     }
 
     var called: String {
-        handler ?? (spot.hasSheet ? Handler.show.name : Handler.press.name)
+        handler ?? (spot.hasSheet ? ScriptEntry.show.name : ScriptEntry.press.name)
     }
 
     private func message(isInShow: Bool) -> Message {
@@ -53,7 +53,7 @@ public struct TerminalRun {
         if spot.reachesAccountKey {
             return End(code: 1, errors: "\(spot.name) reaches your account key, so it runs only in the Openspot panel. Open it there.\n")
         }
-        let isInShow = called == Handler.show.name
+        let isInShow = called == ScriptEntry.show.name
         if spot.mode == .inline { return await inline(isInShow: isInShow, frame: frame) }
         let swift = SwiftProgram()
         let program = swift.runnable(for: spot, builds: false)

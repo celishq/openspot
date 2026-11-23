@@ -1,7 +1,7 @@
 import OpenspotCore
 import SwiftUI
 
-struct SampleActions: NodeActions {
+struct SampleHost: NodeHost {
     let panel: SheetParts
     let items: ItemList
     let onSet: (SpotPart, String) -> Void

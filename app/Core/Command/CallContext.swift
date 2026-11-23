@@ -41,8 +41,8 @@ struct CallContext {
         isCareful ? Set(SpotUse.allCases) : nil
     }
 
-    var fence: (caller: Spot, mode: CarefulMode)? {
+    var fence: (caller: Spot, sandbox: Sandbox)? {
         guard isCareful, let caller, !caller.uses.contains(.files) else { return nil }
-        return (caller, CarefulMode(uses: caller.uses))
+        return (caller, Sandbox(uses: caller.uses))
     }
 }

@@ -156,7 +156,7 @@ final class WireTests: SpotRunsCase {
 
         _ = await TerminalRun(spot: sheet.spot, handler: nil, input: nil, inputs: [], settings: settings, careful: nil, callers: nil, environment: nil, folder: nil).start { _ in }
         _ = await TerminalRun(spot: sheet.spot, handler: "go", input: "x=2\n", inputs: [.init(key: "x", value: "1")], settings: settings, careful: nil, callers: nil, environment: nil, folder: nil).start { _ in }
-        _ = try await runs.answer(of: sheet.spot, Handler.show.name)
+        _ = try await runs.answer(of: sheet.spot, ScriptEntry.show.name)
 
         XCTAssertEqual(calls, ["args=show\ninput.event=sheet.open\nsetting.city=Paris", "args=go\ninput.x=1\nx=2\nsetting.city=Paris", "args=show\n"])
     }
@@ -195,7 +195,7 @@ final class WireTests: SpotRunsCase {
 
         """)
         let before = try String(contentsOfFile: path("stdin"), encoding: .utf8)
-        _ = try await StayMode.answer(of: sheet.spot, Handler.show.name, input: "x=2\n", limit: 10, variables: [:], in: runs)
+        _ = try await StayMode.answer(of: sheet.spot, ScriptEntry.show.name, input: "x=2\n", limit: 10, variables: [:], in: runs)
         XCTAssertEqual(try String(contentsOfFile: path("stdin"), encoding: .utf8).dropFirst(before.count), "call=1\narg=show\ninput.event=panel.open\nx=2\n\n")
     }
 }

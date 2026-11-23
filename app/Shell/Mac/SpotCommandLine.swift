@@ -88,7 +88,7 @@ enum SpotCommandLine {
         }
         var answer: Result<String, Error>?
         Task {
-            do { answer = .success(try await SpotRuns().answer(of: spot, Handler.show.name, limit: 10)) } catch { answer = .failure(error) }
+            do { answer = .success(try await SpotRuns().answer(of: spot, ScriptEntry.show.name, limit: 10)) } catch { answer = .failure(error) }
         }
         while answer == nil { RunLoop.main.run(mode: .default, before: .distantFuture) }
         guard case .success(let text)? = answer, !text.isEmpty else {

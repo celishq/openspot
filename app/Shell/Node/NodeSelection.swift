@@ -7,6 +7,6 @@ struct NodeSelection: View {
     @Environment(\.spotNode) private var context
 
     var body: some View {
-        NodeFace(node: node, tree: tree, isSelected: context.actions.isSelected(node, in: tree))
+        NodeFace(node: node, tree: tree, isSelected: context.host.isSelected(node, in: tree))
     }
 }

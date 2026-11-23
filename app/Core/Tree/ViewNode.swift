@@ -7,7 +7,7 @@ public struct ViewNode: Equatable, Sendable, Identifiable {
     static let commonKeys: Set<String> = [parentKey, classKey, "title", "detail", "tone", "icon"]
 
     public let id: String
-    public let kind: String
+    public let kind: BlockKind
     public let parent: String?
     public let block: TextBlock
     public let style: Style
@@ -34,32 +34,32 @@ public struct ViewNode: Equatable, Sendable, Identifiable {
 
     public var naturalSize: CGSize {
         switch kind {
-        case BlockKind.icon.word: CGSize(width: SpotTokens.listIconSize, height: SpotTokens.listIconSize)
-        case BlockKind.picture.word: CGSize(width: SpotTokens.cell, height: SpotTokens.cell)
+        case .icon: CGSize(width: SpotTokens.listIconSize, height: SpotTokens.listIconSize)
+        case .picture: CGSize(width: SpotTokens.cell, height: SpotTokens.cell)
         default: CGSize(width: SpotTokens.cell, height: source == nil ? SpotTokens.listRow * CGFloat(lines) + SpotTokens.partGap * CGFloat(lines - 1) : SpotTokens.cell)
         }
     }
 
-    init(id: String, kind: String, parent: String?, block: TextBlock, style written: Style, children: [String], blockKind: BlockKind?) {
+    init(id: String, kind: BlockKind, parent: String?, block: TextBlock, style written: Style, children: [String], partKind: BlockKind?) {
         self.id = id
         self.kind = kind
         self.parent = parent
         self.block = block
-        let part = blockKind.flatMap { SpotPart(block: block, kind: $0, style: written) }
+        let part = partKind.flatMap { SpotPart(block: block, kind: $0, style: written) }
         self.part = part
         var style = written
         if style.grows == nil {
-            let isMultiline = kind == BlockKind.field.word && block.value("type") == Self.multiline
-            let isFree = blockKind?.source != nil && style.height == nil && !style.isSquare
-            style.grows = block.flag("grow") ?? (kind == BlockKind.items || isMultiline || isFree ? true : nil)
+            let isMultiline = kind == .field && block.value("type") == Self.multiline
+            let isFree = partKind?.source != nil && style.height == nil && !style.isSquare
+            style.grows = block.flag("grow") ?? (kind == .items || isMultiline || isFree ? true : nil)
         }
         self.style = style
         self.children = children
         value = block.value("value")
-        icon = kind == BlockKind.icon.word ? Icon(text: value) : part?.icon
-        source = blockKind?.source
-        lines = blockKind == .hotkey ? 2 : 1
-        isSearch = kind == BlockKind.field.word && block.value("type") == Frame.searchType
+        icon = kind == .icon ? Icon(text: value) : part?.icon
+        source = partKind?.source
+        lines = partKind == .hotkey ? 2 : 1
+        isSearch = kind == .field && block.value("type") == Frame.searchType
         values = source == nil ? [:] : Dictionary(grouping: block.fields, by: \.key).mapValues { $0.map(\.value) }
     }
 }

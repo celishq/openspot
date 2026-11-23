@@ -1,5 +1,5 @@
 public struct FrameCheck: Equatable, Sendable {
-    public static let calls = Handler.all.map(\.name)
+    public static let calls = ScriptEntry.all.map(\.name)
 
     public let output: Frame
     public let partFaults: [String]
@@ -17,8 +17,8 @@ public struct FrameCheck: Equatable, Sendable {
         let taken = Self.calls.filter { $0 != "drag" || listed.contains { $0.value(ItemKey.file) != nil } }
         var faults: [String] = []
         for block in blocks {
-            if block.fields.first?.key == BlockKind.box {
-                faults += BlockKind.faults(in: block, kind: BlockKind(name: BlockKind.box))
+            if block.fields.first?.key == BlockKind.box.word {
+                faults += BlockKind.faults(in: block, kind: .box)
                 continue
             }
             guard let kind = BlockKind.of(block, in: kinds), let id = block.value(kind.word) else { continue }
@@ -34,8 +34,8 @@ public struct FrameCheck: Equatable, Sendable {
                 faults += BlockKind.faults(in: block, kind: kind)
                 continue
             }
-            if taken.contains(id), id != Handler.press.name { faults.append("an action cannot be called \(id)") }
-            if id != Handler.press.name, CommandAction(id: id, block: block) == nil { faults += BlockKind.actionFaults(in: block) }
+            if taken.contains(id), id != ScriptEntry.press.name { faults.append("an action cannot be called \(id)") }
+            if id != ScriptEntry.press.name, CommandAction(id: id, block: block) == nil { faults += BlockKind.actionFaults(in: block) }
         }
         faults += output.tree.faults
         if !output.unnamedValues.isEmpty {

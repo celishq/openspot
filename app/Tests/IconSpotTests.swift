@@ -17,7 +17,7 @@ final class IconSpotTests: BuiltInCase {
     private func view() async throws -> TextBlock {
         let output = try await icon.items(timeout: 60)
         let board = try XCTUnwrap(output.tree.node("drawer"))
-        XCTAssertEqual(board.kind, "board")
+        XCTAssertEqual(board.kind.name, "board")
         return board.block
     }
 

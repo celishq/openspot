@@ -77,6 +77,86 @@ final class ManifestSchemaTests: XCTestCase {
         XCTAssertFalse(commands.contains { ($0["name"] as? String)?.hasPrefix("clipboard") == true })
     }
 
+    func testSpotActionsPrintsOnlyTheDeclaredActionsInTheirOrder() async throws {
+        try "#!/bin/sh\n".writeScript(to: root.appendingPathComponent("spots").spotFile("snooze"), toml: """
+        [actions.snooze]
+        title = "Snooze Tab"
+        inputs.url = { type = "url", required = true }
+        outputs.until = "date"
+
+        [actions.clear]
+        inputs.all = "bool"
+        """)
+
+        let answer = try await answer(["spot", "actions", "snooze"])
+
+        XCTAssertEqual(answer.code, 0, answer.errors)
+        XCTAssertEqual(answer.output, """
+        [
+          {
+            "actions" : [
+              {
+                "inputs" : {
+                  "properties" : {
+                    "url" : {
+                      "format" : "uri",
+                      "type" : "string"
+                    }
+                  },
+                  "required" : [
+                    "url"
+                  ],
+                  "type" : "object"
+                },
+                "name" : "snooze",
+                "outputs" : {
+                  "properties" : {
+                    "until" : {
+                      "pattern" : "^[0-9]{4}-[0-9]{2}-[0-9]{2}",
+                      "type" : "string"
+                    }
+                  },
+                  "required" : [
+
+                  ],
+                  "type" : "object"
+                },
+                "title" : "Snooze Tab"
+              },
+              {
+                "inputs" : {
+                  "properties" : {
+                    "all" : {
+                      "type" : "boolean"
+                    }
+                  },
+                  "required" : [
+
+                  ],
+                  "type" : "object"
+                },
+                "name" : "clear",
+                "outputs" : {
+                  "properties" : {
+
+                  },
+                  "required" : [
+
+                  ],
+                  "type" : "object"
+                }
+              }
+            ],
+            "commands" : [
+
+            ],
+            "spot" : "snooze"
+          }
+        ]
+
+        """)
+    }
+
     func testSpotActionsFailsForASpotThatDoesNotLoad() async throws {
         let answer = try await answer(["spot", "actions", "none"])
 

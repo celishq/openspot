@@ -49,11 +49,11 @@ final class SpotStarterTests: XCTestCase {
         let said = tools.appendingPathComponent("said")
         try "#!/bin/sh\nprintf '%s\\n' \"$*\" > '\(said.path)'\n".writeScript(to: tools.appendingPathComponent("openspot"))
         let spot = try XCTUnwrap(SpotsFolder(url: folder).scan().spots.first)
-        let rows = try await spot.answer(Handler.show.name, timeout: 10).items
+        let rows = try await spot.answer(ScriptEntry.show.name, timeout: 10).items
 
         _ = try await TestEnvironment.with(["PATH": "\(tools.path):/usr/bin:/bin"]) {
             let row = try XCTUnwrap(rows.last)
-            let message = Handler.press.message([row.run], then: row.carried)
+            let message = ScriptEntry.press.message([row.run], then: row.carried)
             return try await spot.answer(message.handler, input: message.text, timeout: 10)
         }
 

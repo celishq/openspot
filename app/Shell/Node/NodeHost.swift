@@ -2,7 +2,7 @@ import OpenspotCore
 import SwiftUI
 
 @MainActor
-protocol NodeActions {
+protocol NodeHost {
     func part(of node: ViewNode) -> SpotPart?
     func set(_ part: SpotPart, to value: String)
     func press(_ part: SpotPart)
@@ -24,10 +24,10 @@ protocol NodeActions {
     var selection: (() -> Int)? { get }
     var rows: [[String]] { get }
     var answers: Int { get }
-    func isSame(as other: any NodeActions) -> Bool
+    func isSame(as other: any NodeHost) -> Bool
 }
 
-extension NodeActions {
+extension NodeHost {
     func part(of node: ViewNode) -> SpotPart? { node.part }
     func set(_ part: SpotPart, to value: String) {}
     func press(_ part: SpotPart) {}
@@ -49,11 +49,11 @@ extension NodeActions {
     var selection: (() -> Int)? { nil }
     var rows: [[String]] { [] }
     var answers: Int { 0 }
-    func isSame(as other: any NodeActions) -> Bool { false }
+    func isSame(as other: any NodeHost) -> Bool { false }
 }
 
-extension NodeActions where Self: Equatable {
-    func isSame(as other: any NodeActions) -> Bool {
+extension NodeHost where Self: Equatable {
+    func isSame(as other: any NodeHost) -> Bool {
         (other as? Self) == self
     }
 }

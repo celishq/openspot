@@ -126,7 +126,7 @@ final class DoomExampleTests: SampleSpotsCase {
                 try await Task.sleep(for: .milliseconds(10))
             }
             runs.panelClosed()
-            let tree = sheet.state.face.tree
+            let tree = sheet.state.face
             pictures.append((tree.node("screen")?.values["picture"]?.last, tree.isWritten ? tree.children : nil))
         }
         return pictures

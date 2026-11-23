@@ -377,7 +377,7 @@ final class SpotRunsInlineTests: SpotRunsCase {
         let spot = try XCTUnwrap(try scanned().scripts.first)
 
         do {
-            _ = try await runs.answer(of: spot, Handler.show.name, limit: 0.2)
+            _ = try await runs.answer(of: spot, ScriptEntry.show.name, limit: 0.2)
             XCTFail("the run returned")
         } catch {
             XCTAssertEqual(error as? SpotError, .timedOut)

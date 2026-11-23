@@ -34,8 +34,8 @@ final class CalculatorSpotTests: SampleSpotsCase {
 
             XCTAssertEqual(answers.map(\.run), ["1234.5"])
             XCTAssertEqual(answers.first?.card?.face.answerSize, .large)
-            XCTAssertEqual(answers.first?.card?.face.tree.parts.map(\.title), ["1000 + 234.5"])
-            XCTAssertEqual(answers.first?.card?.face.tree.parts.last?.number?.text, "1,234.5")
+            XCTAssertEqual(answers.first?.card?.face.parts.map(\.title), ["1000 + 234.5"])
+            XCTAssertEqual(answers.first?.card?.face.parts.last?.number?.text, "1,234.5")
             XCTAssertEqual(answers.first?.openTitle, "Copy")
             XCTAssertEqual(try String(contentsOf: home.appendingPathComponent("calc-asked"), encoding: .utf8), "1000+234.5\n")
         }
@@ -47,8 +47,8 @@ final class CalculatorSpotTests: SampleSpotsCase {
 
             let answers = try await self.calculator.search("15 usd in eur", timeout: 60).answers(asCard: self.calculator.triggers.search?.isCard == true)
 
-            XCTAssertEqual(answers.first?.card?.face.tree.parts.map(\.title), ["15 USD in EUR"])
-            XCTAssertEqual(answers.first?.card?.face.tree.parts.last?.numberPieces.map(\.isUnit), [false, true])
+            XCTAssertEqual(answers.first?.card?.face.parts.map(\.title), ["15 USD in EUR"])
+            XCTAssertEqual(answers.first?.card?.face.parts.last?.numberPieces.map(\.isUnit), [false, true])
         }
     }
 
@@ -58,7 +58,7 @@ final class CalculatorSpotTests: SampleSpotsCase {
 
             let answers = try await self.calculator.search("3pm tokyo in berlin", timeout: 60).answers(asCard: self.calculator.triggers.search?.isCard == true)
 
-            XCTAssertEqual(answers.first?.card?.face.tree.parts.first?.title, "Wed 3:00 PM · Tokyo")
+            XCTAssertEqual(answers.first?.card?.face.parts.first?.title, "Wed 3:00 PM · Tokyo")
         }
     }
 
@@ -69,7 +69,7 @@ final class CalculatorSpotTests: SampleSpotsCase {
             let answers = try await self.calculator.search("15 usd in eur", timeout: 60).answers(asCard: self.calculator.triggers.search?.isCard == true)
 
             XCTAssertEqual(answers.map(\.run), ["13.46"])
-            XCTAssertEqual(answers.first?.card?.face.tree.parts.first?.title, "15 USD in EUR · rates of Nov 2, 9 days old")
+            XCTAssertEqual(answers.first?.card?.face.parts.first?.title, "15 USD in EUR · rates of Nov 2, 9 days old")
         }
     }
 

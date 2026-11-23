@@ -25,7 +25,7 @@ public struct Frame: Equatable, Sendable {
     private var barValue: TextBlock?
     private var barKind: BlockKind?
     public private(set) var hasBar = false
-    public private(set) var face = CardFace.none
+    public private(set) var face = ViewTree.empty
     public private(set) var tree = ViewTree.empty
     private var partIDs: [String] = []
     public private(set) var columns = 1
@@ -36,7 +36,7 @@ public struct Frame: Equatable, Sendable {
     public let isMark: Bool
 
     private static let sheetRoot = RootKey.block([.init(key: ViewNode.classKey, value: "gap-part")])
-    private static let itemsBlock = TextBlock(fields: [.init(key: BlockKind.items, value: "items")])
+    private static let itemsBlock = TextBlock(fields: [.init(key: BlockKind.items.word, value: "items")])
     static let searchType = "search"
     static let sheetPlaces: [Set<Style.Variant>] = [Style.Variant.sheet, .float, .window].flatMap { place in [[place, .dark], [place, .light]] }
 
@@ -45,7 +45,7 @@ public struct Frame: Equatable, Sendable {
         var choice: Int?
         for block in blocks {
             let kind = block.fields.first?.key
-            if kind == BlockKind.option, let index = choice {
+            if kind == BlockKind.option.word, let index = choice {
                 grouped[index] = grouped[index].adding(child: block)
             } else {
                 choice = kind == BlockKind.choice.word ? grouped.count : nil
@@ -75,7 +75,7 @@ public struct Frame: Equatable, Sendable {
         isMark = frame.isMark
         let head = frame.block
         tree = ViewTree(blocks: blocks, root: head, kinds: kinds)
-        let repeated = blocks.first { $0.fields.first?.key == BlockKind.items }?.fields.first?.value
+        let repeated = blocks.first { $0.fields.first?.key == BlockKind.items.word }?.fields.first?.value
         if let repeated, let style = tree.node(repeated)?.style.resolved(for: [.sheet]), style.arrangement == .grid {
             columns = style.columns ?? 1
         }
@@ -87,7 +87,7 @@ public struct Frame: Equatable, Sendable {
         var unplaced: [TextBlock] = []
         for (index, block) in blocks.enumerated() {
             let word = block.fields.first?.key
-            if [BlockKind.items, BlockKind.box].contains(word) { continue }
+            if [BlockKind.items.word, BlockKind.box.word].contains(word) { continue }
             if let kind = BlockKind.of(block, in: kinds) {
                 let id = block.value(kind.word)
                 let isPlaced = id.map(placed.contains) ?? false
@@ -120,7 +120,7 @@ public struct Frame: Equatable, Sendable {
         if partIDs.contains(where: { tree.node($0)?.source != nil }) {
             rows = listedRows.map { $0.fields.flatMap { [$0.key, $0.value] } }
         }
-        face = CardFace(tree: tree.isWritten || !tree.places.isEmpty ? tree : .empty)
+        face = tree.isWritten || !tree.places.isEmpty ? tree : .empty
         let cardSizes = SpotSize.all.filter(tree.draws(on:))
         let onCard = cardSizes.isEmpty ? nil : Set(cardSizes.flatMap { tree.shown(in: Style.Variant.card($0)) })
         if let onCard {
@@ -142,7 +142,7 @@ public struct Frame: Equatable, Sendable {
         barKind = shown?.kind
         hasBar = !barred.isEmpty
         if !tree.isWritten, !unplaced.isEmpty {
-            let itemsBlock = blocks.first { $0.fields.first?.key == BlockKind.items } ?? (items.isEmpty ? nil : Self.itemsBlock)
+            let itemsBlock = blocks.first { $0.fields.first?.key == BlockKind.items.word } ?? (items.isEmpty ? nil : Self.itemsBlock)
             tree = tree.unwritten(showing: unplaced + [itemsBlock].compactMap(\.self), root: Self.sheetRoot, kinds: kinds)
         }
     }
@@ -240,7 +240,7 @@ public struct Frame: Equatable, Sendable {
     }
 
     private mutating func take(action id: String, _ block: TextBlock) {
-        if id == Handler.press.name {
+        if id == ScriptEntry.press.name {
             openTitle = block.value("title")
             pick = block.flag("close") == false ? .stay : .close
         } else if let action = CommandAction(id: id, block: block) {

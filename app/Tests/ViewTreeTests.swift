@@ -40,7 +40,7 @@ final class ViewTreeTests: XCTestCase {
         XCTAssertTrue(tree.isWritten)
         XCTAssertEqual(tree.style, Style(classes: "gap-3 p-3"))
         XCTAssertEqual(tree.children, ["head", "note"])
-        XCTAssertEqual(tree.node("head")?.kind, "box")
+        XCTAssertEqual(tree.node("head")?.kind, .box)
         XCTAssertEqual(tree.node("head")?.style.arrangement, .row)
         XCTAssertEqual(tree.node("head")?.children, ["wifi", "name", "forget"])
         XCTAssertEqual(tree.node("name")?.parent, "head")
@@ -69,7 +69,7 @@ final class ViewTreeTests: XCTestCase {
         let level = try XCTUnwrap(tree.node("level"))
 
         XCTAssertEqual(tree.children, ["level", "words"])
-        XCTAssertEqual(level.kind, "liquid")
+        XCTAssertEqual(level.kind.name, "liquid")
         XCTAssertEqual(level.source, "/spots/liquid.swift")
         XCTAssertEqual(level.values["value"], ["0.72"])
         XCTAssertEqual(level.values["tone"], ["good"])
@@ -108,7 +108,7 @@ final class ViewTreeTests: XCTestCase {
     func testALaterBlockWithTheIdOfANodeAndAnotherKindReplacesItInItsPlace() throws {
         for tree in [patched("switch=name\ntitle=Wi-Fi\n", after: wifi), Frame(text: wifi + "\n\nswitch=name\ntitle=Wi-Fi\n").tree] {
             let name = try XCTUnwrap(tree.node("name"))
-            XCTAssertEqual(name.kind, "switch")
+            XCTAssertEqual(name.kind, .toggle)
             XCTAssertEqual(name.title, "Wi-Fi")
             XCTAssertNil(name.detail)
             XCTAssertNil(name.style.grows)
@@ -214,7 +214,7 @@ final class ViewTreeTests: XCTestCase {
         XCTAssertEqual(output.search, .local)
         XCTAssertFalse(panel.tree.isWritten)
         XCTAssertEqual(panel.tree.children, ["a", "items"])
-        XCTAssertEqual(panel.tree.node("items")?.kind, BlockKind.items)
+        XCTAssertEqual(panel.tree.node("items")?.kind, .items)
         XCTAssertEqual(panel.tree.style.rowGap, Frame(text: "frame=\nclass=gap-part\n").tree.style.rowGap)
         XCTAssertEqual(output.items.map(\.title), ["B"])
         XCTAssertTrue(panel.showsRows)
@@ -235,7 +235,7 @@ final class ViewTreeTests: XCTestCase {
         let text = "frame=\nclass=gap-2\n\nicon=wifi\nvalue=wifi\n\nicon=cup\nvalue=cups.png\n\ntext=name\ntitle=Home\ndetail=82 Mb/s\nvalue=On\ntone=good\n"
         let tree = Frame(text: text).tree
 
-        XCTAssertEqual(tree.node("wifi")?.kind, "icon")
+        XCTAssertEqual(tree.node("wifi")?.kind, .icon)
         XCTAssertEqual(tree.node("wifi")?.icon, .symbol("wifi"))
         XCTAssertEqual(tree.node("cup")?.icon, .image("cups.png"))
         XCTAssertEqual(tree.node("name")?.title, "Home")
@@ -309,7 +309,7 @@ final class ViewTreeTests: XCTestCase {
         let output = Frame(text: FrameStream(patch, after: FrameStream(base, after: nil).drawn).text)
 
         XCTAssertEqual(output.tree.children, ["wifi", "net", "note"])
-        XCTAssertEqual(output.tree.node("wifi")?.kind, "icon")
+        XCTAssertEqual(output.tree.node("wifi")?.kind, .icon)
         XCTAssertEqual(output.parts.first { $0.id == "net" }?.control, .menu([.init(id: "lan", title: "Ethernet"), .init(id: "wifi", title: "Wireless")], value: "lan"))
         XCTAssertEqual(output.errors, [])
         let renamed = Frame(text: FrameStream("option=wifi\ntitle=Air\n", after: FrameStream(base, after: nil).drawn).text)

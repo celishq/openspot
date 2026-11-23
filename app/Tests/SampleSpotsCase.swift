@@ -168,7 +168,7 @@ class SampleSpotsCase: XCTestCase {
         let script = "#!/bin/sh\n[ \"$1 $2\" = 'color pick' ] && { printf '%s' '\(answer)'; exit 0; }\n\(Self.fakeOpenspot(in: folder))\n"
         try script.writeScript(to: folder.appendingPathComponent("tools/openspot"))
         let picker = try XCTUnwrap(try scan.spots.first { $0.name == "Color picker" })
-        return try await picker.perform(Handler.press.name, timeout: 60)
+        return try await picker.perform(ScriptEntry.press.name, timeout: 60)
     }
 
     func fakeTranslate(in folder: URL, status: String? = nil) throws -> Spot {

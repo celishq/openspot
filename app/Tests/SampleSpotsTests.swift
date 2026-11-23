@@ -84,7 +84,7 @@ final class SampleSpotsTests: SampleSpotsCase {
             defer { relay.end() }
             var frames = relay.start().makeAsyncIterator()
 
-            relay.send(Message(Handler.show.name), id: 1)
+            relay.send(Message(ScriptEntry.show.name), id: 1)
             var sheet = try await self.next(&frames, of: relay)
             while FrameRoot(text: sheet ?? "").isMark { sheet = try await self.next(&frames, of: relay) }
             XCTAssertTrue(sheet?.contains("title=No message yet") == true, sheet ?? "")
@@ -405,7 +405,7 @@ final class SampleSpotsTests: SampleSpotsCase {
             let url = folder.appendingPathComponent("frames.sh")
             try "#!/bin/sh\nprintf 'text=a\\n---\\n'\nprintf 'text=b\\n'\n".writeScript(to: url)
 
-            let text = try await SpotRuns(environment: TestEnvironment.values).answer(of: Spot(id: "frames", name: "Frames", url: url), Handler.show.name, limit: 60)
+            let text = try await SpotRuns(environment: TestEnvironment.values).answer(of: Spot(id: "frames", name: "Frames", url: url), ScriptEntry.show.name, limit: 60)
 
             XCTAssertEqual(text, "text=a\n")
         }

@@ -17,7 +17,7 @@ public final class ScriptProcess: @unchecked Sendable {
     private let mode: Mode
     private let limit: TimeInterval?
     private let dataName: String?
-    private let careful: CarefulMode?
+    private let sandbox: Sandbox?
     private let variables: [String: String]
     private let withheld: Set<String>
     private let base: [String: String]?
@@ -58,7 +58,7 @@ public final class ScriptProcess: @unchecked Sendable {
         building = build != nil
         self.base = base
         self.folder = folder
-        self.careful = careful.map(CarefulMode.init)
+        self.sandbox = careful.map(Sandbox.init)
         errorText = ErrorTail(limit: errorLimit)
         self.dataName = dataName
         self.variables = variables
@@ -144,7 +144,7 @@ public final class ScriptProcess: @unchecked Sendable {
             hasInput = given != nil
         }
         let environment = Self.environment(base: base ?? ProcessInfo.processInfo.environment, app: Bundle.main.executablePath ?? "", dataName: dataName).merging(variables) { _, new in new }.filter { !withheld.contains($0.key) }
-        let fence = careful?.words(in: environment) ?? []
+        let fence = sandbox?.words(in: environment) ?? []
         let errors = errorOutput
         signal(SIGPIPE, SIG_IGN)
         guard !isStopped else {

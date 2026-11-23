@@ -46,7 +46,7 @@ final class InlineScript: @unchecked Sendable {
     private let api: CommandAPI?
     private let callers: SpotCallers?
     private let caller: SpotCaller?
-    private let careful: CarefulMode?
+    private let sandbox: Sandbox?
     private let limit: TimeInterval
     private let idle: TimeInterval
     private let spent: @Sendable (TimeInterval) -> Void
@@ -65,7 +65,7 @@ final class InlineScript: @unchecked Sendable {
     private var thrown: JSValue?
 
     init(spot: Spot, api: CommandAPI?, callers: SpotCallers? = nil, careful: Set<SpotUse>? = nil, limit: TimeInterval = 10, idle: TimeInterval = 30, bound: [String: Spot] = [:], base: [String: String] = ProcessInfo.processInfo.environment, spent: @escaping @Sendable (TimeInterval) -> Void = { _ in }) {
-        self.careful = careful.map(CarefulMode.init)
+        self.sandbox = careful.map(Sandbox.init)
         url = spot.url
         name = spot.id
         self.spot = spot
@@ -368,7 +368,7 @@ final class InlineScript: @unchecked Sendable {
            let work = api.work(for: api.admit(call, request: request), request: request, input: { input ?? "" }) {
             return work
         }
-        let child = ScriptProcess(url: URL(fileURLWithPath: "/usr/bin/env"), arguments: ["openspot"] + arguments, mode: .once(input: input), dataName: dataName, variables: own, careful: careful?.uses, base: base)
+        let child = ScriptProcess(url: URL(fileURLWithPath: "/usr/bin/env"), arguments: ["openspot"] + arguments, mode: .once(input: input), dataName: dataName, variables: own, careful: sandbox?.uses, base: base)
         child.channel = caller.flatMap { callers?.channel(for: $0) }
         return { await Self.answer(of: child) }
     }

@@ -195,7 +195,7 @@ struct SpotCalls {
             if let id, spots.isEmpty {
                 throw SpotError.failed(1, "Openspot has no spot \(id). Run `openspot check spots` to see each file that does not load.")
             }
-            return ManifestSchema.json(spots.map(ManifestSchema.actions(of:)))
+            return ManifestSchema.json(spots.map(CallShape.listing(of:)))
         }
     }
 
