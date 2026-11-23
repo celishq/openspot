@@ -27,7 +27,7 @@ final class ToastPanel: NSPanel {
         let screens = ScreenPlace.Screen.all
         let window = screens.count < 2 ? nil : front()
         let place = ScreenPlace(screens: screens)
-        if let origin = place.origin(ofToast: size, inset: SpotTokens.toastMargin, under: item?.frame, window: window, pointer: NSEvent.mouseLocation) {
+        if let origin = place.origin(ofToast: size, inset: SpotTokens.toastRoom, under: item?.frame, window: window, pointer: NSEvent.mouseLocation) {
             setFrame(NSRect(origin: origin, size: size), display: true)
         }
         orderFrontRegardless()

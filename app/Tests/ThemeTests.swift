@@ -46,6 +46,30 @@ final class ThemeTests: XCTestCase {
         XCTAssertEqual(theme.layout.type.body, 15)
     }
 
+    func testAVeilBackdropBlursAndTintsWithItsOwnColour() {
+        let theme = Theme(text: "[dark]\nbackdrop-tint = \"#00000040\"\n\n[look]\nbackdrop = \"veil\"\n\n[advanced]\nbackdrop-blur = 10\n")
+
+        XCTAssertEqual(theme.faults, [])
+        XCTAssertEqual(theme.layout.backdrop.style, .veil)
+        XCTAssertEqual(theme.layout.backdrop.blur, 10)
+        XCTAssertEqual(theme.colours.dark.backdropTint, ThemeColor(text: "#00000040"))
+    }
+
+    func testAThemeTunesHowTheBlurEasesInAndHowRoundItsHaloIs() {
+        let theme = Theme(text: "[advanced]\nbackdrop-ease = 3\nhalo-roundness = 1\nhalo-inset = 12\n")
+
+        XCTAssertEqual(theme.faults, [])
+        XCTAssertEqual([theme.layout.backdrop.ease, theme.layout.backdrop.roundness, theme.layout.backdrop.inset], [3, 1, 12])
+    }
+
+    func testTheHaloReachesTheEdgeOfThePanelUnlessAThemeSetsIt() {
+        func size(_ text: String) -> Double { Theme(text: text).layout.backdrop.size }
+
+        XCTAssertEqual(size("[advanced]\nbackdrop-blur = 4\n"), Double(SpotTokens.halo))
+        XCTAssertEqual(size("[advanced]\nbackdrop-blur = 20\nhalo-size = 40\n"), 40)
+    }
+
+
     func testTheColoursOfALookFollowFromItsChoices() {
         let dark = Theme(text: dracula).colours.dark
 
@@ -72,9 +96,9 @@ final class ThemeTests: XCTestCase {
         XCTAssertEqual(set.layout.backdrop.shadow, 20)
     }
 
-    func testOpenspotLiquidIsOpenspotWithClearTintedGlass() throws {
+    func testOpenspotLiquidIsOpenspotWithClearTintedGlassOverAStrongerBlur() throws {
         let liquid = builtInURL.deletingLastPathComponent().deletingLastPathComponent().appendingPathComponent("Openspot Liquid.theme/theme.toml")
-        let lines = { (text: String) in text.split(separator: "\n").filter { !$0.hasPrefix("glass") } }
+        let lines = { (text: String) in text.split(separator: "\n").filter { !$0.hasPrefix("glass") && !$0.hasPrefix("backdrop-blur") && $0 != "[advanced]" } }
         let frosted = try String(contentsOf: builtInURL, encoding: .utf8)
         let clear = try String(contentsOf: liquid, encoding: .utf8)
 
@@ -83,6 +107,7 @@ final class ThemeTests: XCTestCase {
         XCTAssertEqual(Theme(text: frosted).colours.light.glassTint.sample.alpha, 0)
         XCTAssertEqual(Theme(text: clear).colours.glass, .clear)
         XCTAssertEqual(Theme(text: clear).colours.light.glassTint, ThemeColor(text: "#C4C4C473"))
+        XCTAssertEqual([Theme(text: frosted).layout.backdrop.blur, Theme(text: clear).layout.backdrop.blur], [2, 6])
     }
 
     func testAnOnColourIsTheBackgroundOrTheInkWhicheverReadsBetter() {
@@ -145,7 +170,8 @@ final class ThemeTests: XCTestCase {
         XCTAssertEqual([layout.motion.pressBounce, layout.motion.pressedScale, layout.motion.liftedScale, layout.motion.focusedScale], [0.2, 1.04, 1.05, 1.04])
         XCTAssertEqual(layout.backdrop.style, .blur)
         XCTAssertEqual(layout.backdrop.reach, .tiles)
-        XCTAssertEqual([layout.backdrop.blur, layout.backdrop.size, layout.backdrop.padding], [1, 30, 0])
+        XCTAssertEqual([layout.backdrop.blur, layout.backdrop.size, layout.backdrop.padding], [2, 90, 0])
+        XCTAssertEqual([layout.backdrop.ease, layout.backdrop.roundness, layout.backdrop.inset], [2, 2, 40])
     }
 
     func testCornerDensityTypeAndSpeedScaleWhatFollowsThem() {
@@ -235,7 +261,7 @@ final class ThemeTests: XCTestCase {
             "theme.toml: [dark] background is a colour such as #00000099.",
             "theme.toml: [dark] fill is a strength from 0 to 1, such as 0.2.",
             "theme.toml: [look] glass is clear or regular.",
-            "theme.toml: [look] backdrop is blur or tint.",
+            "theme.toml: [look] backdrop is blur or tint or veil.",
             "theme.toml: [look] reach is tiles or screen.",
             "theme.toml: [look] corner is a number of points from 0 to 100, such as 3.",
             "theme.toml: [look] density is a factor from 0.25 to 4, such as 1.5.",
@@ -278,6 +304,18 @@ final class ThemeTests: XCTestCase {
         XCTAssertGreaterThan(files.count, 1)
         for file in files {
             XCTAssertEqual(ThemeFolder.read(builtIn: builtInURL, copy: file).faults, [], file.path)
+        }
+    }
+
+    func testEachShippedThemeButRetroDeckBlursWhatIsBehindItsTiles() throws {
+        let shipped = builtInURL.deletingLastPathComponent().deletingLastPathComponent()
+        let folders = try FileManager.default.contentsOfDirectory(at: shipped, includingPropertiesForKeys: nil).filter { $0.pathExtension == "theme" }
+
+        XCTAssertGreaterThan(folders.count, 1)
+        for folder in folders {
+            let style = ThemeFolder.read(builtIn: builtInURL, copy: folder.appendingPathComponent("theme.toml")).layout.backdrop.style
+            let blurs = style == .blur || style == .veil
+            XCTAssertEqual(blurs, folder.lastPathComponent != "Retro Deck.theme", folder.lastPathComponent)
         }
     }
 

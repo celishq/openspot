@@ -15,6 +15,8 @@ extension SpotTokens {
 
     public static var hintBlock: CGFloat { layout.hintBlock }
 
+    public static var toastRoom: CGFloat { max(toastMargin, 2 * CGFloat(backdrop.shadow)) }
+
     public static var panelWidth: CGFloat { layout.panelWidth }
 
     public static var panelHeight: CGFloat { layout.panelHeight }

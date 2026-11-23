@@ -51,7 +51,7 @@ struct SpotBackdropTint: NSViewRepresentable {
         }
 
         private func applyFade() {
-            let fade = SpotBackdropFade(fade: .current, area: area, size: bounds.size)
+            let fade = SpotBackdropFade(fade: .current(blur: nil), area: area, size: bounds.size)
             guard fade != drawn else { return }
             CATransaction.begin()
             CATransaction.setDisableActions(true)

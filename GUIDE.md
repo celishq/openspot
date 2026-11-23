@@ -732,7 +732,7 @@ openspot theme reload
 | `highlight`  | `[dark]`, `[light]` | The colour of the search field, the keys, the sliders and a filled card.                      | the `ink`              |
 | `good`, `warn`, `bad` | `[dark]`, `[light]` | The colours of a value that is fine, needs a look, or failed. `bad` also marks a press that deletes. | `green`, `orange`, `red` |
 | `glass`      | `[look]`            | `clear` shows what is behind the panel. `regular` frosts it, and the `background` tints it strongly. | `regular`       |
-| `backdrop`   | `[look]`            | `blur` blurs what is behind the panel. `tint` lays the `background` over it.                  | `blur`                 |
+| `backdrop`   | `[look]`            | `blur` blurs what is behind the panel. `tint` lays the `background` over it. `veil` does both.  | `blur`                 |
 | `reach`      | `[look]`            | `tiles` lays the backdrop as a soft halo around the tiles. `screen` covers the screen.         | `tiles`                |
 | `corner`     | `[look]`            | The corner of a card in points. Every other corner follows it.                                | `26`                   |
 | `density`    | `[look]`            | A factor on every gap and padding: `0.5` is tight, `1.5` is roomy.                            | `1`                    |
@@ -807,7 +807,7 @@ press-bounce = 0
 | `solid`, `on-solid`, `glyph-on-solid`     | `[dark]`, `[light]` | A filled card, its text and its glyph. They follow `highlight`.                         |
 | `glass-tint`, `corner-fill`, `window`     | `[dark]`, `[light]` | The tint of the glass, the fill behind a corner button, and a lifted card and a window. They follow `background`. |
 | `confirm`, `on-confirm`                   | `[dark]`, `[light]` | A press that asks again before it deletes, and its text. They follow `bad`.             |
-| `backdrop-tint`                           | `[dark]`, `[light]` | The colour of the backdrop `tint`. It follows `background`.                             |
+| `backdrop-tint`                           | `[dark]`, `[light]` | The colour of the backdrop `tint` and `veil`. It follows `background`.                  |
 | `card-shadow`                             | `[dark]`, `[light]` | The colour of the soft shadow under each glass surface. Its strength is its alpha.       |
 | `fill`, `selected`, `disc`, `chip`, `control`, `track`, `secondary` | `[dark]`, `[light]` | Strengths from 0 to 1 of the `ink`: the field and a card, a chosen row, the disc behind a glyph, a chip, a button, a track and ring, and the second line of a row. |
 | `cell`, `glyph`, `list-row`, `menu-row`   | `[advanced]`        | The side of a grid cell, of a glyph, and the height of a row and a menu row, in points. |
@@ -816,8 +816,10 @@ press-bounce = 0
 | `title`, `body`, `detail`, `input`        | `[advanced]`        | The sizes of the text in points. They follow `type`.                                    |
 | `grow`, `shrink`, `move`, `fade-in`, `fade-out`, `press`, `settle` | `[advanced]` | The time of each motion in seconds. They follow `speed`.                     |
 | `press-bounce`, `pressed-scale`, `lifted-scale`, `focused-scale` | `[advanced]` | The bounce of a press, and the scale of a pressed, a lifted and a focused card.   |
-| `backdrop-blur`, `halo-size`, `halo-padding` | `[advanced]`     | The strength of the backdrop's blur, how far its halo reaches past the tiles, from 16 to 90, and how far it holds its full strength, from 0 to 74. |
+| `backdrop-blur`, `halo-size`, `halo-padding` | `[advanced]`     | The strength of the backdrop's blur in points, 2 by default and 6 in Openspot Liquid, how far its halo reaches past the tiles, from 16 to 90, 90 by default, and how far it holds its full strength, from 0 to 74. |
 | `card-shadow-size`                        | `[advanced]`     | How far the shadow under each glass surface spreads, in points.                        |
+| `backdrop-ease`, `halo-roundness`         | `[advanced]`     | How slowly the blur starts across the halo, 2 by default, where 1 doubles the blur at an even pace and more keeps it small until near the tiles, and how fast the halo's corner rounds as it reaches out, 2 by default. |
+| `halo-inset`                              | `[advanced]`     | How far under the tiles the blur reaches its full strength, in points, 40 by default, so the text behind fades out at their edge. |
 
 - An exact value holds only in the file that sets it. A copy of `Openspot` keeps the exact values in its file, but a
   theme you write from scratch works out its own.
