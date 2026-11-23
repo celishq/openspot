@@ -66,4 +66,5 @@ In Careful mode, a setting people can turn on, your spot can write only to its d
 ## Next
 
 - [Settings people choose](settings.md), for a choice people make
+- [Keep a copy that goes old](cache.md), for data you fetch again
 - [Use the Mac](../connect/the-mac.md)

@@ -138,6 +138,7 @@ When Openspot runs your spot by itself.
 | `command`             | [text]          | `command`                         | When people type `/<word>` in the panel's search.        |
 | `search`              | `true` or regex | `show`, or `search`               | `true` adds your items to the panel's search. A regex runs `search` for each text that matches. |
 | `drop`                | [text]          | `drop`                            | When people drop a file of a kind on your card, such as `png`, `folder` or `*`. |
+| `"cache.<name>"`      | an age          | `cache.<name>`                    | When a read of the cache `<name>` finds it missing or older than the age, such as `"1d"`; see [Keep a copy that goes old](../remember/cache.md). |
 
 A regex on an event, such as `"power.change" = "^battery$"`, runs your spot only when the event's value matches.
 

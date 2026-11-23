@@ -73,6 +73,7 @@ A function that throws fails with its message, as a script that prints `error=` 
 | `env.<noun>.<verb>(...)`          | An `openspot` command: its words in order, then an object of its inputs, then its options, such as `env.timer.add(t, "remind", { words: "Stand-up" })`. |
 | `env.<binding>.<action>(inputs)`  | An action of a spot you bind. It gives back its values, or `null` when people close it. |
 | `env.emit(event, values)`         | `openspot emit`: sends one of your spot's events.                            |
+| `env.cache.get(name)`, `env.cache.set(name, value)` | Your spot's cache, at once and with no `await`; see [Keep a copy that goes old](../remember/cache.md). |
 | `env.open(id)`                    | `openspot spot open`: opens the panel on a spot.                             |
 | `env.settings`                    | Your spot's settings, by name.                                                |
 

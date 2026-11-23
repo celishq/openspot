@@ -11,7 +11,9 @@ extension Manifest {
         static let keys = [command, search, schedule, every, drop]
         static let events = EventName.declarable
         private static let named = [ScriptEntry.show, .press, .drag]
-        private static let spaces = Set(EventName.declarable.compactMap { $0.split(separator: ".").first.map(String.init) } + ["clock", "timer"])
+        static let cache = "cache"
+        private static let spaces = Set(EventName.declarable.compactMap { $0.split(separator: ".").first.map(String.init) } + ["clock", "timer", cache])
+        private static let ages: [Character: TimeInterval] = ["s": 1, "m": 60, "h": 3_600, "d": 86_400]
 
         public let commands: [String]
         public let search: AnswerPattern?
@@ -22,13 +24,14 @@ extension Manifest {
         public let events: [String]
         public let filters: [String: AnswerPattern]
         public let bindings: [BoundEvent]
+        public let fills: [String: TimeInterval]
 
         public static let panel = Triggers(events: [EventName.panelOpen])
         public static let sheet = Triggers(events: [EventName.sheetOpen])
 
         public init(
             events: [String] = [], every: Int? = nil, search: AnswerPattern? = nil, lists: Bool = false, drop: [String] = [], commands: [String] = [],
-            schedule: [CronLine] = [], filters: [String: AnswerPattern] = [:], bindings: [BoundEvent] = []
+            schedule: [CronLine] = [], filters: [String: AnswerPattern] = [:], bindings: [BoundEvent] = [], fills: [String: TimeInterval] = [:]
         ) {
             self.commands = commands
             self.search = search
@@ -39,6 +42,7 @@ extension Manifest {
             self.events = events
             self.filters = filters
             self.bindings = bindings
+            self.fills = fills
         }
 
         init(section: String, table: ConfigDocument.Table) throws {
@@ -52,6 +56,7 @@ extension Manifest {
             var events: [String] = []
             var filters: [String: AnswerPattern] = [:]
             var bindings: [BoundEvent] = []
+            var fills: [String: TimeInterval] = [:]
             for key in table.keys {
                 let name = Manifest.path(key).joined(separator: ".")
                 let value = table[key]
@@ -96,6 +101,12 @@ extension Manifest {
                     default:
                         throw fault(name, "takes true, or a regular expression of its value.")
                     }
+                case let fill where fill.hasPrefix(Self.cache + "."):
+                    let cache = String(fill.dropFirst(Self.cache.count + 1))
+                    guard SpotCache.isName(cache), case .string(let text)? = value, let age = Self.age(text) else {
+                        throw fault(name, "takes the age after which a read runs it, such as \"cache.rates\" = \"1d\". Use s, m, h or d.")
+                    }
+                    fills[cache] = age
                 case let event where EventName.isName(event) && !Self.spaces.contains(String(event.prefix { $0 != "." })):
                     guard value == .boolean(true) else { throw fault(name, "takes true.") }
                     bindings.append(BoundEvent(key: event))
@@ -104,7 +115,12 @@ extension Manifest {
                     throw SpotError.fault("\(Manifest.fileName): \(section) has an unknown event: \(name). Use \(known), or <binding>.<event>.")
                 }
             }
-            self.init(events: events, every: every, search: search, lists: lists, drop: drop, commands: commands, schedule: schedule, filters: filters, bindings: bindings)
+            self.init(events: events, every: every, search: search, lists: lists, drop: drop, commands: commands, schedule: schedule, filters: filters, bindings: bindings, fills: fills)
+        }
+
+        private static func age(_ text: String) -> TimeInterval? {
+            guard let unit = text.last.flatMap({ ages[$0] }), let count = Int(text.dropLast()), count > 0 else { return nil }
+            return TimeInterval(count) * unit
         }
 
         var handlers: [ScriptEntry] {
@@ -114,6 +130,7 @@ extension Manifest {
             if !schedule.isEmpty { handlers.append(.schedule) }
             if every != nil { handlers.append(.every) }
             if !drop.isEmpty { handlers.append(.drop) }
+            handlers += fills.keys.sorted().map { ScriptEntry.event(Self.cache + "." + $0) }
             return handlers
         }
 
@@ -151,7 +168,7 @@ extension Manifest {
 
         func answering(_ order: String?) -> Triggers {
             let ordered = order == "last" ? search?.last() : order == "card" ? search?.card() : search
-            return Triggers(events: events, every: every, search: ordered, lists: lists, drop: drop, commands: commands, schedule: schedule, filters: filters, bindings: bindings)
+            return Triggers(events: events, every: every, search: ordered, lists: lists, drop: drop, commands: commands, schedule: schedule, filters: filters, bindings: bindings, fills: fills)
         }
 
         var showing: Triggers {

@@ -58,6 +58,19 @@ openspot.env = function env(call, spec, bindings, settings) {
       if (method !== "") env[noun][method] = command(verb)
     }
   }
+  const now = (argv, input) => {
+    const answer = openspot.call(argv, input)
+    if (answer.code !== 0) throw new Error(`openspot ${argv.join(" ")} exited ${answer.code}.`)
+    return answer.stdout
+  }
+  env.cache = {
+    get: (name) => {
+      const value = now(["cache", "get", name])
+      const age = now(["cache", "age", name])
+      return age === "" ? null : { value, age: Number(age) }
+    },
+    set: (name, value) => { now(["cache", "set", name], String(value)) },
+  }
   env.emit = async (event, values) => { await run(["emit", event, ...pairs(values)]) }
   env.open = async (spot) => { await run(["spot", "open", spot]) }
   for (const name of bindings) {
