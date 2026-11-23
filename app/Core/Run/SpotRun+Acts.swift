@@ -69,11 +69,8 @@ extension SpotRun {
     @discardableResult
     public func drop(_ value: ContextValue) -> Bool {
         guard spot.takes(value) else { return false }
-        switch value.kind {
-        case .file: waitingFiles.append(ScriptEntry.drop.message(value.values))
-        case .url: waitingFiles.append(ScriptEntry.drop.message([], value.values, [], value.title.map { [$0] } ?? []))
-        case .text: waitingFiles.append(ScriptEntry.drop.message([], [], value.values, value.title.map { [$0] } ?? []))
-        }
+        let title = value.kind == .file ? nil : value.title
+        waitingFiles.append(ScriptEntry.drop.message(named: [value.kind.rawValue: value.values, "title": title.map { [$0] } ?? []]))
         startWaitingFiles()
         return true
     }

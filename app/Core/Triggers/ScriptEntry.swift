@@ -29,4 +29,8 @@ public struct ScriptEntry: Equatable, Sendable {
         let own = zip(inputs, values).flatMap { input, values in values.map { TextBlock.Field(key: input.name, value: $0) } }
         return Message(name, inputs: given + own + carried)
     }
+
+    func message(named values: [String: [String]]) -> Message {
+        Message(name, inputs: inputs.flatMap { input in (values[input.name] ?? []).map { TextBlock.Field(key: input.name, value: $0) } })
+    }
 }
