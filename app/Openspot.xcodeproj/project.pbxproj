@@ -669,6 +669,7 @@
 		A79E3616C9DF45B16C9C3447 /* CalendarEntry.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2E3D93D868910B76AFBE9F0A /* CalendarEntry.swift */; };
 		A811FEA5F66A4A714CA9FCEE /* ViewTree+States.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0BF074AA7F98BF3655D5116B /* ViewTree+States.swift */; };
 		A81A9113A1BD0DE03FFE0CF8 /* SpotFileDragSource.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6DFF8726FDD1394BA4F70D9C /* SpotFileDragSource.swift */; };
+		A826C3B22AB0D2B3D9494541 /* SnoozeTabContextTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = AB338F719CAC21B88787AC39 /* SnoozeTabContextTests.swift */; };
 		A877071006F12E57B5BC1E2B /* FrameStream.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8D69099846A116093CFAE667 /* FrameStream.swift */; };
 		A88CF744AEBD95852326A4E8 /* ViewNode.swift in Sources */ = {isa = PBXBuildFile; fileRef = 697C869DF7414CEF7A0BC9CB /* ViewNode.swift */; };
 		A8B40646676227B8ABC8F23A /* main.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6BB77A6A0BA76644749DD655 /* main.swift */; };
@@ -1878,6 +1879,7 @@
 		AA986DBCCEF5FEA3BB0E8C4D /* TextBlock+Patch.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "TextBlock+Patch.swift"; sourceTree = "<group>"; };
 		AAABCE3C6AA83E514226EA47 /* Message.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Message.swift; sourceTree = "<group>"; };
 		AAFA3D401343502B7835F58F /* SheetMotion.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SheetMotion.swift; sourceTree = "<group>"; };
+		AB338F719CAC21B88787AC39 /* SnoozeTabContextTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SnoozeTabContextTests.swift; sourceTree = "<group>"; };
 		AB4B1E65C6FD66F46DCA6137 /* FrameRoot.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FrameRoot.swift; sourceTree = "<group>"; };
 		AB4C876B74746CC1FF5730EC /* SpotEmptyField.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SpotEmptyField.swift; sourceTree = "<group>"; };
 		AB6602BFEF7AB92D069ACDBA /* LaunchSettings.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LaunchSettings.swift; sourceTree = "<group>"; };
@@ -3067,6 +3069,7 @@
 				CE9FCFDC40CFE3EBFDEC7F47 /* SlashCommandTests.swift */,
 				E4C083E17D6ABE1C4E5C7780 /* SnippetsSpotTests.swift */,
 				F1BA0E6BD52DC154D25BEBAF /* SnoozeSpotTests.swift */,
+				AB338F719CAC21B88787AC39 /* SnoozeTabContextTests.swift */,
 				6D25B5842713EDDC3CA7BEAD /* SnoozeTabPanelTests.swift */,
 				A20212D4CA96CB7CEC3DF823 /* SocketConnection.swift */,
 				4F790F652A58A8853C46BF0A /* SoleCommandTests.swift */,
@@ -5368,6 +5371,7 @@
 				53FE3A3B1936D2B2B6F903D0 /* SlashCommandTests.swift in Sources */,
 				79148356A7C5222C67C6A80A /* SnippetsSpotTests.swift in Sources */,
 				80C6EB0B312782BC14162921 /* SnoozeSpotTests.swift in Sources */,
+				A826C3B22AB0D2B3D9494541 /* SnoozeTabContextTests.swift in Sources */,
 				030A05B16479F8CFE679E8F6 /* SnoozeTabPanelTests.swift in Sources */,
 				AC7B8E5F9D8D7AE648AF8D6D /* SocketConnection.swift in Sources */,
 				F1599EF124DA9174DBC2EB0A /* SoleCommandTests.swift in Sources */,
