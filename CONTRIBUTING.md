@@ -25,9 +25,24 @@ Write a failing test first, then the code that passes it. Before you open a pull
 make verify
 ```
 
+## Extend the protocol
+
+Add a word to the [protocol](PROTOCOL.md) so that an old spot never sees a word it didn't ask for.
+
+| To add               | Add                                                                       |
+| -------------------- | ------------------------------------------------------------------------- |
+| A thing that happens | An event `<noun>.<verb>`, a key of `[on]` and a handler of its name.      |
+| A place to show      | A variant `<place>:`.                                                     |
+| A look or a layout   | A class.                                                                  |
+| A thing to draw      | A kind `<kind>=`, which an older Openspot skips and reports.              |
+| A detail of a kind   | A key, or a `type` value.                                                 |
+| A power of the Mac   | A noun, `openspot <noun> <verb>`, with its events and its `uses` word.    |
+| A complex look       | Nothing, since a spot draws it with a [view](PROTOCOL.md#views).          |
+
 ## Follow the rules
 
 - [`AGENTS.md`](AGENTS.md) has the repo conventions.
-- [`GUIDE.md`](GUIDE.md) teaches how to write a spot, and [`PROTOCOL.md`](PROTOCOL.md) is the spot contract. If your change differs from them, change them first.
+- [`GUIDE.md`](GUIDE.md) teaches how to write a spot, [`USING.md`](USING.md) how to use Openspot, and
+  [`PROTOCOL.md`](PROTOCOL.md) is the spot contract. If your change differs from them, change them first.
 
 By contributing, you agree that your work is under the [MIT License](LICENSE).

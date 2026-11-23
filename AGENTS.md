@@ -122,13 +122,13 @@ of a rule that names it.
 
 ## UX
 
-Each spot follows [Use the keys of a spot](USING.md#use-the-keys-of-a-spot): Return does its main act, `⌘` Return opens its
-Settings, `⌘Y` its History, `⌘K` the menu of all acts. Openspot makes these for every spot, so a rule changes in one place.
+Each spot follows [Use the keys of a spot](USING.md#use-the-keys-of-a-spot): Return does its main action, `⌘` Return opens
+its Settings, `⌘Y` its History, `⌘K` the menu of all actions. Openspot makes these for every spot, so a rule changes in one place.
 
 - Settings follow the level they change. openspot's Settings hold only the app's rows. Each spot's own Settings hold its
   keys first, Open, each command and Float, then its fields, its menu bar and its window, with the same Not set and `⌘⌫` Remove on
   every key row.
-- A card's ⌘K menu holds the standard acts in one order, which `spots/openspot.spot/actions.js` offers to every card.
+- A card's ⌘K menu holds the standard actions in one order, which `spots/openspot.spot/actions.js` offers to every card.
   A key that a footer already shows does not need a ⌘K menu of its own.
 - Making and changing a spot both go through one form: describe it, then Copy prompt (`⌘⏎`), which flashes `✓ Copied`
   on the same black button. The prompt tells the agent to finish alone, with no question.

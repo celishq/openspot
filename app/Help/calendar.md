@@ -26,14 +26,14 @@ reminders. Each list prints items, and the id of each item goes to each other ve
 
 | Command                                                  | Does                                                                                    |
 | -------------------------------------------------------- | --------------------------------------------------------------------------------------- |
-| `openspot calendar events [--days n] [--hide id]...`     | Prints each event that has not ended, through the end of day `n`. Day 1 is today, and it is the default. |
+| `openspot calendar events [--days n] [--hide id]...` | Prints each event that has not ended, through the end of day `n`, where day 1, the default, is today. |
 | `openspot calendar calendars`                            | Prints each calendar as an item.                                                          |
 | `openspot calendar add [--dry-run] <words>...`           | Adds an event from the words to the default calendar, and prints its item.              |
 | `openspot calendar show <id>`                            | Opens Calendar on the day of an event.                                                  |
 | `openspot reminders due [--days n] [--hide id]...`       | Prints each open reminder that is late or due through the end of day `n`, and each of those done today. |
 | `openspot reminders lists`                               | Prints each list of reminders as an item.                                                 |
 | `openspot reminders add [--dry-run] <words>...`          | Adds a reminder from the words to the default list, and prints its item.                |
-| `openspot reminders done <id> [true\|false]`             | Ticks a reminder, or with `false` opens it again. It prints nothing.                   |
+| `openspot reminders done <id> [true\|false]` | Ticks a reminder, or with `false` opens it again, and prints nothing. |
 | `openspot reminders show <id>`                           | Opens Reminders on a reminder.                                                          |
 
 `--hide` takes the id of an item of `calendars` or `lists`, and leaves out its events or reminders. Repeat it for each one.
@@ -62,7 +62,7 @@ An item has the keys of an item: `title`, a `detail` in the language of the Mac 
 | ---------- | ------------------------------------------------------------------------------------------- |
 | `start`    | When an event starts, in ISO 8601 with the offset of its zone.                              |
 | `end`      | When an event ends.                                                                         |
-| `due`      | When a reminder is due. A reminder with no due date has none.                               |
+| `due` | When a reminder is due, which a reminder with no due date lacks. |
 | `allday`   | `true` for an event of whole days, or a reminder due on a day with no time.                 |
 | `calendar` | The id of the calendar of an event.                                                         |
 | `list`     | The id of the list of a reminder.                                                           |
