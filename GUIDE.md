@@ -282,7 +282,7 @@ esac
 
 Select **Report.pdf** and press ⌘O, and `value item.path` prints the path that the item holds.
 
-Learn more in [Actions](PROTOCOL.md#actions) and [Buttons and actions](PROTOCOL.md#buttons-and-actions).
+Learn more in [Actions](PROTOCOL.md#actionsid) and [Buttons and actions](PROTOCOL.md#button).
 
 ## Lay out a sheet
 
@@ -342,7 +342,7 @@ says **Saved**. The spot never sees an empty note, since Openspot checks each in
 An input that isn't required can have a `default`, which the call gets when the user gives none. To refuse a value,
 print `error=` and the reason, and the form stays open with it.
 
-Learn more in [Ask for values](PROTOCOL.md#ask-for-values) and [Types](PROTOCOL.md#types).
+Learn more in [Ask for values](PROTOCOL.md#forms) and [Types](PROTOCOL.md#types).
 
 ## Run a command with text
 
@@ -504,7 +504,7 @@ Choose **Remind me later** in the ⌘K menu, and the tiles of Snooze show over t
 it gives `null`. The `await` costs no time of the spot's limit, however long the user takes. A shell script runs the
 same action with `openspot run picker.pick --out until`.
 
-Learn more in [Use another spot](PROTOCOL.md#use-another-spot) and [Act at a time](PROTOCOL.md#act-at-a-time).
+Learn more in [Use another spot](PROTOCOL.md#openspot-run) and [Act at a time](PROTOCOL.md#openspot-timer).
 
 ## Let the user choose a setting
 

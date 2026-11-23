@@ -90,36 +90,3 @@ GUIDE.md unnamed file after: you [change the look](#change-the-look-of-openspot)
 GUIDE.md unnamed file after: you [change the look](#change-the-look-of-openspot).
 GUIDE.md unnamed file after: your spot with `press`, and the id of the item as the input `item`.
 GUIDE.md unnamed file after: your spot with `press`, and the id of the item as the input `item`.
-PROTOCOL.md cell of two sentences: `"<binding>.<event>"`
-PROTOCOL.md cell of two sentences: `[<type>]`
-PROTOCOL.md cell of two sentences: `<spot> <binding>.<event>`
-PROTOCOL.md cell of two sentences: `<spot> command`
-PROTOCOL.md cell of two sentences: `<spot> drop`
-PROTOCOL.md cell of two sentences: `<spot> schedule`
-PROTOCOL.md cell of two sentences: `<spot> search`
-PROTOCOL.md cell of two sentences: `bar`
-PROTOCOL.md cell of two sentences: `button`
-PROTOCOL.md cell of two sentences: `command`
-PROTOCOL.md cell of two sentences: `device.connect`
-PROTOCOL.md cell of two sentences: `drop`
-PROTOCOL.md cell of two sentences: `every`
-PROTOCOL.md cell of two sentences: `file`
-PROTOCOL.md cell of two sentences: `hides`
-PROTOCOL.md cell of two sentences: `icon`
-PROTOCOL.md cell of two sentences: `input.<name>=`
-PROTOCOL.md cell of two sentences: `input.route=`
-PROTOCOL.md cell of two sentences: `item`
-PROTOCOL.md cell of two sentences: `number`
-PROTOCOL.md cell of two sentences: `openspot_paste <text>`
-PROTOCOL.md cell of two sentences: `place`
-PROTOCOL.md cell of two sentences: `route.title=<words>`
-PROTOCOL.md cell of two sentences: `schedule`
-PROTOCOL.md cell of two sentences: `search`
-PROTOCOL.md cell of two sentences: `series`
-PROTOCOL.md cell of two sentences: `sheet.open`
-PROTOCOL.md cell of two sentences: `small`, `wide`, `square`, `strip`, `large`
-PROTOCOL.md cell of two sentences: `spot.isShown`
-PROTOCOL.md cell of two sentences: `stay`
-PROTOCOL.md cell of two sentences: `title`
-PROTOCOL.md cell of two sentences: `title`
-PROTOCOL.md cell of two sentences: `views`
