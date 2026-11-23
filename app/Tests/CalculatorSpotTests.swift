@@ -34,8 +34,10 @@ final class CalculatorSpotTests: SampleSpotsCase {
 
             XCTAssertEqual(answers.map(\.run), ["1234.5"])
             XCTAssertEqual(answers.first?.card?.face.answerSize, .large)
-            XCTAssertEqual(answers.first?.card?.face.parts.map(\.title), ["1000 + 234.5"])
+            XCTAssertEqual(answers.first?.card?.face.parts.map(\.id), ["sum", "answer"])
+            XCTAssertEqual(answers.first?.card?.face.parts.map(\.title), ["1000 + 234.5", nil])
             XCTAssertEqual(answers.first?.card?.face.parts.last?.number?.text, "1,234.5")
+            XCTAssertEqual(answers.first?.card?.face.node("answer")?.style.grows, true)
             XCTAssertEqual(answers.first?.openTitle, "Copy")
             XCTAssertEqual(try String(contentsOf: home.appendingPathComponent("calc-asked"), encoding: .utf8), "1000+234.5\n")
         }
@@ -47,7 +49,7 @@ final class CalculatorSpotTests: SampleSpotsCase {
 
             let answers = try await self.calculator.search("15 usd in eur", timeout: 60).answers(asCard: self.calculator.triggers.search?.isCard == true)
 
-            XCTAssertEqual(answers.first?.card?.face.parts.map(\.title), ["15 USD in EUR"])
+            XCTAssertEqual(answers.first?.card?.face.parts.map(\.title), ["15 USD in EUR", nil])
             XCTAssertEqual(answers.first?.card?.face.parts.last?.numberPieces.map(\.isUnit), [false, true])
         }
     }

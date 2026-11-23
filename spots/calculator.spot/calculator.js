@@ -10,12 +10,13 @@ function fields(text) {
   return Object.fromEntries(text.trim().split("\n").map((line) => [line.slice(0, line.indexOf("=")), line.slice(line.indexOf("=") + 1)]))
 }
 
-/** The card of an answer: the big answer with its unit faint, over the sum as it was read, faint. The sum names the day
- * of old rates. A pick copies the plain value. */
+/** The card of an answer: the sum as it was read, faint, over the big answer with its unit faint, which fills the rest
+ * of the card. The sum names the day of old rates. A pick copies the plain value. */
 function card(solved) {
   return [
-    { frame: "" },
-    { number: "answer", class: "large:flex", value: solved.item, display: solved.title, unit: solved.unit, title: solved.tone ? `${solved.detail} · rates of ${solved.rates}` : solved.detail },
+    { frame: "", value: "answer" },
+    { text: "sum", class: "large:flex text-secondary", title: solved.tone ? `${solved.detail} · rates of ${solved.rates}` : solved.detail },
+    { number: "answer", class: "large:flex", grow: true, value: solved.item, display: solved.title, unit: solved.unit },
     { button: "press", title: "Copy", scope: "spot" },
   ]
 }
