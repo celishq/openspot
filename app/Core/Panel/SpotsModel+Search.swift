@@ -55,6 +55,7 @@ extension SpotsModel {
         finding = nil
         let text = query.trimmingCharacters(in: .whitespaces)
         if context.isOn, !isEditing, !text.hasPrefix("/") {
+            indexSpots()
             if slash != nil { slash = nil }
             content = .context
             foundSpots = []
@@ -68,12 +69,7 @@ extension SpotsModel {
             foundSpots = []
             return show(dragged(cards.filter(\.isOnGrid) + (isEditing ? shelfCards : [])))
         }
-        if spotListIsStale {
-            spotListIsStale = false
-            spotListBuilds += 1
-            spotList.replace(cards.filter(\.isFound).map(Self.foundItem))
-            commands = CommandIndex(cards)
-        }
+        indexSpots()
         let command = isEditing ? nil : SlashCommand(query)
         if command != nil, slash == nil { commands = CommandIndex(cards) }
         let rows = command.map(commandEntries) ?? []
@@ -107,6 +103,14 @@ extension SpotsModel {
         }
         finding = Finding(ask: ask, answers: Array(answers), sources: sources.map(\.spot), job: job)
         if !answers.isEmpty || visible.contains { $0.role == .answer } { show(Self.placed(Array(answers), around: foundSpots.filter { !ids.contains($0.id) })) }
+    }
+
+    private func indexSpots() {
+        guard spotListIsStale else { return }
+        spotListIsStale = false
+        spotListBuilds += 1
+        spotList.replace(cards.filter(\.isFound).map(Self.foundItem))
+        commands = CommandIndex(cards)
     }
 
     private static func placed(_ answers: [Entry], around found: [Entry]) -> [Entry] {

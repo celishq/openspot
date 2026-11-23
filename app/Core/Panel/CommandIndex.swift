@@ -6,6 +6,8 @@ struct CommandIndex {
     private var buttons: [String: CommandAction] = [:]
     private var items: [String: SpotItem] = [:]
     private var spots: [String: Spot] = [:]
+    private var takers: [ContextValue.Kind: ItemList] = [:]
+    private var takerSpots: [String: Spot] = [:]
 
     init() {}
 
@@ -33,6 +35,17 @@ struct CommandIndex {
             }
         }
         list.replace(rows)
+        for kind in ContextValue.Kind.allCases {
+            let cards = cards.filter { $0.spot.triggers.drop.takes(kind) }
+            cards.forEach { takerSpots[$0.id] = $0.spot }
+            takers[kind, default: ItemList()].replace(cards.map { SpotItem(title: $0.spot.name, subtitle: $0.spot.subtitle, run: $0.id, keywords: $0.spot.keywords) })
+        }
+    }
+
+    func takers(of value: ContextValue, matching query: SearchQuery?, limit: Int) -> [(spot: String, title: String)] {
+        guard let list = takers[value.kind] else { return [] }
+        let rows = query.map { $0.matching(in: [list]).map(\.item) } ?? list.all
+        return Array(rows.filter { takerSpots[$0.run]?.takes(value) == true }.map { ($0.run, $0.title) }.prefix(limit))
     }
 
     func entries(matching query: SearchQuery, text: String, limit: Int) -> [SpotsModel.Entry] {

@@ -68,20 +68,10 @@ extension SpotsModel {
         }
         let shown = ContextPreview(value)
         let preview = Entry(spot: source.spot, item: SpotItem(title: shown.text, run: "", picture: shown.picture), role: .preview, detail: shown.caption)
-        let rows = cards.filter { $0.item == nil && $0.spot.takes(value) }.map { card in
-            SpotItem(title: card.spot.name, subtitle: card.spot.subtitle, run: card.id, keywords: card.spot.keywords)
-        }
         let text = query.trimmingCharacters(in: .whitespaces)
-        let found: [SpotItem]
-        if text.isEmpty {
-            found = Array(rows.prefix(Self.contextRows))
-        } else {
-            var list = ItemList()
-            list.replace(rows)
-            found = runs.search(of: text).matching(in: [list], limit: Self.contextRows).map(\.item)
-        }
+        let found = commands.takers(of: value, matching: text.isEmpty ? nil : runs.search(of: text), limit: Self.contextRows)
         let taken = found.compactMap { row in
-            entry(row.run).map { Entry(spot: $0.spot, item: SpotItem(title: row.title, run: ""), role: .taker, detail: Self.takes(value.kind)) }
+            entry(row.spot).map { Entry(spot: $0.spot, item: SpotItem(title: row.title, run: ""), role: .taker, detail: Self.takes(value.kind)) }
         }
         return [preview] + taken
     }

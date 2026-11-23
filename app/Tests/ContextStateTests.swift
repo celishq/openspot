@@ -69,6 +69,20 @@ final class ContextStateTests: ContextCase {
         XCTAssertEqual(model.selected, 1)
     }
 
+    func testTypingInTheContextBuildsTheIndexOfTakersOnce() async throws {
+        try await openWithTab(takers: ["keep", "save"])
+        XCTAssertTrue(model.handleKey(tab))
+        let builds = model.spotListBuilds
+
+        for text in ["s", "sa", "sav"] {
+            model.query = text
+            model.landSearch()
+        }
+
+        XCTAssertEqual(model.spotListBuilds, builds)
+        XCTAssertEqual(shown, ["A", "save"])
+    }
+
     func testThePreviewIsNeverSelected() async throws {
         try await openWithTab()
         XCTAssertTrue(model.handleKey(tab))
