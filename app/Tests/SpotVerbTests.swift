@@ -70,11 +70,12 @@ final class SpotVerbTests: XCTestCase {
           "icon.file": (id) => ["spot", "run", "openspot/icon", "file", `spot=${id}`],
         };
 
-        export default Object.fromEntries(Object.keys(calls).map((act) => [act, async ({ item }) => { openspot.call(calls[act](item)) }]));
-
-        function hasIcon(id) {
-          return "";
-        }
+        export default {
+          ...Object.fromEntries(Object.keys(calls).map((act) => [act, async ({ item }) => { openspot.call(calls[act](item)) }])),
+          hasIcon() {
+            return "";
+          },
+        };
 
         """
 
@@ -367,7 +368,7 @@ final class SpotVerbTests: XCTestCase {
         try script("notes", toml: "title = 'Notes'")
         let tools = core.appendingPathComponent("openspot.spot/tools.js")
         try FileManager.default.createDirectory(at: tools.deletingLastPathComponent(), withIntermediateDirectories: true)
-        try "function isWeather(id, origin) { return id === \"weather\" && origin === \"mine\" }\nfunction always() { return true }\n".writeInline(to: tools, toml: "title = 'Tools'\n\n[actions.star]\ntitle = 'Star'\noffers = ['actions']\nwhen = 'isWeather'\n[actions.mark]\ntitle = 'Mark'\noffers = ['actions']\nwhen = 'always'")
+        try "export default { isWeather({ item, origin }) { return item === \"weather\" && origin === \"mine\" }, always() { return true } }\n".writeInline(to: tools, toml: "title = 'Tools'\n\n[actions.star]\ntitle = 'Star'\noffers = ['actions']\nwhen = 'isWeather'\n[actions.mark]\ntitle = 'Mark'\noffers = ['actions']\nwhen = 'always'")
         let titles = { self.model.menu?.rows.map(\.title) ?? [] }
 
         _ = try await select("notes")
@@ -387,7 +388,7 @@ final class SpotVerbTests: XCTestCase {
         try script("weather", toml: "title = 'Weather'")
         let slow = core.appendingPathComponent("openspot.spot/slow.js")
         try FileManager.default.createDirectory(at: slow.deletingLastPathComponent(), withIntermediateDirectories: true)
-        try "function late() { const end = Date.now() + 300; while (Date.now() < end) {} return true }\n".writeInline(to: slow, toml: "title = 'Slow'\n\n[actions.late]\ntitle = 'Late'\noffers = ['actions']\nwhen = 'late'")
+        try "export default { late() { const end = Date.now() + 300; while (Date.now() < end) {} return true } }\n".writeInline(to: slow, toml: "title = 'Slow'\n\n[actions.late]\ntitle = 'Late'\noffers = ['actions']\nwhen = 'late'")
         _ = try await select("weather")
 
         let start = Date()

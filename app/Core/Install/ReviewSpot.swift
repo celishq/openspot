@@ -136,14 +136,10 @@ public struct ReviewSpot: Equatable, Sendable {
             case .stay: [script.showsAtLaunch ? "keeps running while Openspot runs" : "keeps running while it is in use"]
             case .once, .inline: []
             }
-            for moment in script.triggers.moments {
-                switch moment {
-                case .panel: moments.append("when the panel opens")
-                case .every(let seconds): moments.append("every \(Int(seconds)) seconds")
-                case .event(let name): moments.append("on \(name)")
-                case .sheet: break
-                }
+            for event in script.triggers.events where event != EventName.sheetOpen && event != EventName.sheetText {
+                moments.append(event == EventName.panelOpen ? "when the panel opens" : "on \(event)")
             }
+            if let every = script.triggers.every { moments.append("every \(every) seconds") }
             return moments.isEmpty ? nil : "\(script.name): \(moments.joined(separator: ", "))"
         }
     }

@@ -48,10 +48,10 @@ public struct SpotFile: Equatable, Sendable {
         if let setting = manifest.settings.first(where: { ReservedSetting.isReserved($0.id) }) {
             throw SpotError.fault("\(name) has \(setting.section), a key that Openspot keeps for the person. Give the setting another name.")
         }
-        let commands = manifest.actions.filter { $0.title != nil }
-        let offeredActions = try OfferedAction.read(commands, owner: id, of: name, isInline: mode == .inline)
+        let titled = manifest.actions.filter { $0.title != nil }
+        let offeredActions = try OfferedAction.read(titled, owner: id, of: name, isInline: mode == .inline)
         let offeredIDs = Set(offeredActions.map(\.action.id))
-        let offers = commands.filter { !offeredIDs.contains($0.id) }
+        let commands = titled.filter { !offeredIDs.contains($0.id) }
         if manifest.views.contains(where: { URL(fileURLWithPath: $0).pathExtension != SwiftProgram.sourceExtension }) {
             throw SpotError.fault("\(name) needs a Swift file for each of its views, such as views = [\"liquid.swift\"]")
         }
@@ -83,8 +83,8 @@ public struct SpotFile: Equatable, Sendable {
             isFound: isFound,
             mode: mode,
             dataName: SpotID(id).name,
-            isOnGrid: isFound && offers.isEmpty && triggers.seconds == nil,
-            offers: offers,
+            isOnGrid: isFound && commands.isEmpty && triggers.every == nil,
+            commands: commands,
             offeredActions: offeredActions,
             settings: manifest.settings,
             views: Dictionary(manifest.views.map { (URL(fileURLWithPath: $0).deletingPathExtension().lastPathComponent, Self.path($0, beside: url)) }) { first, _ in first },
@@ -97,7 +97,7 @@ public struct SpotFile: Equatable, Sendable {
             edits: edits,
             starts: starts
         )
-        command.typedActions = manifest.actions
+        command.actions = manifest.actions
         command.bindings = manifest.bindings
         command.events = manifest.events
         self.init(id: id, spots: [command])

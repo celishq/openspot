@@ -176,7 +176,7 @@ final class CaffeinateSpotTests: XCTestCase {
         try await wait("the end of the call that asked") { sheet.calls.isEmpty }
         var draft = FormDraft(form: form)
         draft.set("45", for: "minutes")
-        _ = try await sheet.submit(CommandAction(id: Frame.press, title: item.title), item: item, draft: draft)
+        _ = try await sheet.submit(CommandAction(id: Handler.press.name, title: item.title), item: item, draft: draft)
 
         try await wait("caffeinate") { self.running().count == 1 }
         XCTAssertEqual(flags(), ["-di -t 2700"])
@@ -282,8 +282,8 @@ final class CaffeinateSpotTests: XCTestCase {
     }
 
     private func start(in sheet: SpotRun) async throws -> CommandAction {
-        try await wait("the button to start") { sheet.spot.actions.contains { $0.id == "start" } }
-        let start = try XCTUnwrap(sheet.spot.actions.first { $0.id == "start" })
+        try await wait("the button to start") { sheet.spot.frameActions.contains { $0.id == "start" } }
+        let start = try XCTUnwrap(sheet.spot.frameActions.first { $0.id == "start" })
         XCTAssertEqual(start.placeholder, "Minutes, such as 45")
         return start
     }

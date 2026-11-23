@@ -13,7 +13,7 @@ public enum PlaygroundPlace: String, CaseIterable, Sendable {
         case .sheet:
             nil
         case .card:
-            spot.triggers.has(.panel) || spot.triggers.seconds != nil ? nil : "The panel reads a card with \"panel.open\" or every in its [on]."
+            spot.triggers.showsOnPanel || spot.triggers.every != nil ? nil : "The panel reads a card with \"panel.open\" or every in its [on]."
         }
     }
 }

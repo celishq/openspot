@@ -75,7 +75,7 @@ public enum ManifestSchema {
     }
 
     static func actions(of spot: Spot) -> [String: Any] {
-        let actions = spot.typedActions.map { action -> [String: Any] in
+        let actions = spot.actions.map { action -> [String: Any] in
             var entry: [String: Any] = ["name": action.id, "inputs": object(of: action.inputs), "outputs": object(of: action.outputs)]
             if let title = action.title { entry["title"] = title }
             return entry

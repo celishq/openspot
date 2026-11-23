@@ -1,18 +1,20 @@
 import Foundation
 
 public struct Message: Equatable, Sendable {
-    static let argumentLimit = 65_536
-
-    public var words: SpotWords
+    public var handler: String
     public var inputs: [TextBlock.Field]
     public var given: String?
     public var settings: [TextBlock.Field]
 
-    public init(_ words: SpotWords, inputs: [TextBlock.Field] = [], given: String? = nil, settings: [TextBlock.Field] = []) {
-        self.words = words
+    public init(_ handler: String, inputs: [TextBlock.Field] = [], given: String? = nil, settings: [TextBlock.Field] = []) {
+        self.handler = handler
         self.inputs = inputs
         self.given = given
         self.settings = settings
+    }
+
+    public static func stopEvent(id: Int) -> String {
+        "stop=\(id)\n\n"
     }
 
     public var text: String? {
@@ -23,18 +25,8 @@ public struct Message: Equatable, Sendable {
     }
 
     public func block(id: Int) -> String {
-        let call = [TextBlock.Field(key: "call", value: String(id))] + words.arguments.map { TextBlock.Field(key: "arg", value: $0) }
+        let call = [TextBlock.Field(key: "call", value: String(id)), TextBlock.Field(key: "arg", value: handler)]
         let fields = text.map { TextBlock.blocks(in: $0).flatMap(\.fields) } ?? []
         return TextBlock(fields: call + fields).text + "\n"
-    }
-
-    var sent: (arguments: [String], input: String?) {
-        let arguments = words.arguments
-        let input = text
-        let long = arguments.dropFirst().filter { $0.utf8.count > Self.argumentLimit }
-        guard !long.isEmpty else { return (arguments, input) }
-        let held = input.flatMap { TextBlock.blocks(in: $0).first }?.fields.map(\.value) ?? []
-        let missing = long.filter { !held.contains($0) }.map { TextBlock.Field(key: "input.value", value: $0) }
-        return (arguments.prefix(1) + arguments.dropFirst().filter { !long.contains($0) }, (input ?? "") + TextBlock(fields: missing).text)
     }
 }

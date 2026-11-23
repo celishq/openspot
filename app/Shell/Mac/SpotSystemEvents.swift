@@ -5,7 +5,7 @@ import OpenspotCore
 
 @MainActor
 final class SpotSystemEvents {
-    private var heard: (@MainActor (SpotEvent) -> Void)?
+    private var heard: (@MainActor (AppSignal) -> Void)?
     private var power: PowerSample?
     private var powerSource: CFRunLoopSource?
     private var devicePort: IONotificationPortRef?
@@ -29,7 +29,7 @@ final class SpotSystemEvents {
         return LoadSample(busy: total - idle, total: total, memory: Int(100 - free))
     }
 
-    func listen(_ heard: @escaping @MainActor (SpotEvent) -> Void) {
+    func listen(_ heard: @escaping @MainActor (AppSignal) -> Void) {
         stop()
         self.heard = heard
         power = Self.readPower()
@@ -44,7 +44,7 @@ final class SpotSystemEvents {
         }
         mounts = NSWorkspace.shared.notificationCenter.addObserver(forName: NSWorkspace.didMountNotification, object: nil, queue: .main) { note in
             let path = (note.userInfo?[NSWorkspace.volumeURLUserInfoKey] as? URL)?.path
-            MainActor.assumeIsolated { heard(.named(SpotEvent.diskMount, value: path)) }
+            MainActor.assumeIsolated { heard(.named(EventName.diskMount, value: path)) }
         }
         watchDevices(context)
     }
@@ -65,7 +65,7 @@ final class SpotSystemEvents {
         while case let device = IOIteratorNext(iterator), device != 0 {
             let name = IORegistryEntryCreateCFProperty(device, "USB Product Name" as CFString, kCFAllocatorDefault, 0)?.takeRetainedValue() as? String
             IOObjectRelease(device)
-            if tells { heard?(.named(SpotEvent.deviceConnect, value: name)) }
+            if tells { heard?(.named(EventName.deviceConnect, value: name)) }
         }
     }
 

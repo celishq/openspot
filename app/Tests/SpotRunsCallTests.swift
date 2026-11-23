@@ -291,7 +291,7 @@ final class SpotRunsCallTests: SpotRunsCase {
         try await wait("the first frame") { sheet.panel?.parts.map(\.title) == ["half"] }
         let call = try XCTUnwrap(sheet.calls.first)
         XCTAssertTrue(call.isAct)
-        XCTAssertEqual(call.words.arguments, ["go"])
+        XCTAssertEqual(call.handler, "go")
         sheet.close()
         runs.panelClosed()
         XCTAssertEqual(sheet.calls.count, 1)
@@ -425,8 +425,8 @@ final class SpotRunsCallTests: SpotRunsCase {
         """)
         let sheet = try sheet()
         sheet.open {}
-        try await wait("the action") { sheet.spot.actions.count == 1 }
-        let action = try XCTUnwrap(sheet.spot.actions.first)
+        try await wait("the action") { sheet.spot.frameActions.count == 1 }
+        let action = try XCTUnwrap(sheet.spot.frameActions.first)
 
         sheet.run(action, item: nil)
         try await wait("the call") { self.log() == ["show", "go"] }
@@ -471,23 +471,5 @@ final class SpotRunsCallTests: SpotRunsCase {
         XCTAssertEqual(try String(contentsOfFile: path("count"), encoding: .utf8), "1")
         let got = try String(contentsOfFile: path("got"), encoding: .utf8)
         XCTAssertEqual(TextBlock.blocks(in: got).first?.value("input.input"), Self.big)
-    }
-
-    func testATwoMegabyteRunGoesOnStdinAsValue() async throws {
-        let url = try script(body: "printf '%s\\n' \"$#\"\ncat")
-
-        let text = try await runs.answer(of: Spot(id: "script", name: "Script", url: url), .item(SpotItem(title: "A", run: Self.big)))
-
-        XCTAssertTrue(text.hasPrefix("1\n"))
-        XCTAssertEqual(TextBlock.blocks(in: String(text.dropFirst(2))).first?.value("input.value"), Self.big)
-    }
-
-    func testAValueOf64KilobytesStaysInTheArguments() async throws {
-        let url = try script(body: "printf '%s' \"${#2}\"")
-        let value = String(repeating: "x", count: 65_536)
-
-        let text = try await runs.answer(of: Spot(id: "script", name: "Script", url: url), .set("a", to: value), input: "a=\(value)\n")
-
-        XCTAssertEqual(text, "65536")
     }
 }

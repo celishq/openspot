@@ -43,7 +43,7 @@ final class AccountSheetTests: BuiltInCase {
 
     private func frame(_ arguments: [String], input: String? = nil, reason: String = "sheet.open", page: String? = nil) async throws -> String {
         let message = (arguments == ["show"] ? "input.event=\(reason)\n" : "") + Self.inputs(arguments, page: page) + (input ?? "")
-        return try await runs.answer(of: account, SpotWords(arguments: Array(arguments.prefix(1))), input: message, limit: 60)
+        return try await runs.answer(of: account, arguments[0], input: message, limit: 60)
     }
 
     private func said(_ arguments: [String], input: String? = nil, page: String? = nil) async throws -> HostAnswer {
@@ -83,7 +83,7 @@ final class AccountSheetTests: BuiltInCase {
 
         XCTAssertEqual(spot.name, "Account")
         XCTAssertTrue(spot.isFound)
-        XCTAssertFalse(spot.triggers.has(.panel))
+        XCTAssertFalse(spot.triggers.showsOnPanel)
         XCTAssertTrue(spot.reachesAccountKey)
         XCTAssertEqual(spot.views, ["card": AccountSheet.card])
     }

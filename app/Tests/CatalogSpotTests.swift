@@ -28,7 +28,7 @@ final class CatalogSpotTests: BuiltInCase {
     }
 
     func testAPressOpensEditSpotsInTheApp() async throws {
-        _ = try await catalog.perform(.press("edit"), timeout: 60)
+        _ = try await catalog.perform("edit", timeout: 60)
 
         let opened = await app.opened
         XCTAssertEqual(opened, ["grid"])

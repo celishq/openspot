@@ -34,12 +34,12 @@ final class ScreenExamplesTests: SampleSpotsCase {
         try await withPrivateHome(settings: ["inputs": "mic:B2 system"]) { folder in
             try self.fakeScreen(in: folder)
 
-            try await record.perform(.press("record"), timeout: 60)
+            try await record.perform("record", timeout: 60)
             XCTAssertEqual(self.toasts(in: folder), ["Recording the screen. Run Record again to stop it."])
             XCTAssertTrue(try self.read("calls", in: folder).contains("screen record start mic:B2 system\n"))
             XCTAssertFalse(try self.read("calls", in: folder).contains("setting get"))
 
-            try await record.perform(.press("record"), timeout: 60)
+            try await record.perform("record", timeout: 60)
             XCTAssertEqual(self.toasts(in: folder), ["Recording the screen. Run Record again to stop it.", "Copied the recording."])
             XCTAssertEqual(try self.read("clipboard", in: folder), folder.path + "/talk.mp4")
         }
@@ -52,7 +52,7 @@ final class ScreenExamplesTests: SampleSpotsCase {
             FileManager.default.createFile(atPath: folder.appendingPathComponent("ended").path, contents: Data())
 
             do {
-                try await record.perform(.press("record"), timeout: 60)
+                try await record.perform("record", timeout: 60)
                 XCTFail("the run says why the recording ended")
             } catch {
                 XCTAssertTrue("\(error)".contains("The recording ended as macOS stopped it."), "\(error)")
@@ -78,7 +78,7 @@ final class ScreenExamplesTests: SampleSpotsCase {
 
     func testAPickTurnsAnInputOnOrOffAndReplacesTheOtherOfItsKind() async throws {
         let record = try example("Record")
-        let inputs = SpotWords.action(CommandAction(id: "inputs", title: "Sound and camera"), item: nil)
+        let inputs = "inputs"
         try await withPrivateHome { folder in
             try self.fakeScreen(in: folder)
             let pick = { (input: String, kept: String) in

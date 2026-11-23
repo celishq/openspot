@@ -4,7 +4,7 @@ public final class CommandAPI: @unchecked Sendable {
     public typealias Work = @Sendable () async -> CommandAnswer
 
     private let mac: Mac
-    private let raise: (@Sendable (SpotEvent) async -> Void)?
+    private let raise: (@Sendable (AppSignal) async -> Void)?
     private let app: (any RunningApp)?
     private let places: AppPlaces
     private let account: Account?
@@ -14,7 +14,7 @@ public final class CommandAPI: @unchecked Sendable {
     private let rates: CalcRateCache
     private let nouns: [CommandNoun]
 
-    public init(mac: Mac, places: AppPlaces, raise: (@Sendable (SpotEvent) async -> Void)? = nil, app: (any RunningApp)? = nil, runs: SpotRuns? = nil, rates: CalcRateCache, nouns: [CommandNoun] = CommandNoun.all) {
+    public init(mac: Mac, places: AppPlaces, raise: (@Sendable (AppSignal) async -> Void)? = nil, app: (any RunningApp)? = nil, runs: SpotRuns? = nil, rates: CalcRateCache, nouns: [CommandNoun] = CommandNoun.all) {
         self.mac = mac
         self.places = places
         account = app.map { app in Account(store: places.account, allows: { await app.allows($0) }) }

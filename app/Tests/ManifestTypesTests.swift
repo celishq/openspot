@@ -89,9 +89,9 @@ final class ManifestTypesTests: XCTestCase {
         let spot = try XCTUnwrap(spot(Self.toml).spot)
 
         XCTAssertEqual(spot.mode, .stay)
-        XCTAssertEqual(spot.typedActions.map(\.id), ["snooze", "wake", "go"])
-        XCTAssertEqual(spot.offers.map(\.id), ["snooze", "go"])
-        XCTAssertEqual(spot.offers.first?.title, "Snooze Tab")
+        XCTAssertEqual(spot.actions.map(\.id), ["snooze", "wake", "go"])
+        XCTAssertEqual(spot.commands.map(\.id), ["snooze", "go"])
+        XCTAssertEqual(spot.commands.first?.title, "Snooze Tab")
     }
 
     func testAWrongTypeFailsTheLoadWithALineThatNamesTheKey() throws {

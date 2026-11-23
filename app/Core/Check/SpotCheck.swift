@@ -72,11 +72,11 @@ public struct SpotCheck: Sendable {
             if let careful { script.uses.formIntersection(careful) }
             func found(_ fault: String) -> Finding { Finding(spot: script.id, file: script.url.path, fault: fault) }
             do {
-                let text = try await runs.answer(of: script, .show, limit: timeout)
+                let text = try await runs.answer(of: script, Handler.show.name, limit: timeout)
                 let check = FrameCheck(text: text, kinds: script.kinds, isApp: script.isBuiltIn)
                 let output = check.output
                 _ = try script.state(of: output)
-                if script.triggers.seconds != nil, MetricValue(output: output) == nil { throw SpotError.badMetric }
+                if script.triggers.every != nil, MetricValue(output: output) == nil { throw SpotError.badMetric }
                 findings += output.errors.map { found("cannot read the item \($0)") }
                 findings += Self.brokenBlocks(in: text, kinds: script.kinds).map(found)
                 findings += check.partFaults.map(found)
@@ -86,7 +86,7 @@ public struct SpotCheck: Sendable {
             }
         }
         for script in scan.scripts {
-            for command in script.offers where FrameCheck.calls.contains(command.id) {
+            for command in script.commands where FrameCheck.calls.contains(command.id) {
                 findings.append(Finding(spot: script.id, file: script.url.path, fault: "a command cannot be called \(command.id), since Openspot calls the spot with \(command.id)"))
             }
         }

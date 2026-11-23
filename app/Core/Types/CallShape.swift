@@ -14,7 +14,7 @@ struct CallShape: Equatable, Sendable {
     }
 
     static func all(of spot: Spot, bound: [String: Spot]) -> [CallShape] {
-        var shapes = spot.typedActions.map { CallShape(name: $0.id, inputs: $0.inputs, outputs: $0.outputs) }
+        var shapes = spot.actions.map { CallShape(name: $0.id, inputs: $0.inputs, outputs: $0.outputs) }
         let actions = Set(shapes.map(\.name))
         for handler in spot.triggers.handlers.sorted(by: { $0.name < $1.name }) where !actions.contains(handler.name) {
             shapes.append(CallShape(name: handler.name, inputs: handler.inputs))

@@ -11,7 +11,7 @@ public final class ScriptCall: Identifiable {
     }
 
     public let id = UUID()
-    public let words: SpotWords
+    public let handler: String
     public let started: Date
     public private(set) var status: TextBlock?
     public private(set) var isStopped = false
@@ -21,8 +21,8 @@ public final class ScriptCall: Identifiable {
 
     public let isAct: Bool
 
-    init(words: SpotWords, isAct: Bool, key: String, started: Date) {
-        self.words = words
+    init(handler: String, isAct: Bool, key: String, started: Date) {
+        self.handler = handler
         self.isAct = isAct
         self.key = key
         self.started = started

@@ -89,7 +89,7 @@ function sheet(now, choices, title) {
     if (id === "date") tile.route = "date"
     blocks.push(tile)
   }
-  return openspot.frame(blocks)
+  return blocks
 }
 
 /** The parts of the day that a picked day offers: title, icon, and its hour and minute, from the person's choices for
@@ -123,7 +123,7 @@ function days(now, choices) {
     const weekday = day.toLocaleDateString("en-US", { weekday: "long" })
     blocks.push({ item: route, parent: "days", title: weekday, detail: dayWords(day, now), icon: "calendar", class: "bg-tile", route, "route.title": `${weekday}, ${day.toLocaleDateString("en-US", { month: "long", day: "numeric" })}` })
   }
-  return openspot.frame(blocks)
+  return blocks
 }
 
 /** The page of one day: its parts still to come, each with the time it stands for. */
@@ -135,7 +135,7 @@ function hours(route, now, choices) {
     if (moment <= now) continue
     blocks.push({ item: iso(moment), parent: "hours", title, detail: `${hour}:${two(minute)}`, icon, class: "bg-tile" })
   }
-  return openspot.frame(blocks)
+  return blocks
 }
 
 /** Shows the sheet or a page of Pick Date; pick shows the sheet under the title of what is snoozed; a press of a tile,

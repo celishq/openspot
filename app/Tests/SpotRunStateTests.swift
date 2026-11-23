@@ -23,8 +23,8 @@ final class SpotRunStateTests: XCTestCase {
         runs.quit()
     }
 
-    private func sheet(kind: SpotKind = .list, triggers: Manifest.Triggers = .sheet, mode: SpotMode = .once, offers: [Manifest.Action] = []) -> (SpotRun, FakeMode) {
-        let sheet = runs.sheet(for: Spot(id: "script", name: "Script", url: URL(fileURLWithPath: "/script.spot/script.sh"), kind: kind, triggers: triggers, mode: mode, offers: offers))
+    private func sheet(kind: SpotKind = .list, triggers: Manifest.Triggers = .sheet, mode: SpotMode = .once, commands: [Manifest.Action] = []) -> (SpotRun, FakeMode) {
+        let sheet = runs.sheet(for: Spot(id: "script", name: "Script", url: URL(fileURLWithPath: "/script.spot/script.sh"), kind: kind, triggers: triggers, mode: mode, commands: commands))
         return (sheet, links["script"]!)
     }
 
@@ -33,7 +33,7 @@ final class SpotRunStateTests: XCTestCase {
     }
 
     private func opened(searches: Bool = false, frame: String = "item=a\ntitle=A\n") async -> (SpotRun, FakeMode) {
-        let (sheet, link) = sheet(triggers: Manifest.Triggers(events: [searches ? SpotEvent.sheetText : SpotEvent.sheetOpen]))
+        let (sheet, link) = sheet(triggers: Manifest.Triggers(events: [searches ? EventName.sheetText : EventName.sheetOpen]))
         sheet.open {}
         await link.frame(frame, of: link.sent[0])
         await link.end(link.sent[0])
@@ -198,7 +198,7 @@ final class SpotRunStateTests: XCTestCase {
     }
 
     private func readInMenuBar() async -> (SpotRun, FakeMode, Int) {
-        let (sheet, link) = inMenuBar(triggers: Manifest.Triggers(events: [SpotEvent.panelOpen, SpotEvent.sheetOpen, "clipboard.change"]))
+        let (sheet, link) = inMenuBar(triggers: Manifest.Triggers(events: [EventName.panelOpen, EventName.sheetOpen, "clipboard.change"]))
         for call in link.sent { await link.end(call) }
         sheet.show(need: .change, event: .panel)
         return (sheet, link, link.sent.count - 1)
@@ -339,7 +339,7 @@ final class SpotRunStateTests: XCTestCase {
     }
 
     func testQuickPressesOfAKeyWaitUpToTheirLimit() async throws {
-        let (sheet, link) = sheet(kind: .launch, triggers: Manifest.Triggers(), offers: Manifest(text: TestSpot.command, folder: "").actions.filter { $0.title != nil })
+        let (sheet, link) = sheet(kind: .launch, triggers: Manifest.Triggers(), commands: Manifest(text: TestSpot.command, folder: "").actions.filter { $0.title != nil })
 
         for _ in 0..<10 { sheet.pressKey("go") }
         var ended = 0
@@ -352,7 +352,7 @@ final class SpotRunStateTests: XCTestCase {
     }
 
     func testAStayingSpotHoldsNoMoreKeyPressesThanTheLimit() async throws {
-        let (sheet, link) = sheet(kind: .launch, triggers: Manifest.Triggers(), mode: .stay, offers: Manifest(text: TestSpot.command, folder: "").actions.filter { $0.title != nil })
+        let (sheet, link) = sheet(kind: .launch, triggers: Manifest.Triggers(), mode: .stay, commands: Manifest(text: TestSpot.command, folder: "").actions.filter { $0.title != nil })
         var toasts: [String] = []
         sheet.onReport = { if case .toast(let text) = $0 { toasts.append(text) } }
 

@@ -37,7 +37,7 @@ final class SpotKeysTests: XCTestCase {
         XCTAssertEqual(spot.offeredActions.first?.group, "Icon")
         XCTAssertEqual(spot.offeredActions.first?.action.title, "Change Icon")
         XCTAssertEqual(spot.offeredActions.first?.origins, [])
-        XCTAssertEqual(spot.offers.map(\.id), ["reset"])
+        XCTAssertEqual(spot.commands.map(\.id), ["reset"])
         XCTAssertFalse(spot.isFound)
     }
 
@@ -48,17 +48,17 @@ final class SpotKeysTests: XCTestCase {
 
         XCTAssertEqual(spot.offeredActions.map(\.action.id), ["change", "change.draw"])
         XCTAssertEqual(spot.offeredActions.last?.origins, [.mine])
-        XCTAssertEqual(spot.offers.map(\.id), ["other.go"])
+        XCTAssertEqual(spot.commands.map(\.id), ["other.go"])
     }
 
-    func testAJavaScriptSpotNamesTheFunctionThatSaysWhetherAnActionShows() throws {
+    func testAJavaScriptSpotNamesTheHandlerThatSaysWhetherAnActionShows() throws {
         let folder = try temporaryFolder().appendingPathComponent("icon.spot")
         try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
         let reset = "title = 'Reset Icon'\noffers = ['actions']"
         let toml = "title = 'Icon'\n[actions.reset]\n\(reset)\nwhen = 'hasIcon'\n[scripts.shell.actions.reset]\n\(reset)\nwhen = 'hasIcon'\n[scripts.wrong.actions.reset]\n\(reset)\nwhen = 'has icon()'\n"
         try toml.write(to: folder.appendingPathComponent("spot.toml"), atomically: true, encoding: .utf8)
         let js = folder.appendingPathComponent("icon.js")
-        try "function hasIcon(id) { return true }\n".write(to: js, atomically: true, encoding: .utf8)
+        try "export default { hasIcon() { return true } }\n".write(to: js, atomically: true, encoding: .utf8)
         let shell = folder.appendingPathComponent("shell.sh")
         try "#!/bin/sh\n".writeScript(to: shell)
         let wrong = folder.appendingPathComponent("wrong.js")
@@ -66,7 +66,7 @@ final class SpotKeysTests: XCTestCase {
 
         let spot = try XCTUnwrap(try SpotFile(file: js, id: "icon", isApp: true)?.spots.first)
 
-        XCTAssertEqual(spot.offeredActions.first?.hooks[.when], "hasIcon")
+        XCTAssertEqual(spot.offeredActions.first?.when, "hasIcon")
         XCTAssertThrowsError(try SpotFile(file: shell, id: "shell", isApp: true)) { XCTAssertTrue((($0 as? SpotError)?.reason ?? "").contains("only a JavaScript spot"), "\($0)") }
         XCTAssertThrowsError(try SpotFile(file: wrong, id: "wrong", isApp: true)) { XCTAssertTrue((($0 as? SpotError)?.reason ?? "").contains("such as when = \"hasIcon\""), "\($0)") }
     }
@@ -98,8 +98,17 @@ final class SpotKeysTests: XCTestCase {
         for toml in ["[on]\nsearch = true", "[on]\n\"clipboard.change\" = true\nsearch = true"] {
             let spot = try spot(toml)
 
-            XCTAssertEqual(spot.triggers.has(.sheet), true, toml)
+            XCTAssertEqual(spot.showsInSheet, true, toml)
             XCTAssertTrue(spot.showsOfferedItems, toml)
+        }
+    }
+
+    func testASearchThatListsShowsItsListInASheetOnlyWithNoPanelOpenAndNoEvery() throws {
+        for toml in ["[on]\nsearch = true\n\"panel.open\" = true", "[on]\nsearch = true\nevery = 60"] {
+            let spot = try spot(toml)
+
+            XCTAssertFalse(spot.showsOfferedItems, toml)
+            XCTAssertFalse(spot.showsInSheet, toml)
         }
     }
 

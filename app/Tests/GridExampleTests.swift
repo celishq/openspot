@@ -46,7 +46,7 @@ final class GridExampleTests: SampleSpotsCase {
         let grid = try example("Grid")
 
         XCTAssertEqual(grid.mode, .stay)
-        XCTAssertEqual(grid.triggers.moments, [.panel])
+        XCTAssertEqual(grid.triggers.events, [EventName.panelOpen])
         XCTAssertNil(grid.triggers.search)
         XCTAssertFalse(grid.triggers.searchesSheet)
         XCTAssertEqual(grid.triggers.filters, [:])

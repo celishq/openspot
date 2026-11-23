@@ -126,9 +126,9 @@ final class SpotRunsStayTests: SpotRunsCase {
         let sheet = try sheet()
         runs.panelOpened()
         sheet.open {}
-        try await wait("the action") { sheet.spot.actions.count == 1 }
+        try await wait("the action") { sheet.spot.frameActions.count == 1 }
 
-        sheet.run(try XCTUnwrap(sheet.spot.actions.first), item: nil)
+        sheet.run(try XCTUnwrap(sheet.spot.frameActions.first), item: nil)
         try await wait("the running call") { sheet.calls.count == 1 }
         try "".write(toFile: path("done"), atomically: true, encoding: .utf8)
 
@@ -140,8 +140,8 @@ final class SpotRunsStayTests: SpotRunsCase {
         let sheet = try sheet()
         runs.panelOpened()
         sheet.open {}
-        try await wait("the action") { sheet.spot.actions.count == 1 }
-        let action = try XCTUnwrap(sheet.spot.actions.first)
+        try await wait("the action") { sheet.spot.frameActions.count == 1 }
+        let action = try XCTUnwrap(sheet.spot.frameActions.first)
         sheet.run(action, item: nil)
         try await wait("the running call") { sheet.calls.count == 1 }
         time += 2
@@ -252,7 +252,7 @@ final class SpotRunsStayTests: SpotRunsCase {
         runs.panelOpened()
         sheet.open {}
         try await wait("the row") { sheet.list.shown.count == 1 }
-        let action = try XCTUnwrap(sheet.spot.actions.first)
+        let action = try XCTUnwrap(sheet.spot.frameActions.first)
 
         sheet.run(action, item: sheet.list.selectedItem)
         sheet.run(action, item: nil)
@@ -267,13 +267,13 @@ final class SpotRunsStayTests: SpotRunsCase {
         let sheet = try sheet()
         runs.panelOpened()
         sheet.open {}
-        try await wait("the action") { sheet.spot.actions.count == 1 }
-        let action = try XCTUnwrap(sheet.spot.actions.first)
+        try await wait("the action") { sheet.spot.frameActions.count == 1 }
+        let action = try XCTUnwrap(sheet.spot.frameActions.first)
 
         let asked = try await sheet.form(action, item: nil)
         let form = try XCTUnwrap(asked)
         XCTAssertEqual(form.fields.map(\.name), ["a"])
-        XCTAssertEqual(sheet.spot.actions.count, 1)
+        XCTAssertEqual(sheet.spot.frameActions.count, 1)
         var draft = FormDraft(form: form, prefill: "")
         draft.set("one", for: "a")
         let answer = try await sheet.submit(action, item: nil, draft: draft)
@@ -308,10 +308,10 @@ final class SpotRunsStayTests: SpotRunsCase {
             let stayed = parses.count
 
             once.open {}
-            try await wait("the read of the spot that runs once") { once.spot.actions.count == 1 && once.calls.isEmpty }
+            try await wait("the read of the spot that runs once") { once.spot.frameActions.count == 1 && once.calls.isEmpty }
             XCTAssertEqual(parses.count, stayed + 1)
 
-            let action = try XCTUnwrap(once.spot.actions.first)
+            let action = try XCTUnwrap(once.spot.frameActions.first)
             let asked = try await once.form(action, item: nil)
             XCTAssertEqual(parses.count, stayed + 2)
             try await wait("the end of the ask") { once.calls.isEmpty }
@@ -341,8 +341,8 @@ final class SpotRunsStayTests: SpotRunsCase {
         let sheet = try sheet()
         runs.panelOpened()
         sheet.open {}
-        try await wait("the action") { sheet.spot.actions.count == 1 }
-        return (sheet, try XCTUnwrap(sheet.spot.actions.first { $0.id == "new" }))
+        try await wait("the action") { sheet.spot.frameActions.count == 1 }
+        return (sheet, try XCTUnwrap(sheet.spot.frameActions.first { $0.id == "new" }))
     }
 
     func testAPressAgainStopsAFormOfAStayingScript() async throws {
@@ -475,7 +475,7 @@ final class SpotRunsStayTests: SpotRunsCase {
         let before = sheet.state
         sheet.state = before.switched(on: true)
 
-        sheet.send(SpotRun.Call(message: Message(.press("power")), key: SpotRun.cardKey, purpose: .act(SpotRun.Act(undo: before))))
+        sheet.send(SpotRun.Call(message: Message("power"), key: SpotRun.cardKey, purpose: .act(SpotRun.Act(undo: before))))
 
         XCTAssertTrue(sheet.isCardRunning)
         try await wait("the undo of the switch") { sheet.state == before }
@@ -1033,9 +1033,9 @@ final class SpotRunsStayTests: SpotRunsCase {
         let sheet = try sheet()
         runs.panelOpened()
         sheet.open {}
-        try await wait("the action") { sheet.spot.actions.count == 1 }
+        try await wait("the action") { sheet.spot.frameActions.count == 1 }
 
-        sheet.run(try XCTUnwrap(sheet.spot.actions.first), item: nil)
+        sheet.run(try XCTUnwrap(sheet.spot.frameActions.first), item: nil)
 
         try await wait("the record") { !kept.isEmpty }
         XCTAssertLessThan(kept[0], 30)

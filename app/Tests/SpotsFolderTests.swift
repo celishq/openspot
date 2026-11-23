@@ -286,7 +286,6 @@ final class SpotsFolderTests: XCTestCase {
         XCTAssertEqual(command.pick, .close)
         XCTAssertFalse(command.triggers.lists)
         XCTAssertEqual(command.mode, .once)
-        XCTAssertEqual(command.click.arguments, ["press"])
     }
 
     func testOnlyTheScriptNamedAfterItsFolderIsASpot() throws {
@@ -322,8 +321,8 @@ final class SpotsFolderTests: XCTestCase {
 
         let read = try XCTUnwrap(try scan.spots.first?.triggers)
 
-        XCTAssertEqual(read.moments, [.panel, .sheet, .every(30)])
-        XCTAssertEqual(read.seconds, 30)
+        XCTAssertEqual(read.events, [EventName.panelOpen, EventName.sheetOpen])
+        XCTAssertEqual(read.every, 30)
     }
 
     func testStayTrueKeepsOneProcessAndAnyOtherSpotRunsOncePerCall() throws {
@@ -371,7 +370,7 @@ final class SpotsFolderTests: XCTestCase {
 
         XCTAssertEqual(scan.spots.map(\.id), ["a"])
         XCTAssertEqual(scan.spots.map(\.headerState.isOnGrid), [false])
-        XCTAssertEqual(scan.metrics.map(\.triggers.seconds), [30])
+        XCTAssertEqual(scan.metrics.map(\.triggers.every), [30])
     }
 
     func testASpotThatOffersSearchAndCardHasACard() throws {
@@ -400,7 +399,7 @@ final class SpotsFolderTests: XCTestCase {
         XCTAssertEqual(metric.id, "cups")
         XCTAssertEqual(metric.name, "Cups")
         XCTAssertEqual(metric.symbol, "cup.and.saucer")
-        XCTAssertEqual(metric.triggers.seconds, 30)
+        XCTAssertEqual(metric.triggers.every, 30)
     }
 
     func testAMetricIsAlsoAList() throws {

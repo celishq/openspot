@@ -229,7 +229,7 @@ final class ItemsTests: PanelCase {
     func testAnActClosesThePanelAndCloseFalseKeepsItOpen() async throws {
         try await open("button=star\ntitle=Star\nclose=false\n\nbutton=delete\ntitle=Delete\n\nitem=a\ntitle=A\n")
         let entry = try XCTUnwrap(model.openEntry)
-        let actions = entry.spot.actions
+        let actions = entry.spot.frameActions
 
         let sheet = try XCTUnwrap(model.runs.sheets["items"])
         model.run(try XCTUnwrap(actions.first { $0.id == "star" }), on: (entry, try item("a")))

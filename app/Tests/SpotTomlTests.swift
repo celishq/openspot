@@ -34,10 +34,10 @@ final class SpotTomlTests: XCTestCase {
         XCTAssertEqual(scan.refused, [])
         XCTAssertEqual(scan.spots.map(\.name), ["Weather"])
         let weather = try XCTUnwrap(scan.spots.first)
-        XCTAssertEqual(weather.triggers.has(.sheet), true)
-        XCTAssertEqual(weather.triggers.seconds, 300)
+        XCTAssertEqual(weather.showsInSheet, true)
+        XCTAssertEqual(weather.triggers.every, 300)
         XCTAssertEqual(weather.uses, [.network, .clipboard])
-        XCTAssertEqual(weather.offers.map(\.id), ["refresh"])
+        XCTAssertEqual(weather.commands.map(\.id), ["refresh"])
         XCTAssertEqual(weather.settings.map(\.id), ["city"])
     }
 

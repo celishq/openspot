@@ -31,6 +31,8 @@ targets:
     platform: macOS
     sources:
       - path: Core
+        excludes:
+          - "**/*.js"
       - path: Shared
     dependencies:
       - package: secp256k1
@@ -44,6 +46,8 @@ targets:
     platform: macOS
     sources:
       - path: Shell
+      - path: Core/Run/InlineScript.js
+        buildPhase: resources
       - path: Power/PowerService.swift
       - path: Power/PowerDaemon.swift
     dependencies:
@@ -247,6 +251,8 @@ targets:
     platform: macOS
     sources:
       - path: Tests
+      - path: Core/Run/InlineScript.js
+        buildPhase: resources
     dependencies:
       - target: OpenspotCore
       - package: secp256k1

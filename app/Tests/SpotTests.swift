@@ -74,7 +74,7 @@ final class SpotTests: XCTestCase {
 
         XCTAssertEqual(opened.spot.kind, .list)
         XCTAssertEqual(opened.spot.openTitle, "Select")
-        XCTAssertEqual(opened.spot.actions.map(\.id), ["copy"])
+        XCTAssertEqual(opened.spot.frameActions.map(\.id), ["copy"])
         XCTAssertEqual(opened.state.on, true)
     }
 
@@ -121,7 +121,7 @@ final class SpotTests: XCTestCase {
     func testAClickOnAFileWithNoReadSendsPress() async throws {
         let command = try writeCommand(kind: .launch, "echo \"$1\" > '\(marker.path)'")
 
-        try await command.perform(command.click, timeout: 60)
+        try await command.perform(Handler.press.name, timeout: 60)
 
         XCTAssertEqual(try String(contentsOf: marker, encoding: .utf8), "press\n")
     }
@@ -129,7 +129,7 @@ final class SpotTests: XCTestCase {
     func testAClickOnACardWithAReadSendsPress() async throws {
         let command = try writeCommand(kind: .launch, triggers: .panel, "echo \"$1\" > '\(marker.path)'")
 
-        try await command.perform(command.click, timeout: 60)
+        try await command.perform(Handler.press.name, timeout: 60)
 
         XCTAssertEqual(try String(contentsOf: marker, encoding: .utf8), "press\n")
     }
@@ -165,19 +165,19 @@ final class SpotTests: XCTestCase {
         }
     }
 
-    func testPerformPassesTheActionArguments() async throws {
+    func testPerformPassesTheHandler() async throws {
         let command = try writeCommand(kind: .toggle, "echo \"$*\" > '\(marker.path)'")
 
-        try await command.perform(.set("focus", to: "true"), timeout: 60)
+        try await command.perform("focus", timeout: 60)
 
-        XCTAssertEqual(try String(contentsOf: marker, encoding: .utf8), "focus true\n")
+        XCTAssertEqual(try String(contentsOf: marker, encoding: .utf8), "focus\n")
     }
 
     func testAFailureCarriesTheLastLineOfItsErrorOutput() async throws {
         let command = try writeCommand(kind: .launch, "echo first >&2\necho 'No screenshot found.' >&2\nexit 3")
 
         do {
-            try await command.perform(command.click, timeout: 60)
+            try await command.perform(Handler.press.name, timeout: 60)
             XCTFail("expected a failure")
         } catch let error as SpotError {
             XCTAssertEqual(error, .failed(3, "No screenshot found."))

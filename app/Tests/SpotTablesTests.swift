@@ -134,7 +134,7 @@ final class SpotTablesTests: XCTestCase {
         for name in ["spots", "examples"] {
             for spot in try SpotsFolder(url: RepoDoc.repo.appendingPathComponent(name)).scan().scripts {
                 guard let sampled = spot.sampled else { continue }
-                let frame = try await SpotRuns(environment: TestEnvironment.values).answer(of: sampled, .show, limit: 60)
+                let frame = try await SpotRuns(environment: TestEnvironment.values).answer(of: sampled, Handler.show.name, limit: 60)
                 XCTAssertEqual(unknownKeys(in: frame), [], spot.id)
             }
         }

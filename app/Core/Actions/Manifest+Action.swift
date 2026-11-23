@@ -4,7 +4,7 @@ extension Manifest {
     public struct Action: Equatable, Sendable {
         static let table = "actions"
         static let keys: Set<String> = ["title", "icon", "confirm"]
-        static let appKeys: Set<String> = ["offers", "shortcut", "close", ActionHook.when.rawValue]
+        static let appKeys: Set<String> = ["offers", "shortcut", "close", "when"]
         static let inputs = "inputs"
         static let outputs = "outputs"
 
@@ -17,7 +17,7 @@ extension Manifest {
         public let offers: [String]
         let shortcut: String?
         let close: Bool?
-        let hooks: [ActionHook: String]
+        let when: String?
         let section: String
         let appKey: String?
 
@@ -59,7 +59,7 @@ extension Manifest {
             offers = appValues["offers"] ?? []
             shortcut = appValues["shortcut"]?.first
             close = appValues["close"]?.first.flatMap(Bool.init)
-            hooks = ActionHook.allCases.reduce(into: [:]) { hooks, hook in hooks[hook] = appValues[hook.rawValue]?.first }
+            when = appValues["when"]?.first
             self.appKey = appKey
         }
 
@@ -97,32 +97,23 @@ extension Manifest.Action {
         return texts.first { $0.isRequired } ?? texts.first
     }
 
-    public var form: String {
-        form(with: [:])
-    }
-
-    public func form(with values: [String: String], title: String? = nil) -> String {
-        let root = TextBlock(fields: [.init(key: "frame", value: ""), .init(key: "type", value: "form"), .init(key: "title", value: title ?? self.title ?? id)])
-        return ([root] + inputs.flatMap { $0.formBlocks(value: values[$0.name]) }).map(\.text).joined(separator: "\n")
+    public func itemForm(values: [String: String] = [:], title: String? = nil) -> ItemForm {
+        ItemForm(title: title ?? self.title ?? id, fields: inputs.map { $0.formField(value: values[$0.name]) })
     }
 }
 
 extension Manifest.Parameter {
-    func formBlocks(value: String?) -> [TextBlock] {
+    func formField(value: String?) -> ItemForm.Field {
         let defaultValue = value ?? defaultValue
         let label = title ?? name.prefix(1).uppercased() + name.dropFirst()
         switch type.kind {
         case .bool:
-            return [TextBlock(fields: [.init(key: "switch", value: name), .init(key: "title", value: label), .init(key: "value", value: defaultValue ?? "false")])]
+            return ItemForm.Field(name: name, label: label, type: .switch, value: Bool(defaultValue ?? "") == true ? "true" : "false")
         case .choice:
-            let head = TextBlock(fields: [.init(key: "choice", value: name), .init(key: "title", value: label)] + (defaultValue.map { [.init(key: "value", value: $0)] } ?? []))
-            return [head] + options.map { TextBlock(fields: [.init(key: "option", value: $0)]) }
+            let options = options.map { SpotPart.Option(id: $0, title: $0) }
+            return ItemForm.Field(name: name, label: label, type: .choice, value: defaultValue ?? options.first?.id, options: options)
         default:
-            var fields: [TextBlock.Field] = [.init(key: "field", value: name), .init(key: "title", value: label)]
-            if let defaultValue { fields.append(.init(key: "value", value: defaultValue)) }
-            if isRequired { fields.append(.init(key: "required", value: "true")) }
-            if let detail { fields.append(.init(key: "placeholder", value: detail)) }
-            return [TextBlock(fields: fields)]
+            return ItemForm.Field(name: name, label: label, value: defaultValue, required: isRequired ? true : nil, placeholder: detail)
         }
     }
 }

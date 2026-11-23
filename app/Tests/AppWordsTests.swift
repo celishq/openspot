@@ -46,7 +46,7 @@ final class AppWordsTests: XCTestCase {
         XCTAssertEqual(acts.offeredActions.map { $0.action.key?.label ?? "" }, ["⇧⌘C", ""])
         XCTAssertEqual(acts.offeredActions.map(\.action.after), [.stay, .close])
         XCTAssertEqual(acts.offeredActions.map(\.origins), [[.mine, .core], [.mine, .core]])
-        XCTAssertEqual(acts.offers.map(\.id), ["go"])
+        XCTAssertEqual(acts.commands.map(\.id), ["go"])
         XCTAssertEqual(scan.refused.map(\.reason), ["Mine has an unknown key in [actions.share]: shortcut"])
     }
 
@@ -78,8 +78,8 @@ final class AppWordsTests: XCTestCase {
         let runs = SpotRuns(environment: environment)
         let given = ["OPENSPOT_EDIT": "cups", "OPENSPOT_EDIT_FILE": "/cups.sh", "OPENSPOT_EDIT_FAILURE": "Down"]
 
-        let app = try await runs.answer(of: try XCTUnwrap(scan.spots.first { $0.id == "openspot/app" }), .show, limit: 60, variables: given)
-        let mine = try await runs.answer(of: try XCTUnwrap(scan.spots.first { $0.id == "mine" }), .show, limit: 60, variables: given)
+        let app = try await runs.answer(of: try XCTUnwrap(scan.spots.first { $0.id == "openspot/app" }), Handler.show.name, limit: 60, variables: given)
+        let mine = try await runs.answer(of: try XCTUnwrap(scan.spots.first { $0.id == "mine" }), Handler.show.name, limit: 60, variables: given)
 
         XCTAssertEqual(app, "text=v\ntitle=cups|/cups.sh|Down|\(folder.path)|\(folder.path)\n")
         XCTAssertEqual(mine, "text=v\ntitle=none|none|none|none|none\n")

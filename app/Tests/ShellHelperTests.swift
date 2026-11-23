@@ -340,18 +340,18 @@ final class ShellHelperTests: XCTestCase {
     }
 
     func testOneMainRunsUnchangedOnceAndStaying() async throws {
-        let action = SpotWords(arguments: ["show", "a b"])
+        let handler = Handler.show.name
         let input = "event=panel\ninput.note=x\\ny\n"
         let once = try script(Self.shownCall)
         let stays = try script(Self.shownCall, toml: "stay = true")
 
         var onceText = ""
-        for try await frame in ScriptProcess(url: once, arguments: action.arguments, mode: .once(input: input), limit: 60).start() {
+        for try await frame in ScriptProcess(url: once, arguments: [handler], mode: .once(input: input), limit: 60).start() {
             onceText += frame
         }
         let live = ScriptProcess(url: stays, mode: .stays, limit: 60)
         var frames = live.start().makeAsyncIterator()
-        live.send(Message(action, given: input), id: 1)
+        live.send(Message(handler, given: input), id: 1)
         var stayFrames: [String] = []
         while let frame = try await frames.next() {
             stayFrames.append(frame)
@@ -359,7 +359,7 @@ final class ShellHelperTests: XCTestCase {
         }
         live.end()
 
-        XCTAssertEqual(TextBlock.blocks(in: onceText).first?.value("title"), "2|show|a b|panel|x\ny|event=panel\ninput.note=x\\ny")
+        XCTAssertEqual(TextBlock.blocks(in: onceText).first?.value("title"), "1|show||panel|x\ny|event=panel\ninput.note=x\\ny")
         XCTAssertEqual(Self.pictures(stayFrames), [TextBlock.blocks(in: onceText)])
         XCTAssertEqual(TextBlock.blocks(in: stayFrames.first ?? "").first?.value("call"), "1")
     }
@@ -373,9 +373,9 @@ final class ShellHelperTests: XCTestCase {
         let live = ScriptProcess(url: url, mode: .stays, limit: 60)
         var frames = live.start().makeAsyncIterator()
 
-        live.send(Message(.show, inputs: [.init(key: "a", value: "held")], given: "event=music.track\nevent.value=Song\n"), id: 1)
-        live.send(text: SpotWords.stopEvent(id: 1))
-        live.send(Message(.press("go")), id: 2)
+        live.send(Message(Handler.show.name, inputs: [.init(key: "a", value: "held")], given: "event=music.track\nevent.value=Song\n"), id: 1)
+        live.send(text: Message.stopEvent(id: 1))
+        live.send(Message("go"), id: 2)
         live.end()
         var printed: [String] = []
         while let frame = try await frames.next() { printed.append(frame) }
@@ -389,12 +389,12 @@ final class ShellHelperTests: XCTestCase {
         let live = ScriptProcess(url: url, mode: .stays, limit: 60)
         var frames = live.start().makeAsyncIterator()
 
-        live.send(Message(SpotWords(arguments: ["", "x"])), id: 1)
+        live.send(Message(""), id: 1)
         live.end()
         var printed: [String] = []
         while let frame = try await frames.next() { printed.append(frame) }
 
-        XCTAssertEqual(printed.filter { $0.hasPrefix("count=") }, ["count=2|x\n\n"])
+        XCTAssertEqual(printed.filter { $0.hasPrefix("count=") }, ["count=1|\n\n"])
     }
 
     func testOnceServeReturnsTheCodeOfMain() async throws {
@@ -441,7 +441,7 @@ final class ShellHelperTests: XCTestCase {
         var frames = live.start().makeAsyncIterator()
 
         let first = try await frames.next()
-        live.send(Message(.press("go")), id: 1)
+        live.send(Message("go"), id: 1)
         let second = try await frames.next()
 
         XCTAssertEqual(first, "a=b\\\\c|\n")

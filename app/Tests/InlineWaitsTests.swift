@@ -49,7 +49,7 @@ final class InlineWaitsTests: PanelCase {
         try await wait("the pushed view of the action") { self.model.transition.phase == .open && self.titles == ["Morning", "Evening"] }
 
         let started = Date()
-        let shown = try await model.runs.answer(of: asker.spot, .show, limit: 5)
+        let shown = try await model.runs.answer(of: asker.spot, Handler.show.name, limit: 5)
         XCTAssertEqual(TextBlock.blocks(in: shown).first?.value("title"), "Asker")
         XCTAssertLessThan(Date().timeIntervalSince(started), 1)
         try await wait("a wait past the limit") { Date().timeIntervalSince(started) > 1 }

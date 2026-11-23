@@ -43,9 +43,9 @@ final class SpotPagesTests: SpotRunsCase {
         runs.panelOpened()
         sheet.open(onReady: {})
         sheet.show(FlowSheet(spot: sheet.spot.id, route: "detail"))
-        try await wait("the page") { !sheet.spot.actions.isEmpty && !self.runs.isShowing }
+        try await wait("the page") { !sheet.spot.frameActions.isEmpty && !self.runs.isShowing }
 
-        sheet.run(try XCTUnwrap(sheet.spot.actions.first), item: nil)
+        sheet.run(try XCTUnwrap(sheet.spot.frameActions.first), item: nil)
 
         try await wait("the press") { self.log("pages") == ["detail"] }
     }
