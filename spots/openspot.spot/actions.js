@@ -1,8 +1,7 @@
-function hasIcon(id) {
-  return openspot.call(["setting", "get", "--spot", id, "icon"]).stdout.trim() !== "";
-}
-
 export default {
+  async hasIcon({ item }, env) {
+    return (await env.setting.get("icon", { spot: item })).trim() !== "";
+  },
   async share({ item }, env) {
     await env.spot.share(item);
   },

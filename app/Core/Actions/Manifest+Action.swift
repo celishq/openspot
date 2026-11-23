@@ -4,7 +4,7 @@ extension Manifest {
     public struct Action: Equatable, Sendable {
         static let table = "actions"
         static let keys: Set<String> = ["title", "icon", "confirm"]
-        static let appKeys: Set<String> = ["offers", "shortcut", "close", ActionHook.when.rawValue]
+        static let appKeys: Set<String> = ["offers", "shortcut", "close", "when"]
         static let inputs = "inputs"
         static let outputs = "outputs"
 
@@ -17,7 +17,7 @@ extension Manifest {
         public let offers: [String]
         let shortcut: String?
         let close: Bool?
-        let hooks: [ActionHook: String]
+        let when: String?
         let section: String
         let appKey: String?
 
@@ -59,7 +59,7 @@ extension Manifest {
             offers = appValues["offers"] ?? []
             shortcut = appValues["shortcut"]?.first
             close = appValues["close"]?.first.flatMap(Bool.init)
-            hooks = ActionHook.allCases.reduce(into: [:]) { hooks, hook in hooks[hook] = appValues[hook.rawValue]?.first }
+            when = appValues["when"]?.first
             self.appKey = appKey
         }
 

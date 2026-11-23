@@ -51,14 +51,14 @@ final class SpotKeysTests: XCTestCase {
         XCTAssertEqual(spot.offers.map(\.id), ["other.go"])
     }
 
-    func testAJavaScriptSpotNamesTheFunctionThatSaysWhetherAnActionShows() throws {
+    func testAJavaScriptSpotNamesTheHandlerThatSaysWhetherAnActionShows() throws {
         let folder = try temporaryFolder().appendingPathComponent("icon.spot")
         try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
         let reset = "title = 'Reset Icon'\noffers = ['actions']"
         let toml = "title = 'Icon'\n[actions.reset]\n\(reset)\nwhen = 'hasIcon'\n[scripts.shell.actions.reset]\n\(reset)\nwhen = 'hasIcon'\n[scripts.wrong.actions.reset]\n\(reset)\nwhen = 'has icon()'\n"
         try toml.write(to: folder.appendingPathComponent("spot.toml"), atomically: true, encoding: .utf8)
         let js = folder.appendingPathComponent("icon.js")
-        try "function hasIcon(id) { return true }\n".write(to: js, atomically: true, encoding: .utf8)
+        try "export default { hasIcon() { return true } }\n".write(to: js, atomically: true, encoding: .utf8)
         let shell = folder.appendingPathComponent("shell.sh")
         try "#!/bin/sh\n".writeScript(to: shell)
         let wrong = folder.appendingPathComponent("wrong.js")
@@ -66,7 +66,7 @@ final class SpotKeysTests: XCTestCase {
 
         let spot = try XCTUnwrap(try SpotFile(file: js, id: "icon", isApp: true)?.spots.first)
 
-        XCTAssertEqual(spot.offeredActions.first?.hooks[.when], "hasIcon")
+        XCTAssertEqual(spot.offeredActions.first?.when, "hasIcon")
         XCTAssertThrowsError(try SpotFile(file: shell, id: "shell", isApp: true)) { XCTAssertTrue((($0 as? SpotError)?.reason ?? "").contains("only a JavaScript spot"), "\($0)") }
         XCTAssertThrowsError(try SpotFile(file: wrong, id: "wrong", isApp: true)) { XCTAssertTrue((($0 as? SpotError)?.reason ?? "").contains("such as when = \"hasIcon\""), "\($0)") }
     }

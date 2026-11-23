@@ -33,83 +33,6 @@ final class InlineScript: @unchecked Sendable {
         return true
     }
 
-    private static let library = """
-    openspot.frame = function frame(value) {
-      if (Array.isArray(value)) return value.map(frame).join("\\n")
-      const write = (one) => String(one).replace(/\\\\/g, "\\\\\\\\").replace(/\\n/g, "\\\\n")
-      let text = ""
-      for (const [key, each] of Object.entries(value || {})) {
-        if (each === undefined || each === null) continue
-        for (const one of Array.isArray(each) ? each : [each]) text += `${key}=${write(one)}\\n`
-      }
-      return text
-    }
-    openspot.value = function value(key, text) {
-      const read = (one) => one.replace(/\\\\(n|\\\\)/g, (_, kind) => kind === "n" ? "\\n" : "\\\\")
-      return String(text || "").split("\\n").filter((line) => line.startsWith(key + "=")).map((line) => read(line.slice(key.length + 1))).join("\\n")
-    }
-    openspot.handle = function handle(handlers, name, input, env, done) {
-      const fail = (error) => done(false, error && error.message !== undefined ? String(error.message) : String(error))
-      let result
-      try { result = handlers[name](input, env) } catch (error) { return fail(error) }
-      Promise.resolve(result).then((value) => done(true, openspot.answer(value)), fail)
-    }
-    openspot.answer = function answer(value) {
-      if (value === undefined || value === null) return ""
-      if (typeof value === "string") return value
-      if (Array.isArray(value)) return openspot.frame(value)
-      const out = {}
-      for (const [key, each] of Object.entries(value)) out["out." + key] = each
-      return openspot.frame(out)
-    }
-    openspot.env = function env(call, spec, bindings, settings) {
-      const failure = (argv, answer) => new Error(answer.errors || `openspot ${argv.join(" ")} exited ${answer.code}.`)
-      const run = async (argv) => {
-        const answer = await openspot.ask(call, argv)
-        if (answer.code !== 0) throw failure(argv, answer)
-        return answer
-      }
-      const listed = (value) => (Array.isArray(value) ? value : [value]).filter((one) => one !== undefined && one !== null)
-      const pairs = (values) => Object.entries(values || {}).flatMap(([key, each]) => listed(each).map((one) => `${key}=${one}`))
-      const words = (slots, args) => {
-        const argv = []
-        const options = args[slots.filter((slot) => !slot.option).length] || {}
-        let index = 0
-        for (const slot of slots) {
-          const value = slot.option ? options[slot.key] : args[index++]
-          if (value === undefined || value === null || (slot.option && value === false)) continue
-          if (slot.kind === "flag") argv.push(slot.option)
-          else if (slot.option) for (const one of listed(value)) argv.push(slot.option, String(one))
-          else if (slot.kind === "pairs") argv.push(...pairs(value))
-          else argv.push(...listed(value).map(String))
-        }
-        return argv
-      }
-      const env = { settings }
-      for (const [noun, verbs] of Object.entries(spec)) {
-        const command = (verb) => async (...args) => (await run([...verb.words, ...words(verb.slots, args)])).output.replace(/\\n$/, "")
-        env[noun] = verbs[""] ? command(verbs[""]) : {}
-        for (const [method, verb] of Object.entries(verbs)) {
-          if (method !== "") env[noun][method] = command(verb)
-        }
-      }
-      env.emit = async (event, values) => { await run(["emit", event, ...pairs(values)]) }
-      env.open = async (spot) => { await run(["spot", "open", spot]) }
-      for (const name of bindings) {
-        env[name] = new Proxy({}, {
-          get: (_, action) => typeof action !== "string" || action === "then" ? undefined : async (inputs) => {
-            const argv = ["run", `${name}.${action}`, ...pairs(inputs)]
-            const answer = await openspot.ask(call, argv)
-            if (answer.code === 4) return null
-            if (answer.code !== 0) throw failure(argv, answer)
-            return answer.values
-          },
-        })
-      }
-      return env
-    }
-    """
-
     private static let module = try? NSRegularExpression(pattern: #"(?m)^([ \t]*)export[ \t]+default[ \t]+"#)
 
     private let url: URL
@@ -313,17 +236,9 @@ final class InlineScript: @unchecked Sendable {
 
     private func run(_ call: InlineCall) throws -> String? {
         let context = try loaded()
-        if call.function == nil, let name = call.arguments.first, let handlers = handlers(in: context), Self.isFunction(handlers.objectForKeyedSubscript(name), in: context) {
-            handle(call, name: name, handlers: handlers, in: context)
-            return nil
-        }
-        guard let name = call.function else { return "" }
-        arm(limit)
-        guard let function = context.objectForKeyedSubscript(name), Self.isFunction(function, in: context) else { return "" }
-        let result = function.call(withArguments: call.arguments)
-        try rethrow()
-        if let result, result.isString { return result.toString() ?? "" }
-        return result?.toBool() == true ? "true" : ""
+        guard let name = call.arguments.first, let handlers = handlers(in: context), Self.isFunction(handlers.objectForKeyedSubscript(name), in: context) else { return "" }
+        handle(call, name: name, handlers: handlers, in: context)
+        return nil
     }
 
     private func handlers(in context: JSContext) -> JSValue? {
@@ -395,7 +310,9 @@ final class InlineScript: @unchecked Sendable {
         openspot?.setObject(ask, forKeyedSubscript: "call" as NSString)
         openspot?.setObject(asked, forKeyedSubscript: "ask" as NSString)
         context.setObject(openspot, forKeyedSubscript: "openspot" as NSString)
-        context.evaluateScript(Self.library)
+        guard let library = Bundle(for: InlineScript.self).url(forResource: "InlineScript", withExtension: "js"),
+              let shared = try? String(contentsOf: library, encoding: .utf8) else { throw SpotError.failed(1, "Openspot cannot find its JavaScript library.") }
+        context.evaluateScript(shared, withSourceURL: library)
         var text = try String(contentsOf: url, encoding: .utf8)
         text = Self.module?.stringByReplacingMatches(in: text, range: NSRange(text.startIndex..., in: text), withTemplate: "$1openspot.handlers = ") ?? text
         context.evaluateScript(text, withSourceURL: url)

@@ -37,7 +37,7 @@ final class InlineHandlersTests: SpotRunsCase {
         try inline("notes", toml: "[actions.save]\ninputs.note = 'text'", """
         export default {
           async save({ note }) {
-            return openspot.frame([{ item: "t", title: note }])
+            return [{ item: "t", title: note }]
           },
         }
         """)

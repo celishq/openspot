@@ -13,11 +13,11 @@ function fields(text) {
 /** The card of an answer: the big answer with its unit faint, over the sum as it was read, faint. The sum names the day
  * of old rates. A pick copies the plain value. */
 function card(solved) {
-  return openspot.frame([
+  return [
     { frame: "" },
     { number: "answer", class: "large:flex", value: solved.item, display: solved.title, unit: solved.unit, title: solved.tone ? `${solved.detail} · rates of ${solved.rates}` : solved.detail },
     { button: "press", title: "Copy", scope: "spot" },
-  ])
+  ]
 }
 
 export default {

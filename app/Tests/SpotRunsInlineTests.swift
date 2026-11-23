@@ -183,7 +183,7 @@ final class SpotRunsInlineTests: SpotRunsCase {
     }
 
     private func counting() throws {
-        try inline(toml: "", "let n = 0\nexport default { show() { n += 1; return `item=n\\ntitle=${n}\\n` } }\nfunction asked() { n += 1; return true }")
+        try inline(toml: "", "let n = 0\nexport default { show() { n += 1; return `item=n\\ntitle=${n}\\n` }, asked() { n += 1; return true } }")
     }
 
     func testAHookAndACallOfOneSpotShareOneLoadedScript() async throws {
@@ -216,8 +216,8 @@ final class SpotRunsInlineTests: SpotRunsCase {
         try await wait("the first call of the script that loaded again") { sheet.reading.value?.title == "1" }
     }
 
-    func testFrameWritesAValueWithANewLineAndAKeyLineAsOneValue() async throws {
-        try inline(toml: "title = 'Script'", "export default { show() { return openspot.frame([{ item: 'a', title: 'one\\n\\ntext=x\\ntitle=x', hides: ['x', 'y'], none: null }, { item: 'b', value: true }]) } }")
+    func testAnAnswerOfBlocksWritesAValueWithANewLineAndAKeyLineAsOneValue() async throws {
+        try inline(toml: "title = 'Script'", "export default { show() { return [{ item: 'a', title: 'one\\n\\ntext=x\\ntitle=x', hides: ['x', 'y'], none: null }, { item: 'b', value: true }] } }")
         let spot = try XCTUnwrap(try scanned().scripts.first)
 
         let text = try await runs.answer(of: spot, SpotWords(arguments: ["show"]), limit: 60)

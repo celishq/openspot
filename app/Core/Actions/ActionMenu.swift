@@ -51,7 +51,7 @@ public struct ActionMenu: Equatable, Sendable {
         let sorted = offered.enumerated().sorted {
             ($0.element.group == nil ? 0 : 1, $0.element.group ?? "", $0.offset) < ($1.element.group == nil ? 0 : 1, $1.element.group ?? "", $1.offset)
         }.map(\.element)
-        rows += Self.nested(sorted.map { Row(title: $0.action.title, keyLabel: $0.keyLabel ?? $0.action.key?.label ?? "", action: $0.action, isQuiet: true, owner: $0.owner, group: $0.group) })
+        rows += Self.nested(sorted.map { Row(title: $0.action.title, keyLabel: $0.action.key?.label ?? "", action: $0.action, isQuiet: true, owner: $0.owner, group: $0.group) })
         guard !rows.isEmpty else { return nil }
         self.rows = rows
         shown = rows
