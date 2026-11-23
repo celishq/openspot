@@ -173,7 +173,7 @@ public final class SpotRun {
     }
     public subscript(cardPart id: String) -> SpotPart? {
         access(keyPath: \.[cardPart: id])
-        return keptState.face.tree.node(id)?.part
+        return keptState.face.node(id)?.part
     }
     public var selectedPart: SpotPart? {
         access(keyPath: \.panel)

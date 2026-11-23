@@ -25,7 +25,7 @@ public struct Frame: Equatable, Sendable {
     private var barValue: TextBlock?
     private var barKind: BlockKind?
     public private(set) var hasBar = false
-    public private(set) var face = CardFace.none
+    public private(set) var face = ViewTree.empty
     public private(set) var tree = ViewTree.empty
     private var partIDs: [String] = []
     public private(set) var columns = 1
@@ -120,7 +120,7 @@ public struct Frame: Equatable, Sendable {
         if partIDs.contains(where: { tree.node($0)?.source != nil }) {
             rows = listedRows.map { $0.fields.flatMap { [$0.key, $0.value] } }
         }
-        face = CardFace(tree: tree.isWritten || !tree.places.isEmpty ? tree : .empty)
+        face = tree.isWritten || !tree.places.isEmpty ? tree : .empty
         let cardSizes = SpotSize.all.filter(tree.draws(on:))
         let onCard = cardSizes.isEmpty ? nil : Set(cardSizes.flatMap { tree.shown(in: Style.Variant.card($0)) })
         if let onCard {

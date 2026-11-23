@@ -89,8 +89,8 @@ final class SheetPartsTests: XCTestCase {
         let outputCheck = FrameCheck(text: "frame=\nclass=gap-part strip:flex-row\n\nnumber=next\nvalue=09:30\n\nbutton=join-now\ntitle=Join\nclass=hidden strip:flex\n\nitems=list\n\nbutton=tick\nparent=list\ntitle=Mark as done\n")
         let output = outputCheck.output
 
-        XCTAssertEqual(output.face.tree.shown(in: Style.Variant.card(.strip)), ["next", "join-now", "list", "tick"])
-        XCTAssertEqual(output.face.tree.shown(in: [.sheet]), ["next", "list", "tick"])
+        XCTAssertEqual(output.face.shown(in: Style.Variant.card(.strip)), ["next", "join-now", "list", "tick"])
+        XCTAssertEqual(output.face.shown(in: [.sheet]), ["next", "list", "tick"])
         XCTAssertEqual(output.actions.map(\.id), ["tick"])
         XCTAssertEqual(outputCheck.partFaults, [])
     }

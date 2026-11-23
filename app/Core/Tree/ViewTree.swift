@@ -21,6 +21,10 @@ public struct ViewTree: Equatable, Sendable {
         !places.isDisjoint(with: Style.Variant.card(size))
     }
 
+    public var answerSize: SpotSize? {
+        [SpotSize.large, .strip].first { size in Style.Variant(size: size).map(places.contains) == true }
+    }
+
     func group(of id: String) -> String? {
         guard let box = nodes[id]?.parent.flatMap({ nodes[$0] }), box.kind == BlockKind.box, listed.contains(box.id) else { return nil }
         return box.block.value("title")

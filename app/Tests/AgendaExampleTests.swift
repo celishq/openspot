@@ -114,27 +114,27 @@ final class AgendaExampleTests: SampleSpotsCase {
 
             let output = try await agenda.items(timeout: 30)
 
-            let next = try XCTUnwrap(output.face.tree.parts.first { $0.id == "next" })
+            let next = try XCTUnwrap(output.face.parts.first { $0.id == "next" })
             XCTAssertEqual(next.number?.text, "in 12 min")
             XCTAssertEqual(next.title, "Standup")
             XCTAssertEqual(next.color, "#1BADF8")
-            let ticks = output.face.tree.parts.filter(\.isTick)
+            let ticks = output.face.parts.filter(\.isTick)
             XCTAssertEqual(ticks.map(\.id), ["R1", "R3"])
             XCTAssertEqual(ticks.map(\.control), [.toggle(false), .toggle(false)])
             XCTAssertEqual(ticks.map(\.title), ["Call mom", "Water the plants"])
             XCTAssertEqual(ticks.map(\.detail), [nil, nil])
-            XCTAssertEqual(output.face.tree.parts.filter { $0.id.hasPrefix("due-") }.map(\.detail), ["Late", "18:00"])
+            XCTAssertEqual(output.face.parts.filter { $0.id.hasPrefix("due-") }.map(\.detail), ["Late", "18:00"])
             let time = DateFormatter()
             time.dateFormat = "HH:mm"
-            XCTAssertEqual(output.face.tree.parts.first { $0.id == "at" }?.number?.text, time.string(from: now.addingTimeInterval(750)))
-            XCTAssertEqual(output.face.tree.shown(in: Style.Variant.card(.large)), ["head", "next", "row-R1", "R1", "due-R1", "row-R3", "R3", "due-R3"])
-            XCTAssertEqual(output.face.tree.shown(in: Style.Variant.card(.square)), ["head", "next", "counts", "todo", "late"])
-            XCTAssertEqual(output.face.tree.parts.first { $0.id == "todo" }?.title, "3 to do")
-            XCTAssertEqual(output.face.tree.parts.first { $0.id == "late" }?.title, "1 late")
-            XCTAssertEqual(output.face.tree.parts.first { $0.id == "late" }?.tone, .bad)
-            XCTAssertEqual(output.face.tree.shown(in: Style.Variant.card(.strip)), ["head", "next"])
-            XCTAssertEqual(output.face.tree.shown(in: Style.Variant.card(.wide)), ["head", "next"])
-            XCTAssertEqual(output.face.tree.shown(in: Style.Variant.card(.small)), ["at"])
+            XCTAssertEqual(output.face.parts.first { $0.id == "at" }?.number?.text, time.string(from: now.addingTimeInterval(750)))
+            XCTAssertEqual(output.face.shown(in: Style.Variant.card(.large)), ["head", "next", "row-R1", "R1", "due-R1", "row-R3", "R3", "due-R3"])
+            XCTAssertEqual(output.face.shown(in: Style.Variant.card(.square)), ["head", "next", "counts", "todo", "late"])
+            XCTAssertEqual(output.face.parts.first { $0.id == "todo" }?.title, "3 to do")
+            XCTAssertEqual(output.face.parts.first { $0.id == "late" }?.title, "1 late")
+            XCTAssertEqual(output.face.parts.first { $0.id == "late" }?.tone, .bad)
+            XCTAssertEqual(output.face.shown(in: Style.Variant.card(.strip)), ["head", "next"])
+            XCTAssertEqual(output.face.shown(in: Style.Variant.card(.wide)), ["head", "next"])
+            XCTAssertEqual(output.face.shown(in: Style.Variant.card(.small)), ["at"])
             XCTAssertEqual(output.errors, [])
             let calls = try self.calls(in: folder)
             XCTAssertEqual(calls.map { $0.split(separator: "|", omittingEmptySubsequences: false)[1] }, [
@@ -155,9 +155,9 @@ final class AgendaExampleTests: SampleSpotsCase {
             let output = try await agenda.items(timeout: 30)
             try await agenda.perform("join-now", timeout: 30)
 
-            XCTAssertEqual(far.face.tree.shown(in: Style.Variant.card(.strip)), ["head", "next"])
-            XCTAssertEqual(output.face.tree.shown(in: Style.Variant.card(.strip)), ["head", "next", "join-now"])
-            XCTAssertEqual(output.face.tree.parts.first { $0.id == "join-now" }?.title, "Join")
+            XCTAssertEqual(far.face.shown(in: Style.Variant.card(.strip)), ["head", "next"])
+            XCTAssertEqual(output.face.shown(in: Style.Variant.card(.strip)), ["head", "next", "join-now"])
+            XCTAssertEqual(output.face.parts.first { $0.id == "join-now" }?.title, "Join")
             XCTAssertFalse(output.actions.contains { $0.id == "join-now" })
             XCTAssertEqual(try self.read("opened", in: folder), "https://meet.google.com/abc-defg-hij\n")
         }
@@ -266,7 +266,7 @@ final class AgendaExampleTests: SampleSpotsCase {
             try self.fakeOpenspot(in: folder)
             let output = try await agenda.items(timeout: 30)
             let row = try XCTUnwrap(output.items.first { $0.title == "Call mom" }?.run)
-            let card = try XCTUnwrap(output.face.tree.parts.first { $0.title == "Water the plants" }?.id)
+            let card = try XCTUnwrap(output.face.parts.first { $0.title == "Water the plants" }?.id)
             let done = try XCTUnwrap(output.items.first { $0.title == "Take pills" }?.run)
 
             try await agenda.perform("tick", input: "input.item=\(row)\ninput.item.done=false\n", timeout: 30)
@@ -307,7 +307,7 @@ final class AgendaExampleTests: SampleSpotsCase {
             try await agenda.perform("press", input: "input.item=allow-calendar\n", timeout: 30)
 
             XCTAssertEqual(output.items.map(\.run), ["allow-calendar", "allow-reminders"])
-            XCTAssertEqual(output.face.tree.parts.first { $0.id == "next" }?.number?.text, "Allow")
+            XCTAssertEqual(output.face.parts.first { $0.id == "next" }?.number?.text, "Allow")
             XCTAssertTrue(try self.calls(in: folder).contains("act|calendar events|"))
         }
     }

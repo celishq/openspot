@@ -2,7 +2,7 @@ import OpenspotCore
 import SwiftUI
 
 struct CardTreeView: View {
-    let face: CardFace
+    let face: ViewTree
     let size: SpotSize
     var isPressed = false
     var model: SpotsModel?
@@ -10,10 +10,10 @@ struct CardTreeView: View {
     var spot: String?
 
     var body: some View {
-        let follows = !face.tree.places.isDisjoint(with: [.selected, .focus])
+        let follows = !face.places.isDisjoint(with: [.selected, .focus])
         let isSelected = follows && model?.selected == index
         let outset = SpotTokens.cardPadding(for: size, isDrawn: true)
-        NodeTree(tree: face.tree, pictureTimes: [:], outset: outset)
+        NodeTree(tree: face, pictureTimes: [:], outset: outset)
             .environment(\.spotSurfaceEdge, SurfaceEdge(card: size))
             .clipShape(SpotRoundShape(SurfaceEdge(card: size).outset(by: outset)))
             .environment(\.spotNode, context(isSelected: isSelected))
