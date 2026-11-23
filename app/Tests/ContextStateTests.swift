@@ -86,8 +86,8 @@ final class ContextStateTests: ContextCase {
 
         model.runSelected()
 
-        try await wait("the drop") { self.log("keep-drops").count == 1 }
-        XCTAssertEqual(log("keep-drops"), ["input.url=https://example.com/a"])
+        try await wait("the drop") { self.log("keep-drops").count == 2 }
+        XCTAssertEqual(log("keep-drops"), ["input.url=https://example.com/a", "input.title=A"])
         XCTAssertFalse(model.context.isOn)
     }
 

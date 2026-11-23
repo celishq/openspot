@@ -12,7 +12,7 @@ public struct ScriptEntry: Equatable, Sendable {
     static let every = ScriptEntry(name: "every", inputs: [])
     static let schedule = ScriptEntry(name: "schedule", inputs: [.init(name: "cron", type: text), .init(name: "late", type: ValueType(.duration))])
     static let drop = ScriptEntry(name: "drop", inputs: [
-        .init(name: "file", type: ValueType(.file, isList: true)), .init(name: "url", type: ValueType(.url), isRequired: false), .init(name: "text", type: text, isRequired: false),
+        .init(name: "file", type: ValueType(.file, isList: true)), .init(name: "url", type: ValueType(.url), isRequired: false), .init(name: "text", type: text, isRequired: false), .init(name: "title", type: text, isRequired: false),
     ])
     static let drag = ScriptEntry(name: "drag", inputs: [.init(name: "item", type: ValueType(.text, isList: true))])
     static let sheetText = ScriptEntry(name: EventName.sheetText, inputs: [value, alt])

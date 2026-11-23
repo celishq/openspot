@@ -22,3 +22,4 @@ picker = { spot = "openspot/snooze" }
 "sheet.open" = true
 "spot.want" = true
 search = true
+drop = ["url"]

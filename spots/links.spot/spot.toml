@@ -9,3 +9,4 @@ inputs.title = "text"
 [on]
 "panel.open" = true
 search = true
+drop = ["url"]

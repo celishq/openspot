@@ -129,6 +129,15 @@ case "$1" in
   snooze)
     snooze "" ""
     ;;
+  drop)
+    # Snoozes a link handed to it only when it is the front tab, the one that closes.
+    browser=$(front_id)
+    if [ "$(read_tab "$browser" | sed -n 1p)" != "$(value input.url)" ]; then
+      echo "Snooze Tab snoozes the front tab of your browser. Open the link there, then try again." >&2
+      exit 1
+    fi
+    snooze "$browser" "$(value input.title)"
+    ;;
   reopen)
     open -b "$(value browser)" "$(value url)"
     ;;

@@ -160,7 +160,7 @@ case "$1" in
           + (if ($found | index($host + ".png")) then "icon=\("\($icons)/\($host).png" | esc)\n" else "icon=link\n" end)
         end' "$data" --args "$@"
     ;;
-  new)
+  new|drop)
     # Asks with its own form, filled with what the call gave, until both the name and the link are given.
     if [ -z "$(value input.title)" ] || [ -z "$(value input.url)" ]; then
       form "New link" "$(jq -nc --arg title "$(value input.title)" --arg url "$(value input.url)" '{$title, $url}')"

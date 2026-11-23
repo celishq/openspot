@@ -79,8 +79,8 @@ extension SpotRun {
         guard spot.takes(value) else { return false }
         switch value.kind {
         case .file: return drop(value.values, files: value.files)
-        case .url: waitingFiles.append(ScriptEntry.drop.message([], value.values))
-        case .text: waitingFiles.append(ScriptEntry.drop.message([], [], value.values))
+        case .url: waitingFiles.append(ScriptEntry.drop.message([], value.values, [], value.title.map { [$0] } ?? []))
+        case .text: waitingFiles.append(ScriptEntry.drop.message([], [], value.values, value.title.map { [$0] } ?? []))
         }
         startWaitingFiles()
         return true

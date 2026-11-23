@@ -66,7 +66,7 @@ extension SpotsModel {
             found = runs.search(of: text).matching(in: [list], limit: Self.contextRows).map(\.item)
         }
         let taken = found.compactMap { row in
-            entry(row.run).map { Entry(spot: $0.spot, item: SpotItem(title: row.title, run: Self.contextRun), detail: row.subtitle ?? Self.takes(value.kind)) }
+            entry(row.run).map { Entry(spot: $0.spot, item: SpotItem(title: row.title, run: Self.contextRun), detail: Self.takes(value.kind)) }
         }
         return [preview] + taken
     }

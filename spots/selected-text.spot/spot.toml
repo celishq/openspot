@@ -1,0 +1,7 @@
+title = "Selected Text"
+icon = "text.cursor"
+detail = "Hand the selected text to a spot"
+uses = ["context"]
+
+[on]
+"panel.open" = true
