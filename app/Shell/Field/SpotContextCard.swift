@@ -8,20 +8,18 @@ struct SpotContextCard: View, Equatable {
     var body: some View {
         let shape = SpotRoundShape(radius: SpotTokens.contextCardRadius)
         ZStack {
-            shape.fill(SpotTheme.contextFace)
             picture
                 .id(chip.look)
                 .transition(.opacity)
                 .opacity(chip.isLoading ? SpotTheme.contextLoadingIcon : 1)
         }
         .frame(width: SpotTokens.contextCard, height: SpotTokens.contextCard)
-        .clipShape(shape)
         .background {
             shape.fill(SpotTheme.contextFace)
                 .shadow(color: SpotTheme.contextFarShadow, radius: SpotTokens.contextFarShadowRadius, y: SpotTokens.contextFarShadowDrop)
                 .shadow(color: SpotTheme.contextNearShadow, radius: SpotTokens.contextNearShadowRadius, y: SpotTokens.contextNearShadowDrop)
         }
-        .overlay(shape.strokeBorder(SpotTheme.highlight.opacity(SpotTheme.contextRimStrength), lineWidth: SpotTokens.contextBorder))
+        .overlay(shape.strokeBorder(SpotTheme.contextRim, lineWidth: SpotTokens.contextBorder))
         .overlay(alignment: .bottomTrailing) { badge }
     }
 
@@ -29,7 +27,9 @@ struct SpotContextCard: View, Equatable {
     private var picture: some View {
         switch chip.look {
         case .file(let file):
-            SpotItemIcon(icon: file, glyph: nil, symbol: nil, size: SpotTokens.contextCard / IconBody.share)
+            SpotItemIcon(icon: file, glyph: nil, symbol: nil, size: SpotTokens.contextIcon / IconBody.share)
+                .frame(width: SpotTokens.contextIcon, height: SpotTokens.contextIcon)
+                .clipShape(SpotRoundShape(radius: SpotTokens.contextIconRadius))
         case .symbol(let symbol):
             SpotItemIcon(icon: nil, glyph: nil, symbol: symbol, size: SpotTokens.contextSymbol)
         }
@@ -38,18 +38,24 @@ struct SpotContextCard: View, Equatable {
     @ViewBuilder
     private var badge: some View {
         if showsBadge, let kind = chip.value?.kind {
-            Image(systemName: ContextPreview.symbol(of: kind))
+            let leaf = SpotLeafShape(radius: SpotTokens.contextIconRadius)
+            Image(systemName: Self.symbol(of: kind))
                 .font(SpotType.contextBadge)
                 .foregroundStyle(SpotTheme.contextBadgeInk)
+                .offset(x: SpotTokens.contextBadgeNudge, y: SpotTokens.contextBadgeNudge)
                 .frame(width: SpotTokens.contextBadge, height: SpotTokens.contextBadge)
-                .background {
-                    Circle()
-                        .fill(SpotTheme.contextBadgeFace)
-                        .shadow(color: SpotTheme.contextBadgeShadow, radius: SpotTokens.contextBadgeShadowRadius, y: SpotTokens.contextBadgeShadowDrop)
-                }
-                .overlay(Circle().strokeBorder(SpotTheme.contextBadgeRim, lineWidth: SpotTokens.contextBadgeBorder))
-                .offset(x: SpotTokens.contextBadgeReach, y: SpotTokens.contextBadgeReach)
+                .background(leaf.fill(SpotTheme.contextFace))
+                .overlay(leaf.stroke(SpotTheme.contextRim, lineWidth: SpotTokens.contextBorder))
+                .padding(SpotTokens.contextInset)
                 .transition(.opacity)
+        }
+    }
+
+    private static func symbol(of kind: ContextValue.Kind) -> String {
+        switch kind {
+        case .url: "link"
+        case .text: "character"
+        case .file: "doc.fill"
         }
     }
 }

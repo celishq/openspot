@@ -7,15 +7,16 @@ struct SpotContextStack: View {
     var body: some View {
         let context = model.context
         let spread = model.contextSpread
+        let count = spread.places.count
         ZStack(alignment: .trailing) {
             ForEach(spread.places, id: \.chip.source) { place in
-                SpotContextCard(chip: place.chip, showsBadge: place.depth == 0 && place.showsKind)
+                SpotContextCard(chip: place.chip, showsBadge: place.showsKind && (spread.isSpread || place.depth == 0))
                     .equatable()
-                    .overlay {
-                        SpotContextRing(isOn: spread.isSpread && place.chip.source == spread.selected && place.depth == 0)
+                    .overlay(alignment: .bottom) {
+                        SpotContextDot(isOn: context.isOn && place.chip.source == context.selected)
                     }
                     .scaleEffect(Self.scale(of: place, in: spread), anchor: .trailing)
-                    .offset(x: Self.x(of: place, in: spread))
+                    .offset(x: Self.x(of: place, in: spread, count: count))
                     .opacity(Self.opacity(of: place, in: spread))
                     .zIndex(Self.layer(of: place, in: spread))
                     .transition(.opacity)
@@ -30,14 +31,11 @@ struct SpotContextStack: View {
         .accessibilityAddTraits(.isButton)
     }
 
-    static func x(of place: ContextSpread.Place, in spread: ContextSpread) -> CGFloat {
-        guard spread.isSpread else { return -CGFloat(place.depth) * SpotTokens.contextStep }
+    private static func x(of place: ContextSpread.Place, in spread: ContextSpread, count: Int) -> CGFloat {
+        guard spread.isSpread else { return -CGFloat(count - 1 - place.depth) * SpotTokens.contextStep }
         let pitch = SpotTokens.contextCard + SpotTokens.contextSpreadGap
-        return place.depth == 0 ? -CGFloat(place.slot) * pitch : -CGFloat(spread.rowCount - 1) * pitch - SpotTokens.contextStep
-    }
-
-    static func selectedX(in spread: ContextSpread) -> CGFloat? {
-        spread.places.first { $0.chip.source == spread.selected }.map { x(of: $0, in: spread) }
+        let slot = place.depth == 0 ? place.slot : 0
+        return -CGFloat(spread.rowCount - 1 - slot) * pitch + (place.depth == 0 ? 0 : SpotTokens.contextStep)
     }
 
     private static func scale(of place: ContextSpread.Place, in spread: ContextSpread) -> CGFloat {
@@ -54,13 +52,14 @@ struct SpotContextStack: View {
     }
 }
 
-private struct SpotContextRing: View {
+private struct SpotContextDot: View {
     let isOn: Bool
 
     var body: some View {
-        SpotRoundShape(radius: SpotTokens.contextCardRadius + SpotTokens.contextRingGap)
-            .strokeBorder(SpotTheme.accent, lineWidth: SpotTokens.thinRing)
-            .padding(-SpotTokens.contextRingGap)
+        Circle()
+            .fill(SpotTheme.accent)
+            .frame(width: SpotTokens.contextDot, height: SpotTokens.contextDot)
+            .offset(y: SpotTokens.contextDot + SpotTokens.contextDotGap)
             .opacity(isOn ? 1 : MotionTokens.hiddenOpacity)
             .transaction { $0.animation = nil }
             .allowsHitTesting(false)

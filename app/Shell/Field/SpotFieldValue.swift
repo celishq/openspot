@@ -6,7 +6,9 @@ struct SpotFieldValue: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
-            SpotFieldValuePointer(model: model)
+            Rectangle()
+                .fill(SpotTheme.contextDivider)
+                .frame(height: SpotTokens.dividerHeight)
             ZStack(alignment: .leading) {
                 if let preview = model.contextPreview {
                     ZStack(alignment: .leading) {
@@ -41,51 +43,5 @@ struct SpotFieldValue: View {
             }
         }
         .accessibilityElement(children: .combine)
-    }
-}
-
-private struct SpotFieldValuePointer: View {
-    let model: SpotsModel
-
-    var body: some View {
-        let spread = model.contextSpread
-        let x = SpotContextStack.selectedX(in: spread).map { Self.front + $0 }
-        let width = SpotTokens.contextPointerWidth
-        Rectangle()
-            .fill(SpotTheme.contextDivider)
-            .frame(height: SpotTokens.dividerHeight)
-            .mask {
-                Rectangle()
-                    .overlay(alignment: .leading) {
-                        Rectangle()
-                            .frame(width: width)
-                            .offset(x: (x ?? Self.front) - width / 2)
-                            .opacity(x == nil ? MotionTokens.hiddenOpacity : 1)
-                            .blendMode(.destinationOut)
-                    }
-                    .compositingGroup()
-            }
-            .overlay(alignment: .bottomLeading) {
-                SpotPointerShape()
-                    .stroke(SpotTheme.contextDivider, lineWidth: SpotTokens.dividerHeight)
-                    .frame(width: width, height: SpotTokens.contextPointerHeight)
-                    .offset(x: (x ?? Self.front) - width / 2)
-                    .opacity(x == nil ? MotionTokens.hiddenOpacity : 1)
-            }
-            .allowsHitTesting(false)
-    }
-
-    private static var front: CGFloat {
-        SpotFieldView.contextLeft - SpotFieldView.rect.minX + SpotTokens.contextStack(count: ContextChips.limit) - SpotTokens.contextCard / 2
-    }
-}
-
-private struct SpotPointerShape: Shape {
-    func path(in rect: CGRect) -> Path {
-        var path = Path()
-        path.move(to: CGPoint(x: rect.minX, y: rect.maxY))
-        path.addLine(to: CGPoint(x: rect.midX, y: rect.minY))
-        path.addLine(to: CGPoint(x: rect.maxX, y: rect.maxY))
-        return path
     }
 }
