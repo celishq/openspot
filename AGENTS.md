@@ -44,14 +44,9 @@
 
 ## Docs
 
-`PROTOCOL.md` indexes the contract of a spot: its pages, then tables that name the page of each key, handler, block kind, class family and `openspot` noun. `GUIDE.md` builds a spot in about five tasks, `USING.md` is the person's page, `app/Help/` the reference of the `openspot` commands, `TRUST.md` what Openspot shows the person about a spot, and `spots/AGENTS.md` the words of the app's own spots. No doc describes the app's code.
+`PROTOCOL.md` is the contract of a spot, `GUIDE.md` builds spots one goal at a time, `USING.md` is the person's page, `app/Help/` the reference of the `openspot` commands, `TRUST.md` what Openspot shows the person about a spot, and `spots/AGENTS.md` the words of the app's own spots. No doc describes the app's code.
 
-- `docs/protocol/01-spot.md` is the whole foundation: a reader of it alone can build a spot that works. Each later page adds one capability on top of it.
-- A capability page opens with its title, a status line such as `draft` `optional` with the pages it builds on, and one sentence of when to use it. Then comes its example, then only the rules an author meets on the main path, with MUST or never only for a must. The tests keep the edge cases.
-- A page uses at most three words of Openspot's own, each defined in the sentence that first uses it, and never renames an ordinary thing. Write natural English, "you", contractions and one word for each meaning.
-- A new capability gets a new page, not more words on an old one, and a row in each table of the index that it adds to. `scripts/check-docs.sh` fails on page 01 over 1500 words, another page of `docs/protocol/` over 800, or `GUIDE.md` over 1200, outside code.
-- A task of `GUIDE.md` is a verb phrase, names each file before it, shows the render of its example from `make docs-images`, and ends with "Learn more in". `check-docs.sh` fails on each of these, and on a table cell of two sentences.
-- `make verify` fails when a doc links to a file or a heading that doesn't exist, or code cites a missing protocol heading (`DocReferenceTests`), when an `sh`, `js` or `swift` example doesn't run (`DocExampleTests`; put one that needs a network or a rare tool in a `text` fence), when a picture of the guide is older than its example (`GuideImageTests`), and when Core takes a key, kind, call, event, place or helper that no page names (`ProtocolContractTests`, with today's gaps in `scripts/protocol-gaps.txt`).
+`make verify` checks facts, not style: a link or a cited heading that doesn't exist (`DocReferenceTests`), an `sh`, `js` or `swift` example that doesn't run (`DocExampleTests`; put one that needs a network or a rare tool in a `text` fence), a picture of the guide older than its example (`GuideImageTests`), and an `openspot` command that a doc names but the command doesn't take (`DocCommandTests`).
 
 ## Comments
 

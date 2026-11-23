@@ -70,13 +70,6 @@ struct RepoDoc {
         Set(headings.map(Self.anchor))
     }
 
-    func section(_ heading: String) -> String {
-        let lines = prose.components(separatedBy: "\n")
-        guard let start = lines.firstIndex(where: { $0.hasPrefix("#") && String($0.drop { $0 == "#" }.dropFirst()) == heading }) else { return "" }
-        let rest = lines[(start + 1)...].prefix { line in !(line.hasPrefix("#") && line.contains("# ")) }
-        return rest.joined(separator: "\n")
-    }
-
     static func anchor(of heading: String) -> String {
         heading.lowercased().filter { $0.isLetter || $0.isNumber || $0 == " " || $0 == "-" || $0 == "_" }.replacingOccurrences(of: " ", with: "-")
     }
@@ -86,15 +79,6 @@ struct RepoDoc {
         let whole = text as NSString
         return expression.matches(in: text, range: NSRange(location: 0, length: whole.length)).map { match in
             (0..<match.numberOfRanges).map { match.range(at: $0).location == NSNotFound ? "" : whole.substring(with: match.range(at: $0)) }
-        }
-    }
-
-    static func tableRows(in text: String) -> [[String]] {
-        let lines = text.components(separatedBy: "\n")
-        return lines.indices.filter { index in
-            lines[index].hasPrefix("|") && !lines[index].hasPrefix("| -") && index + 1 < lines.count && !lines[index + 1].hasPrefix("| -")
-        }.map { index in
-            lines[index].split(separator: "|", omittingEmptySubsequences: false).dropFirst().dropLast().map { $0.trimmingCharacters(in: .whitespaces) }
         }
     }
 
