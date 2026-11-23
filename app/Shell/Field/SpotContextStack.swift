@@ -7,7 +7,6 @@ struct SpotContextStack: View {
     var body: some View {
         let context = model.context
         let spread = model.contextSpread
-        let count = spread.places.count
         ZStack(alignment: .trailing) {
             ForEach(spread.places, id: \.chip.source) { place in
                 SpotContextCard(chip: place.chip, showsBadge: place.showsKind && (spread.isSpread || place.depth == 0))
@@ -15,8 +14,8 @@ struct SpotContextStack: View {
                     .overlay(alignment: .bottom) {
                         SpotContextDot(isOn: context.isOn && place.chip.source == context.selected)
                     }
-                    .scaleEffect(Self.scale(of: place, in: spread), anchor: .trailing)
-                    .offset(x: Self.x(of: place, in: spread, count: count))
+                    .scaleEffect(Self.scale(of: place, in: spread), anchor: .leading)
+                    .offset(x: Self.x(of: place, in: spread))
                     .opacity(Self.opacity(of: place, in: spread))
                     .zIndex(Self.layer(of: place, in: spread))
                     .transition(.opacity)
@@ -31,11 +30,10 @@ struct SpotContextStack: View {
         .accessibilityAddTraits(.isButton)
     }
 
-    private static func x(of place: ContextSpread.Place, in spread: ContextSpread, count: Int) -> CGFloat {
-        guard spread.isSpread else { return -CGFloat(count - 1 - place.depth) * SpotTokens.contextStep }
+    private static func x(of place: ContextSpread.Place, in spread: ContextSpread) -> CGFloat {
+        guard spread.isSpread else { return -CGFloat(place.depth) * SpotTokens.contextStep }
         let pitch = SpotTokens.contextCard + SpotTokens.contextSpreadGap
-        let slot = place.depth == 0 ? place.slot : 0
-        return -CGFloat(spread.rowCount - 1 - slot) * pitch + (place.depth == 0 ? 0 : SpotTokens.contextStep)
+        return place.depth == 0 ? -CGFloat(place.slot) * pitch : -CGFloat(spread.rowCount - 1) * pitch - SpotTokens.contextStep
     }
 
     private static func scale(of place: ContextSpread.Place, in spread: ContextSpread) -> CGFloat {
