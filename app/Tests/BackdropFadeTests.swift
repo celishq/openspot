@@ -59,4 +59,13 @@ final class BackdropFadeTests: XCTestCase {
             XCTAssertEqual(ring.corner, 20 + 2 * (content.minX - ring.rect.minX), accuracy: 0.0001)
         }
     }
+
+    func testABlurReachesItsFullRadiusUnderTheContentSoTextFadesOutAtItsEdge() {
+        let under = SpotTokens.backdropUnderTiles
+        let rings = BackdropFade(size: 80, padding: 0, corner: 20, blur: 8, ease: 2, roundness: 2).rings(in: area)
+        XCTAssertEqual(rings.first?.rect, content.insetBy(dx: -80, dy: -80))
+        XCTAssertEqual(rings.last?.rect, content.insetBy(dx: under, dy: under))
+        XCTAssertEqual(rings.last?.strength ?? 0, 1, accuracy: 0.0001)
+        XCTAssertEqual(rings.last?.corner, 0)
+    }
 }

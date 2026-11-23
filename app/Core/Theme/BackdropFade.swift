@@ -33,12 +33,13 @@ public struct BackdropFade: Equatable, Sendable {
 
     public func rings(in area: CGRect) -> [Ring] {
         let content = area.insetBy(dx: SpotTokens.halo, dy: SpotTokens.halo)
-        let fade = max(size - padding, SpotTokens.backdropLeastFade)
+        let under = blur == nil ? 0 : SpotTokens.backdropUnderTiles
+        let fade = max(size - padding, SpotTokens.backdropLeastFade) + under
         let steps = SpotTokens.backdropFadeSteps
         return (0...steps).map { step in
             let place = CGFloat(step) / CGFloat(steps)
             let outset = size - place * fade
-            return Ring(rect: content.insetBy(dx: -outset, dy: -outset), corner: corner + roundness * outset, strength: strength(at: place))
+            return Ring(rect: content.insetBy(dx: -outset, dy: -outset), corner: max(corner + roundness * outset, 0), strength: strength(at: place))
         }
     }
 
