@@ -92,9 +92,7 @@ extension SpotsModel {
         guard context.isOn, slash == nil else { return false }
         guard !isPreview(entry) else { return true }
         guard let value = context.selectedChip?.value else { return true }
-        leaveContext()
-        guard sheets[entry.spot.id]?.drop(value) == true else { return true }
-        landDrop(on: entry.spot.id)
+        landDrop(value, on: entry.spot.id, leavesContext: true)
         return true
     }
 

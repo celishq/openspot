@@ -602,7 +602,7 @@ public final class SpotsModel {
 
     public func chooseFiles(for id: String) -> Bool {
         guard let sheet = sheets[id], sheet.spot.takesDrops else { return false }
-        host.chooseFiles(for: sheet.spot) { sheet.drop($0) }
+        host.chooseFiles(for: sheet.spot) { sheet.drop(ContextValue(files: FileKinds.Disk().read($0))) }
         return true
     }
 

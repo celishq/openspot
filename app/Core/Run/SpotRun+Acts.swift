@@ -67,18 +67,10 @@ extension SpotRun {
     }
 
     @discardableResult
-    public func drop(_ paths: [String], files: FileKinds? = nil) -> Bool {
-        guard files.map(spot.accepts) ?? spot.accepts(paths) else { return false }
-        waitingFiles.append(ScriptEntry.drop.message(paths))
-        startWaitingFiles()
-        return true
-    }
-
-    @discardableResult
     public func drop(_ value: ContextValue) -> Bool {
         guard spot.takes(value) else { return false }
         switch value.kind {
-        case .file: return drop(value.values, files: value.files)
+        case .file: waitingFiles.append(ScriptEntry.drop.message(value.values))
         case .url: waitingFiles.append(ScriptEntry.drop.message([], value.values, [], value.title.map { [$0] } ?? []))
         case .text: waitingFiles.append(ScriptEntry.drop.message([], [], value.values, value.title.map { [$0] } ?? []))
         }

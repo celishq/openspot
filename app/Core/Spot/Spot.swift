@@ -294,11 +294,7 @@ public struct Spot: Equatable, Sendable {
         takesFiles || takesFolders
     }
 
-    public func accepts(_ paths: [String]) -> Bool {
-        accepts(FileKinds.Disk().read(paths))
-    }
-
-    public func accepts(_ files: FileKinds) -> Bool {
+    private func accepts(_ files: FileKinds) -> Bool {
         !files.paths.isEmpty && files.paths.allSatisfy { accepts(path: $0, kind: files.kind(of: $0)) }
     }
 

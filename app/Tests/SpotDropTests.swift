@@ -71,22 +71,22 @@ final class SpotDropTests: XCTestCase {
     func testACardTakesOnlyFilesWhoseExtensionItsDropLists() {
         let card = command(drop: ["mov", "mkv"])
 
-        XCTAssertTrue(card.accepts([file("a.mov")]))
-        XCTAssertTrue(card.accepts([file("a.mov"), file("b.mkv")]))
-        XCTAssertFalse(card.accepts([file("a.txt")]))
-        XCTAssertFalse(card.accepts([file("mov")]))
+        XCTAssertTrue(card.takes(paths: [file("a.mov")]))
+        XCTAssertTrue(card.takes(paths: [file("a.mov"), file("b.mkv")]))
+        XCTAssertFalse(card.takes(paths: [file("a.txt")]))
+        XCTAssertFalse(card.takes(paths: [file("mov")]))
     }
 
     func testOneFileThatDoesNotFitRefusesTheWholeMix() {
         let card = command(drop: ["mov"])
 
-        XCTAssertFalse(card.accepts([file("a.mov"), file("b.txt")]))
-        XCTAssertFalse(card.accepts([file("b.txt"), file("a.mov")]))
+        XCTAssertFalse(card.takes(paths: [file("a.mov"), file("b.txt")]))
+        XCTAssertFalse(card.takes(paths: [file("b.txt"), file("a.mov")]))
     }
 
     func testAnExtensionMatchesInAnyCase() {
-        XCTAssertTrue(command(drop: ["mov"]).accepts([file("A.MOV")]))
-        XCTAssertTrue(command(drop: ["MOV"]).accepts([file("a.mov")]))
+        XCTAssertTrue(command(drop: ["mov"]).takes(paths: [file("A.MOV")]))
+        XCTAssertTrue(command(drop: ["MOV"]).takes(paths: [file("a.mov")]))
         XCTAssertTrue(command(drop: ["FOLDER"]).takesFolders)
     }
 
@@ -94,34 +94,34 @@ final class SpotDropTests: XCTestCase {
         let plain = try directory("plain")
         let named = try directory("clip.mov")
 
-        XCTAssertTrue(command(drop: ["folder"]).accepts([plain, named]))
-        XCTAssertFalse(command(drop: ["mov"]).accepts([plain]))
-        XCTAssertFalse(command(drop: ["mov"]).accepts([named]))
+        XCTAssertTrue(command(drop: ["folder"]).takes(paths: [plain, named]))
+        XCTAssertFalse(command(drop: ["mov"]).takes(paths: [plain]))
+        XCTAssertFalse(command(drop: ["mov"]).takes(paths: [named]))
     }
 
     func testTheWordFolderIsNotAnExtension() {
-        XCTAssertFalse(command(drop: ["folder"]).accepts([file("a.folder")]))
-        XCTAssertFalse(command(drop: ["folder"]).accepts([file("a.mov")]))
+        XCTAssertFalse(command(drop: ["folder"]).takes(paths: [file("a.folder")]))
+        XCTAssertFalse(command(drop: ["folder"]).takes(paths: [file("a.mov")]))
     }
 
     func testAStarTakesEachFileAndEachFolder() throws {
         let card = command(drop: ["*"])
 
-        XCTAssertTrue(card.accepts([file("a.mov"), file("no-extension"), try directory("plain")]))
+        XCTAssertTrue(card.takes(paths: [file("a.mov"), file("no-extension"), try directory("plain")]))
     }
 
     func testACardWithNoDropTakesNothing() {
-        XCTAssertFalse(command(drop: []).accepts([file("a.mov")]))
-        XCTAssertFalse(command(drop: [""]).accepts([file("no-extension")]))
+        XCTAssertFalse(command(drop: []).takes(paths: [file("a.mov")]))
+        XCTAssertFalse(command(drop: [""]).takes(paths: [file("no-extension")]))
     }
 
     func testNoFilesAndAMissingFileAreNotTaken() {
-        XCTAssertFalse(command(drop: ["*"]).accepts([]))
-        XCTAssertFalse(command(drop: ["*"]).accepts([path("gone.mov")]))
+        XCTAssertFalse(command(drop: ["*"]).takes(paths: []))
+        XCTAssertFalse(command(drop: ["*"]).takes(paths: [path("gone.mov")]))
     }
 
     func testAPathWithSpacesAndALeadingDashIsTaken() {
-        XCTAssertTrue(command(drop: ["mov"]).accepts([file("a b c.mov"), file("-rf.mov"), file("--.mov")]))
+        XCTAssertTrue(command(drop: ["mov"]).takes(paths: [file("a b c.mov"), file("-rf.mov"), file("--.mov")]))
     }
 
     func testAChoiceOffersWhatTheDropTakes() {
@@ -139,8 +139,8 @@ final class SpotDropTests: XCTestCase {
     func testAHeaderWithDropScansToACardThatTakesItsFiles() throws {
         let sheet = try sheet(toml: "[on]\ndrop = [\"mov\", \"MKV\", \"folder\"]")
 
-        XCTAssertTrue(sheet.spot.accepts([file("a.mkv"), try directory("plain")]))
-        XCTAssertFalse(sheet.spot.accepts([file("a.txt")]))
+        XCTAssertTrue(sheet.spot.takes(paths: [file("a.mkv"), try directory("plain")]))
+        XCTAssertFalse(sheet.spot.takes(paths: [file("a.txt")]))
     }
 
     private func addScript(_ name: String, toml: String) throws {
@@ -211,7 +211,7 @@ final class SpotDropTests: XCTestCase {
         """)
         let paths = [file("a b c.mov"), file("-rf.mov"), file("--.mov"), file("quoted \"name\".mov")]
 
-        XCTAssertTrue(sheet.drop(paths))
+        XCTAssertTrue(sheet.drop(paths: paths))
 
         try await wait("the call") { sheet.calls.isEmpty && self.log().count == 1 }
         let lines = try String(contentsOfFile: path("arguments"), encoding: .utf8).split(separator: "\n").map(String.init)
@@ -224,7 +224,7 @@ final class SpotDropTests: XCTestCase {
 
         XCTAssertTrue(card.takes(ContextValue(url: "https://example.com")))
         XCTAssertTrue(card.takes(ContextValue(text: "hola")))
-        XCTAssertFalse(card.accepts([file("a.url"), file("b.text")]))
+        XCTAssertFalse(card.takes(paths: [file("a.url"), file("b.text")]))
         XCTAssertFalse(card.takesDrops)
     }
 
@@ -267,8 +267,8 @@ final class SpotDropTests: XCTestCase {
     func testADropThatTheCardDoesNotTakeRunsNothing() async throws {
         let sheet = try sheet(toml: "[on]\ndrop = [\"mov\"]")
 
-        XCTAssertFalse(sheet.drop([file("a.mov"), file("b.txt")]))
-        XCTAssertFalse(sheet.drop([]))
+        XCTAssertFalse(sheet.drop(paths: [file("a.mov"), file("b.txt")]))
+        XCTAssertFalse(sheet.drop(paths: []))
 
         try await pause()
         XCTAssertEqual(log(), [])
@@ -293,7 +293,7 @@ final class SpotDropTests: XCTestCase {
         let sheet = try await busySheet()
         let file = file("a.mov")
 
-        XCTAssertTrue(sheet.drop([file]))
+        XCTAssertTrue(sheet.drop(paths: [file]))
         try await pause()
 
         XCTAssertEqual(log(), ["show", "work"])
@@ -307,7 +307,7 @@ final class SpotDropTests: XCTestCase {
     func testAWaitingDropRunsAfterTheRunningCallIsStopped() async throws {
         let sheet = try await busySheet()
         let file = file("a.mov")
-        XCTAssertTrue(sheet.drop([file]))
+        XCTAssertTrue(sheet.drop(paths: [file]))
 
         sheet.stop(try XCTUnwrap(sheet.calls.first))
 
@@ -319,9 +319,9 @@ final class SpotDropTests: XCTestCase {
         let sheet = try sheet(toml: "\(TestSpot.command)\n\n[on]\ndrop = [\"mov\"]", "case \"$2\" in *first.mov) sleep 30 ;; esac")
         let first = file("first.mov")
         let second = file("second.mov")
-        XCTAssertTrue(sheet.drop([first]))
+        XCTAssertTrue(sheet.drop(paths: [first]))
         try await wait("the first drop") { self.log() == ["drop \(first)"] }
-        XCTAssertTrue(sheet.drop([second]))
+        XCTAssertTrue(sheet.drop(paths: [second]))
         try await pause(0.1)
         XCTAssertEqual(log(), ["drop \(first)"])
 
@@ -345,7 +345,7 @@ final class SpotDropTests: XCTestCase {
         sheet.run(try XCTUnwrap(sheet.spot.frameActions.first), item: nil)
         let file = file("a.mov")
 
-        XCTAssertTrue(sheet.drop([file]))
+        XCTAssertTrue(sheet.drop(paths: [file]))
 
         try await wait("the drop") { self.log().contains("drop \(file)") }
         XCTAssertEqual(failures, ["gone"])
@@ -355,8 +355,8 @@ final class SpotDropTests: XCTestCase {
         let sheet = try await busySheet()
         let first = file("first.mov")
         let second = file("second.mov")
-        XCTAssertTrue(sheet.drop([first]))
-        XCTAssertTrue(sheet.drop([second]))
+        XCTAssertTrue(sheet.drop(paths: [first]))
+        XCTAssertTrue(sheet.drop(paths: [second]))
 
         FileManager.default.createFile(atPath: path("release"), contents: Data())
 
@@ -368,8 +368,8 @@ final class SpotDropTests: XCTestCase {
         let first = file("first.mov")
         let second = file("second.mov")
 
-        XCTAssertTrue(sheet.drop([first]))
-        XCTAssertTrue(sheet.drop([second]))
+        XCTAssertTrue(sheet.drop(paths: [first]))
+        XCTAssertTrue(sheet.drop(paths: [second]))
         try await wait("the first drop") { self.log() == ["drop \(first)"] }
         try await pause()
         XCTAssertEqual(self.log(), ["drop \(first)"])
@@ -389,14 +389,14 @@ final class SpotDropTests: XCTestCase {
         try await wait("the read") { self.log() == ["show"] && sheet.spot.kind == .toggle }
         let file = file("a.mov")
 
-        XCTAssertTrue(sheet.drop([file]))
+        XCTAssertTrue(sheet.drop(paths: [file]))
 
         try await wait("the drop") { self.log().contains("drop \(file)") }
     }
 
     func testQuittingDropsAWaitingDrop() async throws {
         let sheet = try await busySheet()
-        XCTAssertTrue(sheet.drop([file("a.mov")]))
+        XCTAssertTrue(sheet.drop(paths: [file("a.mov")]))
 
         runs.quit()
         try await pause(0.25)
@@ -429,7 +429,7 @@ final class SpotDropTests: XCTestCase {
         let spaced = file("a b c.mov")
         let dashed = file("-rf.mov")
 
-        XCTAssertTrue(sheet.drop([spaced, dashed]))
+        XCTAssertTrue(sheet.drop(paths: [spaced, dashed]))
 
         try await wait("the call and its end") { self.blocks() == ["arg=show", "arg=drop\ninput.file=\(spaced)\ninput.file=\(dashed)"] && sheet.calls.isEmpty }
         XCTAssertEqual(log().count, 1)
@@ -440,7 +440,7 @@ final class SpotDropTests: XCTestCase {
         let spaced = file("a b c.mov")
         let dashed = file("-rf.mov")
 
-        XCTAssertTrue(sheet.drop([spaced, dashed]))
+        XCTAssertTrue(sheet.drop(paths: [spaced, dashed]))
 
         try await wait("the call") { self.blocks() == ["arg=show", "arg=drop\ninput.file=\(spaced)\ninput.file=\(dashed)"] }
         XCTAssertEqual(log(), [""])
@@ -454,8 +454,8 @@ final class SpotDropTests: XCTestCase {
         let first = file("first.mov")
         let second = file("second.mov")
 
-        XCTAssertTrue(sheet.drop([first]))
-        XCTAssertTrue(sheet.drop([second]))
+        XCTAssertTrue(sheet.drop(paths: [first]))
+        XCTAssertTrue(sheet.drop(paths: [second]))
 
         try await wait("the calls") { self.blocks() == ["arg=show", "arg=drop\ninput.file=\(first)", "arg=drop\ninput.file=\(second)"] }
         XCTAssertEqual(log().count, 1)
@@ -471,7 +471,7 @@ final class SpotDropTests: XCTestCase {
 
     func testAPressOnARunningDropStopsIt() async throws {
         let sheet = try sheet(toml: "[on]\ndrop = [\"mov\"]", "sleep 5\ntouch '\(path("went-on"))'")
-        XCTAssertTrue(sheet.drop([file("a.mov")]))
+        XCTAssertTrue(sheet.drop(paths: [file("a.mov")]))
         XCTAssertTrue(sheet.isCardRunning)
         try await wait("the call") { self.log().count == 1 }
 
@@ -485,7 +485,7 @@ final class SpotDropTests: XCTestCase {
 
     func testAPressWithinOneSecondOfADropDoesNothing() async throws {
         let sheet = try sheet(toml: "[on]\ndrop = [\"mov\"]", "sleep 0.2\ntouch '\(path("done"))'")
-        XCTAssertTrue(sheet.drop([file("a.mov")]))
+        XCTAssertTrue(sheet.drop(paths: [file("a.mov")]))
 
         sheet.pressCard()
 
@@ -510,7 +510,7 @@ final class SpotDropTests: XCTestCase {
         runs.panelOpened()
         var failures: [String] = []
         sheet.onReport = { if case .failure(let text) = $0 { failures.append(text) } }
-        XCTAssertTrue(sheet.drop([file("a.mov")]))
+        XCTAssertTrue(sheet.drop(paths: [file("a.mov")]))
 
         runs.panelClosed()
         XCTAssertEqual(sheet.calls.first?.isAct, true)
@@ -526,7 +526,7 @@ final class SpotDropTests: XCTestCase {
         sheet.onReport = { if case .toast(let text) = $0 { toasts.append(text) } }
         let frames = FrameLog(sheet)
 
-        XCTAssertTrue(sheet.drop([file("a.mov")]))
+        XCTAssertTrue(sheet.drop(paths: [file("a.mov")]))
 
         try await wait("the frame") { sheet.calls.first?.status != nil }
         XCTAssertEqual(sheet.calls.first?.handler, "drop")
@@ -542,7 +542,7 @@ final class SpotDropTests: XCTestCase {
         var failures: [String] = []
         sheet.onReport = { if case .failure(let text) = $0 { failures.append(text) } }
 
-        XCTAssertTrue(sheet.drop([file("a.mov")]))
+        XCTAssertTrue(sheet.drop(paths: [file("a.mov")]))
 
         try await wait("the failure") { failures == ["broken"] }
     }
@@ -556,7 +556,7 @@ final class SpotDropTests: XCTestCase {
         """)
         sheet.open {}
         try await wait("the row") { sheet.list.shown.count == 1 && sheet.calls.isEmpty }
-        XCTAssertTrue(sheet.drop([file("a.mov")]))
+        XCTAssertTrue(sheet.drop(paths: [file("a.mov")]))
         try await wait("the call") { self.log().count == 2 }
 
         sheet.stop(try XCTUnwrap(sheet.calls.first))
@@ -571,7 +571,7 @@ final class SpotDropTests: XCTestCase {
         let sheet = try sheet(toml: "[on]\ndrop = [\"mov\"]", "[ \"$1\" = show ] && printf 'item=a\\ntitle=A\\n'\nexit 0")
         let file = file("a.mov")
 
-        XCTAssertTrue(sheet.drop([file]))
+        XCTAssertTrue(sheet.drop(paths: [file]))
 
         try await wait("the read after the call") { self.log() == ["drop \(file)", "show"] }
     }
