@@ -25,7 +25,7 @@ struct ToastView: View {
         .modifier(SpotGlass(shape: SpotRoundShape(radius: SpotTokens.toastRadius)))
         .contentShape(Rectangle())
         .onTapGesture { toast.open?() }
-        .padding(SpotTokens.toastMargin)
+        .padding(SpotTokens.toastRoom)
         .environment(\.spotIsShown, toast.isShown)
         .id(SpotLoadedTheme.shared.layout)
     }
