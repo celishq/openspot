@@ -1,6 +1,6 @@
 # Views
 
-`draft` `optional` · Builds on [01](01-spot.md) and [04](04-layouts.md)
+`draft` `optional` · Builds on [01](01-spot.md) and [04](04-layouts.md) · Uses [05](05-places.md)
 
 Use this when your spot needs a look or a motion that classes can't give, such as a chart of its own or a pulsing
 icon. A view is a kind of block that a SwiftUI file of your spot draws.

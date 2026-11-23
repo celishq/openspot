@@ -1,6 +1,6 @@
 # Other spots
 
-`draft` `optional` · Builds on [01](01-spot.md) and [06](06-actions.md)
+`draft` `optional` · Builds on [01](01-spot.md) and [06](06-actions.md) · Uses [08](08-triggers.md#on) and [09](09-commands.md#openspot-timer)
 
 Use this when a step of your spot is the job of another spot, such as picking a time, or when your spot has news that
 other spots want, such as a focus session that ended. A binding names another spot that your spot runs or listens to,

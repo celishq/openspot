@@ -1,6 +1,6 @@
 # Places
 
-`draft` `optional` · Builds on [01](01-spot.md) and [04](04-layouts.md)
+`draft` `optional` · Builds on [01](01-spot.md) and [04](04-layouts.md) · Uses [08](08-triggers.md)
 
 Use this when your spot should show its value without being opened, such as the free space of a disk on its card or
 in the menu bar, or answer in the panel's own search. A place is where a spot shows: its sheet, a card in the panel,

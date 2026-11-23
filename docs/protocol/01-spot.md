@@ -2,9 +2,10 @@
 
 `draft` `required`
 
-A spot is a small tool that Openspot shows in its panel. It's a folder with a `spot.toml` and a script: Openspot runs
-the script, and the script prints what to show. This page is everything a spot needs. Each later page adds one
-capability on top of it.
+A spot is a small tool that Openspot shows in its panel, the window that opens when the person presses `⌃Space`. The
+panel shows a card for each spot, and a press of a card opens the spot's sheet, which fills the panel. A spot is a
+folder with a `spot.toml` and a script: Openspot runs the script, and the script prints what to show. This page is
+everything a spot needs. Each later page adds one capability on top of it.
 
 ```text
 ports.spot/
@@ -37,18 +38,18 @@ title = "Ports"
 icon = "network"
 ```
 
-| Key        | Type   | Default           | Is                                                          |
-| ---------- | ------ | ----------------- | ----------------------------------------------------------- |
-| `title`    | text   | the folder's name | The name of the spot.                                       |
-| `icon`     | text   | none              | An SF Symbol, an emoji, or an image file of the folder.     |
-| `detail`   | text   | none              | The line under the title.                                   |
-| `keywords` | [text] | none              | More words that find the spot in the panel's search.        |
+| Key        | Type   | Is                                                      |
+| ---------- | ------ | ------------------------------------------------------- |
+| `title`    | text   | The name of the spot, the folder's name by default.     |
+| `icon`     | text   | An SF Symbol, an emoji, or an image file of the folder. |
+| `detail`   | text   | The line under the title.                               |
+| `keywords` | [text] | More words that find the spot in the panel's search.    |
 
 - Each other key and table comes with the page of its capability, and [the index](../../PROTOCOL.md#spottoml) lists
   them all.
 - A wrong or unknown key, such as `titel`, keeps the spot from loading, and its fault names the key.
 - `openspot schema` prints the JSON Schema of the file, and [`schema/spot.schema.json`](../../schema/spot.schema.json)
-  holds a copy, so an editor such as one with Taplo can check it as you type.
+  holds a copy for your editor.
 
 ## The calls
 
@@ -61,22 +62,24 @@ ports.sh press
 
 ```ini
 input.item=4120
-input.item.port=:3000
-setting.signal=TERM
 ```
 
-| Call           | Comes                                                                    | Inputs               |
-| -------------- | ------------------------------------------------------------------------ | -------------------- |
-| `<spot> show`  | When its sheet opens, or a card or the menu bar needs it.                | `event`, `route`     |
-| `<spot> press` | When the person presses an item, or the card of a spot with no sheet.    | `item`, `item.<key>` |
+| Call           | Comes                                                                  | Inputs               |
+| -------------- | ---------------------------------------------------------------------- | -------------------- |
+| `<spot> show`  | When its sheet opens, or its card or the menu bar needs what it shows. | `event`, `route`     |
+| `<spot> press` | When the person presses an item, a row of the sheet.                   | `item`, `item.<key>` |
 
 Every other handler comes with a capability, and [the index](../../PROTOCOL.md#handlers) lists them all. A script
 ignores a handler it doesn't know.
 
 - `show` is a read, and so is each handler that only asks what to show. A read MUST NOT change anything or open
   anything.
-- `input.<name>=` is one input, such as `item`. `input.item.<key>=` is a key of the pressed item's own, such as
-  `port`. `setting.<name>=` is one [setting](07-settings.md), or its default.
+- `input.<name>=` is one input, such as `item`, the id of the pressed item.
+- `event` names the [trigger](08-triggers.md) that called `show`, such as `panel.open`. `route`
+  names the [page](02-lists.md#pages) of the spot that shows, and is empty for its first sheet.
+- `setting.<name>=` is one of the spot's [settings](07-settings.md), the choices the person makes in its Settings, or
+  its default. Ports has none.
+- The card and the menu bar can show more than the spot's name; see [Places](05-places.md).
 
 Each call gets these variables:
 
@@ -91,7 +94,8 @@ Each call gets these variables:
 ## The shell helper
 
 `. "$OPENSPOT_SH"` loads functions that read stdin once and print values safely. Once it's loaded, read stdin only with
-`value` or `openspot_input`, never with `cat`.
+`value` or `openspot_input`, never with `cat`. The helpers that read a command's output, paste or serve calls come
+with their pages.
 
 | Function                                     | Does                                                                              |
 | -------------------------------------------- | --------------------------------------------------------------------------------- |
@@ -100,12 +104,8 @@ Each call gets these variables:
 | `openspot_item <id> <title> [detail] [icon]` | Prints a blank line, then one `item` block, so it starts a new block.             |
 | `openspot_items [kind]`                      | Prints a block for each line of stdin: id, title, detail and icon, split by tabs. |
 | `openspot_kv <key> <value>`                  | Prints one more line of the block above it.                                       |
-| `esc <text>`                                 | Prints a text as a value.                                                         |
-| `openspot_value <key> <text>`                | Prints each value of a key in a text, such as what a command printed.             |
-| `openspot_rows <key>...`                     | Prints a line of tab-separated values for each block of stdin.                    |
+| `esc <text>`                                 | Prints a text as one value.                                                       |
 | `openspot_keep <file> [text]`                | Writes the text, or stdin, to the file at once, so a stop never leaves half of it. |
-| `openspot_paste <text>`                      | Pastes the text into the front app, with `clipboard` in `uses`.                   |
-| `openspot_serve <function> "$@"`             | Runs the function at each call; see [A staying spot](11-modes.md#a-staying-spot). |
 
 ## Frames
 
@@ -129,7 +129,8 @@ detail=postgres
 - A line splits at its first `=`.
 - In a value, `\n` is a new line and `\\` is a backslash. An empty value is no value.
 - A value that comes from data MUST be printed with `openspot_item`, `openspot_kv` or `esc`, so that it can't add a
-  line or a block.
+  line or a block. `esc` writes a new line as `\n` and a backslash as `\\`, as in
+  `printf 'detail=%s\n' "$(esc "$name")"`.
 
 ### Blocks
 
@@ -141,10 +142,11 @@ the block and the handler it calls. These keys work on every block:
 | `title`  | text    | The first line of the block's words.                        |
 | `detail` | text    | The line under the title.                                   |
 | `icon`   | text    | An SF Symbol, an emoji, an image file or a web image.       |
-| `tone`   | text    | The colour of the words: `good`, `warn` or `bad`.           |
+| `tone`   | text    | The colour of the words, `good`, `warn` or `bad`, or a dot on an item's icon. |
 | `parent` | id      | The block that this block sits inside.                      |
 | `class`  | classes | The [classes](04-layouts.md#classes) that place and style it. |
 | `grow`   | bool    | Whether the block takes the free height of its box.         |
+| `close`  | bool    | Whether a press of the block that answers with no view closes the panel. |
 
 - An `item` is a row of the list. A frame of items shows as a list that the person searches, and a press of a row
   calls `press` with its id as the input `item`.
@@ -158,11 +160,12 @@ The root is the block of the frame's own keys. It starts with `frame=` or `error
 
 | Key        | Type           | Is                                                         |
 | ---------- | -------------- | ---------------------------------------------------------- |
-| `frame`    | text           | The route of the sheet that the frame is for, often empty. |
+| `frame`    | text           | The [route](02-lists.md#pages) of the page that the frame is for, empty for the first sheet. |
 | `title`    | text           | The title of the card.                                     |
 | `detail`   | text           | The line under the card's title.                           |
 | `progress` | number, 0 to 1 | How much of the call's work is done.                       |
 | `error`    | text           | The message of a failure of the call.                      |
+| `link`     | url            | A page that helps the person fix the failure.              |
 
 Other root keys come with their capability, and [the index](../../PROTOCOL.md#root-keys) lists them.
 
@@ -187,27 +190,18 @@ start ──► frame ──► frame ──► end    exit 0: done; error= or a
 
 - A `show` has 10 seconds to print its first frame. Other calls have no limit.
 - A handler fails with `error=<message>` in its frame, or with an exit code other than 0. The person sees the message,
-  or the last line of stderr. `link=<url>` adds a page that helps fix it.
-- A call that answers with no view closes the panel. With `close=false` on the pressed block, the panel stays open, and
-  Openspot calls `show` again.
+  or the last line of stderr, and the root's `link`.
+- A call that answers with no view closes the panel. With `close=false` on the pressed item or button, the panel stays
+  open, and Openspot calls `show` again.
 - A stop sends the terminate signal, then the kill signal, to the call's processes. A spot MUST NOT leave a file half
   written, so write with `openspot_keep`.
 - A process that your script starts gets its stdin, unless the helper read it first, so close it, as in
   `curl "$url" </dev/null`.
-
-### Write a message
-
-A toast or a failure line tells the person what happened and what to do next.
-
-- Instead of `Oops! Something went wrong.`, write `Openspot cannot find a screenshot.`
-- Instead of `Error 1: osascript failed.`, write ``Copied, but Openspot cannot paste. Press `⌘V`, or allow Openspot in
-  Accessibility.``
-
-Say what still worked, and the step that fixes the rest, in one or two calm sentences. Put each key in backticks.
+- Write the message as [Write a message](09-commands.md#write-a-message) says.
 
 ## Try your spot
 
-You can run one call the way Openspot does, and see what it prints:
+Run one call the way Openspot does, and see what it prints:
 
 ```sh
 openspot spot run ports show
@@ -215,10 +209,9 @@ openspot check spots ~/.config/openspot/spots
 openspot spot log ports
 ```
 
-`spot run` prints the frame. `check spots` prints nothing when each spot loads and runs, or a `fault` block for each
-error. `spot log` prints the last calls, with their stdin, stdout, stderr and exit code. And
-`openspot playground open ports.spot/ports.sh` shows the spot in a panel of its own, and runs it again each time you
-save.
+`spot run` prints the frame. `check spots` prints a `fault` block for each error, or nothing. `spot log` prints the
+last calls, with their stdin, stdout, stderr and exit code. `openspot playground open ports.spot/ports.sh` shows the
+spot in a panel of its own, and runs it again each time you save.
 
 ## Ports, the whole spot
 

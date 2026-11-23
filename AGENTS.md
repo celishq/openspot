@@ -40,7 +40,7 @@
 - One primary type per file. The filename matches it. A file of extensions is named `Type+Topic.swift`.
   `scripts/check-files.sh` fails on a file that breaks this.
 - Nouns own their data. Verbs are methods on the noun that owns the data.
-- A toast or a failure line follows [Write a message](docs/protocol/01-spot.md#write-a-message).
+- A toast or a failure line follows [Write a message](docs/protocol/09-commands.md#write-a-message).
 
 ## Docs
 

@@ -80,10 +80,13 @@ esac
 
 1. Type `left` in the panel. The search lists Left side, with its icon.
 2. Press Return on it. Openspot runs `windows.sh left`, and the front window fills the left half of the screen.
-3. Press `⌘` Return on the Windows card. Its Settings list a key for each action, which the person records.
+3. Add Windows to the grid in Edit Spots, the view of the panel where you arrange its cards, since a spot with an
+   action that has a title starts off the grid. Then press `⌘` Return on its card. Its Settings list a key for each
+   action, which the person records.
 
-`uses` names the features of the Mac that your spot uses, here `screen` for `openspot window move`. Since Windows has
-actions with titles and no `[on]`, it has no sheet, so a press of its card runs its first action.
+`uses` names the features of the Mac that your spot uses, here `screen` for `openspot window move`. A spot with an
+action that has a title has no sheet unless its `[on]` asks for one, so a press of the Windows card runs its first
+action, as [Actions](docs/protocol/06-actions.md#actionsid) says.
 
 Learn more in [Actions](docs/protocol/06-actions.md) and [The openspot command](docs/protocol/09-commands.md).
 
@@ -117,7 +120,7 @@ printf 'frame=\ndetail=%s free\n\nitem=free\ntitle=%s free\n' "$free" "$free"
 
 The wide card of Disk shows its icon, the title Disk with 256Gi free under it, and an arrow at its end.
 
-1. Add Disk to the grid in Edit Spots, since a spot with `every` starts off the grid.
+1. Add Disk to the grid in Edit Spots, since a spot with `every` starts off the grid too.
 2. Free some space, and open the panel again. The card shows the new value.
 
 `"panel.open" = true` calls `show` each time the panel opens, and `every = 300` calls `every` every 5 minutes while the
@@ -166,6 +169,10 @@ esac
 2. Pick Tomorrow. `openspot run` prints the time, and the spot adds a timer that calls `remind` then.
 3. Press Esc instead. `openspot run` exits 4, and the call ends with no failure.
 
+`scope=spot` puts the button in the ⌘K menu of the spot, whatever row is selected. The `case $?` line reads how
+`openspot run` ended: 0 when the person picked a time, 4 when they closed the tiles, which isn't a failure, and any
+other code when something went wrong.
+
 `openspot spot actions openspot/snooze` prints the actions you can run, with their inputs and outputs. `pick` takes an
 optional `title` and gives `until`, a time that `openspot timer add` takes.
 
@@ -196,6 +203,7 @@ printf 'button=forget\nparent=head\ntitle=Forget\nclass=rounded-full\n'
 ![The sheet: one row, the Wi-Fi icon, Home with 82 Mb/s under it, and a Forget chip](docs/images/lay-out-a-sheet.png)
 
 The sheet shows one row: the Wi-Fi icon in the accent colour, Home with 82 Mb/s under it, and a Forget chip at its end.
+An `icon` block draws the icon that its `value` names, as a `number` block draws its number.
 
 1. Remove `class=grow` from the `text` block. The chip moves next to the words, since no block takes the free width.
 2. Press Forget. Openspot runs `wi-fi.sh forget`.

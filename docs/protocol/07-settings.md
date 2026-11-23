@@ -1,6 +1,6 @@
 # Settings
 
-`draft` `optional` · Builds on [01](01-spot.md) and [06](06-actions.md#types)
+`draft` `optional` · Builds on [01](01-spot.md) and [06](06-actions.md#types) · Uses [09](09-commands.md)
 
 Use this when the person should choose how your spot works, such as the city of a clock or the key of a web service.
 A setting is a choice that the person makes in your spot's Settings, and that Openspot keeps for you. The

@@ -1,6 +1,6 @@
 # Lists and pages
 
-`draft` `optional` · Builds on [01](01-spot.md)
+`draft` `optional` · Builds on [01](01-spot.md) · Uses [03](03-blocks.md#buttons) and [04](04-layouts.md)
 
 Use this when your spot shows a list that people search and act on, such as files, tabs or tasks, or when a row opens
 a sheet of its own.

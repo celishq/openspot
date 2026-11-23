@@ -1,6 +1,6 @@
 # The openspot command
 
-`draft` `optional` · Builds on [01](01-spot.md) and [06](06-actions.md)
+`draft` `optional` · Builds on [01](01-spot.md) and [06](06-actions.md) · Uses [10](10-other-spots.md#openspot-run)
 
 Use this when your spot needs the Mac or Openspot, such as the clipboard, a window, a toast or a timer.
 `openspot <noun> <verb>` is the one way a spot asks for anything, and it works the same in a terminal.
@@ -34,12 +34,24 @@ uses = ["screen"]
 
 - A command exits 0 when it's done, 1 when it failed, 2 when `openspot` doesn't take its words, 3 when Openspot didn't
   answer, and 4 when the person closed what it showed.
-- A list prints blocks, or JSON with `--json`. `openspot_value` and `openspot_rows` of the
-  [shell helper](01-spot.md#the-shell-helper) read them.
+- A list prints blocks, or JSON with `--json`. In the [shell helper](01-spot.md#the-shell-helper),
+  `openspot_value <key> <text>` prints each value of a key in what a command printed, and `openspot_rows <key>...`
+  prints a line of tab-separated values for each block of stdin.
+- `openspot_paste <text>` of the shell helper pastes the text into the front app, with `clipboard` in `uses`.
 - A command that changes the Mac or Openspot, waits for the person, or opens a window fails in a read; see
   [the commands that fail in a read](../../app/Help/commands.md#the-commands-that-fail-in-a-read).
 - `openspot toast <words>` shows the words for a moment, even when the panel is closed. `openspot select <item>`
   selects an item once the next frame shows.
+
+## Write a message
+
+A toast or a failure line tells the person what happened and what to do next.
+
+- Instead of `Oops! Something went wrong.`, write `Openspot cannot find a screenshot.`
+- Instead of `Error 1: osascript failed.`, write ``Copied, but Openspot cannot paste. Press `⌘V`, or allow Openspot in
+  Accessibility.``
+
+Say what still worked, and the step that fixes the rest, in one or two calm sentences. Put each key in backticks.
 
 ## openspot timer
 

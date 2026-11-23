@@ -1,6 +1,6 @@
 # Modes
 
-`draft` `optional` · Builds on [01](01-spot.md)
+`draft` `optional` · Builds on [01](01-spot.md) · Uses [08](08-triggers.md) and [12](12-javascript.md)
 
 Use this when a process for each call doesn't fit your spot: when it should keep what it holds between calls, or be a
 Swift program. A mode is the way Openspot runs a spot's script, and the script's file chooses it.

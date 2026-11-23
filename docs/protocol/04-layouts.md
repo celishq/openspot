@@ -1,6 +1,6 @@
 # Layouts
 
-`draft` `optional` · Builds on [01](01-spot.md) and [03](03-blocks.md)
+`draft` `optional` · Builds on [01](01-spot.md) and [03](03-blocks.md) · Uses [05](05-places.md)
 
 Use this when a list isn't the shape you want, such as a row of an icon, words and a button over a list. `parent` puts
 a block inside a box, and `class` says how each box lays out what it holds, with the class names of Tailwind CSS.

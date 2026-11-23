@@ -1,6 +1,6 @@
 # Actions
 
-`draft` `optional` · Builds on [01](01-spot.md)
+`draft` `optional` · Builds on [01](01-spot.md) · Uses [03](03-blocks.md#inputs) and [07](07-settings.md)
 
 Use this when your spot does a thing that the person runs by name, such as adding a note or moving a window, or that a
 timer or another spot runs. An action is a thing your spot can do, with typed inputs and outputs, and a table `[actions.<id>]` declares
@@ -45,7 +45,9 @@ toast says Saved.
 - When a required input is empty, Openspot asks for it with a form. A `bool` is a switch, a `choice` a menu, and any
   other type a field.
 - The action gives its values as `out.<name>=` lines in its frame's [root](01-spot.md#the-root), once for each value.
-- A spot whose actions have titles, and that has no `[on]`, has no sheet: Return runs its first action.
+- A spot with an action that has a `title` has no sheet, unless its [`[on]`](08-triggers.md#on) lists an event,
+  `every` or `search = true`. A press of its card then runs its first action.
+- A spot with an action that has a `title` starts off the grid.
 - An action MUST NOT be named `show`, `press` or `drag`.
 - `openspot spot actions [id]` prints each action with its inputs and outputs.
 

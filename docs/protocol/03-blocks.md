@@ -1,6 +1,6 @@
 # Blocks by kind
 
-`draft` `optional` · Builds on [01](01-spot.md)
+`draft` `optional` · Builds on [01](01-spot.md) · Uses [04](04-layouts.md) and [06](06-actions.md)
 
 Use this when a row of words isn't enough: when your spot shows a number, a chart or an image, or gives the person a
 button, a field, a switch or a choice.

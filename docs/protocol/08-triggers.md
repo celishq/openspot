@@ -1,6 +1,6 @@
 # Triggers
 
-`draft` `optional` · Builds on [01](01-spot.md)
+`draft` `optional` · Builds on [01](01-spot.md) · Uses [05](05-places.md#the-main-search), [06](06-actions.md#forms) and [10](10-other-spots.md)
 
 Use this when your spot should run without a press: when the panel opens, on a clock, when the Mac changes, or from a
 slash command or a file the person drops. A trigger calls your spot by itself, and the `[on]` table lists them.
@@ -72,7 +72,8 @@ search calls `command` with `input.name=note` and `input.text=buy milk`.
 | `disk.mount`       | its path                         | When a disk mounts.                                       |
 | `device.connect`   | its name                         | When a USB device connects.                               |
 
-- Openspot calls a spot only while it shows, except at `app.launch` and `app.update`.
+- An event calls a spot only while it shows, except `app.launch` and `app.update`, which call it either way. A
+  `schedule`, a timer and an event of a bound spot call it whether or not it shows.
 - The sheet calls `show` at each open, unless it called it less than 5 seconds ago. `"sheet.open" = true` calls it
   even then.
 
