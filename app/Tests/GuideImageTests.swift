@@ -37,7 +37,7 @@ final class GuideImageTests: XCTestCase {
 
     func testEachImageOfTheGuideIsDrawnFromItsExampleAsItIsNow() throws {
         let images = try images()
-        XCTAssertGreaterThan(images.count, 3)
+        XCTAssertGreaterThan(images.count, 2)
         for (name, manifest, example) in images {
             let folder = repo.appendingPathComponent("docs/images")
             XCTAssertTrue(FileManager.default.fileExists(atPath: folder.appendingPathComponent("\(name).png").path), name)

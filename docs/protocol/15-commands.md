@@ -1,0 +1,55 @@
+# The openspot command
+
+`openspot <noun> <verb>` is the one way a spot asks the Mac and Openspot for anything, and it works the same in a
+terminal. [The openspot commands](../../app/Help/commands.md) lists each one.
+
+```text
+$ openspot calc solve 2+2
+item=4
+title=4
+```
+
+- A noun names its commands, its events and its use, such as `openspot clipboard copy`, `clipboard.change` and
+  `clipboard` in `uses`.
+- A command exits 0 when it's done, 1 when it failed, 2 when `openspot` doesn't take its words, 3 when Openspot didn't
+  answer, and 4 when the person closed what it showed.
+- A list prints blocks, or JSON with `--json`.
+- A command that changes the Mac or Openspot, waits for the person, or opens a window fails in a read; see
+  [the commands that fail in a read](../../app/Help/commands.md#the-commands-that-fail-in-a-read).
+- `openspot toast <words>` shows the words for a moment, even when the panel is closed. `openspot select <item>`
+  selects an item once the next frame shows.
+- `openspot spot actions` lists the commands of a spot's uses, and `openspot types` types them for its code.
+
+## openspot timer
+
+`openspot timer add <time> <action> [<name>=<value>...]` adds a timer, which runs an action of the spot at a time, even
+when the panel is closed. It needs `timer` in `uses`.
+
+```toml
+title = "Stretch"
+icon = "figure.walk"
+uses = ["timer"]
+
+[actions.remind]
+inputs.words = { type = "text", required = true }
+```
+
+```sh
+#!/bin/sh
+. "$OPENSPOT_SH"
+case "$1" in
+  show) printf 'button=later\ntitle=Remind me in an hour\nscope=spot\n' ;;
+  later) openspot timer add "$(date -u -v+1H +%Y-%m-%dT%H:%M:%SZ)" remind words="Time to stretch" ;;
+  remind) openspot toast "$(value words)" ;;
+esac
+```
+
+Remind me in an hour in the ⌘K menu adds a timer. An hour later, Openspot calls `remind` with
+`input.words=Time to stretch`, and a toast shows the words.
+
+- The time is ISO 8601 with its offset, or `someday`, which never comes due. The command prints the timer's id.
+- Openspot checks the inputs against the action as `openspot run` does, and exits 2 on a wrong one.
+- A time that has passed comes due at once, such as after the Mac slept.
+- `openspot timer list` prints an item for each timer of the spot, with its action as `title`, its time as `at` and
+  each input as `input.<name>=`. `openspot timer remove <id>` removes one.
+- A timer lasts across a restart, and only its own spot sees it.

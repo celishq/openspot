@@ -76,10 +76,10 @@ work in a read too. `run` works in a read, but the action it runs can't show a v
 | `openspot spot stats`                              | Prints what each spot cost and used. `openspot guide stats` explains it.                        |
 | `openspot spot actions [id]`                       | Prints each action of a spot and each command of its uses, with their inputs and outputs as JSON Schema. |
 | `openspot schema`                                  | Prints the JSON Schema of `spot.toml`, which an editor checks the file with.                    |
-| `openspot timer add <time> <action> [<name>=<value>...]` | Calls an action of the spot at the time; see [openspot timer](../../PROTOCOL.md#openspot-timer). |
+| `openspot timer add <time> <action> [<name>=<value>...]` | Calls an action of the spot at the time; see [openspot timer](../../docs/protocol/15-commands.md#openspot-timer). |
 | `openspot spot run <spot> <handler> [<name>=<value>...]` | Calls one handler of a spot as a call would, with its inputs checked and its bindings live, and prints its frame and values. |
-| `openspot run <binding>.<action> [<name>=<value>...] [--out <name>] [--stdin <name>]` | Runs an action of a spot that your spot binds, and waits for its values; see [openspot run](../../PROTOCOL.md#openspot-run). |
-| `openspot emit <event> [<name>=<value>...]` | Sends one of your spot's `[events]` to each spot that binds it; see [openspot emit](../../PROTOCOL.md#openspot-emit). |
+| `openspot run <binding>.<action> [<name>=<value>...] [--out <name>] [--stdin <name>]` | Runs an action of a spot that your spot binds, and waits for its values; see [openspot run](../../docs/protocol/09-bindings-and-events.md#openspot-run). |
+| `openspot emit <event> [<name>=<value>...]` | Sends one of your spot's `[events]` to each spot that binds it; see [openspot emit](../../docs/protocol/09-bindings-and-events.md#openspot-emit). |
 | `openspot types [id]` | Writes the types of a `.js` spot to `openspot.d.ts`, or of a `.swift` spot to `Openspot.swift`, beside its script, for the spot of the current folder when there is no id, and prints the file. |
 | `openspot grid edit`                               | Opens the panel in Edit Spots, to arrange the grid.                                             |
 | `openspot store list [--json]`                     | Prints each spot of the store and its step: `get`, `publish`, or `added` once you have it.      |

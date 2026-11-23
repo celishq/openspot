@@ -22,7 +22,7 @@ final class DocReferenceTests: XCTestCase {
     }
 
     func testEachProtocolCitationNamesAHeadingOfTheProtocol() throws {
-        let headings = Set(try RepoDoc("PROTOCOL.md").headings)
+        let headings = Set(try ([RepoDoc("PROTOCOL.md")] + RepoDoc.protocolPages()).flatMap(\.headings))
         let kinds: Set<String> = ["swift", "sh", "js", "md", "py", "toml", "yml"]
         let skipped: Set<String> = [".git", ".temp", ".claude", "plans", "Openspot.xcodeproj", "build"]
         let walk = try XCTUnwrap(FileManager.default.enumerator(at: repo, includingPropertiesForKeys: nil))
@@ -33,7 +33,7 @@ final class DocReferenceTests: XCTestCase {
             for match in RepoDoc.matches(#"\((p)rotocol: ([^)]+)\)"#, in: text) {
                 for name in match[2].components(separatedBy: ", ") {
                     cited += 1
-                    XCTAssertTrue(headings.contains(name), "\(url.path.replacingOccurrences(of: repo.path + "/", with: "")) cites the protocol heading \(name), which PROTOCOL.md lacks")
+                    XCTAssertTrue(headings.contains(name), "\(url.path.replacingOccurrences(of: repo.path + "/", with: "")) cites the protocol heading \(name), which no page of the protocol has")
                 }
             }
         }

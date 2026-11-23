@@ -5,7 +5,7 @@ These rules hold for the core spots in `spots/` and the spots in `examples/`. A 
 
 ## Rules
 
-- A spot folder describes each of its spots in its `spot.toml`, as [The manifest](../PROTOCOL.md#the-manifest) shows.
+- A spot folder describes each of its spots in its `spot.toml`, as [spot.toml](../docs/protocol/02-spot-toml.md) shows.
   A script holds no header.
 - A spot may hold comments.
 - A spot keeps its state in `OPENSPOT_DATA`. A folder from `mktemp` that the spot removes is not state.
@@ -14,7 +14,7 @@ These rules hold for the core spots in `spots/` and the spots in `examples/`. A 
 - A spot's view moves only while `spot.isShown` is true, with SwiftUI's own motion or a moving piece that Openspot
   gives it, such as `spot.media`. [Drawing](../AGENTS.md#drawing) says what each frame may cost.
 - The action that adds to a spot's list is its first item, pinned to the top, with
-  [`pin=top`](../PROTOCOL.md#items).
+  [`pin=top`](../docs/protocol/06-items.md#items).
 - A spot's own app, such as the board of Draw, keeps its own motion. The curves of `app/Shell/Surface/SpotMotion.swift`
   are for the panel.
 

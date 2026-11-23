@@ -294,7 +294,7 @@ final class NewSpotTests: BuiltInCase {
     }
 
     func testTheGuideAndThePartsTakeTheSameKeys() {
-        let blocks = guideText.components(separatedBy: "## Blocks").dropFirst().first?.components(separatedBy: "## Layouts").first ?? ""
+        let blocks = guideText.components(separatedBy: "## Blocks").dropFirst().first?.components(separatedBy: "\n# Layouts").first ?? ""
         for key in BlockKind.commonKeys {
             XCTAssertTrue(blocks.contains("`\(key)"), key)
         }

@@ -20,7 +20,12 @@ struct RepoDoc {
         let help = try FileManager.default.contentsOfDirectory(atPath: repo.appendingPathComponent("app/Help").path)
             .filter { $0.hasSuffix(".md") }.sorted().map { "app/Help/" + $0 }
         return try (["AGENTS.md", "CLAUDE.md", "CONTRIBUTING.md", "GUIDE.md", "PROTOCOL.md", "README.md", "TRUST.md", "USING.md", "spots/AGENTS.md"] + help)
-            .map(RepoDoc.init)
+            .map(RepoDoc.init) + protocolPages()
+    }
+
+    static func protocolPages() throws -> [RepoDoc] {
+        try FileManager.default.contentsOfDirectory(atPath: repo.appendingPathComponent("docs/protocol").path)
+            .filter { $0.hasSuffix(".md") }.sorted().map { try RepoDoc("docs/protocol/" + $0) }
     }
 
     var folder: URL {

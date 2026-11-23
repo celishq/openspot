@@ -121,7 +121,7 @@ final class SpotTablesTests: XCTestCase {
         for example in SheetExamples.all + [SheetExamples.tiles] {
             XCTAssertEqual(FrameCheck(text: example.text).partFaults, [], example.name)
         }
-        for doc in try ["GUIDE.md", "PROTOCOL.md"].map(RepoDoc.init) + RepoDoc.all().filter({ $0.path.hasPrefix("app/Help/") }) {
+        for doc in try ["GUIDE.md", "PROTOCOL.md"].map(RepoDoc.init) + RepoDoc.all().filter({ $0.path.hasPrefix("app/Help/") || $0.path.hasPrefix("docs/protocol/") }) {
             for fence in doc.fences where fence.language == "ini" {
                 for frame in fence.text.components(separatedBy: "\n\(SheetFrames.mark)") {
                     XCTAssertEqual(unknownKeys(in: frame), [], "\(doc.path): \(frame.prefix(60))")
