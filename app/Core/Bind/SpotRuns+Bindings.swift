@@ -97,7 +97,7 @@ extension SpotRuns {
         for sheet in sheets.values {
             for binding in sheet.spot.bindings where binding.spot == spot.id {
                 let heard = Manifest.BoundEvent(binding: binding.name, event: event)
-                if sheet.spot.triggers.bindings.contains(heard) { sheet.trigger(heard.key, inputs: values, key: "\(Manifest.Triggers.table).\(heard.key)") }
+                if sheet.spot.triggers.bindings.contains(heard) { sheet.trigger(Message(.press(heard.key), inputs: values), key: "\(Manifest.Triggers.table).\(heard.key)") }
             }
         }
     }

@@ -83,6 +83,25 @@ final class SpotTypesTests: SpotRunsCase {
         XCTAssertTrue(failed.contains("'uri'"), failed)
     }
 
+    func testTheDeclarationsGiveShowTheEventThatAskedForIt() async throws {
+        guard let tsc else { throw XCTSkip("tsc is not installed on this Mac.") }
+        try write("[on]\n\"panel.open\" = true\nsearch = \".\"", to: folder.appendingPathComponent("warm.spot/spot.toml"))
+        let spot = folder.appendingPathComponent("warm.spot/warm.js")
+        try write("export default {}", to: spot)
+
+        let answer = try await types("warm", in: folder)
+
+        XCTAssertEqual(answer.code, 0, answer.errors)
+        try write("""
+        export default /** @satisfies {import("./openspot").Handlers} */ ({
+          show({ event }) { return event === "panel.open" ? "text=warm\\n" : "text=cold\\n" },
+          search({ text, alt }) { return [text, ...(alt ?? [])].map((word) => ({ title: word })) },
+        })
+        """, to: spot)
+        let checked = try await check(spot, with: tsc)
+        XCTAssertTrue(checked.hasSuffix("exit=0\n"), checked)
+    }
+
     func testTheTypesOfTheCommandsOfEveryUseCompile() async throws {
         let uses = SpotUse.allCases.filter { $0 != .account }.map { "\"\($0.rawValue)\"" }.joined(separator: ", ")
         let toml = "uses = [\(uses)]\n[actions.go]\ninputs.when = 'text'\n"

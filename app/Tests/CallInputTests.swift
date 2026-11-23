@@ -173,7 +173,7 @@ final class CallInputTests: SpotRunsCase {
         let store = try secrets(["token": marker])
         let settings = try SpotSettings(file: file, secrets: store, spot: "script", fields: [field("token", secret: true)], showsInMenuBar: false, keys: [])
 
-        _ = try settings.answer(["clear", "setting:script:token"])
+        _ = try settings.answer(["clear"], input: "input.item=setting:script:token\n")
 
         XCTAssertEqual(try SecretStore(file: store.file).read(), [:])
         XCTAssertNil(file.read().setting("token", of: "script"))

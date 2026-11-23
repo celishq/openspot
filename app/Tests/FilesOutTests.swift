@@ -52,7 +52,7 @@ final class FilesOutTests: XCTestCase {
     }
 
     func testTheDragCallNamesEachRow() {
-        XCTAssertEqual(SpotWords.drag(runs: ["a", "b c"]).arguments, ["drag", "a", "b c"])
+        XCTAssertEqual(Handler.drag.message(["a", "b c"]).block(id: 1), "call=1\narg=drag\ninput.item=a\ninput.item=b c\n\n")
     }
 
     func testADragOutTellsTheScriptAndADragOfEveryFileClosesTheFloat() async throws {

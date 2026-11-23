@@ -132,10 +132,10 @@ final class SheetStreamTests: XCTestCase {
 
     func testACallOfAStayingScriptIsOneBlock() {
         XCTAssertEqual(Message(.show).block(id: 1), "call=1\narg=show\n\n")
-        XCTAssertEqual(Message(.show, event: .clock(60)).block(id: 5), "call=5\narg=show\nevent=clock.60\n\n")
+        XCTAssertEqual(ShowEvent.clock.message().block(id: 5), "call=5\narg=every\n\n")
         XCTAssertEqual(Message(.press("swap")).block(id: 2), "call=2\narg=swap\n\n")
         XCTAssertEqual(Message(.set("input", to: "one\ntwo")).block(id: 3), "call=3\narg=input\narg=one\\ntwo\n\n")
-        XCTAssertEqual(Message(.drop(paths: ["/a b.mov", "-rf.mov"])).block(id: 4), "call=4\narg=drop\narg=/a b.mov\narg=-rf.mov\n\n")
+        XCTAssertEqual(Handler.drop.message(["/a b.mov", "-rf.mov"]).block(id: 4), "call=4\narg=drop\ninput.file=/a b.mov\ninput.file=-rf.mov\n\n")
     }
 
     func testTheBlockHoldsEachLineOfTheStdinOfTheCall() {

@@ -74,8 +74,9 @@ public actor AccountSheet {
 
     func answer(_ arguments: [String], input: String?) async throws -> HostAnswer {
         let fields = TextBlock.blocks(in: input ?? "").first
-        let reason = fields?.value("event")
-        let page = fields?.value("route").flatMap(Page.init(rawValue:))
+        let reason = fields?.value("input.event")
+        let page = fields?.value("input.route").flatMap(Page.init(rawValue:))
+        let value = fields?.value("input.value")
         var toast: String?
         var phrase = ""
         var handle: String?
@@ -96,11 +97,11 @@ public actor AccountSheet {
                 move = .popAll
             }
         case "phrase":
-            phrase = arguments.count > 1 ? arguments[1] : ""
+            phrase = value ?? ""
         case "new":
             move = .push(.handle)
         case "handle":
-            handle = AccountHandle.suggestion(from: arguments.dropFirst().first ?? "")
+            handle = AccountHandle.suggestion(from: value ?? "")
         case "create":
             let typed = AccountHandle.suggestion(from: fields?.value("input.handle") ?? "")
             guard AccountHandle(typed) != nil else {
@@ -113,7 +114,7 @@ public actor AccountSheet {
         case "own":
             move = .push(.restore)
         case "card":
-            if arguments.dropFirst().first == "copy", let npub = try account.status().npub, await links.copy(npub) { toast = "Copied your key" }
+            if value == "copy", let npub = try account.status().npub, await links.copy(npub) { toast = "Copied your key" }
         case "how":
             move = .push(.how)
         case "about":
@@ -138,7 +139,7 @@ public actor AccountSheet {
             toast = "Signed out"
             move = .popAll
         case "sync":
-            try await account.sync(arguments.dropFirst().first == "true")
+            try await account.sync(value == "true")
         case let id where id.hasPrefix("pick-"):
             (toast, move) = try await picked(id)
         default:

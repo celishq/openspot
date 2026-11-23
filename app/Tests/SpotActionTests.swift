@@ -1,15 +1,16 @@
 import XCTest
 @testable import OpenspotCore
 
+@MainActor
 final class SpotActionTests: XCTestCase {
     func testTogglingAnOffSpotSendsOn() {
         let state = SpotState(title: "Focus", on: false, control: "focus")
-        XCTAssertEqual(SpotWords.toggle(state).arguments, ["focus", "true"])
+        XCTAssertEqual(SpotRun.toggling(state).block(id: 1), "call=1\narg=focus\ninput.value=true\n\n")
     }
 
     func testTogglingAnOnSpotSendsOff() {
         let state = SpotState(title: "Wi-Fi", on: true, control: "wifi")
-        XCTAssertEqual(SpotWords.toggle(state).arguments, ["wifi", "false"])
+        XCTAssertEqual(SpotRun.toggling(state).block(id: 1), "call=1\narg=wifi\ninput.value=false\n\n")
     }
 
     func testTheCommandOfAManifestSendsItsOwnID() throws {
@@ -18,31 +19,31 @@ final class SpotActionTests: XCTestCase {
     }
 
     func testASliderLevelIsSentAsARoundedNumber() {
-        XCTAssertEqual(SpotWords.level(69.6, of: "volume").arguments, ["volume", "70"])
+        XCTAssertEqual(SpotRun.level(69.6, of: "volume").block(id: 1), "call=1\narg=volume\ninput.value=70\n\n")
     }
 
     func testAClickOnACardWithAReadKeyCallsPressWithNoItem() {
         let url = URL(fileURLWithPath: "/x")
 
-        XCTAssertEqual(Message(Spot(id: "a", name: "A", url: url, triggers: .panel).click).handled().block(id: 1), "call=1\narg=press\n\n")
+        XCTAssertEqual(Message(Spot(id: "a", name: "A", url: url, triggers: .panel).click).block(id: 1), "call=1\narg=press\n\n")
     }
 
     func testAClickOnAFileWithNoReadCallsPressWithNoItem() {
         let url = URL(fileURLWithPath: "/x")
 
-        XCTAssertEqual(Message(Spot(id: "a", name: "A", url: url).click).handled().block(id: 1), "call=1\narg=press\n\n")
+        XCTAssertEqual(Message(Spot(id: "a", name: "A", url: url).click).block(id: 1), "call=1\narg=press\n\n")
     }
 
     func testAListItemCallsPressWithItsRunAsTheItem() {
-        XCTAssertEqual(Message(.item(SpotItem(title: "1 hour", run: "3600"))).handled().block(id: 1), "call=1\narg=press\ninput.item=3600\n\n")
+        XCTAssertEqual(Handler.press.message(["3600"]).block(id: 1), "call=1\narg=press\ninput.item=3600\n\n")
     }
 
     func testAReadHasNoArgumentsAndItsTextGoesOnStdinWithEachForm() {
         XCTAssertEqual(SpotWords.show.arguments, ["show"])
         let rep = SearchQuery(text: "rep", layouts: [])
         let safari = SearchQuery(text: "сафари", layouts: [])
-        XCTAssertEqual(Message(.show, search: rep.text, searchForms: rep.forms).text, "search=rep\n")
-        XCTAssertEqual(Message(.show, search: safari.text, searchForms: safari.forms).text, "search=сафари\nsearch.alt=safari\n")
+        XCTAssertEqual(ShowEvent.typed(rep.text, inSheet: false).message(search: rep).text, "input.text=rep\n")
+        XCTAssertEqual(ShowEvent.typed(safari.text, inSheet: false).message(search: safari).text, "input.text=сафари\ninput.alt=safari\n")
     }
 
     func testAnActionSendsItsIdAndItsItem() {

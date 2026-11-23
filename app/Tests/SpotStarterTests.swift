@@ -52,7 +52,8 @@ final class SpotStarterTests: XCTestCase {
         let rows = try await spot.answer(.show, timeout: 10).items
 
         _ = try await TestEnvironment.with(["PATH": "\(tools.path):/usr/bin:/bin"]) {
-            let message = Message(.item(try XCTUnwrap(rows.last)), item: rows.last?.fields ?? []).handled()
+            let row = try XCTUnwrap(rows.last)
+            let message = Handler.press.message([row.run], then: row.carried)
             return try await spot.answer(message.words, input: message.text, timeout: 10)
         }
 

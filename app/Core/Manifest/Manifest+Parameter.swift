@@ -71,7 +71,7 @@ extension Manifest {
             self.options = options
         }
 
-        init(name: String, type: ValueType, isRequired: Bool = true) {
+        init(name: String, type: ValueType, isRequired: Bool = true, options: [String] = []) {
             self.name = name
             self.type = type
             self.isRequired = isRequired
@@ -79,7 +79,7 @@ extension Manifest {
             title = nil
             icon = nil
             detail = nil
-            options = []
+            self.options = options
         }
 
         func fault(in values: [String]) -> String? {

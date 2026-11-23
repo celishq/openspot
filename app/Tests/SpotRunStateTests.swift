@@ -63,7 +63,7 @@ final class SpotRunStateTests: XCTestCase {
         clock.advance(by: 0.1)
 
         try await wait("the search") { link.sent.count == 2 }
-        XCTAssertEqual(link.sent[1].request.message.text, "search=rep\n")
+        XCTAssertEqual(link.sent[1].request.message.text, "input.value=rep\n")
     }
 
     func testAStoppedSearchChangesNothing() async throws {
@@ -208,12 +208,12 @@ final class SpotRunStateTests: XCTestCase {
         let (sheet, link, first) = await readInMenuBar()
 
         sheet.open {}
-        sheet.show(need: .clock, event: ShowEvent(event: "clipboard.change", value: nil))
+        sheet.show(need: .clock, event: .event("clipboard.change", value: nil))
         await link.end(link.sent[first])
-        XCTAssertEqual(link.sent.dropFirst(first).map(\.request.event?.rawValue), ["panel.open", "sheet.open"])
+        XCTAssertEqual(link.sent.dropFirst(first).map(\.request.event?.name), ["panel.open", "sheet.open"])
         await link.end(link.sent[first + 1])
 
-        XCTAssertEqual(link.sent.dropFirst(first).map(\.request.event?.rawValue), ["panel.open", "sheet.open", "clipboard.change"])
+        XCTAssertEqual(link.sent.dropFirst(first).map(\.request.event?.name), ["panel.open", "sheet.open", "clipboard.change"])
     }
 
     func testASheetThatClosesDuringAReadGetsNoReadForItsOpen() async throws {
@@ -224,7 +224,7 @@ final class SpotRunStateTests: XCTestCase {
         await link.end(link.sent[first])
 
         XCTAssertFalse(link.sent[first].made.isStopped)
-        XCTAssertEqual(link.sent.dropFirst(first).map(\.request.event?.rawValue), ["panel.open"])
+        XCTAssertEqual(link.sent.dropFirst(first).map(\.request.event?.name), ["panel.open"])
     }
 
     func testWorkShorterThanItsPauseTellsNoReaderOfTheWorkOrTheMenuBar() async throws {

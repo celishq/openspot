@@ -277,7 +277,7 @@ final class CaffeinateSpotTests: XCTestCase {
 
         try await wait("the time left on the card") { sheet.shownState.subtitle == "30m left" }
         XCTAssertEqual(running().count, 1)
-        XCTAssertEqual(sheet.calls.map(\.words.arguments), [["press", "1800"]])
+        XCTAssertEqual(sheet.calls.map(\.key), ["call:press\n1800"])
         XCTAssertEqual(sheet.list.all.first?.run, "off")
     }
 
@@ -345,7 +345,7 @@ final class CaffeinateSpotTests: XCTestCase {
         try await pick("7200", in: sheet)
 
         try await wait("one new caffeinate") { self.awake().count == 2 && self.running().count == 1 }
-        try await wait("the one call") { sheet.calls.map(\.words.arguments) == [["press", "7200"]] }
+        try await wait("the one call") { sheet.calls.map(\.key) == ["call:press\n7200"] }
         XCTAssertEqual(running(), [awake()[1]])
     }
 

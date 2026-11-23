@@ -373,7 +373,7 @@ final class ShellHelperTests: XCTestCase {
         let live = ScriptProcess(url: url, mode: .stays, limit: 60)
         var frames = live.start().makeAsyncIterator()
 
-        live.send(Message(.show, event: ShowEvent(event: "music.track", value: "Song"), inputs: [.init(key: "a", value: "held")]), id: 1)
+        live.send(Message(.show, inputs: [.init(key: "a", value: "held")], given: "event=music.track\nevent.value=Song\n"), id: 1)
         live.send(text: SpotWords.stopEvent(id: 1))
         live.send(Message(.press("go")), id: 2)
         live.end()

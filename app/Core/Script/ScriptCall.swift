@@ -19,17 +19,16 @@ public final class ScriptCall: Identifiable {
     @ObservationIgnored var halt: () -> Void = {}
     @ObservationIgnored private(set) var heard = 0
 
-    init(words: SpotWords, key: String, started: Date) {
+    public let isAct: Bool
+
+    init(words: SpotWords, isAct: Bool, key: String, started: Date) {
         self.words = words
+        self.isAct = isAct
         self.key = key
         self.started = started
     }
 
     nonisolated deinit {}
-
-    public var isAct: Bool {
-        words.arguments.first != SpotWords.show.arguments.first
-    }
 
     public var fill: Double? {
         status?.number("progress").map { min(max($0, 0), 1) }

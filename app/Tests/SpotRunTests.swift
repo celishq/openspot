@@ -599,7 +599,7 @@ final class SpotRunTests: XCTestCase {
         try await wait("the rows of the text") { sheet.list.shown.map(\.title) == ["Ax"] && !sheet.isShowing }
         sheet.close()
 
-        sheet.show(need: .clock, event: .clock(60))
+        sheet.show(need: .clock, event: .clock)
 
         try await wait("a new value") { sheet.reading.value?.title == "3" && !sheet.isShowing }
         XCTAssertEqual(sheet.list.shown.map(\.title), ["Ax"])

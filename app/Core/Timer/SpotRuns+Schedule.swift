@@ -23,8 +23,8 @@ extension SpotRuns {
                 if due <= time {
                     schedule.ran(line, of: id, at: time)
                     isChanged = true
-                    let inputs: [TextBlock.Field] = [.init(key: "cron", value: line.text), .init(key: "late", value: String(max(0, Int(time.timeIntervalSince(due)))))]
-                    sheet.trigger(Manifest.Triggers.schedule, inputs: inputs, key: "\(Manifest.Triggers.schedule).\(line.text)")
+                    let late = String(max(0, Int(time.timeIntervalSince(due))))
+                    sheet.trigger(Handler.schedule.message([line.text], [late]), key: "\(Handler.schedule.name).\(line.text)")
                     next = Self.earlier(next, line.next(after: time))
                 } else {
                     next = Self.earlier(next, due)

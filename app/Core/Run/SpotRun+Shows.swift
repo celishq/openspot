@@ -25,7 +25,7 @@ extension SpotRun {
         let typed = query.isEmpty ? typed ?? "" : query
         let search = typed.isEmpty ? nil : SearchQuery(text: typed)
         let isSent = send(Call(
-            message: Message(.show, inputs: showsSheet ? panel?.inputs ?? [] : [], search: search?.text, searchForms: search?.forms ?? []),
+            message: event.message(after: showsSheet ? panel?.inputs ?? [] : [], search: search),
             key: Self.showKey,
             limit: runs.showLimit,
             event: event,
@@ -66,12 +66,12 @@ extension SpotRun {
         if let older = running(Self.searchKey) { stop(older) }
         pauses[Self.searchKey]?.cancel()
         pauses[Self.searchKey] = nil
-        let search = SearchQuery(text: query)
+        let event = ShowEvent.typed(query, inSheet: true)
         send(Call(
-            message: Message(.show, inputs: showsSheet ? panel?.inputs ?? [] : [], search: search.text, searchForms: search.forms),
+            message: event.message(after: showsSheet ? panel?.inputs ?? [] : [], search: SearchQuery(text: query)),
             key: Self.searchKey,
             limit: runs.showLimit,
-            event: .text(query, inSheet: true),
+            event: event,
             purpose: .ask(.search(query))
         ))
     }
@@ -91,12 +91,12 @@ extension SpotRun {
             takeAnswers([])
             return
         }
-        let search = runs.search(of: text)
+        let event = ShowEvent.typed(text, inSheet: false)
         send(Call(
-            message: Message(.show, search: search.text, searchForms: search.forms),
+            message: event.message(search: runs.search(of: text)),
             key: Self.answerKey,
             limit: runs.showLimit,
-            event: .text(text, inSheet: false),
+            event: event,
             purpose: .ask(.answer(text))
         ))
     }

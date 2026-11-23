@@ -154,7 +154,7 @@ final class ReposSpotTests: SampleSpotsCase {
             let pages = repos.taking(output).actions.filter { $0.title.hasPrefix("Open on ") }
             let app = try XCTUnwrap(output.items.first { $0.title == "app" })
             let github = try XCTUnwrap(pages.first { $0.title == "Open on GitHub" })
-            try await kept(in: folder) { try await repos.perform(.action(github, item: app), input: Message(.action(github, item: app), item: app.fields).text, timeout: 60) }
+            try await kept(in: folder) { try await repos.perform(.action(github, item: app), input: TextBlock(fields: app.fields.map { .init(key: "item.\($0.key)", value: $0.value) }).text, timeout: 60) }
 
             XCTAssertEqual(pages.map(\.title), ["Open on git.example.com", "Open on GitHub", "Open on GitLab"])
             XCTAssertEqual(output.items.map(\.title), ["app", "lab", "local", "own"])

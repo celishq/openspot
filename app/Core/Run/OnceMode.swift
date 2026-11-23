@@ -30,7 +30,7 @@ class OnceMode: ScriptMode {
         let made = call.made
         let spot = run.spot
         let values = run.fieldValues
-        let (stream, halt, process) = runs.mode(of: run.spot).frames(of: run.spot, run.message(of: request, values: values), limit: request.limit, reason: request.event?.rawValue, variables: [:], call: call, in: runs)
+        let (stream, halt, process) = runs.mode(of: run.spot).frames(of: run.spot, run.message(of: request, values: values), limit: request.limit, reason: request.event?.name, variables: [:], call: call, in: runs)
         made.halt = halt
         asking.open(call, in: run)
         Task { [weak run, runs, asking] in

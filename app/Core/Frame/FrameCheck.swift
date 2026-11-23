@@ -1,5 +1,5 @@
 public struct FrameCheck: Equatable, Sendable {
-    public static let calls = ["show", Frame.press, Manifest.Triggers.command, Manifest.Triggers.search, Manifest.Triggers.every, Manifest.Triggers.schedule, Manifest.Triggers.drop, "drag"]
+    public static let calls = Handler.all.map(\.name)
 
     public let output: Frame
     public let partFaults: [String]

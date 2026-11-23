@@ -3,14 +3,14 @@ import Foundation
 extension Manifest {
     public struct Triggers: Equatable, Sendable {
         static let table = "on"
-        static let command = "command"
-        static let search = "search"
-        static let schedule = "schedule"
-        static let every = "every"
-        static let drop = "drop"
+        static let command = Handler.command.name
+        static let search = Handler.search.name
+        static let schedule = Handler.schedule.name
+        static let every = Handler.every.name
+        static let drop = Handler.drop.name
         static let keys = [command, search, schedule, every, drop]
         static let events = SpotEvent.known
-        static let named: Set<String> = ["show", "press", "drag"]
+        private static let named = [Handler.show, .press, .drag]
         private static let spaces = Set(SpotEvent.known.compactMap { $0.split(separator: ".").first.map(String.init) } + ["clock", "timer"])
 
         public let commands: [String]
@@ -126,14 +126,14 @@ extension Manifest {
             self.init(events: events, every: every, search: search, lists: lists, drop: drop, commands: commands, schedule: schedule, filters: filters, bindings: bindings)
         }
 
-        var handlers: Set<String> {
-            var names = Self.named.union(events)
-            if !commands.isEmpty { names.insert(Self.command) }
-            if search != nil { names.insert(Self.search) }
-            if !schedule.isEmpty { names.insert(Self.schedule) }
-            if every != nil { names.insert(Self.every) }
-            if !drop.isEmpty { names.insert(Self.drop) }
-            return names
+        var handlers: [Handler] {
+            var handlers = Self.named + events.filter { !ShowEvent.moments.contains($0) }.map(Handler.event)
+            if !commands.isEmpty { handlers.append(.command) }
+            if search != nil { handlers.append(.search) }
+            if !schedule.isEmpty { handlers.append(.schedule) }
+            if every != nil { handlers.append(.every) }
+            if !drop.isEmpty { handlers.append(.drop) }
+            return handlers
         }
 
         public var shows: Bool {
@@ -180,7 +180,8 @@ extension Manifest {
             if let bound = bindings.first(where: { bound in !manifest.bindings.contains { $0.name == bound.binding } }) {
                 throw SpotError.fault("\(name) has [on] \(bound.key), which names no binding \(bound.binding). Add it to [bindings], such as \(bound.binding) = { spot = \"<id>\" }")
             }
-            if let action = manifest.actions.first(where: { handlers.contains($0.id) }) {
+            let names = Set(handlers.map(\.name) + events)
+            if let action = manifest.actions.first(where: { names.contains($0.id) }) {
                 throw SpotError.fault("\(name) has \(action.section), which takes the name of a handler that its [on] calls. Give the action another ID")
             }
         }

@@ -4,43 +4,20 @@ public struct Message: Equatable, Sendable {
     static let argumentLimit = 65_536
 
     public var words: SpotWords
-    public var event: ShowEvent?
-    public var route: String?
-    public var item: [TextBlock.Field]
     public var inputs: [TextBlock.Field]
-    public var search: String?
-    public var searchForms: [String]
     public var given: String?
     public var settings: [TextBlock.Field]
 
-    public init(_ words: SpotWords, event: ShowEvent? = nil, route: String? = nil, item: [TextBlock.Field] = [], inputs: [TextBlock.Field] = [], search: String? = nil, searchForms: [String] = [], given: String? = nil, settings: [TextBlock.Field] = []) {
+    public init(_ words: SpotWords, inputs: [TextBlock.Field] = [], given: String? = nil, settings: [TextBlock.Field] = []) {
         self.words = words
-        self.event = event
-        self.route = route
-        self.item = item
         self.inputs = inputs
-        self.search = search
-        self.searchForms = searchForms
         self.given = given
         self.settings = settings
     }
 
-    var keys: [TextBlock.Field] {
-        var keys: [TextBlock.Field] = []
-        if let event {
-            keys.append(.init(key: "event", value: event.rawValue))
-            if let value = event.value { keys.append(.init(key: "event.value", value: value)) }
-        }
-        if let route { keys.append(.init(key: "route", value: route)) }
-        keys += item.map { .init(key: "item.\($0.key)", value: $0.value) }
-        keys += inputs.map { .init(key: "input.\($0.key)", value: $0.value) }
-        if let search { keys.append(.init(key: "search", value: search)) }
-        keys += searchForms.map { .init(key: "search.alt", value: $0) }
-        return keys
-    }
-
     public var text: String? {
         let settings = settings.map { TextBlock.Field(key: "setting.\($0.key)", value: $0.value) }
+        let keys = inputs.map { TextBlock.Field(key: "input.\($0.key)", value: $0.value) }
         let text = TextBlock(fields: keys).text + (given ?? "") + TextBlock(fields: settings).text
         return text.isEmpty && given == nil ? nil : text
     }

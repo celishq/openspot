@@ -59,6 +59,10 @@ public struct SpotItem: Equatable, Sendable {
         self.showsWords = showsWords
     }
 
+    var carried: [TextBlock.Field] {
+        fields.map { .init(key: "item.\($0.key)", value: $0.value) }
+    }
+
     init?(block: TextBlock, kind: BlockKind, section: String?) {
         guard let run = block.value(kind.word) else { return nil }
         let hides = block.values(ItemKey.hides)

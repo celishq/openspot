@@ -72,9 +72,10 @@ public struct SpotSettings: Equatable, Sendable {
         return key
     }
 
-    func answer(_ arguments: [String]) throws -> String {
-        let row = arguments.dropFirst().first
-        switch (arguments.first, row.flatMap(self.row)) {
+    func answer(_ arguments: [String], input: String? = nil) throws -> String {
+        let fields = TextBlock.blocks(in: input ?? "").first
+        let value = fields?.value("input.value")
+        switch (arguments.first, fields?.value("input.item").flatMap(self.row)) {
         case ("show", _):
             return sheet(in: file.read(), secrets: try secrets.read()[spot] ?? [:])
         case (Self.clear, let found?):
@@ -86,10 +87,10 @@ public struct SpotSettings: Equatable, Sendable {
         case (Self.open, .window):
             try file.change { $0.arrangement.set(isWindow: !isWindow(in: $0), of: spot) }
             return ""
-        case (let id?, nil) where arguments.count == 2:
-            guard case .key(let act)? = self.row(id), keys.contains(where: { $0.act == act }) else { throw SpotError.failed(1, "This sheet cannot do that.") }
-            guard let trigger = Trigger(text: arguments[1]) else {
-                throw SpotError.failed(1, "Openspot cannot use `\(arguments[1])`. Hold cmd, ctrl or option with a letter, a digit, an arrow, space, return or tab, or use shake.")
+        case (let id?, nil) where value != nil:
+            guard case .key(let act)? = self.row(id), keys.contains(where: { $0.act == act }), let value else { throw SpotError.failed(1, "This sheet cannot do that.") }
+            guard let trigger = Trigger(text: value) else {
+                throw SpotError.failed(1, "Openspot cannot use `\(value)`. Hold cmd, ctrl or option with a letter, a digit, an arrow, space, return or tab, or use shake.")
             }
             try file.change { $0.assign(trigger, to: spot, act: act) }
             return ""

@@ -20,7 +20,7 @@ extension SpotRuns {
     public func launched() {
         readTimers()
         for sheet in sheets.values where sheet.spot.showsAtLaunch {
-            sheet.showToEnd(event: ShowEvent(event: SpotEvent.appLaunch, value: nil))
+            sheet.showToEnd(event: .event(SpotEvent.appLaunch, value: nil))
         }
     }
 
@@ -111,7 +111,7 @@ extension SpotRuns {
 
     func want(_ id: String) {
         guard let sheet = sheets[id], sheet.spot.triggers.has(.event(SpotEvent.spotWant)), wanted.insert(id).inserted else { return }
-        sheet.show(need: .change, event: ShowEvent(event: SpotEvent.spotWant, value: nil))
+        sheet.show(need: .change, event: .event(SpotEvent.spotWant, value: nil))
     }
 
     private func openPanel(showsToEnd: Bool = false) {
@@ -140,7 +140,7 @@ extension SpotRuns {
         let time = now()
         for sheet in sheets.values where sheet.isWanted && sheet.spot.triggers.seconds != nil {
             sheet.clockShown = time
-            sheet.show(need: .clock, event: .clock(sheet.spot.triggers.seconds))
+            sheet.show(need: .clock, event: .clock)
         }
         sheets.values.forEach { $0.settleScript() }
         updateClock()
@@ -150,7 +150,7 @@ extension SpotRuns {
 
     private func show(_ name: String, _ value: String?, showsEachSpot: Bool) {
         for sheet in sheets.values where (showsEachSpot || sheet.isWanted) && sheet.spot.triggers.admits(name, value: value) {
-            sheet.show(need: showsEachSpot ? .change : .clock, event: ShowEvent(event: name, value: value))
+            sheet.show(need: showsEachSpot ? .change : .clock, event: .event(name, value: value))
         }
     }
 

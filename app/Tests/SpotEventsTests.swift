@@ -168,8 +168,8 @@ final class SpotEventsTests: SpotRunsCase {
     }
 
     func testAStayingScriptGetsTheValueOfItsEvent() {
-        XCTAssertEqual(Message(.show, event: ShowEvent(event: SpotEvent.powerChange, value: "ac")).handled().block(id: 3), "call=3\narg=power.change\ninput.value=ac\n\n")
-        XCTAssertEqual(Message(.show, event: .panel).handled().block(id: 3), "call=3\narg=show\ninput.event=panel.open\n\n")
+        XCTAssertEqual(ShowEvent.event(SpotEvent.powerChange, value: "ac").message().block(id: 3), "call=3\narg=power.change\ninput.value=ac\n\n")
+        XCTAssertEqual(ShowEvent.panel.message().block(id: 3), "call=3\narg=show\ninput.event=panel.open\n\n")
     }
 
     func testASpotThatListsAnEventCanShowInTheMenuBar() throws {

@@ -305,7 +305,7 @@ final class DrawSpotTests: XCTestCase {
 
         sheet.pick(try row("flows", in: sheet))
         let held = try XCTUnwrap(link.sent.last)
-        XCTAssertEqual(held.request.words.arguments, ["press", "0:flows"])
+        XCTAssertEqual(SpotRun.item(of: held.request.message), "0:flows")
         await link.frame("call=2\n\nitem=1:new\ntitle=New board\n\nitem=1:flows\ntitle=Flows\n", of: held)
         sheet.close()
         runs.panelClosed()
@@ -316,7 +316,7 @@ final class DrawSpotTests: XCTestCase {
         XCTAssertEqual(sheet.calls.map(\.id), [held.made.id])
 
         sheet.pick(try row("flows", in: sheet))
-        XCTAssertEqual(link.sent.last?.request.words.arguments, ["press", "1:flows"])
+        XCTAssertEqual(link.sent.last.flatMap { SpotRun.item(of: $0.request.message) }, "1:flows")
         XCTAssertFalse(held.made.isStopped)
         await link.end(try XCTUnwrap(link.sent.last))
         for read in link.sent.dropFirst() where read.request.words == .show { await link.end(read) }

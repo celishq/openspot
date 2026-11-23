@@ -57,7 +57,7 @@ final class CallLogTests: SpotRunsCase {
         try script(toml: "[on]\n'panel.open' = true", "\(TestSpot.event)\necho \"title=$ev\"")
         let sheet = try sheet()
 
-        sheet.show(event: .clock(60))
+        sheet.show(event: .clock)
         try await wait("the end of the timed read") { self.log().count == 1 && sheet.calls.isEmpty }
         time += 10
         sheet.show(event: .panel)
@@ -70,7 +70,7 @@ final class CallLogTests: SpotRunsCase {
         try script(toml: "[on]\n'panel.open' = true", "echo 'The sensor is gone.' >&2; exit 2")
         let sheet = try sheet()
 
-        sheet.show(event: .clock(60))
+        sheet.show(event: .clock)
 
         try await wait("the record") { self.log.text(of: "script").contains("The sensor is gone.") }
     }

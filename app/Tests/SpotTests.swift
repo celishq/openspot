@@ -168,7 +168,7 @@ final class SpotTests: XCTestCase {
     func testPerformPassesTheActionArguments() async throws {
         let command = try writeCommand(kind: .toggle, "echo \"$*\" > '\(marker.path)'")
 
-        try await command.perform(.toggle(SpotState(title: "Focus", on: false, control: "focus")), timeout: 60)
+        try await command.perform(.set("focus", to: "true"), timeout: 60)
 
         XCTAssertEqual(try String(contentsOf: marker, encoding: .utf8), "focus true\n")
     }

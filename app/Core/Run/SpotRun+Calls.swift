@@ -23,15 +23,6 @@ extension SpotRun {
         return spot.typedActions.first { $0.id == id }
     }
 
-    func pressing(_ message: Message, as name: String) -> Message {
-        let arguments = message.words.arguments
-        guard arguments.count > 1, spot.takesHandlers else { return message }
-        var message = message
-        message.words = .press(arguments[0])
-        message.inputs.append(.init(key: name, value: arguments[1]))
-        return message
-    }
-
     private func refuse(_ call: Call, _ error: Error) {
         switch call.purpose {
         case .form(let waiting):
@@ -170,7 +161,7 @@ extension SpotRun {
             if case .stopped = end { act.first?.end(.stopped) } else { act.first?.end(.done) }
         }
         let isAnswer = if case .ask(let ask) = purpose { ask.isAnswer } else { false }
-        if case .ended = end, failure != nil, !isAnswer, failedItem == nil || Self.item(of: call.request.words) == failedItem {
+        if case .ended = end, failure != nil, !isAnswer, failedItem == nil || Self.item(of: call.request.message) == failedItem {
             failure = nil
             failedItem = nil
         }
@@ -199,7 +190,7 @@ extension SpotRun {
         case (.act(let act), .failed(let error)):
             answered = nil
             if let undo = act.undo { state = undo }
-            let item = Self.item(of: call.request.words)
+            let item = Self.item(of: call.request.message)
             fail(error, item: item)
             if runs.isPanelOpen, let started = act.started, runs.now().timeIntervalSince(started) < MotionTokens.refusalWindow { onReport(.refused(item)) }
             if act.showsAfter { showOnce() }
@@ -211,7 +202,7 @@ extension SpotRun {
         showAgainIfAsked()
     }
 
-    static func item(of words: SpotWords) -> String? {
-        words.arguments.first == Frame.press && words.arguments.count > 1 ? words.arguments[1] : nil
+    static func item(of message: Message) -> String? {
+        message.words == .press(Handler.press.name) ? message.inputs.first { $0.key == itemInput }?.value : nil
     }
 }

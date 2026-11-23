@@ -19,7 +19,7 @@ extension SpotRuns {
                     sheet.clockShown = nil
                 } else if sheet.clockShown == nil {
                     sheet.clockShown = time
-                    sheet.show(need: .clock, event: .clock(nil))
+                    sheet.show(need: .clock, event: .want)
                 }
                 continue
             }
@@ -28,7 +28,7 @@ extension SpotRuns {
                 due = min(due ?? .distantFuture, last.addingTimeInterval(seconds))
             } else {
                 sheet.clockShown = time
-                sheet.show(need: .clock, event: .clock(seconds))
+                sheet.show(need: .clock, event: .clock)
                 due = min(due ?? .distantFuture, time.addingTimeInterval(seconds))
             }
         }

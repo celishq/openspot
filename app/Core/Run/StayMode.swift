@@ -69,9 +69,11 @@ final class StayMode: ScriptMode {
     static func answer(of spot: Spot, _ words: SpotWords, input: String?, limit: TimeInterval?, variables: [String: String], in runs: SpotRuns) async throws -> String {
         guard words == .show else { return try await collect(of: spot, words, input: input, limit: limit, variables: variables, in: runs) }
         let (script, frames, caller) = runs.stay(spot, limit: limit)
-        caller.reason = ShowEvent.panel.rawValue
+        caller.reason = ShowEvent.panel.name
         defer { script.end() }
-        script.send(Message(.show, event: .panel, given: input).handled(), id: 1)
+        var show = ShowEvent.panel.message()
+        show.given = input
+        script.send(show, id: 1)
         for try await frame in frames {
             let head = FrameRoot(text: frame)
             if !head.isMark || head.end == "1" { return frame }
@@ -182,7 +184,7 @@ final class StayMode: ScriptMode {
         drawn = nil
         slowAsks = 0
         let event = event ?? startEvent
-        let show = SpotRun.Call(message: Message(.show), key: SpotRun.showKey, event: event, purpose: .ask(.show(generation: nil, reports: true)))
+        let show = SpotRun.Call(message: event.message(), key: SpotRun.showKey, event: event, purpose: .ask(.show(generation: nil, reports: true)))
         open(OpenCall(show, started: runs.now()), on: script, isTimed: false)
         Task { await follow(script, frames) }
     }
@@ -204,7 +206,7 @@ final class StayMode: ScriptMode {
         let request = call.request
         records[id] = record
         call.made.halt = { [weak script] in script?.send(text: SpotWords.stopEvent(id: id)) }
-        if case .ask = request.purpose { askReason = request.event?.rawValue }
+        if case .ask = request.purpose { askReason = request.event?.name }
         caller?.call = call
         noteReason()
         script.send(run.map { $0.message(of: request, values: $0.fieldValues) } ?? request.message, id: id)

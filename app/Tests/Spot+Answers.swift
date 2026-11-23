@@ -20,8 +20,9 @@ extension Spot {
     }
 
     func items(query: String = "", input: String? = nil, page: String? = nil, timeout: TimeInterval) async throws -> Frame {
-        let event = query.isEmpty ? nil : ShowEvent.text(query, inSheet: self.triggers.search == nil)
-        let message = Message(.show, event: event, route: page, search: query.isEmpty ? nil : query, given: input).handled()
+        var message = query.isEmpty ? Message(.show) : ShowEvent.typed(query, inSheet: self.triggers.search == nil).message()
+        if let page { message.inputs.append(.init(key: "route", value: page)) }
+        message.given = input
         let text = message.text
         return try await output(message.words, input: text?.isEmpty == true ? nil : text, timeout: timeout)
     }
@@ -36,7 +37,7 @@ extension Spot {
 
     private func message(_ action: CommandAction, item: SpotItem?, inputs: [TextBlock.Field] = []) -> Message {
         let call = SpotWords.action(action, item: item)
-        guard self.takesHandlers, call.arguments.count > 1 else { return Message(call, inputs: inputs) }
+        guard call.arguments.count > 1 else { return Message(call, inputs: inputs) }
         return Message(.press(call.arguments[0]), inputs: [.init(key: "item", value: call.arguments[1])] + inputs)
     }
 

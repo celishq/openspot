@@ -42,14 +42,18 @@ final class AccountSheetTests: BuiltInCase {
     }
 
     private func frame(_ arguments: [String], input: String? = nil, reason: String = "sheet.open", page: String? = nil) async throws -> String {
-        let message = (arguments == ["show"] ? "event=\(reason)\n" : "") + (page.map { "route=\($0)\n" } ?? "") + (input ?? "")
-        return try await runs.answer(of: account, SpotWords(arguments: arguments), input: message, limit: 60)
+        let message = (arguments == ["show"] ? "input.event=\(reason)\n" : "") + Self.inputs(arguments, page: page) + (input ?? "")
+        return try await runs.answer(of: account, SpotWords(arguments: Array(arguments.prefix(1))), input: message, limit: 60)
     }
 
     private func said(_ arguments: [String], input: String? = nil, page: String? = nil) async throws -> HostAnswer {
         _ = try account
-        let message = (page.map { "route=\($0)\n" } ?? "") + (input ?? "")
-        return try await XCTUnwrap(sheet).answer(arguments, input: message)
+        let message = Self.inputs(arguments, page: page) + (input ?? "")
+        return try await XCTUnwrap(sheet).answer(Array(arguments.prefix(1)), input: message)
+    }
+
+    private static func inputs(_ arguments: [String], page: String?) -> String {
+        (arguments.dropFirst().first.map { "input.value=\($0)\n" } ?? "") + (page.map { "input.route=\($0)\n" } ?? "")
     }
 
     private func effects(_ arguments: [String], input: String? = nil, page: String? = nil) async throws -> [SpotEffect] {

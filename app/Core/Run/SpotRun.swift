@@ -260,7 +260,7 @@ public final class SpotRun {
     @ObservationIgnored var pauses: [String: Task<Void, Never>] = [:]
     @ObservationIgnored var editing: String?
     @ObservationIgnored var typed: String?
-    @ObservationIgnored var waitingFiles: [SpotWords] = []
+    @ObservationIgnored var waitingFiles: [Message] = []
     @ObservationIgnored var waitingKeys: [String] = []
     @ObservationIgnored var clockShown: Date?
     public internal(set) var page: FlowSheet
