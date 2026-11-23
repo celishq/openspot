@@ -17,7 +17,7 @@
   it from a pinned CLDR version, and the build copies it into the app.
 - `app/Themes/` holds the built-in themes, each in `<name>.theme/theme.toml`. Openspot, in `openspot.theme`, sets every choice,
   and each other built-in theme sets only the choices it changes. The build copies them into the app.
-  [Change the look of Openspot](GUIDE.md#change-the-look-of-openspot) lists its keys and says how a person changes it.
+  [Change the look of Openspot](USING.md#change-the-look-of-openspot) lists its keys and says how a person changes it.
 - `app/Help/` holds the guide of each `openspot` noun that has one, which `openspot help <noun>` prints. The build copies it
   into the app.
 - `spots/` holds the source of the core spots, each a `<name>.spot` folder. The build copies it into the app, and they run
@@ -44,14 +44,14 @@
 
 ## Docs
 
-The docs are `AGENTS.md`, `spots/AGENTS.md`, `GUIDE.md`, `PROTOCOL.md`, `TRUST.md`, `CONTRIBUTING.md`, `README.md` and
-`app/Help/`. Write the ones people read the way Apple writes its developer docs. `scripts/check-docs.sh` fails on a break
+The docs are `AGENTS.md`, `spots/AGENTS.md`, `GUIDE.md`, `USING.md`, `PROTOCOL.md`, `TRUST.md`, `CONTRIBUTING.md`,
+`README.md` and `app/Help/`. Write the ones people read the way Apple writes its developer docs. `scripts/check-docs.sh` fails on a break
 of a rule that names it.
 
 ### Pages
 
 - A page has one reader and one kind: a guide of tasks or a reference of facts, never both. `GUIDE.md` guides the author
-  of a spot, and holds what the person who uses the app chooses. `PROTOCOL.md` is the reference of a spot's contract,
+  of a spot, and `USING.md` the person who uses the app, with what they choose, such as keys, places and themes. `PROTOCOL.md` is the reference of a spot's contract,
   `app/Help/` the reference of the `openspot` commands, `TRUST.md` what Openspot shows the person about a spot, and
   `spots/AGENTS.md` the words of the app's own spots.
 - A thing is said on the page whose kind it is. Before you add a sentence, look for one that says it already, since no
@@ -122,7 +122,7 @@ of a rule that names it.
 
 ## UX
 
-Each spot follows [The keys of a spot](GUIDE.md#the-keys-of-a-spot): Return does its main act, `⌘` Return opens its
+Each spot follows [Use the keys of a spot](USING.md#use-the-keys-of-a-spot): Return does its main act, `⌘` Return opens its
 Settings, `⌘Y` its History, `⌘K` the menu of all acts. Openspot makes these for every spot, so a rule changes in one place.
 
 - Settings follow the level they change. openspot's Settings hold only the app's rows. Each spot's own Settings hold its

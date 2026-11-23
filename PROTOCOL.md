@@ -488,7 +488,7 @@ export default {
 
 | Name                          | Is                                                                                  |
 | ----------------------------- | ----------------------------------------------------------------------------------- |
-| `export default`              | The object of handlers, each `async (input, env)` and named for its call.           |
+| `export default`              | The object of handlers, each a function of `(input, env)` named for its call.       |
 | `input`                       | The values of the call, typed by their declaration.                                 |
 | `env.<noun>.<verb>(...)`      | A command that the spot may call, such as `env.timer.add(...)`.                     |
 | `env.<binding>.<action>(inputs)` | A run of an action of a bound spot, which resolves to its values.                |
@@ -1087,7 +1087,8 @@ class=card:hidden
 - The sheet shows the spot when the person opens it, and fills the panel.
 - A float is a small window at the pointer, and a window is a normal window that holds the sheet. Both draw as the
   sheet does, with their own variants.
-- The person chooses the places, and the spot only lays out the ones it cares about.
+- The person chooses the places, as [Choose where a spot shows](USING.md#choose-where-a-spot-shows) says, and the spot
+  only lays out the ones it cares about.
 
 ### The card
 
