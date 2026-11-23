@@ -62,7 +62,7 @@ struct SpotContextCard: View, Equatable {
     @ViewBuilder
     private func glyph(of kind: ContextValue.Kind) -> some View {
         switch kind {
-        case .url: Image(systemName: "globe")
+        case .url: Image(systemName: "arrow.up.right")
         case .text: Text(verbatim: "T")
         case .file: Image(systemName: "doc.fill")
         }

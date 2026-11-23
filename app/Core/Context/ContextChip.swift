@@ -58,7 +58,7 @@ extension ContextChip {
 
     static func symbol(of kind: ContextValue.Kind?) -> String {
         switch kind {
-        case .url: "globe"
+        case .url: "arrow.up.right"
         case .text: "text.quote"
         case .file: "doc"
         case nil: "ellipsis"

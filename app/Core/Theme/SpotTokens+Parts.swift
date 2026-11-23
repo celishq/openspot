@@ -53,7 +53,7 @@ extension SpotTokens {
     public static let previewCaptionGap: CGFloat = 4
 
     public static let contextValuePadding: CGFloat = 9
-    public static let contextValueFoot: CGFloat = 13
+    public static var contextValueFoot: CGFloat { padding + glyphInset }
     public static let contextValueLineGap: CGFloat = 1
     static let lineShare: CGFloat = 1.25
     static let glyphWidthShare: CGFloat = 0.55
