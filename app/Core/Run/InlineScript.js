@@ -71,6 +71,18 @@ openspot.env = function env(call, spec, bindings, settings) {
     },
     set: (name, value) => { now(["cache", "set", name], String(value)) },
   }
+  env.fetch = async (url, init = {}) => {
+    const answer = await openspot.fetch(call, String(url), String(init.method || "GET"), init.headers || {}, init.body === undefined || init.body === null ? null : String(init.body))
+    if (answer.error) throw Object.assign(new Error(answer.message), { cause: answer.error })
+    return {
+      ok: answer.status >= 200 && answer.status < 300,
+      status: answer.status,
+      url: answer.url,
+      headers: { get: (name) => answer.headers[String(name).toLowerCase()] ?? null },
+      text: async () => answer.body,
+      json: async () => JSON.parse(answer.body),
+    }
+  }
   env.emit = async (event, values) => { await run(["emit", event, ...pairs(values)]) }
   env.open = async (spot) => { await run(["spot", "open", spot]) }
   for (const name of bindings) {

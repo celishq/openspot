@@ -50,6 +50,8 @@ final class InlineScript: @unchecked Sendable {
     private let limit: TimeInterval
     private let idle: TimeInterval
     private let spent: @Sendable (TimeInterval) -> Void
+    private let web: Web
+    private let fetched: @Sendable () -> Void
     private let condition = NSCondition()
     private var calls: [InlineCall] = []
     private var settles: [() -> Void] = []
@@ -64,7 +66,7 @@ final class InlineScript: @unchecked Sendable {
     private var context: JSContext?
     private var thrown: JSValue?
 
-    init(spot: Spot, api: CommandAPI?, callers: SpotCallers? = nil, careful: Set<SpotUse>? = nil, limit: TimeInterval = 10, idle: TimeInterval = 30, bound: [String: Spot] = [:], base: [String: String] = ProcessInfo.processInfo.environment, spent: @escaping @Sendable (TimeInterval) -> Void = { _ in }) {
+    init(spot: Spot, api: CommandAPI?, callers: SpotCallers? = nil, careful: Set<SpotUse>? = nil, limit: TimeInterval = 10, idle: TimeInterval = 30, bound: [String: Spot] = [:], base: [String: String] = ProcessInfo.processInfo.environment, web: Web = Web(), fetched: @escaping @Sendable () -> Void = {}, spent: @escaping @Sendable (TimeInterval) -> Void = { _ in }) {
         self.sandbox = careful.map(Sandbox.init)
         url = spot.url
         name = spot.id
@@ -77,6 +79,8 @@ final class InlineScript: @unchecked Sendable {
         self.limit = limit
         self.idle = idle
         self.spent = spent
+        self.web = web
+        self.fetched = fetched
         self.callers = callers
         caller = callers?.issue(for: spot)
     }
@@ -306,7 +310,13 @@ final class InlineScript: @unchecked Sendable {
             let arguments = (argv.toArray() ?? []).map { "\($0)" }
             return self?.asked(arguments, token: Int(token.toInt32()))
         }
+        let fetch: @convention(block) (JSValue, JSValue, JSValue, JSValue, JSValue) -> JSValue? = { [weak self] token, url, method, headers, body in
+            let fields = (headers.toDictionary() ?? [:]).reduce(into: [String: String]()) { kept, field in kept["\(field.key)"] = "\(field.value)" }
+            let sent = body.isNull || body.isUndefined ? nil : body.toString()
+            return self?.fetch(token: Int(token.toInt32()), url: url.toString() ?? "", method: method.toString() ?? "GET", headers: fields, body: sent)
+        }
         let openspot = JSValue(newObjectIn: context)
+        openspot?.setObject(fetch, forKeyedSubscript: "fetch" as NSString)
         openspot?.setObject(ask, forKeyedSubscript: "call" as NSString)
         openspot?.setObject(asked, forKeyedSubscript: "ask" as NSString)
         context.setObject(openspot, forKeyedSubscript: "openspot" as NSString)
@@ -337,6 +347,29 @@ final class InlineScript: @unchecked Sendable {
     private func ask(_ arguments: [String], input: String?) -> CommandAnswer {
         guard !condition.withLock({ isOverdue }) else { return Self.late }
         return answer(work(arguments, input: input, caller: caller, reason: nil, variables: [:]))
+    }
+
+    private func fetch(token: Int, url: String, method: String, headers: [String: String], body: String?) -> JSValue? {
+        guard let context = JSContext.current() else { return nil }
+        guard waiting[token] != nil else { return JSValue(newPromiseRejectedWithReason: "The call of \(spot.name) has ended.", in: context) }
+        var resolve: JSValue?
+        let promise = JSValue(newPromiseIn: context) { found, _ in resolve = found }
+        let settled = Held(resolve)
+        if sandbox != nil, !spot.uses.contains(.network) {
+            let refused = WebAnswer.failed(.refused, "Careful mode stopped \(spot.name), because it reached the network without `network` in the `uses` of its spot.toml. Add it, or turn Careful mode off.")
+            settled.value?.call(withArguments: [refused.script])
+            return promise
+        }
+        fetched()
+        waiting[token]?.asks += 1
+        Task.detached(priority: .userInitiated) { [weak self, web] in
+            let answer = await web.fetch(url, method: method, headers: headers, body: body)
+            self?.settle(token) { [weak self] in
+                self?.waiting[token]?.asks -= 1
+                settled.value?.call(withArguments: [answer.script])
+            }
+        }
+        return promise
     }
 
     private func asked(_ arguments: [String], token: Int) -> JSValue? {

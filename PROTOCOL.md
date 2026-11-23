@@ -36,6 +36,7 @@ Start with **[Your first spot](docs/first-spot.md)**: one folder, two files, fiv
 
 - [Use the Mac: clipboard, screen, timers](docs/connect/the-mac.md)
 - [Use another spot](docs/connect/other-spots.md)
+- [Fetch from the web](docs/connect/the-web.md)
 
 ## Go further
 

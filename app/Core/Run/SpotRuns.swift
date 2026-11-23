@@ -37,6 +37,7 @@ public final class SpotRuns {
     public nonisolated let callers: SpotCallers
     @ObservationIgnored let clock: RunClock
     @ObservationIgnored let now: () -> Date
+    @ObservationIgnored public var web = Web()
     @ObservationIgnored let stopPause: TimeInterval
     @ObservationIgnored let clipboardPause: Duration
     @ObservationIgnored var source: (any MacEvents)?

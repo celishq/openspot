@@ -50,7 +50,7 @@ is missing still runs, and people see a message about it once a day. In Careful 
 | `calendar`  | Read and add events and reminders.                                                   |
 | `power`     | Keep the Mac awake with its lid closed.                                              |
 | `timer`     | Add, list and remove its timers.                                                     |
-| `network`   | Reach the network in Careful mode. No command needs it.                              |
+| `network`   | Reach the network in Careful mode, such as with `env.fetch`.                          |
 | `files`     | Write outside its data folder in Careful mode. No command needs it.                  |
 
 A program of the Mac, such as `open <url>`, isn't an `openspot` command, so it needs no use. [Uses](../../TRUST.md#uses)
