@@ -6,8 +6,8 @@ holds every rule, and [Use Openspot](USING.md) says what the person who uses you
 
 ## Build your first spot
 
-Build a spot when you want a small tool one key away. This one lists each process that listens on a port, and stops the
-one you press, such as a server that's still on :3000.
+Build a spot when you want a small tool one key away. This one lists each process that listens on a port, with its
+first port, and stops the one you press, such as a server that's still on :3000.
 
 A spot is a folder in the spots folder, `~/.config/openspot/spots`. Make the folder `ports.spot`, and save its manifest,
 the file that names the spot, as `ports.spot/spot.toml`:
@@ -34,16 +34,18 @@ esac
 ```
 
 <!-- draw: lsof() { printf 'COMMAND PID USER FD TYPE DEVICE SIZE NODE NAME\nnode 4120 me 21u IPv4 0x1 0t0 TCP *:3000 (LISTEN)\npostgres 812 me 7u IPv4 0x2 0t0 TCP 127.0.0.1:5432 (LISTEN)\npython3 5051 me 3u IPv6 0x3 0t0 TCP *:8080 (LISTEN)\n'; }; . "$EXAMPLE" -->
-The sheet of Ports lists a row for each port, with its process under it, such as :3000 with node.
+The sheet of Ports lists a row for each process that listens, with its port as the title and its name under it, such
+as :3000 with node.
 
 1. Run `chmod +x ports.sh` in the spot folder. Openspot loads the spot a moment later, and its card shows in the panel.
 2. Press `⌃Space`, then press the Ports card. Its sheet opens with a row for each port.
-3. Press Return on a row. Openspot runs `ports.sh press` with the row's id, the process ID, on stdin, the process stops,
-   and the panel closes.
+3. Press Return on a row. Openspot runs `ports.sh press` with the row's id, the process ID, as `input.item=` on stdin,
+   the process stops, and the panel closes.
 
 Each run of your script is a call. Its first argument names the handler, the part of your script that answers: `show`
 asks what to show, and `press` says that the person pressed a row. The shell helper, which `. "$OPENSPOT_SH"` loads,
-gives you `value item`, the id of the pressed row, and `openspot_items`, which prints a row for each line of tabs.
+gives you `value item`, the id of the pressed row, and `openspot_items`, which turns each line of id, title and detail,
+split by tabs, into an item block with its values escaped.
 
 A show answers with a frame, the lines that say what to show. Each group of lines is a block, and `item=4120` starts an
 item block, a row of the list with the id 4120:
@@ -566,8 +568,10 @@ export default {
    then.
 3. Press Esc instead. `env.picker.pick` resolves to `null`, and the spot adds nothing.
 
-`pick` gives `until`, an ISO 8601 time with its offset, or `someday`, which has no time. A shell script runs the same
-action with `openspot run picker.pick --out until`, which prints the time and exits 4 on Esc.
+`pick` takes an optional `title` and gives one output, `until`: an ISO 8601 time with its offset, or the word
+`someday`, which `openspot timer add` takes too. A shell script runs the same action with
+`openspot run picker.pick title="Remind me later" --out until`, which prints the time, and exits 4 on Esc, so the
+script ends with `|| exit 0` there to show no failure.
 
 Learn more in [`[bindings]`](PROTOCOL.md#bindings) and [openspot run](PROTOCOL.md#openspot-run).
 

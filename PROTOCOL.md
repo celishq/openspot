@@ -190,6 +190,8 @@ picker = { spot = "openspot/snooze" }
 - A bound spot that isn't installed shows as missing.
 - `openspot run <name>.<action>` runs an action of the bound spot; see [openspot run](#openspot-run).
 - `"<name>.<event>" = true` in `[on]` listens to an event of the bound spot.
+- `openspot run` and `openspot emit` need no use in `uses`.
+- `openspot spot actions <id>` prints the inputs and outputs of each action of a spot to bind.
 
 ### [on]
 
@@ -334,7 +336,8 @@ Openspot runs `ports.sh` with the argument `press`, and the message above on its
 - `show` gets the moment that asked for it as `event`, such as `panel.open` or `sheet.open`.
 - A call that answers with no view closes the panel, unless the pressed block or item has `close=false`.
 - A process that the spot starts inherits its stdin, unless the spot reads it first or closes it for that process, as
-  in `curl "$url" </dev/null`.
+  in `curl "$url" </dev/null`. The shell helper reads all of it as it loads, so a process started after
+  `. "$OPENSPOT_SH"` gets none.
 
 | Variable        | Is                                                                                          |
 | --------------- | ------------------------------------------------------------------------------------------- |
@@ -358,9 +361,9 @@ and writes values for you.
 | `openspot_value <key> <text>`                | Prints each value of the key from a text, such as what an `openspot` command printed.           |
 | `openspot_input`                             | Prints the stdin of the call as it came.                                                        |
 | `openspot_kv <key> <value>`                  | Prints one line, with its value escaped.                                                        |
-| `openspot_item <id> <title> [detail] [icon]` | Prints one `item` block.                                                                        |
-| `openspot_items [kind]`                      | Prints a block for each tab-separated line of stdin: id, title, detail and icon.                |
-| `openspot_rows <key>...`                     | Prints a tab-separated line for each block of stdin, with the value of each key.                |
+| `openspot_item <id> <title> [detail] [icon]` | Prints one `item` block, after a blank line, with its values escaped.                           |
+| `openspot_items [kind]`                      | Prints an escaped block for each tab-separated line of stdin: id, title, detail and icon.       |
+| `openspot_rows <key>...`                     | Prints a tab-separated line for each block of stdin, with the value of each key, its kind too.  |
 | `openspot_serve <function> "$@"`             | Runs the function with the arguments of each call, in each [mode](#modes).                      |
 | `openspot_keep <file> [text]`                | Keeps the text, or stdin, in the file as a whole, or fails and keeps the old file.              |
 | `openspot_paste <text>`                      | Pastes the text into the front app, and puts the clipboard back.                                |
@@ -1295,9 +1298,10 @@ title=4
 - A command that has no answer prints `status=<word>`. A list or a report prints blocks, or JSON with `--json`.
 - A read must never change anything or open anything, so a command that waits for the person, captures the screen,
   changes the Mac, Openspot or the sheets that show, or opens a window fails in it; see
-  [the commands that fail in a read](app/Help/commands.md#the-commands-that-fail-in-a-read).
-- `openspot toast <words>` shows the words for a moment, and `openspot select <item>` selects an item once the next
-  frame shows. They work for the call that ran them, and do nothing when it's out of date.
+  [the commands that fail in a read](app/Help/commands.md#the-commands-that-fail-in-a-read). A command that only
+  prints, such as `openspot timer list`, works in a read.
+- `openspot toast <words>` shows the words for a moment, even when the panel is closed, and `openspot select <item>`
+  selects an item once the next frame shows. They work for the call that ran them, and do nothing when it's out of date.
 - From a terminal, `toast`, `select` and `route` work on the sheet that shows.
 - Each command declares its inputs and outputs, so `openspot spot actions` lists the commands of a spot's uses, and
   `openspot types` types them for its code.
@@ -1305,8 +1309,8 @@ title=4
 
 ### openspot run
 
-`openspot run <binding>.<action> [<name>=<value>...]` runs an action of a spot that this spot [binds](#bindings), and
-waits for its values.
+`openspot run <binding>.<action> [<name>=<value>...] [--out <name>] [--stdin <name>]` runs an action of a spot that this
+spot [binds](#bindings), and waits for its values.
 
 ```text
 $ openspot run picker.pick title="Remind me later" --out until
@@ -1321,7 +1325,8 @@ $ openspot run picker.pick title="Remind me later" --out until
 - An action that answers with a view shows it over the sheet that shows, as a step of its flow, titled by the `title`
   of its frame's root.
 - The run ends, and the view leaves, at the first frame of the bound spot that holds `out.<name>` lines or `error=`.
-- A close or a step back from the view exits 4, and in JavaScript resolves to `null`.
+- A close or a step back from the view exits 4, and in JavaScript resolves to `null`. A shell handler that ends then
+  with `|| exit 0` shows no failure.
 - When the person placed the bound spot in a window, the view shows in that window, and the window closes at the end
   of the run if the run opened it. A close of the window exits 4.
 - A run that waits for the person or another spot doesn't count against its spot's time limit.
@@ -1362,8 +1367,8 @@ $ openspot timer add 2026-11-24T09:00:00+01:00 remind words="Time to stretch"
 - A time that has passed comes due at once, such as after the Mac slept or Openspot was quit.
 - `someday` keeps a timer that never comes due, until `openspot timer remove`.
 - A due timer runs its action as a press that the person didn't make, and Openspot draws nothing that the call prints.
-- `openspot timer list` prints each timer of the spot as an item, with its action as the `title`, its time in `at`, and
-  each input as `input.<name>=`.
+- `openspot timer list` prints each timer of the spot as an item whose id is the timer's id, with its action as the
+  `title`, its time in `at`, and each input as `input.<name>=`.
 - `openspot timer remove <id>` removes one.
 - A timer belongs to the spot that added it, and no other spot sees it. It lasts until it comes due, also across a
   restart.
