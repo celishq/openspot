@@ -3,6 +3,21 @@
 `spot.toml` names your spot and says what it adds. A key Openspot doesn't know keeps the spot from loading, and
 `openspot check spots` names it. `openspot schema` prints the JSON Schema of the file, for your editor.
 
+## The folder
+
+A spot is a folder in `~/.config/openspot/spots`, such as `ports.spot`. Its id is the folder's name without `.spot`,
+and it holds 25 MB at most.
+
+| File             | Is                                                                                  |
+| ---------------- | ----------------------------------------------------------------------------------- |
+| `spot.toml`      | This file. Required.                                                                |
+| `<name>.<ext>`   | The script, named like the folder, such as `ports.sh` or `ports.js`. Required.      |
+| `readme.md`      | The page the Store shows about your spot.                                           |
+| `sample.sh`      | A script that prints what your spot shows, with made-up data.                       |
+| `releases.jsonl` | The signed releases, which Openspot writes when you share; see [Signed releases](../../TRUST.md#signed-releases). |
+
+People choose where your spot shows, as [Choose where a spot shows](../../USING.md#choose-where-a-spot-shows) says.
+
 ## Keys
 
 Each key of the top level, before the first table.
@@ -13,12 +28,32 @@ Each key of the top level, before the first table.
 | `icon`     | text   | An SF Symbol, an emoji, or an image file of the folder.                                    |
 | `detail`   | text   | The line under the title.                                                                  |
 | `keywords` | [text] | More words that find the spot in the panel's search.                                       |
-| `uses`     | [text] | The features of the Mac it uses: `app`, `spots`, `screen`, `clipboard`, `calendar`, `power`, `network`, `files` or `timer`. |
+| `uses`     | [text] | What it needs from the Mac; see [Uses](#uses).                                             |
 | `pages`    | [text] | The routes the spot may show, where `*` stands for any text, such as `["photo/*"]`.        |
 | `answers`  | text   | Where its answers show in the panel's search: `"last"`, under the others, or `"card"`, as the card of the frame's value. First by default. It needs `search` in `[on]`. |
 | `stay`     | bool   | Whether the script keeps running and gets each word on stdin. Not for a `.js` spot.         |
 | `source`   | [text] | More Swift files or folders of a Swift spot.                                               |
 | `views`    | [text] | The SwiftUI files that draw its own kinds of block, such as `["week.swift"]`.              |
+
+## Uses
+
+Each use lets your spot run some `openspot` commands. People see your uses when they add your spot. A command whose use
+is missing still runs, and people see a message about it once a day. In Careful mode, it fails.
+
+| Use         | Lets your spot                                                                       |
+| ----------- | ------------------------------------------------------------------------------------ |
+| `app`       | Change Openspot itself: quit or update it, or change its theme, its keys or the menu bar. |
+| `spots`     | Add, remove, change or run other spots, read their logs, and read or change their settings. |
+| `screen`    | Take a picture or a recording of the screen, read or move windows, and pick a colour. |
+| `clipboard` | Copy, paste and read the clipboard.                                                  |
+| `calendar`  | Read and add events and reminders.                                                   |
+| `power`     | Keep the Mac awake with its lid closed.                                              |
+| `timer`     | Add, list and remove its timers.                                                     |
+| `network`   | Reach the network in Careful mode. No command needs it.                              |
+| `files`     | Write outside its data folder in Careful mode. No command needs it.                  |
+
+A program of the Mac, such as `open <url>`, isn't an `openspot` command, so it needs no use. [Uses](../../TRUST.md#uses)
+lists each command that needs one, and [Careful mode](../../TRUST.md#careful-mode) says what it stops.
 
 ## Types
 
@@ -33,7 +68,7 @@ Each setting, input, output and value of an event takes one of these types.
 | `duration` | A number of seconds, 0 or more.                                     |
 | `url`      | An address with a scheme, such as `https://example.com`.            |
 | `file`     | A path that starts with `/`.                                        |
-| `secret`   | A text that Openspot keeps in the Keychain.                         |
+| `secret`   | A text that Openspot keeps in the Keychain. Its form asks for 8 characters or more. |
 | `choice`   | One of its `options`.                                               |
 | `[<type>]` | A list of values of that type, such as `[file]`, one line for each. |
 
@@ -50,7 +85,8 @@ Each setting, input, output and value of an event takes one of these types.
 | `default`     | its type | The value until people choose one.                   |
 | `options`     | [text]   | The values of a `choice`.                            |
 
-A setting can't take a name that Openspot keeps for people, such as `icon`, `enabled`, `menubar`, `open` or `float`.
+A setting can't take a name that Openspot keeps for people: `icon`, `enabled`, `menubar`, `open`, `float`, any
+`key.<action>`, or a name of Openspot's own settings, such as `careful`.
 
 ## [actions.\<id\>]
 

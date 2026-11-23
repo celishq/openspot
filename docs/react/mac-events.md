@@ -47,6 +47,9 @@ panel, its sheet, its float or the menu bar. So an event costs nothing while the
 `"panel.open" = true` runs `show` each time the panel opens, so Power is right even after a change it missed.
 That run gets `input.event=panel.open` on stdin.
 
+When people open your sheet, Openspot runs `show` again only if the last run was 5 seconds ago or more.
+`"sheet.open" = true` runs it each time the sheet opens.
+
 An event's run only shows. It can't change the Mac or open anything, so a command such as `openspot clipboard copy`
 fails in it.
 

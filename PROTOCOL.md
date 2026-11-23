@@ -53,4 +53,7 @@ Start with **[Your first spot](docs/first-spot.md)**: one folder, two files, fiv
 ## Versions
 
 This is version `3.0` of the protocol, a draft. A new word raises the minor number, such as `3.1`. A change that breaks
-a spot raises the major number, such as `4.0`.
+a spot raises the major number, such as `4.0`. While it's a draft, a word may still change what it means.
+
+An older Openspot skips a word it doesn't know in what your script prints. It won't load a spot whose `spot.toml` has
+a key it doesn't know.

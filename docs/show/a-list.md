@@ -61,6 +61,9 @@ input.item.path=/Users/you/Downloads/Report.pdf
 
 That way the script doesn't have to look the file up again. Add as many keys of your own as you need.
 
+A file name is data, and data can hold a new line that would break the block. [Lines](../reference/blocks.md#lines)
+shows how to print any value safely.
+
 ### Buttons on a row
 
 A `button` block is something you do to the selected row. Its id is the word Openspot runs: press `⌘O` and Openspot

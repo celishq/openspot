@@ -19,18 +19,25 @@ every = 300
 
 ```sh
 #!/bin/sh
-free=$(df -h / | awk 'NR==2 {print $4}')
-printf 'frame=\ndetail=%s free\n\nitem=free\ntitle=%s free\n' "$free" "$free"
+case "$1" in
+  show | every)
+    free=$(df -h / | awk 'NR==2 {print $4}')
+    printf 'frame=\ndetail=%s free\n\nitem=free\ntitle=%s free\n' "$free" "$free"
+    ;;
+esac
 ```
 
+<!-- card: wide -->
+<!-- draw: df() { printf 'Filesystem Size Used Avail\n/dev/disk 994Gi 738Gi 256Gi\n'; }; . "$EXAMPLE" -->
 ![The Disk card: the disk icon, Disk, and 256Gi free under it](../images/show-a-value.png)
 
 The card shows Disk, with the free space under it.
 
 ## How it works
 
-`[on]` tells Openspot when to run `disk.sh show` without being asked: each time the panel opens, and every 300
-seconds. [Run every minute or on a schedule](../react/on-a-schedule.md) has the rest.
+`[on]` tells Openspot when to run your script without being asked. It runs `disk.sh show` each time the panel opens,
+and `disk.sh every` every 300 seconds while the card shows. Both print the same thing here.
+[Run every minute or on a schedule](../react/on-a-schedule.md) has the rest.
 
 The script prints a first block that starts with `frame=`. It isn't a row. It holds what the card shows:
 
@@ -41,6 +48,8 @@ detail=256Gi free
 
 The card always shows your spot's icon and title. `detail` in the `frame=` block replaces the line under it. A `title`
 there would replace the title too.
+
+A press on the card does what Return does. If the card shows a `switch`, a press on it flips it.
 
 ## Show a number
 
@@ -87,7 +96,7 @@ card.
 People turn on Show in the menu bar in your spot's Settings. With no `bar:` class, the menu bar shows your spot's icon.
 
 Give a block `bar:flex`, as the number above has, and the menu bar shows it next to the clock: a small ring for a ring,
-or the title of a row.
+the last 8 bars of a `series`, or the title of a row after a dot of its `tone`.
 
 ## The panel's own search
 

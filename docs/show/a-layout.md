@@ -118,6 +118,9 @@ detail=54 Mb/s
 
 Add these lines after the row above, and a list of one network, Office, shows under it.
 
+A frame holds one `items` block at most, and an `items` block alone gives the frame a layout. With
+`class=grid grid-cols-4`, it shows its rows as tiles. A `box` inside it is a group, headed by its `title`.
+
 ## Next
 
 - [A value on the card](the-card.md) uses `card:` to put a value on the card.

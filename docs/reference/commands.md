@@ -50,3 +50,12 @@ see [the commands that fail in a read](../../app/Help/commands.md#the-commands-t
 | `openspot spot open <id>`                           | Opens the panel on a spot.                                               |
 
 Each list a command prints is blocks, as your script prints them, or JSON with `--json` where the command takes it.
+
+## Write a message
+
+A toast or a failure line tells people what happened and what to do next. Say what still worked, and the step that
+fixes the rest, in one or two calm sentences. Put each key in backticks.
+
+- Instead of `Oops! Something went wrong.`, write `Openspot cannot find a screenshot.`
+- Instead of `Error 1: osascript failed.`, write ``Copied, but Openspot cannot paste. Press `⌘V`, or allow Openspot in
+  Accessibility.``

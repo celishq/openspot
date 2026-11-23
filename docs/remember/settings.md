@@ -41,8 +41,9 @@ Until someone picks a value, the line holds the `default`. A setting with no val
 People find your settings in the spot's Settings, below its keys. Each row shows the setting's `title` and its value,
 or Not set. `⌘⌫` removes the value.
 
-Openspot asks for a `choice` itself, with a menu of its `options`. For any other type, Return on the row runs your
-script with the setting's name, such as `clock.sh zone`. Ask there, and keep the answer:
+Openspot asks for a `choice` itself, with a menu of its `options`, and for a `secret` in its own form. For any other
+type, Return on the row runs your script with the setting's name, such as `clock.sh zone`. Ask there, and keep the
+answer:
 
 ```text
 openspot setting set zone Europe/London
@@ -73,7 +74,7 @@ Only your own spot gets the value. Any other spot, and any terminal, gets `•�
 | Key           | Is                                                                                         |
 | ------------- | ------------------------------------------------------------------------------------------ |
 | `type`        | `text`, `number`, `bool`, `date`, `duration`, `url`, `file`, `secret` or `choice`. Required. |
-| `title`       | The name of its row in Settings. The setting's name by default.                            |
+| `title`       | The name of its row in Settings. The setting's name with a capital first letter by default. |
 | `default`     | The value until someone picks one.                                                         |
 | `options`     | The values a `choice` offers.                                                              |
 | `description` | What the setting is for.                                                                   |

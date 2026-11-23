@@ -46,8 +46,7 @@ whole or not at all.
 
 If you load the shell helper, `openspot_keep` does the same in one line:
 
-```sh
-#!/bin/sh
+```text
 . "$OPENSPOT_SH"
 openspot_keep "$OPENSPOT_DATA/glasses" "$(date +%F)=1"
 ```

@@ -28,6 +28,18 @@ How Openspot reads what you print.
 The first frame replaces what shows, and so does a later one that starts with `frame=`. A later frame without it
 changes only the blocks it prints: a known id changes only the keys it prints, and a new id joins the end.
 
+A value that comes from data, such as a file name, must not add a line. Print it with `esc` or `openspot_kv` of the
+[shell helper](#the-shell-helper), or make sure it holds no new line.
+
+## How a run ends
+
+`show` has 10 seconds to print its first block, or Openspot stops it. Other runs have no limit.
+
+A run fails when it prints `error=` or exits with a code other than 0. People see the `error` message, or else the last
+line your script wrote to stderr. When `show` prints nothing, the sheet says Nothing here yet.
+
+A program your script starts reads the script's stdin. Close it with `</dev/null`, as in `curl "$url" </dev/null`.
+
 ## The first block
 
 A block that starts with `frame=` or `error=` holds the frame's own keys. It comes first, and it isn't drawn.
@@ -69,8 +81,12 @@ A block's first line is its kind and its id, such as `item=4120`.
 | `option`  | One choice of a `choice`.              | `title`, its id by default; `icon`.                                  |
 | A view    | A block your SwiftUI file draws, named by the file, such as `week=`. | Any key; see [Draw your own view](../further/views.md). |
 
-A `field`, `switch` or `choice` runs its id with its new value as `value`. `button=press` names Return, and its
-`title` shows in the footer.
+A `field`, `switch` or `choice` runs its id with its new value as `value`. A text field sends as people type, and a
+slider as they drag. A `search` field searches the items. A switch or a choice closes the panel only with `close=true`.
+
+A button is a row of the ⌘K menu when it has a `scope`, sits inside the `items` block, or is in a frame with no
+layout. Anywhere else, it draws where the layout puts it. `button=press` names Return, and its `title` shows in the
+footer.
 
 ## Keys of every block
 
@@ -128,7 +144,7 @@ lines, then your settings as `setting.<name>=` lines.
 | `<action>`           | When people, a timer or another spot run it.       | Its inputs, and `item` from a row.                   |
 | `<button>`           | When people press the button.                      | `item`, the selected row, from the ⌘K menu.          |
 | `<field>`, `<switch>`, `<choice>` | When its value changes.               | `value`, the new value.                              |
-| `<setting>`          | When people press Return on a setting that isn't a `choice` or a `bool`. | none                       |
+| `<setting>`          | When people press Return on a setting that isn't a `secret` and has no `options`. | none              |
 
 ## Environment variables
 
@@ -136,9 +152,8 @@ lines, then your settings as `setting.<name>=` lines.
 | ----------------- | ------------------------------------------------------------------ |
 | `OPENSPOT_ID`     | The id of your spot.                                               |
 | `OPENSPOT_DATA`   | The folder where your spot keeps what lasts.                       |
-| `OPENSPOT_CONFIG` | Openspot's config folder.                                          |
 | `OPENSPOT_SH`     | The path of the shell helper.                                      |
-| `PATH`            | The `openspot` command, then your paths and the system's.          |
+| `PATH`            | The folder of the `openspot` command, then the `PATH` Openspot started with, then `/opt/homebrew/bin`, `/usr/local/bin`, `/usr/bin`, `/bin`, `/usr/sbin` and `/sbin`. Your login shell's paths aren't on it. |
 | `LC_ALL`          | `en_US.UTF-8`.                                                     |
 
 ## The shell helper

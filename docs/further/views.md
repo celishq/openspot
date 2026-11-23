@@ -68,17 +68,25 @@ view runs inside Openspot, so a crash in it quits Openspot.
 
 ## What `spot` holds
 
-| Member                                      | Is                                                                     |
-| ------------------------------------------- | ---------------------------------------------------------------------- |
-| `spot["key"]`, `spot.all("key")`            | The last value of a key of the view's block, and each value.          |
-| `spot.send(value)`                          | Runs your script with the block's id, such as `cups.sh chart`, and `value` as the input `value`. |
-| `spot.isShown`                              | Whether the view shows now. Move only while it's true.                 |
-| `spot.close()`                              | Closes the sheet, float or window the view is in.                      |
-| `spot.accent`, `spot.ink`, `spot.secondary` | The accent, the colour of words, and the opacity of a second line.     |
-| `spot.inset`, `spot.corner`, `spot.font`    | The space a card keeps inside its edge, its corner, and its fonts.     |
-| `spot.theme`                                | Every value of the theme, such as `spot.theme.color.good`.             |
-| `spot.items`, `spot.selection`              | Each item of the frame, and the id of the selected one.                |
-| `spot.media(path)`                          | A picture or a video of your spot's folder.                            |
+| Member                                                 | Is                                                                     |
+| ------------------------------------------------------ | ---------------------------------------------------------------------- |
+| `spot["key"]`, `spot.all("key")`                       | The last value of a key of the view's block, and each value.          |
+| `spot.send(value)`                                     | Runs your script with the block's id, such as `cups.sh chart`, and `value` as the input `value`. |
+| `spot.answers`                                         | A count that changes each time an answer of your script reaches the view. |
+| `spot.isShown`                                         | Whether the view shows now. Move only while it's true.                 |
+| `spot.close()`                                         | Closes the sheet, float or window the view is in.                      |
+| `spot.size`, `spot.card`                               | The size of the view's room, and the size of its card, such as `.wide`. |
+| `spot.accent`, `spot.ink`, `spot.secondary`            | The accent, the colour of words, and the opacity of a second line.     |
+| `spot.inset`, `spot.corner`, `spot.font`               | The space a card keeps inside its edge, its corner, and its fonts.     |
+| `spot.theme`                                           | Every value of the theme, such as `spot.theme.color.good`.             |
+| `spot.items`, `spot.selection`                         | Each item of the frame, and the id of the selected one.                |
+| `spot.media(path)`                                     | A picture or a video of your spot's folder.                            |
+| `spot.loop(period:fill:path:)`, `spot.loop(period:stroke:width:path:)` | A shape that moves in a loop, drawn by macOS while the view shows. |
+| `spot.tip(text)`, `spot.tipDelay`                      | A tip that shows on hover, and how long it waits.                      |
+| `spot.cornerButton(symbol, label:, card:, action:)`   | The round button on the rim of a card.                                 |
+| `spot.card(id)`, `spot.cardSize(id)`, `spot.sheet(id)` | The card of another spot, its size, and its sheet from its `sample.sh`. |
+| `spot.columnGap`, `spot.rowGap`, `spot.columns`        | The gaps between cards, and how many columns a window holds.           |
+| `SpotMetric(spot, value:, detail:, mark:, onFill:)`    | A big number with its detail and an SF Symbol, laid out for the card's size. |
 
 On a card, a view only draws. In a sheet, it takes clicks and keys.
 

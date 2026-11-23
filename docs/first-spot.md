@@ -3,6 +3,7 @@
 You'll build Ports: a list of the programs that listen on a port, such as a server you forgot on :3000. Press a row,
 and that program stops.
 
+<!-- draw: lsof() { printf 'COMMAND PID USER FD TYPE DEVICE SIZE NODE NAME\nnode 4120 me 21u IPv4 0x1 0t0 TCP *:3000 (LISTEN)\npostgres 812 me 7u IPv4 0x2 0t0 TCP 127.0.0.1:5432 (LISTEN)\npython3 5051 me 3u IPv6 0x3 0t0 TCP *:8080 (LISTEN)\n'; }; . "$EXAMPLE" -->
 ![Ports in the Openspot panel: a row for each port, such as :3000 with node under it](images/first-spot.png)
 
 ## Make the folder
@@ -88,7 +89,7 @@ You don't need the panel to test a spot. Run it the way Openspot does:
 openspot spot run ports show
 ```
 
-It prints what your script printed. If something's wrong, these help:
+It prints what your script printed. `show` has 10 seconds to print its first block. If something's wrong, these help:
 
 ```text
 openspot check spots ~/.config/openspot/spots

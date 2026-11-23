@@ -39,8 +39,9 @@ A spot with a schedule starts off, so that a new spot never runs on its own. Tur
 openspot setting set --spot standup enabled true
 ```
 
-A spot with `every` also starts off the grid, so add its card in Edit Spots. At 8:05, the card shows Stand-up, with
-in 85 min under it. At 9:25 on a weekday, a message says Stand-up in 5 minutes.
+A new spot's card starts on the panel's grid, unless the spot has `every`, an action with a title, or only a `search`
+pattern. Stand-up has `every`, so add its card in Edit Spots. At 8:05, the card shows Stand-up, with in 85 min under
+it. At 9:25 on a weekday, a message says Stand-up in 5 minutes.
 
 ## How it works
 

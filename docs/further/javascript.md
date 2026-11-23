@@ -70,7 +70,7 @@ A function that throws fails with its message, as a script that prints `error=` 
 
 | Name                              | Is                                                                            |
 | --------------------------------- | ----------------------------------------------------------------------------- |
-| `env.<noun>.<verb>(...)`          | An `openspot` command: its words in order, then an object of its options, such as `{ dryRun: true }`. |
+| `env.<noun>.<verb>(...)`          | An `openspot` command: its words in order, then an object of its inputs, then its options, such as `env.timer.add(t, "remind", { words: "Stand-up" })`. |
 | `env.<binding>.<action>(inputs)`  | An action of a spot you bind. It gives back its values, or `null` when people close it. |
 | `env.emit(event, values)`         | `openspot emit`: sends one of your spot's events.                            |
 | `env.open(id)`                    | `openspot spot open`: opens the panel on a spot.                             |

@@ -46,6 +46,9 @@ input.text=0xff
 The rows your script prints join the search's own. A newer keystroke stops the older run, so a slow answer never
 shows late. A search run only shows, so it can't change the Mac.
 
+Hex has no sheet of its own. A spot with a `search` pattern, or with an action that has a title, gets a sheet only
+when `[on]` also names an event or `every`.
+
 `command` gives your spot a slash command. People type `/hex`, and the search offers it as a row. Return runs
 `hex.sh command` with the word and the rest of the line:
 
@@ -55,6 +58,11 @@ input.text=255
 ```
 
 `text` can be empty, so check it. People can rename the word in their config, and `name` is still `hex`.
+
+If the run's first block has `type=form`, Openspot asks with a [form](../act/forms.md#ask-from-a-row). If it prints
+anything else, your sheet opens and shows it. If it prints nothing, the panel closes when the run ends.
+
+A command word starts with a letter, and holds only letters, digits, `-` and `_`.
 
 ## Put your rows in the search
 
