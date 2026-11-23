@@ -43,6 +43,13 @@ awk '
       if (cell ~ /[.!?] +[A-Z]/) { first = cells[2]; gsub(/^ +| +$/, "", first); print FILENAME " cell of two sentences: " first; break }
     }
   }
-' $guides PROTOCOL.md app/Help/*.md >>"$found"
+' $guides PROTOCOL.md docs/protocol/*.md app/Help/*.md >>"$found"
+awk '
+  FNR == 1 { if (file != "") counted(); file = FILENAME; words = 0; fence = 0 }
+  /^```/ { fence = !fence; next }
+  !fence { for (i = 1; i <= NF; i++) if ($i ~ /[A-Za-z0-9]/) words++ }
+  END { counted() }
+  function counted() { limit = file == "GUIDE.md" ? 1200 : 800; if (words > limit) print file " has " words " words, over " limit }
+' GUIDE.md docs/protocol/*.md >>"$found"
 compare docs "$found" "A doc breaks a rule of Docs in AGENTS.md:" || exit 1
 echo "Docs check passed."
