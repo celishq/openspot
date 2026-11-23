@@ -21,9 +21,9 @@ public struct SpotFacts: Equatable, Sendable {
     public internal(set) var sources: [String]
     public let pages: [String]
     public internal(set) var uses: Set<SpotUse>
-    public let offers: [Manifest.Action]
+    public let commands: [Manifest.Action]
     public internal(set) var offeredActions: [OfferedAction]
-    public internal(set) var typedActions: [Manifest.Action] = []
+    public internal(set) var actions: [Manifest.Action] = []
     public let triggers: Manifest.Triggers
     public internal(set) var bindings: [Manifest.Binding] = []
     public internal(set) var events: [Manifest.Event] = []

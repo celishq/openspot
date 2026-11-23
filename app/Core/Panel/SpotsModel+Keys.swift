@@ -191,7 +191,7 @@ extension SpotsModel {
 
     private var escapeRow: KeyRow {
         KeyRow("escape", words: escapeWords) { [self] _ in
-            if let target, let action = target.entry.spot.actions(for: target.item).first(where: { $0.key == ActionKey(name: "escape") }) {
+            if let target, let action = target.entry.spot.frameActions(for: target.item).first(where: { $0.key == ActionKey(name: "escape") }) {
                 run(action, on: target)
             } else if !stepBack() {
                 host.dismiss()
@@ -291,7 +291,7 @@ extension SpotsModel {
     private func runAction(with key: ActionKey, on target: Target) -> Bool? {
         let typesKey = !searchText.isEmpty && Self.editsText(key)
         var none = HookAnswers()
-        if !typesKey, !target.entry.spot.actions(for: target.item).contains(where: { $0.key == key }),
+        if !typesKey, !target.entry.spot.frameActions(for: target.item).contains(where: { $0.key == key }),
            let offer = offered(on: target, answers: &none, asks: false).first(where: { $0.action.key == key }) {
             if offer.action.confirm != nil {
                 openMenu(on: target)
@@ -303,7 +303,7 @@ extension SpotsModel {
             return true
         }
         let quiet = typesKey ? [] : extras(on: target)
-        guard let action = (target.entry.spot.actions(for: target.item) + quiet).first(where: { $0.key == key }) else { return nil }
+        guard let action = (target.entry.spot.frameActions(for: target.item) + quiet).first(where: { $0.key == key }) else { return nil }
         if action.confirm != nil {
             openMenu(on: target)
             menu?.select(action)

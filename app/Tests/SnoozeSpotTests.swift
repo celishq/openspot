@@ -70,7 +70,7 @@ final class SnoozeSpotTests: XCTestCase {
         let spot = try XCTUnwrap(try SpotsFolder(url: examples).scan().spots.first { $0.id == "snooze-tab" })
 
         XCTAssertEqual(spot.mainAct, .sheet)
-        XCTAssertEqual(spot.offers.map(\.id), ["snooze", "wake"])
+        XCTAssertEqual(spot.commands.map(\.id), ["snooze", "wake"])
     }
 
     func testEachTileOfAWednesdayAfternoon() throws {

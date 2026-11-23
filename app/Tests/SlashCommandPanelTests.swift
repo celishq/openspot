@@ -38,7 +38,7 @@ final class SlashCommandPanelTests: PanelCase {
         model.isShown = true
         model.panelWillShow()
         if model.entry("notes") != nil {
-            try await wait("the buttons of notes") { self.model.entry("notes")?.spot.actions.isEmpty == false }
+            try await wait("the buttons of notes") { self.model.entry("notes")?.spot.frameActions.isEmpty == false }
         }
     }
 
@@ -198,7 +198,7 @@ final class SlashCommandPanelTests: PanelCase {
         esac
         """)
         try await open()
-        try await wait("the button of the read") { self.model.entry("jot")?.spot.actions.isEmpty == false }
+        try await wait("the button of the read") { self.model.entry("jot")?.spot.frameActions.isEmpty == false }
 
         type("/jot milk")
         XCTAssertEqual(model.visible.map(\.state.title), ["New jot"])

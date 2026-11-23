@@ -42,9 +42,8 @@ extension Spot {
     }
 
     func form(_ action: CommandAction, item: SpotItem?, timeout: TimeInterval) async throws -> ItemForm {
-        if let typed = self.typedActions.first(where: { $0.id == action.id }), typed.lacksInput {
-            guard let form = ItemForm(output: Frame(text: typed.form(with: [:], title: action.title))) else { throw SpotError.badForm }
-            return form
+        if let typed = try? self.action(action.id), typed.lacksInput {
+            return typed.itemForm(title: action.title)
         }
         let message = message(action, item: item)
         guard let form = ItemForm(output: try await output(message.words, input: message.text, timeout: timeout)) else { throw SpotError.badForm }

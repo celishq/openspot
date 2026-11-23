@@ -34,7 +34,7 @@ final class PenExampleTests: SampleSpotsCase {
         XCTAssertEqual(pen.mode, .stay)
         XCTAssertFalse(pen.triggers.shows)
         XCTAssertEqual(pen.sources, ["pen"])
-        XCTAssertEqual(pen.offers.map(\.id), ["draw"])
+        XCTAssertEqual(pen.commands.map(\.id), ["draw"])
         XCTAssertEqual(pen.soleCommand, "draw")
     }
 

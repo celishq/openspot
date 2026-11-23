@@ -114,7 +114,7 @@ extension SpotsModel {
         guard openSheetID == nil, target.item == nil else { return [] }
         let spot = target.entry.spot
         let history: [CommandAction] = spot.keepsHistory ? [.history] : []
-        let commands = spot.opensToKeys || spot.soleCommand != nil ? [] : spot.offers.map(CommandAction.command)
+        let commands = spot.opensToKeys || spot.soleCommand != nil ? [] : spot.commands.map(CommandAction.command)
         return history + commands
     }
 

@@ -288,7 +288,7 @@ extension SpotTypes {
         }
         var parts = ["struct \(name) {"]
         var records: [String] = []
-        for action in other.typedActions {
+        for action in other.actions {
             let values = "\(typeName(binding.name))\(typeName(action.id))Values"
             let parameters = action.inputs.map { input in
                 let given = input.isRequired && input.defaultValue == nil

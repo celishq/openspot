@@ -63,7 +63,7 @@ extension SpotsModel {
                 return true
             },
             .any { [self] key in
-                guard let entry, let action = sheet.spot.actions(for: item).first(where: { $0.key == key }) else { return nil }
+                guard let entry, let action = sheet.spot.frameActions(for: item).first(where: { $0.key == key }) else { return nil }
                 run(action, on: (entry, item), in: detachedPlace(of: id))
                 return true
             },

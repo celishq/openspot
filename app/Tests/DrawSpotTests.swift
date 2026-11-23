@@ -123,7 +123,7 @@ final class DrawSpotTests: XCTestCase {
         try write("Untitled board", id: "a")
         let sheet = try await opened(spot)
         let item = try row("a", in: sheet)
-        let rename = try XCTUnwrap(sheet.spot.actions.first { $0.id == "rename" })
+        let rename = try XCTUnwrap(sheet.spot.frameActions.first { $0.id == "rename" })
         guard case .form(let form) = await sheet.answer(to: rename, item: item) else { return XCTFail("Rename asked with no form") }
         var draft = FormDraft(form: form)
         XCTAssertEqual(draft.form.fields.map(\.value), ["Untitled board"])
@@ -143,7 +143,7 @@ final class DrawSpotTests: XCTestCase {
         try Data().write(to: boards.appendingPathComponent("flows.png"))
         let sheet = try await opened(spot)
 
-        sheet.run(try XCTUnwrap(sheet.spot.actions.first { $0.id == "delete" }), item: try row("flows", in: sheet))
+        sheet.run(try XCTUnwrap(sheet.spot.frameActions.first { $0.id == "delete" }), item: try row("flows", in: sheet))
 
         try await wait("the sheet with no board") { sheet.list.shown.map(\.title) == ["New board"] }
         XCTAssertEqual(toasts, ["Moved Flows to the Trash."])
@@ -158,7 +158,7 @@ final class DrawSpotTests: XCTestCase {
         let spot = try draw()
         let sheet = try await opened(spot)
 
-        sheet.run(try XCTUnwrap(sheet.spot.actions.first { $0.id == "reveal" }), item: nil)
+        sheet.run(try XCTUnwrap(sheet.spot.frameActions.first { $0.id == "reveal" }), item: nil)
 
         try await wait("the folder that Finder got") { FileManager.default.fileExists(atPath: home.appendingPathComponent("opened").path) }
         XCTAssertEqual(try String(contentsOf: home.appendingPathComponent("opened"), encoding: .utf8).trimmingCharacters(in: .newlines), boards.path)
@@ -273,7 +273,7 @@ final class DrawSpotTests: XCTestCase {
         let second = try await opened(spot)
         XCTAssertEqual(processes(of: program).count, 2)
         let item = try row("flows", in: second)
-        let rename = try XCTUnwrap(second.spot.actions.first { $0.id == "rename" })
+        let rename = try XCTUnwrap(second.spot.frameActions.first { $0.id == "rename" })
         guard case .form(let form) = await second.answer(to: rename, item: item) else { return XCTFail("Rename asked with no form") }
         var draft = FormDraft(form: form)
         draft.set("Other", for: "name")

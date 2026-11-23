@@ -376,7 +376,7 @@ final class InlineScript: @unchecked Sendable {
     private func answered(_ arguments: [String], _ answer: CommandAnswer) -> [String: Any] {
         var result: [String: Any] = ["code": answer.code, "output": answer.output, "errors": answer.errors.hasSuffix("\n") ? String(answer.errors.dropLast()) : answer.errors]
         if arguments.first == RunCall.noun.name, arguments.count > 1, answer.code == 0 {
-            let action = RunCall.target(arguments[1]).flatMap { target in bound[target.binding]?.typedActions.first { $0.id == target.action } }
+            let action = RunCall.target(arguments[1]).flatMap { target in try? bound[target.binding]?.action(target.action) }
             let fields = TextBlock.blocks(in: answer.output).flatMap(\.fields).filter { $0.key.hasPrefix(RootKey.outputPrefix) }
             result["values"] = Self.values(of: fields, prefix: RootKey.outputPrefix, types: action?.outputs ?? [])
         }

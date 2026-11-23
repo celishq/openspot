@@ -12,7 +12,7 @@ extension SpotsModel {
 
     private func confirmWords(of key: GlobalKey) -> String? {
         guard case .command(let command) = key.act else { return nil }
-        return sheets[key.spot]?.spot.offers.first { $0.id == command }?.confirm
+        return sheets[key.spot]?.spot.commands.first { $0.id == command }?.confirm
     }
 
     var waitingWords: String? {
@@ -180,7 +180,7 @@ extension SpotsModel {
 
     var soleHint: String? {
         guard openSheetID == nil, let entry = selectedEntry, entry.item == nil, case .command(let command) = entry.spot.mainAct else { return nil }
-        return "⏎ \(entry.spot.offers.first?.title ?? command)   ⌘⏎ Settings   ⌘K Actions"
+        return "⏎ \(entry.spot.commands.first?.title ?? command)   ⌘⏎ Settings   ⌘K Actions"
     }
 
     private func runSole(_ command: String, of entry: Entry) {

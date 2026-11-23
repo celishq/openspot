@@ -74,7 +74,7 @@ final class SpotTests: XCTestCase {
 
         XCTAssertEqual(opened.spot.kind, .list)
         XCTAssertEqual(opened.spot.openTitle, "Select")
-        XCTAssertEqual(opened.spot.actions.map(\.id), ["copy"])
+        XCTAssertEqual(opened.spot.frameActions.map(\.id), ["copy"])
         XCTAssertEqual(opened.state.on, true)
     }
 

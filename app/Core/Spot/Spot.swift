@@ -19,7 +19,7 @@ public struct Spot: Equatable, Sendable {
     public private(set) var pick: ItemPick
     public private(set) var keepsRecent = true
     public private(set) var openTitle: String?
-    public private(set) var actions: [CommandAction]
+    public private(set) var frameActions: [CommandAction]
     public private(set) var settingsSheet: SpotSettings?
     public private(set) var opensToKeys = false
     private var chosenIcon: Icon?
@@ -38,13 +38,13 @@ public struct Spot: Equatable, Sendable {
         isFound: Bool = true,
         order: Int = 0,
         openTitle: String? = nil,
-        actions: [CommandAction] = [],
+        frameActions: [CommandAction] = [],
         host: HostSheet? = nil,
         growsFromField: Bool = false,
         mode: SpotMode = .once,
         dataName: String? = nil,
         isOnGrid: Bool = true,
-        offers: [Manifest.Action] = [],
+        commands: [Manifest.Action] = [],
         offeredActions: [OfferedAction] = [],
         settings: [Manifest.Setting] = [],
         views: [String: String] = [:],
@@ -59,17 +59,17 @@ public struct Spot: Equatable, Sendable {
     ) {
         header = Header(SpotFacts(
             id: id, name: name, url: url, size: size, headerIcon: icon, baseSymbol: symbol, subtitle: subtitle,
-            hasSheet: triggers.shows || triggers.search == nil && offers.isEmpty && offeredActions.isEmpty,
+            hasSheet: triggers.shows || triggers.search == nil && commands.isEmpty && offeredActions.isEmpty,
             isFound: isFound, order: order,
             host: host, growsFromField: growsFromField, mode: mode,
             dataName: dataName, isOnGrid: isOnGrid, views: views, viewDates: viewDates, sources: sources, pages: pages, uses: uses,
-            offers: offers, offeredActions: offeredActions, triggers: triggers, settings: settings, keywords: keywords, sample: sample,
+            commands: commands, offeredActions: offeredActions, triggers: triggers, settings: settings, keywords: keywords, sample: sample,
             edits: edits, starts: starts
         ))
         self.kind = kind
         self.pick = pick
         self.openTitle = openTitle
-        self.actions = actions
+        self.frameActions = frameActions
     }
 
     @inlinable
@@ -89,7 +89,7 @@ public struct Spot: Equatable, Sendable {
     public static func == (left: Spot, right: Spot) -> Bool {
         (left.header === right.header || left.header.facts == right.header.facts) && left.kind == right.kind && left.pick == right.pick
             && left.keepsRecent == right.keepsRecent && left.openTitle == right.openTitle
-            && left.actions == right.actions && left.settingsSheet == right.settingsSheet
+            && left.frameActions == right.frameActions && left.settingsSheet == right.settingsSheet
             && left.opensToKeys == right.opensToKeys && left.chosenIcon == right.chosenIcon
     }
 
@@ -129,13 +129,19 @@ public struct Spot: Equatable, Sendable {
         if case .fault(let fault)? = self.host { fault } else { nil }
     }
 
+    public func action(_ id: String) throws -> Manifest.Action {
+        if let action = self.actions.first(where: { $0.id == id }) { return action }
+        let names = self.actions.map(\.id)
+        throw SpotError.fault("\(self.name) has no action \(id). " + (names.isEmpty ? "It declares no [actions]." : "Name one of its [actions]: \(names.joined(separator: ", "))."))
+    }
+
     public func symbol(of command: String) -> String {
-        Icon(text: self.offers.first { $0.id == command }?.icon)?.symbol ?? self.symbol
+        Icon(text: self.commands.first { $0.id == command }?.icon)?.symbol ?? self.symbol
     }
 
     public var soleCommand: String? {
-        guard self.host == nil, self.offers.count == 1 else { return nil }
-        return self.offers.first?.id
+        guard self.host == nil, self.commands.count == 1 else { return nil }
+        return self.commands.first?.id
     }
 
     public var mainAct: MainAct {
@@ -156,7 +162,7 @@ public struct Spot: Equatable, Sendable {
 
     private var settingKeys: [SpotSettings.Key] {
         let icon = self.image ?? self.file ?? self.glyph ?? self.symbol
-        let commands = self.offers.map { SpotSettings.Key(act: .command($0.id), title: $0.title ?? "", icon: $0.icon ?? icon) }
+        let commands = self.commands.map { SpotSettings.Key(act: .command($0.id), title: $0.title ?? "", icon: $0.icon ?? icon) }
         return [SpotSettings.Key(act: .open, title: "Open", icon: icon)] + commands + [SpotSettings.Key(act: .float, title: "Float", icon: icon)]
     }
 
@@ -172,7 +178,7 @@ public struct Spot: Equatable, Sendable {
             keys: settingKeys,
             isWindowByDefault: isWindow
         )
-        if !self.hasSheet, !self.offers.isEmpty {
+        if !self.hasSheet, !self.commands.isEmpty {
             spot.opensToKeys = true
         }
         return spot
@@ -314,7 +320,7 @@ public struct Spot: Equatable, Sendable {
 
     public func taking(_ output: Frame) -> Spot {
         var command = self
-        command.actions = output.actions
+        command.frameActions = output.actions
         command.openTitle = output.openTitle
         command.pick = output.pick
         command.keepsRecent = output.keepsRecent
@@ -330,15 +336,15 @@ public struct Spot: Equatable, Sendable {
         return state.onGrid(isOnGrid)
     }
 
-    public func actions(for item: SpotItem?) -> [CommandAction] {
-        actions.filter { ($0.scope == .spot || item != nil) && item?.hides?.contains($0.id) != true }
+    public func frameActions(for item: SpotItem?) -> [CommandAction] {
+        frameActions.filter { ($0.scope == .spot || item != nil) && item?.hides?.contains($0.id) != true }
     }
 
     public func openTitle(hasItem: Bool) -> String? {
         if hasItem { return openTitle ?? "Open" }
         switch mainAct {
         case .toggle: return "Toggle"
-        case .command(let command): return self.offers.first { $0.id == command }?.title ?? "Open"
+        case .command(let command): return self.commands.first { $0.id == command }?.title ?? "Open"
         case .sheet: return "Open"
         case .none: return nil
         }

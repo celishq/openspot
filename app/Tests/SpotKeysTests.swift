@@ -37,7 +37,7 @@ final class SpotKeysTests: XCTestCase {
         XCTAssertEqual(spot.offeredActions.first?.group, "Icon")
         XCTAssertEqual(spot.offeredActions.first?.action.title, "Change Icon")
         XCTAssertEqual(spot.offeredActions.first?.origins, [])
-        XCTAssertEqual(spot.offers.map(\.id), ["reset"])
+        XCTAssertEqual(spot.commands.map(\.id), ["reset"])
         XCTAssertFalse(spot.isFound)
     }
 
@@ -48,7 +48,7 @@ final class SpotKeysTests: XCTestCase {
 
         XCTAssertEqual(spot.offeredActions.map(\.action.id), ["change", "change.draw"])
         XCTAssertEqual(spot.offeredActions.last?.origins, [.mine])
-        XCTAssertEqual(spot.offers.map(\.id), ["other.go"])
+        XCTAssertEqual(spot.commands.map(\.id), ["other.go"])
     }
 
     func testAJavaScriptSpotNamesTheHandlerThatSaysWhetherAnActionShows() throws {

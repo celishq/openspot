@@ -46,7 +46,7 @@ final class AppWordsTests: XCTestCase {
         XCTAssertEqual(acts.offeredActions.map { $0.action.key?.label ?? "" }, ["⇧⌘C", ""])
         XCTAssertEqual(acts.offeredActions.map(\.action.after), [.stay, .close])
         XCTAssertEqual(acts.offeredActions.map(\.origins), [[.mine, .core], [.mine, .core]])
-        XCTAssertEqual(acts.offers.map(\.id), ["go"])
+        XCTAssertEqual(acts.commands.map(\.id), ["go"])
         XCTAssertEqual(scan.refused.map(\.reason), ["Mine has an unknown key in [actions.share]: shortcut"])
     }
 

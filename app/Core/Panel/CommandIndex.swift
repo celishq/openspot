@@ -12,12 +12,12 @@ struct CommandIndex {
     init(_ cards: [SpotsModel.Entry]) {
         var rows: [SpotItem] = []
         for card in cards where card.isFound && card.spot.fault == nil {
-            let offers = card.spot.host == nil ? card.spot.offers.map { (CommandAction.command($0), Icon(text: $0.icon)) } : []
-            let own = card.spot.actions.filter { $0.scope == .spot }.map { ($0, Icon?.none) }
-            for (action, icon) in offers + own where action.placeholder != nil && action.confirm == nil {
+            let commands = card.spot.host == nil ? card.spot.commands.map { (CommandAction.command($0), Icon(text: $0.icon)) } : []
+            let own = card.spot.frameActions.filter { $0.scope == .spot }.map { ($0, Icon?.none) }
+            for (action, icon) in commands + own where action.placeholder != nil && action.confirm == nil {
                 let item = SpotItem(title: action.title, run: action.id, picture: icon)
                 let id = SpotsModel.Entry(spot: card.spot, item: item).id
-                rows.append(SpotItem(title: action.title, subtitle: card.state.title, run: id, keywords: [CommandAction.command(of: action) ?? action.id, card.id]))
+                rows.append(SpotItem(title: action.title, subtitle: card.state.title, run: id, keywords: [action.callName, card.id]))
                 buttons[id] = action
                 items[id] = item
                 spots[id] = card.spot

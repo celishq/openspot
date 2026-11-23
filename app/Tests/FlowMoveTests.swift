@@ -19,7 +19,7 @@ final class FlowMoveTests: PanelCase {
         model.isShown = true
         model.panelWillShow()
         model.press("flow")
-        try await wait("the flow") { self.model.transition.phase == .open && self.titles == ["Page first"] && self.model.sheets["flow"]?.spot.actions.count == 5 }
+        try await wait("the flow") { self.model.transition.phase == .open && self.titles == ["Page first"] && self.model.sheets["flow"]?.spot.frameActions.count == 5 }
     }
 
     private func writeFlow() throws {
@@ -38,12 +38,12 @@ final class FlowMoveTests: PanelCase {
     }
 
     private func openFlowSheetInPlace() async throws {
-        try await wait("the flow over the list") { self.model.openSheetID == "flow" && self.titles == ["Page first"] && self.model.sheets["flow"]?.spot.actions.count == 5 }
+        try await wait("the flow over the list") { self.model.openSheetID == "flow" && self.titles == ["Page first"] && self.model.sheets["flow"]?.spot.frameActions.count == 5 }
     }
 
     private func pressFlow(_ id: String) throws {
         let sheet = try XCTUnwrap(model.sheets["flow"])
-        sheet.run(try XCTUnwrap(sheet.spot.actions.first { $0.id == id }), item: nil)
+        sheet.run(try XCTUnwrap(sheet.spot.frameActions.first { $0.id == id }), item: nil)
     }
 
     func testAPressPushesAPageOfItsSpotAndGoesBackAndToTheFirstSheet() async throws {

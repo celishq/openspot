@@ -37,7 +37,7 @@ final class SpotTomlTests: XCTestCase {
         XCTAssertEqual(weather.showsInSheet, true)
         XCTAssertEqual(weather.triggers.every, 300)
         XCTAssertEqual(weather.uses, [.network, .clipboard])
-        XCTAssertEqual(weather.offers.map(\.id), ["refresh"])
+        XCTAssertEqual(weather.commands.map(\.id), ["refresh"])
         XCTAssertEqual(weather.settings.map(\.id), ["city"])
     }
 

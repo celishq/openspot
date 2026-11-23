@@ -425,8 +425,8 @@ final class SpotRunsCallTests: SpotRunsCase {
         """)
         let sheet = try sheet()
         sheet.open {}
-        try await wait("the action") { sheet.spot.actions.count == 1 }
-        let action = try XCTUnwrap(sheet.spot.actions.first)
+        try await wait("the action") { sheet.spot.frameActions.count == 1 }
+        let action = try XCTUnwrap(sheet.spot.frameActions.first)
 
         sheet.run(action, item: nil)
         try await wait("the call") { self.log() == ["show", "go"] }

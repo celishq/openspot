@@ -5,7 +5,7 @@ extension SpotRun {
     func send(_ call: Call) -> Bool {
         var call = call
         if case .ask = call.purpose {} else {
-            if let action = typedAction(of: call.words) {
+            if let id = call.words.arguments.first, let action = try? spot.action(id) {
                 do {
                     call.message.inputs = try action.check.checked(call.message.inputs, keepingUndeclared: true)
                 } catch {
@@ -16,11 +16,6 @@ extension SpotRun {
             acted()
         }
         return link.send(OpenCall(call, started: runs.now()))
-    }
-
-    func typedAction(of words: SpotWords) -> Manifest.Action? {
-        guard let id = words.arguments.first else { return nil }
-        return spot.typedActions.first { $0.id == id }
     }
 
     private func refuse(_ call: Call, _ error: Error) {
@@ -39,7 +34,7 @@ extension SpotRun {
     private func refusal(of lines: Frame, in call: OpenCall) -> SpotError? {
         if let message = lines.root?.value(RootKey.error) { return .failed(1, message) }
         let outputs = lines.outputs
-        guard !outputs.isEmpty, let action = typedAction(of: call.request.words), let fault = action.fault(in: outputs) else { return nil }
+        guard !outputs.isEmpty, let id = call.request.words.arguments.first, let action = try? spot.action(id), let fault = action.fault(in: outputs) else { return nil }
         return .fault(fault)
     }
 

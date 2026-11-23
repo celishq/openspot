@@ -133,7 +133,7 @@ extension SpotRun {
 
     private func acting(_ action: CommandAction, item: SpotItem?) -> Message {
         let inputs = item.map { [TextBlock.Field(key: Self.itemInput, value: $0.run)] + $0.carried } ?? []
-        return Message(.press(CommandAction.command(of: action) ?? action.id), inputs: inputs)
+        return Message(.press(action.callName), inputs: inputs)
     }
 
     public func answer(to action: CommandAction, item: SpotItem?, closes: Bool = false) async -> CallAnswer {
@@ -174,13 +174,14 @@ extension SpotRun {
         let call = SpotWords.action(action, item: nil)
         guard let key = freeKey(call, onCard: onCard) else { return .stopped }
         answered = nil
-        let typed = typedAction(of: call)
+        let typed = try? spot.action(action.callName)
         if let typed, let input = typed.textInput {
             let values = search.text.isEmpty ? [:] : [input.name: search.text]
             let lacks = typed.inputs.contains { $0.isRequired && $0.defaultValue == nil && values[$0.name] == nil }
-            if lacks, let form = ItemForm(output: Frame(text: typed.form(with: values, title: action.title))) { return .form(form) }
+            if lacks { return .form(typed.itemForm(values: values, title: action.title)) }
         }
-        let message = CommandAction.word(of: action).map { Handler.command.message([$0], [search.text]) }
+        let word: String? = if case .word(let name) = action.kind { name } else { nil }
+        let message = word.map { Handler.command.message([$0], [search.text]) }
             ?? typed?.textInput.map { Message(call, inputs: [.init(key: $0.name, value: search.text)]) }
             ?? Message(call)
         return try await withCheckedThrowingContinuation { waiting in
@@ -196,11 +197,11 @@ extension SpotRun {
     }
 
     public func submit(_ action: CommandAction, item: SpotItem?, draft: FormDraft) async throws -> CallAnswer {
-        let word = CommandAction.word(of: action)
+        let word: String? = if case .word(let name) = action.kind { name } else { nil }
         let call = word == nil ? SpotWords.action(action, item: item) : .press(Handler.command.name)
         guard let key = freeKey(call) else { return .stopped }
         let message = word.map { Handler.command.message([$0], then: draft.inputs) }
-            ?? Message(.press(CommandAction.command(of: action) ?? action.id), inputs: draft.inputs + (item.map { [TextBlock.Field(key: Self.itemInput, value: $0.run)] } ?? []))
+            ?? Message(.press(action.callName), inputs: draft.inputs + (item.map { [TextBlock.Field(key: Self.itemInput, value: $0.run)] } ?? []))
         guard !script.keepsState else {
             act(message, key: key)
             return .done

@@ -12,9 +12,9 @@ final class GlobalKeyTests: XCTestCase {
         let spot = try command(toml: "title = 'Move'\n[actions.full]\ntitle = 'Full screen'\n[actions.meet]\ntitle = 'Join: 09:30'\nicon = 'https://example.com/meet.png'")
 
         XCTAssertEqual(spot.name, "Move")
-        XCTAssertEqual(spot.offers.map(\.id), ["full", "meet"])
-        XCTAssertEqual(spot.offers.map(\.title), ["Full screen", "Join: 09:30"])
-        XCTAssertEqual(spot.offers.map(\.icon), [nil, "https://example.com/meet.png"])
+        XCTAssertEqual(spot.commands.map(\.id), ["full", "meet"])
+        XCTAssertEqual(spot.commands.map(\.title), ["Full screen", "Join: 09:30"])
+        XCTAssertEqual(spot.commands.map(\.icon), [nil, "https://example.com/meet.png"])
     }
 
     func testABadCommandRefusesTheSpotAndNamesTheFault() {

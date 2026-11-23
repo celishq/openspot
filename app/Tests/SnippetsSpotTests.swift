@@ -26,8 +26,8 @@ final class SnippetsSpotTests: SampleSpotsCase {
             let new = try await self.action("new", of: snippets)
             XCTAssertEqual(new.placeholder, "Text to keep")
 
-            XCTAssertEqual(snippets.typedActions.first { $0.id == "new" }?.textInput?.name, "content")
-            XCTAssertFalse(try XCTUnwrap(snippets.typedActions.first { $0.id == "new" }).lacksInput)
+            XCTAssertEqual((try? snippets.action("new"))?.textInput?.name, "content")
+            XCTAssertFalse(try snippets.action("new").lacksInput)
 
             for input in ["", "input.content=hello there\n"] {
                 let output = try await Self.answer(of: snippets, ["new"], input: input)

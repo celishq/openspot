@@ -15,7 +15,7 @@ public struct SpotWords: Equatable, Sendable {
     }
 
     public static func action(_ action: CommandAction, item: SpotItem?) -> SpotWords {
-        SpotWords(arguments: [CommandAction.command(of: action) ?? action.id] + (item.map { [$0.run] } ?? []))
+        SpotWords(arguments: [action.callName] + (item.map { [$0.run] } ?? []))
     }
 
     public static func press(_ part: String) -> SpotWords {
