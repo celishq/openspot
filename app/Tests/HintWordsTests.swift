@@ -18,6 +18,11 @@ final class HintWordsTests: XCTestCase {
         XCTAssertEqual(groups("↩ Open   ⌘K Actions   Esc Close"), ["[↩] Open", "[⌘K] Actions", "[Esc] Close"])
     }
 
+    func testTabIsAKey() {
+        XCTAssertEqual(groups("⇥ 3 Contexts   ⏎ Open"), ["[⇥] 3 Contexts", "[⏎] Open"])
+        XCTAssertEqual(groups("⇥ Next   ⇧⇥ Back   Esc Leave"), ["[⇥] Next", "[⇧⇥] Back", "[Esc] Leave"])
+    }
+
     func testTheTitleOfASpotIsAGroupWithNoKey() {
         XCTAssertEqual(groups("Translate  ↩ Open"), ["Translate", "[↩] Open"])
     }
