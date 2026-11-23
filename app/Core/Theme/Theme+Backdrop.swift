@@ -30,7 +30,7 @@ extension Theme {
         init(style: Style, reach: Reach, exact: @escaping (String) -> Double?) {
             self.style = style
             self.reach = reach
-            blur = exact("backdrop-blur") ?? 3
+            blur = exact("backdrop-blur") ?? 2
             size = exact("halo-size") ?? Double(SpotTokens.halo)
             padding = exact("halo-padding") ?? 0
             shadow = exact("card-shadow-size") ?? 24

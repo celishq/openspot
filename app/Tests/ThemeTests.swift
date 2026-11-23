@@ -107,7 +107,7 @@ final class ThemeTests: XCTestCase {
         XCTAssertEqual(Theme(text: frosted).colours.light.glassTint.sample.alpha, 0)
         XCTAssertEqual(Theme(text: clear).colours.glass, .clear)
         XCTAssertEqual(Theme(text: clear).colours.light.glassTint, ThemeColor(text: "#C4C4C473"))
-        XCTAssertEqual([Theme(text: frosted).layout.backdrop.blur, Theme(text: clear).layout.backdrop.blur], [3, 8])
+        XCTAssertEqual([Theme(text: frosted).layout.backdrop.blur, Theme(text: clear).layout.backdrop.blur], [2, 6])
     }
 
     func testAnOnColourIsTheBackgroundOrTheInkWhicheverReadsBetter() {
@@ -170,7 +170,7 @@ final class ThemeTests: XCTestCase {
         XCTAssertEqual([layout.motion.pressBounce, layout.motion.pressedScale, layout.motion.liftedScale, layout.motion.focusedScale], [0.2, 1.04, 1.05, 1.04])
         XCTAssertEqual(layout.backdrop.style, .blur)
         XCTAssertEqual(layout.backdrop.reach, .tiles)
-        XCTAssertEqual([layout.backdrop.blur, layout.backdrop.size, layout.backdrop.padding], [3, 90, 0])
+        XCTAssertEqual([layout.backdrop.blur, layout.backdrop.size, layout.backdrop.padding], [2, 90, 0])
         XCTAssertEqual([layout.backdrop.ease, layout.backdrop.roundness, layout.backdrop.inset], [2, 2, 40])
     }
 
@@ -304,6 +304,18 @@ final class ThemeTests: XCTestCase {
         XCTAssertGreaterThan(files.count, 1)
         for file in files {
             XCTAssertEqual(ThemeFolder.read(builtIn: builtInURL, copy: file).faults, [], file.path)
+        }
+    }
+
+    func testEachShippedThemeButRetroDeckBlursWhatIsBehindItsTiles() throws {
+        let shipped = builtInURL.deletingLastPathComponent().deletingLastPathComponent()
+        let folders = try FileManager.default.contentsOfDirectory(at: shipped, includingPropertiesForKeys: nil).filter { $0.pathExtension == "theme" }
+
+        XCTAssertGreaterThan(folders.count, 1)
+        for folder in folders {
+            let style = ThemeFolder.read(builtIn: builtInURL, copy: folder.appendingPathComponent("theme.toml")).layout.backdrop.style
+            let blurs = style == .blur || style == .veil
+            XCTAssertEqual(blurs, folder.lastPathComponent != "Retro Deck.theme", folder.lastPathComponent)
         }
     }
 
