@@ -309,8 +309,8 @@ public final class SpotRuns {
         dragTakers.contains(id)
     }
 
-    public func answer(of spot: Spot, _ words: SpotWords, input: String? = nil, limit: TimeInterval? = nil, variables: [String: String] = [:]) async throws -> String {
-        try await mode(of: spot).answer(of: spot, words, input: input, limit: limit, variables: variables, in: self)
+    public func answer(of spot: Spot, _ handler: String, input: String? = nil, limit: TimeInterval? = nil, variables: [String: String] = [:]) async throws -> String {
+        try await mode(of: spot).answer(of: spot, handler, input: input, limit: limit, variables: variables, in: self)
     }
 
     func isOnGrid(_ id: String) -> Bool {
@@ -356,11 +356,11 @@ public final class SpotRuns {
         log != nil || onCall != nil
     }
 
-    func record(_ spot: Spot, _ words: SpotWords, input: String?, frames: [String], errors: String, end: ScriptCall.End, event: ShowEvent?, started: Date, begin: Date) {
+    func record(_ spot: Spot, _ handler: String, input: String?, frames: [String], errors: String, end: ScriptCall.End, event: ShowEvent?, started: Date, begin: Date) {
         guard !spot.reachesAccountKey else { return }
         let record = CallLog.Record(
             spot: spot.id,
-            arguments: words.arguments,
+            arguments: [handler],
             input: input,
             frames: frames,
             errors: errors,

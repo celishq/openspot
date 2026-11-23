@@ -43,7 +43,7 @@ final class EditSheetTests: PanelCase {
         let done = try XCTUnwrap(sheet.panel?.parts.first { $0.id == "done" })
 
         model.pressPart(done)
-        try await wait("the call of done") { sheet.calls.contains { $0.words == .press("done") } }
+        try await wait("the call of done") { sheet.calls.contains { $0.handler == "done" } }
         XCTAssertEqual(host.dismissals, 0)
         FileManager.default.createFile(atPath: release.path, contents: Data())
 

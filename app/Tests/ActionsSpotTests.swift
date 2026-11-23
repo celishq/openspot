@@ -18,9 +18,9 @@ final class ActionsSpotTests: BuiltInCase {
         try "#!/bin/sh\n".writeScript(to: core.appendingPathComponent("caffeinate.spot/caffeinate.sh"), toml: "title = 'Caffeinate'")
 
         for act in ["settings", "edit", "share", "delete"] {
-            try await actions.perform(SpotWords(arguments: [act]), input: "input.item=weather\n", timeout: 60)
+            try await actions.perform(act, input: "input.item=weather\n", timeout: 60)
         }
-        try await actions.perform(SpotWords(arguments: ["off"]), input: "input.item=caffeinate\n", timeout: 60)
+        try await actions.perform("off", input: "input.item=caffeinate\n", timeout: 60)
 
         let opened = await app.opened
         let changes = await app.changeList
@@ -41,8 +41,8 @@ final class ActionsSpotTests: BuiltInCase {
 
         let before = await ask("weather")
         _ = try await acts.call("icon.draw", inputs: weather)
-        try await icon.perform(SpotWords(arguments: ["drawer"]), input: "input.value=0" + String(repeating: ".", count: 80) + "\n", timeout: 60)
-        try await icon.perform(SpotWords(arguments: ["save"]), timeout: 60)
+        try await icon.perform("drawer", input: "input.value=0" + String(repeating: ".", count: 80) + "\n", timeout: 60)
+        try await icon.perform("save", timeout: 60)
         let drawn = await ask("weather")
         _ = try await acts.call("icon.reset", inputs: weather)
         let after = await ask("weather")

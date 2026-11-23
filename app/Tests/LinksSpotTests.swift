@@ -237,7 +237,7 @@ final class LinksSpotTests: SampleSpotsCase {
             XCTAssertFalse(try XCTUnwrap(links.typedActions.first { $0.id == "new" }).lacksInput)
 
             for input in ["", "input.url=example.com\n"] {
-                let output = try await Self.answer(of: links, ["new"], input: input)
+                let output = try await Self.answer(of: links, "new", input: input)
                 let form = try XCTUnwrap(ItemForm(output: output), input)
                 XCTAssertEqual(form.title, "New link")
                 XCTAssertEqual(form.fields.map(\.label), ["Name", "Link"])
@@ -260,10 +260,10 @@ final class LinksSpotTests: SampleSpotsCase {
             XCTAssertEqual(item.subtitle, "github.com")
             XCTAssertEqual(item.hides, ["reveal"])
 
-            try await links.perform(.press("press"), input: "input.item=\(item.run)\n", timeout: 60)
+            try await links.perform("press", input: "input.item=\(item.run)\n", timeout: 60)
             XCTAssertEqual(try self.read("opened", in: folder), "https://github.com/a/b\n")
 
-            try await links.perform(.press("copy"), input: "input.item=\(item.run)\n", timeout: 60)
+            try await links.perform("copy", input: "input.item=\(item.run)\n", timeout: 60)
             XCTAssertEqual(try self.read("clipboard", in: folder), "https://github.com/a/b")
             XCTAssertFalse(FileManager.default.fileExists(atPath: folder.appendingPathComponent("direct").path))
         }
@@ -317,8 +317,8 @@ final class LinksSpotTests: SampleSpotsCase {
 
             """.writeScript(to: folder.appendingPathComponent("tools/jq"))
 
-            async let first: Void = links.perform(.press(delete.id), input: "input.item=\(items[0].run)\n", timeout: 60)
-            async let second: Void = links.perform(.press(delete.id), input: "input.item=\(items[1].run)\n", timeout: 60)
+            async let first: Void = links.perform(delete.id, input: "input.item=\(items[0].run)\n", timeout: 60)
+            async let second: Void = links.perform(delete.id, input: "input.item=\(items[1].run)\n", timeout: 60)
             _ = try await (first, second)
 
             let left = try await links.items(timeout: 60).items
@@ -331,7 +331,7 @@ final class LinksSpotTests: SampleSpotsCase {
         try await withPrivateHome { _ in
             let delete = try await self.action("delete", of: links)
             for item in try await links.items(timeout: 60).items {
-                try await links.perform(.press(delete.id), input: "input.item=\(item.run)\n", timeout: 60)
+                try await links.perform(delete.id, input: "input.item=\(item.run)\n", timeout: 60)
             }
 
             let items = try await links.items(timeout: 60).items
@@ -354,7 +354,7 @@ final class LinksSpotTests: SampleSpotsCase {
             let all = try await links.items(timeout: 60).items
             let item = try XCTUnwrap(all.first { $0.run == run })
 
-            try await links.perform(.press("press"), input: "input.item=\(item.run)\n", timeout: 60)
+            try await links.perform("press", input: "input.item=\(item.run)\n", timeout: 60)
 
             XCTAssertEqual(item.iconFile, place.path)
             XCTAssertEqual(try self.read("opened", in: folder), place.path + "\n")
@@ -367,7 +367,7 @@ final class LinksSpotTests: SampleSpotsCase {
             let downloads = try await links.items(timeout: 60).items.first { $0.title == "Downloads" }
             do {
                 let item = try XCTUnwrap(downloads)
-                try await links.perform(.press("press"), input: "input.item=\(item.run)\n", timeout: 60)
+                try await links.perform("press", input: "input.item=\(item.run)\n", timeout: 60)
                 XCTFail("expected a failure")
             } catch let error as SpotError {
                 XCTAssertEqual(error.reason, "Openspot cannot find \(folder.path)/Downloads.")
@@ -382,7 +382,7 @@ final class LinksSpotTests: SampleSpotsCase {
             let items = try await links.items(timeout: 60).items
             let downloads = try XCTUnwrap(items.first { $0.title == "Downloads" })
 
-            try await links.perform(.press("reveal"), input: "input.item=\(downloads.run)\n", timeout: 60)
+            try await links.perform("reveal", input: "input.item=\(downloads.run)\n", timeout: 60)
 
             XCTAssertEqual(try self.read("opened", in: folder), "-R\n")
         }

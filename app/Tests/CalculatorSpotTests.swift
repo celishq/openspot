@@ -97,7 +97,7 @@ final class CalculatorSpotTests: SampleSpotsCase {
 
     func testAPickCopiesThePlainValue() async throws {
         try await withPrivateHome { home in
-            try await self.calculator.perform(SpotWords(arguments: ["press"]), input: "input.item=13.46\n", timeout: 60)
+            try await self.calculator.perform("press", input: "input.item=13.46\n", timeout: 60)
 
             XCTAssertEqual(self.toasts(in: home), ["Copied 13.46"])
             XCTAssertEqual(try String(contentsOf: home.appendingPathComponent("clipboard"), encoding: .utf8), "13.46")
@@ -149,6 +149,6 @@ final class CalculatorSpotTests: SampleSpotsCase {
 @MainActor
 private extension Spot {
     func search(_ text: String, timeout: TimeInterval) async throws -> Frame {
-        try await answer(SpotWords(arguments: ["search"]), input: "input.text=\(text)\n", timeout: timeout)
+        try await answer("search", input: "input.text=\(text)\n", timeout: timeout)
     }
 }

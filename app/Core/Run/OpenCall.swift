@@ -19,7 +19,7 @@ final class OpenCall {
     init(_ request: SpotRun.Call, started: Date) {
         self.request = request
         let isAsk = if case .ask = request.purpose { true } else { false }
-        made = ScriptCall(words: request.words, isAct: !isAsk, key: request.key, started: started)
+        made = ScriptCall(handler: request.handler, isAct: !isAsk, key: request.key, started: started)
     }
 
     func outcome(_ end: ScriptCall.End) -> CallOutcome {

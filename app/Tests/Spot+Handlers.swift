@@ -3,16 +3,20 @@ import Foundation
 
 @MainActor
 extension Spot {
-    func handle(_ action: SpotWords, timeout: TimeInterval) async throws {
-        let words = action.arguments
-        let rest = Array(words.dropFirst())
-        let message = switch words.first {
-        case Handler.drop.name: Handler.drop.message(rest)
-        case Handler.drag.name: Handler.drag.message(rest)
-        case Handler.press.name: Handler.press.message(rest)
-        case let name? where !rest.isEmpty: Message(.press(name), inputs: [.init(key: "item", value: rest[0])])
-        default: Message(action)
+    func handle(_ handler: String, _ values: [String] = [], timeout: TimeInterval) async throws {
+        let message = switch handler {
+        case Handler.drop.name: Handler.drop.message(values)
+        case Handler.drag.name: Handler.drag.message(values)
+        case Handler.press.name: Handler.press.message(values)
+        default: Message(handler, inputs: values.prefix(1).map { .init(key: "item", value: $0) })
         }
-        try await perform(message.words, input: message.text, timeout: timeout)
+        try await perform(message.handler, input: message.text, timeout: timeout)
+    }
+
+    func handle(_ item: SpotItem, timeout: TimeInterval) async throws {
+        let message = item.isToggle
+            ? Message(item.run, inputs: [.init(key: "value", value: item.isOn ? "false" : "true")] + item.carried)
+            : Handler.press.message([item.run], then: item.carried)
+        try await perform(message.handler, input: message.text, timeout: timeout)
     }
 }

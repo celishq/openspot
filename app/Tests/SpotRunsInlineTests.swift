@@ -220,7 +220,7 @@ final class SpotRunsInlineTests: SpotRunsCase {
         try inline(toml: "title = 'Script'", "export default { show() { return openspot.frame([{ item: 'a', title: 'one\\n\\ntext=x\\ntitle=x', hides: ['x', 'y'], none: null }, { item: 'b', value: true }]) } }")
         let spot = try XCTUnwrap(try scanned().scripts.first)
 
-        let text = try await runs.answer(of: spot, SpotWords(arguments: ["show"]), limit: 60)
+        let text = try await runs.answer(of: spot, "show", limit: 60)
 
         let items = Frame(text: text).items
         XCTAssertEqual(items.map(\.run), ["a", "b"], text)
@@ -377,7 +377,7 @@ final class SpotRunsInlineTests: SpotRunsCase {
         let spot = try XCTUnwrap(try scanned().scripts.first)
 
         do {
-            _ = try await runs.answer(of: spot, .show, limit: 0.2)
+            _ = try await runs.answer(of: spot, Handler.show.name, limit: 0.2)
             XCTFail("the run returned")
         } catch {
             XCTAssertEqual(error as? SpotError, .timedOut)

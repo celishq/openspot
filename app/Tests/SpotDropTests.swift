@@ -252,7 +252,7 @@ final class SpotDropTests: XCTestCase {
         try await pause()
 
         XCTAssertEqual(log(), ["show", "work"])
-        XCTAssertEqual(sheet.calls.map(\.words.arguments), [["work"]])
+        XCTAssertEqual(sheet.calls.map(\.handler), ["work"])
 
         FileManager.default.createFile(atPath: path("release"), contents: Data())
         try await wait("the drop") { self.log().contains("drop \(file)") }
@@ -484,7 +484,7 @@ final class SpotDropTests: XCTestCase {
         XCTAssertTrue(sheet.drop([file("a.mov")]))
 
         try await wait("the frame") { sheet.calls.first?.status != nil }
-        XCTAssertEqual(sheet.calls.first?.words.arguments.first, "drop")
+        XCTAssertEqual(sheet.calls.first?.handler, "drop")
         XCTAssertEqual(sheet.calls.first?.title, "42%")
         XCTAssertEqual(sheet.calls.first?.fill, 0.42)
         FileManager.default.createFile(atPath: path("release"), contents: Data())

@@ -286,7 +286,6 @@ final class SpotsFolderTests: XCTestCase {
         XCTAssertEqual(command.pick, .close)
         XCTAssertFalse(command.triggers.lists)
         XCTAssertEqual(command.mode, .once)
-        XCTAssertEqual(command.click.arguments, ["press"])
     }
 
     func testOnlyTheScriptNamedAfterItsFolderIsASpot() throws {

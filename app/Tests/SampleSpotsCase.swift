@@ -147,8 +147,8 @@ class SampleSpotsCase: XCTestCase {
     }
 
     @MainActor
-    static func answer(of spot: Spot, _ arguments: [String], input: String) async throws -> Frame {
-        Frame(text: try await SpotRuns(environment: TestEnvironment.values).answer(of: spot, SpotWords(arguments: arguments), input: input, limit: 30))
+    static func answer(of spot: Spot, _ handler: String, input: String) async throws -> Frame {
+        Frame(text: try await SpotRuns(environment: TestEnvironment.values).answer(of: spot, handler, input: input, limit: 30))
     }
 
     func action(_ id: String, of spot: Spot) async throws -> CommandAction {
@@ -168,7 +168,7 @@ class SampleSpotsCase: XCTestCase {
         let script = "#!/bin/sh\n[ \"$1 $2\" = 'color pick' ] && { printf '%s' '\(answer)'; exit 0; }\n\(Self.fakeOpenspot(in: folder))\n"
         try script.writeScript(to: folder.appendingPathComponent("tools/openspot"))
         let picker = try XCTUnwrap(try scan.spots.first { $0.name == "Color picker" })
-        return try await picker.perform(picker.click, timeout: 60)
+        return try await picker.perform(Handler.press.name, timeout: 60)
     }
 
     func fakeTranslate(in folder: URL, status: String? = nil) throws -> Spot {
@@ -204,12 +204,12 @@ class SampleSpotsCase: XCTestCase {
     }
 
     @MainActor
-    static func drive(_ spot: Spot, _ actions: [SpotWords]) async throws -> Frame {
+    static func drive(_ spot: Spot, _ steps: [(handler: String, value: String?)]) async throws -> Frame {
         var last = try await spot.items(timeout: 60)
         var panel = try XCTUnwrap(SheetParts(output: last))
-        for action in actions {
-            if action.arguments.count == 2 { panel.set(action.arguments[1], of: action.arguments[0]) }
-            last = Frame(text: try await SpotRuns(environment: TestEnvironment.values).answer(of: spot, action, input: Message(action, inputs: panel.inputs).text, limit: 30))
+        for step in steps {
+            if let value = step.value { panel.set(value, of: step.handler) }
+            last = Frame(text: try await SpotRuns(environment: TestEnvironment.values).answer(of: spot, step.handler, input: Message(step.handler, inputs: panel.inputs).text, limit: 30))
             panel.take(last, answering: panel.generation)
         }
         return last

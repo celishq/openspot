@@ -54,7 +54,7 @@ final class AppsSpotTests: SampleSpotsCase {
     func testAPressOfAnAppOpensIt() async throws {
         let apps = try apps()
         try await withPrivateHome { folder in
-            try await apps.handle(.item(SpotItem(title: "Notes", run: "/System/Applications/Notes.app")), timeout: 60)
+            try await apps.handle(SpotItem(title: "Notes", run: "/System/Applications/Notes.app"), timeout: 60)
 
             XCTAssertEqual(try self.read("opened", in: folder), "/System/Applications/Notes.app\n")
         }
@@ -65,7 +65,7 @@ final class AppsSpotTests: SampleSpotsCase {
         try await withPrivateHome { folder in
             let app = try Self.fakeApp(in: folder, running: true)
 
-            try await apps.handle(SpotWords(arguments: ["quit", app.path]), timeout: 60)
+            try await apps.handle("quit", [app.path], timeout: 60)
 
             let said = try String(contentsOf: folder.appendingPathComponent("osascript-args"), encoding: .utf8)
             XCTAssertEqual(said, "-e\ntell application id \"dev.zed.Zed\" to quit\n")
@@ -81,7 +81,7 @@ final class AppsSpotTests: SampleSpotsCase {
             let preferences = try Self.library(folder, "Preferences/dev.zed.Zed.plist")
             _ = try Self.library(folder, "Caches/com.other.App/db")
 
-            try await apps.handle(SpotWords(arguments: ["uninstall", app.path]), timeout: 60)
+            try await apps.handle("uninstall", [app.path], timeout: 60)
             let sheet = try await apps.items(input: "input.event=spot.change\n", timeout: 60)
 
             XCTAssertEqual(sheet.root?.value("title"), "Delete Zed")
@@ -97,11 +97,11 @@ final class AppsSpotTests: SampleSpotsCase {
             XCTAssertEqual(sheet.items.map(\.isOn), [true, false, true, true])
             XCTAssertEqual(sheet.pick, .stay)
 
-            try await apps.handle(.item(SpotItem(title: "dev.zed.Zed.plist", run: preferences.path)), timeout: 60)
+            try await apps.handle(SpotItem(title: "dev.zed.Zed.plist", run: preferences.path), timeout: 60)
             let kept = try await apps.items(input: "input.event=spot.change\n", timeout: 60)
             XCTAssertEqual(kept.items.first { $0.run == preferences.path }?.isOn, false)
-            try await apps.handle(.item(SpotItem(title: "Zed", run: support.deletingLastPathComponent().path)), timeout: 60)
-            try await apps.handle(.press("remove"), timeout: 60)
+            try await apps.handle(SpotItem(title: "Zed", run: support.deletingLastPathComponent().path), timeout: 60)
+            try await apps.handle("remove", timeout: 60)
 
             let said = try String(contentsOf: folder.appendingPathComponent("osascript-args"), encoding: .utf8)
             XCTAssertTrue(said.contains(app.path + "\n"))
@@ -174,7 +174,7 @@ final class AppsSpotTests: SampleSpotsCase {
             _ = try Self.fakeApp(in: folder, running: false)
 
             do {
-                try await apps.handle(SpotWords(arguments: ["uninstall", "/System/Applications/Notes.app"]), timeout: 60)
+                try await apps.handle("uninstall", ["/System/Applications/Notes.app"], timeout: 60)
                 XCTFail("A system app was taken for deletion")
             } catch SpotError.failed(_, let message) {
                 XCTAssertEqual(message, "Notes is part of macOS, so it cannot be deleted.")

@@ -176,7 +176,7 @@ final class CaffeinateSpotTests: XCTestCase {
         try await wait("the end of the call that asked") { sheet.calls.isEmpty }
         var draft = FormDraft(form: form)
         draft.set("45", for: "minutes")
-        _ = try await sheet.submit(CommandAction(id: Frame.press, title: item.title), item: item, draft: draft)
+        _ = try await sheet.submit(CommandAction(id: Handler.press.name, title: item.title), item: item, draft: draft)
 
         try await wait("caffeinate") { self.running().count == 1 }
         XCTAssertEqual(flags(), ["-di -t 2700"])

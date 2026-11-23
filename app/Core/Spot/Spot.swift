@@ -273,10 +273,6 @@ public struct Spot: Equatable, Sendable {
         self.host == nil
     }
 
-    public var click: SpotWords {
-        .open
-    }
-
     public var takesFiles: Bool {
         dropWords.contains { !$0.isEmpty && $0 != Self.folderWord }
     }
