@@ -56,10 +56,6 @@ extension ContextChip {
         }
     }
 
-    public var symbol: String {
-        Self.symbol(of: value?.kind)
-    }
-
     static func symbol(of kind: ContextValue.Kind?) -> String {
         switch kind {
         case .url: "link"

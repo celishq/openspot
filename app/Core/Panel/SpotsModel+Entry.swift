@@ -8,7 +8,6 @@ extension SpotsModel {
             case answer
             case command
             case taker
-            case preview
         }
 
         public let id: String
@@ -40,7 +39,7 @@ extension SpotsModel {
         }
 
         public init(spot: Spot, item: SpotItem, role: Role = .item, detail: String? = nil) {
-            id = role == .taker || role == .preview ? "\(spot.id)\n\n\(role)" : "\(spot.id)\n\(item.run)"
+            id = role == .taker ? "\(spot.id)\n\n\(role)" : "\(spot.id)\n\(item.run)"
             sizeChoice = item.card?.face.answerSize ?? .strip
             defaultSize = nil
             gridChoice = nil

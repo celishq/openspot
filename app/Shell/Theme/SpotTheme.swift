@@ -50,7 +50,6 @@ enum SpotTheme {
     static let unfocusedCardStrength = 0.35
     static let contextCardFade = 0.3
     static let contextLoadingIcon = 0.35
-    static let previewRule = 0.22
     @MainActor static var fill: Double { current.fill }
     static let edgeStrengths = [1, 0.7, 0.45]
     @MainActor static var disc: Double { current.disc }
@@ -81,6 +80,7 @@ enum SpotTheme {
     static let capFace = color(dark: .white.withAlphaComponent(0.08), light: .white.withAlphaComponent(0.6))
     static let capRim = color(dark: .white.withAlphaComponent(0.14), light: .black.withAlphaComponent(0.1))
     static let capEdge = color(dark: .black.withAlphaComponent(0.35), light: .black.withAlphaComponent(0.14))
+    static let contextDivider = color(dark: .white.withAlphaComponent(0.08), light: .black.withAlphaComponent(0.07))
     static let well = color(dark: .black.withAlphaComponent(0.22), light: .black.withAlphaComponent(0.05))
 
     private static func color(dark: NSColor, light: NSColor) -> Color {

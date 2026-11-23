@@ -24,8 +24,9 @@ final class ContextStateTests: ContextCase {
         XCTAssertTrue(model.handleKey(tab))
 
         XCTAssertEqual(model.context.selected, "tab")
-        XCTAssertEqual(shown, ["A", "keep"])
-        XCTAssertEqual(model.selected, 1)
+        XCTAssertEqual(model.contextPreview?.text, "A")
+        XCTAssertEqual(shown, ["keep"])
+        XCTAssertEqual(model.selected, 0)
     }
 
     func testTabAndShiftTabTurnTheChipsAndWrap() async throws {
@@ -65,8 +66,9 @@ final class ContextStateTests: ContextCase {
         model.query = "sav"
         model.landSearch()
 
-        XCTAssertEqual(shown, ["A", "save"])
-        XCTAssertEqual(model.selected, 1)
+        XCTAssertEqual(model.contextPreview?.text, "A")
+        XCTAssertEqual(shown, ["save"])
+        XCTAssertEqual(model.selected, 0)
     }
 
     func testTypingInTheContextBuildsTheIndexOfTakersOnce() async throws {
@@ -80,18 +82,17 @@ final class ContextStateTests: ContextCase {
         }
 
         XCTAssertEqual(model.spotListBuilds, builds)
-        XCTAssertEqual(shown, ["A", "save"])
+        XCTAssertEqual(shown, ["save"])
     }
 
-    func testThePreviewIsNeverSelected() async throws {
+    func testTheRowsStartBelowThePreview() async throws {
         try await openWithTab()
         XCTAssertTrue(model.handleKey(tab))
 
         model.moveSelection(dx: 0, dy: -1)
-        model.tap(model.visible[0].id)
 
-        XCTAssertEqual(model.selected, 1)
-        XCTAssertTrue(model.context.isOn)
+        XCTAssertEqual(model.placements.map(\.row), [1])
+        XCTAssertEqual(model.selected, 0)
     }
 
     func testReturnHandsTheValueToTheDropOfTheSelectedRow() async throws {
@@ -130,12 +131,14 @@ final class ContextStateTests: ContextCase {
         try source(waits: true, adds: "url=https://example.com/a title=A")
         await open()
         XCTAssertTrue(model.handleKey(tab))
-        XCTAssertEqual(shown, ["Loading"])
+        XCTAssertEqual(shown, [])
+        XCTAssertEqual(model.contextPreview, .loading)
 
         FileManager.default.createFile(atPath: path("release"), contents: Data())
 
-        try await wait("the rows of the value") { self.shown == ["A", "keep"] }
-        XCTAssertEqual(model.selected, 1)
+        try await wait("the rows of the value") { self.shown == ["keep"] }
+        XCTAssertEqual(model.contextPreview?.text, "A")
+        XCTAssertEqual(model.selected, 0)
     }
 
     func testASlashRunsItsCommandWhileAChipIsSelected() async throws {
@@ -179,11 +182,12 @@ final class ContextStateTests: ContextCase {
     func testPointingAtThePreviewLeavesTheSelectionOnItsRow() async throws {
         try await openWithTab()
         XCTAssertTrue(model.handleKey(tab))
-        let preview = try XCTUnwrap(model.placements.first { $0.index == 0 })
+        let row = try XCTUnwrap(model.placements.first)
 
-        model.point(at: .grid(CGPoint(x: preview.rect.midX, y: preview.rect.midY)))
+        model.point(at: .grid(CGPoint(x: row.rect.midX, y: row.rect.midY - row.rect.height - SpotTokens.rowGap)))
 
-        XCTAssertEqual(model.selected, 1)
+        XCTAssertEqual(model.selected, 0)
+        XCTAssertNil(model.pointedCard)
     }
 
     func testALateAnswerKeepsTheRowsOfTheValue() async throws {
@@ -195,8 +199,8 @@ final class ContextStateTests: ContextCase {
         model.landSearch()
         try await wait("the answer of Echo") { self.model.sheets["echo"]?.answers.isEmpty == false }
 
-        XCTAssertEqual(shown, ["A", "save"])
-        XCTAssertEqual(model.selected, 1)
+        XCTAssertEqual(shown, ["save"])
+        XCTAssertEqual(model.selected, 0)
     }
 
     func testCommandReturnOnATakerRowOpensNoSettings() async throws {
@@ -217,8 +221,8 @@ final class ContextStateTests: ContextCase {
         model.panelWillShow()
 
         XCTAssertFalse(model.context.isOn)
-        XCTAssertEqual(shown.filter { $0 != "A" }, grid)
-        XCTAssertFalse(shown.contains("A"))
+        XCTAssertEqual(shown, grid)
+        XCTAssertNil(model.contextPreview)
     }
 
     func testAnotherSourceThatAnswersKeepsTheSelectedRow() async throws {
@@ -231,12 +235,12 @@ final class ContextStateTests: ContextCase {
         try await wait("the tab") { self.model.context.chips.first?.value != nil }
         XCTAssertTrue(model.handleKey(tab))
         model.moveSelection(dx: 0, dy: 1)
-        XCTAssertEqual(model.selected, 2)
+        XCTAssertEqual(model.selected, 1)
 
         FileManager.default.createFile(atPath: path("release"), contents: Data())
         try await wait("the copy") { self.model.context.chips.count == 2 }
 
-        XCTAssertEqual(model.selected, 2)
+        XCTAssertEqual(model.selected, 1)
         XCTAssertEqual(model.context.selected, "tab")
     }
 
@@ -246,7 +250,7 @@ final class ContextStateTests: ContextCase {
 
         model.beginEditing()
 
-        XCTAssertFalse(shown.contains("A"))
+        XCTAssertNil(model.contextPreview)
     }
 
     func testTheActionsMenuHasNoTargetOnAContextRow() async throws {

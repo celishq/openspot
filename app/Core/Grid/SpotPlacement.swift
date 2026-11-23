@@ -19,6 +19,10 @@ public struct SpotPlacement: Equatable, Sendable {
         self.group = group
     }
 
+    func moved(rows: Int) -> SpotPlacement {
+        rows == 0 ? self : SpotPlacement(index: index, row: row + rows, column: column, size: size, group: group)
+    }
+
     public var top: CGFloat {
         switch group {
         case nil: 0

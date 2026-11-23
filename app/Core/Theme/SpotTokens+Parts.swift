@@ -38,11 +38,10 @@ extension SpotTokens {
     public static let contextBadge: CGFloat = 15
     public static let contextBadgeReach: CGFloat = 4
     public static let contextGap: CGFloat = 8
-    public static let previewRule: CGFloat = 3
-    public static let previewRuleInset: CGFloat = 12
-    public static let previewIcon: CGFloat = 32
     public static let previewLines = 2
     public static let previewCaptionGap: CGFloat = 4
+
+    public static var contextValueRoom: CGFloat { cell + rowGap }
 
     public static func contextStack(count: Int) -> CGFloat {
         count == 0 ? 0 : contextCard + CGFloat(count - 1) * contextStep

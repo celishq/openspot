@@ -2,7 +2,7 @@ import Foundation
 
 extension SpotsModel {
     func give(to entry: Entry) {
-        guard entry.role != .preview, let value = context.selectedChip?.value else { return }
+        guard let value = context.selectedChip?.value else { return }
         landDrop(value, on: entry.spot.id, leavesContext: true)
     }
 
@@ -17,7 +17,7 @@ extension SpotsModel {
     var contextHint: String? {
         guard openSheetID == nil, !isEditing, !context.chips.isEmpty else { return nil }
         guard context.isOn else { return "⇥ \(context.chips.count == 1 ? "Context" : "\(context.chips.count) Contexts")" }
-        let run = selectedEntry.flatMap { $0.role == .preview ? nil : "⏎ \($0.state.title)" }
+        let run = selectedEntry.map { "⏎ \($0.state.title)" }
         return [run, "⇥ Next", "Esc Leave"].compactMap { $0 }.joined(separator: "   ")
     }
 }

@@ -32,7 +32,7 @@ struct SpotFieldView: View {
     }
 
     private var searchField: some View {
-        let place = isInSheet ? Self.sheetRow(top: model.fieldTop) : Self.rect
+        let place = isInSheet ? Self.sheetRow(top: model.fieldTop) : model.fieldHoldsValue ? Self.heldRect : Self.rect
         let top = isInSheet ? Self.sheetTop(top: model.fieldTop) : SpotTokens.halo
         let glyphLeft = isInSheet ? Self.sheetGlyphLeft : SpotTokens.halo + SpotTokens.padding
         return ZStack(alignment: .topLeading) {
@@ -51,6 +51,9 @@ struct SpotFieldView: View {
                     .offset(x: fieldTextLeft, y: top)
                     .allowsHitTesting(false)
                 if !isInSheet {
+                    SpotFieldValue(model: model)
+                        .mask { SpotSurfaceShape(rect: place.offsetBy(dx: -Self.rect.minX, dy: -Self.rect.maxY), radius: fieldRadius) }
+                        .offset(x: Self.rect.minX, y: Self.rect.maxY)
                     SpotContextStack(model: model)
                         .frame(width: SpotTokens.contextStack(count: ContextChips.limit), height: SpotTokens.cell, alignment: .trailing)
                         .offset(x: Self.contextLeft, y: top)
@@ -97,6 +100,10 @@ struct SpotFieldView: View {
         .frame(width: Self.rect.width, height: Self.rect.height)
         .offset(x: Self.rect.minX, y: Self.rect.minY)
         .frame(width: SpotTokens.panelWidth, height: SpotTokens.panelHeight, alignment: .topLeading)
+    }
+
+    static var heldRect: CGRect {
+        CGRect(x: rect.minX, y: rect.minY, width: rect.width, height: rect.height + SpotTokens.contextValueRoom)
     }
 
     static func sheetRow(top: SheetTop) -> CGRect {

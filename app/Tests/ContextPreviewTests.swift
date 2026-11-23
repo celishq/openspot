@@ -7,7 +7,7 @@ final class ContextPreviewTests: XCTestCase {
 
         XCTAssertEqual(preview.text, "SwiftUI")
         XCTAssertEqual(preview.caption, "developer.apple.com")
-        XCTAssertEqual(preview.picture, .symbol("link"))
+        XCTAssertEqual(preview.symbol, "link")
     }
 
     func testATextShowsItsWordsOnOneRunOfLines() {
@@ -15,6 +15,7 @@ final class ContextPreviewTests: XCTestCase {
 
         XCTAssertEqual(preview.text, "one two three")
         XCTAssertEqual(preview.caption, "Selected text")
+        XCTAssertEqual(preview.symbol, "textformat")
     }
 
     func testFilesShowTheirNamesAndTheirFolder() {
@@ -23,6 +24,6 @@ final class ContextPreviewTests: XCTestCase {
 
         XCTAssertEqual(preview.text, "one.md, two.md")
         XCTAssertEqual(preview.caption, "2 files in docs")
-        XCTAssertEqual(preview.picture, .file("/a/docs/one.md"))
+        XCTAssertEqual(preview.symbol, "doc")
     }
 }

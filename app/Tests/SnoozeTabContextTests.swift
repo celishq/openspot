@@ -26,12 +26,12 @@ final class SnoozeTabContextTests: ContextCase {
     func testTheTabChipOffersSnoozeTab() async throws {
         let shown = try await openTab(dropping: true)
 
-        XCTAssertEqual(Set(shown), ["A", "keep", "Snooze Tab"])
+        XCTAssertEqual(Set(shown), ["keep", "Snooze Tab"])
     }
 
     func testACopyOfSnoozeTabWithNoDropIsNotOffered() async throws {
         let shown = try await openTab(dropping: false)
 
-        XCTAssertEqual(Set(shown), ["A", "keep"])
+        XCTAssertEqual(Set(shown), ["keep"])
     }
 }
