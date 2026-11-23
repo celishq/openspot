@@ -31,7 +31,7 @@ extension SpotsModel {
     func turnContext(by step: Int) {
         spreadContext()
         var next = context
-        next.turn(by: step)
+        next.turn(by: step, along: contextSpread.order(over: context.chips))
         settle(next, motion: .edit)
     }
 

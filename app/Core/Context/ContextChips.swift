@@ -49,13 +49,14 @@ public struct ContextChips: Equatable, Sendable {
         if selected == source { selected = chips.first?.source }
     }
 
-    mutating func turn(by step: Int) {
-        guard !chips.isEmpty else { return }
-        guard let selected, let index = chips.firstIndex(where: { $0.source == selected }) else {
-            self.selected = chips[step < 0 ? chips.count - 1 : 0].source
+    mutating func turn(by step: Int, along order: [String]) {
+        let order = order.filter { source in chips.contains { $0.source == source } }
+        guard !order.isEmpty else { return }
+        guard let selected, let index = order.firstIndex(of: selected) else {
+            self.selected = order[step < 0 ? order.count - 1 : 0]
             return
         }
-        self.selected = chips[(index + step % chips.count + chips.count) % chips.count].source
+        self.selected = order[(index + step % order.count + order.count) % order.count]
     }
 
     mutating func leave() {

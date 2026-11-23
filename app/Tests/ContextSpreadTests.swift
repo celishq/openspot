@@ -32,6 +32,41 @@ final class ContextSpreadTests: ContextCase {
         XCTAssertTrue(model.handleKey(escape))
     }
 
+    func testTheFirstTabRingsTheFrontTileAndLeavesItInPlace() async throws {
+        try await openWithTwoChips()
+        let stack = spread.places.map(\.chip.source)
+
+        XCTAssertTrue(model.handleKey(tab))
+
+        XCTAssertEqual(model.context.selected, stack.first)
+        XCTAssertEqual(spread.places.map(\.chip.source), stack)
+        XCTAssertEqual(spread.places.map(\.slot), [0, 1])
+    }
+
+    func testTabMovesTheRingToTheNextTileOfTheStack() async throws {
+        try await openWithTwoChips()
+        let stack = spread.places.map(\.chip.source)
+
+        XCTAssertTrue(model.handleKey(tab))
+        XCTAssertTrue(model.handleKey(tab))
+
+        XCTAssertEqual(model.context.selected, stack.last)
+        XCTAssertEqual(spread.places.map(\.chip.source), stack)
+    }
+
+    func testTheKindShowsOnlyOnTilesOfOneApp() async throws {
+        try taker("keep", takes: "'url', 'text'")
+        try source(adds: "url=https://example.com/a app=com.apple.Safari")
+        try source("selection", adds: "text=hola app=com.apple.Safari")
+        try source("finder", adds: "text=notes app=com.apple.finder")
+        await open()
+        try await wait("three values") { self.model.context.chips.count == 3 && self.model.context.chips.allSatisfy { $0.value != nil } }
+
+        let kinds = Dictionary(uniqueKeysWithValues: spread.places.map { ($0.chip.source, $0.showsKind) })
+
+        XCTAssertEqual(kinds, ["tab": true, "selection": true, "finder": false])
+    }
+
     func testTheRowFoldsAfterAPauseWithTheSelectionInFront() async throws {
         try await openWithTwoChips()
         model.contextFold.pause = .milliseconds(50)
