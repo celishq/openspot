@@ -8,10 +8,11 @@ struct SpotContextCard: View, Equatable {
     var body: some View {
         let shape = SpotRoundShape(radius: SpotTokens.contextCardRadius)
         ZStack {
-            picture
-                .id(chip.look)
-                .transition(.opacity)
-                .opacity(chip.isLoading ? SpotTheme.contextLoadingIcon : 1)
+            if !chip.isLoading {
+                picture
+                    .id(chip.look)
+                    .transition(.opacity)
+            }
         }
         .frame(width: SpotTokens.contextCard, height: SpotTokens.contextCard)
         .background {

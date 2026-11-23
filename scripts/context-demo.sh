@@ -21,6 +21,8 @@ demo() {
 }
 demo demo-text "Demo Text" "text.quote" '"text=The quick brown fox jumps over the lazy dog" title="Selected text" app=com.apple.Safari'
 demo demo-link "Demo Link" "link" 'url=https://developer.apple.com/design/human-interface-guidelines title="Human Interface Guidelines" app=com.apple.Safari'
+demo demo-note "Demo Note" "note.text" '"text=Buy milk, call the bank, book the flight" title="Note" app=com.apple.Notes'
+demo demo-mail "Demo Mail" "envelope" 'url=message://demo title="Re: Contract" app=com.apple.mail'
 demo demo-files "Demo Files" "folder" "file=$files/Invoice.txt file=$files/Contract.txt app=com.apple.finder"
 folder="$state/spots/show-me.spot"
 rm -rf "$folder"

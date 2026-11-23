@@ -29,10 +29,10 @@ extension SpotTokens {
     public static let toastKeySpace: CGFloat = 2
 
     public static let contextCard: CGFloat = 28
-    public static var contextCardRadius: CGFloat { contextCard * 0.25 }
+    public static var contextCardRadius: CGFloat { min(contextCard * 0.25 * cardRadius / builtIn.radius.card, contextCard / 2) }
     public static let contextInset: CGFloat = 1.5
     public static var contextIcon: CGFloat { contextCard - 2 * contextInset }
-    public static var contextIconRadius: CGFloat { contextIcon * 0.224 }
+    public static var contextIconRadius: CGFloat { min(contextIcon * 0.224 * cardRadius / builtIn.radius.card, contextIcon / 2) }
     public static var contextSymbol: CGFloat { contextIcon * 0.5 }
     public static let contextBorder: CGFloat = 1
     public static var contextStep: CGFloat { contextCard * 0.25 }

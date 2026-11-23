@@ -55,7 +55,7 @@ struct SpotFieldView: View {
                         .mask { SpotSurfaceShape(rect: place.offsetBy(dx: -Self.rect.minX, dy: -Self.rect.maxY), radius: fieldRadius) }
                         .offset(x: Self.rect.minX, y: Self.rect.maxY)
                     SpotContextStack(model: model)
-                        .frame(width: SpotTokens.contextStack(count: ContextChips.limit), height: SpotTokens.cell, alignment: .trailing)
+                        .frame(width: SpotTokens.contextStack(count: ContextSpread.row), height: SpotTokens.cell, alignment: .trailing)
                         .offset(x: Self.contextLeft, y: top)
                 }
             }
@@ -127,7 +127,7 @@ struct SpotFieldView: View {
     }
 
     static var contextLeft: CGFloat {
-        rect.maxX - SpotTokens.padding - SpotTokens.contextStack(count: ContextChips.limit)
+        rect.maxX - SpotTokens.padding - SpotTokens.contextStack(count: ContextSpread.row)
     }
 
     private var fieldTextLeft: CGFloat {

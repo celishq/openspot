@@ -103,14 +103,52 @@ final class ContextSpreadTests: ContextCase {
         XCTAssertNil(model.contextFold.watch)
     }
 
-    func testAClosedPanelFoldsTheRowAndStopsItsPause() async throws {
+    func testAClosedPanelStopsThePauseAndTheNextOpenFoldsTheRow() async throws {
         try await openWithTwoChips()
         XCTAssertTrue(model.handleKey(tab))
 
         model.panelWillHide()
+        XCTAssertNil(model.contextFold.watch)
+        model.panelDidHide()
+        model.panelWillShow()
 
         XCTAssertFalse(spread.isSpread)
-        XCTAssertNil(model.contextFold.watch)
+    }
+
+    func testAPanelThatHidesAfterEscKeepsItsCardsWhereTheyLie() async throws {
+        try await openWithTwoChips()
+        model.contextFold.pause = .milliseconds(50)
+        XCTAssertTrue(model.handleKey(tab))
+        XCTAssertTrue(model.handleKey(tab))
+        try await wait("the fold") { !self.spread.isSpread }
+        XCTAssertTrue(model.handleKey(escape))
+        let before = spread.places.map(\.chip.source)
+
+        model.panelWillHide()
+
+        XCTAssertEqual(spread.places.map(\.chip.source), before)
+    }
+
+    func testTabTurnsThroughMoreChipsThanTheRowHoldsByShiftingTheRow() async throws {
+        try taker("keep", takes: "'text'")
+        for name in ["a", "b", "c", "d", "e"] {
+            try source(name, adds: "text=\(name) app=com.apple.Safari")
+        }
+        await open()
+        try await wait("five values") { self.chips.count == 5 && self.chips.allSatisfy { $0.value != nil } }
+        let order = spread.places.map(\.chip.source)
+
+        for _ in 0..<4 { XCTAssertTrue(model.handleKey(tab)) }
+
+        XCTAssertEqual(model.context.selected, order[3])
+        let row = spread.places.filter { $0.depth == 0 }.sorted { $0.slot < $1.slot }.map(\.chip.source)
+        XCTAssertEqual(row, Array(order[1...3]))
+
+        XCTAssertTrue(model.handleKey(tab))
+        XCTAssertTrue(model.handleKey(tab))
+
+        XCTAssertEqual(model.context.selected, order[0])
+        XCTAssertEqual(spread.places.filter { $0.depth == 0 }.sorted { $0.slot < $1.slot }.map(\.chip.source), Array(order[0...2]))
     }
 
     func testPressesDuringTheMotionFoldIntoOneStepToTheNewestState() async throws {

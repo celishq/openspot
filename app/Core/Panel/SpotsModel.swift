@@ -528,7 +528,7 @@ public final class SpotsModel {
     }
 
     public func panelWillHide() {
-        resetContextSpread()
+        endSpread()
         pendingAsk = nil
         if confirming != nil { confirming = nil }
         stopRecording()
