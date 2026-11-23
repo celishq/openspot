@@ -29,7 +29,7 @@ extension SpotTokens {
     public static let toastKeySpace: CGFloat = 2
 
     public static let contextCard: CGFloat = 28
-    public static var contextCardRadius: CGFloat { contextCard * 0.24 }
+    public static var contextCardRadius: CGFloat { contextCard * 0.225 }
     public static var contextSymbol: CGFloat { contextCard * 0.6 }
     public static let contextBorder: CGFloat = 1
     public static let contextBadgeBorder: CGFloat = 0.5
@@ -39,12 +39,13 @@ extension SpotTokens {
     public static var contextBadge: CGFloat { contextCard / 2 }
     public static var contextBadgeGlyph: CGFloat { contextBadge * 0.58 }
     public static var contextBadgeReach: CGFloat { contextCard / 6 }
-    public static let contextNearShadowRadius: CGFloat = 1.5
-    public static let contextNearShadowDrop: CGFloat = 1
+    public static let contextNearShadowRadius: CGFloat = 0.5
+    public static let contextNearShadowDrop: CGFloat = 0.5
+    public static let contextFarShadowRadius: CGFloat = 3
+    public static let contextFarShadowDrop: CGFloat = 1.5
     public static let contextBadgeShadowRadius: CGFloat = 1
     public static let contextBadgeShadowDrop: CGFloat = 1
-    public static let contextRingGap: CGFloat = 1.5
-    public static let contextEdge: CGFloat = 1.5
+    public static let contextRingGap: CGFloat = 2
     public static let contextValueRise: CGFloat = 8
     public static let contextPointerWidth: CGFloat = 14
     public static let contextPointerHeight: CGFloat = 7

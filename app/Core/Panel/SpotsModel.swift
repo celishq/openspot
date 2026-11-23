@@ -79,6 +79,7 @@ public final class SpotsModel {
     public private(set) var isContextSpread = false
     public internal(set) var contextPreview: ContextPreview?
     public internal(set) var fieldHoldsValue = false
+    @ObservationIgnored var holdMotion: PanelMotion? = .edit
     @ObservationIgnored var contextFold = ContextFold()
     @ObservationIgnored var keyFrames: [String: String] = [:]
     @ObservationIgnored var spotListBuilds = 0

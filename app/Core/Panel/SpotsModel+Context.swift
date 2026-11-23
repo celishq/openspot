@@ -29,10 +29,11 @@ extension SpotsModel {
     }
 
     func turnContext(by step: Int) {
+        let isCycling = contextSpread.isSpread
         spreadContext()
         var next = context
         next.turn(by: step, along: contextSpread.order(over: context.chips))
-        settle(next, motion: .edit)
+        settle(next, motion: isCycling ? nil : .edit)
     }
 
     func leaveContext() {
@@ -51,13 +52,15 @@ extension SpotsModel {
         spot.fileIcon.map(ContextChip.Look.file) ?? .symbol(spot.symbol)
     }
 
-    private func settle(_ next: ContextChips, motion: PanelMotion) {
+    private func settle(_ next: ContextChips, motion: PanelMotion?) {
         guard next != context else { return }
         let before = (isOn: context.isOn, chip: context.selectedChip)
         change(isShown ? motion : nil, { context = next })
         placeContext(motion)
         guard before.isOn != next.isOn || before.chip != next.selectedChip else { return }
+        holdMotion = motion
         selected = 0
         updateVisible()
+        holdMotion = .edit
     }
 }

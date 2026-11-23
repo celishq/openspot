@@ -50,9 +50,10 @@ enum SpotTheme {
     static let unfocusedCardStrength = 0.35
     static let contextCardFade = 0.3
     static let contextLoadingIcon = 0.35
-    static let contextRim = color(dark: .white.withAlphaComponent(0.14), light: .black.withAlphaComponent(0.14))
+    static let contextRimStrength = 0.16
     static let contextFace = color(dark: NSColor(white: 0.19, alpha: 1), light: NSColor(white: 0.985, alpha: 1))
-    static let contextNearShadow = color(dark: .black.withAlphaComponent(0.5), light: .black.withAlphaComponent(0.22))
+    static let contextNearShadow = color(dark: .black.withAlphaComponent(0.6), light: .black.withAlphaComponent(0.3))
+    static let contextFarShadow = color(dark: .black.withAlphaComponent(0.35), light: .black.withAlphaComponent(0.12))
     static let contextBadgeFace = Color.white
     static let contextBadgeInk = ThemeColor(text: "#1C1C1E")!.color
     static let contextBadgeRim = ThemeColor(text: "#00000033")!.color
@@ -87,7 +88,6 @@ enum SpotTheme {
     static let capFace = color(dark: .white.withAlphaComponent(0.08), light: .white.withAlphaComponent(0.6))
     static let capRim = color(dark: .white.withAlphaComponent(0.14), light: .black.withAlphaComponent(0.1))
     static let capEdge = color(dark: .black.withAlphaComponent(0.35), light: .black.withAlphaComponent(0.14))
-    static let contextEdge = color(dark: NSColor(white: 0.16, alpha: 1), light: NSColor(white: 0.98, alpha: 1))
     static let contextDivider = color(dark: .white.withAlphaComponent(0.08), light: .black.withAlphaComponent(0.07))
     static let well = color(dark: .black.withAlphaComponent(0.22), light: .black.withAlphaComponent(0.05))
 

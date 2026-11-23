@@ -21,7 +21,7 @@ extension SpotsModel {
 
     func hold(_ preview: ContextPreview?) {
         guard preview != contextPreview else { return }
-        change(isShown ? .edit : nil) {
+        change(isShown ? holdMotion : nil) {
             contextPreview = preview
             if fieldHoldsValue != (preview != nil) { fieldHoldsValue = preview != nil }
         }

@@ -54,6 +54,17 @@ final class ContextSpreadTests: ContextCase {
         XCTAssertEqual(spread.places.map(\.chip.source), stack)
     }
 
+    func testATabWhileTheRowIsSpreadMovesNothing() async throws {
+        try await openWithTwoChips()
+        XCTAssertTrue(model.handleKey(tab))
+        let before = host.motions.count
+
+        XCTAssertTrue(model.handleKey(tab))
+
+        XCTAssertEqual(host.motions[before...].compactMap { $0 }, [])
+        XCTAssertTrue(spread.isSpread)
+    }
+
     func testTheKindShowsOnlyOnTilesOfOneApp() async throws {
         try taker("keep", takes: "'url', 'text'")
         try source(adds: "url=https://example.com/a app=com.apple.Safari")
