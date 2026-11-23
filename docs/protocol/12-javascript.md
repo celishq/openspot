@@ -1,7 +1,9 @@
 # A JavaScript spot
 
-A JavaScript spot is a `.js` file that runs inside Openspot, so it answers in the same keystroke, and its handlers can
-wait for the person or another spot.
+`draft` `optional` · Builds on [01](01-spot.md)
+
+Use this when your spot should answer in the same keystroke, such as a calculator in the panel's search, or wait for
+the person or another spot inside a handler. A JavaScript spot is a `.js` file that runs inside Openspot.
 
 ```toml
 title = "Clocks"

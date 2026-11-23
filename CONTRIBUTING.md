@@ -37,7 +37,7 @@ Add a word to the [protocol](PROTOCOL.md) so that an old spot never sees a word 
 | A thing to draw      | A kind `<kind>=`, which an older Openspot skips and reports.              |
 | A detail of a kind   | A key, or a `type` value.                                                 |
 | A power of the Mac   | A noun, `openspot <noun> <verb>`, with its events and its `uses` word.    |
-| A complex look       | Nothing, since a spot draws it with a [view](docs/protocol/14-views.md).          |
+| A complex look       | Nothing, since a spot draws it with a [view](docs/protocol/13-views.md).          |
 
 ## Follow the rules
 

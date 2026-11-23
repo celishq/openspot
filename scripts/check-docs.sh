@@ -49,7 +49,7 @@ awk '
   /^```/ { fence = !fence; next }
   !fence { for (i = 1; i <= NF; i++) if ($i ~ /[A-Za-z0-9]/) words++ }
   END { counted() }
-  function counted() { limit = file == "GUIDE.md" ? 1200 : 800; if (words > limit) print file " has " words " words, over " limit }
+  function counted() { limit = file == "GUIDE.md" ? 1200 : file ~ /\/01-[^\/]*$/ ? 1500 : 800; if (words > limit) print file " has " words " words, over " limit }
 ' GUIDE.md docs/protocol/*.md >>"$found"
 compare docs "$found" "A doc breaks a rule of Docs in AGENTS.md:" || exit 1
 echo "Docs check passed."

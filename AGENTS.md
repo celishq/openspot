@@ -40,15 +40,16 @@
 - One primary type per file. The filename matches it. A file of extensions is named `Type+Topic.swift`.
   `scripts/check-files.sh` fails on a file that breaks this.
 - Nouns own their data. Verbs are methods on the noun that owns the data.
-- A toast or a failure line follows [Write a message](docs/protocol/03-calls.md#write-a-message).
+- A toast or a failure line follows [Write a message](docs/protocol/01-spot.md#write-a-message).
 
 ## Docs
 
-`PROTOCOL.md` indexes the contract of a spot, one concept to each numbered page of `docs/protocol/`. `GUIDE.md` builds a spot in about five tasks, `USING.md` is the person's page, `app/Help/` the reference of the `openspot` commands, `TRUST.md` what Openspot shows the person about a spot, and `spots/AGENTS.md` the words of the app's own spots. No doc describes the app's code.
+`PROTOCOL.md` indexes the contract of a spot: its pages, then tables that name the page of each key, handler, block kind, class family and `openspot` noun. `GUIDE.md` builds a spot in about five tasks, `USING.md` is the person's page, `app/Help/` the reference of the `openspot` commands, `TRUST.md` what Openspot shows the person about a spot, and `spots/AGENTS.md` the words of the app's own spots. No doc describes the app's code.
 
-- A page opens with one sentence and one example, then gives only the rules an author meets on the main path, with MUST or never only for a must. The tests keep the edge cases.
-- A page uses at most three words of Openspot's own, each defined in the sentence that first uses it, and never renames an ordinary thing. Write natural English, "you" and one word for each meaning.
-- A new concept gets a new page, not more words on an old one. `scripts/check-docs.sh` fails on a page of `docs/protocol/` over 800 words, or `GUIDE.md` over 1200, outside code.
+- `docs/protocol/01-spot.md` is the whole foundation: a reader of it alone can build a spot that works. Each later page adds one capability on top of it.
+- A capability page opens with its title, a status line such as `draft` `optional` with the pages it builds on, and one sentence of when to use it. Then comes its example, then only the rules an author meets on the main path, with MUST or never only for a must. The tests keep the edge cases.
+- A page uses at most three words of Openspot's own, each defined in the sentence that first uses it, and never renames an ordinary thing. Write natural English, "you", contractions and one word for each meaning.
+- A new capability gets a new page, not more words on an old one, and a row in each table of the index that it adds to. `scripts/check-docs.sh` fails on page 01 over 1500 words, another page of `docs/protocol/` over 800, or `GUIDE.md` over 1200, outside code.
 - A task of `GUIDE.md` is a verb phrase, names each file before it, shows the render of its example from `make docs-images`, and ends with "Learn more in". `check-docs.sh` fails on each of these, and on a table cell of two sentences.
 - `make verify` fails when a doc links to a file or a heading that doesn't exist, or code cites a missing protocol heading (`DocReferenceTests`), when an `sh`, `js` or `swift` example doesn't run (`DocExampleTests`; put one that needs a network or a rare tool in a `text` fence), when a picture of the guide is older than its example (`GuideImageTests`), and when Core takes a key, kind, call, event, place or helper that no page names (`ProtocolContractTests`, with today's gaps in `scripts/protocol-gaps.txt`).
 

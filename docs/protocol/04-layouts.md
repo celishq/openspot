@@ -1,7 +1,9 @@
 # Layouts
 
-A layout places the blocks of a frame: `parent` puts a block inside a box, and `class` says how each box lays out what
-it holds, with the class names of Tailwind CSS.
+`draft` `optional` · Builds on [01](01-spot.md) and [03](03-blocks.md)
+
+Use this when a list isn't the shape you want, such as a row of an icon, words and a button over a list. `parent` puts
+a block inside a box, and `class` says how each box lays out what it holds, with the class names of Tailwind CSS.
 
 ```ini
 frame=
@@ -36,16 +38,21 @@ detail=54 Mb/s
 
 A row of the Wi-Fi icon, Home and a Forget chip shows over a list of one network, Office.
 
+## Boxes
+
+A `box` holds the blocks whose `parent` names it, and lays them out by its classes.
+
 - A frame has a layout when its root has a `class`, or when it holds an `items` block.
 - A box lays out its blocks in a column, or in a row with `flex-row`, a grid with `grid grid-cols-<n>`, or layers with
   `relative`.
 - Blocks that share a parent keep the order of their lines.
 - `grow` takes the free space of a row or a column.
 - The arrow keys move through each button, field, switch and choice in the order of the layout.
+- A divider is a box with `class=h-px bg-tile`.
 
 ## Classes
 
-Every size and colour comes from the person's theme, so a spot looks right in any theme.
+Every size and colour comes from the person's theme, so your spot looks right in any theme.
 
 | Class                                                     | Is                                                     |
 | --------------------------------------------------------- | ------------------------------------------------------ |
@@ -74,7 +81,6 @@ Every size and colour comes from the person's theme, so a spot looks right in an
   `gap-part` and `gap-group` are the gaps of Openspot's own sheets.
 - `<n>` is a count from 1 to 12, and `<p>` a percent in steps of 5.
 - `rounded-full` on a button makes a chip, or a round button of its `icon` when it has no `title`.
-- A divider is a box with `class=h-px bg-tile`.
 - A class that isn't here, such as `w-[120px]`, is skipped.
 
 ## Variants
@@ -89,7 +95,7 @@ class=bg-tile hover:bg-accent card:hidden
 
 | Prefix                                           | Applies                                          |
 | ------------------------------------------------ | ------------------------------------------------ |
-| `sheet:`, `card:`, `bar:`, `float:`, `window:`   | In that [place](11-places.md).                   |
+| `sheet:`, `card:`, `bar:`, `float:`, `window:`   | In that [place](05-places.md).                   |
 | `small:`, `wide:`, `square:`, `strip:`, `large:` | On a card of that size.                          |
 | `hover:`, `pressed:`, `selected:`, `focus:`      | While the pointer is over it, it's pressed, its item is selected, or it has the keys. |
 | `dark:`, `light:`                                | In that appearance of the Mac.                   |

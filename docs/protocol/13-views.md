@@ -1,6 +1,9 @@
 # Views
 
-A view is a kind of block that a SwiftUI file of the spot draws, for a look or a motion that classes can't give.
+`draft` `optional` · Builds on [01](01-spot.md) and [04](04-layouts.md)
+
+Use this when your spot needs a look or a motion that classes can't give, such as a chart of its own or a pulsing
+icon. A view is a kind of block that a SwiftUI file of your spot draws.
 
 ```toml
 title = "Cups this week"
@@ -42,7 +45,8 @@ struct SpotView: View {
 The sheet shows three bars in the accent colour, a pulsing cup and a Done button, over the rows Monday, Tuesday and
 Wednesday.
 
-- Each file of `views` is a kind of block, named by its file: `week.swift` gives `week=<id>`.
+- `views` in `spot.toml` lists the SwiftUI files. Each file is a kind of block, named by its file: `week.swift`
+  gives `week=<id>`.
 - The file MUST declare `struct SpotView: View` with `let spot: SpotInput`, and no top-level code.
 - A view takes `parent` and `class` like any block, and fills the room that its classes give it.
 - On a card, a view only draws. In a sheet, it takes clicks and keys.

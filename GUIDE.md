@@ -1,22 +1,23 @@
 # Openspot guide
 
-In this guide, you build spots, the small programs that Openspot shows in its panel. Each task is one working spot. The
-[protocol](PROTOCOL.md) holds every rule, and [Use Openspot](USING.md) says what the person who uses your spot chooses.
+In this guide, you build spots, the small tools that Openspot shows in its panel. Each task starts from a whole spot
+that works, so you can copy it, try it and change it. The [protocol](PROTOCOL.md) holds every rule, and
+[Use Openspot](USING.md) says what the person who uses your spot can choose.
 
 ## Build your first spot
 
-Build a spot when you want a small tool one key away. This one lists each process that listens on a port, and stops the
-one you press, such as a server that's still on :3000.
+Build a spot when you want a small tool one key away. This one lists each process that's listening on a port, and
+stops the one you press, such as a server that's still running on :3000.
 
-A spot is a folder in `~/.config/openspot/spots`. Make the folder `ports.spot`, and save the file that names the spot as
-`ports.spot/spot.toml`:
+A spot is a folder in `~/.config/openspot/spots`. Make a folder named `ports.spot`, and save the file that names your
+spot as `ports.spot/spot.toml`:
 
 ```toml
 title = "Ports"
 icon = "network"
 ```
 
-Save its script beside it, named like the folder, as `ports.spot/ports.sh`:
+Save the script beside it, named like the folder, as `ports.spot/ports.sh`:
 
 ```sh
 #!/bin/sh
@@ -40,42 +41,16 @@ The sheet of Ports lists a row for each process that listens, with its port as t
 2. Press `⌃Space`, then press the Ports card. Its sheet opens with a row for each port.
 3. Press Return on a row. The process stops, and the panel closes.
 
-Each run of your script is a call. Its first argument names the handler, the part of the script that answers: `show`
-asks what to show, and `press` says that the person pressed a row. `. "$OPENSPOT_SH"` loads the shell helper, which
-gives you `value item`, the id of the pressed row, and `openspot_items`, which turns each line of id, title and detail,
-split by tabs, into a row. What `show` prints is a frame:
+Each run of your script is a call, and its first argument names the handler: `show` asks what to show, and `press`
+says that the person pressed a row. What `show` prints is a frame, a block of `key=value` lines for each row. You can
+run a call yourself with `openspot spot run ports show`, and see what it prints.
 
-```text
-item=4120
-title=:3000
-detail=node
-
-item=812
-title=:5432
-detail=postgres
-```
-
-### Try your spot
-
-Run one call of the spot, the way Openspot calls it, and see what it prints:
-
-```sh
-openspot spot run ports show
-openspot check spots ~/.config/openspot/spots
-openspot spot log ports
-```
-
-`spot run` prints the frame above. `check spots` prints nothing when each spot loads and runs, or a `fault` block for
-each error. `spot log` prints the last calls, with their stdin, stdout, stderr and exit code.
-`openspot playground open ports.spot/ports.sh` shows the spot in a panel of its own, and runs it again at each save.
-
-Learn more in [A spot](docs/protocol/01-spot.md), [The calls](docs/protocol/03-calls.md) and
-[Items](docs/protocol/06-items.md).
+Learn more in [A spot](docs/protocol/01-spot.md) and [Try your spot](docs/protocol/01-spot.md#try-your-spot).
 
 ## Add an action
 
-Add an action when your spot does a thing that the person runs by name, such as moving a window. A table
-`[actions.<id>]` declares it, and a run calls the handler of its id.
+Add an action when your spot does something the person runs by name, such as moving a window. A table
+`[actions.<id>]` declares each action, and running it calls the handler of its id.
 
 `windows.spot/spot.toml`:
 
@@ -107,15 +82,14 @@ esac
 2. Press Return on it. Openspot runs `windows.sh left`, and the front window fills the left half of the screen.
 3. Press `⌘` Return on the Windows card. Its Settings list a key for each action, which the person records.
 
-`uses` names the features of the Mac that the spot uses, here `screen` for `openspot window move`. A spot whose actions
-have titles, and that has no `[on]`, has no sheet, so a press of its card runs its first action.
+`uses` names the features of the Mac that your spot uses, here `screen` for `openspot window move`. Since Windows has
+actions with titles and no `[on]`, it has no sheet, so a press of its card runs its first action.
 
-Learn more in [Actions and settings](docs/protocol/07-actions-and-settings.md) and
-[The openspot command](docs/protocol/15-commands.md).
+Learn more in [Actions](docs/protocol/06-actions.md) and [The openspot command](docs/protocol/09-commands.md).
 
 ## React to an event
 
-React to an event when your spot shows something that changes, such as the free space of the disk. The `[on]` table
+React to an event when your spot shows something that changes, such as the free space on your disk. The `[on]` table
 lists the triggers, the things that call a spot by themselves.
 
 `disk.spot/spot.toml`:
@@ -147,15 +121,16 @@ The wide card of Disk shows its icon, the title Disk with 256Gi free under it, a
 2. Free some space, and open the panel again. The card shows the new value.
 
 `"panel.open" = true` calls `show` each time the panel opens, and `every = 300` calls `every` every 5 minutes while the
-card shows. The first block, `frame=`, holds the frame's own keys, and its `detail` is the line under the card's title.
+card shows. The first block, `frame=`, is the root, which holds the frame's own keys. Its `detail` is the line under the
+card's title.
 
-Learn more in [Triggers](docs/protocol/08-triggers.md), [The root](docs/protocol/04-frames.md#the-root) and
-[Places](docs/protocol/11-places.md).
+Learn more in [Triggers](docs/protocol/08-triggers.md), [The root](docs/protocol/01-spot.md#the-root) and
+[Places](docs/protocol/05-places.md).
 
 ## Use another spot
 
-Use another spot when a step of yours is the job of another spot, such as picking a time. A binding names the other
-spot, and your spot runs its action and waits for its values.
+Use another spot when one of your steps is another spot's job, such as picking a time. A binding names the other
+spot, and your spot runs one of its actions and waits for the values it gives back.
 
 `remind.spot/spot.toml`:
 
@@ -191,16 +166,16 @@ esac
 2. Pick Tomorrow. `openspot run` prints the time, and the spot adds a timer that calls `remind` then.
 3. Press Esc instead. `openspot run` exits 4, and the call ends with no failure.
 
-`openspot spot actions openspot/snooze` prints the actions that you can run, with their inputs and outputs. `pick` takes
-an optional `title` and gives `until`, a time that `openspot timer add` takes.
+`openspot spot actions openspot/snooze` prints the actions you can run, with their inputs and outputs. `pick` takes an
+optional `title` and gives `until`, a time that `openspot timer add` takes.
 
-Learn more in [Bindings and events](docs/protocol/09-bindings-and-events.md) and
-[openspot timer](docs/protocol/15-commands.md#openspot-timer).
+Learn more in [Other spots](docs/protocol/10-other-spots.md) and
+[openspot timer](docs/protocol/09-commands.md#openspot-timer).
 
 ## Lay out a sheet
 
-Lay out a sheet when a list isn't enough, such as a row of an icon, words and a button. A `box` block holds the blocks
-whose `parent` names it, and its classes, the words of Tailwind CSS, say how it lays them out.
+Lay out a sheet when a list isn't enough, such as a row with an icon, some words and a button. A `box` block holds the
+blocks whose `parent` names it, and its classes, the class names of Tailwind CSS, say how it lays them out.
 
 `wi-fi.spot/spot.toml`:
 
@@ -225,4 +200,4 @@ The sheet shows one row: the Wi-Fi icon in the accent colour, Home with 82 Mb/s 
 1. Remove `class=grow` from the `text` block. The chip moves next to the words, since no block takes the free width.
 2. Press Forget. Openspot runs `wi-fi.sh forget`.
 
-Learn more in [Layouts](docs/protocol/10-layout.md) and [Blocks by kind](docs/protocol/05-blocks.md).
+Learn more in [Layouts](docs/protocol/04-layouts.md) and [Blocks by kind](docs/protocol/03-blocks.md).
