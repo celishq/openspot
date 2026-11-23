@@ -64,10 +64,10 @@ extension SpotsModel {
     func showContext() -> [Entry] {
         guard let chip = context.selectedChip, let source = entry(chip.source) else { return [] }
         guard let value = chip.value else {
-            return [Entry(spot: source.spot, item: SpotItem(title: chip.words.title, run: Self.previewRun, picture: Icon(text: chip.symbol)), detail: "")]
+            return [Entry(spot: source.spot, item: SpotItem(title: chip.words.title, run: "", picture: Icon(text: chip.symbol)), role: .preview, detail: "")]
         }
         let shown = ContextPreview(value)
-        let preview = Entry(spot: source.spot, item: SpotItem(title: shown.text, run: Self.previewRun, picture: shown.picture), detail: shown.caption)
+        let preview = Entry(spot: source.spot, item: SpotItem(title: shown.text, run: "", picture: shown.picture), role: .preview, detail: shown.caption)
         let rows = cards.filter { $0.item == nil && $0.spot.takes(value) }.map { card in
             SpotItem(title: card.spot.name, subtitle: card.spot.subtitle, run: card.id, keywords: card.spot.keywords)
         }
@@ -81,22 +81,14 @@ extension SpotsModel {
             found = runs.search(of: text).matching(in: [list], limit: Self.contextRows).map(\.item)
         }
         let taken = found.compactMap { row in
-            entry(row.run).map { Entry(spot: $0.spot, item: SpotItem(title: row.title, run: Self.contextRun), detail: Self.takes(value.kind)) }
+            entry(row.run).map { Entry(spot: $0.spot, item: SpotItem(title: row.title, run: ""), role: .taker, detail: Self.takes(value.kind)) }
         }
         return [preview] + taken
     }
 
-    public func isPreview(_ entry: Entry) -> Bool {
-        entry.item?.run == Self.previewRun
-    }
-
-    func isContextRow(_ entry: Entry) -> Bool {
-        entry.item?.run == Self.contextRun || isPreview(entry)
-    }
-
     func give(to entry: Entry) -> Bool {
         guard context.isOn, slash == nil else { return false }
-        guard !isPreview(entry) else { return true }
+        guard entry.role != .preview else { return true }
         guard let value = context.selectedChip?.value else { return true }
         landDrop(value, on: entry.spot.id, leavesContext: true)
         return true
@@ -119,13 +111,11 @@ extension SpotsModel {
     var contextHint: String? {
         guard openSheetID == nil, !isEditing, !context.chips.isEmpty else { return nil }
         guard context.isOn else { return "⇥ \(context.chips.count == 1 ? "Context" : "\(context.chips.count) Contexts")" }
-        let run = selectedEntry.flatMap { isPreview($0) ? nil : "⏎ \($0.state.title)" }
+        let run = selectedEntry.flatMap { $0.role == .preview ? nil : "⏎ \($0.state.title)" }
         return [run, "⇥ Next", "Esc Leave"].compactMap { $0 }.joined(separator: "   ")
     }
 
     static let contextRows = 5
-    static let contextRun = "openspot.context"
-    static let previewRun = "openspot.context.preview"
 
     private static func takes(_ kind: ContextValue.Kind) -> String {
         switch kind {

@@ -83,7 +83,7 @@ extension SpotsModel {
         }
         var ids = Set<String>()
         let answers = entries.filter { $0.spot.triggers.search.map { runs.answerMatches.matches($0, text) } == true }
-            .flatMap { entry in (sheets[entry.id]?.answers ?? []).map { Entry(spot: entry.spot, item: $0, isAnswer: true) } }
+            .flatMap { entry in (sheets[entry.id]?.answers ?? []).map { Entry(spot: entry.spot, item: $0, role: .answer) } }
             .filter { ids.insert($0.id).inserted }
             .prefix(Self.searchLimit)
         let sources = entries.filter { $0.spot.triggers.lists && arrangement.isGlobal(of: $0.id) != false }
@@ -103,7 +103,7 @@ extension SpotsModel {
             land(found, of: finding)
         }
         finding = Finding(ask: ask, answers: Array(answers), sources: sources.map(\.spot), job: job)
-        if !answers.isEmpty || visible.contains(where: \.isAnswer) { show(Self.placed(Array(answers), around: foundSpots.filter { !ids.contains($0.id) })) }
+        if !answers.isEmpty || visible.contains { $0.role == .answer } { show(Self.placed(Array(answers), around: foundSpots.filter { !ids.contains($0.id) })) }
     }
 
     private static func placed(_ answers: [Entry], around found: [Entry]) -> [Entry] {
@@ -136,7 +136,7 @@ extension SpotsModel {
 
     private func show(_ next: [Entry]) {
         if next != visible { visible = next }
-        let sizes = query.isEmpty ? visible.map { $0.id == resize?.id ? resize?.size ?? $0.size : $0.size } : visible.map { $0.isAnswer ? $0.size : SpotSize.strip }
+        let sizes = query.isEmpty ? visible.map { $0.id == resize?.id ? resize?.size ?? $0.size : $0.size } : visible.map { $0.role == .answer ? $0.size : SpotSize.strip }
         let index = visible.firstIndex { $0.id == resize?.id }
         let grid = index.map(self.grid.keeping) ?? self.grid
         if sizes != laidOutSizes || grid != laidOutGrid {

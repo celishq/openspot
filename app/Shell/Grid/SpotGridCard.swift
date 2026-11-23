@@ -18,7 +18,7 @@ struct SpotGridCard: View, @MainActor Equatable {
     }
 
     var body: some View {
-        if model.isPreview(entry) {
+        if entry.role == .preview {
             SpotContextPreview(entry: entry, size: size)
         } else {
             card

@@ -39,7 +39,7 @@ struct CommandIndex {
         query.matching(in: [list], limit: limit).compactMap { match in
             guard let spot = spots[match.item.run], let item = items[match.item.run] else { return nil }
             let detail = text.isEmpty ? buttons[match.item.run]?.placeholder : "With \"\(text)\""
-            return SpotsModel.Entry(spot: spot, item: item, detail: detail)
+            return SpotsModel.Entry(spot: spot, item: item, role: .command, detail: detail)
         }
     }
 
