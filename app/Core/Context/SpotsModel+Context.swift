@@ -86,12 +86,9 @@ extension SpotsModel {
         return [preview] + taken
     }
 
-    func give(to entry: Entry) -> Bool {
-        guard context.isOn, slash == nil else { return false }
-        guard entry.role != .preview else { return true }
-        guard let value = context.selectedChip?.value else { return true }
+    func give(to entry: Entry) {
+        guard entry.role != .preview, let value = context.selectedChip?.value else { return }
         landDrop(value, on: entry.spot.id, leavesContext: true)
-        return true
     }
 
     func takeTab(back: Bool) -> Bool? {

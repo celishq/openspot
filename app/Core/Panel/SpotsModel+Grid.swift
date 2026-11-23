@@ -79,8 +79,8 @@ extension SpotsModel {
         selected = position
         if opening, openSelectedSettings() { return }
         guard !isEditing else { return }
-        if openSheetID == nil, give(to: visible[position]) { return }
-        if openSheetID == nil, let slash { launch(visible[position], with: slash.text) } else if openSheetID == nil { run(seen: visible[position]) } else { runSelectedItem() }
+        guard openSheetID == nil else { return runSelectedItem() }
+        runShown(visible[position])
     }
 
     public func setLevel(_ id: String, to value: Double) {
@@ -99,9 +99,15 @@ extension SpotsModel {
             return
         }
         guard let entry = selectedEntry else { return }
-        if give(to: entry) { return }
-        if let slash { return launch(entry, with: slash.text) }
-        run(seen: entry)
+        runShown(entry)
+    }
+
+    private func runShown(_ entry: Entry) {
+        switch content {
+        case .context: give(to: entry)
+        case .slash: launch(entry, with: slash?.text ?? "")
+        case .cards, .search: run(seen: entry)
+        }
     }
 
     func run(seen entry: Entry) {

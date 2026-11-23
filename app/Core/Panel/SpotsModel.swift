@@ -67,6 +67,7 @@ public final class SpotsModel {
     @ObservationIgnored var spotListIsStale = true
     @ObservationIgnored var commands = CommandIndex()
     public internal(set) var slash: SlashCommand?
+    @ObservationIgnored var content = GridContent.cards
     public internal(set) var context = ContextChips()
     @ObservationIgnored var isContextOpen = false
     public internal(set) var contextSpread = ContextSpread()

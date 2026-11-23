@@ -56,6 +56,7 @@ extension SpotsModel {
         let text = query.trimmingCharacters(in: .whitespaces)
         if context.isOn, !isEditing, !text.hasPrefix("/") {
             if slash != nil { slash = nil }
+            content = .context
             foundSpots = []
             show(showContext())
             if selected == 0, visible.count > 1 { selected = 1 }
@@ -63,6 +64,7 @@ extension SpotsModel {
         }
         guard !text.isEmpty else {
             if slash != nil { slash = nil }
+            content = .cards
             foundSpots = []
             return show(dragged(cards.filter(\.isOnGrid) + (isEditing ? shelfCards : [])))
         }
@@ -77,6 +79,7 @@ extension SpotsModel {
         let rows = command.map(commandEntries) ?? []
         let next = rows.isEmpty ? nil : command
         if slash != next { slash = next }
+        content = rows.isEmpty ? .search : .slash
         if !rows.isEmpty {
             foundSpots = []
             return show(rows)

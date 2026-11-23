@@ -5,7 +5,7 @@ extension SpotsModel {
         if let entry = openEntry {
             return (entry, openSheet?.selectedItem)
         }
-        guard let entry = selectedEntry, entry.role != .taker, entry.role != .preview else { return nil }
+        guard content != .context, let entry = selectedEntry else { return nil }
         if let item = entry.item, let list = self.entry(entry.spot.id) { return (list, item) }
         return (entry, nil)
     }

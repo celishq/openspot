@@ -142,6 +142,57 @@ final class ContextStateTests: ContextCase {
         try await wait("the command") { self.log("translate-log") == ["command"] }
     }
 
+    func testASlashThatNamesNoCommandSearchesAndHandsNothingToAnAnswer() async throws {
+        try script("echo", toml: "title = 'Echo'\n\n[on]\nsearch = '.'\ndrop = ['url']", """
+        case "$1" in
+          drop) echo drop >> '\(path("echo-log"))' ;;
+          *) printf 'item=x\\ntitle=Echo\\n' ;;
+        esac
+        """)
+        try await openWithTab()
+        XCTAssertTrue(model.handleKey(tab))
+
+        model.query = "/zz"
+        model.landSearch()
+        try await wait("the answer") { self.model.visible.contains { $0.role == .answer } }
+        model.selected = try XCTUnwrap(model.visible.firstIndex { $0.role == .answer })
+        model.runSelected()
+
+        XCTAssertTrue(model.context.isOn)
+        XCTAssertEqual(log("echo-log"), [])
+    }
+
+    func testPointingAtThePreviewLeavesTheSelectionOnItsRow() async throws {
+        try await openWithTab()
+        XCTAssertTrue(model.handleKey(tab))
+        let preview = try XCTUnwrap(model.placements.first { $0.index == 0 })
+
+        model.point(at: .grid(CGPoint(x: preview.rect.midX, y: preview.rect.midY)))
+
+        XCTAssertEqual(model.selected, 1)
+    }
+
+    func testALateAnswerKeepsTheRowsOfTheValue() async throws {
+        try script("echo", toml: "title = 'Echo'\n\n[on]\nsearch = '.'", "printf 'item=x\\ntitle=Echo\\n'")
+        try await openWithTab(takers: ["keep", "save"])
+        XCTAssertTrue(model.handleKey(tab))
+
+        model.query = "sav"
+        model.landSearch()
+        try await wait("the answer of Echo") { self.model.sheets["echo"]?.answers.isEmpty == false }
+
+        XCTAssertEqual(shown, ["A", "save"])
+        XCTAssertEqual(model.selected, 1)
+    }
+
+    func testCommandReturnOnATakerRowOpensNoSettings() async throws {
+        try await openWithTab()
+        XCTAssertTrue(model.handleKey(tab))
+
+        XCTAssertFalse(model.openSelectedSettings())
+        XCTAssertTrue(model.context.isOn)
+    }
+
     func testAReopenShowsTheGridAndNoRowsOfTheLastContext() async throws {
         try await openWithTab()
         let grid = shown
