@@ -48,6 +48,8 @@ final class GridExampleTests: SampleSpotsCase {
         XCTAssertEqual(grid.mode, .stay)
         XCTAssertEqual(grid.triggers.moments, [.panel])
         XCTAssertNil(grid.triggers.search)
+        XCTAssertFalse(grid.triggers.searchesSheet)
+        XCTAssertEqual(grid.triggers.filters, [:])
         XCTAssertEqual(grid.sources, ["grid"])
     }
 
