@@ -23,6 +23,10 @@ enum SpotMotion {
 
     static let press = Animation.spring(duration: MotionTokens.press, bounce: MotionTokens.pressBounce)
 
+    static let creep = Animation.linear(duration: MotionTokens.workTick)
+
+    static let shine = Animation.linear(duration: MotionTokens.shine).repeatForever(autoreverses: false)
+
     static func animation(_ motion: PanelMotion) -> Animation {
         switch motion {
         case .sheet(let isOpen): grow(isOpen: isOpen)

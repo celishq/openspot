@@ -36,15 +36,13 @@ final class SpotRunsWorkTests: SpotRunsCase {
         time += 0.9
         XCTAssertTrue(sheet.work.isEmpty)
         XCTAssertNil(sheet.cardWork)
-        XCTAssertNil(runs.runningSummary)
-        XCTAssertNil(runs.workSpot)
+        XCTAssertNil(runs.workCard)
         XCTAssertEqual(sheet.shownState, sheet.state)
 
         time += 0.1
         try await wait("the shown work") { !sheet.work.isEmpty }
         XCTAssertEqual(sheet.work.map(\.id), sheet.calls.map(\.id))
-        XCTAssertNotNil(runs.runningSummary)
-        XCTAssertEqual(runs.workSpot, "script")
+        XCTAssertEqual(runs.workCard?.spot, "script")
     }
 
     func testKeyPressesRunInOrderAndNeverStopACall() async throws {
@@ -73,7 +71,7 @@ final class SpotRunsWorkTests: SpotRunsCase {
         time += 5
 
         XCTAssertTrue(sheet.work.isEmpty)
-        XCTAssertNil(runs.runningSummary)
+        XCTAssertNil(runs.workCard)
     }
 
     func testAReadNeverShowsAsWork() async throws {
@@ -85,8 +83,7 @@ final class SpotRunsWorkTests: SpotRunsCase {
 
         XCTAssertEqual(sheet.calls.count, 1)
         XCTAssertTrue(sheet.work.isEmpty)
-        XCTAssertNil(runs.runningSummary)
-        XCTAssertNil(runs.workSpot)
+        XCTAssertNil(runs.workCard)
     }
 
     func testACallToAStayingScriptShowsAsWorkAfterItsSecondAndLeavesItAtItsEnd() async throws {
@@ -114,13 +111,12 @@ final class SpotRunsWorkTests: SpotRunsCase {
         time += 5
         try await wait("the shown work") { sheet.work.count == 1 }
         XCTAssertEqual(sheet.calls.count, 1)
-        XCTAssertEqual(runs.workSpot, "script")
+        XCTAssertNil(runs.workCard)
 
         openGate()
         try await wait("the end of the call") { sheet.calls.isEmpty }
         XCTAssertTrue(sheet.work.isEmpty)
-        XCTAssertNil(runs.runningSummary)
-        XCTAssertNil(runs.workSpot)
+        XCTAssertNil(runs.workCard)
         XCTAssertEqual(sheet.shownState, before)
     }
 
@@ -133,10 +129,10 @@ final class SpotRunsWorkTests: SpotRunsCase {
         sheet.pressCard()
         let changes = expectation(description: "the second has passed")
 
-        XCTAssertNil(withObservationTracking { live.runningSummary } onChange: { changes.fulfill() })
+        XCTAssertNil(withObservationTracking { live.workCard } onChange: { changes.fulfill() })
         await fulfillment(of: [changes], timeout: 60)
 
-        XCTAssertNotNil(live.runningSummary)
+        XCTAssertNotNil(live.workCard)
     }
 
     func testTheSpotShowsASpinnerWithNoValueAndARingFromValue() async throws {
@@ -194,7 +190,7 @@ final class SpotRunsWorkTests: SpotRunsCase {
         XCTAssertEqual(sheet.shownState.subtitle, "Videos")
     }
 
-    func testAStoppedCallLeavesNothingOnTheSpotOrInTheMenuBar() async throws {
+    func testAStoppedCallLeavesNothingOnTheSpotOrOnTheWorkCard() async throws {
         try script(header: "title=Encode", Self.progress)
         let sheet = try sheet()
         sheet.pressCard()
@@ -207,33 +203,9 @@ final class SpotRunsWorkTests: SpotRunsCase {
         XCTAssertTrue(sheet.work.isEmpty)
         XCTAssertEqual(sheet.shownState.title, "Encode")
         XCTAssertNil(sheet.shownState.subtitle)
-        XCTAssertNil(runs.runningSummary)
-        XCTAssertNil(runs.workSpot)
+        XCTAssertNil(runs.workCard)
         try await pause()
         XCTAssertEqual(log(), ["open"])
-    }
-
-    func testTheMenuBarShowsTheOldestCallOfAllScriptsAndHowManyRun() async throws {
-        try script("a", "sleep 30")
-        try script("z", "printf 'progress=0.25\\n---\\n'\nsleep 30")
-        _ = try scanned()
-        let a = try XCTUnwrap(runs.sheets["a"])
-        let z = try XCTUnwrap(runs.sheets["z"])
-
-        z.pressCard()
-        try await wait("the frame") { z.calls.first?.status != nil }
-        time += 1
-        a.pressCard()
-        try await wait("the summary") { self.runs.runningSummary == "\(z.spot.name) is running" }
-        XCTAssertEqual(runs.workSpot, "z")
-
-        time += 1
-        try await wait("the summary of both") { self.runs.runningSummary == "2 running. \(z.spot.name) is the oldest" }
-        XCTAssertEqual(runs.workSpot, "z")
-
-        z.stop(try XCTUnwrap(z.calls.first))
-        XCTAssertEqual(runs.runningSummary, "\(a.spot.name) is running")
-        XCTAssertEqual(runs.workSpot, "a")
     }
 
     func testTheSpotShowsItsOldestCall() async throws {

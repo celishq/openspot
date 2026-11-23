@@ -319,7 +319,7 @@ final class DrawSpotTests: XCTestCase {
         XCTAssertEqual(sheet.calls.map(\.id), [held.made.id])
         XCTAssertTrue(sheet.isWanted)
         XCTAssertTrue(sheet.work.isEmpty)
-        XCTAssertNil(runs.runningSummary)
+        XCTAssertNil(runs.workCard)
 
         await link.end(held)
         for read in link.sent.dropFirst() where read.request.action == .read && sheet.calls.contains(where: { $0 === read.made }) { await link.end(read) }

@@ -74,6 +74,7 @@ struct SpotsView: View {
                 sheet: fieldSheet(on: card, at: frame)
             )
             .modifier(FlowFieldHide(model: model, isInSheet: fieldIsInSheet))
+            SpotWorkChip(model: model, isShown: !sheetOpen && showsSearchField)
             if model.isMenuOpen {
                 Color.clear
                     .contentShape(Rectangle())

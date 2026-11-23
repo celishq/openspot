@@ -16,6 +16,12 @@ public enum MotionTokens {
 
     public static let cardShare = 0.5
 
+    public static let workCreep = 4.0
+    public static let workCeiling = 0.9
+    public static let workTick = 0.5 * slow
+    public static let workFinish = 0.6 * slow
+    public static let shine = 1.6 * slow
+
     public static let hiddenScale = 1.04
     public static let pressedScale = 1.04
     public static let liftedScale = 1.05

@@ -32,6 +32,10 @@ public struct SpotOutput: Equatable, Sendable {
     public let isPicture: Bool
     public let isMark: Bool
 
+    public var isBackground: Bool {
+        summary?.value(HeadKey.background) == "true"
+    }
+
     static let open = "open"
     private static let rowsArea = "rows"
 

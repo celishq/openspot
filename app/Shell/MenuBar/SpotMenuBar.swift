@@ -16,8 +16,8 @@ final class SpotMenuBar: NSObject {
     }
 
     private func update() {
-        let (marks, running) = withObservationTracking {
-            (model.menuBarMarks, model.runningSummary)
+        let marks = withObservationTracking {
+            model.menuBarMarks
         } onChange: { [weak self] in
             Task { @MainActor in self?.update() }
         }
@@ -27,7 +27,6 @@ final class SpotMenuBar: NSObject {
         for (id, mark) in marks {
             if let item = shown[id] { item.draw(mark) } else { shown[id] = makeItem(id: id, mark: mark) }
         }
-        openspotItem.show(running: running)
     }
 
     private func makeItem(id: String, mark: MenuBarMark) -> MenuBarMarkItem {

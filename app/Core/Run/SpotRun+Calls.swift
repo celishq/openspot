@@ -13,7 +13,7 @@ extension SpotRun {
     }
 
     func take(_ text: String, _ lines: SpotOutput, of call: OpenCall) async {
-        call.made.take(lines)
+        call.made.take(lines, at: runs.now())
         call.selected = lines.select ?? call.selected
         switch call.request.purpose {
         case .ask(let ask):
@@ -30,7 +30,7 @@ extension SpotRun {
             if lines.isPicture {
                 if await takePicture(lines, frame: text, of: work) {
                     call.showedPicture = true
-                    drewFrame(call.made)
+                    if !call.made.isBackground { drewFrame(call.made) }
                 }
             } else {
                 takeEffects(lines, frame: text)

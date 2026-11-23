@@ -49,9 +49,9 @@ public final class SpotRuns {
     @ObservationIgnored private(set) var placed: Set<String> = []
     @ObservationIgnored private var menuBar: Set<String> = []
     public private(set) var menuBarMarks: [(id: String, mark: MenuBarMark)] = []
-    @ObservationIgnored public private(set) var work: [(id: String, call: ScriptCall)] = []
-    public private(set) var runningSummary: String?
-    public private(set) var workSpot: String?
+    public private(set) var work: [(id: String, call: ScriptCall)] = []
+    private var finished: WorkCard?
+    @ObservationIgnored private var finishing: Task<Void, Never>?
     @ObservationIgnored var ticks: Task<Void, Never>?
     @ObservationIgnored var nextRead: Date?
     @ObservationIgnored var answerMatches = AnswerMatches()
@@ -226,6 +226,7 @@ public final class SpotRuns {
 
     public func quit() {
         hasQuit = true
+        finishing?.cancel()
         ticks?.cancel()
         ticks = nil
         clipboardWatch?.cancel()
@@ -260,11 +261,47 @@ public final class SpotRuns {
     func showWork() {
         let next = order.flatMap { id in (sheets[id]?.work ?? []).map { (id: id, call: $0) } }.sorted { $0.call.started < $1.call.started }
         guard !next.elementsEqual(work, by: { $0.id == $1.id && $0.call === $1.call }) else { return }
+        let leaving = shownWork
         work = next
-        let name = next.first.map { sheets[$0.id]?.spot.name ?? $0.id }
-        let summary = name.map { next.count > 1 ? "\(next.count) running. \($0) is the oldest" : "\($0) is running" }
-        if summary != runningSummary { runningSummary = summary }
-        if next.first?.id != workSpot { workSpot = next.first?.id }
+        if let leaving, !leaving.call.isStopped, !next.contains(where: { $0.call === leaving.call }) {
+            finish(WorkCard(spot: leaving.id, words: words(of: leaving), fill: .full))
+        }
+    }
+
+    public var workCard: WorkCard? {
+        if let finished, !shows(finished.spot) { return finished }
+        return shownWork.map { WorkCard(spot: $0.id, words: words(of: $0), fill: $0.call.progress) }
+    }
+
+    private var shownWork: (id: String, call: ScriptCall)? {
+        work.first { !shows($0.id) && !$0.call.isBackground }
+    }
+
+    public var backgroundWork: [(id: String, call: ScriptCall)] {
+        work.filter { $0.call.isBackground }
+    }
+
+    private func words(of work: (id: String, call: ScriptCall)) -> String {
+        work.call.title ?? "Setting up \(sheets[work.id]?.spot.name ?? work.id)"
+    }
+
+    private func finish(_ card: WorkCard) {
+        finished = card
+        let start = now()
+        finishing?.cancel()
+        finishing = Task { [weak self, sleep = clock.sleep] in
+            var left = MotionTokens.workFinish
+            while left > 0 {
+                try? await sleep(.seconds(left), .seconds(left / 10))
+                guard !Task.isCancelled, let self else { return }
+                left = MotionTokens.workFinish - now().timeIntervalSince(start)
+            }
+            self?.finished = nil
+        }
+    }
+
+    private func shows(_ id: String) -> Bool {
+        floating.contains(id) || isPanelOpen && (openID == nil || openID == id)
     }
 
     public func takesDrag(_ id: String) -> Bool {

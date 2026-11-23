@@ -239,13 +239,13 @@ final class SpotRunStateTests: XCTestCase {
         XCTAssertEqual(link.sent.dropFirst(first).map(\.request.reason?.rawValue), ["panel.open"])
     }
 
-    func testWorkShorterThanItsPauseTellsNoReaderOfTheWorkOrTheMenuBar() async throws {
+    func testWorkShorterThanItsPauseTellsNoReaderOfTheWorkOrTheCard() async throws {
         let (sheet, link) = inMenuBar()
         nonisolated(unsafe) var told: [String] = []
         withObservationTracking { _ = sheet.work } onChange: { told.append("work") }
         withObservationTracking { _ = sheet.shownState } onChange: { told.append("state") }
         withObservationTracking { _ = self.runs.menuBarMarks } onChange: { told.append("marks") }
-        withObservationTracking { _ = self.runs.runningSummary } onChange: { told.append("summary") }
+        withObservationTracking { _ = self.runs.workCard } onChange: { told.append("card") }
 
         sheet.pressCard()
         await link.end(link.sent[0])
@@ -253,21 +253,23 @@ final class SpotRunStateTests: XCTestCase {
         XCTAssertEqual(told, [])
     }
 
-    func testWorkPastItsPauseShowsInTheRunningSummaryUntilItEnds() async throws {
+    func testWorkPastItsPauseShowsOnTheWorkCardUntilItEnds() async throws {
         let (sheet, link) = inMenuBar()
         sheet.pressCard()
         try await sleeps()
         nonisolated(unsafe) var told = 0
-        withObservationTracking { _ = self.runs.runningSummary } onChange: { told += 1 }
+        withObservationTracking { _ = self.runs.workCard } onChange: { told += 1 }
 
         clock.advance(by: 1)
-        try await wait("the summary") { self.runs.runningSummary == "Script is running" }
+        try await wait("the card") { self.runs.workCard?.words == "Setting up Script" }
         XCTAssertEqual(told, 1)
-        XCTAssertEqual(runs.workSpot, "script")
         await link.end(link.sent[0])
 
-        XCTAssertNil(runs.runningSummary)
+        XCTAssertEqual(runs.workCard?.fill, .full)
         XCTAssertTrue(sheet.work.isEmpty)
+        try await wait("the sleep of the full card") { self.clock.isSleeping(for: MotionTokens.workFinish) }
+        clock.advance(by: 1)
+        try await wait("the card leaves") { self.runs.workCard == nil }
     }
 
     func testANewReadingTellsTheReaderOfTheMarksAndTheSameReadingDoesNot() async throws {

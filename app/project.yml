@@ -59,8 +59,8 @@ targets:
     info:
       path: Shell/Info.plist
       properties:
-        CFBundleName: Openspot
-        CFBundleDisplayName: Openspot
+        CFBundleName: $(OPENSPOT_APP_NAME)
+        CFBundleDisplayName: $(OPENSPOT_APP_NAME)
         CFBundleShortVersionString: $(MARKETING_VERSION)
         CFBundleVersion: $(CURRENT_PROJECT_VERSION)
         LSMinimumSystemVersion: "26.0"
@@ -162,11 +162,14 @@ targets:
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: openspot.celis.ai
+        OPENSPOT_APP_NAME: Openspot
         DEVELOPMENT_TEAM: ""
         INFOPLIST_OUTPUT_FORMAT: XML
         ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
       configs:
         Debug:
+          PRODUCT_BUNDLE_IDENTIFIER: openspot.celis.ai.dev
+          OPENSPOT_APP_NAME: Openspot Dev
           ASSETCATALOG_COMPILER_APPICON_NAME: AppIconNightly
           SWIFT_ACTIVE_COMPILATION_CONDITIONS: $(inherited) OPENSPOT_TOOLS
           ENABLE_HARDENED_RUNTIME: NO

@@ -428,7 +428,11 @@ effects of the frame.
 - Its effects:
   - `toast=Saved` shows a short message at once, even when the panel is closed;
   - `link=<url>` opens the URL;
-  - `progress=<0 to 1>` shows progress. With it, `title` and `detail` show only while the call runs;
+  - `progress=<0 to 1>` shows progress. With it, `title` and `detail` show only while the call runs, and `title`
+    names the work on the working card (see [The life of a call](#the-life-of-a-call));
+  - `background=true` marks a call that goes on while the person does other things, such as an agent that builds. It
+    gets no working card in the middle of the screen: its `title` shows at the end of the search row, and a press of it
+    opens the spot;
   - `select=<row id>` asks the spot again with that row selected;
   - `push=`, `push.spot=`, `push.title=`, `push.replace=` and `pop=` move the flow after a press: see [Pages](#pages);
   - `call=<n>` and `end=<n>` mark the calls of a staying spot (see [Modes](#modes)).
@@ -636,6 +640,11 @@ start ──► frame ──► frame ──► ... ──► end        exit 0:
 ```
 
 - A `read` has 10 seconds to print its first frame or end. Other calls have no time limit.
+- A call other than a `read` that runs for more than a second shows as work on the spot's card and sheet. While the
+  panel doesn't show the spot, a working card in the middle of the screen shows the spot's icon, the `title` of the
+  call's latest head (or "Setting up <spot>" without one) and a bar. The bar starts at the call's `progress`, or at 0,
+  and keeps creeping forward until the next `progress`. When the call ends or prints a frame with blocks, the bar fills
+  and the card leaves. When several spots work, it shows the oldest call.
 - A frame holds at most 32 MB. Openspot stops a call that prints more in one frame, and the call fails.
 - A new value of a block stops the older call of that block. A second press of a running call stops it: its process
   group gets the terminate signal, then the kill signal. A staying spot can keep a call that the user pressed again; see

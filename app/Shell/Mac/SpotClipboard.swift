@@ -3,7 +3,6 @@ import ApplicationServices
 import OpenspotCore
 
 struct SpotClipboard: MacClipboard {
-    static let accessibility = "x-apple.systempreferences:com.apple.preference.security?Privacy_Accessibility"
     private static let vKey: CGKeyCode = 9
 
     func copy(file url: URL) throws {
@@ -21,8 +20,8 @@ struct SpotClipboard: MacClipboard {
     }
 
     func paste() throws {
-        guard AXIsProcessTrusted() else {
-            throw SpotError.failedWithFix(1, "Openspot cannot paste. Press `⌘V` to paste, or allow Openspot in Accessibility.", URL(string: Self.accessibility)!)
+        guard SpotAccessibility.ask() else {
+            throw SpotError.failedWithFix(1, "Openspot cannot paste. Press `⌘V` to paste, or allow Openspot in Accessibility.", SpotAccessibility.settings)
         }
         let read = { MainActor.assumeIsolated { SpotKeyLayouts.readCommandCode(of: "v") } }
         let code = (Thread.isMainThread ? read() : DispatchQueue.main.sync(execute: read)) ?? Self.vKey

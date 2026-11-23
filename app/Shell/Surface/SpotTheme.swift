@@ -86,6 +86,7 @@ struct SpotTheme {
     static let dragFill = 0.4
     static let hover = 0.08
     static let menuDim = 0.4
+    static let shineDim = 0.45
     static let liftShadow: CGFloat = 14
     static let liftShadowStrength = 0.25
     static let unfocusedCardStrength = 0.35

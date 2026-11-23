@@ -268,7 +268,9 @@ struct SheetPartsView: View {
 
     @ViewBuilder
     private func pressLabel(_ part: SpotPart, words: String, font: Font) -> some View {
-        if let call = work(part) {
+        if let call = work(part), let title = call.title {
+            SpotShine(words: title, font: font)
+        } else if let call = work(part) {
             HStack(spacing: SpotTokens.placeGap / 2) {
                 SpotWorkMark(call: call, side: SpotTokens.workMark)
                 Text("Stop").font(font).lineLimit(1)

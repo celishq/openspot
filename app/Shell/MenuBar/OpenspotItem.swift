@@ -32,12 +32,6 @@ final class OpenspotItem {
         item.button?.window?.frame.contains(point) == true
     }
 
-    func show(running summary: String?) {
-        icon?.rootView.isWorking = summary != nil
-        item.button?.toolTip = summary
-        item.button?.setAccessibilityLabel(summary ?? Self.name)
-    }
-
     private func makeIcon(model: SpotsModel, toast: Toast?) -> MenuBarHost<SpotMenuBarIconView>? {
         guard let button = item.button, let image = button.image else { return nil }
         button.image = nil

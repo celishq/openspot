@@ -29,6 +29,11 @@ public struct ScreenPlace: Sendable {
         return CGPoint(x: x.rounded(.down), y: y.rounded(.down))
     }
 
+    public func origin(ofWorkCard size: CGSize, pointer: CGPoint) -> CGPoint? {
+        guard let area = screen(window: nil, pointer: pointer)?.area else { return nil }
+        return CGPoint(x: (area.midX - size.width / 2).rounded(.down), y: (area.midY - size.height / 2).rounded(.down))
+    }
+
     public func origin(ofToast size: CGSize, inset: CGFloat, under item: CGRect?) -> CGPoint? {
         let lift = inset - SpotTokens.toastGap
         if let item, let area = screens.first(where: { $0.frame.intersects(item) })?.area {

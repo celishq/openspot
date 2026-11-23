@@ -202,21 +202,12 @@ extension SpotsModel {
         runs.menuBarMarks
     }
 
-    public var runningSummary: String? {
-        runs.runningSummary
+    public var workCard: WorkCard? {
+        runs.workCard
     }
 
-    public func openWork() -> Bool {
-        guard let id = runs.workSpot else { return false }
-        let spot = { self.visible.firstIndex { $0.id == id || $0.spot.places.contains(id) } }
-        if isShown, openSheetID == nil, spot() == selected {
-            host.dismiss()
-            return true
-        }
-        closeSheet(moving: isShown)
-        host.show()
-        if let spot = spot() { selected = spot }
-        return true
+    public var backgroundWork: [(id: String, call: ScriptCall)] {
+        runs.backgroundWork
     }
 
     public func work(of part: SpotPart) -> ScriptCall? {

@@ -31,6 +31,7 @@ final class OpenspotApp: NSObject, NSApplicationDelegate {
     )
     private(set) lazy var windows = DetachedWindows(model: model)
     private var menuBar: SpotMenuBar?
+    private var workCard: WorkCardPanel?
     private var fileChooser: SpotFileChooser?
     private var submenu: SpotSubmenuWindow?
     #if OPENSPOT_TOOLS
@@ -48,7 +49,7 @@ final class OpenspotApp: NSObject, NSApplicationDelegate {
     func applicationDidFinishLaunching(_ notification: Notification) {
         toast = ToastPanel.make()
         let item = OpenspotItem(
-            model: model, toast: toast?.toast, target: self, action: #selector(pressItem),
+            model: model, toast: toast?.toast, target: self, action: #selector(togglePanel),
             onDragEnter: { [weak self] in self?.showPanelForDrag() }, onDrop: { [weak self] in self?.model.review($0) }
         )
         self.item = item
@@ -57,6 +58,7 @@ final class OpenspotApp: NSObject, NSApplicationDelegate {
         SpotKeyLayouts.start()
         panel = SpotsPanel.make(model: model)
         menuBar = SpotMenuBar(model: model, openspotItem: item)
+        workCard = WorkCardPanel.make(model: model)
         #if OPENSPOT_TOOLS
         if let panel, let probe = SpotMotionProbe(model: model, panel: panel) {
             motionProbe = probe
@@ -121,10 +123,6 @@ final class OpenspotApp: NSObject, NSApplicationDelegate {
         spotsWatch?.stop()
         commandSocket?.close()
         model.quit()
-    }
-
-    @objc private func pressItem() {
-        if !model.openWork() { togglePanel() }
     }
 
     @objc func togglePanel() {
