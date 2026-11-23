@@ -27,12 +27,22 @@ extension BoxLayout {
         let spanned = { (place: Cell) in
             heights[place.row..<place.row + place.rows].reduce(0, +) + gapY * CGFloat(place.rows - 1)
         }
+        let gaps = gapY * CGFloat(max(rows - 1, 0))
         for index in children.indices where cells[index].rows > 1 {
-            let short = natural[index] - spanned(cells[index])
-            if short > 0 { heights[cells[index].row + cells[index].rows - 1] += short }
+            let place = cells[index]
+            let short = natural[index] - spanned(place)
+            guard short > 0 else { continue }
+            guard let given else {
+                heights[place.row + place.rows - 1] += short
+                continue
+            }
+            let taken = min(short, max(given - heights.reduce(0, +) - gaps, 0)) / CGFloat(place.rows)
+            for row in place.row..<place.row + place.rows { heights[row] += taken }
         }
-        let free = (given ?? 0) - heights.reduce(0, +) - gapY * CGFloat(max(rows - 1, 0))
+        let free = (given ?? 0) - heights.reduce(0, +) - gaps
         if free > 0, rows > 0 { heights = heights.map { $0 + free / CGFloat(rows) } }
+        let total = heights.reduce(0, +)
+        if free < 0, given != nil, total > 0 { heights = heights.map { max($0 + free * $0 / total, 0) } }
         var tops: [CGFloat] = []
         var y: CGFloat = 0
         for height in heights {
@@ -47,7 +57,7 @@ extension BoxLayout {
             let x = CGFloat(place.column) * (cell + gapX)
             return CGRect(x: x, y: tops[place.row] + Self.offset(alignment, size: height, in: tall), width: widths[index], height: height)
         }
-        let height = heights.reduce(0, +) + gapY * CGFloat(max(rows - 1, 0))
+        let height = heights.reduce(0, +) + gaps
         return (CGSize(width: room, height: given ?? height), frames)
     }
 

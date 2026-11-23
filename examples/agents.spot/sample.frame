@@ -1,8 +1,8 @@
 frame=
-class=gap-part card:relative
+class=gap-part
 
 card=card
-class=hidden card:flex absolute inset-0
+class=hidden card:flex card:grow
 limit1=claude|0.62|working
 limit2=openai|0.28|waiting
 task1=waiting|Fix a flaky test|openai|website

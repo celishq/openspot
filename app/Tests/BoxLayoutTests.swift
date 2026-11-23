@@ -111,6 +111,19 @@ final class BoxLayoutTests: XCTestCase {
         ])
     }
 
+    func testAGridOfAGivenHeightKeepsATallSpanningChildWithinThatHeight() {
+        let placed = place("grid grid-cols-2 gap-2", [block(10, 100, "row-span-3"), block(10, 10), block(10, 10), block(10, 10)], width: 108, height: 64)
+
+        XCTAssertEqual(placed.size.height, 64)
+        XCTAssertEqual(placed.frames.map(\.maxY), [64, 16, 40, 64])
+    }
+
+    func testAGridOfAGivenHeightShrinksRowsThatDoNotFitIt() {
+        let placed = place("grid grid-cols-2 gap-2", [block(10, 10, "row-span-3"), block(10, 40), block(10, 40), block(10, 40)], width: 108, height: 106)
+
+        XCTAssertEqual(placed.frames.map(\.maxY), [106, 30, 68, 106])
+    }
+
     func testASquareInARowOfAGivenHeightTakesItsHeightAsItsWidth() {
         let placed = place("flex-row", [block(10, 10, "aspect-square")], width: 200, height: 60)
 

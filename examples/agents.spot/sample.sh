@@ -1,5 +1,5 @@
 #!/bin/sh
-printf 'frame=\nclass=gap-part card:relative\n\ncard=card\nclass=hidden card:flex absolute inset-0\nlimit1=claude|0.62|working\nlimit2=openai|0.28|waiting\n'
+printf 'frame=\nclass=gap-part\n\ncard=card\nclass=hidden card:flex card:grow\nlimit1=claude|0.62|working\nlimit2=openai|0.28|waiting\n'
 printf 'task1=waiting|Fix a flaky test|openai|website\ntask2=working|Rewrite the README|claude|openspot\ntask3=working|Add a pricing page|claude|website\n\n'
 printf 'number=count\nclass=hidden bar:flex\nvalue=3\ntitle=Sessions\n\n'
 printf 'items=items\nclass=card:hidden\n\n'
