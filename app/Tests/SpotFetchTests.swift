@@ -5,7 +5,7 @@ import XCTest
 final class SpotFetchTests: SpotRunsCase {
     override func setUp() async throws {
         try await super.setUp()
-        runs.web = Web(session: FakeWeb.session, wait: 30)
+        runs.web = Web(configuration: FakeWeb.configuration, wait: 30)
         runs.api = CommandAPI(mac: Mac(), places: .test(["OPENSPOT_CONFIG": folder.appendingPathComponent("config").path]), runs: runs)
     }
 
@@ -90,7 +90,7 @@ final class SpotFetchTests: SpotRunsCase {
     }
 
     func testAnAnswerThatNeverComesFailsAsTimeoutAfterTheWait() async throws {
-        runs.web = Web(session: FakeWeb.session, wait: 0.3)
+        runs.web = Web(configuration: FakeWeb.configuration, wait: 0.3)
         let sheet = try fetching("""
         await env.fetch("https://fetch.test/never")
         return `item=${text}\\ntitle=read\\n`

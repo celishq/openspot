@@ -51,6 +51,7 @@ final class InlineScript: @unchecked Sendable {
     private let idle: TimeInterval
     private let spent: @Sendable (TimeInterval) -> Void
     private let web: Web
+    private var session: URLSession?
     private let fetched: @Sendable () -> Void
     private let condition = NSCondition()
     private var calls: [InlineCall] = []
@@ -86,6 +87,7 @@ final class InlineScript: @unchecked Sendable {
     }
 
     deinit {
+        session?.finishTasksAndInvalidate()
         if let caller { callers?.release(caller) }
     }
 
@@ -209,6 +211,7 @@ final class InlineScript: @unchecked Sendable {
         condition.withLock {
             guard !isEnded else { return }
             settles.append { [self] in
+                deadline = waiting[token]?.call.limit.map { .now() + $0 } ?? .distantFuture
                 let start = Self.threadTime()
                 slice(token, work)
                 spent(Self.threadTime() - start)
@@ -367,9 +370,11 @@ final class InlineScript: @unchecked Sendable {
             return promise
         }
         fetched()
+        let session = session ?? web.session()
+        self.session = session
         waiting[token]?.asks += 1
-        Task.detached(priority: .userInitiated) { [weak self, web] in
-            let answer = await web.fetch(url, method: method, headers: headers, body: body)
+        Task.detached(priority: .userInitiated) { [weak self, web, session] in
+            let answer = await web.fetch(url, method: method, headers: headers, body: body, in: session)
             self?.settle(token) { [weak self] in
                 self?.waiting[token]?.asks -= 1
                 settled.value?.call(withArguments: [answer.script])

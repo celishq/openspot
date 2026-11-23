@@ -28,24 +28,30 @@ enum CacheCall: NounCall {
         switch self {
         case .get(let name):
             guard SpotCache.isName(name) else { return Self.badName(name) }
-            let entry = cache.read(name, of: owner)
-            if let age = spot.triggers.fills[name], entry.map({ Date().timeIntervalSince($0.saved) >= age }) ?? true {
-                Task { @MainActor in runs.fill(name, of: spot.id) }
+            let fills = spot.triggers.fills[name]
+            return {
+                let entry = cache.read(name, of: owner)
+                if let fills, entry.map({ Date().timeIntervalSince($0.saved) >= fills }) ?? true {
+                    Task { @MainActor in runs.fill(name, of: spot.id) }
+                }
+                return CommandAnswer(output: entry?.value ?? "")
             }
-            return { CommandAnswer(output: entry?.value ?? "") }
         case .age(let name):
             guard SpotCache.isName(name) else { return Self.badName(name) }
-            let entry = cache.read(name, of: owner)
-            return { CommandAnswer(output: entry.map { "\(Int(Date().timeIntervalSince($0.saved).rounded(.down)))\n" } ?? "") }
+            return {
+                let entry = cache.read(name, of: owner)
+                return CommandAnswer(output: entry.map { "\(Int(Date().timeIntervalSince($0.saved).rounded(.down)))\n" } ?? "")
+            }
         case .set(let name):
             guard SpotCache.isName(name) else { return Self.badName(name) }
             return {
+                let isChanged: Bool
                 do {
-                    try cache.keep(await context.input(), as: name, of: owner, at: Date())
+                    isChanged = try cache.keep(await context.input(), as: name, of: owner, at: Date())
                 } catch {
                     return CommandAnswer(errors: "\(spot.name) keeps 16 MB at most in its cache. Keep less, or set a smaller value.\n", code: 2)
                 }
-                Task { @MainActor in runs.cacheChanged(spot.id) }
+                if isChanged { Task { @MainActor in runs.cacheChanged(spot.id) } }
                 return CommandAnswer()
             }
         }

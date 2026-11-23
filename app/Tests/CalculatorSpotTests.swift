@@ -163,7 +163,7 @@ final class CalculatorSpotTests: SampleSpotsCase {
         let suite = "openspot-calc-\(UUID().uuidString)"
         let defaults = try XCTUnwrap(UserDefaults(suiteName: suite))
         defer { defaults.removePersistentDomain(forName: suite) }
-        let model = try await panel(in: folder, defaults: defaults, web: Web(session: FakeWeb.session, wait: 30))
+        let model = try await panel(in: folder, defaults: defaults, web: Web(configuration: FakeWeb.configuration, wait: 30))
         defer { model.quit() }
 
         model.searchText = "15 usd in eur"

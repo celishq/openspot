@@ -41,8 +41,9 @@ shows its row in the turn of the key.
 more, Openspot runs `cache.line` in the background, one run at a time. An age takes `s`, `m`, `h` or `d`. Nothing runs
 on a clock: a cache that no one reads never fills.
 
-`env.cache.set(name, value)` keeps the text. Openspot then asks your spot again for the text in the panel's search, so
-the row that said Getting a quote shows the line.
+`env.cache.set(name, value)` keeps the text. When the value changed, Openspot then asks your spot again for the text in
+the panel's search, so the row that said Getting a quote shows the line. So set in a filler, not in `search`: a search
+that sets a new value each time asks itself again and again.
 
 A shell or Swift spot uses `openspot cache get <name>`, `openspot cache age <name>` and `openspot cache set <name>`,
 which takes the value on stdin.

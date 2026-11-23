@@ -90,7 +90,7 @@ extension SpotRun {
     }
 
     func take(answers text: String?, to query: String, of call: OpenCall, _ end: ScriptCall.End, errors: String) {
-        if text != nil || answeredQuery != query {
+        if text != nil || answeredQuery != query || !Self.isStop(end) {
             takeAnswers(text.map { Frame(text: $0).answers(asCard: spot.triggers.search?.isCard == true) } ?? [], to: query)
         }
         call.hasAnswer = text != nil
@@ -101,6 +101,11 @@ extension SpotRun {
         guard case .ended = end, !call.hasAnswer, case .ask(let ask) = call.request.purpose else { return }
         call.hasAnswer = true
         await takeAnswer((call.pushed ?? call.lastHead)?.withoutEffects() ?? .empty, frame: "", to: ask)
+    }
+
+    private static func isStop(_ end: ScriptCall.End) -> Bool {
+        if case .stopped = end { return true }
+        return false
     }
 
     func finish(_ call: OpenCall, _ end: ScriptCall.End, errors: String = "") {

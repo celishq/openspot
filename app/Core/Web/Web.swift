@@ -2,17 +2,22 @@ import Foundation
 
 public struct Web: Sendable {
     public static let byteLimit = 2 << 20
+    private static let chunk = 64 << 10
     public static let use = SpotUseCall(name: "fetch", rule: CallRule(use: .network, used: "reached the network"))
 
-    let session: URLSession
+    nonisolated(unsafe) let configuration: URLSessionConfiguration
     let wait: TimeInterval
 
-    public init(session: URLSession = .shared, wait: TimeInterval = 30) {
-        self.session = session
+    public init(configuration: URLSessionConfiguration = .ephemeral, wait: TimeInterval = 30) {
+        self.configuration = configuration
         self.wait = wait
     }
 
-    public func fetch(_ url: String, method: String, headers: [String: String], body: String?) async -> WebAnswer {
+    public func session() -> URLSession {
+        URLSession(configuration: configuration)
+    }
+
+    public func fetch(_ url: String, method: String, headers: [String: String], body: String?, in session: URLSession) async -> WebAnswer {
         guard let address = URL(string: url), ["http", "https"].contains(address.scheme?.lowercased() ?? "") else {
             return .failed(.unavailable, "Openspot fetches only an http or https address: \(url).")
         }
@@ -22,7 +27,7 @@ public struct Web: Sendable {
         request.httpBody = body.map { Data($0.utf8) }
         let sent = request
         return await withTaskGroup(of: WebAnswer.self) { group in
-            group.addTask { await read(sent) }
+            group.addTask { await read(sent, in: session) }
             group.addTask {
                 try? await Task.sleep(for: .seconds(wait))
                 return .failed(.timeout, "\(address.host() ?? url) did not answer in \(Int(wait)) seconds.")
@@ -33,17 +38,24 @@ public struct Web: Sendable {
         }
     }
 
-    private func read(_ request: URLRequest) async -> WebAnswer {
+    private func read(_ request: URLRequest, in session: URLSession) async -> WebAnswer {
         let host = request.url?.host() ?? ""
         do {
             let (bytes, response) = try await session.bytes(for: request)
             guard let response = response as? HTTPURLResponse else { return .failed(.unavailable, "\(host) did not answer over http.") }
             guard response.expectedContentLength <= Self.byteLimit else { return Self.overLimit(host) }
             var body = Data()
+            var chunk: [UInt8] = []
+            chunk.reserveCapacity(Self.chunk)
             for try await byte in bytes {
-                body.append(byte)
+                chunk.append(byte)
+                guard chunk.count == Self.chunk else { continue }
+                autoreleasepool { body.append(contentsOf: chunk) }
+                chunk.removeAll(keepingCapacity: true)
                 if body.count > Self.byteLimit { return Self.overLimit(host) }
             }
+            body.append(contentsOf: chunk)
+            if body.count > Self.byteLimit { return Self.overLimit(host) }
             let headers = response.allHeaderFields.reduce(into: [String: String]()) { kept, field in
                 kept["\(field.key)".lowercased()] = "\(field.value)"
             }

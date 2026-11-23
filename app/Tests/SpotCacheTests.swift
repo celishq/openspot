@@ -65,7 +65,7 @@ final class SpotCacheTests: SpotRunsCase {
         sheet.answer("12")
 
         try await wait("the answer after the fill") { sheet.answers.first?.title == "fresh" && sheet.answers.map(\.run) == ["12"] }
-        try await pause(0.3)
+        try await wait("the end of each call") { sheet.calls.isEmpty }
         XCTAssertEqual(cache.read("fills", of: "script")?.value, "1")
     }
 
@@ -78,8 +78,27 @@ final class SpotCacheTests: SpotRunsCase {
         try await wait("the answer after the fill") { sheet.answers.first?.title == "fresh" }
         sheet.answer("2")
         try await wait("the next answer") { sheet.answers.map(\.run) == ["2"] }
-        try await pause(0.3)
+        try await wait("the end of each call") { sheet.calls.isEmpty }
         XCTAssertEqual(cache.read("fills", of: "script")?.value, "1")
+    }
+
+    func testASetOfTheSameValueAsksTheSpotNothingAgain() async throws {
+        let sheet = try inline(toml: "[on]\nsearch = '^[0-9]'", """
+        let searches = 0
+        export default {
+          search({ text }, env) {
+            searches += 1
+            env.cache.set("seen", "same")
+            return `item=${text}\\ntitle=${searches}\\n`
+          },
+        }
+        """)
+
+        sheet.answer("1")
+
+        try await wait("the answer") { sheet.answers.map(\.run) == ["1"] }
+        try await wait("the end of each call") { sheet.calls.isEmpty }
+        XCTAssertLessThanOrEqual(Int(sheet.answers.first?.title ?? "") ?? 99, 2)
     }
 
     func testACacheKeeps16MegabytesAtMostForEachSpot() throws {

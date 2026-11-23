@@ -834,7 +834,8 @@ export default {
     return card(solved)
   },
   /** Fetches the rates from the first source that answers with a good file, and keeps them unless the kept ones are
-   * newer or far fuller. A failure is kept for a minute, so that the reads in it fetch nothing. */
+   * newer or far fuller. A failure, or a file that loses to the kept one, is kept for a minute, so that the reads in it
+   * fetch nothing. */
   async "cache.rates"(_, env) {
     const failed = env.cache.get("rates-failure")
     if (failed && failed.age < 60) return
@@ -848,8 +849,7 @@ export default {
         if (!fresh) continue
         const kept = env.cache.get("rates")
         const old = kept && ratesOf(kept.value)
-        env.cache.set("rates", !old || replaces(fresh, old) ? text : kept.value)
-        return
+        if (!old || replaces(fresh, old)) return env.cache.set("rates", text)
       } catch (error) {
         if (error.cause === "offline") cause = "offline"
       }

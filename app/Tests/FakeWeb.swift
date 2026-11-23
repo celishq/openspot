@@ -12,10 +12,10 @@ final class FakeWeb: URLProtocol, @unchecked Sendable {
     static let answers = Mutex<[String: Answer]>([:])
     static let asked = Mutex<[URLRequest]>([])
 
-    static var session: URLSession {
+    static var configuration: URLSessionConfiguration {
         let configuration = URLSessionConfiguration.ephemeral
         configuration.protocolClasses = [FakeWeb.self]
-        return URLSession(configuration: configuration)
+        return configuration
     }
 
     override class func canInit(with request: URLRequest) -> Bool { true }
