@@ -11,16 +11,24 @@ public struct BackdropFade: Equatable, Sendable {
     public let padding: CGFloat
     public let corner: CGFloat
     public let blur: CGFloat?
+    public let ease: CGFloat
+    public let roundness: CGFloat
 
-    public init(size: CGFloat, padding: CGFloat, corner: CGFloat, blur: CGFloat?) {
+    public init(size: CGFloat, padding: CGFloat, corner: CGFloat, blur: CGFloat?, ease: CGFloat, roundness: CGFloat) {
         self.size = size
         self.padding = padding
         self.corner = corner
         self.blur = blur
+        self.ease = ease
+        self.roundness = roundness
     }
 
     public static func current(blur: CGFloat?) -> BackdropFade {
-        BackdropFade(size: CGFloat(SpotTokens.backdrop.size), padding: CGFloat(SpotTokens.backdrop.padding), corner: SpotTokens.cardRadius, blur: blur)
+        let backdrop = SpotTokens.backdrop
+        return BackdropFade(
+            size: CGFloat(backdrop.size), padding: CGFloat(backdrop.padding), corner: SpotTokens.cardRadius, blur: blur,
+            ease: CGFloat(backdrop.ease), roundness: CGFloat(backdrop.roundness)
+        )
     }
 
     public func rings(in area: CGRect) -> [Ring] {
@@ -30,13 +38,13 @@ public struct BackdropFade: Equatable, Sendable {
         return (0...steps).map { step in
             let place = CGFloat(step) / CGFloat(steps)
             let outset = size - place * fade
-            return Ring(rect: content.insetBy(dx: -outset, dy: -outset), corner: corner + SpotTokens.backdropCornerGrowth * outset, strength: strength(at: place))
+            return Ring(rect: content.insetBy(dx: -outset, dy: -outset), corner: corner + roundness * outset, strength: strength(at: place))
         }
     }
 
     private func strength(at place: CGFloat) -> CGFloat {
         guard let blur, blur > 0 else { return place }
-        let lost = place * place
+        let lost = pow(place, ease)
         guard lost < 1 else { return 1 }
         let radius = SpotTokens.backdropHalfDetailBlur * pow(lost / (1 - lost), 1 / SpotTokens.backdropDetailFalloff)
         return min(pow(radius / blur, 1 / SpotTokens.backdropBlurResponse), 1)
