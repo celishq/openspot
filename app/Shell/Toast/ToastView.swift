@@ -12,6 +12,7 @@ struct ToastView: View {
             .modifier(SpotGlass(shape: SpotRoundShape(radius: SpotTokens.toastRadius)))
             .contentShape(Rectangle())
             .onTapGesture { toasts?.press(toast.id) }
+            .allowsHitTesting(toast.isShown)
             .environment(\.spotIsShown, toast.isShown)
     }
 

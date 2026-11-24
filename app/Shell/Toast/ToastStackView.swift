@@ -9,6 +9,7 @@ struct ToastStackView: View {
             ZStack(alignment: .top) {
                 ForEach(toasts.shown) { toast in
                     ToastView(toast: toast, toasts: toasts)
+                        .zIndex(toast.isShown ? 1 : 0)
                 }
             }
             .frame(height: toasts.frontHeight, alignment: .top)

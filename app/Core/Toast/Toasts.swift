@@ -22,6 +22,7 @@ public final class Toasts {
     @ObservationIgnored private var ends: [ToastID: Task<Void, Never>] = [:]
     @ObservationIgnored private var isHeld = false
     @ObservationIgnored private var fixKeyToast: ToastID?
+    @ObservationIgnored private var frontID: ToastID?
 
     public init(host: SpotsHost, clock: RunClock = RunClock()) {
         self.host = host
@@ -33,7 +34,8 @@ public final class Toasts {
         let existing = stacked.first { $0.id == id }
         if existing == nil, leaving.remove(id) != nil { shown.removeAll { $0.id == id } }
         let fixKey = press == nil ? nil : key
-        let held = fixKey.flatMap { holdFixKey(id, key: $0) }
+        let isFront = existing == nil || frontID == id
+        let held = isFront ? fixKey.flatMap { holdFixKey(id, key: $0) } : nil
         let words = held.map { "\(note.words) Press `\($0.label)` to fix it." } ?? note.words
         let toast = existing ?? Toast(id: id, note: note, words: words)
         existing?.take(note, words: words)
@@ -49,8 +51,7 @@ public final class Toasts {
             window?.bringToFront()
             window?.nextFrame { [weak self] in self?.showFront() }
         }
-        ends.removeValue(forKey: id)?.cancel()
-        if !isHeld { end(toast) }
+        if existing != nil, frontID == id, !isHeld { end(toast) }
     }
 
     public func drop(_ id: String, of spot: String) {
@@ -68,8 +69,8 @@ public final class Toasts {
         if isHovered {
             ends.values.forEach { $0.cancel() }
             ends.removeAll()
-        } else {
-            stacked.forEach(end)
+        } else if let front = stacked.first {
+            end(front)
         }
     }
 
@@ -99,7 +100,6 @@ public final class Toasts {
         showFront()
         host.change(.move, { fit() }, completion: {})
         window?.place()
-        if fixKeyToast == id { passFixKey() }
         after(MotionTokens.fadeOut) { [weak self] in
             guard let self, shown.contains(where: { $0 === toast }) else { return }
             leaving.remove(id)
@@ -109,6 +109,7 @@ public final class Toasts {
     }
 
     private func settle() {
+        fit()
         if !stacked.isEmpty {
             window?.place()
         } else if shown.isEmpty {
@@ -142,20 +143,24 @@ public final class Toasts {
         return key
     }
 
-    private func passFixKey() {
-        window?.dropFixKey()
-        fixKeyToast = nil
-        guard let next = stacked.first(where: { $0.fixKey != nil }), let key = next.fixKey else { return }
-        holdFixKey(next.id, key: key)
-    }
-
     private func showFront() {
-        let front = stacked.first?.id
-        for toast in shown where toast.isShown != (toast.id == front) {
-            toast.isShown = toast.id == front
+        let front = stacked.first
+        for toast in shown where toast.isShown != (toast === front) {
+            toast.isShown = toast === front
         }
-        let next = stacked.first?.note.kind
+        let next = front?.note.kind
         if next != leadKind { leadKind = next }
+        guard front?.id != frontID else { return }
+        frontID = front?.id
+        ends.values.forEach { $0.cancel() }
+        ends.removeAll()
+        if let front, !isHeld { end(front) }
+        if let front, let key = front.fixKey {
+            if fixKeyToast != front.id { holdFixKey(front.id, key: key) }
+        } else if fixKeyToast != nil {
+            window?.dropFixKey()
+            fixKeyToast = nil
+        }
     }
 
     private func fit() {
@@ -163,7 +168,8 @@ public final class Toasts {
         if stacked.count != count { count = stacked.count }
         let front = stacked.first?.size.height ?? 0
         if front != frontHeight { frontHeight = front }
-        width = max(shown.map(\.size.width).max() ?? 0, count > 1 ? SpotTokens.toastBars(count) : 0)
-        height = (shown.map(\.size.height).max() ?? 0) + (count > 1 ? SpotTokens.toastBarsGap + SpotTokens.toastBarHeight : 0)
+        let seen = shown.filter { $0.id == stacked.first?.id || leaving.contains($0.id) }
+        width = max(seen.map(\.size.width).max() ?? 0, count > 1 ? SpotTokens.toastBars(count) : 0)
+        height = (seen.map(\.size.height).max() ?? 0) + (count > 1 ? SpotTokens.toastBarsGap + SpotTokens.toastBarHeight : 0)
     }
 }

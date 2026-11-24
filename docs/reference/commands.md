@@ -61,7 +61,7 @@ In each command, an app is its bundle ID, such as `com.apple.Safari`. Each list 
 
 ## A toast
 
-Up to three toasts wait at once. The newest shows, a short bar under it stands for each one that waits, and the next steps in when it leaves. A click on a toast closes it. A toast with no words reads blocks
+Up to three toasts wait in line. The newest shows, with a short bar under it for each toast in line, its own bright, and the next steps in when it leaves. A toast's time starts when it shows. A click on a toast closes it. A toast with no words reads blocks
 on stdin, and its first block holds the toast's own keys:
 
 ```ini

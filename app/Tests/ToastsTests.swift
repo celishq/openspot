@@ -73,7 +73,7 @@ final class ToastsTests: XCTestCase {
 
         XCTAssertEqual(front, "d")
         XCTAssertEqual(toasts.count, 3)
-        try await pass(MotionTokens.fadeOut, sleeps: 4)
+        try await pass(MotionTokens.fadeOut, sleeps: 2, due: MotionTokens.fadeOut)
         try await wait("the oldest leaves", until: { toasts.shown.map(\.words) == ["d", "c", "b"] })
     }
 
@@ -87,19 +87,41 @@ final class ToastsTests: XCTestCase {
         XCTAssertEqual(toasts.count, 2)
     }
 
-    func testAnIdChangesItsToastInPlaceAndRestartsItsTime() async throws {
+    func testAnIdChangesAWaitingToastInPlace() async throws {
         toasts.add(try note("toast=up\ntitle=Uploading\n"), spot: "s")
         try await wait("the upload shows", until: { front == "Uploading" })
         try await show("other")
-        try await pass(4, sleeps: 2, due: 5)
+        try await pass(4, sleeps: 1, due: 5)
 
         toasts.add(try note("toast=up\ntitle=Uploaded\n"), spot: "s")
 
         XCTAssertEqual(toasts.shown.map(\.words), ["other", "Uploaded"])
-        try await pass(4, sleeps: 2, due: 5)
-        try await wait("the other toast ends", until: { front == "Uploaded" })
-        try await pass(2, sleeps: 2, due: 1)
+        try await pass(1, sleeps: 1, due: 1)
+        try await wait("the upload steps in", until: { front == "Uploaded" })
+        try await pass(5, sleeps: 2, due: 5)
         try await wait("the upload ends", until: { front == nil })
+    }
+
+    func testAnIdRestartsTheTimeOfTheShownToast() async throws {
+        toasts.add(try note("toast=up\ntitle=Uploading\n"), spot: "s")
+        try await wait("the upload shows", until: { front == "Uploading" })
+        try await pass(4, sleeps: 1, due: 5)
+
+        toasts.add(try note("toast=up\ntitle=Uploaded\n"), spot: "s")
+
+        try await wait("its time starts again", until: { clock.sleepCount == 1 && clock.isSleeping(for: 5) })
+    }
+
+    func testAWaitingToastsTimeStartsWhenItShows() async throws {
+        try await show("a")
+        try await pass(3, sleeps: 1, due: 5)
+        try await show("b")
+        try await wait("only the shown toast's time runs", until: { clock.sleepCount == 1 && clock.isSleeping(for: 5) })
+
+        clock.advance(by: 5)
+
+        try await wait("a steps in", until: { front == "a" })
+        try await wait("a has its whole time", until: { clock.isSleeping(for: 5) })
     }
 
     func testTheSameIdOfAnotherSpotIsAnotherToast() async throws {
@@ -154,10 +176,10 @@ final class ToastsTests: XCTestCase {
         XCTAssertEqual(toasts.count, 2)
 
         toasts.hold(false)
-        try await pass(4, sleeps: 2, due: 5)
+        try await pass(4, sleeps: 1, due: 5)
         XCTAssertEqual(toasts.count, 2)
-        try await pass(1, sleeps: 2, due: 1)
-        try await wait("both end", until: { front == nil })
+        try await pass(1, sleeps: 1, due: 1)
+        try await wait("the next steps in", until: { front == "a" })
     }
 
     func testAPressRunsWhatItDoesAndClosesTheToast() async throws {
@@ -210,5 +232,21 @@ final class ToastsTests: XCTestCase {
 
         XCTAssertFalse(clock.tolerances.isEmpty)
         XCTAssertFalse(clock.tolerances.contains(nil))
+    }
+
+    func testAToastThatCoversAFailureTakesItsFixKeyUntilItLeaves() async throws {
+        let key = try XCTUnwrap(Shortcut(text: "cmd+shift+f"))
+        var fixes = 0
+        toasts.add(.failure("failed"), press: { fixes += 1 }, fixKey: key)
+        try await wait("the failure shows", until: { front?.hasPrefix("failed") == true })
+        XCTAssertNotNil(window.fixPress)
+
+        try await show("ok")
+        XCTAssertNil(window.fixPress)
+
+        toasts.press(try XCTUnwrap(toasts.shown.first).id)
+        try await wait("the failure steps in with its key", until: { window.fixPress != nil })
+        window.fixPress?()
+        XCTAssertEqual(fixes, 1)
     }
 }

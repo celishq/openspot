@@ -7,7 +7,7 @@ enum ToastCall: NounCall {
 
     static let noun = CommandNoun("toast", group: .build, verbs: [
         CommandVerb("remove", "<id>", "Takes the toast of the spot with the id away.", rule: CallRule(flags: .needsApp)) { $0.one.map(Self.remove) },
-        CommandVerb("", "[words...]", "Shows a short message, even when the panel is closed. With no words, it reads a block on stdin: `toast=<id>`, its `title`, `keep=true` to keep it until a click, and `action`, the action of the spot that a click runs. It works in a show too.", rule: CallRule(flags: .needsApp)) { words in
+        CommandVerb("", "[words...]", "Shows a short message, even when the panel is closed. With no words, it reads blocks on stdin: first `toast=<id>` with its `title`, `keep=true` to keep it until a click, `action`, the action of the spot that a click runs, and `class`, its layout; then Openspot's own blocks to draw in it. It works in a show too.", rule: CallRule(flags: .needsApp)) { words in
             words.none ? Self.blocks : Self.show(words.rest.joined(separator: " "))
         }
     ])
