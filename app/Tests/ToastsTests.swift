@@ -29,12 +29,12 @@ final class ToastsTests: XCTestCase {
     }
 
     private func note(_ blocks: String) throws -> ToastNote {
-        try ToastNote(blocks: blocks)
+        try ToastNote(.init(view: blocks))
     }
 
     func testANewToastShowsInPlaceOfTheOthersAndCountsThem() async throws {
         try await show("a")
-        XCTAssertEqual(toasts.count, 0)
+        XCTAssertEqual(toasts.count, 1)
 
         try await show("b")
 
@@ -50,7 +50,7 @@ final class ToastsTests: XCTestCase {
         toasts.press(try XCTUnwrap(toasts.queue.first).id)
 
         XCTAssertEqual(front, "a")
-        XCTAssertEqual(toasts.count, 0)
+        XCTAssertEqual(toasts.count, 1)
     }
 
     func testTheWindowReachesTheHeightOfEachToastItShows() async throws {

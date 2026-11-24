@@ -6,11 +6,11 @@ mkdir -p .temp
 folder=.temp/openspot/spots/toast-demo.spot
 rm -rf "$folder"
 mkdir -p "$folder"
-printf 'title = "Toast Demo"\nicon = "bell"\n\n[actions.upload]\ntitle = "Show a kept toast"\n\n[actions.done]\n' > "$folder/spot.toml"
+printf 'title = "Toast Demo"\nicon = "bell"\n\n[actions.upload]\ntitle = "Show an upload"\n\n[actions.done]\n' > "$folder/spot.toml"
 cat > "$folder/toast-demo.sh" <<'SPOT'
 #!/bin/sh
 case "$1" in
-  show) printf 'item=upload\ntitle=Show a kept toast\n' ;;
+  show) printf 'item=upload\ntitle=Show an upload\n' ;;
   upload)
     openspot toast --id upload --action done Uploading 3 files.
     sleep 2

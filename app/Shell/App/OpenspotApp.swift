@@ -67,7 +67,7 @@ final class OpenspotApp: NSObject, NSApplicationDelegate {
         }
         if !theme.faults.isEmpty { model.toast(.failure(theme.faults.joined(separator: "\n"))) }
         let item = OpenspotItem(
-            model: model, toasts: model.toasts, target: self, action: #selector(pressItem),
+            model: model, target: self, action: #selector(pressItem),
             onDragEnter: { [weak self] in self?.showPanelForDrag() }, onDrop: { [weak self] in self?.model.review($0) }
         )
         self.item = item

@@ -4,7 +4,6 @@ import SwiftUI
 struct OpenspotItemView: View {
     let model: SpotsModel
     let image: NSImage
-    let toasts: Toasts?
 
     private static var leave: Animation { SpotMotion.fade(isShown: false) }
     private static var arrive: Animation { SpotMotion.press }
@@ -40,8 +39,8 @@ struct OpenspotItemView: View {
     }
 
     private var count: Int? {
-        guard isToasting, let count = toasts?.count, count > 1 else { return nil }
-        return count
+        guard isToasting, model.toasts.count > 1 else { return nil }
+        return model.toasts.count
     }
 
     private var face: String {
@@ -49,7 +48,7 @@ struct OpenspotItemView: View {
     }
 
     private var isToasting: Bool {
-        !isRunning && toasts?.isShown == true
+        !isRunning && model.toasts.isShown
     }
 
     private var isRunning: Bool {
@@ -57,7 +56,7 @@ struct OpenspotItemView: View {
     }
 
     private var symbol: String? {
-        model.menuBarSymbol(during: toasts?.leadKind)
+        model.menuBarSymbol(during: model.toasts.leadKind)
     }
 
     @ViewBuilder

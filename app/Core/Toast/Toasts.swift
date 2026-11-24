@@ -18,7 +18,7 @@ public final class Toasts {
     @ObservationIgnored public weak var window: ToastWindow?
     @ObservationIgnored private let clock: RunClock
     @ObservationIgnored private var lastMade = 0
-    @ObservationIgnored private var ends: [ToastID: Task<Void, Never>] = [:]
+    @ObservationIgnored private var ending: Task<Void, Never>?
     @ObservationIgnored private var hiding: Task<Void, Never>?
     @ObservationIgnored private var isHeld = false
     @ObservationIgnored private var fixKeyToast: ToastID?
@@ -35,7 +35,6 @@ public final class Toasts {
         let words = held.map { "\(note.words) Press `\($0.label)` to fix it." } ?? note.words
         let toast = existing ?? Toast(id: id, note: note, words: words)
         existing?.take(note, words: words)
-        toast.duration = note.kind == .work ? nil : Self.duration
         toast.press = press
         toast.fixKey = key
         toast.size = window?.measure(toast) ?? .zero
@@ -60,8 +59,8 @@ public final class Toasts {
         guard isHovered != isHeld else { return }
         isHeld = isHovered
         if isHovered {
-            ends.values.forEach { $0.cancel() }
-            ends.removeAll()
+            ending?.cancel()
+            ending = nil
         } else if let front = queue.first {
             end(front)
         }
@@ -85,7 +84,6 @@ public final class Toasts {
     }
 
     private func forget(_ id: ToastID) {
-        ends.removeValue(forKey: id)?.cancel()
         queue.removeAll { $0.id == id }
     }
 
@@ -119,6 +117,7 @@ public final class Toasts {
         }
         let kind = next?.note.kind
         if kind != leadKind { leadKind = kind }
+        if queue.count != count { count = queue.count }
     }
 
     private func show(_ next: Toast) {
@@ -128,8 +127,8 @@ public final class Toasts {
     }
 
     private func cut(to toast: Toast?) {
-        ends.values.forEach { $0.cancel() }
-        ends.removeAll()
+        ending?.cancel()
+        ending = nil
         if let toast, !isHeld { end(toast) }
         if let toast, let key = toast.fixKey {
             if fixKeyToast != toast.id { holdFixKey(toast.id, key: key) }
@@ -143,15 +142,13 @@ public final class Toasts {
         if next.size != frontSize { frontSize = next.size }
         let shift = window?.shift(for: next.size.width) ?? 0
         if shift != frontShift { frontShift = shift }
-        let waiting = queue.count > 1 ? queue.count : 0
-        if waiting != count { count = waiting }
     }
 
     private func end(_ toast: Toast) {
-        guard let duration = toast.duration else { return }
+        guard toast.note.kind != .work else { return }
         let id = toast.id
-        ends[id]?.cancel()
-        ends[id] = after(duration) { [weak self] in self?.leave(id) }
+        ending?.cancel()
+        ending = after(Self.duration) { [weak self] in self?.leave(id) }
     }
 
     @discardableResult

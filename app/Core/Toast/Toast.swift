@@ -9,7 +9,6 @@ public final class Toast: Identifiable {
     public internal(set) var note: ToastNote
     public internal(set) var words: String
     @ObservationIgnored public internal(set) var size = CGSize.zero
-    @ObservationIgnored var duration: TimeInterval?
     @ObservationIgnored var press: (@MainActor @Sendable () -> Void)?
     @ObservationIgnored var fixKey: Shortcut?
 

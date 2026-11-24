@@ -34,10 +34,6 @@ public struct ToastNote: Equatable, Sendable, ExpressibleByStringInterpolation {
         self.init(words: words)
     }
 
-    init(blocks text: String) throws {
-        try self.init(Source(view: text))
-    }
-
     init(_ source: Source) throws {
         var blocks = source.view.map(TextBlock.blocks(in:)) ?? []
         var given: [TextBlock.Field] = []

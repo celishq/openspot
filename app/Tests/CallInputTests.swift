@@ -72,7 +72,6 @@ final class CallInputTests: SpotRunsCase {
         runs.onReport = { _, report in
             switch report {
             case .toast(let note): told.append(note.words)
-            case .toast(let note) where note.kind == .failure: told.append(note.words)
             default: break
             }
         }

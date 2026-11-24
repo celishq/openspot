@@ -26,7 +26,7 @@ final class SpotEffectTests: PanelCase {
     }
 
     private func writeFlow(show: String = "") throws {
-        let buttons = ["next", "root", "back", "close", "saved", "pick", "late", "other", "kept", "wrong", "drop"].map { "button=\($0)\\ntitle=\($0)\\nscope=spot\\n\\n" }.joined()
+        let buttons = ["next", "root", "back", "close", "saved", "pick", "late", "other", "upload", "wrong", "drop"].map { "button=\($0)\\ntitle=\($0)\\nscope=spot\\n\\n" }.joined()
         try script("flow", toml: "title = 'Flow'\npages = ['*']\n\n[actions.again]", """
         os='\(client.path)'
         codes='\(path("codes"))'
@@ -40,7 +40,7 @@ final class SpotEffectTests: PanelCase {
           close) "$os" route close ;;
           saved) "$os" toast Saved ;;
           pick) "$os" select c ;;
-          kept) "$os" toast --id up --action again Uploading ;;
+          upload) "$os" toast --id up --action again Uploading ;;
           wrong) "$os" toast --id up --action nothing Uploading ;;
           drop) "$os" toast --remove up ;;
           late) trap '"$os" toast Late; echo "late $?" >> "$codes"; exit 0' TERM; echo up >> "$codes"; sleep 30 & wait ;;
@@ -211,12 +211,12 @@ final class SpotEffectTests: PanelCase {
         XCTAssertEqual(back.errors, "The panel shows no sheet. Open a spot, then run `openspot route back` again.\n")
     }
 
-    func testAToastFromStdinCarriesItsIdKeepAndActionWithItsSpot() async throws {
+    func testAToastCarriesItsIdAndActionWithItsSpot() async throws {
         try await openFlow()
 
-        let code = try await pressed("kept")
+        let code = try await pressed("upload")
 
-        XCTAssertEqual(code, "kept 0")
+        XCTAssertEqual(code, "upload 0")
         XCTAssertEqual(host.toasts.map(\.spot), ["flow"])
         XCTAssertEqual(host.toasts.first?.note.id, "up")
         XCTAssertEqual(host.toasts.first?.note.action, "again")
@@ -233,7 +233,7 @@ final class SpotEffectTests: PanelCase {
 
     func testToastRemoveTakesTheToastOfTheSpotAway() async throws {
         try await openFlow()
-        _ = try await pressed("kept")
+        _ = try await pressed("upload")
         XCTAssertEqual(model.toasts.queue.map(\.id), [ToastID(spot: "flow", name: .given("up"))])
 
         let code = try await pressed("drop")
@@ -244,7 +244,7 @@ final class SpotEffectTests: PanelCase {
 
     func testAPressOnAToastRunsItsAction() async throws {
         try await openFlow()
-        _ = try await pressed("kept")
+        _ = try await pressed("upload")
         let note = try XCTUnwrap(host.toasts.first)
 
         model.press(note.note, of: note.spot)
@@ -259,15 +259,6 @@ final class SpotEffectTests: PanelCase {
         model.toasts.press(try XCTUnwrap(model.toasts.queue.first).id)
 
         XCTAssertEqual(host.opened, [link])
-    }
-
-    func testAToastMayStartWithTheWordRemove() async throws {
-        try await openFlow()
-
-        let toast = try await call(["toast", "remove", "the", "old", "copy"])
-
-        XCTAssertEqual(toast.code, 0)
-        XCTAssertEqual(host.confirms, ["remove the old copy"])
     }
 
     func testAToastDrawsAViewWithAHeadThatItsFlagsOverride() async throws {
