@@ -183,8 +183,14 @@ public final class SpotsModel {
     public var reviewed: ReviewSpot?
     public var isFirstLaunch = false
     public var isShown = false {
-        didSet { takeCardsPlay() }
+        didSet {
+            takeCardsPlay()
+            if isShown, !oldValue { startShowMotion() }
+        }
     }
+    @ObservationIgnored var showMotion: Task<Void, Never>?
+    @ObservationIgnored var showLength: TimeInterval?
+    @ObservationIgnored var heldArrivals: [(value: AttachmentValue, id: String)] = []
     public var isWarming = false
     public var isOpenForDrag = false
     public var isSettlingDrop = false

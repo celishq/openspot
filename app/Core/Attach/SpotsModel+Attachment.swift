@@ -4,6 +4,7 @@ extension SpotsModel {
     func openAttachment() {
         guard !isAttachmentOpen else { return runs.panelOpened() }
         isAttachmentOpen = !isWarming
+        heldArrivals = []
         let wasOn = attachments.isOn
         let front = isWarming ? nil : host.frontApp
         let feeds = !isWarming && entries.contains { !$0.spot.chipActions.isEmpty }
@@ -18,9 +19,36 @@ extension SpotsModel {
     }
 
     func takeAttachment(_ value: AttachmentValue, of id: String) {
-        var next = attachments
+        guard showMotion == nil else {
+            heldArrivals.removeAll { $0.id == id }
+            return heldArrivals.append((value, id))
+        }
+        settle(filled(attachments, with: value, of: id), motion: .fade)
+    }
+
+    func startShowMotion() {
+        showMotion?.cancel()
+        let length = showLength ?? MotionTokens.fadeIn
+        showMotion = Task { [weak self] in
+            try? await Task.sleep(for: .seconds(length), tolerance: .seconds(length / 10))
+            guard !Task.isCancelled else { return }
+            self?.endShowMotion()
+        }
+    }
+
+    func endShowMotion() {
+        showMotion?.cancel()
+        showMotion = nil
+        let held = heldArrivals
+        heldArrivals = []
+        guard !held.isEmpty else { return }
+        settle(held.reduce(attachments) { filled($0, with: $1.value, of: $1.id) }, motion: .fade)
+    }
+
+    private func filled(_ stack: AttachmentStack, with value: AttachmentValue, of id: String) -> AttachmentStack {
+        var next = stack
         if cards.contains(where: { $0.spot.offers(value) }) { next.fill(id, with: value, look: entry(id).flatMap { Self.look(of: $0.spot) }) } else { next.remove(id) }
-        settle(next, motion: .fade)
+        return next
     }
 
     func endAttachment(of id: String, _ end: ScriptCall.End) {

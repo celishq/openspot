@@ -130,6 +130,21 @@ final class AttachmentSourceTests: AttachmentCase {
         try await wait("no chip, since one file is gone") { self.chips.isEmpty }
     }
 
+    func testAValueThatArrivesWhileThePanelShowsLandsAtTheEndOfTheShowInAFade() async throws {
+        model.showLength = 600
+        try taker(takes: "'url'")
+        try source(adds: "url=https://example.com/a")
+
+        await open()
+
+        try await wait("the value") { !self.model.heldArrivals.isEmpty || !self.chips.isEmpty }
+        XCTAssertTrue(chips.isEmpty)
+        let changes = host.motions.count
+        model.endShowMotion()
+        XCTAssertEqual(chips.first?.value?.payload, .url("https://example.com/a"))
+        XCTAssertEqual(host.motions.dropFirst(changes).first, .fade)
+    }
+
     func testAnAddKeepsTheFirstBytesOfAText() async throws {
         try taker(takes: "'text'")
         try source(adds: "text=\"$(printf '%0\(ReadSources.limit + 10)d' 0)\"")
