@@ -1,19 +1,13 @@
 SpotsModel.chooseFormOption
 SpotsModel.createFromSearch
 SpotsModel.dragOut
-SpotsModel.dragSpot
-SpotsModel.gridScrolled
-SpotsModel.handleSearchKey
 SpotsModel.land
 SpotsModel.pick
 SpotsModel.pressFloatCard
-SpotsModel.pressHint
-SpotsModel.resizeSpot
 SpotsModel.review
 SpotsModel.runItem
 SpotsModel.searchMenu
 SpotsModel.setFormValue
-SpotsModel.setLevel
 SpotsModel.show
 SpotsModel.turnOff
 app/Core/Panel/SpotsModel.swift	setter of menuSession

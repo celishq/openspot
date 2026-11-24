@@ -26,8 +26,10 @@ extension SpotsModel {
     }
 
     public func pressHint(_ label: String) {
-        guard let key = ActionKey(label: label) else { return }
-        if !handleKey(key) { _ = handleSearchKey(key) }
+        asOnePress {
+            guard let key = ActionKey(label: label) else { return }
+            if !handleKey(key) { _ = handleSearchKey(key) }
+        }
     }
 
     func keyRows(of mode: PanelMode) -> [KeyRow] {

@@ -1,9 +1,12 @@
 #!/bin/sh
 . "$(dirname "$0")/checks.sh"
 need app/Core app/Shell
+fast=scripts/fast-signals.txt
+[ -f "$fast" ] || { echo "$(basename "$0"): $(pwd)/$fast is missing." >&2; exit 1; }
 found=$(mktemp)
 methods=$(mktemp)
-trap 'rm -f "$found" "$methods"' EXIT
+presses=$(mktemp)
+trap 'rm -f "$found" "$methods" "$presses"' EXIT
 find app/Core -name '*.swift' | sort | while read -r file; do
   awk -v f="$file" '
     function count(s, c,  t) { t = s; return gsub(c, "", t) }
@@ -37,6 +40,7 @@ grep -lE '(extension|class) SpotsModel([^A-Za-z0-9_]|$)' $(find app/Core -name '
     next
   }
   fn != "" && /^    \}/ { flush(); next }
+  fn != "" && lines == 0 && /^[[:space:]]*guard .* else \{ return[^()]*\}[[:space:]]*$/ { next }
   fn != "" && /[^[:space:]]/ {
     lines++
     if (lines == 1) { first = $0; sub(/^[[:space:]]+/, "", first) }
@@ -46,10 +50,13 @@ grep -lE '(extension|class) SpotsModel([^A-Za-z0-9_]|$)' $(find app/Core -name '
   { name[NR] = $1; pub[NR] = $2; first[NR] = $3; lines[NR] = $4 }
   END {
     for (i = 1; i <= NR; i++) if (first[i] ~ /^((return|_ =) )?asOnePress[[:space:]]*\{/) wraps[name[i]] = 1
-    for (i = 1; i <= NR; i++) {
-      if (wraps[name[i]] || lines[i] != 1) continue
-      call = first[i]; sub(/^((return|_ =) )?(self\.)?/, "", call)
-      if (call ~ /^[A-Za-z_][A-Za-z0-9_]*\(/) { sub(/\(.*/, "", call); if (wraps[call]) wraps[name[i]] = 1 }
+    for (more = 1; more;) {
+      more = 0
+      for (i = 1; i <= NR; i++) {
+        if (wraps[name[i]] || lines[i] != 1) continue
+        call = first[i]; sub(/^((return|_ =) )?(self\.)?/, "", call)
+        if (call ~ /^[A-Za-z_][A-Za-z0-9_]*\(/) { sub(/\(.*/, "", call); if (wraps[call]) { wraps[name[i]] = 1; more = 1 } }
+      }
     }
     for (i = 1; i <= NR; i++) if (pub[i] == "public" && !wraps[name[i]]) open[name[i]] = 1
     for (n in open) print n
@@ -77,6 +84,9 @@ find app/Shell -name '*.swift' ! -path 'app/Shell/Tools/*' | sort | xargs awk -v
     calls(rest)
     depth = count(rest, "\\{") - count(rest, "\\}")
   }
-' | sort -u >>"$found"
+' | sort -u >"$presses"
+stale=$(sort "$fast" | comm -23 - "$presses")
+[ -z "$stale" ] || { printf 'No press of Shell reaches each outside asOnePress any more, so remove each from %s:\n%s\n' "$fast" "$stale" >&2; exit 1; }
+sort "$fast" | comm -13 - "$presses" >>"$found"
 compare presses "$found" "A setter writes through change, or a press of Shell reaches a SpotsModel method that does not start with asOnePress (see The press in AGENTS.md):" || exit 1
 echo "Presses check passed."

@@ -123,7 +123,9 @@ below is one a reviewer can check in a diff.
   hint out once and writes it as its last change, so no setter writes the hint, and the observation's hop works it out only for a
   change that no press made. A setter must not write through `change`, since `withTransaction` can flush the pending update, and
   a body can then run between two writes that it reads together, such as `visible` and `placements`. `make verify` runs `scripts/check-presses.sh`, which fails on a `change(` inside a setter in `Core/`, and on a
-  public `SpotsModel` method that a gesture, a button, a key or a drop closure of `Shell/` calls and that does not start with `asOnePress`.
+  public `SpotsModel` method that a gesture, a button, a key or a drop closure of `Shell/` calls and that, after its guards, neither
+  starts with `asOnePress` nor only calls a method that does, except the fast signals of `scripts/fast-signals.txt` (`dragSpot`,
+  `resizeSpot`, `gridScrolled` and `setLevel`), which fire on each move of a drag, a slider or a scroll and so are no press.
 
 ### Where work lives
 
