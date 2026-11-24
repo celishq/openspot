@@ -262,6 +262,7 @@
 		3AE62B958E5D987445A5866F /* SecretStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8E63E66D33252D7F1CC9E976 /* SecretStore.swift */; };
 		3AEC47D31D7A4B8D303C07F6 /* Sparkle in Frameworks */ = {isa = PBXBuildFile; productRef = 5D46E63C968896AC610529D8 /* Sparkle */; };
 		3B8FBB08AF6DE22373101644 /* FileIconTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = D34F4DF9EE6D7D1505F40662 /* FileIconTests.swift */; };
+		3BA699EBEA73C26DBC6853FF /* ToastCut.swift in Sources */ = {isa = PBXBuildFile; fileRef = 822C64BE95219597E17F4446 /* ToastCut.swift */; };
 		3BD62091A2621104AAF1506F /* AppStatus.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3AFDD9C8D6F15F5C96732D17 /* AppStatus.swift */; };
 		3C305F9732E71BF44D812FA5 /* HostMode.swift in Sources */ = {isa = PBXBuildFile; fileRef = D51AEF5593DDBC73EEB5C287 /* HostMode.swift */; };
 		3D7541A309B5BF686941B697 /* Manifest+BoundEvent.swift in Sources */ = {isa = PBXBuildFile; fileRef = D5897BB7225321A2B47885B1 /* Manifest+BoundEvent.swift */; };
@@ -1747,6 +1748,7 @@
 		81C5B8D083F78A81B1FEBBCC /* GuideTopic.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GuideTopic.swift; sourceTree = "<group>"; };
 		81D49C11A2C4C461BF3E367A /* SpotsModel+Backdrop.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "SpotsModel+Backdrop.swift"; sourceTree = "<group>"; };
 		8212EFF0E6981177B955332C /* ViewLibraryTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ViewLibraryTests.swift; sourceTree = "<group>"; };
+		822C64BE95219597E17F4446 /* ToastCut.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ToastCut.swift; sourceTree = "<group>"; };
 		824573AD4BE599CF9601E0C1 /* BlockKind.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BlockKind.swift; sourceTree = "<group>"; };
 		82F3F386D9AC82BE8ADF20DB /* AccountMarkerTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AccountMarkerTests.swift; sourceTree = "<group>"; };
 		8340796A15CBE04063AE41D1 /* UsageSpotTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UsageSpotTests.swift; sourceTree = "<group>"; };
@@ -2662,6 +2664,7 @@
 		341DB4D45220B3E10D79DF4C /* Toast */ = {
 			isa = PBXGroup;
 			children = (
+				822C64BE95219597E17F4446 /* ToastCut.swift */,
 				D14A96CD1B177F8A53D7B7DE /* ToastKeyFill.swift */,
 				F1E3218E6D4C2E9BB6661856 /* ToastPanel.swift */,
 				61685756922701D55ADA8B08 /* ToastStackView.swift */,
@@ -5361,6 +5364,7 @@
 				5E6F9A2B2B99EBC6E769187D /* SpotsWindowPlace.swift in Sources */,
 				02AF28C905BDD3965FAD5D99 /* SpotsWindowView.swift in Sources */,
 				77E3E9CE762B85341645C212 /* ThemeColor+AppKit.swift in Sources */,
+				3BA699EBEA73C26DBC6853FF /* ToastCut.swift in Sources */,
 				2DA0ED84843B556BFECCAA29 /* ToastKeyFill.swift in Sources */,
 				35EA5B3C2F66976ED361984D /* ToastPanel.swift in Sources */,
 				988A08E398CECEF0C24CD7C1 /* ToastStackView.swift in Sources */,

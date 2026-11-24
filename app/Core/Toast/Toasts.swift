@@ -43,7 +43,6 @@ public final class Toasts {
         if existing == nil { dropped(by: toast).forEach(leave) }
         toast.size = window?.measure(toast) ?? .zero
         if existing == nil { shown.insert(toast, at: 0) }
-        widen()
         host.change(.move, { arrange() }, completion: {})
         window?.place()
         if existing == nil {
@@ -126,7 +125,6 @@ public final class Toasts {
     }
 
     private func settle() {
-        widen()
         if !stacked.isEmpty {
             window?.place()
         } else if shown.isEmpty {
@@ -178,6 +176,7 @@ public final class Toasts {
     }
 
     private func arrange() {
+        widen()
         let layout = ToastLayout(heights: shown.map(\.size.height), isExpanded: isExpanded)
         let next = Dictionary(uniqueKeysWithValues: zip(shown.map(\.id), layout.places))
         if next != places { places = next }

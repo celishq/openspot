@@ -34,22 +34,16 @@ final class ToastLayoutTests: XCTestCase {
         XCTAssertEqual(ToastLayout(heights: [], isExpanded: false).height, 0)
     }
 
-    func testEachToastShowsOnlyBelowTheBottomEdgeOfTheToastInFrontOfIt() {
+    func testEachToastIsCoveredByTheShapeOfTheToastInFrontOfIt() {
         for isExpanded in [false, true] {
             let heights: [CGFloat] = [50, 40, 30]
             let layout = ToastLayout(heights: heights, isExpanded: isExpanded)
 
-            XCTAssertNil(layout.places[0].edge)
+            XCTAssertEqual(layout.places[0].cover.height, 0)
             for index in 1...2 {
-                XCTAssertEqual(layout.places[index].edge, layout.places[index - 1].offset + heights[index - 1])
+                let front = layout.places[index - 1]
+                XCTAssertEqual(layout.places[index].cover, ToastLayout.Cover(offset: front.offset, height: heights[index - 1], scale: front.scale))
             }
         }
-    }
-
-    func testAnExpandedStackHidesNoPartOfAToast() {
-        let heights: [CGFloat] = [40, 40]
-        let layout = ToastLayout(heights: heights, isExpanded: true)
-
-        XCTAssertLessThanOrEqual(layout.places[1].edge ?? 0, layout.places[1].offset)
     }
 }

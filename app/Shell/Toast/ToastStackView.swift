@@ -11,12 +11,7 @@ struct ToastStackView: View {
                 ToastView(toast: toast, showsContent: place?.showsContent ?? true, width: toasts.width, toasts: toasts)
                     .scaleEffect(place?.scale ?? 1, anchor: .bottom)
                     .offset(y: place?.offset ?? 0)
-                    .mask(alignment: .top) {
-                        Rectangle()
-                            .padding(.horizontal, -SpotTokens.toastRoom)
-                            .padding(.bottom, -SpotTokens.toastMaxSize.height * CGFloat(Toasts.limit))
-                            .offset(y: place?.edge ?? -SpotTokens.toastRoom)
-                    }
+                    .mask(alignment: .top) { ToastCut(cover: place?.cover, width: toasts.width) }
                     .zIndex(-Double(index))
             }
         }
