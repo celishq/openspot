@@ -244,6 +244,38 @@ final class AttachmentStateTests: AttachmentCase {
         XCTAssertNil(model.fieldValue.preview)
     }
 
+    func testTheFieldSearchesActionsWhileAChipIsChosenAndSpotsAfterEscOrAReopen() async throws {
+        try await openWithTab()
+        XCTAssertEqual(model.promptWord, "spots")
+
+        XCTAssertTrue(model.handleKey(tab))
+        XCTAssertEqual(model.promptWord, "actions")
+        XCTAssertTrue(model.handleKey(escape))
+        XCTAssertEqual(model.promptWord, "spots")
+
+        XCTAssertTrue(model.handleKey(tab))
+        model.panelWillHide()
+        model.panelDidHide()
+        model.panelWillShow()
+        XCTAssertEqual(model.promptWord, "spots")
+    }
+
+    func testTurningToAnotherChipTellsNoReaderOfTheFieldsWord() async throws {
+        try taker("reader", takes: "'text', 'url'")
+        try source(adds: "url=https://example.com/a")
+        try source("selection", adds: "text=hola app=com.apple.Safari")
+        await open()
+        try await wait("two values") { self.model.attachments.chips.allSatisfy { $0.value != nil } && self.model.attachments.chips.count == 2 }
+        XCTAssertTrue(model.handleKey(tab))
+        nonisolated(unsafe) var changed = false
+        withObservationTracking { _ = model.promptWord } onChange: { changed = true }
+
+        XCTAssertTrue(model.handleKey(tab))
+
+        XCTAssertFalse(changed)
+        XCTAssertEqual(model.promptWord, "actions")
+    }
+
     func testAnotherSourceThatAnswersKeepsTheSelectedRow() async throws {
         try taker("keep", takes: "'url'")
         try taker("save", takes: "'url'")

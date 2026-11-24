@@ -74,12 +74,15 @@ public final class SpotsModel {
         didSet {
             let shape = AttachmentShape(attachments.layout)
             if attachmentShape != shape { attachmentShape = shape }
+            let word = attachments.isOn ? SearchPrompt.actions : SearchPrompt.grid
+            if promptWord != word { promptWord = word }
             hideAttachments()
         }
     }
     public internal(set) var isAttachmentHidden = false
     @ObservationIgnored var isAttachmentOpen = false
     public private(set) var attachmentShape = AttachmentShape.folded
+    public private(set) var promptWord = SearchPrompt.grid
     public internal(set) var fieldValue = FieldValue() {
         didSet {
             let room = fieldValue.preview == nil ? 0 : SpotTokens.attachmentValueRoom(lines: fieldValue.lines)

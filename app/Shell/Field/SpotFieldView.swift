@@ -137,7 +137,7 @@ struct SpotFieldView: View {
     }
 
     private var searchText: some View {
-            SpotSearchText(model: model, title: "\(SearchPrompt.verb) \(isOpen ? sheetWord : SearchPrompt.grid)")
+            SpotSearchText(model: model, sheetWord: isOpen ? sheetWord : nil)
                 .textFieldStyle(.plain)
                 .focused($isFocused)
                 .onSubmit { _ = model.handleSearchKey(ActionKey(name: "return")) }
@@ -165,7 +165,7 @@ struct SpotFieldView: View {
     }
 
     private var promptWords: some View {
-        SpotFieldPrompt(word: sheetWord, progress: progress)
+        FieldPrompt(model: model, word: sheetWord, progress: progress)
             .morph(progress, opacity: crossing)
         .modifier(SpotEmptyField(model: model, isHidden: model.showsFieldDrop))
         .modifier(SpotAttachmentCover(model: model))
@@ -209,6 +209,16 @@ struct SpotFieldView: View {
         isInSheet ? Self.sheetRadius : SurfaceEdge(card: .strip).radius
     }
 
+}
+
+private struct FieldPrompt: View {
+    let model: SpotsModel
+    let word: String
+    let progress: Double
+
+    var body: some View {
+        SpotFieldPrompt(word: word, progress: progress, grid: model.promptWord)
+    }
 }
 
 private struct FieldDim: ViewModifier {
