@@ -12,7 +12,7 @@ final class ReadUseCallTests: XCTestCase {
         folder = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString, isDirectory: true)
         try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
         runs = SpotRuns()
-        api = CommandAPI(mac: Mac(reads: ReadSources(mac: reads)), places: .test(["OPENSPOT_CONFIG": folder.path]), runs: runs)
+        api = CommandAPI(mac: Mac(reads: reads), places: .test(["OPENSPOT_CONFIG": folder.path]), runs: runs)
     }
 
     override func tearDown() async throws {

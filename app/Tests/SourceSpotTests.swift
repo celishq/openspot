@@ -14,7 +14,7 @@ final class SourceSpotTests: AttachmentCase {
         model.quit()
         model = SpotsModel(host: host, files: model.files, runs: SpotRuns(environment: environment, stopPause: stopPause))
         host.model = model
-        model.runs.api = CommandAPI(mac: Mac(clipboard: board, reads: ReadSources(mac: reads)), places: model.files, app: ModelApp(model: model), runs: model.runs)
+        model.runs.api = CommandAPI(mac: Mac(clipboard: board, reads: reads), places: model.files, app: ModelApp(model: model), runs: model.runs)
         model.runs.listen(to: board)
         try taker(takes: "'url', 'text', '*'")
     }

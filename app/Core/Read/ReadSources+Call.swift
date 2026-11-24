@@ -7,7 +7,7 @@ extension ReadSources {
         let reads = context.mac.reads
         let asks = asks ?? !context.isInShow
         return CommandAnswer.work {
-            let sources = try Mac.part(reads, "reads")
+            let sources = ReadSources(mac: try Mac.part(reads, "reads"))
             return try await read(sources, asks).map(\.text).joined(separator: "\n")
         }
     }

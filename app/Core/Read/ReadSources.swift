@@ -1,6 +1,6 @@
 import Foundation
 
-public final class ReadSources: @unchecked Sendable {
+struct ReadSources: Sendable {
     static let limit = 100_000
     private static let finder = (bundleID: "com.apple.finder", name: "Finder")
     private static let finderScript = """
@@ -15,11 +15,7 @@ public final class ReadSources: @unchecked Sendable {
 
     static let accessibility = "accessibility"
 
-    private let mac: any MacReads
-
-    public init(mac: any MacReads) {
-        self.mac = mac
-    }
+    let mac: any MacReads
 
     func access(of app: String? = nil, browsers: [Browser], asks: Bool = false) async -> [TextBlock] {
         let apps = browsers.map(\.bundleID) + [Self.finder.bundleID]

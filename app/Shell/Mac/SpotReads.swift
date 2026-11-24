@@ -7,10 +7,10 @@ struct SpotReads: MacReads {
     private static let queue = DispatchQueue(label: "openspot.reads")
     private static let timeout: Float = 1
 
-    let app: @MainActor @Sendable () -> NSRunningApplication?
+    let frontApp: @MainActor @Sendable () -> FrontApp?
 
     func front() async -> FrontApp? {
-        await MainActor.run { app().flatMap(FrontApp.init) }
+        await MainActor.run { frontApp() }
     }
 
     func name(of bundleID: String) -> String? {

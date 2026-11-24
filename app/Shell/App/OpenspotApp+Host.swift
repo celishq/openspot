@@ -97,12 +97,8 @@ extension OpenspotApp: SpotsHost {
     }
 
     var frontApp: FrontApp? {
-        frontRunningApp.flatMap(FrontApp.init)
-    }
-
-    var frontRunningApp: NSRunningApplication? {
         let front = NSWorkspace.shared.frontmostApplication
-        return front == .current ? previous.app : front
+        return (front == .current ? previous.app : front).flatMap(FrontApp.init)
     }
 
     func takeFocus() {

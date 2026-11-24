@@ -9,7 +9,7 @@ public struct Mac: Sendable {
     public var translation: (any MacTranslation)?
     public var events: (any MacEvents)?
     public var power: (any MacPower)?
-    public var reads: ReadSources?
+    public var reads: (any MacReads)?
     public var login: @Sendable () -> LoginItem?
     public var link: @Sendable () -> CommandLink?
     public var pickColor: (@MainActor @Sendable () async -> HexColor?)?
@@ -29,7 +29,7 @@ public struct Mac: Sendable {
         translation: (any MacTranslation)? = nil,
         events: (any MacEvents)? = nil,
         power: (any MacPower)? = nil,
-        reads: ReadSources? = nil,
+        reads: (any MacReads)? = nil,
         login: @escaping @Sendable () -> LoginItem? = { nil },
         link: @escaping @Sendable () -> CommandLink? = { nil },
         pickColor: (@MainActor @Sendable () async -> HexColor?)? = nil,
