@@ -53,13 +53,12 @@ final class ToastsTests: XCTestCase {
         XCTAssertEqual(toasts.count, 0)
     }
 
-    func testTheWindowFitsTheShownToastWhateverWaits() async throws {
+    func testTheWindowReachesTheHeightOfEachToastItShows() async throws {
         try await show("a")
-        XCTAssertEqual(toasts.height, 40)
-
         try await show("b")
 
-        XCTAssertEqual(toasts.height, 40)
+        XCTAssertEqual(window.reached, [40, 40])
+        XCTAssertEqual(toasts.frontSize.height, 40)
     }
 
     func testAToastPastTheLimitDropsTheOldest() async throws {
@@ -205,12 +204,11 @@ final class ToastsTests: XCTestCase {
         XCTAssertEqual(toasts.leadKind, .confirm)
     }
 
-    func testTheWindowFitsTheShownToast() async throws {
+    func testTheSurfaceTakesTheSizeOfTheShownToast() async throws {
         try await show("longer words")
         try await show("a")
 
         XCTAssertEqual(toasts.frontSize.width, 101)
-        XCTAssertEqual(toasts.width, 101)
     }
 
     func testTheFixKeyPassesToTheNewestToastWithAFix() async throws {

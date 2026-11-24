@@ -26,6 +26,15 @@ final class ScreenPlaceTests: XCTestCase {
         XCTAssertEqual(place.origin(ofToast: toast, inset: 16, under: item, window: nil, pointer: pointer), CGPoint(x: 916, y: 876))
     }
 
+    func testAToastAnchorKeepsTheToastUnderTheItemAndShiftsAWideOneOntoTheScreen() throws {
+        let anchor = try XCTUnwrap(place.toastAnchor(inset: 16, under: CGRect(x: 1450, y: 938, width: 33, height: 29), window: nil, pointer: pointer))
+
+        XCTAssertEqual(anchor.midX, 1466.5)
+        XCTAssertEqual(anchor.top, 944)
+        XCTAssertEqual(anchor.shift(for: 20), 0)
+        XCTAssertEqual(anchor.midX + anchor.shift(for: 200) + 100, main.area.maxX)
+    }
+
     func testAToastUnderAnItemNearTheEdgeStaysWholeOnTheScreen() {
         XCTAssertEqual(place.origin(ofToast: toast, inset: 16, under: CGRect(x: 1450, y: 938, width: 33, height: 29), window: nil, pointer: pointer), CGPoint(x: 1296, y: 876))
     }

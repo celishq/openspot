@@ -10,6 +10,7 @@ final class ToastPanel: NSPanel, ToastWindow {
         self?.ignoresMouseEvents = !inside
         self?.toasts?.hold(inside)
     }
+    private var anchor: ToastAnchor?
     weak var item: OpenspotItem?
     var front: () -> CGRect? = { nil }
 
@@ -21,23 +22,27 @@ final class ToastPanel: NSPanel, ToastWindow {
         return measure.sizeThatFits(in: NSSize(width: width, height: .greatestFiniteMagnitude))
     }
 
-    func place() {
-        guard let toasts else { return }
-        let room = 2 * SpotTokens.toastRoom
-        let size = CGSize(width: toasts.width + room, height: toasts.height + room)
-        let screens = ScreenPlace.Screen.all
-        let window = screens.count < 2 ? nil : front()
-        let place = ScreenPlace(screens: screens)
-        if let origin = place.origin(ofToast: size, inset: SpotTokens.toastRoom, under: item?.frame, window: window, pointer: NSEvent.mouseLocation) {
-            setFrame(NSRect(origin: origin, size: size), display: true)
+    func reach(_ height: CGFloat) {
+        if anchor == nil {
+            let screens = ScreenPlace.Screen.all
+            anchor = ScreenPlace(screens: screens).toastAnchor(inset: SpotTokens.toastRoom, under: item?.frame, window: screens.count < 2 ? nil : front(), pointer: NSEvent.mouseLocation)
         }
+        guard let anchor else { return }
+        let tall = height + 2 * SpotTokens.toastRoom
+        guard !isVisible || tall > frame.height else { return }
+        let size = CGSize(width: SpotTokens.toastMaxWidth, height: isVisible ? max(tall, frame.height) : tall)
+        setFrame(NSRect(origin: CGPoint(x: (anchor.midX - size.width / 2).rounded(.down), y: (anchor.top - size.height).rounded(.down)), size: size), display: true)
         pointer.check()
+    }
+
+    func shift(for width: CGFloat) -> CGFloat {
+        anchor?.shift(for: width) ?? 0
     }
 
     private var surface: CGRect {
         guard let toasts, isVisible else { return .zero }
         let size = toasts.frontSize
-        return CGRect(x: frame.midX - size.width / 2, y: frame.maxY - SpotTokens.toastRoom - size.height, width: size.width, height: size.height)
+        return CGRect(x: frame.midX + toasts.frontShift - size.width / 2, y: frame.maxY - SpotTokens.toastRoom - size.height, width: size.width, height: size.height)
     }
 
     func bringToFront() {
@@ -47,6 +52,7 @@ final class ToastPanel: NSPanel, ToastWindow {
     }
 
     func putAway() {
+        anchor = nil
         pointer.stop()
         ignoresMouseEvents = true
         orderOut(nil)
@@ -66,8 +72,8 @@ final class ToastPanel: NSPanel, ToastWindow {
         fixKey = nil
     }
 
-    func move(_ body: () -> Void, completion: @escaping @MainActor () -> Void) {
-        withAnimation(SpotMotion.move, completionCriteria: .logicallyComplete, body, completion: completion)
+    func move(_ body: () -> Void) {
+        withAnimation(SpotMotion.move, body)
     }
 
     static func make(toasts: Toasts) -> ToastPanel {

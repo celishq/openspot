@@ -12,11 +12,9 @@ public final class Toasts {
     public private(set) var front: Toast?
     public private(set) var isShown = false
     public private(set) var frontSize = CGSize.zero
+    public private(set) var frontShift: CGFloat = 0
     public private(set) var count = 0
     public private(set) var leadKind: ToastKind?
-    @ObservationIgnored public private(set) var width: CGFloat = 0
-    @ObservationIgnored public private(set) var height: CGFloat = 0
-    @ObservationIgnored private var target = CGSize.zero
     @ObservationIgnored public weak var window: ToastWindow?
     @ObservationIgnored private let clock: RunClock
     @ObservationIgnored private var lastMade = 0
@@ -96,15 +94,13 @@ public final class Toasts {
         if let next {
             hiding?.cancel()
             hiding = nil
-            if next !== front {
-                front = next
-                cut(to: next)
-            }
+            window?.reach(next.size.height)
             if isShown {
-                window?.move({ fit() }, completion: { [weak self] in self?.shrink() })
+                window?.move { fit(next) }
+                show(next)
             } else {
-                fit()
-                shrink()
+                show(next)
+                fit(next)
                 window?.bringToFront()
                 window?.nextFrame { [weak self] in
                     guard let self, front === next, !isShown else { return }
@@ -125,6 +121,12 @@ public final class Toasts {
         if kind != leadKind { leadKind = kind }
     }
 
+    private func show(_ next: Toast) {
+        guard next !== front else { return }
+        front = next
+        cut(to: next)
+    }
+
     private func cut(to toast: Toast?) {
         ends.values.forEach { $0.cancel() }
         ends.removeAll()
@@ -137,23 +139,12 @@ public final class Toasts {
         }
     }
 
-    private func fit() {
-        let size = front?.size ?? .zero
-        if size != frontSize { frontSize = size }
-        let next = queue.count > 1 ? queue.count : 0
-        if next != count { count = next }
-        target = size
-        guard target.width > width || target.height > height else { return }
-        width = max(width, target.width)
-        height = max(height, target.height)
-        window?.place()
-    }
-
-    private func shrink() {
-        guard width != target.width || height != target.height else { return }
-        width = target.width
-        height = target.height
-        window?.place()
+    private func fit(_ next: Toast) {
+        if next.size != frontSize { frontSize = next.size }
+        let shift = window?.shift(for: next.size.width) ?? 0
+        if shift != frontShift { frontShift = shift }
+        let waiting = queue.count > 1 ? queue.count : 0
+        if waiting != count { count = waiting }
     }
 
     private func end(_ toast: Toast) {

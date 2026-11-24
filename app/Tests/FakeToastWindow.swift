@@ -12,7 +12,14 @@ final class FakeToastWindow: ToastWindow {
         return CGSize(width: 100 + CGFloat(toast.words.count), height: 40)
     }
 
-    func place() {
+    var reached: [CGFloat] = []
+
+    func reach(_ height: CGFloat) {
+        reached.append(height)
+    }
+
+    func shift(for width: CGFloat) -> CGFloat {
+        0
     }
 
     func bringToFront() {
@@ -32,9 +39,8 @@ final class FakeToastWindow: ToastWindow {
         return true
     }
 
-    func move(_ body: () -> Void, completion: @escaping @MainActor () -> Void) {
+    func move(_ body: () -> Void) {
         body()
-        completion()
     }
 
     func dropFixKey() {
