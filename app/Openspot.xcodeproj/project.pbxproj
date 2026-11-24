@@ -199,6 +199,7 @@
 		2C2D71376A29A2B49325AB64 /* ScreenCaptureTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 73F0CFFF6AFC5B9FC56E6574 /* ScreenCaptureTests.swift */; };
 		2C97E93550CB40308FDFA28A /* SpotType+Parts.swift in Sources */ = {isa = PBXBuildFile; fileRef = D64FE653497134B94A2A3DD1 /* SpotType+Parts.swift */; };
 		2CDB660E401427CCC3ECA174 /* AccountHandle.swift in Sources */ = {isa = PBXBuildFile; fileRef = 49D6B763F8EEBA98A98B8C9E /* AccountHandle.swift */; };
+		2D4A753B678D61E906EA7169 /* ToastLayoutTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 91DD14A684021436B4F97115 /* ToastLayoutTests.swift */; };
 		2D51CC9D9FE59E9DF47125C3 /* OpenspotItem.swift in Sources */ = {isa = PBXBuildFile; fileRef = A0D37D4729D1CBB46B75278F /* OpenspotItem.swift */; };
 		2D6F6E09E97F7B1A842E73A6 /* ScriptProcess.swift in Sources */ = {isa = PBXBuildFile; fileRef = BB3BF554F43314B713EEC4F0 /* ScriptProcess.swift */; };
 		2D767FD965D15EAF5F644AF0 /* ConfigFile.swift in Sources */ = {isa = PBXBuildFile; fileRef = C534CF8DF32EE7ABB64624F6 /* ConfigFile.swift */; };
@@ -554,6 +555,7 @@
 		8716B0C596D1866071EDD75D /* ItemListTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1F768E1AE84E0DFDD983194E /* ItemListTests.swift */; };
 		874A3EF7FD23EE0338C15917 /* ModifierTapTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8A564A8D2623D8AB8446F8EA /* ModifierTapTests.swift */; };
 		879C1D2996DF88E3ABCFEC38 /* AccountCall.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2CEF74F754FB12F60F75A1B9 /* AccountCall.swift */; };
+		87F2A1A49C57AF92B28AD4BF /* ToastLayout.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5BB66FA6168D129A7F60FDE3 /* ToastLayout.swift */; };
 		888E3AFE0608317581BF14D8 /* SpotScreenBackdrop.swift in Sources */ = {isa = PBXBuildFile; fileRef = 227842BD53F16419E160A966 /* SpotScreenBackdrop.swift */; };
 		889181434259B98D5A2C5E7B /* ClockExampleTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6552E5F292394568C1A4AD12 /* ClockExampleTests.swift */; };
 		88EFF1A06DB3A44EBD9C00B7 /* KeyLook+Foil.swift in Sources */ = {isa = PBXBuildFile; fileRef = A6834026A6A6DA808DA83B88 /* KeyLook+Foil.swift */; };
@@ -1571,6 +1573,7 @@
 		5ABDF1A6D88542249105D14B /* CommandLineCall+Test.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "CommandLineCall+Test.swift"; sourceTree = "<group>"; };
 		5B06039093C58181DCF0E63F /* SpotPlaygroundView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SpotPlaygroundView.swift; sourceTree = "<group>"; };
 		5B8A23A7BADF6488184FC557 /* Toast.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Toast.swift; sourceTree = "<group>"; };
+		5BB66FA6168D129A7F60FDE3 /* ToastLayout.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ToastLayout.swift; sourceTree = "<group>"; };
 		5BD78FB3457AD468DB372707 /* BatchCall.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BatchCall.swift; sourceTree = "<group>"; };
 		5C097A07F5E3A2C2F376C6AE /* NumberReadingTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NumberReadingTests.swift; sourceTree = "<group>"; };
 		5C57613B03D08C3F562390AF /* SpotFileEnd.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SpotFileEnd.swift; sourceTree = "<group>"; };
@@ -1812,6 +1815,7 @@
 		90A039991D63E5AFE9E595E9 /* AppPresence.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppPresence.swift; sourceTree = "<group>"; };
 		90FE0CDF017E914FE9B01A26 /* AttachmentCall.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AttachmentCall.swift; sourceTree = "<group>"; };
 		918E9A39B0F4437D4F80B006 /* MetricContractTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MetricContractTests.swift; sourceTree = "<group>"; };
+		91DD14A684021436B4F97115 /* ToastLayoutTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ToastLayoutTests.swift; sourceTree = "<group>"; };
 		91FD4C89A96E3C2717B08878 /* SpotPushedCard.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SpotPushedCard.swift; sourceTree = "<group>"; };
 		9213D65F213630C148EBB1EE /* SpotsHost.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SpotsHost.swift; sourceTree = "<group>"; };
 		921F8FDC4ACC08B24033B84B /* ManifestSchema.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ManifestSchema.swift; sourceTree = "<group>"; };
@@ -2510,6 +2514,7 @@
 			children = (
 				EA1A579B29B6D804B33A7783 /* SpotsModel+Toast.swift */,
 				68B3990479EF2DFF1DD88EEA /* ToastCall.swift */,
+				5BB66FA6168D129A7F60FDE3 /* ToastLayout.swift */,
 				7F5BF5B3E41AD8F8905E184D /* ToastNote.swift */,
 				B2A16CC29F46DC64D4D919C7 /* ToastStack.swift */,
 			);
@@ -3297,6 +3302,7 @@
 				A00714417444C03CF2BC23F9 /* ThemesSpotTests.swift */,
 				47AD2235A9745DFB8FBDDD69 /* ThemeTests.swift */,
 				E5BD1950F2854291BD2F37B1 /* TimerActionTests.swift */,
+				91DD14A684021436B4F97115 /* ToastLayoutTests.swift */,
 				C8554B2C90CA514EDFB6D877 /* ToastNoteTests.swift */,
 				6FD2B8D05F8CB70C66ADBE2D /* ToastStackTests.swift */,
 				1B0DB4B72F8CDD93847CDAB8 /* TranslateSpotTests.swift */,
@@ -5047,6 +5053,7 @@
 				0A4917F2E3DD459EAEC076BC /* TimerCall.swift in Sources */,
 				041C4B819C3E99B329BEF83B /* ToastCall.swift in Sources */,
 				EF0707B9C74260D81190E723 /* ToastKind.swift in Sources */,
+				87F2A1A49C57AF92B28AD4BF /* ToastLayout.swift in Sources */,
 				81BCC24BD58348669177AE02 /* ToastNote.swift in Sources */,
 				BDDE9B3BB3B77FA1267EBA2B /* ToastStack.swift in Sources */,
 				53A93A27384542370516127E /* TranslateCall.swift in Sources */,
@@ -5662,6 +5669,7 @@
 				D5BE115929A72C5EFDCD29E6 /* ThemeTests.swift in Sources */,
 				0A34A543E6706E28E589A8A3 /* ThemesSpotTests.swift in Sources */,
 				4170068576B76CEB0B942FED /* TimerActionTests.swift in Sources */,
+				2D4A753B678D61E906EA7169 /* ToastLayoutTests.swift in Sources */,
 				1400DB43B9A6085DDCD83CD8 /* ToastNoteTests.swift in Sources */,
 				A00F75002D4D5AF4529714AE /* ToastStackTests.swift in Sources */,
 				45558E2CCB4A3CC7C463353E /* TranslateSpotTests.swift in Sources */,

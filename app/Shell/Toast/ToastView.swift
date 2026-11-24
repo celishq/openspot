@@ -3,9 +3,11 @@ import SwiftUI
 
 struct ToastView: View {
     let toast: Toast
+    let showsContent: Bool
 
     var body: some View {
         content
+            .opacity(showsContent ? 1 : MotionTokens.hiddenOpacity)
             .padding(.horizontal, SpotTokens.toastMargin)
             .padding(.vertical, SpotTokens.toastPaddingY)
             .modifier(SpotGlass(shape: SpotRoundShape(radius: SpotTokens.toastRadius)))

@@ -12,6 +12,7 @@ final class Toast: Identifiable {
     @ObservationIgnored var duration: TimeInterval?
     @ObservationIgnored var open: (@MainActor @Sendable () -> Void)?
     @ObservationIgnored var fixKey: Shortcut?
+    @ObservationIgnored var size = CGSize.zero
     var isShown = false
 
     init(id: Int, message: String, kind: ToastKind, tree: ViewTree? = nil, duration: TimeInterval?) {

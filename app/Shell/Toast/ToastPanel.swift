@@ -7,7 +7,6 @@ final class ToastPanel: NSPanel {
 
     let toasts = Toasts()
     private var stack = ToastStack()
-    private lazy var measure = NSHostingController(rootView: ToastStackView(toasts: Toasts()))
     private var ends: [Int: DispatchWorkItem] = [:]
     private var isHeld = false
     private var leaving: Set<Int> = []
@@ -28,6 +27,8 @@ final class ToastPanel: NSPanel {
             shown.duration = duration
             shown.open = open
             shown.fixKey = press == nil ? nil : key
+            measure(shown)
+            withAnimation(SpotMotion.move) { toasts.arrange() }
             place()
             ends.removeValue(forKey: number)?.cancel()
             if !isHeld { end(shown) }
@@ -37,7 +38,11 @@ final class ToastPanel: NSPanel {
         toast.open = open
         toast.fixKey = press == nil ? nil : key
         added.dropped.forEach(leave)
-        withAnimation(SpotMotion.move) { toasts.shown.insert(toast, at: 0) }
+        measure(toast)
+        withAnimation(SpotMotion.move) {
+            toasts.shown.insert(toast, at: 0)
+            toasts.arrange()
+        }
         place()
         ignoresMouseEvents = false
         orderFrontRegardless()
@@ -67,7 +72,10 @@ final class ToastPanel: NSPanel {
         if fixKey?.toast == number { passFixKey() }
         DispatchQueue.main.asyncAfter(deadline: .now() + MotionTokens.fadeOut) {
             self.leaving.remove(number)
-            withAnimation(SpotMotion.move) { self.toasts.shown.removeAll { $0.id == number } }
+            withAnimation(SpotMotion.move) {
+                self.toasts.shown.removeAll { $0.id == number }
+                self.toasts.arrange()
+            }
             DispatchQueue.main.asyncAfter(deadline: .now() + MotionTokens.move) { self.settle() }
         }
     }
@@ -108,14 +116,28 @@ final class ToastPanel: NSPanel {
         } else {
             toasts.shown.filter { isStacked($0.id) }.forEach(end)
         }
+        toasts.isExpanded = isHovered
+        withAnimation(SpotMotion.move) { toasts.arrange() }
+        if isHovered {
+            place()
+        } else {
+            DispatchQueue.main.asyncAfter(deadline: .now() + MotionTokens.move) {
+                if !self.isHeld { self.place() }
+            }
+        }
+    }
+
+    private func measure(_ toast: Toast) {
+        let copy = Toast(id: toast.id, message: toast.message, kind: toast.kind, tree: toast.tree, duration: nil)
+        let measure = NSHostingController(rootView: ToastView(toast: copy, showsContent: true))
+        measure.sizingOptions = []
+        let width = min(measure.view.fittingSize.width.rounded(.up) + 1, SpotTokens.toastMaxSize.width - 2 * SpotTokens.toastRoom)
+        toast.size = measure.sizeThatFits(in: NSSize(width: width, height: SpotTokens.toastMaxSize.height))
     }
 
     private func place() {
-        let copy = Toasts()
-        copy.shown = toasts.shown.map { Toast(id: $0.id, message: $0.message, kind: $0.kind, tree: $0.tree, duration: nil) }
-        measure.rootView = ToastStackView(toasts: copy)
-        let width = min(measure.view.fittingSize.width.rounded(.up) + 1, SpotTokens.toastMaxSize.width)
-        let size = measure.sizeThatFits(in: NSSize(width: width, height: SpotTokens.toastMaxSize.height * CGFloat(ToastStack.limit)))
+        let room = 2 * SpotTokens.toastRoom
+        let size = CGSize(width: (toasts.shown.map(\.size.width).max() ?? 0) + room, height: toasts.height + room)
         let screens = ScreenPlace.Screen.all
         let window = screens.count < 2 ? nil : front()
         let place = ScreenPlace(screens: screens)
@@ -156,7 +178,7 @@ final class ToastPanel: NSPanel {
         panel.isReleasedWhenClosed = false
         panel.collectionBehavior = [.canJoinAllSpaces, .fullScreenAuxiliary]
         panel.toasts.hover = { [weak panel] in panel?.hold($0) }
-        let view = NSHostingView(rootView: ToastStackView(toasts: panel.toasts).frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top))
+        let view = NSHostingView(rootView: ToastStackView(toasts: panel.toasts))
         view.sizingOptions = []
         panel.contentView = view
         return panel
