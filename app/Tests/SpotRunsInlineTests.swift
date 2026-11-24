@@ -23,6 +23,7 @@ final class SpotRunsInlineTests: SpotRunsCase {
     }
 
     func testAFastInlineSpotAnswersInTheTurnOfTheText() async throws {
+        runs(frameWait: .seconds(10))
         try answering()
         let sheet = try sheet()
         sheet.answer("1")

@@ -383,7 +383,7 @@ public final class SpotRuns {
 
     func stay(_ spot: Spot, limit: TimeInterval?) -> (ScriptProcess, AsyncThrowingStream<String, Error>, SpotCaller) {
         let caller = callers.issue(for: spot)
-        let script = ScriptProcess(spot: spot, program: swift.runnable(for: spot), swift: swift, sending: nil, limit: limit, stopPause: stopPause, careful: isCareful ? spot.uses : nil, base: environment)
+        let script = ScriptProcess(spot: spot, program: swift.runnable(for: spot), swift: swift, sending: nil, limit: limit, stopPause: stopPause, careful: isCareful ? spot.uses : nil, base: environment, clock: clock)
         track(script, of: spot.id, caller: caller)
         let frames = script.start()
         keep(script)
@@ -393,7 +393,7 @@ public final class SpotRuns {
     func process(of spot: Spot, _ message: Message, limit: TimeInterval?, reason: String?, variables given: [String: String], call: OpenCall?) -> ScriptMode.Frames {
         let caller = callers.issue(for: spot, reason: reason, keepsFix: true)
         caller.call = call
-        let process = ScriptProcess(spot: spot, program: swift.runnable(for: spot), swift: swift, sending: message, limit: limit, stopPause: stopPause, variables: variables(of: spot, given: given), careful: isCareful ? spot.uses : nil, base: environment)
+        let process = ScriptProcess(spot: spot, program: swift.runnable(for: spot), swift: swift, sending: message, limit: limit, stopPause: stopPause, variables: variables(of: spot, given: given), careful: isCareful ? spot.uses : nil, base: environment, clock: clock)
         track(process, of: spot.id, caller: caller)
         process.fix = { caller.takeFix() }
         let stream = process.start()

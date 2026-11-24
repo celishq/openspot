@@ -20,7 +20,7 @@ final class InlineMode: ScriptMode {
         let inline = InlineCall(arguments: [message.handler], variables: runs.variables(of: spot, given: variables), input: message.text, reason: reason, limit: limit)
         runs.script(of: spot).send(inline)
         let (stream, halt) = runs.answered {
-            switch await inline.outcome(limit: limit) {
+            switch await inline.outcome(limit: limit, clock: runs.clock) {
             case .frame(let text): return text
             case .failed(let error): throw error
             case .dropped: return ""

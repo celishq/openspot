@@ -64,9 +64,9 @@ final class InlineCall: @unchecked Sendable {
         }
     }
 
-    func outcome(limit: TimeInterval? = nil) async -> Outcome {
+    func outcome(limit: TimeInterval? = nil, clock: RunClock = RunClock()) async -> Outcome {
         if let limit {
-            DispatchQueue.global().asyncAfter(deadline: .now() + limit) { [self] in finish(.failed(SpotError.timedOut)) }
+            clock.after(limit) { [self] in finish(.failed(SpotError.timedOut)) }
         }
         return await withCheckedContinuation { continuation in
             if let outcome = wait(until: .now(), later: { continuation.resume(returning: $0) }) { continuation.resume(returning: outcome) }

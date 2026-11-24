@@ -283,8 +283,12 @@ interaction.
 - Wait with `wait(_:until:)`, which fails with the name of the fact. Give a process its environment as a value, through
   `TestEnvironment`, and never change the environment of the test process.
 - Build on the shared helpers: `temporaryFolder()`, `TestSpot`, `FakeHost`, and `PanelCase` for a test of the model.
+- A time that decides an outcome, such as a limit, comes from the clock of the runs (`RunClock`), which a test moves with
+  `FakeClock`. A test proves a fact, not a speed: a speed goes to `make perf` or a bench.
 - `make verify` runs `scripts/check-tests.sh`, which fails on a test that reads the real home or the clipboard, or that
-  blocks its thread with a sleep, and on a new `Task.sleep` or `setenv` outside the shared helpers.
+  blocks its thread with a sleep, and on a new `Task.sleep`, `setenv`, `Task.yield`, `ContinuousClock.now` or
+  `Date().timeIntervalSince` outside the shared helpers. `scripts/check-core.sh` fails on a new `asyncAfter` in `Core/`
+  outside `RunClock`.
 
 ## Verify
 
