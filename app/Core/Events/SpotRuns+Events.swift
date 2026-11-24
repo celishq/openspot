@@ -135,7 +135,7 @@ extension SpotRuns {
         return seenCopy.map { time.timeIntervalSince($0.at) }
     }
 
-    func isCopy(newerThan limit: TimeInterval) -> Bool {
+    func isCopy(within limit: TimeInterval) -> Bool {
         copyAge().map { $0 < limit } ?? false
     }
 

@@ -3,5 +3,5 @@
 # image file and anything else as text, where Tab offers it to each spot that takes it. Openspot counts the age of a copy
 # from the first time it sees it, and reads a long text or a picture only when you hand it on.
 case "$1" in
-  show) openspot attachment add clipboard --newer 2m ;;
+  show) openspot attachment add clipboard --within 2m ;;
 esac
