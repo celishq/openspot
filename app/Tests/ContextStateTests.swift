@@ -29,6 +29,14 @@ final class ContextStateTests: ContextCase {
         XCTAssertEqual(model.selected, 0)
     }
 
+    func testTheFooterNamesNoContextUntilTab() async throws {
+        try await openWithTab()
+
+        XCTAssertFalse(model.hint.contains("Context"))
+        XCTAssertTrue(model.handleKey(tab))
+        XCTAssertTrue(model.hint.contains("⇥ Next"))
+    }
+
     func testTabAndShiftTabTurnTheChipsAndWrap() async throws {
         try taker("reader", takes: "'text', 'url'")
         try source(adds: "url=https://example.com/a")

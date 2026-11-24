@@ -78,7 +78,7 @@ extension SpotsModel {
 
     var contextHint: String? {
         guard openSheetID == nil, !isEditing, !context.chips.isEmpty else { return nil }
-        guard context.isOn else { return "⇥ \(context.chips.count == 1 ? "Context" : "\(context.chips.count) Contexts")" }
+        guard context.isOn else { return nil }
         let run = selectedEntry.map { "⏎ \($0.state.title)" }
         return [run, "⇥ Next", "Esc Leave"].compactMap { $0 }.joined(separator: "   ")
     }

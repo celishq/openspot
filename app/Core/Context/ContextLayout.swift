@@ -9,6 +9,18 @@ public struct ContextLayout: Equatable, Sendable {
         public let scale: CGFloat
         public let opacity: Double
         public let layer: Double
+        public let isQuiet: Bool
+
+        init(chip: ContextChip, quietDepth depth: Int) {
+            self.chip = chip
+            slot = 0
+            self.depth = depth
+            x = 0
+            scale = SpotTokens.contextQuietScale
+            opacity = depth == 0 ? 1 : MotionTokens.hiddenOpacity
+            layer = -Double(depth)
+            isQuiet = true
+        }
 
         init(chip: ContextChip, depth: Int, count: Int) {
             let shown = min(count, ContextStack.pile)
@@ -19,6 +31,7 @@ public struct ContextLayout: Equatable, Sendable {
             scale = 1 - CGFloat(min(depth, ContextStack.pile - 1)) * SpotTokens.contextShrink
             opacity = depth < ContextStack.pile ? 1 : MotionTokens.hiddenOpacity
             layer = -Double(depth)
+            isQuiet = false
         }
 
         init(chip: ContextChip, slot: Int, depth: Int, spreadCount: Int, fit: Int) {
@@ -30,6 +43,7 @@ public struct ContextLayout: Equatable, Sendable {
             scale = 1 - CGFloat(min(depth, 1)) * SpotTokens.contextShrink
             opacity = depth == 0 ? 1 : depth == 1 ? 1 - SpotTokens.contextCardFade : MotionTokens.hiddenOpacity
             layer = -Double(slot) - Double(depth * fit)
+            isQuiet = false
         }
     }
 
@@ -60,7 +74,9 @@ public struct ContextLayout: Equatable, Sendable {
         let spreadCount = isSpread ? min(order.count, fit) : 0
         places = order.enumerated().compactMap { index, source in
             guard let chip = byID[source] else { return nil }
-            guard isSpread else { return Place(chip: chip, depth: index, count: order.count) }
+            guard isSpread else {
+                return selection == nil ? Place(chip: chip, quietDepth: index) : Place(chip: chip, depth: index, count: order.count)
+            }
             let slot = index - start
             return (0..<fit).contains(slot)
                 ? Place(chip: chip, slot: slot, depth: 0, spreadCount: spreadCount, fit: fit)
@@ -71,6 +87,10 @@ public struct ContextLayout: Equatable, Sendable {
         self.order = order
         self.start = start
         self.spreadCount = spreadCount
+    }
+
+    public var isQuiet: Bool {
+        places.first?.isQuiet ?? false
     }
 
     func order(of chips: [ContextChip]) -> [String] {

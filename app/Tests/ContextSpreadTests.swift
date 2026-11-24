@@ -168,10 +168,29 @@ final class ContextSpreadTests: ContextCase {
         XCTAssertEqual(row(), ["a", "b", "c"])
     }
 
+    func testAStackWithNoChoiceShowsOnlyItsFrontIconQuietly() {
+        var stack = ContextStack(fit: 3)
+        stack.open(over: nil, loading: ["a", "b", "c"].map { ($0, .symbol("doc")) })
+
+        XCTAssertTrue(stack.layout.isQuiet)
+        XCTAssertEqual(stack.layout.places.map(\.isQuiet), [true, true, true])
+        XCTAssertEqual(stack.layout.places.map(\.x), [0, 0, 0])
+        XCTAssertEqual(stack.layout.places.map(\.scale), Array(repeating: SpotTokens.contextQuietScale, count: 3))
+        XCTAssertEqual(stack.layout.places.map(\.opacity), [1, MotionTokens.hiddenOpacity, MotionTokens.hiddenOpacity])
+
+        stack.turn(by: 1)
+        stack.place(spreads: true)
+
+        XCTAssertFalse(stack.layout.isQuiet)
+        XCTAssertEqual(stack.layout.places.map(\.isQuiet), [false, false, false])
+    }
+
     func testAStackAtRestPilesItsCardsSmallerAndFurtherRightBehindTheFront() {
         let sources = ["a", "b", "c", "d"]
         var stack = ContextStack(fit: 3)
         stack.open(over: nil, loading: sources.map { ($0, .symbol("doc")) })
+        stack.turn(by: 1)
+        stack.place(spreads: false)
         let step = SpotTokens.contextStep
         let shrink = SpotTokens.contextShrink
 

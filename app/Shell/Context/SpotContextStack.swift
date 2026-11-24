@@ -7,8 +7,10 @@ struct SpotContextStack: View {
     var body: some View {
         let context = model.context
         ZStack(alignment: .trailing) {
+            SpotContextKey(isQuiet: context.layout.isQuiet)
+                .zIndex(-Double(ContextStack.limit * ContextStack.limit))
             ForEach(context.layout.places, id: \.chip.source) { place in
-                SpotContextCard(chip: place.chip, showsBadge: place.chip.showsKind && (context.layout.isSpread || place.depth == 0))
+                SpotContextCard(chip: place.chip, showsBadge: !place.isQuiet && place.chip.showsKind && (context.layout.isSpread || place.depth == 0), isQuiet: place.isQuiet)
                     .equatable()
                     .overlay(alignment: .bottom) {
                         SpotContextDot(isOn: context.isOn && place.chip.source == context.selected)
@@ -40,6 +42,21 @@ private struct SpotContextDot: View {
             .offset(y: SpotTokens.contextDot + SpotTokens.contextDotGap)
             .opacity(isOn ? 1 : MotionTokens.hiddenOpacity)
             .transaction { $0.animation = nil }
+            .allowsHitTesting(false)
+    }
+}
+
+private struct SpotContextKey: View {
+    let isQuiet: Bool
+
+    var body: some View {
+        Text(verbatim: "⇥")
+            .font(SpotType.detail)
+            .modifier(SpotSecondaryText())
+            .frame(width: SpotTokens.contextKeyWidth, height: SpotTokens.contextQuietIcon)
+            .background(SpotRoundShape(radius: SpotTokens.contextQuietRadius).fill(SpotTheme.contextQuietFill))
+            .offset(x: SpotTokens.contextKeyX + (isQuiet ? 0 : SpotTokens.contextKeySlide))
+            .opacity(isQuiet ? 1 : MotionTokens.hiddenOpacity)
             .allowsHitTesting(false)
     }
 }

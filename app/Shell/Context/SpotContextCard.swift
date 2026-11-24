@@ -4,6 +4,7 @@ import SwiftUI
 struct SpotContextCard: View, Equatable {
     let chip: ContextChip
     let showsBadge: Bool
+    let isQuiet: Bool
 
     var body: some View {
         let shape = SpotRoundShape(radius: SpotTokens.contextCardRadius)
@@ -19,8 +20,9 @@ struct SpotContextCard: View, Equatable {
             shape.fill(SpotTheme.contextFace)
                 .shadow(color: SpotTheme.contextFarShadow, radius: SpotTokens.contextFarShadowRadius, y: SpotTokens.contextFarShadowDrop)
                 .shadow(color: SpotTheme.contextNearShadow, radius: SpotTokens.contextNearShadowRadius, y: SpotTokens.contextNearShadowDrop)
+                .opacity(isQuiet ? MotionTokens.hiddenOpacity : 1)
         }
-        .overlay(SpotRoundShape(radius: SpotTokens.contextCardRadius + SpotTokens.contextBorder).strokeBorder(SpotTheme.contextRim, lineWidth: SpotTokens.contextBorder).padding(-SpotTokens.contextBorder))
+        .overlay(SpotRoundShape(radius: SpotTokens.contextCardRadius + SpotTokens.contextBorder).strokeBorder(SpotTheme.contextRim, lineWidth: SpotTokens.contextBorder).padding(-SpotTokens.contextBorder).opacity(isQuiet ? MotionTokens.hiddenOpacity : 1))
         .overlay(alignment: .bottomTrailing) { badge }
     }
 
@@ -31,16 +33,23 @@ struct SpotContextCard: View, Equatable {
             SpotNativeIcon(path: path, size: SpotTokens.contextIcon / IconBody.share)
                 .frame(width: SpotTokens.contextCard, height: SpotTokens.contextCard)
                 .clipShape(SpotRoundShape(radius: SpotTokens.contextCardRadius))
+                .opacity(isQuiet ? SpotTheme.contextQuietPicture : 1)
         case .file(let file):
             SpotItemIcon(icon: file, glyph: nil, symbol: nil, size: SpotTokens.contextIcon / IconBody.share)
                 .frame(width: SpotTokens.contextIcon, height: SpotTokens.contextIcon)
                 .clipShape(SpotRoundShape(radius: SpotTokens.contextIconRadius))
+                .opacity(isQuiet ? SpotTheme.contextQuietPicture : 1)
         case .symbol(let symbol):
-            Image(systemName: symbol)
-                .font(SpotType.contextTile)
-                .foregroundStyle(SpotTheme.contextTileInk)
-                .frame(width: SpotTokens.contextIcon, height: SpotTokens.contextIcon)
-                .background(SpotRoundShape(radius: SpotTokens.contextIconRadius).fill(LinearGradient(colors: [SpotTheme.contextTileTop, SpotTheme.contextTileBottom], startPoint: .top, endPoint: .bottom)))
+            let tile = SpotRoundShape(radius: SpotTokens.contextIconRadius)
+            ZStack {
+                tile.fill(LinearGradient(colors: [SpotTheme.contextTileTop, SpotTheme.contextTileBottom], startPoint: .top, endPoint: .bottom))
+                    .overlay(Image(systemName: symbol).font(SpotType.contextTile).foregroundStyle(SpotTheme.contextTileInk))
+                    .opacity(isQuiet ? MotionTokens.hiddenOpacity : 1)
+                tile.fill(SpotTheme.contextQuietFill)
+                    .overlay(Image(systemName: symbol).font(SpotType.contextTile).modifier(SpotSecondaryText()))
+                    .opacity(isQuiet ? 1 : MotionTokens.hiddenOpacity)
+            }
+            .frame(width: SpotTokens.contextIcon, height: SpotTokens.contextIcon)
         }
     }
 

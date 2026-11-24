@@ -37,6 +37,13 @@ extension SpotTokens {
     public static let contextBorder: CGFloat = 1
     public static var contextStep: CGFloat { contextCard * 0.25 }
     public static let contextShrink: CGFloat = 0.1
+    public static let contextQuietIcon: CGFloat = 20
+    public static var contextQuietScale: CGFloat { contextQuietIcon / contextIcon }
+    public static var contextQuietRadius: CGFloat { contextIconRadius * contextQuietScale }
+    public static var contextKeyWidth: CGFloat { contextQuietIcon * 1.2 }
+    public static let contextKeyGap: CGFloat = 4
+    public static var contextKeyX: CGFloat { -(contextCard - contextInset) * contextQuietScale - contextKeyGap }
+    public static var contextKeySlide: CGFloat { contextKeyGap + contextKeyWidth * 0.6 }
     public static let contextCardFade = 0.3
     public static var contextSpreadGap: CGFloat { contextCard * 0.42 }
     public static var contextBadge: CGFloat { (contextCard * contextCard / 6).squareRoot() }
