@@ -17,11 +17,12 @@ extension SpotsModel {
     }
 
     private func take(_ key: ActionKey, in rows: [KeyRow]) -> Bool {
-        defer { refreshHint() }
-        for row in rows where row.takes(key) {
-            if let handled = row.act(key) { return handled }
+        asOnePress {
+            for row in rows where row.takes(key) {
+                if let handled = row.act(key) { return handled }
+            }
+            return false
         }
-        return false
     }
 
     public func pressHint(_ label: String) {
@@ -340,15 +341,29 @@ extension SpotsModel {
         takeHint()
     }
 
+    func asOnePress<T>(_ work: () -> T) -> T {
+        pressDepth += 1
+        defer {
+            pressDepth -= 1
+            if pressDepth == 0, hintIsStale { takeHint() }
+        }
+        return work()
+    }
+
     private func takeHint() {
+        hintIsStale = false
         place(HintWords(withObservationTracking { hint } onChange: { [weak self] in
-            Task { @MainActor in self?.takeHint() }
+            MainActor.assumeIsolated { self?.staleHint() }
         }))
     }
 
-    func refreshHint() {
-        guard followsHint else { return }
-        place(HintWords(hint))
+    private func staleHint() {
+        hintIsStale = true
+        guard pressDepth == 0 else { return }
+        Task { @MainActor [weak self] in
+            guard let self, hintIsStale else { return }
+            takeHint()
+        }
     }
 
     private func place(_ words: HintWords) {

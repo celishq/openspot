@@ -66,15 +66,17 @@ extension SpotsModel {
     }
 
     public func stepBack() -> Bool {
-        if !searchText.isEmpty {
-            searchText = ""
-        } else if popPage() {
-        } else if openSheetID != nil {
-            closeSheet(moving: isShown)
-        } else {
-            return false
+        asOnePress {
+            if !searchText.isEmpty {
+                searchText = ""
+            } else if popPage() {
+            } else if openSheetID != nil {
+                closeSheet(moving: isShown)
+            } else {
+                return false
+            }
+            return true
         }
-        return true
     }
 
     public func place(ofSheet id: String) -> SheetPlace {
@@ -133,22 +135,26 @@ extension SpotsModel {
     }
 
     public func closeSheet(moving: Bool) {
-        closingPage = moving ? openSheetID.flatMap { id in sheets[id].map { SheetPage(run: $0, rect: $0.sheetRect, query: searchText) } } : nil
-        pendingAsk = nil
-        keys.status = nil
-        askedAnswer = nil
-        stopRecording()
-        showSheet(nil, moving: moving) {
-            runs.closeOpen()
-            endFlow()
+        asOnePress {
+            closingPage = moving ? openSheetID.flatMap { id in sheets[id].map { SheetPage(run: $0, rect: $0.sheetRect, query: searchText) } } : nil
+            pendingAsk = nil
+            keys.status = nil
+            askedAnswer = nil
+            stopRecording()
+            showSheet(nil, moving: moving) {
+                runs.closeOpen()
+                endFlow()
+            }
         }
     }
 
     public func close(_ place: ViewPlace) {
-        switch place {
-        case .card, .sample: break
-        case .sheet(let id): if openSheetID == id { closeSheet(moving: true) }
-        case .detached(let id): if runs.floating.contains(id) { land(id) }
+        asOnePress {
+            switch place {
+            case .card, .sample: break
+            case .sheet(let id): if openSheetID == id { closeSheet(moving: true) }
+            case .detached(let id): if runs.floating.contains(id) { land(id) }
+            }
         }
     }
 
@@ -165,43 +171,45 @@ extension SpotsModel {
     }
 
     func showSheet(_ list: String?, moving: Bool, ending: () -> Void = {}) {
-        guard list != openSheetID else {
+        asOnePress {
+            guard list != openSheetID else {
+                dropWaitingPush()
+                return ending()
+            }
+            if let list, openSheetID != nil, transition.isOpen {
+                let swapped = takeWaitingPush { [weak self] in
+                    self?.transition.show(list, moves: true)
+                    self?.transition.settle(list)
+                }
+                guard !swapped else { return }
+                change(moving ? .sheet(isOpen: true) : nil, {
+                    transition.show(list, moves: true)
+                }) { [weak self] in
+                    self?.change(nil) { self?.transition.settle(list) }
+                }
+                return
+            }
             dropWaitingPush()
-            return ending()
-        }
-        if let list, openSheetID != nil, transition.isOpen {
-            let swapped = takeWaitingPush { [weak self] in
-                self?.transition.show(list, moves: true)
-                self?.transition.settle(list)
+            guard moving, hasPlace(list ?? transition.id) else {
+                cutSheet(to: list)
+                return ending()
             }
-            guard !swapped else { return }
-            change(moving ? .sheet(isOpen: true) : nil, {
-                transition.show(list, moves: true)
-            }) { [weak self] in
-                self?.change(nil) { self?.transition.settle(list) }
+            guard let list else {
+                animate(isOpen: false) {
+                    transition.hide(moves: true)
+                    holdFieldDrop()
+                    ending()
+                }
+                return
             }
-            return
-        }
-        dropWaitingPush()
-        guard moving, hasPlace(list ?? transition.id) else {
-            cutSheet(to: list)
-            return ending()
-        }
-        guard let list else {
-            animate(isOpen: false) {
-                transition.hide(moves: true)
+            closeMenu(keepsFoot: true)
+            change(nil) {
+                transition.show(list, moves: true, page: flow.current)
                 holdFieldDrop()
-                ending()
             }
-            return
-        }
-        closeMenu(keepsFoot: true)
-        change(nil) {
-            transition.show(list, moves: true, page: flow.current)
-            holdFieldDrop()
-        }
-        host.nextFrame { [weak self] in
-            self?.animate(isOpen: true) { self?.transition.start() }
+            host.nextFrame { [weak self] in
+                self?.animate(isOpen: true) { self?.transition.start() }
+            }
         }
     }
 

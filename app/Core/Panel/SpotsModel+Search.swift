@@ -107,7 +107,6 @@ extension SpotsModel {
             placements = grid.place(sizes)
         }
         if transition.phase == .closing, !hasPlace(transition.id) { cutSheet(to: nil) }
-        refreshHint()
     }
 
     func mayMove(_ id: String) -> Bool {
@@ -143,16 +142,18 @@ extension SpotsModel {
     public var searchText: String {
         get { form?.draft.choices?.query ?? openSheet?.query ?? query }
         set {
-            if form?.draft.choices != nil {
-                form?.draft.search(newValue)
-            } else if let file = SpotPackage.file(in: newValue) {
-                query = ""
-                openSheet?.search("")
-                DispatchQueue.main.async { self.review([file]) }
-            } else if let openSheet {
-                openSheet.search(newValue)
-            } else {
-                query = newValue
+            asOnePress {
+                if form?.draft.choices != nil {
+                    form?.draft.search(newValue)
+                } else if let file = SpotPackage.file(in: newValue) {
+                    query = ""
+                    openSheet?.search("")
+                    DispatchQueue.main.async { self.review([file]) }
+                } else if let openSheet {
+                    openSheet.search(newValue)
+                } else {
+                    query = newValue
+                }
             }
         }
     }

@@ -2,7 +2,9 @@ import Foundation
 
 extension SpotsModel {
     public func toggleRecording(_ part: SpotPart) {
-        toggleRecording(id: part.id)
+        asOnePress {
+            toggleRecording(id: part.id)
+        }
     }
 
     func recordAskedField() {
@@ -12,7 +14,7 @@ extension SpotsModel {
         let answer = "\(id)#\(run.partsAnswers)"
         guard askedAnswer != answer else { return }
         askedAnswer = answer
-        toggleRecording(part)
+        toggleRecording(id: part.id)
     }
 
     func takeKeyField() {
@@ -60,9 +62,11 @@ extension SpotsModel {
     }
 
     public func stopRecording() {
-        guard recording != nil else { return }
-        recording = nil
-        takeEntryKey()
+        asOnePress {
+            guard recording != nil else { return }
+            recording = nil
+            takeEntryKey()
+        }
     }
 
     var holdsKeyField: Bool {
@@ -89,34 +93,36 @@ extension SpotsModel {
     }
 
     public func record(code: UInt32, modifiers: Shortcut.Modifiers) {
-        let part = openParts?.parts.first { $0.id == recording }
-        let item = openItems?.shown.first { $0.run == recording }
-        let isField = recordsField
-        if isField { keys.press(code) }
-        guard let shortcut = Shortcut(code: code, modifiers: modifiers) else {
-            guard isField else { return host.notify("Hold cmd, ctrl or option with a letter, a digit, a sign, an arrow, space, return or tab.") }
-            keys.refuse(code: code, modifiers: modifiers)
-            return
+        asOnePress {
+            let part = openParts?.parts.first { $0.id == recording }
+            let item = openItems?.shown.first { $0.run == recording }
+            let isField = recordsField
+            if isField { keys.press(code) }
+            guard let shortcut = Shortcut(code: code, modifiers: modifiers) else {
+                guard isField else { return host.notify("Hold cmd, ctrl or option with a letter, a digit, a sign, an arrow, space, return or tab.") }
+                keys.refuse(code: code, modifiers: modifiers)
+                return
+            }
+            if takesShake, shortcut.isAppKey {
+                host.notify("\(KeyRecording.appWords(shortcut)), or tap one key such as `⌥`.")
+                return
+            }
+            if isField, shortcut.isAppKey {
+                keys.refuseAppKey(shortcut)
+                return
+            }
+            if item != nil {
+                if keys.use(of: shortcut) != nil { host.notify(keys.words(for: shortcut)) }
+            } else if isField {
+                keys.check(shortcut)
+            }
+            stopRecording()
+            if let part {
+                setPart(part, to: shortcut.text)
+                focusAfterRecording(part.id)
+            }
+            if let item, let entry = openEntry { give(shortcut.text, to: item, of: entry) }
         }
-        if takesShake, shortcut.isAppKey {
-            host.notify("\(KeyRecording.appWords(shortcut)), or tap one key such as `⌥`.")
-            return
-        }
-        if isField, shortcut.isAppKey {
-            keys.refuseAppKey(shortcut)
-            return
-        }
-        if item != nil {
-            if keys.use(of: shortcut) != nil { host.notify(keys.words(for: shortcut)) }
-        } else if isField {
-            keys.check(shortcut)
-        }
-        stopRecording()
-        if let part {
-            setPart(part, to: shortcut.text)
-            focusAfterRecording(part.id)
-        }
-        if let item, let entry = openEntry { give(shortcut.text, to: item, of: entry) }
     }
 
     private func give(_ key: String, to item: SpotItem, of entry: Entry) {
