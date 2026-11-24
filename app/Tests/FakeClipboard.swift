@@ -4,7 +4,8 @@ import Foundation
 final class FakeClipboard: MacClipboard, MacEvents, @unchecked Sendable {
     private let lock = NSLock()
     private var textValue: String
-    private var contentsValue = ClipboardContents.text
+    private var typesValue: Set<String> = [ClipboardContents.textType]
+    private var filesValue: [URL] = []
     private var imageValue = Data()
     private var countValue = 0
     private var readsValue = 0
@@ -17,14 +18,16 @@ final class FakeClipboard: MacClipboard, MacEvents, @unchecked Sendable {
     func copy(_ text: String) {
         lock.withLock {
             textValue = text
-            contentsValue = .text
+            typesValue = [ClipboardContents.textType]
+            filesValue = []
             countValue += 1
         }
     }
 
     func copy(files: [URL]) {
         lock.withLock {
-            contentsValue = .files(files)
+            typesValue = ["public.file-url", ClipboardContents.textType]
+            filesValue = files
             countValue += 1
         }
     }
@@ -32,7 +35,8 @@ final class FakeClipboard: MacClipboard, MacEvents, @unchecked Sendable {
     func copy(image: Data, kind: String) {
         lock.withLock {
             imageValue = image
-            contentsValue = .image(kind)
+            typesValue = [kind == "png" ? ClipboardContents.pngType : ClipboardContents.tiffType]
+            filesValue = []
             countValue += 1
         }
     }
@@ -40,7 +44,8 @@ final class FakeClipboard: MacClipboard, MacEvents, @unchecked Sendable {
     func copy(concealed text: String) {
         lock.withLock {
             textValue = text
-            contentsValue = .none
+            typesValue = [ClipboardContents.concealedType, ClipboardContents.textType]
+            filesValue = []
             countValue += 1
         }
     }
@@ -54,11 +59,12 @@ final class FakeClipboard: MacClipboard, MacEvents, @unchecked Sendable {
         }
     }
     var textReads: Int { lock.withLock { readsValue } }
-    func contents() -> ClipboardContents { lock.withLock { contentsValue } }
+    func types() -> Set<String> { lock.withLock { typesValue } }
+    func files() -> [URL] { lock.withLock { filesValue } }
     func count() -> Int { lock.withLock { countValue } }
     func image() -> Data? {
         lock.withLock {
-            guard case .image = contentsValue else { return nil }
+            guard typesValue.contains(ClipboardContents.pngType) || typesValue.contains(ClipboardContents.tiffType) else { return nil }
             return imageValue
         }
     }

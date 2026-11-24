@@ -18,7 +18,7 @@ public struct ClipboardCopy: Equatable, Sendable {
     }
 
     private static func read(_ board: any MacClipboard, count: Int, images: URL) -> AttachmentValue? {
-        switch board.contents() {
+        switch ClipboardContents(of: board) {
         case .none:
             return nil
         case .files(let urls):
