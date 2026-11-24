@@ -14,18 +14,18 @@ struct AppBundle {
         isApp = access(contents + "/Info.plist", F_OK) == 0
     }
 
-    var program: String {
-        let name = isApp ? plistString("CFBundleExecutable") : nil
+    func readProgram() -> String {
+        let name = isApp ? readPlist("CFBundleExecutable") : nil
         return contents + "/MacOS/" + (name.flatMap { $0.isEmpty ? nil : $0 } ?? "Openspot")
     }
 
     func configFolder() -> String? {
-        if isApp, let state = plistString("OpenspotDevState"), !state.isEmpty { return state }
+        if isApp, let state = readPlist("OpenspotDevState"), !state.isEmpty { return state }
         if !isApp, let named = getenv("OPENSPOT_CONFIG").map({ String(cString: $0) }), !named.isEmpty { return named }
         return getenv("HOME").map { String(cString: $0) + "/.config/openspot" }
     }
 
-    private func plistString(_ key: String) -> String? {
+    private func readPlist(_ key: String) -> String? {
         guard let file = fopen(contents + "/Info.plist", "r") else { return nil }
         defer { fclose(file) }
         var bytes: [UInt8] = []

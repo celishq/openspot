@@ -4,7 +4,7 @@ let startWaitSeconds = getenv("OPENSPOT_START_WAIT").flatMap { Double(String(cSt
 nonisolated(unsafe) var connection: Int32 = -1
 
 func runAlone(_ app: AppBundle) -> Never {
-    let program = app.program
+    let program = app.readProgram()
     var argv: [UnsafeMutablePointer<CChar>?] = ([program] + handed + arguments).map { strdup($0) }
     argv.append(nil)
     execv(program, argv)
@@ -19,7 +19,7 @@ func fail(_ line: String, code: Int32 = 1) -> Never {
 
 func startInBackground(_ app: AppBundle) {
     let bundle = String(app.contents[..<(app.contents.lastIndex(of: "/") ?? app.contents.endIndex)])
-    let arguments = app.isApp ? ["/usr/bin/open", "-g", "-j", bundle] + (handed.isEmpty ? [] : ["--args"] + handed) : [app.program] + handed
+    let arguments = app.isApp ? ["/usr/bin/open", "-g", "-j", bundle] + (handed.isEmpty ? [] : ["--args"] + handed) : [app.readProgram()] + handed
     var actions: posix_spawn_file_actions_t?
     posix_spawn_file_actions_init(&actions)
     defer { posix_spawn_file_actions_destroy(&actions) }
