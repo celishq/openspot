@@ -4,7 +4,6 @@ public enum ClipboardCall: NounCall {
     case copy(String?)
     case paste
     case read(newer: TimeInterval?)
-    case files(newer: TimeInterval?)
 
     static let noun = CommandNoun("clipboard", group: .mac, verbs: [
         CommandVerb("copy", "[file]", "Copies the file as Finder does, or the text on stdin.", rule: CallRule(use: .clipboard, used: "copied to the clipboard", inShow: .changes("changes the clipboard"))) { words in
@@ -16,12 +15,6 @@ public enum ClipboardCall: NounCall {
             rule: CallRule(use: .clipboard, used: "read the clipboard")
         ) { words in
             Self.newer(of: words).map(Self.read)
-        },
-        CommandVerb(
-            "files", "[--newer age]", "Prints the path of each file on the clipboard, one a line, or nothing when it holds none. --newer works as it does for read.",
-            rule: CallRule(use: .clipboard, used: "read the files on the clipboard")
-        ) { words in
-            Self.newer(of: words).map(Self.files)
         }
     ])
 
@@ -50,8 +43,6 @@ public enum ClipboardCall: NounCall {
         case .paste: calls.paste()
         case .read(nil): calls.read()
         case .read(let newer?): context.runs.map { calls.read(newer: newer, runs: $0) } ?? CommandAnswer.notRunning("clipboard read --newer")
-        case .files(nil): calls.files()
-        case .files(let newer?): context.runs.map { calls.files(newer: newer, runs: $0) } ?? CommandAnswer.notRunning("clipboard files --newer")
         }
     }
 }
