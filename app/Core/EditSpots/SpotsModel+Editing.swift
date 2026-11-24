@@ -12,9 +12,10 @@ extension SpotsModel {
             guard openSheetID == nil else { return }
             closeMenu()
             missedSearch.drop()
+            hold(nil, motion: .edit)
             change(.edit) {
-                query = ""
                 isEditing = true
+                query = ""
                 updateVisible()
             }
             hideAttachments()

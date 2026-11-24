@@ -52,10 +52,12 @@ public final class SpotsModel {
     public var query = "" {
         didSet {
             guard query != oldValue else { return }
+            let shown = shownPreview(of: query)
+            if preview != shown { preview = shown }
             if query.trimmingCharacters(in: .whitespaces).isEmpty { noteMiss() }
             selected = 0
             askAnswers()
-            updateVisible()
+            showVisible()
             spanBackdrop()
         }
     }
@@ -455,7 +457,7 @@ public final class SpotsModel {
         endEditing(moving: false)
         if openSheetID != nil { closeSheet(moving: false) }
         host.show()
-        query = visible.contains { $0.id == id } || cards.filter(\.isOnGrid).contains { $0.id == id } ? "" : entry.state.title
+        takeQuery(visible.contains { $0.id == id } || cards.filter(\.isOnGrid).contains { $0.id == id } ? "" : entry.state.title)
         hideAttachments()
         selected = visible.firstIndex { $0.id == id } ?? 0
         return true

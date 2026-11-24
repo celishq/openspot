@@ -73,6 +73,41 @@ final class AttachmentStateTests: AttachmentCase {
         XCTAssertEqual(host.hiddenWrites.dropFirst(writes).map(\.depth), [0, 0])
     }
 
+    func testAWriteOfTheQueryThatLeavesTheChipsMakesNoChangeOfItsOwn() async throws {
+        try await openWithTab()
+        XCTAssertTrue(model.handleKey(tab))
+        let changes = host.motions.count
+
+        model.query = "/"
+
+        XCTAssertNil(model.preview)
+        XCTAssertEqual(host.motions.count, changes)
+    }
+
+    func testThePreviewGivesWayOnTypingASlashInAChangeOfItsOwn() async throws {
+        try await openWithTab()
+        XCTAssertTrue(model.handleKey(tab))
+        let writes = host.previewWrites.count
+
+        model.searchText = "/"
+
+        XCTAssertNil(model.preview)
+        XCTAssertEqual(host.previewWrites.dropFirst(writes).map(\.motion), [.edit])
+        XCTAssertEqual(host.previewWrites.dropFirst(writes).map(\.depth), [0])
+    }
+
+    func testThePreviewGivesWayToEditSpotsInOneChange() async throws {
+        try await openWithTab()
+        XCTAssertTrue(model.handleKey(tab))
+        let writes = host.previewWrites.count
+
+        model.beginEditing()
+
+        XCTAssertNil(model.preview)
+        XCTAssertEqual(host.previewWrites.dropFirst(writes).map(\.motion), [.edit])
+        XCTAssertEqual(host.previewWrites.dropFirst(writes).map(\.depth), [0])
+    }
+
     func testATapOnTheAttachmentsWorksTheHintOutOnceByTheEndOfThePress() async throws {
         try await openWithTab()
         model.followHint()

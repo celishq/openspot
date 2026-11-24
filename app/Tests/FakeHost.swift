@@ -153,6 +153,7 @@ final class FakeHost: SpotsHost {
     private(set) var disagreements = 0
     private(set) var hintWrites: [(motion: PanelMotion?, depth: Int)] = []
     private(set) var hiddenWrites: [(motion: PanelMotion?, depth: Int)] = []
+    private(set) var previewWrites: [(motion: PanelMotion?, depth: Int)] = []
 
     var isChanging: Bool {
         changeDepth > 0
@@ -162,10 +163,12 @@ final class FakeHost: SpotsHost {
         motions.append(motion)
         let hint = model.map { ($0.gridHint, $0.sheetHint) }
         let hidden = model?.isAttachmentHidden
+        let preview = model?.preview
         changeDepth += 1
         body()
         changeDepth -= 1
         if let hidden, hidden != model?.isAttachmentHidden { hiddenWrites.append((motion, changeDepth)) }
+        if let model, preview != model.preview { previewWrites.append((motion, changeDepth)) }
         if let model, let hint, hint != (model.gridHint, model.sheetHint) { hintWrites.append((motion, changeDepth)) }
         if let model, model.placements.contains(where: { !model.visible.indices.contains($0.index) }) { disagreements += 1 }
         if let edges = model?.flowEdges, edges != edgeChanges.last?.edges { edgeChanges.append((motion, edges, model?.openItems?.shown.map(\.title) ?? [])) }

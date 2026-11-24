@@ -130,16 +130,17 @@ extension SpotsModel {
         change(isShown ? .fade : nil) { isAttachmentHidden = isHidden }
     }
 
-    func showAttachment(holding motion: PanelMotion?) -> [Entry] {
-        guard let chip = attachments.selectedChip, entry(chip.source) != nil else {
-            hold(nil, motion: motion)
-            return []
-        }
-        guard let value = chip.value else {
-            hold(AttachmentPreview(state: chip), motion: motion)
-            return []
-        }
-        hold(AttachmentPreview(value), motion: motion)
+    func showsAttachment(of query: String) -> Bool {
+        attachments.isOn && !isEditing && !query.trimmingCharacters(in: .whitespaces).hasPrefix("/")
+    }
+
+    func shownPreview(of query: String) -> AttachmentPreview? {
+        guard showsAttachment(of: query), let chip = attachments.selectedChip, entry(chip.source) != nil else { return nil }
+        return chip.value.map { AttachmentPreview($0) } ?? AttachmentPreview(state: chip)
+    }
+
+    func attachmentRows() -> [Entry] {
+        guard let chip = attachments.selectedChip, entry(chip.source) != nil, let value = chip.value else { return [] }
         let text = query.trimmingCharacters(in: .whitespaces)
         let search = text.isEmpty ? nil : runs.search(of: text)
         return commands.chipActions(of: value, matching: search, limit: Self.chipActionLimit).compactMap { row in
