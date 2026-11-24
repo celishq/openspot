@@ -19,11 +19,11 @@ extension OpenspotApp: SpotsHost {
         case .settings: { [weak self] in self?.openSettings() }
         case nil: { [weak self] in self?.model.press(note, of: spot) }
         }
-        toast?.show(note.words, kind: note.kind, tree: note.tree, spot: spot, id: note.id, press: press, fixKey: note.fix == nil ? nil : model.config.fixKey, for: note.keeps ? nil : ToastPanel.duration)
+        model.toasts.add(note, kind: note.kind, spot: spot, press: press, fixKey: note.fix == nil ? nil : model.config.fixKey)
     }
 
     func dropToast(_ id: String, of spot: String) {
-        toast?.drop(id, of: spot)
+        model.toasts.drop(id, of: spot)
     }
 
     func applyConfig(_ config: Config) {

@@ -5,6 +5,7 @@ struct ToastView: View {
     let toast: Toast
     let showsContent: Bool
     var width: CGFloat?
+    var toasts: Toasts?
 
     var body: some View {
         content
@@ -14,13 +15,13 @@ struct ToastView: View {
             .frame(width: width)
             .modifier(SpotGlass(shape: SpotRoundShape(radius: SpotTokens.toastRadius)))
             .contentShape(Rectangle())
-            .onTapGesture { toast.open?() }
+            .onTapGesture { toasts?.press(toast.id) }
             .environment(\.spotIsShown, toast.isShown)
     }
 
     @ViewBuilder
     private var content: some View {
-        if let tree = toast.tree {
+        if let tree = toast.note.tree {
             NodeTree(tree: tree, pictureTimes: [:])
                 .environment(\.spotSurfaceEdge, SurfaceEdge(radius: SpotTokens.toastRadius).inner(by: SpotTokens.toastPaddingY))
                 .environment(\.spotNode, NodeContext(variants: [.toast]))
@@ -35,7 +36,7 @@ struct ToastView: View {
                         .font(SpotType.strong)
                         .foregroundStyle(SpotTheme.ink)
                 }
-                Self.styled(toast.message)
+                Self.styled(toast.words)
                     .textRenderer(ToastKeyFill(fill: SpotTheme.highlight.opacity(SpotTheme.track)))
                     .font(SpotType.body)
                     .foregroundStyle(SpotTheme.ink)
