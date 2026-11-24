@@ -77,7 +77,12 @@ public final class SpotsModel {
     }
     @ObservationIgnored var isContextOpen = false
     public private(set) var contextRow = ContextRow.folded
-    public internal(set) var fieldValue = FieldValue()
+    public internal(set) var fieldValue = FieldValue() {
+        didSet {
+            if fieldRoom != fieldValue.room { fieldRoom = fieldValue.room }
+        }
+    }
+    public private(set) var fieldRoom: CGFloat = 0
     @ObservationIgnored var holdMotion: PanelMotion? = .edit
     @ObservationIgnored var contextPause: Duration = .seconds(1)
     @ObservationIgnored var contextWatch: Task<Void, Never>?
