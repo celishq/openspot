@@ -1638,6 +1638,23 @@ final class SpotsModelTests: XCTestCase {
         XCTAssertEqual(takes, 1)
     }
 
+    func testOpeningSettingsWorksTheHintOutOnceByTheEndOfThePress() async throws {
+        try script("keys", toml: "title = 'Keys'", "printf 'item=a\\ntitle=Apple\\n'")
+        try FileManager.default.createDirectory(at: folder.appendingPathComponent("config"), withIntermediateDirectories: true)
+        try "[[spots]]\nid = \"keys\"\nkey = \"cmd+,\"\n".write(to: folder.appendingPathComponent("config/config.toml"), atomically: true, encoding: .utf8)
+        await model.reload()
+        model.isShown = true
+        model.panelWillShow()
+        model.followHint()
+        await hopsEnd()
+        let takes = model.hintTakes
+
+        model.openSettings()
+
+        XCTAssertEqual(model.hintTakes - takes, 1)
+        XCTAssertEqual(model.gridHint, HintWords(model.hint))
+    }
+
     func testAPointerMoveThatLeavesTheSelectionWorksNothingOut() async throws {
         try await followThreeCards()
         let point = try center(of: 0)

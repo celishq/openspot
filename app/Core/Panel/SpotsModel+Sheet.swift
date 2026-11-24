@@ -98,8 +98,10 @@ extension SpotsModel {
     }
 
     public func openSettings() {
-        guard let id = spot(openedBy: ActionKey(name: ",", isCommand: true)) else { return }
-        pushFirst(id, moving: true)
+        asOnePress {
+            guard let id = spot(openedBy: ActionKey(name: ",", isCommand: true)) else { return }
+            pushFirst(id, moving: true)
+        }
     }
 
     @discardableResult
