@@ -33,7 +33,7 @@ final class AttachmentReadTests: AttachmentCase {
         model.runs.api = CommandAPI(mac: Mac(reads: ReadSources(mac: reads)), places: model.files, app: ModelApp(model: model), runs: model.runs)
         reads.set(front: "com.apple.Safari", access: ["com.apple.Safari": .denied])
         try taker(takes: "'url'")
-        try pickSource(runs: "\(cli) browser tab || exit")
+        try pickSource(runs: "\(cli) browser tab com.apple.Safari || exit")
     }
 
     private func refuse() async throws {

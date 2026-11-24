@@ -84,15 +84,26 @@ esac
   holds no value.
 - The chip shows the value's `icon=`, else the spot's own picture when its `icon` is a file or a picture, else the icon
   of the app in front when the value is of that app, else the spot's symbol.
-- `openspot browser tab`, `openspot finder selection` and `openspot selection read` read what people work on inside Openspot. A source needs
-  `read` in its `uses`, and `openspot attachment add` takes what it prints:
+- `openspot browser tab`, `openspot finder selection` and `openspot text selected` read what people work on inside Openspot. A source needs
+  `read` in its `uses`, and `openspot attachment add` takes what it prints. Each read but Finder's names its app by its bundle ID,
+  which `attachment.pick` gets as `input.value`:
 
   ```text
-  attachment.pick) tab=$(openspot browser tab) && printf '%s\n' "$tab" | openspot attachment add ;;
+  attachment.pick) tab=$(openspot browser tab "$(value input.value)") && printf '%s\n' "$tab" | openspot attachment add ;;
   ```
 
-  `openspot browser tab <bundle id>` reads a browser while another app is in front, and `openspot browser tabs` prints
-  each tab of each window. [Commands](../reference/commands.md) lists what each one prints.
+  `openspot browser tabs <bundle id>` prints each tab of each window. [Commands](../reference/commands.md) lists what each
+  one prints.
+
+- Only `openspot front app` reads which app is in front. A `panel.open` source reads it first, then the reader of that app:
+
+  ```text
+  show)
+    app=$(openspot front app | sed -n 's/^app=//p')
+    [ -n "$app" ] || exit 0
+    { openspot text selected "$app" && echo "title=Selected text"; } | openspot attachment add
+    ;;
+  ```
 
 - While `attachment.pick` runs, the field says `Reading <app>…`. When it adds nothing, the field says `Nothing to attach from
   <app>`, or the words of `openspot attachment empty <words>`. When it fails, or gives no answer in 3 seconds, the field

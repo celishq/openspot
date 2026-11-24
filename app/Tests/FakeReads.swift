@@ -56,5 +56,5 @@ final class FakeReads: MacReads, @unchecked Sendable {
         }
     }
 
-    func selectedText() async -> String? { lock.withLock { selectedValue } }
+    func selectedText(of bundleID: String) async -> String? { lock.withLock { bundleID == frontValue?.bundleID ? selectedValue : nil } }
 }

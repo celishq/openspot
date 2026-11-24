@@ -6,5 +6,5 @@ public protocol MacReads: Sendable {
     func access(to bundleID: String, asks: Bool) async -> ReadAccess
     func run(_ script: String) async -> [String]?
     func accessibility(asks: Bool) -> ReadAccess
-    func selectedText() async -> String?
+    func selectedText(of bundleID: String) async -> String?
 }

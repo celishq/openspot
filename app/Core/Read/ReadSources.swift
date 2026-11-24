@@ -34,16 +34,16 @@ public final class ReadSources: @unchecked Sendable {
         return records
     }
 
-    func tab(of bundleID: String? = nil, asks: Bool) async throws -> [TextBlock] {
-        guard let browser = await browser(bundleID), try await allows(browser.bundleID, named: browser.name, asks: asks),
+    func tab(of browser: Browser, asks: Bool) async throws -> [TextBlock] {
+        guard try await allows(browser.bundleID, named: browser.name, asks: asks),
               let values = await mac.run(browser.script), let url = values.first, !url.isEmpty
         else { return [] }
         let title = values.dropFirst().first.flatMap { $0.isEmpty ? nil : $0 }
         return [Self.record([("url", url)] + (title.map { [("title", $0)] } ?? []) + [("app", browser.bundleID)])]
     }
 
-    func tabs(of bundleID: String? = nil, asks: Bool) async throws -> [TextBlock] {
-        guard let browser = await browser(bundleID), try await allows(browser.bundleID, named: browser.name, asks: asks),
+    func tabs(of browser: Browser, asks: Bool) async throws -> [TextBlock] {
+        guard try await allows(browser.bundleID, named: browser.name, asks: asks),
               let values = await mac.run(browser.tabsScript)
         else { return [] }
         return stride(from: 0, to: values.count - values.count % 5, by: 5).compactMap { start in
@@ -59,21 +59,15 @@ public final class ReadSources: @unchecked Sendable {
         return [Self.record(files.map { ("file", $0) } + [("app", Self.finder.bundleID)])]
     }
 
-    func selection(asks: Bool) async throws -> [TextBlock] {
+    func selection(of bundleID: String, asks: Bool) async throws -> [TextBlock] {
         guard mac.accessibility(asks: asks) == .allowed else { throw ReadRefusal(reader: "the selected text") }
-        guard let text = await mac.selectedText().map(Self.cut), !text.allSatisfy(\.isWhitespace) else { return [] }
-        let app = await mac.front()?.bundleID
-        return [Self.record([("text", text)] + (app.map { [("app", $0)] } ?? []))]
+        guard let text = await mac.selectedText(of: bundleID).map(Self.cut), !text.allSatisfy(\.isWhitespace) else { return [] }
+        return [Self.record([("text", text), ("app", bundleID)])]
     }
 
-    func app() async -> [TextBlock] {
+    func front() async -> [TextBlock] {
         guard let front = await mac.front() else { return [] }
         return [Self.record([("app", front.bundleID), ("name", front.name)] + (front.path.map { [("path", $0)] } ?? []))]
-    }
-
-    private func browser(_ bundleID: String?) async -> Browser? {
-        guard let bundleID else { return await mac.front().flatMap { Browser.named($0.bundleID) } }
-        return Browser.named(bundleID)
     }
 
     private func allows(_ bundleID: String, named name: String, asks: Bool) async throws -> Bool {

@@ -103,11 +103,11 @@ work in a read too. `run` works in a read, but the action it runs can't show a v
 | `openspot prompt change <id> [words]...` | Prints a prompt that asks a coding agent to change a spot as the words say, with what the stats counted of it over 14 days, or with no words a goal that follows those counts. |
 | `openspot prompt theme <name> [words]...`          | Prints a prompt that asks a coding agent to change a theme as the words say.                    |
 | `openspot date read <words>...`                    | Prints the date the words name, such as `tomorrow 3pm`, as `item=yyyy-MM-dd HH:mm` in the zone of the Mac, or with no time `item=yyyy-MM-dd`, and `time=true` or `false`. It prints nothing when the words are more than a date. |
-| `openspot browser tab [<bundle id>]` | Prints the `url=`, `title=` and `app=` of the front tab of the browser in front, or of the browser that the bundle ID names, or nothing. |
-| `openspot browser tabs [<bundle id>]` | Prints a record for each tab of each window of the browser in front, or of the one named: `url=`, `title=`, `window=` (1 is the front window), `index=`, `active=` and `app=`. |
+| `openspot browser tab <bundle id>` | Prints the `url=`, `title=` and `app=` of the front tab of the browser that the bundle ID names, or nothing when it is not running. |
+| `openspot browser tabs <bundle id>` | Prints a record for each tab of each window of the browser that the bundle ID names: `url=`, `title=`, `window=` (1 is the front window), `index=`, `active=` and `app=`. |
 | `openspot finder selection` | Prints a `file=` for each file selected in Finder, and `app=`. |
-| `openspot selection read` | Prints the `text=` selected in the front app, and its `app=`. |
-| `openspot window app` | Prints the `app=` bundle ID, `name=` and `path=` of the app in front of Openspot, or nothing. |
+| `openspot text selected <bundle id>` | Prints the `text=` selected in the app that the bundle ID names, and its `app=`, or nothing when it is not running or has no selection. |
+| `openspot front app` | Prints the `app=` bundle ID, `name=` and `path=` of the app in front of Openspot, or nothing. |
 | `openspot clipboard read [--newer <seconds>]` | Prints the text on the clipboard. With `--newer`, it prints it only when Openspot first saw that copy within the last `<seconds>` seconds. |
 | `openspot access list` | Prints `app=`, `path=` and `access=` for each app that Openspot reads: `allowed`, `denied`, `unasked`, or `unknown` while the app is closed. The record of the selected text has `app=accessibility`. |
 | `openspot access ask <bundle id or accessibility>` | Asks macOS for Openspot's access to the app, or to Accessibility, when the person has not chosen yet, and prints its record. |

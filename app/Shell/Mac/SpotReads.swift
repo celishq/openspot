@@ -29,8 +29,8 @@ struct SpotReads: MacReads {
         AXIsProcessTrustedWithOptions(["AXTrustedCheckOptionPrompt": asks] as CFDictionary) ? .allowed : .unasked
     }
 
-    func selectedText() async -> String? {
-        guard let pid = await MainActor.run(body: { app()?.processIdentifier }) else { return nil }
+    func selectedText(of bundleID: String) async -> String? {
+        guard let pid = await MainActor.run(body: { NSRunningApplication.runningApplications(withBundleIdentifier: bundleID).first?.processIdentifier }) else { return nil }
         return await Self.off { Self.selectedText(of: pid) }
     }
 

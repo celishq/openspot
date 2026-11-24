@@ -28,9 +28,9 @@ final class SourceSpotTests: AttachmentCase {
         chips.first { $0.source == id }?.state
     }
 
-    func testBrowserTabReadsTheFrontTabWhenTabPicksIt() async throws {
+    func testBrowserTabReadsTheFrontTabOfTheAppInFrontWhenTabPicksIt() async throws {
         try copy("browser-tab")
-        reads.set(front: "com.apple.Safari", answers: ["com.apple.Safari": ["https://a.com/", "A page"]])
+        reads.set(answers: ["com.apple.Safari": ["https://a.com/", "A page"]])
         await open()
         XCTAssertEqual(state(of: "browser-tab"), .unread)
 
