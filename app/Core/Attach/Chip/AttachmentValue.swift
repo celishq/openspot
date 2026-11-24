@@ -43,6 +43,17 @@ public struct AttachmentValue: Equatable, Sendable {
         self.init(.files(files), title: title, app: app, icon: icon)
     }
 
+    var isWhole: Bool {
+        wholeCopy == nil
+    }
+
+    func whole(from board: (any MacClipboard)?) throws -> AttachmentValue {
+        guard let wholeCopy else { return self }
+        guard let board else { throw SpotError.fault("This Mac has no clipboard.") }
+        guard let whole = try Clipboard(board: board).whole(of: self, copy: wholeCopy) else { throw SpotError.fault(Clipboard.changed) }
+        return whole
+    }
+
     public var kind: Kind {
         switch payload {
         case .files: .file

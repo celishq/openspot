@@ -4,7 +4,6 @@ import ImageIO
 struct Clipboard {
     static let heldLength = 1_000_000
     static let changed = "The clipboard changed since the panel opened. Copy it again, then hand it on."
-    static let unwritten = "Openspot could not save the copied image. Copy it again."
 
     static var thumbnailPixels: Int { Int((SpotTokens.attachmentPicture * 2).rounded(.up)) }
 
@@ -23,8 +22,12 @@ struct Clipboard {
             try? FileManager.default.removeItem(at: old)
         }
         guard let data = autoreleasepool(invoking: { board.image() }) else { throw SpotError.fault("Openspot cannot find the copied image. Copy it again.") }
-        try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
-        try data.write(to: image, options: .atomic)
+        do {
+            try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
+            try data.write(to: image, options: .atomic)
+        } catch {
+            throw SpotError.fault("Openspot could not save the copied image. Copy it again.")
+        }
         return value
     }
 
