@@ -52,6 +52,21 @@ final class AttachmentStateTests: AttachmentCase {
         XCTAssertFalse(model.isAttachmentHidden)
     }
 
+    func testATapOnTheAttachmentsWorksTheHintOutOnceByTheEndOfThePress() async throws {
+        try await openWithTab()
+        model.followHint()
+        await Task { @MainActor in }.value
+        let takes = model.hintTakes
+        let writes = host.hintWrites.count
+
+        model.pressAttachment()
+
+        XCTAssertEqual(model.attachments.selected, "tab")
+        XCTAssertEqual(model.hintTakes - takes, 1)
+        XCTAssertEqual(model.gridHint, HintWords(model.hint))
+        XCTAssertEqual(host.hintWrites.dropFirst(writes).map(\.depth), [0])
+    }
+
     func testTabAndShiftTabTurnTheChipsAndWrap() async throws {
         try taker("reader", takes: "'text', 'url'")
         try source(adds: "url=https://example.com/a")

@@ -72,8 +72,10 @@ extension SpotsModel {
     }
 
     public func pressAttachment() {
-        guard openSheetID == nil, !isEditing, !attachments.chips.isEmpty else { return }
-        turnAttachment(by: 1)
+        asOnePress {
+            guard openSheetID == nil, !isEditing, !attachments.chips.isEmpty else { return }
+            turnAttachment(by: 1)
+        }
     }
 
     private static func look(of spot: Spot) -> AttachmentChip.Look? {
