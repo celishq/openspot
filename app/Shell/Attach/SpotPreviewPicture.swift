@@ -13,7 +13,9 @@ struct SpotPreviewPicture: View {
             .fill(SpotTheme.ink.opacity(SpotTheme.fill))
             .frame(width: SpotTokens.attachmentPicture, height: SpotTokens.attachmentPicture)
             .overlay {
-                if let image {
+                if case .icon(let icon) = picture {
+                    SpotItemIcon(icon: icon, glyph: nil, symbol: nil, size: SpotTokens.attachmentPicture / IconBody.share)
+                } else if let image {
                     Image(nsImage: image)
                         .resizable()
                         .scaledToFill()
@@ -33,9 +35,8 @@ struct SpotPreviewPicture: View {
 
     private static func image(of picture: AttachmentPreview.Picture, scale: CGFloat) async -> NSImage? {
         switch picture {
-        case .symbol: return nil
+        case .symbol, .icon: return nil
         case .data(let data): return NSImage(data: data)
-        case .icon(let path): return NSWorkspace.shared.icon(forFile: path)
         case .thumbnail(let path):
             let side = SpotTokens.attachmentPicture
             let request = QLThumbnailGenerator.Request(fileAt: URL(fileURLWithPath: path), size: CGSize(width: side, height: side), scale: scale, representationTypes: .thumbnail)

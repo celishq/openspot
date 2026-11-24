@@ -3,7 +3,7 @@ import Foundation
 public struct AttachmentPreview: Hashable, Sendable {
     public enum Picture: Hashable, Sendable {
         case thumbnail(String)
-        case icon(String)
+        case icon(FileIcon)
         case data(Data)
         case symbol(String)
     }
@@ -47,7 +47,7 @@ public struct AttachmentPreview: Hashable, Sendable {
         guard case .files(let files) = value.payload, let path = files.paths.first, value.wholeCopy == nil else { return nil }
         let kind = (path as NSString).pathExtension.lowercased()
         if thumbnailKinds.contains(kind) { return .thumbnail(path) }
-        return audioKinds.contains(kind) ? .symbol(audioSymbol) : .icon(path)
+        return audioKinds.contains(kind) ? .symbol(audioSymbol) : .icon(FileIcon(path: path))
     }
 
     public init?(state chip: AttachmentChip) {

@@ -44,8 +44,8 @@ final class AttachmentPreviewTests: XCTestCase {
         XCTAssertEqual(picture("/a/talk.mov"), .thumbnail("/a/talk.mov"))
         XCTAssertEqual(picture("/a/deck.pdf"), .thumbnail("/a/deck.pdf"))
         XCTAssertEqual(picture("/a/song.mp3"), .symbol("waveform"))
-        XCTAssertEqual(picture("/a/notes.md"), .icon("/a/notes.md"))
-        XCTAssertEqual(picture("/a/docs"), .icon("/a/docs"))
+        XCTAssertEqual(picture("/a/notes.md"), .icon(.type("md")))
+        XCTAssertEqual(picture("/a/docs"), .icon(.file("/a/docs")))
         XCTAssertNil(AttachmentPreview(AttachmentValue(text: "words")).picture)
     }
 
