@@ -113,6 +113,25 @@ final class ManifestTypesTests: XCTestCase {
         }
     }
 
+    func testAPatternThatIsNoRegexOrIsOnATypeOtherThanUrlOrTextFailsTheLoad() throws {
+        XCTAssertEqual(try spot("[actions.wake]\ninputs.url = { type = \"url\", pattern = \"(\" }").refused, [
+            "Snooze cannot load: spot.toml: [actions.wake] inputs.url has a pattern that is not a regular expression: (."
+        ])
+        XCTAssertEqual(try spot("[actions.wake]\ninputs.count = { type = \"number\", pattern = \"^1\" }").refused, [
+            "Snooze cannot load: spot.toml: [actions.wake] inputs.count has a pattern, which only a url or a text takes."
+        ])
+    }
+
+    func testAValueThatDoesNotMatchThePatternOfItsInputFailsTheCheck() throws {
+        let manifest = try Manifest(text: "[actions.approve]\ninputs.url = { type = \"url\", pattern = \"^https://github\\\\.com/\" }", folder: "/spots/review.spot").script("review.sh")
+        let check = try XCTUnwrap(manifest.actions.first).check
+
+        XCTAssertEqual(try check.checked([.init(key: "url", value: "https://github.com/a")]).map(\.value), ["https://github.com/a"])
+        XCTAssertThrowsError(try check.checked([.init(key: "url", value: "https://example.com/a")])) { error in
+            XCTAssertEqual(SpotRuns.reason(error), "approve cannot run: url takes a value that matches ^https://github\\.com/, and got https://example.com/a.")
+        }
+    }
+
     func testAnUnknownKeyFailsTheLoadWithALineThatNamesIt() throws {
         let cases = [
             "[actions.wake]\ntitel = \"Wake\"": "titel",

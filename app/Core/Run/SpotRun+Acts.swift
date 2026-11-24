@@ -163,6 +163,10 @@ extension SpotRun {
         press(acting(action, item: item), ended: ended)
     }
 
+    func run(_ action: CommandAction, inputs: [TextBlock.Field]) {
+        press(Message(action.callName, inputs: inputs))
+    }
+
     public func change(_ action: CommandAction) async throws -> CallAnswer {
         let call = action.callName
         guard let key = freeKey(call), let output = try await answer(to: acting(action, item: nil), key: key) else { return .stopped }

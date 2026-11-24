@@ -6,7 +6,7 @@ extension SpotsModel {
         isAttachmentOpen = !isWarming
         let wasOn = attachments.isOn
         let front = isWarming ? nil : host.frontApp
-        let feeds = !isWarming && entries.contains { entry in AttachmentValue.Kind.allCases.contains(where: entry.spot.triggers.drop.takes) }
+        let feeds = !isWarming && entries.contains { entry in AttachmentValue.Kind.allCases.contains { entry.spot.triggers.drop.takes($0) || entry.spot.offers($0) } }
         let unread = feeds ? entries.filter { $0.spot.isSource && $0.spot.triggers.picks(over: front?.bundleID, browsers: config.browsers) } : []
         endSpread()
         isAttachmentMoving = false
@@ -23,7 +23,7 @@ extension SpotsModel {
             return mark(id, state)
         }
         var next = attachments
-        if cards.contains(where: { $0.spot.takes(value) }) { next.fill(id, with: value, look: entry(id).flatMap { Self.look(of: $0.spot) }) } else { next.remove(id) }
+        if cards.contains(where: { $0.spot.takes(value) || $0.spot.offers(value) }) { next.fill(id, with: value, look: entry(id).flatMap { Self.look(of: $0.spot) }) } else { next.remove(id) }
         settle(next, motion: .fade)
     }
 
@@ -91,7 +91,21 @@ extension SpotsModel {
 
     func give(to entry: Entry) {
         guard let value = attachments.selectedChip?.value else { return }
-        landDrop(value, on: entry.spot.id, leavesAttachment: true)
+        guard entry.role == .action else {
+            landDrop(value, on: entry.spot.id, leavesAttachment: true)
+            return
+        }
+        guard let key = confirmKey(of: entry), let id = entry.item?.run, let action = try? entry.spot.action(id), let offer = ChipAction(action, takes: value.kind), offer.fits(value) else { return }
+        if action.confirm != nil, confirming != key { return confirming = key }
+        confirming = nil
+        leaveAttachment()
+        sheets[entry.spot.id]?.run(.command(action), inputs: offer.inputs(for: value))
+        settleGive(on: entry.spot.id)
+    }
+
+    func confirmKey(of entry: Entry) -> GlobalKey? {
+        guard entry.role == .action, let run = entry.item?.run else { return nil }
+        return GlobalKey(spot: entry.spot.id, act: .command(run), trigger: .shake)
     }
 
     func takeTab(back: Bool) -> Bool? {
@@ -105,7 +119,7 @@ extension SpotsModel {
     var attachmentHint: String? {
         guard openSheetID == nil, !isEditing, !attachments.chips.isEmpty else { return nil }
         guard attachments.isOn else { return attachments.layout.showsHint ? "⇥ Attach" : nil }
-        let run = selectedEntry.map { "⏎ \($0.state.title)" }
+        let run = waitingWords.map { "⏎ \($0)" } ?? selectedEntry.map { "⏎ \($0.state.title)" }
         return [run, "⇥ Next", "Esc Leave"].compactMap { $0 }.joined(separator: "   ")
     }
 
@@ -126,11 +140,15 @@ extension SpotsModel {
         }
         hold(AttachmentPreview(value), motion: motion)
         let text = query.trimmingCharacters(in: .whitespaces)
-        let found = commands.takers(of: value, matching: text.isEmpty ? nil : runs.search(of: text), limit: Self.takerLimit)
+        let search = text.isEmpty ? nil : runs.search(of: text)
+        let offered = commands.chipActions(of: value, matching: search, limit: Self.takerLimit).compactMap { row in
+            entry(row.spot).map { Entry(spot: $0.spot, item: SpotItem(title: row.action.title ?? row.action.id, run: row.action.id, picture: Icon(text: row.action.icon)), role: .action, detail: $0.spot.name) }
+        }
+        let found = commands.takers(of: value, matching: search, except: Set(offered.map(\.spot.id)), limit: Self.takerLimit - offered.count)
         let taken = found.compactMap { row in
             entry(row.spot).map { Entry(spot: $0.spot, item: SpotItem(title: row.title, run: ""), role: .taker, detail: value.kind.takerWords) }
         }
-        return taken
+        return offered + taken
     }
 
     func hold(_ preview: AttachmentPreview?, motion: PanelMotion?) {

@@ -76,15 +76,19 @@ extension SpotsModel {
         guard sheets[id]?.drop(value) == true else { return false }
         guard place == .panel else { return true }
         if endsDrag { endDrag() }
+        settleGive(on: id)
+        return true
+    }
+
+    func settleGive(on id: String) {
         guard entry(id)?.spot.opensOnReturn == true else {
             if isShown { host.dismiss() }
-            return true
+            return
         }
         presentSheet(of: id) {
             isSettlingDrop = true
             host.present()
         }
-        return true
     }
 
     public func dragOut(_ items: [SpotItem], of id: String) {

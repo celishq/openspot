@@ -16,12 +16,16 @@ extension SpotsModel {
     }
 
     var waitingWords: String? {
-        guard openSheetID == nil, let key = confirming, selectedEntry?.id == key.spot else { return nil }
+        guard openSheetID == nil, let key = confirming, let entry = selectedEntry, entry.id == key.spot || confirmKey(of: entry) == key else { return nil }
         return confirmWords(of: key)
     }
 
     func runConfirmed() -> Bool {
         guard waitingWords != nil, let key = confirming else { return false }
+        if let entry = selectedEntry, entry.role == .action {
+            give(to: entry)
+            return true
+        }
         confirming = nil
         if isShown { host.dismiss() }
         run(key)

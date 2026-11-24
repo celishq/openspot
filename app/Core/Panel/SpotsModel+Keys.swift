@@ -47,7 +47,7 @@ extension SpotsModel {
             let hasActions = target.flatMap(actionMenu(on:)) != nil
             return parts.hint(escape: escapeWords, stopping: { act(of: $0) != nil }, actions: hasActions)
         }
-        if let confirm = confirmRow.hint { return [confirm, settingsRow.hint, "⌘K Actions"].compactMap { $0 }.joined(separator: "   ") }
+        if content != .attachment, let confirm = confirmRow.hint { return [confirm, settingsRow.hint, "⌘K Actions"].compactMap { $0 }.joined(separator: "   ") }
         if let slashHint { return slashHint }
         if content == .attachment, let attachmentHint { return attachmentHint }
         if let soleHint { return soleHint }

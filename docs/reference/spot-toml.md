@@ -116,6 +116,7 @@ An input, an output or a value of an event takes a type alone, such as `url = "u
 | `default`     | its type | none    | The value it gets when it's given none. Not for a list. |
 | `description` | text     | none    | What it is. A form shows it as the placeholder.    |
 | `options`     | [text]   | none    | The values of a `choice`.                          |
+| `pattern`     | text     | none    | A regular expression that each value must match. Only for a `url` or a `text`. |
 
 ## [bindings]
 

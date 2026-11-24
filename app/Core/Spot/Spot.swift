@@ -301,6 +301,14 @@ public struct Spot: Equatable, Sendable {
         return !value.files.paths.isEmpty && value.files.paths.allSatisfy { self.triggers.drop.takes(path: $0, kind: value.files.kind(of: $0)) }
     }
 
+    func offers(_ kind: AttachmentValue.Kind) -> Bool {
+        self.actions.contains { ChipAction($0, takes: kind) != nil }
+    }
+
+    func offers(_ value: AttachmentValue) -> Bool {
+        self.actions.contains { ChipAction($0, takes: value.kind)?.fits(value) == true }
+    }
+
     public func taking(_ output: Frame) -> Spot {
         var command = self
         command.frameActions = output.actions
