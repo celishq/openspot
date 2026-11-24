@@ -8,7 +8,7 @@ public final class Toasts {
     public static let limit = 20
     public static let duration: TimeInterval = 5
 
-    public private(set) var queue: [Toast] = []
+    @ObservationIgnored public private(set) var queue: [Toast] = []
     public private(set) var front: Toast?
     public private(set) var isShown = false
     public private(set) var frontSize = CGSize.zero

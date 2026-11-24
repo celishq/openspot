@@ -31,12 +31,21 @@ struct OpenspotItemView: View {
     private var swap: some View {
         ZStack {
             icon
-                .id(symbol)
+                .id(face)
                 .transition(.asymmetric(
                     insertion: .scale(scale: MotionTokens.menuBarSwapScale).combined(with: .opacity).animation(Self.arrive),
                     removal: .scale(scale: MotionTokens.menuBarSwapScale).combined(with: .opacity).animation(Self.leave)
                 ))
         }
+    }
+
+    private var count: Int? {
+        guard isToasting, let count = toasts?.count, count > 1 else { return nil }
+        return count
+    }
+
+    private var face: String {
+        "\(symbol ?? "") \(count ?? 0)"
     }
 
     private var isToasting: Bool {
@@ -53,16 +62,14 @@ struct OpenspotItemView: View {
 
     @ViewBuilder
     private var icon: some View {
-        if let symbol, isToasting, let count = toasts?.count, count > 1 {
-            HStack(spacing: SpotTokens.menuBarCountGap) {
+        HStack(spacing: SpotTokens.menuBarCountGap) {
+            if let symbol {
                 Image(systemName: symbol)
-                Text("\(count)").monospacedDigit()
+            } else {
+                Image(nsImage: image).renderingMode(.template)
             }
-            .font(SpotType.menuBar)
-        } else if let symbol {
-            Image(systemName: symbol).font(SpotType.menuBar)
-        } else {
-            Image(nsImage: image).renderingMode(.template)
+            if let count { Text("\(count)").monospacedDigit() }
         }
+        .font(SpotType.menuBar)
     }
 }
