@@ -167,6 +167,7 @@
 		24F82F7C053EF98ECE9F95E4 /* Mac+Guide.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2906D300745D42A5031C864A /* Mac+Guide.swift */; };
 		2511E4FD7DC67F65C43CDD39 /* NumberReading+Lines.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0647A51BB1B87A5FE7E10B12 /* NumberReading+Lines.swift */; };
 		251E500D55FC6312DABD8235 /* SymbolCatalog.swift in Sources */ = {isa = PBXBuildFile; fileRef = FABB501FC911592C38310E2F /* SymbolCatalog.swift */; };
+		252B324E37F508D2020D346D /* Clipboard.swift in Sources */ = {isa = PBXBuildFile; fileRef = 46EDF061A4434EBEFAB2DA72 /* Clipboard.swift */; };
 		25F781484425BA8380BA42EE /* ShortcutsSpotTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0BD6B1DDE368F35A0546DB0E /* ShortcutsSpotTests.swift */; };
 		260823EDF2EB2D1BB495C3B4 /* libOpenspotCore.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 04798119A31A08BDE55ED6D1 /* libOpenspotCore.a */; };
 		263C01EB7C13448ABCEB8866 /* MenuBarHost.swift in Sources */ = {isa = PBXBuildFile; fileRef = A916743FB5C26B3DA7BCFE08 /* MenuBarHost.swift */; };
@@ -1501,6 +1502,7 @@
 		465AADBC2B4DBBB3B10D5794 /* ReleaseLog.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReleaseLog.swift; sourceTree = "<group>"; };
 		46789F24ADADFC7204FA8E27 /* FlowKey.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FlowKey.swift; sourceTree = "<group>"; };
 		468ECDCE92BFA4A96CF82E6E /* SpotCatalogTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SpotCatalogTests.swift; sourceTree = "<group>"; };
+		46EDF061A4434EBEFAB2DA72 /* Clipboard.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Clipboard.swift; sourceTree = "<group>"; };
 		473ABE23A29349EDAFCF3A9D /* ActionMenuTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ActionMenuTests.swift; sourceTree = "<group>"; };
 		4748D0A6E33C42BBDCC04A1D /* SpotMode.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SpotMode.swift; sourceTree = "<group>"; };
 		4762AB426CAACFDAD9AC43A8 /* SpotsModel+Sheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "SpotsModel+Sheet.swift"; sourceTree = "<group>"; };
@@ -2960,6 +2962,7 @@
 		64C254042B39832BE5EF2EB0 /* Clipboard */ = {
 			isa = PBXGroup;
 			children = (
+				46EDF061A4434EBEFAB2DA72 /* Clipboard.swift */,
 				6E518A63418FE33CDA929F64 /* ClipboardCall.swift */,
 				147C9C300BFB32145B022467 /* ClipboardCalls.swift */,
 				96CE3435AAB0481EA21551D0 /* ClipboardContents.swift */,
@@ -4681,6 +4684,7 @@
 				663FA1E8E7317DD44062EDA7 /* CheckCall.swift in Sources */,
 				F5912BE11BF065A1617E542A /* CheckCalls.swift in Sources */,
 				DBEE032DEF84AA1102FFDDB3 /* ChipAction.swift in Sources */,
+				252B324E37F508D2020D346D /* Clipboard.swift in Sources */,
 				458683122D4F69FE94747093 /* ClipboardCall.swift in Sources */,
 				B2669AEB3E36B8B0B9FDFB2C /* ClipboardCalls.swift in Sources */,
 				1FD77B14ABF9C46B263A8D7E /* ClipboardContents.swift in Sources */,

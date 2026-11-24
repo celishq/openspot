@@ -43,8 +43,8 @@ public struct AttachmentPreview: Hashable, Sendable {
     }
 
     private static func picture(of value: AttachmentValue) -> Picture? {
-        if let thumbnail = value.copy?.thumbnail { return .data(thumbnail) }
-        guard case .files(let files) = value.payload, let path = files.paths.first, value.copy == nil else { return nil }
+        if let thumbnail = value.wholeCopy?.thumbnail { return .data(thumbnail) }
+        guard case .files(let files) = value.payload, let path = files.paths.first, value.wholeCopy == nil else { return nil }
         let kind = (path as NSString).pathExtension.lowercased()
         if thumbnailKinds.contains(kind) { return .thumbnail(path) }
         return audioKinds.contains(kind) ? .symbol(audioSymbol) : .icon(path)

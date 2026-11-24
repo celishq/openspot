@@ -138,13 +138,13 @@ extension SpotsModel {
         guard let offer = entry.spot.chipActions.first(where: { $0.name == id && $0.fits(value) }) else { return }
         if offer.confirm != nil, confirming != key { return confirming = key }
         confirming = nil
-        guard let copy = value.copy else { return hand(value, to: entry.spot.id, by: offer) }
+        guard let copy = value.wholeCopy else { return hand(value, to: entry.spot.id, by: offer) }
         let board = runs.api?.mac.clipboard
         Task { [weak self] in
             let whole = await Task.detached {
                 Result {
                     guard let board else { throw SpotError.fault("This Mac has no clipboard.") }
-                    return try copy.whole(of: value, from: board)
+                    return try Clipboard(board: board).whole(of: value, copy: copy)
                 }
             }.value
             guard let self else { return }
@@ -152,8 +152,8 @@ extension SpotsModel {
                 guard attachments.selectedChip?.source == chip.source else { return }
                 switch whole {
                 case .success(let whole?): hand(whole, to: entry.spot.id, by: offer)
-                case .success(nil): mark(chip.source, .failed(ClipboardCopy.changed))
-                case .failure(let error): mark(chip.source, .failed((error as? SpotError)?.reason ?? ClipboardCopy.unwritten))
+                case .success(nil): mark(chip.source, .failed(Clipboard.changed))
+                case .failure(let error): mark(chip.source, .failed((error as? SpotError)?.reason ?? Clipboard.unwritten))
                 }
             }
         }

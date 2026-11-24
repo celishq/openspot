@@ -71,7 +71,7 @@ enum AttachmentCall: NounCall {
             if case .some(let kept) = await runs.keptValue(of: count) {
                 value = kept
             } else {
-                value = ClipboardCopy.value(of: board, count: count, images: images)
+                value = Clipboard(board: board).value(count: count, images: images)
                 await runs.keep(value, of: count)
             }
             guard let value else { return CommandAnswer() }

@@ -35,7 +35,7 @@ final class AttachmentClipboardTests: AttachmentCase {
     }
 
     func testALongCopyIsHeldInPartAndHandedOnWhole() async throws {
-        let long = String(repeating: "a", count: ClipboardCopy.heldLength * 2)
+        let long = String(repeating: "a", count: Clipboard.heldLength * 2)
         board.copy(long)
         try taker(takes: "'text'")
 
@@ -45,7 +45,7 @@ final class AttachmentClipboardTests: AttachmentCase {
         try await give()
 
         try await wait("the hand-off") { self.log("keep-drops").count == 2 }
-        XCTAssertEqual(held.count, ClipboardCopy.heldLength)
+        XCTAssertEqual(held.count, Clipboard.heldLength)
         XCTAssertEqual(log("keep-drops").first?.count, "input.text=".count + long.count)
         XCTAssertEqual(log("keep-drops").last, "input.title=Copied text")
     }
@@ -99,20 +99,20 @@ final class AttachmentClipboardTests: AttachmentCase {
     }
 
     func testALongCopyThatChangedBeforeTheHandOffIsNotHandedOnAndSaysSo() async throws {
-        board.copy(String(repeating: "a", count: ClipboardCopy.heldLength + 1))
+        board.copy(String(repeating: "a", count: Clipboard.heldLength + 1))
         try taker(takes: "'text'")
 
         try await openCopy()
         board.copy("newer")
         try await give()
 
-        try await wait("the chip that says so") { self.chips.first?.state == .failed(ClipboardCopy.changed) }
+        try await wait("the chip that says so") { self.chips.first?.state == .failed(Clipboard.changed) }
         XCTAssertEqual(log("keep-drops"), [])
         XCTAssertTrue(model.attachments.isOn)
     }
 
     func testAnOpenWithTheSameCopyReadsItsTextNoMore() async throws {
-        board.copy(String(repeating: "a", count: ClipboardCopy.heldLength + 1))
+        board.copy(String(repeating: "a", count: Clipboard.heldLength + 1))
         try taker(takes: "'text'")
 
         try await openCopy()

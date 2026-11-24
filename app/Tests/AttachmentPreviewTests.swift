@@ -69,12 +69,12 @@ final class AttachmentPreviewTests: XCTestCase {
     func testACopiedImageShowsASmallThumbnailMadeOnceFromItsBytes() throws {
         let board = FakeClipboard()
         board.copy(image: try Self.png(width: 1200, height: 600), kind: "png")
-        let value = try XCTUnwrap(ClipboardCopy.value(of: board, count: board.count(), images: URL(fileURLWithPath: "/tmp/none")))
+        let value = try XCTUnwrap(Clipboard(board: board).value(count: board.count(), images: URL(fileURLWithPath: "/tmp/none")))
 
         guard case .data(let thumbnail)? = AttachmentPreview(value).picture else { return XCTFail("no thumbnail") }
         let source = try XCTUnwrap(CGImageSourceCreateWithData(thumbnail as CFData, nil))
         let image = try XCTUnwrap(CGImageSourceCreateImageAtIndex(source, 0, nil))
-        XCTAssertEqual(max(image.width, image.height), ClipboardCopy.thumbnailPixels)
+        XCTAssertEqual(max(image.width, image.height), Clipboard.thumbnailPixels)
         XCTAssertLessThan(thumbnail.count, 200_000)
     }
 
