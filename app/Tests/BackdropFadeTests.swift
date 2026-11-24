@@ -111,4 +111,10 @@ final class BackdropFadeTests: XCTestCase {
         XCTAssertNil(fade.stretch(from: tall, to: CGRect(x: 0, y: 0, width: 600, height: 500), height: 700, scale: 0.5))
         XCTAssertNil(fade.stretch(from: tall, to: CGRect(x: 0, y: 0, width: 580, height: 720), height: 700, scale: 0.5))
     }
+
+    func testAnAreaWhoseStraightBandStartsAboveThePictureIsNotStretched() {
+        let fade = BackdropFade(size: 80, padding: 0, corner: 20, blur: nil, ease: 2, roundness: 2, inset: 40)
+        let tall = CGRect(x: 0, y: -600, width: 580, height: 1300)
+        XCTAssertNil(fade.stretch(from: tall, to: CGRect(x: 0, y: -600, width: 580, height: 1100), height: 700, scale: 0.5))
+    }
 }

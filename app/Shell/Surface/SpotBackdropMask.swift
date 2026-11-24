@@ -12,15 +12,31 @@ final class SpotBackdropMask {
         if isMoving { return stretched(to: fade) ?? fade.image() }
         let image = fade.image()
         kept = Array((kept + [(fade, image)]).suffix(Self.keptLimit))
+        trim()
         return image
+    }
+
+    private var bytes: Int {
+        let tall = tallest?.picture.map { $0.bytesPerRow * $0.height } ?? 0
+        return kept.reduce(tall) { $0 + ($1.image.map { $0.bytesPerRow * $0.height } ?? 0) }
+    }
+
+    private func trim() {
+        while bytes > SpotTokens.backdropMaskBytes, !kept.isEmpty { kept.removeFirst() }
+        if bytes > SpotTokens.backdropMaskBytes { tallest = nil }
     }
 
     private func stretched(to fade: SpotBackdropFade) -> CGImage? {
         guard let area = fade.area else { return nil }
         let tallArea = CGRect(x: area.minX, y: area.minY, width: area.width, height: fade.size.height - area.minY)
         let tall = SpotBackdropFade(fade: fade.fade, area: tallArea, size: fade.size)
-        if tallest?.fade != tall { tallest = (tall, tall.drawn()) }
-        guard let picture = tallest?.picture, let source = picture.data, let space = picture.colorSpace,
+        var drawn = tallest?.picture
+        if tallest?.fade != tall {
+            drawn = tall.drawn()
+            tallest = (tall, drawn)
+            trim()
+        }
+        guard let picture = drawn, let source = picture.data, let space = picture.colorSpace,
               let stretch = fade.fade.stretch(from: tallArea, to: area, height: fade.size.height, scale: SpotTokens.backdropMaskScale) else { return nil }
         let row = picture.bytesPerRow
         let rows = picture.height

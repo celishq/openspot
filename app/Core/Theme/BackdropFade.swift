@@ -58,7 +58,7 @@ public struct BackdropFade: Equatable, Sendable {
         guard let top = rings.map({ $0.rect.minY + $0.corner }).max(), let foot = rings.map({ $0.rect.maxY - $0.corner }).min() else { return nil }
         let offset = (height * scale).rounded(.up) - height * scale
         let split = (top * scale + offset).rounded(.up)
-        guard top < foot, split <= foot * scale + offset else { return nil }
+        guard top < foot, split >= 0, split <= foot * scale + offset else { return nil }
         return Stretch(split: Int(split), shift: Int(((picture.height - area.height) * scale).rounded()))
     }
 
