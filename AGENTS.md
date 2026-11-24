@@ -199,7 +199,9 @@ takes its look from the surface's progress, by `SheetMorph`, and keeps no curve 
   short holds the content to the close's end.
 - A sheet opens and closes by one rule, whatever its source (`SheetMorph.Source`): a card in sight, or the field for any
   other sheet. The source shows its own look and words, and they fade over the first half of the motion. The sheet's
-  content, its title too, fades in from `MotionTokens.contentStart`, softened by `MotionTokens.contentSoftness`. No part pops in when the shape has room for it.
+  content, its title too, fades in from `MotionTokens.contentStart`, softened by `MotionTokens.contentSoftness`, and fades
+  out as the progress itself, so a close takes about 125 ms from 90% to 5% (`SheetMorph.contentLook(at:isOpen:)`). No part
+  pops in when the shape has room for it.
 - The field's glass lies uncut under the sheet's glass, drawn by a second `SpotFieldView` below the sheet. It fades once the
   sheet's moving shape holds it by a margin (`SheetMorph.fieldGlass`, `SheetMorph.clearance`), so one glass shape shows and no
   glass is cut.

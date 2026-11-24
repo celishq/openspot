@@ -87,11 +87,23 @@ final class SpotSpringTests: XCTestCase {
         func time(_ look: (Double) -> Double, reaching share: Double) -> Double {
             Double(progress.firstIndex { look($0) >= share } ?? progress.count) * frame
         }
-        let span = time(SheetMorph.contentLook(at:), reaching: 0.9) - time(SheetMorph.contentLook(at:), reaching: 0.05)
+        let look = { SheetMorph.contentLook(at: $0, isOpen: true) }
+        let span = time(look, reaching: 0.9) - time(look, reaching: 0.05)
 
-        XCTAssertGreaterThanOrEqual(time(SheetMorph.contentLook(at:), reaching: 0.05), time(SheetMorph.sheetLook(at:), reaching: 0.05))
+        XCTAssertGreaterThanOrEqual(time(look, reaching: 0.05), time(SheetMorph.sheetLook(at:), reaching: 0.05))
         XCTAssertGreaterThanOrEqual(span, 0.13)
         XCTAssertLessThanOrEqual(span, 0.17)
+    }
+
+    func testTheSheetsContentFadesOutOverAbout125MillisecondsOfTheClose() {
+        let progress = run(SpotMotion.grow(isOpen: false), presses: [(0, -1)]).values.map { 1 + $0 }
+        func time(falling share: Double) -> Double {
+            Double(progress.firstIndex { SheetMorph.contentLook(at: $0, isOpen: false) <= share } ?? progress.count) * frame
+        }
+        let span = time(falling: 0.05) - time(falling: 0.9)
+
+        XCTAssertGreaterThanOrEqual(span, 0.11)
+        XCTAssertLessThanOrEqual(span, 0.14)
     }
 
     private func plainSpring(duration: Double, bounce: Double) -> Animation {

@@ -104,7 +104,7 @@ private struct SheetContentView: View {
                     }
                 }
             }
-            .morph(progress, opacity: { [morph, firstRow] in min(morph.shown(firstRow, at: $0), SheetMorph.contentLook(at: $0)) })
+            .morph(progress, opacity: { [morph, firstRow, isOpen] in min(morph.shown(firstRow, at: $0), SheetMorph.contentLook(at: $0, isOpen: isOpen)) })
         }
         .padding(SpotTokens.padding)
         .frame(width: rect.width, height: rect.height, alignment: .topLeading)
@@ -167,7 +167,7 @@ private struct SheetContentView: View {
 
     private var sheetWordsOpacity: (Double) -> Double {
         if hasCardLook { return { _ in 1 } }
-        return SheetMorph.contentLook(at:)
+        return { [isOpen] in SheetMorph.contentLook(at: $0, isOpen: isOpen) }
     }
 
     private var sheetWordsWidth: CGFloat {
@@ -187,7 +187,7 @@ private struct SheetContentView: View {
         }
         if let closeShift {
             button
-                .morph(progress, offset: { SheetMorph.place(onCard: CGSize(width: closeShift, height: 0), at: $0) }, opacity: SheetMorph.contentLook(at:))
+                .morph(progress, offset: { SheetMorph.place(onCard: CGSize(width: closeShift, height: 0), at: $0) }, opacity: { [isOpen] in SheetMorph.contentLook(at: $0, isOpen: isOpen) })
         } else if hasCardLook {
             button
         } else {

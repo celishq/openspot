@@ -20,10 +20,19 @@ final class SheetMorphTests: XCTestCase {
     }
 
     func testTheContentsLookIsNoneAtTheStartAllAtTheEndAndNeverFallsOnTheWay() {
-        XCTAssertEqual(SheetMorph.contentLook(at: 0), 0)
-        XCTAssertEqual(SheetMorph.contentLook(at: 1), 1)
-        let looks = (0...1000).map { SheetMorph.contentLook(at: Double($0) / 1000) }
-        XCTAssertTrue(zip(looks, looks.dropFirst()).allSatisfy { $0 <= $1 })
+        for isOpen in [true, false] {
+            XCTAssertEqual(SheetMorph.contentLook(at: 0, isOpen: isOpen), 0)
+            XCTAssertEqual(SheetMorph.contentLook(at: 1, isOpen: isOpen), 1)
+            let looks = (0...1000).map { SheetMorph.contentLook(at: Double($0) / 1000, isOpen: isOpen) }
+            XCTAssertTrue(zip(looks, looks.dropFirst()).allSatisfy { $0 <= $1 }, "isOpen \(isOpen)")
+        }
+    }
+
+    func testTheContentsLookOnACloseShowsMoreThanOnAnOpenAtTheSameProgress() {
+        for step in 1..<100 {
+            let progress = Double(step) / 100
+            XCTAssertGreaterThan(SheetMorph.contentLook(at: progress, isOpen: false), SheetMorph.contentLook(at: progress, isOpen: true), "at \(progress)")
+        }
     }
 
     func testTheTwoLooksShowTogetherOnlyBetweenAFifthAndAHalf() {
