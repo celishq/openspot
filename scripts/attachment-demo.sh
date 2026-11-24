@@ -15,8 +15,8 @@ demo() {
   folder="$state/spots/$1.spot"
   rm -rf "$folder"
   mkdir -p "$folder"
-  printf 'title = "%s"\nicon = "%s"\nuses = ["context"]\n\n[on]\n"panel.open" = true\n' "$2" "$3" > "$folder/spot.toml"
-  printf '#!/bin/sh\ncase "$1" in\n  show) openspot context add %s ;;\nesac\n' "$4" > "$folder/$1.sh"
+  printf 'title = "%s"\nicon = "%s"\nuses = ["attachment"]\n\n[on]\n"panel.open" = true\n' "$2" "$3" > "$folder/spot.toml"
+  printf '#!/bin/sh\ncase "$1" in\n  show) openspot attachment add %s ;;\nesac\n' "$4" > "$folder/$1.sh"
   chmod +x "$folder/$1.sh"
 }
 demo demo-text "Demo Text" "text.quote" '"text=The quick brown fox jumps over the lazy dog" title="Selected text" app=com.apple.Safari'
@@ -31,4 +31,4 @@ mkdir -p "$folder"
 printf 'title = "Show Me"\nicon = "eye"\ndetail = "Shows what it was handed"\n\n[on]\ndrop = ["url", "text", "*"]\n' > "$folder/spot.toml"
 printf '#!/bin/sh\ncase "$1" in\n  show) printf "text=x\\\\ntitle=Show Me\\\\n" ;;\n  drop) openspot toast "$(grep "^input\\\\." | head -1 | cut -c 7-)" ;;\nesac\n' > "$folder/show-me.sh"
 chmod +x "$folder/show-me.sh"
-echo "Context demo is in $state/spots. Open the Debug panel and press Tab. make dev-state removes it."
+echo "Attachment demo is in $state/spots. Open the Debug panel and press Tab. make dev-state removes it."

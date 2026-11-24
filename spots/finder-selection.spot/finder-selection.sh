@@ -12,7 +12,7 @@ case "$1" in
     done <<EOF_PATHS
 $picked
 EOF_PATHS
-    [ $# -gt 0 ] && openspot context add "$@" app=com.apple.finder
+    [ $# -gt 0 ] && openspot attachment add "$@" app=com.apple.finder
     ;;
 esac
 exit 0

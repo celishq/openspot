@@ -21,7 +21,7 @@ case "$1" in
     url=$(printf '%s\n' "$tab" | sed -n 1p)
     title=$(printf '%s\n' "$tab" | sed -n 2p)
     [ -n "$url" ] || exit 0
-    openspot context add url="$url" title="${title:-$url}" app="$browser"
+    openspot attachment add url="$url" title="${title:-$url}" app="$browser"
     ;;
 esac
 exit 0

@@ -1,7 +1,7 @@
 #!/bin/sh
 . "$OPENSPOT_SH"
 
-# The sources of context: each spot that comes with Openspot and puts a value in the panel's field, on or off. Return
+# The sources of attachments: each spot that comes with Openspot and puts a value in the panel's field, on or off. Return
 # turns the source of the row on or off, and Settings opens the Settings of a source that is on. A source of your own
 # spots folder is always on.
 
@@ -14,7 +14,7 @@ list() {
     { delete f; source = 0
       for (i = 1; i <= NF; i++) {
         n = index($i, "="); key = substr($i, 1, n - 1); f[key] = substr($i, n + 1)
-        if (key == "uses" && f[key] == "context") source = 1
+        if (key == "uses" && f[key] == "attachment") source = 1
       }
       if (!source) next
       printf "\nitem=%s\ntitle=%s\nicon=%s\nvalue=%s\n", f["item"], f["title"], f["icon"], f["on"]
@@ -45,7 +45,7 @@ case "$1" in
     ;;
   settings) exec openspot spot settings "$source" ;;
   *)
-    echo 'Context cannot do that.' >&2
+    echo 'Attachments cannot do that.' >&2
     exit 1
     ;;
 esac

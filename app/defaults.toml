@@ -86,7 +86,7 @@ id = "openspot/themes"
 grid = false
 
 [[spots]]
-id = "openspot/context"
+id = "openspot/attachments"
 grid = false
 
 [[spots]]

@@ -142,14 +142,14 @@ pages = ["prompt:*"]
 [scripts.themes.on]
 "sheet.open" = true
 
-[scripts.context]
-title = "Context"
+[scripts.attachments]
+title = "Attachments"
 icon = "rectangle.on.rectangle"
 detail = "Choose what the panel hands to spots"
-keywords = ["context", "tab", "selection", "selected text", "clipboard", "copied", "finder", "browser", "source"]
+keywords = ["attachments", "tab", "selection", "selected text", "clipboard", "copied", "finder", "browser", "source"]
 uses = ["spots"]
 
-[scripts.context.on]
+[scripts.attachments.on]
 "sheet.open" = true
 
 [scripts.updates]

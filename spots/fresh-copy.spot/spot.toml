@@ -1,7 +1,7 @@
 title = "Fresh Copy"
 icon = "doc.on.clipboard"
 detail = "Hand what you just copied to a spot"
-uses = ["context", "clipboard"]
+uses = ["attachment", "clipboard"]
 
 [on]
 "panel.open" = true

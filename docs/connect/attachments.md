@@ -1,4 +1,4 @@
-# Act on what people work on
+# Attach what people work on
 
 People open the panel over the app they work in. A source spot puts what they work on there, such as the front tab, in
 the panel's field as a chip. People press Tab, and the panel lists each spot that takes it. Return hands it to one.
@@ -32,7 +32,7 @@ case "$1" in
 esac
 ```
 
-Turn on Browser Tab in the Context spot. Open the panel over Safari, press Tab, and pick Page Title. It copies the title of
+Turn on Browser Tab in the Attachments spot. Open the panel over Safari, press Tab, and pick Page Title. It copies the title of
 the tab.
 
 ## How it takes it
@@ -50,14 +50,14 @@ run, Openspot opens your sheet when Return opens it, and closes the panel when i
 
 ## Give a value
 
-A source has `context` in its `uses`. It runs `show` each time the panel opens, and calls `openspot context add` with one
+A source has `attachment` in its `uses`. It runs `show` each time the panel opens, and calls `openspot attachment add` with one
 value. Give `panel.open` a regular expression, and the source runs only when the bundle ID of the front app matches.
 
 `clock-tab.spot/spot.toml`:
 
 ```toml
 title = "Clock Tab"
-uses = ["context"]
+uses = ["attachment"]
 
 [on]
 "panel.open" = "^com\\.apple\\.clock$"
@@ -68,16 +68,16 @@ uses = ["context"]
 ```text
 #!/bin/sh
 case "$1" in
-  show) openspot context add text="$(date +%H:%M)" title="The time" app=com.apple.clock ;;
+  show) openspot attachment add text="$(date +%H:%M)" title="The time" app=com.apple.clock ;;
 esac
 ```
 
-- `openspot context add` takes `file=` once for each file, `url=` or `text=`, with `title=`, the words of the preview,
+- `openspot attachment add` takes `file=` once for each file, `url=` or `text=`, with `title=`, the words of the preview,
   and `app=`, the bundle ID of the app whose icon the chip shows.
 - A source that names an app in `panel.open` shows its chip at once, with a spinner, and fills it when it answers.
   Another source's chip shows only when it answers.
 - A chip shows only when a spot that is on takes its kind. A source runs only when some spot takes some kind.
-- A source stays off the grid and out of the search. People turn it on in the Context spot.
+- A source stays off the grid and out of the search. People turn it on in the Attachments spot.
 
 ## Next
 

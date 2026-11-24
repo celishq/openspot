@@ -29,7 +29,7 @@ It shows what a spot can do when you add or update it, and shows each use after 
 | `calendar`  | each call of `calendar` and `reminders`                                                                                                                         |
 | `power`     | `power lid-closed`                                                                                                                                              |
 | `timer`     | each call of `timer`                                                                                                                                            |
-| `context`   | `context add`. A spot with it runs when the panel opens, stays off the grid, and puts a value in the panel's field.                                             |
+| `attachment` | `attachment add`. A spot with it runs when the panel opens, stays off the grid, and puts a value in the panel's field.                                             |
 | `network`   | No call. The spot reaches the network.                                                                                                                          |
 | `files`     | No call. The spot writes outside its data folder.                                                                                                               |
 | `account`   | `store publish`. Only a spot of `spots/openspot.spot` can have it; see [The account](#the-account).                                                             |

@@ -50,7 +50,7 @@ is missing still runs, and people see a message about it once a day. In Careful 
 | `calendar`  | Read and add events and reminders.                                                   |
 | `power`     | Keep the Mac awake with its lid closed.                                              |
 | `timer`     | Add, list and remove its timers.                                                     |
-| `context`   | Put a value in the panel's field when the panel opens; see [Act on what people work on](../connect/context.md). |
+| `attachment` | Put a value in the panel's field when the panel opens; see [Attach what people work on](../connect/attachments.md). |
 | `network`   | Reach the network in Careful mode. No command needs it.                              |
 | `files`     | Write outside its data folder in Careful mode. No command needs it.                  |
 

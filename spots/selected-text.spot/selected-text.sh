@@ -7,7 +7,7 @@ case "$1" in
     text=$(osascript -e 'tell application "System Events" to set front_app to first application process whose frontmost is true' \
       -e 'tell application "System Events" to return value of attribute "AXSelectedText" of (value of attribute "AXFocusedUIElement" of front_app)' 2>/dev/null)
     [ -n "$(printf '%s' "$text" | tr -d '[:space:]')" ] || exit 0
-    openspot context add text="$text" title="Selected text" ${app:+app="$app"}
+    openspot attachment add text="$text" title="Selected text" ${app:+app="$app"}
     ;;
 esac
 exit 0

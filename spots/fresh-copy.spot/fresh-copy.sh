@@ -17,9 +17,9 @@ case "$1" in
     first=$(sed -n 2p "$seen" 2>/dev/null)
     [ $((now - ${first:-0})) -lt $fresh ] || exit 0
     if [ "$(printf '%s' "$copied" | wc -l)" -eq 0 ] && printf '%s' "$copied" | grep -Eq '^https?://[^[:space:]]+$'; then
-      openspot context add url="$copied"
+      openspot attachment add url="$copied"
     else
-      openspot context add text="$copied" title="Copied text"
+      openspot attachment add text="$copied" title="Copied text"
     fi
     ;;
 esac
