@@ -310,7 +310,7 @@ final class SpotDropTests: XCTestCase {
         esac
         """)
         var failures: [String] = []
-        sheet.onReport = { if case .failure(let text) = $0 { failures.append(text) } }
+        sheet.onReport = { if case .toast(let note) = $0, note.kind == .failure, note.fix == nil { failures.append(note.words) } }
         sheet.open {}
         try await wait("the action") { sheet.spot.frameActions.count == 1 && sheet.calls.isEmpty }
         sheet.run(try XCTUnwrap(sheet.spot.frameActions.first), item: nil)
@@ -480,7 +480,7 @@ final class SpotDropTests: XCTestCase {
         let sheet = try sheet(toml: "\(TestSpot.command)\n\n[on]\ndrop = [\"mov\"]", "sleep 0.5\ntouch '\(path("done"))'")
         runs.panelOpened()
         var failures: [String] = []
-        sheet.onReport = { if case .failure(let text) = $0 { failures.append(text) } }
+        sheet.onReport = { if case .toast(let note) = $0, note.kind == .failure, note.fix == nil { failures.append(note.words) } }
         XCTAssertTrue(sheet.drop(paths: [file("a.mov")]))
 
         runs.panelClosed()
@@ -494,7 +494,7 @@ final class SpotDropTests: XCTestCase {
         runs.api = CommandAPI(mac: Mac(), places: .test(["OPENSPOT_CONFIG": folder.path]), app: FakeRunningApp(), runs: runs)
         let sheet = try sheet(toml: "[on]\ndrop = [\"mov\"]", "printf 'frame=\\ntitle=42%%\\nprogress=0.42\\n---\\n'\n\(untilRelease)\n\(TestSpot.toast) Done")
         var toasts: [String] = []
-        sheet.onReport = { if case .toast(let text) = $0 { toasts.append(text) } }
+        sheet.onReport = { if case .toast(let note) = $0 { toasts.append(note.words) } }
         let frames = FrameLog(sheet)
 
         XCTAssertTrue(sheet.drop(paths: [file("a.mov")]))
@@ -511,7 +511,7 @@ final class SpotDropTests: XCTestCase {
     func testAFailedDropTellsThePerson() async throws {
         let sheet = try sheet(toml: "\(TestSpot.command)\n\n[on]\ndrop = [\"mov\"]", "echo broken >&2\nexit 2")
         var failures: [String] = []
-        sheet.onReport = { if case .failure(let text) = $0 { failures.append(text) } }
+        sheet.onReport = { if case .toast(let note) = $0, note.kind == .failure, note.fix == nil { failures.append(note.words) } }
 
         XCTAssertTrue(sheet.drop(paths: [file("a.mov")]))
 

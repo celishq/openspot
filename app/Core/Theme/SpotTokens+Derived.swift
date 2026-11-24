@@ -87,7 +87,6 @@ extension SpotTokens {
         return CGSize(width: gridWidth, height: min(sheetFieldDrop + content + padding, sheetMaxHeight))
     }
 
-
     public static func floatSize(list: ItemList) -> CGSize {
         floatSize(rows: list.lineCount, perLine: list.perLine, setsApart: list.setsApart)
     }

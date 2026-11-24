@@ -16,8 +16,10 @@ extension SpotRuns {
     private func takeFromPerson(_ effect: SpotEffect) -> Bool {
         let open = openID.flatMap { sheets[$0] }
         switch effect {
-        case .toast(let text):
-            onReport("", .toast(text))
+        case .toast(let note):
+            onReport("", .toast(note))
+        case .dropToast(let id):
+            onReport("", .dropToast(id))
         case .select(let item):
             guard let open else { return false }
             open.show(selecting: item, need: .change)

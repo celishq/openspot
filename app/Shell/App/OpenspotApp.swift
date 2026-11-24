@@ -38,7 +38,7 @@ final class OpenspotApp: NSObject, NSApplicationDelegate {
     private(set) var previous = PreviousApp<NSRunningApplication>()
     private(set) lazy var keys = GlobalKeys(
         model: model, toggle: { [weak self] in self?.togglePanel() },
-        fault: { [weak self] in self?.notifyKeyFault($0) }, fix: { [weak self] in self?.notify($0, fix: $1) }
+        fault: { [weak self] in self?.model.toast(.failure($0, fix: .settings)) }, fix: { [weak self] in self?.model.toast(.failure($0, fix: .url($1))) }
     )
     private(set) lazy var windows = DetachedWindows(model: model)
     private var menuBar: SpotMenuBar?
@@ -58,16 +58,16 @@ final class OpenspotApp: NSObject, NSApplicationDelegate {
     private var openedAtLaunch: [URL] = []
 
     func applicationDidFinishLaunching(_ notification: Notification) {
-        toast = ToastPanel.make()
+        toast = ToastPanel.make(toasts: model.toasts)
         let theme = ThemeFolder.standard(environment: model.files.environment, builtIn: mac.mac.theme).read()
         model.take(theme)
         appearanceWatch = NSApp.observe(\.effectiveAppearance, options: [.initial, .new]) { [weak self] app, _ in
             let appearance: Style.Variant = SpotTheme.isDark(app.effectiveAppearance) ? .dark : .light
             MainActor.assumeIsolated { self?.model.runs.take(appearance: appearance) }
         }
-        if !theme.faults.isEmpty { notify(theme.faults.joined(separator: "\n")) }
+        if !theme.faults.isEmpty { model.toast(.failure(theme.faults.joined(separator: "\n"))) }
         let item = OpenspotItem(
-            model: model, toast: toast?.toast, target: self, action: #selector(pressItem),
+            model: model, target: self, action: #selector(pressItem),
             onDragEnter: { [weak self] in self?.showPanelForDrag() }, onDrop: { [weak self] in self?.model.review($0) }
         )
         self.item = item
@@ -129,7 +129,7 @@ final class OpenspotApp: NSObject, NSApplicationDelegate {
             if isFirstLaunch {
                 Task { await self.model.beginFirstLaunch() }
             } else {
-                confirm(model.entryKey.openHint)
+                model.toast(ToastNote(words: model.entryKey.openHint))
             }
         }
         isLaunched = true

@@ -428,6 +428,6 @@ final class StayMode: ScriptMode {
         givenUp = .some(stamp)
         let text = "\(run.spot.name) failed \(Self.failureLimit) times in one minute. Openspot will not start it again until its file changes."
         runs.usage.failed(run.spot, fault: text, at: time)
-        run.onReport(.failure(text))
+        run.onReport(.toast(.failure(text)))
     }
 }

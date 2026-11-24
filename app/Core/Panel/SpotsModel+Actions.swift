@@ -93,13 +93,13 @@ extension SpotsModel {
         if place.isDetached {
             let asks = (try? target.entry.spot.action(action.callName))?.lacksInput == true || action.confirm != nil
             if asks, place == .window {
-                host.notify("\(action.title) asks with a form or a second press, which a window does not show yet.")
+                toast(.failure("\(action.title) asks with a form or a second press, which a window does not show yet."))
             } else if asks {
                 press(target.entry.id)
             } else if target.entry.spot.takesHandlers, let sheet = sheets[target.entry.id] {
                 Task { [weak self] in
                     guard case .form = await sheet.answer(to: action, item: target.item), let self else { return }
-                    if place == .window { host.notify("\(action.title) asks with a form, which a window does not show yet.") } else { press(target.entry.id) }
+                    if place == .window { toast(.failure("\(action.title) asks with a form, which a window does not show yet.")) } else { press(target.entry.id) }
                 }
             } else {
                 sheets[target.entry.id]?.run(action, item: target.item)
@@ -146,7 +146,7 @@ extension SpotsModel {
             } catch {
                 if pendingAsk == ask { pendingAsk = nil }
                 closeMenu()
-                host.notify("\(action.title) failed. \(Self.reason(error))")
+                toast(.failure("\(action.title) failed. \(Self.reason(error))"))
             }
         }
     }
@@ -215,7 +215,7 @@ extension SpotsModel {
     public func submitForm() {
         guard let form else { return }
         if let missing = form.draft.missing {
-            host.notify("Enter a value for \(missing.label).")
+            toast(.failure("Enter a value for \(missing.label)."))
             return
         }
         send(form, form.draft)
@@ -229,7 +229,7 @@ extension SpotsModel {
             closeSheet(moving: true)
             configChanged(.value(spot: spot, caller: nil), to: next)
         } catch {
-            host.notify("\(form.action.title) failed. \(Self.reason(error))")
+            toast(.failure("\(form.action.title) failed. \(Self.reason(error))"))
         }
     }
 
@@ -237,12 +237,12 @@ extension SpotsModel {
         let spot = form.entry.id
         let value = draft.values[key] ?? ""
         if !value.isEmpty, value.count < SecretStore.shortest {
-            return host.notify("Openspot didn't keep this secret, because it is shorter than \(SecretStore.shortest) characters. Type the whole value.")
+            return toast(.failure("Openspot didn't keep this secret, because it is shorter than \(SecretStore.shortest) characters. Type the whole value."))
         }
         let secrets = files.secrets
         Task {
             if let failure = await Self.keep(value.isEmpty ? nil : value, key: key, of: spot, in: secrets) {
-                return host.notify("\(form.action.title) failed. \(failure)")
+                return toast(.failure("\(form.action.title) failed. \(failure)"))
             }
             guard self.form?.id == form.id else { return }
             self.form = nil
@@ -277,7 +277,7 @@ extension SpotsModel {
                     break
                 }
             } catch {
-                host.notify("\(form.action.title) failed. \(Self.reason(error))")
+                toast(.failure("\(form.action.title) failed. \(Self.reason(error))"))
             }
         }
     }

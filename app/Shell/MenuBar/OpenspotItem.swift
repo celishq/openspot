@@ -10,7 +10,7 @@ final class OpenspotItem {
     private var icon: MenuBarHost<OpenspotItemView>?
     private var drag: SpotMenuBarDrag?
 
-    init(model: SpotsModel, toast: Toast?, target: AnyObject, action: Selector, onDragEnter: @escaping () -> Void, onDrop: @escaping ([URL]) -> Void) {
+    init(model: SpotsModel, target: AnyObject, action: Selector, onDragEnter: @escaping () -> Void, onDrop: @escaping ([URL]) -> Void) {
         #if DEBUG
         let image = NSImage(named: "MenuBarIconNightly")
         #else
@@ -20,7 +20,7 @@ final class OpenspotItem {
         item.button?.target = target
         item.button?.action = action
         drag = item.button.map { SpotMenuBarDrag(button: $0, onEnter: onDragEnter, onDrop: onDrop) }
-        icon = image.flatMap { makeIcon(model: model, image: $0, toast: toast) }
+        icon = image.flatMap { makeIcon(model: model, image: $0) }
     }
 
     var frame: NSRect? {
@@ -36,9 +36,9 @@ final class OpenspotItem {
         item.button?.setAccessibilityLabel(summary ?? Self.name)
     }
 
-    private func makeIcon(model: SpotsModel, image: NSImage, toast: Toast?) -> MenuBarHost<OpenspotItemView>? {
+    private func makeIcon(model: SpotsModel, image: NSImage) -> MenuBarHost<OpenspotItemView>? {
         guard let button = item.button else { return nil }
-        let host = MenuBarHost(rootView: OpenspotItemView(model: model, image: image, toast: toast))
+        let host = MenuBarHost(rootView: OpenspotItemView(model: model, image: image))
         let height = max(button.bounds.height, SpotTokens.menuBarPill.height)
         host.frame = NSRect(x: 0, y: (button.bounds.height - height) / 2, width: SpotTokens.menuBarPill.width, height: height)
         host.autoresizingMask = [.width, .height]

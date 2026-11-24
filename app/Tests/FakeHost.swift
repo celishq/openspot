@@ -6,8 +6,6 @@ final class FakeHost: SpotsHost {
     var dismissals = 0
     var edgeChanges: [(motion: PanelMotion?, edges: FlowEdges, rows: [String])] = []
     var shows = 0
-    var notes: [String] = []
-    var confirms: [String] = []
     var isPointerOverDrop = false
     var isPointerOverWindow = false
     var draggedPaths: [String] = []
@@ -63,20 +61,23 @@ final class FakeHost: SpotsHost {
         return allowsActs
     }
 
-    func notify(_ text: String) {
-        notes.append(text)
+    var toasts: [(note: ToastNote, spot: String)] = []
+    var opened: [URL] = []
+
+    var notes: [String] {
+        toasts.filter { $0.note.kind == .failure }.map(\.note.words)
     }
 
-    func notify(_ text: String, fix: URL) {
-        notes.append(text)
+    var confirms: [String] {
+        toasts.filter { $0.note.kind != .failure }.map(\.note.words)
     }
 
-    func confirm(_ text: String) {
-        confirms.append(text)
+    func toast(_ note: ToastNote, of spot: String) {
+        toasts.append((note, spot))
     }
 
-    func work(_ text: String) {
-        confirms.append(text)
+    func open(_ url: URL) {
+        opened.append(url)
     }
 
     func applyConfig(_ config: Config) {

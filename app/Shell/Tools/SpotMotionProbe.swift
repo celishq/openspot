@@ -298,7 +298,7 @@ final class SpotMotionProbe: NSObject {
                 self.model.cancelForm()
                 self.model.closeSheet(moving: false)
             }),
-            ("toast", 1, { self.model.host.confirm("Saved to the shelf") })
+            ("toast", 1, { self.model.toast("Saved to the shelf") })
         ]
         func next(_ left: ArraySlice<(name: String?, wait: Double, act: () -> Void)>) {
             guard let step = left.first else { return finish(with: "shots\n") }

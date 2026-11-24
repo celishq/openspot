@@ -13,8 +13,10 @@ extension SpotRun {
 
     func take(_ effect: SpotEffect, of call: OpenCall?) {
         switch effect {
-        case .toast(let text):
-            onReport(.toast(fieldValues.hiding(text)))
+        case .toast(let note):
+            onReport(.toast(note.hiding(fieldValues)))
+        case .dropToast(let id):
+            onReport(.dropToast(id))
         case .select(let item):
             selecting = item
             call?.selected = item

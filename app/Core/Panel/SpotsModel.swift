@@ -167,6 +167,7 @@ public final class SpotsModel {
     }
     @ObservationIgnored public var closingPick: (item: SpotItem, entry: Entry)?
     public let runs: SpotRuns
+    public let toasts: Toasts
     @ObservationIgnored public var dragWatch: Task<Void, Never>?
     public var dragPaths: [String] = []
     @ObservationIgnored var dragRead: Task<Void, Never>?
@@ -330,7 +331,7 @@ public final class SpotsModel {
         self.host = host
         self.files = files
         defaultArrangement = files.readDefaultArrangement()
-        self.runs = runs ?? SpotRuns(
+        let runs = runs ?? SpotRuns(
             recent: { files.recent(of: $0) },
             prepare: { [unowned host] in await host.prepare($0, glyphs: $1) },
             log: files.log,
@@ -338,6 +339,8 @@ public final class SpotsModel {
             timers: files.timers,
             schedule: files.schedule
         )
+        self.runs = runs
+        toasts = Toasts(clock: runs.clock)
         self.runs.secrets = files.secrets
         self.runs.onReport = { [weak self] id, report in self?.take(report, of: id) }
         self.runs.partsArrival = { [weak self] id, bring in
@@ -378,7 +381,7 @@ public final class SpotsModel {
         do {
             try files.config.begin(enabling: folder.startingSpots())
         } catch {
-            host.notify("Openspot could not save the spots. \(Self.reason(error))")
+            toast(.failure("Openspot could not save the spots. \(Self.reason(error))"))
         }
         await reload()
         if let first = runs.firstLaunchSheet { push(FlowSheet(spot: first)) }
@@ -438,7 +441,7 @@ public final class SpotsModel {
         if let ids, isOnlyNamed { patchEntries(ids) } else { rebuildEntries() }
         readWindows()
         if problems != self.problems, !problems.isEmpty {
-            host.notify(problems.joined(separator: " "))
+            toast(.failure(problems.joined(separator: " ")))
         }
         self.problems = problems
     }
@@ -598,9 +601,8 @@ public final class SpotsModel {
 
     private func take(_ report: SpotRun.Report, of id: String) {
         switch report {
-        case .toast(let text): host.confirm(text)
-        case .failure(let text): host.notify(text)
-        case .failureWithFix(let text, let fix): host.notify(text, fix: fix)
+        case .toast(let note): toast(note, of: note.kind == .failure ? "" : id)
+        case .dropToast(let toast): toasts.drop(toast, of: id)
         case .listChange:
             markFound(id)
             if mayMove(id) { updateVisible() }

@@ -19,7 +19,7 @@ extension SpotsModel {
         switch act {
         case .settings:
             if !isShown { host.show() }
-            if !openSettings(of: entry) { host.notify("\(entry.state.title) has nothing to set.") }
+            if !openSettings(of: entry) { toast(.failure("\(entry.state.title) has nothing to set.")) }
         case .edit:
             if openEdit(of: entry) {
                 if !isShown { host.show() }
@@ -40,7 +40,7 @@ extension SpotsModel {
             do {
                 _ = try await ScriptProcess.output(url: URL(fileURLWithPath: "/usr/bin/env"), arguments: ["open", "-t", path], base: runs.environment)
             } catch {
-                host.notify("Openspot cannot open \(path). \(Self.reason(error))")
+                toast(.failure("Openspot cannot open \(path). \(Self.reason(error))"))
             }
         }
     }
@@ -52,9 +52,9 @@ extension SpotsModel {
             let evidence = await SpotEvidence.read(of: entry.id, runs: runs, stats: files.stats, app: prompt.app)
             let text = prompt.changing(file, failure: entry.failure, evidence: evidence)
             do {
-                host.confirm(try await prompt.copy(text, base: runs.environment))
+                toast(ToastNote(words: try await prompt.copy(text, base: runs.environment)))
             } catch {
-                host.notify("The prompt for \(entry.spot.name) was not copied. \(Self.reason(error))")
+                toast(.failure("The prompt for \(entry.spot.name) was not copied. \(Self.reason(error))"))
             }
         }
     }
@@ -77,9 +77,9 @@ extension SpotsModel {
             if turn == removals { removal = failure == nil || !moves.isEmpty ? Removal(id: id, words: words, moves: moves, secrets: kept) : nil }
             await reload()
             if let failure {
-                host.notify("\(command.name) was not removed. \(failure)")
+                toast(.failure("\(command.name) was not removed. \(failure)"))
             } else {
-                host.confirm("Moved \(words) to the Trash. Press `⌘Z` to put it back.")
+                toast("Moved \(words) to the Trash. Press `⌘Z` to put it back.")
             }
         }
     }
@@ -104,11 +104,11 @@ extension SpotsModel {
         let chosen = selectedEntry?.id
         Task {
             guard await Self.putBack(removal.moves, secrets: removal.secrets, in: files.secrets) else {
-                return host.notify("Openspot cannot put \(removal.words) back, because a file left the Trash. Find it in the Trash, and move it to the spots folder.")
+                return toast(.failure("Openspot cannot put \(removal.words) back, because a file left the Trash. Find it in the Trash, and move it to the spots folder."))
             }
             await reload()
             if selectedEntry?.id == chosen, let place = visible.firstIndex(where: { $0.id == removal.id }) { selected = place }
-            host.confirm("Put \(removal.words) back.")
+            toast("Put \(removal.words) back.")
         }
         return true
     }

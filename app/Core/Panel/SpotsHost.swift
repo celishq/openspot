@@ -6,10 +6,8 @@ public protocol SpotsHost: AnyObject {
     func show()
     func present()
     func takeFocus()
-    func notify(_ text: String)
-    func notify(_ text: String, fix: URL)
-    func confirm(_ text: String)
-    func work(_ text: String)
+    func toast(_ note: ToastNote, of spot: String)
+    func open(_ url: URL)
     func applyConfig(_ config: Config)
     func paint(_ colours: Theme.Colours)
     func layOut(_ layout: Theme.Layout)
@@ -38,6 +36,8 @@ public protocol SpotsHost: AnyObject {
 }
 
 extension SpotsHost {
+    public func toast(_ note: ToastNote, of spot: String) {}
+
     public func change(_ motion: PanelMotion?, _ body: () -> Void, completion: @escaping @MainActor () -> Void, removal: @escaping @MainActor () -> Void) {
         change(motion, body) {
             completion()
