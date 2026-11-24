@@ -83,15 +83,26 @@ extension SpotsModel {
         spot.fileIcon.map(AttachmentChip.Look.file) ?? (spot.symbol.isEmpty ? nil : .symbol(spot.symbol))
     }
 
-    private func settle(_ next: AttachmentStack, motion: PanelMotion?) {
+    private func settle(_ stack: AttachmentStack, motion: PanelMotion?) {
+        var next = stack
+        if !next.isMoving { next.place() }
         guard next != attachments else { return }
-        let before = (isOn: attachments.isOn, chip: attachments.selectedChip)
-        change(isShown ? motion : nil, { attachments = next })
+        let motion = isShown ? motion : nil
+        let turns = attachments.isOn != next.isOn || attachments.selectedChip != next.selectedChip
+        let moves = !next.isMoving && motion != nil && next.layout != attachments.layout
+        if moves { next.isMoving = true }
+        change(motion, {
+            attachments = next
+            if turns { takePreview() }
+        }) { [weak self] in
+            guard moves, var landed = self?.attachments else { return }
+            landed.isMoving = false
+            self?.placeAttachment(landed, .edit)
+        }
         hideAttachments()
-        placeAttachment(motion)
-        guard before.isOn != next.isOn || before.chip != next.selectedChip else { return }
+        guard turns else { return }
         selected = 0
-        updateVisible(holding: motion)
+        showVisible()
     }
 
     func give(to entry: Entry) {
@@ -148,6 +159,11 @@ extension SpotsModel {
         }
     }
 
+    func takePreview() {
+        let shown = shownPreview(of: query)
+        if preview != shown { preview = shown }
+    }
+
     func hold(_ preview: AttachmentPreview?, motion: PanelMotion?) {
         guard preview != self.preview else { return }
         change(isShown ? motion : nil) { self.preview = preview }
@@ -168,10 +184,6 @@ extension SpotsModel {
     func endSpread() {
         attachmentWatch?.cancel()
         attachmentWatch = nil
-    }
-
-    func placeAttachment(_ motion: PanelMotion?) {
-        placeAttachment(attachments, motion)
     }
 
     private func placeAttachment(_ stack: AttachmentStack, _ motion: PanelMotion?) {

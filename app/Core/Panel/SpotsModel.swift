@@ -52,8 +52,7 @@ public final class SpotsModel {
     public var query = "" {
         didSet {
             guard query != oldValue else { return }
-            let shown = shownPreview(of: query)
-            if preview != shown { preview = shown }
+            takePreview()
             if query.trimmingCharacters(in: .whitespaces).isEmpty { noteMiss() }
             selected = 0
             askAnswers()

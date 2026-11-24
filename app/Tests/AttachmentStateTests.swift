@@ -108,6 +108,20 @@ final class AttachmentStateTests: AttachmentCase {
         XCTAssertEqual(host.previewWrites.dropFirst(writes).map(\.depth), [0])
     }
 
+    func testTabWritesThePlacedStackAndThePreviewInOneChange() async throws {
+        try await openWithTab()
+        host.heldEnds = []
+        let changes = host.motions.count
+        let writes = host.previewWrites.count
+
+        XCTAssertTrue(model.handleKey(tab))
+
+        XCTAssertEqual(Array(host.motions.dropFirst(changes)), [.edit])
+        XCTAssertEqual(host.previewWrites.dropFirst(writes).map(\.motion), [.edit])
+        XCTAssertTrue(model.attachments.isMoving)
+        XCTAssertEqual(model.preview?.text, "A")
+    }
+
     func testATapOnTheAttachmentsWorksTheHintOutOnceByTheEndOfThePress() async throws {
         try await openWithTab()
         model.followHint()
