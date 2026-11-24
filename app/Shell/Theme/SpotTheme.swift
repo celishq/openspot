@@ -48,7 +48,7 @@ enum SpotTheme {
     static let chosenRow = 0.1
     static let liftShadowStrength = 0.25
     static let unfocusedCardStrength = 0.35
-    static let attachmentQuietPicture = 0.7
+    static let attachmentQuietPicture = 0.45
     @MainActor static var attachmentQuietFill: Color { highlight.opacity(fill) }
     @MainActor static var attachmentRim: Color { highlight.opacity(selectedFill + fill) }
     @MainActor static var attachmentTileTop: Color { loaded.attachmentTileTop }

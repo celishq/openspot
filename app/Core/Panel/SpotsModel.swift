@@ -52,6 +52,7 @@ public final class SpotsModel {
     public var query = "" {
         didSet {
             guard query != oldValue else { return }
+            hideAttachments()
             if query.trimmingCharacters(in: .whitespaces).isEmpty { noteMiss() }
             selected = 0
             askAnswers()
@@ -73,8 +74,10 @@ public final class SpotsModel {
         didSet {
             let shape = AttachmentShape(attachments.layout)
             if attachmentShape != shape { attachmentShape = shape }
+            hideAttachments()
         }
     }
+    public internal(set) var isAttachmentHidden = false
     @ObservationIgnored var isAttachmentOpen = false
     public private(set) var attachmentShape = AttachmentShape.folded
     public internal(set) var fieldValue = FieldValue() {

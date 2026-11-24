@@ -93,7 +93,7 @@ public struct AttachmentLayout: Equatable, Sendable {
         places.first?.isQuiet ?? false
     }
 
-    public var showsKey: Bool {
+    public var showsHint: Bool {
         isQuiet && places.first?.chip.isLoading == false
     }
 

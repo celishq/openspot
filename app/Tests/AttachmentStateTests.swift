@@ -29,12 +29,27 @@ final class AttachmentStateTests: AttachmentCase {
         XCTAssertEqual(model.selected, 0)
     }
 
-    func testTheFooterNamesNoAttachmentUntilTab() async throws {
+    func testTheFooterOffersTabOnceAnAttachmentIsReady() async throws {
         try await openWithTab()
 
-        XCTAssertFalse(model.hint.contains("Attachment"))
+        XCTAssertTrue(model.hint.hasPrefix("⇥ Attach"))
         XCTAssertTrue(model.handleKey(tab))
         XCTAssertTrue(model.hint.contains("⇥ Next"))
+        XCTAssertFalse(model.hint.contains("⇥ Attach"))
+    }
+
+    func testTypingHidesTheAttachmentsUntilOneIsChosen() async throws {
+        try await openWithTab()
+        XCTAssertFalse(model.isAttachmentHidden)
+
+        model.query = "k"
+        XCTAssertTrue(model.isAttachmentHidden)
+        model.query = ""
+        XCTAssertFalse(model.isAttachmentHidden)
+
+        XCTAssertTrue(model.handleKey(tab))
+        model.query = "k"
+        XCTAssertFalse(model.isAttachmentHidden)
     }
 
     func testTabAndShiftTabTurnTheChipsAndWrap() async throws {

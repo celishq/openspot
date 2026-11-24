@@ -33,11 +33,13 @@ struct SpotAttachmentCard: View, Equatable {
             SpotNativeIcon(path: path, size: SpotTokens.attachmentIcon / IconBody.share)
                 .frame(width: SpotTokens.attachmentCard, height: SpotTokens.attachmentCard)
                 .clipShape(SpotRoundShape(radius: SpotTokens.attachmentCardRadius))
+                .grayscale(isQuiet ? 1 : 0)
                 .opacity(isQuiet ? SpotTheme.attachmentQuietPicture : 1)
         case .file(let file):
             SpotItemIcon(icon: file, glyph: nil, symbol: nil, size: SpotTokens.attachmentIcon / IconBody.share)
                 .frame(width: SpotTokens.attachmentIcon, height: SpotTokens.attachmentIcon)
                 .clipShape(SpotRoundShape(radius: SpotTokens.attachmentIconRadius))
+                .grayscale(isQuiet ? 1 : 0)
                 .opacity(isQuiet ? SpotTheme.attachmentQuietPicture : 1)
         case .symbol(let symbol):
             let tile = SpotRoundShape(radius: SpotTokens.attachmentIconRadius)

@@ -78,9 +78,15 @@ extension SpotsModel {
 
     var attachmentHint: String? {
         guard openSheetID == nil, !isEditing, !attachments.chips.isEmpty else { return nil }
-        guard attachments.isOn else { return nil }
+        guard attachments.isOn else { return attachments.layout.showsHint ? "⇥ Attach" : nil }
         let run = selectedEntry.map { "⏎ \($0.state.title)" }
         return [run, "⇥ Next", "Esc Leave"].compactMap { $0 }.joined(separator: "   ")
+    }
+
+    func hideAttachments() {
+        let isHidden = attachments.layout.isQuiet && !query.isEmpty
+        guard isAttachmentHidden != isHidden else { return }
+        change(isShown ? .fade : nil) { isAttachmentHidden = isHidden }
     }
 
     func showAttachment(holding motion: PanelMotion?) -> [Entry] {

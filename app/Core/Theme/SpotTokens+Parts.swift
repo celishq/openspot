@@ -42,10 +42,6 @@ extension SpotTokens {
     public static var attachmentQuietRadius: CGFloat { attachmentIconRadius * attachmentQuietScale }
     public static var attachmentQuietX: CGFloat { -((attachmentCard - attachmentQuietIcon) / 2 - attachmentInset * attachmentQuietScale) }
     public static var attachmentEdge: CGFloat { (cell - attachmentCard) / 2 }
-    public static var attachmentKeyWidth: CGFloat { attachmentQuietIcon }
-    public static let attachmentKeyGap: CGFloat = 4
-    public static var attachmentKeyX: CGFloat { attachmentQuietX - (attachmentCard - attachmentInset) * attachmentQuietScale - attachmentKeyGap }
-    public static var attachmentKeySlide: CGFloat { attachmentKeyGap + attachmentKeyWidth * 0.6 }
     public static let attachmentCardFade = 0.3
     public static var attachmentSpreadGap: CGFloat { attachmentCard * 0.42 }
     public static var attachmentBadge: CGFloat { (attachmentCard * attachmentCard / 6).squareRoot() }

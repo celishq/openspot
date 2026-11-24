@@ -7,8 +7,6 @@ struct SpotAttachmentStack: View {
     var body: some View {
         let attachments = model.attachments
         ZStack(alignment: .trailing) {
-            SpotAttachmentKey(isQuiet: attachments.layout.isQuiet, isShown: attachments.layout.showsKey)
-                .zIndex(-Double(AttachmentStack.limit * AttachmentStack.limit))
             ForEach(attachments.layout.places, id: \.chip.source) { place in
                 SpotAttachmentCard(chip: place.chip, showsBadge: !place.isQuiet && place.chip.showsKind && (attachments.layout.isSpread || place.depth == 0), isQuiet: place.isQuiet)
                     .equatable()
@@ -24,6 +22,7 @@ struct SpotAttachmentStack: View {
         }
         .frame(width: SpotTokens.attachmentStack(count: AttachmentStack.pile), height: SpotTokens.attachmentCard, alignment: .trailing)
         .compositingGroup()
+        .opacity(model.isAttachmentHidden ? MotionTokens.hiddenOpacity : 1)
         .contentShape(Rectangle())
         .onTapGesture { model.pressAttachment() }
         .accessibilityElement(children: .ignore)
@@ -42,22 +41,6 @@ private struct SpotAttachmentDot: View {
             .offset(y: SpotTokens.attachmentDot + SpotTokens.attachmentDotGap)
             .opacity(isOn ? 1 : MotionTokens.hiddenOpacity)
             .transaction { $0.animation = nil }
-            .allowsHitTesting(false)
-    }
-}
-
-private struct SpotAttachmentKey: View {
-    let isQuiet: Bool
-    let isShown: Bool
-
-    var body: some View {
-        Text(verbatim: "⇥")
-            .font(SpotType.detail)
-            .modifier(SpotSecondaryText())
-            .frame(width: SpotTokens.attachmentKeyWidth, height: SpotTokens.attachmentQuietIcon)
-            .background(SpotRoundShape(radius: SpotTokens.attachmentQuietRadius).fill(SpotTheme.attachmentQuietFill))
-            .offset(x: SpotTokens.attachmentKeyX + (isQuiet ? 0 : SpotTokens.attachmentKeySlide))
-            .opacity(isShown ? 1 : MotionTokens.hiddenOpacity)
             .allowsHitTesting(false)
     }
 }
