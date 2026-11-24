@@ -85,10 +85,12 @@ extension SpotsModel {
     }
 
     public func dragOut(_ items: [SpotItem], of id: String) {
-        guard let sheet = sheets[id] else { return }
-        sheet.dragged(items)
-        let files = Set(sheet.list.shown.filter { $0.file != nil }.map(\.run))
-        if runs.floating.contains(id), !files.isEmpty, files.isSubset(of: items.map(\.run)) { land(id) }
+        asOnePress {
+            guard let sheet = sheets[id] else { return }
+            sheet.dragged(items)
+            let files = Set(sheet.list.shown.filter { $0.file != nil }.map(\.run))
+            if runs.floating.contains(id), !files.isEmpty, files.isSubset(of: items.map(\.run)) { land(id) }
+        }
     }
 
     public func prepareForDrag() {
@@ -99,27 +101,29 @@ extension SpotsModel {
     }
 
     public func review(_ urls: [URL]) {
-        guard let url = urls.first else { return }
-        dragWatch?.cancel()
-        endDrag()
-        finishPick()
-        closeMenu()
-        form = nil
-        closeSheet(moving: isShown)
-        endReview()
-        let folder = folder.url
-        let lock = files.lock
-        let wasShown = isShown
-        reviewRead?.cancel()
-        reviewRead = Task { [weak self] in
-            let review = await Self.review(url, folder, lock)
-            guard !Task.isCancelled, let self, isShown == wasShown, flow.current == nil else { return }
-            switch review {
-            case .success(let review):
-                show(review)
-                if urls.count > 1 { host.notify("Openspot installs one spot at a time.") }
-            case .failure(let error):
-                host.notify(Self.reason(error))
+        asOnePress {
+            guard let url = urls.first else { return }
+            dragWatch?.cancel()
+            endDrag()
+            finishPick()
+            closeMenu()
+            form = nil
+            closeSheet(moving: isShown)
+            endReview()
+            let folder = folder.url
+            let lock = files.lock
+            let wasShown = isShown
+            reviewRead?.cancel()
+            reviewRead = Task { [weak self] in
+                let review = await Self.review(url, folder, lock)
+                guard !Task.isCancelled, let self, isShown == wasShown, flow.current == nil else { return }
+                switch review {
+                case .success(let review):
+                    show(review)
+                    if urls.count > 1 { host.notify("Openspot installs one spot at a time.") }
+                case .failure(let error):
+                    host.notify(Self.reason(error))
+                }
             }
         }
     }

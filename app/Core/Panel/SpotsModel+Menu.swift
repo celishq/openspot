@@ -74,7 +74,9 @@ extension SpotsModel {
     }
 
     public func searchMenu(_ text: String) {
-        menu?.search(text)
+        asOnePress {
+            menu?.search(text)
+        }
     }
 
     public func openMenu(at point: CGPoint) {
