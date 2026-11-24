@@ -3,7 +3,6 @@ import Foundation
 enum WindowCall: NounCall {
     case frame
     case move(WindowMove)
-    case selection
     case app
 
     static let noun = CommandNoun("window", group: .mac, verbs: [
@@ -11,7 +10,6 @@ enum WindowCall: NounCall {
         CommandVerb("move", "frame...", "Moves the front window to a frame, x y width height. 50%, 1/2 or a number from 0 to 1 is a part of the area, and any other number is points. With more frames, it moves to the frame after the one it holds now.", rule: CallRule(use: .screen, used: "moved a window", inShow: .changes("moves a window"))) { words in
             words.none ? nil : WindowMove(words: words.rest).map(Self.move)
         },
-        CommandVerb("selection", "", "Prints the text= selected in the front app, and its app=.", rule: ReadSources.rule) { $0.none ? Self.selection : nil },
         CommandVerb("app", "", "Prints the app= bundle ID, name= and path= of the app in front of Openspot, or nothing.", rule: ReadSources.rule) { $0.none ? Self.app : nil }
     ])
 
@@ -22,7 +20,6 @@ enum WindowCall: NounCall {
             try await Mac.part(mac, "windows").move(move)
             return ""
         }
-        case .selection: ReadSources.work(in: context) { try await $0.selection(asks: $1) }
         case .app: ReadSources.work(in: context) { sources, _ in await sources.app() }
         }
     }

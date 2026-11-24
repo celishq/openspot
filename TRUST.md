@@ -30,7 +30,7 @@ It shows what a spot can do when you add or update it, and shows each use after 
 | `power`     | `power lid-closed`                                                                                                                                              |
 | `timer`     | each call of `timer`                                                                                                                                            |
 | `attachment` | `attachment add`. A spot with it runs when the panel opens, stays off the grid, and puts a value in the panel's field.                                             |
-| `read`      | `browser tab`, `browser tabs`, `finder selection`, `window selection`, `window app`, `access list` and `access ask`. A read from `show` never asks macOS for access, and fails when Openspot doesn't have it yet.                                             |
+| `read`      | `browser tab`, `browser tabs`, `finder selection`, `selection read`, `window app`, `access list` and `access ask`. A read from `show` never asks macOS for access, and fails when Openspot doesn't have it yet.                                             |
 | `network`   | No call. The spot reaches the network.                                                                                                                          |
 | `files`     | No call. The spot writes outside its data folder.                                                                                                               |
 | `account`   | `store publish`. Only a spot of `spots/openspot.spot` can have it; see [The account](#the-account).                                                             |

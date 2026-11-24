@@ -674,6 +674,7 @@
 		A2F389DF7CF4DAC3DD94B63A /* RunChannel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 431EF4EDAEF207B967284C44 /* RunChannel.swift */; };
 		A38513EA23CC448D2C62FE4B /* SpotCache.swift in Sources */ = {isa = PBXBuildFile; fileRef = F45CBB13C0A55E0EDC20E6E4 /* SpotCache.swift */; };
 		A3C681BDC95F170555B2F6FD /* CaptureFileTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = E50E6719EBEC724AB88E711A /* CaptureFileTests.swift */; };
+		A445B887FFDD4D43AC906CAF /* SelectionCall.swift in Sources */ = {isa = PBXBuildFile; fileRef = F824ED317BA3D31A0BB5AAC3 /* SelectionCall.swift */; };
 		A467160A615A07904E0F6AAF /* SpotSurfaceShape.swift in Sources */ = {isa = PBXBuildFile; fileRef = BE349937DD8063F00D305FDA /* SpotSurfaceShape.swift */; };
 		A495011C02FA0C31EF2E4B0E /* RunClock.swift in Sources */ = {isa = PBXBuildFile; fileRef = 55179210AEE82C8FCFF4BEAE /* RunClock.swift */; };
 		A49D805A74202FC00CBD3FF7 /* SheetStreamTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3AD5607F47BCD0BAD71F0BA0 /* SheetStreamTests.swift */; };
@@ -2274,6 +2275,7 @@
 		F70009486AB59B320D3B9046 /* Event.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Event.swift; sourceTree = "<group>"; };
 		F728C6860C0CE384C2E23AB7 /* AppCall.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppCall.swift; sourceTree = "<group>"; };
 		F80C1E926FC7BB5C6B6247A9 /* SpotFloatTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SpotFloatTests.swift; sourceTree = "<group>"; };
+		F824ED317BA3D31A0BB5AAC3 /* SelectionCall.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SelectionCall.swift; sourceTree = "<group>"; };
 		F84CF3184ED56FA56D25C402 /* AppPlaces+Test.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "AppPlaces+Test.swift"; sourceTree = "<group>"; };
 		F88DACD8904B76FD2D7206B0 /* SpotSheetPicture.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SpotSheetPicture.swift; sourceTree = "<group>"; };
 		F894C3208A1981A4A892F11D /* Style.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Style.swift; sourceTree = "<group>"; };
@@ -2720,6 +2722,7 @@
 				B1DDE6398DE8192DE024231B /* ReadRefusal.swift */,
 				8E1FF596D4194B52D993E99D /* ReadSources.swift */,
 				B2E0A06DDEEBF90E281C89A9 /* ReadSources+Call.swift */,
+				F824ED317BA3D31A0BB5AAC3 /* SelectionCall.swift */,
 			);
 			path = Read;
 			sourceTree = "<group>";
@@ -4822,6 +4825,7 @@
 				D4E04DA7FAB75264C5762E37 /* SearchRanks.swift in Sources */,
 				3AE62B958E5D987445A5866F /* SecretStore.swift in Sources */,
 				1F00735B3B5E4167FB8D5FF6 /* SelectCall.swift in Sources */,
+				A445B887FFDD4D43AC906CAF /* SelectionCall.swift in Sources */,
 				C64853D2A051E7BD647354A3 /* SettingCall.swift in Sources */,
 				F892ADDEB6B2BB2A5295DE7D /* SettingCalls.swift in Sources */,
 				BD54B4C6625466F5C5747C24 /* SettingsMode.swift in Sources */,

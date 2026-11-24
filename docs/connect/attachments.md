@@ -84,7 +84,7 @@ esac
   holds no value.
 - The chip shows the value's `icon=`, else the spot's own picture when its `icon` is a file or a picture, else the icon
   of the app in front when the value is of that app, else the spot's symbol.
-- `openspot browser tab`, `openspot finder selection` and `openspot window selection` read what people work on inside Openspot. A source needs
+- `openspot browser tab`, `openspot finder selection` and `openspot selection read` read what people work on inside Openspot. A source needs
   `read` in its `uses`, and `openspot attachment add` takes what it prints:
 
   ```text

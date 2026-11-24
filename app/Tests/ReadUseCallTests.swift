@@ -137,7 +137,7 @@ final class ReadUseCallTests: XCTestCase {
     func testSelectionPrintsTheTextSelectedInTheFrontApp() async throws {
         reads.set(front: "com.apple.Notes", selected: "two\nlines")
 
-        let answer = try await call(["window", "selection"])
+        let answer = try await call(["selection", "read"])
 
         XCTAssertEqual(answer.output, "text=two\\nlines\napp=com.apple.Notes\n")
     }
@@ -162,7 +162,7 @@ final class ReadUseCallTests: XCTestCase {
     func testNothingToReadPrintsNothingAndEndsWell() async throws {
         reads.set(front: "com.apple.Safari", answers: ["com.apple.finder": []], selected: "  \n")
 
-        for source in [["browser", "tab"], ["finder", "selection"], ["window", "selection"]] {
+        for source in [["browser", "tab"], ["finder", "selection"], ["selection", "read"]] {
             let answer = try await call(source)
             XCTAssertEqual([answer.output, answer.errors], ["", ""], source.joined(separator: " "))
             XCTAssertEqual(answer.code, 0, source.joined(separator: " "))
@@ -172,7 +172,7 @@ final class ReadUseCallTests: XCTestCase {
     func testAReadThatIsNotAllowedFailsWithALineThatSaysWhereToAllowIt() async throws {
         reads.set(front: "com.apple.Safari", access: ["com.apple.Safari": .denied, "com.apple.finder": .denied], grant: .unasked, trust: .unasked)
 
-        let answers = [try await call(["browser", "tab"]), try await call(["browser", "tabs"]), try await call(["finder", "selection"]), try await call(["window", "selection"])]
+        let answers = [try await call(["browser", "tab"]), try await call(["browser", "tabs"]), try await call(["finder", "selection"]), try await call(["selection", "read"])]
 
         XCTAssertEqual(answers.map(\.code), [1, 1, 1, 1])
         XCTAssertEqual(answers.map(\.errors), [
@@ -189,9 +189,9 @@ final class ReadUseCallTests: XCTestCase {
 
         let show = try await call(["browser", "tab"], from: spot(), reason: "panel.open")
         let shownTabs = try await call(["browser", "tabs"], from: spot(), reason: "panel.open")
-        let shownSelection = try await call(["window", "selection"], from: spot(), reason: "panel.open")
+        let shownSelection = try await call(["selection", "read"], from: spot(), reason: "panel.open")
         let press = try await call(["browser", "tab"], from: spot())
-        let terminal = try await call(["window", "selection"])
+        let terminal = try await call(["selection", "read"])
 
         XCTAssertEqual([show.code, shownTabs.code, shownSelection.code], [1, 1, 1])
         XCTAssertEqual(show.errors, "Openspot can't read Safari. Allow it in the Attachments spot.\n")
@@ -203,8 +203,8 @@ final class ReadUseCallTests: XCTestCase {
         runs.isCareful = true
         reads.set(front: "com.apple.Notes", selected: "words")
 
-        let refused = try await call(["window", "selection"], from: spot(uses: [.screen]))
-        let allowed = try await call(["window", "selection"], from: spot())
+        let refused = try await call(["selection", "read"], from: spot(uses: [.screen]))
+        let allowed = try await call(["selection", "read"], from: spot())
 
         XCTAssertEqual(refused.code, 1)
         XCTAssertEqual(refused.errors, "Careful mode stopped Reader, because it read what the person works on without `read` in the `uses` of its spot.toml. Add it, or turn Careful mode off.\n")
@@ -250,10 +250,11 @@ final class ReadUseCallTests: XCTestCase {
     }
 
     func testEachReadNeedsTheAppAndNamesItsUse() {
-        for words in [["browser", "tab"], ["browser", "tab", "com.apple.Safari"], ["browser", "tabs"], ["finder", "selection"], ["window", "selection"], ["window", "app"], ["access", "list"], ["access", "ask", "accessibility"]] {
+        for words in [["browser", "tab"], ["browser", "tab", "com.apple.Safari"], ["browser", "tabs"], ["finder", "selection"], ["selection", "read"], ["window", "app"], ["access", "list"], ["access", "ask", "accessibility"]] {
             XCTAssertEqual(SpotUseCall(arguments: words, of: "reader")?.use, .read, words.joined(separator: " "))
             XCTAssertTrue(CommandKind.needsApp(words), words.joined(separator: " "))
         }
         XCTAssertTrue(CommandLineCall(arguments: ["read", "tab"])?.value is CallFault)
+        XCTAssertTrue(CommandLineCall(arguments: ["window", "selection"])?.value is CallFault)
     }
 }

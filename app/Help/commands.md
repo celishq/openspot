@@ -106,7 +106,7 @@ work in a read too. `run` works in a read, but the action it runs can't show a v
 | `openspot browser tab [<bundle id>]` | Prints the `url=`, `title=` and `app=` of the front tab of the browser in front, or of the browser that the bundle ID names, or nothing. |
 | `openspot browser tabs [<bundle id>]` | Prints a record for each tab of each window of the browser in front, or of the one named: `url=`, `title=`, `window=` (1 is the front window), `index=`, `active=` and `app=`. |
 | `openspot finder selection` | Prints a `file=` for each file selected in Finder, and `app=`. |
-| `openspot window selection` | Prints the `text=` selected in the front app, and its `app=`. |
+| `openspot selection read` | Prints the `text=` selected in the front app, and its `app=`. |
 | `openspot window app` | Prints the `app=` bundle ID, `name=` and `path=` of the app in front of Openspot, or nothing. |
 | `openspot clipboard read [--newer <seconds>]` | Prints the text on the clipboard. With `--newer`, it prints it only when Openspot first saw that copy less than the seconds ago. |
 | `openspot access list` | Prints `app=`, `path=` and `access=` for each app that Openspot reads: `allowed`, `denied`, `unasked`, or `unknown` while the app is closed. The record of the selected text has `app=accessibility`. |
