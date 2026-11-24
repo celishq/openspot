@@ -130,7 +130,7 @@ esac
 - `openspot attachment add` takes `file=` once for each file, `url=` or `text=`, with `title=`, the words of the preview,
   `app=`, the bundle ID of the app whose icon the chip shows, and `icon=`, which takes what `icon` in `spot.toml`
   takes. With none of these, it takes them on stdin, as `openspot browser tab` prints them, and adds nothing when stdin
-  holds no value.
+  holds no value. It keeps the first 100,000 bytes of a `url=` or `text=`, and the first 1,000 files.
 - The chip shows the value's `icon=`, else the spot's own picture when its `icon` is a file or a picture, else the icon
   of the app in front when the value is of that app, else the spot's symbol.
 - `openspot browser tab` and `openspot selection read` read what people work on inside Openspot. A source needs

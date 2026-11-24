@@ -13,6 +13,8 @@ enum AttachmentCall: NounCall {
         ) { words in Self.add(words.rest) }
     ])
 
+    static let fileLimit = 1_000
+
     static let oneKind = "`openspot attachment add` takes one kind of value: file= once for each file, url= or text=."
 
     func rule(_ rule: CallRule, spot: String?) -> CallRule {
@@ -62,11 +64,12 @@ enum AttachmentCall: NounCall {
         guard kinds.count == 1, let kind = kinds.first, kind == "file" || values.count == 1 else {
             return { CommandAnswer(errors: "\(oneKind)\n", code: 2) }
         }
+        let kept = kind == "file" ? Array(values.prefix(fileLimit)) : values.map(ReadSources.cut)
         return {
             let value = switch kind {
-            case "url": AttachmentValue(url: values[0], title: title, app: app, icon: icon)
-            case "text": AttachmentValue(text: values[0], title: title, app: app, icon: icon)
-            default: AttachmentValue(files: FileKinds.Disk().read(values), title: title, app: app, icon: icon)
+            case "url": AttachmentValue(url: kept[0], title: title, app: app, icon: icon)
+            case "text": AttachmentValue(text: kept[0], title: title, app: app, icon: icon)
+            default: AttachmentValue(files: FileKinds.Disk().read(kept), title: title, app: app, icon: icon)
             }
             _ = await runs.take(SpotEffect.attachment(value), from: caller)
             return CommandAnswer()

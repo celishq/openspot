@@ -130,6 +130,31 @@ final class AttachmentSourceTests: AttachmentCase {
         try await wait("no chip, since one file is gone") { self.chips.isEmpty }
     }
 
+    func testAnAddKeepsTheFirstBytesOfAText() async throws {
+        try taker(takes: "'text'")
+        try source(adds: "text=\"$(printf '%0\(ReadSources.limit + 10)d' 0)\"")
+
+        await open()
+
+        try await wait("the text") { self.chips.first?.value != nil }
+        XCTAssertEqual(chips.first?.value?.payload, .text(String(repeating: "0", count: ReadSources.limit)))
+    }
+
+    func testAnAddKeepsTheFirstFiles() async throws {
+        let paths = (0...AttachmentCall.fileLimit).map { path("f\($0).mov") }
+        paths.forEach { FileManager.default.createFile(atPath: $0, contents: Data()) }
+        try paths.map { "file=\($0)" }.joined(separator: "\n").write(toFile: path("args"), atomically: true, encoding: .utf8)
+        try taker(takes: "'mov'")
+        try source("finder", adds: "$(cat '\(path("args"))')")
+        host.frontApp = FrontApp(bundleID: "com.apple.finder")
+
+        await open()
+
+        try await wait("the files") { self.chips.first?.value != nil }
+        guard case .files(let files) = chips.first?.value?.payload else { return XCTFail("no files") }
+        XCTAssertEqual(files.paths, Array(paths.prefix(AttachmentCall.fileLimit)))
+    }
+
     func testAValueOfTwoKindsFailsWithExit2() async throws {
         try taker(takes: "'url'")
         try source(adds: "url=https://example.com text=hola")
