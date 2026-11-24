@@ -10,8 +10,31 @@ trap 'rm -f "$found" "$methods" "$presses"' EXIT
 find app/Core -name '*.swift' | sort | while read -r file; do
   awk -v f="$file" '
     function count(s, c,  t) { t = s; return gsub(c, "", t) }
+    function changes(s,  m) {
+      if (s ~ /(^|[^A-Za-z0-9_])change\(/) return 1
+      while (match(s, /[A-Za-z_][A-Za-z0-9_]*\(/)) {
+        m = substr(s, RSTART, RLENGTH - 1)
+        if (m in helper) return 1
+        s = substr(s, RSTART + RLENGTH)
+      }
+      return 0
+    }
+    FNR == NR {
+      if (fdepth > 0) {
+        if ($0 ~ /(^|[^A-Za-z0-9_.])change\([^)]/) helper[fname] = 1
+        fdepth += count($0, "\\{") - count($0, "\\}")
+        next
+      }
+      if (match($0, /func [A-Za-z_][A-Za-z0-9_]*/)) {
+        fname = substr($0, RSTART + 5, RLENGTH - 5)
+        rest = substr($0, RSTART + RLENGTH)
+        fdepth = count(rest, "\\{") - count(rest, "\\}")
+        if (fname != "change" && rest ~ /(^|[^A-Za-z0-9_.])change\([^)]/) helper[fname] = 1
+      }
+      next
+    }
     depth > 0 {
-      if ($0 ~ /(^|[^A-Za-z0-9_])change\(/) print f "\tsetter of " name
+      if (changes($0)) print f "\tsetter of " name
       depth += count($0, "\\{") - count($0, "\\}")
       next
     }
@@ -22,10 +45,10 @@ find app/Core -name '*.swift' | sort | while read -r file; do
     }
     match($0, /(didSet|willSet|(^|[^A-Za-z0-9_])set(\([A-Za-z_]+\))?)[[:space:]]*\{/) {
       rest = substr($0, RSTART)
-      if (rest ~ /(^|[^A-Za-z0-9_])change\(/) print f "\tsetter of " name
+      if (changes(rest)) print f "\tsetter of " name
       depth = count(rest, "\\{") - count(rest, "\\}")
     }
-  ' "$file"
+  ' "$file" "$file"
 done >"$found"
 grep -lE '(extension|class) SpotsModel([^A-Za-z0-9_]|$)' $(find app/Core -name '*.swift' | sort) | xargs awk '
   function flush() {

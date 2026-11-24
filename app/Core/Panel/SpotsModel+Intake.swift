@@ -12,14 +12,14 @@ extension SpotsModel {
         readPaths = paths
         dragRead?.cancel()
         if runs.dragged != FileKinds() { runs.dragged = FileKinds() }
-        if draggedSpot != nil { draggedSpot = nil }
+        if draggedSpot != nil { moveDrop { draggedSpot = nil } }
         guard !paths.isEmpty else { return }
         let kinds = files.kinds
         let folder = folder.url
         dragRead = Task { [weak self] in
             let (kinds, drop) = await Self.read(paths, kinds, folder)
             guard !Task.isCancelled, let self, readPaths == paths else { return }
-            if let drop { draggedSpot = drop } else { runs.dragged = kinds }
+            if let drop { moveDrop { draggedSpot = drop } } else { runs.dragged = kinds }
         }
     }
 
@@ -41,13 +41,13 @@ extension SpotsModel {
         guard paths != dragPaths else { return }
         dragPaths = paths
         read(paths)
-        isPointerOverDrop = host.isPointerOverDrop
+        moveDrop { isPointerOverDrop = host.isPointerOverDrop }
         dragWatch?.cancel()
         dragWatch = Task { [weak self] in
             while self?.host.isMouseDown == true {
                 try? await Task.sleep(for: Self.dragWatchPause)
                 if Task.isCancelled { return }
-                if let self { isPointerOverDrop = host.isPointerOverDrop }
+                if let self { moveDrop { isPointerOverDrop = host.isPointerOverDrop } }
             }
             try? await Task.sleep(for: Self.dropPause)
             guard !Task.isCancelled, let self else { return }
@@ -58,6 +58,12 @@ extension SpotsModel {
 
     public var spotDrop: SpotDrop? {
         isPointerOverDrop ? draggedSpot : nil
+    }
+
+    private func moveDrop(_ write: () -> Void) {
+        let old = spotDrop
+        write()
+        followSpotDrop(from: old)
     }
 
     private func endDrag() {

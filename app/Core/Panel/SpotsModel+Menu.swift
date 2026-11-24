@@ -91,6 +91,7 @@ extension SpotsModel {
     func openMenu(on target: Target) {
         var answers = HookAnswers()
         menuSession = actionMenu(on: target, answers: &answers, asks: true).map { ActionMenuSession(menu: $0, target: target, answers: answers) }
+        foldMenuFoot()
         host.nextFrame { [weak self] in
             guard let self, menuSession?.phase == .opening else { return }
             change(.sheet(isOpen: true), {
@@ -198,9 +199,16 @@ extension SpotsModel {
                 menuSession?.phase = .closing
                 if !keepsFoot, menuContentHeight != 0 { menuContentHeight = 0 }
             }, completion: { [weak self] in
-                if self?.menuSession?.phase == .closing { self?.menuSession = nil }
+                guard self?.menuSession?.phase == .closing else { return }
+                self?.menuSession = nil
+                self?.foldMenuFoot()
             })
         }
+    }
+
+    private func foldMenuFoot() {
+        guard menuSession == nil, menuContentHeight != 0 else { return }
+        change(.sheet(isOpen: false), { menuContentHeight = 0 })
     }
 
     public func pressMenu(row: Int) {

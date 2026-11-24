@@ -172,12 +172,8 @@ public final class SpotsModel {
     @ObservationIgnored var dragRead: Task<Void, Never>?
     @ObservationIgnored var readPaths: [String] = []
     @ObservationIgnored var reviewRead: Task<Void, Never>?
-    public var draggedSpot: SpotDrop? {
-        didSet { followSpotDrop(from: isPointerOverDrop ? oldValue : nil) }
-    }
-    public var isPointerOverDrop = false {
-        didSet { followSpotDrop(from: oldValue ? draggedSpot : nil) }
-    }
+    public var draggedSpot: SpotDrop?
+    public var isPointerOverDrop = false
     public var fieldDrop: SpotDrop?
     public var showsFieldDrop = false
     public var reviewed: ReviewSpot?
@@ -247,7 +243,6 @@ public final class SpotsModel {
             takeShade()
             guard menuSession == nil else { return }
             if menuFrame != nil { menuFrame = nil }
-            if menuContentHeight != 0 { change(.sheet(isOpen: false), { menuContentHeight = 0 }) }
         }
     }
     public private(set) var isMenuOpen = false

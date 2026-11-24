@@ -1,1 +1,0 @@
-app/Core/Panel/SpotsModel.swift	setter of menuSession

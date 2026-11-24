@@ -1496,6 +1496,38 @@ final class SpotsModelTests: XCTestCase {
         XCTAssertEqual(model.menuContentHeight, 0)
     }
 
+    func testAWriteOfTheMenuSessionMakesNoChangeOfItsOwn() async throws {
+        model.placeMenu(try await openWeatherMenu())
+        try await wait("the grow") { model.menuSession?.phase != .opening }
+        XCTAssertGreaterThan(model.menuContentHeight, 0)
+        let changes = host.motions.count
+
+        model.menuSession = nil
+
+        XCTAssertEqual(host.motions.count, changes)
+    }
+
+    func testAMenuThatFoldsUnderAnOpeningSheetShrinksItsFootInAChangeOfItsOwnAtTheEndOfItsClose() async throws {
+        try script("notes", toml: "title = 'Notes'", "printf 'item=a\\ntitle=A\\n'")
+        model.placeMenu(try await openWeatherMenu())
+        try await wait("the grow") { model.menuSession?.phase != .opening }
+        host.heldEnds = []
+
+        model.open("notes")
+        try await wait("the open motion") { model.transition.phase == .opening }
+        XCTAssertGreaterThan(model.menuContentHeight, 0)
+        let writes = host.menuFootWrites.count
+        while let end = host.heldEnds?.first {
+            host.heldEnds?.removeFirst()
+            end()
+        }
+
+        XCTAssertNil(model.menuSession)
+        XCTAssertEqual(model.menuContentHeight, 0)
+        XCTAssertEqual(host.menuFootWrites.dropFirst(writes).map(\.motion), [.sheet(isOpen: false)])
+        XCTAssertEqual(host.menuFootWrites.dropFirst(writes).map(\.depth), [0])
+    }
+
     func testTheBackdropUnderTheMenuGoesWhenAMenuWithNoRowsTakesThePlaceOfAClosingOne() async throws {
         let frame = try await openWeatherMenu()
         model.placeMenu(frame)
