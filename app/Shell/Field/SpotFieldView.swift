@@ -19,10 +19,10 @@ struct SpotFieldView: View {
             if isGlass {
                 glass
                     .modifier(FieldPlace(isShown: model.isShown))
-                    .morph(showsField ? 1 : 0, opacity: { SheetMorph.sheetLook(at: $0) })
+                    .morph(showsField ? 1 : 0, opacity: { SheetMorph.sheetOpacity(at: $0) })
             } else {
                 searchField
-                    .morph(showsField ? 1 : 0, opacity: { SheetMorph.sheetLook(at: $0) })
+                    .morph(showsField ? 1 : 0, opacity: { SheetMorph.sheetOpacity(at: $0) })
                     .allowsHitTesting(showsField && !model.isEditing)
                 promptLayer
                     .modifier(SpotFaded())
@@ -171,7 +171,7 @@ struct SpotFieldView: View {
             .frame(height: SpotTokens.cell)
             .offset(x: left, y: top)
             .frame(width: SpotTokens.panelWidth, height: SpotTokens.panelHeight, alignment: .topLeading)
-            .morph(showsField ? 1 : 0, opacity: { SheetMorph.sheetLook(at: $0) })
+            .morph(showsField ? 1 : 0, opacity: { SheetMorph.sheetOpacity(at: $0) })
             .modifier(SpotShownFade(
                 isShown: model.isShown,
                 hiddenScale: MotionTokens.hiddenScale,
@@ -204,7 +204,7 @@ struct SpotFieldView: View {
         let drop = model.fieldTop.fieldY - (SpotTokens.cell - SpotTokens.listRow) / 2
         return { progress in
             let words = CGRect(x: SpotTokens.halo, y: rest + drop * CGFloat(progress), width: SpotTokens.gridWidth, height: line)
-            return morph.crossing(of: words, header: header, at: progress)
+            return morph.wordsOpacity(of: words, header: header, at: progress)
         }
     }
 
@@ -224,7 +224,7 @@ struct SpotFieldView: View {
                 width: rest.width + (row.width - rest.width) * t,
                 height: rest.height + (row.height - rest.height) * t
             )
-            return morph.fieldGlass(of: field, at: progress)
+            return morph.fieldGlassOpacity(of: field, at: progress)
         }
     }
 

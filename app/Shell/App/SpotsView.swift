@@ -45,7 +45,7 @@ struct SpotsView: View {
             .modifier(GridEdgeScroll(model: model, scroll: $scroll))
             .modifier(SpotScrollEdgeTracker(edges: Binding(get: { fade.edges }, set: { fade.edges = $0 })))
             .modifier(GridFadeMask(fade: fade, height: cardHeight))
-            .fade(coversGrid ? 0 : 1) { SheetMorph.sheetLook(at: $0) }
+            .fade(coversGrid ? 0 : 1) { SheetMorph.sheetOpacity(at: $0) }
             .modifier(PanelSpan(panels: model.panels))
             SpotHintLine(model: model, surfaceIsOut: surfaceIsOut, motion: motion)
                 .modifier(SpotShownFade(isShown: model.isShown))

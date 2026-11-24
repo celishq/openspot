@@ -11,19 +11,19 @@ final class SheetMorphTests: XCTestCase {
     }
 
     func testTheCardsLookIsGoneHalfWayAndTheSheetsLookStartsAtAFifth() {
-        XCTAssertEqual(SheetMorph.cardLook(at: 0), 1)
-        XCTAssertGreaterThan(SheetMorph.cardLook(at: 0.4), 0)
-        XCTAssertEqual(SheetMorph.cardLook(at: 0.5), 0)
-        XCTAssertEqual(SheetMorph.sheetLook(at: 0.2), 0)
-        XCTAssertGreaterThan(SheetMorph.sheetLook(at: 0.25), 0)
-        XCTAssertEqual(SheetMorph.sheetLook(at: 1), 1)
+        XCTAssertEqual(SheetMorph.cardOpacity(at: 0), 1)
+        XCTAssertGreaterThan(SheetMorph.cardOpacity(at: 0.4), 0)
+        XCTAssertEqual(SheetMorph.cardOpacity(at: 0.5), 0)
+        XCTAssertEqual(SheetMorph.sheetOpacity(at: 0.2), 0)
+        XCTAssertGreaterThan(SheetMorph.sheetOpacity(at: 0.25), 0)
+        XCTAssertEqual(SheetMorph.sheetOpacity(at: 1), 1)
     }
 
     func testTheContentsLookIsNoneAtTheStartAllAtTheEndAndNeverFallsOnTheWay() {
         for isOpen in [true, false] {
-            XCTAssertEqual(SheetMorph.contentLook(at: 0, isOpen: isOpen), 0)
-            XCTAssertEqual(SheetMorph.contentLook(at: 1, isOpen: isOpen), 1)
-            let looks = (0...1000).map { SheetMorph.contentLook(at: Double($0) / 1000, isOpen: isOpen) }
+            XCTAssertEqual(SheetMorph.contentOpacity(at: 0, isOpen: isOpen), 0)
+            XCTAssertEqual(SheetMorph.contentOpacity(at: 1, isOpen: isOpen), 1)
+            let looks = (0...1000).map { SheetMorph.contentOpacity(at: Double($0) / 1000, isOpen: isOpen) }
             XCTAssertTrue(zip(looks, looks.dropFirst()).allSatisfy { $0 <= $1 }, "isOpen \(isOpen)")
         }
     }
@@ -31,14 +31,14 @@ final class SheetMorphTests: XCTestCase {
     func testTheContentsLookOnACloseShowsMoreThanOnAnOpenAtTheSameProgress() {
         for step in 1..<100 {
             let progress = Double(step) / 100
-            XCTAssertGreaterThan(SheetMorph.contentLook(at: progress, isOpen: false), SheetMorph.contentLook(at: progress, isOpen: true), "at \(progress)")
+            XCTAssertGreaterThan(SheetMorph.contentOpacity(at: progress, isOpen: false), SheetMorph.contentOpacity(at: progress, isOpen: true), "at \(progress)")
         }
     }
 
     func testTheTwoLooksShowTogetherOnlyBetweenAFifthAndAHalf() {
         for step in 0...100 {
             let progress = Double(step) / 100
-            let both = SheetMorph.cardLook(at: progress) * SheetMorph.sheetLook(at: progress) > 0
+            let both = SheetMorph.cardOpacity(at: progress) * SheetMorph.sheetOpacity(at: progress) > 0
             XCTAssertEqual(both, progress > 0.2 && progress < 0.5, "at \(progress)")
         }
     }
@@ -52,48 +52,48 @@ final class SheetMorphTests: XCTestCase {
 
     func testAPartWithNoPlaceOnTheCardShowsOnlyOnceTheShapeHoldsAllOfIt() {
         let words = CGRect(x: 57, y: 13, width: 62, height: 16)
-        XCTAssertEqual(morph.shown(words, at: 0), 0)
-        XCTAssertEqual(morph.shown(words, at: 1), 1)
+        XCTAssertEqual(morph.edgeOpacity(of: words, at: 0), 0)
+        XCTAssertEqual(morph.edgeOpacity(of: words, at: 1), 1)
         for step in 0...100 {
             let progress = Double(step) / 100
             let room = morph.size(at: progress)
-            if room.width < words.maxX || room.height < words.maxY { XCTAssertEqual(morph.shown(words, at: progress), 0, "at \(progress)") }
+            if room.width < words.maxX || room.height < words.maxY { XCTAssertEqual(morph.edgeOpacity(of: words, at: progress), 0, "at \(progress)") }
         }
     }
 
     func testARowAsWideAsTheSheetShowsWholeWhenTheSheetIsOpen() {
         let row = CGRect(x: 13, y: 61, width: 263, height: 40)
-        XCTAssertEqual(morph.shown(row, at: 1), 1)
-        XCTAssertEqual(morph.shown(row, at: 0.9), 0)
+        XCTAssertEqual(morph.edgeOpacity(of: row, at: 1), 1)
+        XCTAssertEqual(morph.edgeOpacity(of: row, at: 0.9), 0)
     }
 
     func testAPartThatGrowsInPlaceNeverCrossesTheShapesEdge() {
         let button = CGRect(x: 240, y: 13, width: 36, height: 36)
         for step in 0...100 {
             let progress = Double(step) / 100
-            let scale = CGFloat(morph.growth(of: button, at: progress))
+            let scale = CGFloat(morph.middleOpacity(of: button, at: progress))
             let room = morph.size(at: progress)
             guard scale > 0 else { continue }
             XCTAssertLessThanOrEqual(button.midX + button.width / 2 * scale, room.width + 0.001, "at \(progress)")
             XCTAssertLessThanOrEqual(button.midY + button.height / 2 * scale, room.height + 0.001, "at \(progress)")
         }
-        XCTAssertEqual(morph.growth(of: button, at: 1), 1)
+        XCTAssertEqual(morph.middleOpacity(of: button, at: 1), 1)
     }
 
     func testTheFieldsGlassShowsWhileAnyEdgeLiesOutsideTheShapeAndIsGoneOnceTheShapeHoldsItByAMargin() {
         let margin = SheetMorph.clearance
         let field = CGRect(x: 90, y: 90, width: 289, height: 52)
         let row = CGRect(x: 90 + margin, y: 150, width: 289 - 2 * margin, height: 40)
-        XCTAssertEqual(morph.fieldGlass(of: field, at: 0), 1)
-        XCTAssertEqual(morph.fieldGlass(of: field, at: 1), 1)
-        XCTAssertEqual(morph.fieldGlass(of: row, at: 1), 0)
-        XCTAssertEqual(morph.fieldGlass(of: row.insetBy(dx: -margin / 2, dy: 0), at: 1), 0.5, accuracy: 0.001)
+        XCTAssertEqual(morph.fieldGlassOpacity(of: field, at: 0), 1)
+        XCTAssertEqual(morph.fieldGlassOpacity(of: field, at: 1), 1)
+        XCTAssertEqual(morph.fieldGlassOpacity(of: row, at: 1), 0)
+        XCTAssertEqual(morph.fieldGlassOpacity(of: row.insetBy(dx: -margin / 2, dy: 0), at: 1), 0.5, accuracy: 0.001)
     }
 
     func testTheFieldsGlassIsGoneThroughASheetThatGrowsFromTheField() {
         let fromField = SheetMorph(card: CGRect(x: 90, y: 90, width: 289, height: 52), sheet: CGRect(x: 90, y: 90, width: 289, height: 430), source: .field)
         for step in 0...10 {
-            XCTAssertEqual(fromField.fieldGlass(of: CGRect(x: 90, y: 90, width: 289, height: 52), at: Double(step) / 10), 0)
+            XCTAssertEqual(fromField.fieldGlassOpacity(of: CGRect(x: 90, y: 90, width: 289, height: 52), at: Double(step) / 10), 0)
         }
     }
 
@@ -105,18 +105,18 @@ final class SheetMorphTests: XCTestCase {
             let corner = morph.origin(at: progress)
             let placed = header.offsetBy(dx: corner.x, dy: corner.y)
             if words(progress).minY < placed.maxY, words(progress).maxY > placed.minY {
-                XCTAssertEqual(morph.crossing(of: words(progress), header: header, at: progress), 0, "at \(progress)")
+                XCTAssertEqual(morph.wordsOpacity(of: words(progress), header: header, at: progress), 0, "at \(progress)")
             }
         }
-        XCTAssertEqual(morph.crossing(of: words(0), header: header, at: 0), 1)
+        XCTAssertEqual(morph.wordsOpacity(of: words(0), header: header, at: 0), 1)
     }
 
     func testAFieldSourceShowsNoLookOfItsOwnWhileACardShowsItsLookUntilHalfWay() {
         let field = SheetMorph(card: CGRect(x: 24, y: 24, width: 289, height: 52), sheet: CGRect(x: 24, y: 24, width: 289, height: 430), source: .field)
 
-        XCTAssertEqual(field.sourceLook(at: 0), 0)
-        XCTAssertEqual(morph.sourceLook(at: 0), 1)
-        XCTAssertEqual(morph.sourceLook(at: 0.5), 0)
+        XCTAssertEqual(field.sourceOpacity(at: 0), 0)
+        XCTAssertEqual(morph.sourceOpacity(at: 0), 1)
+        XCTAssertEqual(morph.sourceOpacity(at: 0.5), 0)
     }
 
     func testTheFieldsWordsStayWholeOverAHeaderThatHasNotFadedInYet() {
@@ -126,7 +126,7 @@ final class SheetMorphTests: XCTestCase {
 
         for step in 0...100 {
             let progress = Double(step) / 100
-            XCTAssertEqual(field.crossing(of: words, header: header, at: progress), 1 - SheetMorph.sheetLook(at: progress), accuracy: 0.001, "at \(progress)")
+            XCTAssertEqual(field.wordsOpacity(of: words, header: header, at: progress), 1 - SheetMorph.sheetOpacity(at: progress), accuracy: 0.001, "at \(progress)")
         }
     }
 

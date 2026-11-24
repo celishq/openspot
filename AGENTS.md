@@ -200,10 +200,10 @@ takes its look from the surface's progress, by `SheetMorph`, and keeps no curve 
 - A sheet opens and closes by one rule, whatever its source (`SheetMorph.Source`): a card in sight, or the field for any
   other sheet. The source shows its own look and words, and they fade over the first half of the motion. The sheet's
   content, its title too, fades in from `MotionTokens.contentStart`, softened by `MotionTokens.contentSoftness`, and fades
-  out as the progress itself, so a close takes about 125 ms from 90% to 5% (`SheetMorph.contentLook(at:isOpen:)`). No part
+  out as the progress itself, so a close takes about 125 ms from 90% to 5% (`SheetMorph.contentOpacity(at:isOpen:)`). No part
   pops in when the shape has room for it.
 - The field's glass lies uncut under the sheet's glass, drawn by a second `SpotFieldView` below the sheet. It fades once the
-  sheet's moving shape holds it by a margin (`SheetMorph.fieldGlass`, `SheetMorph.clearance`), so one glass shape shows and no
+  sheet's moving shape holds it by a margin (`SheetMorph.fieldGlassOpacity`, `SheetMorph.clearance`), so one glass shape shows and no
   glass is cut.
 - The blur's foot is the lower of the moving shape's foot and the grid's foot, which reaches the sheet's foot while the
   grid fades. The footer sits on it, and a grid card has faded by the time it reaches the card (`PanelFoot`).

@@ -37,7 +37,7 @@ struct SpotSelectionRing<Edge: InsettableShape>: ViewModifier {
     private var ring: some View {
         let stroke = shape.strokeBorder(SpotTheme.accent, lineWidth: width)
         if let progress {
-            stroke.morph(progress, opacity: { [isSelected] in isSelected ? SheetMorph.cardLook(at: $0) : 0 })
+            stroke.morph(progress, opacity: { [isSelected] in isSelected ? SheetMorph.cardOpacity(at: $0) : 0 })
         } else {
             stroke.opacity(isSelected ? 1 : MotionTokens.hiddenOpacity)
         }
