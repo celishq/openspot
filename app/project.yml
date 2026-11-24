@@ -254,6 +254,7 @@ targets:
     sources:
       - path: Tests
       - path: Shell/Surface/SpotSpring.swift
+      - path: Shell/Surface/SpotMotion.swift
       - path: Core/Run/InlineScript.js
         buildPhase: resources
     dependencies:

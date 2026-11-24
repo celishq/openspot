@@ -68,8 +68,7 @@ final class SpotSpringTests: XCTestCase {
     }
 
     private func plainSpring(duration: Double, bounce: Double) -> Animation {
-        let spring: (Spring, TimeInterval) -> Animation = Animation.spring
-        return spring(Spring(duration: duration, bounce: bounce), 0)
+        SpotMotion.plainSpring(duration: duration, bounce: bounce)
     }
 
     private func spotSpring(duration: Double, bounce: Double) -> Animation {
