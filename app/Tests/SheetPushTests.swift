@@ -85,4 +85,52 @@ final class SheetPushTests: XCTestCase {
         XCTAssertEqual(field.fade(of: below, share: 0.46), 1, accuracy: 0.001)
         XCTAssertEqual(field.fade(of: card(row: 0, column: 0), share: 0.5), 0.5, accuracy: 0.001)
     }
+    func testACardThatHasFadedHoldsAtThePlaceWhereItsFadeEnded() {
+        let above = card(row: 0, column: 1)
+        let hidden = CGSize(width: 0, height: -132)
+
+        XCTAssertEqual(push.fade(of: above, movedBy: hidden) ?? -1, 1, accuracy: 0.000001)
+        assertSize(push.pose(of: above, movedBy: CGSize(width: 0, height: -140)), hidden)
+        assertSize(push.pose(of: above, movedBy: CGSize(width: 0, height: -152)), hidden)
+    }
+
+    func testACardOnItsWayBackStartsFromItsHiddenPlaceAndTravelsAsBeforeOnceSeen() {
+        let above = card(row: 0, column: 1)
+        for height in stride(from: 0.0, to: -131.9, by: -6.5) {
+            let moved = CGSize(width: 0, height: height)
+            XCTAssertLessThan(push.fade(of: above, movedBy: moved) ?? 1, 1)
+            XCTAssertEqual(push.pose(of: above, movedBy: moved), moved)
+        }
+        assertSize(push.pose(of: above, movedBy: CGSize(width: 0, height: -132)), CGSize(width: 0, height: -132))
+    }
+
+    func testACardHiddenFromTheStartHoldsAtItsCell() {
+        let low = SheetPush(open: push.open, sheet: push.sheet, window: CGRect(x: -24, y: 50, width: 300, height: 600))
+        let above = card(row: 0, column: 1)
+
+        XCTAssertEqual(low.fade(of: above, movedBy: .zero), 1)
+        XCTAssertEqual(low.pose(of: above, movedBy: CGSize(width: 0, height: -100)), .zero)
+    }
+
+    func testACardWithNoFadeOfItsOwnShowsWhereItMoved() {
+        let tall = SheetPush(open: push.open, sheet: CGRect(x: 75, y: 0, width: 64, height: 300), window: push.window)
+        let moved = CGSize(width: 0, height: -40)
+
+        XCTAssertEqual(tall.pose(of: card(row: 1, column: 0), movedBy: moved), moved)
+        XCTAssertEqual(SheetPush(open: nil, sheet: push.sheet, window: push.window).pose(of: card(row: 2, column: 0), movedBy: moved), moved)
+    }
+
+    func testTheRuleOfClicksTakesNoClickOnlyAtAFullFade() {
+        let above = card(row: 0, column: 1)
+
+        XCTAssertTrue(SheetPush.takesClicks(atFade: SheetPush.fade(of: above, in: push, movedBy: CGSize(width: 0, height: -60), share: 1)))
+        XCTAssertFalse(SheetPush.takesClicks(atFade: SheetPush.fade(of: above, in: push, movedBy: CGSize(width: 0, height: -140), share: 1)))
+        XCTAssertFalse(SheetPush.takesClicks(atFade: SheetPush.fade(of: above, in: nil, movedBy: .zero, share: 1)))
+        XCTAssertTrue(SheetPush.takesClicks(atFade: SheetPush.fade(of: above, in: nil, movedBy: .zero, share: 0)))
+    }
+
+    private func assertSize(_ size: CGSize, _ expected: CGSize, line: UInt = #line) {
+        XCTAssertEqual(size.width, expected.width, accuracy: 0.000001, line: line)
+        XCTAssertEqual(size.height, expected.height, accuracy: 0.000001, line: line)
+    }
 }

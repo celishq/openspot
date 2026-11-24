@@ -13,6 +13,7 @@ struct SpotMedia: View {
     @State private var frames: PictureFrames?
     @Environment(\.spotIsShown) private var isShown
     @Environment(\.spotMoves) private var moves
+    @Environment(\.spotViewPlace) private var place
 
     private var kind: String {
         (URL(string: source)?.path ?? source).split(separator: ".").last.map { $0.lowercased() } ?? ""
@@ -20,7 +21,7 @@ struct SpotMedia: View {
 
     var body: some View {
         if let frames {
-            SpotMovingPicture(frames: frames, gravity: .resizeAspect, isPlaying: isShown && moves)
+            SpotMovingPicture(frames: frames, gravity: .resizeAspect, isPlaying: place.plays(isShown: isShown, moves: moves))
                 .aspectRatio(frames.size, contentMode: .fit)
                 .frame(maxWidth: frames.size.width)
                 .clipShape(Self.edge)

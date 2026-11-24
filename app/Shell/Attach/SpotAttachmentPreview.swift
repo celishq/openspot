@@ -24,7 +24,7 @@ struct SpotAttachmentPreview: View {
             .padding(.bottom, SpotTokens.attachmentValueFoot)
             .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
         }
-        .frame(width: SpotFieldView.rect.width, height: max(model.fieldRoom, SpotTokens.attachmentValueRoom(lines: 0)), alignment: .top)
+        .frame(width: SpotFieldView.rect.width, height: SpotTokens.attachmentValueRoom(lines: SpotTokens.previewLines), alignment: .top)
     }
 
     private func words(of preview: AttachmentPreview) -> some View {

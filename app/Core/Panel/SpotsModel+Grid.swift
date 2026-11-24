@@ -2,12 +2,14 @@ import Foundation
 
 extension SpotsModel {
     public func press(_ key: GlobalKey) {
-        if confirming == key, runConfirmed() { return }
-        if confirmWords(of: key) != nil, showCard(key.spot) {
-            confirming = key
-            return
+        asOnePress {
+            if confirming == key, runConfirmed() { return }
+            if confirmWords(of: key) != nil, showCard(key.spot) {
+                confirming = key
+                return
+            }
+            run(key)
         }
-        run(key)
     }
 
     private func confirmWords(of key: GlobalKey) -> String? {
@@ -74,17 +76,23 @@ extension SpotsModel {
         isMenuOpen && openSheetID != nil
     }
 
+    public func marksMenu(ofCard index: Int) -> Bool {
+        index == selected && openSheetID == nil
+    }
+
     public func focus(ofCard index: Int) -> CardFocus {
-        isMenuGrown && openSheetID == nil && index == selected ? .focused : .none
+        marksMenu(ofCard: index) && isMenuGrown ? .focused : .none
     }
 
     public func tap(_ id: String, opening: Bool = false) {
-        guard !menuOwnsPointer, let position = visible.firstIndex(where: { $0.id == id }) else { return }
-        selected = position
-        if opening, openSelectedSettings() { return }
-        guard !isEditing else { return }
-        guard openSheetID == nil else { return runSelectedItem() }
-        runShown(visible[position])
+        asOnePress {
+            guard !menuOwnsPointer, let position = visible.firstIndex(where: { $0.id == id }) else { return }
+            selected = position
+            if opening, openSelectedSettings() { return }
+            guard !isEditing else { return }
+            guard openSheetID == nil else { return runSelectedItem() }
+            runShown(visible[position])
+        }
     }
 
     public func setLevel(_ id: String, to value: Double) {
@@ -128,16 +136,18 @@ extension SpotsModel {
     }
 
     public func press(_ id: String) {
-        guard let entry = entry(id) else { return }
-        if let sheet = sheets[id], sheet.awaitsAnswer {
-            sheet.afterAnswer { [weak self] in self?.press(id) }
-            return
+        asOnePress {
+            guard let entry = entry(id) else { return }
+            if let sheet = sheets[id], sheet.awaitsAnswer {
+                sheet.afterAnswer { [weak self] in self?.press(id) }
+                return
+            }
+            guard entry.kind.opensSheet else {
+                run(entry)
+                return
+            }
+            presentSheet(of: id) { host.show() }
         }
-        guard entry.kind.opensSheet else {
-            run(entry)
-            return
-        }
-        presentSheet(of: id) { host.show() }
     }
 
 

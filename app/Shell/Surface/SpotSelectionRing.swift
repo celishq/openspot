@@ -8,12 +8,28 @@ struct SpotSelectionRing<Edge: InsettableShape>: ViewModifier {
     let shape: Edge
     var width = Self.width
     var progress: Double?
-    var marksMenu = false
+    var marksMenu: Bool?
 
+    @ViewBuilder
     func body(content: Content) -> some View {
-        content.overlay(ring.allowsHitTesting(false))
-        .transformAnchorPreference(key: SpotMenuAnchor.self, value: .bounds) { item, bounds in
-            if isSelected, marksMenu { item = SpotMenuAnchor.Item(bounds: bounds) }
+        if let marksMenu {
+            content.overlay(ring.allowsHitTesting(false))
+                .background(MenuMark(isOn: marksMenu))
+        } else {
+            content.overlay(ring.allowsHitTesting(false))
+        }
+    }
+
+    private struct MenuMark: View {
+        let isOn: Bool
+
+        @ViewBuilder
+        var body: some View {
+            if isOn {
+                Color.clear.anchorPreference(key: SpotMenuAnchor.self, value: .bounds) { SpotMenuAnchor.Item(bounds: $0) }
+            } else {
+                Color.clear
+            }
         }
     }
 
@@ -21,7 +37,7 @@ struct SpotSelectionRing<Edge: InsettableShape>: ViewModifier {
     private var ring: some View {
         let stroke = shape.strokeBorder(SpotTheme.accent, lineWidth: width)
         if let progress {
-            stroke.morph(progress, opacity: { [isSelected] in isSelected ? SheetMorph.cardLook(at: $0) : 0 })
+            stroke.morph(progress, opacity: { [isSelected] in isSelected ? SheetMorph.cardOpacity(at: $0) : 0 })
         } else {
             stroke.opacity(isSelected ? 1 : MotionTokens.hiddenOpacity)
         }

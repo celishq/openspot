@@ -45,18 +45,19 @@ public final class SpotsModel {
             spotListIsStale = true
             storeCards = nil
             askAnswers()
-            updateVisible()
+            takePreview()
+            showVisible()
             prepareCardGlyphs()
         }
     }
     public var query = "" {
         didSet {
             guard query != oldValue else { return }
-            hideAttachments()
+            takePreview()
             if query.trimmingCharacters(in: .whitespaces).isEmpty { noteMiss() }
             selected = 0
             askAnswers()
-            updateVisible()
+            showVisible()
             spanBackdrop()
         }
     }
@@ -76,9 +77,13 @@ public final class SpotsModel {
             if isFieldCovered != covered { isFieldCovered = covered }
             let word = attachments.isOn ? SearchPrompt.actions : SearchPrompt.grid
             if promptWord != word { promptWord = word }
-            hideAttachments()
+            if attachments.selectedChip != oldValue.selectedChip {
+                previewBuilds += 1
+                chipPreview = attachments.selectedChip.flatMap { chip in chip.value.map { AttachmentPreview($0) } ?? AttachmentPreview(state: chip) }
+            }
         }
     }
+    @ObservationIgnored var chipPreview: AttachmentPreview?
     public internal(set) var isAttachmentHidden = false
     @ObservationIgnored var isAttachmentOpen = false
     public private(set) var isFieldCovered = false
@@ -94,6 +99,7 @@ public final class SpotsModel {
     @ObservationIgnored var keyFrames: [String: String] = [:]
     @ObservationIgnored var spotListBuilds = 0
     @ObservationIgnored var visibleUpdates = 0
+    @ObservationIgnored var previewBuilds = 0
     @ObservationIgnored var missedSearch = MissedSearch()
     var answerMatches: AnswerMatches {
         runs.answerMatches
@@ -150,10 +156,13 @@ public final class SpotsModel {
                 openSheetID = shown
                 recordAskedField()
                 takeMode()
-                if shown != nil, followsHint { takeSheetHint(HintWords(hint)) }
             }
-            let opening = transition.phase == .opening ? transition.id : nil
-            if opening != (oldValue.phase == .opening ? oldValue.id : nil) { runs.opening.moving = opening }
+            let moving = transition.isMoving ? transition.id : nil
+            if moving != (oldValue.isMoving ? oldValue.id : nil) {
+                runs.opening.moving = moving
+            } else if moving != nil, transition.phase != oldValue.phase {
+                runs.opening.restart()
+            }
         }
     }
     @ObservationIgnored public var closingPick: (item: SpotItem, entry: Entry)?
@@ -163,17 +172,21 @@ public final class SpotsModel {
     @ObservationIgnored var dragRead: Task<Void, Never>?
     @ObservationIgnored var readPaths: [String] = []
     @ObservationIgnored var reviewRead: Task<Void, Never>?
-    public var draggedSpot: SpotDrop? {
-        didSet { followSpotDrop(from: isPointerOverDrop ? oldValue : nil) }
-    }
-    public var isPointerOverDrop = false {
-        didSet { followSpotDrop(from: oldValue ? draggedSpot : nil) }
-    }
+    public var draggedSpot: SpotDrop?
+    public var isPointerOverDrop = false
     public var fieldDrop: SpotDrop?
     public var showsFieldDrop = false
     public var reviewed: ReviewSpot?
     public var isFirstLaunch = false
-    public var isShown = false
+    public var isShown = false {
+        didSet {
+            takeCardsPlay()
+            if isShown, !oldValue { startShowMotion() }
+        }
+    }
+    @ObservationIgnored var showMotion: Task<Void, Never>?
+    @ObservationIgnored var showLength: TimeInterval?
+    @ObservationIgnored var heldArrivals: [(value: AttachmentValue, id: String)] = []
     public var isWarming = false
     public var isOpenForDrag = false
     public var isSettlingDrop = false
@@ -208,10 +221,14 @@ public final class SpotsModel {
         guard recordsField else { return }
         keys.inputSourceChanged()
     }
-    public internal(set) var mode = PanelMode.grid
+    public internal(set) var mode = PanelMode.grid {
+        didSet { takeCardsPlay() }
+    }
+    public private(set) var cardsPlay = false
 
-    public var cardsMove: Bool {
-        isShown && mode == .grid
+    private func takeCardsPlay() {
+        let next = isShown && mode == .grid
+        if next != cardsPlay { cardsPlay = next }
     }
     @ObservationIgnored private var problems: [String] = []
     public internal(set) var menuSession: ActionMenuSession? {
@@ -226,7 +243,6 @@ public final class SpotsModel {
             takeShade()
             guard menuSession == nil else { return }
             if menuFrame != nil { menuFrame = nil }
-            if menuContentHeight != 0 { change(.sheet(isOpen: false), { menuContentHeight = 0 }) }
         }
     }
     public private(set) var isMenuOpen = false
@@ -245,6 +261,8 @@ public final class SpotsModel {
     @ObservationIgnored var hintIsForEdit = false
     @ObservationIgnored var followsHint = false
     @ObservationIgnored var hintTakes = 0
+    @ObservationIgnored var hintIsStale = false
+    @ObservationIgnored var pressDepth = 0
     public var form: FormSession? {
         didSet {
             let rect = form.map { SpotTokens.formRect($0.draft.form) }
@@ -446,7 +464,8 @@ public final class SpotsModel {
         endEditing(moving: false)
         if openSheetID != nil { closeSheet(moving: false) }
         host.show()
-        query = visible.contains { $0.id == id } || cards.filter(\.isOnGrid).contains { $0.id == id } ? "" : entry.state.title
+        takeQuery(visible.contains { $0.id == id } || cards.filter(\.isOnGrid).contains { $0.id == id } ? "" : entry.state.title)
+        hideAttachments()
         selected = visible.firstIndex { $0.id == id } ?? 0
         return true
     }
@@ -521,27 +540,32 @@ public final class SpotsModel {
     }
 
     public func panelWillShow() {
-        isPanelHidden = false
-        finishPick()
-        selected = 0
-        openAttachment()
-        askAnswers()
-        host.nextFrame { [weak self] in
-            self?.isShown = true
-            self?.recordAskedField()
+        asOnePress {
+            isPanelHidden = false
+            finishPick()
+            selected = 0
+            openAttachment()
+            askAnswers()
+            host.nextFrame { [weak self] in
+                self?.isShown = true
+                self?.recordAskedField()
+            }
         }
     }
 
     public func panelWillHide() {
-        endSpread()
-        if attachments.spreads { attachments.fold() }
-        pendingAsk = nil
-        if confirming != nil { confirming = nil }
-        stopRecording()
-        closeMenu()
-        endEditing(moving: false)
-        isShown = false
-        takeEntryKey()
+        asOnePress {
+            endSpread()
+            if attachments.spreads { attachments.fold() }
+            hideAttachments()
+            pendingAsk = nil
+            if confirming != nil { confirming = nil }
+            stopRecording()
+            closeMenu()
+            endEditing(moving: false)
+            isShown = false
+            takeEntryKey()
+        }
     }
 
     public func waitForShows() async {

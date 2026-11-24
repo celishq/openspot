@@ -7,7 +7,6 @@ struct SpotSurface: View {
     var glass = 1.0
     var marks: [FlowEdge] = []
     var markRoom: CGRect = .zero
-    var cut: SpotSurfaceShape?
     @Environment(\.spotIsShown) private var isShown
     @Environment(\.spotPanels) private var panels
     @Environment(\.spotFade) private var fade
@@ -23,18 +22,12 @@ struct SpotSurface: View {
                     .transition(.opacity)
             }
             Color.clear
-                .spotGlass(in: SpotCutShape(shape: shape, cut: cutShape))
+                .spotGlass(in: shape)
                 .opacity(isShown ? max(glass, MotionTokens.hiddenOpacity) * SpotTheme.glassStrength(at: fade) : MotionTokens.hiddenOpacity)
                 .animation(SpotMotion.fade(isShown: isShown), value: isShown)
         }
         .modifier(PanelSpan(panels: panels))
         .allowsHitTesting(false)
-    }
-
-    private var cutShape: SpotSurfaceShape {
-        guard var cut else { return SpotSurfaceShape(rect: .zero, radius: 0) }
-        cut.rect = cut.rect.offsetBy(dx: -panels.frame.minX, dy: 0)
-        return cut
     }
 
     private func place(of mark: FlowEdge) -> CGRect {

@@ -33,7 +33,7 @@ public struct AgentNote: Equatable, Sendable {
         `weather.spot`, and its `spot.toml` describes each script in it. The ID of a spot is its path with no extension, such as
         `weather` or `home/coffee`.
 
-        In this file, `openspot` stands for `\(command)`. Type that full path when `openspot` is not on the PATH.
+        In this file, `openspot` stands for `"\(command)"`. Type that full path in quotes, since it can hold a space, when `openspot` is not on the PATH.
 
         Before you change a file here, run `openspot guide` and read all of it. It is the contract that each spot follows.
 

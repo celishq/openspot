@@ -46,28 +46,30 @@ extension SpotsModel {
     }
 
     public func dropSpot(by translation: CGSize) {
-        guard let drag else { return }
-        if host.isPointerOverWindow, let entry = visible.first(where: { $0.id == drag.id }), turnsOff(entry) {
-            cancelDrag()
-            return turnOff(entry.id)
+        asOnePress {
+            guard let drag else { return }
+            if host.isPointerOverWindow, let entry = visible.first(where: { $0.id == drag.id }), turnsOff(entry) {
+                cancelDrag()
+                return turnOff(entry.id)
+            }
+            let move = inGrid(translation)
+            let centre = drag.centre(movedBy: move)
+            let target = drag.nearest(to: drag.centre(movedBy: drag.capped(move, within: windowInGrid)))
+            guard drag.holds(centre), target != drag.home else { return cancelDrag() }
+            stopDragWait()
+            pointerMove = nil
+            var order = (cards.filter(\.isOnGrid) + cards.filter { !$0.isOnGrid }).map(\.id)
+            order.removeAll { $0 == drag.id }
+            order.insert(drag.id, at: target.place)
+            saveArrangement({ next in
+                next.arrange(order)
+                if target.isOnGrid != drag.home.isOnGrid { next.set(isOnGrid: target.isOnGrid, of: drag.id) }
+                next.set(panel: target.panel, of: drag.id)
+            }, selecting: drag.id, ending: {
+                self.drag = nil
+                landing = drag.id
+            }, landed: { self.endLanding(of: drag.id) })
         }
-        let move = inGrid(translation)
-        let centre = drag.centre(movedBy: move)
-        let target = drag.nearest(to: drag.centre(movedBy: drag.capped(move, within: windowInGrid)))
-        guard drag.holds(centre), target != drag.home else { return cancelDrag() }
-        stopDragWait()
-        pointerMove = nil
-        var order = (cards.filter(\.isOnGrid) + cards.filter { !$0.isOnGrid }).map(\.id)
-        order.removeAll { $0 == drag.id }
-        order.insert(drag.id, at: target.place)
-        saveArrangement({ next in
-            next.arrange(order)
-            if target.isOnGrid != drag.home.isOnGrid { next.set(isOnGrid: target.isOnGrid, of: drag.id) }
-            next.set(panel: target.panel, of: drag.id)
-        }, selecting: drag.id, ending: {
-            self.drag = nil
-            landing = drag.id
-        }, landed: { self.endLanding(of: drag.id) })
     }
 
     public func cancelDrag() {

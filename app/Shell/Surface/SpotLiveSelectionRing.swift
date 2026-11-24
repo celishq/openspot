@@ -7,6 +7,7 @@ struct SpotLiveSelectionRing<Edge: InsettableShape>: ViewModifier {
     var marksMenu = false
 
     func body(content: Content) -> some View {
-        content.modifier(SpotSelectionRing(isSelected: isSelected(), shape: shape, progress: progress, marksMenu: marksMenu))
+        let isSelected = isSelected()
+        content.modifier(SpotSelectionRing(isSelected: isSelected, shape: shape, progress: progress, marksMenu: marksMenu ? isSelected : nil))
     }
 }

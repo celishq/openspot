@@ -66,27 +66,38 @@ final class PanelKeysTests: PanelCase {
         try await wait("the grid") { self.model.mode == .grid }
     }
 
-    func testTheCardsMoveOnlyWhileTheGridShowsInFront() async throws {
+    func testTheCardsPlayOnlyWhileTheGridShowsInFront() async throws {
         try await showGrid()
-        XCTAssertTrue(model.cardsMove)
+        XCTAssertTrue(model.cardsPlay)
         try select("weather")
 
         XCTAssertTrue(model.handleKey(actions))
-        XCTAssertFalse(model.cardsMove)
+        XCTAssertFalse(model.cardsPlay)
         XCTAssertTrue(model.handleKey(escape))
-        XCTAssertTrue(model.cardsMove)
+        XCTAssertTrue(model.cardsPlay)
 
         model.beginEditing()
-        XCTAssertFalse(model.cardsMove)
+        XCTAssertFalse(model.cardsPlay)
         model.endEditing()
-        XCTAssertTrue(model.cardsMove)
+        XCTAssertTrue(model.cardsPlay)
 
         model.isShown = false
-        XCTAssertFalse(model.cardsMove)
+        XCTAssertFalse(model.cardsPlay)
         model.isShown = true
 
         try await openList()
-        XCTAssertFalse(model.cardsMove)
+        XCTAssertFalse(model.cardsPlay)
+    }
+
+    func testAModeChangeBetweenTwoModesThatHoldTheCardsStillTellsNoReaderThatTheCardsPlay() async throws {
+        try await openList()
+        XCTAssertFalse(model.cardsPlay)
+        nonisolated(unsafe) var changed = false
+        withObservationTracking { _ = model.cardsPlay } onChange: { changed = true }
+
+        model.mode = .form
+
+        XCTAssertFalse(changed)
     }
 
     func testASearchThatFindsNoSpotTeachesTheSlash() async throws {

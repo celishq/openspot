@@ -208,7 +208,7 @@ final class AttachmentSpreadTests: AttachmentCase {
         stack.open(over: nil, unread: ["a", "b", "c"].map { ($0, .symbol("doc")) })
 
         XCTAssertTrue(stack.layout.isQuiet)
-        XCTAssertEqual(stack.layout.places.map(\.x), Array(repeating: SpotTokens.attachmentQuietX, count: 3))
+        XCTAssertEqual(stack.layout.places.map(\.x), [0, 0, 0])
         XCTAssertEqual(stack.layout.places.map(\.scale), Array(repeating: SpotTokens.attachmentQuietScale, count: 3))
         XCTAssertEqual(stack.layout.places.map(\.opacity), [1, MotionTokens.hiddenOpacity, MotionTokens.hiddenOpacity])
 
@@ -219,8 +219,24 @@ final class AttachmentSpreadTests: AttachmentCase {
         XCTAssertFalse(stack.layout.isQuiet)
     }
 
+    func testAChipThatOnlyChangesItsScaleKeepsItsPlace() {
+        var stack = AttachmentStack(fit: 3)
+        stack.open(over: nil, unread: [("a", .symbol("doc"))])
+        let quiet = stack.layout.places[0]
+
+        stack.turn(by: 1)
+        stack.place()
+        let selected = stack.layout.places[0]
+
+        XCTAssertNotEqual(selected.scale, quiet.scale)
+        XCTAssertEqual(selected.x, quiet.x)
+    }
+
     func testTheIconsSitAsFarFromTheFieldsRightEdgeAsFromItsTopAndBottom() {
-        let quietRight = SpotTokens.attachmentEdge - SpotTokens.attachmentQuietX + SpotTokens.attachmentInset * SpotTokens.attachmentQuietScale
+        var stack = AttachmentStack(fit: 3)
+        stack.open(over: nil, unread: [("a", .symbol("doc"))])
+        let quiet = stack.layout.places[0]
+        let quietRight = SpotTokens.attachmentEdge + (SpotTokens.attachmentCard - SpotTokens.attachmentIcon * quiet.scale) / 2 - quiet.x
 
         XCTAssertEqual(quietRight, (SpotTokens.cell - SpotTokens.attachmentQuietIcon) / 2, accuracy: 0.001)
         XCTAssertEqual(SpotTokens.attachmentEdge, (SpotTokens.cell - SpotTokens.attachmentCard) / 2)
@@ -246,7 +262,10 @@ final class AttachmentSpreadTests: AttachmentCase {
         let step = SpotTokens.attachmentStep
         let shrink = SpotTokens.attachmentShrink
 
-        XCTAssertEqual(stack.layout.places.map(\.x), [-2 * step, -step, 0, 0])
+        let card = SpotTokens.attachmentCard
+        let pile = [-2 * step, -step + card * shrink / 2, card * shrink, card * shrink]
+        XCTAssertEqual(stack.layout.places.count, pile.count)
+        for (place, x) in zip(stack.layout.places, pile) { XCTAssertEqual(place.x, x, accuracy: 0.001) }
         XCTAssertEqual(stack.layout.places.map(\.scale), [1, 1 - shrink, 1 - 2 * shrink, 1 - 2 * shrink])
         XCTAssertEqual(stack.layout.places.map(\.opacity), [1, 1, 1, MotionTokens.hiddenOpacity])
         XCTAssertEqual(stack.layout.places.map(\.layer), [0, -1, -2, -3])
@@ -262,7 +281,10 @@ final class AttachmentSpreadTests: AttachmentCase {
         let pitch = SpotTokens.attachmentCard + SpotTokens.attachmentSpreadGap
         let step = SpotTokens.attachmentStep
 
-        XCTAssertEqual(stack.layout.places.map(\.x), [-2 * pitch, -pitch, 0, -2 * pitch + step, -2 * pitch + step])
+        let back = (-2 * pitch).rounded() + step + SpotTokens.attachmentCard * SpotTokens.attachmentShrink / 2
+        let row = [(-2 * pitch).rounded(), (-pitch).rounded(), 0, back, back]
+        XCTAssertEqual(stack.layout.places.count, row.count)
+        for (place, x) in zip(stack.layout.places, row) { XCTAssertEqual(place.x, x, accuracy: 0.001) }
         XCTAssertEqual(stack.layout.places.map(\.scale), [1, 1, 1, 1 - SpotTokens.attachmentShrink, 1 - SpotTokens.attachmentShrink])
         XCTAssertEqual(stack.layout.places.map(\.opacity), [1, 1, 1, 1 - SpotTokens.attachmentCardFade, MotionTokens.hiddenOpacity])
         XCTAssertEqual(stack.layout.places.map(\.layer), [0, -1, -2, -3, -6])

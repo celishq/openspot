@@ -43,17 +43,21 @@ extension SpotsModel {
     }
 
     public func updateVisible(holding motion: PanelMotion? = .edit) {
+        hold(shownPreview(of: query), motion: motion)
+        showVisible()
+    }
+
+    func showVisible() {
         visibleUpdates += 1
         let text = query.trimmingCharacters(in: .whitespaces)
-        if attachments.isOn, !isEditing, !text.hasPrefix("/") {
+        if showsAttachment(of: query) {
             indexSpots()
             if slash != nil { slash = nil }
             content = .attachment
             foundSpots = []
-            show(showAttachment(holding: motion))
+            show(attachmentRows())
             return
         }
-        hold(nil, motion: motion)
         guard !text.isEmpty else {
             if slash != nil { slash = nil }
             content = .cards
@@ -141,6 +145,11 @@ extension SpotsModel {
         runs.usage.missed(search, at: runs.now())
     }
 
+    func takeQuery(_ text: String) {
+        hold(shownPreview(of: text), motion: .edit)
+        query = text
+    }
+
     func askAnswers() {
         runs.raise(.query(query))
     }
@@ -158,16 +167,19 @@ extension SpotsModel {
     public var searchText: String {
         get { form?.draft.choices?.query ?? openSheet?.query ?? query }
         set {
-            if form?.draft.choices != nil {
-                form?.draft.search(newValue)
-            } else if let file = SpotPackage.file(in: newValue) {
-                query = ""
-                openSheet?.search("")
-                DispatchQueue.main.async { self.review([file]) }
-            } else if let openSheet {
-                openSheet.search(newValue)
-            } else {
-                query = newValue
+            asOnePress {
+                if form?.draft.choices != nil {
+                    form?.draft.search(newValue)
+                } else if let file = SpotPackage.file(in: newValue) {
+                    takeQuery("")
+                    openSheet?.search("")
+                    DispatchQueue.main.async { self.review([file]) }
+                } else if let openSheet {
+                    openSheet.search(newValue)
+                } else {
+                    takeQuery(newValue)
+                }
+                hideAttachments()
             }
         }
     }

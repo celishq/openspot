@@ -179,6 +179,41 @@ final class PanelDiskTests: PanelCase {
         XCTAssertNil(model.card(id: "first"))
     }
 
+    func testAWriteOfTheDraggedSpotOrOfThePointerMakesNoChangeOfItsOwn() async throws {
+        await model.reload()
+        model.isShown = true
+        model.panelWillShow()
+        let drop = SpotDrop(paths: [file("broken.spot")], folder: folder)
+        let changes = host.motions.count
+
+        model.isPointerOverDrop = true
+        model.draggedSpot = drop
+        model.isPointerOverDrop = false
+        model.draggedSpot = nil
+
+        XCTAssertEqual(host.motions.count, changes)
+    }
+
+    func testASpotFileOverThePanelGrowsItsDropAndShrinksItWhenThePointerLeaves() async throws {
+        await model.reload()
+        model.isShown = true
+        model.panelWillShow()
+        let package = folder.appendingPathComponent("broken.spot").path
+        FileManager.default.createFile(atPath: package, contents: Data("no zip".utf8))
+        host.draggedPaths = [package]
+        host.isMouseDown = true
+        host.isPointerOverDrop = true
+
+        model.followDrag()
+        try await wait("the drop") { self.model.showsFieldDrop }
+        host.isPointerOverDrop = false
+        try await wait("the drop gone") { !self.model.showsFieldDrop }
+        host.isMouseDown = false
+
+        XCTAssertEqual(host.fieldDropWrites.map(\.motion), [.sheet(isOpen: true), .sheet(isOpen: false)])
+        XCTAssertEqual(host.fieldDropWrites.map(\.depth), [0, 0])
+    }
+
     func testASpotFileOverThePanelIsOpenedAwayFromThePress() async throws {
         await model.reload()
         model.isShown = true

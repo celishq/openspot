@@ -17,15 +17,19 @@ extension SpotsModel {
     }
 
     private func take(_ key: ActionKey, in rows: [KeyRow]) -> Bool {
-        for row in rows where row.takes(key) {
-            if let handled = row.act(key) { return handled }
+        asOnePress {
+            for row in rows where row.takes(key) {
+                if let handled = row.act(key) { return handled }
+            }
+            return false
         }
-        return false
     }
 
     public func pressHint(_ label: String) {
-        guard let key = ActionKey(label: label) else { return }
-        if !handleKey(key) { _ = handleSearchKey(key) }
+        asOnePress {
+            guard let key = ActionKey(label: label) else { return }
+            if !handleKey(key) { _ = handleSearchKey(key) }
+        }
     }
 
     func keyRows(of mode: PanelMode) -> [KeyRow] {
@@ -347,22 +351,38 @@ extension SpotsModel {
         takeHint()
     }
 
+    func asOnePress<T>(_ work: () -> T) -> T {
+        pressDepth += 1
+        defer {
+            pressDepth -= 1
+            if pressDepth == 0, hintIsStale { takeHint() }
+        }
+        return work()
+    }
+
     private func takeHint() {
-        hintTakes += 1
-        let words = HintWords(withObservationTracking { hint } onChange: { [weak self] in
-            Task { @MainActor in self?.takeHint() }
-        })
-        let motion: PanelMotion? = isEditing || hintIsForEdit || fieldDrop != nil ? .fade : nil
-        hintIsForEdit = isEditing
-        if openSheetID == nil, spotDrop == nil {
-            if words != gridHint { change(motion, { gridHint = words }) }
-        } else {
-            takeSheetHint(words, motion: motion)
+        hintIsStale = false
+        place(HintWords(withObservationTracking { hint } onChange: { [weak self] in
+            MainActor.assumeIsolated { self?.staleHint() }
+        }))
+    }
+
+    private func staleHint() {
+        hintIsStale = true
+        guard pressDepth == 0 else { return }
+        Task { @MainActor [weak self] in
+            guard let self, hintIsStale else { return }
+            takeHint()
         }
     }
 
-    func takeSheetHint(_ words: HintWords, motion: PanelMotion? = nil) {
-        if words != sheetHint { change(motion, { sheetHint = words }) }
+    private func place(_ words: HintWords) {
+        hintTakes += 1
+        let onSheet = openSheetID != nil || spotDrop != nil
+        guard words != (onSheet ? sheetHint : gridHint) else { return }
+        let motion: PanelMotion? = isEditing || hintIsForEdit || fieldDrop != nil ? .fade : nil
+        hintIsForEdit = isEditing
+        change(motion, { if onSheet { sheetHint = words } else { gridHint = words } })
     }
 
     var selectedGlyphTitle: String? {

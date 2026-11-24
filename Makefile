@@ -17,6 +17,7 @@ verify:
 	sh scripts/check-windows.sh
 	sh scripts/check-tokens.sh
 	sh scripts/check-tools.sh
+	sh scripts/check-presses.sh
 	sh scripts/spot-tests.sh
 	cd app && xcodegen generate >/dev/null
 	cd app && DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer xcodebuild -project Openspot.xcodeproj -scheme Openspot -destination 'platform=macOS' $(TEST_LIMITS) test
@@ -60,7 +61,7 @@ dev-state:
 	rm -rf .temp/openspot/spots/openspot.spot
 
 first-launch:
-	pkill -f '/Debug/Openspot.app/Contents/MacOS/Openspot' || true
+	pkill -f '/Debug/Openspot Nightly.app/Contents/MacOS/OpenspotNightly' || true
 	$(MAKE) dev-state EMPTY=1
 
 examples:

@@ -16,9 +16,9 @@ struct SpotFieldPrompt: View {
                     Text(SearchPrompt.actions)
                         .opacity(grid == SearchPrompt.actions ? 1 : MotionTokens.hiddenOpacity)
                 }
-                .morph(progress, opacity: SheetMorph.cardLook(at:))
+                .morph(progress, opacity: SheetMorph.cardOpacity(at:))
                 Text(word)
-                    .morph(progress, opacity: SheetMorph.sheetLook(at:))
+                    .morph(progress, opacity: SheetMorph.sheetOpacity(at:))
             }
         }
         .font(SpotType.input)
