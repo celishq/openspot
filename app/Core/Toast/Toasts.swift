@@ -37,7 +37,7 @@ public final class Toasts {
         let words = held.map { "\(note.words) Press `\($0.label)` to fix it." } ?? note.words
         let toast = existing ?? Toast(id: id, note: note, words: words)
         existing?.take(note, words: words)
-        toast.duration = note.keeps ? nil : Self.duration
+        toast.duration = note.kind == .work ? nil : Self.duration
         toast.press = press
         toast.fixKey = key
         toast.size = window?.measure(toast) ?? .zero

@@ -56,7 +56,7 @@ work in a read too. `run` works in a read, but the action it runs can't show a v
 | -------------------------------------------------- | ----------------------------------------------------------------------------------------------- |
 | `openspot guide [topic \| --topics]` | Prints the docs, from the map to the reference, then Use Openspot, or with a topic one page, such as this one. |
 | `openspot version`                                 | Prints the version of Openspot, as `openspot --version` does.                                   |
-| `openspot toast [--id <id>] [--keep] [--action <name>] [--class <classes>] [--view <blocks>] <words>...` | Shows a short message, even when the panel is closed. [A toast](../../docs/reference/commands.md#a-toast) has the options. |
+| `openspot toast [--id <id>] [--action <name>] [--class <classes>] [--view <blocks>] <words>...` | Shows a short message, even when the panel is closed. [A toast](../../docs/reference/commands.md#a-toast) has the options. |
 | `openspot toast --remove <id>`                     | Takes the spot's toast with the id away.                                                        |
 | `openspot select <item>`                           | Selects an item of the spot's sheet once the spot's next frame shows.                           |
 | `openspot attachment add <kind>=<value>... [title=<words>] [app=<app>] [icon=<icon>]` | Puts a value in the panel's field as the spot's chip: `file=` once for each file, `url=` or `text=`. `icon=` takes what `icon` in spot.toml takes. |

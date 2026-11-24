@@ -117,6 +117,7 @@ extension SpotTokens {
     public static let lineRingLine: CGFloat = 2
 
     public static let menuBarPill = CGSize(width: 40, height: 24)
+    public static let menuBarTint = 0.2
     public static let menuBarGap: CGFloat = 5
     public static let menuBarCountGap: CGFloat = 3
     public static let menuBarPadding: CGFloat = 6

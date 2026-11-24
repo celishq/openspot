@@ -11,6 +11,10 @@ struct OpenspotItemView: View {
 
     var body: some View {
         ZStack {
+            Capsule()
+                .frame(height: SpotTokens.menuBarPill.height)
+                .opacity(isToasting ? SpotTokens.menuBarTint : MotionTokens.hiddenOpacity)
+                .animation(SpotMotion.fade(isShown: isToasting), value: isToasting)
             swap.opacity(isRunning ? MotionTokens.hiddenOpacity : 1)
             ZStack {
                 Capsule().frame(height: SpotTokens.menuBarPill.height)
@@ -33,6 +37,10 @@ struct OpenspotItemView: View {
                     removal: .scale(scale: MotionTokens.menuBarSwapScale).combined(with: .opacity).animation(Self.leave)
                 ))
         }
+    }
+
+    private var isToasting: Bool {
+        !isRunning && toasts?.isShown == true
     }
 
     private var isRunning: Bool {

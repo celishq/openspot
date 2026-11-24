@@ -687,6 +687,7 @@
 		A2F389DF7CF4DAC3DD94B63A /* RunChannel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 431EF4EDAEF207B967284C44 /* RunChannel.swift */; };
 		A38513EA23CC448D2C62FE4B /* SpotCache.swift in Sources */ = {isa = PBXBuildFile; fileRef = F45CBB13C0A55E0EDC20E6E4 /* SpotCache.swift */; };
 		A3C681BDC95F170555B2F6FD /* CaptureFileTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = E50E6719EBEC724AB88E711A /* CaptureFileTests.swift */; };
+		A42EB493DBE8854F3C2D6561 /* ToastPointer.swift in Sources */ = {isa = PBXBuildFile; fileRef = AE76057B84F1B27BDA2A421D /* ToastPointer.swift */; };
 		A445B887FFDD4D43AC906CAF /* SelectionCall.swift in Sources */ = {isa = PBXBuildFile; fileRef = F824ED317BA3D31A0BB5AAC3 /* SelectionCall.swift */; };
 		A467160A615A07904E0F6AAF /* SpotSurfaceShape.swift in Sources */ = {isa = PBXBuildFile; fileRef = BE349937DD8063F00D305FDA /* SpotSurfaceShape.swift */; };
 		A495011C02FA0C31EF2E4B0E /* RunClock.swift in Sources */ = {isa = PBXBuildFile; fileRef = 55179210AEE82C8FCFF4BEAE /* RunClock.swift */; };
@@ -1981,6 +1982,7 @@
 		ADF70F46E57A9D5A6C413B2D /* SpotCalls.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SpotCalls.swift; sourceTree = "<group>"; };
 		AE2F87FA556CEFAAB2C454FA /* SheetTop.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SheetTop.swift; sourceTree = "<group>"; };
 		AE67B48020CB65712DB3B5B4 /* LaunchSettingsTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LaunchSettingsTests.swift; sourceTree = "<group>"; };
+		AE76057B84F1B27BDA2A421D /* ToastPointer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ToastPointer.swift; sourceTree = "<group>"; };
 		AEA81349258EDFD88C8C51E9 /* SheetMotion.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SheetMotion.swift; sourceTree = "<group>"; };
 		AECA7E4958B376D25475BDFB /* SpotsModelDragTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SpotsModelDragTests.swift; sourceTree = "<group>"; };
 		AEE6E5B4502E62959A3B47EE /* Openspot.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Openspot.app; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -2681,6 +2683,7 @@
 				4D762EF53EE05C4A0D453F13 /* ToastBars.swift */,
 				D14A96CD1B177F8A53D7B7DE /* ToastKeyFill.swift */,
 				F1E3218E6D4C2E9BB6661856 /* ToastPanel.swift */,
+				AE76057B84F1B27BDA2A421D /* ToastPointer.swift */,
 				A21172E4BB2CDA50C1A9A00A /* ToastSurface.swift */,
 				F6E3D111F02BEDA8AC6F75DE /* ToastsView.swift */,
 				8AE7333AFB1BE8B127EE7D7B /* ToastView.swift */,
@@ -5396,6 +5399,7 @@
 				3068A05D1B709AB9CA20E460 /* ToastBars.swift in Sources */,
 				2DA0ED84843B556BFECCAA29 /* ToastKeyFill.swift in Sources */,
 				35EA5B3C2F66976ED361984D /* ToastPanel.swift in Sources */,
+				A42EB493DBE8854F3C2D6561 /* ToastPointer.swift in Sources */,
 				0E700D8000E33EF07B1271A6 /* ToastSurface.swift in Sources */,
 				71EEF7BECC5512145EAFB9B3 /* ToastView.swift in Sources */,
 				2DE3A0ED236C9370F07074D3 /* ToastsView.swift in Sources */,

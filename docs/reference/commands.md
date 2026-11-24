@@ -34,7 +34,7 @@ see [the commands that fail in a read](../../app/Help/commands.md#the-commands-t
 
 | Command                                             | Does                                                                     |
 | --------------------------------------------------- | ------------------------------------------------------------------------ |
-| `openspot toast [--id <id>] [--keep] [--action <name>] [--class <classes>] [--view <blocks>] <words>...` | Shows a short message, even when the panel is closed. [A toast](#a-toast) has the rest. It works in `show`. |
+| `openspot toast [--id <id>] [--action <name>] [--class <classes>] [--view <blocks>] <words>...` | Shows a short message, even when the panel is closed. [A toast](#a-toast) has the rest. It works in `show`. |
 | `openspot toast --remove <id>`                      | Takes your toast with the id away.                                       |
 | `openspot select <item>`                            | Selects a row of your sheet once your next frame shows.                  |
 | `openspot attachment add <kind>=<value>... [title=<words>] [app=<app>] [icon=<icon>]` | Puts a value in the panel's field: `file=` once for each file, `url=` or `text=`. `icon=` takes what [`icon`](spot-toml.md#keys) in spot.toml takes. It works in `show` and `attachment.pick`, and needs `attachment` in `uses`. |
@@ -62,11 +62,11 @@ In each command, an app is its bundle ID, such as `com.apple.Safari`. Each list 
 ## A toast
 
 Up to three toasts wait in line. The newest shows, with a short bar under it for each toast in line, its own bright, and
-the next steps in when it leaves. A toast's time starts when it shows. A click on a toast closes it.
+the next steps in when it leaves. A toast leaves 5 seconds after it shows. While the pointer is on it, it stays, and its time starts again when the pointer leaves. A click on a toast closes it.
 
 ```text
 openspot toast Saved.
-openspot toast --id upload --keep --action open-uploads Uploading 3 files.
+openspot toast --id upload --action open-uploads Uploading 3 files.
 openspot toast --id upload Uploaded 2 of 3 files.
 openspot toast --remove upload
 ```
@@ -74,21 +74,20 @@ openspot toast --remove upload
 | Option             | Is                                                                                    |
 | ------------------ | ------------------------------------------------------------------------------------- |
 | `--id <id>`        | Its id. A later toast of your spot with the same id changes it in place.              |
-| `--keep`           | Keeps it until a click or `--remove`. Else it leaves 5 seconds after it shows.         |
 | `--action <name>`  | The action of your spot that a click runs. With none, a click opens your spot.        |
 | `--view <blocks>`  | Openspot's own [blocks](blocks.md) to draw in place of the words, such as a ring and a line of words. |
 | `--class <classes>`| The classes of the view's layout, as `class` of a frame's first block.                |
 
 Options come before the words. A block of a view of your spot is a fault. The whole toast is one click, so a button in
 it does nothing. A `toast:` class shows a part only in a toast, as `card:` does on a card. A view may start with a block
-of `toast=<id>` and the keys `title`, `keep`, `action` and `class`, and an option wins over its key.
+of `toast=<id>` and the keys `title`, `action` and `class`, and an option wins over its key.
 
 ```text
 view=$(printf 'number=done\nvalue=72\nmax=100\nunit=%%\ntype=ring\n\ntext=words\ntitle=Backup\ndetail=72%% of 40 GB\n')
 openspot toast --id backup --class "flex-row items-center gap-2" --view "$view" Backup at 72%
 ```
 
-In JavaScript, `env.toast("Uploading 3 files.", { id: "upload", keep: true, action: "open-uploads" })` takes the same options.
+In JavaScript, `env.toast("Uploading 3 files.", { id: "upload", action: "open-uploads" })` takes the same options.
 
 ## Write a message
 

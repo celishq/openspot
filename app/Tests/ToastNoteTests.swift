@@ -3,11 +3,10 @@ import XCTest
 
 final class ToastNoteTests: XCTestCase {
     func testTheHeadBlockGivesTheIdTheWordsKeepAndAction() throws {
-        let note = try ToastNote(blocks: "toast=upload\ntitle=Uploading\nkeep=true\naction=again\n")
+        let note = try ToastNote(blocks: "toast=upload\ntitle=Uploading\naction=again\n")
 
         XCTAssertEqual(note.id, "upload")
         XCTAssertEqual(note.words, "Uploading")
-        XCTAssertTrue(note.keeps)
         XCTAssertEqual(note.action, "again")
     }
 
@@ -16,16 +15,15 @@ final class ToastNoteTests: XCTestCase {
 
         XCTAssertNil(note.id)
         XCTAssertEqual(note.words, "Saved")
-        XCTAssertFalse(note.keeps)
         XCTAssertNil(note.action)
     }
 
     func testAHeadWithNothingToShowIsAFault() {
-        XCTAssertThrowsError(try ToastNote(blocks: "toast=upload\nkeep=true\n"))
+        XCTAssertThrowsError(try ToastNote(blocks: "toast=upload\naction=again\n"))
     }
 
-    func testKeepTakesOnlyTrueOrFalse() {
-        XCTAssertThrowsError(try ToastNote(blocks: "toast=upload\ntitle=Up\nkeep=yes\n"))
+    func testKeepIsNoKeyOfAToast() {
+        XCTAssertThrowsError(try ToastNote(blocks: "toast=upload\ntitle=Up\nkeep=true\n"))
     }
 
     func testAnUnknownKeyOfTheHeadIsAFault() {

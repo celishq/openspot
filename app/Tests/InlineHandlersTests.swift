@@ -116,7 +116,7 @@ final class InlineHandlersTests: SpotRunsCase {
         try inline("toaster", toml: "[actions.go]\noutputs.said = 'text'", """
         export default {
           async go(input, env) {
-            try { await env.toast("Uploading", { id: "up", keep: true, action: "go" }) } catch (error) { return { said: error.message } }
+            try { await env.toast("Uploading", { id: "up", action: "go" }) } catch (error) { return { said: error.message } }
           },
         }
         """)
@@ -125,7 +125,7 @@ final class InlineHandlersTests: SpotRunsCase {
 
         let text = try await bare.answer(of: try spot("toaster"), "go", limit: 60)
 
-        XCTAssertEqual(Frame(text: text).outputs, [.init(key: "said", value: "toast|--id|up|--keep|--action|go|Uploading|")], text)
+        XCTAssertEqual(Frame(text: text).outputs, [.init(key: "said", value: "toast|--id|up|--action|go|Uploading|")], text)
     }
 
     func testEnvHoldsEachCommandThatNeedsNoUseAndNoCommandOfAnUndeclaredUse() async throws {

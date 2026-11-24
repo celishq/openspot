@@ -6,6 +6,10 @@ final class ToastPanel: NSPanel, ToastWindow {
     private(set) var toasts: Toasts?
     private var fixKey: HotKey.Registration?
     private let nextFrames = NextFrame()
+    private lazy var pointer = ToastPointer(area: { [weak self] in self?.surface ?? .zero }) { [weak self] inside in
+        self?.ignoresMouseEvents = !inside
+        self?.toasts?.hold(inside)
+    }
     weak var item: OpenspotItem?
     var front: () -> CGRect? = { nil }
 
@@ -27,15 +31,23 @@ final class ToastPanel: NSPanel, ToastWindow {
         if let origin = place.origin(ofToast: size, inset: SpotTokens.toastRoom, under: item?.frame, window: window, pointer: NSEvent.mouseLocation) {
             setFrame(NSRect(origin: origin, size: size), display: true)
         }
+        pointer.check()
+    }
+
+    private var surface: CGRect {
+        guard let toasts, isVisible else { return .zero }
+        let size = toasts.frontSize
+        return CGRect(x: frame.midX - size.width / 2, y: frame.maxY - SpotTokens.toastRoom - size.height, width: size.width, height: size.height)
     }
 
     func bringToFront() {
-        ignoresMouseEvents = false
         orderFrontRegardless()
         contentView?.layoutSubtreeIfNeeded()
+        pointer.start()
     }
 
     func putAway() {
+        pointer.stop()
         ignoresMouseEvents = true
         orderOut(nil)
     }
@@ -71,6 +83,7 @@ final class ToastPanel: NSPanel, ToastWindow {
         panel.hidesOnDeactivate = false
         panel.level = .statusBar
         panel.ignoresMouseEvents = true
+        panel.acceptsMouseMovedEvents = true
         panel.isReleasedWhenClosed = false
         panel.collectionBehavior = [.canJoinAllSpaces, .fullScreenAuxiliary]
         panel.toasts = toasts

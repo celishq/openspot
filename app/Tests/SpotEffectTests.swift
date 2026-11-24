@@ -40,7 +40,7 @@ final class SpotEffectTests: PanelCase {
           close) "$os" route close ;;
           saved) "$os" toast Saved ;;
           pick) "$os" select c ;;
-          kept) "$os" toast --id up --keep --action again Uploading ;;
+          kept) "$os" toast --id up --action again Uploading ;;
           wrong) "$os" toast --id up --action nothing Uploading ;;
           drop) "$os" toast --remove up ;;
           late) trap '"$os" toast Late; echo "late $?" >> "$codes"; exit 0' TERM; echo up >> "$codes"; sleep 30 & wait ;;
@@ -219,7 +219,6 @@ final class SpotEffectTests: PanelCase {
         XCTAssertEqual(code, "kept 0")
         XCTAssertEqual(host.toasts.map(\.spot), ["flow"])
         XCTAssertEqual(host.toasts.first?.note.id, "up")
-        XCTAssertEqual(host.toasts.first?.note.keeps, true)
         XCTAssertEqual(host.toasts.first?.note.action, "again")
     }
 
@@ -274,11 +273,10 @@ final class SpotEffectTests: PanelCase {
     func testAToastDrawsAViewWithAHeadThatItsFlagsOverride() async throws {
         try await openFlow()
 
-        let toast = try await call(["toast", "--id", "backup", "--view", "toast=old\nkeep=true\n\ntext=words\ntitle=Backup\n", "Backup"])
+        let toast = try await call(["toast", "--id", "backup", "--view", "toast=old\nclass=flex-col\n\ntext=words\ntitle=Backup\n", "Backup"])
 
         XCTAssertEqual(toast.code, 0)
         XCTAssertEqual(host.toasts.first?.note.id, "backup")
-        XCTAssertEqual(host.toasts.first?.note.keeps, true)
         XCTAssertEqual(host.toasts.first?.note.tree?.children, ["words"])
     }
 }

@@ -14,8 +14,6 @@ struct ToastsView: View {
         .environment(\.spotIsShown, toasts.isShown)
         .padding(SpotTokens.toastRoom)
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
-        .contentShape(Rectangle())
-        .onHover { toasts.hold($0) }
         .id(SpotLoadedTheme.shared.layout)
     }
 }

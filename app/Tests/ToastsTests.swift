@@ -146,7 +146,7 @@ final class ToastsTests: XCTestCase {
     }
 
     func testDropTakesTheToastOfTheIdAway() async throws {
-        toasts.add(try note("toast=up\ntitle=Uploading\nkeep=true\n"), spot: "s")
+        toasts.add(try note("toast=up\ntitle=Uploading\n"), spot: "s")
         try await wait("the upload shows", until: { front == "Uploading" })
 
         toasts.drop("up", of: "s")
@@ -155,27 +155,23 @@ final class ToastsTests: XCTestCase {
     }
 
     func testAnIdShownAgainWhileTheSurfaceFadesShowsItAgain() async throws {
-        toasts.add(try note("toast=up\ntitle=Uploading\nkeep=true\n"), spot: "s")
+        toasts.add(try note("toast=up\ntitle=Uploading\n"), spot: "s")
         try await wait("the upload shows", until: { front == "Uploading" })
         toasts.drop("up", of: "s")
 
-        toasts.add(try note("toast=up\ntitle=Uploaded\nkeep=true\n"), spot: "s")
+        toasts.add(try note("toast=up\ntitle=Uploaded\n"), spot: "s")
 
         try await wait("the new upload shows", until: { front == "Uploaded" })
         XCTAssertEqual(toasts.queue.map(\.words), ["Uploaded"])
-        try await wait("no fade waits to put the window away", until: { clock.sleepCount == 0 })
+        try await wait("only its own time runs, no fade", until: { clock.sleepCount == 1 && clock.isSleeping(for: 5) })
         XCTAssertEqual(window.putAways, 0)
     }
 
-    func testAKeptToastNeverExpires() async throws {
-        toasts.add(try note("toast=up\ntitle=Uploading\nkeep=true\n"), spot: "s")
-        try await wait("the upload shows", until: { front == "Uploading" })
+    func testAWorkToastStaysUntilTheNextToastOfItsSpot() async throws {
         try await show("working", kind: .work)
-        try await show("brief", spot: "b")
 
-        try await pass(60, sleeps: 1, due: 5)
-
-        try await wait("the brief toast ends", until: { front == "working" && toasts.bars == 2 })
+        try await wait("no timer sleeps", until: { clock.sleepCount == 0 })
+        XCTAssertEqual(front, "working")
     }
 
     func testHoverHoldsEveryTimerAndExpiryResumesAfter() async throws {

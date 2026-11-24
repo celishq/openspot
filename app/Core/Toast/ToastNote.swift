@@ -2,23 +2,21 @@ import Foundation
 
 public struct ToastNote: Equatable, Sendable, ExpressibleByStringInterpolation {
     static let head = "toast"
-    private static let keys: Set = [head, "title", "keep", "action", ViewNode.classKey]
+    private static let keys: Set = [head, "title", "action", ViewNode.classKey]
 
     public let id: String?
     public let words: String
-    public let keeps: Bool
     public let action: String?
     public let tree: ViewTree?
     public let kind: ToastKind
     public let fix: ToastFix?
     private let source: Source?
 
-    public init(words: String, kind: ToastKind = .confirm, fix: ToastFix? = nil, keeps: Bool = false) {
+    public init(words: String, kind: ToastKind = .confirm, fix: ToastFix? = nil) {
         id = nil
         self.words = words
         self.kind = kind
         self.fix = fix
-        self.keeps = keeps
         action = nil
         tree = nil
         source = nil
@@ -29,7 +27,7 @@ public struct ToastNote: Equatable, Sendable, ExpressibleByStringInterpolation {
     }
 
     public static func work(_ words: String) -> ToastNote {
-        ToastNote(words: words, kind: .work, keeps: true)
+        ToastNote(words: words, kind: .work)
     }
 
     public init(stringLiteral words: String) {
@@ -50,15 +48,13 @@ public struct ToastNote: Equatable, Sendable, ExpressibleByStringInterpolation {
             given = first.fields
             blocks.removeFirst()
         }
-        let flags: [(String, String?)] = [(Self.head, source.id), ("title", source.words), ("keep", source.keeps ? "true" : nil), ("action", source.action), (ViewNode.classKey, source.classes)]
+        let flags: [(String, String?)] = [(Self.head, source.id), ("title", source.words), ("action", source.action), (ViewNode.classKey, source.classes)]
         for (key, value) in flags {
             guard let value else { continue }
             given.removeAll { $0.key == key }
             given.append(.init(key: key, value: value))
         }
         let head = TextBlock(fields: given)
-        let keep = head.value("keep")
-        guard keep == nil || keep == "true" || keep == "false" else { throw SpotError.fault("`keep` of a toast takes `true` or `false`.") }
         if let other = blocks.first(where: { !BlockKind.words.contains($0.fields.first?.key ?? "") }) {
             throw SpotError.fault("A toast draws only Openspot's own blocks, such as `text`, `number` or `icon`: \(other.firstLine)")
         }
@@ -69,7 +65,6 @@ public struct ToastNote: Equatable, Sendable, ExpressibleByStringInterpolation {
         let id = head.value(Self.head) ?? ""
         self.id = id.isEmpty ? nil : id
         self.words = words
-        keeps = keep == "true"
         action = head.value("action").flatMap { $0.isEmpty ? nil : $0 }
         self.tree = tree
         kind = .confirm
@@ -78,7 +73,7 @@ public struct ToastNote: Equatable, Sendable, ExpressibleByStringInterpolation {
     }
 
     func hiding(_ values: FieldValues) -> ToastNote {
-        guard let source else { return ToastNote(words: values.hiding(words), kind: kind, fix: fix, keeps: keeps) }
+        guard let source else { return ToastNote(words: values.hiding(words), kind: kind, fix: fix) }
         return (try? ToastNote(source.hiding(values))) ?? self
     }
 }

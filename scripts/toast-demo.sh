@@ -12,9 +12,9 @@ cat > "$folder/toast-demo.sh" <<'SPOT'
 case "$1" in
   show) printf 'item=upload\ntitle=Show a kept toast\n' ;;
   upload)
-    openspot toast --id upload --keep --action done Uploading 3 files.
+    openspot toast --id upload --action done Uploading 3 files.
     sleep 2
-    openspot toast --id upload --keep --action done Uploaded 2 of 3 files. Click to finish.
+    openspot toast --id upload --action done Uploaded 2 of 3 files. Click to finish.
     ;;
   done) openspot toast 'The click ran the action `done`.' ;;
 esac
