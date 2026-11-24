@@ -10,7 +10,7 @@ final class ToastPanel: NSPanel, ToastWindow {
     var front: () -> CGRect? = { nil }
 
     func measure(_ toast: Toast) -> CGSize {
-        let measure = NSHostingController(rootView: ToastView(toast: toast.copy, showsContent: true))
+        let measure = NSHostingController(rootView: ToastView(toast: toast.copy))
         measure.sizingOptions = []
         let widest = SpotTokens.toastMaxSize.width - 2 * SpotTokens.toastRoom
         let width = min(measure.sizeThatFits(in: NSSize(width: widest, height: SpotTokens.toastMaxSize.height)).width.rounded(.up) + 1, widest)
@@ -20,7 +20,7 @@ final class ToastPanel: NSPanel, ToastWindow {
     func place() {
         guard let toasts else { return }
         let room = 2 * SpotTokens.toastRoom
-        let size = CGSize(width: (toasts.width ?? 0) + room, height: toasts.height + room)
+        let size = CGSize(width: toasts.width + room, height: toasts.height + room)
         let screens = ScreenPlace.Screen.all
         let window = screens.count < 2 ? nil : front()
         let place = ScreenPlace(screens: screens)

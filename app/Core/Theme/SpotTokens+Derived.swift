@@ -17,6 +17,10 @@ extension SpotTokens {
 
     public static var toastRoom: CGFloat { max(toastMargin, 2 * CGFloat(backdrop.shadow)) }
 
+    public static func toastBars(_ count: Int) -> CGFloat {
+        CGFloat(count) * toastBarWidth + CGFloat(max(count - 1, 0)) * toastBarGap
+    }
+
     public static var panelWidth: CGFloat { layout.panelWidth }
 
     public static var panelHeight: CGFloat { layout.panelHeight }

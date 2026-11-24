@@ -3,16 +3,12 @@ import SwiftUI
 
 struct ToastView: View {
     let toast: Toast
-    let showsContent: Bool
-    var width: CGFloat?
     var toasts: Toasts?
 
     var body: some View {
         content
-            .opacity(showsContent ? 1 : MotionTokens.hiddenOpacity)
             .padding(.horizontal, SpotTokens.toastMargin)
             .padding(.vertical, SpotTokens.toastPaddingY)
-            .frame(width: width)
             .modifier(SpotGlass(shape: SpotRoundShape(radius: SpotTokens.toastRadius)))
             .contentShape(Rectangle())
             .onTapGesture { toasts?.press(toast.id) }

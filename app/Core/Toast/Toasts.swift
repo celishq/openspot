@@ -10,10 +10,10 @@ public final class Toasts {
 
     public private(set) var shown: [Toast] = []
     public private(set) var leadKind: ToastKind?
-    public private(set) var places: [ToastID: ToastLayout.Place] = [:]
-    public private(set) var width: CGFloat?
+    public private(set) var count = 0
+    public private(set) var frontHeight: CGFloat = 0
+    @ObservationIgnored public private(set) var width: CGFloat = 0
     @ObservationIgnored public private(set) var height: CGFloat = 0
-    @ObservationIgnored public private(set) var isExpanded = false
     @ObservationIgnored public weak var window: ToastWindow?
     @ObservationIgnored private unowned let host: SpotsHost
     @ObservationIgnored private let clock: RunClock
@@ -43,15 +43,11 @@ public final class Toasts {
         if existing == nil { dropped(by: toast).forEach(leave) }
         toast.size = window?.measure(toast) ?? .zero
         if existing == nil { shown.insert(toast, at: 0) }
-        host.change(.move, { arrange() }, completion: {})
+        host.change(.move, { fit() }, completion: {})
         window?.place()
         if existing == nil {
             window?.bringToFront()
-            window?.nextFrame { [weak self] in
-                guard let self, isStacked(id) else { return }
-                toast.isShown = true
-                takeLeadKind()
-            }
+            window?.nextFrame { [weak self] in self?.showFront() }
         }
         ends.removeValue(forKey: id)?.cancel()
         if !isHeld { end(toast) }
@@ -74,16 +70,6 @@ public final class Toasts {
             ends.removeAll()
         } else {
             stacked.forEach(end)
-        }
-        isExpanded = isHovered
-        host.change(.move, { arrange() }, completion: {})
-        if isHovered {
-            window?.place()
-        } else {
-            after(MotionTokens.move) { [weak self] in
-                guard let self, !isHeld else { return }
-                window?.place()
-            }
         }
     }
 
@@ -110,17 +96,15 @@ public final class Toasts {
     private func leave(_ id: ToastID) {
         ends.removeValue(forKey: id)?.cancel()
         guard let toast = shown.first(where: { $0.id == id }), leaving.insert(id).inserted else { return }
-        if toast.isShown { toast.isShown = false }
-        takeLeadKind()
+        showFront()
+        host.change(.move, { fit() }, completion: {})
+        window?.place()
         if fixKeyToast == id { passFixKey() }
         after(MotionTokens.fadeOut) { [weak self] in
             guard let self, shown.contains(where: { $0 === toast }) else { return }
             leaving.remove(id)
-            host.change(.move, {
-                shown.removeAll { $0.id == id }
-                arrange()
-            }, completion: {})
-            after(MotionTokens.move) { [weak self] in self?.settle() }
+            shown.removeAll { $0.id == id }
+            settle()
         }
     }
 
@@ -165,21 +149,21 @@ public final class Toasts {
         holdFixKey(next.id, key: key)
     }
 
-    private func takeLeadKind() {
-        let next = shown.first { $0.isShown }?.note.kind
+    private func showFront() {
+        let front = stacked.first?.id
+        for toast in shown where toast.isShown != (toast.id == front) {
+            toast.isShown = toast.id == front
+        }
+        let next = stacked.first?.note.kind
         if next != leadKind { leadKind = next }
     }
 
-    private func widen() {
-        let next = shown.map(\.size.width).max()
-        if next != width { width = next }
-    }
-
-    private func arrange() {
-        widen()
-        let layout = ToastLayout(heights: shown.map(\.size.height), isExpanded: isExpanded)
-        let next = Dictionary(uniqueKeysWithValues: zip(shown.map(\.id), layout.places))
-        if next != places { places = next }
-        height = layout.height
+    private func fit() {
+        let stacked = stacked
+        if stacked.count != count { count = stacked.count }
+        let front = stacked.first?.size.height ?? 0
+        if front != frontHeight { frontHeight = front }
+        width = max(shown.map(\.size.width).max() ?? 0, count > 1 ? SpotTokens.toastBars(count) : 0)
+        height = (shown.map(\.size.height).max() ?? 0) + (count > 1 ? SpotTokens.toastBarsGap + SpotTokens.toastBarHeight : 0)
     }
 }
