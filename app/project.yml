@@ -253,6 +253,7 @@ targets:
     platform: macOS
     sources:
       - path: Tests
+      - path: Shell/Surface/SpotSpring.swift
       - path: Core/Run/InlineScript.js
         buildPhase: resources
     dependencies:
