@@ -57,7 +57,7 @@ public final class ReadSources: @unchecked Sendable {
     }
 
     private func selection(asks: Bool) async throws -> [TextBlock] {
-        guard mac.accessibility(asks: asks) == .allowed else { throw SpotError.fault(Self.refusal("the selected text")) }
+        guard mac.accessibility(asks: asks) == .allowed else { throw ReadRefusal(reader: "the selected text") }
         guard let text = await mac.selectedText().map(Self.cut), !text.allSatisfy(\.isWhitespace) else { return [] }
         let app = await mac.front()?.bundleID
         return [Self.record([("text", text)] + (app.map { [("app", $0)] } ?? []))]
@@ -81,12 +81,8 @@ public final class ReadSources: @unchecked Sendable {
         switch await mac.access(to: bundleID, asks: asks) {
         case .allowed: true
         case .unknown: false
-        case .denied, .unasked: throw SpotError.fault(Self.refusal(name))
+        case .denied, .unasked: throw ReadRefusal(reader: name)
         }
-    }
-
-    private static func refusal(_ name: String) -> String {
-        "Openspot can't read \(name). Allow it in the Attachments spot."
     }
 
     private static func cut(_ text: String) -> String {

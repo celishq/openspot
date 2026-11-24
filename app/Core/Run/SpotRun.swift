@@ -16,7 +16,7 @@ public final class SpotRun {
         case move(FlowMove)
         case refused(String?)
         case done
-        case attachment(AttachmentValue)
+        case attachment(AttachmentChip.State)
         case shown
     }
 

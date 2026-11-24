@@ -8,22 +8,35 @@ extension SpotsModel {
         let front = isWarming ? nil : host.frontApp
         let feeds = !isWarming && entries.contains { entry in AttachmentValue.Kind.allCases.contains(where: entry.spot.triggers.drop.takes) }
         let loading = feeds ? entries.filter { $0.spot.isSource && $0.spot.triggers.opensOverAnApp && $0.spot.runsOnOpen(over: front?.bundleID, feedsAttachment: feeds) } : []
+        let unread = feeds ? entries.filter { $0.spot.isSource && $0.spot.triggers.attaches(over: front?.bundleID) } : []
         endSpread()
+        endReads()
         isAttachmentMoving = false
         var next = attachments
-        next.open(over: front, loading: loading.map { ($0.id, Self.look(of: $0.spot)) })
+        next.open(over: front, loading: loading.map { ($0.id, Self.look(of: $0.spot)) }, unread: unread.map { ($0.id, Self.look(of: $0.spot)) })
         if next != attachments { attachments = next }
         if wasOn { updateVisible() }
         runs.panelOpened(showsToEnd: isWarming, over: front?.bundleID, feedsAttachment: feeds)
     }
 
-    func takeAttachment(_ value: AttachmentValue, of id: String) {
+    func takeAttachment(_ state: AttachmentChip.State, of id: String) {
+        guard case .ready(let value) = state else {
+            guard attachments.chips.contains(where: { $0.source == id && $0.isLoading }) else { return }
+            endRead(id)
+            return mark(id, state)
+        }
+        endRead(id)
         var next = attachments
         if cards.contains(where: { $0.spot.takes(value) }) { next.fill(id, with: value, look: entry(id).flatMap { Self.look(of: $0.spot) }) } else { next.remove(id) }
         settle(next, motion: .fade)
     }
 
     func endAttachment(of id: String) {
+        guard !isLazy(id) else {
+            guard let chip = attachments.chips.first(where: { $0.source == id }), chip.isLoading else { return }
+            endRead(id)
+            return mark(id, sheets[id]?.failure.map(AttachmentChip.State.failed) ?? .empty("Nothing to attach from \(chip.appName ?? "the app")"))
+        }
         var next = attachments
         next.end(id)
         settle(next, motion: .fade)
@@ -34,14 +47,66 @@ extension SpotsModel {
         spreadAttachment()
         var next = attachments
         next.turn(by: step)
+        let read = next.selectedChip.flatMap { !$0.isRead && isLazy($0.source) ? $0 : nil }
+        if let read { next.mark(read.source, .loading) }
         settle(next, motion: isCycling ? nil : .edit)
+        if let read { self.read(read) }
     }
 
     func leaveAttachment() {
         endSpread()
         var next = attachments
+        let reading = next.chips.filter { $0.isLoading && isLazy($0.source) }.map(\.source)
+        reading.forEach { next.mark($0, .unread) }
         next.leave()
         settle(next, motion: .edit)
+        for id in reading {
+            endRead(id)
+            runs.stopAttach(id)
+        }
+    }
+
+    func allowAttachment() {
+        guard case .denied = attachments.selectedChip?.state, let id = entries.first(where: { $0.spot.edits == .attachments && $0.spot.isBuiltIn })?.id else { return }
+        pushFirst(id, moving: true)
+    }
+
+    private func isLazy(_ id: String) -> Bool {
+        entry(id)?.spot.triggers.attach != nil
+    }
+
+    private func read(_ chip: AttachmentChip) {
+        let id = chip.source
+        runs.attach(id, over: chip.app)
+        attachmentReads[id]?.cancel()
+        let limit = attachmentReadLimit
+        attachmentReads[id] = Task { [weak self] in
+            try? await Task.sleep(for: limit, tolerance: limit / 10)
+            guard !Task.isCancelled else { return }
+            self?.timeOut(id)
+        }
+    }
+
+    private func timeOut(_ id: String) {
+        attachmentReads[id] = nil
+        guard let chip = attachments.chips.first(where: { $0.source == id }), chip.isLoading else { return }
+        mark(id, .failed("\(chip.appName ?? "The app") didn't answer"))
+        runs.stopAttach(id)
+    }
+
+    private func mark(_ id: String, _ state: AttachmentChip.State) {
+        var next = attachments
+        next.mark(id, state)
+        settle(next, motion: .fade)
+    }
+
+    private func endRead(_ id: String) {
+        attachmentReads.removeValue(forKey: id)?.cancel()
+    }
+
+    private func endReads() {
+        attachmentReads.values.forEach { $0.cancel() }
+        attachmentReads = [:]
     }
 
     public func pressAttachment() {
@@ -95,7 +160,7 @@ extension SpotsModel {
             return []
         }
         guard let value = chip.value else {
-            hold(.loading, motion: motion)
+            hold(AttachmentPreview(state: chip), motion: motion)
             return []
         }
         hold(AttachmentPreview(value), motion: motion)

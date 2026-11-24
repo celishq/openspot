@@ -29,7 +29,7 @@ extension SpotRun {
             key: Self.showKey,
             limit: runs.showLimit,
             event: event,
-            purpose: .ask(.show(generation: partsGeneration, reports: need != .clock, query: query, tells: event != .panel))
+            purpose: .ask(.show(generation: partsGeneration, reports: need != .clock, query: query, tells: event.tells))
         ))
         self.typed = nil
         if isSent {

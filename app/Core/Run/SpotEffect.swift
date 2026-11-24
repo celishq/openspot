@@ -4,7 +4,7 @@ enum SpotEffect: Equatable, Sendable {
     case toast(String)
     case select(String)
     case route(FlowMove)
-    case attachment(AttachmentValue)
+    case attachment(AttachmentChip.State)
 }
 
 extension SpotEffect {

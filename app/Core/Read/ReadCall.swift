@@ -21,13 +21,20 @@ enum ReadCall: NounCall {
     func work(in context: CallContext) -> CommandAPI.Work? {
         let reads = context.mac.reads
         let asks = !context.isInShow
+        let runs = context.runs
+        let caller = context.request.caller
         return CommandAnswer.work { [self] in
             let sources = try Mac.part(reads, "reads")
-            let records = switch self {
-            case .source(let source): try await sources.read(source, asks: asks)
-            case .access: await sources.access()
+            do {
+                let records = switch self {
+                case .source(let source): try await sources.read(source, asks: asks)
+                case .access: await sources.access()
+                }
+                return records.map(\.text).joined(separator: "\n")
+            } catch let refusal as ReadRefusal {
+                if let runs, let caller { _ = await runs.take(SpotEffect.attachment(.denied(refusal.reader)), from: caller) }
+                throw refusal
             }
-            return records.map(\.text).joined(separator: "\n")
         }
     }
 }

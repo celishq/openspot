@@ -153,7 +153,7 @@ final class AttachmentStateTests: AttachmentCase {
         await open()
         XCTAssertTrue(model.handleKey(tab))
         XCTAssertEqual(shown, [])
-        XCTAssertEqual(model.fieldValue.preview, .loading)
+        XCTAssertEqual(model.fieldValue.preview?.caption, "Reading Safari…")
 
         FileManager.default.createFile(atPath: path("release"), contents: Data())
 

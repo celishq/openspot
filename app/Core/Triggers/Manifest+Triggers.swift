@@ -8,7 +8,8 @@ extension Manifest {
         static let schedule = ScriptEntry.schedule.name
         static let every = ScriptEntry.every.name
         static let drop = ScriptEntry.drop.name
-        static let keys = [command, search, schedule, every, drop]
+        static let attach = EventName.attach
+        static let keys = [command, search, schedule, every, drop, attach]
         static let events = EventName.declarable
         private static let named = [ScriptEntry.show, .press, .drag]
         static let cache = "cache"
@@ -21,6 +22,7 @@ extension Manifest {
         public let schedule: [CronLine]
         public let every: Int?
         public let drop: DropKinds
+        public let attach: AnswerPattern?
         public let events: [String]
         public let filters: [String: AnswerPattern]
         public let bindings: [BoundEvent]
@@ -30,7 +32,7 @@ extension Manifest {
         public static let sheet = Triggers(events: [EventName.sheetOpen])
 
         public init(
-            events: [String] = [], every: Int? = nil, search: AnswerPattern? = nil, lists: Bool = false, drop: DropKinds = DropKinds(), commands: [String] = [],
+            events: [String] = [], every: Int? = nil, search: AnswerPattern? = nil, lists: Bool = false, drop: DropKinds = DropKinds(), attach: AnswerPattern? = nil, commands: [String] = [],
             schedule: [CronLine] = [], filters: [String: AnswerPattern] = [:], bindings: [BoundEvent] = [], fills: [String: TimeInterval] = [:]
         ) {
             self.commands = commands
@@ -39,6 +41,7 @@ extension Manifest {
             self.schedule = schedule
             self.every = every
             self.drop = drop
+            self.attach = attach
             self.events = events
             self.filters = filters
             self.bindings = bindings
@@ -53,6 +56,7 @@ extension Manifest {
             var schedule: [CronLine] = []
             var every: Int?
             var drop = DropKinds()
+            var attach: AnswerPattern?
             var events: [String] = []
             var filters: [String: AnswerPattern] = [:]
             var bindings: [BoundEvent] = []
@@ -89,6 +93,10 @@ extension Manifest {
                 case Self.drop:
                     guard case .strings(let kinds)? = value else { throw fault(name, "takes a list of file types, such as drop = [\"png\", \"folder\"].") }
                     drop = DropKinds(kinds)
+                case Self.attach:
+                    guard case .string(let text)? = value else { throw fault(name, "takes a regular expression of the bundle ID of the front app, such as attach = \"^com\\\\.apple\\\\.Safari$\".") }
+                    guard let pattern = AnswerPattern(text) else { throw fault(name, "is not a regular expression: \(text).") }
+                    attach = pattern
                 case let event where Self.events.contains(event):
                     switch value {
                     case .boolean(let isOn)?:
@@ -115,7 +123,7 @@ extension Manifest {
                     throw SpotError.fault("\(Manifest.fileName): \(section) has an unknown event: \(name). Use \(known), or <binding>.<event>.")
                 }
             }
-            self.init(events: events, every: every, search: search, lists: lists, drop: drop, commands: commands, schedule: schedule, filters: filters, bindings: bindings, fills: fills)
+            self.init(events: events, every: every, search: search, lists: lists, drop: drop, attach: attach, commands: commands, schedule: schedule, filters: filters, bindings: bindings, fills: fills)
         }
 
         private static func age(_ text: String) -> TimeInterval? {
@@ -130,6 +138,7 @@ extension Manifest {
             if !schedule.isEmpty { handlers.append(.schedule) }
             if every != nil { handlers.append(.every) }
             if drop.isDeclared { handlers.append(.drop) }
+            if attach != nil { handlers.append(.event(Self.attach)) }
             handlers += fills.keys.sorted().map { ScriptEntry.event(Self.cache + "." + $0) }
             return handlers
         }
@@ -151,6 +160,11 @@ extension Manifest {
         public func opens(over front: String?) -> Bool {
             guard let filter = filters[EventName.panelOpen] else { return showsOnPanel }
             return front.map(filter.matches) ?? false
+        }
+
+        public func attaches(over front: String?) -> Bool {
+            guard let attach, let front else { return false }
+            return attach.matches(front)
         }
 
         public var opensSheet: Bool {
@@ -177,7 +191,7 @@ extension Manifest {
 
         func answering(_ order: String?) -> Triggers {
             let ordered = order == "last" ? search?.last() : order == "card" ? search?.card() : search
-            return Triggers(events: events, every: every, search: ordered, lists: lists, drop: drop, commands: commands, schedule: schedule, filters: filters, bindings: bindings, fills: fills)
+            return Triggers(events: events, every: every, search: ordered, lists: lists, drop: drop, attach: attach, commands: commands, schedule: schedule, filters: filters, bindings: bindings, fills: fills)
         }
 
         var showing: Triggers {

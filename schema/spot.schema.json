@@ -62,6 +62,9 @@
         ]
       },
       "properties" : {
+        "attach" : {
+          "type" : "string"
+        },
         "command" : {
           "items" : {
             "type" : "string"

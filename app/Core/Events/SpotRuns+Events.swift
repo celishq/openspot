@@ -17,6 +17,14 @@ extension SpotRuns {
         openPanel(showsToEnd: showsToEnd, over: front, feedsAttachment: feedsAttachment)
     }
 
+    func attach(_ id: String, over front: String?) {
+        sheets[id]?.show(need: .change, event: .event(EventName.attach, value: front))
+    }
+
+    func stopAttach(_ id: String) {
+        sheets[id]?.stopShows()
+    }
+
     public func launched() {
         readTimers()
         for sheet in sheets.values where sheet.spot.showsAtLaunch {

@@ -97,7 +97,10 @@ extension SpotsModel {
             runSelectedItem()
             return
         }
-        guard let entry = selectedEntry else { return }
+        guard let entry = selectedEntry else {
+            if content == .attachment { allowAttachment() }
+            return
+        }
         runShown(entry)
     }
 

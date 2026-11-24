@@ -97,7 +97,7 @@ extension OpenspotApp: SpotsHost {
     }
 
     var frontApp: FrontApp? {
-        previous.app.flatMap { app in app.bundleIdentifier.map { FrontApp(bundleID: $0, path: app.bundleURL?.path) } }
+        previous.app.flatMap { app in app.bundleIdentifier.map { FrontApp(bundleID: $0, path: app.bundleURL?.path, name: app.localizedName) } }
     }
 
     func takeFocus() {

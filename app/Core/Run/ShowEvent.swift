@@ -27,6 +27,10 @@ public enum ShowEvent: Equatable, Sendable {
         if case .event = self { true } else { false }
     }
 
+    var tells: Bool {
+        self != .panel && name != EventName.attach
+    }
+
     var isFrequent: Bool {
         switch self {
         case .want, .clock, .typed, .event: true

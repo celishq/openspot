@@ -33,6 +33,23 @@ class AttachmentCase: PanelCase {
         """)
     }
 
+    var cli: String {
+        "'\(client.path)'"
+    }
+
+    func attach(_ name: String = "tab", app: String = "^com\\.apple\\.Safari$", waits: Bool = false, runs body: String) throws {
+        let wait = waits ? "while [ ! -f '\(path("release"))' ]; do sleep 0.02; done\n" : ""
+        try script(name, toml: "title = '\(name)'\nuses = ['attachment', 'read']\n\n[on]\nattach = '\(app)'", """
+        case "$1" in
+          attach) echo attach >> '\(path("\(name)-log"))'; \(wait)\(body); echo $? >> '\(path("done"))' ;;
+        esac
+        """)
+    }
+
+    func unblock() {
+        FileManager.default.createFile(atPath: path("release"), contents: Data())
+    }
+
     func taker(_ name: String = "keep", takes kinds: String) throws {
         try script(name, toml: "title = '\(name)'\n\n[on]\ndrop = [\(kinds)]", """
         case "$1" in
