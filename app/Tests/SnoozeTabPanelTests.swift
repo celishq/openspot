@@ -78,4 +78,45 @@ final class SnoozeTabPanelTests: PanelCase {
         XCTAssertTrue(list.contains("input.url=https://example.com/a"), list)
         XCTAssertTrue(list.contains("input.title=Example page"), list)
     }
+
+    private func snooze(_ id: String, url: String) async throws {
+        await model.reload()
+        let action = try XCTUnwrap(model.sheets["snooze-tab"]).spot.action(id)
+        model.sheets["snooze-tab"]?.run(.command(action), inputs: [TextBlock.Field(key: "url", value: url), TextBlock.Field(key: "title", value: "A page")])
+        try await wait("the toast of the snooze") { self.host.confirms.contains { $0.hasPrefix("Snoozed") } }
+    }
+
+    private var tomorrowMorning: String {
+        let calendar = Calendar.current
+        let day = calendar.date(byAdding: .day, value: 1, to: calendar.startOfDay(for: Date()))!
+        return ISO8601DateFormatter().string(from: calendar.date(bySettingHour: 8, minute: 0, second: 0, of: day)!)
+    }
+
+    func testSnoozeUntilTomorrowClosesTheFrontTabOfItsLinkAndReopensItTomorrowMorning() async throws {
+        try await snooze("tomorrow", url: "https://example.com/a")
+
+        XCTAssertEqual(host.confirms.last, "Snoozed the tab.")
+        XCTAssertTrue(FileManager.default.fileExists(atPath: folder.appendingPathComponent("closed").path))
+        let list = try await timers()
+        XCTAssertTrue(list.contains("at=\(tomorrowMorning)"), list)
+        XCTAssertTrue(list.contains("input.browser=com.apple.Safari"), list)
+        XCTAssertTrue(list.contains("input.url=https://example.com/a"), list)
+        XCTAssertTrue(list.contains("input.title=A page"), list)
+    }
+
+    func testSnoozeOfALinkThatIsNotTheFrontTabClosesNoTab() async throws {
+        try await snooze("week", url: "https://example.com/other")
+
+        XCTAssertEqual(host.confirms.last, "Snoozed the link.")
+        XCTAssertFalse(FileManager.default.fileExists(atPath: folder.appendingPathComponent("closed").path))
+        let list = try await timers()
+        XCTAssertTrue(list.contains("input.url=https://example.com/other"), list)
+    }
+
+    func testEachSnoozeActionNamesItsTime() async throws {
+        await model.reload()
+        let spot = try XCTUnwrap(model.sheets["snooze-tab"]).spot
+
+        XCTAssertEqual(try ["tomorrow", "weekend", "week"].map { try spot.action($0).title }, ["Snooze until tomorrow", "Snooze until the weekend", "Snooze until next week"])
+    }
 }

@@ -189,6 +189,10 @@ pages = ["date", "date/*"]
 inputs.title = { type = "text", description = "What the time is for, as the title of the sheet" }
 outputs.until = { type = "text", required = true, description = "An ISO 8601 time with its offset, or someday" }
 
+[scripts.snooze.actions.at]
+inputs.tile = { type = "text", required = true, description = "A tile with a moment, such as tomorrow, weekend or week" }
+outputs.until = { type = "text", required = true, description = "An ISO 8601 time with its offset" }
+
 [scripts.snooze.settings]
 morning = { type = "choice", title = "Morning", icon = "sunrise", options = ["6:00", "7:00", "8:00", "9:00", "10:00"] }
 evening = { type = "choice", title = "Evening", icon = "moon.stars", options = ["17:00", "18:00", "19:00", "20:00", "21:00"] }

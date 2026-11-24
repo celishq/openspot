@@ -48,12 +48,12 @@ changes until you press Tab.
 
 | Key        | Does                                                                                  |
 | ---------- | ------------------------------------------------------------------------------------- |
-| Tab        | Shows the front card's preview and each spot that takes it, then turns to the next card. |
+| Tab        | Shows the front card's preview and each action that takes it, then turns to the next card. |
 | `⇧` Tab    | Turns to the card before.                                                             |
-| Return     | Hands the card to the selected spot, such as a link to Links.                         |
+| Return     | Runs the selected action with the card, such as Add to Links with a link.             |
 | Esc        | Brings back the grid. A second Esc closes the panel.                                  |
 
-- Typing filters the spots that take the card. Backspace edits only the text.
+- Typing filters the actions that take the card. Backspace edits only the text.
 - When the text starts with `/`, Tab completes the slash command instead.
 - A card shows only when a spot that is on takes it. Fresh Copy shows what you copied in the last 2 minutes.
 

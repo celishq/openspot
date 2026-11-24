@@ -88,6 +88,26 @@ snooze() {
   openspot toast "Snoozed the tab."
 }
 
+# Snoozes a link handed to it until the moment of a tile of Snooze, with no sheet. It reopens in the front browser when
+# Snooze Tab reads it, else in the default browser, and closes the front tab only when that tab shows the link.
+snooze_link() {
+  at=$(openspot run picker.at tile="$1" --out until) || exit 1
+  browser=$(front_id)
+  [ -n "$(tab_words "$browser")" ] || browser=""
+  set -- "$2" "$3"
+  if [ -n "$2" ]; then
+    openspot timer add "$at" reopen browser="$browser" url="$1" title="$2" >/dev/null || exit 1
+  else
+    openspot timer add "$at" reopen browser="$browser" url="$1" >/dev/null || exit 1
+  fi
+  if [ -n "$browser" ] && [ "$(read_tab "$browser" | sed -n 1p)" = "$1" ]; then
+    close_tab "$browser"
+    openspot toast "Snoozed the tab."
+  else
+    openspot toast "Snoozed the link."
+  fi
+}
+
 case "$1" in
   show)
     browser=$(front_id)
@@ -129,16 +149,10 @@ case "$1" in
   snooze)
     snooze "" ""
     ;;
-  drop)
-    # Snoozes a link handed to it only when it is the front tab, the one that closes.
-    browser=$(front_id)
-    if [ "$(read_tab "$browser" | sed -n 1p)" != "$(value input.url)" ]; then
-      echo "Snooze Tab snoozes the front tab of your browser. Open the link there, then try again." >&2
-      exit 1
-    fi
-    snooze "$browser" "$(value input.title)"
+  tomorrow|weekend|week)
+    snooze_link "$1" "$(value input.url)" "$(value input.title)"
     ;;
   reopen)
-    open -b "$(value browser)" "$(value url)"
+    if [ -n "$(value browser)" ]; then open -b "$(value browser)" "$(value url)"; else open "$(value url)"; fi
     ;;
 esac

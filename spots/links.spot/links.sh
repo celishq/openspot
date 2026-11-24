@@ -160,7 +160,7 @@ case "$1" in
           + (if ($found | index($host + ".png")) then "icon=\("\($icons)/\($host).png" | esc)\n" else "icon=link\n" end)
         end' "$data" --args "$@"
     ;;
-  drop)
+  add)
     # Keeps the link that was handed to it, named by its title, or by the link when it has none.
     values=$(checked) || exit 1
     values=$(printf '%s' "$values" | jq -c 'if .title == "" then .title = .url else . end')
