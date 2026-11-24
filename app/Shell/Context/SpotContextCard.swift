@@ -54,7 +54,7 @@ struct SpotContextCard: View, Equatable {
                 .offset(x: SpotTokens.contextBadgeNudge, y: SpotTokens.contextBadgeNudge)
                 .frame(width: SpotTokens.contextBadge, height: SpotTokens.contextBadge)
                 .background(leaf.fill(SpotTheme.contextFace))
-                .overlay(alignment: .topLeading) { SpotLeafSeam(radius: SpotTokens.contextIconRadius).stroke(SpotTheme.contextRim, lineWidth: SpotTokens.contextBorder) }
+                .overlay(alignment: .topLeading) { SpotLeafShape(radius: SpotTokens.contextIconRadius, isSeam: true).stroke(SpotTheme.contextRim, lineWidth: SpotTokens.contextBorder) }
                 .padding(SpotTokens.contextInset)
                 .transition(.opacity)
         }

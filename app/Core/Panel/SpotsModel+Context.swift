@@ -64,4 +64,85 @@ extension SpotsModel {
         updateVisible()
         holdMotion = .edit
     }
+
+    func give(to entry: Entry) {
+        guard let value = context.selectedChip?.value else { return }
+        landDrop(value, on: entry.spot.id, leavesContext: true)
+    }
+
+    func takeTab(back: Bool) -> Bool? {
+        guard openSheetID == nil, !isEditing else { return nil }
+        if slash != nil { return completeSlash() }
+        guard !context.chips.isEmpty else { return nil }
+        turnContext(by: back ? -1 : 1)
+        return true
+    }
+
+    var contextHint: String? {
+        guard openSheetID == nil, !isEditing, !context.chips.isEmpty else { return nil }
+        guard context.isOn else { return "⇥ \(context.chips.count == 1 ? "Context" : "\(context.chips.count) Contexts")" }
+        let run = selectedEntry.map { "⏎ \($0.state.title)" }
+        return [run, "⇥ Next", "Esc Leave"].compactMap { $0 }.joined(separator: "   ")
+    }
+
+    func showContext() -> [Entry] {
+        guard let chip = context.selectedChip, entry(chip.source) != nil else {
+            hold(nil)
+            return []
+        }
+        guard let value = chip.value else {
+            hold(.loading)
+            return []
+        }
+        hold(ContextPreview(value))
+        let text = query.trimmingCharacters(in: .whitespaces)
+        let found = commands.takers(of: value, matching: text.isEmpty ? nil : runs.search(of: text), limit: Self.contextRows)
+        let taken = found.compactMap { row in
+            entry(row.spot).map { Entry(spot: $0.spot, item: SpotItem(title: row.title, run: ""), role: .taker, detail: value.kind.takerWords) }
+        }
+        return taken
+    }
+
+    func hold(_ preview: ContextPreview?) {
+        guard preview != fieldValue.preview else { return }
+        change(isShown ? holdMotion : nil) { fieldValue = FieldValue(preview) }
+    }
+
+    static let contextRows = 5
+
+    func spreadContext() {
+        contextWatch?.cancel()
+        let pause = contextPause
+        contextWatch = Task { [weak self] in
+            try? await Task.sleep(for: pause, tolerance: pause / 10)
+            guard !Task.isCancelled else { return }
+            self?.foldContext()
+        }
+    }
+
+    func endSpread() {
+        contextWatch?.cancel()
+        contextWatch = nil
+    }
+
+    func placeContext(_ motion: PanelMotion?) {
+        guard !isContextMoving else { return }
+        var next = context
+        next.place(spreads: contextWatch != nil)
+        guard next != context else { return }
+        guard let motion, isShown else {
+            context = next
+            return
+        }
+        isContextMoving = true
+        change(motion, { context = next }) { [weak self] in
+            self?.isContextMoving = false
+            self?.placeContext(.edit)
+        }
+    }
+
+    private func foldContext() {
+        endSpread()
+        placeContext(.edit)
+    }
 }
