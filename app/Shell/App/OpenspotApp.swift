@@ -58,7 +58,7 @@ final class OpenspotApp: NSObject, NSApplicationDelegate {
     private var openedAtLaunch: [URL] = []
 
     func applicationDidFinishLaunching(_ notification: Notification) {
-        toast = ToastPanel.make()
+        toast = ToastPanel.make(toasts: model.toasts)
         let theme = ThemeFolder.standard(environment: model.files.environment, builtIn: mac.mac.theme).read()
         model.take(theme)
         appearanceWatch = NSApp.observe(\.effectiveAppearance, options: [.initial, .new]) { [weak self] app, _ in
@@ -67,7 +67,7 @@ final class OpenspotApp: NSObject, NSApplicationDelegate {
         }
         if !theme.faults.isEmpty { notify(theme.faults.joined(separator: "\n")) }
         let item = OpenspotItem(
-            model: model, toasts: toast?.toasts, target: self, action: #selector(pressItem),
+            model: model, toasts: model.toasts, target: self, action: #selector(pressItem),
             onDragEnter: { [weak self] in self?.showPanelForDrag() }, onDrop: { [weak self] in self?.model.review($0) }
         )
         self.item = item

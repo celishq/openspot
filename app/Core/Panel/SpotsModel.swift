@@ -158,6 +158,7 @@ public final class SpotsModel {
     }
     @ObservationIgnored public var closingPick: (item: SpotItem, entry: Entry)?
     public let runs: SpotRuns
+    public let toasts: Toasts
     @ObservationIgnored public var dragWatch: Task<Void, Never>?
     public var dragPaths: [String] = []
     @ObservationIgnored var dragRead: Task<Void, Never>?
@@ -312,7 +313,7 @@ public final class SpotsModel {
         self.host = host
         self.files = files
         defaultArrangement = files.readDefaultArrangement()
-        self.runs = runs ?? SpotRuns(
+        let runs = runs ?? SpotRuns(
             recent: { files.recent(of: $0) },
             prepare: { [unowned host] in await host.prepare($0, glyphs: $1) },
             log: files.log,
@@ -320,6 +321,8 @@ public final class SpotsModel {
             timers: files.timers,
             schedule: files.schedule
         )
+        self.runs = runs
+        toasts = Toasts(host: host, clock: runs.clock)
         self.runs.secrets = files.secrets
         self.runs.onReport = { [weak self] id, report in self?.take(report, of: id) }
         self.runs.partsArrival = { [weak self] id, bring in
