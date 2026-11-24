@@ -30,6 +30,10 @@ final class FakeReads: MacReads, @unchecked Sendable {
     var asks: [String] { lock.withLock { asksValue } }
 
     func front() async -> FrontApp? { lock.withLock { frontValue } }
+    func name(of bundleID: String) -> String? {
+        lock.withLock { installedValue.contains(bundleID) ? bundleID.split(separator: ".").last?.capitalized : nil }
+    }
+
     func place(of bundleID: String) -> String? {
         lock.withLock { installedValue.contains(bundleID) || bundleID == "com.apple.finder" ? "/Applications/\(bundleID.split(separator: ".").last?.capitalized ?? bundleID).app" : nil }
     }

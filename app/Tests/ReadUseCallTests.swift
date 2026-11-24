@@ -30,6 +30,43 @@ final class ReadUseCallTests: XCTestCase {
         return await work()
     }
 
+    private func configure(browsers lines: String) throws {
+        try "[browsers]\n\(lines)\n".write(to: folder.appendingPathComponent("config.toml"), atomically: true, encoding: .utf8)
+    }
+
+    func testABrowserOfTheConfigIsReadInTheWordsOfItsFamily() async throws {
+        try configure(browsers: "\"company.thebrowser.dia\" = \"chromium\"\n\"com.kagi.kagimacOS\" = \"safari\"\n\"com.google.Chrome\" = \"safari\"")
+        reads.set(front: "com.apple.TextEdit", answers: ["company.thebrowser.dia": ["https://d.com/", "D"], "com.kagi.kagimacOS": ["https://k.com/", "K"], "com.google.Chrome": ["https://c.com/", "C"]])
+
+        let dia = try await call(["browser", "tab", "company.thebrowser.dia"])
+        let kagi = try await call(["browser", "tab", "com.kagi.kagimacOS"])
+        let chrome = try await call(["browser", "tab", "com.google.Chrome"])
+
+        XCTAssertEqual([dia.output, kagi.output, chrome.output], ["url=https://d.com/\ntitle=D\napp=company.thebrowser.dia\n", "url=https://k.com/\ntitle=K\napp=com.kagi.kagimacOS\n", "url=https://c.com/\ntitle=C\napp=com.google.Chrome\n"])
+        XCTAssertTrue(reads.scripts[0].contains("active tab") && reads.scripts[0].contains("title of"), reads.scripts[0])
+        XCTAssertTrue(reads.scripts[1].contains("current tab") && reads.scripts[1].contains("name of"), reads.scripts[1])
+        XCTAssertTrue(reads.scripts[2].contains("current tab") && reads.scripts[2].contains("name of"), reads.scripts[2])
+    }
+
+    func testTheLineOfAnUnknownBrowserNamesEachBrowserOfTheConfigByItsAppOrElseItsBundleID() async throws {
+        try configure(browsers: "\"company.thebrowser.dia\" = \"chromium\"\n\"com.kagi.kagimacOS\" = \"safari\"")
+        reads.set(installed: ["company.thebrowser.dia"])
+
+        let answer = try await call(["browser", "tabs", "com.apple.TextEdit"])
+
+        XCTAssertEqual(answer.code, 1)
+        XCTAssertTrue(answer.errors.hasSuffix(", Opera, Dia and com.kagi.kagimacOS.\n"), answer.errors)
+    }
+
+    func testAccessListsTheBrowsersOfTheConfig() async throws {
+        try configure(browsers: "\"company.thebrowser.dia\" = \"chromium\"")
+        reads.set(installed: ["company.thebrowser.dia"], trust: .unasked)
+
+        let answer = try await call(["access", "list"])
+
+        XCTAssertEqual(answer.output, "app=company.thebrowser.dia\npath=/Applications/Dia.app\naccess=allowed\n\napp=com.apple.finder\npath=/Applications/Finder.app\naccess=allowed\n\napp=accessibility\naccess=unasked\n")
+    }
+
     func testTabPrintsTheFrontTabOfTheNamedBrowserInTheWordsOfThatBrowser() async throws {
         reads.set(front: "com.apple.TextEdit", answers: ["com.apple.Safari": ["https://a.com/", "A page"], "com.google.Chrome": ["https://b.com/", "B page"]])
         let safari = try await call(["browser", "tab", "com.apple.Safari"])

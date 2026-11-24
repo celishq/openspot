@@ -57,6 +57,19 @@ changes until you press Tab.
 - When the text starts with `/`, Tab completes the slash command instead.
 - A card shows only when a spot that is on takes it. Fresh Copy shows what you copied in the last 2 minutes.
 
+Browser Tab reads Safari, Safari Technology Preview, Google Chrome, Google Chrome Canary, Arc, Brave, Microsoft Edge,
+Vivaldi and Opera. To read another browser, name its bundle ID and its family, `chromium` or `safari`, in
+`~/.config/openspot/config.toml`:
+
+```toml
+[browsers]
+"company.thebrowser.dia" = "chromium"
+"com.kagi.kagimacOS" = "safari"
+```
+
+A browser of the Chromium family answers as Chrome does, and one of the Safari family as Safari does. A line for a
+browser that Openspot already reads changes its family.
+
 ## Rename a slash command
 
 Rename or remove a slash command, or keep a spot out of the search, in `~/.config/openspot/config.toml`. Here `/note`

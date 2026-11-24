@@ -13,6 +13,11 @@ struct SpotReads: MacReads {
         await MainActor.run { app().flatMap(FrontApp.init) }
     }
 
+    func name(of bundleID: String) -> String? {
+        guard let place = NSWorkspace.shared.urlForApplication(withBundleIdentifier: bundleID) else { return nil }
+        return (FileManager.default.displayName(atPath: place.path) as NSString).deletingPathExtension
+    }
+
     func place(of bundleID: String) -> String? {
         NSWorkspace.shared.urlForApplication(withBundleIdentifier: bundleID)?.path
     }

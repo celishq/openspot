@@ -22,7 +22,7 @@ extension Manifest {
         public let schedule: [CronLine]
         public let every: Int?
         public let drop: DropKinds
-        public let pick: AnswerPattern?
+        public let pick: AttachmentPick?
         public let events: [String]
         public let filters: [String: AnswerPattern]
         public let bindings: [BoundEvent]
@@ -32,7 +32,7 @@ extension Manifest {
         public static let sheet = Triggers(events: [EventName.sheetOpen])
 
         public init(
-            events: [String] = [], every: Int? = nil, search: AnswerPattern? = nil, lists: Bool = false, drop: DropKinds = DropKinds(), pick: AnswerPattern? = nil, commands: [String] = [],
+            events: [String] = [], every: Int? = nil, search: AnswerPattern? = nil, lists: Bool = false, drop: DropKinds = DropKinds(), pick: AttachmentPick? = nil, commands: [String] = [],
             schedule: [CronLine] = [], filters: [String: AnswerPattern] = [:], bindings: [BoundEvent] = [], fills: [String: TimeInterval] = [:]
         ) {
             self.commands = commands
@@ -56,7 +56,7 @@ extension Manifest {
             var schedule: [CronLine] = []
             var every: Int?
             var drop = DropKinds()
-            var pick: AnswerPattern?
+            var pick: AttachmentPick?
             var events: [String] = []
             var filters: [String: AnswerPattern] = [:]
             var bindings: [BoundEvent] = []
@@ -94,9 +94,9 @@ extension Manifest {
                     guard case .strings(let kinds)? = value else { throw fault(name, "takes a list of file types, such as drop = [\"png\", \"folder\"].") }
                     drop = DropKinds(kinds)
                 case Self.pick:
-                    guard case .string(let text)? = value else { throw fault(name, "takes a regular expression of the bundle ID of the front app, such as \"attachment.pick\" = \"^com\\\\.apple\\\\.Safari$\".") }
-                    guard let pattern = AnswerPattern(text) else { throw fault(name, "is not a regular expression: \(text).") }
-                    pick = pattern
+                    guard case .string(let text)? = value else { throw fault(name, "takes \"browsers\", or a regular expression of the bundle ID of the front app, such as \"attachment.pick\" = \"^com\\\\.apple\\\\.Safari$\".") }
+                    guard let found = AttachmentPick(text) else { throw fault(name, "is not a regular expression: \(text).") }
+                    pick = found
                 case let event where Self.events.contains(event):
                     switch value {
                     case .boolean(let isOn)?:
@@ -158,9 +158,9 @@ extension Manifest {
             return front.map(filter.matches) ?? false
         }
 
-        public func picks(over front: String?) -> Bool {
+        func picks(over front: String?, browsers: [Browser]) -> Bool {
             guard let pick, let front else { return false }
-            return pick.matches(front)
+            return pick.matches(front, browsers: browsers)
         }
 
         public var opensSheet: Bool {

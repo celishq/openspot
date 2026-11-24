@@ -20,6 +20,7 @@ public struct Config: Equatable, Sendable {
     public private(set) var isCareful = false
     public private(set) var theme: String?
     public private(set) var panels = GridPanels()
+    private(set) var browsers = Browser.builtIn
     public private(set) var isReadable = true
     private var kept = ConfigDocument()
 
@@ -44,7 +45,7 @@ public struct Config: Equatable, Sendable {
         kept.tables = []
         let known = ["spots", "keys", "settings", "stores"]
         let names = Array(document.values.keys) + Set(document.tables.map(\.name)) + document.sections.map(\.name)
-        for key in names.sorted() where !(["panel-key", "fix-key", "careful", "theme"] + known + GridPanel.allCases.compactMap(\.configKey)).contains(key) {
+        for key in names.sorted() where !(["panel-key", "fix-key", "careful", "theme", "browsers"] + known + GridPanel.allCases.compactMap(\.configKey)).contains(key) {
             faults.append("config.toml: \(key) is not a setting.")
         }
         arrangement = SpotArrangement(choices: document.tables(named: "spots").compactMap { choice(of: $0) })
@@ -63,6 +64,20 @@ public struct Config: Equatable, Sendable {
         case .string(let name)?: theme = name
         case nil: break
         default: faults.append("config.toml: theme is the name of a theme, such as \"Openspot\".")
+        }
+        for table in document.sections where table.name == "browsers" {
+            for key in table.keys {
+                let id = Manifest.path(key).joined(separator: ".")
+                guard case .string(let word)? = table[key], let family = Browser.Family(rawValue: word) else {
+                    faults.append("config.toml: " + Browser.familyFault(of: id))
+                    continue
+                }
+                if let place = browsers.firstIndex(where: { $0.bundleID == id }) {
+                    browsers[place] = browsers[place].family(family)
+                } else {
+                    browsers.append(Browser(bundleID: id, family: family))
+                }
+            }
         }
         for panel in GridPanel.allCases {
             guard let key = panel.configKey else { continue }

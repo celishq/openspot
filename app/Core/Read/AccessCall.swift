@@ -16,9 +16,10 @@ enum AccessCall: NounCall {
     ])
 
     func work(in context: CallContext) -> CommandAPI.Work? {
-        switch self {
-        case .list: ReadSources.work(in: context, asks: false) { sources, _ in await sources.access() }
-        case .ask(let app): ReadSources.work(in: context, asks: true) { sources, _ in await sources.access(of: app, asks: true) }
+        let config = context.places.config
+        return switch self {
+        case .list: ReadSources.work(in: context, asks: false) { sources, _ in await sources.access(browsers: config.read().browsers) }
+        case .ask(let app): ReadSources.work(in: context, asks: true) { sources, _ in await sources.access(of: app, browsers: config.read().browsers, asks: true) }
         }
     }
 }

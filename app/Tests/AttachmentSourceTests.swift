@@ -22,6 +22,25 @@ final class AttachmentSourceTests: AttachmentCase {
         XCTAssertTrue(faults.contains { $0.contains("unknown event: attach.") && $0.contains("attachment.pick") }, "\(faults)")
     }
 
+    func testPickBrowsersShowsTheChipOverEachBrowserOfOpenspotAndOfTheConfig() async throws {
+        let config = folder.appendingPathComponent("config")
+        try FileManager.default.createDirectory(at: config, withIntermediateDirectories: true)
+        try "[browsers]\n\"company.thebrowser.dia\" = \"chromium\"\n".write(to: config.appendingPathComponent("config.toml"), atomically: true, encoding: .utf8)
+        try taker(takes: "'url'")
+        try pickSource(app: "browsers", runs: "true")
+        var shown: [[String]] = []
+
+        for app in ["company.thebrowser.dia", "com.apple.Safari", "com.apple.TextEdit"] {
+            host.frontApp = FrontApp(bundleID: app)
+            await open()
+            shown.append(chips.map(\.source))
+            model.panelWillHide()
+            model.panelDidHide()
+        }
+
+        XCTAssertEqual(shown, [["tab"], ["tab"], []])
+    }
+
     func testASourceThatEndsWithNoValueLeavesNoChip() async throws {
         try taker(takes: "'url'")
         try source(adds: nil)

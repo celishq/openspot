@@ -1087,6 +1087,7 @@
 		F6BEAD932E39DCDD19D8E682 /* KeyRow.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2F879BAF9F25DE9FFF84989F /* KeyRow.swift */; };
 		F6D0479ECBCD1F201E496495 /* SpotTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2C8EA4B013951F882C97A132 /* SpotTests.swift */; };
 		F6FAE0F6A4E66C24922103F0 /* OpenspotItemView.swift in Sources */ = {isa = PBXBuildFile; fileRef = EEBFCF3BCC3211C9D535657D /* OpenspotItemView.swift */; };
+		F75CEA62B30D6607627B917B /* AttachmentPick.swift in Sources */ = {isa = PBXBuildFile; fileRef = CB33A12BE93ED71FEB49822C /* AttachmentPick.swift */; };
 		F7716BC9B83BFD21CF0D8D59 /* SpotEvidence.swift in Sources */ = {isa = PBXBuildFile; fileRef = B615B2901998BE824447F05D /* SpotEvidence.swift */; };
 		F78DF2739E21E68108720B97 /* WorkWindows.swift in Sources */ = {isa = PBXBuildFile; fileRef = 60FAF1500E1F6B256BDCC490 /* WorkWindows.swift */; };
 		F7A6B60EE680B2F25EA33E6C /* SpotEventsTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 80D063F29976A3A35734DE15 /* SpotEventsTests.swift */; };
@@ -2068,6 +2069,7 @@
 		CAAF0E80DC97DF254E294165 /* SpotTypesTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SpotTypesTests.swift; sourceTree = "<group>"; };
 		CABF4CA4077E92C2311D9BBA /* SpotRunningApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SpotRunningApp.swift; sourceTree = "<group>"; };
 		CAF7265077B5E78264B1CDFF /* HexColor+Contrast.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "HexColor+Contrast.swift"; sourceTree = "<group>"; };
+		CB33A12BE93ED71FEB49822C /* AttachmentPick.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AttachmentPick.swift; sourceTree = "<group>"; };
 		CB687CF43BB5A419F79C6ADA /* SpotFaded.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SpotFaded.swift; sourceTree = "<group>"; };
 		CB9ACC0059F5999A7C9CC391 /* ManifestTypesTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ManifestTypesTests.swift; sourceTree = "<group>"; };
 		CBE8B6BEB3303CE902A2652E /* SpotScreenTarget.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SpotScreenTarget.swift; sourceTree = "<group>"; };
@@ -2923,6 +2925,7 @@
 		6A82BCBB9C2D09973C6BA88C /* Triggers */ = {
 			isa = PBXGroup;
 			children = (
+				CB33A12BE93ED71FEB49822C /* AttachmentPick.swift */,
 				337DC76ADF7BCB6CC31D7EE0 /* CronLine.swift */,
 				4C1E7B061C0A80D88C3C8819 /* DropKinds.swift */,
 				CCF4E2B90F1743A04312E22A /* Manifest+Triggers.swift */,
@@ -4557,6 +4560,7 @@
 				740B7E40DA2178AB224B7A4D /* AttachmentCall.swift in Sources */,
 				4D63CEAEC85FDF122321106E /* AttachmentChip.swift in Sources */,
 				CA51E77561870C4E931B4DD0 /* AttachmentLayout.swift in Sources */,
+				F75CEA62B30D6607627B917B /* AttachmentPick.swift in Sources */,
 				573DC48D220E7723C883EBD7 /* AttachmentPreview.swift in Sources */,
 				FF834DFDCD82A83F8A2B4FBC /* AttachmentShape.swift in Sources */,
 				2E0CC3C53B6497644A78CEE5 /* AttachmentStack.swift in Sources */,

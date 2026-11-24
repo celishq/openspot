@@ -4,4 +4,4 @@ detail = "Hand the front tab to a spot"
 uses = ["attachment", "read"]
 
 [on]
-"attachment.pick" = "^(com\\.apple\\.Safari|com\\.apple\\.SafariTechnologyPreview|com\\.google\\.Chrome|com\\.google\\.Chrome\\.canary|company\\.thebrowser\\.Browser|com\\.brave\\.Browser|com\\.microsoft\\.edgemac|com\\.vivaldi\\.Vivaldi|com\\.operasoftware\\.Opera)$"
+"attachment.pick" = "browsers"

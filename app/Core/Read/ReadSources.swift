@@ -21,8 +21,8 @@ public final class ReadSources: @unchecked Sendable {
         self.mac = mac
     }
 
-    func access(of app: String? = nil, asks: Bool = false) async -> [TextBlock] {
-        let apps = Browser.all.map(\.bundleID) + [Self.finder.bundleID]
+    func access(of app: String? = nil, browsers: [Browser], asks: Bool = false) async -> [TextBlock] {
+        let apps = browsers.map(\.bundleID) + [Self.finder.bundleID]
         var records: [TextBlock] = []
         for bundleID in apps where app == nil || app == bundleID {
             guard let place = mac.place(of: bundleID) else { continue }
@@ -34,16 +34,18 @@ public final class ReadSources: @unchecked Sendable {
         return records
     }
 
-    func tab(of browser: Browser, asks: Bool) async throws -> [TextBlock] {
-        guard try await allows(browser.bundleID, named: browser.name, asks: asks),
+    func tab(of bundleID: String, in browsers: [Browser], asks: Bool) async throws -> [TextBlock] {
+        let browser = try find(bundleID, in: browsers)
+        guard try await allows(browser.bundleID, named: name(of: browser), asks: asks),
               let values = await mac.run(browser.script), let url = values.first, !url.isEmpty
         else { return [] }
         let title = values.dropFirst().first.flatMap { $0.isEmpty ? nil : $0 }
         return [Self.record([("url", url)] + (title.map { [("title", $0)] } ?? []) + [("app", browser.bundleID)])]
     }
 
-    func tabs(of browser: Browser, asks: Bool) async throws -> [TextBlock] {
-        guard try await allows(browser.bundleID, named: browser.name, asks: asks),
+    func tabs(of bundleID: String, in browsers: [Browser], asks: Bool) async throws -> [TextBlock] {
+        let browser = try find(bundleID, in: browsers)
+        guard try await allows(browser.bundleID, named: name(of: browser), asks: asks),
               let values = await mac.run(browser.tabsScript)
         else { return [] }
         return stride(from: 0, to: values.count - values.count % 5, by: 5).compactMap { start in
@@ -68,6 +70,17 @@ public final class ReadSources: @unchecked Sendable {
     func front() async -> [TextBlock] {
         guard let front = await mac.front() else { return [] }
         return [Self.record([("app", front.bundleID), ("name", front.name)] + (front.path.map { [("path", $0)] } ?? []))]
+    }
+
+    private func find(_ bundleID: String, in browsers: [Browser]) throws -> Browser {
+        guard let browser = browsers.first(where: { $0.bundleID == bundleID }) else {
+            throw SpotError.failed(1, Browser.unknown(bundleID, names: browsers.map(name)))
+        }
+        return browser
+    }
+
+    private func name(of browser: Browser) -> String {
+        browser.name ?? mac.name(of: browser.bundleID) ?? browser.bundleID
     }
 
     private func allows(_ bundleID: String, named name: String, asks: Bool) async throws -> Bool {

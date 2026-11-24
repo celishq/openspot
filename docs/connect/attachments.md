@@ -53,8 +53,10 @@ run, Openspot opens your sheet when Return opens it, and closes the panel when i
 A source has `attachment` in its `uses`, and puts one value in the field with `openspot attachment add`. It reads in one of
 two ways:
 
-- `"attachment.pick"` takes a regular expression of the bundle ID of the front app. Its chip shows at once when the panel
-  opens over a matching app, and the source runs `attachment.pick` only when Tab first picks the chip in that open of the
+- `"attachment.pick"` takes a regular expression of the bundle ID of the front app, or `"browsers"`, which matches each
+  browser that Openspot reads, with those that people add in
+  [config.toml](../../MANUAL.md#hand-what-you-work-on-to-a-spot). Its chip shows at once when the panel opens over a
+  matching app, and the source runs `attachment.pick` only when Tab first picks the chip in that open of the
   panel. Use it for a read that is slow or that asks the app, such as its front tab.
 - `panel.open = true` runs `show` each time the panel opens, and its chip shows when it adds a value. Use it for a read
   that is quick and that you want ready, such as the clipboard. A source ties itself to an app only with `"attachment.pick"`.
