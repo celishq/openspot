@@ -72,6 +72,11 @@ extension SpotTokens {
         return (contextValuePadding + contextValueFoot + caption + body).rounded(.up)
     }
 
+    public static var contextRow: Int {
+        let room = gridWidth - 2 * padding - glyph - fieldTextGap + contextSpreadGap
+        return max(ContextSpread.pile, min(ContextChips.limit, Int(room / (contextCard + contextSpreadGap))))
+    }
+
     public static func contextStack(count: Int) -> CGFloat {
         count == 0 ? 0 : contextCard + CGFloat(count - 1) * contextStep
     }

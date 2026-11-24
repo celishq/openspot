@@ -8,7 +8,7 @@ public struct ContextSpread: Equatable, Sendable {
         public let showsKind: Bool
     }
 
-    public static let row = 3
+    public static let pile = 3
 
     public private(set) var isSpread = false
     public private(set) var selected: String?
@@ -16,8 +16,11 @@ public struct ContextSpread: Equatable, Sendable {
     public private(set) var rowCount = 0
     private var order: [String] = []
     private var start = 0
+    public let row: Int
 
-    public init() {}
+    public init(row: Int = SpotTokens.contextRow) {
+        self.row = row
+    }
 
     func order(over chips: [ContextChip]) -> [String] {
         let sources = chips.map(\.source)
@@ -25,7 +28,7 @@ public struct ContextSpread: Equatable, Sendable {
     }
 
     func next(over chips: [ContextChip], selected: String?, spreads: Bool) -> ContextSpread {
-        var next = ContextSpread()
+        var next = ContextSpread(row: row)
         next.selected = selected
         next.isSpread = spreads && selected != nil
         var order = order(over: chips)
@@ -41,17 +44,17 @@ public struct ContextSpread: Equatable, Sendable {
             let showsKind = chip.app.map { (apps[$0] ?? 0) > 1 } ?? false
             guard next.isSpread else { return Place(chip: chip, slot: 0, depth: index, showsKind: showsKind) }
             let slot = index - next.start
-            return (0..<Self.row).contains(slot)
+            return (0..<row).contains(slot)
                 ? Place(chip: chip, slot: slot, depth: 0, showsKind: showsKind)
-                : Place(chip: chip, slot: 0, depth: (slot + order.count) % order.count - Self.row + 1, showsKind: showsKind)
+                : Place(chip: chip, slot: 0, depth: (slot + order.count) % order.count - row + 1, showsKind: showsKind)
         }
-        next.rowCount = next.isSpread ? min(order.count, Self.row) : 0
+        next.rowCount = next.isSpread ? min(order.count, row) : 0
         return next
     }
 
     private func start(of index: Int, count: Int) -> Int {
         let start = isSpread ? self.start : 0
         guard index >= start else { return index }
-        return index < start + Self.row ? min(start, max(count - Self.row, 0)) : index - Self.row + 1
+        return index < start + row ? min(start, max(count - row, 0)) : index - row + 1
     }
 }

@@ -1,7 +1,7 @@
 import Foundation
 
 public struct ContextChips: Equatable, Sendable {
-    public static let limit = 5
+    public static let limit = 6
 
     public private(set) var chips: [ContextChip] = [] {
         didSet { restack() }

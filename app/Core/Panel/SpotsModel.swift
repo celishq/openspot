@@ -74,9 +74,12 @@ public final class SpotsModel {
     public internal(set) var contextSpread = ContextSpread() {
         didSet {
             if isContextSpread != contextSpread.isSpread { isContextSpread = contextSpread.isSpread }
+            let isWide = contextSpread.rowCount > ContextSpread.pile
+            if isContextWide != isWide { isContextWide = isWide }
         }
     }
     public private(set) var isContextSpread = false
+    public private(set) var isContextWide = false
     public internal(set) var contextPreview: ContextPreview?
     public internal(set) var fieldValueRoom: CGFloat = 0
     public internal(set) var fieldValueLines = 0

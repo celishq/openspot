@@ -22,7 +22,7 @@ struct SpotContextStack: View {
                     .transition(.opacity)
             }
         }
-        .frame(width: SpotTokens.contextStack(count: ContextSpread.row), height: SpotTokens.contextCard, alignment: .trailing)
+        .frame(width: SpotTokens.contextStack(count: ContextSpread.pile), height: SpotTokens.contextCard, alignment: .trailing)
         .compositingGroup()
         .contentShape(Rectangle())
         .onTapGesture { model.pressContext() }
@@ -32,7 +32,7 @@ struct SpotContextStack: View {
     }
 
     private static func x(of place: ContextSpread.Place, in spread: ContextSpread, count: Int) -> CGFloat {
-        let shown = min(count, ContextSpread.row)
+        let shown = min(count, ContextSpread.pile)
         guard spread.isSpread else { return -CGFloat(shown - 1 - min(place.depth, shown - 1)) * SpotTokens.contextStep }
         let pitch = SpotTokens.contextCard + SpotTokens.contextSpreadGap
         let slot = place.depth == 0 ? place.slot : 0
@@ -40,16 +40,16 @@ struct SpotContextStack: View {
     }
 
     private static func scale(of place: ContextSpread.Place, in spread: ContextSpread) -> CGFloat {
-        1 - CGFloat(min(place.depth, spread.isSpread ? 1 : ContextSpread.row - 1)) * SpotTokens.contextShrink
+        1 - CGFloat(min(place.depth, spread.isSpread ? 1 : ContextSpread.pile - 1)) * SpotTokens.contextShrink
     }
 
     private static func opacity(of place: ContextSpread.Place, in spread: ContextSpread) -> Double {
-        guard spread.isSpread else { return place.depth < ContextSpread.row ? 1 : MotionTokens.hiddenOpacity }
+        guard spread.isSpread else { return place.depth < ContextSpread.pile ? 1 : MotionTokens.hiddenOpacity }
         return place.depth == 0 ? 1 : place.depth == 1 ? 1 - SpotTheme.contextCardFade : MotionTokens.hiddenOpacity
     }
 
     private static func layer(of place: ContextSpread.Place, in spread: ContextSpread) -> Double {
-        spread.isSpread ? -Double(place.slot) - Double(place.depth * ContextSpread.row) : -Double(place.depth)
+        spread.isSpread ? -Double(place.slot) - Double(place.depth * spread.row) : -Double(place.depth)
     }
 }
 

@@ -129,26 +129,34 @@ final class ContextSpreadTests: ContextCase {
         XCTAssertEqual(spread.places.map(\.chip.source), before)
     }
 
-    func testTabTurnsThroughMoreChipsThanTheRowHoldsByShiftingTheRow() async throws {
+    func testTabLaysEveryChipThatFitsTheFieldInOneRowAndHidesItsWords() async throws {
         try taker("keep", takes: "'text'")
-        for name in ["a", "b", "c", "d", "e"] {
+        for name in ["a", "b", "c", "d", "e", "f"] {
             try source(name, adds: "text=\(name) app=com.apple.Safari")
         }
         await open()
-        try await wait("five values") { self.chips.count == 5 && self.chips.allSatisfy { $0.value != nil } }
-        let order = spread.places.map(\.chip.source)
-
-        for _ in 0..<4 { XCTAssertTrue(model.handleKey(tab)) }
-
-        XCTAssertEqual(model.context.selected, order[3])
-        let row = spread.places.filter { $0.depth == 0 }.sorted { $0.slot < $1.slot }.map(\.chip.source)
-        XCTAssertEqual(row, Array(order[1...3]))
+        try await wait("six values") { self.chips.count == 6 && self.chips.allSatisfy { $0.value != nil } }
+        XCTAssertFalse(model.isContextWide)
 
         XCTAssertTrue(model.handleKey(tab))
-        XCTAssertTrue(model.handleKey(tab))
 
-        XCTAssertEqual(model.context.selected, order[0])
-        XCTAssertEqual(spread.places.filter { $0.depth == 0 }.sorted { $0.slot < $1.slot }.map(\.chip.source), Array(order[0...2]))
+        XCTAssertEqual(spread.rowCount, SpotTokens.contextRow)
+        XCTAssertGreaterThan(spread.rowCount, ContextSpread.pile)
+        XCTAssertEqual(spread.places.filter { $0.depth == 0 }.map(\.slot), Array(0..<SpotTokens.contextRow))
+        XCTAssertTrue(model.isContextWide)
+        XCTAssertTrue(model.handleKey(escape))
+        XCTAssertFalse(model.isContextWide)
+    }
+
+    func testARowNarrowerThanTheChipsShiftsWithTheSelection() {
+        let chips = ["a", "b", "c", "d", "e"].map { ContextChip(source: $0, app: nil, look: .symbol("doc"), state: .ready(ContextValue(text: $0))) }
+        var spread = ContextSpread(row: 3)
+
+        for source in ["a", "b", "c", "d"] { spread = spread.next(over: chips, selected: source, spreads: true) }
+
+        XCTAssertEqual(spread.places.filter { $0.depth == 0 }.sorted { $0.slot < $1.slot }.map(\.chip.source), ["b", "c", "d"])
+        for source in ["e", "a"] { spread = spread.next(over: chips, selected: source, spreads: true) }
+        XCTAssertEqual(spread.places.filter { $0.depth == 0 }.sorted { $0.slot < $1.slot }.map(\.chip.source), ["a", "b", "c"])
     }
 
     func testPressesDuringTheMotionFoldIntoOneStepToTheNewestState() async throws {
