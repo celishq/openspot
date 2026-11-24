@@ -35,7 +35,7 @@ list() {
       if (f["app"] == "accessibility") { title = "Selected text"; icon = "character.cursor.ibeam" }
       else { title = f["path"]; sub(/.*\//, "", title); sub(/\.app$/, "", title); icon = f["path"] }
       printf "\nitem=access-%s\nparent=access\ntitle=%s\nicon=%s\napp=%s\naccess=%s\nhides=settings\n", f["app"], title, icon, f["app"], f["access"]
-      if (f["access"] == "allowed") printf "detail=Allowed\nopen.title=Open System Settings\n"
+      if (f["access"] == "allowed") printf "detail=Allowed\nopen.title=Manage in System Settings\n"
       else if (f["access"] == "denied") printf "detail=Not allowed\nopen.title=Open System Settings\n"
       else if (f["access"] == "unasked") printf "detail=Not asked\nopen.title=Ask for access\n"
       else printf "detail=Open the app to check\nopen.title=Open %s\n", title }'

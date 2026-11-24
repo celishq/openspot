@@ -3,7 +3,7 @@ import Foundation
 public struct AttachmentPreview: Hashable, Sendable {
     static let excerptLimit = 280
 
-    public static let loading = AttachmentPreview(text: "", caption: "Loading", symbol: AttachmentChip.loadingSymbol)
+    public static let loading = AttachmentPreview(text: "", caption: "Reading…", symbol: AttachmentChip.loadingSymbol)
     static let emptySymbol = "tray"
     static let failedSymbol = "exclamationmark.triangle"
 

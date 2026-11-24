@@ -2,6 +2,12 @@ import XCTest
 @testable import OpenspotCore
 
 final class AttachmentPreviewTests: XCTestCase {
+    func testAReadOfNoKnownAppSaysReading() {
+        let chip = AttachmentChip(source: "tab", app: nil, look: .symbol("globe"), state: .loading)
+
+        XCTAssertEqual(AttachmentPreview(state: chip)?.caption, "Reading…")
+    }
+
     func testALinkShowsItsTitleAndItsHost() {
         let preview = AttachmentPreview(AttachmentValue(url: "https://developer.apple.com/documentation/swiftui", title: "SwiftUI"))
 

@@ -108,9 +108,9 @@ work in a read too. `run` works in a read, but the action it runs can't show a v
 | `openspot finder selection` | Prints a `file=` for each file selected in Finder, and `app=`. |
 | `openspot selection read` | Prints the `text=` selected in the front app, and its `app=`. |
 | `openspot window app` | Prints the `app=` bundle ID, `name=` and `path=` of the app in front of Openspot, or nothing. |
-| `openspot clipboard read [--newer <seconds>]` | Prints the text on the clipboard. With `--newer`, it prints it only when Openspot first saw that copy less than the seconds ago. |
+| `openspot clipboard read [--newer <seconds>]` | Prints the text on the clipboard. With `--newer`, it prints it only when Openspot first saw that copy within the last `<seconds>` seconds. |
 | `openspot access list` | Prints `app=`, `path=` and `access=` for each app that Openspot reads: `allowed`, `denied`, `unasked`, or `unknown` while the app is closed. The record of the selected text has `app=accessibility`. |
-| `openspot access ask <bundle id or accessibility>` | Asks the person for Openspot's access to the app, or to Accessibility, when they have not chosen yet, and prints its record. |
+| `openspot access ask <bundle id or accessibility>` | Asks macOS for Openspot's access to the app, or to Accessibility, when the person has not chosen yet, and prints its record. |
 | `openspot emoji list [--tone name]`                | Prints each emoji as an item, with its name in the language of the Mac.                         |
 | `openspot symbols list`                            | Prints each symbol of the Character Viewer as an item.                                          |
 | `openspot translate text [--from code] [--to code]` | Translates the text on stdin. `openspot translate languages` prints the languages it knows.     |

@@ -11,7 +11,7 @@ public enum ClipboardCall: NounCall {
         },
         CommandVerb("paste", "", "Pastes the clipboard into the front app.", rule: CallRule(use: .clipboard, used: "pasted the clipboard", inShow: .changes("types in the front app"))) { $0.none ? Self.paste : nil },
         CommandVerb(
-            "read", "[--newer seconds]", "Prints the text on the clipboard, or nothing when it holds none. --newer prints it only when Openspot first saw that copy less than the seconds ago.",
+            "read", "[--newer seconds]", "Prints the text on the clipboard, or nothing when it holds none. --newer prints it only when Openspot first saw that copy within the last <seconds> seconds.",
             rule: CallRule(use: .clipboard, used: "read the clipboard")
         ) { words in
             guard let fit = words.fit, fit.rest.isEmpty else { return nil }

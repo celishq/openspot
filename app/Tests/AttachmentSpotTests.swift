@@ -83,7 +83,7 @@ final class AttachmentSpotTests: BuiltInCase {
         XCTAssertEqual(rows.map(\.title), ["Safari", "Chrome", "Finder", "Selected text"])
         XCTAssertEqual(rows.map(\.subtitle), ["Allowed", "Open the app to check", "Not allowed", "Not asked"])
         XCTAssertEqual(rows.first?.picture, .file("/Applications/Safari.app"))
-        XCTAssertEqual(rows.map(\.openTitle), ["Open System Settings", "Open Chrome", "Open System Settings", "Ask for access"])
+        XCTAssertEqual(rows.map(\.openTitle), ["Manage in System Settings", "Open Chrome", "Open System Settings", "Ask for access"])
         XCTAssertEqual(rows.map { $0.hides ?? [] }, Array(repeating: ["settings"], count: 4))
         let faults = try await attachments.sheetFaults(timeout: 60)
         XCTAssertEqual(faults, [])
