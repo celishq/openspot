@@ -9,11 +9,28 @@ struct SpotSelectionRing<Edge: InsettableShape>: ViewModifier {
     var width = Self.width
     var progress: Double?
     var marksMenu = false
+    var marksNow = true
 
+    @ViewBuilder
     func body(content: Content) -> some View {
-        content.overlay(ring.allowsHitTesting(false))
-        .transformAnchorPreference(key: SpotMenuAnchor.self, value: .bounds) { item, bounds in
-            if isSelected, marksMenu { item = SpotMenuAnchor.Item(bounds: bounds) }
+        if marksMenu {
+            content.overlay(ring.allowsHitTesting(false))
+                .background(MenuMark(isOn: isSelected && marksNow))
+        } else {
+            content.overlay(ring.allowsHitTesting(false))
+        }
+    }
+
+    private struct MenuMark: View {
+        let isOn: Bool
+
+        @ViewBuilder
+        var body: some View {
+            if isOn {
+                Color.clear.anchorPreference(key: SpotMenuAnchor.self, value: .bounds) { SpotMenuAnchor.Item(bounds: $0) }
+            } else {
+                Color.clear
+            }
         }
     }
 
