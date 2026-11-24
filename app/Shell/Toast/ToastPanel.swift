@@ -16,9 +16,9 @@ final class ToastPanel: NSPanel, ToastWindow {
     func measure(_ toast: Toast) -> CGSize {
         let measure = NSHostingController(rootView: ToastView(toast: toast.copy))
         measure.sizingOptions = []
-        let widest = SpotTokens.toastMaxSize.width - 2 * SpotTokens.toastRoom
-        let width = min(measure.sizeThatFits(in: NSSize(width: widest, height: SpotTokens.toastMaxSize.height)).width.rounded(.up) + 1, widest)
-        return measure.sizeThatFits(in: NSSize(width: width, height: SpotTokens.toastMaxSize.height))
+        let widest = SpotTokens.toastMaxWidth - 2 * SpotTokens.toastRoom
+        let width = min(measure.sizeThatFits(in: NSSize(width: widest, height: .greatestFiniteMagnitude)).width.rounded(.up) + 1, widest)
+        return measure.sizeThatFits(in: NSSize(width: width, height: .greatestFiniteMagnitude))
     }
 
     func place() {
@@ -72,7 +72,7 @@ final class ToastPanel: NSPanel, ToastWindow {
 
     static func make(toasts: Toasts) -> ToastPanel {
         let panel = ToastPanel(
-            contentRect: NSRect(origin: .zero, size: SpotTokens.toastMaxSize),
+            contentRect: .zero,
             styleMask: [.borderless, .nonactivatingPanel, .fullSizeContentView],
             backing: .buffered,
             defer: false

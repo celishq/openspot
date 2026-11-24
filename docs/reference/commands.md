@@ -61,8 +61,9 @@ In each command, an app is its bundle ID, such as `com.apple.Safari`. Each list 
 
 ## A toast
 
-Up to three toasts wait in line. The newest shows, with a short bar under it for each toast in line, its own bright, and
-the next steps in when it leaves. A toast leaves 5 seconds after it shows. While the pointer is on it, it stays, and its time starts again when the pointer leaves. A click on a toast closes it.
+Up to twenty toasts wait in line. The newest shows, and the next steps in when it leaves. While more than one waits, the
+menu bar icon counts them. A toast leaves 5 seconds after it shows. While the pointer is on it, it stays, and its time
+starts again when the pointer leaves. A click on a toast closes it.
 
 ```text
 openspot toast Saved.

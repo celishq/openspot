@@ -53,7 +53,13 @@ struct OpenspotItemView: View {
 
     @ViewBuilder
     private var icon: some View {
-        if let symbol {
+        if let symbol, isToasting, let count = toasts?.count, count > 1 {
+            HStack(spacing: SpotTokens.menuBarCountGap) {
+                Image(systemName: symbol)
+                Text("\(count)").monospacedDigit()
+            }
+            .font(SpotType.menuBar)
+        } else if let symbol {
             Image(systemName: symbol).font(SpotType.menuBar)
         } else {
             Image(nsImage: image).renderingMode(.template)

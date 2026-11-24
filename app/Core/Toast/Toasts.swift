@@ -12,7 +12,7 @@ public final class Toasts {
     public private(set) var front: Toast?
     public private(set) var isShown = false
     public private(set) var frontSize = CGSize.zero
-    public private(set) var bars = 0
+    public private(set) var count = 0
     public private(set) var leadKind: ToastKind?
     @ObservationIgnored public private(set) var width: CGFloat = 0
     @ObservationIgnored public private(set) var height: CGFloat = 0
@@ -141,8 +141,8 @@ public final class Toasts {
         let size = front?.size ?? .zero
         if size != frontSize { frontSize = size }
         let next = queue.count > 1 ? queue.count : 0
-        if next != bars { bars = next }
-        target = CGSize(width: max(size.width, SpotTokens.toastBarsWidth), height: size.height + SpotTokens.toastBarsGap + SpotTokens.toastBarHeight)
+        if next != count { count = next }
+        target = size
         guard target.width > width || target.height > height else { return }
         width = max(width, target.width)
         height = max(height, target.height)

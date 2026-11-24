@@ -212,7 +212,6 @@
 		2F06D03355A53E364547DE9E /* SpotPower.swift in Sources */ = {isa = PBXBuildFile; fileRef = 44FFAA538D32C0C53E15E0C1 /* SpotPower.swift */; };
 		2FACD63893D8E0A53425B8F5 /* SpotPlaygroundFile.swift in Sources */ = {isa = PBXBuildFile; fileRef = DFA63D8D2AC6C9CEA447D4F6 /* SpotPlaygroundFile.swift */; };
 		30203CE7D1C72A2606A89CFD /* CallInputTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = E75C18A9074E1B6060A20101 /* CallInputTests.swift */; };
-		3068A05D1B709AB9CA20E460 /* ToastBars.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4D762EF53EE05C4A0D453F13 /* ToastBars.swift */; };
 		308E4A6E1A9C16D53ECE5570 /* CalendarClock.swift in Sources */ = {isa = PBXBuildFile; fileRef = CC23A55EB94A4EF24BD0D2F7 /* CalendarClock.swift */; };
 		30B15963F9513FE78062736C /* SpotRunsReadTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = F06E95F6AF356EBFD00D06E1 /* SpotRunsReadTests.swift */; };
 		31143B6FD509C5C74ED5C14A /* Manifest+InputCheck.swift in Sources */ = {isa = PBXBuildFile; fileRef = 07EE7C528A8D773302A32433 /* Manifest+InputCheck.swift */; };
@@ -1544,7 +1543,6 @@
 		4CC48EEEE73E01DA1768C18C /* ReminderStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReminderStore.swift; sourceTree = "<group>"; };
 		4CF096BD2E9025B33FF465C8 /* EmojiCatalogTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EmojiCatalogTests.swift; sourceTree = "<group>"; };
 		4D2C497D48D5B61AE9209EED /* SpotPackageTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SpotPackageTests.swift; sourceTree = "<group>"; };
-		4D762EF53EE05C4A0D453F13 /* ToastBars.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ToastBars.swift; sourceTree = "<group>"; };
 		4D92094FEFE2DE6DF031020E /* CommandStop.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CommandStop.swift; sourceTree = "<group>"; };
 		4DA18669F2527198666078FB /* TerminalRunTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TerminalRunTests.swift; sourceTree = "<group>"; };
 		4DC0207B11DC84FB401C64BE /* SpotMotion.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SpotMotion.swift; sourceTree = "<group>"; };
@@ -2680,7 +2678,6 @@
 		341DB4D45220B3E10D79DF4C /* Toast */ = {
 			isa = PBXGroup;
 			children = (
-				4D762EF53EE05C4A0D453F13 /* ToastBars.swift */,
 				D14A96CD1B177F8A53D7B7DE /* ToastKeyFill.swift */,
 				F1E3218E6D4C2E9BB6661856 /* ToastPanel.swift */,
 				AE76057B84F1B27BDA2A421D /* ToastPointer.swift */,
@@ -5396,7 +5393,6 @@
 				5E6F9A2B2B99EBC6E769187D /* SpotsWindowPlace.swift in Sources */,
 				02AF28C905BDD3965FAD5D99 /* SpotsWindowView.swift in Sources */,
 				77E3E9CE762B85341645C212 /* ThemeColor+AppKit.swift in Sources */,
-				3068A05D1B709AB9CA20E460 /* ToastBars.swift in Sources */,
 				2DA0ED84843B556BFECCAA29 /* ToastKeyFill.swift in Sources */,
 				35EA5B3C2F66976ED361984D /* ToastPanel.swift in Sources */,
 				A42EB493DBE8854F3C2D6561 /* ToastPointer.swift in Sources */,
