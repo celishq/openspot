@@ -41,6 +41,10 @@ public struct AttachmentChip: Equatable, Sendable {
         state == .loading
     }
 
+    public var showsPicture: Bool {
+        !isLoading || app != nil
+    }
+
     var isRead: Bool {
         switch state {
         case .unread, .failed, .denied: false

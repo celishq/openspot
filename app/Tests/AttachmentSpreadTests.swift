@@ -193,6 +193,20 @@ final class AttachmentSpreadTests: AttachmentCase {
         XCTAssertEqual(SpotTokens.attachmentEdge, (SpotTokens.cell - SpotTokens.attachmentCard) / 2)
     }
 
+    func testALoadingChipShowsTheIconOfItsAppAndOneOverNoAppShowsNoPicture() {
+        let safari = FrontApp(bundleID: "com.apple.Safari", path: "/Applications/Safari.app")
+        var over = AttachmentStack(fit: 3)
+        over.open(over: safari, loading: [("eager", .symbol("doc"))], unread: [("lazy", .symbol("globe"))])
+        over.mark("lazy", .loading)
+        var bare = AttachmentStack(fit: 3)
+        bare.open(over: nil, loading: [("eager", .symbol("doc"))])
+
+        XCTAssertEqual(over.chips.map(\.isLoading), [true, true])
+        XCTAssertEqual(over.chips.map(\.look), Array(repeating: .file(FileIcon(path: "/Applications/Safari.app")), count: 2))
+        XCTAssertEqual(over.chips.map(\.showsPicture), [true, true])
+        XCTAssertEqual(bare.chips.map(\.showsPicture), [false])
+    }
+
     func testTheTabHintShowsOnlyOnceTheFrontIconHasLoaded() {
         var stack = AttachmentStack(fit: 3)
         stack.open(over: nil, loading: [("a", .symbol("doc"))])
