@@ -12,7 +12,7 @@ final class ThemeCallTests: XCTestCase {
             try FileManager.default.moveItem(at: url, to: place)
             return place
         }, defaultConfig: nil)
-        return CommandAPI(mac: Mac(theme: theme ?? alone(in: config)), places: places, app: app, rates: .offline)
+        return CommandAPI(mac: Mac(theme: theme ?? alone(in: config)), places: places, app: app)
     }
 
     private func alone(in config: URL) -> URL {

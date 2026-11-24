@@ -20,7 +20,6 @@ final class TriggerPanelTests: PanelCase {
 
     private func type(_ query: String) {
         model.query = query
-        model.landSearch()
     }
 
     private func openSheet() async throws {

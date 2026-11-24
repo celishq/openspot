@@ -86,7 +86,6 @@ final class AttachmentStateTests: AttachmentCase {
         XCTAssertTrue(model.handleKey(tab))
 
         model.query = "sav"
-        model.landSearch()
 
         XCTAssertEqual(model.fieldValue.preview?.text, "A")
         XCTAssertEqual(shown, ["save"])
@@ -100,7 +99,6 @@ final class AttachmentStateTests: AttachmentCase {
 
         for text in ["s", "sa", "sav"] {
             model.query = text
-            model.landSearch()
         }
 
         XCTAssertEqual(model.spotListBuilds, builds)
@@ -142,7 +140,6 @@ final class AttachmentStateTests: AttachmentCase {
         try script("translate", toml: "title = 'Translate'\n\n[on]\ncommand = ['translate']", "printf 'text=x\\ntitle=Translate\\n'")
         try await openWithTab()
         model.query = "/tra"
-        model.landSearch()
 
         XCTAssertTrue(model.handleKey(tab))
 
@@ -177,7 +174,6 @@ final class AttachmentStateTests: AttachmentCase {
         XCTAssertTrue(model.handleKey(tab))
 
         model.query = "/translate hola"
-        model.landSearch()
         model.runSelected()
 
         try await wait("the command") { self.log("translate-log") == ["command"] }
@@ -194,7 +190,6 @@ final class AttachmentStateTests: AttachmentCase {
         XCTAssertTrue(model.handleKey(tab))
 
         model.query = "/zz"
-        model.landSearch()
         try await wait("the answer") { self.model.visible.contains { $0.role == .answer } }
         model.selected = try XCTUnwrap(model.visible.firstIndex { $0.role == .answer })
         model.runSelected()
@@ -220,7 +215,6 @@ final class AttachmentStateTests: AttachmentCase {
         XCTAssertTrue(model.handleKey(tab))
 
         model.query = "sav"
-        model.landSearch()
         try await wait("the answer of Echo") { self.model.sheets["echo"]?.answers.isEmpty == false }
 
         XCTAssertEqual(shown, ["save"])

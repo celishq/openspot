@@ -29,10 +29,8 @@ public struct Event: Equatable, Sendable {
     }
 
     var meeting: String? {
-        let detector = try? NSDataDetector(types: NSTextCheckingResult.CheckingType.link.rawValue)
         for text in [url, location, notes].compactMap(\.self) {
-            let links = detector?.matches(in: text, range: NSRange(text.startIndex..., in: text)).compactMap(\.url) ?? []
-            if let link = links.first(where: Self.isMeeting) { return link.absoluteString }
+            if let link = TextFinds(text).links.first(where: Self.isMeeting) { return link.absoluteString }
         }
         return nil
     }

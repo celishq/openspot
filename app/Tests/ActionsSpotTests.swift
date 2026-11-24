@@ -33,7 +33,7 @@ final class ActionsSpotTests: BuiltInCase {
         let icon = try spot("icon")
         let ask = { (card: String) in await actions.hook("hasIcon", card: card, origin: "mine") }
         try FileManager.default.createSymbolicLink(at: core.appendingPathComponent("openspot.spot"), withDestinationURL: repoSpots.appendingPathComponent("openspot.spot"))
-        runs.api = CommandAPI(mac: Mac(), places: .test(TestEnvironment.values), app: app, runs: runs, rates: .offline)
+        runs.api = CommandAPI(mac: Mac(), places: .test(TestEnvironment.values), app: app, runs: runs)
         runs.take(try SpotsFolder(url: root.appendingPathComponent("none"), core: repoSpots).scan())
         defer { runs.quit() }
         let acts = try XCTUnwrap(runs.sheets["openspot/actions"])

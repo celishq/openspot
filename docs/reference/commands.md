@@ -48,7 +48,11 @@ see [the commands that fail in a read](../../app/Help/commands.md#the-commands-t
 | `openspot timer remove <id>`                        | Removes a timer.                                                         |
 | `openspot run <binding>.<action> [<name>=<value>...] [--out <name>] [--stdin <name>]` | Runs an action of a spot you bind, and prints its values. |
 | `openspot emit <event> [<name>=<value>...]`         | Sends one of your spot's events to each spot that listens.               |
+| `openspot cache get <name>`                         | Prints the value your spot keeps as `<name>`, and runs its filler when it is missing or old. |
+| `openspot cache age <name>`                         | Prints the seconds since your spot kept `<name>`, or nothing.            |
+| `openspot cache set <name>`                         | Keeps stdin as `<name>`, and asks your spot again for the panel's search. |
 | `openspot spot open <id>`                           | Opens the panel on a spot.                                               |
+| `openspot date read <words>...`                     | Prints the date the words name, such as `25 dec`, as `item` and `time`, or nothing when they are more than a date. |
 
 Each list a command prints is blocks, as your script prints them, or JSON with `--json` where the command takes it.
 

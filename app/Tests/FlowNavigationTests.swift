@@ -29,7 +29,6 @@ final class FlowNavigationTests: PanelCase {
         try await openList()
         try await openPage()
         model.searchText = "de"
-        model.landSearch()
 
         XCTAssertTrue(model.handleKey(escape))
         XCTAssertEqual(model.searchText, "")

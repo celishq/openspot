@@ -86,7 +86,7 @@ final class MacCallsTests: XCTestCase {
         client = try TestClient(beside: Bundle(for: Self.self))
         try FileManager.default.createDirectory(at: folder.appendingPathComponent("A.app/Contents/MacOS"), withIntermediateDirectories: true)
         try "#!/bin/sh\necho \"alone: $*\"\n".writeScript(to: folder.appendingPathComponent("A.app/Contents/MacOS/Openspot"))
-        socket = CommandSocket(folder: config, api: CommandAPI(mac: host, places: .test(["OPENSPOT_CONFIG": config.path]), rates: .offline))
+        socket = CommandSocket(folder: config, api: CommandAPI(mac: host, places: .test(["OPENSPOT_CONFIG": config.path])))
     }
 
     override func tearDownWithError() throws {
@@ -102,7 +102,7 @@ final class MacCallsTests: XCTestCase {
         let deep = folder.appendingPathComponent(String(repeating: "deep-folder-", count: 10), isDirectory: true)
         try FileManager.default.createDirectory(at: deep, withIntermediateDirectories: true)
         XCTAssertGreaterThan(deep.appendingPathComponent(CommandSocket.name).path.utf8.count, 103)
-        let socket = try XCTUnwrap(CommandSocket(folder: deep, api: CommandAPI(mac: host, places: .test(["OPENSPOT_CONFIG": deep.path]), rates: .offline)))
+        let socket = try XCTUnwrap(CommandSocket(folder: deep, api: CommandAPI(mac: host, places: .test(["OPENSPOT_CONFIG": deep.path]))))
         defer { socket.close() }
 
         let answer = try client.run(["clipboard", "read"], config: deep)
@@ -183,7 +183,7 @@ final class MacCallsTests: XCTestCase {
         runs.isCareful = true
         let fenced = runs.callers.issue(for: Spot(id: "shots", name: "Shots", url: folder.appendingPathComponent("shots.sh"), dataName: "shots", uses: [.screen]))
         let free = runs.callers.issue(for: Spot(id: "files", name: "Files", url: folder.appendingPathComponent("files.sh"), dataName: "files", uses: [.screen, .files]))
-        let api = CommandAPI(mac: host, places: .test(["OPENSPOT_CONFIG": config.path]), runs: runs, rates: .offline)
+        let api = CommandAPI(mac: host, places: .test(["OPENSPOT_CONFIG": config.path]), runs: runs)
         let home = URL(fileURLWithPath: try XCTUnwrap(ProcessInfo.processInfo.environment["HOME"], "the test scheme gives a private home"), isDirectory: true).standardizedFileURL
         let data = URL(fileURLWithPath: try XCTUnwrap(ScriptProcess.environment(base: ProcessInfo.processInfo.environment, app: "", dataName: "shots")["OPENSPOT_DATA"]), isDirectory: true)
         let outside = home.appendingPathComponent("Documents/mc-\(UUID().uuidString.prefix(8))", isDirectory: true)
@@ -235,7 +235,7 @@ final class MacCallsTests: XCTestCase {
     }
 
     func testAMacWithNoPartSaysSoAndAFakeStubsOneNoun() async throws {
-        let api = CommandAPI(mac: Mac(windows: Windows(acts: acts)), places: .test(["OPENSPOT_CONFIG": config.path]), rates: .offline)
+        let api = CommandAPI(mac: Mac(windows: Windows(acts: acts)), places: .test(["OPENSPOT_CONFIG": config.path]))
         func answer(_ arguments: [String]) async throws -> CommandAnswer {
             try await XCTUnwrap(api.work(for: .test(arguments), input: { "" }))()
         }

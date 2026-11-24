@@ -51,7 +51,6 @@ final class SpotSettingsSheetTests: XCTestCase {
         model.isShown = true
         model.panelWillShow()
         model.query = search
-        model.landSearch()
         model.selected = try XCTUnwrap(model.visible.firstIndex { $0.id == id })
     }
 

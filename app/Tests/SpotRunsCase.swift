@@ -19,7 +19,7 @@ class SpotRunsCase: XCTestCase {
     }
 
     func runs(environment: [String: String]) -> SpotRuns {
-        SpotRuns(environment: environment, clock: clock.value, stopPause: 0.2)
+        SpotRuns(environment: environment, clock: clock.value, stopPause: 0.2, cache: SpotCache(folder: folder.appendingPathComponent("cache")))
     }
 
     override func tearDown() async throws {
@@ -52,7 +52,7 @@ class SpotRunsCase: XCTestCase {
     }
 
     func takeCalls() {
-        runs.api = CommandAPI(mac: Mac(), places: .test(["OPENSPOT_CONFIG": folder.path]), app: FakeRunningApp(), runs: runs, rates: .offline)
+        runs.api = CommandAPI(mac: Mac(), places: .test(["OPENSPOT_CONFIG": folder.path]), app: FakeRunningApp(), runs: runs)
     }
 
     func scanned() throws -> ScanResult {

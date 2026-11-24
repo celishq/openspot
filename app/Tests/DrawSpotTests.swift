@@ -64,7 +64,7 @@ final class DrawSpotTests: XCTestCase {
     private func opened(_ spot: Spot) async throws -> SpotRun {
         runs = SpotRuns(environment: environment, showLimit: 120, stopPause: 20)
         started.append(runs)
-        runs.api = CommandAPI(mac: Mac(), places: .test(["OPENSPOT_CONFIG": home.appendingPathComponent(".config/openspot").path]), app: FakeRunningApp(), runs: runs, rates: .offline)
+        runs.api = CommandAPI(mac: Mac(), places: .test(["OPENSPOT_CONFIG": home.appendingPathComponent(".config/openspot").path]), app: FakeRunningApp(), runs: runs)
         let count = records.count
         runs.onCall = { [unowned self] record in records.append(record) }
         let sheet = runs.sheet(for: spot)

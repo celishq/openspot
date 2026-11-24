@@ -8,7 +8,7 @@ struct UseCommand: Sendable {
     let about: String
     let use: SpotUse?
 
-    private static let envNouns: Set<String> = [RunCall.noun.name, EmitCall.noun.name]
+    private static let envNouns: Set<String> = [RunCall.noun.name, EmitCall.noun.name, CacheCall.noun.name]
 
     static func all(for uses: Set<SpotUse>) -> [UseCommand] {
         CommandNoun.all.filter { !envNouns.contains($0.name) }.flatMap { noun in

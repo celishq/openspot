@@ -114,15 +114,15 @@ final class InlineHandlersTests: SpotRunsCase {
         try inline("summer", toml: "[actions.sum]\noutputs.sum = 'text'\noutputs.kinds = 'text'", """
         export default {
           async sum(input, env) {
-            const solved = await env.calc.solve("2+3")
-            return { sum: solved.split("\\n")[0], kinds: `${typeof env.toast} ${typeof env.clipboard}` }
+            const solved = await env.version()
+            return { sum: solved, kinds: `${typeof env.toast} ${typeof env.clipboard}` }
           },
         }
         """)
 
         let text = try await runs.answer(of: try spot("summer"), "sum", limit: 60)
 
-        XCTAssertEqual(Frame(text: text).outputs, [.init(key: "sum", value: "item=5"), .init(key: "kinds", value: "function undefined")], text)
+        XCTAssertEqual(Frame(text: text).outputs, [.init(key: "sum", value: (Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String ?? "unknown")), .init(key: "kinds", value: "function undefined")], text)
     }
 
     func testTheMainSearchAndAPressCallTheHandlersOfAnInlineSpot() async throws {

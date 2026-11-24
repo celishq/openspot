@@ -8,13 +8,11 @@ extension SpotsModel {
     }
 
     public func handleKey(_ key: ActionKey) -> Bool {
-        landSearch()
         return take(key, in: keyRows(of: mode))
     }
 
     public func handleSearchKey(_ key: ActionKey) -> Bool {
         guard mode == .sheet || mode == .grid, showsSearch, openParts?.selectedPart == nil else { return false }
-        landSearch()
         return take(key, in: searchRows)
     }
 
@@ -53,7 +51,7 @@ extension SpotsModel {
         if let slashHint { return slashHint }
         if content == .attachment, let attachmentHint { return attachmentHint }
         if let soleHint { return soleHint }
-        if openSheetID == nil, slash == nil, finding == nil, !query.isEmpty, visible.isEmpty { return "\(SearchPrompt.slashHint)   \(escape)" }
+        if openSheetID == nil, slash == nil, !query.isEmpty, visible.isEmpty { return "\(SearchPrompt.slashHint)   \(escape)" }
         let keys = target.flatMap { target in
             actionMenu(on: target)?.hint(
                 stopping: { sheets[target.entry.id]?.act(of: $0, item: target.item) != nil },
@@ -211,10 +209,6 @@ extension SpotsModel {
 
     private var spotRows: [KeyRow] {
         var rows: [KeyRow] = [
-            .any { [self] _ in
-                openSheet?.landRows()
-                return nil
-            },
             .any { [self] key in openSheetID == nil ? nil : handleFlowKey(key) },
             KeyRow("z", command: true) { [self] _ in
                 openSheetID == nil && searchText.isEmpty && undoRemoval() ? true : nil

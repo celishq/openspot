@@ -114,7 +114,6 @@ final class AttachmentSourceTests: AttachmentCase {
 
         await open()
         model.query = "tab"
-        model.landSearch()
 
         XCTAssertFalse(model.cards.filter(\.isOnGrid).contains { $0.id == "tab" })
         XCTAssertFalse(model.visible.contains { $0.spot.id == "tab" })

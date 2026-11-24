@@ -98,7 +98,6 @@ public final class SpotsModel {
         runs.answerMatches
     }
     @ObservationIgnored var mainSearch = MainSearch()
-    @ObservationIgnored var finding: Finding?
     @ObservationIgnored var foundSpots: [Entry] = []
     public internal(set) var placements: [SpotPlacement] = [] {
         didSet { takePlacements() }
@@ -379,7 +378,6 @@ public final class SpotsModel {
             self.load = load
             let id = selectedEntry?.id
             reload(patching: nil, to: kept == start ? next : kept)
-            landSearch()
             if let position = visible.firstIndex(where: { $0.id == id }) { selected = position }
         }
         loading = task
@@ -448,7 +446,6 @@ public final class SpotsModel {
         if openSheetID != nil { closeSheet(moving: false) }
         host.show()
         query = visible.contains { $0.id == id } || cards.filter(\.isOnGrid).contains { $0.id == id } ? "" : entry.state.title
-        landSearch()
         selected = visible.firstIndex { $0.id == id } ?? 0
         return true
     }
@@ -458,7 +455,6 @@ public final class SpotsModel {
         if case .spots(let ids) = change {
             let id = selectedEntry?.id
             reload(patching: Set(ids), to: next)
-            landSearch()
             if let position = visible.firstIndex(where: { $0.id == id }) { selected = position }
             return
         }

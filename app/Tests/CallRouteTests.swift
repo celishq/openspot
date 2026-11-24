@@ -50,7 +50,7 @@ final class CallRouteTests: XCTestCase {
         folder = URL(fileURLWithPath: String(cString: temp), isDirectory: true).appendingPathComponent("cr-\(UUID().uuidString.prefix(8))", isDirectory: true)
         try FileManager.default.createDirectory(at: spots, withIntermediateDirectories: true)
         let runs = await SpotRuns()
-        socket = CommandSocket(folder: folder, api: CommandAPI(mac: host, places: .test(ProcessInfo.processInfo.environment.merging(variables) { _, new in new }), app: FakeRunningApp(), runs: runs, rates: .offline))
+        socket = CommandSocket(folder: folder, api: CommandAPI(mac: host, places: .test(ProcessInfo.processInfo.environment.merging(variables) { _, new in new }), app: FakeRunningApp(), runs: runs))
     }
 
     override func tearDown() async throws {
@@ -64,7 +64,7 @@ final class CallRouteTests: XCTestCase {
         let printed = Printed()
         let output = CommandOutput { text, isError in printed.add(text, isError: isError) }
         let request = CommandRequest(arguments: argv, folder: folder.path, isPiped: input != nil)
-        let work = try XCTUnwrap(CommandAPI(mac: host, places: .test(environment), rates: .offline).work(for: call, request: request, input: { input ?? "" }, output: output))
+        let work = try XCTUnwrap(CommandAPI(mac: host, places: .test(environment)).work(for: call, request: request, input: { input ?? "" }, output: output))
         let answer = await work()
         output.print(answer.output)
         output.report(answer.errors)

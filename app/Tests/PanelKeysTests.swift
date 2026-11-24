@@ -115,7 +115,6 @@ final class PanelKeysTests: PanelCase {
     func testOnTheGridEscClearsTheSearchThenHidesAndTabGoesToTheText() async throws {
         try await showGrid()
         model.query = "al"
-        model.landSearch()
 
         XCTAssertTrue(model.handleKey(escape))
         XCTAssertEqual(model.query, "")
@@ -156,7 +155,6 @@ final class PanelKeysTests: PanelCase {
     func testWhileASearchIsTypedOnTheGridTheSideArrowsStayInTheText() async throws {
         try await showGrid()
         model.query = "a"
-        model.landSearch()
 
         XCTAssertFalse(model.handleSearchKey(left))
         XCTAssertFalse(model.handleSearchKey(right))
@@ -853,7 +851,6 @@ final class PanelKeysTests: PanelCase {
         model.isShown = true
         model.panelWillShow()
         model.query = "dictate"
-        model.landSearch()
         model.selected = try XCTUnwrap(model.visible.firstIndex { $0.id == "dictate" })
 
         XCTAssertTrue(model.handleKey(history))
