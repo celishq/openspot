@@ -12,7 +12,6 @@ final class SheetHeldAnswerTests: PanelCase {
         n=$(( $(cat '\(f)/n' 2>/dev/null || echo 0) + 1 )); echo $n > '\(f)/n'
         [ $n -gt 1 ] && while [ ! -f '\(f)/gate' ]; do /bin/sleep 0.02; done
         printf 'frame=\\ndetail=D%s\\n\\nitem=a\\ntitle=A%s\\n' $n $n
-        touch '\(f)/printed'$n
         """)
     }
 
@@ -26,16 +25,8 @@ final class SheetHeldAnswerTests: PanelCase {
         return try XCTUnwrap(model.sheets["list"])
     }
 
-    private func printed(_ n: Int) -> Bool {
-        FileManager.default.fileExists(atPath: folder.appendingPathComponent("printed\(n)").path)
-    }
-
     private func release() {
         FileManager.default.createFile(atPath: folder.appendingPathComponent("gate").path, contents: Data())
-    }
-
-    private func settle() async {
-        for _ in 0..<50 { await Task.yield() }
     }
 
     private func tracking(_ sheet: SpotRun) -> Told {
@@ -67,8 +58,7 @@ final class SheetHeldAnswerTests: PanelCase {
         let told = tracking(sheet)
 
         release()
-        try await wait("the second print") { self.printed(2) }
-        await settle()
+        try await wait("the second frame at the hold") { self.model.runs.opening.waitingFrames == 1 }
 
         XCTAssertEqual(told.count, 0)
         XCTAssertEqual(sheet.list.shown.map(\.title), ["A1"])
@@ -86,8 +76,7 @@ final class SheetHeldAnswerTests: PanelCase {
         let told = tracking(sheet)
 
         release()
-        try await wait("the second print") { self.printed(2) }
-        await settle()
+        try await wait("the second frame at the hold") { self.model.runs.opening.waitingFrames == 1 }
 
         XCTAssertEqual(told.count, 0)
         XCTAssertEqual(sheet.list.shown.map(\.title), ["A1"])
@@ -108,8 +97,7 @@ final class SheetHeldAnswerTests: PanelCase {
         let told = tracking(sheet)
 
         release()
-        try await wait("the second print") { self.printed(2) }
-        await settle()
+        try await wait("the second frame at the hold") { self.model.runs.opening.waitingFrames == 1 }
 
         XCTAssertEqual(told.count, 0)
         ends()

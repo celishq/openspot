@@ -21,6 +21,10 @@ public final class SheetOpening {
         fixedLength = motionLength
     }
 
+    var waitingFrames: Int {
+        frameWaits.count
+    }
+
     public var motionLength: TimeInterval {
         fixedLength ?? MotionTokens.growSettle
     }
