@@ -8,7 +8,7 @@ final class SpotRunsCallTests: SpotRunsCase {
         try script(toml: "[on]\n\"panel.open\" = true", "sleep 30")
         let sheet = try sheet()
         var failures: [String] = []
-        sheet.onReport = { if case .failure(let text) = $0 { failures.append(text) } }
+        sheet.onReport = { if case .toast(let note) = $0, note.kind == .failure, note.fix == nil { failures.append(note.words) } }
 
         sheet.show()
 
@@ -28,7 +28,7 @@ final class SpotRunsCallTests: SpotRunsCase {
         """)
         let sheet = try sheet()
         var failures: [String] = []
-        sheet.onReport = { if case .failure(let text) = $0 { failures.append(text) } }
+        sheet.onReport = { if case .toast(let note) = $0, note.kind == .failure, note.fix == nil { failures.append(note.words) } }
         sheet.show()
         try await wait("the row") { sheet.list.shown.count == 1 }
         sheet.pick(try XCTUnwrap(sheet.list.selectedItem))
@@ -55,7 +55,7 @@ final class SpotRunsCallTests: SpotRunsCase {
         """)
         let sheet = try sheet()
         var failures: [String] = []
-        sheet.onReport = { if case .failure(let text) = $0 { failures.append(text) } }
+        sheet.onReport = { if case .toast(let note) = $0, note.kind == .failure, note.fix == nil { failures.append(note.words) } }
         try await wait("the value") { sheet.reading.value?.title == "3" && sheet.calls.isEmpty }
         XCTAssertFalse(sheet.reading.isStale)
         XCTAssertEqual(runs.menuBarMarks.first?.mark.isStale, false)
@@ -85,7 +85,7 @@ final class SpotRunsCallTests: SpotRunsCase {
         try script(toml: TestSpot.command, "echo gone >&2\nexit 2")
         let sheet = try sheet()
         var failures: [String] = []
-        sheet.onReport = { if case .failure(let text) = $0 { failures.append(text) } }
+        sheet.onReport = { if case .toast(let note) = $0, note.kind == .failure, note.fix == nil { failures.append(note.words) } }
 
         sheet.pressCard()
 
@@ -96,7 +96,7 @@ final class SpotRunsCallTests: SpotRunsCase {
         try script(toml: TestSpot.command, "printf 'link=x-apple.systempreferences:pane\\n'\necho 'Allow it.' >&2\nexit 1")
         let sheet = try sheet()
         var fixes: [String] = []
-        sheet.onReport = { if case .failureWithFix(let text, let fix) = $0 { fixes.append("\(text) \(fix.absoluteString)") } }
+        sheet.onReport = { if case .toast(let note) = $0, case .url(let fix) = note.fix { fixes.append("\(note.words) \(fix.absoluteString)") } }
 
         sheet.pressCard()
 

@@ -7,7 +7,7 @@ extension SpotsModel {
         host.paint(theme.colours)
         defer { takenTheme = theme }
         guard isPanelHidden else {
-            if theme != takenTheme { host.confirm(Self.openAgain) }
+            if theme != takenTheme { toast(ToastNote(words: Self.openAgain)) }
             heldLayout = theme.layout
             return
         }

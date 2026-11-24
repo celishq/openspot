@@ -38,7 +38,7 @@ final class OpenspotApp: NSObject, NSApplicationDelegate {
     private(set) var previous = PreviousApp<NSRunningApplication>()
     private(set) lazy var keys = GlobalKeys(
         model: model, toggle: { [weak self] in self?.togglePanel() },
-        fault: { [weak self] in self?.notifyKeyFault($0) }, fix: { [weak self] in self?.notify($0, fix: $1) }
+        fault: { [weak self] in self?.model.toast(.failure($0, fix: .settings)) }, fix: { [weak self] in self?.model.toast(.failure($0, fix: .url($1))) }
     )
     private(set) lazy var windows = DetachedWindows(model: model)
     private var menuBar: SpotMenuBar?
@@ -65,7 +65,7 @@ final class OpenspotApp: NSObject, NSApplicationDelegate {
             let appearance: Style.Variant = SpotTheme.isDark(app.effectiveAppearance) ? .dark : .light
             MainActor.assumeIsolated { self?.model.runs.take(appearance: appearance) }
         }
-        if !theme.faults.isEmpty { notify(theme.faults.joined(separator: "\n")) }
+        if !theme.faults.isEmpty { model.toast(.failure(theme.faults.joined(separator: "\n"))) }
         let item = OpenspotItem(
             model: model, toasts: toast?.toasts, target: self, action: #selector(pressItem),
             onDragEnter: { [weak self] in self?.showPanelForDrag() }, onDrop: { [weak self] in self?.model.review($0) }
@@ -129,7 +129,7 @@ final class OpenspotApp: NSObject, NSApplicationDelegate {
             if isFirstLaunch {
                 Task { await self.model.beginFirstLaunch() }
             } else {
-                confirm(model.entryKey.openHint)
+                model.toast(ToastNote(words: model.entryKey.openHint))
             }
         }
         isLaunched = true

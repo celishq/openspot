@@ -117,9 +117,9 @@ extension SpotsModel {
             switch review {
             case .success(let review):
                 show(review)
-                if urls.count > 1 { host.notify("Openspot installs one spot at a time.") }
+                if urls.count > 1 { toast(.failure("Openspot installs one spot at a time.")) }
             case .failure(let error):
-                host.notify(Self.reason(error))
+                toast(.failure(Self.reason(error)))
             }
         }
     }
@@ -139,7 +139,7 @@ extension SpotsModel {
             closeSheet(moving: isShown)
             show(review)
         } catch {
-            host.notify(Self.reason(error))
+            toast(.failure(Self.reason(error)))
         }
         return true
     }
@@ -196,9 +196,9 @@ extension SpotsModel {
                 guard let released = try await release(package, named: spot.name) else { return }
                 let file = try await Self.zipped(released, named: spot.name).get()
                 host.copy(file)
-                host.confirm(released.notice(name: spot.name))
+                toast(ToastNote(words: released.notice(name: spot.name)))
             } catch {
-                host.notify("\(spot.name) was not copied. \(Self.reason(error))")
+                toast(.failure("\(spot.name) was not copied. \(Self.reason(error))"))
             }
         }
     }

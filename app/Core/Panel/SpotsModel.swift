@@ -360,7 +360,7 @@ public final class SpotsModel {
         do {
             try files.config.begin(enabling: folder.startingSpots())
         } catch {
-            host.notify("Openspot could not save the spots. \(Self.reason(error))")
+            toast(.failure("Openspot could not save the spots. \(Self.reason(error))"))
         }
         await reload()
         if let first = runs.firstLaunchSheet { push(FlowSheet(spot: first)) }
@@ -420,7 +420,7 @@ public final class SpotsModel {
         if let ids, isOnlyNamed { patchEntries(ids) } else { rebuildEntries() }
         readWindows()
         if problems != self.problems, !problems.isEmpty {
-            host.notify(problems.joined(separator: " "))
+            toast(.failure(problems.joined(separator: " ")))
         }
         self.problems = problems
     }
@@ -574,10 +574,8 @@ public final class SpotsModel {
 
     private func take(_ report: SpotRun.Report, of id: String) {
         switch report {
-        case .toast(let note): host.toast(note, of: id)
+        case .toast(let note): toast(note, of: note.kind == .failure ? "" : id)
         case .dropToast(let toast): host.dropToast(toast, of: id)
-        case .failure(let text): host.notify(text)
-        case .failureWithFix(let text, let fix): host.notify(text, fix: fix)
         case .listChange:
             markFound(id)
             if mayMove(id) { updateVisible() }

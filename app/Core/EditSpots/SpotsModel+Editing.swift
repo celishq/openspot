@@ -40,7 +40,7 @@ extension SpotsModel {
         do {
             next = try files.config.change(from: kept) { $0.arrangement.set(isEnabled: isOn, of: id) }
         } catch {
-            host.notify("\(spot.name) was not turned \(isOn ? "on" : "off"). \(Self.reason(error))")
+            toast(.failure("\(spot.name) was not turned \(isOn ? "on" : "off"). \(Self.reason(error))"))
             return false
         }
         change(.edit) {
@@ -117,7 +117,7 @@ extension SpotsModel {
             do {
                 try write(.panels) { $0.show(panel, isShown) }
             } catch {
-                return host.notify("Openspot could not save the panels. \(Self.reason(error))")
+                return toast(.failure("Openspot could not save the panels. \(Self.reason(error))"))
             }
             if panels[panel] != isShown { panels[panel] = isShown }
             updateVisible()
@@ -153,7 +153,7 @@ extension SpotsModel {
             try write(.spots) { edit(&$0.arrangement) }
             return true
         } catch {
-            host.notify("Openspot could not save the spots. \(Self.reason(error))")
+            toast(.failure("Openspot could not save the spots. \(Self.reason(error))"))
             return false
         }
     }

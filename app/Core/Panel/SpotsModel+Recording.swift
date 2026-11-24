@@ -94,12 +94,12 @@ extension SpotsModel {
         let isField = recordsField
         if isField { keys.press(code) }
         guard let shortcut = Shortcut(code: code, modifiers: modifiers) else {
-            guard isField else { return host.notify("Hold cmd, ctrl or option with a letter, a digit, a sign, an arrow, space, return or tab.") }
+            guard isField else { return toast(.failure("Hold cmd, ctrl or option with a letter, a digit, a sign, an arrow, space, return or tab.")) }
             keys.refuse(code: code, modifiers: modifiers)
             return
         }
         if takesShake, shortcut.isAppKey {
-            host.notify("\(KeyRecording.appWords(shortcut)), or tap one key such as `⌥`.")
+            toast(.failure("\(KeyRecording.appWords(shortcut)), or tap one key such as `⌥`."))
             return
         }
         if isField, shortcut.isAppKey {
@@ -107,7 +107,7 @@ extension SpotsModel {
             return
         }
         if item != nil {
-            if keys.use(of: shortcut) != nil { host.notify(keys.words(for: shortcut)) }
+            if keys.use(of: shortcut) != nil { toast(.failure(keys.words(for: shortcut))) }
         } else if isField {
             keys.check(shortcut)
         }

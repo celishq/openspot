@@ -9,15 +9,27 @@ public struct ToastNote: Equatable, Sendable, ExpressibleByStringInterpolation {
     public let keeps: Bool
     public let action: String?
     public let tree: ViewTree?
+    public let kind: ToastKind
+    public let fix: ToastFix?
     private let source: String?
 
-    public init(words: String) {
+    public init(words: String, kind: ToastKind = .confirm, fix: ToastFix? = nil, keeps: Bool = false) {
         id = nil
         self.words = words
-        keeps = false
+        self.kind = kind
+        self.fix = fix
+        self.keeps = keeps
         action = nil
         tree = nil
         source = nil
+    }
+
+    public static func failure(_ words: String, fix: ToastFix? = nil) -> ToastNote {
+        ToastNote(words: words, kind: .failure, fix: fix)
+    }
+
+    public static func work(_ words: String) -> ToastNote {
+        ToastNote(words: words, kind: .work, keeps: true)
     }
 
     public init(stringLiteral words: String) {
@@ -48,11 +60,13 @@ public struct ToastNote: Equatable, Sendable, ExpressibleByStringInterpolation {
         keeps = keep == "true"
         action = head.value("action").flatMap { $0.isEmpty ? nil : $0 }
         self.tree = tree
+        kind = .confirm
+        fix = nil
         source = text
     }
 
     func hiding(_ values: FieldValues) -> ToastNote {
-        guard let source else { return ToastNote(words: values.hiding(words)) }
+        guard let source else { return ToastNote(words: values.hiding(words), kind: kind, fix: fix, keeps: keeps) }
         return (try? ToastNote(blocks: values.hiding(source))) ?? self
     }
 }

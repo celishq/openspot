@@ -39,7 +39,7 @@ extension SpotsModel {
             return true
         }
         if let route = sheet.route, !spot.takes(route: route) {
-            host.notify("\(spot.name) takes no page \(route). Add \(route) to the pages of its spot.toml")
+            toast(.failure("\(spot.name) takes no page \(route). Add \(route) to the pages of its spot.toml"))
             return true
         }
         let moves = isShown

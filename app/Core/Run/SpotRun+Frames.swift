@@ -122,7 +122,7 @@ extension SpotRun {
         guard case .show = ask else { return }
         await preparePictures()
         if !lines.errors.isEmpty {
-            onReport(.failure("\(spot.name) sent \(lines.errors.count) items Openspot cannot read."))
+            onReport(.toast(.failure("\(spot.name) sent \(lines.errors.count) items Openspot cannot read.")))
         }
     }
 
@@ -242,7 +242,7 @@ extension SpotRun {
         if failedItem != item { failedItem = item }
         runs.usage.failed(spot, fault: text, at: runs.now())
         guard tells else { return Self.appLog.info("\(text, privacy: .public)") }
-        if case .failedWithFix(_, _, let fix) = error as? SpotError { return onReport(.failureWithFix(text, fix)) }
-        onReport(.failure(text))
+        if case .failedWithFix(_, _, let fix) = error as? SpotError { return onReport(.toast(.failure(text, fix: .url(fix)))) }
+        onReport(.toast(.failure(text)))
     }
 }

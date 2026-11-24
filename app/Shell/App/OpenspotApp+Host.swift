@@ -13,32 +13,17 @@ extension OpenspotApp: SpotsHost {
         if !model.isShown || model.isWarming { showPanel() }
     }
 
-    func notify(_ text: String) {
-        toast?.show(text, kind: .failure)
-    }
-
-    func notify(_ text: String, fix: URL) {
-        toast?.show(text, kind: .failure, press: { NSWorkspace.shared.open(fix) }, fixKey: model.config.fixKey)
-    }
-
-    func notifyKeyFault(_ text: String) {
-        toast?.show(text, kind: .failure, press: { [weak self] in self?.openSettings() }, fixKey: model.config.fixKey)
-    }
-
-    func confirm(_ text: String) {
-        toast?.show(text, kind: .confirm)
-    }
-
     func toast(_ note: ToastNote, of spot: String) {
-        toast?.show(note.words, kind: .confirm, tree: note.tree, spot: spot, id: note.id, press: { [weak self] in self?.model.press(note, of: spot) }, for: note.keeps ? nil : ToastPanel.duration)
+        let press: @MainActor @Sendable () -> Void = switch note.fix {
+        case .url(let url): { NSWorkspace.shared.open(url) }
+        case .settings: { [weak self] in self?.openSettings() }
+        case nil: { [weak self] in self?.model.press(note, of: spot) }
+        }
+        toast?.show(note.words, kind: note.kind, tree: note.tree, spot: spot, id: note.id, press: press, fixKey: note.fix == nil ? nil : model.config.fixKey, for: note.keeps ? nil : ToastPanel.duration)
     }
 
     func dropToast(_ id: String, of spot: String) {
         toast?.drop(id, of: spot)
-    }
-
-    func work(_ text: String) {
-        toast?.show(text, kind: .work, for: nil)
     }
 
     func applyConfig(_ config: Config) {
@@ -118,7 +103,7 @@ extension OpenspotApp: SpotsHost {
         let context = LAContext()
         var error: NSError?
         guard context.canEvaluatePolicy(.deviceOwnerAuthentication, error: &error) else {
-            notify("Openspot cannot guard your account key on this Mac. Set a login password or Touch ID in System Settings, then try again.")
+            model.toast(.failure("Openspot cannot guard your account key on this Mac. Set a login password or Touch ID in System Settings, then try again."))
             return false
         }
         guard (try? await context.evaluatePolicy(.deviceOwnerAuthentication, localizedReason: reason)) == true else { return false }

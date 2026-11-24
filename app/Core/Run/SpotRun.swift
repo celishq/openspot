@@ -7,8 +7,6 @@ public final class SpotRun {
     public enum Report: Sendable {
         case toast(ToastNote)
         case dropToast(String)
-        case failure(String)
-        case failureWithFix(String, URL)
         case frame(String)
         case parts
         case listChange

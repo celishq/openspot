@@ -371,7 +371,7 @@ extension SpotsModel {
                 guard case .form(let form) = answer else { return }
                 let press = CommandAction(id: ScriptEntry.press.name, title: item.title)
                 switch place {
-                case .window: host.notify("\(item.title) asks with a form, which a window does not show yet.")
+                case .window: toast(.failure("\(item.title) asks with a form, which a window does not show yet."))
                 case .float: afterShowing({ host.show() }) { [weak self] in self?.show(.form(form), of: press, on: (entry, item), prefill: "") }
                 case .panel: if isShown { show(.form(form), of: press, on: (entry, item), prefill: "") }
                 }

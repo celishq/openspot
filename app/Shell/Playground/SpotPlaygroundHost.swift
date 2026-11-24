@@ -11,12 +11,8 @@ final class SpotPlaygroundHost: SpotsHost {
     func show() {}
     func present() {}
     func takeFocus() {}
-    func notify(_ text: String) { onNote(text) }
-    func notify(_ text: String, fix: URL) { onNote(text) }
-    func confirm(_ text: String) { onNote(text) }
     func toast(_ note: ToastNote, of spot: String) { onNote(note.words) }
     func dropToast(_ id: String, of spot: String) {}
-    func work(_ text: String) { onNote(text) }
     func applyConfig(_ config: Config) {}
     func paint(_ colours: Theme.Colours) {}
     func layOut(_ layout: Theme.Layout) {}

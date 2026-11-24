@@ -130,7 +130,7 @@ final class SpotRunStateTests: XCTestCase {
     func testAToggleThatFailsIsUndone() async throws {
         let (sheet, link) = sheet(kind: .toggle, triggers: Manifest.Triggers())
         var failures: [String] = []
-        sheet.onReport = { if case .failure(let text) = $0 { failures.append(text) } }
+        sheet.onReport = { if case .toast(let note) = $0, note.kind == .failure, note.fix == nil { failures.append(note.words) } }
 
         sheet.pressCard()
         XCTAssertEqual(sheet.state.on, true)
