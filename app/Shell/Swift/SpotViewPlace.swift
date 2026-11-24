@@ -14,6 +14,10 @@ struct SpotViewPlace: @MainActor Equatable {
         lhs.model === rhs.model && lhs.place == rhs.place
     }
 
+    var cardsMove: Bool {
+        place != .card || model?.cardsMove ?? true
+    }
+
     func close() {
         model?.close(place)
     }

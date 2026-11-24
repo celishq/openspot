@@ -32,7 +32,6 @@ struct SpotsView: View {
                     push: push(from: card),
                     dropTarget: $dropTarget
                 )
-                    .modifier(GridCardsMove(model: model))
                     .offset(y: gridPush)
                     .padding(.horizontal, SpotTokens.halo)
                     .padding(.top, SpotTokens.gridTop)

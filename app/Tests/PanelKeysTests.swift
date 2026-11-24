@@ -89,6 +89,17 @@ final class PanelKeysTests: PanelCase {
         XCTAssertFalse(model.cardsMove)
     }
 
+    func testAModeChangeBetweenTwoModesThatHoldTheCardsStillTellsNoReaderThatTheCardsMove() async throws {
+        try await openList()
+        XCTAssertFalse(model.cardsMove)
+        nonisolated(unsafe) var changed = false
+        withObservationTracking { _ = model.cardsMove } onChange: { changed = true }
+
+        model.mode = .form
+
+        XCTAssertFalse(changed)
+    }
+
     func testASearchThatFindsNoSpotTeachesTheSlash() async throws {
         try script("list", toml: "title = 'List'", "printf 'item=a\\ntitle=A\\n'")
         await model.reload()

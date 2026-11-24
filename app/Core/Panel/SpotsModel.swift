@@ -152,7 +152,9 @@ public final class SpotsModel {
     public var showsFieldDrop = false
     public var reviewed: ReviewSpot?
     public var isFirstLaunch = false
-    public var isShown = false
+    public var isShown = false {
+        didSet { takeCardsMove() }
+    }
     public var isWarming = false
     public var isOpenForDrag = false
     public var isSettlingDrop = false
@@ -187,10 +189,14 @@ public final class SpotsModel {
         guard recordsField else { return }
         keys.inputSourceChanged()
     }
-    public internal(set) var mode = PanelMode.grid
+    public internal(set) var mode = PanelMode.grid {
+        didSet { takeCardsMove() }
+    }
+    public private(set) var cardsMove = false
 
-    public var cardsMove: Bool {
-        isShown && mode == .grid
+    private func takeCardsMove() {
+        let next = isShown && mode == .grid
+        if next != cardsMove { cardsMove = next }
     }
     @ObservationIgnored private var problems: [String] = []
     public internal(set) var menuSession: ActionMenuSession? {

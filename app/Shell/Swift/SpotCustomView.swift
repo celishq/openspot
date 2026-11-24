@@ -103,7 +103,7 @@ struct SpotCustomView: View, @MainActor Equatable {
 
     private var input: [String: Any] {
         [
-            "isShown": isShown && moves,
+            "isShown": isShown && moves && place.cardsMove,
             "items": items,
             "selection": selection as Any,
             "close": close,

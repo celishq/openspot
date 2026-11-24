@@ -189,7 +189,7 @@ private struct CardRing: ViewModifier {
     let shape: SpotRoundShape
 
     func body(content: Content) -> some View {
-        content.modifier(SpotSelectionRing(isSelected: model.selected == index, shape: shape, marksMenu: model.openSheetID == nil))
+        content.modifier(SpotSelectionRing(isSelected: model.selected == index, shape: shape, marksMenu: model.marksMenu(ofCard: index)))
     }
 }
 
