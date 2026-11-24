@@ -10,7 +10,7 @@ enum AccessCall: NounCall {
             rule: ReadSources.rule
         ) { $0.none ? Self.list : nil },
         CommandVerb(
-            "ask", "<bundle id or accessibility>", "Asks macOS for Openspot's access to the app, or to Accessibility, when the person has not chosen yet, and prints its record.",
+            "ask", "<app|accessibility>", "Asks macOS for Openspot's access to the app, or to Accessibility, when the person has not chosen yet, and prints its record.",
             rule: CallRule(use: .read, used: "asked for access to read", inShow: .waits, flags: .needsApp)
         ) { $0.one.map(Self.ask) }
     ])

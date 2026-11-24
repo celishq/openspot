@@ -7,7 +7,7 @@ case "$1" in
     if [ -n "$picked" ]; then
       printf '%s\n' "$picked" | openspot attachment add
     else
-      openspot attachment empty "Nothing selected in Finder"
+      openspot attachment add title="Nothing selected in Finder"
     fi
     ;;
 esac

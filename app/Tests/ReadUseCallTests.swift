@@ -63,8 +63,7 @@ final class ReadUseCallTests: XCTestCase {
             let answer = try await call(["browser", verb, "com.apple.TextEdit"])
 
             XCTAssertEqual(answer.code, 1)
-            XCTAssertTrue(answer.errors.hasPrefix("Openspot can't read the tabs of com.apple.TextEdit. Name a browser: com.apple.Safari, "), answer.errors)
-            XCTAssertTrue(answer.errors.contains("com.google.Chrome"), answer.errors)
+            XCTAssertEqual(answer.errors, "Openspot can't read the tabs of com.apple.TextEdit. It reads Safari, Safari Technology Preview, Google Chrome, Google Chrome Canary, Arc, Brave, Microsoft Edge, Vivaldi and Opera.\n")
         }
         XCTAssertEqual(reads.scripts, [])
     }

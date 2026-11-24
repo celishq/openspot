@@ -5,8 +5,8 @@ enum TextCall: NounCall {
 
     static let noun = CommandNoun("text", group: .mac, verbs: [
         CommandVerb(
-            "selected", "<bundle id>",
-            "Prints the text= selected in the app that the bundle ID names, and its app=. It prints nothing when the app is not running or has no selection.",
+            "selected", "<app>",
+            "Prints the text= selected in the app <app>, and its app=. It prints nothing when the app is not running or has no selection.",
             rule: ReadSources.rule
         ) { $0.one.map(Self.selected) }
     ])

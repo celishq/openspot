@@ -37,10 +37,11 @@ final class ClipboardReadTests: XCTestCase {
         XCTAssertEqual([fresh.code, old.code], [0, 0])
     }
 
-    func testNewerTakesOnlyAWholeNumberOfSecondsAboveZero() {
-        for words in [["--newer"], ["--newer", "0"], ["--newer", "soon"], ["--newer", "5", "x"]] {
+    func testNewerTakesAnAgeAboveZeroInSecondsOrWithItsUnit() {
+        for words in [["--newer"], ["--newer", "0"], ["--newer", "0m"], ["--newer", "soon"], ["--newer", "2w"], ["--newer", "5", "x"]] {
             XCTAssertNil(CommandLineCall(arguments: ["clipboard", "read"] + words)?.value as? ClipboardCall, words.joined(separator: " "))
         }
-        XCTAssertEqual(CommandLineCall(arguments: ["clipboard", "read", "--newer", "120"])?.value as? ClipboardCall, .read(newer: 120))
+        let ages = ["120", "90s", "2m", "1h", "1d"].map { CommandLineCall(arguments: ["clipboard", "read", "--newer", $0])?.value as? ClipboardCall }
+        XCTAssertEqual(ages, [.read(newer: 120), .read(newer: 90), .read(newer: 120), .read(newer: 3_600), .read(newer: 86_400)])
     }
 }

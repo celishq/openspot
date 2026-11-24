@@ -32,7 +32,8 @@ struct Browser: Equatable, Sendable {
     }
 
     static func unknown(_ bundleID: String) -> String {
-        "Openspot can't read the tabs of \(bundleID). Name a browser: " + all.map(\.bundleID).joined(separator: ", ") + "."
+        let names = all.map(\.name)
+        return "Openspot can't read the tabs of \(bundleID). It reads " + names.dropLast().joined(separator: ", ") + " and " + names[names.count - 1] + "."
     }
 
     var script: String {

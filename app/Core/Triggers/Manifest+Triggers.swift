@@ -126,7 +126,7 @@ extension Manifest {
             self.init(events: events, every: every, search: search, lists: lists, drop: drop, pick: pick, commands: commands, schedule: schedule, filters: filters, bindings: bindings, fills: fills)
         }
 
-        private static func age(_ text: String) -> TimeInterval? {
+        static func age(_ text: String) -> TimeInterval? {
             guard let unit = text.last.flatMap({ ages[$0] }), let count = Int(text.dropLast()), count > 0 else { return nil }
             return TimeInterval(count) * unit
         }

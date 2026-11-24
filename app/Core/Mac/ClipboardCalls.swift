@@ -20,9 +20,9 @@ struct ClipboardCalls {
         CommandAnswer.work { [mac] in mac?.text() ?? "" }
     }
 
-    func read(newer seconds: Int, runs: SpotRuns) -> CommandAPI.Work {
+    func read(newer limit: TimeInterval, runs: SpotRuns) -> CommandAPI.Work {
         CommandAnswer.work { [mac] in
-            guard let age = await runs.copyAge(), age < TimeInterval(seconds) else { return "" }
+            guard let age = await runs.copyAge(), age < limit else { return "" }
             return mac?.text() ?? ""
         }
     }

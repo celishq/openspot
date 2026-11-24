@@ -6,13 +6,13 @@ enum BrowserCall: NounCall {
 
     static let noun = CommandNoun("browser", group: .mac, verbs: [
         CommandVerb(
-            "tab", "<bundle id>",
-            "Prints the url=, title= and app= of the front tab of the front window of the browser that the bundle ID names. It prints nothing when that browser is not running.",
+            "tab", "<app>",
+            "Prints the url=, title= and app= of the front tab of the front window of the browser <app>. It prints nothing when that browser is not running.",
             rule: ReadSources.rule
         ) { Self.parse($0, Self.tab) },
         CommandVerb(
-            "tabs", "<bundle id>",
-            "Prints a record for each tab of each window of the browser that the bundle ID names: url=, title=, window= (1 is the front window), index= (its place in the window), active=true or false, and app=.",
+            "tabs", "<app>",
+            "Prints a record for each tab of each window of the browser <app>: url=, title=, window= (1 is the front window), index= (its place in the window), active=true or false, and app=.",
             rule: ReadSources.rule
         ) { Self.parse($0, Self.tabs) }
     ])

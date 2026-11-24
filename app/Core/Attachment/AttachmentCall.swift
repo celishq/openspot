@@ -2,21 +2,15 @@ import Foundation
 
 enum AttachmentCall: NounCall {
     case add([String])
-    case empty(String)
 
     private static let rule = CallRule(use: .attachment, used: "put a value in the panel's field", flags: .needsApp)
 
     static let noun = CommandNoun("attachment", group: .build, verbs: [
         CommandVerb(
             "add", "[input...]",
-            "Puts a value in the panel's field, where people press Tab to hand it to a spot that takes its kind: `file=` once for each file, `url=` or `text=`, with `title=`, the bundle ID of its app in `app=`, and the picture of its chip in `icon=`, as `icon` in spot.toml takes it. With no input it takes the record on stdin that `openspot browser tab` prints, and adds nothing when it holds no value. It works in a show.",
+            "Puts a value in the panel's field, where people press Tab to hand it to a spot that takes its kind: `file=` once for each file, `url=` or `text=`, with `title=`, the app in `app=`, and the picture of its chip in `icon=`, as `icon` in spot.toml takes it. With `title=` alone it shows the title in the field as the chip's words, such as Nothing selected in Finder. With no input it takes the record on stdin that `openspot browser tab` prints, and adds nothing when it holds no value. It works in a show.",
             rule: rule
-        ) { words in Self.add(words.rest) },
-        CommandVerb(
-            "empty", "<words>...",
-            "Shows the words in the panel's field when the chip that Tab picks has nothing to hand over, such as Nothing selected in Finder. It works in a show.",
-            rule: rule
-        ) { words in words.none ? nil : Self.empty(words.rest.joined(separator: " ")) }
+        ) { words in Self.add(words.rest) }
     ])
 
     static let oneKind = "`openspot attachment add` takes one kind of value: file= once for each file, url= or text=."
@@ -31,16 +25,10 @@ enum AttachmentCall: NounCall {
     func work(in context: CallContext) -> CommandAPI.Work? {
         guard let runs = context.runs else { return CommandAnswer.notRunning("attachment") }
         guard let caller = context.request.caller else {
-            let verb = if case .empty = self { "empty" } else { "add" }
-            return { CommandAnswer(errors: "`openspot attachment \(verb)` runs only from a spot, since its value shows as that spot's chip.\n", code: 1) }
+            return { CommandAnswer(errors: "`openspot attachment add` runs only from a spot, since its value shows as that spot's chip.\n", code: 1) }
         }
         switch self {
         case .add(let words): return add(words, to: runs, from: caller, input: context.input)
-        case .empty(let words):
-            return {
-                _ = await runs.take(SpotEffect.attachment(.empty(words)), from: caller)
-                return CommandAnswer()
-            }
         }
     }
 
@@ -52,6 +40,12 @@ enum AttachmentCall: NounCall {
                     return { CommandAnswer(errors: "`openspot attachment add` does not take \(word). Write file=, url= or text=, and title=, app= or icon=.\n", code: 2) }
                 }
                 fields.append(TextBlock.Field(key: String(word[..<split]), value: String(word[word.index(after: split)...])))
+            }
+            if fields.allSatisfy({ $0.key == "title" }), let title = fields.last?.value {
+                return {
+                    _ = await runs.take(SpotEffect.attachment(.empty(title)), from: caller)
+                    return CommandAnswer()
+                }
             }
             return Self.add(fields, to: runs, from: caller)
         }
