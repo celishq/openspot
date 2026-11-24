@@ -142,6 +142,23 @@ final class ReadUseCallTests: XCTestCase {
         XCTAssertEqual(answer.output, "text=two\\nlines\napp=com.apple.Notes\n")
     }
 
+    func testAppPrintsTheBundleIDNameAndPlaceOfTheFrontApp() async throws {
+        reads.set(front: "com.apple.TextEdit")
+
+        let answer = try await call(["window", "app"])
+
+        XCTAssertEqual(answer.output, "app=com.apple.TextEdit\nname=TextEdit\npath=/Applications/TextEdit.app\n")
+    }
+
+    func testAppPrintsNothingWhenNoAppIsInFront() async throws {
+        reads.set()
+
+        let answer = try await call(["window", "app"])
+
+        XCTAssertEqual([answer.output, answer.errors], ["", ""])
+        XCTAssertEqual(answer.code, 0)
+    }
+
     func testNothingToReadPrintsNothingAndEndsWell() async throws {
         reads.set(front: "com.apple.Safari", answers: ["com.apple.finder": []], selected: "  \n")
 
@@ -233,7 +250,7 @@ final class ReadUseCallTests: XCTestCase {
     }
 
     func testEachReadNeedsTheAppAndNamesItsUse() {
-        for words in [["browser", "tab"], ["browser", "tab", "com.apple.Safari"], ["browser", "tabs"], ["finder", "selection"], ["window", "selection"], ["access", "list"], ["access", "ask", "accessibility"]] {
+        for words in [["browser", "tab"], ["browser", "tab", "com.apple.Safari"], ["browser", "tabs"], ["finder", "selection"], ["window", "selection"], ["window", "app"], ["access", "list"], ["access", "ask", "accessibility"]] {
             XCTAssertEqual(SpotUseCall(arguments: words, of: "reader")?.use, .read, words.joined(separator: " "))
             XCTAssertTrue(CommandKind.needsApp(words), words.joined(separator: " "))
         }

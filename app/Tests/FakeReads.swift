@@ -16,7 +16,7 @@ final class FakeReads: MacReads, @unchecked Sendable {
     func set(front: String? = nil, installed: Set<String> = [], access: [String: ReadAccess] = [:], grant: ReadAccess = .allowed, trust: ReadAccess = .allowed,
              answers: [String: [String]] = [:], selected: String? = nil) {
         lock.withLock {
-            frontValue = front.map { FrontApp(bundleID: $0) }
+            frontValue = front.map { FrontApp(bundleID: $0, path: "/Applications/\($0.split(separator: ".").last ?? "").app") }
             installedValue = installed
             accessValue = access
             grantValue = grant

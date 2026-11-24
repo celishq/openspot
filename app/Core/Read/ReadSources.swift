@@ -66,6 +66,11 @@ public final class ReadSources: @unchecked Sendable {
         return [Self.record([("text", text)] + (app.map { [("app", $0)] } ?? []))]
     }
 
+    func app() async -> [TextBlock] {
+        guard let front = await mac.front() else { return [] }
+        return [Self.record([("app", front.bundleID), ("name", front.name)] + (front.path.map { [("path", $0)] } ?? []))]
+    }
+
     private func browser(_ bundleID: String?) async -> Browser? {
         guard let bundleID else { return await mac.front().flatMap { Browser.named($0.bundleID) } }
         return Browser.named(bundleID)
