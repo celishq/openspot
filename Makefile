@@ -1,4 +1,4 @@
-.PHONY: verify test perf film shots eval-agent eval-compare docs-images spots attachment-demo dev-state first-launch examples release release-build
+.PHONY: verify test perf film shots eval-agent eval-compare docs-images spots attachment-demo toast-demo dev-state first-launch examples release release-build
 
 TEST_LIMITS := -test-timeouts-enabled YES -default-test-execution-time-allowance 120 -maximum-test-execution-time-allowance 300
 
@@ -52,6 +52,9 @@ spots:
 
 attachment-demo:
 	sh scripts/attachment-demo.sh
+
+toast-demo:
+	sh scripts/toast-demo.sh
 
 dev-state:
 	rm -rf .temp/openspot

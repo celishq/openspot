@@ -24,6 +24,7 @@ extension SpotTokens {
     public static let toastMargin: CGFloat = 16
     public static let toastMaxSize = CGSize(width: 560, height: 120)
     public static let toastGlyphGap: CGFloat = 8
+    public static let toastStackGap: CGFloat = 8
     public static let toastMarkSide: CGFloat = 16
     public static let toastPaddingY: CGFloat = 10
     public static let toastKeySpace: CGFloat = 2

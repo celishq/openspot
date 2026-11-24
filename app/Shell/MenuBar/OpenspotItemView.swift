@@ -4,7 +4,7 @@ import SwiftUI
 struct OpenspotItemView: View {
     let model: SpotsModel
     let image: NSImage
-    let toast: Toast?
+    let toasts: Toasts?
 
     private static var leave: Animation { SpotMotion.fade(isShown: false) }
     private static var arrive: Animation { SpotMotion.press }
@@ -40,7 +40,7 @@ struct OpenspotItemView: View {
     }
 
     private var symbol: String? {
-        model.menuBarSymbol(during: toast.flatMap { $0.isShown ? $0.kind : nil })
+        model.menuBarSymbol(during: toasts?.lead)
     }
 
     @ViewBuilder
