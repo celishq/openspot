@@ -28,7 +28,7 @@ public struct AttachmentChip: Equatable, Sendable {
         case failed(String)
     }
 
-    static let loadingSymbol = "ellipsis"
+    public static let loadingSymbol = "ellipsis"
 
     public let source: String
     public let app: String?

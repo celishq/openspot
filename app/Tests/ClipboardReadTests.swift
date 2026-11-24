@@ -22,26 +22,26 @@ final class ClipboardReadTests: XCTestCase {
         return await work()
     }
 
-    func testNewerPrintsACopyOnlyUntilItIsOlderThanTheSecondsSinceOpenspotFirstSawIt() async throws {
+    func testWithinPrintsACopyOnlyUntilItIsOlderThanTheSecondsSinceOpenspotFirstSawIt() async throws {
         board.copy("https://a.com/x\n")
-        let fresh = try await call(["--newer", "120"])
+        let fresh = try await call(["--within", "120"])
         clock.advance(by: 119)
-        let late = try await call(["--newer", "120"])
+        let late = try await call(["--within", "120"])
         clock.advance(by: 1)
-        let old = try await call(["--newer", "120"])
+        let old = try await call(["--within", "120"])
         let plain = try await call([])
         board.copy("two\nlines")
-        let next = try await call(["--newer", "120"])
+        let next = try await call(["--within", "120"])
 
         XCTAssertEqual([fresh.output, late.output, old.output, plain.output, next.output], ["https://a.com/x\n", "https://a.com/x\n", "", "https://a.com/x\n", "two\nlines"])
         XCTAssertEqual([fresh.code, old.code], [0, 0])
     }
 
-    func testNewerTakesAnAgeAboveZeroInSecondsOrWithItsUnit() {
-        for words in [["--newer"], ["--newer", "0"], ["--newer", "0m"], ["--newer", "soon"], ["--newer", "2w"], ["--newer", "5", "x"]] {
+    func testWithinTakesAnAgeAboveZeroInSecondsOrWithItsUnit() {
+        for words in [["--within"], ["--within", "0"], ["--within", "0m"], ["--within", "soon"], ["--within", "2w"], ["--within", "5", "x"]] {
             XCTAssertNil(CommandLineCall(arguments: ["clipboard", "read"] + words)?.value as? ClipboardCall, words.joined(separator: " "))
         }
-        let ages = ["120", "90s", "2m", "1h", "1d"].map { CommandLineCall(arguments: ["clipboard", "read", "--newer", $0])?.value as? ClipboardCall }
-        XCTAssertEqual(ages, [.read(newer: 120), .read(newer: 90), .read(newer: 120), .read(newer: 3_600), .read(newer: 86_400)])
+        let ages = ["120", "90s", "2m", "1h", "1d"].map { CommandLineCall(arguments: ["clipboard", "read", "--within", $0])?.value as? ClipboardCall }
+        XCTAssertEqual(ages, [.read(within: 120), .read(within: 90), .read(within: 120), .read(within: 3_600), .read(within: 86_400)])
     }
 }

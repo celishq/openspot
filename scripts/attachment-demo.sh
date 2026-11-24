@@ -11,6 +11,9 @@ files="$PWD/$state/demo-files"
 mkdir -p "$files"
 printf 'Invoice\n' > "$files/Invoice.txt"
 printf 'Contract\n' > "$files/Contract.txt"
+sips -s format png /System/Applications/Calculator.app/Contents/Resources/AppIcon.icns --out "$files/Picture.png" >/dev/null
+sips -s format gif "$files/Picture.png" --out "$files/Screen Recording of the quarterly planning review, part two.gif" >/dev/null
+say -o "$files/Voice.aiff" "Openspot" >/dev/null
 demo() {
   folder="$state/spots/$1.spot"
   rm -rf "$folder"
@@ -30,6 +33,9 @@ demo demo-note "Demo Note" "note.text" '"text=Buy milk, call the bank, book the 
 demo demo-mail "Demo Mail" "envelope" 'url=message://demo title="Re: Contract" app=com.apple.mail' '^com\\.apple\\.mail$'
 demo demo-page "Demo Page" "doc.richtext" "file=$files/Contract.txt title=Contract app=com.apple.Preview" '^com\\.apple\\.Preview$'
 demo demo-files "Demo Files" "folder" "file=$files/Invoice.txt file=$files/Contract.txt app=com.apple.finder"
+demo demo-picture "Demo Picture" "photo" "file=$files/Picture.png app=com.apple.finder"
+demo demo-gif "Demo GIF" "photo.stack" "\"file=$files/Screen Recording of the quarterly planning review, part two.gif\" app=com.apple.finder"
+demo demo-voice "Demo Voice" "waveform" "file=$files/Voice.aiff app=com.apple.finder"
 folder="$state/spots/show-me.spot"
 rm -rf "$folder"
 mkdir -p "$folder"

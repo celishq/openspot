@@ -90,6 +90,17 @@ extension SpotRuns {
         clipboardWatch != nil
     }
 
+    func keptValue(of count: Int) -> AttachmentValue?? {
+        guard let seenCopy, seenCopy.count == count, seenCopy.isRead else { return nil }
+        return .some(seenCopy.value)
+    }
+
+    func keep(_ value: AttachmentValue?, of count: Int) {
+        if seenCopy?.count != count { seenCopy = SeenCopy(count: count, at: now()) }
+        seenCopy?.value = value
+        seenCopy?.isRead = true
+    }
+
     func watchClipboard(looksNow: Bool = false) {
         let isWanted = sheets.values.contains { $0.isWanted && $0.spot.triggers.events.contains(EventName.clipboard) }
         guard let source, isWanted, !hasQuit else {
@@ -98,7 +109,7 @@ extension SpotRuns {
             return
         }
         guard clipboardWatch == nil else { return }
-        if !looksNow || clipboardSeen == nil { _ = copyAge() }
+        if !looksNow || seenCopy == nil { _ = copyAge() }
         clipboardWatch = Task { [weak self, weak source, sleep = clock.sleep] in
             var looks = looksNow
             while !Task.isCancelled {
@@ -109,8 +120,8 @@ extension SpotRuns {
                 looks = false
                 guard !Task.isCancelled, let self, let source else { return }
                 let next = source.clipboardCount
-                guard next != clipboardSeen?.count else { continue }
-                clipboardSeen = (next, now())
+                guard next != seenCopy?.count else { continue }
+                seenCopy = SeenCopy(count: next, at: now())
                 raise(.named(EventName.clipboard, value: nil))
             }
         }
@@ -120,8 +131,12 @@ extension SpotRuns {
         guard let source else { return nil }
         let count = source.clipboardCount
         let time = now()
-        if clipboardSeen?.count != count { clipboardSeen = (count, time) }
-        return clipboardSeen.map { time.timeIntervalSince($0.at) }
+        if seenCopy?.count != count { seenCopy = SeenCopy(count: count, at: time) }
+        return seenCopy.map { time.timeIntervalSince($0.at) }
+    }
+
+    func isCopy(within limit: TimeInterval) -> Bool {
+        copyAge().map { $0 < limit } ?? false
     }
 
     func want(_ id: String) {

@@ -247,6 +247,7 @@ final class MacCallsTests: XCTestCase {
         XCTAssertEqual([colour.output, colour.errors], ["", ""])
     }
 
+
     func testTheAppAsksForAColourAndAFolder() async throws {
         let client = client!
         let colour = try await Task.detached { try client.run(["color", "pick"]) }.value

@@ -134,13 +134,29 @@ extension SpotsModel {
     }
 
     func give(to entry: Entry) {
-        guard let value = attachments.selectedChip?.value, let key = confirmKey(of: entry), let id = entry.item?.run else { return }
+        guard let chip = attachments.selectedChip, let value = chip.value, let key = confirmKey(of: entry), let id = entry.item?.run else { return }
         guard let offer = entry.spot.chipActions.first(where: { $0.name == id && $0.fits(value) }) else { return }
         if offer.confirm != nil, confirming != key { return confirming = key }
         confirming = nil
+        guard !value.isWhole else { return hand(value, to: entry.spot.id, by: offer) }
+        let board = runs.api?.mac.clipboard
+        Task { [weak self] in
+            let whole = await Task.detached { Result { try value.whole(from: board) } }.value
+            guard let self else { return }
+            asOnePress {
+                guard attachments.selectedChip?.source == chip.source else { return }
+                switch whole {
+                case .success(let whole): hand(whole, to: entry.spot.id, by: offer)
+                case .failure(let error): mark(chip.source, .failed((error as? SpotError)?.reason ?? error.localizedDescription))
+                }
+            }
+        }
+    }
+
+    private func hand(_ value: AttachmentValue, to id: String, by offer: ChipAction) {
         leaveAttachment()
-        sheets[entry.spot.id]?.run(offer, with: value)
-        settleGive(on: entry.spot.id)
+        sheets[id]?.run(offer, with: value)
+        settleGive(on: id)
     }
 
     func confirmKey(of entry: Entry) -> GlobalKey? {

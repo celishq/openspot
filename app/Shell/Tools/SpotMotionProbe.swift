@@ -69,6 +69,7 @@ final class SpotMotionProbe: NSObject {
         if action == "pixels" { return shotsFolder.map(shootPixels) ?? finish(with: "no shots folder\n") }
         if action == "panel" { return beginOpens() }
         if action == "search" { return shotsFolder.map(shootTyping) ?? beginSearch() }
+        if action == "attach" { return shotsFolder.map(shootAttachments) ?? finish(with: "no shots folder\n") }
         if action == "drag" || action == "mouse" { return beginDrag() }
         if action == "edit" { return beginEdit() }
         if action == "menu" { return beginMenus() }
@@ -332,6 +333,20 @@ final class SpotMotionProbe: NSObject {
         DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) {
             self.saveSharp(to: "\(folder)/search-unfocused.png")
             self.finish(with: "shots\n" + self.model.hint + "\n")
+        }
+    }
+
+    private func shootAttachments(into folder: String) {
+        panel.makeKeyAndOrderFront(nil)
+        DispatchQueue.main.asyncAfter(deadline: .now() + 2) { self.shootChip(1, into: folder) }
+    }
+
+    private func shootChip(_ number: Int, into folder: String) {
+        guard number <= model.attachments.chips.count else { return finish(with: "shots\n") }
+        _ = model.handleKey(ActionKey(name: "tab"))
+        DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) {
+            self.save(to: "\(folder)/attach-\(number).png")
+            self.shootChip(number + 1, into: folder)
         }
     }
 

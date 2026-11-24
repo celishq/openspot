@@ -17,12 +17,18 @@ public struct AttachmentValue: Equatable, Sendable {
     public let title: String?
     public let app: String?
     public let icon: Icon?
+    let wholeCopy: ClipboardCopy?
 
     public init(_ payload: Payload, title: String? = nil, app: String? = nil, icon: Icon? = nil) {
+        self.init(payload, title: title, app: app, icon: icon, wholeCopy: nil)
+    }
+
+    init(_ payload: Payload, title: String? = nil, app: String? = nil, icon: Icon? = nil, wholeCopy: ClipboardCopy?) {
         self.payload = payload
         self.title = title
         self.app = app
         self.icon = icon
+        self.wholeCopy = wholeCopy
     }
 
     public init(url: String, title: String? = nil, app: String? = nil, icon: Icon? = nil) {
@@ -35,6 +41,17 @@ public struct AttachmentValue: Equatable, Sendable {
 
     public init(files: FileKinds, title: String? = nil, app: String? = nil, icon: Icon? = nil) {
         self.init(.files(files), title: title, app: app, icon: icon)
+    }
+
+    var isWhole: Bool {
+        wholeCopy == nil
+    }
+
+    func whole(from board: (any MacClipboard)?) throws -> AttachmentValue {
+        guard let wholeCopy else { return self }
+        guard let board else { throw SpotError.fault("This Mac has no clipboard.") }
+        guard let whole = try Clipboard(board: board).whole(of: self, copy: wholeCopy) else { throw SpotError.fault(Clipboard.changed) }
+        return whole
     }
 
     public var kind: Kind {

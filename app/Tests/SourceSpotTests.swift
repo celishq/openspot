@@ -118,6 +118,18 @@ final class SourceSpotTests: AttachmentCase {
         XCTAssertEqual(state(of: "fresh-copy"), .ready(AttachmentValue(text: "see https://a.com/x", title: "Copied text")))
     }
 
+    func testFreshCopyAddsCopiedFilesAsFiles() async throws {
+        try copy("fresh-copy")
+        let file = path("a.txt")
+        FileManager.default.createFile(atPath: file, contents: Data())
+        board.copy(files: [URL(fileURLWithPath: file)])
+
+        await open()
+
+        try await wait("the copy") { self.state(of: "fresh-copy") != nil }
+        XCTAssertEqual(chips.first?.value?.payload, .files(FileKinds.Disk().read([file])))
+    }
+
     func testFreshCopyAddsNothingWhenTheClipboardHoldsNoText() async throws {
         try copy("fresh-copy")
         try witness()
