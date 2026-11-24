@@ -1496,6 +1496,38 @@ final class SpotsModelTests: XCTestCase {
         XCTAssertEqual(model.menuContentHeight, 0)
     }
 
+    func testAWriteOfTheMenuSessionMakesNoChangeOfItsOwn() async throws {
+        model.placeMenu(try await openWeatherMenu())
+        try await wait("the grow") { model.menuSession?.phase != .opening }
+        XCTAssertGreaterThan(model.menuContentHeight, 0)
+        let changes = host.motions.count
+
+        model.menuSession = nil
+
+        XCTAssertEqual(host.motions.count, changes)
+    }
+
+    func testAMenuThatFoldsUnderAnOpeningSheetShrinksItsFootInAChangeOfItsOwnAtTheEndOfItsClose() async throws {
+        try script("notes", toml: "title = 'Notes'", "printf 'item=a\\ntitle=A\\n'")
+        model.placeMenu(try await openWeatherMenu())
+        try await wait("the grow") { model.menuSession?.phase != .opening }
+        host.heldEnds = []
+
+        model.open("notes")
+        try await wait("the open motion") { model.transition.phase == .opening }
+        XCTAssertGreaterThan(model.menuContentHeight, 0)
+        let writes = host.menuFootWrites.count
+        while let end = host.heldEnds?.first {
+            host.heldEnds?.removeFirst()
+            end()
+        }
+
+        XCTAssertNil(model.menuSession)
+        XCTAssertEqual(model.menuContentHeight, 0)
+        XCTAssertEqual(host.menuFootWrites.dropFirst(writes).map(\.motion), [.sheet(isOpen: false)])
+        XCTAssertEqual(host.menuFootWrites.dropFirst(writes).map(\.depth), [0])
+    }
+
     func testTheBackdropUnderTheMenuGoesWhenAMenuWithNoRowsTakesThePlaceOfAClosingOne() async throws {
         let frame = try await openWeatherMenu()
         model.placeMenu(frame)
@@ -1540,6 +1572,205 @@ final class SpotsModelTests: XCTestCase {
 
         try await wait("the words of Edit Spots") { model.gridHint == HintWords(model.hint) && model.gridHint != grid }
         XCTAssertEqual(host.motions.last, .fade)
+    }
+
+    func testThePressThatStartsEditingWritesTheHintInItsOwnUpdate() async throws {
+        try script("notes", toml: "title = 'Notes'", "true")
+        await model.reload()
+        model.isShown = true
+        model.followHint()
+        let grid = model.gridHint
+
+        model.beginEditing()
+
+        XCTAssertNotEqual(model.gridHint, grid)
+        XCTAssertEqual(model.gridHint, HintWords(model.hint))
+        XCTAssertEqual(host.motions.last, .fade)
+    }
+
+    func testThePressThatClosesASheetWritesTheHintOfTheGridInItsOwnUpdate() async throws {
+        try await openList()
+        model.followHint()
+        let sheet = model.sheetHint
+        XCTAssertEqual(sheet, HintWords(model.hint))
+
+        XCTAssertTrue(model.stepBack())
+
+        XCTAssertNil(model.openSheetID)
+        XCTAssertNotEqual(model.gridHint, sheet)
+        XCTAssertEqual(model.gridHint, HintWords(model.hint))
+    }
+
+    func testAPressThatLeavesTheHintTheSameTellsNoReaderOfIt() async throws {
+        try script("notes", toml: "title = 'Notes'", "true")
+        try script("mail", toml: "title = 'Mail'", "true")
+        await model.reload()
+        model.isShown = true
+        model.followHint()
+        await hopsEnd()
+        nonisolated(unsafe) var told = false
+        withObservationTracking { _ = (model.gridHint, model.sheetHint) } onChange: { told = true }
+        let key = try center(of: 1).y == center(of: 0).y ? "right" : "down"
+        let changes = host.motions.count
+
+        let takes = await hintTakes { _ = model.handleSearchKey(ActionKey(name: key)) }
+
+        XCTAssertEqual(model.selected, 1)
+        XCTAssertEqual(takes, 1)
+        XCTAssertFalse(told)
+        XCTAssertEqual(host.motions.count, changes)
+    }
+
+    func testASearchThatFindsNothingNeverLetsAnUpdateSeeThePlacementsOfCardsTheListNoLongerHolds() async throws {
+        try script("notes", toml: "title = 'Notes'", "true")
+        try script("mail", toml: "title = 'Mail'", "true")
+        try script("maps", toml: "title = 'Maps'", "true")
+        await model.reload()
+        model.isShown = true
+        model.followHint()
+
+        model.query = "zzz"
+
+        XCTAssertEqual(host.disagreements, 0)
+    }
+
+    private func followThreeCards() async throws {
+        try script("notes", toml: "title = 'Notes'", "true")
+        try script("mail", toml: "title = 'Mail'", "true")
+        try script("maps", toml: "title = 'Maps'", "true")
+        await model.reload()
+        model.isShown = true
+        model.followHint()
+        await hopsEnd()
+    }
+
+    private func hopsEnd() async {
+        await Task { @MainActor in }.value
+    }
+
+    private func hintTakes(during press: () -> Void) async -> Int {
+        let takes = model.hintTakes
+        press()
+        await hopsEnd()
+        return model.hintTakes - takes
+    }
+
+    private func center(of index: Int) throws -> CGPoint {
+        let rect = try XCTUnwrap(model.placements.first { $0.index == index }).rect
+        return CGPoint(x: rect.midX, y: rect.midY)
+    }
+
+    func testAKeyThatMovesTheSelectionWorksTheHintOutOnce() async throws {
+        try await followThreeCards()
+        let key = try center(of: 1).y == center(of: 0).y ? "right" : "down"
+
+        let takes = await hintTakes { _ = model.handleSearchKey(ActionKey(name: key)) }
+
+        XCTAssertNotEqual(model.selected, 0)
+        XCTAssertEqual(takes, 1)
+    }
+
+    func testOpeningSettingsWorksTheHintOutOnceByTheEndOfThePress() async throws {
+        try script("keys", toml: "title = 'Keys'", "printf 'item=a\\ntitle=Apple\\n'")
+        try FileManager.default.createDirectory(at: folder.appendingPathComponent("config"), withIntermediateDirectories: true)
+        try "[[spots]]\nid = \"keys\"\nkey = \"cmd+,\"\n".write(to: folder.appendingPathComponent("config/config.toml"), atomically: true, encoding: .utf8)
+        await model.reload()
+        model.isShown = true
+        model.panelWillShow()
+        model.followHint()
+        await hopsEnd()
+        let takes = model.hintTakes
+
+        model.openSettings()
+
+        XCTAssertEqual(model.hintTakes - takes, 1)
+        XCTAssertEqual(model.gridHint, HintWords(model.hint))
+    }
+
+    func testAPointerMoveThatLeavesTheSelectionWorksNothingOut() async throws {
+        try await followThreeCards()
+        let point = try center(of: 0)
+
+        let takes = await hintTakes { model.point(at: .grid(point)) }
+
+        XCTAssertEqual(model.selected, 0)
+        XCTAssertEqual(takes, 0)
+    }
+
+    func testAPointerMoveThatChangesTheSelectionWorksTheHintOutOnce() async throws {
+        try await followThreeCards()
+        let point = try center(of: 1)
+
+        let takes = await hintTakes { model.point(at: .grid(point)) }
+
+        XCTAssertEqual(model.selected, 1)
+        XCTAssertEqual(takes, 1)
+    }
+
+    func testAKeystrokeInTheFieldWorksTheHintOutOnce() async throws {
+        try await followThreeCards()
+        model.selected = 1
+        await hopsEnd()
+
+        let takes = await hintTakes { model.searchText = "zzz" }
+
+        XCTAssertEqual(takes, 1)
+        XCTAssertEqual(model.gridHint, HintWords(model.hint))
+    }
+
+    func testEnteringAndLeavingEditSpotsEachWorkTheHintOutOnceInOneChangeOfItsOwn() async throws {
+        try await followThreeCards()
+        let writes = host.hintWrites.count
+
+        let begin = await hintTakes { model.beginEditing() }
+        let end = await hintTakes { model.endEditing() }
+
+        XCTAssertEqual(begin, 1)
+        XCTAssertEqual(end, 1)
+        XCTAssertEqual(host.hintWrites.dropFirst(writes).map(\.motion), [.fade, .fade])
+        XCTAssertEqual(host.hintWrites.dropFirst(writes).map(\.depth), [0, 0])
+    }
+
+    func testLeavingEditSpotsWithTheThirdCardSelectedFadesTheHintInOneWrite() async throws {
+        try await followThreeCards()
+        model.beginEditing()
+        model.selected = 2
+        await hopsEnd()
+        let writes = host.hintWrites.count
+
+        model.endEditing()
+
+        XCTAssertEqual(host.hintWrites.dropFirst(writes).map(\.motion), [.fade])
+        XCTAssertEqual(host.hintWrites.dropFirst(writes).map(\.depth), [0])
+        XCTAssertEqual(model.gridHint, HintWords(model.hint))
+    }
+
+    func testACutSheetWritesTheHintOnceWithNoMotion() async throws {
+        try await openList()
+        model.followHint()
+        await hopsEnd()
+        model.fieldDrop = SpotDrop(paths: [folder.path], folder: folder)
+        let writes = host.hintWrites.count
+
+        model.closeSheet(moving: false)
+
+        XCTAssertNil(model.openSheetID)
+        XCTAssertEqual(host.hintWrites.dropFirst(writes).map(\.motion), [nil])
+        XCTAssertEqual(host.hintWrites.dropFirst(writes).map(\.depth), [0])
+        XCTAssertEqual(model.gridHint, HintWords(model.hint))
+    }
+
+    func testAListThatArrivesFromASpotsRunWithNoPressUpdatesTheHint() async throws {
+        try script("list", toml: "", "sleep 0.3; printf 'item=a\\ntitle=Apple\\n'")
+        await model.reload()
+        model.isShown = true
+        model.panelWillShow()
+        model.followHint()
+        model.press("list")
+        try await wait("the open sheet") { model.openSheetID == "list" }
+        let empty = model.sheetHint
+
+        try await wait("the hint of the list") { model.openItems?.shown.count == 1 && model.sheetHint == HintWords(model.hint) && model.sheetHint != empty }
     }
 
     func testTheSameTextOfTheSearchFindsNothingAgain() async throws {

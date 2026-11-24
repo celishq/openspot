@@ -35,14 +35,14 @@ struct SpotSheetLayer: View {
             if let look = card?.look, let frame {
                 cardLook(look, size: card?.placement.size ?? look.size)
                     .frame(width: frame.width, height: frame.height)
-                    .morph(progress, opacity: SheetMorph.cardLook(at:))
+                    .morph(progress, opacity: SheetMorph.cardOpacity(at:))
                     .allowsHitTesting(false)
             }
         }
         .background {
             if entry.isActive {
                 SpotTheme.solid
-                    .morph(progress, opacity: { [morph] in morph.sourceLook(at: $0) })
+                    .morph(progress, opacity: { [morph] in morph.sourceOpacity(at: $0) })
             }
         }
         .modifier(SpotSheetFrame(
@@ -111,7 +111,7 @@ struct SpotSheetLayer: View {
 
     private var contentOpacity: (Double) -> Double {
         if card?.look == nil { return { _ in 1 } }
-        return { SheetMorph.sheetLook(at: $0) }
+        return { [isOpen] in SheetMorph.contentOpacity(at: $0, isOpen: isOpen) }
     }
 
     private var morph: SheetMorph {
@@ -119,7 +119,8 @@ struct SpotSheetLayer: View {
     }
 
     private var closedRect: CGRect {
-        isInstall ? SpotFieldView.rect : frame ?? SpotFieldView.rect
+        let field = SpotTokens.fieldRect(room: model.fieldRoom)
+        return isInstall ? field : frame ?? field
     }
 
     private func shift(to closed: CGRect) -> CGSize {
@@ -134,7 +135,7 @@ struct SpotSheetLayer: View {
         SpotCardArrow()
             .placed(isTall: (frame?.height ?? 0) > SpotTokens.cell)
             .environment(\.spotIsOnSolid, entry.isActive)
-            .morph(progress, opacity: SheetMorph.cardLook(at:))
+            .morph(progress, opacity: SheetMorph.cardOpacity(at:))
             .allowsHitTesting(false)
     }
 

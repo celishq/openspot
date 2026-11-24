@@ -12,7 +12,7 @@ public struct AttachmentLayout: Equatable, Sendable {
         init(chip: AttachmentChip, quietDepth depth: Int) {
             self.chip = chip
             self.depth = depth
-            x = SpotTokens.attachmentQuietX
+            x = 0
             scale = SpotTokens.attachmentQuietScale
             opacity = depth == 0 ? 1 : MotionTokens.hiddenOpacity
             layer = -Double(depth)
@@ -22,20 +22,24 @@ public struct AttachmentLayout: Equatable, Sendable {
             let shown = min(count, AttachmentStack.pile)
             self.chip = chip
             self.depth = depth
-            x = -CGFloat(shown - 1 - min(depth, shown - 1)) * SpotTokens.attachmentStep
             scale = 1 - CGFloat(min(depth, AttachmentStack.pile - 1)) * SpotTokens.attachmentShrink
+            x = Self.centre(trailing: -CGFloat(shown - 1 - min(depth, shown - 1)) * SpotTokens.attachmentStep, scale: scale)
             opacity = depth < AttachmentStack.pile ? 1 : MotionTokens.hiddenOpacity
             layer = -Double(depth)
         }
 
         init(chip: AttachmentChip, slot: Int, depth: Int, spreadCount: Int, fit: Int) {
-            let pitch = SpotTokens.attachmentCard + SpotTokens.attachmentSpreadGap
             self.chip = chip
             self.depth = depth
-            x = -CGFloat(spreadCount - 1 - (depth == 0 ? slot : 0)) * pitch + (depth == 0 ? 0 : SpotTokens.attachmentStep)
             scale = 1 - CGFloat(min(depth, 1)) * SpotTokens.attachmentShrink
+            let front = -CGFloat(spreadCount - 1 - (depth == 0 ? slot : 0)) * SpotTokens.attachmentPitch
+            x = Self.centre(trailing: front + (depth == 0 ? 0 : SpotTokens.attachmentStep), scale: scale)
             opacity = depth == 0 ? 1 : depth == 1 ? 1 - SpotTokens.attachmentCardFade : MotionTokens.hiddenOpacity
             layer = -Double(slot) - Double(depth * fit)
+        }
+
+        private static func centre(trailing: CGFloat, scale: CGFloat) -> CGFloat {
+            trailing.rounded() + SpotTokens.attachmentCard * (1 - scale) / 2
         }
     }
 

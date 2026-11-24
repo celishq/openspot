@@ -4,7 +4,7 @@ import SwiftUI
 
 @MainActor
 final class OpenspotItem {
-    private static let name = "Openspot"
+    private static let name = Bundle.main.object(forInfoDictionaryKey: "CFBundleName") as? String ?? "Openspot"
 
     private let item = NSStatusBar.system.statusItem(withLength: SpotTokens.menuBarPill.width)
     private var icon: MenuBarHost<OpenspotItemView>?

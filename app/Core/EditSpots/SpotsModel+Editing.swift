@@ -8,13 +8,17 @@ extension SpotsModel {
     }
 
     public func beginEditing() {
-        guard openSheetID == nil else { return }
-        closeMenu()
-        missedSearch.drop()
-        change(.edit) {
-            query = ""
-            isEditing = true
-            updateVisible()
+        asOnePress {
+            guard openSheetID == nil else { return }
+            closeMenu()
+            missedSearch.drop()
+            hold(nil, motion: .edit)
+            change(.edit) {
+                isEditing = true
+                query = ""
+                updateVisible()
+            }
+            hideAttachments()
         }
     }
 
@@ -29,8 +33,10 @@ extension SpotsModel {
     }
 
     public func turnOff(_ id: String) {
-        guard let entry = visible.first(where: { $0.id == id }), turnsOff(entry) else { return }
-        turn(entry.spot, on: false)
+        asOnePress {
+            guard let entry = visible.first(where: { $0.id == id }), turnsOff(entry) else { return }
+            turn(entry.spot, on: false)
+        }
     }
 
     @discardableResult
@@ -51,19 +57,21 @@ extension SpotsModel {
     }
 
     public func endEditing(moving: Bool = true) {
-        guard isEditing else { return }
-        stopDragWait()
-        change(moving ? .edit : nil) {
-            isEditing = false
-            tip = nil
-            drag = nil
-            landing = nil
-            carry = nil
-            resize = nil
-            pointerMove = nil
-            if lift.offset != .zero { lift.offset = .zero }
-            selected = 0
-            updateVisible()
+        asOnePress {
+            guard isEditing else { return }
+            stopDragWait()
+            change(moving ? .edit : nil) {
+                isEditing = false
+                tip = nil
+                drag = nil
+                landing = nil
+                carry = nil
+                resize = nil
+                pointerMove = nil
+                if lift.offset != .zero { lift.offset = .zero }
+                selected = 0
+                updateVisible()
+            }
         }
     }
 
@@ -111,34 +119,36 @@ extension SpotsModel {
     }
 
     public func show(_ panel: GridPanel, _ isShown: Bool) {
-        guard panel.configKey != nil, panels[panel] != isShown, panelLeaving != panel else { return }
-        let apply: @MainActor () -> Void = { [self] in
-            panelLeaving = nil
-            do {
-                try write(.panels) { $0.show(panel, isShown) }
-            } catch {
-                return toast(.failure("Openspot could not save the panels. \(Self.reason(error))"))
+        asOnePress {
+            guard panel.configKey != nil, panels[panel] != isShown, panelLeaving != panel else { return }
+            let apply: @MainActor () -> Void = { [self] in
+                panelLeaving = nil
+                do {
+                    try write(.panels) { $0.show(panel, isShown) }
+                } catch {
+                    return toast(.failure("Openspot could not save the panels. \(Self.reason(error))"))
+                }
+                if panels[panel] != isShown { panels[panel] = isShown }
+                updateVisible()
             }
-            if panels[panel] != isShown { panels[panel] = isShown }
-            updateVisible()
+            let held = cards.filter { $0.panel == panel }.map(\.id)
+            guard !held.isEmpty else { return apply() }
+            let leaving = isShown ? [] : cards.filter { $0.isOnGrid && $0.panel == panel }.map(\.id)
+            guard let first = leaving.first else {
+                guard save({ next in held.forEach { next.set(panel: .center, of: $0) } }) else { return }
+                rebuildEntries()
+                return apply()
+            }
+            let onGrid = cards.filter(\.isOnGrid).map(\.id).filter { !leaving.contains($0) }
+            let order = onGrid + leaving + cards.filter { !$0.isOnGrid }.map(\.id)
+            let isSaved = save { next in
+                held.forEach { next.set(panel: .center, of: $0) }
+                next.arrange(order)
+            }
+            guard isSaved else { return }
+            panelLeaving = panel
+            land(selecting: first, landed: apply)
         }
-        let held = cards.filter { $0.panel == panel }.map(\.id)
-        guard !held.isEmpty else { return apply() }
-        let leaving = isShown ? [] : cards.filter { $0.isOnGrid && $0.panel == panel }.map(\.id)
-        guard let first = leaving.first else {
-            guard save({ next in held.forEach { next.set(panel: .center, of: $0) } }) else { return }
-            rebuildEntries()
-            return apply()
-        }
-        let onGrid = cards.filter(\.isOnGrid).map(\.id).filter { !leaving.contains($0) }
-        let order = onGrid + leaving + cards.filter { !$0.isOnGrid }.map(\.id)
-        let isSaved = save { next in
-            held.forEach { next.set(panel: .center, of: $0) }
-            next.arrange(order)
-        }
-        guard isSaved else { return }
-        panelLeaving = panel
-        land(selecting: first, landed: apply)
     }
 
 

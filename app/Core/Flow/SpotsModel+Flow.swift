@@ -92,16 +92,20 @@ extension SpotsModel {
 
     @discardableResult
     public func back(steps: Int = 1) -> Bool {
-        guard openSheetID != nil, let page = flow.back(steps: steps) else { return false }
-        show(page, moving: isShown)
-        return true
+        asOnePress {
+            guard openSheetID != nil, let page = flow.back(steps: steps) else { return false }
+            show(page, moving: isShown)
+            return true
+        }
     }
 
     @discardableResult
     public func forward(steps: Int = 1) -> Bool {
-        guard openSheetID != nil, let page = flow.forward(steps: steps) else { return false }
-        show(page, moving: isShown)
-        return true
+        asOnePress {
+            guard openSheetID != nil, let page = flow.forward(steps: steps) else { return false }
+            show(page, moving: isShown)
+            return true
+        }
     }
 
     func move(_ move: FlowMove, in id: String) {

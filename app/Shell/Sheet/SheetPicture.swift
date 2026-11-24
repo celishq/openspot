@@ -9,6 +9,7 @@ struct SheetPicture: View {
     @Environment(\.spotIsHeld) private var isHeld
     @Environment(\.spotIsShown) private var isShown
     @Environment(\.spotMoves) private var moves
+    @Environment(\.spotViewPlace) private var place
 
     private var key: SpotPictureStore.Key {
         followed.flatMap { $0.from == arrived ? SpotPictureStore.Key(path: arrived.path, changed: $0.changed) : nil } ?? arrived
@@ -19,7 +20,7 @@ struct SheetPicture: View {
         Color.clear
             .overlay {
                 if PictureFrames.moves(key.path), let frames = SpotPictureStore.shared.cachedFrames(key) ?? (moving?.key == key ? moving?.frames : nil) {
-                    SpotMovingPicture(frames: frames, gravity: .resizeAspectFill, isPlaying: isShown && moves && !isHeld)
+                    SpotMovingPicture(frames: frames, gravity: .resizeAspectFill, isPlaying: place.plays(isShown: isShown, moves: moves) && !isHeld)
                 } else if let image = SpotPictureStore.shared.cached(key) ?? (loaded?.key == key ? loaded?.image : nil) {
                     Image(decorative: image, scale: SpotTokens.pictureScale).resizable().scaledToFill()
                 } else {

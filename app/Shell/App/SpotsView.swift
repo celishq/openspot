@@ -32,7 +32,6 @@ struct SpotsView: View {
                     push: push(from: card),
                     dropTarget: $dropTarget
                 )
-                    .modifier(GridCardsMove(model: model))
                     .offset(y: gridPush)
                     .padding(.horizontal, SpotTokens.halo)
                     .padding(.top, SpotTokens.gridTop)
@@ -46,10 +45,11 @@ struct SpotsView: View {
             .modifier(GridEdgeScroll(model: model, scroll: $scroll))
             .modifier(SpotScrollEdgeTracker(edges: Binding(get: { fade.edges }, set: { fade.edges = $0 })))
             .modifier(GridFadeMask(fade: fade, height: cardHeight))
-            .fade(coversGrid ? 0 : 1) { SheetMorph.sheetLook(at: $0) }
+            .fade(coversGrid ? 0 : 1) { SheetMorph.sheetOpacity(at: $0) }
             .modifier(PanelSpan(panels: model.panels))
             SpotHintLine(model: model, surfaceIsOut: surfaceIsOut, motion: motion)
                 .modifier(SpotShownFade(isShown: model.isShown))
+            field(card: card, motion: motion, isGlass: true)
             if sheetOpen, sheetID != nil {
                 SpotFlowEdges(model: model, rect: sheetRect)
             }
@@ -66,16 +66,7 @@ struct SpotsView: View {
                     showsField: showsSearchField && fieldIsInSheet
                 )
             }
-            SpotFieldView(
-                model: model,
-                isOpen: sheetOpen,
-                isInSheet: fieldIsInSheet,
-                isInstall: isInstall,
-                showsField: showsSearchField,
-                surfaceIsOut: surfaceIsOut,
-                sheet: fieldSheet(on: card, motion: motion)
-            )
-            .modifier(FlowFieldHide(model: model, isInSheet: fieldIsInSheet))
+            field(card: card, motion: motion, isGlass: false)
             if model.isMenuOpen {
                 Color.clear
                     .contentShape(Rectangle())
@@ -99,6 +90,20 @@ struct SpotsView: View {
         }
     }
 
+    private func field(card: SpotSheetCard?, motion: SheetMotion, isGlass: Bool) -> some View {
+        SpotFieldView(
+            model: model,
+            isOpen: sheetOpen,
+            isInSheet: fieldIsInSheet,
+            isInstall: isInstall,
+            showsField: showsSearchField,
+            surfaceIsOut: surfaceIsOut,
+            sheet: fieldSheet(on: card, motion: motion),
+            isGlass: isGlass
+        )
+        .modifier(FlowFieldHide(model: model, isInSheet: fieldIsInSheet))
+    }
+
     private func fieldSheet(on card: SpotSheetCard?, motion: SheetMotion) -> (morph: SheetMorph, cardRadius: CGFloat)? {
         guard !isInstall, let morph = motion.morph else { return nil }
         return (morph, SurfaceEdge(card: card?.placement.size ?? .strip).radius)
@@ -106,7 +111,7 @@ struct SpotsView: View {
 
     private func morph(of card: SpotSheetCard?, at frame: CGRect?) -> SheetMorph? {
         guard sheetID != nil else { return nil }
-        guard card != nil, let frame else { return SheetMorph(card: SpotFieldView.rect, sheet: sheetRect, source: .field) }
+        guard card != nil, let frame else { return SheetMorph(card: SpotTokens.fieldRect(room: model.fieldRoom), sheet: sheetRect, source: .field) }
         return SheetMorph(card: frame, sheet: sheetRect)
     }
 

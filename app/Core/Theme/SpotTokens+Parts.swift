@@ -44,10 +44,10 @@ extension SpotTokens {
     public static let attachmentQuietIcon: CGFloat = 20
     public static var attachmentQuietScale: CGFloat { attachmentQuietIcon / attachmentIcon }
     public static var attachmentQuietRadius: CGFloat { attachmentIconRadius * attachmentQuietScale }
-    public static var attachmentQuietX: CGFloat { -((attachmentCard - attachmentQuietIcon) / 2 - attachmentInset * attachmentQuietScale) }
     public static var attachmentEdge: CGFloat { (cell - attachmentCard) / 2 }
     public static let attachmentCardFade = 0.3
     public static var attachmentSpreadGap: CGFloat { attachmentCard * 0.42 }
+    public static var attachmentPitch: CGFloat { attachmentCard + attachmentSpreadGap }
     public static var attachmentBadge: CGFloat { (attachmentCard * attachmentCard / 6).squareRoot() }
     public static var attachmentBadgeGlyph: CGFloat { attachmentBadge * 0.72 }
     public static let attachmentBadgeNudge: CGFloat = 0.5
@@ -87,8 +87,20 @@ extension SpotTokens {
         return max(AttachmentStack.pile, min(AttachmentStack.limit, Int(room / (attachmentCard + attachmentSpreadGap))))
     }
 
+    public static func fieldRect(room: CGFloat) -> CGRect {
+        CGRect(x: halo, y: halo, width: gridWidth, height: cell + room)
+    }
+
     public static func attachmentStack(count: Int) -> CGFloat {
         count == 0 ? 0 : attachmentCard + CGFloat(count - 1) * attachmentStep
+    }
+
+    public static var attachmentRow: CGFloat {
+        attachmentCard + CGFloat(attachmentFit - 1) * attachmentPitch
+    }
+
+    public static var attachmentReach: CGFloat {
+        2 * attachmentFarShadowRadius + attachmentFarShadowDrop
     }
 
     public static let metricBigRingLine: CGFloat = 8
@@ -137,6 +149,7 @@ extension SpotTokens {
     public static var backdrop: Theme.Backdrop { layout.backdrop }
     public static let backdropMaskScale: CGFloat = 0.5
     public static let backdropFadeSteps = 64
+    public static let backdropMaskBytes = 16 * 1024 * 1024
     public static let backdropLeastBlur: CGFloat = 0.25
     public static let backdropBlurResponse: CGFloat = 1.2
     public static let cardShadowReach: CGFloat = 3

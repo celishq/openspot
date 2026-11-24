@@ -21,6 +21,10 @@ public final class SheetOpening {
         fixedLength = motionLength
     }
 
+    var waitingFrames: Int {
+        frameWaits.count
+    }
+
     public var motionLength: TimeInterval {
         fixedLength ?? MotionTokens.growSettle
     }
@@ -61,6 +65,10 @@ public final class SheetOpening {
         held = nil
         pause?.cancel()
         pause = nil
+    }
+
+    func restart() {
+        endMotionLater()
     }
 
     private func endMotionLater() {

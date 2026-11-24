@@ -191,12 +191,16 @@ extension SpotsModel {
     }
 
     public func chooseFormOption(_ item: SpotItem) {
-        form?.draft.choose(item.run)
-        submitForm()
+        asOnePress {
+            form?.draft.choose(item.run)
+            submitForm()
+        }
     }
 
     public func setFormValue(_ text: String, for name: String) {
-        form?.draft.set(text, for: name)
+        asOnePress {
+            form?.draft.set(text, for: name)
+        }
     }
 
     public func cancelForm() {

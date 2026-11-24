@@ -8,6 +8,8 @@ struct CommandIndex {
     private var spots: [String: Spot] = [:]
     private var chipActions: [AttachmentValue.Kind: ItemList] = [:]
     private var chipActionRows: [String: (spot: String, action: ChipAction)] = [:]
+    private var fitting: (value: AttachmentValue, runs: Set<String>)?
+    private(set) var fits = 0
 
     init() {}
 
@@ -49,9 +51,14 @@ struct CommandIndex {
         }
     }
 
-    func chipActions(of value: AttachmentValue, matching query: SearchQuery?, limit: Int) -> [(spot: String, action: ChipAction)] {
+    mutating func chipActions(of value: AttachmentValue, matching query: SearchQuery?, limit: Int) -> [(spot: String, action: ChipAction)] {
         guard let list = chipActions[value.kind] else { return [] }
-        let rows = (query.map { $0.matching(in: [list]).map(\.item) } ?? list.all).compactMap { chipActionRows[$0.run] }.filter { $0.action.fits(value) }
+        if fitting?.value != value {
+            fits += 1
+            fitting = (value, Set(chipActionRows.filter { $0.value.action.fits(value) }.keys))
+        }
+        let runs = fitting?.runs ?? []
+        let rows = (query.map { $0.matching(in: [list]).map(\.item) } ?? list.all).filter { runs.contains($0.run) }.compactMap { chipActionRows[$0.run] }
         let actions = rows.filter { !$0.action.isDrop }
         let ranked = (actions.filter(\.action.isPatterned) + actions.filter { !$0.action.isPatterned }).prefix(limit)
         let spots = Set(ranked.map(\.spot))

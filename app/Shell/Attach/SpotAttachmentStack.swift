@@ -13,21 +13,36 @@ struct SpotAttachmentStack: View {
                     .overlay(alignment: .bottom) {
                         SpotAttachmentDot(isOn: attachments.isOn && place.chip.source == attachments.selected)
                     }
-                    .scaleEffect(place.scale, anchor: .trailing)
+                    .scaleEffect(place.scale)
                     .offset(x: place.x)
                     .opacity(place.opacity)
                     .zIndex(place.layer)
                     .transition(.opacity)
             }
         }
-        .frame(width: SpotTokens.attachmentStack(count: AttachmentStack.pile), height: SpotTokens.attachmentCard, alignment: .trailing)
+        .frame(width: SpotTokens.attachmentRow, height: SpotTokens.attachmentCard, alignment: .trailing)
+        .background {
+            Rectangle()
+                .padding(-SpotTokens.attachmentReach)
+                .opacity(MotionTokens.hiddenOpacity)
+                .allowsHitTesting(false)
+        }
         .compositingGroup()
+        .frame(width: SpotTokens.attachmentStack(count: AttachmentStack.pile), height: SpotTokens.attachmentCard, alignment: .trailing)
         .opacity(model.isAttachmentHidden ? MotionTokens.hiddenOpacity : 1)
         .contentShape(Rectangle())
         .onTapGesture { model.pressAttachment() }
         .accessibilityElement(children: .ignore)
-        .accessibilityLabel(model.preview.map { $0.text.isEmpty ? $0.caption : $0.text } ?? "Attachments")
+        .modifier(SpotAttachmentLabel(model: model))
         .accessibilityAddTraits(.isButton)
+    }
+}
+
+private struct SpotAttachmentLabel: ViewModifier {
+    let model: SpotsModel
+
+    func body(content: Content) -> some View {
+        content.accessibilityLabel(model.preview.map { $0.text.isEmpty ? $0.caption : $0.text } ?? "Attachments")
     }
 }
 

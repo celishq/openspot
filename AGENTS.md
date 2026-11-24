@@ -13,6 +13,8 @@
     `.view`, and each Swift spot into a `.program`, beside its source, so that it runs on a Mac with no developer tools. It does not ship.
     Debug compiles each at its first use.
   - `Tests/` — XCTest, through `@testable import OpenspotCore`.
+- The Debug build is `Openspot Nightly.app`, with the program `OpenspotNightly` and the bundle id `openspot.celis.ai.dev`. Release keeps
+  `Openspot`. The `openspot` command runs the program that `CFBundleExecutable` of its bundle names.
 - `app/Keywords/` holds the CLDR keywords of emoji and symbols, one xz file per language. `scripts/emoji-keywords.py` writes
   it from a pinned CLDR version, and the build copies it into the app.
 - `app/Themes/` holds the built-in themes, each in `<name>.theme/theme.toml`. Openspot, in `openspot.theme`, sets every choice,
@@ -83,7 +85,7 @@ its Settings, `⌘Y` its History, `⌘K` the menu of all actions. Openspot makes
   on a number or a colour written for the look in `Shell/`, outside the token files, `Shell/Picture`, `Shell/Mac` and
   `Shell/Tools`.
 - Glass is system glass, drawn by `spotGlass`, which wraps `glassEffect`. Each shape draws its own glass, outside a
-  `GlassEffectContainer`, since a container drops an opacity after `glassEffect`, and the grid hides an open card and
+  `GlassEffectContainer`, since a container drops each opacity and scale after `glassEffect`, and the grid hides an open card and
   hides the panel by opacity. The grid's scroll edge is one gradient mask over the scroll view, so it cuts each card and
   its marks row by row. A fade dims the content before `glassEffect` (`spotFade`) and
   keeps the glass whole until its last third (`SpotTheme.glassStrength`), so faded glass never shows a sharp page.
@@ -100,7 +102,7 @@ its Settings, `⌘Y` its History, `⌘K` the menu of all actions. Openspot makes
 - The soft backdrop of the panel is one fade around the content, `BackdropFade` in Core: none at the outer edge of the
   halo, full at the content, and the blur full under it by `halo-inset`, so text fades out at the edge of the tiles. It shows as the system's variable blur (`SpotBackdropBlur`) or as a tint
   (`SpotBackdropTint`), both masked by the same small picture of the fade (`SpotBackdropFade`), drawn again only when
-  the backdrop's shape changes. The backdrop hides by opacity alone.
+  the backdrop's resting shape changes. While a sheet moves the foot, each frame's picture is the rows of one tall picture (`BackdropFade.stretch`). The backdrop hides by opacity alone.
 - A picture drawn off screen cannot hold system glass. It goes through `SpotPicture`, which turns the glass off, and the
   glass check fails on a file of `Shell/Picture` that draws one another way.
 
@@ -117,12 +119,19 @@ below is one a reviewer can check in a diff.
 - The main thread never waits on a spot. The one exception: the answers to a key share one wait of 2 ms at most.
 - A press makes one update. The animated change goes first in it, or alone, since SwiftUI animates a view by the first change
   it sees in an update.
+- Each entry point of a person's act runs in `asOnePress`. A source of the hint only marks it stale. The outermost press works the
+  hint out once and writes it as its last change, so no setter writes the hint, and the observation's hop works it out only for a
+  change that no press made. A setter must not write through `change`, since `withTransaction` can flush the pending update, and
+  a body can then run between two writes that it reads together, such as `visible` and `placements`. `make verify` runs `scripts/check-presses.sh`, which fails on a `change(` inside a setter in `Core/` or in a function of the same file that the setter calls, and on a
+  public `SpotsModel` method that a gesture, a button, a key or a drop closure of `Shell/` calls and that, after its guards, neither
+  starts with `asOnePress` nor only calls a method that does, except the fast signals of `scripts/fast-signals.txt` (`dragSpot`,
+  `resizeSpot`, `gridScrolled` and `setLevel`), which fire on each move of a drag, a slider or a scroll and so are no press.
 
 ### Where work lives
 
 - A getter, a computed property and a static factory read only memory. They touch no disk, start no process and change no
   state. Work that reads the disk is a method named for it, such as `read()` or `scan()`. `scripts/check-getters.sh` fails on
-  a getter or a static factory that reads the disk.
+  a getter or a static factory that reads the disk, also by `fopen`, `fread` or `readPlist`.
 - The model and the views do not read the disk. A loader, such as `KeptScan` or `ConfigFile`, reads it at a load, and the
   rest read the value it kept.
 - Code starts a process only through `ScriptProcess`, which gives it a limit, a stop and the end of its group.
@@ -141,6 +150,10 @@ below is one a reviewer can check in a diff.
 - Store a derived value that views read, and write it where its source changes. A computed property over a list reruns on
   each read.
 - A child view takes plain values, not closures, so its container skips it when nothing changed.
+- A fact that only a few leaf views need is read by the leaf from the model, never written into the environment of a container.
+  A card reads a panel-wide fact, such as the open sheet, only when it is the selected card (`marksMenu(ofCard:)`, `focus(ofCard:)`).
+- Attach a preference only where it can hold a value. A ring that cannot mark the menu carries no `SpotMenuAnchor`, and the
+  selected-or-not switch lives in a leaf (`MenuMark`).
 - A body does no pass over a list, no parse, no `stat`, no formatter or regex made anew, and no picture drawn. Do that work
   once, where the data arrives.
 
@@ -158,8 +171,8 @@ below is one a reviewer can check in a diff.
 
 Each motion is one of five kinds, each with one curve in `Shell/Surface/SpotMotion.swift`: grow (and its way back), move,
 fade and press. Each duration, bounce and motion scale is in `Core/Theme/MotionTokens.swift`. A part of a surface that grows
-takes its look from the surface's progress, by `SheetMorph`, and keeps no curve of its own. `make verify` runs
-`scripts/check-motion.sh`, which fails on a curve written anywhere else in `app/` or `scripts/`.
+takes its look from the surface's progress, by `SheetMorph`, and keeps no curve of its own. `Core/Motion/` holds the geometry and the clock of each motion, such as `SheetMorph`, `SheetPush` and `SheetOpening`. `make verify` runs
+`scripts/check-motion.sh`, which fails on a curve written anywhere else in `app/` or `scripts/`, except the base that `SpotSpring` builds for each spring of `SpotMotion`.
 
 - Move a view with FLIP: lay it out at its last place, then animate only `offset`, `scaleEffect` and `opacity` from its
   first place. Do not animate a frame, a padding, a font, a text width or a blur radius.
@@ -168,6 +181,12 @@ takes its look from the surface's progress, by `SheetMorph`, and keeps no curve 
 - A fade of many glass surfaces is one layer over them. The ⌘K dim is the one exception: it fades each other card and the
   field by opacity (`SpotMenuDim`), and `make perf ACTION=menu` guards its cost. A glass holds still during a motion it is
   not the subject of, since the system draws a glass again on each frame in which its content or its opacity changes.
+- A glass whose shape is a rounded rectangle (`RoundedRectangle`, `SpotRoundShape`, `SpotSurfaceShape`) becomes a layer
+  corner, and the system draws it once. A glass of any other shape, such as a path built by `subtracting`, is drawn again on each
+  frame of a motion.
+- An animatable modifier's output is constant while its view is hidden, since each frame that moves a glass works out its whole
+  subtree again, and `visualEffect` does not spare that. A pushed grid card holds still once its fade has hidden it
+  (`SheetPush.pose`), and takes no click.
 - Change words by a crossfade of two laid-out copies, not by a reflow.
 - Do not put an AppKit view in a view that moves or resizes, except a moving piece of a spot's view (see
   [Drawing](#drawing)).
@@ -176,11 +195,19 @@ takes its look from the surface's progress, by `SheetMorph`, and keeps no curve 
   (`SpotsHost.nextFrame`), never on the next turn of the queue, which can run before that frame is drawn.
 - During a motion, no state is written from a measure, such as `onGeometryChange` or a scroll's geometry. Compute frames
   from the layout's own numbers, and scale the content inside a scroll view, not the scroll view.
-- Content that reaches a surface during its open motion is applied when the motion ends.
+- Each spring ends when it looks done. `SpotSpring` runs SwiftUI's spring value for value and finishes once the travel it can
+  still make is under `MotionTokens.restFraction` of its own travel, half a point over the longest travel of the panel
+  (`SpringEnd`). It reports its logical end on the same frame as the plain spring, and its removal comes sooner.
+- Content that reaches a surface during its open or close motion is applied when the motion ends. A close that cuts an open
+  short holds the content to the close's end.
 - A sheet opens and closes by one rule, whatever its source (`SheetMorph.Source`): a card in sight, or the field for any
   other sheet. The source shows its own look and words, and they fade over the first half of the motion. The sheet's
-  content, its title too, fades in from `MotionTokens.contentStart`. No part pops in when the shape has room for it.
-- The field travels into the sheet's search row, and the sheet's moving shape cuts its glass, so one glass shape shows.
+  content, its title too, fades in from `MotionTokens.contentStart`, softened by `MotionTokens.contentSoftness`, and fades
+  out as the progress itself, so a close takes about 125 ms from 90% to 5% (`SheetMorph.contentOpacity(at:isOpen:)`). No part
+  pops in when the shape has room for it.
+- The field's glass lies uncut under the sheet's glass, drawn by a second `SpotFieldView` below the sheet. It fades once the
+  sheet's moving shape holds it by a margin (`SheetMorph.fieldGlassOpacity`, `SheetMorph.clearance`), so one glass shape shows and no
+  glass is cut.
 - The blur's foot is the lower of the moving shape's foot and the grid's foot, which reaches the sheet's foot while the
   grid fades. The footer sits on it, and a grid card has faded by the time it reaches the card (`PanelFoot`).
 - The actions menu is placed from its card's resting frame, never from the card's moving outline, and the card's focus
@@ -242,6 +269,9 @@ interaction.
 - Write the failing test first, then the code that passes it.
 - Write a script for a test with `writeScript(to:)`. macOS checks a new executable file on its first run, for 150 ms or more.
 - Give a test a short pause through a setting, such as `stopPause`, and keep one test of the real time.
+- A test of a held frame waits for the hold itself (`SheetOpening.waitingFrames`), never for a count of yields. A test of Core
+  names only the rule it proves, since a Shell modifier that applies the rule is out of its reach.
+- A test takes its base spring from `SpotSpring(duration:bounce:).base` and writes no curve.
 - Wait for a fact, never for a pause. To prove that a stopped thing does nothing more, give its action a long delay, stop it,
   wait for its end, then check.
 - A time limit in a test catches a hang or a slow algorithm, not a slow Mac. Give it ten times the normal time or more.

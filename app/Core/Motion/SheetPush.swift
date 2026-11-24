@@ -28,14 +28,35 @@ public struct SheetPush: Equatable, Sendable {
     public func fade(of placement: SpotPlacement, movedBy moved: CGSize) -> Double? {
         guard let open else { return nil }
         guard placement.index != open.index else { return 0 }
-        let push = offset(of: placement)
-        let length = (push.width * push.width + push.height * push.height).squareRoot()
-        guard length > 0 else { return nil }
-        let along = (moved.width * push.width + moved.height * push.height) / length
-        let ends = [CardPush(from: placement.rect, by: push).fade(within: window)?.upperBound, foot?.meeting(of: placement.rect, movingDown: push.height)]
-        let end = ends.compactMap { $0 }.min() ?? 1
+        guard let (push, end) = fadeEnd(of: placement) else { return nil }
         guard end > 0 else { return 1 }
-        return min(max(Double(along / length) / end, 0), 1)
+        return min(max(Double(share(of: moved, along: push)) / end, 0), 1)
+    }
+
+    public func pose(of placement: SpotPlacement, movedBy moved: CGSize) -> CGSize {
+        guard let open, placement.index != open.index, let (push, end) = fadeEnd(of: placement) else { return moved }
+        guard end > 0 else { return .zero }
+        guard Double(share(of: moved, along: push)) >= end else { return moved }
+        return CGSize(width: push.width * end, height: push.height * end)
+    }
+
+    private func fadeEnd(of placement: SpotPlacement) -> (push: CGSize, end: Double)? {
+        let push = offset(of: placement)
+        guard push != .zero else { return nil }
+        let ends = [CardPush(from: placement.rect, by: push).fade(within: window)?.upperBound, foot?.meeting(of: placement.rect, movingDown: push.height)]
+        return (push, ends.compactMap { $0 }.min() ?? 1)
+    }
+
+    private func share(of moved: CGSize, along push: CGSize) -> CGFloat {
+        (moved.width * push.width + moved.height * push.height) / (push.width * push.width + push.height * push.height)
+    }
+
+    public static func fade(of placement: SpotPlacement, in push: SheetPush?, movedBy moved: CGSize, share: Double) -> Double {
+        push.flatMap { $0.fade(of: placement, movedBy: moved) } ?? push?.fade(of: placement, share: share) ?? share
+    }
+
+    public static func takesClicks(atFade fade: Double) -> Bool {
+        fade < 1
     }
 
     public func fade(of placement: SpotPlacement, share: Double) -> Double {

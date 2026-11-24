@@ -42,14 +42,110 @@ final class AttachmentStateTests: AttachmentCase {
         try await openWithTab()
         XCTAssertFalse(model.isAttachmentHidden)
 
-        model.query = "k"
+        model.searchText = "k"
         XCTAssertTrue(model.isAttachmentHidden)
-        model.query = ""
+        model.searchText = ""
         XCTAssertFalse(model.isAttachmentHidden)
 
         XCTAssertTrue(model.handleKey(tab))
-        model.query = "k"
+        model.searchText = "k"
         XCTAssertFalse(model.isAttachmentHidden)
+    }
+
+    func testAWriteOfTheQueryMakesNoChangeOfItsOwn() async throws {
+        try await openWithTab()
+        let changes = host.motions.count
+
+        model.query = "k"
+
+        XCTAssertEqual(host.motions.count, changes)
+    }
+
+    func testTheStackFadesOutOnTypingAndBackOnTabEachInAChangeOfItsOwn() async throws {
+        try await openWithTab()
+        let writes = host.hiddenWrites.count
+
+        model.searchText = "k"
+        XCTAssertTrue(model.handleKey(tab))
+
+        XCTAssertFalse(model.isAttachmentHidden)
+        XCTAssertEqual(host.hiddenWrites.dropFirst(writes).map(\.motion), [.fade, .fade])
+        XCTAssertEqual(host.hiddenWrites.dropFirst(writes).map(\.depth), [0, 0])
+    }
+
+    func testAWriteOfTheQueryThatLeavesTheChipsMakesNoChangeOfItsOwn() async throws {
+        try await openWithTab()
+        XCTAssertTrue(model.handleKey(tab))
+        let changes = host.motions.count
+
+        model.query = "/"
+
+        XCTAssertNil(model.preview)
+        XCTAssertEqual(host.motions.count, changes)
+    }
+
+    func testAWriteOfTheEntriesThatDropsTheSourceMakesNoChangeOfItsOwn() async throws {
+        try await openWithTab()
+        XCTAssertTrue(model.handleKey(tab))
+        let changes = host.motions.count
+
+        model.entries = model.entries.filter { $0.id != "tab" }
+
+        XCTAssertNil(model.preview)
+        XCTAssertEqual(host.motions.count, changes)
+    }
+
+    func testThePreviewGivesWayOnTypingASlashInAChangeOfItsOwn() async throws {
+        try await openWithTab()
+        XCTAssertTrue(model.handleKey(tab))
+        let writes = host.previewWrites.count
+
+        model.searchText = "/"
+
+        XCTAssertNil(model.preview)
+        XCTAssertEqual(host.previewWrites.dropFirst(writes).map(\.motion), [.edit])
+        XCTAssertEqual(host.previewWrites.dropFirst(writes).map(\.depth), [0])
+    }
+
+    func testThePreviewGivesWayToEditSpotsInOneChange() async throws {
+        try await openWithTab()
+        XCTAssertTrue(model.handleKey(tab))
+        let writes = host.previewWrites.count
+
+        model.beginEditing()
+
+        XCTAssertNil(model.preview)
+        XCTAssertEqual(host.previewWrites.dropFirst(writes).map(\.motion), [.edit])
+        XCTAssertEqual(host.previewWrites.dropFirst(writes).map(\.depth), [0])
+    }
+
+    func testTabWritesThePlacedStackAndThePreviewInOneChange() async throws {
+        try await openWithTab()
+        host.heldEnds = []
+        let changes = host.motions.count
+        let writes = host.previewWrites.count
+
+        XCTAssertTrue(model.handleKey(tab))
+
+        XCTAssertEqual(Array(host.motions.dropFirst(changes)), [.edit])
+        XCTAssertEqual(host.previewWrites.dropFirst(writes).map(\.motion), [.edit])
+        XCTAssertTrue(model.attachments.isMoving)
+        XCTAssertEqual(model.preview?.text, "A")
+    }
+
+    func testATapOnTheAttachmentsWorksTheHintOutOnceByTheEndOfThePress() async throws {
+        try await openWithTab()
+        model.followHint()
+        await Task { @MainActor in }.value
+        let takes = model.hintTakes
+        let writes = host.hintWrites.count
+
+        model.pressAttachment()
+
+        XCTAssertEqual(model.attachments.selected, "tab")
+        XCTAssertEqual(model.hintTakes - takes, 1)
+        XCTAssertEqual(model.gridHint, HintWords(model.hint))
+        XCTAssertEqual(host.hintWrites.dropFirst(writes).map(\.depth), [0])
     }
 
     func testTabAndShiftTabTurnTheChipsAndWrap() async throws {
@@ -106,6 +202,22 @@ final class AttachmentStateTests: AttachmentCase {
         XCTAssertEqual(shown, ["save"])
     }
 
+    func testTypingInTheAttachmentFitsTheActionsAndBuildsThePreviewOnlyAtTab() async throws {
+        try await openWithTab(takers: ["keep", "save"])
+        XCTAssertTrue(model.handleKey(tab))
+        let fits = model.commands.fits
+        let builds = model.previewBuilds
+
+        for text in ["s", "sa", "sav"] {
+            model.searchText = text
+        }
+
+        XCTAssertEqual(model.commands.fits, fits)
+        XCTAssertEqual(model.previewBuilds, builds)
+        XCTAssertEqual(shown, ["save"])
+        XCTAssertEqual(model.preview?.text, "A")
+    }
+
     func testTheRowsStartBelowThePreview() async throws {
         try await openWithTab()
         XCTAssertTrue(model.handleKey(tab))
@@ -116,6 +228,21 @@ final class AttachmentStateTests: AttachmentCase {
         XCTAssertEqual(model.placements.map(\.rect.minY), [model.fieldRoom])
         XCTAssertLessThan(model.fieldRoom, SpotTokens.cell + SpotTokens.rowGap)
         XCTAssertEqual(model.selected, 0)
+    }
+
+    func testASheetThatOpensFromTheFieldWhileThePreviewHoldsRoomKeepsTheRoomThroughItsOpen() async throws {
+        try await openWithTab()
+        XCTAssertTrue(model.handleKey(tab))
+        let room = model.fieldRoom
+        XCTAssertGreaterThan(room, 0)
+        let writes = host.previewWrites.count
+
+        model.pushFirst("reader", moving: true)
+        try await wait("the open") { self.model.transition.phase == .open }
+
+        XCTAssertNil(SpotSheetCard.of("reader", in: model))
+        XCTAssertEqual(model.fieldRoom, room)
+        XCTAssertEqual(host.previewWrites.count, writes)
     }
 
     func testReturnHandsTheValueToTheActionOfTheSelectedRow() async throws {
