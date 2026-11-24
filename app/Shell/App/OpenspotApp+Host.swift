@@ -30,7 +30,7 @@ extension OpenspotApp: SpotsHost {
     }
 
     func toast(_ note: ToastNote, of spot: String) {
-        toast?.show(note.words, kind: .confirm, spot: spot, id: note.id, press: { [weak self] in self?.model.press(note, of: spot) }, for: note.keeps ? nil : ToastPanel.duration)
+        toast?.show(note.words, kind: .confirm, tree: note.tree, spot: spot, id: note.id, press: { [weak self] in self?.model.press(note, of: spot) }, for: note.keeps ? nil : ToastPanel.duration)
     }
 
     func dropToast(_ id: String, of spot: String) {

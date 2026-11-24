@@ -61,8 +61,8 @@ In each command, an app is its bundle ID, such as `com.apple.Safari`. Each list 
 
 ## A toast
 
-Up to three toasts show at once, the newest on top. A click on a toast closes it. A toast with no words reads one block
-on stdin:
+Up to three toasts show at once, the newest on top. A click on a toast closes it. A toast with no words reads blocks
+on stdin, and its first block holds the toast's own keys:
 
 ```ini
 toast=upload
@@ -77,6 +77,26 @@ action=open-uploads
 | `title`  | The words it shows.                                                                   |
 | `keep`   | `true` keeps it until a click or `openspot toast remove <id>`. Else it leaves after 5 seconds. |
 | `action` | The action of your spot that a click runs. With none, a click opens your spot.        |
+| `class`  | The classes of its layout, as `class` of a frame's first block.                       |
+
+Each block after it is drawn with Openspot's own [blocks](blocks.md), such as a ring and a line of words. A block of a
+view of your spot is a fault. The whole toast is one click, so a button in it does nothing. A `toast:` class shows a part
+only in a toast, as `card:` does on a card.
+
+```ini
+toast=backup
+class=flex-row items-center gap-2
+
+number=done
+value=72
+max=100
+unit=%
+type=ring
+
+text=words
+title=Backup
+detail=72% of 40 GB
+```
 
 ## Write a message
 

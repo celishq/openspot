@@ -31,4 +31,29 @@ final class ToastNoteTests: XCTestCase {
     func testAnUnknownKeyOfTheHeadIsAFault() {
         XCTAssertThrowsError(try ToastNote(blocks: "toast=upload\ntitle=Up\nlinger=5\n"))
     }
+
+    func testTheBlocksAfterTheHeadAreTheTreeItDraws() throws {
+        let note = try ToastNote(blocks: "toast=upload\nclass=flex-row gap-2\n\nnumber=done\nvalue=40\nmax=100\ntype=ring\n\ntext=words\ntitle=Uploading\n")
+
+        let tree = try XCTUnwrap(note.tree)
+        XCTAssertEqual(tree.children, ["done", "words"])
+        XCTAssertEqual(tree.faults, [])
+        XCTAssertEqual(tree.style.arrangement, .row)
+    }
+
+    func testAToastWithWordsAloneHasNoTree() throws {
+        XCTAssertNil(ToastNote(words: "Saved").tree)
+        XCTAssertNil(try ToastNote(blocks: "toast=up\ntitle=Up\n").tree)
+    }
+
+    func testABlockOfAKindOpenspotLacksIsAFault() {
+        XCTAssertThrowsError(try ToastNote(blocks: "toast=up\n\nweek=w\ntitle=This week\n"))
+    }
+
+    func testAToastClassTakesTheToastPlace() throws {
+        let note = try ToastNote(blocks: "toast=up\n\ntext=a\ntitle=A\nclass=hidden toast:flex\n")
+
+        let node = try XCTUnwrap(note.tree?.node("a"))
+        XCTAssertEqual(node.style.resolved(for: [.toast]).isHidden, false)
+    }
 }

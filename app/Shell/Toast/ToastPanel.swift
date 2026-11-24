@@ -15,7 +15,7 @@ final class ToastPanel: NSPanel {
     weak var item: OpenspotItem?
     var front: () -> CGRect? = { nil }
 
-    func show(_ message: String, kind: ToastKind, spot: String = "", id: String? = nil, press: (@MainActor @Sendable () -> Void)? = nil, fixKey key: Shortcut? = nil, for duration: TimeInterval? = ToastPanel.duration) {
+    func show(_ message: String, kind: ToastKind, tree: ViewTree? = nil, spot: String = "", id: String? = nil, press: (@MainActor @Sendable () -> Void)? = nil, fixKey key: Shortcut? = nil, for duration: TimeInterval? = ToastPanel.duration) {
         let added = stack.add(spot: spot, kind: kind, id: id)
         let number = added.number
         let open = closing(number, after: press ?? {})
@@ -24,6 +24,7 @@ final class ToastPanel: NSPanel {
         if !added.isNew, let shown = toasts.shown.first(where: { $0.id == number }) {
             shown.message = words
             shown.kind = kind
+            shown.tree = tree
             shown.duration = duration
             shown.open = open
             shown.fixKey = press == nil ? nil : key
@@ -32,7 +33,7 @@ final class ToastPanel: NSPanel {
             if !isHeld { end(shown) }
             return
         }
-        let toast = Toast(id: number, message: words, kind: kind, duration: duration)
+        let toast = Toast(id: number, message: words, kind: kind, tree: tree, duration: duration)
         toast.open = open
         toast.fixKey = press == nil ? nil : key
         added.dropped.forEach(leave)
@@ -111,7 +112,7 @@ final class ToastPanel: NSPanel {
 
     private func place() {
         let copy = Toasts()
-        copy.shown = toasts.shown.map { Toast(id: $0.id, message: $0.message, kind: $0.kind, duration: nil) }
+        copy.shown = toasts.shown.map { Toast(id: $0.id, message: $0.message, kind: $0.kind, tree: $0.tree, duration: nil) }
         measure.rootView = ToastStackView(toasts: copy)
         let width = min(measure.view.fittingSize.width.rounded(.up) + 1, SpotTokens.toastMaxSize.width)
         let size = measure.sizeThatFits(in: NSSize(width: width, height: SpotTokens.toastMaxSize.height * CGFloat(ToastStack.limit)))

@@ -30,5 +30,5 @@ sleep 0.6
 sleep 0.6
 "$openspot" spot run toast-demo upload >/dev/null
 sleep 0.6
-"$openspot" toast 'A fourth toast takes the place of the oldest that shows.'
-echo "Toasts went to the Debug app. Hover over them to hold them, and click Uploaded to run its action. Quit it with $openspot app quit."
+printf 'toast=backup\nclass=flex-row items-center gap-2\n\nnumber=done\nvalue=72\nmax=100\nunit=%%\ntype=ring\n\ntext=words\ntitle=Backup\ndetail=72%% of 40 GB\n' | "$openspot" toast
+echo "Toasts went to the Debug app, the last drawn from blocks. Hover over them to hold them, and click Uploaded to run its action. Quit it with $openspot app quit."
