@@ -9,7 +9,7 @@ extension SpotRun {
         let keeping = part.isEditable ? part.id : nil
         let send: () -> Void = { [weak self] in self?.change(part.id, to: value, key: key, generation: generation, keeping: keeping, closes: false, waits: false) }
         switch part.control {
-        case .text: after(Self.textPause, key: key, send)
+        case .text, .secret: after(Self.textPause, key: key, send)
         case .slider: after(Self.sliderPause, key: key, send)
         default:
             pauses[key]?.cancel()

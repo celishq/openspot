@@ -88,8 +88,11 @@ extension SpotsModel {
         mainSearch = found.search
         let ids = Set(answers.map(\.id))
         let spots = Dictionary(cards.map { ($0.id, $0) }, uniquingKeysWith: { first, _ in first })
-        foundSpots = found.matches.compactMap { match in
-            match.list == 0 ? spots[match.item.run] : Entry(spot: sources[match.list - 1], item: match.item)
+        let shown = Set(found.matches.filter { $0.list == 0 }.map(\.item.run))
+        foundSpots = found.matches.compactMap { match -> Entry? in
+            if match.list == 0 { return spots[match.item.run] }
+            if match.item.fields.contains(where: { $0.key == "spot" && shown.contains($0.value) }) { return nil }
+            return Entry(spot: sources[match.list - 1], item: match.item)
         }
         show(Self.placed(answers, around: foundSpots.filter { !ids.contains($0.id) }))
         Set(foundSpots.compactMap { $0.item == nil ? nil : $0.spot.id }).forEach(runs.want)

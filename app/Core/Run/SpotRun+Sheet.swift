@@ -85,9 +85,9 @@ extension SpotRun {
         runs.updateClock()
     }
 
-    func leftPlace() {
+    func leftPlace(keepsOpen: Bool = false) {
         let keepsState = script.keepsState
-        if !isInView, panel?.holdsParts == true || keepsState {
+        if !isInView, panel?.holdsParts == true || keepsState, !(keepsOpen && isOpen && !keepsState) {
             let wasOpen = isOpen
             close()
             if keepsState || panel?.parts.contains(where: \.isEditable) == true {

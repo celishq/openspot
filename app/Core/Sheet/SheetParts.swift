@@ -144,6 +144,12 @@ public struct SheetParts: Equatable, Sendable {
         part.icon == nil && !part.fillsHeight && parts.contains { $0.icon != nil && !$0.fillsHeight }
     }
 
+    public var mainButton: SpotPart? {
+        focusOrder.first { part in
+            part.isPressable && tree.node(part.id).flatMap { SpotPart.Look(style: $0.style.resolved(for: [.sheet])) } == .strong
+        }
+    }
+
     public var selectedPart: SpotPart? {
         let order = focusLines.joined()
         if let selected, order.contains(selected) { return part(selected) }

@@ -2,7 +2,7 @@ import OpenspotCore
 import SwiftUI
 
 struct SpotToneWords: View {
-    let text: String
+    let text: AttributedString
     let tone: MetricValue.Tone?
 
     var body: some View {

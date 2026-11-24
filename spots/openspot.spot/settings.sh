@@ -30,6 +30,7 @@ sheet() {
   [ -z "$slow" ] || printf '\nitem=slow_motion\ntitle=Slow motion\ndetail=Every motion ten times slower\nicon=tortoise\nvalue=%s\n' "$slow"
   [ -z "$login" ] || printf '\nitem=open_at_login\ntitle=Open at login\nicon=power\nvalue=%s\n' "$login"
   [ -z "$link" ] || printf '\nitem=command_link\ntitle=Use openspot in Terminal\ndetail=The command line tool\nicon=terminal\nvalue=%s\n' "$link"
+  printf '\nitem=import_raycast\ntitle=Import from Raycast\ndetail=Scripts, quicklinks and snippets\nicon=square.and.arrow.down\nspot=openspot/import\nclose=false\n'
 }
 
 case "$1" in
@@ -39,6 +40,7 @@ case "$1" in
     ;;
   press)
     case "$(value item)" in
+      import_raycast) exec openspot spot push openspot/import ;;
       open_at_login)
         if [ "$(status login)" = true ]; then on=false; else on=true; fi
         exec openspot setting set --spot openspot login "$on"

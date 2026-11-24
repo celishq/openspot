@@ -4,6 +4,7 @@ enum PromptCall: NounCall {
     case new(String)
     case change(id: String, words: String, failure: String?)
     case theme(String, words: String)
+    case convert([String])
 
     static let noun = CommandNoun("prompt", group: .build, verbs: [
         CommandVerb("new", "[words]...", "Prints a prompt that asks a coding agent to build a spot that does what the words say. With no words, the agent asks you first.") { words in
@@ -15,6 +16,9 @@ enum PromptCall: NounCall {
         },
         CommandVerb("theme", "<name> [words]...", "Prints a prompt that asks a coding agent to change a theme as the words say. With no words, the agent asks you first.") { words in
             words.rest.first.map { Self.theme($0, words: words.rest.dropFirst().joined(separator: " ")) }
+        },
+        CommandVerb("convert", "<folder>...", "Prints a prompt that asks a coding agent to turn each Raycast extension folder into a spot, from its manifest and its source.") { words in
+            words.rest.isEmpty ? nil : Self.convert(words.rest)
         }
     ])
 
@@ -24,6 +28,7 @@ enum PromptCall: NounCall {
         case .new(let words): calls.new(words)
         case .change(let id, let words, let failure): calls.change(id, words: words, failure: failure)
         case .theme(let name, let words): calls.theme(name, words: words)
+        case .convert(let folders): calls.convert(folders.map { URL(fileURLWithPath: ($0 as NSString).expandingTildeInPath, relativeTo: context.folder).standardizedFileURL })
         }
     }
 }

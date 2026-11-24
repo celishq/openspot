@@ -37,7 +37,8 @@ fail in it:
 - calls that wait for the person: `color pick` and `folder pick`;
 - calls that capture the screen: `screen shot`, `screen record start` and `screen record stop`;
 - calls that change the Mac or the person's data: `window move`, `clipboard copy`, `clipboard paste`,
-  `power lid-closed`, `calendar add`, `reminders add`, `reminders done`, `spot add`, `spot remove` and `spot delete`;
+  `power lid-closed`, `calendar add`, `reminders add`, `reminders done`, `spot add`, `spot remove`, `spot delete`,
+  `import raycast` and `import rayconfig`;
 - calls that change Openspot or its places: `app quit`, each call of `theme` but `theme list` and `theme open`,
   `update install`, and `setting set` of a key that Openspot keeps for the person;
 - calls that move the flow of sheets: `route push`, `route back` and `route close`;
@@ -45,8 +46,9 @@ fail in it:
   `spot share`, `spot review`, `grid edit`, `setting change`, `theme open`, `update check`, `calendar show` and
   `reminders show`.
 
-`calendar add --dry-run` and `reminders add --dry-run` change nothing, so they work in a read. `toast` and `select`
-work in a read too. `run` works in a read, but the action it runs can't show a view there.
+`calendar add --dry-run`, `reminders add --dry-run`, `import raycast --dry-run` and `import rayconfig --dry-run` change
+nothing, so they work in a read. `toast` and `select` work in a read too. `run` works in a read, but the action it runs
+can't show a view there.
 
 ## Commands
 
@@ -100,6 +102,10 @@ work in a read too. `run` works in a read, but the action it runs can't show a v
 | `openspot prompt new [words]...`                   | Prints a prompt that asks a coding agent to build a spot that does what the words say.          |
 | `openspot prompt change <id> [words]...` | Prints a prompt that asks a coding agent to change a spot as the words say, with what the stats counted of it over 14 days, or with no words a goal that follows those counts. |
 | `openspot prompt theme <name> [words]...`          | Prints a prompt that asks a coding agent to change a theme as the words say.                    |
+| `openspot prompt convert <folder>...`              | Prints a prompt that asks a coding agent to turn each Raycast extension folder into a spot of its own, from its manifest and its source. |
+| `openspot import raycast <folder> [--dry-run]`     | Turns each Raycast script command in a folder into a spot, and prints an item for each file: `added`, `kept` when it was imported before, or `skipped` with the reason. `--skip <file>` leaves out a file by its path in the folder. `--dry-run` changes nothing. |
+| `openspot import rayconfig <file> [--dry-run]`     | Opens a Raycast export with its passphrase on stdin, adds its quicklinks to Links and its snippets to Snippets, and prints an item for each kind of data it holds, with what it added or why it skipped it. `--skip links` or `--skip snippets` leaves out a kind. `--dry-run` changes nothing. |
+| `openspot import extensions [folder]`              | Prints an item for each Raycast extension in `~/.config/raycast/extensions`, or in the folder: the spot that does its job, and whether you have it or can get it, or else that an agent can make one with `prompt convert`. It changes nothing. |
 | `openspot date read <words>...`                    | Prints the date the words name, such as `tomorrow 3pm`, as `item=yyyy-MM-dd HH:mm` in the zone of the Mac, or with no time `item=yyyy-MM-dd`, and `time=true` or `false`. It prints nothing when the words are more than a date. |
 | `openspot emoji list [--tone name]`                | Prints each emoji as an item, with its name in the language of the Mac.                         |
 | `openspot symbols list`                            | Prints each symbol of the Character Viewer as an item.                                          |

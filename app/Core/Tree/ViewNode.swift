@@ -28,6 +28,10 @@ public struct ViewNode: Equatable, Sendable, Identifiable {
         part?.detail
     }
 
+    public var detailWords: AttributedString? {
+        part.flatMap { $0.detail == nil ? nil : $0.detailWords }
+    }
+
     public var tone: MetricValue.Tone? {
         part?.tone
     }

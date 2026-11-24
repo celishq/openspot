@@ -9,6 +9,10 @@ extension SpotsModel {
     @discardableResult
     public func open(_ page: FlowSheet) -> Bool {
         guard entry(page.spot) != nil else { return false }
+        if page.route == nil, place(ofSheet: page.spot) == .window {
+            openWindow(page.spot)
+            return true
+        }
         afterShowing({ host.show() }) { [weak self] in
             guard let self else { return }
             endFlow()

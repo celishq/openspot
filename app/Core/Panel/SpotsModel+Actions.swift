@@ -21,11 +21,16 @@ extension SpotsModel {
         arrangement.spot(openedBy: key, over: defaultArrangement).flatMap { id in entry(id) == nil ? nil : id }
     }
 
-    static func editsText(_ key: ActionKey) -> Bool {
+    public static func editsText(_ key: ActionKey) -> Bool {
         key.isCommand && !key.isShift && ["backspace", "a", "c", "v", "x", "z"].contains(key.name)
     }
 
     func handleRowsPanelKey(_ key: ActionKey, _ panel: SheetParts) -> Bool {
+        if key == ActionKey(name: "down", isCommand: true), let main = panel.mainButton, panel.selectedPart?.id != main.id {
+            _ = openSheet?.leaveRows()
+            openSheet?.focusPart(main.id)
+            return true
+        }
         if let part = panel.selectedPart { return handleFocusKey(key, part) }
         if key == ActionKey(name: "up"), openItems?.isOnFirstLine != false { return openSheet?.leaveRows(upward: true) == true }
         guard key == ActionKey(name: "down"), openItems?.isOnLastLine != false else { return false }

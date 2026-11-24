@@ -30,8 +30,8 @@ struct NodeLine<Trailing: View>: View {
             if part.title != nil || part.detail != nil {
                 Spacer(minLength: 0)
             }
-            if let detail = part.detail {
-                Text(detail).font(SpotType.detail).modifier(SpotSecondaryText()).lineLimit(1)
+            if part.detail != nil {
+                Text(part.detailWords).font(SpotType.detail).modifier(SpotSecondaryText()).lineLimit(1)
                     .layoutPriority(2)
             }
             trailing

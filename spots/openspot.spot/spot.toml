@@ -72,6 +72,19 @@ inputs.spot = { type = "text", required = true, description = "The spot whose ic
 [scripts.icon.actions.reset]
 inputs.spot = { type = "text", required = true, description = "The spot whose icon to take back" }
 
+[scripts.import]
+title = "Import from Raycast"
+icon = "square.and.arrow.down"
+detail = "Bring your scripts and data"
+keywords = ["raycast", "import", "script commands", "quicklinks", "snippets", "extensions"]
+pages = ["scripts", "export", "analogs", "extensions"]
+views = ["import.swift"]
+uses = ["app", "spots", "files"]
+
+[scripts.import.on]
+"sheet.open" = true
+drop = ["folder", "rayconfig"]
+
 [scripts.new]
 title = "New spot"
 icon = "plus"

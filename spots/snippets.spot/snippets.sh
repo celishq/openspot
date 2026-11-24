@@ -37,6 +37,15 @@ value=\($v.content | esc)
 required=true"'
 }
 
+# Prints how many snippets an import added, as the output that the import reads.
+added() {
+  case "$1" in
+    0) printf 'frame=\nout.added=No new snippets\n' ;;
+    1) printf 'frame=\nout.added=Added 1 snippet\n' ;;
+    *) printf 'frame=\nout.added=Added %s snippets\n' "$1" ;;
+  esac
+}
+
 item=$(value item)
 
 case "$1" in
@@ -47,7 +56,7 @@ case "$1" in
     printf 'button=delete\ntitle=Delete\nshortcut=cmd+backspace\nconfirm=Press again to delete\nclose=false\n\n'
     printf 'button=new\ntitle=New snippet\nshortcut=cmd+n\nscope=spot\nclose=false\nplaceholder=Text to keep\n\n'
     [ -s "$data" ] || exit 0
-    jq -r "$esc"'.[] | "item=\(.id | esc)\ntitle=\(.title | esc)\ndetail=\(.content | gsub("\\s+"; " ") | .[0:200] | esc)\n"' "$data"
+    jq -r "$esc"'.[] | "item=\(.id | esc)\ntitle=\(.title | esc)\ndetail=\(.content | gsub("\\s+"; " ") | .[0:200] | esc)\n" + (if .keyword then "keywords=\(.keyword | esc)\n" else "" end)' "$data"
     ;;
   new)
     title=$(value input.title)
@@ -73,6 +82,14 @@ case "$1" in
     ;;
   delete)
     load | jq -c --arg id "$item" 'map(select(.id != $id))' | store
+    ;;
+  import)
+    given=$(value input.snippets)
+    new=$(load | jq -c --argjson given "${given:-[]}" '[.[] | [.title, .content]] as $have | [$given[] | select([.title, .text] as $one | $have | index([$one]) | not)]')
+    count=$(printf '%s' "$new" | jq 'length')
+    ids=$(i=0; while [ "$i" -lt "$count" ]; do uuidgen; i=$((i + 1)); done | jq -R . | jq -sc .)
+    load | jq -c --argjson new "$new" --argjson ids "$ids" '. + [$new | to_entries[] | {id: $ids[.key], title: .value.title, content: .value.text} + (if .value.keyword then {keyword: .value.keyword} else {} end)]' | store
+    added "$count"
     ;;
   paste)
     text=$(content "$item" && printf x) || exit 1

@@ -58,6 +58,18 @@ final class StoreSpotTests: BuiltInCase {
         return friends
     }
 
+    func testAReadAfterAnotherSpotAskedToShowASpotOpensItsAboutOnce() async throws {
+        let data = root.appendingPathComponent("data/openspot")
+        try FileManager.default.createDirectory(at: data, withIntermediateDirectories: true)
+        try "timer".write(to: data.appendingPathComponent("store-show"), atomically: true, encoding: .utf8)
+
+        let first = try await answer(["show"])
+        let second = try await answer(["show"])
+
+        XCTAssertEqual(TextBlock.blocks(in: first).first { $0.fields.first?.key == "store" }?.values("show"), ["timer"])
+        XCTAssertEqual(TextBlock.blocks(in: second).first { $0.fields.first?.key == "store" }?.values("show"), [])
+    }
+
     func testAddStoreKeepsThePickedFolderAndShowsItsSpotsUnderIt() async throws {
         let friends = try friends()
         try pick(friends)

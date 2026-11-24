@@ -3,7 +3,7 @@ import SwiftUI
 
 struct NodeText: View {
     let title: String?
-    let detail: String?
+    let detail: AttributedString?
     let tone: MetricValue.Tone?
     let icon: Icon?
     @Environment(\.multilineTextAlignment) private var alignment

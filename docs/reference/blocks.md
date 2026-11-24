@@ -75,7 +75,7 @@ A block's first line is its kind and its id, such as `item=4120`.
 | `icon`    | An icon alone.                         | `value`, the icon.                                                   |
 | `picture` | An image that fills its room.          | `icon`, the image.                                                   |
 | `button`  | A verb people press. A press runs the button's id. | `scope`, `item` or `spot` in the ⌘K menu; `shortcut`, such as `cmd+r`; `confirm`, words that ask for a second press. |
-| `field`   | A text people type.                    | `value`; `type`, `multiline`, `slider`, `search` or `hotkey`; `placeholder`; `required`; `readonly`; `min` and `max` of a slider, 0 and 100 by default; `recording`, while a `hotkey` records. |
+| `field`   | A text people type.                    | `value`; `type`, `multiline`, `secret` for one line that shows dots, `slider`, `search` or `hotkey`; `placeholder`; `required`; `readonly`; `min` and `max` of a slider, 0 and 100 by default; `recording`, while a `hotkey` records. |
 | `switch`  | On or off.                             | `value`, `true` or `false`; `type`, `tick` for a round tick.         |
 | `choice`  | A menu of the `option` blocks after it. | `value`, the chosen id; `type`, `list`, `swatches` or `multiple`; `color`, one colour of `swatches`. |
 | `option`  | One choice of a `choice`.              | `title`, its id by default; `icon`.                                  |
@@ -93,7 +93,7 @@ footer.
 | Key      | Is                                                                    |
 | -------- | --------------------------------------------------------------------- |
 | `title`  | The first line of its words.                                          |
-| `detail` | The line under the title.                                             |
+| `detail` | The line under the title. Two stars around words, as in `**Settings**`, draw them in bold. |
 | `icon`   | An SF Symbol, an emoji, an image file or a web image.                 |
 | `tone`   | `good`, `warn` or `bad`: the colour of its words, or a dot on an item's icon. |
 | `parent` | The id of the box or list it sits in.                                 |

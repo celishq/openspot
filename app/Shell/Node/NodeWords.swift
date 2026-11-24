@@ -10,8 +10,8 @@ struct NodeWords: View {
             if let title = part.title {
                 Text(title).font(SpotType.body).foregroundStyle(SpotTheme.ink(onSolid: isOnSolid)).lineLimit(1)
             }
-            if let detail = part.detail {
-                Text(detail).font(SpotType.detail).modifier(SpotSecondaryText()).lineLimit(1)
+            if part.detail != nil {
+                Text(part.detailWords).font(SpotType.detail).modifier(SpotSecondaryText()).lineLimit(1)
             }
         }
         .modifier(SpotColorBar(color: part.color))

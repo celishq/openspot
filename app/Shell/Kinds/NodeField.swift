@@ -38,6 +38,8 @@ private struct FieldDrawing: View {
         case .text(let text, let placeholder, let isReadOnly):
             textLine(text: text, placeholder: placeholder, isReadOnly: isReadOnly)
                 .overlay(alignment: .trailing) { mark }
+        case .secret(let text, let placeholder):
+            secretLine(text: text, placeholder: placeholder)
         case .slider(let level, let low, let high):
             slider(level: level, range: low...max(high, low + 1))
         case .shortcut(let text) where isCard:
@@ -112,6 +114,19 @@ private struct FieldDrawing: View {
         .font(SpotType.body)
         .foregroundStyle(SpotTheme.ink)
         .background(SpotTheme.ink.opacity(SpotTheme.fill), in: shape)
+    }
+
+    private func secretLine(text: String, placeholder: String?) -> some View {
+        let prompt = Text(placeholder ?? part.title ?? "").foregroundStyle(SpotTheme.ink.opacity(SpotTheme.secondary))
+        return SecureField(part.title ?? part.id, text: Binding(get: { text }, set: { onSet($0) }), prompt: prompt)
+            .labelsHidden()
+            .textFieldStyle(.plain)
+            .modifier(FieldFocus(focus: focus, id: part.id))
+            .padding(.horizontal, SpotTokens.padding)
+            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .leading)
+            .font(SpotType.body)
+            .foregroundStyle(SpotTheme.ink)
+            .background(SpotTheme.ink.opacity(SpotTheme.fill), in: shape)
     }
 
     @ViewBuilder

@@ -47,7 +47,7 @@ final class WireTests: SpotRunsCase {
         let routed = try await sent("press", by: sheet) { sheet.pick(try XCTUnwrap(sheet.list.all.first)) }
 
         XCTAssertEqual(field, "args=search\ninput.search=milk\ninput.title=Groceries\ninput.value=milk\nsetting.city=Paris")
-        XCTAssertEqual(button, "args=go\ninput.search=\ninput.title=Groceries\nsetting.city=Paris")
+        XCTAssertEqual(button, "args=go\ninput.search=milk\ninput.title=Groceries\nsetting.city=Paris")
         XCTAssertEqual(pick, "args=press\ninput.item=a\ninput.item.item=a\ninput.item.title=A\ninput.item.meeting=42\nsetting.city=Paris")
         XCTAssertEqual(change, "args=show\ninput.search=\ninput.title=Groceries\ninput.event=spot.change\nsetting.city=Paris")
         XCTAssertEqual(page, "args=show\ninput.event=sheet.open\ninput.route=photo\nsetting.city=Paris")

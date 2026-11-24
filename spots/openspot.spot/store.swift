@@ -166,6 +166,9 @@ struct SpotView: View {
         .sheet(isPresented: Binding(get: { opened != nil }, set: { if !$0 { opened = nil } })) {
             if let opened, let item = all.first(where: { $0.id == opened }) { about(item) }
         }
+        .task(id: spot["show"]) {
+            if let id = spot["show"], let item = all.first(where: { $0.id == id }) { open(item) }
+        }
         .overlayPreferenceValue(TipAnchor.self) { anchor in
             GeometryReader { proxy in
                 if let anchor, let tip {

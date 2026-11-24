@@ -742,24 +742,6 @@ final class SpotsModelTests: XCTestCase {
         XCTAssertFalse(host.motions.isEmpty)
     }
 
-    func testAPanelThatHidesCutsASheetOfPartsAndItsRun() async throws {
-        try script("parts", toml: "", "printf 'frame=\\nclass=gap-part\\n\\ntext=a\\ntitle=A\\n'")
-        await model.reload()
-        model.isShown = true
-        model.panelWillShow()
-        model.pushFirst("parts", moving: true)
-        try await wait("the open sheet") { model.openSheetID == "parts" && model.openParts != nil }
-
-        host.motions = []
-        model.panelWillHide()
-        model.panelDidHide()
-
-        XCTAssertNil(model.openSheetID)
-        XCTAssertNil(model.runs.openID)
-        XCTAssertEqual(host.motions.compactMap { $0 }, [])
-        XCTAssertFalse(host.motions.isEmpty)
-    }
-
     func testASizeInAReadLeavesTheCardAtItsDefaultSize() async throws {
         try script("grow", toml: "[on]\n\"panel.open\" = true", "printf 'frame=\\ndetail=Read\\nsize=large\\n'")
         await model.reload()
@@ -1225,6 +1207,19 @@ final class SpotsModelTests: XCTestCase {
 
         try await wait("the row of the app") { model.visible.contains { $0.id == "apps\nshortcuts" } }
         XCTAssertEqual(model.visible.map(\.id), ["shortcuts", "apps\nshortcuts"])
+    }
+
+    func testTheGridSearchLeavesOutAnItemThatOpensASpotItAlreadyFound() async throws {
+        try script("importer", toml: "title = 'Import Stuff'", "true")
+        try script("settings", toml: "title = 'Settings'\n[on]\n\"panel.open\" = true\nsearch = true", "printf 'item=importer\\ntitle=Import Stuff\\nspot=importer\\n\\nitem=other\\ntitle=Import Other\\n'")
+        await model.reload()
+        model.isShown = true
+        model.panelWillShow()
+
+        model.searchText = "import"
+
+        try await wait("the other row") { model.visible.contains { $0.id == "settings\nother" } }
+        XCTAssertEqual(model.visible.map(\.id), ["importer", "settings\nother"])
     }
 
     func testTheGridSearchFindsASpotThatOffersSearchAndItsRows() async throws {

@@ -8,7 +8,7 @@ final class SpotRunsWantTests: SpotRunsCase {
         blocks().filter { $0.hasPrefix("arg=show") || $0 == "arg=every" }.count
     }
 
-    func testClosingThePanelClosesASheetOfPartsAndTheNextOpenReads() async throws {
+    func testClosingThePanelLeavesASheetOfPartsOpenWithWhatWasTyped() async throws {
         try script(toml: "", "printf 'frame=\\nclass=gap-part\\n\\nfield=a\\nvalue=one\\n'")
         let sheet = try sheet()
         sheet.open {}
@@ -17,11 +17,8 @@ final class SpotRunsWantTests: SpotRunsCase {
 
         runs.panelClosed()
 
-        XCTAssertFalse(sheet.isOpen)
-        XCTAssertNil(sheet.panel)
-        sheet.open {}
-        try await wait("the new read") { sheet.panel?.parts.first?.value == "one" }
-        XCTAssertEqual(log(), ["show", "show"])
+        XCTAssertTrue(sheet.isOpen)
+        XCTAssertEqual(sheet.panel?.parts.first?.value, "typed")
     }
 
     func testClosingThePanelLeavesASheetOfRowsOpen() async throws {

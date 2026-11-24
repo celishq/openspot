@@ -284,4 +284,5 @@ final class SlashCommandPanelTests: PanelCase {
         try await wait("the sheet") { self.model.openSheetID == "translate" }
         XCTAssertTrue(sent.hasPrefix("command\ninput.name=translate\ninput.text=hello world\n"), sent)
     }
+
 }
