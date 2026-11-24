@@ -34,22 +34,24 @@ final class AttachmentPreviewTests: XCTestCase {
         XCTAssertEqual(preview.symbol, "doc")
     }
 
-    func testAnImageAGifAndAVideoShowTheirFileAndAudioAWaveform() {
+    func testAPictureOrAVideoShowsItsThumbnailAudioAWaveformAndEveryOtherFileItsIcon() {
         func picture(_ path: String) -> AttachmentPreview.Picture? {
             AttachmentPreview(AttachmentValue(files: FileKinds([path]))).picture
         }
 
-        XCTAssertEqual(picture("/a/shot.PNG"), .file("/a/shot.PNG"))
-        XCTAssertEqual(picture("/a/cat.gif"), .file("/a/cat.gif"))
-        XCTAssertEqual(picture("/a/talk.mov"), .file("/a/talk.mov"))
+        XCTAssertEqual(picture("/a/shot.PNG"), .thumbnail("/a/shot.PNG"))
+        XCTAssertEqual(picture("/a/cat.gif"), .thumbnail("/a/cat.gif"))
+        XCTAssertEqual(picture("/a/talk.mov"), .thumbnail("/a/talk.mov"))
+        XCTAssertEqual(picture("/a/deck.pdf"), .thumbnail("/a/deck.pdf"))
         XCTAssertEqual(picture("/a/song.mp3"), .symbol("waveform"))
-        XCTAssertNil(picture("/a/notes.md"))
+        XCTAssertEqual(picture("/a/notes.md"), .icon("/a/notes.md"))
+        XCTAssertEqual(picture("/a/docs"), .icon("/a/docs"))
         XCTAssertNil(AttachmentPreview(AttachmentValue(text: "words")).picture)
     }
 
     func testAPictureKeepsTheHeightOfAPreviewWithoutOne() {
         let picture = AttachmentPreview(AttachmentValue(files: FileKinds(["/a/shot.png"])))
-        let words = AttachmentPreview(AttachmentValue(files: FileKinds(["/a/shot.md"])))
+        let words = AttachmentPreview(AttachmentValue(text: "shot.png"))
 
         XCTAssertEqual(picture.lines, words.lines)
         XCTAssertEqual(SpotTokens.attachmentValueRoom(lines: picture.lines), SpotTokens.attachmentValueRoom(lines: words.lines))

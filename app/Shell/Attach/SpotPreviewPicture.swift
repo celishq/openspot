@@ -35,7 +35,8 @@ struct SpotPreviewPicture: View {
         switch picture {
         case .symbol: return nil
         case .data(let data): return NSImage(data: data)
-        case .file(let path):
+        case .icon(let path): return NSWorkspace.shared.icon(forFile: path)
+        case .thumbnail(let path):
             let side = SpotTokens.attachmentPicture
             let request = QLThumbnailGenerator.Request(fileAt: URL(fileURLWithPath: path), size: CGSize(width: side, height: side), scale: scale, representationTypes: .thumbnail)
             return try? await QLThumbnailGenerator.shared.generateBestRepresentation(for: request).nsImage

@@ -2,13 +2,14 @@ import Foundation
 
 public struct AttachmentPreview: Hashable, Sendable {
     public enum Picture: Hashable, Sendable {
-        case file(String)
+        case thumbnail(String)
+        case icon(String)
         case data(Data)
         case symbol(String)
     }
 
     static let excerptLimit = 280
-    static let shownKinds: Set<String> = ["png", "jpg", "jpeg", "gif", "heic", "heif", "tif", "tiff", "webp", "bmp", "mov", "mp4", "m4v", "avi", "mkv", "webm"]
+    static let thumbnailKinds: Set<String> = ["png", "jpg", "jpeg", "gif", "heic", "heif", "tif", "tiff", "webp", "bmp", "mov", "mp4", "m4v", "avi", "mkv", "webm", "pdf"]
     static let audioKinds: Set<String> = ["mp3", "m4a", "wav", "aif", "aiff", "flac", "aac", "ogg", "opus", "caf"]
     static let audioSymbol = "waveform"
 
@@ -43,10 +44,10 @@ public struct AttachmentPreview: Hashable, Sendable {
 
     private static func picture(of value: AttachmentValue) -> Picture? {
         if let thumbnail = value.copy?.thumbnail { return .data(thumbnail) }
-        guard case .files(let files) = value.payload, let path = files.paths.first else { return nil }
+        guard case .files(let files) = value.payload, let path = files.paths.first, value.copy == nil else { return nil }
         let kind = (path as NSString).pathExtension.lowercased()
-        if shownKinds.contains(kind), value.copy == nil { return .file(path) }
-        return audioKinds.contains(kind) ? .symbol(audioSymbol) : nil
+        if thumbnailKinds.contains(kind) { return .thumbnail(path) }
+        return audioKinds.contains(kind) ? .symbol(audioSymbol) : .icon(path)
     }
 
     public init?(state chip: AttachmentChip) {
