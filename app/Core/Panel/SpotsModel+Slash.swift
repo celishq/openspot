@@ -51,6 +51,7 @@ extension SpotsModel {
     func completeSlash() -> Bool {
         guard let slash, let entry = selectedEntry, let word = commands.word(of: entry) else { return false }
         query = "\(slash.lead)/\(word) \(slash.tail.trimmingCharacters(in: .whitespaces))"
+        hideAttachments()
         return true
     }
 }

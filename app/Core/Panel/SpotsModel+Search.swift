@@ -170,6 +170,7 @@ extension SpotsModel {
                 } else {
                     query = newValue
                 }
+                hideAttachments()
             }
         }
     }

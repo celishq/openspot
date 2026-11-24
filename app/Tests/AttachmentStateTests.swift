@@ -42,14 +42,35 @@ final class AttachmentStateTests: AttachmentCase {
         try await openWithTab()
         XCTAssertFalse(model.isAttachmentHidden)
 
-        model.query = "k"
+        model.searchText = "k"
         XCTAssertTrue(model.isAttachmentHidden)
-        model.query = ""
+        model.searchText = ""
         XCTAssertFalse(model.isAttachmentHidden)
 
         XCTAssertTrue(model.handleKey(tab))
-        model.query = "k"
+        model.searchText = "k"
         XCTAssertFalse(model.isAttachmentHidden)
+    }
+
+    func testAWriteOfTheQueryMakesNoChangeOfItsOwn() async throws {
+        try await openWithTab()
+        let changes = host.motions.count
+
+        model.query = "k"
+
+        XCTAssertEqual(host.motions.count, changes)
+    }
+
+    func testTheStackFadesOutOnTypingAndBackOnTabEachInAChangeOfItsOwn() async throws {
+        try await openWithTab()
+        let writes = host.hiddenWrites.count
+
+        model.searchText = "k"
+        XCTAssertTrue(model.handleKey(tab))
+
+        XCTAssertFalse(model.isAttachmentHidden)
+        XCTAssertEqual(host.hiddenWrites.dropFirst(writes).map(\.motion), [.fade, .fade])
+        XCTAssertEqual(host.hiddenWrites.dropFirst(writes).map(\.depth), [0, 0])
     }
 
     func testATapOnTheAttachmentsWorksTheHintOutOnceByTheEndOfThePress() async throws {

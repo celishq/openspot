@@ -12,6 +12,7 @@ extension SpotsModel {
         var next = attachments
         next.open(over: front, unread: unread.map { ($0.id, Self.look(of: $0.spot)) })
         if next != attachments { attachments = next }
+        hideAttachments()
         if wasOn { updateVisible() }
         runs.panelOpened(showsToEnd: isWarming, over: front?.bundleID, feedsAttachment: feeds)
     }
@@ -86,6 +87,7 @@ extension SpotsModel {
         guard next != attachments else { return }
         let before = (isOn: attachments.isOn, chip: attachments.selectedChip)
         change(isShown ? motion : nil, { attachments = next })
+        hideAttachments()
         placeAttachment(motion)
         guard before.isOn != next.isOn || before.chip != next.selectedChip else { return }
         selected = 0
@@ -177,7 +179,7 @@ extension SpotsModel {
         guard next != attachments else { return }
         guard let motion, isShown, next.layout != attachments.layout else {
             attachments = next
-            return
+            return hideAttachments()
         }
         next.isMoving = true
         change(motion, { attachments = next }) { [weak self] in
@@ -185,6 +187,7 @@ extension SpotsModel {
             landed.isMoving = false
             self?.placeAttachment(landed, .edit)
         }
+        hideAttachments()
     }
 
     private func foldAttachment() {

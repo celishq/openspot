@@ -52,7 +52,6 @@ public final class SpotsModel {
     public var query = "" {
         didSet {
             guard query != oldValue else { return }
-            hideAttachments()
             if query.trimmingCharacters(in: .whitespaces).isEmpty { noteMiss() }
             selected = 0
             askAnswers()
@@ -76,7 +75,6 @@ public final class SpotsModel {
             if isFieldCovered != covered { isFieldCovered = covered }
             let word = attachments.isOn ? SearchPrompt.actions : SearchPrompt.grid
             if promptWord != word { promptWord = word }
-            hideAttachments()
         }
     }
     public internal(set) var isAttachmentHidden = false
@@ -458,6 +456,7 @@ public final class SpotsModel {
         if openSheetID != nil { closeSheet(moving: false) }
         host.show()
         query = visible.contains { $0.id == id } || cards.filter(\.isOnGrid).contains { $0.id == id } ? "" : entry.state.title
+        hideAttachments()
         selected = visible.firstIndex { $0.id == id } ?? 0
         return true
     }
@@ -549,6 +548,7 @@ public final class SpotsModel {
         asOnePress {
             endSpread()
             if attachments.spreads { attachments.fold() }
+            hideAttachments()
             pendingAsk = nil
             if confirming != nil { confirming = nil }
             stopRecording()

@@ -17,6 +17,7 @@ extension SpotsModel {
                 isEditing = true
                 updateVisible()
             }
+            hideAttachments()
         }
     }
 
