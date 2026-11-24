@@ -252,4 +252,43 @@ final class AttachmentReadTests: AttachmentCase {
         XCTAssertNil(model.target)
         XCTAssertFalse(model.openSelectedSettings())
     }
+
+    func testAttachmentAddTakesTheRecordOfReadOnStdinAndIgnoresItsOtherKeys() async throws {
+        try taker(takes: "'url', 'text'")
+        try attach(runs: "printf 'url=https://a.com/x\\ntitle=A page\\nage=5\\napp=com.apple.Safari\\n' | \(cli) attachment add")
+        try attach("selection", runs: "printf 'text=two\\\\nlines\\napp=com.apple.Safari\\n' | \(cli) attachment add")
+        await open()
+
+        XCTAssertTrue(model.handleKey(tab))
+        XCTAssertTrue(model.handleKey(tab))
+
+        try await wait("both values") { self.chips.allSatisfy { $0.value != nil } }
+        XCTAssertEqual(chips.first { $0.source == "tab" }?.value, AttachmentValue(url: "https://a.com/x", title: "A page", app: "com.apple.Safari"))
+        XCTAssertEqual(chips.first { $0.source == "selection" }?.value, AttachmentValue(text: "two\nlines", app: "com.apple.Safari"))
+        try await wait("the end of both reads") { self.log("done") == ["0", "0"] }
+    }
+
+    func testAttachmentAddWithNothingOnStdinAddsNothingAndEndsWell() async throws {
+        try taker(takes: "'url'")
+        try attach(runs: "printf '' | \(cli) attachment add")
+        await open()
+
+        XCTAssertTrue(model.handleKey(tab))
+
+        try await wait("the empty chip") { self.chips.map(\.state) == [.empty("Nothing to attach from Safari")] }
+        try await wait("the end of the read") { self.log("done") == ["0"] }
+    }
+
+    func testARefusedReadPipedToAttachmentAddOffersAllow() async throws {
+        try refuseSafari()
+        try attach(runs: "\(cli) read tab | \(cli) attachment add")
+        await open()
+
+        XCTAssertTrue(model.handleKey(tab))
+
+        try await wait("the refusal") { self.chips.map(\.state) == [.denied("Safari")] }
+        try await wait("the end of the read") { self.log("done") == ["0"] }
+        XCTAssertEqual(chips.map(\.state), [.denied("Safari")])
+        XCTAssertEqual(host.notes, [])
+    }
 }

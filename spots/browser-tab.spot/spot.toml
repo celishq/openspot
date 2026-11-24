@@ -1,7 +1,7 @@
 title = "Browser Tab"
 icon = "safari"
 detail = "Hand the front tab to a spot"
-uses = ["attachment"]
+uses = ["attachment", "read"]
 
 [on]
-"panel.open" = "^(com\\.apple\\.Safari|com\\.apple\\.SafariTechnologyPreview|com\\.google\\.Chrome|com\\.google\\.Chrome\\.canary|company\\.thebrowser\\.Browser|com\\.brave\\.Browser|com\\.microsoft\\.edgemac|com\\.vivaldi\\.Vivaldi|com\\.operasoftware\\.Opera)$"
+attach = "^(com\\.apple\\.Safari|com\\.apple\\.SafariTechnologyPreview|com\\.google\\.Chrome|com\\.google\\.Chrome\\.canary|company\\.thebrowser\\.Browser|com\\.brave\\.Browser|com\\.microsoft\\.edgemac|com\\.vivaldi\\.Vivaldi|com\\.operasoftware\\.Opera)$"

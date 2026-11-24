@@ -1,26 +1,16 @@
 #!/bin/sh
 # Puts what you copied in the last 2 minutes in the panel's field, as a link or as text, where Tab offers it to each spot
-# that takes it. It keeps a digest of the clipboard and the time it first saw it in its data folder.
-. "$OPENSPOT_SH"
-seen="$OPENSPOT_DATA/seen"
+# that takes it. Openspot counts the age of a copy from the first read after it.
 fresh=120
 
 case "$1" in
   show)
-    copied=$(pbpaste 2>/dev/null | head -c 100000)
-    [ -n "$(printf '%s' "$copied" | tr -d '[:space:]')" ] || exit 0
-    digest=$(printf '%s' "$copied" | shasum | cut -d ' ' -f 1)
-    now=$(date +%s)
-    if [ "$(sed -n 1p "$seen" 2>/dev/null)" != "$digest" ]; then
-      printf '%s\n%s\n' "$digest" "$now" > "$seen.$$" && mv "$seen.$$" "$seen"
-    fi
-    first=$(sed -n 2p "$seen" 2>/dev/null)
-    [ $((now - ${first:-0})) -lt $fresh ] || exit 0
-    if [ "$(printf '%s' "$copied" | wc -l)" -eq 0 ] && printf '%s' "$copied" | grep -Eq '^https?://[^[:space:]]+$'; then
-      openspot attachment add url="$copied"
-    else
-      openspot attachment add text="$copied" title="Copied text"
-    fi
+    copied=$(openspot read clipboard) || exit 0
+    age=$(printf '%s\n' "$copied" | sed -n 's/^age=//p')
+    [ -n "$age" ] && [ "$age" -lt "$fresh" ] || exit 0
+    case "$copied" in
+      text=*) printf '%s\ntitle=Copied text\n' "$copied" ;;
+      *) printf '%s\n' "$copied" ;;
+    esac | openspot attachment add
     ;;
 esac
-exit 0

@@ -50,8 +50,14 @@ run, Openspot opens your sheet when Return opens it, and closes the panel when i
 
 ## Give a value
 
-A source has `attachment` in its `uses`. It runs `show` each time the panel opens, and calls `openspot attachment add` with one
-value. Give `panel.open` a regular expression, and the source runs only when the bundle ID of the front app matches.
+A source has `attachment` in its `uses`, and puts one value in the field with `openspot attachment add`. It reads in one of
+two ways:
+
+- `attach` takes a regular expression of the bundle ID of the front app. Its chip shows at once when the panel opens over
+  a matching app, and the source runs `attach` only when Tab first picks the chip in that open of the panel. Use it for a
+  read that is slow or that asks the app, such as its front tab.
+- `panel.open` runs `show` each time the panel opens. A regular expression runs it only over a matching app, and its chip
+  shows at once with a spinner. Use it for a read that is quick and that you want ready, such as the clipboard.
 
 `clock-tab.spot/spot.toml`:
 
@@ -60,7 +66,7 @@ title = "Clock Tab"
 uses = ["attachment"]
 
 [on]
-"panel.open" = "^com\\.apple\\.clock$"
+attach = "^com\\.apple\\.clock$"
 ```
 
 `clock-tab.spot/clock-tab.sh`:
@@ -68,14 +74,24 @@ uses = ["attachment"]
 ```text
 #!/bin/sh
 case "$1" in
-  show) openspot attachment add text="$(date +%H:%M)" title="The time" app=com.apple.clock ;;
+  attach) openspot attachment add text="$(date +%H:%M)" title="The time" app=com.apple.clock ;;
 esac
 ```
 
 - `openspot attachment add` takes `file=` once for each file, `url=` or `text=`, with `title=`, the words of the preview,
-  and `app=`, the bundle ID of the app whose icon the chip shows.
-- A source that names an app in `panel.open` shows its chip at once, with a spinner, and fills it when it answers.
-  Another source's chip shows only when it answers.
+  and `app=`, the bundle ID of the app whose icon the chip shows. With none of these, it takes them on stdin, as
+  `openspot read` prints them, and adds nothing when stdin holds no value.
+- `openspot read tab`, `finder`, `selection` and `clipboard` read what people work on inside Openspot. A source needs
+  `read` in its `uses`, and `openspot attachment add` takes what it prints:
+
+  ```text
+  attach) openspot read tab | openspot attachment add ;;
+  ```
+
+- While `attach` runs, the field says `Reading <app>…`. When it adds nothing, the field says `Nothing to attach from
+  <app>`, or the words of `openspot attachment empty <words>`. When it fails, or gives no answer in 3 seconds, the field
+  shows why, and the next Tab reads again. When Openspot may not read the app yet, Return opens the Attachments spot,
+  where people allow it.
 - A chip shows only when a spot that is on takes its kind. A source runs only when some spot takes some kind.
 - A source stays off the grid and out of the search. People turn it on in the Attachments spot.
 
