@@ -67,6 +67,21 @@ final class SpotSpringTests: XCTestCase {
         XCTAssertLessThan(end, plain.removed.max() ?? 0)
     }
 
+    func testEachSpringOfTheAppIsLogicallyCompleteOnTheSameFrameAsThePlainSpring() {
+        let travel = MotionTokens.longestTravel
+        let curves = [(MotionTokens.grow, 0.0), (MotionTokens.move, 0.0), (MotionTokens.press, MotionTokens.pressBounce), (MotionTokens.pop, MotionTokens.popBounce)]
+        for (duration, bounce) in curves {
+            for presses in [[(0, travel)], [(0, travel), (12, 0.0)]] {
+                let plain = run(plainSpring(duration: duration, bounce: bounce), presses: presses)
+                let ended = run(spotSpring(duration: duration, bounce: bounce), presses: presses)
+
+                XCTAssertEqual(ended.logical.count, presses.count)
+                XCTAssertEqual(ended.logical, plain.logical)
+                XCTAssertLessThanOrEqual(ended.logical.max() ?? 0, ended.removed.max() ?? 0)
+            }
+        }
+    }
+
     private func plainSpring(duration: Double, bounce: Double) -> Animation {
         SpotMotion.plainSpring(duration: duration, bounce: bounce)
     }
@@ -75,23 +90,25 @@ final class SpotSpringTests: XCTestCase {
         Animation(SpotSpring(base: plainSpring(duration: duration, bounce: bounce), end: SpringEnd(duration: duration, bounce: bounce)))
     }
 
-    private func run(_ animation: Animation, presses: [(frame: Int, target: Double)], frames: Int = 240) -> (values: [Double], removed: [Int]) {
+    private func run(_ animation: Animation, presses: [(frame: Int, target: Double)], frames: Int = 240) -> (values: [Double], removed: [Int], logical: [Int]) {
         let place = Place()
         let host = NSHostingView(rootView: Stage(place: place))
         host.frame = CGRect(x: 0, y: 0, width: 10, height: 10)
         host._renderForTest(interval: 0)
         var values: [Double] = []
         var removed: [Int] = []
+        var logical: [Int] = []
         for index in 0..<frames {
             for press in presses where press.frame == index {
                 var transaction = Transaction(animation: animation)
+                transaction.addAnimationCompletion(criteria: .logicallyComplete) { logical.append(values.count) }
                 transaction.addAnimationCompletion(criteria: .removed) { removed.append(values.count) }
                 withTransaction(transaction) { place.target = press.target }
             }
             host._renderForTest(interval: frame)
             values.append(place.shown)
         }
-        return (values, removed)
+        return (values, removed, logical)
     }
 }
 
