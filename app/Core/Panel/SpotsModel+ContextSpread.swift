@@ -2,10 +2,9 @@ import Foundation
 
 extension SpotsModel {
     func spreadContext() {
-        contextFold.spreads = true
-        contextFold.watch?.cancel()
-        let pause = contextFold.pause
-        contextFold.watch = Task { [weak self] in
+        contextWatch?.cancel()
+        let pause = contextPause
+        contextWatch = Task { [weak self] in
             try? await Task.sleep(for: pause, tolerance: pause / 10)
             guard !Task.isCancelled else { return }
             self?.foldContext()
@@ -13,29 +12,22 @@ extension SpotsModel {
     }
 
     func endSpread() {
-        contextFold.watch?.cancel()
-        contextFold.watch = nil
-        contextFold.spreads = false
-    }
-
-    func resetContextSpread() {
-        endSpread()
-        contextFold.isMoving = false
-        let next = ContextSpread().next(over: context.chips, selected: context.selected, spreads: false)
-        if next != contextSpread { contextSpread = next }
+        contextWatch?.cancel()
+        contextWatch = nil
     }
 
     func placeContext(_ motion: PanelMotion?) {
-        guard !contextFold.isMoving else { return }
-        let next = contextSpread.next(over: context.chips, selected: context.selected, spreads: contextFold.spreads)
-        guard next != contextSpread else { return }
+        guard !isContextMoving else { return }
+        var next = context
+        next.place(spreads: contextWatch != nil)
+        guard next != context else { return }
         guard let motion, isShown else {
-            contextSpread = next
+            context = next
             return
         }
-        contextFold.isMoving = true
-        change(motion, { contextSpread = next }) { [weak self] in
-            self?.contextFold.isMoving = false
+        isContextMoving = true
+        change(motion, { context = next }) { [weak self] in
+            self?.isContextMoving = false
             self?.placeContext(.edit)
         }
     }

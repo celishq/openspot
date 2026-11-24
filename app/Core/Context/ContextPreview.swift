@@ -11,7 +11,7 @@ public struct ContextPreview: Hashable, Sendable {
 
     public init(_ value: ContextValue) {
         let first = value.values.first ?? ""
-        symbol = Self.symbol(of: value.kind)
+        symbol = value.kind.captionSymbol
         switch value.kind {
         case .url:
             text = value.title ?? first
@@ -31,13 +31,5 @@ public struct ContextPreview: Hashable, Sendable {
         self.text = text
         self.caption = caption
         self.symbol = symbol
-    }
-
-    public static func symbol(of kind: ContextValue.Kind) -> String {
-        switch kind {
-        case .url: "arrow.up.right"
-        case .text: "textformat"
-        case .file: "doc"
-        }
     }
 }

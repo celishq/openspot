@@ -38,30 +38,3 @@ public struct ContextChip: Equatable, Sendable {
         return (isFront ? 0 : 2) + (isText ? 0 : 1)
     }
 }
-
-extension ContextChip {
-    public var words: (title: String, detail: String) {
-        guard let value else { return ("Loading", "") }
-        let first = value.values.first ?? ""
-        switch value.kind {
-        case .url:
-            return (value.title ?? first, first)
-        case .text:
-            let line = first.split(whereSeparator: \.isNewline).first.map(String.init) ?? first
-            return (line.trimmingCharacters(in: .whitespaces), value.title ?? "Text")
-        case .file:
-            let names = value.values.map { URL(fileURLWithPath: $0).lastPathComponent }
-            let title = value.title ?? (names.count == 1 ? names[0] : "\(names.count) files")
-            return (title, names.count == 1 ? URL(fileURLWithPath: first).deletingLastPathComponent().path : names.joined(separator: ", "))
-        }
-    }
-
-    static func symbol(of kind: ContextValue.Kind?) -> String {
-        switch kind {
-        case .url: "arrow.up.right"
-        case .text: "text.quote"
-        case .file: "doc"
-        case nil: "ellipsis"
-        }
-    }
-}

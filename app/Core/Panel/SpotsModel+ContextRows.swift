@@ -14,7 +14,7 @@ extension SpotsModel {
         let text = query.trimmingCharacters(in: .whitespaces)
         let found = commands.takers(of: value, matching: text.isEmpty ? nil : runs.search(of: text), limit: Self.contextRows)
         let taken = found.compactMap { row in
-            entry(row.spot).map { Entry(spot: $0.spot, item: SpotItem(title: row.title, run: ""), role: .taker, detail: Self.takes(value.kind)) }
+            entry(row.spot).map { Entry(spot: $0.spot, item: SpotItem(title: row.title, run: ""), role: .taker, detail: value.kind.takerWords) }
         }
         return taken
     }
@@ -31,12 +31,4 @@ extension SpotsModel {
     }
 
     static let contextRows = 5
-
-    private static func takes(_ kind: ContextValue.Kind) -> String {
-        switch kind {
-        case .file: "Takes the files"
-        case .url: "Takes the link"
-        case .text: "Takes the text"
-        }
-    }
 }

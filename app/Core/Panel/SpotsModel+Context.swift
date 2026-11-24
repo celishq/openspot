@@ -8,10 +8,11 @@ extension SpotsModel {
         let front = isWarming ? nil : host.frontApp
         let feeds = !isWarming && entries.contains { entry in ContextValue.Kind.allCases.contains(where: entry.spot.triggers.drop.takes) }
         let loading = feeds ? entries.filter { $0.spot.isSource && $0.spot.triggers.opensOverAnApp && $0.spot.runsOnOpen(over: front?.bundleID, feedsContext: feeds) } : []
+        endSpread()
+        isContextMoving = false
         var next = context
         next.open(over: front, loading: loading.map { ($0.id, Self.look(of: $0.spot)) })
         if next != context { context = next }
-        resetContextSpread()
         if wasOn { updateVisible() }
         runs.panelOpened(showsToEnd: isWarming, over: front?.bundleID, feedsContext: feeds)
     }
@@ -29,10 +30,10 @@ extension SpotsModel {
     }
 
     func turnContext(by step: Int) {
-        let isCycling = contextSpread.isSpread
+        let isCycling = context.isSpread
         spreadContext()
         var next = context
-        next.turn(by: step, along: contextSpread.order(over: context.chips))
+        next.turn(by: step)
         settle(next, motion: isCycling ? nil : .edit)
     }
 
@@ -52,7 +53,7 @@ extension SpotsModel {
         spot.fileIcon.map(ContextChip.Look.file) ?? .symbol(spot.symbol)
     }
 
-    private func settle(_ next: ContextChips, motion: PanelMotion?) {
+    private func settle(_ next: ContextStack, motion: PanelMotion?) {
         guard next != context else { return }
         let before = (isOn: context.isOn, chip: context.selectedChip)
         change(isShown ? motion : nil, { context = next })

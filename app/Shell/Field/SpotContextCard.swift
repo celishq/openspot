@@ -48,7 +48,7 @@ struct SpotContextCard: View, Equatable {
     private var badge: some View {
         if showsBadge, let kind = chip.value?.kind {
             let leaf = SpotLeafShape(radius: SpotTokens.contextIconRadius)
-            glyph(of: kind)
+            glyph(of: kind.badge)
                 .font(SpotType.contextBadge)
                 .modifier(SpotSecondaryText())
                 .offset(x: SpotTokens.contextBadgeNudge, y: SpotTokens.contextBadgeNudge)
@@ -61,11 +61,10 @@ struct SpotContextCard: View, Equatable {
     }
 
     @ViewBuilder
-    private func glyph(of kind: ContextValue.Kind) -> some View {
-        switch kind {
-        case .url: Image(systemName: "arrow.up.right")
-        case .text: Text(verbatim: "T")
-        case .file: Image(systemName: "doc.fill")
+    private func glyph(of badge: ContextValue.Kind.Badge) -> some View {
+        switch badge {
+        case .symbol(let symbol): Image(systemName: symbol)
+        case .letter(let letter): Text(verbatim: letter)
         }
     }
 }

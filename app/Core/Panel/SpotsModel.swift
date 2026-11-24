@@ -69,22 +69,23 @@ public final class SpotsModel {
     @ObservationIgnored var commands = CommandIndex()
     public internal(set) var slash: SlashCommand?
     @ObservationIgnored var content = GridContent.cards
-    public internal(set) var context = ContextChips()
-    @ObservationIgnored var isContextOpen = false
-    public internal(set) var contextSpread = ContextSpread() {
+    public internal(set) var context = ContextStack() {
         didSet {
-            if isContextSpread != contextSpread.isSpread { isContextSpread = contextSpread.isSpread }
-            let isWide = contextSpread.rowCount > ContextSpread.pile
+            if isContextSpread != context.isSpread { isContextSpread = context.isSpread }
+            let isWide = context.rowCount > ContextStack.pile
             if isContextWide != isWide { isContextWide = isWide }
         }
     }
+    @ObservationIgnored var isContextOpen = false
     public private(set) var isContextSpread = false
     public private(set) var isContextWide = false
     public internal(set) var contextPreview: ContextPreview?
     public internal(set) var fieldValueRoom: CGFloat = 0
     public internal(set) var fieldValueLines = 0
     @ObservationIgnored var holdMotion: PanelMotion? = .edit
-    @ObservationIgnored var contextFold = ContextFold()
+    @ObservationIgnored var contextPause: Duration = .seconds(1)
+    @ObservationIgnored var contextWatch: Task<Void, Never>?
+    @ObservationIgnored var isContextMoving = false
     @ObservationIgnored var keyFrames: [String: String] = [:]
     @ObservationIgnored var spotListBuilds = 0
     @ObservationIgnored var visibleUpdates = 0

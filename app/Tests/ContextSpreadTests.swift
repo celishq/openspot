@@ -14,8 +14,8 @@ final class ContextSpreadTests: ContextCase {
         try await wait("two values") { self.model.context.chips.count == 2 && self.model.context.chips.allSatisfy { $0.value != nil } }
     }
 
-    private var spread: ContextSpread {
-        model.contextSpread
+    private var spread: ContextStack {
+        model.context
     }
 
     func testTabSpreadsTheStackIntoARowWithTheSelectedChipMarked() async throws {
@@ -26,7 +26,7 @@ final class ContextSpreadTests: ContextCase {
 
         XCTAssertTrue(spread.isSpread)
         XCTAssertTrue(model.isContextSpread)
-        XCTAssertEqual(spread.selected, model.context.selected)
+        XCTAssertEqual(spread.placedSelection, model.context.selected)
         XCTAssertEqual(spread.places.map(\.chip.source), model.context.chips.map(\.source))
         XCTAssertEqual(spread.places.map(\.slot), [0, 1])
         XCTAssertTrue(model.handleKey(escape))
@@ -80,7 +80,7 @@ final class ContextSpreadTests: ContextCase {
 
     func testTheRowFoldsAfterAPauseWithTheSelectionInFront() async throws {
         try await openWithTwoChips()
-        model.contextFold.pause = .milliseconds(50)
+        model.contextPause = .milliseconds(50)
 
         XCTAssertTrue(model.handleKey(tab))
         XCTAssertTrue(model.handleKey(tab))
@@ -99,8 +99,8 @@ final class ContextSpreadTests: ContextCase {
         XCTAssertTrue(model.handleKey(escape))
 
         XCTAssertFalse(spread.isSpread)
-        XCTAssertNil(spread.selected)
-        XCTAssertNil(model.contextFold.watch)
+        XCTAssertNil(spread.placedSelection)
+        XCTAssertNil(model.contextWatch)
     }
 
     func testAClosedPanelStopsThePauseAndTheNextOpenFoldsTheRow() async throws {
@@ -108,7 +108,7 @@ final class ContextSpreadTests: ContextCase {
         XCTAssertTrue(model.handleKey(tab))
 
         model.panelWillHide()
-        XCTAssertNil(model.contextFold.watch)
+        XCTAssertNil(model.contextWatch)
         model.panelDidHide()
         model.panelWillShow()
 
@@ -117,7 +117,7 @@ final class ContextSpreadTests: ContextCase {
 
     func testAPanelThatHidesAfterEscKeepsItsCardsWhereTheyLie() async throws {
         try await openWithTwoChips()
-        model.contextFold.pause = .milliseconds(50)
+        model.contextPause = .milliseconds(50)
         XCTAssertTrue(model.handleKey(tab))
         XCTAssertTrue(model.handleKey(tab))
         try await wait("the fold") { !self.spread.isSpread }
@@ -141,7 +141,7 @@ final class ContextSpreadTests: ContextCase {
         XCTAssertTrue(model.handleKey(tab))
 
         XCTAssertEqual(spread.rowCount, SpotTokens.contextRow)
-        XCTAssertGreaterThan(spread.rowCount, ContextSpread.pile)
+        XCTAssertGreaterThan(spread.rowCount, ContextStack.pile)
         XCTAssertEqual(spread.places.filter { $0.depth == 0 }.map(\.slot), Array(0..<SpotTokens.contextRow))
         XCTAssertTrue(model.isContextWide)
         XCTAssertTrue(model.handleKey(escape))
@@ -149,14 +149,23 @@ final class ContextSpreadTests: ContextCase {
     }
 
     func testARowNarrowerThanTheChipsShiftsWithTheSelection() {
-        let chips = ["a", "b", "c", "d", "e"].map { ContextChip(source: $0, app: nil, look: .symbol("doc"), state: .ready(ContextValue(text: $0))) }
-        var spread = ContextSpread(row: 3)
+        let sources = ["a", "b", "c", "d", "e"]
+        var stack = ContextStack(row: 3)
+        stack.open(over: nil, loading: sources.map { ($0, .symbol("doc")) })
+        for source in sources { stack.fill(source, with: ContextValue(text: source), look: .symbol("doc")) }
+        let row = { stack.places.filter { $0.depth == 0 }.sorted { $0.slot < $1.slot }.map(\.chip.source) }
 
-        for source in ["a", "b", "c", "d"] { spread = spread.next(over: chips, selected: source, spreads: true) }
+        for _ in 0..<4 {
+            stack.turn(by: 1)
+            stack.place(spreads: true)
+        }
 
-        XCTAssertEqual(spread.places.filter { $0.depth == 0 }.sorted { $0.slot < $1.slot }.map(\.chip.source), ["b", "c", "d"])
-        for source in ["e", "a"] { spread = spread.next(over: chips, selected: source, spreads: true) }
-        XCTAssertEqual(spread.places.filter { $0.depth == 0 }.sorted { $0.slot < $1.slot }.map(\.chip.source), ["a", "b", "c"])
+        XCTAssertEqual(row(), ["b", "c", "d"])
+        for _ in 0..<2 {
+            stack.turn(by: 1)
+            stack.place(spreads: true)
+        }
+        XCTAssertEqual(row(), ["a", "b", "c"])
     }
 
     func testPressesDuringTheMotionFoldIntoOneStepToTheNewestState() async throws {
@@ -167,14 +176,14 @@ final class ContextSpreadTests: ContextCase {
 
         XCTAssertTrue(model.handleKey(tab))
         XCTAssertTrue(model.handleKey(tab))
-        XCTAssertEqual(spread.selected, first)
+        XCTAssertEqual(spread.placedSelection, first)
         XCTAssertEqual(model.context.selected, second)
 
         let ends = host.heldEnds ?? []
         host.heldEnds = []
         ends.forEach { $0() }
 
-        XCTAssertEqual(spread.selected, second)
+        XCTAssertEqual(spread.placedSelection, second)
         XCTAssertTrue(spread.isSpread)
         XCTAssertEqual(host.heldEnds?.count, 1)
         host.heldEnds = nil

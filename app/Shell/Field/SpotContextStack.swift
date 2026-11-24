@@ -6,50 +6,49 @@ struct SpotContextStack: View {
 
     var body: some View {
         let context = model.context
-        let spread = model.contextSpread
-        let count = spread.places.count
+        let count = context.places.count
         ZStack(alignment: .trailing) {
-            ForEach(spread.places, id: \.chip.source) { place in
-                SpotContextCard(chip: place.chip, showsBadge: place.showsKind && (spread.isSpread || place.depth == 0))
+            ForEach(context.places, id: \.chip.source) { place in
+                SpotContextCard(chip: place.chip, showsBadge: place.showsKind && (context.isSpread || place.depth == 0))
                     .equatable()
                     .overlay(alignment: .bottom) {
                         SpotContextDot(isOn: context.isOn && place.chip.source == context.selected)
                     }
-                    .scaleEffect(Self.scale(of: place, in: spread), anchor: .trailing)
-                    .offset(x: Self.x(of: place, in: spread, count: count))
-                    .opacity(Self.opacity(of: place, in: spread))
-                    .zIndex(Self.layer(of: place, in: spread))
+                    .scaleEffect(Self.scale(of: place, in: context), anchor: .trailing)
+                    .offset(x: Self.x(of: place, in: context, count: count))
+                    .opacity(Self.opacity(of: place, in: context))
+                    .zIndex(Self.layer(of: place, in: context))
                     .transition(.opacity)
             }
         }
-        .frame(width: SpotTokens.contextStack(count: ContextSpread.pile), height: SpotTokens.contextCard, alignment: .trailing)
+        .frame(width: SpotTokens.contextStack(count: ContextStack.pile), height: SpotTokens.contextCard, alignment: .trailing)
         .compositingGroup()
         .contentShape(Rectangle())
         .onTapGesture { model.pressContext() }
         .accessibilityElement(children: .ignore)
-        .accessibilityLabel(context.selectedChip?.words.title ?? "Context")
+        .accessibilityLabel(model.contextPreview.map { $0.text.isEmpty ? $0.caption : $0.text } ?? "Context")
         .accessibilityAddTraits(.isButton)
     }
 
-    private static func x(of place: ContextSpread.Place, in spread: ContextSpread, count: Int) -> CGFloat {
-        let shown = min(count, ContextSpread.pile)
-        guard spread.isSpread else { return -CGFloat(shown - 1 - min(place.depth, shown - 1)) * SpotTokens.contextStep }
+    private static func x(of place: ContextStack.Place, in context: ContextStack, count: Int) -> CGFloat {
+        let shown = min(count, ContextStack.pile)
+        guard context.isSpread else { return -CGFloat(shown - 1 - min(place.depth, shown - 1)) * SpotTokens.contextStep }
         let pitch = SpotTokens.contextCard + SpotTokens.contextSpreadGap
         let slot = place.depth == 0 ? place.slot : 0
-        return -CGFloat(spread.rowCount - 1 - slot) * pitch + (place.depth == 0 ? 0 : SpotTokens.contextStep)
+        return -CGFloat(context.rowCount - 1 - slot) * pitch + (place.depth == 0 ? 0 : SpotTokens.contextStep)
     }
 
-    private static func scale(of place: ContextSpread.Place, in spread: ContextSpread) -> CGFloat {
-        1 - CGFloat(min(place.depth, spread.isSpread ? 1 : ContextSpread.pile - 1)) * SpotTokens.contextShrink
+    private static func scale(of place: ContextStack.Place, in context: ContextStack) -> CGFloat {
+        1 - CGFloat(min(place.depth, context.isSpread ? 1 : ContextStack.pile - 1)) * SpotTokens.contextShrink
     }
 
-    private static func opacity(of place: ContextSpread.Place, in spread: ContextSpread) -> Double {
-        guard spread.isSpread else { return place.depth < ContextSpread.pile ? 1 : MotionTokens.hiddenOpacity }
+    private static func opacity(of place: ContextStack.Place, in context: ContextStack) -> Double {
+        guard context.isSpread else { return place.depth < ContextStack.pile ? 1 : MotionTokens.hiddenOpacity }
         return place.depth == 0 ? 1 : place.depth == 1 ? 1 - SpotTheme.contextCardFade : MotionTokens.hiddenOpacity
     }
 
-    private static func layer(of place: ContextSpread.Place, in spread: ContextSpread) -> Double {
-        spread.isSpread ? -Double(place.slot) - Double(place.depth * spread.row) : -Double(place.depth)
+    private static func layer(of place: ContextStack.Place, in context: ContextStack) -> Double {
+        context.isSpread ? -Double(place.slot) - Double(place.depth * context.row) : -Double(place.depth)
     }
 }
 
