@@ -9,7 +9,7 @@ public final class Toasts {
     public static let duration: TimeInterval = 5
 
     public private(set) var shown: [Toast] = []
-    public private(set) var lead: ToastKind?
+    public private(set) var leadKind: ToastKind?
     public private(set) var places: [ToastID: ToastLayout.Place] = [:]
     public private(set) var width: CGFloat?
     @ObservationIgnored public private(set) var height: CGFloat = 0
@@ -17,11 +17,11 @@ public final class Toasts {
     @ObservationIgnored public weak var window: ToastWindow?
     @ObservationIgnored private unowned let host: SpotsHost
     @ObservationIgnored private let clock: RunClock
-    @ObservationIgnored private var count = 0
+    @ObservationIgnored private var lastMade = 0
     @ObservationIgnored private var leaving: Set<ToastID> = []
     @ObservationIgnored private var ends: [ToastID: Task<Void, Never>] = [:]
     @ObservationIgnored private var isHeld = false
-    @ObservationIgnored private var fixHolder: ToastID?
+    @ObservationIgnored private var fixKeyToast: ToastID?
 
     public init(host: SpotsHost, clock: RunClock = RunClock()) {
         self.host = host
@@ -29,7 +29,7 @@ public final class Toasts {
     }
 
     public func add(_ note: ToastNote, spot: String = "", press: (@MainActor @Sendable () -> Void)? = nil, fixKey key: Shortcut? = nil, for duration: TimeInterval? = Toasts.duration) {
-        let id = ToastID(spot: spot, name: note.id.map(ToastID.Name.given) ?? .made(next()))
+        let id = ToastID(spot: spot, name: note.id.map(ToastID.Name.given) ?? .made(nextMade()))
         let existing = stacked.first { $0.id == id }
         if existing == nil, leaving.remove(id) != nil { shown.removeAll { $0.id == id } }
         let fixKey = press == nil ? nil : key
@@ -51,7 +51,7 @@ public final class Toasts {
             window?.nextFrame { [weak self] in
                 guard let self, isStacked(id) else { return }
                 toast.isShown = true
-                takeLead()
+                takeLeadKind()
             }
         }
         ends.removeValue(forKey: id)?.cancel()
@@ -96,9 +96,9 @@ public final class Toasts {
         shown.contains { $0.id == id } && !leaving.contains(id)
     }
 
-    private func next() -> Int {
-        count += 1
-        return count
+    private func nextMade() -> Int {
+        lastMade += 1
+        return lastMade
     }
 
     private func dropped(by toast: Toast) -> [ToastID] {
@@ -112,8 +112,8 @@ public final class Toasts {
         ends.removeValue(forKey: id)?.cancel()
         guard let toast = shown.first(where: { $0.id == id }), leaving.insert(id).inserted else { return }
         if toast.isShown { toast.isShown = false }
-        takeLead()
-        if fixHolder == id { passFixKey() }
+        takeLeadKind()
+        if fixKeyToast == id { passFixKey() }
         after(MotionTokens.fadeOut) { [weak self] in
             guard let self, shown.contains(where: { $0 === toast }) else { return }
             leaving.remove(id)
@@ -154,22 +154,22 @@ public final class Toasts {
     @discardableResult
     private func holdFixKey(_ id: ToastID, key: Shortcut) -> Shortcut? {
         window?.dropFixKey()
-        fixHolder = nil
+        fixKeyToast = nil
         guard window?.holdFixKey(key, press: { [weak self] in self?.press(id) }) == true else { return nil }
-        fixHolder = id
+        fixKeyToast = id
         return key
     }
 
     private func passFixKey() {
         window?.dropFixKey()
-        fixHolder = nil
+        fixKeyToast = nil
         guard let next = stacked.first(where: { $0.fixKey != nil }), let key = next.fixKey else { return }
         holdFixKey(next.id, key: key)
     }
 
-    private func takeLead() {
+    private func takeLeadKind() {
         let next = shown.first { $0.isShown }?.note.kind
-        if next != lead { lead = next }
+        if next != leadKind { leadKind = next }
     }
 
     private func widen() {

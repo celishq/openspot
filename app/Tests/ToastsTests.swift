@@ -162,13 +162,13 @@ final class ToastsTests: XCTestCase {
 
     func testTheLeadFollowsTheNewestShownToast() async throws {
         try await show("saved")
-        XCTAssertEqual(toasts.lead, .confirm)
+        XCTAssertEqual(toasts.leadKind, .confirm)
         try await show("failed", kind: .failure)
-        XCTAssertEqual(toasts.lead, .failure)
+        XCTAssertEqual(toasts.leadKind, .failure)
 
         toasts.press(try XCTUnwrap(toasts.shown.first).id)
 
-        XCTAssertEqual(toasts.lead, .confirm)
+        XCTAssertEqual(toasts.leadKind, .confirm)
     }
 
     func testTheWidthIsTheWidestToast() async throws {

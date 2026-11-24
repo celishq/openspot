@@ -40,7 +40,7 @@ struct OpenspotItemView: View {
     }
 
     private var symbol: String? {
-        model.menuBarSymbol(during: toasts?.lead)
+        model.menuBarSymbol(during: toasts?.leadKind)
     }
 
     @ViewBuilder
