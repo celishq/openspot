@@ -40,10 +40,10 @@ extension SpotTokens {
     public static let attachmentQuietIcon: CGFloat = 20
     public static var attachmentQuietScale: CGFloat { attachmentQuietIcon / attachmentIcon }
     public static var attachmentQuietRadius: CGFloat { attachmentIconRadius * attachmentQuietScale }
-    public static var attachmentQuietX: CGFloat { -((attachmentCard - attachmentQuietIcon) / 2 - attachmentInset * attachmentQuietScale) }
     public static var attachmentEdge: CGFloat { (cell - attachmentCard) / 2 }
     public static let attachmentCardFade = 0.3
     public static var attachmentSpreadGap: CGFloat { attachmentCard * 0.42 }
+    public static var attachmentPitch: CGFloat { attachmentCard + attachmentSpreadGap }
     public static var attachmentBadge: CGFloat { (attachmentCard * attachmentCard / 6).squareRoot() }
     public static var attachmentBadgeGlyph: CGFloat { attachmentBadge * 0.72 }
     public static let attachmentBadgeNudge: CGFloat = 0.5
@@ -89,6 +89,14 @@ extension SpotTokens {
 
     public static func attachmentStack(count: Int) -> CGFloat {
         count == 0 ? 0 : attachmentCard + CGFloat(count - 1) * attachmentStep
+    }
+
+    public static var attachmentRow: CGFloat {
+        attachmentCard + CGFloat(attachmentFit - 1) * attachmentPitch
+    }
+
+    public static var attachmentReach: CGFloat {
+        2 * attachmentFarShadowRadius + attachmentFarShadowDrop
     }
 
     public static let metricBigRingLine: CGFloat = 8
