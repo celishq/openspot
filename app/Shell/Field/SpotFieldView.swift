@@ -53,7 +53,7 @@ struct SpotFieldView: View {
                     .offset(x: fieldTextLeft, y: top)
                     .allowsHitTesting(false)
                 if !isInSheet {
-                    SpotFieldValue(model: model)
+                    SpotAttachmentPreview(model: model)
                         .mask { SpotSurfaceShape(rect: place.offsetBy(dx: -Self.rect.minX, dy: -Self.rect.maxY), radius: fieldRadius) }
                         .offset(x: Self.rect.minX, y: Self.rect.maxY)
                     SpotAttachmentStack(model: model)

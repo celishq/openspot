@@ -10,6 +10,7 @@ public struct AttachmentPreview: Hashable, Sendable {
     public let text: String
     public let caption: String
     public let symbol: String
+    public let lines: Int
 
     public init(_ value: AttachmentValue) {
         symbol = value.kind.captionSymbol
@@ -26,6 +27,7 @@ public struct AttachmentPreview: Hashable, Sendable {
             text = value.title ?? names.joined(separator: ", ")
             caption = names.count == 1 ? folder : "\(names.count) files in \(folder)"
         }
+        lines = SpotTokens.attachmentValueLines(of: text)
     }
 
     public init?(state chip: AttachmentChip) {
@@ -41,5 +43,6 @@ public struct AttachmentPreview: Hashable, Sendable {
         self.text = text
         self.caption = caption
         self.symbol = symbol
+        lines = SpotTokens.attachmentValueLines(of: text)
     }
 }

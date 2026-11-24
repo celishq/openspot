@@ -25,10 +25,10 @@ final class AttachmentSpreadTests: AttachmentCase {
         XCTAssertTrue(model.handleKey(tab))
 
         XCTAssertTrue(spread.isSpread)
-        XCTAssertEqual(model.attachmentShape, .spread)
+        XCTAssertFalse(model.isFieldCovered)
         XCTAssertEqual(spread.selection, model.attachments.selected)
         XCTAssertEqual(spread.places.map(\.chip.source), model.attachments.chips.map(\.source))
-        XCTAssertEqual(spread.places.map(\.slot), [0, 1])
+        XCTAssertLessThan(spread.places[0].x, spread.places[1].x)
         XCTAssertTrue(model.handleKey(escape))
     }
 
@@ -68,7 +68,7 @@ final class AttachmentSpreadTests: AttachmentCase {
 
         XCTAssertEqual(model.attachments.selected, stack.first)
         XCTAssertEqual(spread.places.map(\.chip.source), stack)
-        XCTAssertEqual(spread.places.map(\.slot), [0, 1])
+        XCTAssertLessThan(spread.places[0].x, spread.places[1].x)
     }
 
     func testTabMovesTheRingToTheNextTileOfTheStack() async throws {
@@ -116,7 +116,7 @@ final class AttachmentSpreadTests: AttachmentCase {
 
         XCTAssertEqual(spread.places.first?.chip.source, model.attachments.selected)
         XCTAssertEqual(spread.places.map(\.depth), [0, 1])
-        XCTAssertEqual(model.attachmentShape, .folded)
+        XCTAssertFalse(model.isFieldCovered)
         XCTAssertTrue(model.attachments.isOn)
     }
 
@@ -164,16 +164,16 @@ final class AttachmentSpreadTests: AttachmentCase {
         }
         await open()
         try await wait("six values") { self.chips.count == 6 && self.chips.allSatisfy { $0.value != nil } }
-        XCTAssertNotEqual(model.attachmentShape, .wide)
+        XCTAssertFalse(model.isFieldCovered)
 
         XCTAssertTrue(model.handleKey(tab))
 
         XCTAssertEqual(spread.spreadCount, SpotTokens.attachmentFit)
         XCTAssertGreaterThan(spread.spreadCount, AttachmentStack.pile)
-        XCTAssertEqual(spread.places.filter { $0.depth == 0 }.map(\.slot), Array(0..<SpotTokens.attachmentFit))
-        XCTAssertEqual(model.attachmentShape, .wide)
+        XCTAssertEqual(spread.places.filter { $0.depth == 0 }.count, SpotTokens.attachmentFit)
+        XCTAssertTrue(model.isFieldCovered)
         XCTAssertTrue(model.handleKey(escape))
-        XCTAssertNotEqual(model.attachmentShape, .wide)
+        XCTAssertFalse(model.isFieldCovered)
     }
 
     func testARowNarrowerThanTheChipsShiftsWithTheSelection() {
@@ -181,7 +181,7 @@ final class AttachmentSpreadTests: AttachmentCase {
         var stack = AttachmentStack(fit: 3)
         stack.open(over: nil, unread: sources.map { ($0, .symbol("doc")) })
         for source in sources { stack.fill(source, with: AttachmentValue(text: source), look: .symbol("doc")) }
-        let row = { stack.layout.places.filter { $0.depth == 0 }.sorted { $0.slot < $1.slot }.map(\.chip.source) }
+        let row = { stack.layout.places.filter { $0.depth == 0 }.sorted { $0.x < $1.x }.map(\.chip.source) }
 
         for _ in 0..<4 {
             stack.turn(by: 1)
@@ -201,8 +201,6 @@ final class AttachmentSpreadTests: AttachmentCase {
         stack.open(over: nil, unread: ["a", "b", "c"].map { ($0, .symbol("doc")) })
 
         XCTAssertTrue(stack.layout.isQuiet)
-        XCTAssertTrue(stack.layout.showsHint)
-        XCTAssertEqual(stack.layout.places.map(\.isQuiet), [true, true, true])
         XCTAssertEqual(stack.layout.places.map(\.x), Array(repeating: SpotTokens.attachmentQuietX, count: 3))
         XCTAssertEqual(stack.layout.places.map(\.scale), Array(repeating: SpotTokens.attachmentQuietScale, count: 3))
         XCTAssertEqual(stack.layout.places.map(\.opacity), [1, MotionTokens.hiddenOpacity, MotionTokens.hiddenOpacity])
@@ -211,7 +209,6 @@ final class AttachmentSpreadTests: AttachmentCase {
         stack.place(spreads: true)
 
         XCTAssertFalse(stack.layout.isQuiet)
-        XCTAssertEqual(stack.layout.places.map(\.isQuiet), [false, false, false])
     }
 
     func testTheIconsSitAsFarFromTheFieldsRightEdgeAsFromItsTopAndBottom() {

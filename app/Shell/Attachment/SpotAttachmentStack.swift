@@ -8,7 +8,7 @@ struct SpotAttachmentStack: View {
         let attachments = model.attachments
         ZStack(alignment: .trailing) {
             ForEach(attachments.layout.places, id: \.chip.source) { place in
-                SpotAttachmentCard(chip: place.chip, showsBadge: !place.isQuiet && place.chip.showsKind && (attachments.layout.isSpread || place.depth == 0), isQuiet: place.isQuiet)
+                SpotAttachmentCard(chip: place.chip, showsBadge: !attachments.layout.isQuiet && place.chip.showsKind && (attachments.layout.isSpread || place.depth == 0), isQuiet: attachments.layout.isQuiet)
                     .equatable()
                     .overlay(alignment: .bottom) {
                         SpotAttachmentDot(isOn: attachments.isOn && place.chip.source == attachments.selected)
@@ -26,7 +26,7 @@ struct SpotAttachmentStack: View {
         .contentShape(Rectangle())
         .onTapGesture { model.pressAttachment() }
         .accessibilityElement(children: .ignore)
-        .accessibilityLabel(model.fieldValue.preview.map { $0.text.isEmpty ? $0.caption : $0.text } ?? "Attachments")
+        .accessibilityLabel(model.preview.map { $0.text.isEmpty ? $0.caption : $0.text } ?? "Attachments")
         .accessibilityAddTraits(.isButton)
     }
 }

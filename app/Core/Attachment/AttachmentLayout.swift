@@ -3,47 +3,39 @@ import Foundation
 public struct AttachmentLayout: Equatable, Sendable {
     public struct Place: Equatable, Sendable {
         public let chip: AttachmentChip
-        public let slot: Int
         public let depth: Int
         public let x: CGFloat
         public let scale: CGFloat
         public let opacity: Double
         public let layer: Double
-        public let isQuiet: Bool
 
         init(chip: AttachmentChip, quietDepth depth: Int) {
             self.chip = chip
-            slot = 0
             self.depth = depth
             x = SpotTokens.attachmentQuietX
             scale = SpotTokens.attachmentQuietScale
             opacity = depth == 0 ? 1 : MotionTokens.hiddenOpacity
             layer = -Double(depth)
-            isQuiet = true
         }
 
         init(chip: AttachmentChip, depth: Int, count: Int) {
             let shown = min(count, AttachmentStack.pile)
             self.chip = chip
-            slot = 0
             self.depth = depth
             x = -CGFloat(shown - 1 - min(depth, shown - 1)) * SpotTokens.attachmentStep
             scale = 1 - CGFloat(min(depth, AttachmentStack.pile - 1)) * SpotTokens.attachmentShrink
             opacity = depth < AttachmentStack.pile ? 1 : MotionTokens.hiddenOpacity
             layer = -Double(depth)
-            isQuiet = false
         }
 
         init(chip: AttachmentChip, slot: Int, depth: Int, spreadCount: Int, fit: Int) {
             let pitch = SpotTokens.attachmentCard + SpotTokens.attachmentSpreadGap
             self.chip = chip
-            self.slot = slot
             self.depth = depth
             x = -CGFloat(spreadCount - 1 - (depth == 0 ? slot : 0)) * pitch + (depth == 0 ? 0 : SpotTokens.attachmentStep)
             scale = 1 - CGFloat(min(depth, 1)) * SpotTokens.attachmentShrink
             opacity = depth == 0 ? 1 : depth == 1 ? 1 - SpotTokens.attachmentCardFade : MotionTokens.hiddenOpacity
             layer = -Double(slot) - Double(depth * fit)
-            isQuiet = false
         }
     }
 
@@ -51,6 +43,7 @@ public struct AttachmentLayout: Equatable, Sendable {
     public let isSpread: Bool
     public let selection: String?
     public let spreadCount: Int
+    public let isQuiet: Bool
     private let start: Int
 
     init() {
@@ -58,6 +51,7 @@ public struct AttachmentLayout: Equatable, Sendable {
         isSpread = false
         selection = nil
         spreadCount = 0
+        isQuiet = false
         start = 0
     }
 
@@ -84,14 +78,7 @@ public struct AttachmentLayout: Equatable, Sendable {
         self.isSpread = isSpread
         self.start = start
         self.spreadCount = spreadCount
-    }
-
-    public var isQuiet: Bool {
-        places.first?.isQuiet ?? false
-    }
-
-    public var showsHint: Bool {
-        isQuiet
+        isQuiet = selection == nil && !places.isEmpty
     }
 
     private func start(of index: Int, count: Int, fit: Int) -> Int {

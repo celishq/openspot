@@ -116,7 +116,7 @@ extension SpotsModel {
 
     var attachmentHint: String? {
         guard openSheetID == nil, !isEditing, !attachments.chips.isEmpty else { return nil }
-        guard attachments.isOn else { return attachments.layout.showsHint ? "⇥ Attach" : nil }
+        guard attachments.isOn else { return attachments.layout.isQuiet ? "⇥ Attach" : nil }
         let run = waitingWords.map { "⏎ \($0)" } ?? selectedEntry.map { "⏎ \($0.state.title)" }
         return [run, "⇥ Next", "Esc Leave"].compactMap { $0 }.joined(separator: "   ")
     }
@@ -145,8 +145,8 @@ extension SpotsModel {
     }
 
     func hold(_ preview: AttachmentPreview?, motion: PanelMotion?) {
-        guard preview != fieldValue.preview else { return }
-        change(isShown ? motion : nil) { fieldValue = FieldValue(preview) }
+        guard preview != self.preview else { return }
+        change(isShown ? motion : nil) { self.preview = preview }
     }
 
     static let chipActionLimit = 5

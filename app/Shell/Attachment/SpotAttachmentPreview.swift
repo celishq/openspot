@@ -1,7 +1,7 @@
 import OpenspotCore
 import SwiftUI
 
-struct SpotFieldValue: View {
+struct SpotAttachmentPreview: View {
     let model: SpotsModel
 
     var body: some View {
@@ -10,7 +10,7 @@ struct SpotFieldValue: View {
                 .fill(SpotTheme.attachmentDivider)
                 .frame(height: SpotTokens.dividerHeight)
             ZStack(alignment: .leading) {
-                if let preview = model.fieldValue.preview {
+                if let preview = model.preview {
                     ZStack(alignment: .leading) {
                         words(of: preview)
                             .id(preview)
@@ -40,7 +40,7 @@ struct SpotFieldValue: View {
                 Text(preview.text)
                     .font(SpotType.body)
                     .modifier(SpotInk())
-                    .lineLimit(max(model.fieldValue.lines, 1))
+                    .lineLimit(max(preview.lines, 1))
                     .fixedSize(horizontal: false, vertical: true)
             }
         }

@@ -72,8 +72,8 @@ public final class SpotsModel {
     @ObservationIgnored var content = GridContent.cards
     public internal(set) var attachments = AttachmentStack() {
         didSet {
-            let shape = AttachmentShape(attachments.layout)
-            if attachmentShape != shape { attachmentShape = shape }
+            let covered = attachments.layout.spreadCount > AttachmentStack.pile
+            if isFieldCovered != covered { isFieldCovered = covered }
             let word = attachments.isOn ? SearchPrompt.actions : SearchPrompt.grid
             if promptWord != word { promptWord = word }
             hideAttachments()
@@ -81,11 +81,11 @@ public final class SpotsModel {
     }
     public internal(set) var isAttachmentHidden = false
     @ObservationIgnored var isAttachmentOpen = false
-    public private(set) var attachmentShape = AttachmentShape.folded
+    public private(set) var isFieldCovered = false
     public private(set) var promptWord = SearchPrompt.grid
-    public internal(set) var fieldValue = FieldValue() {
+    public internal(set) var preview: AttachmentPreview? {
         didSet {
-            let room = fieldValue.preview == nil ? 0 : SpotTokens.attachmentValueRoom(lines: fieldValue.lines)
+            let room = preview.map { SpotTokens.attachmentValueRoom(lines: $0.lines) } ?? 0
             if fieldRoom != room { fieldRoom = room }
         }
     }

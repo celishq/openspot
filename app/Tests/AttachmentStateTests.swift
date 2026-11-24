@@ -24,7 +24,7 @@ final class AttachmentStateTests: AttachmentCase {
         XCTAssertTrue(model.handleKey(tab))
 
         XCTAssertEqual(model.attachments.selected, "tab")
-        XCTAssertEqual(model.fieldValue.preview?.text, "A")
+        XCTAssertEqual(model.preview?.text, "A")
         XCTAssertEqual(shown, ["keep"])
         XCTAssertEqual(model.selected, 0)
     }
@@ -88,7 +88,7 @@ final class AttachmentStateTests: AttachmentCase {
 
         model.query = "sav"
 
-        XCTAssertEqual(model.fieldValue.preview?.text, "A")
+        XCTAssertEqual(model.preview?.text, "A")
         XCTAssertEqual(shown, ["save"])
         XCTAssertEqual(model.selected, 0)
     }
@@ -112,7 +112,7 @@ final class AttachmentStateTests: AttachmentCase {
 
         model.moveSelection(dx: 0, dy: -1)
 
-        XCTAssertEqual(model.fieldValue.lines, 1)
+        XCTAssertEqual(model.preview?.lines, 1)
         XCTAssertEqual(model.placements.map(\.rect.minY), [model.fieldRoom])
         XCTAssertLessThan(model.fieldRoom, SpotTokens.cell + SpotTokens.rowGap)
         XCTAssertEqual(model.selected, 0)
@@ -154,12 +154,12 @@ final class AttachmentStateTests: AttachmentCase {
         await open()
         XCTAssertTrue(model.handleKey(tab))
         XCTAssertEqual(shown, [])
-        XCTAssertEqual(model.fieldValue.preview?.caption, "Reading Safari…")
+        XCTAssertEqual(model.preview?.caption, "Reading Safari…")
 
         FileManager.default.createFile(atPath: path("release"), contents: Data())
 
         try await wait("the rows of the value") { self.shown == ["keep"] }
-        XCTAssertEqual(model.fieldValue.preview?.text, "A")
+        XCTAssertEqual(model.preview?.text, "A")
         XCTAssertEqual(model.selected, 0)
     }
 
@@ -241,7 +241,7 @@ final class AttachmentStateTests: AttachmentCase {
 
         XCTAssertFalse(model.attachments.isOn)
         XCTAssertEqual(shown, grid)
-        XCTAssertNil(model.fieldValue.preview)
+        XCTAssertNil(model.preview)
     }
 
     func testTheFieldSearchesActionsWhileAChipIsChosenAndSpotsAfterEscOrAReopen() async throws {
@@ -301,7 +301,7 @@ final class AttachmentStateTests: AttachmentCase {
 
         model.beginEditing()
 
-        XCTAssertNil(model.fieldValue.preview)
+        XCTAssertNil(model.preview)
     }
 
     func testTheActionsMenuHasNoTargetOnAnAttachmentRow() async throws {
