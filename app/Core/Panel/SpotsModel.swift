@@ -129,8 +129,12 @@ public final class SpotsModel {
                 takeMode()
                 refreshHint()
             }
-            let opening = transition.phase == .opening ? transition.id : nil
-            if opening != (oldValue.phase == .opening ? oldValue.id : nil) { runs.opening.moving = opening }
+            let moving = transition.isMoving ? transition.id : nil
+            if moving != (oldValue.isMoving ? oldValue.id : nil) {
+                runs.opening.moving = moving
+            } else if moving != nil, transition.phase != oldValue.phase {
+                runs.opening.restart()
+            }
         }
     }
     @ObservationIgnored public var closingPick: (item: SpotItem, entry: Entry)?

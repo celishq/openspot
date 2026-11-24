@@ -63,6 +63,10 @@ public final class SheetOpening {
         pause = nil
     }
 
+    func restart() {
+        endMotionLater()
+    }
+
     private func endMotionLater() {
         motionSerial += 1
         let serial = motionSerial
