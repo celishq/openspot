@@ -7,6 +7,4 @@ public protocol MacReads: Sendable {
     func run(_ script: String) async -> [String]?
     func accessibility(asks: Bool) -> ReadAccess
     func selectedText() async -> String?
-    func copyCount() -> Int
-    func copiedText() -> String?
 }

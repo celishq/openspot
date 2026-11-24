@@ -7,10 +7,10 @@ struct SpotReads: MacReads {
     private static let queue = DispatchQueue(label: "openspot.reads")
     private static let timeout: Float = 1
 
-    let previous: @MainActor @Sendable () -> NSRunningApplication?
+    let app: @MainActor @Sendable () -> NSRunningApplication?
 
     func front() async -> FrontApp? {
-        await MainActor.run { app().flatMap { app in app.bundleIdentifier.map { FrontApp(bundleID: $0, path: app.bundleURL?.path) } } }
+        await MainActor.run { app().flatMap(FrontApp.init) }
     }
 
     func place(of bundleID: String) -> String? {
@@ -32,20 +32,6 @@ struct SpotReads: MacReads {
     func selectedText() async -> String? {
         guard let pid = await MainActor.run(body: { app()?.processIdentifier }) else { return nil }
         return await Self.off { Self.selectedText(of: pid) }
-    }
-
-    func copyCount() -> Int {
-        NSPasteboard.general.changeCount
-    }
-
-    func copiedText() -> String? {
-        NSPasteboard.general.string(forType: .string)
-    }
-
-    @MainActor
-    private func app() -> NSRunningApplication? {
-        let front = NSWorkspace.shared.frontmostApplication
-        return front == .current ? previous() : front
     }
 
     private static func off<Value: Sendable>(_ work: @escaping @Sendable () -> Value) async -> Value {

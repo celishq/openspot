@@ -10,8 +10,6 @@ final class FakeReads: MacReads, @unchecked Sendable {
     private var trustValue: ReadAccess = .allowed
     private var answersValue: [String: [String]] = [:]
     private var selectedValue: String?
-    private var countValue = 0
-    private var copiedValue: String?
     private var scriptsValue: [String] = []
     private var asksValue: [String] = []
 
@@ -25,13 +23,6 @@ final class FakeReads: MacReads, @unchecked Sendable {
             trustValue = trust
             answersValue = answers
             selectedValue = selected
-        }
-    }
-
-    func copy(_ text: String?, count: Int) {
-        lock.withLock {
-            copiedValue = text
-            countValue = count
         }
     }
 
@@ -66,6 +57,4 @@ final class FakeReads: MacReads, @unchecked Sendable {
     }
 
     func selectedText() async -> String? { lock.withLock { selectedValue } }
-    func copyCount() -> Int { lock.withLock { countValue } }
-    func copiedText() -> String? { lock.withLock { copiedValue } }
 }

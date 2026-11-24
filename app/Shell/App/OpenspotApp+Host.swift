@@ -97,7 +97,12 @@ extension OpenspotApp: SpotsHost {
     }
 
     var frontApp: FrontApp? {
-        previous.app.flatMap { app in app.bundleIdentifier.map { FrontApp(bundleID: $0, path: app.bundleURL?.path, name: app.localizedName) } }
+        frontRunningApp.flatMap(FrontApp.init)
+    }
+
+    var frontRunningApp: NSRunningApplication? {
+        let front = NSWorkspace.shared.frontmostApplication
+        return front == .current ? previous.app : front
     }
 
     func takeFocus() {

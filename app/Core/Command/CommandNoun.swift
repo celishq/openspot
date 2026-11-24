@@ -20,7 +20,7 @@ public struct CommandNoun: Sendable {
     public static let all: [CommandNoun] = [
         GuideCall.noun, HelpCall.noun, SpotCall.noun, ToastCall.noun, AttachmentCall.noun, SelectCall.noun, RouteCall.noun, GridCall.noun, StoreCall.noun, CheckCall.noun, RenderCall.noun,
         PlaygroundCommand.noun, ColorCall.noun, FolderCall.noun, SettingCall.noun, PromptCall.noun, AppCall.noun, ThemeCall.noun, BatchCall.noun,
-        UpdateCall.noun, VersionCall.noun, AccountCall.noun, ClipboardCall.noun, ReadCall.noun, TranslateCall.noun, DateCall.noun, EmojiCall.noun,
+        UpdateCall.noun, VersionCall.noun, AccountCall.noun, ClipboardCall.noun, BrowserCall.noun, FinderCall.noun, AccessCall.noun, TranslateCall.noun, DateCall.noun, EmojiCall.noun,
         SymbolsCall.noun, WindowCall.noun, ScreenCall.noun, CalendarCall.noun, RemindersCall.noun, PowerCall.noun, HelperCall.noun, TimerCall.noun, SchemaCall.noun, RunCall.noun, EmitCall.noun, TypesCall.noun, CacheCall.noun
     ]
 

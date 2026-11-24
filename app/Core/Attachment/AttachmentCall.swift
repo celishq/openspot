@@ -9,7 +9,7 @@ enum AttachmentCall: NounCall {
     static let noun = CommandNoun("attachment", group: .build, verbs: [
         CommandVerb(
             "add", "[input...]",
-            "Puts a value in the panel's field, where people press Tab to hand it to a spot that takes its kind: `file=` once for each file, `url=` or `text=`, with `title=` and the bundle ID of its app in `app=`. With no input it takes the record on stdin that `openspot read` prints, and adds nothing when it holds no value. It works in a show.",
+            "Puts a value in the panel's field, where people press Tab to hand it to a spot that takes its kind: `file=` once for each file, `url=` or `text=`, with `title=` and the bundle ID of its app in `app=`. With no input it takes the record on stdin that `openspot browser tab` prints, and adds nothing when it holds no value. It works in a show.",
             rule: rule
         ) { words in Self.add(words.rest) },
         CommandVerb(

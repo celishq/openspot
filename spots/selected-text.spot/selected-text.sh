@@ -2,5 +2,5 @@
 # Puts the text selected in the app in front in the panel's field, where Tab offers it to each spot that takes text.
 # It reads the selection when the panel opens, and adds nothing when no text is selected.
 case "$1" in
-  show) { openspot read selection && echo "title=Selected text"; } | openspot attachment add ;;
+  show) { openspot window selection && echo "title=Selected text"; } | openspot attachment add ;;
 esac

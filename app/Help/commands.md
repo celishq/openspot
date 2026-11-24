@@ -34,7 +34,7 @@ prints each emoji as an item.
 A read, such as `show`, `search`, `every` or an event's handler, changes nothing and opens nothing, so these commands
 fail in it:
 
-- calls that wait for the person: `color pick` and `folder pick`;
+- calls that wait for the person: `color pick`, `folder pick` and `access ask`;
 - calls that capture the screen: `screen shot`, `screen record start` and `screen record stop`;
 - calls that change the Mac or the person's data: `window move`, `clipboard copy`, `clipboard paste`,
   `power lid-closed`, `calendar add`, `reminders add`, `reminders done`, `spot add`, `spot remove` and `spot delete`;
@@ -103,11 +103,12 @@ work in a read too. `run` works in a read, but the action it runs can't show a v
 | `openspot prompt change <id> [words]...` | Prints a prompt that asks a coding agent to change a spot as the words say, with what the stats counted of it over 14 days, or with no words a goal that follows those counts. |
 | `openspot prompt theme <name> [words]...`          | Prints a prompt that asks a coding agent to change a theme as the words say.                    |
 | `openspot date read <words>...`                    | Prints the date the words name, such as `tomorrow 3pm`, as `item=yyyy-MM-dd HH:mm` in the zone of the Mac, or with no time `item=yyyy-MM-dd`, and `time=true` or `false`. It prints nothing when the words are more than a date. |
-| `openspot read tab` | Prints the `url=`, `title=` and `app=` of the front tab when a browser is in front, or nothing. |
-| `openspot read finder` | Prints a `file=` for each file selected in Finder, and `app=`. |
-| `openspot read selection` | Prints the `text=` selected in the front app, and its `app=`. |
-| `openspot read clipboard` | Prints the `text=` on the clipboard, or `url=` when it holds one link, and `age=`, the seconds since Openspot first saw that copy. |
-| `openspot read --access [app]` | Prints `reader=`, `app=`, `path=` and `access=` for each reader: `allowed`, `denied`, `unasked`, or `unknown` while its app is closed. With an app's bundle id, it prints only that app, and asks the person when they have not chosen yet, outside a read. |
+| `openspot browser tab` | Prints the `url=`, `title=` and `app=` of the front tab when a browser is in front, or nothing. |
+| `openspot finder selection` | Prints a `file=` for each file selected in Finder, and `app=`. |
+| `openspot window selection` | Prints the `text=` selected in the front app, and its `app=`. |
+| `openspot clipboard read [--newer <seconds>]` | Prints the text on the clipboard. With `--newer`, it prints it only when Openspot first saw that copy less than the seconds ago. |
+| `openspot access list` | Prints `app=`, `path=` and `access=` for each app that Openspot reads: `allowed`, `denied`, `unasked`, or `unknown` while the app is closed. The record of the selected text has `app=accessibility`. |
+| `openspot access ask <bundle id or accessibility>` | Asks the person for Openspot's access to the app, or to Accessibility, when they have not chosen yet, and prints its record. |
 | `openspot emoji list [--tone name]`                | Prints each emoji as an item, with its name in the language of the Mac.                         |
 | `openspot symbols list`                            | Prints each symbol of the Character Viewer as an item.                                          |
 | `openspot translate text [--from code] [--to code]` | Translates the text on stdin. `openspot translate languages` prints the languages it knows.     |

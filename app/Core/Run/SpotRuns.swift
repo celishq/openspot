@@ -43,7 +43,7 @@ public final class SpotRuns {
     @ObservationIgnored let clipboardPause: Duration
     @ObservationIgnored var source: (any MacEvents)?
     @ObservationIgnored var clipboardWatch: Task<Void, Never>?
-    @ObservationIgnored var clipboardSeen: Int?
+    @ObservationIgnored var clipboardSeen: (count: Int, at: Date)?
     @ObservationIgnored var loadWatch: Task<Void, Never>?
     @ObservationIgnored let loadPause: Duration
     @ObservationIgnored var loadSeen: (sample: LoadSample, at: Date)?

@@ -33,7 +33,7 @@ final class AttachmentReadTests: AttachmentCase {
         model.runs.api = CommandAPI(mac: Mac(reads: ReadSources(mac: reads)), places: model.files, app: ModelApp(model: model), runs: model.runs)
         reads.set(front: "com.apple.Safari", access: ["com.apple.Safari": .denied])
         try taker(takes: "'url'")
-        try attach(runs: "\(cli) read tab")
+        try attach(runs: "\(cli) browser tab")
     }
 
     private func refuse() async throws {
@@ -298,7 +298,7 @@ final class AttachmentReadTests: AttachmentCase {
 
     func testARefusedReadPipedToAttachmentAddOffersAllow() async throws {
         try refuseSafari()
-        try attach(runs: "\(cli) read tab | \(cli) attachment add")
+        try attach(runs: "\(cli) browser tab | \(cli) attachment add")
         await open()
 
         XCTAssertTrue(model.handleKey(tab))

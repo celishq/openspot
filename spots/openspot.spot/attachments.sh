@@ -13,7 +13,7 @@ pane='x-apple.systempreferences:com.apple.preference.security?Privacy_'
 # Prints the list of sources, then the access of each reader.
 list() {
   spots=$(openspot spot list --core) || exit 1
-  access=$(openspot read --access) || exit 1
+  access=$(openspot access list) || exit 1
   printf 'frame=\nrecents=false\n\nbutton=press\nparent=list\ntitle=Turn on or off\nclose=false\n\n'
   printf 'button=settings\nparent=list\ntitle=Settings\nshortcut=cmd+return\n\nitems=list\n'
   printf '%s\n' "$spots" | awk 'BEGIN { RS = ""; FS = "\n" }
@@ -32,9 +32,9 @@ list() {
   printf '%s\n' "$access" | awk 'BEGIN { RS = ""; FS = "\n" }
     { delete f
       for (i = 1; i <= NF; i++) { n = index($i, "="); f[substr($i, 1, n - 1)] = substr($i, n + 1) }
-      if (f["reader"] == "selection") { title = "Selected text"; icon = "character.cursor.ibeam" }
+      if (f["app"] == "accessibility") { title = "Selected text"; icon = "character.cursor.ibeam" }
       else { title = f["path"]; sub(/.*\//, "", title); sub(/\.app$/, "", title); icon = f["path"] }
-      printf "\nitem=access-%s\nparent=access\ntitle=%s\nicon=%s\nreader=%s\napp=%s\naccess=%s\nhides=settings\n", (f["app"] != "" ? f["app"] : f["reader"]), title, icon, f["reader"], f["app"], f["access"]
+      printf "\nitem=access-%s\nparent=access\ntitle=%s\nicon=%s\napp=%s\naccess=%s\nhides=settings\n", f["app"], title, icon, f["app"], f["access"]
       if (f["access"] == "allowed") printf "detail=Allowed\nopen.title=Open System Settings\n"
       else if (f["access"] == "denied") printf "detail=Not allowed\nopen.title=Open System Settings\n"
       else if (f["access"] == "unasked") printf "detail=Not asked\nopen.title=Ask for access\n"
@@ -45,12 +45,10 @@ list() {
 ask() {
   app=$(value item.app)
   case "$(value item.access)" in
-    unasked)
-      if [ -z "$app" ]; then openspot read selection >/dev/null 2>&1; else openspot read --access "$app" >/dev/null; fi
-      ;;
+    unasked) openspot access ask "$app" >/dev/null ;;
     unknown) open -b "$app" ;;
     *)
-      if [ -z "$app" ]; then open "${pane}Accessibility"; else open "${pane}Automation"; fi
+      if [ "$app" = accessibility ]; then open "${pane}Accessibility"; else open "${pane}Automation"; fi
       ;;
   esac
 }

@@ -2,29 +2,17 @@ import XCTest
 @testable import OpenspotCore
 
 @MainActor
-final class ReadCallTests: XCTestCase {
-    private final class Time: @unchecked Sendable {
-        private let lock = NSLock()
-        private var value = Date(timeIntervalSince1970: 1000)
-
-        var now: Date { lock.withLock { value } }
-
-        func pass(_ seconds: TimeInterval) {
-            lock.withLock { value += seconds }
-        }
-    }
-
+final class ReadUseCallTests: XCTestCase {
     private var folder: URL!
     private var runs: SpotRuns!
     private var api: CommandAPI!
     private let reads = FakeReads()
-    private let time = Time()
 
     override func setUp() async throws {
         folder = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString, isDirectory: true)
         try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
         runs = SpotRuns()
-        api = CommandAPI(mac: Mac(reads: ReadSources(mac: reads, now: { [time] in time.now })), places: .test(["OPENSPOT_CONFIG": folder.path]), runs: runs)
+        api = CommandAPI(mac: Mac(reads: ReadSources(mac: reads)), places: .test(["OPENSPOT_CONFIG": folder.path]), runs: runs)
     }
 
     override func tearDown() async throws {
@@ -36,7 +24,7 @@ final class ReadCallTests: XCTestCase {
     }
 
     private func call(_ arguments: [String], from spot: Spot? = nil, reason: String? = nil) async throws -> CommandAnswer {
-        let request = CommandRequest(arguments: ["read"] + arguments, folder: folder.path, caller: spot.map { runs.callers.issue(for: $0, reason: reason) })
+        let request = CommandRequest(arguments: arguments, folder: folder.path, caller: spot.map { runs.callers.issue(for: $0, reason: reason) })
         let parsed = api.admit(try XCTUnwrap(api.call(of: request)), request: request)
         let work = try XCTUnwrap(api.work(for: parsed, request: request, input: { "" }))
         return await work()
@@ -44,9 +32,9 @@ final class ReadCallTests: XCTestCase {
 
     func testTabPrintsTheFrontTabOfABrowserInTheWordsOfThatBrowser() async throws {
         reads.set(front: "com.apple.Safari", answers: ["com.apple.Safari": ["https://a.com/", "A page"], "com.google.Chrome": ["https://b.com/", "B page"]])
-        let safari = try await call(["tab"])
+        let safari = try await call(["browser", "tab"])
         reads.set(front: "com.google.Chrome", answers: ["com.apple.Safari": ["https://a.com/", "A page"], "com.google.Chrome": ["https://b.com/", "B page"]])
-        let chrome = try await call(["tab"])
+        let chrome = try await call(["browser", "tab"])
 
         XCTAssertEqual(safari.output, "url=https://a.com/\ntitle=A page\napp=com.apple.Safari\n")
         XCTAssertEqual(chrome.output, "url=https://b.com/\ntitle=B page\napp=com.google.Chrome\n")
@@ -58,7 +46,7 @@ final class ReadCallTests: XCTestCase {
     func testTabPrintsNothingWhenNoBrowserIsInFront() async throws {
         reads.set(front: "com.apple.TextEdit")
 
-        let answer = try await call(["tab"])
+        let answer = try await call(["browser", "tab"])
 
         XCTAssertEqual([answer.output, answer.errors], ["", ""])
         XCTAssertEqual(answer.code, 0)
@@ -68,7 +56,7 @@ final class ReadCallTests: XCTestCase {
     func testFinderPrintsALineForEachSelectedFile() async throws {
         reads.set(answers: ["com.apple.finder": ["/Users/a/one.txt", "/Users/a/Two Words"]])
 
-        let answer = try await call(["finder"])
+        let answer = try await call(["finder", "selection"])
 
         XCTAssertEqual(answer.output, "file=/Users/a/one.txt\nfile=/Users/a/Two Words\napp=com.apple.finder\n")
     }
@@ -76,40 +64,25 @@ final class ReadCallTests: XCTestCase {
     func testSelectionPrintsTheTextSelectedInTheFrontApp() async throws {
         reads.set(front: "com.apple.Notes", selected: "two\nlines")
 
-        let answer = try await call(["selection"])
+        let answer = try await call(["window", "selection"])
 
         XCTAssertEqual(answer.output, "text=two\\nlines\napp=com.apple.Notes\n")
     }
 
-    func testClipboardPrintsALinkOrTextWithTheSecondsSinceOpenspotFirstSawTheCopy() async throws {
-        reads.copy("https://a.com/x\n", count: 5)
-        let first = try await call(["clipboard"])
-        time.pass(30)
-        let later = try await call(["clipboard"])
-        reads.copy("see https://a.com/x", count: 6)
-        let text = try await call(["clipboard"])
-        reads.copy(String(repeating: "é", count: 60_000), count: 7)
-        let long = try await call(["clipboard"])
-
-        XCTAssertEqual([first.output, later.output, text.output], ["url=https://a.com/x\nage=0\n", "url=https://a.com/x\nage=30\n", "text=see https://a.com/x\nage=0\n"])
-        XCTAssertEqual(TextBlock.blocks(in: long.output).first?.value("text")?.utf8.count, 100_000)
-    }
-
     func testNothingToReadPrintsNothingAndEndsWell() async throws {
         reads.set(front: "com.apple.Safari", answers: ["com.apple.finder": []], selected: "  \n")
-        reads.copy(nil, count: 1)
 
-        for source in ["tab", "finder", "selection", "clipboard"] {
-            let answer = try await call([source])
-            XCTAssertEqual([answer.output, answer.errors], ["", ""], source)
-            XCTAssertEqual(answer.code, 0, source)
+        for source in [["browser", "tab"], ["finder", "selection"], ["window", "selection"]] {
+            let answer = try await call(source)
+            XCTAssertEqual([answer.output, answer.errors], ["", ""], source.joined(separator: " "))
+            XCTAssertEqual(answer.code, 0, source.joined(separator: " "))
         }
     }
 
     func testAReadThatIsNotAllowedFailsWithALineThatSaysWhereToAllowIt() async throws {
         reads.set(front: "com.apple.Safari", access: ["com.apple.Safari": .denied, "com.apple.finder": .denied], grant: .unasked, trust: .unasked)
 
-        let answers = [try await call(["tab"]), try await call(["finder"]), try await call(["selection"])]
+        let answers = [try await call(["browser", "tab"]), try await call(["finder", "selection"]), try await call(["window", "selection"])]
 
         XCTAssertEqual(answers.map(\.code), [1, 1, 1])
         XCTAssertEqual(answers.map(\.errors), [
@@ -123,10 +96,10 @@ final class ReadCallTests: XCTestCase {
     func testAReadOfAShowNeverAsksAndAPersonsRunOrTheTerminalMayAsk() async throws {
         reads.set(front: "com.apple.Safari", access: ["com.apple.Safari": .unasked], trust: .unasked, answers: ["com.apple.Safari": ["https://a.com/", "A"]], selected: "word")
 
-        let show = try await call(["tab"], from: spot(), reason: "panel.open")
-        let shownSelection = try await call(["selection"], from: spot(), reason: "panel.open")
-        let press = try await call(["tab"], from: spot())
-        let terminal = try await call(["selection"])
+        let show = try await call(["browser", "tab"], from: spot(), reason: "panel.open")
+        let shownSelection = try await call(["window", "selection"], from: spot(), reason: "panel.open")
+        let press = try await call(["browser", "tab"], from: spot())
+        let terminal = try await call(["window", "selection"])
 
         XCTAssertEqual([show.code, shownSelection.code], [1, 1])
         XCTAssertEqual(show.errors, "Openspot can't read Safari. Allow it in the Attachments spot.\n")
@@ -136,57 +109,59 @@ final class ReadCallTests: XCTestCase {
 
     func testInCarefulModeASpotWithoutReadInItsUsesIsRefused() async throws {
         runs.isCareful = true
-        reads.copy("words", count: 1)
+        reads.set(front: "com.apple.Notes", selected: "words")
 
-        let refused = try await call(["clipboard"], from: spot(uses: [.clipboard]))
-        let allowed = try await call(["clipboard"], from: spot())
+        let refused = try await call(["window", "selection"], from: spot(uses: [.screen]))
+        let allowed = try await call(["window", "selection"], from: spot())
 
         XCTAssertEqual(refused.code, 1)
         XCTAssertEqual(refused.errors, "Careful mode stopped Reader, because it read what the person works on without `read` in the `uses` of its spot.toml. Add it, or turn Careful mode off.\n")
-        XCTAssertEqual(allowed.output, "text=words\nage=0\n")
+        XCTAssertEqual(allowed.output, "text=words\napp=com.apple.Notes\n")
     }
 
     func testAccessPrintsARecordForEachReaderAndNeverAsks() async throws {
         reads.set(installed: ["com.apple.Safari", "com.google.Chrome"], access: ["com.apple.Safari": .allowed, "com.google.Chrome": .unknown, "com.apple.finder": .unasked], trust: .unasked)
 
-        let answer = try await call(["--access"])
+        let answer = try await call(["access", "list"])
 
         XCTAssertEqual(answer.output, """
-        reader=tab
         app=com.apple.Safari
         path=/Applications/Safari.app
         access=allowed
 
-        reader=tab
         app=com.google.Chrome
         path=/Applications/Chrome.app
         access=unknown
 
-        reader=finder
         app=com.apple.finder
         path=/Applications/Finder.app
         access=unasked
 
-        reader=selection
+        app=accessibility
         access=unasked
 
         """)
         XCTAssertFalse(reads.asks.contains { $0.hasSuffix("true") }, reads.asks.joined(separator: ", "))
     }
 
-    func testAccessOfOneAppAsksForItInAPersonsRunAndNeverInAShow() async throws {
-        reads.set(installed: ["com.apple.Safari", "com.google.Chrome"], access: ["com.google.Chrome": .unasked])
+    func testAskAsksForOneAppOrAccessibilityInAPersonsRunAndFailsInAShow() async throws {
+        reads.set(installed: ["com.apple.Safari", "com.google.Chrome"], access: ["com.google.Chrome": .unasked], trust: .unasked)
 
-        let shown = try await call(["--access", "com.google.Chrome"], from: spot(), reason: "sheet.open")
-        let press = try await call(["--access", "com.google.Chrome"], from: spot())
+        let shown = try await call(["access", "ask", "com.google.Chrome"], from: spot(), reason: "sheet.open")
+        let press = try await call(["access", "ask", "com.google.Chrome"], from: spot())
+        let trust = try await call(["access", "ask", "accessibility"], from: spot())
 
-        XCTAssertEqual(shown.output, "reader=tab\napp=com.google.Chrome\npath=/Applications/Chrome.app\naccess=unasked\n")
-        XCTAssertEqual(press.output, "reader=tab\napp=com.google.Chrome\npath=/Applications/Chrome.app\naccess=allowed\n")
-        XCTAssertEqual(reads.asks, ["com.google.Chrome false", "com.google.Chrome true"])
+        XCTAssertEqual(shown.code, 1)
+        XCTAssertEqual(press.output, "app=com.google.Chrome\npath=/Applications/Chrome.app\naccess=allowed\n")
+        XCTAssertEqual(trust.output, "app=accessibility\naccess=allowed\n")
+        XCTAssertEqual(reads.asks, ["com.google.Chrome true", "accessibility true"])
     }
 
-    func testReadNeedsTheAppAndNamesItsUse() {
-        XCTAssertEqual(SpotUseCall(arguments: ["read", "tab"], of: "reader")?.use, .read)
-        XCTAssertTrue(CommandKind.needsApp(["read", "clipboard"]))
+    func testEachReadNeedsTheAppAndNamesItsUse() {
+        for words in [["browser", "tab"], ["finder", "selection"], ["window", "selection"], ["access", "list"], ["access", "ask", "accessibility"]] {
+            XCTAssertEqual(SpotUseCall(arguments: words, of: "reader")?.use, .read, words.joined(separator: " "))
+            XCTAssertTrue(CommandKind.needsApp(words), words.joined(separator: " "))
+        }
+        XCTAssertTrue(CommandLineCall(arguments: ["read", "tab"])?.value is CallFault)
     }
 }

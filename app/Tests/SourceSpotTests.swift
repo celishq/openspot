@@ -5,6 +5,7 @@ import XCTest
 final class SourceSpotTests: AttachmentCase {
     private let tab = ActionKey(name: "tab")
     private let reads = FakeReads()
+    private let board = FakeClipboard()
 
     override func setUp() async throws {
         try await super.setUp()
@@ -13,7 +14,8 @@ final class SourceSpotTests: AttachmentCase {
         model.quit()
         model = SpotsModel(host: host, files: model.files, runs: SpotRuns(environment: environment, stopPause: stopPause))
         host.model = model
-        model.runs.api = CommandAPI(mac: Mac(reads: ReadSources(mac: reads)), places: model.files, app: ModelApp(model: model), runs: model.runs)
+        model.runs.api = CommandAPI(mac: Mac(clipboard: board, reads: ReadSources(mac: reads)), places: model.files, app: ModelApp(model: model), runs: model.runs)
+        model.runs.listen(to: board)
         try taker(takes: "'url', 'text', '*'")
     }
 
@@ -97,13 +99,34 @@ final class SourceSpotTests: AttachmentCase {
         XCTAssertEqual(host.notes, [])
     }
 
-    func testFreshCopyAddsACopyOfTheLastTwoMinutes() async throws {
+    func testFreshCopyAddsACopiedLinkAsALink() async throws {
         try copy("fresh-copy")
-        reads.copy("https://a.com/x", count: 1)
+        board.copy("https://a.com/x\n")
 
         await open()
 
         try await wait("the copy") { self.state(of: "fresh-copy") != nil }
         XCTAssertEqual(state(of: "fresh-copy"), .ready(AttachmentValue(url: "https://a.com/x")))
+    }
+
+    func testFreshCopyAddsOtherWordsAsCopiedText() async throws {
+        try copy("fresh-copy")
+        board.copy("see https://a.com/x")
+
+        await open()
+
+        try await wait("the copy") { self.state(of: "fresh-copy") != nil }
+        XCTAssertEqual(state(of: "fresh-copy"), .ready(AttachmentValue(text: "see https://a.com/x", title: "Copied text")))
+    }
+
+    func testFreshCopyAddsNothingWhenTheClipboardHoldsNoText() async throws {
+        try copy("fresh-copy")
+        try witness()
+        board.copy("  \n")
+
+        await open()
+        try await wait("the end of the read") { self.model.sheets["fresh-copy"]?.isShowing == false && self.log("witness-log").count == 1 }
+
+        XCTAssertEqual(chips, [])
     }
 }

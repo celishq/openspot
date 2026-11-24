@@ -95,11 +95,10 @@ extension SpotRuns {
         guard let source, isWanted, !hasQuit else {
             clipboardWatch?.cancel()
             clipboardWatch = nil
-            clipboardSeen = nil
             return
         }
         guard clipboardWatch == nil else { return }
-        if clipboardSeen == nil { clipboardSeen = source.clipboardCount }
+        if !looksNow || clipboardSeen == nil { _ = copyAge() }
         clipboardWatch = Task { [weak self, weak source, sleep = clock.sleep] in
             var looks = looksNow
             while !Task.isCancelled {
@@ -110,11 +109,19 @@ extension SpotRuns {
                 looks = false
                 guard !Task.isCancelled, let self, let source else { return }
                 let next = source.clipboardCount
-                guard next != clipboardSeen else { continue }
-                clipboardSeen = next
+                guard next != clipboardSeen?.count else { continue }
+                clipboardSeen = (next, now())
                 raise(.named(EventName.clipboard, value: nil))
             }
         }
+    }
+
+    func copyAge() -> TimeInterval? {
+        guard let source else { return nil }
+        let count = source.clipboardCount
+        let time = now()
+        if clipboardSeen?.count != count { clipboardSeen = (count, time) }
+        return clipboardSeen.map { time.timeIntervalSince($0.at) }
     }
 
     func want(_ id: String) {

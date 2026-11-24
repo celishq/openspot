@@ -80,12 +80,12 @@ esac
 
 - `openspot attachment add` takes `file=` once for each file, `url=` or `text=`, with `title=`, the words of the preview,
   and `app=`, the bundle ID of the app whose icon the chip shows. With none of these, it takes them on stdin, as
-  `openspot read` prints them, and adds nothing when stdin holds no value.
-- `openspot read tab`, `finder`, `selection` and `clipboard` read what people work on inside Openspot. A source needs
+  `openspot browser tab` prints them, and adds nothing when stdin holds no value.
+- `openspot browser tab`, `openspot finder selection` and `openspot window selection` read what people work on inside Openspot. A source needs
   `read` in its `uses`, and `openspot attachment add` takes what it prints:
 
   ```text
-  attach) openspot read tab | openspot attachment add ;;
+  attach) openspot browser tab | openspot attachment add ;;
   ```
 
 - While `attach` runs, the field says `Reading <app>…`. When it adds nothing, the field says `Nothing to attach from
