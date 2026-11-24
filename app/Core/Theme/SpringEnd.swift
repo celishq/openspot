@@ -35,7 +35,8 @@ public struct SpringEnd: Hashable, Sendable {
         return (offset, abs(decay * pace * pace / swing * sin(swing * time)))
     }
 
-    public var end: Double {
+    public func end() -> Double? {
+        guard damping > 0 else { return nil }
         let step = duration / 1000
         var time = 0.0
         while true {

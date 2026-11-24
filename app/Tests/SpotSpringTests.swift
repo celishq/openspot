@@ -17,8 +17,8 @@ final class SpotSpringTests: XCTestCase {
         XCTAssertLessThan(travel - plain.values[end], MotionTokens.visibleTravel)
         XCTAssertGreaterThanOrEqual(travel - plain.values[end - 2], MotionTokens.visibleTravel)
         XCTAssertTrue(ended.values[end...].allSatisfy { $0 == travel })
-        XCTAssertGreaterThanOrEqual(Double(end) * frame, SpringEnd(duration: MotionTokens.grow, bounce: 0).end)
-        XCTAssertLessThan(Double(end) * frame, SpringEnd(duration: MotionTokens.grow, bounce: 0).end + 6 * frame)
+        XCTAssertGreaterThanOrEqual(Double(end) * frame, SpringEnd(duration: MotionTokens.grow, bounce: 0).end() ?? 0)
+        XCTAssertLessThan(Double(end) * frame, (SpringEnd(duration: MotionTokens.grow, bounce: 0).end() ?? 0) + 6 * frame)
         XCTAssertLessThan(Double(end) * frame, Double(plain.removed[0]) * frame * 0.75)
     }
 

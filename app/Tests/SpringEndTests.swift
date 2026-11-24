@@ -23,8 +23,8 @@ final class SpringEndTests: XCTestCase {
         for (duration, bounce) in [(MotionTokens.grow, 0.0), (MotionTokens.move, 0.0), (MotionTokens.press, MotionTokens.pressBounce), (MotionTokens.pop, MotionTokens.popBounce)] {
             let end = SpringEnd(duration: duration, bounce: bounce)
             let travel = MotionTokens.longestTravel
-            let rest = end.path(at: end.end)
-            let before = end.path(at: end.end - duration / 100)
+            let rest = end.path(at: end.end() ?? 0)
+            let before = end.path(at: (end.end() ?? 0) - duration / 100)
 
             XCTAssertLessThan(abs(rest.offset) * travel, MotionTokens.visibleTravel)
             XCTAssertLessThan(end.reach(offset: abs(rest.offset), speed: rest.speed) * travel, MotionTokens.visibleTravel)
@@ -34,7 +34,7 @@ final class SpringEndTests: XCTestCase {
 
     func testAUnitValueEndsAtTheSameTimeWithTheMatchingFraction() {
         let end = SpringEnd(duration: MotionTokens.grow, bounce: 0)
-        let rest = end.path(at: end.end)
+        let rest = end.path(at: end.end() ?? 0)
 
         XCTAssertLessThan(abs(rest.offset), MotionTokens.restFraction)
         XCTAssertTrue(end.isDone(offset: abs(rest.offset), speed: rest.speed, travel: 1))
@@ -42,23 +42,41 @@ final class SpringEndTests: XCTestCase {
     }
 
     func testTheEndFollowsTheDurationOfATheme() throws {
-        let plain = SpringEnd(duration: MotionTokens.grow, bounce: 0).end
+        let plain = SpringEnd(duration: MotionTokens.grow, bounce: 0).end() ?? 0
         let folder = try temporaryFolder()
         let copy = folder.appendingPathComponent("themes/openspot.theme/theme.toml")
         try FileManager.default.createDirectory(at: copy.deletingLastPathComponent(), withIntermediateDirectories: true)
         try "[advanced]\ngrow = \(SpotTokens.layout.motion.grow * 2)\n".write(to: copy, atomically: true, encoding: .utf8)
         SpotTokens.take(ThemeFolder.read(builtIn: builtInURL, copy: copy).layout)
 
-        XCTAssertEqual(SpringEnd(duration: MotionTokens.grow, bounce: 0).end, plain * 2, accuracy: plain / 100)
+        XCTAssertEqual(SpringEnd(duration: MotionTokens.grow, bounce: 0).end() ?? 0, plain * 2, accuracy: plain / 100)
     }
 
     @MainActor
     func testSlowMotionMakesTheEndTenTimesLater() {
-        let plain = SpringEnd(duration: MotionTokens.grow, bounce: 0).end
+        let plain = SpringEnd(duration: MotionTokens.grow, bounce: 0).end() ?? 0
         MotionTokens.toggleSlowMotion()
         defer { MotionTokens.toggleSlowMotion() }
 
-        XCTAssertEqual(SpringEnd(duration: MotionTokens.grow, bounce: 0).end, plain * MotionTokens.slowMotion, accuracy: plain / 100)
+        XCTAssertEqual(SpringEnd(duration: MotionTokens.grow, bounce: 0).end() ?? 0, plain * MotionTokens.slowMotion, accuracy: plain / 100)
+    }
+
+    func testASpringThatDoesNotSettleHasNoEnd() {
+        let answered = expectation(description: "each end answered")
+        answered.expectedFulfillmentCount = 3
+        nonisolated(unsafe) var ends: [Double?] = []
+        let lock = NSLock()
+        for bounce in [1.0, 1.5, 4.0] {
+            DispatchQueue.global().async {
+                let end = SpringEnd(duration: MotionTokens.grow, bounce: bounce).end()
+                lock.withLock { ends.append(end) }
+                answered.fulfill()
+            }
+        }
+
+        wait(for: [answered], timeout: 5)
+        XCTAssertEqual(lock.withLock { ends.compactMap { $0 } }, [])
+        XCTAssertNotNil(SpringEnd(duration: MotionTokens.grow, bounce: 0.99).end())
     }
 
     func testARetargetWithSpeedEndsLaterThanAStartFromRest() {
