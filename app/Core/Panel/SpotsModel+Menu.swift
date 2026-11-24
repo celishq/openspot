@@ -6,7 +6,9 @@ extension SpotsModel {
     }
 
     public func releaseMenu(at point: CGPoint) {
-        if let row = menuRow(at: point) { pressMenu(row: row) }
+        asOnePress {
+            if let row = menuRow(at: point) { pressMenu(row: row) }
+        }
     }
 
     private func menuRow(at point: CGPoint) -> Int? {
@@ -42,8 +44,10 @@ extension SpotsModel {
     }
 
     public func pressSubmenu(row: Int) {
-        menu?.pointSubmenu(at: row)
-        pressMenu()
+        asOnePress {
+            menu?.pointSubmenu(at: row)
+            pressMenu()
+        }
     }
 
     public var menuTarget: Target? {
@@ -74,10 +78,12 @@ extension SpotsModel {
     }
 
     public func openMenu(at point: CGPoint) {
-        let origin = gridOrigin
-        guard openSheetID == nil, !isEditing, let id = card(at: CGPoint(x: point.x - origin.x, y: point.y - origin.y)), let index = visible.firstIndex(where: { $0.id == id }) else { return }
-        selected = index
-        if let target { openMenu(on: target) }
+        asOnePress {
+            let origin = gridOrigin
+            guard openSheetID == nil, !isEditing, let id = card(at: CGPoint(x: point.x - origin.x, y: point.y - origin.y)), let index = visible.firstIndex(where: { $0.id == id }) else { return }
+            selected = index
+            if let target { openMenu(on: target) }
+        }
     }
 
     func openMenu(on target: Target) {
@@ -180,25 +186,29 @@ extension SpotsModel {
     }
 
     public func closeMenu(keepsFoot: Bool = false) {
-        guard menu != nil else { return }
-        if menuSession?.submenuRow != nil {
-            menuSession?.submenuRow = nil
-            host.hideSubmenu()
+        asOnePress {
+            guard menu != nil else { return }
+            if menuSession?.submenuRow != nil {
+                menuSession?.submenuRow = nil
+                host.hideSubmenu()
+            }
+            change(.sheet(isOpen: false), {
+                menuSession?.phase = .closing
+                if !keepsFoot, menuContentHeight != 0 { menuContentHeight = 0 }
+            }, completion: { [weak self] in
+                if self?.menuSession?.phase == .closing { self?.menuSession = nil }
+            })
         }
-        change(.sheet(isOpen: false), {
-            menuSession?.phase = .closing
-            if !keepsFoot, menuContentHeight != 0 { menuContentHeight = 0 }
-        }, completion: { [weak self] in
-            if self?.menuSession?.phase == .closing { self?.menuSession = nil }
-        })
     }
 
     public func pressMenu(row: Int) {
-        guard let menu, menu.shown.indices.contains(row) else { return }
-        guard menu.shown[row].children.isEmpty else { return point(at: .menuRow(row)) }
-        _ = self.menu?.back()
-        self.menu?.move(by: row - menu.selected)
-        pressMenu()
+        asOnePress {
+            guard let menu, menu.shown.indices.contains(row) else { return }
+            guard menu.shown[row].children.isEmpty else { return point(at: .menuRow(row)) }
+            _ = self.menu?.back()
+            self.menu?.move(by: row - menu.selected)
+            pressMenu()
+        }
     }
 
     func pressMenu() {

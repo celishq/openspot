@@ -103,7 +103,6 @@ public final class SpotsModel {
         didSet {
             if confirming != nil, selected != oldValue { confirming = nil }
             takeShade()
-            refreshHint()
         }
     }
     public internal(set) var confirming: GlobalKey?
@@ -127,7 +126,6 @@ public final class SpotsModel {
                 openSheetID = shown
                 recordAskedField()
                 takeMode()
-                refreshHint()
             }
             let moving = transition.isMoving ? transition.id : nil
             if moving != (oldValue.isMoving ? oldValue.id : nil) {
@@ -165,7 +163,6 @@ public final class SpotsModel {
         didSet {
             keys.clear()
             takeMode()
-            refreshHint()
         }
     }
     public let keys = KeyRecording()
@@ -202,7 +199,6 @@ public final class SpotsModel {
             if isOpen != isMenuOpen {
                 isMenuOpen = isOpen
                 takeMode()
-                refreshHint()
             }
             let isGrown = menuSession?.isGrown == true
             if isGrown != isMenuGrown { isMenuGrown = isGrown }
@@ -228,6 +224,8 @@ public final class SpotsModel {
     @ObservationIgnored var hintIsForEdit = false
     @ObservationIgnored var followsHint = false
     @ObservationIgnored var hintTakes = 0
+    @ObservationIgnored var hintIsStale = false
+    @ObservationIgnored var pressDepth = 0
     public var form: FormSession? {
         didSet {
             let rect = form.map { SpotTokens.formRect($0.draft.form) }
@@ -248,10 +246,7 @@ public final class SpotsModel {
     @ObservationIgnored var pendingAsk: UUID?
     @ObservationIgnored var askedWindows: Set<String> = []
     public var isEditing = false {
-        didSet {
-            takeMode()
-            refreshHint()
-        }
+        didSet { takeMode() }
     }
     public var tip: SpotTip?
     public internal(set) var pointedCard: String?
@@ -507,25 +502,29 @@ public final class SpotsModel {
     }
 
     public func panelWillShow() {
-        isPanelHidden = false
-        finishPick()
-        selected = 0
-        runs.panelOpened(showsToEnd: isWarming)
-        askAnswers()
-        host.nextFrame { [weak self] in
-            self?.isShown = true
-            self?.recordAskedField()
+        asOnePress {
+            isPanelHidden = false
+            finishPick()
+            selected = 0
+            runs.panelOpened(showsToEnd: isWarming)
+            askAnswers()
+            host.nextFrame { [weak self] in
+                self?.isShown = true
+                self?.recordAskedField()
+            }
         }
     }
 
     public func panelWillHide() {
-        pendingAsk = nil
-        if confirming != nil { confirming = nil }
-        stopRecording()
-        closeMenu()
-        endEditing(moving: false)
-        isShown = false
-        takeEntryKey()
+        asOnePress {
+            pendingAsk = nil
+            if confirming != nil { confirming = nil }
+            stopRecording()
+            closeMenu()
+            endEditing(moving: false)
+            isShown = false
+            takeEntryKey()
+        }
     }
 
     public func waitForShows() async {

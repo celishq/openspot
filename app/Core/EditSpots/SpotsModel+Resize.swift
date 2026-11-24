@@ -31,14 +31,16 @@ extension SpotsModel {
     }
 
     public func dropResize() {
-        guard let resize else { return }
-        pointerMove = nil
-        guard resize.size != resize.start else { return cancelResize() }
-        let order = visible.map(\.id)
-        saveArrangement({
-            $0.arrange(order)
-            $0.set(size: resize.size, of: resize.id)
-        }, selecting: resize.id) { self.resize = nil }
+        asOnePress {
+            guard let resize else { return }
+            pointerMove = nil
+            guard resize.size != resize.start else { return cancelResize() }
+            let order = visible.map(\.id)
+            saveArrangement({
+                $0.arrange(order)
+                $0.set(size: resize.size, of: resize.id)
+            }, selecting: resize.id) { self.resize = nil }
+        }
     }
 
     public func cancelResize() {

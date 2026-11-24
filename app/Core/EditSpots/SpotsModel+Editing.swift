@@ -8,13 +8,15 @@ extension SpotsModel {
     }
 
     public func beginEditing() {
-        guard openSheetID == nil else { return }
-        closeMenu()
-        missedSearch.drop()
-        change(.edit) {
-            query = ""
-            isEditing = true
-            updateVisible()
+        asOnePress {
+            guard openSheetID == nil else { return }
+            closeMenu()
+            missedSearch.drop()
+            change(.edit) {
+                query = ""
+                isEditing = true
+                updateVisible()
+            }
         }
     }
 
@@ -51,19 +53,21 @@ extension SpotsModel {
     }
 
     public func endEditing(moving: Bool = true) {
-        guard isEditing else { return }
-        stopDragWait()
-        change(moving ? .edit : nil) {
-            isEditing = false
-            tip = nil
-            drag = nil
-            landing = nil
-            carry = nil
-            resize = nil
-            pointerMove = nil
-            if lift.offset != .zero { lift.offset = .zero }
-            selected = 0
-            updateVisible()
+        asOnePress {
+            guard isEditing else { return }
+            stopDragWait()
+            change(moving ? .edit : nil) {
+                isEditing = false
+                tip = nil
+                drag = nil
+                landing = nil
+                carry = nil
+                resize = nil
+                pointerMove = nil
+                if lift.offset != .zero { lift.offset = .zero }
+                selected = 0
+                updateVisible()
+            }
         }
     }
 
