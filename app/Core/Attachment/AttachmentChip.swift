@@ -12,7 +12,6 @@ public struct AttachmentChip: Equatable, Sendable {
         case ready(AttachmentValue)
         case empty(String)
         case failed(String)
-        case denied(String)
     }
 
     static let loadingSymbol = "ellipsis"
@@ -43,7 +42,7 @@ public struct AttachmentChip: Equatable, Sendable {
 
     var isRead: Bool {
         switch state {
-        case .unread, .failed, .denied: false
+        case .unread, .failed: false
         case .loading, .ready, .empty: true
         }
     }

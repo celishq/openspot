@@ -6,7 +6,6 @@ public struct AttachmentPreview: Hashable, Sendable {
     public static let loading = AttachmentPreview(text: "", caption: "Loading", symbol: AttachmentChip.loadingSymbol)
     static let emptySymbol = "tray"
     static let failedSymbol = "exclamationmark.triangle"
-    static let deniedSymbol = "lock"
 
     public let text: String
     public let caption: String
@@ -36,7 +35,6 @@ public struct AttachmentPreview: Hashable, Sendable {
         case .unread, .loading: self.init(text: "", caption: chip.appName.map { "Reading \($0)…" } ?? Self.loading.caption, symbol: AttachmentChip.loadingSymbol)
         case .empty(let words): self.init(text: "", caption: words, symbol: Self.emptySymbol)
         case .failed(let line): self.init(text: "", caption: line, symbol: Self.failedSymbol)
-        case .denied(let reader): self.init(text: "", caption: "Openspot can't read \(reader) · ⏎ Allow", symbol: Self.deniedSymbol)
         }
     }
 

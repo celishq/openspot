@@ -33,14 +33,14 @@ final class AttachmentReadTests: AttachmentCase {
         model.runs.api = CommandAPI(mac: Mac(reads: ReadSources(mac: reads)), places: model.files, app: ModelApp(model: model), runs: model.runs)
         reads.set(front: "com.apple.Safari", access: ["com.apple.Safari": .denied])
         try taker(takes: "'url'")
-        try attach(runs: "\(cli) browser tab")
+        try attach(runs: "\(cli) browser tab || exit")
     }
 
     private func refuse() async throws {
         try refuseSafari()
         await open()
         XCTAssertTrue(model.handleKey(tab))
-        try await wait("the refusal") { self.chips.map(\.state) == [.denied("Safari")] }
+        try await wait("the refusal") { self.chips.map(\.state) == [.failed("Openspot can't read Safari · ⏎ Allow")] }
     }
 
     func testAnAttachSourceShowsItsChipUnreadAtTheOpenAndRunsNothingUntilTab() async throws {
@@ -258,7 +258,7 @@ final class AttachmentReadTests: AttachmentCase {
         try taker("save", takes: "'url'")
         await model.reload()
 
-        XCTAssertEqual(chips.map(\.state), [.denied("Safari")])
+        XCTAssertEqual(chips.map(\.state), [.failed("Openspot can't read Safari · ⏎ Allow")])
         XCTAssertEqual(model.fieldValue.preview?.caption, "Openspot can't read Safari · ⏎ Allow")
         XCTAssertEqual(shown, [])
     }
@@ -313,16 +313,15 @@ final class AttachmentReadTests: AttachmentCase {
         try await wait("the end of the read") { self.log("done") == ["0"] }
     }
 
-    func testARefusedReadPipedToAttachmentAddOffersAllow() async throws {
+    func testReturnOnAFailedChipWithNoRowsOpensAttachments() async throws {
         try refuseSafari()
-        try attach(runs: "\(cli) browser tab | \(cli) attachment add")
+        try attach(runs: "echo 'The tab is gone.' >&2; exit 1")
         await open()
-
         XCTAssertTrue(model.handleKey(tab))
+        try await wait("the failure") { if case .failed = self.chips.first?.state { true } else { false } }
 
-        try await wait("the refusal") { self.chips.map(\.state) == [.denied("Safari")] }
-        try await wait("the end of the read") { self.log("done") == ["0"] }
-        XCTAssertEqual(chips.map(\.state), [.denied("Safari")])
-        XCTAssertEqual(host.notes, [])
+        model.runSelected()
+
+        try await wait("the Attachments sheet") { self.model.openSheetID == "openspot/attachments" }
     }
 }

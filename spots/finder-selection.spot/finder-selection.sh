@@ -3,7 +3,7 @@
 # takes them. It reads the selection only when Tab picks its chip over Finder.
 case "$1" in
   attach)
-    picked=$(openspot finder selection) || exit 0
+    picked=$(openspot finder selection) || exit
     if [ -n "$picked" ]; then
       printf '%s\n' "$picked" | openspot attachment add
     else

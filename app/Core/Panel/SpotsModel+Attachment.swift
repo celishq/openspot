@@ -31,7 +31,9 @@ extension SpotsModel {
         guard let chip = attachments.chips.first(where: { $0.source == id }), chip.isLoading else { return }
         switch end {
         case .failed(SpotError.timedOut): mark(id, .failed("\(chip.appName ?? "The app") didn't answer"))
-        case .failed: mark(id, .failed(sheets[id]?.failure ?? ""))
+        case .failed:
+            let line = sheets[id]?.failure ?? ""
+            mark(id, .failed(ReadRefusal.field(of: line) ?? line))
         case .ended, .stopped: mark(id, .empty("Nothing to attach from \(chip.appName ?? "the app")"))
         }
     }
@@ -58,7 +60,7 @@ extension SpotsModel {
     }
 
     func allowAttachment() {
-        guard case .denied = attachments.selectedChip?.state, let id = entries.first(where: { $0.spot.edits == .attachments && $0.spot.isBuiltIn })?.id else { return }
+        guard case .failed = attachments.selectedChip?.state, let id = entries.first(where: { $0.spot.edits == .attachments && $0.spot.isBuiltIn })?.id else { return }
         pushFirst(id, moving: true)
     }
 

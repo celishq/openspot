@@ -85,13 +85,13 @@ esac
   `read` in its `uses`, and `openspot attachment add` takes what it prints:
 
   ```text
-  attach) openspot browser tab | openspot attachment add ;;
+  attach) tab=$(openspot browser tab) && printf '%s\n' "$tab" | openspot attachment add ;;
   ```
 
 - While `attach` runs, the field says `Reading <app>…`. When it adds nothing, the field says `Nothing to attach from
   <app>`, or the words of `openspot attachment empty <words>`. When it fails, or gives no answer in 3 seconds, the field
-  shows why, and the next Tab reads again. When Openspot may not read the app yet, Return opens the Attachments spot,
-  where people allow it.
+  shows why, such as `Openspot can't read Safari · ⏎ Allow` when `openspot browser tab` fails since Openspot may not
+  read it yet. Return then opens the Attachments spot, where people allow it, and the next Tab reads again.
 - A chip shows only when a spot that is on takes its kind. A source runs only when some spot takes some kind.
 - A source stays off the grid and out of the search. People turn it on in the Attachments spot.
 

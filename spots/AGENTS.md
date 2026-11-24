@@ -31,7 +31,7 @@ edits = "spots"
 
 | Word                    | Where       | Does                                                                                           |
 | ----------------------- | ----------- | ---------------------------------------------------------------------------------------------- |
-| `edits`                 | `spot.toml` | `edits = "spots"`: its sheet is also the Edit sheet of each spot. `edits = "attachments"`: Return opens it on a chip whose read Openspot was refused. |
+| `edits`                 | `spot.toml` | `edits = "spots"`: its sheet is also the Edit sheet of each spot. `edits = "attachments"`: Return opens it on a chip whose read failed. |
 | `starts`                | `spot.toml` | `starts = "first-launch"`: its sheet opens in place of the grid when Openspot first starts.    |
 | `offers`                | an action   | `offers = ["actions"]`: the action shows in the ⌘K menu of every card, under the spot's name, and a press calls its handler with the card's id as `item`. Origins after a space, such as `["actions mine, core"]`, fit only the cards of the person's spots (`mine`), of the spots that come with Openspot (`core`), or of the app (`builtin`). An action `<offered id>.<name>`, such as `[actions."icon.draw"]`, shows in its submenu. |
 | `when`                  | an action   | In a JavaScript spot, the name of a function that gets the card's spot id and its origin, and returns whether the offered action shows. The ⌘K menu waits 2 ms for it. |
