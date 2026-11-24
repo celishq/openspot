@@ -58,7 +58,7 @@ work in a read too. `run` works in a read, but the action it runs can't show a v
 | `openspot version`                                 | Prints the version of Openspot, as `openspot --version` does.                                   |
 | `openspot toast <words>...`                        | Shows a short message, even when the panel is closed.                                           |
 | `openspot select <item>`                           | Selects an item of the spot's sheet once the spot's next frame shows.                           |
-| `openspot attachment add <kind>=<value>... [title=<words>] [app=<app>] [icon=<icon>]` | Puts a value in the panel's field as the spot's chip: `file=` once for each file, `url=` or `text=`. `icon=` takes what `icon` in spot.toml takes. With `title=` alone, it shows the title in the field when the chip has nothing to hand over. |
+| `openspot attachment add <kind>=<value>... [title=<words>] [app=<app>] [icon=<icon>]` | Puts a value in the panel's field as the spot's chip: `file=` once for each file, `url=` or `text=`. `icon=` takes what `icon` in spot.toml takes. |
 | `openspot route push <route> [--title <words>] [--replace]` | Shows a route of the spot over the sheet that shows.                                   |
 | `openspot route back [--root]`                     | Goes back one sheet of the spot, or to its first sheet.                                         |
 | `openspot route close`                             | Takes each sheet of the spot off.                                                               |

@@ -8,7 +8,7 @@ enum AttachmentCall: NounCall {
     static let noun = CommandNoun("attachment", group: .build, verbs: [
         CommandVerb(
             "add", "[input...]",
-            "Puts a value in the panel's field, where people press Tab to hand it to a spot that takes its kind: `file=` once for each file, `url=` or `text=`, with `title=`, the app in `app=`, and the picture of its chip in `icon=`, as `icon` in spot.toml takes it. With `title=` alone it shows the title in the field as the chip's words, such as Nothing selected in Finder. With no input it takes the record on stdin that `openspot browser tab` prints, and adds nothing when it holds no value. It works in a show.",
+            "Puts a value in the panel's field, where people press Tab to hand it to a spot that takes its kind: `file=` once for each file, `url=` or `text=`, with `title=`, the app in `app=`, and the picture of its chip in `icon=`, as `icon` in spot.toml takes it. With no input it takes the record on stdin that `openspot browser tab` prints, and adds nothing when it holds no value. It works in a show.",
             rule: rule
         ) { words in Self.add(words.rest) }
     ])
@@ -40,12 +40,6 @@ enum AttachmentCall: NounCall {
                     return { CommandAnswer(errors: "`openspot attachment add` does not take \(word). Write file=, url= or text=, and title=, app= or icon=.\n", code: 2) }
                 }
                 fields.append(TextBlock.Field(key: String(word[..<split]), value: String(word[word.index(after: split)...])))
-            }
-            if fields.allSatisfy({ $0.key == "title" }), let title = fields.last?.value {
-                return {
-                    _ = await runs.take(SpotEffect.attachment(.empty(title)), from: caller)
-                    return CommandAnswer()
-                }
             }
             return Self.add(fields, to: runs, from: caller)
         }

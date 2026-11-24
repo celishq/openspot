@@ -36,7 +36,7 @@ see [the commands that fail in a read](../../app/Help/commands.md#the-commands-t
 | --------------------------------------------------- | ------------------------------------------------------------------------ |
 | `openspot toast <words>...`                         | Shows a short message, even when the panel is closed. It works in `show`. |
 | `openspot select <item>`                            | Selects a row of your sheet once your next frame shows.                  |
-| `openspot attachment add <kind>=<value>... [title=<words>] [app=<app>] [icon=<icon>]` | Puts a value in the panel's field: `file=` once for each file, `url=` or `text=`. `icon=` takes what [`icon`](spot-toml.md#keys) in spot.toml takes. With `title=` alone, it shows the title in the field when your chip has nothing to hand over, such as `Nothing selected in Finder`. It works in `show` and `attachment.pick`, and needs `attachment` in `uses`. |
+| `openspot attachment add <kind>=<value>... [title=<words>] [app=<app>] [icon=<icon>]` | Puts a value in the panel's field: `file=` once for each file, `url=` or `text=`. `icon=` takes what [`icon`](spot-toml.md#keys) in spot.toml takes. It works in `show` and `attachment.pick`, and needs `attachment` in `uses`. |
 | `openspot route push <route> [--title <words>] [--replace]` | Shows a page of your spot over the sheet.                        |
 | `openspot route back [--root]`                      | Goes back one page, or to the first.                                     |
 | `openspot route close`                              | Takes each sheet of your spot off.                                       |

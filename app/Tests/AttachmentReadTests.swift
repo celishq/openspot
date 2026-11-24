@@ -104,15 +104,17 @@ final class AttachmentReadTests: AttachmentCase {
         XCTAssertNil(model.openSheetID)
     }
 
-    func testAnAddOfOnlyATitleShowsTheTitleAsTheWordsOfTheSource() async throws {
+    func testAnAddOfOnlyATitleFailsWithExit2AndTheChipSaysNothingToAttach() async throws {
         try taker(takes: "'url'")
-        try pickSource(runs: "\(cli) attachment add 'title=Nothing selected in Finder'")
+        try pickSource(runs: "\(cli) attachment add 'title=Nothing selected in Finder' 2>> '\(path("errors"))'")
         await open()
 
         XCTAssertTrue(model.handleKey(tab))
 
-        try await wait("the words of the source") { self.model.fieldValue.preview?.caption == "Nothing selected in Finder" }
-        XCTAssertEqual(chips.map(\.state), [.empty("Nothing selected in Finder")])
+        try await wait("the end of the source") { self.log("done").count == 1 }
+        XCTAssertEqual(log("done"), ["2"])
+        XCTAssertEqual(log("errors"), [AttachmentCall.oneKind])
+        try await wait("the empty chip") { self.chips.map(\.state) == [.empty("Nothing to attach from Safari")] }
     }
 
     func testARecordOnStdinOfOnlyATitleAddsNothing() async throws {
