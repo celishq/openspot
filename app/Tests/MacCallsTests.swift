@@ -13,15 +13,6 @@ final class MacCallsTests: XCTestCase {
         }
     }
 
-    private struct Clipboard: MacClipboard {
-        let acts: Acts
-
-        func copy(text: String) throws { acts.keep("copy \(text)") }
-        func copy(file: URL) throws { acts.keep("copy file \(file.path)") }
-        func text() -> String { "kept text" }
-        func paste() throws { acts.keep("paste") }
-    }
-
     private struct Windows: MacWindows {
         let acts: Acts
 
@@ -71,10 +62,11 @@ final class MacCallsTests: XCTestCase {
     private var client: TestClient!
     private var socket: CommandSocket?
     private let acts = Acts()
+    private let board = FakeClipboard(text: "kept text")
 
     private var host: Mac {
         Mac(
-            clipboard: Clipboard(acts: acts), windows: Windows(acts: acts), screen: Screen(acts: acts), translation: FakeTranslation(acts: acts),
+            clipboard: board, windows: Windows(acts: acts), screen: Screen(acts: acts), translation: FakeTranslation(acts: acts),
             pickColor: { HexColor(red: 1, green: 0x88 / 255.0, blue: 0) }, pickFolder: { URL(fileURLWithPath: "/Users/a/Repos") }
         )
     }
@@ -115,14 +107,17 @@ final class MacCallsTests: XCTestCase {
         let place = folder.appendingPathComponent("notes", isDirectory: true)
         try FileManager.default.createDirectory(at: place, withIntermediateDirectories: true)
 
-        let copied = try run(["clipboard", "copy"], input: "hello")
-        let file = try run(["clipboard", "copy", "list.txt"], in: place)
         let read = try run(["clipboard", "read"])
+        let copied = try run(["clipboard", "copy"], input: "hello")
+        let words = board.text()
+        let file = try run(["clipboard", "copy", "list.txt"], in: place)
         let pasted = try run(["clipboard", "paste"])
 
         XCTAssertEqual([copied.code, file.code, read.code, pasted.code], [0, 0, 0, 0], copied.output + file.output + pasted.output)
         XCTAssertEqual(read.output, "kept text")
-        XCTAssertEqual(acts.all, ["copy hello", "copy file \(place.path)/list.txt", "paste"])
+        XCTAssertEqual(words, "hello")
+        XCTAssertEqual(board.text(), URL(fileURLWithPath: "\(place.path)/list.txt").absoluteString)
+        XCTAssertEqual(board.pasteCount, 1)
     }
 
     func testTheAppReadsAndMovesTheWindowInFront() throws {
