@@ -20,7 +20,7 @@ struct SheetPicture: View {
         Color.clear
             .overlay {
                 if PictureFrames.moves(key.path), let frames = SpotPictureStore.shared.cachedFrames(key) ?? (moving?.key == key ? moving?.frames : nil) {
-                    SpotMovingPicture(frames: frames, gravity: .resizeAspectFill, isPlaying: isShown && moves && place.cardsMove && !isHeld)
+                    SpotMovingPicture(frames: frames, gravity: .resizeAspectFill, isPlaying: place.plays(isShown: isShown, moves: moves) && !isHeld)
                 } else if let image = SpotPictureStore.shared.cached(key) ?? (loaded?.key == key ? loaded?.image : nil) {
                     Image(decorative: image, scale: SpotTokens.pictureScale).resizable().scaledToFill()
                 } else {

@@ -21,7 +21,7 @@ struct SpotMedia: View {
 
     var body: some View {
         if let frames {
-            SpotMovingPicture(frames: frames, gravity: .resizeAspect, isPlaying: isShown && moves && place.cardsMove)
+            SpotMovingPicture(frames: frames, gravity: .resizeAspect, isPlaying: place.plays(isShown: isShown, moves: moves))
                 .aspectRatio(frames.size, contentMode: .fit)
                 .frame(maxWidth: frames.size.width)
                 .clipShape(Self.edge)

@@ -177,7 +177,7 @@ public final class SpotsModel {
     public var reviewed: ReviewSpot?
     public var isFirstLaunch = false
     public var isShown = false {
-        didSet { takeCardsMove() }
+        didSet { takeCardsPlay() }
     }
     public var isWarming = false
     public var isOpenForDrag = false
@@ -214,13 +214,13 @@ public final class SpotsModel {
         keys.inputSourceChanged()
     }
     public internal(set) var mode = PanelMode.grid {
-        didSet { takeCardsMove() }
+        didSet { takeCardsPlay() }
     }
-    public private(set) var cardsMove = false
+    public private(set) var cardsPlay = false
 
-    private func takeCardsMove() {
+    private func takeCardsPlay() {
         let next = isShown && mode == .grid
-        if next != cardsMove { cardsMove = next }
+        if next != cardsPlay { cardsPlay = next }
     }
     @ObservationIgnored private var problems: [String] = []
     public internal(set) var menuSession: ActionMenuSession? {
