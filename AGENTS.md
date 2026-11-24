@@ -169,7 +169,7 @@ below is one a reviewer can check in a diff.
 Each motion is one of five kinds, each with one curve in `Shell/Surface/SpotMotion.swift`: grow (and its way back), move,
 fade and press. Each duration, bounce and motion scale is in `Core/Theme/MotionTokens.swift`. A part of a surface that grows
 takes its look from the surface's progress, by `SheetMorph`, and keeps no curve of its own. `make verify` runs
-`scripts/check-motion.sh`, which fails on a curve written anywhere else in `app/` or `scripts/`.
+`scripts/check-motion.sh`, which fails on a curve written anywhere else in `app/` or `scripts/`, except the base that `SpotSpring` builds for each spring of `SpotMotion`.
 
 - Move a view with FLIP: lay it out at its last place, then animate only `offset`, `scaleEffect` and `opacity` from its
   first place. Do not animate a frame, a padding, a font, a text width or a blur radius.
@@ -268,7 +268,7 @@ interaction.
 - Give a test a short pause through a setting, such as `stopPause`, and keep one test of the real time.
 - A test of a held frame waits for the hold itself (`SheetOpening.waitingFrames`), never for a count of yields. A test of Core
   names only the rule it proves, since a Shell modifier that applies the rule is out of its reach.
-- A test takes its base spring from `SpotMotion.plainSpring(duration:bounce:)` and writes no curve.
+- A test takes its base spring from `SpotSpring(duration:bounce:).base` and writes no curve.
 - Wait for a fact, never for a pause. To prove that a stopped thing does nothing more, give its action a long delay, stop it,
   wait for its end, then check.
 - A time limit in a test catches a hang or a slow algorithm, not a slow Mac. Give it ten times the normal time or more.

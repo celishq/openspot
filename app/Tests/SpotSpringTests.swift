@@ -107,11 +107,11 @@ final class SpotSpringTests: XCTestCase {
     }
 
     private func plainSpring(duration: Double, bounce: Double) -> Animation {
-        SpotMotion.plainSpring(duration: duration, bounce: bounce)
+        SpotSpring(duration: duration, bounce: bounce).base
     }
 
     private func spotSpring(duration: Double, bounce: Double) -> Animation {
-        Animation(SpotSpring(base: plainSpring(duration: duration, bounce: bounce), end: SpringEnd(duration: duration, bounce: bounce)))
+        Animation(SpotSpring(duration: duration, bounce: bounce))
     }
 
     private func run(_ animation: Animation, presses: [(frame: Int, target: Double)], frames: Int = 240) -> (values: [Double], removed: [Int], logical: [Int]) {

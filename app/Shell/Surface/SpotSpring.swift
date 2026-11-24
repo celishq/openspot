@@ -5,6 +5,11 @@ struct SpotSpring: CustomAnimation {
     let base: Animation
     let end: SpringEnd
 
+    init(duration: Double, bounce: Double) {
+        base = .spring(duration: duration, bounce: bounce)
+        end = SpringEnd(duration: duration, bounce: bounce)
+    }
+
     private struct Travel: AnimationStateKey {
         static var defaultValue: Double { 0 }
     }

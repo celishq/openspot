@@ -40,12 +40,8 @@ enum SpotMotion {
     static var press: Animation { spring(duration: MotionTokens.press, bounce: MotionTokens.pressBounce) }
     static var pop: Animation { spring(duration: MotionTokens.pop, bounce: MotionTokens.popBounce) }
 
-    static func plainSpring(duration: Double, bounce: Double) -> Animation {
-        .spring(duration: duration, bounce: bounce)
-    }
-
     private static func spring(duration: Double, bounce: Double) -> Animation {
-        Animation(SpotSpring(base: plainSpring(duration: duration, bounce: bounce), end: SpringEnd(duration: duration, bounce: bounce)))
+        Animation(SpotSpring(duration: duration, bounce: bounce))
     }
 
     static func animation(_ motion: PanelMotion) -> Animation {
