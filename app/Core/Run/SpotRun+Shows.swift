@@ -27,7 +27,7 @@ extension SpotRun {
         let isSent = send(Call(
             message: event.message(after: showsSheet ? panel?.inputs ?? [] : [], search: search),
             key: Self.showKey,
-            limit: runs.showLimit,
+            limit: event.name == EventName.attach ? runs.attachLimit : runs.showLimit,
             event: event,
             purpose: .ask(.show(generation: partsGeneration, reports: need != .clock, query: query, tells: event.tells))
         ))

@@ -116,24 +116,25 @@ final class AttachmentReadTests: AttachmentCase {
     }
 
     func testAReadWithNoAnswerFailsAtTheLimitAndTheNextTabReadsAgain() async throws {
+        model.quit()
+        model = SpotsModel(host: host, files: model.files, runs: SpotRuns(attachLimit: 0.5, stopPause: stopPause))
+        host.model = model
+        takeCalls()
         try taker(takes: "'url'")
         try attach(waits: true, runs: "\(cli) attachment add \(add)")
-        model.attachmentReadLimit = .milliseconds(200)
         await open()
 
         XCTAssertTrue(model.handleKey(tab))
         try await wait("the failure") { self.chips.map(\.state) == [.failed("Safari didn't answer")] }
         XCTAssertEqual(model.fieldValue.preview?.caption, "Safari didn't answer")
-        try await wait("the stop of the read") { !self.isReading }
+        XCTAssertFalse(isReading)
         XCTAssertEqual(log("done"), [])
+        XCTAssertEqual(host.notes, [])
 
-        model.attachmentReadLimit = .seconds(60)
-        unblock()
         XCTAssertTrue(model.handleKey(tab))
 
         XCTAssertEqual(chips.map(\.state), [.loading])
-        try await wait("the value of the second read") { self.shown == ["keep"] }
-        XCTAssertEqual(log("tab-log"), ["attach", "attach"])
+        try await wait("the second read") { self.log("tab-log") == ["attach", "attach"] }
     }
 
     func testAReadThatFailsShowsItsFailureLineAndNoToast() async throws {

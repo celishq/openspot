@@ -17,7 +17,7 @@ public final class SpotRun {
         case refused(String?)
         case done
         case attachment(AttachmentChip.State)
-        case shown
+        case shown(ScriptCall.End)
     }
 
     public enum ShowNeed: Sendable {
