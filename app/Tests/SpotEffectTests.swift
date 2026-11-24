@@ -40,9 +40,9 @@ final class SpotEffectTests: PanelCase {
           close) "$os" route close ;;
           saved) "$os" toast Saved ;;
           pick) "$os" select c ;;
-          kept) printf 'toast=up\\ntitle=Uploading\\nkeep=true\\naction=again\\n' | "$os" toast ;;
-          wrong) printf 'toast=up\\ntitle=Uploading\\naction=nothing\\n' | "$os" toast ;;
-          drop) "$os" toast remove up ;;
+          kept) "$os" toast --id up --keep --action again Uploading ;;
+          wrong) "$os" toast --id up --action nothing Uploading ;;
+          drop) "$os" toast --remove up ;;
           late) trap '"$os" toast Late; echo "late $?" >> "$codes"; exit 0' TERM; echo up >> "$codes"; sleep 30 & wait ;;
         esac
         echo "$1 $?" >> "$codes"
@@ -260,5 +260,25 @@ final class SpotEffectTests: PanelCase {
         model.toasts.press(try XCTUnwrap(model.toasts.waiting.first).id)
 
         XCTAssertEqual(host.opened, [link])
+    }
+
+    func testAToastMayStartWithTheWordRemove() async throws {
+        try await openFlow()
+
+        let toast = try await call(["toast", "remove", "the", "old", "copy"])
+
+        XCTAssertEqual(toast.code, 0)
+        XCTAssertEqual(host.confirms, ["remove the old copy"])
+    }
+
+    func testAToastDrawsAViewWithAHeadThatItsFlagsOverride() async throws {
+        try await openFlow()
+
+        let toast = try await call(["toast", "--id", "backup", "--view", "toast=old\nkeep=true\n\ntext=words\ntitle=Backup\n", "Backup"])
+
+        XCTAssertEqual(toast.code, 0)
+        XCTAssertEqual(host.toasts.first?.note.id, "backup")
+        XCTAssertEqual(host.toasts.first?.note.keeps, true)
+        XCTAssertEqual(host.toasts.first?.note.tree?.children, ["words"])
     }
 }

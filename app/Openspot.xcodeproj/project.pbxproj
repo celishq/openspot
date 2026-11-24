@@ -820,6 +820,7 @@
 		BED0BD9D2661D80F05FE43E2 /* SpotDigestTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 758301B608B727AE3DBD52AD /* SpotDigestTests.swift */; };
 		BF0E4916E2B8461F0DA30AD2 /* CalendarList.swift in Sources */ = {isa = PBXBuildFile; fileRef = C36B3E477AAAF5EDB054FBD2 /* CalendarList.swift */; };
 		BF60C262EA568EDC7EF0C18A /* RootKey.swift in Sources */ = {isa = PBXBuildFile; fileRef = 83BA73A5BD0879356E293A5B /* RootKey.swift */; };
+		BF75E4D42DB5FC479D4AE862 /* ToastNote+Source.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0FB24FA4F6442D238BB06D5F /* ToastNote+Source.swift */; };
 		BFB150413EC4D1EA9C9B9477 /* WebPictures.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6771DD6BAE823D6555E5FAE7 /* WebPictures.swift */; };
 		BFBDAAAA42FA8EB471CB668C /* AppWordsTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7B7E74011BAC4C7ACD987A3C /* AppWordsTests.swift */; };
 		C00FFD57619BA590314E35A9 /* HexColor+Contrast.swift in Sources */ = {isa = PBXBuildFile; fileRef = CAF7265077B5E78264B1CDFF /* HexColor+Contrast.swift */; };
@@ -1272,6 +1273,7 @@
 		0F73C02502299A509A427DA9 /* AttachmentLayout.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AttachmentLayout.swift; sourceTree = "<group>"; };
 		0F94032BF55521D28DBE4D34 /* SpotMenuLayer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SpotMenuLayer.swift; sourceTree = "<group>"; };
 		0F9D96F5B7F915FCCD751403 /* InputLogSpanTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = InputLogSpanTests.swift; sourceTree = "<group>"; };
+		0FB24FA4F6442D238BB06D5F /* ToastNote+Source.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "ToastNote+Source.swift"; sourceTree = "<group>"; };
 		10587EC067AD609A2988210E /* SpotTypes.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SpotTypes.swift; sourceTree = "<group>"; };
 		11201F7A1BEBFD2212380850 /* ThemeKind.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ThemeKind.swift; sourceTree = "<group>"; };
 		11809BB092F0369982D0C390 /* OwnedSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OwnedSheet.swift; sourceTree = "<group>"; };
@@ -2537,6 +2539,7 @@
 				1C9F812903AF337B12E46FEB /* ToastID.swift */,
 				6047EF78D171F1FAFC484C5C /* ToastKind.swift */,
 				7F5BF5B3E41AD8F8905E184D /* ToastNote.swift */,
+				0FB24FA4F6442D238BB06D5F /* ToastNote+Source.swift */,
 				334F191A2C5DE086796579F2 /* Toasts.swift */,
 				AA33A877C302D609D7964456 /* ToastWindow.swift */,
 			);
@@ -5091,6 +5094,7 @@
 				A9F92063144FB9AD42AD87AC /* ToastFix.swift in Sources */,
 				3F9AEC14BFE125DA40791724 /* ToastID.swift in Sources */,
 				13BB5989583DF2A9BA97DFC7 /* ToastKind.swift in Sources */,
+				BF75E4D42DB5FC479D4AE862 /* ToastNote+Source.swift in Sources */,
 				81BCC24BD58348669177AE02 /* ToastNote.swift in Sources */,
 				8E7502A7661725AD57675878 /* ToastWindow.swift in Sources */,
 				75FE965ADD871A25E5F26E76 /* Toasts.swift in Sources */,
