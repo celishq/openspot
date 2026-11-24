@@ -154,6 +154,7 @@ extension SpotsModel {
 
     public func panelDidHide() {
         isPanelHidden = true
+        isAttachmentOpen = false
         if !shakes.isEmpty { shakes = [:] }
         noteMiss()
         finishPick()

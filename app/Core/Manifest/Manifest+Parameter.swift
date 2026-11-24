@@ -2,7 +2,7 @@ import Foundation
 
 extension Manifest {
     public struct Parameter: Equatable, Sendable {
-        static let inputKeys: Set<String> = ["type", "required", "default", "description", "options"]
+        static let inputKeys: Set<String> = ["type", "required", "default", "description", "options", "pattern"]
         static let settingKeys: Set<String> = ["type", "options", "default", "title", "description", "icon"]
 
         public let name: String
@@ -13,6 +13,7 @@ extension Manifest {
         public let icon: String?
         public let detail: String?
         public let options: [String]
+        public let pattern: AnswerPattern?
 
         init(name: String, value: ConfigDocument.Value?, keys: Set<String>, place: String) throws {
             let fault = { (reason: String) in SpotError.fault("\(Manifest.fileName): \(place) \(reason)") }
@@ -61,10 +62,17 @@ extension Manifest {
             if let defaultValue, type.isList || !type.accepts(defaultValue, options: options) {
                 throw fault("has a default that is not \(type.isList ? "one value" : type.article): \(defaultValue).")
             }
+            var pattern: AnswerPattern?
+            if let text = try text("pattern") {
+                guard type == ValueType(.url) || type == ValueType(.text) else { throw fault("has a pattern, which only a url or a text takes.") }
+                guard let parsed = AnswerPattern(text) else { throw fault("has a pattern that is not a regular expression: \(text).") }
+                pattern = parsed
+            }
             self.name = name
             self.type = type
             self.isRequired = isRequired
             self.defaultValue = defaultValue
+            self.pattern = pattern
             self.title = try text("title")
             self.icon = try text("icon")
             self.detail = try text("description")
@@ -80,12 +88,16 @@ extension Manifest {
             icon = nil
             detail = nil
             self.options = options
+            pattern = nil
         }
 
         func fault(in values: [String]) -> String? {
             if !type.isList, values.count > 1 { return "\(name) takes one value, and got \(values.count)" }
-            guard let wrong = values.first(where: { !type.accepts($0, options: options) }) else { return nil }
-            return "\(name) takes \(type.article), and got \(wrong.isEmpty ? "an empty text" : wrong)"
+            if let wrong = values.first(where: { !type.accepts($0, options: options) }) {
+                return "\(name) takes \(type.article), and got \(wrong.isEmpty ? "an empty text" : wrong)"
+            }
+            guard let pattern, let wrong = values.first(where: { !pattern.matches($0) }) else { return nil }
+            return "\(name) takes a value that matches \(pattern.text), and got \(wrong)"
         }
     }
 }

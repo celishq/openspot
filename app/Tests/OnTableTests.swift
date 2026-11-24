@@ -35,7 +35,7 @@ final class OnTableTests: XCTestCase {
         XCTAssertEqual(spot.triggers.search?.text, "^https?://")
         XCTAssertEqual(triggers.schedule.map(\.text), ["0 9 * * 1-5", "*/15 * * * *"])
         XCTAssertEqual(spot.triggers.every, 60)
-        XCTAssertEqual(spot.triggers.drop, ["png", "folder"])
+        XCTAssertEqual(spot.triggers.drop, DropKinds(["png", "folder"]))
         XCTAssertEqual(triggers.bindings.map(\.key), ["picker.picked"])
     }
 
@@ -71,7 +71,7 @@ final class OnTableTests: XCTestCase {
             ("command = [\"/snooze\"]", "command"),
             ("drop = \"png\"", "drop"),
             ("\"clipboard.change\" = \"^http\"", "clipboard.change"),
-            ("\"panel.open\" = \"^x\"", "panel.open"),
+            ("\"panel.open\" = \"([\"", "panel.open"),
             ("\"sheet.open\" = \"^x\"", "sheet.open"),
             ("\"screen.wake\" = \"^x\"", "screen.wake"),
             ("every = 1.5", "every"),

@@ -11,9 +11,6 @@ public struct Spot: Equatable, Sendable {
         }
     }
 
-    private static let folderWord = "folder"
-    private static let anyWord = "*"
-
     @usableFromInline private(set) var header: Header
     public private(set) var kind: SpotKind
     public private(set) var pick: ItemPick
@@ -57,12 +54,13 @@ public struct Spot: Equatable, Sendable {
         edits: SpotEdits? = nil,
         starts: SpotStart? = nil
     ) {
+        let isSource = uses.contains(.attachment)
         header = Header(SpotFacts(
             id: id, name: name, url: url, size: size, headerIcon: icon, baseSymbol: symbol, subtitle: subtitle,
             hasSheet: triggers.shows || triggers.search == nil && commands.isEmpty && offeredActions.isEmpty,
-            isFound: isFound, order: order,
+            isFound: isFound && !isSource, isSource: isSource, order: order,
             host: host, growsFromField: growsFromField, mode: mode,
-            dataName: dataName, isOnGrid: isOnGrid, views: views, viewDates: viewDates, sources: sources, pages: pages, uses: uses,
+            dataName: dataName, isOnGrid: isOnGrid && !isSource, views: views, viewDates: viewDates, sources: sources, pages: pages, uses: uses,
             commands: commands, offeredActions: offeredActions, triggers: triggers, settings: settings, keywords: keywords, sample: sample,
             edits: edits, starts: starts
         ))
@@ -283,35 +281,32 @@ public struct Spot: Equatable, Sendable {
     }
 
     public var takesFiles: Bool {
-        dropWords.contains { !$0.isEmpty && $0 != Self.folderWord }
+        self.triggers.drop.files
     }
 
     public var takesFolders: Bool {
-        dropWords.contains(Self.folderWord) || dropWords.contains(Self.anyWord)
+        self.triggers.drop.takesFolders
     }
 
     public var takesDrops: Bool {
-        takesFiles || takesFolders
+        self.triggers.drop.takesAny
     }
 
-    public func accepts(_ paths: [String]) -> Bool {
-        accepts(FileKinds.Disk().read(paths))
+    public func runsOnOpen(over front: String?, feedsAttachment: Bool) -> Bool {
+        self.triggers.opens(over: front) && (!self.isSource || feedsAttachment)
     }
 
-    public func accepts(_ files: FileKinds) -> Bool {
-        !files.paths.isEmpty && files.paths.allSatisfy { accepts(path: $0, kind: files.kind(of: $0)) }
+    public func takes(_ value: AttachmentValue) -> Bool {
+        self.triggers.drop.takes(value)
     }
 
-    private func accepts(path: String, kind: FileKinds.Kind?) -> Bool {
-        guard let kind else { return false }
-        if kind == .folder { return takesFolders }
-        let fileExtension = URL(fileURLWithPath: path).pathExtension.lowercased()
-        if dropWords.contains(Self.anyWord) { return true }
-        return !fileExtension.isEmpty && fileExtension != Self.folderWord && dropWords.contains(fileExtension)
+    var chipActions: [ChipAction] {
+        let actions = AttachmentValue.Kind.allCases.flatMap { kind in self.actions.compactMap { ChipAction($0, of: self.name, takes: kind) } }
+        return actions + [ChipAction(drop: self.triggers.drop, title: self.name, detail: self.subtitle)].compactMap { $0 }
     }
 
-    private var dropWords: [String] {
-        self.triggers.drop.map { $0.lowercased() }
+    func offers(_ value: AttachmentValue) -> Bool {
+        self.chipActions.contains { $0.fits(value) }
     }
 
     public func taking(_ output: Frame) -> Spot {

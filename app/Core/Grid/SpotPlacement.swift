@@ -10,13 +10,19 @@ public struct SpotPlacement: Equatable, Sendable {
     public let column: Int
     public let size: SpotSize
     public let group: Group?
+    let drop: CGFloat
 
-    public init(index: Int, row: Int, column: Int, size: SpotSize, group: Group? = nil) {
+    public init(index: Int, row: Int, column: Int, size: SpotSize, group: Group? = nil, drop: CGFloat = 0) {
         self.index = index
         self.row = row
         self.column = column
         self.size = size
         self.group = group
+        self.drop = drop
+    }
+
+    func dropped(by points: CGFloat) -> SpotPlacement {
+        points == 0 ? self : SpotPlacement(index: index, row: row, column: column, size: size, group: group, drop: drop + points)
     }
 
     public var top: CGFloat {
@@ -37,7 +43,7 @@ public struct SpotPlacement: Equatable, Sendable {
     public var rect: CGRect {
         CGRect(
             x: CGFloat(column) * (SpotTokens.cell + SpotTokens.columnGap),
-            y: CGFloat(row) * (SpotTokens.cell + SpotTokens.rowGap) + top,
+            y: CGFloat(row) * (SpotTokens.cell + SpotTokens.rowGap) + top + drop,
             width: SpotTokens.width(columns: size.columns),
             height: SpotTokens.height(rows: size.rows)
         )

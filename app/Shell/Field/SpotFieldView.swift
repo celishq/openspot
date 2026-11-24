@@ -32,7 +32,7 @@ struct SpotFieldView: View {
     }
 
     private var searchField: some View {
-        let place = isInSheet ? Self.sheetRow(top: model.fieldTop) : Self.rect
+        let place = isInSheet ? Self.sheetRow(top: model.fieldTop) : model.fieldRoom > 0 ? Self.heldRect(room: model.fieldRoom) : Self.rect
         let top = isInSheet ? Self.sheetTop(top: model.fieldTop) : SpotTokens.halo
         let glyphLeft = isInSheet ? Self.sheetGlyphLeft : SpotTokens.halo + SpotTokens.padding
         return ZStack(alignment: .topLeading) {
@@ -44,12 +44,22 @@ struct SpotFieldView: View {
                 SpotFieldPrompt.glyph
                     .offset(x: glyphLeft, y: top)
                 searchText
-                    .frame(width: Self.fieldTextWidth, height: SpotTokens.cell, alignment: .leading)
+                    .frame(width: textWidth, height: SpotTokens.cell, alignment: .leading)
+                    .modifier(SpotAttachmentCover(model: model))
                     .offset(x: fieldTextLeft, y: top)
                 SpotSlashMark(model: model)
-                    .frame(width: Self.fieldTextWidth, height: SpotTokens.cell, alignment: .leading)
+                    .frame(width: textWidth, height: SpotTokens.cell, alignment: .leading)
+                    .modifier(SpotAttachmentCover(model: model))
                     .offset(x: fieldTextLeft, y: top)
                     .allowsHitTesting(false)
+                if !isInSheet {
+                    SpotAttachmentPreview(model: model)
+                        .mask { SpotSurfaceShape(rect: place.offsetBy(dx: -Self.rect.minX, dy: -Self.rect.maxY), radius: fieldRadius) }
+                        .offset(x: Self.rect.minX, y: Self.rect.maxY)
+                    SpotAttachmentStack(model: model)
+                        .frame(width: SpotTokens.attachmentStack(count: AttachmentStack.pile), height: SpotTokens.cell, alignment: .trailing)
+                        .offset(x: Self.attachmentLeft, y: top)
+                }
             }
             .morph(progress, opacity: crossing)
             .modifier(SpotFaded())
@@ -94,6 +104,10 @@ struct SpotFieldView: View {
         .frame(width: SpotTokens.panelWidth, height: SpotTokens.panelHeight, alignment: .topLeading)
     }
 
+    static func heldRect(room: CGFloat) -> CGRect {
+        CGRect(x: rect.minX, y: rect.minY, width: rect.width, height: rect.height + room)
+    }
+
     static func sheetRow(top: SheetTop) -> CGRect {
         CGRect(
             x: SpotTokens.halo + SpotTokens.padding,
@@ -110,12 +124,20 @@ struct SpotFieldView: View {
     static var sheetRadius: CGFloat { SurfaceEdge.sheet.inner().radius }
     static var fieldTextWidth: CGFloat { SpotTokens.gridWidth - 4 * SpotTokens.padding - SpotTokens.listIconSize - SpotTokens.fieldTextGap }
 
+    private var textWidth: CGFloat {
+        isInSheet ? Self.fieldTextWidth : Self.attachmentLeft - SpotTokens.attachmentGap - fieldTextLeft
+    }
+
+    static var attachmentLeft: CGFloat {
+        rect.maxX - SpotTokens.attachmentEdge - SpotTokens.attachmentStack(count: AttachmentStack.pile)
+    }
+
     private var fieldTextLeft: CGFloat {
         isInSheet ? Self.sheetTextLeft : SpotTokens.halo + SpotTokens.padding + SpotTokens.glyph + SpotTokens.fieldTextGap
     }
 
     private var searchText: some View {
-            SpotSearchText(model: model, title: "\(SearchPrompt.verb) \(isOpen ? sheetWord : SearchPrompt.grid)")
+            SpotSearchText(model: model, sheetWord: isOpen ? sheetWord : nil)
                 .textFieldStyle(.plain)
                 .focused($isFocused)
                 .onSubmit { _ = model.handleSearchKey(ActionKey(name: "return")) }
@@ -143,9 +165,10 @@ struct SpotFieldView: View {
     }
 
     private var promptWords: some View {
-        SpotFieldPrompt(word: sheetWord, progress: progress)
+        FieldPrompt(model: model, word: sheetWord, progress: progress)
             .morph(progress, opacity: crossing)
         .modifier(SpotEmptyField(model: model, isHidden: model.showsFieldDrop))
+        .modifier(SpotAttachmentCover(model: model))
     }
 
     private var sheetWord: String {
@@ -186,6 +209,16 @@ struct SpotFieldView: View {
         isInSheet ? Self.sheetRadius : SurfaceEdge(card: .strip).radius
     }
 
+}
+
+private struct FieldPrompt: View {
+    let model: SpotsModel
+    let word: String
+    let progress: Double
+
+    var body: some View {
+        SpotFieldPrompt(word: word, progress: progress, grid: model.promptWord)
+    }
 }
 
 private struct FieldDim: ViewModifier {

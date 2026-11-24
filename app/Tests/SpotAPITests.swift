@@ -88,6 +88,15 @@ final class SpotAPITests: XCTestCase {
         XCTAssertEqual(spots.last?["icon"] as? String, "star")
     }
 
+    func testTheCoreListNamesTheUsesOfEachSpot() async throws {
+        try "#!/bin/sh\n".writeScript(to: core.appendingPathComponent("apps.spot/apps.sh"))
+        try "#!/bin/sh\n".writeScript(to: core.appendingPathComponent("tab.spot/tab.sh"), toml: "uses = ['attachment', 'clipboard']")
+
+        let spots = try await json(["spot", "list", "--core", "--json"])
+
+        XCTAssertEqual(spots.map { $0["uses"] as? [String] }, [[], ["attachment", "clipboard"]])
+    }
+
     func testOnAndOffTurnCoreSpotsAndTellTheApp() async throws {
         try "#!/bin/sh\n".writeScript(to: core.appendingPathComponent("apps.spot/apps.sh"))
         try "#!/bin/sh\n".writeScript(to: core.appendingPathComponent("zebra.spot/zebra.sh"))

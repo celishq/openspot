@@ -85,7 +85,7 @@ final class SpotKeysTests: XCTestCase {
             ("[actions.go]\ntitle = 'Go'\noffers = ['actions']\n[actions.'go.far']\ntitle = 'Far'\noffers = ['actions']", "submenu of go")
         ]
         XCTAssertThrowsError(try spot("[actions.go]\ntitle = 'Go'\noffers = ['actions']")) { error in
-            XCTAssertEqual((error as? SpotError)?.reason, "Script has an unknown key in [actions.go]: offers")
+            XCTAssertEqual((error as? SpotError)?.reason, "Script has offers = [\"actions\"] in [actions.go]. A spot offers only offers = [\"attachments\"]")
         }
         for (toml, hint) in cases {
             XCTAssertThrowsError(try spot(toml, isApp: true), toml) { error in

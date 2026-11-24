@@ -15,6 +15,7 @@ extension NSEvent {
         case kVK_DownArrow: name = "down"
         case kVK_LeftArrow: name = "left"
         case kVK_RightArrow: name = "right"
+        case kVK_Tab: name = "tab"
         default:
             guard let typed = charactersIgnoringModifiers else { return nil }
             return ActionKey(typed: typed, code: keyCode, isCommand: isCommand, isShift: isShift, latin: SpotKeyLayouts.latin)

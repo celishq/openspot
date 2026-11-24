@@ -2,13 +2,6 @@ import XCTest
 @testable import OpenspotCore
 
 final class CallRouteTests: XCTestCase {
-    private struct Clipboard: MacClipboard {
-        func copy(text: String) throws {}
-        func copy(file: URL) throws { throw SpotError.fault("Openspot cannot copy \(file.lastPathComponent).") }
-        func text() -> String { "kept text" }
-        func paste() throws {}
-    }
-
     private struct Windows: MacWindows {
         func frame() async throws -> WindowFrame { WindowFrame(window: CGRect(x: 10, y: 20, width: 300, height: 400), area: CGRect(x: 0, y: 33, width: 1728, height: 1084)) }
         func move(_ move: WindowMove) async throws {}
@@ -36,7 +29,7 @@ final class CallRouteTests: XCTestCase {
     private var folder: URL!
     private var socket: CommandSocket?
     private let host = Mac(
-        calendar: FakeCalendar(), reminders: FakeReminders(), clipboard: Clipboard(), windows: Windows(), screen: Screen(), translation: FakeTranslation(),
+        calendar: FakeCalendar(), reminders: FakeReminders(), clipboard: FakeClipboard(text: "kept text"), windows: Windows(), screen: Screen(), translation: FakeTranslation(),
         pickColor: { HexColor(red: 1, green: 0x88 / 255.0, blue: 0) }, pickFolder: { URL(fileURLWithPath: "/Users/a/Repos") }
     )
 

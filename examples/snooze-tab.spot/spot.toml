@@ -11,9 +11,30 @@ title = "Open All"
 icon = "arrow.uturn.backward"
 
 [actions.reopen]
-inputs.browser = { type = "text", required = true, description = "The bundle id of the browser" }
+inputs.browser = { type = "text", description = "The bundle id of the browser, or none for the default browser" }
 inputs.url = { type = "url", required = true, description = "The page to open" }
 inputs.title = { type = "text", description = "The title of the page" }
+
+[actions.tomorrow]
+title = "Snooze until tomorrow"
+icon = "sunrise.fill"
+offers = ["attachments"]
+inputs.url = { type = "url", required = true, description = "The page to open again" }
+inputs.title = "text"
+
+[actions.weekend]
+title = "Snooze until the weekend"
+icon = "sofa.fill"
+offers = ["attachments"]
+inputs.url = { type = "url", required = true, description = "The page to open again" }
+inputs.title = "text"
+
+[actions.week]
+title = "Snooze until next week"
+icon = "briefcase.fill"
+offers = ["attachments"]
+inputs.url = { type = "url", required = true, description = "The page to open again" }
+inputs.title = "text"
 
 [bindings]
 picker = { spot = "openspot/snooze" }

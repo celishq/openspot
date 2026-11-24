@@ -36,15 +36,6 @@ final class CommandSocketTests: XCTestCase {
         }
     }
 
-    private struct Clipboard: MacClipboard {
-        let kept: String
-
-        func copy(text: String) throws {}
-        func copy(file: URL) throws {}
-        func text() -> String { kept }
-        func paste() throws {}
-    }
-
     private var folder: URL!
     private var socket: CommandSocket?
     private var clock: CommandSocket?
@@ -279,7 +270,7 @@ final class CommandSocketTests: XCTestCase {
 
     func testAnAnswerOverTheOutputLimitReachesAReaderThatKeepsUp() throws {
         let text = String(repeating: "0123456789abcdef", count: 65_536)
-        listen(CommandConnection.Limits(output: 65_536), mac: Mac(clipboard: Clipboard(kept: text)))
+        listen(CommandConnection.Limits(output: 65_536), mac: Mac(clipboard: FakeClipboard(text: text)))
 
         let answer = try ask(["clipboard", "read"])
 

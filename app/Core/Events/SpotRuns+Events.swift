@@ -12,9 +12,17 @@ extension SpotRuns {
         }
     }
 
-    public func panelOpened(showsToEnd: Bool = false) {
+    public func panelOpened(showsToEnd: Bool = false, over front: String? = nil, feedsAttachment: Bool = false) {
         guard !hasQuit else { return }
-        openPanel(showsToEnd: showsToEnd)
+        openPanel(showsToEnd: showsToEnd, over: front, feedsAttachment: feedsAttachment)
+    }
+
+    func pickAttachment(_ id: String, over front: String?, ended: @escaping (ScriptCall.End) -> Void) {
+        sheets[id]?.pickAttachment(over: front, ended: ended)
+    }
+
+    func stopAttach(_ id: String) {
+        sheets[id]?.stopPick()
     }
 
     public func launched() {
@@ -87,11 +95,10 @@ extension SpotRuns {
         guard let source, isWanted, !hasQuit else {
             clipboardWatch?.cancel()
             clipboardWatch = nil
-            clipboardSeen = nil
             return
         }
         guard clipboardWatch == nil else { return }
-        if clipboardSeen == nil { clipboardSeen = source.clipboardCount }
+        if !looksNow || clipboardSeen == nil { _ = copyAge() }
         clipboardWatch = Task { [weak self, weak source, sleep = clock.sleep] in
             var looks = looksNow
             while !Task.isCancelled {
@@ -102,11 +109,19 @@ extension SpotRuns {
                 looks = false
                 guard !Task.isCancelled, let self, let source else { return }
                 let next = source.clipboardCount
-                guard next != clipboardSeen else { continue }
-                clipboardSeen = next
+                guard next != clipboardSeen?.count else { continue }
+                clipboardSeen = (next, now())
                 raise(.named(EventName.clipboard, value: nil))
             }
         }
+    }
+
+    func copyAge() -> TimeInterval? {
+        guard let source else { return nil }
+        let count = source.clipboardCount
+        let time = now()
+        if clipboardSeen?.count != count { clipboardSeen = (count, time) }
+        return clipboardSeen.map { time.timeIntervalSince($0.at) }
     }
 
     func want(_ id: String) {
@@ -114,7 +129,7 @@ extension SpotRuns {
         sheet.show(need: .change, event: .event(EventName.spotWant, value: nil))
     }
 
-    private func openPanel(showsToEnd: Bool = false) {
+    private func openPanel(showsToEnd: Bool = false, over front: String? = nil, feedsAttachment: Bool = false) {
         let wasOpen = isPanelOpen
         isPanelOpen = true
         if !wasOpen { wanted = [] }
@@ -125,12 +140,18 @@ extension SpotRuns {
             watchClipboard(looksNow: true)
         }
         updateClock()
-        showPanel(toEnd: showsToEnd)
+        showPanel(toEnd: showsToEnd, over: front, feedsAttachment: feedsAttachment)
     }
 
-    private func showPanel(toEnd: Bool = false) {
-        for sheet in sheets.values where sheet.spot.triggers.showsOnPanel {
-            if toEnd { sheet.showToEnd(event: .panel) } else { sheet.show(need: .moment, event: .panel) }
+    private func showPanel(toEnd: Bool = false, over front: String? = nil, feedsAttachment: Bool = false) {
+        for sheet in sheets.values where sheet.spot.runsOnOpen(over: front, feedsAttachment: feedsAttachment) {
+            if sheet.spot.isSource {
+                sheet.show(need: .change, event: .panel)
+            } else if toEnd {
+                sheet.showToEnd(event: .panel)
+            } else {
+                sheet.show(need: .moment, event: .panel)
+            }
         }
         sheets.keys.filter(isOnGrid).forEach(want)
         sheets.values.forEach { $0.settleScript() }

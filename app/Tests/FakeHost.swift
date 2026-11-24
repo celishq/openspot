@@ -20,6 +20,7 @@ final class FakeHost: SpotsHost {
     var phases: [SheetTransition.Phase] = []
     var openings: [String?] = []
     var app = "/Apps/Openspot"
+    var frontApp: FrontApp?
     var prepared: [SpotItem] = []
     var glyphLists: [[String]] = []
     var cardGlyphs: [[String]] = []

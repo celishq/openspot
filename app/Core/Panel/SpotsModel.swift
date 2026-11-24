@@ -52,6 +52,7 @@ public final class SpotsModel {
     public var query = "" {
         didSet {
             guard query != oldValue else { return }
+            hideAttachments()
             if query.trimmingCharacters(in: .whitespaces).isEmpty { noteMiss() }
             selected = 0
             askAnswers()
@@ -63,10 +64,33 @@ public final class SpotsModel {
     @ObservationIgnored var laidOutSizes: [SpotSize] = []
     @ObservationIgnored private var cardGlyphs: [String] = []
     @ObservationIgnored var laidOutGrid = SpotGrid()
+    @ObservationIgnored var laidOutTop: CGFloat = 0
     @ObservationIgnored var spotList = ItemList()
     @ObservationIgnored var spotListIsStale = true
     @ObservationIgnored var commands = CommandIndex()
     public internal(set) var slash: SlashCommand?
+    @ObservationIgnored var content = GridContent.cards
+    public internal(set) var attachments = AttachmentStack() {
+        didSet {
+            let covered = attachments.layout.spreadCount > AttachmentStack.pile
+            if isFieldCovered != covered { isFieldCovered = covered }
+            let word = attachments.isOn ? SearchPrompt.actions : SearchPrompt.grid
+            if promptWord != word { promptWord = word }
+            hideAttachments()
+        }
+    }
+    public internal(set) var isAttachmentHidden = false
+    @ObservationIgnored var isAttachmentOpen = false
+    public private(set) var isFieldCovered = false
+    public private(set) var promptWord = SearchPrompt.grid
+    public internal(set) var preview: AttachmentPreview? {
+        didSet {
+            let room = preview.map { SpotTokens.attachmentValueRoom(lines: $0.lines) } ?? 0
+            if fieldRoom != room { fieldRoom = room }
+        }
+    }
+    public private(set) var fieldRoom: CGFloat = 0
+    @ObservationIgnored var attachmentWatch: Task<Void, Never>?
     @ObservationIgnored var keyFrames: [String: String] = [:]
     @ObservationIgnored var spotListBuilds = 0
     @ObservationIgnored var visibleUpdates = 0
@@ -93,7 +117,7 @@ public final class SpotsModel {
     public private(set) var gridHeight = SpotTokens.contentHeight(gridHeight: 0)
 
     func takePlacements() {
-        let height = SpotTokens.contentHeight(gridHeight: SpotGrid.height(of: placements))
+        let height = SpotTokens.contentHeight(gridHeight: max(SpotGrid.height(of: placements), laidOutTop))
         if height != gridHeight { gridHeight = height }
         let bands = SpotGroupBands(placements)
         if bands != groupBands { groupBands = bands }
@@ -500,7 +524,7 @@ public final class SpotsModel {
         isPanelHidden = false
         finishPick()
         selected = 0
-        runs.panelOpened(showsToEnd: isWarming)
+        openAttachment()
         askAnswers()
         host.nextFrame { [weak self] in
             self?.isShown = true
@@ -509,6 +533,8 @@ public final class SpotsModel {
     }
 
     public func panelWillHide() {
+        endSpread()
+        if attachments.spreads { attachments.fold() }
         pendingAsk = nil
         if confirming != nil { confirming = nil }
         stopRecording()
@@ -575,6 +601,8 @@ public final class SpotsModel {
             shakes[Self.shakeKey(of: item, in: id), default: 0] += 1
         case .done:
             if isShown { host.dismiss() }
+        case .attachment(let value):
+            takeAttachment(value, of: id)
         }
     }
 
@@ -592,7 +620,7 @@ public final class SpotsModel {
 
     public func chooseFiles(for id: String) -> Bool {
         guard let sheet = sheets[id], sheet.spot.takesDrops else { return false }
-        host.chooseFiles(for: sheet.spot) { sheet.drop($0) }
+        host.chooseFiles(for: sheet.spot) { sheet.drop(AttachmentValue(files: FileKinds.Disk().read($0))) }
         return true
     }
 

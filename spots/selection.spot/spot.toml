@@ -1,0 +1,7 @@
+title = "Selection"
+icon = "text.cursor"
+detail = "Hand what you selected to a spot"
+uses = ["attachment", "read"]
+
+[on]
+"panel.open" = true

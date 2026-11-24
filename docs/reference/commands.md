@@ -36,6 +36,7 @@ see [the commands that fail in a read](../../app/Help/commands.md#the-commands-t
 | --------------------------------------------------- | ------------------------------------------------------------------------ |
 | `openspot toast <words>...`                         | Shows a short message, even when the panel is closed. It works in `show`. |
 | `openspot select <item>`                            | Selects a row of your sheet once your next frame shows.                  |
+| `openspot attachment add <kind>=<value>... [title=<words>] [app=<app>] [icon=<icon>]` | Puts a value in the panel's field: `file=` once for each file, `url=` or `text=`. `icon=` takes what [`icon`](spot-toml.md#keys) in spot.toml takes. It works in `show` and `attachment.pick`, and needs `attachment` in `uses`. |
 | `openspot route push <route> [--title <words>] [--replace]` | Shows a page of your spot over the sheet.                        |
 | `openspot route back [--root]`                      | Goes back one page, or to the first.                                     |
 | `openspot route close`                              | Takes each sheet of your spot off.                                       |
@@ -51,9 +52,11 @@ see [the commands that fail in a read](../../app/Help/commands.md#the-commands-t
 | `openspot cache age <name>`                         | Prints the seconds since your spot kept `<name>`, or nothing.            |
 | `openspot cache set <name>`                         | Keeps stdin as `<name>`, and asks your spot again for the panel's search. |
 | `openspot spot open <id>`                           | Opens the panel on a spot.                                               |
+| `openspot front app`, `openspot browser tab <app>`, `openspot browser tabs <app>` or `openspot selection read <app>` | Prints what people work on, or nothing. It needs `read` in `uses`, and fails in `show` when Openspot may not read it yet. |
+| `openspot clipboard read [--newer <age>]` | Prints the text on the clipboard. With `--newer`, it prints it only when Openspot first saw that copy within the age: seconds, or a number with `s`, `m`, `h` or `d`, such as `2m`. |
 | `openspot date read <words>...`                     | Prints the date the words name, such as `25 dec`, as `item` and `time`, or nothing when they are more than a date. |
 
-Each list a command prints is blocks, as your script prints them, or JSON with `--json` where the command takes it.
+In each command, an app is its bundle ID, such as `com.apple.Safari`. Each list a command prints is blocks, as your script prints them, or JSON with `--json` where the command takes it.
 
 ## Write a message
 

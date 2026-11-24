@@ -1,0 +1,7 @@
+title = "Browser Tab"
+icon = "safari"
+detail = "Hand the front tab to a spot"
+uses = ["attachment", "read"]
+
+[on]
+"attachment.pick" = "browsers"

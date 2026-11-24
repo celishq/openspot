@@ -15,7 +15,7 @@ public final class SpotRuns {
     public var dragged = FileKinds() {
         didSet {
             guard dragged != oldValue else { return }
-            let takers = dragged.paths.isEmpty ? [] : Set(sheets.filter { $0.value.spot.accepts(dragged) }.keys)
+            let takers = dragged.paths.isEmpty ? [] : Set(sheets.filter { $0.value.spot.takes(AttachmentValue(files: dragged)) }.keys)
             if takers != dragTakers { dragTakers = takers }
         }
     }
@@ -24,6 +24,7 @@ public final class SpotRuns {
     @ObservationIgnored public var partsArrival: (String, () -> Void) -> Void = { _, bring in bring() }
     @ObservationIgnored public let opening: SheetOpening
     public let showLimit: TimeInterval
+    let attachLimit: TimeInterval
     let inlineIdle: TimeInterval
     let frameWait: DispatchTimeInterval
     public nonisolated let usage: StatsLog
@@ -43,7 +44,7 @@ public final class SpotRuns {
     @ObservationIgnored let clipboardPause: Duration
     @ObservationIgnored var source: (any MacEvents)?
     @ObservationIgnored var clipboardWatch: Task<Void, Never>?
-    @ObservationIgnored var clipboardSeen: Int?
+    @ObservationIgnored var clipboardSeen: (count: Int, at: Date)?
     @ObservationIgnored var loadWatch: Task<Void, Never>?
     @ObservationIgnored let loadPause: Duration
     @ObservationIgnored var loadSeen: (sample: LoadSample, at: Date)?
@@ -100,6 +101,7 @@ public final class SpotRuns {
     public init(
         environment: [String: String] = ProcessInfo.processInfo.environment,
         showLimit: TimeInterval = 10,
+        attachLimit: TimeInterval = 3,
         opening: SheetOpening = SheetOpening(),
         clock: RunClock = RunClock(),
         stopPause: TimeInterval = 2,
@@ -128,6 +130,7 @@ public final class SpotRuns {
         self.inlineIdle = inlineIdle
         self.frameWait = frameWait
         self.showLimit = showLimit
+        self.attachLimit = attachLimit
         self.opening = opening
         self.clock = clock
         now = clock.now
@@ -261,6 +264,7 @@ public final class SpotRuns {
     public func panelClosed() {
         isPanelOpen = false
         sheets.values.forEach { $0.leftPlace() }
+        sheets.values.filter(\.spot.isSource).forEach { $0.stopShows() }
         updateClock()
     }
 

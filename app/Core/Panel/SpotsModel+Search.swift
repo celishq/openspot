@@ -42,32 +42,38 @@ extension SpotsModel {
         }
     }
 
-    public func updateVisible() {
+    public func updateVisible(holding motion: PanelMotion? = .edit) {
         visibleUpdates += 1
         let text = query.trimmingCharacters(in: .whitespaces)
+        if attachments.isOn, !isEditing, !text.hasPrefix("/") {
+            indexSpots()
+            if slash != nil { slash = nil }
+            content = .attachment
+            foundSpots = []
+            show(showAttachment(holding: motion))
+            return
+        }
+        hold(nil, motion: motion)
         guard !text.isEmpty else {
             if slash != nil { slash = nil }
+            content = .cards
             foundSpots = []
             return show(dragged(cards.filter(\.isOnGrid) + (isEditing ? shelfCards : [])))
         }
-        if spotListIsStale {
-            spotListIsStale = false
-            spotListBuilds += 1
-            spotList.replace(cards.filter(\.isFound).map(Self.foundItem))
-            commands = CommandIndex(cards)
-        }
+        indexSpots()
         let command = isEditing ? nil : SlashCommand(query)
         if command != nil, slash == nil { commands = CommandIndex(cards) }
         let rows = command.map(commandEntries) ?? []
         let next = rows.isEmpty ? nil : command
         if slash != next { slash = next }
+        content = rows.isEmpty ? .search : .slash
         if !rows.isEmpty {
             foundSpots = []
             return show(rows)
         }
         var ids = Set<String>()
         let answers = entries.filter { $0.spot.triggers.search.map { runs.answerMatches.matches($0, text) } == true }
-            .flatMap { entry in (sheets[entry.id]?.answers ?? []).map { Entry(spot: entry.spot, item: $0, isAnswer: true) } }
+            .flatMap { entry in (sheets[entry.id]?.answers ?? []).map { Entry(spot: entry.spot, item: $0, role: .answer) } }
             .filter { ids.insert($0.id).inserted }
             .prefix(Self.searchLimit)
         let sources = entries.filter { $0.spot.triggers.lists && arrangement.isGlobal(of: $0.id) != false }
@@ -78,6 +84,14 @@ extension SpotsModel {
             limit: Self.searchLimit - answers.count
         )
         land(ask.found(), answers: Array(answers), sources: sources.map(\.spot))
+    }
+
+    private func indexSpots() {
+        guard spotListIsStale else { return }
+        spotListIsStale = false
+        spotListBuilds += 1
+        spotList.replace(cards.filter(\.isFound).map(Self.foundItem))
+        commands = CommandIndex(cards)
     }
 
     private static func placed(_ answers: [Entry], around found: [Entry]) -> [Entry] {
@@ -98,13 +112,15 @@ extension SpotsModel {
 
     private func show(_ next: [Entry]) {
         if next != visible { visible = next }
-        let sizes = query.isEmpty ? visible.map { $0.id == resize?.id ? resize?.size ?? $0.size : $0.size } : visible.map { $0.isAnswer ? $0.size : SpotSize.strip }
+        let sizes = query.isEmpty ? visible.map { $0.id == resize?.id ? resize?.size ?? $0.size : $0.size } : visible.map { $0.role == .answer ? $0.size : SpotSize.strip }
         let index = visible.firstIndex { $0.id == resize?.id }
         let grid = index.map(self.grid.keeping) ?? self.grid
-        if sizes != laidOutSizes || grid != laidOutGrid {
+        let top = fieldRoom
+        if sizes != laidOutSizes || grid != laidOutGrid || top != laidOutTop {
             laidOutSizes = sizes
             laidOutGrid = grid
-            placements = grid.place(sizes)
+            laidOutTop = top
+            placements = grid.place(sizes).map { $0.dropped(by: top) }
         }
         if transition.phase == .closing, !hasPlace(transition.id) { cutSheet(to: nil) }
     }
