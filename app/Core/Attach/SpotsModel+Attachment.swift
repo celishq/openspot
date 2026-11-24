@@ -4,6 +4,7 @@ extension SpotsModel {
     func openAttachment() {
         guard !isAttachmentOpen else { return runs.panelOpened() }
         isAttachmentOpen = !isWarming
+        heldArrivals = []
         let wasOn = attachments.isOn
         let front = isWarming ? nil : host.frontApp
         let feeds = !isWarming && entries.contains { !$0.spot.chipActions.isEmpty }
@@ -18,9 +19,36 @@ extension SpotsModel {
     }
 
     func takeAttachment(_ value: AttachmentValue, of id: String) {
-        var next = attachments
+        guard showMotion == nil else {
+            heldArrivals.removeAll { $0.id == id }
+            return heldArrivals.append((value, id))
+        }
+        settle(filled(attachments, with: value, of: id), motion: .fade)
+    }
+
+    func startShowMotion() {
+        showMotion?.cancel()
+        let length = showLength ?? MotionTokens.fadeIn
+        showMotion = Task { [weak self] in
+            try? await Task.sleep(for: .seconds(length), tolerance: .seconds(length / 10))
+            guard !Task.isCancelled else { return }
+            self?.endShowMotion()
+        }
+    }
+
+    func endShowMotion() {
+        showMotion?.cancel()
+        showMotion = nil
+        let held = heldArrivals
+        heldArrivals = []
+        guard !held.isEmpty else { return }
+        settle(held.reduce(attachments) { filled($0, with: $1.value, of: $1.id) }, motion: .fade)
+    }
+
+    private func filled(_ stack: AttachmentStack, with value: AttachmentValue, of id: String) -> AttachmentStack {
+        var next = stack
         if cards.contains(where: { $0.spot.offers(value) }) { next.fill(id, with: value, look: entry(id).flatMap { Self.look(of: $0.spot) }) } else { next.remove(id) }
-        settle(next, motion: .fade)
+        return next
     }
 
     func endAttachment(of id: String, _ end: ScriptCall.End) {
@@ -83,15 +111,26 @@ extension SpotsModel {
         spot.fileIcon.map(AttachmentChip.Look.file) ?? (spot.symbol.isEmpty ? nil : .symbol(spot.symbol))
     }
 
-    private func settle(_ next: AttachmentStack, motion: PanelMotion?) {
+    private func settle(_ stack: AttachmentStack, motion: PanelMotion?) {
+        var next = stack
+        if !next.isMoving { next.place() }
         guard next != attachments else { return }
-        let before = (isOn: attachments.isOn, chip: attachments.selectedChip)
-        change(isShown ? motion : nil, { attachments = next })
+        let motion = isShown ? motion : nil
+        let turns = attachments.isOn != next.isOn || attachments.selectedChip != next.selectedChip
+        let moves = !next.isMoving && motion != nil && next.layout != attachments.layout
+        if moves { next.isMoving = true }
+        change(motion, {
+            attachments = next
+            if turns { takePreview() }
+        }) { [weak self] in
+            guard moves, var landed = self?.attachments else { return }
+            landed.isMoving = false
+            self?.placeAttachment(landed, .edit)
+        }
         hideAttachments()
-        placeAttachment(motion)
-        guard before.isOn != next.isOn || before.chip != next.selectedChip else { return }
+        guard turns else { return }
         selected = 0
-        updateVisible(holding: motion)
+        showVisible()
     }
 
     func give(to entry: Entry) {
@@ -135,8 +174,8 @@ extension SpotsModel {
     }
 
     func shownPreview(of query: String) -> AttachmentPreview? {
-        guard showsAttachment(of: query), let chip = attachments.selectedChip, entry(chip.source) != nil else { return nil }
-        return chip.value.map { AttachmentPreview($0) } ?? AttachmentPreview(state: chip)
+        guard showsAttachment(of: query), let source = attachments.selected, entry(source) != nil else { return nil }
+        return chipPreview
     }
 
     func attachmentRows() -> [Entry] {
@@ -146,6 +185,11 @@ extension SpotsModel {
         return commands.chipActions(of: value, matching: search, limit: Self.chipActionLimit).compactMap { row in
             entry(row.spot).map { Entry(spot: $0.spot, item: SpotItem(title: row.action.title, run: row.action.name, picture: Icon(text: row.action.icon)), role: .action, detail: row.action.detail) }
         }
+    }
+
+    func takePreview() {
+        let shown = shownPreview(of: query)
+        if preview != shown { preview = shown }
     }
 
     func hold(_ preview: AttachmentPreview?, motion: PanelMotion?) {
@@ -168,10 +212,6 @@ extension SpotsModel {
     func endSpread() {
         attachmentWatch?.cancel()
         attachmentWatch = nil
-    }
-
-    func placeAttachment(_ motion: PanelMotion?) {
-        placeAttachment(attachments, motion)
     }
 
     private func placeAttachment(_ stack: AttachmentStack, _ motion: PanelMotion?) {

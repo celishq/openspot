@@ -45,15 +45,15 @@ public final class SpotsModel {
             spotListIsStale = true
             storeCards = nil
             askAnswers()
-            updateVisible()
+            takePreview()
+            showVisible()
             prepareCardGlyphs()
         }
     }
     public var query = "" {
         didSet {
             guard query != oldValue else { return }
-            let shown = shownPreview(of: query)
-            if preview != shown { preview = shown }
+            takePreview()
             if query.trimmingCharacters(in: .whitespaces).isEmpty { noteMiss() }
             selected = 0
             askAnswers()
@@ -77,8 +77,13 @@ public final class SpotsModel {
             if isFieldCovered != covered { isFieldCovered = covered }
             let word = attachments.isOn ? SearchPrompt.actions : SearchPrompt.grid
             if promptWord != word { promptWord = word }
+            if attachments.selectedChip != oldValue.selectedChip {
+                previewBuilds += 1
+                chipPreview = attachments.selectedChip.flatMap { chip in chip.value.map { AttachmentPreview($0) } ?? AttachmentPreview(state: chip) }
+            }
         }
     }
+    @ObservationIgnored var chipPreview: AttachmentPreview?
     public internal(set) var isAttachmentHidden = false
     @ObservationIgnored var isAttachmentOpen = false
     public private(set) var isFieldCovered = false
@@ -94,6 +99,7 @@ public final class SpotsModel {
     @ObservationIgnored var keyFrames: [String: String] = [:]
     @ObservationIgnored var spotListBuilds = 0
     @ObservationIgnored var visibleUpdates = 0
+    @ObservationIgnored var previewBuilds = 0
     @ObservationIgnored var missedSearch = MissedSearch()
     var answerMatches: AnswerMatches {
         runs.answerMatches
@@ -177,8 +183,14 @@ public final class SpotsModel {
     public var reviewed: ReviewSpot?
     public var isFirstLaunch = false
     public var isShown = false {
-        didSet { takeCardsPlay() }
+        didSet {
+            takeCardsPlay()
+            if isShown, !oldValue { startShowMotion() }
+        }
     }
+    @ObservationIgnored var showMotion: Task<Void, Never>?
+    @ObservationIgnored var showLength: TimeInterval?
+    @ObservationIgnored var heldArrivals: [(value: AttachmentValue, id: String)] = []
     public var isWarming = false
     public var isOpenForDrag = false
     public var isSettlingDrop = false

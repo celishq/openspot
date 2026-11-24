@@ -5,9 +5,12 @@ public struct Spot: Equatable, Sendable {
     @usableFromInline
     final class Header: Sendable {
         @usableFromInline let facts: SpotFacts
+        let chipActions: [ChipAction]
 
         init(_ facts: SpotFacts) {
             self.facts = facts
+            let actions = AttachmentValue.Kind.allCases.flatMap { kind in facts.actions.compactMap { ChipAction($0, of: facts.name, takes: kind) } }
+            chipActions = actions + [ChipAction(drop: facts.triggers.drop, title: facts.name, detail: facts.subtitle)].compactMap { $0 }
         }
     }
 
@@ -301,8 +304,7 @@ public struct Spot: Equatable, Sendable {
     }
 
     var chipActions: [ChipAction] {
-        let actions = AttachmentValue.Kind.allCases.flatMap { kind in self.actions.compactMap { ChipAction($0, of: self.name, takes: kind) } }
-        return actions + [ChipAction(drop: self.triggers.drop, title: self.name, detail: self.subtitle)].compactMap { $0 }
+        header.chipActions
     }
 
     func offers(_ value: AttachmentValue) -> Bool {

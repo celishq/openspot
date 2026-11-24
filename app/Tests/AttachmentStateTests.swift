@@ -84,6 +84,17 @@ final class AttachmentStateTests: AttachmentCase {
         XCTAssertEqual(host.motions.count, changes)
     }
 
+    func testAWriteOfTheEntriesThatDropsTheSourceMakesNoChangeOfItsOwn() async throws {
+        try await openWithTab()
+        XCTAssertTrue(model.handleKey(tab))
+        let changes = host.motions.count
+
+        model.entries = model.entries.filter { $0.id != "tab" }
+
+        XCTAssertNil(model.preview)
+        XCTAssertEqual(host.motions.count, changes)
+    }
+
     func testThePreviewGivesWayOnTypingASlashInAChangeOfItsOwn() async throws {
         try await openWithTab()
         XCTAssertTrue(model.handleKey(tab))
@@ -106,6 +117,20 @@ final class AttachmentStateTests: AttachmentCase {
         XCTAssertNil(model.preview)
         XCTAssertEqual(host.previewWrites.dropFirst(writes).map(\.motion), [.edit])
         XCTAssertEqual(host.previewWrites.dropFirst(writes).map(\.depth), [0])
+    }
+
+    func testTabWritesThePlacedStackAndThePreviewInOneChange() async throws {
+        try await openWithTab()
+        host.heldEnds = []
+        let changes = host.motions.count
+        let writes = host.previewWrites.count
+
+        XCTAssertTrue(model.handleKey(tab))
+
+        XCTAssertEqual(Array(host.motions.dropFirst(changes)), [.edit])
+        XCTAssertEqual(host.previewWrites.dropFirst(writes).map(\.motion), [.edit])
+        XCTAssertTrue(model.attachments.isMoving)
+        XCTAssertEqual(model.preview?.text, "A")
     }
 
     func testATapOnTheAttachmentsWorksTheHintOutOnceByTheEndOfThePress() async throws {
@@ -175,6 +200,22 @@ final class AttachmentStateTests: AttachmentCase {
 
         XCTAssertEqual(model.spotListBuilds, builds)
         XCTAssertEqual(shown, ["save"])
+    }
+
+    func testTypingInTheAttachmentFitsTheActionsAndBuildsThePreviewOnlyAtTab() async throws {
+        try await openWithTab(takers: ["keep", "save"])
+        XCTAssertTrue(model.handleKey(tab))
+        let fits = model.commands.fits
+        let builds = model.previewBuilds
+
+        for text in ["s", "sa", "sav"] {
+            model.searchText = text
+        }
+
+        XCTAssertEqual(model.commands.fits, fits)
+        XCTAssertEqual(model.previewBuilds, builds)
+        XCTAssertEqual(shown, ["save"])
+        XCTAssertEqual(model.preview?.text, "A")
     }
 
     func testTheRowsStartBelowThePreview() async throws {
