@@ -31,6 +31,17 @@ struct SpotClipboard: MacClipboard {
         return .none
     }
 
+    func count() -> Int {
+        NSPasteboard.general.changeCount
+    }
+
+    func writeImage(to file: URL) throws {
+        let type: NSPasteboard.PasteboardType = file.pathExtension == "png" ? .png : .tiff
+        guard let data = autoreleasepool(invoking: { NSPasteboard.general.data(forType: type) }) else { throw SpotError.fault("Openspot cannot find the copied image. Copy it again.") }
+        try FileManager.default.createDirectory(at: file.deletingLastPathComponent(), withIntermediateDirectories: true)
+        try data.write(to: file, options: .atomic)
+    }
+
     private static let concealed = NSPasteboard.PasteboardType("org.nspasteboard.ConcealedType")
 
     func paste() throws {

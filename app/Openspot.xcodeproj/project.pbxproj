@@ -660,6 +660,7 @@
 		9D79827160465BD450E0D007 /* SpotBackdropBlur.swift in Sources */ = {isa = PBXBuildFile; fileRef = 343B74F47009E908B1316B6B /* SpotBackdropBlur.swift */; };
 		9D8EB89A3C98463B5FF6A8CA /* GlyphBookTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = EA5BC0434C9402119869A138 /* GlyphBookTests.swift */; };
 		9E13561CB9DAD69582F63CC9 /* NodeButton.swift in Sources */ = {isa = PBXBuildFile; fileRef = F13017B4B327B5B125971901 /* NodeButton.swift */; };
+		9E4574C63CE023438112BA0C /* ClipboardCopy.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5663A4A1A74AFC4E5A68706B /* ClipboardCopy.swift */; };
 		9EA98C3C5C12E79EC768A76E /* SpotFailureTip.swift in Sources */ = {isa = PBXBuildFile; fileRef = D37B7AE6F005A35E858E0FB3 /* SpotFailureTip.swift */; };
 		9EBDA1C2B4842CB42BC99223 /* SpotGridView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C2A2E193370E14885C92F0DC /* SpotGridView.swift */; };
 		9F44FE0E902094859A3CAABD /* SheetPartsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 171DE2A93C238530C6A56985 /* SheetPartsView.swift */; };
@@ -982,6 +983,7 @@
 		DE938381D6BAC5C7508315F4 /* CheckScriptTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2F581FC3F7F59B5D4F7BFAAD /* CheckScriptTests.swift */; };
 		DEB17834B6D52E4865A70200 /* TestChildTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 43426D303EAEED7D975374D4 /* TestChildTests.swift */; };
 		DF439BA5BB58AD77FD57B7BB /* SpotRunsStayTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = D62785D723E86E5616B5BCCB /* SpotRunsStayTests.swift */; };
+		DF5F8961503C217011060A4A /* AttachmentClipboardTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = FF5C9EF3F36F99A0A72D3C65 /* AttachmentClipboardTests.swift */; };
 		DFB0D3A249DB9FEA3D9A2334 /* TestClient.swift in Sources */ = {isa = PBXBuildFile; fileRef = BAE51D8BEAC1F240D8E3A2BE /* TestClient.swift */; };
 		DFB915E7831E17F4C14BBB56 /* MessageBlockTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 701D4202AEBB487641654B83 /* MessageBlockTests.swift */; };
 		E004233F621658F2873FF9B8 /* ChannelDescriptor.swift in Sources */ = {isa = PBXBuildFile; fileRef = 795525E5896143D79A05BD30 /* ChannelDescriptor.swift */; };
@@ -1560,6 +1562,7 @@
 		55281667DA5D266778D3B00C /* SpotPlacement.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SpotPlacement.swift; sourceTree = "<group>"; };
 		552F81E4432F2F7D939CDE9E /* OpenspotApp+Host.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "OpenspotApp+Host.swift"; sourceTree = "<group>"; };
 		55E790130B641BEE6E10C80B /* NumberLook.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NumberLook.swift; sourceTree = "<group>"; };
+		5663A4A1A74AFC4E5A68706B /* ClipboardCopy.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ClipboardCopy.swift; sourceTree = "<group>"; };
 		567645B84EE28613BC728ED2 /* SystemSettingsSpotTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SystemSettingsSpotTests.swift; sourceTree = "<group>"; };
 		57B5FBD640FCB2293EED7F00 /* ItemList.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ItemList.swift; sourceTree = "<group>"; };
 		597CEAA0B3890DEC34E577FE /* TriggerCallsTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TriggerCallsTests.swift; sourceTree = "<group>"; };
@@ -2321,6 +2324,7 @@
 		FF2CA391A8D104C7C57C2721 /* SpotFrames.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SpotFrames.swift; sourceTree = "<group>"; };
 		FF54036BAB7C42C5F74AB672 /* SpotLiftedCard.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SpotLiftedCard.swift; sourceTree = "<group>"; };
 		FF5691175EA97A376FA0D74D /* TakenKey.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TakenKey.swift; sourceTree = "<group>"; };
+		FF5C9EF3F36F99A0A72D3C65 /* AttachmentClipboardTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AttachmentClipboardTests.swift; sourceTree = "<group>"; };
 		FFA79A70AAB0FAA5BF6E22F3 /* FilesOutTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FilesOutTests.swift; sourceTree = "<group>"; };
 		FFD8983A5D718934384188E9 /* FocusLoss.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FocusLoss.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
@@ -2724,6 +2728,7 @@
 				74022333AF25C8D9FB545E75 /* ClipboardCall.swift */,
 				0593FF6BEE540B9D2F8DC85E /* ClipboardCalls.swift */,
 				914D5373C9AF1BB68468624F /* ClipboardContents.swift */,
+				5663A4A1A74AFC4E5A68706B /* ClipboardCopy.swift */,
 				C453BCE620D31DE869C4446B /* ColorCall.swift */,
 				6CDC506D3F69D8EE35B1CE80 /* DateCall.swift */,
 				F0D761DB9A1CD3CA9B19C764 /* EmojiCall.swift */,
@@ -3010,6 +3015,7 @@
 				7B7E74011BAC4C7ACD987A3C /* AppWordsTests.swift */,
 				2FC8ADE70F857027B5F28F70 /* AttachmentActionTests.swift */,
 				DD7D01C37DBFFA2AD1BEEB62 /* AttachmentCase.swift */,
+				FF5C9EF3F36F99A0A72D3C65 /* AttachmentClipboardTests.swift */,
 				47D78D04DA10C2AF3C76176B /* AttachmentLookTests.swift */,
 				AF993A5D372EA17D5518E288 /* AttachmentPreviewTests.swift */,
 				6E8E6B66F117FACCE2287166 /* AttachmentReadTests.swift */,
@@ -4661,6 +4667,7 @@
 				C89268AF9CAC7735281A7B58 /* ClipboardCall.swift in Sources */,
 				6B6B77B1B592F27EC1CBEF37 /* ClipboardCalls.swift in Sources */,
 				179337FBD69C3C807079FE68 /* ClipboardContents.swift in Sources */,
+				9E4574C63CE023438112BA0C /* ClipboardCopy.swift in Sources */,
 				2071303C2B913DFEF8902187 /* ColorCall.swift in Sources */,
 				180CB7E917D2541952951C66 /* CommandAPI.swift in Sources */,
 				7DE6B016D16CA73667C2AF51 /* CommandAction.swift in Sources */,
@@ -5384,6 +5391,7 @@
 				B34A155F568AA723C2FD1D2D /* AppsSpotTests.swift in Sources */,
 				FD77764AE0E8A5762743AC54 /* AttachmentActionTests.swift in Sources */,
 				7B86A98CF24E2468472D69DC /* AttachmentCase.swift in Sources */,
+				DF5F8961503C217011060A4A /* AttachmentClipboardTests.swift in Sources */,
 				DD1B4EFA1FAC35B75F710A03 /* AttachmentLookTests.swift in Sources */,
 				4949E44CB74EE431318F7764 /* AttachmentPreviewTests.swift in Sources */,
 				80C11995983F3A9E6F4B0269 /* AttachmentReadTests.swift in Sources */,

@@ -2,15 +2,22 @@ import Foundation
 
 enum AttachmentCall: NounCall {
     case add([String])
+    case clipboard(newer: TimeInterval?)
 
     private static let rule = CallRule(use: .attachment, used: "put a value in the panel's field", flags: .needsApp)
 
     static let noun = CommandNoun("attachment", group: .build, verbs: [
         CommandVerb(
             "add", "[input...]",
-            "Puts a value in the panel's field, where people press Tab to hand it to a spot that takes its kind: `file=` once for each file, `url=` or `text=`, with `title=`, the app in `app=`, and the picture of its chip in `icon=`, as `icon` in spot.toml takes it. With no input it takes the record on stdin that `openspot browser tab` prints, and adds nothing when it holds no value. It works in a show.",
+            "Puts a value in the panel's field, where people press Tab to hand it to a spot that takes its kind: `file=` once for each file, `url=` or `text=`, with `title=`, the app in `app=`, and the picture of its chip in `icon=`, as `icon` in spot.toml takes it. With no input it takes the record on stdin that `openspot browser tab` prints, and adds nothing when it holds no value. `clipboard` puts what the clipboard holds: its files, a link, a text or an image, and nothing for a password; with --newer, only a copy that Openspot first saw within the age, as `clipboard read` takes it. It works in a show.",
             rule: rule
-        ) { words in Self.add(words.rest) }
+        ) { words in
+            guard words.rest.first == "clipboard" else { return Self.add(words.rest) }
+            let rest = Array(words.rest.dropFirst())
+            if rest.isEmpty { return Self.clipboard(newer: nil) }
+            guard rest.count == 2, rest[0] == "--newer" else { return nil }
+            return ClipboardCall.age(rest[1]).map(Self.clipboard)
+        }
     ])
 
     static let oneKind = "`openspot attachment add` takes one kind of value: file= once for each file, url= or text=."
@@ -28,6 +35,7 @@ enum AttachmentCall: NounCall {
             return { CommandAnswer(errors: "`openspot attachment add` runs only from a spot, since its value shows as that spot's chip.\n", code: 1) }
         }
         switch self {
+        case .clipboard(let newer): return Self.addClipboard(context.mac.clipboard, newer: newer, images: context.places.clipboard, to: runs, from: caller)
         case .add(let words): return add(words, to: runs, from: caller, input: context.input)
         }
     }
@@ -47,6 +55,15 @@ enum AttachmentCall: NounCall {
             let fields = (TextBlock.blocks(in: await input()).first?.fields ?? []).filter { Self.keys.contains($0.key) }
             guard fields.contains(where: { !Self.notes.contains($0.key) }) else { return CommandAnswer() }
             return await Self.add(fields, to: runs, from: caller)()
+        }
+    }
+
+    private static func addClipboard(_ board: (any MacClipboard)?, newer limit: TimeInterval?, images: URL, to runs: SpotRuns, from caller: SpotCaller) -> CommandAPI.Work {
+        {
+            if let limit { guard let age = await runs.copyAge(), age < limit else { return CommandAnswer() } }
+            guard let board, let value = ClipboardCopy.value(of: board, images: images) else { return CommandAnswer() }
+            _ = await runs.take(SpotEffect.attachment(value), from: caller)
+            return CommandAnswer()
         }
     }
 

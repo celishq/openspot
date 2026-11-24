@@ -139,8 +139,24 @@ extension SpotsModel {
         if offer.confirm != nil, confirming != key { return confirming = key }
         confirming = nil
         leaveAttachment()
-        sheets[entry.spot.id]?.run(offer, with: value)
+        hand(value, to: entry.spot.id, by: offer)
         settleGive(on: entry.spot.id)
+    }
+
+    private func hand(_ value: AttachmentValue, to id: String, by offer: ChipAction) {
+        guard let copy = value.copy, let board = runs.api?.mac.clipboard else {
+            sheets[id]?.run(offer, with: value)
+            return
+        }
+        Task { [weak self] in
+            let whole = await Task.detached { Result { try copy.whole(of: value, from: board) } }.value
+            guard let self else { return }
+            switch whole {
+            case .success(let whole?): sheets[id]?.run(offer, with: whole)
+            case .success(nil): host.confirm(ClipboardCopy.changed)
+            case .failure: host.confirm(ClipboardCopy.unwritten)
+            }
+        }
     }
 
     func confirmKey(of entry: Entry) -> GlobalKey? {

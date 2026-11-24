@@ -79,6 +79,10 @@ public struct AppPlaces: Sendable {
         configFolder.appendingPathComponent("schedule.json")
     }
 
+    var clipboard: URL {
+        configFolder.appendingPathComponent("Clipboard", isDirectory: true)
+    }
+
     public var stats: URL {
         configFolder.appendingPathComponent("stats", isDirectory: true)
     }

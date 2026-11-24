@@ -28,8 +28,12 @@ public enum ClipboardCall: NounCall {
     private static func newer(of words: CallWords) -> TimeInterval?? {
         guard let fit = words.fit, fit.rest.isEmpty else { return nil }
         guard let newer = fit.value("--newer") else { return .some(nil) }
-        let age = Int(newer).map(TimeInterval.init) ?? Manifest.Triggers.age(newer)
-        return age.flatMap { $0 > 0 ? .some($0) : nil }
+        return age(newer).map { .some($0) }
+    }
+
+    static func age(_ text: String) -> TimeInterval? {
+        let age = Int(text).map(TimeInterval.init) ?? Manifest.Triggers.age(text)
+        return age.flatMap { $0 > 0 ? $0 : nil }
     }
 
     func rule(_ rule: CallRule, spot: String?) -> CallRule {
