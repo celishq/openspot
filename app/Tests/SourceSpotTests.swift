@@ -51,49 +51,47 @@ final class SourceSpotTests: AttachmentCase {
         XCTAssertEqual(host.notes, [])
     }
 
-    func testFinderSelectionSaysWhenNothingIsSelected() async throws {
-        try copy("finder-selection")
-        host.frontApp = FrontApp(bundleID: "com.apple.finder")
-        reads.set(front: "com.apple.finder", answers: ["com.apple.finder": []])
-        await open()
-
-        XCTAssertTrue(model.handleKey(tab))
-
-        try await wait("the empty chip") { self.state(of: "finder-selection") == .empty("Nothing selected in Finder") }
-    }
-
-    func testFinderSelectionHandsTheSelectedFiles() async throws {
-        try copy("finder-selection")
+    func testSelectionAddsTheFilesSelectedInFinderWhenThePanelOpens() async throws {
+        try copy("selection")
         let file = path("a.txt")
         FileManager.default.createFile(atPath: file, contents: Data())
         host.frontApp = FrontApp(bundleID: "com.apple.finder")
         reads.set(front: "com.apple.finder", answers: ["com.apple.finder": [file]])
+
         await open()
 
-        XCTAssertTrue(model.handleKey(tab))
-
-        try await wait("the files") { self.chips.first?.value != nil }
+        try await wait("the files") { self.state(of: "selection") != nil }
         XCTAssertEqual(chips.first?.value?.values, [file])
         XCTAssertEqual(chips.first?.value?.app, "com.apple.finder")
+        XCTAssertNil(chips.first?.value?.title)
     }
 
-    func testSelectedTextAddsTheSelectionWhenThePanelOpens() async throws {
-        try copy("selected-text")
+    func testSelectionAddsTheSelectedTextWhenThePanelOpens() async throws {
+        try copy("selection")
         reads.set(front: "com.apple.Safari", selected: "two words")
 
         await open()
 
-        try await wait("the selection") { self.state(of: "selected-text") != nil }
-        XCTAssertEqual(state(of: "selected-text"), .ready(AttachmentValue(text: "two words", title: "Selected text", app: "com.apple.Safari")))
+        try await wait("the selection") { self.state(of: "selection") != nil }
+        XCTAssertEqual(state(of: "selection"), .ready(AttachmentValue(text: "two words", title: "Selected text", app: "com.apple.Safari")))
     }
 
-    func testSelectedTextAddsNothingWhenNothingIsSelected() async throws {
-        try copy("selected-text")
+    func testSelectionAddsNothingWhenNothingIsSelectedInFinder() async throws {
+        try await addsNothing(over: "com.apple.finder")
+    }
+
+    func testSelectionAddsNothingWhenNothingIsSelectedInAnotherApp() async throws {
+        try await addsNothing(over: "com.apple.Safari")
+    }
+
+    private func addsNothing(over app: String) async throws {
+        try copy("selection")
         try witness()
-        reads.set(front: "com.apple.Safari")
+        host.frontApp = FrontApp(bundleID: app)
+        reads.set(front: app, answers: ["com.apple.finder": []])
 
         await open()
-        try await wait("the end of the read") { self.model.sheets["selected-text"]?.isShowing == false && self.log("witness-log").count == 1 }
+        try await wait("the end of the read") { self.model.sheets["selection"]?.isShowing == false && self.log("witness-log").count == 1 }
 
         XCTAssertEqual(chips, [])
         XCTAssertEqual(host.notes, [])

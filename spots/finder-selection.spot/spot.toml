@@ -1,7 +1,0 @@
-title = "Finder Selection"
-icon = "folder"
-detail = "Hand the selected files to a spot"
-uses = ["attachment", "read"]
-
-[on]
-"attachment.pick" = "^com\\.apple\\.finder$"

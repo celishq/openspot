@@ -52,7 +52,7 @@ see [the commands that fail in a read](../../app/Help/commands.md#the-commands-t
 | `openspot cache age <name>`                         | Prints the seconds since your spot kept `<name>`, or nothing.            |
 | `openspot cache set <name>`                         | Keeps stdin as `<name>`, and asks your spot again for the panel's search. |
 | `openspot spot open <id>`                           | Opens the panel on a spot.                                               |
-| `openspot front app`, `openspot browser tab <app>`, `openspot browser tabs <app>`, `openspot finder selection` or `openspot text selected <app>` | Prints what people work on, or nothing. It needs `read` in `uses`, and fails in `show` when Openspot may not read it yet. |
+| `openspot front app`, `openspot browser tab <app>`, `openspot browser tabs <app>` or `openspot selection read <app>` | Prints what people work on, or nothing. It needs `read` in `uses`, and fails in `show` when Openspot may not read it yet. |
 | `openspot clipboard read [--newer <age>]` | Prints the text on the clipboard. With `--newer`, it prints it only when Openspot first saw that copy within the age: seconds, or a number with `s`, `m`, `h` or `d`, such as `2m`. |
 | `openspot date read <words>...`                     | Prints the date the words name, such as `25 dec`, as `item` and `time`, or nothing when they are more than a date. |
 

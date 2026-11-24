@@ -1,6 +1,6 @@
-title = "Selected Text"
+title = "Selection"
 icon = "text.cursor"
-detail = "Hand the selected text to a spot"
+detail = "Hand what you selected to a spot"
 uses = ["attachment", "read"]
 
 [on]

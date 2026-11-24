@@ -41,7 +41,7 @@ Put any spot on the grid, in the menu bar, in a float or in a window, from its S
 
 ## Hand what you work on to a spot
 
-Search for Attachments, and press Return on Finder Selection, Browser Tab, Selected Text or Fresh Copy to turn it on or off.
+Search for Attachments, and press Return on Selection, Browser Tab or Fresh Copy to turn it on or off.
 `⌘` Return opens the Settings of one that is on. Under Access, each app it reads says whether macOS lets Openspot read
 it, and Return asks for access or opens the pane of System Settings that gives it. When you open the panel, what each one reads, such as the files you selected in Finder, shows as a small stack of cards on the right of the field. Nothing else
 changes until you press Tab.

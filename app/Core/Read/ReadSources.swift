@@ -56,12 +56,8 @@ public final class ReadSources: @unchecked Sendable {
         }
     }
 
-    func finder(asks: Bool) async throws -> [TextBlock] {
-        guard try await allows(Self.finder.bundleID, named: Self.finder.name, asks: asks), let files = await mac.run(Self.finderScript), !files.isEmpty else { return [] }
-        return [Self.record(files.map { ("file", $0) } + [("app", Self.finder.bundleID)])]
-    }
-
     func selection(of bundleID: String, asks: Bool) async throws -> [TextBlock] {
+        guard bundleID != Self.finder.bundleID else { return try await finder(asks: asks) }
         guard mac.accessibility(asks: asks) == .allowed else { throw ReadRefusal(reader: "the selected text") }
         guard let text = await mac.selectedText(of: bundleID).map(Self.cut), !text.allSatisfy(\.isWhitespace) else { return [] }
         return [Self.record([("text", text), ("app", bundleID)])]
@@ -70,6 +66,11 @@ public final class ReadSources: @unchecked Sendable {
     func front() async -> [TextBlock] {
         guard let front = await mac.front() else { return [] }
         return [Self.record([("app", front.bundleID), ("name", front.name)] + (front.path.map { [("path", $0)] } ?? []))]
+    }
+
+    private func finder(asks: Bool) async throws -> [TextBlock] {
+        guard try await allows(Self.finder.bundleID, named: Self.finder.name, asks: asks), let files = await mac.run(Self.finderScript), !files.isEmpty else { return [] }
+        return [Self.record(files.map { ("file", $0) } + [("app", Self.finder.bundleID)])]
     }
 
     private func find(_ bundleID: String, in browsers: [Browser]) throws -> Browser {

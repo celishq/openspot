@@ -104,8 +104,7 @@ work in a read too. `run` works in a read, but the action it runs can't show a v
 | `openspot date read <words>...`                    | Prints the date the words name, such as `tomorrow 3pm`, as `item=yyyy-MM-dd HH:mm` in the zone of the Mac, or with no time `item=yyyy-MM-dd`, and `time=true` or `false`. It prints nothing when the words are more than a date. |
 | `openspot browser tab <app>` | Prints the `url=`, `title=` and `app=` of the front tab of the browser `<app>`, or nothing when it is not running. |
 | `openspot browser tabs <app>` | Prints a record for each tab of each window of the browser `<app>`: `url=`, `title=`, `window=` (1 is the front window), `index=`, `active=` and `app=`. |
-| `openspot finder selection` | Prints a `file=` for each file selected in Finder, and `app=`. |
-| `openspot text selected <app>` | Prints the `text=` selected in the app `<app>`, and its `app=`, or nothing when it is not running or has no selection. |
+| `openspot selection read <app>` | Prints what is selected in the app `<app>`, and its `app=`: a `file=` for each file selected in Finder, or the `text=` selected in another app. It prints nothing when the app is not running or has no selection. |
 | `openspot front app` | Prints the `app=` bundle ID, `name=` and `path=` of the app in front of Openspot, or nothing. |
 | `openspot clipboard read [--newer <age>]` | Prints the text on the clipboard. With `--newer`, it prints it only when Openspot first saw that copy within the age: seconds, or a number with `s`, `m`, `h` or `d`, such as `2m`. |
 | `openspot access list` | Prints `app=`, `path=` and `access=` for each app that Openspot reads: `allowed`, `denied`, `unasked`, or `unknown` while the app is closed. The record of the selected text has `app=accessibility`. |

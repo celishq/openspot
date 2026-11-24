@@ -86,8 +86,8 @@ esac
   holds no value.
 - The chip shows the value's `icon=`, else the spot's own picture when its `icon` is a file or a picture, else the icon
   of the app in front when the value is of that app, else the spot's symbol.
-- `openspot browser tab`, `openspot finder selection` and `openspot text selected` read what people work on inside Openspot. A source needs
-  `read` in its `uses`, and `openspot attachment add` takes what it prints. Each read but Finder's names its app by its bundle ID,
+- `openspot browser tab` and `openspot selection read` read what people work on inside Openspot. A source needs
+  `read` in its `uses`, and `openspot attachment add` takes what it prints. Each read names its app by its bundle ID,
   which `attachment.pick` gets as `input.value`:
 
   ```text
@@ -103,7 +103,7 @@ esac
   show)
     app=$(openspot front app | sed -n 's/^app=//p')
     [ -n "$app" ] || exit 0
-    { openspot text selected "$app" && echo "title=Selected text"; } | openspot attachment add
+    { openspot selection read "$app" && echo "title=Selected"; } | openspot attachment add
     ;;
   ```
 

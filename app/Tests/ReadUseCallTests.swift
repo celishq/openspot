@@ -80,7 +80,7 @@ final class ReadUseCallTests: XCTestCase {
     }
 
     func testEachReadOfAnAppFailsWithItsUsageWithoutTheBundleID() {
-        for words in [["browser", "tab"], ["browser", "tabs"], ["text", "selected"]] {
+        for words in [["browser", "tab"], ["browser", "tabs"], ["selection", "read"]] {
             XCTAssertEqual(CommandLineCall(arguments: words)?.value as? CallFault, .unknown(words), words.joined(separator: " "))
         }
     }
@@ -147,26 +147,36 @@ final class ReadUseCallTests: XCTestCase {
         XCTAssertTrue(reads.scripts[0].contains("active tab") && reads.scripts[0].contains("title of"), reads.scripts[0])
     }
 
-    func testFinderPrintsALineForEachSelectedFile() async throws {
+    func testSelectionOfFinderPrintsALineForEachSelectedFileThroughItsOwnReader() async throws {
         reads.set(answers: ["com.apple.finder": ["/Users/a/one.txt", "/Users/a/Two Words"]])
 
-        let answer = try await call(["finder", "selection"])
+        let answer = try await call(["selection", "read", "com.apple.finder"])
 
         XCTAssertEqual(answer.output, "file=/Users/a/one.txt\nfile=/Users/a/Two Words\napp=com.apple.finder\n")
     }
 
-    func testTextSelectedPrintsTheTextSelectedInTheNamedApp() async throws {
+    func testSelectionOfAnotherAppPrintsItsSelectedText() async throws {
         reads.set(front: "com.apple.Notes", selected: "two\nlines")
 
-        let answer = try await call(["text", "selected", "com.apple.Notes"])
+        let answer = try await call(["selection", "read", "com.apple.Notes"])
 
         XCTAssertEqual(answer.output, "text=two\\nlines\napp=com.apple.Notes\n")
     }
 
-    func testTextSelectedPrintsNothingForAnAppWithNoSelectionOrThatIsNotRunning() async throws {
+    func testSelectionOfFinderWithNothingSelectedPrintsNothingAndReadsNoText() async throws {
+        reads.set(front: "com.apple.finder", answers: ["com.apple.finder": []], selected: "name.txt")
+
+        let answer = try await call(["selection", "read", "com.apple.finder"])
+
+        XCTAssertEqual([answer.output, answer.errors], ["", ""])
+        XCTAssertEqual(answer.code, 0)
+        XCTAssertFalse(reads.asks.contains { $0.hasPrefix("accessibility") }, reads.asks.joined(separator: ", "))
+    }
+
+    func testSelectionPrintsNothingForAnAppWithNoSelectionOrThatIsNotRunning() async throws {
         reads.set(front: "com.apple.Notes", selected: "words")
 
-        let answer = try await call(["text", "selected", "com.apple.TextEdit"])
+        let answer = try await call(["selection", "read", "com.apple.TextEdit"])
 
         XCTAssertEqual([answer.output, answer.errors], ["", ""])
         XCTAssertEqual(answer.code, 0)
@@ -192,7 +202,7 @@ final class ReadUseCallTests: XCTestCase {
     func testNothingToReadPrintsNothingAndEndsWell() async throws {
         reads.set(front: "com.apple.Safari", answers: ["com.apple.finder": []], selected: "  \n")
 
-        for source in [["browser", "tab", "com.apple.Safari"], ["finder", "selection"], ["text", "selected", "com.apple.Safari"]] {
+        for source in [["browser", "tab", "com.apple.Safari"], ["selection", "read", "com.apple.finder"], ["selection", "read", "com.apple.Safari"]] {
             let answer = try await call(source)
             XCTAssertEqual([answer.output, answer.errors], ["", ""], source.joined(separator: " "))
             XCTAssertEqual(answer.code, 0, source.joined(separator: " "))
@@ -202,7 +212,7 @@ final class ReadUseCallTests: XCTestCase {
     func testAReadThatIsNotAllowedFailsWithALineThatSaysWhereToAllowIt() async throws {
         reads.set(front: "com.apple.Safari", access: ["com.apple.Safari": .denied, "com.apple.finder": .denied], grant: .unasked, trust: .unasked)
 
-        let answers = [try await call(["browser", "tab", "com.apple.Safari"]), try await call(["browser", "tabs", "com.apple.Safari"]), try await call(["finder", "selection"]), try await call(["text", "selected", "com.apple.Safari"])]
+        let answers = [try await call(["browser", "tab", "com.apple.Safari"]), try await call(["browser", "tabs", "com.apple.Safari"]), try await call(["selection", "read", "com.apple.finder"]), try await call(["selection", "read", "com.apple.Safari"])]
 
         XCTAssertEqual(answers.map(\.code), [1, 1, 1, 1])
         XCTAssertEqual(answers.map(\.errors), [
@@ -219,9 +229,9 @@ final class ReadUseCallTests: XCTestCase {
 
         let show = try await call(["browser", "tab", "com.apple.Safari"], from: spot(), reason: "panel.open")
         let shownTabs = try await call(["browser", "tabs", "com.apple.Safari"], from: spot(), reason: "panel.open")
-        let shownSelection = try await call(["text", "selected", "com.apple.Safari"], from: spot(), reason: "panel.open")
+        let shownSelection = try await call(["selection", "read", "com.apple.Safari"], from: spot(), reason: "panel.open")
         let press = try await call(["browser", "tab", "com.apple.Safari"], from: spot())
-        let terminal = try await call(["text", "selected", "com.apple.Safari"])
+        let terminal = try await call(["selection", "read", "com.apple.Safari"])
 
         XCTAssertEqual([show.code, shownTabs.code, shownSelection.code], [1, 1, 1])
         XCTAssertEqual(show.errors, "Openspot can't read Safari. Allow it in the Attachments spot.\n")
@@ -233,8 +243,8 @@ final class ReadUseCallTests: XCTestCase {
         runs.isCareful = true
         reads.set(front: "com.apple.Notes", selected: "words")
 
-        let refused = try await call(["text", "selected", "com.apple.Notes"], from: spot(uses: [.screen]))
-        let allowed = try await call(["text", "selected", "com.apple.Notes"], from: spot())
+        let refused = try await call(["selection", "read", "com.apple.Notes"], from: spot(uses: [.screen]))
+        let allowed = try await call(["selection", "read", "com.apple.Notes"], from: spot())
 
         XCTAssertEqual(refused.code, 1)
         XCTAssertEqual(refused.errors, "Careful mode stopped Reader, because it read what the person works on without `read` in the `uses` of its spot.toml. Add it, or turn Careful mode off.\n")
@@ -280,7 +290,7 @@ final class ReadUseCallTests: XCTestCase {
     }
 
     func testEachReadNeedsTheAppAndNamesItsUse() {
-        for words in [["browser", "tab", "com.apple.Safari"], ["browser", "tabs", "com.apple.Safari"], ["finder", "selection"], ["text", "selected", "com.apple.Notes"], ["front", "app"], ["access", "list"], ["access", "ask", "accessibility"]] {
+        for words in [["browser", "tab", "com.apple.Safari"], ["browser", "tabs", "com.apple.Safari"], ["selection", "read", "com.apple.finder"], ["selection", "read", "com.apple.Notes"], ["front", "app"], ["access", "list"], ["access", "ask", "accessibility"]] {
             XCTAssertEqual(SpotUseCall(arguments: words, of: "reader")?.use, .read, words.joined(separator: " "))
             XCTAssertTrue(CommandKind.needsApp(words), words.joined(separator: " "))
         }
@@ -288,5 +298,7 @@ final class ReadUseCallTests: XCTestCase {
         XCTAssertTrue(CommandLineCall(arguments: ["window", "selection"])?.value is CallFault)
         XCTAssertTrue(CommandLineCall(arguments: ["window", "app"])?.value is CallFault)
         XCTAssertTrue(CommandLineCall(arguments: ["selection", "read"])?.value is CallFault)
+        XCTAssertTrue(CommandLineCall(arguments: ["finder", "selection"])?.value is CallFault)
+        XCTAssertTrue(CommandLineCall(arguments: ["text", "selected", "com.apple.Notes"])?.value is CallFault)
     }
 }

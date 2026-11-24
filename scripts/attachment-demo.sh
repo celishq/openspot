@@ -3,7 +3,7 @@ set -e
 cd "$(dirname "$0")/.."
 state=.temp/openspot
 [ -d "$state/spots" ] || make dev-state >/dev/null
-for source in finder-selection browser-tab selected-text fresh-copy; do
+for source in selection browser-tab fresh-copy; do
   rm -rf "$state/spots/$source.spot"
   cp -R "spots/$source.spot" "$state/spots/"
 done
