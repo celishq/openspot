@@ -9,21 +9,21 @@ struct SpotPreviewPicture: View {
     @State private var image: NSImage?
 
     var body: some View {
-        ZStack {
-            SpotRoundShape(radius: SpotTokens.attachmentPictureRadius)
-                .fill(SpotTheme.ink.opacity(SpotTheme.fill))
-            if let image {
-                Image(nsImage: image)
-                    .resizable()
-                    .scaledToFill()
-            } else {
-                Image(systemName: symbol)
-                    .font(SpotType.body)
-                    .modifier(SpotSecondaryText())
+        SpotRoundShape(radius: SpotTokens.attachmentPictureRadius)
+            .fill(SpotTheme.ink.opacity(SpotTheme.fill))
+            .frame(width: SpotTokens.attachmentPicture, height: SpotTokens.attachmentPicture)
+            .overlay {
+                if let image {
+                    Image(nsImage: image)
+                        .resizable()
+                        .scaledToFill()
+                } else {
+                    Image(systemName: symbol)
+                        .font(SpotType.detail)
+                        .modifier(SpotSecondaryText())
+                }
             }
-        }
-        .frame(width: SpotTokens.attachmentPicture, height: SpotTokens.attachmentPicture)
-        .clipShape(SpotRoundShape(radius: SpotTokens.attachmentPictureRadius))
+            .clipShape(SpotRoundShape(radius: SpotTokens.attachmentPictureRadius))
         .task(id: picture) { image = await Self.image(of: picture, scale: scale) }
     }
 

@@ -47,10 +47,21 @@ final class AttachmentPreviewTests: XCTestCase {
         XCTAssertNil(AttachmentPreview(AttachmentValue(text: "words")).picture)
     }
 
-    func testAPictureTakesEveryLineOfThePreview() {
-        let preview = AttachmentPreview(AttachmentValue(files: FileKinds(["/a/shot.png"])))
+    func testAPictureKeepsTheHeightOfAPreviewWithoutOne() {
+        let picture = AttachmentPreview(AttachmentValue(files: FileKinds(["/a/shot.png"])))
+        let words = AttachmentPreview(AttachmentValue(files: FileKinds(["/a/shot.md"])))
 
-        XCTAssertEqual(preview.lines, SpotTokens.previewLines)
+        XCTAssertEqual(picture.lines, words.lines)
+        XCTAssertEqual(SpotTokens.attachmentValueRoom(lines: picture.lines), SpotTokens.attachmentValueRoom(lines: words.lines))
+        XCTAssertLessThanOrEqual(SpotTokens.attachmentPicture, SpotTokens.attachmentValueRoom(lines: 1) - SpotTokens.attachmentValuePadding - SpotTokens.attachmentValueFoot)
+    }
+
+    func testWordsBesideAPictureWrapSooner() {
+        let name = String(repeating: "n", count: Int(SpotTokens.attachmentValueWidth / (CGFloat(SpotTokens.layout.type.body) * SpotTokens.glyphWidthShare))) + ".png"
+
+        XCTAssertEqual(SpotTokens.attachmentValueLines(of: name), 2)
+        XCTAssertEqual(SpotTokens.attachmentValueLines(of: String(name.dropLast(6))), 1)
+        XCTAssertEqual(SpotTokens.attachmentValueLines(of: String(name.dropLast(6)), besidePicture: true), 2)
     }
 
     func testACopiedImageShowsASmallThumbnailMadeOnceFromItsBytes() throws {
