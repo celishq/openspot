@@ -13,6 +13,8 @@
     `.view`, and each Swift spot into a `.program`, beside its source, so that it runs on a Mac with no developer tools. It does not ship.
     Debug compiles each at its first use.
   - `Tests/` — XCTest, through `@testable import OpenspotCore`.
+- The Debug build is `Openspot Nightly.app`, with the program `OpenspotNightly` and the bundle id `openspot.celis.ai.dev`. Release keeps
+  `Openspot`. The `openspot` command runs the program that `CFBundleExecutable` of its bundle names.
 - `app/Keywords/` holds the CLDR keywords of emoji and symbols, one xz file per language. `scripts/emoji-keywords.py` writes
   it from a pinned CLDR version, and the build copies it into the app.
 - `app/Themes/` holds the built-in themes, each in `<name>.theme/theme.toml`. Openspot, in `openspot.theme`, sets every choice,
@@ -117,12 +119,16 @@ below is one a reviewer can check in a diff.
 - The main thread never waits on a spot. The one exception: the answers to a key share one wait of 2 ms at most.
 - A press makes one update. The animated change goes first in it, or alone, since SwiftUI animates a view by the first change
   it sees in an update.
+- Each entry point of a person's act runs in `asOnePress`. A source of the hint only marks it stale. The outermost press works the
+  hint out once and writes it as its last change, so no setter writes the hint, and the observation's hop works it out only for a
+  change that no press made. A setter must not write through `change`, since `withTransaction` can flush the pending update, and
+  a body can then run between two writes that it reads together, such as `visible` and `placements`.
 
 ### Where work lives
 
 - A getter, a computed property and a static factory read only memory. They touch no disk, start no process and change no
   state. Work that reads the disk is a method named for it, such as `read()` or `scan()`. `scripts/check-getters.sh` fails on
-  a getter or a static factory that reads the disk.
+  a getter or a static factory that reads the disk, also by `fopen`, `fread` or `readPlist`.
 - The model and the views do not read the disk. A loader, such as `KeptScan` or `ConfigFile`, reads it at a load, and the
   rest read the value it kept.
 - Code starts a process only through `ScriptProcess`, which gives it a limit, a stop and the end of its group.
@@ -168,6 +174,12 @@ takes its look from the surface's progress, by `SheetMorph`, and keeps no curve 
 - A fade of many glass surfaces is one layer over them. The ⌘K dim is the one exception: it fades each other card and the
   field by opacity (`SpotMenuDim`), and `make perf ACTION=menu` guards its cost. A glass holds still during a motion it is
   not the subject of, since the system draws a glass again on each frame in which its content or its opacity changes.
+- A glass whose shape is a rounded rectangle (`RoundedRectangle`, `SpotRoundShape`, `SpotSurfaceShape`) becomes a layer
+  corner, and the system draws it once. A glass of any other shape, such as a path built by `subtracting`, is drawn again on each
+  frame of a motion.
+- An animatable modifier's output is constant while its view is hidden, since each frame that moves a glass works out its whole
+  subtree again, and `visualEffect` does not spare that. A pushed grid card holds still once its fade has hidden it
+  (`SheetPush.pose`), and takes no click.
 - Change words by a crossfade of two laid-out copies, not by a reflow.
 - Do not put an AppKit view in a view that moves or resizes, except a moving piece of a spot's view (see
   [Drawing](#drawing)).
@@ -176,11 +188,17 @@ takes its look from the surface's progress, by `SheetMorph`, and keeps no curve 
   (`SpotsHost.nextFrame`), never on the next turn of the queue, which can run before that frame is drawn.
 - During a motion, no state is written from a measure, such as `onGeometryChange` or a scroll's geometry. Compute frames
   from the layout's own numbers, and scale the content inside a scroll view, not the scroll view.
-- Content that reaches a surface during its open motion is applied when the motion ends.
+- Each spring ends when it looks done. `SpotSpring` runs SwiftUI's spring value for value and finishes once the travel it can
+  still make is under `MotionTokens.restFraction` of its own travel, half a point over the longest travel of the panel
+  (`SpringEnd`). It reports its logical end on the same frame as the plain spring, and its removal comes sooner.
+- Content that reaches a surface during its open or close motion is applied when the motion ends. A close that cuts an open
+  short holds the content to the close's end.
 - A sheet opens and closes by one rule, whatever its source (`SheetMorph.Source`): a card in sight, or the field for any
   other sheet. The source shows its own look and words, and they fade over the first half of the motion. The sheet's
   content, its title too, fades in from `MotionTokens.contentStart`. No part pops in when the shape has room for it.
-- The field travels into the sheet's search row, and the sheet's moving shape cuts its glass, so one glass shape shows.
+- The field's glass lies uncut under the sheet's glass, drawn by a second `SpotFieldView` below the sheet. It fades once the
+  sheet's moving shape holds it by a margin (`SheetMorph.fieldGlass`, `SheetMorph.clearance`), so one glass shape shows and no
+  glass is cut.
 - The blur's foot is the lower of the moving shape's foot and the grid's foot, which reaches the sheet's foot while the
   grid fades. The footer sits on it, and a grid card has faded by the time it reaches the card (`PanelFoot`).
 - The actions menu is placed from its card's resting frame, never from the card's moving outline, and the card's focus
@@ -242,6 +260,9 @@ interaction.
 - Write the failing test first, then the code that passes it.
 - Write a script for a test with `writeScript(to:)`. macOS checks a new executable file on its first run, for 150 ms or more.
 - Give a test a short pause through a setting, such as `stopPause`, and keep one test of the real time.
+- A test of a held frame waits for the hold itself (`SheetOpening.waitingFrames`), never for a count of yields. A test of Core
+  names only the rule it proves, since a Shell modifier that applies the rule is out of its reach.
+- A test takes its base spring from `SpotMotion.plainSpring(duration:bounce:)` and writes no curve.
 - Wait for a fact, never for a pause. To prove that a stopped thing does nothing more, give its action a long delay, stop it,
   wait for its end, then check.
 - A time limit in a test catches a hang or a slow algorithm, not a slow Mac. Give it ten times the normal time or more.
