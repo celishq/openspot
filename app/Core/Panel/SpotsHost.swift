@@ -9,6 +9,8 @@ public protocol SpotsHost: AnyObject {
     func notify(_ text: String)
     func notify(_ text: String, fix: URL)
     func confirm(_ text: String)
+    func toast(_ note: ToastNote, of spot: String)
+    func dropToast(_ id: String, of spot: String)
     func work(_ text: String)
     func applyConfig(_ config: Config)
     func paint(_ colours: Theme.Colours)

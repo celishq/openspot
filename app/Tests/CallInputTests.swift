@@ -71,7 +71,8 @@ final class CallInputTests: SpotRunsCase {
         var told: [String] = []
         runs.onReport = { _, report in
             switch report {
-            case .toast(let text), .failure(let text), .failureWithFix(let text, _): told.append(text)
+            case .toast(let note): told.append(note.words)
+            case .failure(let text), .failureWithFix(let text, _): told.append(text)
             default: break
             }
         }

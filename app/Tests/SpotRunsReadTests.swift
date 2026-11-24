@@ -570,7 +570,7 @@ final class SpotRunsReadTests: SpotRunsCase {
         try script(toml: "", "[ \"$1\" = show ] && printf 'item=a\\ntitle=A\\n'\n[ \"$1\" = press ] && sed -n 's/^input\\.item=//p' > '\(path("item"))'\n[ \"$1\" = press ] && \(TestSpot.toast) Done\nexit 0")
         let sheet = try sheet()
         var toasts: [String] = []
-        sheet.onReport = { if case .toast(let text) = $0 { toasts.append(text) } }
+        sheet.onReport = { if case .toast(let note) = $0 { toasts.append(note.words) } }
         sheet.open {}
         try await wait("the row") { sheet.list.shown.count == 1 }
 

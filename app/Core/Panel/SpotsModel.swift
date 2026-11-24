@@ -574,7 +574,8 @@ public final class SpotsModel {
 
     private func take(_ report: SpotRun.Report, of id: String) {
         switch report {
-        case .toast(let text): host.confirm(text)
+        case .toast(let note): host.toast(note, of: id)
+        case .dropToast(let toast): host.dropToast(toast, of: id)
         case .failure(let text): host.notify(text)
         case .failureWithFix(let text, let fix): host.notify(text, fix: fix)
         case .listChange:

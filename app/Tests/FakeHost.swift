@@ -75,6 +75,18 @@ final class FakeHost: SpotsHost {
         confirms.append(text)
     }
 
+    var toasts: [(note: ToastNote, spot: String)] = []
+    var droppedToasts: [(id: String, spot: String)] = []
+
+    func toast(_ note: ToastNote, of spot: String) {
+        toasts.append((note, spot))
+        confirms.append(note.words)
+    }
+
+    func dropToast(_ id: String, of spot: String) {
+        droppedToasts.append((id, spot))
+    }
+
     func work(_ text: String) {
         confirms.append(text)
     }

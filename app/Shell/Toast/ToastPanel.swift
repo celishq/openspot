@@ -3,7 +3,7 @@ import OpenspotCore
 import SwiftUI
 
 final class ToastPanel: NSPanel {
-    private static let duration: TimeInterval = 5
+    static let duration: TimeInterval = 5
 
     let toasts = Toasts()
     private var stack = ToastStack()
@@ -15,14 +15,26 @@ final class ToastPanel: NSPanel {
     weak var item: OpenspotItem?
     var front: () -> CGRect? = { nil }
 
-    func show(_ message: String, kind: ToastKind, fix: (@MainActor @Sendable () -> Void)? = nil, key: Shortcut? = nil, for duration: TimeInterval? = ToastPanel.duration) {
-        let added = stack.add(spot: "", kind: kind)
+    func show(_ message: String, kind: ToastKind, spot: String = "", id: String? = nil, press: (@MainActor @Sendable () -> Void)? = nil, fixKey key: Shortcut? = nil, for duration: TimeInterval? = ToastPanel.duration) {
+        let added = stack.add(spot: spot, kind: kind, id: id)
         let number = added.number
-        let open = fix.map { closing(number, after: $0) }
-        let held = open.flatMap { open in key.flatMap { holdFixKey(number, key: $0, open: open) } }
-        let toast = Toast(id: number, message: held.map { "\(message) Press `\($0.label)` to fix it." } ?? message, kind: kind, duration: duration)
+        let open = closing(number, after: press ?? {})
+        let held = press == nil ? nil : key.flatMap { holdFixKey(number, key: $0, open: open) }
+        let words = held.map { "\(message) Press `\($0.label)` to fix it." } ?? message
+        if !added.isNew, let shown = toasts.shown.first(where: { $0.id == number }) {
+            shown.message = words
+            shown.kind = kind
+            shown.duration = duration
+            shown.open = open
+            shown.fixKey = press == nil ? nil : key
+            place()
+            ends.removeValue(forKey: number)?.cancel()
+            if !isHeld { end(shown) }
+            return
+        }
+        let toast = Toast(id: number, message: words, kind: kind, duration: duration)
         toast.open = open
-        toast.fixKey = key
+        toast.fixKey = press == nil ? nil : key
         added.dropped.forEach(leave)
         withAnimation(SpotMotion.move) { toasts.shown.insert(toast, at: 0) }
         place()
@@ -35,6 +47,10 @@ final class ToastPanel: NSPanel {
             self.toasts.takeLead()
         }
         if !isHeld { end(toast) }
+    }
+
+    func drop(_ id: String, of spot: String) {
+        stack.number(of: id, spot: spot).map(leave)
     }
 
     func hide() {
@@ -119,7 +135,7 @@ final class ToastPanel: NSPanel {
     private func passFixKey() {
         fixKey.map { HotKey.unregister($0.registration) }
         fixKey = nil
-        guard let next = toasts.shown.first(where: { $0.open != nil && $0.fixKey != nil && isStacked($0.id) }), let key = next.fixKey, let open = next.open else { return }
+        guard let next = toasts.shown.first(where: { $0.fixKey != nil && isStacked($0.id) }), let key = next.fixKey, let open = next.open else { return }
         holdFixKey(next.id, key: key, open: open)
     }
 

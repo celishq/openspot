@@ -6,9 +6,9 @@ import OpenspotCore
 @Observable
 final class Toast: Identifiable {
     let id: Int
-    let message: String
-    let kind: ToastKind
-    @ObservationIgnored let duration: TimeInterval?
+    var message: String
+    var kind: ToastKind
+    @ObservationIgnored var duration: TimeInterval?
     @ObservationIgnored var open: (@MainActor @Sendable () -> Void)?
     @ObservationIgnored var fixKey: Shortcut?
     var isShown = false

@@ -494,7 +494,7 @@ final class SpotDropTests: XCTestCase {
         runs.api = CommandAPI(mac: Mac(), places: .test(["OPENSPOT_CONFIG": folder.path]), app: FakeRunningApp(), runs: runs)
         let sheet = try sheet(toml: "[on]\ndrop = [\"mov\"]", "printf 'frame=\\ntitle=42%%\\nprogress=0.42\\n---\\n'\n\(untilRelease)\n\(TestSpot.toast) Done")
         var toasts: [String] = []
-        sheet.onReport = { if case .toast(let text) = $0 { toasts.append(text) } }
+        sheet.onReport = { if case .toast(let note) = $0 { toasts.append(note.words) } }
         let frames = FrameLog(sheet)
 
         XCTAssertTrue(sheet.drop(paths: [file("a.mov")]))

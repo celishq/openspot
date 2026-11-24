@@ -69,7 +69,7 @@ final class DrawSpotTests: XCTestCase {
         runs.onCall = { [unowned self] record in records.append(record) }
         let sheet = runs.sheet(for: spot)
         sheet.onReport = { [unowned self] report in
-            if case .toast(let text) = report { toasts.append(text) }
+            if case .toast(let note) = report { toasts.append(note.words) }
         }
         runs.panelOpened()
         sheet.open {}

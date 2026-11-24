@@ -282,7 +282,7 @@ final class SpotRunsCallTests: SpotRunsCase {
         try script(toml: "", String(format: Self.worker, path("done")))
         let sheet = try sheet()
         var toasts: [String] = []
-        sheet.onReport = { if case .toast(let text) = $0 { toasts.append(text) } }
+        sheet.onReport = { if case .toast(let note) = $0 { toasts.append(note.words) } }
         let frames = FrameLog(sheet)
         sheet.open {}
         try await wait("the part") { sheet.panel != nil && sheet.calls.isEmpty }

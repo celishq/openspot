@@ -18,15 +18,23 @@ extension OpenspotApp: SpotsHost {
     }
 
     func notify(_ text: String, fix: URL) {
-        toast?.show(text, kind: .failure, fix: { NSWorkspace.shared.open(fix) }, key: model.config.fixKey)
+        toast?.show(text, kind: .failure, press: { NSWorkspace.shared.open(fix) }, fixKey: model.config.fixKey)
     }
 
     func notifyKeyFault(_ text: String) {
-        toast?.show(text, kind: .failure, fix: { [weak self] in self?.openSettings() }, key: model.config.fixKey)
+        toast?.show(text, kind: .failure, press: { [weak self] in self?.openSettings() }, fixKey: model.config.fixKey)
     }
 
     func confirm(_ text: String) {
         toast?.show(text, kind: .confirm)
+    }
+
+    func toast(_ note: ToastNote, of spot: String) {
+        toast?.show(note.words, kind: .confirm, spot: spot, id: note.id, press: { [weak self] in self?.model.press(note, of: spot) }, for: note.keeps ? nil : ToastPanel.duration)
+    }
+
+    func dropToast(_ id: String, of spot: String) {
+        toast?.drop(id, of: spot)
     }
 
     func work(_ text: String) {

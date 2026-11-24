@@ -34,7 +34,8 @@ see [the commands that fail in a read](../../app/Help/commands.md#the-commands-t
 
 | Command                                             | Does                                                                     |
 | --------------------------------------------------- | ------------------------------------------------------------------------ |
-| `openspot toast <words>...`                         | Shows a short message, even when the panel is closed. It works in `show`. |
+| `openspot toast [words...]`                         | Shows a short message, even when the panel is closed. With no words, it reads [a toast](#a-toast) on stdin. It works in `show`. |
+| `openspot toast remove <id>`                        | Takes your toast with the id away.                                       |
 | `openspot select <item>`                            | Selects a row of your sheet once your next frame shows.                  |
 | `openspot attachment add <kind>=<value>... [title=<words>] [app=<app>] [icon=<icon>]` | Puts a value in the panel's field: `file=` once for each file, `url=` or `text=`. `icon=` takes what [`icon`](spot-toml.md#keys) in spot.toml takes. It works in `show` and `attachment.pick`, and needs `attachment` in `uses`. |
 | `openspot route push <route> [--title <words>] [--replace]` | Shows a page of your spot over the sheet.                        |
@@ -57,6 +58,25 @@ see [the commands that fail in a read](../../app/Help/commands.md#the-commands-t
 | `openspot date read <words>...`                     | Prints the date the words name, such as `25 dec`, as `item` and `time`, or nothing when they are more than a date. |
 
 In each command, an app is its bundle ID, such as `com.apple.Safari`. Each list a command prints is blocks, as your script prints them, or JSON with `--json` where the command takes it.
+
+## A toast
+
+Up to three toasts show at once, the newest on top. A click on a toast closes it. A toast with no words reads one block
+on stdin:
+
+```ini
+toast=upload
+title=Uploading 3 files
+keep=true
+action=open-uploads
+```
+
+| Key      | Is                                                                                    |
+| -------- | ------------------------------------------------------------------------------------- |
+| `toast`  | Its id. A later toast of your spot with the same id changes it in place.              |
+| `title`  | The words it shows.                                                                   |
+| `keep`   | `true` keeps it until a click or `openspot toast remove <id>`. Else it leaves after 5 seconds. |
+| `action` | The action of your spot that a click runs. With none, a click opens your spot.        |
 
 ## Write a message
 

@@ -23,7 +23,7 @@ public struct FaultSpot: Equatable, Sendable {
             return HostAnswer(frame: sheet)
         case Self.fixPart:
             let toast = try await prompt.copy(prompt.fixing(file, faults: faults), base: base)
-            return HostAnswer(frame: "", effects: [.toast(toast)])
+            return HostAnswer(frame: "", effects: [.toast(ToastNote(words: toast))])
         case Self.editPart:
             _ = try await ScriptProcess.output(url: URL(fileURLWithPath: "/usr/bin/env"), arguments: ["open", "-t", file.path], base: base)
             return HostAnswer(frame: "")

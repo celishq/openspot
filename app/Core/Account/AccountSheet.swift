@@ -146,7 +146,7 @@ public actor AccountSheet {
             throw SpotError.failed(1, "Account cannot do that.")
         }
         let frame = try await sheet(on: page, phrase: phrase, handle: handle)
-        return HostAnswer(frame: frame, effects: [move?.effect, toast.map(SpotEffect.toast)].compactMap { $0 })
+        return HostAnswer(frame: frame, effects: [move?.effect, toast.map { .toast(ToastNote(words: $0)) }].compactMap { $0 })
     }
 
     private func step(on page: Page?, _ facts: AccountStatus) -> Step {

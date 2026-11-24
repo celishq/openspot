@@ -45,4 +45,27 @@ final class ToastStackTests: XCTestCase {
         XCTAssertFalse(stack.remove(first))
         XCTAssertEqual(stack.entries.map(\.number), [second])
     }
+
+    func testAToastWithTheIdOfOneThatShowsChangesItInPlace() {
+        var stack = ToastStack()
+        let first = stack.add(spot: "a", kind: .confirm, id: "up")
+        let other = stack.add(spot: "a", kind: .confirm)
+
+        let again = stack.add(spot: "a", kind: .confirm, id: "up")
+
+        XCTAssertEqual(again.number, first.number)
+        XCTAssertFalse(again.isNew)
+        XCTAssertEqual(stack.entries.map(\.number), [other.number, first.number])
+    }
+
+    func testTheSameIdOfAnotherSpotIsAnotherToast() {
+        var stack = ToastStack()
+        stack.add(spot: "a", kind: .confirm, id: "up")
+
+        let other = stack.add(spot: "b", kind: .confirm, id: "up")
+
+        XCTAssertTrue(other.isNew)
+        XCTAssertEqual(stack.entries.count, 2)
+        XCTAssertEqual(stack.number(of: "up", spot: "b"), other.number)
+    }
 }

@@ -5,7 +5,8 @@ import Observation
 @Observable
 public final class SpotRun {
     public enum Report: Sendable {
-        case toast(String)
+        case toast(ToastNote)
+        case dropToast(String)
         case failure(String)
         case failureWithFix(String, URL)
         case frame(String)

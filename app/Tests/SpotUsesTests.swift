@@ -18,7 +18,7 @@ final class SpotUsesTests: SpotRunsCase {
         runs.api = api
         socket = try XCTUnwrap(CommandSocket(folder: config, api: api))
         runs.onReport = { [unowned self] _, report in
-            if case .toast(let text) = report { toasts.append(text) }
+            if case .toast(let note) = report { toasts.append(note.words) }
         }
     }
 

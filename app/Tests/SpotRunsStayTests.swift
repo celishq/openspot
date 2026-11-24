@@ -157,7 +157,7 @@ final class SpotRunsStayTests: SpotRunsCase {
         try holding()
         let sheet = try sheet()
         var toasts: [String] = []
-        sheet.onReport = { if case .toast(let text) = $0 { toasts.append(text) } }
+        sheet.onReport = { if case .toast(let note) = $0 { toasts.append(note.words) } }
         sheet.pressKey("hold")
         _ = try await pid("children")
 
@@ -903,7 +903,7 @@ final class SpotRunsStayTests: SpotRunsCase {
         """)
         let sheet = try sheet()
         var toasts: [String] = []
-        sheet.onReport = { if case .toast(let text) = $0 { toasts.append(text) } }
+        sheet.onReport = { if case .toast(let note) = $0 { toasts.append(note.words) } }
         runs.panelOpened()
         sheet.open {}
         try await wait("the first rows") { sheet.list.search == .script && sheet.list.shown.count == 1 }
