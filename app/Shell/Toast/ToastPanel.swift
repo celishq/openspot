@@ -71,7 +71,7 @@ final class ToastPanel: NSPanel, ToastWindow {
         panel.collectionBehavior = [.canJoinAllSpaces, .fullScreenAuxiliary]
         panel.toasts = toasts
         toasts.window = panel
-        let view = NSHostingView(rootView: ToastStackView(toasts: toasts))
+        let view = NSHostingView(rootView: ToastsView(toasts: toasts))
         view.sizingOptions = []
         panel.contentView = view
         return panel

@@ -1,13 +1,13 @@
 import OpenspotCore
 import SwiftUI
 
-struct ToastStackView: View {
+struct ToastsView: View {
     let toasts: Toasts
 
     var body: some View {
         VStack(spacing: SpotTokens.toastBarsGap) {
             ZStack(alignment: .top) {
-                ForEach(toasts.shown) { toast in
+                ForEach(toasts.queue) { toast in
                     ToastView(toast: toast, toasts: toasts)
                         .zIndex(toast.isShown ? 1 : 0)
                 }

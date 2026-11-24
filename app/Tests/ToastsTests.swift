@@ -17,15 +17,11 @@ final class ToastsTests: XCTestCase {
     }
 
     private var front: String? {
-        toasts.shown.first(where: \.isShown)?.words
-    }
-
-    private var waiting: [String] {
-        toasts.shown.map(\.words)
+        toasts.queue.first(where: \.isShown)?.words
     }
 
     private func show(_ words: String, kind: ToastKind = .confirm, spot: String = "", press: (@MainActor @Sendable () -> Void)? = nil) async throws {
-        toasts.add(ToastNote(words: words, kind: kind), spot: spot, press: press)
+        toasts.add(kind == .work ? .work(words) : ToastNote(words: words, kind: kind), spot: spot, press: press)
         try await wait("\(words) shows", until: { front == words })
     }
 
@@ -44,7 +40,7 @@ final class ToastsTests: XCTestCase {
 
         try await show("b")
 
-        XCTAssertEqual(toasts.shown.filter(\.isShown).map(\.words), ["b"])
+        XCTAssertEqual(toasts.queue.filter(\.isShown).map(\.words), ["b"])
         XCTAssertEqual(toasts.count, 2)
         XCTAssertEqual(window.fronts, 2)
     }
@@ -53,7 +49,7 @@ final class ToastsTests: XCTestCase {
         try await show("a")
         try await show("b")
 
-        toasts.press(try XCTUnwrap(toasts.shown.first).id)
+        toasts.press(try XCTUnwrap(toasts.queue.first).id)
 
         XCTAssertEqual(front, "a")
         XCTAssertEqual(toasts.count, 1)
@@ -74,7 +70,7 @@ final class ToastsTests: XCTestCase {
         XCTAssertEqual(front, "d")
         XCTAssertEqual(toasts.count, 3)
         try await pass(MotionTokens.fadeOut, sleeps: 2, due: MotionTokens.fadeOut)
-        try await wait("the oldest leaves", until: { toasts.shown.map(\.words) == ["d", "c", "b"] })
+        try await wait("the oldest leaves", until: { toasts.queue.map(\.words) == ["d", "c", "b"] })
     }
 
     func testAWorkToastGivesWayToTheNextToastOfItsSpot() async throws {
@@ -95,7 +91,7 @@ final class ToastsTests: XCTestCase {
 
         toasts.add(try note("toast=up\ntitle=Uploaded\n"), spot: "s")
 
-        XCTAssertEqual(toasts.shown.map(\.words), ["other", "Uploaded"])
+        XCTAssertEqual(toasts.queue.map(\.words), ["other", "Uploaded"])
         try await pass(1, sleeps: 1, due: 1)
         try await wait("the upload steps in", until: { front == "Uploaded" })
         try await pass(5, sleeps: 2, due: 5)
@@ -149,7 +145,7 @@ final class ToastsTests: XCTestCase {
         try await wait("the new upload shows", until: { front == "Uploaded" })
         try await pass(MotionTokens.fadeOut, sleeps: 1)
 
-        try await wait("one toast stays", until: { toasts.shown.map(\.words) == ["Uploaded"] })
+        try await wait("one toast stays", until: { toasts.queue.map(\.words) == ["Uploaded"] })
         XCTAssertEqual(toasts.count, 1)
         toasts.drop("up", of: "s")
         XCTAssertNil(front)
@@ -185,7 +181,7 @@ final class ToastsTests: XCTestCase {
     func testAPressRunsWhatItDoesAndClosesTheToast() async throws {
         var runs = 0
         try await show("a", press: { runs += 1 })
-        let toast = try XCTUnwrap(toasts.shown.first)
+        let toast = try XCTUnwrap(toasts.queue.first)
 
         toasts.press(toast.id)
 
@@ -193,7 +189,7 @@ final class ToastsTests: XCTestCase {
         XCTAssertNil(front)
         try await pass(MotionTokens.fadeOut, sleeps: 1)
         try await wait("the window goes away", until: { window.putAways == 1 })
-        XCTAssertEqual(toasts.shown.count, 0)
+        XCTAssertEqual(toasts.queue.count, 0)
     }
 
     func testTheLeadFollowsTheNewestShownToast() async throws {
@@ -202,7 +198,7 @@ final class ToastsTests: XCTestCase {
         try await show("failed", kind: .failure)
         XCTAssertEqual(toasts.leadKind, .failure)
 
-        toasts.press(try XCTUnwrap(toasts.shown.first).id)
+        toasts.press(try XCTUnwrap(toasts.queue.first).id)
 
         XCTAssertEqual(toasts.leadKind, .confirm)
     }
@@ -219,7 +215,7 @@ final class ToastsTests: XCTestCase {
         var fixes: [String] = []
         toasts.add(.failure("first"), press: { fixes.append("first") }, fixKey: key)
         toasts.add(.failure("second"), press: { fixes.append("second") }, fixKey: key)
-        XCTAssertEqual(toasts.shown.first?.words, "second Press `\(key.label)` to fix it.")
+        XCTAssertEqual(toasts.queue.first?.words, "second Press `\(key.label)` to fix it.")
 
         window.fixPress?()
         window.fixPress?()
@@ -244,7 +240,7 @@ final class ToastsTests: XCTestCase {
         try await show("ok")
         XCTAssertNil(window.fixPress)
 
-        toasts.press(try XCTUnwrap(toasts.shown.first).id)
+        toasts.press(try XCTUnwrap(toasts.queue.first).id)
         try await wait("the failure steps in with its key", until: { window.fixPress != nil })
         window.fixPress?()
         XCTAssertEqual(fixes, 1)

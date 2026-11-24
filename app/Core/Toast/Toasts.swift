@@ -8,7 +8,7 @@ public final class Toasts {
     public static let limit = 3
     public static let duration: TimeInterval = 5
 
-    public private(set) var shown: [Toast] = []
+    public private(set) var queue: [Toast] = []
     public private(set) var leadKind: ToastKind?
     public private(set) var count = 0
     public private(set) var frontHeight: CGFloat = 0
@@ -29,22 +29,22 @@ public final class Toasts {
         self.clock = clock
     }
 
-    public func add(_ note: ToastNote, spot: String = "", press: (@MainActor @Sendable () -> Void)? = nil, fixKey key: Shortcut? = nil, for duration: TimeInterval? = Toasts.duration) {
+    public func add(_ note: ToastNote, spot: String = "", press: (@MainActor @Sendable () -> Void)? = nil, fixKey key: Shortcut? = nil) {
         let id = ToastID(spot: spot, name: note.id.map(ToastID.Name.given) ?? .made(nextMade()))
-        let existing = stacked.first { $0.id == id }
-        if existing == nil, leaving.remove(id) != nil { shown.removeAll { $0.id == id } }
+        let existing = waiting.first { $0.id == id }
+        if existing == nil, leaving.remove(id) != nil { queue.removeAll { $0.id == id } }
         let fixKey = press == nil ? nil : key
         let isFront = existing == nil || frontID == id
         let held = isFront ? fixKey.flatMap { holdFixKey(id, key: $0) } : nil
         let words = held.map { "\(note.words) Press `\($0.label)` to fix it." } ?? note.words
         let toast = existing ?? Toast(id: id, note: note, words: words)
         existing?.take(note, words: words)
-        toast.duration = note.keeps || note.kind == .work ? nil : duration
+        toast.duration = note.keeps ? nil : Self.duration
         toast.press = press
         toast.fixKey = fixKey
         if existing == nil { dropped(by: toast).forEach(leave) }
         toast.size = window?.measure(toast) ?? .zero
-        if existing == nil { shown.insert(toast, at: 0) }
+        if existing == nil { queue.insert(toast, at: 0) }
         host.change(.move, { fit() }, completion: {})
         window?.place()
         if existing == nil {
@@ -59,7 +59,7 @@ public final class Toasts {
     }
 
     public func press(_ id: ToastID) {
-        shown.first { $0.id == id }?.press?()
+        queue.first { $0.id == id }?.press?()
         leave(id)
     }
 
@@ -69,17 +69,13 @@ public final class Toasts {
         if isHovered {
             ends.values.forEach { $0.cancel() }
             ends.removeAll()
-        } else if let front = stacked.first {
+        } else if let front = waiting.first {
             end(front)
         }
     }
 
-    private var stacked: [Toast] {
-        shown.filter { !leaving.contains($0.id) }
-    }
-
-    private func isStacked(_ id: ToastID) -> Bool {
-        shown.contains { $0.id == id } && !leaving.contains(id)
+    private var waiting: [Toast] {
+        queue.filter { !leaving.contains($0.id) }
     }
 
     private func nextMade() -> Int {
@@ -88,31 +84,31 @@ public final class Toasts {
     }
 
     private func dropped(by toast: Toast) -> [ToastID] {
-        let stacked = stacked
-        let giving = stacked.filter { $0.id.spot == toast.id.spot && $0.note.kind == .work }.map(\.id)
-        let staying = stacked.filter { !giving.contains($0.id) }
+        let waiting = waiting
+        let giving = waiting.filter { $0.id.spot == toast.id.spot && $0.note.kind == .work }.map(\.id)
+        let staying = waiting.filter { !giving.contains($0.id) }
         return giving + staying.dropFirst(Self.limit - 1).map(\.id)
     }
 
     private func leave(_ id: ToastID) {
         ends.removeValue(forKey: id)?.cancel()
-        guard let toast = shown.first(where: { $0.id == id }), leaving.insert(id).inserted else { return }
+        guard let toast = queue.first(where: { $0.id == id }), leaving.insert(id).inserted else { return }
         showFront()
         host.change(.move, { fit() }, completion: {})
         window?.place()
         after(MotionTokens.fadeOut) { [weak self] in
-            guard let self, shown.contains(where: { $0 === toast }) else { return }
+            guard let self, queue.contains(where: { $0 === toast }) else { return }
             leaving.remove(id)
-            shown.removeAll { $0.id == id }
+            queue.removeAll { $0.id == id }
             settle()
         }
     }
 
     private func settle() {
         fit()
-        if !stacked.isEmpty {
+        if !waiting.isEmpty {
             window?.place()
-        } else if shown.isEmpty {
+        } else if queue.isEmpty {
             isHeld = false
             window?.putAway()
         }
@@ -144,8 +140,8 @@ public final class Toasts {
     }
 
     private func showFront() {
-        let front = stacked.first
-        for toast in shown where toast.isShown != (toast === front) {
+        let front = waiting.first
+        for toast in queue where toast.isShown != (toast === front) {
             toast.isShown = toast === front
         }
         let next = front?.note.kind
@@ -164,11 +160,11 @@ public final class Toasts {
     }
 
     private func fit() {
-        let stacked = stacked
-        if stacked.count != count { count = stacked.count }
-        let front = stacked.first?.size.height ?? 0
+        let waiting = waiting
+        if waiting.count != count { count = waiting.count }
+        let front = waiting.first?.size.height ?? 0
         if front != frontHeight { frontHeight = front }
-        let seen = shown.filter { $0.id == stacked.first?.id || leaving.contains($0.id) }
+        let seen = queue.filter { $0.id == waiting.first?.id || leaving.contains($0.id) }
         width = max(seen.map(\.size.width).max() ?? 0, count > 1 ? SpotTokens.toastBars(count) : 0)
         height = (seen.map(\.size.height).max() ?? 0) + (count > 1 ? SpotTokens.toastBarsGap + SpotTokens.toastBarHeight : 0)
     }
