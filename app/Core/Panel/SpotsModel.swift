@@ -83,7 +83,6 @@ public final class SpotsModel {
         }
     }
     public private(set) var fieldRoom: CGFloat = 0
-    @ObservationIgnored var holdMotion: PanelMotion? = .edit
     @ObservationIgnored var contextPause: Duration = .seconds(1)
     @ObservationIgnored var contextWatch: Task<Void, Never>?
     @ObservationIgnored var isContextMoving = false

@@ -49,7 +49,7 @@ extension SpotsModel {
         let job: Task<Void, Never>
     }
 
-    public func updateVisible() {
+    public func updateVisible(holding motion: PanelMotion? = .edit) {
         visibleUpdates += 1
         finding?.job.cancel()
         finding = nil
@@ -59,10 +59,10 @@ extension SpotsModel {
             if slash != nil { slash = nil }
             content = .context
             foundSpots = []
-            show(showContext())
+            show(showContext(holding: motion))
             return
         }
-        hold(nil)
+        hold(nil, motion: motion)
         guard !text.isEmpty else {
             if slash != nil { slash = nil }
             content = .cards

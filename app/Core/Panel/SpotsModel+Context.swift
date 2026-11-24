@@ -59,10 +59,8 @@ extension SpotsModel {
         change(isShown ? motion : nil, { context = next })
         placeContext(motion)
         guard before.isOn != next.isOn || before.chip != next.selectedChip else { return }
-        holdMotion = motion
         selected = 0
-        updateVisible()
-        holdMotion = .edit
+        updateVisible(holding: motion)
     }
 
     func give(to entry: Entry) {
@@ -85,16 +83,16 @@ extension SpotsModel {
         return [run, "⇥ Next", "Esc Leave"].compactMap { $0 }.joined(separator: "   ")
     }
 
-    func showContext() -> [Entry] {
+    func showContext(holding motion: PanelMotion?) -> [Entry] {
         guard let chip = context.selectedChip, entry(chip.source) != nil else {
-            hold(nil)
+            hold(nil, motion: motion)
             return []
         }
         guard let value = chip.value else {
-            hold(.loading)
+            hold(.loading, motion: motion)
             return []
         }
-        hold(ContextPreview(value))
+        hold(ContextPreview(value), motion: motion)
         let text = query.trimmingCharacters(in: .whitespaces)
         let found = commands.takers(of: value, matching: text.isEmpty ? nil : runs.search(of: text), limit: Self.takerLimit)
         let taken = found.compactMap { row in
@@ -103,9 +101,9 @@ extension SpotsModel {
         return taken
     }
 
-    func hold(_ preview: ContextPreview?) {
+    func hold(_ preview: ContextPreview?, motion: PanelMotion?) {
         guard preview != fieldValue.preview else { return }
-        change(isShown ? holdMotion : nil) { fieldValue = FieldValue(preview) }
+        change(isShown ? motion : nil) { fieldValue = FieldValue(preview) }
     }
 
     static let takerLimit = 5
