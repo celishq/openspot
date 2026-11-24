@@ -12,7 +12,7 @@ final class ScreenExamplesTests: SampleSpotsCase {
         case "$1 $2" in
           'setting get') cat "\(path)/setting-$key" 2>/dev/null ;;
           'setting set') if [ $# -ge 4 ]; then printf '%s' "$4" > "\(path)/setting-$3"; else rm -f "\(path)/setting-$3"; fi ;;
-          'screen sources') printf 'text=display:1\\ntitle=Built-in\\n\\ntext=window:7\\ntitle=Notes\\n\\ntext=system\\ntitle=Sound of the Mac\\n\\ntext=mic:A1\\ntitle=Desk\\n\\ntext=mic:B2\\ntitle=Headset\\n\\ntext=camera:C3\\ntitle=FaceTime\\n' ;;
+          'screen sources') printf 'item=display:1\\ntitle=Built-in\\n\\nitem=window:7\\ntitle=Notes\\n\\nitem=system\\ntitle=Sound of the Mac\\n\\nitem=mic:A1\\ntitle=Desk\\n\\nitem=mic:B2\\ntitle=Headset\\n\\nitem=camera:C3\\ntitle=FaceTime\\n' ;;
           'screen shot') cat '\(path)/shot' 2>/dev/null || true ;;
           'clipboard copy') printf '%s' "$3" > '\(path)/clipboard' ;;
           'toast '*) shift; printf '%s\\n' "$*" >> '\(path)/toasts' ;;
@@ -34,12 +34,12 @@ final class ScreenExamplesTests: SampleSpotsCase {
         try await withPrivateHome(settings: ["inputs": "mic:B2 system"]) { folder in
             try self.fakeScreen(in: folder)
 
-            try await record.perform(.press("record"), timeout: 60)
+            try await record.perform("record", timeout: 60)
             XCTAssertEqual(self.toasts(in: folder), ["Recording the screen. Run Record again to stop it."])
             XCTAssertTrue(try self.read("calls", in: folder).contains("screen record start mic:B2 system\n"))
             XCTAssertFalse(try self.read("calls", in: folder).contains("setting get"))
 
-            try await record.perform(.press("record"), timeout: 60)
+            try await record.perform("record", timeout: 60)
             XCTAssertEqual(self.toasts(in: folder), ["Recording the screen. Run Record again to stop it.", "Copied the recording."])
             XCTAssertEqual(try self.read("clipboard", in: folder), folder.path + "/talk.mp4")
         }
@@ -52,7 +52,7 @@ final class ScreenExamplesTests: SampleSpotsCase {
             FileManager.default.createFile(atPath: folder.appendingPathComponent("ended").path, contents: Data())
 
             do {
-                try await record.perform(.press("record"), timeout: 60)
+                try await record.perform("record", timeout: 60)
                 XCTFail("the run says why the recording ended")
             } catch {
                 XCTAssertTrue("\(error)".contains("The recording ended as macOS stopped it."), "\(error)")
@@ -78,7 +78,7 @@ final class ScreenExamplesTests: SampleSpotsCase {
 
     func testAPickTurnsAnInputOnOrOffAndReplacesTheOtherOfItsKind() async throws {
         let record = try example("Record")
-        let inputs = SpotAction.action(CommandAction(id: "inputs", title: "Sound and camera"), item: nil)
+        let inputs = "inputs"
         try await withPrivateHome { folder in
             try self.fakeScreen(in: folder)
             let pick = { (input: String, kept: String) in
@@ -130,7 +130,7 @@ final class ScreenExamplesTests: SampleSpotsCase {
         let shot = try example("Shot")
 
         XCTAssertEqual(shot.mode, .stay)
-        XCTAssertNil(shot.on)
+        XCTAssertFalse(shot.triggers.shows)
         XCTAssertEqual(shot.sources, ["shot"])
         XCTAssertEqual(shot.uses, [.screen, .clipboard])
     }

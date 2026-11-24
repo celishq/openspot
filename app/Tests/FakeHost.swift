@@ -145,12 +145,16 @@ final class FakeHost: SpotsHost {
     }
 
     func agentPrompt(for folder: URL) -> AgentPrompt {
-        AgentPrompt(folder: folder, guide: folder.appendingPathComponent("GUIDE.md"), app: app)
+        AgentPrompt(folder: folder, guide: folder.appendingPathComponent("DOCS.md"), app: app)
     }
+
+    private(set) var isChanging = false
 
     func change(_ motion: PanelMotion?, _ body: () -> Void, completion: @escaping @MainActor () -> Void) {
         motions.append(motion)
+        isChanging = true
         body()
+        isChanging = false
         if let edges = model?.flowEdges, edges != edgeChanges.last?.edges { edgeChanges.append((motion, edges, model?.openItems?.shown.map(\.title) ?? [])) }
         if let phase = model?.transition.phase { phases.append(phase) }
         openings.append(model?.runs.opening.moving)

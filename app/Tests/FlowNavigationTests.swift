@@ -29,7 +29,6 @@ final class FlowNavigationTests: PanelCase {
         try await openList()
         try await openPage()
         model.searchText = "de"
-        model.landSearch()
 
         XCTAssertTrue(model.handleKey(escape))
         XCTAssertEqual(model.searchText, "")
@@ -51,6 +50,20 @@ final class FlowNavigationTests: PanelCase {
         try await wait("the grid") { self.model.openSheetID == nil }
         XCTAssertNil(model.flow.current)
         XCTAssertNil(model.sheets["list"]?.route)
+    }
+
+    func testClosingASheetEndsItsFlowInTheSameUpdateAsItsMotion() async throws {
+        try await openList()
+        try await openPage()
+        nonisolated(unsafe) var toldOutsideAChange = false
+        nonisolated(unsafe) let host = host
+        withObservationTracking { _ = model.flowEdges } onChange: { MainActor.assumeIsolated { toldOutsideAChange = host?.isChanging == false } }
+
+        XCTAssertTrue(model.handleKey(toGrid))
+
+        try await wait("the grid") { self.model.openSheetID == nil }
+        XCTAssertFalse(toldOutsideAChange)
+        XCTAssertEqual(model.flowEdges, FlowEdges())
     }
 
     func testASpotThatOpensAnotherPushesItAndBackComesHome() async throws {
@@ -77,8 +90,8 @@ final class FlowNavigationTests: PanelCase {
 
     func testTheHintOfAPageSaysThatEscGoesBack() async throws {
         try script("info", toml: "pages = ['a']", """
-        page=$(sed -n 's/^route=//p')
-        if [ -n "$page" ]; then printf 'frame=\\ngrid=detail\\n\\ntext=detail\\ntitle=Detail\\n'; else printf 'frame=\\ngrid=first\\n\\ntext=first\\ntitle=First\\n\\ntext=a\\ntitle=A\\nroute=a\\n'; fi
+        page=$(sed -n 's/^input\\.route=//p')
+        if [ -n "$page" ]; then printf 'frame=\\nclass=gap-part\\n\\ntext=detail\\ntitle=Detail\\n'; else printf 'frame=\\nclass=gap-part\\n\\ntext=first\\ntitle=First\\n\\nitems=list\\n\\nitem=a\\nparent=list\\ntitle=A\\nroute=a\\n'; fi
         """)
         await model.reload()
         model.isShown = true
@@ -301,7 +314,7 @@ final class FlowNavigationTests: PanelCase {
     }
 
     func testASheetWithNoCardGrowsFromTheFieldAndShrinksBackIntoIt() async throws {
-        try script("hidden", toml: "", "printf 'text=h\\ntitle=Hidden\\n'")
+        try script("hidden", toml: "", "printf 'item=h\\ntitle=Hidden\\n'")
         _ = try model.files.config.change { $0.arrangement.set(isOnGrid: false, of: "hidden") }
         await model.reload()
         model.isShown = true
@@ -340,8 +353,8 @@ final class FlowNavigationTests: PanelCase {
     }
 
     func testEscOnAListThatAnotherSpotPushedGoesBackToIt() async throws {
-        try script("menu", toml: "title = 'Menu'\non = ['sheet.open']", "printf 'text=go\\ntitle=Go\\n'")
-        try script("hub", toml: "title = 'Hub'\non = ['sheet.open']\npages = ['a']", "printf 'frame=\\nrecents=false\\ngrid=list\\n\\nrepeat=list\\n\\ntext=a\\ntitle=A\\nroute=a\\n'")
+        try script("menu", toml: "title = 'Menu'\n[on]\n\"sheet.open\" = true", "printf 'item=go\\ntitle=Go\\n'")
+        try script("hub", toml: "title = 'Hub'\npages = ['a']\n[on]\n\"sheet.open\" = true", "printf 'frame=\\nrecents=false\\n\\nitem=a\\ntitle=A\\nroute=a\\n'")
         await model.reload()
         model.isShown = true
         model.panelWillShow()
@@ -356,12 +369,11 @@ final class FlowNavigationTests: PanelCase {
     }
 
     func testEscOnAListThatTheSearchOpenedGoesBackToTheGrid() async throws {
-        try script("hub", toml: "title = 'Hub'\non = ['sheet.open']\npages = ['a']", "printf 'frame=\\nrecents=false\\ngrid=list\\n\\nrepeat=list\\n\\ntext=a\\ntitle=A\\nroute=a\\n'")
+        try script("hub", toml: "title = 'Hub'\npages = ['a']\n[on]\n\"sheet.open\" = true", "printf 'frame=\\nrecents=false\\n\\nitem=a\\ntitle=A\\nroute=a\\n'")
         await model.reload()
         model.isShown = true
         model.panelWillShow()
         model.searchText = "hub"
-        model.landSearch()
         try await wait("the found hub") { self.model.visible.map(\.id) == ["hub"] }
         XCTAssertTrue(model.handleSearchKey(ActionKey(name: "return")))
         try await wait("the hub") { self.model.openSheetID == "hub" && self.titles == ["A"] && !self.model.runs.isShowing }
@@ -375,11 +387,11 @@ final class FlowNavigationTests: PanelCase {
         let calls = folder.appendingPathComponent("calls")
         try script("routes", toml: "title = 'Routes'\npages = ['*']", """
         echo "$1" >> '\(calls.path)'
-        page=$(sed -n 's/^route=//p')
+        page=$(sed -n 's/^input\\.route=//p')
         case "$page" in
-          '') printf 'text=a\\ntitle=A\\nroute=photo/1\\nroute.title=Photo\\n' ;;
-          photo/1) printf 'text=b\\ntitle=B\\nroute=photo/2\\nroute.replace=true\\n' ;;
-          *) printf 'text=x\\ntitle=Detail %s\\n' "$page" ;;
+          '') printf 'item=a\\ntitle=A\\nroute=photo/1\\nroute.title=Photo\\n' ;;
+          photo/1) printf 'item=b\\ntitle=B\\nroute=photo/2\\nroute.replace=true\\n' ;;
+          *) printf 'item=x\\ntitle=Detail %s\\n' "$page" ;;
         esac
         """)
         await model.reload()

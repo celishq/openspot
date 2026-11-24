@@ -11,16 +11,16 @@ struct GuideTopic: Equatable, Sendable {
         var isFenced = false
         func close() {
             guard let head = lines.first else { return }
-            let title = String(head.dropFirst(3))
+            let title = String(head.dropFirst(2))
             let text = lines.joined(separator: "\n").trimmingCharacters(in: .newlines) + "\n"
             topics.append(GuideTopic(slug: slug(of: title), title: title, text: text))
             lines = []
         }
         for line in guide.split(separator: "\n", omittingEmptySubsequences: false) {
             if line.hasPrefix("```") { isFenced.toggle() }
-            if !isFenced, line.hasPrefix("# ") || line.hasPrefix("## ") {
+            if !isFenced, line.hasPrefix("# ") {
                 close()
-                if line.hasPrefix("## ") { lines = [line] }
+                lines = [line]
                 continue
             }
             if !lines.isEmpty { lines.append(line) }

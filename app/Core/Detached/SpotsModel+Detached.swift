@@ -28,7 +28,7 @@ extension SpotsModel {
         if runs.floating.contains(id) {
             sheets[id]?.show(need: .change)
         } else {
-            runs.float(id)
+            runs.float(id, isWindow: true)
         }
         host.window(entry)
     }
@@ -38,6 +38,7 @@ extension SpotsModel {
     }
 
     public func land(_ id: String) {
+        askedWindows.remove(id)
         runs.land(id)
         host.land(id)
     }
@@ -66,7 +67,7 @@ extension SpotsModel {
                 return true
             },
             .any { [self] key in
-                guard let entry, let action = sheet.spot.actions(for: item).first(where: { $0.key == key }) else { return nil }
+                guard let entry, let action = sheet.spot.frameActions(for: item).first(where: { $0.key == key }) else { return nil }
                 run(action, on: (entry, item), in: detachedPlace(of: id))
                 return true
             },

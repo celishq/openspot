@@ -36,28 +36,17 @@ public struct CommandForm: Sendable {
     private let fixed: Int
 
     init(_ form: String) {
+        self.init(CommandSlot.slots(of: form))
+    }
+
+    init(_ slots: [CommandSlot]) {
         var options: [String: Option] = [:]
-        var isOpen = false
-        var fixed = 0
-        let groups = try? NSRegularExpression(pattern: #"\[((?:[^\[\]]|\[[^\]]*\])*)\](\.\.\.)?|(\S+)"#)
-        for match in groups?.matches(in: form, range: NSRange(form.startIndex..., in: form)) ?? [] {
-            let text = { (index: Int) in Range(match.range(at: index), in: form).map { String(form[$0]) } }
-            guard let inside = text(1) else {
-                if text(3)?.hasSuffix("...") == true { isOpen = true } else if !isOpen { fixed += 1 }
-                continue
-            }
-            let repeats = text(2) != nil
-            var named = false
-            for choice in inside.split(separator: "|").map({ $0.split(separator: " ").map(String.init) }) {
-                guard let name = choice.first, name.hasPrefix("--") else { continue }
-                options[name] = Option(takesValue: choice.count > 1, repeats: repeats)
-                named = true
-            }
-            if repeats, !named { isOpen = true } else if !named, !isOpen { fixed += 1 }
+        for slot in slots {
+            if let option = slot.option { options[option] = Option(takesValue: slot.kind == .option, repeats: slot.isRepeated) }
         }
         self.options = options
-        self.isOpen = isOpen
-        self.fixed = fixed
+        isOpen = slots.contains { $0.isPositional && $0.isRepeated }
+        fixed = slots.prefix { !$0.isPositional || !$0.isRepeated }.filter(\.isPositional).count
     }
 
     func fit(_ words: [String]) -> Words? {

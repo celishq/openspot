@@ -31,7 +31,7 @@ public struct RaycastSpot: Sendable {
     }
 
     var hasSheet: Bool {
-        !script.arguments.isEmpty || script.mode == .fullOutput
+        script.mode == .fullOutput
     }
 
     var manifest: ConfigDocument {
@@ -40,17 +40,29 @@ public struct RaycastSpot: Sendable {
         manifest.set("icon", to: .string(Self.value(icon)))
         if let description = script.description { manifest.set("detail", to: .string(Self.value(description))) }
         if let package = script.package { manifest.set("keywords", to: .strings([Self.value(package)])) }
-        if let first = script.arguments.first, !first.placeholder.isEmpty { manifest.set("placeholder", to: .string(Self.value(first.placeholder))) }
-        if script.mode == .inline, let seconds = script.refreshSeconds {
-            manifest.set("on", to: .strings(["panel.open", "clock.\(seconds)"]))
+        if script.mode == .inline {
+            manifest.sections.append(ConfigDocument.Table("on", [("\"panel.open\"", .boolean(true)), ("every", script.refreshSeconds.map(ConfigDocument.Value.integer))]))
         } else if hasSheet {
-            manifest.set("on", to: .strings(["sheet.open"]))
+            manifest.sections.append(ConfigDocument.Table("on", [("\"sheet.open\"", .boolean(true))]))
         } else {
             var run: [(String, ConfigDocument.Value?)] = [("title", .string(Self.value(script.title)))]
             if script.confirms { run.append(("confirm", .string("Press again to run \(Self.value(script.title))"))) }
-            manifest.sections.append(ConfigDocument.Table("commands.run", run))
+            for (index, argument) in script.arguments.enumerated() {
+                run.append(("inputs.arg\(index + 1)", Self.input(argument, number: index + 1)))
+            }
+            manifest.sections.append(ConfigDocument.Table("actions.run", run))
         }
         return manifest
+    }
+
+    static func input(_ argument: RaycastArgument, number: Int) -> ConfigDocument.Value {
+        var input: [String: ConfigDocument.Value] = [
+            "type": .string(argument.isChoice ? "choice" : "text"),
+            "required": .boolean(!argument.isOptional),
+            "description": .string(value(RaycastBody.label(number, argument)))
+        ]
+        if argument.isChoice { input["options"] = .strings(argument.options.map { value($0.value) }) }
+        return .table(input)
     }
 
     public var text: String {
@@ -66,10 +78,10 @@ public struct RaycastSpot: Sendable {
     }
 
     var body: String {
-        switch (script.mode, hasSheet) {
-        case (.inline, _): RaycastBody.inline
-        case (_, false): RaycastBody.toast
-        case (_, true): RaycastBody.sheet(arguments: script.arguments, title: script.title, mode: script.mode, confirms: script.confirms)
+        switch script.mode {
+        case .inline: RaycastBody.inline
+        case .fullOutput: RaycastBody.sheet(arguments: script.arguments, title: script.title, confirms: script.confirms)
+        default: RaycastBody.action(arguments: script.arguments)
         }
     }
 

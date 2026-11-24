@@ -67,7 +67,7 @@ final class ShellHelperTests: XCTestCase {
         let fence = "(version 1)(allow default)(deny file-write* (subpath \"/private/var/tmp\") (subpath \"/private/tmp\") (subpath \"/private/var/folders\"))"
         let once = try script("printf '[%s][%s][%s]' \"$(esc 'a\\b\nc')\" \"$(value a)\" \"$(value b)\"")
         let served = try script("main() { printf '%s|%s|' \"$1\" \"$(value secret)\"; openspot_input; /bin/cat; kept=yes; return 3; }\nopenspot_serve main \"$@\"\nprintf '|%s|%s' \"$?\" \"$kept\"")
-        let stays = try script("count=0\nmain() { count=$((count + 1)); printf '%s|%s|%s|%s|' \"$count\" \"$(esc \"$1\")\" \"$#\" \"$(value secret)\"; openspot_input; /bin/cat; }\nopenspot_serve main", toml: "mode = 'stay'")
+        let stays = try script("count=0\nmain() { count=$((count + 1)); printf '%s|%s|%s|%s|' \"$count\" \"$(esc \"$1\")\" \"$#\" \"$(value secret)\"; openspot_input; /bin/cat; }\nopenspot_serve main", toml: "stay = true")
         let tool = URL(fileURLWithPath: "/usr/bin/sandbox-exec")
         let calls = "call=1\narg=a\\\\b\\nc\narg=\nsecret=hunter2\nb=1\n\ncall=2\n\ncall=3\nsecret=two\n\n"
 
@@ -88,8 +88,8 @@ final class ShellHelperTests: XCTestCase {
         let temp = folder.appendingPathComponent("temp")
         try FileManager.default.createDirectory(at: temp, withIntermediateDirectories: true)
         let once = try script("main() { printf '%s' \"$(value a)\"; }\nopenspot_serve main")
-        let stays = try script("main() { printf '%s' \"$(value a)\"; }\nopenspot_serve main", toml: "mode = 'stay'")
-        let stopped = try script("main() { kill -TERM $$; }\nopenspot_serve main", toml: "mode = 'stay'")
+        let stays = try script("main() { printf '%s' \"$(value a)\"; }\nopenspot_serve main", toml: "stay = true")
+        let stopped = try script("main() { kill -TERM $$; }\nopenspot_serve main", toml: "stay = true")
         var base = ProcessInfo.processInfo.environment
         base["TMPDIR"] = temp.path
 
@@ -101,6 +101,27 @@ final class ShellHelperTests: XCTestCase {
             XCTAssertEqual(ran, "1", shell)
             XCTAssertTrue(stayed.contains("1\n") && stayed.contains("2\n"), stayed)
             XCTAssertEqual(try FileManager.default.contentsOfDirectory(atPath: temp.path), [], shell)
+        }
+    }
+
+    func testValueReadsTheInputOfANameThatStdinLacks() async throws {
+        for shell in ["/bin/sh", "/bin/dash"] {
+            let url = try script("printf '%s|%s|%s' \"$(value url)\" \"$(value item)\" \"$(value none)\"", shell: shell)
+
+            let output = try await ScriptProcess.output(url: url, input: "input.url=https://a.example\nitem=own\ninput.item=input\n", limit: 60)
+
+            XCTAssertEqual(output, "https://a.example|own|", shell)
+        }
+    }
+
+    func testServeKeepsOneProcessForEachCallWhenTheSpotTomlSaysStayTrue() async throws {
+        let stays = try script("main() { printf '%s|%s;' \"$$\" \"$(value a)\"; }\nopenspot_serve main", toml: "title = 'Stays'\nstay = true")
+
+        for shell in ["/bin/sh", "/bin/dash"] {
+            let stayed = try await output(of: stays, shell: shell, input: "call=1\na=1\n\ncall=2\na=2\n\n")
+
+            XCTAssertTrue(stayed.contains("call=1\n") && stayed.contains("call=2\n"), stayed)
+            XCTAssertTrue(stayed.contains("|1;") && stayed.contains("|2;"), stayed)
         }
     }
 
@@ -116,7 +137,7 @@ final class ShellHelperTests: XCTestCase {
           esac
         }
         openspot_serve main
-        """, toml: "mode = 'stay'")
+        """, toml: "stay = true")
         var calls = ""
         for id in 1...20 {
             let word = ["none", "half", "all", "raw"][id % 4]
@@ -134,7 +155,7 @@ final class ShellHelperTests: XCTestCase {
     }
 
     func testServeStartsNoProcessOfItsOwnAndLeavesNoneWhenTheFunctionExits() async throws {
-        let stays = try script("main() { /usr/bin/pgrep -P $$ > /dev/null; printf 'none=%s\\n' \"$?\"; }\nopenspot_serve main", toml: "mode = 'stay'")
+        let stays = try script("main() { /usr/bin/pgrep -P $$ > /dev/null; printf 'none=%s\\n' \"$?\"; }\nopenspot_serve main", toml: "stay = true")
         let once = try script("trap '/usr/bin/pgrep -P $$ > /dev/null; printf none=%s \"$?\"' EXIT\nmain() { exit 0; }\nopenspot_serve main")
 
         for shell in ["/bin/sh", "/bin/dash"] {
@@ -155,7 +176,7 @@ final class ShellHelperTests: XCTestCase {
           esac
         }
         openspot_serve main
-        """, toml: "mode = 'stay'")
+        """, toml: "stay = true")
 
         for shell in ["/bin/sh", "/bin/dash"] {
             let output = try await output(of: url, shell: shell, input: "call=1\narg=child\nsecret=old\n\ncall=2\narg=next\nb=new\n\n")
@@ -190,6 +211,16 @@ final class ShellHelperTests: XCTestCase {
 
                 XCTAssertEqual(output, values.joined(separator: "\n"), "\(shell) \(tail.count)")
             }
+        }
+    }
+
+    func testRowsPrintTheValuesOfEachBlockSplitByTabsInEachShell() async throws {
+        for shell in ["/bin/sh", "/bin/dash"] {
+            let url = try script("printf 'text=a\\ntitle=A one\\nat=t1\\n\\ntext=b\\nat=t2\\nat=t3\\n' | openspot_rows text at title", shell: shell)
+
+            let output = try await ScriptProcess.output(url: url, limit: 60)
+
+            XCTAssertEqual(output, "a\tt1\tA one\nb\tt2\t\n", shell)
         }
     }
 
@@ -299,7 +330,7 @@ final class ShellHelperTests: XCTestCase {
 
     private static let shownCall = """
     main() {
-      printf 'text=t\\ntitle=%s\\n' "$(esc "$#|$1|$2|$(value event)|$(value input.note)|$(openspot_input)$(cat)")"
+      printf 'item=t\\ntitle=%s\\n' "$(esc "$#|$1|$2|$(value event)|$(value input.note)|$(openspot_input)$(cat)")"
     }
     openspot_serve main "$@"
     """
@@ -309,18 +340,18 @@ final class ShellHelperTests: XCTestCase {
     }
 
     func testOneMainRunsUnchangedOnceAndStaying() async throws {
-        let action = SpotAction(arguments: ["show", "a b"])
+        let handler = ScriptEntry.show.name
         let input = "event=panel\ninput.note=x\\ny\n"
         let once = try script(Self.shownCall)
-        let stays = try script(Self.shownCall, toml: "mode = 'stay'")
+        let stays = try script(Self.shownCall, toml: "stay = true")
 
         var onceText = ""
-        for try await frame in ScriptProcess(url: once, arguments: action.arguments, mode: .once(input: input), limit: 60).start() {
+        for try await frame in ScriptProcess(url: once, arguments: [handler], mode: .once(input: input), limit: 60).start() {
             onceText += frame
         }
         let live = ScriptProcess(url: stays, mode: .stays, limit: 60)
         var frames = live.start().makeAsyncIterator()
-        live.send(Message(action, given: input), id: 1)
+        live.send(Message(handler, given: input), id: 1)
         var stayFrames: [String] = []
         while let frame = try await frames.next() {
             stayFrames.append(frame)
@@ -328,7 +359,7 @@ final class ShellHelperTests: XCTestCase {
         }
         live.end()
 
-        XCTAssertEqual(TextBlock.blocks(in: onceText).first?.value("title"), "2|show|a b|panel|x\ny|event=panel\ninput.note=x\\ny")
+        XCTAssertEqual(TextBlock.blocks(in: onceText).first?.value("title"), "1|show||panel|x\ny|event=panel\ninput.note=x\\ny")
         XCTAssertEqual(Self.pictures(stayFrames), [TextBlock.blocks(in: onceText)])
         XCTAssertEqual(TextBlock.blocks(in: stayFrames.first ?? "").first?.value("call"), "1")
     }
@@ -338,13 +369,13 @@ final class ShellHelperTests: XCTestCase {
         main() { printf 'got=%s|%s|%s\\n' "$1" "$(value event.value)" "$(value input.a)"; }
         openspot_serve main "$@"
         printf 'over=1\\n'
-        """, toml: "mode = 'stay'")
+        """, toml: "stay = true")
         let live = ScriptProcess(url: url, mode: .stays, limit: 60)
         var frames = live.start().makeAsyncIterator()
 
-        live.send(Message(.show, event: ShowEvent(event: "music.track", value: "Song"), inputs: [.init(key: "a", value: "held")]), id: 1)
-        live.send(text: SpotAction.stopEvent(id: 1))
-        live.send(Message(.press("go")), id: 2)
+        live.send(Message(ScriptEntry.show.name, inputs: [.init(key: "a", value: "held")], given: "event=music.track\nevent.value=Song\n"), id: 1)
+        live.send(text: Message.stopEvent(id: 1))
+        live.send(Message("go"), id: 2)
         live.end()
         var printed: [String] = []
         while let frame = try await frames.next() { printed.append(frame) }
@@ -354,16 +385,16 @@ final class ShellHelperTests: XCTestCase {
     }
 
     func testServeKeepsAnEmptyFirstArgument() async throws {
-        let url = try script("main() { printf 'count=%s|%s\\n' \"$#\" \"$2\"; }\nopenspot_serve main \"$@\"", toml: "mode = 'stay'")
+        let url = try script("main() { printf 'count=%s|%s\\n' \"$#\" \"$2\"; }\nopenspot_serve main \"$@\"", toml: "stay = true")
         let live = ScriptProcess(url: url, mode: .stays, limit: 60)
         var frames = live.start().makeAsyncIterator()
 
-        live.send(Message(SpotAction(arguments: ["", "x"])), id: 1)
+        live.send(Message(""), id: 1)
         live.end()
         var printed: [String] = []
         while let frame = try await frames.next() { printed.append(frame) }
 
-        XCTAssertEqual(printed.filter { $0.hasPrefix("count=") }, ["count=2|x\n\n"])
+        XCTAssertEqual(printed.filter { $0.hasPrefix("count=") }, ["count=1|\n\n"])
     }
 
     func testOnceServeReturnsTheCodeOfMain() async throws {
@@ -395,7 +426,7 @@ final class ShellHelperTests: XCTestCase {
         XCTAssertEqual(items.last?.title, "Back\\slash")
         XCTAssertEqual(items.last?.isOn, true)
         XCTAssertEqual(items.last?.keywords, ["c\\d"])
-        XCTAssertEqual(TextBlock.blocks(in: output).first { $0.value("text") == "a" }?.value("tone"), "good")
+        XCTAssertEqual(TextBlock.blocks(in: output).first { $0.value("item") == "a" }?.value("tone"), "good")
     }
 
     func testAStayingScriptIsNotBlockedAndKeepsItsCallsOnStdin() async throws {
@@ -404,13 +435,13 @@ final class ShellHelperTests: XCTestCase {
         while IFS= read -r line; do
           [ -z "$line" ] || printf 'got=%s\\n---\\n' "$line"
         done
-        """, toml: "mode = 'stay'")
+        """, toml: "stay = true")
         let live = ScriptProcess(url: url, mode: .stays, limit: 3)
         defer { live.end() }
         var frames = live.start().makeAsyncIterator()
 
         let first = try await frames.next()
-        live.send(Message(.press("go")), id: 1)
+        live.send(Message("go"), id: 1)
         let second = try await frames.next()
 
         XCTAssertEqual(first, "a=b\\\\c|\n")
@@ -418,7 +449,7 @@ final class ShellHelperTests: XCTestCase {
     }
 
     func testAStayingRunHasNoVariableThatNamesItsLife() async throws {
-        let url = try script("printf 'stay=%s\\n---\\n' \"${OPENSPOT_STAY-}\"", toml: "mode = 'stay'")
+        let url = try script("printf 'stay=%s\\n---\\n' \"${OPENSPOT_STAY-}\"", toml: "stay = true")
         let live = ScriptProcess(url: url, mode: .stays, limit: 3)
         defer { live.end() }
         var frames = live.start().makeAsyncIterator()

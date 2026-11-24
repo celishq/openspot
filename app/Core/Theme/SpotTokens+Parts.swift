@@ -4,16 +4,22 @@ extension SpotTokens {
     public static let arrowWidth: CGFloat = 7
     public static let fieldTextGap: CGFloat = 8
     public static let tipGap: CGFloat = 4
+    public static let tipWidth: CGFloat = 280
+    public static let tipLines = 4
     public static let submenuGap: CGFloat = 4
     public static let groupTitleGap: CGFloat = 6
     public static let cardLineReach: CGFloat = 6
     public static var mediaRadius: CGFloat { layout.radius.media }
-    public static let tileIconShare: CGFloat = 0.5
+    public static let wordsTileCircleShare: CGFloat = 0.36
+    public static let wordsTileIconShare: CGFloat = 0.5
+    public static let wordsTileGap: CGFloat = 4
     public static let pictureScale: CGFloat = 2
     public static let pictureRimLine: CGFloat = 0.5
     public static let offScreen = CGPoint(x: -9000, y: -9000)
     public static let scrollFadeLength = 56.0
     public static let scrollFadeDistance = 24.0
+    public static let textLeading: CGFloat = 3
+    public static let textLineGap: CGFloat = 1
 
     public static let toastMargin: CGFloat = 16
     public static let toastMaxSize = CGSize(width: 560, height: 120)
@@ -25,9 +31,6 @@ extension SpotTokens {
     public static let metricBigRingLine: CGFloat = 8
     public static let metricRingLine: CGFloat = 4
     public static let metricBarLine: CGFloat = 4
-    public static let metricRowLine: CGFloat = 15
-    public static let metricTitleGap: CGFloat = 4
-    public static let metricControlBars = CGSize(width: 33, height: 16)
     public static let ringInsideGap: CGFloat = 2
     public static let trendBar: CGFloat = 3
     public static let trendGap: CGFloat = 2
@@ -52,7 +55,6 @@ extension SpotTokens {
     public static let partGap: CGFloat = 6
     public static let partMaxRound: CGFloat = 44
     public static var partFieldRoom: CGFloat { listRow + rowGap }
-    public static let partSeamClearance: CGFloat = 22
     public static let dividerHeight: CGFloat = 1
     public static let partGroupGap: CGFloat = 24
     public static let keycapSide: CGFloat = 52
@@ -68,12 +70,13 @@ extension SpotTokens {
     public static let keycapGlow: CGFloat = 2.5
     public static let keycapDashLine: CGFloat = 1.5
     public static let menuMargin: CGFloat = 16
-    public static let backdropSteps: [CGFloat] = [5, 3.5, 2]
-    public static let backdropReach: CGFloat = 3
-    public static let backdropCapFade: CGFloat = 2.5
     public static let backdropLeastFade: CGFloat = 16
     public static var backdrop: Theme.Backdrop { layout.backdrop }
-    public static let backdropMiddle: CGFloat = 2
+    public static let backdropMaskScale: CGFloat = 0.5
+    public static let backdropFadeSteps = 64
+    public static let backdropLeastBlur: CGFloat = 0.25
+    public static let backdropBlurResponse: CGFloat = 1.2
+    public static let cardShadowReach: CGFloat = 3
 
     public static let swatchSize: CGFloat = 22
     public static let smallSwatch: CGFloat = 16
@@ -81,13 +84,16 @@ extension SpotTokens {
     public static let narrowCell: CGFloat = 80
     public static let narrowGap: CGFloat = 2
     public static let partSymbolWidth: CGFloat = 22
+    public static let nodeBorder: CGFloat = 1
     public static let chipPaddingY: CGFloat = 5
     public static let choiceChevronGap: CGFloat = 4
-    public static let choicePaddingX: CGFloat = 10
     public static let colorBarWidth: CGFloat = 4
     public static let colorBarGap: CGFloat = 8
 
     public static let slotSwitchGap: CGFloat = 8
+    public static let solidSwitchWidth: CGFloat = 36
+    public static let solidSwitchHeight: CGFloat = 16
+    public static let solidSwitchInset: CGFloat = 2
     public static let slotButton: CGFloat = 28
     public static let slotChipPaddingX: CGFloat = 12
 
@@ -125,9 +131,4 @@ extension SpotTokens {
     public static let publisherPillHeight: CGFloat = 22
     public static let publisherPillCharWidth = 6.3
     public static let publisherPillRoom = 33.0
-
-    public static let rowBarWidth: CGFloat = 3
-    public static let rowBarGap: CGFloat = 2
-    public static let rowBarHeight: CGFloat = 20
-    public static let rowBarFloor: CGFloat = 2
 }

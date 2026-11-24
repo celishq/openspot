@@ -4,47 +4,50 @@ icon = "ellipsis.circle"
 detail = "Share, set, edit, change the icon of, delete or turn off a spot"
 uses = ["spots"]
 
-[scripts.actions.commands.share]
+[scripts.actions.bindings]
+icon = { spot = "openspot/icon" }
+
+[scripts.actions.actions.share]
 title = "Share"
 shortcut = "cmd+shift+c"
 offers = ["actions mine, core"]
 
-[scripts.actions.commands.settings]
+[scripts.actions.actions.settings]
 title = "Settings"
 shortcut = "cmd+return"
 close = false
 offers = ["actions"]
 
-[scripts.actions.commands.edit]
+[scripts.actions.actions.edit]
 title = "Edit"
 shortcut = "cmd+e"
 close = false
 offers = ["actions mine, core"]
 
-[scripts.actions.commands.icon]
+[scripts.actions.actions.icon]
 title = "Change Icon"
 offers = ["actions"]
 
-[scripts.actions.commands."icon.draw"]
+[scripts.actions.actions."icon.draw"]
 title = "Draw…"
 close = false
 
-[scripts.actions.commands."icon.file"]
+[scripts.actions.actions."icon.file"]
 title = "Choose File…"
 close = false
 
-[scripts.actions.commands."icon.reset"]
+[scripts.actions.actions."icon.reset"]
 title = "Reset Icon"
 close = false
 when = "hasIcon"
 
-[scripts.actions.commands.delete]
+[scripts.actions.actions.delete]
 title = "Delete"
 shortcut = "cmd+backspace"
 close = false
 offers = ["actions mine"]
 
-[scripts.actions.commands.off]
+[scripts.actions.actions.off]
 title = "Turn off"
 shortcut = "cmd+backspace"
 offers = ["actions core"]
@@ -53,37 +56,46 @@ offers = ["actions core"]
 title = "Icon"
 icon = "paintbrush.pointed"
 detail = "Draw the icon of a spot"
-on = ["sheet.open"]
-view = "icon.swift"
+views = ["board.swift"]
 uses = ["spots"]
-drop = "png,jpg,jpeg,heic,gif,tiff,svg,pdf,icns"
+
+[scripts.icon.on]
+"sheet.open" = true
+drop = ["png", "jpg", "jpeg", "heic", "gif", "tiff", "svg", "pdf", "icns"]
+
+[scripts.icon.actions.draw]
+inputs.spot = { type = "text", required = true, description = "The spot whose icon to draw" }
+
+[scripts.icon.actions.file]
+inputs.spot = { type = "text", required = true, description = "The spot whose icon to choose" }
+
+[scripts.icon.actions.reset]
+inputs.spot = { type = "text", required = true, description = "The spot whose icon to take back" }
 
 [scripts.import]
 title = "Import from Raycast"
 icon = "square.and.arrow.down"
 detail = "Bring your scripts and data"
 keywords = ["raycast", "import", "script commands", "quicklinks", "snippets", "extensions"]
-on = ["sheet.open"]
-drop = "folder,rayconfig"
 pages = ["scripts", "export", "analogs", "extensions"]
-view = "import.swift"
+views = ["import.swift"]
 uses = ["app", "spots", "files"]
 
-[scripts.make]
-title = "Make a spot"
-icon = "plus"
-detail = "Make a spot that does what you typed"
-on = ["search.text \\S"]
-answers = "last"
-uses = ["clipboard"]
+[scripts.import.on]
+"sheet.open" = true
+drop = ["folder", "rayconfig"]
 
 [scripts.new]
 title = "New spot"
 icon = "plus"
 detail = "Make your own"
-on = ["sheet.open"]
+answers = "last"
 uses = ["clipboard"]
 edits = "spots"
+
+[scripts.new.on]
+"sheet.open" = true
+search = "\\S"
 
 [scripts.playground]
 title = "Playground"
@@ -91,7 +103,7 @@ icon = "hammer"
 detail = "Try a spot and see each call"
 keywords = ["sandbox"]
 
-[scripts.playground.commands.playground]
+[scripts.playground.actions.playground]
 title = "Open Playground"
 
 [scripts.quit]
@@ -100,7 +112,7 @@ icon = "power"
 detail = "Openspot"
 uses = ["app"]
 
-[scripts.quit.commands.quit]
+[scripts.quit.actions.quit]
 title = "Quit"
 
 [scripts.settings]
@@ -108,7 +120,9 @@ title = "Settings"
 icon = "gearshape"
 detail = "Choose your key"
 uses = ["app"]
-offers = ["search"]
+
+[scripts.settings.on]
+search = true
 
 [scripts.spots]
 title = "Spots"
@@ -116,7 +130,7 @@ icon = "puzzlepiece.extension"
 detail = "Edit Spots"
 keywords = ["edit spots"]
 
-[scripts.spots.commands.edit]
+[scripts.spots.actions.edit]
 title = "Edit Spots"
 
 [scripts.store]
@@ -124,33 +138,61 @@ title = "Store"
 icon = "bag"
 detail = "Get spots"
 keywords = ["store", "get spots"]
-on = ["sheet.open"]
 uses = ["spots", "account"]
-view = "store.swift"
+views = ["store.swift"]
+
+[scripts.store.on]
+"sheet.open" = true
 
 [scripts.themes]
 title = "Themes"
 icon = "paintpalette"
 detail = "Change the look"
 keywords = ["theme", "look"]
-on = ["sheet.open"]
 uses = ["app", "clipboard"]
 pages = ["prompt:*"]
+
+[scripts.themes.on]
+"sheet.open" = true
 
 [scripts.updates]
 title = "Updates"
 icon = "arrow.triangle.2.circlepath"
-on = ["app.launch", "app.update"]
 uses = ["app"]
 
-[scripts.updates.commands.update]
+[scripts.updates.on]
+"app.launch" = true
+"app.update" = true
+
+[scripts.updates.actions.update]
 title = "Update"
 
 [scripts.welcome]
 title = "Welcome spot"
 icon = "hand.wave"
-on = ["sheet.open"]
 uses = ["app"]
 starts = "first-launch"
-view = "welcome.swift"
+views = ["welcome.swift"]
 pages = ["key", "agent"]
+
+[scripts.welcome.on]
+"sheet.open" = true
+
+[scripts.snooze]
+title = "Snooze"
+icon = "moon.zzz"
+detail = "Pick a time for later"
+pages = ["date", "date/*"]
+
+[scripts.snooze.on]
+"sheet.open" = true
+
+[scripts.snooze.actions.pick]
+inputs.title = { type = "text", description = "What the time is for, as the title of the sheet" }
+outputs.until = { type = "text", required = true, description = "An ISO 8601 time with its offset, or someday" }
+
+[scripts.snooze.settings]
+morning = { type = "choice", title = "Morning", icon = "sunrise", options = ["6:00", "7:00", "8:00", "9:00", "10:00"] }
+evening = { type = "choice", title = "Evening", icon = "moon.stars", options = ["17:00", "18:00", "19:00", "20:00", "21:00"] }
+later = { type = "choice", title = "Later", icon = "cup.and.saucer", options = ["1 hour", "2 hours", "3 hours", "4 hours", "6 hours"] }
+weekend = { type = "choice", title = "Weekend", icon = "sofa", options = ["Saturday", "Sunday"] }

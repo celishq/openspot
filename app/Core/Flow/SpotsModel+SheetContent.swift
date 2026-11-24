@@ -7,7 +7,7 @@ extension SpotsModel {
         return SheetContent(
             panel: shownParts(of: id),
             list: sheets[id]?.list ?? ItemList(),
-            state: entry.shownState,
+            state: sheets[id]?.sheetState ?? entry.shownState,
             top: sheets[id]?.top ?? .plain,
             form: form,
             recording: recording,

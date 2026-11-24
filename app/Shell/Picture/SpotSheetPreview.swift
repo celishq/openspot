@@ -9,12 +9,10 @@ struct SpotSheetPreview: View {
     var onSet: (SpotPart, String) -> Void = { _, _ in }
     var onPress: (SpotPart) -> Void = { _ in }
     var list = ItemList()
-    var viewSource: String?
-    var views = SpotViews.shared
     var seed = ""
 
     var body: some View {
-        let frame = SpotSheetBody.size(of: panel, rows: list.shown.count, setsApart: list.setsApart)
+        let frame = SpotSheetBody.size(of: panel, list: list)
         VStack(alignment: .leading, spacing: SpotTokens.rowGap) {
             HStack(spacing: SpotTokens.wordsGap) {
                 Image(systemName: symbol)
@@ -27,9 +25,9 @@ struct SpotSheetPreview: View {
                     if !subtitle.isEmpty { Text(subtitle).font(SpotType.detail).modifier(SpotSecondaryText()) }
                 }
                 Spacer()
-                SpotRoundButton(symbol: "xmark", label: "Close") {}
+                SpotRoundButton(icon: .symbol("xmark"), label: "Close") {}
             }
-            SpotSheetBody(panel: panel, list: list, onSet: onSet, onPress: onPress, viewSource: viewSource, views: views)
+            SpotSheetBody(panel: panel, list: list, search: title, onSet: onSet, onPress: onPress)
         }
         .padding(SpotTokens.padding)
         .frame(width: frame.width, height: frame.height, alignment: .topLeading)

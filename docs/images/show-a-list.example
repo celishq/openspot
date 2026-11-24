@@ -1,6 +1,0 @@
-#!/bin/sh
-. "$OPENSPOT_SH"
-case "$1" in
-  show) printf 'Mail\tMail\tYour inbox\tenvelope\nNotes\tNotes\tYour notes\tnote.text\n' | openspot_items ;;
-  open) open -a "$2" ;;
-esac

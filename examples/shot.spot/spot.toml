@@ -2,8 +2,8 @@ title = "Shot"
 icon = "camera.viewfinder"
 detail = "Take a picture of the screen and mark it"
 uses = ["screen", "clipboard"]
-mode = "stay"
+stay = true
 source = ["shot"]
 
-[commands.shoot]
+[actions.shoot]
 title = "Take a shot"

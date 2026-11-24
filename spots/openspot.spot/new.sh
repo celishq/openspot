@@ -18,10 +18,10 @@ nl='
 
 # Prints the sheet with these words in its field, and the words of its button in $2.
 sheet() {
-  printf 'frame=\ngrid=describe describe describe\ngrid=describe describe describe\ngrid=describe describe describe\ngrid=copy copy copy\n\n'
+  printf 'frame=\nclass=gap-group\n\n'
   printf 'field=describe\ntype=multiline\nplaceholder=%s\n' "$placeholder"
   openspot_kv value "$1"
-  printf '\nbutton=copy\ntitle=%s\nlook=strong\nshortcut=cmd+return\nclose=false\n\n' "${2:-Copy prompt}"
+  printf '\nbutton=copy\ntitle=%s\nclass=bg-accent\nshortcut=cmd+return\nclose=false\n\n' "${2:-Copy prompt}"
   printf 'button=clear\ntitle=Clear\nscope=spot\nclose=false\n\n'
   [ -z "${OPENSPOT_EDIT_FILE-}" ] || printf 'button=editor\ntitle=Open in editor\nscope=spot\n\n'
   printf 'button=guide\ntitle=Read the guide\nscope=spot\n'
@@ -39,6 +39,19 @@ prompt() {
     openspot prompt new
   fi
 }
+
+# A search ends with a row that makes a spot of the typed words, and a pick of it copies their prompt.
+if [ "$1" = search ]; then
+  text=$(value text | awk '{ sub(/^[ \t]+/, ""); sub(/[ \t]+$/, ""); print }')
+  [ -z "$text" ] || openspot_item "$text" 'Make a spot' "$text" plus
+  exit 0
+fi
+if [ "$1" = press ]; then
+  words=$(openspot prompt new "$(value item)") || exit 1
+  printf '%s' "$words" | openspot clipboard copy || exit 1
+  openspot toast 'Prompt copied. Paste it into your agent.'
+  exit 0
+fi
 
 # The words of the field: the ones on stdin when the sheet sends them, or else the draft that a last call kept. A draft that
 # was copied is done, so the sheet opens empty.
@@ -79,7 +92,7 @@ case "$1" in
     open -t "$OPENSPOT_EDIT_FILE"
     ;;
   guide)
-    openspot guide > "$OPENSPOT_DATA/GUIDE.md" && open "$OPENSPOT_DATA/GUIDE.md"
+    openspot guide > "$OPENSPOT_DATA/DOCS.md" && open "$OPENSPOT_DATA/DOCS.md"
     ;;
   folder)
     mkdir -p "$folder" && open "$folder"

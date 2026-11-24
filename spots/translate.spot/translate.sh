@@ -22,13 +22,13 @@ languages() {
 
 # Prints the name of a language.
 name() {
-  [ -s "$known" ] && awk -v code="$1" -F= '$1 == "text" { found = $2 == code } $1 == "title" && found { print $2; exit }' "$known"
+  [ -s "$known" ] && awk -v code="$1" -F= '$1 == "item" { found = $2 == code } $1 == "title" && found { print $2; exit }' "$known"
 }
 
 # Prints the options of a language menu, each as a block.
 options() {
   if [ -s "$known" ]; then
-    awk -F= '$1 == "text" { code = $2 } $1 == "title" { print ""; print "option=" code; print "title=" $2 }' "$known"
+    awk -F= '$1 == "item" { code = $2 } $1 == "title" { print ""; print "option=" code; print "title=" $2 }' "$known"
   else
     printf '\noption=en\ntitle=English\n'
   fi
@@ -89,42 +89,48 @@ show() {
     corner=copy
   fi
 
-  printf 'frame=\ngrid=source source . .\ngrid=input input input input\ngrid=input input input swap\ngrid=- - - swap\n'
-  printf 'grid=target target . swap\ngrid=output output output output\ngrid=output output output %s\n' "$corner"
-  printf '\n'
+  printf 'frame=\nclass=gap-part\n\n'
 
-  printf 'choice=source\nvalue=%s\n\noption=auto\ntitle=%s\n' "$source" "$auto"
+  printf 'box=pair\nclass=relative grow gap-part\n\nbox=top\nparent=pair\nclass=grow gap-part\n\n'
+
+  printf 'choice=source\nparent=top\nclass=self-start\nvalue=%s\n\noption=auto\ntitle=%s\n' "$source" "$auto"
   options
   printf '\n'
 
-  printf 'field=input\ntype=multiline\nplaceholder=Type or paste text\n'
+  printf 'box=text\nparent=top\nclass=relative grow\n\n'
+  printf 'field=input\nparent=text\nclass=absolute inset-0\ntype=multiline\nplaceholder=Type or paste text\n'
   openspot_kv value "$input"
   printf '\n'
 
-  printf 'choice=target\nvalue=%s\n' "$target"
+  printf 'box=seam\nparent=pair\nclass=absolute inset-0 justify-center items-end pr-2\n\n'
+  printf 'button=swap\nparent=seam\nclass=backdrop-blur rounded-full\nicon=arrow.up.arrow.down\nshortcut=cmd+shift+s\nclose=false\n\n'
+
+  printf 'box=bottom\nparent=pair\nclass=grow gap-part\n\n'
+
+  printf 'choice=target\nparent=bottom\nclass=self-start\nvalue=%s\n' "$target"
   options
   printf '\n'
 
-  printf 'field=output\ntype=multiline\nvalue=%s\nplaceholder=Translation\nreadonly=true\n\n' "$output"
-
-  printf 'button=swap\nicon=arrow.up.arrow.down\nshortcut=cmd+shift+s\nclose=false\n\n'
+  printf 'box=result\nparent=bottom\nclass=relative grow\n\n'
+  printf 'field=output\nparent=result\nclass=absolute inset-0\ntype=multiline\nvalue=%s\nplaceholder=Translation\nreadonly=true\n\n' "$output"
+  printf 'box=corner\nparent=result\nclass=absolute inset-0 justify-end items-end p-2\n\n'
 
   if [ "$corner" = settings ]; then
-    printf 'button=settings\nalign=right\nlook=chip\ntitle=Open Settings\n'
+    printf 'button=settings\nparent=corner\nclass=rounded-full\ntitle=Open Settings\n'
   elif [ "$corner" = copy ]; then
-    printf 'button=copy\nalign=right\nlook=chip\ntitle=Copy\nshortcut=cmd+return\n'
+    printf 'button=copy\nparent=corner\nclass=rounded-full\ntitle=Copy\nshortcut=cmd+return\n'
   fi
 }
 
 input=$(value input.input; printf x)
 input=${input%x}
-typed=$(value search)
+typed=$(value text)
 [ -z "$typed" ] || input=$typed
 source=$(value input.source)
 target=$(value input.target)
 [ -n "$source" ] || source=$(field source "$(cat "$saved" 2>/dev/null)")
 [ -n "$target" ] || target=$(field target "$(cat "$saved" 2>/dev/null)")
-if [ ! -s "$known" ] && { [ "$1" = show ] || [ -z "$1" ]; }; then
+if [ ! -s "$known" ] && { [ "$1" = show ] || [ "$1" = command ] || [ -z "$1" ]; }; then
   (source=${source:-auto}; target=${target:-en}; output=; status=; detected=; show)
   printf -- '---\n'
 fi

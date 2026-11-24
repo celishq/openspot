@@ -17,7 +17,7 @@
   it from a pinned CLDR version, and the build copies it into the app.
 - `app/Themes/` holds the built-in themes, each in `<name>.theme/theme.toml`. Openspot, in `openspot.theme`, sets every choice,
   and each other built-in theme sets only the choices it changes. The build copies them into the app.
-  [Change the look of Openspot](GUIDE.md#change-the-look-of-openspot) lists its keys and says how a person changes it.
+  [Change the look of Openspot](MANUAL.md#change-the-look-of-openspot) lists its keys and says how a person changes it.
 - `app/Help/` holds the guide of each `openspot` noun that has one, which `openspot help <noun>` prints. The build copies it
   into the app.
 - `spots/` holds the source of the core spots, each a `<name>.spot` folder. The build copies it into the app, and they run
@@ -40,31 +40,13 @@
 - One primary type per file. The filename matches it. A file of extensions is named `Type+Topic.swift`.
   `scripts/check-files.sh` fails on a file that breaks this.
 - Nouns own their data. Verbs are methods on the noun that owns the data.
-- A toast or a failure line follows [Write a message](GUIDE.md#write-a-message).
+- A toast or a failure line follows [Write a message](docs/reference/commands.md#write-a-message).
 
 ## Docs
 
-Write a doc that people read, such as `GUIDE.md` and `PROTOCOL.md`, the way Apple writes its developer docs.
+`PROTOCOL.md` is the map of a spot's contract: `docs/first-spot.md` builds the first spot, a page in `docs/show`, `docs/act`, `docs/remember`, `docs/react`, `docs/connect` and `docs/further` for each goal, and `docs/reference` every key, block, class and command. `MANUAL.md` is the person's page, `app/Help/` the reference of the `openspot` commands, `TRUST.md` what Openspot shows the person about a spot, and `spots/AGENTS.md` the words of the app's own spots. No doc describes the app's code.
 
-- Open each page or section with one sentence that says what the thing is for and when to use it.
-- Show it next, with an example and what it gives on screen. The rules come after the example.
-- Order a guide by the tasks of its reader, such as "Show a number on a card", not by how the code parses it.
-- Bring in a new word where the reader first needs it, with its meaning in the same sentence.
-- Keep the main idea and the edge cases apart. Put limits, errors and rare cases in a short note or in the reference.
-- Write natural English: "you" for the reader, short sentences, common words. Contractions are fine.
-- Use one word for each meaning on the page.
-- `make verify` fails when a doc links to a file or a heading that does not exist, names a repo path or a `make` target
-  that does not exist, or when code cites a protocol heading that does not exist (`DocReferenceTests`).
-- It fails when PROTOCOL.md and Core disagree on a key, a block kind, a call word, an event, a place, a use, a shell
-  helper or an `openspot` command (`ProtocolContractTests`). `scripts/protocol-gaps.txt` lists today's gaps, and it
-  fails on a gap the list lacks and on a listed gap that is gone.
-- It fails when an `sh`, `js` or `swift` example of GUIDE.md, PROTOCOL.md or `app/Help/` does not run (`DocExampleTests`).
-  An example that needs a network, an account or a tool that not every Mac has goes in a `text` fence.
-- The docs are `AGENTS.md`, `spots/AGENTS.md`, `GUIDE.md`, `PROTOCOL.md`, `TRUST.md`, `CONTRIBUTING.md`, `README.md`
-  and `app/Help/`. `PROTOCOL.md` holds only the contract of a spot. What the user chooses is in `GUIDE.md`, the words of
-  the app's own spots in `spots/AGENTS.md`, what Openspot shows the user about a spot in `TRUST.md`, and the reference of
-  the `openspot` commands in `app/Help/`. The code is the truth for how the app works, so no doc describes the app's
-  code. Before you add a sentence, look for one that says it already, and link to it, since no check finds a repeat.
+`make verify` checks facts, not style: a link or a cited heading that doesn't exist (`DocReferenceTests`), an `sh`, `js` or `swift` example that doesn't run (`DocExampleTests`; put one that needs a network or a rare tool in a `text` fence), a picture of a page older than its example (`GuideImageTests`), and an `openspot` command that a doc names but the command doesn't take (`DocCommandTests`).
 
 ## Comments
 
@@ -74,20 +56,20 @@ Write a doc that people read, such as `GUIDE.md` and `PROTOCOL.md`, the way Appl
 
 ## UX
 
-Each spot follows [The keys of a spot](GUIDE.md#the-keys-of-a-spot): Return does its main act, `⌘` Return opens its
-Settings, `⌘Y` its History, `⌘K` the menu of all acts. Openspot makes these for every spot, so a rule changes in one place.
+Each spot follows [Use the keys of a spot](MANUAL.md#use-the-keys-of-a-spot): Return does its main action, `⌘` Return opens
+its Settings, `⌘Y` its History, `⌘K` the menu of all actions. Openspot makes these for every spot, so a rule changes in one place.
 
 - Settings follow the level they change. openspot's Settings hold only the app's rows. Each spot's own Settings hold its
   keys first, Open, each command and Float, then its fields, its menu bar and its window, with the same Not set and `⌘⌫` Remove on
   every key row.
-- A card's ⌘K menu holds the standard acts in one order, which `spots/openspot.spot/actions.js` offers to every card.
+- A card's ⌘K menu holds the standard actions in one order, which `spots/openspot.spot/actions.js` offers to every card.
   A key that a footer already shows does not need a ⌘K menu of its own.
 - Making and changing a spot both go through one form: describe it, then Copy prompt (`⌘⏎`), which flashes `✓ Copied`
   on the same black button. The prompt tells the agent to finish alone, with no question.
 
 ## Core and Shell
 
-- `Core/` imports only Foundation, CoreGraphics, CryptoKit, CommonCrypto, JavaScriptCore, Observation, os, P256K, Security
+- `Core/` imports only Foundation, CoreGraphics, CryptoKit, CommonCrypto, ImageIO, JavaScriptCore, Observation, os, P256K, Security
   and Synchronization. `make verify` runs `scripts/check-core.sh`, which fails on any other import, also after an attribute
   such as `@preconcurrency`.
 - Logic that a window needs goes in `Core/`. Only drawing and window handling go in `Shell/`.
@@ -115,10 +97,10 @@ Settings, `⌘Y` its History, `⌘K` the menu of all acts. Openspot makes these 
   window follows the corner that macOS gives it. A borderless window gives its
   content view the edge of its surface (`NSWindow.take`). `make verify` runs `scripts/check-shapes.sh`, which fails on a
   `RoundedRectangle` in `Shell/` outside `Shell/Surface/SpotRoundShape.swift`.
-- The soft backdrop of the panel is a progressive blur under the glass: fixed `SpotBackdropBlur` views of rising radius,
-  each under a soft edge further in, so the blur grows weaker toward its edge. Each soft edge is a picture drawn once and
-  laid as nine fixed pieces that only move and scale (`SpotBackdropEdge`, by `BackdropEdge` in Core), and the backdrop
-  hides by opacity alone.
+- The soft backdrop of the panel is one fade around the content, `BackdropFade` in Core: none at the outer edge of the
+  halo, full at the content, and the blur full under it by `halo-inset`, so text fades out at the edge of the tiles. It shows as the system's variable blur (`SpotBackdropBlur`) or as a tint
+  (`SpotBackdropTint`), both masked by the same small picture of the fade (`SpotBackdropFade`), drawn again only when
+  the backdrop's shape changes. The backdrop hides by opacity alone.
 - A picture drawn off screen cannot hold system glass. It goes through `SpotPicture`, which turns the glass off, and the
   glass check fails on a file of `Shell/Picture` that draws one another way.
 
@@ -168,7 +150,9 @@ below is one a reviewer can check in a diff.
 - Build each thing made from the query once per query, and pass it on.
 - A list that can be long is lazy, or builds only the cells near the visible band. In a grid that is not lazy, a cell is a
   plain view with a tap and the button trait, not a `Button`.
-- One drop target on a container that holds still, not one per moving item.
+- One drop target and one pointer area on a container that holds still, not one per moving item. The panel takes no
+  pointer while a sheet grows or shrinks, since SwiftUI tests a still pointer against the panel on each frame in which
+  content moves under it.
 
 ### Motion
 
@@ -212,13 +196,13 @@ takes its look from the surface's progress, by `SheetMorph`, and keeps no curve 
 
 ### Drawing
 
-A view that moves on its own, such as a liquid, a clock hand or a GIF, keeps the main thread free while it moves.
+A view that moves on its own, such as a liquid, a clock hand or a GIF, keeps each frame within the budget of an
+interaction.
 
-- A motion that runs on each frame runs in the render server: a Core Animation animation or a video layer, set up once
-  for each value. The main thread works only when a value changes. A `TimelineView` that redraws on each frame, or a
-  timer that writes state for each frame, breaks this rule.
-- Live content may sit in a glass, since a motion in the render server costs the glass no more than still content
-  does.
+- It may move with SwiftUI, such as an animation, keyframes or a `TimelineView`, or in the render server, such as a Core
+  Animation animation or a video layer. Its work on the main thread stays within the 4 ms of each frame that
+  [Performance](#performance) gives, so only the views that show the moving value read it.
+- Live content may sit in a glass.
 - A view moves only while its place shows: the panel is shown, its card is in sight, and no sheet, menu, Edit Spots or
   motion of the panel covers it. The model decides it, and a spot's view reads it as `spot.isShown`.
 - Openspot gives a spot's view each moving piece it needs, such as `spot.media`, so a spot never writes AppKit. Such a
@@ -282,13 +266,17 @@ make film SPOT=caffeinate  # films the open and close of a sheet 10x slower (SLO
 make shots                 # saves pictures of the actions menu in the running panel into .temp/shots; ACTION=search TEXT=/translate shoots a typed search
 sh scripts/pixel-diff.sh shoot before  # saves pictures of fixed screens, dark and light, into .temp/pixels/before
 sh scripts/pixel-diff.sh compare before after  # counts the pixels that differ in each picture, and marks them in .temp/pixels/marks
-make docs-images           # shows each GUIDE.md example on screen, focused, and takes its image; GuideImageTests fail when one is out of date
+make docs-images           # shows each example of the docs that has a picture on screen, focused, and takes its image; GuideImageTests fail when one is out of date
 make eval-agent LABEL=base # gives each task of scripts/agent-eval/ to claude -p (Sonnet) N=3 times, grades what it did and how it used
                            # the command, into .temp/agent-eval/base; TASKS=calc picks tasks; it costs money
 make eval-compare LABELS="base phase1"  # prints the summaries of two eval runs one after the other
 ```
 
 `make verify` runs `xcodegen generate` before it builds, so the project file matches the folders on disk.
+
+`openspot render` and `openspot check` start the Debug app of their build when it isn't running, and it keeps running
+after the command ends. It runs on `.temp/openspot/` of the tree it was built from, whatever `--config` the command
+took. Before you finish your work, quit each Debug app you started with that build's `openspot app quit`, with no `--config`.
 
 Each check runs from any folder and takes the repo root as its argument. A check whose rule the code does not meet yet keeps
 today's breaks in `scripts/breaks/`. It fails on a new break and on a listed break that is gone, so a fix removes its line. `make perf` is

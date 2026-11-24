@@ -4,7 +4,11 @@ extension SpotRun {
     func isOutOfDate(_ call: OpenCall) -> Bool {
         guard !call.made.isStopped else { return true }
         guard case .act(let act) = call.request.purpose, let generation = act.generation else { return false }
-        return panel?.generation != generation
+        return partsGeneration != generation
+    }
+
+    var partsGeneration: Int? {
+        panel?.holdsParts == true ? panel?.generation : nil
     }
 
     func take(_ effect: SpotEffect, of call: OpenCall?) {

@@ -15,22 +15,11 @@ final class SpotStateTests: XCTestCase {
         XCTAssertTrue(try state("shown=false").isOnGrid)
     }
 
-    func testAReadKeepsEachValueOfItsHeadForAViewAndAChangeKeepsThem() throws {
-        let head = try XCTUnwrap(TextBlock.blocks(in: "title=3\npoint=1\npoint=0\npoint=2").first)
-        let read = SpotState(output: Frame(text: head.text), header: header).holding(head)
-        let block = Frame(text: "switch=power\nvalue=true")
-
-        XCTAssertEqual(SpotState(output: Frame(text: head.text), header: header).values, [:])
-        XCTAssertEqual(read.values, ["title": ["3"], "point": ["1", "0", "2"]])
-        XCTAssertEqual(read.taking(block).values, read.values)
-        XCTAssertEqual(read.showing(title: "Busy", detail: nil).values, read.values)
-    }
-
     func testActiveInTheHeadSaysWhetherTheCardIsOnAndWinsOverTheMainSwitch() throws {
         XCTAssertEqual(try state("frame=\ndetail=25m left\nactive=true\n\ntext=off\ntitle=Turn off").on, true)
         XCTAssertEqual(try state("frame=\ndetail=Off\nactive=false").on, false)
-        XCTAssertEqual(try state("frame=\nactive=false\n\nswitch=power\nvalue=true").on, false)
-        XCTAssertEqual(try state("frame=\ndetail=Off\n\nswitch=power\nvalue=true").on, true)
+        XCTAssertEqual(try state("frame=\nactive=false\n\nswitch=power\nclass=card:flex\nvalue=true").on, false)
+        XCTAssertEqual(try state("frame=\ndetail=Off\n\nswitch=power\nclass=card:flex\nvalue=true").on, true)
         XCTAssertEqual(try state("detail=Off").on, nil)
     }
 
@@ -43,17 +32,17 @@ final class SpotStateTests: XCTestCase {
 
     func testAChangedStateStaysOffTheGrid() throws {
         let hidden = SpotState(title: "Name", level: 1, isOnGrid: false)
-        let block = Frame(text: "switch=power\nvalue=true")
+        let block = Frame(text: "switch=power\nclass=card:flex\nvalue=true")
 
         XCTAssertFalse(hidden.taking(block).isOnGrid)
         XCTAssertFalse(hidden.showing(title: "Work", detail: nil).isOnGrid)
         XCTAssertFalse(hidden.withLevel(2).isOnGrid)
     }
 
-    func testReadsAToggleState() throws {
-        let state = try state("switch=wifi\ntitle=Wi-Fi\ndetail=VIRGIN-telco_5668\nvalue=true")
-        XCTAssertEqual(state.title, "Wi-Fi")
-        XCTAssertEqual(state.subtitle, "VIRGIN-telco_5668")
+    func testReadsAToggleStateUnderTheWordsOfTheHeader() throws {
+        let state = try state("switch=wifi\nclass=card:flex\ntitle=Wi-Fi\ndetail=VIRGIN-telco_5668\nvalue=true")
+        XCTAssertEqual(state.title, "Name")
+        XCTAssertEqual(state.subtitle, "From header")
         XCTAssertEqual(state.on, true)
     }
 
@@ -65,7 +54,7 @@ final class SpotStateTests: XCTestCase {
     }
 
     func testAStateTakesFromTheHeaderWhatItLeavesOut() throws {
-        let state = try state("switch=power\nvalue=true")
+        let state = try state("switch=power\nclass=card:flex\nvalue=true")
         XCTAssertEqual(state.title, "Name")
         XCTAssertEqual(state.subtitle, "From header")
     }

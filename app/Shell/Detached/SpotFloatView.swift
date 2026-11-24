@@ -32,6 +32,7 @@ struct SpotFloatView: View {
         .environment(\.spotIsShown, true)
         .environment(\.spotCards, SpotCardSource(model: model))
         .environment(\.spotViewPlace, SpotViewPlace(model: model, place: .detached(id)))
+        .environment(\.spotViewDates, entry?.spot.viewDates ?? [:])
         .id(SpotLoadedTheme.shared.layout)
     }
 
@@ -44,46 +45,34 @@ struct SpotFloatView: View {
     }
 
     private func sheet(_ entry: SpotsModel.Entry, _ run: SpotRun, size: CGSize) -> some View {
-        let sole = fills ? run.panel.flatMap { $0.parts.count == 1 ? $0.parts.first : nil }.flatMap { $0.isOpen ? $0 : nil } : nil
+        let sole = soleView(run)
         return VStack(alignment: .leading, spacing: SpotTokens.rowGap) {
             if !fills { header(entry, run) }
-            if let part = sole, let view = entry.spot.view {
-                GeometryReader { area in
-                    SpotCustomView(source: view, values: part.values, items: part.items, card: .square, room: area.size, answers: run.panel?.answered ?? 0, date: entry.spot.viewDate, views: .shared) { run.set(part, to: $0) }
-                        .equatable()
-                }
-                .ignoresSafeArea(edges: [.horizontal, .bottom])
-            } else if let parts = run.panel {
-                SheetPartsView(
-                    panel: parts,
-                    act: { run.act(of: $0) },
-                    onSet: { run.set($0, to: $1) },
-                    onPress: { part in
-                        run.press(part)
-                        if part.closes { model.land(id) }
-                    },
-                    list: run.list,
-                    onRun: { model.pick($0, of: entry, in: place) },
-                    onDragOut: { model.dragOut($0, of: id) },
-                    selection: { run.selection },
-                    selectedPart: { run.selectedPart?.id },
-                    nudge: { run.nudge },
-                    viewSource: entry.spot.view,
-                    viewDate: entry.spot.viewDate
-                )
+            if let sole, let view = sole.node.source {
+                NodeSpotView(id: sole.node.id, values: sole.node.values, source: view)
+                    .environment(\.spotNode.host, FloatHost(model: model, run: run, place: place))
+                    .ignoresSafeArea(edges: [.horizontal, .bottom])
             } else {
-                SpotItemsView(
+                SpotSheetBody(
+                    panel: run.panel,
                     list: run.list,
-                    onRun: { model.pick($0, of: entry, in: place) },
-                    selection: { run.selection },
-                    onDragOut: { model.dragOut($0, of: id) }
+                    host: FloatHost(model: model, run: run, place: place),
+                    onPick: { model.pick($0, of: entry, in: place) },
+                    onDragOut: { model.dragOut($0, of: id) },
+                    selection: { run.selection }
                 )
             }
         }
         .padding(sole == nil ? SpotTokens.padding : 0)
+        .environment(\.spotNode.variants, [fills ? .window : .float])
         .frame(width: fills ? nil : size.width, height: fills ? nil : size.height, alignment: .topLeading)
         .frame(maxWidth: fills ? .infinity : nil, maxHeight: fills ? .infinity : nil, alignment: .topLeading)
         .modifier(FloatSurface(fills: fills, dropWords: dropWords))
+    }
+
+    private func soleView(_ run: SpotRun) -> (part: SpotPart, node: ViewNode)? {
+        guard fills, let panel = run.panel, panel.parts.count == 1, let part = panel.parts.first, let node = panel.tree.node(part.id), node.source != nil else { return nil }
+        return (part, node)
     }
 
     private func header(_ entry: SpotsModel.Entry, _ run: SpotRun) -> some View {
@@ -92,7 +81,7 @@ struct SpotFloatView: View {
                 .modifier(SpotFileDragSource(items: run.list.shown, hasFiles: run.list.hasFiles, onDrop: { model.dragOut($0, of: id) }))
             SpotSheetTitle(title: entry.shownState.title, subtitle: entry.shownState.subtitle)
             Spacer(minLength: 0)
-            SpotRoundButton(symbol: "xmark", label: "Close") { model.land(id) }
+            SpotRoundButton(icon: .symbol("xmark"), label: "Close") { model.land(id) }
         }
     }
 

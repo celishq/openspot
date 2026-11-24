@@ -6,7 +6,7 @@ final class StatsLogTests: SpotRunsCase {
     private static let busyLoop = "i=0; while [ $i -lt 50000 ]; do i=$((i + 1)); done"
 
     func testABusyScriptCountsItsCPUTime() async throws {
-        try script(toml: "", "\(Self.busyLoop)\nprintf 'text=a\\ntitle=A\\n'")
+        try script(toml: "", "\(Self.busyLoop)\nprintf 'item=a\\ntitle=A\\n'")
         let sheet = try sheet()
 
         runs.panelOpened()
@@ -19,12 +19,12 @@ final class StatsLogTests: SpotRunsCase {
     }
 
     func testAStayingScriptCountsItsCPUTimeWhileItRuns() async throws {
-        try script(toml: "mode = 'stay'", """
+        try script(toml: "stay = true", """
         \(Self.busyLoop)
         touch '\(path("busy"))'
         while IFS= read -r line; do
           case "$line" in call=*) call=${line#call=} ;; esac
-          [ -n "$line" ] || printf 'end=%s\\n\\ntext=a\\ntitle=A\\n---\\n' "$call"
+          [ -n "$line" ] || printf 'end=%s\\n\\nitem=a\\ntitle=A\\n---\\n' "$call"
         done
         """)
         let sheet = try sheet()
@@ -42,7 +42,7 @@ final class StatsLogTests: SpotRunsCase {
     func testAStayingProcessPutsItsCPUTimeOnTheDayItWasSpent() async throws {
         runs.quit()
         runs = SpotRuns(clock: clock.value, stopPause: 0.2, stats: folder.appendingPathComponent("stats"))
-        try script(toml: "mode = 'stay'", """
+        try script(toml: "stay = true", """
         \(Self.busyLoop)
         touch '\(path("busy"))'
         \(untilRelease)
@@ -50,7 +50,7 @@ final class StatsLogTests: SpotRunsCase {
         touch '\(path("busy again"))'
         while IFS= read -r line; do
           case "$line" in call=*) call=${line#call=} ;; esac
-          [ -n "$line" ] || printf 'end=%s\\n\\ntext=a\\ntitle=A\\n---\\n' "$call"
+          [ -n "$line" ] || printf 'end=%s\\n\\nitem=a\\ntitle=A\\n---\\n' "$call"
         done
         """)
         let sheet = try sheet()
@@ -195,8 +195,8 @@ final class StatsLogTests: SpotRunsCase {
     }
 
     func testTheRunsTellTheUsageWhichSpotOwnsEachView() throws {
-        try script(toml: "view = 'cups.swift'", "printf 'view=cups\n'")
-        let view = try XCTUnwrap(try scanned().scripts.first?.view)
+        try script(toml: "views = ['cups.swift']", "printf 'cups=cups\n'")
+        let view = try XCTUnwrap(try scanned().scripts.first?.views["cups"])
 
         runs.usage.drew(view: view, seconds: 0.5)
 
@@ -205,7 +205,7 @@ final class StatsLogTests: SpotRunsCase {
     }
 
     func testOpeningASheetAndPickingARowAtOnceIsOneActAndTheReadIsCountedByItsReason() async throws {
-        try script(toml: "", "printf 'text=a\\ntitle=A\\n'")
+        try script(toml: "", "printf 'item=a\\ntitle=A\\n'")
         let sheet = try sheet()
 
         runs.panelOpened()
@@ -324,7 +324,7 @@ final class StatsLogTests: SpotRunsCase {
         let text = try Stats(days: usage.days(1, at: day), spot: nil).text(.frame)
 
         XCTAssertEqual(text, """
-        text=b
+        item=b
         title=Beta
         detail=1.5 s CPU · 2 runs · 250 ms each
         runs=2
@@ -342,7 +342,7 @@ final class StatsLogTests: SpotRunsCase {
         call.screen.shot=1
         network=declared
 
-        text=a
+        item=a
         title=Alpha
         detail=40 ms CPU · 1 run · 2.0 s each
         runs=1
@@ -384,8 +384,8 @@ final class StatsLogTests: SpotRunsCase {
         let one = try Stats(days: usage.days(1, at: day), spot: "a").text(.frame)
         let two = try Stats(days: usage.days(2, at: day), spot: "a").text(.frame)
 
-        XCTAssertTrue(one.contains("text=a\ntitle=Alpha\ndetail=0 ms CPU · 1 run · 1.0 s each\nruns=1\n"), one)
-        XCTAssertFalse(one.contains("text=b"), one)
+        XCTAssertTrue(one.contains("item=a\ntitle=Alpha\ndetail=0 ms CPU · 1 run · 1.0 s each\nruns=1\n"), one)
+        XCTAssertFalse(one.contains("item=b"), one)
         XCTAssertTrue(two.contains("runs=2\n"), two)
         let json = try XCTUnwrap(JSONSerialization.jsonObject(with: Data(Stats(days: usage.days(2, at: day), spot: nil).text(.json).utf8)) as? [[String: Any]])
         XCTAssertEqual(json.map { $0["day"] as? String }, ["2026-11-11", "2026-11-10"])

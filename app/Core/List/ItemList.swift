@@ -14,7 +14,6 @@ public struct ItemList: Equatable, Sendable {
     public private(set) var sectionStarts: [String: String] = [:]
     public private(set) var selected = 0
     public private(set) var perLine = 1
-    public private(set) var drawing = RepeatDrawing.list
     public private(set) var isWaiting = false
     public private(set) var landedSearches = 0
     private var awaitsLanding = false
@@ -226,6 +225,24 @@ public struct ItemList: Equatable, Sendable {
         shown[topCount..<(shown.count - bottomCount)]
     }
 
+    public func lineItem(at y: CGFloat) -> SpotItem? {
+        let step = SpotTokens.listRow + SpotTokens.listRowGap
+        guard y >= 0, y.truncatingRemainder(dividingBy: step) < SpotTokens.listRow else { return nil }
+        let line = Int(y / step)
+        let rows = scrolling
+        if sectionStarts.isEmpty { return line < rows.count ? rows[rows.startIndex + line] : nil }
+        var at = 0
+        for item in rows {
+            if sectionStarts[item.run] != nil {
+                if at == line { return nil }
+                at += 1
+            }
+            if at == line { return item }
+            at += 1
+        }
+        return nil
+    }
+
     public mutating func moveToEdge(last: Bool) {
         landFinding()
         selected = last ? max(shown.count - 1, 0) : 0
@@ -240,13 +257,8 @@ public struct ItemList: Equatable, Sendable {
         self.perLine = max(perLine, 1)
     }
 
-    public mutating func take(drawing: RepeatDrawing) {
-        self.drawing = drawing
-        perLine = drawing.perLine ?? drawing.places.count
-    }
-
-    public var isBento: Bool {
-        drawing.perLine == nil
+    public var isOnFirstLine: Bool {
+        selected < perLine
     }
 
     public var isOnLastLine: Bool {

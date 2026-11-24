@@ -21,7 +21,7 @@ final class RaycastImportTests: XCTestCase {
 
     private func answer(_ arguments: [String]) async throws -> CommandAnswer {
         let call = try XCTUnwrap(CommandLineCall(arguments: arguments, environment: environment))
-        let work = try XCTUnwrap(CommandAPI(mac: Mac(), places: .test(environment), rates: .offline).work(for: call, request: .test(arguments, in: environment), input: { "" }))
+        let work = try XCTUnwrap(CommandAPI(mac: Mac(), places: .test(environment)).work(for: call, request: .test(arguments, in: environment), input: { "" }))
         return await work()
     }
 
@@ -51,7 +51,8 @@ final class RaycastImportTests: XCTestCase {
         try "#!/bin/sh\necho \"$*\" >> '\(calls.path)'\n".writeScript(to: tools.appendingPathComponent("openspot"))
         let environment = TestEnvironment.values.merging(["PATH": "\(tools.path):/usr/bin:/bin"]) { _, new in new }
         var frames: [String] = []
-        let end = await TerminalRun(spot: try spot(id), arguments: arguments, input: input, careful: nil, callers: nil, environment: environment, folder: nil).start { frames.append($0) }
+        let run = TerminalRun(spot: try spot(id), handler: arguments.first, input: input, inputs: [], settings: [], careful: nil, callers: nil, environment: environment, folder: nil)
+        let end = await run.start { frames.append($0) }
         return (frames, end)
     }
 
@@ -96,7 +97,7 @@ final class RaycastImportTests: XCTestCase {
         let answer = try await answer(["import", "raycast", scripts.path, "--dry-run"])
 
         XCTAssertEqual(answer.code, 0, answer.errors)
-        XCTAssertTrue(answer.output.contains("text=say-hello\ntitle=Say Hello\ndetail=added"), answer.output)
+        XCTAssertTrue(answer.output.contains("item=say-hello\ntitle=Say Hello\ndetail=added"), answer.output)
         XCTAssertEqual(try FileManager.default.contentsOfDirectory(atPath: spots.path), [])
     }
 
@@ -136,34 +137,31 @@ final class RaycastImportTests: XCTestCase {
         XCTAssertEqual(run.end.errors, "Invalid value provided\n")
     }
 
-    func testASpotWithAnArgumentAsksForItAndPassesItEncoded() async throws {
+    func testAnArgumentIsAnInputOfTheRunActionAndGoesToTheScriptEncoded() async throws {
         try script("search.sh", header: ["title Search Flights", "mode silent", #"argument1 { "type": "text", "placeholder": "from city", "percentEncoded": true }"#, #"argument2 { "type": "text", "placeholder": "to city", "optional": true }"#], body: "echo \"$1|$2\"")
         _ = try await imported()
 
-        let read = try await run("search-flights", ["show"], input: "search=New York\n")
-        let split = try await run("search-flights", ["show"], input: "search=Kyiv  Rome di Roma\n")
+        let manifest = try manifest("search-flights")
         let ran = try await run("search-flights", ["run"], input: "input.arg1=New York\ninput.arg2=Rome\n")
         let empty = try await run("search-flights", ["run"], input: "input.arg2=Rome\n")
+        let action = try XCTUnwrap(try spot("search-flights").action("run"))
 
-        XCTAssertTrue(read.frames.joined().contains("field=arg1\ntitle=from city\nplaceholder=from city\ngrow=false\nvalue=New\n"), read.frames.joined())
-        XCTAssertTrue(split.frames.joined().contains("value=Kyiv\n"), split.frames.joined())
-        XCTAssertTrue(split.frames.joined().contains("field=arg2\ntitle=to city\nplaceholder=to city\ngrow=false\nvalue=Rome di Roma\n"), split.frames.joined())
-        XCTAssertTrue(read.frames.joined().hasPrefix("frame=\ngrid=arg1\ngrid=arg2\ngrid=run\n"), read.frames.joined())
-        XCTAssertTrue(read.frames.joined().contains("button=run\ntitle=Run\nlook=strong\nshortcut=return\nscope=spot\n"), read.frames.joined())
+        XCTAssertTrue(manifest.contains("[actions.run]\ntitle = \"Search Flights\"\ninputs.arg1 = { description = \"from city\", required = true, type = \"text\" }\ninputs.arg2 = { description = \"to city\", required = false, type = \"text\" }"), manifest)
+        XCTAssertEqual(action.inputs.map(\.name), ["arg1", "arg2"])
         XCTAssertEqual(ran.end.code, 0, ran.end.errors)
         XCTAssertEqual(try toasts(), ["New%20York|Rome"])
         XCTAssertEqual(empty.end.code, 1)
         XCTAssertEqual(empty.end.errors, "Fill in from city.\n")
     }
 
-    func testADropdownShowsAChoiceAndPassesTheValueOfThePickedOption() async throws {
+    func testADropdownIsAChoiceOfItsValuesAndPassesThePickedOne() async throws {
         try script("dock.sh", header: ["title Dock Position", "mode compact", #"argument1 { "type": "dropdown", "placeholder": "Position", "data": [{"title": "Left", "value": "left"}, {"title": "Right", "value": "right"}] }"#], body: "echo \"dock $1\"")
         _ = try await imported()
 
-        let read = try await run("dock-position", ["show"], input: "search=Right\n")
-        let ran = try await run("dock-position", ["run"], input: "input.arg1=2\n")
+        let manifest = try manifest("dock-position")
+        _ = try await run("dock-position", ["run"], input: "input.arg1=right\n")
 
-        XCTAssertTrue(read.frames.joined().contains("choice=arg1\ntitle=Position\nvalue=2\n\noption=1\ntitle=Left\n\noption=2\ntitle=Right\n"), read.frames.joined())
+        XCTAssertTrue(manifest.contains("inputs.arg1 = { description = \"Position\", options = [\"left\", \"right\"], required = true, type = \"choice\" }"), manifest)
         XCTAssertEqual(try toasts(), ["dock right"])
     }
 
@@ -176,8 +174,21 @@ final class RaycastImportTests: XCTestCase {
         XCTAssertEqual(read.frames.count, 2)
         XCTAssertTrue(read.frames[0].contains("value=Running…"), read.frames[0])
         XCTAssertTrue(read.frames[1].contains("field=output\ntype=multiline\nreadonly=true\nvalue=one\\ntwo\n"), read.frames[1])
-        XCTAssertTrue(read.frames[1].contains("button=run\ntitle=Run Again\nshortcut=cmd+r\n"), read.frames[1])
-        XCTAssertTrue(read.frames[1].hasPrefix("frame=\ngrid=output\n"), read.frames[1])
+        XCTAssertTrue(read.frames[1].contains("button=run\ntitle=Run Again\nshortcut=cmd+r\nscope=spot\nclose=false\n"), read.frames[1])
+        XCTAssertTrue(read.frames[1].hasPrefix("frame=\nclass=gap-part\n"), read.frames[1])
+    }
+
+    func testAFullOutputScriptWithAnArgumentAsksInItsSheetAndShowsTheOutputUnderIt() async throws {
+        try script("shout.sh", header: ["title Shout", "mode fullOutput", #"argument1 { "type": "text", "placeholder": "Text" }"#, #"argument2 { "type": "dropdown", "placeholder": "Case", "data": [{"title": "Upper", "value": "upper"}, {"title": "Lower", "value": "lower"}] }"#], body: "echo \"$2 $1\"")
+        _ = try await imported()
+
+        let read = try await run("shout", ["show"])
+        let ran = try await run("shout", ["run"], input: "input.arg1=hello\ninput.arg2=lower\n")
+
+        XCTAssertTrue(read.frames.joined().contains("field=arg1\ntitle=Text\nplaceholder=Text\nvalue=\n"), read.frames.joined())
+        XCTAssertTrue(read.frames.joined().contains("choice=arg2\ntitle=Case\nvalue=upper\n\noption=upper\ntitle=Upper\n\noption=lower\ntitle=Lower\n"), read.frames.joined())
+        XCTAssertTrue(read.frames.joined().contains("button=run\ntitle=Run\nclass=bg-accent\nshortcut=return\nclose=false\n"), read.frames.joined())
+        XCTAssertTrue(ran.frames.joined().contains("field=output\ntype=multiline\nreadonly=true\nvalue=lower hello\n"), ran.frames.joined())
     }
 
     func testAnInlineScriptShowsItsFirstLineOnItsCardAndInTheMenuBar() async throws {
@@ -187,8 +198,8 @@ final class RaycastImportTests: XCTestCase {
         let read = try await run("current-weather", ["show"])
         let manifest = try manifest("current-weather")
 
-        XCTAssertEqual(read.frames, ["frame=\ngrid.bar=output\ndetail=Sunny 21°\n\ntext=output\ntitle=Sunny 21°\n"])
-        XCTAssertTrue(manifest.contains("on = [\"panel.open\", \"clock.60\"]"), manifest)
+        XCTAssertEqual(read.frames, ["frame=\nclass=gap-part\ndetail=Sunny 21°\n\ntext=output\nclass=bar:flex\ntitle=Sunny 21°\n"])
+        XCTAssertTrue(manifest.contains("[on]\n\"panel.open\" = true\nevery = 60"), manifest)
     }
 
     func testAScriptThatNeedsConfirmationAsksTwice() async throws {
@@ -198,7 +209,7 @@ final class RaycastImportTests: XCTestCase {
         let manifest = try manifest("move-desktop-to-trash")
         _ = try await run("move-desktop-to-trash", ["run"])
 
-        XCTAssertTrue(manifest.contains("[commands.run]\ntitle = \"Move Desktop to Trash\"\nconfirm = \"Press again to run Move Desktop to Trash\"\n"), manifest)
+        XCTAssertTrue(manifest.contains("[actions.run]\ntitle = \"Move Desktop to Trash\"\nconfirm = \"Press again to run Move Desktop to Trash\"\n"), manifest)
         XCTAssertEqual(try toasts(), ["moved"])
     }
 
@@ -237,15 +248,19 @@ final class RaycastImportTests: XCTestCase {
         XCTAssertEqual(items, ["added clock-2"])
     }
 
-    func testTheTextOfASlashCommandGoesWholeToASingleArgument() async throws {
-        try script("shout.sh", header: ["title Shout", "mode compact", #"argument1 { "type": "text", "placeholder": "Text" }"#], body: "echo \"$1\"")
+    func testEachKindOfImportedScriptLoadsAsASpot() async throws {
+        try script("hello.sh", header: ["title Say Hello", "mode compact", "needsConfirmation true"], body: "echo hello")
+        try script("search.sh", header: ["title Search Flights", "mode silent", #"argument1 { "type": "text", "placeholder": "from city" }"#], body: "echo \"$1\"")
+        try script("dock.sh", header: ["title Dock Position", "mode compact", #"argument1 { "type": "dropdown", "placeholder": "Position", "data": [{"title": "Left", "value": "left"}] }"#], body: "echo \"$1\"")
+        try script("info.sh", header: ["title Network Info", "mode fullOutput"], body: "echo one")
+        try script("weather.sh", header: ["title Current Weather", "mode inline", "refreshTime 1m"], body: "echo sunny")
         _ = try await imported()
 
-        let read = try await run("shout", ["show"], input: "search=hello  big world\n")
+        let found = try SpotsFolder(url: spots).scan()
 
-        XCTAssertTrue(read.frames.joined().contains("grow=false\nvalue=hello  big world\n"), read.frames.joined())
+        XCTAssertEqual(found.refused, [])
+        XCTAssertEqual(Set(found.spots.map(\.id)), ["say-hello", "search-flights", "dock-position", "network-info", "current-weather"])
     }
-
 
     func testAScriptLeftOutIsNotImported() async throws {
         try script("hello.sh", header: ["title Say Hello", "mode compact"], body: "echo hello")

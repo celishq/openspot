@@ -26,10 +26,10 @@ toggle() {
 calendars_form() {
   calendars=$(openspot calendar calendars </dev/null) || { printf '%s\n' "$calendars"; exit 1; }
   lists=$(openspot reminders lists </dev/null) || { printf '%s\n' "$lists"; exit 1; }
-  printf 'frame=\ntitle=Calendars\ngrid=calendars\n\nchoice=calendars\ntitle=Calendars\ntype=multiple\n'
-  { printf '%s\n' "$calendars" | sed 's/^text=/text=calendar /'; printf '\n'; printf '%s\n' "$lists" | sed 's/^text=/text=list.bullet /'; } |
+  printf 'frame=\ntype=form\ntitle=Calendars\nclass=gap-part\n\nchoice=calendars\ntitle=Calendars\ntype=multiple\n'
+  { printf '%s\n' "$calendars" | sed 's/^item=/item=calendar /'; printf '\n'; printf '%s\n' "$lists" | sed 's/^item=/item=list.bullet /'; } |
     awk -v hidden=" $hidden " 'BEGIN { RS = ""; FS = "\n" }
-      /^text=/ {
+      /^item=/ {
         split(substr($1, 6), head, " ")
         title = ""; account = ""
         for (i = 2; i <= NF; i++) {
@@ -52,7 +52,7 @@ field() { printf '%s\n' "$2" | sed -n "s/^$1=//p" | head -n 1; }
 epoch() { date -j -f '%Y-%m-%dT%H:%M:%S%z' "$(printf '%s' "$1" | sed 's/:\([0-9][0-9]\)$/\1/')" +%s 2>/dev/null; }
 
 # Prints the next event that has a time, or nothing.
-next_event() { printf '%s\n' "$events" | awk 'BEGIN { RS = "" } /\nallday=true/ { next } /^text=/ { print; exit }'; }
+next_event() { printf '%s\n' "$events" | awk 'BEGIN { RS = "" } /\nallday=true/ { next } /^item=/ { print; exit }'; }
 
 # Prints the head and the card: the next event in large type across the top, in the colour of its calendar, with its time
 # alone on the small card. The strip card adds Join while the event's call is on or starts within 10 minutes, the square
@@ -60,8 +60,7 @@ next_event() { printf '%s\n' "$events" | awk 'BEGIN { RS = "" } /\nallday=true/ 
 # reminders, with a tick before its title and its due time at the end.
 card() {
   next=$(next_event)
-  ticks=$(printf '%s\n' "$reminders" | awk 'BEGIN { RS = ""; FS = "\n" } /^text=reminder:/ && /\ndone=false/ && shown < 2 { shown++; print substr($1, 15) }')
-  set -- $(printf '%s\n' "$reminders" | awk 'BEGIN { RS = ""; FS = "\n" } /^text=reminder:/ && /\ndone=false/ { open++; if (/\ntone=bad/) late++ } END { print open + 0, late + 0 }')
+  set -- $(printf '%s\n' "$reminders" | awk 'BEGIN { RS = ""; FS = "\n" } /^item=reminder:/ && /\ndone=false/ { open++; if (/\ntone=bad/) late++ } END { print open + 0, late + 0 }')
   open=$1
   late=$2
   join=""
@@ -89,26 +88,17 @@ card() {
     fi
     if [ -n "$(field meeting "$next")" ] && { [ "$value" = Now ] || [ "$left" -le 10 ]; }; then join=1; fi
   fi
-  strip=next
-  [ -z "$join" ] || strip='next next next join-now'
-  printf 'frame=\ngrid.bar=next\nrecents=false\ngrid=items\ngrid.small=at\ngrid.wide=next\ngrid.strip=%s\n' "$strip"
-  printf 'grid.square=next next\ngrid.square=next next\ngrid.large=next next next next\ngrid.large=next next next next\n'
-  if [ "$late" -gt 0 ]; then
-    printf 'grid.square=todo late\n'
-  elif [ "$open" -gt 0 ]; then
-    printf 'grid.square=todo todo\n'
-  fi
-  for id in $ticks; do
-    printf 'grid.large=%s %s %s due-%s\n' "$id" "$id" "$id" "$id"
-  done
-  printf '\n'
+  printf 'frame=\nclass=gap-part\nrecents=false\nvalue=next\n\nitems=items\nclass=card:hidden\n\n'
+  printf 'box=head\nclass=hidden bar:flex wide:flex strip:flex square:flex large:flex flex-row gap-part grow\n\n'
   color=$(field color "$next")
-  printf 'number=next\nvalue=%s\ntitle=%s\ncolor=%s\n\nnumber=at\nvalue=%s\ntitle=%s\n\n' "$value" "$title" "$color" "$time" "$title"
-  [ "$open" -eq 0 ] || printf 'text=todo\ntitle=%s to do\n\n' "$open"
-  [ "$late" -eq 0 ] || printf 'text=late\ntitle=%s late\ntone=bad\n\n' "$late"
-  [ -z "$join" ] || printf 'button=join-now\ntitle=Join\n\n'
+  printf 'number=next\nparent=head\nclass=grow\nvalue=%s\ntitle=%s\ncolor=%s\n\n' "$value" "$title" "$color"
+  [ -z "$join" ] || printf 'button=join-now\nparent=head\nclass=hidden strip:flex\ntitle=Join\n\n'
+  printf 'number=at\nclass=hidden small:flex grow\nvalue=%s\ntitle=%s\n\n' "$time" "$title"
+  printf 'box=counts\nclass=hidden square:flex square:grid grid-cols-2 gap-part\n\n'
+  [ "$open" -eq 0 ] || printf 'text=todo\nparent=counts\ntitle=%s to do\n\n' "$open"
+  [ "$late" -eq 0 ] || printf 'text=late\nparent=counts\ntitle=%s late\ntone=bad\n\n' "$late"
   printf '%s\n' "$reminders" | awk 'BEGIN { RS = ""; FS = "\n" }
-    /^text=reminder:/ && /\ndone=false/ && shown < 2 {
+    /^item=reminder:/ && /\ndone=false/ && shown < 2 {
       shown++
       id = substr($1, 15)
       title = ""; due = ""; tone = ""
@@ -117,7 +107,8 @@ card() {
         if ($i ~ /^detail=/) { due = substr($i, 8); sub(/ · .*/, "", due) }
         if ($i ~ /^tone=/) tone = $i
       }
-      printf "switch=%s\ntype=tick\ntitle=%s\nvalue=false\n\ntext=due-%s\ndetail=%s\n", id, title, id, due
+      printf "box=row-%s\nclass=hidden large:flex flex-row gap-part\n\n", id
+      printf "switch=%s\nparent=row-%s\nclass=grow\ntype=tick\ntitle=%s\nvalue=false\n\ntext=due-%s\nparent=row-%s\ndetail=%s\n", id, id, title, id, id, due
       if (tone != "") print tone
       print ""
     }'
@@ -128,7 +119,7 @@ card() {
 rows() {
   printf '%s\n\n%s\n' "$events" "$reminders" | TEXTS=$(printf '%s\n' "$@") awk '
     BEGIN { RS = ""; FS = "\n"; count = split(tolower(ENVIRON["TEXTS"]), texts, "\n") }
-    /^text=(event|reminder):/ {
+    /^item=(event|reminder):/ {
       title = ""; detail = ""; meeting = 0
       for (i = 1; i <= NF; i++) {
         if ($i ~ /^title=/) title = substr($i, 7)
@@ -139,8 +130,10 @@ rows() {
       found = count == 0
       for (t = 1; t <= count; t++) if (texts[t] != "" && index(shown, texts[t])) found = 1
       if (!found) next
-      print
-      if ($1 ~ /^text=reminder:/) print "hides=join"
+      print $1
+      print "parent=items"
+      for (i = 2; i <= NF; i++) print $i
+      if ($1 ~ /^item=reminder:/) print "hides=join"
       else { print "hides=tick"; if (!meeting) print "hides=join" }
       print ""
     }'
@@ -150,7 +143,9 @@ rows() {
 adding() {
   made=$(openspot "$1" add --dry-run "$2" </dev/null 2>/dev/null) || return 0
   [ "$made" != status=unasked ] || return 0
-  printf 'text=add-%s\ntitle=%s\ndetail=%s · %s\nicon=plus.circle\nhides=join\nhides=tick\n\n' "$3" "$4" "$(field title "$made")" "$(field detail "$made")"
+  printf 'item=add-%s\nparent=items\ntitle=%s\ndetail=%s · %s\nicon=plus.circle\nhides=join\nhides=tick\n' "$3" "$4" "$(field title "$made")" "$(field detail "$made")"
+  openspot_kv words "$2"
+  echo
 }
 
 # Asks macOS for leave with a call outside a read. When the person said no, Openspot shows the link to the fix.
@@ -159,34 +154,34 @@ allow() {
 }
 
 case "$1" in
-  show)
+  show | sheet.text | every)
     events=$(events) || { printf '%s\n' "$events"; exit 1; }
     reminders=$(reminders) || { printf '%s\n' "$reminders"; exit 1; }
     card
-    printf 'repeat=items\n\n'
-    printf 'button=open\ntitle=Open\n\nbutton=join\ntitle=Join call\nshortcut=cmd+j\n\n'
-    printf 'button=tick\ntitle=Mark as done\nshortcut=cmd+shift+c\nclose=false\n\nbutton=calendars\ntitle=Choose calendars\nform=true\nscope=spot\nclose=false\n\n'
-    typed=$(value search)
+    printf 'button=press\nparent=items\ntitle=Open\n\nbutton=join\nparent=items\ntitle=Join call\nshortcut=cmd+j\n\n'
+    printf 'button=tick\nparent=items\ntitle=Mark as done\nshortcut=cmd+shift+c\nclose=false\n\nbutton=calendars\nparent=items\ntitle=Choose calendars\nscope=spot\nclose=false\n\n'
+    typed=$(value value)
     if [ -n "$typed" ]; then
       adding reminders "$typed" reminder 'Add reminder'
       adding calendar "$typed" event 'Add event'
     fi
-    [ "$events" != status=unasked ] || printf 'text=allow-calendar\ntitle=Allow Calendar\ndetail=Show your events here\nicon=calendar\nhides=join\nhides=tick\n\n'
-    [ "$reminders" != status=unasked ] || printf 'text=allow-reminders\ntitle=Allow Reminders\ndetail=Show and tick your reminders here\nicon=checklist\nhides=join\nhides=tick\n\n'
-    rows "$typed" "$(value search.alt)"
+    [ "$events" != status=unasked ] || printf 'item=allow-calendar\nparent=items\ntitle=Allow Calendar\ndetail=Show your events here\nicon=calendar\nhides=join\nhides=tick\n\n'
+    [ "$reminders" != status=unasked ] || printf 'item=allow-reminders\nparent=items\ntitle=Allow Reminders\ndetail=Show and tick your reminders here\nicon=checklist\nhides=join\nhides=tick\n\n'
+    rows "$typed" "$(value alt)"
     ;;
-  open)
-    case "$2" in
+  press)
+    picked=$(value item)
+    case "$picked" in
       allow-calendar) allow calendar events ;;
       allow-reminders) allow reminders due ;;
       add-reminder | add-event)
         noun=reminders
-        [ "$2" = add-event ] && noun=calendar
-        added=$(openspot "$noun" add "$(value search)" </dev/null) || { printf '%s\n' "$added"; exit 1; }
+        [ "$picked" = add-event ] && noun=calendar
+        added=$(openspot "$noun" add "$(value item.words)" </dev/null) || { printf '%s\n' "$added"; exit 1; }
         openspot toast "Added $(field title "$added")."
         ;;
-      reminder:*) openspot reminders show "$2" </dev/null ;;
-      *) openspot calendar show "$2" </dev/null ;;
+      reminder:*) openspot reminders show "$picked" </dev/null ;;
+      *) openspot calendar show "$picked" </dev/null ;;
     esac
     ;;
   calendars)
@@ -199,7 +194,7 @@ case "$1" in
     state=$(value item.done)
     to=true
     [ "$state" = true ] && to=false
-    openspot reminders done "$2" "$to" </dev/null
+    openspot reminders done "$(value item)" "$to" </dev/null
     ;;
   join-now)
     events=$(events) || exit 1
@@ -213,8 +208,9 @@ case "$1" in
     open "$link"
     ;;
   *)
-    case "$2" in
-      true | false) openspot reminders done "reminder:$1" "$2" </dev/null ;;
+    ticked=$(value value)
+    case "$ticked" in
+      true | false) openspot reminders done "reminder:$1" "$ticked" </dev/null ;;
     esac
     ;;
 esac

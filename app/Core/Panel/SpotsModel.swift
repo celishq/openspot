@@ -75,7 +75,6 @@ public final class SpotsModel {
         runs.answerMatches
     }
     @ObservationIgnored var mainSearch = MainSearch()
-    @ObservationIgnored var finding: Finding?
     @ObservationIgnored var foundSpots: [Entry] = []
     public internal(set) var placements: [SpotPlacement] = [] {
         didSet { takePlacements() }
@@ -242,10 +241,13 @@ public final class SpotsModel {
     public private(set) var formIsMultiple = false
     public private(set) var formHint = HintWords("")
     @ObservationIgnored var pendingAsk: UUID?
+    @ObservationIgnored var askedWindows: Set<String> = []
     public var isEditing = false {
         didSet { takeMode() }
     }
     public var tip: SpotTip?
+    public internal(set) var pointedCard: String?
+    var shakes: [String: Int] = [:]
     public internal(set) var drag: SpotDrag?
     public let lift = SpotLift()
     public internal(set) var landing: String?
@@ -292,7 +294,9 @@ public final class SpotsModel {
             recent: { files.recent(of: $0) },
             prepare: { [unowned host] in await host.prepare($0, glyphs: $1) },
             log: files.log,
-            stats: files.stats
+            stats: files.stats,
+            timers: files.timers,
+            schedule: files.schedule
         )
         self.runs.secrets = files.secrets
         self.runs.onReport = { [weak self] id, report in self?.take(report, of: id) }
@@ -353,7 +357,6 @@ public final class SpotsModel {
             self.load = load
             let id = selectedEntry?.id
             reload(patching: nil, to: kept == start ? next : kept)
-            landSearch()
             if let position = visible.firstIndex(where: { $0.id == id }) { selected = position }
         }
         loading = task
@@ -404,7 +407,7 @@ public final class SpotsModel {
         let stamps = fileStamps
         await reload()
         guard isShown else { return }
-        for entry in entries where entry.spot.on?.has(.panel) == true && fileStamps[entry.id] != stamps[entry.id] {
+        for entry in entries where entry.spot.triggers.showsOnPanel && fileStamps[entry.id] != stamps[entry.id] {
             sheets[entry.id]?.show(need: .change)
         }
     }
@@ -422,7 +425,6 @@ public final class SpotsModel {
         if openSheetID != nil { closeSheet(moving: false) }
         host.show()
         query = visible.contains { $0.id == id } || cards.filter(\.isOnGrid).contains { $0.id == id } ? "" : entry.state.title
-        landSearch()
         selected = visible.firstIndex { $0.id == id } ?? 0
         return true
     }
@@ -432,7 +434,6 @@ public final class SpotsModel {
         if case .spots(let ids) = change {
             let id = selectedEntry?.id
             reload(patching: Set(ids), to: next)
-            landSearch()
             if let position = visible.firstIndex(where: { $0.id == id }) { selected = position }
             return
         }
@@ -533,7 +534,7 @@ public final class SpotsModel {
     }
 
     public func updateIsReady(_ version: String) {
-        runs.raise(.named(SpotEvent.appUpdate, value: version, showsEachSpot: true))
+        runs.raise(.named(EventName.appUpdate, value: version, showsEachSpot: true))
     }
 
     public func allows(_ reason: String) async -> Bool {
@@ -578,6 +579,10 @@ public final class SpotsModel {
             }
         case .move(let move):
             self.move(move, in: id)
+        case .refused(let item):
+            shakes[Self.shakeKey(of: item, in: id), default: 0] += 1
+        case .done:
+            if isShown { host.dismiss() }
         }
     }
 

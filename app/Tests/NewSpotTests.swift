@@ -49,34 +49,34 @@ final class NewSpotTests: BuiltInCase {
         XCTAssertEqual(field.control, .text("", placeholder: "Describe what you want to build", isReadOnly: false))
         let copy = try XCTUnwrap(output.parts.last)
         XCTAssertEqual(copy.title, "Copy prompt")
-        XCTAssertEqual(copy.look, .strong)
+        XCTAssertEqual(output.tree.look(of: copy.id), .strong)
         XCTAssertEqual(copy.key, ActionKey(name: "return", isCommand: true))
         XCTAssertEqual(output.actions.map(\.title), ["Clear", "Read the guide", "Open spots folder"])
-        XCTAssertEqual(SheetParts(output: output)?.hint(stopping: { _ in false }, actions: true), "⌘⏎ Copy prompt   ⌘K Actions")
+        XCTAssertEqual(SheetParts(output: output).hint(stopping: { _ in false }, actions: true), "⌘⏎ Copy prompt   ⌘K Actions")
     }
 
     func testTheFieldKeepsTheWordsThatThePersonTypesAcrossAReadAndACall() async throws {
         let spot = try newSpot()
 
-        for action in [SpotAction(arguments: ["show"]), SpotAction(arguments: ["describe", "Show the weather"])] {
+        for action in ["show", "describe"] {
             let output = try await spot.answer(action, input: "input.describe=Show the weather\\nin Kyiv\n", timeout: 60)
-            XCTAssertEqual(output.parts.first?.value, "Show the weather\nin Kyiv", "\(action.arguments)")
+            XCTAssertEqual(output.parts.first?.value, "Show the weather\nin Kyiv", action)
         }
     }
 
     func testEverySearchEndsWithARowThatMakesASpotOfTheTypedWords() async throws {
-        let make = try spot("make")
+        let make = try newSpot()
 
-        let rows = try await make.items(query: " time in kyiv ", timeout: 60).answers
+        let rows = try await make.answer("search", input: "input.text= time in kyiv \n", timeout: 60).answers(asCard: false)
 
-        XCTAssertEqual(try XCTUnwrap(make.answers).isLast, true)
+        XCTAssertEqual(try XCTUnwrap(make.triggers.search).isLast, true)
         XCTAssertEqual(rows.map(\.run), ["time in kyiv"])
         XCTAssertEqual(rows.map(\.title), ["Make a spot"])
         XCTAssertEqual(rows.map(\.subtitle), ["time in kyiv"])
     }
 
     func testAPickOfMakeASpotCopiesThePromptThatBuildsTheTypedWords() async throws {
-        try await spot("make").perform(SpotAction(arguments: ["open", "time in kyiv"]), timeout: 60)
+        try await newSpot().perform("press", input: "input.item=time in kyiv\n", timeout: 60)
 
         XCTAssertEqual(effects(), ["toast \(AgentPrompt.copied)"])
         let prompt = try saved("clipboard")
@@ -86,23 +86,23 @@ final class NewSpotTests: BuiltInCase {
     func testAfterACopyTheNextOpenStartsEmpty() async throws {
         let spot = try newSpot()
 
-        try await spot.perform(.press("copy"), input: "input.describe=Show the weather\n", timeout: 60)
+        try await spot.perform("copy", input: "input.describe=Show the weather\n", timeout: 60)
 
         XCTAssertEqual(effects(), ["toast \(AgentPrompt.copied)"])
-        let reopened = try await spot.answer(.show, timeout: 60)
+        let reopened = try await spot.answer(ScriptEntry.show.name, timeout: 60)
         XCTAssertEqual(reopened.parts.first?.value ?? "", "")
     }
 
     func testTheWordsStayAsADraftWhenTheSheetClosesAndClearEmptiesThem() async throws {
         let spot = try newSpot()
-        _ = try await spot.answer(SpotAction(arguments: ["describe", "A list of my repos"]), input: "input.describe=A list of my repos\n", timeout: 60)
+        _ = try await spot.answer("describe", input: "input.describe=A list of my repos\n", timeout: 60)
 
-        let reopened = try await spot.answer(.show, timeout: 60)
+        let reopened = try await spot.answer(ScriptEntry.show.name, timeout: 60)
         XCTAssertEqual(reopened.parts.first?.value, "A list of my repos")
 
-        let cleared = try await spot.answer(SpotAction(arguments: ["clear"]), input: "input.describe=A list of my repos\n", timeout: 60)
+        let cleared = try await spot.answer("clear", input: "input.describe=A list of my repos\n", timeout: 60)
         XCTAssertEqual(cleared.parts.first?.value ?? "", "")
-        let again = try await spot.answer(.show, timeout: 60)
+        let again = try await spot.answer(ScriptEntry.show.name, timeout: 60)
         XCTAssertEqual(again.parts.first?.value ?? "", "")
         XCTAssertEqual(again.actions.map(\.title), ["Clear", "Read the guide", "Open spots folder"])
     }
@@ -110,7 +110,7 @@ final class NewSpotTests: BuiltInCase {
     func testCopyPromptWithWordsCopiesThePromptThatBuildsTheSpotToTheEnd() async throws {
         let spot = try newSpot()
 
-        try await spot.perform(.press("copy"), input: "input.describe=Show the weather\\nin Kyiv\n", timeout: 60)
+        try await spot.perform("copy", input: "input.describe=Show the weather\\nin Kyiv\n", timeout: 60)
 
         XCTAssertEqual(effects(), ["toast \(AgentPrompt.copied)"])
         let prompt = try saved("clipboard")
@@ -121,7 +121,7 @@ final class NewSpotTests: BuiltInCase {
     }
 
     func testCopyPromptWithAnEmptyFieldCopiesThePromptThatAsksWhatToBuild() async throws {
-        try await newSpot().perform(.press("copy"), input: "input.describe=  \n", timeout: 60)
+        try await newSpot().perform("copy", input: "input.describe=  \n", timeout: 60)
 
         XCTAssertEqual(effects(), ["toast \(AgentPrompt.copied)"])
         let prompt = try saved("clipboard")
@@ -147,7 +147,7 @@ final class NewSpotTests: BuiltInCase {
         XCTAssertTrue(try saved("clipboard").contains("Build an Openspot spot that does this: Show the weather here"))
         for _ in 0..<6000 where sheet.panel?.parts.last?.title != "✓ Copied" { try await Task.sleep(for: .milliseconds(10)) }
         XCTAssertEqual(sheet.panel?.parts.last?.title, "✓ Copied")
-        XCTAssertEqual(sheet.panel?.parts.last?.look, .strong)
+        XCTAssertEqual(sheet.panel?.tree.look(of: "copy"), .strong)
         XCTAssertEqual(sheet.panel?.parts.last?.press, .line)
         XCTAssertEqual(sheet.panel?.parts.first?.value, "Show the weather here")
         for _ in 0..<6000 where sheet.panel?.parts.last?.title != "Copy prompt" { try await Task.sleep(for: .milliseconds(10)) }
@@ -161,7 +161,7 @@ final class NewSpotTests: BuiltInCase {
         return try XCTUnwrap(try newSpot().editSheet(of: owner, isOwn: !place.isCore(owner)))
     }
 
-    private func edit(_ sheet: Spot, _ action: SpotAction, input: String? = nil, variables: [String: String] = [:]) async throws -> String {
+    private func edit(_ sheet: Spot, _ action: String, input: String? = nil, variables: [String: String] = [:]) async throws -> String {
         try await SpotRuns(environment: TestEnvironment.values).answer(of: sheet, action, input: input, limit: 60, variables: variables)
     }
 
@@ -169,25 +169,25 @@ final class NewSpotTests: BuiltInCase {
         try "#!/bin/sh\necho\n".writeScript(to: spots.spotFile("weather"), toml: "title = 'Weather'")
         let sheet = try editSheet(of: "weather")
 
-        let output = Frame(text: try await edit(sheet, .show))
+        let output = Frame(text: try await edit(sheet, ScriptEntry.show.name))
 
         XCTAssertEqual(sheet.name, "Edit Weather")
         XCTAssertEqual(output.parts.map(\.id), ["describe", "copy"])
         XCTAssertEqual(output.fields.map { $0.block.value("type") }, ["multiline"])
         XCTAssertEqual(output.parts.first?.control, .text("", placeholder: "Describe what you want to change", isReadOnly: false))
         XCTAssertEqual(output.parts.last?.title, "Copy prompt")
-        XCTAssertEqual(output.parts.last?.look, .strong)
+        XCTAssertEqual(output.tree.look(of: "copy"), .strong)
         XCTAssertEqual(output.parts.last?.key, ActionKey(name: "return", isCommand: true))
         XCTAssertEqual(output.actions.map(\.title), ["Clear", "Open in editor", "Read the guide"])
 
-        _ = try await edit(sheet, SpotAction(arguments: ["editor"]))
+        _ = try await edit(sheet, "editor")
         XCTAssertEqual(try saved("opened"), "-t \(spots.spotFile("weather").path)\n")
     }
 
     func testCopyPromptOnAnEditSheetCopiesTheChangeOfTheSpotsFileToTheEnd() async throws {
         try "#!/bin/sh\necho\n".writeScript(to: spots.spotFile("weather"), toml: "title = 'Weather'")
 
-        _ = try await edit(try editSheet(of: "weather"), .press("copy"), input: "input.describe=Add a refresh button\n")
+        _ = try await edit(try editSheet(of: "weather"), "copy", input: "input.describe=Add a refresh button\n")
 
         let prompt = try saved("clipboard")
         XCTAssertTrue(prompt.hasPrefix("Change the Openspot spot in \(spots.spotFile("weather").path): Add a refresh button\n\(AgentPrompt.finishChange)\n"), prompt)
@@ -198,7 +198,7 @@ final class NewSpotTests: BuiltInCase {
     func testCopyPromptOnAnEmptyEditSheetAsksWhatToChangeWithTheLastFailure() async throws {
         try "#!/bin/sh\necho\n".writeScript(to: spots.spotFile("weather"), toml: "title = 'Weather'")
 
-        _ = try await edit(try editSheet(of: "weather"), .press("copy"), input: "input.describe=\n", variables: ["OPENSPOT_EDIT_FAILURE": "The server did not answer."])
+        _ = try await edit(try editSheet(of: "weather"), "copy", input: "input.describe=\n", variables: ["OPENSPOT_EDIT_FAILURE": "The server did not answer."])
 
         let prompt = try saved("clipboard")
         XCTAssertTrue(prompt.hasPrefix("Change the Openspot spot in \(spots.spotFile("weather").path). Ask me what to change before you change it."), prompt)
@@ -212,16 +212,16 @@ final class NewSpotTests: BuiltInCase {
         let weather = try editSheet(of: "weather")
         let notes = try editSheet(of: "notes")
 
-        _ = try await edit(weather, SpotAction(arguments: ["describe", "Add a refresh button"]), input: "input.describe=Add a refresh button\n")
-        _ = try await edit(notes, SpotAction(arguments: ["describe", "Sort by date"]), input: "input.describe=Sort by date\n")
+        _ = try await edit(weather, "describe", input: "input.describe=Add a refresh button\n")
+        _ = try await edit(notes, "describe", input: "input.describe=Sort by date\n")
 
-        let words = { (sheet: Spot) in Frame(text: try await self.edit(sheet, .show)).parts.first?.value ?? "" }
+        let words = { (sheet: Spot) in Frame(text: try await self.edit(sheet, ScriptEntry.show.name)).parts.first?.value ?? "" }
         let kept = (try await words(weather), try await words(notes))
         XCTAssertEqual(kept.0, "Add a refresh button")
         XCTAssertEqual(kept.1, "Sort by date")
-        let new = try await newSpot().answer(.show, timeout: 60)
+        let new = try await newSpot().answer(ScriptEntry.show.name, timeout: 60)
         XCTAssertEqual(new.parts.first?.value ?? "", "")
-        _ = try await edit(weather, .press("copy"), input: "input.describe=Add a refresh button\n")
+        _ = try await edit(weather, "copy", input: "input.describe=Add a refresh button\n")
         let after = (try await words(weather), try await words(notes))
         XCTAssertEqual(after.0, "")
         XCTAssertEqual(after.1, "Sort by date")
@@ -233,21 +233,21 @@ final class NewSpotTests: BuiltInCase {
         let sheet = try editSheet(of: "cups")
         let copy = spots.appendingPathComponent("cups.spot", isDirectory: true)
 
-        let read = Frame(text: try await edit(sheet, .show))
+        let read = Frame(text: try await edit(sheet, ScriptEntry.show.name))
         XCTAssertFalse(read.actions.contains { $0.title == "Open in editor" })
-        _ = try await edit(sheet, .press("copy"), input: "input.describe=Count in litres\n")
+        _ = try await edit(sheet, "copy", input: "input.describe=Count in litres\n")
         let prompt = try saved("clipboard")
         XCTAssertTrue(prompt.hasPrefix("\(AgentPrompt(folder: spots, guide: guide, app: "").copying(core.appendingPathComponent("cups.spot"), to: copy))\n"), prompt)
         XCTAssertTrue(prompt.contains(core.appendingPathComponent("cups.spot").path))
         XCTAssertTrue(prompt.contains("Change the Openspot spot in \(copy.appendingPathComponent("cups.sh").path): Count in litres"))
         XCTAssertTrue(prompt.contains(AgentPrompt.finishChange))
-        _ = try await edit(sheet, .press("copy"), input: "input.describe=\n")
+        _ = try await edit(sheet, "copy", input: "input.describe=\n")
         let asking = try saved("clipboard")
         XCTAssertTrue(asking.contains(core.appendingPathComponent("cups.spot").path))
         XCTAssertTrue(asking.contains("Ask me what to change"))
 
         try "#!/bin/sh\necho\n".writeScript(to: copy.appendingPathComponent("cups.sh"), toml: "title = 'Cups'")
-        _ = try await edit(try editSheet(of: "cups"), .press("copy"), input: "input.describe=Count in litres\n")
+        _ = try await edit(try editSheet(of: "cups"), "copy", input: "input.describe=Count in litres\n")
         let own = try saved("clipboard")
         XCTAssertTrue(own.hasPrefix("Change the Openspot spot in \(copy.appendingPathComponent("cups.sh").path): Count in litres"), own)
         XCTAssertFalse(own.contains("comes with Openspot"))
@@ -256,16 +256,16 @@ final class NewSpotTests: BuiltInCase {
     func testTheActionsOpenTheGuideAndTheFolder() async throws {
         let spot = try newSpot()
 
-        try await spot.perform(SpotAction(arguments: ["guide"]), timeout: 60)
-        XCTAssertTrue(try saved("opened").contains("GUIDE.md"))
+        try await spot.perform("guide", timeout: 60)
+        XCTAssertTrue(try saved("opened").contains("DOCS.md"))
 
-        try await spot.perform(SpotAction(arguments: ["folder"]), timeout: 60)
+        try await spot.perform("folder", timeout: 60)
         XCTAssertTrue(try saved("opened").contains(spots.path))
     }
 
     func testAnUnknownCallFails() async throws {
         do {
-            _ = try await newSpot().perform(SpotAction(arguments: ["gone"]), timeout: 60)
+            _ = try await newSpot().perform("gone", timeout: 60)
             XCTFail("expected a fault")
         } catch {
             XCTAssertEqual((error as? SpotError)?.reason, "New spot cannot do that.")
@@ -278,13 +278,24 @@ final class NewSpotTests: BuiltInCase {
         })
         let links = guideText.components(separatedBy: "](#").dropFirst().map { String($0.prefix { $0 != ")" }) }
 
-        XCTAssertTrue(guideText.hasPrefix("# Openspot guide"))
-        XCTAssertTrue(guideText.contains("\n# Openspot protocol\n"))
-        XCTAssertFalse(guideText.contains("GUIDE.md#") || guideText.contains("PROTOCOL.md#"))
+        XCTAssertTrue(guideText.hasPrefix("# How Openspot works"))
+        XCTAssertTrue(guideText.contains("\n# Your first spot\n"))
+        XCTAssertTrue(guideText.contains("\n# The openspot command\n"))
+        XCTAssertFalse(guideText.contains("PROTOCOL.md") || guideText.contains("](docs/"))
         XCTAssertGreaterThan(links.count, 20)
         for link in links {
             XCTAssertTrue(headings.contains(link), link)
         }
+    }
+
+    func testEachTopicOfTheGuideIsAPageOfTheMapOnce() throws {
+        let docs = try [RepoDoc("PROTOCOL.md")] + RepoDoc.pages() + [RepoDoc("MANUAL.md")]
+        let topics = Guide(text: guideText, pages: [:]).topics
+
+        XCTAssertEqual(topics.map(\.title), try docs.map { try XCTUnwrap($0.headings.first) })
+        XCTAssertEqual(Set(topics.map(\.slug)).count, topics.count)
+        XCTAssertEqual(topics.first { $0.title == "Your first spot" }?.text.hasPrefix("# Your first spot\n"), true)
+        XCTAssertEqual(topics.first { $0.title == "Your first spot" }?.text.contains("\n## How it works\n"), true)
     }
 
     func testTheGuideTeachesNoOldKeyOrCall() {
@@ -294,17 +305,17 @@ final class NewSpotTests: BuiltInCase {
     }
 
     func testTheGuideAndThePartsTakeTheSameKeys() {
-        let blocks = guideText.components(separatedBy: "## Blocks").dropFirst().first?.components(separatedBy: "## Layouts").first ?? ""
-        for key in PartCatalog.keys {
+        let blocks = guideText.components(separatedBy: "## Kinds of block").dropFirst().first?.components(separatedBy: "\n## Items").first ?? ""
+        for key in BlockKind.commonKeys {
             XCTAssertTrue(blocks.contains("`\(key)"), key)
         }
         for line in blocks.split(separator: "\n") where line.hasPrefix("| `") {
             let cells = line.split(separator: "|").map { $0.trimmingCharacters(in: .whitespaces) }
             let kind = cells[0].trimmingCharacters(in: CharacterSet(charactersIn: "`"))
-            guard cells.count > 2, BlockKind.all.contains(where: { $0.word == kind }) else { continue }
-            for item in cells[2].components(separatedBy: ", ") {
+            guard cells.count > 2, let known = BlockKind.all.first(where: { $0.word == kind }) else { continue }
+            for item in cells[2].components(separatedBy: "; ") {
                 guard let word = item.split(separator: "`", omittingEmptySubsequences: false).dropFirst().first else { continue }
-                XCTAssertTrue(PartCatalog.keys.contains(String(word.split(separator: "=").first ?? word)), "\(kind): \(word)")
+                XCTAssertTrue(BlockKind.commonKeys.union(known.keys).contains(String(word.split(separator: "=").first ?? word)), "\(kind): \(word)")
             }
         }
     }

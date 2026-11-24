@@ -6,14 +6,18 @@ rules it names by their IDs.
 ```toml
 title = "Today"
 icon = "calendar"
-on = ["panel.open"]
+uses = ["calendar"]
+
+[on]
+"panel.open" = true
 ```
 
 ```text
 #!/bin/sh
+. "$OPENSPOT_SH"
 case "$1" in
   show) openspot calendar events ;;
-  open) openspot calendar show "$2" ;;
+  press) openspot calendar show "$(value item)" ;;
 esac
 ```
 
@@ -22,14 +26,14 @@ reminders. Each list prints items, and the id of each item goes to each other ve
 
 | Command                                                  | Does                                                                                    |
 | -------------------------------------------------------- | --------------------------------------------------------------------------------------- |
-| `openspot calendar events [--days n] [--hide id]...`     | Prints each event that has not ended, through the end of day `n`. Day 1 is today, and it is the default. |
+| `openspot calendar events [--days n] [--hide id]...` | Prints each event that has not ended, through the end of day `n`, where day 1, the default, is today. |
 | `openspot calendar calendars`                            | Prints each calendar as an item.                                                          |
 | `openspot calendar add [--dry-run] <words>...`           | Adds an event from the words to the default calendar, and prints its item.              |
 | `openspot calendar show <id>`                            | Opens Calendar on the day of an event.                                                  |
 | `openspot reminders due [--days n] [--hide id]...`       | Prints each open reminder that is late or due through the end of day `n`, and each of those done today. |
 | `openspot reminders lists`                               | Prints each list of reminders as an item.                                                 |
 | `openspot reminders add [--dry-run] <words>...`          | Adds a reminder from the words to the default list, and prints its item.                |
-| `openspot reminders done <id> [true\|false]`             | Ticks a reminder, or with `false` opens it again. It prints nothing.                   |
+| `openspot reminders done <id> [true\|false]` | Ticks a reminder, or with `false` opens it again, and prints nothing. |
 | `openspot reminders show <id>`                           | Opens Reminders on a reminder.                                                          |
 
 `--hide` takes the id of an item of `calendars` or `lists`, and leaves out its events or reminders. Repeat it for each one.
@@ -38,7 +42,7 @@ An id of the other kind is left alone, so a script can pass one set of hidden id
 ## Items
 
 ```text
-text=event:3F2A…                     text=reminder:9C41…
+item=event:3F2A…                     item=reminder:9C41…
 title=Standup                        title=Call mom
 detail=09:30–09:45 · Work            detail=Late · Yesterday 18:00 · Family
 icon=video                           icon=circle
@@ -58,7 +62,7 @@ An item has the keys of an item: `title`, a `detail` in the language of the Mac 
 | ---------- | ------------------------------------------------------------------------------------------- |
 | `start`    | When an event starts, in ISO 8601 with the offset of its zone.                              |
 | `end`      | When an event ends.                                                                         |
-| `due`      | When a reminder is due. A reminder with no due date has none.                               |
+| `due` | When a reminder is due, which a reminder with no due date lacks. |
 | `allday`   | `true` for an event of whole days, or a reminder due on a day with no time.                 |
 | `calendar` | The id of the calendar of an event.                                                         |
 | `list`     | The id of the list of a reminder.                                                           |
@@ -99,8 +103,8 @@ A verb never prints an empty list in place of a list that it cannot read.
 
 ## Rules
 
-- `add`, `done` and `show` fail in a show, so that nothing changes or opens by surprise (protocol: The openspot command). The lists and `add --dry-run`
-  work in a show (E9).
+- `add`, `done` and `show` fail in a read, so that nothing changes or opens by surprise (protocol: The openspot command). The lists and `add --dry-run`
+  work in a read (E9).
 - A list is in the order of time: an event by its start, and a reminder by its due time, so that a ticked one keeps its
   place.
 

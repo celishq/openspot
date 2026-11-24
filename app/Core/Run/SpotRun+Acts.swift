@@ -7,8 +7,7 @@ extension SpotRun {
         let key = Self.key(part: part.id)
         if let older = running(key) { stop(older) }
         let keeping = part.isEditable ? part.id : nil
-        let action = SpotAction.set(part.id, to: value)
-        let send: () -> Void = { [weak self] in self?.change(action, key: key, generation: generation, keeping: keeping, closes: false) }
+        let send: () -> Void = { [weak self] in self?.change(part.id, to: value, key: key, generation: generation, keeping: keeping, closes: false, waits: false) }
         switch part.control {
         case .text, .secret: after(Self.textPause, key: key, send)
         case .slider: after(Self.sliderPause, key: key, send)
@@ -23,7 +22,7 @@ extension SpotRun {
         if let running = running(key) { return pressAgain(running) }
         guard let generation = panel?.advance() else { return }
         editing = nil
-        change(.press(part.id), key: key, generation: generation, keeping: nil, closes: part.closes)
+        change(part.id, to: nil, key: key, generation: generation, keeping: nil, closes: part.closes, waits: spot.takesHandlers)
     }
 
     public var isCardRunning: Bool {
@@ -39,8 +38,8 @@ extension SpotRun {
     }
 
     public func act(of row: ActionMenu.Row, item: SpotItem?) -> ScriptCall? {
-        if let action = row.action { return shown(Self.key(call: .action(action, item: item))) }
-        return shown(item.map { Self.key(call: .item($0)) } ?? Self.cardKey)
+        if let action = row.action { return shown(Self.key(of: acting(action, item: item))) }
+        return shown(item.map { Self.key(of: picking($0)) } ?? Self.cardKey)
     }
 
     public var shownState: SpotState {
@@ -48,38 +47,42 @@ extension SpotRun {
         return state.showing(title: call.title, detail: call.detail)
     }
 
+    public var sheetState: SpotState {
+        page.route == nil ? shownState.showing(title: page.title, detail: nil) : shownState
+    }
+
     public func pressCard() {
         if let running = running(Self.cardKey) { return pressAgain(running) }
-        guard spot.kind == .toggle else { return act(Message(spot.click), key: Self.cardKey) }
+        guard spot.kind == .toggle else { return act(Message(ScriptEntry.press.name), key: Self.cardKey) }
         let before = state
-        let action = SpotAction.toggle(state)
+        let message = Self.toggling(state)
         state = state.switched(on: !(state.on ?? false))
-        act(Message(action), key: Self.cardKey, as: Act(undo: before))
+        act(message, key: Self.cardKey, as: Act(undo: before))
     }
 
     public func setCardPart(_ id: String, to value: String?) {
-        guard let value else { return act(Message(.press(id)), key: Self.key(part: id)) }
+        guard let value else { return act(Message(id), key: Self.key(part: id)) }
         state = state.setting(value, of: id)
-        act(Message(.set(id, to: value)), key: Self.key(part: id))
+        act(Self.setting(id, to: value), key: Self.key(part: id))
     }
 
     @discardableResult
     public func drop(_ paths: [String], files: FileKinds? = nil) -> Bool {
         guard files.map(spot.accepts) ?? spot.accepts(paths) else { return false }
-        waitingFiles.append(.drop(paths: paths))
+        waitingFiles.append(ScriptEntry.drop.message(paths))
         startWaitingFiles()
         return true
     }
 
     public func dragged(_ items: [SpotItem]) {
         guard !items.isEmpty else { return }
-        waitingFiles.append(.drag(runs: items.map(\.run)))
+        waitingFiles.append(ScriptEntry.drag.message(items.map(\.run)))
         startWaitingFiles()
     }
 
     func startWaitingFiles() {
         guard !waitingFiles.isEmpty, !calls.contains(where: \.isAct) else { return }
-        act(Message(waitingFiles.removeFirst()), key: Self.cardKey)
+        act(waitingFiles.removeFirst(), key: Self.cardKey)
     }
 
     public func pressKey(_ call: String) {
@@ -92,9 +95,13 @@ extension SpotRun {
         startWaitingKey()
     }
 
+    func trigger(_ message: Message, key: String) {
+        send(Call(message: message, key: key, purpose: .act(Act(showsAfter: false)), isPressed: false))
+    }
+
     func startWaitingKey() {
         while !waitingKeys.isEmpty, script.keepsState || running(Self.globalKey) == nil {
-            act(Message(.press(waitingKeys.removeFirst())), key: Self.globalKey)
+            act(Message(waitingKeys.removeFirst()), key: Self.globalKey)
         }
     }
 
@@ -105,44 +112,81 @@ extension SpotRun {
         if let older = running(Self.levelKey) { stop(older) }
         after(Self.sliderPause, key: Self.levelKey) { [weak self] in
             guard let self else { return }
-            act(Message(.level(state.level ?? 0, of: state.control ?? "")), key: Self.levelKey)
+            act(Self.level(state.level ?? 0, of: state.control ?? ""), key: Self.levelKey)
         }
     }
 
-    public func pick(_ item: SpotItem) {
-        press(Message(.item(item), item: item.fields, search: list.search == .script && !list.query.isEmpty ? list.query : nil))
+    public func pick(_ item: SpotItem, closes: Bool = false) {
+        press(picking(item), closes: closes)
+    }
+
+    public func answer(toPick item: SpotItem, closes: Bool = false) async -> CallAnswer {
+        await answer(toPress: picking(item), closes: closes)
+    }
+
+    private func picking(_ item: SpotItem) -> Message {
+        guard item.isToggle else { return ScriptEntry.press.message([item.run], then: item.carried) }
+        var message = Self.setting(item.run, to: item.isOn ? "false" : "true")
+        message.inputs += item.carried
+        return message
+    }
+
+    private func acting(_ action: CommandAction, item: SpotItem?) -> Message {
+        let inputs = item.map { [TextBlock.Field(key: Self.itemInput, value: $0.run)] + $0.carried } ?? []
+        return Message(action.callName, inputs: inputs)
+    }
+
+    public func answer(to action: CommandAction, item: SpotItem?, closes: Bool = false) async -> CallAnswer {
+        await answer(toPress: acting(action, item: item), closes: closes)
+    }
+
+    private func answer(toPress message: Message, closes: Bool = false) async -> CallAnswer {
+        let key = Self.key(of: message)
+        if let running = running(key) {
+            pressAgain(running)
+            return .stopped
+        }
+        answered = nil
+        let answer = try? await withCheckedThrowingContinuation { waiting in
+            let first = FirstFrame(waiting)
+            if !send(Call(message: message, key: key, purpose: .act(Act(first: first, started: runs.now(), closes: closes)))) { first.end(.stopped) }
+        }
+        return answer ?? .stopped
     }
 
     public func set(_ item: SpotItem, to value: String) {
-        press(Message(.set(item.run, to: value)))
+        press(Self.setting(item.run, to: value))
     }
 
     public func run(_ action: CommandAction, item: SpotItem?, ended: (() -> Void)? = nil) {
-        press(Message(.action(action, item: item), item: item?.fields ?? []), ended: ended)
-    }
-
-    public func form(_ action: CommandAction, item: SpotItem?) async throws -> ItemForm? {
-        let call = SpotAction.action(action, item: item)
-        guard let key = freeKey(call), let output = try await answer(to: Message(call), key: key) else { return nil }
-        guard let form = ItemForm(output: output) else { throw SpotError.badForm }
-        return form
+        press(acting(action, item: item), ended: ended)
     }
 
     public func change(_ action: CommandAction) async throws -> CallAnswer {
-        let call = SpotAction.action(action, item: nil)
-        guard let key = freeKey(call), let output = try await answer(to: Message(call), key: key) else { return .stopped }
+        let call = action.callName
+        guard let key = freeKey(call), let output = try await answer(to: acting(action, item: nil), key: key) else { return .stopped }
         if let form = Self.form(in: output) { return .form(form) }
         show(need: .change)
         return .done
     }
 
     public func launch(_ action: CommandAction, search: SearchQuery, onCard: Bool = false) async throws -> CallAnswer {
-        let call = SpotAction.action(action, item: nil)
+        let call = action.callName
         guard let key = freeKey(call, onCard: onCard) else { return .stopped }
         answered = nil
+        let typed = try? spot.action(action.callName)
+        if let typed, let input = typed.textInput {
+            let values = search.text.isEmpty ? [:] : [input.name: search.text]
+            let lacks = typed.inputs.contains { $0.isRequired && $0.defaultValue == nil && values[$0.name] == nil }
+            if lacks { return .form(typed.itemForm(values: values, title: action.title)) }
+        }
+        let word: String? = if case .word(let name) = action.kind { name } else { nil }
+        let message = word.map { ScriptEntry.command.message([$0], [search.text]) }
+            ?? typed?.textInput.map { Message(call, inputs: [.init(key: $0.name, value: search.text)]) }
+            ?? Message(call)
         return try await withCheckedThrowingContinuation { waiting in
             let first = FirstFrame(waiting)
-            if !send(Call(message: Message(call, search: search.text, searchForms: search.forms), key: key, purpose: .act(Act(first: first)))) { first.end(.stopped) }
+            if !send(Call(message: message, key: key, purpose: .act(Act(first: first, started: runs.now())))) { first.end(.stopped) }
         }
     }
 
@@ -153,13 +197,16 @@ extension SpotRun {
     }
 
     public func submit(_ action: CommandAction, item: SpotItem?, draft: FormDraft) async throws -> CallAnswer {
-        let call = SpotAction.action(action, item: item)
-        guard let key = freeKey(call) else { return .stopped }
+        let word: String? = if case .word(let name) = action.kind { name } else { nil }
+        let call = word == nil ? action.callName : ScriptEntry.command.name
+        guard let key = freeKey(call, item: word == nil ? item?.run : nil) else { return .stopped }
+        let message = word.map { ScriptEntry.command.message([$0], then: draft.inputs) }
+            ?? Message(action.callName, inputs: draft.inputs + (item.map { [TextBlock.Field(key: Self.itemInput, value: $0.run)] } ?? []))
         guard !script.keepsState else {
-            act(Message(call, inputs: draft.inputs), key: key)
+            act(message, key: key)
             return .done
         }
-        guard let output = try await answer(to: Message(call, inputs: draft.inputs), key: key) else { return .stopped }
+        guard let output = try await answer(to: message, key: key) else { return .stopped }
         if let form = Self.form(in: output) {
             if draft.isMultiple { show(need: .change) }
             return .form(form)
@@ -168,8 +215,8 @@ extension SpotRun {
         return .done
     }
 
-    private func freeKey(_ call: SpotAction, onCard: Bool = false) -> String? {
-        let key = onCard ? Self.cardKey : Self.key(call: call)
+    private func freeKey(_ call: String, item: String? = nil, onCard: Bool = false) -> String? {
+        let key = onCard ? Self.cardKey : Self.key(call: call, item: item)
         guard let running = running(key) else { return key }
         stopPressed(running)
         return nil
@@ -200,12 +247,15 @@ extension SpotRun {
         if runs.now().timeIntervalSince(call.started) >= Self.pressPause { stop(call) }
     }
 
+    private static let valueInput = "value"
+    static let itemInput = "item"
+
     private static func key(part id: String) -> String {
         "part:\(id)"
     }
 
-    private static func key(call action: SpotAction) -> String {
-        "call:\(action.arguments.joined(separator: "\n"))"
+    private static func key(call handler: String, item: String? = nil) -> String {
+        "call:\(([handler] + (item.map { [$0] } ?? [])).joined(separator: "\n"))"
     }
 
     private func shown(_ key: String) -> ScriptCall? {
@@ -226,19 +276,46 @@ extension SpotRun {
         }
     }
 
-    private func change(_ action: SpotAction, key: String, generation: Int, keeping: String?, closes: Bool) {
+    private func change(_ id: String, to value: String?, key: String, generation: Int, keeping: String?, closes: Bool, waits: Bool) {
         guard let inputs = panel?.inputs else { return }
-        act(Message(action, inputs: inputs), key: key, as: Act(generation: generation, keeping: keeping, showsAfter: !closes))
+        let message = Message(id, inputs: inputs + (value.map { [TextBlock.Field(key: Self.valueInput, value: $0)] } ?? []))
+        act(message, key: key, as: Act(generation: generation, keeping: keeping, showsAfter: !closes, closes: closes && waits))
     }
 
-    private func press(_ message: Message, ended: (() -> Void)? = nil) {
-        let key = Self.key(call: message.action)
+    private static func setting(_ id: String, to value: String) -> Message {
+        Message(id, inputs: [.init(key: valueInput, value: value)])
+    }
+
+    static func toggling(_ state: SpotState) -> Message {
+        setting(state.control ?? "", to: (state.on ?? false) ? "false" : "true")
+    }
+
+    static func level(_ value: Double, of control: String) -> Message {
+        setting(control, to: String(Int(value.rounded())))
+    }
+
+    private static func key(of message: Message) -> String {
+        key(call: message.handler, item: message.inputs.first { $0.key == itemInput }?.value)
+    }
+
+    private func press(_ message: Message, ended: (() -> Void)? = nil, closes: Bool = false) {
+        let key = Self.key(of: message)
         if let running = running(key) { return pressAgain(running) }
-        act(message, key: key, as: Act(ended: ended))
+        act(message, key: key, as: Act(ended: ended, closes: closes))
     }
 
     private func act(_ message: Message, key: String, as act: Act = Act()) {
         answered = nil
+        var act = act
+        act.started = runs.now()
         send(Call(message: message, key: key, purpose: .act(act)))
+    }
+}
+
+extension SpotRun {
+    public func call(_ action: String, inputs: [TextBlock.Field] = []) async throws -> [TextBlock.Field] {
+        let message = Message(action, inputs: inputs)
+        guard let output = try await answer(to: message, key: "call:\(action)") else { return [] }
+        return output.outputs
     }
 }

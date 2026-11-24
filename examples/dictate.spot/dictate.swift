@@ -51,22 +51,22 @@ func sheet(downloading share: Double? = nil) -> String {
     if let share {
         root.append("progress=\(String(format: "%.3f", share))\ntitle=Downloading speech model\ndetail=\(percent(share))")
     }
-    var blocks: [String] = []
+    let past = texts()
+    var blocks = past.isEmpty ? ["items=items"] : []
+    let place = past.isEmpty ? "parent=items\n" : ""
     if !FileManager.default.fileExists(atPath: model.path) {
         if let download {
-            blocks.append("text=whisper\ntitle=Downloading speech model\ndetail=\(percent(download.share))\nicon=arrow.down.circle\nopen.title=Stop\nclose=false\nhides=delete\npin=top")
+            blocks.append("item=whisper\n\(place)title=Downloading speech model\ndetail=\(percent(download.share))\nicon=arrow.down.circle\nopen.title=Stop\nclose=false\nhides=delete\npin=top")
         } else {
-            blocks.append("text=whisper\ntitle=Download speech model\ndetail=1.6 GB\nicon=arrow.down.circle\nopen.title=Download\nclose=false\nhides=delete\npin=top")
+            blocks.append("item=whisper\n\(place)title=Download speech model\ndetail=1.6 GB\nicon=arrow.down.circle\nopen.title=Download\nclose=false\nhides=delete\npin=top")
         }
     }
-    let past = texts()
     if past.isEmpty {
-        root.append("grid=items")
-        blocks.append("repeat=items")
+        root.append("class=gap-part")
     } else {
-        blocks.append("button=open\ntitle=Copy")
+        blocks.append("button=press\ntitle=Copy")
         blocks.append("button=delete\ntitle=Delete\nshortcut=cmd+backspace\nclose=false")
-        blocks += past.map { "text=\($0.0)\ntitle=\(Link.value($0.1))\ndetail=\(age($0.0))" }
+        blocks += past.map { "item=\($0.0)\ntitle=\(Link.value($0.1))\ndetail=\(age($0.0))" }
     }
     return ([root.joined(separator: "\n")] + blocks).joined(separator: "\n\n")
 }
@@ -150,18 +150,18 @@ func delete(_ stamp: String) {
 
 func serve() {
     Link.listen { call in
-        let row = call.arguments.dropFirst().first ?? ""
+        let row = call.value("input.item") ?? ""
         switch call.arguments.first {
         case "show":
             answer(call.id, sheet())
         case "dictate":
             dictate(call.id)
-        case "open" where row == "whisper" && download == nil && !FileManager.default.fileExists(atPath: model.path):
+        case "press" where row == "whisper" && download == nil && !FileManager.default.fileExists(atPath: model.path):
             fetch(in: call.id)
-        case "open" where row == "whisper" && download != nil:
+        case "press" where row == "whisper" && download != nil:
             download?.stop()
             answer(call.id)
-        case "open" where row != "whisper":
+        case "press" where row != "whisper":
             copy(row, in: call.id)
         case "delete":
             delete(row)

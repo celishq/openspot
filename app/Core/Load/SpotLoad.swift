@@ -16,6 +16,10 @@ public struct SpotLoad: Sendable {
         let refusal: String?
         let added: Date?
 
+        var isScheduled: Bool {
+            spots?.contains { !$0.triggers.schedule.isEmpty } == true
+        }
+
         func add(to result: inout ScanResult) {
             if let refusal { result.refused.append(ScanResult.Refusal(file: id, reason: refusal)) }
             guard let spots else { return }
@@ -47,7 +51,7 @@ public struct SpotLoad: Sendable {
         if let failure { throw SpotError.fault(failure) }
         var result = ScanResult(files: hosted.isEmpty ? [] : [SpotFile(id: "openspot", spots: hosted)], refused: loose)
         let ownIDs = Set(entries.filter { $0.origin == .own }.map(\.id))
-        for entry in entries where entry.origin == .own && !disabled.contains(entry.id) {
+        for entry in entries where entry.origin == .own && !disabled.contains(entry.id) && (enabled.contains(entry.id) || !entry.isScheduled) {
             entry.add(to: &result)
         }
         for entry in entries where entry.origin == .core && !ownIDs.contains(entry.id) && enabled.contains(entry.id) {
@@ -56,12 +60,17 @@ public struct SpotLoad: Sendable {
         for entry in entries where entry.origin == .app {
             entry.add(to: &result)
         }
+        result.checkBoundEvents(also: entries.flatMap { $0.spots ?? [] })
         return result
+    }
+
+    var ownIDs: Set<String> {
+        Set(entries.filter { $0.origin == .own }.map(\.id))
     }
 
     public var coreChoices: [Spot] {
         let files = entries.filter { $0.origin == .core }.compactMap { entry in entry.spots.map { SpotFile(id: entry.id, spots: $0) } }
-        return ScanResult(files: files, refused: []).spots.filter { $0.on?.seconds == nil }
+        return ScanResult(files: files, refused: []).spots.filter { $0.triggers.every == nil }
     }
 
     static func version(of stamp: [Int]) -> String {
@@ -88,7 +97,7 @@ public struct SpotLoad: Sendable {
                 kind: .list,
                 symbol: "exclamationmark.triangle",
                 subtitle: name,
-                on: .sheet,
+                triggers: .sheet,
                 host: .fault(FaultSpot(file: entry.file, name: name, faults: faults[id]?.map(\.reason) ?? [], prompt: prompt))
             )
             return entry.added.map(spot.added(at:)) ?? spot

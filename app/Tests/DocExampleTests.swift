@@ -5,7 +5,7 @@ final class DocExampleTests: SampleSpotsCase {
     private let runnable: Set<String> = ["sh", "js", "swift"]
 
     private func docs() throws -> [RepoDoc] {
-        try RepoDoc.all().filter { ["GUIDE.md", "PROTOCOL.md"].contains($0.path) || $0.path.hasPrefix("app/Help/") }
+        try RepoDoc.all().filter { ["PROTOCOL.md", "MANUAL.md"].contains($0.path) || $0.path.hasPrefix("app/Help/") || $0.path.hasPrefix("docs/") }
     }
 
     private func syntaxFault(of file: URL) throws -> String? {
@@ -35,7 +35,7 @@ final class DocExampleTests: SampleSpotsCase {
                     if fence.language == "swift", !fence.text.hasPrefix("#!") {
                         let spot = fences[..<index].lastIndex { runnable.contains($0.language) && ($0.language != "swift" || $0.text.hasPrefix("#!")) }
                         let named = spot.flatMap { $0 > 0 && fences[$0 - 1].language == "toml" ? try? described(fences[$0 - 1].text, of: fences[$0].language) : nil }
-                        XCTAssertNotNil(named?.view ?? named?.source.first, "\(place) is Swift that no view or source of the spot.toml before the example above it names. Make it a view or a source, or put it in a text fence.")
+                        XCTAssertNotNil(named?.views.first ?? named?.source.first, "\(place) is Swift that no view or source of the spot.toml before the example above it names. Make it a view or a source, or put it in a text fence.")
                         continue
                     }
                     let isSpot = fence.text.hasPrefix("#!") || fence.language == "js"
@@ -65,7 +65,7 @@ final class DocExampleTests: SampleSpotsCase {
                     for (name, source) in zip(named, sources) {
                         try source.text.write(to: file.deletingLastPathComponent().appendingPathComponent(name), atomically: true, encoding: .utf8)
                     }
-                    if let view = manifest.view {
+                    if let view = manifest.views.first {
                         let source = fences[(index + 1)...].first { $0.language == "swift" }
                         XCTAssertNotNil(source, "\(place) names the view \(view), and no Swift example follows it")
                         try source?.text.write(to: file.deletingLastPathComponent().appendingPathComponent(view), atomically: true, encoding: .utf8)
@@ -74,15 +74,15 @@ final class DocExampleTests: SampleSpotsCase {
                     let faults = await SpotCheck(folder: SpotsFolder(url: folder), views: ViewLibrary(cache: home.appendingPathComponent("views")), programs: SwiftProgram(cache: home.appendingPathComponent("programs")), environment: TestEnvironment.values).faults()
                     XCTAssertEqual(faults, [], place)
 
-                    guard let spot = try SpotsFolder(url: folder).scan().spots.first(where: { $0.id == "example" }) else {
+                    guard let spot = try SpotsFolder(url: folder, enabled: ["example"]).scan().spots.first(where: { $0.id == "example" }) else {
                         XCTFail("\(place) does not load")
                         continue
                     }
-                    if spot.on == nil {
-                        let calls = spot.offers.map(\.id) + spot.offeredActions.map(\.action.id)
+                    if !spot.triggers.shows {
+                        let calls = spot.commands.map(\.id) + spot.offeredActions.map(\.action.id)
                         for call in calls.isEmpty ? ["open"] : calls {
                             do {
-                                try await spot.perform(SpotAction(arguments: [call]), timeout: 60)
+                                try await spot.perform(call, timeout: 60)
                             } catch {
                                 XCTFail("\(place) fails its call \(call): \(error)")
                             }

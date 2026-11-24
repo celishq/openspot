@@ -18,18 +18,21 @@ final class SpotPicture {
     private static let far = CGPoint(x: -9000, y: -9000)
     private static let level = NSWindow.Level(rawValue: Int(CGShieldingWindowLevel()))
 
+    private static var isLight = false
+
     private let view: NSView
     private let windows: [NSWindow]
     private let path: String
     private let seed: String
 
-    static func start() {
+    static func start(isLight: Bool = false) {
+        Self.isLight = isLight
         NSApplication.shared.setActivationPolicy(isOnScreen ? .accessory : .prohibited)
         guard isOnScreen else { return }
         var given = UserDefaults.standard.volatileDomain(forName: UserDefaults.argumentDomain)
         given["AppleAccentColor"] = accent
         UserDefaults.standard.setVolatileDomain(given, forName: UserDefaults.argumentDomain)
-        NSApplication.shared.appearance = NSAppearance(named: .darkAqua)
+        NSApplication.shared.appearance = NSAppearance(named: isLight ? .aqua : .darkAqua)
         DispatchQueue.global().asyncAfter(deadline: .now() + lifeLimit) { _exit(1) }
     }
 
@@ -39,7 +42,7 @@ final class SpotPicture {
         let root = content
             .environment(\.spotDrawsGlass, Self.isOnScreen)
             .environment(\.spotMoves, false)
-            .preferredColorScheme(.dark)
+            .preferredColorScheme(Self.isLight ? .light : .dark)
         let view = NSHostingView(rootView: root)
         self.view = view
         guard Self.isOnScreen else {

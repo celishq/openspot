@@ -39,6 +39,6 @@ final class FakeMode: ScriptMode {
     }
 
     func arguments() -> [[String]] {
-        sent.map(\.request.action.arguments)
+        sent.map { [$0.request.handler] + (SpotRun.item(of: $0.request.message).map { [$0] } ?? []) }
     }
 }

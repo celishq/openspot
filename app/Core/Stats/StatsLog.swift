@@ -120,7 +120,7 @@ public final class StatsLog: @unchecked Sendable {
     }
 
     func take(views spots: [Spot]) {
-        let views = Dictionary(spots.compactMap { spot in spot.view.map { ($0, (id: spot.id, name: spot.name)) } }) { first, _ in first }
+        let views = Dictionary(spots.flatMap { spot in spot.views.values.map { ($0, (id: spot.id, name: spot.name)) } }) { first, _ in first }
         lock.withLock { self.views = views }
     }
 

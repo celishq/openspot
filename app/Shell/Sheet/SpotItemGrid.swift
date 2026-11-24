@@ -47,12 +47,9 @@ struct SpotItemGrid: View {
             .onTapGesture { point in
                 if let item = item(at: point, step: step, side: side) { onRun(item) }
             }
-            .onContinuousHover { phase in
-                if case .active(let point) = phase { reading.pointer = point }
-            }
-            .modifier(SpotPointerMove {
-                if let point = reading.pointer, let item = item(at: point, step: step, side: side) { onPoint(item) }
-            })
+            .modifier(SpotPointerMove(at: { point in
+                if let point, let item = item(at: point, step: step, side: side) { onPoint(item) }
+            }))
             .simultaneousGesture(DragGesture(minimumDistance: 4).onChanged { value in
                 guard !reading.isDragging, let item = item(at: value.startLocation, step: step, side: side), let file = item.file else { return }
                 reading.isDragging = SpotFileDrag.begin([file], onDrop: { onDragOut([item]) }, onEnd: { reading.isDragging = false })
@@ -129,12 +126,21 @@ private struct SpotGridCell: View, Equatable {
 
     var body: some View {
         let shape = SpotRoundShape(surface.inner())
-        SpotItemIcon(item: item, size: SpotTokens.listIconSize)
-            .overlay(alignment: .bottomTrailing) { SpotToneDot(tone: item.tone, side: SpotTokens.listIconSize) }
+        face
             .frame(width: side, height: side)
             .background(SpotTheme.ink.opacity(SpotTheme.fill), in: shape)
             .accessibilityLabel(item.title)
             .accessibilityAddTraits(.isButton)
+    }
+
+    @ViewBuilder
+    private var face: some View {
+        if item.showsWords {
+            SpotTileWords(item: item, side: side)
+        } else {
+            SpotItemIcon(item: item, size: SpotTokens.listIconSize)
+                .overlay(alignment: .bottomTrailing) { SpotToneDot(tone: item.tone, side: SpotTokens.listIconSize) }
+        }
     }
 }
 
@@ -146,7 +152,6 @@ private final class GridReading {
     var position = ScrollPosition(edge: .top)
     var isDragging = false
     var isMoving = false
-    var pointer: CGPoint?
     private var built: Range<Int>?
     private var landed: Int?
     private var ahead: [String] = []

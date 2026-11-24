@@ -6,7 +6,7 @@ final class MetricSpotsTests: SpotRunsCase {
     private final class FakeMac: MacEvents, @unchecked Sendable {
         var sample = LoadSample(busy: 0, total: 0, memory: 0)
 
-        func listen(_ heard: @escaping @MainActor (SpotEvent) -> Void) {}
+        func listen(_ heard: @escaping @MainActor (AppSignal) -> Void) {}
 
         var clipboardCount: Int {
             0
@@ -59,8 +59,9 @@ final class MetricSpotsTests: SpotRunsCase {
         let scan = try scanned()
 
         for id in metrics {
-            let read = try XCTUnwrap(scan.spots.first { $0.id == id }?.on, id)
-            XCTAssertNil(read.seconds, id)
+            let read = try XCTUnwrap(scan.spots.first { $0.id == id }?.triggers, id)
+            XCTAssertTrue(read.shows, id)
+            XCTAssertNil(read.every, id)
         }
     }
 
@@ -102,7 +103,7 @@ final class MetricSpotsTests: SpotRunsCase {
         fake.advance(by: 60)
         XCTAssertEqual(log("tools.log"), ["pmset"])
 
-        runs.raise(.named(SpotEvent.powerChange, value: "ac"))
+        runs.raise(.named(EventName.powerChange, value: "ac"))
 
         try await wait("the read of the change") { self.log("tools.log") == ["pmset", "pmset"] && !self.runs.isShowing }
     }
@@ -115,11 +116,11 @@ final class MetricSpotsTests: SpotRunsCase {
         let script = folder.appendingPathComponent("devices.spot/devices.sh")
         var kept = ""
 
-        for try await frame in ScriptProcess(url: script, arguments: ["show"], mode: .once(input: "event=spot.want\n"), limit: 60, dataName: "devices", base: runs.environment).start() { kept += frame }
+        for try await frame in ScriptProcess(url: script, arguments: ["show"], mode: .once(input: ""), limit: 60, dataName: "devices", base: runs.environment).start() { kept += frame }
         XCTAssertEqual(log("tools.log"), ["system_profiler"])
         XCTAssertTrue(kept.contains("display=–"), kept)
 
-        runs.raise(.named(SpotEvent.deviceConnect, value: "Keyboard"))
+        runs.raise(.named(EventName.deviceConnect, value: "Keyboard"))
 
         try await wait("the read of the device") { self.log("tools.log") == ["system_profiler", "system_profiler"] && !self.runs.isShowing }
     }
@@ -129,16 +130,16 @@ final class MetricSpotsTests: SpotRunsCase {
         let script = folder.appendingPathComponent("system.spot/system.sh")
         var frames: [String] = []
 
-        for event in ["sheet.open", "system.load"] {
+        for (handler, input) in [("show", ""), ("system.load", "input.value=cpu=12 memory=40\n")] {
             var frame = ""
-            for try await text in ScriptProcess(url: script, arguments: ["show"], mode: .once(input: "event=\(event)\n"), limit: 60, dataName: "system", base: runs.environment).start() { frame += text }
+            for try await text in ScriptProcess(url: script, arguments: [handler], mode: .once(input: input), limit: 60, dataName: "system", base: runs.environment).start() { frame += text }
             frames.append(frame)
         }
 
         for frame in frames {
-            XCTAssertTrue(frame.contains("grid=battery cpu memory devices\ngrid=battery cpu memory devices\n"), frame)
-            XCTAssertTrue(frame.contains("section=top-cpu\ntitle=CPU\n\nnumber=cpu-1\n"), frame)
-            XCTAssertTrue(frame.contains("number=swap\ntitle=Swap\n"), frame)
+            XCTAssertTrue(frame.contains("box=gauges\nclass=grid grid-cols-4 "), frame)
+            XCTAssertTrue(frame.contains("box=top-cpu\nparent=list\ntitle=CPU\n\nnumber=cpu-1\n"), frame)
+            XCTAssertTrue(frame.contains("number=swap\nparent=top-memory\ntitle=Swap\n"), frame)
             XCTAssertFalse(frame.contains("text=mac\n"), frame)
         }
         XCTAssertEqual(log("tools.log").filter { $0 == "system_profiler" }, ["system_profiler"])
@@ -148,17 +149,17 @@ final class MetricSpotsTests: SpotRunsCase {
         try copy("system")
         try "#!/bin/sh\nprintf '%s\\n' \"$*\" >> '\(path("open.log"))'\n".writeScript(to: folder.appendingPathComponent("tools/open"))
         let script = folder.appendingPathComponent("system.spot/system.sh")
-        func run(_ arguments: [String]) async throws -> String {
+        func run(_ handler: String, input: String = "") async throws -> String {
             var text = ""
-            for try await frame in ScriptProcess(url: script, arguments: arguments, mode: .once(input: "event=sheet.open\n"), limit: 60, dataName: "system", base: runs.environment).start() { text += frame }
+            for try await frame in ScriptProcess(url: script, arguments: [handler], mode: .once(input: input), limit: 60, dataName: "system", base: runs.environment).start() { text += frame }
             return text
         }
 
-        let frame = try await run(["show"])
+        let frame = try await run("show")
         let rows = Frame(text: frame).items
         let process = try XCTUnwrap(rows.first { $0.run == "cpu-1" })
-        _ = try await run(["open", process.run])
-        _ = try await run(["open", "device-1"])
+        _ = try await run("press", input: "input.item=\(process.run)\n")
+        _ = try await run("press", input: "input.item=device-1\n")
 
         XCTAssertNotNil(process.number, frame)
         XCTAssertEqual(process.openTitle, "Activity Monitor")
@@ -188,16 +189,18 @@ final class MetricSpotsTests: SpotRunsCase {
         runs.take(grid: ["system"])
         runs.panelOpened()
         let titles = { Dictionary((self.runs.sheets["system"]?.state.face.parts ?? []).map { ($0.id, $0.number?.text ?? "") }) { first, _ in first } }
-        XCTAssertNil(try XCTUnwrap(scan.spots.first { $0.id == "system" }?.on).seconds)
+        let triggers = try XCTUnwrap(scan.spots.first { $0.id == "system" }?.triggers)
+        XCTAssertTrue(triggers.shows)
+        XCTAssertNil(triggers.every)
         try await wait("the first read") { titles()["battery"] == "84%" && titles()["devices"] == "–" && titles()["memory"] != nil && !self.runs.isShowing }
 
         mac.sample = LoadSample(busy: 30, total: 200, memory: 55)
         try await wait("the sleep of the load") { self.fake.isSleeping(for: 5) }
         fake.advance(by: 5)
         try await wait("the load") { titles()["memory"] == "55%" && titles()["cpu"] == "20%" && !self.runs.isShowing }
-        runs.raise(.named(SpotEvent.powerChange, value: "ac"))
+        runs.raise(.named(EventName.powerChange, value: "ac"))
         try await wait("the read of the power") { self.log("tools.log").filter { $0 == "pmset" }.count == 2 && !self.runs.isShowing }
-        runs.raise(.named(SpotEvent.deviceConnect, value: "Keyboard"))
+        runs.raise(.named(EventName.deviceConnect, value: "Keyboard"))
         try await wait("the read of the device") { self.log("tools.log").filter { $0 == "system_profiler" }.count == 2 && !self.runs.isShowing }
     }
 }

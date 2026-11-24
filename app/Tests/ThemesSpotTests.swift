@@ -47,13 +47,13 @@ final class ThemesSpotTests: BuiltInCase {
     }
 
     private func settingsRows() throws -> [String] {
-        try String(contentsOf: repoSpots.appendingPathComponent("openspot.spot/settings.sh"), encoding: .utf8).split(separator: "\n").map(String.init).filter { $0.contains("text=") }
+        try String(contentsOf: repoSpots.appendingPathComponent("openspot.spot/settings.sh"), encoding: .utf8).split(separator: "\n").map(String.init).filter { $0.contains("item=") }
     }
 
     func testReturnUsesATheme() async throws {
         try theme("Night", "")
 
-        let output = try await themes.answer(SpotAction(arguments: ["open", "Night"]), timeout: 60)
+        let output = try await themes.answer("press", input: "input.item=Night\n", timeout: 60)
 
         XCTAssertEqual(file.read().theme, "Night")
         XCTAssertEqual(output.items.filter(\.isOn).map(\.run), ["Night"])
@@ -62,10 +62,10 @@ final class ThemesSpotTests: BuiltInCase {
     }
 
     func testDuplicateRenameAndMoveToTrashChangeTheThemes() async throws {
-        try await themes.perform(SpotAction(arguments: ["duplicate", "Openspot"]), timeout: 60)
-        let form = try await themes.answer(SpotAction(arguments: ["rename", "Openspot copy"]), timeout: 60)
-        let renamed = try await themes.answer(SpotAction(arguments: ["rename", "Openspot copy"]), input: "input.name= Dusk \n", timeout: 60)
-        try await themes.perform(SpotAction(arguments: ["delete", "Dusk"]), timeout: 60)
+        try await themes.perform("duplicate", input: "input.item=Openspot\n", timeout: 60)
+        let form = try await themes.answer("rename", input: "input.item=Openspot copy\n", timeout: 60)
+        let renamed = try await themes.answer("rename", input: "input.item=Openspot copy\ninput.name= Dusk \n", timeout: 60)
+        try await themes.perform("delete", input: "input.item=Dusk\n", timeout: 60)
 
         XCTAssertEqual(form.fields.map { $0.block.value("field") }, ["name"])
         XCTAssertEqual(renamed.items.filter { $0.subtitle != "Built in" }.map(\.run), ["Dusk"])
@@ -74,9 +74,9 @@ final class ThemesSpotTests: BuiltInCase {
     }
 
     func testCopyPromptPushesAPageWhoseButtonCopiesAPromptThatChangesACopyOfTheBuiltInTheme() async throws {
-        _ = try await themes.answer(SpotAction(arguments: ["prompt", "Openspot"]), timeout: 60)
+        _ = try await themes.answer("prompt", input: "input.item=Openspot\n", timeout: 60)
         let page = try await themes.items(page: "prompt:Openspot", timeout: 60)
-        try await themes.perform(SpotAction(arguments: ["copy"]), input: "input.describe=Warm and round\n", page: "prompt:Openspot", timeout: 60)
+        try await themes.perform("copy", input: "input.describe=Warm and round\n", page: "prompt:Openspot", timeout: 60)
 
         XCTAssertEqual(page.fields.map { $0.block.value("field") }, ["describe"])
         XCTAssertEqual(effects(), ["route push prompt:Openspot --title Openspot", "toast \(AgentPrompt.copied)"])
@@ -92,7 +92,7 @@ final class ThemesSpotTests: BuiltInCase {
     func testThePromptOfAnOwnThemeNamesItsFile() async throws {
         try theme("Night", "")
 
-        try await themes.perform(SpotAction(arguments: ["copy"]), input: "input.describe=Darker\n", page: "prompt:Night", timeout: 60)
+        try await themes.perform("copy", input: "input.describe=Darker\n", page: "prompt:Night", timeout: 60)
 
         let prompt = try String(contentsOf: root.appendingPathComponent("clipboard"), encoding: .utf8)
         XCTAssertTrue(prompt.contains("theme use 'Night'. Then change the file \(root.appendingPathComponent("themes/Night.theme/theme.toml").path)."), prompt)

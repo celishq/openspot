@@ -1,5 +1,15 @@
 icon = "text.quote"
 detail = "Copy text"
-on = ["panel.open"]
 uses = ["clipboard"]
-offers = ["search"]
+
+[actions.new]
+inputs.content = { type = "text", description = "Text to keep" }
+inputs.title = "text"
+
+[actions.import]
+inputs.snippets = { type = "text", required = true, description = "A JSON list of snippets, each with a title, a text and a keyword" }
+outputs.added = { type = "text", required = true, description = "How many snippets it added, in words" }
+
+[on]
+"panel.open" = true
+search = true

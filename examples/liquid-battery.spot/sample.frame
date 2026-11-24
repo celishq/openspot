@@ -1,0 +1,10 @@
+frame=
+class=relative card:relative
+
+liquid=level
+class=absolute inset-0
+title=72%
+detail=4:18 left
+icon=battery.75
+value=0.72
+tone=

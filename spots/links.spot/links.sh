@@ -1,4 +1,9 @@
 #!/bin/sh
+
+# A delete waits for the delete before it, so two quick deletes never write over each other. A save keeps no lock, since
+# a stop of its icon fetch must reach this process.
+[ "$1" != delete ] || [ -n "${LINKS_LOCKED-}" ] || LINKS_LOCKED=1 exec lockf -k "$OPENSPOT_DATA/links.lock" "$0" "$@"
+
 data="$OPENSPOT_DATA/links.json"
 icons="$OPENSPOT_DATA/icons"
 . "$OPENSPOT_SH"
@@ -118,7 +123,7 @@ fetch_missing() {
 
 # Prints the form with this title and these values.
 form() {
-  jq -nr --arg title "$1" --argjson v "$2" "$esc"'"frame=\ntitle=\($title)
+  jq -nr --arg title "$1" --argjson v "$2" "$esc"'"frame=\ntype=form\ntitle=\($title)
 
 field=title
 title=Name
@@ -136,46 +141,49 @@ prepare
 
 # Prints the page that asks for the text of a link that holds {query}.
 query_page() {
-  load | jq -e -r --arg id "$1" "$esc"'.[] | select(.id == $id) | "frame=query:\(.id | esc)\ngrid=query\ngrid=go\n\nfield=query\ntitle=\(.title | esc)\nplaceholder=\(.title | esc)\ngrow=false\n\nbutton=go\ntitle=Open\nlook=strong\nshortcut=return\n"' || {
+  load | jq -e -r --arg id "$1" "$esc"'.[] | select(.id == $id) | "frame=query:\(.id | esc)\nclass=gap-part\n\nfield=query\ntitle=\(.title | esc)\nplaceholder=\(.title | esc)\n\nbutton=go\ntitle=Open\nclass=bg-accent\nshortcut=return\n"' || {
     echo "This link is gone." >&2
     exit 1
   }
 }
 
-# Prints how many items an import added, as the title of a block that the import reads.
+# Prints how many items an import added, as the output that the import reads.
 added() {
   case "$1" in
-    0) printf 'text=added\ntitle=No new %ss\n' "$2" ;;
-    1) printf 'text=added\ntitle=Added 1 %s\n' "$2" ;;
-    *) printf 'text=added\ntitle=Added %s %ss\n' "$1" "$2" ;;
+    0) printf 'frame=\nout.added=No new %ss\n' "$2" ;;
+    1) printf 'frame=\nout.added=Added 1 %s\n' "$2" ;;
+    *) printf 'frame=\nout.added=Added %s %ss\n' "$1" "$2" ;;
   esac
 }
+
+item=$(value item)
 
 case "$1" in
   show)
     case "$(value route)" in query:*) query_page "$(value route | sed 's/^query://')"; exit 0 ;; esac
     printf 'button=copy\ntitle=Copy\nshortcut=cmd+return\n\n'
     printf 'button=reveal\ntitle=Show in Finder\nshortcut=cmd+r\n\n'
-    printf 'button=edit\ntitle=Edit\nshortcut=cmd+e\nform=true\nclose=false\n\n'
+    printf 'button=edit\ntitle=Edit\nshortcut=cmd+e\nclose=false\n\n'
     printf 'button=delete\ntitle=Delete\nshortcut=cmd+backspace\nconfirm=Press again to delete\nclose=false\n\n'
-    printf 'button=new\ntitle=New link\nshortcut=cmd+n\nscope=spot\nform=true\nclose=false\nplaceholder=Link to add\n\n'
+    printf 'button=new\ntitle=New link\nshortcut=cmd+n\nscope=spot\nclose=false\nplaceholder=Link to add\n\n'
     [ -s "$data" ] || exit 0
     set --
     for icon in "$icons"/*.png; do [ -e "$icon" ] && set -- "$@" "${icon##*/}"; done
     jq -r --arg icons "$icons" --arg home "$HOME" "$esc"'$ARGS.positional as $found | .[]
       | if (.url | test("^[/~]")) then
-          "text=\(.id | esc)\ntitle=\(.title | esc)\ndetail=\(.url | esc)\nicon=\(.url | if startswith("~") then $home + .[1:] else . end | esc)\n"
+          "item=\(.id | esc)\ntitle=\(.title | esc)\ndetail=\(.url | esc)\nicon=\(.url | if startswith("~") then $home + .[1:] else . end | esc)\n"
           + (if (.url | contains("{query}")) then "route=query:\(.id | esc)\n" else "" end)
         else
           (.url | sub("^[a-zA-Z][a-zA-Z0-9+.-]*:(//)?"; "") | sub("[/?#].*$"; "")) as $host
-          | "text=\(.id | esc)\ntitle=\(.title | esc)\ndetail=\($host | esc)\nhides=reveal\n"
+          | "item=\(.id | esc)\ntitle=\(.title | esc)\ndetail=\($host | esc)\nhides=reveal\n"
           + (if ($found | index($host + ".png")) then "icon=\("\($icons)/\($host).png" | esc)\n" else "icon=link\n" end)
           + (if (.url | contains("{query}")) then "route=query:\(.id | esc)\n" else "" end)
         end' "$data" --args "$@"
     ;;
   new)
-    if [ -z "$(value input.title)$(value input.url)" ]; then
-      form "New link" "$(jq -nc --arg url "$(value search)" '{title: "", url: $url}')"
+    # Asks with its own form, filled with what the call gave, until both the name and the link are given.
+    if [ -z "$(value input.title)" ] || [ -z "$(value input.url)" ]; then
+      form "New link" "$(jq -nc --arg title "$(value input.title)" --arg url "$(value input.url)" '{$title, $url}')"
       exit 0
     fi
     id=$(uuidgen)
@@ -186,16 +194,16 @@ case "$1" in
     ;;
   edit)
     if [ -z "$(value input.title)$(value input.url)" ]; then
-      form "Edit link" "$(load | jq -c --arg id "$2" '.[] | select(.id == $id)')"
+      form "Edit link" "$(load | jq -c --arg id "$item" '.[] | select(.id == $id)')"
       exit 0
     fi
     values=$(checked) || exit 1
-    load | jq -c --arg id "$2" --argjson v "$values" 'map(if .id == $id then .title = $v.title | .url = $v.url else . end)' | store
+    load | jq -c --arg id "$item" --argjson v "$values" 'map(if .id == $id then .title = $v.title | .url = $v.url else . end)' | store
     fetch_missing "$values" >/dev/null 2>&1 </dev/null
-    openspot select "$2"
+    openspot select "$item"
     ;;
   delete)
-    load | jq -c --arg id "$2" 'map(select(.id != $id))' | store
+    load | jq -c --arg id "$item" 'map(select(.id != $id))' | store
     ;;
   go)
     url=$(link "$(value route | sed 's/^query://')") || exit 1
@@ -210,17 +218,17 @@ case "$1" in
     added "$count" link
     ;;
   copy)
-    url=$(link "$2") || exit 1
+    url=$(link "$item") || exit 1
     printf '%s' "$url" | openspot clipboard copy
     openspot toast Copied
     ;;
   reveal)
-    url=$(link "$2") || exit 1
+    url=$(link "$item") || exit 1
     check_path "$url"
     open -R "$url"
     ;;
-  open)
-    url=$(link "$2") || exit 1
+  press)
+    url=$(link "$item") || exit 1
     check_path "$url"
     open "$url"
     ;;

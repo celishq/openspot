@@ -25,6 +25,18 @@ enum SpotMotion {
         .easeOut(duration: isShown ? MotionTokens.fadeIn : MotionTokens.fadeOut)
     }
 
+    static var shake: some Keyframes<CGFloat> {
+        let reach = MotionTokens.shakeReach
+        let step = MotionTokens.shake / 5
+        return KeyframeTrack {
+            CubicKeyframe(reach, duration: step)
+            CubicKeyframe(-reach * 0.8, duration: step)
+            CubicKeyframe(reach * 0.5, duration: step)
+            CubicKeyframe(-reach * 0.25, duration: step)
+            CubicKeyframe(0, duration: step)
+        }
+    }
+
     static var press: Animation { .spring(duration: MotionTokens.press, bounce: MotionTokens.pressBounce) }
     static var pop: Animation { .spring(duration: MotionTokens.pop, bounce: MotionTokens.popBounce) }
 

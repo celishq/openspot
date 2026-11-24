@@ -4,6 +4,7 @@ public enum SpotCall: NounCall {
     case new(name: String, starter: SpotStarter)
     case run(id: String, arguments: [String])
     case log(String)
+    case actions(String?)
     case stats(days: Int, spot: String?, format: Stats.Form, byVersion: Bool = false)
     case show(String)
     case list(core: Bool, form: PrintForm)
@@ -25,8 +26,11 @@ public enum SpotCall: NounCall {
             guard let fit = words.fit, fit.rest.count == 1, let starter = fit.value("--from").map { SpotStarter(rawValue: $0) } ?? .button else { return nil }
             return Self.new(name: fit.rest[0], starter: starter)
         },
-        CommandVerb("run", "<id> [call] [value]...", "Makes one call of a spot as the app does, and prints all that it prints.", rule: CallRule(use: .spots, used: "ran a spot", flags: .startsScripts)) { words in
+        CommandVerb("run", "<id> [call] [value]...", "Makes one call of a spot as the app does, and prints all that it prints. For a spot with [actions] or [on], the call names a handler and each word after it is an input, <name>=<value>, checked as a call checks it, and the spot's bindings work as in a run.", rule: CallRule(use: .spots, used: "ran a spot", flags: .startsScripts)) { words in
             words.rest.first.map { Self.run(id: $0, arguments: Array(words.rest.dropFirst())) }
+        },
+        CommandVerb("actions", "[id]", "Prints each action of a spot, or of every spot, and each command of its uses, with their inputs and outputs as JSON Schema.") { words in
+            words.fit.flatMap { $0.rest.count <= 1 ? Self.actions($0.rest.first) : nil }
         },
         CommandVerb("log", "<id>", "Prints the last calls that the app made to a spot.", rule: CallRule(use: .spots, used: "read the calls of a spot")) { $0.one.map(Self.log) },
         CommandVerb(
@@ -35,7 +39,7 @@ public enum SpotCall: NounCall {
         ) { $0.fit.flatMap(stats) },
         CommandVerb(
             "list", "[--core] [--json]",
-            "Prints an item, a text=<id> block, for each spot that the app loads, with a button=<id> or field=<id> block for each of its own. --core prints each spot that comes with the app, and whether it is on. --json prints them as JSON, with their keys."
+            "Prints an item, an item=<id> block, for each spot that the app loads, with a button=<id> or field=<id> block for each of its own. --core prints each spot that comes with the app, and whether it is on. --json prints them as JSON, with their keys."
         ) { words in
             words.fit.flatMap { $0.rest.isEmpty ? Self.list(core: $0.has("--core"), form: $0.form) : nil }
         },
@@ -52,7 +56,7 @@ public enum SpotCall: NounCall {
             guard let fit = words.fit, fit.rest.count == 1 else { return nil }
             return fit.has("--select") ? Self.show(fit.rest[0]) : Self.open(fit.rest[0])
         },
-        CommandVerb("push", "<id> [page] [--replace] [--title <words>]", "Pushes a spot, or a page of it, over the flow that shows.", rule: CallRule(inShow: .changes(panel))) { $0.fit.flatMap(push) },
+        CommandVerb("push", "<id> [page] [--replace] [--title <words>]", "Pushes a spot, or a page of it, over the flow that shows, or opens the panel on it when no sheet shows.", rule: CallRule(inShow: .changes(panel))) { $0.fit.flatMap(push) },
         CommandVerb("pop", "<id> [--all]", "Goes back one sheet of a spot that shows, or to its first sheet.", rule: CallRule(inShow: .changes("moves the panel"))) { words in
             guard let fit = words.fit, fit.rest.count == 1 else { return nil }
             return Self.pop(fit.rest[0], all: fit.has("--all"))
@@ -89,6 +93,7 @@ public enum SpotCall: NounCall {
         case .new(let name, let starter): spots.new(name, from: starter)
         case .run(let id, let arguments): spots.run(id, arguments, input: context.request.isPiped ? context.input : nil, careful: context.careful, output: context.output)
         case .log(let id): spots.log(id)
+        case .actions(let id): spots.actions(id)
         case .stats(let days, let spot, let format, let byVersion): spots.stats(days: days, spot: spot, format: format, byVersion: byVersion)
         case .show(let id): spots.show(id)
         case .list(let core, let form): spots.list(core: core, form: form)

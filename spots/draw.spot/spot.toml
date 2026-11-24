@@ -1,6 +1,6 @@
 title = "Draw"
 icon = "scribble.variable"
 detail = "Sketch on a board"
-mode = "stay"
+stay = true
 uses = ["files"]
 source = ["model", "app"]

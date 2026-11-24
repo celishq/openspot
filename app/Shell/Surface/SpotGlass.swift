@@ -22,6 +22,7 @@ struct SpotGlass: ViewModifier {
             }
             .opacity(fade)
             .spotGlass(isSolid != true && !isBare, in: shape)
+            .background { if !isBare { SpotCardShadow(shape: shape) } }
             .opacity(SpotTheme.glassStrength(at: fade))
             .opacity(isShown ? 1 : MotionTokens.hiddenOpacity)
             .allowsHitTesting(isShown)

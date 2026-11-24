@@ -7,9 +7,9 @@ final class GuideTests: XCTestCase {
 
     override func setUpWithError() throws {
         let folder = try temporaryFolder()
-        let file = folder.appendingPathComponent("GUIDE.md")
-        try "# Openspot guide\n\n## Show a list\n\nPrint rows.\n".write(to: file, atomically: true, encoding: .utf8)
-        api = CommandAPI(mac: Mac(guide: file, pages: pages), places: .test(["OPENSPOT_CONFIG": folder.path]), rates: .offline)
+        let file = folder.appendingPathComponent("DOCS.md")
+        try "# Show a list\n\nPrint rows.\n".write(to: file, atomically: true, encoding: .utf8)
+        api = CommandAPI(mac: Mac(guide: file, pages: pages), places: .test(["OPENSPOT_CONFIG": folder.path]))
     }
 
     private func answer(_ arguments: [String]) async throws -> CommandAnswer {
@@ -26,7 +26,7 @@ final class GuideTests: XCTestCase {
     }
 
     func testTheHelpOfANounFindsItsPageWithNoGuideFile() async throws {
-        let bare = CommandAPI(mac: Mac(guide: nil, pages: pages), places: .test(["OPENSPOT_CONFIG": try temporaryFolder().path]), rates: .offline)
+        let bare = CommandAPI(mac: Mac(guide: nil, pages: pages), places: .test(["OPENSPOT_CONFIG": try temporaryFolder().path]))
 
         let screen = try await XCTUnwrap(bare.work(for: .test(["help", "screen"]), input: { "" }))()
 

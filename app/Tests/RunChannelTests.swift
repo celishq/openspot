@@ -16,7 +16,7 @@ final class RunChannelTests: SpotRunsCase {
         client = folder.appendingPathComponent("A.app/Contents/Helpers/openspot")
         try FileManager.default.createDirectory(at: client.deletingLastPathComponent(), withIntermediateDirectories: true)
         try FileManager.default.copyItem(at: Bundle(for: Self.self).bundleURL.deletingLastPathComponent().appendingPathComponent("openspot"), to: client)
-        runs.api = CommandAPI(mac: Mac(), places: .test(["OPENSPOT_CONFIG": config.path]), app: FakeRunningApp(), runs: runs, rates: .offline)
+        runs.api = CommandAPI(mac: Mac(), places: .test(["OPENSPOT_CONFIG": config.path]), app: FakeRunningApp(), runs: runs)
     }
 
     override func tearDown() async throws {
@@ -52,12 +52,12 @@ final class RunChannelTests: SpotRunsCase {
     }
 
     func testTwoCallsAtOnceInOneRunEachGetTheirOwnAnswer() async throws {
-        try script(toml: TestSpot.command, "\(call("calc solve 1+1")) > '\(path("one"))' & \(call("calc solve 20+22")) > '\(path("two"))'; wait; echo 0 >> '\(path("done"))'")
+        try script(toml: TestSpot.command, "printf '2\\n' | \(call("cache set one")) 2>> '\(path("errors"))'; printf '42\\n' | \(call("cache set two")) 2>> '\(path("errors"))'; \(call("cache get one")) > '\(path("one"))' & \(call("cache get two")) > '\(path("two"))'; wait; echo 0 >> '\(path("done"))'")
 
         try await press()
 
-        XCTAssertTrue(log("one").contains("title=2"), log("one").joined(separator: "\n"))
-        XCTAssertTrue(log("two").contains("title=42"), log("two").joined(separator: "\n"))
+        XCTAssertEqual(log("one"), ["2"], log("errors").joined(separator: "\n"))
+        XCTAssertEqual(log("two"), ["42"])
     }
 
     func testEachShellPassesTheChannelOnToItsChildren() async throws {
@@ -123,8 +123,8 @@ final class RunChannelTests: SpotRunsCase {
     }
 
     func testEachRunIsKnownAsItsOwnSpot() async throws {
-        try script("one", toml: "on = ['panel.open']", "\(call("setting set tone one")); echo 0 >> '\(path("done"))'")
-        try script("two", toml: "on = ['panel.open']", "\(call("setting set tone two")); echo 0 >> '\(path("done"))'")
+        try script("one", toml: "[on]\n'panel.open' = true", "\(call("setting set tone one")); echo 0 >> '\(path("done"))'")
+        try script("two", toml: "[on]\n'panel.open' = true", "\(call("setting set tone two")); echo 0 >> '\(path("done"))'")
         _ = try scanned()
 
         runs.panelOpened()
@@ -136,10 +136,10 @@ final class RunChannelTests: SpotRunsCase {
     }
 
     func testAStayingSpotIsKnownInEachCall() async throws {
-        try script(toml: "mode = 'stay'", """
+        try script(toml: "stay = true", """
         while IFS= read -r line; do
           case "$line" in call=*) call=${line#call=} ;; esac
-          [ -n "$line" ] || { \(call("setting set tone stay$call")); printf 'end=%s\\n\\ntext=a\\n---\\n' "$call"; }
+          [ -n "$line" ] || { \(call("setting set tone stay$call")); printf 'end=%s\\n\\nitem=a\\n---\\n' "$call"; }
         done
         """)
         let sheet = try sheet()
@@ -154,7 +154,7 @@ final class RunChannelTests: SpotRunsCase {
     func testAnInlineCallIsKnownAsItsSpot() async throws {
         let script = folder.spotFile("script", extension: "js")
         try FileManager.default.createDirectory(at: script.deletingLastPathComponent(), withIntermediateDirectories: true)
-        try "function main(args, env) { openspot.call(['setting', 'set', 'tone', 'inline']); return 'text=t\\ntitle=done\\n' }\n"
+        try "export default { async show(input, env) { openspot.call(['setting', 'set', 'tone', 'inline']); return 'text=t\\ntitle=done\\n' } }\n"
             .writeInline(to: script, toml: "")
         let sheet = try sheet()
         runs.panelOpened()
@@ -173,14 +173,14 @@ final class RunChannelTests: SpotRunsCase {
         defer { try? FileManager.default.removeItem(at: outside) }
         let products = Bundle(for: Self.self).bundleURL.deletingLastPathComponent().path
         runs = runs(environment: ["PATH": "\(products):/usr/bin:/bin", "HOME": home, "OPENSPOT_CONFIG": config.path])
-        runs.api = CommandAPI(mac: Mac(), places: .test(["OPENSPOT_CONFIG": config.path]), app: FakeRunningApp(), runs: runs, rates: .offline)
+        runs.api = CommandAPI(mac: Mac(), places: .test(["OPENSPOT_CONFIG": config.path]), app: FakeRunningApp(), runs: runs)
         let socket = try XCTUnwrap(CommandSocket(folder: config, api: try XCTUnwrap(runs.api)))
         defer { socket.close() }
         runs.isCareful = true
         try script("writer", toml: "uses = ['files']", "echo a > '\(outside.path)/'\"$1\"")
         let script = folder.spotFile("script", extension: "js")
         try FileManager.default.createDirectory(at: script.deletingLastPathComponent(), withIntermediateDirectories: true)
-        try "function main(args, env) { openspot.call(['spot', 'run', 'writer', 'inline']); return 'text=t\\ntitle=done\\n' }\n"
+        try "export default { async show(input, env) { openspot.call(['spot', 'run', 'writer', 'inline']); return 'text=t\\ntitle=done\\n' } }\n"
             .writeInline(to: script, toml: "uses = ['spots']")
         let sheet = try sheet()
         runs.panelOpened()

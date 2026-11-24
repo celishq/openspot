@@ -3,18 +3,18 @@ icon = "macwindow"
 detail = "Give each command a key"
 uses = ["screen"]
 
-[commands.full]
+[actions.full]
 title = "Full screen"
 icon = "rectangle.inset.filled"
 
-[commands.center]
+[actions.center]
 title = "Centre"
 icon = "rectangle.center.inset.filled"
 
-[commands.left]
+[actions.left]
 title = "Left side"
 icon = "rectangle.lefthalf.inset.filled"
 
-[commands.right]
+[actions.right]
 title = "Right side"
 icon = "rectangle.righthalf.inset.filled"

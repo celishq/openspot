@@ -5,6 +5,7 @@ public struct CommandVerb: Sendable {
     public let form: String
     public let about: String
     public let rule: CallRule
+    let slots: [CommandSlot]
     let shape: CommandForm
     let parse: @Sendable (CallWords) -> (any NounCall)?
 
@@ -13,7 +14,8 @@ public struct CommandVerb: Sendable {
         self.form = form
         self.about = about
         self.rule = rule
-        shape = CommandForm(form)
+        slots = CommandSlot.slots(of: form)
+        shape = CommandForm(slots)
         self.parse = parse
     }
 

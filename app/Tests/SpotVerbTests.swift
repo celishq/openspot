@@ -26,7 +26,7 @@ final class SpotVerbTests: XCTestCase {
         let editor = [
             "#!/bin/sh",
             "case \"$1\" in",
-            "  show) printf 'frame=\\ngrid=describe\\ngrid=copy\\n\\nfield=describe\\ntype=multiline\\n\\nbutton=copy\\ntitle=Copy prompt\\nlook=strong\\nshortcut=cmd+return\\nclose=false\\n'",
+            "  show) printf 'frame=\\nclass=gap-part\\n\\nfield=describe\\ntype=multiline\\n\\nbutton=copy\\ntitle=Copy prompt\\nlook=strong\\nshortcut=cmd+return\\nclose=false\\n'",
             "    [ -z \"${OPENSPOT_EDIT_FILE-}\" ] || printf '\\nbutton=editor\\ntitle=Open in editor\\nscope=spot\\n' ;;",
             "  copy) echo \"$OPENSPOT_EDIT|${OPENSPOT_EDIT_FILE-}|${OPENSPOT_EDIT_FAILURE-}\" >> '\(folder.path)/edits' ;;",
             "  editor) open -t \"$OPENSPOT_EDIT_FILE\" ;;",
@@ -35,8 +35,8 @@ final class SpotVerbTests: XCTestCase {
         let app = core.appendingPathComponent("openspot.spot")
         try editor.joined(separator: "\n").appending("\n").writeScript(to: app.appendingPathComponent("change.sh"), toml: "title = 'Change'\nedits = 'spots'")
         try actions.writeInline(to: app.appendingPathComponent("actions.js"), toml: actionsToml)
-        try icon.writeScript(to: app.appendingPathComponent("icon.sh"), toml: "title = 'Icon'\nicon = 'paintbrush.pointed'\nview = 'icon.swift'\nuses = ['spots']\ndrop = 'png,svg'")
-        try "import SwiftUI\n\nstruct SpotView: View {\n    let spot: SpotInput\n\n    var body: some View {\n        Color.clear\n    }\n}\n".write(to: app.appendingPathComponent("icon.swift"), atomically: true, encoding: .utf8)
+        try icon.writeScript(to: app.appendingPathComponent("icon.sh"), toml: "title = 'Icon'\nicon = 'paintbrush.pointed'\nviews = ['drawer.swift']\nuses = ['spots']\n\n[actions.draw]\ninputs.spot = { type = 'text', required = true }\n\n[on]\ndrop = [\"png\", \"svg\"]")
+        try "import SwiftUI\n\nstruct SpotView: View {\n    let spot: SpotInput\n\n    var body: some View {\n        Color.clear\n    }\n}\n".write(to: app.appendingPathComponent("drawer.swift"), atomically: true, encoding: .utf8)
         try "#!/bin/sh\necho\n".writeScript(to: core.spotFile("cups"), toml: "title = 'Cups'")
         let files = AppPlaces(
             environment: ["OPENSPOT_SPOTS": spots.path, "OPENSPOT_CONFIG": folder.appendingPathComponent("config").path, "OPENSPOT_CORE": core.path],
@@ -50,7 +50,7 @@ final class SpotVerbTests: XCTestCase {
         )
         model = SpotsModel(host: host, files: files, runs: SpotRuns(environment: ProcessInfo.processInfo.environment.merging(["PATH": "\(tools.path):/usr/bin:/bin"]) { _, new in new }, stopPause: 0.2))
         host.model = model
-        model.runs.api = CommandAPI(mac: Mac(), places: files, app: ModelApp(model: model), runs: model.runs, rates: .offline)
+        model.runs.api = CommandAPI(mac: Mac(), places: files, app: ModelApp(model: model), runs: model.runs)
     }
 
     override func tearDown() async throws {
@@ -66,19 +66,16 @@ final class SpotVerbTests: XCTestCase {
           share: (id) => ["spot", "share", id],
           delete: (id) => ["spot", "delete", id],
           off: (id) => ["setting", "set", "--spot", id, "enabled", "false"],
-          "icon.draw": (id) => ["spot", "run", "openspot/icon", "draw", id],
-          "icon.file": (id) => ["spot", "run", "openspot/icon", "file", id],
+          "icon.draw": (id) => ["spot", "run", "openspot/icon", "draw", `spot=${id}`],
+          "icon.file": (id) => ["spot", "run", "openspot/icon", "file", `spot=${id}`],
         };
 
-        function main(args) {
-          const [act, id] = args;
-          if (calls[act]) openspot.call(calls[act](id));
-          return "";
-        }
-
-        function hasIcon(id) {
-          return "";
-        }
+        export default {
+          ...Object.fromEntries(Object.keys(calls).map((act) => [act, async ({ item }) => { openspot.call(calls[act](item)) }])),
+          hasIcon() {
+            return "";
+          },
+        };
 
         """
 
@@ -86,51 +83,54 @@ final class SpotVerbTests: XCTestCase {
         title = 'Card actions'
         icon = 'ellipsis.circle'
         uses = ['spots']
-        [commands.share]
+        [actions.share]
         title = 'Share'
         shortcut = 'cmd+shift+c'
         offers = ['actions mine, core']
-        [commands.settings]
+        [actions.settings]
         title = 'Settings'
         shortcut = 'cmd+return'
         close = false
         offers = ['actions']
-        [commands.edit]
+        [actions.edit]
         title = 'Edit'
         shortcut = 'cmd+e'
         close = false
         offers = ['actions mine, core']
-        [commands.icon]
+        [actions.icon]
         title = 'Change Icon'
         offers = ['actions']
-        [commands."icon.draw"]
+        [actions."icon.draw"]
         title = 'Draw…'
         close = false
-        [commands."icon.file"]
+        [actions."icon.file"]
         title = 'Choose File…'
         close = false
-        [commands."icon.reset"]
+        [actions."icon.reset"]
         title = 'Reset Icon'
         close = false
         when = 'hasIcon'
-        [commands.delete]
+        [actions.delete]
         title = 'Delete'
         shortcut = 'cmd+backspace'
         close = false
         offers = ['actions mine']
-        [commands.off]
+        [actions.off]
         title = 'Turn off'
         shortcut = 'cmd+backspace'
         offers = ['actions core']
         """
 
-    private let icon = """
+    private var icon: String {
+        """
         #!/bin/sh
         case "$1" in
-          show) printf 'frame=\\ntitle=Icon\\ngrid=drawer drawer\\ngrid=clear save\\n\\nview=drawer\\ndots=.\\n\\nbutton=clear\\ntitle=Clear\\nclose=false\\n\\nbutton=save\\ntitle=Save\\nshortcut=return\\nlook=strong\\n' ;;
+          draw) sed -n 's/^input\\.spot=//p' > '\(folder.path)/drawn' ;;
+          show) printf 'frame=\\ntitle=Icon\\nclass=grid grid-cols-2 gap-part\\n\\ndrawer=drawer\\nclass=col-span-2\\ndots=.\\n\\nbutton=clear\\ntitle=Clear\\nclose=false\\n\\nbutton=save\\ntitle=Save\\nshortcut=return\\nlook=strong\\n' ;;
         esac
 
         """
+    }
 
     private var spots: URL {
         folder.appendingPathComponent("spots", isDirectory: true)
@@ -226,6 +226,36 @@ final class SpotVerbTests: XCTestCase {
         XCTAssertTrue(saved("edits")?.hasPrefix("ping|\(spots.spotFile("ping").path)|") == true)
     }
 
+    func testTurnOffInTheMenuOfACardRunsTheHandlerOfTheRealActionsAndTurnsTheSpotOff() async throws {
+        let real = URL(fileURLWithPath: #filePath).deletingLastPathComponent().deletingLastPathComponent().deletingLastPathComponent().appendingPathComponent("spots/openspot.spot/actions.js")
+        try String(contentsOf: real, encoding: .utf8).writeInline(to: core.appendingPathComponent("openspot.spot/actions.js"), toml: actionsToml)
+        try model.files.config.turn("cups", on: true)
+        _ = try await select("cups")
+
+        XCTAssertTrue(model.handleKey(ActionKey(name: "k", isCommand: true)))
+        model.pressMenu(row: try XCTUnwrap(model.menu?.rows.firstIndex { $0.title == "Turn off" }))
+
+        try await wait("the spot turned off") { model.files.config.read().arrangement.disabled.contains("cups") }
+    }
+
+    func testAnInlineHandlerOfTheAppRunsIconThroughABinding() async throws {
+        try FileManager.default.copyItem(at: Bundle(for: Self.self).bundleURL.deletingLastPathComponent().appendingPathComponent("openspot"), to: folder.appendingPathComponent("tools/openspot"))
+        let app = core.appendingPathComponent("openspot.spot")
+        let real = URL(fileURLWithPath: #filePath).deletingLastPathComponent().deletingLastPathComponent().deletingLastPathComponent().appendingPathComponent("spots/openspot.spot/icon.sh")
+        try String(contentsOf: real, encoding: .utf8).writeScript(
+            to: app.appendingPathComponent("icon.sh"), toml: "title = 'Icon'\nuses = ['spots']\n[on]\n\"sheet.open\" = true\n[actions.draw]\ninputs.spot = { type = 'text', required = true }"
+        )
+        let actions = URL(fileURLWithPath: #filePath).deletingLastPathComponent().deletingLastPathComponent().deletingLastPathComponent().appendingPathComponent("spots/openspot.spot/actions.js")
+        try String(contentsOf: actions, encoding: .utf8).writeInline(to: app.appendingPathComponent("actions.js"), toml: actionsToml + "\n[bindings]\nicon = { spot = 'openspot/icon' }")
+        try model.files.config.turn("cups", on: true)
+        let target = try await select("cups")
+        let draw = try XCTUnwrap(model.runs.sheets["openspot/actions"]?.spot.offeredActions.first { $0.action.id == "icon.draw" }?.action)
+
+        model.run(draw, offeredBy: "openspot/actions", on: target)
+
+        try await wait("the sheet of the icon") { model.openSheetID == "openspot/icon" }
+    }
+
     func testACoreSpotHasEditWithNoFileToOpenAndASpotOfTheAppHasNone() async throws {
         try model.files.config.turn("cups", on: true)
         _ = try await select("cups")
@@ -254,13 +284,13 @@ final class SpotVerbTests: XCTestCase {
     func testAnActionThatASpotOffersShowsInEachCardsMenuAndRunsThatSpotWithTheCardsID() async throws {
         let calls = folder.appendingPathComponent("calls").path
         try script("weather", toml: "title = 'Weather'")
-        try "#!/bin/sh\necho \"$@\" >> '\(calls)'\n".writeScript(to: spots.spotFile("stars"), toml: "title = 'Stars'\n[commands.star]\ntitle = 'Star'\noffers = ['actions']")
+        try "#!/bin/sh\necho \"$1 $(sed -n 's/^input\\.item=//p')\" >> '\(calls)'\n".writeScript(to: core.appendingPathComponent("openspot.spot/stars.sh"), toml: "title = 'Stars'\n\n[actions.star]\ntitle = 'Star'\noffers = ['actions']")
         _ = try await select("weather")
 
         XCTAssertTrue(model.handleKey(ActionKey(name: "k", isCommand: true)))
         let menu = try XCTUnwrap(model.menu)
         XCTAssertEqual(menu.rows.dropFirst().map(\.title), ["Share", "Settings", "Edit", "Change Icon", "Delete", "Star"])
-        XCTAssertEqual(menu.headers.map(\.title), ["Stars"])
+        XCTAssertEqual(menu.headers.map(\.title), [])
         model.menu?.select(try XCTUnwrap(menu.rows.last?.action))
         XCTAssertTrue(model.handleKey(ActionKey(name: "return")))
 
@@ -271,7 +301,7 @@ final class SpotVerbTests: XCTestCase {
     func testAnOfferedActionClosesThePanelUnlessItHasCloseFalse() async throws {
         let calls = folder.appendingPathComponent("calls").path
         try script("weather", toml: "title = 'Weather'")
-        try "#!/bin/sh\necho \"$@\" >> '\(calls)'\n".writeScript(to: spots.spotFile("stars"), toml: "title = 'Stars'\n[commands.star]\ntitle = 'Star'\nclose = false\noffers = ['actions']\n[commands.mark]\ntitle = 'Mark'\noffers = ['actions']")
+        try "#!/bin/sh\necho \"$1 $(sed -n 's/^input\\.item=//p')\" >> '\(calls)'\n".writeScript(to: core.appendingPathComponent("openspot.spot/stars.sh"), toml: "title = 'Stars'\n\n[actions.star]\ntitle = 'Star'\nclose = false\noffers = ['actions']\n[actions.mark]\ntitle = 'Mark'\noffers = ['actions']")
         _ = try await select("weather")
 
         for title in ["Star", "Mark"] {
@@ -287,7 +317,7 @@ final class SpotVerbTests: XCTestCase {
     func testAMenuRowThatAnotherSpotRunsKeepsTheMenuUntilItsRunEnds() async throws {
         let gate = folder.appendingPathComponent("gate").path
         try script("weather", toml: "title = 'Weather'")
-        try "#!/bin/sh\n[ \"$1\" = star ] && touch '\(gate).run' && while [ ! -f '\(gate)' ]; do sleep 0.01; done; true\n".writeScript(to: spots.spotFile("stars"), toml: "title = 'Stars'\n[commands.star]\ntitle = 'Star'\nclose = false\noffers = ['actions']")
+        try "#!/bin/sh\n[ \"$1\" = star ] && touch '\(gate).run' && while [ ! -f '\(gate)' ]; do sleep 0.01; done; true\n".writeScript(to: core.appendingPathComponent("openspot.spot/stars.sh"), toml: "title = 'Stars'\n\n[actions.star]\ntitle = 'Star'\nclose = false\noffers = ['actions']")
         _ = try await select("weather")
         XCTAssertTrue(model.handleKey(ActionKey(name: "k", isCommand: true)))
         let row = try XCTUnwrap(model.menu?.rows.last)
@@ -299,6 +329,20 @@ final class SpotVerbTests: XCTestCase {
 
         try Data().write(to: URL(fileURLWithPath: gate))
         try await wait("the close at the end of the run") { model.menu == nil }
+    }
+
+    func testDrawInTheMenuRunsTheDrawOfTheIconSpotWithTheSpotOfTheCard() async throws {
+        try script("weather", toml: "title = 'Weather'")
+        _ = try await select("weather")
+        XCTAssertTrue(model.handleKey(ActionKey(name: "k", isCommand: true)))
+        let menu = try XCTUnwrap(model.menu)
+        model.menu?.select(try XCTUnwrap(menu.shown.first { $0.title == "Change Icon" }?.action))
+        XCTAssertTrue(model.handleKey(ActionKey(name: "right")))
+        XCTAssertEqual(model.menu?.selectedRow?.title, "Draw…")
+
+        XCTAssertTrue(model.handleKey(ActionKey(name: "return")))
+
+        try await wait("the draw") { saved("drawn") == "weather\n" }
     }
 
     func testTheSheetOfTheIconSpotOpensThoughItHasNoCard() async throws {
@@ -322,9 +366,9 @@ final class SpotVerbTests: XCTestCase {
     func testAHookOfAJavaScriptSpotShowsAnActionOnlyOnTheCardsItSaysYesTo() async throws {
         try script("weather", toml: "title = 'Weather'")
         try script("notes", toml: "title = 'Notes'")
-        let tools = spots.spotFile("tools", extension: "js")
+        let tools = core.appendingPathComponent("openspot.spot/tools.js")
         try FileManager.default.createDirectory(at: tools.deletingLastPathComponent(), withIntermediateDirectories: true)
-        try "function isWeather(id, origin) { return id === \"weather\" && origin === \"mine\" }\nfunction always() { return true }\n".writeInline(to: tools, toml: "title = 'Tools'\n[commands.star]\ntitle = 'Star'\noffers = ['actions']\nwhen = 'isWeather'\n[commands.mark]\ntitle = 'Mark'\noffers = ['actions']\nwhen = 'always'")
+        try "export default { isWeather({ item, origin }) { return item === \"weather\" && origin === \"mine\" }, always() { return true } }\n".writeInline(to: tools, toml: "title = 'Tools'\n\n[actions.star]\ntitle = 'Star'\noffers = ['actions']\nwhen = 'isWeather'\n[actions.mark]\ntitle = 'Mark'\noffers = ['actions']\nwhen = 'always'")
         let titles = { self.model.menu?.rows.map(\.title) ?? [] }
 
         _ = try await select("notes")
@@ -342,9 +386,9 @@ final class SpotVerbTests: XCTestCase {
 
     func testASlowHookLeavesTheMenuOpenAtOnceAndItsLateYesJoinsIt() async throws {
         try script("weather", toml: "title = 'Weather'")
-        let slow = spots.spotFile("slow", extension: "js")
+        let slow = core.appendingPathComponent("openspot.spot/slow.js")
         try FileManager.default.createDirectory(at: slow.deletingLastPathComponent(), withIntermediateDirectories: true)
-        try "function late() { const end = Date.now() + 300; while (Date.now() < end) {} return true }\n".writeInline(to: slow, toml: "title = 'Slow'\n[commands.late]\ntitle = 'Late'\noffers = ['actions']\nwhen = 'late'")
+        try "export default { late() { const end = Date.now() + 300; while (Date.now() < end) {} return true } }\n".writeInline(to: slow, toml: "title = 'Slow'\n\n[actions.late]\ntitle = 'Late'\noffers = ['actions']\nwhen = 'late'")
         _ = try await select("weather")
 
         let start = Date()
@@ -413,8 +457,8 @@ final class SpotVerbTests: XCTestCase {
     }
 
     func testTheSecretOfARemovedSpotGoesWithItAndComesBackWithItsUndo() async throws {
-        try script("weather", toml: "title = 'Weather'\n[settings.token]\ntype = 'secret'")
-        try script("clock", toml: "title = 'Clock'\n[settings.token]\ntype = 'secret'")
+        try script("weather", toml: "title = 'Weather'\n\n[settings]\ntoken = { type = 'secret' }")
+        try script("clock", toml: "title = 'Clock'\n\n[settings]\ntoken = { type = 'secret' }")
         try model.files.secrets.keep("weather-secret", key: "token", of: "weather")
         try model.files.secrets.keep("clock-secret", key: "token", of: "clock")
         await model.reload()
@@ -430,7 +474,7 @@ final class SpotVerbTests: XCTestCase {
     }
 
     func testTheFormOfASecretKeepsItInTheStoreNotTheConfigAndRefusesAShortOne() async throws {
-        try script("weather", toml: "title = 'Weather'\n[settings.token]\ntype = 'secret'")
+        try script("weather", toml: "title = 'Weather'\n\n[settings]\ntoken = { type = 'secret' }")
         await model.reload()
         model.isShown = true
         model.panelWillShow()
@@ -526,17 +570,36 @@ final class SpotVerbTests: XCTestCase {
         try script("clock", toml: "title = 'Clock'")
         _ = try await select("weather")
 
-        model.point(at: .card("clock"))
+        let middle = { (id: String) in
+            let index = try XCTUnwrap(self.model.visible.firstIndex { $0.id == id })
+            let rect = try XCTUnwrap(self.model.placements.first { $0.index == index }).rect
+            return CGPoint(x: rect.midX, y: rect.midY)
+        }
+
+        model.point(at: .grid(try middle("clock")))
         XCTAssertEqual(model.selectedEntry?.id, "clock")
 
         XCTAssertTrue(model.handleKey(ActionKey(name: "k", isCommand: true)))
-        model.point(at: .card("weather"))
+        model.point(at: .grid(try middle("weather")))
         XCTAssertEqual(model.selectedEntry?.id, "clock")
         model.closeMenu()
 
         model.beginEditing()
-        model.point(at: .card("weather"))
+        model.point(at: .grid(try middle("weather")))
         XCTAssertEqual(model.selectedEntry?.id, "clock")
+        XCTAssertEqual(model.pointedCard, "weather")
+        model.point(at: .grid(nil))
+        XCTAssertNil(model.pointedCard)
+    }
+
+    func testAPointBetweenCardsPointsAtNoCard() async throws {
+        try script("weather", toml: "title = 'Weather'")
+        _ = try await select("weather")
+        let rect = try XCTUnwrap(model.placements.first).rect
+
+        model.point(at: .grid(CGPoint(x: rect.maxX + SpotTokens.columnGap / 2, y: rect.midY)))
+
+        XCTAssertNil(model.pointedCard)
     }
 
     func testOpeningTheMenuDimsEachOtherCardOnceItGrows() async throws {
@@ -640,7 +703,7 @@ final class SpotVerbTests: XCTestCase {
     }
 
     func testACardOfAFileThatDoesNotLoadIsThePersonsAndCanBeDeleted() async throws {
-        try script("broken", toml: "mode = 'huge'")
+        try script("broken", toml: "answers = 'huge'")
         _ = try await select("broken")
         XCTAssertTrue(model.handleKey(ActionKey(name: "k", isCommand: true)))
         XCTAssertEqual(model.menu?.rows.filter { $0.action != nil }.map(\.title), ["Share", "Settings", "Edit", "Change Icon", "Delete"])

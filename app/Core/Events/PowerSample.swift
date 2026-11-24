@@ -9,7 +9,7 @@ public struct PowerSample: Equatable, Sendable {
         self.percent = percent
     }
 
-    public func event(after earlier: PowerSample?) -> SpotEvent? {
-        self == earlier ? nil : .named(SpotEvent.powerChange, value: source)
+    public func event(after earlier: PowerSample?) -> AppSignal? {
+        self == earlier ? nil : .named(EventName.powerChange, value: source)
     }
 }

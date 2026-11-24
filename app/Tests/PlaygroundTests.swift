@@ -7,7 +7,7 @@ final class PlaygroundTests: XCTestCase {
         let modes = try ["stay", "once", "inline"].map { mode in
             let file = folder.appendingPathComponent("\(mode).spot/\(mode).sh")
             try FileManager.default.createDirectory(at: file.deletingLastPathComponent(), withIntermediateDirectories: true)
-            try "mode = \"\(mode)\"\n".write(to: file.deletingLastPathComponent().appendingPathComponent("spot.toml"), atomically: true, encoding: .utf8)
+            try (mode == "stay" ? "stay = true\n" : "").write(to: file.deletingLastPathComponent().appendingPathComponent("spot.toml"), atomically: true, encoding: .utf8)
             try "#!/bin/sh\n".write(to: file, atomically: true, encoding: .utf8)
             return Playground.command(file: file).mode
         }
@@ -26,7 +26,7 @@ final class PlaygroundTests: XCTestCase {
         XCTAssertEqual(place("/p/spots/home.spot/cups.sh", "").id, "home/cups")
         XCTAssertEqual(place("/p/spots/cups.spot/cups.js", "").id, "cups")
         XCTAssertEqual(place("/elsewhere/tools/cups.sh", "").id, "cups")
-        XCTAssertEqual(place(nil, "function main() { return '' }\n").url.path, "/t/playground/playground.js")
+        XCTAssertEqual(place(nil, "export default { async show() { return '' } }\n").url.path, "/t/playground/playground.js")
         XCTAssertEqual(place(nil, "#!/bin/sh\n").id, "playground")
     }
 
@@ -38,15 +38,15 @@ final class PlaygroundTests: XCTestCase {
 
     func testTextDrawsASheetAndReportsItsFaults() {
         var playground = Playground()
-        playground.take(text: "frame=\ngrid=a\ngrid=a b\n\ntext=a\ntitle=A\n")
+        playground.take(text: "frame=\nclass=gap-part glow\n\ntext=a\ntitle=A\n")
 
         XCTAssertEqual(playground.panel?.parts.map(\.id), ["a"])
-        XCTAssertEqual(playground.faults, ["each grid line needs the same number of columns"])
+        XCTAssertEqual(playground.faults, ["the root has an unknown class: glow"])
     }
 
     func testTextThatDrawsNothingLeavesTheLastSheet() {
         var playground = Playground()
-        playground.take(text: "frame=\ngrid=a\n\ntext=a\ntitle=A\n")
+        playground.take(text: "frame=\nclass=gap-part\n\ntext=a\ntitle=A\n")
         playground.take(text: "gri")
 
         XCTAssertEqual(playground.panel?.parts.map(\.id), ["a"])
@@ -56,7 +56,7 @@ final class PlaygroundTests: XCTestCase {
 
     func testAChangeShowsAtOnceAndIsLogged() {
         var playground = Playground()
-        playground.take(text: "frame=\ngrid=a\n\nswitch=a\nvalue=false\n")
+        playground.take(text: "frame=\nclass=gap-part\n\nswitch=a\nvalue=false\n")
 
         playground.set("true", of: "a")
         playground.press("a")
@@ -68,10 +68,10 @@ final class PlaygroundTests: XCTestCase {
     func testAFrameOfAScriptShowsItsTextAndFaults() {
         var playground = Playground()
 
-        playground.note(frame: "frame=\ngrid=a\ngrid=a b\n\ntext=a\ntitle=A\n")
+        playground.note(frame: "frame=\nclass=gap-part glow\n\ntext=a\ntitle=A\n")
 
-        XCTAssertEqual(playground.text, "frame=\ngrid=a\ngrid=a b\n\ntext=a\ntitle=A\n")
-        XCTAssertEqual(playground.faults, ["each grid line needs the same number of columns"])
+        XCTAssertEqual(playground.text, "frame=\nclass=gap-part glow\n\ntext=a\ntitle=A\n")
+        XCTAssertEqual(playground.faults, ["the root has an unknown class: glow"])
         XCTAssertNil(playground.panel)
     }
 }

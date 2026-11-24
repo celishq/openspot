@@ -11,6 +11,9 @@ struct SpotItemsView: View {
     var onPoint: (SpotItem) -> Void = { _ in }
     var selection: (() -> Int)?
     var onDragOut: ([SpotItem]) -> Void = { _ in }
+    var failure: (String) -> String? = { _ in nil }
+    var tips: SpotsModel?
+    var shakes: (String) -> Int = { _ in 0 }
     var room = SpotTokens.listRoom
 
     private static var bottomFade: CGFloat { 2 * SpotTokens.padding }
@@ -76,7 +79,7 @@ struct SpotItemsView: View {
 
     private var scroll: some View {
         Group {
-            if list.isBento { bentoScroll } else if isGrid { grid } else { lineScroll }
+            if isGrid { grid } else { lineScroll }
         }
         .modifier(ItemsFade(bottom: Self.bottomFade))
         .padding(.vertical, -SpotTokens.padding)
@@ -130,58 +133,10 @@ struct SpotItemsView: View {
                     rowLabel(item)
                 }
                 .buttonStyle(.plain)
-                .modifier(SpotPointerMove { onPoint(item) })
                 .modifier(SpotFileDragSource(items: [item], hasFiles: item.file != nil, onDrop: onDragOut))
             }
         }
-    }
-
-    private var bentoScroll: some View {
-        let drawing = list.drawing
-        let side = SpotTokens.square(perLine: drawing.columns)
-        let step = side + SpotTokens.listRowGap
-        let lines = drawing.lineCount(rows: list.shown.count)
-        return ScrollViewReader { proxy in
-            ScrollView(showsIndicators: false) {
-                ZStack(alignment: .topLeading) {
-                    ForEach(Array(list.shown.enumerated()), id: \.element.run) { index, item in
-                        let area = drawing.area(of: index)
-                        bentoCell(item, size: Self.size(of: area, step: step))
-                            .id(item.run)
-                            .offset(x: CGFloat(area.x0) * step, y: CGFloat(area.y0) * step)
-                    }
-                }
-                .overlay(alignment: .topLeading) { BentoRing(selection: selected, count: list.shown.count, drawing: drawing, step: step) }
-                .frame(width: SpotTokens.partsWidth, height: max(CGFloat(lines) * step - SpotTokens.listRowGap, 0), alignment: .topLeading)
-                .padding(.top, SpotTokens.padding)
-                .padding(.bottom, bottomInset)
-            }
-            .modifier(ItemsFollow(selection: selected, items: list.shown, proxy: proxy, motion: SpotMotion.move))
-            .onChange(of: list.landedSearches) {
-                guard let run = list.shown.first?.run else { return }
-                DispatchQueue.main.async { proxy.scrollTo(run, anchor: .top) }
-            }
-        }
-    }
-
-    fileprivate static func size(of area: SheetArea, step: CGFloat) -> CGSize {
-        CGSize(
-            width: CGFloat(area.x1 - area.x0 + 1) * step - SpotTokens.listRowGap,
-            height: CGFloat(area.y1 - area.y0 + 1) * step - SpotTokens.listRowGap
-        )
-    }
-
-    private func bentoCell(_ item: SpotItem, size: CGSize) -> some View {
-        SpotItemIcon(item: item, size: min(size.width, size.height) * SpotTokens.tileIconShare)
-            .overlay(alignment: .bottomTrailing) { SpotToneDot(tone: item.tone, side: min(size.width, size.height) * SpotTokens.tileIconShare) }
-            .frame(width: size.width, height: size.height)
-        .background(SpotTheme.ink.opacity(SpotTheme.fill), in: row)
-        .contentShape(row)
-        .onTapGesture { onRun(item) }
-        .modifier(SpotPointerMove { onPoint(item) })
-        .modifier(SpotFileDragSource(items: [item], hasFiles: item.file != nil, onDrop: onDragOut))
-        .accessibilityLabel(item.title)
-        .accessibilityAddTraits(.isButton)
+        .modifier(SpotPointerMove(at: { [list, onPoint] in if let item = $0.flatMap({ list.lineItem(at: $0.y) }) { onPoint(item) } }))
     }
 
     private func rowLabel(_ item: SpotItem) -> some View {
@@ -207,6 +162,7 @@ struct SpotItemsView: View {
             if let shortcut = item.shortcut {
                 LiveKeyLabel(text: shortcut, isRecording: recording == item.run, words: recordingWords, keys: keys)
             }
+            ItemFailureMark(failure: { [failure, run = item.run] in failure(run) }, tips: tips, id: item.run)
             if item.isToggle {
                 ItemSwitch(isOn: item.isOn)
             } else if item.isOn {
@@ -221,6 +177,7 @@ struct SpotItemsView: View {
         .background(SpotTheme.ink.opacity(SpotTheme.fill), in: row)
         .modifier(SpotLiveSelectionRing(isSelected: { [selectedRun, run = item.run] in selectedRun() == run }, shape: row, marksMenu: true))
         .contentShape(row)
+        .modifier(SpotShake(count: { [shakes, run = item.run] in shakes(run) }))
     }
 }
 
@@ -232,6 +189,22 @@ private struct LiveKeyLabel: View {
 
     var body: some View {
         SpotKeyLabel(text: text, isRecording: isRecording, recordingWords: words, held: isRecording ? keys?.held ?? [] : [])
+    }
+}
+
+private struct ItemFailureMark: View {
+    let failure: () -> String?
+    let tips: SpotsModel?
+    let id: String
+
+    var body: some View {
+        if let text = failure() {
+            let mark = Image(systemName: "exclamationmark.triangle.fill")
+                .font(SpotType.body)
+                .foregroundStyle(SpotTheme.ink)
+                .accessibilityLabel("Last run failed")
+            if let tips { mark.modifier(SpotFailureTip(model: tips, id: id, text: text)) } else { mark }
+        }
     }
 }
 
@@ -266,26 +239,6 @@ private struct ItemsFade: ViewModifier {
                         .frame(height: bottom)
                 }
             }
-    }
-}
-
-private struct BentoRing: View {
-    @Environment(\.spotSurfaceEdge) private var surface
-    let selection: () -> Int
-    let count: Int
-    let drawing: RepeatDrawing
-    let step: CGFloat
-
-    var body: some View {
-        let index = selection()
-        if index < count {
-            let area = drawing.area(of: index)
-            let size = SpotItemsView.size(of: area, step: step)
-            Color.clear
-                .frame(width: size.width, height: size.height)
-                .modifier(SpotSelectionRing(isSelected: true, shape: SpotRoundShape(surface.inner()), marksMenu: true))
-                .offset(x: CGFloat(area.x0) * step, y: CGFloat(area.y0) * step)
-        }
     }
 }
 

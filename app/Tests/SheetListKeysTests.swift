@@ -3,8 +3,8 @@ import XCTest
 
 final class SheetListKeysTests: PanelCase {
     private func open(_ actions: String) async throws {
-        let frame = "frame=\\ngrid=files\\ngrid=import\\n\\nrepeat=files\\n\\nbutton=import\\ntitle=Import\\nlook=strong\\nshortcut=cmd+return\\n\(actions)\\ntext=a\\ntitle=A\\n\\ntext=b\\ntitle=B\\n"
-        try script("list", toml: "title = 'List'\non = ['sheet.open']", "printf '\(frame)'")
+        let frame = "frame=\\nclass=gap-part\\n\\nitems=files\\n\\nbutton=import\\ntitle=Import\\nclass=bg-accent\\nshortcut=cmd+return\\n\(actions)\\nitem=a\\nparent=files\\ntitle=A\\n\\nitem=b\\nparent=files\\ntitle=B\\n"
+        try script("list", toml: "title = 'List'\n[on]\n\"sheet.open\" = true", "printf '\(frame)'")
         await model.reload()
         model.isShown = true
         model.panelWillShow()
@@ -13,7 +13,7 @@ final class SheetListKeysTests: PanelCase {
     }
 
     func testTheActionsKeyOpensTheMenuThatTheFooterOffers() async throws {
-        try await open("\\nbutton=open\\ntitle=Select\\nclose=false\\n\\nbutton=change\\ntitle=Change Folder\\nshortcut=cmd+o\\nscope=spot\\n")
+        try await open("\\nbutton=press\\nparent=files\\ntitle=Select\\nclose=false\\n\\nbutton=change\\ntitle=Change Folder\\nshortcut=cmd+o\\nscope=spot\\n")
 
         XCTAssertTrue(model.hint.contains("⌘K Actions"), model.hint)
         XCTAssertTrue(model.handleKey(ActionKey(name: "k", isCommand: true)))
@@ -41,8 +41,8 @@ final class SheetListKeysTests: PanelCase {
     }
 
     func testALineMoveUnderAViewMovesTheSelectionThatTheViewReads() async throws {
-        let frame = "frame=\\ngrid=preview\\ngrid=files\\ngrid=import\\n\\nview=preview\\ngrow=false\\n\\nrepeat=files\\n\\nbutton=import\\ntitle=Import\\nlook=strong\\nshortcut=cmd+return\\n\\ntext=a\\ntitle=A\\n\\ntext=b\\ntitle=B\\n"
-        try script("list", toml: "title = 'List'\non = ['sheet.open']\nview = 'preview.swift'", "printf '\(frame)'")
+        let frame = "frame=\\nclass=gap-part\\n\\npreview=preview\\nclass=h-24 shrink-0\\n\\nitems=files\\n\\nbutton=import\\ntitle=Import\\nclass=bg-accent\\nshortcut=cmd+return\\n\\nitem=a\\nparent=files\\ntitle=A\\n\\nitem=b\\nparent=files\\ntitle=B\\n"
+        try script("list", toml: "title = 'List'\nviews = ['preview.swift']\n[on]\n\"sheet.open\" = true", "printf '\(frame)'")
         await model.reload()
         model.isShown = true
         model.panelWillShow()

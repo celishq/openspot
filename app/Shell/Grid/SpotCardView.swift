@@ -25,33 +25,28 @@ struct SpotCardView: View, @MainActor Equatable {
         ZStack(alignment: .topLeading) { content }
             .environment(\.spotIsOnSolid, isFilled)
             .environment(\.spotViewPlace, SpotViewPlace(model: model))
-            .padding(drawnView != nil && !isDrawn ? 0 : SpotTokens.cardPadding(for: size, isDrawn: isDrawn))
+            .environment(\.spotViewDates, entry.spot.viewDates)
+            .padding(SpotTokens.cardPadding(for: size, isDrawn: isDrawn))
             .frame(width: SpotTokens.width(columns: size.columns), height: SpotTokens.height(rows: size.rows), alignment: .topLeading)
             .background(shape(of: .dropFill).fill(SpotTheme.accent).opacity(dropFill))
             .modifier(CardPress(shape: shape(of: .press), isFilled: isFilled, showsPress: showsPress))
-            .modifier(SpotPointerMove { model.point(at: .card(entry.id)) })
             .overlay(Color.clear.modifier(CardRing(model: model, index: index, shape: shape(of: .ring))).allowsHitTesting(false))
-            .overlay(alignment: .topTrailing) { FailureMark(entry: entry, size: size) }
+            .overlay(alignment: .topTrailing) { FailureMark(model: model, entry: entry, size: size) }
             .modifier(SpotGlass(shape: shape(of: .glass), isSolid: isFilled))
             .contentShape(shape(of: .hit))
             .onTapGesture { if let onTap { onTap() } else { model.tap(entry.id, opening: NSEvent.modifierFlags.contains(.command)) } }
             .animation(SpotMotion.fade(isShown: isFilled), value: isFilled)
             .scaleEffect(showsPress ? MotionTokens.pressedScale : 1)
             .animation(SpotMotion.press, value: showsPress)
+            .modifier(SpotShake(count: { [model, entry] in model.refusals(of: entry.item?.run, in: entry.spot.id) }))
     }
 
     @ViewBuilder
     private var content: some View {
-        if drawsOwnCard, let layout = entry.state.face.layout(for: size) {
-            SpotCardDrawing(layout: layout, face: entry.state.face, card: size, view: { room in
-                ownView.map { SpotCustomView(source: $0, values: entry.state.values, card: size, room: room, date: entry.spot.viewDate, views: SpotViews.shared) }
-            }) { model.setCardPart(entry.id, $0, to: $1) }
-        } else if let view = drawnView {
-            SpotCustomView(source: view, values: entry.state.values, card: size, date: entry.spot.viewDate, views: SpotViews.shared)
+        if drawsOwnCard, entry.state.face.draws(on: size) {
+            CardTreeView(face: entry.state.face, size: size, isPressed: showsPress, model: model, index: index, spot: entry.id)
         } else {
-            words.background {
-                if let ownView { SpotCustomView(source: ownView, values: entry.state.values, card: size, date: entry.spot.viewDate, views: SpotViews.shared) }
-            }
+            words
         }
     }
 
@@ -66,26 +61,12 @@ struct SpotCardView: View, @MainActor Equatable {
         }
     }
 
-    private var ownView: String? {
-        drawsOwnCard && entry.state.face.hasView ? entry.spot.view : nil
-    }
-
-    private var drawnView: String? {
-        guard let ownView else { return nil }
-        if case .building = SpotViews.shared.phase(of: ownView) { return nil }
-        return ownView
-    }
-
     private var isDrawn: Bool {
-        drawsOwnCard && entry.state.face.layout(for: size) != nil
+        drawsOwnCard && entry.state.face.draws(on: size)
     }
 
     private var drawsOwnCard: Bool {
         entry.item == nil || entry.item?.card != nil
-    }
-
-    private var isBuildingView: Bool {
-        ownView != nil && drawnView == nil
     }
 
     private var showsPress: Bool {
@@ -150,8 +131,6 @@ struct SpotCardView: View, @MainActor Equatable {
             title
             if entry.kind == .slider {
                 slider
-            } else if isBuildingView {
-                detail("Building its view")
             } else if let subtitle = entry.shownState.subtitle {
                 detail(subtitle)
             }
@@ -227,11 +206,12 @@ private struct CardPress: ViewModifier {
 }
 
 private struct FailureMark: View {
+    let model: SpotsModel
     let entry: SpotsModel.Entry
     let size: SpotSize
 
     var body: some View {
-        if entry.failure != nil {
+        if let failure = model.failure(of: entry) {
             let inset = SurfaceEdge(card: size).rim - SpotTokens.cornerMark / 2
             let cap = SpotRoundShape(radius: SpotTokens.cornerMarkRadius)
             Image(systemName: "exclamationmark.triangle.fill")
@@ -242,7 +222,7 @@ private struct FailureMark: View {
                 .overlay(cap.strokeBorder(SpotTheme.ink.opacity(SpotTheme.track)))
                 .offset(x: -inset, y: inset)
                 .accessibilityLabel("Last run failed")
-                .allowsHitTesting(false)
+                .modifier(SpotFailureTip(model: model, id: entry.id, text: failure))
         }
     }
 }

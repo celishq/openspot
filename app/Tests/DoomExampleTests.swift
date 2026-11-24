@@ -109,14 +109,14 @@ final class DoomExampleTests: SampleSpotsCase {
     }
 
     @MainActor
-    private static func pictures(spots: URL, changes: [@Sendable () throws -> Void]) async throws -> [(picture: String?, sheet: [[String]]?)] {
+    private static func pictures(spots: URL, changes: [@Sendable () throws -> Void]) async throws -> [(picture: String?, sheet: [String]?)] {
         var time = Date(timeIntervalSince1970: 1000)
         let runs = SpotRuns(environment: TestEnvironment.values, clock: RunClock { time }, stopPause: 0.2)
         defer { runs.quit() }
         runs.take(try SpotsFolder(url: spots).scan())
         let sheet = try XCTUnwrap(runs.sheets["doom"])
         let log = FrameLog(sheet)
-        var pictures: [(picture: String?, sheet: [[String]]?)] = []
+        var pictures: [(picture: String?, sheet: [String]?)] = []
         for change in [{}] + changes {
             try change()
             time += 10
@@ -126,8 +126,8 @@ final class DoomExampleTests: SampleSpotsCase {
                 try await Task.sleep(for: .milliseconds(10))
             }
             runs.panelClosed()
-            let drawing = Frame(text: log.last ?? "").layout?.rows
-            pictures.append((sheet.state.face.hasView ? sheet.state.values["picture"]?.last : nil, drawing))
+            let tree = sheet.state.face
+            pictures.append((tree.node("screen")?.values["picture"]?.last, tree.isWritten ? tree.children : nil))
         }
         return pictures
     }
@@ -326,7 +326,7 @@ final class DoomExampleTests: SampleSpotsCase {
             ])
 
             XCTAssertEqual(pictures.map(\.picture), [nil, first.path, second.path])
-            XCTAssertEqual(pictures.map(\.sheet), [nil, [["screen"], ["play"]], [["screen"], ["play"]]])
+            XCTAssertEqual(pictures.map(\.sheet), [nil, ["screen", "play"], ["screen", "play"]])
             XCTAssertFalse(self.exists("fetched", in: folder))
             XCTAssertFalse(self.exists("compiled", in: folder))
             XCTAssertFalse(self.exists("played", in: folder))

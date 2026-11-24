@@ -16,18 +16,18 @@ final class SpotCheckTests: XCTestCase {
 
     func testAFindingNamesItsSpotItsFileAndItsFault() async throws {
         let file = folder.spotFile("weather")
-        try "#!/bin/sh\necho\n".writeScript(to: file, toml: "mode = 'huge'")
+        try "#!/bin/sh\necho\n".writeScript(to: file, toml: "answers = 'huge'")
 
         let findings = await SpotCheck(folder: SpotsFolder(url: folder)).findings()
 
-        XCTAssertEqual(findings, [SpotCheck.Finding(spot: "weather", file: file.path, fault: "Weather has an unknown mode: huge. Use once or stay")])
+        XCTAssertEqual(findings, [SpotCheck.Finding(spot: "weather", file: file.path, fault: "Weather has an unknown answers: huge. Use answers = \"last\" or answers = \"card\"")])
         let json = try JSONSerialization.jsonObject(with: Data(SpotCheck.json(findings).utf8)) as? [[String: String]]
-        XCTAssertEqual(json, [["spot": "weather", "file": file.path, "fault": "Weather has an unknown mode: huge. Use once or stay"]])
+        XCTAssertEqual(json, [["spot": "weather", "file": file.path, "fault": "Weather has an unknown answers: huge. Use answers = \"last\" or answers = \"card\""]])
     }
 
     func testTheTestsOfASpotAreNotCheckedAsASpot() async throws {
-        try "#!/bin/sh\necho text=a\necho title=A\n".writeScript(to: folder.spotFile("notes"), toml: "")
-        try "#!/bin/sh\nexit 1\n".writeScript(to: folder.appendingPathComponent("notes.spot/tests/run.sh"), toml: "mode = 'huge'")
+        try "#!/bin/sh\necho item=a\necho title=A\n".writeScript(to: folder.spotFile("notes"), toml: "")
+        try "#!/bin/sh\nexit 1\n".writeScript(to: folder.appendingPathComponent("notes.spot/tests/run.sh"), toml: "answers = 'huge'")
 
         let findings = await SpotCheck(folder: SpotsFolder(url: folder)).findings()
 
@@ -36,43 +36,44 @@ final class SpotCheckTests: XCTestCase {
 
     func testAValueWithANewLinePrintedByHandIsAFaultThatNamesTheHelper() async throws {
         let file = folder.spotFile("notes")
-        try "#!/bin/sh\nprintf 'text=a\\ntitle=one\\ntwo\\n\\ntext=b\\ntitle=B\\ntitle=C\\n'\n".writeScript(to: file, toml: "")
+        try "#!/bin/sh\nprintf 'item=a\\ntitle=one\\ntwo\\n\\nitem=b\\ntitle=B\\ntitle=C\\n'\n".writeScript(to: file, toml: "")
 
         let findings = await SpotCheck(folder: SpotsFolder(url: folder)).findings()
 
         XCTAssertEqual(findings.map(\.fault), [
-            "the block text=a has a line with no =, as a value with a new line prints. Print each value from data with openspot_kv, openspot_item or esc",
-            "the block text=b has title twice, as a value with a new line prints. Print each value from data with openspot_kv, openspot_item or esc"
+            "the block item=a has a line with no =, as a value with a new line prints. Print each value from data with openspot_kv, openspot_item or esc",
+            "the block item=b has title twice, as a value with a new line prints. Print each value from data with openspot_kv, openspot_item or esc"
         ])
     }
 
     func testACheckRunsTheShowOfASpotWithASheetAndNotOfASpotWithCommandsAndNoEvents() async throws {
         let notes = folder.spotFile("notes")
-        try "#!/bin/sh\nprintf 'text=a\\ntitle=one\\ntwo\\n'\n".writeScript(to: notes, toml: "title = 'Notes'")
-        try "#!/bin/sh\nprintf 'text=a\\ntitle=one\\ntwo\\n'\n".writeScript(to: folder.spotFile("move"), toml: "title = 'Move'\n[commands.left]\ntitle = 'Left'")
+        try "#!/bin/sh\nprintf 'item=a\\ntitle=one\\ntwo\\n'\n".writeScript(to: notes, toml: "title = 'Notes'")
+        try "#!/bin/sh\nprintf 'item=a\\ntitle=one\\ntwo\\n'\n".writeScript(to: folder.spotFile("move"), toml: "title = 'Move'\n\n[actions.left]\ntitle = 'Left'")
 
         let findings = await SpotCheck(folder: SpotsFolder(url: folder)).findings()
 
         XCTAssertEqual(findings.map(\.spot), ["notes"])
     }
 
-    func testAnEventThatNoSpotRaisesIsAFaultThatNamesTheFix() async throws {
-        try "#!/bin/sh\nprintf 'text=t\\ntitle=T\\n'\n".writeScript(to: folder.spotFile("song"), toml: "on = ['music.track', 'clipboard.change']")
-
-        let alone = await SpotCheck(folder: SpotsFolder(url: folder)).findings()
-        try "#!/bin/sh\n".writeScript(to: folder.spotFile("player"), toml: "emits = ['music.track']")
-        let named = await SpotCheck(folder: SpotsFolder(url: folder)).findings()
-
-        XCTAssertEqual(alone.map(\.fault), ["Song reads on music.track, which Openspot does not raise and no spot names in its emits. Add emits = [\"music.track\"] to the spot that raises it, or fix the name"])
-        XCTAssertEqual(named, [])
-    }
-
-    func testASpotThatReadsOnTheEventItRaisesIsWarned() async throws {
-        try "#!/bin/sh\nprintf 'text=t\\ntitle=T\\n'\n".writeScript(to: folder.spotFile("song"), toml: "title = 'Song'\non = ['music.track']\nemits = ['music.track']")
+    func testAnItemOrAnActionCannotTakeTheNameOfAHandler() async throws {
+        try "#!/bin/sh\nprintf 'item=search\\ntitle=Search\\n'\n".writeScript(to: folder.spotFile("bills"), toml: "title = 'Bills'")
+        try "#!/bin/sh\n".writeScript(to: folder.spotFile("tabs"), toml: "title = 'Tabs'\n\n[actions.show]\ntitle = 'Show'")
 
         let findings = await SpotCheck(folder: SpotsFolder(url: folder)).findings()
 
-        XCTAssertEqual(findings.map(\.fault), ["Song reads on music.track and raises it, so a raise from its read would read it again without end. Raise it from an action, or rename one of them"])
+        XCTAssertEqual(findings.map { "\($0.spot ?? ""): \($0.fault)" }.sorted(), [
+            "bills: an item cannot be called search",
+            "tabs: Tabs has [actions.show], which takes the name of a handler that its [on] calls. Give the action another ID"
+        ])
+    }
+
+    func testAnEventThatNoBindingNamesIsAFaultThatNamesTheFix() async throws {
+        try "#!/bin/sh\nprintf 'item=t\\ntitle=T\\n'\n".writeScript(to: folder.spotFile("song"), toml: "[on]\n\"music.track\" = true\n\"clipboard.change\" = true")
+
+        let findings = await SpotCheck(folder: SpotsFolder(url: folder)).findings()
+
+        XCTAssertEqual(findings.map(\.fault), ["Song has [on] music.track, which names no binding music. Add it to [bindings], such as music = { spot = \"<id>\" }"])
     }
 
     func testNoFaultIsAnEmptyList() async throws {
@@ -103,7 +104,7 @@ final class SpotCheckTests: XCTestCase {
 
     func testARowWithARouteThatTheSpotDoesNotTakeIsAFaultThatNamesThePagesLine() async throws {
         let file = folder.spotFile("clips")
-        try "#!/bin/sh\nprintf 'text=a\\nroute=text:a\\n\\ntext=c\\nroute=c\\n'\n".writeScript(to: file, toml: "pages = ['text:*']")
+        try "#!/bin/sh\nprintf 'item=a\\nroute=text:a\\n\\nitem=c\\nroute=c\\n'\n".writeScript(to: file, toml: "pages = ['text:*']")
 
         let findings = await SpotCheck(folder: SpotsFolder(url: folder)).findings()
 
@@ -114,7 +115,7 @@ final class SpotCheckTests: XCTestCase {
 
     func testAnEffectInTheRootIsAnUnknownKeyThatACheckReports() async throws {
         let root = "frame=\\ntoast=Saved\\nlink=https://a.b\\nselect=r\\npush=a\\npush.title=A\\npush.spot=b\\npush.replace=true\\npop=true\\n"
-        try "#!/bin/sh\nprintf '\(root)\\ntext=r\\n'\n".writeScript(to: folder.spotFile("old"), toml: "pages = ['*']")
+        try "#!/bin/sh\nprintf '\(root)\\nitem=r\\n'\n".writeScript(to: folder.spotFile("old"), toml: "pages = ['*']")
 
         let findings = await SpotCheck(folder: SpotsFolder(url: folder)).findings()
 
@@ -122,10 +123,27 @@ final class SpotCheckTests: XCTestCase {
     }
 
     func testABlockThatStartsWithAnEffectIsAnItemThatACheckCannotRead() async throws {
-        try "#!/bin/sh\nprintf 'toast=Saved\\n\\npop=true\\n\\ntext=r\\n'\n".writeScript(to: folder.spotFile("old"), toml: "")
+        try "#!/bin/sh\nprintf 'toast=Saved\\n\\npop=true\\n\\nitem=r\\n'\n".writeScript(to: folder.spotFile("old"), toml: "")
 
         let findings = await SpotCheck(folder: SpotsFolder(url: folder)).findings()
 
         XCTAssertEqual(findings.map(\.fault), ["cannot read the item toast=Saved", "cannot read the item pop=true"])
+    }
+
+    func testAViewNamedLikeAKindOfBlockIsReported() async throws {
+        let file = folder.spotFile("meter")
+        try "#!/bin/sh\n".writeScript(to: file, toml: "views = ['text.swift', 'dial.swift']")
+        for name in ["text.swift", "dial.swift"] {
+            try Data("struct SpotView {}\n".utf8).write(to: file.deletingLastPathComponent().appendingPathComponent(name))
+        }
+        let tools = folder.appendingPathComponent("tools")
+        try "#!/bin/sh\nexit 0\n".writeScript(to: tools.appendingPathComponent("xcode-select"))
+        try "#!/bin/sh\nwhile [ $# -gt 0 ]; do [ \"$1\" = -o ] && printf built > \"$2\"; shift; done\n".writeScript(to: tools.appendingPathComponent("swiftc"))
+        try "#!/bin/sh\nwhile [ $# -gt 0 ]; do [ \"$1\" = -output ] && printf both > \"$2\"; shift; done\n".writeScript(to: tools.appendingPathComponent("lipo"))
+        let views = ViewLibrary(cache: folder.appendingPathComponent("cache"), tools: tools)
+
+        let findings = await SpotCheck(folder: SpotsFolder(url: folder), views: views).findings()
+
+        XCTAssertEqual(findings.map(\.fault), ["the view text.swift has the name of the kind text, so a text block never reaches it. Rename the file"])
     }
 }

@@ -96,5 +96,10 @@ grid = false
 search = false
 
 [[spots]]
+id = "openspot/snooze"
+grid = false
+search = false
+
+[[spots]]
 id = "system"
 size = "large"

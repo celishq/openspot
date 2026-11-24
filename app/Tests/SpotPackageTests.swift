@@ -88,21 +88,21 @@ final class SpotPackageTests: XCTestCase {
     }
 
     func testAScriptTravelsWithItsWholeSpotFolderButNotItsHiddenFiles() throws {
-        try script("home.spot/coffee.sh")
-        try manifest("home.spot", "[scripts.coffee]\n")
+        try script("home.spot/home.sh")
+        try manifest("home.spot", "title = \"Home\"\n")
         try plain("home.spot/lib/shared.sh", Data("shared code\n".utf8))
         try plain("home.spot/.env", Data("TOKEN=1\n".utf8))
         try script("other.spot/other.sh")
 
-        let spot = try sharing("home/coffee")
+        let spot = try sharing("home")
 
-        XCTAssertEqual(spot.files.map(\.path).sorted(), ["home.spot/coffee.sh", "home.spot/lib/shared.sh", "home.spot/spot.toml"])
+        XCTAssertEqual(spot.files.map(\.path).sorted(), ["home.spot/home.sh", "home.spot/lib/shared.sh", "home.spot/spot.toml"])
         XCTAssertEqual(spot.files.first { $0.path == "home.spot/lib/shared.sh" }?.isExecutable, false)
     }
 
     func testASpotTravelsWithItsManifestAndLoadsWithItAtTheOtherEnd() throws {
         try script("weather.spot/weather.sh", "#!/bin/sh\necho 'text=t'\n")
-        try manifest("weather.spot", "title = \"Weather\"\non = [\"sheet.open\"]\n")
+        try manifest("weather.spot", "title = \"Weather\"\n\n[on]\n\"sheet.open\" = true\n")
 
         let read = try sent(sharing("weather"))
         try read.add(to: target)
@@ -112,12 +112,12 @@ final class SpotPackageTests: XCTestCase {
     }
 
     func testAFileThatIsNotTextTravelsWhenItDoesNotRun() throws {
-        try script("home.spot/coffee.sh")
-        try manifest("home.spot", "[scripts.coffee]\n")
+        try script("home.spot/home.sh")
+        try manifest("home.spot", "title = \"Home\"\n")
         let picture = Data([0x89, 0x50, 0x4E, 0x47, 0x00, 0xFF])
         try plain("home.spot/icon.png", picture)
 
-        let read = try sent(sharing("home/coffee"))
+        let read = try sent(sharing("home"))
 
         let icon = try XCTUnwrap(read.files.first { $0.path == "home.spot/icon.png" })
         XCTAssertEqual(icon.contents, picture)
@@ -144,11 +144,11 @@ final class SpotPackageTests: XCTestCase {
     }
 
     func testAFolderOverTheSizeLimitDoesNotTravel() throws {
-        try script("home.spot/coffee.sh")
-        try manifest("home.spot", "[scripts.coffee]\n")
+        try script("home.spot/home.sh")
+        try manifest("home.spot", "title = \"Home\"\n")
         try plain("home.spot/big.bin", Data(count: SpotPackage.shareLimit + 1))
 
-        XCTAssertThrowsError(try sharing("home/coffee")) { error in
+        XCTAssertThrowsError(try sharing("home")) { error in
             XCTAssertEqual((error as? SpotError)?.reason, "This spot is over the 25 MB limit.")
         }
     }
@@ -327,11 +327,11 @@ final class SpotPackageTests: XCTestCase {
 
     func testTheNoticeWarnsTheSenderAboutSecrets() throws {
         try script("weather.spot/weather.sh")
-        try script("home.spot/a.sh")
-        try manifest("home.spot", "[scripts.a]\n")
+        try script("home.spot/home.sh")
+        try manifest("home.spot", "title = \"A\"\n")
         try plain("home.spot/b", Data("b".utf8))
 
         XCTAssertEqual(try sharing("weather").notice(name: "Weather"), "Weather copied. Check it for secrets before you send it.")
-        XCTAssertEqual(try sharing("home/a").notice(name: "A"), "A copied, with 3 files. Check them for secrets before you send them.")
+        XCTAssertEqual(try sharing("home").notice(name: "A"), "A copied, with 3 files. Check them for secrets before you send them.")
     }
 }

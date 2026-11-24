@@ -22,6 +22,6 @@ public struct FrameRoot: Equatable, Sendable {
     }
 
     static func isKind(_ word: String, in kinds: [BlockKind]) -> Bool {
-        BlockKind.listWords.contains(word) || kinds.contains { $0.word == word || $0.name == word }
+        BlockKind.lists.contains { $0.word == word } || kinds.contains { $0.word == word || $0.name == word }
     }
 }

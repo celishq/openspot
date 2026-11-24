@@ -1,6 +1,16 @@
 icon = "link"
 detail = "Open a link"
-on = ["panel.open"]
 uses = ["network", "clipboard"]
-offers = ["search"]
 pages = ["query:*"]
+
+[actions.new]
+inputs.url = { type = "text", description = "example.com or ~/Downloads" }
+inputs.title = "text"
+
+[actions.import]
+inputs.links = { type = "text", required = true, description = "A JSON list of links, each with a title and a url" }
+outputs.added = { type = "text", required = true, description = "How many links it added, in words" }
+
+[on]
+"panel.open" = true
+search = true

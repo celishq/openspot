@@ -40,9 +40,9 @@ struct RaycastDataImport {
         guard !isDry else { return RaycastImport.Item(file: key, title: title, id: key, outcome: .added, reason: "\(list.count) to add to \(spot.name)") }
         let json = String(decoding: try JSONEncoder().encode(list), as: UTF8.self)
         var toast: String?
-        let input = TextBlock(fields: [.init(key: "input.\(key)", value: json)]).text
-        let end = await TerminalRun(spot: spot, arguments: ["import"], input: input, careful: nil, callers: nil, environment: environment, folder: nil).start { frame in
-            toast = TextBlock.blocks(in: frame).first { $0.fields.first == .init(key: "text", value: "added") }?.value("title") ?? toast
+        let run = TerminalRun(spot: spot, handler: "import", input: nil, inputs: [.init(key: key, value: json)], settings: [], careful: nil, callers: nil, environment: environment, folder: nil)
+        let end = await run.start { frame in
+            toast = TextBlock.blocks(in: frame).first?.value(RootKey.outputPrefix + "added") ?? toast
         }
         guard end.code == 0 else {
             let reason = end.errors.split(separator: "\n").last.map(String.init) ?? "it stopped with code \(end.code)"

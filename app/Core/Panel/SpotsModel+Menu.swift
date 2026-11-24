@@ -119,7 +119,7 @@ extension SpotsModel {
         guard openSheetID == nil, target.item == nil else { return [] }
         let spot = target.entry.spot
         let history: [CommandAction] = spot.keepsHistory ? [.history] : []
-        let commands = spot.opensToKeys || spot.soleCommand != nil ? [] : spot.offers.map(CommandAction.command)
+        let commands = spot.opensToKeys || spot.soleCommand != nil ? [] : spot.commands.map(CommandAction.command)
         return history + commands
     }
 
@@ -132,31 +132,29 @@ extension SpotsModel {
             var hidden: [String] = []
             for offer in spot.offeredActions {
                 let id = offer.action.id
-                func ask(_ hook: ActionHook) -> String? {
-                    answer(hook, of: offer, by: spot, on: target, origin: word, until: deadline, answers: &answers, asks: asks)
-                }
-                let shows = offer.fits(origin) && !hidden.contains { id.hasPrefix($0 + ".") } && (offer.hooks[.when] == nil || ask(.when)?.isEmpty == false)
-                if shows { shown.append(ask(.hotkey).map(offer.labeled) ?? offer) } else { hidden.append(id) }
+                let shows = offer.fits(origin) && !hidden.contains { id.hasPrefix($0 + ".") }
+                    && (offer.when == nil || answer(of: offer, by: spot, on: target, origin: word, until: deadline, answers: &answers, asks: asks)?.isEmpty == false)
+                if shows { shown.append(offer) } else { hidden.append(id) }
             }
         }
         return shown
     }
 
     private func answer(
-        _ hook: ActionHook, of offer: OfferedAction, by spot: Spot, on target: Target, origin: String, until deadline: DispatchTime, answers: inout HookAnswers, asks: Bool
+        of offer: OfferedAction, by spot: Spot, on target: Target, origin: String, until deadline: DispatchTime, answers: inout HookAnswers, asks: Bool
     ) -> String? {
-        guard let function = offer.hooks[hook] else { return nil }
-        if let text = answers.text(hook, of: offer, in: spot.id) { return text }
+        guard let handler = offer.when else { return nil }
+        if let text = answers.text(of: offer, in: spot.id) { return text }
         guard asks else { return nil }
         let card = target.entry.id
-        let now = runs.answer(function, of: spot, card: card, origin: origin, until: deadline) { [weak self] text in
+        let now = runs.answer(handler, of: spot, card: card, origin: origin, until: deadline) { [weak self] text in
             guard !text.isEmpty, let self, let session = menuSession, session.phase != .closing, session.target.entry.id == card, session.menu.parent == nil,
-                  session.answers.text(hook, of: offer, in: spot.id) == nil else { return }
+                  session.answers.text(of: offer, in: spot.id) == nil else { return }
             var answers = session.answers
-            answers.keep(text, for: hook, of: offer, in: spot.id)
+            answers.keep(text, of: offer, in: spot.id)
             remake(session, answers: &answers)
         }
-        if let now { answers.keep(now, for: hook, of: offer, in: spot.id) }
+        if let now { answers.keep(now, of: offer, in: spot.id) }
         return now
     }
 
@@ -211,10 +209,6 @@ extension SpotsModel {
     func pressMenu() {
         let isRunning = menu?.selectedRow.map { act(of: $0) != nil } ?? false
         guard let row = menu?.press(isRunning: isRunning), let target = menuTarget else { return }
-        if !isRunning, let action = row.action, action.isForm {
-            openForm(action, on: target)
-            return
-        }
         if let action = row.action, let owner = row.owner {
             return run(action, offeredBy: owner, on: target)
         }

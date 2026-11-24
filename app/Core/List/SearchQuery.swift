@@ -108,7 +108,7 @@ public struct SearchQuery: Equatable, Sendable {
     private static func match(_ word: [UInt32], title: FoldedText, keywords: SearchIndex.Texts, subtitle: FoldedText?, loose: Bool) -> Int? {
         let inTitle = title.place(of: word)
         if inTitle == .wordStart { return 2 }
-        if title.spellsAtWordStarts(word) { return 3 }
+        if title.spellsAtWordStarts(word) || title.spellsAcrossGaps(word) { return 3 }
         if inTitle == .inside { return 4 }
         if keywords.contains(where: { $0.letters.starts(with: word) }) { return 5 }
         switch subtitle?.place(of: word) {

@@ -11,6 +11,16 @@ final class FrameTests: XCTestCase {
         XCTAssertEqual(printed.errors, [])
     }
 
+    func testAPressButtonTitlesReturnAsAnOpenButtonDoes() {
+        let text = "button=press\ntitle=Copy\nclose=false\n\nitem=a\ntitle=A\n"
+        let frame = Frame(text: text)
+
+        XCTAssertEqual(frame.openTitle, "Copy")
+        XCTAssertEqual(frame.pick, .stay)
+        XCTAssertTrue(frame.actions.isEmpty)
+        XCTAssertEqual(FrameCheck(text: text).partFaults, [])
+    }
+
     func testSortsBlocksByTheKeyThatSaysWhatTheyAre() {
         let output = Frame(text: """
         frame=
@@ -21,12 +31,12 @@ final class FrameTests: XCTestCase {
         shortcut=cmd+return
         close=true
 
-        text=/Applications/Safari.app
+        item=/Applications/Safari.app
         title=Safari
         detail=Browser
         icon=/Applications/Safari.app
 
-        text=off
+        item=off
         title=Off
         icon=power
         """)
@@ -41,14 +51,14 @@ final class FrameTests: XCTestCase {
     }
 
     func testTheFirstKeyOfABlockNamesItsKind() {
-        let output = Frame(text: "frame=\ntitle=Places\n\ndetail=Late\ntext=kyiv\ntitle=Kyiv\n\ntext=lviv\ntitle=Lviv\n")
+        let output = Frame(text: "frame=\ntitle=Places\n\ndetail=Late\nitem=kyiv\ntitle=Kyiv\n\nitem=lviv\ntitle=Lviv\n")
 
         XCTAssertEqual(output.items.map(\.run), ["lviv"])
         XCTAssertEqual(output.errors, ["detail=Late"])
     }
 
     func testABlockOfAnUnknownKindBeforeTheRootIsSkippedAndReported() {
-        let output = Frame(text: "badge=new\ntitle=New\n\nframe=\ntitle=Mine\n\ntext=a\ntitle=A\n")
+        let output = Frame(text: "badge=new\ntitle=New\n\nframe=\ntitle=Mine\n\nitem=a\ntitle=A\n")
         let alone = Frame(text: "badge=new\ntitle=New\n")
 
         XCTAssertEqual(output.root?.value("title"), "Mine")
@@ -61,17 +71,17 @@ final class FrameTests: XCTestCase {
     }
 
     func testABlockThatStartsWithAKeyOfTheRootButNotFrameIsAnUnknownKind() {
-        let output = Frame(text: "title=Mine\ngrid=a\n\ntoast=Saved\n\ntext=a\ntitle=A\n")
+        let output = Frame(text: "title=Mine\nclass=gap-part\n\ntoast=Saved\n\nitem=a\ntitle=A\n")
 
         XCTAssertNil(output.root)
-        XCTAssertNil(output.layout)
+        XCTAssertNil(output.perLine)
         XCTAssertEqual(output.items.map(\.run), ["a"])
         XCTAssertEqual(output.errors, ["title=Mine", "toast=Saved"])
     }
 
     func testTheRootIsTheBlockThatStartsWithFrameAtAnyPlaceAndItsRouteMayBeEmpty() {
-        let first = Frame(text: "frame=\ntitle=Mine\nrecents=false\n\ntext=a\ntitle=A\n")
-        let after = Frame(text: "text=a\ntitle=A\n\nframe=photo/12\nrecents=false\n")
+        let first = Frame(text: "frame=\ntitle=Mine\nrecents=false\n\nitem=a\ntitle=A\n")
+        let after = Frame(text: "item=a\ntitle=A\n\nframe=photo/12\nrecents=false\n")
 
         XCTAssertEqual(first.root?.value("title"), "Mine")
         XCTAssertFalse(first.keepsRecent)
@@ -86,7 +96,6 @@ final class FrameTests: XCTestCase {
         title=New
         shortcut=cmd+n
         scope=spot
-        form=true
 
         button=delete
         title=Delete
@@ -94,7 +103,7 @@ final class FrameTests: XCTestCase {
         """)
 
         XCTAssertEqual(output.actions, [
-            CommandAction(id: "new", title: "New", key: ActionKey(text: "cmd+n"), scope: .spot, after: .close, isForm: true),
+            CommandAction(id: "new", title: "New", key: ActionKey(text: "cmd+n"), scope: .spot, after: .close),
             CommandAction(id: "delete", title: "Delete", after: .close, confirm: "Delete this?")
         ])
     }
@@ -107,8 +116,8 @@ final class FrameTests: XCTestCase {
         XCTAssertEqual(unknown.errors, [])
     }
 
-    func testTheOpenActionSetsTheWordForEnterAndThePick() {
-        let copy = Frame(text: "button=open\ntitle=Copy\nclose=false\n")
+    func testThePressActionSetsTheWordForEnterAndThePick() {
+        let copy = Frame(text: "button=press\ntitle=Copy\nclose=false\n")
 
         XCTAssertEqual(copy.actions, [])
         XCTAssertEqual(copy.openTitle, "Copy")
@@ -116,22 +125,10 @@ final class FrameTests: XCTestCase {
         XCTAssertEqual(Frame(text: "").pick, .close)
     }
 
-    func testAFormOnTheOpenActionAsksBeforeEachPick() {
-        XCTAssertEqual(
-            Frame(text: "button=open\ntitle=Open in Zed\nform=true\n").pickForm,
-            CommandAction(id: "open", title: "Open in Zed", after: .close, isForm: true)
-        )
-        XCTAssertEqual(
-            Frame(text: "button=open\nform=true\nclose=false\n").pickForm,
-            CommandAction(id: "open", title: "Open", after: .stay, isForm: true)
-        )
-        XCTAssertNil(Frame(text: "button=open\ntitle=Copy\n").pickForm)
-    }
-
     func testReportsARowWithNoIdAndABlockThatSaysNothing() {
-        let output = Frame(text: "text=\ndetail=x\n\nnot an item\n\ntext=1\ntitle=Kept\n")
+        let output = Frame(text: "item=\ndetail=x\n\nnot an item\n\nitem=1\ntitle=Kept\n")
 
-        XCTAssertEqual(output.errors, ["text=", "not an item"])
+        XCTAssertEqual(output.errors, ["item=", "not an item"])
         XCTAssertEqual(output.items.map(\.title), ["Kept"])
     }
 
@@ -139,8 +136,11 @@ final class FrameTests: XCTestCase {
         XCTAssertEqual(Frame(text: "frame=\ntitle=One\n\nframe=\ntitle=Two\n").errors, ["frame="])
     }
 
-    func testKeepsTheFirstItemOfEachRunValue() {
-        XCTAssertEqual(Frame(text: "text=same\ntitle=One\n\ntext=same\ntitle=Two\n").items.map(\.title), ["One"])
+    func testALaterItemWithTheIdOfAnEarlierOnePatchesIt() {
+        let items = Frame(text: "item=same\ntitle=One\ndetail=First\n\nitem=other\n\nitem=same\ntitle=Two\n").items
+
+        XCTAssertEqual(items.map(\.title), ["Two", "other"])
+        XCTAssertEqual(items.first?.subtitle, "First")
     }
 
     func testNoOutputIsNothing() {
@@ -151,8 +151,10 @@ final class FrameTests: XCTestCase {
     func testWhatItPrintsDecidesTheKindOfSpot() {
         XCTAssertEqual(Frame(text: "").kind, .list)
         XCTAssertEqual(Frame(text: "frame=\ntitle=Hi\n").kind, .list)
-        XCTAssertEqual(Frame(text: "switch=power\nvalue=true\n").kind, .toggle)
-        XCTAssertEqual(Frame(text: "field=volume\ntype=slider\nvalue=7\n").kind, .slider)
+        XCTAssertEqual(Frame(text: "switch=power\nvalue=true\n").kind, .list)
+        XCTAssertEqual(Frame(text: "switch=power\nvalue=true\nclass=card:flex\n").kind, .toggle)
+        XCTAssertEqual(Frame(text: "switch=power\nvalue=true\nclass=card:flex\n\nbutton=new\ntitle=New\n").kind, .toggle)
+        XCTAssertEqual(Frame(text: "field=volume\ntype=slider\nvalue=7\nclass=card:flex\n").kind, .slider)
         XCTAssertEqual(Frame(text: "switch=power\nvalue=true\n\ntext=a\ntitle=A\n").kind, .list)
         XCTAssertEqual(Frame(text: "button=new\ntitle=New\n").kind, .list)
     }
@@ -162,16 +164,16 @@ final class FrameTests: XCTestCase {
             try XCTUnwrap(MetricValue(output: Frame(text: text))).kind
         }
 
-        XCTAssertEqual(try kind("text=m\ntitle=3\n"), .value)
-        XCTAssertEqual(try kind("text=m\ntitle=3\nicon=star\ntone=good\n"), .value)
-        XCTAssertEqual(try kind("text=m\ntitle=Up\ntone=good\n"), .status)
-        XCTAssertEqual(try kind("number=m\nvalue=84\nmax=100\nunit=%\n"), .gauge)
-        XCTAssertEqual(try kind("number=m\nvalue=1\nvalue=2\n"), .trend)
-        XCTAssertEqual(try kind("text=Build\n\ntext=Test\n"), .rows)
+        XCTAssertEqual(try kind("item=m\ntitle=3\n"), .value)
+        XCTAssertEqual(try kind("item=m\ntitle=3\nicon=star\ntone=good\n"), .value)
+        XCTAssertEqual(try kind("item=m\ntitle=Up\ntone=good\n"), .status)
+        XCTAssertEqual(try kind("number=m\nvalue=84\nmax=100\nunit=%\ntype=ring\n"), .gauge)
+        XCTAssertEqual(try kind("series=m\nvalue=1,2\n"), .trend)
+        XCTAssertEqual(try kind("item=Build\n\nitem=Test\n"), .rows)
     }
 
-    func testANumberReadsItsBarsFromValueLines() throws {
-        let value = try XCTUnwrap(MetricValue(output: Frame(text: "number=m\nmax=10\nvalue=1\nvalue=2\n")))
+    func testASeriesReadsItsBarsFromItsValue() throws {
+        let value = try XCTUnwrap(MetricValue(output: Frame(text: "series=m\nmax=10\nvalue=1,2\n")))
 
         XCTAssertEqual(value.kind, .trend)
         XCTAssertEqual(value.number?.points, [1, 2])
@@ -179,10 +181,10 @@ final class FrameTests: XCTestCase {
     }
 
     func testRowsCountThemselvesUnlessATitleIsPrinted() throws {
-        let rows = "text=One\ndetail=2m\ntone=bad\n\ntext=Two\n"
+        let rows = "item=One\ndetail=2m\ntone=bad\n\nitem=Two\n"
 
         let counted = try XCTUnwrap(MetricValue(output: Frame(text: rows)))
-        let titled = try XCTUnwrap(MetricValue(output: Frame(text: "frame=\ngrid=m\n\ntext=m\ntitle=Many\n\n" + rows)))
+        let titled = try XCTUnwrap(MetricValue(output: Frame(text: "frame=\nclass=gap-part\n\ntext=m\ntitle=Many\n\nitems=list\n\nitem=One\nparent=list\n\nitem=Two\nparent=list\n")))
 
         XCTAssertEqual(counted.title, "2")
         XCTAssertEqual(counted.rows, [.init(title: "One", detail: "2m", tone: .bad), .init(title: "Two")])
@@ -190,7 +192,7 @@ final class FrameTests: XCTestCase {
     }
 
     func testATintIsAnUnknownKey() {
-        XCTAssertEqual(FrameCheck(text: "frame=\ngrid=m\n\ntext=m\ntitle=1\ntint=green\n").partFaults, ["the part m has an unknown key: tint"])
+        XCTAssertEqual(FrameCheck(text: "frame=\nclass=gap-part\n\ntext=m\ntitle=1\ntint=green\n").partFaults, ["the part m has an unknown key: tint"])
     }
 
     func testPrintingNothingHidesAMetric() {
@@ -200,7 +202,7 @@ final class FrameTests: XCTestCase {
 
     func testAReadingOfRowsCountsZeroWhenThereIsNothingToShow() throws {
         var reading = MetricReading(label: "Agents")
-        reading.take(try XCTUnwrap(MetricValue(output: Frame(text: "text=One\n\ntext=Two\n"))))
+        reading.take(try XCTUnwrap(MetricValue(output: Frame(text: "item=One\n\nitem=Two\n"))))
         reading.take(try XCTUnwrap(MetricValue(output: Frame(text: ""))))
 
         XCTAssertEqual(reading.kind, .rows)
@@ -216,6 +218,7 @@ final class FrameTests: XCTestCase {
     func testAFormHasOneBlockForEachField() {
         let form = ItemForm(output: Frame(text: """
         frame=
+        type=form
         title=New
 
         field=text
@@ -235,22 +238,25 @@ final class FrameTests: XCTestCase {
         ]))
     }
 
-    func testAFormNeedsATitleAndALabelForEachField() {
-        XCTAssertNil(ItemForm(output: Frame(text: "field=a\ntitle=A\n")))
-        XCTAssertNil(ItemForm(output: Frame(text: "frame=\ntitle=New\n\nfield=a\n")))
+    func testAFormNeedsTypeFormATitleAndALabelForEachField() {
+        XCTAssertNotNil(ItemForm(output: Frame(text: "frame=\ntype=form\ntitle=New\n\nfield=a\ntitle=A\n")))
+        XCTAssertNil(ItemForm(output: Frame(text: "frame=\ntitle=New\n\nfield=a\ntitle=A\n")))
+        XCTAssertNil(ItemForm(output: Frame(text: "frame=\ntype=form\n\nfield=a\ntitle=A\n")))
+        XCTAssertNil(ItemForm(output: Frame(text: "frame=\ntype=form\ntitle=New\n\nfield=a\n")))
+        XCTAssertEqual(Frame(text: "frame=\ntype=form\ntitle=New\n\nfield=a\ntitle=A\n").errors, [])
     }
 
     func testARowReadsEachKeyword() {
-        let output = Frame(text: "text=😀\ntitle=grinning face\nkeywords=happy, big smile,,\n")
+        let output = Frame(text: "item=😀\ntitle=grinning face\nkeywords=happy, big smile,,\n")
 
         XCTAssertEqual(output.items.first?.keywords, ["happy", "big smile"])
     }
 
     func testCardAndPadLinesDrawNothing() throws {
-        let output = Frame(text: "frame=\ngrid=a a\ncard=a\npad=7 8 9\n\ntext=a\ntitle=A\n")
+        let output = Frame(text: "frame=\nclass=gap-part\ncard=a\npad=7 8 9\n\ntext=a\ntitle=A\n")
 
         XCTAssertEqual(output.parts.map(\.id), ["a"])
-        XCTAssertEqual(output.layout?.rows, [["a", "a"]])
+        XCTAssertEqual(output.tree.children, ["a"])
     }
 
     func testABlockThatNamesAKindOfTheAppItselfIsUnreadable() {
@@ -266,25 +272,51 @@ final class FrameTests: XCTestCase {
     }
 
     func testARowDrawsItsOwnKeys() throws {
-        let output = Frame(text: "text=r\ntitle=R\nas=big\nname=Big\n")
+        let output = Frame(text: "item=r\ntitle=R\nas=big\nname=Big\n")
 
         let row = try XCTUnwrap(output.items.first)
-        XCTAssertEqual(row, SpotItem(title: "R", run: "r", fields: [.init(key: "text", value: "r"), .init(key: "title", value: "R"), .init(key: "as", value: "big"), .init(key: "name", value: "Big")]))
+        XCTAssertEqual(row, SpotItem(title: "R", run: "r", fields: [.init(key: "item", value: "r"), .init(key: "title", value: "R"), .init(key: "as", value: "big"), .init(key: "name", value: "Big")]))
     }
 
     func testANumberWithAMaxFillsAFieldTypeIsItsInputAndAnOldKindIsReported() throws {
-        let output = Frame(text: "frame=\ngrid=g\ngrid=s\ngrid=k\ngrid=t\ngrid=w\n\nnumber=g\nvalue=50\nmax=100\n\nfield=s\ntype=slider\nvalue=40\n\nfield=k\ntype=hotkey\nvalue=ctrl+k\n\nswitch=t\ntype=tick\n\nswitch=w\nlook=tick\n\ngauge=old\nvalue=1\n")
+        let output = Frame(text: "frame=\nclass=gap-part\n\nnumber=g\nvalue=50\nmax=100\n\nfield=s\ntype=slider\nvalue=40\n\nfield=k\ntype=hotkey\nvalue=ctrl+k\n\nswitch=t\ntype=tick\n\nswitch=w\nlook=tick\n\ngauge=old\nvalue=1\n")
 
         XCTAssertEqual(try XCTUnwrap(output.parts.first?.number).fill, 0.5)
         XCTAssertEqual(output.parts.dropFirst().map(\.control), [.slider(level: 40, min: 0, max: 100), .shortcut("ctrl+k"), .toggle(false), .toggle(false)])
-        XCTAssertEqual(output.parts.map(\.look), [nil, nil, nil, .tick, nil])
+        XCTAssertEqual(output.parts.map(\.isTick), [false, false, false, true, false])
         XCTAssertEqual(output.errors, ["gauge=old"])
     }
 
     func testASwitchItemIsAToggleThatShowsWhetherItIsOn() {
-        let items = Frame(text: "switch=on\nvalue=true\n\nswitch=off\nvalue=false\n\ntext=picked\nvalue=true\n\ntext=plain\n").items
+        let items = Frame(text: "switch=on\nvalue=true\n\nswitch=off\nvalue=false\n\nitem=picked\nvalue=true\n\nitem=plain\n").items
 
         XCTAssertEqual(items.map(\.isToggle), [true, true, false, false])
         XCTAssertEqual(items.map(\.isOn), [true, false, true, false])
+    }
+
+
+    func testAnItemInAGridShowsItsWordsUnlessItsClassHidesThem() {
+        let output = Frame(text: "items=list\nclass=grid grid-cols-3\n\nitem=a\nparent=list\ntitle=A\n\nitem=b\nparent=list\ntitle=B\nclass=sr-only\n")
+
+        XCTAssertEqual(output.items.map(\.showsWords), [true, false])
+    }
+
+    func testTheRootNamesTheValueWhenTheCardShowsMoreThanOne() {
+        let blocks = "number=cpu\nvalue=12\nclass=card:flex bar:flex\n\nnumber=memory\nvalue=40\nclass=card:flex bar:flex\n"
+        let named = Frame(text: "frame=\nvalue=memory\n\n" + blocks)
+        let check = FrameCheck(text: "frame=\n\n" + blocks)
+
+        XCTAssertEqual(named.value?.value("number"), "memory")
+        XCTAssertEqual(named.barred.value?.value("number"), "memory")
+        XCTAssertNil(check.output.value)
+        XCTAssertEqual(check.output.barred.value?.value("number"), "cpu")
+        XCTAssertEqual(check.partFaults, ["the card shows more than one value: cpu, memory. Name the one it stands for with value= in the root"])
+        XCTAssertEqual(FrameCheck(text: "frame=\nvalue=memory\n\n" + blocks).partFaults, [])
+    }
+
+    func testASecondButtonWithTheIdOfAScopedButtonChangesIt() {
+        let output = Frame(text: "button=rename\ntitle=Rename\nscope=spot\n\nbutton=rename\ntitle=Rename it\n")
+
+        XCTAssertEqual(output.actions.map(\.title), ["Rename it"])
     }
 }

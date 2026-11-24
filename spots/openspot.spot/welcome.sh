@@ -48,41 +48,39 @@ card() {
 }
 
 # Prints the heading of a page, which welcome.swift draws: its words in large type, the words under them, then a hand-drawn
-# note when it names one. It keeps the height of its grid lines.
+# note when it names one. It is as tall as the class $1 says.
 heading() {
-  printf '\nview=head\ngrow=false\ntitle=%s\ndetail=%s\n' "$1" "$2"
-  [ -z "${3-}" ] || printf 'note=%s\n' "$3"
+  printf '\nwelcome=head\nclass=%s\ngrow=false\ntitle=%s\ndetail=%s\n' "$1" "$2" "$3"
+  [ -z "${4-}" ] || printf 'note=%s\n' "$4"
 }
 
 # Prints the first page: what a spot is, a handwritten "even this onboarding" in the accent colour, then Continue.
 welcome() {
-  printf 'frame=\ngrid=head head head head\ngrid=head head head head\ngrid=head head head head\ngrid=head head head head\n'
-  printf 'grid=next next next next\n'
-  heading 'Everything is a disposable spot' 'Make a script or an app for anything. Keep it, throw it away, or share it in one click.'
+  printf 'frame=\nclass=gap-part\n'
+  heading h-44 'Everything is a disposable spot' 'Make a script or an app for anything. Keep it, throw it away, or share it in one click.'
   printf 'icon=%s/even-this-onboarding.svg\n' "$here"
-  printf '\nbutton=next\ntitle=Continue\nlook=strong\nshortcut=return\nclose=false\n'
+  printf '\nbutton=next\ntitle=Continue\nclass=bg-accent\nshortcut=return\nclose=false\n'
 }
 
 # Prints the key page: the chosen key, or the key that opens Openspot, then Use this key and Record another key. With an argument, the field records at once.
 keys() {
   shown=$(chosen)
-  printf 'frame=key\ngrid=head head head head\ngrid=head head head head\ngrid=key key key key\ngrid=key key key key\ngrid=key key key key\ngrid=use use use use\ngrid=record record record record\n'
-  heading 'Choose your key' 'It opens Openspot from any app.'
-  printf '\nfield=key\ntype=hotkey\n'
+  printf 'frame=key\nclass=gap-part\n'
+  heading h-24 'Choose your key' 'It opens Openspot from any app.'
+  printf '\nfield=key\nclass=h-32\ntype=hotkey\n'
   openspot_kv value "${shown:-$now}"
   [ -z "${1-}" ] || printf 'recording=true\n'
-  printf '\nbutton=use\ntitle=Use this key\nlook=strong\nshortcut=return\nclose=false\n'
+  printf '\nbutton=use\ntitle=Use this key\nclass=bg-accent\nshortcut=return\nclose=false\n'
   printf '\nbutton=record\ntitle=Record another key\nshortcut=escape\nclose=false\n'
 }
 
 # Prints the last page: the two things to try, a spot of your own and a change by your agent, then Start using Openspot.
 agent() {
-  printf 'frame=agent\ngrid=head head head head\ngrid=head head head head\ngrid=head head head head\ngrid=head head head head\n'
-  printf 'grid=head head head head\ngrid=head head head head\ngrid=done done done done\n'
-  heading 'Make it yours' 'Easily, with any of your favourite agents' "$here/note-and-pls.svg"
+  printf 'frame=agent\nclass=gap-part\n'
+  heading h-72 'Make it yours' 'Easily, with any of your favourite agents' "$here/note-and-pls.svg"
   card 'Create your own spot' 'Open New spot and describe it.' plus "$here/note-1.svg"
   card 'Change it with your agent' 'Select it and press ⌘E.' pencil "$here/note-2.svg"
-  printf '\nbutton=done\ntitle=Start using Openspot\nlook=strong\nshortcut=return\nclose=false\n'
+  printf '\nbutton=done\ntitle=Start using Openspot\nclass=bg-accent\nshortcut=return\nclose=false\n'
 }
 
 case "$1" in
@@ -95,7 +93,7 @@ case "$1" in
     ;;
   next) openspot route push key --title 'Choose your key' ;;
   key)
-    printf '%s\n' "$2" > "$keyfile"
+    printf '%s\n' "$(value value)" > "$keyfile"
     current
     keys
     ;;

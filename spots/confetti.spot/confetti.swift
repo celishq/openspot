@@ -61,7 +61,7 @@ func look(_ call: Call) {
     let picked = call.arguments.dropFirst().first ?? call.value("input.look") ?? ""
     let current = shelf.chosen(call.value("setting.look"))
     guard shelf.ids.contains(picked) else {
-        var form = "frame=\ntitle=Look\n\nchoice=look\ntitle=Look\nvalue=\(current)\n"
+        var form = "frame=\ntype=form\ntitle=Look\n\nchoice=look\ntitle=Look\nvalue=\(current)\n"
         for id in shelf.ids { form += "\noption=\(id)\ntitle=\(Link.value(shelf.title(of: id)))\n" }
         Link.frame(form)
         return Link.end(call.id)
@@ -83,7 +83,7 @@ func look(_ call: Call) {
 Link.listen { call in
     Link.start(call.id)
     switch call.arguments.first {
-    case "play", "open": play(shelf.chosen(call.value("setting.look")), call: call.id)
+    case "play": play(shelf.chosen(call.value("setting.look")), call: call.id)
     case "look": look(call)
     default: Link.end(call.id)
     }

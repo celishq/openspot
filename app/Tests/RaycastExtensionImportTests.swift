@@ -42,7 +42,7 @@ final class RaycastExtensionImportTests: XCTestCase {
 
     private func answer(_ arguments: [String]) async throws -> CommandAnswer {
         let call = try XCTUnwrap(CommandLineCall(arguments: arguments, environment: environment))
-        let work = try XCTUnwrap(CommandAPI(mac: Mac(), places: .test(environment), rates: .offline).work(for: call, request: .test(arguments, in: environment), input: { "" }))
+        let work = try XCTUnwrap(CommandAPI(mac: Mac(), places: .test(environment)).work(for: call, request: .test(arguments, in: environment), input: { "" }))
         return await work()
     }
 
@@ -55,7 +55,7 @@ final class RaycastExtensionImportTests: XCTestCase {
         let rows = blocks(answer)
 
         XCTAssertEqual(answer.code, 0, answer.errors)
-        XCTAssertEqual(rows.map { "\($0.value("text") ?? "") \($0.value("outcome") ?? "") \($0.value("spot") ?? "")" }, [
+        XCTAssertEqual(rows.map { "\($0.value("item") ?? "") \($0.value("outcome") ?? "") \($0.value("spot") ?? "")" }, [
             "caffeinate get caffeinate",
             "translate use translate",
             "spotify-player get now-playing",

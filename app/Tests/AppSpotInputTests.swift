@@ -10,8 +10,8 @@ final class AppSpotInputTests: BuiltInCase {
         XCTAssertGreaterThan(scripts.count, 4)
 
         for script in scripts {
-            for arguments in [["show"], [text], ["show", text]] {
-                _ = try? await runs.answer(of: script, SpotAction(arguments: arguments), input: "route=\(text)\nevent.value=\(text)\ninput.id=\(text)\ninput.value=\(text)\n", limit: 30)
+            for handler in ["show", text] {
+                _ = try? await runs.answer(of: script, handler, input: "route=\(text)\nevent.value=\(text)\ninput.id=\(text)\ninput.value=\(text)\n", limit: 30)
             }
         }
 

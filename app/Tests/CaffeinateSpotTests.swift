@@ -171,12 +171,12 @@ final class CaffeinateSpotTests: XCTestCase {
         let sheet = try sheet()
         try await wait("the custom row") { self.row("custom", in: sheet) != nil }
         let item = try XCTUnwrap(row("custom", in: sheet))
-        let open = try XCTUnwrap(item.form)
 
-        let form = try await sheet.form(open, item: item)
-        var draft = FormDraft(form: try XCTUnwrap(form))
+        guard case .form(let form) = await sheet.answer(toPick: item) else { return XCTFail("Custom… asked with no form") }
+        try await wait("the end of the call that asked") { sheet.calls.isEmpty }
+        var draft = FormDraft(form: form)
         draft.set("45", for: "minutes")
-        _ = try await sheet.submit(open, item: item, draft: draft)
+        _ = try await sheet.submit(CommandAction(id: ScriptEntry.press.name, title: item.title), item: item, draft: draft)
 
         try await wait("caffeinate") { self.running().count == 1 }
         XCTAssertEqual(flags(), ["-di -t 2700"])
@@ -277,13 +277,13 @@ final class CaffeinateSpotTests: XCTestCase {
 
         try await wait("the time left on the card") { sheet.shownState.subtitle == "30m left" }
         XCTAssertEqual(running().count, 1)
-        XCTAssertEqual(sheet.calls.map(\.action.arguments), [["open", "1800"]])
+        XCTAssertEqual(sheet.calls.map(\.key), ["call:press\n1800"])
         XCTAssertEqual(sheet.list.all.first?.run, "off")
     }
 
     private func start(in sheet: SpotRun) async throws -> CommandAction {
-        try await wait("the button to start") { sheet.spot.actions.contains { $0.id == "start" } }
-        let start = try XCTUnwrap(sheet.spot.actions.first { $0.id == "start" })
+        try await wait("the button to start") { sheet.spot.frameActions.contains { $0.id == "start" } }
+        let start = try XCTUnwrap(sheet.spot.frameActions.first { $0.id == "start" })
         XCTAssertEqual(start.placeholder, "Minutes, such as 45")
         return start
     }
@@ -298,6 +298,18 @@ final class CaffeinateSpotTests: XCTestCase {
         try await wait("caffeinate") { self.running().count == 1 }
         XCTAssertEqual(flags(), ["-di -t 2700"])
         try await wait("the toast") { self.lines("toasts").last == "Caffeinate is on for 45 minutes" }
+    }
+
+    func testKeepAwakeForWithNoMinutesAsksWithTheFormOfTheSpot() async throws {
+        let sheet = try sheet()
+        let start = try await start(in: sheet)
+
+        let answer = try await sheet.launch(start, search: SearchQuery(text: "", layouts: []))
+
+        guard case .form(let form) = answer else { return XCTFail("no form: \(answer)") }
+        XCTAssertEqual(form.title, "Keep the Mac awake")
+        XCTAssertEqual(form.fields.map(\.label), ["Minutes"])
+        XCTAssertTrue(running().isEmpty)
     }
 
     func testTextThatIsNoNumberShowsAnErrorAndTheDurations() async throws {
@@ -333,7 +345,7 @@ final class CaffeinateSpotTests: XCTestCase {
         try await pick("7200", in: sheet)
 
         try await wait("one new caffeinate") { self.awake().count == 2 && self.running().count == 1 }
-        try await wait("the one call") { sheet.calls.map(\.action.arguments) == [["open", "7200"]] }
+        try await wait("the one call") { sheet.calls.map(\.key) == ["call:press\n7200"] }
         XCTAssertEqual(running(), [awake()[1]])
     }
 

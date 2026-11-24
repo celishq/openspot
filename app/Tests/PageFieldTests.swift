@@ -4,13 +4,13 @@ import XCTest
 final class PageFieldTests: PanelCase {
     func testTextTypedOnAPushedPageStaysWhenTheSpotAnswersNothing() async throws {
         let log = try temporaryFolder().appendingPathComponent("calls")
-        try script("links", toml: "title = 'Links'\non = ['sheet.open']\npages = ['query:*']", """
+        try script("links", toml: "title = 'Links'\npages = ['query:*']\n[on]\n\"sheet.open\" = true", """
         echo "$*" >> '\(log.path)'
         case "$1" in
           show)
-            case "$(sed -n 's/^route=//p')" in
-              query:*) printf 'frame=query:g\\ngrid=query\\ngrid=go\\n\\nfield=query\\ntitle=Search\\ngrow=false\\n\\nbutton=go\\ntitle=Open\\nlook=strong\\n' ;;
-              *) printf 'text=g\\ntitle=Google\\nroute=query:g\\n' ;;
+            case "$(sed -n 's/^input.route=//p')" in
+              query:*) printf 'frame=query:g\\nclass=gap-part\\n\\nfield=query\\ntitle=Search\\n\\nbutton=go\\ntitle=Open\\nclass=bg-accent\\n' ;;
+              *) printf 'item=g\\ntitle=Google\\nroute=query:g\\n' ;;
             esac
             ;;
         esac
@@ -25,7 +25,7 @@ final class PageFieldTests: PanelCase {
         let field = try XCTUnwrap(model.openParts?.parts.first)
 
         model.setPart(field, to: "hel")
-        try await wait("the call and the read after it") { ((try? String(contentsOf: log, encoding: .utf8)) ?? "").hasSuffix("query hel\nshow\n") }
+        try await wait("the call and the read after it") { ((try? String(contentsOf: log, encoding: .utf8)) ?? "").hasSuffix("query\nshow\n") }
 
         XCTAssertEqual(model.openParts?.parts.map(\.id), ["query", "go"])
         XCTAssertEqual(model.openParts?.parts.first?.value, "hel")

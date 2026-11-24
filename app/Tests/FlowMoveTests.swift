@@ -10,7 +10,7 @@ final class FlowMoveTests: PanelCase {
         client = folder.appendingPathComponent("A.app/Contents/Helpers/openspot")
         try FileManager.default.createDirectory(at: client.deletingLastPathComponent(), withIntermediateDirectories: true)
         try FileManager.default.copyItem(at: Bundle(for: Self.self).bundleURL.deletingLastPathComponent().appendingPathComponent("openspot"), to: client)
-        model.runs.api = CommandAPI(mac: Mac(), places: model.files, app: ModelApp(model: model), runs: model.runs, rates: .offline)
+        model.runs.api = CommandAPI(mac: Mac(), places: model.files, app: ModelApp(model: model), runs: model.runs)
     }
 
     func openFlowSpot() async throws {
@@ -19,15 +19,15 @@ final class FlowMoveTests: PanelCase {
         model.isShown = true
         model.panelWillShow()
         model.press("flow")
-        try await wait("the flow") { self.model.transition.phase == .open && self.titles == ["Page first"] && self.model.sheets["flow"]?.spot.actions.count == 5 }
+        try await wait("the flow") { self.model.transition.phase == .open && self.titles == ["Page first"] && self.model.sheets["flow"]?.spot.frameActions.count == 5 }
     }
 
     private func writeFlow() throws {
         try script("flow", toml: "title = 'Flow'\npages = ['n*', 'swapped']", """
         os='\(client.path)'
-        page=$(sed -n 's/^route=//p')
+        page=$(sed -n 's/^input\\.route=//p')
         case "$1" in
-          show) printf 'button=done\\ntitle=Done\\nscope=spot\\n\\nbutton=top\\ntitle=Top\\nscope=spot\\n\\nbutton=next\\ntitle=Next\\nscope=spot\\n\\nbutton=swap\\ntitle=Swap\\nscope=spot\\n\\nbutton=leave\\ntitle=Leave\\nscope=spot\\n\\ntext=x\\ntitle=Page %s\\n' "${page:-first}" ;;
+          show) printf 'button=done\\ntitle=Done\\nscope=spot\\n\\nbutton=top\\ntitle=Top\\nscope=spot\\n\\nbutton=next\\ntitle=Next\\nscope=spot\\n\\nbutton=swap\\ntitle=Swap\\nscope=spot\\n\\nbutton=leave\\ntitle=Leave\\nscope=spot\\n\\nitem=x\\ntitle=Page %s\\n' "${page:-first}" ;;
           done) "$os" route back ;;
           top) "$os" route back --root ;;
           leave) "$os" route close ;;
@@ -38,12 +38,12 @@ final class FlowMoveTests: PanelCase {
     }
 
     private func openFlowSheetInPlace() async throws {
-        try await wait("the flow over the list") { self.model.openSheetID == "flow" && self.titles == ["Page first"] && self.model.sheets["flow"]?.spot.actions.count == 5 }
+        try await wait("the flow over the list") { self.model.openSheetID == "flow" && self.titles == ["Page first"] && self.model.sheets["flow"]?.spot.frameActions.count == 5 }
     }
 
     private func pressFlow(_ id: String) throws {
         let sheet = try XCTUnwrap(model.sheets["flow"])
-        sheet.run(try XCTUnwrap(sheet.spot.actions.first { $0.id == id }), item: nil)
+        sheet.run(try XCTUnwrap(sheet.spot.frameActions.first { $0.id == id }), item: nil)
     }
 
     func testAPressPushesAPageOfItsSpotAndGoesBackAndToTheFirstSheet() async throws {
@@ -173,7 +173,7 @@ final class FlowMoveTests: PanelCase {
 
     func testAPushOfAPageThatTheSpotDoesNotTakeMovesNothingAndSaysSo() async throws {
         try await openList()
-        try script("narrow", toml: "title = 'Narrow'\npages = ['ok:*']", "printf 'text=n\\ntitle=N\\n'")
+        try script("narrow", toml: "title = 'Narrow'\npages = ['ok:*']", "printf 'item=n\\ntitle=N\\n'")
         await model.reload()
 
         XCTAssertTrue(model.push(FlowSheet(spot: "narrow", route: "bad")))

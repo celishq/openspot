@@ -227,7 +227,21 @@ public struct Config: Equatable, Sendable {
             choice.panel = GridPanel(rawValue: name).flatMap { $0 == .center ? nil : $0 }
             if choice.panel == nil { faults.append("config.toml: \(id) cannot use the side \(name).") }
         }
-        for key in table.keys.sorted() where !["id", "size", "grid", "search", "enabled", "global", "tray", "window", "letter", "key", "side"].contains(key) {
+        switch table["commands"] {
+        case .table(let pairs)?:
+            var words: [String: String] = [:]
+            for (name, value) in pairs {
+                guard case .string(let word) = value else {
+                    faults.append("config.toml: \(id) commands takes a word for each command, such as commands = { snooze = \"sz\" }, or \"\" to remove it.")
+                    continue
+                }
+                words[name] = word
+            }
+            choice.commands = words
+        case nil: break
+        default: faults.append("config.toml: \(id) commands takes a word for each command, such as commands = { snooze = \"sz\" }, or \"\" to remove it.")
+        }
+        for key in table.keys.sorted() where !["id", "size", "grid", "search", "enabled", "global", "tray", "window", "letter", "key", "side", "commands"].contains(key) {
             faults.append("config.toml: \(key) is not a setting of a spot.")
         }
         return choice

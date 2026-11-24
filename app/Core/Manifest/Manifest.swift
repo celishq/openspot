@@ -3,23 +3,29 @@ import Foundation
 public struct Manifest: Equatable, Sendable {
     public static let fileName = "spot.toml"
     public static let keys: Set<String> = [
-        "title", "icon", "detail", "keywords", "placeholder", "on", "emits", "offers", "drop", "edits", "starts", "view", "source", "mode",
-        "uses", "pages", "answers"
+        "title", "icon", "detail", "keywords", "edits", "starts", "views", "source", "uses", "pages", "answers", "stay"
     ]
-    public static let tables: Set<String> = [Command.table, Setting.table]
+    public static let tables: Set<String> = [Setting.table, Action.table, Binding.table, Event.table, Triggers.table]
     static let appKeys: Set<String> = ["edits", "starts"]
     static let limit = 65_536
-    private static let scriptsTable = "scripts"
+    static let scriptsTable = "scripts"
+    private static let stayKey = "stay"
 
     private struct Script {
         var values: [String: [String]] = [:]
         var written: [String] = []
-        var commands: [Command] = []
         var settings: [Setting] = []
+        var actions: [Action] = []
+        var bindings: [Binding] = []
+        var events: [Event] = []
+        var triggers = Triggers()
 
         mutating func take(_ table: [(String, ConfigDocument.Value?)]) throws {
             for (name, value) in table {
                 let key = Manifest.path(name).joined(separator: ".")
+                if key == Manifest.stayKey, case .boolean = value {} else if key == Manifest.stayKey {
+                    throw SpotError.fault("\(Manifest.fileName): stay takes true or false, such as stay = true.")
+                }
                 written.append(key)
                 values[key, default: []] += try Manifest.texts(key, value).filter { !$0.isEmpty }
             }
@@ -31,22 +37,21 @@ public struct Manifest: Equatable, Sendable {
     public let icon: String?
     public let detail: String?
     public let keywords: [String]
-    public let placeholder: String?
-    public let on: [String]
-    public let emits: [String]
-    public let offers: [String]
-    public let drop: [String]
     public let edits: String?
     public let starts: String?
-    public let view: String?
+    public let views: [String]
     public let source: [String]
-    public let mode: String?
     public let uses: [String]
     public let pages: [String]
     public let answers: String?
-    public let commands: [Command]
     public let settings: [Setting]
+    public let actions: [Action]
+    public let bindings: [Binding]
+    public let events: [Event]
+    public let stay: Bool?
+    public let triggers: Triggers
     private let written: [String]
+    let hasScripts: Bool
     private let scripts: [String: Manifest]
     private let main: String?
     private let fault: String?
@@ -86,22 +91,21 @@ public struct Manifest: Equatable, Sendable {
         icon = text("icon")
         detail = text("detail")
         keywords = list("keywords").flatMap { $0.split(separator: ",").map { $0.trimmingCharacters(in: .whitespaces) } }.filter { !$0.isEmpty }
-        placeholder = text("placeholder")
-        on = list("on")
-        emits = list("emits").flatMap(Self.words)
-        offers = list("offers")
-        drop = text("drop")?.split(separator: ",").map { $0.trimmingCharacters(in: .whitespaces) } ?? []
         edits = text("edits")
         starts = text("starts")
-        view = text("view")
+        views = list("views")
         source = list("source")
-        mode = text("mode")
         uses = list("uses").flatMap(Self.words)
         pages = list("pages")
         answers = text("answers")
-        commands = script.commands
         settings = script.settings
+        actions = script.actions
+        bindings = script.bindings
+        events = script.events
+        stay = text(Self.stayKey).flatMap(Bool.init)
+        triggers = script.triggers
         written = script.written
+        hasScripts = !scripts.isEmpty
         self.scripts = scripts
         self.main = main
         self.fault = fault
@@ -148,17 +152,27 @@ public struct Manifest: Equatable, Sendable {
                 name = path[1]
                 path.removeFirst(2)
             }
-            var table = Script()
-            try table.take(section.keys.map { ($0, section[$0]) })
             var script = scripts[name] ?? Script()
             let heading = "[\(section.name)]"
-            if path.isEmpty {
+            var table = Script()
+            let isTyped = path == [Setting.table] || path == [Triggers.table] || path == [Binding.table] || path.count == 2 && (path[0] == Action.table || path[0] == Event.table)
+            if !isTyped { try table.take(section.keys.map { ($0, section[$0]) }) }
+            if path == [Setting.table] {
+                script.settings += try section.keys.map { key in
+                    guard Setting.isKey(key) else { throw SpotError.fault("\(fileName): \(heading) has a key with a space: \(key).") }
+                    return Setting(try Parameter(name: key, value: section[key], keys: Parameter.settingKeys, place: "\(heading) \(key)"))
+                }
+            } else if path == [Binding.table] {
+                script.bindings += try section.keys.map { try Binding(name: $0, value: section[$0], section: heading) }
+            } else if path.count == 2, path[0] == Event.table {
+                script.events.append(try Event(name: path[1], section: heading, table: section))
+            } else if path == [Triggers.table] {
+                script.triggers = try Triggers(section: heading, table: section)
+            } else if path.count == 2, path[0] == Action.table {
+                script.actions.append(try Action(id: path[1], section: heading, table: section))
+            } else if path.isEmpty {
                 script.values.merge(table.values) { $0 + $1 }
                 script.written += table.written
-            } else if path.count == 2, path[0] == Command.table {
-                script.commands.append(Command(id: path[1], section: heading, values: table.values, written: table.written))
-            } else if path.count == 2, path[0] == Setting.table {
-                script.settings.append(Setting(id: path[1], section: heading, values: table.values, written: table.written))
             } else {
                 script.written.append(path[0])
             }
@@ -182,7 +196,7 @@ public struct Manifest: Equatable, Sendable {
         text.split(separator: ",", omittingEmptySubsequences: false).map { $0.trimmingCharacters(in: .whitespaces) }
     }
 
-    private static func path(_ name: String) -> [String] {
+    static func path(_ name: String) -> [String] {
         var parts = [""]
         var quote: Character?
         for character in name {

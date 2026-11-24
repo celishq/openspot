@@ -5,7 +5,7 @@ public struct SpotItem: Equatable, Sendable {
     public let subtitle: String?
     public let run: String
     public let picture: Icon?
-    public let parent: String?
+    public let place: String?
     public let hides: [String]?
     public let keywords: [String]
     public let shortcut: String?
@@ -28,17 +28,17 @@ public struct SpotItem: Equatable, Sendable {
     }
     public let openTitle: String?
     public let staysOnPick: Bool
-    public let form: CommandAction?
     public let move: FlowMove?
     public let section: String?
     public let number: NumberReading?
+    public let showsWords: Bool
 
-    public init(title: String, subtitle: String? = nil, run: String, picture: Icon? = nil, parent: String? = nil, hides: [String]? = nil, keywords: [String] = [], shortcut: String? = nil, records: Bool = false, takesShake: Bool = false, isOn: Bool = false, isToggle: Bool = false, tone: MetricValue.Tone? = nil, file: String? = nil, fields: [TextBlock.Field] = [], card: SpotState? = nil, pin: Pin? = nil, openTitle: String? = nil, staysOnPick: Bool = false, form: CommandAction? = nil, move: FlowMove? = nil, section: String? = nil, number: NumberReading? = nil) {
+    public init(title: String, subtitle: String? = nil, run: String, picture: Icon? = nil, place: String? = nil, hides: [String]? = nil, keywords: [String] = [], shortcut: String? = nil, records: Bool = false, takesShake: Bool = false, isOn: Bool = false, isToggle: Bool = false, tone: MetricValue.Tone? = nil, file: String? = nil, fields: [TextBlock.Field] = [], card: SpotState? = nil, pin: Pin? = nil, openTitle: String? = nil, staysOnPick: Bool = false, move: FlowMove? = nil, section: String? = nil, number: NumberReading? = nil, showsWords: Bool = true) {
         self.title = title
         self.subtitle = subtitle
         self.run = run
         self.picture = picture
-        self.parent = parent
+        self.place = place
         self.hides = hides
         self.keywords = keywords
         self.shortcut = shortcut
@@ -53,23 +53,28 @@ public struct SpotItem: Equatable, Sendable {
         self.pin = pin
         self.openTitle = openTitle
         self.staysOnPick = staysOnPick
-        self.form = form
         self.move = move
         self.section = section
         self.number = number
+        self.showsWords = showsWords
+    }
+
+    var carried: [TextBlock.Field] {
+        fields.map { .init(key: "item.\($0.key)", value: $0.value) }
     }
 
     init?(block: TextBlock, kind: BlockKind, section: String?) {
         guard let run = block.value(kind.word) else { return nil }
         let hides = block.values(ItemKey.hides)
         let records = kind == .hotkey
-        let number = kind == .number ? NumberReading(block: block) : nil
+        let number = kind == .number || kind == .series ? NumberReading(block: block) : nil
+        let style = StyleCache.shared.style(of: block.value(ViewNode.classKey) ?? "").resolved(for: [.sheet])
         self.init(
             title: block.value(ItemKey.title) ?? run,
             subtitle: block.value(ItemKey.detail),
             run: run,
             picture: Icon(text: block.value(ItemKey.icon)),
-            parent: block.value(ItemKey.parent),
+            place: block.value(ItemKey.place),
             hides: hides.isEmpty ? nil : hides,
             keywords: block.list(ItemKey.keywords),
             shortcut: records ? block.value(ItemKey.value) ?? Trigger.unset : nil,
@@ -83,16 +88,16 @@ public struct SpotItem: Equatable, Sendable {
             pin: block.value(ItemKey.pin).flatMap(Pin.init(rawValue:)),
             openTitle: block.value(ItemKey.openTitle),
             staysOnPick: block.flag(ItemKey.close) == false,
-            form: block.flag(ItemKey.form) == true ? CommandAction(id: Frame.open, title: block.value(ItemKey.openTitle) ?? block.value(ItemKey.title) ?? run, after: block.flag(ItemKey.close) == false ? .stay : .close, isForm: true) : nil,
             move: FlowMove(item: block),
             section: section,
-            number: number
+            number: number,
+            showsWords: !style.hidesWords
         )
     }
 
     private static func fields(of block: TextBlock) -> [TextBlock.Field] {
-        guard block.fields.dropFirst().contains(where: { ItemKey(rawValue: $0.key) == nil && !PartCatalog.keys.contains($0.key) && $0.key != Self.type }) else { return [] }
-        return block.fields
+        guard block.fields.dropFirst().contains(where: { ItemKey(rawValue: $0.key) == nil && !BlockKind.commonKeys.contains($0.key) && $0.key != Self.type }) else { return [] }
+        return block.fields.filter { $0.key != ViewNode.parentKey && $0.key != ViewNode.classKey }
     }
 
     private static let type = "type"
@@ -114,7 +119,7 @@ public struct SpotItem: Equatable, Sendable {
     }
 
     public func path(in spot: Spot) -> String {
-        [spot.name, parent].compactMap { $0 }.joined(separator: " › ")
+        [spot.name, place].compactMap { $0 }.joined(separator: " › ")
     }
 
     public var icon: FileIcon? {

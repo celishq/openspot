@@ -22,6 +22,9 @@ public enum MotionTokens {
     public static var press: Double { SpotTokens.layout.motion.press * slow }
     public static var pressBounce: Double { SpotTokens.layout.motion.pressBounce }
     public static var pop: Double { 0.32 * slow }
+    public static var shake: Double { 0.25 * slow }
+    public static let shakeReach = 6.0
+    public static let refusalWindow: TimeInterval = 0.5
     public static let popBounce = 0.35
     public static let keycapArrivalScale = 0.85
     public static let keycapLeastScale = 0.6

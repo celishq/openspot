@@ -24,7 +24,7 @@ final class AppCallsSocketTests: XCTestCase {
     }
 
     private func listen(app: (any RunningApp)? = nil, runs: SpotRuns? = nil) {
-        socket = CommandSocket(folder: folder, api: CommandAPI(mac: Mac(), places: .test(ProcessInfo.processInfo.environment.merging(["OPENSPOT_CONFIG": config.path, "OPENSPOT_SPOTS": spots.path, "TONE": "warm"]) { _, new in new }), app: app, runs: runs, rates: .offline))
+        socket = CommandSocket(folder: folder, api: CommandAPI(mac: Mac(), places: .test(ProcessInfo.processInfo.environment.merging(["OPENSPOT_CONFIG": config.path, "OPENSPOT_SPOTS": spots.path, "TONE": "warm"]) { _, new in new }), app: app, runs: runs))
     }
 
     private func connect() -> SocketConnection {
@@ -148,13 +148,13 @@ final class AppCallsSocketTests: XCTestCase {
     }
 
     func testACheckAsJSONInTheAppNamesEachFault() async throws {
-        try spot("weather", toml: "mode = 'huge'", "echo")
+        try spot("weather", toml: "stay = 'huge'", "echo")
         listen()
 
         let answer = try ask(["check", "spots", "--json"])
 
         let json = try JSONSerialization.jsonObject(with: Data(answer.stdout.utf8)) as? [[String: String]]
-        XCTAssertEqual(json?.map { $0["fault"] }, ["Weather has an unknown mode: huge. Use once or stay"])
+        XCTAssertEqual(json?.map { $0["fault"] }, ["Weather cannot load: spot.toml: stay takes true or false, such as stay = true."])
         XCTAssertEqual(answer.code, 1)
     }
 

@@ -5,7 +5,7 @@ city=$(printf '%s' "${zone##*/}" | tr _ ' ')
 
 # Prints the time in the zone, with the city below it.
 now() {
-  printf 'frame=\ngrid.bar=time\n\ntext=time\ntitle=%s\ndetail=%s' "$(TZ=$zone date +%H:%M)" "$city"
+  printf 'frame=\nclass=gap-part\n\ntext=time\nclass=bar:flex\ntitle=%s\ndetail=%s' "$(TZ=$zone date +%H:%M)" "$city"
 }
 
 # Prints the time again each time a new minute starts.
@@ -17,7 +17,7 @@ tick() {
 
 main() {
   case "$1" in
-    show) now ;;
+    show | app.launch) now ;;
   esac
 }
 

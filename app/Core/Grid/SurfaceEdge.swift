@@ -36,6 +36,10 @@ public struct SurfaceEdge: Equatable, Sendable {
         SurfaceEdge(radius: radius, inset: inset + amount)
     }
 
+    public func outset(by amount: CGFloat) -> SurfaceEdge {
+        SurfaceEdge(radius: radius - amount, inset: inset - amount)
+    }
+
     public func place(in rect: CGRect) -> CGRect {
         rect.insetBy(dx: inset, dy: inset)
     }

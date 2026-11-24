@@ -27,12 +27,12 @@ final class RaycastDataImportTests: XCTestCase {
 
     private func answer(_ arguments: [String], passphrase: String = "openspot-test") async throws -> CommandAnswer {
         let call = try XCTUnwrap(CommandLineCall(arguments: arguments, environment: environment))
-        let work = try XCTUnwrap(CommandAPI(mac: Mac(), places: .test(environment), rates: .offline).work(for: call, request: .test(arguments, in: environment), input: { passphrase + "\n" }))
+        let work = try XCTUnwrap(CommandAPI(mac: Mac(), places: .test(environment)).work(for: call, request: .test(arguments, in: environment), input: { passphrase + "\n" }))
         return await work()
     }
 
     private func rows(_ answer: CommandAnswer) -> [String] {
-        TextBlock.blocks(in: answer.output).compactMap { block in block.value("text").map { "\($0) \(block.value("outcome") ?? "") \(block.value("detail") ?? "")" } }
+        TextBlock.blocks(in: answer.output).compactMap { block in block.value("item").map { "\($0) \(block.value("outcome") ?? "") \(block.value("detail") ?? "")" } }
     }
 
     private func data(_ spot: String) -> String {
@@ -87,8 +87,8 @@ final class RaycastDataImportTests: XCTestCase {
     }
 
     func testASpotThatDoesNotTakeAnImportIsReportedAsSkipped() async throws {
-        try "#!/bin/sh\necho 'text=a'\n".writeScript(to: config.appendingPathComponent("spots/links.spot/links.sh"))
-        try "title = 'Links'\non = ['sheet.open']\n".write(to: config.appendingPathComponent("spots/links.spot/spot.toml"), atomically: true, encoding: .utf8)
+        try "#!/bin/sh\necho 'item=a'\n".writeScript(to: config.appendingPathComponent("spots/links.spot/links.sh"))
+        try "title = 'Links'\n".write(to: config.appendingPathComponent("spots/links.spot/spot.toml"), atomically: true, encoding: .utf8)
 
         let answer = try await answer(["import", "rayconfig", export.path])
 

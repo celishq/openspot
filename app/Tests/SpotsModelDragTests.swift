@@ -265,7 +265,7 @@ final class SpotsModelDragTests: XCTestCase {
     }
 
     func testTheShelfLeavesOutASpotThatOnlyAnswersTheSearch() async throws {
-        try "#!/bin/sh\n".writeScript(to: spots.appendingPathComponent("rows.spot/rows.sh"), toml: "on = ['search.text ^x']")
+        try "#!/bin/sh\n".writeScript(to: spots.appendingPathComponent("rows.spot/rows.sh"), toml: "[on]\nsearch = '^x'")
         await model.reload()
 
         XCTAssertFalse(order.contains("rows"))
@@ -591,8 +591,8 @@ final class SpotsModelDragTests: XCTestCase {
         XCTAssertEqual(host.notes, [])
         XCTAssertFalse(FileManager.default.fileExists(atPath: store.appendingPathComponent("a.spot").path))
 
-        _ = try await model.runs.answer(of: model.account.spot, SpotAction(arguments: ["new"]), limit: 60)
-        _ = try await model.runs.answer(of: model.account.spot, SpotAction(arguments: ["create"]), input: "input.handle=tony\n", limit: 60)
+        _ = try await model.runs.answer(of: model.account.spot, "new", limit: 60)
+        _ = try await model.runs.answer(of: model.account.spot, "create", input: "input.handle=tony\n", limit: 60)
 
         XCTAssertTrue(FileManager.default.fileExists(atPath: store.appendingPathComponent("a.spot").path))
     }
@@ -610,7 +610,7 @@ final class SpotsModelDragTests: XCTestCase {
 
         _ = await model.publish("a")
         try await wait("the account") { self.model.openSheetID == AccountSheet.id }
-        _ = try await model.runs.answer(of: model.account.spot, SpotAction(arguments: ["create"]), input: "route=handle\ninput.handle=tony\n", limit: 60)
+        _ = try await model.runs.answer(of: model.account.spot, "create", input: "route=handle\ninput.handle=tony\n", limit: 60)
 
         XCTAssertTrue(FileManager.default.fileExists(atPath: store.appendingPathComponent("a.spot").path))
         try await wait("the sheet behind") { self.model.flow.current == FlowSheet(spot: "b") }
@@ -622,8 +622,8 @@ final class SpotsModelDragTests: XCTestCase {
         try "Does a.".write(to: spots.appendingPathComponent("a.spot/readme.md"), atomically: true, encoding: .utf8)
 
         model.push(FlowSheet(spot: AccountSheet.id, route: "publish:a"))
-        _ = try await model.runs.answer(of: model.account.spot, SpotAction(arguments: ["new"]), input: "route=publish:a\n", limit: 60)
-        _ = try await model.runs.answer(of: model.account.spot, SpotAction(arguments: ["create"]), input: "route=publish:a\ninput.handle=tony\n", limit: 60)
+        _ = try await model.runs.answer(of: model.account.spot, "new", input: "route=publish:a\n", limit: 60)
+        _ = try await model.runs.answer(of: model.account.spot, "create", input: "route=publish:a\ninput.handle=tony\n", limit: 60)
 
         XCTAssertNotNil(try model.files.account.key())
         XCTAssertNotEqual(model.flow.current?.route, "publish:a")
@@ -638,8 +638,8 @@ final class SpotsModelDragTests: XCTestCase {
         _ = await model.publish("a")
 
         model.open(AccountSheet.id)
-        _ = try await model.runs.answer(of: model.account.spot, SpotAction(arguments: ["new"]), limit: 60)
-        _ = try await model.runs.answer(of: model.account.spot, SpotAction(arguments: ["create"]), input: "input.handle=tony\n", limit: 60)
+        _ = try await model.runs.answer(of: model.account.spot, "new", limit: 60)
+        _ = try await model.runs.answer(of: model.account.spot, "create", input: "input.handle=tony\n", limit: 60)
 
         XCTAssertFalse(FileManager.default.fileExists(atPath: store.appendingPathComponent("a.spot").path))
     }

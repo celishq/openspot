@@ -8,7 +8,7 @@ final class ActionsSpotTests: BuiltInCase {
         XCTAssertEqual(actions.offeredActions.map(\.action.title), ["Share", "Settings", "Edit", "Change Icon", "Draw…", "Choose File…", "Reset Icon", "Delete", "Turn off"])
         XCTAssertEqual(actions.offeredActions.map(\.origins), [[.mine, .core], [], [.mine, .core], [], [], [], [], [.mine], [.core]])
         XCTAssertEqual(actions.offeredActions.map { $0.action.key?.label ?? "" }, ["⇧⌘C", "⌘⏎", "⌘E", "", "", "", "", "⌘⌫", "⌘⌫"])
-        XCTAssertEqual(actions.offeredActions.map(\.hooks), [[:], [:], [:], [:], [:], [:], [.when: "hasIcon"], [:], [:]])
+        XCTAssertEqual(actions.offeredActions.map(\.when), [nil, nil, nil, nil, nil, nil, "hasIcon", nil, nil])
         XCTAssertNil(actions.offeredActions[7].action.confirm)
         XCTAssertFalse(actions.isFound)
     }
@@ -18,9 +18,9 @@ final class ActionsSpotTests: BuiltInCase {
         try "#!/bin/sh\n".writeScript(to: core.appendingPathComponent("caffeinate.spot/caffeinate.sh"), toml: "title = 'Caffeinate'")
 
         for act in ["settings", "edit", "share", "delete"] {
-            try await actions.perform(SpotAction(arguments: [act, "weather"]), timeout: 60)
+            try await actions.perform(act, input: "input.item=weather\n", timeout: 60)
         }
-        try await actions.perform(SpotAction(arguments: ["off", "caffeinate"]), timeout: 60)
+        try await actions.perform("off", input: "input.item=caffeinate\n", timeout: 60)
 
         let opened = await app.opened
         let changes = await app.changeList
@@ -33,25 +33,30 @@ final class ActionsSpotTests: BuiltInCase {
         let icon = try spot("icon")
         let ask = { (card: String) in await actions.hook("hasIcon", card: card, origin: "mine") }
         try FileManager.default.createSymbolicLink(at: core.appendingPathComponent("openspot.spot"), withDestinationURL: repoSpots.appendingPathComponent("openspot.spot"))
+        runs.api = CommandAPI(mac: Mac(), places: .test(TestEnvironment.values), app: app, runs: runs)
+        runs.take(try SpotsFolder(url: root.appendingPathComponent("none"), core: repoSpots).scan())
+        defer { runs.quit() }
+        let acts = try XCTUnwrap(runs.sheets["openspot/actions"])
+        let weather = [TextBlock.Field(key: "item", value: "weather")]
 
         let before = await ask("weather")
-        try await actions.perform(SpotAction(arguments: ["icon.draw", "weather"]), timeout: 60)
-        try await icon.perform(SpotAction(arguments: ["drawer", "0" + String(repeating: ".", count: 80)]), timeout: 60)
-        try await icon.perform(SpotAction(arguments: ["save"]), timeout: 60)
+        _ = try await acts.call("icon.draw", inputs: weather)
+        try await icon.perform("drawer", input: "input.value=0" + String(repeating: ".", count: 80) + "\n", timeout: 60)
+        try await icon.perform("save", timeout: 60)
         let drawn = await ask("weather")
-        try await actions.perform(SpotAction(arguments: ["icon.reset", "weather"]), timeout: 60)
+        _ = try await acts.call("icon.reset", inputs: weather)
         let after = await ask("weather")
-        try await actions.perform(SpotAction(arguments: ["icon.file", "weather"]), timeout: 60)
+        _ = try await acts.call("icon.file", inputs: weather)
 
         let opened = await app.opened
         XCTAssertEqual([before, drawn, after], [false, true, false])
         XCTAssertEqual(opened, ["open openspot/icon", "choose openspot/icon"])
     }
 
-    func testAWhenFunctionThatReturnsAnyTextSaysYes() async throws {
+    func testAWhenHandlerThatReturnsAnyTextSaysYes() async throws {
         let js = try temporaryFolder().appendingPathComponent("hooks.js")
-        try "function named(id) { return id === \"a\" ? \"yes\" : \"\"; }\n".writeInline(to: js, toml: "title = 'Hooks'\n[commands.go]\ntitle = 'Go'\nwhen = 'named'\noffers = ['actions']")
-        let hooks = try XCTUnwrap(try SpotFile(file: js, id: "hooks")?.spots.first)
+        try "export default { named({ item }) { return item === \"a\" ? \"yes\" : \"\" } }\n".writeInline(to: js, toml: "title = 'Hooks'\n[actions.go]\ntitle = 'Go'\nwhen = 'named'\noffers = ['actions']")
+        let hooks = try XCTUnwrap(try SpotFile(file: js, id: "hooks", isApp: true)?.spots.first)
 
         let a = await hooks.hook("named", card: "a", origin: "mine")
         let b = await hooks.hook("named", card: "b", origin: "mine")

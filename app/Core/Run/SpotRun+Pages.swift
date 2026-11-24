@@ -8,15 +8,18 @@ extension SpotRun {
     }
 
     @discardableResult
-    public func show(route next: String?) -> Bool {
-        guard next != route else { return true }
+    public func show(_ next: FlowSheet) -> Bool {
+        let shown = page
+        if next.title != shown.title || next.source != shown.source { page = next }
+        guard next.route != shown.route else { return true }
+        let route = shown.route
         forget(route: route)
         pageStates.append((route, PageState(state: state, rows: rows, panel: panel)))
         if let show = running(Self.showKey) { stop(show) }
         if let search = running(Self.searchKey) { stop(search) }
-        route = next
-        let kept = pageStates.first { $0.route == next }?.state
-        forget(route: next)
+        page = next
+        let kept = pageStates.first { $0.route == next.route }?.state
+        forget(route: next.route)
         state = kept?.state ?? spot.headerState
         list = kept?.rows ?? ItemList(recent: rows.recent, search: rows.search)
         panel = kept?.panel
@@ -26,6 +29,8 @@ extension SpotRun {
         if showsSheet { show(need: .change, event: .sheet) }
         return kept != nil
     }
+
+    private static let routeInput = "route"
 
     func holdPageMotion(start: @escaping () -> Void) {
         guard answered == nil else { return start() }
@@ -38,8 +43,7 @@ extension SpotRun {
 
     func message(of call: Call, values: FieldValues) -> Message {
         var message = call.message
-        message.event = call.event
-        message.route = route
+        if let route { message.inputs.append(.init(key: Self.routeInput, value: route)) }
         message.settings = values.settings
         return message
     }
