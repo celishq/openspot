@@ -88,7 +88,7 @@ struct ReadSources: Sendable {
         }
     }
 
-    static func cut(_ text: String) -> String {
+    private static func cut(_ text: String) -> String {
         guard text.utf8.count > limit else { return text }
         return String(text[..<text.utf8.index(text.utf8.startIndex, offsetBy: limit)])
     }
