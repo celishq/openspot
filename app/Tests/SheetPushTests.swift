@@ -120,6 +120,15 @@ final class SheetPushTests: XCTestCase {
         XCTAssertEqual(SheetPush(open: nil, sheet: push.sheet, window: push.window).pose(of: card(row: 2, column: 0), movedBy: moved), moved)
     }
 
+    func testACardThatItsFadeHasHiddenTakesNoClick() {
+        let above = card(row: 0, column: 1)
+
+        XCTAssertTrue(SheetPush.takesClicks(atFade: SheetPush.fade(of: above, in: push, movedBy: CGSize(width: 0, height: -60), share: 1)))
+        XCTAssertFalse(SheetPush.takesClicks(atFade: SheetPush.fade(of: above, in: push, movedBy: CGSize(width: 0, height: -140), share: 1)))
+        XCTAssertFalse(SheetPush.takesClicks(atFade: SheetPush.fade(of: above, in: nil, movedBy: .zero, share: 1)))
+        XCTAssertTrue(SheetPush.takesClicks(atFade: SheetPush.fade(of: above, in: nil, movedBy: .zero, share: 0)))
+    }
+
     private func assertSize(_ size: CGSize, _ expected: CGSize, line: UInt = #line) {
         XCTAssertEqual(size.width, expected.width, accuracy: 0.000001, line: line)
         XCTAssertEqual(size.height, expected.height, accuracy: 0.000001, line: line)

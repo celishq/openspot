@@ -51,6 +51,14 @@ public struct SheetPush: Equatable, Sendable {
         (moved.width * push.width + moved.height * push.height) / (push.width * push.width + push.height * push.height)
     }
 
+    public static func fade(of placement: SpotPlacement, in push: SheetPush?, movedBy moved: CGSize, share: Double) -> Double {
+        push.flatMap { $0.fade(of: placement, movedBy: moved) } ?? push?.fade(of: placement, share: share) ?? share
+    }
+
+    public static func takesClicks(atFade fade: Double) -> Bool {
+        fade < 1
+    }
+
     public func fade(of placement: SpotPlacement, share: Double) -> Double {
         guard let meeting = foot?.meeting(of: placement.rect, movingDown: 0) else { return share }
         guard meeting > 0 else { return 1 }
