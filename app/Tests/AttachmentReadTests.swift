@@ -40,7 +40,7 @@ final class AttachmentReadTests: AttachmentCase {
         try refuseSafari()
         await open()
         XCTAssertTrue(model.handleKey(tab))
-        try await wait("the refusal") { self.chips.map(\.state) == [.failed("Openspot can't read Safari · ⏎ Allow")] }
+        try await wait("the refusal") { self.chips.map(\.state) == [.failed("Openspot can't read Safari. Allow it in Openspot's settings.")] }
     }
 
     func testAnAttachSourceShowsItsChipUnreadAtTheOpenAndRunsNothingUntilTab() async throws {
@@ -218,7 +218,8 @@ final class AttachmentReadTests: AttachmentCase {
     func testARefusedReadOffersAllowAndReturnOpensAttachments() async throws {
         try await refuse()
 
-        XCTAssertEqual(model.preview?.caption, "Openspot can't read Safari · ⏎ Allow")
+        XCTAssertEqual(model.preview?.caption, "Openspot can't read Safari. Allow it in Openspot's settings.")
+        XCTAssertEqual(model.attachmentHint, "⏎ Allow   ⇥ Next   Esc Leave")
         XCTAssertEqual(shown, [])
         XCTAssertEqual(host.notes, [])
         model.runSelected()
@@ -270,8 +271,8 @@ final class AttachmentReadTests: AttachmentCase {
         try taker("save", takes: "'url'")
         await model.reload()
 
-        XCTAssertEqual(chips.map(\.state), [.failed("Openspot can't read Safari · ⏎ Allow")])
-        XCTAssertEqual(model.preview?.caption, "Openspot can't read Safari · ⏎ Allow")
+        XCTAssertEqual(chips.map(\.state), [.failed("Openspot can't read Safari. Allow it in Openspot's settings.")])
+        XCTAssertEqual(model.preview?.caption, "Openspot can't read Safari. Allow it in Openspot's settings.")
         XCTAssertEqual(shown, [])
     }
 

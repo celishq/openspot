@@ -26,9 +26,7 @@ extension SpotsModel {
         guard let chip = attachments.chips.first(where: { $0.source == id }), chip.isLoading else { return }
         switch end {
         case .failed(SpotError.timedOut): mark(id, .failed(chip.appName.map { "\($0) didn't answer" } ?? "No answer"))
-        case .failed:
-            let line = sheets[id]?.failure ?? ""
-            mark(id, .failed(ReadRefusal.field(of: line) ?? line))
+        case .failed: mark(id, .failed(sheets[id]?.failure ?? ""))
         case .ended: mark(id, .empty(chip.appName.map { "Nothing to attach from \($0)" } ?? "Nothing to attach"))
         case .stopped: break
         }
@@ -58,8 +56,13 @@ extension SpotsModel {
     }
 
     func allowAttachment() {
-        guard case .failed = attachments.selectedChip?.state, let id = entries.first(where: { $0.spot.edits == .attachments && $0.spot.isBuiltIn })?.id else { return }
+        guard let id = allowSpot else { return }
         pushFirst(id, moving: true)
+    }
+
+    private var allowSpot: String? {
+        guard case .failed = attachments.selectedChip?.state else { return nil }
+        return entries.first { $0.spot.edits == .attachments && $0.spot.isBuiltIn }?.id
     }
 
     private func mark(_ id: String, _ state: AttachmentChip.State) {
@@ -113,7 +116,7 @@ extension SpotsModel {
     var attachmentHint: String? {
         guard openSheetID == nil, !isEditing, !attachments.chips.isEmpty else { return nil }
         guard attachments.isOn else { return attachments.layout.isQuiet ? "⇥ Attach" : nil }
-        let run = waitingWords.map { "⏎ \($0)" } ?? selectedEntry.map { "⏎ \($0.state.title)" }
+        let run = waitingWords.map { "⏎ \($0)" } ?? selectedEntry.map { "⏎ \($0.state.title)" } ?? allowSpot.map { _ in "⏎ Allow" }
         return [run, "⇥ Next", "Esc Leave"].compactMap { $0 }.joined(separator: "   ")
     }
 

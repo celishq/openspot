@@ -216,10 +216,10 @@ final class ReadUseCallTests: XCTestCase {
 
         XCTAssertEqual(answers.map(\.code), [1, 1, 1, 1])
         XCTAssertEqual(answers.map(\.errors), [
-            "Openspot can't read Safari. Allow it in the Attachments spot.\n",
-            "Openspot can't read Safari. Allow it in the Attachments spot.\n",
-            "Openspot can't read Finder. Allow it in the Attachments spot.\n",
-            "Openspot can't read the selected text. Allow it in the Attachments spot.\n"
+            "Openspot can't read Safari. Allow it in Openspot's settings.\n",
+            "Openspot can't read Safari. Allow it in Openspot's settings.\n",
+            "Openspot can't read Finder. Allow it in Openspot's settings.\n",
+            "Openspot can't read the selected text. Allow it in Openspot's settings.\n"
         ])
         XCTAssertEqual(reads.scripts, [])
     }
@@ -234,7 +234,7 @@ final class ReadUseCallTests: XCTestCase {
         let terminal = try await call(["selection", "read", "com.apple.Safari"])
 
         XCTAssertEqual([show.code, shownTabs.code, shownSelection.code], [1, 1, 1])
-        XCTAssertEqual(show.errors, "Openspot can't read Safari. Allow it in the Attachments spot.\n")
+        XCTAssertEqual(show.errors, "Openspot can't read Safari. Allow it in Openspot's settings.\n")
         XCTAssertEqual([press.code, terminal.code], [0, 0], press.errors + terminal.errors)
         XCTAssertEqual(reads.asks, ["com.apple.Safari false", "com.apple.Safari false", "accessibility false", "com.apple.Safari true", "accessibility true"])
     }

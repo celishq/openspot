@@ -47,7 +47,7 @@ final class SourceSpotTests: AttachmentCase {
 
         XCTAssertTrue(model.handleKey(tab))
 
-        try await wait("the refusal") { self.state(of: "browser-tab") == .failed("Openspot can't read Safari · ⏎ Allow") }
+        try await wait("the refusal") { self.state(of: "browser-tab") == .failed("Openspot can't read Safari. Allow it in Openspot's settings.") }
         XCTAssertEqual(host.notes, [])
         XCTAssertEqual(reads.asks, ["com.apple.Safari false"])
     }
