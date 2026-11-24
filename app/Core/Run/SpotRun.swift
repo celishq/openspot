@@ -62,7 +62,6 @@ public final class SpotRun {
         var purpose: Purpose
         var chain: [String] = []
         var isPressed = true
-        var read: Int?
 
         var handler: String {
             message.handler
@@ -252,7 +251,6 @@ public final class SpotRun {
     @ObservationIgnored var showsAgain = false
     @ObservationIgnored var sheetAgain = false
     @ObservationIgnored var eventAgain: ShowEvent?
-    @ObservationIgnored var attachReads = 0
     @ObservationIgnored var pauses: [String: Task<Void, Never>] = [:]
     @ObservationIgnored var editing: String?
     @ObservationIgnored var typed: String?

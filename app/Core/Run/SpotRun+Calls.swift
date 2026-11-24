@@ -199,7 +199,7 @@ extension SpotRun {
         }
         callEnded(call.made)
         if case .act(let act) = purpose { act.ended?() }
-        if case .ask(.show) = purpose, isCurrent(call) { onReport(.shown) }
+        if case .ask(.show) = purpose, !call.made.isStopped { onReport(.shown) }
         showAgainIfAsked()
     }
 

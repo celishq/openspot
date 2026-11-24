@@ -21,7 +21,7 @@ extension SpotRun {
         case .route(let move):
             onReport(.move(move))
         case .attachment(let state):
-            if isCurrent(call) { onReport(.attachment(state)) }
+            onReport(.attachment(state))
         }
     }
 }

@@ -29,8 +29,7 @@ extension SpotRun {
             key: Self.showKey,
             limit: runs.showLimit,
             event: event,
-            purpose: .ask(.show(generation: partsGeneration, reports: need != .clock, query: query, tells: event.tells)),
-            read: event.name == EventName.attach ? attachReads : nil
+            purpose: .ask(.show(generation: partsGeneration, reports: need != .clock, query: query, tells: event.tells))
         ))
         self.typed = nil
         if isSent {
@@ -40,12 +39,8 @@ extension SpotRun {
     }
 
     func attach(over front: String?) {
-        attachReads += 1
+        if let show = running(Self.showKey) { stop(show) }
         show(need: .change, event: .event(EventName.attach, value: front))
-    }
-
-    func isCurrent(_ call: OpenCall?) -> Bool {
-        call?.request.read.map { $0 == attachReads } ?? true
     }
 
     public func search(_ text: String) {

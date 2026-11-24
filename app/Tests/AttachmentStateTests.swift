@@ -58,15 +58,16 @@ final class AttachmentStateTests: AttachmentCase {
         try source("selection", adds: "text=hola app=com.apple.Safari")
         await open()
         try await wait("two values") { self.model.attachments.chips.allSatisfy { $0.value != nil } && self.model.attachments.chips.count == 2 }
+        let order = model.attachments.layout.places.map(\.chip.source)
 
         XCTAssertTrue(model.handleKey(tab))
-        XCTAssertEqual(model.attachments.selected, "selection")
+        XCTAssertEqual(model.attachments.selected, order[0])
         XCTAssertTrue(model.handleKey(tab))
-        XCTAssertEqual(model.attachments.selected, "tab")
+        XCTAssertEqual(model.attachments.selected, order[1])
         XCTAssertTrue(model.handleKey(tab))
-        XCTAssertEqual(model.attachments.selected, "selection")
+        XCTAssertEqual(model.attachments.selected, order[0])
         XCTAssertTrue(model.handleKey(backTab))
-        XCTAssertEqual(model.attachments.selected, "tab")
+        XCTAssertEqual(model.attachments.selected, order[1])
     }
 
     func testEscLeavesTheAttachmentAndBringsBackTheGrid() async throws {

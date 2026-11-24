@@ -186,6 +186,22 @@ final class AttachmentReadTests: AttachmentCase {
         try await wait("the value of the second read") { self.shown == ["keep"] }
     }
 
+    func testANewReadStopsTheReadItReplacesAndOnlyItsValueLands() async throws {
+        try taker(takes: "'url'")
+        try attach(waits: true, runs: "\(cli) attachment add \(add)")
+        await open()
+        XCTAssertTrue(model.handleKey(tab))
+        try await wait("the start of the read") { self.log("tab-log") == ["attach"] }
+
+        model.runs.attach("tab", over: "com.apple.Safari")
+
+        try await wait("the start of the second read") { self.log("tab-log") == ["attach", "attach"] }
+        try await wait("the end of the replaced read") { self.model.runs.usage.counts["tab"]?.runs == 1 }
+        unblock()
+        try await wait("the value of the second read") { self.shown == ["keep"] }
+        try await wait("the end of the second read") { self.log("done") == ["0"] }
+    }
+
     func testARefusedReadOffersAllowAndReturnOpensAttachments() async throws {
         try await refuse()
 
