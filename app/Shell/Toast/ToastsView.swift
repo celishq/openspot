@@ -13,7 +13,7 @@ struct ToastsView: View {
                 }
             }
             .frame(height: toasts.frontHeight, alignment: .top)
-            ToastBars(count: toasts.count)
+            ToastBars(count: toasts.bars)
         }
         .padding(SpotTokens.toastRoom)
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)

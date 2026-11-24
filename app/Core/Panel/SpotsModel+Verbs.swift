@@ -79,7 +79,7 @@ extension SpotsModel {
             if let failure {
                 toast(.failure("\(command.name) was not removed. \(failure)"))
             } else {
-                toast(ToastNote(words: "Moved \(words) to the Trash. Press `⌘Z` to put it back."))
+                toast("Moved \(words) to the Trash. Press `⌘Z` to put it back.")
             }
         }
     }
@@ -108,7 +108,7 @@ extension SpotsModel {
             }
             await reload()
             if selectedEntry?.id == chosen, let place = visible.firstIndex(where: { $0.id == removal.id }) { selected = place }
-            toast(ToastNote(words: "Put \(removal.words) back."))
+            toast("Put \(removal.words) back.")
         }
         return true
     }

@@ -62,7 +62,7 @@ final class FakeHost: SpotsHost {
     }
 
     var toasts: [(note: ToastNote, spot: String)] = []
-    var droppedToasts: [(id: String, spot: String)] = []
+    var opened: [URL] = []
 
     var notes: [String] {
         toasts.filter { $0.note.kind == .failure }.map(\.note.words)
@@ -76,8 +76,8 @@ final class FakeHost: SpotsHost {
         toasts.append((note, spot))
     }
 
-    func dropToast(_ id: String, of spot: String) {
-        droppedToasts.append((id, spot))
+    func open(_ url: URL) {
+        opened.append(url)
     }
 
     func applyConfig(_ config: Config) {

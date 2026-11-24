@@ -32,6 +32,10 @@ final class FakeToastWindow: ToastWindow {
         return true
     }
 
+    func move(_ body: () -> Void) {
+        body()
+    }
+
     func dropFixKey() {
         fixPress = nil
     }

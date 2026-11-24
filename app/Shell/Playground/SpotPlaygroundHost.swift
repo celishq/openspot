@@ -12,7 +12,7 @@ final class SpotPlaygroundHost: SpotsHost {
     func present() {}
     func takeFocus() {}
     func toast(_ note: ToastNote, of spot: String) { onNote(note.words) }
-    func dropToast(_ id: String, of spot: String) {}
+    func open(_ url: URL) {}
     func applyConfig(_ config: Config) {}
     func paint(_ colours: Theme.Colours) {}
     func layOut(_ layout: Theme.Layout) {}

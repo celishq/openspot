@@ -322,7 +322,7 @@ public final class SpotsModel {
             schedule: files.schedule
         )
         self.runs = runs
-        toasts = Toasts(host: host, clock: runs.clock)
+        toasts = Toasts(clock: runs.clock)
         self.runs.secrets = files.secrets
         self.runs.onReport = { [weak self] id, report in self?.take(report, of: id) }
         self.runs.partsArrival = { [weak self] id, bring in
@@ -578,7 +578,7 @@ public final class SpotsModel {
     private func take(_ report: SpotRun.Report, of id: String) {
         switch report {
         case .toast(let note): toast(note, of: note.kind == .failure ? "" : id)
-        case .dropToast(let toast): host.dropToast(toast, of: id)
+        case .dropToast(let toast): toasts.drop(toast, of: id)
         case .listChange:
             markFound(id)
             if mayMove(id) { updateVisible() }

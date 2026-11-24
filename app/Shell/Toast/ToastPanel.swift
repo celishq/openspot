@@ -54,6 +54,10 @@ final class ToastPanel: NSPanel, ToastWindow {
         fixKey = nil
     }
 
+    func move(_ body: () -> Void) {
+        withAnimation(SpotMotion.move, body)
+    }
+
     static func make(toasts: Toasts) -> ToastPanel {
         let panel = ToastPanel(
             contentRect: NSRect(origin: .zero, size: SpotTokens.toastMaxSize),

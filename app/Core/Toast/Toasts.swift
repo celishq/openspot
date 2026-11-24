@@ -10,12 +10,11 @@ public final class Toasts {
 
     public private(set) var queue: [Toast] = []
     public private(set) var leadKind: ToastKind?
-    public private(set) var count = 0
+    public private(set) var bars = 0
     public private(set) var frontHeight: CGFloat = 0
     @ObservationIgnored public private(set) var width: CGFloat = 0
     @ObservationIgnored public private(set) var height: CGFloat = 0
     @ObservationIgnored public weak var window: ToastWindow?
-    @ObservationIgnored private unowned let host: SpotsHost
     @ObservationIgnored private let clock: RunClock
     @ObservationIgnored private var lastMade = 0
     @ObservationIgnored private var leaving: Set<ToastID> = []
@@ -24,8 +23,7 @@ public final class Toasts {
     @ObservationIgnored private var fixKeyToast: ToastID?
     @ObservationIgnored private var frontID: ToastID?
 
-    public init(host: SpotsHost, clock: RunClock = RunClock()) {
-        self.host = host
+    public init(clock: RunClock = RunClock()) {
         self.clock = clock
     }
 
@@ -33,7 +31,7 @@ public final class Toasts {
         let id = ToastID(spot: spot, name: note.id.map(ToastID.Name.given) ?? .made(nextMade()))
         let existing = waiting.first { $0.id == id }
         if existing == nil, leaving.remove(id) != nil { queue.removeAll { $0.id == id } }
-        let fixKey = press == nil ? nil : key
+        let fixKey = key
         let isFront = existing == nil || frontID == id
         let held = isFront ? fixKey.flatMap { holdFixKey(id, key: $0) } : nil
         let words = held.map { "\(note.words) Press `\($0.label)` to fix it." } ?? note.words
@@ -45,7 +43,7 @@ public final class Toasts {
         if existing == nil { dropped(by: toast).forEach(leave) }
         toast.size = window?.measure(toast) ?? .zero
         if existing == nil { queue.insert(toast, at: 0) }
-        host.change(.move, { fit() }, completion: {})
+        move(fit)
         window?.place()
         if existing == nil {
             window?.bringToFront()
@@ -74,7 +72,7 @@ public final class Toasts {
         }
     }
 
-    private var waiting: [Toast] {
+    var waiting: [Toast] {
         queue.filter { !leaving.contains($0.id) }
     }
 
@@ -94,7 +92,7 @@ public final class Toasts {
         ends.removeValue(forKey: id)?.cancel()
         guard let toast = queue.first(where: { $0.id == id }), leaving.insert(id).inserted else { return }
         showFront()
-        host.change(.move, { fit() }, completion: {})
+        move(fit)
         window?.place()
         after(MotionTokens.fadeOut) { [weak self] in
             guard let self, queue.contains(where: { $0 === toast }) else { return }
@@ -161,11 +159,16 @@ public final class Toasts {
 
     private func fit() {
         let waiting = waiting
-        if waiting.count != count { count = waiting.count }
+        let next = waiting.count > 1 ? waiting.count : 0
+        if next != bars { bars = next }
         let front = waiting.first?.size.height ?? 0
         if front != frontHeight { frontHeight = front }
         let seen = queue.filter { $0.id == waiting.first?.id || leaving.contains($0.id) }
-        width = max(seen.map(\.size.width).max() ?? 0, count > 1 ? SpotTokens.toastBars(count) : 0)
-        height = (seen.map(\.size.height).max() ?? 0) + (count > 1 ? SpotTokens.toastBarsGap + SpotTokens.toastBarHeight : 0)
+        width = max(seen.map(\.size.width).max() ?? 0, SpotTokens.toastBars(bars))
+        height = (seen.map(\.size.height).max() ?? 0) + (bars > 0 ? SpotTokens.toastBarsGap + SpotTokens.toastBarHeight : 0)
+    }
+
+    private func move(_ body: () -> Void) {
+        if let window { window.move(body) } else { body() }
     }
 }

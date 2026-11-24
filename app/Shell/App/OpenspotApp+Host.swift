@@ -13,17 +13,8 @@ extension OpenspotApp: SpotsHost {
         if !model.isShown || model.isWarming { showPanel() }
     }
 
-    func toast(_ note: ToastNote, of spot: String) {
-        let press: @MainActor @Sendable () -> Void = switch note.fix {
-        case .url(let url): { NSWorkspace.shared.open(url) }
-        case .settings: { [weak self] in self?.openSettings() }
-        case nil: { [weak self] in self?.model.press(note, of: spot) }
-        }
-        model.toasts.add(note, spot: spot, press: press, fixKey: note.fix == nil ? nil : model.config.fixKey)
-    }
-
-    func dropToast(_ id: String, of spot: String) {
-        model.toasts.drop(id, of: spot)
+    func open(_ url: URL) {
+        NSWorkspace.shared.open(url)
     }
 
     func applyConfig(_ config: Config) {

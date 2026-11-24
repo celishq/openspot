@@ -11,8 +11,7 @@ final class SpotQuietHost: SpotsHost {
     func show() {}
     func present() {}
     func takeFocus() {}
-    func toast(_ note: ToastNote, of spot: String) {}
-    func dropToast(_ id: String, of spot: String) {}
+    func open(_ url: URL) {}
     func applyConfig(_ config: Config) {}
     func paint(_ colours: Theme.Colours) { SpotLoadedTheme.shared.paint(colours) }
     func layOut(_ layout: Theme.Layout) { SpotLoadedTheme.shared.lay(layout) }

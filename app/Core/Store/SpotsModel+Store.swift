@@ -21,7 +21,7 @@ extension SpotsModel {
             }.value
             var shared = read.shared
             guard !read.isCurrent else {
-                toast(ToastNote(words: "\(spot.name) has no change since its last publish."))
+                toast("\(spot.name) has no change since its last publish.")
                 return .unchanged
             }
             if spot.sample != nil {
@@ -34,7 +34,7 @@ extension SpotsModel {
             toast(.failure("\(spot.name) was not published. \(Self.reason(error))"))
             return .failed
         }
-        toast(ToastNote(words: "Published \(spot.name) to your store. Its files travel as they are, so check them for secrets before you share it."))
+        toast("Published \(spot.name) to your store. Its files travel as they are, so check them for secrets before you share it.")
         return .published
     }
 
