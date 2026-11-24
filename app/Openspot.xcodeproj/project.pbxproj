@@ -261,6 +261,7 @@
 		3AEC47D31D7A4B8D303C07F6 /* Sparkle in Frameworks */ = {isa = PBXBuildFile; productRef = 5D46E63C968896AC610529D8 /* Sparkle */; };
 		3B8FBB08AF6DE22373101644 /* FileIconTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = D34F4DF9EE6D7D1505F40662 /* FileIconTests.swift */; };
 		3BD62091A2621104AAF1506F /* AppStatus.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3AFDD9C8D6F15F5C96732D17 /* AppStatus.swift */; };
+		3BFB83B088F90A1057F196E1 /* SeenCopy.swift in Sources */ = {isa = PBXBuildFile; fileRef = 01E85D448386CE1AE0743588 /* SeenCopy.swift */; };
 		3C305F9732E71BF44D812FA5 /* HostMode.swift in Sources */ = {isa = PBXBuildFile; fileRef = D51AEF5593DDBC73EEB5C287 /* HostMode.swift */; };
 		3D7541A309B5BF686941B697 /* Manifest+BoundEvent.swift in Sources */ = {isa = PBXBuildFile; fileRef = D5897BB7225321A2B47885B1 /* Manifest+BoundEvent.swift */; };
 		3D98093AA041B98B8D3D91E5 /* NodeLine.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4C4DBD456C0ADABF814B450D /* NodeLine.swift */; };
@@ -1216,6 +1217,7 @@
 		0175D569E5CAC0641A87D16B /* MotionTokens.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MotionTokens.swift; sourceTree = "<group>"; };
 		01C1EEC4277D8DD01CEEEE19 /* SpotCalendarApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SpotCalendarApp.swift; sourceTree = "<group>"; };
 		01C491EC6E6433FEAFF51972 /* ViewPlaceTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ViewPlaceTests.swift; sourceTree = "<group>"; };
+		01E85D448386CE1AE0743588 /* SeenCopy.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SeenCopy.swift; sourceTree = "<group>"; };
 		01ED13F3AC6E3FCA367E0219 /* UnlockPassTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UnlockPassTests.swift; sourceTree = "<group>"; };
 		0241961BFAB0332387C87B6B /* TextBlock+Series.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "TextBlock+Series.swift"; sourceTree = "<group>"; };
 		0344D30DF4D5FAD7AC93DE4D /* SpotToneWords.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SpotToneWords.swift; sourceTree = "<group>"; };
@@ -2963,6 +2965,7 @@
 				96CE3435AAB0481EA21551D0 /* ClipboardContents.swift */,
 				12706805862D8350BF9E315A /* ClipboardCopy.swift */,
 				3E0D8873D7822F782A3FCBF4 /* MacClipboard.swift */,
+				01E85D448386CE1AE0743588 /* SeenCopy.swift */,
 			);
 			path = Clipboard;
 			sourceTree = "<group>";
@@ -4904,6 +4907,7 @@
 				AB8A2C67138918199AD3D2BE /* SearchQuery.swift in Sources */,
 				D4E04DA7FAB75264C5762E37 /* SearchRanks.swift in Sources */,
 				3AE62B958E5D987445A5866F /* SecretStore.swift in Sources */,
+				3BFB83B088F90A1057F196E1 /* SeenCopy.swift in Sources */,
 				1F00735B3B5E4167FB8D5FF6 /* SelectCall.swift in Sources */,
 				A445B887FFDD4D43AC906CAF /* SelectionCall.swift in Sources */,
 				C64853D2A051E7BD647354A3 /* SettingCall.swift in Sources */,
