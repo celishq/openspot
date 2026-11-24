@@ -60,10 +60,4 @@ public struct AttachmentChip: Equatable, Sendable {
         case .loading, .ready, .empty: true
         }
     }
-
-    func rank(over front: String?) -> Int {
-        let isFront = front != nil && app == front
-        let isText = value?.kind == .text
-        return (isFront ? 0 : 2) + (isText ? 0 : 1)
-    }
 }

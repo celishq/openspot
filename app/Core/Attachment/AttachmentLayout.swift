@@ -51,7 +51,6 @@ public struct AttachmentLayout: Equatable, Sendable {
     public let isSpread: Bool
     public let selection: String?
     public let spreadCount: Int
-    private let order: [String]
     private let start: Int
 
     init() {
@@ -59,13 +58,12 @@ public struct AttachmentLayout: Equatable, Sendable {
         isSpread = false
         selection = nil
         spreadCount = 0
-        order = []
         start = 0
     }
 
     init(chips: [AttachmentChip], after previous: AttachmentLayout, selection: String?, spreads: Bool, fit: Int) {
         let isSpread = spreads && selection != nil
-        var order = previous.order(of: chips)
+        var order = chips.map(\.source)
         if !isSpread, let selection, let index = order.firstIndex(of: selection) {
             order = Array(order[index...] + order[..<index])
         }
@@ -84,7 +82,6 @@ public struct AttachmentLayout: Equatable, Sendable {
         }
         self.selection = selection
         self.isSpread = isSpread
-        self.order = order
         self.start = start
         self.spreadCount = spreadCount
     }
@@ -95,11 +92,6 @@ public struct AttachmentLayout: Equatable, Sendable {
 
     public var showsHint: Bool {
         isQuiet
-    }
-
-    func order(of chips: [AttachmentChip]) -> [String] {
-        let sources = chips.map(\.source)
-        return order.filter(sources.contains) + sources.filter { !order.contains($0) }
     }
 
     private func start(of index: Int, count: Int, fit: Int) -> Int {

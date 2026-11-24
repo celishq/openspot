@@ -14,7 +14,6 @@ public struct AttachmentStack: Equatable, Sendable {
     public private(set) var selected: String?
     public private(set) var layout = AttachmentLayout()
     private var front: FrontApp?
-    private var arrival: [String] = []
 
     public init(fit: Int = SpotTokens.attachmentFit) {
         self.fit = fit
@@ -31,7 +30,6 @@ public struct AttachmentStack: Equatable, Sendable {
     mutating func open(over front: FrontApp?, unread: [(source: String, look: AttachmentChip.Look?)]) {
         self.front = front
         selected = nil
-        arrival = unread.map(\.source)
         chips = unread.map { AttachmentChip(source: $0.source, app: front?.bundleID, appName: front?.name, look: look(of: front?.bundleID, value: nil, own: $0.look), state: .unread) }
         settle()
         layout = AttachmentLayout(chips: chips, after: AttachmentLayout(), selection: nil, spreads: false, fit: fit)
@@ -41,9 +39,8 @@ public struct AttachmentStack: Equatable, Sendable {
         let held = chips.first { $0.source == source }
         let app = value.app ?? held?.app
         let name = app == held?.app ? held?.appName : app == front?.bundleID ? front?.name : nil
-        chips.removeAll { $0.source == source }
-        chips.append(AttachmentChip(source: source, app: app, appName: name, look: look(of: app, value: value, own: own), state: .ready(value)))
-        if !arrival.contains(source) { arrival.append(source) }
+        let chip = AttachmentChip(source: source, app: app, appName: name, look: look(of: app, value: value, own: own), state: .ready(value))
+        if let index = chips.firstIndex(where: { $0.source == source }) { chips[index] = chip } else { chips.append(chip) }
         settle()
     }
 
@@ -58,7 +55,7 @@ public struct AttachmentStack: Equatable, Sendable {
     }
 
     mutating func turn(by step: Int) {
-        let order = layout.order(of: chips)
+        let order = chips.map(\.source)
         guard !order.isEmpty else { return }
         guard let selected, let index = order.firstIndex(of: selected) else {
             self.selected = order[step < 0 ? order.count - 1 : 0]
@@ -83,8 +80,7 @@ public struct AttachmentStack: Equatable, Sendable {
     }
 
     private mutating func settle() {
-        let place = Dictionary(arrival.enumerated().map { ($0.element, $0.offset) }, uniquingKeysWith: { first, _ in first })
-        chips = Array(chips.sorted { ($0.rank(over: front?.bundleID), place[$0.source] ?? 0) < ($1.rank(over: front?.bundleID), place[$1.source] ?? 0) }.prefix(Self.limit))
+        if chips.count > Self.limit { chips = Array(chips.prefix(Self.limit)) }
         if let selected, !chips.contains(where: { $0.source == selected }) { self.selected = chips.first?.source }
     }
 }

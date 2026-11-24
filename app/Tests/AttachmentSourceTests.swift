@@ -86,18 +86,6 @@ final class AttachmentSourceTests: AttachmentCase {
         XCTAssertEqual(chips.first { $0.source == "tab" }?.look, .file(FileIcon(path: "/Applications/Safari.app")))
     }
 
-    func testChipsOfTheFrontAppComeFirstWithTextFirst() async throws {
-        try taker(takes: "'text', 'url'")
-        try source("copy", adds: "text=copied")
-        try source("tab", adds: "url=https://example.com/a app=com.apple.Safari")
-        try source("selection", adds: "text=hola app=com.apple.Safari")
-
-        await open()
-
-        try await wait("three values") { self.chips.count == 3 && self.chips.allSatisfy { $0.value != nil } }
-        XCTAssertEqual(chips.map(\.source), ["selection", "tab", "copy"])
-    }
-
     func testASourceIsOffTheGridAndOutOfTheSearch() async throws {
         try taker(takes: "'url'")
         try source(adds: nil)

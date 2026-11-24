@@ -27,9 +27,37 @@ final class AttachmentSpreadTests: AttachmentCase {
         XCTAssertTrue(spread.isSpread)
         XCTAssertEqual(model.attachmentShape, .spread)
         XCTAssertEqual(spread.selection, model.attachments.selected)
-        XCTAssertEqual(Set(spread.places.map(\.chip.source)), Set(model.attachments.chips.map(\.source)))
+        XCTAssertEqual(spread.places.map(\.chip.source), model.attachments.chips.map(\.source))
         XCTAssertEqual(spread.places.map(\.slot), [0, 1])
         XCTAssertTrue(model.handleKey(escape))
+    }
+
+    func testEachChipKeepsThePlaceWhereItFirstShowsWhicheverValueArrivesFirst() {
+        let safari = FrontApp(bundleID: "com.apple.Safari")
+        for late in [["x", "y"], ["y", "x"]] {
+            var stack = AttachmentStack(fit: 6)
+            stack.open(over: safari, unread: [("a", nil), ("b", nil)])
+            let values = ["a": AttachmentValue(url: "https://a.com"), "b": AttachmentValue(text: "b", app: "com.apple.Safari"), "x": AttachmentValue(url: "https://x.com"), "y": AttachmentValue(text: "y", app: "com.apple.Safari")]
+            for source in ["b", "a"] + late { stack.fill(source, with: values[source]!, look: nil) }
+            let order = ["a", "b"] + late
+
+            XCTAssertEqual(stack.chips.map(\.source), order)
+            XCTAssertEqual(stack.layout.places.map(\.chip.source), ["a", "b"])
+            stack.place(spreads: false)
+            XCTAssertEqual(stack.layout.places.map(\.chip.source), order)
+            stack.turn(by: 1)
+            XCTAssertEqual(stack.selected, "a")
+            stack.place(spreads: true)
+            XCTAssertEqual(stack.layout.places.map(\.chip.source), order)
+            stack.turn(by: 1)
+            stack.place(spreads: false)
+            stack.leave()
+            stack.place(spreads: false)
+            XCTAssertEqual(stack.layout.places.map(\.chip.source), order)
+            stack.turn(by: 1)
+            stack.place(spreads: true)
+            XCTAssertEqual(stack.layout.places.map(\.chip.source), order)
+        }
     }
 
     func testTheFirstTabRingsTheFrontTileAndLeavesItInPlace() async throws {
