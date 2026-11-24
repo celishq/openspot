@@ -230,6 +230,21 @@ final class AttachmentStateTests: AttachmentCase {
         XCTAssertEqual(model.selected, 0)
     }
 
+    func testASheetThatOpensFromTheFieldWhileThePreviewHoldsRoomKeepsTheRoomThroughItsOpen() async throws {
+        try await openWithTab()
+        XCTAssertTrue(model.handleKey(tab))
+        let room = model.fieldRoom
+        XCTAssertGreaterThan(room, 0)
+        let writes = host.previewWrites.count
+
+        model.pushFirst("reader", moving: true)
+        try await wait("the open") { self.model.transition.phase == .open }
+
+        XCTAssertNil(SpotSheetCard.of("reader", in: model))
+        XCTAssertEqual(model.fieldRoom, room)
+        XCTAssertEqual(host.previewWrites.count, writes)
+    }
+
     func testReturnHandsTheValueToTheActionOfTheSelectedRow() async throws {
         try await openWithTab()
         XCTAssertTrue(model.handleKey(tab))

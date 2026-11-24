@@ -2,7 +2,7 @@ import OpenspotCore
 import SwiftUI
 
 struct SpotFieldView: View {
-    static var rect: CGRect { CGRect(x: SpotTokens.halo, y: SpotTokens.halo, width: SpotTokens.gridWidth, height: SpotTokens.cell) }
+    static var rect: CGRect { SpotTokens.fieldRect(room: 0) }
 
     let model: SpotsModel
     let isOpen: Bool
@@ -43,7 +43,7 @@ struct SpotFieldView: View {
     }
 
     private var gridPlace: CGRect {
-        model.fieldRoom > 0 ? Self.heldRect(room: model.fieldRoom) : Self.rect
+        SpotTokens.fieldRect(room: model.fieldRoom)
     }
 
     private var glass: some View {
@@ -118,10 +118,6 @@ struct SpotFieldView: View {
         .frame(width: Self.rect.width, height: Self.rect.height)
         .offset(x: Self.rect.minX, y: Self.rect.minY)
         .frame(width: SpotTokens.panelWidth, height: SpotTokens.panelHeight, alignment: .topLeading)
-    }
-
-    static func heldRect(room: CGFloat) -> CGRect {
-        CGRect(x: rect.minX, y: rect.minY, width: rect.width, height: rect.height + room)
     }
 
     static func sheetRow(top: SheetTop) -> CGRect {
@@ -200,10 +196,11 @@ struct SpotFieldView: View {
         guard let morph = sheet?.morph else { return { _ in 1 } }
         let header = CGRect(x: SpotTokens.padding, y: SpotTokens.padding, width: SpotTokens.gridWidth - 2 * SpotTokens.padding, height: SpotTokens.glyph)
         let line = SpotType.inputLine
-        let rest = SpotTokens.halo + (SpotTokens.cell - line) / 2
+        let field = gridPlace
+        let rest = field.minY + (SpotTokens.cell - line) / 2
         let drop = model.fieldTop.fieldY - (SpotTokens.cell - SpotTokens.listRow) / 2
         return { progress in
-            let words = CGRect(x: SpotTokens.halo, y: rest + drop * CGFloat(progress), width: SpotTokens.gridWidth, height: line)
+            let words = CGRect(x: field.minX, y: rest + drop * CGFloat(progress), width: field.width, height: line)
             return morph.wordsOpacity(of: words, header: header, at: progress)
         }
     }

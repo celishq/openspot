@@ -83,6 +83,10 @@ extension SpotTokens {
         return max(AttachmentStack.pile, min(AttachmentStack.limit, Int(room / (attachmentCard + attachmentSpreadGap))))
     }
 
+    public static func fieldRect(room: CGFloat) -> CGRect {
+        CGRect(x: halo, y: halo, width: gridWidth, height: cell + room)
+    }
+
     public static func attachmentStack(count: Int) -> CGFloat {
         count == 0 ? 0 : attachmentCard + CGFloat(count - 1) * attachmentStep
     }

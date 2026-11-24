@@ -119,7 +119,8 @@ struct SpotSheetLayer: View {
     }
 
     private var closedRect: CGRect {
-        isInstall ? SpotFieldView.rect : frame ?? SpotFieldView.rect
+        let field = SpotTokens.fieldRect(room: model.fieldRoom)
+        return isInstall ? field : frame ?? field
     }
 
     private func shift(to closed: CGRect) -> CGSize {
