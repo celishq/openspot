@@ -57,7 +57,7 @@ dev-state:
 	rm -rf .temp/openspot/spots/openspot.spot
 
 first-launch:
-	pkill -f '/Debug/Openspot.app/Contents/MacOS/Openspot' || true
+	pkill -f '/Debug/Openspot Nightly.app/Contents/MacOS/OpenspotNightly' || true
 	$(MAKE) dev-state EMPTY=1
 
 examples:

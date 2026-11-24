@@ -229,6 +229,14 @@ final class CommandClientTests: XCTestCase {
         XCTAssertEqual(try run(client, []).output, "app: \(handed)help\n")
     }
 
+    func testTheCommandRunsTheProgramThatTheInfoOfItsBundleNames() throws {
+        let contents = folder.appendingPathComponent("A.app/Contents")
+        try "<plist><dict><key>CFBundleExecutable</key>\n<string>OpenspotNightly</string></dict></plist>".write(to: contents.appendingPathComponent("Info.plist"), atomically: true, encoding: .utf8)
+        try "#!/bin/sh\necho \"nightly: $*\"\n".writeScript(to: contents.appendingPathComponent("MacOS/OpenspotNightly"))
+
+        XCTAssertEqual(try run(client, []).output, "nightly: help\n")
+    }
+
     func testACallThatRunsAloneStartsTheApp() throws {
         listen()
 

@@ -5651,6 +5651,7 @@
 				COMBINE_HIDPI_IMAGES = YES;
 				DEVELOPMENT_TEAM = "";
 				ENABLE_HARDENED_RUNTIME = NO;
+				EXECUTABLE_NAME = OpenspotNightly;
 				INFOPLIST_FILE = Shell/Info.plist;
 				INFOPLIST_OUTPUT_FORMAT = XML;
 				LD_RUNPATH_SEARCH_PATHS = (
@@ -5663,6 +5664,7 @@
 					"-ObjC",
 				);
 				PRODUCT_BUNDLE_IDENTIFIER = openspot.celis.ai.dev;
+				PRODUCT_NAME = "Openspot Nightly";
 				SDKROOT = macosx;
 				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "$(inherited) OPENSPOT_TOOLS";
 			};

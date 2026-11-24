@@ -5,7 +5,7 @@
 	<key>CFBundleDevelopmentRegion</key>
 	<string>$(DEVELOPMENT_LANGUAGE)</string>
 	<key>CFBundleDisplayName</key>
-	<string>Openspot</string>
+	<string>$(PRODUCT_NAME)</string>
 	<key>CFBundleDocumentTypes</key>
 	<array>
 		<dict>
@@ -28,7 +28,7 @@
 	<key>CFBundleInfoDictionaryVersion</key>
 	<string>6.0</string>
 	<key>CFBundleName</key>
-	<string>Openspot</string>
+	<string>$(PRODUCT_NAME)</string>
 	<key>CFBundlePackageType</key>
 	<string>APPL</string>
 	<key>CFBundleShortVersionString</key>
@@ -40,15 +40,15 @@
 	<key>LSUIElement</key>
 	<true/>
 	<key>NSAppleEventsUsageDescription</key>
-	<string>Openspot runs your spots, and a spot can ask another app to act, such as to paste.</string>
+	<string>$(PRODUCT_NAME) runs your spots, and a spot can ask another app to act, such as to paste.</string>
 	<key>NSCalendarsFullAccessUsageDescription</key>
-	<string>Openspot shows and adds your events when a spot that you use asks for them.</string>
+	<string>$(PRODUCT_NAME) shows and adds your events when a spot that you use asks for them.</string>
 	<key>NSCameraUsageDescription</key>
-	<string>Openspot records the camera when a spot records the screen with your camera.</string>
+	<string>$(PRODUCT_NAME) records the camera when a spot records the screen with your camera.</string>
 	<key>NSMicrophoneUsageDescription</key>
-	<string>Openspot records the microphone when a spot records the screen with your voice, or when you dictate.</string>
+	<string>$(PRODUCT_NAME) records the microphone when a spot records the screen with your voice, or when you dictate.</string>
 	<key>NSRemindersFullAccessUsageDescription</key>
-	<string>Openspot shows, adds and ticks your reminders when a spot that you use asks for them.</string>
+	<string>$(PRODUCT_NAME) shows, adds and ticks your reminders when a spot that you use asks for them.</string>
 	<key>OpenspotDevState</key>
 	<string>$(OPENSPOT_DEV_STATE)</string>
 	<key>SUAutomaticallyUpdate</key>
