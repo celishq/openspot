@@ -145,7 +145,7 @@ public final class Toasts {
     @discardableResult
     private func after(_ seconds: TimeInterval, _ body: @escaping @MainActor () -> Void) -> Task<Void, Never> {
         Task { [clock] in
-            do { try await clock.sleep(.seconds(seconds), nil) } catch { return }
+            do { try await clock.sleep(.seconds(seconds), .seconds(seconds) / 10) } catch { return }
             guard !Task.isCancelled else { return }
             body()
         }

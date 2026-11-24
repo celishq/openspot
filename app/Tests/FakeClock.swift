@@ -10,6 +10,7 @@ final class FakeClock {
     }
 
     private(set) var time = Date(timeIntervalSince1970: 1000)
+    private(set) var tolerances: [Duration?] = []
     private var sleeps: [Sleep] = []
     private var count = 0
     private let isReal: Bool
@@ -19,7 +20,10 @@ final class FakeClock {
     }
 
     var value: RunClock {
-        RunClock(now: { self.time }, sleep: { duration, _ in try await self.sleep(duration) })
+        RunClock(now: { self.time }, sleep: { duration, tolerance in
+            self.tolerances.append(tolerance)
+            try await self.sleep(duration)
+        })
     }
 
     var sleepCount: Int {

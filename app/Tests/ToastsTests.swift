@@ -190,4 +190,11 @@ final class ToastsTests: XCTestCase {
 
         XCTAssertEqual(fixes, ["second", "first"])
     }
+
+    func testEachTimerOfAToastSleepsWithATolerance() async throws {
+        try await show("Saved")
+
+        XCTAssertFalse(clock.tolerances.isEmpty)
+        XCTAssertFalse(clock.tolerances.contains(nil))
+    }
 }
