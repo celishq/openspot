@@ -62,7 +62,7 @@ final class SourceSpotTests: AttachmentCase {
         await open()
 
         try await wait("the files") { self.state(of: "selection") != nil }
-        XCTAssertEqual(chips.first?.value?.values, [file])
+        XCTAssertEqual(chips.first?.value?.payload, .files(FileKinds.Disk().read([file])))
         XCTAssertEqual(chips.first?.value?.app, "com.apple.finder")
         XCTAssertNil(chips.first?.value?.title)
     }

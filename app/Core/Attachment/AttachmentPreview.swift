@@ -12,18 +12,17 @@ public struct AttachmentPreview: Hashable, Sendable {
     public let symbol: String
 
     public init(_ value: AttachmentValue) {
-        let first = value.values.first ?? ""
         symbol = value.kind.captionSymbol
-        switch value.kind {
-        case .url:
-            text = value.title ?? first
-            caption = URL(string: first)?.host() ?? first
-        case .text:
-            text = String(first.prefix(Self.excerptLimit)).split(whereSeparator: \.isWhitespace).joined(separator: " ")
+        switch value.payload {
+        case .url(let url):
+            text = value.title ?? url
+            caption = URL(string: url)?.host() ?? url
+        case .text(let words):
+            text = String(words.prefix(Self.excerptLimit)).split(whereSeparator: \.isWhitespace).joined(separator: " ")
             caption = value.title ?? "Text"
-        case .file:
-            let names = value.values.map { ($0 as NSString).lastPathComponent }
-            let folder = ((first as NSString).deletingLastPathComponent as NSString).lastPathComponent
+        case .files(let files):
+            let names = files.paths.map { ($0 as NSString).lastPathComponent }
+            let folder = (((files.paths.first ?? "") as NSString).deletingLastPathComponent as NSString).lastPathComponent
             text = value.title ?? names.joined(separator: ", ")
             caption = names.count == 1 ? folder : "\(names.count) files in \(folder)"
         }

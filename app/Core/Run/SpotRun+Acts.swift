@@ -68,8 +68,8 @@ extension SpotRun {
 
     @discardableResult
     public func drop(_ value: AttachmentValue) -> Bool {
-        guard spot.takes(value) else { return false }
-        waitingFiles.append(ScriptEntry.drop.message(value.values))
+        guard spot.takes(value), case .files(let files) = value.payload else { return false }
+        waitingFiles.append(ScriptEntry.drop.message(files.paths))
         startWaitingFiles()
         return true
     }

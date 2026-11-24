@@ -27,7 +27,8 @@ public struct DropKinds: Equatable, Sendable {
     }
 
     func takes(_ value: AttachmentValue) -> Bool {
-        value.kind == .file && !value.files.paths.isEmpty && value.files.paths.allSatisfy { takes(path: $0, kind: value.files.kind(of: $0)) }
+        guard case .files(let files) = value.payload else { return false }
+        return !files.paths.isEmpty && files.paths.allSatisfy { takes(path: $0, kind: files.kind(of: $0)) }
     }
 
     func takes(path: String, kind: FileKinds.Kind?) -> Bool {

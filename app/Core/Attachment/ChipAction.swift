@@ -48,12 +48,12 @@ struct ChipAction: Equatable, Sendable {
 
     func fits(_ value: AttachmentValue) -> Bool {
         guard value.kind == kind else { return false }
-        return drop?.takes(value) ?? (input.fault(in: value.values) == nil)
+        return drop?.takes(value) ?? (input.fault(in: value.texts) == nil)
     }
 
     func message(for value: AttachmentValue) -> Message {
         let title = takesTitle ? value.title.map { [TextBlock.Field(key: Self.title, value: $0)] } ?? [] : []
-        return Message(name, inputs: value.values.map { TextBlock.Field(key: input.name, value: $0) } + title)
+        return Message(name, inputs: value.texts.map { TextBlock.Field(key: input.name, value: $0) } + title)
     }
 
     private static let title = "title"
