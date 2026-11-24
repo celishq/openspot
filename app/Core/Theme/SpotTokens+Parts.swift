@@ -37,6 +37,7 @@ extension SpotTokens {
     public static let contextBorder: CGFloat = 1
     public static var contextStep: CGFloat { contextCard * 0.25 }
     public static let contextShrink: CGFloat = 0.1
+    public static let contextCardFade = 0.3
     public static var contextSpreadGap: CGFloat { contextCard * 0.42 }
     public static var contextBadge: CGFloat { (contextCard * contextCard / 6).squareRoot() }
     public static var contextBadgeGlyph: CGFloat { contextBadge * 0.72 }

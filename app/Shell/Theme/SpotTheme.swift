@@ -48,7 +48,6 @@ enum SpotTheme {
     static let chosenRow = 0.1
     static let liftShadowStrength = 0.25
     static let unfocusedCardStrength = 0.35
-    static let contextCardFade = 0.3
     @MainActor static var contextRim: Color { highlight.opacity(selectedFill + fill) }
     @MainActor static var contextTileTop: Color { loaded.contextTileTop }
     @MainActor static var contextTileBottom: Color { loaded.contextTileBottom }

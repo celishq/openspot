@@ -5,6 +5,32 @@ public struct ContextStack: Equatable, Sendable {
         public let chip: ContextChip
         public let slot: Int
         public let depth: Int
+        public let x: CGFloat
+        public let scale: CGFloat
+        public let opacity: Double
+        public let layer: Double
+
+        init(chip: ContextChip, depth: Int, count: Int) {
+            let shown = min(count, ContextStack.pile)
+            self.chip = chip
+            slot = 0
+            self.depth = depth
+            x = -CGFloat(shown - 1 - min(depth, shown - 1)) * SpotTokens.contextStep
+            scale = 1 - CGFloat(min(depth, ContextStack.pile - 1)) * SpotTokens.contextShrink
+            opacity = depth < ContextStack.pile ? 1 : MotionTokens.hiddenOpacity
+            layer = -Double(depth)
+        }
+
+        init(chip: ContextChip, slot: Int, depth: Int, spreadCount: Int, row: Int) {
+            let pitch = SpotTokens.contextCard + SpotTokens.contextSpreadGap
+            self.chip = chip
+            self.slot = slot
+            self.depth = depth
+            x = -CGFloat(spreadCount - 1 - (depth == 0 ? slot : 0)) * pitch + (depth == 0 ? 0 : SpotTokens.contextStep)
+            scale = 1 - CGFloat(min(depth, 1)) * SpotTokens.contextShrink
+            opacity = depth == 0 ? 1 : depth == 1 ? 1 - SpotTokens.contextCardFade : MotionTokens.hiddenOpacity
+            layer = -Double(slot) - Double(depth * row)
+        }
     }
 
     public static let limit = 6
@@ -92,19 +118,20 @@ public struct ContextStack: Equatable, Sendable {
         let start = isSpread ? start(of: order.firstIndex { $0 == selected } ?? 0, count: order.count) : 0
         let byID = Dictionary(chips.map { ($0.source, $0) }, uniquingKeysWith: { first, _ in first })
         let row = row
+        let rowCount = isSpread ? min(order.count, row) : 0
         places = order.enumerated().compactMap { index, source in
             guard let chip = byID[source] else { return nil }
-            guard isSpread else { return Place(chip: chip, slot: 0, depth: index) }
+            guard isSpread else { return Place(chip: chip, depth: index, count: order.count) }
             let slot = index - start
             return (0..<row).contains(slot)
-                ? Place(chip: chip, slot: slot, depth: 0)
-                : Place(chip: chip, slot: 0, depth: (slot + order.count) % order.count - row + 1)
+                ? Place(chip: chip, slot: slot, depth: 0, spreadCount: rowCount, row: row)
+                : Place(chip: chip, slot: 0, depth: (slot + order.count) % order.count - row + 1, spreadCount: rowCount, row: row)
         }
         placedSelection = selected
         self.isSpread = isSpread
         self.order = order
         self.start = start
-        rowCount = isSpread ? min(order.count, row) : 0
+        self.rowCount = rowCount
     }
 
     private func shownOrder() -> [String] {

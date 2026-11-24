@@ -168,6 +168,34 @@ final class ContextSpreadTests: ContextCase {
         XCTAssertEqual(row(), ["a", "b", "c"])
     }
 
+    func testAStackAtRestPilesItsCardsSmallerAndFurtherRightBehindTheFront() {
+        let sources = ["a", "b", "c", "d"]
+        var stack = ContextStack(row: 3)
+        stack.open(over: nil, loading: sources.map { ($0, .symbol("doc")) })
+        let step = SpotTokens.contextStep
+        let shrink = SpotTokens.contextShrink
+
+        XCTAssertEqual(stack.places.map(\.x), [-2 * step, -step, 0, 0])
+        XCTAssertEqual(stack.places.map(\.scale), [1, 1 - shrink, 1 - 2 * shrink, 1 - 2 * shrink])
+        XCTAssertEqual(stack.places.map(\.opacity), [1, 1, 1, MotionTokens.hiddenOpacity])
+        XCTAssertEqual(stack.places.map(\.layer), [0, -1, -2, -3])
+    }
+
+    func testASpreadRowLaysItsCardsOnePitchApartWithTheRestBehindItsFirst() {
+        let sources = ["a", "b", "c", "d", "e"]
+        var stack = ContextStack(row: 3)
+        stack.open(over: nil, loading: sources.map { ($0, .symbol("doc")) })
+        stack.turn(by: 1)
+        stack.place(spreads: true)
+        let pitch = SpotTokens.contextCard + SpotTokens.contextSpreadGap
+        let step = SpotTokens.contextStep
+
+        XCTAssertEqual(stack.places.map(\.x), [-2 * pitch, -pitch, 0, -2 * pitch + step, -2 * pitch + step])
+        XCTAssertEqual(stack.places.map(\.scale), [1, 1, 1, 1 - SpotTokens.contextShrink, 1 - SpotTokens.contextShrink])
+        XCTAssertEqual(stack.places.map(\.opacity), [1, 1, 1, 1 - SpotTokens.contextCardFade, MotionTokens.hiddenOpacity])
+        XCTAssertEqual(stack.places.map(\.layer), [0, -1, -2, -3, -6])
+    }
+
     func testPressesDuringTheMotionFoldIntoOneStepToTheNewestState() async throws {
         try await openWithTwoChips()
         let first = model.context.chips[0].source
