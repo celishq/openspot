@@ -107,6 +107,7 @@ work in a read too. `run` works in a read, but the action it runs can't show a v
 | `openspot selection read <app>` | Prints what is selected in the app `<app>`, and its `app=`: a `file=` for each file selected in Finder, or the `text=` selected in another app. It prints nothing when the app is not running or has no selection. |
 | `openspot front app` | Prints the `app=` bundle ID, `name=` and `path=` of the app in front of Openspot, or nothing. |
 | `openspot clipboard read [--newer <age>]` | Prints the text on the clipboard. With `--newer`, it prints it only when Openspot first saw that copy within the age: seconds, or a number with `s`, `m`, `h` or `d`, such as `2m`. |
+| `openspot clipboard files [--newer <age>]` | Prints the path of each file on the clipboard, one a line, or nothing when it holds none. `--newer` works as it does for `clipboard read`. |
 | `openspot access list` | Prints `app=`, `path=` and `access=` for each app that Openspot reads: `allowed`, `denied`, `unasked`, or `unknown` while the app is closed. The record of the selected text has `app=accessibility`. |
 | `openspot access ask <app\|accessibility>` | Asks macOS for Openspot's access to the app, or to Accessibility, when the person has not chosen yet, and prints its record. |
 | `openspot emoji list [--tone name]`                | Prints each emoji as an item, with its name in the language of the Mac.                         |

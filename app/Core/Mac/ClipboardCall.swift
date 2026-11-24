@@ -4,6 +4,7 @@ public enum ClipboardCall: NounCall {
     case copy(String?)
     case paste
     case read(newer: TimeInterval?)
+    case files(newer: TimeInterval?)
 
     static let noun = CommandNoun("clipboard", group: .mac, verbs: [
         CommandVerb("copy", "[file]", "Copies the file as Finder does, or the text on stdin.", rule: CallRule(use: .clipboard, used: "copied to the clipboard", inShow: .changes("changes the clipboard"))) { words in
@@ -14,12 +15,22 @@ public enum ClipboardCall: NounCall {
             "read", "[--newer age]", "Prints the text on the clipboard, or nothing when it holds none. --newer prints it only when Openspot first saw that copy within the age, such as 2m: seconds, or a number with s, m, h or d.",
             rule: CallRule(use: .clipboard, used: "read the clipboard")
         ) { words in
-            guard let fit = words.fit, fit.rest.isEmpty else { return nil }
-            guard let newer = fit.value("--newer") else { return Self.read(newer: nil) }
-            let age = Int(newer).map(TimeInterval.init) ?? Manifest.Triggers.age(newer)
-            return age.flatMap { $0 > 0 ? Self.read(newer: $0) : nil }
+            Self.newer(of: words).map(Self.read)
+        },
+        CommandVerb(
+            "files", "[--newer age]", "Prints the path of each file on the clipboard, one a line, or nothing when it holds none. --newer works as it does for read.",
+            rule: CallRule(use: .clipboard, used: "read the files on the clipboard")
+        ) { words in
+            Self.newer(of: words).map(Self.files)
         }
     ])
+
+    private static func newer(of words: CallWords) -> TimeInterval?? {
+        guard let fit = words.fit, fit.rest.isEmpty else { return nil }
+        guard let newer = fit.value("--newer") else { return .some(nil) }
+        let age = Int(newer).map(TimeInterval.init) ?? Manifest.Triggers.age(newer)
+        return age.flatMap { $0 > 0 ? .some($0) : nil }
+    }
 
     func rule(_ rule: CallRule, spot: String?) -> CallRule {
         guard case .copy(nil) = self else { return rule }
@@ -35,6 +46,8 @@ public enum ClipboardCall: NounCall {
         case .paste: calls.paste()
         case .read(nil): calls.read()
         case .read(let newer?): context.runs.map { calls.read(newer: newer, runs: $0) } ?? CommandAnswer.notRunning("clipboard read --newer")
+        case .files(nil): calls.files()
+        case .files(let newer?): context.runs.map { calls.files(newer: newer, runs: $0) } ?? CommandAnswer.notRunning("clipboard files --newer")
         }
     }
 }

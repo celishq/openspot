@@ -27,6 +27,22 @@ struct ClipboardCalls {
         }
     }
 
+    func files() -> CommandAPI.Work {
+        CommandAnswer.work { [mac] in Self.paths(mac) }
+    }
+
+    func files(newer limit: TimeInterval, runs: SpotRuns) -> CommandAPI.Work {
+        CommandAnswer.work { [mac] in
+            guard let age = await runs.copyAge(), age < limit else { return "" }
+            return Self.paths(mac)
+        }
+    }
+
+    private static func paths(_ mac: (any MacClipboard)?) -> String {
+        guard case .files(let urls) = mac?.contents() else { return "" }
+        return urls.map { "\($0.path)\n" }.joined()
+    }
+
     func paste() -> CommandAPI.Work {
         CommandAnswer.work { [mac] in
             try Mac.part(mac, "clipboard").paste()

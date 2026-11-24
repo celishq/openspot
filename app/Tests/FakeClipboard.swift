@@ -4,6 +4,7 @@ import Foundation
 final class FakeClipboard: MacClipboard, MacEvents, @unchecked Sendable {
     private let lock = NSLock()
     private var textValue: String
+    private var contentsValue = ClipboardContents.text
     private var countValue = 0
     private var pasteValue = 0
 
@@ -14,6 +15,14 @@ final class FakeClipboard: MacClipboard, MacEvents, @unchecked Sendable {
     func copy(_ text: String) {
         lock.withLock {
             textValue = text
+            contentsValue = .text
+            countValue += 1
+        }
+    }
+
+    func copy(files: [URL]) {
+        lock.withLock {
+            contentsValue = .files(files)
             countValue += 1
         }
     }
@@ -21,6 +30,7 @@ final class FakeClipboard: MacClipboard, MacEvents, @unchecked Sendable {
     func copy(text: String) throws { copy(text) }
     func copy(file: URL) throws { copy(file.absoluteString) }
     func text() -> String { lock.withLock { textValue } }
+    func contents() -> ClipboardContents { lock.withLock { contentsValue } }
     func paste() throws { lock.withLock { pasteValue += 1 } }
 
     func listen(_ heard: @escaping @MainActor (AppSignal) -> Void) {}

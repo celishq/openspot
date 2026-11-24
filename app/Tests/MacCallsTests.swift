@@ -247,6 +247,21 @@ final class MacCallsTests: XCTestCase {
         XCTAssertEqual([colour.output, colour.errors], ["", ""])
     }
 
+    func testClipboardFilesPrintsEachCopiedFileAndNothingForText() async throws {
+        let board = FakeClipboard(text: "a.png")
+        let api = CommandAPI(mac: Mac(clipboard: board), places: .test(["OPENSPOT_CONFIG": config.path]))
+        func answer() async throws -> CommandAnswer {
+            try await XCTUnwrap(api.work(for: .test(["clipboard", "files"]), input: { "" }))()
+        }
+
+        let text = try await answer()
+        board.copy(files: [URL(fileURLWithPath: "/a/b c.png"), URL(fileURLWithPath: "/a/d")])
+        let files = try await answer()
+
+        XCTAssertEqual([text.output, text.errors], ["", ""])
+        XCTAssertEqual(files.output, "/a/b c.png\n/a/d\n")
+    }
+
     func testTheAppAsksForAColourAndAFolder() async throws {
         let client = client!
         let colour = try await Task.detached { try client.run(["color", "pick"]) }.value
