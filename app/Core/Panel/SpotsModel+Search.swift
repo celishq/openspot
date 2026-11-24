@@ -91,7 +91,8 @@ extension SpotsModel {
         foundSpots = found.matches.compactMap { match in
             match.list == 0 ? spots[match.item.run] : Entry(spot: sources[match.list - 1], item: match.item)
         }
-        show(Self.placed(answers, around: foundSpots.filter { !ids.contains($0.id) }))
+        let found = foundSpots.filter { !ids.contains($0.id) }
+        show(found.filter(\.isNew) + Self.placed(answers, around: found.filter { !$0.isNew }))
         Set(foundSpots.compactMap { $0.item == nil ? nil : $0.spot.id }).forEach(runs.want)
         if !isEditing { missedSearch.landed(query, found: visible.contains { $0.spot.triggers.search?.isLast != true }) }
     }

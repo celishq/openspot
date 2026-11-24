@@ -13,6 +13,7 @@ public struct SpotArrangement: Equatable, Sendable {
         public var key: ActionKey?
         public var panel: GridPanel?
         public var commands: [String: String]?
+        public var mark: SpotMark?
 
         public init(id: String, size: SpotSize? = nil, isOnGrid: Bool? = nil, isEnabled: Bool? = nil, isGlobal: Bool? = nil, isInMenuBar: Bool? = nil, key: ActionKey? = nil) {
             self.id = id
@@ -80,6 +81,14 @@ public struct SpotArrangement: Equatable, Sendable {
         Set(choices.filter { $0.isInMenuBar == true }.map(\.id))
     }
 
+    public func mark(of id: String) -> SpotMark? {
+        choice(of: id)?.mark
+    }
+
+    public var marks: [String: SpotMark] {
+        Dictionary(choices.compactMap { choice in choice.mark.map { (choice.id, $0) } }, uniquingKeysWith: { first, _ in first })
+    }
+
     public var enabled: Set<String> {
         Set(choices.filter { $0.isEnabled == true }.map(\.id))
     }
@@ -123,6 +132,16 @@ public struct SpotArrangement: Equatable, Sendable {
         change(id) { $0.isWindow = isWindow }
     }
 
+    public mutating func set(mark: SpotMark?, of id: String) {
+        guard mark != nil || places[id] != nil else { return }
+        change(id) { $0.mark = mark }
+        choices.removeAll { $0.id == id && $0 == Choice(id: id) }
+    }
+
+    public mutating func dropMarks(keeping ids: Set<String>) {
+        for choice in choices where choice.mark != nil && !ids.contains(choice.id) { set(mark: nil, of: choice.id) }
+    }
+
     private mutating func change(_ id: String, _ work: (inout Choice) -> Void) {
         if places[id] == nil { choices.append(Choice(id: id)) }
         choices.indices.filter { choices[$0].id == id }.forEach { work(&choices[$0]) }
@@ -141,7 +160,8 @@ public struct SpotArrangement: Equatable, Sendable {
                 ("window", choice.isWindow.map { .boolean($0) }),
                 ("key", (choice.key?.text).map { .string($0) }),
                 ("side", (choice.panel?.rawValue).map { .string($0) }),
-                ("commands", choice.commands.map { .table($0.mapValues { .string($0) }) })
+                ("commands", choice.commands.map { .table($0.mapValues { .string($0) }) }),
+                ("mark", (choice.mark?.rawValue).map { .string($0) })
             ])
         }
     }
