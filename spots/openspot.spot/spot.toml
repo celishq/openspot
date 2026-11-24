@@ -146,8 +146,8 @@ pages = ["prompt:*"]
 title = "Attachments"
 icon = "rectangle.on.rectangle"
 detail = "Choose what the panel hands to spots"
-keywords = ["attachments", "tab", "selection", "selected text", "clipboard", "copied", "finder", "browser", "source"]
-uses = ["spots"]
+keywords = ["attachments", "tab", "selection", "selected text", "clipboard", "copied", "finder", "browser", "source", "access", "permission"]
+uses = ["spots", "read"]
 edits = "attachments"
 
 [scripts.attachments.on]

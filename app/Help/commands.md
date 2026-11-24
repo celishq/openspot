@@ -107,7 +107,7 @@ work in a read too. `run` works in a read, but the action it runs can't show a v
 | `openspot read finder` | Prints a `file=` for each file selected in Finder, and `app=`. |
 | `openspot read selection` | Prints the `text=` selected in the front app, and its `app=`. |
 | `openspot read clipboard` | Prints the `text=` on the clipboard, or `url=` when it holds one link, and `age=`, the seconds since Openspot first saw that copy. |
-| `openspot read --access` | Prints `reader=`, `app=` and `access=` for each reader: `allowed`, `denied`, `unasked`, or `unknown` while its app is closed. |
+| `openspot read --access [app]` | Prints `reader=`, `app=`, `path=` and `access=` for each reader: `allowed`, `denied`, `unasked`, or `unknown` while its app is closed. With an app's bundle id, it prints only that app, and asks the person when they have not chosen yet, outside a read. |
 | `openspot emoji list [--tone name]`                | Prints each emoji as an item, with its name in the language of the Mac.                         |
 | `openspot symbols list`                            | Prints each symbol of the Character Viewer as an item.                                          |
 | `openspot translate text [--from code] [--to code]` | Translates the text on stdin. `openspot translate languages` prints the languages it knows.     |

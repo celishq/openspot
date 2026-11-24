@@ -2,7 +2,7 @@ import Foundation
 
 enum ReadCall: NounCall {
     case source(ReadSource)
-    case access
+    case access(String?)
 
     private static let rule = CallRule(use: .read, used: "read what the person works on", flags: .needsApp)
 
@@ -14,8 +14,10 @@ enum ReadCall: NounCall {
             "clipboard", "", "Prints the text= on the clipboard, or url= when it holds one link, and its age= in seconds since Openspot first saw that copy.", rule: rule
         ) { $0.none ? Self.source(.clipboard) : nil },
         CommandVerb(
-            "--access", "", "Prints reader=, app= and access= for each reader: allowed, denied, unasked, or unknown while its app is closed.", rule: rule
-        ) { $0.none ? Self.access : nil }
+            "--access", "[app]",
+            "Prints reader=, app=, path= and access= for each reader: allowed, denied, unasked, or unknown while its app is closed. With an app's bundle id, prints only its record, and asks the person when they have not chosen yet, outside a read.",
+            rule: rule
+        ) { $0.none ? Self.access(nil) : $0.one.map { Self.access($0) } }
     ])
 
     func work(in context: CallContext) -> CommandAPI.Work? {
@@ -28,7 +30,7 @@ enum ReadCall: NounCall {
             do {
                 let records = switch self {
                 case .source(let source): try await sources.read(source, asks: asks)
-                case .access: await sources.access()
+                case .access(let app): await sources.access(of: app, asks: asks && app != nil)
                 }
                 return records.map(\.text).joined(separator: "\n")
             } catch let refusal as ReadRefusal {

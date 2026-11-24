@@ -32,13 +32,14 @@ public final class ReadSources: @unchecked Sendable {
         }
     }
 
-    func access() async -> [TextBlock] {
+    func access(of app: String? = nil, asks: Bool = false) async -> [TextBlock] {
+        let apps = Browser.all.map { ("tab", $0.bundleID) } + [("finder", Self.finder.bundleID)]
         var records: [TextBlock] = []
-        for browser in Browser.all where mac.isInstalled(browser.bundleID) {
-            records.append(Self.record([("reader", "tab"), ("app", browser.bundleID), ("access", await mac.access(to: browser.bundleID, asks: false).rawValue)]))
+        for (reader, bundleID) in apps where app == nil || app == bundleID {
+            guard let place = mac.place(of: bundleID) else { continue }
+            records.append(Self.record([("reader", reader), ("app", bundleID), ("path", place), ("access", await mac.access(to: bundleID, asks: asks).rawValue)]))
         }
-        records.append(Self.record([("reader", "finder"), ("app", Self.finder.bundleID), ("access", await mac.access(to: Self.finder.bundleID, asks: false).rawValue)]))
-        records.append(Self.record([("reader", "selection"), ("access", mac.accessibility(asks: false).rawValue)]))
+        if app == nil { records.append(Self.record([("reader", "selection"), ("access", mac.accessibility(asks: false).rawValue)])) }
         return records
     }
 

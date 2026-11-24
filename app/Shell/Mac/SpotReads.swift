@@ -13,8 +13,8 @@ struct SpotReads: MacReads {
         await MainActor.run { app().flatMap { app in app.bundleIdentifier.map { FrontApp(bundleID: $0, path: app.bundleURL?.path) } } }
     }
 
-    func isInstalled(_ bundleID: String) -> Bool {
-        NSWorkspace.shared.urlForApplication(withBundleIdentifier: bundleID) != nil
+    func place(of bundleID: String) -> String? {
+        NSWorkspace.shared.urlForApplication(withBundleIdentifier: bundleID)?.path
     }
 
     func access(to bundleID: String, asks: Bool) async -> ReadAccess {

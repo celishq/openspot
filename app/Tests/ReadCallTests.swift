@@ -154,14 +154,17 @@ final class ReadCallTests: XCTestCase {
         XCTAssertEqual(answer.output, """
         reader=tab
         app=com.apple.Safari
+        path=/Applications/Safari.app
         access=allowed
 
         reader=tab
         app=com.google.Chrome
+        path=/Applications/Chrome.app
         access=unknown
 
         reader=finder
         app=com.apple.finder
+        path=/Applications/Finder.app
         access=unasked
 
         reader=selection
@@ -169,6 +172,17 @@ final class ReadCallTests: XCTestCase {
 
         """)
         XCTAssertFalse(reads.asks.contains { $0.hasSuffix("true") }, reads.asks.joined(separator: ", "))
+    }
+
+    func testAccessOfOneAppAsksForItInAPersonsRunAndNeverInAShow() async throws {
+        reads.set(installed: ["com.apple.Safari", "com.google.Chrome"], access: ["com.google.Chrome": .unasked])
+
+        let shown = try await call(["--access", "com.google.Chrome"], from: spot(), reason: "sheet.open")
+        let press = try await call(["--access", "com.google.Chrome"], from: spot())
+
+        XCTAssertEqual(shown.output, "reader=tab\napp=com.google.Chrome\npath=/Applications/Chrome.app\naccess=unasked\n")
+        XCTAssertEqual(press.output, "reader=tab\napp=com.google.Chrome\npath=/Applications/Chrome.app\naccess=allowed\n")
+        XCTAssertEqual(reads.asks, ["com.google.Chrome false", "com.google.Chrome true"])
     }
 
     func testReadNeedsTheAppAndNamesItsUse() {
