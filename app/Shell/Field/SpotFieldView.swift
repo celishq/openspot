@@ -39,7 +39,11 @@ struct SpotFieldView: View {
     }
 
     private var place: CGRect {
-        isInSheet ? Self.sheetRow(top: model.fieldTop) : model.fieldRoom > 0 ? Self.heldRect(room: model.fieldRoom) : Self.rect
+        isInSheet ? Self.sheetRow(top: model.fieldTop) : gridPlace
+    }
+
+    private var gridPlace: CGRect {
+        model.fieldRoom > 0 ? Self.heldRect(room: model.fieldRoom) : Self.rect
     }
 
     private var glass: some View {
@@ -210,7 +214,7 @@ struct SpotFieldView: View {
 
     private var glassLook: (Double) -> Double {
         guard let morph = sheet?.morph else { return { _ in 1 } }
-        let rest = Self.rect
+        let rest = gridPlace
         let row = Self.sheetRow(top: model.fieldTop)
         return { progress in
             let t = CGFloat(progress)
