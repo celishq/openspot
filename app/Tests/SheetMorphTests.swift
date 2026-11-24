@@ -19,6 +19,13 @@ final class SheetMorphTests: XCTestCase {
         XCTAssertEqual(SheetMorph.sheetLook(at: 1), 1)
     }
 
+    func testTheContentsLookIsNoneAtTheStartAllAtTheEndAndNeverFallsOnTheWay() {
+        XCTAssertEqual(SheetMorph.contentLook(at: 0), 0)
+        XCTAssertEqual(SheetMorph.contentLook(at: 1), 1)
+        let looks = (0...1000).map { SheetMorph.contentLook(at: Double($0) / 1000) }
+        XCTAssertTrue(zip(looks, looks.dropFirst()).allSatisfy { $0 <= $1 })
+    }
+
     func testTheTwoLooksShowTogetherOnlyBetweenAFifthAndAHalf() {
         for step in 0...100 {
             let progress = Double(step) / 100

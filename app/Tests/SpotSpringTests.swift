@@ -82,6 +82,18 @@ final class SpotSpringTests: XCTestCase {
         }
     }
 
+    func testTheSheetsContentFadesInOverAbout150MillisecondsOfTheOpenAndNoEarlierThanTheSheetsLook() {
+        let progress = run(plainSpring(duration: MotionTokens.grow, bounce: 0), presses: [(0, 1)]).values
+        func time(_ look: (Double) -> Double, reaching share: Double) -> Double {
+            Double(progress.firstIndex { look($0) >= share } ?? progress.count) * frame
+        }
+        let span = time(SheetMorph.contentLook(at:), reaching: 0.9) - time(SheetMorph.contentLook(at:), reaching: 0.05)
+
+        XCTAssertGreaterThanOrEqual(time(SheetMorph.contentLook(at:), reaching: 0.05), time(SheetMorph.sheetLook(at:), reaching: 0.05))
+        XCTAssertGreaterThanOrEqual(span, 0.13)
+        XCTAssertLessThanOrEqual(span, 0.17)
+    }
+
     private func plainSpring(duration: Double, bounce: Double) -> Animation {
         SpotMotion.plainSpring(duration: duration, bounce: bounce)
     }

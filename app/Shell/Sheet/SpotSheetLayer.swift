@@ -111,7 +111,7 @@ struct SpotSheetLayer: View {
 
     private var contentOpacity: (Double) -> Double {
         if card?.look == nil { return { _ in 1 } }
-        return { SheetMorph.sheetLook(at: $0) }
+        return { SheetMorph.contentLook(at: $0) }
     }
 
     private var morph: SheetMorph {

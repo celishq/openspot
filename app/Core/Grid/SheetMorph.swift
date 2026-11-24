@@ -44,6 +44,10 @@ public struct SheetMorph: Equatable, Sendable {
         ease((progress - MotionTokens.contentStart) / (1 - MotionTokens.contentStart))
     }
 
+    public static func contentLook(at progress: Double) -> Double {
+        1 - pow(1 - sheetLook(at: progress), 1 / MotionTokens.contentSoftness)
+    }
+
     public func origin(at progress: Double) -> CGPoint {
         let t = CGFloat(progress)
         return CGPoint(x: card.minX + (sheet.minX - card.minX) * t, y: card.minY + (sheet.minY - card.minY) * t)

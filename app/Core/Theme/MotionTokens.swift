@@ -40,6 +40,7 @@ public enum MotionTokens {
 
     public static let cardShare = 0.5
     public static let contentStart = 0.2
+    public static let contentSoftness = 4.0
 
     public static let hiddenScale = 1.04
     public static var pressedScale: Double { SpotTokens.layout.motion.pressedScale }
