@@ -18,7 +18,7 @@ extension SpotRuns {
     }
 
     func attach(_ id: String, over front: String?) {
-        sheets[id]?.show(need: .change, event: .event(EventName.attach, value: front))
+        sheets[id]?.attach(over: front)
     }
 
     func stopAttach(_ id: String) {

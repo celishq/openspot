@@ -169,6 +169,23 @@ final class AttachmentReadTests: AttachmentCase {
         XCTAssertTrue(model.hint.hasPrefix("⇥ Attach"))
     }
 
+    func testTheEndOfAStoppedReadLeavesTheNextReadOfTheChipLoading() async throws {
+        try taker(takes: "'url'")
+        try attach(waits: true, runs: "\(cli) attachment add \(add)")
+        await open()
+        XCTAssertTrue(model.handleKey(tab))
+        try await wait("the start of the read") { self.log("tab-log") == ["attach"] }
+
+        XCTAssertTrue(model.handleKey(escape))
+        XCTAssertTrue(model.handleKey(tab))
+
+        try await wait("the end of the stopped read") { self.model.runs.usage.counts["tab"]?.runs == 1 }
+        XCTAssertEqual(chips.map(\.state), [.loading])
+        try await wait("the start of the second read") { self.log("tab-log") == ["attach", "attach"] }
+        unblock()
+        try await wait("the value of the second read") { self.shown == ["keep"] }
+    }
+
     func testARefusedReadOffersAllowAndReturnOpensAttachments() async throws {
         try await refuse()
 
