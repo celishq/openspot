@@ -85,7 +85,7 @@ its Settings, `⌘Y` its History, `⌘K` the menu of all actions. Openspot makes
   on a number or a colour written for the look in `Shell/`, outside the token files, `Shell/Picture`, `Shell/Mac` and
   `Shell/Tools`.
 - Glass is system glass, drawn by `spotGlass`, which wraps `glassEffect`. Each shape draws its own glass, outside a
-  `GlassEffectContainer`, since a container drops an opacity after `glassEffect`, and the grid hides an open card and
+  `GlassEffectContainer`, since a container drops each opacity and scale after `glassEffect`, and the grid hides an open card and
   hides the panel by opacity. The grid's scroll edge is one gradient mask over the scroll view, so it cuts each card and
   its marks row by row. A fade dims the content before `glassEffect` (`spotFade`) and
   keeps the glass whole until its last third (`SpotTheme.glassStrength`), so faded glass never shows a sharp page.
@@ -147,6 +147,10 @@ below is one a reviewer can check in a diff.
 - Store a derived value that views read, and write it where its source changes. A computed property over a list reruns on
   each read.
 - A child view takes plain values, not closures, so its container skips it when nothing changed.
+- A fact that only a few leaf views need is read by the leaf from the model, never written into the environment of a container.
+  A card reads a panel-wide fact, such as the open sheet, only when it is the selected card (`marksMenu(ofCard:)`, `focus(ofCard:)`).
+- Attach a preference only where it can hold a value. A ring that cannot mark the menu carries no `SpotMenuAnchor`, and the
+  selected-or-not switch lives in a leaf (`MenuMark`).
 - A body does no pass over a list, no parse, no `stat`, no formatter or regex made anew, and no picture drawn. Do that work
   once, where the data arrives.
 
