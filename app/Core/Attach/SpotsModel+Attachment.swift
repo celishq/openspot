@@ -135,8 +135,8 @@ extension SpotsModel {
     }
 
     func shownPreview(of query: String) -> AttachmentPreview? {
-        guard showsAttachment(of: query), let chip = attachments.selectedChip, entry(chip.source) != nil else { return nil }
-        return chip.value.map { AttachmentPreview($0) } ?? AttachmentPreview(state: chip)
+        guard showsAttachment(of: query), let source = attachments.selected, entry(source) != nil else { return nil }
+        return chipPreview
     }
 
     func attachmentRows() -> [Entry] {

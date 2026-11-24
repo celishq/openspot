@@ -77,8 +77,13 @@ public final class SpotsModel {
             if isFieldCovered != covered { isFieldCovered = covered }
             let word = attachments.isOn ? SearchPrompt.actions : SearchPrompt.grid
             if promptWord != word { promptWord = word }
+            if attachments.selectedChip != oldValue.selectedChip {
+                previewBuilds += 1
+                chipPreview = attachments.selectedChip.flatMap { chip in chip.value.map { AttachmentPreview($0) } ?? AttachmentPreview(state: chip) }
+            }
         }
     }
+    @ObservationIgnored var chipPreview: AttachmentPreview?
     public internal(set) var isAttachmentHidden = false
     @ObservationIgnored var isAttachmentOpen = false
     public private(set) var isFieldCovered = false
@@ -94,6 +99,7 @@ public final class SpotsModel {
     @ObservationIgnored var keyFrames: [String: String] = [:]
     @ObservationIgnored var spotListBuilds = 0
     @ObservationIgnored var visibleUpdates = 0
+    @ObservationIgnored var previewBuilds = 0
     @ObservationIgnored var missedSearch = MissedSearch()
     var answerMatches: AnswerMatches {
         runs.answerMatches
