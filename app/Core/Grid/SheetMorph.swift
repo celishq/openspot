@@ -44,8 +44,9 @@ public struct SheetMorph: Equatable, Sendable {
         ease((progress - MotionTokens.contentStart) / (1 - MotionTokens.contentStart))
     }
 
-    public static func contentLook(at progress: Double) -> Double {
-        1 - pow(1 - sheetLook(at: progress), 1 / MotionTokens.contentSoftness)
+    public static func contentLook(at progress: Double, isOpen: Bool) -> Double {
+        guard isOpen else { return progress }
+        return 1 - pow(1 - sheetLook(at: progress), 1 / MotionTokens.contentSoftness)
     }
 
     public func origin(at progress: Double) -> CGPoint {
