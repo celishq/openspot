@@ -5,6 +5,7 @@ extension Manifest {
         static let table = "actions"
         static let keys: Set<String> = ["title", "icon", "confirm"]
         static let appKeys: Set<String> = ["offers", "shortcut", "close", "when"]
+        static let attachments = "attachments"
         static let inputs = "inputs"
         static let outputs = "outputs"
 
@@ -41,7 +42,7 @@ extension Manifest {
                     case .strings(let texts): appValues[key] = texts
                     default: throw fault("takes a text in \(key).")
                     }
-                    appKey = appKey ?? key
+                    if key != "offers" || appValues[key] != [Self.attachments] { appKey = appKey ?? key }
                 } else if Self.keys.contains(key) {
                     guard case .string(let text)? = table[key] else { throw fault("takes a text in \(key).") }
                     texts[key] = text
@@ -61,6 +62,10 @@ extension Manifest {
             close = appValues["close"]?.first.flatMap(Bool.init)
             when = appValues["when"]?.first
             self.appKey = appKey
+        }
+
+        public var isChipOnly: Bool {
+            offers == [Self.attachments]
         }
 
         public var closes: Bool {

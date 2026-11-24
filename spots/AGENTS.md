@@ -21,7 +21,7 @@ These rules hold for the core spots in `spots/` and the spots in `examples/`. A 
 ## The app's own words
 
 The spots of `spots/openspot.spot/` are parts of the app, such as Settings and New spot, and take a few words that no
-other spot gets. In any other spot, `edits`, `starts`, `shown` and the keys of an action below are unknown keys,
+other spot gets. In any other spot, `edits`, `starts`, `shown` and the keys of an action below are unknown keys, except `offers = ["attachments"]`,
 `account` is removed from its uses, and the variables are absent. `builtin` names these spots to the others.
 
 ```toml
@@ -33,7 +33,7 @@ edits = "spots"
 | ----------------------- | ----------- | ---------------------------------------------------------------------------------------------- |
 | `edits`                 | `spot.toml` | `edits = "spots"`: its sheet is also the Edit sheet of each spot. `edits = "attachments"`: Return opens it on a chip whose read failed. |
 | `starts`                | `spot.toml` | `starts = "first-launch"`: its sheet opens in place of the grid when Openspot first starts.    |
-| `offers`                | an action   | `offers = ["actions"]`: the action shows in the ⌘K menu of every card, under the spot's name, and a press calls its handler with the card's id as `item`. Origins after a space, such as `["actions mine, core"]`, fit only the cards of the person's spots (`mine`), of the spots that come with Openspot (`core`), or of the app (`builtin`). An action `<offered id>.<name>`, such as `[actions."icon.draw"]`, shows in its submenu. |
+| `offers`                | an action   | `offers = ["attachments"]` is open to every spot; [spot.toml](../docs/reference/spot-toml.md) says what it does. `offers = ["actions"]`: the action shows in the ⌘K menu of every card, under the spot's name, and a press calls its handler with the card's id as `item`. Origins after a space, such as `["actions mine, core"]`, fit only the cards of the person's spots (`mine`), of the spots that come with Openspot (`core`), or of the app (`builtin`). An action `<offered id>.<name>`, such as `[actions."icon.draw"]`, shows in its submenu. |
 | `when`                  | an action   | In a JavaScript spot, the name of a function that gets the card's spot id and its origin, and returns whether the offered action shows. The ⌘K menu waits 2 ms for it. |
 | `shortcut`              | an action   | The standard key of an offered action, as a button's `shortcut`.                               |
 | `close`                 | an action   | `close = false` keeps the panel open after the action runs.                                    |

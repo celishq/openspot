@@ -26,6 +26,9 @@ public struct SpotFile: Equatable, Sendable {
         if let key = manifest.unknownKey(isApp: isApp) {
             throw SpotError.fault("\(name) has an unknown key in its \(Manifest.fileName): \(key)")
         }
+        if let action = manifest.actions.first(where: { !isApp && $0.appKey == "offers" }) {
+            throw SpotError.fault("\(name) has offers = [\"\(action.offers.first ?? "")\"] in \(action.section). A spot offers only offers = [\"\(Manifest.Action.attachments)\"]")
+        }
         if let action = manifest.actions.first(where: { !isApp && $0.appKey != nil }) {
             throw SpotError.fault("\(name) has an unknown key in \(action.section): \(action.appKey ?? "")")
         }
@@ -51,7 +54,7 @@ public struct SpotFile: Equatable, Sendable {
         if let setting = manifest.settings.first(where: { ReservedSetting.isReserved($0.id) }) {
             throw SpotError.fault("\(name) has \(setting.section), a key that Openspot keeps for the person. Give the setting another name.")
         }
-        let titled = manifest.actions.filter { $0.title != nil }
+        let titled = manifest.actions.filter { $0.title != nil && !$0.isChipOnly }
         let offeredActions = try OfferedAction.read(titled, owner: id, of: name, isInline: mode == .inline)
         let offeredIDs = Set(offeredActions.map(\.action.id))
         let commands = titled.filter { !offeredIDs.contains($0.id) }

@@ -100,6 +100,7 @@ One table for each thing your spot does by name. Openspot runs `<script> <id>` w
 | `title`          | text              | The words people run it by. With none, it runs only from a button, a view, a timer or another spot. |
 | `icon`           | text              | Its icon.                                              |
 | `confirm`        | text              | The words that ask people to press a second time.      |
+| `offers`         | [text]            | `["attachments"]`: it shows only as a row for a chip, not in the search, the `⌘K` menu or the keys. See [Offer an action](../connect/attachments.md#offer-an-action). |
 | `inputs.<name>`  | a type or a table | A value it takes.                                      |
 | `outputs.<name>` | a type or a table | A value it gives back, as an `out.<name>=` line.       |
 

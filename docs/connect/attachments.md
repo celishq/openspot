@@ -54,6 +54,9 @@ An action shows as a row of its own when it has a `title` and one required input
 input takes files. Its other inputs are optional. A [`pattern`](../reference/spot-toml.md#an-input) shows it only for
 the values that match.
 
+Such an action is also a command that people run from the search, the `⌘K` menu or a key. With
+`offers = ["attachments"]`, it shows only for a chip. Use it for an action that needs the value, such as Approve.
+
 `review.spot/spot.toml`:
 
 ```toml
@@ -62,6 +65,7 @@ icon = "checkmark.seal"
 
 [actions.approve]
 title = "Approve"
+offers = ["attachments"]
 confirm = "Press again to approve"
 inputs.url = { type = "url", required = true, pattern = "^https://github\\.com/.+/pull/\\d+" }
 inputs.title = "text"

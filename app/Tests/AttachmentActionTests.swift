@@ -58,6 +58,25 @@ final class AttachmentActionTests: AttachmentCase {
         XCTAssertEqual(model.visible.first?.symbol, "checkmark")
     }
 
+    func testAnActionOfferedToAttachmentsShowsOnlyOnAChip() async throws {
+        try actionSpot("pages", title: "Pages", actions: [("save", "Save page", url(more: "offers = ['attachments']"))])
+        try await openPull()
+        XCTAssertEqual(shown, ["Save page"])
+        XCTAssertTrue(model.handleKey(escape))
+        let pages = try XCTUnwrap(model.entries.first { $0.id == "pages" })
+
+        model.openMenu(on: SpotsModel.Target(entry: pages, item: nil))
+        let menu = model.menu?.rows.map(\.title) ?? []
+        model.closeMenu()
+        model.query = "save page"
+
+        XCTAssertFalse(menu.isEmpty)
+        XCTAssertFalse(menu.contains("Save page"))
+        XCTAssertFalse(shown.contains("Save page"))
+        XCTAssertTrue(pages.isOnGrid)
+        XCTAssertEqual(pages.spot.mainAct, .sheet)
+    }
+
     func testAnActionWhosePatternDoesNotMatchShowsNoRow() async throws {
         try actionSpot("issues", title: "Issues", actions: [("close", "Close issue", url(pattern: "^https://github\\\\.com/.+/issues/\\\\d+"))])
         try taker(takes: "'url'")
