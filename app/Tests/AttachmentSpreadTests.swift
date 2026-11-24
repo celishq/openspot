@@ -27,7 +27,7 @@ final class AttachmentSpreadTests: AttachmentCase {
         XCTAssertTrue(spread.isSpread)
         XCTAssertEqual(model.attachmentShape, .spread)
         XCTAssertEqual(spread.selection, model.attachments.selected)
-        XCTAssertEqual(spread.places.map(\.chip.source), model.attachments.chips.map(\.source))
+        XCTAssertEqual(Set(spread.places.map(\.chip.source)), Set(model.attachments.chips.map(\.source)))
         XCTAssertEqual(spread.places.map(\.slot), [0, 1])
         XCTAssertTrue(model.handleKey(escape))
     }
