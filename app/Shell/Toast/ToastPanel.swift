@@ -28,6 +28,7 @@ final class ToastPanel: NSPanel {
             shown.open = open
             shown.fixKey = press == nil ? nil : key
             measure(shown)
+            toasts.widen()
             withAnimation(SpotMotion.move) { toasts.arrange() }
             place()
             ends.removeValue(forKey: number)?.cancel()
@@ -39,10 +40,9 @@ final class ToastPanel: NSPanel {
         toast.fixKey = press == nil ? nil : key
         added.dropped.forEach(leave)
         measure(toast)
-        withAnimation(SpotMotion.move) {
-            toasts.shown.insert(toast, at: 0)
-            toasts.arrange()
-        }
+        toasts.shown.insert(toast, at: 0)
+        toasts.widen()
+        withAnimation(SpotMotion.move) { toasts.arrange() }
         place()
         ignoresMouseEvents = false
         orderFrontRegardless()
@@ -92,6 +92,7 @@ final class ToastPanel: NSPanel {
     }
 
     private func settle() {
+        toasts.widen()
         guard stack.entries.isEmpty else { return place() }
         guard toasts.shown.isEmpty else { return }
         ignoresMouseEvents = true
@@ -131,13 +132,14 @@ final class ToastPanel: NSPanel {
         let copy = Toast(id: toast.id, message: toast.message, kind: toast.kind, tree: toast.tree, duration: nil)
         let measure = NSHostingController(rootView: ToastView(toast: copy, showsContent: true))
         measure.sizingOptions = []
-        let width = min(measure.view.fittingSize.width.rounded(.up) + 1, SpotTokens.toastMaxSize.width - 2 * SpotTokens.toastRoom)
+        let widest = SpotTokens.toastMaxSize.width - 2 * SpotTokens.toastRoom
+        let width = min(measure.sizeThatFits(in: NSSize(width: widest, height: SpotTokens.toastMaxSize.height)).width.rounded(.up) + 1, widest)
         toast.size = measure.sizeThatFits(in: NSSize(width: width, height: SpotTokens.toastMaxSize.height))
     }
 
     private func place() {
         let room = 2 * SpotTokens.toastRoom
-        let size = CGSize(width: (toasts.shown.map(\.size.width).max() ?? 0) + room, height: toasts.height + room)
+        let size = CGSize(width: (toasts.width ?? 0) + room, height: toasts.height + room)
         let screens = ScreenPlace.Screen.all
         let window = screens.count < 2 ? nil : front()
         let place = ScreenPlace(screens: screens)

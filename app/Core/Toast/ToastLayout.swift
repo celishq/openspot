@@ -5,6 +5,7 @@ public struct ToastLayout: Equatable, Sendable {
         public let offset: CGFloat
         public let scale: CGFloat
         public let showsContent: Bool
+        public let cut: CGFloat
     }
 
     public let places: [Place]
@@ -16,11 +17,15 @@ public struct ToastLayout: Equatable, Sendable {
         let front = heights.first ?? 0
         for (index, height) in heights.enumerated() {
             if isExpanded {
-                places.append(Place(offset: top, scale: 1, showsContent: true))
+                places.append(Place(offset: top, scale: 1, showsContent: true, cut: 0))
                 top += height + SpotTokens.toastStackGap
             } else {
                 let depth = CGFloat(index)
-                places.append(Place(offset: max(front + depth * SpotTokens.toastPeek - height, 0), scale: 1 - depth * SpotTokens.toastDepthScale, showsContent: index == 0))
+                let offset = max(front + depth * SpotTokens.toastPeek - height, 0)
+                let scale = 1 - depth * SpotTokens.toastDepthScale
+                let edge = index == 0 ? 0 : front + (depth - 1) * SpotTokens.toastPeek
+                let top = offset + height * (1 - scale)
+                places.append(Place(offset: offset, scale: scale, showsContent: index == 0, cut: max(edge - top, 0) / scale))
             }
         }
         self.places = places

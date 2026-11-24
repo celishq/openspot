@@ -4,12 +4,14 @@ import SwiftUI
 struct ToastView: View {
     let toast: Toast
     let showsContent: Bool
+    var width: CGFloat?
 
     var body: some View {
         content
             .opacity(showsContent ? 1 : MotionTokens.hiddenOpacity)
             .padding(.horizontal, SpotTokens.toastMargin)
             .padding(.vertical, SpotTokens.toastPaddingY)
+            .frame(width: width)
             .modifier(SpotGlass(shape: SpotRoundShape(radius: SpotTokens.toastRadius)))
             .contentShape(Rectangle())
             .onTapGesture { toast.open?() }
@@ -22,7 +24,7 @@ struct ToastView: View {
             NodeTree(tree: tree, pictureTimes: [:])
                 .environment(\.spotSurfaceEdge, SurfaceEdge(radius: SpotTokens.toastRadius).inner(by: SpotTokens.toastPaddingY))
                 .environment(\.spotNode, NodeContext(variants: [.toast]))
-                .fixedSize(horizontal: false, vertical: true)
+                .fixedSize()
                 .allowsHitTesting(false)
         } else {
             HStack(spacing: SpotTokens.toastGlyphGap) {

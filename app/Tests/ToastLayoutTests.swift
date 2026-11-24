@@ -33,4 +33,19 @@ final class ToastLayoutTests: XCTestCase {
     func testAnEmptyStackHasNoHeight() {
         XCTAssertEqual(ToastLayout(heights: [], isExpanded: false).height, 0)
     }
+
+    func testAnOlderToastShowsOnlyThePartBelowTheToastInFrontOfIt() {
+        let layout = ToastLayout(heights: [40, 40, 40], isExpanded: false)
+
+        XCTAssertEqual(layout.places[0].cut, 0)
+        for index in 1...2 {
+            let place = layout.places[index]
+            let top = place.offset + 40 * (1 - place.scale) + place.cut * place.scale
+            XCTAssertEqual(top, 40 + CGFloat(index - 1) * peek, accuracy: 0.001)
+        }
+    }
+
+    func testAnExpandedStackCutsNothing() {
+        XCTAssertEqual(ToastLayout(heights: [40, 40], isExpanded: true).places.map(\.cut), [0, 0])
+    }
 }
