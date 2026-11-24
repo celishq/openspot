@@ -93,6 +93,10 @@ public struct ContextLayout: Equatable, Sendable {
         places.first?.isQuiet ?? false
     }
 
+    public var showsKey: Bool {
+        isQuiet && places.first?.chip.isLoading == false
+    }
+
     func order(of chips: [ContextChip]) -> [String] {
         let sources = chips.map(\.source)
         return order.filter(sources.contains) + sources.filter { !order.contains($0) }

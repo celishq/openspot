@@ -173,6 +173,7 @@ final class ContextSpreadTests: ContextCase {
         stack.open(over: nil, loading: ["a", "b", "c"].map { ($0, .symbol("doc")) })
 
         XCTAssertTrue(stack.layout.isQuiet)
+        XCTAssertFalse(stack.layout.showsKey)
         XCTAssertEqual(stack.layout.places.map(\.isQuiet), [true, true, true])
         XCTAssertEqual(stack.layout.places.map(\.x), [0, 0, 0])
         XCTAssertEqual(stack.layout.places.map(\.scale), Array(repeating: SpotTokens.contextQuietScale, count: 3))
@@ -183,6 +184,17 @@ final class ContextSpreadTests: ContextCase {
 
         XCTAssertFalse(stack.layout.isQuiet)
         XCTAssertEqual(stack.layout.places.map(\.isQuiet), [false, false, false])
+    }
+
+    func testTheTabKeyShowsOnlyOnceTheFrontIconHasLoaded() {
+        var stack = ContextStack(fit: 3)
+        stack.open(over: nil, loading: [("a", .symbol("doc"))])
+        XCTAssertFalse(stack.layout.showsKey)
+
+        stack.fill("a", with: ContextValue(text: "hola"), look: nil)
+        stack.place(spreads: false)
+
+        XCTAssertTrue(stack.layout.showsKey)
     }
 
     func testAStackAtRestPilesItsCardsSmallerAndFurtherRightBehindTheFront() {
