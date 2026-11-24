@@ -92,7 +92,7 @@ input.title=Fix the build
 after `drop`.
 
 The actions whose `pattern` matches come first, then the other actions, then the spots that take the value with `drop`.
-A spot with an action in the list does not show again for `drop`. The list holds five rows at most.
+A spot with an action in the list does not show again for `drop`. A spot that takes it with `drop` shows its title, with its `detail` under it. The list holds five rows at most.
 
 ## Give a value
 

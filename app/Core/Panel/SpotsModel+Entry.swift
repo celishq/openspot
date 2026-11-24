@@ -55,7 +55,7 @@ extension SpotsModel {
             self.role = role
             run = nil
             fixedSpot = spot
-            fixedState = item.card ?? SpotState(title: item.title, subtitle: detail ?? (role == .answer ? item.subtitle ?? spot.name : item.path(in: spot)))
+            fixedState = item.card ?? SpotState(title: item.title, subtitle: role == .taker ? detail : detail ?? (role == .answer ? item.subtitle ?? spot.name : item.path(in: spot)))
         }
 
         @MainActor public var commandWords: [(name: String, word: String)] {

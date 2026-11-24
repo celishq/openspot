@@ -49,8 +49,9 @@ class AttachmentCase: PanelCase {
         FileManager.default.createFile(atPath: path("release"), contents: Data())
     }
 
-    func taker(_ name: String = "keep", takes kinds: String) throws {
-        try script(name, toml: "title = '\(name)'\n\n[on]\ndrop = [\(kinds)]", """
+    func taker(_ name: String = "keep", detail: String? = nil, takes kinds: String) throws {
+        let line = detail.map { "detail = '\($0)'\n" } ?? ""
+        try script(name, toml: "title = '\(name)'\n\(line)\n[on]\ndrop = [\(kinds)]", """
         case "$1" in
           show) printf 'text=x\\ntitle=\(name)\\n' ;;
           drop) grep '^input\\.' >> '\(path("\(name)-drops"))' ;;

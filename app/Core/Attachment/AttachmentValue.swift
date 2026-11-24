@@ -61,12 +61,4 @@ extension AttachmentValue.Kind {
         case .file: .symbol("doc.fill")
         }
     }
-
-    public var takerWords: String {
-        switch self {
-        case .file: "Takes the files"
-        case .url: "Takes the link"
-        case .text: "Takes the text"
-        }
-    }
 }

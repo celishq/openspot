@@ -39,6 +39,15 @@ final class AttachmentActionTests: AttachmentCase {
         model.visible.map { $0.state.subtitle ?? "" }
     }
 
+    func testATakerRowShowsTheDetailOfItsSpot() async throws {
+        try taker("keep", detail: "Keep a page", takes: "'url'")
+        try taker("bare", takes: "'url'")
+
+        try await openPull()
+
+        XCTAssertEqual(Set(model.visible.map { "\($0.state.title) \($0.state.subtitle ?? "none")" }), ["keep Keep a page", "bare none"])
+    }
+
     func testAnActionWhosePatternMatchesShowsWithItsTitleAndSpot() async throws {
         try actionSpot("review", title: "Review", actions: [("approve", "Approve", url(pattern: pullPattern, more: "icon = 'checkmark'"))])
 
@@ -79,7 +88,7 @@ final class AttachmentActionTests: AttachmentCase {
         try await openPull()
 
         XCTAssertEqual(shown, ["Approve", "Merge", "Save page", "Share page", "keep"])
-        XCTAssertEqual(details, ["Review", "Review", "Pages", "Pages", "Takes the link"])
+        XCTAssertEqual(details, ["Review", "Review", "Pages", "Pages", ""])
     }
 
     func testASpotWhoseActionShowsDoesNotAlsoShowAsATaker() async throws {

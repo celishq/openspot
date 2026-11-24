@@ -146,7 +146,7 @@ extension SpotsModel {
         }
         let found = commands.takers(of: value, matching: search, except: Set(offered.map(\.spot.id)), limit: Self.takerLimit - offered.count)
         let taken = found.compactMap { row in
-            entry(row.spot).map { Entry(spot: $0.spot, item: SpotItem(title: row.title, run: ""), role: .taker, detail: value.kind.takerWords) }
+            entry(row.spot).map { Entry(spot: $0.spot, item: SpotItem(title: row.title, run: ""), role: .taker, detail: $0.spot.subtitle) }
         }
         return offered + taken
     }
