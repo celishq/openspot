@@ -175,7 +175,7 @@ final class AttachmentSpreadTests: AttachmentCase {
         XCTAssertTrue(stack.layout.isQuiet)
         XCTAssertFalse(stack.layout.showsKey)
         XCTAssertEqual(stack.layout.places.map(\.isQuiet), [true, true, true])
-        XCTAssertEqual(stack.layout.places.map(\.x), [0, 0, 0])
+        XCTAssertEqual(stack.layout.places.map(\.x), Array(repeating: SpotTokens.attachmentQuietX, count: 3))
         XCTAssertEqual(stack.layout.places.map(\.scale), Array(repeating: SpotTokens.attachmentQuietScale, count: 3))
         XCTAssertEqual(stack.layout.places.map(\.opacity), [1, MotionTokens.hiddenOpacity, MotionTokens.hiddenOpacity])
 
@@ -184,6 +184,14 @@ final class AttachmentSpreadTests: AttachmentCase {
 
         XCTAssertFalse(stack.layout.isQuiet)
         XCTAssertEqual(stack.layout.places.map(\.isQuiet), [false, false, false])
+    }
+
+    func testTheIconsSitAsFarFromTheFieldsRightEdgeAsFromItsTopAndBottom() {
+        let quietRight = SpotTokens.attachmentEdge - SpotTokens.attachmentQuietX + SpotTokens.attachmentInset * SpotTokens.attachmentQuietScale
+
+        XCTAssertEqual(quietRight, (SpotTokens.cell - SpotTokens.attachmentQuietIcon) / 2, accuracy: 0.001)
+        XCTAssertEqual(SpotTokens.attachmentEdge, (SpotTokens.cell - SpotTokens.attachmentCard) / 2)
+        XCTAssertEqual(SpotTokens.attachmentKeyWidth, SpotTokens.attachmentQuietIcon)
     }
 
     func testTheTabKeyShowsOnlyOnceTheFrontIconHasLoaded() {

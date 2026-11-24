@@ -15,7 +15,7 @@ public struct AttachmentLayout: Equatable, Sendable {
             self.chip = chip
             slot = 0
             self.depth = depth
-            x = 0
+            x = SpotTokens.attachmentQuietX
             scale = SpotTokens.attachmentQuietScale
             opacity = depth == 0 ? 1 : MotionTokens.hiddenOpacity
             layer = -Double(depth)

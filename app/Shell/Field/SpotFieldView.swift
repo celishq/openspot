@@ -129,7 +129,7 @@ struct SpotFieldView: View {
     }
 
     static var attachmentLeft: CGFloat {
-        rect.maxX - SpotTokens.padding - SpotTokens.attachmentStack(count: AttachmentStack.pile)
+        rect.maxX - SpotTokens.attachmentEdge - SpotTokens.attachmentStack(count: AttachmentStack.pile)
     }
 
     private var fieldTextLeft: CGFloat {
