@@ -7,6 +7,7 @@ final class FakeClipboard: MacClipboard, MacEvents, @unchecked Sendable {
     private var contentsValue = ClipboardContents.text
     private var imageValue = Data()
     private var countValue = 0
+    private var readsValue = 0
     private var pasteValue = 0
 
     init(text: String = "") {
@@ -46,7 +47,13 @@ final class FakeClipboard: MacClipboard, MacEvents, @unchecked Sendable {
 
     func copy(text: String) throws { copy(text) }
     func copy(file: URL) throws { copy(file.absoluteString) }
-    func text() -> String { lock.withLock { textValue } }
+    func text() -> String {
+        lock.withLock {
+            readsValue += 1
+            return textValue
+        }
+    }
+    var textReads: Int { lock.withLock { readsValue } }
     func contents() -> ClipboardContents { lock.withLock { contentsValue } }
     func count() -> Int { lock.withLock { countValue } }
     func writeImage(to file: URL) throws {

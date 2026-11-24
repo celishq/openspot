@@ -11,10 +11,21 @@ final class AttachmentClipboardTests: AttachmentCase {
         model.runs.api = CommandAPI(mac: Mac(clipboard: board), places: model.files, app: ModelApp(model: model), runs: model.runs)
     }
 
-    private func openCopy() async throws {
-        try source("copy", adds: "clipboard")
+    private func openCopy(uses: String = "'attachment', 'clipboard'") async throws {
+        try script("copy", toml: "title = 'copy'\nuses = [\(uses)]\n\n[on]\n\"panel.open\" = true", """
+        case "$1" in
+          show) \(cli) attachment add clipboard 2>> '\(path("errors"))'; echo $? >> '\(path("done"))' ;;
+        esac
+        """)
         await open()
         try await wait("the end of the source") { self.log("done").count == 1 }
+    }
+
+    private func reopen() async throws {
+        model.panelWillHide()
+        model.panelDidHide()
+        await open()
+        try await wait("the end of the source") { self.log("done").count == 2 }
     }
 
     private func give() async throws {
@@ -95,7 +106,30 @@ final class AttachmentClipboardTests: AttachmentCase {
         board.copy("newer")
         try await give()
 
-        try await wait("the note") { self.host.confirms.contains(ClipboardCopy.changed) }
+        try await wait("the chip that says so") { self.chips.first?.state == .failed(ClipboardCopy.changed) }
         XCTAssertEqual(log("keep-drops"), [])
+        XCTAssertTrue(model.attachments.isOn)
+    }
+
+    func testAnOpenWithTheSameCopyReadsItsTextNoMore() async throws {
+        board.copy(String(repeating: "a", count: ClipboardCopy.heldLength + 1))
+        try taker(takes: "'text'")
+
+        try await openCopy()
+        try await reopen()
+
+        try await wait("the value of the copy") { self.chips.first?.value != nil }
+        XCTAssertEqual(board.textReads, 1)
+    }
+
+    func testASourceWithoutClipboardInUsesGetsNoChipAndANote() async throws {
+        board.copy("words")
+        try taker(takes: "'text'")
+
+        try await openCopy(uses: "'attachment'")
+
+        XCTAssertEqual(chips, [])
+        XCTAssertEqual(log("done"), ["1"])
+        XCTAssertTrue(log("errors").first?.contains("needs `clipboard` in the `uses`") == true, "\(log("errors"))")
     }
 }

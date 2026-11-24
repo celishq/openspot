@@ -35,7 +35,11 @@ enum AttachmentCall: NounCall {
             return { CommandAnswer(errors: "`openspot attachment add` runs only from a spot, since its value shows as that spot's chip.\n", code: 1) }
         }
         switch self {
-        case .clipboard(let newer): return Self.addClipboard(context.mac.clipboard, newer: newer, images: context.places.clipboard, to: runs, from: caller)
+        case .clipboard(let newer):
+            guard caller.spot.uses.contains(.clipboard) else {
+                return { CommandAnswer(errors: "`openspot attachment add clipboard` needs `clipboard` in the `uses` of your spot.toml. Add it, then open the panel again.\n", code: 1) }
+            }
+            return Self.addClipboard(context.mac.clipboard, newer: newer, images: context.places.clipboard, to: runs, from: caller)
         case .add(let words): return add(words, to: runs, from: caller, input: context.input)
         }
     }
@@ -61,7 +65,12 @@ enum AttachmentCall: NounCall {
     private static func addClipboard(_ board: (any MacClipboard)?, newer limit: TimeInterval?, images: URL, to runs: SpotRuns, from caller: SpotCaller) -> CommandAPI.Work {
         {
             if let limit { guard let age = await runs.copyAge(), age < limit else { return CommandAnswer() } }
-            guard let board, let value = ClipboardCopy.value(of: board, images: images) else { return CommandAnswer() }
+            guard let board else { return CommandAnswer() }
+            let count = board.count()
+            let kept = await runs.clipboardChip
+            let value = kept?.count == count ? kept?.value : ClipboardCopy.value(of: board, count: count, images: images)
+            if kept?.count != count { await runs.keep(clipboardChip: (count, value)) }
+            guard let value else { return CommandAnswer() }
             _ = await runs.take(SpotEffect.attachment(value), from: caller)
             return CommandAnswer()
         }

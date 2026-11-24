@@ -134,29 +134,35 @@ extension SpotsModel {
     }
 
     func give(to entry: Entry) {
-        guard let value = attachments.selectedChip?.value, let key = confirmKey(of: entry), let id = entry.item?.run else { return }
+        guard let chip = attachments.selectedChip, let value = chip.value, let key = confirmKey(of: entry), let id = entry.item?.run else { return }
         guard let offer = entry.spot.chipActions.first(where: { $0.name == id && $0.fits(value) }) else { return }
         if offer.confirm != nil, confirming != key { return confirming = key }
         confirming = nil
-        leaveAttachment()
-        hand(value, to: entry.spot.id, by: offer)
-        settleGive(on: entry.spot.id)
+        guard let copy = value.copy else { return hand(value, to: entry.spot.id, by: offer) }
+        let board = runs.api?.mac.clipboard
+        Task { [weak self] in
+            let whole = await Task.detached {
+                Result {
+                    guard let board else { throw SpotError.fault("This Mac has no clipboard.") }
+                    return try copy.whole(of: value, from: board)
+                }
+            }.value
+            guard let self else { return }
+            asOnePress {
+                guard attachments.selectedChip?.source == chip.source else { return }
+                switch whole {
+                case .success(let whole?): hand(whole, to: entry.spot.id, by: offer)
+                case .success(nil): mark(chip.source, .failed(ClipboardCopy.changed))
+                case .failure(let error): mark(chip.source, .failed((error as? SpotError)?.reason ?? ClipboardCopy.unwritten))
+                }
+            }
+        }
     }
 
     private func hand(_ value: AttachmentValue, to id: String, by offer: ChipAction) {
-        guard let copy = value.copy, let board = runs.api?.mac.clipboard else {
-            sheets[id]?.run(offer, with: value)
-            return
-        }
-        Task { [weak self] in
-            let whole = await Task.detached { Result { try copy.whole(of: value, from: board) } }.value
-            guard let self else { return }
-            switch whole {
-            case .success(let whole?): sheets[id]?.run(offer, with: whole)
-            case .success(nil): host.confirm(ClipboardCopy.changed)
-            case .failure: host.confirm(ClipboardCopy.unwritten)
-            }
-        }
+        leaveAttachment()
+        sheets[id]?.run(offer, with: value)
+        settleGive(on: id)
     }
 
     func confirmKey(of entry: Entry) -> GlobalKey? {

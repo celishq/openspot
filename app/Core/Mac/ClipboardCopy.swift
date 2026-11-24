@@ -8,15 +8,19 @@ public struct ClipboardCopy: Equatable, Sendable {
     let count: Int
     let image: URL?
 
-    static func value(of board: any MacClipboard, images: URL) -> AttachmentValue? {
-        let count = board.count()
+    static func value(of board: any MacClipboard, count: Int, images: URL) -> AttachmentValue? {
+        let value = read(board, count: count, images: images)
+        return board.count() == count ? value : nil
+    }
+
+    private static func read(_ board: any MacClipboard, count: Int, images: URL) -> AttachmentValue? {
         switch board.contents() {
         case .none:
             return nil
         case .files(let urls):
             return AttachmentValue(files: FileKinds.Disk().read(urls.map(\.path)))
         case .image(let kind):
-            let file = images.appendingPathComponent("Copied image.\(kind)")
+            let file = images.appendingPathComponent("Copied image \(count).\(kind)")
             return AttachmentValue(.files(FileKinds([file.path], kinds: [file.path: .file])), title: "Copied image", copy: ClipboardCopy(count: count, image: file))
         case .text:
             return autoreleasepool { held(board.text(), count: count) }
@@ -36,6 +40,10 @@ public struct ClipboardCopy: Equatable, Sendable {
     func whole(of value: AttachmentValue, from board: any MacClipboard) throws -> AttachmentValue? {
         guard board.count() == count else { return nil }
         guard let image else { return autoreleasepool { AttachmentValue(.text(board.text()), title: value.title, app: value.app, icon: value.icon) } }
+        let folder = image.deletingLastPathComponent()
+        for old in (try? FileManager.default.contentsOfDirectory(at: folder, includingPropertiesForKeys: nil)) ?? [] where old.lastPathComponent != image.lastPathComponent {
+            try? FileManager.default.removeItem(at: old)
+        }
         try board.writeImage(to: image)
         return value
     }

@@ -90,6 +90,10 @@ extension SpotRuns {
         clipboardWatch != nil
     }
 
+    func keep(clipboardChip chip: (count: Int, value: AttachmentValue?)) {
+        clipboardChip = chip
+    }
+
     func watchClipboard(looksNow: Bool = false) {
         let isWanted = sheets.values.contains { $0.isWanted && $0.spot.triggers.events.contains(EventName.clipboard) }
         guard let source, isWanted, !hasQuit else {
