@@ -8,14 +8,13 @@ struct SpotSelectionRing<Edge: InsettableShape>: ViewModifier {
     let shape: Edge
     var width = Self.width
     var progress: Double?
-    var marksMenu = false
-    var marksNow = true
+    var marksMenu: Bool?
 
     @ViewBuilder
     func body(content: Content) -> some View {
-        if marksMenu {
+        if let marksMenu {
             content.overlay(ring.allowsHitTesting(false))
-                .background(MenuMark(isOn: isSelected && marksNow))
+                .background(MenuMark(isOn: marksMenu))
         } else {
             content.overlay(ring.allowsHitTesting(false))
         }

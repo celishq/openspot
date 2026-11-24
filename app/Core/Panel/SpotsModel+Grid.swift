@@ -81,7 +81,7 @@ extension SpotsModel {
     }
 
     public func focus(ofCard index: Int) -> CardFocus {
-        index == selected && openSheetID == nil && isMenuGrown ? .focused : .none
+        marksMenu(ofCard: index) && isMenuGrown ? .focused : .none
     }
 
     public func tap(_ id: String, opening: Bool = false) {
