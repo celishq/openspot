@@ -2,9 +2,9 @@ import XCTest
 
 final class DrawCallTests: XCTestCase {
     func testABlockIsACallWithItsNumberItsArgumentsAndWhatThePersonTyped() {
-        let call = Call(lines: ["call=7", "arg=rename", #"arg=2:Work/pl\\an"#, "route=x", #"input.name=Two\nlines"#, "search=pl"])
+        let call = Call(lines: ["call=7", "arg=rename", #"input.item=2:Work/pl\\an"#, #"input.name=Two\nlines"#])
 
-        XCTAssertEqual(call, .ask(id: 7, arguments: ["rename", #"2:Work/pl\an"#], input: ["route": "x", "input.name": "Two\nlines", "search": "pl"]))
+        XCTAssertEqual(call, .ask(id: 7, arguments: ["rename"], input: ["input.item": #"2:Work/pl\an"#, "input.name": "Two\nlines"]))
     }
 
     func testAStopBlockNamesTheCallToStop() {

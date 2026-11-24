@@ -23,7 +23,7 @@ warned() {
 }
 
 case "$1" in
-  show)
+  show | app.launch | app.update)
     if [ -z "$ready" ]; then
       rm -f "$warned"
       printf 'frame=\ntitle=Updates\ndetail=%s\nshown=false\n' "$version"

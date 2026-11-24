@@ -22,7 +22,7 @@ final class FilesOutTests: XCTestCase {
         )
         model = SpotsModel(host: host, files: files, runs: SpotRuns(stopPause: 0.2))
         host.model = model
-        model.runs.api = CommandAPI(mac: Mac(), places: files, app: ModelApp(model: model), runs: model.runs, rates: .offline)
+        model.runs.api = CommandAPI(mac: Mac(), places: files, app: ModelApp(model: model), runs: model.runs)
     }
 
     override func tearDown() async throws {
@@ -36,7 +36,7 @@ final class FilesOutTests: XCTestCase {
     }
 
     func testAnItemCarriesTheFileThatItNamesFromTheRoot() {
-        let outputCheck = FrameCheck(text: "text=a\nfile=/Users/me/a.png\n\ntext=b\nfile=b.png\n\ntext=c\n")
+        let outputCheck = FrameCheck(text: "item=a\nfile=/Users/me/a.png\n\nitem=b\nfile=b.png\n\nitem=c\n")
         let output = outputCheck.output
 
         XCTAssertEqual(output.items.map(\.file), ["/Users/me/a.png", nil, nil])
@@ -52,14 +52,14 @@ final class FilesOutTests: XCTestCase {
     }
 
     func testTheDragCallNamesEachRow() {
-        XCTAssertEqual(SpotAction.drag(runs: ["a", "b c"]).arguments, ["drag", "a", "b c"])
+        XCTAssertEqual(ScriptEntry.drag.message(["a", "b c"]).block(id: 1), "call=1\narg=drag\ninput.item=a\ninput.item=b c\n\n")
     }
 
     func testADragOutTellsTheScriptAndADragOfEveryFileClosesTheFloat() async throws {
         let body = """
         case "$1" in
-          show) printf 'text=a\\nfile=/a.png\\n\\ntext=b\\nfile=/b.png\\n\\ntext=c\\n' ;;
-          drag) shift; \(TestSpot.toast) "Took $*" ;;
+          show) printf 'item=a\\nfile=/a.png\\n\\nitem=b\\nfile=/b.png\\n\\nitem=c\\n' ;;
+          drag) items=$(sed -n 's/^input.item=//p' | tr '\\n' ' '); \(TestSpot.toast) "Took ${items% }" ;;
         esac
         """
         try "#!/bin/sh\n\(body)\n".writeScript(to: spots.spotFile("shelf"), toml: "")

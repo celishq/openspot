@@ -12,7 +12,7 @@ final class FirstFrame {
     func take(_ frame: Frame) -> Bool {
         guard let waiting, !frame.isMark else { return false }
         self.waiting = nil
-        if frame.fields.isEmpty || frame.root?.value(RootKey.title) == nil {
+        if !frame.isForm {
             waiting.resume(returning: frame.isPicture || !frame.items.isEmpty ? .shown : .done)
         } else if let form = ItemForm(output: frame) {
             waiting.resume(returning: .form(form))

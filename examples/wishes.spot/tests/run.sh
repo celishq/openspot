@@ -97,5 +97,78 @@ prices '1,299.00' 1299 ''
 prices 'soon' '' ''
 prices '526 UAN' 526 ''
 
+# The frames of wishes.sh in protocol 3, and its list in Wishes.md, with a fake `openspot` and a data folder under a
+# hidden folder, as ~/.config is.
+shell="$spot/../../app/Shell/openspot.sh"
+if [ -f "$shell" ]; then
+  work=$(mktemp -d)
+  trap 'rm -rf "$work"' EXIT
+  data="$work/.config/openspot/data/wishes"
+  mkdir -p "$work/bin" "$data" "$work/iCloud Drive/Lists" "$work/Vault"
+  printf '#!/bin/sh\necho "$*" >> "%s/calls"\ncase "$1 $2" in "folder pick") cat "%s/pick" ;; esac\n' "$work" "$work" > "$work/bin/openspot"
+  chmod +x "$work/bin/openspot"
+  printf 'w1\tBooks\t18\tUSD\tThe Design of Everyday Things\thttps://shop.example/b\thttps://shop.example/b.jpg\t\n' > "$data/wishes.tsv"
+  printf 'Plants\n' > "$data/types"
+  setting=
+  call() { printf '%s\n%s' "$2" "$setting" | HOME="$work" PATH="$work/bin:$PATH" OPENSPOT_SH="$shell" OPENSPOT_DATA="$data" sh "$spot/wishes.sh" "$1"; }
+  # frame <name> <handler> <stdin> <line>...: each line is in what the handler prints.
+  frame() {
+    name=$1 out=$(call "$2" "$3"); shift 3
+    for line; do
+      printf '%s\n' "$out" | grep -qxF -- "$line" && continue
+      printf 'wishes.sh, %s: no line %s in\n%s\n' "$name" "$line" "$out"
+      failed=1
+    done
+  }
+  # book <name> <file> <line>...: each line is in the file.
+  book() {
+    name=$1 file=$2; shift 2
+    for line; do
+      grep -qxF -- "$line" "$file" 2>/dev/null && continue
+      printf 'Wishes.md, %s: no line %s in\n%s\n' "$name" "$line" "$(cat "$file" 2>/dev/null)"
+      failed=1
+    done
+  }
+  id=$(call show '' | sed -n 's/^item=\(w.*\)/\1/p')
+
+  frame 'the list from the older wishes.tsv' show '' 'field=search' 'type=search' 'items=items' 'item=add' 'parent=items' 'open.wait=Reading the page' \
+    'box=s1' 'title=Books' "item=$id" 'parent=s1' 'item=share' 'button=edit' 'wait=Reading the page'
+  book 'the older list' "$data/Wishes.md" '# Wishes' '## Books' \
+    '- [The Design of Everyday Things](https://shop.example/b) — 18 USD' '  ![](https://shop.example/b.jpg)' '## Plants'
+  [ -f "$data/wishes.tsv" ] || { printf 'wishes.sh dropped the older wishes.tsv\n'; failed=1; }
+  frame 'a search that is no link' press "$(printf 'input.item=add\ninput.search=a sweater')" \
+    'type=form' 'title=New wish' 'field=link' 'detail=A link starts with https://'
+  frame 'the form of a wish' edit "input.item=$id" 'type=form' 'title=Edit wish' 'value=https://shop.example/b' \
+    'value=The Design of Everyday Things' 'title=Plants'
+  books=$(printf 'Books' | od -An -tx1 | tr -d ' \n')
+  call edit "$(printf 'input.item=%s\ninput.link=https://shop.example/b\ninput.name=Design [2nd] book\ninput.price=20\ninput.notes=hardcover\ninput.type=t%s' "$id" "$books")" >/dev/null
+  book 'a saved edit' "$data/Wishes.md" '- [Design \[2nd\] book](https://shop.example/b) — 20 USD — hardcover' '## Plants'
+
+  printf '%s/Vault' "$work" > "$work/pick"
+  call folder '' >/dev/null
+  grep -qxF "setting set folder ~/Vault" "$work/calls" || { printf 'wishes.sh folder: no setting set in\n%s\n' "$(cat "$work/calls")"; failed=1; }
+  book 'the moved list' "$work/Vault/Wishes.md" '- [Design \[2nd\] book](https://shop.example/b) — 20 USD — hardcover'
+  [ ! -f "$data/Wishes.md" ] || { printf 'wishes.sh folder left the list behind\n'; failed=1; }
+  setting="setting.folder=~/Vault"
+
+  printf '# Wishes\n\n## Plants\n\n- [Fern](https://plants.example/fern) — 12 EUR\n' > "$work/iCloud Drive/Lists/Wishes.md"
+  printf '%s/iCloud Drive/Lists' "$work" > "$work/pick"
+  call folder '' >/dev/null
+  book 'the list that the folder had' "$work/iCloud Drive/Lists/Wishes.md" '- [Fern](https://plants.example/fern) — 12 EUR'
+  book 'the list that stays where it was' "$work/Vault/Wishes.md" '- [Design \[2nd\] book](https://shop.example/b) — 20 USD — hardcover'
+  setting="setting.folder=$work/iCloud Drive/Lists"
+  frame 'a list written by hand' show '' 'title=Plants' 'title=Fern' 'detail=€12 · plants.example'
+
+  fern=$(call show '' | sed -n 's/^item=\(w.*\)/\1/p')
+  call remove "input.item=$fern" >/dev/null
+  book 'a removed wish keeps its own type' "$work/iCloud Drive/Lists/Wishes.md" '# Wishes' '## Plants'
+  grep -q 'Fern' "$work/iCloud Drive/Lists/Wishes.md" && { printf 'wishes.sh remove left the wish\n'; failed=1; }
+
+  setting="setting.folder=$work/Gone"
+  frame 'a folder that is gone' show '' 'item=lost' "title=Wishes can't find ~/Gone"
+  if call remove "input.item=$fern" >/dev/null; then printf 'wishes.sh wrote to a folder that is gone\n'; failed=1; fi
+  grep -q "toast Wishes can't write Wishes.md in ~/Gone" "$work/calls" || { printf 'wishes.sh said nothing of a write that failed\n'; failed=1; }
+  [ ! -d "$work/Gone" ] || { printf 'wishes.sh made the folder that was gone\n'; failed=1; }
+fi
 [ "$failed" = 0 ] && echo 'Wishes tests passed.'
 exit "$failed"

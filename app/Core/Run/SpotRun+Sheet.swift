@@ -6,7 +6,7 @@ extension SpotRun {
         acted()
         settle()
         list.selectFirst()
-        if panel == nil, answered != nil { panel = lastAnswer.flatMap(SheetParts.init(output:)) }
+        if panel?.holdsParts != true, answered != nil { panel = lastAnswer.flatMap { SheetParts(output: $0, variants: runs.variants(of: spot.id)) } }
         let keepsState = script.keepsState
         if answered == nil, keepsState || (waits && list.search == .local) {
             runs.opening.holdMotion(of: spot.id, limited: !keepsState, start: onReady)
@@ -39,11 +39,17 @@ extension SpotRun {
         if let search = running(Self.searchKey) { stop(search) }
         editing = nil
         runs.opening.dropMotion(of: spot.id)
-        heardKind = nil
+        heardRows = nil
         if panel?.isSelectionMoved == true { panel?.clearSelection() }
         link.settle()
         stopUnwantedShow()
         runs.updateClock()
+    }
+
+    func showPlace() {
+        guard var next = panel else { return }
+        next.show(in: runs.variants(of: spot.id))
+        panel = next
     }
 
     public func movePart(by step: Int) {
@@ -54,8 +60,8 @@ extension SpotRun {
         panel?.moveLine(by: lines) ?? false
     }
 
-    public func leaveRows() -> Bool {
-        panel?.leaveRows() ?? false
+    public func leaveRows(upward: Bool = false) -> Bool {
+        panel?.leaveRows(upward: upward) ?? false
     }
 
     public func focusPart(_ id: String) {
@@ -73,7 +79,7 @@ extension SpotRun {
     func floated() {
         settle()
         list.selectFirst()
-        if panel == nil, answered != nil { panel = lastAnswer.flatMap(SheetParts.init(output:)) }
+        if panel?.holdsParts != true, answered != nil { panel = lastAnswer.flatMap { SheetParts(output: $0, variants: runs.variants(of: spot.id)) } }
         show(event: spot.kind.opensSheet ? .sheet : .panel)
         link.settle()
         runs.updateClock()
@@ -81,7 +87,7 @@ extension SpotRun {
 
     func leftPlace() {
         let keepsState = script.keepsState
-        if !isInView, panel != nil || keepsState {
+        if !isInView, panel?.holdsParts == true || keepsState {
             let wasOpen = isOpen
             close()
             if keepsState || panel?.parts.contains(where: \.isEditable) == true {

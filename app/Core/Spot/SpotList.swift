@@ -22,7 +22,7 @@ struct SpotList {
         let inMenuBar: Bool
 
         var blocks: [[(String, String?)]] {
-            [[("text", id), ("title", name), ("icon", icon), ("detail", detail), ("openKey", openKey), ("float", String(float)), ("floatKey", floatKey), ("menubar", String(menubar)), ("inMenuBar", String(inMenuBar))]]
+            [[("item", id), ("title", name), ("icon", icon), ("detail", detail), ("openKey", openKey), ("float", String(float)), ("floatKey", floatKey), ("menubar", String(menubar)), ("inMenuBar", String(inMenuBar))]]
                 + buttons.map { [("button", $0.id), ("title", $0.title), ("icon", $0.icon), ("key", $0.key)] }
                 + fields.map { [("field", $0.id), ("title", $0.title), ("icon", $0.icon)] }
         }
@@ -37,7 +37,7 @@ struct SpotList {
         let own: Bool
 
         var blocks: [[(String, String?)]] {
-            [[("text", id), ("title", name), ("icon", icon), ("detail", detail), ("on", String(on)), ("own", String(own))]]
+            [[("item", id), ("title", name), ("icon", icon), ("detail", detail), ("on", String(on)), ("own", String(own))]]
         }
     }
 
@@ -47,7 +47,7 @@ struct SpotList {
         let value: String
 
         var blocks: [[(String, String?)]] {
-            [[("text", "\(spot).\(key)"), ("key", key), ("spot", spot), ("value", value)]]
+            [[("item", "\(spot).\(key)"), ("key", key), ("spot", spot), ("value", value)]]
         }
     }
 
@@ -63,8 +63,8 @@ struct SpotList {
                 name: script.name,
                 icon: Self.picture(of: script),
                 detail: script.subtitle,
-                buttons: script.offers.map { offer in
-                    Loaded.Offer(id: offer.id, title: offer.title, icon: offer.icon, key: keys.first { $0.spot == script.id && $0.act == .command(offer.id) }?.trigger.text)
+                buttons: script.commands.map { offer in
+                    Loaded.Offer(id: offer.id, title: offer.title ?? "", icon: offer.icon, key: keys.first { $0.spot == script.id && $0.act == .command(offer.id) }?.trigger.text)
                 },
                 fields: script.settings.map { Loaded.Offer(id: $0.id, title: $0.title, icon: $0.icon, key: nil) },
                 openKey: keys.first { $0.spot == script.id && $0.act == .open }?.trigger.text,

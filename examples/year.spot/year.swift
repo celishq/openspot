@@ -10,9 +10,16 @@ struct SpotView: View {
     private var title: some View { Text(spot["title"] ?? "").font(.headline) }
     private var left: some View { Text("\(days - day) days left").font(spot.font.detail).opacity(spot.secondary) }
 
+    private var shape: SpotCard? {
+        if let card = spot.card { return card }
+        if spot.size.width < 100 { return .small }
+        if spot.size.height < 100 { return spot.size.width < 200 ? .wide : .strip }
+        return nil
+    }
+
     var body: some View {
         Group {
-            switch spot.card {
+            switch shape {
             case .small, .wide:
                 SpotMetric(spot, value: "\(days - day)", detail: "days left\nin \(spot["title"] ?? "")")
             case .strip:

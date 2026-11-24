@@ -22,7 +22,7 @@ if [ ! -s "$out/data/spots.txt" ]; then
     [ "$name.spot" = "${folder##*/}" ] || section="scripts.$name"
     title=$(manifest "$folder/spot.toml" "$section" title)
     detail=$(manifest "$folder/spot.toml" "$section" detail)
-    printf 'text=%s\ntitle=%s\ndetail=%s\n\n' "$name" "${title:-$name}" "$detail"
+    printf 'item=%s\ntitle=%s\ndetail=%s\n\n' "$name" "${title:-$name}" "$detail"
   done >"$out/data/spots.txt"
 fi
 package="$out/package"

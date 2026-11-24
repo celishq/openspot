@@ -14,7 +14,7 @@ final class AccountCallsTests: XCTestCase {
         try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
         runs = SpotRuns()
         app = FakeRunningApp()
-        api = CommandAPI(mac: Mac(), places: .test(["OPENSPOT_CONFIG": folder.path]), app: app, runs: runs, rates: .offline)
+        api = CommandAPI(mac: Mac(), places: .test(["OPENSPOT_CONFIG": folder.path]), app: app, runs: runs)
     }
 
     override func tearDown() async throws {
@@ -59,7 +59,7 @@ final class AccountCallsTests: XCTestCase {
 
         let facts = try await call(["account", "show"], from: spot(uses: [], isBuiltIn: false))
 
-        XCTAssertEqual(facts.output, "text=account\nsignedIn=true\nnpub=\(key.npub)\nsince=\(try XCTUnwrap(try store.record()?.since))\nbackedUp=false\n")
+        XCTAssertEqual(facts.output, "item=account\nsignedIn=true\nnpub=\(key.npub)\nsince=\(try XCTUnwrap(try store.record()?.since))\nbackedUp=false\n")
     }
 
     func testNoVerbMakesChangesOrRemovesTheKeyNorPrintsOrTakesAWord() async throws {
@@ -133,7 +133,7 @@ final class AccountCallsTests: XCTestCase {
     }
 
     func testTheFactsRunAloneAnswerThatTheAppIsNotRunning() async throws {
-        let alone = CommandAPI(mac: Mac(), places: .test(["OPENSPOT_CONFIG": folder.path]), rates: .offline)
+        let alone = CommandAPI(mac: Mac(), places: .test(["OPENSPOT_CONFIG": folder.path]))
         let request = CommandRequest(arguments: ["account", "show"], folder: folder.path)
 
         let work = try XCTUnwrap(alone.work(for: try XCTUnwrap(alone.call(of: request)), request: request, input: { "" }))
@@ -169,7 +169,7 @@ final class AccountCallsTests: XCTestCase {
 
         let answer = await work()
 
-        XCTAssertTrue(answer.output.hasPrefix("text=account\nsignedIn=true\n"), answer.output + answer.errors)
+        XCTAssertTrue(answer.output.hasPrefix("item=account\nsignedIn=true\n"), answer.output + answer.errors)
     }
 
     func testEachActOnTheSecretAsksTouchIDFirst() async throws {

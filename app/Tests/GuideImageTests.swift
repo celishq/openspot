@@ -6,38 +6,52 @@ final class GuideImageTests: XCTestCase {
     private let repo = URL(fileURLWithPath: #filePath).deletingLastPathComponent().deletingLastPathComponent().deletingLastPathComponent()
 
     private func images() throws -> [(name: String, manifest: String, example: String)] {
-        let guide = try String(contentsOf: repo.appendingPathComponent("GUIDE.md"), encoding: .utf8)
         var found: [(String, String, String)] = []
-        var last = (manifest: "", example: "")
-        var manifest = ""
-        var fence: (language: String, text: String)?
-        for line in guide.components(separatedBy: "\n") {
-            if fence == nil, ["```toml", "```sh", "```js", "```swift"].contains(line) { fence = (String(line.dropFirst(3)), ""); continue }
-            if let open = fence {
-                if line != "```" {
-                    fence?.text = open.text + line + "\n"
+        for page in try RepoDoc.pages() {
+            var last = (manifest: "", example: "")
+            var manifest = ""
+            var pending: String?
+            var fence: (language: String, text: String)?
+            for line in page.text.components(separatedBy: "\n") {
+                if fence == nil, ["```toml", "```sh", "```js", "```swift"].contains(line) { fence = (String(line.dropFirst(3)), ""); continue }
+                if let open = fence {
+                    if line != "```" {
+                        fence?.text = open.text + line + "\n"
+                        continue
+                    }
+                    if open.language == "toml" {
+                        manifest = open.text
+                    } else {
+                        if open.text.hasPrefix("#!") || open.language == "js" {
+                            last = (manifest, open.text)
+                            if let name = pending {
+                                found.append((name, last.manifest, last.example))
+                                last = ("", "")
+                                pending = nil
+                            }
+                        }
+                        manifest = ""
+                    }
+                    fence = nil
                     continue
                 }
-                if open.language == "toml" {
-                    manifest = open.text
-                } else {
-                    if open.text.hasPrefix("#!") || open.language == "js" { last = (manifest, open.text) }
-                    manifest = ""
+                if line.hasPrefix("!["), let start = line.range(of: "images/", options: .backwards), line.hasSuffix(".png)") {
+                    let name = String(line[start.upperBound...].dropLast(5))
+                    if last.example.isEmpty {
+                        pending = name
+                    } else {
+                        found.append((name, last.manifest, last.example))
+                        last = ("", "")
+                    }
                 }
-                fence = nil
-                continue
-            }
-            if line.hasPrefix("!["), let start = line.range(of: "](docs/images/"), line.hasSuffix(".png)") {
-                found.append((String(line[start.upperBound...].dropLast(5)), last.manifest, last.example))
-                last = ("", "")
             }
         }
         return found
     }
 
-    func testEachImageOfTheGuideIsDrawnFromItsExampleAsItIsNow() throws {
+    func testEachImageOfTheDocsIsDrawnFromItsExampleAsItIsNow() throws {
         let images = try images()
-        XCTAssertGreaterThan(images.count, 3)
+        XCTAssertGreaterThan(images.count, 2)
         for (name, manifest, example) in images {
             let folder = repo.appendingPathComponent("docs/images")
             XCTAssertTrue(FileManager.default.fileExists(atPath: folder.appendingPathComponent("\(name).png").path), name)

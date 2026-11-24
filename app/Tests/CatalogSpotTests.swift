@@ -6,7 +6,7 @@ final class CatalogSpotTests: BuiltInCase {
         try await super.setUp()
         try "#!/bin/sh\n".writeScript(to: core.appendingPathComponent("zebra.spot/zebra.sh"), toml: "detail = 'Open app'\nicon = 'star'")
         try "#!/bin/sh\n".writeScript(to: core.appendingPathComponent("apps.spot/apps.sh"))
-        try "#!/bin/sh\n".writeScript(to: core.appendingPathComponent("cpu.spot/cpu.sh"), toml: "on = ['clock.5']")
+        try "#!/bin/sh\n".writeScript(to: core.appendingPathComponent("cpu.spot/cpu.sh"), toml: "[on]\nevery = 5")
     }
 
     private var catalog: Spot {
@@ -21,14 +21,14 @@ final class CatalogSpotTests: BuiltInCase {
 
         XCTAssertEqual(spot.name, "Spots")
         XCTAssertEqual(spot.subtitle, "Edit Spots")
-        XCTAssertNil(spot.on)
+        XCTAssertFalse(spot.triggers.shows)
         XCTAssertEqual(defaults.arrangement.size(of: spot.id), .wide)
         XCTAssertEqual(defaults.arrangement.isOnGrid(of: spot.id), true)
         XCTAssertEqual(spot.keywords, ["edit spots"])
     }
 
     func testAPressOpensEditSpotsInTheApp() async throws {
-        _ = try await catalog.perform(.press("edit"), timeout: 60)
+        _ = try await catalog.perform("edit", timeout: 60)
 
         let opened = await app.opened
         XCTAssertEqual(opened, ["grid"])
@@ -62,7 +62,7 @@ final class CatalogSpotTests: BuiltInCase {
     }
 
     func testAnItemIsOnByItsValue() throws {
-        XCTAssertEqual(Frame(text: "text=apps\ntitle=Apps\nvalue=true\n").items.first?.isOn, true)
-        XCTAssertEqual(Frame(text: "text=apps\ntitle=Apps\non=true\n").items.first?.isOn, false)
+        XCTAssertEqual(Frame(text: "item=apps\ntitle=Apps\nvalue=true\n").items.first?.isOn, true)
+        XCTAssertEqual(Frame(text: "item=apps\ntitle=Apps\non=true\n").items.first?.isOn, false)
     }
 }

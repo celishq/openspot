@@ -38,6 +38,7 @@ public final class SpotCallers: @unchecked Sendable {
 
     func attach(_ process: ScriptProcess, to caller: SpotCaller) {
         process.channel = channel(for: caller)
+        caller.process = process
         process.onStart { [self] group in enter(group, caller: caller) }
         process.onExit { [self] _ in release(caller) }
     }

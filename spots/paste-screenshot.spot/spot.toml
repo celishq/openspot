@@ -3,5 +3,5 @@ icon = "doc.on.clipboard.fill"
 detail = "From the screenshot folder"
 uses = ["clipboard"]
 
-[commands.paste]
+[actions.paste]
 title = "Paste latest screenshot"

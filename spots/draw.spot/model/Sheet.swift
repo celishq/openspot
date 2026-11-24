@@ -12,17 +12,17 @@ struct Sheet {
     /// The frame of the sheet, with these lines in its root.
     func frame(head: [String] = []) -> String {
         var blocks = [(["frame=", "recents=false"] + head).joined(separator: "\n")]
-        blocks.append("button=open\ntitle=Open")
+        blocks.append("button=press\ntitle=Open")
         blocks.append("button=\(turn):new\ntitle=New board\nshortcut=cmd+n\nscope=spot")
-        blocks.append("button=rename\ntitle=Rename\nshortcut=cmd+r\nform=true\nclose=false")
+        blocks.append("button=rename\ntitle=Rename\nshortcut=cmd+r\nclose=false")
         blocks.append("button=delete\ntitle=Delete\nshortcut=cmd+backspace\nconfirm=Press again to move it to the Trash\nclose=false")
         blocks.append("button=reveal\ntitle=Show boards in Finder\nshortcut=cmd+o\nscope=spot")
-        blocks.append("text=\(turn):new\ntitle=New board\ndetail=A blank board\nicon=plus.square.dashed\nhides=rename\nhides=delete")
+        blocks.append("item=\(turn):new\ntitle=New board\ndetail=A blank board\nicon=plus.square.dashed\nhides=rename\nhides=delete")
         for entry in shelf.entries {
             let name = Self.name(of: entry.file, in: shelf.folder)
             let place = (name as NSString).deletingLastPathComponent
             let picture = FileManager.default.fileExists(atPath: entry.picture.path) ? entry.picture.path : "scribble.variable"
-            let lines = ["text=\(turn):\(name)", "title=\(entry.title)", "detail=\(place.isEmpty ? "" : "\(place) · ")\(edited(entry.edited))", "icon=\(picture)"]
+            let lines = ["item=\(turn):\(name)", "title=\(entry.title)", "detail=\(place.isEmpty ? "" : "\(place) · ")\(edited(entry.edited))", "icon=\(picture)"]
             blocks.append(lines.map(Self.line).joined(separator: "\n"))
         }
         return blocks.joined(separator: "\n\n") + "\n"
@@ -30,7 +30,7 @@ struct Sheet {
 
     /// The form that asks for the new name of a board.
     static func renameForm(title: String, head: [String]) -> String {
-        (["frame="] + head + ["title=Rename board"]).joined(separator: "\n") + "\n\n" + ["field=name", "title=Name", "value=\(title)", "required=true"].map(line).joined(separator: "\n") + "\n"
+        (["frame=", "type=form"] + head + ["title=Rename board"]).joined(separator: "\n") + "\n\n" + ["field=name", "title=Name", "value=\(title)", "required=true"].map(line).joined(separator: "\n") + "\n"
     }
 
     /// What an argument of a call names, without the number that starts it: `new`, or the place of a board.

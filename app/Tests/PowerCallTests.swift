@@ -48,7 +48,7 @@ final class PowerCallTests: XCTestCase {
     }
 
     private func serve(fault: String? = nil) {
-        socket = CommandSocket(folder: client.config, api: CommandAPI(mac: Mac(power: Power(acts: acts, fault: fault)), places: .test(["OPENSPOT_CONFIG": client.config.path]), rates: .offline))
+        socket = CommandSocket(folder: client.config, api: CommandAPI(mac: Mac(power: Power(acts: acts, fault: fault)), places: .test(["OPENSPOT_CONFIG": client.config.path])))
     }
 
     private func run(_ arguments: [String]) throws -> (output: String, errors: String, code: Int32) {
@@ -84,7 +84,7 @@ final class PowerCallTests: XCTestCase {
 
         let answer = try run(["power", "readings"])
 
-        XCTAssertEqual(answer.output, "text=power\nwatts=1.29\ncpu-watts=1.23\ngpu-watts=0.06\nane-watts=0.00\nthermal-pressure=nominal\n")
+        XCTAssertEqual(answer.output, "item=power\nwatts=1.29\ncpu-watts=1.23\ngpu-watts=0.06\nane-watts=0.00\nthermal-pressure=nominal\n")
         XCTAssertEqual(answer.code, 0)
     }
 

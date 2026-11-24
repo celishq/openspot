@@ -30,6 +30,8 @@ extension SpotRun {
         return kept != nil
     }
 
+    private static let routeInput = "route"
+
     func holdPageMotion(start: @escaping () -> Void) {
         guard answered == nil else { return start() }
         runs.opening.holdMotion(of: spot.id, limited: true, start: start)
@@ -41,8 +43,7 @@ extension SpotRun {
 
     func message(of call: Call, values: FieldValues) -> Message {
         var message = call.message
-        message.event = call.event
-        message.route = route
+        if let route { message.inputs.append(.init(key: Self.routeInput, value: route)) }
         message.settings = values.settings
         return message
     }

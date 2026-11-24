@@ -1,5 +1,0 @@
-function main(args, env, input) {
-  if (args[0] === "show")
-    return openspot.call(["calc", "solve", openspot.value("event.value", input)]).stdout;
-  return "";
-}

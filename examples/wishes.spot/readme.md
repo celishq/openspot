@@ -15,6 +15,10 @@ Wishes keeps the things you want to buy, each with its name, its picture and its
 - **Edit a wish.** `⌘E` opens the same form, with its link, name, price, type and picture. A wish that has no
   picture or price reads its page again for them. `⌘⌫` removes a wish.
 - **Share the list.** Press Return on **Share list**, at the bottom, and paste the list into any message.
+- **Keep the list where you want.** Your wishes are one file, `Wishes.md`, that you can open and edit in any app, such
+  as Obsidian or TextEdit. Each type is a `##` heading, and each wish a line with its link, its price and its notes.
+  Choose **Keep in** in the Settings of Wishes to pick its folder, such as one in iCloud Drive: the list moves there,
+  or Wishes reads the `Wishes.md` that the folder already holds. Until you choose, it stays in the folder of Wishes.
 - **Group the list.** Choose **Group by** in the Settings of Wishes, `⌘⏎` on its card: by type, such as Books and
   Gadgets, or by price range. The shared list follows it.
 

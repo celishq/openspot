@@ -13,7 +13,9 @@ final class SettingsSpotTests: BuiltInCase {
     }
 
     private func call(_ arguments: [String]) async throws {
-        try await settings.perform(SpotAction(arguments: arguments), timeout: 60)
+        let handler = arguments[0] == "open" ? "press" : arguments[0]
+        let input = arguments.dropFirst().map { "input.\(handler == "press" ? "item" : "value")=\($0)\n" }.joined()
+        try await settings.perform(handler, input: input.isEmpty ? nil : input, timeout: 60)
     }
 
     func testItIsASmallListThatTheSearchFindsAndTheSettingsKeyOpens() throws {
@@ -24,11 +26,11 @@ final class SettingsSpotTests: BuiltInCase {
         XCTAssertEqual(spot.subtitle, "Choose your key")
         XCTAssertEqual(defaults.arrangement.size(of: spot.id), .small)
         XCTAssertEqual(spot.kind, .list)
-        XCTAssertTrue(spot.isGlobal)
+        XCTAssertTrue(spot.triggers.lists)
         XCTAssertTrue(spot.isFound)
-        XCTAssertFalse(spot.on?.has(.panel) == true)
+        XCTAssertFalse(spot.triggers.showsOnPanel)
         XCTAssertTrue(spot.showsOfferedItems)
-        XCTAssertTrue(spot.on?.has(.sheet) == true)
+        XCTAssertTrue(spot.showsInSheet)
         XCTAssertEqual(SpotArrangement().spot(openedBy: ActionKey(name: ",", isCommand: true), over: defaults.arrangement), spot.id)
     }
 
@@ -41,7 +43,7 @@ final class SettingsSpotTests: BuiltInCase {
     }
 
     func testTheSheetListsOnlyTheSettingsOfTheAppAndNoneOfASpot() async throws {
-        try script("cups.sh", "title = 'Cups'\non = ['clock.60', 'sheet.open']\n[commands.fill]\ntitle = 'Fill'\n[settings.size]")
+        try script("cups.sh", "title = 'Cups'\n[actions.fill]\ntitle = 'Fill'\n[settings]\nsize = 'text'\n[on]\nevery = 60\n'sheet.open' = true")
         try file.set(setting: "theme", of: "cups", to: "dark")
         try file.assign(.shake, to: "cups", act: .float)
 
@@ -200,7 +202,7 @@ final class SettingsSpotTests: BuiltInCase {
     }
 
     func testAHotkeyItemShowsItsKeyAndRecordsANewOne() {
-        let items = Frame(text: "field=open\ntitle=Open\ntype=hotkey\nvalue=ctrl+k\nshake=true\n\ntext=shown\ntitle=Shown\nshortcut=cmd+k\nshake=true\n\ntext=other\ntitle=Other\n").items
+        let items = Frame(text: "field=open\ntitle=Open\ntype=hotkey\nvalue=ctrl+k\nshake=true\n\nitem=shown\ntitle=Shown\nshortcut=cmd+k\nshake=true\n\nitem=other\ntitle=Other\n").items
 
         XCTAssertEqual(items.map(\.shortcut), ["ctrl+k", nil, nil])
         XCTAssertEqual(items.map(\.records), [true, false, false])

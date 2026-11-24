@@ -15,31 +15,31 @@ title=Clear Shelf
 scope=spot
 close=false
 
-text=/Users/you/Desktop/Launch plan.pdf
+item=/Users/you/Desktop/Launch plan.pdf
 title=Launch plan.pdf
 detail=~/Desktop
 icon=/Users/you/Desktop/Launch plan.pdf
 file=/Users/you/Desktop/Launch plan.pdf
 
-text=/Users/you/Downloads/brand-assets.zip
+item=/Users/you/Downloads/brand-assets.zip
 title=brand-assets.zip
 detail=~/Downloads
 icon=/Users/you/Downloads/brand-assets.zip
 file=/Users/you/Downloads/brand-assets.zip
 
-text=/Users/you/Documents/Budget 2026.numbers
+item=/Users/you/Documents/Budget 2026.numbers
 title=Budget 2026.numbers
 detail=~/Documents
 icon=/Users/you/Documents/Budget 2026.numbers
 file=/Users/you/Documents/Budget 2026.numbers
 
-text=/Users/you/Pictures/Screenshots/onboarding-step-2.png
+item=/Users/you/Pictures/Screenshots/onboarding-step-2.png
 title=onboarding-step-2.png
 detail=~/Pictures/Screenshots
 icon=/Users/you/Pictures/Screenshots/onboarding-step-2.png
 file=/Users/you/Pictures/Screenshots/onboarding-step-2.png
 
-text=/Users/you/Documents/Contracts/Lease renewal.pdf
+item=/Users/you/Documents/Contracts/Lease renewal.pdf
 title=Lease renewal.pdf
 detail=~/Documents/Contracts
 icon=/Users/you/Documents/Contracts/Lease renewal.pdf

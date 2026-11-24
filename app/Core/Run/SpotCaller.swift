@@ -12,6 +12,7 @@ public final class SpotCaller: @unchecked Sendable, Equatable {
     private var groupValue: (id: pid_t, start: UInt64)?
     private var endedValue = false
     private var callValue: OpenCall?
+    private weak var processValue: ScriptProcess?
 
     init(spot: Spot, reason: String? = nil, keepsFix: Bool = false) {
         self.spot = spot
@@ -36,6 +37,19 @@ public final class SpotCaller: @unchecked Sendable, Equatable {
     var group: (id: pid_t, start: UInt64)? {
         get { lock.withLock { groupValue } }
         set { lock.withLock { groupValue = newValue } }
+    }
+
+    var process: ScriptProcess? {
+        get { lock.withLock { processValue } }
+        set { lock.withLock { processValue = newValue } }
+    }
+
+    func holdLimit() {
+        process?.holdLimit()
+    }
+
+    func releaseLimit() {
+        process?.releaseLimit()
     }
 
     var hasEnded: Bool {

@@ -50,6 +50,7 @@ final class OpenspotApp: NSObject, NSApplicationDelegate {
     private var update: AppUpdate?
     private var spotsWatch: SpotsWatch?
     private var showListener: NSObjectProtocol?
+    private var appearanceWatch: NSKeyValueObservation?
     private var commandSocket: CommandSocket?
     private let mac = SpotMac()
     private var isLaunched = false
@@ -60,6 +61,10 @@ final class OpenspotApp: NSObject, NSApplicationDelegate {
         toast = ToastPanel.make()
         let theme = ThemeFolder.standard(environment: model.files.environment, builtIn: mac.mac.theme).read()
         model.take(theme)
+        appearanceWatch = NSApp.observe(\.effectiveAppearance, options: [.initial, .new]) { [weak self] app, _ in
+            let appearance: Style.Variant = SpotTheme.isDark(app.effectiveAppearance) ? .dark : .light
+            MainActor.assumeIsolated { self?.model.runs.take(appearance: appearance) }
+        }
         if !theme.faults.isEmpty { notify(theme.faults.joined(separator: "\n")) }
         let item = OpenspotItem(
             model: model, toast: toast?.toast, target: self, action: #selector(pressItem),
@@ -67,6 +72,16 @@ final class OpenspotApp: NSObject, NSApplicationDelegate {
         )
         self.item = item
         toast?.item = item
+        toast?.front = { [weak self] in
+            guard let self else { return nil }
+            let app = NSWorkspace.shared.frontmostApplication
+            return ScreenPlace.toastWindow(
+                panel: model.isWarming ? nil : panel?.frame,
+                isPanelShown: model.isShown,
+                isAppInFront: app == .current,
+                front: { SpotFrontWindow.frame(of: app) }
+            )
+        }
         EditMenu.install()
         SpotKeyLayouts.start()
         panel = SpotsPanel.make(model: model)
@@ -81,13 +96,16 @@ final class OpenspotApp: NSObject, NSApplicationDelegate {
         self.update = update
         let api = CommandAPI(mac: mac.mac, places: model.files, raise: { [model] event in
             await MainActor.run { model.runs.raise(event) }
-        }, app: SpotRunningApp(model: model, update: update), runs: model.runs, rates: .standard)
+        }, app: SpotRunningApp(model: model, update: update), runs: model.runs)
         model.runs.api = api
+        model.runs.cache.listenForMemoryPressure()
         Task { await launch(update: update, api: api) }
     }
 
     private func launch(update: AppUpdate?, api: CommandAPI) async {
         await model.reload()
+        let oldRates = model.files.home.appendingPathComponent("Library/Caches/openspot/calc-rates.json")
+        Task.detached(priority: .utility) { try? FileManager.default.removeItem(at: oldRates) }
         let config = ConfigFile.standard().url.deletingLastPathComponent()
         commandSocket = CommandSocket(folder: config, api: api)
         if commandSocket == nil {

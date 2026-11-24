@@ -7,7 +7,7 @@ draw() {
   elif [ "$used" -ge 85 ]; then detail="Little left" tone=warn
   else detail="In use" tone=
   fi
-  printf 'frame=\ngrid=memory\ngrid=memory\ngrid.bar=memory\n\nnumber=memory\ntitle=Memory\nvalue=%s\nmax=100\nunit=%%\ndetail=%s\ntone=%s\n' "$used" "$detail" "$tone"
+  printf 'frame=\nclass=gap-part\n\nnumber=memory\nclass=h-20 bar:flex\ntype=bar\ntitle=Memory\nvalue=%s\nmax=100\nunit=%%\ndetail=%s\ntone=%s\n' "$used" "$detail" "$tone"
 }
 
 # Prints the memory in use now, as a percent.
@@ -25,10 +25,10 @@ fi
 . "$OPENSPOT_SH"
 used=
 
-# Prints the memory from the load that Openspot measures every 5 seconds. A read with no load, as when the panel
-# opens, measures the memory now.
+# Prints the memory from the load that Openspot measures every 5 seconds. A show, as when the panel opens, measures
+# the memory now.
 main() {
-  load=$(value event.value)
+  load=$(value value)
   case $load in
     *memory=*) used=${load##*memory=} used=${used%% *} ;;
     *) used=$(measure) ;;

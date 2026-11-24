@@ -1,0 +1,129 @@
+# Ask for details in a form
+
+Some actions need a few words from you first. You'll build Notes: run Add note, fill in a short form, and the note is
+saved to a file.
+
+## The spot
+
+`notes.spot/spot.toml`:
+
+```toml
+title = "Notes"
+icon = "note.text"
+
+[actions.add]
+title = "Add note"
+icon = "plus"
+inputs.note = { type = "text", required = true, description = "What to note" }
+inputs.list = { type = "choice", options = ["work", "home"] }
+inputs.urgent = "bool"
+```
+
+`notes.spot/notes.sh`:
+
+```sh
+#!/bin/sh
+case "$1" in
+  add)
+    input=$(cat)
+    note=$(printf '%s\n' "$input" | sed -n 's/^input.note=//p')
+    list=$(printf '%s\n' "$input" | sed -n 's/^input.list=//p')
+    urgent=$(printf '%s\n' "$input" | sed -n 's/^input.urgent=//p')
+    printf '%s\t%s\t%s\n' "$list" "$urgent" "$note" >> "$OPENSPOT_DATA/notes.tsv"
+    openspot toast "Saved to $list"
+    ;;
+esac
+```
+
+Type `add note` in the panel and press Return. A form opens with three rows: a Note field that says What to note, a
+List menu set to work, and an Urgent switch. Fill in Note and press Return, and a message says Saved to work.
+
+## How it works
+
+`note` is `required` and has no `default`, so Openspot can't run the action yet. It asks with a form, one row for each
+input:
+
+| Input type | Row in the form              |
+| ---------- | ---------------------------- |
+| `bool`     | A switch.                    |
+| `choice`   | A menu of its `options`.     |
+| any other  | A field to type in.          |
+
+Each row is named after its input, and a field shows the input's `description` until you type. While Note is empty,
+Return asks you to fill it in.
+
+When you press Return, Openspot runs `notes.sh add` with every value on stdin:
+
+```ini
+input.note=Call the bank
+input.list=work
+input.urgent=false
+```
+
+stdin can only be read once, so the script keeps it in `input` and reads each value from there.
+
+## Ask from a row
+
+A form can also come from the script itself, such as Rename on a row. Print a `frame=` block with `type=form` and a
+`title`, then one block for each value you need:
+
+```ini
+frame=
+type=form
+title=Rename
+
+field=name
+title=Name
+value=Home
+required=true
+
+switch=pinned
+title=Keep at the top
+value=false
+
+choice=color
+title=Color
+value=blue
+
+option=blue
+title=Blue
+
+option=green
+title=Green
+```
+
+The form opens with the values filled in. When you press Return, Openspot runs the same word again, with each value as
+`input.<id>`, here `input.name`, `input.pinned` and `input.color`, and the row as `input.item`. To tell the two runs
+apart, check whether `input.name` is there.
+
+If a value is wrong, print `error=` and a message. The form stays open and shows it.
+
+| Block                  | Is                                                         |
+| ---------------------- | ---------------------------------------------------------- |
+| `field`                | A line of text. `type=multiline` for more, `type=slider` with `min` and `max` for a number. |
+| `switch`               | On or off, `true` or `false`.                              |
+| `choice` and `option`  | A menu of the `option` blocks after it.                    |
+| `placeholder`          | The words a field shows while it's empty.                  |
+| `required`             | `true` keeps Return from sending while the field is empty. |
+
+## Keys in a form
+
+Return does the act of the part in focus: it moves on from a field, opens the list of a choice, flips a switch and saves
+on Save. `⌘` Return saves from any part, and Return saves a form of one field. The arrows move between the parts.
+
+An `option` with `send=true`, such as Add type…, sends the form as soon as it's chosen. An `option` with `remove=true`
+can be deleted with `⌘⌫` in the list of its choice, and the form sends the id of each deleted one as
+`input.<choice id>.removed`.
+
+## While it waits
+
+While your script prints the form, or reads what was sent, the sheet's foot says Loading… or Saving… after a moment.
+`wait` on a button, or `open.wait` on a row, names what your spot does instead, such as `wait=Reading the page`.
+
+A row with `pin=top`, such as Add wish, gets the text of the sheet's search as `input.search` when it's pressed, and the
+first field of its form holds it.
+
+## Next
+
+- [Run an action by name](actions.md) has every key of an action.
+- [Settings people choose](../remember/settings.md) keeps a value from one run to the next.

@@ -40,7 +40,6 @@ public enum SpotTokens {
     public static let menuRowGap: CGFloat = 2
     public static var menuPadding: CGFloat { layout.space.menuPadding }
     public static let placeGap: CGFloat = 8
-    public static let sideGap: CGFloat = 20
     public static let edgeWidth: CGFloat = 8
     public static let edgeGap: CGFloat = 8
     public static let edgeStep: CGFloat = 5
@@ -62,4 +61,5 @@ public enum SpotTokens {
     public static var windowRadius: CGFloat { layout.radius.window }
     public static let windowHeight: CGFloat = 760
     public static let pictureShare: CGFloat = 0.6
+    public static let spaceUnit: CGFloat = 4
 }

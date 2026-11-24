@@ -3,6 +3,7 @@ import Foundation
 public struct AnswerPattern: Equatable, @unchecked Sendable {
     public let text: String
     public private(set) var isLast = false
+    public private(set) var isCard = false
     private let expression: NSRegularExpression
 
     public init?(_ text: String) {
@@ -17,11 +18,17 @@ public struct AnswerPattern: Equatable, @unchecked Sendable {
         return pattern
     }
 
+    func card() -> AnswerPattern {
+        var pattern = self
+        pattern.isCard = true
+        return pattern
+    }
+
     public func matches(_ query: String) -> Bool {
         expression.firstMatch(in: query, range: NSRange(query.startIndex..., in: query)) != nil
     }
 
     public static func == (one: AnswerPattern, two: AnswerPattern) -> Bool {
-        one.text == two.text && one.isLast == two.isLast
+        one.text == two.text && one.isLast == two.isLast && one.isCard == two.isCard
     }
 }

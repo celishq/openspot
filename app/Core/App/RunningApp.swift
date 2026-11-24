@@ -10,6 +10,7 @@ public protocol RunningApp: Sendable {
     func apply(_ theme: Theme) async
     func open(_ id: String) async -> Bool
     func ask(_ id: String, from caller: String?, title: String?) async -> Bool
+    func leave(_ id: String) async -> Bool
     func push(_ id: String, route: String?, title: String?, replace: Bool) async -> Bool
     func pop(_ id: String, all: Bool) async -> Bool
     func review(_ id: String) async -> Bool
@@ -21,6 +22,7 @@ public protocol RunningApp: Sendable {
     func playground(_ file: URL?, isCareful: Bool) async
     func changeSetting(_ key: String, of spot: String) async -> Bool
     func allows(_ reason: String) async -> Bool
+    func pickFolder(_ pick: @escaping @MainActor @Sendable () async -> URL?) async -> URL?
     func slowMotion(_ isOn: Bool?) async -> Bool?
 }
 
@@ -29,7 +31,15 @@ extension RunningApp {
         await open(id)
     }
 
+    public func leave(_ id: String) async -> Bool {
+        await pop(id, all: false)
+    }
+
     public func slowMotion(_ isOn: Bool?) async -> Bool? {
         nil
+    }
+
+    public func pickFolder(_ pick: @escaping @MainActor @Sendable () async -> URL?) async -> URL? {
+        await pick()
     }
 }

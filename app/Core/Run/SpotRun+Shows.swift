@@ -7,8 +7,9 @@ extension SpotRun {
     }
 
     public func show(selecting run: String? = nil, need: ShowNeed = .moment, event: ShowEvent? = nil) {
+        guard !isHeld || route != heldRoute else { return }
         let event = event ?? (need == .change ? .change : showsSheet ? .sheet : .panel)
-        let wantsSheetAnswer = event == .sheet && spot.on?.has(.sheet) == true && shownEvent != .sheet
+        let wantsSheetAnswer = event == .sheet && spot.showsInSheet && shownEvent != .sheet
         if let run { selecting = run }
         if link.isAsking {
             if need == .change { showsAgain = true }
@@ -24,11 +25,11 @@ extension SpotRun {
         let typed = query.isEmpty ? typed ?? "" : query
         let search = typed.isEmpty ? nil : SearchQuery(text: typed)
         let isSent = send(Call(
-            message: Message(.show, inputs: showsSheet ? panel?.inputs ?? [] : [], search: search?.text, searchForms: search?.forms ?? []),
+            message: event.message(after: showsSheet ? panel?.inputs ?? [] : [], search: search),
             key: Self.showKey,
             limit: runs.showLimit,
             event: event,
-            purpose: .ask(.show(generation: panel?.generation, reports: need != .clock, query: query, tells: event != .panel))
+            purpose: .ask(.show(generation: partsGeneration, reports: need != .clock, query: query, tells: event != .panel))
         ))
         self.typed = nil
         if isSent {
@@ -38,6 +39,7 @@ extension SpotRun {
     }
 
     public func search(_ text: String) {
+        if panel?.isSelectionMoved == true { panel?.clearSelection() }
         if list.search == .local { return find(text) }
         guard list.search(text), list.search == .script else { return }
         if let older = running(Self.searchKey) { stop(older) }
@@ -45,18 +47,10 @@ extension SpotRun {
     }
 
     private func find(_ text: String) {
-        guard list.beginFinding(text) else { return }
-        let asked = rows
-        finding?.cancel()
-        finding = Task { [weak self] in
-            guard let found = await Self.found(asked), !Task.isCancelled else { return }
-            self?.list.take(found)
-        }
-    }
-
-    @concurrent
-    private nonisolated static func found(_ list: ItemList) async -> ItemList.Found? {
-        Task.isCancelled ? nil : list.found()
+        var next = list
+        guard next.beginFinding(text) else { return }
+        next.take(next.found())
+        list = next
     }
 
     func ask() {
@@ -64,12 +58,12 @@ extension SpotRun {
         if let older = running(Self.searchKey) { stop(older) }
         pauses[Self.searchKey]?.cancel()
         pauses[Self.searchKey] = nil
-        let search = SearchQuery(text: query)
+        let event = ShowEvent.typed(query, inSheet: true)
         send(Call(
-            message: Message(.show, inputs: showsSheet ? panel?.inputs ?? [] : [], search: search.text, searchForms: search.forms),
+            message: event.message(after: showsSheet ? panel?.inputs ?? [] : [], search: SearchQuery(text: query)),
             key: Self.searchKey,
             limit: runs.showLimit,
-            event: .text(query, inSheet: true),
+            event: event,
             purpose: .ask(.search(query))
         ))
     }
@@ -77,6 +71,11 @@ extension SpotRun {
     public func answer(_ text: String) {
         guard text != answerQuery else { return }
         answerQuery = text
+        askAnswer()
+    }
+
+    func askAnswer() {
+        let text = answerQuery
         if let older = running(Self.answerKey) { stop(older) }
         guard !text.isEmpty else {
             answeredQuery = ""
@@ -84,12 +83,12 @@ extension SpotRun {
             takeAnswers([])
             return
         }
-        let search = runs.search(of: text)
+        let event = ShowEvent.typed(text, inSheet: false)
         send(Call(
-            message: Message(.show, search: search.text, searchForms: search.forms),
+            message: event.message(search: runs.search(of: text)),
             key: Self.answerKey,
             limit: runs.showLimit,
-            event: .text(text, inSheet: false),
+            event: event,
             purpose: .ask(.answer(text))
         ))
     }
@@ -98,7 +97,8 @@ extension SpotRun {
         if isAnswering { answerWaiters.append(work) } else { work() }
     }
 
-    func takeAnswers(_ rows: [SpotItem], to query: String? = nil) {
+    func takeAnswers(_ rows: [SpotItem], to query: String? = nil, isStopped: Bool = false) {
+        if isStopped, rows.isEmpty, query == answeredQuery { return }
         if let query {
             guard query == answerQuery else { return }
             answeredQuery = query
@@ -151,6 +151,16 @@ extension SpotRun {
         showsAgain = false
         eventAgain = nil
         show(need: need, event: event)
+    }
+
+    func hold(_ frame: Frame) async {
+        isHeld = true
+        heldRoute = route
+        await takeAnswer(frame, frame: "", to: .show(generation: nil, reports: false, query: ""))
+    }
+
+    func release() {
+        isHeld = false
     }
 
     func showOnce() {

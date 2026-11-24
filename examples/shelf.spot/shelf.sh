@@ -2,9 +2,17 @@
 list="$OPENSPOT_DATA/files"
 . "$OPENSPOT_SH"
 
+# Prints each value of an input, such as each file of a drop, on a line of its own.
+each() {
+  value "$1"
+  printf '\n'
+}
+
+# Forgets each path on stdin.
 forget() {
   [ -f "$list" ] || return 0
-  for path; do
+  while IFS= read -r path; do
+    [ -n "$path" ] || continue
     grep -vxF "$path" "$list" > "$list.new"
     mv "$list.new" "$list"
   done
@@ -26,24 +34,23 @@ case "$1" in
     done < "$list"
     ;;
   drop)
-    shift
     touch "$list"
-    for path; do
+    each file | while IFS= read -r path; do
+      [ -n "$path" ] || continue
       grep -qxF "$path" "$list" || printf '%s\n' "$path" >> "$list"
     done
-    openspot select "$1"
+    openspot select "$(each file | head -n 1)"
     ;;
   drag | remove)
-    shift
-    forget "$@"
+    each item | forget
     ;;
   clear)
     rm -f "$list"
     ;;
   reveal)
-    open -R "$2"
+    open -R "$(value item)"
     ;;
-  open)
-    open "$2"
+  press)
+    open "$(value item)"
     ;;
 esac

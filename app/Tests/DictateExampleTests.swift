@@ -83,7 +83,7 @@ final class DictateExampleTests: SampleSpotsCase {
         XCTAssertEqual(spot.mode, .stay)
         XCTAssertEqual(spot.sources, ["dictate"])
         XCTAssertEqual(spot.soleCommand, "dictate")
-        XCTAssertEqual(spot.on?.moments, [.sheet])
+        XCTAssertEqual(spot.triggers.events, [EventName.sheetOpen])
         XCTAssertEqual(files.sorted(), ["dictate", "dictate.swift", "readme.md", "spot.toml"])
     }
 
@@ -94,11 +94,12 @@ final class DictateExampleTests: SampleSpotsCase {
         try Data().write(to: folder.appendingPathComponent("data/\(Self.model)"))
         try "1000\tFirst words\n2000\tSecond, with a back\\slash\n".write(to: folder.appendingPathComponent("data/history"), atomically: true, encoding: .utf8)
 
-        let frames = try await frames(script, sending: "call=1\narg=show\n\ncall=2\narg=open\narg=1000\n\ncall=3\narg=delete\narg=2000\n\n", until: ["1", "2", "3"])
+        let frames = try await frames(script, sending: "call=1\narg=show\n\ncall=2\narg=press\ninput.item=1000\n\ncall=3\narg=delete\ninput.item=2000\n\n", until: ["1", "2", "3"])
 
         let first = Array(frames.prefix { FrameRoot(text: $0).end != "1" })
         XCTAssertEqual(rows(first).map(\.run), ["2000", "1000"])
         XCTAssertEqual(rows(first).map(\.title), ["Second, with a back\\slash", "First words"])
+        XCTAssertEqual(first.map { Frame(text: $0) }.last { !$0.items.isEmpty }?.openTitle, "Copy")
         XCTAssertEqual(rows(frames).map(\.run), ["1000"])
         XCTAssertEqual(toasts(in: folder), ["Copied"])
         XCTAssertEqual(try read("clipboard", in: folder), "First words")
@@ -111,7 +112,7 @@ final class DictateExampleTests: SampleSpotsCase {
         let script = try await staying(in: folder)
         defer { script.stop() }
 
-        let frames = try await frames(script, sending: "call=1\narg=show\n\ncall=2\narg=open\narg=whisper\n\n", until: ["1", "2"])
+        let frames = try await frames(script, sending: "call=1\narg=show\n\ncall=2\narg=press\ninput.item=whisper\n\n", until: ["1", "2"])
         let offer = rows(Array(frames.prefix(2))).first
 
         XCTAssertEqual(offer?.run, "whisper")
@@ -119,7 +120,6 @@ final class DictateExampleTests: SampleSpotsCase {
         XCTAssertEqual(offer?.pin, .top)
         XCTAssertEqual(offer?.openTitle, "Download")
         XCTAssertEqual(offer?.staysOnPick, true)
-        XCTAssertEqual(Frame(text: frames[1]).search, .off)
         let head = try XCTUnwrap(frames.compactMap { Frame(text: $0).root }.first { $0.value("progress") != nil })
         XCTAssertEqual(head.value("detail"), "0% of 1.6 GB")
         XCTAssertTrue(toasts(in: folder).contains { $0.hasPrefix("Dictate is ready.") })
@@ -138,7 +138,7 @@ final class DictateExampleTests: SampleSpotsCase {
         let part = folder.appendingPathComponent("data/\(Self.model).part")
 
         var frames = script.start().makeAsyncIterator()
-        script.send(text: "call=1\narg=open\narg=whisper\n\n")
+        script.send(text: "call=1\narg=press\ninput.item=whisper\n\n")
         let broken = try await Self.collect(&frames, until: ["1"])
         let kept = try Data(contentsOf: part)
         script.send(text: "call=2\narg=dictate\n\n")
@@ -160,7 +160,7 @@ final class DictateExampleTests: SampleSpotsCase {
         let pidFile = folder.appendingPathComponent("curl.pid")
 
         var frames = script.start().makeAsyncIterator()
-        script.send(text: "call=1\narg=open\narg=whisper\n\n")
+        script.send(text: "call=1\narg=press\ninput.item=whisper\n\n")
         try await wait("curl") { FileManager.default.fileExists(atPath: pidFile.path) }
         let curl = try XCTUnwrap(pid_t(try read("curl.pid", in: folder).trimmingCharacters(in: .whitespacesAndNewlines)))
         defer { kill(curl, SIGKILL) }
@@ -193,7 +193,7 @@ final class DictateExampleTests: SampleSpotsCase {
         let script = try await staying(in: folder, size: 250_000)
         defer { script.stop() }
 
-        let frames = try await frames(script, sending: "call=1\narg=open\narg=whisper\n\n", until: ["1"])
+        let frames = try await frames(script, sending: "call=1\narg=press\ninput.item=whisper\n\n", until: ["1"])
 
         XCTAssertTrue(toasts(in: folder).contains { $0.hasPrefix("The speech model came in the wrong size") })
         XCTAssertFalse(FileManager.default.fileExists(atPath: folder.appendingPathComponent("data/\(Self.model)").path))
@@ -214,7 +214,7 @@ final class DictateExampleTests: SampleSpotsCase {
         try await wait("curl") { FileManager.default.fileExists(atPath: pidFile.path) }
         let curl = try XCTUnwrap(pid_t(try read("curl.pid", in: folder).trimmingCharacters(in: .whitespacesAndNewlines)))
         defer { kill(curl, SIGKILL) }
-        script.send(text: "call=2\narg=open\narg=whisper\n\n")
+        script.send(text: "call=2\narg=press\ninput.item=whisper\n\n")
         _ = try await Self.collect(&frames, until: ["1", "2"])
 
         XCTAssertNotEqual(kill(curl, 0), 0)

@@ -1,3 +1,6 @@
 title = "Disk"
 icon = "internaldrive"
-on = ["panel.open", "clock.300"]
+
+[on]
+"panel.open" = true
+every = 300

@@ -46,7 +46,10 @@ final class GridExampleTests: SampleSpotsCase {
         let grid = try example("Grid")
 
         XCTAssertEqual(grid.mode, .stay)
-        XCTAssertEqual(grid.on, .panel)
+        XCTAssertEqual(grid.triggers.events, [EventName.panelOpen])
+        XCTAssertNil(grid.triggers.search)
+        XCTAssertFalse(grid.triggers.searchesSheet)
+        XCTAssertEqual(grid.triggers.filters, [:])
         XCTAssertEqual(grid.sources, ["grid"])
     }
 
@@ -163,7 +166,7 @@ final class GridExampleTests: SampleSpotsCase {
         XCTAssertEqual(calls(in: folder), "")
     }
 
-    func testOnlyAReadOfAnEventWarmsTheGrid() async throws {
+    func testOnlyAShowOfAnOpenOfThePanelWarmsTheGrid() async throws {
         let folder = try temporaryFolder()
         let (script, frames) = try await grid(in: folder)
         defer { script.stop() }
@@ -171,7 +174,7 @@ final class GridExampleTests: SampleSpotsCase {
         script.send(text: "call=1\narg=show\n\n")
         try await wait("the end of the plain read") { frames.ends == ["1"] }
         XCTAssertEqual(notes(in: folder), "")
-        script.send(text: "call=2\narg=show\nevent=panel.open\n\n")
+        script.send(text: "call=2\narg=show\ninput.event=panel.open\n\n")
         try await wait("the end of the read") { frames.ends == ["1", "2"] }
 
         XCTAssertEqual(notes(in: folder), "warm\n")

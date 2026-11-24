@@ -16,15 +16,15 @@ final class SpotRunStateTests: XCTestCase {
             links[spot.id] = link
             return link
         }
-        runs.onCall = { [unowned self] record, _ in records.append(record) }
+        runs.onCall = { [unowned self] record in records.append(record) }
     }
 
     override func tearDown() async throws {
         runs.quit()
     }
 
-    private func sheet(kind: SpotKind = .list, on: ShowEvents? = .sheet, mode: SpotMode = .once, offers: [Manifest.Command] = []) -> (SpotRun, FakeMode) {
-        let sheet = runs.sheet(for: Spot(id: "script", name: "Script", url: URL(fileURLWithPath: "/script.spot/script.sh"), kind: kind, on: on, mode: mode, offers: offers))
+    private func sheet(kind: SpotKind = .list, triggers: Manifest.Triggers = .sheet, mode: SpotMode = .once, commands: [Manifest.Action] = []) -> (SpotRun, FakeMode) {
+        let sheet = runs.sheet(for: Spot(id: "script", name: "Script", url: URL(fileURLWithPath: "/script.spot/script.sh"), kind: kind, triggers: triggers, mode: mode, commands: commands))
         return (sheet, links["script"]!)
     }
 
@@ -32,8 +32,8 @@ final class SpotRunStateTests: XCTestCase {
         try await wait("\(count) sleeps on the clock") { self.clock.sleepCount == count }
     }
 
-    private func opened(searches: Bool = false, frame: String = "text=a\ntitle=A\n") async -> (SpotRun, FakeMode) {
-        let (sheet, link) = sheet(on: ShowEvents(moments: [.sheet], searchesSheet: searches))
+    private func opened(searches: Bool = false, frame: String = "item=a\ntitle=A\n") async -> (SpotRun, FakeMode) {
+        let (sheet, link) = sheet(triggers: Manifest.Triggers(events: [searches ? EventName.sheetText : EventName.sheetOpen]))
         sheet.open {}
         await link.frame(frame, of: link.sent[0])
         await link.end(link.sent[0])
@@ -63,7 +63,7 @@ final class SpotRunStateTests: XCTestCase {
         clock.advance(by: 0.1)
 
         try await wait("the search") { link.sent.count == 2 }
-        XCTAssertEqual(link.sent[1].request.message.text, "search=rep\n")
+        XCTAssertEqual(link.sent[1].request.message.text, "input.value=rep\n")
     }
 
     func testAStoppedSearchChangesNothing() async throws {
@@ -74,7 +74,7 @@ final class SpotRunStateTests: XCTestCase {
         try await wait("the search") { link.sent.count == 2 }
 
         sheet.close()
-        await link.frame("text=b\ntitle=B\n\ntext=c\ntitle=C\n", of: link.sent[1])
+        await link.frame("item=b\ntitle=B\n\nitem=c\ntitle=C\n", of: link.sent[1])
         await link.end(link.sent[1])
 
         XCTAssertTrue(link.sent[1].made.isStopped)
@@ -82,7 +82,7 @@ final class SpotRunStateTests: XCTestCase {
     }
 
     func testAnOlderAnswerDoesNotReplaceANewerChange() async throws {
-        let (sheet, link) = await opened(frame: "frame=\ngrid=a\n\nfield=a\ntitle=start\nvalue=x\n")
+        let (sheet, link) = await opened(frame: "frame=\nclass=gap-part\n\nfield=a\ntitle=start\nvalue=x\n")
         let part = try XCTUnwrap(sheet.panel?.parts.first)
         sheet.set(part, to: "old")
         try await sleeps()
@@ -93,12 +93,12 @@ final class SpotRunStateTests: XCTestCase {
         try await sleeps(2)
         clock.advance(by: 0.3)
         try await wait("the newer call") { link.sent.count == 3 }
-        await link.frame("frame=\ngrid=a\n\nfield=a\ntitle=new\nvalue=x\n", of: link.sent[2])
+        await link.frame("frame=\nclass=gap-part\n\nfield=a\ntitle=new\nvalue=x\n", of: link.sent[2])
         await link.end(link.sent[2])
-        await link.frame("frame=\ngrid=a\n\nfield=a\ntitle=old\nvalue=x\n", of: link.sent[1])
+        await link.frame("frame=\nclass=gap-part\n\nfield=a\ntitle=old\nvalue=x\n", of: link.sent[1])
         await link.end(link.sent[1])
 
-        XCTAssertEqual(link.arguments().dropFirst().map(\.last), ["old", "new"])
+        XCTAssertEqual(link.sent.dropFirst().map { call in call.request.message.inputs.last { $0.key == "value" }?.value }, ["old", "new"])
         XCTAssertEqual(sheet.panel?.parts.first?.title, "new")
         XCTAssertEqual(sheet.panel?.parts.first?.value, "new")
     }
@@ -128,7 +128,7 @@ final class SpotRunStateTests: XCTestCase {
     }
 
     func testAToggleThatFailsIsUndone() async throws {
-        let (sheet, link) = sheet(kind: .toggle, on: nil)
+        let (sheet, link) = sheet(kind: .toggle, triggers: Manifest.Triggers())
         var failures: [String] = []
         sheet.onReport = { if case .failure(let text) = $0 { failures.append(text) } }
 
@@ -142,7 +142,7 @@ final class SpotRunStateTests: XCTestCase {
     }
 
     func testAToggleStoppedByASecondPressIsUndone() async throws {
-        let (sheet, link) = sheet(kind: .toggle, on: nil)
+        let (sheet, link) = sheet(kind: .toggle, triggers: Manifest.Triggers())
         sheet.pressCard()
         clock.advance(by: 0.5)
         sheet.pressCard()
@@ -164,22 +164,22 @@ final class SpotRunStateTests: XCTestCase {
         await link.frame("toast=Done\n", of: link.sent[1])
         await link.end(link.sent[1])
 
-        XCTAssertEqual(link.arguments(), [["show"], ["open", "a"], ["show"]])
+        XCTAssertEqual(link.arguments(), [["show"], ["press", "a"], ["show"]])
     }
 
     func testNoReadFollowsWorkThatDrewAPicture() async throws {
         let (sheet, link) = await opened()
 
         sheet.pick(SpotItem(title: "A", run: "a"))
-        await link.frame("text=b\ntitle=B\n", of: link.sent[1])
+        await link.frame("item=b\ntitle=B\n", of: link.sent[1])
         await link.end(link.sent[1])
 
-        XCTAssertEqual(link.arguments(), [["show"], ["open", "a"]])
+        XCTAssertEqual(link.arguments(), [["show"], ["press", "a"]])
         XCTAssertEqual(sheet.list.shown.map(\.run), ["b"])
     }
 
     func testWorkShowsOnceTheClockHasRunOneSecond() async throws {
-        let (sheet, link) = sheet(kind: .launch, on: nil)
+        let (sheet, link) = sheet(kind: .launch, triggers: Manifest.Triggers())
 
         sheet.pressCard()
         try await sleeps()
@@ -191,14 +191,14 @@ final class SpotRunStateTests: XCTestCase {
         XCTAssertEqual(sheet.acts.map(\.id), [link.sent[0].made.id])
     }
 
-    private func inMenuBar(on: ShowEvents? = nil) -> (SpotRun, FakeMode) {
-        let spot = Spot(id: "script", name: "Script", url: URL(fileURLWithPath: "/script.spot/script.sh"), on: on)
+    private func inMenuBar(triggers: Manifest.Triggers = Manifest.Triggers()) -> (SpotRun, FakeMode) {
+        let spot = Spot(id: "script", name: "Script", url: URL(fileURLWithPath: "/script.spot/script.sh"), triggers: triggers)
         runs.take(ScanResult(files: [SpotFile(id: "script", spots: [spot])], refused: []), menuBar: ["script"])
         return (runs.sheets["script"]!, links["script"]!)
     }
 
     private func readInMenuBar() async -> (SpotRun, FakeMode, Int) {
-        let (sheet, link) = inMenuBar(on: ShowEvents(moments: [.panel, .sheet, .event("clipboard.change")]))
+        let (sheet, link) = inMenuBar(triggers: Manifest.Triggers(events: [EventName.panelOpen, EventName.sheetOpen, "clipboard.change"]))
         for call in link.sent { await link.end(call) }
         sheet.show(need: .change, event: .panel)
         return (sheet, link, link.sent.count - 1)
@@ -208,12 +208,12 @@ final class SpotRunStateTests: XCTestCase {
         let (sheet, link, first) = await readInMenuBar()
 
         sheet.open {}
-        sheet.show(need: .clock, event: ShowEvent(event: "clipboard.change", value: nil))
+        sheet.show(need: .clock, event: .event("clipboard.change", value: nil))
         await link.end(link.sent[first])
-        XCTAssertEqual(link.sent.dropFirst(first).map(\.request.event?.rawValue), ["panel.open", "sheet.open"])
+        XCTAssertEqual(link.sent.dropFirst(first).map(\.request.event?.name), ["panel.open", "sheet.open"])
         await link.end(link.sent[first + 1])
 
-        XCTAssertEqual(link.sent.dropFirst(first).map(\.request.event?.rawValue), ["panel.open", "sheet.open", "clipboard.change"])
+        XCTAssertEqual(link.sent.dropFirst(first).map(\.request.event?.name), ["panel.open", "sheet.open", "clipboard.change"])
     }
 
     func testASheetThatClosesDuringAReadGetsNoReadForItsOpen() async throws {
@@ -224,7 +224,7 @@ final class SpotRunStateTests: XCTestCase {
         await link.end(link.sent[first])
 
         XCTAssertFalse(link.sent[first].made.isStopped)
-        XCTAssertEqual(link.sent.dropFirst(first).map(\.request.event?.rawValue), ["panel.open"])
+        XCTAssertEqual(link.sent.dropFirst(first).map(\.request.event?.name), ["panel.open"])
     }
 
     func testWorkShorterThanItsPauseTellsNoReaderOfTheWorkOrTheMenuBar() async throws {
@@ -259,19 +259,19 @@ final class SpotRunStateTests: XCTestCase {
     }
 
     func testANewReadingTellsTheReaderOfTheMarksAndTheSameReadingDoesNot() async throws {
-        let (sheet, link) = inMenuBar(on: ShowEvents(moments: [.every(60)]))
+        let (sheet, link) = inMenuBar(triggers: Manifest.Triggers(every: 60))
         try await wait("the first read") { link.sent.count == 1 }
-        await link.frame("frame=\ngrid.bar=n\n\nnumber=n\nvalue=3\n", of: link.sent[0])
+        await link.frame("frame=\nclass=gap-part\n\nnumber=n\nclass=bar:flex\nvalue=3\n", of: link.sent[0])
         await link.end(link.sent[0])
         nonisolated(unsafe) var told = 0
         withObservationTracking { _ = self.runs.menuBarMarks } onChange: { told += 1 }
 
         sheet.show(need: .change)
-        await link.frame("frame=\ngrid.bar=n\n\nnumber=n\nvalue=3\n", of: link.sent[1])
+        await link.frame("frame=\nclass=gap-part\n\nnumber=n\nclass=bar:flex\nvalue=3\n", of: link.sent[1])
         await link.end(link.sent[1])
         XCTAssertEqual(told, 0)
         sheet.show(need: .change)
-        await link.frame("frame=\ngrid.bar=n\n\nnumber=n\nvalue=4\n", of: link.sent[2])
+        await link.frame("frame=\nclass=gap-part\n\nnumber=n\nclass=bar:flex\nvalue=4\n", of: link.sent[2])
         await link.end(link.sent[2])
 
         XCTAssertEqual(told, 1)
@@ -302,7 +302,7 @@ final class SpotRunStateTests: XCTestCase {
             links[spot.id] = link
             return link
         }
-        let (_, link) = inMenuBar(on: ShowEvents(moments: [.every(60)]))
+        let (_, link) = inMenuBar(triggers: Manifest.Triggers(every: 60))
         await link.end(link.sent[0])
         let before = looks
 
@@ -312,7 +312,7 @@ final class SpotRunStateTests: XCTestCase {
     }
 
     func testTheClockSleepsUntilTheNextReadIsDue() async throws {
-        let (_, link) = inMenuBar(on: ShowEvents(moments: [.every(60)]))
+        let (_, link) = inMenuBar(triggers: Manifest.Triggers(every: 60))
         await link.end(link.sent[0])
         try await wait("the schedule") { self.clock.isSleeping(for: 60) }
 
@@ -326,7 +326,7 @@ final class SpotRunStateTests: XCTestCase {
     }
 
     func testASpotThatComesBackReadsAtOnce() async throws {
-        let spot = Spot(id: "script", name: "Script", url: URL(fileURLWithPath: "/script.spot/script.sh"), on: ShowEvents(moments: [.every(60)]))
+        let spot = Spot(id: "script", name: "Script", url: URL(fileURLWithPath: "/script.spot/script.sh"), triggers: Manifest.Triggers(every: 60))
         let scan = ScanResult(files: [SpotFile(id: "script", spots: [spot])], refused: [])
         runs.take(scan, menuBar: ["script"])
         await links["script"]!.end(links["script"]!.sent[0])
@@ -339,7 +339,7 @@ final class SpotRunStateTests: XCTestCase {
     }
 
     func testQuickPressesOfAKeyWaitUpToTheirLimit() async throws {
-        let (sheet, link) = sheet(kind: .launch, on: nil, offers: Manifest(text: TestSpot.command, folder: "").commands)
+        let (sheet, link) = sheet(kind: .launch, triggers: Manifest.Triggers(), commands: Manifest(text: TestSpot.command, folder: "").actions.filter { $0.title != nil })
 
         for _ in 0..<10 { sheet.pressKey("go") }
         var ended = 0
@@ -352,7 +352,7 @@ final class SpotRunStateTests: XCTestCase {
     }
 
     func testAStayingSpotHoldsNoMoreKeyPressesThanTheLimit() async throws {
-        let (sheet, link) = sheet(kind: .launch, on: nil, mode: .stay, offers: Manifest(text: TestSpot.command, folder: "").commands)
+        let (sheet, link) = sheet(kind: .launch, triggers: Manifest.Triggers(), mode: .stay, commands: Manifest(text: TestSpot.command, folder: "").actions.filter { $0.title != nil })
         var toasts: [String] = []
         sheet.onReport = { if case .toast(let text) = $0 { toasts.append(text) } }
 
@@ -368,7 +368,7 @@ final class SpotRunStateTests: XCTestCase {
     }
 
     func testASecondPressStopsAStayingCallThatSaysNothingAfterTheStopPause() async throws {
-        let (sheet, link) = sheet(kind: .launch, on: nil, mode: .stay)
+        let (sheet, link) = sheet(kind: .launch, triggers: Manifest.Triggers(), mode: .stay)
         sheet.pressCard()
         clock.advance(by: 2)
 
@@ -382,7 +382,7 @@ final class SpotRunStateTests: XCTestCase {
     }
 
     func testAStayingCallThatPrintsAFrameAfterTheStopKeepsRunning() async throws {
-        let (sheet, link) = sheet(kind: .launch, on: nil, mode: .stay)
+        let (sheet, link) = sheet(kind: .launch, triggers: Manifest.Triggers(), mode: .stay)
         sheet.pressCard()
         clock.advance(by: 2)
 
@@ -397,7 +397,7 @@ final class SpotRunStateTests: XCTestCase {
     }
 
     func testAThirdPressStartsTheStopPauseAgain() async throws {
-        let (sheet, _) = sheet(kind: .launch, on: nil, mode: .stay)
+        let (sheet, _) = sheet(kind: .launch, triggers: Manifest.Triggers(), mode: .stay)
         sheet.pressCard()
         clock.advance(by: 2)
         sheet.pressCard()
@@ -430,7 +430,7 @@ final class SpotRunStateTests: XCTestCase {
             links[spot.id] = link
             return link
         }
-        let (sheet, _) = sheet(kind: .launch, on: nil)
+        let (sheet, _) = sheet(kind: .launch, triggers: Manifest.Triggers())
 
         sheet.pressCard()
         try await sleeps()
@@ -445,7 +445,7 @@ final class SpotRunStateTests: XCTestCase {
         async let answer = sheet.form(action, item: nil)
         try await wait("the form call") { link.sent.count == 2 }
 
-        await link.frame("frame=\ntitle=New\n\nfield=a\ntitle=A\n", of: link.sent[1])
+        await link.frame("frame=\ntype=form\ntitle=New\n\nfield=a\ntitle=A\n", of: link.sent[1])
         await link.frame("toast=Ready\n", of: link.sent[1])
         await link.end(link.sent[1])
 
@@ -474,7 +474,8 @@ final class SpotRunStateTests: XCTestCase {
         await link.frame("toast=Done\n", of: link.sent[1])
         await link.end(link.sent[1], .failed(SpotError.failed(2, "No")))
 
-        XCTAssertEqual(records.map(\.arguments), [["show"], ["open", "a"]])
+        XCTAssertEqual(records.map(\.arguments), [["show"], ["press"]])
+        XCTAssertTrue(records.last?.input?.contains("input.item=a\n") == true, records.last?.input ?? "")
         XCTAssertEqual(records.last?.frames, ["toast=Done\n"])
         XCTAssertEqual(records.last?.end, .exited(2))
         XCTAssertEqual(runs.usage.counts["script"]?.runs, 2)

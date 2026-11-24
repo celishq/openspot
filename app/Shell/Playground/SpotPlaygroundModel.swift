@@ -7,7 +7,7 @@ import OpenspotCore
 final class SpotPlaygroundModel {
     nonisolated private static let watchPause: Duration = .milliseconds(500)
     private static let editPause: Duration = .milliseconds(300)
-    private static let starter = "#!/bin/sh\n. \"$OPENSPOT_SH\"\nprintf 'text=hello\\ntitle=Hello\\ndetail=%s\\n' \"$(value event)\"\n"
+    private static let starter = "#!/bin/sh\n. \"$OPENSPOT_SH\"\nprintf 'item=hello\\ntitle=Hello\\ndetail=%s\\n' \"$(value event)\"\n"
     private static let starterManifest = "title = \"Hello\"\n"
 
     private(set) var playground = Playground()
@@ -44,13 +44,13 @@ final class SpotPlaygroundModel {
         self.file = file
         disk = file.map(SpotPlaygroundFile.init)
         folder = FileManager.default.temporaryDirectory.appendingPathComponent("openspot-playground-\(UUID().uuidString)")
-        let guide = Bundle.main.url(forResource: "GUIDE", withExtension: "md").flatMap { try? String(contentsOf: $0, encoding: .utf8) } ?? ""
+        let guide = Bundle.main.url(forResource: "DOCS", withExtension: "md").flatMap { try? String(contentsOf: $0, encoding: .utf8) } ?? ""
         presets = Playground.presets(guide: guide)
         panel = PlaygroundPanel(host: host, scratch: folder, defaults: UserDefaults(suiteName: "openspot-playground") ?? .standard)
         host.onNote = { [weak self] in self?.playground.record($0) }
         panel.model.runs.isCareful = isCareful
-        panel.model.runs.onCall = { [weak self] record, event in
-            self?.playground.take(call: PlaygroundCall(record: record, event: event))
+        panel.model.runs.onCall = { [weak self] record in
+            self?.playground.take(call: PlaygroundCall(record: record))
             if let frame = record.frames.last { self?.playground.note(frame: frame) }
         }
         if file == nil { edit(Self.starter) }

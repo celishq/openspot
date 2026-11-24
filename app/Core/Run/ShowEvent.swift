@@ -1,36 +1,50 @@
 import Foundation
 
-public struct ShowEvent: Equatable, Sendable {
-    public static let panel = ShowEvent(rawValue: SpotEvent.panelOpen)
-    public static let sheet = ShowEvent(rawValue: SpotEvent.sheetOpen)
-    public static let want = ShowEvent(rawValue: "spot.want")
-    public static let change = ShowEvent(rawValue: "spot.change")
+public enum ShowEvent: Equatable, Sendable {
+    case panel
+    case sheet
+    case want
+    case change
+    case clock
+    case typed(String, inSheet: Bool)
+    case event(String, value: String?)
 
-    public let rawValue: String
-    public let value: String?
-    let isEvent: Bool
+    static let options = [ShowEvent.panel, .sheet, .want, .change].map(\.name)
 
-    private init(rawValue: String, value: String? = nil) {
-        self.rawValue = rawValue
-        self.value = value
-        isEvent = false
+    var name: String {
+        switch self {
+        case .panel: EventName.panelOpen
+        case .sheet: EventName.sheetOpen
+        case .want: EventName.spotWant
+        case .change: EventName.spotChange
+        case .clock: "clock"
+        case .typed(_, let inSheet): inSheet ? EventName.sheetText : EventName.searchText
+        case .event(let name, _): name
+        }
     }
 
-    init(event name: String, value: String?) {
-        rawValue = name
-        self.value = value
-        isEvent = true
-    }
-
-    static func clock(_ seconds: TimeInterval?) -> ShowEvent {
-        seconds.map { ShowEvent(rawValue: SpotEvent.clockPrefix + String(Int($0))) } ?? want
-    }
-
-    static func text(_ text: String, inSheet: Bool) -> ShowEvent {
-        ShowEvent(rawValue: inSheet ? SpotEvent.sheetText : SpotEvent.searchText, value: text)
+    var isEvent: Bool {
+        if case .event = self { true } else { false }
     }
 
     var isFrequent: Bool {
-        isEvent || self == .want || [SpotEvent.searchText, SpotEvent.sheetText].contains(rawValue) || rawValue.hasPrefix(SpotEvent.clockPrefix)
+        switch self {
+        case .want, .clock, .typed, .event: true
+        default: false
+        }
+    }
+
+    func message(after given: [TextBlock.Field] = [], search: SearchQuery? = nil) -> Message {
+        switch self {
+        case .clock:
+            guard let search, !search.text.isEmpty else { return ScriptEntry.every.message(after: given) }
+            return ScriptEntry.sheetText.message([search.text], search.forms, after: given)
+        case .typed(let text, let inSheet):
+            return (inSheet ? ScriptEntry.sheetText : ScriptEntry.search).message([text], search?.forms ?? [], after: given)
+        case .event(let name, let value) where !Self.options.contains(name):
+            return ScriptEntry.event(name).message(value.map { [$0] } ?? [], after: given)
+        default:
+            return ScriptEntry.show.message([name], after: given)
+        }
     }
 }

@@ -17,7 +17,7 @@ final class InlineMode: ScriptMode {
     }
 
     static func frames(of spot: Spot, _ message: Message, limit: TimeInterval?, reason: String?, variables: [String: String], call: OpenCall?, in runs: SpotRuns) -> Frames {
-        let inline = InlineCall(arguments: message.action.arguments, variables: runs.variables(of: spot, given: variables), input: message.text, reason: reason, limit: limit)
+        let inline = InlineCall(arguments: [message.handler], variables: runs.variables(of: spot, given: variables), input: message.text, reason: reason, limit: limit)
         runs.script(of: spot).send(inline)
         let (stream, halt) = runs.answered {
             switch await inline.outcome(limit: limit) {
@@ -35,7 +35,8 @@ final class InlineMode: ScriptMode {
     func send(_ call: OpenCall) -> Bool {
         guard let run else { return false }
         let request = call.request
-        let inline = InlineCall(arguments: request.action.arguments, input: run.message(of: request, values: run.fieldValues).text, reason: request.event?.rawValue, limit: request.limit, opened: call)
+        let message = run.message(of: request, values: run.fieldValues)
+        let inline = InlineCall(arguments: [message.handler], input: message.text, reason: request.event?.name, limit: request.limit, opened: call)
         call.made.halt = { inline.stop() }
         asking.open(call, in: run)
         runs.script(of: run.spot).send(inline)
@@ -89,7 +90,7 @@ final class InlineMode: ScriptMode {
         Task { [weak run, runs, asking] in
             var end = first
             if let run, let text {
-                let lines = await runs.intake(text, of: run.spot.id)
+                let lines = await runs.intake(text, of: run.spot)
                 if made.isStopped { end = .stopped } else { await run.take(text, lines, of: call) }
             }
             await asking.close(call, end, errors: errors, in: run)

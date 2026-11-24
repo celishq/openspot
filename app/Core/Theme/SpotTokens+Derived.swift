@@ -15,6 +15,8 @@ extension SpotTokens {
 
     public static var hintBlock: CGFloat { layout.hintBlock }
 
+    public static var toastRoom: CGFloat { max(toastMargin, 2 * CGFloat(backdrop.shadow)) }
+
     public static var panelWidth: CGFloat { layout.panelWidth }
 
     public static var panelHeight: CGFloat { layout.panelHeight }
@@ -78,8 +80,8 @@ extension SpotTokens {
 
     public static func floatSize(rows: Int, perLine: Int, sections: Int = 0, parts: SheetParts? = nil, setsApart: Bool = false) -> CGSize {
         let content: CGFloat
-        if let parts {
-            content = parts.placement.height
+        if let parts, parts.holdsParts {
+            content = parts.height
         } else {
             content = listHeight(rows: rows, perLine: perLine, sections: sections, setsApart: setsApart)
         }
@@ -87,9 +89,13 @@ extension SpotTokens {
     }
 
 
+    public static func floatSize(list: ItemList) -> CGSize {
+        floatSize(rows: list.lineCount, perLine: list.perLine, setsApart: list.setsApart)
+    }
+
     public static func panelRect(_ panel: SheetParts) -> CGRect {
         let field = panel.top.hasField ? SpotTokens.partFieldRoom : 0
-        let height = panel.top.fieldY + field + panel.placement.height + padding
+        let height = panel.top.fieldY + field + panel.height + padding
         return CGRect(x: halo, y: halo, width: gridWidth, height: min(height, sheetMaxHeight))
     }
 

@@ -1,3 +1,5 @@
 title = "Focus"
 icon = "moon.fill"
-on = ["panel.open"]
+
+[on]
+"panel.open" = true

@@ -1,36 +1,45 @@
 frame=
-grid.large=cover cover cover song song song
-grid.large=cover cover cover time time time
-grid.large=cover cover cover prev play next
-grid.bar=song
+class=gap-3 items-center card:gap-part small:p-0 wide:flex-row strip:flex-row large:flex-row large:items-stretch
 
 picture=cover
+class=sheet:size-56 rounded-inner overflow-hidden card:aspect-square small:w-full wide:h-full strip:h-full large:h-full square:size-10 square:self-start
 icon=music.note
 
+box=side
+class=self-stretch gap-part small:hidden card:grow strip:flex-row strip:items-center large:justify-between
+
 text=song
+parent=side
+class=text-center sheet:font-title card:text-left strip:grow bar:flex truncate
 title=Midnight Drive
 detail=Neon Coast
 
 number=time
+parent=side
+class=wide:hidden strip:hidden square:hidden
 max=1
-chart=bar
+type=bar
 display=1:42
 value=0.42
 
+box=controls
+parent=side
+class=flex-row justify-center gap-6 card:justify-between strip:gap-part wide:hidden
+
 button=prev
-title=Previous
+parent=controls
+class=bg-transparent rounded-full
 icon=backward.fill
-look=bare
 close=false
 
 button=play
-title=Pause
+parent=controls
+class=bg-transparent rounded-full
 icon=pause.fill
-look=bare
 close=false
 
 button=next
-title=Next
+parent=controls
+class=bg-transparent rounded-full
 icon=forward.fill
-look=bare
 close=false

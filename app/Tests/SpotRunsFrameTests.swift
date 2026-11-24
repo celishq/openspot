@@ -6,8 +6,8 @@ final class SpotRunsFrameTests: SpotRunsCase {
     func testAnActionsFrameWithABlockReplacesTheWholeSheet() async throws {
         try script(toml: "", """
         case "$1" in
-          show) printf 'frame=\\ngrid=go\\ngrid=a\\ngrid=b\\n\\nbutton=go\\ntitle=Go\\n\\ntext=a\\ntitle=A\\n\\ntext=b\\ntitle=B\\n' ;;
-          go) printf 'frame=\\ngrid=only\\n\\ntext=only\\ntitle=Only\\n' ;;
+          show) printf 'frame=\\nclass=gap-part\\n\\nbutton=go\\ntitle=Go\\n\\ntext=a\\ntitle=A\\n\\ntext=b\\ntitle=B\\n' ;;
+          go) printf 'frame=\\nclass=gap-part\\n\\ntext=only\\ntitle=Only\\n' ;;
         esac
         """)
         let sheet = try sheet()
@@ -22,10 +22,26 @@ final class SpotRunsFrameTests: SpotRunsCase {
         XCTAssertEqual(log(), ["show", "go"])
     }
 
+    func testEachFrameOfAnActThatTurnsTheSheetToRowsShows() async throws {
+        try script(toml: "", """
+        case "$1" in
+          show) printf 'frame=\\nclass=gap-part\\n\\nbutton=go\\ntitle=Go\\n\\ntext=a\\ntitle=A\\n' ;;
+          go) printf 'item=x\\ntitle=X\\n---\\n'; sleep 0.3; printf 'item=y\\ntitle=Y\\n' ;;
+        esac
+        """)
+        let sheet = try sheet()
+        sheet.open {}
+        try await wait("the parts") { sheet.panel?.parts.count == 2 }
+
+        sheet.press(try XCTUnwrap(sheet.panel?.parts.first))
+
+        try await wait("the second rows") { sheet.list.all.map(\.title) == ["X", "Y"] }
+    }
+
     func testALaterFrameWithNoRootChangesOnlyTheBlocksItPrintsAndANewIdJoins() async throws {
         try script(toml: "", """
-        printf 'frame=\\ngrid=a b\\ngrid=c c\\n\\ntext=a\\ntitle=A\\n\\ntext=b\\ntitle=B\\n---\\n'
-        printf 'text=b\\ntitle=B2\\n\\ntext=c\\ntitle=C\\n'
+        printf 'frame=\\nclass=grid grid-cols-2 gap-part\\n\\ntext=a\\ntitle=A\\n\\ntext=b\\ntitle=B\\n---\\n'
+        printf 'text=b\\ntitle=B2\\n\\ntext=c\\ntitle=C\\nclass=col-span-2\\n'
         """)
         let sheet = try sheet()
         runs.panelOpened()
@@ -33,11 +49,11 @@ final class SpotRunsFrameTests: SpotRunsCase {
 
         try await wait("the merged picture") { sheet.panel?.parts.map(\.id) == ["a", "b", "c"] && sheet.calls.isEmpty }
         XCTAssertEqual(sheet.panel?.parts.map(\.title), ["A", "B2", "C"])
-        XCTAssertEqual(sheet.panel?.layout?.areas.keys.sorted(), ["a", "b", "c"])
+        XCTAssertEqual(sheet.panel?.tree.children, ["a", "b", "c"])
     }
 
     func testALaterFrameWithNoRootAddsARowWithANewIdToTheList() async throws {
-        try script(toml: "", "printf 'frame=\\n\\ntext=a\\ntitle=A\\n---\\n'\nprintf 'text=b\\ntitle=B\\n'")
+        try script(toml: "", "printf 'frame=\\n\\nitem=a\\ntitle=A\\n---\\n'\nprintf 'item=b\\ntitle=B\\n'")
         let sheet = try sheet()
         runs.panelOpened()
         sheet.open {}
@@ -47,7 +63,7 @@ final class SpotRunsFrameTests: SpotRunsCase {
     }
 
     func testALaterFrameWithARootEmptiesWhatItDoesNotPrint() async throws {
-        try script(toml: "", "printf 'frame=\\ngrid=a2\\n\\ntext=a\\ntitle=A\\n\\ntext=a2\\ntitle=A\\n---\\n'\nprintf 'frame=\\ngrid=t\\n\\ntext=t\\ntitle=T\\n'")
+        try script(toml: "", "printf 'frame=\\nclass=gap-part\\n\\nitems=list\\n\\ntext=a\\nparent=list\\ntitle=A\\n\\ntext=a2\\ntitle=A\\n---\\n'\nprintf 'frame=\\nclass=gap-part\\n\\ntext=t\\ntitle=T\\n'")
         let sheet = try sheet()
         runs.panelOpened()
         sheet.open {}
@@ -59,8 +75,8 @@ final class SpotRunsFrameTests: SpotRunsCase {
     func testAFrameOfOnlyARootKeepsThePicture() async throws {
         try script(toml: "", """
         case "$1" in
-          show) printf 'text=a\\ntitle=A\\n' ;;
-          open) printf 'frame=\\ntitle=Other\\n---\\n'; \(untilRelease) ;;
+          show) printf 'item=a\\ntitle=A\\n' ;;
+          press) printf 'frame=\\ntitle=Other\\n---\\n'; \(untilRelease) ;;
         esac
         """)
         let sheet = try sheet()
@@ -78,8 +94,8 @@ final class SpotRunsFrameTests: SpotRunsCase {
     func testProgressInAHeadShowsOnTheRunningCall() async throws {
         try script(toml: "", """
         case "$1" in
-          show) printf 'text=a\\ntitle=A\\n' ;;
-          open) printf 'frame=\\nprogress=0.4\\ntitle=Copying\\ndetail=2 of 5\\n---\\n'; \(untilRelease) ;;
+          show) printf 'item=a\\ntitle=A\\n' ;;
+          press) printf 'frame=\\nprogress=0.4\\ntitle=Copying\\ndetail=2 of 5\\n---\\n'; \(untilRelease) ;;
         esac
         """)
         let sheet = try sheet()
@@ -98,8 +114,8 @@ final class SpotRunsFrameTests: SpotRunsCase {
     func testAMainGaugeOfARunningCallIsNoLongerItsProgress() async throws {
         try script(toml: "", """
         case "$1" in
-          show) printf 'text=a\\ntitle=A\\n' ;;
-          open) printf 'frame=\\ngrid=g\\n\\nnumber=g\\nvalue=40\\nmax=100\\n---\\n'; \(untilRelease) ;;
+          show) printf 'item=a\\ntitle=A\\n' ;;
+          press) printf 'frame=\\nclass=gap-part\\n\\nnumber=g\\nvalue=40\\nmax=100\\n---\\n'; \(untilRelease) ;;
         esac
         """)
         let sheet = try sheet()
@@ -115,7 +131,7 @@ final class SpotRunsFrameTests: SpotRunsCase {
 
     func testAReadThatEndsWithOnlyAHeadShowsNothingAndKeepsItsHead() async throws {
         try script(toml: "", """
-        if [ -f '\(path("second"))' ]; then printf 'frame=\\nrecents=false\\n'; else touch '\(path("second"))'; printf 'text=a\\ntitle=A\\n'; fi
+        if [ -f '\(path("second"))' ]; then printf 'frame=\\nrecents=false\\n'; else touch '\(path("second"))'; printf 'item=a\\ntitle=A\\n'; fi
         """)
         let sheet = try sheet()
         sheet.open {}
@@ -128,12 +144,12 @@ final class SpotRunsFrameTests: SpotRunsCase {
     }
 
     func testAFrameOfAStayingScriptWithARootReplacesAll() async throws {
-        try script(toml: "mode = 'stay'", """
+        try script(toml: "stay = true", """
         while IFS= read -r line; do
           case "$line" in
             call=*) call=${line#call=} ;;
-            arg=show) printf 'end=%s\\n\\ntext=a\\ntitle=A\\n---\\n' "$call" ;;
-            arg=open) printf 'end=%s\\n---\\n' "$call"; printf 'frame=\\ngrid=peer\\n\\ntext=peer\\ntitle=Peer\\n---\\n' ;;
+            arg=show) printf 'end=%s\\n\\nitem=a\\ntitle=A\\n---\\n' "$call" ;;
+            arg=press) printf 'end=%s\\n---\\n' "$call"; printf 'frame=\\nclass=gap-part\\n\\ntext=peer\\ntitle=Peer\\n---\\n' ;;
           esac
         done
         """)
@@ -149,11 +165,11 @@ final class SpotRunsFrameTests: SpotRunsCase {
     }
 
     func testALaterFrameOfAStayingScriptWithNoRootMergesIntoTheFrameOfItsCall() async throws {
-        try script(toml: "mode = 'stay'", """
+        try script(toml: "stay = true", """
         while IFS= read -r line; do
           case "$line" in
             call=*) call=${line#call=}; printf 'call=%s\\n---\\n' "$call" ;;
-            arg=show) printf 'frame=\\ngrid=a\\ngrid=b\\n\\ntext=a\\ntitle=A\\n\\ntext=b\\ntitle=B\\n---\\ntext=b\\ntitle=B2\\n---\\nend=%s\\n---\\n' "$call" ;;
+            arg=show) printf 'frame=\\nclass=gap-part\\n\\ntext=a\\ntitle=A\\n\\ntext=b\\ntitle=B\\n---\\ntext=b\\ntitle=B2\\n---\\nend=%s\\n---\\n' "$call" ;;
           esac
         done
         """)
@@ -164,12 +180,28 @@ final class SpotRunsFrameTests: SpotRunsCase {
         try await wait("the merged picture") { sheet.panel?.parts.map(\.title) == ["A", "B2"] }
     }
 
+    func testAStayingScriptAddsPointsToItsSeriesWithoutPrintingTheList() async throws {
+        try script(toml: "stay = true", """
+        while IFS= read -r line; do
+          case "$line" in
+            call=*) call=${line#call=}; printf 'call=%s\\n---\\n' "$call" ;;
+            arg=show) printf 'frame=\\nclass=gap-part\\n\\nseries=cpu\\nvalue=1,2,3\\nkeep=4\\n---\\nseries=cpu\\nadd=4\\n---\\nseries=cpu\\nadd=5,6\\n---\\nend=%s\\n---\\n' "$call" ;;
+          esac
+        done
+        """)
+        let sheet = try sheet()
+        runs.panelOpened()
+        sheet.open {}
+
+        try await wait("the points after two adds") { sheet.panel?.parts.first?.number?.points == [3, 4, 5, 6] }
+    }
+
     func testAStayingReadThatEndsWithOnlyAHeadKeepsThePictureThatCameBeforeIt() async throws {
-        try script(toml: "mode = 'stay'", """
+        try script(toml: "stay = true", """
         while IFS= read -r line; do
           case "$line" in
             call=*) call=${line#call=} ;;
-            arg=show) printf 'text=a\\ntitle=A\\n---\\n'; printf 'end=%s\\n---\\n' "$call" ;;
+            arg=show) printf 'item=a\\ntitle=A\\n---\\n'; printf 'end=%s\\n---\\n' "$call" ;;
           esac
         done
         """)
@@ -185,10 +217,11 @@ final class SpotRunsFrameTests: SpotRunsCase {
 
     func testAnOutdatedAnswerChangesNothingAndAReadFollowsItsEnd() async throws {
         try script(toml: "", """
+        v=$(sed -n 's/^input\\.value=//p')
         case "$1" in
-          show) printf 'frame=\\ngrid=a\\ngrid=b\\n\\nswitch=a\\nvalue=%s\\n\\nswitch=b\\nvalue=%s\\n' "$(cat '\(path("a"))' 2>/dev/null || echo false)" "$(cat '\(path("b"))' 2>/dev/null || echo false)" ;;
-          a) \(untilRelease); echo "$2" > '\(path("a"))'; printf 'frame=\\ngrid=a\\ngrid=b\\n\\nswitch=a\\nvalue=%s\\n\\nswitch=b\\nvalue=false\\n' "$2" ;;
-          b) echo "$2" > '\(path("b"))'; printf 'frame=\\ngrid=a\\ngrid=b\\n\\nswitch=a\\nvalue=false\\n\\nswitch=b\\nvalue=%s\\n' "$2" ;;
+          show) printf 'frame=\\nclass=gap-part\\n\\nswitch=a\\nvalue=%s\\n\\nswitch=b\\nvalue=%s\\n' "$(cat '\(path("a"))' 2>/dev/null || echo false)" "$(cat '\(path("b"))' 2>/dev/null || echo false)" ;;
+          a) \(untilRelease); echo "$v" > '\(path("a"))'; printf 'frame=\\nclass=gap-part\\n\\nswitch=a\\nvalue=%s\\n\\nswitch=b\\nvalue=false\\n' "$v" ;;
+          b) echo "$v" > '\(path("b"))'; printf 'frame=\\nclass=gap-part\\n\\nswitch=a\\nvalue=false\\n\\nswitch=b\\nvalue=%s\\n' "$v" ;;
         esac
         """)
         let sheet = try sheet()
@@ -197,9 +230,9 @@ final class SpotRunsFrameTests: SpotRunsCase {
         let parts = try XCTUnwrap(sheet.panel?.parts)
 
         sheet.set(parts[0], to: "true")
-        try await wait("the call of a") { self.log().contains("a true") }
+        try await wait("the call of a") { self.log().contains("a") }
         sheet.set(parts[1], to: "true")
-        try await wait("the answer of b") { self.log().contains("b true") && sheet.calls.count == 1 }
+        try await wait("the answer of b") { self.log().contains("b") && sheet.calls.count == 1 }
         openGate()
 
         try await wait("the read after a") { self.log().last == "show" && sheet.calls.isEmpty }

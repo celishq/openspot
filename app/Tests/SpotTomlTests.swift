@@ -12,39 +12,33 @@ final class SpotTomlTests: XCTestCase {
         return spots
     }
 
-    func testAFolderWithASpotTomlLoadsWithItsTitleEventsCommandsSettingsAndOtherScripts() throws {
+    func testAFolderWithASpotTomlLoadsWithItsTitleEventsActionsAndSettings() throws {
         let toml = """
         title = "Weather"
-        on = ["sheet.open", "clock.300"]
         uses = ["network", "clipboard"]
 
-        [commands.refresh]
+        [actions.refresh]
         title = "Refresh"
 
-        [settings.city]
-        title = "City"
+        [settings]
+        city = { type = "text", title = "City" }
 
-        [scripts.radar]
-        title = "Rain radar"
-        on = ["sheet.open"]
-
-        [scripts.radar.commands."zoom.in"]
-        title = "Zoom in"
+        [on]
+        "sheet.open" = true
+        every = 300
         """
-        let spots = try folder("weather", toml: toml, scripts: ["weather.sh": "#!/bin/sh\necho\n", "radar.sh": "#!/bin/sh\necho\n", "helper.sh": "#!/bin/sh\necho\n"])
+        let spots = try folder("weather", toml: toml, scripts: ["weather.sh": "#!/bin/sh\necho\n", "helper.sh": "#!/bin/sh\necho\n"])
 
         let scan = try SpotsFolder(url: spots).scan()
 
         XCTAssertEqual(scan.refused, [])
-        XCTAssertEqual(Set(scan.spots.map(\.name)), ["Weather", "Rain radar"])
-        let weather = try XCTUnwrap(scan.spots.first { $0.name == "Weather" })
-        XCTAssertEqual(weather.on?.has(.sheet), true)
-        XCTAssertEqual(weather.on?.seconds, 300)
+        XCTAssertEqual(scan.spots.map(\.name), ["Weather"])
+        let weather = try XCTUnwrap(scan.spots.first)
+        XCTAssertEqual(weather.showsInSheet, true)
+        XCTAssertEqual(weather.triggers.every, 300)
         XCTAssertEqual(weather.uses, [.network, .clipboard])
-        XCTAssertEqual(weather.offers.map(\.id), ["refresh"])
+        XCTAssertEqual(weather.commands.map(\.id), ["refresh"])
         XCTAssertEqual(weather.settings.map(\.id), ["city"])
-        let radar = try XCTUnwrap(scan.spots.first { $0.name == "Rain radar" })
-        XCTAssertEqual(radar.offers.map(\.title), ["Zoom in"])
     }
 
     func testAnUnknownKeyKeepsTheSpotFromLoadingWithAFaultThatNamesTheKey() throws {
@@ -63,7 +57,7 @@ final class SpotTomlTests: XCTestCase {
         let scan = try SpotsFolder(url: spots).scan()
 
         XCTAssertEqual(scan.spots.map(\.name), ["Brew"])
-        XCTAssertNil(scan.spots.first?.on)
+        XCTAssertEqual(scan.spots.first?.triggers.shows, false)
     }
 
     func testALooseScriptThatOpenspotMovesIntoAFolderGetsASpotToml() throws {
@@ -87,12 +81,12 @@ final class SpotTomlTests: XCTestCase {
         XCTAssertNotEqual(KeptScan().load(SpotsFolder(url: spots)).stamp(of: spot), load.stamp(of: spot))
     }
 
-    func testAlwaysIsAnUnknownMode() throws {
+    func testModeIsAnUnknownKey() throws {
         let spots = try folder("clock", toml: "mode = \"always\"\n", scripts: ["clock.sh": "#!/bin/sh\necho\n"])
 
         let scan = try SpotsFolder(url: spots).scan()
 
         XCTAssertEqual(scan.spots, [])
-        XCTAssertTrue(scan.refused.first?.reason.contains("unknown mode: always") == true)
+        XCTAssertTrue(scan.refused.first?.reason.contains("unknown key in its spot.toml: mode") == true)
     }
 }

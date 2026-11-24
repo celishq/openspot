@@ -5,13 +5,13 @@ final class SystemSettingsSpotTests: SampleSpotsCase {
     func testSystemSettingsJoinsTheMainSearch() throws {
         let settings = try XCTUnwrap(try scan.spots.first { $0.name == "System Settings" })
 
-        XCTAssertTrue(settings.isGlobal)
+        XCTAssertTrue(settings.triggers.lists)
     }
 
     func testSystemSettingsReadsWhenThePanelOpens() throws {
-        let read = try XCTUnwrap(try scan.spots.first { $0.name == "System Settings" }?.on)
+        let read = try XCTUnwrap(try scan.spots.first { $0.name == "System Settings" }?.triggers)
 
-        XCTAssertTrue(read.has(.panel))
+        XCTAssertTrue(read.showsOnPanel)
     }
 
     func testAPaneAndItsSectionsAreRowsInTheLanguageOfTheMac() async throws {
@@ -25,8 +25,8 @@ final class SystemSettingsSpotTests: SampleSpotsCase {
             let section = try XCTUnwrap(rows.first { $0.title == "Громкость" })
             XCTAssertEqual(section.subtitle, "System Settings › Звук")
             XCTAssertEqual(section.keywords, ["громко", "тихо"])
-            XCTAssertEqual(section.parent, "Звук")
-            XCTAssertNil(pane.parent)
+            XCTAssertEqual(section.place, "Звук")
+            XCTAssertNil(pane.place)
             XCTAssertEqual(section.iconFile, pane.iconFile)
         }
     }
@@ -48,7 +48,7 @@ final class SystemSettingsSpotTests: SampleSpotsCase {
             let rows = try await self.rows()
             let section = try XCTUnwrap(rows.first { $0.title == "Громкость" })
 
-            _ = try await settings.perform(.item(section), timeout: 60)
+            _ = try await settings.perform("press", input: "input.item=\(section.run)\n", timeout: 60)
 
             let opened = try String(contentsOf: home.appendingPathComponent("opened"), encoding: .utf8)
             XCTAssertEqual(opened, "x-apple.systempreferences:com.apple.Sound-Settings.extension?volume\n")

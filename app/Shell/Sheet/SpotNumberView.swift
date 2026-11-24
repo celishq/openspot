@@ -2,6 +2,7 @@ import OpenspotCore
 import SwiftUI
 
 struct SpotNumberView: View {
+    @Environment(\.spotIsOnSolid) private var isOnSolid
     let part: SpotPart
     var look: NumberLook = .stat
     let font: Font
@@ -14,7 +15,7 @@ struct SpotNumberView: View {
     }
 
     private var colour: Color {
-        SpotToneWords.colour(of: part.tone) ?? SpotTheme.ink
+        SpotToneWords.colour(of: part.tone) ?? SpotTheme.ink(onSolid: isOnSolid)
     }
 
     var body: some View {
@@ -30,7 +31,7 @@ struct SpotNumberView: View {
         VStack(alignment: alignment, spacing: SpotType.lineGap) {
             shown
                 .font(font)
-                .foregroundStyle(SpotTheme.ink)
+                .foregroundStyle(SpotTheme.ink(onSolid: isOnSolid))
                 .lineLimit(1)
                 .minimumScaleFactor(leastScale)
             if let title = part.title {
@@ -46,7 +47,7 @@ struct SpotNumberView: View {
             label
             shown
                 .font(SpotType.metric)
-                .foregroundStyle(SpotTheme.ink)
+                .foregroundStyle(SpotTheme.ink(onSolid: isOnSolid))
                 .lineLimit(1)
                 .minimumScaleFactor(leastScale)
             detail
@@ -87,7 +88,7 @@ struct SpotNumberView: View {
                 VStack(spacing: 0) {
                     shown
                         .font(isBig ? SpotType.ringValue : SpotType.controlValue)
-                        .foregroundStyle(SpotTheme.ink)
+                        .foregroundStyle(SpotTheme.ink(onSolid: isOnSolid))
                         .lineLimit(1)
                         .minimumScaleFactor(SpotType.leastValueScale)
                     if isBig, let detail = part.detail {
@@ -125,15 +126,11 @@ struct SpotNumberView: View {
                 Spacer(minLength: 0)
                 shown
                     .font(SpotType.value)
-                    .foregroundStyle(SpotTheme.ink)
+                    .foregroundStyle(SpotTheme.ink(onSolid: isOnSolid))
                     .lineLimit(1)
                     .minimumScaleFactor(leastScale)
             }
-            if reading?.isSeries == true, reading?.max == nil {
-                bars.frame(height: SpotTokens.lineTrendHeight)
-            } else {
-                line(fill: reading?.level ?? 0)
-            }
+            line(fill: reading?.level ?? 0)
         }
     }
 
@@ -157,7 +154,7 @@ struct SpotNumberView: View {
     private func line(fill: Double) -> some View {
         GeometryReader { room in
             ZStack(alignment: .leading) {
-                Capsule().fill(SpotTheme.ink.opacity(SpotTheme.track))
+                Capsule().fill(SpotTheme.ink(onSolid: isOnSolid).opacity(SpotTheme.track))
                 Capsule().fill(colour).frame(width: room.size.width * fill)
             }
         }
@@ -171,7 +168,7 @@ struct SpotNumberView: View {
     private var shown: Text {
         part.numberPieces.reduce(Text(verbatim: "")) { text, piece in
             let run = Text(verbatim: piece.text)
-            return Text("\(text)\(piece.isUnit ? run.foregroundStyle(SpotTheme.ink.opacity(SpotTheme.secondary)) : run)")
+            return Text("\(text)\(piece.isUnit ? run.foregroundStyle(SpotTheme.ink(onSolid: isOnSolid).opacity(SpotTheme.secondary)) : run)")
         }
     }
 }

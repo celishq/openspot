@@ -2,6 +2,11 @@ import XCTest
 @testable import OpenspotCore
 
 final class SpotTokensTests: XCTestCase {
+    func testTheToastsWindowHoldsTheWholeShadowOfItsGlass() {
+        XCTAssertGreaterThanOrEqual(SpotTokens.toastRoom, 2 * CGFloat(SpotTokens.backdrop.shadow))
+        XCTAssertGreaterThanOrEqual(SpotTokens.toastRoom, SpotTokens.toastMargin)
+    }
+
     func testAPictureInARoomOneLineHighIsARowIcon() {
         XCTAssertEqual(SpotTokens.pictureSide(in: CGSize(width: 80, height: 26)), SpotTokens.listIconSize)
         XCTAssertEqual(SpotTokens.pictureSide(in: CGSize(width: 80, height: SpotTokens.listRow)), SpotTokens.listIconSize)
@@ -23,6 +28,12 @@ final class SpotTokensTests: XCTestCase {
         XCTAssertEqual(SpotSize.wide.reach(among: sizes).shrinks, true)
         XCTAssertEqual(SpotSize.square.reach(among: sizes).grows, false)
         XCTAssertEqual(SpotSize.square.reach(among: sizes).shrinks, true)
+    }
+
+    func testAFloatingListHoldsALineForEachSectionTitle() {
+        let list = ItemList(items: Frame(text: "items=devices\n\nbox=nearby\nparent=devices\ntitle=Nearby\n\nitem=mouse\nparent=nearby\ntitle=Mouse\n\nitem=keyboard\nparent=nearby\ntitle=Keyboard\n").items)
+
+        XCTAssertEqual(SpotTokens.floatSize(list: list), SpotTokens.floatSize(rows: 3, perLine: 1))
     }
 
     func testAFloatingSheetWithRowsSetApartHoldsTheRuleAsThePanelDoes() {

@@ -9,7 +9,6 @@ final class EmptySearchTests: PanelCase {
 
     private func search(_ text: String) {
         model.query = text
-        model.landSearch()
     }
 
     func testASearchThatFoundNothingCountsByItsFoldedTextWhenItIsClearedOrThePanelHides() async throws {
@@ -27,7 +26,7 @@ final class EmptySearchTests: PanelCase {
     }
 
     func testASearchThatFoundOnlyAnAnswerUnderTheResultsCountsAsMissed() async throws {
-        try script("make", toml: "title = 'Make'\non = ['search.text .']\nanswers = 'last'", #"\#(TestSpot.event); printf 'text=%s\ntitle=Make\n' "$val""#)
+        try script("make", toml: "title = 'Make'\nanswers = 'last'\n[on]\nsearch = '.'", #"text=$(sed -n 's/^input\.text=//p'); printf 'item=%s\ntitle=Make\n' "$text""#)
         await model.reload()
         model.isShown = true
         model.panelWillShow()

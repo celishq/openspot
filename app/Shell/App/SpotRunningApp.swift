@@ -55,6 +55,10 @@ struct SpotRunningApp: RunningApp {
         await model.present(FlowSheet(spot: id, title: title), from: caller)
     }
 
+    func leave(_ id: String) async -> Bool {
+        await model.leave(id)
+    }
+
     func push(_ id: String, route: String?, title: String?, replace: Bool) async -> Bool {
         await model.present(FlowSheet(spot: id, route: route, title: title), replace: replace)
     }
@@ -97,6 +101,10 @@ struct SpotRunningApp: RunningApp {
 
     func allows(_ reason: String) async -> Bool {
         await model.allows(reason)
+    }
+
+    func pickFolder(_ pick: @escaping @MainActor @Sendable () async -> URL?) async -> URL? {
+        await model.holdingFocus { await pick() }
     }
 
 }

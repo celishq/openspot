@@ -1,24 +1,38 @@
 #!/bin/sh
 # Wishes: keeps product links with their name, picture and price, and shares them as a list.
-# Each wish is one line of $OPENSPOT_DATA/wishes.tsv: id, type, price, currency, title, link, picture, notes.
+# The list is Wishes.md, in the folder of the setting Keep in, or else in $OPENSPOT_DATA. markdown.pl reads each wish of
+# it as one line: id, type, price, currency, title, link, picture, notes, and writes such lines back as Wishes.md.
 export LC_ALL=en_US.UTF-8
 . "$OPENSPOT_SH"
 
 here=$(dirname "$0")
-data="$OPENSPOT_DATA/wishes.tsv"
+folder=$(value setting.folder)
+case "$folder" in "~") folder=$HOME ;; "~/"*) folder="$HOME/${folder#"~/"}" ;; esac
+[ -n "$folder" ] || folder=$OPENSPOT_DATA
+book="$folder/Wishes.md"
 tab=$(printf '\t')
 agent='Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.0 Safari/605.1.15'
 
-list() { [ -f "$data" ] && cat "$data"; }
+list() { [ -f "$book" ] && perl "$here/markdown.pl" read < "$book"; }
 link() { grep -Eo 'https?://[^[:space:]<>"]+' | head -n 1; }
 clean() { printf '%s' "$1" | tr '\t\n\r' '   ' | sed 's/^ *//; s/ *$//'; }
 field() { list | awk -F'\t' -v id="$1" -v n="$2" '$1 == id { print $n; exit }'; }
-kinds="$OPENSPOT_DATA/types"
 builtin() { printf 'Books\nClothes\nGadgets\nHome\nBeauty\nToys\nSports\nOther\n'; }
 own() {
-  if [ -f "$kinds" ]; then cat "$kinds"; else list | cut -f2; fi | awk -v B="$(builtin | tr '\n' '|')" 'BEGIN { split(B, a, "|"); for (i in a) b[a[i]] = 1 } NF && !b[$0] && !seen[$0]++'
+  if [ -f "$book" ]; then perl "$here/markdown.pl" types < "$book"; fi | awk -v B="$(builtin | tr '\n' '|')" 'BEGIN { split(B, a, "|"); for (i in a) b[a[i]] = 1 } NF && !b[$0] && !seen[$0]++'
 }
 types() { { builtin; own; } | awk 'NF && !seen[$0]++'; }
+# The folder of the list as people read it, with ~ for the home folder.
+where() { case "$folder" in "$HOME"/*) printf '~/%s' "${folder#"$HOME"/}" ;; *) printf '%s' "$folder" ;; esac; }
+# save [own types]: writes the wishes on stdin as Wishes.md, with these own types, or else with those of the list as it is.
+save() {
+  if [ $# -gt 0 ]; then own=$1; else own=$(own); fi
+  [ -d "$folder" ] && perl "$here/markdown.pl" write "$(builtin | tr '\n' '|')" "$own" | openspot_keep "$book" && return 0
+  openspot toast "Wishes can't write Wishes.md in $(where). Choose another folder under Keep in, in its Settings."
+  exit 1
+}
+# The id of the wish with the link <link>.
+found() { list | U="$1" awk -F'\t' '$6 == ENVIRON["U"] { print $1; exit }'; }
 hex() { printf '%s' "$1" | od -An -tx1 | tr -d ' \n'; }
 unhex() { printf '%s' "$1" | perl -pe 's/([0-9a-f]{2})/chr hex $1/ge'; }
 
@@ -71,25 +85,27 @@ show() {
   printf 'frame=\nrecents=false\n'
   [ "$count" -eq 1 ] && printf 'detail=1 wish\n'
   [ "$count" -gt 1 ] && printf 'detail=%s wishes\n' "$count"
-  printf '\ntext=add\ntitle=Add wish\nicon=plus.circle.fill\npin=top\nform=true\nclose=false\nopen.title=Add Wish\nopen.wait=Reading the page\nhides=edit\nhides=remove\n'
+  printf '\nfield=search\ntype=search\nplaceholder=Search wishes\n'
+  printf '\nitems=items\n\nitem=add\nparent=items\ntitle=Add wish\nicon=plus.circle.fill\npin=top\nclose=false\nopen.title=Add Wish\nopen.wait=Reading the page\nhides=edit\nhides=remove\n'
   [ "$count" -eq 0 ] && printf 'detail=Press Return, then paste a product link\n'
+  [ -d "$folder" ] || printf "\nitem=lost\nparent=items\ntitle=Wishes can't find %s\ndetail=Choose another folder under Keep in, in the Settings of Wishes\nicon=exclamationmark.triangle\ntone=warn\npin=top\nhides=edit\nhides=remove\n" "$(esc "$(where)")"
   printf '\n'
   [ "$count" -eq 0 ] && return
   arrange "$group" | awk -F'\t' -v group="$group" '
     function e(s) { gsub(/\\/, "\\\\", s); return s }
-    $4 != last { last = $4; printf "section=s%d\ntitle=%s\n\n", ++sections, e($4) }
+    $4 != last { last = $4; printf "box=s%d\nparent=items\ntitle=%s\n\n", ++sections, e($4) }
     {
       detail = $7
       if (group == "Price") detail = detail (detail == "" ? "" : " · ") $11
       detail = detail (detail == "" ? "" : " · ") $8
       if ($12 != "") detail = detail " · " $12
-      printf "text=%s\ntitle=%s\ndetail=%s\nicon=%s\nurl=%s\nkeywords=%s,%s\nopen.title=Open in Browser\n\n", \
-        $5, e($6), e(detail), e($9), e($10), e($8), e($11)
+      printf "item=%s\nparent=s%d\ntitle=%s\ndetail=%s\nicon=%s\nurl=%s\nkeywords=%s,%s\nopen.title=Open in Browser\n\n", \
+        $5, sections, e($6), e(detail), e($9), e($10), e($8), e($11)
     }'
   if [ "$group" = Price ]; then by='by price range'; else by='by type'; fi
-  printf 'text=share\ntitle=Share list\ndetail=Copies your wishes as text, %s\nicon=square.and.arrow.up\npin=bottom\nopen.title=Copy List\nhides=edit\nhides=remove\n\n' "$by"
-  printf 'button=edit\ntitle=Edit\nicon=pencil\nshortcut=cmd+e\nform=true\nclose=false\nwait=Reading the page\n\n'
-  printf 'button=remove\ntitle=Remove\nicon=trash\nshortcut=cmd+backspace\nconfirm=Press again to remove this wish\nclose=false\n'
+  printf 'item=share\nparent=items\ntitle=Share list\ndetail=Copies your wishes as text, %s\nicon=square.and.arrow.up\npin=bottom\nopen.title=Copy List\nhides=edit\nhides=remove\n\n' "$by"
+  printf 'button=edit\nparent=items\ntitle=Edit\nicon=pencil\nshortcut=cmd+e\nclose=false\nwait=Reading the page\n\n'
+  printf 'button=remove\nparent=items\ntitle=Remove\nicon=trash\nshortcut=cmd+backspace\nconfirm=Press again to remove this wish\nclose=false\n'
 }
 
 # A link with no tracking words, such as utm_source or gclid, so that a shared list is short.
@@ -131,7 +147,7 @@ fetch() {
 # Prints the form of a wish: its title, link, name, price, currency, type, picture, whether the page was read, from
 # where, and its notes. A new wish and an edit share it, so each value is changed in one place.
 wishform() {
-  printf 'frame=\n'
+  printf 'frame=\ntype=form\n'
   openspot_kv title "$1"
   printf '\nfield=link\ntitle=Link\nrequired=true\n'
   openspot_kv value "$2"
@@ -181,7 +197,7 @@ keep() {
   notes=$(clean "$(value input.notes)")
   line=$(printf '%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s' "$1" "${type:-Other}" "$price" "$currency" "$name" "$url" "$picture" "$notes")
   { list | L="$line" awk -F'\t' -v id="$1" '$1 == id { print ENVIRON["L"]; found = 1; next } { print } END { if (!found) print ENVIRON["L"] }'; } \
-    | openspot_keep "$data" || exit 1
+    | save
   rm -f "$OPENSPOT_DATA/draft"
 }
 
@@ -190,9 +206,9 @@ forget() {
   gone=$(value input.type.removed)
   [ -n "$gone" ] || return 0
   drop=$(printf '%s\n' "$gone" | while IFS= read -r id; do [ -n "$id" ] && unhex "${id#t}" && echo; done)
-  own | D="$drop" awk 'BEGIN { n = split(ENVIRON["D"], a, "\n"); for (i = 1; i <= n; i++) d[a[i]] = 1 } !d[$0]' | openspot_keep "$kinds" || exit 1
+  kept=$(own | D="$drop" awk 'BEGIN { n = split(ENVIRON["D"], a, "\n"); for (i = 1; i <= n; i++) d[a[i]] = 1 } !d[$0]')
   list | D="$drop" awk -F'\t' -v OFS='\t' 'BEGIN { n = split(ENVIRON["D"], a, "\n"); for (i = 1; i <= n; i++) d[a[i]] = 1 } d[$2] { $2 = "Other" } { print }' \
-    | openspot_keep "$data" || exit 1
+    | save "$kept"
 }
 
 # Add type… in the Type list: the values of the wish wait in $OPENSPOT_DATA/draft while a form of one field asks for
@@ -204,13 +220,13 @@ retype() {
     forget
     printf '%s\t%s\t%s\t%s\t%s\t%s\n' "$1" "$(clean "$(value input.link)")" "$(clean "$(value input.name)")" \
       "$(clean "$(value input.price)")" "$(clean "$(value input.picture)")" "$(clean "$(value input.notes)")" | openspot_keep "$draft"
-    printf 'frame=\ntitle=New type\n\nfield=newtype\ntitle=Name\nplaceholder=Such as Plants\nrequired=true\n'
+    printf 'frame=\ntype=form\ntitle=New type\n\nfield=newtype\ntitle=Name\nplaceholder=Such as Plants\nrequired=true\n'
     return 0
   fi
   new=$(clean "$(value input.newtype)")
   [ -n "$new" ] && [ -s "$draft" ] && [ "$(cut -f1 < "$draft")" = "$1" ] || return 1
-  { own; printf '%s\n' "$new"; } | awk -v B="$(builtin | tr '\n' '|')" 'BEGIN { split(B, a, "|"); for (i in a) b[a[i]] = 1 } NF && !b[$0] && !seen[$0]++' \
-    | openspot_keep "$kinds" || exit 1
+  kept=$({ own; printf '%s\n' "$new"; } | awk -v B="$(builtin | tr '\n' '|')" 'BEGIN { split(B, a, "|"); for (i in a) b[a[i]] = 1 } NF && !b[$0] && !seen[$0]++')
+  list | save "$kept"
   at() { cut -f"$(($1 + 1))" < "$draft"; }
   wishform "$2" "$(at 1)" "$(at 2)" "$(at 3)" '' "$new" "$(at 4)" '' '' "$(at 5)"
 }
@@ -220,16 +236,16 @@ retype() {
 add() {
   retype add 'New wish' && return
   typed=$(clean "$(value input.link)")
-  [ -n "$typed" ] || typed=$(clean "$(value search)")
+  [ -n "$typed" ] || typed=$(clean "$(value input.search)")
   url=$(printf '%s\n' "$typed" | link | untrack)
   if [ -z "$url" ]; then
-    printf 'frame=\ntitle=New wish\n\nfield=link\ntitle=Link\nplaceholder=Paste a product link\nrequired=true\n'
+    printf 'frame=\ntype=form\ntitle=New wish\n\nfield=link\ntitle=Link\nplaceholder=Paste a product link\nrequired=true\n'
     if [ -n "$typed" ]; then printf 'detail=A link starts with https://\ntone=warn\n'; fi
     return
   fi
-  found=$(list | U="$url" awk -F'\t' '$6 == ENVIRON["U"] { print $1; exit }')
-  if [ -n "$found" ]; then
-    openspot select "$found"
+  there=$(found "$url")
+  if [ -n "$there" ]; then
+    openspot select "$there"
     openspot toast 'This link is already in your wishes.'
     return
   fi
@@ -248,7 +264,7 @@ add() {
   id="w$(date +%s)$$"
   keep "$id" "$(printf '%s\n' "$read" | cut -f4)"
   rm -f "$OPENSPOT_DATA/page"
-  openspot select "$id"
+  openspot select "$(found "$url")"
 }
 
 # The form of a wish that is there, with each of its values. A wish that lacks its picture, its price or a name of its
@@ -260,7 +276,7 @@ edit() {
   name=$(clean "$(value input.name)")
   if [ -n "$name" ]; then
     keep "$1" "$(field "$1" 4)"
-    openspot select "$1"
+    openspot select "$(found "$url")"
     return
   fi
   url=$(field "$1" 6)
@@ -304,19 +320,45 @@ share() {
     && openspot toast 'Copied your list. Paste it into a message.'
 }
 
+# Keep in, in the Settings of Wishes: asks for a folder and keeps the list there. A folder that holds a Wishes.md already
+# keeps its own list, and the one here stays as it is. Else the list moves into the folder.
+move() {
+  picked=$(openspot folder pick) || exit 1
+  [ -n "$picked" ] && [ "$picked" != "$folder" ] || return 0
+  moves=
+  if [ ! -f "$picked/Wishes.md" ] && [ -f "$book" ]; then
+    openspot_keep "$picked/Wishes.md" "$(cat "$book")
+" || { openspot toast "Wishes can't write Wishes.md in $picked."; exit 1; }
+    moves=1
+  fi
+  old=$book
+  folder=$picked
+  openspot setting set folder "$(where)" || exit 1
+  [ -z "$moves" ] || rm -f "$old"
+  if [ -n "$moves" ]; then openspot toast "Moved your list to $(where)/Wishes.md."; else openspot toast "Wishes now reads $(where)/Wishes.md."; fi
+}
+
+# The list of an older Wishes, wishes.tsv with its own types in types, comes into Wishes.md once, and stays as it was.
+old="$OPENSPOT_DATA/wishes.tsv"
+if [ -d "$folder" ] && [ ! -f "$book" ] && [ -s "$old" ] && [ ! -e "$OPENSPOT_DATA/imported" ]; then
+  save "$(cat "$OPENSPOT_DATA/types" 2>/dev/null)" < "$old" && : > "$OPENSPOT_DATA/imported"
+fi
+
+item=$(value input.item)
 case "$1" in
   show) show ;;
-  open)
-    case "$2" in
+  press)
+    case "$item" in
       add) add ;;
       share) if [ "$(value setting.group)" = Price ]; then share Price; else share Type; fi ;;
       *)
         url=$(value item.url)
-        [ -n "$url" ] || url=$(field "$2" 6)
+        [ -n "$url" ] || url=$(field "$item" 6)
         if [ -n "$url" ]; then open "$url"; fi
         ;;
     esac
     ;;
-  edit) edit "$2" ;;
-  remove) if [ -n "$2" ]; then list | awk -F'\t' -v id="$2" '$1 != id' | openspot_keep "$data"; fi ;;
+  edit) edit "$item" ;;
+  remove) if [ -n "$item" ]; then list | awk -F'\t' -v id="$item" '$1 != id' | save; fi ;;
+  folder) move ;;
 esac

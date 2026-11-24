@@ -10,6 +10,7 @@ final class ToastPanel: NSPanel {
     private var shows = 0
     private var fixKey: HotKey.Registration?
     weak var item: OpenspotItem?
+    var front: () -> CGRect? = { nil }
 
     func show(_ message: String, kind: ToastKind, fix: (@MainActor @Sendable () -> Void)? = nil, key: Shortcut? = nil, for duration: TimeInterval? = ToastPanel.duration) {
         shows += 1
@@ -23,8 +24,10 @@ final class ToastPanel: NSPanel {
         measure.rootView = ToastView(toast: copy)
         let width = min(measure.view.fittingSize.width.rounded(.up) + 1, SpotTokens.toastMaxSize.width)
         let size = measure.sizeThatFits(in: NSSize(width: width, height: SpotTokens.toastMaxSize.height))
-        let place = ScreenPlace(screens: ScreenPlace.Screen.all)
-        if let origin = place.origin(ofToast: size, inset: SpotTokens.toastMargin, under: item?.frame) {
+        let screens = ScreenPlace.Screen.all
+        let window = screens.count < 2 ? nil : front()
+        let place = ScreenPlace(screens: screens)
+        if let origin = place.origin(ofToast: size, inset: SpotTokens.toastRoom, under: item?.frame, window: window, pointer: NSEvent.mouseLocation) {
             setFrame(NSRect(origin: origin, size: size), display: true)
         }
         orderFrontRegardless()

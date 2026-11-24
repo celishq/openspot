@@ -1,4 +1,5 @@
 #!/bin/sh
+. "$OPENSPOT_SH"
 data="$OPENSPOT_DATA/icons"
 target=$(cat "$data/target" 2>/dev/null)
 name=$(printf '%s' "$target" | tr '/' '_')
@@ -23,8 +24,8 @@ reset() {
 case "$1" in
   draw|file|reset)
     mkdir -p "$data"
-    printf '%s' "$2" > "$data/target.$$" && mv "$data/target.$$" "$data/target"
-    target=$2
+    target=$(value spot)
+    printf '%s' "$target" > "$data/target.$$" && mv "$data/target.$$" "$data/target"
     name=$(printf '%s' "$target" | tr '/' '_')
     rm -f "$data/$name.draft"
     case "$1" in
@@ -36,22 +37,25 @@ case "$1" in
   drop)
     [ -n "$target" ] || exit 0
     rm -f "$data/$name".*.svg "$data/$name".*.picture.* "$data/$name.dots" "$data/$name.draft"
-    file="$data/$name.$(date +%s).picture.${2##*.}"
-    cp "$2" "$file"
+    dropped=$(value file | head -n 1)
+    file="$data/$name.$(date +%s).picture.${dropped##*.}"
+    cp "$dropped" "$file"
     openspot setting set --spot "$target" icon "$file"
     ;;
   show)
-    [ -n "$target" ] || { printf 'text=none\ntitle=No spot\ndetail=Choose Change Icon › Draw… in the menu of a card\n'; exit 0; }
+    [ -n "$target" ] || { printf 'item=none\ntitle=No spot\ndetail=Choose Change Icon › Draw… in the menu of a card\n'; exit 0; }
     dots=$(cat "$data/$name.draft" 2>/dev/null || cat "$data/$name.dots" 2>/dev/null)
     [ ${#dots} -eq 81 ] || dots=$empty
-    printf 'frame=\ntitle=%s\ngrid=drawer drawer\ngrid=clear save\n\n' "$target"
-    printf 'view=drawer\ndots=%s\n\n' "$dots"
-    printf 'button=clear\ntitle=Clear\nclose=false\n\n'
-    printf 'button=save\ntitle=Save\nshortcut=return\nlook=strong\n'
+    printf 'frame=\ntitle=%s\nclass=gap-part\n\n' "$target"
+    printf 'board=drawer\nclass=grow\ndots=%s\n\n' "$dots"
+    printf 'box=buttons\nclass=flex-row gap-part\n\n'
+    printf 'button=clear\nparent=buttons\nclass=w-1/2\ntitle=Clear\nclose=false\n\n'
+    printf 'button=save\nparent=buttons\nclass=w-1/2 bg-accent\ntitle=Save\nshortcut=return\n'
     ;;
   drawer)
-    [ -n "$target" ] && [ ${#2} -eq 81 ] || exit 0
-    printf '%s' "$2" > "$data/$name.draft.$$" && mv "$data/$name.draft.$$" "$data/$name.draft"
+    dots=$(value value)
+    [ -n "$target" ] && [ ${#dots} -eq 81 ] || exit 0
+    printf '%s' "$dots" > "$data/$name.draft.$$" && mv "$data/$name.draft.$$" "$data/$name.draft"
     ;;
   clear)
     [ -n "$target" ] && printf '%s' "$empty" > "$data/$name.draft.$$" && mv "$data/$name.draft.$$" "$data/$name.draft"

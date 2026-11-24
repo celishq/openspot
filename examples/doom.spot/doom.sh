@@ -18,9 +18,9 @@ layer=$(cd "$(dirname "$0")" && pwd)/doomgeneric_mac.m
 card() {
   newest=$(ls -t "$data"/screens/*.png 2>/dev/null | head -n 1)
   [ -n "$newest" ] || return 1
-  printf 'frame=\ngrid=screen\ngrid=play\n\nview=screen\n'
+  printf 'frame=\nclass=gap-part card:relative\n\nscreen=screen\nclass=grow card:absolute card:inset-0\n'
   openspot_kv picture "$newest"
-  printf '\nbutton=play\ntitle=Play\nshortcut=return\n'
+  printf '\nbutton=play\nclass=card:hidden\ntitle=Play\nshortcut=return\n'
 }
 
 fail() {

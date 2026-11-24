@@ -27,7 +27,7 @@ extension SpotsModel {
 
     func handleRowsPanelKey(_ key: ActionKey, _ panel: SheetParts) -> Bool {
         if let part = panel.selectedPart { return handleFocusKey(key, part) }
-        openSheet?.landRows()
+        if key == ActionKey(name: "up"), openItems?.isOnFirstLine != false { return openSheet?.leaveRows(upward: true) == true }
         guard key == ActionKey(name: "down"), openItems?.isOnLastLine != false else { return false }
         return openSheet?.leaveRows() == true
     }
@@ -71,11 +71,12 @@ extension SpotsModel {
 
     public func setPart(_ part: SpotPart, to value: String) {
         openSheet?.set(part, to: value)
+        if part.closesOnSet, isShown { host.dismiss() }
     }
 
     public func pressPart(_ part: SpotPart) {
         openSheet?.press(part)
-        if part.closes, isShown { host.dismiss() }
+        if part.closes, isShown, openSheet?.spot.takesHandlers != true { host.dismiss() }
     }
 
     @discardableResult
@@ -90,45 +91,56 @@ extension SpotsModel {
 
     public func run(_ action: CommandAction, on target: Target, in place: SheetPlace = .panel) {
         if place.isDetached {
-            if action.isForm || action.confirm != nil, place == .window {
+            let asks = (try? target.entry.spot.action(action.callName))?.lacksInput == true || action.confirm != nil
+            if asks, place == .window {
                 host.notify("\(action.title) asks with a form or a second press, which a window does not show yet.")
-            } else if action.isForm || action.confirm != nil {
+            } else if asks {
                 press(target.entry.id)
+            } else if target.entry.spot.takesHandlers, let sheet = sheets[target.entry.id] {
+                Task { [weak self] in
+                    guard case .form = await sheet.answer(to: action, item: target.item), let self else { return }
+                    if place == .window { host.notify("\(action.title) asks with a form, which a window does not show yet.") } else { press(target.entry.id) }
+                }
             } else {
                 sheets[target.entry.id]?.run(action, item: target.item)
             }
         } else if action == .open || action == .history {
             presentSheet(of: target.entry.id)
-        } else if let command = CommandAction.command(of: action) {
+        } else if let typed = try? target.entry.spot.action(action.callName), typed.lacksInput {
+            show(.form(typed.itemForm(title: action.title)), of: action, on: target, prefill: "")
+        } else if case .command(let command) = action.kind {
             if isShown { host.dismiss() }
             sheets[target.entry.id]?.pressKey(command)
-        } else if action.isForm {
-            openForm(action, on: target)
         } else if action.after == .stay {
-            sheets[target.entry.id]?.run(action, item: target.item)
+            perform(action, on: target)
+        } else if target.entry.spot.takesHandlers {
+            perform(action, on: target, closes: true)
         } else if let item = target.item {
             pick(item, of: target.entry, action: action)
         } else {
             if isShown { host.dismiss() }
-            sheets[target.entry.id]?.run(action, item: nil)
+            perform(action, on: target)
         }
     }
 
-    public func openForm(_ action: CommandAction, on target: Target, prefill: String = "") {
-        guard place(ofSheet: target.entry.id) == .panel else {
-            return host.notify("\(action.title) asks with a form, which a window does not show yet.")
+    func perform(_ action: CommandAction, on target: Target, closes: Bool = false) {
+        guard target.entry.spot.takesHandlers, let sheet = sheets[target.entry.id] else {
+            sheets[target.entry.id]?.run(action, item: target.item)
+            return
         }
-        ask(action, on: target, prefill: prefill, waits: true) { [sheets] in
-            try await sheets[target.entry.id]?.form(action, item: target.item, search: prefill).map(CallAnswer.form)
+        let wait = startWaiting(action.openWords)
+        Task { [weak self] in
+            let answer = await sheet.answer(to: action, item: target.item, closes: closes)
+            self?.endWaiting(wait)
+            guard case .form(let form) = answer, let self, isShown else { return }
+            show(.form(form), of: action, on: target, prefill: "")
         }
     }
 
-    func ask(_ action: CommandAction, on target: Target, prefill: String = "", whileShown: Bool = false, waits: Bool = false, _ call: @escaping @MainActor () async throws -> CallAnswer?) {
+    func ask(_ action: CommandAction, on target: Target, prefill: String = "", whileShown: Bool = false, _ call: @escaping @MainActor () async throws -> CallAnswer?) {
         let ask = UUID()
         pendingAsk = ask
-        let wait = waits ? startWaiting(action.openWords) : nil
         Task {
-            defer { if let wait { endWaiting(wait) } }
             do {
                 guard let answer = try await call(), pendingAsk == ask else { return }
                 pendingAsk = nil
@@ -142,7 +154,7 @@ extension SpotsModel {
         }
     }
 
-    private func show(_ answer: CallAnswer, of action: CommandAction, on target: Target, prefill: String) {
+    func show(_ answer: CallAnswer, of action: CommandAction, on target: Target, prefill: String) {
         let id = target.entry.id
         switch answer {
         case .form(let form):
@@ -164,7 +176,7 @@ extension SpotsModel {
         if let field = entry.spot.settings.first(where: { $0.id == key && $0.isSecret }) {
             pushFirst(id, moving: true)
             let form = ItemForm(title: field.title, fields: [ItemForm.Field(name: key, label: field.title, type: .secret)])
-            let action = CommandAction(id: Self.secretPrefix + key, title: "Change \(field.title)", scope: .spot, after: .stay)
+            let action = CommandAction.secret(key, title: field.title)
             self.form = FormSession(draft: FormDraft(form: form), entry: entry, action: action, item: nil, openedSheet: true)
             return true
         }
@@ -172,13 +184,30 @@ extension SpotsModel {
             pushFirst(id, moving: true)
             let options = field.options.map { SpotPart.Option(id: $0, title: $0) }
             let form = ItemForm(title: field.title, fields: [ItemForm.Field(name: key, label: field.title, type: .choice, value: runs.settings[id]?[key], options: options)])
-            let action = CommandAction(id: Self.optionPrefix + key, title: "Change \(field.title)", scope: .spot, after: .stay)
+            let action = CommandAction.option(key, title: field.title)
             self.form = FormSession(draft: FormDraft(form: form), entry: entry, action: action, item: nil, openedSheet: true)
             return true
         }
-        let action = CommandAction(id: key, title: "Change \(key)", scope: .spot, after: .close)
+        let action = CommandAction(id: key, title: "Change \(key)", scope: .spot, after: .stay)
         ask(action, on: (entry, nil), whileShown: true) { try await sheet.change(action) }
         return true
+    }
+
+    func offerSettingMenu(_ key: String, of id: String) -> Bool {
+        guard let field = entry(id)?.spot.settings.first(where: { $0.id == key && !$0.isSecret && !$0.options.isEmpty }) else { return false }
+        let value = runs.settings[id]?[key] ?? field.defaultValue
+        let offered = field.options.filter { $0 != value } + field.options.filter { $0 == value }
+        settingMenu = SettingMenu(spot: id, key: key, options: offered.map { SpotPart.Option(id: $0, title: $0) }, value: value, serial: (settingMenu?.serial ?? 0) + 1)
+        return true
+    }
+
+    public func chooseSetting(_ value: String, in menu: SettingMenu) {
+        do {
+            let next = try files.config.change { $0.set(setting: menu.key, of: menu.spot, to: value) }
+            configChanged(.value(spot: menu.spot, caller: nil), to: next)
+        } catch {
+            host.notify("Openspot didn't keep \(value). \(Self.reason(error))")
+        }
     }
 
     public func chooseFormOption(_ item: SpotItem) {
@@ -239,11 +268,7 @@ extension SpotsModel {
         send(form, form.draft)
     }
 
-    private static let secretPrefix = "openspot.secret."
-    private static let optionPrefix = "openspot.option."
-
-    private func keepOption(_ form: FormSession, _ draft: FormDraft) {
-        let key = String(form.action.id.dropFirst(Self.optionPrefix.count))
+    private func keepOption(_ key: String, _ form: FormSession, _ draft: FormDraft) {
         let spot = form.entry.id
         do {
             let next = try files.config.change { $0.set(setting: key, of: spot, to: draft.values[key]) }
@@ -255,8 +280,7 @@ extension SpotsModel {
         }
     }
 
-    private func keepSecret(_ form: FormSession, _ draft: FormDraft) {
-        let key = String(form.action.id.dropFirst(Self.secretPrefix.count))
+    private func keepSecret(_ key: String, _ form: FormSession, _ draft: FormDraft) {
         let spot = form.entry.id
         let value = draft.values[key] ?? ""
         if !value.isEmpty, value.count < SecretStore.shortest {
@@ -285,8 +309,8 @@ extension SpotsModel {
     }
 
     func send(_ form: FormSession, _ draft: FormDraft) {
-        if form.action.id.hasPrefix(Self.secretPrefix) { return keepSecret(form, draft) }
-        if form.action.id.hasPrefix(Self.optionPrefix) { return keepOption(form, draft) }
+        if case .secret(let key) = form.action.kind { return keepSecret(key, form, draft) }
+        if case .option(let key) = form.action.kind { return keepOption(key, form, draft) }
         let wait = startWaiting(form.action.sendWords)
         Task {
             defer { endWaiting(wait) }

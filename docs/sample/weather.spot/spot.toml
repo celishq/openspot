@@ -1,4 +1,6 @@
 title = "Weather"
 icon = "cloud.sun.fill"
-on = ["panel.open"]
-view = "weather.swift"
+views = ["weather.swift"]
+
+[on]
+"panel.open" = true

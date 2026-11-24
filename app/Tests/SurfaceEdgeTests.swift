@@ -30,6 +30,19 @@ final class SurfaceEdgeTests: XCTestCase {
         }
     }
 
+    func testACardEdgeDrawnFromItsPaddedContentIsTheCardItselfForEachSize() {
+        for size in SpotSize.all {
+            let padding = SpotTokens.cardPadding(for: size, isDrawn: true)
+            let card = SurfaceEdge(card: size)
+            let content = bounds(of: size).insetBy(dx: padding, dy: padding)
+            let edge = card.outset(by: padding)
+
+            XCTAssertEqual(edge.place(in: content), bounds(of: size), size.name)
+            XCTAssertEqual(edge.corner(in: content), card.corner(in: bounds(of: size)), size.name)
+            XCTAssertEqual(edge.isCircular(in: content), card.isCircular(in: bounds(of: size)), size.name)
+        }
+    }
+
     func testAnEdgeIsCircularOnlyWhenItsCornerIsHalfItsShortSide() {
         let rect = CGRect(x: 0, y: 0, width: 200, height: 40)
 

@@ -20,7 +20,7 @@ final class DrawSheetTests: XCTestCase {
     }
 
     private func rows(_ frame: String) -> [[String]] {
-        frame.components(separatedBy: "\n\n").map { $0.split(separator: "\n").map(String.init) }.filter { $0.first?.hasPrefix("text=") == true }
+        frame.components(separatedBy: "\n\n").map { $0.split(separator: "\n").map(String.init) }.filter { $0.first?.hasPrefix("item=") == true }
     }
 
     func testTheSheetListsANewBoardThenEachBoardNewestFirst() throws {
@@ -31,7 +31,7 @@ final class DrawSheetTests: XCTestCase {
 
         let rows = rows(Sheet(shelf: Shelf(folder: folder), now: now).frame())
 
-        XCTAssertEqual(rows.map { $0[0] }, ["text=0:new", "text=0:fresh", "text=0:flows", "text=0:old", "text=0:last-year"])
+        XCTAssertEqual(rows.map { $0[0] }, ["item=0:new", "item=0:fresh", "item=0:flows", "item=0:old", "item=0:last-year"])
         XCTAssertEqual(rows.map { $0[1] }, ["title=New board", "title=Fresh", "title=Flows", "title=Old plan", "title=Last year"])
         XCTAssertEqual(rows.map { $0[2] }, ["detail=A blank board", "detail=Edited just now", "detail=Edited 2 min ago", "detail=Edited 2 h ago", "detail=Edited Dec 11"])
         XCTAssertEqual(rows[0].suffix(2), ["hides=rename", "hides=delete"])
@@ -52,7 +52,7 @@ final class DrawSheetTests: XCTestCase {
 
         let rows = rows(sheet.frame())
 
-        XCTAssertEqual(rows.map { $0[0] }, ["text=0:new", "text=0:Work/plan"])
+        XCTAssertEqual(rows.map { $0[0] }, ["item=0:new", "item=0:Work/plan"])
         XCTAssertEqual(rows[1][2], "detail=Work · Edited 1 min ago")
         XCTAssertEqual(URL(fileURLWithPath: String(rows[1][3].dropFirst(5))).resolvingSymlinksInPath().path, picture.resolvingSymlinksInPath().path)
         XCTAssertEqual(sheet.file(named: "Work/plan")?.lastPathComponent, "plan.json")
@@ -67,7 +67,7 @@ final class DrawSheetTests: XCTestCase {
     func testTheHeadOfTheFrameHoldsTheLinesOfTheCall() {
         let frame = Sheet(shelf: Shelf(folder: folder), now: now).frame(head: ["end=4", "call=5"])
 
-        XCTAssertTrue(frame.hasPrefix("frame=\nrecents=false\nend=4\ncall=5\n\nbutton=open\n"))
+        XCTAssertTrue(frame.hasPrefix("frame=\nrecents=false\nend=4\ncall=5\n\nbutton=press\n"))
     }
 
     func testEachTurnGivesTheRowsAndTheNewButtonOtherIDsAndTheSameNames() throws {
@@ -79,7 +79,7 @@ final class DrawSheetTests: XCTestCase {
 
         XCTAssertTrue(first.contains("button=0:new\n"))
         XCTAssertTrue(second.contains("button=1:new\n"))
-        XCTAssertEqual(rows(second).map { $0[0] }, ["text=1:new", "text=1:flows"])
+        XCTAssertEqual(rows(second).map { $0[0] }, ["item=1:new", "item=1:flows"])
         XCTAssertEqual(Sheet.name(in: "1:flows"), "flows")
         XCTAssertEqual(Sheet.name(in: "12:Work/a:b"), "Work/a:b")
         XCTAssertEqual(Sheet.name(in: "rename"), "rename")
@@ -98,7 +98,7 @@ final class DrawSheetTests: XCTestCase {
     }
 
     func testTheRenameFormHoldsTheTitleOfTheBoard() {
-        XCTAssertEqual(Sheet.renameForm(title: "Flows", head: ["end=3"]), "frame=\nend=3\ntitle=Rename board\n\nfield=name\ntitle=Name\nvalue=Flows\nrequired=true\n")
+        XCTAssertEqual(Sheet.renameForm(title: "Flows", head: ["end=3"]), "frame=\ntype=form\nend=3\ntitle=Rename board\n\nfield=name\ntitle=Name\nvalue=Flows\nrequired=true\n")
     }
 
     func testTheSampleIsTheSheetOverSampleBoards() throws {

@@ -7,7 +7,7 @@ final class SpotIDTests: XCTestCase {
     override func setUpWithError() throws {
         folder = FileManager.default.temporaryDirectory.appendingPathComponent("openspot-id-\(UUID().uuidString)")
         try "#!/bin/sh\n".writeScript(to: folder.appendingPathComponent("weather.spot/weather.sh"))
-        try "#!/bin/sh\n".writeScript(to: folder.appendingPathComponent("home.spot/lights.sh"), toml: "")
+        try "#!/bin/sh\n".writeScript(to: folder.appendingPathComponent("home.spot/home.sh"), toml: "title = 'Home'")
     }
 
     override func tearDownWithError() throws {
@@ -17,7 +17,7 @@ final class SpotIDTests: XCTestCase {
     func testEachIDThatAScanGivesFindsItsFileAgain() throws {
         let spots = try SpotsFolder(url: folder).scan().spots
 
-        XCTAssertEqual(spots.map(\.id).sorted(), ["home/lights", "weather"])
+        XCTAssertEqual(spots.map(\.id).sorted(), ["home", "weather"])
         for spot in spots {
             let id = SpotID(spot.id)
             XCTAssertEqual(id, SpotID(file: spot.url))

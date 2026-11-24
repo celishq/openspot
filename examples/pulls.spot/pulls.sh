@@ -1,6 +1,7 @@
 #!/bin/sh
 export LC_ALL=en_US.UTF-8
 export PATH="$PATH:/opt/homebrew/bin:/usr/local/bin"
+. "$OPENSPOT_SH"
 
 # Makes a jq value safe for one line of a text block, and gives the words and the tone of a state of checks.
 defs='def esc: gsub("\\\\"; "\\\\") | gsub("\n"; "\\n");
@@ -28,7 +29,7 @@ pulls() {
 }
 
 case "$1" in
-  show)
+  show | every)
     if ! command -v gh >/dev/null; then
       printf 'link=https://cli.github.com\n'
       echo "Pull requests need the gh tool. Install it, then open this again." >&2
@@ -36,16 +37,16 @@ case "$1" in
     fi
     list=$(pulls) || exit 1
     count=$(printf '%s' "$list" | jq length)
-    [ "$count" -eq 0 ] || printf 'frame=\ngrid=items\ngrid.bar=count\n\nnumber=count\nvalue=%s\ntitle=Pull requests\n\nrepeat=items\n\n' "$count"
-    printf 'button=copy\ntitle=Copy link\nshortcut=cmd+return\n\n'
-    printf '%s' "$list" | jq -r "$defs"'.[] | "text=\(.url | esc)\ntitle=\(.title | esc)\ndetail=\(about)\nicon=\({good: "checkmark.circle", bad: "xmark.circle", warn: "clock"}[tone // ""] // "arrow.triangle.pull")"
+    [ "$count" -eq 0 ] || printf 'frame=\nclass=gap-part\n\nnumber=count\nclass=hidden bar:flex\nvalue=%s\ntitle=Pull requests\n\nitems=items\n\n' "$count"
+    printf 'button=copy\nparent=items\ntitle=Copy link\nshortcut=cmd+return\n\n'
+    printf '%s' "$list" | jq -r "$defs"'.[] | "item=\(.url | esc)\nparent=items\ntitle=\(.title | esc)\ndetail=\(about)\nicon=\({good: "checkmark.circle", bad: "xmark.circle", warn: "clock"}[tone // ""] // "arrow.triangle.pull")"
       + (tone | if . then "\ntone=\(.)" else "" end) + "\n"'
     ;;
   copy)
-    printf '%s' "$2" | pbcopy
+    printf '%s' "$(value item)" | pbcopy
     openspot toast Copied
     ;;
-  open)
-    open "$2"
+  press)
+    open "$(value item)"
     ;;
 esac

@@ -19,7 +19,7 @@ final class AccountMarkerTests: BuiltInCase {
     }
 
     private func verbsSaid() async -> [String] {
-        let api = CommandAPI(mac: Mac(), places: .test(TestEnvironment.values), app: app, runs: runs, rates: .offline)
+        let api = CommandAPI(mac: Mac(), places: .test(TestEnvironment.values), app: app, runs: runs)
         let callers: [Spot?] = [
             nil,
             caller("mine", uses: [.account], isBuiltIn: false),
@@ -94,9 +94,10 @@ final class AccountMarkerTests: BuiltInCase {
         var lines: [String] = []
         var failures: [String] = []
         let frame = { (arguments: [String], input: String?, page: String?) async -> String in
-            let message = (arguments == ["show"] ? "event=sheet.open\n" : "") + (page.map { "route=\($0)\n" } ?? "") + (input ?? "")
+            let value = arguments.dropFirst().first.map { "input.value=\($0)\n" } ?? ""
+            let message = (arguments == ["show"] ? "input.event=sheet.open\n" : "") + value + (page.map { "input.route=\($0)\n" } ?? "") + (input ?? "")
             do {
-                let answer = try await sheet.answer(arguments, input: message)
+                let answer = try await sheet.answer(Array(arguments.prefix(1)), input: message)
                 lines.append("\(answer.effects)")
                 return answer.frame
             } catch {

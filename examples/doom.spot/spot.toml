@@ -1,6 +1,8 @@
 title = "Doom"
 icon = "gamecontroller"
 detail = "Play the first episode of Doom"
-on = ["panel.open"]
-view = "screen.swift"
+views = ["screen.swift"]
 uses = ["network"]
+
+[on]
+"panel.open" = true

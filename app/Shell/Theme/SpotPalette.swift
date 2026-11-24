@@ -16,6 +16,7 @@ final class SpotPalette: Sendable {
     let confirm: Color
     let onConfirm: Color
     let backdropTint: Color
+    let cardShadow: Color
     let highlight: Color
     let accent: Color
     let good: Color
@@ -40,6 +41,7 @@ final class SpotPalette: Sendable {
         confirm = color(\.confirm)
         onConfirm = color(\.onConfirm)
         backdropTint = color(\.backdropTint)
+        cardShadow = color(\.cardShadow)
         highlight = color(\.highlight)
         accent = color(\.accent)
         good = color(\.good)
@@ -52,6 +54,10 @@ final class SpotPalette: Sendable {
         glassInk = colours.glass.takesInk ? AnyShapeStyle(ink) : AnyShapeStyle(HierarchicalShapeStyle.primary)
         glassSecondary = colours.glass.takesInk ? AnyShapeStyle(Self.color(secondary(colours.dark), secondary(colours.light))) : AnyShapeStyle(HierarchicalShapeStyle.secondary)
         glassVariant = colours.glass
+    }
+
+    func ink(onSolid: Bool) -> Color {
+        Theme.Appearance.inkKey(onSolid: onSolid) == \.onSolid ? self.onSolid : ink
     }
 
     func color(_ part: KeyPath<Theme.Appearance, ThemeColor>) -> Color {

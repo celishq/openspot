@@ -18,5 +18,5 @@ bad = "#DC322F"
 
 [look]
 glass = "regular"
-backdrop = "tint"
+backdrop = "veil"
 reach = "tiles"

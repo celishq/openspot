@@ -2,6 +2,7 @@ import OpenspotCore
 import SwiftUI
 
 struct SpotTick<Words: View>: View {
+    @Environment(\.spotIsOnSolid) private var isOnSolid
     let isOn: Bool
     let words: Words
     let onPress: (Bool) -> Void
@@ -12,7 +13,7 @@ struct SpotTick<Words: View>: View {
                 Image(systemName: isOn ? "checkmark.circle.fill" : "circle")
                     .font(SpotType.body.weight(.regular))
                     .imageScale(.large)
-                    .foregroundStyle(SpotTheme.ink.opacity(isOn ? SpotTheme.secondary : 1))
+                    .foregroundStyle(SpotTheme.ink(onSolid: isOnSolid).opacity(isOn ? SpotTheme.secondary : 1))
                     .frame(width: SpotTokens.listIconSize)
                     .contentShape(Circle())
             }

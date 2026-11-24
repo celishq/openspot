@@ -49,10 +49,12 @@ final class SpotStarterTests: XCTestCase {
         let said = tools.appendingPathComponent("said")
         try "#!/bin/sh\nprintf '%s\\n' \"$*\" > '\(said.path)'\n".writeScript(to: tools.appendingPathComponent("openspot"))
         let spot = try XCTUnwrap(SpotsFolder(url: folder).scan().spots.first)
-        let rows = try await spot.answer(.show, timeout: 10).items
+        let rows = try await spot.answer(ScriptEntry.show.name, timeout: 10).items
 
         _ = try await TestEnvironment.with(["PATH": "\(tools.path):/usr/bin:/bin"]) {
-            try await spot.answer(SpotAction(arguments: ["open", "second"]), input: Message(SpotAction(arguments: ["open", "second"]), item: rows.last?.fields ?? []).text, timeout: 10)
+            let row = try XCTUnwrap(rows.last)
+            let message = ScriptEntry.press.message([row.run], then: row.carried)
+            return try await spot.answer(message.handler, input: message.text, timeout: 10)
         }
 
         XCTAssertEqual(rows.map(\.run), ["first", "second"])
@@ -66,7 +68,7 @@ final class SpotStarterTests: XCTestCase {
 
         XCTAssertEqual(spot.mainAct, .command("run"))
         XCTAssertFalse(spot.hasSheet)
-        XCTAssertEqual(spot.offers.map(\.title), ["Weather today"])
+        XCTAssertEqual(spot.commands.map(\.title), ["Weather today"])
     }
 
     func testANameThatAnotherSpotHasIsRefused() throws {

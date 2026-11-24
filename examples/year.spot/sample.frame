@@ -1,7 +1,8 @@
 frame=
-grid=year
+class=relative card:relative
 
-view=year
+year=year
+class=absolute inset-0
 title=2026
 day=321
 days=365

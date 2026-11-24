@@ -32,9 +32,9 @@ final class PenExampleTests: SampleSpotsCase {
         let pen = try example("Pen")
 
         XCTAssertEqual(pen.mode, .stay)
-        XCTAssertNil(pen.on)
+        XCTAssertFalse(pen.triggers.shows)
         XCTAssertEqual(pen.sources, ["pen"])
-        XCTAssertEqual(pen.offers.map(\.id), ["draw"])
+        XCTAssertEqual(pen.commands.map(\.id), ["draw"])
         XCTAssertEqual(pen.soleCommand, "draw")
     }
 

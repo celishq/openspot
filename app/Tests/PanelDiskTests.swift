@@ -75,8 +75,8 @@ final class PanelDiskTests: PanelCase {
     }
 
     func testADragReadsItsFilesOnceAwayFromTheMainThreadAndEachTickReadsNone() async throws {
-        try script("shelf", toml: "title = 'Shelf'\ndrop = 'mov'", "true")
-        try script("notes", toml: "title = 'Notes'\ndrop = 'txt'", "true")
+        try script("shelf", toml: "title = 'Shelf'\n[on]\ndrop = ['mov']", "true")
+        try script("notes", toml: "title = 'Notes'\n[on]\ndrop = ['txt']", "true")
         await model.reload()
         model.isShown = true
         model.panelWillShow()
@@ -105,7 +105,7 @@ final class PanelDiskTests: PanelCase {
     }
 
     func testACheckOfADropThatNoDragBroughtReadsNothingAndTellsNoReader() async throws {
-        try script("shelf", toml: "title = 'Shelf'\ndrop = 'mov'", "true")
+        try script("shelf", toml: "title = 'Shelf'\n[on]\ndrop = ['mov']", "true")
         await model.reload()
         model.isShown = true
         model.panelWillShow()

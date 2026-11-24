@@ -14,7 +14,7 @@ public struct CalendarList: Equatable, Sendable {
     }
 
     var row: TextBlock {
-        TextBlock(fields: [.init(key: "text", value: id), .init(key: "title", value: title), .init(key: "detail", value: account)]
+        TextBlock(fields: [.init(key: "item", value: id), .init(key: "title", value: title), .init(key: "detail", value: account)]
             + (color.map { [.init(key: "color", value: $0)] } ?? []))
     }
 }

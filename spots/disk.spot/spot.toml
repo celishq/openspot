@@ -1,3 +1,5 @@
 detail = "The space in use"
 icon = "internaldrive"
-on = ["disk.mount"]
+
+[on]
+"disk.mount" = true

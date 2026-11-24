@@ -1,4 +1,9 @@
 title = "System"
 icon = "macbook"
 detail = "Battery, CPU, memory and devices"
-on = ["panel.open", "system.load", "power.change", "device.connect"]
+
+[on]
+"panel.open" = true
+"system.load" = true
+"power.change" = true
+"device.connect" = true

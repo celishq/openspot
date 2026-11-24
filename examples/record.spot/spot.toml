@@ -3,9 +3,8 @@ icon = "record.circle"
 detail = "Record the screen, again to stop"
 uses = ["screen", "clipboard"]
 
-[commands.record]
+[actions.record]
 title = "Record"
 
-[settings.inputs]
-title = "Sound and camera"
-icon = "mic"
+[settings]
+inputs = { type = "text", title = "Sound and camera", icon = "mic" }

@@ -49,7 +49,7 @@ public struct EmojiCatalog: Sendable {
         for emoji in sorted {
             let form = Self.form(of: emoji, tone: tone, known: place)
             let row = TextBlock(fields: [
-                .init(key: "text", value: form),
+                .init(key: "item", value: form),
                 .init(key: "title", value: names[emoji] ?? emoji),
                 .init(key: "icon", value: form)
             ] + keywords.field(of: emoji))

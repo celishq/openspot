@@ -43,7 +43,7 @@ final class SpotSettingsSheetTests: XCTestCase {
     }
 
     private func script(_ name: String, toml: String) throws {
-        try "#!/bin/sh\necho \"$*\" >> '\(log.path)'\n[ \"$1\" = show ] && printf 'text=own\\ntitle=Own\\n'\nexit 0\n".writeScript(to: spots.spotFile(name), toml: toml)
+        try "#!/bin/sh\necho \"$*\" >> '\(log.path)'\n[ \"$1\" = show ] && printf 'item=own\\ntitle=Own\\n'\nexit 0\n".writeScript(to: spots.spotFile(name), toml: toml)
     }
 
     private func show(selecting id: String, search: String = "") async throws {
@@ -51,7 +51,6 @@ final class SpotSettingsSheetTests: XCTestCase {
         model.isShown = true
         model.panelWillShow()
         model.query = search
-        model.landSearch()
         model.selected = try XCTUnwrap(model.visible.firstIndex { $0.id == id })
     }
 
@@ -103,16 +102,69 @@ final class SpotSettingsSheetTests: XCTestCase {
 
         try await show(selecting: "lock")
         XCTAssertTrue(model.openSelectedSettings())
-        try await wait("the value") { model.openItems?.shown.map(\.run) == ["key:lock:open", "key:lock:float", "setting:lock:theme", "menubar:lock", "window:lock"] }
+        try await wait("the value") { model.openItems?.shown.map(\.run) == ["setting:lock:theme", "key:lock:open", "key:lock:float", "menubar:lock", "window:lock"] }
         XCTAssertEqual(model.openItems?.shown.first { $0.run == "setting:lock:theme" }?.subtitle, "dark")
         XCTAssertEqual(calls, [])
     }
 
+    func testASettingRowShowsItsOwnIconAndItsDefaultUntilOneIsChosen() async throws {
+        try script("list", toml: "title = 'List'\n[settings]\nfolder = { type = 'file', title = 'Keep in', icon = 'folder' }\ngroup = { type = 'choice', options = ['Type', 'Price'], default = 'Type' }")
+        try await show(selecting: "list")
+
+        XCTAssertTrue(model.openSelectedSettings())
+        try await wait("the setting rows") { model.openItems?.shown.contains { $0.run == "setting:list:group" } == true }
+        let rows = try XCTUnwrap(model.openItems?.shown)
+        let folder = try XCTUnwrap(rows.first { $0.run == "setting:list:folder" })
+        let group = try XCTUnwrap(rows.first { $0.run == "setting:list:group" })
+        XCTAssertEqual(folder.symbol, "folder")
+        XCTAssertEqual(folder.subtitle, "Not set")
+        XCTAssertEqual(group.symbol, "slider.horizontal.3")
+        XCTAssertNil(group.subtitle)
+        XCTAssertEqual(group.chosen, "Type")
+    }
+
+    func testReturnOnARowOfOptionsOffersThemInAMenuAndKeepsThePickInPlace() async throws {
+        try script("list", toml: "title = 'List'\n[settings]\ngroup = { type = 'choice', options = ['Type', 'Price'], default = 'Type' }")
+        try await show(selecting: "list")
+        XCTAssertTrue(model.openSelectedSettings())
+        try await wait("the group row") { model.openItems?.shown.contains { $0.run == "setting:list:group" } == true }
+        let sheet = model.openSheetID
+
+        model.runItem(try XCTUnwrap(model.openItems?.shown.first { $0.run == "setting:list:group" }))
+
+        let menu = try XCTUnwrap(model.settingMenu)
+        XCTAssertEqual(menu.options.map(\.id), ["Price", "Type"])
+        XCTAssertEqual(menu.value, "Type")
+        XCTAssertNil(model.form)
+        XCTAssertEqual(model.openSheetID, sheet)
+        model.chooseSetting("Price", in: menu)
+        XCTAssertEqual(model.files.config.read().setting("group", of: "list"), "Price")
+        try await wait("the picked value") { model.openItems?.shown.first { $0.run == "setting:list:group" }?.chosen == "Price" }
+    }
+
+    func testTheLookRowOfConfettiShowsTheKeptLookAndAsksForEachLook() async throws {
+        let repo = URL(fileURLWithPath: #filePath).deletingLastPathComponent().deletingLastPathComponent().deletingLastPathComponent()
+        try FileManager.default.copyItem(at: repo.appendingPathComponent("spots/confetti.spot"), to: spots.appendingPathComponent("confetti.spot"))
+        try model.files.config.set(setting: "look", of: "confetti", to: "Gold")
+        try await show(selecting: "confetti", search: "confetti")
+
+        XCTAssertTrue(model.openSelectedSettings())
+        try await wait("the look row") { model.openItems?.shown.contains { $0.run == "setting:confetti:look" } == true }
+        let row = try XCTUnwrap(model.openItems?.shown.first { $0.run == "setting:confetti:look" })
+        XCTAssertEqual(row.title, "Look")
+        XCTAssertEqual(row.subtitle, "Gold")
+        model.runItem(row)
+
+        try await wait("the looks", seconds: 600) { model.form?.draft.form.soleChoice != nil }
+        XCTAssertEqual(model.form?.draft.form.soleChoice?.options.map(\.id), ["colorful", "gold", "metallic"])
+        XCTAssertEqual(model.form?.draft.form.soleChoice?.value, "gold")
+    }
+
     func testReturnOnAFieldRunsTheActionOfItsNameAndTheMenuBarRowTurnsItsPlaceOnAndOff() async throws {
-        try script("cups", toml: "title = 'Cups'\non = ['sheet.open', 'clock.60']\n[settings.size]")
+        try script("cups", toml: "title = 'Cups'\n[settings]\nsize = { type = 'text' }\n[on]\n\"sheet.open\" = true\nevery = 60")
         try await show(selecting: "cups", search: "cups")
         XCTAssertTrue(model.openSelectedSettings())
-        try await wait("the rows") { model.openItems?.shown.map(\.run) == ["key:cups:open", "key:cups:float", "setting:cups:size", "menubar:cups", "window:cups"] }
+        try await wait("the rows") { model.openItems?.shown.map(\.run) == ["setting:cups:size", "key:cups:open", "key:cups:float", "menubar:cups", "window:cups"] }
 
         model.moveItemToEdge(last: true)
         model.moveItem(by: -1)
@@ -122,7 +174,6 @@ final class SpotSettingsSheetTests: XCTestCase {
         XCTAssertEqual(model.openSheetID, SpotSettings.sheetID(of: "cups"))
 
         model.moveItemToEdge(last: false)
-        model.moveItem(by: 2)
         model.runSelectedItem()
         try await wait("the action of the field") { calls.contains("size") }
     }

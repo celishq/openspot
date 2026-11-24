@@ -3,8 +3,8 @@ import XCTest
 
 final class CardDropTests: PanelCase {
     func testADropOnACardWhoseReturnOpensItsSheetOpensItWithTheFocusAndOnAnyOtherCardClosesThePanel() async throws {
-        try script("shelf", toml: "drop = '*'", "case \"$1\" in show) printf 'text=a\\ntitle=A\\n' ;; esac")
-        try script("plain", toml: "drop = '*'\n[commands.go]\ntitle = 'Go'", "true")
+        try script("shelf", toml: "[on]\ndrop = ['*']", "case \"$1\" in show) printf 'item=a\\ntitle=A\\n' ;; esac")
+        try script("plain", toml: "[actions.go]\ntitle = 'Go'\n[on]\ndrop = ['*']", "true")
         _ = try model.files.config.change { $0.arrangement.set(isOnGrid: true, of: "plain") }
         await model.reload()
         model.isShown = true
