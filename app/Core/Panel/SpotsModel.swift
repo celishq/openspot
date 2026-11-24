@@ -71,17 +71,13 @@ public final class SpotsModel {
     @ObservationIgnored var content = GridContent.cards
     public internal(set) var context = ContextStack() {
         didSet {
-            if isContextSpread != context.isSpread { isContextSpread = context.isSpread }
-            let isWide = context.rowCount > ContextStack.pile
-            if isContextWide != isWide { isContextWide = isWide }
+            let row = ContextRow(context)
+            if contextRow != row { contextRow = row }
         }
     }
     @ObservationIgnored var isContextOpen = false
-    public private(set) var isContextSpread = false
-    public private(set) var isContextWide = false
-    public internal(set) var contextPreview: ContextPreview?
-    public internal(set) var fieldValueRoom: CGFloat = 0
-    public internal(set) var fieldValueLines = 0
+    public private(set) var contextRow = ContextRow.folded
+    public internal(set) var fieldValue = FieldValue()
     @ObservationIgnored var holdMotion: PanelMotion? = .edit
     @ObservationIgnored var contextPause: Duration = .seconds(1)
     @ObservationIgnored var contextWatch: Task<Void, Never>?

@@ -32,7 +32,7 @@ struct SpotFieldView: View {
     }
 
     private var searchField: some View {
-        let place = isInSheet ? Self.sheetRow(top: model.fieldTop) : model.fieldValueRoom > 0 ? Self.heldRect(room: model.fieldValueRoom) : Self.rect
+        let place = isInSheet ? Self.sheetRow(top: model.fieldTop) : model.fieldValue.room > 0 ? Self.heldRect(room: model.fieldValue.room) : Self.rect
         let top = isInSheet ? Self.sheetTop(top: model.fieldTop) : SpotTokens.halo
         let glyphLeft = isInSheet ? Self.sheetGlyphLeft : SpotTokens.halo + SpotTokens.padding
         return ZStack(alignment: .topLeading) {

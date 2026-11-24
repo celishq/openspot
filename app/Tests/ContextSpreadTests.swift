@@ -25,7 +25,7 @@ final class ContextSpreadTests: ContextCase {
         XCTAssertTrue(model.handleKey(tab))
 
         XCTAssertTrue(spread.isSpread)
-        XCTAssertTrue(model.isContextSpread)
+        XCTAssertEqual(model.contextRow, .spread)
         XCTAssertEqual(spread.placedSelection, model.context.selected)
         XCTAssertEqual(spread.places.map(\.chip.source), model.context.chips.map(\.source))
         XCTAssertEqual(spread.places.map(\.slot), [0, 1])
@@ -73,7 +73,7 @@ final class ContextSpreadTests: ContextCase {
         await open()
         try await wait("three values") { self.model.context.chips.count == 3 && self.model.context.chips.allSatisfy { $0.value != nil } }
 
-        let kinds = Dictionary(uniqueKeysWithValues: spread.places.map { ($0.chip.source, $0.showsKind) })
+        let kinds = Dictionary(uniqueKeysWithValues: spread.places.map { ($0.chip.source, $0.chip.showsKind) })
 
         XCTAssertEqual(kinds, ["tab": true, "selection": true, "finder": false])
     }
@@ -88,7 +88,7 @@ final class ContextSpreadTests: ContextCase {
 
         XCTAssertEqual(spread.places.first?.chip.source, model.context.selected)
         XCTAssertEqual(spread.places.map(\.depth), [0, 1])
-        XCTAssertFalse(model.isContextSpread)
+        XCTAssertEqual(model.contextRow, .folded)
         XCTAssertTrue(model.context.isOn)
     }
 
@@ -136,16 +136,16 @@ final class ContextSpreadTests: ContextCase {
         }
         await open()
         try await wait("six values") { self.chips.count == 6 && self.chips.allSatisfy { $0.value != nil } }
-        XCTAssertFalse(model.isContextWide)
+        XCTAssertNotEqual(model.contextRow, .wide)
 
         XCTAssertTrue(model.handleKey(tab))
 
         XCTAssertEqual(spread.rowCount, SpotTokens.contextRow)
         XCTAssertGreaterThan(spread.rowCount, ContextStack.pile)
         XCTAssertEqual(spread.places.filter { $0.depth == 0 }.map(\.slot), Array(0..<SpotTokens.contextRow))
-        XCTAssertTrue(model.isContextWide)
+        XCTAssertEqual(model.contextRow, .wide)
         XCTAssertTrue(model.handleKey(escape))
-        XCTAssertFalse(model.isContextWide)
+        XCTAssertNotEqual(model.contextRow, .wide)
     }
 
     func testARowNarrowerThanTheChipsShiftsWithTheSelection() {

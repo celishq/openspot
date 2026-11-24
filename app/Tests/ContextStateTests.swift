@@ -24,7 +24,7 @@ final class ContextStateTests: ContextCase {
         XCTAssertTrue(model.handleKey(tab))
 
         XCTAssertEqual(model.context.selected, "tab")
-        XCTAssertEqual(model.contextPreview?.text, "A")
+        XCTAssertEqual(model.fieldValue.preview?.text, "A")
         XCTAssertEqual(shown, ["keep"])
         XCTAssertEqual(model.selected, 0)
     }
@@ -65,7 +65,7 @@ final class ContextStateTests: ContextCase {
         model.query = "sav"
         model.landSearch()
 
-        XCTAssertEqual(model.contextPreview?.text, "A")
+        XCTAssertEqual(model.fieldValue.preview?.text, "A")
         XCTAssertEqual(shown, ["save"])
         XCTAssertEqual(model.selected, 0)
     }
@@ -90,9 +90,9 @@ final class ContextStateTests: ContextCase {
 
         model.moveSelection(dx: 0, dy: -1)
 
-        XCTAssertEqual(model.fieldValueLines, 1)
-        XCTAssertEqual(model.placements.map(\.rect.minY), [model.fieldValueRoom])
-        XCTAssertLessThan(model.fieldValueRoom, SpotTokens.cell + SpotTokens.rowGap)
+        XCTAssertEqual(model.fieldValue.lines, 1)
+        XCTAssertEqual(model.placements.map(\.rect.minY), [model.fieldValue.room])
+        XCTAssertLessThan(model.fieldValue.room, SpotTokens.cell + SpotTokens.rowGap)
         XCTAssertEqual(model.selected, 0)
     }
 
@@ -133,12 +133,12 @@ final class ContextStateTests: ContextCase {
         await open()
         XCTAssertTrue(model.handleKey(tab))
         XCTAssertEqual(shown, [])
-        XCTAssertEqual(model.contextPreview, .loading)
+        XCTAssertEqual(model.fieldValue.preview, .loading)
 
         FileManager.default.createFile(atPath: path("release"), contents: Data())
 
         try await wait("the rows of the value") { self.shown == ["keep"] }
-        XCTAssertEqual(model.contextPreview?.text, "A")
+        XCTAssertEqual(model.fieldValue.preview?.text, "A")
         XCTAssertEqual(model.selected, 0)
     }
 
@@ -223,7 +223,7 @@ final class ContextStateTests: ContextCase {
 
         XCTAssertFalse(model.context.isOn)
         XCTAssertEqual(shown, grid)
-        XCTAssertNil(model.contextPreview)
+        XCTAssertNil(model.fieldValue.preview)
     }
 
     func testAnotherSourceThatAnswersKeepsTheSelectedRow() async throws {
@@ -251,7 +251,7 @@ final class ContextStateTests: ContextCase {
 
         model.beginEditing()
 
-        XCTAssertNil(model.contextPreview)
+        XCTAssertNil(model.fieldValue.preview)
     }
 
     func testTheActionsMenuHasNoTargetOnAContextRow() async throws {

@@ -146,7 +146,7 @@ extension SpotsModel {
         let sizes = query.isEmpty ? visible.map { $0.id == resize?.id ? resize?.size ?? $0.size : $0.size } : visible.map { $0.role == .answer ? $0.size : SpotSize.strip }
         let index = visible.firstIndex { $0.id == resize?.id }
         let grid = index.map(self.grid.keeping) ?? self.grid
-        let top = fieldValueRoom
+        let top = fieldValue.room
         if sizes != laidOutSizes || grid != laidOutGrid || top != laidOutTop {
             laidOutSizes = sizes
             laidOutGrid = grid

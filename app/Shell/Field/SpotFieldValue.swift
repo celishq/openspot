@@ -10,7 +10,7 @@ struct SpotFieldValue: View {
                 .fill(SpotTheme.contextDivider)
                 .frame(height: SpotTokens.dividerHeight)
             ZStack(alignment: .leading) {
-                if let preview = model.contextPreview {
+                if let preview = model.fieldValue.preview {
                     ZStack(alignment: .leading) {
                         words(of: preview)
                             .id(preview)
@@ -24,7 +24,7 @@ struct SpotFieldValue: View {
             .padding(.bottom, SpotTokens.contextValueFoot)
             .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
         }
-        .frame(width: SpotFieldView.rect.width, height: max(model.fieldValueRoom, SpotTokens.contextValueRoom(lines: 0)), alignment: .top)
+        .frame(width: SpotFieldView.rect.width, height: max(model.fieldValue.room, SpotTokens.contextValueRoom(lines: 0)), alignment: .top)
     }
 
     private func words(of preview: ContextPreview) -> some View {
@@ -40,7 +40,7 @@ struct SpotFieldValue: View {
                 Text(preview.text)
                     .font(SpotType.body)
                     .modifier(SpotInk())
-                    .lineLimit(max(model.fieldValueLines, 1))
+                    .lineLimit(max(model.fieldValue.lines, 1))
                     .fixedSize(horizontal: false, vertical: true)
             }
         }

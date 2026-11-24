@@ -15,6 +15,7 @@ public struct ContextChip: Equatable, Sendable {
     public let app: String?
     public let look: Look
     public let state: State
+    public internal(set) var showsKind = false
 
     public init(source: String, app: String?, look: Look, state: State = .loading) {
         self.source = source

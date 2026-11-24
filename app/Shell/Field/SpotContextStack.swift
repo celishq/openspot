@@ -9,7 +9,7 @@ struct SpotContextStack: View {
         let count = context.places.count
         ZStack(alignment: .trailing) {
             ForEach(context.places, id: \.chip.source) { place in
-                SpotContextCard(chip: place.chip, showsBadge: place.showsKind && (context.isSpread || place.depth == 0))
+                SpotContextCard(chip: place.chip, showsBadge: place.chip.showsKind && (context.isSpread || place.depth == 0))
                     .equatable()
                     .overlay(alignment: .bottom) {
                         SpotContextDot(isOn: context.isOn && place.chip.source == context.selected)
@@ -26,7 +26,7 @@ struct SpotContextStack: View {
         .contentShape(Rectangle())
         .onTapGesture { model.pressContext() }
         .accessibilityElement(children: .ignore)
-        .accessibilityLabel(model.contextPreview.map { $0.text.isEmpty ? $0.caption : $0.text } ?? "Context")
+        .accessibilityLabel(model.fieldValue.preview.map { $0.text.isEmpty ? $0.caption : $0.text } ?? "Context")
         .accessibilityAddTraits(.isButton)
     }
 

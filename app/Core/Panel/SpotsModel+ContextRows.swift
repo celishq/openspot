@@ -20,14 +20,8 @@ extension SpotsModel {
     }
 
     func hold(_ preview: ContextPreview?) {
-        guard preview != contextPreview else { return }
-        change(isShown ? holdMotion : nil) {
-            contextPreview = preview
-            let lines = preview.map { SpotTokens.contextValueLines(of: $0.text) } ?? 0
-            let room = preview == nil ? 0 : SpotTokens.contextValueRoom(lines: lines)
-            if fieldValueLines != lines { fieldValueLines = lines }
-            if fieldValueRoom != room { fieldValueRoom = room }
-        }
+        guard preview != fieldValue.preview else { return }
+        change(isShown ? holdMotion : nil) { fieldValue = FieldValue(preview) }
     }
 
     static let contextRows = 5

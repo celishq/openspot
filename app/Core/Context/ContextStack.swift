@@ -5,14 +5,18 @@ public struct ContextStack: Equatable, Sendable {
         public let chip: ContextChip
         public let slot: Int
         public let depth: Int
-        public let showsKind: Bool
     }
 
     public static let limit = 6
     public static let pile = 3
 
     public let row: Int
-    public private(set) var chips: [ContextChip] = []
+    public private(set) var chips: [ContextChip] = [] {
+        didSet {
+            let apps = Dictionary(chips.compactMap { chip in chip.app.map { ($0, 1) } }, uniquingKeysWith: +)
+            for index in chips.indices { chips[index].showsKind = chips[index].app.map { (apps[$0] ?? 0) > 1 } ?? false }
+        }
+    }
     public private(set) var selected: String?
     public private(set) var isSpread = false
     public private(set) var placedSelection: String?
@@ -87,16 +91,14 @@ public struct ContextStack: Equatable, Sendable {
         }
         let start = isSpread ? start(of: order.firstIndex { $0 == selected } ?? 0, count: order.count) : 0
         let byID = Dictionary(chips.map { ($0.source, $0) }, uniquingKeysWith: { first, _ in first })
-        let apps = Dictionary(chips.compactMap { chip in chip.app.map { ($0, 1) } }, uniquingKeysWith: +)
         let row = row
         places = order.enumerated().compactMap { index, source in
             guard let chip = byID[source] else { return nil }
-            let showsKind = chip.app.map { (apps[$0] ?? 0) > 1 } ?? false
-            guard isSpread else { return Place(chip: chip, slot: 0, depth: index, showsKind: showsKind) }
+            guard isSpread else { return Place(chip: chip, slot: 0, depth: index) }
             let slot = index - start
             return (0..<row).contains(slot)
-                ? Place(chip: chip, slot: slot, depth: 0, showsKind: showsKind)
-                : Place(chip: chip, slot: 0, depth: (slot + order.count) % order.count - row + 1, showsKind: showsKind)
+                ? Place(chip: chip, slot: slot, depth: 0)
+                : Place(chip: chip, slot: 0, depth: (slot + order.count) % order.count - row + 1)
         }
         placedSelection = selected
         self.isSpread = isSpread
