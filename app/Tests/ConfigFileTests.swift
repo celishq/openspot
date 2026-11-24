@@ -63,6 +63,23 @@ final class ConfigFileTests: XCTestCase {
         XCTAssertEqual(Config(text: "[[spots]]\nid = \"a\"\nside = \"up\"\n").faults, ["config.toml: a cannot use the side up."])
     }
 
+    func testTheBrowsersOfTheFileAddToTheBuiltInOnesAndMayChangeTheFamilyOfOne() {
+        let config = Config(text: "[browsers]\n\"company.thebrowser.dia\" = \"chromium\"\n\"com.kagi.kagimacOS\" = \"safari\"\n\"com.google.Chrome\" = \"safari\"\n")
+
+        XCTAssertEqual(config.faults, [])
+        XCTAssertEqual(config.browsers.map(\.bundleID), Config(text: "").browsers.map(\.bundleID) + ["company.thebrowser.dia", "com.kagi.kagimacOS"])
+        XCTAssertEqual(config.browsers.first { $0.bundleID == "com.google.Chrome" }?.family, .safari)
+        XCTAssertEqual(config.browsers.first { $0.bundleID == "com.google.Chrome" }?.name, "Google Chrome")
+        XCTAssertEqual(config.browsers.first { $0.bundleID == "company.thebrowser.dia" }?.family, .chromium)
+    }
+
+    func testABrowserOfAnUnknownFamilyIsAFaultAndTheOthersStillLoad() {
+        let config = Config(text: "[browsers]\n\"org.mozilla.firefox\" = \"gecko\"\n\"company.thebrowser.dia\" = \"chromium\"\n")
+
+        XCTAssertEqual(config.faults, ["config.toml: the browser org.mozilla.firefox is \"chromium\" or \"safari\"."])
+        XCTAssertEqual(config.browsers.last?.bundleID, "company.thebrowser.dia")
+    }
+
     func testABadKeyGivesNoKeyAndAFault() {
         let config = Config(text: "panel-key = \"k\"\n")
 

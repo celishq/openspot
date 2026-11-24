@@ -6,6 +6,11 @@ uses = ["clipboard"]
 inputs.content = { type = "text", description = "Text to keep" }
 inputs.title = "text"
 
+[actions.save]
+title = "Save as a snippet"
+offers = ["attachments"]
+inputs.text = { type = "text", required = true, description = "The text to keep" }
+
 [on]
 "panel.open" = true
 search = true

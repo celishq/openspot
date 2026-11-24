@@ -5,7 +5,7 @@ extension SpotsModel {
     public func acceptsDrop(_ paths: [String], on id: String, in place: SheetPlace = .panel) -> Bool {
         let isOpenToDrops = place == .panel ? openSheetID == nil : runs.floating.contains(id)
         guard isOpenToDrops, !paths.isEmpty, runs.dragged.paths == paths, let spot = sheets[id]?.spot else { return false }
-        return spot.accepts(runs.dragged)
+        return spot.takes(AttachmentValue(files: runs.dragged))
     }
 
     private func read(_ paths: [String]) {
@@ -66,18 +66,22 @@ extension SpotsModel {
     }
 
     public func drop(_ paths: [String], on id: String, in place: SheetPlace = .panel) -> Bool {
-        guard acceptsDrop(paths, on: id, in: place), sheets[id]?.drop(paths, files: runs.dragged) == true else { return false }
+        guard acceptsDrop(paths, on: id, in: place), sheets[id]?.drop(AttachmentValue(files: runs.dragged)) == true else { return false }
         guard place == .panel else { return true }
         endDrag()
+        settleGive(on: id)
+        return true
+    }
+
+    func settleGive(on id: String) {
         guard entry(id)?.spot.opensOnReturn == true else {
             if isShown { host.dismiss() }
-            return true
+            return
         }
         presentSheet(of: id) {
             isSettlingDrop = true
             host.present()
         }
-        return true
     }
 
     public func dragOut(_ items: [SpotItem], of id: String) {

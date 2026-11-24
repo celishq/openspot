@@ -461,7 +461,10 @@ final class Pill {
         panel.alphaValue = 0.001
         rest()
         panel.orderFrontRegardless()
-        DispatchQueue.main.async { self.panel.orderOut(nil) }
+        DispatchQueue.main.async { [weak self] in
+            guard let self, showing == 0 else { return }
+            panel.orderOut(nil)
+        }
     }
 
     /// Shows the pill as it records.

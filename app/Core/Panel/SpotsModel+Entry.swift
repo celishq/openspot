@@ -2,9 +2,17 @@ import Foundation
 
 extension SpotsModel {
     public struct Entry: Identifiable, Equatable {
+        public enum Role: Sendable {
+            case card
+            case item
+            case answer
+            case command
+            case action
+        }
+
         public let id: String
         public let item: SpotItem?
-        public let isAnswer: Bool
+        public let role: Role
         private let sizeChoice: SpotSize?
         private let defaultSize: SpotSize?
         private let run: SpotRun?
@@ -24,13 +32,13 @@ extension SpotsModel {
             wordChoices = choice.commands(of: spot.id) ?? defaults.commands(of: spot.id) ?? [:]
             panel = choice.panel(of: spot.id) ?? .center
             item = nil
-            isAnswer = false
+            role = .card
             self.run = run
             fixedSpot = spot
             fixedState = spot.headerState
         }
 
-        public init(spot: Spot, item: SpotItem, isAnswer: Bool = false, detail: String? = nil) {
+        public init(spot: Spot, item: SpotItem, role: Role = .item, detail: String? = nil) {
             id = "\(spot.id)\n\(item.run)"
             sizeChoice = item.card?.face.answerSize ?? .strip
             defaultSize = nil
@@ -39,10 +47,10 @@ extension SpotsModel {
             wordChoices = [:]
             panel = .center
             self.item = item
-            self.isAnswer = isAnswer
+            self.role = role
             run = nil
             fixedSpot = spot
-            fixedState = item.card ?? SpotState(title: item.title, subtitle: detail ?? (isAnswer ? item.subtitle ?? spot.name : item.path(in: spot)))
+            fixedState = item.card ?? SpotState(title: item.title, subtitle: role == .action ? detail : detail ?? (role == .answer ? item.subtitle ?? spot.name : item.path(in: spot)))
         }
 
         @MainActor public var commandWords: [(name: String, word: String)] {
@@ -118,7 +126,7 @@ extension SpotsModel {
         }
 
         public static func == (lhs: Entry, rhs: Entry) -> Bool {
-            lhs.id == rhs.id && lhs.item == rhs.item && lhs.sizeChoice == rhs.sizeChoice && lhs.gridChoice == rhs.gridChoice && lhs.panel == rhs.panel && lhs.defaultSize == rhs.defaultSize && lhs.isAnswer == rhs.isAnswer
+            lhs.id == rhs.id && lhs.item == rhs.item && lhs.sizeChoice == rhs.sizeChoice && lhs.gridChoice == rhs.gridChoice && lhs.panel == rhs.panel && lhs.defaultSize == rhs.defaultSize && lhs.role == rhs.role
                 && lhs.run === rhs.run && lhs.fixedSpot == rhs.fixedSpot && lhs.fixedState == rhs.fixedState
         }
     }

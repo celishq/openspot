@@ -35,9 +35,10 @@ struct SpotList {
         let detail: String?
         let on: Bool
         let own: Bool
+        let uses: [String]
 
         var blocks: [[(String, String?)]] {
-            [[("item", id), ("title", name), ("icon", icon), ("detail", detail), ("on", String(on)), ("own", String(own))]]
+            [[("item", id), ("title", name), ("icon", icon), ("detail", detail), ("on", String(on)), ("own", String(own))] + uses.map { ("uses", $0) }]
         }
     }
 
@@ -77,7 +78,7 @@ struct SpotList {
     }
 
     func core(_ form: PrintForm) throws -> String {
-        try form.text(of: choices.map { Choice(id: $0.id, name: $0.spot.name, icon: Self.picture(of: $0.spot), detail: $0.spot.subtitle, on: $0.on, own: $0.own) })
+        try form.text(of: choices.map { Choice(id: $0.id, name: $0.spot.name, icon: Self.picture(of: $0.spot), detail: $0.spot.subtitle, on: $0.on, own: $0.own, uses: $0.spot.uses.map(\.rawValue).sorted()) })
     }
 
     private var choices: [(id: String, spot: Spot, on: Bool, own: Bool)] {

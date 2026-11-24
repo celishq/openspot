@@ -49,8 +49,9 @@ extension SpotsModel {
             let hasActions = target.flatMap(actionMenu(on:)) != nil
             return parts.hint(escape: escapeWords, stopping: { act(of: $0) != nil }, actions: hasActions)
         }
-        if let confirm = confirmRow.hint { return [confirm, settingsRow.hint, "⌘K Actions"].compactMap { $0 }.joined(separator: "   ") }
+        if content != .attachment, let confirm = confirmRow.hint { return [confirm, settingsRow.hint, "⌘K Actions"].compactMap { $0 }.joined(separator: "   ") }
         if let slashHint { return slashHint }
+        if content == .attachment, let attachmentHint { return attachmentHint }
         if let soleHint { return soleHint }
         if openSheetID == nil, slash == nil, !query.isEmpty, visible.isEmpty { return "\(SearchPrompt.slashHint)   \(escape)" }
         let keys = target.flatMap { target in
@@ -59,7 +60,8 @@ extension SpotsModel {
                 second: [settingsRow.hint].compactMap { $0 }
             )
         } ?? escape
-        return selectedGlyphTitle.map { "\($0)  \(keys)" } ?? keys
+        let shown = selectedGlyphTitle.map { "\($0)  \(keys)" } ?? keys
+        return attachmentHint.map { "\($0)   \(shown)" } ?? shown
     }
 
     private var recordingRows: [KeyRow] {
@@ -253,6 +255,12 @@ extension SpotsModel {
             rows.append(partKey)
         }
         rows += [
+            KeyRow("tab", shift: nil) { [self] key in takeTab(back: key.isShift) },
+            KeyRow("escape") { [self] _ in
+                guard attachments.isOn, openSheetID == nil else { return nil }
+                leaveAttachment()
+                return true
+            },
             escapeRow,
             KeyRow("k", command: true) { [self] _ in
                 guard let target else { return nil }

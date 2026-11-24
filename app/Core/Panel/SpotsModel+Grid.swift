@@ -18,12 +18,16 @@ extension SpotsModel {
     }
 
     var waitingWords: String? {
-        guard openSheetID == nil, let key = confirming, selectedEntry?.id == key.spot else { return nil }
+        guard openSheetID == nil, let key = confirming, let entry = selectedEntry, entry.id == key.spot || confirmKey(of: entry) == key else { return nil }
         return confirmWords(of: key)
     }
 
     func runConfirmed() -> Bool {
         guard waitingWords != nil, let key = confirming else { return false }
+        if let entry = selectedEntry, entry.role == .action {
+            give(to: entry)
+            return true
+        }
         confirming = nil
         if isShown { host.dismiss() }
         run(key)
@@ -86,7 +90,8 @@ extension SpotsModel {
             selected = position
             if opening, openSelectedSettings() { return }
             guard !isEditing else { return }
-            if openSheetID == nil, let slash { launch(visible[position], with: slash.text) } else if openSheetID == nil { run(seen: visible[position]) } else { runSelectedItem() }
+            guard openSheetID == nil else { return runSelectedItem() }
+            runShown(visible[position])
         }
     }
 
@@ -104,15 +109,25 @@ extension SpotsModel {
             runSelectedItem()
             return
         }
-        guard let entry = selectedEntry else { return }
-        if let slash { return launch(entry, with: slash.text) }
-        run(seen: entry)
+        guard let entry = selectedEntry else {
+            if content == .attachment { allowAttachment() }
+            return
+        }
+        runShown(entry)
+    }
+
+    private func runShown(_ entry: Entry) {
+        switch content {
+        case .attachment: give(to: entry)
+        case .slash: launch(entry, with: slash?.text ?? "")
+        case .cards, .search: run(seen: entry)
+        }
     }
 
     func run(seen entry: Entry) {
-        if entry.isAnswer, let sheet = sheets[entry.spot.id], sheet.isAnswering {
+        if entry.role == .answer, let sheet = sheets[entry.spot.id], sheet.isAnswering {
             sheet.afterAnswers { [weak self] in
-                guard let self, let next = selectedEntry, next.isAnswer, next.spot.id == entry.spot.id else { return }
+                guard let self, let next = selectedEntry, next.role == .answer, next.spot.id == entry.spot.id else { return }
                 run(next)
             }
             return

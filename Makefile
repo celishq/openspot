@@ -1,4 +1,4 @@
-.PHONY: verify test perf film shots eval-agent eval-compare docs-images spots dev-state first-launch examples release release-build
+.PHONY: verify test perf film shots eval-agent eval-compare docs-images spots attachment-demo dev-state first-launch examples release release-build
 
 TEST_LIMITS := -test-timeouts-enabled YES -default-test-execution-time-allowance 120 -maximum-test-execution-time-allowance 300
 
@@ -49,6 +49,9 @@ spots:
 	[ ! -L $(HOME)/.config/openspot/spots ] || rm $(HOME)/.config/openspot/spots
 	mkdir -p $(HOME)/.config/openspot/spots
 	for spot in spots/*.spot; do [ "$$spot" = spots/openspot.spot ] || ln -sfn "$(CURDIR)/$$spot" $(HOME)/.config/openspot/spots/; done
+
+attachment-demo:
+	sh scripts/attachment-demo.sh
 
 dev-state:
 	rm -rf .temp/openspot

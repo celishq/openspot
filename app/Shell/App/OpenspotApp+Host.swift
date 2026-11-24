@@ -96,6 +96,11 @@ extension OpenspotApp: SpotsHost {
         SpotGridDrop.paths(on: .general)
     }
 
+    var frontApp: FrontApp? {
+        let front = NSWorkspace.shared.frontmostApplication
+        return (front == .current ? previous.app : front).flatMap(FrontApp.init)
+    }
+
     func takeFocus() {
         panel?.makeKey()
     }
