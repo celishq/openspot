@@ -14,19 +14,17 @@ public enum ClipboardCall: NounCall {
             "read", "[--newer age]", "Prints the text on the clipboard, or nothing when it holds none. --newer prints it only when Openspot first saw that copy within the age, such as 2m: seconds, or a number with s, m, h or d.",
             rule: CallRule(use: .clipboard, used: "read the clipboard")
         ) { words in
-            Self.newer(of: words).map(Self.read)
+            Self.newer(in: words.fit).map(Self.read)
         }
     ])
 
-    private static func newer(of words: CallWords) -> TimeInterval?? {
-        guard let fit = words.fit, fit.rest.isEmpty else { return nil }
-        guard let newer = fit.value("--newer") else { return .some(nil) }
-        return age(newer).map { .some($0) }
-    }
+    static let newerForm = CommandForm("[--newer age]")
 
-    static func age(_ text: String) -> TimeInterval? {
-        let age = Int(text).map(TimeInterval.init) ?? Manifest.Triggers.age(text)
-        return age.flatMap { $0 > 0 ? $0 : nil }
+    static func newer(in fit: CommandForm.Words?) -> TimeInterval?? {
+        guard let fit, fit.rest.isEmpty else { return nil }
+        guard let newer = fit.value("--newer") else { return .some(nil) }
+        let age = Int(newer).map(TimeInterval.init) ?? Manifest.Triggers.age(newer)
+        return age.flatMap { $0 > 0 ? .some($0) : nil }
     }
 
     func rule(_ rule: CallRule, spot: String?) -> CallRule {

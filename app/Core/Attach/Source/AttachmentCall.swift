@@ -13,10 +13,7 @@ enum AttachmentCall: NounCall {
             rule: rule
         ) { words in
             guard words.rest.first == "clipboard" else { return Self.add(words.rest) }
-            let rest = Array(words.rest.dropFirst())
-            if rest.isEmpty { return Self.clipboard(newer: nil) }
-            guard rest.count == 2, rest[0] == "--newer" else { return nil }
-            return ClipboardCall.age(rest[1]).map(Self.clipboard)
+            return ClipboardCall.newer(in: ClipboardCall.newerForm.fit(Array(words.rest.dropFirst()))).map(Self.clipboard)
         }
     ])
 
