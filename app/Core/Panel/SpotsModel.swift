@@ -604,8 +604,6 @@ public final class SpotsModel {
             if isShown { host.dismiss() }
         case .attachment(let state):
             takeAttachment(state, of: id)
-        case .shown(let end):
-            endAttachment(of: id, end)
         }
     }
 

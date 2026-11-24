@@ -27,20 +27,15 @@ extension SpotRun {
         let isSent = send(Call(
             message: event.message(after: showsSheet ? panel?.inputs ?? [] : [], search: search),
             key: Self.showKey,
-            limit: event.name == EventName.attachmentPick ? runs.attachLimit : runs.showLimit,
+            limit: runs.showLimit,
             event: event,
-            purpose: .ask(.show(generation: partsGeneration, reports: need != .clock, query: query, tells: event.tells))
+            purpose: .ask(.show(generation: partsGeneration, reports: need != .clock, query: query, tells: event != .panel))
         ))
         self.typed = nil
         if isSent {
             shownEvent = event
             if !list.holdsItems || list.hasFailed { list.beginLoading() }
         }
-    }
-
-    func pickAttachment(over front: String?) {
-        if let show = running(Self.showKey) { stop(show) }
-        show(need: .change, event: .event(EventName.attachmentPick, value: front))
     }
 
     public func search(_ text: String) {

@@ -166,6 +166,17 @@ extension SpotRun {
         press(offer.message(for: value))
     }
 
+    func pickAttachment(over front: String?, ended: @escaping (ScriptCall.End) -> Void) {
+        let event = ShowEvent.event(EventName.attachmentPick, value: front)
+        let message = event.message()
+        stopPick()
+        send(Call(message: message, key: Self.key(of: message), limit: runs.attachLimit, event: event, purpose: .act(Act(showsAfter: false, ended: ended, started: runs.now(), tells: false))))
+    }
+
+    func stopPick() {
+        if let pick = running(Self.key(call: EventName.attachmentPick, item: nil)) { stop(pick) }
+    }
+
     public func change(_ action: CommandAction) async throws -> CallAnswer {
         let call = action.callName
         guard let key = freeKey(call), let output = try await answer(to: acting(action, item: nil), key: key) else { return .stopped }
@@ -305,7 +316,7 @@ extension SpotRun {
     private func press(_ message: Message, ended: (() -> Void)? = nil, closes: Bool = false) {
         let key = Self.key(of: message)
         if let running = running(key) { return pressAgain(running) }
-        act(message, key: key, as: Act(ended: ended, closes: closes))
+        act(message, key: key, as: Act(ended: ended.map { ended in { _ in ended() } }, closes: closes))
     }
 
     private func act(_ message: Message, key: String, as act: Act = Act()) {

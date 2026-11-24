@@ -49,6 +49,7 @@ final class SourceSpotTests: AttachmentCase {
 
         try await wait("the refusal") { self.state(of: "browser-tab") == .failed("Openspot can't read Safari · ⏎ Allow") }
         XCTAssertEqual(host.notes, [])
+        XCTAssertEqual(reads.asks, ["com.apple.Safari false"])
     }
 
     func testSelectionAddsTheFilesSelectedInFinderWhenThePanelOpens() async throws {

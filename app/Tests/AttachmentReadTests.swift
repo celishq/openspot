@@ -12,7 +12,7 @@ final class AttachmentReadTests: AttachmentCase {
     }
 
     private var isReading: Bool {
-        model.sheets["tab"]?.isShowing ?? false
+        model.sheets["tab"]?.calls.isEmpty == false
     }
 
     private func refuseSafari() throws {
@@ -206,7 +206,7 @@ final class AttachmentReadTests: AttachmentCase {
         XCTAssertTrue(model.handleKey(tab))
         try await wait("the start of the read") { self.log("tab-log") == ["pick"] }
 
-        model.runs.pickAttachment("tab", over: "com.apple.Safari")
+        model.runs.pickAttachment("tab", over: "com.apple.Safari") { _ in }
 
         try await wait("the start of the second read") { self.log("tab-log") == ["pick", "pick"] }
         try await wait("the end of the replaced read") { self.model.runs.usage.counts["tab"]?.runs == 1 }

@@ -17,7 +17,6 @@ public final class SpotRun {
         case refused(String?)
         case done
         case attachment(AttachmentChip.State)
-        case shown(ScriptCall.End)
     }
 
     public enum ShowNeed: Sendable {
@@ -42,10 +41,11 @@ public final class SpotRun {
         var keeping: String?
         var showsAfter = true
         var undo: SpotState?
-        var ended: (() -> Void)?
+        var ended: ((ScriptCall.End) -> Void)?
         var first: FirstFrame?
         var started: Date?
         var closes = false
+        var tells = true
     }
 
     enum Purpose {

@@ -17,12 +17,12 @@ extension SpotRuns {
         openPanel(showsToEnd: showsToEnd, over: front, feedsAttachment: feedsAttachment)
     }
 
-    func pickAttachment(_ id: String, over front: String?) {
-        sheets[id]?.pickAttachment(over: front)
+    func pickAttachment(_ id: String, over front: String?, ended: @escaping (ScriptCall.End) -> Void) {
+        sheets[id]?.pickAttachment(over: front, ended: ended)
     }
 
     func stopAttach(_ id: String) {
-        sheets[id]?.stopShows()
+        sheets[id]?.stopPick()
     }
 
     public func launched() {

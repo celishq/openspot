@@ -34,7 +34,8 @@ extension SpotsModel {
         case .failed:
             let line = sheets[id]?.failure ?? ""
             mark(id, .failed(ReadRefusal.field(of: line) ?? line))
-        case .ended, .stopped: mark(id, .empty(chip.appName.map { "Nothing to attach from \($0)" } ?? "Nothing to attach"))
+        case .ended: mark(id, .empty(chip.appName.map { "Nothing to attach from \($0)" } ?? "Nothing to attach"))
+        case .stopped: break
         }
     }
 
@@ -46,7 +47,8 @@ extension SpotsModel {
         let read = next.selectedChip.flatMap { !$0.isRead ? $0 : nil }
         if let read { next.mark(read.source, .loading) }
         settle(next, motion: isCycling ? nil : .edit)
-        if let read { runs.pickAttachment(read.source, over: read.app) }
+        guard let read else { return }
+        runs.pickAttachment(read.source, over: read.app) { [weak self] end in self?.endAttachment(of: read.source, end) }
     }
 
     func leaveAttachment() {

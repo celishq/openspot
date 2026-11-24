@@ -25,7 +25,7 @@ extension SpotRun {
         case .act(let act):
             act.first?.end(.stopped)
             fail(error)
-            act.ended?()
+            act.ended?(.failed(error))
         case .ask:
             break
         }
@@ -191,15 +191,14 @@ extension SpotRun {
             answered = nil
             if let undo = act.undo { state = undo }
             let item = Self.item(of: call.request.message)
-            fail(error, item: item)
-            if runs.isPanelOpen, let started = act.started, runs.now().timeIntervalSince(started) < MotionTokens.refusalWindow { onReport(.refused(item)) }
+            fail(error, tells: act.tells, item: item)
+            if act.tells, runs.isPanelOpen, let started = act.started, runs.now().timeIntervalSince(started) < MotionTokens.refusalWindow { onReport(.refused(item)) }
             if act.showsAfter { showOnce() }
         default:
             break
         }
         callEnded(call.made)
-        if case .act(let act) = purpose { act.ended?() }
-        if case .ask(.show) = purpose, !call.made.isStopped { onReport(.shown(end)) }
+        if case .act(let act) = purpose { act.ended?(end) }
         showAgainIfAsked()
     }
 
