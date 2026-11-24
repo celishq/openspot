@@ -34,13 +34,24 @@ public final class ReadSources: @unchecked Sendable {
         return records
     }
 
-    func tab(asks: Bool) async throws -> [TextBlock] {
-        guard let front = await mac.front(), let browser = Browser.all.first(where: { $0.bundleID == front.bundleID }),
-              try await allows(browser.bundleID, named: browser.name, asks: asks),
+    func tab(of bundleID: String? = nil, asks: Bool) async throws -> [TextBlock] {
+        guard let browser = await browser(bundleID), try await allows(browser.bundleID, named: browser.name, asks: asks),
               let values = await mac.run(browser.script), let url = values.first, !url.isEmpty
         else { return [] }
         let title = values.dropFirst().first.flatMap { $0.isEmpty ? nil : $0 }
         return [Self.record([("url", url)] + (title.map { [("title", $0)] } ?? []) + [("app", browser.bundleID)])]
+    }
+
+    func tabs(of bundleID: String? = nil, asks: Bool) async throws -> [TextBlock] {
+        guard let browser = await browser(bundleID), try await allows(browser.bundleID, named: browser.name, asks: asks),
+              let values = await mac.run(browser.tabsScript)
+        else { return [] }
+        return stride(from: 0, to: values.count - values.count % 5, by: 5).compactMap { start in
+            let tab = values[start..<start + 5].map { $0 }
+            guard !tab[0].isEmpty else { return nil }
+            return Self.record([("url", tab[0])] + (tab[1].isEmpty ? [] : [("title", tab[1])])
+                + [("window", tab[2]), ("index", tab[3]), ("active", tab[4]), ("app", browser.bundleID)])
+        }
     }
 
     func finder(asks: Bool) async throws -> [TextBlock] {
@@ -53,6 +64,11 @@ public final class ReadSources: @unchecked Sendable {
         guard let text = await mac.selectedText().map(Self.cut), !text.allSatisfy(\.isWhitespace) else { return [] }
         let app = await mac.front()?.bundleID
         return [Self.record([("text", text)] + (app.map { [("app", $0)] } ?? []))]
+    }
+
+    private func browser(_ bundleID: String?) async -> Browser? {
+        guard let bundleID else { return await mac.front().flatMap { Browser.named($0.bundleID) } }
+        return Browser.named(bundleID)
     }
 
     private func allows(_ bundleID: String, named name: String, asks: Bool) async throws -> Bool {

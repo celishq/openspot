@@ -53,6 +53,79 @@ final class ReadUseCallTests: XCTestCase {
         XCTAssertEqual(reads.scripts, [])
     }
 
+    func testTabOfABrowserReadsItsFrontWindowWhileAnotherAppIsInFront() async throws {
+        reads.set(front: "com.apple.TextEdit", answers: ["com.google.Chrome": ["https://b.com/", "B page"]])
+
+        let answer = try await call(["browser", "tab", "com.google.Chrome"])
+
+        XCTAssertEqual(answer.output, "url=https://b.com/\ntitle=B page\napp=com.google.Chrome\n")
+    }
+
+    func testTabOfABrowserThatIsNotRunningPrintsNothingAndAsksNoScript() async throws {
+        reads.set(front: "com.apple.TextEdit", access: ["com.apple.Safari": .unknown])
+
+        let answer = try await call(["browser", "tab", "com.apple.Safari"])
+
+        XCTAssertEqual([answer.output, answer.errors], ["", ""])
+        XCTAssertEqual(answer.code, 0)
+        XCTAssertEqual(reads.scripts, [])
+    }
+
+    func testTabOfAnAppThatIsNoBrowserFailsWithALineThatNamesTheBrowsers() async throws {
+        for verb in ["tab", "tabs"] {
+            let answer = try await call(["browser", verb, "com.apple.TextEdit"])
+
+            XCTAssertEqual(answer.code, 1)
+            XCTAssertTrue(answer.errors.hasPrefix("Openspot can't read the tabs of com.apple.TextEdit. Name a browser: com.apple.Safari, "), answer.errors)
+            XCTAssertTrue(answer.errors.contains("com.google.Chrome"), answer.errors)
+        }
+        XCTAssertEqual(reads.scripts, [])
+    }
+
+    func testTabsPrintsARecordForEachTabOfEachWindowInOneScript() async throws {
+        let tabs = ["https://a.com/", "A", "1", "1", "false", "https://b.com/", "", "1", "2", "true", "https://c.com/", "C", "2", "1", "true"]
+        reads.set(front: "com.apple.Safari", answers: ["com.apple.Safari": tabs])
+
+        let answer = try await call(["browser", "tabs"])
+
+        XCTAssertEqual(answer.output, """
+        url=https://a.com/
+        title=A
+        window=1
+        index=1
+        active=false
+        app=com.apple.Safari
+
+        url=https://b.com/
+        window=1
+        index=2
+        active=true
+        app=com.apple.Safari
+
+        url=https://c.com/
+        title=C
+        window=2
+        index=1
+        active=true
+        app=com.apple.Safari
+
+        """)
+        XCTAssertEqual(reads.scripts.count, 1)
+        XCTAssertTrue(reads.scripts[0].contains("current tab") && reads.scripts[0].contains("name of"), reads.scripts[0])
+    }
+
+    func testTabsOfABrowserReadsItWhileAnotherAppIsInFrontAndInItsOwnWords() async throws {
+        reads.set(front: "com.apple.TextEdit", answers: ["com.google.Chrome": ["https://b.com/", "B", "1", "1", "true"]])
+
+        let named = try await call(["browser", "tabs", "com.google.Chrome"])
+        let front = try await call(["browser", "tabs"])
+
+        XCTAssertEqual(named.output, "url=https://b.com/\ntitle=B\nwindow=1\nindex=1\nactive=true\napp=com.google.Chrome\n")
+        XCTAssertEqual(front.output, "")
+        XCTAssertEqual(reads.scripts.count, 1)
+        XCTAssertTrue(reads.scripts[0].contains("active tab") && reads.scripts[0].contains("title of"), reads.scripts[0])
+    }
+
     func testFinderPrintsALineForEachSelectedFile() async throws {
         reads.set(answers: ["com.apple.finder": ["/Users/a/one.txt", "/Users/a/Two Words"]])
 
@@ -82,10 +155,11 @@ final class ReadUseCallTests: XCTestCase {
     func testAReadThatIsNotAllowedFailsWithALineThatSaysWhereToAllowIt() async throws {
         reads.set(front: "com.apple.Safari", access: ["com.apple.Safari": .denied, "com.apple.finder": .denied], grant: .unasked, trust: .unasked)
 
-        let answers = [try await call(["browser", "tab"]), try await call(["finder", "selection"]), try await call(["window", "selection"])]
+        let answers = [try await call(["browser", "tab"]), try await call(["browser", "tabs"]), try await call(["finder", "selection"]), try await call(["window", "selection"])]
 
-        XCTAssertEqual(answers.map(\.code), [1, 1, 1])
+        XCTAssertEqual(answers.map(\.code), [1, 1, 1, 1])
         XCTAssertEqual(answers.map(\.errors), [
+            "Openspot can't read Safari. Allow it in the Attachments spot.\n",
             "Openspot can't read Safari. Allow it in the Attachments spot.\n",
             "Openspot can't read Finder. Allow it in the Attachments spot.\n",
             "Openspot can't read the selected text. Allow it in the Attachments spot.\n"
@@ -97,14 +171,15 @@ final class ReadUseCallTests: XCTestCase {
         reads.set(front: "com.apple.Safari", access: ["com.apple.Safari": .unasked], trust: .unasked, answers: ["com.apple.Safari": ["https://a.com/", "A"]], selected: "word")
 
         let show = try await call(["browser", "tab"], from: spot(), reason: "panel.open")
+        let shownTabs = try await call(["browser", "tabs"], from: spot(), reason: "panel.open")
         let shownSelection = try await call(["window", "selection"], from: spot(), reason: "panel.open")
         let press = try await call(["browser", "tab"], from: spot())
         let terminal = try await call(["window", "selection"])
 
-        XCTAssertEqual([show.code, shownSelection.code], [1, 1])
+        XCTAssertEqual([show.code, shownTabs.code, shownSelection.code], [1, 1, 1])
         XCTAssertEqual(show.errors, "Openspot can't read Safari. Allow it in the Attachments spot.\n")
         XCTAssertEqual([press.code, terminal.code], [0, 0], press.errors + terminal.errors)
-        XCTAssertEqual(reads.asks, ["com.apple.Safari false", "accessibility false", "com.apple.Safari true", "accessibility true"])
+        XCTAssertEqual(reads.asks, ["com.apple.Safari false", "com.apple.Safari false", "accessibility false", "com.apple.Safari true", "accessibility true"])
     }
 
     func testInCarefulModeASpotWithoutReadInItsUsesIsRefused() async throws {
@@ -158,7 +233,7 @@ final class ReadUseCallTests: XCTestCase {
     }
 
     func testEachReadNeedsTheAppAndNamesItsUse() {
-        for words in [["browser", "tab"], ["finder", "selection"], ["window", "selection"], ["access", "list"], ["access", "ask", "accessibility"]] {
+        for words in [["browser", "tab"], ["browser", "tab", "com.apple.Safari"], ["browser", "tabs"], ["finder", "selection"], ["window", "selection"], ["access", "list"], ["access", "ask", "accessibility"]] {
             XCTAssertEqual(SpotUseCall(arguments: words, of: "reader")?.use, .read, words.joined(separator: " "))
             XCTAssertTrue(CommandKind.needsApp(words), words.joined(separator: " "))
         }

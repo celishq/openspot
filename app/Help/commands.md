@@ -103,7 +103,8 @@ work in a read too. `run` works in a read, but the action it runs can't show a v
 | `openspot prompt change <id> [words]...` | Prints a prompt that asks a coding agent to change a spot as the words say, with what the stats counted of it over 14 days, or with no words a goal that follows those counts. |
 | `openspot prompt theme <name> [words]...`          | Prints a prompt that asks a coding agent to change a theme as the words say.                    |
 | `openspot date read <words>...`                    | Prints the date the words name, such as `tomorrow 3pm`, as `item=yyyy-MM-dd HH:mm` in the zone of the Mac, or with no time `item=yyyy-MM-dd`, and `time=true` or `false`. It prints nothing when the words are more than a date. |
-| `openspot browser tab` | Prints the `url=`, `title=` and `app=` of the front tab when a browser is in front, or nothing. |
+| `openspot browser tab [<bundle id>]` | Prints the `url=`, `title=` and `app=` of the front tab of the browser in front, or of the browser that the bundle ID names, or nothing. |
+| `openspot browser tabs [<bundle id>]` | Prints a record for each tab of each window of the browser in front, or of the one named: `url=`, `title=`, `window=` (1 is the front window), `index=`, `active=` and `app=`. |
 | `openspot finder selection` | Prints a `file=` for each file selected in Finder, and `app=`. |
 | `openspot window selection` | Prints the `text=` selected in the front app, and its `app=`. |
 | `openspot clipboard read [--newer <seconds>]` | Prints the text on the clipboard. With `--newer`, it prints it only when Openspot first saw that copy less than the seconds ago. |

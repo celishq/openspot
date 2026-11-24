@@ -91,6 +91,9 @@ esac
   attach) tab=$(openspot browser tab) && printf '%s\n' "$tab" | openspot attachment add ;;
   ```
 
+  `openspot browser tab <bundle id>` reads a browser while another app is in front, and `openspot browser tabs` prints
+  each tab of each window. [Commands](../reference/commands.md) lists what each one prints.
+
 - While `attach` runs, the field says `Reading <app>…`. When it adds nothing, the field says `Nothing to attach from
   <app>`, or the words of `openspot attachment empty <words>`. When it fails, or gives no answer in 3 seconds, the field
   shows why, such as `Openspot can't read Safari · ⏎ Allow` when `openspot browser tab` fails since Openspot may not
