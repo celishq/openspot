@@ -3,7 +3,7 @@ import Foundation
 public struct ContextPreview: Hashable, Sendable {
     static let excerptLimit = 280
 
-    public static let loading = ContextPreview(text: "", caption: "Loading", symbol: "ellipsis")
+    public static let loading = ContextPreview(text: "", caption: "Loading", symbol: ContextChip.loadingSymbol)
 
     public let text: String
     public let caption: String

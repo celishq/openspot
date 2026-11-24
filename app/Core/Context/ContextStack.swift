@@ -28,7 +28,7 @@ public struct ContextStack: Equatable, Sendable {
         selected != nil
     }
 
-    mutating func open(over front: FrontApp?, loading: [(source: String, look: ContextChip.Look)]) {
+    mutating func open(over front: FrontApp?, loading: [(source: String, look: ContextChip.Look?)]) {
         self.front = front
         selected = nil
         arrival = loading.map(\.source)
@@ -75,8 +75,7 @@ public struct ContextStack: Equatable, Sendable {
 
     private func look(of app: String?, kind: ContextValue.Kind?, else own: ContextChip.Look?) -> ContextChip.Look {
         if app != nil, app == front?.bundleID, let path = front?.path { return .file(FileIcon(path: path)) }
-        guard let own, own != .symbol("") else { return .symbol(kind?.symbol ?? "ellipsis") }
-        return own
+        return own ?? .symbol(kind?.symbol ?? ContextChip.loadingSymbol)
     }
 
     private mutating func settle() {

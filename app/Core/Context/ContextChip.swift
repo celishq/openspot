@@ -11,6 +11,8 @@ public struct ContextChip: Equatable, Sendable {
         case ready(ContextValue)
     }
 
+    static let loadingSymbol = "ellipsis"
+
     public let source: String
     public let app: String?
     public let look: Look

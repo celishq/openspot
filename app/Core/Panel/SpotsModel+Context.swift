@@ -19,7 +19,7 @@ extension SpotsModel {
 
     func takeContext(_ value: ContextValue, of id: String) {
         var next = context
-        if cards.contains(where: { $0.spot.takes(value) }) { next.fill(id, with: value, look: entry(id).map { Self.look(of: $0.spot) }) } else { next.remove(id) }
+        if cards.contains(where: { $0.spot.takes(value) }) { next.fill(id, with: value, look: entry(id).flatMap { Self.look(of: $0.spot) }) } else { next.remove(id) }
         settle(next, motion: .fade)
     }
 
@@ -49,8 +49,8 @@ extension SpotsModel {
         turnContext(by: 1)
     }
 
-    private static func look(of spot: Spot) -> ContextChip.Look {
-        spot.fileIcon.map(ContextChip.Look.file) ?? .symbol(spot.symbol)
+    private static func look(of spot: Spot) -> ContextChip.Look? {
+        spot.fileIcon.map(ContextChip.Look.file) ?? (spot.symbol.isEmpty ? nil : .symbol(spot.symbol))
     }
 
     private func settle(_ next: ContextStack, motion: PanelMotion?) {
