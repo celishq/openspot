@@ -430,6 +430,7 @@
 		697F86EDA41387C392C14F43 /* SpotsModel+Sheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4762AB426CAACFDAD9AC43A8 /* SpotsModel+Sheet.swift */; };
 		69B301D04D8DB9EE906CC23F /* SpotSteadyField.swift in Sources */ = {isa = PBXBuildFile; fileRef = CC1F77B97060A35519386698 /* SpotSteadyField.swift */; };
 		6A3AF5954E5869CA883E02B9 /* ScreenCapture.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5CB2F24416F8028DDBD5AADA /* ScreenCapture.swift */; };
+		6A522A90CF843AFF73C2B540 /* ContextLayout.swift in Sources */ = {isa = PBXBuildFile; fileRef = C7BEE516F3D97F77A66963A3 /* ContextLayout.swift */; };
 		6A67F4E385F4197C646A9A9B /* WireTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D5C81464286C36C5C388552 /* WireTests.swift */; };
 		6B08DAE4383D074596964CA5 /* CoreSpotsTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = BA6B0D4E912ED2F8DDF8428A /* CoreSpotsTests.swift */; };
 		6B6B77B1B592F27EC1CBEF37 /* ClipboardCalls.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0593FF6BEE540B9D2F8DC85E /* ClipboardCalls.swift */; };
@@ -2016,6 +2017,7 @@
 		C72CC146B1C0431B9C1F56DB /* SpotRowNumber.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SpotRowNumber.swift; sourceTree = "<group>"; };
 		C77D36781ECBB07CFDCA15A3 /* SystemKeys.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SystemKeys.swift; sourceTree = "<group>"; };
 		C79DBF3C095A5C2291D9BA03 /* SpotGridDrop.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SpotGridDrop.swift; sourceTree = "<group>"; };
+		C7BEE516F3D97F77A66963A3 /* ContextLayout.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContextLayout.swift; sourceTree = "<group>"; };
 		C8184F15CDEF8277660D2E61 /* FlowEdges.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FlowEdges.swift; sourceTree = "<group>"; };
 		C84A418522A17D33DE7C40C9 /* UpdateCalls.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UpdateCalls.swift; sourceTree = "<group>"; };
 		C85822DB2F15AF350E11EE94 /* SpotTranslation.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SpotTranslation.swift; sourceTree = "<group>"; };
@@ -2364,6 +2366,7 @@
 			children = (
 				ED3AAC4777FE9D3CF24FD984 /* ContextCall.swift */,
 				2CCDC77FDBDA1BFAD1D1D91D /* ContextChip.swift */,
+				C7BEE516F3D97F77A66963A3 /* ContextLayout.swift */,
 				E6FA26BAD2B77C8584CF3DC5 /* ContextPreview.swift */,
 				D1C29E5ACD80C350317B6700 /* ContextShape.swift */,
 				18277B2C49497820FFA1830B /* ContextStack.swift */,
@@ -4562,6 +4565,7 @@
 				2D767FD965D15EAF5F644AF0 /* ConfigFile.swift in Sources */,
 				18E484DACF13CCDD141AE2A0 /* ContextCall.swift in Sources */,
 				B8721D089F717547AFABB1BC /* ContextChip.swift in Sources */,
+				6A522A90CF843AFF73C2B540 /* ContextLayout.swift in Sources */,
 				A03014FC08A06C3A1F2AA8ED /* ContextPreview.swift in Sources */,
 				0CA9FC1FE2B10E1ECFE0892F /* ContextShape.swift in Sources */,
 				2BB3B3FBCFFAA2D0305137C8 /* ContextStack.swift in Sources */,

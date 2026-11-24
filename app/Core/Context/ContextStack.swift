@@ -1,38 +1,6 @@
 import Foundation
 
 public struct ContextStack: Equatable, Sendable {
-    public struct Place: Equatable, Sendable {
-        public let chip: ContextChip
-        public let slot: Int
-        public let depth: Int
-        public let x: CGFloat
-        public let scale: CGFloat
-        public let opacity: Double
-        public let layer: Double
-
-        init(chip: ContextChip, depth: Int, count: Int) {
-            let shown = min(count, ContextStack.pile)
-            self.chip = chip
-            slot = 0
-            self.depth = depth
-            x = -CGFloat(shown - 1 - min(depth, shown - 1)) * SpotTokens.contextStep
-            scale = 1 - CGFloat(min(depth, ContextStack.pile - 1)) * SpotTokens.contextShrink
-            opacity = depth < ContextStack.pile ? 1 : MotionTokens.hiddenOpacity
-            layer = -Double(depth)
-        }
-
-        init(chip: ContextChip, slot: Int, depth: Int, spreadCount: Int, fit: Int) {
-            let pitch = SpotTokens.contextCard + SpotTokens.contextSpreadGap
-            self.chip = chip
-            self.slot = slot
-            self.depth = depth
-            x = -CGFloat(spreadCount - 1 - (depth == 0 ? slot : 0)) * pitch + (depth == 0 ? 0 : SpotTokens.contextStep)
-            scale = 1 - CGFloat(min(depth, 1)) * SpotTokens.contextShrink
-            opacity = depth == 0 ? 1 : depth == 1 ? 1 - SpotTokens.contextCardFade : MotionTokens.hiddenOpacity
-            layer = -Double(slot) - Double(depth * fit)
-        }
-    }
-
     public static let limit = 6
     public static let pile = 3
 
@@ -44,14 +12,9 @@ public struct ContextStack: Equatable, Sendable {
         }
     }
     public private(set) var selected: String?
-    public private(set) var isSpread = false
-    public private(set) var placedSelection: String?
-    public private(set) var places: [Place] = []
-    public private(set) var spreadCount = 0
+    public private(set) var layout = ContextLayout()
     private var front: FrontApp?
     private var arrival: [String] = []
-    private var order: [String] = []
-    private var start = 0
 
     public init(fit: Int = SpotTokens.contextFit) {
         self.fit = fit
@@ -71,10 +34,7 @@ public struct ContextStack: Equatable, Sendable {
         arrival = loading.map(\.source)
         chips = loading.map { ContextChip(source: $0.source, app: front?.bundleID, look: look(of: front?.bundleID, kind: nil, else: $0.look)) }
         settle()
-        order = []
-        start = 0
-        isSpread = false
-        place(spreads: false)
+        layout = ContextLayout(chips: chips, after: ContextLayout(), selection: nil, spreads: false, fit: fit)
     }
 
     mutating func fill(_ source: String, with value: ContextValue, look own: ContextChip.Look?) {
@@ -96,7 +56,7 @@ public struct ContextStack: Equatable, Sendable {
     }
 
     mutating func turn(by step: Int) {
-        let order = shownOrder()
+        let order = layout.order(of: chips)
         guard !order.isEmpty else { return }
         guard let selected, let index = order.firstIndex(of: selected) else {
             self.selected = order[step < 0 ? order.count - 1 : 0]
@@ -110,39 +70,7 @@ public struct ContextStack: Equatable, Sendable {
     }
 
     mutating func place(spreads: Bool) {
-        let isSpread = spreads && selected != nil
-        var order = shownOrder()
-        if !isSpread, let selected, let index = order.firstIndex(of: selected) {
-            order = Array(order[index...] + order[..<index])
-        }
-        let start = isSpread ? start(of: order.firstIndex { $0 == selected } ?? 0, count: order.count) : 0
-        let byID = Dictionary(chips.map { ($0.source, $0) }, uniquingKeysWith: { first, _ in first })
-        let fit = fit
-        let spreadCount = isSpread ? min(order.count, fit) : 0
-        places = order.enumerated().compactMap { index, source in
-            guard let chip = byID[source] else { return nil }
-            guard isSpread else { return Place(chip: chip, depth: index, count: order.count) }
-            let slot = index - start
-            return (0..<fit).contains(slot)
-                ? Place(chip: chip, slot: slot, depth: 0, spreadCount: spreadCount, fit: fit)
-                : Place(chip: chip, slot: 0, depth: (slot + order.count) % order.count - fit + 1, spreadCount: spreadCount, fit: fit)
-        }
-        placedSelection = selected
-        self.isSpread = isSpread
-        self.order = order
-        self.start = start
-        self.spreadCount = spreadCount
-    }
-
-    private func shownOrder() -> [String] {
-        let sources = chips.map(\.source)
-        return order.filter(sources.contains) + sources.filter { !order.contains($0) }
-    }
-
-    private func start(of index: Int, count: Int) -> Int {
-        let start = isSpread ? self.start : 0
-        guard index >= start else { return index }
-        return index < start + fit ? min(start, max(count - fit, 0)) : index - fit + 1
+        layout = ContextLayout(chips: chips, after: layout, selection: selected, spreads: spreads, fit: fit)
     }
 
     private func look(of app: String?, kind: ContextValue.Kind?, else own: ContextChip.Look?) -> ContextChip.Look {

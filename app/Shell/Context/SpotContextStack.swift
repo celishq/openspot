@@ -7,8 +7,8 @@ struct SpotContextStack: View {
     var body: some View {
         let context = model.context
         ZStack(alignment: .trailing) {
-            ForEach(context.places, id: \.chip.source) { place in
-                SpotContextCard(chip: place.chip, showsBadge: place.chip.showsKind && (context.isSpread || place.depth == 0))
+            ForEach(context.layout.places, id: \.chip.source) { place in
+                SpotContextCard(chip: place.chip, showsBadge: place.chip.showsKind && (context.layout.isSpread || place.depth == 0))
                     .equatable()
                     .overlay(alignment: .bottom) {
                         SpotContextDot(isOn: context.isOn && place.chip.source == context.selected)

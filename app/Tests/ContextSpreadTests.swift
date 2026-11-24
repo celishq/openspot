@@ -14,8 +14,8 @@ final class ContextSpreadTests: ContextCase {
         try await wait("two values") { self.model.context.chips.count == 2 && self.model.context.chips.allSatisfy { $0.value != nil } }
     }
 
-    private var spread: ContextStack {
-        model.context
+    private var spread: ContextLayout {
+        model.context.layout
     }
 
     func testTabSpreadsTheStackIntoARowWithTheSelectedChipMarked() async throws {
@@ -26,7 +26,7 @@ final class ContextSpreadTests: ContextCase {
 
         XCTAssertTrue(spread.isSpread)
         XCTAssertEqual(model.contextShape, .spread)
-        XCTAssertEqual(spread.placedSelection, model.context.selected)
+        XCTAssertEqual(spread.selection, model.context.selected)
         XCTAssertEqual(spread.places.map(\.chip.source), model.context.chips.map(\.source))
         XCTAssertEqual(spread.places.map(\.slot), [0, 1])
         XCTAssertTrue(model.handleKey(escape))
@@ -99,7 +99,7 @@ final class ContextSpreadTests: ContextCase {
         XCTAssertTrue(model.handleKey(escape))
 
         XCTAssertFalse(spread.isSpread)
-        XCTAssertNil(spread.placedSelection)
+        XCTAssertNil(spread.selection)
         XCTAssertNil(model.contextWatch)
     }
 
@@ -153,7 +153,7 @@ final class ContextSpreadTests: ContextCase {
         var stack = ContextStack(fit: 3)
         stack.open(over: nil, loading: sources.map { ($0, .symbol("doc")) })
         for source in sources { stack.fill(source, with: ContextValue(text: source), look: .symbol("doc")) }
-        let row = { stack.places.filter { $0.depth == 0 }.sorted { $0.slot < $1.slot }.map(\.chip.source) }
+        let row = { stack.layout.places.filter { $0.depth == 0 }.sorted { $0.slot < $1.slot }.map(\.chip.source) }
 
         for _ in 0..<4 {
             stack.turn(by: 1)
@@ -175,10 +175,10 @@ final class ContextSpreadTests: ContextCase {
         let step = SpotTokens.contextStep
         let shrink = SpotTokens.contextShrink
 
-        XCTAssertEqual(stack.places.map(\.x), [-2 * step, -step, 0, 0])
-        XCTAssertEqual(stack.places.map(\.scale), [1, 1 - shrink, 1 - 2 * shrink, 1 - 2 * shrink])
-        XCTAssertEqual(stack.places.map(\.opacity), [1, 1, 1, MotionTokens.hiddenOpacity])
-        XCTAssertEqual(stack.places.map(\.layer), [0, -1, -2, -3])
+        XCTAssertEqual(stack.layout.places.map(\.x), [-2 * step, -step, 0, 0])
+        XCTAssertEqual(stack.layout.places.map(\.scale), [1, 1 - shrink, 1 - 2 * shrink, 1 - 2 * shrink])
+        XCTAssertEqual(stack.layout.places.map(\.opacity), [1, 1, 1, MotionTokens.hiddenOpacity])
+        XCTAssertEqual(stack.layout.places.map(\.layer), [0, -1, -2, -3])
     }
 
     func testASpreadRowLaysItsCardsOnePitchApartWithTheRestBehindItsFirst() {
@@ -190,10 +190,10 @@ final class ContextSpreadTests: ContextCase {
         let pitch = SpotTokens.contextCard + SpotTokens.contextSpreadGap
         let step = SpotTokens.contextStep
 
-        XCTAssertEqual(stack.places.map(\.x), [-2 * pitch, -pitch, 0, -2 * pitch + step, -2 * pitch + step])
-        XCTAssertEqual(stack.places.map(\.scale), [1, 1, 1, 1 - SpotTokens.contextShrink, 1 - SpotTokens.contextShrink])
-        XCTAssertEqual(stack.places.map(\.opacity), [1, 1, 1, 1 - SpotTokens.contextCardFade, MotionTokens.hiddenOpacity])
-        XCTAssertEqual(stack.places.map(\.layer), [0, -1, -2, -3, -6])
+        XCTAssertEqual(stack.layout.places.map(\.x), [-2 * pitch, -pitch, 0, -2 * pitch + step, -2 * pitch + step])
+        XCTAssertEqual(stack.layout.places.map(\.scale), [1, 1, 1, 1 - SpotTokens.contextShrink, 1 - SpotTokens.contextShrink])
+        XCTAssertEqual(stack.layout.places.map(\.opacity), [1, 1, 1, 1 - SpotTokens.contextCardFade, MotionTokens.hiddenOpacity])
+        XCTAssertEqual(stack.layout.places.map(\.layer), [0, -1, -2, -3, -6])
     }
 
     func testPressesDuringTheMotionFoldIntoOneStepToTheNewestState() async throws {
@@ -204,14 +204,14 @@ final class ContextSpreadTests: ContextCase {
 
         XCTAssertTrue(model.handleKey(tab))
         XCTAssertTrue(model.handleKey(tab))
-        XCTAssertEqual(spread.placedSelection, first)
+        XCTAssertEqual(spread.selection, first)
         XCTAssertEqual(model.context.selected, second)
 
         let ends = host.heldEnds ?? []
         host.heldEnds = []
         ends.forEach { $0() }
 
-        XCTAssertEqual(spread.placedSelection, second)
+        XCTAssertEqual(spread.selection, second)
         XCTAssertTrue(spread.isSpread)
         XCTAssertEqual(host.heldEnds?.count, 1)
         host.heldEnds = nil

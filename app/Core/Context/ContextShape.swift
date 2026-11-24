@@ -5,7 +5,7 @@ public enum ContextShape: Sendable {
     case spread
     case wide
 
-    init(_ stack: ContextStack) {
-        self = !stack.isSpread ? .folded : stack.spreadCount > ContextStack.pile ? .wide : .spread
+    init(_ layout: ContextLayout) {
+        self = !layout.isSpread ? .folded : layout.spreadCount > ContextStack.pile ? .wide : .spread
     }
 }

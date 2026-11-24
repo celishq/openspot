@@ -71,7 +71,7 @@ public final class SpotsModel {
     @ObservationIgnored var content = GridContent.cards
     public internal(set) var context = ContextStack() {
         didSet {
-            let shape = ContextShape(context)
+            let shape = ContextShape(context.layout)
             if contextShape != shape { contextShape = shape }
         }
     }

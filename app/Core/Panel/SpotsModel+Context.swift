@@ -30,7 +30,7 @@ extension SpotsModel {
     }
 
     func turnContext(by step: Int) {
-        let isCycling = context.isSpread
+        let isCycling = context.layout.isSpread
         spreadContext()
         var next = context
         next.turn(by: step)
