@@ -168,6 +168,7 @@ struct SpotFieldView: View {
         SpotFieldPrompt(word: sheetWord, progress: progress)
             .morph(progress, opacity: crossing)
         .modifier(SpotEmptyField(model: model, isHidden: model.showsFieldDrop))
+        .modifier(SpotContextCover(model: model))
     }
 
     private var sheetWord: String {
