@@ -9,7 +9,12 @@ struct SpotBackdropFade: Equatable {
     private static let whole = wholeImage()
 
     func image() -> CGImage? {
-        guard let area else { return Self.whole }
+        guard area != nil else { return Self.whole }
+        return drawn()?.makeImage()
+    }
+
+    func drawn() -> CGContext? {
+        guard let area else { return nil }
         let scale = SpotTokens.backdropMaskScale
         guard let context = CGContext(
             data: nil, width: Int((size.width * scale).rounded(.up)), height: Int((size.height * scale).rounded(.up)),
@@ -19,12 +24,11 @@ struct SpotBackdropFade: Equatable {
         context.setBlendMode(.copy)
         for ring in fade.rings(in: area) {
             let frame = CGRect(x: ring.rect.minX, y: size.height - ring.rect.maxY, width: ring.rect.width, height: ring.rect.height)
-            let corner = min(ring.corner, frame.width / 2, frame.height / 2)
             context.setFillColor(CGColor(gray: 0, alpha: ring.strength))
-            context.addPath(CGPath(roundedRect: frame, cornerWidth: corner, cornerHeight: corner, transform: nil))
+            context.addPath(CGPath(roundedRect: frame, cornerWidth: ring.corner, cornerHeight: ring.corner, transform: nil))
             context.fillPath()
         }
-        return context.makeImage()
+        return context
     }
 
     private static func wholeImage() -> CGImage? {
