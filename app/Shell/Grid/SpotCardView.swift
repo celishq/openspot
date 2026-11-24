@@ -32,6 +32,7 @@ struct SpotCardView: View, @MainActor Equatable {
             .modifier(CardPress(shape: shape(of: .press), isFilled: isFilled, showsPress: showsPress))
             .overlay(Color.clear.modifier(CardRing(model: model, index: index, shape: shape(of: .ring))).allowsHitTesting(false))
             .overlay(alignment: .topTrailing) { FailureMark(model: model, entry: entry, size: size) }
+            .overlay(alignment: .topLeading) { if entry.isNew { SpotCornerMark(face: .word("New"), corner: .leading, size: size).accessibilityLabel("New spot") } }
             .modifier(SpotGlass(shape: shape(of: .glass), isSolid: isFilled))
             .contentShape(shape(of: .hit))
             .onTapGesture { if let onTap { onTap() } else { model.tap(entry.id, opening: NSEvent.modifierFlags.contains(.command)) } }
@@ -212,15 +213,7 @@ private struct FailureMark: View {
 
     var body: some View {
         if let failure = model.failure(of: entry) {
-            let inset = SurfaceEdge(card: size).rim - SpotTokens.cornerMark / 2
-            let cap = SpotRoundShape(radius: SpotTokens.cornerMarkRadius)
-            Image(systemName: "exclamationmark.triangle.fill")
-                .font(SpotType.cornerFault)
-                .foregroundStyle(SpotTheme.ink)
-                .frame(width: SpotTokens.cornerMark, height: SpotTokens.cornerMark)
-                .background(SpotTheme.cornerFill, in: cap)
-                .overlay(cap.strokeBorder(SpotTheme.ink.opacity(SpotTheme.track)))
-                .offset(x: -inset, y: inset)
+            SpotCornerMark(face: .symbol("exclamationmark.triangle.fill"), corner: .trailing, size: size)
                 .accessibilityLabel("Last run failed")
                 .modifier(SpotFailureTip(model: model, id: entry.id, text: failure))
         }

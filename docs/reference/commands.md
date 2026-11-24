@@ -24,6 +24,7 @@ see [the commands that fail in a read](../../app/Help/commands.md#the-commands-t
 | `openspot spot new <name> --from <kind>`            | Writes a spot that works, from `button`, `list`, `number` or `form`.     |
 | `openspot spot run <id> [word] [<name>=<value>...]` | Runs one word of a spot as Openspot does, and prints what it printed.    |
 | `openspot spot log <id>`                            | Prints the last runs of a spot, with their stdin, stdout, stderr and exit code. |
+| `openspot spot mark <id> <mark>`                   | A mark of `building` hides a spot that an agent still builds, and `new` shows it first until people open it. |
 | `openspot check spots [--json] [folder]`            | Loads and runs each spot of a folder once, and prints a `fault` block for each mistake. |
 | `openspot playground open [file]`                   | Shows a spot in a panel of its own, and runs it again each time you save. |
 | `openspot spot actions [id]`                        | Prints each action of a spot and each command of its uses, with their inputs and outputs. |

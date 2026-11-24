@@ -33,6 +33,14 @@ struct SpotCalls {
         }
     }
 
+    func mark(_ id: String, as mark: SpotMark?) -> CommandAPI.Work {
+        CommandAnswer.work { [places, app] in
+            let config = try places.readSpots().mark(id, as: mark, in: places.config)
+            await app?.configChanged(.spots([id]), to: config)
+            return ""
+        }
+    }
+
     func add(_ source: String, isConfirmed: Bool) -> CommandAPI.Work {
         CommandAnswer.work { [places, folder, app] in
             let answer = try await places.lock.add(SpotSource(text: source, place: folder), to: places.spots.url, isConfirmed: isConfirmed)

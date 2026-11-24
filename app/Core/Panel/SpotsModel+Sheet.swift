@@ -129,6 +129,7 @@ extension SpotsModel {
     func present(_ id: String, moving: Bool) {
         closingPage = nil
         if let shown = openSheetID, shown != id { stopRecording() }
+        unmarkNew(id)
         sheets[id]?.open(waits: moving) { [weak self] in self?.showSheet(id, moving: moving) }
     }
 

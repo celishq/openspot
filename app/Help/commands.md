@@ -39,7 +39,7 @@ fail in it:
 - calls that capture the screen: `screen shot`, `screen record start` and `screen record stop`;
 - calls that change the Mac or the person's data: `window move`, `clipboard copy`, `clipboard paste`,
   `power lid-closed`, `calendar add`, `reminders add`, `reminders done`, `spot add`, `spot remove` and `spot delete`;
-- calls that change Openspot or its places: `app quit`, each call of `theme` but `theme list` and `theme open`,
+- calls that change Openspot or its places: `app quit`, `spot mark`, each call of `theme` but `theme list` and `theme open`,
   `update install`, and `setting set` of a key that Openspot keeps for the person;
 - calls that move the flow of sheets: `route push`, `route back` and `route close`;
 - calls that open a window or the panel: `spot open`, `spot choose`, `spot settings`, `spot edit`, `spot prompt`,
@@ -73,6 +73,7 @@ work in a read too. `run` works in a read, but the action it runs can't show a v
 | `openspot spot delete <id>`                        | Moves a spot to the Trash, and `⌘Z` in the panel puts it back.                                  |
 | `openspot spot add <git url, folder or .spot>` | Adds a spot and records it in `spots.lock`, and an update that needs a new use also needs `--yes`. |
 | `openspot spot remove <id>`                        | Moves a spot that `spot add` added to the Trash.                                                |
+| `openspot spot mark <id> <mark>` | `building` hides a spot from the panel and the menu bar while an agent builds it, `new` shows it first with a New mark until you open it, and `none` takes the mark off. |
 | `openspot spot stats`                              | Prints what each spot cost and used. `openspot guide stats` explains it.                        |
 | `openspot spot actions [id]`                       | Prints each action of a spot and each command of its uses, with their inputs and outputs as JSON Schema. |
 | `openspot schema`                                  | Prints the JSON Schema of `spot.toml`, which an editor checks the file with.                    |

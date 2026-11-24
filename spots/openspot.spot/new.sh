@@ -18,8 +18,8 @@ if [ "$1" = press ]; then
   exit 0
 fi
 
-# Each build is a folder in `builds`, with the words last sent, the spot it made, its state (running, ready, failed or
-# done), the step it is on, the agent's last words and its session. Builds run side by side, each in its own call, and
+# Each build is a folder in `builds`, with the words last sent, the spot it made, its state (running, ready, failed, done or
+# deleted), the step it is on, the agent's last words and its session. Builds run side by side, each in its own call, and
 # each shows on its own page, build/<id>. The first sheet starts a new one. The Edit sheet of a spot shows its last build.
 route=$(value route)
 job=
@@ -145,17 +145,18 @@ options() {
 form() {
   way=$(chosen)
   go=$(go_title "$way")
-  printf '\nfield=describe\ntype=multiline\nclass=grow\n'
+  printf '\nbox=form\nclass=flex-col gap-2 grow\n'
+  printf '\nfield=describe\nparent=form\ntype=multiline\nclass=grow\n'
   openspot_kv placeholder "$placeholder"
   openspot_kv value "$1"
   if [ -n "$go" ]; then
-    printf '\nchoice=agent\ntitle=Agent\nvalue=%s\n' "$way"
+    printf '\nchoice=agent\nparent=form\ntitle=Agent\nicon=sparkles\nvalue=%s\n' "$way"
     options
-    printf '\nbox=go\nclass=grid grid-cols-2 gap-2\n'
+    printf '\nbox=go\nparent=form\nclass=grid grid-cols-2 gap-2\n'
     printf '\nbutton=copy\nparent=go\ntitle=%s\nshortcut=cmd+shift+return\nclose=false\n' "${2:-Copy prompt}"
     printf '\nbutton=%s\nparent=go\ntitle=%s\nclass=bg-accent\nshortcut=cmd+return\nclose=false\n' "$(next_key)" "$go"
   else
-    printf '\nbox=go\nclass=flex-row gap-2\n'
+    printf '\nbox=go\nparent=form\nclass=flex-row gap-2\n'
     printf '\nbutton=copy\nparent=go\ntitle=%s\nclass=grow bg-accent\nshortcut=cmd+return\nclose=false\n' "${2:-Copy prompt}"
   fi
   printf '\nbutton=clear\ntitle=Clear\nscope=spot\nclose=false\n'
@@ -175,15 +176,15 @@ settle() {
 # How long Undo stays after Done, in seconds.
 undo_time=6
 
-# Prints the builds that show on the first sheet, the newest first: each that is not done, and each done in the last
-# seconds of undo_time, which offers Undo.
+# Prints the builds that show on the first sheet, the newest first: each that is not done, and each done or deleted in
+# the last seconds of undo_time, which offers Undo.
 active() {
   now=$(date +%s)
   for dir in $(ls -1t "${builds:?}" 2>/dev/null); do
     settle "$dir"
     case $(get "$dir" state) in
       running | ready | failed) printf '%s\n' "$dir" ;;
-      done)
+      done | deleted)
         at=$(get "$dir" done.at)
         [ -n "$at" ] && [ $((now - at)) -lt "$undo_time" ] && printf '%s\n' "$dir"
         ;;
@@ -191,33 +192,34 @@ active() {
   done
 }
 
-# Prints the first sheet: a line for each build that shows, with Show, which opens its page, then the form of a new
-# one. The lines are words, not items, so that the field keeps the only focus.
+# Prints the first sheet: the form of a new build, then a row for each build that shows, which opens its page. A ready
+# build offers Open, which opens its spot, a stopped one Delete, and one just done or deleted Undo.
 first_sheet() {
   printf 'frame=\nclass=gap-group\n'
+  form "$1" "$2"
   list=$(active | head -n 3)
   if [ -n "$list" ]; then
     printf '\nbox=builds\nclass=flex-col gap-1\n'
     printf '%s\n' "$list" | while IFS= read -r dir; do
       state=$(get "$dir" state)
-      printf '\nbox=b-%s\nparent=builds\nclass=flex-row items-center gap-2\n' "$dir"
       case $state in
-        running) icon=sparkles look=text-accent words=$(get "$dir" step) ;;
-        ready) icon=checkmark.circle.fill look=text-good words=Ready ;;
-        failed) icon=exclamationmark.triangle.fill look=text-bad words=Stopped ;;
-        *) icon=checkmark.circle look=text-secondary words=Done ;;
+        running) icon=sparkles words=$(get "$dir" step) ;;
+        ready) icon=checkmark.circle.fill words=Ready ;;
+        failed) icon=exclamationmark.triangle words=Stopped ;;
+        deleted) icon=trash words=Deleted ;;
+        *) icon=checkmark.circle words=Done ;;
       esac
-      printf '\nicon=i-%s\nparent=b-%s\nvalue=%s\nclass=%s\n' "$dir" "$dir" "$icon" "$look"
-      printf '\ntext=t-%s\nparent=b-%s\nclass=grow truncate\n' "$dir" "$dir"
-      openspot_kv title "$(name_of "$dir") · $words"
-      if [ "$state" = done ]; then
-        printf '\nbutton=undo-%s\nparent=b-%s\ntitle=Undo\nclass=rounded-full\nclose=false\n' "$dir" "$dir"
-      else
-        printf '\nbutton=show-%s\nparent=b-%s\ntitle=Show\nclass=rounded-full\nclose=false\n' "$dir" "$dir"
-      fi
+      printf '\nbox=b-%s\nparent=builds\nclass=flex-row items-center gap-2 bg-tile rounded-inner pr-2\n' "$dir"
+      printf '\nbutton=show-%s\nparent=b-%s\nicon=%s\nclass=grow bg-transparent\nclose=false\n' "$dir" "$dir" "$icon"
+      openspot_kv title "$(name_of "$dir")"
+      openspot_kv detail "$words"
+      case $state in
+        ready) printf '\nbutton=open-%s\nparent=b-%s\ntitle=Open\nclass=rounded-full\nclose=false\n' "$dir" "$dir" ;;
+        failed) printf '\nbutton=delete-%s\nparent=b-%s\ntitle=Delete\nclass=rounded-full\nclose=false\n' "$dir" "$dir" ;;
+        done | deleted) printf '\nbutton=undo-%s\nparent=b-%s\ntitle=Undo\nclass=rounded-full\nclose=false\n' "$dir" "$dir" ;;
+      esac
     done
   fi
-  form "$1" "$2"
   [ ! -s "$OPENSPOT_DATA/history" ] || printf '\nbutton=history\ntitle=History\nscope=spot\nshortcut=cmd+y\nclose=false\n'
   printf '\nbutton=folder\ntitle=Open spots folder\nscope=spot\n'
 }
@@ -236,7 +238,7 @@ build_sheet() {
     openspot_kv title "$(get "$job" step)"
     said=$(get "$job" said)
     [ -z "$said" ] || openspot_kv detail "$said"
-    printf '\nbutton=stop-%s\ntitle=Stop\nclass=self-end\nshortcut=cmd+return\nclose=false\n' "$job"
+    printf '\nbutton=stop-%s\ntitle=Stop\nclass=self-stretch\nshortcut=cmd+return\nclose=false\n' "$job"
     return
   fi
   edit=${OPENSPOT_EDIT-}
@@ -245,7 +247,7 @@ build_sheet() {
     printf '\nicon=made-icon\nparent=made\nvalue=exclamationmark.triangle.fill\nclass=text-bad\n'
     printf '\ntext=made-name\nparent=made\nclass=grow line-clamp-2\n'
     openspot_kv title "$(get "$job" said)"
-    [ -n "$edit" ] || printf '\nbutton=done-%s\nparent=made\ntitle=Done\nclass=rounded-full\nshortcut=cmd+d\nclose=false\n' "$job"
+    [ -n "$edit" ] || printf '\nbutton=delete-%s\nparent=made\ntitle=Delete\nclass=rounded-full\nshortcut=cmd+backspace\nclose=false\n' "$job"
   elif [ -n "$spot" ] && [ -z "$edit" ]; then
     printf '\nbox=made\nclass=flex-row items-center gap-2\n'
     printf '\nicon=made-icon\nparent=made\nvalue=checkmark.circle.fill\nclass=text-good\n'
@@ -255,7 +257,7 @@ build_sheet() {
     printf '\nbutton=open\nparent=made\ntitle=Open\nclass=rounded-full\nshortcut=cmd+o\nclose=false\n'
   fi
   form "$1" "$2"
-  [ -n "$edit" ] || printf '\nbutton=remove\ntitle=Remove from the list\nscope=spot\nshortcut=cmd+backspace\nclose=false\n'
+  [ -n "$edit" ] || [ "$state" = failed ] || printf '\nbutton=remove\ntitle=Remove from the list\nscope=spot\nshortcut=cmd+backspace\nclose=false\n'
 }
 
 # Prints the History page: each spot made here, the newest first, with the last words sent for it.
@@ -355,6 +357,13 @@ progress() {
 
 # Runs the agent $3 with no window for the build $1, with the prompt $4. Each step goes to the build's files and tells
 # the sheet. The run itself prints only its title and progress, so Openspot shows no working card for it.
+# Marks the spot that the build $1 made, if any, so that Openspot hides it while it is built and shows it first once it is.
+mark() {
+  made=$(get "$1" spot)
+  [ -n "$made" ] && [ -z "$was" ] || return 0
+  openspot spot mark "$made" "$2" > /dev/null 2>&1 || true
+}
+
 run() {
   building=$1
   bin=$(agent_bin "$3") || { echo "Openspot cannot find $3." >&2; exit 1; }
@@ -364,7 +373,7 @@ run() {
   if [ -n "$name" ]; then work="Changing $name…"; else work='Building a spot…'; fi
   put "$1" pid "$$"
   put "$1" state running
-  trap 'put "$building" state failed; put "$building" said "Stopped before it was done."; moved "$building"; exit 0' TERM INT
+  trap 'mark "$building" none; put "$building" state failed; put "$building" said "Stopped before it was done."; moved "$building"; exit 0' TERM INT
   put "$1" step 'Starting the agent…'
   put "$1" said ''
   put "$1" end ''
@@ -394,6 +403,8 @@ run() {
                     made=${made%%.spot/*}
                     if [ -z "$(get "$1" spot)" ] && ! printf '%s\n' "$before" | grep -qxF "$made.spot"; then
                       put "$1" spot "$made"
+                      put "$1" fresh 1
+                      mark "$1" building
                     fi
                     ;;
                 esac
@@ -417,6 +428,7 @@ END
   if [ -z "$failed" ] || [ "$failed" = true ] || [ -z "$name" ]; then
     [ -n "$said" ] || said=$(tail -n 1 "$log")
     [ -n "$name" ] || [ "$failed" = true ] || said='The agent is done, but made no spot.'
+    mark "$1" none
     put "$1" state failed
     put "$1" said "${said:-The agent gave no answer.}"
     moved "$1"
@@ -424,10 +436,19 @@ END
     exit 1
   fi
   [ -z "$session" ] || put "$1" session "$session"
+  mark "$1" new
   put "$1" state ready
   printf '%s\t%s\t%s\n' "$(date +%s)" "$1" "$(get "$1" asked)" >> "$OPENSPOT_DATA/history"
   moved "$1"
-  if [ -n "$was" ]; then openspot toast "Changed $name."; else openspot toast "Made $name."; fi
+  shown "$1" "$name"
+}
+
+# Opens the spot $2 that the build $1 made, over the page of the build, so that Escape goes back to it.
+shown() {
+  openspot spot open openspot/new > /dev/null 2>&1 &&
+    openspot spot push openspot/new "build/$1" > /dev/null 2>&1 &&
+    openspot spot push "$2" > /dev/null 2>&1 ||
+    openspot toast "Made $2."
 }
 
 # Stops the run of the build $1: its group when the run leads one, or else the run and its children.
@@ -549,22 +570,37 @@ case "$1" in
     sheet "$typed"
     ;;
   open) [ -z "$spot" ] || openspot spot push "$spot" > /dev/null ;;
-  done-*)
-    # Done takes the build off the first sheet, where it shows with Undo for undo_time seconds, then reads again.
-    dir=${1#done-}
+  done-* | delete-*)
+    # Done and Delete take the build off the first sheet, where it shows with Undo for undo_time seconds. Then Delete
+    # drops the build, and the spot it began, if it never got ready, goes to the Trash.
+    dir=${1#*-}
     case $dir in '' | */* | .*) exit 1 ;; esac
-    put "$dir" state done
+    settle "$dir"
+    [ "$(get "$dir" state)" != running ] || { echo 'Stop this build first.' >&2; exit 1; }
+    put "$dir" before "$(get "$dir" state)"
+    put "$dir" state "${1%%-*}"
+    [ "$1" = "done-$dir" ] || put "$dir" state deleted
     put "$dir" done.at "$(date +%s)"
-    openspot route back > /dev/null 2>&1 || true
+    if [ "$job" = "$dir" ]; then openspot route back > /dev/null 2>&1 || true; else moved "$dir"; fi
     sleep "$undo_time"
+    if [ "$(get "$dir" state)" = deleted ]; then
+      made=$(get "$dir" spot)
+      [ -z "$made" ] || [ -z "$(get "$dir" fresh)" ] || [ "$(get "$dir" before)" != failed ] || [ ! -d "$folder/$made.spot" ] ||
+        openspot spot delete "$made" > /dev/null 2>&1 || true
+      rm -rf "${builds:?}/$dir"
+    fi
     moved "$dir"
     ;;
   undo-*)
     dir=${1#undo-}
     case $dir in '' | */* | .*) exit 1 ;; esac
-    [ "$(get "$dir" state)" != done ] || put "$dir" state ready
-    rm -f "$builds/$dir/done.at"
+    case $(get "$dir" state) in done | deleted) put "$dir" state "$(get "$dir" before || echo ready)" ;; esac
+    rm -f "$builds/$dir/done.at" "$builds/$dir/before"
     sheet "$typed"
+    ;;
+  open-*)
+    made=$(get "${1#open-}" spot)
+    [ -z "$made" ] || openspot spot push "$made" > /dev/null
     ;;
   history) openspot route push history --title History > /dev/null ;;
   show-*)

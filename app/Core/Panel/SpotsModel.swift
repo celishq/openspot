@@ -277,6 +277,7 @@ public final class SpotsModel {
     @ObservationIgnored var removal: Removal?
     @ObservationIgnored var removals = 0
     @ObservationIgnored private var fileStamps: [String: [Int]] = [:]
+    @ObservationIgnored var unmarking: Set<String> = []
 
     @ObservationIgnored public unowned let host: SpotsHost
     @ObservationIgnored public let files: AppPlaces
@@ -384,7 +385,7 @@ public final class SpotsModel {
         runs.isCareful = config.isCareful
         var stamps: [String: [Int]] = [:]
         for script in scan.scripts where script.host == nil { stamps[script.id] = load.stamp(of: script) }
-        runs.take(scan, menuBar: config.arrangement.menuBar, stamps: stamps)
+        runs.take(scan, menuBar: config.arrangement.menuBar.filter { config.arrangement.mark(of: $0) != .building }, stamps: stamps)
         lastScan = scan
         loaded = (load.stamp, hosted)
         let others = ids.map { ids in { (stamps: [String: [Int]]) in stamps.filter { !ids.contains($0.key) } } }
@@ -493,7 +494,9 @@ public final class SpotsModel {
 
     private func ordered() -> [Spot] {
         let sorted = scanned.enumerated().sorted { ($0.element.order, $0.offset) < ($1.element.order, $1.offset) }.map(\.element)
-        return arrangement.ordered(defaultArrangement.ordered(sorted))
+        let marks = arrangement.marks
+        let placed = arrangement.ordered(defaultArrangement.ordered(sorted)).filter { marks[$0.id] != .building }
+        return marks.isEmpty ? placed : placed.filter { marks[$0.id] == .new } + placed.filter { marks[$0.id] != .new }
     }
 
     public func panelWillShow() {

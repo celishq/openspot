@@ -146,6 +146,7 @@ extension SpotsModel {
             sheet.afterAnswer { [weak self] in self?.run(entry) }
             return
         }
+        unmarkNew(entry.id)
         switch entry.spot.mainAct {
         case .toggle:
             sheets[entry.id]?.pressCard()
