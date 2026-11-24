@@ -151,7 +151,7 @@ final class AttachmentSpreadTests: AttachmentCase {
     func testARowNarrowerThanTheChipsShiftsWithTheSelection() {
         let sources = ["a", "b", "c", "d", "e"]
         var stack = AttachmentStack(fit: 3)
-        stack.open(over: nil, loading: sources.map { ($0, .symbol("doc")) })
+        stack.open(over: nil, unread: sources.map { ($0, .symbol("doc")) })
         for source in sources { stack.fill(source, with: AttachmentValue(text: source), look: .symbol("doc")) }
         let row = { stack.layout.places.filter { $0.depth == 0 }.sorted { $0.slot < $1.slot }.map(\.chip.source) }
 
@@ -170,10 +170,10 @@ final class AttachmentSpreadTests: AttachmentCase {
 
     func testAStackWithNoChoiceShowsOnlyItsFrontIconQuietly() {
         var stack = AttachmentStack(fit: 3)
-        stack.open(over: nil, loading: ["a", "b", "c"].map { ($0, .symbol("doc")) })
+        stack.open(over: nil, unread: ["a", "b", "c"].map { ($0, .symbol("doc")) })
 
         XCTAssertTrue(stack.layout.isQuiet)
-        XCTAssertFalse(stack.layout.showsHint)
+        XCTAssertTrue(stack.layout.showsHint)
         XCTAssertEqual(stack.layout.places.map(\.isQuiet), [true, true, true])
         XCTAssertEqual(stack.layout.places.map(\.x), Array(repeating: SpotTokens.attachmentQuietX, count: 3))
         XCTAssertEqual(stack.layout.places.map(\.scale), Array(repeating: SpotTokens.attachmentQuietScale, count: 3))
@@ -193,35 +193,20 @@ final class AttachmentSpreadTests: AttachmentCase {
         XCTAssertEqual(SpotTokens.attachmentEdge, (SpotTokens.cell - SpotTokens.attachmentCard) / 2)
     }
 
-    func testALoadingChipShowsTheIconOfItsAppAndOneOverNoAppShowsNoPicture() {
+    func testAChipThatReadsShowsTheIconOfItsApp() {
         let safari = FrontApp(bundleID: "com.apple.Safari", path: "/Applications/Safari.app")
-        var over = AttachmentStack(fit: 3)
-        over.open(over: safari, loading: [("eager", .symbol("doc"))], unread: [("lazy", .symbol("globe"))])
-        over.mark("lazy", .loading)
-        var bare = AttachmentStack(fit: 3)
-        bare.open(over: nil, loading: [("eager", .symbol("doc"))])
-
-        XCTAssertEqual(over.chips.map(\.isLoading), [true, true])
-        XCTAssertEqual(over.chips.map(\.look), Array(repeating: .file(FileIcon(path: "/Applications/Safari.app")), count: 2))
-        XCTAssertEqual(over.chips.map(\.showsPicture), [true, true])
-        XCTAssertEqual(bare.chips.map(\.showsPicture), [false])
-    }
-
-    func testTheTabHintShowsOnlyOnceTheFrontIconHasLoaded() {
         var stack = AttachmentStack(fit: 3)
-        stack.open(over: nil, loading: [("a", .symbol("doc"))])
-        XCTAssertFalse(stack.layout.showsHint)
+        stack.open(over: safari, unread: [("lazy", .symbol("globe"))])
+        stack.mark("lazy", .loading)
 
-        stack.fill("a", with: AttachmentValue(text: "hola"), look: nil)
-        stack.place(spreads: false)
-
-        XCTAssertTrue(stack.layout.showsHint)
+        XCTAssertEqual(stack.chips.map(\.isLoading), [true])
+        XCTAssertEqual(stack.chips.map(\.look), [.file(FileIcon(path: "/Applications/Safari.app"))])
     }
 
     func testAStackAtRestPilesItsCardsSmallerAndFurtherRightBehindTheFront() {
         let sources = ["a", "b", "c", "d"]
         var stack = AttachmentStack(fit: 3)
-        stack.open(over: nil, loading: sources.map { ($0, .symbol("doc")) })
+        stack.open(over: nil, unread: sources.map { ($0, .symbol("doc")) })
         stack.turn(by: 1)
         stack.place(spreads: false)
         let step = SpotTokens.attachmentStep
@@ -236,7 +221,7 @@ final class AttachmentSpreadTests: AttachmentCase {
     func testASpreadRowLaysItsCardsOnePitchApartWithTheRestBehindItsFirst() {
         let sources = ["a", "b", "c", "d", "e"]
         var stack = AttachmentStack(fit: 3)
-        stack.open(over: nil, loading: sources.map { ($0, .symbol("doc")) })
+        stack.open(over: nil, unread: sources.map { ($0, .symbol("doc")) })
         stack.turn(by: 1)
         stack.place(spreads: true)
         let pitch = SpotTokens.attachmentCard + SpotTokens.attachmentSpreadGap
@@ -250,8 +235,8 @@ final class AttachmentSpreadTests: AttachmentCase {
 
     func testPressesDuringTheMotionFoldIntoOneStepToTheNewestState() async throws {
         try await openWithTwoChips()
-        let first = model.attachments.chips[0].source
-        let second = model.attachments.chips[1].source
+        let first = spread.places[0].chip.source
+        let second = spread.places[1].chip.source
         host.heldEnds = []
 
         XCTAssertTrue(model.handleKey(tab))

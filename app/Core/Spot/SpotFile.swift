@@ -32,6 +32,9 @@ public struct SpotFile: Equatable, Sendable {
         let icon = Icon(text: manifest.icon).map { Self.placed($0, beside: url) }
         try manifest.triggers.check(manifest, name: name)
         let uses = try SpotUse.set(manifest.uses, of: name)
+        if uses.contains(.attachment), manifest.triggers.filters[EventName.panelOpen] != nil {
+            throw SpotError.fault("\(name) uses attachment, so its [on] \"panel.open\" takes only true. Tie it to an app with attach = \"<regex>\"")
+        }
         let isInline = url.pathExtension == Self.inlineExtension && !FileManager.default.isExecutableFile(atPath: url.path)
         if isInline, manifest.stay == true {
             throw SpotError.fault("\(name) is a .js file, which runs inline, so it takes no stay = true")

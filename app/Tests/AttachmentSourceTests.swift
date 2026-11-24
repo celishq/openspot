@@ -3,34 +3,14 @@ import XCTest
 
 @MainActor
 final class AttachmentSourceTests: AttachmentCase {
-    func testASourceOverItsAppShowsALoadingChipAtTheOpenAndItsValueWhenItAnswers() async throws {
-        try taker(takes: "'url'")
-        try source(waits: true, adds: "url=https://example.com/a title=A")
+    func testASourceThatTiesPanelOpenToAnAppIsAFaultThatNamesAttach() async throws {
+        try script("tab", toml: "title = 'Tab'\nuses = ['attachment']\n\n[on]\n\"panel.open\" = '^com\\.apple\\.Safari$'", "true")
 
-        await open()
+        await model.reload()
 
-        XCTAssertEqual(chips.map(\.source), ["tab"])
-        XCTAssertEqual(chips.map(\.app), ["com.apple.Safari"])
-        XCTAssertEqual(chips.map(\.state), [.loading])
-        FileManager.default.createFile(atPath: path("release"), contents: Data())
-        try await wait("the value of the tab") { self.chips.first?.value != nil }
-        XCTAssertEqual(chips.map(\.state), [.ready(AttachmentValue(url: "https://example.com/a", title: "A"))])
-        XCTAssertEqual(chips.map(\.app), ["com.apple.Safari"])
-        XCTAssertEqual(log("errors"), [])
-        XCTAssertEqual(host.notes, [])
-    }
-
-    func testASourceOverAnotherAppDoesNotRunAndShowsNoChip() async throws {
-        try taker(takes: "'url'")
-        try source(adds: "url=https://example.com/a")
-        try witness()
-        host.frontApp = FrontApp(bundleID: "com.apple.finder")
-
-        await open()
-        try await wait("the spots of the open") { self.log("witness-log").count == 1 }
-
+        let faults = try XCTUnwrap(model.entry("tab")?.spot.fault?.faults)
+        XCTAssertTrue(faults.contains { $0.contains("attach = \"<regex>\"") }, "\(faults)")
         XCTAssertEqual(chips, [])
-        XCTAssertEqual(log("tab-log"), [])
     }
 
     func testASourceThatEndsWithNoValueLeavesNoChip() async throws {
@@ -65,9 +45,9 @@ final class AttachmentSourceTests: AttachmentCase {
         XCTAssertEqual(log("tab-log"), [])
     }
 
-    func testASourceWithNoAppShowsNoLoadingChipAndItsChipWhenItAnswers() async throws {
+    func testASourceOfEachOpenShowsNoChipUntilItAnswers() async throws {
         try taker(takes: "'text'")
-        try source("copy", app: nil, waits: true, adds: "text=hola")
+        try source("copy", waits: true, adds: "text=hola")
 
         await open()
 
@@ -82,8 +62,8 @@ final class AttachmentSourceTests: AttachmentCase {
     func testAChipOfTheFrontAppShowsTheAppsIconAndAnotherChipItsSpotsSymbol() async throws {
         host.frontApp = FrontApp(bundleID: "com.apple.Safari", path: "/Applications/Safari.app")
         try taker(takes: "'text', 'url'")
-        try source("tab", waits: true, adds: "url=https://example.com/a")
-        try source("copy", app: nil, adds: "text=hola")
+        try attach("tab", waits: true, runs: "\(cli) attachment add url=https://example.com/a")
+        try source("copy", adds: "text=hola")
 
         await open()
 
@@ -91,15 +71,16 @@ final class AttachmentSourceTests: AttachmentCase {
         try await wait("the copy") { self.chips.count == 2 }
         let symbol = try XCTUnwrap(model.entry("copy")?.spot.symbol)
         XCTAssertEqual(chips.first { $0.source == "copy" }?.look, .symbol(symbol))
+        XCTAssertTrue(model.handleKey(ActionKey(name: "tab")))
         FileManager.default.createFile(atPath: path("release"), contents: Data())
-        try await wait("the tab") { self.chips.allSatisfy { !$0.isLoading } }
+        try await wait("the tab") { self.chips.allSatisfy { $0.value != nil } }
         XCTAssertEqual(chips.first { $0.source == "tab" }?.look, .file(FileIcon(path: "/Applications/Safari.app")))
     }
 
     func testChipsOfTheFrontAppComeFirstWithTextFirst() async throws {
         try taker(takes: "'text', 'url'")
-        try source("copy", app: nil, adds: "text=copied")
-        try source("tab", adds: "url=https://example.com/a")
+        try source("copy", adds: "text=copied")
+        try source("tab", adds: "url=https://example.com/a app=com.apple.Safari")
         try source("selection", adds: "text=hola app=com.apple.Safari")
 
         await open()
@@ -123,7 +104,7 @@ final class AttachmentSourceTests: AttachmentCase {
         let movie = path("a.mov")
         FileManager.default.createFile(atPath: movie, contents: Data())
         try taker(takes: "'mov'")
-        try source("finder", app: "^com\\.apple\\.finder$", adds: "file='\(movie)' file='\(path("gone.mov"))'")
+        try source("finder", adds: "file='\(movie)' file='\(path("gone.mov"))'")
         host.frontApp = FrontApp(bundleID: "com.apple.finder")
 
         await open()

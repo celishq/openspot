@@ -56,8 +56,8 @@ two ways:
 - `attach` takes a regular expression of the bundle ID of the front app. Its chip shows at once when the panel opens over
   a matching app, and the source runs `attach` only when Tab first picks the chip in that open of the panel. Use it for a
   read that is slow or that asks the app, such as its front tab.
-- `panel.open` runs `show` each time the panel opens. A regular expression runs it only over a matching app, and its chip
-  shows at once with a spinner. Use it for a read that is quick and that you want ready, such as the clipboard.
+- `panel.open = true` runs `show` each time the panel opens, and its chip shows when it adds a value. Use it for a read
+  that is quick and that you want ready, such as the clipboard. A source ties itself to an app only with `attach`.
 
 `clock-tab.spot/spot.toml`:
 

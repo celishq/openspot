@@ -22,11 +22,10 @@ class AttachmentCase: PanelCase {
         ((try? String(contentsOfFile: path(name), encoding: .utf8)) ?? "").split(separator: "\n").map(String.init)
     }
 
-    func source(_ name: String = "tab", app: String? = "^com\\.apple\\.Safari$", waits: Bool = false, adds words: String?) throws {
-        let open = app.map { "'\($0)'" } ?? "true"
+    func source(_ name: String = "tab", waits: Bool = false, adds words: String?) throws {
         let wait = waits ? "while [ ! -f '\(path("release"))' ]; do sleep 0.02; done\n" : ""
         let add = words.map { "'\(client.path)' attachment add \($0) 2>> '\(path("errors"))'; echo $? >> '\(path("done"))'" } ?? "echo 0 >> '\(path("done"))'"
-        try script(name, toml: "title = '\(name)'\nuses = ['attachment']\n\n[on]\n\"panel.open\" = \(open)", """
+        try script(name, toml: "title = '\(name)'\nuses = ['attachment']\n\n[on]\n\"panel.open\" = true", """
         case "$1" in
           show) echo show >> '\(path("\(name)-log"))'; \(wait)\(add) ;;
         esac

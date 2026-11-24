@@ -153,10 +153,6 @@ extension Manifest {
             events.contains(EventName.panelOpen)
         }
 
-        public var opensOverAnApp: Bool {
-            filters[EventName.panelOpen] != nil
-        }
-
         public func opens(over front: String?) -> Bool {
             guard let filter = filters[EventName.panelOpen] else { return showsOnPanel }
             return front.map(filter.matches) ?? false

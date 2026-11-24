@@ -149,7 +149,7 @@ final class AttachmentStateTests: AttachmentCase {
 
     func testAChipThatFillsWhileItIsSelectedShowsItsRows() async throws {
         try taker(takes: "'url'")
-        try source(waits: true, adds: "url=https://example.com/a title=A")
+        try attach(waits: true, runs: "\(cli) attachment add url=https://example.com/a title=A")
         await open()
         XCTAssertTrue(model.handleKey(tab))
         XCTAssertEqual(shown, [])
@@ -247,7 +247,7 @@ final class AttachmentStateTests: AttachmentCase {
         try taker("keep", takes: "'url'")
         try taker("save", takes: "'url'")
         try source(adds: "url=https://example.com/a title=A")
-        try source("copy", app: nil, waits: true, adds: "text=hola")
+        try source("copy", waits: true, adds: "text=hola")
         try taker("reader", takes: "'text'")
         await open()
         try await wait("the tab") { self.model.attachments.chips.first?.value != nil }

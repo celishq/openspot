@@ -94,7 +94,7 @@ public struct AttachmentLayout: Equatable, Sendable {
     }
 
     public var showsHint: Bool {
-        isQuiet && places.first?.chip.isLoading == false
+        isQuiet
     }
 
     func order(of chips: [AttachmentChip]) -> [String] {

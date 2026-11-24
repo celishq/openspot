@@ -24,7 +24,7 @@ public struct AttachmentChip: Equatable, Sendable {
     public internal(set) var state: State
     public internal(set) var showsKind = false
 
-    public init(source: String, app: String?, appName: String? = nil, look: Look, state: State = .loading) {
+    public init(source: String, app: String?, appName: String? = nil, look: Look, state: State) {
         self.source = source
         self.app = app
         self.appName = appName
@@ -39,10 +39,6 @@ public struct AttachmentChip: Equatable, Sendable {
 
     public var isLoading: Bool {
         state == .loading
-    }
-
-    public var showsPicture: Bool {
-        !isLoading || app != nil
     }
 
     var isRead: Bool {

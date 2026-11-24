@@ -7,13 +7,12 @@ extension SpotsModel {
         let wasOn = attachments.isOn
         let front = isWarming ? nil : host.frontApp
         let feeds = !isWarming && entries.contains { entry in AttachmentValue.Kind.allCases.contains(where: entry.spot.triggers.drop.takes) }
-        let loading = feeds ? entries.filter { $0.spot.isSource && $0.spot.triggers.opensOverAnApp && $0.spot.runsOnOpen(over: front?.bundleID, feedsAttachment: feeds) } : []
         let unread = feeds ? entries.filter { $0.spot.isSource && $0.spot.triggers.attaches(over: front?.bundleID) } : []
         endSpread()
         endReads()
         isAttachmentMoving = false
         var next = attachments
-        next.open(over: front, loading: loading.map { ($0.id, Self.look(of: $0.spot)) }, unread: unread.map { ($0.id, Self.look(of: $0.spot)) })
+        next.open(over: front, unread: unread.map { ($0.id, Self.look(of: $0.spot)) })
         if next != attachments { attachments = next }
         if wasOn { updateVisible() }
         runs.panelOpened(showsToEnd: isWarming, over: front?.bundleID, feedsAttachment: feeds)
@@ -32,14 +31,9 @@ extension SpotsModel {
     }
 
     func endAttachment(of id: String) {
-        guard !isLazy(id) else {
-            guard let chip = attachments.chips.first(where: { $0.source == id }), chip.isLoading else { return }
-            endRead(id)
-            return mark(id, sheets[id]?.failure.map(AttachmentChip.State.failed) ?? .empty("Nothing to attach from \(chip.appName ?? "the app")"))
-        }
-        var next = attachments
-        next.end(id)
-        settle(next, motion: .fade)
+        guard let chip = attachments.chips.first(where: { $0.source == id }), chip.isLoading else { return }
+        endRead(id)
+        mark(id, sheets[id]?.failure.map(AttachmentChip.State.failed) ?? .empty("Nothing to attach from \(chip.appName ?? "the app")"))
     }
 
     func turnAttachment(by step: Int) {
@@ -47,7 +41,7 @@ extension SpotsModel {
         spreadAttachment()
         var next = attachments
         next.turn(by: step)
-        let read = next.selectedChip.flatMap { !$0.isRead && isLazy($0.source) ? $0 : nil }
+        let read = next.selectedChip.flatMap { !$0.isRead ? $0 : nil }
         if let read { next.mark(read.source, .loading) }
         settle(next, motion: isCycling ? nil : .edit)
         if let read { self.read(read) }
@@ -56,7 +50,7 @@ extension SpotsModel {
     func leaveAttachment() {
         endSpread()
         var next = attachments
-        let reading = next.chips.filter { $0.isLoading && isLazy($0.source) }.map(\.source)
+        let reading = next.chips.filter(\.isLoading).map(\.source)
         reading.forEach { next.mark($0, .unread) }
         next.leave()
         settle(next, motion: .edit)
@@ -69,10 +63,6 @@ extension SpotsModel {
     func allowAttachment() {
         guard case .denied = attachments.selectedChip?.state, let id = entries.first(where: { $0.spot.edits == .attachments && $0.spot.isBuiltIn })?.id else { return }
         pushFirst(id, moving: true)
-    }
-
-    private func isLazy(_ id: String) -> Bool {
-        entry(id)?.spot.triggers.attach != nil
     }
 
     private func read(_ chip: AttachmentChip) {

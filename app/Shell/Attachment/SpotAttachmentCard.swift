@@ -9,11 +9,9 @@ struct SpotAttachmentCard: View, Equatable {
     var body: some View {
         let shape = SpotRoundShape(radius: SpotTokens.attachmentCardRadius)
         ZStack {
-            if chip.showsPicture {
-                picture
-                    .id(chip.look)
-                    .transition(.opacity)
-            }
+            picture
+                .id(chip.look)
+                .transition(.opacity)
         }
         .frame(width: SpotTokens.attachmentCard, height: SpotTokens.attachmentCard)
         .background {

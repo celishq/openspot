@@ -28,12 +28,11 @@ public struct AttachmentStack: Equatable, Sendable {
         selected != nil
     }
 
-    mutating func open(over front: FrontApp?, loading: [(source: String, look: AttachmentChip.Look?)], unread: [(source: String, look: AttachmentChip.Look?)] = []) {
+    mutating func open(over front: FrontApp?, unread: [(source: String, look: AttachmentChip.Look?)]) {
         self.front = front
         selected = nil
-        arrival = (unread + loading).map(\.source)
+        arrival = unread.map(\.source)
         chips = unread.map { AttachmentChip(source: $0.source, app: front?.bundleID, appName: front?.name, look: look(of: front?.bundleID, kind: nil, else: $0.look), state: .unread) }
-            + loading.map { AttachmentChip(source: $0.source, app: front?.bundleID, appName: front?.name, look: look(of: front?.bundleID, kind: nil, else: $0.look)) }
         settle()
         layout = AttachmentLayout(chips: chips, after: AttachmentLayout(), selection: nil, spreads: false, fit: fit)
     }
@@ -46,11 +45,6 @@ public struct AttachmentStack: Equatable, Sendable {
         chips.append(AttachmentChip(source: source, app: app, appName: name, look: look(of: app, kind: value.kind, else: own), state: .ready(value)))
         if !arrival.contains(source) { arrival.append(source) }
         settle()
-    }
-
-    mutating func end(_ source: String) {
-        guard chips.contains(where: { $0.source == source && $0.isLoading }) else { return }
-        remove(source)
     }
 
     mutating func mark(_ source: String, _ state: AttachmentChip.State) {
