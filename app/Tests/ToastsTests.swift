@@ -21,7 +21,7 @@ final class ToastsTests: XCTestCase {
     }
 
     private func show(_ words: String, kind: ToastKind = .confirm, spot: String = "", press: (@MainActor @Sendable () -> Void)? = nil) async throws {
-        toasts.add(ToastNote(words: words), kind: kind, spot: spot, press: press)
+        toasts.add(ToastNote(words: words, kind: kind), spot: spot, press: press)
         try await wait("\(words) shows", until: { visible.first == words })
     }
 
@@ -60,12 +60,12 @@ final class ToastsTests: XCTestCase {
     }
 
     func testAnIdChangesItsToastInPlaceAndRestartsItsTime() async throws {
-        toasts.add(try note("toast=up\ntitle=Uploading\n"), kind: .confirm, spot: "s")
+        toasts.add(try note("toast=up\ntitle=Uploading\n"), spot: "s")
         try await wait("the upload shows", until: { visible == ["Uploading"] })
         try await show("other")
         try await pass(4, sleeps: 2, due: 5)
 
-        toasts.add(try note("toast=up\ntitle=Uploaded\n"), kind: .confirm, spot: "s")
+        toasts.add(try note("toast=up\ntitle=Uploaded\n"), spot: "s")
 
         XCTAssertEqual(toasts.shown.map(\.words), ["other", "Uploaded"])
         try await pass(4, sleeps: 2, due: 5)
@@ -75,14 +75,14 @@ final class ToastsTests: XCTestCase {
     }
 
     func testTheSameIdOfAnotherSpotIsAnotherToast() async throws {
-        toasts.add(try note("toast=up\ntitle=A\n"), kind: .confirm, spot: "a")
-        toasts.add(try note("toast=up\ntitle=B\n"), kind: .confirm, spot: "b")
+        toasts.add(try note("toast=up\ntitle=A\n"), spot: "a")
+        toasts.add(try note("toast=up\ntitle=B\n"), spot: "b")
 
         try await wait("both show", until: { visible == ["B", "A"] })
     }
 
     func testDropTakesTheToastOfTheIdAway() async throws {
-        toasts.add(try note("toast=up\ntitle=Uploading\nkeep=true\n"), kind: .confirm, spot: "s")
+        toasts.add(try note("toast=up\ntitle=Uploading\nkeep=true\n"), spot: "s")
         try await wait("the upload shows", until: { visible == ["Uploading"] })
 
         toasts.drop("up", of: "s")
@@ -90,8 +90,23 @@ final class ToastsTests: XCTestCase {
         XCTAssertEqual(visible, [])
     }
 
+    func testAnIdShownAgainWhileItsToastLeavesShowsOneToast() async throws {
+        toasts.add(try note("toast=up\ntitle=Uploading\nkeep=true\n"), spot: "s")
+        try await wait("the upload shows", until: { visible == ["Uploading"] })
+        toasts.drop("up", of: "s")
+
+        toasts.add(try note("toast=up\ntitle=Uploaded\nkeep=true\n"), spot: "s")
+        try await wait("the new upload shows", until: { visible == ["Uploaded"] })
+        try await pass(MotionTokens.fadeOut, sleeps: 1)
+
+        try await wait("one toast stays", until: { toasts.shown.map(\.words) == ["Uploaded"] })
+        XCTAssertEqual(toasts.places.count, 1)
+        toasts.drop("up", of: "s")
+        XCTAssertEqual(visible, [])
+    }
+
     func testAKeptToastNeverExpires() async throws {
-        toasts.add(try note("toast=up\ntitle=Uploading\nkeep=true\n"), kind: .confirm, spot: "s")
+        toasts.add(try note("toast=up\ntitle=Uploading\nkeep=true\n"), spot: "s")
         try await wait("the upload shows", until: { visible == ["Uploading"] })
         try await show("working", kind: .work)
         try await show("brief", spot: "b")
@@ -166,8 +181,8 @@ final class ToastsTests: XCTestCase {
     func testTheFixKeyPassesToTheNewestToastWithAFix() async throws {
         let key = try XCTUnwrap(Shortcut(text: "cmd+shift+f"))
         var fixes: [String] = []
-        toasts.add("first", kind: .failure, press: { fixes.append("first") }, fixKey: key)
-        toasts.add("second", kind: .failure, press: { fixes.append("second") }, fixKey: key)
+        toasts.add(.failure("first"), press: { fixes.append("first") }, fixKey: key)
+        toasts.add(.failure("second"), press: { fixes.append("second") }, fixKey: key)
         XCTAssertEqual(toasts.shown.first?.words, "second Press `\(key.label)` to fix it.")
 
         window.fixPress?()

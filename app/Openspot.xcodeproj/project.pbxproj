@@ -273,6 +273,7 @@
 		3EFE619D86B16F5FF7153698 /* InputLogSpanTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0F9D96F5B7F915FCCD751403 /* InputLogSpanTests.swift */; };
 		3F389D3A873B6B97B5E798BB /* CommandConnection.swift in Sources */ = {isa = PBXBuildFile; fileRef = 43A6F7420B66E45DD5A02DCF /* CommandConnection.swift */; };
 		3F7BAC9FB0163BC75EC056E0 /* XCTestCase+TemporaryFolder.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4311EE079F79465D8455F824 /* XCTestCase+TemporaryFolder.swift */; };
+		3F9AEC14BFE125DA40791724 /* ToastID.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1C9F812903AF337B12E46FEB /* ToastID.swift */; };
 		3FBEE56F9CA5E8D50DA07C29 /* SpotEditControls.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7444D73CFC4FDAF9EEA64B25 /* SpotEditControls.swift */; };
 		4039D8D830D58B06A08FE537 /* NodeTree.swift in Sources */ = {isa = PBXBuildFile; fileRef = 43059B371E9E52108AEF9A82 /* NodeTree.swift */; };
 		4077E50BBEBA2309395422CE /* AppSignal.swift in Sources */ = {isa = PBXBuildFile; fileRef = 945DC5FEE72948CB57E46716 /* AppSignal.swift */; };
@@ -1306,6 +1307,7 @@
 		1BDF9593FE28B31C6655ECD9 /* CalendarAccess.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CalendarAccess.swift; sourceTree = "<group>"; };
 		1BE313B422EC952BB6E4703F /* SpotReadme.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SpotReadme.swift; sourceTree = "<group>"; };
 		1BF69273AA1F98E8F02DF94C /* StatsTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StatsTests.swift; sourceTree = "<group>"; };
+		1C9F812903AF337B12E46FEB /* ToastID.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ToastID.swift; sourceTree = "<group>"; };
 		1D203723750660C5ACB1972C /* HookAnswers.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HookAnswers.swift; sourceTree = "<group>"; };
 		1D33426E68F9956BD3B55BBE /* ClipboardReadTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ClipboardReadTests.swift; sourceTree = "<group>"; };
 		1D7B8FC971C5895746897ABA /* GlyphKeywords.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GlyphKeywords.swift; sourceTree = "<group>"; };
@@ -2520,6 +2522,7 @@
 				4EDC6DAD424B1913130FCD7B /* Toast.swift */,
 				68B3990479EF2DFF1DD88EEA /* ToastCall.swift */,
 				57E0A35CA5EE202ED05736C1 /* ToastFix.swift */,
+				1C9F812903AF337B12E46FEB /* ToastID.swift */,
 				5BB66FA6168D129A7F60FDE3 /* ToastLayout.swift */,
 				7F5BF5B3E41AD8F8905E184D /* ToastNote.swift */,
 				334F191A2C5DE086796579F2 /* Toasts.swift */,
@@ -5060,6 +5063,7 @@
 				D4D68F7370ADDF05705926E9 /* Toast.swift in Sources */,
 				041C4B819C3E99B329BEF83B /* ToastCall.swift in Sources */,
 				A9F92063144FB9AD42AD87AC /* ToastFix.swift in Sources */,
+				3F9AEC14BFE125DA40791724 /* ToastID.swift in Sources */,
 				EF0707B9C74260D81190E723 /* ToastKind.swift in Sources */,
 				87F2A1A49C57AF92B28AD4BF /* ToastLayout.swift in Sources */,
 				81BCC24BD58348669177AE02 /* ToastNote.swift in Sources */,

@@ -29,9 +29,9 @@ struct ToastView: View {
                 .allowsHitTesting(false)
         } else {
             HStack(spacing: SpotTokens.toastGlyphGap) {
-                if toast.kind == .work {
+                if toast.note.kind == .work {
                     SpotWorkMark(call: nil, side: SpotTokens.toastMarkSide)
-                } else if let symbol = toast.kind.symbol {
+                } else if let symbol = toast.note.kind.symbol {
                     Image(systemName: symbol)
                         .font(SpotType.strong)
                         .foregroundStyle(SpotTheme.ink)
