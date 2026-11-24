@@ -24,7 +24,7 @@ struct SpotFieldValue: View {
             .padding(.bottom, SpotTokens.contextValueFoot)
             .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
         }
-        .frame(width: SpotFieldView.rect.width, height: max(model.fieldValue.room, SpotTokens.contextValueRoom(lines: 0)), alignment: .top)
+        .frame(width: SpotFieldView.rect.width, height: max(model.fieldRoom, SpotTokens.contextValueRoom(lines: 0)), alignment: .top)
     }
 
     private func words(of preview: ContextPreview) -> some View {

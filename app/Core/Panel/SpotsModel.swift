@@ -79,7 +79,8 @@ public final class SpotsModel {
     public private(set) var contextShape = ContextShape.folded
     public internal(set) var fieldValue = FieldValue() {
         didSet {
-            if fieldRoom != fieldValue.room { fieldRoom = fieldValue.room }
+            let room = fieldValue.preview == nil ? 0 : SpotTokens.contextValueRoom(lines: fieldValue.lines)
+            if fieldRoom != room { fieldRoom = room }
         }
     }
     public private(set) var fieldRoom: CGFloat = 0
