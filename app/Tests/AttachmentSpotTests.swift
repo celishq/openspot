@@ -1,34 +1,34 @@
 import XCTest
 @testable import OpenspotCore
 
-final class ContextSpotTests: BuiltInCase {
-    private var context: Spot {
+final class AttachmentSpotTests: BuiltInCase {
+    private var attachments: Spot {
         get throws {
-            try spot("context")
+            try spot("attachments")
         }
     }
 
     private func items() async throws -> [SpotItem] {
-        try await context.items(timeout: 60).items
+        try await attachments.items(timeout: 60).items
     }
 
     private func press(_ handler: String, on item: String) async throws {
-        try await context.perform(handler, input: "input.item=\(item)\n", timeout: 60)
+        try await attachments.perform(handler, input: "input.item=\(item)\n", timeout: 60)
     }
 
     override func setUp() async throws {
         try await super.setUp()
         try "#!/bin/sh\n".writeScript(to: core.appendingPathComponent("apps.spot/apps.sh"))
-        try "#!/bin/sh\n".writeScript(to: core.appendingPathComponent("tab.spot/tab.sh"), toml: "title = 'Tab'\ndetail = 'Hand the front tab to a spot'\nuses = ['context']")
-        try "#!/bin/sh\n".writeScript(to: core.appendingPathComponent("copy.spot/copy.sh"), toml: "title = 'Copy'\nuses = ['context', 'clipboard']")
+        try "#!/bin/sh\n".writeScript(to: core.appendingPathComponent("tab.spot/tab.sh"), toml: "title = 'Tab'\ndetail = 'Hand the front tab to a spot'\nuses = ['attachment']")
+        try "#!/bin/sh\n".writeScript(to: core.appendingPathComponent("copy.spot/copy.sh"), toml: "title = 'Copy'\nuses = ['attachment', 'clipboard']")
     }
 
     func testTheSearchFindsItByTheWordsOfWhatItReads() throws {
-        let spot = try context
+        let spot = try attachments
 
         XCTAssertTrue(spot.isFound)
         XCTAssertTrue(spot.showsInSheet)
-        XCTAssertTrue(["context", "tab", "selection", "clipboard"].allSatisfy(spot.keywords.contains))
+        XCTAssertTrue(["attachments", "tab", "selection", "clipboard"].allSatisfy(spot.keywords.contains))
     }
 
     func testTheSheetListsEachSourceOnOrOffWithWhatItReads() async throws {

@@ -3,6 +3,6 @@ import Foundation
 
 extension Spot {
     func takes(paths: [String]) -> Bool {
-        takes(ContextValue(files: FileKinds.Disk().read(paths)))
+        takes(AttachmentValue(files: FileKinds.Disk().read(paths)))
     }
 }

@@ -2,7 +2,7 @@ import XCTest
 @testable import OpenspotCore
 
 @MainActor
-final class ContextSourceTests: ContextCase {
+final class AttachmentSourceTests: AttachmentCase {
     func testASourceOverItsAppShowsALoadingChipAtTheOpenAndItsValueWhenItAnswers() async throws {
         try taker(takes: "'url'")
         try source(waits: true, adds: "url=https://example.com/a title=A")
@@ -14,7 +14,7 @@ final class ContextSourceTests: ContextCase {
         XCTAssertEqual(chips.map(\.state), [.loading])
         FileManager.default.createFile(atPath: path("release"), contents: Data())
         try await wait("the value of the tab") { self.chips.first?.value != nil }
-        XCTAssertEqual(chips.map(\.state), [.ready(ContextValue(url: "https://example.com/a", title: "A"))])
+        XCTAssertEqual(chips.map(\.state), [.ready(AttachmentValue(url: "https://example.com/a", title: "A"))])
         XCTAssertEqual(chips.map(\.app), ["com.apple.Safari"])
         XCTAssertEqual(log("errors"), [])
         XCTAssertEqual(host.notes, [])
@@ -76,7 +76,7 @@ final class ContextSourceTests: ContextCase {
         try await wait("the copy") { !self.chips.isEmpty }
         XCTAssertEqual(chips.map(\.source), ["copy"])
         XCTAssertEqual(chips.map(\.app), [nil])
-        XCTAssertEqual(chips.map(\.state), [.ready(ContextValue(text: "hola"))])
+        XCTAssertEqual(chips.map(\.state), [.ready(AttachmentValue(text: "hola"))])
     }
 
     func testAChipOfTheFrontAppShowsTheAppsIconAndAnotherChipItsSpotsSymbol() async throws {
@@ -142,7 +142,7 @@ final class ContextSourceTests: ContextCase {
 
         try await wait("the end of the source") { self.log("done").count == 1 }
         XCTAssertEqual(log("done"), ["2"])
-        XCTAssertEqual(log("errors"), ["`openspot context add` takes one kind of value: file= once for each file, url= or text=."])
+        XCTAssertEqual(log("errors"), ["`openspot attachment add` takes one kind of value: file= once for each file, url= or text=."])
     }
 
     func testAPanelOpenRegexKeepsAnOrdinarySpotToItsApp() async throws {

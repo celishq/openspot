@@ -2,7 +2,7 @@ import XCTest
 @testable import OpenspotCore
 
 @MainActor
-final class ContextSpreadTests: ContextCase {
+final class AttachmentSpreadTests: AttachmentCase {
     private let tab = ActionKey(name: "tab")
 
     private func openWithTwoChips() async throws {
@@ -11,11 +11,11 @@ final class ContextSpreadTests: ContextCase {
         try source(adds: "url=https://example.com/a title=A")
         try source("selection", adds: "text=hola app=com.apple.Safari")
         await open()
-        try await wait("two values") { self.model.context.chips.count == 2 && self.model.context.chips.allSatisfy { $0.value != nil } }
+        try await wait("two values") { self.model.attachments.chips.count == 2 && self.model.attachments.chips.allSatisfy { $0.value != nil } }
     }
 
-    private var spread: ContextLayout {
-        model.context.layout
+    private var spread: AttachmentLayout {
+        model.attachments.layout
     }
 
     func testTabSpreadsTheStackIntoARowWithTheSelectedChipMarked() async throws {
@@ -25,9 +25,9 @@ final class ContextSpreadTests: ContextCase {
         XCTAssertTrue(model.handleKey(tab))
 
         XCTAssertTrue(spread.isSpread)
-        XCTAssertEqual(model.contextShape, .spread)
-        XCTAssertEqual(spread.selection, model.context.selected)
-        XCTAssertEqual(spread.places.map(\.chip.source), model.context.chips.map(\.source))
+        XCTAssertEqual(model.attachmentShape, .spread)
+        XCTAssertEqual(spread.selection, model.attachments.selected)
+        XCTAssertEqual(spread.places.map(\.chip.source), model.attachments.chips.map(\.source))
         XCTAssertEqual(spread.places.map(\.slot), [0, 1])
         XCTAssertTrue(model.handleKey(escape))
     }
@@ -38,7 +38,7 @@ final class ContextSpreadTests: ContextCase {
 
         XCTAssertTrue(model.handleKey(tab))
 
-        XCTAssertEqual(model.context.selected, stack.first)
+        XCTAssertEqual(model.attachments.selected, stack.first)
         XCTAssertEqual(spread.places.map(\.chip.source), stack)
         XCTAssertEqual(spread.places.map(\.slot), [0, 1])
     }
@@ -50,7 +50,7 @@ final class ContextSpreadTests: ContextCase {
         XCTAssertTrue(model.handleKey(tab))
         XCTAssertTrue(model.handleKey(tab))
 
-        XCTAssertEqual(model.context.selected, stack.last)
+        XCTAssertEqual(model.attachments.selected, stack.last)
         XCTAssertEqual(spread.places.map(\.chip.source), stack)
     }
 
@@ -71,7 +71,7 @@ final class ContextSpreadTests: ContextCase {
         try source("selection", adds: "text=hola app=com.apple.Safari")
         try source("finder", adds: "text=notes app=com.apple.finder")
         await open()
-        try await wait("three values") { self.model.context.chips.count == 3 && self.model.context.chips.allSatisfy { $0.value != nil } }
+        try await wait("three values") { self.model.attachments.chips.count == 3 && self.model.attachments.chips.allSatisfy { $0.value != nil } }
 
         let kinds = Dictionary(uniqueKeysWithValues: spread.places.map { ($0.chip.source, $0.chip.showsKind) })
 
@@ -80,16 +80,16 @@ final class ContextSpreadTests: ContextCase {
 
     func testTheRowFoldsAfterAPauseWithTheSelectionInFront() async throws {
         try await openWithTwoChips()
-        model.contextPause = .milliseconds(50)
+        model.attachmentPause = .milliseconds(50)
 
         XCTAssertTrue(model.handleKey(tab))
         XCTAssertTrue(model.handleKey(tab))
         try await wait("the fold") { !self.spread.isSpread }
 
-        XCTAssertEqual(spread.places.first?.chip.source, model.context.selected)
+        XCTAssertEqual(spread.places.first?.chip.source, model.attachments.selected)
         XCTAssertEqual(spread.places.map(\.depth), [0, 1])
-        XCTAssertEqual(model.contextShape, .folded)
-        XCTAssertTrue(model.context.isOn)
+        XCTAssertEqual(model.attachmentShape, .folded)
+        XCTAssertTrue(model.attachments.isOn)
     }
 
     func testEscFoldsTheRowAtOnce() async throws {
@@ -100,7 +100,7 @@ final class ContextSpreadTests: ContextCase {
 
         XCTAssertFalse(spread.isSpread)
         XCTAssertNil(spread.selection)
-        XCTAssertNil(model.contextWatch)
+        XCTAssertNil(model.attachmentWatch)
     }
 
     func testAClosedPanelStopsThePauseAndTheNextOpenFoldsTheRow() async throws {
@@ -108,7 +108,7 @@ final class ContextSpreadTests: ContextCase {
         XCTAssertTrue(model.handleKey(tab))
 
         model.panelWillHide()
-        XCTAssertNil(model.contextWatch)
+        XCTAssertNil(model.attachmentWatch)
         model.panelDidHide()
         model.panelWillShow()
 
@@ -117,7 +117,7 @@ final class ContextSpreadTests: ContextCase {
 
     func testAPanelThatHidesAfterEscKeepsItsCardsWhereTheyLie() async throws {
         try await openWithTwoChips()
-        model.contextPause = .milliseconds(50)
+        model.attachmentPause = .milliseconds(50)
         XCTAssertTrue(model.handleKey(tab))
         XCTAssertTrue(model.handleKey(tab))
         try await wait("the fold") { !self.spread.isSpread }
@@ -136,23 +136,23 @@ final class ContextSpreadTests: ContextCase {
         }
         await open()
         try await wait("six values") { self.chips.count == 6 && self.chips.allSatisfy { $0.value != nil } }
-        XCTAssertNotEqual(model.contextShape, .wide)
+        XCTAssertNotEqual(model.attachmentShape, .wide)
 
         XCTAssertTrue(model.handleKey(tab))
 
-        XCTAssertEqual(spread.spreadCount, SpotTokens.contextFit)
-        XCTAssertGreaterThan(spread.spreadCount, ContextStack.pile)
-        XCTAssertEqual(spread.places.filter { $0.depth == 0 }.map(\.slot), Array(0..<SpotTokens.contextFit))
-        XCTAssertEqual(model.contextShape, .wide)
+        XCTAssertEqual(spread.spreadCount, SpotTokens.attachmentFit)
+        XCTAssertGreaterThan(spread.spreadCount, AttachmentStack.pile)
+        XCTAssertEqual(spread.places.filter { $0.depth == 0 }.map(\.slot), Array(0..<SpotTokens.attachmentFit))
+        XCTAssertEqual(model.attachmentShape, .wide)
         XCTAssertTrue(model.handleKey(escape))
-        XCTAssertNotEqual(model.contextShape, .wide)
+        XCTAssertNotEqual(model.attachmentShape, .wide)
     }
 
     func testARowNarrowerThanTheChipsShiftsWithTheSelection() {
         let sources = ["a", "b", "c", "d", "e"]
-        var stack = ContextStack(fit: 3)
+        var stack = AttachmentStack(fit: 3)
         stack.open(over: nil, loading: sources.map { ($0, .symbol("doc")) })
-        for source in sources { stack.fill(source, with: ContextValue(text: source), look: .symbol("doc")) }
+        for source in sources { stack.fill(source, with: AttachmentValue(text: source), look: .symbol("doc")) }
         let row = { stack.layout.places.filter { $0.depth == 0 }.sorted { $0.slot < $1.slot }.map(\.chip.source) }
 
         for _ in 0..<4 {
@@ -169,14 +169,14 @@ final class ContextSpreadTests: ContextCase {
     }
 
     func testAStackWithNoChoiceShowsOnlyItsFrontIconQuietly() {
-        var stack = ContextStack(fit: 3)
+        var stack = AttachmentStack(fit: 3)
         stack.open(over: nil, loading: ["a", "b", "c"].map { ($0, .symbol("doc")) })
 
         XCTAssertTrue(stack.layout.isQuiet)
         XCTAssertFalse(stack.layout.showsKey)
         XCTAssertEqual(stack.layout.places.map(\.isQuiet), [true, true, true])
         XCTAssertEqual(stack.layout.places.map(\.x), [0, 0, 0])
-        XCTAssertEqual(stack.layout.places.map(\.scale), Array(repeating: SpotTokens.contextQuietScale, count: 3))
+        XCTAssertEqual(stack.layout.places.map(\.scale), Array(repeating: SpotTokens.attachmentQuietScale, count: 3))
         XCTAssertEqual(stack.layout.places.map(\.opacity), [1, MotionTokens.hiddenOpacity, MotionTokens.hiddenOpacity])
 
         stack.turn(by: 1)
@@ -187,11 +187,11 @@ final class ContextSpreadTests: ContextCase {
     }
 
     func testTheTabKeyShowsOnlyOnceTheFrontIconHasLoaded() {
-        var stack = ContextStack(fit: 3)
+        var stack = AttachmentStack(fit: 3)
         stack.open(over: nil, loading: [("a", .symbol("doc"))])
         XCTAssertFalse(stack.layout.showsKey)
 
-        stack.fill("a", with: ContextValue(text: "hola"), look: nil)
+        stack.fill("a", with: AttachmentValue(text: "hola"), look: nil)
         stack.place(spreads: false)
 
         XCTAssertTrue(stack.layout.showsKey)
@@ -199,12 +199,12 @@ final class ContextSpreadTests: ContextCase {
 
     func testAStackAtRestPilesItsCardsSmallerAndFurtherRightBehindTheFront() {
         let sources = ["a", "b", "c", "d"]
-        var stack = ContextStack(fit: 3)
+        var stack = AttachmentStack(fit: 3)
         stack.open(over: nil, loading: sources.map { ($0, .symbol("doc")) })
         stack.turn(by: 1)
         stack.place(spreads: false)
-        let step = SpotTokens.contextStep
-        let shrink = SpotTokens.contextShrink
+        let step = SpotTokens.attachmentStep
+        let shrink = SpotTokens.attachmentShrink
 
         XCTAssertEqual(stack.layout.places.map(\.x), [-2 * step, -step, 0, 0])
         XCTAssertEqual(stack.layout.places.map(\.scale), [1, 1 - shrink, 1 - 2 * shrink, 1 - 2 * shrink])
@@ -214,29 +214,29 @@ final class ContextSpreadTests: ContextCase {
 
     func testASpreadRowLaysItsCardsOnePitchApartWithTheRestBehindItsFirst() {
         let sources = ["a", "b", "c", "d", "e"]
-        var stack = ContextStack(fit: 3)
+        var stack = AttachmentStack(fit: 3)
         stack.open(over: nil, loading: sources.map { ($0, .symbol("doc")) })
         stack.turn(by: 1)
         stack.place(spreads: true)
-        let pitch = SpotTokens.contextCard + SpotTokens.contextSpreadGap
-        let step = SpotTokens.contextStep
+        let pitch = SpotTokens.attachmentCard + SpotTokens.attachmentSpreadGap
+        let step = SpotTokens.attachmentStep
 
         XCTAssertEqual(stack.layout.places.map(\.x), [-2 * pitch, -pitch, 0, -2 * pitch + step, -2 * pitch + step])
-        XCTAssertEqual(stack.layout.places.map(\.scale), [1, 1, 1, 1 - SpotTokens.contextShrink, 1 - SpotTokens.contextShrink])
-        XCTAssertEqual(stack.layout.places.map(\.opacity), [1, 1, 1, 1 - SpotTokens.contextCardFade, MotionTokens.hiddenOpacity])
+        XCTAssertEqual(stack.layout.places.map(\.scale), [1, 1, 1, 1 - SpotTokens.attachmentShrink, 1 - SpotTokens.attachmentShrink])
+        XCTAssertEqual(stack.layout.places.map(\.opacity), [1, 1, 1, 1 - SpotTokens.attachmentCardFade, MotionTokens.hiddenOpacity])
         XCTAssertEqual(stack.layout.places.map(\.layer), [0, -1, -2, -3, -6])
     }
 
     func testPressesDuringTheMotionFoldIntoOneStepToTheNewestState() async throws {
         try await openWithTwoChips()
-        let first = model.context.chips[0].source
-        let second = model.context.chips[1].source
+        let first = model.attachments.chips[0].source
+        let second = model.attachments.chips[1].source
         host.heldEnds = []
 
         XCTAssertTrue(model.handleKey(tab))
         XCTAssertTrue(model.handleKey(tab))
         XCTAssertEqual(spread.selection, first)
-        XCTAssertEqual(model.context.selected, second)
+        XCTAssertEqual(model.attachments.selected, second)
 
         let ends = host.heldEnds ?? []
         host.heldEnds = []

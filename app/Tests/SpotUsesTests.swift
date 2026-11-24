@@ -192,7 +192,7 @@ final class SpotUsesTests: SpotRunsCase {
         try script(toml: "uses = ['camera']")
 
         XCTAssertEqual(try SpotsFolder(url: folder).scan().refused.map(\.reason), [
-            "Script has an unknown use in its uses: camera. Use app, spots, screen, clipboard, calendar, power, network, files, timer or context"
+            "Script has an unknown use in its uses: camera. Use app, spots, screen, clipboard, calendar, power, network, files, timer or attachment"
         ])
     }
 

@@ -2,7 +2,7 @@ import XCTest
 @testable import OpenspotCore
 
 @MainActor
-final class SnoozeTabContextTests: ContextCase {
+final class SnoozeTabAttachmentTests: AttachmentCase {
     private var example: URL {
         URL(fileURLWithPath: #filePath).deletingLastPathComponent().deletingLastPathComponent().deletingLastPathComponent().appendingPathComponent("examples/snooze-tab.spot")
     }
@@ -18,7 +18,7 @@ final class SnoozeTabContextTests: ContextCase {
         try taker(takes: "'url'")
         try source(adds: "url=https://example.com/a title=A app=com.apple.Safari")
         await open()
-        try await wait("the value of the tab") { self.model.context.chips.first?.value != nil }
+        try await wait("the value of the tab") { self.model.attachments.chips.first?.value != nil }
         XCTAssertTrue(model.handleKey(ActionKey(name: "tab")))
         return model.visible.map(\.state.title)
     }

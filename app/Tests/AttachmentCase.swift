@@ -2,7 +2,7 @@ import XCTest
 @testable import OpenspotCore
 
 @MainActor
-class ContextCase: PanelCase {
+class AttachmentCase: PanelCase {
     var client: URL!
 
     override func setUp() async throws {
@@ -25,8 +25,8 @@ class ContextCase: PanelCase {
     func source(_ name: String = "tab", app: String? = "^com\\.apple\\.Safari$", waits: Bool = false, adds words: String?) throws {
         let open = app.map { "'\($0)'" } ?? "true"
         let wait = waits ? "while [ ! -f '\(path("release"))' ]; do sleep 0.02; done\n" : ""
-        let add = words.map { "'\(client.path)' context add \($0) 2>> '\(path("errors"))'; echo $? >> '\(path("done"))'" } ?? "echo 0 >> '\(path("done"))'"
-        try script(name, toml: "title = '\(name)'\nuses = ['context']\n\n[on]\n\"panel.open\" = \(open)", """
+        let add = words.map { "'\(client.path)' attachment add \($0) 2>> '\(path("errors"))'; echo $? >> '\(path("done"))'" } ?? "echo 0 >> '\(path("done"))'"
+        try script(name, toml: "title = '\(name)'\nuses = ['attachment']\n\n[on]\n\"panel.open\" = \(open)", """
         case "$1" in
           show) echo show >> '\(path("\(name)-log"))'; \(wait)\(add) ;;
         esac
@@ -56,8 +56,8 @@ class ContextCase: PanelCase {
         model.panelWillShow()
     }
 
-    var chips: [ContextChip] {
-        model.context.chips
+    var chips: [AttachmentChip] {
+        model.attachments.chips
     }
 
 }

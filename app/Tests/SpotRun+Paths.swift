@@ -5,6 +5,6 @@ import Foundation
 extension SpotRun {
     @discardableResult
     func drop(paths: [String]) -> Bool {
-        drop(ContextValue(files: FileKinds.Disk().read(paths)))
+        drop(AttachmentValue(files: FileKinds.Disk().read(paths)))
     }
 }

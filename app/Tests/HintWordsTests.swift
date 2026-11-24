@@ -19,7 +19,7 @@ final class HintWordsTests: XCTestCase {
     }
 
     func testTabIsAKey() {
-        XCTAssertEqual(groups("⇥ 3 Contexts   ⏎ Open"), ["[⇥] 3 Contexts", "[⏎] Open"])
+        XCTAssertEqual(groups("⇥ 3 Attachments   ⏎ Open"), ["[⇥] 3 Attachments", "[⏎] Open"])
         XCTAssertEqual(groups("⇥ Next   ⇧⇥ Back   Esc Leave"), ["[⇥] Next", "[⇧⇥] Back", "[Esc] Leave"])
     }
 

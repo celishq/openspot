@@ -1,9 +1,9 @@
 import XCTest
 @testable import OpenspotCore
 
-final class ContextPreviewTests: XCTestCase {
+final class AttachmentPreviewTests: XCTestCase {
     func testALinkShowsItsTitleAndItsHost() {
-        let preview = ContextPreview(ContextValue(url: "https://developer.apple.com/documentation/swiftui", title: "SwiftUI"))
+        let preview = AttachmentPreview(AttachmentValue(url: "https://developer.apple.com/documentation/swiftui", title: "SwiftUI"))
 
         XCTAssertEqual(preview.text, "SwiftUI")
         XCTAssertEqual(preview.caption, "developer.apple.com")
@@ -11,7 +11,7 @@ final class ContextPreviewTests: XCTestCase {
     }
 
     func testATextShowsItsWordsOnOneRunOfLines() {
-        let preview = ContextPreview(ContextValue(text: "  one\n\ntwo   three ", title: "Selected text"))
+        let preview = AttachmentPreview(AttachmentValue(text: "  one\n\ntwo   three ", title: "Selected text"))
 
         XCTAssertEqual(preview.text, "one two three")
         XCTAssertEqual(preview.caption, "Selected text")
@@ -20,7 +20,7 @@ final class ContextPreviewTests: XCTestCase {
 
     func testFilesShowTheirNamesAndTheirFolder() {
         let files = FileKinds(["/a/docs/one.md", "/a/docs/two.md"])
-        let preview = ContextPreview(ContextValue(files: files))
+        let preview = AttachmentPreview(AttachmentValue(files: files))
 
         XCTAssertEqual(preview.text, "one.md, two.md")
         XCTAssertEqual(preview.caption, "2 files in docs")

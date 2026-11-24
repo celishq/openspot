@@ -90,11 +90,11 @@ final class SpotAPITests: XCTestCase {
 
     func testTheCoreListNamesTheUsesOfEachSpot() async throws {
         try "#!/bin/sh\n".writeScript(to: core.appendingPathComponent("apps.spot/apps.sh"))
-        try "#!/bin/sh\n".writeScript(to: core.appendingPathComponent("tab.spot/tab.sh"), toml: "uses = ['context', 'clipboard']")
+        try "#!/bin/sh\n".writeScript(to: core.appendingPathComponent("tab.spot/tab.sh"), toml: "uses = ['attachment', 'clipboard']")
 
         let spots = try await json(["spot", "list", "--core", "--json"])
 
-        XCTAssertEqual(spots.map { $0["uses"] as? [String] }, [[], ["clipboard", "context"]])
+        XCTAssertEqual(spots.map { $0["uses"] as? [String] }, [[], ["attachment", "clipboard"]])
     }
 
     func testOnAndOffTurnCoreSpotsAndTellTheApp() async throws {
