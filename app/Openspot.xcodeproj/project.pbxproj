@@ -959,6 +959,7 @@
 		DBFE2DADC9DDDBE960986293 /* EmojiCall.swift in Sources */ = {isa = PBXBuildFile; fileRef = F0D761DB9A1CD3CA9B19C764 /* EmojiCall.swift */; };
 		DC5993209AEE68F39561E0E9 /* RouteCall.swift in Sources */ = {isa = PBXBuildFile; fileRef = B533AC7C589516C8FE7A253F /* RouteCall.swift */; };
 		DD03629B44348F2596212FA7 /* AccountPhrase.swift in Sources */ = {isa = PBXBuildFile; fileRef = A140BCF3C0B568616F9BB942 /* AccountPhrase.swift */; };
+		DD1B4EFA1FAC35B75F710A03 /* AttachmentLookTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 47D78D04DA10C2AF3C76176B /* AttachmentLookTests.swift */; };
 		DD3D4B88B794E8EFCB94C54A /* SpotsModel+Detached.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5C66B08702EB503F2A379905 /* SpotsModel+Detached.swift */; };
 		DD6F1C52484D41A274F8EB42 /* SpotCallers.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6B88C22A550D76C9F5E8DCE2 /* SpotCallers.swift */; };
 		DD6F3508B547358B0314A552 /* FetchAnswer.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4C4C2F436C081097303FE0E5 /* FetchAnswer.swift */; };
@@ -1480,6 +1481,7 @@
 		4748D0A6E33C42BBDCC04A1D /* SpotMode.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SpotMode.swift; sourceTree = "<group>"; };
 		4762AB426CAACFDAD9AC43A8 /* SpotsModel+Sheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "SpotsModel+Sheet.swift"; sourceTree = "<group>"; };
 		47AD2235A9745DFB8FBDDD69 /* ThemeTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ThemeTests.swift; sourceTree = "<group>"; };
+		47D78D04DA10C2AF3C76176B /* AttachmentLookTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AttachmentLookTests.swift; sourceTree = "<group>"; };
 		48341C1F654BB89F7DF8B4BE /* HotKey.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HotKey.swift; sourceTree = "<group>"; };
 		4846831A9EBA2EBCAD124F63 /* Flow.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Flow.swift; sourceTree = "<group>"; };
 		486CBAD271C8BE0DBFE7DE4D /* MacPower.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MacPower.swift; sourceTree = "<group>"; };
@@ -2971,6 +2973,7 @@
 				49C48F05AFABA5992D73C68E /* AppsSpotTests.swift */,
 				7B7E74011BAC4C7ACD987A3C /* AppWordsTests.swift */,
 				DD7D01C37DBFFA2AD1BEEB62 /* AttachmentCase.swift */,
+				47D78D04DA10C2AF3C76176B /* AttachmentLookTests.swift */,
 				AF993A5D372EA17D5518E288 /* AttachmentPreviewTests.swift */,
 				6E8E6B66F117FACCE2287166 /* AttachmentReadTests.swift */,
 				CE097EA158500A7B91FFB3F5 /* AttachmentSourceTests.swift */,
@@ -5316,6 +5319,7 @@
 				BFBDAAAA42FA8EB471CB668C /* AppWordsTests.swift in Sources */,
 				B34A155F568AA723C2FD1D2D /* AppsSpotTests.swift in Sources */,
 				7B86A98CF24E2468472D69DC /* AttachmentCase.swift in Sources */,
+				DD1B4EFA1FAC35B75F710A03 /* AttachmentLookTests.swift in Sources */,
 				4949E44CB74EE431318F7764 /* AttachmentPreviewTests.swift in Sources */,
 				80C11995983F3A9E6F4B0269 /* AttachmentReadTests.swift in Sources */,
 				FA63B3F34C904522FD7B3D6F /* AttachmentSourceTests.swift in Sources */,

@@ -9,7 +9,7 @@ enum AttachmentCall: NounCall {
     static let noun = CommandNoun("attachment", group: .build, verbs: [
         CommandVerb(
             "add", "[input...]",
-            "Puts a value in the panel's field, where people press Tab to hand it to a spot that takes its kind: `file=` once for each file, `url=` or `text=`, with `title=` and the bundle ID of its app in `app=`. With no input it takes the record on stdin that `openspot browser tab` prints, and adds nothing when it holds no value. It works in a show.",
+            "Puts a value in the panel's field, where people press Tab to hand it to a spot that takes its kind: `file=` once for each file, `url=` or `text=`, with `title=`, the bundle ID of its app in `app=`, and the picture of its chip in `icon=`, as `icon` in spot.toml takes it. With no input it takes the record on stdin that `openspot browser tab` prints, and adds nothing when it holds no value. It works in a show.",
             rule: rule
         ) { words in Self.add(words.rest) },
         CommandVerb(
@@ -49,7 +49,7 @@ enum AttachmentCall: NounCall {
             var fields: [TextBlock.Field] = []
             for word in words {
                 guard let split = word.firstIndex(of: "="), Self.keys.contains(String(word[..<split])) else {
-                    return { CommandAnswer(errors: "`openspot attachment add` does not take \(word). Write file=, url= or text=, and title= or app=.\n", code: 2) }
+                    return { CommandAnswer(errors: "`openspot attachment add` does not take \(word). Write file=, url= or text=, and title=, app= or icon=.\n", code: 2) }
                 }
                 fields.append(TextBlock.Field(key: String(word[..<split]), value: String(word[word.index(after: split)...])))
             }
@@ -62,22 +62,23 @@ enum AttachmentCall: NounCall {
         }
     }
 
-    private static let notes = ["title", "app"]
+    private static let notes = ["title", "app", "icon"]
     private static let keys = ["file", "url", "text"] + notes
 
     private static func add(_ fields: [TextBlock.Field], to runs: SpotRuns, from caller: SpotCaller) -> CommandAPI.Work {
         let kinds = Set(fields.map(\.key).filter { !notes.contains($0) })
         let title = fields.last { $0.key == "title" }?.value
         let app = fields.last { $0.key == "app" }?.value
+        let icon = Icon(text: fields.last { $0.key == "icon" }?.value)
         let values = fields.filter { kinds.contains($0.key) }.map(\.value)
         guard kinds.count == 1, let kind = kinds.first, kind == "file" || values.count == 1 else {
             return { CommandAnswer(errors: "\(oneKind)\n", code: 2) }
         }
         return {
             let value = switch kind {
-            case "url": AttachmentValue(url: values[0], title: title, app: app)
-            case "text": AttachmentValue(text: values[0], title: title, app: app)
-            default: AttachmentValue(files: FileKinds.Disk().read(values), title: title, app: app)
+            case "url": AttachmentValue(url: values[0], title: title, app: app, icon: icon)
+            case "text": AttachmentValue(text: values[0], title: title, app: app, icon: icon)
+            default: AttachmentValue(files: FileKinds.Disk().read(values), title: title, app: app, icon: icon)
             }
             _ = await runs.take(SpotEffect.attachment(.ready(value)), from: caller)
             return CommandAnswer()

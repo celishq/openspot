@@ -4,6 +4,20 @@ public struct AttachmentChip: Equatable, Sendable {
     public enum Look: Hashable, Sendable {
         case file(FileIcon)
         case symbol(String)
+        case glyph(String)
+
+        init(_ icon: Icon) {
+            switch icon {
+            case .symbol(let name): self = .symbol(name)
+            case .image(let path): self = .file(.image(path))
+            case .file(let path): self = .file(FileIcon(path: path))
+            case .glyph(let text): self = .glyph(text)
+            }
+        }
+
+        var isSymbol: Bool {
+            if case .symbol = self { true } else { false }
+        }
     }
 
     public enum State: Equatable, Sendable {

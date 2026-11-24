@@ -32,7 +32,7 @@ public struct AttachmentStack: Equatable, Sendable {
         self.front = front
         selected = nil
         arrival = unread.map(\.source)
-        chips = unread.map { AttachmentChip(source: $0.source, app: front?.bundleID, appName: front?.name, look: look(of: front?.bundleID, kind: nil, else: $0.look), state: .unread) }
+        chips = unread.map { AttachmentChip(source: $0.source, app: front?.bundleID, appName: front?.name, look: look(of: front?.bundleID, value: nil, own: $0.look), state: .unread) }
         settle()
         layout = AttachmentLayout(chips: chips, after: AttachmentLayout(), selection: nil, spreads: false, fit: fit)
     }
@@ -42,7 +42,7 @@ public struct AttachmentStack: Equatable, Sendable {
         let app = value.app ?? held?.app
         let name = app == held?.app ? held?.appName : app == front?.bundleID ? front?.name : nil
         chips.removeAll { $0.source == source }
-        chips.append(AttachmentChip(source: source, app: app, appName: name, look: look(of: app, kind: value.kind, else: own), state: .ready(value)))
+        chips.append(AttachmentChip(source: source, app: app, appName: name, look: look(of: app, value: value, own: own), state: .ready(value)))
         if !arrival.contains(source) { arrival.append(source) }
         settle()
     }
@@ -75,9 +75,11 @@ public struct AttachmentStack: Equatable, Sendable {
         layout = AttachmentLayout(chips: chips, after: layout, selection: selected, spreads: spreads, fit: fit)
     }
 
-    private func look(of app: String?, kind: AttachmentValue.Kind?, else own: AttachmentChip.Look?) -> AttachmentChip.Look {
+    private func look(of app: String?, value: AttachmentValue?, own: AttachmentChip.Look?) -> AttachmentChip.Look {
+        if let icon = value?.icon { return AttachmentChip.Look(icon) }
+        if let own, !own.isSymbol { return own }
         if app != nil, app == front?.bundleID, let path = front?.path { return .file(FileIcon(path: path)) }
-        return own ?? .symbol(kind?.symbol ?? AttachmentChip.loadingSymbol)
+        return own ?? .symbol(value?.kind.symbol ?? AttachmentChip.loadingSymbol)
     }
 
     private mutating func settle() {
