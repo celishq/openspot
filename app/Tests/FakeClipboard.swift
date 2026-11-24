@@ -56,9 +56,11 @@ final class FakeClipboard: MacClipboard, MacEvents, @unchecked Sendable {
     var textReads: Int { lock.withLock { readsValue } }
     func contents() -> ClipboardContents { lock.withLock { contentsValue } }
     func count() -> Int { lock.withLock { countValue } }
-    func writeImage(to file: URL) throws {
-        try FileManager.default.createDirectory(at: file.deletingLastPathComponent(), withIntermediateDirectories: true)
-        try lock.withLock { imageValue }.write(to: file)
+    func image() -> Data? {
+        lock.withLock {
+            guard case .image = contentsValue else { return nil }
+            return imageValue
+        }
     }
     func paste() throws { lock.withLock { pasteValue += 1 } }
 

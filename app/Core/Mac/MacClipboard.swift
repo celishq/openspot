@@ -6,6 +6,6 @@ public protocol MacClipboard: Sendable {
     func text() -> String
     func contents() -> ClipboardContents
     func count() -> Int
-    func writeImage(to file: URL) throws
+    func image() -> Data?
     func paste() throws
 }

@@ -1,7 +1,16 @@
 import Foundation
 
 public struct AttachmentPreview: Hashable, Sendable {
+    public enum Picture: Hashable, Sendable {
+        case file(String)
+        case data(Data)
+        case symbol(String)
+    }
+
     static let excerptLimit = 280
+    static let shownKinds: Set<String> = ["png", "jpg", "jpeg", "gif", "heic", "heif", "tif", "tiff", "webp", "bmp", "mov", "mp4", "m4v", "avi", "mkv", "webm"]
+    static let audioKinds: Set<String> = ["mp3", "m4a", "wav", "aif", "aiff", "flac", "aac", "ogg", "opus", "caf"]
+    static let audioSymbol = "waveform"
 
     public static let loading = AttachmentPreview(text: "", caption: "Reading…", symbol: AttachmentChip.loadingSymbol)
     static let emptySymbol = "tray"
@@ -11,6 +20,7 @@ public struct AttachmentPreview: Hashable, Sendable {
     public let caption: String
     public let symbol: String
     public let lines: Int
+    public let picture: Picture?
 
     public init(_ value: AttachmentValue) {
         symbol = value.kind.captionSymbol
@@ -27,7 +37,16 @@ public struct AttachmentPreview: Hashable, Sendable {
             text = value.title ?? names.joined(separator: ", ")
             caption = names.count == 1 ? folder : "\(names.count) files in \(folder)"
         }
-        lines = SpotTokens.attachmentValueLines(of: text)
+        picture = Self.picture(of: value)
+        lines = SpotTokens.attachmentValueLines(of: text, besidePicture: picture != nil)
+    }
+
+    private static func picture(of value: AttachmentValue) -> Picture? {
+        if let thumbnail = value.copy?.thumbnail { return .data(thumbnail) }
+        guard case .files(let files) = value.payload, let path = files.paths.first else { return nil }
+        let kind = (path as NSString).pathExtension.lowercased()
+        if shownKinds.contains(kind), value.copy == nil { return .file(path) }
+        return audioKinds.contains(kind) ? .symbol(audioSymbol) : nil
     }
 
     public init?(state chip: AttachmentChip) {
@@ -43,6 +62,7 @@ public struct AttachmentPreview: Hashable, Sendable {
         self.text = text
         self.caption = caption
         self.symbol = symbol
+        picture = nil
         lines = SpotTokens.attachmentValueLines(of: text)
     }
 }

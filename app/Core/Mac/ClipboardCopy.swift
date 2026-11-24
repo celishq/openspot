@@ -1,12 +1,16 @@
 import Foundation
+import ImageIO
 
 public struct ClipboardCopy: Equatable, Sendable {
     static let heldLength = 1_000_000
     static let changed = "The clipboard changed since the panel opened. Copy it again, then hand it on."
     static let unwritten = "Openspot could not save the copied image. Copy it again."
 
+    static var thumbnailPixels: Int { Int((SpotTokens.attachmentPicture * 2).rounded(.up)) }
+
     let count: Int
     let image: URL?
+    var thumbnail: Data?
 
     static func value(of board: any MacClipboard, count: Int, images: URL) -> AttachmentValue? {
         let value = read(board, count: count, images: images)
@@ -21,7 +25,8 @@ public struct ClipboardCopy: Equatable, Sendable {
             return AttachmentValue(files: FileKinds.Disk().read(urls.map(\.path)))
         case .image(let kind):
             let file = images.appendingPathComponent("Copied image \(count).\(kind)")
-            return AttachmentValue(.files(FileKinds([file.path], kinds: [file.path: .file])), title: "Copied image", copy: ClipboardCopy(count: count, image: file))
+            let thumbnail = autoreleasepool { board.image().flatMap(Self.thumbnail) }
+            return AttachmentValue(.files(FileKinds([file.path], kinds: [file.path: .file])), title: "Copied image", copy: ClipboardCopy(count: count, image: file, thumbnail: thumbnail))
         case .text:
             return autoreleasepool { held(board.text(), count: count) }
         }
@@ -34,7 +39,7 @@ public struct ClipboardCopy: Equatable, Sendable {
             let isLink = (line.hasPrefix("https://") || line.hasPrefix("http://")) && !line.contains(where: \.isWhitespace)
             return isLink ? AttachmentValue(url: line) : AttachmentValue(text: text, title: "Copied text")
         }
-        return AttachmentValue(.text(String(text.prefix(heldLength))), title: "Copied text", copy: ClipboardCopy(count: count, image: nil))
+        return AttachmentValue(.text(String(text.prefix(heldLength))), title: "Copied text", copy: ClipboardCopy(count: count, image: nil, thumbnail: nil))
     }
 
     func whole(of value: AttachmentValue, from board: any MacClipboard) throws -> AttachmentValue? {
@@ -44,7 +49,18 @@ public struct ClipboardCopy: Equatable, Sendable {
         for old in (try? FileManager.default.contentsOfDirectory(at: folder, includingPropertiesForKeys: nil)) ?? [] where old.lastPathComponent != image.lastPathComponent {
             try? FileManager.default.removeItem(at: old)
         }
-        try board.writeImage(to: image)
+        guard let data = autoreleasepool(invoking: { board.image() }) else { throw SpotError.fault("Openspot cannot find the copied image. Copy it again.") }
+        try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
+        try data.write(to: image, options: .atomic)
         return value
+    }
+
+    static func thumbnail(of data: Data) -> Data? {
+        let options = [kCGImageSourceCreateThumbnailFromImageAlways: true, kCGImageSourceCreateThumbnailWithTransform: true, kCGImageSourceThumbnailMaxPixelSize: thumbnailPixels] as CFDictionary
+        guard let source = CGImageSourceCreateWithData(data as CFData, nil), let image = CGImageSourceCreateThumbnailAtIndex(source, 0, options) else { return nil }
+        let png = NSMutableData()
+        guard let destination = CGImageDestinationCreateWithData(png, "public.png" as CFString, 1, nil) else { return nil }
+        CGImageDestinationAddImage(destination, image, nil)
+        return CGImageDestinationFinalize(destination) ? png as Data : nil
     }
 }

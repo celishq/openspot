@@ -28,6 +28,14 @@ struct SpotAttachmentPreview: View {
     }
 
     private func words(of preview: AttachmentPreview) -> some View {
+        HStack(alignment: .top, spacing: SpotTokens.attachmentPictureGap) {
+            if let picture = preview.picture { SpotPreviewPicture(picture: picture) }
+            lines(of: preview)
+        }
+        .accessibilityElement(children: .combine)
+    }
+
+    private func lines(of preview: AttachmentPreview) -> some View {
         VStack(alignment: .leading, spacing: SpotTokens.attachmentValueLineGap) {
             HStack(spacing: SpotTokens.previewCaptionGap) {
                 Image(systemName: preview.symbol)
@@ -44,6 +52,5 @@ struct SpotAttachmentPreview: View {
                     .fixedSize(horizontal: false, vertical: true)
             }
         }
-        .accessibilityElement(children: .combine)
     }
 }
