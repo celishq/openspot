@@ -68,7 +68,7 @@ enum AttachmentCall: NounCall {
             case "text": AttachmentValue(text: values[0], title: title, app: app, icon: icon)
             default: AttachmentValue(files: FileKinds.Disk().read(values), title: title, app: app, icon: icon)
             }
-            _ = await runs.take(SpotEffect.attachment(.ready(value)), from: caller)
+            _ = await runs.take(SpotEffect.attachment(value), from: caller)
             return CommandAnswer()
         }
     }

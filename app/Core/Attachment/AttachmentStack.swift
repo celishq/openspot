@@ -13,6 +13,9 @@ public struct AttachmentStack: Equatable, Sendable {
     }
     public private(set) var selected: String?
     public private(set) var layout = AttachmentLayout()
+    var pause: Duration = .seconds(1)
+    private(set) var spreads = false
+    var isMoving = false
     private var front: FrontApp?
 
     public init(fit: Int = SpotTokens.attachmentFit) {
@@ -30,6 +33,8 @@ public struct AttachmentStack: Equatable, Sendable {
     mutating func open(over front: FrontApp?, unread: [(source: String, look: AttachmentChip.Look?)]) {
         self.front = front
         selected = nil
+        spreads = false
+        isMoving = false
         chips = unread.map { AttachmentChip(source: $0.source, app: front?.bundleID, appName: front?.name, look: look(of: front?.bundleID, value: nil, own: $0.look), state: .unread) }
         settle()
         layout = AttachmentLayout(chips: chips, after: AttachmentLayout(), selection: nil, spreads: false, fit: fit)
@@ -66,9 +71,18 @@ public struct AttachmentStack: Equatable, Sendable {
 
     mutating func leave() {
         selected = nil
+        spreads = false
     }
 
-    mutating func place(spreads: Bool) {
+    mutating func spread() {
+        spreads = true
+    }
+
+    mutating func fold() {
+        spreads = false
+    }
+
+    mutating func place() {
         layout = AttachmentLayout(chips: chips, after: layout, selection: selected, spreads: spreads, fit: fit)
     }
 

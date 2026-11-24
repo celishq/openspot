@@ -16,7 +16,7 @@ public final class SpotRun {
         case move(FlowMove)
         case refused(String?)
         case done
-        case attachment(AttachmentChip.State)
+        case attachment(AttachmentValue)
     }
 
     public enum ShowNeed: Sendable {

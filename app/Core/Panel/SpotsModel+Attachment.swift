@@ -9,7 +9,6 @@ extension SpotsModel {
         let feeds = !isWarming && entries.contains { !$0.spot.chipActions.isEmpty }
         let unread = feeds ? entries.filter { $0.spot.isSource && $0.spot.triggers.picks(over: front?.bundleID, browsers: config.browsers) } : []
         endSpread()
-        isAttachmentMoving = false
         var next = attachments
         next.open(over: front, unread: unread.map { ($0.id, Self.look(of: $0.spot)) })
         if next != attachments { attachments = next }
@@ -17,11 +16,7 @@ extension SpotsModel {
         runs.panelOpened(showsToEnd: isWarming, over: front?.bundleID, feedsAttachment: feeds)
     }
 
-    func takeAttachment(_ state: AttachmentChip.State, of id: String) {
-        guard case .ready(let value) = state else {
-            guard attachments.chips.contains(where: { $0.source == id && $0.isLoading }) else { return }
-            return mark(id, state)
-        }
+    func takeAttachment(_ value: AttachmentValue, of id: String) {
         var next = attachments
         if cards.contains(where: { $0.spot.offers(value) }) { next.fill(id, with: value, look: entry(id).flatMap { Self.look(of: $0.spot) }) } else { next.remove(id) }
         settle(next, motion: .fade)
@@ -43,6 +38,7 @@ extension SpotsModel {
         let isCycling = attachments.layout.isSpread
         spreadAttachment()
         var next = attachments
+        next.spread()
         next.turn(by: step)
         let read = next.selectedChip.flatMap { !$0.isRead ? $0 : nil }
         if let read { next.mark(read.source, .loading) }
@@ -153,7 +149,7 @@ extension SpotsModel {
 
     func spreadAttachment() {
         attachmentWatch?.cancel()
-        let pause = attachmentPause
+        let pause = attachments.pause
         attachmentWatch = Task { [weak self] in
             try? await Task.sleep(for: pause, tolerance: pause / 10)
             guard !Task.isCancelled else { return }
@@ -167,23 +163,29 @@ extension SpotsModel {
     }
 
     func placeAttachment(_ motion: PanelMotion?) {
-        guard !isAttachmentMoving else { return }
-        var next = attachments
-        next.place(spreads: attachmentWatch != nil)
+        placeAttachment(attachments, motion)
+    }
+
+    private func placeAttachment(_ stack: AttachmentStack, _ motion: PanelMotion?) {
+        var next = stack
+        if !next.isMoving { next.place() }
         guard next != attachments else { return }
-        guard let motion, isShown else {
+        guard let motion, isShown, next.layout != attachments.layout else {
             attachments = next
             return
         }
-        isAttachmentMoving = true
+        next.isMoving = true
         change(motion, { attachments = next }) { [weak self] in
-            self?.isAttachmentMoving = false
-            self?.placeAttachment(.edit)
+            guard var landed = self?.attachments else { return }
+            landed.isMoving = false
+            self?.placeAttachment(landed, .edit)
         }
     }
 
     private func foldAttachment() {
         endSpread()
-        placeAttachment(.edit)
+        var next = attachments
+        next.fold()
+        placeAttachment(next, .edit)
     }
 }

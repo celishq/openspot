@@ -43,19 +43,24 @@ final class AttachmentSpreadTests: AttachmentCase {
 
             XCTAssertEqual(stack.chips.map(\.source), order)
             XCTAssertEqual(stack.layout.places.map(\.chip.source), ["a", "b"])
-            stack.place(spreads: false)
+            stack.fold()
+            stack.place()
             XCTAssertEqual(stack.layout.places.map(\.chip.source), order)
             stack.turn(by: 1)
             XCTAssertEqual(stack.selected, "a")
-            stack.place(spreads: true)
+            stack.spread()
+            stack.place()
             XCTAssertEqual(stack.layout.places.map(\.chip.source), order)
             stack.turn(by: 1)
-            stack.place(spreads: false)
+            stack.fold()
+            stack.place()
             stack.leave()
-            stack.place(spreads: false)
+            stack.fold()
+            stack.place()
             XCTAssertEqual(stack.layout.places.map(\.chip.source), order)
             stack.turn(by: 1)
-            stack.place(spreads: true)
+            stack.spread()
+            stack.place()
             XCTAssertEqual(stack.layout.places.map(\.chip.source), order)
         }
     }
@@ -108,7 +113,7 @@ final class AttachmentSpreadTests: AttachmentCase {
 
     func testTheRowFoldsAfterAPauseWithTheSelectionInFront() async throws {
         try await openWithTwoChips()
-        model.attachmentPause = .milliseconds(50)
+        model.attachments.pause = .milliseconds(50)
 
         XCTAssertTrue(model.handleKey(tab))
         XCTAssertTrue(model.handleKey(tab))
@@ -145,7 +150,7 @@ final class AttachmentSpreadTests: AttachmentCase {
 
     func testAPanelThatHidesAfterEscKeepsItsCardsWhereTheyLie() async throws {
         try await openWithTwoChips()
-        model.attachmentPause = .milliseconds(50)
+        model.attachments.pause = .milliseconds(50)
         XCTAssertTrue(model.handleKey(tab))
         XCTAssertTrue(model.handleKey(tab))
         try await wait("the fold") { !self.spread.isSpread }
@@ -185,13 +190,15 @@ final class AttachmentSpreadTests: AttachmentCase {
 
         for _ in 0..<4 {
             stack.turn(by: 1)
-            stack.place(spreads: true)
+            stack.spread()
+            stack.place()
         }
 
         XCTAssertEqual(row(), ["b", "c", "d"])
         for _ in 0..<2 {
             stack.turn(by: 1)
-            stack.place(spreads: true)
+            stack.spread()
+            stack.place()
         }
         XCTAssertEqual(row(), ["a", "b", "c"])
     }
@@ -206,7 +213,8 @@ final class AttachmentSpreadTests: AttachmentCase {
         XCTAssertEqual(stack.layout.places.map(\.opacity), [1, MotionTokens.hiddenOpacity, MotionTokens.hiddenOpacity])
 
         stack.turn(by: 1)
-        stack.place(spreads: true)
+        stack.spread()
+        stack.place()
 
         XCTAssertFalse(stack.layout.isQuiet)
     }
@@ -233,7 +241,8 @@ final class AttachmentSpreadTests: AttachmentCase {
         var stack = AttachmentStack(fit: 3)
         stack.open(over: nil, unread: sources.map { ($0, .symbol("doc")) })
         stack.turn(by: 1)
-        stack.place(spreads: false)
+        stack.fold()
+        stack.place()
         let step = SpotTokens.attachmentStep
         let shrink = SpotTokens.attachmentShrink
 
@@ -248,7 +257,8 @@ final class AttachmentSpreadTests: AttachmentCase {
         var stack = AttachmentStack(fit: 3)
         stack.open(over: nil, unread: sources.map { ($0, .symbol("doc")) })
         stack.turn(by: 1)
-        stack.place(spreads: true)
+        stack.spread()
+        stack.place()
         let pitch = SpotTokens.attachmentCard + SpotTokens.attachmentSpreadGap
         let step = SpotTokens.attachmentStep
 

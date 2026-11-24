@@ -90,9 +90,7 @@ public final class SpotsModel {
         }
     }
     public private(set) var fieldRoom: CGFloat = 0
-    @ObservationIgnored var attachmentPause: Duration = .seconds(1)
     @ObservationIgnored var attachmentWatch: Task<Void, Never>?
-    @ObservationIgnored var isAttachmentMoving = false
     @ObservationIgnored var keyFrames: [String: String] = [:]
     @ObservationIgnored var spotListBuilds = 0
     @ObservationIgnored var visibleUpdates = 0
@@ -536,6 +534,7 @@ public final class SpotsModel {
 
     public func panelWillHide() {
         endSpread()
+        if attachments.spreads { attachments.fold() }
         pendingAsk = nil
         if confirming != nil { confirming = nil }
         stopRecording()
@@ -602,8 +601,8 @@ public final class SpotsModel {
             shakes[Self.shakeKey(of: item, in: id), default: 0] += 1
         case .done:
             if isShown { host.dismiss() }
-        case .attachment(let state):
-            takeAttachment(state, of: id)
+        case .attachment(let value):
+            takeAttachment(value, of: id)
         }
     }
 
