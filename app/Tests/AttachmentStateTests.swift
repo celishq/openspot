@@ -84,6 +84,17 @@ final class AttachmentStateTests: AttachmentCase {
         XCTAssertEqual(host.motions.count, changes)
     }
 
+    func testAWriteOfTheEntriesThatDropsTheSourceMakesNoChangeOfItsOwn() async throws {
+        try await openWithTab()
+        XCTAssertTrue(model.handleKey(tab))
+        let changes = host.motions.count
+
+        model.entries = model.entries.filter { $0.id != "tab" }
+
+        XCTAssertNil(model.preview)
+        XCTAssertEqual(host.motions.count, changes)
+    }
+
     func testThePreviewGivesWayOnTypingASlashInAChangeOfItsOwn() async throws {
         try await openWithTab()
         XCTAssertTrue(model.handleKey(tab))

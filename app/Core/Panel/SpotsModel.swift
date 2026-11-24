@@ -45,7 +45,8 @@ public final class SpotsModel {
             spotListIsStale = true
             storeCards = nil
             askAnswers()
-            updateVisible()
+            takePreview()
+            showVisible()
             prepareCardGlyphs()
         }
     }
