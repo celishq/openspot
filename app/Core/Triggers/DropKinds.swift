@@ -4,17 +4,13 @@ public struct DropKinds: Equatable, Sendable {
     public let extensions: Set<String>
     public let folders: Bool
     public let anyFile: Bool
-    public let url: Bool
-    public let text: Bool
     public let isDeclared: Bool
 
     public init(_ words: [String] = []) {
         let words = Set(words.map { $0.lowercased() })
         anyFile = words.contains("*")
         folders = words.contains("folder")
-        url = words.contains(AttachmentValue.Kind.url.rawValue)
-        text = words.contains(AttachmentValue.Kind.text.rawValue)
-        extensions = words.subtracting(["", "*", "folder", AttachmentValue.Kind.url.rawValue, AttachmentValue.Kind.text.rawValue])
+        extensions = words.subtracting(["", "*", "folder"])
         isDeclared = !words.isEmpty
     }
 
@@ -26,12 +22,12 @@ public struct DropKinds: Equatable, Sendable {
         folders || anyFile
     }
 
-    public func takes(_ kind: AttachmentValue.Kind) -> Bool {
-        switch kind {
-        case .file: files || takesFolders
-        case .url: url
-        case .text: text
-        }
+    var takesAny: Bool {
+        files || takesFolders
+    }
+
+    func takes(_ value: AttachmentValue) -> Bool {
+        value.kind == .file && !value.files.paths.isEmpty && value.files.paths.allSatisfy { takes(path: $0, kind: value.files.kind(of: $0)) }
     }
 
     func takes(path: String, kind: FileKinds.Kind?) -> Bool {

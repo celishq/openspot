@@ -92,6 +92,9 @@ extension Manifest {
                     every = seconds
                 case Self.drop:
                     guard case .strings(let kinds)? = value else { throw fault(name, "takes a list of file types, such as drop = [\"png\", \"folder\"].") }
+                    guard !kinds.contains(where: { [AttachmentValue.Kind.url.rawValue, AttachmentValue.Kind.text.rawValue].contains($0.lowercased()) }) else {
+                        throw fault(name, "takes files. Take a link or text with an action that has a url or text input.")
+                    }
                     drop = DropKinds(kinds)
                 case Self.pick:
                     guard case .string(let text)? = value else { throw fault(name, "takes \"browsers\", or a regular expression of the bundle ID of the front app, such as \"attachment.pick\" = \"^com\\\\.apple\\\\.Safari$\".") }

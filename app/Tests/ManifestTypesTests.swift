@@ -122,6 +122,12 @@ final class ManifestTypesTests: XCTestCase {
         ])
     }
 
+    func testADropOfAUrlOrTextFailsTheLoadAndNamesAnActionAsTheWay() throws {
+        XCTAssertEqual(try spot("[on]\ndrop = [\"png\", \"url\"]").refused, [
+            "Snooze cannot load: spot.toml: [on] drop takes files. Take a link or text with an action that has a url or text input."
+        ])
+    }
+
     func testAValueThatDoesNotMatchThePatternOfItsInputFailsTheCheck() throws {
         let manifest = try Manifest(text: "[actions.approve]\ninputs.url = { type = \"url\", pattern = \"^https://github\\\\.com/\" }", folder: "/spots/review.spot").script("review.sh")
         let check = try XCTUnwrap(manifest.actions.first).check

@@ -7,7 +7,6 @@ extension SpotsModel {
             case item
             case answer
             case command
-            case taker
             case action
         }
 
@@ -40,11 +39,7 @@ extension SpotsModel {
         }
 
         public init(spot: Spot, item: SpotItem, role: Role = .item, detail: String? = nil) {
-            id = switch role {
-            case .taker: "\(spot.id)\n\n\(role)"
-            case .action: "\(spot.id)\n\n\(role)\n\(item.run)"
-            default: "\(spot.id)\n\(item.run)"
-            }
+            id = "\(spot.id)\n\(item.run)"
             sizeChoice = item.card?.face.answerSize ?? .strip
             defaultSize = nil
             gridChoice = nil
@@ -55,7 +50,7 @@ extension SpotsModel {
             self.role = role
             run = nil
             fixedSpot = spot
-            fixedState = item.card ?? SpotState(title: item.title, subtitle: role == .taker ? detail : detail ?? (role == .answer ? item.subtitle ?? spot.name : item.path(in: spot)))
+            fixedState = item.card ?? SpotState(title: item.title, subtitle: role == .action ? detail : detail ?? (role == .answer ? item.subtitle ?? spot.name : item.path(in: spot)))
         }
 
         @MainActor public var commandWords: [(name: String, word: String)] {

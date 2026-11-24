@@ -6,8 +6,6 @@ struct CommandIndex {
     private var buttons: [String: CommandAction] = [:]
     private var items: [String: SpotItem] = [:]
     private var spots: [String: Spot] = [:]
-    private var takers: [AttachmentValue.Kind: ItemList] = [:]
-    private var takerSpots: [String: Spot] = [:]
     private var chipActions: [AttachmentValue.Kind: ItemList] = [:]
     private var chipActionRows: [String: (spot: String, action: ChipAction)] = [:]
 
@@ -37,34 +35,27 @@ struct CommandIndex {
             }
         }
         list.replace(rows)
-        for kind in AttachmentValue.Kind.allCases {
-            let takes = cards.filter { $0.spot.triggers.drop.takes(kind) }
-            takes.forEach { takerSpots[$0.id] = $0.spot }
-            takers[kind, default: ItemList()].replace(takes.map { SpotItem(title: $0.spot.name, subtitle: $0.spot.subtitle, run: $0.id, keywords: $0.spot.keywords) })
-            var rows: [SpotItem] = []
-            for card in cards where card.spot.fault == nil {
-                for action in card.spot.actions {
-                    guard let offer = ChipAction(action, takes: kind) else { continue }
-                    let run = "\(card.id)\n\(action.id)"
-                    chipActionRows[run] = (card.id, offer)
-                    rows.append(SpotItem(title: action.title ?? action.id, subtitle: card.spot.name, run: run, keywords: [card.spot.name] + card.spot.keywords))
-                }
+        var chipRows: [AttachmentValue.Kind: [SpotItem]] = [:]
+        for card in cards where card.spot.fault == nil {
+            for action in card.spot.chipActions {
+                let run = "\(card.id)\n\(action.name)"
+                chipActionRows[run] = (card.id, action)
+                let keywords = action.isDrop ? card.spot.keywords : [card.spot.name] + card.spot.keywords
+                chipRows[action.kind, default: []].append(SpotItem(title: action.title, subtitle: action.detail, run: run, keywords: keywords))
             }
-            chipActions[kind, default: ItemList()].replace(rows)
+        }
+        for kind in AttachmentValue.Kind.allCases {
+            chipActions[kind, default: ItemList()].replace(chipRows[kind] ?? [])
         }
     }
 
-    func chipActions(of value: AttachmentValue, matching query: SearchQuery?, limit: Int) -> [(spot: String, action: Manifest.Action)] {
+    func chipActions(of value: AttachmentValue, matching query: SearchQuery?, limit: Int) -> [(spot: String, action: ChipAction)] {
         guard let list = chipActions[value.kind] else { return [] }
         let rows = (query.map { $0.matching(in: [list]).map(\.item) } ?? list.all).compactMap { chipActionRows[$0.run] }.filter { $0.action.fits(value) }
-        let ranked = rows.filter(\.action.isPatterned) + rows.filter { !$0.action.isPatterned }
-        return ranked.prefix(limit).map { ($0.spot, $0.action.action) }
-    }
-
-    func takers(of value: AttachmentValue, matching query: SearchQuery?, except spots: Set<String> = [], limit: Int) -> [(spot: String, title: String)] {
-        guard let list = takers[value.kind] else { return [] }
-        let rows = query.map { $0.matching(in: [list]).map(\.item) } ?? list.all
-        return Array(rows.filter { !spots.contains($0.run) && takerSpots[$0.run]?.takes(value) == true }.map { ($0.run, $0.title) }.prefix(limit))
+        let actions = rows.filter { !$0.action.isDrop }
+        let ranked = (actions.filter(\.action.isPatterned) + actions.filter { !$0.action.isPatterned }).prefix(limit)
+        let spots = Set(ranked.map(\.spot))
+        return Array((ranked + rows.filter { $0.action.isDrop && !spots.contains($0.spot) }).prefix(limit))
     }
 
     func entries(matching query: SearchQuery, text: String, limit: Int) -> [SpotsModel.Entry] {

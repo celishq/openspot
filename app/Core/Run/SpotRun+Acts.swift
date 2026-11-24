@@ -69,8 +69,7 @@ extension SpotRun {
     @discardableResult
     public func drop(_ value: AttachmentValue) -> Bool {
         guard spot.takes(value) else { return false }
-        let title = value.kind == .file ? nil : value.title
-        waitingFiles.append(ScriptEntry.drop.message(named: [value.kind.rawValue: value.values, "title": title.map { [$0] } ?? []]))
+        waitingFiles.append(ScriptEntry.drop.message(value.values))
         startWaitingFiles()
         return true
     }
@@ -163,8 +162,8 @@ extension SpotRun {
         press(acting(action, item: item), ended: ended)
     }
 
-    func run(_ action: CommandAction, inputs: [TextBlock.Field]) {
-        press(Message(action.callName, inputs: inputs))
+    func run(_ offer: ChipAction, with value: AttachmentValue) {
+        press(offer.message(for: value))
     }
 
     public func change(_ action: CommandAction) async throws -> CallAnswer {

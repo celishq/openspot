@@ -9,7 +9,7 @@ final class AttachmentActionTests: AttachmentCase {
 
     private func actionSpot(_ name: String, title: String, actions: [(id: String, title: String, extra: String)], drop: Bool = false) throws {
         let tables = actions.map { "[actions.\($0.id)]\ntitle = '\($0.title)'\n\($0.extra)" }.joined(separator: "\n")
-        let on = drop ? "\n[on]\ndrop = ['url']" : ""
+        let on = drop ? "\n[on]\ndrop = ['mov']" : ""
         try script(name, toml: "title = '\(title)'\n\(tables)\(on)", """
         case "$1" in
           drop) grep '^input\\.' | sed 's/^/drop /' >> '\(path("\(name)-log"))' ;;
@@ -31,6 +31,23 @@ final class AttachmentActionTests: AttachmentCase {
         XCTAssertTrue(model.handleKey(tab))
     }
 
+    private var movie: String {
+        path("a.mov")
+    }
+
+    private func file(more: String = "") -> String {
+        "inputs.file = { type = 'file', required = true }\n\(more)"
+    }
+
+    private func openMovie() async throws {
+        FileManager.default.createFile(atPath: movie, contents: Data())
+        try source("finder", adds: "file='\(movie)'")
+        host.frontApp = FrontApp(bundleID: "com.apple.finder")
+        await open()
+        try await wait("the value of the file") { self.chips.first?.value != nil }
+        XCTAssertTrue(model.handleKey(tab))
+    }
+
     private var shown: [String] {
         model.visible.map(\.state.title)
     }
@@ -39,11 +56,11 @@ final class AttachmentActionTests: AttachmentCase {
         model.visible.map { $0.state.subtitle ?? "" }
     }
 
-    func testATakerRowShowsTheDetailOfItsSpot() async throws {
-        try taker("keep", detail: "Keep a page", takes: "'url'")
-        try taker("bare", takes: "'url'")
+    func testADropRowShowsTheTitleAndTheDetailOfItsSpot() async throws {
+        try taker("keep", detail: "Keep a page", takes: "'mov'")
+        try taker("bare", takes: "'mov'")
 
-        try await openPull()
+        try await openMovie()
 
         XCTAssertEqual(Set(model.visible.map { "\($0.state.title) \($0.state.subtitle ?? "none")" }), ["keep Keep a page", "bare none"])
     }
@@ -99,24 +116,43 @@ final class AttachmentActionTests: AttachmentCase {
         XCTAssertEqual(shown, ["keep"])
     }
 
-    func testPatternedActionsComeFirstThenActionsByKindThenTakersUpToFive() async throws {
-        try actionSpot("pages", title: "Pages", actions: [("save", "Save page", url()), ("share", "Share page", url())])
+    func testPatternedActionsComeFirstThenActionsByKindUpToFive() async throws {
+        try actionSpot("pages", title: "Pages", actions: [("save", "Save page", url()), ("share", "Share page", url()), ("print", "Print page", url())])
         try actionSpot("review", title: "Review", actions: [("approve", "Approve", url(pattern: pullPattern)), ("merge", "Merge", url(pattern: pullPattern))])
-        for name in ["keep", "save"] { try taker(name, takes: "'url'") }
 
         try await openPull()
 
-        XCTAssertEqual(shown, ["Approve", "Merge", "Save page", "Share page", "keep"])
-        XCTAssertEqual(details, ["Review", "Review", "Pages", "Pages", ""])
+        XCTAssertEqual(shown, ["Approve", "Merge", "Save page", "Share page", "Print page"])
+        XCTAssertEqual(details, ["Review", "Review", "Pages", "Pages", "Pages"])
     }
 
-    func testASpotWhoseActionShowsDoesNotAlsoShowAsATaker() async throws {
-        try actionSpot("review", title: "Review", actions: [("approve", "Approve", url(pattern: pullPattern))], drop: true)
-        try taker(takes: "'url'")
+    func testDropRowsComeAfterTheActionsOfAFileUpToFive() async throws {
+        try actionSpot("clips", title: "Clips", actions: [("cut", "Cut", file()), ("trim", "Trim", file()), ("play", "Play", file()), ("mute", "Mute", file())])
+        for name in ["keep", "save"] { try taker(name, takes: "'mov'") }
 
-        try await openPull()
+        try await openMovie()
 
-        XCTAssertEqual(shown, ["Approve", "keep"])
+        XCTAssertEqual(shown, ["Cut", "Trim", "Play", "Mute", "keep"])
+    }
+
+    func testASpotWhoseActionShowsDoesNotAlsoShowItsDrop() async throws {
+        try actionSpot("clips", title: "Clips", actions: [("cut", "Cut", file())], drop: true)
+        try taker(takes: "'mov'")
+
+        try await openMovie()
+
+        XCTAssertEqual(shown, ["Cut", "keep"])
+    }
+
+    func testReturnOnADropRowRunsTheDropWithTheFile() async throws {
+        try taker(takes: "'mov'")
+        try await openMovie()
+
+        model.runSelected()
+
+        try await wait("the drop") { self.log("keep-drops").count == 1 }
+        XCTAssertEqual(log("keep-drops"), ["input.file=\(movie)"])
+        XCTAssertFalse(model.attachments.isOn)
     }
 
     func testReturnRunsTheActionWithTheValueAndTheTitleOfTheChip() async throws {

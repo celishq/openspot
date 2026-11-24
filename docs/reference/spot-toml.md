@@ -141,7 +141,7 @@ When Openspot runs your spot by itself.
 | `schedule`            | [text]          | `schedule`                        | At each cron line, such as `"0 9 * * 1-5"`, shown or not. |
 | `command`             | [text]          | `command`                         | When people type `/<word>` in the panel's search.        |
 | `search`              | `true` or regex | `show`, or `search`               | `true` adds your items to the panel's search. A regex runs `search` for each text that matches. |
-| `drop`                | [text]          | `drop`                            | When people drop a file of a kind on your card, such as `png`, `folder` or `*`, or hand it a `url` or a `text` with Tab. |
+| `drop`                | [text]          | `drop`                            | When people drop a file of a kind on your card, such as `png`, `folder` or `*`, or hand it a file chip with Tab. A [chip](../connect/attachments.md#how-it-takes-it) of a `url` or a `text` goes to an action. |
 | `"attachment.pick"`   | regex or `"browsers"` | `attachment.pick`           | In a source, when Tab first picks its chip in an open of the panel over an app whose bundle ID matches, or with `"browsers"` over any browser that Openspot reads; see [Attach what people work on](../connect/attachments.md). |
 | `"cache.<name>"`      | an age          | `cache.<name>`                    | When a read of the cache `<name>` finds it missing or older than the age, such as `"1d"`; see [Keep a copy that goes old](../remember/cache.md). |
 

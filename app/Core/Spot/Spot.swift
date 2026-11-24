@@ -289,7 +289,7 @@ public struct Spot: Equatable, Sendable {
     }
 
     public var takesDrops: Bool {
-        self.triggers.drop.takes(.file)
+        self.triggers.drop.takesAny
     }
 
     public func runsOnOpen(over front: String?, feedsAttachment: Bool) -> Bool {
@@ -297,16 +297,16 @@ public struct Spot: Equatable, Sendable {
     }
 
     public func takes(_ value: AttachmentValue) -> Bool {
-        guard value.kind == .file else { return self.triggers.drop.takes(value.kind) }
-        return !value.files.paths.isEmpty && value.files.paths.allSatisfy { self.triggers.drop.takes(path: $0, kind: value.files.kind(of: $0)) }
+        self.triggers.drop.takes(value)
     }
 
-    func offers(_ kind: AttachmentValue.Kind) -> Bool {
-        self.actions.contains { ChipAction($0, takes: kind) != nil }
+    var chipActions: [ChipAction] {
+        let actions = AttachmentValue.Kind.allCases.flatMap { kind in self.actions.compactMap { ChipAction($0, of: self.name, takes: kind) } }
+        return actions + [ChipAction(drop: self.triggers.drop, title: self.name, detail: self.subtitle)].compactMap { $0 }
     }
 
     func offers(_ value: AttachmentValue) -> Bool {
-        self.actions.contains { ChipAction($0, takes: value.kind)?.fits(value) == true }
+        self.chipActions.contains { $0.fits(value) }
     }
 
     public func taking(_ output: Frame) -> Spot {

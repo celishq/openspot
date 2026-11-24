@@ -81,8 +81,10 @@ final class SnoozeTabPanelTests: PanelCase {
 
     private func snooze(_ id: String, url: String) async throws {
         await model.reload()
-        let action = try XCTUnwrap(model.sheets["snooze-tab"]).spot.action(id)
-        model.sheets["snooze-tab"]?.run(.command(action), inputs: [TextBlock.Field(key: "url", value: url), TextBlock.Field(key: "title", value: "A page")])
+        let sheet = try XCTUnwrap(model.sheets["snooze-tab"])
+        let value = AttachmentValue(url: url, title: "A page")
+        let offer = try XCTUnwrap(sheet.spot.chipActions.first { $0.name == id && $0.fits(value) })
+        sheet.run(offer, with: value)
         try await wait("the toast of the snooze") { self.host.confirms.contains { $0.hasPrefix("Snoozed") } }
     }
 

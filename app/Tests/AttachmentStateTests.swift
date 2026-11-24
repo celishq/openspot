@@ -93,7 +93,7 @@ final class AttachmentStateTests: AttachmentCase {
         XCTAssertEqual(model.selected, 0)
     }
 
-    func testTypingInTheAttachmentBuildsTheIndexOfTakersOnce() async throws {
+    func testTypingInTheAttachmentBuildsTheIndexOfChipRowsOnce() async throws {
         try await openWithTab(takers: ["keep", "save"])
         XCTAssertTrue(model.handleKey(tab))
         let builds = model.spotListBuilds
@@ -118,7 +118,7 @@ final class AttachmentStateTests: AttachmentCase {
         XCTAssertEqual(model.selected, 0)
     }
 
-    func testReturnHandsTheValueToTheDropOfTheSelectedRow() async throws {
+    func testReturnHandsTheValueToTheActionOfTheSelectedRow() async throws {
         try await openWithTab()
         XCTAssertTrue(model.handleKey(tab))
 
@@ -164,10 +164,10 @@ final class AttachmentStateTests: AttachmentCase {
     }
 
     func testASlashRunsItsCommandWhileAChipIsSelected() async throws {
-        try script("translate", toml: "title = 'Translate'\n\n[on]\ncommand = ['translate']\ndrop = ['url']", """
+        try script("translate", toml: "title = 'Translate'\n[actions.take]\ntitle = 'Take'\ninputs.url = { type = 'url', required = true }\n\n[on]\ncommand = ['translate']", """
         case "$1" in
           command) echo command >> '\(path("translate-log"))' ;;
-          drop) echo drop >> '\(path("translate-log"))' ;;
+          take) echo take >> '\(path("translate-log"))' ;;
           *) printf 'text=x\\ntitle=Translate\\n' ;;
         esac
         """)
@@ -181,9 +181,9 @@ final class AttachmentStateTests: AttachmentCase {
     }
 
     func testASlashThatNamesNoCommandSearchesAndHandsNothingToAnAnswer() async throws {
-        try script("echo", toml: "title = 'Echo'\n\n[on]\nsearch = '.'\ndrop = ['url']", """
+        try script("echo", toml: "title = 'Echo'\n[actions.take]\ntitle = 'Take'\ninputs.url = { type = 'url', required = true }\n\n[on]\nsearch = '.'", """
         case "$1" in
-          drop) echo drop >> '\(path("echo-log"))' ;;
+          take) echo take >> '\(path("echo-log"))' ;;
           *) printf 'item=x\\ntitle=Echo\\n' ;;
         esac
         """)
@@ -222,7 +222,7 @@ final class AttachmentStateTests: AttachmentCase {
         XCTAssertEqual(model.selected, 0)
     }
 
-    func testCommandReturnOnATakerRowOpensNoSettings() async throws {
+    func testCommandReturnOnAChipRowOpensNoSettings() async throws {
         try await openWithTab()
         XCTAssertTrue(model.handleKey(tab))
 

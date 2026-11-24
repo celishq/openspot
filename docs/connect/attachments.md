@@ -15,8 +15,11 @@ title = "Page Title"
 icon = "textformat"
 uses = ["clipboard"]
 
-[on]
-drop = ["url"]
+[actions.copy-title]
+title = "Copy title"
+offers = ["attachments"]
+inputs.url = { type = "url", required = true }
+inputs.title = "text"
 ```
 
 `page-title.spot/page-title.sh`:
@@ -25,37 +28,39 @@ drop = ["url"]
 #!/bin/sh
 . "$OPENSPOT_SH"
 case "$1" in
-  drop)
+  copy-title)
     printf '%s' "$(value input.title)" | openspot clipboard copy
     openspot toast "Copied the title."
     ;;
 esac
 ```
 
-Turn on Browser Tab in the Attachments spot. Open the panel over Safari, press Tab, and pick Page Title. It copies the title of
-the tab.
+Turn on Browser Tab in the Attachments spot. Open the panel over Safari, press Tab, and pick Copy title. It copies the
+title of the tab.
 
 ## How it takes it
 
-`drop` takes the kinds of value your spot takes: `url`, `text`, and a file's extension, `folder` or `*`. A star takes
-any file, but no `url` and no `text`. When people pick your spot, Openspot runs `drop` with the value on stdin:
+An action shows as a row under the chip when it has a `title` and one required input of the chip's kind: `url`, `text`,
+or `file` or `[file]` for files. Its other inputs are optional. The row shows the action's title, with your spot's title
+under it. When people pick it, Openspot runs the action with the value and the chip's title on stdin:
 
 ```ini
 input.url=https://example.com/a
 input.title=Example
 ```
 
-A `text` comes as `input.text`, and files as `input.file`, once for each file, as a real drop of files does. After the
-run, Openspot opens your sheet when Return opens it, and closes the panel when it doesn't.
+`input.title` comes only when the action has a `title` input. After the run, Openspot opens your sheet when Return opens
+it, and closes the panel when it doesn't.
+
+Files also go to a spot whose [`drop`](../react/mac-events.md#take-a-dropped-file) takes each of them. Its row shows your
+spot's title, with its `detail` under it, and Openspot runs `drop` with one `input.file` for each file, as a real drop
+of files does.
 
 ## Offer an action
 
-An action shows as a row of its own when it has a `title` and one required input of the chip's kind. A `file` or `[file]`
-input takes files. Its other inputs are optional. A [`pattern`](../reference/spot-toml.md#an-input) shows it only for
-the values that match.
-
 Such an action is also a command that people run from the search, the `⌘K` menu or a key. With
-`offers = ["attachments"]`, it shows only for a chip. Use it for an action that needs the value, such as Approve.
+`offers = ["attachments"]`, it shows only for a chip. A [`pattern`](../reference/spot-toml.md#an-input) shows it only for
+the values that match. Use it for an action that needs the value, such as Approve.
 
 `review.spot/spot.toml`:
 
@@ -85,18 +90,10 @@ esac
 ```
 
 Open the panel over a pull request and press Tab. Approve shows first, with Review under it. Return asks for a second
-press, since the action has `confirm`. Then Openspot runs `approve` with the value and the chip's title on stdin:
+press, since the action has `confirm`. Then Openspot runs `approve` with the value and the chip's title.
 
-```ini
-input.url=https://github.com/o/r/pull/12
-input.title=Fix the build
-```
-
-`input.title` comes only when the action has a `title` input. After the run, the panel opens your sheet or closes, as
-after `drop`.
-
-The actions whose `pattern` matches come first, then the other actions, then the spots that take the value with `drop`.
-A spot with an action in the list does not show again for `drop`. A spot that takes it with `drop` shows its title, with its `detail` under it. The list holds five rows at most.
+The actions whose `pattern` matches come first, then the other actions, then the spots that take the files with `drop`.
+A spot with an action in the list does not show again for `drop`. The list holds five rows at most.
 
 ## Give a value
 
@@ -160,8 +157,8 @@ esac
 - While `attachment.pick` runs, the field says `Reading <app>…`. When it adds nothing, the field says `Nothing to attach from
   <app>`. When it fails, or gives no answer in 3 seconds, the field shows why, such as `Openspot can't read Safari · ⏎ Allow`
   when `openspot browser tab` fails since Openspot may not read it yet. Return then opens the Attachments spot, where people allow it, and the next Tab reads again.
-- A chip shows only when a spot that is on takes its kind or offers an action for it. A source runs only when some spot
-  takes or offers some kind.
+- A chip shows only when a spot that is on has a row for it. A source runs only when some spot has a row for some
+  kind.
 - A source stays off the grid and out of the search. People turn it on in the Attachments spot.
 
 ## Next

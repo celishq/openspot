@@ -50,11 +50,16 @@ class AttachmentCase: PanelCase {
     }
 
     func taker(_ name: String = "keep", detail: String? = nil, takes kinds: String) throws {
+        let words = kinds.split(separator: ",").map { $0.trimmingCharacters(in: CharacterSet(charactersIn: " '")) }
+        let values = words.filter { $0 == "url" || $0 == "text" }
+        let files = words.filter { !values.contains($0) }.map { "'\($0)'" }
+        let actions = values.map { "[actions.\($0)]\ntitle = '\(name)'\noffers = ['attachments']\ninputs.\($0) = { type = '\($0)', required = true }\ninputs.title = 'text'\n" }
         let line = detail.map { "detail = '\($0)'\n" } ?? ""
-        try script(name, toml: "title = '\(name)'\n\(line)\n[on]\ndrop = [\(kinds)]", """
+        let drop = files.isEmpty ? "" : "\n[on]\ndrop = [\(files.joined(separator: ", "))]"
+        try script(name, toml: "title = '\(name)'\n\(line)\n\(actions.joined(separator: "\n"))\(drop)", """
         case "$1" in
           show) printf 'text=x\\ntitle=\(name)\\n' ;;
-          drop) grep '^input\\.' >> '\(path("\(name)-drops"))' ;;
+          drop|url|text) grep '^input\\.' >> '\(path("\(name)-drops"))' ;;
         esac
         """)
     }

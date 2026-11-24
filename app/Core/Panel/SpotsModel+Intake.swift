@@ -66,16 +66,9 @@ extension SpotsModel {
     }
 
     public func drop(_ paths: [String], on id: String, in place: SheetPlace = .panel) -> Bool {
-        guard acceptsDrop(paths, on: id, in: place) else { return false }
-        return landDrop(AttachmentValue(files: runs.dragged), on: id, in: place, endsDrag: true)
-    }
-
-    @discardableResult
-    func landDrop(_ value: AttachmentValue, on id: String, in place: SheetPlace = .panel, endsDrag: Bool = false, leavesAttachment: Bool = false) -> Bool {
-        if leavesAttachment { leaveAttachment() }
-        guard sheets[id]?.drop(value) == true else { return false }
+        guard acceptsDrop(paths, on: id, in: place), sheets[id]?.drop(AttachmentValue(files: runs.dragged)) == true else { return false }
         guard place == .panel else { return true }
-        if endsDrag { endDrag() }
+        endDrag()
         settleGive(on: id)
         return true
     }

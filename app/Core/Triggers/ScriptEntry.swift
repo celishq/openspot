@@ -11,9 +11,7 @@ public struct ScriptEntry: Equatable, Sendable {
     static let search = ScriptEntry(name: "search", inputs: [.init(name: "text", type: text), alt])
     static let every = ScriptEntry(name: "every", inputs: [])
     static let schedule = ScriptEntry(name: "schedule", inputs: [.init(name: "cron", type: text), .init(name: "late", type: ValueType(.duration))])
-    static let drop = ScriptEntry(name: "drop", inputs: [
-        .init(name: "file", type: ValueType(.file, isList: true)), .init(name: "url", type: ValueType(.url), isRequired: false), .init(name: "text", type: text, isRequired: false), .init(name: "title", type: text, isRequired: false),
-    ])
+    static let drop = ScriptEntry(name: "drop", inputs: [.init(name: "file", type: ValueType(.file, isList: true))])
     static let drag = ScriptEntry(name: "drag", inputs: [.init(name: "item", type: ValueType(.text, isList: true))])
     static let sheetText = ScriptEntry(name: EventName.sheetText, inputs: [value, alt])
     static let all = [show, press, command, search, every, schedule, drop, drag]
@@ -28,9 +26,5 @@ public struct ScriptEntry: Equatable, Sendable {
     func message(_ values: [String]..., after given: [TextBlock.Field] = [], then carried: [TextBlock.Field] = []) -> Message {
         let own = zip(inputs, values).flatMap { input, values in values.map { TextBlock.Field(key: input.name, value: $0) } }
         return Message(name, inputs: given + own + carried)
-    }
-
-    func message(named values: [String: [String]]) -> Message {
-        Message(name, inputs: inputs.flatMap { input in (values[input.name] ?? []).map { TextBlock.Field(key: input.name, value: $0) } })
     }
 }

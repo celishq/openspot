@@ -219,16 +219,7 @@ final class SpotDropTests: XCTestCase {
         XCTAssertEqual(log(), ["drop " + paths.joined(separator: " ")])
     }
 
-    func testUrlAndTextAreKindsOfValueNotExtensions() {
-        let card = command(drop: ["url", "text"])
-
-        XCTAssertTrue(card.takes(AttachmentValue(url: "https://example.com")))
-        XCTAssertTrue(card.takes(AttachmentValue(text: "hola")))
-        XCTAssertFalse(card.takes(paths: [file("a.url"), file("b.text")]))
-        XCTAssertFalse(card.takesDrops)
-    }
-
-    func testAStarTakesFilesButNoUrlAndNoText() {
+    func testAStarTakesFilesAndNoUrlOrText() {
         let card = command(drop: ["*"])
 
         XCTAssertFalse(card.takes(AttachmentValue(url: "https://example.com")))
@@ -242,26 +233,6 @@ final class SpotDropTests: XCTestCase {
         XCTAssertTrue(card.takes(AttachmentValue(files: FileKinds.Disk().read([file("a.mov")]))))
         XCTAssertFalse(card.takes(AttachmentValue(files: FileKinds.Disk().read([file("a.txt")]))))
         XCTAssertFalse(card.takes(AttachmentValue(url: "https://example.com")))
-    }
-
-    func testAUrlRunsTheDropWithTheUrlOnStdin() async throws {
-        let sheet = try sheet(toml: "\(TestSpot.command)\n\n[on]\ndrop = [\"url\"]", """
-        printf '%s\\n' "$in" | grep '^input\\.' > '\(path("arguments"))'
-        """)
-
-        XCTAssertTrue(sheet.drop(AttachmentValue(url: "https://example.com/a b")))
-
-        try await wait("the call") { sheet.calls.isEmpty && self.log().count == 1 }
-        let lines = try String(contentsOfFile: path("arguments"), encoding: .utf8).split(separator: "\n").map(String.init)
-        XCTAssertEqual(lines, ["input.url=https://example.com/a b"])
-        XCTAssertEqual(log(), ["drop"])
-    }
-
-    func testTextThatTheCardDoesNotTakeRunsNothing() async throws {
-        let sheet = try sheet(toml: "\(TestSpot.command)\n\n[on]\ndrop = [\"url\"]")
-
-        XCTAssertFalse(sheet.drop(AttachmentValue(text: "hola")))
-        XCTAssertTrue(sheet.calls.isEmpty)
     }
 
     func testADropThatTheCardDoesNotTakeRunsNothing() async throws {
