@@ -28,6 +28,17 @@ final class AgentPromptTests: XCTestCase {
         XCTAssertEqual(AgentPrompt.command(of: app), app)
     }
 
+    func testEachStepGivesAPathWithASpaceInQuotes() {
+        let app = "/Apps/Openspot Nightly.app/Contents/Helpers/openspot"
+        let prompt = AgentPrompt(folder: folder, guide: folder, app: app).building("Show the weather")
+
+        XCTAssertTrue(prompt.contains("\"\(app)\" guide"))
+        XCTAssertTrue(prompt.contains("\"\(app)\" spot run"))
+        XCTAssertTrue(prompt.contains("\"\(app)\" check spots --json"))
+        XCTAssertTrue(prompt.contains("\"\(app)\" spot open"))
+        XCTAssertFalse(prompt.contains(" \(app) "))
+    }
+
     func testTheBuildingPromptBuildsTheSpotToTheEndWithNoQuestion() {
         let prompt = AgentPrompt(folder: folder, guide: folder, app: "openspot").building("Show the weather")
 

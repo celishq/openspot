@@ -37,6 +37,15 @@ final class AgentNoteTests: XCTestCase {
         XCTAssertEqual(saved("AGENTS.md"), "My own rules\n")
     }
 
+    func testTheNoteGivesAPathWithASpaceInQuotes() throws {
+        let path = "/Apps/Openspot Nightly.app/Contents/Helpers/openspot"
+        try AgentNote(command: path).write(in: folder)
+
+        let note = try XCTUnwrap(saved("AGENTS.md"))
+        XCTAssertTrue(note.contains("`\"\(path)\"`"))
+        XCTAssertTrue(note.contains("in quotes"))
+    }
+
     func testTheNoteGivesNoSpot() throws {
         try AgentNote(command: "/Apps/openspot").write(in: folder)
 
