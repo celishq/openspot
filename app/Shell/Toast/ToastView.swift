@@ -3,17 +3,11 @@ import SwiftUI
 
 struct ToastView: View {
     let toast: Toast
-    var toasts: Toasts?
 
     var body: some View {
         content
             .padding(.horizontal, SpotTokens.toastMargin)
             .padding(.vertical, SpotTokens.toastPaddingY)
-            .modifier(SpotGlass(shape: SpotRoundShape(radius: SpotTokens.toastRadius)))
-            .contentShape(Rectangle())
-            .onTapGesture { toasts?.press(toast.id) }
-            .allowsHitTesting(toast.isShown)
-            .environment(\.spotIsShown, toast.isShown)
     }
 
     @ViewBuilder

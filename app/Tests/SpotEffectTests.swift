@@ -235,12 +235,12 @@ final class SpotEffectTests: PanelCase {
     func testToastRemoveTakesTheToastOfTheSpotAway() async throws {
         try await openFlow()
         _ = try await pressed("kept")
-        XCTAssertEqual(model.toasts.waiting.map(\.id), [ToastID(spot: "flow", name: .given("up"))])
+        XCTAssertEqual(model.toasts.queue.map(\.id), [ToastID(spot: "flow", name: .given("up"))])
 
         let code = try await pressed("drop")
 
         XCTAssertEqual(code, "drop 0")
-        XCTAssertTrue(model.toasts.waiting.isEmpty)
+        XCTAssertTrue(model.toasts.queue.isEmpty)
     }
 
     func testAPressOnAToastRunsItsAction() async throws {
@@ -257,7 +257,7 @@ final class SpotEffectTests: PanelCase {
         let link = try XCTUnwrap(URL(string: "x-apple.systempreferences:com.apple.preference.security"))
         model.toast(.failure("Openspot cannot paste.", fix: .url(link)))
 
-        model.toasts.press(try XCTUnwrap(model.toasts.waiting.first).id)
+        model.toasts.press(try XCTUnwrap(model.toasts.queue.first).id)
 
         XCTAssertEqual(host.opened, [link])
     }

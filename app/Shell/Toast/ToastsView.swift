@@ -6,15 +6,12 @@ struct ToastsView: View {
 
     var body: some View {
         VStack(spacing: SpotTokens.toastBarsGap) {
-            ZStack(alignment: .top) {
-                ForEach(toasts.queue) { toast in
-                    ToastView(toast: toast, toasts: toasts)
-                        .zIndex(toast.isShown ? 1 : 0)
-                }
+            if let front = toasts.front {
+                ToastSurface(toasts: toasts, front: front)
             }
-            .frame(height: toasts.frontHeight, alignment: .top)
             ToastBars(count: toasts.bars)
         }
+        .environment(\.spotIsShown, toasts.isShown)
         .padding(SpotTokens.toastRoom)
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
         .contentShape(Rectangle())

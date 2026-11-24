@@ -8,7 +8,7 @@ public protocol ToastWindow: AnyObject {
     func bringToFront()
     func putAway()
     func nextFrame(_ body: @escaping @MainActor () -> Void)
-    func move(_ body: () -> Void)
+    func move(_ body: () -> Void, completion: @escaping @MainActor () -> Void)
     func holdFixKey(_ key: Shortcut, press: @escaping @MainActor @Sendable () -> Void) -> Bool
     func dropFixKey()
 }

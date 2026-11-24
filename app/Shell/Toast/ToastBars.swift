@@ -5,12 +5,15 @@ struct ToastBars: View {
     let count: Int
 
     var body: some View {
-        HStack(spacing: SpotTokens.toastBarGap) {
+        let bar = SpotTokens.toastBar(count)
+        HStack(spacing: bar.gap) {
             ForEach(0..<count, id: \.self) { index in
-                Capsule()
-                    .fill(index == 0 ? SpotTheme.ink : SpotTheme.ink.opacity(SpotTheme.track))
-                    .frame(width: SpotTokens.toastBarWidth, height: SpotTokens.toastBarHeight)
+                Color.clear
+                    .frame(width: bar.width, height: SpotTokens.toastBarHeight)
+                    .modifier(SpotGlass(shape: SpotRoundShape(radius: SpotTokens.toastBarHeight / 2)))
+                    .opacity(index == 0 ? 1 : SpotTheme.track)
             }
         }
+        .frame(height: SpotTokens.toastBarHeight)
     }
 }

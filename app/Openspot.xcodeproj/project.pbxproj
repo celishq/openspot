@@ -69,6 +69,7 @@
 		0D705A9344FA42056E83BE93 /* SpotFile.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1B9CE0BCB6DFA62B73CB7462 /* SpotFile.swift */; };
 		0D925E836160D970705BB7A4 /* FormDraftTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 81708547DDCAC262759EB258 /* FormDraftTests.swift */; };
 		0E52A8A9B8904E263896149E /* SheetPicture.swift in Sources */ = {isa = PBXBuildFile; fileRef = 16DB4F0DC2A390811F35BBA5 /* SheetPicture.swift */; };
+		0E700D8000E33EF07B1271A6 /* ToastSurface.swift in Sources */ = {isa = PBXBuildFile; fileRef = A21172E4BB2CDA50C1A9A00A /* ToastSurface.swift */; };
 		0E7233B9561246A78F66B8A2 /* PowerLink.swift in Sources */ = {isa = PBXBuildFile; fileRef = 165DAF2D810D81B8A5004CD1 /* PowerLink.swift */; };
 		0E7749CD53212BC4C672C9E5 /* ViewVariantTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A8E4E1C1772A88D5998AAD4B /* ViewVariantTests.swift */; };
 		0E91DD35DE3A9239DF2B4860 /* CatalogSpotTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = AF254D771EC7ED00E1D037FE /* CatalogSpotTests.swift */; };
@@ -1917,6 +1918,7 @@
 		A1CE8BC21A7A4CDEE7D24501 /* ConfigDocument.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ConfigDocument.swift; sourceTree = "<group>"; };
 		A201B1B34CA8F75B76BC030A /* TerminalStop.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TerminalStop.swift; sourceTree = "<group>"; };
 		A20212D4CA96CB7CEC3DF823 /* SocketConnection.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SocketConnection.swift; sourceTree = "<group>"; };
+		A21172E4BB2CDA50C1A9A00A /* ToastSurface.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ToastSurface.swift; sourceTree = "<group>"; };
 		A21DBAA74B7E9909831A52DC /* FakeWeb.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FakeWeb.swift; sourceTree = "<group>"; };
 		A2435D7F8475B619E8C779D4 /* TextFindsTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TextFindsTests.swift; sourceTree = "<group>"; };
 		A275CEDDAA3CA4D1F91C7A0D /* SocketOption.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SocketOption.swift; sourceTree = "<group>"; };
@@ -2679,6 +2681,7 @@
 				4D762EF53EE05C4A0D453F13 /* ToastBars.swift */,
 				D14A96CD1B177F8A53D7B7DE /* ToastKeyFill.swift */,
 				F1E3218E6D4C2E9BB6661856 /* ToastPanel.swift */,
+				A21172E4BB2CDA50C1A9A00A /* ToastSurface.swift */,
 				F6E3D111F02BEDA8AC6F75DE /* ToastsView.swift */,
 				8AE7333AFB1BE8B127EE7D7B /* ToastView.swift */,
 			);
@@ -5393,6 +5396,7 @@
 				3068A05D1B709AB9CA20E460 /* ToastBars.swift in Sources */,
 				2DA0ED84843B556BFECCAA29 /* ToastKeyFill.swift in Sources */,
 				35EA5B3C2F66976ED361984D /* ToastPanel.swift in Sources */,
+				0E700D8000E33EF07B1271A6 /* ToastSurface.swift in Sources */,
 				71EEF7BECC5512145EAFB9B3 /* ToastView.swift in Sources */,
 				2DE3A0ED236C9370F07074D3 /* ToastsView.swift in Sources */,
 			);

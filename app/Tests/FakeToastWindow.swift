@@ -32,8 +32,9 @@ final class FakeToastWindow: ToastWindow {
         return true
     }
 
-    func move(_ body: () -> Void) {
+    func move(_ body: () -> Void, completion: @escaping @MainActor () -> Void) {
         body()
+        completion()
     }
 
     func dropFixKey() {

@@ -54,8 +54,8 @@ final class ToastPanel: NSPanel, ToastWindow {
         fixKey = nil
     }
 
-    func move(_ body: () -> Void) {
-        withAnimation(SpotMotion.move, body)
+    func move(_ body: () -> Void, completion: @escaping @MainActor () -> Void) {
+        withAnimation(SpotMotion.move, completionCriteria: .logicallyComplete, body, completion: completion)
     }
 
     static func make(toasts: Toasts) -> ToastPanel {

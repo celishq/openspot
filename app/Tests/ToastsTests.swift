@@ -15,7 +15,7 @@ final class ToastsTests: XCTestCase {
     }
 
     private var front: String? {
-        toasts.queue.first(where: \.isShown)?.words
+        toasts.isShown ? toasts.front?.words : nil
     }
 
     private func show(_ words: String, kind: ToastKind = .confirm, spot: String = "", press: (@MainActor @Sendable () -> Void)? = nil) async throws {
@@ -38,9 +38,9 @@ final class ToastsTests: XCTestCase {
 
         try await show("b")
 
-        XCTAssertEqual(toasts.queue.filter(\.isShown).map(\.words), ["b"])
+        XCTAssertEqual(toasts.front?.words, "b")
         XCTAssertEqual(toasts.bars, 2)
-        XCTAssertEqual(window.fronts, 2)
+        XCTAssertEqual(window.fronts, 1)
     }
 
     func testTheNextToastStepsInWhenTheShownOneLeaves() async throws {
@@ -53,22 +53,41 @@ final class ToastsTests: XCTestCase {
         XCTAssertEqual(toasts.bars, 0)
     }
 
-    func testTheWindowFitsTheBarsOnlyWhenMoreThanOneToastWaits() async throws {
+    func testTheWindowKeepsItsHeightWhenTheBarsAppear() async throws {
         try await show("a")
-        XCTAssertEqual(toasts.height, 40)
+        let alone = toasts.height
 
         try await show("b")
 
-        XCTAssertEqual(toasts.height, 40 + SpotTokens.toastBarsGap + SpotTokens.toastBarHeight)
+        XCTAssertEqual(toasts.height, alone)
+        XCTAssertEqual(alone, 40 + SpotTokens.toastBarsGap + SpotTokens.toastBarHeight)
     }
 
-    func testAFourthToastDropsTheOldest() async throws {
-        for words in ["a", "b", "c", "d"] { try await show(words) }
+    func testAToastPastTheLimitDropsTheOldest() async throws {
+        for index in 0...Toasts.limit { try await show("\(index)") }
 
-        XCTAssertEqual(front, "d")
-        XCTAssertEqual(toasts.bars, 3)
-        try await pass(MotionTokens.fadeOut, sleeps: 2, due: MotionTokens.fadeOut)
-        try await wait("the oldest leaves", until: { toasts.queue.map(\.words) == ["d", "c", "b"] })
+        XCTAssertEqual(front, "\(Toasts.limit)")
+        XCTAssertEqual(toasts.queue.count, Toasts.limit)
+        XCTAssertEqual(toasts.bars, Toasts.limit)
+        XCTAssertFalse(toasts.queue.contains { $0.words == "0" })
+    }
+
+    func testANewToastCutsInWithNoFade() async throws {
+        try await show("a")
+
+        toasts.add("b")
+
+        XCTAssertTrue(toasts.isShown)
+        XCTAssertEqual(toasts.front?.words, "b")
+    }
+
+    func testABarsRowFitsAnyCountInItsWidth() {
+        for count in 1...40 {
+            let bar = SpotTokens.toastBar(count)
+            XCTAssertLessThanOrEqual(CGFloat(count) * bar.width + CGFloat(count - 1) * bar.gap, SpotTokens.toastBarsWidth + 0.001)
+        }
+        XCTAssertEqual(SpotTokens.toastBar(3).width, SpotTokens.toastBarWidth)
+        XCTAssertLessThan(SpotTokens.toastBar(10).width, SpotTokens.toastBarWidth)
     }
 
     func testAWorkToastGivesWayToTheNextToastOfItsSpot() async throws {
@@ -85,6 +104,7 @@ final class ToastsTests: XCTestCase {
         toasts.add(try note("toast=up\ntitle=Uploading\n"), spot: "s")
         try await wait("the upload shows", until: { front == "Uploading" })
         try await show("other")
+        try await wait("the other toast's time starts", until: { clock.tolerances.count == 2 && clock.sleepCount == 1 })
         try await pass(4, sleeps: 1, due: 5)
 
         toasts.add(try note("toast=up\ntitle=Uploaded\n"), spot: "s")
@@ -92,7 +112,7 @@ final class ToastsTests: XCTestCase {
         XCTAssertEqual(toasts.queue.map(\.words), ["other", "Uploaded"])
         try await pass(1, sleeps: 1, due: 1)
         try await wait("the upload steps in", until: { front == "Uploaded" })
-        try await pass(5, sleeps: 2, due: 5)
+        try await pass(5, sleeps: 1, due: 5)
         try await wait("the upload ends", until: { front == nil })
     }
 
@@ -134,19 +154,17 @@ final class ToastsTests: XCTestCase {
         XCTAssertNil(front)
     }
 
-    func testAnIdShownAgainWhileItsToastLeavesShowsOneToast() async throws {
+    func testAnIdShownAgainWhileTheSurfaceFadesShowsItAgain() async throws {
         toasts.add(try note("toast=up\ntitle=Uploading\nkeep=true\n"), spot: "s")
         try await wait("the upload shows", until: { front == "Uploading" })
         toasts.drop("up", of: "s")
 
         toasts.add(try note("toast=up\ntitle=Uploaded\nkeep=true\n"), spot: "s")
-        try await wait("the new upload shows", until: { front == "Uploaded" })
-        try await pass(MotionTokens.fadeOut, sleeps: 1)
 
-        try await wait("one toast stays", until: { toasts.queue.map(\.words) == ["Uploaded"] })
-        XCTAssertEqual(toasts.bars, 0)
-        toasts.drop("up", of: "s")
-        XCTAssertNil(front)
+        try await wait("the new upload shows", until: { front == "Uploaded" })
+        XCTAssertEqual(toasts.queue.map(\.words), ["Uploaded"])
+        try await wait("no fade waits to put the window away", until: { clock.sleepCount == 0 })
+        XCTAssertEqual(window.putAways, 0)
     }
 
     func testAKeptToastNeverExpires() async throws {
@@ -201,11 +219,12 @@ final class ToastsTests: XCTestCase {
         XCTAssertEqual(toasts.leadKind, .confirm)
     }
 
-    func testTheWidthIsTheWidestToast() async throws {
-        try await show("a")
+    func testTheWindowFitsTheShownToast() async throws {
         try await show("longer words")
+        try await show("a")
 
-        XCTAssertEqual(toasts.width, 100 + CGFloat("longer words".count))
+        XCTAssertEqual(toasts.frontSize.width, 101)
+        XCTAssertEqual(toasts.width, max(101, SpotTokens.toastBarsWidth))
     }
 
     func testTheFixKeyPassesToTheNewestToastWithAFix() async throws {

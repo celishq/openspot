@@ -8,7 +8,6 @@ public final class Toast: Identifiable {
     public let id: ToastID
     public internal(set) var note: ToastNote
     public internal(set) var words: String
-    public internal(set) var isShown = false
     @ObservationIgnored public internal(set) var size = CGSize.zero
     @ObservationIgnored var duration: TimeInterval?
     @ObservationIgnored var press: (@MainActor @Sendable () -> Void)?
