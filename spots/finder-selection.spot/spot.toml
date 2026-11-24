@@ -4,4 +4,4 @@ detail = "Hand the selected files to a spot"
 uses = ["attachment", "read"]
 
 [on]
-attach = "^com\\.apple\\.finder$"
+"attachment.pick" = "^com\\.apple\\.finder$"

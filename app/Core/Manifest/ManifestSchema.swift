@@ -69,7 +69,7 @@ public enum ManifestSchema {
         let words: [String: Any] = ["type": "array", "items": ["type": "string"]]
         let properties: [String: Any] = [
             Manifest.Triggers.command: words, Manifest.Triggers.search: ["type": ["boolean", "string"]], Manifest.Triggers.schedule: words,
-            Manifest.Triggers.every: ["type": "integer", "minimum": 1], Manifest.Triggers.drop: words, Manifest.Triggers.attach: ["type": "string"]
+            Manifest.Triggers.every: ["type": "integer", "minimum": 1], Manifest.Triggers.drop: words, Manifest.Triggers.pick: ["type": "string"]
         ]
         return ["type": "object", "properties": properties, "additionalProperties": ["type": ["boolean", "string"]]]
     }

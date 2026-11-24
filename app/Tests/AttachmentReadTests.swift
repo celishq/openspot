@@ -33,7 +33,7 @@ final class AttachmentReadTests: AttachmentCase {
         model.runs.api = CommandAPI(mac: Mac(reads: ReadSources(mac: reads)), places: model.files, app: ModelApp(model: model), runs: model.runs)
         reads.set(front: "com.apple.Safari", access: ["com.apple.Safari": .denied])
         try taker(takes: "'url'")
-        try attach(runs: "\(cli) browser tab || exit")
+        try pickSource(runs: "\(cli) browser tab || exit")
     }
 
     private func refuse() async throws {
@@ -45,7 +45,7 @@ final class AttachmentReadTests: AttachmentCase {
 
     func testAnAttachSourceShowsItsChipUnreadAtTheOpenAndRunsNothingUntilTab() async throws {
         try taker(takes: "'url'")
-        try attach(runs: "\(cli) attachment add \(add)")
+        try pickSource(runs: "\(cli) attachment add \(add)")
         try witness()
 
         await open()
@@ -59,7 +59,7 @@ final class AttachmentReadTests: AttachmentCase {
 
     func testAnAttachSourceOverAnotherAppShowsNoChip() async throws {
         try taker(takes: "'url'")
-        try attach(runs: "\(cli) attachment add \(add)")
+        try pickSource(runs: "\(cli) attachment add \(add)")
         host.frontApp = FrontApp(bundleID: "com.apple.finder")
 
         await open()
@@ -69,7 +69,7 @@ final class AttachmentReadTests: AttachmentCase {
 
     func testTabReadsTheChipOnceAndShowsReadingThenItsPreviewAndRows() async throws {
         try taker(takes: "'url'")
-        try attach(waits: true, runs: "\(cli) attachment add \(add)")
+        try pickSource(waits: true, runs: "\(cli) attachment add \(add)")
         await open()
 
         XCTAssertTrue(model.handleKey(tab))
@@ -85,12 +85,12 @@ final class AttachmentReadTests: AttachmentCase {
         XCTAssertTrue(model.handleKey(escape))
         XCTAssertTrue(model.handleKey(tab))
         XCTAssertFalse(isReading)
-        XCTAssertEqual(log("tab-log"), ["attach"])
+        XCTAssertEqual(log("tab-log"), ["pick"])
     }
 
     func testAReadThatAddsNothingSaysSoAndReturnDoesNothing() async throws {
         try taker(takes: "'url'")
-        try attach(runs: "true")
+        try pickSource(runs: "true")
         await open()
 
         XCTAssertTrue(model.handleKey(tab))
@@ -106,7 +106,7 @@ final class AttachmentReadTests: AttachmentCase {
 
     func testAttachmentEmptyShowsTheWordsOfTheSource() async throws {
         try taker(takes: "'url'")
-        try attach(runs: "\(cli) attachment empty Nothing selected in Finder")
+        try pickSource(runs: "\(cli) attachment empty Nothing selected in Finder")
         await open()
 
         XCTAssertTrue(model.handleKey(tab))
@@ -121,7 +121,7 @@ final class AttachmentReadTests: AttachmentCase {
         host.model = model
         takeCalls()
         try taker(takes: "'url'")
-        try attach(waits: true, runs: "\(cli) attachment add \(add)")
+        try pickSource(waits: true, runs: "\(cli) attachment add \(add)")
         await open()
 
         XCTAssertTrue(model.handleKey(tab))
@@ -134,12 +134,12 @@ final class AttachmentReadTests: AttachmentCase {
         XCTAssertTrue(model.handleKey(tab))
 
         XCTAssertEqual(chips.map(\.state), [.loading])
-        try await wait("the second read") { self.log("tab-log") == ["attach", "attach"] }
+        try await wait("the second read") { self.log("tab-log") == ["pick", "pick"] }
     }
 
     func testAReadThatFailsShowsItsFailureLineAndNoToast() async throws {
         try taker(takes: "'url'")
-        try attach(runs: "echo 'The tab is gone.' >&2; exit 1")
+        try pickSource(runs: "echo 'The tab is gone.' >&2; exit 1")
         await open()
 
         XCTAssertTrue(model.handleKey(tab))
@@ -154,10 +154,10 @@ final class AttachmentReadTests: AttachmentCase {
 
     func testEscWhileReadingStopsTheReadAndLeavesTheChipUnread() async throws {
         try taker(takes: "'url'")
-        try attach(waits: true, runs: "\(cli) attachment add \(add)")
+        try pickSource(waits: true, runs: "\(cli) attachment add \(add)")
         await open()
         XCTAssertTrue(model.handleKey(tab))
-        try await wait("the start of the read") { self.log("tab-log") == ["attach"] }
+        try await wait("the start of the read") { self.log("tab-log") == ["pick"] }
 
         XCTAssertTrue(model.handleKey(escape))
 
@@ -172,31 +172,31 @@ final class AttachmentReadTests: AttachmentCase {
 
     func testTheEndOfAStoppedReadLeavesTheNextReadOfTheChipLoading() async throws {
         try taker(takes: "'url'")
-        try attach(waits: true, runs: "\(cli) attachment add \(add)")
+        try pickSource(waits: true, runs: "\(cli) attachment add \(add)")
         await open()
         XCTAssertTrue(model.handleKey(tab))
-        try await wait("the start of the read") { self.log("tab-log") == ["attach"] }
+        try await wait("the start of the read") { self.log("tab-log") == ["pick"] }
 
         XCTAssertTrue(model.handleKey(escape))
         XCTAssertTrue(model.handleKey(tab))
 
         try await wait("the end of the stopped read") { self.model.runs.usage.counts["tab"]?.runs == 1 }
         XCTAssertEqual(chips.map(\.state), [.loading])
-        try await wait("the start of the second read") { self.log("tab-log") == ["attach", "attach"] }
+        try await wait("the start of the second read") { self.log("tab-log") == ["pick", "pick"] }
         unblock()
         try await wait("the value of the second read") { self.shown == ["keep"] }
     }
 
     func testANewReadStopsTheReadItReplacesAndOnlyItsValueLands() async throws {
         try taker(takes: "'url'")
-        try attach(waits: true, runs: "\(cli) attachment add \(add)")
+        try pickSource(waits: true, runs: "\(cli) attachment add \(add)")
         await open()
         XCTAssertTrue(model.handleKey(tab))
-        try await wait("the start of the read") { self.log("tab-log") == ["attach"] }
+        try await wait("the start of the read") { self.log("tab-log") == ["pick"] }
 
-        model.runs.attach("tab", over: "com.apple.Safari")
+        model.runs.pickAttachment("tab", over: "com.apple.Safari")
 
-        try await wait("the start of the second read") { self.log("tab-log") == ["attach", "attach"] }
+        try await wait("the start of the second read") { self.log("tab-log") == ["pick", "pick"] }
         try await wait("the end of the replaced read") { self.model.runs.usage.counts["tab"]?.runs == 1 }
         unblock()
         try await wait("the value of the second read") { self.shown == ["keep"] }
@@ -217,7 +217,7 @@ final class AttachmentReadTests: AttachmentCase {
     func testASlashWordWhileAChipReadsCompletesItsCommandAndTheChipStillFills() async throws {
         try script("translate", toml: "title = 'Translate'\n\n[on]\ncommand = ['translate']", "printf 'text=x\\ntitle=Translate\\n'")
         try taker(takes: "'url'")
-        try attach(waits: true, runs: "\(cli) attachment add \(add)")
+        try pickSource(waits: true, runs: "\(cli) attachment add \(add)")
         await open()
         XCTAssertTrue(model.handleKey(tab))
 
@@ -234,10 +234,10 @@ final class AttachmentReadTests: AttachmentCase {
 
     func testAReopenWhileAChipReadsShowsItUnreadAndTheNextTabReadsAgain() async throws {
         try taker(takes: "'url'")
-        try attach(waits: true, runs: "\(cli) attachment add \(add)")
+        try pickSource(waits: true, runs: "\(cli) attachment add \(add)")
         await open()
         XCTAssertTrue(model.handleKey(tab))
-        try await wait("the start of the read") { self.log("tab-log") == ["attach"] }
+        try await wait("the start of the read") { self.log("tab-log") == ["pick"] }
 
         model.panelWillHide()
         model.panelDidHide()
@@ -249,7 +249,7 @@ final class AttachmentReadTests: AttachmentCase {
         unblock()
         XCTAssertTrue(model.handleKey(tab))
         try await wait("the value of the second read") { self.shown == ["keep"] }
-        XCTAssertEqual(log("tab-log"), ["attach", "attach"])
+        XCTAssertEqual(log("tab-log"), ["pick", "pick"])
     }
 
     func testATakerThatArrivesAfterARefusalShowsNoRow() async throws {
@@ -265,7 +265,7 @@ final class AttachmentReadTests: AttachmentCase {
 
     func testTypingHidesTheUnreadChipAsBefore() async throws {
         try taker(takes: "'url'")
-        try attach(runs: "\(cli) attachment add \(add)")
+        try pickSource(runs: "\(cli) attachment add \(add)")
         await open()
 
         model.query = "k"
@@ -277,7 +277,7 @@ final class AttachmentReadTests: AttachmentCase {
 
     func testTheActionsMenuHasNoTargetOnTheEmptyLine() async throws {
         try taker(takes: "'url'")
-        try attach(runs: "true")
+        try pickSource(runs: "true")
         await open()
 
         XCTAssertTrue(model.handleKey(tab))
@@ -289,8 +289,8 @@ final class AttachmentReadTests: AttachmentCase {
 
     func testAttachmentAddTakesTheRecordOfReadOnStdinAndIgnoresItsOtherKeys() async throws {
         try taker(takes: "'url', 'text'")
-        try attach(runs: "printf 'url=https://a.com/x\\ntitle=A page\\nage=5\\napp=com.apple.Safari\\n' | \(cli) attachment add")
-        try attach("selection", runs: "printf 'text=two\\\\nlines\\napp=com.apple.Safari\\n' | \(cli) attachment add")
+        try pickSource(runs: "printf 'url=https://a.com/x\\ntitle=A page\\nage=5\\napp=com.apple.Safari\\n' | \(cli) attachment add")
+        try pickSource("selection", runs: "printf 'text=two\\\\nlines\\napp=com.apple.Safari\\n' | \(cli) attachment add")
         await open()
 
         XCTAssertTrue(model.handleKey(tab))
@@ -304,7 +304,7 @@ final class AttachmentReadTests: AttachmentCase {
 
     func testAttachmentAddWithNothingOnStdinAddsNothingAndEndsWell() async throws {
         try taker(takes: "'url'")
-        try attach(runs: "printf '' | \(cli) attachment add")
+        try pickSource(runs: "printf '' | \(cli) attachment add")
         await open()
 
         XCTAssertTrue(model.handleKey(tab))
@@ -315,7 +315,7 @@ final class AttachmentReadTests: AttachmentCase {
 
     func testReturnOnAFailedChipWithNoRowsOpensAttachments() async throws {
         try refuseSafari()
-        try attach(runs: "echo 'The tab is gone.' >&2; exit 1")
+        try pickSource(runs: "echo 'The tab is gone.' >&2; exit 1")
         await open()
         XCTAssertTrue(model.handleKey(tab))
         try await wait("the failure") { if case .failed = self.chips.first?.state { true } else { false } }

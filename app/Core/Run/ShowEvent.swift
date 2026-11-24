@@ -28,7 +28,7 @@ public enum ShowEvent: Equatable, Sendable {
     }
 
     var tells: Bool {
-        self != .panel && name != EventName.attach
+        self != .panel && name != EventName.attachmentPick
     }
 
     var isFrequent: Bool {

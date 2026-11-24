@@ -150,7 +150,7 @@ final class AttachmentStateTests: AttachmentCase {
 
     func testAChipThatFillsWhileItIsSelectedShowsItsRows() async throws {
         try taker(takes: "'url'")
-        try attach(waits: true, runs: "\(cli) attachment add url=https://example.com/a title=A")
+        try pickSource(waits: true, runs: "\(cli) attachment add url=https://example.com/a title=A")
         await open()
         XCTAssertTrue(model.handleKey(tab))
         XCTAssertEqual(shown, [])

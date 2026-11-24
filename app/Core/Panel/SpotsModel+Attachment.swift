@@ -7,7 +7,7 @@ extension SpotsModel {
         let wasOn = attachments.isOn
         let front = isWarming ? nil : host.frontApp
         let feeds = !isWarming && entries.contains { entry in AttachmentValue.Kind.allCases.contains(where: entry.spot.triggers.drop.takes) }
-        let unread = feeds ? entries.filter { $0.spot.isSource && $0.spot.triggers.attaches(over: front?.bundleID) } : []
+        let unread = feeds ? entries.filter { $0.spot.isSource && $0.spot.triggers.picks(over: front?.bundleID) } : []
         endSpread()
         isAttachmentMoving = false
         var next = attachments
@@ -46,7 +46,7 @@ extension SpotsModel {
         let read = next.selectedChip.flatMap { !$0.isRead ? $0 : nil }
         if let read { next.mark(read.source, .loading) }
         settle(next, motion: isCycling ? nil : .edit)
-        if let read { runs.attach(read.source, over: read.app) }
+        if let read { runs.pickAttachment(read.source, over: read.app) }
     }
 
     func leaveAttachment() {

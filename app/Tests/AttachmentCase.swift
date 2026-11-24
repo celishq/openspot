@@ -36,11 +36,11 @@ class AttachmentCase: PanelCase {
         "'\(client.path)'"
     }
 
-    func attach(_ name: String = "tab", app: String = "^com\\.apple\\.Safari$", waits: Bool = false, runs body: String) throws {
+    func pickSource(_ name: String = "tab", app: String = "^com\\.apple\\.Safari$", waits: Bool = false, runs body: String) throws {
         let wait = waits ? "while [ ! -f '\(path("release"))' ]; do sleep 0.02; done\n" : ""
-        try script(name, toml: "title = '\(name)'\nuses = ['attachment', 'read']\n\n[on]\nattach = '\(app)'", """
+        try script(name, toml: "title = '\(name)'\nuses = ['attachment', 'read']\n\n[on]\n\"attachment.pick\" = '\(app)'", """
         case "$1" in
-          attach) echo attach >> '\(path("\(name)-log"))'; \(wait)\(body); echo $? >> '\(path("done"))' ;;
+          attachment.pick) echo pick >> '\(path("\(name)-log"))'; \(wait)\(body); echo $? >> '\(path("done"))' ;;
         esac
         """)
     }

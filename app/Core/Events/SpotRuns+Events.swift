@@ -17,8 +17,8 @@ extension SpotRuns {
         openPanel(showsToEnd: showsToEnd, over: front, feedsAttachment: feedsAttachment)
     }
 
-    func attach(_ id: String, over front: String?) {
-        sheets[id]?.attach(over: front)
+    func pickAttachment(_ id: String, over front: String?) {
+        sheets[id]?.pickAttachment(over: front)
     }
 
     func stopAttach(_ id: String) {

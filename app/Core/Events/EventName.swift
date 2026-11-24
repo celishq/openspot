@@ -17,7 +17,7 @@ public enum EventName {
     public static let panelOpen = "panel.open"
     public static let searchText = "search.text"
     public static let sheetText = "sheet.text"
-    public static let attach = "attach"
+    public static let attachmentPick = "attachment.pick"
     public static let declarable = [sheetOpen, panelOpen, sheetText, spotWant, clipboard, frontApp, appUpdate, appLaunch, screenWake, systemLoad, powerChange, diskMount, deviceConnect]
     public static let valueless = [sheetOpen, sheetText, spotWant, clipboard, screenWake, appLaunch]
 

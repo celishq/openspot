@@ -62,7 +62,7 @@
         ]
       },
       "properties" : {
-        "attach" : {
+        "attachment.pick" : {
           "type" : "string"
         },
         "command" : {

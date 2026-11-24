@@ -3,14 +3,23 @@ import XCTest
 
 @MainActor
 final class AttachmentSourceTests: AttachmentCase {
-    func testASourceThatTiesPanelOpenToAnAppIsAFaultThatNamesAttach() async throws {
+    func testASourceThatTiesPanelOpenToAnAppIsAFaultThatNamesAttachmentPick() async throws {
         try script("tab", toml: "title = 'Tab'\nuses = ['attachment']\n\n[on]\n\"panel.open\" = '^com\\.apple\\.Safari$'", "true")
 
         await model.reload()
 
         let faults = try XCTUnwrap(model.entry("tab")?.spot.fault?.faults)
-        XCTAssertTrue(faults.contains { $0.contains("attach = \"<regex>\"") }, "\(faults)")
+        XCTAssertTrue(faults.contains { $0.contains("\"attachment.pick\" = \"<regex>\"") }, "\(faults)")
         XCTAssertEqual(chips, [])
+    }
+
+    func testTheOldAttachKeyIsAnUnknownEvent() async throws {
+        try script("tab", toml: "title = 'Tab'\nuses = ['attachment']\n\n[on]\nattach = '^com\\.apple\\.Safari$'", "true")
+
+        await model.reload()
+
+        let faults = try XCTUnwrap(model.entry("tab")?.spot.fault?.faults)
+        XCTAssertTrue(faults.contains { $0.contains("unknown event: attach.") && $0.contains("attachment.pick") }, "\(faults)")
     }
 
     func testASourceThatEndsWithNoValueLeavesNoChip() async throws {
@@ -62,7 +71,7 @@ final class AttachmentSourceTests: AttachmentCase {
     func testAChipOfTheFrontAppShowsTheAppsIconAndAnotherChipItsSpotsSymbol() async throws {
         host.frontApp = FrontApp(bundleID: "com.apple.Safari", path: "/Applications/Safari.app")
         try taker(takes: "'text', 'url'")
-        try attach("tab", waits: true, runs: "\(cli) attachment add url=https://example.com/a")
+        try pickSource("tab", waits: true, runs: "\(cli) attachment add url=https://example.com/a")
         try source("copy", adds: "text=hola")
 
         await open()

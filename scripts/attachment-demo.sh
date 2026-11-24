@@ -16,8 +16,8 @@ demo() {
   rm -rf "$folder"
   mkdir -p "$folder"
   if [ -n "$5" ]; then
-    printf 'title = "%s"\nicon = "%s"\nuses = ["attachment"]\n\n[on]\nattach = "%s"\n' "$2" "$3" "$5" > "$folder/spot.toml"
-    printf '#!/bin/sh\ncase "$1" in\n  attach) openspot attachment add %s ;;\nesac\n' "$4" > "$folder/$1.sh"
+    printf 'title = "%s"\nicon = "%s"\nuses = ["attachment"]\n\n[on]\n"attachment.pick" = "%s"\n' "$2" "$3" "$5" > "$folder/spot.toml"
+    printf '#!/bin/sh\ncase "$1" in\n  attachment.pick) openspot attachment add %s ;;\nesac\n' "$4" > "$folder/$1.sh"
   else
     printf 'title = "%s"\nicon = "%s"\nuses = ["attachment"]\n\n[on]\n"panel.open" = true\n' "$2" "$3" > "$folder/spot.toml"
     printf '#!/bin/sh\ncase "$1" in\n  show) openspot attachment add %s ;;\nesac\n' "$4" > "$folder/$1.sh"

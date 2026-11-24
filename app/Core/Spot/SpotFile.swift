@@ -33,7 +33,7 @@ public struct SpotFile: Equatable, Sendable {
         try manifest.triggers.check(manifest, name: name)
         let uses = try SpotUse.set(manifest.uses, of: name)
         if uses.contains(.attachment), manifest.triggers.filters[EventName.panelOpen] != nil {
-            throw SpotError.fault("\(name) uses attachment, so its [on] \"panel.open\" takes only true. Tie it to an app with attach = \"<regex>\"")
+            throw SpotError.fault("\(name) uses attachment, so its [on] \"panel.open\" takes only true. Tie it to an app with \"attachment.pick\" = \"<regex>\"")
         }
         let isInline = url.pathExtension == Self.inlineExtension && !FileManager.default.isExecutableFile(atPath: url.path)
         if isInline, manifest.stay == true {

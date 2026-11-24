@@ -41,8 +41,8 @@ final class AttachmentLookTests: AttachmentCase {
 
     func testAttachmentAddTakesAnIconInItsWordsAndOnStdin() async throws {
         try taker(takes: "'url', 'text'")
-        try attach(runs: "\(cli) attachment add url=https://a.com icon=star")
-        try attach("selection", runs: "printf 'text=hola\\nicon=★\\n' | \(cli) attachment add")
+        try pickSource(runs: "\(cli) attachment add url=https://a.com icon=star")
+        try pickSource("selection", runs: "printf 'text=hola\\nicon=★\\n' | \(cli) attachment add")
         await open()
 
         XCTAssertTrue(model.handleKey(ActionKey(name: "tab")))

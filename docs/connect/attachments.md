@@ -53,11 +53,11 @@ run, Openspot opens your sheet when Return opens it, and closes the panel when i
 A source has `attachment` in its `uses`, and puts one value in the field with `openspot attachment add`. It reads in one of
 two ways:
 
-- `attach` takes a regular expression of the bundle ID of the front app. Its chip shows at once when the panel opens over
-  a matching app, and the source runs `attach` only when Tab first picks the chip in that open of the panel. Use it for a
-  read that is slow or that asks the app, such as its front tab.
+- `"attachment.pick"` takes a regular expression of the bundle ID of the front app. Its chip shows at once when the panel
+  opens over a matching app, and the source runs `attachment.pick` only when Tab first picks the chip in that open of the
+  panel. Use it for a read that is slow or that asks the app, such as its front tab.
 - `panel.open = true` runs `show` each time the panel opens, and its chip shows when it adds a value. Use it for a read
-  that is quick and that you want ready, such as the clipboard. A source ties itself to an app only with `attach`.
+  that is quick and that you want ready, such as the clipboard. A source ties itself to an app only with `"attachment.pick"`.
 
 `clock-tab.spot/spot.toml`:
 
@@ -66,7 +66,7 @@ title = "Clock Tab"
 uses = ["attachment"]
 
 [on]
-attach = "^com\\.apple\\.clock$"
+"attachment.pick" = "^com\\.apple\\.clock$"
 ```
 
 `clock-tab.spot/clock-tab.sh`:
@@ -74,7 +74,7 @@ attach = "^com\\.apple\\.clock$"
 ```text
 #!/bin/sh
 case "$1" in
-  attach) openspot attachment add text="$(date +%H:%M)" title="The time" app=com.apple.clock ;;
+  attachment.pick) openspot attachment add text="$(date +%H:%M)" title="The time" app=com.apple.clock ;;
 esac
 ```
 
@@ -88,13 +88,13 @@ esac
   `read` in its `uses`, and `openspot attachment add` takes what it prints:
 
   ```text
-  attach) tab=$(openspot browser tab) && printf '%s\n' "$tab" | openspot attachment add ;;
+  attachment.pick) tab=$(openspot browser tab) && printf '%s\n' "$tab" | openspot attachment add ;;
   ```
 
   `openspot browser tab <bundle id>` reads a browser while another app is in front, and `openspot browser tabs` prints
   each tab of each window. [Commands](../reference/commands.md) lists what each one prints.
 
-- While `attach` runs, the field says `Reading <app>…`. When it adds nothing, the field says `Nothing to attach from
+- While `attachment.pick` runs, the field says `Reading <app>…`. When it adds nothing, the field says `Nothing to attach from
   <app>`, or the words of `openspot attachment empty <words>`. When it fails, or gives no answer in 3 seconds, the field
   shows why, such as `Openspot can't read Safari · ⏎ Allow` when `openspot browser tab` fails since Openspot may not
   read it yet. Return then opens the Attachments spot, where people allow it, and the next Tab reads again.
