@@ -96,7 +96,7 @@ extension SpotsModel {
         }
         hold(ContextPreview(value))
         let text = query.trimmingCharacters(in: .whitespaces)
-        let found = commands.takers(of: value, matching: text.isEmpty ? nil : runs.search(of: text), limit: Self.contextRows)
+        let found = commands.takers(of: value, matching: text.isEmpty ? nil : runs.search(of: text), limit: Self.takerLimit)
         let taken = found.compactMap { row in
             entry(row.spot).map { Entry(spot: $0.spot, item: SpotItem(title: row.title, run: ""), role: .taker, detail: value.kind.takerWords) }
         }
@@ -108,7 +108,7 @@ extension SpotsModel {
         change(isShown ? holdMotion : nil) { fieldValue = FieldValue(preview) }
     }
 
-    static let contextRows = 5
+    static let takerLimit = 5
 
     func spreadContext() {
         contextWatch?.cancel()

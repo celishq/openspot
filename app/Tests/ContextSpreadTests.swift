@@ -25,7 +25,7 @@ final class ContextSpreadTests: ContextCase {
         XCTAssertTrue(model.handleKey(tab))
 
         XCTAssertTrue(spread.isSpread)
-        XCTAssertEqual(model.contextRow, .spread)
+        XCTAssertEqual(model.contextShape, .spread)
         XCTAssertEqual(spread.placedSelection, model.context.selected)
         XCTAssertEqual(spread.places.map(\.chip.source), model.context.chips.map(\.source))
         XCTAssertEqual(spread.places.map(\.slot), [0, 1])
@@ -88,7 +88,7 @@ final class ContextSpreadTests: ContextCase {
 
         XCTAssertEqual(spread.places.first?.chip.source, model.context.selected)
         XCTAssertEqual(spread.places.map(\.depth), [0, 1])
-        XCTAssertEqual(model.contextRow, .folded)
+        XCTAssertEqual(model.contextShape, .folded)
         XCTAssertTrue(model.context.isOn)
     }
 
@@ -136,21 +136,21 @@ final class ContextSpreadTests: ContextCase {
         }
         await open()
         try await wait("six values") { self.chips.count == 6 && self.chips.allSatisfy { $0.value != nil } }
-        XCTAssertNotEqual(model.contextRow, .wide)
+        XCTAssertNotEqual(model.contextShape, .wide)
 
         XCTAssertTrue(model.handleKey(tab))
 
-        XCTAssertEqual(spread.rowCount, SpotTokens.contextRow)
-        XCTAssertGreaterThan(spread.rowCount, ContextStack.pile)
-        XCTAssertEqual(spread.places.filter { $0.depth == 0 }.map(\.slot), Array(0..<SpotTokens.contextRow))
-        XCTAssertEqual(model.contextRow, .wide)
+        XCTAssertEqual(spread.spreadCount, SpotTokens.contextFit)
+        XCTAssertGreaterThan(spread.spreadCount, ContextStack.pile)
+        XCTAssertEqual(spread.places.filter { $0.depth == 0 }.map(\.slot), Array(0..<SpotTokens.contextFit))
+        XCTAssertEqual(model.contextShape, .wide)
         XCTAssertTrue(model.handleKey(escape))
-        XCTAssertNotEqual(model.contextRow, .wide)
+        XCTAssertNotEqual(model.contextShape, .wide)
     }
 
     func testARowNarrowerThanTheChipsShiftsWithTheSelection() {
         let sources = ["a", "b", "c", "d", "e"]
-        var stack = ContextStack(row: 3)
+        var stack = ContextStack(fit: 3)
         stack.open(over: nil, loading: sources.map { ($0, .symbol("doc")) })
         for source in sources { stack.fill(source, with: ContextValue(text: source), look: .symbol("doc")) }
         let row = { stack.places.filter { $0.depth == 0 }.sorted { $0.slot < $1.slot }.map(\.chip.source) }
@@ -170,7 +170,7 @@ final class ContextSpreadTests: ContextCase {
 
     func testAStackAtRestPilesItsCardsSmallerAndFurtherRightBehindTheFront() {
         let sources = ["a", "b", "c", "d"]
-        var stack = ContextStack(row: 3)
+        var stack = ContextStack(fit: 3)
         stack.open(over: nil, loading: sources.map { ($0, .symbol("doc")) })
         let step = SpotTokens.contextStep
         let shrink = SpotTokens.contextShrink
@@ -183,7 +183,7 @@ final class ContextSpreadTests: ContextCase {
 
     func testASpreadRowLaysItsCardsOnePitchApartWithTheRestBehindItsFirst() {
         let sources = ["a", "b", "c", "d", "e"]
-        var stack = ContextStack(row: 3)
+        var stack = ContextStack(fit: 3)
         stack.open(over: nil, loading: sources.map { ($0, .symbol("doc")) })
         stack.turn(by: 1)
         stack.place(spreads: true)

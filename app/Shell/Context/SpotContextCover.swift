@@ -5,6 +5,6 @@ struct SpotContextCover: ViewModifier {
     let model: SpotsModel
 
     func body(content: Content) -> some View {
-        content.opacity(model.contextRow == .wide ? MotionTokens.hiddenOpacity : 1)
+        content.opacity(model.contextShape == .wide ? MotionTokens.hiddenOpacity : 1)
     }
 }

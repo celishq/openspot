@@ -71,12 +71,12 @@ public final class SpotsModel {
     @ObservationIgnored var content = GridContent.cards
     public internal(set) var context = ContextStack() {
         didSet {
-            let row = ContextRow(context)
-            if contextRow != row { contextRow = row }
+            let shape = ContextShape(context)
+            if contextShape != shape { contextShape = shape }
         }
     }
     @ObservationIgnored var isContextOpen = false
-    public private(set) var contextRow = ContextRow.folded
+    public private(set) var contextShape = ContextShape.folded
     public internal(set) var fieldValue = FieldValue() {
         didSet {
             if fieldRoom != fieldValue.room { fieldRoom = fieldValue.room }

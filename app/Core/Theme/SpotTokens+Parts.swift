@@ -73,7 +73,7 @@ extension SpotTokens {
         return (contextValuePadding + contextValueFoot + caption + body).rounded(.up)
     }
 
-    public static var contextRow: Int {
+    public static var contextFit: Int {
         let room = gridWidth - 2 * padding - glyph - fieldTextGap + contextSpreadGap
         return max(ContextStack.pile, min(ContextStack.limit, Int(room / (contextCard + contextSpreadGap))))
     }
