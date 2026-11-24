@@ -51,6 +51,7 @@ is missing still runs, and people see a message about it once a day. In Careful 
 | `power`     | Keep the Mac awake with its lid closed.                                              |
 | `timer`     | Add, list and remove its timers.                                                     |
 | `attachment` | Put a value in the panel's field when the panel opens; see [Attach what people work on](../connect/attachments.md). |
+| `read`      | Read what people work on: the front tab, the files selected in Finder, the selected text and the clipboard. |
 | `network`   | Reach the network in Careful mode, such as with `env.fetch`.                          |
 | `files`     | Write outside its data folder in Careful mode. No command needs it.                  |
 
