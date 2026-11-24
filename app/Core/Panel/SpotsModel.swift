@@ -69,24 +69,24 @@ public final class SpotsModel {
     @ObservationIgnored var commands = CommandIndex()
     public internal(set) var slash: SlashCommand?
     @ObservationIgnored var content = GridContent.cards
-    public internal(set) var context = ContextStack() {
+    public internal(set) var attachments = AttachmentStack() {
         didSet {
-            let shape = ContextShape(context.layout)
-            if contextShape != shape { contextShape = shape }
+            let shape = AttachmentShape(attachments.layout)
+            if attachmentShape != shape { attachmentShape = shape }
         }
     }
-    @ObservationIgnored var isContextOpen = false
-    public private(set) var contextShape = ContextShape.folded
+    @ObservationIgnored var isAttachmentOpen = false
+    public private(set) var attachmentShape = AttachmentShape.folded
     public internal(set) var fieldValue = FieldValue() {
         didSet {
-            let room = fieldValue.preview == nil ? 0 : SpotTokens.contextValueRoom(lines: fieldValue.lines)
+            let room = fieldValue.preview == nil ? 0 : SpotTokens.attachmentValueRoom(lines: fieldValue.lines)
             if fieldRoom != room { fieldRoom = room }
         }
     }
     public private(set) var fieldRoom: CGFloat = 0
-    @ObservationIgnored var contextPause: Duration = .seconds(1)
-    @ObservationIgnored var contextWatch: Task<Void, Never>?
-    @ObservationIgnored var isContextMoving = false
+    @ObservationIgnored var attachmentPause: Duration = .seconds(1)
+    @ObservationIgnored var attachmentWatch: Task<Void, Never>?
+    @ObservationIgnored var isAttachmentMoving = false
     @ObservationIgnored var keyFrames: [String: String] = [:]
     @ObservationIgnored var spotListBuilds = 0
     @ObservationIgnored var visibleUpdates = 0
@@ -524,7 +524,7 @@ public final class SpotsModel {
         isPanelHidden = false
         finishPick()
         selected = 0
-        openContext()
+        openAttachment()
         askAnswers()
         host.nextFrame { [weak self] in
             self?.isShown = true
@@ -600,10 +600,10 @@ public final class SpotsModel {
             shakes[Self.shakeKey(of: item, in: id), default: 0] += 1
         case .done:
             if isShown { host.dismiss() }
-        case .context(let value):
-            takeContext(value, of: id)
+        case .attachment(let value):
+            takeAttachment(value, of: id)
         case .shown:
-            endContext(of: id)
+            endAttachment(of: id)
         }
     }
 
@@ -621,7 +621,7 @@ public final class SpotsModel {
 
     public func chooseFiles(for id: String) -> Bool {
         guard let sheet = sheets[id], sheet.spot.takesDrops else { return false }
-        host.chooseFiles(for: sheet.spot) { sheet.drop(ContextValue(files: FileKinds.Disk().read($0))) }
+        host.chooseFiles(for: sheet.spot) { sheet.drop(AttachmentValue(files: FileKinds.Disk().read($0))) }
         return true
     }
 

@@ -15,7 +15,7 @@ public final class SpotRuns {
     public var dragged = FileKinds() {
         didSet {
             guard dragged != oldValue else { return }
-            let takers = dragged.paths.isEmpty ? [] : Set(sheets.filter { $0.value.spot.takes(ContextValue(files: dragged)) }.keys)
+            let takers = dragged.paths.isEmpty ? [] : Set(sheets.filter { $0.value.spot.takes(AttachmentValue(files: dragged)) }.keys)
             if takers != dragTakers { dragTakers = takers }
         }
     }

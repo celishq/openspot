@@ -7,7 +7,7 @@ struct SpotFieldValue: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
             Rectangle()
-                .fill(SpotTheme.contextDivider)
+                .fill(SpotTheme.attachmentDivider)
                 .frame(height: SpotTokens.dividerHeight)
             ZStack(alignment: .leading) {
                 if let preview = model.fieldValue.preview {
@@ -16,19 +16,19 @@ struct SpotFieldValue: View {
                             .id(preview)
                             .transition(.opacity)
                     }
-                    .transition(.opacity.combined(with: .offset(y: -SpotTokens.contextValueRise)))
+                    .transition(.opacity.combined(with: .offset(y: -SpotTokens.attachmentValueRise)))
                 }
             }
             .padding(.horizontal, SpotTokens.padding + SpotTokens.glyphInset)
-            .padding(.top, SpotTokens.contextValuePadding)
-            .padding(.bottom, SpotTokens.contextValueFoot)
+            .padding(.top, SpotTokens.attachmentValuePadding)
+            .padding(.bottom, SpotTokens.attachmentValueFoot)
             .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
         }
-        .frame(width: SpotFieldView.rect.width, height: max(model.fieldRoom, SpotTokens.contextValueRoom(lines: 0)), alignment: .top)
+        .frame(width: SpotFieldView.rect.width, height: max(model.fieldRoom, SpotTokens.attachmentValueRoom(lines: 0)), alignment: .top)
     }
 
-    private func words(of preview: ContextPreview) -> some View {
-        VStack(alignment: .leading, spacing: SpotTokens.contextValueLineGap) {
+    private func words(of preview: AttachmentPreview) -> some View {
+        VStack(alignment: .leading, spacing: SpotTokens.attachmentValueLineGap) {
             HStack(spacing: SpotTokens.previewCaptionGap) {
                 Image(systemName: preview.symbol)
                 Text(preview.caption)

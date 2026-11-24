@@ -4,7 +4,7 @@ enum SpotEffect: Equatable, Sendable {
     case toast(String)
     case select(String)
     case route(FlowMove)
-    case context(ContextValue)
+    case attachment(AttachmentValue)
 }
 
 extension SpotEffect {

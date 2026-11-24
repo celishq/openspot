@@ -45,20 +45,20 @@ struct SpotFieldView: View {
                     .offset(x: glyphLeft, y: top)
                 searchText
                     .frame(width: textWidth, height: SpotTokens.cell, alignment: .leading)
-                    .modifier(SpotContextCover(model: model))
+                    .modifier(SpotAttachmentCover(model: model))
                     .offset(x: fieldTextLeft, y: top)
                 SpotSlashMark(model: model)
                     .frame(width: textWidth, height: SpotTokens.cell, alignment: .leading)
-                    .modifier(SpotContextCover(model: model))
+                    .modifier(SpotAttachmentCover(model: model))
                     .offset(x: fieldTextLeft, y: top)
                     .allowsHitTesting(false)
                 if !isInSheet {
                     SpotFieldValue(model: model)
                         .mask { SpotSurfaceShape(rect: place.offsetBy(dx: -Self.rect.minX, dy: -Self.rect.maxY), radius: fieldRadius) }
                         .offset(x: Self.rect.minX, y: Self.rect.maxY)
-                    SpotContextStack(model: model)
-                        .frame(width: SpotTokens.contextStack(count: ContextStack.pile), height: SpotTokens.cell, alignment: .trailing)
-                        .offset(x: Self.contextLeft, y: top)
+                    SpotAttachmentStack(model: model)
+                        .frame(width: SpotTokens.attachmentStack(count: AttachmentStack.pile), height: SpotTokens.cell, alignment: .trailing)
+                        .offset(x: Self.attachmentLeft, y: top)
                 }
             }
             .morph(progress, opacity: crossing)
@@ -125,11 +125,11 @@ struct SpotFieldView: View {
     static var fieldTextWidth: CGFloat { SpotTokens.gridWidth - 4 * SpotTokens.padding - SpotTokens.listIconSize - SpotTokens.fieldTextGap }
 
     private var textWidth: CGFloat {
-        isInSheet ? Self.fieldTextWidth : Self.contextLeft - SpotTokens.contextGap - fieldTextLeft
+        isInSheet ? Self.fieldTextWidth : Self.attachmentLeft - SpotTokens.attachmentGap - fieldTextLeft
     }
 
-    static var contextLeft: CGFloat {
-        rect.maxX - SpotTokens.padding - SpotTokens.contextStack(count: ContextStack.pile)
+    static var attachmentLeft: CGFloat {
+        rect.maxX - SpotTokens.padding - SpotTokens.attachmentStack(count: AttachmentStack.pile)
     }
 
     private var fieldTextLeft: CGFloat {
@@ -168,7 +168,7 @@ struct SpotFieldView: View {
         SpotFieldPrompt(word: sheetWord, progress: progress)
             .morph(progress, opacity: crossing)
         .modifier(SpotEmptyField(model: model, isHidden: model.showsFieldDrop))
-        .modifier(SpotContextCover(model: model))
+        .modifier(SpotAttachmentCover(model: model))
     }
 
     private var sheetWord: String {

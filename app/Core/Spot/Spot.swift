@@ -54,7 +54,7 @@ public struct Spot: Equatable, Sendable {
         edits: SpotEdits? = nil,
         starts: SpotStart? = nil
     ) {
-        let isSource = uses.contains(.context)
+        let isSource = uses.contains(.attachment)
         header = Header(SpotFacts(
             id: id, name: name, url: url, size: size, headerIcon: icon, baseSymbol: symbol, subtitle: subtitle,
             hasSheet: triggers.shows || triggers.search == nil && commands.isEmpty && offeredActions.isEmpty,
@@ -292,11 +292,11 @@ public struct Spot: Equatable, Sendable {
         self.triggers.drop.takes(.file)
     }
 
-    public func runsOnOpen(over front: String?, feedsContext: Bool) -> Bool {
-        self.triggers.opens(over: front) && (!self.isSource || feedsContext)
+    public func runsOnOpen(over front: String?, feedsAttachment: Bool) -> Bool {
+        self.triggers.opens(over: front) && (!self.isSource || feedsAttachment)
     }
 
-    public func takes(_ value: ContextValue) -> Bool {
+    public func takes(_ value: AttachmentValue) -> Bool {
         guard value.kind == .file else { return self.triggers.drop.takes(value.kind) }
         return !value.files.paths.isEmpty && value.files.paths.allSatisfy { self.triggers.drop.takes(path: $0, kind: value.files.kind(of: $0)) }
     }

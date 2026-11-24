@@ -20,8 +20,8 @@ extension SpotRun {
             call?.selected = item
         case .route(let move):
             onReport(.move(move))
-        case .context(let value):
-            onReport(.context(value))
+        case .attachment(let value):
+            onReport(.attachment(value))
         }
     }
 }

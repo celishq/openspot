@@ -45,10 +45,10 @@ extension Theme {
         public let onConfirm: ThemeColor
         public let backdropTint: ThemeColor
         public let cardShadow: ThemeColor
-        public let contextFace: ThemeColor
-        public let contextTileTop: ThemeColor
-        public let contextTileBottom: ThemeColor
-        public let contextTileInk: ThemeColor
+        public let attachmentFace: ThemeColor
+        public let attachmentTileTop: ThemeColor
+        public let attachmentTileBottom: ThemeColor
+        public let attachmentTileInk: ThemeColor
         public let fill: Double
         public let selected: Double
         public let disc: Double
@@ -98,10 +98,10 @@ extension Theme {
             onConfirm = exact("on-confirm") ?? confirm.legible(background, or: ink)
             backdropTint = exact("backdrop-tint") ?? background.with(alpha: isDark ? 0.6 : 0.5)
             cardShadow = exact("card-shadow") ?? ThemeColor.hex(HexColor(red: 0, green: 0, blue: 0)).with(alpha: isDark ? 0.15 : 0.04)
-            contextFace = background.mixed(with: ink, by: isDark ? 0.23 : 0)
-            contextTileTop = background.mixed(with: ink, by: isDark ? 0.5 : 0.04)
-            contextTileBottom = background.mixed(with: ink, by: isDark ? 0.36 : 0.15)
-            contextTileInk = background.mixed(with: ink, by: isDark ? 0.95 : 0.62)
+            attachmentFace = background.mixed(with: ink, by: isDark ? 0.23 : 0)
+            attachmentTileTop = background.mixed(with: ink, by: isDark ? 0.5 : 0.04)
+            attachmentTileBottom = background.mixed(with: ink, by: isDark ? 0.36 : 0.15)
+            attachmentTileInk = background.mixed(with: ink, by: isDark ? 0.95 : 0.62)
             let (ground, mark) = (background.sample, ink.sample)
             let strength = { (key: String) in
                 values.number(section, key) ?? Self.strength(anchor.strengths[key] ?? 0, keeping: (anchor.background, anchor.ink), on: ground, of: mark)

@@ -16,7 +16,7 @@ public final class SpotRun {
         case move(FlowMove)
         case refused(String?)
         case done
-        case context(ContextValue)
+        case attachment(AttachmentValue)
         case shown
     }
 

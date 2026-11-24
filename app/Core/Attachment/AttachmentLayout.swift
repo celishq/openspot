@@ -1,8 +1,8 @@
 import Foundation
 
-public struct ContextLayout: Equatable, Sendable {
+public struct AttachmentLayout: Equatable, Sendable {
     public struct Place: Equatable, Sendable {
-        public let chip: ContextChip
+        public let chip: AttachmentChip
         public let slot: Int
         public let depth: Int
         public let x: CGFloat
@@ -11,37 +11,37 @@ public struct ContextLayout: Equatable, Sendable {
         public let layer: Double
         public let isQuiet: Bool
 
-        init(chip: ContextChip, quietDepth depth: Int) {
+        init(chip: AttachmentChip, quietDepth depth: Int) {
             self.chip = chip
             slot = 0
             self.depth = depth
             x = 0
-            scale = SpotTokens.contextQuietScale
+            scale = SpotTokens.attachmentQuietScale
             opacity = depth == 0 ? 1 : MotionTokens.hiddenOpacity
             layer = -Double(depth)
             isQuiet = true
         }
 
-        init(chip: ContextChip, depth: Int, count: Int) {
-            let shown = min(count, ContextStack.pile)
+        init(chip: AttachmentChip, depth: Int, count: Int) {
+            let shown = min(count, AttachmentStack.pile)
             self.chip = chip
             slot = 0
             self.depth = depth
-            x = -CGFloat(shown - 1 - min(depth, shown - 1)) * SpotTokens.contextStep
-            scale = 1 - CGFloat(min(depth, ContextStack.pile - 1)) * SpotTokens.contextShrink
-            opacity = depth < ContextStack.pile ? 1 : MotionTokens.hiddenOpacity
+            x = -CGFloat(shown - 1 - min(depth, shown - 1)) * SpotTokens.attachmentStep
+            scale = 1 - CGFloat(min(depth, AttachmentStack.pile - 1)) * SpotTokens.attachmentShrink
+            opacity = depth < AttachmentStack.pile ? 1 : MotionTokens.hiddenOpacity
             layer = -Double(depth)
             isQuiet = false
         }
 
-        init(chip: ContextChip, slot: Int, depth: Int, spreadCount: Int, fit: Int) {
-            let pitch = SpotTokens.contextCard + SpotTokens.contextSpreadGap
+        init(chip: AttachmentChip, slot: Int, depth: Int, spreadCount: Int, fit: Int) {
+            let pitch = SpotTokens.attachmentCard + SpotTokens.attachmentSpreadGap
             self.chip = chip
             self.slot = slot
             self.depth = depth
-            x = -CGFloat(spreadCount - 1 - (depth == 0 ? slot : 0)) * pitch + (depth == 0 ? 0 : SpotTokens.contextStep)
-            scale = 1 - CGFloat(min(depth, 1)) * SpotTokens.contextShrink
-            opacity = depth == 0 ? 1 : depth == 1 ? 1 - SpotTokens.contextCardFade : MotionTokens.hiddenOpacity
+            x = -CGFloat(spreadCount - 1 - (depth == 0 ? slot : 0)) * pitch + (depth == 0 ? 0 : SpotTokens.attachmentStep)
+            scale = 1 - CGFloat(min(depth, 1)) * SpotTokens.attachmentShrink
+            opacity = depth == 0 ? 1 : depth == 1 ? 1 - SpotTokens.attachmentCardFade : MotionTokens.hiddenOpacity
             layer = -Double(slot) - Double(depth * fit)
             isQuiet = false
         }
@@ -63,7 +63,7 @@ public struct ContextLayout: Equatable, Sendable {
         start = 0
     }
 
-    init(chips: [ContextChip], after previous: ContextLayout, selection: String?, spreads: Bool, fit: Int) {
+    init(chips: [AttachmentChip], after previous: AttachmentLayout, selection: String?, spreads: Bool, fit: Int) {
         let isSpread = spreads && selection != nil
         var order = previous.order(of: chips)
         if !isSpread, let selection, let index = order.firstIndex(of: selection) {
@@ -97,7 +97,7 @@ public struct ContextLayout: Equatable, Sendable {
         isQuiet && places.first?.chip.isLoading == false
     }
 
-    func order(of chips: [ContextChip]) -> [String] {
+    func order(of chips: [AttachmentChip]) -> [String] {
         let sources = chips.map(\.source)
         return order.filter(sources.contains) + sources.filter { !order.contains($0) }
     }

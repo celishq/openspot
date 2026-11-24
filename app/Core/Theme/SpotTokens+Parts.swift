@@ -28,65 +28,65 @@ extension SpotTokens {
     public static let toastPaddingY: CGFloat = 10
     public static let toastKeySpace: CGFloat = 2
 
-    public static let contextCard: CGFloat = 28
-    public static var contextCardRadius: CGFloat { min(contextCard * 0.25 * cardRadius / builtIn.radius.card, contextCard / 2) }
-    public static let contextInset: CGFloat = 1.5
-    public static var contextIcon: CGFloat { contextCard - 2 * contextInset }
-    public static var contextIconRadius: CGFloat { min(contextIcon * 0.224 * cardRadius / builtIn.radius.card, contextIcon / 2) }
-    public static var contextSymbol: CGFloat { contextIcon * 0.5 }
-    public static let contextBorder: CGFloat = 1
-    public static var contextStep: CGFloat { contextCard * 0.25 }
-    public static let contextShrink: CGFloat = 0.1
-    public static let contextQuietIcon: CGFloat = 20
-    public static var contextQuietScale: CGFloat { contextQuietIcon / contextIcon }
-    public static var contextQuietRadius: CGFloat { contextIconRadius * contextQuietScale }
-    public static var contextKeyWidth: CGFloat { contextQuietIcon * 1.2 }
-    public static let contextKeyGap: CGFloat = 4
-    public static var contextKeyX: CGFloat { -(contextCard - contextInset) * contextQuietScale - contextKeyGap }
-    public static var contextKeySlide: CGFloat { contextKeyGap + contextKeyWidth * 0.6 }
-    public static let contextCardFade = 0.3
-    public static var contextSpreadGap: CGFloat { contextCard * 0.42 }
-    public static var contextBadge: CGFloat { (contextCard * contextCard / 6).squareRoot() }
-    public static var contextBadgeGlyph: CGFloat { contextBadge * 0.72 }
-    public static let contextBadgeNudge: CGFloat = 0.5
-    public static let contextNearShadowRadius: CGFloat = 2.5
-    public static let contextNearShadowDrop: CGFloat = 2
-    public static let contextFarShadowRadius: CGFloat = 7
-    public static let contextFarShadowDrop: CGFloat = 6
-    public static let contextDot: CGFloat = 4
-    public static let contextDotGap: CGFloat = 3
-    public static let contextValueRise: CGFloat = 8
-    public static let contextGap: CGFloat = 8
+    public static let attachmentCard: CGFloat = 28
+    public static var attachmentCardRadius: CGFloat { min(attachmentCard * 0.25 * cardRadius / builtIn.radius.card, attachmentCard / 2) }
+    public static let attachmentInset: CGFloat = 1.5
+    public static var attachmentIcon: CGFloat { attachmentCard - 2 * attachmentInset }
+    public static var attachmentIconRadius: CGFloat { min(attachmentIcon * 0.224 * cardRadius / builtIn.radius.card, attachmentIcon / 2) }
+    public static var attachmentSymbol: CGFloat { attachmentIcon * 0.5 }
+    public static let attachmentBorder: CGFloat = 1
+    public static var attachmentStep: CGFloat { attachmentCard * 0.25 }
+    public static let attachmentShrink: CGFloat = 0.1
+    public static let attachmentQuietIcon: CGFloat = 20
+    public static var attachmentQuietScale: CGFloat { attachmentQuietIcon / attachmentIcon }
+    public static var attachmentQuietRadius: CGFloat { attachmentIconRadius * attachmentQuietScale }
+    public static var attachmentKeyWidth: CGFloat { attachmentQuietIcon * 1.2 }
+    public static let attachmentKeyGap: CGFloat = 4
+    public static var attachmentKeyX: CGFloat { -(attachmentCard - attachmentInset) * attachmentQuietScale - attachmentKeyGap }
+    public static var attachmentKeySlide: CGFloat { attachmentKeyGap + attachmentKeyWidth * 0.6 }
+    public static let attachmentCardFade = 0.3
+    public static var attachmentSpreadGap: CGFloat { attachmentCard * 0.42 }
+    public static var attachmentBadge: CGFloat { (attachmentCard * attachmentCard / 6).squareRoot() }
+    public static var attachmentBadgeGlyph: CGFloat { attachmentBadge * 0.72 }
+    public static let attachmentBadgeNudge: CGFloat = 0.5
+    public static let attachmentNearShadowRadius: CGFloat = 2.5
+    public static let attachmentNearShadowDrop: CGFloat = 2
+    public static let attachmentFarShadowRadius: CGFloat = 7
+    public static let attachmentFarShadowDrop: CGFloat = 6
+    public static let attachmentDot: CGFloat = 4
+    public static let attachmentDotGap: CGFloat = 3
+    public static let attachmentValueRise: CGFloat = 8
+    public static let attachmentGap: CGFloat = 8
     public static let previewLines = 2
     public static let previewCaptionGap: CGFloat = 4
 
-    public static let contextValuePadding: CGFloat = 9
-    public static var contextValueFoot: CGFloat { padding + glyphInset }
-    public static let contextValueLineGap: CGFloat = 1
+    public static let attachmentValuePadding: CGFloat = 9
+    public static var attachmentValueFoot: CGFloat { padding + glyphInset }
+    public static let attachmentValueLineGap: CGFloat = 1
     static let lineShare: CGFloat = 1.25
     static let glyphWidthShare: CGFloat = 0.55
 
-    public static var contextValueWidth: CGFloat { gridWidth - 2 * (padding + glyphInset) }
+    public static var attachmentValueWidth: CGFloat { gridWidth - 2 * (padding + glyphInset) }
 
-    public static func contextValueLines(of text: String) -> Int {
+    public static func attachmentValueLines(of text: String) -> Int {
         guard !text.isEmpty else { return 0 }
         let width = CGFloat(text.count) * CGFloat(layout.type.body) * glyphWidthShare
-        return min(previewLines, max(1, Int((width / contextValueWidth).rounded(.up))))
+        return min(previewLines, max(1, Int((width / attachmentValueWidth).rounded(.up))))
     }
 
-    public static func contextValueRoom(lines: Int) -> CGFloat {
+    public static func attachmentValueRoom(lines: Int) -> CGFloat {
         let caption = CGFloat(layout.type.detail) * lineShare
-        let body = lines == 0 ? 0 : contextValueLineGap + CGFloat(lines) * CGFloat(layout.type.body) * lineShare
-        return (contextValuePadding + contextValueFoot + caption + body).rounded(.up)
+        let body = lines == 0 ? 0 : attachmentValueLineGap + CGFloat(lines) * CGFloat(layout.type.body) * lineShare
+        return (attachmentValuePadding + attachmentValueFoot + caption + body).rounded(.up)
     }
 
-    public static var contextFit: Int {
-        let room = gridWidth - 2 * padding - glyph - fieldTextGap + contextSpreadGap
-        return max(ContextStack.pile, min(ContextStack.limit, Int(room / (contextCard + contextSpreadGap))))
+    public static var attachmentFit: Int {
+        let room = gridWidth - 2 * padding - glyph - fieldTextGap + attachmentSpreadGap
+        return max(AttachmentStack.pile, min(AttachmentStack.limit, Int(room / (attachmentCard + attachmentSpreadGap))))
     }
 
-    public static func contextStack(count: Int) -> CGFloat {
-        count == 0 ? 0 : contextCard + CGFloat(count - 1) * contextStep
+    public static func attachmentStack(count: Int) -> CGFloat {
+        count == 0 ? 0 : attachmentCard + CGFloat(count - 1) * attachmentStep
     }
 
     public static let metricBigRingLine: CGFloat = 8

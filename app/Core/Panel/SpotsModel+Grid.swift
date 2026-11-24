@@ -104,7 +104,7 @@ extension SpotsModel {
 
     private func runShown(_ entry: Entry) {
         switch content {
-        case .context: give(to: entry)
+        case .attachment: give(to: entry)
         case .slash: launch(entry, with: slash?.text ?? "")
         case .cards, .search: run(seen: entry)
         }

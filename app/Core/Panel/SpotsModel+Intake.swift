@@ -5,7 +5,7 @@ extension SpotsModel {
     public func acceptsDrop(_ paths: [String], on id: String, in place: SheetPlace = .panel) -> Bool {
         let isOpenToDrops = place == .panel ? openSheetID == nil : runs.floating.contains(id)
         guard isOpenToDrops, !paths.isEmpty, runs.dragged.paths == paths, let spot = sheets[id]?.spot else { return false }
-        return spot.takes(ContextValue(files: runs.dragged))
+        return spot.takes(AttachmentValue(files: runs.dragged))
     }
 
     private func read(_ paths: [String]) {
@@ -67,12 +67,12 @@ extension SpotsModel {
 
     public func drop(_ paths: [String], on id: String, in place: SheetPlace = .panel) -> Bool {
         guard acceptsDrop(paths, on: id, in: place) else { return false }
-        return landDrop(ContextValue(files: runs.dragged), on: id, in: place, endsDrag: true)
+        return landDrop(AttachmentValue(files: runs.dragged), on: id, in: place, endsDrag: true)
     }
 
     @discardableResult
-    func landDrop(_ value: ContextValue, on id: String, in place: SheetPlace = .panel, endsDrag: Bool = false, leavesContext: Bool = false) -> Bool {
-        if leavesContext { leaveContext() }
+    func landDrop(_ value: AttachmentValue, on id: String, in place: SheetPlace = .panel, endsDrag: Bool = false, leavesAttachment: Bool = false) -> Bool {
+        if leavesAttachment { leaveAttachment() }
         guard sheets[id]?.drop(value) == true else { return false }
         guard place == .panel else { return true }
         if endsDrag { endDrag() }

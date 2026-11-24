@@ -1,15 +1,15 @@
 import Foundation
 
-public struct ContextPreview: Hashable, Sendable {
+public struct AttachmentPreview: Hashable, Sendable {
     static let excerptLimit = 280
 
-    public static let loading = ContextPreview(text: "", caption: "Loading", symbol: ContextChip.loadingSymbol)
+    public static let loading = AttachmentPreview(text: "", caption: "Loading", symbol: AttachmentChip.loadingSymbol)
 
     public let text: String
     public let caption: String
     public let symbol: String
 
-    public init(_ value: ContextValue) {
+    public init(_ value: AttachmentValue) {
         let first = value.values.first ?? ""
         symbol = value.kind.captionSymbol
         switch value.kind {

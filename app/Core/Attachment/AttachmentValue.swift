@@ -1,6 +1,6 @@
 import Foundation
 
-public struct ContextValue: Equatable, Sendable {
+public struct AttachmentValue: Equatable, Sendable {
     public enum Kind: String, CaseIterable, Sendable {
         case file
         case url
@@ -34,7 +34,7 @@ public struct ContextValue: Equatable, Sendable {
     }
 }
 
-extension ContextValue.Kind {
+extension AttachmentValue.Kind {
     public enum Badge: Hashable, Sendable {
         case symbol(String)
         case letter(String)

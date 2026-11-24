@@ -12,9 +12,9 @@ extension SpotRuns {
         }
     }
 
-    public func panelOpened(showsToEnd: Bool = false, over front: String? = nil, feedsContext: Bool = false) {
+    public func panelOpened(showsToEnd: Bool = false, over front: String? = nil, feedsAttachment: Bool = false) {
         guard !hasQuit else { return }
-        openPanel(showsToEnd: showsToEnd, over: front, feedsContext: feedsContext)
+        openPanel(showsToEnd: showsToEnd, over: front, feedsAttachment: feedsAttachment)
     }
 
     public func launched() {
@@ -114,7 +114,7 @@ extension SpotRuns {
         sheet.show(need: .change, event: .event(EventName.spotWant, value: nil))
     }
 
-    private func openPanel(showsToEnd: Bool = false, over front: String? = nil, feedsContext: Bool = false) {
+    private func openPanel(showsToEnd: Bool = false, over front: String? = nil, feedsAttachment: Bool = false) {
         let wasOpen = isPanelOpen
         isPanelOpen = true
         if !wasOpen { wanted = [] }
@@ -125,11 +125,11 @@ extension SpotRuns {
             watchClipboard(looksNow: true)
         }
         updateClock()
-        showPanel(toEnd: showsToEnd, over: front, feedsContext: feedsContext)
+        showPanel(toEnd: showsToEnd, over: front, feedsAttachment: feedsAttachment)
     }
 
-    private func showPanel(toEnd: Bool = false, over front: String? = nil, feedsContext: Bool = false) {
-        for sheet in sheets.values where sheet.spot.runsOnOpen(over: front, feedsContext: feedsContext) {
+    private func showPanel(toEnd: Bool = false, over front: String? = nil, feedsAttachment: Bool = false) {
+        for sheet in sheets.values where sheet.spot.runsOnOpen(over: front, feedsAttachment: feedsAttachment) {
             if sheet.spot.isSource {
                 sheet.show(need: .change, event: .panel)
             } else if toEnd {

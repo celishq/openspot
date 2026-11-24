@@ -22,6 +22,6 @@ final class SpotFileChooser: NSObject, NSOpenSavePanelDelegate {
 
     func panel(_ sender: Any, shouldEnable url: URL) -> Bool {
         let values = try? url.resourceValues(forKeys: [.isDirectoryKey, .isPackageKey])
-        return (values?.isDirectory == true && values?.isPackage != true) || spot.takes(ContextValue(files: FileKinds.Disk().read([url.path])))
+        return (values?.isDirectory == true && values?.isPackage != true) || spot.takes(AttachmentValue(files: FileKinds.Disk().read([url.path])))
     }
 }

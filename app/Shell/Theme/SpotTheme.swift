@@ -48,15 +48,15 @@ enum SpotTheme {
     static let chosenRow = 0.1
     static let liftShadowStrength = 0.25
     static let unfocusedCardStrength = 0.35
-    static let contextQuietPicture = 0.7
-    @MainActor static var contextQuietFill: Color { highlight.opacity(fill) }
-    @MainActor static var contextRim: Color { highlight.opacity(selectedFill + fill) }
-    @MainActor static var contextTileTop: Color { loaded.contextTileTop }
-    @MainActor static var contextTileBottom: Color { loaded.contextTileBottom }
-    @MainActor static var contextTileInk: Color { loaded.contextTileInk }
-    @MainActor static var contextFace: Color { loaded.contextFace }
-    static let contextNearShadow = color(dark: .black.withAlphaComponent(0.35), light: .black.withAlphaComponent(0.10))
-    static let contextFarShadow = color(dark: .black.withAlphaComponent(0.35), light: .black.withAlphaComponent(0.10))
+    static let attachmentQuietPicture = 0.7
+    @MainActor static var attachmentQuietFill: Color { highlight.opacity(fill) }
+    @MainActor static var attachmentRim: Color { highlight.opacity(selectedFill + fill) }
+    @MainActor static var attachmentTileTop: Color { loaded.attachmentTileTop }
+    @MainActor static var attachmentTileBottom: Color { loaded.attachmentTileBottom }
+    @MainActor static var attachmentTileInk: Color { loaded.attachmentTileInk }
+    @MainActor static var attachmentFace: Color { loaded.attachmentFace }
+    static let attachmentNearShadow = color(dark: .black.withAlphaComponent(0.35), light: .black.withAlphaComponent(0.10))
+    static let attachmentFarShadow = color(dark: .black.withAlphaComponent(0.35), light: .black.withAlphaComponent(0.10))
     @MainActor static var fill: Double { current.fill }
     static let edgeStrengths = [1, 0.7, 0.45]
     @MainActor static var disc: Double { current.disc }
@@ -87,7 +87,7 @@ enum SpotTheme {
     static let capFace = color(dark: .white.withAlphaComponent(0.08), light: .white.withAlphaComponent(0.6))
     static let capRim = color(dark: .white.withAlphaComponent(0.14), light: .black.withAlphaComponent(0.1))
     static let capEdge = color(dark: .black.withAlphaComponent(0.35), light: .black.withAlphaComponent(0.14))
-    static let contextDivider = color(dark: .white.withAlphaComponent(0.08), light: .black.withAlphaComponent(0.07))
+    static let attachmentDivider = color(dark: .white.withAlphaComponent(0.08), light: .black.withAlphaComponent(0.07))
     static let well = color(dark: .black.withAlphaComponent(0.22), light: .black.withAlphaComponent(0.05))
 
     private static func color(dark: NSColor, light: NSColor) -> Color {

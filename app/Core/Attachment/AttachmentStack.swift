@@ -1,26 +1,26 @@
 import Foundation
 
-public struct ContextStack: Equatable, Sendable {
+public struct AttachmentStack: Equatable, Sendable {
     public static let limit = 6
     public static let pile = 3
 
     public let fit: Int
-    public private(set) var chips: [ContextChip] = [] {
+    public private(set) var chips: [AttachmentChip] = [] {
         didSet {
             let apps = Dictionary(chips.compactMap { chip in chip.app.map { ($0, 1) } }, uniquingKeysWith: +)
             for index in chips.indices { chips[index].showsKind = chips[index].app.map { (apps[$0] ?? 0) > 1 } ?? false }
         }
     }
     public private(set) var selected: String?
-    public private(set) var layout = ContextLayout()
+    public private(set) var layout = AttachmentLayout()
     private var front: FrontApp?
     private var arrival: [String] = []
 
-    public init(fit: Int = SpotTokens.contextFit) {
+    public init(fit: Int = SpotTokens.attachmentFit) {
         self.fit = fit
     }
 
-    public var selectedChip: ContextChip? {
+    public var selectedChip: AttachmentChip? {
         chips.first { $0.source == selected }
     }
 
@@ -28,19 +28,19 @@ public struct ContextStack: Equatable, Sendable {
         selected != nil
     }
 
-    mutating func open(over front: FrontApp?, loading: [(source: String, look: ContextChip.Look?)]) {
+    mutating func open(over front: FrontApp?, loading: [(source: String, look: AttachmentChip.Look?)]) {
         self.front = front
         selected = nil
         arrival = loading.map(\.source)
-        chips = loading.map { ContextChip(source: $0.source, app: front?.bundleID, look: look(of: front?.bundleID, kind: nil, else: $0.look)) }
+        chips = loading.map { AttachmentChip(source: $0.source, app: front?.bundleID, look: look(of: front?.bundleID, kind: nil, else: $0.look)) }
         settle()
-        layout = ContextLayout(chips: chips, after: ContextLayout(), selection: nil, spreads: false, fit: fit)
+        layout = AttachmentLayout(chips: chips, after: AttachmentLayout(), selection: nil, spreads: false, fit: fit)
     }
 
-    mutating func fill(_ source: String, with value: ContextValue, look own: ContextChip.Look?) {
+    mutating func fill(_ source: String, with value: AttachmentValue, look own: AttachmentChip.Look?) {
         let app = value.app ?? chips.first { $0.source == source }?.app
         chips.removeAll { $0.source == source }
-        chips.append(ContextChip(source: source, app: app, look: look(of: app, kind: value.kind, else: own), state: .ready(value)))
+        chips.append(AttachmentChip(source: source, app: app, look: look(of: app, kind: value.kind, else: own), state: .ready(value)))
         if !arrival.contains(source) { arrival.append(source) }
         settle()
     }
@@ -70,12 +70,12 @@ public struct ContextStack: Equatable, Sendable {
     }
 
     mutating func place(spreads: Bool) {
-        layout = ContextLayout(chips: chips, after: layout, selection: selected, spreads: spreads, fit: fit)
+        layout = AttachmentLayout(chips: chips, after: layout, selection: selected, spreads: spreads, fit: fit)
     }
 
-    private func look(of app: String?, kind: ContextValue.Kind?, else own: ContextChip.Look?) -> ContextChip.Look {
+    private func look(of app: String?, kind: AttachmentValue.Kind?, else own: AttachmentChip.Look?) -> AttachmentChip.Look {
         if app != nil, app == front?.bundleID, let path = front?.path { return .file(FileIcon(path: path)) }
-        return own ?? .symbol(kind?.symbol ?? ContextChip.loadingSymbol)
+        return own ?? .symbol(kind?.symbol ?? AttachmentChip.loadingSymbol)
     }
 
     private mutating func settle() {

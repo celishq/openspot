@@ -1,6 +1,6 @@
 import Foundation
 
-public struct ContextChip: Equatable, Sendable {
+public struct AttachmentChip: Equatable, Sendable {
     public enum Look: Hashable, Sendable {
         case file(FileIcon)
         case symbol(String)
@@ -8,7 +8,7 @@ public struct ContextChip: Equatable, Sendable {
 
     public enum State: Equatable, Sendable {
         case loading
-        case ready(ContextValue)
+        case ready(AttachmentValue)
     }
 
     static let loadingSymbol = "ellipsis"
@@ -26,7 +26,7 @@ public struct ContextChip: Equatable, Sendable {
         self.state = state
     }
 
-    public var value: ContextValue? {
+    public var value: AttachmentValue? {
         guard case .ready(let value) = state else { return nil }
         return value
     }

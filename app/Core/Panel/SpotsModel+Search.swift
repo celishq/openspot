@@ -54,12 +54,12 @@ extension SpotsModel {
         finding?.job.cancel()
         finding = nil
         let text = query.trimmingCharacters(in: .whitespaces)
-        if context.isOn, !isEditing, !text.hasPrefix("/") {
+        if attachments.isOn, !isEditing, !text.hasPrefix("/") {
             indexSpots()
             if slash != nil { slash = nil }
-            content = .context
+            content = .attachment
             foundSpots = []
-            show(showContext(holding: motion))
+            show(showAttachment(holding: motion))
             return
         }
         hold(nil, motion: motion)

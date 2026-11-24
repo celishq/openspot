@@ -12,9 +12,9 @@ public struct DropKinds: Equatable, Sendable {
         let words = Set(words.map { $0.lowercased() })
         anyFile = words.contains("*")
         folders = words.contains("folder")
-        url = words.contains(ContextValue.Kind.url.rawValue)
-        text = words.contains(ContextValue.Kind.text.rawValue)
-        extensions = words.subtracting(["", "*", "folder", ContextValue.Kind.url.rawValue, ContextValue.Kind.text.rawValue])
+        url = words.contains(AttachmentValue.Kind.url.rawValue)
+        text = words.contains(AttachmentValue.Kind.text.rawValue)
+        extensions = words.subtracting(["", "*", "folder", AttachmentValue.Kind.url.rawValue, AttachmentValue.Kind.text.rawValue])
         isDeclared = !words.isEmpty
     }
 
@@ -26,7 +26,7 @@ public struct DropKinds: Equatable, Sendable {
         folders || anyFile
     }
 
-    public func takes(_ kind: ContextValue.Kind) -> Bool {
+    public func takes(_ kind: AttachmentValue.Kind) -> Bool {
         switch kind {
         case .file: files || takesFolders
         case .url: url
