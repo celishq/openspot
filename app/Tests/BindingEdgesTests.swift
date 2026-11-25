@@ -102,7 +102,7 @@ final class BindingEdgesTests: SpotRunsCase {
         sheet.pressKey("go")
         try await wait("the wait in the run") { self.log("picker-log") == ["slow"] }
         sheet.answer("y")
-        try await pause(1)
+        time += 1
 
         XCTAssertEqual(sheet.answers.map(\.title), ["Answer"])
         XCTAssertFalse(sheet.isAnswering)

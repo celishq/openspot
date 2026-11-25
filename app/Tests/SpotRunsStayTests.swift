@@ -78,8 +78,10 @@ final class SpotRunsStayTests: SpotRunsCase {
         sheet.close()
         runs.panelClosed()
         time += 60
-        try await pause()
+        sheet.show()
+        try await wait("a read past the limit") { self.reads().last == "arg=show" && !sheet.isShowing }
 
+        XCTAssertEqual(log().count, 1)
         XCTAssertEqual(sheet.calls.map(\.key), ["call:press\nhold"])
         XCTAssertFalse(placed(at: path("ended")))
         XCTAssertEqual(kill(child, 0), 0)
@@ -239,10 +241,8 @@ final class SpotRunsStayTests: SpotRunsCase {
 
         sheet.open {}
         XCTAssertTrue(sheet.isShowing)
-        let limit = ContinuousClock.now + .seconds(60)
-        while sheet.isShowing, ContinuousClock.now < limit { await Task.yield() }
+        try await wait("the answer") { !sheet.isShowing }
 
-        XCTAssertFalse(sheet.isShowing)
         XCTAssertEqual(sheet.list.shown.count, 1)
     }
 
@@ -400,7 +400,6 @@ final class SpotRunsStayTests: SpotRunsCase {
 
         try await wait("the newest answer") { sheet.answers.map(\.run) == ["12345"] }
         try await wait("each older text stopped") { self.reads().filter { $0.hasPrefix("stop=") }.count == 4 }
-        try await pause()
         XCTAssertEqual(shown, [["12345"]])
         XCTAssertEqual(log().count, 1)
     }
@@ -613,14 +612,11 @@ final class SpotRunsStayTests: SpotRunsCase {
         sheet.close()
         runs.panelClosed()
         _ = try scanned()
-        try await pause(0.15)
-
-        XCTAssertFalse(placed(at: path("ended")))
-        XCTAssertEqual(log().count, 1)
 
         sheet.pick(try XCTUnwrap(sheet.list.selectedItem))
 
         try await wait("the call") { self.reads().last == "arg=press\ninput.item=a" }
+        XCTAssertFalse(placed(at: path("ended")))
         XCTAssertEqual(log().count, 1)
     }
 
@@ -662,7 +658,7 @@ final class SpotRunsStayTests: SpotRunsCase {
     func testAStayingScriptIsWantedByThePanelOnlyWhileItIsOpen() async throws {
         try staying(toml: "stay = true\n[on]\n\"panel.open\" = true")
         let sheet = try sheet()
-        try await pause(0.1)
+        XCTAssertFalse(sheet.isShowing)
         XCTAssertEqual(log(), [])
 
         runs.panelOpened()
@@ -684,8 +680,9 @@ final class SpotRunsStayTests: SpotRunsCase {
         runs.panelOpened()
         runs.panelClosed()
         runs.woke()
-        try await pause(0.15)
+        sheet.pick(SpotItem(title: "A", run: "a"))
 
+        try await wait("the call") { self.reads().last == "arg=press\ninput.item=a" }
         XCTAssertFalse(placed(at: path("ended")))
         XCTAssertEqual(log().count, 1)
     }
@@ -695,8 +692,8 @@ final class SpotRunsStayTests: SpotRunsCase {
         _ = try scanned()
 
         runs.woke()
-        try await pause(0.15)
 
+        XCTAssertFalse(runs.isShowing)
         XCTAssertEqual(log(), [])
     }
 
@@ -781,8 +778,9 @@ final class SpotRunsStayTests: SpotRunsCase {
         runs.panelClosed()
         _ = try scanned()
         sheet.pick(SpotItem(title: "A", run: "a"))
-        try await pause(0.15)
 
+        XCTAssertFalse(runs.isShowing)
+        XCTAssertTrue(sheet.calls.isEmpty)
         XCTAssertEqual(log().count, 3)
         XCTAssertEqual(told().filter { $0 == Self.givenUp }.count, 1)
         XCTAssertEqual(told().count, 3)
@@ -816,7 +814,7 @@ final class SpotRunsStayTests: SpotRunsCase {
         try await wait("the third failure") { told().count == 3 }
 
         _ = try scanned()
-        try await pause(0.1)
+        XCTAssertFalse(runs.isShowing)
         XCTAssertEqual(log().count, 3)
 
         menuBar.insert("script")
@@ -840,8 +838,8 @@ final class SpotRunsStayTests: SpotRunsCase {
         var isReady = false
 
         sheet.open { isReady = true }
-        try await pause(0.1)
 
+        XCTAssertFalse(runs.isShowing)
         XCTAssertFalse(isReady)
         XCTAssertFalse(sheet.isOpen)
     }

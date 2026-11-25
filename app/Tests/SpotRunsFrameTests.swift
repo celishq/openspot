@@ -18,7 +18,7 @@ final class SpotRunsFrameTests: SpotRunsCase {
 
         try await wait("the new picture") { sheet.panel?.parts.map(\.id) == ["only"] }
         try await allEnded()
-        try await pause(0.1)
+        try await wait("the end of the call") { sheet.calls.isEmpty }
         XCTAssertEqual(log(), ["show", "go"])
     }
 

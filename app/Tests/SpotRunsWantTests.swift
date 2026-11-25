@@ -78,11 +78,11 @@ final class SpotRunsWantTests: SpotRunsCase {
         try script("ontimer", toml: "[on]\nevery = 600", log: "ontimer", "printf 'text=t\\ntitle=T\\n'")
         try script("onpanel", toml: "[on]\n\"panel.open\" = true", log: "onpanel", "printf 'text=m\\ntitle=P\\n'")
         _ = try scanned()
-        try await pause(0.1)
+        XCTAssertFalse(runs.isShowing)
         XCTAssertEqual(log("onsheet") + log("ontimer") + log("onpanel"), [])
 
         runs.woke()
-        try await pause(0.1)
+        XCTAssertFalse(runs.isShowing)
         XCTAssertEqual(log("onsheet") + log("ontimer") + log("onpanel"), [])
 
         runs.panelOpened()
@@ -105,7 +105,7 @@ final class SpotRunsWantTests: SpotRunsCase {
         XCTAssertTrue(sheet.isOpen)
         time += 5
         runs.raise(.clock)
-        try await pause(0.15)
+        XCTAssertTrue(sheet.calls.isEmpty)
         XCTAssertEqual(log(), ["show", "every"])
 
         time += 5
@@ -141,22 +141,22 @@ final class SpotRunsWantTests: SpotRunsCase {
         try await wait("the read from the clock") { self.log().count == 2 }
     }
 
-    func testTheClockLooksAtTheTimeOnlyWhenAReadIsDue() async throws {
-        nonisolated(unsafe) var looks = 0
-        runs = SpotRuns(clock: RunClock(now: { [clock] in
-            looks += 1
-            return clock.time
-        }, sleep: clock.value.sleep), stopPause: 0.2)
+    func testTheClockSleepsOnceUntilTheNextReadIsDue() async throws {
+        let idle = FakeClock()
+        runs = SpotRuns(clock: idle.value, stopPause: 0.2)
         menuBar.insert("script")
         try script(toml: "[on]\nevery = 5", "printf 'text=t\\ntitle=1\\n'")
         _ = try scanned()
         try await wait("the first read") { self.log().count == 1 && self.runs.sheets["script"]?.calls.isEmpty == true }
-        let before = looks
 
-        try await pause(0.5)
-
-        XCTAssertLessThanOrEqual(looks - before, 1)
+        try await wait("the sleep of the clock") { idle.sleepCount == 1 }
+        XCTAssertEqual(runs.clockWatch.due, idle.time.addingTimeInterval(5))
+        XCTAssertTrue(idle.isSleeping(for: 5))
         XCTAssertEqual(log().count, 1)
+
+        idle.advance(by: 5)
+
+        try await wait("the read when it is due") { self.log().count == 2 }
     }
 
     func testAScriptWantedWhileTheClockWaitsForALaterReadIsReadOnItsOwnTime() async throws {
