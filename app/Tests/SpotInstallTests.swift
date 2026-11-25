@@ -160,6 +160,22 @@ final class SpotInstallTests: XCTestCase {
         XCTAssertEqual(try places.lock.entries().map(\.paths), [["clock-3.spot"]])
     }
 
+    func testAnInstallFromTheSourceOfAKeptBothCopyLeavesTheCopy() async throws {
+        try "#!/bin/sh\n".writeScript(to: source.appendingPathComponent("clock.spot/clock.sh"), toml: "title = 'Clock'\nuses = ['spots']")
+        _ = try await install("clock", isConfirmed: true)
+        _ = try await install("clock", .keepBoth, isConfirmed: true)
+        _ = try places.lock.remove("clock", from: spots, discard: places.trash)
+
+        do {
+            _ = try await install("clock")
+            XCTFail("an install with a use passed with no yes")
+        } catch {}
+        _ = try await install("clock", isConfirmed: true)
+
+        XCTAssertTrue(FileManager.default.fileExists(atPath: spots.appendingPathComponent("clock-2.spot/clock-2.sh").path))
+        XCTAssertEqual(try places.lock.entries().map(\.paths).sorted { $0[0] < $1[0] }, [["clock-2.spot"], ["clock.spot"]])
+    }
+
     func testAKeptBothCopyThatRunsItsOldIDRunsTheCopy() async throws {
         try "#!/bin/sh\necho \"tick from $(basename \"$(dirname \"$0\")\")\"\n".writeScript(to: source.appendingPathComponent("clock.spot/clock.sh"), toml: "title = 'Clock'\nuses = ['spots']")
         try mine()

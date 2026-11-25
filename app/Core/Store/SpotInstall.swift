@@ -33,7 +33,7 @@ public struct SpotInstall: Equatable, Sendable {
         let folder = clash == .keepBoth ? free() : target
         let asking = "Openspot installed nothing. Run `\(command)\(clash.map { " --\($0.rawValue)" } ?? "") --yes` to install it."
         _ = try await lock.add(
-            origin, to: spots, isConfirmed: isConfirmed, replaces: clash == .replace ? [folder] : [], expecting: expecting, naming: clash == .keepBoth ? folder : nil,
+            origin, to: spots, isConfirmed: isConfirmed, replaces: clash == .replace ? [folder] : [], expecting: expecting, naming: folder,
             asking: asking, discard: trash
         )
         try leaveOffGrid(folder)
