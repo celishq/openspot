@@ -11,7 +11,6 @@ public enum SettingCall: NounCall {
     case appKey(name: String, key: String)
     case login(Bool)
     case link(Bool)
-    case careful(Bool)
     case slow(Bool)
 
     static let noun = CommandNoun("setting", group: .app, verbs: [
@@ -20,7 +19,7 @@ public enum SettingCall: NounCall {
         },
         CommandVerb(
             "set", "[--spot id] <key> [value]",
-            "Keeps a value for the spot, or removes it with no value. The person's choices of a spot: enabled, menubar (true or false), open, float and key.<command> (a key such as ctrl+option+k, or shake; none takes it away). Of the spot openspot: login, link, careful, slow (true or false), panel-key and fix-key."
+            "Keeps a value for the spot, or removes it with no value. The person's choices of a spot: enabled, menubar (true or false), open, float and key.<command> (a key such as ctrl+option+k, or shake; none takes it away). Of the spot openspot: login, link, slow (true or false), panel-key and fix-key."
         ) { words in
             pair(words, sets: true) { spot, key, value in reserved(spot, key, value, isInShow: words.isInShow) ?? Self.set(spot: spot, key: key, value: value) }
         },
@@ -35,8 +34,6 @@ public enum SettingCall: NounCall {
         let call: SettingCall = verb.words == ["get"] ? .get(spot: rest[1], key: "") : .set(spot: rest[1], key: "", value: nil)
         return call.rule(verb.rule, spot: caller)
     })
-
-    private static let careful = "cannot change Careful mode. Only you can, in Settings or with `openspot setting set --spot openspot careful true` in Terminal."
 
     private static func pair(_ words: CallWords, sets: Bool, _ call: (String, String, String?) -> any NounCall) -> (any NounCall)? {
         var rest = words.rest
@@ -70,7 +67,6 @@ public enum SettingCall: NounCall {
                 return changing(.appKey(name: key, key: value), "sets a key of your Mac")
             case "login": return on("changes your Mac", Self.login)
             case "link": return on("changes your Mac", Self.link)
-            case "careful": return on("changes how spots run", Self.careful)
             case "slow": return on("changes how fast the panel moves", Self.slow)
             default: return nil
             }
@@ -96,7 +92,6 @@ public enum SettingCall: NounCall {
         case .key, .appKey: CallRule(use: .app, used: "changed a key")
         case .login: CallRule(use: .app, used: "changed whether Openspot opens at login")
         case .link: CallRule(use: .app, used: "changed the openspot command in Terminal")
-        case .careful: CallRule(use: .app, used: "changed Careful mode", onlyPerson: Self.careful)
         case .slow: CallRule(use: .app, used: "changed slow motion")
         default: rule
         }
@@ -117,7 +112,6 @@ public enum SettingCall: NounCall {
         case .appKey(let name, let key): keys.set(app: name, to: key)
         case .login(let isOn): apps.login(isOn)
         case .link(let isOn): apps.link(isOn)
-        case .careful(let isOn): apps.careful(isOn)
         case .slow(let isOn): apps.slow(isOn)
         }
     }

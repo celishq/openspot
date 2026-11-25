@@ -5,7 +5,6 @@ public struct Config: Equatable, Sendable {
         case keys
         case spots
         case settings
-        case careful
         case panels
         case rest
     }
@@ -17,7 +16,6 @@ public struct Config: Equatable, Sendable {
     public var keys: [GlobalKey] = []
     public private(set) var settings: [SpotSetting] = []
     public private(set) var stores: [Store] = []
-    public private(set) var isCareful = false
     public private(set) var theme: String?
     public private(set) var panels = GridPanels()
     private(set) var browsers = Browser.builtIn
@@ -55,11 +53,6 @@ public struct Config: Equatable, Sendable {
         kept.tables += document.tables.filter { !known.contains($0.name) }
         panelKey = shortcut(document.values["panel-key"], named: "panel-key", or: .standard)
         fixKey = shortcut(document.values["fix-key"], named: "fix-key", or: .fix)
-        switch document.values["careful"] {
-        case .boolean(let isOn)?: isCareful = isOn
-        case nil: break
-        default: faults.append("config.toml: careful is true or false.")
-        }
         switch document.values["theme"] {
         case .string(let name)?: theme = name
         case nil: break
@@ -101,14 +94,12 @@ public struct Config: Equatable, Sendable {
         if panelKey != other.panelKey || fixKey != other.fixKey || keys != other.keys { sections.insert(.keys) }
         if arrangement != other.arrangement { sections.insert(.spots) }
         if settings != other.settings { sections.insert(.settings) }
-        if isCareful != other.isCareful { sections.insert(.careful) }
         if panels != other.panels { sections.insert(.panels) }
         same.panelKey = panelKey
         same.fixKey = fixKey
         same.keys = keys
         same.arrangement = arrangement
         same.settings = settings
-        same.isCareful = isCareful
         same.theme = theme
         same.panels = panels
         same.kept = kept
@@ -124,11 +115,6 @@ public struct Config: Equatable, Sendable {
         default: return
         }
         kept.set(name, to: .string(shortcut.text))
-    }
-
-    public mutating func set(isCareful: Bool) {
-        self.isCareful = isCareful
-        kept.set("careful", to: .boolean(isCareful))
     }
 
     public mutating func set(theme: String) {

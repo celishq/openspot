@@ -26,7 +26,6 @@ sheet() {
   printf 'frame=\nrecents=false\n\nbutton=press\ntitle=Change\nclose=false\n'
   printf '\nfield=panel-key\ntype=hotkey\ntitle=Open Openspot\nicon=keyboard\nvalue=%s\n' "$(field "$1" panel-key)"
   printf '\nfield=fix-key\ntype=hotkey\ntitle=Open a fix\nicon=wrench.and.screwdriver\nvalue=%s\n' "$(field "$1" fix-key)"
-  printf '\nitem=careful_mode\ntitle=Careful mode\ndetail=Spots get only what their uses name\nicon=lock.shield\nvalue=%s\n' "$(field "$1" careful)"
   [ -z "$slow" ] || printf '\nitem=slow_motion\ntitle=Slow motion\ndetail=Every motion ten times slower\nicon=tortoise\nvalue=%s\n' "$slow"
   [ -z "$login" ] || printf '\nitem=open_at_login\ntitle=Open at login\nicon=power\nvalue=%s\n' "$login"
   [ -z "$link" ] || printf '\nitem=command_link\ntitle=Use openspot in Terminal\ndetail=The command line tool\nicon=terminal\nvalue=%s\n' "$link"
@@ -42,10 +41,6 @@ case "$1" in
       open_at_login)
         if [ "$(status login)" = true ]; then on=false; else on=true; fi
         exec openspot setting set --spot openspot login "$on"
-        ;;
-      careful_mode)
-        if [ "$(status careful)" = true ]; then on=false; else on=true; fi
-        exec openspot setting set --spot openspot careful "$on"
         ;;
       slow_motion)
         if [ "$(status slow)" = true ]; then on=false; else on=true; fi

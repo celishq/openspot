@@ -487,7 +487,7 @@ public final class SpotsModel {
             case .keys:
                 host.applyConfig(config)
                 holdAssignedKeys(config)
-            case .careful, .spots, .value:
+            case .spots, .value:
                 break
             }
         }

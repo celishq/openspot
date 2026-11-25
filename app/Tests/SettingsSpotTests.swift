@@ -49,7 +49,7 @@ final class SettingsSpotTests: BuiltInCase {
 
         let items = try await items()
 
-        XCTAssertEqual(items.map(\.run), ["panel-key", "fix-key", "careful_mode"])
+        XCTAssertEqual(items.map(\.run), ["panel-key", "fix-key"])
         XCTAssertFalse(items.contains { $0.title == "Show in the menu bar" || $0.title == "Float" || $0.subtitle?.contains("Cups") == true })
     }
 
@@ -58,11 +58,11 @@ final class SettingsSpotTests: BuiltInCase {
 
         let items = try await items()
 
-        XCTAssertEqual(items.map(\.run), ["panel-key", "fix-key", "careful_mode"])
+        XCTAssertEqual(items.map(\.run), ["panel-key", "fix-key"])
         XCTAssertEqual(items.first?.title, "Open Openspot")
         XCTAssertEqual(items.first?.shortcut, "option+space")
-        XCTAssertEqual(items.map { $0.hides ?? [] }, [[], [], []])
-        XCTAssertEqual(items.map(\.takesShake), [false, false, false])
+        XCTAssertEqual(items.map { $0.hides ?? [] }, [[], []])
+        XCTAssertEqual(items.map(\.takesShake), [false, false])
     }
 
     func testTheSheetListsTheFixKeyAndChangesIt() async throws {
@@ -137,7 +137,7 @@ final class SettingsSpotTests: BuiltInCase {
         offerLogin()
 
         let off = try await items()
-        XCTAssertEqual(off.map(\.run), ["panel-key", "fix-key", "careful_mode", "open_at_login"])
+        XCTAssertEqual(off.map(\.run), ["panel-key", "fix-key", "open_at_login"])
         XCTAssertEqual(off.last?.title, "Open at login")
         XCTAssertEqual(off.last?.isOn, false)
 
@@ -163,29 +163,12 @@ final class SettingsSpotTests: BuiltInCase {
         XCTAssertEqual(on.first { $0.run == "slow_motion" }?.isOn, true)
     }
 
-    func testTheCarefulRowShowsItsStateAndAPickTurnsItOnAndOff() async throws {
-        let off = try await items()
-        let row = try XCTUnwrap(off.first { $0.run == "careful_mode" })
-        XCTAssertEqual(row.title, "Careful mode")
-        XCTAssertEqual(row.isOn, false)
-
-        try await call(["open", "careful_mode"])
-        XCTAssertTrue(file.read().isCareful)
-        let on = try await items()
-        XCTAssertEqual(on.first { $0.run == "careful_mode" }?.isOn, true)
-
-        try await call(["open", "careful_mode"])
-        XCTAssertFalse(file.read().isCareful)
-        let changes = await app.changes
-        XCTAssertEqual(changes, 2)
-    }
-
     func testTheLinkRowIsOffUntilALinkPointsAtTheAppAndAPickLinksAndRemovesIt() async throws {
         offerLink()
         let effects = try recordEffects()
 
         let off = try await items()
-        XCTAssertEqual(off.map(\.run), ["panel-key", "fix-key", "careful_mode", "command_link"])
+        XCTAssertEqual(off.map(\.run), ["panel-key", "fix-key", "command_link"])
         XCTAssertEqual(off.last?.title, "Use openspot in Terminal")
         XCTAssertEqual(off.last?.isOn, false)
 

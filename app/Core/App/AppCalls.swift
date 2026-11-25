@@ -14,7 +14,6 @@ struct AppCalls {
                 version: Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String ?? "",
                 panelKey: (config.panelKey ?? .standard).text,
                 fixKey: (config.fixKey ?? .fix).text,
-                careful: config.isCareful,
                 slow: slow,
                 login: mac.login()?.isOn(),
                 link: mac.link()?.isOn,
@@ -37,14 +36,6 @@ struct AppCalls {
         CommandAnswer.work { [mac] in
             guard let link = mac.link() else { throw SpotError.failed(1, "This copy of Openspot cannot put openspot in Terminal.") }
             try link.set(isOn)
-            return ""
-        }
-    }
-
-    func careful(_ isOn: Bool) -> CommandAPI.Work {
-        CommandAnswer.work { [places, app] in
-            let config = try places.config.change { $0.set(isCareful: isOn) }
-            await app?.configChanged(.careful, to: config)
             return ""
         }
     }
