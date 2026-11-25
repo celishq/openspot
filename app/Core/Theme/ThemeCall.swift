@@ -51,19 +51,11 @@ enum ThemeCall: NounCall, Equatable {
         }
     }
 
-    struct Listed: Equatable, Sendable {
-        let name: String
-        let isBuiltIn: Bool
-        let isUsed: Bool
-        let colours: Theme.Colours
-        let layout: Theme.Layout
-    }
-
-    static func listed(_ themes: ThemeFolder) -> [Listed] {
+    static func listed(_ themes: ThemeFolder) -> [ListedTheme] {
         let used = themes.readInUse()
         return themes.scan().items.map { item in
             let theme = ThemeFolder.read(builtIn: themes.builtIn, copy: item.file)
-            return Listed(name: item.name, isBuiltIn: item.isBuiltIn, isUsed: item.name == used, colours: theme.colours, layout: theme.layout)
+            return ListedTheme(name: item.name, isBuiltIn: item.isBuiltIn, isUsed: item.name == used, colours: theme.colours, layout: theme.layout)
         }
     }
 

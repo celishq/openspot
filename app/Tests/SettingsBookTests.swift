@@ -59,7 +59,7 @@ final class SettingsBookTests: PanelCase {
         XCTAssertEqual(book.looks.first { $0.isUsed }?.id, "Openspot")
         XCTAssertEqual(book.looks.first { $0.id == "Dracula" }?.colours.dark.accent.text, "#BD93F9")
         XCTAssertLessThan(try XCTUnwrap(book.looks.first { $0.id == "Retro Deck" }).layout.radius.card, try XCTUnwrap(book.looks.first { $0.id == "Openspot" }).layout.radius.card)
-        XCTAssertEqual(book.account?.isSignedIn, false)
+        XCTAssertEqual(book.account?.signedIn, false)
     }
 
     func testTheSearchFindsAccessesSpotsAndRowsByTheirFoldedWords() async throws {
@@ -263,7 +263,7 @@ final class SettingsBookTests: PanelCase {
 
         await book.makeAccount(handle: "tony")
 
-        XCTAssertEqual(book.account?.isSignedIn, true)
+        XCTAssertEqual(book.account?.signedIn, true)
         XCTAssertEqual(book.account?.handle, "tony")
         XCTAssertEqual(try model.files.account.record()?.handle, "tony")
     }
@@ -284,7 +284,7 @@ final class SettingsBookTests: PanelCase {
         await book.signOut()
 
         XCTAssertNil(try model.files.account.key())
-        XCTAssertEqual(book.account?.isSignedIn, false)
+        XCTAssertEqual(book.account?.signedIn, false)
         XCTAssertEqual(host.asked, ["sign out of your account"])
     }
 

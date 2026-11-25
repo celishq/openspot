@@ -27,7 +27,7 @@ struct SettingsAccountSheet: View {
         _shown = State(initialValue: step.wrappedValue ?? .how)
     }
 
-    private var account: SettingsFacts.Account? {
+    private var account: AccountStatus? {
         book.account
     }
 
@@ -162,7 +162,7 @@ struct SettingsAccountSheet: View {
     }
 
     private var wordsStep: some View {
-        let isSaved = account?.isBackedUp == true
+        let isSaved = account?.backedUp == true
         return Group {
             title("Write them down", "In this order. Anyone with them is you, and nobody can reset them.")
             if let failure {
@@ -265,7 +265,7 @@ struct SettingsAccountSheet: View {
 
     private var leave: some View {
         let place = account?.sync == true ? "all your Macs" : "this Mac"
-        let isSaved = account?.isBackedUp == true
+        let isSaved = account?.backedUp == true
         return Group {
             title("Sign out of your account?", "It leaves \(place)." + (isSaved ? " Your 12 words sign you in again." : ""))
             if !isSaved {

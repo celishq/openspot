@@ -8,8 +8,8 @@ public final class SettingsBook {
     public private(set) var spots = SpotStandings()
     public private(set) var keys = KeyMap()
     public private(set) var rows = SettingRows()
-    public private(set) var looks: [SettingsFacts.Look] = []
-    public private(set) var account: SettingsFacts.Account?
+    public private(set) var looks: [ListedTheme] = []
+    public private(set) var account: AccountStatus?
     public private(set) var index = SettingsIndex()
     public private(set) var page = SettingsPage.access
     public private(set) var back: [SettingsPage] = []

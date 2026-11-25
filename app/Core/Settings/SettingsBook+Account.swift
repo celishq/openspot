@@ -49,7 +49,7 @@ extension SettingsBook {
     }
 
     public func line(of phrase: String) -> [String: String] {
-        AccountPhrase(phrase).line(isSignedIn: account?.isSignedIn == true)
+        AccountPhrase(phrase).line(isSignedIn: account?.signedIn == true)
     }
 
     private func act(_ work: (Account) async throws -> Void) async {

@@ -826,6 +826,7 @@
 		B58A2F63D93A4D41070BCFAC /* SpotBackdropFade.swift in Sources */ = {isa = PBXBuildFile; fileRef = E12444EBBD730953C3E98BC5 /* SpotBackdropFade.swift */; };
 		B601E166271674D8DBFE9FEF /* CalendarEntryTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6C5B6013A7D3A8A2D7C7E232 /* CalendarEntryTests.swift */; };
 		B6582E815802148F1D739482 /* ThemeScan.swift in Sources */ = {isa = PBXBuildFile; fileRef = A17BC46FD789F75D966FBF24 /* ThemeScan.swift */; };
+		B669D32D223B250B3AFC539A /* ListedTheme.swift in Sources */ = {isa = PBXBuildFile; fileRef = 33CC933B5DBF73563F3DDB53 /* ListedTheme.swift */; };
 		B6745FC2B9BCEA2156209D7F /* PenExampleTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 424C4697CEBCCA92D20C9FF8 /* PenExampleTests.swift */; };
 		B68EAF23B3499B5F4058CC6B /* Manifest+Event.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4B3364059BCA13968AC8EAFF /* Manifest+Event.swift */; };
 		B69418570449AE5664E2B417 /* BoxLayoutTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 639DD9405B53C7F65560DD09 /* BoxLayoutTests.swift */; };
@@ -1495,6 +1496,7 @@
 		337DC76ADF7BCB6CC31D7EE0 /* CronLine.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CronLine.swift; sourceTree = "<group>"; };
 		33A221C6F5EFE1673DE88C45 /* SettingsFacts.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsFacts.swift; sourceTree = "<group>"; };
 		33B4946F18A73EDC281BCDBC /* SpotCheck.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SpotCheck.swift; sourceTree = "<group>"; };
+		33CC933B5DBF73563F3DDB53 /* ListedTheme.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ListedTheme.swift; sourceTree = "<group>"; };
 		343B74F47009E908B1316B6B /* SpotBackdropBlur.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SpotBackdropBlur.swift; sourceTree = "<group>"; };
 		344B4D81ADE4C8F2D324AE25 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		345D82DAD27C18BC9DBD8741 /* SpotRun+Frames.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "SpotRun+Frames.swift"; sourceTree = "<group>"; };
@@ -2891,6 +2893,7 @@
 			isa = PBXGroup;
 			children = (
 				C8B441AB6747B042324BB2CD /* BackdropFade.swift */,
+				33CC933B5DBF73563F3DDB53 /* ListedTheme.swift */,
 				0175D569E5CAC0641A87D16B /* MotionTokens.swift */,
 				8F5A90D4CD855B63E40BB0F1 /* SpotTokens.swift */,
 				E248243F99206359A29D4549 /* SpotTokens+Derived.swift */,
@@ -5005,6 +5008,7 @@
 				EF3F3FE8B775CA416957F323 /* KeyWidth.swift in Sources */,
 				22F2F14518754249968C66CF /* LanguageCodes.swift in Sources */,
 				524F4299B8633AE9E145D2C6 /* LaunchSettings.swift in Sources */,
+				B669D32D223B250B3AFC539A /* ListedTheme.swift in Sources */,
 				2DB8791E756ABE5D8953BD67 /* LoadSample.swift in Sources */,
 				BCC8EB2F0710E72684311E2E /* LocalDisk.swift in Sources */,
 				37D3ED187CFDF0411531B406 /* LoginItem.swift in Sources */,

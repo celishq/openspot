@@ -109,10 +109,10 @@ struct SettingsView: View {
         return HStack(spacing: SpotTokens.settingsGroupGap) {
             SettingsAvatar(side: SpotTokens.settingsAccountTile)
             VStack(alignment: .leading, spacing: SpotTokens.settingsLineGap) {
-                Text(account?.isSignedIn == true ? account?.handle.map { "@\($0)" } ?? "Account" : "Sign In")
+                Text(account?.signedIn == true ? account?.handle.map { "@\($0)" } ?? "Account" : "Sign In")
                     .fontWeight(.medium)
                     .lineLimit(1)
-                Text(account?.isSignedIn == true ? "Account" : "Publish your spots")
+                Text(account?.signedIn == true ? "Account" : "Publish your spots")
                     .font(SpotType.settingsLine)
                     .foregroundStyle(isChosen ? SpotTheme.settingsSelectedInk : Color.secondary)
                     .lineLimit(1)

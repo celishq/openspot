@@ -7,7 +7,7 @@ extension SettingsView {
         let account = book.account
         let rows = book.rows.rows(in: .account)
         return Group {
-            if let account, account.isSignedIn {
+            if let account, account.signedIn {
                 hero(account.handle.map { "@\($0)" } ?? SettingsPage.account.section.title, SettingsPage.account.line) {
                     Button("How It Works…") { step = .how }
                         .buttonStyle(.link)
@@ -92,8 +92,8 @@ extension SettingsView {
     }
 
     @ViewBuilder
-    private func saved(_ account: SettingsFacts.Account) -> some View {
-        if account.isBackedUp {
+    private func saved(_ account: AccountStatus) -> some View {
+        if account.backedUp == true {
             Text("Saved").foregroundStyle(SpotTheme.settingsDone)
         } else if account.sync == true {
             Text("In iCloud Keychain").foregroundStyle(.secondary)

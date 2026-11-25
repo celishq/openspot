@@ -26,7 +26,7 @@ extension SettingsView {
         }
     }
 
-    private func preview(_ look: SettingsFacts.Look) -> some View {
+    private func preview(_ look: ListedTheme) -> some View {
         let shape = SpotRoundShape(radius: SpotTokens.settingsCorner)
         return ZStack {
             half(look, look.colours.dark, wall: SpotTheme.settingsLookWallDark)
@@ -52,7 +52,7 @@ extension SettingsView {
         }
     }
 
-    private func half(_ look: SettingsFacts.Look, _ swatch: Theme.Appearance, wall: [Color]) -> some View {
+    private func half(_ look: ListedTheme, _ swatch: Theme.Appearance, wall: [Color]) -> some View {
         let layout = look.layout
         let columns = CGFloat(SpotTheme.settingsLookCards.count)
         let width = columns * CGFloat(layout.space.cell) + (columns - 1) * CGFloat(layout.space.columnGap) + 2 * CGFloat(layout.space.padding)
