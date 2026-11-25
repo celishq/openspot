@@ -43,6 +43,14 @@ public enum SpotSource: Equatable, Sendable {
         }
     }
 
+    func readFolderName() -> String? {
+        switch self {
+        case .git(let text): try? Self.name(of: text)
+        case .folder(let url), .builtIn(let url): Self.spotName(url.lastPathComponent)
+        case .file(let url): (try? SpotPackage(contentsOf: url).roots).flatMap { $0.count == 1 ? $0.first : nil }
+        }
+    }
+
     func find() -> URL? {
         var isFolder: ObjCBool = false
         switch self {

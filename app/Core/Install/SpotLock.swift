@@ -16,6 +16,10 @@ public struct SpotLock: Equatable, Sendable {
             SpotID(path: paths.first ?? source).name
         }
 
+        var folders: Set<String> {
+            Set(paths.compactMap { $0.split(separator: "/").first.map(String.init) })
+        }
+
         func holds(_ id: String) -> Bool {
             paths.contains { path in
                 SpotID(id).isSameFolder(as: SpotID(path: path))
@@ -85,7 +89,7 @@ public struct SpotLock: Equatable, Sendable {
         discard: (URL) throws -> Void = { try FileManager.default.trashItem(at: $0, resultingItemURL: nil) }
     ) async throws -> String {
         try await locked {
-            let old = try entries().first { $0.source == source.text && (naming == nil || $0.paths == [naming]) }
+            let old = try entries().first { $0.source == source.text && (naming == nil || $0.folders == [naming]) }
             var facts: Facts?
             let command = updating ?? "openspot spot add \(source.text) --yes"
             let (commit, paths) = try await source.add(to: folder, at: nil, base: environment, naming: naming, replacing: (old?.paths ?? []) + replaces, discard: discard) { work, paths in

@@ -27,7 +27,8 @@ struct SpotCalls {
 
     func add(_ source: String, isConfirmed: Bool) -> CommandAPI.Work {
         CommandAnswer.work { [places, folder, app] in
-            let answer = try await places.lock.add(SpotSource(text: source, place: folder), to: places.spots.url, isConfirmed: isConfirmed)
+            let source = SpotSource(text: source, place: folder)
+            let answer = try await places.lock.add(source, to: places.spots.url, isConfirmed: isConfirmed, naming: source.readFolderName())
             await app?.spotsChanged()
             return answer
         }

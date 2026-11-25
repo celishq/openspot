@@ -176,6 +176,23 @@ final class SpotInstallTests: XCTestCase {
         XCTAssertEqual(try places.lock.entries().map(\.paths).sorted { $0[0] < $1[0] }, [["clock-2.spot"], ["clock.spot"]])
     }
 
+    func testASpotAddFromTheSourceOfAKeptBothCopyLeavesTheCopy() async throws {
+        try "#!/bin/sh\n".writeScript(to: source.appendingPathComponent("clock.spot/clock.sh"), toml: "title = 'Clock'\nuses = ['spots']")
+        _ = try await install("clock", isConfirmed: true)
+        _ = try await install("clock", .keepBoth, isConfirmed: true)
+        _ = try places.lock.remove("clock", from: spots, discard: places.trash)
+        let api = CommandAPI(mac: Mac(), places: places)
+        let add = { (words: [String]) in await (try XCTUnwrap(api.work(for: CommandRequest(arguments: words, folder: self.root.path), input: { "" })))() }
+
+        let asked = try await add(["spot", "add", source.appendingPathComponent("clock.spot").path])
+        let added = try await add(["spot", "add", source.appendingPathComponent("clock.spot").path, "--yes"])
+
+        XCTAssertNotEqual(asked.code, 0, "a spot add with a use passed with no yes")
+        XCTAssertEqual(added.code, 0, added.errors)
+        XCTAssertTrue(FileManager.default.fileExists(atPath: spots.appendingPathComponent("clock-2.spot/clock-2.sh").path))
+        XCTAssertEqual(Set(try places.lock.entries().map(\.folders)), [["clock-2.spot"], ["clock.spot"]])
+    }
+
     func testAKeptBothCopyThatRunsItsOldIDRunsTheCopy() async throws {
         try "#!/bin/sh\necho \"tick from $(basename \"$(dirname \"$0\")\")\"\n".writeScript(to: source.appendingPathComponent("clock.spot/clock.sh"), toml: "title = 'Clock'\nuses = ['spots']")
         try mine()
