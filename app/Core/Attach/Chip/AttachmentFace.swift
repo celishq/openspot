@@ -14,6 +14,11 @@ public struct AttachmentFace: Hashable, Sendable {
         tree = frame.tree
     }
 
+    init(_ blocks: [TextBlock]) {
+        self.blocks = blocks
+        tree = Frame(grouped: Frame.grouping(blocks), kinds: Self.kinds).tree
+    }
+
     public static func == (one: AttachmentFace, other: AttachmentFace) -> Bool {
         one.blocks == other.blocks
     }

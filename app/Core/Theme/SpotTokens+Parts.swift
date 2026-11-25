@@ -54,7 +54,6 @@ extension SpotTokens {
     public static let attachmentDotGap: CGFloat = 3
     public static let attachmentGap: CGFloat = 8
     public static let previewLines = 2
-    public static let previewCaptionGap: CGFloat = 4
 
     public static let attachmentValuePadding: CGFloat = 9
     public static var attachmentValueFoot: CGFloat { padding + glyphInset }
@@ -65,7 +64,6 @@ extension SpotTokens {
     public static var attachmentValueWidth: CGFloat { gridWidth - 2 * (padding + glyphInset) }
     public static var attachmentFaceHeight: CGFloat { attachmentValueRoom(lines: previewLines) - attachmentValuePadding - attachmentValueFoot }
     public static var attachmentPicture: CGFloat { attachmentValueRoom(lines: 1) - attachmentValuePadding - attachmentValueFoot }
-    public static var attachmentPictureRadius: CGFloat { min(attachmentPicture * 0.224 * cardRadius / builtIn.radius.card, attachmentPicture / 2) }
     public static let attachmentPictureGap: CGFloat = 8
 
     public static func attachmentValueLines(of text: String, besidePicture: Bool = false) -> Int {

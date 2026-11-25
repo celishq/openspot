@@ -172,8 +172,8 @@ final class AttachmentSourceTests: AttachmentCase {
         try await wait("the value") { self.chips.first?.value != nil }
         XCTAssertTrue(model.handleKey(ActionKey(name: "tab")))
 
-        XCTAssertEqual(model.preview?.face?.tree.node("host")?.title, "example.com")
-        XCTAssertNotNil(model.preview?.face?.tree.node("views"))
+        XCTAssertEqual(model.preview?.face.tree.node("host")?.title, "example.com")
+        XCTAssertNotNil(model.preview?.face.tree.node("views"))
         XCTAssertEqual(model.preview?.lines, SpotTokens.previewLines)
         XCTAssertEqual(chips.first?.value?.payload, .url("https://example.com/a"))
     }

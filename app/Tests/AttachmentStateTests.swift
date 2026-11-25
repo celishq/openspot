@@ -24,7 +24,7 @@ final class AttachmentStateTests: AttachmentCase {
         XCTAssertTrue(model.handleKey(tab))
 
         XCTAssertEqual(model.attachments.selected, "tab")
-        XCTAssertEqual(model.preview?.text, "A")
+        XCTAssertEqual(model.preview?.label, "A")
         XCTAssertEqual(shown, ["keep"])
         XCTAssertEqual(model.selected, 0)
     }
@@ -140,7 +140,7 @@ final class AttachmentStateTests: AttachmentCase {
         XCTAssertEqual(Array(host.motions.dropFirst(changes)), [.sheet(isOpen: true)])
         XCTAssertEqual(host.previewWrites.dropFirst(writes).map(\.motion), [.sheet(isOpen: true)])
         XCTAssertTrue(model.attachments.isMoving)
-        XCTAssertEqual(model.preview?.text, "A")
+        XCTAssertEqual(model.preview?.label, "A")
     }
 
     func testTabGrowsTheFieldForThePreviewOnTheSheetsOpenWithTheRowsLaidInTheSameChange() async throws {
@@ -192,7 +192,7 @@ final class AttachmentStateTests: AttachmentCase {
         XCTAssertTrue(model.handleKey(ActionKey(name: "escape")))
 
         XCTAssertNil(model.preview)
-        XCTAssertEqual(model.previewLook?.text, "A")
+        XCTAssertEqual(model.previewLook?.label, "A")
     }
 
     func testATapOnTheAttachmentsWorksTheHintOutOnceByTheEndOfThePress() async throws {
@@ -246,7 +246,7 @@ final class AttachmentStateTests: AttachmentCase {
 
         model.query = "sav"
 
-        XCTAssertEqual(model.preview?.text, "A")
+        XCTAssertEqual(model.preview?.label, "A")
         XCTAssertEqual(shown, ["save"])
         XCTAssertEqual(model.selected, 0)
     }
@@ -275,7 +275,7 @@ final class AttachmentStateTests: AttachmentCase {
 
         XCTAssertEqual(model.commands.fits, fits)
         XCTAssertEqual(shown, ["save"])
-        XCTAssertEqual(model.preview?.text, "A")
+        XCTAssertEqual(model.preview?.label, "A")
     }
 
     func testTheRowsStartBelowThePreview() async throws {
@@ -341,12 +341,12 @@ final class AttachmentStateTests: AttachmentCase {
         await open()
         XCTAssertTrue(model.handleKey(tab))
         XCTAssertEqual(shown, [])
-        XCTAssertEqual(model.preview?.caption, "Reading Safari…")
+        XCTAssertEqual(model.preview?.label, "Reading Safari…")
 
         FileManager.default.createFile(atPath: path("release"), contents: Data())
 
         try await wait("the rows of the value") { self.shown == ["keep"] }
-        XCTAssertEqual(model.preview?.text, "A")
+        XCTAssertEqual(model.preview?.label, "A")
         XCTAssertEqual(model.selected, 0)
     }
 

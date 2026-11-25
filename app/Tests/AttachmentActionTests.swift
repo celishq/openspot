@@ -202,7 +202,7 @@ final class AttachmentActionTests: AttachmentCase {
         model.query = "shar"
 
         XCTAssertEqual(shown, ["Share page"])
-        XCTAssertEqual(model.preview?.text, "Fix")
+        XCTAssertEqual(model.preview?.label, "Fix")
     }
 
     func testASlashWordWhileActionRowsShowRunsItsCommand() async throws {

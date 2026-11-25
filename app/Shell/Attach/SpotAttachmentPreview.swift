@@ -26,39 +26,11 @@ struct SpotAttachmentPreview: View {
         .frame(width: SpotFieldView.rect.width, height: SpotTokens.attachmentValueRoom(lines: SpotTokens.previewLines), alignment: .top)
     }
 
-    @ViewBuilder
     private func words(of preview: AttachmentPreview) -> some View {
-        if let face = preview.face {
-            NodeTree(tree: face.tree, pictureTimes: [:])
-                .environment(\.spotNode, NodeContext(variants: Style.Variant.card(.strip)))
-                .frame(width: SpotTokens.attachmentValueWidth, height: SpotTokens.attachmentFaceHeight, alignment: .topLeading)
-                .clipped()
-                .accessibilityElement(children: .combine)
-        } else {
-            HStack(alignment: .top, spacing: SpotTokens.attachmentPictureGap) {
-                if let picture = preview.picture { SpotPreviewPicture(picture: picture) }
-                lines(of: preview)
-            }
+        NodeTree(tree: preview.face.tree, pictureTimes: [:])
+            .environment(\.spotNode, NodeContext(variants: Style.Variant.card(.strip)))
+            .frame(width: SpotTokens.attachmentValueWidth, height: SpotTokens.attachmentFaceHeight, alignment: .topLeading)
+            .clipped()
             .accessibilityElement(children: .combine)
-        }
-    }
-
-    private func lines(of preview: AttachmentPreview) -> some View {
-        VStack(alignment: .leading, spacing: SpotTokens.attachmentValueLineGap) {
-            HStack(spacing: SpotTokens.previewCaptionGap) {
-                Image(systemName: preview.symbol)
-                Text(preview.caption)
-                    .lineLimit(1)
-            }
-            .font(SpotType.detail)
-            .modifier(SpotSecondaryText())
-            if !preview.text.isEmpty {
-                Text(preview.text)
-                    .font(SpotType.body)
-                    .modifier(SpotInk())
-                    .lineLimit(max(preview.lines, 1))
-                    .fixedSize(horizontal: false, vertical: true)
-            }
-        }
     }
 }
