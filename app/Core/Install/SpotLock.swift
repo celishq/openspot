@@ -10,6 +10,7 @@ public struct SpotLock: Equatable, Sendable {
         public var canDo: [String]
         public var address: String?
         public var key: String?
+        public var version: String?
 
         public var name: String {
             SpotID(path: paths.first ?? source).name
@@ -21,7 +22,7 @@ public struct SpotLock: Equatable, Sendable {
             }
         }
 
-        public init(source: String, commit: String?, paths: [String], hash: String?, uses: [SpotUse], canDo: [String] = [], address: String? = nil, key: String? = nil) {
+        public init(source: String, commit: String?, paths: [String], hash: String?, uses: [SpotUse], canDo: [String] = [], address: String? = nil, key: String? = nil, version: String? = nil) {
             self.source = source
             self.commit = commit
             self.paths = paths
@@ -30,6 +31,7 @@ public struct SpotLock: Equatable, Sendable {
             self.canDo = canDo
             self.address = address
             self.key = key
+            self.version = version
         }
 
         var addedLine: String {
@@ -112,7 +114,10 @@ public struct SpotLock: Equatable, Sendable {
                 }
                 facts = new
             }
-            let entry = Entry(source: source.text, commit: commit, paths: paths, hash: facts?.hash, uses: facts?.uses ?? [], canDo: facts?.canDo ?? [], address: facts?.release?.address, key: facts?.release?.publicKey)
+            let entry = Entry(
+                source: source.text, commit: commit, paths: paths, hash: facts?.hash, uses: facts?.uses ?? [], canDo: facts?.canDo ?? [], address: facts?.release?.address,
+                key: facts?.release?.publicKey, version: try source.version()?.text
+            )
             try write(try entries().filter { Set($0.paths).isDisjoint(with: paths) && (naming != nil || $0.source != source.text) } + [entry])
             return old == nil ? entry.addedLine : entry.updatedLine
         }
@@ -138,7 +143,11 @@ public struct SpotLock: Equatable, Sendable {
                     }
                     facts = new
                 })
-                entries[index] = Entry(source: entry.source, commit: entry.commit, paths: entry.paths, hash: facts?.hash, uses: facts?.uses ?? [], canDo: facts?.canDo ?? [], address: facts?.release?.address, key: facts?.release?.publicKey)
+                let source = SpotSource(text: entry.source, place: place)
+                entries[index] = Entry(
+                    source: entry.source, commit: entry.commit, paths: entry.paths, hash: facts?.hash, uses: facts?.uses ?? [], canDo: facts?.canDo ?? [],
+                    address: facts?.release?.address, key: facts?.release?.publicKey, version: try source.version()?.text
+                )
                 changed[entry.paths.first ?? entry.source] = entries[index]
                 added += entry.addedLine
             } catch {

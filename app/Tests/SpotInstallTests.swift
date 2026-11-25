@@ -55,6 +55,14 @@ final class SpotInstallTests: XCTestCase {
         XCTAssertEqual(try places.lock.entries().map(\.paths), [["clock.spot"]])
     }
 
+    func testAnInstallRecordsItsSourceAndTheVersionOfItsSource() async throws {
+        _ = try await install("clock")
+
+        let entry = try XCTUnwrap(try places.lock.entries().first)
+        XCTAssertEqual(entry.source, source.appendingPathComponent("clock.spot").path)
+        XCTAssertEqual(entry.version, try SpotVersion(of: source.appendingPathComponent("clock.spot")).text)
+    }
+
     func testInstallMakesTheSpotSearchableAndLeavesItOffTheGrid() async throws {
         _ = try await install("clock")
 

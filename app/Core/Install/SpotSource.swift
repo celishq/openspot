@@ -32,6 +32,11 @@ public enum SpotSource: Equatable, Sendable {
         }
     }
 
+    func version() throws -> SpotVersion? {
+        guard case .folder(let url) = self else { return nil }
+        return try SpotVersion(of: url)
+    }
+
     func add(
         to folder: URL,
         at commit: String?,
