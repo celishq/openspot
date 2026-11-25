@@ -66,6 +66,10 @@ final class SpotMotionProbe: NSObject {
     }
 
     private func begin() {
+        if action == "selectall" {
+            let trace = SpotSelectAllTrace(model: model, panel: panel) { self.finish(with: $0) }
+            return trace.run()
+        }
         if action == "pixels" { return shotsFolder.map(shootPixels) ?? finish(with: "no shots folder\n") }
         if action == "panel" { return beginOpens() }
         if action == "search" { return shotsFolder.map(shootTyping) ?? beginSearch() }

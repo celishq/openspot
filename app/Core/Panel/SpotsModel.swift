@@ -261,7 +261,7 @@ public final class SpotsModel {
     public internal(set) var sheetHint = HintWords("")
     @ObservationIgnored var hintIsForEdit = false
     @ObservationIgnored var followsHint = false
-    @ObservationIgnored var hintTakes = 0
+    @ObservationIgnored public internal(set) var hintTakes = 0
     @ObservationIgnored var hintIsStale = false
     @ObservationIgnored var pressDepth = 0
     public var form: FormSession? {

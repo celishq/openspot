@@ -168,6 +168,7 @@
 		24903B4BCD64E40B002DEF93 /* FolderCall.swift in Sources */ = {isa = PBXBuildFile; fileRef = 63D340B71E776E4297A0E0D8 /* FolderCall.swift */; };
 		24F00ED203B9EFE3940520CD /* SpotSpring.swift in Sources */ = {isa = PBXBuildFile; fileRef = 53132FB51D492167918A25DD /* SpotSpring.swift */; };
 		24F82F7C053EF98ECE9F95E4 /* Mac+Guide.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2906D300745D42A5031C864A /* Mac+Guide.swift */; };
+		2510D6EF20EE2A59E522D6CC /* SpotSelectAllTrace.swift in Sources */ = {isa = PBXBuildFile; fileRef = 447807C58999C0522310F0DE /* SpotSelectAllTrace.swift */; };
 		2511E4FD7DC67F65C43CDD39 /* NumberReading+Lines.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0647A51BB1B87A5FE7E10B12 /* NumberReading+Lines.swift */; };
 		251E500D55FC6312DABD8235 /* SymbolCatalog.swift in Sources */ = {isa = PBXBuildFile; fileRef = FABB501FC911592C38310E2F /* SymbolCatalog.swift */; };
 		252B324E37F508D2020D346D /* Clipboard.swift in Sources */ = {isa = PBXBuildFile; fileRef = 46EDF061A4434EBEFAB2DA72 /* Clipboard.swift */; };
@@ -1506,6 +1507,7 @@
 		441D60D3142BDD50E886B27D /* SpotFieldPrompt.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SpotFieldPrompt.swift; sourceTree = "<group>"; };
 		4437852862EB64A7D076A69F /* PowerDaemon.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PowerDaemon.swift; sourceTree = "<group>"; };
 		444DD65CF2C99D03386DDF64 /* MetricValue.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MetricValue.swift; sourceTree = "<group>"; };
+		447807C58999C0522310F0DE /* SpotSelectAllTrace.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SpotSelectAllTrace.swift; sourceTree = "<group>"; };
 		448EAB5B87311019474C50AA /* PanelDiskTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PanelDiskTests.swift; sourceTree = "<group>"; };
 		44B7A8C5D45D9C699B5B597E /* KeyRecordingTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KeyRecordingTests.swift; sourceTree = "<group>"; };
 		44F53537B66E67E7C1E74CD4 /* SpotTokens+Parts.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "SpotTokens+Parts.swift"; sourceTree = "<group>"; };
@@ -3517,6 +3519,7 @@
 			isa = PBXGroup;
 			children = (
 				84FD5E0A2962D925FF02807B /* SpotMotionProbe.swift */,
+				447807C58999C0522310F0DE /* SpotSelectAllTrace.swift */,
 			);
 			path = Tools;
 			sourceTree = "<group>";
@@ -5375,6 +5378,7 @@
 				8CC8E8685EE4A3D81DEEF980 /* SpotSearchField.swift in Sources */,
 				A24832672696F53390D71C61 /* SpotSearchText.swift in Sources */,
 				0C67694EA372E3B8A0D47A84 /* SpotSecondaryText.swift in Sources */,
+				2510D6EF20EE2A59E522D6CC /* SpotSelectAllTrace.swift in Sources */,
 				E2602B4A58D5A6E92B50229B /* SpotSelectionRing.swift in Sources */,
 				ACD1182F06C3D3BF0C1DC844 /* SpotSelectionScope.swift in Sources */,
 				5B2DC12EA5D5C971279E1BAA /* SpotShake.swift in Sources */,
