@@ -1755,9 +1755,21 @@ final class SpotsModelTests: XCTestCase {
         model.closeSheet(moving: false)
 
         XCTAssertNil(model.openSheetID)
-        XCTAssertEqual(host.hintWrites.dropFirst(writes).map(\.motion), [nil])
-        XCTAssertEqual(host.hintWrites.dropFirst(writes).map(\.depth), [0])
+        XCTAssertEqual(host.hintWrites.count, writes)
         XCTAssertEqual(model.gridHint, HintWords(model.hint))
+    }
+
+    func testATypedLetterWritesItsHintOutsideAnyTransaction() async throws {
+        try await followThreeCards()
+        let writes = host.hintWrites.count
+        let before = model.gridHint
+
+        let takes = await hintTakes { model.searchText = "zzz" }
+
+        XCTAssertEqual(takes, 1)
+        XCTAssertNotEqual(model.gridHint, before)
+        XCTAssertEqual(model.gridHint, HintWords(model.hint))
+        XCTAssertEqual(host.hintWrites.count, writes)
     }
 
     func testAListThatArrivesFromASpotsRunWithNoPressUpdatesTheHint() async throws {

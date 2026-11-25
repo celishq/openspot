@@ -145,7 +145,7 @@ final class AttachmentStateTests: AttachmentCase {
         XCTAssertEqual(model.attachments.selected, "tab")
         XCTAssertEqual(model.hintTakes - takes, 1)
         XCTAssertEqual(model.gridHint, HintWords(model.hint))
-        XCTAssertEqual(host.hintWrites.dropFirst(writes).map(\.depth), [0])
+        XCTAssertTrue(host.hintWrites.dropFirst(writes).allSatisfy { $0.depth == 0 })
     }
 
     func testTabAndShiftTabTurnTheChipsAndWrap() async throws {

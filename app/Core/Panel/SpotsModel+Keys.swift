@@ -379,7 +379,8 @@ extension SpotsModel {
         guard words != (onSheet ? sheetHint : gridHint) else { return }
         let motion: PanelMotion? = isEditing || hintIsForEdit || fieldDrop != nil ? .fade : nil
         hintIsForEdit = isEditing
-        change(motion, { if onSheet { sheetHint = words } else { gridHint = words } })
+        let write = { [self] in if onSheet { sheetHint = words } else { gridHint = words } }
+        if let motion { change(motion, write) } else { write() }
     }
 
     var selectedGlyphTitle: String? {
