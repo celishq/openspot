@@ -23,8 +23,8 @@ extension SpotsModel {
         }
     }
 
-    public func updateVisible(holding motion: PanelMotion? = .edit) {
-        hold(shownPreview(of: query), motion: motion, with: showVisible)
+    public func updateVisible() {
+        hold(shownPreview(of: query), with: showVisible)
     }
 
     func showVisible() {
@@ -152,7 +152,7 @@ extension SpotsModel {
 
     func takeQuery(_ text: String) {
         hideAttachments(for: text)
-        hold(shownPreview(of: text), motion: .edit)
+        hold(shownPreview(of: text))
         query = text
     }
 

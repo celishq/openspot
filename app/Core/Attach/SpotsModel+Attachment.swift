@@ -232,9 +232,9 @@ extension SpotsModel {
         if preview != shown { preview = shown }
     }
 
-    func hold(_ preview: AttachmentPreview?, motion: PanelMotion?, with rest: () -> Void = {}) {
+    func hold(_ preview: AttachmentPreview?, with rest: () -> Void = {}) {
         guard preview != self.preview else { return rest() }
-        change(isShown ? motion.flatMap { previewMotion(to: preview, else: $0) } : nil) {
+        change(isShown ? previewMotion(to: preview, else: .edit) : nil) {
             self.preview = preview
             rest()
         }

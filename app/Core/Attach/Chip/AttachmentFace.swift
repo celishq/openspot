@@ -5,14 +5,13 @@ public struct AttachmentFace: Hashable, Sendable {
 
     let blocks: [TextBlock]
     public let tree: ViewTree
-    let errors: [String]
 
-    init?(blocks: [TextBlock]) {
+    init?(blocks: [TextBlock]) throws {
         guard !blocks.isEmpty else { return nil }
         let frame = Frame(grouped: Frame.grouping(blocks), kinds: Self.kinds)
+        if let fault = frame.errors.first { throw SpotError.fault(fault) }
         self.blocks = blocks
         tree = frame.tree
-        errors = frame.errors
     }
 
     public static func == (one: AttachmentFace, other: AttachmentFace) -> Bool {

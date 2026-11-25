@@ -56,9 +56,11 @@ enum AttachmentCall: NounCall {
             let blocks = TextBlock.blocks(in: await input())
             let fields = (blocks.first?.fields ?? []).filter { Self.keys.contains($0.key) }
             guard fields.contains(where: { !Self.notes.contains($0.key) }) else { return CommandAnswer() }
-            let face = AttachmentFace(blocks: Array(blocks.dropFirst()))
-            if let fault = face?.errors.first {
-                return CommandAnswer(errors: "A preview after the value of `openspot attachment add` draws only text, number, series, picture and icon blocks, not \(fault).\n", code: 2)
+            let face: AttachmentFace?
+            do {
+                face = try AttachmentFace(blocks: Array(blocks.dropFirst()))
+            } catch {
+                return CommandAnswer(errors: "A preview after the value of `openspot attachment add` draws only text, number, series, picture and icon blocks, not \((error as? SpotError)?.reason ?? "").\n", code: 2)
             }
             return await Self.add(fields, face: face, to: runs, from: caller)()
         }
@@ -95,12 +97,12 @@ enum AttachmentCall: NounCall {
             return { CommandAnswer(errors: "\(oneKind)\n", code: 2) }
         }
         return {
-            var value = switch kind {
-            case "url": AttachmentValue(url: values[0], title: title, app: app, icon: icon)
-            case "text": AttachmentValue(text: values[0], title: title, app: app, icon: icon)
-            default: AttachmentValue(files: FileKinds.Disk().read(values), title: title, app: app, icon: icon)
+            let payload: AttachmentValue.Payload = switch kind {
+            case "url": .url(values[0])
+            case "text": .text(values[0])
+            default: .files(FileKinds.Disk().read(values))
             }
-            value.face = face
+            let value = AttachmentValue(payload, title: title, app: app, icon: icon, face: face)
             _ = await runs.take(SpotEffect.attachment(value), from: caller)
             return CommandAnswer()
         }
