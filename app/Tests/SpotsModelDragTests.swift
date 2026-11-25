@@ -486,6 +486,79 @@ final class SpotsModelDragTests: XCTestCase {
         XCTAssertFalse(model.isEditing)
     }
 
+    private func fillTheGrid() async throws {
+        model.endEditing()
+        for index in 0..<26 {
+            try "#!/bin/sh\n".writeScript(to: spots.spotFile("x\(index)"))
+        }
+        await model.reload()
+        model.beginEditing()
+    }
+
+    func testALiveDragStillPushesWhenASpotIsLeftOut() async throws {
+        try await fillTheGrid()
+        XCTAssertFalse(model.leftOut.isEmpty)
+        let first = order[0]
+        let last = order[order.count - 1]
+        let start = place(of: first).cell
+
+        model.dragSpot(last, by: move(last, to: start))
+
+        XCTAssertEqual(place(of: last).cell, start)
+        XCTAssertNotEqual(place(of: first).cell, start)
+    }
+
+    func testAReloadDuringADragDropsTheDrag() async throws {
+        model.dragSpot("d", by: move("d", to: row0))
+        try "#!/bin/sh\n".writeScript(to: spots.spotFile("e"))
+
+        await model.reload()
+        model.dropSpot(by: move("d", to: row0))
+
+        XCTAssertNil(model.drag)
+        XCTAssertNotEqual(files.config.read().arrangement.cells(of: "a")?[4], GridCell(row: 0, column: 1))
+    }
+
+    func testAColumnSwitchDuringADragDropsTheDrag() {
+        model.dragSpot("d", by: move("d", to: row0))
+
+        model.set(columns: GridColumns(8))
+
+        XCTAssertNil(model.drag)
+    }
+
+    func testAKeyWithCommandEndsTheEditOfAHeldCommandAndAnotherMoveStartsNone() {
+        model.endEditing()
+        model.hold([.command])
+        model.point(at: pointOnGrid)
+        XCTAssertTrue(model.isEditing)
+
+        _ = model.handleKey(ActionKey(name: "s", isCommand: true))
+
+        XCTAssertFalse(model.isEditing)
+        XCTAssertNil(files.config.read().arrangement.size(of: "a"))
+        model.point(at: pointOnGrid)
+        XCTAssertFalse(model.isEditing)
+        model.hold([])
+        model.hold([.command])
+        model.point(at: pointOnGrid)
+        XCTAssertTrue(model.isEditing)
+    }
+
+    func testAHideForgetsAHeldCommand() {
+        model.endEditing()
+        model.hold([.command])
+
+        model.panelWillHide()
+        model.point(at: pointOnGrid)
+
+        XCTAssertFalse(model.isEditing)
+    }
+
+    func testTheFreeCellsAreKeptForTheSlotsToDraw() {
+        XCTAssertEqual(model.freeCells.count, 4 * SpotTokens.rows - 7)
+    }
+
     func testAPanelThatHidesEndsTheResize() {
         model.resizeSpot("c", by: down)
 

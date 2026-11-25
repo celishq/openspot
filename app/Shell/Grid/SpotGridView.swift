@@ -39,7 +39,7 @@ struct SpotGridView: View {
         }
         return ZStack(alignment: .topLeading) {
             if model.isEditing {
-                GridSlots(cells: frame.freeCells(around: placements))
+                GridSlots(cells: model.freeCells)
                 landing(of: drag, in: placements)
                     .frame(width: frame.width, height: height)
             }

@@ -106,6 +106,16 @@ extension SpotsModel {
         }
     }
 
+    func dropGesture() {
+        stopDragWait()
+        pointerMove = nil
+        if drag != nil { drag = nil }
+        if resize != nil { resize = nil }
+        if carry != nil { carry = nil }
+        if landing != nil { landing = nil }
+        if lift.offset != .zero { lift.offset = .zero }
+    }
+
     func stopDragWait() {
         dragWait?.cancel()
         dragWait = nil

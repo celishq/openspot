@@ -13,12 +13,13 @@ public struct GridLayout: Equatable, Sendable {
         var taken = Array(repeating: false, count: columns * rows)
         var placements: [SpotPlacement] = []
         let reading = { (cell: GridCell) in cell.row * columns + cell.column }
-        let held = spots.indices.filter { $0 != first && spots[$0].cell != nil }
-            .sorted { (reading(spots[$0].cell!), $0) < (reading(spots[$1].cell!), $1) }
-        let loose = spots.indices.filter { $0 != first && spots[$0].cell == nil }
+        let cells = spots.map { $0.cell.flatMap { holds($0) ? $0 : nil } }
+        let held = spots.indices.filter { $0 != first && cells[$0] != nil }
+            .sorted { (reading(cells[$0]!), $0) < (reading(cells[$1]!), $1) }
+        let loose = spots.indices.filter { $0 != first && cells[$0] == nil }
         for index in (first.map { [$0] } ?? []) + held + loose where spots.indices.contains(index) {
             let spot = spots[index]
-            let start = spot.cell.map { index == first ? clamped($0, for: spot.size) : $0 }
+            let start = index == first ? spot.cell.map { clamped($0, for: spot.size) } : cells[index]
             guard let cell = freeCell(for: spot.size, from: start.map(reading) ?? 0, in: taken) else { continue }
             mark(cell, spot.size, in: &taken)
             placements.append(SpotPlacement(index: index, row: cell.row, column: cell.column, size: spot.size))
@@ -87,6 +88,10 @@ public struct GridLayout: Equatable, Sendable {
 
     public var width: CGFloat {
         SpotTokens.width(columns: columns)
+    }
+
+    private func holds(_ cell: GridCell) -> Bool {
+        cell.row < rows && cell.column < columns
     }
 
     private func clamped(_ cell: GridCell, for size: SpotSize) -> GridCell {

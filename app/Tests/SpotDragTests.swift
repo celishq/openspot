@@ -35,6 +35,20 @@ final class SpotDragTests: XCTestCase {
         XCTAssertEqual(drag.start, .square)
     }
 
+    func testAStripReachesAHoleAtTheLastColumnAndShrinksIntoIt() throws {
+        let start = placements([
+            GridSpot(size: .strip, cell: GridCell(row: 2, column: 0)),
+            GridSpot(size: .wide, cell: GridCell(row: 0, column: 0)),
+            GridSpot(size: .small, cell: GridCell(row: 0, column: 2))
+        ])
+        let drag = SpotDrag(id: "a", index: 0, placements: start, grid: grid, choices: SpotSize.all)
+
+        let cell = drag.cell(movedBy: CGSize(width: 3 * step, height: -2 * (SpotTokens.cell + SpotTokens.rowGap)))
+        let moved = try XCTUnwrap(drag.moved(to: cell))
+
+        XCTAssertEqual(moved.placement, SpotPlacement(index: 0, row: 0, column: 3, size: .small))
+    }
+
     func testACardOverATakenCellPushesTheCardThere() throws {
         let start = placements([GridSpot(size: .small, cell: GridCell(row: 3, column: 0)), GridSpot(size: .small, cell: GridCell(row: 0, column: 0))])
         let drag = SpotDrag(id: "a", index: 0, placements: start, grid: grid, choices: SpotSize.all)

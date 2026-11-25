@@ -112,10 +112,15 @@ extension SpotsModel {
             ? next.map { GridSpot(size: $0.size, cell: $0.cell(in: columns)) }
             : next.map { GridSpot(size: $0.role == .answer ? $0.size : SpotSize.strip, cell: nil) }
         let top = fieldRoom
-        let held = isGrid ? drag?.layout ?? resize.map { $0.layout(of: $0.size) } : nil
-        if let held, next == visible {
-            lay(held, top: top)
-            return
+        if isGrid, drag != nil || resize != nil {
+            let shown = Set(visible.map(\.id))
+            let grid = drag?.grid ?? resize?.grid
+            if grid == columns.layout, next.filter({ shown.contains($0.id) }) == visible,
+               let held = drag?.layout ?? resize.map({ $0.layout(of: $0.size) }) {
+                lay(held, top: top)
+                return
+            }
+            dropGesture()
         }
         let side = (columns.count - SpotTokens.columns) / 2
         let laid = isGrid
@@ -123,6 +128,12 @@ extension SpotsModel {
             : GridLayout(columns: SpotTokens.columns).place(spots).map { SpotPlacement(index: $0.index, row: $0.row, column: $0.column + side, size: $0.size) }
         let shown = laid.map { next[$0.index] }
         if shown != visible { visible = shown }
+        if isGrid {
+            let placed = Set(shown.map(\.id))
+            let left = Set(next.map(\.id)).subtracting(placed)
+            if left != leftOut { leftOut = left }
+            runs.take(grid: placed)
+        }
         lay(laid.enumerated().map { $0.element.reindexed($0.offset) }, top: top)
     }
 
@@ -135,7 +146,7 @@ extension SpotsModel {
     func mayMove(_ id: String) -> Bool {
         guard let entry = entry(id) else { return false }
         guard !query.trimmingCharacters(in: .whitespaces).isEmpty else {
-            return entry.isOnGrid != visible.contains { $0.id == id }
+            return entry.isOnGrid != (visible.contains { $0.id == id } || leftOut.contains(id))
         }
         return entry.isFound || entry.spot.triggers.lists || entry.spot.triggers.search != nil
     }

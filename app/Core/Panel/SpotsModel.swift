@@ -33,7 +33,6 @@ public final class SpotsModel {
     private func takeCards() {
         let next = entries.filter { $0.id != fieldSheet }
         if next != cards { cards = next }
-        runs.take(grid: Set(entries.lazy.filter(\.isOnGrid).map(\.id)))
     }
     @ObservationIgnored var storeCards: [String: (entry: Entry, item: SpotCatalog.Item)]?
     @ObservationIgnored private var entryPlaces: [String: Int] = [:]
@@ -120,6 +119,8 @@ public final class SpotsModel {
     public private(set) var gridHeight = SpotTokens.contentHeight(gridHeight: 0)
 
     func takePlacements() {
+        let free = columns.layout.freeCells(around: placements)
+        if free != freeCells { freeCells = free }
         let content = query.isEmpty ? columns.layout.height + laidOutTop : SpotPlacement.height(of: placements)
         let height = SpotTokens.contentHeight(gridHeight: max(content, laidOutTop))
         if height != gridHeight { gridHeight = height }
@@ -284,6 +285,9 @@ public final class SpotsModel {
         didSet { takeMode() }
     }
     @ObservationIgnored var isCommandHeld = false
+    @ObservationIgnored var isCommandSpoiled = false
+    @ObservationIgnored var leftOut: Set<String> = []
+    public private(set) var freeCells: [GridCell] = []
     @ObservationIgnored var editsByKey = false
     public var tip: SpotTip?
     public internal(set) var pointedCard: String?
@@ -461,7 +465,7 @@ public final class SpotsModel {
         endEditing(moving: false)
         if openSheetID != nil { closeSheet(moving: false) }
         host.show()
-        takeQuery(visible.contains { $0.id == id } || cards.filter(\.isOnGrid).contains { $0.id == id } ? "" : entry.state.title)
+        takeQuery(visible.contains { $0.id == id } ? "" : entry.state.title)
         selected = visible.firstIndex { $0.id == id } ?? 0
         return true
     }
@@ -551,6 +555,7 @@ public final class SpotsModel {
 
     public func panelWillHide() {
         asOnePress {
+            holdCommand(false)
             endSpread()
             if attachments.spreads { attachments.fold() }
             hideAttachments()

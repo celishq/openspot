@@ -50,6 +50,11 @@ final class GridLayoutTests: XCTestCase {
         XCTAssertEqual(placements.map { [$0.index, $0.row, $0.column] }, [[0, 0, 2], [1, 0, 3], [2, 0, 0]])
     }
 
+    func testAStoredCellPastTheFrameTakesAFreeCellAndCrashesNothing() {
+        let placements = layout.place([GridSpot(size: .small, cell: GridCell(row: 9, column: 0)), GridSpot(size: .small, cell: GridCell(row: 0, column: 12))])
+        XCTAssertEqual(placements.map(\.cell), [GridCell(row: 0, column: 0), GridCell(row: 0, column: 1)])
+    }
+
     func testAWiderFrameHoldsMoreColumns() {
         let placements = GridLayout(columns: 8, rows: 7).place([GridSpot(size: .large, cell: nil), GridSpot(size: .large, cell: nil)])
         XCTAssertEqual(placements.map { [$0.row, $0.column] }, [[0, 0], [0, 4]])

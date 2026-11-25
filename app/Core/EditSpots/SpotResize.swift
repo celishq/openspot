@@ -5,6 +5,7 @@ public struct SpotResize: Sendable {
     public let index: Int
     public let start: SpotSize
     public var size: SpotSize
+    let grid: GridLayout
     private let layouts: [(size: SpotSize, places: [SpotPlacement])]
 
     public init(id: String, index: Int, placements: [SpotPlacement], choices: [SpotSize], grid: GridLayout) {
@@ -13,6 +14,7 @@ public struct SpotResize: Sendable {
         let placement = placements.first { $0.index == index } ?? SpotPlacement(index: index, row: 0, column: 0, size: .small)
         start = placement.size
         size = placement.size
+        self.grid = grid
         var layouts: [(size: SpotSize, places: [SpotPlacement])] = [(placement.size, placements)]
         for choice in choices where choice != placement.size {
             guard let places = grid.moved(index, to: placement.cell, size: choice, in: placements) else { continue }

@@ -30,7 +30,7 @@ extension SpotsModel {
     }
 
     func editByKey() {
-        guard isCommandHeld, !isEditing, openSheetID == nil, menu == nil, form == nil, recording == nil,
+        guard isCommandHeld, !isCommandSpoiled, !isEditing, openSheetID == nil, menu == nil, form == nil, recording == nil,
               query.trimmingCharacters(in: .whitespaces).isEmpty else { return }
         beginEditing()
         editsByKey = isEditing
@@ -39,7 +39,16 @@ extension SpotsModel {
     func holdCommand(_ isHeld: Bool) {
         guard isHeld != isCommandHeld else { return }
         isCommandHeld = isHeld
+        isCommandSpoiled = false
         if !isHeld { endKeyEditing() }
+    }
+
+    func spoilCommand(by key: ActionKey) {
+        guard key.isCommand, isCommandHeld else { return }
+        isCommandSpoiled = true
+        guard editsByKey, isEditing else { return }
+        if drag != nil || resize != nil { dropGesture() }
+        endEditing(moving: false)
     }
 
     func endKeyEditing() {
@@ -137,6 +146,7 @@ extension SpotsModel {
             change(.edit) {
                 columns = next
                 updateVisible()
+                if !visible.indices.contains(selected) { selected = 0 }
             }
         }
     }

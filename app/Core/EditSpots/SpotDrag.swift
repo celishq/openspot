@@ -9,7 +9,7 @@ public struct SpotDrag: Equatable, Sendable {
     public private(set) var layout: [SpotPlacement]
     private let homeLayout: [SpotPlacement]
     private let others: [SpotPlacement]
-    private let grid: GridLayout
+    let grid: GridLayout
     private let choices: [SpotSize]
 
     public init(id: String, index: Int, placements: [SpotPlacement], grid: GridLayout, choices: [SpotSize]) {
@@ -36,7 +36,7 @@ public struct SpotDrag: Equatable, Sendable {
 
     public func cell(movedBy translation: CGSize) -> GridCell {
         let rect = homeRect
-        return grid.cell(near: CGPoint(x: rect.minX + translation.width, y: rect.minY + translation.height), for: start)
+        return grid.cell(near: CGPoint(x: rect.minX + translation.width, y: rect.minY + translation.height), for: .small)
     }
 
     public func moved(to cell: GridCell) -> SpotDrag? {

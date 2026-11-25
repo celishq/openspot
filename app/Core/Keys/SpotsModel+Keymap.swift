@@ -7,6 +7,7 @@ extension SpotsModel {
     }
 
     public func handleKey(_ key: ActionKey) -> Bool {
+        spoilCommand(by: key)
         return take(key, in: keyRows(of: mode))
     }
 
