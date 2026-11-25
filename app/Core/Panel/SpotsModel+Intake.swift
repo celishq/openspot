@@ -187,8 +187,14 @@ extension SpotsModel {
     public func pasteSpot() -> Bool {
         let paths = host.pastedPaths
         guard form == nil, SpotPackage.isFile(paths) else { return false }
-        review(paths.map { URL(fileURLWithPath: $0) })
+        openInStore(paths.map { URL(fileURLWithPath: $0) })
         return true
+    }
+
+    public func openInStore(_ urls: [URL]) {
+        guard let url = urls.first else { return }
+        host.openStore(file: url)
+        if urls.count > 1 { toast(.failure("Openspot opens one spot at a time.")) }
     }
 
     public func endReview() {

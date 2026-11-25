@@ -98,6 +98,10 @@ extension OpenspotApp: SpotsHost {
         panel?.makeKey()
     }
 
+    func openStore(file: URL) {
+        Task { _ = await StoreWindow.show(model: model, file: file) }
+    }
+
     func allows(_ reason: String) async -> Bool {
         if Self.unlocks.covers(reason, at: Date()) { return true }
         let context = LAContext()

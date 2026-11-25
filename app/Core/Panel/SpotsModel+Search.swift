@@ -183,7 +183,7 @@ extension SpotsModel {
             } else if let file = SpotPackage.file(in: text) {
                 takeQuery("")
                 openSheet?.search("")
-                DispatchQueue.main.async { self.review([file]) }
+                DispatchQueue.main.async { self.openInStore([file]) }
             } else if let openSheet {
                 openSheet.search(text)
             } else {

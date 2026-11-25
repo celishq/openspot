@@ -99,7 +99,7 @@ public struct SpotCatalog: Sendable {
     public func install(_ id: String, in places: AppPlaces, from source: StoreSource? = nil) throws -> SpotInstall? {
         if item(id)?.isCore == true { return nil }
         let found = (source.map { [$0] } ?? stores).lazy.compactMap { source in
-            source.spots().first { $0.id == id }?.spots.first.flatMap { spot in source.fetch(id).map { (name: spot.name, folder: $0, isBuiltIn: source.isBuiltIn) } }
+            source.spots().first { $0.id == id }?.spots.first.flatMap { spot in source.fetch(id).map { (name: spot.name, folder: $0, source: source) } }
         }.first
         guard let found else {
             guard item(id) != nil else {
@@ -108,7 +108,7 @@ public struct SpotCatalog: Sendable {
             return nil
         }
         return SpotInstall(
-            id: id, name: found.name, source: found.folder, isBuiltIn: found.isBuiltIn, spots: folder.url, core: folder.core, lock: places.lock, config: places.config, trash: places.trash
+            id: id, name: found.name, source: found.folder, origin: found.source.origin(of: found.folder), expecting: try found.source.readPackage(), spots: folder.url, core: folder.core, lock: places.lock, config: places.config, trash: places.trash
         )
     }
 

@@ -13,6 +13,7 @@ public final class Store {
     public private(set) var ask: StoreAsk?
     @ObservationIgnored private var shelves: [StorePlace: [StoreCard]] = [:]
     @ObservationIgnored private var opening: String?
+    @ObservationIgnored private var opened: StoreSource?
     @ObservationIgnored private let places: AppPlaces
     @ObservationIgnored private let clock: RunClock
     @ObservationIgnored private let changed: @MainActor () async -> Void
@@ -32,7 +33,7 @@ public final class Store {
     }
 
     public func read() async {
-        let shelf = await Self.read(places)
+        let shelf = await Self.read(places, opened: opened)
         if shelf.tookUpdates { await changed() }
         if sources != shelf.sources { sources = shelf.sources }
         if missing != shelf.missing { missing = shelf.missing }
@@ -60,6 +61,23 @@ public final class Store {
         return page?.id == id
     }
 
+    public func show(file url: URL) async -> Bool {
+        switch await Self.run({ try StoreSource(file: url) }) {
+        case .failure(let error):
+            toast(.failure("Openspot cannot open \(url.lastPathComponent). \(SpotsModel.reason(error))"))
+            return false
+        case .success(let source):
+            opened = source
+            await read()
+            guard let id = shelves[.source(source.url)]?.first?.id else { return false }
+            query = ""
+            choose(.source(source.url))
+            refilter()
+            await open(id)
+            return page?.id == id
+        }
+    }
+
     public func choose(_ next: StorePlace) {
         if page != nil { page = nil }
         guard next != place else { return }
@@ -76,7 +94,7 @@ public final class Store {
 
     public func open(_ id: String) async {
         opening = id
-        let next = await Self.page(id, at: place, places, now: clock.now())
+        let next = await Self.page(id, at: place, places, opened: opened, now: clock.now())
         guard opening == id else { return }
         opening = nil
         page = next
@@ -88,7 +106,7 @@ public final class Store {
     }
 
     public func install(_ id: String) async {
-        switch await Self.review(id, at: place, places, now: clock.now()) {
+        switch await Self.review(id, at: place, places, opened: opened, now: clock.now()) {
         case .success(let review?): ask = review.clashes ? .clash(review) : .install(review)
         case .success(nil): toast("\(id) is one of your spots already.")
         case .failure(let error): toast(.failure(SpotsModel.reason(error)))
@@ -169,8 +187,8 @@ public final class Store {
         do { return .success(try await work()) } catch { return .failure(error) }
     }
 
-    private nonisolated static func sources(in places: AppPlaces, config: Config) -> [StoreSource] {
-        StoreSource.all(builtIn: places.examples, config: config).filter { !$0.isBuiltIn || $0.exists() }
+    private nonisolated static func sources(in places: AppPlaces, config: Config, opened: StoreSource?) -> [StoreSource] {
+        StoreSource.all(builtIn: places.examples, config: config).filter { !$0.isBuiltIn || $0.exists() } + [opened].compactMap { $0 }
     }
 
     private nonisolated static func catalog(_ places: AppPlaces, _ config: Config, sources: [StoreSource]) -> SpotCatalog {
@@ -178,12 +196,12 @@ public final class Store {
     }
 
     @concurrent
-    private nonisolated static func read(_ places: AppPlaces) async -> StoreShelf {
+    private nonisolated static func read(_ places: AppPlaces, opened: StoreSource?) async -> StoreShelf {
         let before = try? places.lock.entries()
         await SpotUpdate(places: places).takeEachWithNoNewPower()
         let tookUpdates = (try? places.lock.entries()) != before
         let config = places.config.read()
-        let sources = sources(in: places, config: config)
+        let sources = sources(in: places, config: config, opened: opened)
         let mine = catalog(places, config, sources: []).items(publications: false).filter(\.isAdded).map { StoreCard(id: $0.id, spot: $0.spot, mark: StoreMark(of: $0)) }
         let had = Set(mine.map(\.id))
         var cards: [StorePlace: [StoreCard]] = [.mine: mine]
@@ -192,11 +210,11 @@ public final class Store {
                 file.spots.first.map { StoreCard(id: file.id, spot: $0, mark: had.contains(file.id) ? .installed : nil) }
             }.sorted { $0.spot.name.localizedCaseInsensitiveCompare($1.spot.name) == .orderedAscending }
         }
-        return StoreShelf(sources: sources, missing: Set(sources.filter { !$0.exists() }.map(\.url.path)), cards: cards, tookUpdates: tookUpdates)
+        return StoreShelf(sources: sources, missing: Set(sources.filter { $0.canRemove && !$0.exists() }.map(\.url.path)), cards: cards, tookUpdates: tookUpdates)
     }
 
     @concurrent
-    private nonisolated static func page(_ id: String, at place: StorePlace, _ places: AppPlaces, now: Date) async -> StorePage? {
+    private nonisolated static func page(_ id: String, at place: StorePlace, _ places: AppPlaces, opened: StoreSource?, now: Date) async -> StorePage? {
         let config = places.config.read()
         let folder = places.spots
         let own = catalog(places, config, sources: []).items(publications: false).first { $0.id == id && $0.isAdded }
@@ -213,7 +231,7 @@ public final class Store {
                 trust: review?.lines ?? [], button: button, hasSample: SpotSample.exists(for: own.spot, runsScript: true), runsSample: true
             )
         case .source(let url):
-            guard let source = StoreSource.all(builtIn: places.examples, config: config).first(where: { $0.url == url }),
+            guard let source = (StoreSource.all(builtIn: places.examples, config: config) + [opened].compactMap { $0 }).first(where: { $0.url == url }),
                   let spot = source.spots().first(where: { $0.id == id })?.spots.first else { return nil }
             let spotFolder = spot.url.deletingLastPathComponent()
             let review = try? ReviewSpot(
@@ -240,10 +258,10 @@ public final class Store {
     }
 
     @concurrent
-    private nonisolated static func review(_ id: String, at place: StorePlace, _ places: AppPlaces, now: Date) async -> Result<StoreReview?, Error> {
+    private nonisolated static func review(_ id: String, at place: StorePlace, _ places: AppPlaces, opened: StoreSource?, now: Date) async -> Result<StoreReview?, Error> {
         Result {
             let config = places.config.read()
-            let sources = sources(in: places, config: config)
+            let sources = sources(in: places, config: config, opened: opened)
             let chosen: StoreSource? = if case .source(let url) = place { sources.first { $0.url == url } } else { nil }
             guard let install = try catalog(places, config, sources: sources).install(id, in: places, from: chosen) else { return nil }
             let source = chosen ?? sources.first { $0.fetch(id) != nil }

@@ -104,6 +104,19 @@ final class PanelDiskTests: PanelCase {
         XCTAssertEqual(reads.count, 0)
     }
 
+    func testAPastedSpotFileOpensTheStoreAtIt() async throws {
+        await model.reload()
+        model.isShown = true
+        let file = folder.appendingPathComponent("Tea.spot")
+        try SpotPackage(files: [.init(path: "tea.spot/tea.sh", isExecutable: true, contents: Data("#!/bin/sh\n".utf8))]).zip(to: file)
+        host.pastedPaths = [file.path]
+
+        XCTAssertTrue(model.pasteSpot())
+
+        XCTAssertEqual(host.openedStores, [file])
+        XCTAssertFalse(model.isReviewing)
+    }
+
     func testAReviewThatLandsAfterThePanelClosedIsDropped() async throws {
         try script("cups", toml: "title = 'Cups'", "true")
         await model.reload()

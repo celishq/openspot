@@ -35,6 +35,7 @@ public protocol SpotsHost: AnyObject {
     func change(_ motion: PanelMotion?, _ body: () -> Void, completion: @escaping @MainActor () -> Void, removal: @escaping @MainActor () -> Void)
     func nextFrame(_ body: @escaping @MainActor () -> Void)
     func allows(_ reason: String) async -> Bool
+    func openStore(file: URL)
 }
 
 extension SpotsHost {
@@ -60,4 +61,6 @@ extension SpotsHost {
     public func allows(_ reason: String) async -> Bool {
         true
     }
+
+    public func openStore(file: URL) {}
 }

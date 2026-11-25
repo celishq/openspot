@@ -69,9 +69,9 @@ To offer your spot in the Store instead, put its folder in a folder of spots tha
 
 ## Add a shared spot
 
-Your friend double-clicks `Ports.spot`, or pastes it into the panel with `⌘V`. Before Openspot adds it, they see a
-review: your page, the uses, and each file. [The review before an add](../../TRUST.md#the-review-before-an-add) lists
-what it shows. From the terminal, `openspot spot add` takes the file, a folder or a git URL:
+Your friend double-clicks `Ports.spot`, or pastes it into the panel with `⌘V`. The Store opens at its page, with your
+readme and the trust lines. Install shows the review first, and adds the file as they saw it: a file changed since is
+refused. [The review before an add](../../TRUST.md#the-review-before-an-add) lists what it shows. From the terminal, `openspot spot add` takes the file, a folder or a git URL:
 
 ```text
 openspot spot add ~/Downloads/Ports.spot

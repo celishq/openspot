@@ -15,12 +15,12 @@ struct StoreSidebar: View {
                 .padding(.top, SpotTokens.storeHeadingGap)
             ForEach(store.sources, id: \.self) { source in
                 StoreSidebarRow(
-                    store: store, place: .source(source.url), symbol: source.isBuiltIn ? "sparkles" : "folder", title: source.name,
+                    store: store, place: .source(source.url), symbol: source.symbol, title: source.name,
                     isMissing: store.missing.contains(source.url.path)
                 )
                 .contextMenu {
                     Button("Show in Finder") { NSWorkspace.shared.activateFileViewerSelecting([source.url]) }
-                    if !source.isBuiltIn {
+                    if source.canRemove {
                         Button("Remove Source") { Task { await store.removeSource(source.url) } }
                     }
                 }

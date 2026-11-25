@@ -81,8 +81,9 @@ public enum SpotSource: Equatable, Sendable {
         try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
         let work = try FileManager.default.url(for: .itemReplacementDirectory, in: .userDomainMask, appropriateFor: folder, create: true)
         defer { try? FileManager.default.removeItem(at: work) }
-        let (commit, paths) = try await stage(in: work, from: folder, at: commit, base: base, naming: naming, replacing: replacing)
-        try check(work, paths)
+        let (commit, staged) = try await stage(in: work, from: folder, at: commit, base: base, naming: naming, replacing: replacing)
+        try check(work, staged)
+        let paths = try Self.renaming(staged, in: work, as: naming)
         try Task.checkCancellation()
         let kept = paths.filter { Self.isSame(work.appendingPathComponent($0), folder.appendingPathComponent($0)) }
         let wholes = replacing.filter { old in !paths.contains { $0.hasPrefix(old + "/") } }
@@ -125,8 +126,34 @@ public enum SpotSource: Equatable, Sendable {
             let paths = spot.files.map(\.path)
             try spot.add(to: work)
             let changed = paths.filter { !Self.isSame(work.appendingPathComponent($0), folder.appendingPathComponent($0)) }
+            if Self.root(renaming: paths, as: naming) != nil { return (nil, paths) }
             try Self.checkFree(changed.filter { path in !replacing.contains { path.hasPrefix($0 + "/") } }, in: folder, replacing: replacing)
             return (nil, paths)
+        }
+    }
+
+    private static func root(renaming paths: [String], as naming: String?) -> (old: String, new: String)? {
+        guard let naming else { return nil }
+        let roots = Set(paths.compactMap { $0.split(separator: "/").first.map(String.init) })
+        let new = SpotID(path: naming).folderName
+        guard roots.count == 1, let old = roots.first, old != new, (old as NSString).pathExtension == SpotPackage.fileExtension else { return nil }
+        return (old, new)
+    }
+
+    private static func renaming(_ paths: [String], in work: URL, as naming: String?) throws -> [String] {
+        guard let (old, new) = root(renaming: paths, as: naming) else { return paths }
+        try FileManager.default.moveItem(at: work.appendingPathComponent(old), to: work.appendingPathComponent(new))
+        let before = SpotID(path: old).name
+        let after = SpotID(path: new).name
+        try rename(work.appendingPathComponent(new), from: before)
+        return paths.map { path in
+            var parts = path.split(separator: "/").map(String.init)
+            parts[0] = new
+            if parts.count > 1, (parts[1] as NSString).deletingPathExtension == before {
+                let kind = (parts[1] as NSString).pathExtension
+                parts[1] = kind.isEmpty ? after : after + "." + kind
+            }
+            return parts.joined(separator: "/")
         }
     }
 

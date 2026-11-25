@@ -4,7 +4,8 @@ public struct SpotInstall: Equatable, Sendable {
     public let id: String
     public let name: String
     let source: URL
-    let isBuiltIn: Bool
+    let origin: SpotSource
+    let expecting: SpotPackage?
     let spots: URL
     let core: URL?
     let lock: SpotLock
@@ -12,7 +13,7 @@ public struct SpotInstall: Equatable, Sendable {
     let trash: @Sendable (URL) throws -> Void
 
     public static func == (one: SpotInstall, other: SpotInstall) -> Bool {
-        one.id == other.id && one.source == other.source && one.spots == other.spots && one.lock == other.lock && one.config == other.config
+        one.id == other.id && one.source == other.source && one.origin == other.origin && one.expecting == other.expecting && one.spots == other.spots && one.lock == other.lock && one.config == other.config
     }
 
     public func review() throws -> ReviewSpot {
@@ -32,7 +33,7 @@ public struct SpotInstall: Equatable, Sendable {
         let folder = clash == .keepBoth ? free() : target
         let asking = "Openspot installed nothing. Run `\(command)\(clash.map { " --\($0.rawValue)" } ?? "") --yes` to install it."
         _ = try await lock.add(
-            isBuiltIn ? .builtIn(source) : .folder(source), to: spots, isConfirmed: isConfirmed, replaces: clash == .replace ? [folder] : [], naming: clash == .keepBoth ? folder : nil,
+            origin, to: spots, isConfirmed: isConfirmed, replaces: clash == .replace ? [folder] : [], expecting: expecting, naming: clash == .keepBoth ? folder : nil,
             asking: asking, discard: trash
         )
         try leaveOffGrid(folder)

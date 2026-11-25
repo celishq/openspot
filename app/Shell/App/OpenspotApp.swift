@@ -134,7 +134,7 @@ final class OpenspotApp: NSObject, NSApplicationDelegate {
         }
         isLaunched = true
         if showsAtLaunch { showPanel() }
-        if !openedAtLaunch.isEmpty { model.review(openedAtLaunch) }
+        if !openedAtLaunch.isEmpty { model.openInStore(openedAtLaunch) }
         model.runs.listen(to: mac)
     }
 
@@ -145,7 +145,7 @@ final class OpenspotApp: NSObject, NSApplicationDelegate {
 
     func application(_ application: NSApplication, open urls: [URL]) {
         if isLaunched {
-            model.review(urls)
+            model.openInStore(urls)
         } else {
             openedAtLaunch = urls
         }

@@ -56,6 +56,12 @@ final class FakeHost: SpotsHost {
     var allowsActs = true
     var asked: [String] = []
 
+    var openedStores: [URL] = []
+
+    func openStore(file: URL) {
+        openedStores.append(file)
+    }
+
     func allows(_ reason: String) async -> Bool {
         heldDuringAsks.append(model?.holdsFocus ?? false)
         asked.append(reason)

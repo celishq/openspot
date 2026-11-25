@@ -212,6 +212,69 @@ final class StoreTests: XCTestCase {
         XCTAssertEqual(toasts, ["Installed Clock as clock-2."])
     }
 
+    private func spotFile(_ id: String, _ body: String, toml: String) throws -> URL {
+        let file = root.appendingPathComponent("\(id.capitalized).spot")
+        try SpotPackage(files: [
+            .init(path: "\(id).spot/\(id).sh", isExecutable: true, contents: Data(body.utf8)),
+            .init(path: "\(id).spot/spot.toml", isExecutable: false, contents: Data(toml.utf8))
+        ]).zip(to: file)
+        return file
+    }
+
+    func testAnOpenedSpotFileShowsItsPageWithItsTrustLines() async throws {
+        let file = try spotFile("cups", "#!/bin/sh\npbcopy\n", toml: "title = 'Cups'\nuses = ['clipboard']")
+
+        let isShown = await store.show(file: file)
+
+        XCTAssertTrue(isShown)
+        XCTAssertEqual(store.place, .source(file))
+        XCTAssertEqual(store.sources.last?.name, "Cups.spot")
+        let page = try XCTUnwrap(store.page)
+        XCTAssertEqual(page.id, "cups")
+        XCTAssertEqual(page.from, "From Cups.spot")
+        XCTAssertEqual(page.button, .install)
+        XCTAssertEqual(page.trust.first, ReviewLine(title: "Uses", words: ["clipboard"]))
+        XCTAssertEqual(page.trust.first { $0.title == "Can also" }?.words, ["Copy with pbcopy in place of openspot clipboard"])
+    }
+
+    func testInstallOfAnOpenedFileAddsTheFileItRead() async throws {
+        let file = try spotFile("cups", "#!/bin/sh\necho one\n", toml: "title = 'Cups'")
+        _ = await store.show(file: file)
+
+        try await installed("cups")
+
+        XCTAssertEqual(try String(contentsOf: spots.appendingPathComponent("cups.spot/cups.sh"), encoding: .utf8), "#!/bin/sh\necho one\n")
+        XCTAssertEqual(toasts, ["Installed Cups."])
+        XCTAssertEqual(store.page?.button, .installed)
+    }
+
+    func testInstallOfAnOpenedFileRefusesAFileChangedSince() async throws {
+        let file = try spotFile("cups", "#!/bin/sh\necho one\n", toml: "title = 'Cups'")
+        _ = await store.show(file: file)
+        await store.install("cups")
+        try FileManager.default.removeItem(at: file)
+        _ = try spotFile("cups", "#!/bin/sh\necho two\n", toml: "title = 'Cups'")
+
+        await store.confirm()
+
+        XCTAssertFalse(exists("cups.spot"))
+        XCTAssertEqual(toasts, ["The file changed after you looked at it, so Openspot added nothing. Open it again to see it."])
+    }
+
+    func testKeepBothOfAnOpenedFileGivesANewID() async throws {
+        try "#!/bin/sh\necho mine\n".writeScript(to: spots.appendingPathComponent("cups.spot/cups.sh"), toml: "title = 'My cups'")
+        let file = try spotFile("cups", "#!/bin/sh\necho one\n", toml: "title = 'Cups'")
+        _ = await store.show(file: file)
+
+        await store.install("cups")
+        await store.confirm(.keepBoth)
+        await store.confirm()
+
+        XCTAssertEqual(try String(contentsOf: spots.appendingPathComponent("cups-2.spot/cups-2.sh"), encoding: .utf8), "#!/bin/sh\necho one\n")
+        XCTAssertTrue(try String(contentsOf: spots.appendingPathComponent("cups.spot/cups.sh"), encoding: .utf8).contains("mine"))
+        XCTAssertEqual(toasts, ["Installed Cups as cups-2."])
+    }
+
     func testAnUpdateThatAsksForANewPowerShowsUpdateAndNamesOnlyThatPower() async throws {
         await store.read()
         try await installed("clock")
