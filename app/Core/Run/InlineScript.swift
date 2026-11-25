@@ -2,25 +2,6 @@ import Foundation
 import JavaScriptCore
 
 final class InlineScript: @unchecked Sendable {
-    private final class Box: @unchecked Sendable {
-        private let lock = NSLock()
-        private var given: CommandAnswer?
-        private var isEnded = false
-
-        func give(_ answer: CommandAnswer?) -> Bool {
-            lock.withLock {
-                guard !isEnded else { return false }
-                isEnded = true
-                given = answer
-                return true
-            }
-        }
-
-        var answer: CommandAnswer? {
-            lock.withLock { given }
-        }
-    }
-
     private final class Held: @unchecked Sendable {
         let value: JSValue?
 
@@ -437,16 +418,16 @@ final class InlineScript: @unchecked Sendable {
     }
 
     private func answer(_ work: @escaping @Sendable () async -> CommandAnswer) -> CommandAnswer {
-        let box = Box()
+        let first = FirstAnswer<CommandAnswer?>()
         let done = DispatchSemaphore(value: 0)
         let task = Task.detached(priority: .userInitiated) {
-            if box.give(await work()) { done.signal() }
+            if first.give(await work()) { done.signal() }
         }
         if let deadline {
-            clock.after(deadline.timeIntervalSince(clock.now())) { if box.give(nil) { done.signal() } }
+            clock.after(deadline.timeIntervalSince(clock.now())) { if first.give(nil) { done.signal() } }
         }
         done.wait()
-        guard let answer = box.answer else {
+        guard let answer = first.value ?? nil else {
             task.cancel()
             timeOut()
             return Self.late
