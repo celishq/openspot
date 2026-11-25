@@ -1,6 +1,6 @@
 import Foundation
 
-public struct SpotArrangement: Equatable, Sendable {
+public struct SpotChoices: Equatable, Sendable {
     public struct Choice: Equatable, Sendable {
         public let id: String
         public var size: SpotSize?
@@ -43,7 +43,7 @@ public struct SpotArrangement: Equatable, Sendable {
         places[id].map { choices[$0] }
     }
 
-    public func spot(openedBy key: ActionKey, over defaults: SpotArrangement) -> String? {
+    public func spot(openedBy key: ActionKey, over defaults: SpotChoices) -> String? {
         if let own = choices.first(where: { $0.key == key }) { return own.id }
         return defaults.choices.first { choice in choice.key == key && self.choice(of: choice.id)?.key == nil }?.id
     }

@@ -311,7 +311,7 @@ public final class SpotsModel {
     @ObservationIgnored var dragWait: Task<Void, Never>?
     @ObservationIgnored var pointerMove: CGSize?
     @ObservationIgnored var resizeGrip = CGPoint(x: SpotTokens.resizeHandle, y: SpotTokens.resizeHandle)
-    @ObservationIgnored public private(set) var defaultArrangement = SpotArrangement()
+    @ObservationIgnored public private(set) var defaultArrangement = SpotChoices()
     public internal(set) var flashSymbol: String?
     @ObservationIgnored public var flashPause: Duration = .milliseconds(1500)
     @ObservationIgnored var flashWatch: Task<Void, Never>?
@@ -367,7 +367,7 @@ public final class SpotsModel {
         kept.config
     }
 
-    public var arrangement: SpotArrangement {
+    public var arrangement: SpotChoices {
         kept.config.arrangement
     }
 

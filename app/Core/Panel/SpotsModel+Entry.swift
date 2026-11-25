@@ -23,7 +23,7 @@ extension SpotsModel {
         private let wordChoices: [String: String]
         public let cells: [Int: GridCell]
 
-        public init(spot: Spot, run: SpotRun?, choice: SpotArrangement = SpotArrangement(), defaults: SpotArrangement = SpotArrangement()) {
+        public init(spot: Spot, run: SpotRun?, choice: SpotChoices = SpotChoices(), defaults: SpotChoices = SpotChoices()) {
             id = spot.id
             sizeChoice = choice.size(of: spot.id)
             defaultSize = defaults.size(of: spot.id)

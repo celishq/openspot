@@ -148,7 +148,7 @@ extension SpotsModel {
         }
     }
 
-    func saveLayout(_ layout: [SpotPlacement], selecting id: String, ending: () -> Void = {}, landed: @escaping @MainActor () -> Void = {}, also: (inout SpotArrangement) -> Void = { _ in }) {
+    func saveLayout(_ layout: [SpotPlacement], selecting id: String, ending: () -> Void = {}, landed: @escaping @MainActor () -> Void = {}, also: (inout SpotChoices) -> Void = { _ in }) {
         let count = grid.columns
         let changes = layout.filter { visible.indices.contains($0.index) }.map { (visible[$0.index], $0) }
         save { next in
@@ -162,7 +162,7 @@ extension SpotsModel {
     }
 
     @discardableResult
-    private func save(_ edit: (inout SpotArrangement) -> Void) -> Bool {
+    private func save(_ edit: (inout SpotChoices) -> Void) -> Bool {
         do {
             try write(.spots) { edit(&$0.arrangement) }
             return true

@@ -60,7 +60,7 @@ final class ConfigFileTests: XCTestCase {
     }
 
     func testASpotKeepsItsCellForEachWidth() throws {
-        var arrangement = SpotArrangement()
+        var arrangement = SpotChoices()
         arrangement.set(cell: GridCell(row: 2, column: 3), of: "a", columns: 4)
         arrangement.set(cell: GridCell(row: 0, column: 7), of: "a", columns: 8)
         try file.write(arrangement)

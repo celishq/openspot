@@ -13,7 +13,7 @@ public struct Config: Equatable, Sendable {
     public private(set) var panelKey: Shortcut? = .standard
     public private(set) var fixKey: Shortcut? = .fix
     public private(set) var faults: [String] = []
-    public var arrangement = SpotArrangement()
+    public var arrangement = SpotChoices()
     public var keys: [GlobalKey] = []
     public private(set) var settings: [SpotSetting] = []
     public private(set) var stores: [Store] = []
@@ -51,7 +51,7 @@ public struct Config: Equatable, Sendable {
         for key in names.sorted() where !(["panel-key", "fix-key", "careful", "theme", "browsers", "columns"] + Self.gone + known).contains(key) {
             faults.append("config.toml: \(key) is not a setting.")
         }
-        arrangement = SpotArrangement(choices: document.tables(named: "spots").compactMap { choice(of: $0) })
+        arrangement = SpotChoices(choices: document.tables(named: "spots").compactMap { choice(of: $0) })
         keys = document.tables(named: "keys").compactMap { key(of: $0) }
         settings = document.tables(named: "settings").compactMap { setting(of: $0) }
         stores = document.tables(named: "stores").compactMap { store(of: $0) }
@@ -218,11 +218,11 @@ public struct Config: Equatable, Sendable {
         return GlobalKey(spot: spot, act: act, trigger: trigger)
     }
 
-    private mutating func choice(of table: ConfigDocument.Table) -> SpotArrangement.Choice? {
+    private mutating func choice(of table: ConfigDocument.Table) -> SpotChoices.Choice? {
         guard case .string(let id)? = table["id"] else {
             return unread(table, "config.toml: a spot needs an id.")
         }
-        var choice = SpotArrangement.Choice(id: id)
+        var choice = SpotChoices.Choice(id: id)
         if case .string(let name)? = table["size"] {
             choice.size = SpotSize(name: name)
             if choice.size == nil { faults.append("config.toml: \(id) cannot use the size \(name).") }
