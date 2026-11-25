@@ -13,6 +13,18 @@ public struct SpotSettings: Equatable, Sendable {
         case window
         case setting(String)
 
+        init(key: String) {
+            if let act = GlobalKey.Act(setting: key) {
+                self = .key(act)
+            } else if key == SpotSettings.menuBarKey {
+                self = .menuBar
+            } else if key == SpotSettings.windowKey {
+                self = .window
+            } else {
+                self = .setting(key)
+            }
+        }
+
         init?(id: String, of spot: String) {
             let named = { (word: String) in id.hasPrefix("\(word):\(spot):") ? String(id.dropFirst(word.count + spot.count + 2)) : nil }
             if let act = named("key").flatMap(GlobalKey.Act.init(setting:)) {
@@ -42,6 +54,8 @@ public struct SpotSettings: Equatable, Sendable {
     public static let removeID = "clear"
     private static let open = ScriptEntry.press.name
     static let secretWord = "Set, and hidden"
+    static let menuBarKey = "menubar"
+    static let windowKey = "window"
     static let menuBarIcon = "menubar.rectangle"
     static let windowIcon = "macwindow"
     static let valueIcon = "slider.horizontal.3"
@@ -119,28 +133,35 @@ public struct SpotSettings: Equatable, Sendable {
         }
     }
 
+    func rows(in config: Config, secrets: [String: String]) -> [SettingRow] {
+        func row(_ key: String, _ title: String, _ value: String?, _ kind: SettingRow.Kind, _ icon: String) -> SettingRow {
+            SettingRow(spot: spot, key: key, title: title, value: value, kind: kind, section: .spot, icon: icon)
+        }
+        let keyRows = self.keys.map { key in row(key.act.setting, key.title, config.keys.first { $0.spot == spot && $0.act == key.act }?.trigger.text, .key, key.icon) }
+        let fieldRows = self.fields.map { field in
+            field.isSecret
+                ? row(field.id, field.title, secrets[field.id].map { _ in SettingRow.secretValue }, .secret, Self.valueIcon)
+                : row(field.id, field.title, config.setting(field.id, of: spot).flatMap { $0.isEmpty ? nil : $0 }, Self.kind(of: field), Self.valueIcon)
+        }
+        let keptRows = kept(in: config).map { row($0.key, Manifest.Setting(id: $0.key).title, $0.value, .text, Self.valueIcon) }
+        let placeRows = showsInMenuBar ? [
+            row(Self.menuBarKey, "Show in the menu bar", String(config.arrangement.menuBar.contains(spot)), .toggle, Self.menuBarIcon),
+            row(Self.windowKey, "Open in a window", String(isWindow(in: config)), .toggle, Self.windowIcon)
+        ] : []
+        return keyRows + fieldRows + keptRows + placeRows
+    }
+
+    private static func kind(of field: Manifest.Setting) -> SettingRow.Kind {
+        if !field.options.isEmpty || field.parameter.type.kind == .choice { return .choice }
+        return field.parameter.type.kind == .bool ? .toggle : .field
+    }
+
     func sheet(in config: Config, secrets: [String: String]) -> String {
-        var blocks = [
+        let blocks = [
             RootKey.block([.init(key: "recents", value: "false")]),
             TextBlock(fields: [.init(key: "button", value: Self.open), .init(key: "title", value: "Change"), .init(key: "close", value: "false")]),
             TextBlock(fields: [.init(key: "button", value: Self.clear), .init(key: "title", value: "Remove"), .init(key: "shortcut", value: "cmd+backspace"), .init(key: "close", value: "false")])
-        ]
-        blocks += keys.map { key in keyRow(key, config.keys.first { $0.spot == spot && $0.act == key.act }) }
-        let named = fields.map { field in
-            (field, field.isSecret ? secrets[field.id].map { _ in Self.secretWord } : config.setting(field.id, of: spot).flatMap { $0.isEmpty ? nil : $0 })
-        }
-        let kept = kept(in: config).map { value in (Manifest.Setting(id: value.key), Optional(value.value)) }
-        blocks += (named + kept).map(fieldRow)
-        if showsInMenuBar {
-            blocks.append(TextBlock(fields: [
-                .init(key: "item", value: Row.menuBar.id(of: spot)), .init(key: "title", value: "Show in the menu bar"), .init(key: "icon", value: Self.menuBarIcon),
-                .init(key: "hides", value: Self.clear), .init(key: "value", value: String(config.arrangement.menuBar.contains(spot)))
-            ]))
-            blocks.append(TextBlock(fields: [
-                .init(key: "item", value: Row.window.id(of: spot)), .init(key: "title", value: "Open in a window"), .init(key: "icon", value: Self.windowIcon),
-                .init(key: "hides", value: Self.clear), .init(key: "value", value: String(isWindow(in: config)))
-            ]))
-        }
+        ] + rows(in: config, secrets: secrets).map(block(of:))
         return blocks.map(\.text).joined(separator: "\n")
     }
 
@@ -148,18 +169,33 @@ public struct SpotSettings: Equatable, Sendable {
         config.arrangement.isWindow(of: spot) ?? isWindowByDefault
     }
 
-    private func keyRow(_ key: Key, _ given: GlobalKey?) -> TextBlock {
-        let text = given?.trigger.text
-        return TextBlock(fields: [
-            .init(key: "field", value: Row.key(key.act).id(of: spot)), .init(key: "type", value: "hotkey"), .init(key: "title", value: key.title),
-            .init(key: "icon", value: key.icon), .init(key: "shake", value: "true"), .init(key: "close", value: "false")
-        ] + (text.map { [.init(key: "value", value: $0)] } ?? [.init(key: "detail", value: Self.unsetKey), .init(key: "hides", value: Self.clear)]))
+    private func block(of row: SettingRow) -> TextBlock {
+        switch Row(key: row.key) {
+        case .key(let act): keyRow(act, row)
+        case .menuBar, .window: placeRow(row)
+        case .setting: fieldRow(row)
+        }
     }
 
-    private func fieldRow(_ field: Manifest.Setting, _ value: String?) -> TextBlock {
+    private func keyRow(_ act: GlobalKey.Act, _ row: SettingRow) -> TextBlock {
         TextBlock(fields: [
-            .init(key: "item", value: Row.setting(field.id).id(of: spot)), .init(key: "title", value: field.title),
-            .init(key: "detail", value: value ?? "Not set"), .init(key: "icon", value: Self.valueIcon)
-        ] + (value == nil ? [.init(key: "hides", value: Self.clear)] : []))
+            .init(key: "field", value: Row.key(act).id(of: spot)), .init(key: "type", value: "hotkey"), .init(key: "title", value: row.title),
+            .init(key: "icon", value: row.icon), .init(key: "shake", value: "true"), .init(key: "close", value: "false")
+        ] + (row.value.map { [.init(key: "value", value: $0)] } ?? [.init(key: "detail", value: Self.unsetKey), .init(key: "hides", value: Self.clear)]))
+    }
+
+    private func placeRow(_ row: SettingRow) -> TextBlock {
+        TextBlock(fields: [
+            .init(key: "item", value: Row(key: row.key).id(of: spot)), .init(key: "title", value: row.title), .init(key: "icon", value: row.icon),
+            .init(key: "hides", value: Self.clear), .init(key: "value", value: row.value ?? "false")
+        ])
+    }
+
+    private func fieldRow(_ row: SettingRow) -> TextBlock {
+        let shown = row.kind == .secret ? row.value.map { _ in Self.secretWord } : row.value
+        return TextBlock(fields: [
+            .init(key: "item", value: Row(key: row.key).id(of: spot)), .init(key: "title", value: row.title),
+            .init(key: "detail", value: shown ?? "Not set"), .init(key: "icon", value: row.icon)
+        ] + (shown == nil ? [.init(key: "hides", value: Self.clear)] : []))
     }
 }

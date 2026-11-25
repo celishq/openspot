@@ -34,12 +34,12 @@ final class SettingsSpotTests: BuiltInCase {
         XCTAssertEqual(SpotArrangement().spot(openedBy: ActionKey(name: ",", isCommand: true), over: defaults.arrangement), spot.id)
     }
 
-    func testAReadStartsOneOpenspotAndNoJq() async throws {
+    func testAReadStartsOnlyOpenspotAndNoJq() async throws {
         let programs = try countPrograms()
 
         _ = try await items()
 
-        XCTAssertEqual(programs(), ["openspot app status"])
+        XCTAssertEqual(programs(), ["openspot setting list --spot openspot", "openspot app status"])
     }
 
     func testTheSheetListsOnlyTheSettingsOfTheAppAndNoneOfASpot() async throws {
@@ -137,16 +137,16 @@ final class SettingsSpotTests: BuiltInCase {
         offerLogin()
 
         let off = try await items()
-        XCTAssertEqual(off.map(\.run), ["panel-key", "fix-key", "careful_mode", "open_at_login"])
-        XCTAssertEqual(off.last?.title, "Open at login")
-        XCTAssertEqual(off.last?.isOn, false)
+        XCTAssertEqual(off.map(\.run), ["panel-key", "fix-key", "login", "careful_mode"])
+        XCTAssertEqual(off[2].title, "Open at login")
+        XCTAssertEqual(off[2].isOn, false)
 
-        try await call(["open", "open_at_login"])
+        try await call(["open", "login"])
         XCTAssertTrue(opensAtLogin)
         let on = try await items()
-        XCTAssertEqual(on.last?.isOn, true)
+        XCTAssertEqual(on[2].isOn, true)
 
-        try await call(["open", "open_at_login"])
+        try await call(["open", "login"])
         XCTAssertFalse(opensAtLogin)
     }
 
@@ -154,13 +154,13 @@ final class SettingsSpotTests: BuiltInCase {
         await app.offerSlowMotion()
 
         let off = try await items()
-        let row = try XCTUnwrap(off.first { $0.run == "slow_motion" })
+        let row = try XCTUnwrap(off.first { $0.run == "slow" })
         XCTAssertEqual(row.title, "Slow motion")
         XCTAssertEqual(row.isOn, false)
 
-        try await call(["open", "slow_motion"])
+        try await call(["open", "slow"])
         let on = try await items()
-        XCTAssertEqual(on.first { $0.run == "slow_motion" }?.isOn, true)
+        XCTAssertEqual(on.first { $0.run == "slow" }?.isOn, true)
     }
 
     func testTheCarefulRowShowsItsStateAndAPickTurnsItOnAndOff() async throws {
@@ -185,17 +185,17 @@ final class SettingsSpotTests: BuiltInCase {
         let effects = try recordEffects()
 
         let off = try await items()
-        XCTAssertEqual(off.map(\.run), ["panel-key", "fix-key", "careful_mode", "command_link"])
-        XCTAssertEqual(off.last?.title, "Use openspot in Terminal")
-        XCTAssertEqual(off.last?.isOn, false)
+        XCTAssertEqual(off.map(\.run), ["panel-key", "fix-key", "link", "careful_mode"])
+        XCTAssertEqual(off[2].title, "Use openspot in Terminal")
+        XCTAssertEqual(off[2].isOn, false)
 
-        try await call(["open", "command_link"])
+        try await call(["open", "link"])
         XCTAssertEqual(effects(), ["toast Installed openspot"])
         XCTAssertEqual(try FileManager.default.destinationOfSymbolicLink(atPath: linkFile.path), root.appendingPathComponent("Openspot.app/Contents/Helpers/openspot").path)
         let on = try await items()
-        XCTAssertEqual(on.last?.isOn, true)
+        XCTAssertEqual(on[2].isOn, true)
 
-        try await call(["open", "command_link"])
+        try await call(["open", "link"])
         XCTAssertEqual(effects(), ["toast Installed openspot", "toast Removed openspot"])
         XCTAssertFalse(FileManager.default.fileExists(atPath: linkFile.path))
         XCTAssertEqual(mac.elevated, [])

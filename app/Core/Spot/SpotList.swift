@@ -75,16 +75,6 @@ struct SpotList {
         }
     }
 
-    private struct Value: PrintedRecord {
-        let spot: String
-        let key: String
-        let value: String
-
-        var blocks: [[(String, String?)]] {
-            [[("item", "\(spot).\(key)"), ("key", key), ("spot", spot), ("value", value)]]
-        }
-    }
-
     let folder: SpotsFolder
     let config: Config
     var statuses: [MacAccess: ReadAccess] = [:]
@@ -134,11 +124,6 @@ struct SpotList {
             let id = SpotsFolder.coreID(of: spot)
             return (id, spot, own.contains(id) || enabled.contains(id), own.contains(id))
         }
-    }
-
-    func values(_ form: PrintForm, secrets: SecretStore.Values) throws -> String {
-        let hidden = secrets.sorted { $0.key < $1.key }.flatMap { spot, values in values.keys.sorted().map { Value(spot: spot, key: $0, value: FieldValues.hidden) } }
-        return try form.text(of: config.settings.map { Value(spot: $0.spot, key: $0.key, value: $0.value) } + hidden)
     }
 
     private static func picture(of spot: Spot) -> String {

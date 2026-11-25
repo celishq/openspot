@@ -18,28 +18,46 @@ status() {
   field "$state" "$1"
 }
 
-# Prints the sheet from the state of the app.
+# Prints the row of the record read so far, except the theme, which Themes shows.
+row() {
+  [ -n "$key" ] && [ "$section" != look ] || return 0
+  case $kind in
+    key) printf '\nfield=%s\ntype=hotkey\ntitle=%s\nicon=%s\nvalue=%s\n' "$key" "$title" "$icon" "$value" ;;
+    *)
+      printf '\nitem=%s\ntitle=%s\n' "$key" "$title"
+      [ -z "$detail" ] || printf 'detail=%s\n' "$detail"
+      printf 'icon=%s\nvalue=%s\n' "$icon" "$value"
+      ;;
+  esac
+}
+
+# Prints the sheet from the rows of the app, which `openspot setting list` prints, and the state of the app.
 sheet() {
-  login=$(field "$1" login)
-  link=$(field "$1" link)
-  slow=$(field "$1" slow)
   printf 'frame=\nrecents=false\n\nbutton=press\ntitle=Change\nclose=false\n'
-  printf '\nfield=panel-key\ntype=hotkey\ntitle=Open Openspot\nicon=keyboard\nvalue=%s\n' "$(field "$1" panel-key)"
-  printf '\nfield=fix-key\ntype=hotkey\ntitle=Open a fix\nicon=wrench.and.screwdriver\nvalue=%s\n' "$(field "$1" fix-key)"
-  printf '\nitem=careful_mode\ntitle=Careful mode\ndetail=Spots get only what their uses name\nicon=lock.shield\nvalue=%s\n' "$(field "$1" careful)"
-  [ -z "$slow" ] || printf '\nitem=slow_motion\ntitle=Slow motion\ndetail=Every motion ten times slower\nicon=tortoise\nvalue=%s\n' "$slow"
-  [ -z "$login" ] || printf '\nitem=open_at_login\ntitle=Open at login\nicon=power\nvalue=%s\n' "$login"
-  [ -z "$link" ] || printf '\nitem=command_link\ntitle=Use openspot in Terminal\ndetail=The command line tool\nicon=terminal\nvalue=%s\n' "$link"
+  printf '%s\n\n' "$1" | while IFS= read -r line; do
+    case $line in
+      key=*) key=${line#*=} ;;
+      title=*) title=${line#*=} ;;
+      value=*) value=${line#*=} ;;
+      kind=*) kind=${line#*=} ;;
+      section=*) section=${line#*=} ;;
+      icon=*) icon=${line#*=} ;;
+      detail=*) detail=${line#*=} ;;
+      '') row; key= title= value= kind= section= icon= detail= ;;
+    esac
+  done
+  printf '\nitem=careful_mode\ntitle=Careful mode\ndetail=Spots get only what their uses name\nicon=lock.shield\nvalue=%s\n' "$(field "$2" careful)"
 }
 
 case "$1" in
   show)
+    rows=$(openspot setting list --spot openspot) || exit 1
     state=$(openspot app status) || exit 1
-    sheet "$state"
+    sheet "$rows" "$state"
     ;;
   press)
     case "$(value item)" in
-      open_at_login)
+      login)
         if [ "$(status login)" = true ]; then on=false; else on=true; fi
         exec openspot setting set --spot openspot login "$on"
         ;;
@@ -47,11 +65,11 @@ case "$1" in
         if [ "$(status careful)" = true ]; then on=false; else on=true; fi
         exec openspot setting set --spot openspot careful "$on"
         ;;
-      slow_motion)
+      slow)
         if [ "$(status slow)" = true ]; then on=false; else on=true; fi
         exec openspot setting set --spot openspot slow "$on"
         ;;
-      command_link)
+      link)
         if [ "$(status link)" = true ]; then
           openspot setting set --spot openspot link false && openspot toast 'Removed openspot'
         else
