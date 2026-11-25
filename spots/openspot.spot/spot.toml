@@ -79,7 +79,7 @@ detail = "Make your own"
 answers = "last"
 uses = ["clipboard", "spots"]
 edits = "spots"
-pages = ["build/*", "history"]
+pages = ["build/*", "sessions"]
 
 [scripts.new.on]
 "sheet.open" = true
@@ -93,7 +93,8 @@ new = { spot = "openspot/new" }
 build = { type = "text", required = true, description = "The build that moved" }
 
 [scripts.new.settings]
-agent = { type = "text", title = "Agent", icon = "sparkles", description = "Where Make sends the prompt" }
+agent = { type = "text", title = "Agent", icon = "sparkles", description = "The agent that Make sends the prompt to" }
+place = { type = "text", title = "App", icon = "macwindow", description = "The app the agent works in: Openspot, a terminal or an editor" }
 
 [scripts.playground]
 title = "Playground"

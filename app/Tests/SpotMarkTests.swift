@@ -117,4 +117,66 @@ final class SpotMarkTests: PanelCase {
         XCTAssertNil(model.files.config.read().arrangement.mark(of: "tea"))
         XCTAssertEqual(model.files.config.read().arrangement.mark(of: "coffee"), .building)
     }
+
+    func testASelectedNewSpotNamesEditInTheFooter() async throws {
+        try await drinks(["coffee": "Coffee", "tea": "Tea"])
+        try await mark("tea", "new")
+        model.isShown = true
+        model.panelWillShow()
+
+        model.selected = try XCTUnwrap(model.visible.firstIndex { $0.id == "tea" })
+        XCTAssertTrue(model.hint.contains("⌘E Edit"), model.hint)
+        model.selected = try XCTUnwrap(model.visible.firstIndex { $0.id == "coffee" })
+        XCTAssertFalse(model.hint.contains("⌘E Edit"), model.hint)
+    }
+
+    func testASpotNotMadeYetCanBeMarkedBuildingButNotNew() async throws {
+        try await drinks()
+
+        try await mark("cocoa", "building")
+        let new = try await call(["spot", "mark", "milk", "new"])
+
+        XCTAssertEqual(model.files.config.read().arrangement.mark(of: "cocoa"), .building)
+        XCTAssertEqual(new.code, 1)
+    }
+
+    func testASpotMarkedBuildingBeforeItsFolderIsMadeStaysHidden() async throws {
+        try await drinks()
+        try await mark("cocoa", "building")
+
+        try script("cocoa", toml: "title = 'Cocoa'", "printf 'item=a\\ntitle=A\\n'")
+        await model.reload()
+
+        XCTAssertFalse(shown.contains("cocoa"))
+        model.query = "cocoa"
+        XCTAssertFalse(shown.contains("cocoa"))
+    }
+
+    func testASpotThatIsBuildingDoesNotOpen() async throws {
+        try await drinks()
+        try await mark("coffee", "building")
+
+        let answer = try await call(["spot", "open", "coffee"])
+
+        XCTAssertEqual(answer.code, 1)
+        XCTAssertTrue(answer.errors.contains("is still being built"), answer.errors)
+        XCTAssertNil(model.openSheetID)
+    }
+
+    func testANewSpotNamesEditInItsFooterOnItsFirstOpen() async throws {
+        try await drinks()
+        try await mark("tea", "new")
+        model.isShown = true
+        model.panelWillShow()
+
+        model.run(try XCTUnwrap(model.visible.first { $0.id == "tea" }))
+        try await wait("the sheet") { model.openSheetID == "tea" }
+        XCTAssertTrue(model.hint.contains("⌘E Edit"), model.hint)
+
+        model.closeSheet(moving: false)
+        try await wait("the mark off") { model.visible.first { $0.id == "tea" }?.isNew == false }
+        model.run(try XCTUnwrap(model.visible.first { $0.id == "tea" }))
+        try await wait("the sheet again") { model.openSheetID == "tea" }
+        XCTAssertFalse(model.hint.contains("⌘E Edit"), model.hint)
+    }
 }

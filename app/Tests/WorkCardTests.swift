@@ -128,7 +128,8 @@ final class WorkCardTests: SpotRunsCase {
         sheet.pressCard()
         try await wait("the frame") { sheet.calls.first?.status != nil }
         time += 1
-        try await wait("the background act") { self.runs.backgroundActs.first?.call.title == "Building" }
+        try await wait("the background act") { self.runs.unseenWork.first?.call.title == "Building" }
+        XCTAssertEqual(runs.workingIDs, [sheet.spot.id])
         XCTAssertNil(runs.workCard)
         XCTAssertEqual(sheet.shownState, sheet.state)
     }

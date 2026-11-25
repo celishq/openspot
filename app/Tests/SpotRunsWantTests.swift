@@ -8,20 +8,33 @@ final class SpotRunsWantTests: SpotRunsCase {
         blocks().filter { $0.hasPrefix("arg=show") || $0 == "arg=every" }.count
     }
 
-    func testClosingThePanelClosesASheetOfPartsAndTheNextOpenReads() async throws {
+    func testClosingThePanelWhileASheetOfPartsStillReadsReadsItAgainWhenThePanelOpens() async throws {
+        try script(toml: "", "printf 'frame=\\nclass=gap-part\\n\\ntext=a\\ntitle=one\\n---\\n'; sleep 30")
+        let sheet = try sheet()
+        runs.panelOpened()
+        sheet.open {}
+        try await wait("the first part") { sheet.panel != nil }
+
+        runs.panelClosed()
+        runs.panelOpened()
+
+        try await wait("the second read") { self.log() == ["show", "show"] }
+        XCTAssertTrue(sheet.isOpen)
+    }
+
+    func testClosingThePanelKeepsASheetOfPartsAsItWasAndTheNextOpenReadsNothing() async throws {
         try script(toml: "", "printf 'frame=\\nclass=gap-part\\n\\nfield=a\\nvalue=one\\n'")
         let sheet = try sheet()
         sheet.open {}
-        try await wait("the part") { sheet.panel != nil }
+        try await wait("the part") { sheet.panel != nil && !sheet.isShowing }
         sheet.set(try XCTUnwrap(sheet.panel?.parts.first), to: "typed")
 
         runs.panelClosed()
+        runs.panelOpened()
 
-        XCTAssertFalse(sheet.isOpen)
-        XCTAssertNil(sheet.panel)
-        sheet.open {}
-        try await wait("the new read") { sheet.panel?.parts.first?.value == "one" }
-        XCTAssertEqual(log(), ["show", "show"])
+        XCTAssertTrue(sheet.isOpen)
+        XCTAssertEqual(sheet.panel?.parts.first?.value, "typed")
+        XCTAssertEqual(log(), ["show"])
     }
 
     func testClosingThePanelLeavesASheetOfRowsOpen() async throws {

@@ -22,6 +22,8 @@ public final class SpotRuns {
     private var dragTakers: Set<String> = []
     @ObservationIgnored public var onReport: (String, SpotRun.Report) -> Void = { _, _ in }
     @ObservationIgnored public var partsArrival: (String, () -> Void) -> Void = { _, bring in bring() }
+    @ObservationIgnored public let keptSheets: KeptSheets
+    @ObservationIgnored public var layoutMoves: (String, () -> Void) -> Void = { _, bring in bring() }
     @ObservationIgnored public let opening: SheetOpening
     public let showLimit: TimeInterval
     let inlineIdle: TimeInterval
@@ -54,6 +56,8 @@ public final class SpotRuns {
     @ObservationIgnored private var menuBar: Set<String> = []
     public private(set) var menuBarMarks: [(id: String, mark: MenuBarMark)] = []
     public private(set) var acts: [(id: String, call: ScriptCall)] = []
+    public private(set) var workingIDs: Set<String> = []
+    public private(set) var unseenWork: [(id: String, call: ScriptCall)] = []
     public private(set) var runningSummary: String?
     public private(set) var actSpot: String?
     @ObservationIgnored let clockWatch: DueWatch
@@ -111,6 +115,7 @@ public final class SpotRuns {
         frameWait: DispatchTimeInterval = .milliseconds(2),
         log: CallLog? = nil,
         stats: URL? = nil,
+        sheets: URL? = nil,
         timers: URL? = nil,
         schedule: URL? = nil,
         swift: SwiftProgram = SwiftProgram(),
@@ -121,6 +126,7 @@ public final class SpotRuns {
         self.log = log
         self.swift = swift
         usage = StatsLog(folder: stats, at: clock.now(), now: clock.now)
+        keptSheets = KeptSheets(folder: sheets)
         self.timers = SpotTimers(file: timers)
         self.schedule = SpotSchedule(file: schedule)
         self.inlineIdle = inlineIdle
@@ -182,6 +188,10 @@ public final class SpotRuns {
         sheet.partsArrival = { [weak self] bring in
             guard let self else { return bring() }
             partsArrival(id, bring)
+        }
+        sheet.layoutMoves = { [weak self] bring in
+            guard let self else { return bring() }
+            layoutMoves(id, bring)
         }
         sheets[id] = sheet
         return sheet
@@ -310,6 +320,15 @@ public final class SpotRuns {
         let summary = name.map { next.count > 1 ? "\(next.count) running. \($0) is the oldest" : "\($0) is running" }
         if summary != runningSummary { runningSummary = summary }
         if next.first?.id != actSpot { actSpot = next.first?.id }
+        showWork()
+    }
+
+    private func showWork() {
+        let work = acts.filter { $0.call.isBackground }
+        let ids = Set(work.map(\.id))
+        if ids != workingIDs { workingIDs = ids }
+        let unseen = work.filter { !grid.contains($0.id) }
+        if !unseen.elementsEqual(unseenWork, by: { $0.id == $1.id && $0.call === $1.call }) { unseenWork = unseen }
     }
 
     public var workCard: WorkCard? {
@@ -319,10 +338,6 @@ public final class SpotRuns {
 
     private var shownAct: (id: String, call: ScriptCall)? {
         acts.first { !shows($0.id) && !$0.call.isBackground }
-    }
-
-    public var backgroundActs: [(id: String, call: ScriptCall)] {
-        acts.filter { $0.call.isBackground }
     }
 
     private func words(of act: (id: String, call: ScriptCall)) -> String {
@@ -369,6 +384,7 @@ public final class SpotRuns {
     public func take(grid next: Set<String>) {
         guard next != grid else { return }
         grid = next
+        showWork()
         guard isPanelOpen else { return }
         sheets.values.forEach { $0.settleScript() }
         updateClock()

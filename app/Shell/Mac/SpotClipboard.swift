@@ -4,6 +4,9 @@ import OpenspotCore
 
 struct SpotClipboard: MacClipboard {
     private static let vKey: CGKeyCode = 9
+    private static let nKey: CGKeyCode = 45
+    private static let returnKey: CGKeyCode = 36
+    private static let settle: TimeInterval = 0.3
 
     func copy(file url: URL) throws {
         guard FileManager.default.fileExists(atPath: url.path) else { throw SpotError.fault("Openspot cannot find \(url.lastPathComponent).") }
@@ -19,15 +22,30 @@ struct SpotClipboard: MacClipboard {
         NSPasteboard.general.string(forType: .string) ?? ""
     }
 
-    func paste() throws {
+    func paste(opening: Bool, sending: Bool) throws {
         guard SpotAccessibility.ask() else {
             throw SpotError.failedWithFix(1, "Openspot cannot paste. Press `⌘V` to paste, or allow Openspot in Accessibility.", SpotAccessibility.settings)
         }
-        let read = { MainActor.assumeIsolated { SpotKeyLayouts.readCommandCode(of: "v") } }
-        let code = (Thread.isMainThread ? read() : DispatchQueue.main.sync(execute: read)) ?? Self.vKey
+        if opening {
+            Self.press(Self.commandCode(of: "n") ?? Self.nKey, flags: .maskCommand)
+            Thread.sleep(forTimeInterval: Self.settle)
+        }
+        Self.press(Self.commandCode(of: "v") ?? Self.vKey, flags: .maskCommand)
+        if sending {
+            Thread.sleep(forTimeInterval: Self.settle)
+            Self.press(Self.returnKey, flags: [])
+        }
+    }
+
+    private static func commandCode(of character: Character) -> CGKeyCode? {
+        let read = { MainActor.assumeIsolated { SpotKeyLayouts.readCommandCode(of: character) } }
+        return Thread.isMainThread ? read() : DispatchQueue.main.sync(execute: read)
+    }
+
+    private static func press(_ code: CGKeyCode, flags: CGEventFlags) {
         for isDown in [true, false] {
             let event = CGEvent(keyboardEventSource: nil, virtualKey: code, keyDown: isDown)
-            event?.flags = .maskCommand
+            event?.flags = flags
             event?.post(tap: .cghidEventTap)
         }
     }

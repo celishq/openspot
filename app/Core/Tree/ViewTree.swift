@@ -11,7 +11,12 @@ public struct ViewTree: Equatable, Sendable {
     public private(set) var places: Set<Style.Variant> = []
     public private(set) var listed: Set<String> = []
     public private(set) var holdsItems = false
+    public private(set) var holdsScroll = false
     private(set) var order: [String] = []
+
+    public var shape: [String] {
+        order
+    }
 
     public func node(_ id: String) -> ViewNode? {
         nodes[id]
@@ -138,6 +143,7 @@ public struct ViewTree: Equatable, Sendable {
             places.formUnion(style.named)
         }
         holdsItems = nodes.values.contains { $0.kind == .items }
+        holdsScroll = nodes.values.contains { $0.style.scrolls }
         let tree = nodes
         let holder = { (id: String?) in id.flatMap { tree[$0] } }
         listed = Set(nodes.values.filter { node in

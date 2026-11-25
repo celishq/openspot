@@ -6,7 +6,7 @@ final class CallRouteTests: XCTestCase {
         func copy(text: String) throws {}
         func copy(file: URL) throws { throw SpotError.fault("Openspot cannot copy \(file.lastPathComponent).") }
         func text() -> String { "kept text" }
-        func paste() throws {}
+        func paste(opening: Bool, sending: Bool) throws {}
     }
 
     private struct Windows: MacWindows {

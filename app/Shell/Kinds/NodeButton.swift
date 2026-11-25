@@ -53,12 +53,12 @@ private struct ButtonDrawing: View {
                     .contentShape(Circle())
             }
             .buttonStyle(.plain)
-            .help(part.title ?? part.id.capitalized)
+            .help(part.title ?? part.spoken ?? part.id.capitalized)
         case .round(let icon):
-            NodeLine(part: part, size: size, call: call, keepsIconColumn: keepsIconColumn) {
+            NodeLine(part: part, size: size, call: call, keepsIconColumn: look != .bare && keepsIconColumn) {
                 SpotRoundButton(
                     icon: icon,
-                    label: part.title ?? part.id.capitalized,
+                    label: part.title ?? part.spoken ?? part.id.capitalized,
                     act: call,
                     size: min(size.width, size.height, SpotTokens.partMaxRound),
                     look: look == .strong ? .strong : look == .bare ? .bare : .plain,

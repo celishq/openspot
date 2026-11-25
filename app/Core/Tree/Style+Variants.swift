@@ -32,6 +32,7 @@ extension Style {
         next.height = other.height ?? height
         next.minWidth = other.minWidth ?? minWidth
         next.maxWidth = other.maxWidth ?? maxWidth
+        next.minHeight = other.minHeight ?? minHeight
         next.grows = other.grows ?? grows
         next.shrinks = other.shrinks ?? shrinks
         next.isSquare = other.isSquare || isSquare
@@ -42,6 +43,9 @@ extension Style {
         next.hidesWords = other.hidesWords || hidesWords
         next.lineLimit = other.lineLimit ?? lineLimit
         next.tabularNumbers = other.tabularNumbers || tabularNumbers
+        next.pulses = other.pulses || pulses
+        next.animatesLayout = other.animatesLayout || animatesLayout
+        next.scrolls = other.scrolls || scrolls
         next.ink = other.ink ?? ink
         next.fill = other.fill ?? fill
         next.blursBackdrop = other.blursBackdrop || blursBackdrop

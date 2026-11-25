@@ -72,7 +72,10 @@ struct SpotCalls {
 
     func open(_ id: String) -> CommandAPI.Work {
         guard let app else { return CommandAnswer.notRunning("spot open \(id)") }
-        return CommandAnswer.work {
+        return CommandAnswer.work { [places] in
+            if places.config.read().arrangement.mark(of: id) == .building {
+                throw SpotError.failed(1, "`\(id)` is still being built, so Openspot shows it when its build is done. Run `openspot render spot \(id) <file.png>` to see it.")
+            }
             guard await app.open(id) else { throw SpotError.failed(1, "Openspot has no spot `\(id)`. Run `openspot spot list` to see each one.") }
             return ""
         }

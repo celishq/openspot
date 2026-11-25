@@ -91,38 +91,37 @@ private struct ChoiceDrawing: View {
     }
 
     private func menu(_ options: [SpotPart.Option], value: String?) -> some View {
-        Menu {
-            Picker(part.title ?? part.id, selection: Binding(get: { value ?? "" }, set: { onSet($0) })) {
-                ForEach(options, id: \.id) { Text($0.title).tag($0.id) }
-            }
-            .pickerStyle(.inline)
-            .labelsHidden()
-        } label: {
-            HStack(spacing: SpotTokens.choiceChevronGap) {
-                Text(options.first { $0.id == value }?.title ?? options.first?.title ?? "")
-                    .font(SpotType.detail)
-                    .foregroundStyle(SpotTheme.ink)
-                    .lineLimit(1)
-                Image(systemName: "chevron.up.chevron.down")
-                    .font(SpotType.mark)
-                    .modifier(SpotSecondaryText())
-            }
+        HStack(spacing: SpotTokens.choiceChevronGap) {
+            Text(options.first { $0.id == value }?.title ?? options.first?.title ?? "")
+                .font(SpotType.detail)
+                .foregroundStyle(SpotTheme.ink)
+                .lineLimit(1)
+            Image(systemName: "chevron.up.chevron.down")
+                .font(SpotType.mark)
+                .modifier(SpotSecondaryText())
         }
-        .menuStyle(.button)
-        .menuIndicator(.hidden)
-        .buttonStyle(.plain)
         .fixedSize()
-        .background {
+        .accessibilityHidden(true)
+        .overlay {
             GeometryReader { room in
-                Color.clear.onChange(of: menuOpening()) { _, opening in
-                    guard opening?.part == part.id else { return }
-                    let rect = room.frame(in: .global)
-                    DispatchQueue.main.async {
-                        SpotChoiceMenu.popUp(options: options, value: value, under: rect) { onSet($0) }
+                Color.clear
+                    .contentShape(Rectangle())
+                    .onTapGesture { popUp(options, value: value, over: room.frame(in: .global)) }
+                    .accessibilityAddTraits(.isButton)
+                    .accessibilityLabel(part.title ?? part.id)
+                    .accessibilityValue(options.first { $0.id == value }?.title ?? "")
+                    .accessibilityAction { popUp(options, value: value, over: room.frame(in: .global)) }
+                    .onChange(of: menuOpening()) { _, opening in
+                        guard opening?.part == part.id else { return }
+                        let rect = room.frame(in: .global)
+                        DispatchQueue.main.async { popUp(options, value: value, over: rect) }
                     }
-                }
             }
         }
+    }
+
+    private func popUp(_ options: [SpotPart.Option], value: String?, over rect: CGRect) {
+        SpotChoiceMenu.popUp(options: options, value: value, over: rect) { onSet($0) }
     }
 
     private func swatches(_ colors: [String], value: String?) -> some View {

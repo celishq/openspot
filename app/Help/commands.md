@@ -73,7 +73,7 @@ work in a read too. `run` works in a read, but the action it runs can't show a v
 | `openspot spot delete <id>`                        | Moves a spot to the Trash, and `⌘Z` in the panel puts it back.                                  |
 | `openspot spot add <git url, folder or .spot>` | Adds a spot and records it in `spots.lock`, and an update that needs a new use also needs `--yes`. |
 | `openspot spot remove <id>`                        | Moves a spot that `spot add` added to the Trash.                                                |
-| `openspot spot mark <id> <mark>` | `building` hides a spot from the panel and the menu bar while an agent builds it, `new` shows it first with a New mark until you open it, and `none` takes the mark off. |
+| `openspot spot mark <id> <mark>` | `building` hides a spot from the panel and the menu bar while an agent builds it, also before its folder is made, `new` shows it first with a New mark until you open it, and `none` takes the mark off. |
 | `openspot spot stats`                              | Prints what each spot cost and used. `openspot guide stats` explains it.                        |
 | `openspot spot actions [id]`                       | Prints each action of a spot and each command of its uses, with their inputs and outputs as JSON Schema. |
 | `openspot schema`                                  | Prints the JSON Schema of `spot.toml`, which an editor checks the file with.                    |

@@ -8,7 +8,7 @@ struct SpotWorkChip: View {
 
     var body: some View {
         ZStack {
-            let all = model.backgroundActs
+            let all = model.unseenWork
             if let work = all.first {
                 SpotShine {
                     HStack(spacing: SpotTokens.workChipGap) {

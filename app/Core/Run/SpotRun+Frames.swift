@@ -86,6 +86,10 @@ extension SpotRun {
         switch ask {
         case .show(let generation, _, let query, _):
             if answers { answered = runs.now() }
+            if spot.keepsSheet, route == nil, !frame.isEmpty, !lines.parts.isEmpty {
+                keptSheet = lines
+                runs.keptSheets.keep(frame, frame: lines, of: spot.id)
+            }
             if spot.showsState { takeState(lines) }
             takeValue(lines)
             let kept = selecting
@@ -216,7 +220,10 @@ extension SpotRun {
             panel = SheetParts(output: lines, variants: runs.variants(of: spot.id))
         } else if let current = panel?.generation, panel?.holdsParts == true {
             rows()
-            guard panel?.take(lines, answering: generation ?? current, keeping: keeping) == true else { return }
+            var took = false
+            let bring = { took = self.panel?.take(lines, answering: generation ?? current, keeping: keeping) == true }
+            if lines.tree.style.animatesLayout, panel?.tree.shape != lines.tree.shape { layoutMoves(bring) } else { bring() }
+            guard took else { return }
             partsAnswers += 1
             onReport(.parts)
         } else {

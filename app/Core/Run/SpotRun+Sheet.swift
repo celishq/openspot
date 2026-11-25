@@ -60,6 +60,10 @@ extension SpotRun {
         panel?.moveLine(by: lines) ?? false
     }
 
+    public func focusPartEdge(last: Bool) -> Bool {
+        panel?.focusEdge(last: last) ?? false
+    }
+
     public func leaveRows(upward: Bool = false) -> Bool {
         panel?.leaveRows(upward: upward) ?? false
     }
@@ -86,22 +90,28 @@ extension SpotRun {
     }
 
     func leftPlace() {
-        let keepsState = script.keepsState
-        if !isInView, panel?.holdsParts == true || keepsState {
+        if !isInView, script.keepsState {
             let wasOpen = isOpen
             close()
-            if keepsState || panel?.parts.contains(where: \.isEditable) == true {
-                panel = nil
-                answered = nil
-            }
+            panel = nil
+            answered = nil
             if wasOpen { onReport(.closed) }
+        } else if !isInView, !isOpen, panel?.parts.contains(where: \.isEditable) == true {
+            panel = nil
+            lastAnswer = keptSheet
+            answered = keptSheet == nil ? nil : .distantPast
         }
         stopUnwantedShow()
         link.settle()
     }
 
     func panelOpened() {
-        if isOpen { show() }
+        if isOpen, isShowCut {
+            show(need: .change)
+        } else if isOpen, panel?.holdsParts != true {
+            show()
+        }
+        isShowCut = false
         link.settle()
     }
 
@@ -141,7 +151,10 @@ extension SpotRun {
 
     private func stopUnwantedShow() {
         guard !isWanted else { return }
-        if let show = running(Self.showKey), !finishesShow { stop(show) }
+        if let show = running(Self.showKey), !finishesShow {
+            stop(show)
+            isShowCut = isOpen
+        }
         if let search = running(Self.searchKey) { stop(search) }
     }
 

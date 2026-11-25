@@ -118,7 +118,7 @@ public struct SheetParts: Equatable, Sendable {
     }
 
     public func hint(escape: String = "Close", stopping isRunning: (SpotPart) -> Bool, actions: Bool = false) -> String {
-        let keys = parts.compactMap { part in part.key.map { "\($0.label) \(isRunning(part) ? "Stop" : part.title ?? part.id.capitalized)" } }
+        let keys = parts.compactMap { part in part.key.map { "\($0.label) \(isRunning(part) ? "Stop" : part.title ?? part.spoken ?? part.id.capitalized)" } }
         if actions { return (keys + ["\(ActionMenu.key) Actions"]).joined(separator: "   ") }
         let close = parts.contains { $0.key == ActionKey(name: "escape") } ? [] : ["Esc \(escape)"]
         return (keys + close).joined(separator: "   ")
@@ -186,6 +186,14 @@ public struct SheetParts: Equatable, Sendable {
     public mutating func focus(_ id: String) {
         guard focusLines.contains(where: { $0.contains(id) }) else { return }
         selected = id
+    }
+
+    public mutating func focusEdge(last: Bool) -> Bool {
+        let order = focusOrder
+        let main = order.first { $0.key == ActionKey(name: "return", isCommand: true) }
+        guard let part = last ? main ?? order.last : order.first, part.id != selected else { return false }
+        selected = part.id
+        return true
     }
 
     public func differsOnlyInSelection(from other: SheetParts) -> Bool {

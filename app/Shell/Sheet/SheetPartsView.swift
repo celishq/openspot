@@ -19,7 +19,7 @@ struct SheetPartsView: View {
 
     private var tree: some View {
         ScrollView(showsIndicators: false) {
-            NodeRoom(height: panel.height) {
+            NodeRoom(height: panel.height, fits: panel.tree.holdsScroll) {
                 NodeTree(tree: panel.tree, pictureTimes: panel.pictureTimes)
                     .environment(\.spotNode.host, host)
                     .environment(\.spotNode.panel, panel)

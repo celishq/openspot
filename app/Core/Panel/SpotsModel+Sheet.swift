@@ -129,6 +129,7 @@ extension SpotsModel {
     func present(_ id: String, moving: Bool) {
         closingPage = nil
         if let shown = openSheetID, shown != id { stopRecording() }
+        if arrangement.mark(of: id) == .new { teachesEdit = id }
         unmarkNew(id)
         sheets[id]?.open(waits: moving) { [weak self] in self?.showSheet(id, moving: moving) }
     }
@@ -138,6 +139,7 @@ extension SpotsModel {
         pendingAsk = nil
         keys.status = nil
         askedAnswer = nil
+        teachesEdit = nil
         stopRecording()
         showSheet(nil, moving: moving) {
             runs.closeOpen()

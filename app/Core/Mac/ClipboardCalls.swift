@@ -20,9 +20,9 @@ struct ClipboardCalls {
         CommandAnswer.work { [mac] in mac?.text() ?? "" }
     }
 
-    func paste() -> CommandAPI.Work {
+    func paste(opening: Bool, sending: Bool) -> CommandAPI.Work {
         CommandAnswer.work { [mac] in
-            try Mac.part(mac, "clipboard").paste()
+            try Mac.part(mac, "clipboard").paste(opening: opening, sending: sending)
             return ""
         }
     }

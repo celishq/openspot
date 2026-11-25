@@ -232,6 +232,7 @@ public final class SpotRun {
     }
     @ObservationIgnored public var onReport: (Report) -> Void = { _ in }
     @ObservationIgnored public var partsArrival: (() -> Void) -> Void = { $0() }
+    @ObservationIgnored public var layoutMoves: (() -> Void) -> Void = { $0() }
     @ObservationIgnored let runs: SpotRuns
     @ObservationIgnored let prepare: ([SpotItem], [String]) async -> Void
     @ObservationIgnored var glyphs: (rows: [SpotItem], glyphs: [String]) = ([], [])
@@ -240,9 +241,11 @@ public final class SpotRun {
         didSet { settle() }
     }
     @ObservationIgnored var lastAnswer: Frame?
+    @ObservationIgnored var keptSheet: Frame?
     @ObservationIgnored var shownFrame: String?
     @ObservationIgnored var shownEvent: ShowEvent?
     @ObservationIgnored var finishesShow = false
+    @ObservationIgnored var isShowCut = false
     @ObservationIgnored var hasAsked = false
     @ObservationIgnored var waiter: (() -> Void)?
     @ObservationIgnored var selecting: String?
@@ -272,6 +275,11 @@ public final class SpotRun {
         keptState = spot.headerState
         reading = MetricReading(label: spot.name, headerSymbol: spot.headerSymbol)
         isOn = spot.headerState.active == true
+        if spot.keepsSheet, let kept = runs.keptSheets.frame(of: spot.id) {
+            keptSheet = kept
+            lastAnswer = keptSheet
+            answered = .distantPast
+        }
         settle()
         link.run = self
     }

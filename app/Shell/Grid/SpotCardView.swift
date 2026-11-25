@@ -31,9 +31,9 @@ struct SpotCardView: View, @MainActor Equatable {
             .background(shape(of: .dropFill).fill(SpotTheme.accent).opacity(dropFill))
             .modifier(CardPress(shape: shape(of: .press), isFilled: isFilled, showsPress: showsPress))
             .overlay(Color.clear.modifier(CardRing(model: model, index: index, shape: shape(of: .ring))).allowsHitTesting(false))
+            .modifier(SpotGlass(shape: shape(of: .glass), isSolid: isFilled))
             .overlay(alignment: .topTrailing) { FailureMark(model: model, entry: entry, size: size) }
             .overlay(alignment: .topLeading) { if entry.isNew { SpotCornerMark(face: .word("New"), corner: .leading, size: size).accessibilityLabel("New spot") } }
-            .modifier(SpotGlass(shape: shape(of: .glass), isSolid: isFilled))
             .contentShape(shape(of: .hit))
             .onTapGesture { if let onTap { onTap() } else { model.tap(entry.id, opening: NSEvent.modifierFlags.contains(.command)) } }
             .animation(SpotMotion.fade(isShown: isFilled), value: isFilled)
@@ -176,7 +176,7 @@ struct SpotCardView: View, @MainActor Equatable {
     }
 
     private var symbolGlyph: some View {
-        Image(systemName: entry.symbol)
+        SpotWorkingSymbol(entry: entry)
             .font(SpotType.glyph)
             .foregroundStyle(isFilled ? AnyShapeStyle(SpotTheme.glyphOnSolid) : AnyShapeStyle(SpotTheme.glassInk))
             .frame(width: SpotTokens.glyph, height: SpotTokens.glyph)

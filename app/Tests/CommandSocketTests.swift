@@ -42,7 +42,7 @@ final class CommandSocketTests: XCTestCase {
         func copy(text: String) throws {}
         func copy(file: URL) throws {}
         func text() -> String { kept }
-        func paste() throws {}
+        func paste(opening: Bool, sending: Bool) throws {}
     }
 
     private var folder: URL!

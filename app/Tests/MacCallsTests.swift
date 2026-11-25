@@ -19,7 +19,7 @@ final class MacCallsTests: XCTestCase {
         func copy(text: String) throws { acts.keep("copy \(text)") }
         func copy(file: URL) throws { acts.keep("copy file \(file.path)") }
         func text() -> String { "kept text" }
-        func paste() throws { acts.keep("paste") }
+        func paste(opening: Bool, sending: Bool) throws { acts.keep(["paste", opening ? "new" : nil, sending ? "send" : nil].compactMap { $0 }.joined(separator: " ")) }
     }
 
     private struct Windows: MacWindows {
@@ -119,10 +119,11 @@ final class MacCallsTests: XCTestCase {
         let file = try run(["clipboard", "copy", "list.txt"], in: place)
         let read = try run(["clipboard", "read"])
         let pasted = try run(["clipboard", "paste"])
+        let sent = try run(["clipboard", "paste", "--new", "--send"])
 
-        XCTAssertEqual([copied.code, file.code, read.code, pasted.code], [0, 0, 0, 0], copied.output + file.output + pasted.output)
+        XCTAssertEqual([copied.code, file.code, read.code, pasted.code, sent.code], [0, 0, 0, 0, 0], copied.output + file.output + pasted.output + sent.output)
         XCTAssertEqual(read.output, "kept text")
-        XCTAssertEqual(acts.all, ["copy hello", "copy file \(place.path)/list.txt", "paste"])
+        XCTAssertEqual(acts.all, ["copy hello", "copy file \(place.path)/list.txt", "paste", "paste new send"])
     }
 
     func testTheAppReadsAndMovesTheWindowInFront() throws {

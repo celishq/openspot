@@ -38,6 +38,12 @@ extension SpotsModel {
         }
     }
 
+    private var editHint: String? {
+        if let id = openSheetID { return id == teachesEdit ? "⌘E Edit" : nil }
+        guard let target, target.item == nil, arrangement.mark(of: target.entry.id) == .new else { return nil }
+        return "⌘E Edit"
+    }
+
     public var hint: String {
         if recording != nil { return KeyRow.hint(of: keyRows(of: .recording)) }
         if isEditing { return KeyRow.hint(of: keyRows(of: .edit)) }
@@ -45,7 +51,8 @@ extension SpotsModel {
         let escape = KeyRow.hint(of: [escapeRow])
         if let parts = openParts, !parts.showsRows || parts.drawsKeys {
             let hasActions = target.flatMap(actionMenu(on:)) != nil
-            return parts.hint(escape: escapeWords, stopping: { act(of: $0) != nil }, actions: hasActions)
+            let keys = parts.hint(escape: escapeWords, stopping: { act(of: $0) != nil }, actions: hasActions)
+            return editHint.map { "\($0)   \(keys)" } ?? keys
         }
         if let confirm = confirmRow.hint { return [confirm, settingsRow.hint, "⌘K Actions"].compactMap { $0 }.joined(separator: "   ") }
         if let slashHint { return slashHint }
@@ -54,7 +61,7 @@ extension SpotsModel {
         let keys = target.flatMap { target in
             actionMenu(on: target)?.hint(
                 stopping: { sheets[target.entry.id]?.act(of: $0, item: target.item) != nil },
-                second: [settingsRow.hint].compactMap { $0 }
+                second: [settingsRow.hint, editHint].compactMap { $0 }
             )
         } ?? escape
         return selectedGlyphTitle.map { "\($0)  \(keys)" } ?? keys
@@ -209,7 +216,7 @@ extension SpotsModel {
         var rows: [KeyRow] = [
             .any { [self] key in openSheetID == nil ? nil : handleFlowKey(key) },
             KeyRow("z", command: true) { [self] _ in
-                openSheetID == nil && searchText.isEmpty && undoRemoval() ? true : nil
+                openSheetID == nil && (searchText.isEmpty || removal != nil) && undoRemoval() ? true : nil
             },
             settingsRow,
         ]

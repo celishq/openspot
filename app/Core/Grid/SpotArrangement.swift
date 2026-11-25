@@ -139,7 +139,7 @@ public struct SpotArrangement: Equatable, Sendable {
     }
 
     public mutating func dropMarks(keeping ids: Set<String>) {
-        for choice in choices where choice.mark != nil && !ids.contains(choice.id) { set(mark: nil, of: choice.id) }
+        for choice in choices where choice.mark == .new && !ids.contains(choice.id) { set(mark: nil, of: choice.id) }
     }
 
     private mutating func change(_ id: String, _ work: (inout Choice) -> Void) {

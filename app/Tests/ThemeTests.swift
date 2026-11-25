@@ -172,7 +172,7 @@ final class ThemeTests: XCTestCase {
 
         XCTAssertEqual([layout.space.cell, layout.space.columnGap, layout.space.rowGap, layout.space.padding], [64, 11, 12, 13])
         XCTAssertEqual([layout.space.glyph, layout.space.listRow, layout.space.listRowGap, layout.space.menuRow, layout.space.menuPadding], [36, 40, 6, 32, 8])
-        XCTAssertEqual([layout.radius.card, layout.radius.window, layout.radius.media, layout.radius.cornerMark], [26, 16, 8, 6])
+        XCTAssertEqual([layout.radius.card, layout.radius.window, layout.radius.media, layout.radius.cornerMark], [26, 16, 8, 10])
         XCTAssertEqual([layout.type.title, layout.type.body, layout.type.detail, layout.type.input], [13, 13, 11, 14])
         XCTAssertEqual([layout.motion.grow, layout.motion.shrink, layout.motion.move, layout.motion.fadeIn, layout.motion.fadeOut, layout.motion.press, layout.motion.settle], [0.15, 0.2, 0.25, 0.1, 0.12, 0.2, 0.25])
         XCTAssertEqual([layout.motion.pressBounce, layout.motion.pressedScale, layout.motion.liftedScale, layout.motion.focusedScale], [0.2, 1.04, 1.05, 1.04])
@@ -185,7 +185,7 @@ final class ThemeTests: XCTestCase {
     func testCornerDensityTypeAndSpeedScaleWhatFollowsThem() {
         let layout = Theme(text: dracula).layout
 
-        let corners: [Double] = [20, 20.0 * 16 / 26, 20.0 * 8 / 26, 20.0 * 6 / 26]
+        let corners: [Double] = [20, 20.0 * 16 / 26, 20.0 * 8 / 26, 20.0 * 10 / 26]
         XCTAssertEqual([layout.radius.card, layout.radius.window, layout.radius.media, layout.radius.cornerMark], corners)
         XCTAssertEqual([layout.space.columnGap, layout.space.rowGap, layout.space.padding, layout.space.listRowGap, layout.space.menuPadding], [6, 6, 7, 3, 4])
         XCTAssertEqual([layout.space.cell, layout.space.glyph, layout.space.listRow, layout.space.menuRow], [64, 36, 40, 32])

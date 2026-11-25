@@ -83,6 +83,10 @@ public struct AppPlaces: Sendable {
         configFolder.appendingPathComponent("stats", isDirectory: true)
     }
 
+    public var sheets: URL {
+        configFolder.appendingPathComponent("sheets", isDirectory: true)
+    }
+
     public func recent(of id: String) -> [String] {
         defaults.stringArray(forKey: Self.recentKey(id)) ?? []
     }

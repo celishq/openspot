@@ -66,6 +66,9 @@ extension Style {
         case "truncate": truncates = true
         case "sr-only": hidesWords = true
         case "tabular-nums": tabularNumbers = true
+        case "animate-pulse": pulses = true
+        case "animate-layout": animatesLayout = true
+        case "overflow-y-auto": scrolls = true
         case "text-ink": ink = .ink
         case "text-secondary": ink = .secondary
         case "text-accent": ink = .accent
@@ -117,6 +120,7 @@ extension Style {
         if let value = Self.value(of: word, after: "h-") { return Self.put(Self.size(value), in: &height) }
         if let value = Self.value(of: word, after: "min-w-") { return Self.put(Self.size(value), in: &minWidth) }
         if let value = Self.value(of: word, after: "max-w-") { return Self.put(Self.size(value), in: &maxWidth) }
+        if let value = Self.value(of: word, after: "min-h-") { return Self.put(Self.size(value), in: &minHeight) }
         if let value = Self.value(of: word, after: "grid-cols-") { return Self.put(Self.count(value), in: &columns) }
         if let value = Self.value(of: word, after: "col-span-") { return Self.put(Self.count(value), in: &columnSpan) }
         if let value = Self.value(of: word, after: "row-span-") { return Self.put(Self.count(value), in: &rowSpan) }

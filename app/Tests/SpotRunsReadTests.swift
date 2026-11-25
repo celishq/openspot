@@ -340,13 +340,14 @@ final class SpotRunsReadTests: SpotRunsCase {
         XCTAssertEqual(sheet.panel?.parts.first?.title, "Go")
     }
 
-    func testASheetWithAFieldDropsWhatWasTypedWhenThePanelClosesAndReadsAgain() async throws {
+    func testASheetWithAFieldDropsWhatWasTypedWhenItClosesAndReadsAgain() async throws {
         try script(toml: "", "printf 'frame=\\nclass=gap-part\\n\\nfield=note\\nvalue=\\n'")
         let sheet = try sheet()
         runs.panelOpened()
         sheet.open {}
         try await wait("the field") { sheet.panel != nil && !sheet.isShowing }
         sheet.set(try XCTUnwrap(sheet.panel?.parts.first), to: "typed")
+        sheet.close()
         runs.panelClosed()
         runs.panelOpened()
 

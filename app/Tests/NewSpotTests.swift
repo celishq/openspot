@@ -18,6 +18,8 @@ final class NewSpotTests: BuiltInCase {
         try fake("openspot", "[ \"$1 $2\" = 'clipboard copy' ] && exec cat > '\(root.path)/clipboard'\nexec '\(real.path)' \"$@\"")
         try fake("open", "echo \"$@\" > '\(root.path)/opened'")
         try fake("claude", "exit 0")
+        try fake("mdfind", "exit 0")
+        _ = try await newSpot().answer("describe", timeout: 60)
         effects = try recordEffects()
     }
 
@@ -40,10 +42,10 @@ final class NewSpotTests: BuiltInCase {
         XCTAssertEqual(SpotArrangement().spot(openedBy: ActionKey(name: "n", isCommand: true), over: defaults.arrangement), spot.id)
     }
 
-    func testTheSheetIsAFieldToDescribeTheSpotThenTheAgentCopyPromptAndMakeHere() async throws {
+    func testTheSheetIsOnlyAFieldToDescribeTheSpotThenTheAgentWhereItWorksCopyPromptAndMake() async throws {
         let output = try await newSpot().items(timeout: 60)
 
-        XCTAssertEqual(output.parts.map(\.id), ["describe", "agent", "copy", "make-0"])
+        XCTAssertEqual(output.parts.map(\.id), ["describe", "agent", "place", "make-0", "copy"])
         XCTAssertEqual(output.items, [])
         let field = try XCTUnwrap(output.parts.first)
         XCTAssertEqual(output.fields.first?.block.value("type"), "multiline")
@@ -51,11 +53,121 @@ final class NewSpotTests: BuiltInCase {
         let copy = try XCTUnwrap(output.parts.first { $0.id == "copy" })
         XCTAssertEqual(copy.title, "Copy prompt")
         XCTAssertEqual(copy.key, ActionKey(name: "return", isCommand: true, isShift: true))
-        let make = try XCTUnwrap(output.parts.last)
-        XCTAssertEqual(make.title, "Make here")
+        let make = try XCTUnwrap(output.parts.first { $0.id == "make-0" })
+        XCTAssertEqual(make.title, "Build")
+        XCTAssertFalse(make.closes)
         XCTAssertEqual(output.tree.look(of: make.id), .strong)
         XCTAssertEqual(make.key, ActionKey(name: "return", isCommand: true))
-        XCTAssertEqual(output.actions.map(\.title), ["Clear", "Read the guide", "Open spots folder"])
+        XCTAssertEqual(output.actions.map(\.title), ["Clear", "Read the guide", "Sessions", "Open spots folder"])
+    }
+
+    func testAnAgentWhoseAppHasAnotherNameAndShipsItsCommandInsideWorksInOpenspotAndInItsApp() async throws {
+        let app = try fakeApp("ChatGPT", id: "com.openai.codex")
+        try "#!/bin/sh\nexit 0\n".writeScript(to: app.appendingPathComponent("Contents/Resources/codex-cli/bin/codex"))
+        try fake("mdfind", "echo '\(app.path)'")
+        try forgetWays()
+
+        let output = try await newSpot().answer("describe", input: "setting.agent=codex\n", timeout: 60)
+
+        XCTAssertEqual(options(of: "agent", in: output.parts).map(\.title), ["Claude Code", "Codex"])
+        let places = options(of: "place", in: output.parts)
+        XCTAssertEqual(places.first?.title, "Openspot")
+        XCTAssertEqual(places.first { $0.id == "app-codex" }?.title, "ChatGPT", "\(places)")
+    }
+
+    func testAnEditorWithClaudeCodeIsAnAppThatTheNextOpenFindsWhileTheSheetShowsTheKeptList() async throws {
+        let home = root.appendingPathComponent("home")
+        try FileManager.default.createDirectory(at: home.appendingPathComponent(".vscode/extensions/anthropic.claude-code-2.1.0"), withIntermediateDirectories: true)
+        let app = try fakeApp("Visual Studio Code", id: "com.microsoft.VSCode")
+        try fake("mdfind", "echo '\(app.path)'")
+
+        try await TestEnvironment.with(["HOME": home.path]) {
+            let runs = SpotRuns(environment: TestEnvironment.values)
+            defer { runs.quit() }
+            runs.panelOpened()
+            let sheet = runs.sheet(for: try newSpot())
+            sheet.open {}
+            let places = { self.options(of: "place", in: sheet.panel?.parts ?? []).map(\.title) }
+
+            try await wait("the kept list") { !places().isEmpty }
+            XCTAssertFalse(places().contains("VS Code"))
+            try await wait("VS Code among the apps") { places().last == "VS Code" }
+            XCTAssertEqual(sheet.panel?.parts.first { $0.id == "place" }?.title, "App")
+        }
+    }
+
+    func testBuildInTheClaudeAppOpensANewSessionWithThePromptAndNoFolderAndLeavesTheClipboard() async throws {
+        let app = try fakeApp("Claude", id: "com.anthropic.claudefordesktop")
+        try fake("mdfind", "echo '\(app.path)'")
+        let real = tools.appendingPathComponent("openspot-real")
+        try fake("openspot", """
+        case "$1 $2" in
+          'clipboard '*) echo "$@" >> '\(root.path)/clipboard' ;;
+          *) exec '\(real.path)' "$@" ;;
+        esac
+        """)
+        try forgetWays()
+        let places = options(of: "place", in: try await newSpot().answer("describe", timeout: 60).parts).map(\.id)
+        XCTAssertEqual(Array(places.prefix(2)), ["openspot", "app-claude"])
+        let rest = places.dropFirst(2)
+        XCTAssertFalse(zip(rest, rest.dropFirst()).contains { !$0.hasPrefix("term-") && $1.hasPrefix("term-") }, "\(places)")
+
+        let output = try await newSpot().answer("make-0", input: "input.describe=A timer\nsetting.place=app-claude\n", timeout: 60)
+
+        XCTAssertTrue(output.errors.isEmpty, "\(output.errors)")
+        let opened = try XCTUnwrap(URLComponents(string: try saved("opened").trimmingCharacters(in: .whitespacesAndNewlines)))
+        XCTAssertEqual(opened.scheme, "claude")
+        XCTAssertEqual(opened.path, "/new")
+        XCTAssertNil(opened.queryItems?.first { $0.name == "folder" })
+        XCTAssertEqual(opened.queryItems?.first { $0.name == "q" }?.value?.hasPrefix("Build an Openspot spot"), true, "\(opened)")
+        XCTAssertFalse(FileManager.default.fileExists(atPath: root.appendingPathComponent("clipboard").path))
+    }
+
+    func testBuildInAnAppHidesThePanelAndBuildInOpenspotKeepsIt() async throws {
+        let app = try fakeApp("Claude", id: "com.anthropic.claudefordesktop")
+        try fake("mdfind", "echo '\(app.path)'")
+        try forgetWays()
+        let build = { (place: String) in try await self.newSpot().answer("describe", input: "setting.place=\(place)\n", timeout: 60).parts.first { $0.id.hasPrefix("make-") } }
+
+        let inApp = try await build("app-claude")
+        let here = try await build("openspot")
+
+        XCTAssertEqual(inApp?.closes, true)
+        XCTAssertEqual(here?.closes, false)
+    }
+
+    func testBuildInChatGPTOpensANewCodexThreadWithThePromptAndNoFolder() async throws {
+        let app = try fakeApp("ChatGPT", id: "com.openai.codex")
+        try "#!/bin/sh\nexit 0\n".writeScript(to: app.appendingPathComponent("Contents/Resources/codex-cli/bin/codex"))
+        try fake("mdfind", "echo '\(app.path)'")
+        try forgetWays()
+
+        let output = try await newSpot().answer("make-0", input: "input.describe=A timer\nsetting.agent=codex\nsetting.place=app-codex\n", timeout: 60)
+
+        XCTAssertTrue(output.errors.isEmpty, "\(output.errors)")
+        let opened = try XCTUnwrap(URLComponents(string: try saved("opened").trimmingCharacters(in: .whitespacesAndNewlines)))
+        XCTAssertEqual(opened.scheme, "codex")
+        XCTAssertEqual(opened.host, "new")
+        XCTAssertNil(opened.queryItems?.first { $0.name == "path" })
+        XCTAssertEqual(opened.queryItems?.first { $0.name == "prompt" }?.value?.hasPrefix("Build an Openspot spot"), true, "\(opened)")
+    }
+
+    private func fakeApp(_ name: String, id: String) throws -> URL {
+        let app = root.appendingPathComponent("\(name).app")
+        try FileManager.default.createDirectory(at: app.appendingPathComponent("Contents"), withIntermediateDirectories: true)
+        try PropertyListSerialization.data(fromPropertyList: ["CFBundleIdentifier": id], format: .xml, options: 0)
+            .write(to: app.appendingPathComponent("Contents/Info.plist"))
+        return app
+    }
+
+    private func forgetWays() throws {
+        let paths = FileManager.default.enumerator(atPath: root.path)?.allObjects as? [String] ?? []
+        for path in paths where path.hasSuffix("/ways") { try FileManager.default.removeItem(at: root.appendingPathComponent(path)) }
+    }
+
+    private func options(of id: String, in parts: [SpotPart]) -> [SpotPart.Option] {
+        guard case .menu(let options, _) = parts.first(where: { $0.id == id })?.control else { return [] }
+        return options
     }
 
     func testTheFieldKeepsTheWordsThatThePersonTypesAcrossAReadAndACall() async throws {
@@ -107,7 +219,7 @@ final class NewSpotTests: BuiltInCase {
         XCTAssertEqual(cleared.parts.first?.value ?? "", "")
         let again = try await spot.answer(ScriptEntry.show.name, timeout: 60)
         XCTAssertEqual(again.parts.first?.value ?? "", "")
-        XCTAssertEqual(again.actions.map(\.title), ["Clear", "Read the guide", "Open spots folder"])
+        XCTAssertEqual(again.actions.map(\.title), ["Clear", "Read the guide", "Sessions", "Open spots folder"])
     }
 
     func testCopyPromptWithWordsCopiesThePromptThatBuildsTheSpotToTheEnd() async throws {
@@ -135,6 +247,7 @@ final class NewSpotTests: BuiltInCase {
     func testTheWordsOfTheFieldReachThePressAndTheButtonSaysCopiedThenCopyPromptAgain() async throws {
         let runs = SpotRuns(environment: TestEnvironment.values)
         defer { runs.quit() }
+        runs.panelOpened()
         let sheet = runs.sheet(for: try newSpot())
         sheet.open {}
         for _ in 0..<6000 where sheet.panel == nil { try await Task.sleep(for: .milliseconds(10)) }
@@ -175,13 +288,12 @@ final class NewSpotTests: BuiltInCase {
         let output = Frame(text: try await edit(sheet, ScriptEntry.show.name))
 
         XCTAssertEqual(sheet.name, "Edit Weather")
-        XCTAssertEqual(output.parts.prefix(3).map(\.id), ["describe", "agent", "copy"])
+        XCTAssertEqual(output.parts.prefix(3).map(\.id), ["describe", "agent", "place"])
         XCTAssertEqual(output.fields.first?.block.value("type"), "multiline")
         XCTAssertEqual(output.parts.first?.control, .text("", placeholder: "Describe a change to weather", isReadOnly: false))
         XCTAssertEqual(output.parts.first { $0.id == "copy" }?.title, "Copy prompt")
-        let change = try XCTUnwrap(output.parts.last)
-        XCTAssertTrue(change.id.hasPrefix("change-"))
-        XCTAssertEqual(change.title, "Change here")
+        let change = try XCTUnwrap(output.parts.first { $0.id.hasPrefix("change-") })
+        XCTAssertEqual(change.title, "Build")
         XCTAssertEqual(output.tree.look(of: change.id), .strong)
         XCTAssertEqual(change.key, ActionKey(name: "return", isCommand: true))
         XCTAssertEqual(output.actions.map(\.title), ["Clear", "Open in editor", "Read the guide"])

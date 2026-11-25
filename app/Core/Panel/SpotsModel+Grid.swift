@@ -207,8 +207,12 @@ extension SpotsModel {
         runs.workCard
     }
 
-    public var backgroundActs: [(id: String, call: ScriptCall)] {
-        runs.backgroundActs
+    public var unseenWork: [(id: String, call: ScriptCall)] {
+        runs.unseenWork
+    }
+
+    public var workingIDs: Set<String> {
+        runs.workingIDs
     }
 
     public func openAct() -> Bool {
