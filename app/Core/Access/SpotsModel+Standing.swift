@@ -22,7 +22,7 @@ extension SpotsModel {
         let last = runs.usage.lastUses
         let refused = Stats(days: await StatsLog.days(StatsLog.keptDays, runs: runs.usage.keepsDays ? runs : nil, stats: stats), spot: nil).refused
         return Set(spots.filter { spot in
-            SpotStanding(spot, statuses: statuses, last: last[spot.id] ?? [:], refused: refused[spot.id] ?? [:]).lacks
+            SpotStanding.lacks(spot, written: KeptCalls.shared.read(spot), statuses: statuses, last: last[spot.id] ?? [:], refused: refused[spot.id] ?? [:])
         }.map(\.id))
     }
 

@@ -55,7 +55,7 @@ final class AccessListTests: XCTestCase {
         try "openspot.call([\"calendar\", \"events\"])\nopenspot.call([\"screen\", \"record\", \"start\"])\n".write(to: script.deletingLastPathComponent().appendingPathComponent("film.js"), atomically: true, encoding: .utf8)
         let spot = Spot(id: "film", name: "Film", url: script, dataName: "film", views: ["film": script.deletingLastPathComponent().appendingPathComponent("film.js").path])
 
-        let standing = SpotStanding(spot, statuses: [:], last: ["window move": Date()], refused: [:])
+        let standing = SpotStanding(spot, written: KeptCalls.shared.read(spot), statuses: [:], last: ["window move": Date()], refused: [:])
 
         XCTAssertEqual(standing.needs, [.screen, .calendars, .accessibility])
         XCTAssertEqual(standing.maybe, [.camera, .microphone, .input])

@@ -51,7 +51,7 @@ enum AccessCall: NounCall {
             }
             let statuses = await access.read(from: mac, browsers: config.browsers).statuses
             let last = (runs?.usage.lastUses ?? StatsLog.readLastUses(in: places.stats))[id] ?? [:]
-            let needs = SpotStanding(spot, statuses: statuses, last: last, refused: [:]).missing
+            let needs = SpotStanding(spot, written: KeptCalls.shared.read(spot), statuses: statuses, last: last, refused: [:]).missing
             guard !needs.isEmpty else { return "\(spot.name) has each macOS access it needs.\n" }
             guard await app.grant(id, needs: needs) else { throw SpotError.failed(1, "Openspot has no Settings to walk you through. Open Settings, then run this again.") }
             let titles = AccessGrant(spot: id, steps: needs).steps.map(\.title)

@@ -141,7 +141,7 @@ struct SpotList {
     }
 
     func loaded() throws -> [SpotStanding] {
-        try scan.get().allowing(allowed).scripts.map { standing(of: $0) }
+        try scan.get().allowing(allowed).scripts.map { readStanding(of: $0) }
     }
 
     func core() -> [Choice] {
@@ -149,12 +149,12 @@ struct SpotList {
         let enabled = config.arrangement.enabled
         return folder.coreChoices().sorted { $0.name.localizedCaseInsensitiveCompare($1.name) == .orderedAscending }.map { spot in
             let id = SpotsFolder.coreID(of: spot)
-            return Choice(standing: standing(of: spot, id: id, isOn: own.contains(id) || enabled.contains(id)), isOwn: own.contains(id))
+            return Choice(standing: readStanding(of: spot, id: id, isOn: own.contains(id) || enabled.contains(id)), isOwn: own.contains(id))
         }
     }
 
-    private func standing(of spot: Spot, id: String? = nil, isOn: Bool = true) -> SpotStanding {
-        SpotStanding(spot, id: id, isOn: isOn, statuses: statuses, last: lastUses[spot.id] ?? [:], refused: refused[spot.id] ?? [:])
+    private func readStanding(of spot: Spot, id: String? = nil, isOn: Bool = true) -> SpotStanding {
+        SpotStanding(spot, id: id, isOn: isOn, written: KeptCalls.shared.read(spot), statuses: statuses, last: lastUses[spot.id] ?? [:], refused: refused[spot.id] ?? [:])
     }
 
     private static func picture(of spot: Spot) -> String {
