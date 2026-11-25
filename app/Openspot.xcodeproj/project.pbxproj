@@ -1148,6 +1148,7 @@
 		FC9167F9E45F64550D5C5C38 /* NumberReading.swift in Sources */ = {isa = PBXBuildFile; fileRef = D33B870754A4AAEE3540D5E9 /* NumberReading.swift */; };
 		FCCB900141A41DE4F63DC19E /* FocusRingTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7FFFA8A104BBE3A6BB8748DB /* FocusRingTests.swift */; };
 		FCDF7828A2901BB7E6555788 /* PointerShakeTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 17F7A0C925D690B8DF7148EB /* PointerShakeTests.swift */; };
+		FD06360E206E055734CB77FC /* ThreadTime.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4F66C0A0E52AE6215488EA0F /* ThreadTime.swift */; };
 		FD08977E69A796C65C49EA02 /* GlobalKeys.swift in Sources */ = {isa = PBXBuildFile; fileRef = F2DA0E776E8D9411FBA47CCB /* GlobalKeys.swift */; };
 		FD1058E3D11BEF564A6E18FD /* CallOutcome.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2EBCB63F00EF616CD63884A9 /* CallOutcome.swift */; };
 		FD1296D2282387D4F6B6910B /* SpotSettingsSheetTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 25A0E74FA35CDC8DC5A78829 /* SpotSettingsSheetTests.swift */; };
@@ -1575,6 +1576,7 @@
 		4ED72C3BBA061161ECB1920C /* NodeItems.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NodeItems.swift; sourceTree = "<group>"; };
 		4EDC6DAD424B1913130FCD7B /* Toast.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Toast.swift; sourceTree = "<group>"; };
 		4F6658AC35B5F39C8150B5F0 /* ScreenCalls.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScreenCalls.swift; sourceTree = "<group>"; };
+		4F66C0A0E52AE6215488EA0F /* ThreadTime.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ThreadTime.swift; sourceTree = "<group>"; };
 		4F7550D4A89B7A892745DC4B /* MacCallsTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MacCallsTests.swift; sourceTree = "<group>"; };
 		4F790F652A58A8853C46BF0A /* SoleCommandTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SoleCommandTests.swift; sourceTree = "<group>"; };
 		4FBF38806826AAD61118F1A5 /* SpotArrowScroll.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SpotArrowScroll.swift; sourceTree = "<group>"; };
@@ -3469,6 +3471,7 @@
 				A5A16D73BDBCCBDF35898ED0 /* StayMode.swift */,
 				AF4F14DD4A6D2FD1404FF62B /* TerminalRun.swift */,
 				A201B1B34CA8F75B76BC030A /* TerminalStop.swift */,
+				4F66C0A0E52AE6215488EA0F /* ThreadTime.swift */,
 			);
 			path = Run;
 			sourceTree = "<group>";
@@ -5159,6 +5162,7 @@
 				0BF83DA262474F9625710D0F /* ThemePrompt.swift in Sources */,
 				B6582E815802148F1D739482 /* ThemeScan.swift in Sources */,
 				494E041977581B52B2BEF6F3 /* ThemeValues.swift in Sources */,
+				FD06360E206E055734CB77FC /* ThreadTime.swift in Sources */,
 				0A4917F2E3DD459EAEC076BC /* TimerCall.swift in Sources */,
 				D4D68F7370ADDF05705926E9 /* Toast.swift in Sources */,
 				B4A2A183C4AF8CA2A8DA1057 /* ToastAnchor.swift in Sources */,

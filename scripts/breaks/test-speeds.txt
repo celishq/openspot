@@ -1,1 +1,0 @@
-app/Tests/SearchQueryTests.swift	cpu bound

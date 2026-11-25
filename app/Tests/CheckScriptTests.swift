@@ -2,7 +2,7 @@ import XCTest
 
 final class CheckScriptTests: XCTestCase {
     private static let checks = ["core", "tests", "comments", "motion", "names", "files", "getters", "spots", "processes", "glass", "shapes", "tools"]
-    private static let lists = ["names", "files", "getters", "spot-clocks", "spot-state", "processes", "shapes", "core-timers", "test-speeds"]
+    private static let lists = ["names", "files", "getters", "spot-clocks", "spot-state", "processes", "shapes", "core-timers"]
 
     private static let breaches: [(check: String, file: String, text: String)] = [
         ("core", "app/Core/Panel.swift", "@preconcurrency import AppKit\n"),

@@ -29,6 +29,8 @@ if grep -rEn --include='*.swift' 'Task\.sleep|setenv\(|Date\(\)\.timeIntervalSin
   echo "A test pauses or reads the real clock, or changes the environment of the whole process; move a FakeClock, wait for a fact with wait(_:until:), and give a process its environment as a value; see Tests in AGENTS.md." >&2
   exit 1
 fi
-grep -rEn --include='*.swift' 'XCTAssert(GreaterThan|LessThan)(OrEqual)?\(.*(\.cpu|CPUTIME).*, [0-9.]*[1-9]' app/Tests | cut -d: -f1 | sed 's/$/	cpu bound/' >"$found"
-compare test-speeds "$found" "A test bounds a CPU time by a number, which a faster or busier Mac crosses; give the run a thread clock with FakeClock(threadStep:):" || exit 1
+if grep -rEn --include='*.swift' 'XCTAssert(GreaterThan|LessThan)(OrEqual)?\(.*(\.cpu|CPUTIME).*, [0-9.]*[1-9]' app/Tests; then
+  echo "A test bounds a CPU time by a number, which a faster or busier Mac crosses; give the run a thread clock with FakeClock(threadStep:); see Tests in AGENTS.md." >&2
+  exit 1
+fi
 echo "Tests check passed."

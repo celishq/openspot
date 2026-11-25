@@ -42,7 +42,7 @@ final class FakeClock {
     }
 
     private var threadTime: @Sendable () -> TimeInterval {
-        guard let step = threadStep else { return RunClock.cpuOfThread }
+        guard let step = threadStep else { return ThreadTime.now }
         return { [shared] in
             shared.withLock { state in
                 state.thread += step
