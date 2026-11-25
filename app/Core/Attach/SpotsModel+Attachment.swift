@@ -123,7 +123,7 @@ extension SpotsModel {
         change(motion, {
             attachments = next
             guard turns else { return }
-            if preview != shown { preview = shown }
+            takePreview(shown)
             selected = 0
             showVisible()
         }) { [weak self] in
@@ -218,15 +218,18 @@ extension SpotsModel {
         }
     }
 
-    func takePreview() {
-        let shown = shownPreview(of: query)
+    func takePreview(_ shown: AttachmentPreview?) {
         if preview != shown { preview = shown }
     }
 
-    func hold(_ preview: AttachmentPreview?, with rest: () -> Void = {}) {
-        guard preview != self.preview else { return rest() }
-        change(isShown ? previewMotion(to: preview, else: .edit) : nil) {
-            self.preview = preview
+    func takePreview() {
+        takePreview(shownPreview(of: query))
+    }
+
+    func hold(_ shown: AttachmentPreview?, with rest: () -> Void = {}) {
+        guard shown != preview else { return rest() }
+        change(isShown ? previewMotion(to: shown, else: .edit) : nil) {
+            takePreview(shown)
             rest()
         }
     }
