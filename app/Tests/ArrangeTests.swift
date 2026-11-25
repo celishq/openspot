@@ -109,18 +109,34 @@ final class ArrangeTests: PanelCase {
         XCTAssertEqual(shelf, ["zeta"])
     }
 
-    func testASpotDroppedOnACardSwapsAndTheCardGoesOffTheGrid() async throws {
+    func testASpotDraggedOverACardPushesItAsideAndTheDropKeepsBoth() async throws {
         try await arrangeWithOff(["zeta"], on: ["a", "b"])
         let cell = try XCTUnwrap(place(of: "b")).cell
 
         model.dragShelfSpot("zeta", from: start, by: toward(cell))
-        XCTAssertEqual(model.pin?.target, .swap("b", cell, .wide))
+
+        XCTAssertEqual(model.pin?.target, .slot(cell, .wide))
+        XCTAssertNotEqual(place(of: "b")?.cell, cell)
+        XCTAssertEqual(model.pin?.landing, SpotPlacement(index: 0, row: cell.row, column: cell.column, size: .wide).rect)
+
         model.dropShelfSpot(by: toward(cell))
 
-        XCTAssertEqual(Set(order), ["a", "zeta"])
+        XCTAssertEqual(Set(order), ["a", "b", "zeta"])
         XCTAssertEqual(place(of: "zeta")?.cell, cell)
-        XCTAssertEqual(shelf, ["b"])
-        XCTAssertEqual(model.files.config.read().arrangement.isOnGrid(of: "b"), false)
+        XCTAssertNotEqual(place(of: "b")?.cell, cell)
+        XCTAssertEqual(shelf, [])
+        XCTAssertNotEqual(model.files.config.read().arrangement.isOnGrid(of: "b"), false)
+    }
+
+    func testADragThatLeavesTheGridPutsThePushedCardsBack() async throws {
+        try await arrangeWithOff(["zeta"], on: ["a", "b"])
+        let cell = try XCTUnwrap(place(of: "b")).cell
+
+        model.dragShelfSpot("zeta", from: start, by: toward(cell))
+        model.dragShelfSpot("zeta", from: start, by: CGSize(width: 10, height: 10))
+
+        XCTAssertNil(model.pin?.target)
+        XCTAssertEqual(place(of: "b")?.cell, cell)
     }
 
     func testACardDraggedOffTheGridInArrangeGoesOffTheGrid() async throws {
@@ -158,11 +174,24 @@ final class ArrangeTests: PanelCase {
         XCTAssertEqual(model.pin(left), .full)
     }
 
-    func testACardThatCannotLeaveTheGridTakesNoSwap() {
-        let card = SpotPlacement(index: 0, row: 0, column: 0, size: .wide)
-        let pin = SpotPin(id: "zeta", start: .zero, size: .wide, choices: SpotSize.all, grid: GridLayout(), placements: [card], ids: [nil])
+    func testAFullGridSwapsTheCardUnderTheDropUnlessItCannotLeave() {
+        let grid = GridLayout(columns: 4, rows: 1)
+        let cards = [SpotPlacement(index: 0, row: 0, column: 0, size: .wide), SpotPlacement(index: 1, row: 0, column: 2, size: .wide)]
+        let pin = SpotPin(id: "zeta", start: .zero, size: .wide, choices: SpotSize.all, grid: grid, placements: cards, ids: [nil, "b"])
 
         XCTAssertNil(pin.moved(by: .zero).target)
-        XCTAssertEqual(pin.moved(by: CGSize(width: card.rect.maxX + SpotTokens.columnGap, height: 0)).target?.cell, GridCell(row: 0, column: 2))
+        XCTAssertEqual(pin.moved(by: CGSize(width: cards[1].rect.minX, height: 0)).target, .swap("b", GridCell(row: 0, column: 2), .wide))
+        XCTAssertEqual(pin.moved(by: CGSize(width: cards[1].rect.minX, height: 0)).layout, cards)
+    }
+
+    func testAPinThatFitsPushesTheCardsAsTheHeldDragDoes() {
+        let grid = GridLayout(columns: 4, rows: 2)
+        let card = SpotPlacement(index: 0, row: 0, column: 0, size: .wide)
+        let pin = SpotPin(id: "zeta", start: .zero, size: .wide, choices: SpotSize.all, grid: grid, placements: [card], ids: [nil])
+
+        let moved = pin.moved(by: .zero)
+
+        XCTAssertEqual(moved.target, .slot(GridCell(row: 0, column: 0), .wide))
+        XCTAssertEqual(moved.layout, [SpotPlacement(index: 0, row: 0, column: 2, size: .wide)])
     }
 }

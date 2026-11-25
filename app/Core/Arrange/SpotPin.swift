@@ -22,6 +22,7 @@ public struct SpotPin: Equatable, Sendable {
     public let start: CGPoint
     public let size: SpotSize
     public private(set) var target: Target?
+    public private(set) var layout: [SpotPlacement]
     let grid: GridLayout
     let placements: [SpotPlacement]
     private let ids: [String?]
@@ -35,6 +36,7 @@ public struct SpotPin: Equatable, Sendable {
         self.grid = grid
         self.placements = placements
         self.ids = ids
+        layout = placements
     }
 
     public var carriedSize: SpotSize {
@@ -47,15 +49,31 @@ public struct SpotPin: Equatable, Sendable {
 
     func moved(by translation: CGSize) -> SpotPin {
         var next = self
-        next.target = target(at: CGPoint(x: start.x + translation.width, y: start.y + translation.height))
+        let corner = CGPoint(x: start.x + translation.width, y: start.y + translation.height)
+        let pushed = pushed(at: corner)
+        next.target = pushed?.target ?? target(at: corner)
+        next.layout = pushed?.layout ?? placements
         return next
     }
 
-    private func target(at corner: CGPoint) -> Target? {
+    private func pushed(at corner: CGPoint) -> (target: Target, layout: [SpotPlacement])? {
+        guard let cell = cell(at: corner) else { return nil }
+        let size = grid.size(of: size, at: cell, among: placements, choices: choices)
+        let spots = placements.map { GridSpot(size: $0.size, cell: $0.cell) } + [GridSpot(size: size, cell: cell)]
+        let laid = grid.place(spots, first: placements.count)
+        guard laid.count == spots.count, let landed = laid.last else { return nil }
+        return (.slot(landed.cell, landed.size), Array(laid.dropLast()))
+    }
+
+    private func cell(at corner: CGPoint) -> GridCell? {
         let half = SpotTokens.cell / 2
         let centre = CGPoint(x: corner.x + half, y: corner.y + half)
         guard CGRect(x: 0, y: 0, width: grid.width, height: grid.height).insetBy(dx: -half, dy: -half).contains(centre) else { return nil }
-        let cell = grid.cell(near: corner, for: .small)
+        return grid.cell(near: corner, for: .small)
+    }
+
+    private func target(at corner: CGPoint) -> Target? {
+        guard let cell = cell(at: corner) else { return nil }
         if let card = placements.first(where: { covers($0, cell) }) {
             guard ids.indices.contains(card.index), let leaving = ids[card.index] else { return nil }
             let others = placements.filter { $0.index != card.index }

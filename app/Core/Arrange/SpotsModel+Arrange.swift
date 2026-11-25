@@ -93,6 +93,7 @@ extension SpotsModel {
         change(.edit) {
             gesture = .pin(next)
             if carry?.size != next.carriedSize { carry?.size = next.carriedSize }
+            if next.layout != pin.layout { updateVisible() }
         }
     }
 
@@ -101,7 +102,7 @@ extension SpotsModel {
             guard let pin = pin?.moved(by: translation) else { return }
             guard let target = pin.target, let entry = offGrid.first(where: { $0.id == pin.id }) else { return cancelPin() }
             var spots = visible
-            var layout = placements
+            var layout = pin.layout
             let placement = { (index: Int) in SpotPlacement(index: index, row: target.cell.row, column: target.cell.column, size: target.size) }
             var leaving: String?
             switch target {
@@ -129,6 +130,7 @@ extension SpotsModel {
         change(.edit) {
             gesture = nil
             carry = nil
+            updateVisible()
         }
     }
 

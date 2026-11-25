@@ -37,7 +37,7 @@ public enum SpotGesture: Equatable, Sendable {
         switch self {
         case .move(let drag): drag.layout
         case .size(let resize): resize.layout
-        case .pin(let pin): pin.placements
+        case .pin(let pin): pin.layout
         }
     }
 }

@@ -75,6 +75,10 @@ struct SpotGridView: View {
                 .animation(nil) { $0.opacity(model.carry?.entry.id == entry.id ? MotionTokens.hiddenOpacity : 1) }
                 .allowsHitTesting(entry.id != openID)
             }
+            if model.isEditing, let pick = model.slotPick {
+                SpotSlotPick(model: model, pick: pick)
+                    .zIndex(2)
+            }
         }
         .frame(width: frame.width, height: height, alignment: .topLeading)
         .contentShape(Rectangle())
@@ -158,9 +162,6 @@ private struct GridSlots: View, @MainActor Equatable {
                     .accessibilityAddTraits(.isButton)
                     .accessibilityLabel("Pin a spot here")
                     .offset(x: rect.minX, y: rect.minY)
-            }
-            if let pick = model.slotPick {
-                SpotSlotPick(model: model, pick: pick)
             }
         }
     }
