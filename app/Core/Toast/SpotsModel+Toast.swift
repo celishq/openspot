@@ -13,6 +13,7 @@ extension SpotsModel {
             self?.host.show()
             self?.openSettings()
         }
+        case .schedule(let id): { [weak self] in self?.runs.allowSchedule(of: id) }
         case nil: { [weak self] in self?.press(note, of: spot) }
         }
     }
@@ -24,5 +25,10 @@ extension SpotsModel {
         } else {
             _ = open(spot)
         }
+    }
+
+    func askSchedule(of id: String) {
+        let name = runs.sheets[id]?.spot.name ?? id
+        toast(ToastNote(words: "\(name) runs by itself on a schedule, so Openspot held its first run. Click to allow it.", fix: .schedule(id)), of: id)
     }
 }

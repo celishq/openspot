@@ -325,6 +325,7 @@ public final class SpotsModel {
     @ObservationIgnored var flashWatch: Task<Void, Never>?
     @ObservationIgnored private var scanned: [Spot] = []
     @ObservationIgnored private var load = SpotLoad.empty
+    @ObservationIgnored private var installed: [SpotLock.Entry] = []
     @ObservationIgnored private var loading: Task<Void, Never>?
     @ObservationIgnored private var lastScan = ScanResult(files: [], refused: [])
     @ObservationIgnored private var loaded: (stamp: [String: [Int]], hosted: [Spot])?
@@ -358,6 +359,7 @@ public final class SpotsModel {
         toasts = Toasts(clock: runs.clock)
         self.runs.secrets = files.secrets
         self.runs.onReport = { [weak self] id, report in self?.take(report, of: id) }
+        self.runs.onScheduleAsk = { [weak self] id in self?.askSchedule(of: id) }
         self.runs.partsArrival = { [weak self] id, bring in
             guard let self else { return bring() }
             bringParts(of: id, bring)
@@ -408,11 +410,13 @@ public final class SpotsModel {
         let config = files.config
         let folder = folder
         let secrets = files.secrets
+        let lock = files.lock
         let task = Task {
             await previous?.value
             let start = kept
-            let (next, load) = await Self.read(config, folder, secrets)
+            let (next, load, installed) = await Self.read(config, folder, secrets, lock)
             self.load = load
+            self.installed = installed
             let id = selectedEntry?.id
             reload(patching: nil, to: kept == start ? next : kept)
             if let position = visible.firstIndex(where: { $0.id == id }) { selected = position }
@@ -422,9 +426,9 @@ public final class SpotsModel {
     }
 
     @concurrent
-    private nonisolated static func read(_ config: ConfigFile, _ folder: SpotsFolder, _ secrets: SecretStore) async -> (KeptConfig, SpotLoad) {
+    private nonisolated static func read(_ config: ConfigFile, _ folder: SpotsFolder, _ secrets: SecretStore, _ lock: SpotLock) async -> (KeptConfig, SpotLoad, [SpotLock.Entry]) {
         _ = try? secrets.read()
-        return (config.readKept(), KeptScan.shared.load(folder))
+        return (config.readKept(), KeptScan.shared.load(folder), (try? lock.entries()) ?? [])
     }
 
     func reload(patching ids: Set<String>?, to next: KeptConfig) {
@@ -444,7 +448,10 @@ public final class SpotsModel {
         runs.isCareful = config.isCareful
         var stamps: [String: [Int]] = [:]
         for script in scan.scripts where script.host == nil { stamps[script.id] = load.stamp(of: script) }
-        runs.take(scan, menuBar: config.arrangement.menuBar, stamps: stamps)
+        let unreviewed = scan.spots.filter { spot in
+            !spot.triggers.schedule.isEmpty && spot.host == nil && !spot.isBuiltIn && !folder.isCore(spot) && !installed.contains { $0.holds(spot.id) }
+        }
+        runs.take(scan, menuBar: config.arrangement.menuBar, stamps: stamps, unreviewed: Set(unreviewed.map(\.id)))
         lastScan = scan
         loaded = (load.stamp, hosted)
         let others = ids.map { ids in { (stamps: [String: [Int]]) in stamps.filter { !ids.contains($0.key) } } }

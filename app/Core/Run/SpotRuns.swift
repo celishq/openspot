@@ -64,6 +64,9 @@ public final class SpotRuns {
     @ObservationIgnored let timerWatch: DueWatch
     @ObservationIgnored var schedule: SpotSchedule
     @ObservationIgnored let scheduleWatch: DueWatch
+    @ObservationIgnored var unreviewed: Set<String> = []
+    @ObservationIgnored var scheduleAsks: Set<String> = []
+    @ObservationIgnored public var onScheduleAsk: (String) -> Void = { _ in }
     @ObservationIgnored var pushed = PushedRuns()
     @ObservationIgnored var runWaits: [String: Int] = [:]
     @ObservationIgnored var wanted: Set<String> = []
@@ -146,8 +149,9 @@ public final class SpotRuns {
 
     nonisolated deinit {}
 
-    public func take(_ scan: ScanResult, menuBar: Set<String> = [], stamps: [String: [Int]] = [:]) {
+    public func take(_ scan: ScanResult, menuBar: Set<String> = [], stamps: [String: [Int]] = [:], unreviewed: Set<String> = []) {
         let scripts = scan.scripts
+        self.unreviewed = unreviewed
         self.stamps = stamps
         for (id, kept) in loaded where kept.stamp != stamps[id] { dropScript(of: id) }
         self.menuBar = menuBar

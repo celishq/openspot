@@ -145,6 +145,7 @@
 		1D23EC7E2F4FA1B0C01B2FAE /* IconSpotTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8A38FF55DF7A8FEABDA80146 /* IconSpotTests.swift */; };
 		1DC97DEB78A768DE18FF66F3 /* SpotUpdate.swift in Sources */ = {isa = PBXBuildFile; fileRef = D857E52630595DD40D56126D /* SpotUpdate.swift */; };
 		1DE759742B261909118FDDE0 /* SpotSheetTitle.swift in Sources */ = {isa = PBXBuildFile; fileRef = D61C9AE007C191C0749FE73C /* SpotSheetTitle.swift */; };
+		1E30E4E640881F3BA46F91F6 /* ScheduleConsentTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 205C81490516E3001CFAE6CD /* ScheduleConsentTests.swift */; };
 		1E7E2C64B91EADA3912287AE /* ActionMenu.swift in Sources */ = {isa = PBXBuildFile; fileRef = E3A528E71CE22F9C5AA7A772 /* ActionMenu.swift */; };
 		1EF2850A27D6FB0ABA34228C /* SpotButtonKey.swift in Sources */ = {isa = PBXBuildFile; fileRef = 11D3D0BD6C083FA82A61C56E /* SpotButtonKey.swift */; };
 		1F00735B3B5E4167FB8D5FF6 /* SelectCall.swift in Sources */ = {isa = PBXBuildFile; fileRef = 34D6BFE2D4C901E6411EA655 /* SelectCall.swift */; };
@@ -1406,6 +1407,7 @@
 		1FF8429FAA2864404333DEF0 /* Shortcut.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Shortcut.swift; sourceTree = "<group>"; };
 		2022BE9BBE18EC182C9F8B0B /* GlyphBook.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GlyphBook.swift; sourceTree = "<group>"; };
 		20517BC29A5FDFB06E415497 /* ThemeKey.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ThemeKey.swift; sourceTree = "<group>"; };
+		205C81490516E3001CFAE6CD /* ScheduleConsentTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScheduleConsentTests.swift; sourceTree = "<group>"; };
 		208C81E9E0EB7A4E13145C98 /* CardTreeView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CardTreeView.swift; sourceTree = "<group>"; };
 		20B73B3559A40B0F233DC4D6 /* NodeContext+Parts.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "NodeContext+Parts.swift"; sourceTree = "<group>"; };
 		20D2485A3D41F5B5543AAEF9 /* RenderCall.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RenderCall.swift; sourceTree = "<group>"; };
@@ -3399,6 +3401,7 @@
 				94CA697E68DC79BE324E0A63 /* SampleSpotsCase+SwiftSpot.swift */,
 				785FF3F1BFAA45B0EFB3E7DA /* SampleSpotsTests.swift */,
 				3B8CE8EB1D4514586D34FA6D /* SandboxTests.swift */,
+				205C81490516E3001CFAE6CD /* ScheduleConsentTests.swift */,
 				F8D57520DBD5C68FBDC5AB01 /* ScheduleTests.swift */,
 				73F0CFFF6AFC5B9FC56E6574 /* ScreenCaptureTests.swift */,
 				3DB0F5E72B288FD98E2CAB01 /* ScreenExamplesTests.swift */,
@@ -5865,6 +5868,7 @@
 				665C7E570D4711F70109E728 /* SampleSpotsCase.swift in Sources */,
 				7C7EA029AFF32159F4988448 /* SampleSpotsTests.swift in Sources */,
 				5A52F578DF512FDFEB88CF1C /* SandboxTests.swift in Sources */,
+				1E30E4E640881F3BA46F91F6 /* ScheduleConsentTests.swift in Sources */,
 				BC98424B4831251654F78D80 /* ScheduleTests.swift in Sources */,
 				2C2D71376A29A2B49325AB64 /* ScreenCaptureTests.swift in Sources */,
 				0D6C2612731A12E9B27B773E /* ScreenExamplesTests.swift in Sources */,

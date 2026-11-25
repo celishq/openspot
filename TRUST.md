@@ -72,6 +72,8 @@ and never blocks the add. A bound spot that isn't installed and doesn't come wit
   applies when the Store or `openspot store list` reads the stores, or by `openspot store update`. A spot you edited
   takes no update: `store list` marks it `edited`, and `openspot store revert` moves your copy to the Trash and puts the
   store's version in its place. The review of an update names only what it adds.
+- A spot with a `schedule` that reached your spots folder by hand, not by an install, had no review. Before its first
+  scheduled run, a message asks you to allow it, and the run waits for your click. Openspot keeps the yes.
 - An update that asks for nothing new applies quietly. An update with a new use, binding, Can also or Runs by itself
   waits for `--yes`. So does an update that removes an action that another installed spot binds, or makes an input of one
   required with no default, and the review names each such spot.

@@ -56,6 +56,9 @@ input.late=0
 
 `late` is the seconds since it was due. A time missed while the Mac slept runs once when it wakes.
 
+A spot that you put in your spots folder yourself, not by an install, had no review. At its first due time a message
+asks you to allow its schedule, and the run waits for your click. Openspot keeps the yes.
+
 ## Run once, at a time
 
 For one time only, such as an hour from now, add a timer from any run. It runs an [action](../act/actions.md) of
