@@ -105,11 +105,13 @@ title = "Quit"
 [scripts.settings]
 title = "Settings"
 icon = "gearshape"
-detail = "Choose your key"
-uses = ["app"]
+detail = "Access, spots, keys and look"
+uses = ["app", "spots", "read"]
+views = ["settings.swift"]
+window = "settings"
 
 [scripts.settings.on]
-search = true
+"sheet.open" = true
 
 [scripts.spots]
 title = "Spots"
