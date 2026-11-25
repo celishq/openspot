@@ -60,7 +60,7 @@ public final class SpotCallers: @unchecked Sendable {
     public func caller(of peer: pid_t) -> SpotCaller? {
         let group = getpgid(peer)
         guard group > 0 else { return nil }
-        let known: SpotCaller? = lock.withLock {
+        return lock.withLock {
             guard let caller = groups[group] else { return nil }
             guard kill(group, 0) != 0 || Self.start(of: group) == caller.group?.start else {
                 groups[group] = nil
@@ -68,9 +68,6 @@ public final class SpotCallers: @unchecked Sendable {
             }
             return caller
         }
-        if let known { return known }
-        guard Self.isSandboxed(peer) else { return nil }
-        return SpotCaller.sandboxed
     }
 
     private static func start(of id: pid_t) -> UInt64 {
