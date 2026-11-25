@@ -1,4 +1,4 @@
-.PHONY: verify test perf film shots eval-agent eval-compare docs-images spots attachment-demo toast-demo dev-state first-launch examples release release-build
+.PHONY: verify test load perf film shots eval-agent eval-compare docs-images spots attachment-demo toast-demo dev-state first-launch examples release release-build
 
 TEST_LIMITS := -test-timeouts-enabled YES -default-test-execution-time-allowance 120 -maximum-test-execution-time-allowance 300
 
@@ -25,6 +25,9 @@ verify:
 test:
 	cd app && xcodegen generate >/dev/null
 	cd app && DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer xcodebuild -project Openspot.xcodeproj -scheme Openspot -destination 'platform=macOS' $(TEST_LIMITS) -only-testing:OpenspotTests/$(T) test
+
+load:
+	sh scripts/load-tests.sh $(or $(N),3) "$(T)"
 
 perf:
 	sh scripts/motion-perf.sh $(N)
