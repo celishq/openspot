@@ -242,7 +242,7 @@ final class RunChannelTests: SpotRunsCase {
         posix_spawn_file_actions_addopen(&actions, 1, "/dev/null", O_WRONLY, 0)
         posix_spawn_file_actions_addopen(&actions, 2, "/dev/null", O_WRONLY, 0)
         let words = [client.path, "setting", "set", "--spot", "home/tea", "tone", "warm"].map { (text: String) -> UnsafeMutablePointer<CChar>? in strdup(text) } + [nil]
-        let pairs = ["OPENSPOT_CONFIG=\(config.path)", "PATH=/usr/bin:/bin"].map { (text: String) -> UnsafeMutablePointer<CChar>? in strdup(text) } + [nil]
+        let pairs = ["OPENSPOT_CONFIG=\(config.path)", "PATH=/usr/bin:/bin", "OPENSPOT_START_WAIT=0.5"].map { (text: String) -> UnsafeMutablePointer<CChar>? in strdup(text) } + [nil]
         defer { (words + pairs).forEach { free($0) } }
         var started: pid_t = 0
         XCTAssertEqual(posix_spawn(&started, client.path, &actions, nil, words, pairs), 0)

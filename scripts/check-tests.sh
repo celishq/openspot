@@ -9,4 +9,6 @@ found=$(mktemp)
 trap 'rm -f "$found"' EXIT
 grep -rEo --include='*.swift' 'Task\.sleep|setenv\(' app/Tests | grep -v '^app/Tests/XCTestCase+Wait\.swift:' | tr ':' '\t' | tr -d '(' >"$found"
 compare test-pauses "$found" "A test pauses with Task.sleep or changes the environment of the whole process; wait for a fact with wait(_:until:), and give a process its environment as a value:" || exit 1
+grep -rEo --include='*.swift' 'Date\(\)\.timeIntervalSince|ContinuousClock\.now|Task\.yield' app/Tests | grep -v '^app/Tests/XCTestCase+Wait\.swift:' | tr ':' '\t' | tr -d '()' >"$found"
+compare test-clocks "$found" "A test reads the wall clock or counts yields; move a FakeClock, or wait for a fact with wait(_:until:):" || exit 1
 echo "Tests check passed."

@@ -5,12 +5,12 @@ import XCTest
 final class SpotDropTests: XCTestCase {
     private var folder: URL!
     private var runs: SpotRuns!
-    private var time = Date(timeIntervalSince1970: 1000)
+    private let clock = FakeClock()
 
     override func setUp() async throws {
         folder = FileManager.default.temporaryDirectory.appendingPathComponent("openspot drop \(UUID().uuidString)")
         try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
-        runs = SpotRuns(clock: RunClock { [unowned self] in self.time })
+        runs = SpotRuns(clock: RunClock(now: { [clock] in clock.time }))
     }
 
     override func tearDown() async throws {
@@ -296,7 +296,7 @@ final class SpotDropTests: XCTestCase {
         try await pause(0.1)
         XCTAssertEqual(log(), ["drop \(first)"])
 
-        time = time.addingTimeInterval(1)
+        clock.advance(by: 1)
         sheet.pressCard()
 
         try await wait("the second drop") { self.log() == ["drop \(first)", "drop \(second)"] }
@@ -446,7 +446,7 @@ final class SpotDropTests: XCTestCase {
         XCTAssertTrue(sheet.isCardRunning)
         try await wait("the call") { self.log().count == 1 }
 
-        time = time.addingTimeInterval(1)
+        clock.advance(by: 1)
         sheet.pressCard()
 
         XCTAssertFalse(sheet.isCardRunning)
@@ -476,7 +476,7 @@ final class SpotDropTests: XCTestCase {
     }
 
     func testADropHasNoTimeLimitAndGoesOnWithThePanelClosed() async throws {
-        runs = SpotRuns(showLimit: 0.2, clock: RunClock { [unowned self] in self.time })
+        runs = SpotRuns(showLimit: 0.2, clock: RunClock(now: { [clock] in clock.time }))
         let sheet = try sheet(toml: "\(TestSpot.command)\n\n[on]\ndrop = [\"mov\"]", "sleep 0.5\ntouch '\(path("done"))'")
         runs.panelOpened()
         var failures: [String] = []

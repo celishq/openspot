@@ -927,7 +927,7 @@ final class SpotRunsStayTests: SpotRunsCase {
           printf '%s\\n' "$line" >> '\(path("blocks"))'
           case "$line" in call=*) call=${line#call=} ;; stop=*) call= ;; esac
           if [ -z "$line" ] && [ -n "$call" ]; then
-            if [ -n "$first" ] && [ -f '\(path("slow"))' ]; then end=$(($(date +%s) + 5)); while [ "$(date +%s)" -lt "$end" ]; do :; done; fi
+            if [ -n "$first" ]; then while [ -f '\(path("slow"))' ]; do sleep 0.02; done; fi
             printf 'end=%s\\n\\nitem=t\\ntitle=%s\\n---\\n' "$call" "$call"
             echo "$call" >> '\(path("answered"))'
           fi
@@ -948,8 +948,8 @@ final class SpotRunsStayTests: SpotRunsCase {
         sheet.show(need: .change)
 
         try await wait("the failure") { told() == ["Script took too long, so Openspot stopped it."] }
-        try await wait("the stop of the slow read") { self.blocks(ids: true).contains { $0.contains("stop=2") } }
         try FileManager.default.removeItem(atPath: path("slow"))
+        try await wait("the stop of the slow read") { self.blocks(ids: true).contains { $0.contains("stop=2") } }
         sheet.show(need: .change)
         try await wait("the answer after the late one") { sheet.reading.value?.title == "3" }
         XCTAssertFalse(frames.frames.contains { $0.contains("title=2") })
@@ -988,6 +988,7 @@ final class SpotRunsStayTests: SpotRunsCase {
         sheet.show(need: .change)
 
         try await wait("the second failure") { told().count == 2 }
+        try FileManager.default.removeItem(atPath: path("slow"))
         try await wait("the late answer from the same process") { self.log("answered").contains("4") || self.log("pids").count > 1 }
         try await wait("the late answer from the same process") { self.log("answered").contains("4") }
         XCTAssertEqual(log("pids").count, 1)

@@ -2,8 +2,6 @@ app/Tests/AgendaExampleTests.swift	Task.sleep
 app/Tests/BigPasteTests.swift	Task.sleep
 app/Tests/BigPasteTests.swift	Task.sleep
 app/Tests/BigPasteTests.swift	Task.sleep
-app/Tests/CalculatorSpotTests.swift	Task.sleep
-app/Tests/CalculatorSpotTests.swift	Task.sleep
 app/Tests/CapabilityTests.swift	Task.sleep
 app/Tests/CapabilityTests.swift	Task.sleep
 app/Tests/CapabilityTests.swift	Task.sleep

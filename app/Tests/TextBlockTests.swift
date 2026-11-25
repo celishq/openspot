@@ -2,6 +2,20 @@ import XCTest
 @testable import OpenspotCore
 
 final class TextBlockTests: XCTestCase {
+    func testPatchingALongListReadsTheIdOfEachBlockAFewTimes() {
+        let blocks = (0..<2000).map { TextBlock(fields: [.init(key: "item", value: "r\($0)")]) } + [TextBlock(fields: [.init(key: "item", value: "r7"), .init(key: "title", value: "Seven")])]
+        var reads = 0
+
+        let merged = TextBlock.patching([], with: blocks) { block in
+            reads += 1
+            return block.value("item")
+        }
+
+        XCTAssertEqual(merged.count, 2000)
+        XCTAssertEqual(merged[7].value("title"), "Seven")
+        XCTAssertLessThan(reads, 3 * blocks.count)
+    }
+
     func testABlankLineEndsABlock() {
         let blocks = TextBlock.blocks(in: "title=One\n\n\ntitle=Two\n")
 

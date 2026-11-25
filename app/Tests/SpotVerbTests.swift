@@ -391,13 +391,11 @@ final class SpotVerbTests: XCTestCase {
         try "export default { late() { const end = Date.now() + 300; while (Date.now() < end) {} return true } }\n".writeInline(to: slow, toml: "title = 'Slow'\n\n[actions.late]\ntitle = 'Late'\noffers = ['actions']\nwhen = 'late'")
         _ = try await select("weather")
 
-        let start = Date()
         XCTAssertTrue(model.handleKey(ActionKey(name: "k", isCommand: true)))
-        let opened = Date().timeIntervalSince(start)
         let first = model.menu?.rows.map(\.title) ?? []
         try await wait("the late yes of the slow hook") { model.menu?.rows.contains { $0.title == "Late" } == true }
 
-        XCTAssertLessThan(opened, 0.2)
+        XCTAssertFalse(first.isEmpty)
         XCTAssertFalse(first.contains("Late"))
     }
 
@@ -689,7 +687,7 @@ final class SpotVerbTests: XCTestCase {
         _ = try await select("weather")
 
         XCTAssertTrue(model.handleKey(ActionKey(name: "backspace", isCommand: true)))
-        try await wait("the delete") { !model.entries.contains { $0.id == "weather" } }
+        try await wait("the delete and its toast") { !model.entries.contains { $0.id == "weather" } && !host.confirms.isEmpty }
 
         XCTAssertNil(model.menu)
         XCTAssertEqual(host.dismissals, 0)

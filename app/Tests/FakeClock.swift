@@ -1,4 +1,5 @@
 import Foundation
+import Synchronization
 @testable import OpenspotCore
 
 @MainActor
@@ -9,7 +10,27 @@ final class FakeClock {
         let wake: CheckedContinuation<Void, Error>
     }
 
-    private(set) var time = Date(timeIntervalSince1970: 1000)
+    private struct Timer {
+        let id: Int
+        let due: Date
+        let work: @Sendable () -> Void
+    }
+
+    private struct State {
+        var time = Date(timeIntervalSince1970: 1000)
+        var timers: [Timer] = []
+        var made = 0
+    }
+
+    private final class Shared: Sendable {
+        let state = Mutex(State())
+
+        func withLock<T>(_ body: (inout State) -> T) -> T {
+            state.withLock { body(&$0) }
+        }
+    }
+
+    private nonisolated let shared = Shared()
     private(set) var tolerances: [Duration?] = []
     private var sleeps: [Sleep] = []
     private var count = 0
@@ -19,10 +40,21 @@ final class FakeClock {
         self.isReal = isReal
     }
 
+    nonisolated var time: Date {
+        shared.withLock { $0.time }
+    }
+
     var value: RunClock {
-        RunClock(now: { self.time }, sleep: { duration, tolerance in
+        RunClock(now: { [shared] in shared.withLock { $0.time } }, sleep: { duration, tolerance in
             self.tolerances.append(tolerance)
             try await self.sleep(duration)
+        }, after: { [shared, isReal] seconds, work in
+            let id = shared.withLock { shared in
+                shared.made += 1
+                shared.timers.append(Timer(id: shared.made, due: shared.time.addingTimeInterval(seconds), work: work))
+                return shared.made
+            }
+            if isReal { DispatchQueue.global().asyncAfter(deadline: .now() + max(0, seconds)) { Self.fire(id, in: shared) } }
         })
     }
 
@@ -30,15 +62,37 @@ final class FakeClock {
         sleeps.count
     }
 
+    nonisolated var timerCount: Int {
+        shared.withLock { $0.timers.count }
+    }
+
     func isSleeping(for seconds: TimeInterval) -> Bool {
-        sleeps.contains { abs($0.due.timeIntervalSince(time) - seconds) < 0.001 }
+        let time = time
+        return sleeps.contains { abs($0.due.timeIntervalSince(time) - seconds) < 0.001 }
+    }
+
+    nonisolated func hasTimer(for seconds: TimeInterval) -> Bool {
+        shared.withLock { shared in shared.timers.contains { abs($0.due.timeIntervalSince(shared.time) - seconds) < 0.001 } }
     }
 
     func advance(by seconds: TimeInterval) {
-        time = time.addingTimeInterval(seconds)
+        let (time, timers) = shared.withLock { shared in
+            shared.time = shared.time.addingTimeInterval(seconds)
+            let due = shared.timers.filter { $0.due <= shared.time }.sorted { $0.due < $1.due }
+            shared.timers.removeAll { $0.due <= shared.time }
+            return (shared.time, due)
+        }
+        timers.forEach { $0.work() }
         let due = sleeps.filter { $0.due <= time }.sorted { $0.due < $1.due }
         sleeps.removeAll { $0.due <= time }
         due.forEach { $0.wake.resume() }
+    }
+
+    private nonisolated static func fire(_ id: Int, in shared: Shared) {
+        let timer = shared.withLock { shared in
+            shared.timers.firstIndex { $0.id == id }.map { shared.timers.remove(at: $0) }
+        }
+        timer?.work()
     }
 
     private func sleep(_ duration: Duration) async throws {
