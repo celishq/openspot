@@ -11,7 +11,6 @@ protocol ScriptMode: AnyObject {
     func send(_ call: OpenCall) -> Bool
     func stop(_ call: ScriptCall)
     func settle()
-    func restart()
     func end()
     func leave()
     func holdLimit()
@@ -27,8 +26,6 @@ extension ScriptMode {
     func stop(_ call: ScriptCall) {}
 
     func settle() {}
-
-    func restart() {}
 
     func end() {}
 

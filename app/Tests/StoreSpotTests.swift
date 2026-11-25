@@ -190,10 +190,10 @@ final class StoreSpotTests: BuiltInCase {
         try "# Mine\n".write(to: spots.appendingPathComponent("mine.spot/readme.md"), atomically: true, encoding: .utf8)
 
         for (action, input) in [(ScriptEntry.show.name, ""), ("gallery", "input.value=get:timer\n"), ("gallery", "input.value=publish:timer\n")] {
-            let text = try await SpotRuns(environment: TestEnvironment.values).answer(of: store, action, input: input, limit: 60)
+            let text = try await SpotRuns(environment: TestEnvironment.values, callers: TestEnvironment.callers).answer(of: store, action, input: input, limit: 60)
             XCTAssertNil(try viewValues(text)["readme"], input)
         }
-        let asked = try await SpotRuns(environment: TestEnvironment.values).answer(of: store, "gallery", input: "input.value=readme:timer\n", limit: 60)
+        let asked = try await SpotRuns(environment: TestEnvironment.values, callers: TestEnvironment.callers).answer(of: store, "gallery", input: "input.value=readme:timer\n", limit: 60)
 
         XCTAssertEqual(try viewValues(asked)["readme"], ["timer", "timer\t# Timer", "timer\t", "timer\tCounts down."])
         XCTAssertEqual(TextBlock.blocks(in: asked).compactMap { $0.value("item") }, ["mine", "shared", "timer"])
@@ -203,7 +203,7 @@ final class StoreSpotTests: BuiltInCase {
         let folder = core.appendingPathComponent("timer.spot")
         try "![The sheet](shot.png)\n![](/tmp/a.mov)\n![Web](https://example.com/a.jpg)\n".write(to: folder.appendingPathComponent("readme.md"), atomically: true, encoding: .utf8)
 
-        let text = try await SpotRuns(environment: TestEnvironment.values).answer(of: store, "gallery", input: "input.value=readme:timer\n", limit: 60)
+        let text = try await SpotRuns(environment: TestEnvironment.values, callers: TestEnvironment.callers).answer(of: store, "gallery", input: "input.value=readme:timer\n", limit: 60)
 
         let lines = (try viewValues(text)["readme"] ?? []).filter { $0.hasPrefix("timer\t") }
         XCTAssertEqual(lines, ["timer\t![The sheet](\(folder.path)/shot.png)", "timer\t![](/tmp/a.mov)", "timer\t![Web](https://example.com/a.jpg)"])

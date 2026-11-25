@@ -147,7 +147,7 @@ class SampleSpotsCase: XCTestCase {
 
     @MainActor
     static func answer(of spot: Spot, _ handler: String, input: String) async throws -> Frame {
-        Frame(text: try await SpotRuns(environment: TestEnvironment.values).answer(of: spot, handler, input: input, limit: 30))
+        Frame(text: try await SpotRuns(environment: TestEnvironment.values, callers: TestEnvironment.callers).answer(of: spot, handler, input: input, limit: 30))
     }
 
     func action(_ id: String, of spot: Spot) async throws -> CommandAction {
@@ -208,7 +208,7 @@ class SampleSpotsCase: XCTestCase {
         var panel = try XCTUnwrap(SheetParts(output: last))
         for step in steps {
             if let value = step.value { panel.set(value, of: step.handler) }
-            last = Frame(text: try await SpotRuns(environment: TestEnvironment.values).answer(of: spot, step.handler, input: Message(step.handler, inputs: panel.inputs).text, limit: 30))
+            last = Frame(text: try await SpotRuns(environment: TestEnvironment.values, callers: TestEnvironment.callers).answer(of: spot, step.handler, input: Message(step.handler, inputs: panel.inputs).text, limit: 30))
             panel.take(last, answering: panel.generation)
         }
         return last
@@ -231,7 +231,7 @@ class SampleSpotsCase: XCTestCase {
 
     @MainActor
     static func targetOptions(of spot: Spot, release: URL) async throws -> (first: Int, last: Int) {
-        let runs = SpotRuns(environment: TestEnvironment.values)
+        let runs = SpotRuns(environment: TestEnvironment.values, callers: TestEnvironment.callers)
         defer { runs.quit() }
         let sheet = runs.sheet(for: spot)
         let options: () -> Int = {

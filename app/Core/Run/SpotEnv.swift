@@ -10,16 +10,14 @@ final class SpotEnv: Sendable {
     let spot: Spot
     private let cache: SpotCache
     private let fetching: Fetch
-    private let isCareful: Bool
     private let locale: Locale
     nonisolated(unsafe) private weak var runs: SpotRuns?
     private let session = Mutex<URLSession?>(nil)
 
-    init(spot: Spot, cache: SpotCache, fetch: Fetch = Fetch(), isCareful: Bool = false, locale: Locale = .autoupdatingCurrent, runs: SpotRuns? = nil) {
+    init(spot: Spot, cache: SpotCache, fetch: Fetch = Fetch(), locale: Locale = .autoupdatingCurrent, runs: SpotRuns? = nil) {
         self.spot = spot
         self.cache = cache
         fetching = fetch
-        self.isCareful = isCareful
         self.locale = locale
         self.runs = runs
     }

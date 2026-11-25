@@ -6,7 +6,7 @@ struct Sandbox: Equatable, Sendable {
     let uses: Set<SpotUse>
 
     func words(data: String, temp: String, home: String) -> [String] {
-        var rules = ["(version 1)", "(allow default)", "(deny appleevent-send)"]
+        var rules = ["(version 1)", "(allow default)", "(allow process-exec (literal \"/bin/ps\") (with no-sandbox))"]
         if !uses.contains(.network) {
             rules += ["(deny network-outbound (remote ip))", "(deny network-inbound (local ip))"]
         }
@@ -29,7 +29,7 @@ struct Sandbox: Equatable, Sendable {
 
     private func writable(data: String?, temp: String, home: String) -> [(name: String, path: String)]? {
         guard !uses.contains(.files) else { return nil }
-        var folders = [("TEMP", temp), ("CACHE", Self.cache), ("TMP", "/private/tmp"), ("DEV", "/dev")]
+        var folders = [("TEMP", temp), ("USERTEMP", Self.userTemp), ("CACHE", Self.cache), ("TMP", "/private/tmp"), ("DEV", "/dev")]
         if let data { folders.insert(("DATA", data), at: 0) }
         if uses.contains(.screen) {
             folders += [("SHOTS", Self.screenshots(home: home)), ("DESKTOP", home + "/Desktop"), ("MOVIES", home + "/Movies")]
@@ -37,11 +37,14 @@ struct Sandbox: Equatable, Sendable {
         return folders.map { ($0.0, Self.real($0.1)) }
     }
 
-    private static let cache: String = {
+    private static let cache = folder(_CS_DARWIN_USER_CACHE_DIR)
+    private static let userTemp = folder(_CS_DARWIN_USER_TEMP_DIR)
+
+    private static func folder(_ name: Int32) -> String {
         var buffer = [CChar](repeating: 0, count: Int(PATH_MAX))
-        guard confstr(_CS_DARWIN_USER_CACHE_DIR, &buffer, buffer.count) > 0 else { return NSTemporaryDirectory() }
+        guard confstr(name, &buffer, buffer.count) > 0 else { return NSTemporaryDirectory() }
         return String(decoding: buffer.prefix { $0 != 0 }.map { UInt8(bitPattern: $0) }, as: UTF8.self)
-    }()
+    }
 
     private static func screenshots(home: String) -> String {
         guard let location = UserDefaults(suiteName: "com.apple.screencapture")?.string(forKey: "location") else { return home + "/Desktop" }

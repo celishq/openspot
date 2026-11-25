@@ -112,7 +112,7 @@ struct SpotCalls {
         }
     }
 
-    func run(_ id: String, _ arguments: [String], input: (@Sendable () async -> String)?, careful: Set<SpotUse>?, output: CommandOutput) -> CommandAPI.Work {
+    func run(_ id: String, _ arguments: [String], input: (@Sendable () async -> String)?, output: CommandOutput) -> CommandAPI.Work {
         { [places, folder, runs, caller] in
             let spots = places.readSpots()
             let found: Spot?
@@ -121,10 +121,9 @@ struct SpotCalls {
             } catch {
                 return CommandAnswer(errors: "\((error as? SpotError)?.reason ?? error.localizedDescription)\n", code: 1)
             }
-            guard var spot = found else {
+            guard let spot = found else {
                 return CommandAnswer(errors: "Openspot has no spot \(id) in \(spots.url.path). Run `openspot check spots` to see each file that does not load.\n", code: 1)
             }
-            if let careful { spot.uses.formIntersection(careful) }
             let handler: (name: String?, inputs: [TextBlock.Field])
             do {
                 handler = try Self.handler(arguments, of: spot)
@@ -137,7 +136,7 @@ struct SpotCalls {
             for setting in places.config.read().settings where setting.spot == spot.id { chosen[spot.id, default: [:]][setting.key] = setting.value }
             let settings = FieldValues(of: spot, in: chosen, secrets: places.secrets.values(of: spot.id)).settings
             let run = TerminalRun(
-                spot: spot, handler: handler.name, input: text, inputs: handler.inputs, settings: settings, careful: careful == nil ? nil : spot.uses,
+                spot: spot, handler: handler.name, input: text, inputs: handler.inputs, settings: settings,
                 callers: runs?.callers, environment: places.environment, folder: folder, usage: usage
             )
             let begin = Date()

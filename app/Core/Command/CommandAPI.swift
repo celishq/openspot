@@ -76,7 +76,7 @@ public final class CommandAPI: @unchecked Sendable {
             return { kept.answer(ending: await work()) }
         }
         let caller = caller(of: request)
-        if call.rule.flags.contains(.startsScripts), isSandboxed || runs?.callers.isCareful == true && caller != nil { return nil }
+        if call.rule.flags.contains(.startsScripts), caller?.isBuiltIn != true, isSandboxed || caller != nil { return nil }
         let (spot, reason) = values(of: request)
         let work = call.call.work(in: CallContext(
             mac: mac, api: self, request: request, places: places, app: app, runs: runs, account: account, secrets: places.secrets, trash: places.trash, raise: raise, caller: caller,

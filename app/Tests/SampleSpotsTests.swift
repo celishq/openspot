@@ -278,7 +278,7 @@ final class SampleSpotsTests: SampleSpotsCase {
         try await withPrivateHome { folder in
             let emoji = try self.fakeEmoji(in: folder)
 
-            _ = try await SpotRuns(environment: TestEnvironment.values).answer(of: emoji, "tone", input: "input.value=dark\n", limit: 30)
+            _ = try await SpotRuns(environment: TestEnvironment.values, callers: TestEnvironment.callers).answer(of: emoji, "tone", input: "input.value=dark\n", limit: 30)
             let output = try await emoji.items(timeout: 60)
 
             XCTAssertEqual(self.text(of: "tone", in: output), "dark")
@@ -354,12 +354,12 @@ final class SampleSpotsTests: SampleSpotsCase {
             let row = SpotItem(title: "thumbs up", run: "👍")
             XCTAssertEqual(tone.key, ActionKey(name: "t", isCommand: true))
 
-            _ = try await SpotRuns(environment: TestEnvironment.values).answer(of: emoji, tone.id, input: "input.item=\(row.run)\n", limit: 30)
+            _ = try await SpotRuns(environment: TestEnvironment.values, callers: TestEnvironment.callers).answer(of: emoji, tone.id, input: "input.item=\(row.run)\n", limit: 30)
             let next = try await emoji.items(timeout: 60)
             XCTAssertEqual(self.text(of: "tone", in: next), "light")
 
-            _ = try await SpotRuns(environment: TestEnvironment.values).answer(of: emoji, "tone", input: "input.value=dark\n", limit: 30)
-            _ = try await SpotRuns(environment: TestEnvironment.values).answer(of: emoji, tone.id, input: "input.item=\(row.run)\n", limit: 30)
+            _ = try await SpotRuns(environment: TestEnvironment.values, callers: TestEnvironment.callers).answer(of: emoji, "tone", input: "input.value=dark\n", limit: 30)
+            _ = try await SpotRuns(environment: TestEnvironment.values, callers: TestEnvironment.callers).answer(of: emoji, tone.id, input: "input.item=\(row.run)\n", limit: 30)
             let wrapped = try await emoji.items(timeout: 60)
             XCTAssertEqual(self.text(of: "tone", in: wrapped), "none")
         }
@@ -369,7 +369,7 @@ final class SampleSpotsTests: SampleSpotsCase {
         try await withPrivateHome { folder in
             let emoji = try self.fakeEmoji(in: folder)
 
-            _ = try await SpotRuns(environment: TestEnvironment.values).answer(of: emoji, "press", input: "input.item=👍\n", limit: 30)
+            _ = try await SpotRuns(environment: TestEnvironment.values, callers: TestEnvironment.callers).answer(of: emoji, "press", input: "input.item=👍\n", limit: 30)
 
             XCTAssertEqual(try String(contentsOf: folder.appendingPathComponent("clipboard"), encoding: .utf8), "👍")
         }
@@ -392,7 +392,7 @@ final class SampleSpotsTests: SampleSpotsCase {
             let emoji = try self.fakeEmoji(in: folder)
             try "before".write(to: folder.appendingPathComponent("clipboard"), atomically: true, encoding: .utf8)
 
-            _ = try await SpotRuns(environment: TestEnvironment.values).answer(of: emoji, "paste", input: "input.item=👍\n", limit: 30)
+            _ = try await SpotRuns(environment: TestEnvironment.values, callers: TestEnvironment.callers).answer(of: emoji, "paste", input: "input.item=👍\n", limit: 30)
 
             XCTAssertEqual(try self.read("pasted", in: folder), "👍")
             XCTAssertEqual(try self.read("clipboard", in: folder), "before")
@@ -405,7 +405,7 @@ final class SampleSpotsTests: SampleSpotsCase {
             let url = folder.appendingPathComponent("frames.sh")
             try "#!/bin/sh\nprintf 'text=a\\n---\\n'\nprintf 'text=b\\n'\n".writeScript(to: url)
 
-            let text = try await SpotRuns(environment: TestEnvironment.values).answer(of: Spot(id: "frames", name: "Frames", url: url), ScriptEntry.show.name, limit: 60)
+            let text = try await SpotRuns(environment: TestEnvironment.values, callers: TestEnvironment.callers).answer(of: Spot(id: "frames", name: "Frames", url: url), ScriptEntry.show.name, limit: 60)
 
             XCTAssertEqual(text, "text=a\n")
         }

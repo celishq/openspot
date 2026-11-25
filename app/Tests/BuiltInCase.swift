@@ -82,7 +82,7 @@ class BuiltInCase: XCTestCase {
             "OPENSPOT_CORE": root.appendingPathComponent("core").path,
             "OPENSPOT_EXAMPLES": root.appendingPathComponent("examples").path
         ]) { _, new in new }
-        TestEnvironment.$values.withValue(environment) { super.invokeTest() }
+        TestEnvironment.$values.withValue(environment) { TestEnvironment.$callers.withValue(SpotCallers()) { super.invokeTest() } }
     }
 
     override func setUp() async throws {
@@ -91,7 +91,7 @@ class BuiltInCase: XCTestCase {
         spots = root.appendingPathComponent("spots")
         core = root.appendingPathComponent("core")
         tools = root.appendingPathComponent("tools")
-        runs = SpotRuns(environment: TestEnvironment.values, log: CallLog(folder: root.appendingPathComponent("logs")), stats: root.appendingPathComponent("stats"))
+        runs = SpotRuns(environment: TestEnvironment.values, log: CallLog(folder: root.appendingPathComponent("logs")), stats: root.appendingPathComponent("stats"), callers: TestEnvironment.callers)
         for folder in [spots!, core!, tools!] {
             try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
         }

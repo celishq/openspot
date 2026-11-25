@@ -429,7 +429,6 @@ public final class SpotsModel {
         scan.addSettings(in: files.config, secrets: files.secrets, read: config, defaults: defaultArrangement)
         let carded = Set(faults.map(\.id))
         let problems = scan.refused.filter { !carded.contains($0.file) }.map { "\($0.file) was not loaded: \($0.reason)" }
-        runs.isCareful = config.isCareful
         var stamps: [String: [Int]] = [:]
         for script in scan.scripts where script.host == nil { stamps[script.id] = load.stamp(of: script) }
         runs.take(scan, menuBar: config.arrangement.menuBar, stamps: stamps)
@@ -488,9 +487,7 @@ public final class SpotsModel {
             case .keys:
                 host.applyConfig(config)
                 holdAssignedKeys(config)
-            case .careful:
-                runs.isCareful = config.isCareful
-            case .spots, .value:
+            case .careful, .spots, .value:
                 break
             }
         }

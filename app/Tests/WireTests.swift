@@ -154,8 +154,8 @@ final class WireTests: SpotRunsCase {
         let sheet = try spot("\"sheet.open\" = true")
         let settings = [TextBlock.Field(key: "city", value: "Paris")]
 
-        _ = await TerminalRun(spot: sheet.spot, handler: nil, input: nil, inputs: [], settings: settings, careful: nil, callers: nil, environment: nil, folder: nil).start { _ in }
-        _ = await TerminalRun(spot: sheet.spot, handler: "go", input: "x=2\n", inputs: [.init(key: "x", value: "1")], settings: settings, careful: nil, callers: nil, environment: nil, folder: nil).start { _ in }
+        _ = await TerminalRun(spot: sheet.spot, handler: nil, input: nil, inputs: [], settings: settings, callers: nil, environment: nil, folder: nil).start { _ in }
+        _ = await TerminalRun(spot: sheet.spot, handler: "go", input: "x=2\n", inputs: [.init(key: "x", value: "1")], settings: settings, callers: nil, environment: nil, folder: nil).start { _ in }
         _ = try await runs.answer(of: sheet.spot, ScriptEntry.show.name)
 
         XCTAssertEqual(calls, ["args=show\ninput.event=sheet.open\nsetting.city=Paris", "args=go\ninput.x=1\nx=2\nsetting.city=Paris", "args=show\n"])

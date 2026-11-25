@@ -91,8 +91,8 @@ struct SpotRunningApp: RunningApp {
         await model.reveal(id)
     }
 
-    func playground(_ file: URL?, isCareful: Bool) async {
-        await SpotPlayground.show(path: file?.path, isCareful: isCareful)
+    func playground(_ file: URL?) async {
+        await SpotPlayground.show(path: file?.path)
     }
 
     func changeSetting(_ key: String, of spot: String) async -> Bool {

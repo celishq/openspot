@@ -99,7 +99,7 @@ final class SettingsSpotTests: BuiltInCase {
     }
 
     func testAKeyRecordedOnARowGoesToTheFileAndTheListReadsItAgain() async throws {
-        let runs = SpotRuns(environment: TestEnvironment.values)
+        let runs = SpotRuns(environment: TestEnvironment.values, callers: TestEnvironment.callers)
         defer { runs.quit() }
         let sheet = runs.sheet(for: try settings)
         sheet.open {}

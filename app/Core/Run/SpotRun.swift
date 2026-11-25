@@ -306,10 +306,6 @@ public final class SpotRun {
         if new.headerState != header { takeState(lastAnswer) }
     }
 
-    func restartScript() {
-        link.restart()
-    }
-
     public var awaitsAnswer: Bool {
         spot.showsState && !hasAsked
     }

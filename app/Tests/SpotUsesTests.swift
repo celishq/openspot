@@ -134,8 +134,7 @@ final class SpotUsesTests: SpotRunsCase {
         XCTAssertFalse(FileManager.default.fileExists(atPath: config.appendingPathComponent("config.toml").path))
     }
 
-    func testInCarefulModeASandboxedProcessOutsideEachSpotCannotChangeCarefulModeOrUseAnything() async throws {
-        runs.isCareful = true
+    func testASandboxedProcessOutsideEachSpotCannotChangeCarefulModeOrUseAnything() async throws {
         _ = try scanned()
         let errors = folder.appendingPathComponent("errors")
         FileManager.default.createFile(atPath: errors.path, contents: nil)
@@ -154,8 +153,7 @@ final class SpotUsesTests: SpotRunsCase {
         XCTAssertFalse(FileManager.default.fileExists(atPath: config.appendingPathComponent("config.toml").path))
     }
 
-    func testInCarefulModeADeclaredUseRuns() async throws {
-        runs.isCareful = true
+    func testADeclaredUseRuns() async throws {
         try caller(toml: "uses = ['spots']", "setting list")
         _ = try scanned()
 

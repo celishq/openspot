@@ -53,39 +53,26 @@ final class SandboxTests: SpotRunsCase {
         return sheet.reading.value?.title ?? ""
     }
 
-    func testOffASpotDoesAllThatThePersonCan() async throws {
-        let result = try await result(of: trying())
-
-        XCTAssertEqual(result, "data temp files network cache screenshots read")
-    }
-
-    func testOnASpotWritesOnlyToItsDataAndTheTempFolderAndReachesNoNetwork() async throws {
-        runs.isCareful = true
-
+    func testASpotWithNoUsesWritesOnlyToItsDataAndTheTempFolderAndReachesNoNetwork() async throws {
         let result = try await result(of: trying())
 
         XCTAssertEqual(result, "data temp cache read")
         XCTAssertFalse(FileManager.default.fileExists(atPath: outside.appendingPathComponent("written").path))
     }
 
-    func testOnASpotHasWhatItsUsesName() async throws {
-        runs.isCareful = true
-
+    func testASpotHasWhatItsUsesName() async throws {
         let result = try await result(of: trying(uses: "files,network"))
 
         XCTAssertEqual(result, "data temp files network cache screenshots read")
     }
 
-    func testOnAScreenSpotWritesToTheFolderOfScreenshots() async throws {
-        runs.isCareful = true
-
+    func testAScreenSpotWritesToTheFolderOfScreenshots() async throws {
         let result = try await result(of: trying(uses: "screen"))
 
         XCTAssertEqual(result, "data temp cache screenshots read")
     }
 
-    func testOnAStayingSpotIsCarefulToo() async throws {
-        runs.isCareful = true
+    func testAStayingSpotIsSandboxedToo() async throws {
         try script(toml: "stay = true", """
         echo a > '\(outside.path)/written' 2>/dev/null && r=files || r=kept
         while IFS= read -r line; do
@@ -99,30 +86,21 @@ final class SandboxTests: SpotRunsCase {
         XCTAssertEqual(result, "kept")
     }
 
-    func testAStayingSpotStartsAgainInTheNewModeWhenTheModeChanges() async throws {
-        try script(toml: "stay = true", """
-        echo a > '\(outside.path)/written-$$' 2>/dev/null && r=files || r=kept
-        while IFS= read -r line; do
-          case "$line" in call=*) call=${line#call=} ;; esac
-          [ -n "$line" ] || printf 'end=%s\\n\\ntext=t\\ntitle=%s\\n---\\n' "$call" "$r"
-        done
-        """)
-        let sheet = try sheet()
-        let first = try await result(of: sheet)
-        XCTAssertEqual(first, "files", "the script started as the person")
+    func testASpotWithNoUsesListsTheProcessesOfTheMac() async throws {
+        try script(toml: "", "printf 'text=t\\ntitle=%s\\n' \"$(/bin/ps -p $$ > /dev/null && echo listed)\"")
 
-        runs.isCareful = true
+        let result = try await result(of: try sheet())
 
-        try await wait("the read of the new process") { sheet.reading.value?.title == "kept" }
+        XCTAssertEqual(result, "listed")
     }
 
-    func testOnTheSandboxDeniesAppleEvents() {
-        let words = Sandbox(uses: Set(SpotUse.allCases)).words(data: "/d", temp: "/t", home: "/h")
+    func testTheSandboxLeavesAppleEventsToTheSpot() {
+        let words = Sandbox(uses: []).words(data: "/d", temp: "/t", home: "/h")
 
-        XCTAssertTrue(words.contains { $0.contains("(deny appleevent-send)") })
+        XCTAssertFalse(words.contains { $0.contains("appleevent") })
     }
 
-    func testOnTheHelperProcessOfAnInlineSpotIsCarefulToo() async throws {
+    func testTheHelperProcessOfAnInlineSpotIsSandboxedToo() async throws {
         let bin = outside.appendingPathComponent("bin", isDirectory: true)
         try FileManager.default.createDirectory(at: bin, withIntermediateDirectories: true)
         try "#!/bin/sh\necho a > '\(outside.path)/written' 2>/dev/null && echo files || echo kept\n".writeScript(to: bin.appendingPathComponent("openspot"))
@@ -134,13 +112,9 @@ final class SandboxTests: SpotRunsCase {
         try "export default { async show() { return `text=t\\ntitle=${openspot.call([\"color\", \"pick\"]).stdout.trim()}\\n` } }\n"
             .writeInline(to: script, toml: "")
         let sheet = try sheet()
-        let before = try await result(of: sheet)
-        XCTAssertEqual(before, "files", "the helper ran as the person")
-        try FileManager.default.removeItem(at: outside.appendingPathComponent("written"))
 
-        runs.isCareful = true
-        sheet.show(need: .change)
+        let result = try await result(of: sheet)
 
-        try await wait("the read in Careful mode") { sheet.reading.value?.title == "kept" }
+        XCTAssertEqual(result, "kept")
     }
 }

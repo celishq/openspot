@@ -15,24 +15,22 @@ public struct TerminalRun {
     public let input: String?
     let inputs: [TextBlock.Field]
     let settings: [TextBlock.Field]
-    let careful: Set<SpotUse>?
     let callers: SpotCallers?
     let environment: [String: String]?
     let folder: URL?
     let usage: StatsLog?
 
     public init(spot: Spot, handler: String?, input: String?) {
-        self.init(spot: spot, handler: handler, input: input, inputs: [], settings: [], careful: nil, callers: nil, environment: nil, folder: nil)
+        self.init(spot: spot, handler: handler, input: input, inputs: [], settings: [], callers: nil, environment: nil, folder: nil)
     }
 
-    init(spot: Spot, handler: String?, input: String?, inputs: [TextBlock.Field], settings: [TextBlock.Field], careful: Set<SpotUse>?, callers: SpotCallers?, environment: [String: String]?, folder: URL?, usage: StatsLog? = nil) {
+    init(spot: Spot, handler: String?, input: String?, inputs: [TextBlock.Field], settings: [TextBlock.Field], callers: SpotCallers?, environment: [String: String]?, folder: URL?, usage: StatsLog? = nil) {
         self.usage = usage
         self.spot = spot
         self.handler = handler
         self.input = input
         self.inputs = inputs
         self.settings = settings
-        self.careful = careful
         self.callers = callers
         self.environment = environment
         self.folder = folder
@@ -60,7 +58,7 @@ public struct TerminalRun {
         let caller = callers?.issue(for: spot, reason: isInShow ? ShowEvent.sheet.name : nil)
         let process = ScriptProcess(
             spot: spot, program: program, swift: swift, sending: spot.mode.stays ? nil : message(isInShow: isInShow), limit: isInShow ? Self.showLimit : nil,
-            errorLimit: Self.errorLimit, careful: careful, base: environment, folder: folder
+            errorLimit: Self.errorLimit, base: environment, folder: folder
         )
         usage?.track(process, of: spot.id)
         if let callers, let caller { callers.attach(process, to: caller) }
@@ -93,7 +91,7 @@ public struct TerminalRun {
     }
 
     private func inline(isolation: isolated (any Actor)? = #isolation, isInShow: Bool, frame: (String) -> Void) async -> End {
-        let script = InlineScript(spot: spot, api: nil, callers: callers, careful: careful, limit: Self.showLimit, base: environment ?? ProcessInfo.processInfo.environment)
+        let script = InlineScript(spot: spot, api: nil, callers: callers, limit: Self.showLimit, base: environment ?? ProcessInfo.processInfo.environment)
         defer { script.end() }
         let call = InlineCall(arguments: [called], variables: ["OPENSPOT_ID": spot.id], input: message(isInShow: isInShow).text, reason: isInShow ? ShowEvent.sheet.name : nil, limit: isInShow ? Self.showLimit : nil)
         script.send(call)
