@@ -2,8 +2,6 @@ import XCTest
 @testable import OpenspotCore
 
 final class StoreSpotTests: BuiltInCase {
-    private var effects: (() -> [String])!
-
     private var store: Spot {
         get throws {
             try spot("store")
@@ -12,198 +10,34 @@ final class StoreSpotTests: BuiltInCase {
 
     override func setUp() async throws {
         try await super.setUp()
-        try "#!/bin/sh\n".writeScript(to: core.appendingPathComponent("timer.spot/timer.sh"), toml: "detail = 'Counts down'")
-        try "#!/bin/sh\n".writeScript(to: core.appendingPathComponent("timer.spot/sample.sh"))
-        try "#!/bin/sh\n".writeScript(to: root.appendingPathComponent("examples/shared.spot/shared.sh"), toml: "title = 'Shared'")
-        try "#!/bin/sh\n".writeScript(to: spots.appendingPathComponent("mine.spot/mine.sh"), toml: "title = 'Mine'")
-        effects = try recordEffects()
+        try "#!/bin/sh\n".writeScript(to: root.appendingPathComponent("examples/clock.spot/clock.sh"), toml: "title = 'Clock'")
     }
 
-    private func items() async throws -> [[String]] {
-        let text = try await runs.answer(of: store, ScriptEntry.show.name, limit: 60)
-        XCTAssertEqual(Frame(text: text, kinds: try store.kinds).parts.map(\.id), ["gallery"])
-        return TextBlock.blocks(in: text).compactMap { row in
-            row.value("item").map { [$0, row.value("title") ?? "", row.value("step") ?? "", row.value("origin") ?? "", row.value("detail") ?? "", row.value("size") ?? "", row.value("sample") == "true" ? "sample" : ""] }
-        }
-    }
-
-    private func call(_ arguments: [String]) async throws {
-        try await store.perform(arguments[0], input: Self.input(arguments), timeout: 60)
-    }
-
-    private func answer(_ arguments: [String]) async throws -> String {
-        try await runs.answer(of: store, arguments[0], input: Self.input(arguments), limit: 60)
-    }
-
-    private static func input(_ arguments: [String]) -> String? {
-        arguments.count > 1 ? "input.\(arguments[0] == "press" ? "item" : "value")=\(arguments[1])\n" : nil
-    }
-
-    private func pick(_ folder: URL) throws {
-        let real = tools.appendingPathComponent("openspot-real")
-        if !FileManager.default.fileExists(atPath: real.path) {
-            try FileManager.default.moveItem(at: tools.appendingPathComponent("openspot"), to: real)
-        }
-        try fake("openspot", "if [ \"$1 $2\" = 'folder pick' ]; then echo '\(folder.path)'; exit 0; fi\nexec '\(real.path)' \"$@\"")
-    }
-
-    private func viewValues(_ text: String) throws -> [String: [String]] {
-        let frame = Frame(text: text, kinds: try store.kinds)
-        return frame.parts.first.flatMap { frame.tree.node($0.id) }?.values ?? [:]
-    }
-
-    private func friends() throws -> URL {
-        let friends = root.appendingPathComponent("friends")
-        try "#!/bin/sh\n".writeScript(to: friends.appendingPathComponent("clock.spot/clock.sh"), toml: "title = 'Clock'")
-        return friends
-    }
-
-    func testAddStoreKeepsThePickedFolderAndShowsItsSpotsUnderIt() async throws {
-        let friends = try friends()
-        try pick(friends)
-
-        let text = try await answer(["gallery", "add"])
-
-        XCTAssertEqual(file.read().stores.map(\.url.path), [friends.path])
-        XCTAssertEqual(effects(), ["toast Added the store friends with 1 spot."])
-        XCTAssertEqual(try viewValues(text)["folder"]?.last, "\(friends.path)\tfriends\tfound\tadded")
-        XCTAssertEqual(TextBlock.blocks(in: text).first { $0.value("item") == "clock" }?.value("store"), friends.path)
-    }
-
-    func testAStoreSpotShowsTheDayOfItsVersionAndNoHash() async throws {
-        let shared = root.appendingPathComponent("examples/shared.spot")
-        let day = try XCTUnwrap(ISO8601DateFormatter().date(from: "2031-11-03T12:00:00Z"))
-        try FileManager.default.setAttributes([.modificationDate: day], ofItemAtPath: shared.appendingPathComponent("spot.toml").path)
-
-        let text = try await runs.answer(of: store, ScriptEntry.show.name, limit: 60)
-
-        let row = try XCTUnwrap(TextBlock.blocks(in: text).first { $0.value("item") == "shared" })
-        XCTAssertEqual(row.value("updated"), "3 Nov 2031")
-        XCTAssertFalse(text.contains(try SpotVersion(of: shared).hash))
-    }
-
-    func testAddStoreRefusesAFolderWithNoSpot() async throws {
-        let empty = root.appendingPathComponent("empty")
-        try FileManager.default.createDirectory(at: empty, withIntermediateDirectories: true)
-        try pick(empty)
-
-        _ = try await answer(["gallery", "add"])
-
-        XCTAssertEqual(effects(), ["toast empty has no spot folder, so it cannot be a store. Pick a folder that holds a folder such as weather.spot."])
-        XCTAssertEqual(file.read().stores, [])
-    }
-
-    func testTheBuiltInStoreComesFirstWhenTheAppHasItsExamples() async throws {
-        let examples = root.appendingPathComponent("examples")
-        let friends = try friends()
-        _ = try file.change { $0.add(store: StoreSource(url: friends)) }
-        try FileManager.default.removeItem(at: examples)
-        let before = try await runs.answer(of: store, ScriptEntry.show.name, limit: 60)
-        XCTAssertEqual(try viewValues(before)["folder"], ["\(friends.path)\tfriends\tfound\tadded"])
-
-        try "#!/bin/sh\n".writeScript(to: examples.appendingPathComponent("year.spot/year.sh"), toml: "title = 'Year'")
-        let text = try await runs.answer(of: store, ScriptEntry.show.name, limit: 60)
-
-        XCTAssertEqual(try viewValues(text)["folder"], ["\(examples.path)\tOpenspot\tfound\tbuiltin", "\(friends.path)\tfriends\tfound\tadded"])
-        XCTAssertEqual(TextBlock.blocks(in: text).first { $0.value("item") == "year" }?.value("store"), examples.path)
-    }
-
-    func testAGoneStoreSaysSoUntilRemoveDropsIt() async throws {
-        let gone = root.appendingPathComponent("gone")
-        _ = try file.change { $0.add(store: StoreSource(url: gone)) }
-
-        let text = try await runs.answer(of: store, ScriptEntry.show.name, limit: 60)
-        XCTAssertEqual(try viewValues(text)["folder"]?.last, "\(gone.path)\tgone\tmissing\tadded")
-
-        try await call(["gallery", "remove:\(gone.path)"])
-        XCTAssertEqual(file.read().stores, [])
-    }
-
-    func testLocateMovesAGoneStoreToThePickedFolder() async throws {
-        let gone = root.appendingPathComponent("gone")
-        _ = try file.change { $0.add(store: StoreSource(url: gone)) }
-        let friends = try friends()
-        try pick(friends)
-
-        try await call(["gallery", "locate:\(gone.path)"])
-
-        XCTAssertEqual(file.read().stores.map(\.url.path), [friends.path])
-    }
-
-    func testGetOpensTheReviewOfASpotAndCopiesNothingYet() async throws {
-        let friends = try friends()
-        _ = try file.change { $0.add(store: StoreSource(url: friends)) }
-
-        try await call(["gallery", "get:clock"])
-
-        let opened = await app.opened
-        XCTAssertEqual(opened, ["review clock"])
-        XCTAssertFalse(FileManager.default.fileExists(atPath: spots.appendingPathComponent("clock.spot").path))
-    }
-
-    func testItOpensInAWindowWithItsGalleryView() throws {
+    func testItsCardOpensTheStoreWindowOfTheApp() async throws {
         let spot = try store
 
-        XCTAssertEqual(spot.name, "Store")
-        XCTAssertEqual(Config(text: try String(contentsOf: URL(fileURLWithPath: #filePath).deletingLastPathComponent().deletingLastPathComponent().appendingPathComponent("defaults.toml"), encoding: .utf8)).arrangement.isWindow(of: "openspot/store"), true)
-        XCTAssertEqual(spot.kind, .list)
-        XCTAssertEqual(spot.views["store"].map { URL(fileURLWithPath: $0).lastPathComponent }, "store.swift")
-    }
+        try await spot.perform("open", input: nil, timeout: 60)
 
-    func testItListsEachSpotWithWhatItsButtonDoes() async throws {
-        let rows = try await items()
-
-        XCTAssertEqual(rows.map { Array($0.prefix(4)) }, [["mine", "Mine", "added", "mine"], ["shared", "Shared", "get", "store"], ["timer", "Timer", "added", "core"]])
-        XCTAssertEqual(rows.first { $0[0] == "timer" }?[4], "Counts down")
-        XCTAssertEqual(rows.map { $0[6] }, ["", "", "sample"])
-    }
-
-    func testAFailedGetSaysWhyInAToast() async throws {
-        _ = try await runs.answer(of: store, "gallery", input: "input.value=get:gone\n", limit: 60)
-
-        XCTAssertEqual(effects().map { $0.hasPrefix("toast ") }, [true])
-    }
-
-    func testPublishDoesNothingUntilTheStoreOpensIt() async throws {
-        _ = try AccountStore.standard(environment: ["OPENSPOT_CONFIG": root.path], home: root, devState: nil).keyMadeOnce()
-
-        _ = try await runs.answer(of: store, "gallery", input: "input.value=publish:mine\n", limit: 60)
-
-        XCTAssertEqual(effects(), [])
         let opened = await app.opened
-        XCTAssertEqual(opened, [])
-        XCTAssertFalse(FileManager.default.fileExists(atPath: root.appendingPathComponent("store/mine.spot").path))
+        XCTAssertEqual(opened, ["store"])
+        XCTAssertNil(spot.views["store"])
+        XCTAssertEqual(Config(text: try String(contentsOf: URL(fileURLWithPath: #filePath).deletingLastPathComponent().deletingLastPathComponent().appendingPathComponent("defaults.toml"), encoding: .utf8)).arrangement.isWindow(of: "openspot/store"), nil)
     }
 
-    func testYourOwnSpotOffTheGridStaysAdded() async throws {
-        try file.pin("mine", on: false)
+    func testASearchEndsWithARowThatLooksInTheStore() async throws {
+        let spot = try store
 
-        let rows = try await items()
+        let rows = try await spot.answer("search", input: "input.text= pomodoro \n", timeout: 60).answers(asCard: false)
 
-        XCTAssertEqual(rows.first { $0[0] == "mine" }?[2], "added")
+        XCTAssertEqual(try XCTUnwrap(spot.triggers.search).isLast, true)
+        XCTAssertEqual(rows.map(\.run), ["pomodoro"])
+        XCTAssertEqual(rows.map(\.title), ["Look in the Store for “pomodoro”"])
     }
 
-    func testOnlyTheSheetOfASpotGetsItsReadmeLineByLine() async throws {
-        try "# Timer\n\nCounts down.\n".write(to: core.appendingPathComponent("timer.spot/readme.md"), atomically: true, encoding: .utf8)
-        try "# Mine\n".write(to: spots.appendingPathComponent("mine.spot/readme.md"), atomically: true, encoding: .utf8)
+    func testAPickOfThatRowOpensTheStoreWithTheWordsInItsSearch() async throws {
+        try await store.perform("press", input: "input.item=pomodoro\n", timeout: 60)
 
-        for (action, input) in [(ScriptEntry.show.name, ""), ("gallery", "input.value=get:timer\n"), ("gallery", "input.value=publish:timer\n")] {
-            let text = try await SpotRuns(environment: TestEnvironment.values).answer(of: store, action, input: input, limit: 60)
-            XCTAssertNil(try viewValues(text)["readme"], input)
-        }
-        let asked = try await SpotRuns(environment: TestEnvironment.values).answer(of: store, "gallery", input: "input.value=readme:timer\n", limit: 60)
-
-        XCTAssertEqual(try viewValues(asked)["readme"], ["timer", "timer\t# Timer", "timer\t", "timer\tCounts down."])
-        XCTAssertEqual(TextBlock.blocks(in: asked).compactMap { $0.value("item") }, ["mine", "shared", "timer"])
-    }
-
-    func testAReadmePictureOrVideoInTheSpotsFolderGetsItsFullPath() async throws {
-        let folder = core.appendingPathComponent("timer.spot")
-        try "![The sheet](shot.png)\n![](/tmp/a.mov)\n![Web](https://example.com/a.jpg)\n".write(to: folder.appendingPathComponent("readme.md"), atomically: true, encoding: .utf8)
-
-        let text = try await SpotRuns(environment: TestEnvironment.values).answer(of: store, "gallery", input: "input.value=readme:timer\n", limit: 60)
-
-        let lines = (try viewValues(text)["readme"] ?? []).filter { $0.hasPrefix("timer\t") }
-        XCTAssertEqual(lines, ["timer\t![The sheet](\(folder.path)/shot.png)", "timer\t![](/tmp/a.mov)", "timer\t![Web](https://example.com/a.jpg)"])
+        let opened = await app.opened
+        XCTAssertEqual(opened, ["store search pomodoro"])
     }
 }

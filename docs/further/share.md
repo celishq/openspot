@@ -43,8 +43,8 @@ detail = "Stop what listens on a port"
 printf 'item=4120\ntitle=:3000\ndetail=node\n\nitem=812\ntitle=:5432\ndetail=postgres\n'
 ```
 
-Make it executable. The Store draws your card from it, and Try shows your sheet with it, so people see your spot
-before they add it. When you publish, Openspot keeps what it printed in `sample.frame`, so a store can show it without
+Make it executable. Try on your spot's page in the Store shows your sheet with it, so people see your spot before they
+add it. When you publish, Openspot keeps what it printed in `sample.frame`, so a store can show it without
 running your code.
 
 ## Share it
@@ -65,8 +65,7 @@ message. The first time, Openspot opens Account, so you can make one.
 - A shared spot holds 25 MB at most. A bigger one fails to share and says so.
 - Your files go as they are, so check them for secrets first.
 
-To put your spot in your own Store instead, press Publish on its card in the Store. Publish needs `readme.md`, and
-signs a release the same way.
+To offer your spot in the Store instead, put its folder in a folder of spots that your friend adds with Add Source….
 
 ## Add a shared spot
 

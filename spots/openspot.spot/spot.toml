@@ -125,11 +125,14 @@ title = "Store"
 icon = "bag"
 detail = "Get spots"
 keywords = ["store", "get spots"]
+answers = "last"
 uses = ["spots", "account"]
-views = ["store.swift"]
 
 [scripts.store.on]
-"sheet.open" = true
+search = "\\S"
+
+[scripts.store.actions.open]
+title = "Open Store"
 
 [scripts.themes]
 title = "Themes"
