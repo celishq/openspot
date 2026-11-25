@@ -251,15 +251,21 @@ final class SpotEventsTests: SpotRunsCase {
     }
 
     func testWithThePanelClosedTheClipboardIsLookedAtAfterTwiceItsPause() async throws {
+        runs.quit()
+        let quiet = FakeClock()
+        runs = SpotRuns(clock: quiet.value, stopPause: 0.2, clipboardPause: .milliseconds(20))
         menuBar.insert("script")
         try script(toml: "[on]\n\"clipboard.change\" = true", "printf 'text=t\\ntitle=T\\n'")
         _ = try scanned()
-        let start = Date()
 
         runs.listen(to: mac)
-        try await wait("six looks") { self.mac.looks >= 6 }
+        try await wait("the pause of the watch") { quiet.isSleeping(for: 0.04) }
+        let looks = mac.looks
+        quiet.advance(by: 0.02)
+        XCTAssertTrue(quiet.isSleeping(for: 0.02))
+        quiet.advance(by: 0.03)
 
-        XCTAssertGreaterThanOrEqual(Date().timeIntervalSince(start), 0.2)
+        try await wait("the next look") { self.mac.looks == looks + 1 }
     }
 
     func testOpeningThePanelLooksAtTheClipboardAtOnce() async throws {

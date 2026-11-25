@@ -56,8 +56,10 @@ final class SpotDropTests: XCTestCase {
         "n=0; while [ ! -f '\(path("release"))' ] && [ $n -lt 1500 ]; do sleep 0.02; n=$((n + 1)); done"
     }
 
-    private func pause(_ seconds: Double = 0.15) async throws {
-        try await Task.sleep(for: .seconds(seconds))
+    private func ends() -> () -> Int {
+        var count = 0
+        runs.onCall = { _ in count += 1 }
+        return { count }
     }
 
     private func command(drop: [String]) -> Spot {
@@ -196,7 +198,6 @@ final class SpotDropTests: XCTestCase {
 
         XCTAssertTrue(runs.takesDrag("movies"))
 
-        try await pause()
         XCTAssertEqual(runs.sheets["movies"]?.calls.count, 0)
         XCTAssertTrue(frames.frames.isEmpty)
     }
@@ -237,7 +238,6 @@ final class SpotDropTests: XCTestCase {
         XCTAssertFalse(sheet.drop(paths: [file("a.mov"), file("b.txt")]))
         XCTAssertFalse(sheet.drop(paths: []))
 
-        try await pause()
         XCTAssertEqual(log(), [])
         XCTAssertTrue(sheet.calls.isEmpty)
     }
@@ -261,7 +261,6 @@ final class SpotDropTests: XCTestCase {
         let file = file("a.mov")
 
         XCTAssertTrue(sheet.drop(paths: [file]))
-        try await pause()
 
         XCTAssertEqual(log(), ["show", "work"])
         XCTAssertEqual(sheet.calls.map(\.handler), ["work"])
@@ -289,8 +288,7 @@ final class SpotDropTests: XCTestCase {
         XCTAssertTrue(sheet.drop(paths: [first]))
         try await wait("the first drop") { self.log() == ["drop \(first)"] }
         XCTAssertTrue(sheet.drop(paths: [second]))
-        try await pause(0.1)
-        XCTAssertEqual(log(), ["drop \(first)"])
+        XCTAssertEqual(sheet.calls.count, 1)
 
         clock.advance(by: 1)
         sheet.pressCard()
@@ -338,8 +336,6 @@ final class SpotDropTests: XCTestCase {
         XCTAssertTrue(sheet.drop(paths: [first]))
         XCTAssertTrue(sheet.drop(paths: [second]))
         try await wait("the first drop") { self.log() == ["drop \(first)"] }
-        try await pause()
-        XCTAssertEqual(self.log(), ["drop \(first)"])
         XCTAssertEqual(sheet.calls.count, 1)
 
         FileManager.default.createFile(atPath: path("release"), contents: Data())
@@ -364,10 +360,12 @@ final class SpotDropTests: XCTestCase {
     func testQuittingDropsAWaitingDrop() async throws {
         let sheet = try await busySheet()
         XCTAssertTrue(sheet.drop(paths: [file("a.mov")]))
+        let ends = ends()
 
         runs.quit()
-        try await pause(0.25)
+        try await wait("the end of the work") { ends() == 1 }
 
+        XCTAssertTrue(sheet.calls.isEmpty)
         XCTAssertEqual(log(), ["show", "work"])
     }
 

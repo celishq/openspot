@@ -31,6 +31,12 @@ final class SpotRunTests: XCTestCase {
         folder.appendingPathComponent(name).path
     }
 
+    private func ends() throws -> () -> Int {
+        var count = 0
+        try XCTUnwrap(runs.last).onCall = { _ in count += 1 }
+        return { count }
+    }
+
     private func holding(_ body: String, pause: TimeInterval) throws -> SpotRun {
         let url = folder.appendingPathComponent("held.sh")
         try "#!/bin/sh\n\(body)\n".writeScript(to: url)
@@ -320,12 +326,13 @@ final class SpotRunTests: XCTestCase {
     }
 
     func testAClosedSheetDoesNotOpenWhenItsAnswerComes() async throws {
-        let sheet = try holding("printf 'item=a\\ntitle=A\\n'", pause: 0.02)
+        let sheet = try holding("printf 'item=a\\ntitle=A\\n'", pause: 30)
+        let ends = try ends()
         var isOpened = false
 
         sheet.open(waits: true) { isOpened = true }
         sheet.close()
-        try await Task.sleep(for: .milliseconds(300))
+        try await wait("the end of the read") { ends() == 1 }
 
         XCTAssertFalse(isOpened)
     }
@@ -350,10 +357,11 @@ final class SpotRunTests: XCTestCase {
 
         sheet.show(need: .change)
         sheet.show(need: .change)
+        XCTAssertFalse(sheet.calls.isEmpty)
         var lowest = 1
-        for _ in 0..<80 {
+        try await wait("the end of the joined read") {
             lowest = min(lowest, sheet.list.shown.count)
-            try await Task.sleep(for: .milliseconds(10))
+            return sheet.calls.isEmpty
         }
 
         XCTAssertEqual(lowest, 1)
@@ -428,9 +436,8 @@ final class SpotRunTests: XCTestCase {
         let sheet = try make("touch '\(path("started"))'", mode: .stay, triggers: .panel)
 
         sheet.show()
-        try await Task.sleep(for: .milliseconds(150))
 
-        XCTAssertFalse(placed(at: path("started")))
+        XCTAssertEqual(runs.last?.processes.isEmpty, true)
     }
 
     func testClosingEndsAStayingScriptAndTheNextOpenStartsAfresh() async throws {
@@ -590,7 +597,6 @@ final class SpotRunTests: XCTestCase {
         sheet.close()
 
         sheet.open {}
-        try await Task.sleep(for: .milliseconds(100))
 
         XCTAssertEqual(sheet.list.query, "rep")
         XCTAssertEqual(sheet.list.shown.map(\.title), ["rep"])

@@ -111,8 +111,7 @@ final class SpotRunsCallTests: SpotRunsCase {
         runs.panelOpened()
         runs.opening.moving = "script"
         sheet.open {}
-        try await allEnded()
-        try await pause(0.2)
+        try await wait("the frame at the hold") { self.runs.opening.waitingFrames == 1 }
 
         XCTAssertEqual(sheet.list.shown.count, 0)
         runs.opening.moving = nil
@@ -144,8 +143,7 @@ final class SpotRunsCallTests: SpotRunsCase {
         runs.panelOpened()
         runs.opening.moving = "script"
         sheet.open {}
-        try await allEnded()
-        try await pause(0.2)
+        try await wait("the frame at the hold") { self.runs.opening.waitingFrames == 1 }
 
         XCTAssertNil(sheet.panel)
         XCTAssertFalse(sheet.isWaiting)
@@ -160,6 +158,7 @@ final class SpotRunsCallTests: SpotRunsCase {
         runs = SpotRuns(opening: SheetOpening(motionLength: 30), stopPause: 0.2)
         try script(toml: "", "printf 'frame=\\nclass=gap-part\\n\\ntext=a\\ntitle=A\\n'")
         let sheet = try sheet()
+        let ends = ends()
         runs.panelOpened()
         runs.opening.moving = "script"
         sheet.open {}
@@ -167,8 +166,7 @@ final class SpotRunsCallTests: SpotRunsCase {
 
         runs.panelClosed()
         runs.opening.moving = nil
-        try await allEnded()
-        try await pause(0.2)
+        try await wait("the end of the read") { ends() == 1 }
 
         XCTAssertNil(sheet.panel)
         XCTAssertFalse(sheet.isWaiting)
@@ -250,14 +248,14 @@ final class SpotRunsCallTests: SpotRunsCase {
         printf 'item=a\\ntitle=A\\n'
         """)
         let sheet = try sheet()
+        let ends = ends()
         sheet.open {}
         try await wait("the row") { sheet.list.shown.count == 1 && sheet.calls.isEmpty }
         sheet.show(need: .change)
         XCTAssertFalse(sheet.calls.isEmpty)
 
         sheet.close()
-        try await wait("the end of the read") { sheet.calls.isEmpty }
-        try await pause(0.1)
+        try await wait("the end of the read") { sheet.calls.isEmpty && ends() == 2 }
 
         XCTAssertEqual(sheet.list.shown.count, 1)
         XCTAssertFalse(sheet.list.hasFailed)
@@ -471,5 +469,11 @@ final class SpotRunsCallTests: SpotRunsCase {
         XCTAssertEqual(try String(contentsOfFile: path("count"), encoding: .utf8), "1")
         let got = try String(contentsOfFile: path("got"), encoding: .utf8)
         XCTAssertEqual(TextBlock.blocks(in: got).first?.value("input.input"), Self.big)
+    }
+
+    private func ends() -> () -> Int {
+        var count = 0
+        runs.onCall = { _ in count += 1 }
+        return { count }
     }
 }

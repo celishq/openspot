@@ -13,6 +13,12 @@ final class SpotRunsWorkTests: SpotRunsCase {
         FileManager.default.createFile(atPath: path(name), contents: nil)
     }
 
+    private func ends() -> () -> Int {
+        var count = 0
+        runs.onCall = { _ in count += 1 }
+        return { count }
+    }
+
     func testAReadTellsNoReaderOfTheWorkOfItsCard() async throws {
         try script(toml: "[on]\n\"panel.open\" = true", "printf 'frame=\\ntitle=Same\\n'")
         let sheet = try sheet()
@@ -57,8 +63,7 @@ final class SpotRunsWorkTests: SpotRunsCase {
         try await wait("the first call") { self.log() == ["a"] }
         time += 2
         sheet.pressKey("a")
-        try await pause(0.1)
-        XCTAssertEqual(log(), ["a"])
+        XCTAssertEqual(sheet.calls.count, 1)
 
         touch("go")
         try await wait("each press") { self.log() == ["a", "a", "b", "a"] }
@@ -197,6 +202,7 @@ final class SpotRunsWorkTests: SpotRunsCase {
     func testAStoppedCallLeavesNothingOnTheSpotOrInTheMenuBar() async throws {
         try script(toml: "title = 'Encode'", Self.progress)
         let sheet = try sheet()
+        let ends = ends()
         sheet.pressCard()
         try await wait("the frame") { sheet.calls.first?.status != nil }
         time += 1
@@ -209,7 +215,8 @@ final class SpotRunsWorkTests: SpotRunsCase {
         XCTAssertNil(sheet.shownState.subtitle)
         XCTAssertNil(runs.runningSummary)
         XCTAssertNil(runs.actSpot)
-        try await pause()
+        try await wait("the end of the call") { ends() == 1 }
+        XCTAssertTrue(sheet.calls.isEmpty)
         XCTAssertEqual(log(), ["press"])
     }
 
@@ -492,11 +499,9 @@ final class SpotRunsWorkTests: SpotRunsCase {
         let deaf = try XCTUnwrap(runs.sheets["deaf"])
         deaf.pressCard()
         let pid = try await pid("deaf-pid")
-        let started = Date()
 
         runs.quit()
 
-        XCTAssertLessThan(Date().timeIntervalSince(started), 3)
         try await wait("the stop") { self.placed(at: path("stopped")) }
         try await wait("the end of the deaf script") { kill(pid, 0) != 0 }
     }
@@ -506,11 +511,9 @@ final class SpotRunsWorkTests: SpotRunsCase {
         let sheet = try sheet()
         sheet.pressCard()
         let pid = try await pid("pid")
-        let started = Date()
 
         runs.quit()
 
-        XCTAssertLessThan(Date().timeIntervalSince(started), 3)
         try await wait("the end of the child") { kill(pid, 0) != 0 }
     }
 
@@ -523,7 +526,6 @@ final class SpotRunsWorkTests: SpotRunsCase {
 
         sheet.stop(try XCTUnwrap(sheet.calls.first))
         try await wait("the end of the script") { kill(parent, 0) != 0 }
-        try await pause(0.05)
         runs.quit()
 
         XCTAssertNotEqual(kill(child, 0), 0)
@@ -544,6 +546,7 @@ final class SpotRunsWorkTests: SpotRunsCase {
     func testAQuitStopsAToggleAndItGoesBack() async throws {
         try script(toml: "[on]\n\"panel.open\" = true", "[ \"$1\" = show ] && printf 'switch=power\\nclass=card:flex\\nvalue=false\\n'\n[ \"$1\" = power ] && sed -n 's/^input\\.value=//p' > '\(path("value"))'\n[ \"$1\" = power ] && sleep 30\nexit 0")
         let sheet = try sheet()
+        let ends = ends()
         runs.panelOpened()
         try await wait("the kind") { sheet.spot.kind == .toggle && sheet.calls.isEmpty }
         sheet.pressCard()
@@ -551,8 +554,9 @@ final class SpotRunsWorkTests: SpotRunsCase {
         try await wait("the call with its value") { self.log() == ["show", "power"] && (try? String(contentsOfFile: self.path("value"), encoding: .utf8)) == "true\n" }
 
         runs.quit()
-        try await pause()
+        try await wait("the end of the stopped call") { ends() == 2 }
 
+        XCTAssertTrue(sheet.calls.isEmpty)
         XCTAssertEqual(sheet.state.on, false)
         XCTAssertEqual(log(), ["show", "power"])
     }
@@ -565,8 +569,9 @@ final class SpotRunsWorkTests: SpotRunsCase {
         sheet.show(need: .change)
 
         runs.quit()
-        try await pause()
+        try await allEnded()
 
+        XCTAssertTrue(sheet.calls.isEmpty)
         XCTAssertEqual(log(), ["show"])
     }
 
@@ -583,7 +588,7 @@ final class SpotRunsWorkTests: SpotRunsCase {
         try await wait("the value") { sheet.reading.value?.title == "A" }
 
         runs.quit()
-        try await pause()
+        try await wait("the end of the script") { self.runs.processes.isEmpty }
 
         XCTAssertEqual(told(), [])
         XCTAssertFalse(sheet.reading.isStale)

@@ -285,8 +285,10 @@ final class SpotRunStateTests: XCTestCase {
         sheet.pressCard()
 
         try await wait("the pause of the work") { self.clock.sleepCount >= 1 }
-        await Task.yield()
         XCTAssertEqual(clock.sleepCount, 1)
+        XCTAssertFalse(runs.clockWatch.isWaiting)
+        XCTAssertFalse(runs.timerWatch.isWaiting)
+        XCTAssertFalse(runs.scheduleWatch.isWaiting)
     }
 
     func testAPanelOpenLooksAtTheClockOnce() async throws {
@@ -405,9 +407,8 @@ final class SpotRunStateTests: XCTestCase {
         clock.advance(by: 1.5)
 
         sheet.pressCard()
-        try await wait("the new stop pause") { self.clock.isSleeping(for: 2) }
+        try await wait("the new stop pause alone") { self.clock.isSleeping(for: 2) && !self.clock.isSleeping(for: 0.5) }
         clock.advance(by: 1)
-        await Task.yield()
         XCTAssertEqual(sheet.calls.count, 1)
         clock.advance(by: 1)
 

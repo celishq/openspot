@@ -48,7 +48,7 @@ final class SpotUsesTests: SpotRunsCase {
         try await press()
         try await wait("the toast") { !self.toasts.isEmpty }
         try await press()
-        try await pause()
+        try await wait("the second use counted") { self.runs.usage.counts["script"]?.calls.values.reduce(0, +) == 2 }
 
         XCTAssertEqual(toasts, ["Script read the settings of each spot without `spots` in the `uses` of its spot.toml. Add it to stop this note."])
         time += 24 * 60 * 60
@@ -76,7 +76,6 @@ final class SpotUsesTests: SpotRunsCase {
 
         try shell.run()
         try await wait("the end of the call") { !shell.isRunning }
-        try await pause()
 
         XCTAssertEqual(toasts, [])
     }
