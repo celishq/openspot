@@ -8,8 +8,8 @@ extension SpotType {
     static let settingsUse = Font.system(size: 12, design: .monospaced)
     static let settingsTick = Font.system(size: 11, weight: .bold)
     static let settingsNumber = Font.system(size: 12, weight: .semibold)
-    static let settingsTitle = Font.title2.weight(.semibold)
-    static let settingsHeader = Font.title3.weight(.semibold)
+    static let settingsTitle = Font.largeTitle.weight(.bold)
+    static let settingsHeader = Font.largeTitle.weight(.bold)
     static let settingsPageTitle = Font.system(size: 15, weight: .semibold)
     static let settingsTileShare: CGFloat = 0.52
     static let settingsSymbolShare: CGFloat = 0.5

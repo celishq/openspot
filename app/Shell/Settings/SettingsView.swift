@@ -8,6 +8,7 @@ struct SettingsView: View {
     @State var isAboutShown = false
     @State var drafts: [String: String] = [:]
     @State var step: SettingsAccountSheet.Step?
+    @State private var isTitleShown = false
     @FocusState private var isListening: Bool
     @Environment(\.colorScheme) var scheme
 
@@ -34,6 +35,9 @@ struct SettingsView: View {
                         .padding(SpotTokens.settingsPagePadding)
                         .frame(maxWidth: .infinity, alignment: .leading)
                     }
+                    .onScrollGeometryChange(for: Bool.self, of: { $0.contentOffset.y + $0.contentInsets.top > SpotTokens.settingsTitleReveal }, action: { _, isPast in
+                        withAnimation(SpotMotion.fade(isShown: isPast)) { isTitleShown = isPast }
+                    })
                     .onChange(of: book.target) {
                         guard let target = book.target else { return }
                         proxy.scrollTo(target, anchor: .center)
@@ -59,6 +63,8 @@ struct SettingsView: View {
                 Text(book.title)
                     .font(SpotType.settingsPageTitle)
                     .lineLimit(1)
+                    .opacity(isTitleShown ? 1 : MotionTokens.hiddenOpacity)
+                    .allowsHitTesting(isTitleShown)
             }
             .sharedBackgroundVisibility(.hidden)
         }

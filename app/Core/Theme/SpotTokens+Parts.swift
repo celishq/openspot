@@ -191,10 +191,11 @@ extension SpotTokens {
     public static let settingsWindowSize = CGSize(width: 880, height: 620)
     public static let settingsWindowMinSize = CGSize(width: 680, height: 460)
     public static let settingsSidebarMin: CGFloat = 200
-    public static let settingsSidebarIdeal: CGFloat = 220
-    public static let settingsSidebarMax: CGFloat = 280
+    public static let settingsSidebarIdeal: CGFloat = 240
+    public static let settingsSidebarMax: CGFloat = 320
     public static let settingsPagePadding: CGFloat = 24
     public static let settingsPageGap: CGFloat = 22
+    public static let settingsTitleReveal: CGFloat = 36
     public static let settingsSectionTile: CGFloat = 20
     public static let settingsRowTile: CGFloat = 28
     public static let settingsHeaderTile: CGFloat = 52
