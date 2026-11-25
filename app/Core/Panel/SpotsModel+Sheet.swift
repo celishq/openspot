@@ -103,7 +103,7 @@ extension SpotsModel {
     public func openSettings(at place: String? = nil) -> Bool {
         asOnePress {
             guard let settings = settingsSpot else { return false }
-            sheets[settings]?.destination = place
+            runs.landings[settings] = place
             openWindow(settings)
             return true
         }

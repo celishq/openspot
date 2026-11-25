@@ -251,7 +251,10 @@ public final class SpotRun {
     @ObservationIgnored var showsAgain = false
     @ObservationIgnored var sheetAgain = false
     @ObservationIgnored var eventAgain: ShowEvent?
-    @ObservationIgnored var destination: String?
+    var destination: String? {
+        get { runs.landings[spot.id] }
+        set { runs.landings[spot.id] = newValue }
+    }
     @ObservationIgnored var pauses: [String: Task<Void, Never>] = [:]
     @ObservationIgnored var editing: String?
     @ObservationIgnored var typed: String?

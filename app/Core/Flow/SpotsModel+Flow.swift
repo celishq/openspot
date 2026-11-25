@@ -3,7 +3,7 @@ import Foundation
 extension SpotsModel {
     @discardableResult
     public func open(_ id: String, at destination: String? = nil) -> Bool {
-        if let destination { sheets[id]?.destination = destination }
+        if let destination { runs.landings[id] = destination }
         return open(FlowSheet(spot: id))
     }
 
