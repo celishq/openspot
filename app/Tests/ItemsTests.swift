@@ -241,6 +241,19 @@ final class ItemsTests: PanelCase {
         XCTAssertEqual(host.dismissals, 1)
     }
 
+    func testAnActionOfTheMenuSendsItsCallWithinThePress() async throws {
+        try await open("button=star\ntitle=Star\nclose=false\n\nbutton=delete\ntitle=Delete\n\nitem=a\ntitle=A\n")
+        let entry = try XCTUnwrap(model.openEntry)
+        let actions = entry.spot.frameActions
+        let sheet = try XCTUnwrap(model.runs.sheets["items"])
+
+        for (id, place) in [("star", SheetPlace.panel), ("delete", .panel), ("star", .float)] {
+            try await wait("no call") { sheet.calls.isEmpty }
+            model.run(try XCTUnwrap(actions.first { $0.id == id }), on: (entry, try item("a")), in: place)
+            XCTAssertTrue(sheet.calls.contains(where: \.isAct), "\(id) in \(place)")
+        }
+    }
+
     func testASwitchItemSendsItsIDAndItsNextValue() async throws {
         try await open("switch=sync\ntitle=Sync\nvalue=true\nclose=false\n\nswitch=wifi\ntitle=Wi-Fi\nclose=false\n")
         let entry = try XCTUnwrap(model.openEntry)

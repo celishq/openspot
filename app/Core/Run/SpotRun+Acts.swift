@@ -144,6 +144,10 @@ extension SpotRun {
         await answer(toPress: acting(action, item: item), closes: closes)
     }
 
+    public func answer(to action: CommandAction, item: SpotItem?, closes: Bool = false, then answered: @escaping @MainActor (CallAnswer) -> Void) {
+        press(acting(action, item: item), closes: closes, then: answered)
+    }
+
     private func answer(toPress message: Message, closes: Bool = false) async -> CallAnswer {
         await withCheckedContinuation { waiting in
             press(message, closes: closes) { waiting.resume(returning: $0) }

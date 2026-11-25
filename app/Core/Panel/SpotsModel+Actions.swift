@@ -97,8 +97,8 @@ extension SpotsModel {
             } else if asks {
                 press(target.entry.id)
             } else if target.entry.spot.takesHandlers, let sheet = sheets[target.entry.id] {
-                Task { [weak self] in
-                    guard case .form = await sheet.answer(to: action, item: target.item), let self else { return }
+                sheet.answer(to: action, item: target.item) { [weak self] answer in
+                    guard case .form = answer, let self else { return }
                     if place == .window { toast(.failure("\(action.title) asks with a form, which a window does not show yet.")) } else { press(target.entry.id) }
                 }
             } else {
@@ -128,8 +128,8 @@ extension SpotsModel {
             sheets[target.entry.id]?.run(action, item: target.item)
             return
         }
-        Task { [weak self] in
-            guard case .form(let form) = await sheet.answer(to: action, item: target.item, closes: closes), let self, isShown else { return }
+        sheet.answer(to: action, item: target.item, closes: closes) { [weak self] answer in
+            guard case .form(let form) = answer, let self, isShown else { return }
             show(.form(form), of: action, on: target, prefill: "")
         }
     }
