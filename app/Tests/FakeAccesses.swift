@@ -3,10 +3,10 @@ import Foundation
 
 final class FakeAccesses: MacAccesses, @unchecked Sendable {
     private let lock = NSLock()
-    private var statusValues: [MacAccess: ReadAccess]
+    private var statusValues: [MacAccess: AccessStatus]
     private var readValues: [MacAccess] = []
 
-    init(_ statuses: [MacAccess: ReadAccess] = [:]) {
+    init(_ statuses: [MacAccess: AccessStatus] = [:]) {
         statusValues = statuses
     }
 
@@ -19,11 +19,11 @@ final class FakeAccesses: MacAccesses, @unchecked Sendable {
         lock.withLock { askValues.append(access) }
     }
 
-    func set(_ access: MacAccess, to status: ReadAccess) {
+    func set(_ access: MacAccess, to status: AccessStatus) {
         lock.withLock { statusValues[access] = status }
     }
 
-    func status(of access: MacAccess) async -> ReadAccess {
+    func status(of access: MacAccess) async -> AccessStatus {
         lock.withLock {
             readValues.append(access)
             return statusValues[access] ?? .allowed

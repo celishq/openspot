@@ -2,27 +2,27 @@ import Foundation
 
 final class KeptAccess: @unchecked Sendable {
     private let lock = NSLock()
-    private var kept: [MacAccess: ReadAccess] = [:]
+    private var kept: [MacAccess: AccessStatus] = [:]
 
-    var statuses: [MacAccess: ReadAccess] {
+    var statuses: [MacAccess: AccessStatus] {
         lock.withLock { kept }
     }
 
-    func read(from mac: Mac, browsers: [Browser]) async -> (statuses: [MacAccess: ReadAccess], apps: [TextBlock]) {
+    func read(from mac: Mac, browsers: [Browser]) async -> (statuses: [MacAccess: AccessStatus], apps: [TextBlock]) {
         var apps: [TextBlock] = []
         if let reads = mac.reads { apps = await ReadSources(mac: reads).access(browsers: browsers) }
         return (await read(MacAccess.allCases, from: mac, apps: apps), apps)
     }
 
-    func read(_ accesses: [MacAccess], from mac: Mac, browsers: [Browser]) async -> [MacAccess: ReadAccess] {
+    func read(_ accesses: [MacAccess], from mac: Mac, browsers: [Browser]) async -> [MacAccess: AccessStatus] {
         var apps: [TextBlock] = []
         if accesses.contains(.automation), let reads = mac.reads { apps = await ReadSources(mac: reads).access(browsers: browsers) }
         return await read(accesses, from: mac, apps: apps)
     }
 
-    private func read(_ accesses: [MacAccess], from mac: Mac, apps: [TextBlock]) async -> [MacAccess: ReadAccess] {
-        let automation = apps.filter { $0.value("app") != ReadSources.accessibility }.compactMap { $0.value("access").flatMap(ReadAccess.init) }
-        var read: [MacAccess: ReadAccess] = [:]
+    private func read(_ accesses: [MacAccess], from mac: Mac, apps: [TextBlock]) async -> [MacAccess: AccessStatus] {
+        let automation = apps.filter { $0.value("app") != ReadSources.accessibility }.compactMap { $0.value("access").flatMap(AccessStatus.init) }
+        var read: [MacAccess: AccessStatus] = [:]
         for access in accesses {
             read[access] = switch access {
             case .automation: Self.joined(automation)
@@ -35,7 +35,7 @@ final class KeptAccess: @unchecked Sendable {
         return read
     }
 
-    private static func joined(_ apps: [ReadAccess]) -> ReadAccess {
+    private static func joined(_ apps: [AccessStatus]) -> AccessStatus {
         [.denied, .unasked, .allowed].first(where: apps.contains) ?? .unknown
     }
 }

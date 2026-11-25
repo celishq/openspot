@@ -89,7 +89,7 @@ struct SpotList {
     let folder: SpotsFolder
     let config: Config
     let scan: Result<ScanResult, Error>
-    var statuses: [MacAccess: ReadAccess] = [:]
+    var statuses: [MacAccess: AccessStatus] = [:]
     var apps: [TextBlock] = []
     var lastUses: [String: [String: Date]] = [:]
     var refused: [String: [SpotUse: Date]] = [:]

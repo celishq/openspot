@@ -8,7 +8,7 @@ import OpenspotCore
 import ServiceManagement
 
 struct SpotAccesses: MacAccesses {
-    func status(of access: MacAccess) async -> ReadAccess {
+    func status(of access: MacAccess) async -> AccessStatus {
         switch access {
         case .accessibility: AXIsProcessTrusted() ? .allowed : .unasked
         case .automation: .unknown
@@ -50,7 +50,7 @@ struct SpotAccesses: MacAccesses {
         if let pane = access.pane { NSWorkspace.shared.open(pane) }
     }
 
-    private static func status(of entity: EKEntityType) -> ReadAccess {
+    private static func status(of entity: EKEntityType) -> AccessStatus {
         switch EKEventStore.authorizationStatus(for: entity) {
         case .fullAccess: .allowed
         case .notDetermined: .unasked
@@ -58,7 +58,7 @@ struct SpotAccesses: MacAccesses {
         }
     }
 
-    private static func status(of media: AVMediaType) -> ReadAccess {
+    private static func status(of media: AVMediaType) -> AccessStatus {
         switch AVCaptureDevice.authorizationStatus(for: media) {
         case .authorized: .allowed
         case .notDetermined: .unasked
@@ -66,7 +66,7 @@ struct SpotAccesses: MacAccesses {
         }
     }
 
-    private static func input() -> ReadAccess {
+    private static func input() -> AccessStatus {
         switch IOHIDCheckAccess(kIOHIDRequestTypeListenEvent) {
         case kIOHIDAccessTypeGranted: .allowed
         case kIOHIDAccessTypeDenied: .denied
@@ -74,7 +74,7 @@ struct SpotAccesses: MacAccesses {
         }
     }
 
-    private static func helper() -> ReadAccess {
+    private static func helper() -> AccessStatus {
         guard let daemon = PowerDaemon.readForApp() else { return .unknown }
         return switch SMAppService.daemon(plistName: daemon.plist).status {
         case .enabled: .allowed

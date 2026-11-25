@@ -60,7 +60,7 @@ extension SpotTheme {
         }
     }
 
-    static func settings(_ status: ReadAccess) -> Color {
+    static func settings(_ status: AccessStatus) -> Color {
         switch status {
         case .denied: .red
         case .unasked: .orange

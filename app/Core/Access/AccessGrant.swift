@@ -33,7 +33,7 @@ public struct AccessGrant: Equatable, Sendable {
         [spot] + steps.map(\.rawValue)
     }
 
-    public mutating func take(_ statuses: [MacAccess: ReadAccess]) {
+    public mutating func take(_ statuses: [MacAccess: AccessStatus]) {
         done.formUnion(steps.filter { statuses[$0] == .allowed })
     }
 

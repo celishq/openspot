@@ -40,7 +40,7 @@ extension SpotsModel {
         return true
     }
 
-    func take(_ statuses: [MacAccess: ReadAccess]) {
+    func take(_ statuses: [MacAccess: AccessStatus]) {
         guard var next = grant else { return }
         next.take(statuses)
         guard next != grant else { return }

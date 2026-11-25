@@ -58,7 +58,7 @@ extension SettingsView {
         }
     }
 
-    private func useLine(_ use: SpotStanding.Use) -> some View {
+    private func useLine(_ use: SpotStanding.UseNeeds) -> some View {
         let accesses = use.needs.compactMap(book.access.access)
         let first = accesses.first
         return HStack(spacing: SpotTokens.settingsRowGap) {

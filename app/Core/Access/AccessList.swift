@@ -3,7 +3,7 @@ import Foundation
 public struct AccessList: Equatable, Sendable {
     public struct Entry: Identifiable, Equatable, Sendable {
         public let id: MacAccess
-        public let status: ReadAccess
+        public let status: AccessStatus
         public let spots: [String]
         public let maybe: [String]
 
@@ -14,7 +14,7 @@ public struct AccessList: Equatable, Sendable {
 
     public let entries: [Entry]
 
-    init(statuses: [MacAccess: ReadAccess], standings: [SpotStanding]) {
+    init(statuses: [MacAccess: AccessStatus], standings: [SpotStanding]) {
         entries = MacAccess.allCases.map { access in
             Entry(
                 id: access, status: statuses[access] ?? .unknown,

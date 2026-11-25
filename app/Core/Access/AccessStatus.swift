@@ -1,6 +1,6 @@
 import Foundation
 
-public enum ReadAccess: String, Sendable {
+public enum AccessStatus: String, Sendable {
     case allowed, denied, unasked, unknown
 
     public var word: String {

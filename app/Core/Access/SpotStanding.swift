@@ -1,7 +1,7 @@
 import Foundation
 
 public struct SpotStanding: Identifiable, Equatable, Sendable {
-    public struct Use: Identifiable, Equatable, Sendable {
+    public struct UseNeeds: Identifiable, Equatable, Sendable {
         public let id: SpotUse
         public let needs: [MacAccess]
         public let maybe: [MacAccess]
@@ -15,15 +15,15 @@ public struct SpotStanding: Identifiable, Equatable, Sendable {
     public let id: String
     public let spot: Spot
     public let readiness: SpotReadiness
-    public let uses: [Use]
+    public let uses: [UseNeeds]
     public let missing: [MacAccess]
     public let refused: [SpotUse]
     let needs: Set<MacAccess>
     let maybe: Set<MacAccess>
-    let byUse: [Use]
+    let byUse: [UseNeeds]
     let last: [SpotUse: Date]
 
-    init(_ spot: Spot, id: String? = nil, isOn: Bool = true, statuses: [MacAccess: ReadAccess], last: [String: Date], refused: [SpotUse: Date]) {
+    init(_ spot: Spot, id: String? = nil, isOn: Bool = true, statuses: [MacAccess: AccessStatus], last: [String: Date], refused: [SpotUse: Date]) {
         let calls = KeptCalls.shared.read(spot) + last.keys.map { $0.split(separator: " ").map(String.init) }
         let rules = calls.compactMap { CommandLineCall.looseRule(of: $0, spot: spot.id)?.rule }
         let ordered = { (set: Set<MacAccess>) in MacAccess.allCases.filter(set.contains) }
@@ -35,12 +35,12 @@ public struct SpotStanding: Identifiable, Equatable, Sendable {
             let kept = found[use] ?? ([], [])
             found[use] = (kept.needs.union(rule.needs), kept.maybe.union(rule.mayNeed))
         }
-        let byUse = found.map { use, accesses in Use(id: use, needs: ordered(accesses.needs), maybe: ordered(accesses.maybe.subtracting(accesses.needs))) }
+        let byUse = found.map { use, accesses in UseNeeds(id: use, needs: ordered(accesses.needs), maybe: ordered(accesses.maybe.subtracting(accesses.needs))) }
         let declared = spot.uses.sorted { $0.rawValue < $1.rawValue }
         self.id = id ?? spot.id
         self.spot = spot
         self.byUse = byUse.sorted { $0.id.rawValue < $1.id.rawValue }
-        uses = declared.map { use in byUse.first { $0.id == use } ?? Use(id: use, needs: [], maybe: []) }
+        uses = declared.map { use in byUse.first { $0.id == use } ?? UseNeeds(id: use, needs: [], maybe: []) }
         let needs = needs
         let missing = MacAccess.allCases.filter { needs.contains($0) && [.denied, .unasked].contains(statuses[$0] ?? .unknown) }
         let undeclared = SpotUse.allCases.filter { refused[$0] != nil && !spot.uses.contains($0) }

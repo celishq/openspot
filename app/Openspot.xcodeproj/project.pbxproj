@@ -157,7 +157,6 @@
 		2071303C2B913DFEF8902187 /* ColorCall.swift in Sources */ = {isa = PBXBuildFile; fileRef = C453BCE620D31DE869C4446B /* ColorCall.swift */; };
 		2084F96C3A1CB7E9A550257D /* FakeReminders.swift in Sources */ = {isa = PBXBuildFile; fileRef = D3474D5A34A4F16393629F6F /* FakeReminders.swift */; };
 		20C595D08A6C0DCB45DC58EC /* RemindersTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 92A4BCB2AF5BC515EE265370 /* RemindersTests.swift */; };
-		20FCA4F5BD4869E40F812AC9 /* ReadAccess.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4056FE196CF45889E3264FE3 /* ReadAccess.swift */; };
 		2128D97AE61D28977C35A9C1 /* SpotPlacement.swift in Sources */ = {isa = PBXBuildFile; fileRef = 55281667DA5D266778D3B00C /* SpotPlacement.swift */; };
 		2129521F4878616F35A2FFD7 /* ConfettiSpotTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 457BDE565E8FABFB95747207 /* ConfettiSpotTests.swift */; };
 		21B54DDB386F106835480186 /* CardTreeView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 208C81E9E0EB7A4E13145C98 /* CardTreeView.swift */; };
@@ -558,6 +557,7 @@
 		7DE6B016D16CA73667C2AF51 /* CommandAction.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0AB65DF81F9CC5F76F8CCA13 /* CommandAction.swift */; };
 		7DF42F1B3CA1426F2DEC5EC1 /* GitRepo.swift in Sources */ = {isa = PBXBuildFile; fileRef = 332ADD014AA39622D3CCB196 /* GitRepo.swift */; };
 		7E15F98A69D15AA3FC202DCF /* PowerCallTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6166CE78629F6275BCE69B74 /* PowerCallTests.swift */; };
+		7E269D8A2FAC238AF98CDF36 /* AccessStatus.swift in Sources */ = {isa = PBXBuildFile; fileRef = E6EB4FB47A69A5F97F09B75B /* AccessStatus.swift */; };
 		7E4CF4DEF9660D8A731F4A0B /* CommandLineCall+Test.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5ABDF1A6D88542249105D14B /* CommandLineCall+Test.swift */; };
 		7E687463FC46649F7F5D5C49 /* SpotWindows.swift in Sources */ = {isa = PBXBuildFile; fileRef = 07FE276A36343F10EAA2BA9F /* SpotWindows.swift */; };
 		7E76A066DF75DCA9DA57384D /* CommandAnswer.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6AC6F4428AD7655F8FA05AEF /* CommandAnswer.swift */; };
@@ -1536,7 +1536,6 @@
 		3F442C00EB92417701FEE471 /* SpotClipboard.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SpotClipboard.swift; sourceTree = "<group>"; };
 		3FCC9F874B325C807A9A62EC /* ActionsSpotTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ActionsSpotTests.swift; sourceTree = "<group>"; };
 		4050BAB98C8B776B37E5F290 /* PlaygroundTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PlaygroundTests.swift; sourceTree = "<group>"; };
-		4056FE196CF45889E3264FE3 /* ReadAccess.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReadAccess.swift; sourceTree = "<group>"; };
 		408EF4FB6D0A14896BE00486 /* Account.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Account.swift; sourceTree = "<group>"; };
 		40C9CBCF57716E77BB3BC0D2 /* StatsLogTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StatsLogTests.swift; sourceTree = "<group>"; };
 		40E457C68F8BB4CB7234147D /* CardAct.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CardAct.swift; sourceTree = "<group>"; };
@@ -2337,6 +2336,7 @@
 		E6574796DA8EE0FC71F50F15 /* SpotSearchText.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SpotSearchText.swift; sourceTree = "<group>"; };
 		E67E13CFE4B49E14BA385775 /* ScreenInput.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScreenInput.swift; sourceTree = "<group>"; };
 		E688C02C9D5208381EF35A4B /* OpenspotPower */ = {isa = PBXFileReference; includeInIndex = 0; path = OpenspotPower; sourceTree = BUILT_PRODUCTS_DIR; };
+		E6EB4FB47A69A5F97F09B75B /* AccessStatus.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AccessStatus.swift; sourceTree = "<group>"; };
 		E6F521395AF805153E4C3013 /* AccessFacts.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AccessFacts.swift; sourceTree = "<group>"; };
 		E726A4D788CE727C98EE6161 /* EditMenu.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EditMenu.swift; sourceTree = "<group>"; };
 		E750EC985BC75D11052E0B76 /* SheetFocusTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SheetFocusTests.swift; sourceTree = "<group>"; };
@@ -2964,7 +2964,6 @@
 				BEED060D3E79FC41AD86B8A6 /* FrontApp.swift */,
 				A769BFF266DBAAC33C71AA84 /* FrontCall.swift */,
 				A09F09A569EB0463A8AE43C4 /* MacReads.swift */,
-				4056FE196CF45889E3264FE3 /* ReadAccess.swift */,
 				B1DDE6398DE8192DE024231B /* ReadRefusal.swift */,
 				8E1FF596D4194B52D993E99D /* ReadSources.swift */,
 				B2E0A06DDEEBF90E281C89A9 /* ReadSources+Call.swift */,
@@ -3661,6 +3660,7 @@
 			children = (
 				D423853BFF8C994B954AB931 /* AccessGrant.swift */,
 				95376C064D8098D70E41A543 /* AccessList.swift */,
+				E6EB4FB47A69A5F97F09B75B /* AccessStatus.swift */,
 				84ABEB781EECC4C3D607C2A1 /* KeptAccess.swift */,
 				86873C9715F7692B486150B0 /* KeptCalls.swift */,
 				85366F1DE5D75FB2E6938DC9 /* MacAccess.swift */,
@@ -4811,6 +4811,7 @@
 				B8E3A2DD86DA5CEB46576F8E /* AccessFacts.swift in Sources */,
 				88E06BFA06BA39F913CE8F8B /* AccessGrant.swift in Sources */,
 				F07CDB5D520E93747FF5AC40 /* AccessList.swift in Sources */,
+				7E269D8A2FAC238AF98CDF36 /* AccessStatus.swift in Sources */,
 				9242B4FE5CCFB80D32BBBAFA /* Account.swift in Sources */,
 				879C1D2996DF88E3ABCFEC38 /* AccountCall.swift in Sources */,
 				2CDB660E401427CCC3ECA174 /* AccountHandle.swift in Sources */,
@@ -5078,7 +5079,6 @@
 				291BB46E3F11A4DA495F0F15 /* PromptCall.swift in Sources */,
 				3437A2C405435BA87227A167 /* PromptCalls.swift in Sources */,
 				0B087A1B91F03302612D2763 /* PushedRuns.swift in Sources */,
-				20FCA4F5BD4869E40F812AC9 /* ReadAccess.swift in Sources */,
 				31ACA0D3C67C137D168D650A /* ReadRefusal.swift in Sources */,
 				F5FE30871F819730C991CF84 /* ReadSources+Call.swift in Sources */,
 				AE93DCCBB95911BFEA558E37 /* ReadSources.swift in Sources */,

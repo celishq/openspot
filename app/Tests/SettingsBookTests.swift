@@ -302,8 +302,8 @@ final class SettingsBookTests: PanelCase {
     }
 
     func testAUseSaysTheAccessItNeedsAndMayAskFor() {
-        XCTAssertEqual(SpotStanding.Use(id: .screen, needs: [.screen], maybe: [.camera, .microphone]).needsLine, "Needs Screen Recording · May ask for Camera and Microphone")
-        XCTAssertNil(SpotStanding.Use(id: .clipboard, needs: [], maybe: []).needsLine)
+        XCTAssertEqual(SpotStanding.UseNeeds(id: .screen, needs: [.screen], maybe: [.camera, .microphone]).needsLine, "Needs Screen Recording · May ask for Camera and Microphone")
+        XCTAssertNil(SpotStanding.UseNeeds(id: .clipboard, needs: [], maybe: []).needsLine)
     }
 
     func testTheFactsSayWhatAPageShowsSoTheWindowOnlyDrawsIt() async throws {
