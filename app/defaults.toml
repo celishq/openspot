@@ -11,6 +11,7 @@ grid = true
 [[spots]]
 id = "openspot/store"
 size = "wide"
+grid = true
 
 [[spots]]
 id = "apps"

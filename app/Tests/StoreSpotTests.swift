@@ -24,6 +24,12 @@ final class StoreSpotTests: BuiltInCase {
         XCTAssertEqual(Config(text: try String(contentsOf: URL(fileURLWithPath: #filePath).deletingLastPathComponent().deletingLastPathComponent().appendingPathComponent("defaults.toml"), encoding: .utf8)).arrangement.isWindow(of: "openspot/store"), nil)
     }
 
+    func testItsCardIsOnTheGridOfANewMac() throws {
+        let defaults = Config(text: try String(contentsOf: URL(fileURLWithPath: #filePath).deletingLastPathComponent().deletingLastPathComponent().appendingPathComponent("defaults.toml"), encoding: .utf8))
+
+        XCTAssertEqual(defaults.arrangement.isOnGrid(of: "openspot/store"), true)
+    }
+
     func testASearchEndsWithARowThatLooksInTheStore() async throws {
         let spot = try store
 
