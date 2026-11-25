@@ -34,7 +34,10 @@ public struct AttachmentChip: Equatable, Sendable {
     public let app: String?
     public let appName: String?
     public let look: Look
-    public internal(set) var state: State
+    public internal(set) var state: State {
+        didSet { preview = Self.preview(of: self) }
+    }
+    public private(set) var preview: AttachmentPreview?
     public internal(set) var showsKind = false
 
     public init(source: String, app: String?, appName: String? = nil, look: Look, state: State) {
@@ -43,6 +46,11 @@ public struct AttachmentChip: Equatable, Sendable {
         self.appName = appName
         self.look = look
         self.state = state
+        preview = Self.preview(of: self)
+    }
+
+    private static func preview(of chip: AttachmentChip) -> AttachmentPreview? {
+        chip.value.map { AttachmentPreview($0) } ?? AttachmentPreview(state: chip)
     }
 
     public var value: AttachmentValue? {

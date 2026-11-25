@@ -264,18 +264,16 @@ final class AttachmentStateTests: AttachmentCase {
         XCTAssertEqual(shown, ["save"])
     }
 
-    func testTypingInTheAttachmentFitsTheActionsAndBuildsThePreviewOnlyAtTab() async throws {
+    func testTypingInTheAttachmentFitsTheActionsAndKeepsThePreview() async throws {
         try await openWithTab(takers: ["keep", "save"])
         XCTAssertTrue(model.handleKey(tab))
         let fits = model.commands.fits
-        let builds = model.previewBuilds
 
         for text in ["s", "sa", "sav"] {
             model.search(text)
         }
 
         XCTAssertEqual(model.commands.fits, fits)
-        XCTAssertEqual(model.previewBuilds, builds)
         XCTAssertEqual(shown, ["save"])
         XCTAssertEqual(model.preview?.text, "A")
     }

@@ -197,16 +197,7 @@ extension SpotsModel {
     func shownPreview(of query: String, in stack: AttachmentStack? = nil) -> AttachmentPreview? {
         let stack = stack ?? attachments
         guard showsAttachment(of: query, in: stack), let chip = stack.selectedChip, entry(chip.source) != nil else { return nil }
-        return takeChipPreview(of: chip)
-    }
-
-    @discardableResult
-    func takeChipPreview(of chip: AttachmentChip?) -> AttachmentPreview? {
-        guard chip != chipPreviewSource else { return chipPreview }
-        previewBuilds += 1
-        chipPreviewSource = chip
-        chipPreview = chip.flatMap { chip in chip.value.map { AttachmentPreview($0) } ?? AttachmentPreview(state: chip) }
-        return chipPreview
+        return chip.preview
     }
 
     static func room(of preview: AttachmentPreview?) -> CGFloat {
