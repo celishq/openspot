@@ -14,12 +14,14 @@ final class SpotSelectAllTrace: NSObject {
     private var link: CADisplayLink?
     private var start: CFTimeInterval = 0
     private var turnStart: CFTimeInterval = 0
-    private var turnHadKey = false
+    var turnHadKey = false
     var depth: [String] = []
     private var keyFrame = 0
     private var selectTurnEnd: CFTimeInterval?
     private var observer: CFRunLoopObserver?
     var layouts = 0
+    var inLayout = false
+    var stacks = 0
 
     init(model: SpotsModel, panel: NSPanel, finish: @escaping (String) -> Void) {
         self.model = model
@@ -47,7 +49,7 @@ final class SpotSelectAllTrace: NSObject {
         log("first responder \(type(of: panel.firstResponder as Any)), key \(panel.isKeyWindow), text '\(model.searchText)'")
         let plan: [(String, [Step])] = (0..<4).flatMap { index -> [(String, [Step])] in
             let code: CGKeyCode = index % 2 == 0 ? 11 : 8
-            return [("pause", [.type(code), .wait(0.6), .selectAll, .wait(0.6)]), ("burst", [.type(code), .selectAll, .wait(0.6)])]
+            return [("pause", [.type(code), .wait(0.6), .mark("second letter"), .type(code), .wait(0.6), .selectAll, .wait(0.6)]), ("burst", [.type(code), .selectAll, .wait(0.6)])]
         }
         play(plan.flatMap { name, steps in [.mark(name), .clear, .wait(0.6)] + steps })
     }
@@ -131,8 +133,34 @@ final class SpotSelectAllTrace: NSObject {
                     if let trace = SpotSelectAllTrace.current, view === trace.panel.contentView {
                         trace.layouts += 1
                         if !trace.depth.isEmpty { trace.log("panel layout inside \(trace.depth.joined(separator: " > "))") }
+                        if trace.turnHadKey { trace.log("  layout \(trace.layouts) begins") }
+                        trace.inLayout = true
+                        original(view, #selector(NSView.layout))
+                        trace.inLayout = false
+                        if trace.turnHadKey { trace.log("  layout \(trace.layouts) ends") }
+                        return
                     }
                     original(view, #selector(NSView.layout))
+                }
+            }
+            method_setImplementation(method, imp_implementationWithBlock(block))
+        }
+        typealias SetNeeds = @convention(c) (NSView, Selector, Bool) -> Void
+        let needsSelector = NSSelectorFromString("setNeedsLayout:")
+        if let method = class_getInstanceMethod(NSView.self, needsSelector) {
+            let original = unsafeBitCast(method_getImplementation(method), to: SetNeeds.self)
+            let block: @convention(block) (NSView, Bool) -> Void = { view, flag in
+                MainActor.assumeIsolated {
+                    if flag, let trace = SpotSelectAllTrace.current, trace.turnHadKey, view === trace.panel.contentView, !view.needsLayout {
+                        let stack = Thread.callStackSymbols.joined(separator: "\n")
+                        let cause = stack.contains("configureRenderingSurface") ? "text view adds a fragment subview" : stack.contains("requestUpdate") ? "host requestUpdate block" : stack.contains("setRootView") ? "setRootView" : stack.contains("sendEvent") ? "inside sendEvent" : "other"
+                        trace.log("  setNeedsLayout on panel root, after layout \(trace.layouts), inLayout \(trace.inLayout): \(cause)")
+                        if cause == "other", trace.stacks < 3 {
+                            trace.stacks += 1
+                            for line in Thread.callStackSymbols.prefix(60) { trace.log("    " + line) }
+                        }
+                    }
+                    original(view, needsSelector, flag)
                 }
             }
             method_setImplementation(method, imp_implementationWithBlock(block))
