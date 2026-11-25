@@ -5,10 +5,6 @@ extension SpotsModel {
     static let grantPause: Duration = .seconds(1)
     static let grantTolerance: Duration = .milliseconds(250)
 
-    var settingsSpot: String? {
-        entries.first { $0.spot.edits == .settings && $0.spot.isBuiltIn }?.id
-    }
-
     public func grant(_ spot: String, needs: [MacAccess]) -> Bool {
         !needs.isEmpty && start(AccessGrant(spot: spot, steps: needs))
     }
@@ -21,7 +17,7 @@ extension SpotsModel {
         settingsBook.grant = nil
         keepGrant()
         readWaiting()
-        if let settings = settingsSpot { sheets[settings]?.show(need: .change) }
+        settingsBook.refresh()
     }
 
     public func resumeGrant() async {
@@ -33,7 +29,6 @@ extension SpotsModel {
     }
 
     private func start(_ next: AccessGrant) -> Bool {
-        guard settingsSpot != nil else { return false }
         grantWatch?.cancel()
         grant = next.step == nil ? nil : next
         settingsBook.grant = grant
@@ -51,12 +46,11 @@ extension SpotsModel {
         guard next != grant else { return }
         grant = next
         settingsBook.grant = next
-        let settings = settingsSpot
-        if let settings { host.focusWindow(settings) }
+        host.focusSettings()
         guard next.step != nil else { return endGrant() }
         keepGrant()
         askStep()
-        if let settings { sheets[settings]?.show(need: .change) }
+        settingsBook.refresh()
     }
 
     private func keepGrant() {
@@ -110,7 +104,7 @@ extension SpotsModel {
     }
 
     func openWaiting(_ id: String) -> Bool {
-        guard waiting.contains(id), settingsSpot != nil else { return false }
+        guard waiting.contains(id) else { return false }
         openSettings(at: "spot/\(id)")
         return true
     }

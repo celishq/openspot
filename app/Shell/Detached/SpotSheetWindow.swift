@@ -7,10 +7,11 @@ final class SpotSheetWindow: NSWindow, NSWindowDelegate {
     private var id = ""
     private var isPresent = false
     private var declared: CGSize?
+    private var book: SettingsBook?
 
     override func sendEvent(_ event: NSEvent) {
         if event.type == .keyDown, let key = event.actionKey, !key.isCommand, !textKeeps(key) {
-            if key.name == "escape", !(firstResponder is NSText) { return performClose(nil) }
+            if key.name == "escape", !(firstResponder is NSText), book?.recording == nil { return performClose(nil) }
             if key.name != "escape", let model, model.handleFloatKey(key, in: id) { return }
         }
         super.sendEvent(event)
@@ -36,10 +37,15 @@ final class SpotSheetWindow: NSWindow, NSWindowDelegate {
         makeKey()
     }
 
+    func windowDidBecomeKey(_ notification: Notification) {
+        book?.refresh()
+    }
+
     func windowWillClose(_ notification: Notification) {
         guard isPresent else { return }
         isPresent = false
         AppPresence.close()
+        book?.closed()
         if model?.runs.floating.contains(id) == true { model?.land(id) }
     }
 
@@ -63,7 +69,21 @@ final class SpotSheetWindow: NSWindow, NSWindowDelegate {
         return window
     }
 
-    static func make(remembers: Bool = true, title: String, name: String, size: CGSize = SpotTokens.windowSize, minSize: CGSize = SpotTokens.windowMinSize, content: some View) -> SpotSheetWindow {
+    static func make(settings model: SpotsModel, content: some View) -> SpotSheetWindow {
+        let size = WindowSize.settings
+        let window = make(remembers: false, title: "Settings", name: "settings-window", size: size.size, minSize: size.minSize, bridges: true, content: content)
+        window.book = model.settingsBook
+        window.declared = size.size
+        window.titleVisibility = .visible
+        window.titlebarAppearsTransparent = false
+        window.toolbarStyle = .unified
+        window.isOpaque = true
+        window.backgroundColor = .windowBackgroundColor
+        window.isMovableByWindowBackground = false
+        return window
+    }
+
+    static func make(remembers: Bool = true, title: String, name: String, size: CGSize = SpotTokens.windowSize, minSize: CGSize = SpotTokens.windowMinSize, bridges: Bool = false, content: some View) -> SpotSheetWindow {
         let window = SpotSheetWindow(
             contentRect: NSRect(origin: .zero, size: size),
             styleMask: [.titled, .closable, .miniaturizable, .resizable, .fullSizeContentView],
@@ -83,6 +103,7 @@ final class SpotSheetWindow: NSWindow, NSWindowDelegate {
         if remembers { window.setFrameAutosaveName(name) }
         let host = NSHostingController(rootView: content)
         host.sizingOptions = []
+        if bridges { host.sceneBridgingOptions = .all }
         window.contentViewController = host
         window.setContentSize(size)
         if window.frame.origin == .zero { window.center() }

@@ -1,6 +1,6 @@
 import Foundation
 
-public struct SettingRow: PrintedRecord, Equatable, Sendable {
+public struct SettingRow: PrintedRecord, Equatable, Identifiable, Sendable {
     public enum Kind: String, Encodable, Sendable {
         case key, field, toggle, choice, secret, text
     }
@@ -37,6 +37,10 @@ public struct SettingRow: PrintedRecord, Equatable, Sendable {
         self.detail = detail
         self.options = options.isEmpty ? nil : options.joined(separator: ",")
         self.default = `default`
+    }
+
+    public var id: String {
+        item
     }
 
     var blocks: [[(String, String?)]] {

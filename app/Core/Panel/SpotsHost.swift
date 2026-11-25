@@ -21,6 +21,8 @@ public protocol SpotsHost: AnyObject {
     func land(_ id: String)
     func window(_ entry: SpotsModel.Entry)
     func focusWindow(_ id: String)
+    func showSettings()
+    func focusSettings()
     var isPointerOverDrop: Bool { get }
     var isPointerOverWindow: Bool { get }
     var draggedPaths: [String] { get }
@@ -39,6 +41,10 @@ public protocol SpotsHost: AnyObject {
 
 extension SpotsHost {
     public func focusWindow(_ id: String) {}
+
+    public func showSettings() {}
+
+    public func focusSettings() {}
 
     public func toast(_ note: ToastNote, of spot: String) {}
 

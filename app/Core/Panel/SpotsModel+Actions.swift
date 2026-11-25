@@ -11,7 +11,8 @@ extension SpotsModel {
     }
 
     func openSheet(on key: ActionKey) -> Bool {
-        guard let id = spot(openedBy: key), openSheetID == nil || place(ofSheet: id) == .window else { return false }
+        guard let id = spot(openedBy: key) else { return key == Self.settingsKey && openSettings() }
+        guard openSheetID == nil || place(ofSheet: id) == .window else { return false }
         endEditing(moving: false)
         pushFirst(id, moving: true)
         return true
@@ -19,7 +20,7 @@ extension SpotsModel {
 
     func spot(openedBy key: ActionKey) -> String? {
         let chosen = arrangement.spot(openedBy: key, over: defaultArrangement).flatMap { id in entry(id) == nil ? nil : id }
-        return chosen ?? (key == Self.settingsKey ? settingsSpot : nil)
+        return chosen
     }
 
     static let settingsKey = ActionKey(name: ",", isCommand: true)

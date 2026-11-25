@@ -628,11 +628,6 @@ final class SpotsModelDragTests: XCTestCase {
     }
 
     func testAPublishWithNoAccountOpensSettingsAtTheAccountAndSaysWhy() async throws {
-        let landed = core.appendingPathComponent("landed")
-        try TestSpot(
-            toml: "title = 'Settings'\nwindow = 'settings'\nedits = 'settings'\n[on]\n\"sheet.open\" = true",
-            body: "sed -n 's/^input\\.at=//p' >> '\(landed.path)'\nprintf 'item=a\\ntitle=A\\n'"
-        ).write(to: core.appendingPathComponent("openspot.spot/settings.sh"))
         await model.reload()
         try "Does a.".write(to: spots.appendingPathComponent("a.spot/readme.md"), atomically: true, encoding: .utf8)
 
@@ -640,7 +635,7 @@ final class SpotsModelDragTests: XCTestCase {
 
         XCTAssertEqual(result, .failed)
         XCTAssertEqual(host.notes, ["Set up your account, then publish again."])
-        try await wait("Settings at the account") { (try? String(contentsOf: landed, encoding: .utf8))?.contains("account") == true }
+        XCTAssertEqual(model.settingsBook.page, .account)
         XCTAssertFalse(FileManager.default.fileExists(atPath: store.appendingPathComponent("a.spot").path))
     }
 

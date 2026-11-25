@@ -61,7 +61,7 @@ public final class SettingsBook {
     func open(at place: String?) {
         isOpen = true
         landing = place
-        if hasRead, let place { land(place) }
+        if let place { land(place) }
         refresh()
     }
 

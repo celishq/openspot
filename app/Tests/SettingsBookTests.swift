@@ -193,7 +193,6 @@ final class SettingsBookTests: PanelCase {
     }
 
     func testAllowStartsTheGuidedGrantAndEndGrantEndsIt() async throws {
-        try writeSettings()
         try script("agenda", toml: "title = 'Agenda'\nuses = ['calendar']", "openspot calendar events")
         accesses.set(.calendars, to: .denied)
         await read()

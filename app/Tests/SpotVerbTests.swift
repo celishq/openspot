@@ -465,7 +465,7 @@ final class SpotVerbTests: XCTestCase {
         await model.reload()
 
         XCTAssertTrue(model.act(.settings, on: "weather"))
-        try await wait("the Settings window") { self.host.windows == ["openspot/settings"] }
+        XCTAssertEqual(host.settingsOpens, 1)
         XCTAssertTrue(model.act(.edit, on: "weather"))
         try await wait("the Edit sheet") { model.openSheetID == OwnedSheet.edit.id(of: "weather") }
         XCTAssertTrue(model.act(.delete, on: "weather"))

@@ -3,13 +3,8 @@ import XCTest
 
 @MainActor
 final class SettingsEntryTests: PanelCase {
-    private var landings: [String] {
-        ((try? String(contentsOf: settingsLog, encoding: .utf8)) ?? "").split(separator: "\n").map(String.init)
-    }
-
-    override func setUp() async throws {
-        try await super.setUp()
-        try writeSettings()
+    private var book: SettingsBook {
+        model.settingsBook
     }
 
     private func open(selecting id: String) async throws {
@@ -31,8 +26,8 @@ final class SettingsEntryTests: PanelCase {
         XCTAssertEqual(model.hint, "⏎ Open   ⌘⏎ Settings")
         XCTAssertTrue(model.handleKey(ActionKey(name: "return", isCommand: true)))
 
-        try await wait("Settings at the spot") { self.landings == ["spot/draw"] }
-        XCTAssertEqual(host.windows, [settingsID])
+        XCTAssertEqual(host.settingsOpens, 1)
+        XCTAssertEqual(book.page, .spotOf("draw"))
         XCTAssertNil(model.openSheetID)
     }
 
@@ -42,7 +37,7 @@ final class SettingsEntryTests: PanelCase {
 
         XCTAssertTrue(model.act(.settings, on: "draw"))
 
-        try await wait("Settings at the spot") { self.landings == ["spot/draw"] }
+        XCTAssertEqual(book.page, .spotOf("draw"))
         XCTAssertNil(model.openSheetID)
     }
 
@@ -54,7 +49,7 @@ final class SettingsEntryTests: PanelCase {
 
         model.run(try XCTUnwrap(model.entries.first { $0.id == "windows" }))
 
-        try await wait("Settings at the spot") { self.landings == ["spot/windows"] }
+        XCTAssertEqual(book.page, .spotOf("windows"))
         XCTAssertNil(model.openSheetID)
     }
 
@@ -62,9 +57,9 @@ final class SettingsEntryTests: PanelCase {
         await model.reload()
 
         try pressFix("x-apple.systempreferences:com.apple.preference.security?Privacy_ScreenCapture")
-        try await wait("Settings at Screen Recording") { self.landings == ["access/screen"] }
+        try await wait("Settings at Screen Recording") { self.book.page == .accessOf(.screen) }
         try pressFix("x-apple.systempreferences:com.apple.LoginItems-Settings.extension")
-        try await wait("Settings at the helper") { self.landings == ["access/screen", "access/helper"] }
+        try await wait("Settings at the helper") { self.book.page == .accessOf(.helper) }
 
         XCTAssertEqual(host.opened, [])
     }
@@ -83,20 +78,18 @@ final class SettingsEntryTests: PanelCase {
         model.toast(.failure("Openspot cannot use `ctrl+space` to open, because another app uses it. Choose another key.", fix: .settings))
         model.toasts.press(try XCTUnwrap(model.toasts.queue.last).id)
 
-        try await wait("Settings at Keys") { self.landings == ["keys"] }
+        try await wait("Settings at Keys") { self.book.page == .keys }
     }
 
     func testCommandCommaOverAnOpenSheetOpensSettings() async throws {
         try script("draw", toml: "title = 'Draw'", "printf 'item=own\\ntitle=Own\\n'")
-        try FileManager.default.createDirectory(at: folder.appendingPathComponent("config"), withIntermediateDirectories: true)
-        try "[[spots]]\nid = \"\(settingsID)\"\nkey = \"cmd+,\"\n".write(to: folder.appendingPathComponent("config/config.toml"), atomically: true, encoding: .utf8)
         try await open(selecting: "draw")
         model.runSelected()
         try await wait("the sheet") { self.model.openSheetID == "draw" }
 
         XCTAssertTrue(model.handleKey(ActionKey(name: ",", isCommand: true)))
 
-        try await wait("the Settings window") { self.host.windows == [self.settingsID] }
+        XCTAssertEqual(host.settingsOpens, 1)
     }
 
     func testCommandCommaOpensSettingsWithNoSetup() async throws {
@@ -105,18 +98,30 @@ final class SettingsEntryTests: PanelCase {
 
         XCTAssertTrue(model.handleKey(ActionKey(name: ",", isCommand: true)))
 
-        try await wait("the Settings window") { self.host.windows == [self.settingsID] }
+        XCTAssertEqual(host.settingsOpens, 1)
+        XCTAssertEqual(book.page, .access)
     }
 
-    func testASecretTypedInSettingsIsKeptAndAShortOneIsNot() async throws {
-        try script("weather", toml: "title = 'Weather'\n[settings]\ntoken = 'secret'", "printf 'item=a\\ntitle=A\\n'")
+    func testAPublishWithNoAccountOpensSettingsAtTheAccount() async throws {
+        model.openSettings(at: "account")
+
+        XCTAssertEqual(book.page, .account)
+        XCTAssertEqual(host.settingsOpens, 1)
+    }
+
+    func testTheFactsLoadOnlyWhileTheWindowIsOpenAndEachLandingWaitsForThem() async throws {
+        takeCalls()
+        try script("cups", toml: "title = 'Cups'\n[actions.fill]\ntitle = 'Fill'", "")
         await model.reload()
+        XCTAssertTrue(book.facts.rows.isEmpty)
 
-        let short = await model.keep(secret: "abc", key: "token", of: "weather")
-        let kept = await model.keep(secret: "tok-123456", key: "token", of: "weather")
+        model.openSettings(at: "row/cups/key.fill")
 
-        XCTAssertEqual(short, "Openspot didn't keep this secret, because it is shorter than \(SecretStore.shortest) characters. Type the whole value.")
-        XCTAssertNil(kept)
-        XCTAssertEqual(try model.files.secrets.read()["weather"]?["token"], "tok-123456")
+        try await wait("the facts and the row") { self.book.page == .spotOf("cups") && self.book.target == "cups/key.fill" }
+        book.closed()
+        let rows = book.facts.rows.count
+        try script("mugs", toml: "title = 'Mugs'\n[actions.fill]\ntitle = 'Fill'", "")
+        await model.spotsChanged()
+        XCTAssertEqual(book.facts.rows.count, rows)
     }
 }

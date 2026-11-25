@@ -6,6 +6,7 @@ final class DetachedWindows {
     private let model: SpotsModel
     private var floats: [String: SpotFloatPanel] = [:]
     private var windows: [String: SpotSheetWindow] = [:]
+    private var settings: SpotSheetWindow?
 
     init(model: SpotsModel) {
         self.model = model
@@ -36,6 +37,16 @@ final class DetachedWindows {
         window.show()
     }
 
+    func openSettings() {
+        let window = settings ?? SpotSheetWindow.make(settings: model, content: SettingsView(model: model))
+        settings = window
+        window.show()
+    }
+
+    func focusSettings() {
+        settings?.focus()
+    }
+
     func focus(_ id: String) {
         windows[id]?.focus()
     }
@@ -50,6 +61,6 @@ final class DetachedWindows {
     }
 
     var isPointerOverWindow: Bool {
-        windows.values.contains { $0.isVisible && $0.frame.contains(NSEvent.mouseLocation) }
+        (Array(windows.values) + [settings].compactMap { $0 }).contains { $0.isVisible && $0.frame.contains(NSEvent.mouseLocation) }
     }
 }

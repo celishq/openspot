@@ -102,9 +102,8 @@ extension SpotsModel {
     @discardableResult
     public func openSettings(at place: String? = nil) -> Bool {
         asOnePress {
-            guard let settings = settingsSpot else { return false }
-            runs.landings[settings] = place
-            openWindow(settings)
+            settingsBook.open(at: place)
+            host.showSettings()
             return true
         }
     }
