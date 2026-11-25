@@ -383,8 +383,7 @@ extension SpotsModel {
                 perform(action, on: (entry, item))
             } else if entry.spot.takesHandlers, let sheet = sheets[entry.id] {
                 if closes { closingPick = (item, entry) }
-                Task { [weak self] in
-                    let answer = await sheet.answer(toPick: item, closes: closes)
+                sheet.pick(item, closes: closes) { [weak self] answer in
                     guard let self else { return }
                     switch answer {
                     case .form, .stopped: if closingPick?.item == item { closingPick = nil }
