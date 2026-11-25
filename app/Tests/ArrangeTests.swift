@@ -34,6 +34,7 @@ final class ArrangeTests: PanelCase {
     }
 
     private func arrangeWithOff(_ off: [String], on: [String]) async throws {
+        model.dragRest = .zero
         try await spots(off + on)
         for id in off { model.takeOffGrid(id) }
         model.arrange()
@@ -148,6 +149,22 @@ final class ArrangeTests: PanelCase {
 
         model.dragSpot("zeta", by: CGSize(width: SpotTokens.cell * 2, height: 0))
         XCTAssertEqual(model.drag?.id, "zeta")
+    }
+
+    func testTheCardsGiveWayOnlyOnceThePointerRests() async throws {
+        try await arrangeWithOff(["zeta"], on: ["a", "b"])
+        model.dragRest = .seconds(30)
+        let cell = try XCTUnwrap(place(of: "b")).cell
+
+        model.dragShelfSpot("zeta", from: start, by: toward(cell))
+        model.dragShelfSpot("zeta", from: start, by: toward(GridCell(row: 0, column: 0)))
+        model.dragShelfSpot("zeta", from: start, by: toward(cell))
+
+        XCTAssertEqual(place(of: "b")?.cell, cell)
+        model.dropShelfSpot(by: toward(cell))
+
+        XCTAssertEqual(place(of: "zeta")?.cell, cell)
+        XCTAssertNotEqual(place(of: "b")?.cell, cell)
     }
 
     func testADragThatLeavesTheGridPutsThePushedCardsBack() async throws {

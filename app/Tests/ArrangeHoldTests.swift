@@ -28,6 +28,11 @@ final class ArrangeHoldTests: PanelCase {
         XCTAssertTrue(model.hint.hasPrefix("2 of your spots are off the grid"), model.hint)
     }
 
+    private func call(_ arguments: [String]) async throws -> CommandAnswer {
+        let work = try XCTUnwrap(model.runs.api?.work(for: .test(arguments), input: { "" }))
+        return await work()
+    }
+
     func testGridListPutsTheSpotsOffTheGridFirstAndGridPinTakesTheFirstFreeSlot() async throws {
         try await spots(["a", "b"], off: ["c"])
         takeCalls()

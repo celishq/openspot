@@ -89,7 +89,26 @@ extension SpotsModel {
                 carry = SpotCarry(entry: entry, size: lifted.size)
             }
         }
-        guard let pin, case let next = pin.moved(by: translation), next != pin else { return }
+        guard let pin else { return }
+        pointerMove = translation
+        let next = pin.moved(by: translation)
+        guard next != pin else { return stopDragWait() }
+        guard next.target?.cell != dragTarget || dragWait == nil else { return }
+        stopDragWait()
+        guard dragRest > .zero, let cell = next.target?.cell else { return show(next) }
+        dragTarget = cell
+        let rest = dragRest
+        dragWait = Task { [weak self] in
+            try? await Task.sleep(for: rest)
+            guard !Task.isCancelled, let self, let pin = self.pin, let move = self.pointerMove else { return }
+            self.dragWait = nil
+            self.dragTarget = nil
+            self.show(pin.moved(by: move))
+        }
+    }
+
+    private func show(_ next: SpotPin) {
+        guard let pin, next != pin else { return }
         change(.edit) {
             gesture = .pin(next)
             if carry?.size != next.carriedSize { carry?.size = next.carriedSize }
@@ -100,6 +119,8 @@ extension SpotsModel {
     public func dropShelfSpot(by translation: CGSize) {
         asOnePress {
             guard let pin = pin?.moved(by: translation) else { return }
+            stopDragWait()
+            pointerMove = nil
             guard let target = pin.target, let entry = offGrid.first(where: { $0.id == pin.id }) else { return cancelPin() }
             var spots = visible
             var layout = pin.layout
@@ -127,6 +148,8 @@ extension SpotsModel {
 
     func cancelPin() {
         guard pin != nil else { return }
+        stopDragWait()
+        pointerMove = nil
         change(.edit) {
             gesture = nil
             carry = nil
