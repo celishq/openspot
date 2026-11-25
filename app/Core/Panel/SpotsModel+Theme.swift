@@ -8,19 +8,14 @@ extension SpotsModel {
         defer { takenTheme = theme }
         guard isPanelHidden else {
             if theme != takenTheme { toast(ToastNote(words: Self.openAgain)) }
-            heldLayout = theme.layout.with(columns: grid.columns)
+            heldLayout = theme.layout
             return
         }
-        lay(theme.layout.with(columns: grid.columns))
+        lay(theme.layout)
     }
 
     func widen() {
-        heldLayout = heldLayout?.with(columns: grid.columns)
-        laidOut = laidOut.with(columns: grid.columns)
-        SpotTokens.take(laidOut)
-        gridScroll = 0
-        cardScroll = 0
-        for run in runs.sheets.values { run.layOut() }
+        guard apply(laidOut) else { return }
         showVisible()
         takePlacements()
         host.widen()
@@ -28,13 +23,19 @@ extension SpotsModel {
 
     func lay(_ layout: Theme.Layout) {
         heldLayout = nil
-        guard layout != laidOut else { return }
-        laidOut = layout
-        SpotTokens.take(layout)
+        guard apply(layout) else { return }
+        takePlacements()
+        host.layOut(laidOut)
+    }
+
+    private func apply(_ layout: Theme.Layout) -> Bool {
+        let next = layout.with(columns: grid.columns)
+        guard next != laidOut else { return false }
+        laidOut = next
+        SpotTokens.take(next)
         gridScroll = 0
         cardScroll = 0
-        takePlacements()
         for run in runs.sheets.values { run.layOut() }
-        host.layOut(layout)
+        return true
     }
 }
