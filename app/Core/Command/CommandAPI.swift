@@ -4,6 +4,7 @@ public final class CommandAPI: @unchecked Sendable {
     public typealias Work = @Sendable () async -> CommandAnswer
 
     let mac: Mac
+    let access = KeptAccess()
     private let raise: (@Sendable (AppSignal) async -> Void)?
     private let app: (any RunningApp)?
     private let places: AppPlaces
@@ -59,6 +60,7 @@ public final class CommandAPI: @unchecked Sendable {
             return CommandLineCall(name: call.name, call: CallFault.refused("Careful mode stopped \(caller.name), because it \(needed.words) without `\(needed.use.rawValue)` in the `uses` of its spot.toml. Add it, or turn Careful mode off."))
         }
         Task { @MainActor in runs.used(needed, by: caller) }
+        runs.usage.used(call.name, by: caller.id)
         return call
     }
 

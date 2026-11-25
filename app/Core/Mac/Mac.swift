@@ -10,6 +10,7 @@ public struct Mac: Sendable {
     public var events: (any MacEvents)?
     public var power: (any MacPower)?
     public var reads: (any MacReads)?
+    public var accesses: (any MacAccesses)?
     public var login: @Sendable () -> LoginItem?
     public var link: @Sendable () -> CommandLink?
     public var pickColor: (@MainActor @Sendable () async -> HexColor?)?
@@ -30,6 +31,7 @@ public struct Mac: Sendable {
         events: (any MacEvents)? = nil,
         power: (any MacPower)? = nil,
         reads: (any MacReads)? = nil,
+        accesses: (any MacAccesses)? = nil,
         login: @escaping @Sendable () -> LoginItem? = { nil },
         link: @escaping @Sendable () -> CommandLink? = { nil },
         pickColor: (@MainActor @Sendable () async -> HexColor?)? = nil,
@@ -50,6 +52,7 @@ public struct Mac: Sendable {
         self.events = events
         self.power = power
         self.reads = reads
+        self.accesses = accesses
         self.login = login
         self.link = link
         self.pickColor = pickColor

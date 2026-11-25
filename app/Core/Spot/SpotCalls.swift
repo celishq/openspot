@@ -7,8 +7,12 @@ struct SpotCalls {
     let runs: SpotRuns?
     let secrets: SecretStore
     let caller: Spot?
+    let mac: Mac
+    let access: KeptAccess
 
     init(_ context: CallContext) {
+        mac = context.mac
+        access = context.api.access
         caller = context.caller
         places = context.places
         folder = context.folder
@@ -18,9 +22,11 @@ struct SpotCalls {
     }
 
     func list(core: Bool, form: PrintForm) -> CommandAPI.Work {
-        CommandAnswer.work { [places] in
+        CommandAnswer.work { [places, mac, access, runs] in
             let config = places.config.read()
-            let list = SpotList(folder: places.folder(config), config: config)
+            let statuses = await access.read(from: mac, browsers: config.browsers).statuses
+            let last = runs?.usage.lastUses ?? StatsLog.readLastUses(in: places.stats)
+            let list = SpotList(folder: places.folder(config), config: config, statuses: statuses, lastUses: last)
             return try core ? list.core(form) : list.loaded(form)
         }
     }
