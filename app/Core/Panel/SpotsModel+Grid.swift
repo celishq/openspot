@@ -160,6 +160,10 @@ extension SpotsModel {
 
     public func run(_ entry: Entry) {
         missedSearch.drop()
+        if entry.spot.id == SettingsBook.searchSpot.id, let item = entry.item {
+            openSettings(at: SettingsBook.place(of: item))
+            return
+        }
         if let item = entry.item, let list = self.entry(entry.spot.id) {
             if item.records, openSheetID != list.id {
                 pushFirst(list.id, moving: true)

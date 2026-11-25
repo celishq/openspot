@@ -15,6 +15,8 @@ public final class SettingsBook {
     public internal(set) var grant: AccessGrant?
     public private(set) var isOpen = false
     @ObservationIgnored weak var model: SpotsModel?
+    @ObservationIgnored public internal(set) var searchRows = ItemList()
+    @ObservationIgnored var rowsRead: Task<Void, Never>?
     @ObservationIgnored private var landing: String?
     @ObservationIgnored private var reading: Task<Void, Never>?
     @ObservationIgnored private var hasRead = false
@@ -91,6 +93,7 @@ public final class SettingsBook {
         guard !Task.isCancelled else { return }
         hasRead = true
         if next != facts { facts = next }
+        take(rows: next.rows)
         if !pending.isEmpty { pending = [:] }
         if let place = landing {
             landing = nil

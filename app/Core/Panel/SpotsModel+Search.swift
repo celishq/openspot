@@ -65,11 +65,11 @@ extension SpotsModel {
         let sources = entries.filter { $0.spot.triggers.lists && arrangement.isGlobal(of: $0.id) != false }
         let ask = SearchAsk(
             query: runs.search(of: text),
-            lists: [spotList] + sources.map { sheets[$0.id]?.list ?? ItemList() },
+            lists: [spotList] + sources.map { sheets[$0.id]?.list ?? ItemList() } + [settingsBook.searchRows],
             search: mainSearch,
             limit: Self.searchLimit - answers.count,
             answers: Array(answers),
-            sources: sources.map(\.spot),
+            sources: sources.map(\.spot) + [SettingsBook.searchSpot],
             isWhole: !answering.contains { sheets[$0.id]?.isAnswering == true }
         )
         takeFound(ask)
@@ -144,6 +144,11 @@ extension SpotsModel {
             return entry.isOnGrid != (visible.contains { $0.id == id } || leftOut.contains(id))
         }
         return entry.isFound || entry.spot.triggers.lists || entry.spot.triggers.search != nil
+    }
+
+    func searchRowsChanged() {
+        guard !query.trimmingCharacters(in: .whitespaces).isEmpty, content == .search else { return }
+        showVisible()
     }
 
     func noteMiss() {

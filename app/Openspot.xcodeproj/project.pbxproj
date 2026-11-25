@@ -280,6 +280,7 @@
 		3BFB83B088F90A1057F196E1 /* SeenCopy.swift in Sources */ = {isa = PBXBuildFile; fileRef = 01E85D448386CE1AE0743588 /* SeenCopy.swift */; };
 		3C1908F483300C60E640B760 /* GridLayoutTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 43126C81D940FBC2A86307F7 /* GridLayoutTests.swift */; };
 		3C305F9732E71BF44D812FA5 /* HostMode.swift in Sources */ = {isa = PBXBuildFile; fileRef = D51AEF5593DDBC73EEB5C287 /* HostMode.swift */; };
+		3CBA6B10A65347B4CA9AFCFB /* SettingsBook+Search.swift in Sources */ = {isa = PBXBuildFile; fileRef = F72125ECA96414D3268AA0B6 /* SettingsBook+Search.swift */; };
 		3D7541A309B5BF686941B697 /* Manifest+BoundEvent.swift in Sources */ = {isa = PBXBuildFile; fileRef = D5897BB7225321A2B47885B1 /* Manifest+BoundEvent.swift */; };
 		3D98093AA041B98B8D3D91E5 /* NodeLine.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4C4DBD456C0ADABF814B450D /* NodeLine.swift */; };
 		3DF86C04F7524FD22CEE97AD /* NodeChoice.swift in Sources */ = {isa = PBXBuildFile; fileRef = C87DD31844F4BE449A3C7716 /* NodeChoice.swift */; };
@@ -2398,6 +2399,7 @@
 		F6E3D111F02BEDA8AC6F75DE /* ToastsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ToastsView.swift; sourceTree = "<group>"; };
 		F6FD2BEB19EFA48253618461 /* ConfigFileTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ConfigFileTests.swift; sourceTree = "<group>"; };
 		F70009486AB59B320D3B9046 /* Event.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Event.swift; sourceTree = "<group>"; };
+		F72125ECA96414D3268AA0B6 /* SettingsBook+Search.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "SettingsBook+Search.swift"; sourceTree = "<group>"; };
 		F728C6860C0CE384C2E23AB7 /* AppCall.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppCall.swift; sourceTree = "<group>"; };
 		F80C1E926FC7BB5C6B6247A9 /* SpotFloatTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SpotFloatTests.swift; sourceTree = "<group>"; };
 		F824ED317BA3D31A0BB5AAC3 /* SelectionCall.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SelectionCall.swift; sourceTree = "<group>"; };
@@ -3666,6 +3668,7 @@
 				024ABCEEFA1C0579E42D8D16 /* SettingRow.swift */,
 				212784211CBFD8180B007CFE /* SettingsBook.swift */,
 				A8573A19C30EA855E63249D8 /* SettingsBook+Account.swift */,
+				F72125ECA96414D3268AA0B6 /* SettingsBook+Search.swift */,
 				33A221C6F5EFE1673DE88C45 /* SettingsFacts.swift */,
 				D839E262156F537D4B78FABF /* SettingsPage.swift */,
 				CFF1D7921BCA5365E0A1665D /* SettingsWords.swift */,
@@ -5086,6 +5089,7 @@
 				F892ADDEB6B2BB2A5295DE7D /* SettingCalls.swift in Sources */,
 				92963D11D3568604C1168153 /* SettingRow.swift in Sources */,
 				BE69D46A2BB8A532920C7C3A /* SettingsBook+Account.swift in Sources */,
+				3CBA6B10A65347B4CA9AFCFB /* SettingsBook+Search.swift in Sources */,
 				0EE40620E3A80D282C76B9B3 /* SettingsBook.swift in Sources */,
 				F984B399291DB929B040B211 /* SettingsFacts.swift in Sources */,
 				499E22FE0543F51B5F1A4F1E /* SettingsPage.swift in Sources */,

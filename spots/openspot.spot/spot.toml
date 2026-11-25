@@ -119,16 +119,6 @@ edits = "settings"
 [scripts.settings.on]
 "sheet.open" = true
 
-[scripts.rows]
-title = "All settings"
-icon = "slider.horizontal.3"
-detail = "Find any setting"
-uses = ["spots"]
-
-[scripts.rows.on]
-"panel.open" = true
-search = true
-
 [scripts.spots]
 title = "Spots"
 icon = "puzzlepiece.extension"

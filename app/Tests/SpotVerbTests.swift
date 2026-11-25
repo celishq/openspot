@@ -255,30 +255,6 @@ final class SpotVerbTests: XCTestCase {
         try await wait("the sheet of the icon") { model.openSheetID == "openspot/icon" }
     }
 
-    func testATypedSettingRowIsFoundWithItsSpotAndOpensSettingsAtTheRow() async throws {
-        try FileManager.default.copyItem(at: Bundle(for: Self.self).bundleURL.deletingLastPathComponent().appendingPathComponent("openspot"), to: folder.appendingPathComponent("tools/openspot"))
-        let real = URL(fileURLWithPath: #filePath).deletingLastPathComponent().deletingLastPathComponent().deletingLastPathComponent().appendingPathComponent("spots/openspot.spot/rows.sh")
-        try String(contentsOf: real, encoding: .utf8).writeScript(
-            to: core.appendingPathComponent("openspot.spot/rows.sh"), toml: "title = 'All settings'\nuses = ['spots']\n[on]\n\"panel.open\" = true\nsearch = true"
-        )
-        try script("weather", toml: "title = 'Weather'\n[settings]\ncity = { type = 'text', title = 'Home city' }")
-        await model.reload()
-        model.isShown = true
-        model.panelWillShow()
-
-        model.search("home city")
-
-        try await wait("the row in the search") { model.visible.contains { $0.item?.run == "weather/city" } }
-        let row = try XCTUnwrap(model.visible.first { $0.item?.run == "weather/city" })
-        XCTAssertEqual(row.item?.title, "Home city")
-        XCTAssertEqual(row.item?.subtitle, "Weather")
-        XCTAssertEqual(row.state.subtitle, "All settings › Weather")
-        model.selected = try XCTUnwrap(model.visible.firstIndex { $0.item?.run == "weather/city" })
-        model.runSelected()
-        try await wait("Settings at the row") { saved("at") == "row/weather/city\n" }
-        XCTAssertEqual(host.windows, ["openspot/settings"])
-    }
-
     func testACoreSpotHasEditWithNoFileToOpenAndASpotOfTheAppHasNone() async throws {
         try model.files.config.turn("cups", on: true)
         _ = try await select("cups")

@@ -549,6 +549,7 @@ public final class SpotsModel {
         asOnePress {
             isPanelHidden = false
             readWaiting()
+            settingsBook.readRows()
             finishPick()
             selected = 0
             openAttachment()

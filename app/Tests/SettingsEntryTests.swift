@@ -124,4 +124,40 @@ final class SettingsEntryTests: PanelCase {
         await model.spotsChanged()
         XCTAssertEqual(book.facts.rows.count, rows)
     }
+
+    func testASettingRowIsFoundInThePanelsSearchWithItsSpotAndOpensSettingsAtTheRow() async throws {
+        takeCalls()
+        try script("weather", toml: "title = 'Weather'\n[settings]\ncity = { type = 'text', title = 'Home city' }", "printf 'item=a\\ntitle=A\\n'")
+        await model.reload()
+        model.isShown = true
+        model.panelWillShow()
+        try await wait("the rows") { self.book.searchRows.all.contains { $0.run == "weather/city" } }
+
+        model.search("home city")
+
+        let row = try XCTUnwrap(model.visible.first { $0.item?.run == "weather/city" })
+        XCTAssertEqual(row.item?.title, "Home city")
+        XCTAssertEqual(row.item?.place, "Weather")
+        XCTAssertEqual(row.state.subtitle, "Settings › Weather")
+        model.selected = try XCTUnwrap(model.visible.firstIndex { $0.item?.run == "weather/city" })
+        model.runSelected()
+        XCTAssertEqual(host.settingsOpens, 1)
+        try await wait("Settings at the row") { self.book.page == .spotOf("weather") && self.book.target == "weather/city" }
+    }
+
+    func testSettingsItselfIsFoundInThePanelsSearch() async throws {
+        takeCalls()
+        await model.reload()
+        model.isShown = true
+        model.panelWillShow()
+        try await wait("the rows") { !self.book.searchRows.all.isEmpty }
+
+        model.search("settings")
+
+        let found = try XCTUnwrap(model.visible.firstIndex { $0.spot.id == SettingsBook.searchSpot.id && $0.item?.title == "Settings" })
+        model.selected = found
+        model.runSelected()
+        XCTAssertEqual(host.settingsOpens, 1)
+        XCTAssertEqual(book.page, .access)
+    }
 }
