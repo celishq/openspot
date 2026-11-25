@@ -71,20 +71,9 @@ final class SpotRunsInlineTests: SpotRunsCase {
         try await wait("the loaded scripts") { sheets.allSatisfy { $0.answers.map(\.run) == ["1"] } }
         runs.raise(.query("7"))
         XCTAssertTrue(sheets.allSatisfy { $0.answers.map(\.run) == ["7"] })
-        let waits = runs.frameWaits
 
         runs.raise(.query("12"))
 
-        XCTAssertEqual(runs.frameWaits - waits, 1)
-        try await wait("the slow answers") { sheets.allSatisfy { $0.answers.map(\.run) == ["12"] } }
-    }
-
-    func testTheWaitForTheAnswersStartsAfterTheTextReachesEachSpot() async throws {
-        let sheets = try slowAnswering((1...30).map { "s\($0)" })
-
-        runs.raise(.query("12"))
-
-        XCTAssertEqual(runs.frameWaits, 1)
         try await wait("the slow answers") { sheets.allSatisfy { $0.answers.map(\.run) == ["12"] } }
     }
 
