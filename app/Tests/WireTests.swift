@@ -38,7 +38,7 @@ final class WireTests: SpotRunsCase {
         try await opened(sheet)
         XCTAssertEqual(calls, ["args=show\ninput.event=sheet.open\nsetting.city=Paris"])
 
-        let field = try await sent("search", by: sheet) { sheet.set(try XCTUnwrap(sheet.panel?.parts.first { $0.id == "search" }), to: "milk") }
+        let field = try await sent("search", by: sheet) { sheet.set(try XCTUnwrap(sheet.panel?.parts.first { $0.id == "search" }), to: "milk"); try await self.pass(0.3, on: self.clock) }
         let button = try await sent("go", by: sheet) { sheet.press(try XCTUnwrap(sheet.panel?.parts.first { $0.id == "go" })) }
         let pick = try await sent("press", by: sheet) { sheet.pick(try XCTUnwrap(sheet.list.all.first)) }
         let change = try await sent("show", by: sheet) { sheet.show(need: .change) }
@@ -113,7 +113,7 @@ final class WireTests: SpotRunsCase {
 
         let main = try await sent("search", by: sheet) { runs.raise(.query("ыфа")) }
         try await opened(sheet)
-        let typed = try await sent("sheet.text", by: sheet) { sheet.search("ыфа") }
+        let typed = try await sent("sheet.text", by: sheet) { sheet.search("ыфа"); try await self.pass(0.3, on: self.clock) }
 
         XCTAssertEqual(main, "args=search\ninput.text=ыфа\ninput.alt=yfa\nsetting.city=Paris")
         XCTAssertEqual(typed, "args=sheet.text\ninput.search=\ninput.title=Groceries\ninput.value=ыфа\ninput.alt=yfa\nsetting.city=Paris")
@@ -125,7 +125,7 @@ final class WireTests: SpotRunsCase {
         try await wait("the first tick") { self.calls.count == 1 && sheet.calls.isEmpty }
         let tick = calls[0]
         try await opened(sheet)
-        _ = try await sent("sheet.text", by: sheet) { sheet.search("ab") }
+        _ = try await sent("sheet.text", by: sheet) { sheet.search("ab"); try await self.pass(0.3, on: self.clock) }
 
         let searched = try await sent("sheet.text", by: sheet) { time += 1 }
 

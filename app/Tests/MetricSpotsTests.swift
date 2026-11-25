@@ -77,8 +77,7 @@ final class MetricSpotsTests: SpotRunsCase {
 
         for step in 1...12 {
             mac.sample = LoadSample(busy: UInt64(10 + step * 2), total: UInt64(100 + step * 10), memory: 40 + step)
-            try await wait("the sleep of the load") { self.fake.isSleeping(for: 5) }
-            fake.advance(by: 5)
+            try await pass(5, on: fake)
             try await wait("the load of step \(step)") { self.title("memory") == "\(40 + step)%" && self.title("cpu") == "20%" && !self.runs.isShowing }
         }
 
@@ -195,8 +194,7 @@ final class MetricSpotsTests: SpotRunsCase {
         try await wait("the first read") { titles()["battery"] == "84%" && titles()["devices"] == "–" && titles()["memory"] != nil && !self.runs.isShowing }
 
         mac.sample = LoadSample(busy: 30, total: 200, memory: 55)
-        try await wait("the sleep of the load") { self.fake.isSleeping(for: 5) }
-        fake.advance(by: 5)
+        try await pass(5, on: fake)
         try await wait("the load") { titles()["memory"] == "55%" && titles()["cpu"] == "20%" && !self.runs.isShowing }
         runs.raise(.named(EventName.powerChange, value: "ac"))
         try await wait("the read of the power") { self.log("tools.log").filter { $0 == "pmset" }.count == 2 && !self.runs.isShowing }

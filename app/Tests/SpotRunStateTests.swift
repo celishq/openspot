@@ -316,12 +316,12 @@ final class SpotRunStateTests: XCTestCase {
     func testTheClockSleepsUntilTheNextReadIsDue() async throws {
         let (_, link) = inMenuBar(triggers: Manifest.Triggers(every: 60))
         await link.end(link.sent[0])
-        try await wait("the schedule") { self.clock.isSleeping(for: 60) }
+        try await wait("the schedule") { self.clock.isWaiting(for: 60) }
 
         clock.advance(by: 59)
         runs.raise(.panel)
         XCTAssertEqual(link.sent.count, 1)
-        try await wait("the schedule kept") { self.clock.isSleeping(for: 1) && self.clock.sleepCount == 1 }
+        try await wait("the schedule kept") { self.clock.isWaiting(for: 1) && self.clock.sleepCount == 1 }
         clock.advance(by: 1)
 
         try await wait("the read from the clock") { link.sent.count == 2 }
@@ -376,8 +376,7 @@ final class SpotRunStateTests: XCTestCase {
 
         sheet.pressCard()
         XCTAssertEqual(sheet.calls.count, 1)
-        try await wait("the stop pause") { self.clock.isSleeping(for: 2) }
-        clock.advance(by: 2)
+        try await pass(2, on: clock)
 
         try await wait("the stop") { sheet.calls.isEmpty }
         XCTAssertTrue(link.sent[0].made.isStopped)
@@ -390,8 +389,7 @@ final class SpotRunStateTests: XCTestCase {
 
         sheet.pressCard()
         await link.frame("call=1\n", of: link.sent[0])
-        try await wait("the stop pause") { self.clock.isSleeping(for: 2) }
-        clock.advance(by: 2)
+        try await pass(2, on: clock)
 
         try await wait("the end of the stop pause") { sheet.pauses.isEmpty }
         XCTAssertEqual(sheet.calls.count, 1)
@@ -403,11 +401,11 @@ final class SpotRunStateTests: XCTestCase {
         sheet.pressCard()
         clock.advance(by: 2)
         sheet.pressCard()
-        try await wait("the stop pause") { self.clock.isSleeping(for: 2) }
+        try await wait("the stop pause") { self.clock.isWaiting(for: 2) }
         clock.advance(by: 1.5)
 
         sheet.pressCard()
-        try await wait("the new stop pause alone") { self.clock.isSleeping(for: 2) && !self.clock.isSleeping(for: 0.5) }
+        try await wait("the new stop pause alone") { self.clock.isWaiting(for: 2) && !self.clock.isWaiting(for: 0.5) }
         clock.advance(by: 1)
         XCTAssertEqual(sheet.calls.count, 1)
         clock.advance(by: 1)

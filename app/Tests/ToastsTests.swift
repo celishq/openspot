@@ -24,7 +24,7 @@ final class ToastsTests: XCTestCase {
     }
 
     private func pass(_ seconds: TimeInterval, sleeps: Int, due: TimeInterval? = nil) async throws {
-        try await wait("\(sleeps) timers sleep, one due in \(due ?? seconds)", until: { clock.sleepCount == sleeps && clock.isSleeping(for: due ?? seconds) })
+        try await wait("\(sleeps) timers sleep, one due in \(due ?? seconds)", until: { clock.sleepCount == sleeps && clock.isWaiting(for: due ?? seconds) })
         clock.advance(by: seconds)
     }
 
@@ -112,19 +112,19 @@ final class ToastsTests: XCTestCase {
 
         toasts.add(try note("toast=up\ntitle=Uploaded\n"), spot: "s")
 
-        try await wait("its time starts again", until: { clock.sleepCount == 1 && clock.isSleeping(for: 5) })
+        try await wait("its time starts again", until: { clock.sleepCount == 1 && clock.isWaiting(for: 5) })
     }
 
     func testAWaitingToastsTimeStartsWhenItShows() async throws {
         try await show("a")
         try await pass(3, sleeps: 1, due: 5)
         try await show("b")
-        try await wait("only the shown toast's time runs", until: { clock.sleepCount == 1 && clock.isSleeping(for: 5) })
+        try await wait("only the shown toast's time runs", until: { clock.sleepCount == 1 && clock.isWaiting(for: 5) })
 
         clock.advance(by: 5)
 
         try await wait("a steps in", until: { front == "a" })
-        try await wait("a has its whole time", until: { clock.isSleeping(for: 5) })
+        try await wait("a has its whole time", until: { clock.isWaiting(for: 5) })
     }
 
     func testTheSameIdOfAnotherSpotIsAnotherToast() async throws {
@@ -152,7 +152,7 @@ final class ToastsTests: XCTestCase {
 
         try await wait("the new upload shows", until: { front == "Uploaded" })
         XCTAssertEqual(toasts.queue.map(\.words), ["Uploaded"])
-        try await wait("only its own time runs, no fade", until: { clock.sleepCount == 1 && clock.isSleeping(for: 5) })
+        try await wait("only its own time runs, no fade", until: { clock.sleepCount == 1 && clock.isWaiting(for: 5) })
         XCTAssertEqual(window.putAways, 0)
     }
 

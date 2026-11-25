@@ -854,9 +854,9 @@ final class SpotsModelTests: XCTestCase {
         try await wait("the read") { waiting.runs.isShowing }
 
         let shows = Task { await waiting.waitForShows() }
-        try await wait("the first pause") { clock.isSleeping(for: 0.02) }
+        try await wait("the first pause") { clock.isWaiting(for: 0.02) }
         clock.advance(by: 1.9)
-        try await wait("the pause before the limit") { clock.isSleeping(for: 0.02) }
+        try await wait("the pause before the limit") { clock.isWaiting(for: 0.02) }
         clock.advance(by: 0.2)
         await shows.value
 

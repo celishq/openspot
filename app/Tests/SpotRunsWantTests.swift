@@ -151,7 +151,7 @@ final class SpotRunsWantTests: SpotRunsCase {
 
         try await wait("the sleep of the clock") { idle.sleepCount == 1 }
         XCTAssertEqual(runs.clockWatch.due, idle.time.addingTimeInterval(5))
-        XCTAssertTrue(idle.isSleeping(for: 5))
+        XCTAssertTrue(idle.isWaiting(for: 5))
         XCTAssertEqual(log().count, 1)
 
         idle.advance(by: 5)
@@ -205,6 +205,7 @@ final class SpotRunsWantTests: SpotRunsCase {
         }
         XCTAssertEqual(log(), ["show"])
 
+        try await pass(0.3, on: clock)
         try await wait("the answer") { sheet.list.shown.map(\.title) == ["rep"] }
         XCTAssertEqual(log(), ["show", "sheet.text"])
     }
@@ -220,8 +221,10 @@ final class SpotRunsWantTests: SpotRunsCase {
         try await wait("the first answer") { sheet.list.shown.map(\.title) == ["none"] }
 
         sheet.search("slow")
+        try await pass(0.3, on: clock)
         try await wait("the search") { self.log().count == 2 }
         sheet.search("slower")
+        try await pass(0.3, on: clock)
         try await wait("the answer") { sheet.list.shown.map(\.title) == ["slower"] }
         try await allEnded()
 

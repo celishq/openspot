@@ -209,10 +209,12 @@ final class SpotEventsTests: SpotRunsCase {
         try script(toml: "[on]\n\"clipboard.change\" = true", "\(reasons)\nprintf 'text=t\\ntitle=T\\n'")
         _ = try scanned()
         runs.listen(to: mac)
+        try await pass(0.04, on: clock)
         try await wait("a look at the clipboard") { self.mac.looks > 1 }
         try await wait("the first read") { self.log("reasons") == ["spot.want none"] && !self.runs.isShowing }
 
         mac.count += 1
+        try await pass(0.04, on: clock)
 
         try await wait("the clipboard read") { self.log("reasons") == ["spot.want none", "clipboard.change none"] }
     }
@@ -259,10 +261,10 @@ final class SpotEventsTests: SpotRunsCase {
         _ = try scanned()
 
         runs.listen(to: mac)
-        try await wait("the pause of the watch") { quiet.isSleeping(for: 0.04) }
+        try await wait("the pause of the watch") { quiet.isWaiting(for: 0.04) }
         let looks = mac.looks
         quiet.advance(by: 0.02)
-        XCTAssertTrue(quiet.isSleeping(for: 0.02))
+        XCTAssertTrue(quiet.isWaiting(for: 0.02))
         quiet.advance(by: 0.03)
 
         try await wait("the next look") { self.mac.looks == looks + 1 }
@@ -323,7 +325,7 @@ final class SpotEventsTests: SpotRunsCase {
         XCTAssertTrue(runs.watchesLoad)
         XCTAssertEqual(mac.samples, 1)
         try await wait("the first reads") { self.log("one-reasons") == ["spot.want none"] && self.log("two-reasons") == ["spot.want none"] && !self.runs.isShowing }
-        try await wait("the sleep of the watch") { fake.isSleeping(for: 5) }
+        try await wait("the sleep of the watch") { fake.isWaiting(for: 5) }
         mac.sample = LoadSample(busy: 30, total: 100, memory: 61)
 
         fake.advance(by: 5)
@@ -362,7 +364,7 @@ final class SpotEventsTests: SpotRunsCase {
         mac.sample = LoadSample(busy: 50, total: 200, memory: 40)
         menuBar = ["one"]
         _ = try scanned()
-        try await wait("the watch") { self.runs.watchesLoad && fake.isSleeping(for: 5) && !self.runs.isShowing }
+        try await wait("the watch") { self.runs.watchesLoad && fake.isWaiting(for: 5) && !self.runs.isShowing }
         try await allEnded()
 
         XCTAssertEqual(log("reasons").filter { $0.hasPrefix("system.load") }, ["system.load cpu=20 memory=40"])

@@ -493,7 +493,7 @@ final class SwiftProgramTests: XCTestCase {
 
         runs.panelOpened()
         sheet.open { isReady = true }
-        try await wait("the pause before the sheet says that the spot is being built") { clock.isSleeping(for: 0.5) }
+        try await wait("the pause before the sheet says that the spot is being built") { clock.isWaiting(for: 0.5) }
         XCTAssertFalse(isReady)
         XCTAssertNil(sheet.list.loadingWords)
         clock.advance(by: 0.5)
@@ -522,7 +522,7 @@ final class SwiftProgramTests: XCTestCase {
 
         runs.panelOpened()
         sheet.open { isReady = true }
-        try await wait("the pause after which a spot that is being built says so") { clock.isSleeping(for: 0.5) }
+        try await wait("the pause after which a spot that is being built says so") { clock.isWaiting(for: 0.5) }
         FileManager.default.createFile(atPath: release, contents: Data())
         try await wait("the start of the built program") { runs.processes.contains(where: \.isRunning) }
         clock.advance(by: 0.5)

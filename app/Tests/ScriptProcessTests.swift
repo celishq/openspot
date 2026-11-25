@@ -238,8 +238,7 @@ final class ScriptProcessTests: XCTestCase {
         process.stop()
 
         XCTAssertTrue(runs(script))
-        XCTAssertTrue(clock.hasTimer(for: 2))
-        clock.advance(by: 2)
+        try await pass(2, on: clock)
         try await wait("the end of the process") { !process.isRunning }
     }
 
@@ -289,8 +288,7 @@ final class ScriptProcessTests: XCTestCase {
         process.stop()
 
         XCTAssertTrue(runs(script) && runs(child))
-        XCTAssertTrue(clock.hasTimer(for: Self.stopPause))
-        clock.advance(by: Self.stopPause)
+        try await pass(Self.stopPause, on: clock)
         try await wait("the end of the script and its child") { !self.runs(script) && !self.runs(child) }
     }
 
@@ -305,8 +303,7 @@ final class ScriptProcessTests: XCTestCase {
         process.stop()
 
         XCTAssertTrue(runs(child))
-        XCTAssertTrue(clock.hasTimer(for: Self.stopPause))
-        clock.advance(by: Self.stopPause)
+        try await pass(Self.stopPause, on: clock)
         try await wait("the end of the child and its script") { !self.runs(child) && !process.isRunning }
     }
 
@@ -345,13 +342,11 @@ final class ScriptProcessTests: XCTestCase {
         let child = try await pid("child")
 
         live.end()
-        XCTAssertTrue(clock.hasTimer(for: Self.stopPause))
-        clock.advance(by: Self.stopPause)
+        try await pass(Self.stopPause, on: clock)
 
         XCTAssertTrue(live.isStopped)
         XCTAssertTrue(runs(script) && runs(child))
-        XCTAssertTrue(clock.hasTimer(for: Self.stopPause))
-        clock.advance(by: Self.stopPause)
+        try await pass(Self.stopPause, on: clock)
         try await wait("the end of the script and its child") { !self.runs(script) && !self.runs(child) }
     }
 
@@ -369,8 +364,7 @@ final class ScriptProcessTests: XCTestCase {
 
         XCTAssertFalse(live.isStopped)
         XCTAssertTrue(runs(child))
-        XCTAssertTrue(clock.hasTimer(for: Self.stopPause))
-        clock.advance(by: Self.stopPause)
+        try await pass(Self.stopPause, on: clock)
         try await wait("the end of the child") { !self.runs(child) }
         XCTAssertFalse(live.isRunning)
     }
@@ -446,8 +440,7 @@ final class ScriptProcessTests: XCTestCase {
         let frames = process.start()
         let script = try await pid("script")
 
-        try await wait("the limit of the first frame") { clock.hasTimer(for: 1) }
-        clock.advance(by: 1)
+        try await pass(1, on: clock)
 
         do {
             for try await _ in frames { XCTFail("no frame") }

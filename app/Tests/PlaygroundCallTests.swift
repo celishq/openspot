@@ -12,6 +12,7 @@ final class PlaygroundCallTests: SpotRunsCase {
         sheet.open(onReady: {})
         try await wait("the read") { calls.count == 1 }
         sheet.search("rep")
+        try await pass(0.3, on: clock)
         try await wait("the search") { calls.count == 2 }
 
         XCTAssertEqual(calls[0].lines.dropLast(), ["$ show", "< input.event=sheet.open", "> text=a", "> title=", "! slow disk"])

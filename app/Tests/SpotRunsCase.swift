@@ -5,7 +5,7 @@ import XCTest
 class SpotRunsCase: XCTestCase {
     var folder: URL!
     var runs: SpotRuns!
-    let clock = FakeClock(isReal: true)
+    let clock = FakeClock()
     var time: Date {
         get { clock.time }
         set { clock.advance(by: newValue.timeIntervalSince(clock.time)) }

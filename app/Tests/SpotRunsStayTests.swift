@@ -351,7 +351,9 @@ final class SpotRunsStayTests: SpotRunsCase {
         async let first = sheet.form(new, item: nil)
         try await wait("the ask") { self.log("asked").contains("arg=new") }
         time = time.addingTimeInterval(SpotRun.pressPause)
-        let second = try await sheet.form(new, item: nil)
+        async let pressed = sheet.form(new, item: nil)
+        try await pass(0.2, on: clock)
+        let second = try await pressed
         let answer = try await first
 
         XCTAssertNil(second)
@@ -368,6 +370,7 @@ final class SpotRunsStayTests: SpotRunsCase {
 
         sheet.search("rep")
 
+        try await pass(0.3, on: clock)
         try await wait("the search") { self.reads() == ["arg=show", "arg=sheet.text\ninput.value=rep"] }
         try await wait("the answer") { !sheet.list.isWaiting }
         XCTAssertEqual(log().count, 1)
@@ -868,6 +871,7 @@ final class SpotRunsStayTests: SpotRunsCase {
         try await wait("the first script") { self.log().count == 1 }
 
         sheet.close()
+        try await pass(0.2, on: clock)
         try await allEnded()
         openGate()
         var isReady = false
@@ -904,10 +908,12 @@ final class SpotRunsStayTests: SpotRunsCase {
         sheet.open {}
         try await wait("the first rows") { sheet.list.search == .script && sheet.list.shown.count == 1 }
         sheet.search("a")
+        try await pass(0.3, on: clock)
         try await wait("the older search") { self.reads().contains("arg=sheet.text\ninput.value=a") }
 
         sheet.search("ab")
 
+        try await pass(0.3, on: clock)
         try await wait("the newer answer") { sheet.list.shown.map(\.run) == ["n"] }
         XCTAssertTrue(placed(at: path("stopped")))
         openGate()
@@ -943,6 +949,7 @@ final class SpotRunsStayTests: SpotRunsCase {
 
         sheet.show(need: .change)
 
+        try await pass(1, on: clock)
         try await wait("the failure") { told() == ["Script took too long, so Openspot stopped it."] }
         try FileManager.default.removeItem(atPath: path("slow"))
         try await wait("the stop of the slow read") { self.blocks(ids: true).contains { $0.contains("stop=2") } }
@@ -958,10 +965,12 @@ final class SpotRunsStayTests: SpotRunsCase {
         try await wait("the first answer") { sheet.reading.value?.title == "1" }
         FileManager.default.createFile(atPath: path("slow"), contents: Data())
         sheet.show(need: .change)
+        try await pass(1, on: clock)
         try await wait("the first failure") { told().count == 1 }
 
         sheet.show(need: .change)
 
+        try await pass(1, on: clock)
         try await wait("the second failure") { told().count == 2 }
         try await wait("a new process") { self.log("pids").count == 2 }
         try await wait("the answer of the new process") { sheet.reading.value?.title == "4" }
@@ -974,6 +983,7 @@ final class SpotRunsStayTests: SpotRunsCase {
         try await wait("the first answer") { sheet.reading.value?.title == "1" }
         FileManager.default.createFile(atPath: path("slow"), contents: Data())
         sheet.show(need: .change)
+        try await pass(1, on: clock)
         try await wait("the first failure") { told().count == 1 }
         try FileManager.default.removeItem(atPath: path("slow"))
         try await wait("the late answer of the slow read") { self.log("answered").contains("2") }
@@ -983,6 +993,7 @@ final class SpotRunsStayTests: SpotRunsCase {
 
         sheet.show(need: .change)
 
+        try await pass(1, on: clock)
         try await wait("the second failure") { told().count == 2 }
         try FileManager.default.removeItem(atPath: path("slow"))
         try await wait("the late answer from the same process") { self.log("answered").contains("4") || self.log("pids").count > 1 }

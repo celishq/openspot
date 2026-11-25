@@ -45,6 +45,7 @@ final class CallMessageTests: SpotRunsCase {
         try await wait("the pick") { self.text("calls").hasSuffix("\n\n") && sheet.calls.isEmpty }
         sheet.set(try XCTUnwrap(sheet.panel?.parts.first { $0.id == "search" }), to: "milk")
 
+        try await pass(0.3, on: clock)
         try await wait("the field") { self.text("calls").contains("input.value=milk") && sheet.calls.isEmpty }
         XCTAssertEqual(text("calls"), """
         press

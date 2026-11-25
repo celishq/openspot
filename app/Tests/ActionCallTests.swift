@@ -155,6 +155,7 @@ final class ActionCallTests: SpotRunsCase {
 
         sheet.set(try XCTUnwrap(sheet.panel?.parts.first), to: "hello")
 
+        try await pass(0.3, on: clock)
         try await wait("the note") { self.text("pressed").contains("note hello|") }
     }
 

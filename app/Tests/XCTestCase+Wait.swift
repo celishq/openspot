@@ -8,4 +8,9 @@ extension XCTestCase {
             try await Task.sleep(for: .milliseconds(10))
         }
     }
+
+    @MainActor func pass(_ seconds: TimeInterval, on clock: FakeClock, file: StaticString = #filePath, line: UInt = #line) async throws {
+        try await wait("a wait of \(seconds) s", until: { clock.isWaiting(for: seconds) }, file: file, line: line)
+        clock.advance(by: seconds)
+    }
 }

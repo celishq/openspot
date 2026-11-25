@@ -136,6 +136,7 @@ final class TriggerCallsTests: SpotRunsCase {
 
         sheet.search("ыфа")
 
+        try await pass(0.3, on: clock)
         try await wait("the text") { self.calls.count == 2 }
         XCTAssertTrue(calls[1].hasPrefix("sheet.text|input.value=ыфа "), calls[1])
         XCTAssertTrue(calls[1].contains("input.alt=yfa "), calls[1])

@@ -154,6 +154,7 @@ final class SpotRunsWorkTests: SpotRunsCase {
         let sheet = try sheet()
         sheet.pressCard()
         time += 1
+        try await pass(1, on: clock)
         try await wait("the shown work") { !sheet.acts.isEmpty }
         let call = try XCTUnwrap(sheet.acts.first)
         XCTAssertNil(call.fill)
@@ -283,6 +284,7 @@ final class SpotRunsWorkTests: SpotRunsCase {
         XCTAssertNil(sheet.act(of: parts[0]))
         time += 1
 
+        try await pass(1, on: clock)
         try await wait("the shown work") { sheet.act(of: parts[0]) != nil }
         XCTAssertNil(sheet.act(of: parts[1]))
         XCTAssertTrue(parts[0].isPressable)
@@ -329,12 +331,14 @@ final class SpotRunsWorkTests: SpotRunsCase {
 
         sheet.run(try XCTUnwrap(go.action), item: nil)
         time += 1
+        try await pass(1, on: clock)
         try await wait("the shown action") { sheet.act(of: go, item: nil) != nil }
         XCTAssertNil(sheet.act(of: copy, item: item))
         XCTAssertNil(sheet.act(of: primary, item: item))
 
         sheet.pick(item)
         time += 1
+        try await pass(1, on: clock)
         try await wait("the shown pick") { sheet.act(of: primary, item: item) != nil }
         XCTAssertNil(sheet.cardAct)
     }
@@ -350,6 +354,7 @@ final class SpotRunsWorkTests: SpotRunsCase {
         XCTAssertNil(sheet.act(of: row, item: nil))
         time += 1
 
+        try await pass(1, on: clock)
         try await wait("the shown card") { sheet.cardAct != nil }
         XCTAssertNotNil(sheet.act(of: row, item: nil))
         try await wait("the call") { self.log() == ["press"] }
@@ -528,7 +533,7 @@ final class SpotRunsWorkTests: SpotRunsCase {
         try await wait("the end of the script") { kill(parent, 0) != 0 }
         runs.quit()
 
-        XCTAssertNotEqual(kill(child, 0), 0)
+        try await wait("the end of the child") { kill(child, 0) != 0 }
     }
 
     func testQuittingMarksEachCallAsStopped() async throws {

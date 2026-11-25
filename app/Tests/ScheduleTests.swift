@@ -57,7 +57,7 @@ final class ScheduleTests: SpotRunsCase {
         try write("script")
         _ = try load(enabled: ["script"])
         let due = firstDue
-        try await self.wait("the sleep until the due time") { self.clock.isSleeping(for: due) }
+        try await self.wait("the sleep until the due time") { self.clock.isWaiting(for: due) }
 
         time += due
 
@@ -111,7 +111,7 @@ final class ScheduleTests: SpotRunsCase {
 
         let scan = try load(enabled: ["on"])
         let due = firstDue
-        try await self.wait("the sleep until the due time") { self.clock.isSleeping(for: due) }
+        try await self.wait("the sleep until the due time") { self.clock.isWaiting(for: due) }
         time += due
 
         XCTAssertEqual(scan.spots.map(\.id), ["on"])
@@ -128,7 +128,7 @@ final class ScheduleTests: SpotRunsCase {
         }
         _ = try load(enabled: ["stay", "inline"])
         let due = firstDue
-        try await self.wait("the sleep until the due time") { self.clock.isSleeping(for: due) }
+        try await self.wait("the sleep until the due time") { self.clock.isWaiting(for: due) }
 
         time += due
 

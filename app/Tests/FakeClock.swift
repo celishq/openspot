@@ -35,11 +35,9 @@ final class FakeClock {
     private(set) var tolerances: [Duration?] = []
     private var sleeps: [Sleep] = []
     private var count = 0
-    private let isReal: Bool
     private let threadStep: TimeInterval?
 
-    init(isReal: Bool = false, threadStep: TimeInterval? = nil) {
-        self.isReal = isReal
+    init(threadStep: TimeInterval? = nil) {
         self.threadStep = threadStep
     }
 
@@ -62,13 +60,12 @@ final class FakeClock {
         return RunClock(now: { [shared] in shared.withLock { $0.time } }, sleep: { duration, tolerance in
             self.tolerances.append(tolerance)
             try await self.sleep(duration)
-        }, after: { [shared, isReal] seconds, work in
+        }, after: { [shared] seconds, work in
             let id = shared.withLock { shared in
                 shared.made += 1
                 shared.timers.append(Timer(id: shared.made, due: shared.time.addingTimeInterval(seconds), work: work))
                 return shared.made
             }
-            if isReal { DispatchQueue.global().asyncAfter(deadline: .now() + max(0, seconds)) { Self.fire(id, in: shared) } }
         }, threadTime: threadTime)
     }
 
@@ -80,13 +77,10 @@ final class FakeClock {
         shared.withLock { $0.timers.count }
     }
 
-    func isSleeping(for seconds: TimeInterval) -> Bool {
+    func isWaiting(for seconds: TimeInterval) -> Bool {
         let time = time
-        return sleeps.contains { abs($0.due.timeIntervalSince(time) - seconds) < 0.001 }
-    }
-
-    nonisolated func hasTimer(for seconds: TimeInterval) -> Bool {
-        shared.withLock { shared in shared.timers.contains { abs($0.due.timeIntervalSince(shared.time) - seconds) < 0.001 } }
+        let isTimed = shared.withLock { shared in shared.timers.contains { abs($0.due.timeIntervalSince(time) - seconds) < 0.001 } }
+        return isTimed || sleeps.contains { abs($0.due.timeIntervalSince(time) - seconds) < 0.001 }
     }
 
     func advance(by seconds: TimeInterval) {
@@ -102,12 +96,6 @@ final class FakeClock {
         due.forEach { $0.wake.resume() }
     }
 
-    private nonisolated static func fire(_ id: Int, in shared: Shared) {
-        let timer = shared.withLock { shared in
-            shared.timers.firstIndex { $0.id == id }.map { shared.timers.remove(at: $0) }
-        }
-        timer?.work()
-    }
 
     private func sleep(_ duration: Duration) async throws {
         count += 1
@@ -120,7 +108,6 @@ final class FakeClock {
                     wake.resume(throwing: CancellationError())
                 } else {
                     sleeps.append(Sleep(id: id, due: due, wake: wake))
-                    if isReal { wakeLater(id, after: duration) }
                 }
             }
         } onCancel: {
@@ -128,13 +115,6 @@ final class FakeClock {
         }
     }
 
-    private func wakeLater(_ id: Int, after duration: Duration) {
-        Task { [weak self] in
-            try? await RunClock().sleep(duration, nil)
-            guard let self, let index = sleeps.firstIndex(where: { $0.id == id }) else { return }
-            sleeps.remove(at: index).wake.resume()
-        }
-    }
 
     private func cancel(_ id: Int) {
         guard let index = sleeps.firstIndex(where: { $0.id == id }) else { return }

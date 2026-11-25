@@ -217,7 +217,7 @@ final class InlineHandlersTests: SpotRunsCase {
     }
 
     func testTheTimeAHandlerRunsAddsUpAcrossItsAwaits() async throws {
-        let thread = FakeClock(isReal: true, threadStep: 0.03)
+        let thread = FakeClock(threadStep: 0.03)
         runs.quit()
         runs = SpotRuns(environment: ProcessInfo.processInfo.environment, showLimit: 0.2, clock: thread.value, stopPause: 0.2)
         takeCalls()
@@ -255,13 +255,15 @@ final class InlineHandlersTests: SpotRunsCase {
         try await wait("the thread let go") { !script.isRunning }
     }
 
-    func testAWaitInEnvCountsAgainstTheClockLimitOfACallThatOpenspotTimesAsAWhole() async throws {
+    @MainActor func testAWaitInEnvCountsAgainstTheClockLimitOfACallThatOpenspotTimesAsAWhole() async throws {
         try script("picker", toml: "[actions.slow]\noutputs.v = 'text'", log: "picker-log", "[ \"$1\" = slow ] && sleep 1 && echo out.v=late")
         try inline("asker", toml: "[bindings]\npicker = { spot = 'picker' }", "export default {\n  async show(input, env) { const got = await env.picker.slow(); return `text=a\\ntitle=${got.v}\\n` },\n}")
         let asker = try spot("asker")
 
+        let first = Task { try await self.runs.answer(of: asker, ScriptEntry.show.name, limit: 0.3) }
+        try await pass(0.3, on: clock)
         do {
-            let shown = try await runs.answer(of: asker, ScriptEntry.show.name, limit: 0.3)
+            let shown = try await first.value
             XCTFail("the show outlasted its limit: \(shown)")
         } catch {
             XCTAssertEqual(error as? SpotError, .timedOut)

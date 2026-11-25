@@ -149,9 +149,10 @@ final class SpotRunsReadTests: SpotRunsCase {
         let sheet = try sheet()
 
         sheet.open(onReady: {})
-        try await wait("the first read") { self.log("reasons") == ["sheet.open show"] }
+        try await wait("the first read") { self.log("reasons") == ["sheet.open show"] && !sheet.isShowing }
         sheet.search("k")
 
+        try await pass(0.3, on: clock)
         try await wait("the search read") { self.log("reasons") == ["sheet.open show", "sheet.text sheet.text"] }
     }
 
@@ -159,10 +160,11 @@ final class SpotRunsReadTests: SpotRunsCase {
         try script(toml: "[on]\n\"sheet.open\" = true\n\"sheet.text\" = true", "\(TestSpot.event)\n[ \"$ev\" = sheet.text ] && printf '%s\\n' \"$in\" >> '\(path("stdin"))'\nprintf 'frame=\\nclass=gap-part\\n\\nfield=note\\nvalue=hello\\n'")
         let sheet = try sheet()
         sheet.open(onReady: {})
-        try await wait("the sheet") { sheet.panel?.inputs == [.init(key: "note", value: "hello")] }
+        try await wait("the sheet") { sheet.panel?.inputs == [.init(key: "note", value: "hello")] && !sheet.isShowing }
 
         sheet.search("k")
 
+        try await pass(0.3, on: clock)
         try await wait("the search read") { self.log("stdin").contains("input.value=k") }
         XCTAssertEqual(log("stdin").filter { !$0.hasPrefix("input.alt=") }, ["input.note=hello", "input.value=k"])
     }

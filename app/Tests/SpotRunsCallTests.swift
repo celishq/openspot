@@ -12,7 +12,7 @@ final class SpotRunsCallTests: SpotRunsCase {
         sheet.onReport = { if case .toast(let note) = $0, note.kind == .failure, note.fix == nil { failures.append(note.words) } }
 
         sheet.show()
-        try await wait("the limit of the read") { limit.hasTimer(for: 0.3) }
+        try await wait("the limit of the read") { limit.isWaiting(for: 0.3) }
         XCTAssertNil(sheet.failure)
         limit.advance(by: 0.3)
 
@@ -184,6 +184,7 @@ final class SpotRunsCallTests: SpotRunsCase {
         runs.opening.moving = "script"
 
         sheet.open {}
+        try await pass(runs.opening.motionLength, on: clock)
 
         try await wait("the rows") { sheet.list.shown.count == 1 }
         XCTAssertNil(runs.opening.moving)
@@ -469,6 +470,7 @@ final class SpotRunsCallTests: SpotRunsCase {
 
         sheet.set(try XCTUnwrap(sheet.panel?.parts.first), to: Self.big)
 
+        try await pass(0.3, on: clock)
         try await wait("the call") { self.placed(at: path("done")) }
         XCTAssertEqual(try String(contentsOfFile: path("count"), encoding: .utf8), "1")
         let got = try String(contentsOfFile: path("got"), encoding: .utf8)

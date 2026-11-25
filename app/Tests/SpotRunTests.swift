@@ -30,8 +30,7 @@ final class SpotRunTests: XCTestCase {
 
     private func passTextPause() async throws {
         let pause = Double(SpotRun.textPause.components.seconds) + Double(SpotRun.textPause.components.attoseconds) / 1e18
-        try await wait("the pause after the text") { self.clock.isSleeping(for: pause) }
-        clock.advance(by: pause)
+        try await pass(pause, on: clock)
     }
 
     private func path(_ name: String) -> String {
@@ -68,7 +67,7 @@ final class SpotRunTests: XCTestCase {
         var isOpened = false
 
         sheet.open(waits: true) { isOpened = true }
-        try await wait("the answer pause") { self.clock.isSleeping(for: 0.02) }
+        try await wait("the answer pause") { self.clock.isWaiting(for: 0.02) }
         XCTAssertFalse(isOpened)
         clock.advance(by: 0.02)
 

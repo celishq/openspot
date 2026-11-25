@@ -298,8 +298,10 @@ final class SpotRunsInlineTests: SpotRunsCase {
 
         script.send(first)
         script.send(second)
+        async let outcome = second.outcome()
+        try await pass(0.5, on: clock)
 
-        guard case .failed(let error) = await second.outcome() else { return XCTFail("the queued call did not fail") }
+        guard case .failed(let error) = await outcome else { return XCTFail("the queued call did not fail") }
         XCTAssertEqual(error as? SpotError, .timedOut)
     }
 
@@ -375,7 +377,7 @@ final class SpotRunsInlineTests: SpotRunsCase {
     }
 
     func testTheCPUTimeOfItsThreadCountsInItsUsage() async throws {
-        runs(clock: FakeClock(isReal: true, threadStep: 0.25))
+        runs(clock: FakeClock(threadStep: 0.25))
         try inline(toml: "", "export default { show() { return 'item=a\\n' } }")
         let sheet = try sheet()
         sheet.open {}
