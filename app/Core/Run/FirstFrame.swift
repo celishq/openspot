@@ -2,9 +2,9 @@ import Foundation
 
 @MainActor
 final class FirstFrame {
-    private var waiting: CheckedContinuation<CallAnswer, Error>?
+    private var waiting: ((Result<CallAnswer, Error>) -> Void)?
 
-    init(_ waiting: CheckedContinuation<CallAnswer, Error>) {
+    init(_ waiting: @escaping (Result<CallAnswer, Error>) -> Void) {
         self.waiting = waiting
     }
 
@@ -13,11 +13,11 @@ final class FirstFrame {
         guard let waiting, !frame.isMark else { return false }
         self.waiting = nil
         if !frame.isForm {
-            waiting.resume(returning: frame.isPicture || !frame.items.isEmpty ? .shown : .done)
+            waiting(.success(frame.isPicture || !frame.items.isEmpty ? .shown : .done))
         } else if let form = ItemForm(output: frame) {
-            waiting.resume(returning: .form(form))
+            waiting(.success(.form(form)))
         } else {
-            waiting.resume(throwing: SpotError.badForm)
+            waiting(.failure(SpotError.badForm))
         }
         return true
     }
@@ -25,6 +25,6 @@ final class FirstFrame {
     func end(_ answer: CallAnswer) {
         guard let waiting else { return }
         self.waiting = nil
-        waiting.resume(returning: answer)
+        waiting(.success(answer))
     }
 }

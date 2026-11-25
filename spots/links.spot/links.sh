@@ -61,16 +61,19 @@ checked() {
 }
 
 # A stop of the call that fetches ends this process: the half-fetched image goes with it.
-trap 'rm -f "$icons"/.*."$$"; exit 143' TERM INT
+trap 'rm -f "$icons"/.*."$$" "$icons"/.*."$$".svg; exit 143' TERM INT
 
-# Saves one image from the address to a host's icon file. Fails when the address gives no image Openspot can read.
+# Saves one image from the address to a host's icon file, a vector image at 256 pixels. Fails when the address gives
+# no image Openspot can read.
 save_icon() {
   file="$icons/.$2.$$"
   png="$icons/.$2.png.$$"
   kind=$(curl -fsSL -m 5 -A "$agent" -o "$file" -w '%{content_type}' "$1" 2>/dev/null) || kind=""
+  size=
+  case "$kind" in image/svg*) mv "$file" "$file.svg" && file="$file.svg" size=256 ;; esac
   case "$kind" in
     image/*)
-      if sips -s format png "$file" --out "$png" >/dev/null 2>&1 && mv "$png" "$icons/$2.png"; then
+      if sips -s format png ${size:+-Z "$size"} "$file" --out "$png" >/dev/null 2>&1 && mv "$png" "$icons/$2.png"; then
         rm -f "$file"
         return 0
       fi
@@ -81,18 +84,21 @@ save_icon() {
   return 1
 }
 
-# Finds a site's icon on its page, largest kind first, or else at the usual address.
+# Finds a site's icon on its page, a vector icon first, then the largest kind, or else at the usual address.
 fetch_icon() {
   origin=$1
   host=$2
   mkdir -p "$icons"
   tags=$(curl -fsSL -m 5 -A "$agent" "$origin/" 2>/dev/null | tr '>' '\n' | grep -i '<link')
   hrefs=$(
-    for kind in 'apple-touch-icon' '(shortcut )?icon'; do
+    for kind in 'svg' 'apple-touch-icon' '(shortcut )?icon'; do
+      rel=$kind type=.
+      [ "$kind" = svg ] && rel='(shortcut )?icon' type=svg
       printf '%s\n' "$tags" \
-        | grep -iE "rel=[\"']?$kind[\"' ]" \
+        | grep -iE "rel=[\"']?$rel[\"' ]" \
+        | grep -i "$type" \
         | grep -i 'href=' \
-        | sed -E "s/.*[hH][rR][eE][fF]=[\"']?([^\"' ]+).*/\\1/; s/&amp;/\\&/g"
+        | sed -E "s/.*[[:space:]][hH][rR][eE][fF]=[\"']?([^\"' ]+).*/\\1/; s/&amp;/\\&/g"
     done
   )
   for href in $hrefs "$origin/favicon.ico"; do

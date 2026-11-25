@@ -120,6 +120,10 @@ extension SpotRun {
         press(picking(item), closes: closes)
     }
 
+    public func pick(_ item: SpotItem, closes: Bool = false, then answered: @escaping @MainActor (CallAnswer) -> Void) {
+        press(picking(item), closes: closes, then: answered)
+    }
+
     public func answer(toPick item: SpotItem, closes: Bool = false) async -> CallAnswer {
         await answer(toPress: picking(item), closes: closes)
     }
@@ -141,17 +145,20 @@ extension SpotRun {
     }
 
     private func answer(toPress message: Message, closes: Bool = false) async -> CallAnswer {
+        await withCheckedContinuation { waiting in
+            press(message, closes: closes) { waiting.resume(returning: $0) }
+        }
+    }
+
+    private func press(_ message: Message, closes: Bool, then answered: @escaping @MainActor (CallAnswer) -> Void) {
         let key = Self.key(of: message)
         if let running = running(key) {
             pressAgain(running)
-            return .stopped
+            return answered(.stopped)
         }
-        answered = nil
-        let answer = try? await withCheckedThrowingContinuation { waiting in
-            let first = FirstFrame(waiting)
-            if !send(Call(message: message, key: key, purpose: .act(Act(first: first, started: runs.now(), closes: closes)))) { first.end(.stopped) }
-        }
-        return answer ?? .stopped
+        self.answered = nil
+        let first = FirstFrame { answered((try? $0.get()) ?? .stopped) }
+        if !send(Call(message: message, key: key, purpose: .act(Act(first: first, started: runs.now(), closes: closes)))) { first.end(.stopped) }
     }
 
     public func set(_ item: SpotItem, to value: String) {
@@ -200,7 +207,7 @@ extension SpotRun {
             ?? typed?.textInput.map { Message(call, inputs: [.init(key: $0.name, value: search.text)]) }
             ?? Message(call)
         return try await withCheckedThrowingContinuation { waiting in
-            let first = FirstFrame(waiting)
+            let first = FirstFrame { waiting.resume(with: $0) }
             if !send(Call(message: message, key: key, purpose: .act(Act(first: first, started: runs.now())))) { first.end(.stopped) }
         }
     }

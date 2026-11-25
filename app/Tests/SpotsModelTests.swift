@@ -1908,6 +1908,20 @@ final class SpotsModelTests: XCTestCase {
         try await wait("the toast of the pick") { host.confirms.contains("Picked 14") }
     }
 
+    func testReturnOnAnAnswerSendsThePressWithinThePress() async throws {
+        let body = #"in=$(cat); t=$(printf '%s\n' "$in" | sed -n 's/^input\.text=//p'); case "$1" in search) printf 'frame=\n\nnumber=answer\nclass=large:flex\ntitle=%s\nvalue=14\n' "$t" ;; esac"#
+        try script("calc", toml: "title = 'Calc'\nanswers = 'card'\n[on]\nsearch = '^[0-9]'", body)
+        await model.reload()
+        model.isShown = true
+        model.panelWillShow()
+        model.search("2")
+        try await wait("the answer card") { model.visible.first?.id == "calc\n14" }
+
+        model.runSelected()
+
+        XCTAssertEqual(model.sheets["calc"]?.calls.contains(where: \.isAct), true)
+    }
+
     func testAnAnswerIsOneCardOnlyWhenItsManifestAsksForCards() async throws {
         let body = #"in=$(cat); t=$(printf '%s\n' "$in" | sed -n 's/^input\.text=//p'); printf 'frame=\n\nnumber=answer\nclass=large:flex\ntitle=%s\nvalue=14\n' "$t""#
         try script("calc", toml: "title = 'Calc'\n[on]\nsearch = '^[0-9]'", body)
