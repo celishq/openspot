@@ -235,9 +235,7 @@ extension SpotTokens {
     public static let settingsLookWords: CGFloat = 6
     public static let settingsLookTopInset: CGFloat = 14
     public static let settingsLookRing: CGFloat = 3
-    public static let settingsLookPanel: CGFloat = 150
-    public static let settingsLookRows: CGFloat = 1.6
-    public static let settingsLookGlow: CGFloat = 12
+    public static let settingsLookCardRing: CGFloat = 4
     public static let settingsSheetWidth: CGFloat = 460
     public static let settingsSheetPadding: CGFloat = 24
     public static let settingsSheetGap: CGFloat = 14

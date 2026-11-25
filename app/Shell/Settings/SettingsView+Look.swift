@@ -27,16 +27,15 @@ extension SettingsView {
     private func preview(_ look: SettingsFacts.Look) -> some View {
         let swatch = scheme == .dark ? look.colours.dark : look.colours.light
         let shape = SpotRoundShape(radius: SpotTokens.settingsCorner)
-        let width = SpotTokens.gridWidth
-        let height = SpotTokens.cell * (SpotTokens.settingsLookRows + 1)
-        let scale = SpotTokens.settingsLookPanel / width
-        return ZStack(alignment: .top) {
-            LinearGradient(colors: SpotTheme.settingsLookWall, startPoint: .topLeading, endPoint: .bottomTrailing)
-            swatch.background.color.opacity(SpotTheme.settingsLookBackdrop)
+        let columns = CGFloat(SpotTheme.settingsLookCards.count)
+        let width = columns * SpotTokens.cell + (columns - 1) * SpotTokens.columnGap + 2 * SpotTokens.padding
+        let height = 2 * (SpotTokens.padding + SpotTokens.cell) + SpotTokens.rowGap
+        let scale = (SpotTokens.settingsLookHeight - 2 * SpotTokens.settingsLookTopInset) / height
+        return ZStack {
+            LinearGradient(colors: scheme == .dark ? SpotTheme.settingsLookWallDark : SpotTheme.settingsLookWallLight, startPoint: .topLeading, endPoint: .bottomTrailing)
             panelTop(swatch, width: width, height: height)
-                .scaleEffect(scale, anchor: .topLeading)
-                .frame(width: width * scale, height: height * scale, alignment: .topLeading)
-                .padding(.top, SpotTokens.settingsLookTopInset)
+                .scaleEffect(scale)
+                .frame(width: width * scale, height: height * scale)
         }
         .frame(height: SpotTokens.settingsLookHeight)
         .clipShape(shape)
@@ -45,6 +44,7 @@ extension SettingsView {
 
     private func panelTop(_ swatch: Theme.Appearance, width: CGFloat, height: CGFloat) -> some View {
         let card = SpotRoundShape(radius: SpotTokens.cardRadius)
+        let plate = SpotRoundShape(radius: SpotTokens.cardRadius + SpotTokens.padding)
         return VStack(alignment: .leading, spacing: SpotTokens.rowGap) {
             HStack(spacing: SpotTokens.fieldTextGap) {
                 Image(systemName: "magnifyingglass")
@@ -54,23 +54,23 @@ extension SettingsView {
             .foregroundStyle(swatch.ink.color.opacity(SpotTheme.settingsLookHint))
             .padding(.horizontal, SpotTokens.padding)
             .frame(maxWidth: .infinity, minHeight: SpotTokens.cell, maxHeight: SpotTokens.cell, alignment: .leading)
-            .background(swatch.background.color.opacity(SpotTheme.settingsLookPanelFill), in: card)
-            ForEach(0..<Int(SpotTokens.settingsLookRows.rounded(.up)), id: \.self) { line in
-                HStack(spacing: SpotTokens.columnGap) {
-                    ForEach(Array(SpotTheme.settingsLookCards.enumerated()), id: \.offset) { index, symbol in
-                        let isChosen = line == 0 && index == 0
-                        Image(systemName: line == 0 ? symbol : SpotTheme.settingsLookCards.reversed()[index])
-                            .font(.system(size: SpotTokens.glyph, weight: .semibold))
-                            .foregroundStyle(isChosen ? SpotTheme.settingsTileInk : swatch.ink.color)
-                            .padding(SpotTokens.glyphInset)
-                            .frame(width: SpotTokens.cell, height: SpotTokens.cell, alignment: .topLeading)
-                            .background(isChosen ? swatch.accent.color : swatch.background.color.opacity(SpotTheme.settingsLookPanelFill), in: card)
-                            .shadow(color: isChosen ? swatch.accent.color.opacity(SpotTheme.settingsLookGlow) : .clear, radius: SpotTokens.settingsLookGlow)
-                    }
+            .background(swatch.ink.color.opacity(SpotTheme.settingsLookCell), in: card)
+            HStack(spacing: SpotTokens.columnGap) {
+                ForEach(Array(SpotTheme.settingsLookCards.enumerated()), id: \.offset) { index, symbol in
+                    let isChosen = index == 0
+                    Image(systemName: symbol)
+                        .font(.system(size: SpotTokens.glyph, weight: .semibold))
+                        .foregroundStyle(isChosen ? swatch.accent.color : swatch.ink.color)
+                        .padding(SpotTokens.glyphInset)
+                        .frame(maxWidth: .infinity, minHeight: SpotTokens.cell, maxHeight: SpotTokens.cell, alignment: .topLeading)
+                        .background(swatch.ink.color.opacity(SpotTheme.settingsLookCell), in: card)
+                        .overlay(card.strokeBorder(isChosen ? swatch.accent.color : .clear, lineWidth: SpotTokens.settingsLookCardRing))
                 }
             }
         }
-        .padding(.horizontal, SpotTokens.padding)
+        .padding(SpotTokens.padding)
         .frame(width: width, height: height, alignment: .top)
+        .background(swatch.background.color.opacity(SpotTheme.settingsLookPanelFill), in: plate)
+        .overlay(plate.strokeBorder(swatch.ink.color.opacity(SpotTheme.settingsLookCell), lineWidth: SpotTokens.settingsLookCardRing / 2))
     }
 }

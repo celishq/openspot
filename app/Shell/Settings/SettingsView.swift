@@ -10,6 +10,7 @@ struct SettingsView: View {
     @State var step: SettingsAccountSheet.Step?
     @State private var isTitleShown = false
     @State private var isScrolled = false
+    @State private var barHeight: CGFloat = 0
     @State private var position = ScrollPosition(edge: .top)
     @Environment(\.colorScheme) var scheme
 
@@ -42,6 +43,7 @@ struct SettingsView: View {
             .onScrollGeometryChange(for: Bool.self, of: { $0.contentOffset.y + $0.contentInsets.top > 0 }, action: { _, isPast in
                 withAnimation(SpotMotion.fade(isShown: isPast)) { isScrolled = isPast }
             })
+            .onScrollGeometryChange(for: CGFloat.self, of: { $0.contentInsets.top }, action: { _, height in barHeight = height })
             .overlay(alignment: .top) {
                 Rectangle()
                     .fill(.bar)
@@ -52,8 +54,8 @@ struct SettingsView: View {
                                 .frame(height: SpotTokens.settingsBarFade)
                         }
                     }
-                    .frame(height: SpotTokens.settingsBarFade)
-                    .ignoresSafeArea(edges: .top)
+                    .frame(height: barHeight + SpotTokens.settingsBarFade)
+                    .offset(y: -barHeight)
                     .opacity(isScrolled ? 1 : MotionTokens.hiddenOpacity)
                     .allowsHitTesting(false)
             }

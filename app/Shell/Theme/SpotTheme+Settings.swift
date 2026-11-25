@@ -24,13 +24,10 @@ extension SpotTheme {
     static let settingsBarFade = [Color.black, Color.clear]
     static let settingsLookCell = 0.12
     static let settingsLookHint = 0.5
-    static let settingsLookGlow = 0.6
-    static let settingsLookPanelFill = 0.85
-    static let settingsLookBackdrop = 0.35
+    static let settingsLookPanelFill = 0.92
     static let settingsLookCards = ["plus.forwardslash.minus", "face.smiling", "party.popper", "doc.on.clipboard"]
-    static let settingsLookWall = [
-        Color(red: 0.96, green: 0.36, blue: 0.36), Color(red: 0.55, green: 0.42, blue: 0.95), Color(red: 0.36, green: 0.78, blue: 0.42)
-    ]
+    static let settingsLookWallDark = [Color(red: 0.13, green: 0.17, blue: 0.33), Color(red: 0.29, green: 0.20, blue: 0.42)]
+    static let settingsLookWallLight = [Color(red: 0.74, green: 0.84, blue: 0.97), Color(red: 0.86, green: 0.80, blue: 0.96)]
 
     static func settings(_ section: SettingsPage.Section) -> Color {
         switch section {
