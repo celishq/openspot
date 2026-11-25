@@ -23,9 +23,8 @@ extension SpotsModel {
         }
     }
 
-    public func updateVisible(holding motion: PanelMotion? = .edit) {
-        hold(shownPreview(of: query), motion: motion)
-        showVisible()
+    public func updateVisible() {
+        showDetails(shownDetails(of: query), with: showVisible)
     }
 
     func showVisible() {
@@ -109,7 +108,7 @@ extension SpotsModel {
         holdsRows = false
         let isFixed = content.isFixed
         if isGridFixed != isFixed { isGridFixed = isFixed }
-        let top = fieldRoom
+        let top = detailsRoom
         if isFixed, let gesture {
             let shown = Set(visible.map(\.id))
             if gesture.grid == grid, next.filter({ shown.contains($0.id) }) == visible {
@@ -158,7 +157,7 @@ extension SpotsModel {
 
     func takeQuery(_ text: String) {
         hideAttachments(for: text)
-        hold(shownPreview(of: text), motion: .edit)
+        showDetails(shownDetails(of: text))
         query = text
     }
 

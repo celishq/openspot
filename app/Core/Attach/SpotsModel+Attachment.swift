@@ -115,22 +115,23 @@ extension SpotsModel {
         var next = stack
         if !next.isMoving { next.place() }
         guard next != attachments else { return }
-        let motion = isShown ? motion : nil
         let turns = attachments.isOn != next.isOn || attachments.selectedChip != next.selectedChip
+        let shown = turns ? shownDetails(of: query, in: next) : details
+        let motion = isShown ? detailsMotion(to: shown, else: motion) : nil
         let moves = !next.isMoving && motion != nil && next.layout != attachments.layout
         if moves { next.isMoving = true }
         change(motion, {
             attachments = next
-            if turns { takePreview() }
+            guard turns else { return }
+            takeDetails(shown)
+            selected = 0
+            showVisible()
         }) { [weak self] in
             guard moves, var landed = self?.attachments else { return }
             landed.isMoving = false
             self?.placeAttachment(landed, .edit)
         }
         hideAttachments()
-        guard turns else { return }
-        selected = 0
-        showVisible()
     }
 
     func give(to entry: Entry) {
@@ -189,13 +190,8 @@ extension SpotsModel {
         change(isShown ? .fade : nil) { isAttachmentHidden = isHidden }
     }
 
-    func showsAttachment(of query: String) -> Bool {
-        attachments.isOn && !isEditing && !query.trimmingCharacters(in: .whitespaces).hasPrefix("/")
-    }
-
-    func shownPreview(of query: String) -> AttachmentPreview? {
-        guard showsAttachment(of: query), let source = attachments.selected, entry(source) != nil else { return nil }
-        return chipPreview
+    func showsAttachment(of query: String, in stack: AttachmentStack? = nil) -> Bool {
+        (stack ?? attachments).isOn && !isEditing && !query.trimmingCharacters(in: .whitespaces).hasPrefix("/")
     }
 
     func attachmentRows() -> [Entry] {
@@ -205,16 +201,6 @@ extension SpotsModel {
         return commands.chipActions(of: value, matching: search, limit: Self.chipActionLimit).compactMap { row in
             entry(row.spot).map { Entry(spot: $0.spot, item: SpotItem(title: row.action.title, run: row.action.name, picture: Icon(text: row.action.icon)), role: .action, detail: row.action.detail) }
         }
-    }
-
-    func takePreview() {
-        let shown = shownPreview(of: query)
-        if preview != shown { preview = shown }
-    }
-
-    func hold(_ preview: AttachmentPreview?, motion: PanelMotion?) {
-        guard preview != self.preview else { return }
-        change(isShown ? motion : nil) { self.preview = preview }
     }
 
     static let chipActionLimit = 5

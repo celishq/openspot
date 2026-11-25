@@ -62,7 +62,7 @@ public struct Style: Equatable, Sendable {
     }
 
     public enum Variant: String, CaseIterable, Hashable, Sendable {
-        case sheet, card, bar, float, window, toast
+        case sheet, card, bar, float, window, toast, details
         case small, wide, square, strip, large
         case hover, pressed, selected, focus
         case dark, light

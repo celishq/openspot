@@ -52,33 +52,31 @@ extension SpotTokens {
     public static let attachmentFarShadowDrop: CGFloat = 6
     public static let attachmentDot: CGFloat = 4
     public static let attachmentDotGap: CGFloat = 3
-    public static let attachmentValueRise: CGFloat = 8
     public static let attachmentGap: CGFloat = 8
-    public static let previewLines = 2
-    public static let previewCaptionGap: CGFloat = 4
+    public static let detailsLineLimit = 2
 
-    public static let attachmentValuePadding: CGFloat = 9
-    public static var attachmentValueFoot: CGFloat { padding + glyphInset }
-    public static let attachmentValueLineGap: CGFloat = 1
+    public static let detailsTop: CGFloat = 9
+    public static var detailsFoot: CGFloat { padding + glyphInset }
+    public static let detailsLineGap: CGFloat = 1
     static let lineShare: CGFloat = 1.25
     static let glyphWidthShare: CGFloat = 0.55
 
-    public static var attachmentValueWidth: CGFloat { gridWidth - 2 * (padding + glyphInset) }
-    public static var attachmentPicture: CGFloat { attachmentValueRoom(lines: 1) - attachmentValuePadding - attachmentValueFoot }
-    public static var attachmentPictureRadius: CGFloat { min(attachmentPicture * 0.224 * cardRadius / builtIn.radius.card, attachmentPicture / 2) }
-    public static let attachmentPictureGap: CGFloat = 8
+    public static var detailsWidth: CGFloat { gridWidth - 2 * (padding + glyphInset) }
+    public static var detailsContentHeight: CGFloat { detailsHeight(lines: detailsLineLimit) - detailsTop - detailsFoot }
+    public static var detailsPicture: CGFloat { detailsHeight(lines: 1) - detailsTop - detailsFoot }
+    public static let detailsPictureGap: CGFloat = 8
 
-    public static func attachmentValueLines(of text: String, besidePicture: Bool = false) -> Int {
+    public static func detailsLines(of text: String, besidePicture: Bool = false) -> Int {
         guard !text.isEmpty else { return besidePicture ? 1 : 0 }
         let width = CGFloat(text.count) * CGFloat(layout.type.body) * glyphWidthShare
-        let room = attachmentValueWidth - (besidePicture ? attachmentPicture + attachmentPictureGap : 0)
-        return min(previewLines, max(1, Int((width / room).rounded(.up))))
+        let room = detailsWidth - (besidePicture ? detailsPicture + detailsPictureGap : 0)
+        return min(detailsLineLimit, max(1, Int((width / room).rounded(.up))))
     }
 
-    public static func attachmentValueRoom(lines: Int) -> CGFloat {
+    public static func detailsHeight(lines: Int) -> CGFloat {
         let caption = CGFloat(layout.type.detail) * lineShare
-        let body = lines == 0 ? 0 : attachmentValueLineGap + CGFloat(lines) * CGFloat(layout.type.body) * lineShare
-        return (attachmentValuePadding + attachmentValueFoot + caption + body).rounded(.up)
+        let body = lines == 0 ? 0 : detailsLineGap + CGFloat(lines) * CGFloat(layout.type.body) * lineShare
+        return (detailsTop + detailsFoot + caption + body).rounded(.up)
     }
 
     public static var attachmentFit: Int {
