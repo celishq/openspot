@@ -24,7 +24,7 @@ extension SpotsModel {
     }
 
     public func updateVisible() {
-        hold(shownDetails(of: query), with: showVisible)
+        showDetails(shownDetails(of: query), with: showVisible)
     }
 
     func showVisible() {
@@ -152,7 +152,7 @@ extension SpotsModel {
 
     func takeQuery(_ text: String) {
         hideAttachments(for: text)
-        hold(shownDetails(of: text))
+        showDetails(shownDetails(of: text))
         query = text
     }
 

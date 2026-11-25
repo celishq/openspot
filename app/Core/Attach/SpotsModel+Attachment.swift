@@ -194,43 +194,12 @@ extension SpotsModel {
         (stack ?? attachments).isOn && !isEditing && !query.trimmingCharacters(in: .whitespaces).hasPrefix("/")
     }
 
-    func shownDetails(of query: String, in stack: AttachmentStack? = nil) -> AttachmentDetails? {
-        let stack = stack ?? attachments
-        guard showsAttachment(of: query, in: stack), let chip = stack.selectedChip, entry(chip.source) != nil else { return nil }
-        return chip.details
-    }
-
-    static func room(of details: AttachmentDetails?) -> CGFloat {
-        details.map { SpotTokens.detailsHeight(lines: $0.lines) } ?? 0
-    }
-
-    func detailsMotion(to shown: AttachmentDetails?, else motion: PanelMotion?) -> PanelMotion? {
-        let room = Self.room(of: shown)
-        return room == detailsRoom ? motion : .sheet(isOpen: room > detailsRoom)
-    }
-
     func attachmentRows() -> [Entry] {
         guard let chip = attachments.selectedChip, entry(chip.source) != nil, let value = chip.value else { return [] }
         let text = query.trimmingCharacters(in: .whitespaces)
         let search = text.isEmpty ? nil : runs.search(of: text)
         return commands.chipActions(of: value, matching: search, limit: Self.chipActionLimit).compactMap { row in
             entry(row.spot).map { Entry(spot: $0.spot, item: SpotItem(title: row.action.title, run: row.action.name, picture: Icon(text: row.action.icon)), role: .action, detail: row.action.detail) }
-        }
-    }
-
-    func takeDetails(_ shown: AttachmentDetails?) {
-        if details != shown { details = shown }
-    }
-
-    func takeDetails() {
-        takeDetails(shownDetails(of: query))
-    }
-
-    func hold(_ shown: AttachmentDetails?, with rest: () -> Void = {}) {
-        guard shown != details else { return rest() }
-        change(isShown ? detailsMotion(to: shown, else: .edit) : nil) {
-            takeDetails(shown)
-            rest()
         }
     }
 
