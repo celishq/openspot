@@ -76,6 +76,7 @@ public struct SpotSettings: Equatable, Sendable {
     let showsInMenuBar: Bool
     let keys: [Key]
     var isWindowByDefault = false
+    var opensAsWindow = false
 
     public func hasRows(in config: Config) -> Bool {
         !keys.isEmpty || showsInMenuBar || !fields.isEmpty || !kept(in: config).isEmpty
@@ -144,10 +145,9 @@ public struct SpotSettings: Equatable, Sendable {
                 : row(field.id, field.title, config.setting(field.id, of: spot).flatMap { $0.isEmpty ? nil : $0 }, Self.kind(of: field), Self.valueIcon)
         }
         let keptRows = kept(in: config).map { row($0.key, Manifest.Setting(id: $0.key).title, $0.value, .text, Self.valueIcon) }
-        let placeRows = showsInMenuBar ? [
-            row(Self.menuBarKey, "Show in the menu bar", String(config.arrangement.menuBar.contains(spot)), .toggle, Self.menuBarIcon),
-            row(Self.windowKey, "Open in a window", String(isWindow(in: config)), .toggle, Self.windowIcon)
-        ] : []
+        let menuBarRow = row(Self.menuBarKey, "Show in the menu bar", String(config.arrangement.menuBar.contains(spot)), .toggle, Self.menuBarIcon)
+        let windowRow = row(Self.windowKey, "Open in a window", String(isWindow(in: config)), .toggle, Self.windowIcon)
+        let placeRows = showsInMenuBar ? [menuBarRow] + (opensAsWindow ? [] : [windowRow]) : []
         return keyRows + fieldRows + keptRows + placeRows
     }
 
