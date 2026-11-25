@@ -7,7 +7,7 @@ struct StoreCalls {
     private static func catalog(in places: AppPlaces) -> SpotCatalog {
         let config = places.config.read()
         return SpotCatalog(
-            published: places.store, folder: places.spots, arrangement: config.arrangement, stores: StoreSource.all(builtIn: places.examples, config: config), lock: places.lock
+            folder: places.spots, arrangement: config.arrangement, stores: StoreSource.all(builtIn: places.examples, config: config), lock: places.lock
         )
     }
 
@@ -96,17 +96,5 @@ struct StoreCalls {
         }
     }
 
-    func publish(_ id: String, account: Account?, caller: Spot?) -> CommandAPI.Work {
-        guard let app, let account else { return CommandAnswer.notRunning("store publish \(id)") }
-        return CommandAnswer.work {
-            try account.admit(caller)
-            switch await app.publish(id) {
-            case .published: return "Published \(id).\n"
-            case .unchanged: return "\(id) has no change since its last publish.\n"
-            case .needsReadme: throw SpotError.failed(1, "\(id) has no readme.md. Write one beside its script, then publish again.")
-            case .notOwn: throw SpotError.failed(1, "`\(id)` is not a spot of your spots folder, so it cannot be published.")
-            case .failed: throw SpotError.failed(1, "\(id) was not published. The toast in Openspot says why.")
-            }
-        }
-    }
+
 }

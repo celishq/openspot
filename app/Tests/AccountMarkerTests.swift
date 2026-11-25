@@ -88,7 +88,6 @@ final class AccountMarkerTests: BuiltInCase {
         let sheet = AccountSheet(store: store, links: AccountSheet.Links(
             allows: { await app.allows($0) },
             copy: { mac.copied.append($0); return true },
-            publish: { false },
             userName: { "Tony Pinkevych" }
         ))
         var lines: [String] = []

@@ -129,7 +129,7 @@ icon = "bag"
 detail = "Get spots"
 keywords = ["store", "get spots"]
 answers = "last"
-uses = ["spots", "account"]
+uses = ["spots"]
 
 [scripts.store.on]
 search = "\\S"

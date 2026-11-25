@@ -50,7 +50,7 @@ public final class CommandAPI: @unchecked Sendable {
     }
 
     public func admit(_ call: CommandLineCall, request: CommandRequest) -> CommandLineCall {
-        guard !call.isFault, !call.rule.flags.contains(.reachesKey), let runs, let caller = caller(of: request) else { return call }
+        guard !call.isFault, let runs, let caller = caller(of: request) else { return call }
         if let refusal = call.rule.onlyPerson, !caller.isBuiltIn {
             return CommandLineCall(name: call.name, call: CallFault.refused("\(caller.name) \(refusal)"))
         }

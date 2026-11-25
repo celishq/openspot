@@ -95,10 +95,6 @@ struct SpotRunningApp: RunningApp {
         await StoreWindow.show(model: model, id: id, search: search)
     }
 
-    func publish(_ id: String) async -> SpotPublish {
-        await model.publish(id)
-    }
-
     func reveal(_ id: String) async -> Bool {
         await model.reveal(id)
     }

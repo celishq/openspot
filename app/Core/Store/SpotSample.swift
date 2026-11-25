@@ -22,13 +22,6 @@ public enum SpotSample {
     }
 
     @MainActor
-    public static func capture(of spot: Spot, runs: SpotRuns) async throws {
-        guard let sampled = spot.sampled else { throw SpotError.fault("\(spot.name) has no sample. Add \(scriptName) beside it.") }
-        let text = try await runs.answer(of: sampled, ScriptEntry.show.name, limit: limit)
-        try text.write(to: self.text(beside: spot.url), atomically: true, encoding: .utf8)
-    }
-
-    @MainActor
     public static func output(of item: SpotCatalog.Item, runs: SpotRuns) async -> Frame? {
         await output(of: item.spot, runsScript: item.runsSample, runs: runs)
     }

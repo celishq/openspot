@@ -2,34 +2,16 @@ import XCTest
 @testable import OpenspotCore
 
 final class AccountSheetTests: BuiltInCase {
-    private actor Publishes {
-        var ids: [String] = []
-        var waiting: String?
-
-        func wait(for id: String) {
-            waiting = id
-        }
-
-        func publishWaiting() -> Bool {
-            guard let id = waiting else { return false }
-            waiting = nil
-            ids.append(id)
-            return true
-        }
-    }
-
     private let phrase = "abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon about"
-    private let publishes = Publishes()
     private var sheet: AccountSheet?
 
     private var account: Spot {
         get throws {
             if let sheet { return sheet.spot }
-            let app = app, mac = mac, publishes = publishes
+            let app = app, mac = mac
             let made = AccountSheet(store: store, links: AccountSheet.Links(
                 allows: { await app.allows($0) },
                 copy: { mac.copied.append($0); return true },
-                publish: { await publishes.publishWaiting() },
                 userName: { "Tony Pinkevych" }
             ))
             sheet = made
@@ -194,31 +176,23 @@ final class AccountSheetTests: BuiltInCase {
         XCTAssertEqual(done, [.route(.pop(all: false))])
     }
 
-    func testWithAPublishThatWaitsANewKeyPublishesItAndGoesBack() async throws {
-        await publishes.wait(for: "a")
-
+    func testANewKeyGoesBackToTheSheetBehindAccount() async throws {
         let done = try await effects(["create"], input: "input.handle=tony\n", page: "handle")
 
         XCTAssertNotNil(try store.key())
-        let published = await publishes.ids
-        XCTAssertEqual(published, ["a"])
         XCTAssertEqual(done, [.route(.pop(all: true))])
     }
 
-    func testWithAPublishThatWaitsYourOwnWordsSignInPublishItAndGoBack() async throws {
-        await publishes.wait(for: "a")
-
+    func testYourOwnWordsSignInAndGoBack() async throws {
         let restore = try await frame(["show"], page: "restore")
         let done = try await effects(["sign_in"], input: "input.phrase=\(phrase)\n", page: "restore")
 
         XCTAssertTrue(restore.contains("field=phrase"), restore)
         XCTAssertEqual(try store.key()?.words?.joined(separator: " "), phrase)
-        let published = await publishes.ids
-        XCTAssertEqual(published, ["a"])
         XCTAssertEqual(done, [.route(.pop(all: true)), .toast("Signed in")])
     }
 
-    func testAPageThatACallerNamesPublishesNothing() async throws {
+    func testAPageThatACallerNamesTakesNoRoute() async throws {
         XCTAssertFalse(try account.takes(route: "publish:evil"))
 
         _ = try await frame(["new"], page: "publish:evil")
@@ -228,8 +202,6 @@ final class AccountSheetTests: BuiltInCase {
         _ = try await frame(["own"], page: "publish:evil")
         let signedIn = try await effects(["sign_in"], input: "input.phrase=\(phrase)\n", page: "publish:evil")
 
-        let published = await publishes.ids
-        XCTAssertEqual(published, [])
         XCTAssertFalse(made.contains(.route(.pop(all: false))))
         XCTAssertFalse(signedIn.contains(.route(.pop(all: false))))
     }

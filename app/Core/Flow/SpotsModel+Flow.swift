@@ -155,7 +155,6 @@ extension SpotsModel {
     func endFlow() {
         for page in flow.pages where page.route != nil { sheets[page.spot]?.show(FlowSheet(spot: page.spot)) }
         flow.clear()
-        waitingPublish = nil
         showEdges()
     }
 

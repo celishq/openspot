@@ -103,27 +103,6 @@ final class CommandNounTests: XCTestCase {
         XCTAssertEqual(declared.output, "rang hi\n")
     }
 
-    func testAKeyVerbSkipsTheUseCheckAndMeetsTheGateOfTheKey() async throws {
-        runs.isCareful = true
-
-        let answer = try await ask(["store", "publish", "x"], from: spot(uses: []))
-
-        XCTAssertEqual(answer.errors, "Only Openspot's Store can reach your account key.\n")
-        XCTAssertNil(runs.usage.counts["chime"])
-    }
-
-    func testEachVerbThatReachesTheKeyRefusesACallerThatHoldsNoKey() async throws {
-        for noun in CommandNoun.all {
-            for verb in noun.verbs where verb.rule.flags.contains(.reachesKey) {
-                let arguments = [noun.name] + verb.words + (verb.form == "on|off" ? ["off"] : verb.form == "<id>" ? ["x"] : [])
-                for caller in [nil, spot(uses: [.account])] {
-                    let answer = try await ask(arguments, from: caller)
-                    XCTAssertEqual(answer.errors, "Only Openspot's Store can reach your account key.\n", arguments.joined(separator: " "))
-                }
-            }
-        }
-    }
-
     func testABatchTakesNoBatchInsideIt() async throws {
         let answer = try await ask(["batch"], input: "batch\n")
 

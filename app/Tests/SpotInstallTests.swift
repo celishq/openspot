@@ -26,7 +26,7 @@ final class SpotInstallTests: XCTestCase {
     private var source: URL { root.appendingPathComponent("friends", isDirectory: true) }
 
     private var catalog: SpotCatalog {
-        SpotCatalog(published: places.store, folder: places.spots, arrangement: places.config.read().arrangement, stores: [StoreSource(url: source)])
+        SpotCatalog(folder: places.spots, arrangement: places.config.read().arrangement, stores: [StoreSource(url: source)])
     }
 
     private func install(_ id: String, _ clash: SpotClash? = nil, isConfirmed: Bool = false) async throws -> String {

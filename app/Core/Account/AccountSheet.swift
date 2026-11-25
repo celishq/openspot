@@ -4,18 +4,15 @@ public actor AccountSheet {
     public struct Links: Sendable {
         let allows: @Sendable (String) async -> Bool
         let copy: @Sendable (String) async -> Bool
-        let publish: @Sendable () async -> Bool
         let userName: @Sendable () -> String
 
         public init(
             allows: @escaping @Sendable (String) async -> Bool,
             copy: @escaping @Sendable (String) async -> Bool,
-            publish: @escaping @Sendable () async -> Bool,
             userName: @escaping @Sendable () -> String
         ) {
             self.allows = allows
             self.copy = copy
-            self.publish = publish
             self.userName = userName
         }
     }
@@ -93,7 +90,6 @@ public actor AccountSheet {
                 try await account.signIn(typed)
                 phrase = ""
                 toast = "Signed in"
-                _ = await links.publish()
                 move = .popAll
             }
         case "phrase":
@@ -109,7 +105,6 @@ public actor AccountSheet {
                 break
             }
             try account.make(handle: typed)
-            _ = await links.publish()
             move = .popAll
         case "own":
             move = .push(.restore)

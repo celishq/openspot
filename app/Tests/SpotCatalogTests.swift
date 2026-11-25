@@ -25,7 +25,7 @@ final class SpotCatalogTests: XCTestCase {
     }
 
     private func list(stores: [StoreSource]? = nil) -> SpotCatalog {
-        SpotCatalog(published: store, folder: SpotsFolder(url: spots, core: core), arrangement: config.read().arrangement, stores: stores ?? [StoreSource(url: store)])
+        SpotCatalog(folder: SpotsFolder(url: spots, core: core), arrangement: config.read().arrangement, stores: stores ?? [StoreSource(url: store)])
     }
 
     func testEachStoreFolderListsItsSpotsWithTheFolderTheyCameFrom() throws {
@@ -52,10 +52,6 @@ final class SpotCatalogTests: XCTestCase {
         XCTAssertEqual(list(stores: [builtIn]).items.first { $0.id == "year" }?.store?.url.path, examples.path)
     }
 
-    func testTheFolderThatPublishWritesIsNoStore() {
-        XCTAssertFalse(list(stores: []).items.contains { $0.id == "shared" })
-    }
-
     func testTheConfigKeepsEachStoreFolderOnce() throws {
         let friends = StoreSource(url: folder.appendingPathComponent("friends"))
 
@@ -79,17 +75,6 @@ final class SpotCatalogTests: XCTestCase {
         XCTAssertNil(items.first { $0.id == "timer" }?.package)
     }
 
-    func testYourOwnSpotSaysWhetherTheStoreHoldsItAsItIs() throws {
-        XCTAssertNil(list().items.first { $0.id == "mine" }?.publication)
-
-        try FileManager.default.copyItem(at: spots.appendingPathComponent("mine.spot"), to: store.appendingPathComponent("mine.spot"))
-        XCTAssertEqual(list().items.first { $0.id == "mine" }?.publication, .current)
-        XCTAssertFalse(list().items.contains { $0.origin == .store && $0.id == "mine" })
-
-        try "#!/bin/sh\necho changed\n".writeScript(to: spots.appendingPathComponent("mine.spot/mine.sh"), toml: "title = 'Mine'")
-        XCTAssertEqual(list().items.first { $0.id == "mine" }?.publication, .changed)
-    }
-
     func testTheFramePrintsASpotBlockForEach() throws {
         let frame = try list().text(.frame)
 
@@ -101,7 +86,7 @@ final class SpotCatalogTests: XCTestCase {
 
     func testACoreSpotAndYourOwnSpotWithAScheduleAreAddedAndAGetChangesNothing() throws {
         try "#!/bin/sh\n".writeScript(to: spots.appendingPathComponent("daily.spot/daily.sh"), toml: "title = 'Daily'\n[on]\nschedule = ['0 9 * * *']")
-        XCTAssertEqual(list().items.first { $0.id == "daily" }?.step, "publish")
+        XCTAssertEqual(list().items.first { $0.id == "daily" }?.step, "added")
 
         XCTAssertNil(try list().install("timer", in: AppPlaces.test()))
         XCTAssertNil(try list().install("daily", in: AppPlaces.test()))

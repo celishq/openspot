@@ -5,7 +5,6 @@ enum StoreCall: NounCall {
     case get(String, isConfirmed: Bool, clash: SpotClash? = nil)
     case update(String?, isConfirmed: Bool)
     case revert(String, isConfirmed: Bool)
-    case publish(String)
     case add(String)
     case remove(String)
     case folders(PrintForm)
@@ -37,7 +36,6 @@ enum StoreCall: NounCall {
             guard let fit = words.fit, fit.rest.count <= 1 else { return nil }
             return Self.open(fit.rest.first, search: fit.value("--search"))
         },
-        CommandVerb("publish", "<id>", "Publishes a spot of your spots folder to the store. Only the Store spot can run it, so a person publishes from the Store spot.", rule: CallRule(use: .account, used: "published a spot", inShow: .changes("changes the store"), flags: .reachesKey)) { $0.one.map(Self.publish) }
     ])
 
     func work(in context: CallContext) -> CommandAPI.Work? {
@@ -47,7 +45,6 @@ enum StoreCall: NounCall {
         case .get(let id, let isConfirmed, let clash): calls.get(id, isConfirmed: isConfirmed, clash: clash)
         case .update(let id, let isConfirmed): calls.update(id, isConfirmed: isConfirmed)
         case .revert(let id, let isConfirmed): calls.revert(id, isConfirmed: isConfirmed)
-        case .publish(let id): calls.publish(id, account: context.account, caller: context.caller)
         case .add(let path): calls.add(path)
         case .remove(let path): calls.remove(path)
         case .folders(let form): calls.folders(form)

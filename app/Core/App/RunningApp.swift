@@ -20,7 +20,6 @@ public protocol RunningApp: Sendable {
     func gridSpots() async -> [ArrangedSpot]
     func pin(_ id: String) async -> GridPin
     func openStore(_ id: String?, search: String?) async -> Bool
-    func publish(_ id: String) async -> SpotPublish
     func reveal(_ id: String) async -> Bool
     func playground(_ file: URL?, isCareful: Bool) async
     func changeSetting(_ key: String, of spot: String) async -> Bool

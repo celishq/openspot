@@ -86,7 +86,7 @@ work in a read too. `run` works in a read, but the action it runs can't show a v
 | `openspot grid edit`                               | Opens Arrange, where you pin your spots to the grid and take them off.                          |
 | `openspot grid list [--json]`                      | Prints each of your spots, the ones off the grid first, with grid=true or grid=false.           |
 | `openspot grid pin <id>`                           | Puts a spot of yours that is off the grid in the first free slot.                               |
-| `openspot store list [--json]`                     | Prints each spot of the store and its step: `get`, `publish`, or `added` once you have it. First it updates each spot that `store get` installed and you didn't edit, when its store has a newer version that asks for nothing new. `copy` marks a spot whose update waits for `--yes` (`update`) and one you edited (`edited`). |
+| `openspot store list [--json]`                     | Prints each spot of the store and its step: `get`, or `added` once you have it. First it updates each spot that `store get` installed and you didn't edit, when its store has a newer version that asks for nothing new. `copy` marks a spot whose update waits for `--yes` (`update`) and one you edited (`edited`). |
 | `openspot store get <id> [--yes] [--replace] [--keep-both]` | Installs a spot of a store: copies its folder into your spots folder, where search finds it, and leaves it off the grid. A spot that the review would warn of prints the review and installs only with `--yes`. When your spots have its id, `--replace` moves yours to the Trash first, and `--keep-both` installs it under a new id, such as `ports-2`, and its own `openspot spot run ports` runs the copy. |
 | `openspot store update [<id>] [--yes]` | Updates a spot that `store get` installed to the newest version of its store, or each such spot with no id. An update that asks for a new use, binding or power prints only what it adds and needs `--yes`. A spot you edited takes no update. |
 | `openspot store revert <id> [--yes]` | Moves a spot you edited to the Trash and installs the version of its store in its place. Its data stays. |
@@ -94,7 +94,6 @@ work in a read too. `run` works in a read, but the action it runs can't show a v
 | `openspot store remove <folder>` | Removes a store that `store add` added, and keeps the spots you got from it. |
 | `openspot store open [<id>] [--search <text>]` | Opens the Store, at the page of a spot when given its id, or with the words of `--search` in its search. |
 | `openspot store folders [--json]`                  | Prints the built-in store Openspot, which holds the examples, then each store that `store add` added, with its name and whether its folder is found. |
-| `openspot store publish <id>` | Publishes a spot of your spots folder, with a `readme.md` beside its script, from the Store spot alone. |
 | `openspot playground open [file]`                  | Opens the Playground on a spot that you type or on a file.                                      |
 | `openspot spot new <name> --from <kind>`           | Writes a spot folder that works, from the kind `button`, `list`, `number` or `form`.             |
 | `openspot spot log <id>`                           | Prints the last calls of a spot, with their stdin, stdout, stderr and exit code.                |
@@ -120,4 +119,4 @@ work in a read too. `run` works in a read, but the action it runs can't show a v
 | `openspot symbols list`                            | Prints each symbol of the Character Viewer as an item.                                          |
 | `openspot translate text [--from code] [--to code]` | Translates the text on stdin. `openspot translate languages` prints the languages it knows.     |
 | `openspot theme <verb>`                            | Lists the themes, and uses, makes and changes one: `list`, `use`, `new`, `duplicate`, `rename`, `delete`, `open` and `reload`. |
-| `openspot account show [--json]`                   | Prints the public facts of the account that signs what you publish.                             |
+| `openspot account show [--json]`                   | Prints the public facts of the account that signs what you share.                               |

@@ -192,7 +192,7 @@ public final class Store {
     }
 
     private nonisolated static func catalog(_ places: AppPlaces, _ config: Config, sources: [StoreSource]) -> SpotCatalog {
-        SpotCatalog(published: places.store, folder: places.spots, arrangement: config.arrangement, stores: sources, lock: places.lock)
+        SpotCatalog(folder: places.spots, arrangement: config.arrangement, stores: sources, lock: places.lock)
     }
 
     @concurrent
@@ -202,7 +202,7 @@ public final class Store {
         let tookUpdates = (try? places.lock.entries()) != before
         let config = places.config.read()
         let sources = sources(in: places, config: config, opened: opened)
-        let mine = catalog(places, config, sources: []).items(publications: false).filter(\.isAdded).map { StoreCard(id: $0.id, spot: $0.spot, mark: StoreMark(of: $0)) }
+        let mine = catalog(places, config, sources: []).items.filter(\.isAdded).map { StoreCard(id: $0.id, spot: $0.spot, mark: StoreMark(of: $0)) }
         let had = Set(mine.map(\.id))
         var cards: [StorePlace: [StoreCard]] = [.mine: mine]
         for source in sources {
@@ -217,7 +217,7 @@ public final class Store {
     private nonisolated static func page(_ id: String, at place: StorePlace, _ places: AppPlaces, opened: StoreSource?, now: Date) async -> StorePage? {
         let config = places.config.read()
         let folder = places.spots
-        let own = catalog(places, config, sources: []).items(publications: false).first { $0.id == id && $0.isAdded }
+        let own = catalog(places, config, sources: []).items.first { $0.id == id && $0.isAdded }
         let button: StoreButton = own == nil ? .install : own?.origin == .core ? .locked : own?.copy == .update ? .update : own?.copy == .edited ? .edited : .installed
         switch place {
         case .mine:

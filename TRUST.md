@@ -33,7 +33,7 @@ It shows what a spot can do when you add or update it, and shows each use after 
 | `read`      | `front app`, `browser tab`, `browser tabs`, `selection read`, `access list` and `access ask`. A read from `show` never asks macOS for access, and fails when Openspot doesn't have it yet.                                             |
 | `network`   | No call. The spot reaches the network.                                                                                                                          |
 | `files`     | No call. The spot writes outside its data folder.                                                                                                               |
-| `account`   | `store publish`. Only a spot of `spots/openspot.spot` can have it; see [The account](#the-account).                                                             |
+| `account`   | No call. Only a spot of `spots/openspot.spot` can have it; see [The account](#the-account).                                                    |
 
 - A call that needs a use the manifest doesn't name still runs, and shows one toast for each spot, use and day.
   `openspot check spots` can't report it, because only a run shows it. `openspot spot stats` lists each such call.
@@ -89,12 +89,12 @@ Careful mode runs each process of a spot in a sandbox. It's a setting of the Set
 
 ## Signed releases
 
-A spot folder can hold `releases.jsonl`, the signed releases of the spot. Openspot writes it when you share or publish
+A spot folder can hold `releases.jsonl`, the signed releases of the spot. Openspot writes it when you share
 the spot, and refuses a shared spot whose files don't match its last release. A spot reads nothing from it.
 
 ## The account
 
-The account is the key that signs what you publish. Its 12 words give the key as NIP-06 says, so they open the same
+The account is the key that signs what you share. Its 12 words give the key as NIP-06 says, so they open the same
 account in another Nostr client.
 
 - `openspot account show` tells any spot the public facts: whether an account is signed in, its `npub`, the `handle`
@@ -102,6 +102,5 @@ account in another Nostr client.
 - No call makes, changes or removes the account key, and none prints or takes the 12 words. Only the Account sheet of
   the app does, and it asks for Touch ID or the Mac's password before each act on the key. An unlock counts for 5
   minutes, and only for the act it was asked for. A Mac with neither a password nor Touch ID cannot unlock the key.
-- `store publish` signs with the key, so it answers only a spot of `spots/openspot.spot` that names `account` in its
-  uses, and only while the app runs. Openspot removes `account` from the uses of any other spot, and
+- Only a spot of `spots/openspot.spot` that names `account` in its uses can reach the key. Openspot removes `account` from the uses of any other spot, and
   `openspot check spots` reports it. The calls of such a spot stay out of the call log and the playground.

@@ -44,8 +44,7 @@ printf 'item=4120\ntitle=:3000\ndetail=node\n\nitem=812\ntitle=:5432\ndetail=pos
 ```
 
 Make it executable. Try on your spot's page in the Store shows your sheet with it, so people see your spot before they
-add it. When you publish, Openspot keeps what it printed in `sample.frame`, so a store can show it without
-running your code.
+add it. Put what it prints in `sample.frame` beside it, and a store shows it without running your code.
 
 ## Share it
 

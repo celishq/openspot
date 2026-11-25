@@ -21,10 +21,9 @@ final class CommandLineCallTests: XCTestCase {
         XCTAssertTrue(CommandLineCall.usage.contains("openspot grid edit"))
     }
 
-    func testStoreListsItsSpotsAndPublishesOne() {
+    func testStoreListsItsSpotsAndGetsOne() {
         XCTAssertEqual(CommandLineCall(arguments: ["store", "list"])?.value as? StoreCall, .list(.frame))
         XCTAssertEqual(CommandLineCall(arguments: ["store", "list", "--json"])?.value as? StoreCall, .list(.json))
-        XCTAssertEqual(CommandLineCall(arguments: ["store", "publish", "timer"])?.value as? StoreCall, .publish("timer"))
         XCTAssertEqual(CommandLineCall(arguments: ["store", "get", "timer"])?.value as? StoreCall, .get("timer", isConfirmed: false))
         XCTAssertEqual(CommandLineCall(arguments: ["store", "get", "timer", "--replace"])?.value as? StoreCall, .get("timer", isConfirmed: false, clash: .replace))
         XCTAssertEqual(CommandLineCall(arguments: ["store", "get", "timer", "--keep-both", "--yes"])?.value as? StoreCall, .get("timer", isConfirmed: true, clash: .keepBoth))
@@ -37,7 +36,6 @@ final class CommandLineCallTests: XCTestCase {
         XCTAssertEqual(CommandLineCall(arguments: ["store", "add", "/a"])?.value as? StoreCall, .add("/a"))
         XCTAssertEqual(CommandLineCall(arguments: ["store", "remove", "/a"])?.value as? StoreCall, .remove("/a"))
         XCTAssertEqual(CommandLineCall(arguments: ["store", "folders", "--json"])?.value as? StoreCall, .folders(.json))
-        XCTAssertEqual(CommandLineCall(arguments: ["store", "publish", "timer"], environment: [:], reason: "panel.open")?.value as? CallFault, .refused("`openspot store publish` changes the store, so it cannot run in a show. Run it from a pick or an action."))
     }
 
     func testAccountPrintsItsFactsAndReachesTheKey() {
