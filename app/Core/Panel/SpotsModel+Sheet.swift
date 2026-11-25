@@ -206,7 +206,7 @@ extension SpotsModel {
                 return
             }
             closeMenu(keepsFoot: true)
-            change(nil) {
+            snap {
                 transition.show(list, moves: true, page: flow.current)
                 holdFieldDrop()
             }
@@ -217,7 +217,7 @@ extension SpotsModel {
     }
 
     func cutSheet(to list: String?) {
-        change(nil) {
+        snap {
             if let list { transition.show(list, moves: false, page: flow.current) } else { transition.hide(moves: false) }
             fieldDrop = nil
             showsFieldDrop = false
@@ -238,7 +238,7 @@ extension SpotsModel {
         }) { [weak self] in
             guard let self else { return }
             let isInstall = transition.id != nil && transition.id == fieldSheet
-            change(nil) {
+            snap {
                 self.transition.finish(motion)
                 if isInstall, self.transition.phase == .open {
                     self.fieldDrop = nil
@@ -285,6 +285,10 @@ extension SpotsModel {
 
     public func change(_ motion: PanelMotion?, _ body: () -> Void, completion: @escaping @MainActor () -> Void = {}) {
         host.change(motion, body, completion: completion)
+    }
+
+    func snap(_ body: () -> Void) {
+        host.change(nil, body, completion: {})
     }
 
     public func moveItemToEdge(last: Bool) {
