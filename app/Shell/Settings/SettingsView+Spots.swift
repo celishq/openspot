@@ -4,7 +4,7 @@ import SwiftUI
 extension SettingsView {
     var spotsPage: some View {
         Group {
-            heading("Spots", "Each spot that comes with Openspot or that you added, and whether it can run.")
+            heading(SettingsPage.spots.section.title, SettingsPage.spots.line)
             group(nil) {
                 lines(facts.standings) { spotLine($0, detail: $0.detail) }
             }
@@ -12,11 +12,7 @@ extension SettingsView {
     }
 
     func spotPage(of standing: SpotStanding) -> some View {
-        let rows = facts.rows(of: standing.id)
-        let keys = rows.filter { $0.kind == .key }
-        let fields = rows.filter { [.field, .text, .secret, .choice].contains($0.kind) }
-        let toggles = rows.filter { $0.kind == .toggle }
-        return Group {
+        Group {
             HStack(alignment: .center, spacing: SpotTokens.settingsHeaderGap) {
                 SettingsSpotIcon(spot: standing.spot, side: SpotTokens.settingsSpotIcon)
                 VStack(alignment: .leading, spacing: SpotTokens.settingsDetailGap) {
@@ -32,8 +28,8 @@ extension SettingsView {
                     SettingsCard(model: model, entry: entry)
                 }
             }
-            if standing.lacks || standing.isOff {
-                banner(standing)
+            if let banner = standing.banner {
+                self.banner(standing, banner.title, banner.line)
             }
             group("Uses") {
                 if standing.uses.isEmpty {
@@ -41,14 +37,8 @@ extension SettingsView {
                 }
                 lines(standing.uses) { useLine($0) }
             }
-            if !keys.isEmpty {
-                group("Keys") { lines(keys) { settingLine($0) } }
-            }
-            if !fields.isEmpty {
-                group("Settings") { lines(fields) { settingLine($0) } }
-            }
-            if !toggles.isEmpty {
-                group("Where it shows") { lines(toggles) { settingLine($0) } }
+            ForEach(facts.groups(of: standing.id)) { rows in
+                group(rows.id) { lines(rows.rows) { settingLine($0) } }
             }
             HStack {
                 Spacer()
@@ -62,12 +52,7 @@ extension SettingsView {
         }
     }
 
-    private func banner(_ standing: SpotStanding) -> some View {
-        let (title, line): (String, String) = switch standing.readiness {
-        case .off: ("\(standing.title) is off", "It runs again once you turn it on.")
-        case .review: ("\(standing.title) needs your review", SettingsWords.lack(of: standing, in: facts))
-        default: ("\(standing.title) can’t run yet", "It needs \(facts.names(standing.missing)) from macOS.")
-        }
+    private func banner(_ standing: SpotStanding, _ title: String, _ line: String) -> some View {
         let shape = SpotRoundShape(radius: SpotTokens.settingsCorner)
         return HStack(spacing: SpotTokens.settingsValueGap) {
             VStack(alignment: .leading, spacing: SpotTokens.settingsDetailGap) {
@@ -94,9 +79,8 @@ extension SettingsView {
                 .padding(.horizontal, SpotTokens.settingsUsePaddingX)
                 .padding(.vertical, SpotTokens.settingsUsePaddingY)
                 .overlay(Capsule().strokeBorder(Color.primary.opacity(SpotTheme.settingsCapRim), lineWidth: SpotTokens.settingsRim))
-            Text(SettingsWords.purpose(of: use.id))
+            Text(use.id.purpose)
                 .foregroundStyle(.secondary)
-                .lineLimit(1)
             Spacer(minLength: SpotTokens.settingsTrailingGap)
             VStack(alignment: .trailing, spacing: SpotTokens.settingsTitleGap) {
                 if accesses.isEmpty {
@@ -105,13 +89,13 @@ extension SettingsView {
                 ForEach(accesses) { access in
                     HStack(spacing: SpotTokens.settingsUseGap) {
                         SettingsTile(access: access.id, side: SpotTokens.settingsUseTile)
-                        Text(access.id.title + ": ") + Text(SettingsWords.word(of: access.status)).foregroundColor(SpotTheme.settings(access.status))
+                        Text(access.id.title + ": ") + Text(access.status.word).foregroundColor(SpotTheme.settings(access.status))
                     }
                     .contentShape(Rectangle())
                     .onTapGesture { book.go(.accessOf(access.id)) }
                 }
                 if !use.maybe.isEmpty {
-                    Text("May ask for \(facts.names(use.maybe))")
+                    Text("May ask for \(MacAccess.names(use.maybe))")
                         .font(.caption)
                         .foregroundStyle(.secondary)
                 }
@@ -124,26 +108,25 @@ extension SettingsView {
     func spotLine(_ standing: SpotStanding, detail: String? = nil) -> some View {
         row(open: .spotOf(standing.id)) {
             SettingsSpotIcon(spot: standing.spot, side: SpotTokens.settingsRowTile)
-            titled(standing.title, detail ?? (standing.lacks ? SettingsWords.lack(of: standing, in: facts) : ""))
+            titled(standing.title, detail ?? (standing.lacks ? standing.lack : ""))
             Spacer(minLength: SpotTokens.settingsTrailingGap)
             if standing.lacks {
                 Circle().fill(SpotTheme.settingsLate).frame(width: SpotTokens.settingsDot, height: SpotTokens.settingsDot)
             }
-            Text(SettingsWords.word(of: standing.readiness)).foregroundStyle(standing.lacks ? Color.primary : Color.secondary)
+            Text(standing.readiness.word).foregroundStyle(standing.lacks ? Color.primary : Color.secondary)
             chevron
         }
     }
 
     var keysPage: some View {
-        let keys = facts.rows.filter { $0.kind == .key }
         let shape = SpotRoundShape(radius: SpotTokens.settingsCorner)
         return Group {
-            heading("Keys", "Every key of Openspot and of its spots.")
+            heading(SettingsPage.keys.section.title, SettingsPage.keys.line)
             ForEach(Array(facts.clashes.enumerated()), id: \.offset) { _, clash in
                 VStack(alignment: .leading, spacing: SpotTokens.settingsDetailGap) {
-                    Text(SettingsWords.caps(clash[0].value ?? "").joined() + " does \(clash.count == 2 ? "two" : "\(clash.count)") things")
+                    Text(clash.title)
                         .fontWeight(.semibold)
-                    Text(clash.map { "\($0.name) · \($0.title)" }.joined(separator: " and ") + ". Change one of them.")
+                    Text(clash.line)
                         .foregroundStyle(.secondary)
                 }
                 .frame(maxWidth: .infinity, alignment: .leading)
@@ -152,7 +135,7 @@ extension SettingsView {
                 .overlay(shape.strokeBorder(SpotTheme.settingsClash.opacity(SpotTheme.settingsBannerRim), lineWidth: SpotTokens.settingsRim))
             }
             group(nil) {
-                lines(keys) { row in
+                lines(facts.keyRows) { row in
                     HStack(spacing: SpotTokens.settingsValueGap) {
                         Text(row.name)
                             .foregroundStyle(.secondary)
@@ -173,7 +156,7 @@ extension SettingsView {
     }
 
     func keycaps(_ row: SettingRow) -> some View {
-        let caps = SettingsWords.caps(book.value(of: row))
+        let caps = Shortcut.caps(book.value(of: row))
         let clash = facts.clashing.contains(row.item)
         let isRecording = book.recording == row.item
         let cap = SpotRoundShape(radius: SpotTokens.settingsCapCorner)

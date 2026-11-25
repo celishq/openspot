@@ -21,6 +21,14 @@ public struct AccessGrant: Equatable, Sendable {
         steps.first { !done.contains($0) }
     }
 
+    public func title(of name: String) -> String {
+        steps.count == 1 ? "\(name) needs \(MacAccess.names(steps))" : "\(name) needs \(steps.count) accesses"
+    }
+
+    public var line: String {
+        steps.count == 1 ? "Turn it on in System Settings. This moves on by itself." : "Turn each on in System Settings. This moves on by itself."
+    }
+
     var kept: [String] {
         [spot] + steps.map(\.rawValue)
     }

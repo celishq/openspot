@@ -6,6 +6,10 @@ public struct SettingsFacts: Equatable, Sendable {
         public let isUsed: Bool
         public let isBuiltIn: Bool
         public let colours: Theme.Colours
+
+        public var word: String {
+            isUsed ? "In use" : isBuiltIn ? "Built in" : "Yours"
+        }
     }
 
     public struct Account: Equatable, Sendable {
@@ -15,6 +19,33 @@ public struct SettingsFacts: Equatable, Sendable {
         public let since: String?
         public let isBackedUp: Bool
         public let sync: Bool?
+
+        public var lines: [Line] {
+            [("handle", "Handle", handle), ("npub", "Public key", npub), ("since", "Since", since)].compactMap { id, title, value in value.map { Line(id: id, title: title, value: $0) } }
+        }
+    }
+
+    public struct Line: Identifiable, Equatable, Sendable {
+        public let id: String
+        public let title: String
+        public let value: String
+    }
+
+    public struct Clash: Equatable, Sendable {
+        public let rows: [SettingRow]
+
+        public var title: String {
+            Shortcut.caps(rows.first?.value ?? "").joined() + " does \(rows.count == 2 ? "two" : "\(rows.count)") things"
+        }
+
+        public var line: String {
+            rows.map { "\($0.name) · \($0.title)" }.joined(separator: " and ") + ". Change one of them."
+        }
+    }
+
+    public struct RowGroup: Identifiable, Equatable, Sendable {
+        public let id: String
+        public let rows: [SettingRow]
     }
 
     public struct Found: Equatable, Sendable {
@@ -28,11 +59,14 @@ public struct SettingsFacts: Equatable, Sendable {
     }
 
     public private(set) var accesses: [AccessList.Entry] = []
+    public private(set) var needed: [AccessList.Entry] = []
+    public private(set) var unneeded: [AccessList.Entry] = []
+    public private(set) var keyRows: [SettingRow] = []
     public private(set) var standings: [SpotStanding] = []
     public private(set) var rows: [SettingRow] = []
     public private(set) var looks: [Look] = []
     public private(set) var account: Account?
-    public private(set) var clashes: [[SettingRow]] = []
+    public private(set) var clashes: [Clash] = []
     public private(set) var clashing: Set<String> = []
     private var standingWords: [String] = []
     private var rowWords: [String] = []
@@ -42,6 +76,8 @@ public struct SettingsFacts: Equatable, Sendable {
 
     init(accesses: [AccessList.Entry], loaded: [SpotStanding], core: [SpotList.Choice], rows: [SettingRow], looks: [ThemeCall.Listed], account: AccountStatus?) {
         self.accesses = accesses
+        needed = accesses.filter { !$0.spots.isEmpty }
+        unneeded = accesses.filter { $0.spots.isEmpty }
         var seen = Set<String>()
         standings = (loaded + core.map(\.standing).filter(\.isOff))
             .filter { !$0.id.hasPrefix(ReservedSetting.appSpot + "/") && seen.insert($0.id).inserted }
@@ -55,8 +91,10 @@ public struct SettingsFacts: Equatable, Sendable {
             Account(isSignedIn: status.signedIn, handle: status.handle, npub: status.npub, since: status.since, isBackedUp: status.backedUp == true, sync: status.sync)
         }
         let keyed = rows.filter { $0.kind == .key && !($0.value ?? "").isEmpty && $0.value != "none" }
-        clashes = Dictionary(grouping: keyed) { Self.normal($0.value ?? "") }.values.filter { $0.count > 1 }.sorted { ($0[0].value ?? "") < ($1[0].value ?? "") }
-        clashing = Set(clashes.flatMap { $0.map(\.item) })
+        let clashing = Dictionary(grouping: keyed) { Self.normal($0.value ?? "") }.values.filter { $0.count > 1 }.sorted { ($0[0].value ?? "") < ($1[0].value ?? "") }
+        clashes = clashing.map(Clash.init)
+        self.clashing = Set(clashing.flatMap { $0.map(\.item) })
+        keyRows = rows.filter { $0.kind == .key }
     }
 
     public var waiting: [SpotStanding] {
@@ -96,10 +134,10 @@ public struct SettingsFacts: Equatable, Sendable {
         )
     }
 
-    public func names(_ accesses: [MacAccess]) -> String {
-        let titles = accesses.map(\.title)
-        guard titles.count > 1 else { return titles.first ?? "" }
-        return titles.dropLast().joined(separator: ", ") + " and " + titles[titles.count - 1]
+    public func groups(of spot: String) -> [RowGroup] {
+        let rows = rows(of: spot)
+        let kinds: [(String, Set<SettingRow.Kind>)] = [("Keys", [.key]), ("Settings", [.field, .text, .secret, .choice]), ("Where it shows", [.toggle])]
+        return kinds.map { title, kinds in RowGroup(id: title, rows: rows.filter { kinds.contains($0.kind) }) }.filter { !$0.rows.isEmpty }
     }
 
     static func fold(_ text: String) -> String {

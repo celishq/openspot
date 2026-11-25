@@ -15,9 +15,9 @@ struct SettingsGrantSheet: View {
                 .contentShape(Rectangle())
             VStack(alignment: .leading, spacing: SpotTokens.settingsSheetGap) {
                 VStack(alignment: .leading, spacing: SpotTokens.settingsTitleGap) {
-                    Text(grant.steps.count == 1 ? "\(name) needs \(book.facts.names(grant.steps))" : "\(name) needs \(grant.steps.count) accesses")
+                    Text(grant.title(of: name))
                         .font(SpotType.settingsHeader)
-                    Text(grant.steps.count == 1 ? "Turn it on in System Settings. This moves on by itself." : "Turn each on in System Settings. This moves on by itself.")
+                    Text(grant.line)
                         .foregroundStyle(.secondary)
                 }
                 VStack(alignment: .leading, spacing: 0) {
@@ -68,7 +68,7 @@ struct SettingsGrantSheet: View {
                         .fontWeight(.semibold)
                         .foregroundStyle(isNow ? Color.primary : Color.secondary)
                     if isNow {
-                        Text(SettingsWords.purpose(of: access))
+                        Text(access.purpose)
                             .foregroundStyle(.secondary)
                             .fixedSize(horizontal: false, vertical: true)
                     }

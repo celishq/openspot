@@ -13,7 +13,7 @@ extension SettingsView {
                             SettingsTile(access: access.id, side: SpotTokens.settingsFoundTile)
                             Text(access.id.title)
                             Spacer(minLength: SpotTokens.settingsTrailingGap)
-                            Text(SettingsWords.word(of: access.status)).foregroundStyle(SpotTheme.settings(access.status))
+                            Text(access.status.word).foregroundStyle(SpotTheme.settings(access.status))
                             chevron
                         }
                     }

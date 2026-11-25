@@ -65,4 +65,17 @@ public struct SpotStanding: Identifiable, Equatable, Sendable {
     public var isOff: Bool {
         readiness == .off
     }
+
+    public var lack: String {
+        readiness == .review ? "Tried \(refused.map(\.rawValue).joined(separator: ", ")), which it doesn’t declare" : "Needs \(MacAccess.names(missing))"
+    }
+
+    public var banner: (title: String, line: String)? {
+        switch readiness {
+        case .off: ("\(title) is off", "It runs again once you turn it on.")
+        case .review: ("\(title) needs your review", lack)
+        case .access: ("\(title) can’t run yet", "It needs \(MacAccess.names(missing)) from macOS.")
+        case .ready: nil
+        }
+    }
 }

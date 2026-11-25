@@ -272,5 +272,27 @@ final class SettingsBookTests: PanelCase {
         await book.set(try row("mugs/open"), to: "option+ctrl+k")
 
         XCTAssertEqual(book.facts.clashing, ["cups/open", "mugs/open"])
+        XCTAssertEqual(book.facts.clashes.map(\.title), ["⌃⌥K does two things"])
+        XCTAssertEqual(book.facts.clashes.map(\.line), ["Cups · Open and Mugs · Open. Change one of them."])
+    }
+
+    func testTheFactsSayWhatAPageShowsSoTheWindowOnlyDrawsIt() async throws {
+        try script("cups", toml: "title = 'Cups'\nuses = ['screen']\n[actions.fill]\ntitle = 'Fill'\n[settings]\ncity = 'text'", "openspot screen shot")
+        accesses.set(.screen, to: .denied)
+        await read()
+        let facts = book.facts
+        let cups = try XCTUnwrap(facts.standing("cups"))
+
+        XCTAssertEqual(facts.groups(of: "cups").map(\.id), ["Keys", "Settings", "Where it shows"])
+        XCTAssertEqual(facts.groups(of: "cups")[1].rows.map(\.key), ["city"])
+        XCTAssertEqual(cups.banner?.title, "Cups can’t run yet")
+        XCTAssertEqual(cups.banner?.line, "It needs Screen Recording from macOS.")
+        XCTAssertEqual(cups.lack, "Needs Screen Recording")
+        XCTAssertEqual(facts.needed.map(\.id), [.screen])
+        XCTAssertFalse(facts.unneeded.contains { $0.id == .screen })
+        XCTAssertTrue(facts.keyRows.allSatisfy { $0.kind == .key })
+        XCTAssertEqual(facts.looks.first { $0.isUsed }?.word, "In use")
+        XCTAssertEqual(AccessGrant(spot: "cups", steps: [.screen]).title(of: "Cups"), "Cups needs Screen Recording")
+        XCTAssertEqual(Shortcut.caps("cmd+shift+space"), ["⇧", "⌘", "Space"])
     }
 }

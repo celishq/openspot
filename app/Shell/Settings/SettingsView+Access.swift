@@ -3,10 +3,10 @@ import SwiftUI
 
 extension SettingsView {
     var accessPage: some View {
-        let needed = facts.accesses.filter { !$0.spots.isEmpty }
-        let rest = facts.accesses.filter { $0.spots.isEmpty }
+        let needed = facts.needed
+        let rest = facts.unneeded
         return Group {
-            header(SettingsTile(symbol: "checkmark.shield.fill", color: SpotTheme.settings(.access), side: SpotTokens.settingsHeaderTile), "Access", "macOS gives Openspot each access once, and Openspot passes it only to the spots that need it. A spot runs with everything it needs, or not at all.") {
+            header(SettingsTile(symbol: "checkmark.shield.fill", color: SpotTheme.settings(.access), side: SpotTokens.settingsHeaderTile), SettingsPage.access.section.title, SettingsPage.access.line) {
                 Button("About access…") { isAboutShown = true }
                     .buttonStyle(.link)
             }
@@ -15,7 +15,7 @@ extension SettingsView {
                     lines(facts.waiting) { standing in
                         row(open: .spotOf(standing.id)) {
                             SettingsSpotIcon(spot: standing.spot, side: SpotTokens.settingsRowTile)
-                            titled(standing.title, SettingsWords.lack(of: standing, in: facts))
+                            titled(standing.title, standing.lack)
                             Spacer(minLength: SpotTokens.settingsTrailingGap)
                             fix(standing)
                         }
@@ -28,7 +28,7 @@ extension SettingsView {
                         SettingsTile(access: access.id, side: SpotTokens.settingsRowTile)
                         titled(access.id.title, access.spots.map(facts.title(ofSpot:)).joined(separator: ", "))
                         Spacer(minLength: SpotTokens.settingsTrailingGap)
-                        Text(SettingsWords.word(of: access.status)).foregroundStyle(SpotTheme.settings(access.status))
+                        Text(access.status.word).foregroundStyle(SpotTheme.settings(access.status))
                         chevron
                     }
                 }
@@ -51,7 +51,7 @@ extension SettingsView {
                                 SettingsTile(access: access.id, side: SpotTokens.settingsRowTile)
                                 titled(access.id.title, access.maybe.isEmpty ? "" : "Asked at first use by " + access.maybe.map(facts.title(ofSpot:)).joined(separator: ", "))
                                 Spacer(minLength: SpotTokens.settingsTrailingGap)
-                                Text(SettingsWords.word(of: access.status)).foregroundStyle(.secondary)
+                                Text(access.status.word).foregroundStyle(.secondary)
                                 chevron
                             }
                         }
@@ -65,7 +65,7 @@ extension SettingsView {
         let needers = access.spots.compactMap(facts.standing)
         let maybes = access.maybe.compactMap(facts.standing)
         return Group {
-            header(SettingsTile(access: access.id, side: SpotTokens.settingsHeaderTile), access.id.title, "\(SettingsWords.purpose(of: access.id)) \(SettingsWords.sentence(of: access.status))") {
+            header(SettingsTile(access: access.id, side: SpotTokens.settingsHeaderTile), access.id.title, "\(access.id.purpose) \(access.status.sentence)") {
                 if !access.isAllowed {
                     Button("Allow…") { act { await $0.ask(access.id) } }
                         .controlSize(.large)
@@ -90,10 +90,7 @@ extension SettingsView {
         VStack(alignment: .leading, spacing: SpotTokens.settingsValueGap) {
             Text("About access")
                 .font(SpotType.settingsTitle)
-            Text("macOS asks you once for each access, such as Screen Recording, and gives it to Openspot as a whole. Openspot then passes it on, one spot at a time.")
-            Text("A spot gets only the uses it declares in its spot.toml, which you approved when you added it. A call past them is refused, and the spot asks for your review.")
-            Text("A spot is Ready when macOS gives Openspot every access that its calls need, and Needs access when one is missing. An access that only some calls need, such as the camera for a recording, is asked for at its first use.")
-            Text("To take an access away from one spot, turn the spot off. To take it from every spot, turn it off in System Settings.")
+            ForEach(MacAccess.about, id: \.self) { Text($0) }
             HStack {
                 Spacer()
                 Button("Done") { isAboutShown = false }

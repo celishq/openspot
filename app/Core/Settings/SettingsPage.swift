@@ -86,6 +86,19 @@ public enum SettingsPage: Hashable, Sendable {
         }
     }
 
+    public var line: String {
+        switch self {
+        case .access: "macOS gives each access, such as Screen Recording, to Openspot as a whole. Openspot passes it only to the spots whose calls need it."
+        case .spots: "Each spot that comes with Openspot or that you added, and whether it can run."
+        case .keys: "Every key of Openspot and of its spots."
+        case .look: "The theme of the panel. Each theme keeps its exact values in its own file."
+        case .account: "Your key signs each spot you publish, so people know an update is from you."
+        case .general: "The keys that open Openspot, and how it starts."
+        case .developer: "For those who build spots and themes."
+        case .accessOf, .spotOf, .row, .search: ""
+        }
+    }
+
     public var hint: String {
         switch self {
         case .access, .row, .search: "Each spot works with all it declares, or not at all."

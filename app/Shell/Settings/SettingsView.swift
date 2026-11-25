@@ -120,8 +120,8 @@ struct SettingsView: View {
             case .keys: keysPage
             case .look: lookPage
             case .account: accountPage
-            case .general: rowsPage("General", "The keys that open Openspot, and how it starts.", section: .general)
-            case .developer: rowsPage("Developer", "For those who build spots and themes.", section: .developer)
+            case .general: rowsPage(.general)
+            case .developer: rowsPage(.developer)
             case .row, .search: EmptyView()
             }
         }
