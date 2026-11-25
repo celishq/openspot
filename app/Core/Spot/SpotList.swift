@@ -57,11 +57,16 @@ struct SpotList {
         let last: [String: String]
 
         init(_ spot: Spot, isOn: Bool, statuses: [MacAccess: ReadAccess], last: [String: Date]) {
-            let needs = AccessList.needs(of: spot, in: statuses)
+            let needs = SpotAccess(spot, written: KeptCalls.shared.read(spot), made: Array(last.keys)).missing(in: statuses)
             state = SpotReadiness(isOn: isOn, needs: needs).rawValue
             uses = spot.uses.map(\.rawValue).sorted()
             self.needs = needs.map(\.rawValue)
-            self.last = last.mapValues { $0.formatted(.iso8601) }
+            var times: [String: Date] = [:]
+            for (call, date) in last {
+                guard let use = CommandLineCall.looseRule(of: call.split(separator: " ").map(String.init), spot: spot.id)?.rule.use else { continue }
+                times[use.rawValue] = max(times[use.rawValue] ?? date, date)
+            }
+            self.last = times.mapValues { $0.formatted(.iso8601) }
         }
 
         static func fields(state: String, uses: [String], needs: [String], last: [String: String]) -> [(String, String?)] {

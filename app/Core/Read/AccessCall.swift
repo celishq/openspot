@@ -6,7 +6,7 @@ enum AccessCall: NounCall {
 
     static let noun = CommandNoun("access", group: .mac, verbs: [
         CommandVerb(
-            "list", "", "Prints an item=<id> record for each macOS access that a spot can need, with title=, access=, spots= that are on and use it, and optional=true when none of them needs it for each call. Then it prints app=, path= and access= for each app that Openspot reads. An access is allowed, denied, unasked, or unknown, as for an app that is closed. The record of the selected text has app=accessibility.",
+            "list", "", "Prints an item=<id> record for each macOS access that a spot can need, with title=, access=, the spots= that are on and need it for a call they make, and maybe= those that need it only for some forms of a call. Then it prints app=, path= and access= for each app that Openspot reads. An access is allowed, denied, unasked, or unknown, as for an app that is closed. The record of the selected text has app=accessibility.",
             rule: ReadSources.rule
         ) { $0.none ? Self.list : nil },
         CommandVerb(
@@ -24,13 +24,15 @@ enum AccessCall: NounCall {
     }
 
     private func list(in context: CallContext) -> CommandAPI.Work {
-        let (kept, mac, places) = (context.api.access, context.mac, context.places)
-        return ReadSources.work(in: context, asks: false) { sources, _ in
+        let (kept, mac, places, runs) = (context.api.access, context.mac, context.places, context.runs)
+        return ReadSources.work(in: context, asks: false) { _, _ in
             let config = places.config.read()
-            let apps = await sources.access(browsers: config.browsers)
-            let automation = apps.filter { $0.value("app") != ReadSources.accessibility }.compactMap { $0.value("access").flatMap(ReadAccess.init) }
-            let statuses = await kept.read(Set(MacAccess.allCases), from: mac, apps: automation)
-            return AccessList(statuses: statuses, spots: try places.folder(config).scan().scripts).blocks + apps
+            let (statuses, apps) = await kept.read(from: mac, browsers: config.browsers)
+            let last = runs?.usage.lastUses ?? StatsLog.readLastUses(in: places.stats)
+            let spots = try places.folder(config).scan().scripts.map { spot in
+                (id: spot.id, access: SpotAccess(spot, written: KeptCalls.shared.read(spot), made: Array((last[spot.id] ?? [:]).keys)))
+            }
+            return AccessList(statuses: statuses, spots: spots).blocks + apps
         }
     }
 }

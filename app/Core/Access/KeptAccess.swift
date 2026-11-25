@@ -8,18 +8,21 @@ final class KeptAccess: @unchecked Sendable {
         lock.withLock { kept }
     }
 
-    func read(_ wanted: Set<MacAccess>, from mac: Mac, apps: [ReadAccess] = []) async -> [MacAccess: ReadAccess] {
+    func read(from mac: Mac, browsers: [Browser]) async -> (statuses: [MacAccess: ReadAccess], apps: [TextBlock]) {
+        var apps: [TextBlock] = []
+        if let reads = mac.reads { apps = await ReadSources(mac: reads).access(browsers: browsers) }
+        let automation = apps.filter { $0.value("app") != ReadSources.accessibility }.compactMap { $0.value("access").flatMap(ReadAccess.init) }
         var read: [MacAccess: ReadAccess] = [:]
-        for access in MacAccess.allCases where wanted.contains(access) {
+        for access in MacAccess.allCases {
             read[access] = switch access {
-            case .automation: Self.joined(apps)
+            case .automation: Self.joined(automation)
             case .accessibility: mac.reads?.accessibility(asks: false) ?? .unknown
             default: await mac.accesses?.status(of: access) ?? .unknown
             }
         }
         let found = read
-        lock.withLock { kept.merge(found) { $1 } }
-        return read
+        lock.withLock { kept = found }
+        return (read, apps)
     }
 
     private static func joined(_ apps: [ReadAccess]) -> ReadAccess {

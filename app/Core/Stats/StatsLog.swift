@@ -213,10 +213,10 @@ public final class StatsLog: @unchecked Sendable {
         return tells
     }
 
-    func used(_ use: SpotUse, by spot: String) {
+    func used(_ call: String, by spot: String) {
         let date = now()
         change(at: date) { _ in
-            last[spot, default: [:]][use.rawValue] = date
+            last[spot, default: [:]][call] = date
             if last.count > Self.lastLimit, let oldest = last.min(by: { ($0.value.values.max() ?? .distantPast) < ($1.value.values.max() ?? .distantPast) })?.key {
                 last[oldest] = nil
             }

@@ -24,7 +24,7 @@ struct SpotCalls {
     func list(core: Bool, form: PrintForm) -> CommandAPI.Work {
         CommandAnswer.work { [places, mac, access, runs] in
             let config = places.config.read()
-            let statuses = await access.read(Set(UseAccess.all.values.flatMap(\.needs)), from: mac)
+            let statuses = await access.read(from: mac, browsers: config.browsers).statuses
             let last = runs?.usage.lastUses ?? StatsLog.readLastUses(in: places.stats)
             let list = SpotList(folder: places.folder(config), config: config, statuses: statuses, lastUses: last)
             return try core ? list.core(form) : list.loaded(form)

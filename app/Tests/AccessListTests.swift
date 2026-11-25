@@ -20,8 +20,9 @@ final class AccessListTests: XCTestCase {
         core = root.appendingPathComponent("core", isDirectory: true)
         try FileManager.default.createDirectory(at: spots, withIntermediateDirectories: true)
         try FileManager.default.createDirectory(at: core, withIntermediateDirectories: true)
-        try "#!/bin/sh\n".writeScript(to: spots.spotFile("lid"), toml: "title = 'Lid'\nuses = ['power']")
-        try "#!/bin/sh\n".writeScript(to: spots.spotFile("shot"), toml: "title = 'Shot'\nuses = ['screen', 'clipboard']")
+        try "#!/bin/sh\nopenspot power lid-closed\n".writeScript(to: spots.spotFile("lid"), toml: "title = 'Lid'\nuses = ['power']")
+        try "#!/bin/sh\nopenspot screen record start display mic \"$1\"\nopenspot clipboard copy\n".writeScript(to: spots.spotFile("shot"), toml: "title = 'Shot'\nuses = ['screen', 'clipboard']")
+        try "#!/bin/sh\nopenspot color pick\n".writeScript(to: spots.spotFile("pick"), toml: "title = 'Pick'\nuses = ['screen']")
         try "#!/bin/sh\n".writeScript(to: spots.spotFile("plain"), toml: "title = 'Plain'")
     }
 
@@ -48,25 +49,16 @@ final class AccessListTests: XCTestCase {
         return found
     }
 
-    func testAUseNeedsOnlyTheAccessesThatEachOfItsCallsNeeds() {
-        let noun = CommandNoun("film", group: .mac, verbs: [
-            CommandVerb("shot", "", "", rule: CallRule(use: .screen, needs: [.screen])) { _ in nil },
-            CommandVerb("record", "", "", rule: CallRule(use: .screen, needs: [.screen], mayNeed: [.camera])) { _ in nil },
-            CommandVerb("lid", "", "", rule: CallRule(use: .power, needs: [.helper])) { _ in nil }
-        ])
+    func testASpotNeedsTheAccessOfEachCallInItsFilesAndMayNeedTheRest() throws {
+        let script = spots.spotFile("film")
+        try "#!/bin/sh\nopenspot screen shot\n".writeScript(to: script, toml: "views = ['film.js']")
+        try "openspot.call([\"calendar\", \"events\"])\nopenspot.call([\"screen\", \"record\", \"start\"])\n".write(to: script.deletingLastPathComponent().appendingPathComponent("film.js"), atomically: true, encoding: .utf8)
+        let spot = Spot(id: "film", name: "Film", url: script, dataName: "film", views: ["film": script.deletingLastPathComponent().appendingPathComponent("film.js").path])
 
-        let uses = UseAccess.all(in: [noun])
+        let access = SpotAccess(spot, written: KeptCalls().read(spot), made: ["window move"])
 
-        XCTAssertEqual(uses[.screen], UseAccess(needs: [.screen], optional: [.camera]))
-        XCTAssertEqual(uses[.power], UseAccess(needs: [.helper], optional: []))
-        XCTAssertNil(uses[.clipboard])
-    }
-
-    func testTheAppsUsesNeedTheHelperForPowerAndScreenRecordingOnlyAsAnOption() {
-        XCTAssertEqual(UseAccess.all[.power]?.needs, [.helper])
-        XCTAssertEqual(UseAccess.all[.screen]?.needs, [])
-        XCTAssertTrue(UseAccess.all[.screen]?.optional.isSuperset(of: [.screen, .camera, .microphone, .input, .accessibility]) == true)
-        XCTAssertEqual(UseAccess.all[.calendar]?.optional.isSuperset(of: [.calendars, .reminders]), true)
+        XCTAssertEqual(access.needs, [.screen, .calendars, .accessibility])
+        XCTAssertEqual(access.maybe, [.camera, .microphone, .input])
     }
 
     func testAccessListPrintsEachOfTheNineAccessesWithTheSpotsThatNeedItAndNeverAsks() async throws {
@@ -80,11 +72,9 @@ final class AccessListTests: XCTestCase {
         XCTAssertEqual(answer.code, 0, answer.errors)
         XCTAssertEqual(Set(found.keys), ["accessibility", "automation", "screen", "calendars", "reminders", "camera", "microphone", "input", "helper"])
         XCTAssertEqual(found["helper"], ["item": "helper", "title": "Keep-awake helper", "access": "denied", "spots": "lid"])
-        XCTAssertEqual(found["screen"], ["item": "screen", "title": "Screen Recording", "access": "allowed", "spots": "shot", "optional": "true"])
-        XCTAssertEqual(found["accessibility"]?["access"], "unasked")
-        XCTAssertEqual(found["accessibility"]?["spots"], "shot")
-        XCTAssertEqual(found["camera"]?["access"], "unasked")
-        XCTAssertNil(found["reminders"]?["spots"])
+        XCTAssertEqual(found["screen"], ["item": "screen", "title": "Screen Recording", "access": "allowed", "spots": "shot"])
+        XCTAssertEqual(found["camera"], ["item": "camera", "title": "Camera", "access": "unasked", "maybe": "shot"])
+        XCTAssertEqual(found["accessibility"], ["item": "accessibility", "title": "Accessibility", "access": "unasked"])
         XCTAssertTrue(answer.output.hasSuffix("app=com.apple.finder\npath=/Applications/Finder.app\naccess=allowed\n\napp=accessibility\naccess=unasked\n"), answer.output)
         XCTAssertFalse(reads.asks.contains { $0.hasSuffix("true") }, reads.asks.joined(separator: ", "))
     }
@@ -107,15 +97,17 @@ final class AccessListTests: XCTestCase {
         XCTAssertEqual(found["lid"]?["state"], "access")
         XCTAssertEqual(found["lid"]?["uses"], "power")
         XCTAssertEqual(found["lid"]?["needs"], "helper")
-        XCTAssertEqual(found["shot"]?["state"], "ready")
+        XCTAssertEqual(found["shot"]?["state"], "access")
         XCTAssertEqual(found["shot"]?["uses"], "clipboard,screen")
-        XCTAssertNil(found["shot"]?["needs"])
+        XCTAssertEqual(found["shot"]?["needs"], "screen")
+        XCTAssertEqual(found["pick"]?["state"], "ready")
+        XCTAssertNil(found["pick"]?["needs"])
         XCTAssertEqual(found["plain"]?["state"], "ready")
         XCTAssertNil(found["plain"]?["uses"])
     }
 
     func testTheCoreListPrintsOffForASpotThatIsNotOn() async throws {
-        try "#!/bin/sh\n".writeScript(to: core.appendingPathComponent("awake.spot/awake.sh"), toml: "uses = ['power', 'attachment']")
+        try "#!/bin/sh\nopenspot power lid-closed\n".writeScript(to: core.appendingPathComponent("awake.spot/awake.sh"), toml: "uses = ['power', 'attachment']")
         accesses.set(.helper, to: .denied)
 
         let answer = try await call(["spot", "list", "--core"], api: api())
@@ -128,18 +120,21 @@ final class AccessListTests: XCTestCase {
 
     func testTheLastUseOfAnAdmittedCallShowsInTheListAndSurvivesARestart() async throws {
         let stats = root.appendingPathComponent("stats", isDirectory: true)
+        accesses.set(.screen, to: .denied)
+        reads.set(trust: .unasked)
         let runs = SpotRuns(clock: clock.value, stats: stats)
         let api = api(runs: runs)
         let shot = Spot(id: "shot", name: "Shot", url: spots.spotFile("shot"), dataName: "shot", uses: [.screen, .clipboard])
 
-        _ = try await call(["clipboard", "read"], api: api, from: shot, runs: runs)
+        _ = try await call(["window", "frame"], api: api, from: shot, runs: runs)
         let listed = try await call(["spot", "list"], api: api)
         runs.usage.flush()
         let restarted = SpotRuns(clock: clock.value, stats: stats)
         let again = try await call(["spot", "list"], api: self.api(runs: restarted))
 
-        XCTAssertEqual(records(listed.output)["shot"]?["last.clipboard"], "1970-01-01T00:16:40Z")
-        XCTAssertNil(records(listed.output)["shot"]?["last.screen"])
-        XCTAssertEqual(records(again.output)["shot"]?["last.clipboard"], "1970-01-01T00:16:40Z")
+        XCTAssertEqual(records(listed.output)["shot"]?["last.screen"], "1970-01-01T00:16:40Z")
+        XCTAssertNil(records(listed.output)["shot"]?["last.clipboard"])
+        XCTAssertEqual(records(again.output)["shot"]?["last.screen"], "1970-01-01T00:16:40Z")
+        XCTAssertEqual(records(again.output)["shot"]?["needs"], "accessibility,screen")
     }
 }
