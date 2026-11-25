@@ -3,8 +3,7 @@ import Foundation
 extension SpotsModel {
     public var backdrop: CGRect {
         let foot = panelFoot
-        let span = backdropPanels.frame
-        return CGRect(x: span.minX, y: 0, width: span.width, height: transition.isOpen ? foot.open : foot.closed)
+        return CGRect(x: 0, y: 0, width: SpotTokens.panelWidth, height: transition.isOpen ? foot.open : foot.closed)
     }
 
     public var panelFoot: PanelFoot {
@@ -23,11 +22,6 @@ extension SpotsModel {
 
     private static func foot(of sheet: CGRect) -> CGFloat {
         sheet.height + 2 * SpotTokens.halo + SpotTokens.hintBlock
-    }
-
-    func spanBackdrop() {
-        let shown = query.isEmpty ? panels : GridPanels()
-        if shown != backdropPanels { backdropPanels = shown }
     }
 
     func holdBackdropSheet() {

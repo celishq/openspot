@@ -7,6 +7,7 @@ extension SpotsModel {
     }
 
     public func handleKey(_ key: ActionKey) -> Bool {
+        spoilCommand(by: key)
         return take(key, in: keyRows(of: mode))
     }
 
@@ -98,15 +99,15 @@ extension SpotsModel {
                 return true
             }
         }
-        let shifted = { [self] (name: String, step: Int, glyph: String?) in
-            KeyRow(name, command: nil, shift: true, glyph: glyph, words: glyph.map { _ in "Move" }, act: always { self.moveSelectedSpot(by: step) })
+        let shifted = { [self] (name: String, dx: Int, dy: Int, glyph: String?) in
+            KeyRow(name, command: nil, shift: true, glyph: glyph, words: glyph.map { _ in "Move" }, act: always { self.moveSelectedSpot(dx: dx, dy: dy) })
         }
         let plain = { [self] (name: String, dx: Int, dy: Int) in
             KeyRow(name, command: nil, shift: false, act: always { self.moveSelection(dx: dx, dy: dy) })
         }
         return [
             .any { [self] key in
-                guard drag != nil || resize != nil || carry != nil else { return nil }
+                guard gesture != nil || carry != nil else { return nil }
                 if key.name == "escape" {
                     cancelDrag()
                     cancelResize()
@@ -115,11 +116,10 @@ extension SpotsModel {
             },
             .any { [self] key in openSheet(on: key) ? true : nil },
             KeyRow("s", command: nil, shift: nil, words: "Size", act: always { [self] in stepSelectedSize() }),
-            KeyRow("h", command: nil, shift: nil, words: "Hide", act: always { [self] in toggleSelectedOnGrid() }),
-            shifted("left", -1, "⇧ Arrows"),
-            shifted("up", -1, nil),
-            shifted("right", 1, nil),
-            shifted("down", 1, nil),
+            shifted("left", -1, 0, "⇧ Arrows"),
+            shifted("up", 0, -1, nil),
+            shifted("right", 1, 0, nil),
+            shifted("down", 0, 1, nil),
             KeyRow("escape", command: nil, shift: nil, words: "Done", act: always { [self] in endEditing() }),
             plain("left", -1, 0),
             plain("right", 1, 0),

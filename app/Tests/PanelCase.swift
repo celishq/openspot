@@ -35,6 +35,7 @@ class PanelCase: XCTestCase {
 
     override func tearDown() async throws {
         model.quit()
+        SpotTokens.take(SpotTokens.layout.with(columns: SpotTokens.columns))
         defaults.removePersistentDomain(forName: suite)
         try? FileManager.default.removeItem(at: folder)
     }

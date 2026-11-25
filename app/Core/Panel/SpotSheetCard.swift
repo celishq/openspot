@@ -6,7 +6,6 @@ public struct SpotSheetCard {
     public let kind: SpotKind
     public let look: SpotsModel.Entry?
     public var state: SpotState?
-    public var left: CGFloat = 0
 
     @MainActor
     public static func of(_ sheetID: String?, in model: SpotsModel) -> SpotSheetCard? {
@@ -19,11 +18,11 @@ public struct SpotSheetCard {
         let entry = visible[index]
         let face = entry.state.face
         let isDrawn = entry.item == nil && face.draws(on: placement.size)
-        return SpotSheetCard(id: entry.id, placement: placement, kind: entry.kind, look: isDrawn ? entry : nil, state: entry.id == sheetID ? nil : entry.shownState, left: model.panels.leftExtent)
+        return SpotSheetCard(id: entry.id, placement: placement, kind: entry.kind, look: isDrawn ? entry : nil, state: entry.id == sheetID ? nil : entry.shownState)
     }
 
     public func frame(scrollOffset: CGFloat) -> CGRect {
-        let origin = SpotTokens.gridOrigin(scrollOffset: scrollOffset, left: left)
+        let origin = SpotTokens.gridOrigin(scrollOffset: scrollOffset)
         return placement.rect.offsetBy(dx: origin.x, dy: origin.y)
     }
 

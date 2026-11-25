@@ -86,6 +86,7 @@ final class FakeHost: SpotsHost {
 
     var paints: [Theme.Colours] = []
     var layOuts: [Theme.Layout] = []
+    var widths: [CGFloat] = []
 
     func paint(_ look: Theme.Colours) {
         paints.append(look)
@@ -93,6 +94,10 @@ final class FakeHost: SpotsHost {
 
     func layOut(_ layout: Theme.Layout) {
         layOuts.append(layout)
+    }
+
+    func widen() {
+        widths.append(SpotTokens.panelWidth)
     }
 
     var entryKeyIsOn = true

@@ -10,7 +10,7 @@ extension ConfigFile {
         try change { $0.arrangement.set(isInMenuBar: isShown, of: id) }
     }
 
-    func write(_ arrangement: SpotArrangement) throws {
+    func write(_ arrangement: SpotChoices) throws {
         try change { $0.arrangement = arrangement }
     }
 

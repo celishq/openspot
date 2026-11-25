@@ -60,7 +60,7 @@ public struct ScanResult: Equatable, Sendable {
         return scan
     }
 
-    public mutating func addSettings(in config: ConfigFile, read: Config? = nil, defaults: SpotArrangement = SpotArrangement()) {
+    public mutating func addSettings(in config: ConfigFile, read: Config? = nil, defaults: SpotChoices = SpotChoices()) {
         let read = read ?? config.read()
         files = files.map { SpotFile(id: $0.id, spots: $0.spots.map { spot in
             spot.takingSettings(isWindow: defaults.isWindow(of: spot.id) ?? false).withIcon(read.setting(ReservedSetting.icon, of: spot.id))

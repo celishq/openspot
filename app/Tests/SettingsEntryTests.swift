@@ -36,17 +36,6 @@ final class SettingsEntryTests: PanelCase {
         XCTAssertNil(model.openSheetID)
     }
 
-    func testAClickWithCommandOpensSettingsAtTheSpotAndRunsNothing() async throws {
-        let log = folder.appendingPathComponent("calls")
-        try script("conf", toml: "", "if [ \"$1\" = show ]; then printf 'item=a\\ntitle=A\\n'; else echo \"$@\" >> '\(log.path)'; fi")
-        try await open(selecting: "conf")
-
-        model.tap("conf", opening: true)
-
-        try await wait("Settings at the spot") { self.landings == ["spot/conf"] }
-        XCTAssertFalse(FileManager.default.fileExists(atPath: log.path))
-    }
-
     func testTheSettingsActionOfACardOpensSettingsAtItsSpot() async throws {
         try script("draw", toml: "title = 'Draw'", "printf 'item=own\\ntitle=Own\\n'")
         await model.reload()

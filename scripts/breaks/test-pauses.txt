@@ -35,6 +35,4 @@ app/Tests/SpotRunTests.swift	Task.sleep
 app/Tests/SpotRunTests.swift	Task.sleep
 app/Tests/SpotRunsCase.swift	Task.sleep
 app/Tests/StatsLogTests.swift	Task.sleep
-app/Tests/SpotsModelDragTests.swift	Task.sleep
-app/Tests/SpotsModelDragTests.swift	Task.sleep
 app/Tests/TestChildTests.swift	Task.sleep

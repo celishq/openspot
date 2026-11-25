@@ -16,6 +16,7 @@ final class SpotPlaygroundHost: SpotsHost {
     func applyConfig(_ config: Config) {}
     func paint(_ colours: Theme.Colours) {}
     func layOut(_ layout: Theme.Layout) {}
+    func widen() {}
     func setEntryKey(on isOn: Bool) {}
     func hold(_ keys: [GlobalKey]) {}
     func chooseFiles(for spot: Spot, then take: @escaping ([String]) -> Void) {}

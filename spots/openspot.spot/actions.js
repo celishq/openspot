@@ -11,6 +11,9 @@ export default {
   async edit({ item }, env) {
     await env.spot.edit(item);
   },
+  async rearrange(_, env) {
+    await env.grid.edit();
+  },
   async delete({ item }, env) {
     await env.spot.delete(item);
   },

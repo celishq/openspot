@@ -33,6 +33,7 @@ final class SpotsModelDragTests: XCTestCase {
 
     override func tearDown() async throws {
         model.quit()
+        SpotTokens.take(SpotTokens.layout.with(columns: SpotTokens.columns))
         defaults.removePersistentDomain(forName: suite)
         try? FileManager.default.removeItem(at: folder)
     }
@@ -67,52 +68,92 @@ final class SpotsModelDragTests: XCTestCase {
         model.visible.map(\.id)
     }
 
-    private func move(_ id: String, to point: CGPoint) -> CGSize {
-        let index = model.visible.firstIndex { $0.id == id } ?? 0
-        let rect = model.placements[index].rect
-        return CGSize(width: point.x - rect.midX, height: point.y - rect.midY)
+    private var cells: [GridCell] {
+        model.placements.map(\.cell)
     }
 
-    private func leftHalf(of id: String) -> CGPoint {
-        let rect = model.placements[model.visible.firstIndex { $0.id == id } ?? 0].rect
-        return CGPoint(x: rect.minX + rect.width / 4, y: rect.midY)
+    private func place(of id: String) -> SpotPlacement {
+        model.placements[model.visible.firstIndex { $0.id == id } ?? 0]
+    }
+
+    private func move(_ id: String, to cell: GridCell) -> CGSize {
+        let rect = place(of: id).rect
+        let target = SpotPlacement(index: 0, row: cell.row, column: cell.column, size: .small).rect
+        return CGSize(width: target.minX - rect.minX, height: target.minY - rect.minY)
     }
 
     private var offInConfig: [String] {
         (try? model.files.config.read().arrangement.choices.filter { $0.isEnabled == false }.map(\.id).sorted()) ?? []
     }
 
-    private func savedOrder() async -> [String] {
+    private func savedCells() async -> [String: GridCell] {
         let host = FakeHost()
         let other = SpotsModel(host: host, files: files)
         await other.reload()
         defer { other.quit() }
-        return withExtendedLifetime(host) { other.visible.map(\.id) }
+        return withExtendedLifetime(host) { Dictionary(uniqueKeysWithValues: other.visible.indices.map { (other.visible[$0].id, other.placements[$0].cell) }) }
     }
 
-    func testACardDraggedLeftOfAnotherMakesRoomThereAndAReleaseSavesIt() async {
+    private let row0 = GridCell(row: 0, column: 0)
+    private let home = [GridCell(row: 0, column: 0), GridCell(row: 0, column: 2), GridCell(row: 1, column: 0), GridCell(row: 1, column: 2)]
+
+    func testTheCardsLieInReadingOrderWithTheSizesTheyChose() {
         XCTAssertEqual(order, ["a", "b", "c", "d"])
-        let translation = move("d", to: leftHalf(of: "c"))
+        XCTAssertEqual(cells, home)
+        XCTAssertEqual(model.placements.map(\.size), [.wide, .wide, .wide, .small])
+    }
+
+    func testACardDraggedToAFreeCellLiesThereAndAReleaseSavesItsCell() async {
+        let translation = move("d", to: GridCell(row: 3, column: 1))
 
         model.dragSpot("d", by: translation)
 
-        XCTAssertEqual(order, ["a", "b", "d", "c"])
-        XCTAssertEqual(model.placements.map(\.size), [.wide, .wide, .wide, .wide])
-        XCTAssertEqual(model.selected, 2)
-        let shown = await savedOrder()
-        XCTAssertEqual(shown, ["a", "b", "c", "d"])
+        XCTAssertEqual(place(of: "d").cell, GridCell(row: 3, column: 1))
+        XCTAssertEqual(order, ["a", "b", "c", "d"])
+        let before = await savedCells()
+        XCTAssertEqual(before["d"], GridCell(row: 1, column: 2))
 
         model.dropSpot(by: translation)
 
         XCTAssertNil(model.drag)
-        XCTAssertEqual(order, ["a", "b", "d", "c"])
-        let shown2 = await savedOrder()
-        XCTAssertEqual(shown2, ["a", "b", "d", "c"])
+        XCTAssertEqual(place(of: "d").cell, GridCell(row: 3, column: 1))
+        let after = await savedCells()
+        XCTAssertEqual(after["d"], GridCell(row: 3, column: 1))
+        XCTAssertEqual(after["a"], row0)
+    }
+
+    func testACardDraggedOverAnotherPushesTheRestOnInReadingOrder() {
+        let translation = move("d", to: row0)
+
+        model.dragSpot("d", by: translation)
+        model.dropSpot(by: translation)
+
+        XCTAssertEqual(cells, [GridCell(row: 0, column: 1), GridCell(row: 1, column: 0), GridCell(row: 1, column: 2), row0])
+        XCTAssertEqual(model.selected, 3)
+    }
+
+    func testACardDraggedOverAHoleSmallerThanItTakesTheSizeOfTheHoleWhileHeld() async throws {
+        try files.config.change { config in
+            config.arrangement.set(size: .square, of: "a")
+            config.arrangement.set(cell: GridCell(row: 4, column: 0), of: "a", columns: 4)
+            config.arrangement.set(cell: GridCell(row: 0, column: 2), of: "b", columns: 4)
+            config.arrangement.set(cell: GridCell(row: 1, column: 0), of: "c", columns: 4)
+            config.arrangement.set(cell: GridCell(row: 1, column: 2), of: "d", columns: 4)
+        }
+        await model.reload()
+        XCTAssertEqual(place(of: "a"), SpotPlacement(index: 0, row: 4, column: 0, size: .square))
+
+        let translation = move("a", to: row0)
+        model.dragSpot("a", by: translation)
+
+        XCTAssertEqual(place(of: "a"), SpotPlacement(index: 0, row: 0, column: 0, size: .wide))
+        model.dropSpot(by: translation)
+        XCTAssertEqual(files.config.read().arrangement.size(of: "a"), .wide)
     }
 
     func testADroppedCardLandsUntilItsMotionEnds() {
         host.heldEnds = []
-        let translation = move("d", to: leftHalf(of: "c"))
+        let translation = move("d", to: GridCell(row: 2, column: 0))
         model.dragSpot("d", by: translation)
 
         model.dropSpot(by: translation)
@@ -127,7 +168,7 @@ final class SpotsModelDragTests: XCTestCase {
 
     func testACardPutBackByEscapeLandsUntilItsMotionEnds() {
         host.heldEnds = []
-        model.dragSpot("d", by: move("d", to: leftHalf(of: "c")))
+        model.dragSpot("d", by: move("d", to: GridCell(row: 2, column: 0)))
 
         _ = model.handleKey(ActionKey(name: "escape"))
 
@@ -136,48 +177,23 @@ final class SpotsModelDragTests: XCTestCase {
         XCTAssertNil(model.landing)
     }
 
-    func testALiftedCardMovesWithTheGridWhenItScrollsAndLandsWhereThePointerIs() async {
-        let row = SpotTokens.cell + SpotTokens.rowGap
-        let translation = move("a", to: leftHalf(of: "a"))
-        model.dragSpot("a", by: translation)
-
-        model.gridScrolled(to: row)
-
-        XCTAssertEqual(model.lift.offset, CGSize(width: translation.width, height: translation.height + row))
-        XCTAssertEqual(order, ["b", "c", "a", "d"])
-        model.dropSpot(by: translation)
-        let shown = await savedOrder()
-        XCTAssertEqual(shown, ["b", "c", "a", "d"])
-    }
-
-    func testAResizedCardFollowsTheGridWhenItScrolls() {
-        model.resizeSpot("c", by: .zero)
-
-        model.gridScrolled(to: SpotTokens.cell + SpotTokens.rowGap)
-
-        XCTAssertEqual(model.placements[2].size, .square)
-    }
-
     func testTheCardsWaitForThePointerToRestButAReleaseLandsAtOnce() {
         model.dragRest = .seconds(30)
-        let translation = move("d", to: leftHalf(of: "c"))
+        let translation = move("d", to: row0)
 
         model.dragSpot("d", by: translation)
 
-        XCTAssertEqual(order, ["a", "b", "c", "d"])
+        XCTAssertEqual(place(of: "a").cell, row0)
         model.dropSpot(by: translation)
-        XCTAssertEqual(order, ["a", "b", "d", "c"])
+        XCTAssertEqual(place(of: "d").cell, row0)
     }
 
     func testTheCardsMakeRoomAfterARealRest() async throws {
         model.dragRest = .milliseconds(100)
 
-        model.dragSpot("d", by: move("d", to: leftHalf(of: "c")))
+        model.dragSpot("d", by: move("d", to: row0))
 
-        for _ in 0..<6000 where order != ["a", "b", "d", "c"] {
-            try await Task.sleep(for: .milliseconds(10))
-        }
-        XCTAssertEqual(order, ["a", "b", "d", "c"])
+        try await wait("a gives way") { self.place(of: "a").cell != self.row0 }
     }
 
     func testTheLiftFollowsThePointerAndComesBackAtTheEnd() {
@@ -206,18 +222,20 @@ final class SpotsModelDragTests: XCTestCase {
         ))
     }
 
-    func testTheHKeyPutsTheSelectedSpotInSearchOnly() {
-        XCTAssertEqual(model.hint, "S Size   H Hide   ⇧ Arrows Move   Esc Done")
+    func testEditSpotsOffersNoHideKey() {
+        XCTAssertEqual(model.hint, "S Size   ⇧ Arrows Move   Esc Done")
+    }
 
-        _ = model.handleKey(ActionKey(name: "h"))
+    func testAShiftArrowMovesTheSelectedCardOneCell() {
+        model.selected = 3
 
-        XCTAssertEqual(order, ["b", "c", "d", "a"])
-        XCTAssertEqual(model.cards.first { $0.id == "a" }?.isOnGrid, false)
-        XCTAssertEqual(model.hint, "S Size   H Hide   ⇧ Arrows Move   Esc Done")
+        _ = model.handleKey(ActionKey(name: "down", isShift: true))
+
+        XCTAssertEqual(place(of: "d").cell, GridCell(row: 2, column: 2))
     }
 
     func testEscapePutsTheCardsBackAndKeepsEditSpots() async {
-        let translation = move("d", to: leftHalf(of: "c"))
+        let translation = move("d", to: row0)
         model.dragSpot("d", by: translation)
 
         _ = model.handleKey(ActionKey(name: "escape"))
@@ -225,87 +243,44 @@ final class SpotsModelDragTests: XCTestCase {
 
         XCTAssertTrue(model.isEditing)
         XCTAssertNil(model.drag)
-        XCTAssertEqual(order, ["a", "b", "c", "d"])
+        XCTAssertEqual(cells, home)
         XCTAssertEqual(model.selected, 3)
-        let shown = await savedOrder()
-        XCTAssertEqual(shown, ["a", "b", "c", "d"])
     }
 
     func testAReleaseOffTheGridPutsTheCardsBack() async {
-        model.dragSpot("d", by: move("d", to: leftHalf(of: "c")))
+        model.dragSpot("d", by: move("d", to: row0))
 
-        model.dropSpot(by: move("d", to: CGPoint(x: -SpotTokens.gridWidth, y: 0)))
+        model.dropSpot(by: CGSize(width: -3 * SpotTokens.gridWidth, height: 0))
 
         XCTAssertNil(model.drag)
-        XCTAssertEqual(order, ["a", "b", "c", "d"])
-        let shown = await savedOrder()
-        XCTAssertEqual(shown, ["a", "b", "c", "d"])
+        XCTAssertEqual(cells, home)
+        let saved = await savedCells()
+        XCTAssertEqual(saved["d"], GridCell(row: 1, column: 2))
     }
 
-    func testInEditSpotsTheCardsInSearchOnlyLieOnAShelfUnderTheGrid() {
-        model.setOnGrid(false, for: "a")
+    func testEditSpotsShowsNoShelfAndASpotOffTheGridStaysOff() async throws {
+        try files.config.change { $0.arrangement.set(isOnGrid: false, of: "a") }
+        await model.reload()
 
-        XCTAssertEqual(order, ["b", "c", "d", "a"])
-        XCTAssertEqual(model.placements.map(\.top), [SpotTokens.groupTitleBand, SpotTokens.groupTitleBand, SpotTokens.groupTitleBand, 2 * SpotTokens.groupTitleBand])
-        XCTAssertGreaterThan(model.placements[3].rect.minY, model.placements[0].rect.maxY)
-
-        model.endEditing()
         XCTAssertEqual(order, ["b", "c", "d"])
     }
 
-    func testAReportOfASpotOnTheShelfMovesNoCard() {
-        model.setOnGrid(false, for: "a")
-
-        XCTAssertFalse(model.mayMove("a"))
-        XCTAssertFalse(model.mayMove("b"))
-        XCTAssertEqual(model.groupBands?.grid, 3)
-        XCTAssertEqual(model.groupBands?.shelf, 1)
-    }
-
-    func testTheShelfLeavesOutASpotThatOnlyAnswersTheSearch() async throws {
-        try "#!/bin/sh\n".writeScript(to: spots.appendingPathComponent("rows.spot/rows.sh"), toml: "[on]\nsearch = '^x'")
+    func testTheGridHoldsSevenRowsAndASpotWithNoRoomIsLeftForSearch() async throws {
+        model.endEditing()
+        for index in 0..<26 {
+            try "#!/bin/sh\n".writeScript(to: spots.spotFile("x\(index)"))
+        }
         await model.reload()
 
-        XCTAssertFalse(order.contains("rows"))
+        XCTAssertLessThan(model.visible.count, 30)
+        XCTAssertEqual(model.placements.map(\.row).max(), SpotTokens.rows - 1)
+        XCTAssertLessThan(model.grid.freeCells(around: model.placements).count, 2)
+        XCTAssertEqual(model.placements.indices.map { $0 }, model.placements.map(\.index))
     }
 
-    func testWithEveryCardInSearchOnlyTheShelfStillHasItsTitleBand() {
-        for id in ["a", "b", "c", "d"] { model.setOnGrid(false, for: id) }
-
-        XCTAssertEqual(Set(model.placements.map(\.top)), [2 * SpotTokens.groupTitleBand])
-    }
-
-    func testACardDraggedUnderTheGridGoesToSearchOnly() async {
-        let below = CGPoint(x: SpotTokens.cell / 2, y: SpotGrid.height(of: model.placements) + SpotTokens.cell)
-        let translation = move("b", to: below)
-
-        model.dragSpot("b", by: translation)
-        model.dropSpot(by: translation)
-
-        XCTAssertEqual(order, ["a", "c", "d", "b"])
-        XCTAssertEqual(model.cards.first { $0.id == "b" }?.isOnGrid, false)
-        let shown = await savedOrder()
-        XCTAssertEqual(shown, ["a", "c", "d"])
-    }
-
-    func testACardDraggedFromTheShelfOntoTheGridGoesOnTheGridThere() {
-        model.setOnGrid(false, for: "d")
-        let translation = move("d", to: leftHalf(of: "b"))
-
-        model.dragSpot("d", by: translation)
-        model.dropSpot(by: translation)
-
-        XCTAssertEqual(order, ["a", "d", "b", "c"])
-        XCTAssertEqual(model.cards.first { $0.id == "d" }?.isOnGrid, true)
-    }
-
-    func testATipGoesWhenItsControlActsOrEditSpotsEnds() {
-        model.tip = SpotTip(id: "a", anchor: .trailingCorner, text: "Hide from grid")
-        model.setOnGrid(false, for: "a")
-        XCTAssertNil(model.tip)
-
+    func testATipGoesWhenADragStartsOrEditSpotsEnds() {
         model.tip = SpotTip(id: "d", anchor: .leadingCorner, text: "Turn off")
-        model.dragSpot("d", by: move("d", to: leftHalf(of: "c")))
+        model.dragSpot("d", by: move("d", to: row0))
         XCTAssertNil(model.tip)
         model.cancelDrag()
 
@@ -314,15 +289,8 @@ final class SpotsModelDragTests: XCTestCase {
         XCTAssertNil(model.tip)
     }
 
-    func testAScrollEndsTheTip() {
-        model.tip = SpotTip(id: "a", anchor: .trailingCorner, text: "Hide from grid")
-        model.gridScrolled(to: 40)
-        XCTAssertNil(model.tip)
-
-    }
-
     func testAPanelThatHidesEndsTheDrag() {
-        model.dragSpot("d", by: move("d", to: leftHalf(of: "c")))
+        model.dragSpot("d", by: move("d", to: row0))
 
         model.panelWillHide()
 
@@ -331,36 +299,25 @@ final class SpotsModelDragTests: XCTestCase {
         XCTAssertEqual(model.lift.offset, .zero)
     }
 
-    private func dragMove(to point: CGPoint) -> CGSize {
-        let rect = model.drag.map { $0.rect(at: $0.home) } ?? .zero
-        return CGSize(width: point.x - rect.midX, height: point.y - rect.midY)
-    }
-
-    private func inGrid(_ point: CGPoint) -> CGPoint {
-        let origin = model.gridOrigin
-        return CGPoint(x: point.x - origin.x, y: point.y - origin.y)
-    }
-
     func testOffTheGridTheCardsGoBackToTheirPlacesBeforeTheRelease() {
-        model.dragSpot("d", by: move("d", to: leftHalf(of: "c")))
-        XCTAssertEqual(order, ["a", "b", "d", "c"])
+        model.dragSpot("d", by: move("d", to: row0))
+        XCTAssertNotEqual(place(of: "a").cell, row0)
 
-        let start = model.drag.map { $0.rect(at: $0.home) } ?? .zero
-        model.dragSpot("d", by: dragMove(to: CGPoint(x: SpotTokens.gridWidth + SpotTokens.cell, y: start.midY)))
+        model.dragSpot("d", by: CGSize(width: 0, height: SpotTokens.panelHeight))
 
-        XCTAssertEqual(order, ["a", "b", "c", "d"])
+        XCTAssertEqual(place(of: "a").cell, row0)
     }
 
     func testTheCarriedCardGlidesToItsPlaceSettlingFromItsLiftAndGoesWhenItLands() {
         host.heldEnds = []
-        let translation = move("d", to: leftHalf(of: "c"))
+        let translation = move("d", to: GridCell(row: 2, column: 2))
         model.dragSpot("d", by: translation)
         XCTAssertEqual(model.carry?.entry.id, "d")
         XCTAssertEqual(model.carry?.isLanding, false)
 
         model.dropSpot(by: translation)
 
-        let place = model.placements[model.visible.firstIndex { $0.id == "d" } ?? 0].rect
+        let place = place(of: "d").rect
         XCTAssertEqual(model.lift.origin, CGPoint(x: SpotTokens.halo + place.minX, y: SpotTokens.gridTop + place.minY))
         XCTAssertEqual(model.carry?.entry.id, "d")
         XCTAssertEqual(model.carry?.isLanding, true)
@@ -371,7 +328,7 @@ final class SpotsModelDragTests: XCTestCase {
     func testACardPutBackGlidesToWhereItStarted() {
         host.heldEnds = []
         let start = model.placements[3].rect
-        model.dragSpot("d", by: move("d", to: leftHalf(of: "c")))
+        model.dragSpot("d", by: move("d", to: row0))
 
         _ = model.handleKey(ActionKey(name: "escape"))
 
@@ -384,23 +341,29 @@ final class SpotsModelDragTests: XCTestCase {
         CGSize(width: 0, height: SpotTokens.cell + SpotTokens.rowGap)
     }
 
+    private var across: CGSize {
+        CGSize(width: 2 * (SpotTokens.cell + SpotTokens.columnGap), height: 0)
+    }
+
     private var savedSize: SpotSize? {
         files.config.read().arrangement.size(of: "c")
     }
 
-    func testACornerPulledDownARowMakesTheCardSquareAndAReleaseSavesIt() {
-        model.resizeSpot("c", by: down)
+    func testACornerPulledAcrossMakesTheCardAStripPushingTheCardItCoversAndAReleaseSavesIt() async {
+        model.resizeSpot("c", by: across)
 
-        XCTAssertEqual(model.placements[2].size, .square)
-        XCTAssertEqual(model.placements[3].size, .square)
+        XCTAssertEqual(model.placements[2].size, .strip)
+        XCTAssertEqual(place(of: "d").cell, GridCell(row: 2, column: 0))
         XCTAssertNil(savedSize)
 
         model.dropResize()
 
         XCTAssertNil(model.resize)
-        XCTAssertEqual(model.placements[2].size, .square)
-        XCTAssertEqual(savedSize, .square)
+        XCTAssertEqual(model.placements[2].size, .strip)
+        XCTAssertEqual(savedSize, .strip)
         XCTAssertEqual(model.selected, 2)
+        let saved = await savedCells()
+        XCTAssertEqual(saved["d"], GridCell(row: 2, column: 0))
     }
 
     func testTheResizePointerLiesInTheHandleOfTheCornerItPulls() {
@@ -434,6 +397,7 @@ final class SpotsModelDragTests: XCTestCase {
         XCTAssertTrue(model.isEditing)
         XCTAssertNil(model.resize)
         XCTAssertEqual(model.placements[2].size, .wide)
+        XCTAssertEqual(place(of: "d").cell, GridCell(row: 1, column: 2))
         XCTAssertNil(savedSize)
     }
 
@@ -446,79 +410,165 @@ final class SpotsModelDragTests: XCTestCase {
         XCTAssertNil(savedSize)
     }
 
-    func testASidePanelShowsEmptyAndNoCardMoves() {
-        let before = model.placements.map(\.rect)
+    func testMoreColumnsWidenTheGridAtBothSidesAndKeepEachWidthsOwnCells() async {
+        model.moveSpot("d", to: GridCell(row: 4, column: 3))
 
-        model.show(.left, true)
+        model.set(columns: 8)
+        defer { model.grid = GridLayout() }
 
-        XCTAssertEqual(model.panels, GridPanels(hasLeft: true))
-        XCTAssertEqual(files.config.read().panels, GridPanels(hasLeft: true))
-        let shift = CGFloat(SpotTokens.columns) * (SpotTokens.cell + SpotTokens.columnGap)
-        XCTAssertEqual(model.placements.map { $0.rect.offsetBy(dx: -shift, dy: 0) }, before)
-        XCTAssertEqual(model.gridOrigin.x, SpotTokens.halo - shift)
+        XCTAssertEqual(files.config.read().grid, GridLayout(columns: 8))
+        XCTAssertEqual(SpotTokens.gridWidth, SpotTokens.width(columns: 8))
+        XCTAssertEqual(cells, [GridCell(row: 0, column: 0), GridCell(row: 0, column: 2), GridCell(row: 0, column: 4), GridCell(row: 0, column: 6)])
+        model.moveSpot("a", to: GridCell(row: 3, column: 6))
+        model.set(columns: 4)
+        XCTAssertEqual(place(of: "d").cell, GridCell(row: 4, column: 3))
+        XCTAssertEqual(place(of: "a").cell, row0)
     }
 
-    func testACardDroppedOnASidePanelStaysThereAndHidingThePanelMovesItBackToTheEnd() async throws {
-        model.show(.right, true)
-        let column = model.panels.firstColumn(of: .right)
-        let point = CGPoint(x: SpotPlacement(index: 0, row: 0, column: column, size: .small).rect.midX, y: model.placements[0].rect.midY)
-
-        let translation = move("a", to: point)
-        model.dragSpot("a", by: translation)
-        model.dropSpot(by: translation)
-
-        XCTAssertEqual(model.visible.first { $0.id == "a" }?.panel, .right)
-        XCTAssertEqual(files.config.read().arrangement.panel(of: "a"), .right)
-        model.show(.right, false)
-        for _ in 0..<6000 where model.panels.hasRight { try await Task.sleep(for: .milliseconds(10)) }
-        XCTAssertFalse(model.panels.hasRight)
-        XCTAssertEqual(model.visible.first { $0.id == "a" }?.panel, .center)
-        XCTAssertEqual(model.visible.filter(\.isOnGrid).last?.id, "a")
+    private var pointOnGrid: PointerTarget {
+        .grid(CGPoint(x: model.placements[0].rect.midX, y: model.placements[0].rect.midY))
     }
 
-    func testADraggedCardMakesItsRoomInThePanelItWouldLandIn() {
-        model.show(.right, true)
-        let column = model.panels.firstColumn(of: .right)
-        let point = CGPoint(x: SpotPlacement(index: 0, row: 0, column: column, size: .small).rect.midX, y: model.placements[0].rect.midY)
+    func testTheGridEndsAtItsLastRowAndEditingShowsAllSevenRows() {
+        let rows = SpotPlacement.height(of: model.placements)
+        XCTAssertEqual(model.gridHeight, SpotTokens.contentHeight(gridHeight: model.grid.height))
 
-        model.dragSpot("a", by: move("a", to: point))
-
-        let index = model.visible.firstIndex { $0.id == "a" } ?? -1
-        XCTAssertGreaterThanOrEqual(model.placements.first { $0.index == index }?.column ?? -1, column)
-    }
-
-    func testAPanelThatShowsIsEmptyEvenWhenAnOldChoiceNamedIt() async throws {
-        var arrangement = files.config.read().arrangement
-        arrangement.set(panel: .right, of: "b")
-        try files.config.write(arrangement)
-        await model.reload()
-        XCTAssertLessThan(model.placements.map(\.column).max() ?? 0, SpotTokens.columns)
-
-        model.show(.right, true)
-
-        XCTAssertLessThan(model.placements.map(\.column).max() ?? 0, SpotTokens.columns)
-        XCTAssertNil(files.config.read().arrangement.panel(of: "b"))
-    }
-
-    func testTheGridTakesTheSidePanelsOfTheConfig() async throws {
-        try files.config.change { $0.show(.right, true) }
-
-        await model.reload()
-
-        XCTAssertEqual(model.panels, GridPanels(hasRight: true))
-    }
-
-    func testTheGridGrowsDownPastTheRowsThePanelShows() async throws {
         model.endEditing()
-        for name in ["e", "f", "g", "h", "i", "j", "k", "l", "m"] {
-            try "#!/bin/sh\n".writeScript(to: spots.spotFile(name))
+
+        XCTAssertEqual(model.gridHeight, SpotTokens.contentHeight(gridHeight: rows))
+    }
+
+    func testAHeldCommandAloneStartsNoEditing() {
+        model.endEditing()
+
+        model.hold([.command])
+
+        XCTAssertFalse(model.isEditing)
+    }
+
+    func testAPointerMoveOverTheGridWithCommandHeldStartsEditingAndTheReleaseEndsIt() {
+        model.endEditing()
+        let placements = model.placements
+
+        model.hold([.command])
+        model.point(at: pointOnGrid)
+
+        XCTAssertTrue(model.isEditing)
+        XCTAssertEqual(model.placements, placements)
+        model.hold([])
+        XCTAssertFalse(model.isEditing)
+    }
+
+    func testACommandReleasedDuringADragEndsEditingOnceTheCardLands() {
+        model.endEditing()
+        host.heldEnds = []
+        model.hold([.command])
+        model.point(at: pointOnGrid)
+        let translation = move("d", to: GridCell(row: 3, column: 0))
+        model.dragSpot("d", by: translation)
+
+        model.hold([])
+        XCTAssertTrue(model.isEditing)
+        model.dropSpot(by: translation)
+        XCTAssertTrue(model.isEditing)
+        host.heldEnds?.forEach { $0() }
+
+        XCTAssertFalse(model.isEditing)
+        XCTAssertEqual(place(of: "d").cell, GridCell(row: 3, column: 0))
+    }
+
+    func testEditingOpenedByRearrangeStaysWhenCommandIsReleased() {
+        model.endEditing()
+        model.editGrid()
+
+        model.hold([.command])
+        model.hold([])
+
+        XCTAssertTrue(model.isEditing)
+    }
+
+    func testACommandHeldOverTheGridWhileASearchShowsStartsNoEditing() {
+        model.endEditing()
+        model.query = "a"
+
+        model.hold([.command])
+        model.point(at: pointOnGrid)
+
+        XCTAssertFalse(model.isEditing)
+    }
+
+    private func fillTheGrid() async throws {
+        model.endEditing()
+        for index in 0..<26 {
+            try "#!/bin/sh\n".writeScript(to: spots.spotFile("x\(index)"))
         }
         await model.reload()
         model.beginEditing()
+    }
 
-        XCTAssertEqual(model.visible.filter(\.isOnGrid).count, 13)
-        model.resizeSpot("c", by: .zero)
-        XCTAssertEqual(model.resize?.choices.contains(.large), true)
+    func testALiveDragStillPushesWhenASpotIsLeftOut() async throws {
+        try await fillTheGrid()
+        XCTAssertFalse(model.leftOut.isEmpty)
+        let first = order[0]
+        let last = order[order.count - 1]
+        let start = place(of: first).cell
+
+        model.dragSpot(last, by: move(last, to: start))
+
+        XCTAssertEqual(place(of: last).cell, start)
+        XCTAssertNotEqual(place(of: first).cell, start)
+    }
+
+    func testAReloadDuringADragDropsTheDrag() async throws {
+        model.dragSpot("d", by: move("d", to: row0))
+        try "#!/bin/sh\n".writeScript(to: spots.spotFile("e"))
+
+        await model.reload()
+        model.dropSpot(by: move("d", to: row0))
+
+        XCTAssertNil(model.drag)
+        XCTAssertNotEqual(files.config.read().arrangement.cells(of: "a")?[4], GridCell(row: 0, column: 1))
+    }
+
+    func testAColumnSwitchDuringADragDropsTheDrag() {
+        model.dragSpot("d", by: move("d", to: row0))
+
+        model.set(columns: 8)
+        defer { model.grid = GridLayout() }
+
+        XCTAssertNil(model.drag)
+    }
+
+    func testAKeyWithCommandEndsTheEditOfAHeldCommandAndAnotherMoveStartsNone() {
+        model.endEditing()
+        model.hold([.command])
+        model.point(at: pointOnGrid)
+        XCTAssertTrue(model.isEditing)
+
+        _ = model.handleKey(ActionKey(name: "s", isCommand: true))
+
+        XCTAssertFalse(model.isEditing)
+        XCTAssertNil(files.config.read().arrangement.size(of: "a"))
+        model.point(at: pointOnGrid)
+        XCTAssertFalse(model.isEditing)
+        model.hold([])
+        model.hold([.command])
+        model.point(at: pointOnGrid)
+        XCTAssertTrue(model.isEditing)
+    }
+
+    func testAHideForgetsAHeldCommand() {
+        model.endEditing()
+        model.hold([.command])
+
+        model.panelWillHide()
+        model.point(at: pointOnGrid)
+
+        XCTAssertFalse(model.isEditing)
+    }
+
+    func testTheFreeCellsAreKeptForTheSlotsToDraw() {
+        XCTAssertEqual(model.freeCells.count, 4 * SpotTokens.rows - 7)
     }
 
     func testAPanelThatHidesEndsTheResize() {
@@ -615,8 +665,8 @@ final class SpotsModelDragTests: XCTestCase {
 
         XCTAssertEqual(order, ["b", "c", "d"])
         XCTAssertEqual(offInConfig, ["a"])
-        let shown = await savedOrder()
-        XCTAssertEqual(shown, ["b", "c", "d"])
+        let shown = await savedCells()
+        XCTAssertEqual(shown.keys.sorted(), ["b", "c", "d"])
         XCTAssertTrue(FileManager.default.fileExists(atPath: spots.spotFile("a").path))
     }
 
@@ -633,7 +683,7 @@ final class SpotsModelDragTests: XCTestCase {
     }
 
     func testACardReleasedOverTheStoresWindowTurnsItsSpotOff() {
-        let translation = move("a", to: leftHalf(of: "b"))
+        let translation = move("a", to: GridCell(row: 0, column: 1))
         model.dragSpot("a", by: translation)
         host.isPointerOverWindow = true
 
@@ -659,7 +709,7 @@ final class SpotsModelDragTests: XCTestCase {
     func testNoCardLiftsOutsideEditSpots() {
         model.endEditing()
 
-        model.dragSpot("d", by: move("d", to: leftHalf(of: "c")))
+        model.dragSpot("d", by: move("d", to: row0))
         model.resizeSpot("c", by: down)
 
         XCTAssertNil(model.drag)

@@ -60,7 +60,12 @@ you, with one line of what it lacks.
 
 ## Choose where a spot shows
 
-Put any spot on the grid, in the menu bar, in a float or in a window, from its page in Settings and from Edit Spots.
+Put any spot in the menu bar, in a float or in a window from its page in Settings.
+
+Arrange the grid in Edit Spots: hold `⌘` and move the pointer over the grid, or press `⌘K` on a card and choose
+Rearrange. A release of `⌘` ends it; Rearrange stays until Done. The grid has 7 rows and 4, 6 or 8 columns, which the
+header switches. Each spot stays at the cell you drop it in. A drop on a smaller hole shrinks the card to fit, and a
+bigger card pushes the others on. A spot with no room is found by search.
 
 - A float shows the spot in a small window at the pointer, which a key or a shake opens, and which stays while you work
   in other apps.

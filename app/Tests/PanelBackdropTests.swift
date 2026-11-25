@@ -15,7 +15,7 @@ final class PanelBackdropTests: PanelCase {
         try script("list", toml: "title = 'List'", "printf 'item=a\\ntitle=A\\n'")
         await model.reload()
 
-        let cards = SpotGrid.height(of: model.placements)
+        let cards = SpotPlacement.height(of: model.placements)
         XCTAssertGreaterThan(cards, 0)
         XCTAssertEqual(model.backdrop, CGRect(x: 0, y: 0, width: SpotTokens.panelWidth, height: edges + SpotTokens.cell + SpotTokens.rowGap + cards))
     }
@@ -54,8 +54,7 @@ final class PanelBackdropTests: PanelCase {
         model.placeMenu(frame)
         try await wait("the grow") { self.model.menuSession?.phase != .opening }
 
-        XCTAssertGreaterThan(frame.rect.maxY + SpotTokens.halo + SpotTokens.hintBlock, model.gridHeight)
-        XCTAssertEqual(model.backdrop.height, frame.rect.maxY + SpotTokens.halo + SpotTokens.hintBlock)
+        XCTAssertEqual(model.backdrop.height, max(frame.rect.maxY + SpotTokens.halo + SpotTokens.hintBlock, model.gridHeight))
 
         model.closeMenu()
         try await wait("the closed menu") { self.model.menuSession == nil }
@@ -77,17 +76,19 @@ final class PanelBackdropTests: PanelCase {
         XCTAssertFalse(told)
     }
 
-    func testTheBackdropSpansTheSidePanelsAndASearchNarrowsItToTheMainPanel() async throws {
+    func testTheBackdropAndTheSearchSpanTheChosenColumns() async throws {
         try script("list", toml: "title = 'List'", "printf 'item=a\\ntitle=A\\n'")
         await model.reload()
-        model.panels = GridPanels(hasLeft: true, hasRight: true)
-        let side = SpotTokens.gridWidth + SpotTokens.columnGap
+        let four = SpotTokens.panelWidth
+        model.grid = GridLayout(columns: 8)
+        defer { model.grid = GridLayout() }
 
-        XCTAssertEqual(model.backdrop.minX, -side)
-        XCTAssertEqual(model.backdrop.width, SpotTokens.panelWidth + 2 * side)
-
-        model.query = "zzz"
-
+        XCTAssertEqual(SpotTokens.panelWidth, four + 4 * (SpotTokens.cell + SpotTokens.columnGap))
         XCTAssertEqual(model.backdrop, CGRect(x: 0, y: 0, width: SpotTokens.panelWidth, height: model.gridHeight))
+
+        model.query = "list"
+
+        XCTAssertEqual(model.backdrop.width, SpotTokens.panelWidth)
+        XCTAssertEqual(model.placements.first?.size, SpotSize(columns: 8, rows: 1))
     }
 }
